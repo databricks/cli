@@ -127,15 +127,22 @@ func scanBlockComment(s string, start, end int) int {
 // '$' of $tag$. If the construct doesn't look like a valid dollar-quote
 // opener, returns ("", start) so the caller can fall through.
 //
-// Tag rule: starts after '$', runs to the next '$', and must consist of
-// letter-or-underscore-or-digit (we accept all non-special bytes; over-
-// permissive). Empty tag is valid: $$ is a marker, $$body$$ is the body.
+// Tag rule: starts after '$', runs to the next '$'. Per the Postgres docs a
+// dollar-quote tag must not start with a digit, so we reject `$1`, `$2`,
+// etc. as tags and let the scanner treat them as ordinary bytes (this is
+// what `$1`-style parameter placeholders look like, even though `QueryExecModeExec`
+// can't bind them in this command). Empty tag is valid: $$ is a marker,
+// $$body$$ is the body.
 func readDollarTag(s string, start, end int) (string, int) {
 	i := start + 1
 	for i < end {
 		if s[i] == '$' {
 			tag := s[start+1 : i]
 			return tag, i + 1
+		}
+		// Reject `$<digit>...` early: it can't be a valid tag.
+		if i == start+1 && s[i] >= '0' && s[i] <= '9' {
+			return "", start
 		}
 		// Stop at characters that can't be in a tag.
 		if s[i] == ' ' || s[i] == '\t' || s[i] == '\n' || s[i] == ';' {

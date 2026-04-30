@@ -39,6 +39,18 @@ func TestCheckSingleStatement(t *testing.T) {
 		{name: "empty input", input: "", wantErr: false},
 		{name: "only whitespace", input: "  \n\t  ", wantErr: false},
 		{name: "only semicolon", input: ";", wantErr: false},
+
+		// $1 / $2 placeholder syntax must not be confused with a dollar-quote
+		// tag (tags can't start with a digit per PG docs).
+		{name: "dollar-digit placeholders", input: "SELECT $1, $2 FROM t", wantErr: false},
+		{name: "dollar-digit then real semi", input: "SELECT $1 FROM t; SELECT 2", wantErr: true},
+
+		// E-string escape syntax: scanner doesn't honour \' escape, so a
+		// backslash-escaped apostrophe terminates the literal early. We
+		// document the over-rejection rather than fix it (acceptable v1
+		// stance per the plan); pin the behaviour here so the next person
+		// touching the scanner has to update the test.
+		{name: "E-string with backslash-escape over-rejects", input: `SELECT E'foo\';bar'`, wantErr: true},
 	}
 
 	for _, tc := range tests {

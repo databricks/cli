@@ -2,6 +2,7 @@ package postgrescmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"time"
@@ -128,7 +129,7 @@ func runQuery(ctx context.Context, cmd *cobra.Command, args []string, f queryFla
 	}
 	for _, u := range units {
 		if err := checkSingleStatement(u.SQL); err != nil {
-			return fmt.Errorf("%s: %w%s", u.Source, err, multiStatementHint())
+			return fmt.Errorf("%s: %w%s", u.Source, err, multiStatementHint)
 		}
 	}
 
@@ -183,14 +184,18 @@ func runQuery(ctx context.Context, cmd *cobra.Command, args []string, f queryFla
 	if len(units) == 1 {
 		// Single-input path: stream directly through the per-format sink.
 		// Avoids buffering rows for large exports and matches the v1 single-
-		// input behaviour PR 2 shipped.
+		// input behaviour PR 2 shipped. Wrap the error so DETAIL / HINT
+		// from a *pgconn.PgError surface even on the single-input path.
 		sink := newSink(format, out, stderr)
-		return executeOne(ctx, conn, units[0].SQL, sink)
+		if err := executeOne(ctx, conn, units[0].SQL, sink); err != nil {
+			return errors.New(formatPgError(err))
+		}
+		return nil
 	}
 
 	// Multi-input path: per-unit buffering. The plan accepts this trade-off
 	// (multi-input invocations with huge SELECTs should use single-input
-	// invocations with --output csv for streaming). Sessions state (SET,
+	// invocations with --output csv for streaming). Session state (SET,
 	// temp tables) carries across units because we hold the same connection.
 	results := make([]*unitResult, 0, len(units))
 	for _, u := range units {
@@ -198,7 +203,7 @@ func runQuery(ctx context.Context, cmd *cobra.Command, args []string, f queryFla
 		if err != nil {
 			// Render the successful prefix, then surface the error with
 			// rich pgError formatting if applicable.
-			if rerr := renderPartial(out, stderr, format, results, u, err); rerr != nil {
+			if rerr := renderPartial(out, stderr, format, results, r, err); rerr != nil {
 				// Best-effort partial render failed; surface the original
 				// error to the user, the renderer error to debug logs.
 				fmt.Fprintln(stderr, "warning: failed to render partial result:", rerr)
@@ -210,7 +215,7 @@ func runQuery(ctx context.Context, cmd *cobra.Command, args []string, f queryFla
 
 	switch format {
 	case outputJSON:
-		return renderJSONMulti(out, stderr, results, -1, "")
+		return renderJSONMulti(out, stderr, results, nil, "")
 	default:
 		return renderTextMulti(out, results)
 	}
@@ -232,10 +237,10 @@ func newSink(format outputFormat, out, stderr io.Writer) rowSink {
 // renderPartial emits the rendered output for the prefix of units that ran
 // successfully before a unit errored. For multi-input json this also writes
 // the error envelope as the last array element.
-func renderPartial(out, stderr io.Writer, format outputFormat, results []*unitResult, errored inputUnit, err error) error {
+func renderPartial(out, stderr io.Writer, format outputFormat, results []*unitResult, errored *unitResult, err error) error {
 	switch format {
 	case outputJSON:
-		return renderJSONMulti(out, stderr, results, len(results), formatExecutionErrorMessage(errored.Source, err))
+		return renderJSONMulti(out, stderr, results, errored, formatPgError(err))
 	default:
 		// Text: render whatever ran cleanly. The error message goes through
 		// cobra's default error path on stderr after we return.
@@ -250,16 +255,8 @@ func formatExecutionError(source string, err error) error {
 	return fmt.Errorf("%s: %s", source, formatPgError(err))
 }
 
-// formatExecutionErrorMessage is the string form of formatExecutionError,
-// suitable for embedding in JSON envelopes.
-func formatExecutionErrorMessage(source string, err error) string {
-	return fmt.Sprintf("%s: %s", source, formatPgError(err))
-}
-
-// multiStatementHint is the workaround pointer appended to the
-// errMultipleStatements error so users see the recovery path inline.
-func multiStatementHint() string {
-	return "\nThis command runs one statement per input. To run multiple statements:\n" +
-		`  - Pass each as a separate positional:  query "SELECT 1" "SELECT 2"` + "\n" +
-		`  - Pass each in its own --file:         query --file q1.sql --file q2.sql`
-}
+// multiStatementHint is appended to errMultipleStatements so users see the
+// recovery path inline.
+const multiStatementHint = "\nThis command runs one statement per input. To run multiple statements:\n" +
+	`  - Pass each as a separate positional:  query "SELECT 1" "SELECT 2"` + "\n" +
+	`  - Pass each in its own --file:         query --file q1.sql --file q2.sql`

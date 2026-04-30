@@ -2,7 +2,6 @@ package postgrescmd
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -27,36 +26,44 @@ func (r *unitResult) IsRowsProducing() bool {
 	return len(r.Fields) > 0
 }
 
-// runUnitBuffered runs sql and collects every row into memory. Used by the
-// multi-input output paths (text and json), where per-unit buffering is
-// acceptable per the plan: a multi-input invocation that emits a huge
-// SELECT will buffer that result before printing. Users with huge result
-// sets per statement should use single-input invocations (which fully
-// stream) or --output csv on a single input.
+// runUnitBuffered runs sql and collects every row into memory. Implemented
+// as a thin wrapper that hands a bufferSink to executeOne, so error wrapping
+// and the rowSink contract stay in one place rather than parallel-evolving
+// across two query loops.
 func runUnitBuffered(ctx context.Context, conn *pgx.Conn, unit inputUnit) (*unitResult, error) {
 	start := time.Now()
-	rows, err := conn.Query(ctx, unit.SQL, pgx.QueryExecModeExec)
-	if err != nil {
-		return nil, fmt.Errorf("query failed: %w", err)
+	r := &unitResult{Source: unit.Source, SQL: unit.SQL}
+	sink := &bufferSink{result: r}
+	if err := executeOne(ctx, conn, unit.SQL, sink); err != nil {
+		// Capture timing on the error path too so the JSON error envelope
+		// can surface "this query ran for X seconds before failing".
+		r.Elapsed = time.Since(start)
+		return r, err
 	}
-	defer rows.Close()
-
-	r := &unitResult{
-		Source: unit.Source,
-		SQL:    unit.SQL,
-		Fields: rows.FieldDescriptions(),
-	}
-	for rows.Next() {
-		values, err := rows.Values()
-		if err != nil {
-			return nil, fmt.Errorf("decode row: %w", err)
-		}
-		r.Rows = append(r.Rows, values)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("query failed: %w", err)
-	}
-	r.CommandTag = rows.CommandTag().String()
 	r.Elapsed = time.Since(start)
 	return r, nil
 }
+
+// bufferSink is a rowSink that copies fields, rows, and the command tag into
+// a unitResult instead of writing anywhere. Used by the multi-input path so
+// successive units can be rendered together once they're all available.
+type bufferSink struct {
+	result *unitResult
+}
+
+func (s *bufferSink) Begin(fields []pgconn.FieldDescription) error {
+	s.result.Fields = fields
+	return nil
+}
+
+func (s *bufferSink) Row(values []any) error {
+	s.result.Rows = append(s.result.Rows, values)
+	return nil
+}
+
+func (s *bufferSink) End(commandTag string) error {
+	s.result.CommandTag = commandTag
+	return nil
+}
+
+func (s *bufferSink) OnError(err error) {}

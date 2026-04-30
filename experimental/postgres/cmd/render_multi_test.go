@@ -53,16 +53,12 @@ func TestRenderJSONMulti_TwoResults(t *testing.T) {
 	}
 
 	var stdout, stderr bytes.Buffer
-	require.NoError(t, renderJSONMulti(&stdout, &stderr, []*unitResult{r1, r2}, -1, ""))
+	require.NoError(t, renderJSONMulti(&stdout, &stderr, []*unitResult{r1, r2}, nil, ""))
 
 	out := stdout.String()
-	assert.Contains(t, out, `"sql":"INSERT INTO t VALUES (1)"`)
-	assert.Contains(t, out, `"kind":"command"`)
-	assert.Contains(t, out, `"command":"INSERT"`)
-	assert.Contains(t, out, `"rows_affected":1`)
-	assert.Contains(t, out, `"sql":"SELECT id FROM t"`)
-	assert.Contains(t, out, `"kind":"rows"`)
-	assert.Contains(t, out, `"rows":`)
+	// Canonical key order: source, sql, kind, elapsed_ms, payload.
+	assert.Contains(t, out, `"source":"argv[1]","sql":"INSERT INTO t VALUES (1)","kind":"command","elapsed_ms":5,"command":"INSERT","rows_affected":1`)
+	assert.Contains(t, out, `"source":"argv[2]","sql":"SELECT id FROM t","kind":"rows","elapsed_ms":3,"rows":`)
 	// Outer array framing.
 	assert.Greater(t, len(out), 4)
 	assert.Equal(t, byte('['), out[0])
@@ -78,12 +74,32 @@ func TestRenderJSONMulti_WithErrorAtEnd(t *testing.T) {
 		CommandTag: "SELECT 1",
 		Elapsed:    1 * time.Millisecond,
 	}
+	errored := &unitResult{
+		Source:  "argv[2]",
+		SQL:     "BROKEN SQL",
+		Elapsed: 2 * time.Millisecond,
+	}
 
 	var stdout, stderr bytes.Buffer
-	require.NoError(t, renderJSONMulti(&stdout, &stderr, []*unitResult{r1}, 1, "argv[2]: ERROR: syntax error (SQLSTATE 42601)"))
+	require.NoError(t, renderJSONMulti(&stdout, &stderr, []*unitResult{r1}, errored, "ERROR: syntax error (SQLSTATE 42601)"))
 
 	out := stdout.String()
 	assert.Contains(t, out, `"kind":"rows"`)
-	assert.Contains(t, out, `"kind":"error"`)
-	assert.Contains(t, out, `"message":"argv[2]: ERROR: syntax error (SQLSTATE 42601)"`)
+	// Error envelope: same key order, includes elapsed_ms + source + sql.
+	assert.Contains(t, out, `"source":"argv[2]","sql":"BROKEN SQL","kind":"error","elapsed_ms":2,"error":{"message":"ERROR: syntax error (SQLSTATE 42601)"}`)
+}
+
+func TestRenderJSONMulti_FirstUnitFails(t *testing.T) {
+	errored := &unitResult{
+		Source:  "argv[1]",
+		SQL:     "BROKEN",
+		Elapsed: 7 * time.Millisecond,
+	}
+	var stdout, stderr bytes.Buffer
+	require.NoError(t, renderJSONMulti(&stdout, &stderr, nil, errored, "ERROR: bad"))
+
+	out := stdout.String()
+	// No leading separator before the single error envelope.
+	assert.Contains(t, out, "[\n"+`{"source":"argv[1]","sql":"BROKEN","kind":"error","elapsed_ms":7,"error":{"message":"ERROR: bad"}}`)
+	assert.Contains(t, out, "\n]\n")
 }

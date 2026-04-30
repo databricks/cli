@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"strings"
 )
 
 // renderTextMulti renders a sequence of unit results as plain text. Each
@@ -57,15 +56,19 @@ func renderTextResult(out io.Writer, r *unitResult) error {
 // streaming. CSV multi-input is rejected pre-flight, so this function is
 // only used for json.
 //
-// Per-unit shape:
+// Every per-unit object shares the same canonical key order:
 //
-//	{"sql": "...", "kind": "rows", "elapsed_ms": N, "rows": [...]}
-//	{"sql": "...", "kind": "command", "elapsed_ms": N, "command": "...", "rows_affected": N}
-//	{"sql": "...", "kind": "error", "elapsed_ms": N, "error": {...}}
+//	{"source", "sql", "kind", "elapsed_ms", payload...}
 //
-// kind discriminates which fields are present so consumers don't have to
-// branch on key presence.
-func renderJSONMulti(out, stderr io.Writer, results []*unitResult, errIndex int, errMessage string) error {
+// where payload depends on kind:
+//
+//	"rows":    {..., "rows": [...]}
+//	"command": {..., "command": "...", "rows_affected": N}
+//	"error":   {..., "error": {"message": "..."}}
+//
+// elapsed_ms is present on errors too: it captures how long the failing
+// statement ran before the error fired.
+func renderJSONMulti(out, stderr io.Writer, results []*unitResult, errored *unitResult, errMessage string) error {
 	if _, err := io.WriteString(out, "[\n"); err != nil {
 		return err
 	}
@@ -85,21 +88,13 @@ func renderJSONMulti(out, stderr io.Writer, results []*unitResult, errIndex int,
 		}
 	}
 
-	if errIndex >= 0 {
-		// The errored unit follows the last successful unit; write a comma
-		// separator and the error envelope for it.
+	if errored != nil {
 		if len(results) > 0 {
 			if _, err := io.WriteString(out, ",\n"); err != nil {
 				return err
 			}
 		}
-		errSQL := ""
-		errSource := ""
-		// errIndex points to the input *unit* index; since we render
-		// successful units in order, the errored unit's SQL came from the
-		// caller's units slice. The caller embeds it in errMessage so we
-		// don't need separate plumbing here.
-		obj := jsonErrorObject(errSource, errSQL, errMessage)
+		obj := jsonErrorObject(errored, errMessage)
 		if _, err := out.Write(obj); err != nil {
 			return err
 		}
@@ -113,18 +108,19 @@ func renderJSONMulti(out, stderr io.Writer, results []*unitResult, errIndex int,
 // existing single-input json rendering for the rows array so the value
 // mapping stays consistent across single- and multi-input shapes.
 func renderJSONUnit(buf *bytes.Buffer, stderr io.Writer, r *unitResult) error {
+	if err := writeJSONUnitHeader(buf, r); err != nil {
+		return err
+	}
+
 	if !r.IsRowsProducing() {
-		// Command-only unit.
-		if _, err := fmt.Fprintf(buf, `{"sql":`); err != nil {
-			return err
-		}
-		sqlJSON, err := marshalJSON(r.SQL)
+		buf.WriteString(`,"kind":"command"`)
+		fmt.Fprintf(buf, `,"elapsed_ms":%d`, r.Elapsed.Milliseconds())
+		verbBytes, err := marshalJSON(commandTagVerb(r.CommandTag))
 		if err != nil {
 			return err
 		}
-		buf.Write(sqlJSON)
-		fmt.Fprintf(buf, `,"kind":"command","elapsed_ms":%d`, r.Elapsed.Milliseconds())
-		fmt.Fprintf(buf, `,"command":"%s"`, jsonEscapeShort(commandTagVerb(r.CommandTag)))
+		buf.WriteString(`,"command":`)
+		buf.Write(verbBytes)
 		if rows, ok := commandTagRowCount(r.CommandTag); ok {
 			fmt.Fprintf(buf, `,"rows_affected":%d`, rows)
 		}
@@ -132,17 +128,10 @@ func renderJSONUnit(buf *bytes.Buffer, stderr io.Writer, r *unitResult) error {
 		return nil
 	}
 
-	// Rows-producing unit. We reuse jsonSink for the rows array body so
-	// the per-row encoding (column order, type mapping) stays in one place.
-	if _, err := fmt.Fprintf(buf, `{"sql":`); err != nil {
-		return err
-	}
-	sqlJSON, err := marshalJSON(r.SQL)
-	if err != nil {
-		return err
-	}
-	buf.Write(sqlJSON)
-	fmt.Fprintf(buf, `,"kind":"rows","elapsed_ms":%d,"rows":`, r.Elapsed.Milliseconds())
+	// Rows-producing unit. Reuse jsonSink for the rows array body so the
+	// per-row encoding (column order, type mapping) stays in one place.
+	buf.WriteString(`,"kind":"rows"`)
+	fmt.Fprintf(buf, `,"elapsed_ms":%d,"rows":`, r.Elapsed.Milliseconds())
 
 	rowsBuf := &bytes.Buffer{}
 	sink := newJSONSink(rowsBuf, stderr)
@@ -154,8 +143,6 @@ func renderJSONUnit(buf *bytes.Buffer, stderr io.Writer, r *unitResult) error {
 			return err
 		}
 	}
-	// Use a no-op tag for End so jsonSink's success path emits the closing
-	// bracket. The trailing newline gets trimmed below.
 	if err := sink.End(""); err != nil {
 		return err
 	}
@@ -165,24 +152,38 @@ func renderJSONUnit(buf *bytes.Buffer, stderr io.Writer, r *unitResult) error {
 	return nil
 }
 
-// jsonErrorObject builds the per-unit error envelope used in the multi-input
-// JSON shape. message is the formatted error message (already includes
-// SQLSTATE / hint / detail when applicable).
-func jsonErrorObject(source, sql, message string) []byte {
-	var buf bytes.Buffer
+// writeJSONUnitHeader writes the canonical {source, sql, ...} prefix used
+// by every per-unit object. The closing brace and the kind-specific payload
+// are appended by the caller.
+func writeJSONUnitHeader(buf *bytes.Buffer, r *unitResult) error {
+	sourceBytes, err := marshalJSON(r.Source)
+	if err != nil {
+		return err
+	}
+	sqlBytes, err := marshalJSON(r.SQL)
+	if err != nil {
+		return err
+	}
 	buf.WriteString(`{"source":`)
-	if b, err := marshalJSON(source); err == nil {
-		buf.Write(b)
-	} else {
-		buf.WriteString(`""`)
-	}
+	buf.Write(sourceBytes)
 	buf.WriteString(`,"sql":`)
-	if b, err := marshalJSON(sql); err == nil {
-		buf.Write(b)
-	} else {
-		buf.WriteString(`""`)
+	buf.Write(sqlBytes)
+	return nil
+}
+
+// jsonErrorObject builds the per-unit error envelope used in the multi-input
+// JSON shape. The buffered unitResult provides source, SQL, and the elapsed
+// time captured by runUnitBuffered's error path. message is the
+// already-formatted error wording (includes SQLSTATE / hint / detail for
+// PgErrors).
+func jsonErrorObject(r *unitResult, message string) []byte {
+	var buf bytes.Buffer
+	if err := writeJSONUnitHeader(&buf, r); err != nil {
+		return []byte(`{"source":"","sql":"","kind":"error","elapsed_ms":0,"error":{"message":""}}`)
 	}
-	buf.WriteString(`,"kind":"error","error":{"message":`)
+	buf.WriteString(`,"kind":"error"`)
+	fmt.Fprintf(&buf, `,"elapsed_ms":%d`, r.Elapsed.Milliseconds())
+	buf.WriteString(`,"error":{"message":`)
 	if b, err := marshalJSON(message); err == nil {
 		buf.Write(b)
 	} else {
@@ -190,20 +191,4 @@ func jsonErrorObject(source, sql, message string) []byte {
 	}
 	buf.WriteString(`}}`)
 	return buf.Bytes()
-}
-
-// jsonEscapeShort is a fast path for short ASCII strings (command tag verbs)
-// that need backslash escapes for ", \, and control bytes only. Falls back
-// to a string-escaped value if the input contains anything unusual.
-func jsonEscapeShort(s string) string {
-	if !strings.ContainsAny(s, "\"\\\n\r\t") {
-		return s
-	}
-	out, err := marshalJSON(s)
-	if err != nil {
-		return s
-	}
-	// marshalJSON returns the value with surrounding quotes; strip them so
-	// the caller can wrap with its own quoting.
-	return string(bytes.Trim(out, `"`))
 }
