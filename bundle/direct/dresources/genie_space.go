@@ -3,7 +3,9 @@ package dresources
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/utils"
@@ -99,6 +101,26 @@ func responseToGenieSpaceConfig(space *dashboards.GenieSpace, serializedSpace st
 	}
 }
 
+func isMissingGenieParentPathError(err error) bool {
+	if apierr.IsMissing(err) {
+		return true
+	}
+
+	var apiErr *apierr.APIError
+	if !errors.As(err, &apiErr) {
+		return false
+	}
+
+	// Genie reports a missing parent folder inconsistently across environments.
+	// Some workspaces return a standard missing-resource error, while others
+	// return INVALID_PARAMETER_VALUE with a NOT_FOUND message embedded in the
+	// text. Treat both forms as "create the parent directory and retry once".
+	return apiErr.StatusCode == 400 &&
+		apiErr.ErrorCode == "INVALID_PARAMETER_VALUE" &&
+		strings.Contains(apiErr.Message, "Tree node with path") &&
+		strings.Contains(apiErr.Message, "does not exist")
+}
+
 func (r *ResourceGenieSpace) DoCreate(ctx context.Context, config *resources.GenieSpaceConfig) (string, *resources.GenieSpaceConfig, error) {
 	serializedSpace, err := prepareGenieSpaceRequest(config)
 	if err != nil {
@@ -117,9 +139,11 @@ func (r *ResourceGenieSpace) DoCreate(ctx context.Context, config *resources.Gen
 
 	createResp, err := r.client.Genie.CreateSpace(ctx, req)
 
-	// The API returns 404 if the parent directory doesn't exist.
-	// Create it and retry once.
-	if err != nil && apierr.IsMissing(err) {
+	// Retry once after creating the parent directory when the workspace folder
+	// is missing. Genie can surface this either as a standard missing-resource
+	// error or as INVALID_PARAMETER_VALUE with a "Tree node ... does not exist"
+	// message depending on the backend.
+	if err != nil && isMissingGenieParentPathError(err) {
 		err = r.client.Workspace.MkdirsByPath(ctx, config.ParentPath) //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
 		if err != nil {
 			return "", nil, fmt.Errorf("failed to create parent directory: %w", err)
