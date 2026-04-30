@@ -293,7 +293,7 @@ To start using direct engine, set "engine: direct" under bundle in your databric
 			}
 		}
 
-		deploymentBundle.StateDB.Finalize(ctx)
+		_ = deploymentBundle.StateDB.Finalize(ctx)
 		err = deploymentBundle.StateDB.Open(ctx, tempStatePath, dstate.WithRecovery(false), dstate.WithWrite(true))
 		if err != nil {
 			return fmt.Errorf("reopening state for apply: %w", err)
@@ -328,7 +328,7 @@ Validate the migration by running "databricks bundle plan%s", there should be no
 The state file is not synchronized to the workspace yet. To do that and finalize the migration, run "bundle deploy%s".
 
 To undo the migration, remove %s and rename %s to %s
-`, len(deploymentBundle.StateDB.Data.State), localPath, extraArgsStr, extraArgsStr, localPath, localTerraformBackupPath, localTerraformPath))
+`, len(state), localPath, extraArgsStr, extraArgsStr, localPath, localTerraformBackupPath, localTerraformPath))
 		return nil
 	}
 

@@ -64,7 +64,7 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 	var checkStateDB dstate.DeploymentState
 	if err := checkStateDB.Open(ctx, statePath, dstate.WithRecovery(true), dstate.WithWrite(false)); err == nil {
 		existingID := checkStateDB.GetResourceID(resourceKey)
-		checkStateDB.Finalize(ctx)
+		_ = checkStateDB.Finalize(ctx)
 		if existingID != "" {
 			return nil, ErrResourceAlreadyBound{
 				ResourceKey: resourceKey,
@@ -117,7 +117,7 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 		os.Remove(tmpStatePath)
 		return nil, err
 	}
-	b.StateDB.Finalize(ctx)
+	_ = b.StateDB.Finalize(ctx)
 
 	// Populate the state with the resolved config
 	entry := plan.Plan[resourceKey]
@@ -166,7 +166,7 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 		return nil, err
 	}
 	plan, err = b.CalculatePlan(ctx, client, configRoot)
-	b.StateDB.Finalize(ctx)
+	_ = b.StateDB.Finalize(ctx)
 	if err != nil {
 		os.Remove(tmpStatePath)
 		return nil, err
