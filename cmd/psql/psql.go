@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdgroup"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/lakebase/target"
 	libpsql "github.com/databricks/cli/libs/psql"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/database"
@@ -86,9 +87,9 @@ For more information, see: https://docs.databricks.com/aws/en/oltp/
 		if argsLenAtDash < 0 {
 			argsLenAtDash = len(args)
 		}
-		target := ""
+		targetArg := ""
 		if argsLenAtDash == 1 {
-			target = args[0]
+			targetArg = args[0]
 		} else if argsLenAtDash > 1 {
 			return errors.New("expected at most one positional argument for target")
 		}
@@ -109,16 +110,17 @@ For more information, see: https://docs.databricks.com/aws/en/oltp/
 		}
 
 		// Positional argument takes precedence
-		if target != "" {
-			if strings.HasPrefix(target, "projects/") {
+		if targetArg != "" {
+			if target.IsAutoscalingPath(targetArg) {
 				if provisionedFlag {
 					return errors.New("cannot use --provisioned flag with an autoscaling resource path")
 				}
 
-				projectID, branchID, endpointID, err := parseResourcePath(target)
+				spec, err := target.ParseAutoscalingPath(targetArg)
 				if err != nil {
 					return err
 				}
+				projectID, branchID, endpointID := spec.ProjectID, spec.BranchID, spec.EndpointID
 
 				// Check for conflicts between path and flags
 				if projectFlag != "" && projectFlag != projectID {
@@ -149,7 +151,7 @@ For more information, see: https://docs.databricks.com/aws/en/oltp/
 			if autoscalingFlag {
 				return errors.New("cannot use --autoscaling flag with a provisioned instance name")
 			}
-			return connectProvisioned(ctx, target, retryConfig, extraArgs)
+			return connectProvisioned(ctx, targetArg, retryConfig, extraArgs)
 		}
 
 		// No positional argument - use flags only
@@ -197,45 +199,6 @@ For more information, see: https://docs.databricks.com/aws/en/oltp/
 	return cmd
 }
 
-// parseResourcePath extracts project, branch, and endpoint IDs from a resource path.
-// Returns an error for malformed paths.
-func parseResourcePath(input string) (project, branch, endpoint string, err error) {
-	parts := strings.Split(input, "/")
-
-	// Must start with projects/{project_id}
-	if len(parts) < 2 || parts[0] != "projects" {
-		return "", "", "", fmt.Errorf("invalid resource path: %s", input)
-	}
-	if parts[1] == "" {
-		return "", "", "", errors.New("invalid resource path: missing project ID")
-	}
-	project = parts[1]
-
-	// Optional: branches/{branch_id}
-	if len(parts) > 2 {
-		if len(parts) < 4 || parts[2] != "branches" {
-			return "", "", "", errors.New("invalid resource path: expected 'branches' after project")
-		}
-		if parts[3] == "" {
-			return "", "", "", errors.New("invalid resource path: missing branch ID")
-		}
-		branch = parts[3]
-	}
-
-	// Optional: endpoints/{endpoint_id}
-	if len(parts) > 4 {
-		if len(parts) < 6 || parts[4] != "endpoints" {
-			return "", "", "", errors.New("invalid resource path: expected 'endpoints' after branch")
-		}
-		if parts[5] == "" {
-			return "", "", "", errors.New("invalid resource path: missing endpoint ID")
-		}
-		endpoint = parts[5]
-	}
-
-	return project, branch, endpoint, nil
-}
-
 // listAllDatabases fetches all database instances and projects in parallel.
 // Errors are silently ignored; callers should check for empty results.
 func listAllDatabases(ctx context.Context, w *databricks.WorkspaceClient) ([]database.DatabaseInstance, []postgres.Project) {
@@ -248,12 +211,12 @@ func listAllDatabases(ctx context.Context, w *databricks.WorkspaceClient) ([]dat
 	projectsCh := make(chan result[postgres.Project], 1)
 
 	go func() {
-		instances, err := w.Database.ListDatabaseInstancesAll(ctx, database.ListDatabaseInstancesRequest{})
+		instances, err := target.ListProvisionedInstances(ctx, w)
 		instancesCh <- result[database.DatabaseInstance]{instances, err}
 	}()
 
 	go func() {
-		projects, err := w.Postgres.ListProjectsAll(ctx, postgres.ListProjectsRequest{})
+		projects, err := target.ListProjects(ctx, w)
 		projectsCh <- result[postgres.Project]{projects, err}
 	}()
 
@@ -294,7 +257,7 @@ func showSelectionAndConnect(ctx context.Context, retryConfig libpsql.RetryConfi
 		})
 	}
 	for _, proj := range projects {
-		displayName := extractIDFromName(proj.Name, "projects")
+		displayName := target.ExtractID(proj.Name, target.PathSegmentProjects)
 		if proj.Status != nil && proj.Status.DisplayName != "" {
 			displayName = proj.Status.DisplayName
 		}
@@ -315,7 +278,7 @@ func showSelectionAndConnect(ctx context.Context, retryConfig libpsql.RetryConfi
 	}
 	if after, ok := strings.CutPrefix(selected, "autoscaling:"); ok {
 		projectName := after
-		projectID := extractIDFromName(projectName, "projects")
+		projectID := target.ExtractID(projectName, target.PathSegmentProjects)
 		return connectAutoscaling(ctx, projectID, "", "", retryConfig, extraArgs)
 	}
 
