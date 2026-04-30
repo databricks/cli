@@ -1,4 +1,4 @@
-package compat
+package depversions
 
 import (
 	"context"
@@ -46,11 +46,11 @@ func testContext(t *testing.T) context.Context {
 
 func testManifest() Manifest {
 	return Manifest{
-		"next":    {Appkit: "0.27.0", Skills: "0.1.5"},
-		"0.296.0": {Appkit: "0.27.0", Skills: "0.1.5"},
-		"0.295.0": {Appkit: "0.27.0", Skills: "0.1.5"},
-		"0.290.0": {Appkit: "0.24.0", Skills: "0.1.5"},
-		"0.288.0": {Appkit: "0.24.0", Skills: "0.1.4"},
+		"next":    {AppKit: "0.27.0", Skills: "0.1.5"},
+		"0.296.0": {AppKit: "0.27.0", Skills: "0.1.5"},
+		"0.295.0": {AppKit: "0.27.0", Skills: "0.1.5"},
+		"0.290.0": {AppKit: "0.24.0", Skills: "0.1.5"},
+		"0.288.0": {AppKit: "0.24.0", Skills: "0.1.4"},
 	}
 }
 
@@ -58,7 +58,7 @@ func TestResolve_ExactMatch(t *testing.T) {
 	m := testManifest()
 	entry, err := Resolve(m, "0.296.0")
 	require.NoError(t, err)
-	assert.Equal(t, "0.27.0", entry.Appkit)
+	assert.Equal(t, "0.27.0", entry.AppKit)
 	assert.Equal(t, "0.1.5", entry.Skills)
 }
 
@@ -67,20 +67,20 @@ func TestResolve_NearestLower(t *testing.T) {
 	// 0.293.0 is between 0.290.0 and 0.295.0 → should use 0.290.0's entry
 	entry, err := Resolve(m, "0.293.0")
 	require.NoError(t, err)
-	assert.Equal(t, "0.24.0", entry.Appkit)
+	assert.Equal(t, "0.24.0", entry.AppKit)
 	assert.Equal(t, "0.1.5", entry.Skills)
 }
 
 func TestResolve_NewerThanAll(t *testing.T) {
 	m := Manifest{
-		"next":    {Appkit: "0.99.0", Skills: "0.9.9"},
-		"0.296.0": {Appkit: "0.27.0", Skills: "0.1.5"},
-		"0.290.0": {Appkit: "0.24.0", Skills: "0.1.5"},
+		"next":    {AppKit: "0.99.0", Skills: "0.9.9"},
+		"0.296.0": {AppKit: "0.27.0", Skills: "0.1.5"},
+		"0.290.0": {AppKit: "0.24.0", Skills: "0.1.5"},
 	}
 	entry, err := Resolve(m, "0.300.0")
 	require.NoError(t, err)
 	// Nearest-lower returns the highest versioned entry, not "next".
-	assert.Equal(t, "0.27.0", entry.Appkit)
+	assert.Equal(t, "0.27.0", entry.AppKit)
 	assert.Equal(t, "0.1.5", entry.Skills)
 }
 
@@ -88,7 +88,7 @@ func TestResolve_DevBuild(t *testing.T) {
 	m := testManifest()
 	entry, err := Resolve(m, "0.0.0-dev+abc123def")
 	require.NoError(t, err)
-	assert.Equal(t, "0.27.0", entry.Appkit)
+	assert.Equal(t, "0.27.0", entry.AppKit)
 	assert.Equal(t, "0.1.5", entry.Skills)
 }
 
@@ -96,18 +96,18 @@ func TestResolve_OlderThanAll(t *testing.T) {
 	m := testManifest()
 	entry, err := Resolve(m, "0.280.0")
 	require.NoError(t, err)
-	// Falls back to "next" (best effort)
-	assert.Equal(t, "0.27.0", entry.Appkit)
-	assert.Equal(t, "0.1.5", entry.Skills)
+	// Uses the lowest (oldest) manifest entry as closest match.
+	assert.Equal(t, "0.24.0", entry.AppKit)
+	assert.Equal(t, "0.1.4", entry.Skills)
 }
 
 func TestResolve_OnlyNextKey(t *testing.T) {
 	m := Manifest{
-		"next": {Appkit: "0.27.0", Skills: "0.1.5"},
+		"next": {AppKit: "0.27.0", Skills: "0.1.5"},
 	}
 	entry, err := Resolve(m, "0.296.0")
 	require.NoError(t, err)
-	assert.Equal(t, "0.27.0", entry.Appkit)
+	assert.Equal(t, "0.27.0", entry.AppKit)
 	assert.Equal(t, "0.1.5", entry.Skills)
 }
 
@@ -115,7 +115,7 @@ func TestResolve_LowestEntryExactMatch(t *testing.T) {
 	m := testManifest()
 	entry, err := Resolve(m, "0.288.0")
 	require.NoError(t, err)
-	assert.Equal(t, "0.24.0", entry.Appkit)
+	assert.Equal(t, "0.24.0", entry.AppKit)
 	assert.Equal(t, "0.1.4", entry.Skills)
 }
 
@@ -128,7 +128,7 @@ func TestResolve_EmptyManifest(t *testing.T) {
 
 func TestResolve_MissingNextKey(t *testing.T) {
 	m := Manifest{
-		"0.296.0": {Appkit: "0.27.0", Skills: "0.1.5"},
+		"0.296.0": {AppKit: "0.27.0", Skills: "0.1.5"},
 	}
 	_, err := Resolve(m, "0.296.0")
 	assert.Error(t, err)
@@ -138,8 +138,8 @@ func TestResolve_MissingNextKey(t *testing.T) {
 func TestFetchManifest_RemoteSuccess(t *testing.T) {
 	ctx := testContext(t)
 	want := Manifest{
-		"next":    {Appkit: "0.99.0", Skills: "0.9.9"},
-		"0.296.0": {Appkit: "0.99.0", Skills: "0.9.9"},
+		"next":    {AppKit: "0.99.0", Skills: "0.9.9"},
+		"0.296.0": {AppKit: "0.99.0", Skills: "0.9.9"},
 	}
 	body, _ := json.Marshal(want)
 
@@ -154,11 +154,9 @@ func TestFetchManifest_RemoteSuccess(t *testing.T) {
 	result, err := FetchManifest(ctx)
 	require.NoError(t, err)
 	assert.True(t, called, "test server should have been called")
-	assert.Equal(t, "0.99.0", result["next"].Appkit)
+	assert.Equal(t, "0.99.0", result["next"].AppKit)
 }
 
-// With {} as the embedded manifest, a remote failure means both remote and
-// embedded fail → FetchManifest returns an error.
 func TestFetchManifest_RemoteFailReturnsError(t *testing.T) {
 	ctx := testContext(t)
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -169,7 +167,7 @@ func TestFetchManifest_RemoteFailReturnsError(t *testing.T) {
 
 	_, err := FetchManifest(ctx)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "empty compatibility manifest")
+	assert.Contains(t, err.Error(), "HTTP 500")
 }
 
 func TestFetchManifest_RemoteReturnsInvalidJSON(t *testing.T) {
@@ -182,14 +180,14 @@ func TestFetchManifest_RemoteReturnsInvalidJSON(t *testing.T) {
 
 	_, err := FetchManifest(ctx)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "empty compatibility manifest")
+	assert.Contains(t, err.Error(), "invalid manifest JSON")
 }
 
 func TestFetchManifest_CacheHit(t *testing.T) {
 	ctx := testContext(t)
 	want := Manifest{
-		"next":    {Appkit: "0.99.0", Skills: "0.9.9"},
-		"0.296.0": {Appkit: "0.99.0", Skills: "0.9.9"},
+		"next":    {AppKit: "0.99.0", Skills: "0.9.9"},
+		"0.296.0": {AppKit: "0.99.0", Skills: "0.9.9"},
 	}
 	body, _ := json.Marshal(want)
 
@@ -204,12 +202,12 @@ func TestFetchManifest_CacheHit(t *testing.T) {
 	// First call: populates cache.
 	result1, err := FetchManifest(ctx)
 	require.NoError(t, err)
-	assert.Equal(t, "0.99.0", result1["next"].Appkit)
+	assert.Equal(t, "0.99.0", result1["next"].AppKit)
 
 	// Second call: should come from cache, not hitting the server again.
 	result2, err := FetchManifest(ctx)
 	require.NoError(t, err)
-	assert.Equal(t, "0.99.0", result2["next"].Appkit)
+	assert.Equal(t, "0.99.0", result2["next"].AppKit)
 
 	assert.Equal(t, int32(1), callCount.Load(), "server should only be called once; second call should be a cache hit")
 }
@@ -217,8 +215,8 @@ func TestFetchManifest_CacheHit(t *testing.T) {
 func TestFetchManifest_RetryOnTransientError(t *testing.T) {
 	ctx := testContext(t)
 	want := Manifest{
-		"next":    {Appkit: "0.99.0", Skills: "0.9.9"},
-		"0.296.0": {Appkit: "0.99.0", Skills: "0.9.9"},
+		"next":    {AppKit: "0.99.0", Skills: "0.9.9"},
+		"0.296.0": {AppKit: "0.99.0", Skills: "0.9.9"},
 	}
 	body, _ := json.Marshal(want)
 
@@ -236,7 +234,7 @@ func TestFetchManifest_RetryOnTransientError(t *testing.T) {
 
 	result, err := FetchManifest(ctx)
 	require.NoError(t, err)
-	assert.Equal(t, "0.99.0", result["next"].Appkit)
+	assert.Equal(t, "0.99.0", result["next"].AppKit)
 	assert.Equal(t, int32(2), callCount.Load(), "should have retried after first failure")
 }
 
@@ -244,8 +242,8 @@ func TestParseManifest_Valid(t *testing.T) {
 	data := `{"next":{"appkit":"0.27.0","skills":"0.1.5"},"0.296.0":{"appkit":"0.27.0","skills":"0.1.5"}}`
 	m, err := parseManifest([]byte(data))
 	require.NoError(t, err)
-	assert.Equal(t, "0.27.0", m["next"].Appkit)
-	assert.Equal(t, "0.27.0", m["0.296.0"].Appkit)
+	assert.Equal(t, "0.27.0", m["next"].AppKit)
+	assert.Equal(t, "0.27.0", m["0.296.0"].AppKit)
 }
 
 func TestParseManifest_InvalidJSON(t *testing.T) {
@@ -265,4 +263,37 @@ func TestParseManifest_Empty(t *testing.T) {
 	_, err := parseManifest([]byte("{}"))
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "empty compatibility manifest")
+}
+
+func TestResolveEntry_RemoteSuccess(t *testing.T) {
+	ctx := testContext(t)
+	want := Manifest{
+		"next":    {AppKit: "0.99.0", Skills: "0.9.9"},
+		"0.296.0": {AppKit: "0.99.0", Skills: "0.9.9"},
+	}
+	body, _ := json.Marshal(want)
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write(body)
+	}))
+	defer srv.Close()
+	redirectToServer(t, srv)
+
+	entry, err := resolveEntry(ctx, "0.296.0")
+	require.NoError(t, err)
+	assert.Equal(t, "0.99.0", entry.AppKit)
+	assert.Equal(t, "0.9.9", entry.Skills)
+}
+
+func TestResolveEntry_RemoteFailNoPinnedEntry(t *testing.T) {
+	ctx := testContext(t)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	defer srv.Close()
+	redirectToServer(t, srv)
+
+	_, err := resolveEntry(ctx, "0.296.0")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "manifest fetch failed and no build-time versions available")
 }

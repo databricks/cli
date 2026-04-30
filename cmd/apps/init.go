@@ -19,8 +19,7 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/experimental/aitools/lib/agents"
 	"github.com/databricks/cli/experimental/aitools/lib/installer"
-	"github.com/databricks/cli/internal/build"
-	"github.com/databricks/cli/libs/apps/compat"
+	"github.com/databricks/cli/libs/depversions"
 	"github.com/databricks/cli/libs/apps/generator"
 	"github.com/databricks/cli/libs/apps/initializer"
 	"github.com/databricks/cli/libs/apps/manifest"
@@ -63,16 +62,6 @@ func normalizeVersion(version string) string {
 		return appkitTemplateTagPfx + version
 	}
 	return version
-}
-
-// resolveFromManifest fetches the compatibility manifest and resolves the
-// entry for the current CLI version.
-func resolveFromManifest(ctx context.Context) (compat.Entry, error) {
-	m, err := compat.FetchManifest(ctx)
-	if err != nil {
-		return compat.Entry{}, err
-	}
-	return compat.Resolve(m, build.GetInfo().Version)
 }
 
 func newInitCmd() *cobra.Command {
@@ -788,15 +777,17 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		case opts.version != "":
 			gitRef = normalizeVersion(opts.version)
 		default:
-			// Resolve from compatibility manifest (fetch from GitHub, fall back to embedded).
-			entry, err := resolveFromManifest(ctx)
+			appkitVersion, err := depversions.ResolveAppKitVersion(ctx)
 			if err != nil {
 				return fmt.Errorf("could not resolve AppKit template version: %w. Use --version to specify a version manually", err)
 			}
-			gitRef = normalizeVersion(entry.Appkit)
-			resolvedSkillsVersion = entry.Skills
-			cmdio.LogString(ctx, fmt.Sprintf("Using AppKit template version %s", entry.Appkit))
-			log.Debugf(ctx, "Resolved skills %s from compatibility manifest for CLI %s", entry.Skills, build.GetInfo().Version)
+			gitRef = normalizeVersion(appkitVersion)
+			cmdio.LogString(ctx, fmt.Sprintf("Using AppKit template version %s", appkitVersion))
+
+			skillsVersion, err := depversions.ResolveAgentSkillsVersion(ctx)
+			if err == nil {
+				resolvedSkillsVersion = skillsVersion
+			}
 		}
 		templateSrc = appkitRepoURL
 	}

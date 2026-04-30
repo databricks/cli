@@ -1,8 +1,7 @@
-package compat
+package depversions
 
 import (
 	"context"
-	_ "embed"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -11,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/cache"
 	"github.com/databricks/cli/libs/log"
 	"golang.org/x/mod/semver"
@@ -39,34 +39,25 @@ type manifestFingerprint struct {
 
 // Entry maps a CLI version to compatible AppKit and skills versions.
 type Entry struct {
-	Appkit string `json:"appkit"`
+	AppKit string `json:"appkit"`
 	Skills string `json:"skills"`
 }
 
 // Manifest is the compatibility manifest: a map of CLI version strings to entries.
 type Manifest map[string]Entry
 
-//go:embed cli-compat.json
-var embeddedManifest []byte
-
 // httpClient is the HTTP client used for manifest fetches. Package-level var
 // so tests can replace it.
 var httpClient = &http.Client{Timeout: fetchTimeout}
 
 // FetchManifest returns the compatibility manifest, checking in order:
-// 1h local disk cache, remote fetch with retry, embedded fallback.
+// 1h local disk cache, then remote fetch with retry.
 func FetchManifest(ctx context.Context) (Manifest, error) {
 	c := cache.NewCache(ctx, cacheComponent, cacheTTL, nil)
 	fp := manifestFingerprint{URL: manifestURL}
-
-	m, err := cache.GetOrCompute(ctx, c, fp, func(ctx context.Context) (Manifest, error) {
+	return cache.GetOrCompute(ctx, c, fp, func(ctx context.Context) (Manifest, error) {
 		return fetchRemoteWithRetry(ctx)
 	})
-	if err != nil {
-		log.Debugf(ctx, "Manifest fetch failed (%v), using embedded fallback", err)
-		return parseManifest(embeddedManifest)
-	}
-	return m, nil
 }
 
 // Resolve returns the manifest entry for the given CLI version.
@@ -76,7 +67,7 @@ func FetchManifest(ctx context.Context) (Manifest, error) {
 //  2. Exact match on CLI version.
 //  3. Nearest lower version (semver-sorted). This also handles CLI versions
 //     newer than all entries, returning the highest known entry.
-//  4. If CLI is older than all entries, use "next" (best effort).
+//  4. If CLI is older than all entries, use the lowest (oldest) entry.
 func Resolve(m Manifest, cliVersion string) (Entry, error) {
 	if len(m) == 0 {
 		return Entry{}, fmt.Errorf("empty compatibility manifest")
@@ -118,8 +109,54 @@ func Resolve(m Manifest, cliVersion string) (Entry, error) {
 		}
 	}
 
-	// CLI is older than all entries — best effort: use "next".
-	return next, nil
+	// CLI is older than all entries — use the lowest (oldest) entry as closest match.
+	// If there are no versioned entries (only "next"), fall back to "next".
+	if len(versions) == 0 {
+		return next, nil
+	}
+	return m[versions[len(versions)-1]], nil
+}
+
+// resolveEntry fetches the manifest, resolves for the given CLI version,
+// and falls back to the build-time dep versions on failure.
+func resolveEntry(ctx context.Context, cliVersion string) (Entry, error) {
+	m, fetchErr := FetchManifest(ctx)
+	if fetchErr == nil {
+		entry, err := Resolve(m, cliVersion)
+		if err == nil {
+			return entry, nil
+		}
+		log.Debugf(ctx, "Resolve failed (%v), trying build-time fallback", err)
+	}
+
+	dv := build.GetDepVersions()
+	if dv.AppKit != "" {
+		log.Debugf(ctx, "Using build-time dep versions: appkit=%s skills=%s", dv.AppKit, dv.Skills)
+		return Entry{AppKit: dv.AppKit, Skills: dv.Skills}, nil
+	}
+
+	if fetchErr != nil {
+		return Entry{}, fmt.Errorf("manifest fetch failed and no build-time versions available: %w", fetchErr)
+	}
+	return Entry{}, fmt.Errorf("no compatible versions available")
+}
+
+// ResolveAppKitVersion resolves the AppKit template version for the current CLI.
+func ResolveAppKitVersion(ctx context.Context) (string, error) {
+	entry, err := resolveEntry(ctx, build.GetInfo().Version)
+	if err != nil {
+		return "", err
+	}
+	return entry.AppKit, nil
+}
+
+// ResolveAgentSkillsVersion resolves the Agent Skills version for the current CLI.
+func ResolveAgentSkillsVersion(ctx context.Context) (string, error) {
+	entry, err := resolveEntry(ctx, build.GetInfo().Version)
+	if err != nil {
+		return "", err
+	}
+	return entry.Skills, nil
 }
 
 // fetchRemoteWithRetry wraps fetchRemote with retries.
