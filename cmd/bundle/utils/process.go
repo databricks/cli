@@ -80,18 +80,12 @@ type ProcessOptions struct {
 }
 
 func ProcessBundle(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, error) {
-	b, _, err := processBundleRetInternal(cmd, opts)
+	b, _, err := ProcessBundleRet(cmd, opts)
 	return b, err
 }
 
-func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, *statemgmt.StateDesc, error) {
-	b, stateDesc, err := processBundleRetInternal(cmd, opts)
-	return b, stateDesc, err
-}
-
-func processBundleRetInternal(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle, stateDesc *statemgmt.StateDesc, retErr error) {
+func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle, stateDesc *statemgmt.StateDesc, retErr error) {
 	var err error
-	var plan *deployplan.Plan
 	ctx := cmd.Context()
 	if opts.SkipInitContext {
 		if !logdiag.IsSetup(ctx) {
@@ -189,12 +183,13 @@ func processBundleRetInternal(cmd *cobra.Command, opts ProcessOptions) (b *bundl
 		}
 		cmd.SetContext(ctx)
 
-		// Open state for read (with WAL recovery) so that ExportState, CalculatePlan, etc. can access it.
-		// Caller is responsible for closing state when done (Deploy/Destroy upgrade to write and close).
-		if stateDesc.Engine.IsDirect() {
+		// Open direct engine state once for all subsequent operations (ExportState, CalculatePlan, Apply, etc.)
+		needDirectState := stateDesc.Engine.IsDirect() && (opts.InitIDs || opts.ErrorOnEmptyState || opts.Deploy || opts.ReadPlanPath != "" || opts.PreDeployChecks || opts.PostStateFunc != nil)
+		if needDirectState {
 			_, localPath := b.StateFilenameDirect(ctx)
 			if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(true), dstate.WithWrite(false)); err != nil {
-				return b, stateDesc, err
+				logdiag.LogError(ctx, err)
+				return b, stateDesc, root.ErrAlreadyPrinted
 			}
 		}
 
@@ -217,6 +212,8 @@ func processBundleRetInternal(cmd *cobra.Command, opts ProcessOptions) (b *bundl
 			}
 		}
 	}
+
+	var plan *deployplan.Plan
 
 	if opts.ReadPlanPath != "" {
 		if !stateDesc.Engine.IsDirect() {
