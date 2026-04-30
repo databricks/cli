@@ -38,5 +38,6 @@ EnvMatrix.INPUT_CONFIG = [
   "sql_warehouse.yml.tmpl",
   "synced_database_table.yml.tmpl",
   "vector_search_endpoint.yml.tmpl",
-  "volume.yml.tmpl"
+  "volume.yml.tmpl",
+  "volume_external.yml.tmpl"
 ]
