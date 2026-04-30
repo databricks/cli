@@ -2,6 +2,7 @@ package dstate
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -15,6 +16,7 @@ import (
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/statemgmt/resourcestate"
 	"github.com/databricks/cli/internal/build"
+	"github.com/databricks/cli/libs/log"
 	"github.com/google/uuid"
 )
 
@@ -22,8 +24,12 @@ const (
 	currentStateVersion = 2
 	initialBufferSize   = 64 * 1024
 	maxWalEntrySize     = 1024 * 1024
-	walSuffix           = ".WAL"
+	walSuffix           = ".wal"
 )
+
+// errStaleWAL is returned when the WAL serial is behind the expected serial.
+// The caller should delete the stale WAL and proceed normally.
+var errStaleWAL = errors.New("stale WAL")
 
 type DeploymentState struct {
 	Path     string
@@ -157,9 +163,8 @@ func (db *DeploymentState) Open(ctx context.Context, path string, withRecovery W
 	_, walError := os.Stat(walPath)
 	if walError == nil {
 		if withRecovery {
-			err := db.replayWAL(ctx)
-			if err != nil {
-				return err
+			if err := db.replayWAL(ctx); err != nil {
+				return fmt.Errorf("reading state from %s: %w", path, err)
 			}
 		} else {
 			return fmt.Errorf("unexpected WAL file found at %s", walPath)
@@ -171,6 +176,9 @@ func (db *DeploymentState) Open(ctx context.Context, path string, withRecovery W
 	}
 
 	if withWrite {
+		if err := os.MkdirAll(filepath.Dir(walPath), 0o755); err != nil {
+			return fmt.Errorf("failed to create state directory: %w", err)
+		}
 		walFile, err := os.OpenFile(walPath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600)
 		if err != nil {
 			return fmt.Errorf("failed to open WAL file %s: %w", walPath, err)
@@ -218,35 +226,35 @@ func (db *DeploymentState) replayWAL(ctx context.Context) error {
 	walPath := db.Path + walSuffix
 	hasEntries, err := db.mergeWalIntoState(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to apply WAL file %s: %w", walPath, err)
+		if errors.Is(err, errStaleWAL) {
+			log.Debugf(ctx, "Deleting stale WAL file %s", walPath)
+			_ = os.Remove(walPath)
+			return nil
+		}
+		return fmt.Errorf("WAL recovery failed: %w", err)
 	}
 	if hasEntries {
 		if err := db.unlockedSave(); err != nil {
 			return err
 		}
 	}
-	err = os.Remove(walPath)
-	if err != nil {
+	if err := os.Remove(walPath); err != nil {
 		return fmt.Errorf("failed to remove WAL file %s: %w", walPath, err)
 	}
 	return nil
 }
 
-func (db *DeploymentState) validateWALHeader(ctx context.Context, header *WALHeader) error {
-	if header.CLIVersion != db.Data.CLIVersion {
-		return fmt.Errorf("cli_version in the header (%q) does not match the one in the state (%q)", header.CLIVersion, db.Data.CLIVersion)
-	}
-
-	if header.StateVersion != db.Data.StateVersion {
-		return fmt.Errorf("state_version in the header (%d) does not match the one in the state (%d)", header.StateVersion, db.Data.StateVersion)
-	}
-
+func (db *DeploymentState) validateWALHeader(header *WALHeader) error {
 	if header.Lineage != db.Data.Lineage && db.Data.Lineage != "" {
-		return fmt.Errorf("lineage in the header (%q) does not match the one in the state (%q)", header.Lineage, db.Data.Lineage)
+		return fmt.Errorf("WAL lineage (%s) does not match state lineage (%s)", header.Lineage, db.Data.Lineage)
 	}
 
-	if header.Serial != db.Data.Serial+1 {
-		return fmt.Errorf("serial in the header (%d) is not one higher than the one in the state (%d)", header.Serial, db.Data.Serial)
+	expected := db.Data.Serial + 1
+	if header.Serial < expected {
+		return errStaleWAL
+	}
+	if header.Serial > expected {
+		return fmt.Errorf("WAL serial (%d) is ahead of expected (%d), state may be corrupted", header.Serial, expected)
 	}
 
 	return nil
@@ -267,6 +275,7 @@ func (db *DeploymentState) mergeWalIntoState(ctx context.Context) (bool, error) 
 	scanner := bufio.NewScanner(walFile)
 	scanner.Buffer(make([]byte, 0, initialBufferSize), maxWalEntrySize)
 	lineNumber := 0
+	var corruptedLines [][]byte
 
 	for scanner.Scan() {
 		lineNumber++
@@ -276,7 +285,7 @@ func (db *DeploymentState) mergeWalIntoState(ctx context.Context) (bool, error) 
 			if err := json.Unmarshal(line, &header); err != nil {
 				return false, fmt.Errorf("failed to parse WAL header: %w", err)
 			}
-			if err := db.validateWALHeader(ctx, &header); err != nil {
+			if err := db.validateWALHeader(&header); err != nil {
 				return false, err
 			}
 			// Apply header metadata to state (lineage may be new for first deploy)
@@ -285,17 +294,38 @@ func (db *DeploymentState) mergeWalIntoState(ctx context.Context) (bool, error) 
 		} else {
 			var entry WALEntry
 			if err := json.Unmarshal(line, &entry); err != nil {
-				return false, fmt.Errorf("failed to parse WAL entry %s:%d: %q: %w", walPath, lineNumber, line, err)
+				log.Warnf(ctx, "Skipping corrupted WAL entry at %s:%d: %v", walPath, lineNumber, err)
+				corruptedLines = append(corruptedLines, append([]byte(nil), line...))
+				continue
+			}
+			if db.Data.State == nil {
+				db.Data.State = make(map[string]ResourceEntry)
 			}
 			if entry.Value == nil {
 				delete(db.Data.State, entry.Key)
+				delete(db.stateIDs, entry.Key)
 			} else {
 				db.Data.State[entry.Key] = *entry.Value
+				db.stateIDs[entry.Key] = entry.Value.ID
 			}
 		}
 	}
 
-	return lineNumber > 1, scanner.Err()
+	if err := scanner.Err(); err != nil {
+		return false, err
+	}
+
+	if len(corruptedLines) > 0 {
+		corruptedPath := walPath + ".corrupted"
+		corruptedData := bytes.Join(corruptedLines, []byte("\n"))
+		if writeErr := os.WriteFile(corruptedPath, corruptedData, 0o600); writeErr != nil {
+			log.Warnf(ctx, "Failed to save corrupted WAL entries to %s: %v", corruptedPath, writeErr)
+		} else {
+			log.Warnf(ctx, "Saved %d corrupted WAL entries to %s", len(corruptedLines), corruptedPath)
+		}
+	}
+
+	return lineNumber > 1, nil
 }
 
 // Finalize replays the WAL (if open for write) and resets the state.
@@ -337,6 +367,9 @@ func (db *DeploymentState) UpgradeToWrite() error {
 	}
 
 	walPath := db.Path + walSuffix
+	if err := os.MkdirAll(filepath.Dir(walPath), 0o755); err != nil {
+		return fmt.Errorf("failed to create state directory: %w", err)
+	}
 	walFile, err := os.OpenFile(walPath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600)
 	if err != nil {
 		return fmt.Errorf("failed to open WAL file %s: %w", walPath, err)
