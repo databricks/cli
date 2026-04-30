@@ -15,18 +15,13 @@ const MaterializedConfigFile = "out.test.toml"
 func GenerateMaterializedConfig(config *TestConfig) string {
 	var buf strings.Builder
 
-	writeBool := func(key string, v *bool) {
-		if v != nil {
-			fmt.Fprintf(&buf, "%s = %v\n", key, *v)
-		}
-	}
-	writeBool("Local", config.Local)
-	writeBool("Cloud", config.Cloud)
-	writeBool("CloudSlow", config.CloudSlow)
-	writeBool("RequiresUnityCatalog", config.RequiresUnityCatalog)
-	writeBool("RequiresCluster", config.RequiresCluster)
-	writeBool("RequiresWarehouse", config.RequiresWarehouse)
-	writeBool("RunsOnDbr", config.RunsOnDbr)
+	writeBool(&buf, "Local", config.Local)
+	writeBool(&buf, "Cloud", config.Cloud)
+	writeBool(&buf, "CloudSlow", config.CloudSlow)
+	writeBool(&buf, "RequiresUnityCatalog", config.RequiresUnityCatalog)
+	writeBool(&buf, "RequiresCluster", config.RequiresCluster)
+	writeBool(&buf, "RequiresWarehouse", config.RequiresWarehouse)
+	writeBool(&buf, "RunsOnDbr", config.RunsOnDbr)
 	if config.Phase != 0 {
 		fmt.Fprintf(&buf, "Phase = %d\n", config.Phase)
 	}
@@ -42,6 +37,12 @@ func GenerateMaterializedConfig(config *TestConfig) string {
 	}
 
 	return buf.String()
+}
+
+func writeBool(buf *strings.Builder, key string, v *bool) {
+	if v != nil {
+		fmt.Fprintf(buf, "%s = %v\n", key, *v)
+	}
 }
 
 // writeTomlStringArray writes a TOML string array. Arrays with more than 3 elements
