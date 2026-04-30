@@ -227,12 +227,14 @@ func (db *DeploymentState) Reload(ctx context.Context) error {
 
 func (db *DeploymentState) replayWAL(ctx context.Context) error {
 	walPath := db.Path + walSuffix
-	err := db.mergeWalIntoState(ctx)
+	hasEntries, err := db.mergeWalIntoState(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to apply WAL file %s: %w", walPath, err)
 	}
-	if err := db.unlockedSave(); err != nil {
-		return err
+	if hasEntries {
+		if err := db.unlockedSave(); err != nil {
+			return err
+		}
 	}
 	err = os.Remove(walPath)
 	if err != nil {
@@ -261,7 +263,7 @@ func (db *DeploymentState) validateWALHeader(ctx context.Context, header *WALHea
 	return nil
 }
 
-func (db *DeploymentState) mergeWalIntoState(ctx context.Context) error {
+func (db *DeploymentState) mergeWalIntoState(ctx context.Context) (bool, error) {
 	if db.walFile != nil {
 		panic("internal error: walFile must be closed")
 	}
@@ -269,7 +271,7 @@ func (db *DeploymentState) mergeWalIntoState(ctx context.Context) error {
 	walPath := db.Path + walSuffix
 	walFile, err := os.Open(walPath)
 	if err != nil {
-		return fmt.Errorf("failed to open WAL file %s: %w", walPath, err)
+		return false, fmt.Errorf("failed to open WAL file %s: %w", walPath, err)
 	}
 	defer walFile.Close()
 
@@ -283,10 +285,10 @@ func (db *DeploymentState) mergeWalIntoState(ctx context.Context) error {
 		if lineNumber == 1 {
 			var header WALHeader
 			if err := json.Unmarshal(line, &header); err != nil {
-				return fmt.Errorf("failed to parse WAL header: %w", err)
+				return false, fmt.Errorf("failed to parse WAL header: %w", err)
 			}
 			if err := db.validateWALHeader(ctx, &header); err != nil {
-				return err
+				return false, err
 			}
 			// Apply header metadata to state (lineage may be new for first deploy)
 			db.Data.Lineage = header.Lineage
@@ -294,7 +296,7 @@ func (db *DeploymentState) mergeWalIntoState(ctx context.Context) error {
 		} else {
 			var entry WALEntry
 			if err := json.Unmarshal(line, &entry); err != nil {
-				return fmt.Errorf("failed to parse WAL entry %s:%d: %q: %w", walPath, lineNumber, line, err)
+				return false, fmt.Errorf("failed to parse WAL entry %s:%d: %q: %w", walPath, lineNumber, line, err)
 			}
 			if entry.Value == nil {
 				delete(db.Data.State, entry.Key)
@@ -304,7 +306,7 @@ func (db *DeploymentState) mergeWalIntoState(ctx context.Context) error {
 		}
 	}
 
-	return scanner.Err()
+	return lineNumber > 1, scanner.Err()
 }
 
 // Close replays the WAL (if open for write) and resets the state.
