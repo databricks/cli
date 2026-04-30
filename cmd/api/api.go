@@ -28,8 +28,8 @@ const (
 
 // accountSegmentRe matches a non-empty segment immediately after "accounts/",
 // anchored at the start of the path or after a "/". Account-ID shape is
-// deliberately opaque; the workspace-proxy lists in paths_generated.go carve
-// out the SDK proxies that also live under /accounts/.
+// deliberately opaque; the workspace-proxy list carves out SDK proxies that
+// also live under /accounts/.
 var accountSegmentRe = regexp.MustCompile(`(^|/)accounts/[^/]+`)
 
 func New() *cobra.Command {
@@ -154,20 +154,15 @@ func substituteAccountID(path, accountID, profile string) (string, error) {
 // hasAccountSegment reports whether path is an account-scope API. The match
 // runs on URL.Path, so query strings and fragments containing "/accounts/"
 // can't trigger a false positive. Returns false for paths that match a known
-// workspace-routed proxy from the generated tables.
+// workspace-routed proxy from the proxy path tables.
 func hasAccountSegment(rawPath string) (bool, error) {
 	u, err := url.Parse(rawPath)
 	if err != nil {
 		return false, fmt.Errorf("parse path: %w", err)
 	}
 	p := u.Path
-	if _, ok := workspaceProxyExact[p]; ok {
+	if isWorkspaceProxyPath(p) {
 		return false, nil
-	}
-	for _, prefix := range workspaceProxyPrefixes {
-		if strings.HasPrefix(p, prefix) {
-			return false, nil
-		}
 	}
 	return accountSegmentRe.MatchString(p), nil
 }
