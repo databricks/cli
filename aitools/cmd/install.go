@@ -58,7 +58,7 @@ func NewInstallCmd() *cobra.Command {
 	var projectFlag, globalFlag bool
 
 	cmd := &cobra.Command{
-		Use:   "install",
+		Use:   "install [skill-name]",
 		Short: "Install AI skills for coding agents",
 		Long: `Install Databricks AI skills for detected coding agents.
 
@@ -67,10 +67,20 @@ Use --project to install to the current project directory instead.
 When multiple agents are detected, skills are stored in a canonical location
 and symlinked to each agent to avoid duplication.
 
+Pass a single skill name as a positional argument to install just that skill,
+or use --skills name1,name2 for multiple. The two forms are mutually exclusive.
+
 Supported agents: Claude Code, Cursor, Codex CLI, OpenCode, GitHub Copilot, Antigravity`,
-		Args: cobra.NoArgs,
+		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
+
+			if len(args) == 1 {
+				if skillsFlag != "" {
+					return errors.New("cannot use positional [skill-name] together with --skills; pick one")
+				}
+				skillsFlag = args[0]
+			}
 
 			// Resolve scope.
 			scope, err := resolveScopeWithPrompt(ctx, projectFlag, globalFlag)

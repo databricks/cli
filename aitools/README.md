@@ -4,7 +4,7 @@
 
 ## Commands
 
-- `databricks aitools install` (use `--skills <name>[,<name>...]` to install specific skills)
+- `databricks aitools install [skill-name]` (or `--skills <name>[,<name>...]` for multiple)
 - `databricks aitools update`
 - `databricks aitools uninstall`
 - `databricks aitools list`
