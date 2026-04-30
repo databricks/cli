@@ -95,6 +95,41 @@ func TestWorkspaceFilesClientOrgIDHeaders(t *testing.T) {
 	})
 }
 
+func TestWorkspaceFilesClient_alreadyExistsRegex(t *testing.T) {
+	tests := []struct {
+		name     string
+		message  string
+		expected string
+	}{
+		{
+			name:     "plain message",
+			message:  "/Users/foo@bar.com/notebook already exists. Please pass overwrite=true to overwrite it.",
+			expected: "/Users/foo@bar.com/notebook",
+		},
+		{
+			// SDK falls back to wrapping the message with a "Request failed for ..." prefix
+			// when the JSON body has no error_code field; the path is no longer at column 0.
+			name:     "wrapped with Request failed prefix",
+			message:  "Request failed for POST /Users/foo@bar.com/notebook.py: RESOURCE_ALREADY_EXISTS: /Users/foo@bar.com/notebook already exists. Please pass overwrite=true to overwrite it.",
+			expected: "/Users/foo@bar.com/notebook",
+		},
+		{
+			name:     "non-matching message",
+			message:  "Some other error.",
+			expected: "",
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			var got string
+			if matches := alreadyExistsRegex.FindStringSubmatch(tc.message); len(matches) == 2 {
+				got = matches[1]
+			}
+			assert.Equal(t, tc.expected, got)
+		})
+	}
+}
+
 func TestWorkspaceFilesClient_wsfsUnmarshal(t *testing.T) {
 	payload := `
 		{
