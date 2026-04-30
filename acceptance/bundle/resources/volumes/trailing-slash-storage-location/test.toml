@@ -1,0 +1,16 @@
+Local = true
+Cloud = true
+RecordRequests = false
+RequiresUnityCatalog = true
+
+# External volumes require an external location backed by cloud IAM; only AWS has one set up
+CloudEnvs.gcp = false
+CloudEnvs.azure = false
+
+Ignore = [
+    ".databricks",
+    "databricks.yml",
+]
+
+[EnvMatrix]
+  DATABRICKS_BUNDLE_ENGINE = ["direct", "terraform"]
