@@ -129,14 +129,15 @@ func isRetryableConnectError(err error) bool {
 
 	var pgErr *pgconn.PgError
 	if errors.As(err, &pgErr) {
+		switch {
 		// 08xxx is the connection_exception class.
-		if len(pgErr.Code) == 5 && pgErr.Code[:2] == "08" {
+		case len(pgErr.Code) == 5 && pgErr.Code[:2] == "08":
 			return true
-		}
-		if pgErr.Code == "57P03" {
+		case pgErr.Code == "57P03":
 			return true
+		default:
+			return false
 		}
-		return false
 	}
 
 	var connectErr *pgconn.ConnectError

@@ -164,16 +164,6 @@ func ProjectIDFromName(name string) string {
 	return extractID(name, pathSegmentProjects)
 }
 
-// BranchIDFromName extracts the branch ID from an SDK resource name.
-func BranchIDFromName(name string) string {
-	return extractID(name, pathSegmentBranches)
-}
-
-// EndpointIDFromName extracts the endpoint ID from an SDK resource name.
-func EndpointIDFromName(name string) string {
-	return extractID(name, pathSegmentEndpoints)
-}
-
 // IsAutoscalingPath reports whether s is an autoscaling resource path
 // (i.e. starts with "projects/"). Provisioned instance names never do.
 func IsAutoscalingPath(s string) bool {

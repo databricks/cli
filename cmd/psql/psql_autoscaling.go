@@ -135,10 +135,19 @@ func resolveEndpoint(ctx context.Context, w *databricks.WorkspaceClient, project
 // AmbiguousError. Caller is expected to have logged a header (e.g. via the
 // spinner) before invoking. Used to keep psql's interactive UX while letting
 // the shared lib do the actual list+filter work.
+//
+// Choice.DisplayName is empty when the producer has no friendlier label than
+// the ID (e.g. branches and endpoints, where the ID is the human label).
+// The promptui template renders an empty Name as a blank row, so we fall back
+// to the ID before handing off to cmdio.SelectOrdered.
 func selectAmbiguous(ctx context.Context, amb *target.AmbiguousError, prompt string) (string, error) {
 	items := make([]cmdio.Tuple, 0, len(amb.Choices))
 	for _, c := range amb.Choices {
-		items = append(items, cmdio.Tuple{Name: c.DisplayName, Id: c.ID})
+		name := c.DisplayName
+		if name == "" {
+			name = c.ID
+		}
+		items = append(items, cmdio.Tuple{Name: name, Id: c.ID})
 	}
 	return cmdio.SelectOrdered(ctx, items, prompt)
 }

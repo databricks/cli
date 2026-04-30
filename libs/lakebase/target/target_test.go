@@ -90,12 +90,10 @@ func TestParseAutoscalingPath(t *testing.T) {
 	}
 }
 
-func TestIDFromName(t *testing.T) {
+func TestProjectIDFromName(t *testing.T) {
 	assert.Equal(t, "foo", ProjectIDFromName("projects/foo"))
 	assert.Equal(t, "foo", ProjectIDFromName("projects/foo/branches/bar"))
-	assert.Equal(t, "bar", BranchIDFromName("projects/foo/branches/bar"))
-	assert.Equal(t, "bar", BranchIDFromName("projects/foo/branches/bar/endpoints/baz"))
-	assert.Equal(t, "baz", EndpointIDFromName("projects/foo/branches/bar/endpoints/baz"))
+	assert.Equal(t, "no-projects", ProjectIDFromName("no-projects"))
 }
 
 func TestIsAutoscalingPath(t *testing.T) {
