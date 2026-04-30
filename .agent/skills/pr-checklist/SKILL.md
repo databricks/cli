@@ -1,9 +1,11 @@
 ---
 name: pr-checklist
-description: Checklist to run before submitting a PR
+description: Pre-PR gate for databricks/cli — runs fmt/checks/lint, scrubs the diff, enforces the PR template, and prompts a NEXT_CHANGELOG entry. TRIGGER before every `gh pr create`, before `git push` / `git pp` of a PR branch, and on user phrases like "open a PR", "make a PR", "submit", "ship". Invoke proactively — skipping it is a bug; do not wait for the user to ask.
 ---
 
-Before submitting a PR, run these commands to match what CI checks. CI uses the full variants (not the `-q` diff-only wrappers), so `./task lint-q` alone is insufficient.
+**Run this BEFORE pushing a PR branch or calling `gh pr create`.** If you're already past those points, run it now and fix anything it catches (push a follow-up commit; edit the PR body via `gh pr edit`). Never skip it on the assumption "this change is small."
+
+Run these commands to match what CI checks. CI uses the **full** variants (not the `-q` diff-only wrappers), so `./task lint-q` alone is insufficient.
 
 ```bash
 # 1. Formatting and checks (CI runs fmt, not fmt-q)
