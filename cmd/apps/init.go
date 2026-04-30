@@ -40,8 +40,7 @@ const (
 	appkitTemplateDir    = "template"
 	appkitDefaultBranch  = "main"
 	appkitTemplateTagPfx = "template-v"
-	appkitDefaultVersion = "template-v0.24.0"
-	defaultProfile       = "DEFAULT"
+	defaultProfile = "DEFAULT"
 )
 
 // normalizeVersion converts a version string to the template tag format "template-vX.X.X".
@@ -181,7 +180,7 @@ Environment variables:
 
 	cmd.Flags().StringVar(&templatePath, "template", "", "Template path (local directory or GitHub URL)")
 	cmd.Flags().StringVar(&branch, "branch", "", "Git branch or tag (for GitHub templates, mutually exclusive with --version)")
-	cmd.Flags().StringVar(&version, "version", "", fmt.Sprintf("AppKit version to use (default: %s, use 'latest' for main branch)", appkitDefaultVersion))
+	cmd.Flags().StringVar(&version, "version", "", "AppKit version to use (resolved from compatibility manifest, use 'latest' for main branch)")
 	cmd.Flags().StringVar(&name, "name", "", "Project name (prompts if not provided)")
 	cmd.Flags().StringVar(&warehouseID, "warehouse-id", "", "SQL warehouse ID")
 	_ = cmd.Flags().MarkDeprecated("warehouse-id", "use --set <plugin>.sql-warehouse.id=<value> instead")
@@ -790,14 +789,14 @@ func runCreate(ctx context.Context, opts createOptions) error {
 			gitRef = normalizeVersion(opts.version)
 		default:
 			// Resolve from compatibility manifest (fetch from GitHub, fall back to embedded).
-			if entry, err := resolveFromManifest(ctx); err != nil {
-				log.Warnf(ctx, "Manifest resolution failed (%v), using hardcoded default %s", err, appkitDefaultVersion)
-				gitRef = appkitDefaultVersion
-			} else {
-				gitRef = normalizeVersion(entry.Appkit)
-				resolvedSkillsVersion = entry.Skills
-				log.Infof(ctx, "Resolved AppKit template version %s (skills %s) from compatibility manifest for CLI %s", entry.Appkit, entry.Skills, build.GetInfo().Version)
+			entry, err := resolveFromManifest(ctx)
+			if err != nil {
+				return fmt.Errorf("could not resolve AppKit template version: %w. Use --version to specify a version manually", err)
 			}
+			gitRef = normalizeVersion(entry.Appkit)
+			resolvedSkillsVersion = entry.Skills
+			cmdio.LogString(ctx, fmt.Sprintf("Using AppKit template version %s", entry.Appkit))
+			log.Debugf(ctx, "Resolved skills %s from compatibility manifest for CLI %s", entry.Skills, build.GetInfo().Version)
 		}
 		templateSrc = appkitRepoURL
 	}
@@ -1157,6 +1156,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	skillsCtx := ctx
 	if resolvedSkillsVersion != "" {
 		skillsCtx = env.Set(ctx, "DATABRICKS_SKILLS_REF", "v"+resolvedSkillsVersion)
+		cmdio.LogString(ctx, fmt.Sprintf("Using skills version %s", resolvedSkillsVersion))
 	}
 
 	// Recommend skills installation if coding agents are detected without skills.

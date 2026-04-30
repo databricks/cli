@@ -6,8 +6,10 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"sync/atomic"
 	"testing"
 
+	"github.com/databricks/cli/libs/env"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -33,6 +35,13 @@ func redirectToServer(t *testing.T, srv *httptest.Server) {
 		}),
 	}
 	t.Cleanup(func() { httpClient = orig })
+}
+
+// testContext returns a context with an isolated cache directory so tests don't
+// share cached manifests.
+func testContext(t *testing.T) context.Context {
+	t.Helper()
+	return env.Set(t.Context(), "DATABRICKS_CACHE_DIR", t.TempDir())
 }
 
 func testManifest() Manifest {
@@ -127,6 +136,7 @@ func TestResolve_MissingNextKey(t *testing.T) {
 }
 
 func TestFetchManifest_RemoteSuccess(t *testing.T) {
+	ctx := testContext(t)
 	want := Manifest{
 		"next":    {Appkit: "0.99.0", Skills: "0.9.9"},
 		"0.296.0": {Appkit: "0.99.0", Skills: "0.9.9"},
@@ -141,42 +151,93 @@ func TestFetchManifest_RemoteSuccess(t *testing.T) {
 	defer srv.Close()
 	redirectToServer(t, srv)
 
-	result, err := FetchManifest(context.Background())
+	result, err := FetchManifest(ctx)
 	require.NoError(t, err)
 	assert.True(t, called, "test server should have been called")
-	// Verify we got the remote manifest, not the embedded one.
 	assert.Equal(t, "0.99.0", result["next"].Appkit)
 }
 
-func TestFetchManifest_FallbackToEmbedded(t *testing.T) {
-	var called bool
+// With {} as the embedded manifest, a remote failure means both remote and
+// embedded fail → FetchManifest returns an error.
+func TestFetchManifest_RemoteFailReturnsError(t *testing.T) {
+	ctx := testContext(t)
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		called = true
 		w.WriteHeader(http.StatusInternalServerError)
 	}))
 	defer srv.Close()
 	redirectToServer(t, srv)
 
-	result, err := FetchManifest(context.Background())
-	require.NoError(t, err)
-	assert.True(t, called, "test server should have been called")
-	// Should fall back to embedded manifest.
-	assert.Contains(t, result, "next")
-	assert.Equal(t, "0.27.0", result["next"].Appkit)
+	_, err := FetchManifest(ctx)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "empty compatibility manifest")
 }
 
 func TestFetchManifest_RemoteReturnsInvalidJSON(t *testing.T) {
+	ctx := testContext(t)
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("not json at all"))
 	}))
 	defer srv.Close()
 	redirectToServer(t, srv)
 
-	result, err := FetchManifest(context.Background())
+	_, err := FetchManifest(ctx)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "empty compatibility manifest")
+}
+
+func TestFetchManifest_CacheHit(t *testing.T) {
+	ctx := testContext(t)
+	want := Manifest{
+		"next":    {Appkit: "0.99.0", Skills: "0.9.9"},
+		"0.296.0": {Appkit: "0.99.0", Skills: "0.9.9"},
+	}
+	body, _ := json.Marshal(want)
+
+	var callCount atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		callCount.Add(1)
+		w.Write(body)
+	}))
+	defer srv.Close()
+	redirectToServer(t, srv)
+
+	// First call: populates cache.
+	result1, err := FetchManifest(ctx)
 	require.NoError(t, err)
-	// Should fall back to embedded manifest.
-	assert.Contains(t, result, "next")
-	assert.Equal(t, "0.27.0", result["next"].Appkit)
+	assert.Equal(t, "0.99.0", result1["next"].Appkit)
+
+	// Second call: should come from cache, not hitting the server again.
+	result2, err := FetchManifest(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, "0.99.0", result2["next"].Appkit)
+
+	assert.Equal(t, int32(1), callCount.Load(), "server should only be called once; second call should be a cache hit")
+}
+
+func TestFetchManifest_RetryOnTransientError(t *testing.T) {
+	ctx := testContext(t)
+	want := Manifest{
+		"next":    {Appkit: "0.99.0", Skills: "0.9.9"},
+		"0.296.0": {Appkit: "0.99.0", Skills: "0.9.9"},
+	}
+	body, _ := json.Marshal(want)
+
+	var callCount atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		n := callCount.Add(1)
+		if n == 1 {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		w.Write(body)
+	}))
+	defer srv.Close()
+	redirectToServer(t, srv)
+
+	result, err := FetchManifest(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, "0.99.0", result["next"].Appkit)
+	assert.Equal(t, int32(2), callCount.Load(), "should have retried after first failure")
 }
 
 func TestParseManifest_Valid(t *testing.T) {

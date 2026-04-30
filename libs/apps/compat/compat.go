@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/databricks/cli/libs/cache"
 	"github.com/databricks/cli/libs/log"
 	"golang.org/x/mod/semver"
 )
@@ -24,7 +25,17 @@ const (
 
 	// nextKey is the special manifest key for CLI versions newer than any entry.
 	nextKey = "next"
+
+	cacheComponent    = "compat-manifest"
+	cacheTTL          = 1 * time.Hour
+	fetchRetries      = 2
+	fetchRetryBackoff = 300 * time.Millisecond
 )
+
+// manifestFingerprint is the cache key for the compatibility manifest.
+type manifestFingerprint struct {
+	URL string `json:"url"`
+}
 
 // Entry maps a CLI version to compatible AppKit and skills versions.
 type Entry struct {
@@ -42,10 +53,15 @@ var embeddedManifest []byte
 // so tests can replace it.
 var httpClient = &http.Client{Timeout: fetchTimeout}
 
-// FetchManifest fetches the latest manifest from GitHub.
-// If the fetch fails, it falls back to the embedded manifest.
+// FetchManifest returns the compatibility manifest, checking in order:
+// 1h local disk cache, remote fetch with retry, embedded fallback.
 func FetchManifest(ctx context.Context) (Manifest, error) {
-	m, err := fetchRemote(ctx)
+	c := cache.NewCache(ctx, cacheComponent, cacheTTL, nil)
+	fp := manifestFingerprint{URL: manifestURL}
+
+	m, err := cache.GetOrCompute(ctx, c, fp, func(ctx context.Context) (Manifest, error) {
+		return fetchRemoteWithRetry(ctx)
+	})
 	if err != nil {
 		log.Debugf(ctx, "Manifest fetch failed (%v), using embedded fallback", err)
 		return parseManifest(embeddedManifest)
@@ -106,7 +122,29 @@ func Resolve(m Manifest, cliVersion string) (Entry, error) {
 	return next, nil
 }
 
+// fetchRemoteWithRetry wraps fetchRemote with retries.
+func fetchRemoteWithRetry(ctx context.Context) (Manifest, error) {
+	var lastErr error
+	for attempt := range fetchRetries + 1 {
+		if attempt > 0 {
+			log.Debugf(ctx, "Retrying manifest fetch (attempt %d)", attempt+1)
+			select {
+			case <-ctx.Done():
+				return nil, ctx.Err()
+			case <-time.After(fetchRetryBackoff):
+			}
+		}
+		m, err := fetchRemote(ctx)
+		if err == nil {
+			return m, nil
+		}
+		lastErr = err
+	}
+	return nil, lastErr
+}
+
 func fetchRemote(ctx context.Context) (Manifest, error) {
+	log.Debugf(ctx, "Fetching compatibility manifest from %s", manifestURL)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, manifestURL, nil)
 	if err != nil {
 		return nil, err

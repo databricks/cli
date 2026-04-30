@@ -10,7 +10,6 @@ import (
 
 	"github.com/databricks/cli/libs/apps/manifest"
 	"github.com/databricks/cli/libs/env"
-	"github.com/databricks/cli/libs/log"
 	"github.com/spf13/cobra"
 )
 
@@ -28,12 +27,11 @@ func runManifestOnly(ctx context.Context, templatePath, branch, version string) 
 		case version != "":
 			gitRef = normalizeVersion(version)
 		default:
-			if entry, err := resolveFromManifest(ctx); err != nil {
-				log.Warnf(ctx, "Manifest resolution failed (%v), using hardcoded default %s", err, appkitDefaultVersion)
-				gitRef = appkitDefaultVersion
-			} else {
-				gitRef = normalizeVersion(entry.Appkit)
+			entry, err := resolveFromManifest(ctx)
+			if err != nil {
+				return fmt.Errorf("could not resolve AppKit template version: %w. Use --version to specify a version manually", err)
 			}
+			gitRef = normalizeVersion(entry.Appkit)
 		}
 		templateSrc = appkitRepoURL
 	}

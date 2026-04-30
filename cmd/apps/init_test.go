@@ -281,7 +281,7 @@ func TestNormalizeVersion(t *testing.T) {
 		{"", ""},
 		{"main", "main"},
 		{"feat/something", "feat/something"},
-		{appkitDefaultVersion, appkitDefaultVersion},
+		{"template-v0.24.0", "template-v0.24.0"},
 	}
 
 	for _, tt := range tests {

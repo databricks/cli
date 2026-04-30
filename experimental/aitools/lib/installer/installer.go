@@ -194,12 +194,11 @@ func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgent
 		return err
 	}
 
-	tag := strings.TrimPrefix(ref, "v")
 	noun := "skills"
 	if len(targetSkills) == 1 {
 		noun = "skill"
 	}
-	cmdio.LogString(ctx, fmt.Sprintf("Installed %d %s (v%s).", len(targetSkills), noun, tag))
+	cmdio.LogString(ctx, fmt.Sprintf("Installed %d %s.", len(targetSkills), noun))
 	return nil
 }
 

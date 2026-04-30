@@ -134,15 +134,24 @@ showcover:
 acc-showcover:
 	go tool cover -html=coverage-acceptance.txt
 
+COMPAT_MANIFEST_URL := https://raw.githubusercontent.com/databricks/appkit/main/cli-compat.json
+COMPAT_MANIFEST_PATH := libs/apps/compat/cli-compat.json
+
 .PHONY: fetch-compat-manifest
 fetch-compat-manifest:
-	@curl -sfL https://raw.githubusercontent.com/databricks/appkit/main/cli-compat.json \
-		-o libs/apps/compat/cli-compat.json \
-		&& echo "Fetched latest cli-compat.json" \
-		|| echo "Warning: failed to fetch cli-compat.json, using existing copy"
+	@echo "Fetching compatibility manifest..."
+	@for attempt in 1 2 3; do \
+		if wget -qO $(COMPAT_MANIFEST_PATH) $(COMPAT_MANIFEST_URL); then \
+			echo "Fetched $(COMPAT_MANIFEST_PATH)"; \
+			exit 0; \
+		fi; \
+		echo "  Attempt $$attempt/3 failed"; \
+		[ $$attempt -lt 3 ] && sleep 2; \
+	done; \
+	echo "Warning: failed to fetch compatibility manifest after 3 attempts; the CLI will resolve versions at runtime"
 
 .PHONY: build
-build: tidy
+build: tidy fetch-compat-manifest
 	go build
 
 # builds the binary in a VM environment (such as Parallels Desktop) where your files are mirrored from the host os
@@ -151,7 +160,7 @@ build-vm: tidy
 	go build -buildvcs=false
 
 .PHONY: snapshot
-snapshot:
+snapshot: fetch-compat-manifest
 	go build -o .databricks/databricks
 
 # Produce release binaries and archives in the dist folder without uploading them anywhere.

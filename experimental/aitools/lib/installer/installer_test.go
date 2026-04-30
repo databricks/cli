@@ -3,12 +3,10 @@ package installer
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"io/fs"
 	"log/slog"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/databricks/cli/experimental/aitools/lib/agents"
@@ -209,7 +207,7 @@ func TestInstallSkillsForAgentsWritesState(t *testing.T) {
 	assert.Equal(t, "0.1.0", state.Skills["databricks-sql"])
 	assert.Equal(t, "0.1.0", state.Skills["databricks-jobs"])
 
-	assert.Contains(t, stderr.String(), fmt.Sprintf("Installed 2 skills (%s).", defaultSkillsRepoRef))
+	assert.Contains(t, stderr.String(), "Installed 2 skills.")
 }
 
 func TestInstallSkillForSingleWritesState(t *testing.T) {
@@ -232,7 +230,7 @@ func TestInstallSkillForSingleWritesState(t *testing.T) {
 	assert.Len(t, state.Skills, 1)
 	assert.Equal(t, "0.1.0", state.Skills["databricks-sql"])
 
-	assert.Contains(t, stderr.String(), fmt.Sprintf("Installed 1 skill (%s).", defaultSkillsRepoRef))
+	assert.Contains(t, stderr.String(), "Installed 1 skill.")
 }
 
 func TestInstallSkillsSpecificNotFound(t *testing.T) {
@@ -275,7 +273,7 @@ func TestExperimentalSkillsSkippedByDefault(t *testing.T) {
 	assert.Len(t, state.Skills, 2)
 	assert.NotContains(t, state.Skills, "databricks-experimental")
 
-	assert.Contains(t, stderr.String(), fmt.Sprintf("Installed 2 skills (%s).", defaultSkillsRepoRef))
+	assert.Contains(t, stderr.String(), "Installed 2 skills.")
 }
 
 func TestExperimentalSkillsIncludedWithFlag(t *testing.T) {
@@ -305,7 +303,7 @@ func TestExperimentalSkillsIncludedWithFlag(t *testing.T) {
 	assert.Contains(t, state.Skills, "databricks-experimental")
 	assert.True(t, state.IncludeExperimental)
 
-	assert.Contains(t, stderr.String(), fmt.Sprintf("Installed 3 skills (%s).", defaultSkillsRepoRef))
+	assert.Contains(t, stderr.String(), "Installed 3 skills.")
 }
 
 func TestMinCLIVersionSkipWithWarningForInstallAll(t *testing.T) {
@@ -339,7 +337,7 @@ func TestMinCLIVersionSkipWithWarningForInstallAll(t *testing.T) {
 	assert.Len(t, state.Skills, 2)
 	assert.NotContains(t, state.Skills, "databricks-future")
 
-	assert.Contains(t, stderr.String(), fmt.Sprintf("Installed 2 skills (%s).", defaultSkillsRepoRef))
+	assert.Contains(t, stderr.String(), "Installed 2 skills.")
 	assert.Contains(t, logBuf.String(), "requires CLI version 0.300.0")
 }
 
@@ -610,8 +608,7 @@ func TestInstallProjectScopeWritesState(t *testing.T) {
 	assert.Equal(t, defaultSkillsRepoRef, state.Release)
 	assert.Len(t, state.Skills, 2)
 
-	tag := strings.TrimPrefix(defaultSkillsRepoRef, "v")
-	assert.Contains(t, stderr.String(), fmt.Sprintf("Installed 2 skills (v%s).", tag))
+	assert.Contains(t, stderr.String(), "Installed 2 skills.")
 }
 
 func TestInstallProjectScopeCreatesSymlinks(t *testing.T) {
@@ -680,7 +677,7 @@ func TestInstallProjectScopeFiltersIncompatibleAgents(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Contains(t, stderr.String(), "Skipped No Project Agent: does not support project-scoped skills.")
-	assert.Contains(t, stderr.String(), fmt.Sprintf("Installed 2 skills (%s).", defaultSkillsRepoRef))
+	assert.Contains(t, stderr.String(), "Installed 2 skills.")
 }
 
 func TestInstallProjectScopeZeroCompatibleAgentsReturnsError(t *testing.T) {
