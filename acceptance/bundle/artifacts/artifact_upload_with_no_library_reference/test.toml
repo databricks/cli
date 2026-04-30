@@ -1,5 +1,4 @@
 RecordRequests = true
-EnvVaryOutput = "DATABRICKS_BUNDLE_ENGINE"
 Ignore = [
     '.venv',
     'dist',
@@ -8,10 +7,6 @@ Ignore = [
     '.databricks',
     '*.whl',
 ]
-
-[[Repls]]
-Old = 'Updating deployment state...\n'
-New = ''
 
 [[Server]]
 Pattern = "GET /api/2.1/clusters/get"
