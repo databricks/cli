@@ -1,0 +1,22 @@
+Recommendation: permissions section should explicitly include the current deployment identity '[USERNAME]' or one of its groups
+If it is not included, CAN_MANAGE permissions are only applied if the present identity is used to deploy.
+
+Consider using a adding a top-level permissions section such as the following:
+
+  permissions:
+    - user_name: [USERNAME]
+      level: CAN_MANAGE
+
+See https://docs.databricks.com/dev-tools/bundles/permissions.html to learn more about permission configuration.
+  in databricks.yml:20:3
+
+Error: Genie Space permissions are not supported
+
+Databricks workspaces do not expose a permissions endpoint for Genie Spaces, so a deploy with permissions configured would create the space and then fail. Remove the permissions block, or remove the Genie Space from any bundle-level permissions, until the API adds support.
+
+Error: Genie Space permissions are not supported
+
+Databricks workspaces do not expose a permissions endpoint for Genie Spaces, so a deploy with permissions configured would create the space and then fail. Remove the permissions block, or remove the Genie Space from any bundle-level permissions, until the API adds support.
+
+
+Exit code: 1
