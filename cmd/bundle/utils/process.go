@@ -80,7 +80,6 @@ type ProcessOptions struct {
 	// The plan is computed after PreDeployChecks while state is still open for read.
 	ComputePlan bool
 
-
 	// Indicate whether the bundle operation originates from the pipelines CLI
 	IsPipelinesCLI bool
 }
