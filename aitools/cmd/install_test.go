@@ -262,17 +262,49 @@ func TestInstallAgentsFlagSkipsPrompt(t *testing.T) {
 	assert.Equal(t, []string{"claude-code", "cursor"}, (*calls)[0].agents)
 }
 
-func TestInstallRejectsPositionalArgs(t *testing.T) {
+func TestInstallAcceptsPositionalSkillName(t *testing.T) {
+	setupTestAgents(t)
+	calls := setupInstallMock(t)
+
 	ctx := cmdio.MockDiscard(t.Context())
 	cmd := NewInstallCmd()
 	cmd.SetContext(ctx)
 	cmd.SetArgs([]string{"databricks"})
+
+	err := cmd.Execute()
+	require.NoError(t, err)
+
+	require.Len(t, *calls, 1)
+	assert.Equal(t, []string{"databricks"}, (*calls)[0].opts.SpecificSkills)
+}
+
+func TestInstallRejectsTwoPositionalArgs(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	cmd := NewInstallCmd()
+	cmd.SetContext(ctx)
+	cmd.SetArgs([]string{"a", "b"})
 	cmd.SilenceErrors = true
 	cmd.SilenceUsage = true
 
 	err := cmd.Execute()
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "unknown command")
+	assert.Contains(t, err.Error(), "accepts at most 1 arg")
+}
+
+func TestInstallRejectsPositionalAndSkillsFlag(t *testing.T) {
+	setupTestAgents(t)
+	setupInstallMock(t)
+
+	ctx := cmdio.MockDiscard(t.Context())
+	cmd := NewInstallCmd()
+	cmd.SetContext(ctx)
+	cmd.SetArgs([]string{"databricks", "--skills", "foo"})
+	cmd.SilenceErrors = true
+	cmd.SilenceUsage = true
+
+	err := cmd.Execute()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "either a positional skill name or --skills")
 }
 
 func TestUpdateRejectsPositionalArgs(t *testing.T) {
