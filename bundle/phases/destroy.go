@@ -226,7 +226,7 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 				return
 			}
 			defer func() {
-				if err := b.DeploymentBundle.StateDB.Close(ctx); err != nil {
+				if err := b.DeploymentBundle.StateDB.Finalize(ctx); err != nil {
 					logdiag.LogError(ctx, err)
 				}
 			}()

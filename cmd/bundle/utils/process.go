@@ -80,18 +80,18 @@ type ProcessOptions struct {
 }
 
 func ProcessBundle(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, error) {
-	b, _, _, err := processBundleRetInternal(cmd, opts)
+	b, _, err := processBundleRetInternal(cmd, opts)
 	return b, err
 }
 
 func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, *statemgmt.StateDesc, error) {
-	b, stateDesc, _, err := processBundleRetInternal(cmd, opts)
+	b, stateDesc, err := processBundleRetInternal(cmd, opts)
 	return b, stateDesc, err
 }
 
-
-func processBundleRetInternal(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle, stateDesc *statemgmt.StateDesc, plan *deployplan.Plan, retErr error) {
+func processBundleRetInternal(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle, stateDesc *statemgmt.StateDesc, retErr error) {
 	var err error
+	var plan *deployplan.Plan
 	ctx := cmd.Context()
 	if opts.SkipInitContext {
 		if !logdiag.IsSetup(ctx) {
@@ -122,20 +122,20 @@ func processBundleRetInternal(cmd *cobra.Command, opts ProcessOptions) (b *bundl
 	}
 
 	if logdiag.HasError(ctx) {
-		return b, nil, nil, root.ErrAlreadyPrinted
+		return b, nil, root.ErrAlreadyPrinted
 	}
 
 	variables, err := cmd.Flags().GetStringSlice("var")
 	if err != nil {
 		logdiag.LogDiag(ctx, diag.FromErr(err)[0])
-		return b, nil, nil, err
+		return b, nil, err
 	}
 
 	// Initialize variables by assigning them values passed as command line flags
 	configureVariables(cmd, b, variables)
 
 	if b == nil || logdiag.HasError(ctx) {
-		return b, nil, nil, root.ErrAlreadyPrinted
+		return b, nil, root.ErrAlreadyPrinted
 	}
 	ctx = cmd.Context()
 
@@ -158,19 +158,19 @@ func processBundleRetInternal(cmd *cobra.Command, opts ProcessOptions) (b *bundl
 		if opts.IncludeLocations {
 			bundle.ApplyContext(ctx, b, mutator.PopulateLocations())
 			if logdiag.HasError(ctx) {
-				return b, nil, nil, root.ErrAlreadyPrinted
+				return b, nil, root.ErrAlreadyPrinted
 			}
 		}
 	}
 
 	if logdiag.HasError(ctx) {
-		return b, nil, nil, root.ErrAlreadyPrinted
+		return b, nil, root.ErrAlreadyPrinted
 	}
 
 	if opts.PostInitFunc != nil {
 		err := opts.PostInitFunc(ctx, b)
 		if err != nil {
-			return b, nil, nil, err
+			return b, nil, err
 		}
 	}
 
@@ -179,13 +179,13 @@ func processBundleRetInternal(cmd *cobra.Command, opts ProcessOptions) (b *bundl
 	if shouldReadState {
 		requiredEngine, err := ResolveEngineSetting(ctx, b)
 		if err != nil {
-			return b, nil, nil, err
+			return b, nil, err
 		}
 
 		// PullResourcesState depends on stateFiler which needs b.Config.Workspace.StatePath which is set in phases.Initialize
 		ctx, stateDesc = statemgmt.PullResourcesState(ctx, b, statemgmt.AlwaysPull(opts.AlwaysPull), requiredEngine)
 		if logdiag.HasError(ctx) {
-			return b, stateDesc, nil, root.ErrAlreadyPrinted
+			return b, stateDesc, root.ErrAlreadyPrinted
 		}
 		cmd.SetContext(ctx)
 
@@ -194,7 +194,7 @@ func processBundleRetInternal(cmd *cobra.Command, opts ProcessOptions) (b *bundl
 		if stateDesc.Engine.IsDirect() {
 			_, localPath := b.StateFilenameDirect(ctx)
 			if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(true), dstate.WithWrite(false)); err != nil {
-				return b, stateDesc, nil, err
+				return b, stateDesc, err
 			}
 		}
 
@@ -213,7 +213,7 @@ func processBundleRetInternal(cmd *cobra.Command, opts ProcessOptions) (b *bundl
 			}
 			bundle.ApplySeqContext(ctx, b, mutators...)
 			if logdiag.HasError(ctx) {
-				return b, stateDesc, nil, root.ErrAlreadyPrinted
+				return b, stateDesc, root.ErrAlreadyPrinted
 			}
 		}
 	}
@@ -221,7 +221,7 @@ func processBundleRetInternal(cmd *cobra.Command, opts ProcessOptions) (b *bundl
 	if opts.ReadPlanPath != "" {
 		if !stateDesc.Engine.IsDirect() {
 			logdiag.LogError(ctx, errors.New("--plan is only supported with direct engine (set bundle.engine to \"direct\" or DATABRICKS_BUNDLE_ENGINE=direct)"))
-			return b, stateDesc, nil, root.ErrAlreadyPrinted
+			return b, stateDesc, root.ErrAlreadyPrinted
 		}
 		opts.Build = false
 		opts.PreDeployChecks = false
@@ -230,7 +230,7 @@ func processBundleRetInternal(cmd *cobra.Command, opts ProcessOptions) (b *bundl
 		plan, err = deployplan.LoadPlanFromFile(opts.ReadPlanPath)
 		if err != nil {
 			logdiag.LogError(ctx, err)
-			return b, stateDesc, nil, root.ErrAlreadyPrinted
+			return b, stateDesc, root.ErrAlreadyPrinted
 		}
 		currentVersion := build.GetInfo().Version
 		if plan.CLIVersion != currentVersion {
@@ -242,7 +242,7 @@ func processBundleRetInternal(cmd *cobra.Command, opts ProcessOptions) (b *bundl
 		err = direct.ValidatePlanAgainstState(&b.DeploymentBundle.StateDB, plan)
 		if err != nil {
 			logdiag.LogError(ctx, err)
-			return b, stateDesc, nil, root.ErrAlreadyPrinted
+			return b, stateDesc, root.ErrAlreadyPrinted
 		}
 	} else if opts.Deploy {
 		opts.Build = true
@@ -258,14 +258,14 @@ func processBundleRetInternal(cmd *cobra.Command, opts ProcessOptions) (b *bundl
 		})
 
 		if logdiag.HasError(ctx) {
-			return b, stateDesc, nil, root.ErrAlreadyPrinted
+			return b, stateDesc, root.ErrAlreadyPrinted
 		}
 
 		// Pipeline CLI only validation.
 		if opts.IsPipelinesCLI {
 			rejectDefinitions(ctx, b)
 			if logdiag.HasError(ctx) {
-				return b, stateDesc, nil, root.ErrAlreadyPrinted
+				return b, stateDesc, root.ErrAlreadyPrinted
 			}
 		}
 	}
@@ -273,7 +273,7 @@ func processBundleRetInternal(cmd *cobra.Command, opts ProcessOptions) (b *bundl
 	if opts.Validate {
 		validate.Validate(ctx, b)
 		if logdiag.HasError(ctx) {
-			return b, stateDesc, nil, root.ErrAlreadyPrinted
+			return b, stateDesc, root.ErrAlreadyPrinted
 		}
 	}
 
@@ -288,7 +288,7 @@ func processBundleRetInternal(cmd *cobra.Command, opts ProcessOptions) (b *bundl
 		})
 
 		if logdiag.HasError(ctx) {
-			return b, stateDesc, nil, root.ErrAlreadyPrinted
+			return b, stateDesc, root.ErrAlreadyPrinted
 		}
 	}
 
@@ -297,7 +297,7 @@ func processBundleRetInternal(cmd *cobra.Command, opts ProcessOptions) (b *bundl
 		phases.PreDeployChecks(ctx, b, downgradeWarningToError, stateDesc.Engine)
 
 		if logdiag.HasError(ctx) {
-			return b, stateDesc, nil, root.ErrAlreadyPrinted
+			return b, stateDesc, root.ErrAlreadyPrinted
 		}
 	}
 
@@ -317,25 +317,25 @@ func processBundleRetInternal(cmd *cobra.Command, opts ProcessOptions) (b *bundl
 		})
 
 		if logdiag.HasError(ctx) {
-			return b, stateDesc, nil, root.ErrAlreadyPrinted
+			return b, stateDesc, root.ErrAlreadyPrinted
 		}
 
 		if b != nil && stateDesc != nil && stateDesc.Engine.IsDirect() && stateDesc.HasRemoteTerraformState() {
 			statemgmt.BackupRemoteTerraformState(ctx, b)
 
 			if logdiag.HasError(ctx) {
-				return b, stateDesc, nil, root.ErrAlreadyPrinted
+				return b, stateDesc, root.ErrAlreadyPrinted
 			}
 		}
 	}
 
 	if opts.PostStateFunc != nil {
 		if err := opts.PostStateFunc(ctx, b, stateDesc); err != nil {
-			return b, stateDesc, nil, err
+			return b, stateDesc, err
 		}
 	}
 
-	return b, stateDesc, plan, nil
+	return b, stateDesc, nil
 }
 
 // ResolveEngineSetting determines the effective engine setting by combining bundle config and env var.
