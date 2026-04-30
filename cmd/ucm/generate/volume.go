@@ -56,8 +56,8 @@ Example:
 
 		// Managed volumes echo back a server-assigned storage_location; the
 		// ucm Volume model (matching the SDK CreateVolumeRequestContent
-		// validation) refuses to set it on MANAGED, so drop it here for
-		// parity with phases.Generate.
+		// validation) refuses to set it on MANAGED, so drop it here so the
+		// per-kind direct-SDK scan emits a deploy-clean shape.
 		storage := info.StorageLocation
 		if strings.EqualFold(string(info.VolumeType), "MANAGED") {
 			storage = ""

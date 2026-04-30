@@ -75,10 +75,10 @@ Example:
 	return cmd
 }
 
-// convertStorageCredential reproduces phases.convertStorageCredential's
-// identity-field switch so the per-kind subcommand emits the same shape
-// phases.Generate would. Returns (resource, warning, ok). The warning is
-// surfaced verbatim — it is informational, not fatal.
+// convertStorageCredential maps a server-side StorageCredentialInfo onto the
+// ucm StorageCredential resource using a direct SDK call (the per-kind
+// generate workflow that replaced the bulk-scan engine). Returns (resource,
+// warning). The warning is surfaced verbatim — it is informational, not fatal.
 func convertStorageCredential(info *catalog.StorageCredentialInfo) (*resources.StorageCredential, string) {
 	res := &resources.StorageCredential{
 		CreateStorageCredential: catalog.CreateStorageCredential{
