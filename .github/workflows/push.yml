@@ -352,13 +352,6 @@ jobs:
             exit 1
           fi
 
-      - name: Verify that cmd/api/paths_generated.go is up to date
-        run: |
-          if ! ( ./task --force generate-paths && git diff --exit-code ); then
-            echo "cmd/api/paths_generated.go is not up to date. Please run './task generate-paths' and commit the changes."
-            exit 1
-          fi
-
   validate-python-codegen:
     needs: cleanups
     runs-on: ubuntu-latest

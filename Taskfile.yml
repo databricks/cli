@@ -57,7 +57,6 @@ tasks:
       - task: generate-validation
       - task: generate-docs
       - task: generate-direct
-      - task: generate-paths
       - task: pydabs-codegen
       - task: pydabs-lint
       - task: pydabs-test
@@ -714,7 +713,7 @@ tasks:
   # can be invoked standalone.
 
   generate:
-    desc: Run all generators (genkit, refschema, schema, docs, validation, direct, paths, pydabs)
+    desc: Run all generators (genkit, refschema, schema, docs, validation, direct, pydabs)
     cmds:
       # Runs first: regenerates CLI command stubs from the OpenAPI spec at
       # .codegen/_openapi_sha. SDK version bumps (go.mod/go.sum) are a manual
@@ -729,7 +728,6 @@ tasks:
       - task: generate-validation
       - task: generate-docs
       - task: generate-direct
-      - task: generate-paths
       - task: pydabs-codegen
 
   # Drives genkit from a universe checkout. Genkit writes CLI command files into
@@ -858,24 +856,6 @@ tasks:
   generate-direct:
     desc: Generate direct engine config (apitypes + resources)
     deps: ['generate-direct-apitypes', 'generate-direct-resources']
-
-  # Regenerates cmd/api/paths_generated.go: the deny-list of workspace-routed
-  # proxy paths that live under accounts/ in the SDK. Triggered by SDK pin
-  # changes (go.mod/go.sum) or generator edits. The temp-file-and-rename guards
-  # against truncating the checked-in file if the generator fails midway.
-  generate-paths:
-    desc: Generate cmd/api/paths_generated.go from the pinned SDK
-    sources:
-      - cmd/api/internal/genpaths/**/*.go
-      - exclude: cmd/api/internal/genpaths/**/*_test.go
-      - go.mod
-      - go.sum
-    generates:
-      - cmd/api/paths_generated.go
-    cmds:
-      # Ensure the SDK is in the module cache; the generator parses its source.
-      - go mod download github.com/databricks/databricks-sdk-go
-      - "sh -c 'go run ./cmd/api/internal/genpaths > cmd/api/paths_generated.go.tmp && mv cmd/api/paths_generated.go.tmp cmd/api/paths_generated.go'"
 
   generate-direct-apitypes:
     desc: Generate direct engine API types YAML
