@@ -56,15 +56,14 @@ func (c configureGenieSpaceSerializedSpace) Apply(_ context.Context, b *bundle.B
 			// Otherwise YAML decodes small ints as Go `int` while state JSON
 			// round-trip decodes them as `float64`, and structdiff reports
 			// false drift on every plan.
-			switch ss.Kind() {
-			case dyn.KindMap, dyn.KindSequence:
-				jsonBytes, err := json.Marshal(ss.AsAny())
-				if err != nil {
-					return dyn.InvalidValue, fmt.Errorf("failed to marshal inline serialized_space: %w", err)
-				}
-				return dyn.Set(v, serializedSpaceFieldName, dyn.V(string(jsonBytes)))
+			if ss.Kind() != dyn.KindMap && ss.Kind() != dyn.KindSequence {
+				return v, nil
 			}
-			return v, nil
+			jsonBytes, err := json.Marshal(ss.AsAny())
+			if err != nil {
+				return dyn.InvalidValue, fmt.Errorf("failed to marshal inline serialized_space: %w", err)
+			}
+			return dyn.Set(v, serializedSpaceFieldName, dyn.V(string(jsonBytes)))
 		})
 	})
 
