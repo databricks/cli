@@ -89,7 +89,7 @@ Examples:
 						s.fail("Failed to create lakebox")
 						return fmt.Errorf("failed to create lakebox: %w", err)
 					}
-					lakeboxID = result.LakeboxID
+					lakeboxID = result.SandboxID
 					s.ok(fmt.Sprintf("Lakebox %s ready", bold(lakeboxID)))
 
 					if err := setDefault(profile, lakeboxID); err != nil {

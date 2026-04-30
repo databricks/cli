@@ -12,37 +12,45 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 )
 
-const lakeboxAPIPath = "/api/2.0/lakebox"
+// Sandboxes live under the `/sandboxes` sub-collection of the lakebox service
+// namespace (see `lakebox.proto` `LakeboxService.CreateSandbox`).
+const lakeboxAPIPath = "/api/2.0/lakebox/sandboxes"
 
 // lakeboxAPI wraps raw HTTP calls to the lakebox REST API.
 type lakeboxAPI struct {
 	w *databricks.WorkspaceClient
 }
 
-// createRequest is the JSON body for POST /api/2.0/lakebox.
+// createRequest is the JSON body for POST /api/2.0/lakebox/sandboxes.
+//
+// The proto-defined `CreateSandboxRequest` carries a `Sandbox sandbox = 1`
+// field today (every member is server-chosen), but JSON transcoding accepts
+// the unwrapped form for forward-compatible callers. Keep `public_key` here
+// as a no-op compat shim so older `lakebox create --public-key-file=...`
+// invocations don't error — the manager ignores it on the wire.
 type createRequest struct {
 	PublicKey string `json:"public_key,omitempty"`
 }
 
-// createResponse is the JSON body returned by POST /api/2.0/lakebox.
-// Mirrors the `Lakebox` proto message after JSON transcoding.
+// createResponse is the JSON body returned by POST /api/2.0/lakebox/sandboxes.
+// Mirrors the `Sandbox` proto message after JSON transcoding.
 type createResponse struct {
-	LakeboxID string `json:"lakeboxId"`
+	SandboxID string `json:"sandboxId"`
 	Status    string `json:"status"`
 	FQDN      string `json:"fqdn"`
 }
 
-// lakeboxEntry is a single item in the list response.
-// Mirrors the `Lakebox` proto message after JSON transcoding.
-type lakeboxEntry struct {
-	LakeboxID string `json:"lakeboxId"`
+// sandboxEntry is a single item in the list response.
+// Mirrors the `Sandbox` proto message after JSON transcoding.
+type sandboxEntry struct {
+	SandboxID string `json:"sandboxId"`
 	Status    string `json:"status"`
 	FQDN      string `json:"fqdn"`
 }
 
-// listResponse is the JSON body returned by GET /api/2.0/lakebox.
+// listResponse is the JSON body returned by GET /api/2.0/lakebox/sandboxes.
 type listResponse struct {
-	Lakeboxes []lakeboxEntry `json:"lakeboxes"`
+	Sandboxes []sandboxEntry `json:"sandboxes"`
 }
 
 // apiError is the error body returned by the lakebox API.
@@ -84,8 +92,8 @@ func (a *lakeboxAPI) create(ctx context.Context, publicKey string) (*createRespo
 	return &result, nil
 }
 
-// list calls GET /api/2.0/lakebox.
-func (a *lakeboxAPI) list(ctx context.Context) ([]lakeboxEntry, error) {
+// list calls GET /api/2.0/lakebox/sandboxes.
+func (a *lakeboxAPI) list(ctx context.Context) ([]sandboxEntry, error) {
 	resp, err := a.doRequest(ctx, "GET", lakeboxAPIPath, nil)
 	if err != nil {
 		return nil, err
@@ -100,11 +108,11 @@ func (a *lakeboxAPI) list(ctx context.Context) ([]lakeboxEntry, error) {
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
-	return result.Lakeboxes, nil
+	return result.Sandboxes, nil
 }
 
-// get calls GET /api/2.0/lakebox/{id}.
-func (a *lakeboxAPI) get(ctx context.Context, id string) (*lakeboxEntry, error) {
+// get calls GET /api/2.0/lakebox/sandboxes/{id}.
+func (a *lakeboxAPI) get(ctx context.Context, id string) (*sandboxEntry, error) {
 	resp, err := a.doRequest(ctx, "GET", lakeboxAPIPath+"/"+id, nil)
 	if err != nil {
 		return nil, err
@@ -115,14 +123,14 @@ func (a *lakeboxAPI) get(ctx context.Context, id string) (*lakeboxEntry, error) 
 		return nil, parseAPIError(resp)
 	}
 
-	var result lakeboxEntry
+	var result sandboxEntry
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
 	return &result, nil
 }
 
-// delete calls DELETE /api/2.0/lakebox/{id}.
+// delete calls DELETE /api/2.0/lakebox/sandboxes/{id}.
 func (a *lakeboxAPI) delete(ctx context.Context, id string) error {
 	resp, err := a.doRequest(ctx, "DELETE", lakeboxAPIPath+"/"+id, nil)
 	if err != nil {
@@ -166,17 +174,17 @@ func parseAPIError(resp *http.Response) error {
 	return fmt.Errorf("HTTP %d: %s", resp.StatusCode, string(body))
 }
 
-// User keys live at /api/2.0/lakebox-keys (separate top-level collection so
-// the path doesn't structurally overlap with /api/2.0/lakebox/{lakebox_id}).
-const lakeboxKeysAPIPath = "/api/2.0/lakebox-keys"
+// SSH keys are now nested under the lakebox service namespace alongside
+// `sandboxes/` (see `LakeboxService.CreateSshKey`).
+const lakeboxKeysAPIPath = "/api/2.0/lakebox/ssh-keys"
 
-// registerKeyRequest is the JSON body for POST /api/2.0/lakebox-keys.
+// registerKeyRequest is the JSON body for POST /api/2.0/lakebox/ssh-keys.
 type registerKeyRequest struct {
 	PublicKey string `json:"public_key"`
 	Name      string `json:"name,omitempty"`
 }
 
-// registerKey calls POST /api/2.0/lakebox-keys.
+// registerKey calls POST /api/2.0/lakebox/ssh-keys.
 func (a *lakeboxAPI) registerKey(ctx context.Context, publicKey string) error {
 	body := registerKeyRequest{PublicKey: publicKey}
 	jsonBody, err := json.Marshal(body)

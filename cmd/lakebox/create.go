@@ -45,7 +45,7 @@ Example:
 				return fmt.Errorf("failed to create lakebox: %w", err)
 			}
 
-			s.ok(fmt.Sprintf("Lakebox %s is %s", bold(result.LakeboxID), status(result.Status)))
+			s.ok(fmt.Sprintf("Lakebox %s is %s", bold(result.SandboxID), status(result.Status)))
 
 			profile := w.Config.Profile
 			if profile == "" {
@@ -60,15 +60,15 @@ Example:
 				}
 			}
 			if shouldSetDefault {
-				if err := setDefault(profile, result.LakeboxID); err != nil {
+				if err := setDefault(profile, result.SandboxID); err != nil {
 					warn(stderr, fmt.Sprintf("Could not save default: %v", err))
 				} else {
-					field(stderr, "default", result.LakeboxID)
+					field(stderr, "default", result.SandboxID)
 				}
 			}
 
 			blank(stderr)
-			fmt.Fprintln(cmd.OutOrStdout(), result.LakeboxID)
+			fmt.Fprintln(cmd.OutOrStdout(), result.SandboxID)
 			return nil
 		},
 	}
