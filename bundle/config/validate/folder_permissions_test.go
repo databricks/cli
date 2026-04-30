@@ -19,28 +19,28 @@ func TestFolderPermissionsInheritedWhenRootPathDoesNotExist(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Workspace: config.Workspace{
-				RootPath:     "/Workspace/Users/foo@bar.com",
-				ArtifactPath: "/Workspace/Users/otherfoo@bar.com/artifacts",
-				FilePath:     "/Workspace/Users/foo@bar.com/files",
-				StatePath:    "/Workspace/Users/foo@bar.com/state",
-				ResourcePath: "/Workspace/Users/foo@bar.com/resources",
+				RootPath:     "/Workspace/Users/foo@bar.test",
+				ArtifactPath: "/Workspace/Users/otherfoo@bar.test/artifacts",
+				FilePath:     "/Workspace/Users/foo@bar.test/files",
+				StatePath:    "/Workspace/Users/foo@bar.test/state",
+				ResourcePath: "/Workspace/Users/foo@bar.test/resources",
 			},
 			Permissions: []resources.Permission{
-				{Level: permissions.CAN_MANAGE, UserName: "foo@bar.com"},
+				{Level: permissions.CAN_MANAGE, UserName: "foo@bar.test"},
 			},
 		},
 	}
 	m := mocks.NewMockWorkspaceClient(t)
 	api := m.GetMockWorkspaceAPI()
-	api.EXPECT().GetStatusByPath(mock.Anything, "/Workspace/Users/otherfoo@bar.com/artifacts").Return(nil, &apierr.APIError{
+	api.EXPECT().GetStatusByPath(mock.Anything, "/Workspace/Users/otherfoo@bar.test/artifacts").Return(nil, &apierr.APIError{
 		StatusCode: 404,
 		ErrorCode:  "RESOURCE_DOES_NOT_EXIST",
 	})
-	api.EXPECT().GetStatusByPath(mock.Anything, "/Workspace/Users/otherfoo@bar.com").Return(nil, &apierr.APIError{
+	api.EXPECT().GetStatusByPath(mock.Anything, "/Workspace/Users/otherfoo@bar.test").Return(nil, &apierr.APIError{
 		StatusCode: 404,
 		ErrorCode:  "RESOURCE_DOES_NOT_EXIST",
 	})
-	api.EXPECT().GetStatusByPath(mock.Anything, "/Workspace/Users/foo@bar.com").Return(nil, &apierr.APIError{
+	api.EXPECT().GetStatusByPath(mock.Anything, "/Workspace/Users/foo@bar.test").Return(nil, &apierr.APIError{
 		StatusCode: 404,
 		ErrorCode:  "RESOURCE_DOES_NOT_EXIST",
 	})
@@ -59,7 +59,7 @@ func TestFolderPermissionsInheritedWhenRootPathDoesNotExist(t *testing.T) {
 		ObjectId: "1234",
 		AccessControlList: []workspace.WorkspaceObjectAccessControlResponse{
 			{
-				UserName: "foo@bar.com",
+				UserName: "foo@bar.test",
 				AllPermissions: []workspace.WorkspaceObjectPermission{
 					{PermissionLevel: "CAN_MANAGE"},
 				},
@@ -76,20 +76,20 @@ func TestValidateFolderPermissionsFailsOnMissingBundlePermission(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Workspace: config.Workspace{
-				RootPath:     "/Workspace/Users/foo@bar.com",
-				ArtifactPath: "/Workspace/Users/foo@bar.com/artifacts",
-				FilePath:     "/Workspace/Users/foo@bar.com/files",
-				StatePath:    "/Workspace/Users/foo@bar.com/state",
-				ResourcePath: "/Workspace/Users/foo@bar.com/resources",
+				RootPath:     "/Workspace/Users/foo@bar.test",
+				ArtifactPath: "/Workspace/Users/foo@bar.test/artifacts",
+				FilePath:     "/Workspace/Users/foo@bar.test/files",
+				StatePath:    "/Workspace/Users/foo@bar.test/state",
+				ResourcePath: "/Workspace/Users/foo@bar.test/resources",
 			},
 			Permissions: []resources.Permission{
-				{Level: permissions.CAN_MANAGE, UserName: "foo@bar.com"},
+				{Level: permissions.CAN_MANAGE, UserName: "foo@bar.test"},
 			},
 		},
 	}
 	m := mocks.NewMockWorkspaceClient(t)
 	api := m.GetMockWorkspaceAPI()
-	api.EXPECT().GetStatusByPath(mock.Anything, "/Workspace/Users/foo@bar.com").Return(&workspace.ObjectInfo{
+	api.EXPECT().GetStatusByPath(mock.Anything, "/Workspace/Users/foo@bar.test").Return(&workspace.ObjectInfo{
 		ObjectId: 1234,
 	}, nil)
 
@@ -100,13 +100,13 @@ func TestValidateFolderPermissionsFailsOnMissingBundlePermission(t *testing.T) {
 		ObjectId: "1234",
 		AccessControlList: []workspace.WorkspaceObjectAccessControlResponse{
 			{
-				UserName: "foo@bar.com",
+				UserName: "foo@bar.test",
 				AllPermissions: []workspace.WorkspaceObjectPermission{
 					{PermissionLevel: "CAN_MANAGE"},
 				},
 			},
 			{
-				UserName: "foo2@bar.com",
+				UserName: "foo2@bar.test",
 				AllPermissions: []workspace.WorkspaceObjectPermission{
 					{PermissionLevel: "CAN_MANAGE"},
 				},
@@ -119,8 +119,8 @@ func TestValidateFolderPermissionsFailsOnMissingBundlePermission(t *testing.T) {
 	require.Len(t, diags, 1)
 	require.Equal(t, "workspace folder has permissions not configured in bundle", diags[0].Summary)
 	require.Equal(t, diag.Warning, diags[0].Severity)
-	expectedDetail := "The following permissions apply to the workspace folder at \"/Workspace/Users/foo@bar.com\" " +
-		"but are not configured in the bundle:\n- level: CAN_MANAGE, user_name: foo2@bar.com\n\n" +
+	expectedDetail := "The following permissions apply to the workspace folder at \"/Workspace/Users/foo@bar.test\" " +
+		"but are not configured in the bundle:\n- level: CAN_MANAGE, user_name: foo2@bar.test\n\n" +
 		"Add them to your bundle permissions or remove them from the folder.\n" +
 		"See https://docs.databricks.com/dev-tools/bundles/permissions"
 	require.Equal(t, expectedDetail, diags[0].Detail)
@@ -130,20 +130,20 @@ func TestValidateFolderPermissionsFailsOnPermissionMismatch(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Workspace: config.Workspace{
-				RootPath:     "/Workspace/Users/foo@bar.com",
-				ArtifactPath: "/Workspace/Users/foo@bar.com/artifacts",
-				FilePath:     "/Workspace/Users/foo@bar.com/files",
-				StatePath:    "/Workspace/Users/foo@bar.com/state",
-				ResourcePath: "/Workspace/Users/foo@bar.com/resources",
+				RootPath:     "/Workspace/Users/foo@bar.test",
+				ArtifactPath: "/Workspace/Users/foo@bar.test/artifacts",
+				FilePath:     "/Workspace/Users/foo@bar.test/files",
+				StatePath:    "/Workspace/Users/foo@bar.test/state",
+				ResourcePath: "/Workspace/Users/foo@bar.test/resources",
 			},
 			Permissions: []resources.Permission{
-				{Level: permissions.CAN_MANAGE, UserName: "foo@bar.com"},
+				{Level: permissions.CAN_MANAGE, UserName: "foo@bar.test"},
 			},
 		},
 	}
 	m := mocks.NewMockWorkspaceClient(t)
 	api := m.GetMockWorkspaceAPI()
-	api.EXPECT().GetStatusByPath(mock.Anything, "/Workspace/Users/foo@bar.com").Return(&workspace.ObjectInfo{
+	api.EXPECT().GetStatusByPath(mock.Anything, "/Workspace/Users/foo@bar.test").Return(&workspace.ObjectInfo{
 		ObjectId: 1234,
 	}, nil)
 
@@ -154,7 +154,7 @@ func TestValidateFolderPermissionsFailsOnPermissionMismatch(t *testing.T) {
 		ObjectId: "1234",
 		AccessControlList: []workspace.WorkspaceObjectAccessControlResponse{
 			{
-				UserName: "foo2@bar.com",
+				UserName: "foo2@bar.test",
 				AllPermissions: []workspace.WorkspaceObjectPermission{
 					{PermissionLevel: "CAN_MANAGE"},
 				},
@@ -180,7 +180,7 @@ func TestValidateFolderPermissionsFailsOnNoRootFolder(t *testing.T) {
 				ResourcePath: "/NotExisting/resources",
 			},
 			Permissions: []resources.Permission{
-				{Level: permissions.CAN_MANAGE, UserName: "foo@bar.com"},
+				{Level: permissions.CAN_MANAGE, UserName: "foo@bar.test"},
 			},
 		},
 	}

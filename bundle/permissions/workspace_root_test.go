@@ -20,11 +20,11 @@ func TestApplyWorkspaceRootPermissions(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Workspace: config.Workspace{
-				RootPath:     "/Users/foo@bar.com",
-				ArtifactPath: "/Users/foo@bar.com/artifacts",
-				FilePath:     "/Users/foo@bar.com/files",
-				StatePath:    "/Users/foo@bar.com/state",
-				ResourcePath: "/Users/foo@bar.com/resources",
+				RootPath:     "/Users/foo@bar.test",
+				ArtifactPath: "/Users/foo@bar.test/artifacts",
+				FilePath:     "/Users/foo@bar.test/files",
+				StatePath:    "/Users/foo@bar.test/state",
+				ResourcePath: "/Users/foo@bar.test/resources",
 			},
 			Permissions: []resources.Permission{
 				{Level: CAN_MANAGE, UserName: "TestUser"},
@@ -59,7 +59,7 @@ func TestApplyWorkspaceRootPermissions(t *testing.T) {
 	m := mocks.NewMockWorkspaceClient(t)
 	b.SetWorkpaceClient(m.WorkspaceClient)
 	workspaceApi := m.GetMockWorkspaceAPI()
-	workspaceApi.EXPECT().GetStatusByPath(mock.Anything, "/Users/foo@bar.com").Return(&workspace.ObjectInfo{
+	workspaceApi.EXPECT().GetStatusByPath(mock.Anything, "/Users/foo@bar.test").Return(&workspace.ObjectInfo{
 		ObjectId: 1234,
 	}, nil)
 	workspaceApi.EXPECT().SetPermissions(mock.Anything, workspace.WorkspaceObjectPermissionsRequest{
@@ -81,10 +81,10 @@ func TestApplyWorkspaceRootPermissionsForAllPaths(t *testing.T) {
 		Config: config.Root{
 			Workspace: config.Workspace{
 				RootPath:     "/Some/Root/Path",
-				ArtifactPath: "/Users/foo@bar.com/artifacts",
-				FilePath:     "/Users/foo@bar.com/files",
-				StatePath:    "/Users/foo@bar.com/state",
-				ResourcePath: "/Users/foo@bar.com/resources",
+				ArtifactPath: "/Users/foo@bar.test/artifacts",
+				FilePath:     "/Users/foo@bar.test/files",
+				StatePath:    "/Users/foo@bar.test/state",
+				ResourcePath: "/Users/foo@bar.test/resources",
 			},
 			Permissions: []resources.Permission{
 				{Level: CAN_MANAGE, UserName: "TestUser"},
@@ -122,16 +122,16 @@ func TestApplyWorkspaceRootPermissionsForAllPaths(t *testing.T) {
 	workspaceApi.EXPECT().GetStatusByPath(mock.Anything, "/Some/Root/Path").Return(&workspace.ObjectInfo{
 		ObjectId: 1,
 	}, nil)
-	workspaceApi.EXPECT().GetStatusByPath(mock.Anything, "/Users/foo@bar.com/artifacts").Return(&workspace.ObjectInfo{
+	workspaceApi.EXPECT().GetStatusByPath(mock.Anything, "/Users/foo@bar.test/artifacts").Return(&workspace.ObjectInfo{
 		ObjectId: 2,
 	}, nil)
-	workspaceApi.EXPECT().GetStatusByPath(mock.Anything, "/Users/foo@bar.com/files").Return(&workspace.ObjectInfo{
+	workspaceApi.EXPECT().GetStatusByPath(mock.Anything, "/Users/foo@bar.test/files").Return(&workspace.ObjectInfo{
 		ObjectId: 3,
 	}, nil)
-	workspaceApi.EXPECT().GetStatusByPath(mock.Anything, "/Users/foo@bar.com/state").Return(&workspace.ObjectInfo{
+	workspaceApi.EXPECT().GetStatusByPath(mock.Anything, "/Users/foo@bar.test/state").Return(&workspace.ObjectInfo{
 		ObjectId: 4,
 	}, nil)
-	workspaceApi.EXPECT().GetStatusByPath(mock.Anything, "/Users/foo@bar.com/resources").Return(&workspace.ObjectInfo{
+	workspaceApi.EXPECT().GetStatusByPath(mock.Anything, "/Users/foo@bar.test/resources").Return(&workspace.ObjectInfo{
 		ObjectId: 5,
 	}, nil)
 

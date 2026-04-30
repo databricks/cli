@@ -13,6 +13,9 @@ Deployment complete!
   "endpoint_type": "STANDARD"
 }
 
+>>> print_state.py
+"/vector-search-endpoints/[ORIGINAL_ENDPOINT_UUID]"
+
 === Delete and recreate remotely with the same name
 >>> [CLI] vector-search-endpoints delete-endpoint vs-endpoint-[UNIQUE_NAME]
 
@@ -32,10 +35,14 @@ Deployment complete!
 Original endpoint UUID: [ORIGINAL_ENDPOINT_UUID]
 Remote recreated endpoint UUID: [REMOTE_RECREATED_ENDPOINT_UUID]
 
-=== Badness: bundle should recreate after remote replacement, but currently sees no drift
+=== Plan detects the UUID change and proposes recreate
 >>> [CLI] bundle plan
-Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+recreate vector_search_endpoints.my_endpoint
+update vector_search_endpoints.my_endpoint.permissions
 
+Plan: 1 to add, 1 to change, 1 to delete, 0 unchanged
+
+=== Deploy recreates the endpoint and rebinds permissions to the new UUID
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/drift-vs-endpoint-recreated-same-name-[UNIQUE_NAME]/default/files...
 Deploying resources...
@@ -44,10 +51,12 @@ Deployment complete!
 
 >>> [CLI] vector-search-endpoints get-endpoint vs-endpoint-[UNIQUE_NAME]
 {
-  "id": "[REMOTE_RECREATED_ENDPOINT_UUID]",
   "name": "vs-endpoint-[UNIQUE_NAME]",
   "endpoint_type": "STANDARD"
 }
+
+>>> print_state.py
+"/vector-search-endpoints/[UUID]"
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
