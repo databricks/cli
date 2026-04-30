@@ -10,9 +10,9 @@ import (
 	"time"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/experimental/libs/sqlcli"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
-	"github.com/databricks/cli/libs/flags"
 	mocksql "github.com/databricks/databricks-sdk-go/experimental/mocks/service/sql"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/spf13/cobra"
@@ -271,7 +271,7 @@ func TestResolveWarehouseIDWithFlag(t *testing.T) {
 func TestSelectQueryOutputMode(t *testing.T) {
 	tests := []struct {
 		name              string
-		outputType        flags.Output
+		format            sqlcli.Format
 		stdoutInteractive bool
 		promptSupported   bool
 		rowCount          int
@@ -279,7 +279,7 @@ func TestSelectQueryOutputMode(t *testing.T) {
 	}{
 		{
 			name:              "json flag always returns json",
-			outputType:        flags.OutputJSON,
+			format:            sqlcli.OutputJSON,
 			stdoutInteractive: true,
 			promptSupported:   true,
 			rowCount:          999,
@@ -287,7 +287,7 @@ func TestSelectQueryOutputMode(t *testing.T) {
 		},
 		{
 			name:              "non interactive stdout returns json",
-			outputType:        flags.OutputText,
+			format:            sqlcli.OutputText,
 			stdoutInteractive: false,
 			promptSupported:   true,
 			rowCount:          5,
@@ -295,33 +295,33 @@ func TestSelectQueryOutputMode(t *testing.T) {
 		},
 		{
 			name:              "missing stdin interactivity falls back to static table",
-			outputType:        flags.OutputText,
+			format:            sqlcli.OutputText,
 			stdoutInteractive: true,
 			promptSupported:   false,
-			rowCount:          staticTableThreshold + 10,
+			rowCount:          sqlcli.StaticTableThreshold + 10,
 			want:              queryOutputModeStaticTable,
 		},
 		{
 			name:              "small results use static table",
-			outputType:        flags.OutputText,
+			format:            sqlcli.OutputText,
 			stdoutInteractive: true,
 			promptSupported:   true,
-			rowCount:          staticTableThreshold,
+			rowCount:          sqlcli.StaticTableThreshold,
 			want:              queryOutputModeStaticTable,
 		},
 		{
 			name:              "large results use interactive table",
-			outputType:        flags.OutputText,
+			format:            sqlcli.OutputText,
 			stdoutInteractive: true,
 			promptSupported:   true,
-			rowCount:          staticTableThreshold + 1,
+			rowCount:          sqlcli.StaticTableThreshold + 1,
 			want:              queryOutputModeInteractiveTable,
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			got := selectQueryOutputMode(tc.outputType, tc.stdoutInteractive, tc.promptSupported, tc.rowCount)
+			got := selectQueryOutputMode(tc.format, tc.stdoutInteractive, tc.promptSupported, tc.rowCount)
 			assert.Equal(t, tc.want, got)
 		})
 	}

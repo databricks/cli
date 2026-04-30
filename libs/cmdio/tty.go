@@ -7,6 +7,16 @@ import (
 	"github.com/mattn/go-isatty"
 )
 
+// IsOutputTTY reports whether w is connected to a terminal. Unlike
+// SupportsColor this does NOT consult NO_COLOR or TERM=dumb, which are
+// colour preferences and not TTY signals. Use this when a command needs
+// to decide "should I default to interactive output" or "should I
+// auto-fall-back to machine-readable output on a pipe", and use
+// SupportsColor only for the colour-rendering decision itself.
+func IsOutputTTY(w io.Writer) bool {
+	return isTTY(w)
+}
+
 // isTTY detects if the given reader or writer is a terminal.
 func isTTY(v any) bool {
 	// Check if it's a fakeTTY first.
