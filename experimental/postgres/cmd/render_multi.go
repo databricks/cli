@@ -176,19 +176,35 @@ func writeJSONUnitHeader(buf *bytes.Buffer, r *unitResult) error {
 // time captured by runUnitBuffered's error path. message is the
 // already-formatted error wording (includes SQLSTATE / hint / detail for
 // PgErrors).
+//
+// marshalJSON of a string never errors (encoding/json replaces invalid UTF-8
+// with U+FFFD), so the inner errors are unreachable and we treat them as
+// programming errors via panic.
 func jsonErrorObject(r *unitResult, message string) []byte {
 	var buf bytes.Buffer
-	if err := writeJSONUnitHeader(&buf, r); err != nil {
-		return []byte(`{"source":"","sql":"","kind":"error","elapsed_ms":0,"error":{"message":""}}`)
-	}
+	mustWriteJSONHeader(&buf, r)
 	buf.WriteString(`,"kind":"error"`)
 	fmt.Fprintf(&buf, `,"elapsed_ms":%d`, r.Elapsed.Milliseconds())
 	buf.WriteString(`,"error":{"message":`)
-	if b, err := marshalJSON(message); err == nil {
-		buf.Write(b)
-	} else {
-		buf.WriteString(`""`)
-	}
+	buf.Write(mustMarshalJSON(message))
 	buf.WriteString(`}}`)
 	return buf.Bytes()
+}
+
+// mustWriteJSONHeader is writeJSONUnitHeader with a panic instead of an
+// error return. The only failure mode is an unreachable encoding/json error.
+func mustWriteJSONHeader(buf *bytes.Buffer, r *unitResult) {
+	if err := writeJSONUnitHeader(buf, r); err != nil {
+		panic(fmt.Errorf("encoding json header: %w", err))
+	}
+}
+
+// mustMarshalJSON is marshalJSON with a panic instead of an error return,
+// for the same reason.
+func mustMarshalJSON(v any) []byte {
+	b, err := marshalJSON(v)
+	if err != nil {
+		panic(fmt.Errorf("encoding json value: %w", err))
+	}
+	return b
 }
