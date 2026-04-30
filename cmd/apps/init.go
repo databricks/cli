@@ -299,7 +299,7 @@ type dotEnvVars struct {
 // Fields here are part of the AppKit template contract — the template
 // reads them via {{$p.Field}} on map values in templateVars.Plugins.
 type pluginVar struct {
-	// Stability mirrors manifest.Plugin.Stability ("" for stable, "beta"
+	// Stability mirrors manifest.Plugin.Stability ("" for GA, "beta"
 	// for beta, future tiers preserved). The AppKit template branches
 	// imports on this — see databricks/appkit#264 commit d826a532, which
 	// routes beta plugins through the `@databricks/appkit/beta` subpath.

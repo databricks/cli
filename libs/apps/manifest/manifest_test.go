@@ -56,7 +56,7 @@ func TestLoad(t *testing.T) {
 				"displayName": "Server Plugin",
 				"description": "HTTP server",
 				"package": "@databricks/appkit",
-				"stability": "stable",
+				"stability": "ga",
 				"requiredByTemplate": true,
 				"resources": {
 					"required": [],
@@ -77,7 +77,7 @@ func TestLoad(t *testing.T) {
 	assert.False(t, m.Plugins["analytics"].RequiredByTemplate)
 	assert.Equal(t, "beta", m.Plugins["analytics"].Stability)
 	assert.Equal(t, "alpha", m.Plugins["genie"].Stability)
-	assert.Equal(t, "stable", m.Plugins["server"].Stability)
+	assert.Equal(t, "ga", m.Plugins["server"].Stability)
 }
 
 func TestPlugin_StabilityLabel(t *testing.T) {
@@ -86,7 +86,7 @@ func TestPlugin_StabilityLabel(t *testing.T) {
 		want      string
 	}{
 		{"", ""},
-		{"stable", ""},
+		{"ga", ""},
 		{"beta", "beta"},
 		{"alpha", "alpha"},
 	}

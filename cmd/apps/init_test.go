@@ -254,15 +254,15 @@ func TestExecuteTemplateInvalidSyntaxReturnsOriginal(t *testing.T) {
 
 // TestExecuteTemplatePluginStability locks down the contract that the
 // AppKit init template relies on: ranging over .plugins exposes a
-// .Stability field per plugin, with stable/unset rendering as the empty
+// .Stability field per plugin, with GA/unset rendering as the empty
 // string. See databricks/appkit#264 commit d826a532 (server.ts branches
 // imports between `@databricks/appkit` and `@databricks/appkit/beta`).
 func TestExecuteTemplatePluginStability(t *testing.T) {
 	ctx := t.Context()
 	vars := templateVars{
 		Plugins: map[string]*pluginVar{
-			"stable-plugin": {},
-			"beta-plugin":   {Stability: "beta"},
+			"ga-plugin":   {},
+			"beta-plugin": {Stability: "beta"},
 		},
 	}
 
@@ -271,7 +271,7 @@ func TestExecuteTemplatePluginStability(t *testing.T) {
 	require.NoError(t, err)
 	got := string(result)
 
-	assert.Contains(t, got, "stable-plugin=;")
+	assert.Contains(t, got, "ga-plugin=;")
 	assert.Contains(t, got, "beta-plugin=beta;")
 }
 
@@ -307,20 +307,20 @@ import { {{$betaImports}} } from '@databricks/appkit/beta';
 `
 
 	cases := []struct {
-		name              string
-		plugins           map[string]*pluginVar
-		wantStableImports []string // names that must appear on the stable line
-		wantBetaImports   []string // names that must appear on the beta line, "" means no beta line
-		wantNoBetaLine    bool
+		name            string
+		plugins         map[string]*pluginVar
+		wantGAImports   []string // names that must appear on the GA line
+		wantBetaImports []string // names that must appear on the beta line, "" means no beta line
+		wantNoBetaLine  bool
 	}{
 		{
-			name: "all stable: no beta line",
+			name: "all GA: no beta line",
 			plugins: map[string]*pluginVar{
 				"server":    {},
 				"analytics": {},
 			},
-			wantStableImports: []string{"server", "analytics"},
-			wantNoBetaLine:    true,
+			wantGAImports:  []string{"server", "analytics"},
+			wantNoBetaLine: true,
 		},
 		{
 			name: "mixed single beta",
@@ -328,8 +328,8 @@ import { {{$betaImports}} } from '@databricks/appkit/beta';
 				"server":  {},
 				"betaOne": {Stability: "beta"},
 			},
-			wantStableImports: []string{"server"},
-			wantBetaImports:   []string{"betaOne"},
+			wantGAImports:   []string{"server"},
+			wantBetaImports: []string{"betaOne"},
 		},
 		{
 			name: "mixed multiple betas: combined into one import line",
@@ -338,11 +338,11 @@ import { {{$betaImports}} } from '@databricks/appkit/beta';
 				"betaOne": {Stability: "beta"},
 				"betaTwo": {Stability: "beta"},
 			},
-			wantStableImports: []string{"server"},
-			wantBetaImports:   []string{"betaOne", "betaTwo"},
+			wantGAImports:   []string{"server"},
+			wantBetaImports: []string{"betaOne", "betaTwo"},
 		},
 		{
-			name: "all beta: createApp alone on stable line",
+			name: "all beta: createApp alone on GA line",
 			plugins: map[string]*pluginVar{
 				"betaOne": {Stability: "beta"},
 				"betaTwo": {Stability: "beta"},
@@ -350,13 +350,13 @@ import { {{$betaImports}} } from '@databricks/appkit/beta';
 			wantBetaImports: []string{"betaOne", "betaTwo"},
 		},
 		{
-			name: "future tier (alpha) routes to stable line for now",
+			name: "future tier (alpha) routes to GA line for now",
 			plugins: map[string]*pluginVar{
 				"server":   {},
 				"alphaOne": {Stability: "alpha"},
 			},
-			wantStableImports: []string{"server", "alphaOne"},
-			wantNoBetaLine:    true,
+			wantGAImports:  []string{"server", "alphaOne"},
+			wantNoBetaLine: true,
 		},
 	}
 
@@ -370,20 +370,20 @@ import { {{$betaImports}} } from '@databricks/appkit/beta';
 			lines := strings.Split(got, "\n")
 			require.NotEmpty(t, lines)
 
-			// Stable line is always first: starts with `import { createApp`
+			// GA line is always first: starts with `import { createApp`
 			// and ends with `from '@databricks/appkit';`.
-			stableLine := lines[0]
-			assert.True(t, strings.HasPrefix(stableLine, "import { createApp"),
-				"stable line: %q", stableLine)
-			assert.True(t, strings.HasSuffix(stableLine, "} from '@databricks/appkit';"),
-				"stable line: %q", stableLine)
-			for _, name := range tc.wantStableImports {
-				assert.Contains(t, stableLine, name,
-					"stable line missing %q: %q", name, stableLine)
+			gaLine := lines[0]
+			assert.True(t, strings.HasPrefix(gaLine, "import { createApp"),
+				"GA line: %q", gaLine)
+			assert.True(t, strings.HasSuffix(gaLine, "} from '@databricks/appkit';"),
+				"GA line: %q", gaLine)
+			for _, name := range tc.wantGAImports {
+				assert.Contains(t, gaLine, name,
+					"GA line missing %q: %q", name, gaLine)
 			}
 			for _, name := range tc.wantBetaImports {
-				assert.NotContains(t, stableLine, ", "+name,
-					"beta plugin %q leaked onto stable line: %q", name, stableLine)
+				assert.NotContains(t, gaLine, ", "+name,
+					"beta plugin %q leaked onto GA line: %q", name, gaLine)
 			}
 
 			if tc.wantNoBetaLine {

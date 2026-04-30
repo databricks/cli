@@ -77,18 +77,18 @@ type Plugin struct {
 	Resources          Resources `json:"resources"`
 	OnSetupMessage     string    `json:"onSetupMessage"`
 
-	// Stability is one of "beta", "stable", or empty.
+	// Stability is one of "beta", "ga", or empty.
 	// Stored as a plain string so unknown future values round-trip unchanged.
 	// See https://github.com/databricks/appkit/pull/264.
 	Stability string `json:"stability,omitempty"`
 }
 
-// StabilityLabel returns a user-facing tier label for non-stable plugins.
-// Returns "" for stable, unset, or any value that maps to stable.
+// StabilityLabel returns a user-facing tier label for non-GA plugins.
+// Returns "" for GA, unset, or any value that maps to GA.
 // Unknown values pass through so we are forward-compatible with new tiers.
 func (p Plugin) StabilityLabel() string {
 	switch p.Stability {
-	case "", "stable":
+	case "", "ga":
 		return ""
 	default:
 		return p.Stability

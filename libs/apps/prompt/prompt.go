@@ -75,7 +75,7 @@ var (
 )
 
 // RenderStabilityTier renders a stability tier as a colored " (tier)" suffix,
-// or returns "" for stable/unset. Unknown tiers are rendered in gray so we
+// or returns "" for GA/unset. Unknown tiers are rendered in gray so we
 // remain forward-compatible with future tier names.
 func RenderStabilityTier(tier string) string {
 	if tier == "" {
