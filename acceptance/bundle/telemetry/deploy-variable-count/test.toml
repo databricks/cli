@@ -14,7 +14,3 @@ Response.Body = '''
   ]
 }
 '''
-
-[[Repls]]
-Old = 'Updating deployment state...\n'
-New = ''
