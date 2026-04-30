@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNew_RegistersBindAndUnbind(t *testing.T) {
+func TestNew_RegistersAllSubcommands(t *testing.T) {
 	cmd := New()
 	got := map[string]bool{}
 	for _, sub := range cmd.Commands() {
@@ -14,6 +14,7 @@ func TestNew_RegistersBindAndUnbind(t *testing.T) {
 	}
 	assert.True(t, got["bind"], "bind subcommand missing")
 	assert.True(t, got["unbind"], "unbind subcommand missing")
+	assert.True(t, got["migrate"], "migrate subcommand missing")
 }
 
 func TestBind_And_Unbind_AutoApproveFlag(t *testing.T) {
