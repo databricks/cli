@@ -19,8 +19,8 @@ func (f roundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
 	return f(req)
 }
 
-// redirectToServer returns an http.Client whose transport rewrites every
-// request URL to point at srv, keeping manifestURL as a const.
+// redirectToServer replaces the package-level httpClient with one whose
+// transport rewrites every request URL to point at srv.
 func redirectToServer(t *testing.T, srv *httptest.Server) {
 	t.Helper()
 	orig := httpClient
@@ -63,9 +63,14 @@ func TestResolve_NearestLower(t *testing.T) {
 }
 
 func TestResolve_NewerThanAll(t *testing.T) {
-	m := testManifest()
+	m := Manifest{
+		"next":    {Appkit: "0.99.0", Skills: "0.9.9"},
+		"0.296.0": {Appkit: "0.27.0", Skills: "0.1.5"},
+		"0.290.0": {Appkit: "0.24.0", Skills: "0.1.5"},
+	}
 	entry, err := Resolve(m, "0.300.0")
 	require.NoError(t, err)
+	// Nearest-lower returns the highest versioned entry, not "next".
 	assert.Equal(t, "0.27.0", entry.Appkit)
 	assert.Equal(t, "0.1.5", entry.Skills)
 }
@@ -84,6 +89,7 @@ func TestResolve_OlderThanAll(t *testing.T) {
 	require.NoError(t, err)
 	// Falls back to "next" (best effort)
 	assert.Equal(t, "0.27.0", entry.Appkit)
+	assert.Equal(t, "0.1.5", entry.Skills)
 }
 
 func TestResolve_OnlyNextKey(t *testing.T) {
@@ -93,6 +99,7 @@ func TestResolve_OnlyNextKey(t *testing.T) {
 	entry, err := Resolve(m, "0.296.0")
 	require.NoError(t, err)
 	assert.Equal(t, "0.27.0", entry.Appkit)
+	assert.Equal(t, "0.1.5", entry.Skills)
 }
 
 func TestResolve_LowestEntryExactMatch(t *testing.T) {
@@ -153,6 +160,20 @@ func TestFetchManifest_FallbackToEmbedded(t *testing.T) {
 	result, err := FetchManifest(context.Background())
 	require.NoError(t, err)
 	assert.True(t, called, "test server should have been called")
+	// Should fall back to embedded manifest.
+	assert.Contains(t, result, "next")
+	assert.Equal(t, "0.27.0", result["next"].Appkit)
+}
+
+func TestFetchManifest_RemoteReturnsInvalidJSON(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("not json at all"))
+	}))
+	defer srv.Close()
+	redirectToServer(t, srv)
+
+	result, err := FetchManifest(context.Background())
+	require.NoError(t, err)
 	// Should fall back to embedded manifest.
 	assert.Contains(t, result, "next")
 	assert.Equal(t, "0.27.0", result["next"].Appkit)

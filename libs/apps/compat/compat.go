@@ -20,7 +20,7 @@ const (
 	manifestURL = "https://raw.githubusercontent.com/databricks/appkit/main/cli-compat.json"
 
 	// fetchTimeout is the HTTP timeout for fetching the manifest at runtime.
-	fetchTimeout = 5 * time.Second
+	fetchTimeout = 3 * time.Second
 
 	// nextKey is the special manifest key for CLI versions newer than any entry.
 	nextKey = "next"
@@ -58,9 +58,9 @@ func FetchManifest(ctx context.Context) (Manifest, error) {
 // Resolution order:
 //  1. Dev builds (version starts with "0.0.0-dev") use the "next" entry.
 //  2. Exact match on CLI version.
-//  3. Nearest lower version (semver-sorted).
-//  4. If CLI is newer than all entries, use "next".
-//  5. If CLI is older than all entries, use "next" (best effort).
+//  3. Nearest lower version (semver-sorted). This also handles CLI versions
+//     newer than all entries, returning the highest known entry.
+//  4. If CLI is older than all entries, use "next" (best effort).
 func Resolve(m Manifest, cliVersion string) (Entry, error) {
 	if len(m) == 0 {
 		return Entry{}, fmt.Errorf("empty compatibility manifest")
@@ -141,6 +141,11 @@ func parseManifest(data []byte) (Manifest, error) {
 	}
 	if _, ok := m[nextKey]; !ok {
 		return nil, fmt.Errorf("compatibility manifest missing %q key", nextKey)
+	}
+	for k := range m {
+		if k != nextKey && !semver.IsValid("v"+k) {
+			return nil, fmt.Errorf("invalid semver key %q in compatibility manifest", k)
+		}
 	}
 	return m, nil
 }
