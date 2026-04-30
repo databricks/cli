@@ -6,7 +6,9 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
@@ -110,6 +112,35 @@ func (r *ResourceVolume) DoUpdateWithID(ctx context.Context, id string, config *
 
 func (r *ResourceVolume) DoDelete(ctx context.Context, id string) error {
 	return r.client.Volumes.DeleteByName(ctx, id)
+}
+
+// OverrideChangeDesc suppresses drift for storage_location when the only difference
+// is a trailing slash. The UC API strips trailing slashes on create, so remote returns
+// "s3://bucket/path" while the config may have "s3://bucket/path/".
+//
+// This matches the Terraform provider's suppressLocationDiff behavior.
+// https://github.com/databricks/terraform-provider-databricks/blob/v1.65.1/catalog/resource_volume.go#L25
+func (*ResourceVolume) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, change *ChangeDesc, _ *catalog.VolumeInfo) error {
+	if change.Action == deployplan.Skip {
+		return nil
+	}
+
+	if path.String() != "storage_location" {
+		return nil
+	}
+
+	newStr, newOk := change.New.(string)
+	remoteStr, remoteOk := change.Remote.(string)
+	if !newOk || !remoteOk {
+		return nil
+	}
+
+	if newStr != remoteStr && strings.TrimRight(newStr, "/") == strings.TrimRight(remoteStr, "/") {
+		change.Action = deployplan.Skip
+		change.Reason = deployplan.ReasonAlias
+	}
+
+	return nil
 }
 
 func getNameFromID(id string) (string, error) {
