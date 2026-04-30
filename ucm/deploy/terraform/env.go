@@ -9,6 +9,7 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/ucm"
@@ -155,6 +156,27 @@ func setProxyEnvVars(ctx context.Context, environ map[string]string) error {
 				environ[strings.ToUpper(v)] = val
 			}
 		}
+	}
+	return nil
+}
+
+// setUserAgentExtraEnvVar tags the terraform-provider subprocess so that
+// SDK-side telemetry can attribute UCM-originated traffic. Mirrors
+// bundle/deploy/terraform/init.go's setUserAgentExtraEnvVar — UCM keeps the
+// function shape parallel to ease a future libs/tfenv lift.
+//
+// The "ucm/deploy" suffix distinguishes UCM-originated calls from DAB's,
+// which advertise "cli/<version>" only (plus "databricks-pydabs/<v>" when
+// the bundle has Python). UCM has no pydabs equivalent, so the product
+// list is fixed.
+func setUserAgentExtraEnvVar(environ map[string]string, _ *ucm.Ucm) error {
+	products := []string{
+		"cli/" + build.GetInfo().Version,
+		"ucm/deploy",
+	}
+	userAgentExtra := strings.Join(products, " ")
+	if userAgentExtra != "" {
+		environ["DATABRICKS_USER_AGENT_EXTRA"] = userAgentExtra
 	}
 	return nil
 }

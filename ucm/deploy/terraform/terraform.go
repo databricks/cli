@@ -179,7 +179,9 @@ func resolveAuthConfig(u *ucm.Ucm) (*config.Config, error) {
 //  3. setTempDirEnvVars sets TMP/TEMP/TMPDIR, falling back to
 //     localStateDir("tmp") on Windows to dodge MAX_PATH.
 //  4. setProxyEnvVars forwards HTTP_PROXY / HTTPS_PROXY / NO_PROXY.
-//  5. resolveDatabricksCliPath absolute-izes DATABRICKS_CLI_PATH so the
+//  5. setUserAgentExtraEnvVar sets DATABRICKS_USER_AGENT_EXTRA so SDK
+//     telemetry can attribute UCM-originated terraform-provider calls.
+//  6. resolveDatabricksCliPath absolute-izes DATABRICKS_CLI_PATH so the
 //     terraform subprocess can find the parent CLI from .databricks/ucm/...
 //
 // Cloud-cred env vars (AWS/Azure/GCP) are intentionally NOT forwarded
@@ -201,6 +203,9 @@ func buildEnv(ctx context.Context, u *ucm.Ucm, authCfg *config.Config) (map[stri
 		return nil, err
 	}
 	if err := setProxyEnvVars(ctx, out); err != nil {
+		return nil, err
+	}
+	if err := setUserAgentExtraEnvVar(out, u); err != nil {
 		return nil, err
 	}
 
