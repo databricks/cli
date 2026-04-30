@@ -58,12 +58,9 @@ func NewInstallCmd() *cobra.Command {
 	var projectFlag, globalFlag bool
 
 	cmd := &cobra.Command{
-		Use:   "install [skill-name]",
+		Use:   "install",
 		Short: "Install AI skills for coding agents",
 		Long: `Install Databricks AI skills for detected coding agents.
-
-Pass an optional skill name as a positional argument to install only that
-skill, or use --skills with a comma-separated list to install multiple.
 
 By default, skills are installed globally to each agent's skills directory.
 Use --project to install to the current project directory instead.
@@ -71,7 +68,7 @@ When multiple agents are detected, skills are stored in a canonical location
 and symlinked to each agent to avoid duplication.
 
 Supported agents: Claude Code, Cursor, Codex CLI, OpenCode, GitHub Copilot, Antigravity`,
-		Args: cobra.MaximumNArgs(1),
+		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 
@@ -116,21 +113,12 @@ Supported agents: Claude Code, Cursor, Codex CLI, OpenCode, GitHub Copilot, Anti
 				}
 			}
 
-			// Build install options. The positional arg, if provided, is a
-			// single skill name; --skills accepts a comma-separated list. They
-			// are mutually exclusive to keep behavior unambiguous.
-			if len(args) > 0 && skillsFlag != "" {
-				return errors.New("provide either a positional skill name or --skills, not both")
-			}
+			// Build install options.
 			opts := installer.InstallOptions{
 				IncludeExperimental: includeExperimental,
 				Scope:               scope,
 			}
-			if len(args) > 0 {
-				opts.SpecificSkills = []string{args[0]}
-			} else {
-				opts.SpecificSkills = splitAndTrim(skillsFlag)
-			}
+			opts.SpecificSkills = splitAndTrim(skillsFlag)
 
 			installer.PrintInstallingFor(ctx, targetAgents)
 
