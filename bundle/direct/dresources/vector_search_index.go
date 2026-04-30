@@ -3,11 +3,11 @@ package dresources
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
@@ -103,9 +103,13 @@ func (r *ResourceVectorSearchIndex) DoRead(ctx context.Context, id string) (*Vec
 	if err != nil {
 		return nil, err
 	}
+	endpointUuid, err := r.lookupEndpointUuid(ctx, index.EndpointName)
+	if err != nil {
+		return nil, err
+	}
 	return &VectorSearchIndexRemote{
 		VectorIndex:  index,
-		EndpointUuid: r.lookupEndpointUuid(ctx, index.EndpointName),
+		EndpointUuid: endpointUuid,
 	}, nil
 }
 
@@ -114,10 +118,14 @@ func (r *ResourceVectorSearchIndex) DoCreate(ctx context.Context, config *Vector
 	if err != nil {
 		return "", nil, err
 	}
-	// Exceptional: a second API call. The index API does not return the endpoint
-	// UUID, but we need to persist it in state so a future plan can detect that
-	// the endpoint was replaced out-of-band (same name, different UUID -> orphan).
-	endpointUuid := r.lookupEndpointUuid(ctx, config.EndpointName)
+	// Second API call (also done in DoRead): the index API does not return the
+	// endpoint UUID, but we need to persist it in state so a future plan can
+	// detect that the endpoint was replaced out-of-band (same name, different
+	// UUID -> orphan).
+	endpointUuid, err := r.lookupEndpointUuid(ctx, config.EndpointName)
+	if err != nil {
+		return "", nil, err
+	}
 	config.EndpointUuid = endpointUuid
 	return config.Name, &VectorSearchIndexRemote{VectorIndex: index, EndpointUuid: endpointUuid}, nil
 }
@@ -155,6 +163,13 @@ func (r *ResourceVectorSearchIndex) WaitAfterDelete(ctx context.Context, id stri
 // otherwise. endpoint_uuid is never present in config, so without Skip a
 // synthetic diff between empty newState and populated saved state would
 // otherwise leak into the plan.
+//
+// Unlike vector_search_endpoint, this intentionally does NOT require
+// remoteUuid != "". An empty remoteUuid here is the orphan signal: the index
+// still exists by name but its backing endpoint has been deleted out-of-band.
+// lookupEndpointUuid distinguishes this (404 -> "") from transient errors
+// (propagated through DoRead/DoCreate), so reaching this branch with empty
+// remoteUuid unambiguously means the endpoint is gone.
 func (*ResourceVectorSearchIndex) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, change *ChangeDesc, remote *VectorSearchIndexRemote) error {
 	if path.String() != "endpoint_uuid" {
 		return nil
@@ -175,18 +190,19 @@ func (*ResourceVectorSearchIndex) OverrideChangeDesc(_ context.Context, path *st
 }
 
 // lookupEndpointUuid returns the current UUID of the endpoint with the given
-// name, or "" if the endpoint doesn't exist. Errors are logged and swallowed
-// since a missing endpoint is the signal we want to capture in state.
-func (r *ResourceVectorSearchIndex) lookupEndpointUuid(ctx context.Context, endpointName string) string {
+// name. A 404 is converted to ("", nil) so the caller can distinguish a
+// genuinely missing endpoint (the orphan signal) from a transient or
+// permission error, which is propagated.
+func (r *ResourceVectorSearchIndex) lookupEndpointUuid(ctx context.Context, endpointName string) (string, error) {
 	if endpointName == "" {
-		return ""
+		return "", nil
 	}
 	info, err := r.client.VectorSearchEndpoints.GetEndpointByEndpointName(ctx, endpointName)
 	if err != nil {
-		if !apierr.IsMissing(err) {
-			log.Warnf(ctx, "failed to read vector search endpoint %q while resolving index endpoint UUID: %v", endpointName, err)
+		if apierr.IsMissing(err) {
+			return "", nil
 		}
-		return ""
+		return "", fmt.Errorf("looking up vector search endpoint %q: %w", endpointName, err)
 	}
-	return info.Id
+	return info.Id, nil
 }
