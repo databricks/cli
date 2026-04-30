@@ -719,6 +719,10 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.ClustersCreate(req)
 	})
 
+	server.Handle("POST", "/api/2.1/clusters/delete", func(req Request) any {
+		return req.Workspace.ClustersDelete(req)
+	})
+
 	server.Handle("POST", "/api/2.1/clusters/start", func(req Request) any {
 		return req.Workspace.ClustersStart(req)
 	})

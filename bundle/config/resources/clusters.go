@@ -15,7 +15,18 @@ type Cluster struct {
 	BaseResource
 	compute.ClusterSpec
 
+	// Lifecycle shadows BaseResource.Lifecycle to add support for lifecycle.started.
+	Lifecycle *LifecycleWithStarted `json:"lifecycle,omitempty"`
+
 	Permissions []ClusterPermission `json:"permissions,omitempty"`
+}
+
+// GetLifecycle returns the lifecycle settings, using LifecycleWithStarted.
+func (c *Cluster) GetLifecycle() LifecycleConfig {
+	if c.Lifecycle == nil {
+		return LifecycleWithStarted{}
+	}
+	return *c.Lifecycle
 }
 
 func (s *Cluster) UnmarshalJSON(b []byte) error {

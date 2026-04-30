@@ -22,6 +22,8 @@ func (s *FakeWorkspace) ClustersCreate(req Request) any {
 
 	clusterId := nextUUID()
 	request.ClusterId = clusterId
+	// Clusters start in PENDING state when created; ClustersGet transitions them to RUNNING.
+	request.State = compute.StatePending
 
 	// Match cloud behavior: SINGLE_USER clusters automatically get single_user_name set
 	// to the current user. This enables terraform drift detection when the bundle config
@@ -130,9 +132,38 @@ func (s *FakeWorkspace) ClustersGet(req Request, clusterId string) any {
 		return Response{StatusCode: 404}
 	}
 
+	// Simulate cluster startup: transition PENDING → RUNNING so that WaitGetClusterRunning
+	// resolves without hanging. Real clusters move through these states asynchronously.
+	if cluster.State == compute.StatePending {
+		cluster.State = compute.StateRunning
+		s.Clusters[clusterId] = cluster
+	}
+
 	return Response{
 		Body: cluster,
 	}
+}
+
+// ClustersDelete terminates a cluster (sets state to TERMINATED without removing it).
+func (s *FakeWorkspace) ClustersDelete(req Request) any {
+	var request compute.DeleteCluster
+	if err := json.Unmarshal(req.Body, &request); err != nil {
+		return Response{
+			StatusCode: 400,
+			Body:       fmt.Sprintf("request parsing error: %s", err),
+		}
+	}
+	defer s.LockUnlock()()
+
+	cluster, ok := s.Clusters[request.ClusterId]
+	if !ok {
+		return Response{StatusCode: 404}
+	}
+
+	cluster.State = compute.StateTerminated
+	s.Clusters[request.ClusterId] = cluster
+
+	return Response{}
 }
 
 func (s *FakeWorkspace) ClustersStart(req Request) any {
