@@ -1,6 +1,4 @@
 Local = true
 Cloud = true
 CloudSlow = true
-
-[EnvMatrix]
-  DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]

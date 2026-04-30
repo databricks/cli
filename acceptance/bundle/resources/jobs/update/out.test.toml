@@ -1,6 +1,4 @@
 Local = true
 Cloud = false
-
-[EnvMatrix]
-  DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
-  READPLAN = ["", "1"]
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
+EnvMatrix.READPLAN = ["", "1"]

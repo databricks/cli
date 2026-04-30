@@ -1,9 +1,5 @@
 Local = true
 Cloud = true
 RunsOnDbr = true
-
-[CloudEnvs]
-  gcp = false
-
-[EnvMatrix]
-  DATABRICKS_BUNDLE_ENGINE = ["direct"]
+CloudEnvs.gcp = false
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

@@ -1,10 +1,6 @@
 Local = false
 Cloud = true
 RunsOnDbr = false
-
-[CloudEnvs]
-  azure = false
-  gcp = false
-
-[EnvMatrix]
-  DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
+CloudEnvs.azure = false
+CloudEnvs.gcp = false
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
