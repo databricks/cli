@@ -1,0 +1,21 @@
+bundle:
+  name: genie-space-permissions-unsupported
+
+resources:
+  genie_spaces:
+    inline_perms:
+      title: "Inline Perms"
+      warehouse_id: "test-warehouse-id"
+      serialized_space: "{}"
+      permissions:
+        - level: CAN_MANAGE
+          user_name: someone@example.com
+
+    bundle_perms:
+      title: "Bundle Perms"
+      warehouse_id: "test-warehouse-id"
+      serialized_space: "{}"
+
+permissions:
+  - level: CAN_MANAGE
+    user_name: someone@example.com
