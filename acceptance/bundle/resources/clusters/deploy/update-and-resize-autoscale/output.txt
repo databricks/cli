@@ -12,6 +12,11 @@ Deployment complete!
   "autoscale": null
 }
 
+=== Terminating the cluster
+{
+  "cluster_id": "[CLUSTER_ID]"
+}
+
 === Adding autoscale section should call update API on stopped cluster
 
 >>> [CLI] bundle deploy

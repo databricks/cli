@@ -12,9 +12,52 @@ import (
 	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 )
+
+// ClusterStateLifecycle holds lifecycle settings persisted in state.
+type ClusterStateLifecycle struct {
+	Started *bool `json:"started,omitempty"`
+}
+
+// ClusterState is the state type for Cluster resources. It extends compute.ClusterSpec with
+// lifecycle settings and a transient ClusterId used by WaitAfterCreate and WaitAfterUpdate.
+type ClusterState struct {
+	compute.ClusterSpec
+
+	// ClusterId is set by DoCreate/DoUpdate for use in WaitAfterCreate/WaitAfterUpdate; it is not persisted in state.
+	ClusterId string `json:"-"`
+
+	Lifecycle *ClusterStateLifecycle `json:"lifecycle,omitempty"`
+}
+
+// Custom marshalers needed because embedded compute.ClusterSpec has its own MarshalJSON
+// which would otherwise take over and ignore the additional fields.
+func (s *ClusterState) UnmarshalJSON(b []byte) error {
+	return marshal.Unmarshal(b, s)
+}
+
+func (s ClusterState) MarshalJSON() ([]byte, error) {
+	return marshal.Marshal(s)
+}
+
+// ClusterRemote extends compute.ClusterDetails with a synthetic Lifecycle field so that
+// RemoteType satisfies TestRemoteSuperset (every field in ClusterState exists in ClusterRemote).
+// Lifecycle.Started is populated by DoRead from the cluster's running state.
+type ClusterRemote struct {
+	compute.ClusterDetails
+	Lifecycle *ClusterStateLifecycle `json:"lifecycle,omitempty"`
+}
+
+func (r *ClusterRemote) UnmarshalJSON(b []byte) error {
+	return marshal.Unmarshal(b, r)
+}
+
+func (r ClusterRemote) MarshalJSON() ([]byte, error) {
+	return marshal.Marshal(r)
+}
 
 type ResourceCluster struct {
 	client *databricks.WorkspaceClient
@@ -26,47 +69,60 @@ func (r *ResourceCluster) New(client *databricks.WorkspaceClient) any {
 	}
 }
 
-func (r *ResourceCluster) PrepareState(input *resources.Cluster) *compute.ClusterSpec {
-	return &input.ClusterSpec
+func (r *ResourceCluster) PrepareState(input *resources.Cluster) *ClusterState {
+	s := &ClusterState{
+		ClusterSpec: input.ClusterSpec,
+		Lifecycle:   nil,
+	}
+	if input.Lifecycle != nil && input.Lifecycle.Started != nil {
+		s.Lifecycle = &ClusterStateLifecycle{Started: input.Lifecycle.Started}
+	}
+	return s
 }
 
-func (r *ResourceCluster) RemapState(input *compute.ClusterDetails) *compute.ClusterSpec {
-	spec := &compute.ClusterSpec{
-		ApplyPolicyDefaultValues:   false,
-		Autoscale:                  input.Autoscale,
-		AutoterminationMinutes:     input.AutoterminationMinutes,
-		AwsAttributes:              input.AwsAttributes,
-		AzureAttributes:            input.AzureAttributes,
-		ClusterLogConf:             input.ClusterLogConf,
-		ClusterName:                input.ClusterName,
-		CustomTags:                 input.CustomTags,
-		DataSecurityMode:           input.DataSecurityMode,
-		DockerImage:                input.DockerImage,
-		DriverInstancePoolId:       input.DriverInstancePoolId,
-		DriverNodeTypeId:           input.DriverNodeTypeId,
-		DriverNodeTypeFlexibility:  input.DriverNodeTypeFlexibility,
-		EnableElasticDisk:          input.EnableElasticDisk,
-		EnableLocalDiskEncryption:  input.EnableLocalDiskEncryption,
-		GcpAttributes:              input.GcpAttributes,
-		InitScripts:                input.InitScripts,
-		InstancePoolId:             input.InstancePoolId,
-		IsSingleNode:               input.IsSingleNode,
-		Kind:                       input.Kind,
-		NodeTypeId:                 input.NodeTypeId,
-		NumWorkers:                 input.NumWorkers,
-		PolicyId:                   input.PolicyId,
-		RemoteDiskThroughput:       input.RemoteDiskThroughput,
-		RuntimeEngine:              input.RuntimeEngine,
-		SingleUserName:             input.SingleUserName,
-		SparkConf:                  input.SparkConf,
-		SparkEnvVars:               input.SparkEnvVars,
-		SparkVersion:               input.SparkVersion,
-		SshPublicKeys:              input.SshPublicKeys,
-		TotalInitialRemoteDiskSize: input.TotalInitialRemoteDiskSize,
-		UseMlRuntime:               input.UseMlRuntime,
-		WorkloadType:               input.WorkloadType,
-		WorkerNodeTypeFlexibility:  input.WorkerNodeTypeFlexibility,
-		ForceSendFields:            utils.FilterFields[compute.ClusterSpec](input.ForceSendFields),
+// RemapState maps the remote ClusterRemote to ClusterState for diff comparison.
+// Started is derived from cluster state so the planner can detect start/stop changes.
+func (r *ResourceCluster) RemapState(input *ClusterRemote) *ClusterState {
+	started := input.State == compute.StateRunning
+	spec := &ClusterState{
+		ClusterSpec: compute.ClusterSpec{
+			ApplyPolicyDefaultValues:   false,
+			Autoscale:                  input.Autoscale,
+			AutoterminationMinutes:     input.AutoterminationMinutes,
+			AwsAttributes:              input.AwsAttributes,
+			AzureAttributes:            input.AzureAttributes,
+			ClusterLogConf:             input.ClusterLogConf,
+			ClusterName:                input.ClusterName,
+			CustomTags:                 input.CustomTags,
+			DataSecurityMode:           input.DataSecurityMode,
+			DockerImage:                input.DockerImage,
+			DriverInstancePoolId:       input.DriverInstancePoolId,
+			DriverNodeTypeId:           input.DriverNodeTypeId,
+			DriverNodeTypeFlexibility:  input.DriverNodeTypeFlexibility,
+			EnableElasticDisk:          input.EnableElasticDisk,
+			EnableLocalDiskEncryption:  input.EnableLocalDiskEncryption,
+			GcpAttributes:              input.GcpAttributes,
+			InitScripts:                input.InitScripts,
+			InstancePoolId:             input.InstancePoolId,
+			IsSingleNode:               input.IsSingleNode,
+			Kind:                       input.Kind,
+			NodeTypeId:                 input.NodeTypeId,
+			NumWorkers:                 input.NumWorkers,
+			PolicyId:                   input.PolicyId,
+			RemoteDiskThroughput:       input.RemoteDiskThroughput,
+			RuntimeEngine:              input.RuntimeEngine,
+			SingleUserName:             input.SingleUserName,
+			SparkConf:                  input.SparkConf,
+			SparkEnvVars:               input.SparkEnvVars,
+			SparkVersion:               input.SparkVersion,
+			SshPublicKeys:              input.SshPublicKeys,
+			TotalInitialRemoteDiskSize: input.TotalInitialRemoteDiskSize,
+			UseMlRuntime:               input.UseMlRuntime,
+			WorkloadType:               input.WorkloadType,
+			WorkerNodeTypeFlexibility:  input.WorkerNodeTypeFlexibility,
+			ForceSendFields:            utils.FilterFields[compute.ClusterSpec](input.ForceSendFields),
+		},
+		Lifecycle: &ClusterStateLifecycle{Started: &started},
 	}
 	if input.Spec != nil {
 		spec.ApplyPolicyDefaultValues = input.Spec.ApplyPolicyDefaultValues
@@ -74,40 +130,131 @@ func (r *ResourceCluster) RemapState(input *compute.ClusterDetails) *compute.Clu
 	return spec
 }
 
-func (r *ResourceCluster) DoRead(ctx context.Context, id string) (*compute.ClusterDetails, error) {
-	return r.client.Clusters.GetByClusterId(ctx, id)
+func (r *ResourceCluster) DoRead(ctx context.Context, id string) (*ClusterRemote, error) {
+	details, err := r.client.Clusters.GetByClusterId(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	started := details.State == compute.StateRunning
+	return &ClusterRemote{
+		ClusterDetails: *details,
+		Lifecycle:      &ClusterStateLifecycle{Started: &started},
+	}, nil
 }
 
-func (r *ResourceCluster) DoCreate(ctx context.Context, config *compute.ClusterSpec) (string, *compute.ClusterDetails, error) {
-	wait, err := r.client.Clusters.Create(ctx, makeCreateCluster(config))
+func (r *ResourceCluster) DoCreate(ctx context.Context, config *ClusterState) (string, *ClusterRemote, error) {
+	wait, err := r.client.Clusters.Create(ctx, makeCreateCluster(&config.ClusterSpec))
 	if err != nil {
 		return "", nil, err
 	}
+	// Store cluster ID in memory for WaitAfterCreate to use.
+	// This does not affect state serialization because ClusterId uses json:"-".
+	config.ClusterId = wait.ClusterId
 	return wait.ClusterId, nil, nil
 }
 
-func (r *ResourceCluster) DoUpdate(ctx context.Context, id string, config *compute.ClusterSpec, _ *PlanEntry) (*compute.ClusterDetails, error) {
-	// Same retry as in TF provider logic
-	// https://github.com/databricks/terraform-provider-databricks/blob/3eecd0f90cf99d7777e79a3d03c41f9b2aafb004/clusters/resource_cluster.go#L624
-	timeout := 15 * time.Minute
-	_, err := retries.Poll(ctx, timeout, func() (*compute.WaitGetClusterRunning[struct{}], *retries.Err) {
-		wait, err := r.client.Clusters.Edit(ctx, makeEditCluster(id, config))
-		if err == nil {
-			return wait, nil
-		}
+// lifecycleOnlyFields are ClusterState fields managed via the Start/Delete APIs, not the Cluster Edit API.
+var lifecycleOnlyFields = map[string]bool{
+	"lifecycle":         true,
+	"lifecycle.started": true,
+}
 
-		var apiErr *apierr.APIError
-		// Only Running and Terminated clusters can be modified. In particular, autoscaling clusters cannot be modified
-		// while the resizing is ongoing. We retry in this case. Scaling can take several minutes.
-		if errors.As(err, &apiErr) && apiErr.ErrorCode == "INVALID_STATE" {
-			return nil, retries.Continues(fmt.Sprintf("cluster %s cannot be modified in its current state: %s", id, apiErr.Message))
+// hasClusterChanges reports whether the plan entry contains any Update changes
+// to fields that belong to the Cluster Edit API (i.e., not lifecycle-only fields).
+func hasClusterChanges(entry *PlanEntry) bool {
+	for path, change := range entry.Changes {
+		if change.Action == deployplan.Update && !lifecycleOnlyFields[truncateAtIndex(path)] {
+			return true
 		}
-		return nil, retries.Halt(err)
-	})
+	}
+	return false
+}
+
+func (r *ResourceCluster) DoUpdate(ctx context.Context, id string, config *ClusterState, entry *PlanEntry) (*ClusterRemote, error) {
+	// Store cluster ID for WaitAfterUpdate to use.
+	config.ClusterId = id
+
+	if hasClusterChanges(entry) {
+		// Same retry as in TF provider logic
+		// https://github.com/databricks/terraform-provider-databricks/blob/3eecd0f90cf99d7777e79a3d03c41f9b2aafb004/clusters/resource_cluster.go#L624
+		timeout := 15 * time.Minute
+		_, err := retries.Poll(ctx, timeout, func() (*compute.WaitGetClusterRunning[struct{}], *retries.Err) {
+			wait, err := r.client.Clusters.Edit(ctx, makeEditCluster(id, &config.ClusterSpec))
+			if err == nil {
+				return wait, nil
+			}
+
+			var apiErr *apierr.APIError
+			// Only Running and Terminated clusters can be modified. In particular, autoscaling clusters cannot be modified
+			// while the resizing is ongoing. We retry in this case. Scaling can take several minutes.
+			if errors.As(err, &apiErr) && apiErr.ErrorCode == "INVALID_STATE" {
+				return nil, retries.Continues(fmt.Sprintf("cluster %s cannot be modified in its current state: %s", id, apiErr.Message))
+			}
+			return nil, retries.Halt(err)
+		})
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if config.Lifecycle == nil || config.Lifecycle.Started == nil {
+		return nil, nil
+	}
+
+	desiredStarted := *config.Lifecycle.Started
+	alreadyRunning := remoteClusterIsRunning(entry)
+	if desiredStarted && !alreadyRunning {
+		// lifecycle.started=true: fire Start; WaitAfterUpdate polls for RUNNING.
+		_, err := r.client.Clusters.Start(ctx, compute.StartCluster{ClusterId: id})
+		return nil, err
+	} else if !desiredStarted && alreadyRunning {
+		// lifecycle.started=false: fire Delete; WaitAfterUpdate polls for TERMINATED.
+		// Delete does not remove the cluster, it just sets the state to TERMINATED.
+		_, err := r.client.Clusters.Delete(ctx, compute.DeleteCluster{ClusterId: id})
+		return nil, err
+	}
+
+	return nil, nil
+}
+
+// WaitAfterUpdate waits for the cluster to reach the desired lifecycle state after DoUpdate.
+func (r *ResourceCluster) WaitAfterUpdate(ctx context.Context, config *ClusterState) (*ClusterRemote, error) {
+	if config.Lifecycle == nil || config.Lifecycle.Started == nil {
+		return nil, nil
+	}
+
+	if *config.Lifecycle.Started {
+		_, err := r.client.Clusters.WaitGetClusterRunning(ctx, config.ClusterId, 15*time.Minute, nil)
+		return nil, err
+	}
+
+	_, err := r.client.Clusters.WaitGetClusterTerminated(ctx, config.ClusterId, 15*time.Minute, nil)
 	return nil, err
 }
 
-func (r *ResourceCluster) DoResize(ctx context.Context, id string, config *compute.ClusterSpec) error {
+// WaitAfterCreate waits for the cluster to reach RUNNING state (clusters always start on creation).
+// When lifecycle.started=false, it then terminates the cluster.
+func (r *ResourceCluster) WaitAfterCreate(ctx context.Context, config *ClusterState) (*ClusterRemote, error) {
+	// Always wait for RUNNING first: clusters start in PENDING state and must be polled.
+	_, err := r.client.Clusters.WaitGetClusterRunning(ctx, config.ClusterId, 15*time.Minute, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if config.Lifecycle != nil && config.Lifecycle.Started != nil && !*config.Lifecycle.Started {
+		// started=false: terminate the cluster after it reaches RUNNING.
+		deleteWaiter, err := r.client.Clusters.Delete(ctx, compute.DeleteCluster{ClusterId: config.ClusterId})
+		if err != nil {
+			return nil, err
+		}
+		_, err = deleteWaiter.Get()
+		return nil, err
+	}
+
+	return nil, nil
+}
+
+func (r *ResourceCluster) DoResize(ctx context.Context, id string, config *ClusterState) error {
 	_, err := r.client.Clusters.Resize(ctx, compute.ResizeCluster{
 		ClusterId:       id,
 		NumWorkers:      config.NumWorkers,
@@ -121,7 +268,7 @@ func (r *ResourceCluster) DoDelete(ctx context.Context, id string) error {
 	return r.client.Clusters.PermanentDeleteByClusterId(ctx, id)
 }
 
-func (r *ResourceCluster) OverrideChangeDesc(ctx context.Context, p *structpath.PathNode, change *ChangeDesc, remoteState *compute.ClusterDetails) error {
+func (r *ResourceCluster) OverrideChangeDesc(ctx context.Context, p *structpath.PathNode, change *ChangeDesc, remoteState *ClusterRemote) error {
 	// We're only interested in downgrading some updates to skips. Changes that already skipped or cause recreation should remain unchanged.
 	if change.Action != deployplan.Update {
 		return nil
@@ -144,11 +291,23 @@ func (r *ResourceCluster) OverrideChangeDesc(ctx context.Context, p *structpath.
 		}
 
 	case "num_workers", "autoscale":
-		if remoteState.State == compute.StateRunning {
+		if remoteState != nil && remoteState.State == compute.StateRunning {
 			change.Action = deployplan.Resize
 		}
 	}
 	return nil
+}
+
+// remoteClusterIsRunning reads the cluster running state from the plan entry's remote state.
+func remoteClusterIsRunning(entry *PlanEntry) bool {
+	if entry.RemoteState == nil {
+		return false
+	}
+	remote, ok := entry.RemoteState.(*ClusterRemote)
+	if !ok {
+		return false
+	}
+	return remote.State == compute.StateRunning
 }
 
 func makeCreateCluster(config *compute.ClusterSpec) compute.CreateCluster {

@@ -1,0 +1,112 @@
+
+=== Deploy with started=true: cluster created and running
+>>> errcode [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py //clusters
+{
+  "method": "POST",
+  "path": "/api/2.1/clusters/create",
+  "body": {
+    "autotermination_minutes": 60,
+    "cluster_name": "[UNIQUE_NAME]",
+    "node_type_id": "[NODE_TYPE_ID]",
+    "num_workers": 1,
+    "spark_version": "15.4.x-scala2.12"
+  }
+}
+
+>>> errcode [CLI] clusters get [UUID]
+"RUNNING"
+
+=== Stop cluster externally while config says started=true: plan detects drift
+>>> errcode [CLI] clusters delete [UUID]
+"TERMINATED"
+
+>>> [CLI] bundle plan
+update clusters.mycluster
+
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
+
+=== Deploy fixes the drift: cluster restarted
+>>> errcode [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py //clusters
+{
+  "method": "POST",
+  "path": "/api/2.1/clusters/delete",
+  "body": {
+    "cluster_id": "[UUID]"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.1/clusters/start",
+  "body": {
+    "cluster_id": "[UUID]"
+  }
+}
+
+>>> errcode [CLI] clusters get [UUID]
+"RUNNING"
+
+=== Deploy with started=false while cluster is stopped: cluster stays terminated
+>>> errcode [CLI] clusters delete [UUID]
+"TERMINATED"
+
+>>> update_file.py databricks.yml started: true started: false
+
+>>> errcode [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py //clusters
+{
+  "method": "POST",
+  "path": "/api/2.1/clusters/delete",
+  "body": {
+    "cluster_id": "[UUID]"
+  }
+}
+
+>>> errcode [CLI] clusters get [UUID]
+"TERMINATED"
+
+=== Deploy with started=true: cluster restarted
+>>> update_file.py databricks.yml started: false started: true
+
+>>> errcode [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py //clusters
+{
+  "method": "POST",
+  "path": "/api/2.1/clusters/start",
+  "body": {
+    "cluster_id": "[UUID]"
+  }
+}
+
+>>> errcode [CLI] clusters get [UUID]
+"RUNNING"
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.clusters.mycluster
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
+
+Deleting files...
+Destroy complete!
