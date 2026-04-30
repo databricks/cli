@@ -9,6 +9,6 @@
 ### Bundles
 * Make sure warnings asking for approval are understood by agents ([#5239](https://github.com/databricks/cli/pull/5239))
 
-* Added `vector_search_indexes` as a first-class bundle resource on the direct deployment engine, alongside the existing `vector_search_endpoints`. Supports UC grants, drift detection (including out-of-band endpoint replacement that orphans an index), recreate-on-immutable-field-change, and asynchronous deletion waits. Recreating or deleting an index now prompts for confirmation with a Delta Sync vs Direct Access cost warning. Vector search has no Terraform provider, so this resource is direct-engine only ([#5123](https://github.com/databricks/cli/pull/5123)).
+* Added `vector_search_indexes` as a bundle resource (direct engine only). Supports UC grants and prompts for confirmation on recreate or delete since both are destructive ([#5123](https://github.com/databricks/cli/pull/5123)).
 
 ### Dependency updates
