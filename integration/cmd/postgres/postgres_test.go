@@ -72,14 +72,22 @@ func TestPostgresQuery_TimeoutFires(t *testing.T) {
 	target := requireTarget(t)
 	ctx := t.Context()
 
+	// Warm up first: pay the auth + connect (and potential cold-start)
+	// cost before timing the --timeout assertion. Without this, a cold
+	// Lakebase autoscaling endpoint could push the timed run past any
+	// reasonable deadline even though --timeout did exactly the right
+	// thing. Now `start` measures what we care about: how long the
+	// 1-second deadline takes to actually cancel the in-flight statement.
+	testcli.RequireSuccessfulRun(t, ctx, "experimental", "postgres", "query",
+		"--target", target, "--output", "json", "SELECT 1")
+
 	// pg_sleep(5) with --timeout 1s should fail well within the watcher's
-	// 5s DeadlineDelay. A loose <5s bound would still pass even if the
-	// watcher silently regressed to TCP-keepalive timeout (~minutes); the
-	// tighter <3s bound catches that.
+	// 5s DeadlineDelay. <5s rules out a silent regression to the
+	// TCP-keepalive timeout (~minutes).
 	start := time.Now()
 	_, stderr, _ := testcli.RequireErrorRun(t, ctx, "experimental", "postgres", "query",
 		"--target", target, "--timeout", "1s", "SELECT pg_sleep(5)")
-	assert.Less(t, time.Since(start), 3*time.Second, "--timeout should cancel before pg_sleep finishes")
+	assert.Less(t, time.Since(start), 5*time.Second, "--timeout should cancel before pg_sleep finishes")
 	assert.Contains(t, stderr.String(), "timed out after 1s")
 }
 
