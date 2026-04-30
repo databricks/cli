@@ -18,5 +18,9 @@ func ConvertGenieSpaceToValue(genieSpace *dashboards.GenieSpace, filePath string
 		dv["description"] = dyn.NewValue(genieSpace.Description, []dyn.Location{{Line: 4}})
 	}
 
+	if genieSpace.ParentPath != "" {
+		dv["parent_path"] = dyn.NewValue(genieSpace.ParentPath, []dyn.Location{{Line: 5}})
+	}
+
 	return dyn.V(dv), nil
 }
