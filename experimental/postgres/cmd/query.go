@@ -26,6 +26,7 @@ type queryFlags struct {
 	connectTimeout time.Duration
 	maxRetries     int
 	files          []string
+	timeout        time.Duration
 
 	// outputFormat is the raw flag value. resolveOutputFormat turns it into
 	// the effective format (which may differ when stdout is piped).
@@ -95,6 +96,7 @@ Limitations (this release):
 	cmd.Flags().StringVarP(&f.database, "database", "d", defaultDatabase, "Database name")
 	cmd.Flags().DurationVar(&f.connectTimeout, "connect-timeout", defaultConnectTimeout, "Connect timeout")
 	cmd.Flags().IntVar(&f.maxRetries, "max-retries", 3, "Total connect attempts on idle/waking endpoint (must be >= 1; 1 disables retry)")
+	cmd.Flags().DurationVar(&f.timeout, "timeout", 0, "Per-statement timeout (0 disables)")
 	cmd.Flags().StringArrayVarP(&f.files, "file", "f", nil, "SQL file path (repeatable)")
 	cmd.Flags().StringVarP(&f.outputFormat, "output", "o", string(outputText), "Output format: text, json, or csv")
 	cmd.RegisterFlagCompletionFunc("output", func(*cobra.Command, []string, string) ([]string, cobra.ShellCompDirective) {
@@ -172,10 +174,21 @@ func runQuery(ctx context.Context, cmd *cobra.Command, args []string, f queryFla
 		MaxDelay:     10 * time.Second,
 	}
 
-	conn, err := connectWithRetry(ctx, pgxCfg, rc, pgx.ConnectConfig)
+	// Invocation-scoped context: cancelled by Ctrl+C/SIGTERM. Owns the
+	// connection lifecycle. Per-statement timeouts are children of this so
+	// a cancelled invocation also cancels the in-flight statement.
+	signalCtx, signalCancel := context.WithCancel(ctx)
+	defer signalCancel()
+
+	stopSignals := watchInterruptSignals(signalCtx, signalCancel)
+	defer stopSignals()
+
+	conn, err := connectWithRetry(signalCtx, pgxCfg, rc, pgx.ConnectConfig)
 	if err != nil {
 		return err
 	}
+	// Close on a background ctx so a cancelled signalCtx does not abort a
+	// clean teardown handshake.
 	defer conn.Close(context.WithoutCancel(ctx))
 
 	out := cmd.OutOrStdout()
@@ -186,9 +199,15 @@ func runQuery(ctx context.Context, cmd *cobra.Command, args []string, f queryFla
 		// Avoids buffering rows for large exports and matches the v1 single-
 		// input behaviour PR 2 shipped. Wrap the error so DETAIL / HINT
 		// from a *pgconn.PgError surface even on the single-input path.
-		sink := newSink(format, out, stderr)
-		if err := executeOne(ctx, conn, units[0].SQL, sink); err != nil {
-			return errors.New(formatPgError(err))
+		// Promote-to-interactive only when stdout is a prompt-capable TTY so
+		// a pipe falls back to the static table rather than launching a TUI
+		// into a dead writer.
+		sink := newSinkInteractive(format, out, stderr, stdoutTTY && cmdio.IsPromptSupported(ctx))
+		stmtCtx, stmtCancel := withStatementTimeout(signalCtx, f.timeout)
+		err := executeOne(stmtCtx, conn, units[0].SQL, sink)
+		stmtCancel()
+		if err != nil {
+			return errors.New(reportCancellation(signalCtx, stmtCtx, err, f.timeout))
 		}
 		return nil
 	}
@@ -199,7 +218,9 @@ func runQuery(ctx context.Context, cmd *cobra.Command, args []string, f queryFla
 	// temp tables) carries across units because we hold the same connection.
 	results := make([]*unitResult, 0, len(units))
 	for _, u := range units {
-		r, err := runUnitBuffered(ctx, conn, u)
+		stmtCtx, stmtCancel := withStatementTimeout(signalCtx, f.timeout)
+		r, err := runUnitBuffered(stmtCtx, conn, u)
+		stmtCancel()
 		if err != nil {
 			// Render the successful prefix, then surface the error with
 			// rich pgError formatting if applicable.
@@ -208,7 +229,7 @@ func runQuery(ctx context.Context, cmd *cobra.Command, args []string, f queryFla
 				// error to the user, the renderer error to debug logs.
 				fmt.Fprintln(stderr, "warning: failed to render partial result:", rerr)
 			}
-			return formatExecutionError(u.Source, err)
+			return errors.New(u.Source + ": " + reportCancellation(signalCtx, stmtCtx, err, f.timeout))
 		}
 		results = append(results, r)
 	}
@@ -221,15 +242,47 @@ func runQuery(ctx context.Context, cmd *cobra.Command, args []string, f queryFla
 	}
 }
 
-// newSink returns the rowSink for the chosen output format. Kept separate
-// from runQuery so tests can build sinks without going through pgx.
-func newSink(format outputFormat, out, stderr io.Writer) rowSink {
+// withStatementTimeout returns ctx unchanged (and a no-op cancel) when timeout
+// is zero, otherwise a child context with the timeout applied. Per-statement
+// scoping means a long-running unit can be cancelled without aborting the
+// next unit's chance to run with a fresh deadline; today execution stops on
+// the first failure either way, but the contract is what matters for v2.
+func withStatementTimeout(parent context.Context, timeout time.Duration) (context.Context, context.CancelFunc) {
+	if timeout <= 0 {
+		return parent, func() {}
+	}
+	return context.WithTimeout(parent, timeout)
+}
+
+// reportCancellation distinguishes the three error cases that look the
+// same from `executeOne`'s POV (a wrapped pgconn / network error): user
+// cancelled via Ctrl+C, --timeout fired, or the statement just plain
+// errored. Returns a human-readable message; the caller wraps it.
+func reportCancellation(signalCtx, stmtCtx context.Context, err error, timeout time.Duration) string {
+	switch {
+	case errors.Is(signalCtx.Err(), context.Canceled):
+		return "Query cancelled."
+	case timeout > 0 && errors.Is(stmtCtx.Err(), context.DeadlineExceeded):
+		return fmt.Sprintf("Query timed out after %s.", timeout)
+	default:
+		return formatPgError(err)
+	}
+}
+
+// newSinkInteractive returns the rowSink for the chosen output format. When
+// interactive is true the text sink may launch the libs/tableview viewer for
+// results larger than staticTableThreshold; when false it uses the static
+// tabwriter table.
+func newSinkInteractive(format outputFormat, out, stderr io.Writer, interactive bool) rowSink {
 	switch format {
 	case outputJSON:
 		return newJSONSink(out, stderr)
 	case outputCSV:
 		return newCSVSink(out, stderr)
 	default:
+		if interactive {
+			return newInteractiveTextSink(out)
+		}
 		return newTextSink(out)
 	}
 }
@@ -246,13 +299,6 @@ func renderPartial(out, stderr io.Writer, format outputFormat, results []*unitRe
 		// cobra's default error path on stderr after we return.
 		return renderTextMulti(out, results)
 	}
-}
-
-// formatExecutionError produces the error returned to cobra when an input
-// unit failed. The message includes the source label so the user knows
-// which of N inputs blew up.
-func formatExecutionError(source string, err error) error {
-	return fmt.Errorf("%s: %s", source, formatPgError(err))
 }
 
 // multiStatementHint is appended to errMultipleStatements so users see the

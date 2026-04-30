@@ -6,8 +6,15 @@ import (
 	"strings"
 	"text/tabwriter"
 
+	"github.com/databricks/cli/libs/tableview"
 	"github.com/jackc/pgx/v5/pgconn"
 )
+
+// staticTableThreshold is the row count above which we hand off to
+// libs/tableview's interactive viewer (when stdout is interactive). Smaller
+// results stay in the static tabwriter path so they stream to a pipe
+// unchanged. Matches the threshold aitools query uses.
+const staticTableThreshold = 30
 
 // textSink renders results as plain text: a tabwriter-aligned table for
 // rows-producing statements, the command tag for command-only ones.
@@ -15,14 +22,26 @@ import (
 // Text output buffers all rows because tabwriter needs the widest cell in each
 // column before it can align. Streaming output is provided by the JSON and CSV
 // sinks; users with huge result sets should pick those.
+//
+// When interactive is true and the result has more than staticTableThreshold
+// rows, End hands off to libs/tableview's scrollable viewer instead of
+// emitting the static table. The interactive path requires a real TTY and a
+// prompt-capable terminal; the caller decides.
 type textSink struct {
-	out     io.Writer
-	columns []string
-	rows    [][]string
+	out         io.Writer
+	interactive bool
+	columns     []string
+	rows        [][]string
 }
 
 func newTextSink(out io.Writer) *textSink {
 	return &textSink{out: out}
+}
+
+// newInteractiveTextSink returns a text sink that uses the interactive table
+// viewer for results larger than staticTableThreshold.
+func newInteractiveTextSink(out io.Writer) *textSink {
+	return &textSink{out: out, interactive: true}
 }
 
 func (s *textSink) Begin(fields []pgconn.FieldDescription) error {
@@ -46,6 +65,10 @@ func (s *textSink) End(commandTag string) error {
 	if len(s.columns) == 0 {
 		_, err := fmt.Fprintln(s.out, commandTag)
 		return err
+	}
+
+	if s.interactive && len(s.rows) > staticTableThreshold {
+		return tableview.Run(s.out, s.columns, s.rows)
 	}
 
 	tw := tabwriter.NewWriter(s.out, 0, 0, 2, ' ', 0)
