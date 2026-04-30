@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 
 	"github.com/charmbracelet/huh"
-	"github.com/databricks/cli/experimental/aitools/lib/installer"
+	"github.com/databricks/cli/aitools/lib/installer"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
 )
@@ -230,10 +230,10 @@ func scopeNotInstalledError(scope, verb, projectDir string, hasGlobal, hasProjec
 			"no project-scoped skills found in the current directory.\n\n"+
 				"Project-scoped skills are detected based on your working directory.\n"+
 				"Make sure you are in the project root where you originally ran\n"+
-				"'databricks experimental aitools install --project'.\n\n"+
+				"'databricks aitools install --project'.\n\n"+
 				"Expected location: %s/", expectedPath)
 	} else {
-		msg = "no globally-scoped skills installed. Run 'databricks experimental aitools install --global' to install"
+		msg = "no globally-scoped skills installed. Run 'databricks aitools install --global' to install"
 	}
 
 	hint := crossScopeHint(scope, verb, hasGlobal, hasProject)

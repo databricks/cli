@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/databricks/cli/experimental/aitools/lib/installer"
+	"github.com/databricks/cli/aitools/lib/installer"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/spf13/cobra"
 )
 
-func newVersionCmd() *cobra.Command {
+func NewVersionCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "version",
 		Short: "Show installed AI skills version",
@@ -40,7 +40,7 @@ func newVersionCmd() *cobra.Command {
 			if globalState == nil && projectState == nil {
 				cmdio.LogString(ctx, "No Databricks AI Tools components installed.")
 				cmdio.LogString(ctx, "")
-				cmdio.LogString(ctx, "Run 'databricks experimental aitools install' to get started.")
+				cmdio.LogString(ctx, "Run 'databricks aitools install' to get started.")
 				return nil
 			}
 
@@ -89,6 +89,6 @@ func printVersionLine(ctx context.Context, label string, state *installer.Instal
 		cmdio.LogString(ctx, "  Update available: v"+latestVersion)
 		cmdio.LogString(ctx, "  Last updated: "+state.LastUpdated.Format("2006-01-02"))
 		cmdio.LogString(ctx, "")
-		cmdio.LogString(ctx, "Run 'databricks experimental aitools update' to update.")
+		cmdio.LogString(ctx, "Run 'databricks aitools update' to update.")
 	}
 }

@@ -10,22 +10,22 @@ import (
 )
 
 func TestListCommandExists(t *testing.T) {
-	cmd := newListCmd()
+	cmd := NewListCmd()
 	assert.Equal(t, "list", cmd.Use)
 }
 
 func TestListCommandCallsListFn(t *testing.T) {
-	orig := listSkillsFn
-	t.Cleanup(func() { listSkillsFn = orig })
+	orig := ListSkillsFn
+	t.Cleanup(func() { ListSkillsFn = orig })
 
 	called := false
-	listSkillsFn = func(cmd *cobra.Command, scope string) error {
+	ListSkillsFn = func(cmd *cobra.Command, scope string) error {
 		called = true
 		return nil
 	}
 
 	ctx := cmdio.MockDiscard(t.Context())
-	cmd := newListCmd()
+	cmd := NewListCmd()
 	cmd.SetContext(ctx)
 
 	err := cmd.RunE(cmd, nil)
@@ -34,28 +34,9 @@ func TestListCommandCallsListFn(t *testing.T) {
 }
 
 func TestListCommandHasScopeFlags(t *testing.T) {
-	cmd := newListCmd()
+	cmd := NewListCmd()
 	f := cmd.Flags().Lookup("project")
 	require.NotNil(t, f, "--project flag should exist")
 	f = cmd.Flags().Lookup("global")
 	require.NotNil(t, f, "--global flag should exist")
-}
-
-func TestSkillsListDelegatesToListFn(t *testing.T) {
-	orig := listSkillsFn
-	t.Cleanup(func() { listSkillsFn = orig })
-
-	called := false
-	listSkillsFn = func(cmd *cobra.Command, scope string) error {
-		called = true
-		return nil
-	}
-
-	ctx := cmdio.MockDiscard(t.Context())
-	cmd := newSkillsListCmd()
-	cmd.SetContext(ctx)
-
-	err := cmd.RunE(cmd, nil)
-	require.NoError(t, err)
-	assert.True(t, called)
 }

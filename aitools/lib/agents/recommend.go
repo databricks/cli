@@ -15,7 +15,7 @@ func RecommendSkillsInstall(ctx context.Context, installFn func(context.Context)
 	}
 
 	if !cmdio.IsPromptSupported(ctx) {
-		cmdio.LogString(ctx, "Tip: coding agents detected without Databricks skills. Run 'databricks experimental aitools skills install' to install them.")
+		cmdio.LogString(ctx, "Tip: coding agents detected without Databricks skills. Run 'databricks aitools install' to install them.")
 		return nil
 	}
 

@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/databricks/cli/experimental/aitools/lib/agents"
+	"github.com/databricks/cli/aitools/lib/agents"
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
@@ -76,9 +76,9 @@ func UpdateSkills(ctx context.Context, src ManifestSource, targetAgents []*agent
 
 	if state == nil {
 		if scope == ScopeGlobal && hasLegacyInstall(ctx, baseDir) {
-			return nil, errors.New("found skills from a previous install without state tracking; run 'databricks experimental aitools install' to refresh before updating")
+			return nil, errors.New("found skills from a previous install without state tracking; run 'databricks aitools install' to refresh before updating")
 		}
-		return nil, errors.New("no skills installed. Run 'databricks experimental aitools install' to install")
+		return nil, errors.New("no skills installed. Run 'databricks aitools install' to install")
 	}
 
 	latestTag := GetSkillsRef(ctx)

@@ -67,7 +67,7 @@ func TestRecommendSkillsInstallNonInteractive(t *testing.T) {
 	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
 	err := RecommendSkillsInstall(ctx, noopInstall)
 	require.NoError(t, err)
-	assert.Contains(t, stderr.String(), "databricks experimental aitools skills install")
+	assert.Contains(t, stderr.String(), "databricks aitools install")
 }
 
 func TestRecommendSkillsInstallInteractiveDecline(t *testing.T) {

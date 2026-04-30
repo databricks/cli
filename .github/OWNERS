@@ -59,5 +59,6 @@
 # Internal
 /internal/                  team:platform
 
-# Experimental
+# AI tools
+/aitools/                   team:eng-apps-devex @lennartkats-db
 /experimental/aitools/      team:eng-apps-devex @lennartkats-db

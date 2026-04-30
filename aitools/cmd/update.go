@@ -3,13 +3,13 @@ package aitools
 import (
 	"fmt"
 
-	"github.com/databricks/cli/experimental/aitools/lib/agents"
-	"github.com/databricks/cli/experimental/aitools/lib/installer"
+	"github.com/databricks/cli/aitools/lib/agents"
+	"github.com/databricks/cli/aitools/lib/installer"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/spf13/cobra"
 )
 
-func newUpdateCmd() *cobra.Command {
+func NewUpdateCmd() *cobra.Command {
 	var check, force, noNew bool
 	var skillsFlag string
 	var projectFlag, globalFlag bool

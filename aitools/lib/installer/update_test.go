@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/databricks/cli/experimental/aitools/lib/agents"
+	"github.com/databricks/cli/aitools/lib/agents"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
 	"github.com/stretchr/testify/assert"
@@ -24,7 +24,7 @@ func TestUpdateNoStateReturnsInstallHint(t *testing.T) {
 	_, err := UpdateSkills(ctx, src, nil, UpdateOptions{})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "no skills installed")
-	assert.Contains(t, err.Error(), "databricks experimental aitools install")
+	assert.Contains(t, err.Error(), "databricks aitools install")
 }
 
 func TestUpdateLegacyInstallDetected(t *testing.T) {

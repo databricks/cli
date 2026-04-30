@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/databricks/cli/experimental/aitools/lib/agents"
+	"github.com/databricks/cli/aitools/lib/agents"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
 )
@@ -54,7 +54,7 @@ func UninstallSkillsOpts(ctx context.Context, opts UninstallOptions) error {
 
 	if state == nil {
 		if scope == ScopeGlobal && hasLegacyInstall(ctx, baseDir) {
-			return errors.New("found skills from a previous install without state tracking; run 'databricks experimental aitools install' first, then uninstall")
+			return errors.New("found skills from a previous install without state tracking; run 'databricks aitools install' first, then uninstall")
 		}
 		return errors.New("no skills installed")
 	}
