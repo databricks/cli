@@ -1,0 +1,24 @@
+
+>>> [CLI] bundle validate -o json
+{
+  "vector_search_endpoints": {
+    "vs_endpoint": {
+      "endpoint_type": "STANDARD",
+      "name": "prefix_vs_endpoint"
+    }
+  },
+  "vector_search_indexes": {
+    "vs_index_literal": {
+      "endpoint_name": "vs_endpoint",
+      "index_type": "DELTA_SYNC",
+      "name": "my_catalog.my_schema.prefix_literal_index",
+      "primary_key": "id"
+    },
+    "vs_index_ref": {
+      "endpoint_name": "${resources.vector_search_endpoints.vs_endpoint.name}",
+      "index_type": "DELTA_SYNC",
+      "name": "my_catalog.my_schema.prefix_ref_index",
+      "primary_key": "id"
+    }
+  }
+}

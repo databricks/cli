@@ -1,0 +1,29 @@
+bundle:
+  name: BUNDLE
+
+workspace:
+  resource_path: /foo/bar
+
+resources:
+  vector_search_endpoints:
+    vs_endpoint:
+      name: vs_endpoint
+      endpoint_type: STANDARD
+  vector_search_indexes:
+    # Literal endpoint_name: not rewritten by the prefix preset, so the
+    # index would target the unprefixed (non-existent) endpoint.
+    vs_index_literal:
+      name: my_catalog.my_schema.literal_index
+      endpoint_name: vs_endpoint
+      primary_key: id
+      index_type: DELTA_SYNC
+    # Reference to the bundle-managed endpoint: resolved after the prefix
+    # preset runs, so the index correctly targets the prefixed endpoint.
+    vs_index_ref:
+      name: my_catalog.my_schema.ref_index
+      endpoint_name: ${resources.vector_search_endpoints.vs_endpoint.name}
+      primary_key: id
+      index_type: DELTA_SYNC
+
+presets:
+  name_prefix: "$PREFIX"
