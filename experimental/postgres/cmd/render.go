@@ -55,10 +55,23 @@ func (s *textSink) Begin(fields []pgconn.FieldDescription) error {
 func (s *textSink) Row(values []any) error {
 	row := make([]string, len(values))
 	for i, v := range values {
-		row[i] = textValue(v)
+		row[i] = escapeControlForTabwriter(textValue(v))
 	}
 	s.rows = append(s.rows, row)
 	return nil
+}
+
+// escapeControlForTabwriter replaces tabs, newlines, and carriage returns in
+// a cell value with the two-character backslash-letter sequence. tabwriter
+// uses '\t' as a column boundary and '\n' as a row boundary, so an embedded
+// tab silently shifts subsequent columns and an embedded newline splits one
+// logical row into two. psql's text mode applies the same escapes.
+func escapeControlForTabwriter(s string) string {
+	if !strings.ContainsAny(s, "\t\n\r") {
+		return s
+	}
+	r := strings.NewReplacer("\t", `\t`, "\n", `\n`, "\r", `\r`)
+	return r.Replace(s)
 }
 
 func (s *textSink) End(commandTag string) error {

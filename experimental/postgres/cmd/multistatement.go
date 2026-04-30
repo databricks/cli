@@ -127,30 +127,43 @@ func scanBlockComment(s string, start, end int) int {
 // '$' of $tag$. If the construct doesn't look like a valid dollar-quote
 // opener, returns ("", start) so the caller can fall through.
 //
-// Tag rule: starts after '$', runs to the next '$'. Per the Postgres docs a
-// dollar-quote tag must not start with a digit, so we reject `$1`, `$2`,
-// etc. as tags and let the scanner treat them as ordinary bytes (this is
-// what `$1`-style parameter placeholders look like, even though `QueryExecModeExec`
-// can't bind them in this command). Empty tag is valid: $$ is a marker,
-// $$body$$ is the body.
+// Tag rule: a Postgres dollar-quote tag is an unquoted identifier — first
+// char is ASCII letter or underscore, subsequent chars are letter/digit/
+// underscore. We reject anything outside that grammar so e.g. `$1`
+// (parameter placeholder) and `$foo-bar$ ... $foo-bar$` (PG parses as two
+// statements because `-` is not a tag char) are NOT treated as dollar
+// quotes by this scanner. Empty tag is valid: `$$` is a marker, `$$body$$`
+// is the body.
 func readDollarTag(s string, start, end int) (string, int) {
 	i := start + 1
 	for i < end {
-		if s[i] == '$' {
-			tag := s[start+1 : i]
-			return tag, i + 1
+		c := s[i]
+		if c == '$' {
+			return s[start+1 : i], i + 1
 		}
-		// Reject `$<digit>...` early: it can't be a valid tag.
-		if i == start+1 && s[i] >= '0' && s[i] <= '9' {
-			return "", start
+		// First tag char must be a letter or underscore.
+		if i == start+1 {
+			if !isTagStart(c) {
+				return "", start
+			}
+			i++
+			continue
 		}
-		// Stop at characters that can't be in a tag.
-		if s[i] == ' ' || s[i] == '\t' || s[i] == '\n' || s[i] == ';' {
+		// Subsequent tag chars: letter, digit, or underscore.
+		if !isTagCont(c) {
 			return "", start
 		}
 		i++
 	}
 	return "", start
+}
+
+func isTagStart(c byte) bool {
+	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_'
+}
+
+func isTagCont(c byte) bool {
+	return isTagStart(c) || (c >= '0' && c <= '9')
 }
 
 // scanDollarBody advances past a $tag$...$tag$ body starting at start (the

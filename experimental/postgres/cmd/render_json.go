@@ -52,16 +52,28 @@ func (s *jsonSink) Begin(fields []pgconn.FieldDescription) error {
 
 	s.columns = make([]string, len(fields))
 	s.oids = make([]uint32, len(fields))
-	seen := make(map[string]int, len(fields))
+	// assigned tracks every name we have committed to s.columns so far. This
+	// must include both first-occurrence names and __N suffixed renames, so a
+	// query whose original column list contains the same suffix we'd generate
+	// (e.g. ["id", "id__2", "id"]) does not produce two id__2 keys.
+	assigned := make(map[string]struct{}, len(fields))
 	dupes := false
 	for i, f := range fields {
 		s.oids[i] = f.DataTypeOID
 		name := f.Name
-		seen[name]++
-		if seen[name] > 1 {
+		if _, taken := assigned[name]; taken {
 			dupes = true
-			name = fmt.Sprintf("%s__%d", f.Name, seen[name])
+			suffix := 2
+			for {
+				candidate := fmt.Sprintf("%s__%d", f.Name, suffix)
+				if _, taken := assigned[candidate]; !taken {
+					name = candidate
+					break
+				}
+				suffix++
+			}
 		}
+		assigned[name] = struct{}{}
 		s.columns[i] = name
 	}
 	if dupes {
