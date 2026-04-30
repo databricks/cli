@@ -3093,7 +3093,9 @@ resources.vector_search_indexes.*.direct_access_index_spec.embedding_vector_colu
 resources.vector_search_indexes.*.direct_access_index_spec.embedding_vector_columns[*].name	string	ALL
 resources.vector_search_indexes.*.direct_access_index_spec.schema_json	string	ALL
 resources.vector_search_indexes.*.endpoint_name	string	ALL
+resources.vector_search_indexes.*.endpoint_uuid	string	REMOTE	STATE
 resources.vector_search_indexes.*.id	string	INPUT
+resources.vector_search_indexes.*.index_subtype	vectorsearch.IndexSubtype	ALL
 resources.vector_search_indexes.*.index_type	vectorsearch.VectorIndexType	ALL
 resources.vector_search_indexes.*.lifecycle	resources.Lifecycle	INPUT
 resources.vector_search_indexes.*.lifecycle.prevent_destroy	bool	INPUT
