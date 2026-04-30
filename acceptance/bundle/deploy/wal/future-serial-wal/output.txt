@@ -6,7 +6,6 @@
 === Deploy (should fail with corruption error) ===
 
 >>> errcode [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/wal-future-serial-test/default/files...
 Error: reading state from [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: WAL recovery failed: WAL serial (5) is ahead of expected (3), state may be corrupted
 
 

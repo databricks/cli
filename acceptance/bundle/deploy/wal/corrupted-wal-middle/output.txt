@@ -8,11 +8,9 @@
 === Deploy (should recover valid entries and skip corrupted line) ===
 
 >>> [CLI] bundle deploy
+Warn: Skipping corrupted WAL entry at [TEST_TMP_DIR]/.databricks/bundle/default/resources.json.wal:3: unexpected end of JSON input
+Warn: Saved 1 corrupted WAL entries to [TEST_TMP_DIR]/.databricks/bundle/default/resources.json.wal.corrupted
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/wal-corrupted-middle-test/default/files...
-Recovering state from WAL file: [TEST_TMP_DIR]/.databricks/bundle/default/resources.json.wal
-Warn: Could not read state file WAL entry in [TEST_TMP_DIR]/.databricks/bundle/default/resources.json.wal: line 3
-Warn: Saved corrupted WAL entries to [TEST_TMP_DIR]/.databricks/bundle/default/resources.json.wal.corrupted
-Recovered 2 entries from WAL file.
 Deploying resources...
 Updating deployment state...
 Deployment complete!
@@ -25,6 +23,5 @@ Deployment complete!
   ]
 }
 === Corrupted WAL entries file ===
-{"k":"resources.jobs.partial_write","v":{"__id__": "[ID]","state":{"name":"partial-
-=== WAL after deploy ===
+{"k":"resources.jobs.partial_write","v":{"__id__": "[ID]","state":{"name":"partial-=== WAL after deploy ===
 WAL deleted (expected)

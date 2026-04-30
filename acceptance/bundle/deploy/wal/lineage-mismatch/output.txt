@@ -6,7 +6,6 @@
 === Deploy (should fail with lineage mismatch error) ===
 
 >>> errcode [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/wal-lineage-mismatch-test/default/files...
 Error: reading state from [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: WAL recovery failed: WAL lineage (wal-lineage-bbb) does not match state lineage (state-lineage-aaa)
 
 
