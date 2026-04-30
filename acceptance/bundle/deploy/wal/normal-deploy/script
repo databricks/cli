@@ -1,0 +1,12 @@
+trace $CLI bundle deploy
+
+echo "=== Checking WAL file after deploy ==="
+if [ -f ".databricks/bundle/default/resources.json.wal" ]; then
+    echo "WAL file exists (unexpected - should be deleted after Finalize)"
+    cat .databricks/bundle/default/resources.json.wal
+else
+    echo "WAL file deleted after successful deploy (expected)"
+fi
+
+echo "=== State file content ==="
+cat .databricks/bundle/default/resources.json | jq -S '{lineage: .lineage, serial: .serial, state_keys: (.state | keys)}'

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
@@ -227,12 +228,19 @@ To start using direct engine, set "engine: direct" under bundle in your databric
 		migratedDB := dstate.NewDatabase(stateDesc.Lineage, stateDesc.Serial+1)
 		migratedDB.State = state
 
-		deploymentBundle := &direct.DeploymentBundle{
-			StateDB: dstate.DeploymentState{
-				Path: tempStatePath,
-				Data: migratedDB,
-			},
+		// Write the migrated state to disk so CalculatePlan can read it via Open.
+		migratedStateJSON, err := json.MarshalIndent(migratedDB, "", " ")
+		if err != nil {
+			return fmt.Errorf("marshaling migrated state: %w", err)
 		}
+		if err := os.MkdirAll(filepath.Dir(tempStatePath), 0o755); err != nil {
+			return fmt.Errorf("creating state directory: %w", err)
+		}
+		if err := os.WriteFile(tempStatePath, migratedStateJSON, 0o600); err != nil {
+			return fmt.Errorf("writing migrated state to %s: %w", tempStatePath, err)
+		}
+
+		deploymentBundle := &direct.DeploymentBundle{}
 
 		tempStatePathAutoRemove := true
 
@@ -248,6 +256,10 @@ To start using direct engine, set "engine: direct" under bundle in your databric
 		bundle.ApplyContext(ctx, b, resourcemutator.SecretScopeFixups(engine.EngineDirect))
 		if logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted
+		}
+
+		if err := deploymentBundle.StateDB.Open(ctx, tempStatePath, dstate.WithRecovery(true), dstate.WithWrite(false)); err != nil {
+			return fmt.Errorf("failed to open state: %w", err)
 		}
 
 		plan, err := deploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(ctx), &b.Config)
@@ -281,8 +293,14 @@ To start using direct engine, set "engine: direct" under bundle in your databric
 			}
 		}
 
+		_ = deploymentBundle.StateDB.Finalize(ctx)
+		err = deploymentBundle.StateDB.Open(ctx, tempStatePath, dstate.WithRecovery(false), dstate.WithWrite(true))
+		if err != nil {
+			return fmt.Errorf("reopening state for apply: %w", err)
+		}
+
 		deploymentBundle.Apply(ctx, b.WorkspaceClient(ctx), plan, direct.MigrateMode(true))
-		if err := deploymentBundle.StateDB.Finalize(); err != nil {
+		if err := deploymentBundle.StateDB.Finalize(ctx); err != nil {
 			logdiag.LogError(ctx, err)
 		}
 		if logdiag.HasError(ctx) {
@@ -310,7 +328,7 @@ Validate the migration by running "databricks bundle plan%s", there should be no
 The state file is not synchronized to the workspace yet. To do that and finalize the migration, run "bundle deploy%s".
 
 To undo the migration, remove %s and rename %s to %s
-`, len(deploymentBundle.StateDB.Data.State), localPath, extraArgsStr, extraArgsStr, localPath, localTerraformBackupPath, localTerraformPath))
+`, len(state), localPath, extraArgsStr, extraArgsStr, localPath, localTerraformBackupPath, localTerraformPath))
 		return nil
 	}
 

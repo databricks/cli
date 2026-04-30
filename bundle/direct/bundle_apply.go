@@ -25,7 +25,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 		return
 	}
 
-	b.StateDB.AssertOpened()
+	b.StateDB.AssertOpenedForWrite()
 	b.RemoteStateCache.Clear()
 
 	g, err := makeGraph(plan)
@@ -151,6 +151,8 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 
 		return true
 	})
+
+	// Note: caller is responsible for closing StateDB after Apply returns.
 }
 
 func (b *DeploymentBundle) LookupReferencePostDeploy(ctx context.Context, path *structpath.PathNode) (any, error) {

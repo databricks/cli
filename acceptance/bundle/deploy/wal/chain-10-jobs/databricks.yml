@@ -1,0 +1,117 @@
+bundle:
+  name: wal-chain-test
+
+resources:
+  jobs:
+    # Linear chain: job_01 -> job_02 -> ... -> job_10
+    # Execution order: job_01 first, job_10 last
+    job_01:
+      name: "job-01"
+      description: "first in chain"
+      tasks:
+        - task_key: "task"
+          spark_python_task:
+            python_file: ./test.py
+          new_cluster:
+            spark_version: 15.4.x-scala2.12
+            node_type_id: i3.xlarge
+            num_workers: 0
+    job_02:
+      name: "job-02"
+      description: "depends on ${resources.jobs.job_01.id}"
+      tasks:
+        - task_key: "task"
+          spark_python_task:
+            python_file: ./test.py
+          new_cluster:
+            spark_version: 15.4.x-scala2.12
+            node_type_id: i3.xlarge
+            num_workers: 0
+    job_03:
+      name: "job-03"
+      description: "depends on ${resources.jobs.job_02.id}"
+      tasks:
+        - task_key: "task"
+          spark_python_task:
+            python_file: ./test.py
+          new_cluster:
+            spark_version: 15.4.x-scala2.12
+            node_type_id: i3.xlarge
+            num_workers: 0
+    job_04:
+      name: "job-04"
+      description: "depends on ${resources.jobs.job_03.id}"
+      tasks:
+        - task_key: "task"
+          spark_python_task:
+            python_file: ./test.py
+          new_cluster:
+            spark_version: 15.4.x-scala2.12
+            node_type_id: i3.xlarge
+            num_workers: 0
+    job_05:
+      name: "job-05"
+      description: "depends on ${resources.jobs.job_04.id}"
+      tasks:
+        - task_key: "task"
+          spark_python_task:
+            python_file: ./test.py
+          new_cluster:
+            spark_version: 15.4.x-scala2.12
+            node_type_id: i3.xlarge
+            num_workers: 0
+    job_06:
+      name: "job-06"
+      description: "depends on ${resources.jobs.job_05.id}"
+      tasks:
+        - task_key: "task"
+          spark_python_task:
+            python_file: ./test.py
+          new_cluster:
+            spark_version: 15.4.x-scala2.12
+            node_type_id: i3.xlarge
+            num_workers: 0
+    job_07:
+      name: "job-07"
+      description: "depends on ${resources.jobs.job_06.id}"
+      tasks:
+        - task_key: "task"
+          spark_python_task:
+            python_file: ./test.py
+          new_cluster:
+            spark_version: 15.4.x-scala2.12
+            node_type_id: i3.xlarge
+            num_workers: 0
+    job_08:
+      name: "job-08"
+      description: "depends on ${resources.jobs.job_07.id}"
+      tasks:
+        - task_key: "task"
+          spark_python_task:
+            python_file: ./test.py
+          new_cluster:
+            spark_version: 15.4.x-scala2.12
+            node_type_id: i3.xlarge
+            num_workers: 0
+    job_09:
+      name: "job-09"
+      description: "depends on ${resources.jobs.job_08.id}"
+      tasks:
+        - task_key: "task"
+          spark_python_task:
+            python_file: ./test.py
+          new_cluster:
+            spark_version: 15.4.x-scala2.12
+            node_type_id: i3.xlarge
+            num_workers: 0
+    job_10:
+      name: "job-10"
+      description: "depends on ${resources.jobs.job_09.id}"
+      tasks:
+        - task_key: "task"
+          spark_python_task:
+            python_file: ./test.py
+          new_cluster:
+            spark_version: 15.4.x-scala2.12
+            node_type_id: i3.xlarge
+            num_workers: 0

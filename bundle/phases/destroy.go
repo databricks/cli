@@ -133,12 +133,6 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.
 func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, engine engine.EngineType) {
 	if engine.IsDirect() {
 		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(ctx), plan, direct.MigrateMode(false))
-		// Skip Finalize for empty plans to avoid creating a state file when nothing was destroyed.
-		if len(plan.Plan) > 0 {
-			if err := b.DeploymentBundle.StateDB.Finalize(); err != nil {
-				logdiag.LogError(ctx, err)
-			}
-		}
 	} else {
 		// Core destructive mutators for destroy. These require informed user consent.
 		bundle.ApplyContext(ctx, b, terraform.Apply())
@@ -225,6 +219,18 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 	}
 
 	if hasApproval {
+		if engine.IsDirect() {
+			// Upgrade from read (opened by process.go) to write mode
+			if err := b.DeploymentBundle.StateDB.UpgradeToWrite(); err != nil {
+				logdiag.LogError(ctx, err)
+				return
+			}
+			defer func() {
+				if err := b.DeploymentBundle.StateDB.Finalize(ctx); err != nil {
+					logdiag.LogError(ctx, err)
+				}
+			}()
+		}
 		destroyCore(ctx, b, plan, engine)
 	} else {
 		cmdio.LogString(ctx, "Destroy cancelled!")

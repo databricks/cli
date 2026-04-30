@@ -1,6 +1,8 @@
 package dstate
 
 import (
+	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -14,15 +16,27 @@ import (
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/statemgmt/resourcestate"
 	"github.com/databricks/cli/internal/build"
+	"github.com/databricks/cli/libs/log"
 	"github.com/google/uuid"
 )
 
-const currentStateVersion = 2
+const (
+	currentStateVersion = 2
+	initialBufferSize   = 64 * 1024
+	maxWalEntrySize     = 1024 * 1024
+	walSuffix           = ".wal"
+)
+
+// errStaleWAL is returned when the WAL serial is behind the expected serial.
+// The caller should delete the stale WAL and proceed normally.
+var errStaleWAL = errors.New("stale WAL")
 
 type DeploymentState struct {
-	Path string
-	Data Database
-	mu   sync.Mutex
+	Path     string
+	Data     Database
+	mu       sync.Mutex
+	walFile  *os.File
+	stateIDs map[string]string
 }
 
 type Database struct {
@@ -39,6 +53,18 @@ type ResourceEntry struct {
 	DependsOn []deployplan.DependsOnEntry `json:"depends_on,omitempty"`
 }
 
+type WALHeader struct {
+	Lineage      string `json:"lineage"`
+	Serial       int    `json:"serial"`
+	StateVersion int    `json:"state_version"`
+	CLIVersion   string `json:"cli_version"`
+}
+
+type WALEntry struct {
+	Key   string         `json:"k"`
+	Value *ResourceEntry `json:"v,omitempty"` // nil means delete
+}
+
 func NewDatabase(lineage string, serial int) Database {
 	return Database{
 		StateVersion: currentStateVersion,
@@ -50,7 +76,7 @@ func NewDatabase(lineage string, serial int) Database {
 }
 
 func (db *DeploymentState) SaveState(key, newID string, state any, dependsOn []deployplan.DependsOnEntry) error {
-	db.AssertOpened()
+	db.AssertOpenedForWrite()
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
@@ -58,22 +84,27 @@ func (db *DeploymentState) SaveState(key, newID string, state any, dependsOn []d
 		db.Data.State = make(map[string]ResourceEntry)
 	}
 
-	jsonMessage, err := json.MarshalIndent(state, "  ", " ")
+	// don't indent so that every WAL entry remains on a single line
+	jsonMessage, err := json.Marshal(state)
 	if err != nil {
 		return err
 	}
 
-	db.Data.State[key] = ResourceEntry{
+	entry := ResourceEntry{
 		ID:        newID,
 		State:     json.RawMessage(jsonMessage),
 		DependsOn: dependsOn,
 	}
 
-	return nil
+	err = appendJSONLine(db.walFile, WALEntry{Key: key, Value: &entry})
+	if err == nil {
+		db.stateIDs[key] = newID
+	}
+	return err
 }
 
 func (db *DeploymentState) DeleteState(key string) error {
-	db.AssertOpened()
+	db.AssertOpenedForWrite()
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
@@ -81,13 +112,15 @@ func (db *DeploymentState) DeleteState(key string) error {
 		return nil
 	}
 
-	delete(db.Data.State, key)
-
-	return nil
+	err := appendJSONLine(db.walFile, WALEntry{Key: key})
+	if err == nil {
+		delete(db.stateIDs, key)
+	}
+	return err
 }
 
-func (db *DeploymentState) getResourceEntry(key string) (ResourceEntry, bool) {
-	db.AssertOpened()
+func (db *DeploymentState) GetResourceEntry(key string) (ResourceEntry, bool) {
+	db.AssertOpenedForRead()
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
@@ -99,18 +132,21 @@ func (db *DeploymentState) getResourceEntry(key string) (ResourceEntry, bool) {
 	return result, ok
 }
 
-// GetResourceEntry returns the full resource entry for the given key.
-func (db *DeploymentState) GetResourceEntry(key string) (ResourceEntry, bool) {
-	return db.getResourceEntry(key)
-}
-
 // GetResourceID returns the ID of the resource for the given key, or an empty string if not found.
 func (db *DeploymentState) GetResourceID(key string) string {
-	entry, _ := db.getResourceEntry(key)
-	return entry.ID
+	db.AssertOpenedForReadOrWrite()
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
+	return db.stateIDs[key]
 }
 
-func (db *DeploymentState) Open(path string) error {
+type (
+	WithRecovery bool
+	WithWrite    bool
+)
+
+func (db *DeploymentState) Open(ctx context.Context, path string, withRecovery WithRecovery, withWrite WithWrite) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
@@ -118,47 +154,258 @@ func (db *DeploymentState) Open(path string) error {
 		panic(fmt.Sprintf("state already opened: %v, cannot open %v", db.Path, path))
 	}
 
-	data, err := os.ReadFile(path)
-	if err != nil {
-		if errors.Is(err, fs.ErrNotExist) {
-			// Create new database with serial=0, will be incremented to 1 in Finalize()
-			db.Data = NewDatabase("", 0)
-			db.Path = path
-			return nil
-		}
+	db.Path = path
+	if err := db.Reload(ctx); err != nil {
 		return err
 	}
 
-	err = json.Unmarshal(data, &db.Data)
-	if err != nil {
-		return err
+	walPath := db.Path + walSuffix
+	_, walError := os.Stat(walPath)
+	if walError == nil {
+		if withRecovery {
+			if err := db.replayWAL(ctx); err != nil {
+				return fmt.Errorf("reading state from %s: %w", path, err)
+			}
+		} else {
+			return fmt.Errorf("unexpected WAL file found at %s", walPath)
+		}
 	}
 
 	if err := migrateState(&db.Data); err != nil {
 		return fmt.Errorf("migrating state %s: %w", path, err)
 	}
 
-	db.Path = path
+	if withWrite {
+		if err := os.MkdirAll(filepath.Dir(walPath), 0o755); err != nil {
+			return fmt.Errorf("failed to create state directory: %w", err)
+		}
+		walFile, err := os.OpenFile(walPath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600)
+		if err != nil {
+			return fmt.Errorf("failed to open WAL file %s: %w", walPath, err)
+		}
+		db.walFile = walFile
+		lineage := db.Data.Lineage
+		if lineage == "" {
+			// state file is new, does not have lineage yet; store lineage in the WAL only
+			lineage = uuid.New().String()
+		}
+		walHead := WALHeader{
+			Lineage:      lineage,
+			Serial:       db.Data.Serial + 1,
+			StateVersion: currentStateVersion,
+			CLIVersion:   build.GetInfo().Version,
+		}
+		return appendJSONLine(db.walFile, walHead)
+	}
+
 	return nil
 }
 
-func (db *DeploymentState) Finalize() error {
+func (db *DeploymentState) Reload(ctx context.Context) error {
+	db.stateIDs = make(map[string]string)
+	data, err := os.ReadFile(db.Path)
+	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			// Not initializing lineage yet, we might have that saved in WAL
+			db.Data = NewDatabase("", 0)
+		} else {
+			return err
+		}
+	} else {
+		if err := json.Unmarshal(data, &db.Data); err != nil {
+			return err
+		}
+	}
+	for key, entry := range db.Data.State {
+		db.stateIDs[key] = entry.ID
+	}
+	return nil
+}
+
+func (db *DeploymentState) replayWAL(ctx context.Context) error {
+	walPath := db.Path + walSuffix
+	hasEntries, err := db.mergeWalIntoState(ctx)
+	if err != nil {
+		if errors.Is(err, errStaleWAL) {
+			log.Debugf(ctx, "Deleting stale WAL file %s", walPath)
+			_ = os.Remove(walPath)
+			return nil
+		}
+		return fmt.Errorf("WAL recovery failed: %w", err)
+	}
+	if hasEntries {
+		if err := db.unlockedSave(); err != nil {
+			return err
+		}
+	}
+	if err := os.Remove(walPath); err != nil {
+		return fmt.Errorf("failed to remove WAL file %s: %w", walPath, err)
+	}
+	return nil
+}
+
+func (db *DeploymentState) validateWALHeader(header *WALHeader) error {
+	if header.Lineage != db.Data.Lineage && db.Data.Lineage != "" {
+		return fmt.Errorf("WAL lineage (%s) does not match state lineage (%s)", header.Lineage, db.Data.Lineage)
+	}
+
+	expected := db.Data.Serial + 1
+	if header.Serial < expected {
+		return errStaleWAL
+	}
+	if header.Serial > expected {
+		return fmt.Errorf("WAL serial (%d) is ahead of expected (%d), state may be corrupted", header.Serial, expected)
+	}
+
+	return nil
+}
+
+func (db *DeploymentState) mergeWalIntoState(ctx context.Context) (bool, error) {
+	if db.walFile != nil {
+		panic("internal error: walFile must be closed")
+	}
+
+	walPath := db.Path + walSuffix
+	walFile, err := os.Open(walPath)
+	if err != nil {
+		return false, fmt.Errorf("failed to open WAL file %s: %w", walPath, err)
+	}
+	defer walFile.Close()
+
+	scanner := bufio.NewScanner(walFile)
+	scanner.Buffer(make([]byte, 0, initialBufferSize), maxWalEntrySize)
+	lineNumber := 0
+	var corruptedLines [][]byte
+
+	for scanner.Scan() {
+		lineNumber++
+		line := scanner.Bytes()
+		if lineNumber == 1 {
+			var header WALHeader
+			if err := json.Unmarshal(line, &header); err != nil {
+				return false, fmt.Errorf("failed to parse WAL header: %w", err)
+			}
+			if err := db.validateWALHeader(&header); err != nil {
+				return false, err
+			}
+			// Apply header metadata to state (lineage may be new for first deploy)
+			db.Data.Lineage = header.Lineage
+			db.Data.Serial = header.Serial
+		} else {
+			var entry WALEntry
+			if err := json.Unmarshal(line, &entry); err != nil {
+				log.Warnf(ctx, "Skipping corrupted WAL entry at %s:%d: %v", walPath, lineNumber, err)
+				corruptedLines = append(corruptedLines, append([]byte(nil), line...))
+				continue
+			}
+			if db.Data.State == nil {
+				db.Data.State = make(map[string]ResourceEntry)
+			}
+			if entry.Value == nil {
+				delete(db.Data.State, entry.Key)
+				delete(db.stateIDs, entry.Key)
+			} else {
+				db.Data.State[entry.Key] = *entry.Value
+				db.stateIDs[entry.Key] = entry.Value.ID
+			}
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		return false, err
+	}
+
+	if len(corruptedLines) > 0 {
+		corruptedPath := walPath + ".corrupted"
+		corruptedData := bytes.Join(corruptedLines, []byte("\n"))
+		if writeErr := os.WriteFile(corruptedPath, corruptedData, 0o600); writeErr != nil {
+			log.Warnf(ctx, "Failed to save corrupted WAL entries to %s: %v", corruptedPath, writeErr)
+		} else {
+			log.Warnf(ctx, "Saved %d corrupted WAL entries to %s", len(corruptedLines), corruptedPath)
+		}
+	}
+
+	return lineNumber > 1, nil
+}
+
+// Finalize replays the WAL (if open for write) and resets the state.
+// Safe to call multiple times or on an already-finalized state.
+func (db *DeploymentState) Finalize(ctx context.Context) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
-	// Generate lineage on first save
-	if db.Data.Lineage == "" {
-		db.Data.Lineage = uuid.New().String()
+	if db.Path == "" {
+		return nil
 	}
 
-	db.Data.Serial++
+	var err error
 
-	return db.unlockedSave()
+	if db.walFile != nil {
+		db.walFile.Close()
+		db.walFile = nil
+		err = db.replayWAL(ctx)
+	}
+
+	db.Path = ""
+	db.Data = Database{}
+	db.stateIDs = make(map[string]string)
+
+	return err
 }
 
-func (db *DeploymentState) AssertOpened() {
+// UpgradeToWrite transitions from read mode to write mode without re-reading state.
+// State must already be open for read. This initializes the WAL for writing.
+func (db *DeploymentState) UpgradeToWrite() error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
+	if db.Path == "" {
+		return errors.New("internal error: DeploymentState must be opened first")
+	}
+	if db.walFile != nil {
+		return errors.New("internal error: DeploymentState is already open for write")
+	}
+
+	walPath := db.Path + walSuffix
+	if err := os.MkdirAll(filepath.Dir(walPath), 0o755); err != nil {
+		return fmt.Errorf("failed to create state directory: %w", err)
+	}
+	walFile, err := os.OpenFile(walPath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600)
+	if err != nil {
+		return fmt.Errorf("failed to open WAL file %s: %w", walPath, err)
+	}
+	db.walFile = walFile
+
+	lineage := db.Data.Lineage
+	if lineage == "" {
+		lineage = uuid.New().String()
+	}
+	walHead := WALHeader{
+		Lineage:      lineage,
+		Serial:       db.Data.Serial + 1,
+		StateVersion: currentStateVersion,
+		CLIVersion:   build.GetInfo().Version,
+	}
+	return appendJSONLine(db.walFile, walHead)
+}
+
+func (db *DeploymentState) AssertOpenedForReadOrWrite() {
 	if db.Path == "" {
 		panic("internal error: DeploymentState must be opened first")
+	}
+}
+
+func (db *DeploymentState) AssertOpenedForRead() {
+	db.AssertOpenedForReadOrWrite()
+	if db.walFile != nil {
+		panic("internal error: DeploymentState must be opened in read mode")
+	}
+}
+
+func (db *DeploymentState) AssertOpenedForWrite() {
+	db.AssertOpenedForReadOrWrite()
+	if db.walFile == nil {
+		panic("internal error: DeploymentState must be opened in write mode")
 	}
 }
 
@@ -186,13 +433,11 @@ func (db *DeploymentState) ExportState(ctx context.Context) resourcestate.Export
 }
 
 func (db *DeploymentState) unlockedSave() error {
-	db.AssertOpened()
 	data, err := json.MarshalIndent(db.Data, "", " ")
 	if err != nil {
 		return err
 	}
 
-	// Create parent directories if they don't exist
 	dir := filepath.Dir(db.Path)
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return fmt.Errorf("failed to create directory %#v: %w", dir, err)
@@ -204,4 +449,16 @@ func (db *DeploymentState) unlockedSave() error {
 	}
 
 	return nil
+}
+
+func appendJSONLine(file *os.File, obj any) error {
+	data, err := json.Marshal(obj)
+	if err != nil {
+		return err
+	}
+	data = append(data, '\n')
+
+	_, err = file.Write(data)
+	// no fsync here, not needed
+	return err
 }

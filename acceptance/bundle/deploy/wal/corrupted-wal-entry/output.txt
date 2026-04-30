@@ -1,0 +1,27 @@
+=== Creating state file with serial 5 ===
+=== Creating WAL with corrupted LAST entry ===
+=== WAL content ===
+{"lineage":"test-lineage-123","serial": [SERIAL]}
+{"k":"resources.jobs.valid_job","v":{"__id__": "[ID]","state":{"name":"valid-job"}}}
+{"k":"resources.jobs.another_valid","v":{"__id__": "[ID]","state":{"name":"another-valid"}}}
+{"k":"resources.jobs.partial_write","v":{"__id__": "[ID]","state":{"name":"partial-
+=== Deploy (should recover valid entries, skip corrupted last line) ===
+
+>>> [CLI] bundle deploy
+Warn: Skipping corrupted WAL entry at [TEST_TMP_DIR]/.databricks/bundle/default/resources.json.wal:4: unexpected end of JSON input
+Warn: Saved 1 corrupted WAL entries to [TEST_TMP_DIR]/.databricks/bundle/default/resources.json.wal.corrupted
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/wal-corrupted-test/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+=== Final state (should have recovered entries) ===
+{
+  "serial": [SERIAL],
+  "state_keys": [
+    "resources.jobs.another_valid",
+    "resources.jobs.valid_job"
+  ]
+}
+=== Corrupted WAL entries file ===
+{"k":"resources.jobs.partial_write","v":{"__id__": "[ID]","state":{"name":"partial-=== WAL after successful deploy ===
+WAL deleted (expected)

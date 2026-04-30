@@ -141,12 +141,16 @@ func (m *uploadStateForYamlSync) convertState(ctx context.Context, b *bundle.Bun
 	migratedDB := dstate.NewDatabase(tfState.Lineage, tfState.Serial+1)
 	migratedDB.State = state
 
-	deploymentBundle := &direct.DeploymentBundle{
-		StateDB: dstate.DeploymentState{
-			Path: snapshotPath,
-			Data: migratedDB,
-		},
+	// Write the migrated state to disk so CalculatePlan can read it via Open.
+	migratedStateJSON, err := json.MarshalIndent(migratedDB, "", " ")
+	if err != nil {
+		return false, fmt.Errorf("marshaling migrated state: %w", err)
 	}
+	if err := os.WriteFile(snapshotPath, migratedStateJSON, 0o600); err != nil {
+		return false, fmt.Errorf("writing migrated state to %s: %w", snapshotPath, err)
+	}
+
+	deploymentBundle := &direct.DeploymentBundle{}
 
 	// Apply SecretScopeFixups so the config matches what the direct engine expects.
 	// This adds MANAGE ACL for the current user to all secret scopes, ensuring
@@ -173,7 +177,12 @@ func (m *uploadStateForYamlSync) convertState(ctx context.Context, b *bundle.Bun
 		return false, fmt.Errorf("failed to create uninterpolated config: %w", err)
 	}
 
+	if err := deploymentBundle.StateDB.Open(ctx, snapshotPath, dstate.WithRecovery(true), dstate.WithWrite(false)); err != nil {
+		return false, fmt.Errorf("failed to open state: %w", err)
+	}
+
 	plan, err := deploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(ctx), &uninterpolatedConfig)
+	_ = deploymentBundle.StateDB.Finalize(ctx)
 	if err != nil {
 		return false, err
 	}
@@ -197,8 +206,16 @@ func (m *uploadStateForYamlSync) convertState(ctx context.Context, b *bundle.Bun
 		}
 	}
 
+	// Close read state and reopen for write so Apply can record state changes via WAL.
+	if err := deploymentBundle.StateDB.Finalize(ctx); err != nil {
+		return false, fmt.Errorf("closing state after plan: %w", err)
+	}
+	if err := deploymentBundle.StateDB.Open(ctx, snapshotPath, dstate.WithRecovery(false), dstate.WithWrite(true)); err != nil {
+		return false, fmt.Errorf("reopening state for apply: %w", err)
+	}
+
 	deploymentBundle.Apply(ctx, b.WorkspaceClient(ctx), plan, direct.MigrateMode(true))
-	if err := deploymentBundle.StateDB.Finalize(); err != nil {
+	if err := deploymentBundle.StateDB.Finalize(ctx); err != nil {
 		return false, err
 	}
 
