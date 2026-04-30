@@ -494,6 +494,25 @@ func TestDisableLockingDisabled(t *testing.T) {
 	assert.True(t, b.Config.Bundle.Deployment.Lock.IsEnabled(), "Deployment lock should remain enabled in development mode when explicitly enabled")
 }
 
+func TestVectorSearchIndexNameWithUnresolvedRefsLeftAlone(t *testing.T) {
+	b := mockBundle(config.Development)
+	b.Config.Resources.VectorSearchIndexes["vs_index_with_var"] = &resources.VectorSearchIndex{
+		CreateVectorIndexRequest: vectorsearch.CreateVectorIndexRequest{
+			Name:         "${var.catalog}.${var.schema}.${var.index}",
+			EndpointName: "vs_endpoint1",
+			PrimaryKey:   "id",
+			IndexType:    vectorsearch.VectorIndexTypeDeltaSync,
+		},
+	}
+
+	diags := bundle.ApplySeq(t.Context(), b, ApplyTargetMode(), ApplyPresets())
+	require.NoError(t, diags.Error())
+
+	// The leaf-finding splits on the last dot, which would otherwise inject the
+	// prefix inside the trailing ${var.index} expression.
+	assert.Equal(t, "${var.catalog}.${var.schema}.${var.index}", b.Config.Resources.VectorSearchIndexes["vs_index_with_var"].Name)
+}
+
 func TestPrefixAlreadySet(t *testing.T) {
 	b := mockBundle(config.Development)
 	b.Config.Presets.NamePrefix = "custom_lennart_deploy_"
