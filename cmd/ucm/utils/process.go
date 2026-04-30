@@ -287,9 +287,8 @@ func ProcessUcm(cmd *cobra.Command, opts ProcessOptions) (*ucm.Ucm, error) {
 
 	if opts.Build {
 		t2 := time.Now()
-		// TODO(#101): wire real artifact build; ucm has no artifacts today.
 		// libs is the LibLocationMap bundle threads into phases.Deploy; ucm
-		// has no library concept yet so we discard it.
+		// has no library concept (UC objects are metadata) so we discard it.
 		_ = phases.BuildArtifacts(ctx, u)
 		u.Metrics.ExecutionTimes = append(u.Metrics.ExecutionTimes, protos.IntMapEntry{
 			Key:   "phases.Build",
