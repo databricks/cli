@@ -1,0 +1,28 @@
+{
+  "plan_version": 2,
+  "cli_version": "[DEV_VERSION]",
+  "lineage": "[UUID]",
+  "serial": 1,
+  "plan": {
+    "resources.genie_spaces.sales_analytics": {
+      "action": "skip",
+      "remote_state": {
+        "description": "Inline serialized_space test",
+        "parent_path": "",
+        "serialized_space": "{\"config\":{\"sample_questions\":[{\"id\":\"sq-001\",\"question\":[\"What is the total revenue?\"]}]},\"data_sources\":{\"tables\":[{\"column_configs\":[{\"column_name\":\"amount\",\"get_example_values\":true}],\"identifier\":\"main.sales.orders\"}]},\"version\":1}",
+        "space_id": "[GENIE_SPACE_ID]",
+        "title": "Sales Analytics Inline Genie",
+        "warehouse_id": "test-warehouse-id"
+      },
+      "changes": {
+        "parent_path": {
+          "action": "skip",
+          "reason": "input_only",
+          "old": "/Workspace/Users/[USERNAME]",
+          "new": "/Workspace/Users/[USERNAME]",
+          "remote": ""
+        }
+      }
+    }
+  }
+}

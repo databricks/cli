@@ -1,0 +1,10 @@
+Local = true
+RecordRequests = false
+
+# Genie spaces only support direct deployment engine (no Terraform provider yet)
+[EnvMatrix]
+DATABRICKS_BUNDLE_ENGINE = ["direct"]
+
+Ignore = [
+    "databricks.yml",
+]

@@ -2,6 +2,7 @@ package resourcemutator
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/databricks/cli/bundle"
@@ -30,21 +31,31 @@ func (c configureGenieSpaceSerializedSpace) Apply(_ context.Context, b *bundle.B
 		dyn.AnyKey(),
 	)
 
-	// Configure serialized_space field for all genie spaces.
 	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
 		return dyn.MapByPattern(v, pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
-			// Include "serialized_space" field if "file_path" is set.
-			path, ok := v.Get(filePathFieldName).AsString()
-			if !ok {
-				return v, nil
+			if path, ok := v.Get(filePathFieldName).AsString(); ok {
+				contents, err := b.SyncRoot.ReadFile(path)
+				if err != nil {
+					return dyn.InvalidValue, fmt.Errorf("failed to read serialized genie space from file_path %s: %w", path, err)
+				}
+				return dyn.Set(v, serializedSpaceFieldName, dyn.V(string(contents)))
 			}
 
-			contents, err := b.SyncRoot.ReadFile(path)
-			if err != nil {
-				return dyn.InvalidValue, fmt.Errorf("failed to read serialized genie space from file_path %s: %w", path, err)
+			// Marshal an inline structured serialized_space to a JSON string so
+			// both config-side and state-side carry the same plain string.
+			// Otherwise YAML decodes small ints as Go `int` while state JSON
+			// round-trip decodes them as `float64`, and structdiff reports
+			// false drift on every plan.
+			ss := v.Get(serializedSpaceFieldName)
+			switch ss.Kind() {
+			case dyn.KindMap, dyn.KindSequence:
+				jsonBytes, err := json.Marshal(ss.AsAny())
+				if err != nil {
+					return dyn.InvalidValue, fmt.Errorf("failed to marshal inline serialized_space: %w", err)
+				}
+				return dyn.Set(v, serializedSpaceFieldName, dyn.V(string(jsonBytes)))
 			}
-
-			return dyn.Set(v, serializedSpaceFieldName, dyn.V(string(contents)))
+			return v, nil
 		})
 	})
 
