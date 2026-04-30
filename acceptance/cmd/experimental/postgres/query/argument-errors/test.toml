@@ -1,3 +1,0 @@
-# Argument validation runs before any SDK call. No mocked HTTP responses are
-# needed; CLI either errors at flag-parse time or at our own validate function.
-GOOS.windows = false

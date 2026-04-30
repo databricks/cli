@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/databricks/cli/experimental/postgres/cmd/internal/target"
 	"github.com/databricks/cli/libs/cmdctx"
-	"github.com/databricks/cli/libs/lakebase/target"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/postgres"
 )
