@@ -33,25 +33,41 @@ func TestReportCancellation_SignalCanceled(t *testing.T) {
 	signalCtx, signalCancel := context.WithCancel(t.Context())
 	signalCancel()
 	stmtCtx := signalCtx
-	got := reportCancellation(signalCtx, stmtCtx, errors.New("anything"), 0)
-	assert.Equal(t, "Query cancelled.", got)
+	msg, invocationScoped := reportCancellation(signalCtx, stmtCtx, errors.New("anything"), 0)
+	assert.Equal(t, "Query cancelled.", msg)
+	assert.True(t, invocationScoped)
 }
 
 func TestReportCancellation_TimeoutFired(t *testing.T) {
 	signalCtx := t.Context()
 	stmtCtx, stmtCancel := context.WithDeadline(signalCtx, time.Now().Add(-time.Second))
 	defer stmtCancel()
-	// Wait for the deadline to be surfaced.
 	<-stmtCtx.Done()
-	got := reportCancellation(signalCtx, stmtCtx, errors.New("query failed"), 5*time.Second)
-	assert.Equal(t, "Query timed out after 5s.", got)
+	msg, invocationScoped := reportCancellation(signalCtx, stmtCtx, errors.New("query failed"), 5*time.Second)
+	assert.Equal(t, "Query timed out after 5s.", msg)
+	assert.True(t, invocationScoped)
 }
 
 func TestReportCancellation_GenericError(t *testing.T) {
 	signalCtx := t.Context()
 	stmtCtx := signalCtx
-	got := reportCancellation(signalCtx, stmtCtx, errors.New("syntax error"), 0)
-	assert.Equal(t, "syntax error", got)
+	msg, invocationScoped := reportCancellation(signalCtx, stmtCtx, errors.New("syntax error"), 0)
+	assert.Equal(t, "syntax error", msg)
+	assert.False(t, invocationScoped)
+}
+
+func TestReportCancellation_BothFire_CancelWinsRace(t *testing.T) {
+	// User cancel and deadline both already done. Precedence: cancel wins
+	// (the user's intent dominates a coincidental deadline). A future
+	// reordering of the switch would silently flip this; the test pins it.
+	signalCtx, signalCancel := context.WithCancel(t.Context())
+	signalCancel()
+	stmtCtx, stmtCancel := context.WithDeadline(signalCtx, time.Now().Add(-time.Second))
+	defer stmtCancel()
+	<-stmtCtx.Done()
+	msg, invocationScoped := reportCancellation(signalCtx, stmtCtx, errors.New("anything"), time.Second)
+	assert.Equal(t, "Query cancelled.", msg)
+	assert.True(t, invocationScoped)
 }
 
 func TestWatchInterruptSignals_CancelOnStop(t *testing.T) {

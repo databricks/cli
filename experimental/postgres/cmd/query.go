@@ -207,7 +207,8 @@ func runQuery(ctx context.Context, cmd *cobra.Command, args []string, f queryFla
 		err := executeOne(stmtCtx, conn, units[0].SQL, sink)
 		stmtCancel()
 		if err != nil {
-			return errors.New(reportCancellation(signalCtx, stmtCtx, err, f.timeout))
+			msg, _ := reportCancellation(signalCtx, stmtCtx, err, f.timeout)
+			return errors.New(msg)
 		}
 		return nil
 	}
@@ -229,7 +230,14 @@ func runQuery(ctx context.Context, cmd *cobra.Command, args []string, f queryFla
 				// error to the user, the renderer error to debug logs.
 				fmt.Fprintln(stderr, "warning: failed to render partial result:", rerr)
 			}
-			return errors.New(u.Source + ": " + reportCancellation(signalCtx, stmtCtx, err, f.timeout))
+			msg, invocationScoped := reportCancellation(signalCtx, stmtCtx, err, f.timeout)
+			if invocationScoped {
+				// User cancel / timeout is invocation-scoped; the source
+				// prefix is redundant ("--file foo.sql: Query cancelled."
+				// reads worse than just "Query cancelled.").
+				return errors.New(msg)
+			}
+			return errors.New(u.Source + ": " + msg)
 		}
 		results = append(results, r)
 	}
@@ -242,11 +250,10 @@ func runQuery(ctx context.Context, cmd *cobra.Command, args []string, f queryFla
 	}
 }
 
-// withStatementTimeout returns ctx unchanged (and a no-op cancel) when timeout
-// is zero, otherwise a child context with the timeout applied. Per-statement
-// scoping means a long-running unit can be cancelled without aborting the
-// next unit's chance to run with a fresh deadline; today execution stops on
-// the first failure either way, but the contract is what matters for v2.
+// withStatementTimeout returns ctx unchanged (and a no-op cancel) when
+// timeout is zero, otherwise a child context with the timeout applied. Each
+// statement gets its own deadline so cancellation is scoped to one
+// statement at a time.
 func withStatementTimeout(parent context.Context, timeout time.Duration) (context.Context, context.CancelFunc) {
 	if timeout <= 0 {
 		return parent, func() {}
@@ -254,18 +261,23 @@ func withStatementTimeout(parent context.Context, timeout time.Duration) (contex
 	return context.WithTimeout(parent, timeout)
 }
 
-// reportCancellation distinguishes the three error cases that look the
-// same from `executeOne`'s POV (a wrapped pgconn / network error): user
-// cancelled via Ctrl+C, --timeout fired, or the statement just plain
-// errored. Returns a human-readable message; the caller wraps it.
-func reportCancellation(signalCtx, stmtCtx context.Context, err error, timeout time.Duration) string {
+// reportCancellation distinguishes the three error cases that look the same
+// from `executeOne`'s POV (a wrapped pgconn / network error): user cancelled
+// via Ctrl+C, --timeout fired, or the statement just plain errored. Returns
+// the human-readable message and whether the cause is invocation-scoped
+// (cancel/timeout) rather than statement-scoped.
+//
+// Precedence: user cancel beats deadline. If both contexts fire near-
+// simultaneously (race), we report "cancelled" because the user's intent
+// dominates a coincidental timeout.
+func reportCancellation(signalCtx, stmtCtx context.Context, err error, timeout time.Duration) (msg string, invocationScoped bool) {
 	switch {
 	case errors.Is(signalCtx.Err(), context.Canceled):
-		return "Query cancelled."
+		return "Query cancelled.", true
 	case timeout > 0 && errors.Is(stmtCtx.Err(), context.DeadlineExceeded):
-		return fmt.Sprintf("Query timed out after %s.", timeout)
+		return fmt.Sprintf("Query timed out after %s.", timeout), true
 	default:
-		return formatPgError(err)
+		return formatPgError(err), false
 	}
 }
 
