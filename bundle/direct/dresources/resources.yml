@@ -515,9 +515,15 @@ resources:
 
   vector_search_indexes:
     recreate_on_changes:
+      # The index API has no rename or update path, so every config change
+      # has to go through delete + create.
+      - field: name
+        reason: immutable
       - field: endpoint_name
         reason: immutable
       - field: index_type
+        reason: immutable
+      - field: index_subtype
         reason: immutable
       - field: primary_key
         reason: immutable
