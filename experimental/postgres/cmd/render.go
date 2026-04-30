@@ -81,7 +81,13 @@ func (s *textSink) End(commandTag string) error {
 	}
 
 	if s.interactive && len(s.rows) > staticTableThreshold {
-		return tableview.Run(s.out, s.columns, s.rows)
+		// Try the interactive viewer; on failure (TUI startup, terminal
+		// resize race, etc.) fall through to the static path so the user
+		// still sees the rows their query returned. Without this fallback
+		// a successful query would surface as "viewer failed" with no data.
+		if err := tableview.Run(s.out, s.columns, s.rows); err == nil {
+			return nil
+		}
 	}
 
 	tw := tabwriter.NewWriter(s.out, 0, 0, 2, ' ', 0)
