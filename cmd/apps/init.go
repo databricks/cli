@@ -19,6 +19,7 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/experimental/aitools/lib/agents"
 	"github.com/databricks/cli/experimental/aitools/lib/installer"
+	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/depversions"
 	"github.com/databricks/cli/libs/apps/generator"
 	"github.com/databricks/cli/libs/apps/initializer"
@@ -169,7 +170,11 @@ Environment variables:
 
 	cmd.Flags().StringVar(&templatePath, "template", "", "Template path (local directory or GitHub URL)")
 	cmd.Flags().StringVar(&branch, "branch", "", "Git branch or tag (for GitHub templates, mutually exclusive with --version)")
-	cmd.Flags().StringVar(&version, "version", "", "AppKit version to use (resolved from compatibility manifest, use 'latest' for main branch)")
+	versionDesc := "AppKit version to use (use 'latest' for main branch)"
+	if v := build.GetDepVersions().AppKit; v != "" {
+		versionDesc = fmt.Sprintf("AppKit version to use (default: %s, use 'latest' for main branch)", v)
+	}
+	cmd.Flags().StringVar(&version, "version", "", versionDesc)
 	cmd.Flags().StringVar(&name, "name", "", "Project name (prompts if not provided)")
 	cmd.Flags().StringVar(&warehouseID, "warehouse-id", "", "SQL warehouse ID")
 	_ = cmd.Flags().MarkDeprecated("warehouse-id", "use --set <plugin>.sql-warehouse.id=<value> instead")
