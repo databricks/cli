@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"strings"
 
 	"github.com/databricks/cli/bundle/config/resources"
@@ -123,7 +124,7 @@ func isMissingGenieParentPathError(err error) bool {
 	// Some workspaces return a standard missing-resource error, while others
 	// return INVALID_PARAMETER_VALUE with a NOT_FOUND message embedded in the
 	// text. Treat both forms as "create the parent directory and retry once".
-	return apiErr.StatusCode == 400 &&
+	return apiErr.StatusCode == http.StatusBadRequest &&
 		apiErr.ErrorCode == "INVALID_PARAMETER_VALUE" &&
 		strings.Contains(apiErr.Message, "Tree node with path") &&
 		strings.Contains(apiErr.Message, "does not exist")
