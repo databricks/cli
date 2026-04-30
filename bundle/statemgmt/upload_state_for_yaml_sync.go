@@ -182,8 +182,8 @@ func (m *uploadStateForYamlSync) convertState(ctx context.Context, b *bundle.Bun
 	}
 
 	plan, err := deploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(ctx), &uninterpolatedConfig)
+	_ = deploymentBundle.StateDB.Finalize(ctx)
 	if err != nil {
-		deploymentBundle.StateDB.Finalize(ctx)
 		return false, err
 	}
 

@@ -396,7 +396,6 @@ func (d *dashboard) runForResource(ctx context.Context, b *bundle.Bundle) {
 			logdiag.LogError(ctx, err)
 			return
 		}
-		defer b.DeploymentBundle.StateDB.Finalize(ctx)
 	}
 
 	bundle.ApplySeqContext(ctx, b,

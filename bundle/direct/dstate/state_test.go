@@ -46,7 +46,7 @@ func TestPanicOnDoubleOpen(t *testing.T) {
 	assert.Panics(t, func() {
 		_ = db.Open(t.Context(), path, WithRecovery(true), WithWrite(true))
 	})
-	db.Finalize(t.Context())
+	require.NoError(t, db.Finalize(t.Context()))
 }
 
 func TestDeleteState(t *testing.T) {
