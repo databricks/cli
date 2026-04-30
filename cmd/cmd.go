@@ -77,7 +77,7 @@ func New(ctx context.Context) *cobra.Command {
 		groups := []cobra.Group{
 			{
 				ID:    mainGroup,
-				Title: "Available Commands",
+				Title: "Main Commands",
 			},
 			{
 				ID:    pipelines.ManagementGroupID,

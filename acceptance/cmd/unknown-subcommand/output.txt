@@ -9,7 +9,7 @@ Usage:
   databricks secrets [flags]
   databricks secrets [command]
 
-Available Commands
+Main Commands
   create-scope  Create a new secret scope.
   delete-acl    Delete an ACL.
   delete-scope  Delete a secret scope.
