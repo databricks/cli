@@ -48,6 +48,7 @@ func (s *FakeWorkspace) GenieSpaceCreate(req Request) Response {
 		SpaceId:         spaceId,
 		Title:           createReq.Title,
 		Description:     createReq.Description,
+		ParentPath:      createReq.ParentPath,
 		WarehouseId:     createReq.WarehouseId,
 		SerializedSpace: createReq.SerializedSpace,
 	}

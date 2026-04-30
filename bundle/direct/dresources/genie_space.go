@@ -56,7 +56,11 @@ func (r *ResourceGenieSpace) DoRead(ctx context.Context, id string) (*resources.
 		return nil, err
 	}
 
-	forceSendFields := utils.FilterFields[resources.GenieSpaceConfig](space.ForceSendFields)
+	// Drop ParentPath from ForceSendFields. We always clear ParentPath
+	// below because the GET Genie space API does not reliably return it,
+	// and keeping it in ForceSendFields would force-emit parent_path: ""
+	// in state output even though the field is logically unset.
+	forceSendFields := utils.FilterFields[resources.GenieSpaceConfig](space.ForceSendFields, "ParentPath")
 
 	return &resources.GenieSpaceConfig{
 		Description:     space.Description,
@@ -86,7 +90,11 @@ func prepareGenieSpaceRequest(config *resources.GenieSpaceConfig) (string, error
 }
 
 func responseToGenieSpaceConfig(space *dashboards.GenieSpace, serializedSpace string) *resources.GenieSpaceConfig {
-	forceSendFields := utils.FilterFields[resources.GenieSpaceConfig](space.ForceSendFields)
+	// Drop ParentPath from ForceSendFields. We always clear ParentPath
+	// below because the GET Genie space API does not reliably return it,
+	// and keeping it in ForceSendFields would force-emit parent_path: ""
+	// in state output even though the field is logically unset.
+	forceSendFields := utils.FilterFields[resources.GenieSpaceConfig](space.ForceSendFields, "ParentPath")
 
 	return &resources.GenieSpaceConfig{
 		Description:     space.Description,
