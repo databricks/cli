@@ -146,7 +146,7 @@ func TestFetchManifest_RemoteSuccess(t *testing.T) {
 	var called bool
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		called = true
-		w.Write(body)
+		_, _ = w.Write(body)
 	}))
 	defer srv.Close()
 	redirectToServer(t, srv)
@@ -173,7 +173,7 @@ func TestFetchManifest_RemoteFailReturnsError(t *testing.T) {
 func TestFetchManifest_RemoteReturnsInvalidJSON(t *testing.T) {
 	ctx := testContext(t)
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("not json at all"))
+		_, _ = w.Write([]byte("not json at all"))
 	}))
 	defer srv.Close()
 	redirectToServer(t, srv)
@@ -194,7 +194,7 @@ func TestFetchManifest_CacheHit(t *testing.T) {
 	var callCount atomic.Int32
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		callCount.Add(1)
-		w.Write(body)
+		_, _ = w.Write(body)
 	}))
 	defer srv.Close()
 	redirectToServer(t, srv)
@@ -227,7 +227,7 @@ func TestFetchManifest_RetryOnTransientError(t *testing.T) {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		w.Write(body)
+		_, _ = w.Write(body)
 	}))
 	defer srv.Close()
 	redirectToServer(t, srv)
@@ -274,7 +274,7 @@ func TestResolveEntry_RemoteSuccess(t *testing.T) {
 	body, _ := json.Marshal(want)
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write(body)
+		_, _ = w.Write(body)
 	}))
 	defer srv.Close()
 	redirectToServer(t, srv)

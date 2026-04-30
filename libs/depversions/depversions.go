@@ -3,10 +3,11 @@ package depversions
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
-	"sort"
+	"slices"
 	"strings"
 	"time"
 
@@ -70,7 +71,7 @@ func FetchManifest(ctx context.Context) (Manifest, error) {
 //  4. If CLI is older than all entries, use the lowest (oldest) entry.
 func Resolve(m Manifest, cliVersion string) (Entry, error) {
 	if len(m) == 0 {
-		return Entry{}, fmt.Errorf("empty compatibility manifest")
+		return Entry{}, errors.New("empty compatibility manifest")
 	}
 
 	next, ok := m[nextKey]
@@ -97,8 +98,8 @@ func Resolve(m Manifest, cliVersion string) (Entry, error) {
 	}
 
 	// Sort descending by semver. The semver package requires a "v" prefix.
-	sort.Slice(versions, func(i, j int) bool {
-		return semver.Compare("v"+versions[i], "v"+versions[j]) > 0
+	slices.SortFunc(versions, func(a, b string) int {
+		return semver.Compare("v"+b, "v"+a)
 	})
 
 	// Find the nearest lower version.
@@ -138,7 +139,7 @@ func resolveEntry(ctx context.Context, cliVersion string) (Entry, error) {
 	if fetchErr != nil {
 		return Entry{}, fmt.Errorf("manifest fetch failed and no build-time versions available: %w", fetchErr)
 	}
-	return Entry{}, fmt.Errorf("no compatible versions available")
+	return Entry{}, errors.New("no compatible versions available")
 }
 
 // ResolveAppKitVersion resolves the AppKit template version for the current CLI.
@@ -212,7 +213,7 @@ func parseManifest(data []byte) (Manifest, error) {
 		return nil, fmt.Errorf("invalid manifest JSON: %w", err)
 	}
 	if len(m) == 0 {
-		return nil, fmt.Errorf("empty compatibility manifest")
+		return nil, errors.New("empty compatibility manifest")
 	}
 	if _, ok := m[nextKey]; !ok {
 		return nil, fmt.Errorf("compatibility manifest missing %q key", nextKey)

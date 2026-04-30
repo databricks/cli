@@ -20,13 +20,13 @@ import (
 	"github.com/databricks/cli/experimental/aitools/lib/agents"
 	"github.com/databricks/cli/experimental/aitools/lib/installer"
 	"github.com/databricks/cli/internal/build"
-	"github.com/databricks/cli/libs/depversions"
 	"github.com/databricks/cli/libs/apps/generator"
 	"github.com/databricks/cli/libs/apps/initializer"
 	"github.com/databricks/cli/libs/apps/manifest"
 	"github.com/databricks/cli/libs/apps/prompt"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/depversions"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/git"
 	"github.com/databricks/cli/libs/log"
@@ -40,7 +40,7 @@ const (
 	appkitTemplateDir    = "template"
 	appkitDefaultBranch  = "main"
 	appkitTemplateTagPfx = "template-v"
-	defaultProfile = "DEFAULT"
+	defaultProfile       = "DEFAULT"
 )
 
 // normalizeVersion converts a version string to the template tag format "template-vX.X.X".
@@ -787,7 +787,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 				return fmt.Errorf("could not resolve AppKit template version: %w. Use --version to specify a version manually", err)
 			}
 			gitRef = normalizeVersion(appkitVersion)
-			cmdio.LogString(ctx, fmt.Sprintf("Using AppKit template version %s", appkitVersion))
+			cmdio.LogString(ctx, "Using AppKit template version "+appkitVersion)
 
 			skillsVersion, err := depversions.ResolveAgentSkillsVersion(ctx)
 			if err == nil {
@@ -1152,7 +1152,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	skillsCtx := ctx
 	if resolvedSkillsVersion != "" {
 		skillsCtx = env.Set(ctx, "DATABRICKS_SKILLS_REF", "v"+resolvedSkillsVersion)
-		cmdio.LogString(ctx, fmt.Sprintf("Using skills version %s", resolvedSkillsVersion))
+		cmdio.LogString(ctx, "Using skills version "+resolvedSkillsVersion)
 	}
 
 	// Recommend skills installation if coding agents are detected without skills.
