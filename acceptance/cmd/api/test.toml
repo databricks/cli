@@ -1,0 +1,22 @@
+RecordRequests = true
+IncludeRequestHeaders = ["Authorization", "User-Agent", "X-Databricks-Org-Id"]
+
+# Common stubs for paths used across variants. Each returns an empty JSON
+# object; the variants assert on the *recorded request* (out.requests.txt),
+# not on the response body, so any well-formed JSON is fine.
+
+[[Server]]
+Pattern = "GET /api/2.0/clusters/list"
+Response.Body = '{}'
+
+[[Server]]
+Pattern = "GET /api/2.0/accounts/abc-123/network-policies"
+Response.Body = '{}'
+
+[[Server]]
+Pattern = "GET /api/2.0/accounts/abc-123/oauth2/published-app-integrations"
+Response.Body = '{}'
+
+[[Server]]
+Pattern = "GET /api/2.0/preview/accounts/access-control/rule-sets"
+Response.Body = '{}'

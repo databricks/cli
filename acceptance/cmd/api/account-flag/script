@@ -1,0 +1,1 @@
+$CLI api get /api/2.0/clusters/list --account
