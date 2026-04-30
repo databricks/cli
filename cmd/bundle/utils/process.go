@@ -72,13 +72,8 @@ type ProcessOptions struct {
 	// When set, skips Build and PreDeployChecks phases, loads plan from file instead of calculating.
 	ReadPlanPath string
 
-	// PostStateFunc is called at the end of ProcessBundleRet, within the state lifecycle scope
-	// (after state is opened and IDs loaded, before deferred Finalize).
+	// PostStateFunc is called at the end of ProcessBundleRet, while state is still open.
 	PostStateFunc func(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc) error
-
-	// If true, compute the deployment plan and return it via ProcessBundleRetWithPlan.
-	// The plan is computed after PreDeployChecks while state is still open for read.
-	ComputePlan bool
 
 	// Indicate whether the bundle operation originates from the pipelines CLI
 	IsPipelinesCLI bool
@@ -94,12 +89,6 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, 
 	return b, stateDesc, err
 }
 
-// ProcessBundleRetWithPlan is like ProcessBundleRet but also computes and returns a deployment plan.
-// opts.ComputePlan must be true.
-func ProcessBundleRetWithPlan(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, *statemgmt.StateDesc, *deployplan.Plan, error) {
-	opts.ComputePlan = true
-	return processBundleRetInternal(cmd, opts)
-}
 
 func processBundleRetInternal(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle, stateDesc *statemgmt.StateDesc, plan *deployplan.Plan, retErr error) {
 	var err error
@@ -201,16 +190,12 @@ func processBundleRetInternal(cmd *cobra.Command, opts ProcessOptions) (b *bundl
 		cmd.SetContext(ctx)
 
 		// Open state for read (with WAL recovery) so that ExportState, CalculatePlan, etc. can access it.
-		// Caller is responsible for closing state when done (Deploy closes read + reopens for write).
+		// Caller is responsible for closing state when done (Deploy/Destroy upgrade to write and close).
 		if stateDesc.Engine.IsDirect() {
 			_, localPath := b.StateFilenameDirect(ctx)
 			if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(true), dstate.WithWrite(false)); err != nil {
 				return b, stateDesc, nil, err
 			}
-			defer func() {
-				// Close is idempotent — no-op if already closed by Deploy
-				b.DeploymentBundle.StateDB.Close(ctx)
-			}()
 		}
 
 		// These are not safe in plan/deploy because they insert empty config settings for deleted resources.
@@ -311,14 +296,6 @@ func processBundleRetInternal(cmd *cobra.Command, opts ProcessOptions) (b *bundl
 		downgradeWarningToError := !opts.Deploy
 		phases.PreDeployChecks(ctx, b, downgradeWarningToError, stateDesc.Engine)
 
-		if logdiag.HasError(ctx) {
-			return b, stateDesc, nil, root.ErrAlreadyPrinted
-		}
-	}
-
-	// Compute plan while state is open for read (before Deploy upgrades to write)
-	if opts.ComputePlan && plan == nil {
-		plan = phases.RunPlan(ctx, b, stateDesc.Engine)
 		if logdiag.HasError(ctx) {
 			return b, stateDesc, nil, root.ErrAlreadyPrinted
 		}
