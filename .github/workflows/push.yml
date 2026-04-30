@@ -507,6 +507,80 @@ jobs:
             --ref main \
             -f commit_sha=${{ github.event.after }}
 
+  regression-report:
+    if: >-
+      github.event_name == 'pull_request' &&
+      !github.event.pull_request.head.repo.fork &&
+      github.actor != 'dependabot[bot]'
+
+    runs-on:
+      group: databricks-deco-testing-runner-group
+      labels: ubuntu-latest-deco
+
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup build environment
+        uses: ./.github/actions/setup-build-environment
+        with:
+          cache-key: regression-report
+
+      - name: Fetch full history for diff
+        run: git fetch --unshallow || true
+
+      - name: Generate regression test report
+        run: python3 tools/regression_test_report.py
+
+      - name: Count commits since main
+        id: commits
+        run: echo "count=$(git rev-list --count $(git merge-base origin/main HEAD)..HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Post or update PR comment
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const fs = require('fs');
+            const count = parseInt('${{ steps.commits.outputs.count }}', 10);
+            const MARKER_PREFIX = '<!-- regression-test-report ';
+            const MARKER = MARKER_PREFIX + count + ' -->';
+            const report = fs.readFileSync(process.env.GITHUB_WORKSPACE + '/REGRESSION_REPORT.md', 'utf8');
+            if (report.includes('No acceptance or unit tests were changed on this branch.')) {
+              return;
+            }
+            const body = MARKER + '\n' + report;
+
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
+
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner, repo, issue_number,
+            });
+            const existing = comments.find(c => c.body && c.body.startsWith(MARKER_PREFIX));
+
+            if (existing) {
+              const match = existing.body.match(/^<!-- regression-test-report (\d+) -->/);
+              const existingCount = match ? parseInt(match[1], 10) : 0;
+              if (count < existingCount) {
+                core.info(`Skipping: this run has ${count} commits, existing comment has ${existingCount}`);
+                return;
+              }
+              if (existing.body !== body) {
+                await github.rest.issues.updateComment({
+                  owner, repo, comment_id: existing.id, body,
+                });
+              }
+            } else {
+              await github.rest.issues.createComment({
+                owner, repo, issue_number, body,
+              });
+            }
+
   # Skip integration tests for dependabot PRs.
   # Dependabot has no access to the "test-trigger-is" environment secrets,
   # so we use the built-in GITHUB_TOKEN to mark the required "Integration
