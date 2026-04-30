@@ -1146,7 +1146,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	// In flags mode, only print a hint — never prompt interactively.
 	if flagsMode {
 		if !agents.HasDatabricksSkillsInstalled(ctx) {
-			cmdio.LogString(ctx, "Tip: coding agents detected without Databricks skills. Run 'databricks experimental aitools skills install' to install them.")
+			cmdio.LogString(ctx, "Tip: coding agents detected without Databricks skills. Run 'databricks aitools install' to install them.")
 		}
 	} else if err := agents.RecommendSkillsInstall(ctx, installer.InstallAllSkills); err != nil {
 		log.Warnf(ctx, "Skills recommendation failed: %v", err)
