@@ -38,12 +38,18 @@ func (r *jobRunner) Name() string {
 }
 
 func isFailed(task jobs.RunTask) bool {
+	if task.State == nil {
+		return false
+	}
 	return task.State.LifeCycleState == jobs.RunLifeCycleStateInternalError ||
 		(task.State.LifeCycleState == jobs.RunLifeCycleStateTerminated &&
 			task.State.ResultState == jobs.RunResultStateFailed)
 }
 
 func isSuccess(task jobs.RunTask) bool {
+	if task.State == nil {
+		return false
+	}
 	return task.State.LifeCycleState == jobs.RunLifeCycleStateTerminated &&
 		task.State.ResultState == jobs.RunResultStateSuccess
 }
@@ -58,6 +64,9 @@ func (r *jobRunner) logFailedTasks(ctx context.Context, runId int64) {
 	})
 	if err != nil {
 		log.Errorf(ctx, "failed to log job run. Error: %s", err)
+		return
+	}
+	if run.State == nil {
 		return
 	}
 	if run.State.ResultState == jobs.RunResultStateSuccess {
@@ -161,8 +170,11 @@ func (r *jobRunner) Run(ctx context.Context, opts *Options) (output.RunOutput, e
 		details, err := w.Jobs.GetRun(ctx, jobs.GetRunRequest{
 			RunId: waiter.RunId,
 		})
+		if err != nil {
+			return nil, err
+		}
 		cmdio.Log(ctx, progress.NewJobRunUrlEvent(details.RunPageUrl))
-		return nil, err
+		return nil, nil
 	}
 
 	run, err := waiter.OnProgress(monitor.onProgress).GetWithTimeout(jobRunTimeout)
