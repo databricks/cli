@@ -124,9 +124,6 @@ jobs:
             echo
           done
 
-      # goreleaser's release.extra_files only runs in the publish stage, which
-      # this workflow skips. Stage the bundle JSON schema into dist/ so it is
-      # picked up by upload-artifact and travels with the binaries.
       - name: Stage bundle JSON schema for upload
         run: cp bundle/schema/jsonschema.json dist/
 
