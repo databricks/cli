@@ -2,6 +2,8 @@ package apps
 
 import (
 	"errors"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/databricks/databricks-sdk-go/service/apps"
@@ -102,6 +104,102 @@ func TestFormatAppStatusMessage(t *testing.T) {
 		appInfo := &apps.App{}
 		msg := formatAppStatusMessage(appInfo, "test-app", "started")
 		assert.Equal(t, "✔ App 'test-app' status: unknown", msg)
+	})
+}
+
+func TestInferAppNameHint(t *testing.T) {
+	t.Run("returns empty when no app config exists", func(t *testing.T) {
+		t.Chdir(t.TempDir())
+
+		assert.Equal(t, "", inferAppNameHint())
+	})
+
+	t.Run("returns dir name when app.yml exists", func(t *testing.T) {
+		dir := t.TempDir()
+		t.Chdir(dir)
+		err := os.WriteFile(filepath.Join(dir, "app.yml"), []byte("command: [\"python\"]"), 0o644)
+		assert.NoError(t, err)
+
+		assert.Equal(t, filepath.Base(dir), inferAppNameHint())
+	})
+
+	t.Run("returns dir name when app.yaml exists", func(t *testing.T) {
+		dir := t.TempDir()
+		t.Chdir(dir)
+		err := os.WriteFile(filepath.Join(dir, "app.yaml"), []byte("command: [\"python\"]"), 0o644)
+		assert.NoError(t, err)
+
+		assert.Equal(t, filepath.Base(dir), inferAppNameHint())
+	})
+
+	t.Run("returns empty when cwd has been deleted", func(t *testing.T) {
+		dir := t.TempDir()
+		t.Chdir(dir)
+		os.Remove(dir)
+
+		assert.Equal(t, "", inferAppNameHint())
+	})
+}
+
+func TestMissingAppNameError(t *testing.T) {
+	t.Run("includes APP_NAME and usage info", func(t *testing.T) {
+		t.Chdir(t.TempDir())
+
+		err := missingAppNameError(nil)
+		assert.Contains(t, err.Error(), "APP_NAME")
+		assert.Contains(t, err.Error(), "databricks.yml")
+		assert.NotContains(t, err.Error(), "Did you mean")
+	})
+
+	t.Run("includes hint when app.yml exists", func(t *testing.T) {
+		dir := t.TempDir()
+		t.Chdir(dir)
+		writeErr := os.WriteFile(filepath.Join(dir, "app.yml"), []byte("command: [\"python\"]"), 0o644)
+		assert.NoError(t, writeErr)
+
+		err := missingAppNameError(nil)
+		assert.Contains(t, err.Error(), "Did you mean")
+		assert.Contains(t, err.Error(), filepath.Base(dir))
+	})
+
+	t.Run("gracefully handles deleted cwd", func(t *testing.T) {
+		dir := t.TempDir()
+		t.Chdir(dir)
+		os.Remove(dir)
+
+		err := missingAppNameError(nil)
+		assert.Contains(t, err.Error(), "APP_NAME")
+		assert.NotContains(t, err.Error(), "Did you mean")
+	})
+
+	t.Run("renders usage and hint from cmd path per verb", func(t *testing.T) {
+		dir := t.TempDir()
+		t.Chdir(dir)
+		writeErr := os.WriteFile(filepath.Join(dir, "app.yml"), []byte("command: [\"python\"]"), 0o644)
+		assert.NoError(t, writeErr)
+
+		for _, verb := range []string{"deploy", "start", "stop", "delete"} {
+			t.Run(verb, func(t *testing.T) {
+				root := &cobra.Command{Use: "databricks"}
+				apps := &cobra.Command{Use: "apps"}
+				sub := &cobra.Command{Use: verb}
+				root.AddCommand(apps)
+				apps.AddCommand(sub)
+
+				err := missingAppNameError(sub)
+				assert.Contains(t, err.Error(), "Usage: databricks apps "+verb+" APP_NAME")
+				assert.Contains(t, err.Error(), "databricks apps "+verb+" "+filepath.Base(dir))
+			})
+		}
+	})
+
+	t.Run("ignores non-regular app.yml entries", func(t *testing.T) {
+		dir := t.TempDir()
+		t.Chdir(dir)
+		assert.NoError(t, os.Mkdir(filepath.Join(dir, "app.yml"), 0o755))
+
+		err := missingAppNameError(nil)
+		assert.NotContains(t, err.Error(), "Did you mean")
 	})
 }
 
