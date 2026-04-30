@@ -72,7 +72,8 @@ type ProcessOptions struct {
 	// When set, skips Build and PreDeployChecks phases, loads plan from file instead of calculating.
 	ReadPlanPath string
 
-	// PostStateFunc is called at the end of ProcessBundleRet, while state is still open.
+	// PostStateFunc is called at the end of ProcessBundleRet, within the state lifecycle scope
+	// (after state is opened and IDs loaded, before deferred Finalize).
 	PostStateFunc func(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc) error
 
 	// Indicate whether the bundle operation originates from the pipelines CLI

@@ -44,6 +44,8 @@ func ValidatePlanAgainstState(stateDB *dstate.DeploymentState, plan *deployplan.
 		return nil
 	}
 
+	stateDB.AssertOpenedForReadOrWrite()
+
 	if plan.Lineage != stateDB.Data.Lineage {
 		return fmt.Errorf("plan lineage %q does not match state lineage %q; the state may have been modified by another process", plan.Lineage, stateDB.Data.Lineage)
 	}

@@ -67,5 +67,6 @@ func (d *DeploymentUnit) SetRemoteState(remoteState any) error {
 // ExportState exports the current deployment state as a resource map.
 // StateDB must already be open for read before calling this function.
 func (b *DeploymentBundle) ExportState(ctx context.Context) resourcestate.ExportedResourcesMap {
+	b.StateDB.AssertOpenedForRead()
 	return b.StateDB.ExportState(ctx)
 }
