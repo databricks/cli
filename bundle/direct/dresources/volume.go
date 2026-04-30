@@ -137,7 +137,7 @@ func (*ResourceVolume) OverrideChangeDesc(_ context.Context, path *structpath.Pa
 
 	if newStr != remoteStr && strings.TrimRight(newStr, "/") == strings.TrimRight(remoteStr, "/") {
 		change.Action = deployplan.Skip
-		change.Reason = deployplan.ReasonAlias
+		change.Reason = deployplan.ReasonURLNormalization
 	}
 
 	return nil

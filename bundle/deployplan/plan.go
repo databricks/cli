@@ -100,6 +100,7 @@ type ChangeDesc struct {
 const (
 	ReasonBackendDefault   = "backend_default"
 	ReasonAlias            = "alias"
+	ReasonURLNormalization = "url_normalization"
 	ReasonRemoteAlreadySet = "remote_already_set"
 	ReasonEmpty            = "empty"
 	ReasonCustom           = "custom"
