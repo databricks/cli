@@ -132,23 +132,7 @@ func (db *DeploymentState) GetResourceID(key string) string {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
-	if db.walFile != nil {
-		// in write-mode new IDs are written to WAL and stored in this map
-		id := db.stateIDs[key]
-		if id != "" {
-			return id
-		}
-	}
-
-	// in read mode State is the source of IDs for all requests
-	// in write mode State is the source of IDs for all resources that were not updated
-
-	if db.Data.State == nil {
-		return ""
-	}
-
-	entry := db.Data.State[key]
-	return entry.ID
+	return db.stateIDs[key]
 }
 
 type (
@@ -220,7 +204,12 @@ func (db *DeploymentState) Reload(ctx context.Context) error {
 			return err
 		}
 	} else {
-		return json.Unmarshal(data, &db.Data)
+		if err := json.Unmarshal(data, &db.Data); err != nil {
+			return err
+		}
+	}
+	for key, entry := range db.Data.State {
+		db.stateIDs[key] = entry.ID
 	}
 	return nil
 }
