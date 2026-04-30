@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/experimental/libs/sqlcli"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/jackc/pgx/v5"
 	"github.com/spf13/cobra"
@@ -98,10 +99,10 @@ Limitations (this release):
 	cmd.Flags().IntVar(&f.maxRetries, "max-retries", 3, "Total connect attempts on idle/waking endpoint (must be >= 1; 1 disables retry)")
 	cmd.Flags().DurationVar(&f.timeout, "timeout", 0, "Per-statement timeout (0 disables)")
 	cmd.Flags().StringArrayVarP(&f.files, "file", "f", nil, "SQL file path (repeatable)")
-	cmd.Flags().StringVarP(&f.outputFormat, "output", "o", string(outputText), "Output format: text, json, or csv")
+	cmd.Flags().StringVarP(&f.outputFormat, "output", "o", string(sqlcli.OutputText), "Output format: text, json, or csv")
 	cmd.RegisterFlagCompletionFunc("output", func(*cobra.Command, []string, string) ([]string, cobra.ShellCompDirective) {
-		out := make([]string, len(allOutputFormats))
-		for i, f := range allOutputFormats {
+		out := make([]string, len(sqlcli.AllFormats))
+		for i, f := range sqlcli.AllFormats {
 			out[i] = string(f)
 		}
 		return out, cobra.ShellCompDirectiveNoFileComp
@@ -125,7 +126,7 @@ func runQuery(ctx context.Context, cmd *cobra.Command, args []string, f queryFla
 		return err
 	}
 
-	units, err := collectInputs(ctx, cmd.InOrStdin(), args, f.files)
+	units, err := sqlcli.Collect(ctx, cmd.InOrStdin(), args, f.files, sqlcli.CollectOptions{})
 	if err != nil {
 		return err
 	}
@@ -136,7 +137,7 @@ func runQuery(ctx context.Context, cmd *cobra.Command, args []string, f queryFla
 	}
 
 	stdoutTTY := cmdio.SupportsColor(ctx, cmd.OutOrStdout())
-	format, err := resolveOutputFormat(ctx, f.outputFormat, f.outputFormatSet, stdoutTTY)
+	format, err := sqlcli.ResolveFormat(ctx, f.outputFormat, f.outputFormatSet, stdoutTTY)
 	if err != nil {
 		return err
 	}
@@ -145,7 +146,7 @@ func runQuery(ctx context.Context, cmd *cobra.Command, args []string, f queryFla
 	// a CSV that has to merge schemas across statements. The error names the
 	// flag pair and tells the user how to recover, per the repo rule about
 	// rejecting incompatible inputs early.
-	if format == outputCSV && len(units) > 1 {
+	if format == sqlcli.OutputCSV && len(units) > 1 {
 		return fmt.Errorf("--output csv requires a single input unit; got %d (use --output json for multi-input invocations)", len(units))
 	}
 
@@ -243,7 +244,7 @@ func runQuery(ctx context.Context, cmd *cobra.Command, args []string, f queryFla
 	}
 
 	switch format {
-	case outputJSON:
+	case sqlcli.OutputJSON:
 		return renderJSONMulti(out, stderr, results, nil, "")
 	default:
 		return renderTextMulti(out, results)
@@ -285,11 +286,11 @@ func reportCancellation(signalCtx, stmtCtx context.Context, err error, timeout t
 // interactive is true the text sink may launch the libs/tableview viewer for
 // results larger than staticTableThreshold; when false it uses the static
 // tabwriter table.
-func newSinkInteractive(format outputFormat, out, stderr io.Writer, interactive bool) rowSink {
+func newSinkInteractive(format sqlcli.Format, out, stderr io.Writer, interactive bool) rowSink {
 	switch format {
-	case outputJSON:
+	case sqlcli.OutputJSON:
 		return newJSONSink(out, stderr)
-	case outputCSV:
+	case sqlcli.OutputCSV:
 		return newCSVSink(out, stderr)
 	default:
 		if interactive {
@@ -302,9 +303,9 @@ func newSinkInteractive(format outputFormat, out, stderr io.Writer, interactive 
 // renderPartial emits the rendered output for the prefix of units that ran
 // successfully before a unit errored. For multi-input json this also writes
 // the error envelope as the last array element.
-func renderPartial(out, stderr io.Writer, format outputFormat, results []*unitResult, errored *unitResult, err error) error {
+func renderPartial(out, stderr io.Writer, format sqlcli.Format, results []*unitResult, errored *unitResult, err error) error {
 	switch format {
-	case outputJSON:
+	case sqlcli.OutputJSON:
 		return renderJSONMulti(out, stderr, results, errored, formatPgError(err))
 	default:
 		// Text: render whatever ran cleanly. The error message goes through
