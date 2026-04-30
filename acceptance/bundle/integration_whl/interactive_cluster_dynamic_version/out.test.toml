@@ -1,7 +1,5 @@
 Local = true
 Cloud = true
 CloudSlow = true
-
-[EnvMatrix]
-  DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
-  DATA_SECURITY_MODE = ["USER_ISOLATION", "SINGLE_USER"]
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
+EnvMatrix.DATA_SECURITY_MODE = ["USER_ISOLATION", "SINGLE_USER"]

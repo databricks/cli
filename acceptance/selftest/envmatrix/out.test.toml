@@ -1,7 +1,5 @@
 Local = true
 Cloud = false
-
-[EnvMatrix]
-  DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
-  FIRST = ["overriden-in-inner"]
-  THIRD = ["three $FIRST"]
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
+EnvMatrix.FIRST = ["overriden-in-inner"]
+EnvMatrix.THIRD = ["three $FIRST"]

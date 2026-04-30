@@ -3,9 +3,5 @@ Cloud = true
 CloudSlow = true
 RequiresUnityCatalog = true
 RunsOnDbr = true
-
-[CloudEnvs]
-  gcp = false
-
-[EnvMatrix]
-  DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
+CloudEnvs.gcp = false
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
