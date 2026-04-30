@@ -57,7 +57,7 @@ EnvMatrix.INPUT_CONFIG = [
     "synced_database_table.yml.tmpl",
     "vector_search_endpoint.yml.tmpl",
     "volume.yml.tmpl",
-    "external_volume.yml.tmpl",
+    "volume_external.yml.tmpl",
 ]
 
 [EnvMatrixExclude]
@@ -73,7 +73,7 @@ no_postgres_endpoint_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=postgres_end
 no_external_location_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=external_location.yml.tmpl"]
 
 # External volumes reference external locations; excluded from cloud for the same reason
-no_external_volume_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=external_volume.yml.tmpl"]
+no_external_volume_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=volume_external.yml.tmpl"]
 
 # Fake SQL endpoint for local tests
 [[Server]]
