@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"go/ast"
 	"go/token"
+	"slices"
 	"strconv"
 	"strings"
 )
@@ -86,15 +87,13 @@ func classifySprintf(call *ast.CallExpr) (classification, error) {
 		return classification{class: classNotAccount}, nil
 	}
 
-	for _, a := range call.Args[1:] {
-		if isAccountIDSource(a) {
-			return classification{class: classAccountAPI}, nil
-		}
+	if slices.ContainsFunc(call.Args[1:], isAccountIDSource) {
+		return classification{class: classAccountAPI}, nil
 	}
 
 	prefix := prefixUpToFirstVerb(template)
 	if prefix == "" {
-		return classification{}, fmt.Errorf("Sprintf template %q has no format verb", template)
+		return classification{}, fmt.Errorf("fmt.Sprintf template %q has no format verb", template)
 	}
 	// Guard: a prefix ending exactly at "accounts/" would match every account
 	// API under that family if it leaked into the deny-list. Refuse to emit
