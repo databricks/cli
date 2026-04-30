@@ -73,7 +73,7 @@ func (*ResourceVectorSearchIndex) RemapState(remote *VectorSearchIndexRemote) *V
 		CreateVectorIndexRequest: vectorsearch.CreateVectorIndexRequest{
 			DeltaSyncIndexSpec:    nil,
 			DirectAccessIndexSpec: nil,
-			IndexSubtype:          "",
+			IndexSubtype:          remote.IndexSubtype,
 			Name:                  remote.Name,
 			EndpointName:          remote.EndpointName,
 			IndexType:             remote.IndexType,
