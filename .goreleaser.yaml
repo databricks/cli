@@ -3,6 +3,7 @@ version: 2
 before:
   hooks:
     - go mod download
+    - go run ./internal/pindepversions --version {{ .Version }}
 
 builds:
   - env:

@@ -17,6 +17,7 @@ import (
 	"github.com/databricks/cli/experimental/aitools/lib/agents"
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/depversions"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 	"github.com/fatih/color"
@@ -33,13 +34,17 @@ const (
 // It is a package-level var so tests can replace it with a mock.
 var fetchFileFn = fetchSkillFile
 
-// GetSkillsRef returns the skills repo ref to use. If DATABRICKS_SKILLS_REF
-// is set, it returns that value; otherwise it returns the default ref.
-func GetSkillsRef(ctx context.Context) string {
+// GetSkillsRef returns the skills repo ref to use.
+// Resolution order: DATABRICKS_SKILLS_REF env var → compatibility manifest → error.
+func GetSkillsRef(ctx context.Context) (string, error) {
 	if ref := env.Get(ctx, "DATABRICKS_SKILLS_REF"); ref != "" {
-		return ref
+		return ref, nil
 	}
-	return defaultSkillsRepoRef
+	v, err := depversions.ResolveAgentSkillsVersion(ctx)
+	if err != nil {
+		return "", fmt.Errorf("could not resolve skills version: %w", err)
+	}
+	return "v" + v, nil
 }
 
 // Manifest describes the skills manifest fetched from the skills repo.
@@ -93,7 +98,12 @@ func fetchSkillFile(ctx context.Context, ref, skillName, filePath string) ([]byt
 // This is the core installation function. Callers are responsible for agent detection,
 // prompting, and printing the "Installing..." header.
 func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgents []*agents.Agent, opts InstallOptions) error {
-	ref := GetSkillsRef(ctx)
+	ref, err := GetSkillsRef(ctx)
+	if err != nil {
+		return err
+	}
+	tag := strings.TrimPrefix(ref, "v")
+	cmdio.LogString(ctx, "Using skills version "+tag)
 	manifest, err := src.FetchManifest(ctx, ref)
 	if err != nil {
 		return err
@@ -194,12 +204,11 @@ func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgent
 		return err
 	}
 
-	tag := strings.TrimPrefix(ref, "v")
 	noun := "skills"
 	if len(targetSkills) == 1 {
 		noun = "skill"
 	}
-	cmdio.LogString(ctx, fmt.Sprintf("Installed %d %s (v%s).", len(targetSkills), noun, tag))
+	cmdio.LogString(ctx, fmt.Sprintf("Installed %d %s.", len(targetSkills), noun))
 	return nil
 }
 
