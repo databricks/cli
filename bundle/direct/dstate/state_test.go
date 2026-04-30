@@ -1,6 +1,7 @@
 package dstate
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -23,6 +24,17 @@ func TestOpenCloseRoundTrip(t *testing.T) {
 	assert.Equal(t, 1, db2.Data.Serial)
 	assert.Equal(t, "123", db2.GetResourceID("jobs.my_job"))
 	require.NoError(t, db2.Close(t.Context()))
+}
+
+func TestCloseWithNoEntriesDoesNotWriteStateFile(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "state.json")
+
+	var db DeploymentState
+	require.NoError(t, db.Open(t.Context(), path, WithRecovery(true), WithWrite(true)))
+	require.NoError(t, db.Close(t.Context()))
+
+	_, err := os.Stat(path)
+	assert.ErrorIs(t, err, os.ErrNotExist)
 }
 
 func TestPanicOnDoubleOpen(t *testing.T) {
