@@ -1,0 +1,12 @@
+Local = true
+Cloud = true
+RecordRequests = true
+
+Ignore = [".databricks", "databricks.yml"]
+
+[[Repls]]
+Old = "[0-9]{4}-[0-9]{6}-[0-9a-z]{8}"
+New = "[UUID]"
+
+[EnvMatrix]
+  DATABRICKS_BUNDLE_ENGINE = ["direct"]

@@ -1,0 +1,39 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+title "Deploy with started=true: cluster created and running"
+trace errcode $CLI bundle deploy
+CLUSTER_ID=$($CLI bundle summary -o json | jq -r '.resources.clusters.mycluster.id')
+trace print_requests.py //clusters
+rm -f out.requests.txt
+{ trace errcode $CLI clusters get "$CLUSTER_ID" | jq '.state'; } || true
+
+title "Stop cluster externally while config says started=true: plan detects drift"
+{ trace errcode $CLI clusters delete "$CLUSTER_ID" | jq '.state'; } || true
+trace $CLI bundle plan
+
+title "Deploy fixes the drift: cluster restarted"
+trace errcode $CLI bundle deploy
+trace print_requests.py //clusters
+rm -f out.requests.txt
+{ trace errcode $CLI clusters get "$CLUSTER_ID" | jq '.state'; } || true
+
+title "Deploy with started=false while cluster is stopped: cluster stays terminated"
+{ trace errcode $CLI clusters delete "$CLUSTER_ID" | jq '.state'; } || true
+trace update_file.py databricks.yml "started: true" "started: false"
+trace errcode $CLI bundle deploy
+trace print_requests.py //clusters
+rm -f out.requests.txt
+{ trace errcode $CLI clusters get "$CLUSTER_ID" | jq '.state'; } || true
+
+title "Deploy with started=true: cluster restarted"
+trace update_file.py databricks.yml "started: false" "started: true"
+trace errcode $CLI bundle deploy
+trace print_requests.py //clusters
+rm -f out.requests.txt
+{ trace errcode $CLI clusters get "$CLUSTER_ID" | jq '.state'; } || true
