@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle/config/mutator/paths"
-
 	"github.com/databricks/cli/libs/dyn"
 )
 
