@@ -102,6 +102,8 @@ func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgent
 	if err != nil {
 		return err
 	}
+	tag := strings.TrimPrefix(ref, "v")
+	cmdio.LogString(ctx, "Using skills version "+tag)
 	manifest, err := src.FetchManifest(ctx, ref)
 	if err != nil {
 		return err
