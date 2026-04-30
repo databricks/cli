@@ -4,6 +4,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
@@ -79,6 +80,18 @@ func TestBuildEnvMapsProxyVarsUppercase(t *testing.T) {
 
 	assert.Equal(t, "http://proxy.example:3128", got["HTTP_PROXY"])
 	assert.Equal(t, "http://proxy.example:3129", got["HTTPS_PROXY"])
+}
+
+// TestBuildEnvSetsUserAgentExtra verifies setUserAgentExtraEnvVar is wired
+// into buildEnv so SDK telemetry can attribute UCM-originated terraform
+// traffic.
+func TestBuildEnvSetsUserAgentExtra(t *testing.T) {
+	u, _ := newRenderUcm(t)
+
+	got, err := buildEnv(t.Context(), u, nil)
+	require.NoError(t, err)
+
+	assert.Equal(t, "cli/"+build.GetInfo().Version+" ucm/deploy", got["DATABRICKS_USER_AGENT_EXTRA"])
 }
 
 // TestBuildEnvResolvedAuthOverridesPassthrough pins the DAB ordering:

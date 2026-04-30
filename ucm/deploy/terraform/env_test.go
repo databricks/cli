@@ -6,7 +6,9 @@ import (
 	"runtime"
 	"testing"
 
+	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/ucm"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -250,6 +252,13 @@ func TestSetProxyEnvVarsOmitsUnset(t *testing.T) {
 		_, ok := out[k]
 		assert.False(t, ok, "%s should not be set when neither case is on env", k)
 	}
+}
+
+func TestSetUserAgentExtraEnvVar(t *testing.T) {
+	out := map[string]string{}
+	require.NoError(t, setUserAgentExtraEnvVar(out, &ucm.Ucm{}))
+
+	assert.Equal(t, "cli/"+build.GetInfo().Version+" ucm/deploy", out["DATABRICKS_USER_AGENT_EXTRA"])
 }
 
 func TestResolveDatabricksCliPathLeavesAbsoluteUnchanged(t *testing.T) {
