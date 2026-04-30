@@ -1,0 +1,4 @@
+# Workspace-routed proxy under accounts/. The deny-list must keep this from
+# being misclassified as account-scope, so the routing identifier should be
+# present on the recorded request.
+$CLI api get /api/2.0/preview/accounts/access-control/rule-sets
