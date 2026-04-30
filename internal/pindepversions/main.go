@@ -42,5 +42,5 @@ func main() {
 		fmt.Fprintf(os.Stderr, "error: write %s: %v\n", *output, err)
 		os.Exit(1)
 	}
-	fmt.Fprintf(os.Stderr, "Pinned for CLI %s: appkit=%s skills=%s\n", *version, entry.AppKit, entry.Skills)
+	fmt.Fprintf(os.Stderr, "Pinned for CLI %s: appkit=%s skills=%s\n", *version, entry.AppKit, entry.AgentSkills)
 }

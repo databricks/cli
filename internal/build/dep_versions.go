@@ -11,8 +11,8 @@ var depVersionsJSON []byte
 
 // DepVersions holds build-time resolved dependency versions.
 type DepVersions struct {
-	AppKit string `json:"appkit"`
-	Skills string `json:"skills"`
+	AppKit      string `json:"appkit"`
+	AgentSkills string `json:"skills"`
 }
 
 var depVersions = sync.OnceValue(func() DepVersions {

@@ -37,10 +37,10 @@ type manifestFingerprint struct {
 	URL string `json:"url"`
 }
 
-// Entry maps a CLI version to compatible AppKit and skills versions.
+// Entry maps a CLI version to compatible AppKit and Agent Skills versions.
 type Entry struct {
-	AppKit string `json:"appkit"`
-	Skills string `json:"skills"`
+	AppKit      string `json:"appkit"`
+	AgentSkills string `json:"skills"`
 }
 
 // Manifest is the compatibility manifest: a map of CLI version strings to entries.
@@ -131,8 +131,8 @@ func resolveEntry(ctx context.Context, cliVersion string) (Entry, error) {
 
 	dv := build.GetDepVersions()
 	if dv.AppKit != "" {
-		log.Debugf(ctx, "Using build-time dep versions: appkit=%s skills=%s", dv.AppKit, dv.Skills)
-		return Entry{AppKit: dv.AppKit, Skills: dv.Skills}, nil
+		log.Debugf(ctx, "Using build-time dep versions: appkit=%s skills=%s", dv.AppKit, dv.AgentSkills)
+		return Entry{AppKit: dv.AppKit, AgentSkills: dv.AgentSkills}, nil
 	}
 
 	if fetchErr != nil {
@@ -156,7 +156,7 @@ func ResolveAgentSkillsVersion(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return entry.Skills, nil
+	return entry.AgentSkills, nil
 }
 
 // fetchRemoteWithRetry wraps fetchRemote with retries.

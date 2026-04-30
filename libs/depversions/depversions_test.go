@@ -46,11 +46,11 @@ func testContext(t *testing.T) context.Context {
 
 func testManifest() Manifest {
 	return Manifest{
-		"next":    {AppKit: "0.27.0", Skills: "0.1.5"},
-		"0.296.0": {AppKit: "0.27.0", Skills: "0.1.5"},
-		"0.295.0": {AppKit: "0.27.0", Skills: "0.1.5"},
-		"0.290.0": {AppKit: "0.24.0", Skills: "0.1.5"},
-		"0.288.0": {AppKit: "0.24.0", Skills: "0.1.4"},
+		"next":    {AppKit: "0.27.0", AgentSkills: "0.1.5"},
+		"0.296.0": {AppKit: "0.27.0", AgentSkills: "0.1.5"},
+		"0.295.0": {AppKit: "0.27.0", AgentSkills: "0.1.5"},
+		"0.290.0": {AppKit: "0.24.0", AgentSkills: "0.1.5"},
+		"0.288.0": {AppKit: "0.24.0", AgentSkills: "0.1.4"},
 	}
 }
 
@@ -59,7 +59,7 @@ func TestResolve_ExactMatch(t *testing.T) {
 	entry, err := Resolve(m, "0.296.0")
 	require.NoError(t, err)
 	assert.Equal(t, "0.27.0", entry.AppKit)
-	assert.Equal(t, "0.1.5", entry.Skills)
+	assert.Equal(t, "0.1.5", entry.AgentSkills)
 }
 
 func TestResolve_NearestLower(t *testing.T) {
@@ -68,20 +68,20 @@ func TestResolve_NearestLower(t *testing.T) {
 	entry, err := Resolve(m, "0.293.0")
 	require.NoError(t, err)
 	assert.Equal(t, "0.24.0", entry.AppKit)
-	assert.Equal(t, "0.1.5", entry.Skills)
+	assert.Equal(t, "0.1.5", entry.AgentSkills)
 }
 
 func TestResolve_NewerThanAll(t *testing.T) {
 	m := Manifest{
-		"next":    {AppKit: "0.99.0", Skills: "0.9.9"},
-		"0.296.0": {AppKit: "0.27.0", Skills: "0.1.5"},
-		"0.290.0": {AppKit: "0.24.0", Skills: "0.1.5"},
+		"next":    {AppKit: "0.99.0", AgentSkills: "0.9.9"},
+		"0.296.0": {AppKit: "0.27.0", AgentSkills: "0.1.5"},
+		"0.290.0": {AppKit: "0.24.0", AgentSkills: "0.1.5"},
 	}
 	entry, err := Resolve(m, "0.300.0")
 	require.NoError(t, err)
 	// Nearest-lower returns the highest versioned entry, not "next".
 	assert.Equal(t, "0.27.0", entry.AppKit)
-	assert.Equal(t, "0.1.5", entry.Skills)
+	assert.Equal(t, "0.1.5", entry.AgentSkills)
 }
 
 func TestResolve_DevBuild(t *testing.T) {
@@ -89,7 +89,7 @@ func TestResolve_DevBuild(t *testing.T) {
 	entry, err := Resolve(m, "0.0.0-dev+abc123def")
 	require.NoError(t, err)
 	assert.Equal(t, "0.27.0", entry.AppKit)
-	assert.Equal(t, "0.1.5", entry.Skills)
+	assert.Equal(t, "0.1.5", entry.AgentSkills)
 }
 
 func TestResolve_OlderThanAll(t *testing.T) {
@@ -98,17 +98,17 @@ func TestResolve_OlderThanAll(t *testing.T) {
 	require.NoError(t, err)
 	// Uses the lowest (oldest) manifest entry as closest match.
 	assert.Equal(t, "0.24.0", entry.AppKit)
-	assert.Equal(t, "0.1.4", entry.Skills)
+	assert.Equal(t, "0.1.4", entry.AgentSkills)
 }
 
 func TestResolve_OnlyNextKey(t *testing.T) {
 	m := Manifest{
-		"next": {AppKit: "0.27.0", Skills: "0.1.5"},
+		"next": {AppKit: "0.27.0", AgentSkills: "0.1.5"},
 	}
 	entry, err := Resolve(m, "0.296.0")
 	require.NoError(t, err)
 	assert.Equal(t, "0.27.0", entry.AppKit)
-	assert.Equal(t, "0.1.5", entry.Skills)
+	assert.Equal(t, "0.1.5", entry.AgentSkills)
 }
 
 func TestResolve_LowestEntryExactMatch(t *testing.T) {
@@ -116,7 +116,7 @@ func TestResolve_LowestEntryExactMatch(t *testing.T) {
 	entry, err := Resolve(m, "0.288.0")
 	require.NoError(t, err)
 	assert.Equal(t, "0.24.0", entry.AppKit)
-	assert.Equal(t, "0.1.4", entry.Skills)
+	assert.Equal(t, "0.1.4", entry.AgentSkills)
 }
 
 func TestResolve_EmptyManifest(t *testing.T) {
@@ -128,7 +128,7 @@ func TestResolve_EmptyManifest(t *testing.T) {
 
 func TestResolve_MissingNextKey(t *testing.T) {
 	m := Manifest{
-		"0.296.0": {AppKit: "0.27.0", Skills: "0.1.5"},
+		"0.296.0": {AppKit: "0.27.0", AgentSkills: "0.1.5"},
 	}
 	_, err := Resolve(m, "0.296.0")
 	assert.Error(t, err)
@@ -138,8 +138,8 @@ func TestResolve_MissingNextKey(t *testing.T) {
 func TestFetchManifest_RemoteSuccess(t *testing.T) {
 	ctx := testContext(t)
 	want := Manifest{
-		"next":    {AppKit: "0.99.0", Skills: "0.9.9"},
-		"0.296.0": {AppKit: "0.99.0", Skills: "0.9.9"},
+		"next":    {AppKit: "0.99.0", AgentSkills: "0.9.9"},
+		"0.296.0": {AppKit: "0.99.0", AgentSkills: "0.9.9"},
 	}
 	body, _ := json.Marshal(want)
 
@@ -186,8 +186,8 @@ func TestFetchManifest_RemoteReturnsInvalidJSON(t *testing.T) {
 func TestFetchManifest_CacheHit(t *testing.T) {
 	ctx := testContext(t)
 	want := Manifest{
-		"next":    {AppKit: "0.99.0", Skills: "0.9.9"},
-		"0.296.0": {AppKit: "0.99.0", Skills: "0.9.9"},
+		"next":    {AppKit: "0.99.0", AgentSkills: "0.9.9"},
+		"0.296.0": {AppKit: "0.99.0", AgentSkills: "0.9.9"},
 	}
 	body, _ := json.Marshal(want)
 
@@ -215,8 +215,8 @@ func TestFetchManifest_CacheHit(t *testing.T) {
 func TestFetchManifest_RetryOnTransientError(t *testing.T) {
 	ctx := testContext(t)
 	want := Manifest{
-		"next":    {AppKit: "0.99.0", Skills: "0.9.9"},
-		"0.296.0": {AppKit: "0.99.0", Skills: "0.9.9"},
+		"next":    {AppKit: "0.99.0", AgentSkills: "0.9.9"},
+		"0.296.0": {AppKit: "0.99.0", AgentSkills: "0.9.9"},
 	}
 	body, _ := json.Marshal(want)
 
@@ -268,8 +268,8 @@ func TestParseManifest_Empty(t *testing.T) {
 func TestResolveEntry_RemoteSuccess(t *testing.T) {
 	ctx := testContext(t)
 	want := Manifest{
-		"next":    {AppKit: "0.99.0", Skills: "0.9.9"},
-		"0.296.0": {AppKit: "0.99.0", Skills: "0.9.9"},
+		"next":    {AppKit: "0.99.0", AgentSkills: "0.9.9"},
+		"0.296.0": {AppKit: "0.99.0", AgentSkills: "0.9.9"},
 	}
 	body, _ := json.Marshal(want)
 
@@ -282,7 +282,7 @@ func TestResolveEntry_RemoteSuccess(t *testing.T) {
 	entry, err := resolveEntry(ctx, "0.296.0")
 	require.NoError(t, err)
 	assert.Equal(t, "0.99.0", entry.AppKit)
-	assert.Equal(t, "0.9.9", entry.Skills)
+	assert.Equal(t, "0.9.9", entry.AgentSkills)
 }
 
 func TestResolveEntry_RemoteFailNoPinnedEntry(t *testing.T) {
