@@ -25,9 +25,6 @@ trace musterr $CLI experimental postgres query --project foo --endpoint primary 
 title "Max-retries 0 should error:"
 trace musterr $CLI experimental postgres query --project foo --branch main --max-retries 0 "SELECT 1"
 
-title "Provisioned-shaped target should error pointing at psql:"
-trace musterr $CLI experimental postgres query --target my-instance "SELECT 1"
-
 title "Malformed autoscaling path should error:"
 trace musterr $CLI experimental postgres query --target projects/ "SELECT 1"
 

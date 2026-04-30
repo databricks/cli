@@ -5,58 +5,67 @@ import (
 	"io"
 	"strings"
 	"text/tabwriter"
+
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
-// queryResult is the rendered shape of a single SQL execution. PR 1 only
-// renders text; later PRs add JSON and CSV against the same struct.
+// textSink renders results as plain text: a tabwriter-aligned table for
+// rows-producing statements, the command tag for command-only ones.
 //
-// columns is empty for command-only statements (INSERT, CREATE DATABASE, ...);
-// rows is empty when no rows were returned (or for command-only statements).
-type queryResult struct {
-	SQL string
-	// CommandTag is the Postgres command tag for the statement (e.g. "INSERT 0 5",
-	// "CREATE DATABASE"). Always set; used for command-only statements and as a
-	// trailer for rows-producing ones.
-	CommandTag string
-	Columns    []string
-	Rows       [][]string
+// Text output buffers all rows because tabwriter needs the widest cell in each
+// column before it can align. Streaming output is provided by the JSON and CSV
+// sinks; users with huge result sets should pick those.
+type textSink struct {
+	out     io.Writer
+	columns []string
+	rows    [][]string
 }
 
-// IsRowsProducing reports whether the statement returned a row description.
-// Determined at runtime via FieldDescriptions() rather than by parsing the
-// leading SQL keyword: `INSERT ... RETURNING` and CTEs ending in a SELECT are
-// rows-producing despite their leading keywords.
-func (r *queryResult) IsRowsProducing() bool {
-	return len(r.Columns) > 0
+func newTextSink(out io.Writer) *textSink {
+	return &textSink{out: out}
 }
 
-// renderText writes a result in plain text.
-//
-// For rows-producing statements we use a tabwriter-aligned table followed by
-// a `(N rows)` footer, mimicking psql's compact text shape. For command-only
-// statements we just print the command tag.
-//
-// PR 1 always uses the static (buffered) shape. The interactive table viewer
-// for >30 rows lands in a later PR alongside the multi-input output shapes.
-func renderText(out io.Writer, r *queryResult) error {
-	if !r.IsRowsProducing() {
-		_, err := fmt.Fprintln(out, r.CommandTag)
+func (s *textSink) Begin(fields []pgconn.FieldDescription) error {
+	s.columns = make([]string, len(fields))
+	for i, f := range fields {
+		s.columns[i] = f.Name
+	}
+	return nil
+}
+
+func (s *textSink) Row(values []any) error {
+	row := make([]string, len(values))
+	for i, v := range values {
+		row[i] = textValue(v)
+	}
+	s.rows = append(s.rows, row)
+	return nil
+}
+
+func (s *textSink) End(commandTag string) error {
+	if len(s.columns) == 0 {
+		_, err := fmt.Fprintln(s.out, commandTag)
 		return err
 	}
 
-	tw := tabwriter.NewWriter(out, 0, 0, 2, ' ', 0)
-	fmt.Fprintln(tw, strings.Join(r.Columns, "\t"))
-	fmt.Fprintln(tw, strings.Join(headerSeparator(r.Columns), "\t"))
-	for _, row := range r.Rows {
+	tw := tabwriter.NewWriter(s.out, 0, 0, 2, ' ', 0)
+	fmt.Fprintln(tw, strings.Join(s.columns, "\t"))
+	fmt.Fprintln(tw, strings.Join(headerSeparator(s.columns), "\t"))
+	for _, row := range s.rows {
 		fmt.Fprintln(tw, strings.Join(row, "\t"))
 	}
 	if err := tw.Flush(); err != nil {
 		return err
 	}
 
-	_, err := fmt.Fprintf(out, "(%d %s)\n", len(r.Rows), pluralize(len(r.Rows), "row", "rows"))
+	_, err := fmt.Fprintf(s.out, "(%d %s)\n", len(s.rows), pluralize(len(s.rows), "row", "rows"))
 	return err
 }
+
+// OnError for text sinks is a no-op: text output prints whatever rows have
+// already been collected, with no open structure to close. The caller
+// surfaces the error separately (cobra's default error rendering).
+func (s *textSink) OnError(err error) {}
 
 func headerSeparator(cols []string) []string {
 	out := make([]string, len(cols))

@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/lakebase/target"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/service/database"
 	"github.com/databricks/databricks-sdk-go/service/postgres"
 )
 
@@ -71,9 +72,10 @@ func validateTargeting(f targetingFlags) error {
 }
 
 // resolveTarget translates the validated flags into a resolvedTarget.
-// PR 1 supports autoscaling targeting only; provisioned support is added in
-// the next PR. A provisioned-shaped --target returns a clear error pointing at
-// the experimental status.
+//
+// --target accepts either an autoscaling resource path (starts with "projects/")
+// or a provisioned instance name (everything else). Granular flags
+// (--project, --branch, --endpoint) target autoscaling only.
 func resolveTarget(ctx context.Context, f targetingFlags) (*resolvedTarget, error) {
 	w := cmdctx.WorkspaceClient(ctx)
 
@@ -86,9 +88,7 @@ func resolveTarget(ctx context.Context, f targetingFlags) (*resolvedTarget, erro
 		return resolveAutoscaling(ctx, w, spec)
 
 	case f.target != "":
-		// Provisioned-shaped target. Out of scope for this PR; will be wired in
-		// the follow-up PR alongside JSON/CSV output.
-		return nil, errors.New("provisioned instances are not yet supported by this experimental command; use 'databricks psql <instance>' for now")
+		return resolveProvisioned(ctx, w, f.target)
 
 	default:
 		spec := target.AutoscalingSpec{
@@ -98,6 +98,41 @@ func resolveTarget(ctx context.Context, f targetingFlags) (*resolvedTarget, erro
 		}
 		return resolveAutoscaling(ctx, w, spec)
 	}
+}
+
+// resolveProvisioned looks up a provisioned instance and issues a token. The
+// instance must be in the AVAILABLE state; transitional states return an
+// error pointing the user at the lifecycle they are waiting on.
+func resolveProvisioned(ctx context.Context, w *databricks.WorkspaceClient, instanceName string) (*resolvedTarget, error) {
+	instance, err := target.GetProvisioned(ctx, w, instanceName)
+	if err != nil {
+		return nil, err
+	}
+
+	if instance.State != database.DatabaseInstanceStateAvailable {
+		return nil, fmt.Errorf("database instance %q is not ready for accepting connections (state: %s)", instance.Name, instance.State)
+	}
+	if instance.ReadWriteDns == "" {
+		return nil, fmt.Errorf("database instance %q has no read/write DNS yet", instance.Name)
+	}
+
+	user, err := w.CurrentUser.Me(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get current user: %w", err)
+	}
+
+	token, err := target.ProvisionedCredential(ctx, w, instance.Name)
+	if err != nil {
+		return nil, err
+	}
+
+	return &resolvedTarget{
+		Kind:        kindProvisioned,
+		Host:        instance.ReadWriteDns,
+		Username:    user.UserName,
+		Token:       token,
+		DisplayName: instance.Name,
+	}, nil
 }
 
 // resolveAutoscaling expands a partial spec into a fully-resolved endpoint and

@@ -5,10 +5,29 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
-// executeOne runs a single SQL statement against an open connection and
-// captures the result in a queryResult.
+// rowSink consumes a query result one row at a time. Sinks that maintain open
+// output structures (e.g. a streaming JSON array) implement OnError so they
+// can close cleanly when the iteration terminates with a partial result.
+type rowSink interface {
+	// Begin is called once with the column descriptions before any Row.
+	// For command-only statements (no rows), Begin is still called with an
+	// empty slice so the sink can lock in its rows-vs-command shape.
+	Begin(fields []pgconn.FieldDescription) error
+	// Row delivers one decoded row. Values aligns with the fields passed to
+	// Begin and uses pgx's Go type mapping (int64, float64, time.Time, ...).
+	Row(values []any) error
+	// End is called once on successful completion.
+	End(commandTag string) error
+	// OnError is called if iteration errors after Begin returned. The sink
+	// is expected to flush any in-progress output structures so stdout
+	// remains well-formed. The caller still surfaces err to its caller.
+	OnError(err error)
+}
+
+// executeOne runs a single SQL statement and streams the result through sink.
 //
 // We pass QueryExecModeExec explicitly (not the pgx default
 // QueryExecModeCacheStatement) for two reasons:
@@ -17,46 +36,38 @@ import (
 //     closed at the end of the command, so the cached prepared statement
 //     never gets reused.
 //  2. Exec mode uses Postgres' extended-protocol "exec" path with text-format
-//     result columns. That makes rendering canonical-Postgres-text output
-//     (PR 1) and CSV (later PR) straightforward; the cache mode defaults to
-//     binary and we'd be reformatting back to text.
+//     result columns, which keeps the canonical-Postgres-text rendering for
+//     --output text and --output csv straightforward.
 //
 // QueryExecModeExec still uses extended protocol with a single statement and
 // no implicit transaction wrap, so transaction-disallowed DDL like
-// `CREATE DATABASE` works.
-func executeOne(ctx context.Context, conn *pgx.Conn, sql string) (*queryResult, error) {
+// CREATE DATABASE works.
+func executeOne(ctx context.Context, conn *pgx.Conn, sql string, sink rowSink) error {
 	rows, err := conn.Query(ctx, sql, pgx.QueryExecModeExec)
 	if err != nil {
-		return nil, fmt.Errorf("query failed: %w", err)
+		return fmt.Errorf("query failed: %w", err)
 	}
 	defer rows.Close()
 
-	result := &queryResult{SQL: sql}
-
-	fields := rows.FieldDescriptions()
-	if len(fields) > 0 {
-		result.Columns = make([]string, len(fields))
-		for i, f := range fields {
-			result.Columns[i] = f.Name
-		}
+	if err := sink.Begin(rows.FieldDescriptions()); err != nil {
+		return err
 	}
 
 	for rows.Next() {
-		raw := rows.RawValues()
-		row := make([]string, len(raw))
-		for i, b := range raw {
-			if b == nil {
-				row[i] = "NULL"
-				continue
-			}
-			row[i] = string(b)
+		values, err := rows.Values()
+		if err != nil {
+			sink.OnError(err)
+			return fmt.Errorf("decode row: %w", err)
 		}
-		result.Rows = append(result.Rows, row)
+		if err := sink.Row(values); err != nil {
+			sink.OnError(err)
+			return err
+		}
 	}
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("query failed: %w", err)
+		sink.OnError(err)
+		return fmt.Errorf("query failed: %w", err)
 	}
 
-	result.CommandTag = rows.CommandTag().String()
-	return result, nil
+	return sink.End(rows.CommandTag().String())
 }

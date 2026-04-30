@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"strings"
 	"time"
 
@@ -25,6 +26,11 @@ type queryFlags struct {
 	database       string
 	connectTimeout time.Duration
 	maxRetries     int
+
+	// outputFormat is the raw flag value. resolveOutputFormat turns it into
+	// the effective format (which may differ when stdout is piped).
+	outputFormat    string
+	outputFormatSet bool
 }
 
 func newQueryCmd() *cobra.Command {
@@ -33,15 +39,29 @@ func newQueryCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "query [SQL]",
 		Short: "Run a SQL statement against a Lakebase Postgres endpoint",
-		Long: `Execute a single SQL statement against a Lakebase Postgres endpoint and
-render the result as text.
+		Long: `Execute a single SQL statement against a Lakebase Postgres endpoint.
 
 Targeting (exactly one form required):
-  --target STRING       Autoscaling resource path
-                        (e.g. projects/foo/branches/main/endpoints/primary)
+  --target STRING       Provisioned instance name OR autoscaling resource path
+                        (e.g. my-instance, projects/foo/branches/main/endpoints/primary)
   --project ID          Autoscaling project ID
   --branch ID           Autoscaling branch ID (default: auto-select if exactly one)
-  --endpoint ID         Autoscaling endpoint ID (default: auto-select if exactly one)
+  --endpoint ID         Autoscaling endpoint ID
+
+Output:
+  --output text         Aligned table for rows-producing statements (default).
+                        Falls back to JSON when stdout is not a terminal so
+                        scripts piping the output get machine-readable results.
+  --output json         Top-level array of row objects, streamed for
+                        rows-producing statements. Command-only statements
+                        emit a single {"command": "...", "rows_affected": N}
+                        object. Numbers, booleans, NULL, jsonb, timestamps
+                        render with their JSON-native types.
+  --output csv          Header row + one CSV row per result row, streamed.
+                        Command-only statements write the command tag to
+                        stderr.
+
+DATABRICKS_OUTPUT_FORMAT is honoured when --output is not explicitly set.
 
 This is an experimental command. The flag set, output shape, and supported
 target kinds will expand in subsequent releases.
@@ -49,10 +69,6 @@ target kinds will expand in subsequent releases.
 Limitations (this release):
 
   - Single SQL statement per invocation (multi-statement support comes later).
-  - Text output only. JSON and CSV output come in a follow-up release.
-  - Only Lakebase Autoscaling endpoints are supported. Provisioned instance
-    support comes in a follow-up release; use 'databricks psql <instance>' as a
-    workaround for now.
   - No interactive REPL. 'databricks psql' continues to own that surface.
   - Multi-statement strings (e.g. "SELECT 1; SELECT 2") are not supported.
   - The OAuth token is generated once per invocation and is valid for 1h.
@@ -61,17 +77,26 @@ Limitations (this release):
 		Args:    cobra.ExactArgs(1),
 		PreRunE: root.MustWorkspaceClient,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			f.outputFormatSet = cmd.Flag("output").Changed
 			return runQuery(cmd.Context(), cmd, args[0], f)
 		},
 	}
 
-	cmd.Flags().StringVar(&f.target, "target", "", "Autoscaling resource path (e.g. projects/foo/branches/main/endpoints/primary)")
+	cmd.Flags().StringVar(&f.target, "target", "", "Provisioned instance name OR autoscaling resource path")
 	cmd.Flags().StringVar(&f.project, "project", "", "Autoscaling project ID")
 	cmd.Flags().StringVar(&f.branch, "branch", "", "Autoscaling branch ID (default: auto-select if exactly one)")
 	cmd.Flags().StringVar(&f.endpoint, "endpoint", "", "Autoscaling endpoint ID (default: auto-select if exactly one)")
 	cmd.Flags().StringVarP(&f.database, "database", "d", defaultDatabase, "Database name")
 	cmd.Flags().DurationVar(&f.connectTimeout, "connect-timeout", defaultConnectTimeout, "Connect timeout")
 	cmd.Flags().IntVar(&f.maxRetries, "max-retries", 3, "Total connect attempts on idle/waking endpoint (must be >= 1; 1 disables retry)")
+	cmd.Flags().StringVarP(&f.outputFormat, "output", "o", string(outputText), "Output format: text, json, or csv")
+	cmd.RegisterFlagCompletionFunc("output", func(*cobra.Command, []string, string) ([]string, cobra.ShellCompDirective) {
+		out := make([]string, len(allOutputFormats))
+		for i, f := range allOutputFormats {
+			out[i] = string(f)
+		}
+		return out, cobra.ShellCompDirectiveNoFileComp
+	})
 
 	cmd.MarkFlagsMutuallyExclusive("target", "project")
 	cmd.MarkFlagsMutuallyExclusive("target", "branch")
@@ -92,6 +117,12 @@ func runQuery(ctx context.Context, cmd *cobra.Command, sql string, f queryFlags)
 		return fmt.Errorf("--max-retries must be at least 1; got %d", f.maxRetries)
 	}
 	if err := validateTargeting(f.targetingFlags); err != nil {
+		return err
+	}
+
+	stdoutTTY := cmdio.SupportsColor(ctx, cmd.OutOrStdout())
+	format, err := resolveOutputFormat(ctx, f.outputFormat, f.outputFormatSet, stdoutTTY)
+	if err != nil {
 		return err
 	}
 
@@ -126,10 +157,19 @@ func runQuery(ctx context.Context, cmd *cobra.Command, sql string, f queryFlags)
 	}
 	defer conn.Close(context.WithoutCancel(ctx))
 
-	result, err := executeOne(ctx, conn, sql)
-	if err != nil {
-		return err
-	}
+	sink := newSink(format, cmd.OutOrStdout(), cmd.ErrOrStderr())
+	return executeOne(ctx, conn, sql, sink)
+}
 
-	return renderText(cmd.OutOrStdout(), result)
+// newSink returns the rowSink for the chosen output format. Kept separate
+// from runQuery so tests can build sinks without going through pgx.
+func newSink(format outputFormat, out, stderr io.Writer) rowSink {
+	switch format {
+	case outputJSON:
+		return newJSONSink(out, stderr)
+	case outputCSV:
+		return newCSVSink(out, stderr)
+	default:
+		return newTextSink(out)
+	}
 }

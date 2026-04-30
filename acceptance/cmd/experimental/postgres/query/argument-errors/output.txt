@@ -35,10 +35,6 @@ Error: --branch is required when using --endpoint
 >>> musterr [CLI] experimental postgres query --project foo --branch main --max-retries 0 SELECT 1
 Error: --max-retries must be at least 1; got 0
 
-=== Provisioned-shaped target should error pointing at psql:
->>> musterr [CLI] experimental postgres query --target my-instance SELECT 1
-Error: provisioned instances are not yet supported by this experimental command; use 'databricks psql <instance>' for now
-
 === Malformed autoscaling path should error:
 >>> musterr [CLI] experimental postgres query --target projects/ SELECT 1
 Error: invalid resource path: missing project ID

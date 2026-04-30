@@ -1,0 +1,12 @@
+
+=== Provisioned target in non-AVAILABLE state should error:
+>>> musterr [CLI] experimental postgres query --target starting-instance SELECT 1
+Error: database instance "starting-instance" is not ready for accepting connections (state: STARTING)
+
+=== Provisioned target with no DNS should error:
+>>> musterr [CLI] experimental postgres query --target no-dns-instance SELECT 1
+Error: database instance "no-dns-instance" has no read/write DNS yet
+
+=== Provisioned target not found should surface SDK 404:
+>>> musterr [CLI] experimental postgres query --target missing-instance SELECT 1
+Error: failed to get database instance: instance not found
