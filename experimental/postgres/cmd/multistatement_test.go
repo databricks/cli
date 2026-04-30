@@ -45,6 +45,13 @@ func TestCheckSingleStatement(t *testing.T) {
 		{name: "dollar-digit placeholders", input: "SELECT $1, $2 FROM t", wantErr: false},
 		{name: "dollar-digit then real semi", input: "SELECT $1 FROM t; SELECT 2", wantErr: true},
 
+		// Tag must be an unquoted identifier. Punctuation rejects the
+		// candidate so the embedded ';' is NOT hidden inside a fake body.
+		{name: "dollar-tag with hyphen rejected", input: "SELECT $foo-bar$a;b$foo-bar$", wantErr: true},
+		{name: "dollar-tag with dot rejected", input: "SELECT $foo.bar$a;b$foo.bar$", wantErr: true},
+		{name: "dollar-tag with underscore", input: "SELECT $body_v2$a;b$body_v2$", wantErr: false},
+		{name: "dollar-tag mixed letters digits", input: "SELECT $tag1$a;b$tag1$", wantErr: false},
+
 		// E-string escape syntax: scanner doesn't honour \' escape, so a
 		// backslash-escaped apostrophe terminates the literal early. We
 		// document the over-rejection rather than fix it (acceptable v1

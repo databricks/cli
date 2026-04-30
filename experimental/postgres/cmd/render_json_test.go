@@ -2,6 +2,7 @@ package postgrescmd
 
 import (
 	"bytes"
+	"strings"
 	"testing"
 
 	"github.com/jackc/pgx/v5/pgconn"
@@ -135,4 +136,26 @@ func TestCommandTagParse(t *testing.T) {
 			assert.Equal(t, tc.rows, count, "rows for %q", tc.tag)
 		}
 	}
+}
+
+func TestJSONSink_DuplicateColumns_DoesNotCollideWithExistingSuffix(t *testing.T) {
+	// Source columns ["id", "id__2", "id"]: the second `id` would naively
+	// rename to id__2, colliding with the existing id__2 from the source.
+	// Verify the dedup logic bumps the suffix until unique.
+	var stdout, stderr bytes.Buffer
+	s := newJSONSink(&stdout, &stderr)
+	require.NoError(t, s.Begin(fieldsWithOIDs(
+		[]string{"id", "id__2", "id"},
+		[]uint32{pgtype.Int8OID, pgtype.Int8OID, pgtype.Int8OID},
+	)))
+	require.NoError(t, s.Row([]any{int64(1), int64(2), int64(3)}))
+	require.NoError(t, s.End("SELECT 1"))
+
+	// All three keys present with no duplicates.
+	out := stdout.String()
+	assert.Contains(t, out, `"id":1`)
+	assert.Contains(t, out, `"id__2":2`)
+	assert.Contains(t, out, `"id__3":3`)
+	// And NOT two id__2 keys.
+	assert.Equal(t, 1, strings.Count(out, `"id__2"`))
 }

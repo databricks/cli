@@ -83,3 +83,16 @@ func TestTextSink_OnError_NoOp(t *testing.T) {
 	// is never flushed.
 	assert.Empty(t, buf.String())
 }
+
+func TestTextSink_EscapesTabAndNewlineInCells(t *testing.T) {
+	var buf bytes.Buffer
+	s := newTextSink(&buf)
+	require.NoError(t, s.Begin(fields("note")))
+	require.NoError(t, s.Row([]any{"a\tb\nc\rd"}))
+	require.NoError(t, s.End("SELECT 1"))
+	// The escape replaces tabs/newlines/CR with their backslash-letter forms
+	// so the tabwriter doesn't treat them as column or row boundaries.
+	assert.Contains(t, buf.String(), `a\tb\nc\rd`)
+	assert.NotContains(t, buf.String(), "a\tb")
+	assert.NotContains(t, buf.String(), "c\rd")
+}

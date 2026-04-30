@@ -134,7 +134,12 @@ func runQuery(ctx context.Context, cmd *cobra.Command, args []string, f queryFla
 		}
 	}
 
-	stdoutTTY := cmdio.SupportsColor(ctx, cmd.OutOrStdout())
+	// IsOutputTTY checks the file-descriptor only. SupportsColor would also
+	// AND in NO_COLOR / TERM=dumb, which are colour preferences and have
+	// nothing to do with whether stdout is a pipe; folding them in here
+	// would silently demote interactive text output to JSON for users who
+	// have NO_COLOR set on a real terminal.
+	stdoutTTY := cmdio.IsOutputTTY(cmd.OutOrStdout())
 	format, err := sqlcli.ResolveFormat(ctx, f.outputFormat, f.outputFormatSet, stdoutTTY)
 	if err != nil {
 		return err
