@@ -392,6 +392,8 @@ func matchAnyVariable(remoteValue any, resolved dyn.Value) (string, bool) {
 				match = pathToRef(varPrefix.Append(dyn.Key(name)))
 				count++
 			}
+		case dyn.KindInvalid, dyn.KindMap, dyn.KindSequence, dyn.KindFloat, dyn.KindTime, dyn.KindNil:
+			// Skip non-scalar / unsupported variable values.
 		}
 	}
 	if count == 1 {
@@ -592,4 +594,3 @@ func sequenceSiblings(preResolved dyn.Value, candidates []string) ([]dyn.Value, 
 	}
 	return nil, false
 }
-
