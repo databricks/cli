@@ -20,7 +20,3 @@ Response.Body = '{}'
 # I'm adding 405 because that's what this test originally do. It's somewhat
 # surprising though that CLI can receive 405 and that does not result in error anywhere.
 Response.StatusCode = 405
-
-[[Repls]]
-Old = 'Updating deployment state...\n'
-New = ''

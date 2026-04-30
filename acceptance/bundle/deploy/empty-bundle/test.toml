@@ -2,6 +2,3 @@ Cloud = true
 
 [EnvMatrix]
 DATABRICKS_BUNDLE_ENABLE_EXPERIMENTAL_YAML_SYNC = ["", "true"]
-[[Repls]]
-Old = 'Updating deployment state...\n'
-New = ''
