@@ -11,6 +11,11 @@ trace $CLI bundle deploy
 
 endpoint_name="vs-endpoint-${UNIQUE_NAME}"
 
+# Register a stable label for the endpoint UUID so the plan output shows the
+# same token for both saved (old) and remote, confirming they match.
+endpoint_uuid=$($CLI vector-search-endpoints get-endpoint "${endpoint_name}" | jq -r '.id')
+add_repl.py "$endpoint_uuid" "MY_ENDPOINT_UUID"
+
 title "Simulate remote drift: change min_qps to 5 outside the bundle"
 trace $CLI vector-search-endpoints patch-endpoint "${endpoint_name}" --min-qps 5
 
