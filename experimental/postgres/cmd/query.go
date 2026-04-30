@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/experimental/libs/sqlcli"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/jackc/pgx/v5"
 	"github.com/spf13/cobra"
@@ -89,10 +90,10 @@ Limitations (this release):
 	cmd.Flags().StringVarP(&f.database, "database", "d", defaultDatabase, "Database name")
 	cmd.Flags().DurationVar(&f.connectTimeout, "connect-timeout", defaultConnectTimeout, "Connect timeout")
 	cmd.Flags().IntVar(&f.maxRetries, "max-retries", 3, "Total connect attempts on idle/waking endpoint (must be >= 1; 1 disables retry)")
-	cmd.Flags().StringVarP(&f.outputFormat, "output", "o", string(outputText), "Output format: text, json, or csv")
+	cmd.Flags().StringVarP(&f.outputFormat, "output", "o", string(sqlcli.OutputText), "Output format: text, json, or csv")
 	cmd.RegisterFlagCompletionFunc("output", func(*cobra.Command, []string, string) ([]string, cobra.ShellCompDirective) {
-		out := make([]string, len(allOutputFormats))
-		for i, f := range allOutputFormats {
+		out := make([]string, len(sqlcli.AllFormats))
+		for i, f := range sqlcli.AllFormats {
 			out[i] = string(f)
 		}
 		return out, cobra.ShellCompDirectiveNoFileComp
@@ -126,7 +127,7 @@ func runQuery(ctx context.Context, cmd *cobra.Command, sql string, f queryFlags)
 	// pass --output text explicitly; that path is honoured (see
 	// resolveOutputFormat). Mirrors the aitools query command.
 	stdoutTTY := cmdio.SupportsColor(ctx, cmd.OutOrStdout())
-	format, err := resolveOutputFormat(ctx, f.outputFormat, f.outputFormatSet, stdoutTTY)
+	format, err := sqlcli.ResolveFormat(ctx, f.outputFormat, f.outputFormatSet, stdoutTTY)
 	if err != nil {
 		return err
 	}
@@ -168,11 +169,11 @@ func runQuery(ctx context.Context, cmd *cobra.Command, sql string, f queryFlags)
 
 // newSink returns the rowSink for the chosen output format. Kept separate
 // from runQuery so tests can build sinks without going through pgx.
-func newSink(format outputFormat, out, stderr io.Writer) rowSink {
+func newSink(format sqlcli.Format, out, stderr io.Writer) rowSink {
 	switch format {
-	case outputJSON:
+	case sqlcli.OutputJSON:
 		return newJSONSink(out, stderr)
-	case outputCSV:
+	case sqlcli.OutputCSV:
 		return newCSVSink(out, stderr)
 	default:
 		return newTextSink(out)

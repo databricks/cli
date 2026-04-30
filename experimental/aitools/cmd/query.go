@@ -14,10 +14,9 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/experimental/aitools/lib/middlewares"
 	"github.com/databricks/cli/experimental/aitools/lib/session"
+	"github.com/databricks/cli/experimental/libs/sqlcli"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/env"
-	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/spf13/cobra"
@@ -35,16 +34,6 @@ const (
 
 	// cancelTimeout is how long to wait for server-side cancellation.
 	cancelTimeout = 10 * time.Second
-
-	// staticTableThreshold is the maximum number of rows rendered as a static table.
-	// Beyond this, an interactive scrollable table is used.
-	staticTableThreshold = 30
-
-	// outputCSV is the csv output format, supported only by the query command.
-	outputCSV = "csv"
-
-	// envOutputFormat matches the env var name in cmd/root/io.go.
-	envOutputFormat = "DATABRICKS_OUTPUT_FORMAT"
 )
 
 type queryOutputMode int
@@ -55,8 +44,13 @@ const (
 	queryOutputModeInteractiveTable
 )
 
-func selectQueryOutputMode(outputType flags.Output, stdoutInteractive, promptSupported bool, rowCount int) queryOutputMode {
-	if outputType == flags.OutputJSON {
+// selectQueryOutputMode picks the rendering mode for a single-query result.
+// JSON is the only machine-readable option; static and interactive are
+// table variants chosen by row count and TTY capabilities. Sharing only
+// the threshold with sqlcli; the three-way decision is aitools-specific
+// because the postgres command's renderers have a different shape.
+func selectQueryOutputMode(format sqlcli.Format, stdoutInteractive, promptSupported bool, rowCount int) queryOutputMode {
+	if format == sqlcli.OutputJSON {
 		return queryOutputModeJSON
 	}
 	if !stdoutInteractive {
@@ -67,7 +61,7 @@ func selectQueryOutputMode(outputType flags.Output, stdoutInteractive, promptSup
 	if !promptSupported {
 		return queryOutputModeStaticTable
 	}
-	if rowCount <= staticTableThreshold {
+	if rowCount <= sqlcli.StaticTableThreshold {
 		return queryOutputModeStaticTable
 	}
 	return queryOutputModeInteractiveTable
@@ -119,24 +113,15 @@ interactive table browser. Use --output csv to export results as CSV.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 
-			// Normalize case to match root --output behavior (flags.Output.Set lowercases).
-			outputFormat = strings.ToLower(outputFormat)
-
-			// If --output wasn't explicitly passed, check the env var.
-			// Invalid env values are silently ignored, matching cmd/root/io.go.
-			if !cmd.Flag("output").Changed {
-				if v, ok := env.Lookup(ctx, envOutputFormat); ok {
-					switch flags.Output(strings.ToLower(v)) {
-					case flags.OutputText, flags.OutputJSON, outputCSV:
-						outputFormat = strings.ToLower(v)
-					}
-				}
-			}
-
-			switch flags.Output(outputFormat) {
-			case flags.OutputText, flags.OutputJSON, outputCSV:
-			default:
-				return fmt.Errorf("unsupported output format %q, accepted values: text, json, csv", outputFormat)
+			// Resolve the effective format via sqlcli so the env-var
+			// precedence and explicit-text-on-pipe handling stays in sync
+			// across commands. We pass stdoutTTY=true to keep the original
+			// aitools behavior of not auto-falling-back to JSON here; the
+			// per-result render mode further down already handles the pipe
+			// case via selectQueryOutputMode.
+			format, err := sqlcli.ResolveFormat(ctx, outputFormat, cmd.Flag("output").Changed, true)
+			if err != nil {
+				return err
 			}
 
 			sqls, err := resolveSQLs(ctx, cmd, args, filePaths)
@@ -146,7 +131,7 @@ interactive table browser. Use --output csv to export results as CSV.`,
 
 			// Reject incompatible flag combinations before any API call so the
 			// user sees the real error instead of an auth/warehouse failure.
-			if len(sqls) > 1 && flags.Output(outputFormat) != flags.OutputJSON {
+			if len(sqls) > 1 && format != sqlcli.OutputJSON {
 				return fmt.Errorf("multiple queries require --output json (got %q); pass --output json to receive a JSON array of per-statement results", outputFormat)
 			}
 
@@ -173,7 +158,7 @@ interactive table browser. Use --output csv to export results as CSV.`,
 			}
 
 			// CSV bypasses the normal output mode selection.
-			if flags.Output(outputFormat) == outputCSV {
+			if format == sqlcli.OutputCSV {
 				if len(columns) == 0 && len(rows) == 0 {
 					return nil
 				}
@@ -190,7 +175,7 @@ interactive table browser. Use --output csv to export results as CSV.`,
 			stdoutInteractive := cmdio.SupportsColor(ctx, cmd.OutOrStdout())
 			promptSupported := cmdio.IsPromptSupported(ctx)
 
-			switch selectQueryOutputMode(flags.Output(outputFormat), stdoutInteractive, promptSupported, len(rows)) {
+			switch selectQueryOutputMode(format, stdoutInteractive, promptSupported, len(rows)) {
 			case queryOutputModeJSON:
 				return renderJSON(cmd.OutOrStdout(), columns, rows)
 			case queryOutputModeStaticTable:
@@ -206,9 +191,13 @@ interactive table browser. Use --output csv to export results as CSV.`,
 	cmd.Flags().IntVar(&concurrency, "concurrency", defaultBatchConcurrency, "Maximum in-flight statements when running a batch of queries")
 	// Local --output flag shadows the root command's persistent --output flag,
 	// adding csv support for this command only.
-	cmd.Flags().StringVarP(&outputFormat, "output", "o", string(flags.OutputText), "Output format: text, json, or csv")
+	cmd.Flags().StringVarP(&outputFormat, "output", "o", string(sqlcli.OutputText), "Output format: text, json, or csv")
 	cmd.RegisterFlagCompletionFunc("output", func(*cobra.Command, []string, string) ([]string, cobra.ShellCompDirective) {
-		return []string{string(flags.OutputText), string(flags.OutputJSON), string(outputCSV)}, cobra.ShellCompDirectiveNoFileComp
+		out := make([]string, len(sqlcli.AllFormats))
+		for i, f := range sqlcli.AllFormats {
+			out[i] = string(f)
+		}
+		return out, cobra.ShellCompDirectiveNoFileComp
 	})
 
 	return cmd
