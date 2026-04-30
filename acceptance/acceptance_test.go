@@ -1508,7 +1508,7 @@ func prepareWheelBuildDirectory(t *testing.T, dir string) string {
 }
 
 func BuildYamlfmt(t *testing.T) {
-	RunCommand(t, []string{"./task", "build-yamlfmt"}, "..", []string{})
+	RunCommand(t, []string{"go", "tool", "-modfile=tools/task/go.mod", "task", "build-yamlfmt"}, "..", []string{})
 }
 
 // setupTerraform installs terraform and configures environment variables for tests.
