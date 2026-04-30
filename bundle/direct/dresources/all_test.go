@@ -247,6 +247,23 @@ var testConfig map[string]any = map[string]any{
 			EndpointType: vectorsearch.EndpointTypeStandard,
 		},
 	},
+
+	"vector_search_indexes": &resources.VectorSearchIndex{
+		CreateVectorIndexRequest: vectorsearch.CreateVectorIndexRequest{
+			Name:         "my-index",
+			EndpointName: "my-index-endpoint",
+			PrimaryKey:   "id",
+			IndexType:    vectorsearch.VectorIndexTypeDeltaSync,
+			DeltaSyncIndexSpec: &vectorsearch.DeltaSyncVectorIndexSpecRequest{
+				SourceTable:  "main.default.source_table",
+				PipelineType: vectorsearch.PipelineTypeTriggered,
+			},
+		},
+		Grants: []catalog.PrivilegeAssignment{{
+			Principal:  "user@example.com",
+			Privileges: []catalog.Privilege{catalog.PrivilegeSelect},
+		}},
+	},
 }
 
 type prepareWorkspace func(ctx context.Context, client *databricks.WorkspaceClient) (any, error)
@@ -266,6 +283,18 @@ var testDeps = map[string]prepareWorkspace{
 				DatabaseInstanceName: "mydbinstance1",
 			},
 		}, err
+	},
+
+	"vector_search_indexes": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		_, err := client.VectorSearchEndpoints.CreateEndpoint(ctx, vectorsearch.CreateEndpoint{
+			Name:         "my-index-endpoint",
+			EndpointType: vectorsearch.EndpointTypeStandard,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		return testConfig["vector_search_indexes"], nil
 	},
 
 	"jobs.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
@@ -585,6 +614,17 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
+	"vector_search_indexes.grants": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		return &GrantsState{
+			SecurableType: "table",
+			FullName:      "main.default.my_index",
+			EmbeddedSlice: []catalog.PrivilegeAssignment{{
+				Privileges: []catalog.Privilege{catalog.PrivilegeSelect},
+				Principal:  "user@example.com",
+			}},
+		}, nil
+	},
+
 	"secret_scopes.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
 		err := client.Secrets.CreateScope(ctx, workspace.CreateScope{
 			Scope:            "permissions_test_scope",
@@ -849,6 +889,9 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	}))
 
 	err = adapter.DoDelete(ctx, createdID)
+	require.NoError(t, err)
+
+	err = adapter.WaitAfterDelete(ctx, createdID)
 	require.NoError(t, err)
 
 	p, err := structpath.ParsePath("name")

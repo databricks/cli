@@ -1,0 +1,23 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+endpoint_name="vs-endpoint-${UNIQUE_NAME}"
+index_name="main.default.vs_index_${UNIQUE_NAME}"
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    trace $CLI vector-search-endpoints delete-endpoint "${endpoint_name}"
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+trace $CLI vector-search-endpoints create-endpoint "${endpoint_name}" STANDARD | jq '{id, name, endpoint_type}'
+
+trace $CLI bundle plan
+
+rm -f out.requests.txt
+trace $CLI bundle deploy
+
+trace $CLI bundle plan
+
+trace $CLI grants get table "${index_name}" | jq --sort-keys
+
+trace print_requests.py '//vector-search/indexes' '//permissions' > out.requests.$DATABRICKS_BUNDLE_ENGINE.json

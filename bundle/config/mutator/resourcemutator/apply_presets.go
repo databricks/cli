@@ -298,6 +298,29 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		e.Name = normalizePrefix(prefix) + e.Name
 	}
 
+	// Vector Search Indexes: Prefix
+	// The name is a 3-part UC identifier (catalog.schema.index); prefix only
+	// the last component since catalog and schema are external references.
+	// This mutator runs before reference/variable resolution, so the name may
+	// still carry literal `${...}` tokens. Splitting on the last dot in that
+	// case would inject the prefix inside the ref expression itself
+	// (e.g. `${var.full_name}` -> `${var.dev_user_full_name}`); skip
+	// prefixing when refs are present and let the user compose the prefix
+	// into the variable.
+	for _, e := range r.VectorSearchIndexes {
+		if e == nil {
+			continue
+		}
+		if strings.Contains(e.Name, "${") {
+			continue
+		}
+		if i := strings.LastIndex(e.Name, "."); i >= 0 {
+			e.Name = e.Name[:i+1] + normalizePrefix(prefix) + e.Name[i+1:]
+		} else {
+			e.Name = normalizePrefix(prefix) + e.Name
+		}
+	}
+
 	return diags
 }
 

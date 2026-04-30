@@ -24,5 +24,17 @@ resources:
     model1:
       name: model 1
 
+  vector_search_endpoints:
+    vs_endpoint:
+      name: vs_endpoint
+      endpoint_type: STANDARD
+
+  vector_search_indexes:
+    vs_index:
+      name: my_catalog.my_schema.my_index
+      endpoint_name: vs_endpoint
+      primary_key: id
+      index_type: DELTA_SYNC
+
 presets:
   name_prefix: "$PREFIX"

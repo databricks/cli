@@ -30,6 +30,20 @@
       "name": "prefixschema1"
     }
   },
+  "vector_search_endpoints": {
+    "vs_endpoint": {
+      "endpoint_type": "STANDARD",
+      "name": "prefixvs_endpoint"
+    }
+  },
+  "vector_search_indexes": {
+    "vs_index": {
+      "endpoint_name": "vs_endpoint",
+      "index_type": "DELTA_SYNC",
+      "name": "my_catalog.my_schema.prefixmy_index",
+      "primary_key": "id"
+    }
+  },
   "volumes": {
     "volume1": {
       "catalog_name": "catalog1",
@@ -71,6 +85,20 @@
       "name": "prefix_schema1"
     }
   },
+  "vector_search_endpoints": {
+    "vs_endpoint": {
+      "endpoint_type": "STANDARD",
+      "name": "prefix_vs_endpoint"
+    }
+  },
+  "vector_search_indexes": {
+    "vs_index": {
+      "endpoint_name": "vs_endpoint",
+      "index_type": "DELTA_SYNC",
+      "name": "my_catalog.my_schema.prefix_my_index",
+      "primary_key": "id"
+    }
+  },
   "volumes": {
     "volume1": {
       "catalog_name": "catalog1",
@@ -110,6 +138,20 @@
     "schema1": {
       "catalog_name": "c",
       "name": "schema1"
+    }
+  },
+  "vector_search_endpoints": {
+    "vs_endpoint": {
+      "endpoint_type": "STANDARD",
+      "name": "vs_endpoint"
+    }
+  },
+  "vector_search_indexes": {
+    "vs_index": {
+      "endpoint_name": "vs_endpoint",
+      "index_type": "DELTA_SYNC",
+      "name": "my_catalog.my_schema.my_index",
+      "primary_key": "id"
     }
   },
   "volumes": {

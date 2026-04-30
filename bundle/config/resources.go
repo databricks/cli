@@ -36,6 +36,7 @@ type Resources struct {
 	PostgresBranches      map[string]*resources.PostgresBranch       `json:"postgres_branches,omitempty"`
 	PostgresEndpoints     map[string]*resources.PostgresEndpoint     `json:"postgres_endpoints,omitempty"`
 	VectorSearchEndpoints map[string]*resources.VectorSearchEndpoint `json:"vector_search_endpoints,omitempty"`
+	VectorSearchIndexes   map[string]*resources.VectorSearchIndex    `json:"vector_search_indexes,omitempty"`
 }
 
 type ConfigResource interface {
@@ -113,6 +114,7 @@ func (r *Resources) AllResources() []ResourceGroup {
 		collectResourceMap(descriptions["postgres_branches"], r.PostgresBranches),
 		collectResourceMap(descriptions["postgres_endpoints"], r.PostgresEndpoints),
 		collectResourceMap(descriptions["vector_search_endpoints"], r.VectorSearchEndpoints),
+		collectResourceMap(descriptions["vector_search_indexes"], r.VectorSearchIndexes),
 	}
 }
 
@@ -168,5 +170,6 @@ func SupportedResources() map[string]resources.ResourceDescription {
 		"postgres_branches":       (&resources.PostgresBranch{}).ResourceDescription(),
 		"postgres_endpoints":      (&resources.PostgresEndpoint{}).ResourceDescription(),
 		"vector_search_endpoints": (&resources.VectorSearchEndpoint{}).ResourceDescription(),
+		"vector_search_indexes":   (&resources.VectorSearchIndex{}).ResourceDescription(),
 	}
 }

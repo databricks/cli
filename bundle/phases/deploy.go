@@ -43,11 +43,13 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.P
 	syncedDatabaseTableActions := filterGroup(actions, "synced_database_tables", types...)
 	postgresProjectActions := filterGroup(actions, "postgres_projects", types...)
 	postgresBranchActions := filterGroup(actions, "postgres_branches", types...)
+	vectorSearchIndexActions := filterGroup(actions, "vector_search_indexes", types...)
 
 	// We don't need to display any prompts in this case.
 	if len(schemaActions) == 0 && len(pipelineActions) == 0 && len(volumeActions) == 0 && len(dashboardActions) == 0 &&
 		len(databaseInstanceActions) == 0 && len(syncedDatabaseTableActions) == 0 &&
-		len(postgresProjectActions) == 0 && len(postgresBranchActions) == 0 {
+		len(postgresProjectActions) == 0 && len(postgresBranchActions) == 0 &&
+		len(vectorSearchIndexActions) == 0 {
 		return true, nil
 	}
 
@@ -114,6 +116,14 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.P
 	if len(postgresBranchActions) != 0 {
 		cmdio.LogString(ctx, deleteOrRecreatePostgresBranchMessage)
 		for _, action := range postgresBranchActions {
+			cmdio.Log(ctx, action)
+		}
+	}
+
+	// One or more Vector Search indexes is being deleted or recreated.
+	if len(vectorSearchIndexActions) != 0 {
+		cmdio.LogString(ctx, deleteOrRecreateVectorSearchIndexMessage)
+		for _, action := range vectorSearchIndexActions {
 			cmdio.Log(ctx, action)
 		}
 	}

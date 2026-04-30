@@ -1,0 +1,30 @@
+{
+  "method": "POST",
+  "path": "/api/2.0/vector-search/indexes",
+  "body": {
+    "direct_access_index_spec": {
+      "schema_json": "{\"columns\":[{\"name\":\"id\",\"type\":\"integer\"}]}"
+    },
+    "endpoint_name": "vs-endpoint-[UNIQUE_NAME]",
+    "index_type": "DIRECT_ACCESS",
+    "name": "main.default.vs_index_[UNIQUE_NAME]",
+    "primary_key": "id"
+  }
+}
+{
+  "method": "PATCH",
+  "path": "/api/2.1/unity-catalog/permissions/table/main.default.vs_index_[UNIQUE_NAME]",
+  "body": {
+    "changes": [
+      {
+        "add": [
+          "SELECT"
+        ],
+        "principal": "deco-test-user@databricks.com",
+        "remove": [
+          "ALL_PRIVILEGES"
+        ]
+      }
+    ]
+  }
+}

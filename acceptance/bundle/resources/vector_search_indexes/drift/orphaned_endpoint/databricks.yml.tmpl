@@ -1,0 +1,20 @@
+bundle:
+  name: drift-vs-index-orphaned-endpoint-$UNIQUE_NAME
+
+sync:
+  paths: []
+
+resources:
+  vector_search_endpoints:
+    vs_endpoint:
+      name: vs-endpoint-$UNIQUE_NAME
+      endpoint_type: STANDARD
+  vector_search_indexes:
+    my_index:
+      name: vs-index-$UNIQUE_NAME
+      endpoint_name: ${resources.vector_search_endpoints.vs_endpoint.name}
+      primary_key: id
+      index_type: DELTA_SYNC
+      delta_sync_index_spec:
+        source_table: main.default.source_$UNIQUE_NAME
+        pipeline_type: TRIGGERED

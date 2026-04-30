@@ -58,6 +58,7 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.
 	syncedDatabaseTableActions := filterGroup(deleteActions, "synced_database_tables", deployplan.Delete)
 	postgresProjectActions := filterGroup(deleteActions, "postgres_projects", deployplan.Delete)
 	postgresBranchActions := filterGroup(deleteActions, "postgres_branches", deployplan.Delete)
+	vectorSearchIndexActions := filterGroup(deleteActions, "vector_search_indexes", deployplan.Delete)
 
 	if len(schemaActions) > 0 {
 		cmdio.LogString(ctx, deleteSchemaMessage)
@@ -110,6 +111,14 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.
 	if len(postgresBranchActions) > 0 {
 		cmdio.LogString(ctx, deletePostgresBranchMessage)
 		for _, a := range postgresBranchActions {
+			cmdio.Log(ctx, a)
+		}
+		cmdio.LogString(ctx, "")
+	}
+
+	if len(vectorSearchIndexActions) > 0 {
+		cmdio.LogString(ctx, deleteVectorSearchIndexMessage)
+		for _, a := range vectorSearchIndexActions {
 			cmdio.Log(ctx, a)
 		}
 		cmdio.LogString(ctx, "")

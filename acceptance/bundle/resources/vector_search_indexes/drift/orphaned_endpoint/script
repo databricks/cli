@@ -1,0 +1,22 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+endpoint_name="vs-endpoint-${UNIQUE_NAME}"
+index_name="vs-index-${UNIQUE_NAME}"
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+title "Initial deployment"
+trace $CLI bundle deploy
+
+title "Simulate remote endpoint deletion (index is orphaned, still exists by name)"
+trace $CLI vector-search-endpoints delete-endpoint "${endpoint_name}"
+
+title "Plan must cascade-recreate the index because its endpoint is being recreated"
+trace $CLI bundle plan | contains.py "create vector_search_endpoints.vs_endpoint" "recreate vector_search_indexes.my_index"
+
+title "Deploy recreates endpoint and rebinds index"
+trace $CLI bundle deploy --auto-approve
+trace $CLI vector-search-indexes get-index "${index_name}" | jq '{name, endpoint_name, index_type, primary_key}'

@@ -1,0 +1,25 @@
+{
+  "method": "GET",
+  "path": "/api/2.0/vector-search/indexes/vs-index-[UNIQUE_NAME]"
+}
+{
+  "method": "DELETE",
+  "path": "/api/2.0/vector-search/indexes/vs-index-[UNIQUE_NAME]"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/vector-search/indexes/vs-index-[UNIQUE_NAME]"
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/vector-search/indexes",
+  "body": {
+    "direct_access_index_spec": {
+      "schema_json": "{\"columns\":[{\"name\":\"id\",\"type\":\"integer\"}]}"
+    },
+    "endpoint_name": "vs-endpoint-[UNIQUE_NAME]",
+    "index_type": "DIRECT_ACCESS",
+    "name": "vs-index-[UNIQUE_NAME]",
+    "primary_key": "id"
+  }
+}

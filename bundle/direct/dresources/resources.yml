@@ -512,3 +512,26 @@ resources:
     recreate_on_changes:
       - field: endpoint_type
         reason: immutable
+
+  vector_search_indexes:
+    recreate_on_changes:
+      # The index API has no rename or update path, so every config change
+      # has to go through delete + create.
+      - field: name
+        reason: immutable
+      - field: endpoint_name
+        reason: immutable
+      - field: index_type
+        reason: immutable
+      - field: index_subtype
+        reason: immutable
+      - field: primary_key
+        reason: immutable
+      - field: delta_sync_index_spec
+        reason: immutable
+      - field: direct_access_index_spec
+        reason: immutable
+    ignore_remote_changes:
+      # columns_to_sync is request-only in the create spec and not returned by the read API.
+      - field: delta_sync_index_spec.columns_to_sync
+        reason: input_only

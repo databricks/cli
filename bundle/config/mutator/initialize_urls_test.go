@@ -12,6 +12,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/databricks/databricks-sdk-go/service/serving"
+	"github.com/databricks/databricks-sdk-go/service/vectorsearch"
 	"github.com/stretchr/testify/require"
 )
 
@@ -68,6 +69,14 @@ func TestInitializeURLs(t *testing.T) {
 						CreateMonitor: catalog.CreateMonitor{},
 					},
 				},
+				VectorSearchIndexes: map[string]*resources.VectorSearchIndex{
+					"vectorsearchindex1": {
+						BaseResource: resources.BaseResource{ID: "catalog.schema.vectorsearchindex1"},
+						CreateVectorIndexRequest: vectorsearch.CreateVectorIndexRequest{
+							Name: "catalog.schema.vectorsearchindex1",
+						},
+					},
+				},
 				Schemas: map[string]*resources.Schema{
 					"schema1": {
 						BaseResource: resources.BaseResource{ID: "catalog.schema"},
@@ -97,16 +106,17 @@ func TestInitializeURLs(t *testing.T) {
 	}
 
 	expectedURLs := map[string]string{
-		"job1":             "https://mycompany.databricks.com/jobs/1?o=123456",
-		"pipeline1":        "https://mycompany.databricks.com/pipelines/3?o=123456",
-		"experiment1":      "https://mycompany.databricks.com/ml/experiments/4?o=123456",
-		"model1":           "https://mycompany.databricks.com/ml/models/a%20model%20uses%20its%20name%20for%20identifier?o=123456",
-		"servingendpoint1": "https://mycompany.databricks.com/ml/endpoints/my_serving_endpoint?o=123456",
-		"registeredmodel1": "https://mycompany.databricks.com/explore/data/models/8?o=123456",
-		"qualityMonitor1":  "https://mycompany.databricks.com/explore/data/catalog/schema/qualityMonitor1?o=123456",
-		"schema1":          "https://mycompany.databricks.com/explore/data/catalog/schema?o=123456",
-		"cluster1":         "https://mycompany.databricks.com/compute/clusters/1017-103929-vlr7jzcf?o=123456",
-		"dashboard1":       "https://mycompany.databricks.com/dashboardsv3/01ef8d56871e1d50ae30ce7375e42478/published?o=123456",
+		"job1":               "https://mycompany.databricks.com/jobs/1?o=123456",
+		"pipeline1":          "https://mycompany.databricks.com/pipelines/3?o=123456",
+		"experiment1":        "https://mycompany.databricks.com/ml/experiments/4?o=123456",
+		"model1":             "https://mycompany.databricks.com/ml/models/a%20model%20uses%20its%20name%20for%20identifier?o=123456",
+		"servingendpoint1":   "https://mycompany.databricks.com/ml/endpoints/my_serving_endpoint?o=123456",
+		"registeredmodel1":   "https://mycompany.databricks.com/explore/data/models/8?o=123456",
+		"qualityMonitor1":    "https://mycompany.databricks.com/explore/data/catalog/schema/qualityMonitor1?o=123456",
+		"vectorsearchindex1": "https://mycompany.databricks.com/explore/data/catalog/schema/vectorsearchindex1?o=123456",
+		"schema1":            "https://mycompany.databricks.com/explore/data/catalog/schema?o=123456",
+		"cluster1":           "https://mycompany.databricks.com/compute/clusters/1017-103929-vlr7jzcf?o=123456",
+		"dashboard1":         "https://mycompany.databricks.com/dashboardsv3/01ef8d56871e1d50ae30ce7375e42478/published?o=123456",
 	}
 
 	err := initializeForWorkspace(b, "123456", "https://mycompany.databricks.com/")

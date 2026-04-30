@@ -281,6 +281,16 @@ func TestResourcesBindSupport(t *testing.T) {
 				},
 			},
 		},
+		VectorSearchIndexes: map[string]*resources.VectorSearchIndex{
+			"my_vector_search_index": {
+				CreateVectorIndexRequest: vectorsearch.CreateVectorIndexRequest{
+					Name:         "my_vector_search_index",
+					EndpointName: "my_vector_search_endpoint",
+					PrimaryKey:   "id",
+					IndexType:    vectorsearch.VectorIndexTypeDeltaSync,
+				},
+			},
+		},
 	}
 	unbindableResources := map[string]bool{
 		"model": true,
@@ -313,6 +323,7 @@ func TestResourcesBindSupport(t *testing.T) {
 	m.GetMockPostgresAPI().EXPECT().GetBranch(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockPostgresAPI().EXPECT().GetEndpoint(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockVectorSearchEndpointsAPI().EXPECT().GetEndpoint(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockVectorSearchIndexesAPI().EXPECT().GetIndexByIndexName(mock.Anything, mock.Anything).Return(nil, nil)
 
 	allResources := supportedResources.AllResources()
 	for _, group := range allResources {
