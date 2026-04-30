@@ -1,0 +1,62 @@
+GOOS.windows = false
+
+[[Server]]
+Pattern = "GET /api/2.0/postgres/projects"
+Response.Body = '''
+{
+    "projects": [
+        {"name": "projects/alpha", "status": {"display_name": "Alpha"}},
+        {"name": "projects/beta", "status": {"display_name": "Beta"}}
+    ]
+}
+'''
+
+[[Server]]
+Pattern = "GET /api/2.0/postgres/projects/foo"
+Response.Body = '''
+{
+    "name": "projects/foo",
+    "status": {"display_name": "Foo Project"}
+}
+'''
+
+[[Server]]
+Pattern = "GET /api/2.0/postgres/projects/foo/branches"
+Response.Body = '''
+{
+    "branches": [
+        {"name": "projects/foo/branches/main"},
+        {"name": "projects/foo/branches/dev"}
+    ]
+}
+'''
+
+[[Server]]
+Pattern = "GET /api/2.0/postgres/projects/bar"
+Response.Body = '''
+{
+    "name": "projects/bar",
+    "status": {"display_name": "Bar Project"}
+}
+'''
+
+[[Server]]
+Pattern = "GET /api/2.0/postgres/projects/bar/branches"
+Response.Body = '''
+{
+    "branches": [
+        {"name": "projects/bar/branches/only"}
+    ]
+}
+'''
+
+[[Server]]
+Pattern = "GET /api/2.0/postgres/projects/bar/branches/only/endpoints"
+Response.Body = '''
+{
+    "endpoints": [
+        {"name": "projects/bar/branches/only/endpoints/read-write"},
+        {"name": "projects/bar/branches/only/endpoints/read-only"}
+    ]
+}
+'''

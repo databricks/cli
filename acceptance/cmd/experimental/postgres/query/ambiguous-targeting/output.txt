@@ -1,0 +1,18 @@
+
+=== Project with multiple branches and no --branch should error with choices:
+>>> musterr [CLI] experimental postgres query --project foo SELECT 1
+Error: multiple branches found in projects/foo; specify --branch:
+  - main
+  - dev
+
+=== Project with multiple endpoints in only branch should error with choices:
+>>> musterr [CLI] experimental postgres query --project bar SELECT 1
+Error: multiple endpoints found in projects/bar/branches/only; specify --endpoint:
+  - read-write
+  - read-only
+
+=== Partial path with multiple branches should error with choices:
+>>> musterr [CLI] experimental postgres query --target projects/foo SELECT 1
+Error: multiple branches found in projects/foo; specify --branch:
+  - main
+  - dev
