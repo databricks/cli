@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/databricks/cli/experimental/aitools/lib/agents"
+	"github.com/databricks/cli/aitools/lib/agents"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
 	"github.com/stretchr/testify/assert"

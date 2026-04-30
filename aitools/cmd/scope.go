@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 
 	"github.com/charmbracelet/huh"
-	"github.com/databricks/cli/experimental/aitools/lib/installer"
+	"github.com/databricks/cli/aitools/lib/installer"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
 )

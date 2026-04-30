@@ -16,9 +16,9 @@ import (
 	"text/template"
 
 	"github.com/charmbracelet/huh"
+	"github.com/databricks/cli/aitools/lib/agents"
+	"github.com/databricks/cli/aitools/lib/installer"
 	"github.com/databricks/cli/cmd/root"
-	"github.com/databricks/cli/experimental/aitools/lib/agents"
-	"github.com/databricks/cli/experimental/aitools/lib/installer"
 	"github.com/databricks/cli/libs/apps/generator"
 	"github.com/databricks/cli/libs/apps/initializer"
 	"github.com/databricks/cli/libs/apps/manifest"

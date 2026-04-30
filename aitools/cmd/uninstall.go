@@ -1,11 +1,11 @@
 package aitools
 
 import (
-	"github.com/databricks/cli/experimental/aitools/lib/installer"
+	"github.com/databricks/cli/aitools/lib/installer"
 	"github.com/spf13/cobra"
 )
 
-func newUninstallCmd() *cobra.Command {
+func NewUninstallCmd() *cobra.Command {
 	var skillsFlag string
 	var projectFlag, globalFlag bool
 

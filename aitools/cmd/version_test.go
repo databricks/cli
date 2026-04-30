@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/databricks/cli/experimental/aitools/lib/installer"
+	"github.com/databricks/cli/aitools/lib/installer"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -51,7 +51,7 @@ func TestVersionShowsBothScopes(t *testing.T) {
 	require.NoError(t, installer.SaveState(projectSkillsDir, projectState))
 
 	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
-	cmd := newVersionCmd()
+	cmd := NewVersionCmd()
 	cmd.SetContext(ctx)
 
 	err := cmd.RunE(cmd, nil)
@@ -90,7 +90,7 @@ func TestVersionShowsSingleScopeWithoutQualifier(t *testing.T) {
 	t.Chdir(projectDir)
 
 	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
-	cmd := newVersionCmd()
+	cmd := NewVersionCmd()
 	cmd.SetContext(ctx)
 
 	err := cmd.RunE(cmd, nil)

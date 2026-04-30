@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/databricks/cli/experimental/aitools/lib/installer"
+	"github.com/databricks/cli/aitools/lib/installer"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/spf13/cobra"
 )
 
-func newVersionCmd() *cobra.Command {
+func NewVersionCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "version",
 		Short: "Show installed AI skills version",

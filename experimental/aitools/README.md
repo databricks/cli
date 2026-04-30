@@ -2,11 +2,12 @@
 
 `databricks experimental aitools` is the remaining experimental surface for coding-agent workflows.
 
+The skills-management commands (`install`, `update`, `uninstall`, `list`, `version`) have been promoted to top-level `databricks aitools`. The old paths under `databricks experimental aitools` keep working as silent backward-compat aliases.
+
 Current commands:
 
 - `databricks experimental aitools skills list`
 - `databricks experimental aitools skills install [skill-name]`
-- `databricks experimental aitools install [skill-name]`
 - `databricks experimental aitools tools query`
 - `databricks experimental aitools tools discover-schema`
 - `databricks experimental aitools tools get-default-warehouse`
@@ -17,8 +18,7 @@ Current commands:
 
 Current behavior:
 
-- `skills install` installs Databricks skills for detected coding agents.
-- `install` is a compatibility alias for `skills install`.
+- `skills install` installs Databricks skills for detected coding agents (delegates to `databricks aitools install`).
 - `tools` exposes a small set of AI-oriented workspace helpers.
 - `tools query` accepts a single SQL or multiple SQLs in one invocation. Pass
   several positional arguments and/or repeat `--file` to run them in parallel

@@ -606,8 +606,9 @@ tasks:
   # generic `test` target (the catch-all) instead.
 
   test-exp-aitools:
-    desc: Run experimental aitools unit and acceptance tests
+    desc: Run aitools (top-level + experimental) unit and acceptance tests
     sources:
+      - aitools/**
       - experimental/aitools/**
       - acceptance/apps/**
       - "{{.EMBED_SOURCES}}"
@@ -616,7 +617,7 @@ tasks:
         {{.GO_TOOL}} gotestsum \
           --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
           --no-summary=skipped \
-          --packages ./experimental/aitools/... \
+          --packages "./aitools/... ./experimental/aitools/..." \
           -- -timeout=${LOCAL_TIMEOUT:-30m}
       - |
         {{.GO_TOOL}} gotestsum \

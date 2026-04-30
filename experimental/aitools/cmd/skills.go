@@ -1,50 +1,9 @@
 package aitools
 
 import (
-	"context"
-	"errors"
-
-	"github.com/charmbracelet/huh"
-	"github.com/databricks/cli/experimental/aitools/lib/agents"
-	"github.com/databricks/cli/experimental/aitools/lib/installer"
+	aitoolscmd "github.com/databricks/cli/aitools/cmd"
 	"github.com/spf13/cobra"
 )
-
-// Package-level vars for testability.
-var (
-	promptAgentSelection     = defaultPromptAgentSelection
-	installSkillsForAgentsFn = installer.InstallSkillsForAgents
-)
-
-func defaultPromptAgentSelection(ctx context.Context, detected []*agents.Agent) ([]*agents.Agent, error) {
-	options := make([]huh.Option[string], 0, len(detected))
-	agentsByName := make(map[string]*agents.Agent, len(detected))
-	for _, a := range detected {
-		options = append(options, huh.NewOption(a.DisplayName, a.Name).Selected(true))
-		agentsByName[a.Name] = a
-	}
-
-	var selected []string
-	err := huh.NewMultiSelect[string]().
-		Title("Select coding agents to install skills for").
-		Description("space to toggle, enter to confirm").
-		Options(options...).
-		Value(&selected).
-		Run()
-	if err != nil {
-		return nil, err
-	}
-
-	if len(selected) == 0 {
-		return nil, errors.New("at least one agent must be selected")
-	}
-
-	result := make([]*agents.Agent, 0, len(selected))
-	for _, name := range selected {
-		result = append(result, agentsByName[name])
-	}
-	return result, nil
-}
 
 func newSkillsCmd() *cobra.Command {
 	cmd := &cobra.Command{
@@ -54,7 +13,7 @@ func newSkillsCmd() *cobra.Command {
 		Long:   `Manage Databricks skills that extend coding agents with Databricks-specific capabilities.`,
 	}
 
-	// Subcommands delegate to the flat top-level commands.
+	// Subcommands delegate cross-package to the canonical top-level commands.
 	cmd.AddCommand(newSkillsListCmd())
 	cmd.AddCommand(newSkillsInstallCmd())
 
@@ -67,7 +26,7 @@ func newSkillsListCmd() *cobra.Command {
 		Short: "List available skills",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Default to showing all scopes (empty scope = both).
-			return listSkillsFn(cmd, "")
+			return aitoolscmd.ListSkillsFn(cmd, "")
 		},
 	}
 }
@@ -80,8 +39,8 @@ func newSkillsInstallCmd() *cobra.Command {
 		Short: "Install Databricks skills for detected coding agents",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// Delegate to the flat install command's logic.
-			installCmd := newInstallCmd()
+			// Delegate to the flat top-level install command.
+			installCmd := aitoolscmd.NewInstallCmd()
 			installCmd.SetContext(cmd.Context())
 
 			var delegateArgs []string

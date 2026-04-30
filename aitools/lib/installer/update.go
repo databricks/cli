@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/databricks/cli/experimental/aitools/lib/agents"
+	"github.com/databricks/cli/aitools/lib/agents"
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"

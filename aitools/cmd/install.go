@@ -6,14 +6,53 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/databricks/cli/experimental/aitools/lib/agents"
-	"github.com/databricks/cli/experimental/aitools/lib/installer"
+	"github.com/charmbracelet/huh"
+	"github.com/databricks/cli/aitools/lib/agents"
+	"github.com/databricks/cli/aitools/lib/installer"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 )
 
-func newInstallCmd() *cobra.Command {
+// PromptAgentSelection and InstallSkillsForAgentsFn are package-level for
+// testability. They are exported so wrappers in other packages
+// (experimental/aitools/cmd/skills.go) can override them in tests.
+var (
+	PromptAgentSelection     = defaultPromptAgentSelection
+	InstallSkillsForAgentsFn = installer.InstallSkillsForAgents
+)
+
+func defaultPromptAgentSelection(ctx context.Context, detected []*agents.Agent) ([]*agents.Agent, error) {
+	options := make([]huh.Option[string], 0, len(detected))
+	agentsByName := make(map[string]*agents.Agent, len(detected))
+	for _, a := range detected {
+		options = append(options, huh.NewOption(a.DisplayName, a.Name).Selected(true))
+		agentsByName[a.Name] = a
+	}
+
+	var selected []string
+	err := huh.NewMultiSelect[string]().
+		Title("Select coding agents to install skills for").
+		Description("space to toggle, enter to confirm").
+		Options(options...).
+		Value(&selected).
+		Run()
+	if err != nil {
+		return nil, err
+	}
+
+	if len(selected) == 0 {
+		return nil, errors.New("at least one agent must be selected")
+	}
+
+	result := make([]*agents.Agent, 0, len(selected))
+	for _, name := range selected {
+		result = append(result, agentsByName[name])
+	}
+	return result, nil
+}
+
+func NewInstallCmd() *cobra.Command {
 	var skillsFlag, agentsFlag string
 	var includeExperimental bool
 	var projectFlag, globalFlag bool
@@ -65,7 +104,7 @@ Supported agents: Claude Code, Cursor, Codex CLI, OpenCode, GitHub Copilot, Anti
 				case len(detected) == 1:
 					targetAgents = detected
 				case cmdio.IsPromptSupported(ctx):
-					targetAgents, err = promptAgentSelection(ctx, detected)
+					targetAgents, err = PromptAgentSelection(ctx, detected)
 					if err != nil {
 						return err
 					}
@@ -84,7 +123,7 @@ Supported agents: Claude Code, Cursor, Codex CLI, OpenCode, GitHub Copilot, Anti
 			installer.PrintInstallingFor(ctx, targetAgents)
 
 			src := &installer.GitHubManifestSource{}
-			return installSkillsForAgentsFn(ctx, src, targetAgents, opts)
+			return InstallSkillsForAgentsFn(ctx, src, targetAgents, opts)
 		},
 	}
 

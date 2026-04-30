@@ -167,6 +167,7 @@ Developer Tools
 
 Additional Commands:
   account                                Databricks Account Commands
+  aitools                                Databricks AI Tools for coding agents
   api                                    Perform Databricks API call
   auth                                   Authentication related commands
   cache                                  Local cache related commands
