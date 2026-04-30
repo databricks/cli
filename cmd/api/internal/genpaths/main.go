@@ -18,7 +18,6 @@ import (
 	"go/format"
 	"go/parser"
 	"go/token"
-	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -31,7 +30,8 @@ const sdkModule = "github.com/databricks/databricks-sdk-go"
 
 func main() {
 	if err := run(os.Stdout); err != nil {
-		log.Fatalf("genpaths: %v", err)
+		fmt.Fprintf(os.Stderr, "genpaths: %v\n", err)
+		os.Exit(1)
 	}
 }
 
@@ -112,6 +112,8 @@ func scanAST(fset *token.FileSet, f *ast.File, prefixSet, exactSet map[string]st
 			exactSet[res.value] = struct{}{}
 		case classWorkspaceProxyPrefix:
 			prefixSet[res.value] = struct{}{}
+		case classNotAccount, classAccountAPI:
+			// nothing to record; not part of the deny-list
 		}
 		return true
 	}
