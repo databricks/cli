@@ -17,6 +17,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const testSkillsRef = "v0.1.5"
+
 // mockManifestSource is a test double for ManifestSource.
 type mockManifestSource struct {
 	manifest *Manifest
@@ -190,6 +192,7 @@ func TestInstallSkillsForAgentsWritesState(t *testing.T) {
 	tmp := setupTestHome(t)
 	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
 	setupFetchMock(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
 
 	src := &mockManifestSource{manifest: testManifest()}
 	agent := testAgent(tmp)
@@ -202,7 +205,7 @@ func TestInstallSkillsForAgentsWritesState(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, state)
 	assert.Equal(t, 1, state.SchemaVersion)
-	assert.Equal(t, defaultSkillsRepoRef, state.Release)
+	assert.Equal(t, testSkillsRef, state.Release)
 	assert.Len(t, state.Skills, 2)
 	assert.Equal(t, "0.1.0", state.Skills["databricks-sql"])
 	assert.Equal(t, "0.1.0", state.Skills["databricks-jobs"])
@@ -214,6 +217,7 @@ func TestInstallSkillForSingleWritesState(t *testing.T) {
 	tmp := setupTestHome(t)
 	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
 	setupFetchMock(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
 
 	src := &mockManifestSource{manifest: testManifest()}
 	agent := testAgent(tmp)
@@ -237,6 +241,7 @@ func TestInstallSkillsSpecificNotFound(t *testing.T) {
 	tmp := setupTestHome(t)
 	ctx := cmdio.MockDiscard(t.Context())
 	setupFetchMock(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
 
 	src := &mockManifestSource{manifest: testManifest()}
 	agent := testAgent(tmp)
@@ -252,6 +257,7 @@ func TestExperimentalSkillsSkippedByDefault(t *testing.T) {
 	tmp := setupTestHome(t)
 	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
 	setupFetchMock(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
 
 	manifest := testManifest()
 	manifest.Skills["databricks-experimental"] = SkillMeta{
@@ -280,6 +286,7 @@ func TestExperimentalSkillsIncludedWithFlag(t *testing.T) {
 	tmp := setupTestHome(t)
 	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
 	setupFetchMock(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
 
 	manifest := testManifest()
 	manifest.Skills["databricks-experimental"] = SkillMeta{
@@ -310,6 +317,7 @@ func TestMinCLIVersionSkipWithWarningForInstallAll(t *testing.T) {
 	tmp := setupTestHome(t)
 	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
 	setupFetchMock(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
 	setBuildVersion(t, "0.200.0")
 
 	// Capture log output to verify the warning.
@@ -345,6 +353,7 @@ func TestMinCLIVersionHardErrorForInstallSingle(t *testing.T) {
 	tmp := setupTestHome(t)
 	ctx := cmdio.MockDiscard(t.Context())
 	setupFetchMock(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
 	setBuildVersion(t, "0.200.0")
 
 	manifest := testManifest()
@@ -369,6 +378,7 @@ func TestIdempotentSecondInstallSkips(t *testing.T) {
 	tmp := setupTestHome(t)
 	ctx := cmdio.MockDiscard(t.Context())
 	setupFetchMock(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
 
 	src := &mockManifestSource{manifest: testManifest()}
 	agent := testAgent(tmp)
@@ -398,6 +408,7 @@ func TestIdempotentInstallUpdatesNewVersions(t *testing.T) {
 	tmp := setupTestHome(t)
 	ctx := cmdio.MockDiscard(t.Context())
 	setupFetchMock(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
 
 	src := &mockManifestSource{manifest: testManifest()}
 	agent := testAgent(tmp)
@@ -435,7 +446,7 @@ func TestIdempotentInstallUpdatesNewVersions(t *testing.T) {
 	globalDir := filepath.Join(tmp, ".databricks", "aitools", "skills")
 	state, err := LoadState(globalDir)
 	require.NoError(t, err)
-	assert.Equal(t, defaultSkillsRepoRef, state.Release)
+	assert.Equal(t, testSkillsRef, state.Release)
 	assert.Equal(t, "0.2.0", state.Skills["databricks-sql"])
 }
 
@@ -443,6 +454,7 @@ func TestLegacyDetectMessagePrinted(t *testing.T) {
 	tmp := setupTestHome(t)
 	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
 	setupFetchMock(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
 
 	// Create skills on disk at canonical location but no state file.
 	globalDir := filepath.Join(tmp, ".databricks", "aitools", "skills")
@@ -461,6 +473,7 @@ func TestLegacyDetectLegacyDir(t *testing.T) {
 	tmp := setupTestHome(t)
 	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
 	setupFetchMock(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
 
 	// Create skills in the legacy location.
 	legacyDir := filepath.Join(tmp, ".databricks", "agent-skills")
@@ -479,6 +492,7 @@ func TestIdempotentInstallReinstallsForNewAgent(t *testing.T) {
 	tmp := setupTestHome(t)
 	ctx := cmdio.MockDiscard(t.Context())
 	setupFetchMock(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
 
 	src := &mockManifestSource{manifest: testManifest()}
 	agent1 := testAgent(tmp)
@@ -524,6 +538,7 @@ func TestLegacyTargetedInstallBlocked(t *testing.T) {
 	tmp := setupTestHome(t)
 	ctx := cmdio.MockDiscard(t.Context())
 	setupFetchMock(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
 
 	// Create skills on disk at canonical location but no state file (legacy).
 	globalDir := filepath.Join(tmp, ".databricks", "aitools", "skills")
@@ -544,6 +559,7 @@ func TestLegacyFullInstallAllowed(t *testing.T) {
 	tmp := setupTestHome(t)
 	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
 	setupFetchMock(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
 
 	// Create skills on disk at canonical location but no state file (legacy).
 	globalDir := filepath.Join(tmp, ".databricks", "aitools", "skills")
@@ -588,6 +604,7 @@ func TestInstallProjectScopeWritesState(t *testing.T) {
 	tmp := setupTestHome(t)
 	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
 	setupFetchMock(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
 
 	// Use project dir as cwd.
 	projectDir := filepath.Join(tmp, "myproject")
@@ -605,7 +622,7 @@ func TestInstallProjectScopeWritesState(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, state)
 	assert.Equal(t, ScopeProject, state.Scope)
-	assert.Equal(t, defaultSkillsRepoRef, state.Release)
+	assert.Equal(t, testSkillsRef, state.Release)
 	assert.Len(t, state.Skills, 2)
 
 	assert.Contains(t, stderr.String(), "Installed 2 skills.")
@@ -615,6 +632,7 @@ func TestInstallProjectScopeCreatesSymlinks(t *testing.T) {
 	tmp := setupTestHome(t)
 	ctx := cmdio.MockDiscard(t.Context())
 	setupFetchMock(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
 
 	projectDir := filepath.Join(tmp, "myproject")
 	require.NoError(t, os.MkdirAll(projectDir, 0o755))
@@ -657,6 +675,7 @@ func TestInstallProjectScopeFiltersIncompatibleAgents(t *testing.T) {
 	tmp := setupTestHome(t)
 	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
 	setupFetchMock(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
 
 	projectDir := filepath.Join(tmp, "myproject")
 	require.NoError(t, os.MkdirAll(projectDir, 0o755))
@@ -684,6 +703,7 @@ func TestInstallProjectScopeZeroCompatibleAgentsReturnsError(t *testing.T) {
 	tmp := setupTestHome(t)
 	ctx := cmdio.MockDiscard(t.Context())
 	setupFetchMock(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
 
 	projectDir := filepath.Join(tmp, "myproject")
 	require.NoError(t, os.MkdirAll(projectDir, 0o755))

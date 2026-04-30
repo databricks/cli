@@ -46,6 +46,7 @@ func TestUpdateAlreadyUpToDate(t *testing.T) {
 	tmp := setupTestHome(t)
 	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
 	setupFetchMock(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
 
 	// Install first.
 	src := &mockManifestSource{manifest: testManifest()}
@@ -68,6 +69,7 @@ func TestUpdateVersionDiffDetected(t *testing.T) {
 	tmp := setupTestHome(t)
 	ctx := cmdio.MockDiscard(t.Context())
 	setupFetchMock(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
 
 	// Install with default ref.
 	src := &mockManifestSource{manifest: testManifest()}
@@ -108,6 +110,7 @@ func TestUpdateCheckDryRun(t *testing.T) {
 	tmp := setupTestHome(t)
 	ctx := cmdio.MockDiscard(t.Context())
 	setupFetchMock(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
 
 	// Install with default ref.
 	src := &mockManifestSource{manifest: testManifest()}
@@ -148,13 +151,14 @@ func TestUpdateCheckDryRun(t *testing.T) {
 	globalDir := filepath.Join(tmp, ".databricks", "aitools", "skills")
 	state, err := LoadState(globalDir)
 	require.NoError(t, err)
-	assert.Equal(t, defaultSkillsRepoRef, state.Release)
+	assert.Equal(t, testSkillsRef, state.Release)
 }
 
 func TestUpdateForceRedownloads(t *testing.T) {
 	tmp := setupTestHome(t)
 	ctx := cmdio.MockDiscard(t.Context())
 	setupFetchMock(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
 
 	// Install v0.1.0.
 	src := &mockManifestSource{manifest: testManifest()}
@@ -182,6 +186,7 @@ func TestUpdateAutoAddsNewSkills(t *testing.T) {
 	tmp := setupTestHome(t)
 	ctx := cmdio.MockDiscard(t.Context())
 	setupFetchMock(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
 
 	// Install with default ref.
 	src := &mockManifestSource{manifest: testManifest()}
@@ -218,6 +223,7 @@ func TestUpdateNoNewIgnoresNewSkills(t *testing.T) {
 	tmp := setupTestHome(t)
 	ctx := cmdio.MockDiscard(t.Context())
 	setupFetchMock(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
 
 	// Install with default ref.
 	src := &mockManifestSource{manifest: testManifest()}
@@ -254,6 +260,7 @@ func TestUpdateOutputSortedAlphabetically(t *testing.T) {
 	tmp := setupTestHome(t)
 	ctx := cmdio.MockDiscard(t.Context())
 	setupFetchMock(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
 
 	// Install with skills.
 	src := &mockManifestSource{manifest: testManifest()}
@@ -281,6 +288,7 @@ func TestUpdateSkillRemovedFromManifestWarning(t *testing.T) {
 	tmp := setupTestHome(t)
 	ctx := cmdio.MockDiscard(t.Context())
 	setupFetchMock(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
 
 	// Capture log output to verify warning.
 	var logBuf bytes.Buffer
@@ -325,6 +333,7 @@ func TestUpdateSkipsExperimentalSkills(t *testing.T) {
 	tmp := setupTestHome(t)
 	ctx := cmdio.MockDiscard(t.Context())
 	setupFetchMock(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
 
 	// Install with default ref (not experimental).
 	src := &mockManifestSource{manifest: testManifest()}
@@ -355,6 +364,7 @@ func TestUpdateSkipsMinCLIVersionSkills(t *testing.T) {
 	tmp := setupTestHome(t)
 	ctx := cmdio.MockDiscard(t.Context())
 	setupFetchMock(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
 	setBuildVersion(t, "0.200.0")
 
 	var logBuf bytes.Buffer

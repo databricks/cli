@@ -773,7 +773,6 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	// Resolve the git reference (branch/tag) to use for default appkit template
 	gitRef := opts.branch
 	usingDefaultTemplate := templateSrc == ""
-	var resolvedSkillsVersion string
 	if usingDefaultTemplate {
 		// Using default appkit template - resolve version
 		switch {
@@ -788,11 +787,6 @@ func runCreate(ctx context.Context, opts createOptions) error {
 			}
 			gitRef = normalizeVersion(appkitVersion)
 			cmdio.LogString(ctx, "Using AppKit template version "+appkitVersion)
-
-			skillsVersion, err := depversions.ResolveAgentSkillsVersion(ctx)
-			if err == nil {
-				resolvedSkillsVersion = skillsVersion
-			}
 		}
 		templateSrc = appkitRepoURL
 	}
@@ -1146,22 +1140,13 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		prompt.PrintSetupNotes(ctx, notes)
 	}
 
-	// If the manifest resolved a skills version, set it on the context so the
-	// skills installer uses the manifest-compatible version instead of its
-	// embedded SKILLS_VERSION default.
-	skillsCtx := ctx
-	if resolvedSkillsVersion != "" {
-		skillsCtx = env.Set(ctx, "DATABRICKS_SKILLS_REF", "v"+resolvedSkillsVersion)
-		cmdio.LogString(ctx, "Using skills version "+resolvedSkillsVersion)
-	}
-
 	// Recommend skills installation if coding agents are detected without skills.
 	// In flags mode, only print a hint — never prompt interactively.
 	if flagsMode {
-		if !agents.HasDatabricksSkillsInstalled(skillsCtx) {
+		if !agents.HasDatabricksSkillsInstalled(ctx) {
 			cmdio.LogString(ctx, "Tip: coding agents detected without Databricks skills. Run 'databricks experimental aitools skills install' to install them.")
 		}
-	} else if err := agents.RecommendSkillsInstall(skillsCtx, installer.InstallAllSkills); err != nil {
+	} else if err := agents.RecommendSkillsInstall(ctx, installer.InstallAllSkills); err != nil {
 		log.Warnf(ctx, "Skills recommendation failed: %v", err)
 	}
 
