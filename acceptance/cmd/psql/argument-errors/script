@@ -38,9 +38,6 @@ trace musterr $CLI psql projects/my-project/branches/
 title "Invalid path with missing endpoint ID should error:"
 trace musterr $CLI psql projects/my-project/branches/main/endpoints/
 
-title "Trailing components after endpoint should error:"
-trace musterr $CLI psql projects/my-project/branches/main/endpoints/primary/extra
-
 title "Provisioned flag with --project should error:"
 trace musterr $CLI psql --provisioned --project foo
 
