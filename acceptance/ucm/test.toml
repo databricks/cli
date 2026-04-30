@@ -1,0 +1,8 @@
+# UCM reads DATABRICKS_UCM_ENGINE, not DATABRICKS_BUNDLE_ENGINE — override the
+# matrix inherited from acceptance/test.toml so UCM fixtures actually exercise
+# both engines instead of running the same code path twice. Setting an empty
+# list drops the inherited key from the matrix per acceptance/internal/config.go.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = []
+EnvMatrix.DATABRICKS_UCM_ENGINE = ["terraform", "direct"]
+EnvRepl.DATABRICKS_UCM_ENGINE = false
+EnvVaryOutput = "DATABRICKS_UCM_ENGINE"
