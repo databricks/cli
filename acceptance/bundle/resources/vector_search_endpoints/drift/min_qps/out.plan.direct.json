@@ -3,6 +3,12 @@
     "resources.vector_search_endpoints.my_endpoint": {
       "action": "update",
       "changes": {
+        "endpoint_uuid": {
+          "action": "skip",
+          "reason": "custom",
+          "old": "[MY_ENDPOINT_UUID]",
+          "remote": "[MY_ENDPOINT_UUID]"
+        },
         "min_qps": {
           "action": "update",
           "old": 1,

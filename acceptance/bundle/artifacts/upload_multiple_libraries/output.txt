@@ -28,7 +28,7 @@ Deployment complete!
         "whl": "/Workspace/foo/bar/artifacts/.internal/source4.whl"
       },
       {
-        "whl": "/Workspace/Users/foo@bar.com/mywheel.whl"
+        "whl": "/Workspace/Users/foo@bar.test/mywheel.whl"
       }
     ],
     "python_wheel_task": {
@@ -62,7 +62,7 @@ Deployment complete!
         "/Workspace/foo/bar/artifacts/.internal/source2.whl",
         "/Workspace/foo/bar/artifacts/.internal/source3.whl",
         "/Workspace/foo/bar/artifacts/.internal/source4.whl",
-        "/Workspace/Users/foo@bar.com/mywheel.whl"
+        "/Workspace/Users/foo@bar.test/mywheel.whl"
       ]
     }
   }

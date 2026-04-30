@@ -1,18 +1,7 @@
 {
   "permissions": {
     "allow": [
-      "Bash(make lint:*)",
-      "Bash(make lintfull:*)",
-      "Bash(make fmt:*)",
-      "Bash(make test:*)",
-      "Bash(make checks:*)",
-      "Bash(make build:*)",
-      "Bash(make cover:*)",
-      "Bash(make schema:*)",
-      "Bash(make docs:*)",
-      "Bash(make test-update:*)",
-      "Bash(make test-update-templates:*)",
-      "Bash(make ws:*)",
+      "Bash(./task *)",
       "Bash(go test:*)",
       "Bash(go build:*)",
       "Bash(go vet:*)",

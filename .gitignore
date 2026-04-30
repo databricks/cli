@@ -28,17 +28,28 @@ __pycache__
 
 .ruff_cache
 
-# Test results from 'make test'
+# Test results from 'task test'
 test-output.json
+test-output-unit.json
+test-output-unit-root.json
+test-output-unit-tools.json
+test-output-unit-codegen.json
+test-output-acc.json
 
-# Built by make for 'make fmt' and yamlcheck.py in acceptance tests
+# Taskfile cache
+.task/
+
+# Snapshot binary from 'task snapshot'
+.databricks/
+
+# Built for 'task fmt' and yamlcheck.py in acceptance tests
 tools/yamlfmt
 tools/yamlfmt.exe
 
-# Built by make for 'make lint'
+# Built for 'task lint'
 tools/golangci-lint
 
-# Built by make for test filtering
+# Built for test filtering
 tools/testmask/testmask
 
 # Cache for tools/gh_report.py
@@ -50,6 +61,9 @@ dist/
 # Local development notes, tmp
 /pr-*
 /tmp/
+
+# Per-module golangci-lint TMPDIR (configured in Taskfile.yml)
+/.tmp/
 
 # Go workspace file
 go.work

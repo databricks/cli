@@ -777,10 +777,10 @@ func TestTranslatePathJobEnvironments(t *testing.T) {
 											"./dist/env1.whl",
 											"../dist/env2.whl",
 											"simplejson",
-											"/Workspace/Users/foo@bar.com/test.whl",
+											"/Workspace/Users/foo@bar.test/test.whl",
 											"--extra-index-url https://name:token@gitlab.com/api/v4/projects/9876/packages/pypi/simple foobar",
 											"foobar --extra-index-url https://name:token@gitlab.com/api/v4/projects/9876/packages/pypi/simple",
-											"https://foo@bar.com/packages/pypi/simple",
+											"https://foo@bar.test/packages/pypi/simple",
 										},
 									},
 								},
@@ -800,10 +800,10 @@ func TestTranslatePathJobEnvironments(t *testing.T) {
 	assert.Equal(t, "./job/dist/env1.whl", b.Config.Resources.Jobs["job"].Environments[0].Spec.Dependencies[0])
 	assert.Equal(t, "./dist/env2.whl", b.Config.Resources.Jobs["job"].Environments[0].Spec.Dependencies[1])
 	assert.Equal(t, "simplejson", b.Config.Resources.Jobs["job"].Environments[0].Spec.Dependencies[2])
-	assert.Equal(t, "/Workspace/Users/foo@bar.com/test.whl", b.Config.Resources.Jobs["job"].Environments[0].Spec.Dependencies[3])
+	assert.Equal(t, "/Workspace/Users/foo@bar.test/test.whl", b.Config.Resources.Jobs["job"].Environments[0].Spec.Dependencies[3])
 	assert.Equal(t, "--extra-index-url https://name:token@gitlab.com/api/v4/projects/9876/packages/pypi/simple foobar", b.Config.Resources.Jobs["job"].Environments[0].Spec.Dependencies[4])
 	assert.Equal(t, "foobar --extra-index-url https://name:token@gitlab.com/api/v4/projects/9876/packages/pypi/simple", b.Config.Resources.Jobs["job"].Environments[0].Spec.Dependencies[5])
-	assert.Equal(t, "https://foo@bar.com/packages/pypi/simple", b.Config.Resources.Jobs["job"].Environments[0].Spec.Dependencies[6])
+	assert.Equal(t, "https://foo@bar.test/packages/pypi/simple", b.Config.Resources.Jobs["job"].Environments[0].Spec.Dependencies[6])
 }
 
 func TestTranslatePathWithComplexVariables(t *testing.T) {

@@ -134,10 +134,10 @@ Available on `PATH` during test execution (from `acceptance/bin/`):
 
 ### Update workflow
 
-**RULE: Run `make test-update` to regenerate outputs, then `make fmt` and `make lint`.** If fmt or lint modify files in `acceptance/`, there's an issue in the source files. Fix the source, regenerate, and verify fmt/lint pass cleanly.
+**RULE: Run `./task test-update` to regenerate outputs, then `./task fmt` and `./task lint`.** If fmt or lint modify files in `acceptance/`, there's an issue in the source files. Fix the source, regenerate, and verify fmt/lint pass cleanly.
 
 ### Template tests
 
 Tests in `acceptance/bundle/templates` include materialized templates in output directories. These directories follow the same `out` convention: everything starting with `out` is generated output. Sources are in `libs/template/templates/`.
 
-**RULE: Use `make test-update-templates` to regenerate materialized templates.** If linters or formatters find issues in materialized templates, do not fix the output files; fix the source in `libs/template/templates/` and regenerate.
+**RULE: Use `./task test-update-templates` to regenerate materialized templates.** If linters or formatters find issues in materialized templates, do not fix the output files; fix the source in `libs/template/templates/` and regenerate.

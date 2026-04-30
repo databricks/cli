@@ -13,6 +13,9 @@ import sys
 import argparse
 import subprocess
 
+# Each entry is a path prefix: "tools" also covers "tools/task", "tools/other", etc.
+NESTED_MODULES = ("bundle/internal/tf/codegen", "tools")
+
 
 def parse_lines(cmd):
     # print("+ " + " ".join(cmd), file=sys.stderr, flush=True)
@@ -52,7 +55,16 @@ def main():
 
     cmd = args.args[:]
 
+    # `golangci-lint run` typechecks against the target go.mod and errors on
+    # paths under a different module; `fmt` walks the filesystem and is
+    # cross-module safe. Apply the nested-module filter only for `run`.
+    filter_nested = "run" in cmd
+
     if changed is not None:
+
+        def in_nested_module(path):
+            return filter_nested and any(path == m or path.startswith(m + "/") for m in NESTED_MODULES)
+
         # We need to pass packages to golangci-lint, not individual files.
         # QQQ for lint we should also pass all dependent packages
         dirs = set()
@@ -61,6 +73,8 @@ def main():
                 continue
             if filename.endswith(".go"):
                 d = os.path.dirname(filename)
+                if in_nested_module(d):
+                    continue
                 dirs.add(d)
 
         dirs = ["./" + d for d in sorted(dirs) if os.path.exists(d)]

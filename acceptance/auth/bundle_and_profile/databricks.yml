@@ -11,4 +11,4 @@ targets:
       host: $DATABRICKS_HOST
   prod:
     workspace:
-      host: https://bar.com
+      host: https://bar.test

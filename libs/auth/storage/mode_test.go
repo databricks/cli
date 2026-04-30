@@ -17,10 +17,10 @@ func TestParseMode(t *testing.T) {
 	}{
 		{name: "empty returns unknown", raw: "", want: StorageModeUnknown},
 		{name: "whitespace returns unknown", raw: "   ", want: StorageModeUnknown},
-		{name: "legacy lowercase", raw: "legacy", want: StorageModeLegacy},
-		{name: "secure lowercase", raw: "secure", want: StorageModeSecure},
 		{name: "plaintext lowercase", raw: "plaintext", want: StorageModePlaintext},
+		{name: "secure lowercase", raw: "secure", want: StorageModeSecure},
 		{name: "case and whitespace normalized", raw: "  SECURE  ", want: StorageModeSecure},
+		{name: "legacy keyword no longer recognized", raw: "legacy", want: StorageModeUnknown},
 		{name: "unknown value returns unknown", raw: "bogus", want: StorageModeUnknown},
 	}
 	for _, tc := range cases {
@@ -41,13 +41,13 @@ func TestResolveStorageMode(t *testing.T) {
 	}{
 		{
 			name: "default when nothing is set",
-			want: StorageModeLegacy,
+			want: StorageModePlaintext,
 		},
 		{
 			name:       "override wins over env and config",
 			override:   StorageModeSecure,
 			envValue:   "plaintext",
-			configBody: "[__settings__]\nauth_storage = legacy\n",
+			configBody: "[__settings__]\nauth_storage = plaintext\n",
 			want:       StorageModeSecure,
 		},
 		{

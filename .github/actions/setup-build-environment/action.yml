@@ -38,7 +38,7 @@ runs:
         version: "0.8.9"
 
     - name: Install Python versions for tests
-      run: make install-pythons
+      run: ./task install-pythons
       shell: bash
 
     - name: Install ruff (Python linter and formatter)
