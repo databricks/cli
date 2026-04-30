@@ -295,9 +295,16 @@ type dotEnvVars struct {
 	Example string
 }
 
-// pluginVar represents a selected plugin. Currently empty, but extensible
-// with properties as the plugin model evolves.
-type pluginVar struct{}
+// pluginVar represents a selected plugin in template substitution.
+// Fields here are part of the AppKit template contract — the template
+// reads them via {{$p.Field}} on map values in templateVars.Plugins.
+type pluginVar struct {
+	// Stability mirrors manifest.Plugin.Stability ("" for GA, "beta"
+	// for beta, future tiers preserved). The AppKit template branches
+	// imports on this — see databricks/appkit#264 commit d826a532, which
+	// routes beta plugins through the `@databricks/appkit/beta` subpath.
+	Stability string
+}
 
 // templateVars holds the variables for template substitution.
 type templateVars struct {
@@ -357,7 +364,7 @@ func promptForPluginsAndDeps(ctx context.Context, m *manifest.Manifest, preSelec
 	if len(config.Features) == 0 && len(selectablePlugins) > 0 {
 		options := make([]huh.Option[string], 0, len(selectablePlugins))
 		for _, p := range selectablePlugins {
-			label := p.DisplayName + " - " + p.Description
+			label := p.DisplayName + prompt.RenderStabilityTier(p.StabilityLabel()) + " - " + p.Description
 			options = append(options, huh.NewOption(label, p.Name))
 		}
 
@@ -1036,7 +1043,11 @@ func runCreate(ctx context.Context, opts createOptions) error {
 
 	plugins := make(map[string]*pluginVar, len(selectedPlugins))
 	for _, name := range selectedPlugins {
-		plugins[name] = &pluginVar{}
+		pv := &pluginVar{}
+		if mp, ok := m.Plugins[name]; ok {
+			pv.Stability = mp.Stability
+		}
+		plugins[name] = pv
 	}
 
 	// Template variables with generated content
