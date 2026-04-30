@@ -23,11 +23,25 @@ func TestResolveOutputFormat_TextOnPipeFallsBackToJSON(t *testing.T) {
 	assert.Equal(t, outputJSON, got)
 }
 
-func TestResolveOutputFormat_ExplicitTextOnPipeAlsoFallsBackToJSON(t *testing.T) {
+func TestResolveOutputFormat_ExplicitTextOnPipeIsHonoured(t *testing.T) {
 	ctx := t.Context()
 	got, err := resolveOutputFormat(ctx, "text", true, false)
 	require.NoError(t, err)
-	assert.Equal(t, outputJSON, got)
+	assert.Equal(t, outputText, got)
+}
+
+func TestResolveOutputFormat_EnvVarTextOnPipeIsHonoured(t *testing.T) {
+	ctx := env.Set(t.Context(), envOutputFormat, "text")
+	got, err := resolveOutputFormat(ctx, "text", false, false)
+	require.NoError(t, err)
+	assert.Equal(t, outputText, got)
+}
+
+func TestResolveOutputFormat_EnvVarCSVOnPipe(t *testing.T) {
+	ctx := env.Set(t.Context(), envOutputFormat, "csv")
+	got, err := resolveOutputFormat(ctx, "text", false, false)
+	require.NoError(t, err)
+	assert.Equal(t, outputCSV, got)
 }
 
 func TestResolveOutputFormat_ExplicitJSON(t *testing.T) {

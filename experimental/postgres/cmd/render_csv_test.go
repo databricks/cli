@@ -47,3 +47,23 @@ func TestCSVSink_QuotesFieldsWithCommas(t *testing.T) {
 	require.NoError(t, s.End("SELECT 1"))
 	assert.Contains(t, stdout.String(), `"a,b"`)
 }
+
+func TestCSVSink_EmbeddedNewlineAndQuote(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	s := newCSVSink(&stdout, &stderr)
+	require.NoError(t, s.Begin(fields("note")))
+	require.NoError(t, s.Row([]any{"line1\nline2 \"quoted\""}))
+	require.NoError(t, s.End("SELECT 1"))
+	assert.Contains(t, stdout.String(), "\"line1\nline2 \"\"quoted\"\"\"")
+}
+
+func TestCSVSink_OnError_NoOp(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	s := newCSVSink(&stdout, &stderr)
+	require.NoError(t, s.Begin(fields("id")))
+	require.NoError(t, s.Row([]any{int64(1)}))
+	s.OnError(assert.AnError)
+	// CSV has no open structure to close; partial row count plus header is
+	// what the consumer sees. The sink must not panic on OnError.
+	assert.Contains(t, stdout.String(), "id\n1\n")
+}

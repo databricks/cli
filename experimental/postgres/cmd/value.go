@@ -25,6 +25,11 @@ const safeIntegerBound = 1<<53 - 1
 // NULL renders as the literal "NULL" so it lines up with the column rather
 // than appearing as an empty cell. CSV converts that back to an empty field
 // at write time (matches `psql --csv`).
+//
+// Floats are rendered with Postgres' canonical wording for the IEEE specials
+// ("NaN" / "Infinity" / "-Infinity"), not Go's `fmt.Sprintf("%v")` defaults
+// (which would emit "+Inf"/"-Inf"). This keeps text/CSV consistent with what
+// `psql` would print.
 func textValue(v any) string {
 	if v == nil {
 		return "NULL"
@@ -40,6 +45,10 @@ func textValue(v any) string {
 			return "t"
 		}
 		return "f"
+	case float64:
+		return floatTextForm(x)
+	case float32:
+		return floatTextForm(float64(x))
 	case time.Time:
 		return x.Format(time.RFC3339Nano)
 	case fmt.Stringer:
@@ -47,6 +56,20 @@ func textValue(v any) string {
 	}
 
 	return fmt.Sprintf("%v", v)
+}
+
+// floatTextForm formats a float using Postgres' canonical text wording for
+// the IEEE specials and Go's shortest-round-trip 'g' format otherwise.
+func floatTextForm(f float64) string {
+	switch {
+	case math.IsNaN(f):
+		return "NaN"
+	case math.IsInf(f, 1):
+		return "Infinity"
+	case math.IsInf(f, -1):
+		return "-Infinity"
+	}
+	return strconv.FormatFloat(f, 'g', -1, 64)
 }
 
 // jsonValue renders a Go value (as decoded by pgx) to a JSON-encodable
@@ -73,16 +96,14 @@ func jsonValue(v any) any {
 		return x
 	case string:
 		return x
-	case int8, int16, int32, int, uint8, uint16, uint32:
+	case int16, int32:
 		return x
 	case int64:
+		// pgx decodes Postgres int8 to Go int64. Outside the IEEE-754 safe
+		// integer range we render as a string so JavaScript-style consumers
+		// don't silently lose precision.
 		if x > safeIntegerBound || x < -safeIntegerBound {
 			return strconv.FormatInt(x, 10)
-		}
-		return x
-	case uint64:
-		if x > safeIntegerBound {
-			return strconv.FormatUint(x, 10)
 		}
 		return x
 	case float32:

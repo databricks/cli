@@ -36,8 +36,11 @@ type rowSink interface {
 //     closed at the end of the command, so the cached prepared statement
 //     never gets reused.
 //  2. Exec mode uses Postgres' extended-protocol "exec" path with text-format
-//     result columns, which keeps the canonical-Postgres-text rendering for
-//     --output text and --output csv straightforward.
+//     result columns. We still call rows.Values() (not RawValues) so all
+//     three sinks see uniform Go-typed input; jsonValue/textValue then map
+//     those types back to canonical strings for text/CSV and to JSON-typed
+//     values for JSON. The wire format being text means pgx's decode is
+//     cheap (text -> Go) rather than binary -> Go.
 //
 // QueryExecModeExec still uses extended protocol with a single statement and
 // no implicit transaction wrap, so transaction-disallowed DDL like

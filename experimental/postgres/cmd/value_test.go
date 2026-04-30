@@ -82,3 +82,14 @@ func TestTextValue_Time(t *testing.T) {
 	tm := time.Date(2024, 1, 15, 10, 30, 0, 0, time.UTC)
 	assert.Equal(t, "2024-01-15T10:30:00Z", textValue(tm))
 }
+
+func TestTextValue_FloatSpecials(t *testing.T) {
+	assert.Equal(t, "NaN", textValue(math.NaN()))
+	assert.Equal(t, "Infinity", textValue(math.Inf(1)))
+	assert.Equal(t, "-Infinity", textValue(math.Inf(-1)))
+}
+
+func TestTextValue_FiniteFloat(t *testing.T) {
+	assert.Equal(t, "3.14", textValue(float64(3.14)))
+	assert.Equal(t, "0", textValue(float64(0)))
+}

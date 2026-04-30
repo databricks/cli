@@ -71,3 +71,15 @@ func TestTextSink_NULLRendersAsNULL(t *testing.T) {
 	require.NoError(t, s.End("SELECT 1"))
 	assert.Contains(t, buf.String(), "NULL")
 }
+
+func TestTextSink_OnError_NoOp(t *testing.T) {
+	var buf bytes.Buffer
+	s := newTextSink(&buf)
+	require.NoError(t, s.Begin(fields("id")))
+	require.NoError(t, s.Row([]any{int64(1)}))
+	s.OnError(assert.AnError)
+	// Text sink has no open structure to close. OnError must not panic and
+	// must not emit a partial table; the partial result lives in s.rows but
+	// is never flushed.
+	assert.Empty(t, buf.String())
+}

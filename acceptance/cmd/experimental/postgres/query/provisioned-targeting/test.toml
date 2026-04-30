@@ -11,15 +11,6 @@ Response.Body = '''
 '''
 
 [[Server]]
-Pattern = "GET /api/2.0/database/instances/no-dns-instance"
-Response.Body = '''
-{
-    "name": "no-dns-instance",
-    "state": "AVAILABLE"
-}
-'''
-
-[[Server]]
 Pattern = "GET /api/2.0/database/instances/missing-instance"
 Response.StatusCode = 404
 Response.Body = '''

@@ -34,32 +34,43 @@ var allOutputFormats = []outputFormat{outputText, outputJSON, outputCSV}
 //     values are silently ignored, matching cmd/root/io.go and aitools).
 //  3. The flag default ("text").
 //
-// Then the auto-selection rule applies: text on a non-TTY stdout falls back
-// to JSON. This matches the aitools query command and means scripts piping
-// stdout get machine-readable output by default.
+// Then the auto-selection rule applies: a *defaulted* text mode on a non-TTY
+// stdout falls back to JSON, so scripts piping the output get machine-
+// readable output by default. An *explicit* --output text is honoured even
+// on a pipe; per CLAUDE.md we don't silently override flags the user set.
 //
 // flagSet is true if the user explicitly passed --output. stdoutTTY is true
 // if stdout is a terminal.
 func resolveOutputFormat(ctx context.Context, flagValue string, flagSet, stdoutTTY bool) (outputFormat, error) {
 	chosen := outputFormat(strings.ToLower(flagValue))
+	chosenExplicit := flagSet
 
 	if !flagSet {
 		if v, ok := env.Lookup(ctx, envOutputFormat); ok {
 			candidate := outputFormat(strings.ToLower(v))
 			if isKnownOutputFormat(candidate) {
 				chosen = candidate
+				chosenExplicit = true
 			}
 		}
 	}
 
 	if !isKnownOutputFormat(chosen) {
-		return "", fmt.Errorf("unsupported output format %q; expected one of: text, json, csv", flagValue)
+		return "", fmt.Errorf("unsupported output format %q; expected one of: %s", flagValue, joinOutputFormats(allOutputFormats))
 	}
 
-	if chosen == outputText && !stdoutTTY {
+	if chosen == outputText && !stdoutTTY && !chosenExplicit {
 		return outputJSON, nil
 	}
 	return chosen, nil
+}
+
+func joinOutputFormats(formats []outputFormat) string {
+	parts := make([]string, len(formats))
+	for i, f := range formats {
+		parts[i] = string(f)
+	}
+	return strings.Join(parts, ", ")
 }
 
 func isKnownOutputFormat(f outputFormat) bool {

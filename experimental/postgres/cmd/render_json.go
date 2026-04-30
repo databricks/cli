@@ -82,53 +82,84 @@ func (s *jsonSink) Row(values []any) error {
 		}
 	}
 
-	// Build the row object as a *map* of column to converted value, then let
-	// json.Marshal handle the encoding. We don't preserve key insertion order
-	// (json package sorts map keys), which is fine for machine consumers; the
-	// columns slice is the canonical order.
-	//
-	// Using ordered emission would require a manual writer. Worth the cost
-	// only if a downstream consumer needs schema-positional output, which
-	// none do today.
-	obj := make(map[string]any, len(s.columns))
+	// Emit keys in column order. json.Marshal on a map sorts keys
+	// alphabetically; SELECT order is what consumers expect, so we write
+	// `{`, walk columns, encode key:value pairs ourselves, then `}`.
+	if _, err := io.WriteString(s.out, "{"); err != nil {
+		return err
+	}
 	for i, name := range s.columns {
-		obj[name] = jsonValueWithOID(values[i], s.oids[i])
+		if i > 0 {
+			if _, err := io.WriteString(s.out, ","); err != nil {
+				return err
+			}
+		}
+		key, err := marshalJSON(name)
+		if err != nil {
+			return fmt.Errorf("encode column name %q: %w", name, err)
+		}
+		if _, err := s.out.Write(key); err != nil {
+			return err
+		}
+		if _, err := io.WriteString(s.out, ":"); err != nil {
+			return err
+		}
+		val, err := marshalJSON(jsonValueWithOID(values[i], s.oids[i]))
+		if err != nil {
+			return fmt.Errorf("encode value for %q: %w", name, err)
+		}
+		if _, err := s.out.Write(val); err != nil {
+			return err
+		}
 	}
-
-	var buf bytes.Buffer
-	enc := json.NewEncoder(&buf)
-	enc.SetEscapeHTML(false)
-	if err := enc.Encode(obj); err != nil {
-		return fmt.Errorf("encode row: %w", err)
-	}
-	// json.Encoder always writes a trailing newline; trim it so our outer
-	// formatting controls the layout.
-	out := bytes.TrimRight(buf.Bytes(), "\n")
-	if _, err := s.out.Write(out); err != nil {
+	if _, err := io.WriteString(s.out, "}"); err != nil {
 		return err
 	}
 	s.rowsWritten++
 	return nil
 }
 
-func (s *jsonSink) End(commandTag string) error {
-	if s.hasOpenedArray {
-		_, err := io.WriteString(s.out, "\n]\n")
-		return err
-	}
-	// Command-only path: emit a single object.
-	obj := map[string]any{"command": commandTagVerb(commandTag)}
-	if rows, ok := commandTagRowCount(commandTag); ok {
-		obj["rows_affected"] = rows
-	}
-
+// marshalJSON encodes v with HTML escaping disabled (so jsonb values like
+// {"url":"<a>"} round-trip without `&lt;` rewrites). encoding/json's Encoder
+// is the only path that exposes SetEscapeHTML, so we route through it and
+// strip the trailing newline it always appends.
+func marshalJSON(v any) ([]byte, error) {
 	var buf bytes.Buffer
 	enc := json.NewEncoder(&buf)
 	enc.SetEscapeHTML(false)
-	if err := enc.Encode(obj); err != nil {
-		return fmt.Errorf("encode command tag: %w", err)
+	if err := enc.Encode(v); err != nil {
+		return nil, err
 	}
-	_, err := s.out.Write(buf.Bytes())
+	return bytes.TrimRight(buf.Bytes(), "\n"), nil
+}
+
+func (s *jsonSink) End(commandTag string) error {
+	if s.hasOpenedArray {
+		if s.rowsWritten == 0 {
+			// Empty result: collapse to "[]\n" rather than "[\n\n]\n".
+			_, err := io.WriteString(s.out, "]\n")
+			return err
+		}
+		_, err := io.WriteString(s.out, "\n]\n")
+		return err
+	}
+	// Command-only path: emit a single ordered object.
+	if _, err := io.WriteString(s.out, `{"command":`); err != nil {
+		return err
+	}
+	verbBytes, err := marshalJSON(commandTagVerb(commandTag))
+	if err != nil {
+		return fmt.Errorf("encode command tag verb: %w", err)
+	}
+	if _, err := s.out.Write(verbBytes); err != nil {
+		return err
+	}
+	if rows, ok := commandTagRowCount(commandTag); ok {
+		if _, err := fmt.Fprintf(s.out, `,"rows_affected":%d`, rows); err != nil {
+			return err
+		}
+	}
+	_, err = io.WriteString(s.out, "}\n")
 	return err
 }
 
@@ -141,6 +172,10 @@ func (s *jsonSink) OnError(err error) {
 	}
 	// Best-effort; if this Write fails the stream is already corrupted
 	// and there is nothing more we can do.
+	if s.rowsWritten == 0 {
+		_, _ = io.WriteString(s.out, "]\n")
+		return
+	}
 	_, _ = io.WriteString(s.out, "\n]\n")
 }
 

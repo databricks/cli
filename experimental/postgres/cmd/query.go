@@ -120,6 +120,11 @@ func runQuery(ctx context.Context, cmd *cobra.Command, sql string, f queryFlags)
 		return err
 	}
 
+	// SupportsColor is the public TTY-ish signal libs/cmdio exposes today; it
+	// also folds in NO_COLOR / TERM=dumb, which strictly speaking are colour
+	// preferences rather than TTY signals. Users who hit that edge case can
+	// pass --output text explicitly; that path is honoured (see
+	// resolveOutputFormat). Mirrors the aitools query command.
 	stdoutTTY := cmdio.SupportsColor(ctx, cmd.OutOrStdout())
 	format, err := resolveOutputFormat(ctx, f.outputFormat, f.outputFormatSet, stdoutTTY)
 	if err != nil {

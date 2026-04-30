@@ -42,7 +42,16 @@ func TestJSONSink_EmptyRowsProducing(t *testing.T) {
 	s := newJSONSink(&stdout, &stderr)
 	require.NoError(t, s.Begin(fieldsWithOIDs([]string{"id"}, []uint32{pgtype.Int8OID})))
 	require.NoError(t, s.End("SELECT 0"))
-	assert.Equal(t, "[\n\n]\n", stdout.String())
+	assert.Equal(t, "[\n]\n", stdout.String())
+}
+
+func TestJSONSink_KeysInColumnOrder(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	s := newJSONSink(&stdout, &stderr)
+	require.NoError(t, s.Begin(fieldsWithOIDs([]string{"b", "a"}, []uint32{pgtype.Int8OID, pgtype.Int8OID})))
+	require.NoError(t, s.Row([]any{int64(1), int64(2)}))
+	require.NoError(t, s.End("SELECT 1"))
+	assert.Equal(t, "[\n"+`{"b":1,"a":2}`+"\n]\n", stdout.String())
 }
 
 func TestJSONSink_CommandOnly_WithRowCount(t *testing.T) {
@@ -104,6 +113,10 @@ func TestCommandTagParse(t *testing.T) {
 		{"UPDATE 3", "UPDATE", 3, true},
 		{"DELETE 0", "DELETE", 0, true},
 		{"SELECT 100", "SELECT", 100, true},
+		{"MERGE 5", "MERGE", 5, true},
+		{"COPY 1000", "COPY", 1000, true},
+		{"FETCH 7", "FETCH", 7, true},
+		{"MOVE 3", "MOVE", 3, true},
 		{"CREATE DATABASE", "CREATE", 0, false},
 		{"SET", "SET", 0, false},
 	}

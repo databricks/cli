@@ -112,9 +112,6 @@ func resolveProvisioned(ctx context.Context, w *databricks.WorkspaceClient, inst
 	if instance.State != database.DatabaseInstanceStateAvailable {
 		return nil, fmt.Errorf("database instance %q is not ready for accepting connections (state: %s)", instance.Name, instance.State)
 	}
-	if instance.ReadWriteDns == "" {
-		return nil, fmt.Errorf("database instance %q has no read/write DNS yet", instance.Name)
-	}
 
 	user, err := w.CurrentUser.Me(ctx)
 	if err != nil {
