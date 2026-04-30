@@ -4,7 +4,7 @@ Updating deployment state...
 Deployment complete!
 
 === Modify pipeline_task full_refresh to True
-=== Modify pipeline development to True
+=== Modify pipeline continuous to True
 === Detect and save changes
 Detected changes in 2 resource(s):
 
@@ -12,7 +12,7 @@ Resource: resources.jobs.my_job
   tasks[task_key='run_pipeline'].pipeline_task.full_refresh: replace
 
 Resource: resources.pipelines.my_pipeline
-  development: replace
+  continuous: add
 
 
 
@@ -21,18 +21,19 @@ Resource: resources.pipelines.my_pipeline
 >>> diff.py databricks.yml.backup databricks.yml
 --- databricks.yml.backup
 +++ databricks.yml
-@@ -6,5 +6,5 @@
-     my_pipeline:
-       name: test-pipeline-[UNIQUE_NAME]
--      development: false
-+      development: true
-       libraries:
-         - notebook:
-@@ -17,3 +17,3 @@
+@@ -11,4 +11,5 @@
+             path: /Users/{{workspace_user_name}}/notebook
+
++      continuous: true
+   jobs:
+     my_job:
+@@ -17,5 +18,5 @@
            pipeline_task:
              pipeline_id: ${resources.pipelines.my_pipeline.id}
 -            full_refresh: false
 +            full_refresh: true
+
+ targets:
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

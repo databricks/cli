@@ -1,0 +1,129 @@
+#!/bin/bash
+
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+  trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+$CLI bundle deploy
+job_id="$(read_id.py my_job)"
+pipeline_id="$(read_id.py my_pipeline)"
+
+title "Modify pipeline environment dependencies"
+edit_resource.py pipelines $pipeline_id <<EOF
+# [1] Trim "--editable " prefix AND append "/extra" suffix. The variable's
+# resolved value still appears in the new string, so substring substitution
+# restores \${workspace.file_path} and keeps "/extra" as the literal tail.
+# [0] (\${var.my_env_dep}) and [2] (hardcoded literal) are untouched.
+r["environment"]["dependencies"][1] = (
+    r["environment"]["dependencies"][1].replace("--editable ", "") + "/extra"
+)
+# Append a fully new dep to force a Replace on the dependencies array, which
+# exercises the recursion through indexes [0], [1], [2], and [3].
+r["environment"]["dependencies"].append("another-pkg==2.0")
+EOF
+
+title "Add and replace parameters remotely"
+edit_resource.py jobs $job_id <<EOF
+# --- Add operations (reverse map) ---
+# "main" matches exactly one variable (my_catalog) -> restored to \${var.my_catalog}
+r["parameters"].append({"name": "data_catalog", "default": "main"})
+# "raw_data" matches two variables (landing_schema, curated_schema) -> ambiguous, stays hardcoded
+r["parameters"].append({"name": "some_schema", "default": "raw_data"})
+# "us-west-2" matches no variable -> stays hardcoded
+r["parameters"].append({"name": "region", "default": "us-west-2"})
+# "production" matches target_env (set in target, not default) -> restored to \${var.target_env}
+r["parameters"].append({"name": "deploy_env", "default": "production"})
+# "from-overrides-file" matches file_override_var (set via variable-overrides.json) -> restored
+r["parameters"].append({"name": "file_sourced", "default": "from-overrides-file"})
+# "default" matches sibling target_name's \${bundle.target} -> restored
+r["parameters"].append({"name": "deploy_target", "default": "default"})
+
+# Add a new task with the same structure as the existing one (different task_key).
+# The sibling's source_path uses compound interpolation with \${var.my_catalog} and
+# \${bundle.target}; the new task's source_path matches the resolved template, so
+# both variables should be restored via compound-sibling alignment.
+r["tasks"].append({
+    "task_key": "secondary",
+    "notebook_task": {
+        "notebook_path": r["tasks"][0]["notebook_task"]["notebook_path"],
+        "base_parameters": {"source_path": "/mnt/main/default/raw/landing"}
+    }
+})
+
+# Change full_refresh on the existing run_pipeline task. The sibling field
+# pipeline_id uses \${resources.pipelines.my_pipeline.id} and must stay
+# intact in the YAML because the Replace only affects full_refresh.
+for t in r["tasks"]:
+    if t.get("task_key") == "run_pipeline":
+        t["pipeline_task"]["full_refresh"] = True
+
+# Add a new pipeline task that triggers the same pipeline. The sibling
+# run_pipeline has pipeline_id = \${resources.pipelines.my_pipeline.id}; the
+# new task uses the same resolved ID, so the sibling rule should restore
+# the resource reference.
+pipeline_id = next(t for t in r["tasks"] if t["task_key"] == "run_pipeline")["pipeline_task"]["pipeline_id"]
+r["tasks"].append({
+    "task_key": "run_pipeline_again",
+    "pipeline_task": {
+        "pipeline_id": pipeline_id,
+    }
+})
+
+# --- Replace operations (original ref) ---
+# Change "catalog" param (originally \${var.my_catalog} = "main") to unrelated value -> hardcoded
+for p in r["parameters"]:
+    if p["name"] == "catalog":
+        p["default"] = "staging_catalog"
+
+# Re-target to a different variable: "env" was \${var.target_env} (= "production").
+# New value "main" doesn't match target_env but uniquely matches \${var.my_catalog},
+# so the field is re-targeted to \${var.my_catalog} via the fallback lookup.
+for p in r["parameters"]:
+    if p["name"] == "env":
+        p["default"] = "main"
+
+# --- Non-sequence Add (false-positive prevention) ---
+# Add tags to the job. Tags is a map (not a sequence), so Add restoration is
+# skipped entirely: "main" stays hardcoded even though it matches \${var.my_catalog}.
+r["tags"] = {"deployment": "main"}
+
+# Compound interpolation: change only the suffix of source_path.
+# Both \${var.my_catalog}="main" and \${bundle.target}="default" are unchanged;
+# only the literal suffix changes. Expected: both refs preserved, suffix updated.
+for t in r["tasks"]:
+    bp = t.get("notebook_task", {}).get("base_parameters", {})
+    if "source_path" in bp:
+        bp["source_path"] = "/mnt/main/default/raw/landing_v2"
+
+# --- Environments coverage ---
+# Add a new environments entry. The sibling at environment_key='default' has
+# dependencies = ["\${var.my_env_dep}"]; the new entry uses the same resolved
+# value, so sibling-based restoration should restore the ref.
+r["environments"].append({
+    "environment_key": "secondary",
+    "spec": {
+        "environment_version": "4",
+        "dependencies": ["nonexistent-test-pkg==1.2.3"],
+    },
+})
+
+# Replace the existing environment's dependencies: keep the variable-backed
+# entry and append an unrelated literal. Existing \${var.my_env_dep} must be
+# preserved at index 0; the new dep stays hardcoded.
+for e in r["environments"]:
+    if e["environment_key"] == "default":
+        e["spec"]["dependencies"].append("nonexistent-other-pkg==2.0")
+EOF
+
+title "Detect and save changes"
+echo
+cp databricks.yml databricks.yml.backup
+$CLI bundle config-remote-sync --save
+
+title "Configuration changes"
+echo
+trace diff.py databricks.yml.backup databricks.yml
+rm databricks.yml.backup

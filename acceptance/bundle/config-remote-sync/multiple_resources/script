@@ -23,12 +23,13 @@ add_repl.py "$($CLI metastores current | jq -r .metastore_id)" "METASTORE_ID"
 title "Modify both jobs"
 edit_resource.py jobs $job_one_id <<EOF
 r["max_concurrent_runs"] = 5
-r["tags"] = {"team": "data"}
+# Add tag without replacing the map (dev mode adds its own "dev" tag).
+r.setdefault("tags", {})["team"] = "data"
 EOF
 
 edit_resource.py jobs $job_two_id <<EOF
 r["max_concurrent_runs"] = 10
-r["tags"] = {"team": "ml"}
+r.setdefault("tags", {})["team"] = "ml"
 EOF
 
 title "Detect and save changes"
