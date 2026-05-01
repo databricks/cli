@@ -1,2 +1,7 @@
-# Temporarily disabling due to DBR release breakage.
+# This test exercises the trampoline workaround for DBR <13.1 (PR #635), which
+# requires booking a cluster on Spark 12.2.x-scala2.12. The AWS test workspaces
+# have legacy access disabled, so 12.2.x is rejected with INVALID_PARAMETER_VALUE
+# ("legacy access is disabled in your workspace. Please use Databricks Runtime
+# 13.3 LTS or above"). GCP was previously disabled due to a DBR release breakage.
+CloudEnvs.aws = false
 CloudEnvs.gcp = false
