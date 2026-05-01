@@ -1,0 +1,37 @@
+
+=== Initial deploy
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/recreate-lakebase-catalog-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Change database_name to a new value
+>>> update_file.py databricks.yml db_initial db_renamed
+
+=== Plan should show recreate (was 'update' before fix)
+>>> [CLI] bundle plan
+recreate database_catalogs.my_catalog
+
+Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged
+
+=== Deploy the change
+>>> [CLI] bundle deploy --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/recreate-lakebase-catalog-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.database_catalogs.my_catalog
+  delete resources.database_instances.my_instance
+
+This action will result in the deletion of the following Lakebase database instances.
+All data stored in them will be permanently lost:
+  delete resources.database_instances.my_instance
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/recreate-lakebase-catalog-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!

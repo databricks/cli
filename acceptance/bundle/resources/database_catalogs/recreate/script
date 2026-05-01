@@ -1,0 +1,18 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+  trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+title "Initial deploy"
+trace $CLI bundle deploy
+
+title "Change database_name to a new value"
+trace update_file.py databricks.yml "db_initial" "db_renamed"
+
+title "Plan should show recreate (was 'update' before fix)"
+trace $CLI bundle plan
+
+title "Deploy the change"
+trace $CLI bundle deploy --auto-approve

@@ -512,3 +512,20 @@ resources:
     recreate_on_changes:
       - field: endpoint_type
         reason: immutable
+
+  # Database Catalog API does not yet support updates.
+  # See SDK UpdateDatabaseCatalogRequest: "Note that updating a database catalog is not yet supported."
+  # https://github.com/databricks/databricks-sdk-go/blob/v0.128.0/service/database/model.go#L1318
+  database_catalogs:
+    recreate_on_changes:
+      - field: name
+        reason: immutable
+      - field: database_instance_name
+        reason: immutable
+      - field: database_name
+        reason: immutable
+    ignore_local_changes:
+      # create_database_if_not_exists is input-only and cannot be updated.
+      # Matches TF SyncFieldsDuringCreateOrUpdate which preserves it from prior state.
+      - field: create_database_if_not_exists
+        reason: input_only
