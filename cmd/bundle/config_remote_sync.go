@@ -13,6 +13,7 @@ import (
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/cli/libs/log"
 	"github.com/spf13/cobra"
 )
 
@@ -63,7 +64,9 @@ Examples:
 					return fmt.Errorf("failed to resolve field changes: %w", err)
 				}
 
-				configsync.RestoreVariableReferences(ctx, b, fieldChanges)
+				if err := configsync.RestoreVariableReferences(ctx, b, fieldChanges); err != nil {
+					log.Warnf(ctx, "variable restoration skipped: %v", err)
+				}
 
 				files, err := configsync.ApplyChangesToYAML(ctx, b, fieldChanges)
 				if err != nil {

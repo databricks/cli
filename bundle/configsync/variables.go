@@ -2,6 +2,7 @@ package configsync
 
 import (
 	"context"
+	"errors"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
@@ -50,10 +51,10 @@ var varPrefix = dyn.NewPath(dyn.Key("var"))
 // view where ${var.X} and ${resources.X.Y.id} references are still literal
 // strings — enabling correct sibling lookup even for sequences split across
 // files via target overrides.
-func RestoreVariableReferences(ctx context.Context, b *bundle.Bundle, fieldChanges []FieldChange) {
+func RestoreVariableReferences(ctx context.Context, b *bundle.Bundle, fieldChanges []FieldChange) error {
 	preResolved := loadPreResolvedConfig(ctx, b)
 	if !preResolved.IsValid() {
-		return
+		return errors.New("pre-resolved config unavailable; variable-backed fields will be hardcoded")
 	}
 	resolved := b.Config.Value()
 
@@ -110,6 +111,7 @@ func RestoreVariableReferences(ctx context.Context, b *bundle.Bundle, fieldChang
 			Value:     newValue,
 		}
 	}
+	return nil
 }
 
 // loadPreResolvedConfig loads the bundle's configuration through the standard
