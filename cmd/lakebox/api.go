@@ -42,10 +42,58 @@ type createResponse struct {
 
 // sandboxEntry is a single item in the list response.
 // Mirrors the `Sandbox` proto message after JSON transcoding.
+//
+// IdleTimeoutSecs and Persist correspond to the proto's `optional` fields;
+// they're pointers so we can tell "field absent on the wire" (server has the
+// global default) from "explicitly set to 0 / false."
 type sandboxEntry struct {
-	SandboxID string `json:"sandboxId"`
-	Status    string `json:"status"`
-	FQDN      string `json:"fqdn"`
+	SandboxID       string `json:"sandboxId"`
+	Status          string `json:"status"`
+	FQDN            string `json:"fqdn"`
+	IdleTimeoutSecs *int64 `json:"idleTimeoutSecs,omitempty"`
+	Persist         *bool  `json:"persist,omitempty"`
+}
+
+// defaultAutoStopSecs mirrors the manager's `watchdog_idle_grace_secs`
+// fallback (10 minutes) used when a sandbox has no per-record override.
+// The value is also documented in `lakebox/CLAUDE.md` ("Sandbox
+// Watchdog" section). Hardcoded here so list/status can render the
+// effective timeout without an extra round-trip to fetch manager config.
+const defaultAutoStopSecs int64 = 600
+
+// autoStopLabel renders the auto-stop policy advertised by the manager
+// for one sandbox into a short human-readable string. Mirrors the wire
+// semantics from `lakebox/proto/lakebox.proto`:
+//   - `persist == true` → never auto-stops
+//   - `idle_timeout_secs` set and positive → that many seconds
+//   - otherwise → manager's global default (`defaultAutoStopSecs`)
+func (e *sandboxEntry) autoStopLabel() string {
+	if e.Persist != nil && *e.Persist {
+		return "never"
+	}
+	if e.IdleTimeoutSecs != nil && *e.IdleTimeoutSecs > 0 {
+		return formatDurationSecs(*e.IdleTimeoutSecs)
+	}
+	return formatDurationSecs(defaultAutoStopSecs)
+}
+
+// formatDurationSecs prints `secs` as a compact duration (e.g. `90s`,
+// `15m`, `2h`, `1h30m`). Falls back to seconds if it's not a clean
+// minute/hour multiple. Avoids pulling in a dependency just for this.
+func formatDurationSecs(secs int64) string {
+	if secs < 60 {
+		return fmt.Sprintf("%ds", secs)
+	}
+	if secs%3600 == 0 {
+		return fmt.Sprintf("%dh", secs/3600)
+	}
+	if secs >= 3600 {
+		return fmt.Sprintf("%dh%dm", secs/3600, (secs%3600)/60)
+	}
+	if secs%60 == 0 {
+		return fmt.Sprintf("%dm", secs/60)
+	}
+	return fmt.Sprintf("%ds", secs)
 }
 
 // listResponse is the JSON body returned by GET /api/2.0/lakebox/sandboxes.

@@ -53,18 +53,25 @@ Example:
 
 			out := cmd.OutOrStdout()
 
-			// Compute column width.
+			// Compute column widths. AUTOSTOP holds short tokens like
+			// `default`, `never`, `15m`, `1h30m` — 8 chars covers them.
 			col := 10
+			autostopCol := 8
 			for _, e := range entries {
 				if l := len(e.SandboxID); l > col {
 					col = l
 				}
+				if l := len(e.autoStopLabel()); l > autostopCol {
+					autostopCol = l
+				}
 			}
 			col += 2
+			autostopCol += 2
 
 			blank(out)
-			fmt.Fprintf(out, "  %s%-*s  %-10s  %s%s\n", dm, col, "ID", "STATUS", "DEFAULT", rs)
-			fmt.Fprintf(out, "  %s%s%s\n", dm, strings.Repeat("─", col+22), rs)
+			fmt.Fprintf(out, "  %s%-*s  %-10s  %-*s  %s%s\n",
+				dm, col, "ID", "STATUS", autostopCol, "AUTOSTOP", "DEFAULT", rs)
+			fmt.Fprintf(out, "  %s%s%s\n", dm, strings.Repeat("─", col+10+autostopCol+12), rs)
 
 			for _, e := range entries {
 				id := e.SandboxID
@@ -83,13 +90,19 @@ Example:
 				if stPad < 0 {
 					stPad = 0
 				}
+				as := e.autoStopLabel()
+				asPad := autostopCol - len(as)
+				if asPad < 0 {
+					asPad = 0
+				}
 				idStr := bold(id)
 				if strings.EqualFold(e.Status, "running") {
 					idStr = cyan + bo + id + rs
 				}
-				fmt.Fprintf(out, "  %s%s  %s%s  %s\n",
+				fmt.Fprintf(out, "  %s%s  %s%s  %s%s  %s\n",
 					idStr, strings.Repeat(" ", idPad),
 					st, strings.Repeat(" ", stPad),
+					dim(as), strings.Repeat(" ", asPad),
 					def)
 			}
 			blank(out)

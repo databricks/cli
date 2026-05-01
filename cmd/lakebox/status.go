@@ -46,6 +46,7 @@ Example:
 			if entry.FQDN != "" {
 				field(out, "fqdn", dim(entry.FQDN))
 			}
+			field(out, "autostop", dim(entry.autoStopLabel()))
 			blank(out)
 			return nil
 		},
