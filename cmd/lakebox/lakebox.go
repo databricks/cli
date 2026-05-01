@@ -39,6 +39,7 @@ The CLI manages your ~/.ssh/config so you can also connect directly:
 	cmd.AddCommand(newCreateCommand())
 	cmd.AddCommand(newDeleteCommand())
 	cmd.AddCommand(newStatusCommand())
+	cmd.AddCommand(newConfigCommand())
 
 	return cmd
 }

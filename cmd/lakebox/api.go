@@ -46,11 +46,15 @@ type createResponse struct {
 // IdleTimeoutSecs and Persist correspond to the proto's `optional` fields;
 // they're pointers so we can tell "field absent on the wire" (server has the
 // global default) from "explicitly set to 0 / false."
+//
+// `IdleTimeoutSecs` carries a `,string` JSON tag because proto3 JSON
+// canonical form serializes int64 as a quoted string. The field is read
+// off the wire as `"900"`, not `900`.
 type sandboxEntry struct {
 	SandboxID       string `json:"sandboxId"`
 	Status          string `json:"status"`
 	FQDN            string `json:"fqdn"`
-	IdleTimeoutSecs *int64 `json:"idleTimeoutSecs,omitempty"`
+	IdleTimeoutSecs *int64 `json:"idleTimeoutSecs,omitempty,string"`
 	Persist         *bool  `json:"persist,omitempty"`
 }
 
@@ -162,6 +166,60 @@ func (a *lakeboxAPI) list(ctx context.Context) ([]sandboxEntry, error) {
 // get calls GET /api/2.0/lakebox/sandboxes/{id}.
 func (a *lakeboxAPI) get(ctx context.Context, id string) (*sandboxEntry, error) {
 	resp, err := a.doRequest(ctx, "GET", lakeboxAPIPath+"/"+id, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, parseAPIError(resp)
+	}
+
+	var result sandboxEntry
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+	return &result, nil
+}
+
+// updateBody is the PATCH request body. The proto declares
+// `UpdateSandboxRequest { Sandbox sandbox = 1 }` with `body: "sandbox"`
+// in the (google.api.http) annotation, so the HTTP body is the inner
+// `Sandbox` message directly — there is no `{"sandbox": {...}}`
+// wrapping on the wire.
+//
+// Pointer fields encode the proto3 `optional` semantics — only the
+// fields we explicitly set are emitted, leaving everything else
+// server-untouched.
+type updateBody struct {
+	SandboxID string `json:"sandbox_id"`
+	// `,string` matches proto3 JSON canonical encoding; the manager
+	// accepts both quoted-string and bare-number int64 on input.
+	IdleTimeoutSecs *int64 `json:"idle_timeout_secs,omitempty,string"`
+	Persist         *bool  `json:"persist,omitempty"`
+}
+
+// update calls PATCH /api/2.0/lakebox/sandboxes/{id} with whichever of
+// `idle_timeout_secs` / `persist` the caller chose to set. Fields left
+// nil are omitted from the wire payload, so the server preserves their
+// current values. Returns the refreshed `sandboxEntry`.
+func (a *lakeboxAPI) update(
+	ctx context.Context,
+	id string,
+	idleTimeoutSecs *int64,
+	persist *bool,
+) (*sandboxEntry, error) {
+	body := updateBody{
+		SandboxID:       id,
+		IdleTimeoutSecs: idleTimeoutSecs,
+		Persist:         persist,
+	}
+	jsonBody, err := json.Marshal(body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal request: %w", err)
+	}
+
+	resp, err := a.doRequest(ctx, "PATCH", lakeboxAPIPath+"/"+id, bytes.NewReader(jsonBody))
 	if err != nil {
 		return nil, err
 	}
