@@ -80,6 +80,10 @@ jobs:
     name: "task test (${{matrix.os.name}}, ${{matrix.deployment}})"
     runs-on: ${{ matrix.os.runner }}
 
+    defaults:
+      run:
+        shell: bash
+
     permissions:
       id-token: write
       contents: read
@@ -137,20 +141,19 @@ jobs:
         if: ${{ github.event_name == 'pull_request' || github.event_name == 'merge_group' || github.event_name == 'schedule' }}
         env:
           ENVFILTER: DATABRICKS_BUNDLE_ENGINE=${{ matrix.deployment }}
-        run: ./task test
+        run: go tool -modfile=tools/task/go.mod task test
 
       - name: Run tests with coverage
         # Only run 'task cover' on push to main to make sure it does not get broken.
         if: ${{ github.event_name == 'push' }}
         env:
           ENVFILTER: DATABRICKS_BUNDLE_ENGINE=${{ matrix.deployment }}
-        run: ./task cover
+        run: go tool -modfile=tools/task/go.mod task cover
 
       - name: Analyze slow tests
-        run: ./task slowest
+        run: go tool -modfile=tools/task/go.mod task slowest
 
       - name: Check out.test.toml files are up to date
-        shell: bash
         run: |
           if ! git diff --exit-code; then
             echo "ERROR: detected changed files in the repository; Most likely you have out.test.toml files that are out of date. Run 'go test ./acceptance -run \"^TestAccept$\" -only-out-test-toml' to update."
@@ -166,6 +169,10 @@ jobs:
     if: ${{ contains(fromJSON(needs.testmask.outputs.targets), 'test-exp-aitools') }}
     name: "task test-exp-aitools (${{matrix.os.name}})"
     runs-on: ${{ matrix.os.runner }}
+
+    defaults:
+      run:
+        shell: bash
 
     permissions:
       id-token: write
@@ -201,7 +208,7 @@ jobs:
 
       - name: Run tests
         run: |
-          ./task test-exp-aitools
+          go tool -modfile=tools/task/go.mod task test-exp-aitools
 
   test-exp-ssh:
     needs:
@@ -212,6 +219,10 @@ jobs:
     if: ${{ contains(fromJSON(needs.testmask.outputs.targets), 'test-exp-ssh') }}
     name: "task test-exp-ssh (${{matrix.os.name}})"
     runs-on: ${{ matrix.os.runner }}
+
+    defaults:
+      run:
+        shell: bash
 
     permissions:
       id-token: write
@@ -246,7 +257,7 @@ jobs:
 
       - name: Run tests
         run: |
-          ./task test-exp-ssh
+          go tool -modfile=tools/task/go.mod task test-exp-ssh
 
   test-pipelines:
     needs:
@@ -257,6 +268,10 @@ jobs:
     if: ${{ contains(fromJSON(needs.testmask.outputs.targets), 'test-pipelines') }}
     name: "task test-pipelines (${{matrix.os.name}})"
     runs-on: ${{ matrix.os.runner }}
+
+    defaults:
+      run:
+        shell: bash
 
     permissions:
       id-token: write
@@ -291,7 +306,7 @@ jobs:
 
       - name: Run tests
         run: |
-          ./task test-pipelines
+          go tool -modfile=tools/task/go.mod task test-pipelines
 
   # This job groups the result of all the above test jobs.
   # It is a required check, so it blocks auto-merge and the merge queue.
@@ -340,14 +355,14 @@ jobs:
 
       - name: Verify that the schema is up to date
         run: |
-          if ! ( ./task --force generate-schema && git diff --exit-code ); then
+          if ! ( go tool -modfile=tools/task/go.mod task --force generate-schema && git diff --exit-code ); then
             echo "The schema is not up to date. Please run './task generate-schema' and commit the changes."
             exit 1
           fi
 
       - name: Verify that the generated enum and required fields are up to date
         run: |
-          if ! ( ./task --force generate-validation && git diff --exit-code ); then
+          if ! ( go tool -modfile=tools/task/go.mod task --force generate-validation && git diff --exit-code ); then
             echo "The generated enum and required fields are not up to date. Please run './task generate-validation' and commit the changes."
             exit 1
           fi
@@ -372,7 +387,7 @@ jobs:
 
       - name: Verify that python/codegen is up to date
         run: |-
-          ./task pydabs-codegen
+          go tool -modfile=tools/task/go.mod task pydabs-codegen
 
           if ! ( git diff --exit-code ); then
             echo "Generated Python code is not up-to-date. Please run './task pydabs-codegen' and commit the changes."
