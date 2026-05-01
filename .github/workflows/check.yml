@@ -36,7 +36,7 @@ jobs:
         run: git diff --exit-code
 
       - name: Run Go lint checks (does not include formatting checks)
-        run: ./task lint
+        run: go tool -modfile=tools/task/go.mod task lint
 
       - name: Run ruff (Python linter and formatter)
         uses: astral-sh/ruff-action@0ce1b0bf8b818ef400413f810f8a11cdbda0034b # v4.0.0
@@ -52,10 +52,10 @@ jobs:
       - name: "task fmt: Python and Go formatting"
         # Python formatting is already checked above, but this also checks Go and YAML formatting
         run: |
-          ./task fmt
+          go tool -modfile=tools/task/go.mod task fmt
           git diff --exit-code
 
       - name: "task checks: custom checks outside of fmt and lint"
         run: |-
-          ./task checks
+          go tool -modfile=tools/task/go.mod task checks
           git diff --exit-code
