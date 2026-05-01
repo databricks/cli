@@ -158,39 +158,31 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		return
 	}
 
-	if plan != nil {
-		if engine.IsDirect() {
-			// Upgrade from read (opened by process.go) to write mode
-			if err := b.DeploymentBundle.StateDB.UpgradeToWrite(); err != nil {
-				logdiag.LogError(ctx, err)
-				return
-			}
-			defer func() {
-				if err := b.DeploymentBundle.StateDB.Finalize(ctx); err != nil {
-					logdiag.LogError(ctx, err)
-				}
-			}()
+	planFromFile := plan != nil
+	if plan == nil {
+		// State is already open for read by process.go (for direct engine)
+		plan = RunPlan(ctx, b, engine)
+	}
+
+	if engine.IsDirect() {
+		// Upgrade from read (opened by process.go) to write mode
+		if err := b.DeploymentBundle.StateDB.UpgradeToWrite(); err != nil {
+			logdiag.LogError(ctx, err)
+			return
 		}
+		defer func() {
+			if err := b.DeploymentBundle.StateDB.Finalize(ctx); err != nil {
+				logdiag.LogError(ctx, err)
+			}
+		}()
+	}
+
+	if planFromFile {
 		// Initialize DeploymentBundle for applying the loaded plan
 		err := b.DeploymentBundle.InitForApply(ctx, b.WorkspaceClient(ctx), plan)
 		if err != nil {
 			logdiag.LogError(ctx, err)
 			return
-		}
-	} else {
-		// State is already open for read by process.go (for direct engine)
-		plan = RunPlan(ctx, b, engine)
-		if engine.IsDirect() {
-			// Upgrade from read to write mode (Apply needs write access)
-			if err := b.DeploymentBundle.StateDB.UpgradeToWrite(); err != nil {
-				logdiag.LogError(ctx, err)
-				return
-			}
-			defer func() {
-				if err := b.DeploymentBundle.StateDB.Finalize(ctx); err != nil {
-					logdiag.LogError(ctx, err)
-				}
-			}()
 		}
 	}
 
