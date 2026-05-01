@@ -43,7 +43,7 @@ type createResponse struct {
 // sandboxEntry is a single item in the list response.
 // Mirrors the `Sandbox` proto message after JSON transcoding.
 //
-// IdleTimeoutSecs and Persist correspond to the proto's `optional` fields;
+// IdleTimeoutSecs and NoAutostop correspond to the proto's `optional` fields;
 // they're pointers so we can tell "field absent on the wire" (server has the
 // global default) from "explicitly set to 0 / false."
 //
@@ -55,7 +55,7 @@ type sandboxEntry struct {
 	Status          string `json:"status"`
 	FQDN            string `json:"fqdn"`
 	IdleTimeoutSecs *int64 `json:"idleTimeoutSecs,omitempty,string"`
-	Persist         *bool  `json:"persist,omitempty"`
+	NoAutostop      *bool  `json:"noAutostop,omitempty"`
 }
 
 // defaultAutoStopSecs mirrors the manager's `watchdog_idle_grace_secs`
@@ -68,11 +68,11 @@ const defaultAutoStopSecs int64 = 600
 // autoStopLabel renders the auto-stop policy advertised by the manager
 // for one sandbox into a short human-readable string. Mirrors the wire
 // semantics from `lakebox/proto/lakebox.proto`:
-//   - `persist == true` → never auto-stops
+//   - `no_autostop == true` → never auto-stops
 //   - `idle_timeout_secs` set and positive → that many seconds
 //   - otherwise → manager's global default (`defaultAutoStopSecs`)
 func (e *sandboxEntry) autoStopLabel() string {
-	if e.Persist != nil && *e.Persist {
+	if e.NoAutostop != nil && *e.NoAutostop {
 		return "never"
 	}
 	if e.IdleTimeoutSecs != nil && *e.IdleTimeoutSecs > 0 {
@@ -196,23 +196,23 @@ type updateBody struct {
 	// `,string` matches proto3 JSON canonical encoding; the manager
 	// accepts both quoted-string and bare-number int64 on input.
 	IdleTimeoutSecs *int64 `json:"idle_timeout_secs,omitempty,string"`
-	Persist         *bool  `json:"persist,omitempty"`
+	NoAutostop      *bool  `json:"no_autostop,omitempty"`
 }
 
 // update calls PATCH /api/2.0/lakebox/sandboxes/{id} with whichever of
-// `idle_timeout_secs` / `persist` the caller chose to set. Fields left
+// `idle_timeout_secs` / `no_autostop` the caller chose to set. Fields left
 // nil are omitted from the wire payload, so the server preserves their
 // current values. Returns the refreshed `sandboxEntry`.
 func (a *lakeboxAPI) update(
 	ctx context.Context,
 	id string,
 	idleTimeoutSecs *int64,
-	persist *bool,
+	noAutostop *bool,
 ) (*sandboxEntry, error) {
 	body := updateBody{
 		SandboxID:       id,
 		IdleTimeoutSecs: idleTimeoutSecs,
-		Persist:         persist,
+		NoAutostop:      noAutostop,
 	}
 	jsonBody, err := json.Marshal(body)
 	if err != nil {

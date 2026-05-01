@@ -18,7 +18,7 @@ const (
 
 func newConfigCommand() *cobra.Command {
 	var idleTimeoutFlag string
-	var persistFlag bool
+	var noAutostopFlag bool
 
 	cmd := &cobra.Command{
 		Use:   "config <lakebox-id>",
@@ -33,19 +33,21 @@ Two knobs are independent — pass either or both:
                               global default (10m). Valid range when set:
                               60s to 24h.
 
-  --persist[=true|false]      When true, the sandbox is exempt from
+  --no-autostop[=true|false]  When true, the sandbox is exempt from
                               idle-driven auto-stop entirely. The
                               --idle-timeout setting is ignored while
-                              persist is on. Sandbox still stops on
-                              explicit 'lakebox delete'.
+                              this is on. Setting --idle-timeout to a
+                              non-zero value in a later call clears
+                              --no-autostop automatically. Sandbox still
+                              stops on explicit 'lakebox delete'.
 
 Examples:
   lakebox config happy-panda-1234 --idle-timeout 15m
   lakebox config happy-panda-1234 --idle-timeout 1h30m
   lakebox config happy-panda-1234 --idle-timeout 0           # clear, use default
-  lakebox config happy-panda-1234 --persist                  # never auto-stop
-  lakebox config happy-panda-1234 --persist=false            # back to timeout path
-  lakebox config happy-panda-1234 --idle-timeout 30m --persist=false`,
+  lakebox config happy-panda-1234 --no-autostop                  # never auto-stop
+  lakebox config happy-panda-1234 --no-autostop=false            # back to timeout path
+  lakebox config happy-panda-1234 --idle-timeout 30m --no-autostop=false`,
 		Args:    cobra.ExactArgs(1),
 		PreRunE: mustWorkspaceClient,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -67,17 +69,17 @@ Examples:
 				idleSecs = &secs
 			}
 
-			var persist *bool
-			if cmd.Flags().Changed("persist") {
-				p := persistFlag
-				persist = &p
+			var noAutostop *bool
+			if cmd.Flags().Changed("no-autostop") {
+				p := noAutostopFlag
+				noAutostop = &p
 			}
 
-			if idleSecs == nil && persist == nil {
-				return fmt.Errorf("nothing to update — pass --idle-timeout and/or --persist")
+			if idleSecs == nil && noAutostop == nil {
+				return fmt.Errorf("nothing to update — pass --idle-timeout and/or --no-autostop")
 			}
 
-			updated, err := api.update(ctx, id, idleSecs, persist)
+			updated, err := api.update(ctx, id, idleSecs, noAutostop)
 			if err != nil {
 				return fmt.Errorf("failed to update lakebox %s: %w", id, err)
 			}
@@ -92,8 +94,8 @@ Examples:
 
 	cmd.Flags().StringVar(&idleTimeoutFlag, "idle-timeout", "",
 		"Idle timeout (e.g. 15m, 1h30m, 90s). Pass 0 to clear and revert to the manager's default.")
-	cmd.Flags().BoolVar(&persistFlag, "persist", false,
-		"When true, this sandbox never auto-stops on idle. Pass --persist=false to revert.")
+	cmd.Flags().BoolVar(&noAutostopFlag, "no-autostop", false,
+		"When true, this sandbox never auto-stops on idle. Pass --no-autostop=false to revert.")
 
 	return cmd
 }
