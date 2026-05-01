@@ -24,6 +24,7 @@ EnvMatrix.INPUT_CONFIG = [
     "alert.yml.tmpl",
     "app.yml.tmpl",
     "catalog.yml.tmpl",
+    "catalog_storage_root.yml.tmpl",
     "cluster.yml.tmpl",
     "dashboard.yml.tmpl",
     "database_catalog.yml.tmpl",
@@ -74,6 +75,10 @@ no_external_location_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=external_loc
 
 # External volumes reference external locations; excluded from cloud for the same reason
 no_external_volume_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=volume_external.yml.tmpl"]
+
+# Catalog with explicit storage_root requires actual storage credentials with cloud IAM setup
+# which are environment-specific, so we only test locally with the mock server
+no_catalog_storage_root_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=catalog_storage_root.yml.tmpl"]
 
 # Fake SQL endpoint for local tests
 [[Server]]

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
@@ -19,10 +20,13 @@ func (s *FakeWorkspace) CatalogsCreate(req Request) Response {
 		}
 	}
 
+	// Strip trailing slash to mimic UC API normalization behavior.
+	storageRoot := strings.TrimRight(createRequest.StorageRoot, "/")
+
 	catalogInfo := catalog.CatalogInfo{
 		Name:         createRequest.Name,
 		Comment:      createRequest.Comment,
-		StorageRoot:  createRequest.StorageRoot,
+		StorageRoot:  storageRoot,
 		ProviderName: createRequest.ProviderName,
 		ShareName:    createRequest.ShareName,
 		Options:      createRequest.Options,

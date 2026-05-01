@@ -1,0 +1,9 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+resources:
+  catalogs:
+    foo:
+      name: test-catalog-$UNIQUE_NAME
+      storage_root: s3://test-bucket/path/
+      comment: This is a test catalog with trailing-slash storage_root
