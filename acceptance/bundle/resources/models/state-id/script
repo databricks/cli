@@ -1,0 +1,15 @@
+cleanup() {
+    trace $CLI bundle destroy --auto-approve > /dev/null 2>&1
+}
+trap cleanup EXIT
+
+envsubst < databricks.yml.tmpl > databricks.yml
+
+trace $CLI bundle deploy > /dev/null
+
+# Regression: the direct engine's MlflowModelRemote wraps ml.ModelDatabricks to
+# expose a numeric model_id used by the permissions API. Without custom Marshal
+# methods on the wrapper, the embedded type's MarshalJSON takes over and drops
+# model_id from "bundle plan -o json" output (which serializes RemoteState).
+title "verify plan json contains non-empty model_id in remote_state"
+trace $CLI bundle plan -o json | jq -r '.plan."resources.models.my_model".remote_state.model_id | length > 0'

@@ -6,6 +6,7 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 )
 
@@ -19,7 +20,17 @@ type ResourceMlflowModel struct {
 // ID as model_id, analogous to ModelServingEndpointRemote.EndpointId for serving endpoints.
 type MlflowModelRemote struct {
 	ml.ModelDatabricks
-	ModelId string `json:"model_id"`
+	ModelId string `json:"model_id,omitempty"`
+}
+
+// Custom marshalers needed because embedded ml.ModelDatabricks has its own MarshalJSON
+// which would otherwise take over and ignore the additional ModelId field.
+func (s *MlflowModelRemote) UnmarshalJSON(b []byte) error {
+	return marshal.Unmarshal(b, s)
+}
+
+func (s MlflowModelRemote) MarshalJSON() ([]byte, error) {
+	return marshal.Marshal(s)
 }
 
 func (*ResourceMlflowModel) New(client *databricks.WorkspaceClient) *ResourceMlflowModel {

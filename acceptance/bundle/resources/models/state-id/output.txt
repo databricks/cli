@@ -1,0 +1,10 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/models-state-id-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== verify plan json contains non-empty model_id in remote_state
+>>> [CLI] bundle plan -o json
+true
