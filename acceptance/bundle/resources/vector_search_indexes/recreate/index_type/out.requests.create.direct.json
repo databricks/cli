@@ -12,3 +12,7 @@
     "primary_key": "id"
   }
 }
+{
+  "method": "GET",
+  "path": "/api/2.0/vector-search/indexes/vs-index-[UNIQUE_NAME]"
+}

@@ -21,6 +21,12 @@ import (
 // embedding pipeline shutdown can stretch closer to ten minutes.
 const deleteIndexTimeout = 15 * time.Minute
 
+// createIndexTimeout caps the wait for an index to become ready after creation.
+// Delta sync indexes do an initial sync from the source table, which can stretch
+// out for large tables. Matches the terraform provider's defaultIndexProvisionTimeout.
+// https://github.com/databricks/terraform-provider-databricks/blob/c61a32300445f84efb2bb6827dee35e6e523f4ff/vectorsearch/resource_vector_search_index.go#L19
+const createIndexTimeout = 75 * time.Minute
+
 // VectorSearchIndexState tracks the UUID of the endpoint the index is attached
 // to. Without it the planner cannot tell that an index pointing at a deleted
 // and recreated endpoint (same name, different UUID) has been orphaned — the
@@ -137,6 +143,31 @@ func (r *ResourceVectorSearchIndex) DoUpdate(ctx context.Context, id string, con
 
 func (r *ResourceVectorSearchIndex) DoDelete(ctx context.Context, id string) error {
 	return r.client.VectorSearchIndexes.DeleteIndexByIndexName(ctx, id)
+}
+
+// WaitAfterCreate polls GetIndex until Status.Ready=true. CreateIndex returns
+// immediately with metadata of an index whose embedding pipeline is still
+// provisioning; queries against an index that isn't ready fail. Blocking here
+// lets dependent resources (and the next plan) see a usable index.
+func (r *ResourceVectorSearchIndex) WaitAfterCreate(ctx context.Context, config *VectorSearchIndexState) (*VectorSearchIndexRemote, error) {
+	index, err := retries.Poll(ctx, createIndexTimeout, func() (*vectorsearch.VectorIndex, *retries.Err) {
+		idx, getErr := r.client.VectorSearchIndexes.GetIndexByIndexName(ctx, config.Name)
+		if getErr != nil {
+			return nil, retries.Halt(getErr)
+		}
+		if idx.Status == nil || !idx.Status.Ready {
+			msg := "index is still provisioning"
+			if idx.Status != nil && idx.Status.Message != "" {
+				msg = idx.Status.Message
+			}
+			return nil, retries.Continues(msg)
+		}
+		return idx, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &VectorSearchIndexRemote{VectorIndex: index, EndpointUuid: config.EndpointUuid}, nil
 }
 
 // WaitAfterDelete polls GetIndex until it returns 404. The DELETE call is
