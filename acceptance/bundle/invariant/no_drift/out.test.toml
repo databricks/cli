@@ -6,6 +6,7 @@ EnvMatrix.INPUT_CONFIG = [
   "alert.yml.tmpl",
   "app.yml.tmpl",
   "catalog.yml.tmpl",
+  "catalog_storage_root.yml.tmpl",
   "cluster.yml.tmpl",
   "dashboard.yml.tmpl",
   "database_catalog.yml.tmpl",
