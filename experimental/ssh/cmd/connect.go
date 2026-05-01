@@ -12,11 +12,20 @@ import (
 func newConnectCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "connect",
-		Short: "Connect to Databricks compute via SSH",
+		Short: "Connect to Databricks serverless or dedicated compute via SSH",
 		Long: `Connect to Databricks compute via SSH.
 
 This command establishes an SSH connection to Databricks compute, setting up
 the SSH server and handling the connection proxy.
+
+Connect to serverless (no cluster ID needed):
+  databricks ssh connect
+  databricks ssh connect --accelerator=GPU_1xA10            # serverless GPU
+  databricks ssh connect --environment-version=4            # custom serverless environment
+  databricks ssh connect --ide=cursor                       # launch Cursor remote window on connect
+
+Connect to a dedicated cluster:
+  databricks ssh connect --cluster=<cluster-id>
 
 ` + disclaimer,
 	}
@@ -43,12 +52,9 @@ the SSH server and handling the connection proxy.
 	cmd.Flags().IntVar(&maxClients, "max-clients", defaultMaxClients, "Maximum number of SSH clients")
 	cmd.Flags().BoolVar(&autoStartCluster, "auto-start-cluster", true, "Automatically start the cluster if it is not running")
 
-	cmd.Flags().StringVar(&connectionName, "name", "", "Connection name (for serverless compute)")
-	cmd.Flags().MarkHidden("name")
-	cmd.Flags().StringVar(&accelerator, "accelerator", "", "GPU accelerator type (GPU_1xA10 or GPU_8xH100)")
-	cmd.Flags().MarkHidden("accelerator")
-	cmd.Flags().StringVar(&ide, "ide", "", "Open remote IDE window (vscode or cursor)")
-	cmd.Flags().MarkHidden("ide")
+	cmd.Flags().StringVar(&connectionName, "name", "", "Connection name to reuse across sessions (serverless only)")
+	cmd.Flags().StringVar(&accelerator, "accelerator", "", "Serverless GPU accelerator type (GPU_1xA10 or GPU_8xH100)")
+	cmd.Flags().StringVar(&ide, "ide", "", "Open a remote IDE window on connect (vscode or cursor)")
 
 	cmd.Flags().BoolVar(&proxyMode, "proxy", false, "ProxyCommand mode")
 	cmd.Flags().MarkHidden("proxy")
@@ -69,8 +75,7 @@ the SSH server and handling the connection proxy.
 	cmd.Flags().BoolVar(&skipSettingsCheck, "skip-settings-check", false, "Skip checking and updating IDE settings")
 	cmd.Flags().MarkHidden("skip-settings-check")
 
-	cmd.Flags().IntVar(&environmentVersion, "environment-version", defaultEnvironmentVersion, "Environment version for serverless compute")
-	cmd.Flags().MarkHidden("environment-version")
+	cmd.Flags().IntVar(&environmentVersion, "environment-version", defaultEnvironmentVersion, "Serverless environment version to use for the session")
 
 	cmd.Flags().BoolVar(&autoApprove, "auto-approve", false, "Skip confirmation prompts, installing IDE extensions and applying IDE settings without asking")
 
