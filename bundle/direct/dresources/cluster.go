@@ -71,6 +71,7 @@ func (r *ResourceCluster) New(client *databricks.WorkspaceClient) any {
 
 func (r *ResourceCluster) PrepareState(input *resources.Cluster) *ClusterState {
 	s := &ClusterState{
+		ClusterId:   input.ID,
 		ClusterSpec: input.ClusterSpec,
 		Lifecycle:   nil,
 	}
@@ -85,6 +86,7 @@ func (r *ResourceCluster) PrepareState(input *resources.Cluster) *ClusterState {
 func (r *ResourceCluster) RemapState(input *ClusterRemote) *ClusterState {
 	started := input.State == compute.StateRunning
 	spec := &ClusterState{
+		ClusterId: input.ClusterId,
 		ClusterSpec: compute.ClusterSpec{
 			ApplyPolicyDefaultValues:   false,
 			Autoscale:                  input.Autoscale,

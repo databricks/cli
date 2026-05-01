@@ -22,11 +22,11 @@ type Cluster struct {
 }
 
 // GetLifecycle returns the lifecycle settings, using LifecycleWithStarted.
-func (c *Cluster) GetLifecycle() LifecycleConfig {
-	if c.Lifecycle == nil {
+func (s *Cluster) GetLifecycle() LifecycleConfig {
+	if s.Lifecycle == nil {
 		return LifecycleWithStarted{}
 	}
-	return *c.Lifecycle
+	return *s.Lifecycle
 }
 
 func (s *Cluster) UnmarshalJSON(b []byte) error {
