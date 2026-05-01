@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/databricks/databricks-sdk-go"
 )
@@ -43,19 +44,38 @@ type createResponse struct {
 // sandboxEntry is a single item in the list response.
 // Mirrors the `Sandbox` proto message after JSON transcoding.
 //
-// IdleTimeoutSecs and NoAutostop correspond to the proto's `optional` fields;
-// they're pointers so we can tell "field absent on the wire" (server has the
-// global default) from "explicitly set to 0 / false."
+// IdleTimeout and NoAutostop correspond to the proto's `optional` fields;
+// they're pointers so we can tell "field absent on the wire" (server has
+// the global default) from "explicitly set to 0 / false."
 //
-// `IdleTimeoutSecs` carries a `,string` JSON tag because proto3 JSON
-// canonical form serializes int64 as a quoted string. The field is read
-// off the wire as `"900"`, not `900`.
+// `IdleTimeout` is a `google.protobuf.Duration`. Proto3 JSON canonical
+// form serializes Duration as a string with an `s` suffix (e.g.
+// `"900s"`), so the Go field is `*string` and we parse on read.
 type sandboxEntry struct {
-	SandboxID       string `json:"sandboxId"`
-	Status          string `json:"status"`
-	FQDN            string `json:"fqdn"`
-	IdleTimeoutSecs *int64 `json:"idleTimeoutSecs,omitempty,string"`
-	NoAutostop      *bool  `json:"noAutostop,omitempty"`
+	SandboxID   string  `json:"sandboxId"`
+	Status      string  `json:"status"`
+	FQDN        string  `json:"fqdn"`
+	IdleTimeout *string `json:"idleTimeout,omitempty"`
+	NoAutostop  *bool   `json:"noAutostop,omitempty"`
+}
+
+// idleTimeoutSecs parses the proto3-canonical Duration string off
+// `IdleTimeout` (e.g. `"900s"` → `900`). Returns 0 when unset or when
+// the string is not a recognizable Duration. Sub-second precision is
+// dropped — the watchdog only acts on whole seconds.
+func (e *sandboxEntry) idleTimeoutSecs() int64 {
+	if e.IdleTimeout == nil {
+		return 0
+	}
+	s := *e.IdleTimeout
+	if !strings.HasSuffix(s, "s") {
+		return 0
+	}
+	d, err := time.ParseDuration(s)
+	if err != nil {
+		return 0
+	}
+	return int64(d.Seconds())
 }
 
 // defaultAutoStopSecs mirrors the manager's `watchdog_idle_grace_secs`
@@ -69,14 +89,14 @@ const defaultAutoStopSecs int64 = 600
 // for one sandbox into a short human-readable string. Mirrors the wire
 // semantics from `lakebox/proto/lakebox.proto`:
 //   - `no_autostop == true` → never auto-stops
-//   - `idle_timeout_secs` set and positive → that many seconds
+//   - `idle_timeout` set and positive → that many seconds
 //   - otherwise → manager's global default (`defaultAutoStopSecs`)
 func (e *sandboxEntry) autoStopLabel() string {
 	if e.NoAutostop != nil && *e.NoAutostop {
 		return "never"
 	}
-	if e.IdleTimeoutSecs != nil && *e.IdleTimeoutSecs > 0 {
-		return formatDurationSecs(*e.IdleTimeoutSecs)
+	if secs := e.idleTimeoutSecs(); secs > 0 {
+		return formatDurationSecs(secs)
 	}
 	return formatDurationSecs(defaultAutoStopSecs)
 }
@@ -190,17 +210,17 @@ func (a *lakeboxAPI) get(ctx context.Context, id string) (*sandboxEntry, error) 
 //
 // Pointer fields encode the proto3 `optional` semantics — only the
 // fields we explicitly set are emitted, leaving everything else
-// server-untouched.
+// server-untouched. `IdleTimeout` is a proto3-canonical Duration
+// string (e.g. `"900s"`); the server-side wire type is
+// `google.protobuf.Duration`.
 type updateBody struct {
-	SandboxID string `json:"sandbox_id"`
-	// `,string` matches proto3 JSON canonical encoding; the manager
-	// accepts both quoted-string and bare-number int64 on input.
-	IdleTimeoutSecs *int64 `json:"idle_timeout_secs,omitempty,string"`
-	NoAutostop      *bool  `json:"no_autostop,omitempty"`
+	SandboxID   string  `json:"sandbox_id"`
+	IdleTimeout *string `json:"idle_timeout,omitempty"`
+	NoAutostop  *bool   `json:"no_autostop,omitempty"`
 }
 
 // update calls PATCH /api/2.0/lakebox/sandboxes/{id} with whichever of
-// `idle_timeout_secs` / `no_autostop` the caller chose to set. Fields left
+// `idle_timeout` / `no_autostop` the caller chose to set. Fields left
 // nil are omitted from the wire payload, so the server preserves their
 // current values. Returns the refreshed `sandboxEntry`.
 func (a *lakeboxAPI) update(
@@ -209,10 +229,15 @@ func (a *lakeboxAPI) update(
 	idleTimeoutSecs *int64,
 	noAutostop *bool,
 ) (*sandboxEntry, error) {
+	var idleTimeout *string
+	if idleTimeoutSecs != nil {
+		s := fmt.Sprintf("%ds", *idleTimeoutSecs)
+		idleTimeout = &s
+	}
 	body := updateBody{
-		SandboxID:       id,
-		IdleTimeoutSecs: idleTimeoutSecs,
-		NoAutostop:      noAutostop,
+		SandboxID:   id,
+		IdleTimeout: idleTimeout,
+		NoAutostop:  noAutostop,
 	}
 	jsonBody, err := json.Marshal(body)
 	if err != nil {
