@@ -5,15 +5,27 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
+	"strings"
 
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/spf13/cobra"
 )
 
 const (
-	defaultGatewayHost = "uw2.dbrx.dev"
-	defaultGatewayPort = "2222"
+	defaultGatewayHost        = "uw2.dbrx.dev"
+	stagingDefaultGatewayHost = "uw2.s.dbrx.dev"
+	defaultGatewayPort        = "2222"
 )
+
+// resolveGatewayHost picks the SSH gateway hostname based on the workspace host.
+// Staging workspaces (*.staging.cloud.databricks.com etc.) route through
+// uw2.s.dbrx.dev; everything else uses prod uw2.dbrx.dev.
+func resolveGatewayHost(workspaceHost string) string {
+	if strings.Contains(workspaceHost, ".staging.") {
+		return stagingDefaultGatewayHost
+	}
+	return defaultGatewayHost
+}
 
 func newSSHCommand() *cobra.Command {
 	var gatewayHost string
@@ -98,13 +110,18 @@ Examples:
 				}
 			}
 
+			host := gatewayHost
+			if host == "" {
+				host = resolveGatewayHost(w.Config.Host)
+			}
+
 			s := spin(stderr, fmt.Sprintf("Connecting to %s…", bold(lakeboxID)))
 			s.ok(fmt.Sprintf("Connected to %s", bold(lakeboxID)))
-			return execSSHDirect(lakeboxID, gatewayHost, gatewayPort, keyPath, extraArgs)
+			return execSSHDirect(lakeboxID, host, gatewayPort, keyPath, extraArgs)
 		},
 	}
 
-	cmd.Flags().StringVar(&gatewayHost, "gateway", defaultGatewayHost, "Lakebox gateway hostname")
+	cmd.Flags().StringVar(&gatewayHost, "gateway", "", "Lakebox gateway hostname (auto-detected from profile if empty)")
 	cmd.Flags().StringVar(&gatewayPort, "port", defaultGatewayPort, "Lakebox gateway SSH port")
 
 	return cmd

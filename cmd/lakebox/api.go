@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -277,16 +278,39 @@ func (a *lakeboxAPI) delete(ctx context.Context, id string) error {
 
 // doRequest makes an authenticated HTTP request to the workspace.
 func (a *lakeboxAPI) doRequest(ctx context.Context, method, path string, body io.Reader) (*http.Response, error) {
-	host := strings.TrimRight(a.w.Config.Host, "/")
-	url := host + path
+	// The configured host may be just a hostname or may carry a workspace
+	// selector in the query (e.g. `https://dogfood.staging.databricks.com/?o=...`).
+	// Parse it so we can append the API path while preserving the query, and so
+	// we can pull the workspace ID out of `?o=<id>` when the SDK config doesn't
+	// carry it on a separate `workspace_id` field.
+	parsed, err := url.Parse(a.w.Config.Host)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse host %q: %w", a.w.Config.Host, err)
+	}
+	wsid := a.w.Config.WorkspaceID
+	if wsid == "" {
+		if v := parsed.Query().Get("o"); v != "" {
+			wsid = v
+		}
+	}
+	parsed.Path = strings.TrimRight(parsed.Path, "/") + path
 
-	req, err := http.NewRequestWithContext(ctx, method, url, body)
+	req, err := http.NewRequestWithContext(ctx, method, parsed.String(), body)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
 	if err := a.w.Config.Authenticate(req); err != nil {
 		return nil, fmt.Errorf("failed to authenticate: %w", err)
+	}
+
+	// Multi-workspace gateways (e.g. dogfood.staging.databricks.com) need a
+	// workspace selector to route the request — without it the gateway can't
+	// scope the credential and rejects with "Credential was not sent or was of
+	// an unsupported type for this API". `?o=<id>` in the URL works as a
+	// fallback, but the explicit header is the well-defined contract.
+	if wsid != "" {
+		req.Header.Set("X-Databricks-Org-Id", wsid)
 	}
 
 	if body != nil {
