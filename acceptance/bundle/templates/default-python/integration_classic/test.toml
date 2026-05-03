@@ -1,10 +1,6 @@
 Cloud = true
-# The default-python template's pipeline resource defaults to a hive_metastore
-# catalog when no UC catalog is detected on the workspace. Several test
-# workspaces have HMS disabled, so the deploy fails with
-# "Hive Metastore is not enabled for this workspace; please publish to Unity
-# Catalog." Restrict to UC-enabled workspaces where default_catalog resolves
-# to a real UC catalog and the pipeline gets a proper "catalog:" field.
+# The pipeline resource falls back to a hive_metastore catalog when no UC
+# catalog is detected, so gate on UC to get a real UC catalog instead.
 RequiresUnityCatalog = true
 Timeout = '1m'
 

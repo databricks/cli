@@ -1,11 +1,6 @@
 Env.SERVERLESS = "no"
 
-# The default-python template's pipeline resource defaults to a hive_metastore
-# catalog when no UC catalog is detected on the workspace. Several test
-# workspaces have HMS disabled, so the deploy fails with
-# "Hive Metastore is not enabled for this workspace; please publish to Unity
-# Catalog." Restrict the classic-compute combinations to UC-enabled
-# workspaces where default_catalog resolves to a real UC catalog. The
-# serverless variant is unaffected because the template hardcodes
-# "catalog: main" for serverless pipelines without UC.
+# The pipeline resource falls back to a hive_metastore catalog when no UC
+# catalog is detected, so gate classic combinations on UC. The serverless
+# variant hardcodes "catalog: main" and is unaffected.
 RequiresUnityCatalog = true
