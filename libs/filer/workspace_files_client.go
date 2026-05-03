@@ -338,6 +338,72 @@ func (w *WorkspaceFilesClient) Mkdir(ctx context.Context, name string) error {
 	})
 }
 
+// RemoteFileMetadata describes a single workspace object returned by the
+// list-repo API with return_wsfs_metadata=true.
+type RemoteFileMetadata struct {
+	// Absolute workspace path. Note that for notebooks, the extension is
+	// stripped (e.g. /Workspace/foo/bar.py -> /Workspace/foo/bar).
+	Path string
+
+	// SHA-256 hex digest of the blob. Populated only for FILE and NOTEBOOK
+	// objects (not directories) when the workspace returns wsfs metadata.
+	ContentSHA256Hex string
+
+	// "FILE", "NOTEBOOK", or "DIRECTORY".
+	ObjectType string
+}
+
+// ListWithSHAs recursively lists all workspace objects under the given path
+// and returns their content SHAs from the workspace's wsfs metadata. This uses
+// /api/2.0/workspace/list-repo with the (currently undocumented in the SDK)
+// return_wsfs_metadata=true flag, which causes the response to include a
+// content_sha256_hex field for files and notebooks.
+//
+// Returns nil if the path does not exist; callers should treat that as "no
+// remote state to merge" rather than an error.
+func (w *WorkspaceFilesClient) ListWithSHAs(ctx context.Context, dirPath string) ([]RemoteFileMetadata, error) {
+	type listObject struct {
+		ObjectType       string `json:"object_type"`
+		Path             string `json:"path"`
+		ContentSHA256Hex string `json:"content_sha256_hex"`
+		HasWsfsMetadata  bool   `json:"has_wsfs_metadata"`
+	}
+	type listResponse struct {
+		Objects []listObject `json:"objects"`
+	}
+
+	var resp listResponse
+	err := w.apiClient.Do(
+		ctx,
+		http.MethodGet,
+		"/api/2.0/workspace/list-repo",
+		w.orgIDHeaders(),
+		nil,
+		map[string]any{
+			"path":                 dirPath,
+			"return_wsfs_metadata": true,
+		},
+		&resp,
+	)
+	if err != nil {
+		var aerr *apierr.APIError
+		if errors.As(err, &aerr) && aerr.StatusCode == http.StatusNotFound {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	out := make([]RemoteFileMetadata, 0, len(resp.Objects))
+	for _, o := range resp.Objects {
+		out = append(out, RemoteFileMetadata{
+			Path:             o.Path,
+			ContentSHA256Hex: o.ContentSHA256Hex,
+			ObjectType:       o.ObjectType,
+		})
+	}
+	return out, nil
+}
+
 func (w *WorkspaceFilesClient) Stat(ctx context.Context, name string) (fs.FileInfo, error) {
 	absPath, err := w.root.Join(name)
 	if err != nil {

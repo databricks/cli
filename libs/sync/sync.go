@@ -45,6 +45,24 @@ type SyncOptions struct {
 	DryRun bool
 }
 
+// Sync runs file synchronization in three layers:
+//
+//  1. Discovery (libs/git, libs/fileset): walks the local tree and produces a
+//     list of files to consider, honoring include/exclude rules.
+//
+//  2. Snapshot diff (libs/sync/snapshot.go, libs/sync/diff.go): compares the
+//     discovered files against a local snapshot of mtimes from the previous
+//     run and produces a diff (puts, deletes, mkdirs, rmdirs) — the action
+//     plan for this iteration. If no snapshot exists, every file becomes a
+//     put.
+//
+//  3. Remote filter (libs/sync/remote_filter.go): an optional pre-flight that
+//     fetches content SHAs from the workspace and drops puts whose remote SHA
+//     already matches the local SHA. We only run it when the snapshot is
+//     fresh (no prior state), which is the only case where Layer 2 produces
+//     false-positive puts at scale (e.g. on a CI runner). When a local
+//     snapshot exists, Layer 2 is already accurate enough; paying for a
+//     bulk remote list would be wasted work.
 type Sync struct {
 	*SyncOptions
 
@@ -52,8 +70,9 @@ type Sync struct {
 	includeFileSet *fileset.FileSet
 	excludeFileSet *fileset.FileSet
 
-	snapshot *Snapshot
-	filer    filer.Filer
+	snapshot     *Snapshot
+	filer        filer.Filer
+	remoteFilter *RemoteFilter
 
 	// Synchronization progress events are sent to this event notifier.
 	notifier EventNotifier
@@ -111,9 +130,17 @@ func New(ctx context.Context, opts SyncOptions) (*Sync, error) {
 		}
 	}
 
-	filer, err := filer.NewWorkspaceFilesClient(opts.WorkspaceClient, opts.RemotePath)
+	filerImpl, err := filer.NewWorkspaceFilesClient(opts.WorkspaceClient, opts.RemotePath)
 	if err != nil {
 		return nil, err
+	}
+
+	// The remote SHA list call is not part of the Filer interface (it's a
+	// sync-only optimization, not a general filesystem op), so we type-assert
+	// the concrete client. In tests we plug in a stub via NewWithRemoteFilter.
+	var remoteFilter *RemoteFilter
+	if wfc, ok := filerImpl.(*filer.WorkspaceFilesClient); ok {
+		remoteFilter = NewRemoteFilter(wfc, opts.RemotePath)
 	}
 
 	var notifier EventNotifier
@@ -135,7 +162,8 @@ func New(ctx context.Context, opts SyncOptions) (*Sync, error) {
 		includeFileSet:  includeFileSet,
 		excludeFileSet:  excludeFileSet,
 		snapshot:        snapshot,
-		filer:           filer,
+		filer:           filerImpl,
+		remoteFilter:    remoteFilter,
 		notifier:        notifier,
 		outputWaitGroup: outputWaitGroup,
 		seq:             0,
@@ -178,14 +206,24 @@ func (s *Sync) notifyComplete(ctx context.Context, d diff) {
 // Returns the list of files tracked (and synchronized) by the syncer during the run,
 // and an error if any occurred.
 func (s *Sync) RunOnce(ctx context.Context) ([]fileset.File, error) {
+	// Layer 1: discovery.
 	files, err := s.GetFileList(ctx)
 	if err != nil {
 		return files, err
 	}
 
+	// Layer 2: snapshot-driven action plan.
 	change, err := s.snapshot.diff(ctx, files)
 	if err != nil {
 		return files, err
+	}
+
+	// Layer 3: remote-state filter, only when the snapshot is fresh.
+	// With an existing snapshot, Layer 2 is precise; with no snapshot, every
+	// file is a put — so we ask the workspace what's already there and drop
+	// puts whose contents already match.
+	if s.snapshot.New && s.remoteFilter != nil {
+		change = s.remoteFilter.Apply(ctx, change, files, s.snapshot.LocalToRemoteNames)
 	}
 
 	s.notifyStart(ctx, change)
