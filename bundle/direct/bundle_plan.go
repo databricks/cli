@@ -763,6 +763,17 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 				pat,
 				func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
 					s := p.String()
+					// Resource keys are used as identifiers in plan paths and looked up
+					// via dyn.NewPathFromString, which splits on '.'. A variable reference
+					// in a resource key (e.g. resources.schemas.${var.schema}) cannot be
+					// resolved at this stage and would be split into multiple path
+					// components, causing a nil dereference downstream in PrepareState.
+					// Reject early with an actionable error.
+					for _, c := range p {
+						if dynvar.ContainsVariableReference(c.Key()) {
+							return v, fmt.Errorf("resource key %q cannot contain variable references; use a literal key and parameterize fields like 'name' instead", s)
+						}
+					}
 					resourceType := config.GetResourceTypeFromKey(s)
 					if resourceType == "" {
 						return v, fmt.Errorf("cannot parse resource key: %q", s)
