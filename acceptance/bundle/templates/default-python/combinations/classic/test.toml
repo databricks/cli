@@ -1,6 +1,8 @@
 Env.SERVERLESS = "no"
 
-# The pipeline resource falls back to a hive_metastore catalog when no UC
-# catalog is detected, so gate classic combinations on UC. The serverless
-# variant hardcodes "catalog: main" and is unaffected.
+# The pipeline yaml omits "catalog:" when default_catalog resolves to "" or
+# "hive_metastore" (helper reads metastore.DefaultCatalogName). Without an
+# explicit catalog, DLT falls back to (disabled) hive_metastore. Gate classic
+# combinations on a real UC default catalog; the serverless variant is
+# unaffected because it hardcodes "catalog: main".
 RequiresUnityCatalog = true

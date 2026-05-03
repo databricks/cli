@@ -1,6 +1,8 @@
 Cloud = true
-# The pipeline resource falls back to a hive_metastore catalog when no UC
-# catalog is detected, so gate on UC to get a real UC catalog instead.
+# The pipeline yaml omits "catalog:" when default_catalog resolves to "" or
+# "hive_metastore" (helper reads metastore.DefaultCatalogName). Without an
+# explicit catalog, DLT falls back to (disabled) hive_metastore. Gate on a
+# real UC default catalog.
 RequiresUnityCatalog = true
 Timeout = '1m'
 
