@@ -77,8 +77,8 @@ func (*ResourceVectorSearchIndex) PrepareState(input *resources.VectorSearchInde
 func (*ResourceVectorSearchIndex) RemapState(remote *VectorSearchIndexRemote) *VectorSearchIndexState {
 	state := &VectorSearchIndexState{
 		CreateVectorIndexRequest: vectorsearch.CreateVectorIndexRequest{
-			DeltaSyncIndexSpec:    nil,
-			DirectAccessIndexSpec: nil,
+			DeltaSyncIndexSpec:    nil, // need to remap below
+			DirectAccessIndexSpec: remote.DirectAccessIndexSpec,
 			IndexSubtype:          remote.IndexSubtype,
 			Name:                  remote.Name,
 			EndpointName:          remote.EndpointName,
@@ -97,9 +97,6 @@ func (*ResourceVectorSearchIndex) RemapState(remote *VectorSearchIndexRemote) *V
 			SourceTable:             remote.DeltaSyncIndexSpec.SourceTable,
 			ForceSendFields:         nil,
 		}
-	}
-	if remote.DirectAccessIndexSpec != nil {
-		state.DirectAccessIndexSpec = remote.DirectAccessIndexSpec
 	}
 	return state
 }
