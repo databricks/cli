@@ -42,10 +42,12 @@ Resource: resources.jobs.my_job
 +            Main processing task that runs the notebook.
            notebook_task:
              notebook_path: /Users/{{workspace_user_name}}/notebook
-@@ -40,2 +39,3 @@
+@@ -40,4 +39,5 @@
          - {name: catalog, default: main}
          - {name: schema, default: dev}
 +      timeout_seconds: 3600
+
+ targets:
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
