@@ -1,6 +1,12 @@
 RecordRequests = true
 IncludeRequestHeaders = ["Authorization", "User-Agent", "X-Databricks-Org-Id"]
 
+[Env]
+# MSYS2 (Git Bash on Windows) auto-converts a leading "/" argument to a
+# Windows path (e.g. /api/2.0/... becomes C:/Program Files/Git/api/2.0/...).
+# Disable that so the CLI receives the path verbatim.
+MSYS_NO_PATHCONV = "1"
+
 # Normalize OS-dependent and CI-only User-Agent segments so the recorded
 # requests are stable across local macOS/Linux runs and GitHub Actions.
 [[Repls]]
