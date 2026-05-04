@@ -97,31 +97,31 @@ Deployment complete!
 === Fetch pipeline ID and verify remote state
 >>> [CLI] pipelines get [MY_ID_2]
 {
-  "creator_user_name":"[USERNAME]",
-  "effective_publishing_mode":"DEFAULT_PUBLISHING_MODE",
-  "last_modified":[UNIX_TIME_MILLIS],
-  "name":"test-pipeline-[UNIQUE_NAME]",
-  "pipeline_id":"[MY_ID_2]",
-  "run_as_user_name":"[USERNAME]",
+  "creator_user_name": "[USERNAME]",
+  "effective_publishing_mode": "DEFAULT_PUBLISHING_MODE",
+  "last_modified": [UNIX_TIME_MILLIS],
+  "name": "test-pipeline-[UNIQUE_NAME]",
+  "pipeline_id": "[MY_ID_2]",
+  "run_as_user_name": "[USERNAME]",
   "spec": {
-    "channel":"CURRENT",
+    "channel": "CURRENT",
     "deployment": {
-      "kind":"BUNDLE",
-      "metadata_file_path":"/Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/state/metadata.json"
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/state/metadata.json"
     },
-    "edition":"ADVANCED",
-    "id":"[MY_ID_2]",
+    "edition": "ADVANCED",
+    "id": "[MY_ID_2]",
     "libraries": [
       {
         "file": {
-          "path":"/Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/files/foo.py"
+          "path": "/Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/files/foo.py"
         }
       }
     ],
-    "name":"test-pipeline-[UNIQUE_NAME]",
-    "storage":"dbfs:/pipelines/newcustom"
+    "name": "test-pipeline-[UNIQUE_NAME]",
+    "storage": "dbfs:/pipelines/newcustom"
   },
-  "state":"IDLE"
+  "state": "IDLE"
 }
 
 === Verify that original pipeline is gone

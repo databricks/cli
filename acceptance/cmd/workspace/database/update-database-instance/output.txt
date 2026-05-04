@@ -27,6 +27,6 @@ Exit code: 1
 
 >>> [CLI] database update-database-instance test-db * --json {"stopped": true}
 {
-  "name":"test-db",
-  "stopped":true
+  "name": "test-db",
+  "stopped": true
 }

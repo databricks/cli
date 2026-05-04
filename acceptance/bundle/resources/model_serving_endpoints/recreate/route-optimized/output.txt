@@ -49,22 +49,22 @@ Deployment complete!
   "config": {
     "served_entities": [
       {
-        "entity_name":"system.ai.llama_v3_2_1b_instruct",
-        "entity_version":"1",
-        "name":"llama",
-        "scale_to_zero_enabled":true,
-        "workload_size":"Small"
+        "entity_name": "system.ai.llama_v3_2_1b_instruct",
+        "entity_version": "1",
+        "name": "llama",
+        "scale_to_zero_enabled": true,
+        "workload_size": "Small"
       }
     ]
   },
-  "creator":"[USERNAME]",
-  "id":"[UUID]",
-  "name":"[ORIGINAL_ENDPOINT_ID]",
-  "permission_level":"CAN_MANAGE",
-  "route_optimized":true,
+  "creator": "[USERNAME]",
+  "id": "[UUID]",
+  "name": "[ORIGINAL_ENDPOINT_ID]",
+  "permission_level": "CAN_MANAGE",
+  "route_optimized": true,
   "state": {
-    "config_update":"NOT_UPDATING",
-    "ready":"NOT_READY"
+    "config_update": "NOT_UPDATING",
+    "ready": "NOT_READY"
   }
 }
 

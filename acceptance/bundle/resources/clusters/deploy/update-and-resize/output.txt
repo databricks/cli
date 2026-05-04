@@ -44,22 +44,22 @@ Deployment complete!
 
 === Starting the cluster
 {
-  "autotermination_minutes":60,
+  "autotermination_minutes": 60,
   "aws_attributes": {
-    "availability":"SPOT_WITH_FALLBACK",
-    "zone_id":"us-east-1c"
+    "availability": "SPOT_WITH_FALLBACK",
+    "zone_id": "us-east-1c"
   },
-  "cluster_id":"[CLUSTER_ID]",
-  "cluster_name":"test-cluster-[UNIQUE_NAME]",
-  "driver_node_type_id":"[NODE_TYPE_ID]",
-  "enable_elastic_disk":false,
-  "node_type_id":"[NODE_TYPE_ID]",
-  "num_workers":3,
+  "cluster_id": "[CLUSTER_ID]",
+  "cluster_name": "test-cluster-[UNIQUE_NAME]",
+  "driver_node_type_id": "[NODE_TYPE_ID]",
+  "enable_elastic_disk": false,
+  "node_type_id": "[NODE_TYPE_ID]",
+  "num_workers": 3,
   "spark_conf": {
-    "spark.executor.memory":"2g"
+    "spark.executor.memory": "2g"
   },
-  "spark_version":"13.3.x-snapshot-scala2.12",
-  "state":"RUNNING"
+  "spark_version": "13.3.x-snapshot-scala2.12",
+  "state": "RUNNING"
 }
 
 === Changing num_workers should call resize API on running cluster

@@ -20,38 +20,38 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
     {
       "all_permissions": [
         {
-          "inherited":false,
-          "permission_level":"CAN_VIEW"
+          "inherited": false,
+          "permission_level": "CAN_VIEW"
         }
       ],
-      "display_name":"viewer@example.com",
-      "user_name":"viewer@example.com"
+      "display_name": "viewer@example.com",
+      "user_name": "viewer@example.com"
     },
     {
       "all_permissions": [
         {
-          "inherited":false,
-          "permission_level":"IS_OWNER"
+          "inherited": false,
+          "permission_level": "IS_OWNER"
         }
       ],
-      "display_name":"[USERNAME]",
-      "user_name":"[USERNAME]"
+      "display_name": "[USERNAME]",
+      "user_name": "[USERNAME]"
     },
     {
       "all_permissions": [
         {
-          "inherited":true,
+          "inherited": true,
           "inherited_from_object": [
             "/jobs/"
           ],
-          "permission_level":"CAN_MANAGE"
+          "permission_level": "CAN_MANAGE"
         }
       ],
-      "group_name":"admins"
+      "group_name": "admins"
     }
   ],
-  "object_id":"/jobs/[JOB_WITH_PERMISSIONS_ID]",
-  "object_type":"job"
+  "object_id": "/jobs/[JOB_WITH_PERMISSIONS_ID]",
+  "object_type": "job"
 }
 
 === Add permissions out of band
@@ -61,47 +61,47 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
     {
       "all_permissions": [
         {
-          "inherited":false,
-          "permission_level":"IS_OWNER"
+          "inherited": false,
+          "permission_level": "IS_OWNER"
         }
       ],
-      "display_name":"[USERNAME]",
-      "user_name":"[USERNAME]"
+      "display_name": "[USERNAME]",
+      "user_name": "[USERNAME]"
     },
     {
       "all_permissions": [
         {
-          "inherited":false,
-          "permission_level":"CAN_VIEW"
+          "inherited": false,
+          "permission_level": "CAN_VIEW"
         }
       ],
-      "display_name":"viewer@example.com",
-      "user_name":"viewer@example.com"
+      "display_name": "viewer@example.com",
+      "user_name": "viewer@example.com"
     },
     {
       "all_permissions": [
         {
-          "inherited":false,
-          "permission_level":"CAN_MANAGE"
+          "inherited": false,
+          "permission_level": "CAN_MANAGE"
         }
       ],
-      "group_name":"admin-team"
+      "group_name": "admin-team"
     },
     {
       "all_permissions": [
         {
-          "inherited":true,
+          "inherited": true,
           "inherited_from_object": [
             "/jobs/"
           ],
-          "permission_level":"CAN_MANAGE"
+          "permission_level": "CAN_MANAGE"
         }
       ],
-      "group_name":"admins"
+      "group_name": "admins"
     }
   ],
-  "object_id":"/jobs/[JOB_WITH_PERMISSIONS_ID]",
-  "object_type":"job"
+  "object_id": "/jobs/[JOB_WITH_PERMISSIONS_ID]",
+  "object_type": "job"
 }
 
 >>> [CLI] bundle plan
@@ -126,36 +126,36 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
     {
       "all_permissions": [
         {
-          "inherited":false,
-          "permission_level":"CAN_VIEW"
+          "inherited": false,
+          "permission_level": "CAN_VIEW"
         }
       ],
-      "display_name":"viewer@example.com",
-      "user_name":"viewer@example.com"
+      "display_name": "viewer@example.com",
+      "user_name": "viewer@example.com"
     },
     {
       "all_permissions": [
         {
-          "inherited":false,
-          "permission_level":"IS_OWNER"
+          "inherited": false,
+          "permission_level": "IS_OWNER"
         }
       ],
-      "display_name":"[USERNAME]",
-      "user_name":"[USERNAME]"
+      "display_name": "[USERNAME]",
+      "user_name": "[USERNAME]"
     },
     {
       "all_permissions": [
         {
-          "inherited":true,
+          "inherited": true,
           "inherited_from_object": [
             "/jobs/"
           ],
-          "permission_level":"CAN_MANAGE"
+          "permission_level": "CAN_MANAGE"
         }
       ],
-      "group_name":"admins"
+      "group_name": "admins"
     }
   ],
-  "object_id":"/jobs/[JOB_WITH_PERMISSIONS_ID]",
-  "object_type":"job"
+  "object_id": "/jobs/[JOB_WITH_PERMISSIONS_ID]",
+  "object_type": "job"
 }

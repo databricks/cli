@@ -4,8 +4,8 @@ hello
 
 >>> [CLI] bundle run me
 {
-  "id":"[USERID]",
-  "userName":"[USERNAME]"
+  "id": "[USERID]",
+  "userName": "[USERNAME]"
 }
 
 >>> [CLI] bundle run foo arg1 arg2

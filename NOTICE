@@ -155,10 +155,6 @@ mattn/go-isatty - https://github.com/mattn/go-isatty
 Copyright (c) Yasuhiro MATSUMOTO <mattn.jp@gmail.com>
 License - https://github.com/mattn/go-isatty/blob/master/LICENSE
 
-nwidger/jsoncolor - https://github.com/nwidger/jsoncolor
-Copyright (c) 2016 Niels Widger
-License - https://github.com/nwidger/jsoncolor/blob/master/LICENSE
-
 sabhiram/go-gitignore - https://github.com/sabhiram/go-gitignore
 Copyright (c) 2015 Shaba Abhiram
 License - https://github.com/sabhiram/go-gitignore/blob/master/LICENSE

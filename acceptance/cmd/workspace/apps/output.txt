@@ -3,82 +3,82 @@
 >>> [CLI] apps create --json @input.json
 {
   "active_deployment": {
-    "deployment_id":"deploy-[NUMID]",
-    "source_code_path":"/Workspace/Users/[USERNAME]/test-name",
+    "deployment_id": "deploy-[NUMID]",
+    "source_code_path": "/Workspace/Users/[USERNAME]/test-name",
     "status": {
-      "message":"Deployment succeeded",
-      "state":"SUCCEEDED"
+      "message": "Deployment succeeded",
+      "state": "SUCCEEDED"
     }
   },
   "app_status": {
-    "message":"Application is running.",
-    "state":"RUNNING"
+    "message": "Application is running.",
+    "state": "RUNNING"
   },
-  "compute_size":"MEDIUM",
+  "compute_size": "MEDIUM",
   "compute_status": {
-    "message":"App compute is active.",
-    "state":"ACTIVE"
+    "message": "App compute is active.",
+    "state": "ACTIVE"
   },
-  "default_source_code_path":"/Workspace/Users/[USERNAME]/test-name",
-  "description":"My app description.",
-  "id":"1000",
-  "name":"test-name",
+  "default_source_code_path": "/Workspace/Users/[USERNAME]/test-name",
+  "description": "My app description.",
+  "id": "1000",
+  "name": "test-name",
   "resources": [
     {
-      "description":"API key for external service.",
-      "name":"api-key",
+      "description": "API key for external service.",
+      "name": "api-key",
       "secret": {
-        "key":"my-key",
-        "permission":"READ",
-        "scope":"my-scope"
+        "key": "my-key",
+        "permission": "READ",
+        "scope": "my-scope"
       }
     }
   ],
-  "service_principal_client_id":"[UUID]",
-  "service_principal_id":[NUMID],
-  "service_principal_name":"app-test-name",
-  "url":"test-name-123.cloud.databricksapps.com"
+  "service_principal_client_id": "[UUID]",
+  "service_principal_id": [NUMID],
+  "service_principal_name": "app-test-name",
+  "url": "test-name-123.cloud.databricksapps.com"
 }
 
 === Apps update with correct input
 >>> [CLI] apps update test-name --json @input.json
 {
   "active_deployment": {
-    "deployment_id":"deploy-[NUMID]",
-    "source_code_path":"/Workspace/Users/[USERNAME]/test-name",
+    "deployment_id": "deploy-[NUMID]",
+    "source_code_path": "/Workspace/Users/[USERNAME]/test-name",
     "status": {
-      "message":"Deployment succeeded",
-      "state":"SUCCEEDED"
+      "message": "Deployment succeeded",
+      "state": "SUCCEEDED"
     }
   },
   "app_status": {
-    "message":"Application is running.",
-    "state":"RUNNING"
+    "message": "Application is running.",
+    "state": "RUNNING"
   },
-  "compute_size":"MEDIUM",
+  "compute_size": "MEDIUM",
   "compute_status": {
-    "message":"App compute is active.",
-    "state":"ACTIVE"
+    "message": "App compute is active.",
+    "state": "ACTIVE"
   },
-  "default_source_code_path":"/Workspace/Users/[USERNAME]/test-name",
-  "description":"My app description.",
-  "id":"1001",
-  "name":"test-name",
+  "default_source_code_path": "/Workspace/Users/[USERNAME]/test-name",
+  "description": "My app description.",
+  "id": "1001",
+  "name": "test-name",
   "resources": [
     {
-      "description":"API key for external service.",
-      "name":"api-key",
+      "description": "API key for external service.",
+      "name": "api-key",
       "secret": {
-        "key":"my-key",
-        "permission":"READ",
-        "scope":"my-scope"
+        "key": "my-key",
+        "permission": "READ",
+        "scope": "my-scope"
       }
     }
   ],
-  "service_principal_client_id":"[UUID]",
-  "service_principal_id":[NUMID],
-  "service_principal_name":"app-test-name",
-  "url":"test-name-123.cloud.databricksapps.com"
+  "service_principal_client_id": "[UUID]",
+  "service_principal_id": [NUMID],
+  "service_principal_name": "app-test-name",
+  "url": "test-name-123.cloud.databricksapps.com"
 }
 
 === Apps update with missing parameter

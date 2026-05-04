@@ -17,7 +17,6 @@ import (
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/listing"
 	"github.com/fatih/color"
-	"github.com/nwidger/jsoncolor"
 )
 
 // Heredoc is the equivalent of compute.TrimLeadingWhitespace
@@ -177,8 +176,10 @@ type defaultRenderer struct {
 	t any
 }
 
-func (d defaultRenderer) renderJson(_ context.Context, w writeFlusher) error {
-	pretty, err := fancyJSON(d.t)
+func (d defaultRenderer) renderJson(ctx context.Context, w writeFlusher) error {
+	c := fromContext(ctx)
+	colorize := c.capabilities.stdoutIsTTY && c.capabilities.color
+	pretty, err := marshalJSON(d.t, colorize)
 	if err != nil {
 		return err
 	}
@@ -329,7 +330,10 @@ var renderFuncMap = template.FuncMap{
 		if err != nil {
 			return "", err
 		}
-		b, err := fancyJSON(tmp)
+		// Mirror the other helpers in this map (red/green/etc.) by gating
+		// on fatih/color's global NoColor flag, which is set per-process
+		// based on stdout being a TTY.
+		b, err := marshalJSON(tmp, !color.NoColor)
 		if err != nil {
 			return "", err
 		}
@@ -391,23 +395,6 @@ func renderUsingTemplate(ctx context.Context, r templateRenderer, w io.Writer, h
 		return err
 	}
 	return tw.Flush()
-}
-
-func fancyJSON(v any) ([]byte, error) {
-	// create custom formatter
-	f := jsoncolor.NewFormatter()
-
-	// set custom colors
-	f.StringColor = color.New(color.FgGreen)
-	f.TrueColor = color.New(color.FgGreen, color.Bold)
-	f.FalseColor = color.New(color.FgRed)
-	f.NumberColor = color.New(color.FgCyan)
-	f.NullColor = color.New(color.FgMagenta)
-	f.ObjectColor = color.New(color.Reset)
-	f.CommaColor = color.New(color.Reset)
-	f.ColonColor = color.New(color.Reset)
-
-	return jsoncolor.MarshalIndentWithFormatter(v, "", "  ", f)
 }
 
 const errorTemplate = `{{ "Error" | red }}: {{ .Summary }}

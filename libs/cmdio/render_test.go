@@ -108,8 +108,8 @@ var testCases = []testCase{
 		v:            dummyWorkspace1,
 		outputFormat: flags.OutputText,
 		expected: `{
-  "workspace_id":123,
-  "workspace_name":"abc"
+  "workspace_id": 123,
+  "workspace_name": "abc"
 }
 `,
 	},

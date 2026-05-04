@@ -9,18 +9,18 @@ Deployment complete!
 === Simulate remote drift: change min_qps to 5 outside the bundle
 >>> [CLI] vector-search-endpoints patch-endpoint vs-endpoint-[UNIQUE_NAME] --min-qps 5
 {
-  "creation_timestamp":[UNIX_TIME_MILLIS][0],
-  "creator":"[USERNAME]",
+  "creation_timestamp": [UNIX_TIME_MILLIS][0],
+  "creator": "[USERNAME]",
   "endpoint_status": {
-    "state":"ONLINE"
+    "state": "ONLINE"
   },
-  "endpoint_type":"STANDARD",
-  "id":"[MY_ENDPOINT_UUID]",
-  "last_updated_timestamp":[UNIX_TIME_MILLIS][1],
-  "last_updated_user":"[USERNAME]",
-  "name":"vs-endpoint-[UNIQUE_NAME]",
+  "endpoint_type": "STANDARD",
+  "id": "[MY_ENDPOINT_UUID]",
+  "last_updated_timestamp": [UNIX_TIME_MILLIS][1],
+  "last_updated_user": "[USERNAME]",
+  "name": "vs-endpoint-[UNIQUE_NAME]",
   "scaling_info": {
-    "requested_min_qps":5
+    "requested_min_qps": 5
   }
 }
 

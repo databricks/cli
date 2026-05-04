@@ -4,11 +4,11 @@
 
 >>> [CLI] repos get /Repos/me@databricks.com/test-repo -o json
 {
-  "branch":"main",
-  "id":[NUMID],
-  "path":"/Repos/me@databricks.com/test-repo",
-  "provider":"gitHub",
-  "url":"https://github.com/databricks/databricks-empty-ide-project.git"
+  "branch": "main",
+  "id": [NUMID],
+  "path": "/Repos/me@databricks.com/test-repo",
+  "provider": "gitHub",
+  "url": "https://github.com/databricks/databricks-empty-ide-project.git"
 }
 
 >>> [CLI] repos delete /Repos/me@databricks.com/test-repo
