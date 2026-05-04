@@ -14,6 +14,7 @@ title "Change endpoint_type (should recreate endpoint AND its dependent index)"
 trace update_file.py databricks.yml "endpoint_type: STANDARD" "endpoint_type: STORAGE_OPTIMIZED"
 
 trace $CLI bundle plan
+trace $CLI bundle plan --output json
 rm -f out.requests.txt
 trace $CLI bundle deploy --auto-approve
 

@@ -1,1 +1,1 @@
-Badness = "Recreating a vector_search_endpoint should propagate Recreate to dependent vector_search_indexes (and any other resource), but the planner does not. The dependent index plans Skip while the endpoint deletes underneath it. On a real workspace this either fails the endpoint delete (indexes still attached) or orphans the index. Tracked as a framework-level fix; until then the index must be recreated manually after an endpoint recreate."
+Cloud = false
