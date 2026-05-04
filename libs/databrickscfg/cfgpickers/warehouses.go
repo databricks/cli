@@ -15,7 +15,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/httpclient"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/fatih/color"
-	"github.com/manifoldco/promptui"
 )
 
 var ErrNoCompatibleWarehouses = errors.New("no compatible warehouses")
@@ -225,7 +224,6 @@ func SelectWarehouse(ctx context.Context, w *databricks.WorkspaceClient, descrip
 	if description != "" {
 		cmdio.LogString(ctx, description)
 	}
-	promptui.SearchPrompt = "Search: "
 	warehouseId, err := cmdio.SelectOrdered(ctx, items, "warehouse\n")
 	if err != nil {
 		return "", err
