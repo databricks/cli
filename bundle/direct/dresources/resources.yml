@@ -424,7 +424,12 @@ resources:
         reason: managed
       - field: gcp_attributes
         reason: managed
-
+      # cluster_id is a server-assigned identifier stored in state for reference. PrepareState never
+      # sets it (input carries no ID), so after the first deploy ch.Old="<id>" while ch.New/Remote="",
+      # triggering "remote_already_set". OverrideChangeDesc drops it from the plan; this entry exists
+      # so that the TestAll ignore filter skips the cluster_id assertion.
+      - field: cluster_id
+        reason: identifier
     backend_defaults:
       # lifecycle.started is derived from remote cluster state in RemapState, so the
       # remote side always has a value. When the user omits lifecycle from config,

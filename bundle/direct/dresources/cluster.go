@@ -17,20 +17,15 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/compute"
 )
 
-// ClusterStateLifecycle holds lifecycle settings persisted in state.
-type ClusterStateLifecycle struct {
-	Started *bool `json:"started,omitempty"`
-}
-
 // ClusterState is the state type for Cluster resources. It extends compute.ClusterSpec with
-// lifecycle settings and a transient ClusterId used by WaitAfterCreate and WaitAfterUpdate.
+// lifecycle settings and the cluster ID.
+// ClusterId is written to state by DoCreate/DoUpdate for informational purposes; it is not
+// used in diff computation (neither PrepareState nor RemapState set it).
 type ClusterState struct {
 	compute.ClusterSpec
 
-	// ClusterId is set by DoCreate/DoUpdate for use in WaitAfterCreate/WaitAfterUpdate; it is not persisted in state.
-	ClusterId string `json:"-"`
-
-	Lifecycle *ClusterStateLifecycle `json:"lifecycle,omitempty"`
+	ClusterId string          `json:"cluster_id,omitempty"`
+	Lifecycle *StateLifecycle `json:"lifecycle,omitempty"`
 }
 
 // Custom marshalers needed because embedded compute.ClusterSpec has its own MarshalJSON
@@ -48,7 +43,7 @@ func (s ClusterState) MarshalJSON() ([]byte, error) {
 // Lifecycle.Started is populated by DoRead from the cluster's running state.
 type ClusterRemote struct {
 	compute.ClusterDetails
-	Lifecycle *ClusterStateLifecycle `json:"lifecycle,omitempty"`
+	Lifecycle *StateLifecycle `json:"lifecycle,omitempty"`
 }
 
 func (r *ClusterRemote) UnmarshalJSON(b []byte) error {
@@ -71,12 +66,11 @@ func (r *ResourceCluster) New(client *databricks.WorkspaceClient) any {
 
 func (r *ResourceCluster) PrepareState(input *resources.Cluster) *ClusterState {
 	s := &ClusterState{
-		ClusterId:   input.ID,
 		ClusterSpec: input.ClusterSpec,
 		Lifecycle:   nil,
 	}
 	if input.Lifecycle != nil && input.Lifecycle.Started != nil {
-		s.Lifecycle = &ClusterStateLifecycle{Started: input.Lifecycle.Started}
+		s.Lifecycle = &StateLifecycle{Started: input.Lifecycle.Started}
 	}
 	return s
 }
@@ -86,7 +80,6 @@ func (r *ResourceCluster) PrepareState(input *resources.Cluster) *ClusterState {
 func (r *ResourceCluster) RemapState(input *ClusterRemote) *ClusterState {
 	started := input.State == compute.StateRunning
 	spec := &ClusterState{
-		ClusterId: input.ClusterId,
 		ClusterSpec: compute.ClusterSpec{
 			ApplyPolicyDefaultValues:   false,
 			Autoscale:                  input.Autoscale,
@@ -124,7 +117,7 @@ func (r *ResourceCluster) RemapState(input *ClusterRemote) *ClusterState {
 			WorkerNodeTypeFlexibility:  input.WorkerNodeTypeFlexibility,
 			ForceSendFields:            utils.FilterFields[compute.ClusterSpec](input.ForceSendFields),
 		},
-		Lifecycle: &ClusterStateLifecycle{Started: &started},
+		Lifecycle: &StateLifecycle{Started: &started},
 	}
 	if input.Spec != nil {
 		spec.ApplyPolicyDefaultValues = input.Spec.ApplyPolicyDefaultValues
@@ -140,7 +133,7 @@ func (r *ResourceCluster) DoRead(ctx context.Context, id string) (*ClusterRemote
 	started := details.State == compute.StateRunning
 	return &ClusterRemote{
 		ClusterDetails: *details,
-		Lifecycle:      &ClusterStateLifecycle{Started: &started},
+		Lifecycle:      &StateLifecycle{Started: &started},
 	}, nil
 }
 
@@ -149,8 +142,6 @@ func (r *ResourceCluster) DoCreate(ctx context.Context, config *ClusterState) (s
 	if err != nil {
 		return "", nil, err
 	}
-	// Store cluster ID in memory for WaitAfterCreate to use.
-	// This does not affect state serialization because ClusterId uses json:"-".
 	config.ClusterId = wait.ClusterId
 	return wait.ClusterId, nil, nil
 }
@@ -173,7 +164,6 @@ func hasClusterChanges(entry *PlanEntry) bool {
 }
 
 func (r *ResourceCluster) DoUpdate(ctx context.Context, id string, config *ClusterState, entry *PlanEntry) (*ClusterRemote, error) {
-	// Store cluster ID for WaitAfterUpdate to use.
 	config.ClusterId = id
 
 	if hasClusterChanges(entry) {
@@ -271,12 +261,21 @@ func (r *ResourceCluster) DoDelete(ctx context.Context, id string) error {
 }
 
 func (r *ResourceCluster) OverrideChangeDesc(ctx context.Context, p *structpath.PathNode, change *ChangeDesc, remoteState *ClusterRemote) error {
-	// We're only interested in downgrading some updates to skips. Changes that already skipped or cause recreation should remain unchanged.
+	path := p.Prefix(1).String()
+
+	// cluster_id is stored in state for informational purposes only; it must not appear in plan output.
+	// PrepareState never sets it (input has no ID), so after the first deploy ch.Old="<id>" while ch.New="",
+	// causing a spurious Skip entry. Drop it unconditionally so it never pollutes plan JSON.
+	if path == "cluster_id" {
+		change.Reason = deployplan.ReasonDrop
+		return nil
+	}
+
+	// Remaining overrides only apply to Update actions.
 	if change.Action != deployplan.Update {
 		return nil
 	}
 
-	path := p.Prefix(1).String()
 	switch path {
 	case "data_security_mode":
 		// We do change skip here in the same way TF provider does suppress diff if the alias is used.

@@ -18,11 +18,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/apps"
 )
 
-// AppStateLifecycle holds lifecycle settings persisted in state.
-type AppStateLifecycle struct {
-	Started *bool `json:"started,omitempty"`
-}
-
 // AppState is the state type for App resources. It extends apps.App with deployment-related
 // fields (source_code_path, config, git_source, lifecycle) that are persisted in state.
 type AppState struct {
@@ -30,7 +25,7 @@ type AppState struct {
 	SourceCodePath string               `json:"source_code_path,omitempty"`
 	Config         *resources.AppConfig `json:"config,omitempty"`
 	GitSource      *apps.GitSource      `json:"git_source,omitempty"`
-	Lifecycle      *AppStateLifecycle   `json:"lifecycle,omitempty"`
+	Lifecycle      *StateLifecycle      `json:"lifecycle,omitempty"`
 }
 
 // AppRemote extends apps.App with the same deployment fields as AppState so they
@@ -40,7 +35,7 @@ type AppRemote struct {
 	SourceCodePath string               `json:"source_code_path,omitempty"`
 	Config         *resources.AppConfig `json:"config,omitempty"`
 	GitSource      *apps.GitSource      `json:"git_source,omitempty"`
-	Lifecycle      *AppStateLifecycle   `json:"lifecycle,omitempty"`
+	Lifecycle      *StateLifecycle      `json:"lifecycle,omitempty"`
 }
 
 // Custom marshalers needed because embedded apps.App has its own MarshalJSON
@@ -78,7 +73,7 @@ func (*ResourceApp) PrepareState(input *resources.App) *AppState {
 		Lifecycle:      nil,
 	}
 	if input.Lifecycle != nil && input.Lifecycle.Started != nil {
-		s.Lifecycle = &AppStateLifecycle{Started: input.Lifecycle.Started}
+		s.Lifecycle = &StateLifecycle{Started: input.Lifecycle.Started}
 	}
 	return s
 }
@@ -94,7 +89,7 @@ func (*ResourceApp) RemapState(remote *AppRemote) *AppState {
 		SourceCodePath: remote.SourceCodePath,
 		Config:         remote.Config,
 		GitSource:      remote.GitSource,
-		Lifecycle:      &AppStateLifecycle{Started: &started},
+		Lifecycle:      &StateLifecycle{Started: &started},
 	}
 }
 
@@ -109,7 +104,7 @@ func (r *ResourceApp) DoRead(ctx context.Context, id string) (*AppRemote, error)
 		Config:         nil,
 		GitSource:      nil,
 		SourceCodePath: "",
-		Lifecycle:      &AppStateLifecycle{Started: &started},
+		Lifecycle:      &StateLifecycle{Started: &started},
 	}
 	if app.ActiveDeployment != nil {
 		// The source code path in active deployment is snapshotted version of the source code path in the app.
@@ -367,7 +362,7 @@ func (r *ResourceApp) waitForApp(ctx context.Context, w *databricks.WorkspaceCli
 		Config:         nil,
 		GitSource:      nil,
 		SourceCodePath: "",
-		Lifecycle:      &AppStateLifecycle{Started: &started},
+		Lifecycle:      &StateLifecycle{Started: &started},
 	}
 	if app.ActiveDeployment != nil {
 		remote.SourceCodePath = app.DefaultSourceCodePath

@@ -23,6 +23,10 @@ type PostgresNameComponents struct {
 	EndpointID string
 }
 
+type StateLifecycle struct {
+	Started *bool `json:"started,omitempty"`
+}
+
 // ParsePostgresName extracts project, branch, and endpoint IDs from a hierarchical Postgres resource name.
 // Returns an error if the name doesn't match the expected format.
 func ParsePostgresName(name string) (PostgresNameComponents, error) {
