@@ -18,9 +18,6 @@ type PromptOptions struct {
 	// (use '*' for password-style input).
 	Mask rune
 
-	// AllowEdit lets the user edit Default rather than overwriting it.
-	AllowEdit bool
-
 	// Validate, when set, is called on every keystroke; returning a non-nil
 	// error keeps the prompt open and shows the error to the user.
 	Validate func(input string) error
@@ -30,13 +27,12 @@ type PromptOptions struct {
 func RunPrompt(ctx context.Context, opts PromptOptions) (string, error) {
 	c := fromContext(ctx)
 	p := promptui.Prompt{
-		Label:     opts.Label,
-		Default:   opts.Default,
-		Mask:      opts.Mask,
-		AllowEdit: opts.AllowEdit,
-		Validate:  opts.Validate,
-		Stdin:     c.promptStdin(),
-		Stdout:    nopWriteCloser{c.err},
+		Label:    opts.Label,
+		Default:  opts.Default,
+		Mask:     opts.Mask,
+		Validate: opts.Validate,
+		Stdin:    c.promptStdin(),
+		Stdout:   nopWriteCloser{c.err},
 	}
 	return p.Run()
 }

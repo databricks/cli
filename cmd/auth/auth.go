@@ -56,8 +56,7 @@ func promptForAccountID(ctx context.Context) (string, error) {
 	}
 
 	return cmdio.RunPrompt(ctx, cmdio.PromptOptions{
-		Label:     "Databricks account ID",
-		AllowEdit: true,
+		Label: "Databricks account ID",
 	})
 }
 
