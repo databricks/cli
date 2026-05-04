@@ -33,5 +33,5 @@ go test ./integration/...
 Alternatively:
 
 ```bash
-make integration
+./task integration
 ```

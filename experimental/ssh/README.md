@@ -19,7 +19,7 @@ databricks ssh connect --cluster=id
 
 ## Development
 ```shell
-make build snapshot-release
+./task build snapshot-release
 ./cli ssh connect --cluster=<id> --releases-dir=./dist --debug # or modify ssh config accordingly
 ```
 
