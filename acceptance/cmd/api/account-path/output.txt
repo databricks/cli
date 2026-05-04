@@ -1,6 +1,6 @@
 {}
 
->>> print_requests.py --get --keep //api/2.0/accounts/abc-123/network-policies
+>>> print_requests.py --get //api/2.0/accounts/abc-123/network-policies
 {
   "headers": {
     "Authorization": [

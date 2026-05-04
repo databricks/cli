@@ -1,6 +1,6 @@
 {}
 
->>> print_requests.py --get --keep //api/2.0/preview/accounts/access-control/rule-sets
+>>> print_requests.py --get //api/2.0/preview/accounts/access-control/rule-sets
 {
   "headers": {
     "Authorization": [

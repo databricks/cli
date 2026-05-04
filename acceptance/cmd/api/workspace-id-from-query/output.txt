@@ -1,6 +1,6 @@
 {}
 
->>> print_requests.py --get --keep //api/2.0/clusters/list
+>>> print_requests.py --get //api/2.0/clusters/list
 {
   "headers": {
     "Authorization": [
