@@ -13,7 +13,9 @@ job_id="$(read_id.py test_job)"
 
 edit_resource.py jobs $job_id <<EOF
 r["max_concurrent_runs"] = 3
-r["tags"] = {"env": "test"}
+# Add tag without replacing the map — dev mode auto-adds a "dev" tag and we
+# don't want the diff to show that as removed.
+r.setdefault("tags", {})["env"] = "test"
 EOF
 
 title "JSON output format"
