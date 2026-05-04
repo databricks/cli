@@ -2,7 +2,9 @@ package testserver
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"encoding/binary"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -452,6 +454,56 @@ func (s *FakeWorkspace) WorkspaceFilesExportFile(path string) []byte {
 	defer s.LockUnlock()()
 
 	return s.files[path].Data
+}
+
+// WorkspaceListRepo returns the recursive listing under root used by the
+// /api/2.0/workspace/list-repo endpoint. The CLI calls this with
+// return_wsfs_metadata=true, expecting a content_sha256_hex per file/notebook.
+func (s *FakeWorkspace) WorkspaceListRepo(root string) any {
+	if !strings.HasPrefix(root, "/") {
+		root = "/" + root
+	}
+
+	defer s.LockUnlock()()
+
+	type listObject struct {
+		ObjectType       string `json:"object_type"`
+		Path             string `json:"path"`
+		ContentSHA256Hex string `json:"content_sha256_hex,omitempty"`
+		HasWsfsMetadata  bool   `json:"has_wsfs_metadata,omitempty"`
+		Size             int    `json:"size,omitempty"`
+		Language         string `json:"language,omitempty"`
+	}
+
+	var objects []listObject
+	if _, ok := s.directories[root]; ok {
+		objects = append(objects, listObject{ObjectType: "DIRECTORY", Path: root})
+	}
+	for p, dir := range s.directories {
+		if p == root || !strings.HasPrefix(p, root+"/") {
+			continue
+		}
+		objects = append(objects, listObject{ObjectType: "DIRECTORY", Path: dir.Path})
+	}
+	for p, fe := range s.files {
+		if !strings.HasPrefix(p, root+"/") {
+			continue
+		}
+		sum := sha256.Sum256(fe.Data)
+		obj := listObject{
+			ObjectType:       string(fe.Info.ObjectType),
+			Path:             fe.Info.Path,
+			ContentSHA256Hex: hex.EncodeToString(sum[:]),
+			HasWsfsMetadata:  true,
+			Size:             len(fe.Data),
+		}
+		if fe.Info.Language != "" {
+			obj.Language = string(fe.Info.Language)
+		}
+		objects = append(objects, obj)
+	}
+
+	return map[string]any{"objects": objects}
 }
 
 // FileExists checks if a file exists at the given path.
