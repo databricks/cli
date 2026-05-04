@@ -265,7 +265,7 @@ workspace:
 	}()
 
 	// Verify the prompt fires by reading output from stderr.
-	// promptui with StartInSearchMode writes a search cursor first.
+	// cmdio.RunSelect with StartInSearchMode writes a search cursor first.
 	line, _, readErr := io.Stderr.ReadLine()
 	if assert.NoError(t, readErr, "expected prompt output on stderr") {
 		assert.Contains(t, string(line), "Search:")
