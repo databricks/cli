@@ -8,6 +8,7 @@ OK  	deploy.direct	/api/2.0/workspace/get-status	engine/direct
 OK  	deploy.direct	/api/2.0/workspace/get-status	engine/direct
 OK  	deploy.direct	/api/2.0/workspace/get-status	engine/direct
 OK  	deploy.direct	/api/2.0/workspace/get-status	engine/direct
+OK  	deploy.direct	/api/2.0/workspace/list-repo	engine/direct
 OK  	deploy.direct	/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/empty.py	engine/direct
 OK  	deploy.direct	/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock	engine/direct
 OK  	deploy.direct	/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json	engine/direct
@@ -28,6 +29,7 @@ OK  	deploy.terraform	/api/2.0/workspace/get-status	engine/terraform
 OK  	deploy.terraform	/api/2.0/workspace/get-status	engine/terraform
 OK  	deploy.terraform	/api/2.0/workspace/get-status	engine/terraform
 OK  	deploy.terraform	/api/2.0/workspace/get-status	engine/terraform
+OK  	deploy.terraform	/api/2.0/workspace/list-repo	engine/terraform
 OK  	deploy.terraform	/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/empty.py	engine/terraform
 OK  	deploy.terraform	/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock	engine/terraform
 OK  	deploy.terraform	/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json	engine/terraform
