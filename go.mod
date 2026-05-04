@@ -41,7 +41,7 @@ require (
 	golang.org/x/oauth2 v0.36.0 // BSD-3-Clause
 	golang.org/x/sync v0.20.0 // BSD-3-Clause
 	golang.org/x/sys v0.43.0 // BSD-3-Clause
-	golang.org/x/text v0.35.0 // BSD-3-Clause
+	golang.org/x/text v0.36.0 // BSD-3-Clause
 	gopkg.in/ini.v1 v1.67.1 // Apache-2.0
 )
 
