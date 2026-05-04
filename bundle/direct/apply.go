@@ -86,17 +86,14 @@ func (d *DeploymentUnit) Recreate(ctx context.Context, db *dstate.DeploymentStat
 		return fmt.Errorf("deleting old id=%s: %w", oldID, err)
 	}
 
-	// Drop the state entry so a subsequent failure of Create or WaitAfterDelete
-	// leaves no malformed (empty-ID) entry behind. The next plan will see "no
-	// state" and retry as Create.
-	err = db.DeleteState(d.ResourceKey)
+	err = db.SaveState(d.ResourceKey, "", nil, nil)
 	if err != nil {
 		return fmt.Errorf("deleting state: %w", err)
 	}
 
 	// Wait for asynchronous teardown to finish before re-creating the same
-	// name. Done after DeleteState so the bundle stays consistent if the wait
-	// times out — the resource is no longer tracked in state, retry on next plan.
+	// name. Done after the state update so the bundle stays consistent if the
+	// wait times out — the resource is marked deleted, retry on next plan.
 	err = d.Adapter.WaitAfterDelete(ctx, oldID)
 	if err != nil {
 		return fmt.Errorf("waiting after deleting id=%s: %w", oldID, err)
