@@ -238,26 +238,10 @@ func (r *ResourceApp) manageLifecycle(ctx context.Context, id string, config *Ap
 	return nil
 }
 
-// deployOnlyFields are AppState fields managed via the Deploy API, not the App Update API.
-// They have remote counterparts (populated from active deployment and compute status),
-// but must not appear in the App update_mask.
-var deployOnlyFields = map[string]bool{
-	"source_code_path":  true,
-	"config":            true,
-	"git_source":        true,
-	"lifecycle":         true,
-	"lifecycle.started": true,
-}
-
 // hasAppChanges reports whether the plan entry contains any Update changes
 // to fields that belong to the App Update API (i.e., not deploy-only fields).
 func hasAppChanges(entry *PlanEntry) bool {
-	for path, change := range entry.Changes {
-		if change.Action == deployplan.Update && !deployOnlyFields[truncateAtIndex(path)] {
-			return true
-		}
-	}
-	return false
+	return entry.Changes.HasChangeExcept("source_code_path", "config", "git_source", "lifecycle", "lifecycle.started")
 }
 
 // OverrideChangeDesc skips source_code_path drift when the remote value is empty.

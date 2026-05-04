@@ -157,21 +157,10 @@ func (r *ResourceCluster) DoCreate(ctx context.Context, config *ClusterState) (s
 	return wait.ClusterId, nil, nil
 }
 
-// lifecycleOnlyFields are ClusterState fields managed via the Start/Delete APIs, not the Cluster Edit API.
-var lifecycleOnlyFields = map[string]bool{
-	"lifecycle":         true,
-	"lifecycle.started": true,
-}
-
 // hasClusterChanges reports whether the plan entry contains any Update changes
 // to fields that belong to the Cluster Edit API (i.e., not lifecycle-only fields).
 func hasClusterChanges(entry *PlanEntry) bool {
-	for path, change := range entry.Changes {
-		if change.Action == deployplan.Update && !lifecycleOnlyFields[truncateAtIndex(path)] {
-			return true
-		}
-	}
-	return false
+	return entry.Changes.HasChangeExcept("lifecycle", "lifecycle.started")
 }
 
 func (r *ResourceCluster) DoUpdate(ctx context.Context, id string, config *ClusterState, entry *PlanEntry) (*ClusterRemote, error) {

@@ -132,6 +132,19 @@ func (c *Changes) HasChange(fieldPath *structpath.PathNode) bool {
 	return false
 }
 
+// HasChangeExcept checks if there are any changes for fields with the given prefixes.
+func (c *Changes) HasChangeExcept(prefixes ...string) bool {
+	if c == nil {
+		return false
+	}
+	for field := range *c {
+		if slices.Contains(prefixes, field) {
+			return true
+		}
+	}
+	return false
+}
+
 func (p *Plan) GetActions() []Action {
 	actions := make([]Action, 0, len(p.Plan))
 	for key, entry := range p.Plan {
