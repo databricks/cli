@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestMarshalJSONWithoutColorMatchesEncodingJSON(t *testing.T) {
+func TestMarshalJSONWithoutColorMatchesMarshalIndent(t *testing.T) {
 	tests := []any{
 		map[string]any{"name": "alice", "n": 1, "ok": true, "tags": []any{"x", "y"}, "v": nil},
 		[]any{1, 2.5, -3, 1e10, "s", true, false, nil},

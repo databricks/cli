@@ -6,6 +6,8 @@ import (
 	"fmt"
 )
 
+// SGR (Select Graphic Rendition) escapes; see
+// https://en.wikipedia.org/wiki/ANSI_escape_code#SGR
 const (
 	ansiReset     = "\x1b[0m"
 	ansiGreen     = "\x1b[32m"
@@ -33,7 +35,7 @@ func marshalJSON(v any, colorize bool) ([]byte, error) {
 // trusts that structure and does not re-validate it.
 func colorizeJSON(b []byte) []byte {
 	var out bytes.Buffer
-	out.Grow(len(b) + len(b)/4)
+	out.Grow(len(b) + len(b)/2)
 
 	for i := 0; i < len(b); {
 		c := b[i]
@@ -92,6 +94,7 @@ func scanString(b []byte, i int) int {
 }
 
 // scanNumber returns the index just past the JSON number that begins at b[i].
+// It assumes b is valid JSON and does not validate the number itself.
 func scanNumber(b []byte, i int) int {
 	j := i
 	for j < len(b) {

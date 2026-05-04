@@ -13,6 +13,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/listing"
 	"github.com/databricks/databricks-sdk-go/service/provisioning"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type testCase struct {
@@ -165,6 +166,46 @@ var testCases = []testCase{
 		outputFormat: flags.OutputJSON,
 		errMessage:   "json output not supported",
 	},
+}
+
+// TestRenderJSONColorGate verifies defaultRenderer.renderJson honors the
+// stdout TTY/color capabilities directly, independent of fatih/color globals.
+func TestRenderJSONColorGate(t *testing.T) {
+	tests := []struct {
+		name        string
+		stdoutIsTTY bool
+		color       bool
+		wantANSI    bool
+	}{
+		{"tty with color", true, true, true},
+		{"tty without color", true, false, false},
+		{"no tty with color", false, true, false},
+		{"no tty no color", false, false, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			out := &bytes.Buffer{}
+			c := &cmdIO{
+				capabilities: Capabilities{stdoutIsTTY: tt.stdoutIsTTY, color: tt.color},
+				outputFormat: flags.OutputJSON,
+				out:          out,
+				err:          out,
+			}
+			ctx := InContext(t.Context(), c)
+			require.NoError(t, Render(ctx, dummyWorkspace1))
+
+			s := out.String()
+			if tt.wantANSI {
+				assert.Contains(t, s, ansiBoldBlue)
+				assert.Contains(t, s, ansiCyan)
+			} else {
+				assert.NotContains(t, s, "\x1b[")
+				want, err := json.MarshalIndent(dummyWorkspace1, "", "  ")
+				require.NoError(t, err)
+				assert.Equal(t, string(want)+"\n", s)
+			}
+		})
+	}
 }
 
 func TestRender(t *testing.T) {

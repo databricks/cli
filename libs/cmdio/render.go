@@ -178,8 +178,7 @@ type defaultRenderer struct {
 
 func (d defaultRenderer) renderJson(ctx context.Context, w writeFlusher) error {
 	c := fromContext(ctx)
-	colorize := c.capabilities.stdoutIsTTY && c.capabilities.color
-	pretty, err := marshalJSON(d.t, colorize)
+	pretty, err := marshalJSON(d.t, c.capabilities.SupportsStdoutColor())
 	if err != nil {
 		return err
 	}

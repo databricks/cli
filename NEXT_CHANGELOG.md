@@ -4,7 +4,7 @@
 
 ### CLI
 
-* JSON output (`--output json`) now uses standard `encoding/json` spacing (`"key": "value"` instead of `"key":"value"`).
+* JSON output for single objects now uses standard `"key": "value"` spacing (matching list output and `encoding/json` defaults).
 
 ### Bundles
 
