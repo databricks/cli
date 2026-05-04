@@ -46,13 +46,40 @@ func TestHasAccountSegment(t *testing.T) {
 	}
 }
 
+func TestExtractOrgIDFromQuery(t *testing.T) {
+	cases := []struct {
+		name string
+		path string
+		want string
+	}{
+		{"no query string", "/api/2.0/clusters/list", ""},
+		{"o param present", "/api/2.2/jobs/list?o=7474644166319138", "7474644166319138"},
+		{"o param empty", "/api/2.0/clusters/list?o=", ""},
+		{"o among other params first", "/api/2.0/clusters/list?o=123&foo=bar", "123"},
+		{"o among other params last", "/api/2.0/clusters/list?foo=bar&o=123", "123"},
+		{"unrelated o-prefixed param ignored", "/api/2.0/clusters/list?other=1", ""},
+		{"absolute URL", "https://example.com/api/2.0/clusters/list?o=42", "42"},
+		{"first value wins on duplicate", "/api/2.0/clusters/list?o=1&o=2", "1"},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			got, err := extractOrgIDFromQuery(c.path)
+			require.NoError(t, err)
+			assert.Equal(t, c.want, got)
+		})
+	}
+}
+
 func TestResolveOrgID(t *testing.T) {
 	const (
-		workspacePath = "/api/2.0/clusters/list"
-		accountPath   = "/api/2.0/accounts/abc-123/network-policies"
-		proxyPath     = "/api/2.0/preview/accounts/access-control/rule-sets"
-		resolvedWSID  = "900800700600"
-		flagWSID      = "999"
+		workspacePath   = "/api/2.0/clusters/list"
+		accountPath     = "/api/2.0/accounts/abc-123/network-policies"
+		proxyPath       = "/api/2.0/preview/accounts/access-control/rule-sets"
+		spogPath        = "/api/2.2/jobs/list?o=7474644166319138"
+		spogAccountPath = "/api/2.0/accounts/abc-123/network-policies?o=7474644166319138"
+		spogWorkspaceID = "7474644166319138"
+		resolvedWSID    = "900800700600"
+		flagWSID        = "999"
 	)
 
 	cases := []struct {
@@ -128,6 +155,39 @@ func TestResolveOrgID(t *testing.T) {
 			cfgWorkspaceID:   resolvedWSID,
 			path:             workspacePath,
 			wantErrSubstring: "mutually exclusive",
+		},
+		{
+			name:           "?o=<id> sets identifier when no flag and no profile WorkspaceID",
+			cfgWorkspaceID: "",
+			path:           spogPath,
+			want:           spogWorkspaceID,
+		},
+		{
+			name:           "?o=<id> overrides profile WorkspaceID",
+			cfgWorkspaceID: resolvedWSID,
+			path:           spogPath,
+			want:           spogWorkspaceID,
+		},
+		{
+			name:            "--workspace-id wins over ?o=",
+			workspaceIDFlag: flagWSID,
+			flagSet:         true,
+			cfgWorkspaceID:  resolvedWSID,
+			path:            spogPath,
+			want:            flagWSID,
+		},
+		{
+			name:           "--account wins over ?o=",
+			forceAccount:   true,
+			cfgWorkspaceID: resolvedWSID,
+			path:           spogPath,
+			want:           "",
+		},
+		{
+			name:           "?o= on /accounts/ path still routes to that workspace",
+			cfgWorkspaceID: "",
+			path:           spogAccountPath,
+			want:           spogWorkspaceID,
 		},
 	}
 	for _, c := range cases {

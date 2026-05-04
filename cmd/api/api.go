@@ -23,6 +23,13 @@ const (
 	// per-call when cfg.WorkspaceID is populated; we mirror the same idiom.
 	orgIDHeader = "X-Databricks-Org-Id"
 
+	// orgIDQueryParam is the SPOG (single-page-of-glass) URL convention used
+	// by the Databricks UI: "?o=<workspace-id>" identifies the workspace a URL
+	// targets. When present on the path, we treat it as a per-call override
+	// for the workspace routing identifier so that pasted SPOG URLs route
+	// correctly without requiring --workspace-id.
+	orgIDQueryParam = "o"
+
 	accountIDPlaceholder = "{account_id}"
 )
 
@@ -167,6 +174,16 @@ func hasAccountSegment(rawPath string) (bool, error) {
 	return accountSegmentRe.MatchString(p), nil
 }
 
+// extractOrgIDFromQuery returns the value of the "o" query parameter on path
+// (the SPOG URL convention), or "" if absent or empty.
+func extractOrgIDFromQuery(rawPath string) (string, error) {
+	u, err := url.Parse(rawPath)
+	if err != nil {
+		return "", fmt.Errorf("parse path: %w", err)
+	}
+	return u.Query().Get(orgIDQueryParam), nil
+}
+
 // resolveOrgID picks the value (if any) for the workspace routing identifier
 // based on flags, the resolved profile, and the path shape. Returns "" when
 // no header should be sent.
@@ -188,6 +205,13 @@ func resolveOrgID(
 			return "", errors.New("--workspace-id requires a value; use --account to scope this call to the account API")
 		}
 		return workspaceIDFlag, nil
+	}
+	orgIDFromQuery, err := extractOrgIDFromQuery(path)
+	if err != nil {
+		return "", err
+	}
+	if orgIDFromQuery != "" {
+		return orgIDFromQuery, nil
 	}
 	isAccount, err := hasAccountSegment(path)
 	if err != nil {
