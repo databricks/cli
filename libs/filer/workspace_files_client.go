@@ -210,18 +210,29 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 	}
 
 	// This API returns 400 if the file already exists, when the object type is notebook.
-	// The error_code field is empty in the JSON body, so we anchor on the
-	// RESOURCE_ALREADY_EXISTS marker that the API embeds in the message instead.
-	regex := regexp.MustCompile(`RESOURCE_ALREADY_EXISTS: (\S+)`)
-	if aerr.StatusCode == http.StatusBadRequest && regex.MatchString(aerr.Message) {
-		// Parse file path from regex capture group
-		matches := regex.FindStringSubmatch(aerr.Message)
-		if len(matches) == 2 {
-			return fileAlreadyExistsError{matches[1]}
-		}
+	// We match both the historical "Path (<path>) already exists." format and the newer
+	// "RESOURCE_ALREADY_EXISTS: <path> ..." format because the new format has not been
+	// rolled out to all workspaces yet. The error_code field is empty in the JSON body
+	// for both formats, so we anchor on markers in the message rather than using
+	// errors.Is(apierr.ErrResourceAlreadyExists).
+	notebookExistsRegexes := []*regexp.Regexp{
+		regexp.MustCompile(`Path \((.*)\) already exists\.`),
+		regexp.MustCompile(`RESOURCE_ALREADY_EXISTS: (\S+)`),
+	}
+	if aerr.StatusCode == http.StatusBadRequest {
+		for _, regex := range notebookExistsRegexes {
+			if !regex.MatchString(aerr.Message) {
+				continue
+			}
+			// Parse file path from regex capture group
+			matches := regex.FindStringSubmatch(aerr.Message)
+			if len(matches) == 2 {
+				return fileAlreadyExistsError{matches[1]}
+			}
 
-		// Default to path specified to filer.Write if regex capture fails
-		return fileAlreadyExistsError{absPath}
+			// Default to path specified to filer.Write if regex capture fails
+			return fileAlreadyExistsError{absPath}
+		}
 	}
 
 	// This API returns StatusForbidden when you have read access but don't have write access to a file
