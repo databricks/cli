@@ -26,17 +26,17 @@ Updating deployment state...
 
 Exit code: 1
 
-=== Subsequent plan refuses to proceed because my_endpoint state was left with empty id
+=== Subsequent plan recovers: my_endpoint state was dropped, replan as Create
 >>> [CLI] bundle plan
-Error: cannot plan resources.vector_search_endpoints.my_endpoint: invalid state: empty id
+create vector_search_endpoints.my_endpoint
 
-Error: planning failed
-
-
-Exit code: 1
+Plan: 1 to add, 0 to change, 0 to delete, 1 unchanged
 
 >>> [CLI] bundle destroy --auto-approve
-Error: cannot plan resources.vector_search_endpoints.my_endpoint: internal error, missing in state
+The following resources will be deleted:
+  delete resources.vector_search_endpoints.blocker_endpoint
 
-Error: planning failed
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/recreate-create-fails-[UNIQUE_NAME]/default
 
+Deleting files...
+Destroy complete!

@@ -1,3 +1,1 @@
 Cloud = false
-
-Badness = "When apply.Recreate's Create call errors after Delete already removed the resource, the deployment state is left with an empty-id entry. The next bundle plan refuses to proceed with 'invalid state: empty id', wedging the user."

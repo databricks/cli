@@ -16,5 +16,5 @@ trace update_file.py databricks.yml "      endpoint_type: STANDARD" "      endpo
 title "Deploy: Recreate of my_endpoint runs Delete (ok) then Create (409, name taken by blocker)"
 errcode trace $CLI bundle deploy --auto-approve
 
-title "Subsequent plan refuses to proceed because my_endpoint state was left with empty id"
-errcode trace $CLI bundle plan
+title "Subsequent plan recovers: my_endpoint state was dropped, replan as Create"
+trace $CLI bundle plan
