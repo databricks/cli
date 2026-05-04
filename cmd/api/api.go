@@ -29,8 +29,6 @@ const (
 	// for the workspace routing identifier so that pasted SPOG URLs route
 	// correctly without requiring --workspace-id.
 	orgIDQueryParam = "o"
-
-	accountIDPlaceholder = "{account_id}"
 )
 
 // accountSegmentRe matches a non-empty segment immediately after "accounts/",
@@ -90,11 +88,6 @@ func makeCommand(method string) *cobra.Command {
 				return err
 			}
 
-			path, err = substituteAccountID(path, cfg.AccountID, cfg.Profile)
-			if err != nil {
-				return err
-			}
-
 			orgID, err := resolveOrgID(
 				forceAccount,
 				workspaceIDFlag,
@@ -139,23 +132,6 @@ func normalizeWorkspaceID(workspaceID string) string {
 		return ""
 	}
 	return workspaceID
-}
-
-// substituteAccountID replaces "{account_id}" placeholders in path with the
-// resolved account ID. Errors with an actionable message if the placeholder
-// is present but no account_id is configured for the active profile.
-func substituteAccountID(path, accountID, profile string) (string, error) {
-	if !strings.Contains(path, accountIDPlaceholder) {
-		return path, nil
-	}
-	if accountID == "" {
-		return "", fmt.Errorf(
-			"path contains %s but no account_id is set on profile %q "+
-				"(set account_id in ~/.databrickscfg, export DATABRICKS_ACCOUNT_ID, "+
-				"or replace %s in the path)",
-			accountIDPlaceholder, profile, accountIDPlaceholder)
-	}
-	return strings.ReplaceAll(path, accountIDPlaceholder, accountID), nil
 }
 
 // hasAccountSegment reports whether path is an account-scope API. The match

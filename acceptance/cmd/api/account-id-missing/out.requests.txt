@@ -1,9 +1,0 @@
-{
-  "headers": {
-    "User-Agent": [
-      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS]"
-    ]
-  },
-  "method": "GET",
-  "path": "/.well-known/databricks-config"
-}
