@@ -3,6 +3,10 @@ Cloud = true
 # "hive_metastore" (helper reads metastore.DefaultCatalogName). Without an
 # explicit catalog, DLT falls back to (disabled) hive_metastore. Gate on a
 # real UC default catalog.
+#
+# Known UC API inconsistency: on our test workspaces, metastore.DefaultCatalogName
+# is "hive_metastore" even though no such catalog exists. Drop this gate once UC
+# fixes that.
 RequiresUnityCatalog = true
 Timeout = '1m'
 

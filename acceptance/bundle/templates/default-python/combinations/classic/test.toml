@@ -5,4 +5,8 @@ Env.SERVERLESS = "no"
 # explicit catalog, DLT falls back to (disabled) hive_metastore. Gate classic
 # combinations on a real UC default catalog; the serverless variant is
 # unaffected because it hardcodes "catalog: main".
+#
+# Known UC API inconsistency: on our test workspaces, metastore.DefaultCatalogName
+# is "hive_metastore" even though no such catalog exists. Drop this gate once UC
+# fixes that.
 RequiresUnityCatalog = true
