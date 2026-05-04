@@ -1,0 +1,12 @@
+bundle:
+  name: variable-in-resource-key
+
+variables:
+  env:
+    description: The target environment
+    default: dev
+
+resources:
+  jobs:
+    ${var.env}_job:
+      name: my-job

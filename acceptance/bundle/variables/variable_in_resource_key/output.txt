@@ -1,0 +1,6 @@
+Error: resource key "${var.env}_job" must not contain variable references
+  at resources.jobs.${var.env}_job
+  in databricks.yml:12:7
+
+
+Exit code: 1
