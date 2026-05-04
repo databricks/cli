@@ -45,9 +45,9 @@ func promptForHost(ctx context.Context) (string, error) {
 		return "", errors.New("the command is being run in a non-interactive environment, please specify a host using --host")
 	}
 
-	prompt := cmdio.Prompt(ctx)
-	prompt.Label = "Databricks host (e.g. https://<databricks-instance>.cloud.databricks.com)"
-	return prompt.Run()
+	return cmdio.RunPrompt(ctx, cmdio.PromptOptions{
+		Label: "Databricks host (e.g. https://<databricks-instance>.cloud.databricks.com)",
+	})
 }
 
 func promptForAccountID(ctx context.Context) (string, error) {
@@ -55,11 +55,10 @@ func promptForAccountID(ctx context.Context) (string, error) {
 		return "", errors.New("the command is being run in a non-interactive environment, please specify an account ID using --account-id")
 	}
 
-	prompt := cmdio.Prompt(ctx)
-	prompt.Label = "Databricks account ID"
-	prompt.Default = ""
-	prompt.AllowEdit = true
-	return prompt.Run()
+	return cmdio.RunPrompt(ctx, cmdio.PromptOptions{
+		Label:     "Databricks account ID",
+		AllowEdit: true,
+	})
 }
 
 // validateProfileHostConflict checks that --profile and --host don't conflict.

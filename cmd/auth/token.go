@@ -21,7 +21,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m/cache"
-	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
 	"golang.org/x/oauth2"
 )
@@ -379,8 +378,8 @@ type profileSelectItem struct {
 	Host string
 }
 
-// promptForProfileSelection shows a promptui select list with all configured
-// profiles plus "Enter a host URL" and "Create a new profile" options.
+// promptForProfileSelection shows a select list with all configured profiles
+// plus "Enter a host URL" and "Create a new profile" options.
 // Returns the selection type and, when a profile is selected, its name.
 func promptForProfileSelection(ctx context.Context, profiles profile.Profiles) (profileSelectionResult, string, error) {
 	items := make([]profileSelectItem, 0, len(profiles)+2)
@@ -392,7 +391,7 @@ func promptForProfileSelection(ctx context.Context, profiles profile.Profiles) (
 	enterHostIdx := len(items)
 	items = append(items, profileSelectItem{Name: "Enter a host URL manually"})
 
-	i, _, err := cmdio.RunSelect(ctx, &promptui.Select{
+	i, err := cmdio.RunSelect(ctx, cmdio.SelectOptions{
 		Label:             "Select a profile",
 		Items:             items,
 		StartInSearchMode: len(profiles) > 5,
@@ -402,12 +401,10 @@ func promptForProfileSelection(ctx context.Context, profiles profile.Profiles) (
 			host := strings.ToLower(items[index].Host)
 			return strings.Contains(name, input) || strings.Contains(host, input)
 		},
-		Templates: &promptui.SelectTemplates{
-			Label:    "{{ . | faint }}",
-			Active:   `{{.Name | bold}}{{if .Host}} ({{.Host|faint}}){{end}}`,
-			Inactive: `{{.Name}}{{if .Host}} ({{.Host}}){{end}}`,
-			Selected: `{{ "Using profile" | faint }}: {{ .Name | bold }}`,
-		},
+		LabelTemplate: "{{ . | faint }}",
+		Active:        `{{.Name | bold}}{{if .Host}} ({{.Host|faint}}){{end}}`,
+		Inactive:      `{{.Name}}{{if .Host}} ({{.Host}}){{end}}`,
+		Selected:      `{{ "Using profile" | faint }}: {{ .Name | bold }}`,
 	})
 	if err != nil {
 		return 0, "", err

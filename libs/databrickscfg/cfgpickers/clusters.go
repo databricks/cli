@@ -12,7 +12,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/fatih/color"
-	"github.com/manifoldco/promptui"
 	"golang.org/x/mod/semver"
 )
 
@@ -189,7 +188,7 @@ func AskForCluster(ctx context.Context, w *databricks.WorkspaceClient, filters .
 	if len(compatible) == 1 {
 		return compatible[0].ClusterId, nil
 	}
-	i, _, err := cmdio.RunSelect(ctx, &promptui.Select{
+	i, err := cmdio.RunSelect(ctx, cmdio.SelectOptions{
 		Label: "Choose compatible cluster",
 		Items: compatible,
 		Searcher: func(input string, idx int) bool {
@@ -197,12 +196,10 @@ func AskForCluster(ctx context.Context, w *databricks.WorkspaceClient, filters .
 			return strings.Contains(lower, strings.ToLower(input))
 		},
 		StartInSearchMode: true,
-		Templates: &promptui.SelectTemplates{
-			Label:    "{{.ClusterName | faint}}",
-			Active:   `{{.ClusterName | bold}} ({{.State}} {{.Access}} Runtime {{.Runtime}}) ({{.ClusterId | faint}})`,
-			Inactive: `{{.ClusterName}} ({{.State}} {{.Access}} Runtime {{.Runtime}})`,
-			Selected: `{{ "Configured cluster" | faint }}: {{ .ClusterName | bold }} ({{.ClusterId | faint}})`,
-		},
+		LabelTemplate:     "{{.ClusterName | faint}}",
+		Active:            `{{.ClusterName | bold}} ({{.State}} {{.Access}} Runtime {{.Runtime}}) ({{.ClusterId | faint}})`,
+		Inactive:          `{{.ClusterName}} ({{.State}} {{.Access}} Runtime {{.Runtime}})`,
+		Selected:          `{{ "Configured cluster" | faint }}: {{ .ClusterName | bold }} ({{.ClusterId | faint}})`,
 	})
 	if err != nil {
 		return "", err

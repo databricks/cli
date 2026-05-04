@@ -10,7 +10,6 @@ import (
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
-	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
 )
 
@@ -87,7 +86,7 @@ func promptForSwitchProfile(ctx context.Context, profiles profile.Profiles, curr
 		label = fmt.Sprintf("Current default: %s. Select a new default", currentDefault)
 	}
 
-	i, _, err := cmdio.RunSelect(ctx, &promptui.Select{
+	i, err := cmdio.RunSelect(ctx, cmdio.SelectOptions{
 		Label:             label,
 		Items:             items,
 		StartInSearchMode: len(profiles) > 5,
@@ -97,12 +96,10 @@ func promptForSwitchProfile(ctx context.Context, profiles profile.Profiles, curr
 			host := strings.ToLower(items[index].Host)
 			return strings.Contains(name, input) || strings.Contains(host, input)
 		},
-		Templates: &promptui.SelectTemplates{
-			Label:    "{{ . | faint }}",
-			Active:   `{{.Name | bold}}{{if .Host}} ({{.Host|faint}}){{end}}`,
-			Inactive: `{{.Name}}{{if .Host}} ({{.Host}}){{end}}`,
-			Selected: `{{ "Default profile" | faint }}: {{ .Name | bold }}`,
-		},
+		LabelTemplate: "{{ . | faint }}",
+		Active:        `{{.Name | bold}}{{if .Host}} ({{.Host|faint}}){{end}}`,
+		Inactive:      `{{.Name}}{{if .Host}} ({{.Host}}){{end}}`,
+		Selected:      `{{ "Default profile" | faint }}: {{ .Name | bold }}`,
 	})
 	if err != nil {
 		return "", err
