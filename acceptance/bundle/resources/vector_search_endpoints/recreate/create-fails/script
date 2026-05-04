@@ -1,0 +1,20 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve || true
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+title "Initial deploy creates two endpoints with distinct names"
+trace $CLI bundle deploy
+
+title "Edit my_endpoint: rename onto blocker_endpoint's name and switch endpoint_type to trigger Recreate"
+trace update_file.py databricks.yml "vs-endpoint-a-$UNIQUE_NAME" "vs-endpoint-b-$UNIQUE_NAME"
+trace update_file.py databricks.yml "      endpoint_type: STANDARD" "      endpoint_type: STORAGE_OPTIMIZED"
+
+title "Deploy: Recreate of my_endpoint runs Delete (ok) then Create (409, name taken by blocker)"
+errcode trace $CLI bundle deploy --auto-approve
+
+title "Subsequent plan refuses to proceed because my_endpoint state was left with empty id"
+errcode trace $CLI bundle plan

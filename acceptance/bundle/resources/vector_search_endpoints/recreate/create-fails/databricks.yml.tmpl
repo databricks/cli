@@ -1,0 +1,14 @@
+bundle:
+  name: recreate-create-fails-$UNIQUE_NAME
+
+sync:
+  paths: []
+
+resources:
+  vector_search_endpoints:
+    my_endpoint:
+      name: vs-endpoint-a-$UNIQUE_NAME
+      endpoint_type: STANDARD
+    blocker_endpoint:
+      name: vs-endpoint-b-$UNIQUE_NAME
+      endpoint_type: STANDARD
