@@ -135,9 +135,15 @@ func (r *ResourceCluster) DoRead(ctx context.Context, id string) (*ClusterRemote
 		Lifecycle:      nil,
 	}
 
-	started := details.State == compute.StateRunning
-	if started {
+	switch details.State {
+	case compute.StateRunning:
+		started := true
 		remote.Lifecycle = &StateLifecycle{Started: &started}
+	case compute.StateTerminated:
+		started := false
+		remote.Lifecycle = &StateLifecycle{Started: &started}
+	default:
+		remote.Lifecycle = nil
 	}
 	return remote, nil
 }
