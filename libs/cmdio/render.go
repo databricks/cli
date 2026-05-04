@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"strings"
 	"text/tabwriter"
 	"text/template"
@@ -16,7 +17,6 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/listing"
-	"github.com/fatih/color"
 )
 
 // Heredoc is the equivalent of compute.TrimLeadingWhitespace
@@ -295,49 +295,12 @@ func RenderWithTemplate(ctx context.Context, v any, headerTemplate, template str
 	return renderWithTemplate(ctx, newRenderer(v), c.outputFormat, c.out, headerTemplate, template)
 }
 
-var renderFuncMap = template.FuncMap{
-	// we render colored output if stdout is TTY, otherwise we render text.
-	// in the future we'll check if we can explicitly check for stderr being
-	// a TTY
-	"header":  color.BlueString,
-	"red":     color.RedString,
-	"green":   color.GreenString,
-	"blue":    color.BlueString,
-	"yellow":  color.YellowString,
-	"magenta": color.MagentaString,
-	"cyan":    color.CyanString,
-	"bold": func(format string, a ...any) string {
-		return color.New(color.Bold).Sprintf(format, a...)
-	},
-	"italic": func(format string, a ...any) string {
-		return color.New(color.Italic).Sprintf(format, a...)
-	},
+// staticTemplateFuncs are the ctx-independent helpers shared across every
+// renderFuncMap call.
+var staticTemplateFuncs = template.FuncMap{
 	"replace": strings.ReplaceAll,
 	"join":    strings.Join,
-	"sub": func(a, b int) int {
-		return a - b
-	},
-	"bool": func(v bool) string {
-		if v {
-			return color.GreenString("YES")
-		}
-		return color.RedString("NO")
-	},
-	"pretty_json": func(in string) (string, error) {
-		var tmp any
-		err := json.Unmarshal([]byte(in), &tmp)
-		if err != nil {
-			return "", err
-		}
-		// Mirror the other helpers in this map (red/green/etc.) by gating
-		// on fatih/color's global NoColor flag, which is set per-process
-		// based on stdout being a TTY.
-		b, err := marshalJSON(tmp, !color.NoColor)
-		if err != nil {
-			return "", err
-		}
-		return string(b), nil
-	},
+	"sub":     func(a, b int) int { return a - b },
 	"pretty_date": func(t time.Time) string {
 		return t.Format("2006-01-02T15:04:05Z")
 	},
@@ -368,9 +331,37 @@ var renderFuncMap = template.FuncMap{
 	},
 }
 
+// renderFuncMap returns the template helpers used by cmdio's rendering
+// pipeline. Color helpers and the JSON pretty-printer depend on ctx; the
+// rest are taken from staticTemplateFuncs.
+func renderFuncMap(ctx context.Context) template.FuncMap {
+	fm := RenderFuncMap(ctx)
+	fm["header"] = fm["blue"]
+	fm["bool"] = func(v bool) string {
+		if v {
+			return Green(ctx, "YES")
+		}
+		return Red(ctx, "NO")
+	}
+	fm["pretty_json"] = func(in string) (string, error) {
+		var tmp any
+		err := json.Unmarshal([]byte(in), &tmp)
+		if err != nil {
+			return "", err
+		}
+		b, err := marshalJSON(tmp, colorEnabled(ctx))
+		if err != nil {
+			return "", err
+		}
+		return string(b), nil
+	}
+	maps.Copy(fm, staticTemplateFuncs)
+	return fm
+}
+
 func renderUsingTemplate(ctx context.Context, r templateRenderer, w io.Writer, headerTmpl, tmpl string) error {
 	tw := tabwriter.NewWriter(w, 0, 4, 2, ' ', 0)
-	base := template.New("command").Funcs(renderFuncMap)
+	base := template.New("command").Funcs(renderFuncMap(ctx))
 	if headerTmpl != "" {
 		headerT, err := base.Parse(headerTmpl)
 		if err != nil {
@@ -446,13 +437,14 @@ const recommendationTemplate = `{{ "Recommendation" | blue }}: {{ .Summary }}
 
 func RenderDiagnostics(ctx context.Context, diags diag.Diagnostics) error {
 	c := fromContext(ctx)
-	return renderDiagnostics(c.err, diags)
+	return renderDiagnostics(ctx, c.err, diags)
 }
 
-func renderDiagnostics(out io.Writer, diags diag.Diagnostics) error {
-	errorT := template.Must(template.New("error").Funcs(renderFuncMap).Parse(errorTemplate))
-	warningT := template.Must(template.New("warning").Funcs(renderFuncMap).Parse(warningTemplate))
-	recommendationT := template.Must(template.New("recommendation").Funcs(renderFuncMap).Parse(recommendationTemplate))
+func renderDiagnostics(ctx context.Context, out io.Writer, diags diag.Diagnostics) error {
+	fm := renderFuncMap(ctx)
+	errorT := template.Must(template.New("error").Funcs(fm).Parse(errorTemplate))
+	warningT := template.Must(template.New("warning").Funcs(fm).Parse(warningTemplate))
+	recommendationT := template.Must(template.New("recommendation").Funcs(fm).Parse(recommendationTemplate))
 
 	// Print errors and warnings.
 	for _, d := range diags {
