@@ -506,23 +506,51 @@ func TestDisableLockingDisabled(t *testing.T) {
 	assert.True(t, b.Config.Bundle.Deployment.Lock.IsEnabled(), "Deployment lock should remain enabled in development mode when explicitly enabled")
 }
 
-func TestVectorSearchIndexNameWithUnresolvedRefsLeftAlone(t *testing.T) {
-	b := mockBundle(config.Development)
-	b.Config.Resources.VectorSearchIndexes["vs_index_with_var"] = &resources.VectorSearchIndex{
-		CreateVectorIndexRequest: vectorsearch.CreateVectorIndexRequest{
-			Name:         "${var.catalog}.${var.schema}.${var.index}",
-			EndpointName: "vs_endpoint1",
-			PrimaryKey:   "id",
-			IndexType:    vectorsearch.VectorIndexTypeDeltaSync,
+func TestVectorSearchIndexNamePrefixing(t *testing.T) {
+	cases := []struct {
+		key  string
+		name string
+		want string
+	}{
+		{
+			// Trailing component is a ref: skip, since prefixing would inject
+			// the prefix inside the ${var.index} expression.
+			key:  "vs_index_all_refs",
+			name: "${var.catalog}.${var.schema}.${var.index}",
+			want: "${var.catalog}.${var.schema}.${var.index}",
 		},
+		{
+			// Catalog and schema are refs but the leaf is literal: prefix the leaf.
+			key:  "vs_index_partial_ref",
+			name: "${var.catalog}.${var.schema}.non_ref_name",
+			want: "${var.catalog}.${var.schema}.dev_lennart_non_ref_name",
+		},
+		{
+			// Whole name is a single ref: skip.
+			key:  "vs_index_full_ref",
+			name: "${var.full_name}",
+			want: "${var.full_name}",
+		},
+	}
+
+	b := mockBundle(config.Development)
+	for _, c := range cases {
+		b.Config.Resources.VectorSearchIndexes[c.key] = &resources.VectorSearchIndex{
+			CreateVectorIndexRequest: vectorsearch.CreateVectorIndexRequest{
+				Name:         c.name,
+				EndpointName: "vs_endpoint1",
+				PrimaryKey:   "id",
+				IndexType:    vectorsearch.VectorIndexTypeDeltaSync,
+			},
+		}
 	}
 
 	diags := bundle.ApplySeq(t.Context(), b, ApplyTargetMode(), ApplyPresets())
 	require.NoError(t, diags.Error())
 
-	// The leaf-finding splits on the last dot, which would otherwise inject the
-	// prefix inside the trailing ${var.index} expression.
-	assert.Equal(t, "${var.catalog}.${var.schema}.${var.index}", b.Config.Resources.VectorSearchIndexes["vs_index_with_var"].Name)
+	for _, c := range cases {
+		assert.Equal(t, c.want, b.Config.Resources.VectorSearchIndexes[c.key].Name, c.key)
+	}
 }
 
 func TestPrefixAlreadySet(t *testing.T) {

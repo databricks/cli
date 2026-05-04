@@ -24,6 +24,19 @@ resources:
       endpoint_name: ${resources.vector_search_endpoints.vs_endpoint.name}
       primary_key: id
       index_type: DELTA_SYNC
+    # Partial reference: catalog and schema are variable refs but the leaf
+    # is literal, so the prefix preset can still prefix the leaf.
+    vs_index_partial_ref:
+      name: ${var.catalog}.${var.schema}.partial_ref_index
+      endpoint_name: ${resources.vector_search_endpoints.vs_endpoint.name}
+      primary_key: id
+      index_type: DELTA_SYNC
+
+variables:
+  catalog:
+    default: my_catalog
+  schema:
+    default: my_schema
 
 presets:
   name_prefix: "$PREFIX"
