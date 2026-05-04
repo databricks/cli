@@ -10,3 +10,12 @@ resources:
   jobs:
     ${var.env}_job:
       name: my-job
+
+targets:
+  dev:
+    default: true
+    resources:
+      jobs:
+        ${var.env}_job_2:
+          name: my-job
+          ${var.env}: my-job-description

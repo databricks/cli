@@ -25,24 +25,31 @@ func (m *noVariableReferenceInResourceKey) Name() string {
 func (m *noVariableReferenceInResourceKey) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	_, err := dyn.MapByPattern(
-		b.Config.Value(),
+	patterns := []dyn.Pattern{
 		dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey()),
-		func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
-			key := p[2].Key()
-			if dynvar.ContainsVariableReference(key) {
-				diags = append(diags, diag.Diagnostic{
-					Severity:  diag.Error,
-					Summary:   fmt.Sprintf("resource key %q must not contain variable references", key),
-					Locations: v.Locations(),
-					Paths:     []dyn.Path{p},
-				})
-			}
-			return v, nil
-		},
-	)
-	if err != nil {
-		diags = append(diags, diag.FromErr(err)...)
+		dyn.NewPattern(dyn.Key("targets"), dyn.AnyKey(), dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey()),
+	}
+
+	for _, pattern := range patterns {
+		_, err := dyn.MapByPattern(
+			b.Config.Value(),
+			pattern,
+			func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+				key := p[len(p)-1].Key()
+				if dynvar.ContainsVariableReference(key) {
+					diags = append(diags, diag.Diagnostic{
+						Severity:  diag.Error,
+						Summary:   fmt.Sprintf("resource key %q must not contain variable references", key),
+						Locations: v.Locations(),
+						Paths:     []dyn.Path{p},
+					})
+				}
+				return v, nil
+			},
+		)
+		if err != nil {
+			diags = append(diags, diag.FromErr(err)...)
+		}
 	}
 
 	return diags

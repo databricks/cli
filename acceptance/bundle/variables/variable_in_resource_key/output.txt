@@ -1,6 +1,14 @@
+Warning: unknown field: ${var.env}
+  at targets.dev.resources.jobs.${var.env}_job_2
+  in databricks.yml:21:11
+
 Error: resource key "${var.env}_job" must not contain variable references
   at resources.jobs.${var.env}_job
   in databricks.yml:12:7
+
+Error: resource key "${var.env}_job_2" must not contain variable references
+  at targets.dev.resources.jobs.${var.env}_job_2
+  in databricks.yml:20:11
 
 
 Exit code: 1
