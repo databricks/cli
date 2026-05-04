@@ -9,11 +9,11 @@ Detected changes in 2 resource(s):
 
 Resource: resources.jobs.job_one
   max_concurrent_runs: replace
-  tags: add
+  tags['team']: add
 
 Resource: resources.jobs.job_two
   max_concurrent_runs: replace
-  tags: add
+  tags['team']: add
 
 
 

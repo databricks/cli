@@ -15,7 +15,7 @@ Deployment complete!
     "state":"ONLINE"
   },
   "endpoint_type":"STANDARD",
-  "id":"[UUID]",
+  "id":"[MY_ENDPOINT_UUID]",
   "last_updated_timestamp":[UNIX_TIME_MILLIS][1],
   "last_updated_user":"[USERNAME]",
   "name":"vs-endpoint-[UNIQUE_NAME]",

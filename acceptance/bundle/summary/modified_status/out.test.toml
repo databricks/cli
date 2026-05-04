@@ -1,6 +1,4 @@
 Local = true
 Cloud = false
-
-[EnvMatrix]
-  DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
-  VARIANT = ["empty_resources.yml", "no_resources.yml"]
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
+EnvMatrix.VARIANT = ["empty_resources.yml", "no_resources.yml"]
