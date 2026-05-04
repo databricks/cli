@@ -1,1 +1,2 @@
 $CLI api get /api/2.0/clusters/list
+trace print_requests.py --get --keep //api/2.0/clusters/list | contains.py "X-Databricks-Org-Id"

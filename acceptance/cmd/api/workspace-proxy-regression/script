@@ -2,3 +2,4 @@
 # being misclassified as account-scope, so the routing identifier should be
 # present on the recorded request.
 $CLI api get /api/2.0/preview/accounts/access-control/rule-sets
+trace print_requests.py --get --keep //api/2.0/preview/accounts/access-control/rule-sets | contains.py "X-Databricks-Org-Id"
