@@ -1,2 +1,2 @@
-$CLI api get "/api/2.0/clusters/list?o=999"
+MSYS_NO_PATHCONV=1 $CLI api get "/api/2.0/clusters/list?o=999"
 trace print_requests.py --get //api/2.0/clusters/list | contains.py "X-Databricks-Org-Id" "999"

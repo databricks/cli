@@ -1,2 +1,2 @@
-$CLI api get /api/2.0/accounts/abc-123/network-policies
+MSYS_NO_PATHCONV=1 $CLI api get /api/2.0/accounts/abc-123/network-policies
 trace print_requests.py --get //api/2.0/accounts/abc-123/network-policies | contains.py "!X-Databricks-Org-Id"

@@ -1,2 +1,2 @@
-$CLI api get /api/2.0/clusters/list --account
+MSYS_NO_PATHCONV=1 $CLI api get /api/2.0/clusters/list --account
 trace print_requests.py --get //api/2.0/clusters/list | contains.py "!X-Databricks-Org-Id"

@@ -9,5 +9,5 @@ token        = $DATABRICKS_TOKEN
 workspace_id = none
 EOF
 
-$CLI api get /api/2.0/clusters/list --profile spog-account
+MSYS_NO_PATHCONV=1 $CLI api get /api/2.0/clusters/list --profile spog-account
 trace print_requests.py --get //api/2.0/clusters/list | contains.py "!X-Databricks-Org-Id"
