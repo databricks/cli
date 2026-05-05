@@ -17,7 +17,7 @@ import (
 	"github.com/databricks/cli/experimental/aitools/lib/agents"
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/depversions"
+	"github.com/databricks/cli/libs/clicompat"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 	"golang.org/x/mod/semver"
@@ -39,7 +39,7 @@ func GetSkillsRef(ctx context.Context) (string, error) {
 	if ref := env.Get(ctx, "DATABRICKS_SKILLS_REF"); ref != "" {
 		return ref, nil
 	}
-	v, err := depversions.ResolveAgentSkillsVersion(ctx)
+	v, err := clicompat.ResolveAgentSkillsVersion(ctx)
 	if err != nil {
 		return "", fmt.Errorf("could not resolve skills version: %w", err)
 	}

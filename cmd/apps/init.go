@@ -25,7 +25,7 @@ import (
 	"github.com/databricks/cli/libs/apps/prompt"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/depversions"
+	"github.com/databricks/cli/libs/clicompat"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/git"
 	"github.com/databricks/cli/libs/log"
@@ -170,7 +170,7 @@ Environment variables:
 	cmd.Flags().StringVar(&templatePath, "template", "", "Template path (local directory or GitHub URL)")
 	cmd.Flags().StringVar(&branch, "branch", "", "Git branch or tag (for GitHub templates, mutually exclusive with --version)")
 	versionDesc := "AppKit version to use (use 'latest' for main branch)"
-	if v := depversions.EmbeddedDefaultAppKitVersion(); v != "" {
+	if v := clicompat.EmbeddedDefaultAppKitVersion(); v != "" {
 		versionDesc = fmt.Sprintf("AppKit version to use (default: %s, use 'latest' for main branch)", v)
 	}
 	cmd.Flags().StringVar(&version, "version", "", versionDesc)
@@ -809,7 +809,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		case opts.version != "":
 			gitRef = normalizeVersion(opts.version)
 		default:
-			appkitVersion, err := depversions.ResolveAppKitVersion(ctx)
+			appkitVersion, err := clicompat.ResolveAppKitVersion(ctx)
 			if err != nil {
 				return fmt.Errorf("could not resolve AppKit template version: %w. Use --version to specify a version manually", err)
 			}

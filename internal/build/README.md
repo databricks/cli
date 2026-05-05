@@ -34,7 +34,7 @@ At runtime, the CLI resolves the manifest from three sources:
 
 ## When to update
 
-After each AppKit release:
+After each AppKit or Agent Skills release:
 
 1. **Run evals** on the new AppKit version. If there is no regression, proceed.
 2. **Open a PR** to update `cli-compat.json`. The change depends on the type of release:
