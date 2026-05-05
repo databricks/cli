@@ -743,14 +743,18 @@ func TestSupportsProjectScopeSetCorrectly(t *testing.T) {
 	}
 }
 
-func TestGetSkillsRefFallsBackToEmbeddedManifest(t *testing.T) {
-	// Do NOT set DATABRICKS_SKILLS_REF — exercises the production code path
-	// where the version is resolved from the embedded compatibility manifest.
-	t.Setenv("DATABRICKS_CACHE_DIR", t.TempDir())
-	ctx := t.Context()
+func TestGetSkillsRefResolvesFromManifest(t *testing.T) {
+	// Pre-populate the cache so FetchManifest returns from tier 1 (local cache)
+	// without hitting the network. The embedded manifest fallback is tested
+	// separately in clicompat_test.go.
+	cacheDir := t.TempDir()
+	t.Setenv("DATABRICKS_CACHE_DIR", cacheDir)
+	cachePath := filepath.Join(cacheDir, "compat-manifest.json")
+	manifest := `{"next":{"appkit":"0.24.0","skills":"0.1.5"},"0.300.0":{"appkit":"0.24.0","skills":"0.1.5"}}`
+	require.NoError(t, os.WriteFile(cachePath, []byte(manifest), 0o644))
 
-	ref, err := GetSkillsRef(ctx)
-	require.NoError(t, err, "GetSkillsRef should succeed via embedded manifest")
+	ref, err := GetSkillsRef(t.Context())
+	require.NoError(t, err, "GetSkillsRef should succeed via cached manifest")
 	assert.NotEmpty(t, ref)
 	assert.True(t, len(ref) > 1 && ref[0] == 'v', "ref should start with 'v', got %q", ref)
 }

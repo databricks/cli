@@ -23,9 +23,9 @@ import (
 	"github.com/databricks/cli/libs/apps/initializer"
 	"github.com/databricks/cli/libs/apps/manifest"
 	"github.com/databricks/cli/libs/apps/prompt"
+	"github.com/databricks/cli/libs/clicompat"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/clicompat"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/git"
 	"github.com/databricks/cli/libs/log"
@@ -811,7 +811,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		default:
 			appkitVersion, err := clicompat.ResolveAppKitVersion(ctx)
 			if err != nil {
-				return fmt.Errorf("could not resolve AppKit template version: %w. Use --version to specify a version manually", err)
+				return fmt.Errorf("could not resolve AppKit template version: %w; use --version to specify a version manually", err)
 			}
 			gitRef = normalizeVersion(appkitVersion)
 			cmdio.LogString(ctx, "Using AppKit template version "+appkitVersion)

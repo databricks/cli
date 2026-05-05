@@ -16,8 +16,8 @@ import (
 
 	"github.com/databricks/cli/experimental/aitools/lib/agents"
 	"github.com/databricks/cli/internal/build"
-	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/clicompat"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 	"golang.org/x/mod/semver"
