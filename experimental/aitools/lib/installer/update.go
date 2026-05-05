@@ -81,7 +81,10 @@ func UpdateSkills(ctx context.Context, src ManifestSource, targetAgents []*agent
 		return nil, errors.New("no skills installed. Run 'databricks experimental aitools install' to install")
 	}
 
-	latestTag := GetSkillsRef(ctx)
+	latestTag, err := GetSkillsRef(ctx)
+	if err != nil {
+		return nil, err
+	}
 
 	if state.Release == latestTag && !opts.Force {
 		cmdio.LogString(ctx, "Already up to date.")
