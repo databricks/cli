@@ -137,8 +137,6 @@ func runQuery(ctx context.Context, cmd *cobra.Command, sql string, f queryFlags)
 		return err
 	}
 
-	cmdio.LogString(ctx, fmt.Sprintf("Connecting to %s...", resolved.DisplayName))
-
 	pgxCfg, err := buildPgxConfig(connectConfig{
 		Host:           resolved.Host,
 		Port:           5432,
@@ -157,7 +155,13 @@ func runQuery(ctx context.Context, cmd *cobra.Command, sql string, f queryFlags)
 		MaxDelay:     10 * time.Second,
 	}
 
+	// Spinner clears its line on Close, so the "Connecting to ..." status
+	// disappears once the connection is up. cmdio.NewSpinner already writes
+	// to stderr and degrades to a no-op in non-interactive terminals.
+	sp := cmdio.NewSpinner(ctx)
+	sp.Update("Connecting to " + resolved.DisplayName)
 	conn, err := connectWithRetry(ctx, pgxCfg, rc, pgx.ConnectConfig)
+	sp.Close()
 	if err != nil {
 		return err
 	}
