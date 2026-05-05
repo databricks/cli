@@ -12,6 +12,8 @@ import (
 	"testing"
 	"time"
 
+	"slices"
+
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/env"
 	"github.com/stretchr/testify/assert"
@@ -382,6 +384,11 @@ func TestEmbeddedManifest_IsWellFormed(t *testing.T) {
 	for _, k := range versionedKeys {
 		assert.True(t, semver.IsValid("v"+k), "key %q must be valid semver", k)
 	}
+
+	// Sort to get deterministic order from map iteration.
+	slices.SortFunc(versionedKeys, func(a, b string) int {
+		return semver.Compare("v"+a, "v"+b)
+	})
 
 	// "next" versions must be >= all versioned entries.
 	for _, k := range versionedKeys {

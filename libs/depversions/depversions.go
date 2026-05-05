@@ -94,12 +94,13 @@ func FetchManifest(ctx context.Context) (Manifest, error) {
 	}
 
 	// Tier 3b: embedded manifest.
-	if m, err := parseManifest(build.EmbeddedManifestJSON); err == nil {
+	m, embeddedErr := parseManifest(build.EmbeddedManifestJSON)
+	if embeddedErr == nil {
 		log.Debugf(ctx, "Using embedded manifest (remote and local cache failed)")
 		return m, nil
 	}
 
-	return nil, fmt.Errorf("all manifest sources failed: %w", fetchErr)
+	return nil, fmt.Errorf("all manifest sources failed (remote: %w, embedded: %v)", fetchErr, embeddedErr)
 }
 
 // EmbeddedDefaultAppKitVersion returns the "next" entry's AppKit version from
