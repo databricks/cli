@@ -127,6 +127,10 @@ google/jsonschema-go - https://github.com/google/jsonschema-go
 Copyright 2025 Google LLC
 License - https://github.com/google/jsonschema-go/blob/main/LICENSE
 
+jackc/pgx - https://github.com/jackc/pgx
+Copyright (c) 2013-2021 Jack Christensen
+License - https://github.com/jackc/pgx/blob/master/LICENSE
+
 charmbracelet/bubbles - https://github.com/charmbracelet/bubbles
 Copyright (c) 2020-2025 Charmbracelet, Inc
 License - https://github.com/charmbracelet/bubbles/blob/master/LICENSE
