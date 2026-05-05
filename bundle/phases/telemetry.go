@@ -180,6 +180,8 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 			ResourceClusterIDs:   clusterIds,
 			ResourceDashboardIDs: dashboardIds,
 
+			ResourcesMetadata: collectResourcesMetadata(ctx, b),
+
 			Experimental: &protos.BundleDeployExperimental{
 				BundleMode:                   mode,
 				ConfigurationFileCount:       b.Metrics.ConfigurationFileCount,

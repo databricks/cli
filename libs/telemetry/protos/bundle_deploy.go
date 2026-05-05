@@ -10,6 +10,9 @@ type BundleDeployEvent struct {
 	// Error message encountered during the bundle deploy command, if any.
 	ErrorMessage string `json:"error_message,omitempty"`
 
+	// Deprecated: use Experimental.StateSize.ResourceStats[*].Count instead.
+	// Per-resource-type counts are derived from deployment state at telemetry-
+	// emission time and tracked under StateSize.
 	ResourceCount                     int64 `json:"resource_count"`
 	ResourceJobCount                  int64 `json:"resource_job_count"`
 	ResourcePipelineCount             int64 `json:"resource_pipeline_count"`
@@ -31,6 +34,9 @@ type BundleDeployEvent struct {
 	ResourcePipelineIDs  []string `json:"resource_pipeline_ids,omitempty"`
 	ResourceClusterIDs   []string `json:"resource_cluster_ids,omitempty"`
 	ResourceDashboardIDs []string `json:"resource_dashboard_ids,omitempty"`
+
+	// Per-resource-type metadata (counts and state-size statistics).
+	ResourcesMetadata *BundleResourcesMetadata `json:"resources_metadata,omitempty"`
 
 	Experimental *BundleDeployExperimental `json:"experimental,omitempty"`
 }
@@ -86,6 +92,37 @@ type BundleDeployExperimental struct {
 
 	// Local cache measurements in milliseconds (compute duration, potential savings, etc.)
 	LocalCacheMeasurementsMs []IntMapEntry `json:"local_cache_measurements_ms,omitempty"`
+}
+
+// BundleResourcesMetadata mirrors the universe proto. Per-resource-type
+// metadata for one bundle deployment, including counts (which replace the
+// deprecated DatabricksBundleDeployEvent.resource_*_count fields) and
+// state-size statistics.
+type BundleResourcesMetadata struct {
+	// "direct" or "terraform"
+	StateEngine string `json:"state_engine,omitempty"`
+
+	// Size in bytes of the entire deployment state file on disk.
+	StateFileSizeBytes int64 `json:"state_file_size_bytes,omitempty"`
+
+	// One entry per resource type present in the bundle.
+	Resources []ResourceMetadata `json:"resources,omitempty"`
+}
+
+// ResourceMetadata holds metadata about resources of a single type within one
+// bundle deployment.
+type ResourceMetadata struct {
+	// Resource type name: "jobs", "pipelines", "schemas", ...
+	ResourceType string `json:"resource_type,omitempty"`
+
+	// Number of resources of this type declared in the bundle configuration.
+	Count int64 `json:"count,omitempty"`
+
+	// State-size statistics across resources of this type tracked in the
+	// deployment state. Zero when no resources of this type are in state.
+	StateSizeMaxBytes    int64 `json:"state_size_max_bytes,omitempty"`
+	StateSizeMeanBytes   int64 `json:"state_size_mean_bytes,omitempty"`
+	StateSizeMedianBytes int64 `json:"state_size_median_bytes,omitempty"`
 }
 
 type BoolMapEntry struct {
