@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 	"net/url"
+	"strconv"
 	"time"
 
 	"github.com/databricks/cli/libs/cmdio"
@@ -73,8 +74,9 @@ type connectFunc func(ctx context.Context, cfg *pgx.ConnConfig) (*pgx.Conn, erro
 // Zero DeadlineDelay would race the cancel-request and could leave the
 // connection unusable.
 func buildPgxConfig(c connectConfig) (*pgx.ConnConfig, error) {
-	dsn := fmt.Sprintf("postgresql://%s:%d/%s?sslmode=require",
-		c.Host, c.Port, url.PathEscape(c.Database))
+	dsn := fmt.Sprintf("postgresql://%s/%s?sslmode=require",
+		net.JoinHostPort(c.Host, strconv.Itoa(c.Port)),
+		url.PathEscape(c.Database))
 	cfg, err := pgx.ParseConfig(dsn)
 	if err != nil {
 		return nil, fmt.Errorf("parse pgx config: %w", err)
