@@ -66,7 +66,7 @@ func (c cachedManifest) isFresh(maxAge time.Duration) bool {
 // so tests can replace it.
 var httpClient = &http.Client{Timeout: fetchTimeout}
 
-// FetchManifest returns the compatibility manifest using a 3-tier strategy:
+// FetchManifest returns the compatibility manifest using a 4-tier fallback:
 //  1. Local cached file (if fresh, < 1 hour old)
 //  2. Remote fetch from GitHub (with retry)
 //  3. Stale local file (if remote fails but a previously cached file exists)
@@ -238,7 +238,9 @@ func readLocalManifest(path string) (cachedManifest, error) {
 	return cachedManifest{manifest: m, modTime: info.ModTime()}, nil
 }
 
-// writeLocalManifest atomically writes the manifest to the local cache path.
+// writeLocalManifest writes the manifest to the local cache path using a
+// temp-file-then-rename pattern. The os.Remove before os.Rename is needed
+// for Windows, where Rename fails if the destination exists.
 func writeLocalManifest(ctx context.Context, path string, m Manifest) {
 	if path == "" {
 		return

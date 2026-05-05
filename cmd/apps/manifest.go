@@ -30,7 +30,7 @@ func runManifestOnly(ctx context.Context, templatePath, branch, version string) 
 		default:
 			appkitVersion, err := clicompat.ResolveAppKitVersion(ctx)
 			if err != nil {
-				return fmt.Errorf("could not resolve AppKit template version: %w. Use --version to specify a version manually", err)
+				return fmt.Errorf("could not resolve AppKit template version: %w; use --version to specify a version manually", err)
 			}
 			gitRef = normalizeVersion(appkitVersion)
 		}

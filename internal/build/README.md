@@ -6,14 +6,14 @@
 
 ```json
 {
-  "next": { "appkit": "0.24.0", "skills": "0.1.4" },
-  "0.299.0": { "appkit": "0.24.0", "skills": "0.1.4" }
+  "next": { "appkit": "0.24.0", "skills": "0.1.5" },
+  "0.300.0": { "appkit": "0.24.0", "skills": "0.1.5" }
 }
 ```
 
 - Each key is a CLI version (`X.Y.Z`) or `"next"`.
 - Each value specifies the compatible `appkit` and `skills` versions.
-- `"next"` is used for CLI versions newer than any listed entry and for dev builds.
+- `"next"` is used for dev builds (`0.0.0-dev*`). For production CLI versions newer than all listed entries, the highest versioned entry is used.
 
 ## How the CLI resolves versions
 
@@ -25,7 +25,7 @@
 
 ## Manifest sources (fallback chain)
 
-At runtime, the CLI resolves the manifest from three sources:
+At runtime, the CLI resolves the manifest from four sources:
 
 1. **Local cache** (`~/.cache/databricks/compat-manifest.json`) — used if fresh (< 1 hour old).
 2. **Remote fetch** from GitHub — used when cache is stale or missing. On success, the local cache is updated.
@@ -46,10 +46,10 @@ This process is manual for now but can be automated as part of the release workf
 
 ## Validation
 
-The manifest is validated by Go tests in `libs/depversions/`:
+The manifest is validated by Go tests in `libs/clicompat/`:
 
 ```bash
-go test ./libs/depversions/... -run TestEmbeddedManifest -v
+go test ./libs/clicompat/... -run TestEmbeddedManifest -v
 ```
 
 This checks: valid JSON, `"next"` key present, at least one versioned entry, valid semver keys, `next` versions >= all entries, and ascending key order.

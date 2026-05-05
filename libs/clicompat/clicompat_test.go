@@ -8,11 +8,10 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"slices"
 	"sync/atomic"
 	"testing"
 	"time"
-
-	"slices"
 
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/env"
