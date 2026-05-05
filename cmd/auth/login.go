@@ -147,7 +147,11 @@ a new profile is created.
 		ctx := cmd.Context()
 		profileName := cmd.Flag("profile").Value.String()
 
-		tokenCache, mode, err := storage.ResolveCache(ctx, "")
+		// Resolve the cache before the browser step so a missing/locked keyring
+		// surfaces here rather than after the user completes OAuth. When secure
+		// is selected but the keyring is unreachable, this silently falls back
+		// to plaintext and persists auth_storage = plaintext for next time.
+		tokenCache, mode, err := storage.ResolveCacheForLogin(ctx, "")
 		if err != nil {
 			return err
 		}

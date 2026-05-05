@@ -217,3 +217,43 @@ func TestKeyringCache_StoreNil_TimesOut(t *testing.T) {
 	var timeoutErr *TimeoutError
 	assert.ErrorAs(t, err, &timeoutErr, "expected TimeoutError, got %T: %v", err, err)
 }
+
+func TestProbeKeyring_SuccessLeavesNoEntry(t *testing.T) {
+	backend := newFakeBackend()
+
+	err := probeWithBackend(backend, 100*time.Millisecond)
+	require.NoError(t, err)
+
+	_, ok := backend.items[itemKey(keyringServiceName, keyringProbeAccount)]
+	assert.False(t, ok, "probe must clean up after itself")
+}
+
+func TestProbeKeyring_SetErrorPropagates(t *testing.T) {
+	boom := errors.New("no backend")
+	backend := newFakeBackend()
+	backend.setErr = boom
+
+	err := probeWithBackend(backend, 100*time.Millisecond)
+	require.Error(t, err)
+	assert.ErrorIs(t, err, boom)
+}
+
+func TestProbeKeyring_SetTimesOut(t *testing.T) {
+	backend := newFakeBackend()
+	backend.setBlock = true
+
+	err := probeWithBackend(backend, 50*time.Millisecond)
+	require.Error(t, err)
+	var timeoutErr *TimeoutError
+	assert.ErrorAs(t, err, &timeoutErr)
+}
+
+func TestProbeKeyring_DeleteErrorPropagates(t *testing.T) {
+	boom := errors.New("delete failed")
+	backend := newFakeBackend()
+	backend.deleteErr = boom
+
+	err := probeWithBackend(backend, 100*time.Millisecond)
+	require.Error(t, err)
+	assert.ErrorIs(t, err, boom)
+}

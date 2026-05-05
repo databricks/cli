@@ -3,9 +3,11 @@ package storage
 import (
 	"context"
 	"errors"
+	"os"
 	"path/filepath"
 	"testing"
 
+	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m/cache"
@@ -24,8 +26,9 @@ func (stubCache) Lookup(string) (*oauth2.Token, error) { return nil, cache.ErrNo
 func fakeFactories(t *testing.T) cacheFactories {
 	t.Helper()
 	return cacheFactories{
-		newFile:    func(context.Context) (cache.TokenCache, error) { return stubCache{source: "file"}, nil },
-		newKeyring: func() cache.TokenCache { return stubCache{source: "keyring"} },
+		newFile:      func(context.Context) (cache.TokenCache, error) { return stubCache{source: "file"}, nil },
+		newKeyring:   func() cache.TokenCache { return stubCache{source: "keyring"} },
+		probeKeyring: func() error { return nil },
 	}
 }
 
@@ -106,14 +109,82 @@ func TestResolveCache_FileFactoryErrorPropagates(t *testing.T) {
 	ctx := t.Context()
 	boom := errors.New("disk full")
 	factories := cacheFactories{
-		newFile:    func(context.Context) (cache.TokenCache, error) { return nil, boom },
-		newKeyring: func() cache.TokenCache { return stubCache{source: "keyring"} },
+		newFile:      func(context.Context) (cache.TokenCache, error) { return nil, boom },
+		newKeyring:   func() cache.TokenCache { return stubCache{source: "keyring"} },
+		probeKeyring: func() error { return nil },
 	}
 
 	_, _, err := resolveCacheWith(ctx, StorageModePlaintext, factories)
 
 	require.Error(t, err)
 	assert.ErrorIs(t, err, boom)
+}
+
+func TestResolveCacheForLogin_PlaintextSkipsProbe(t *testing.T) {
+	hermetic(t)
+	ctx := t.Context()
+	probed := false
+	f := fakeFactories(t)
+	f.probeKeyring = func() error {
+		probed = true
+		return nil
+	}
+
+	got, mode, err := resolveCacheForLoginWith(ctx, StorageModePlaintext, f)
+
+	require.NoError(t, err)
+	assert.Equal(t, StorageModePlaintext, mode)
+	assert.Equal(t, "file", got.(stubCache).source)
+	assert.False(t, probed, "probe must not run when mode is already plaintext")
+}
+
+func TestResolveCacheForLogin_SecureProbeOK(t *testing.T) {
+	hermetic(t)
+	ctx := env.Set(t.Context(), EnvVar, "secure")
+
+	got, mode, err := resolveCacheForLoginWith(ctx, "", fakeFactories(t))
+
+	require.NoError(t, err)
+	assert.Equal(t, StorageModeSecure, mode)
+	assert.Equal(t, "keyring", got.(stubCache).source)
+}
+
+func TestResolveCacheForLogin_FallsBackWhenProbeFails(t *testing.T) {
+	hermetic(t)
+	ctx := env.Set(t.Context(), EnvVar, "secure")
+	configPath := env.Get(ctx, "DATABRICKS_CONFIG_FILE")
+
+	f := fakeFactories(t)
+	f.probeKeyring = func() error { return errors.New("no keyring") }
+
+	got, mode, err := resolveCacheForLoginWith(ctx, "", f)
+
+	require.NoError(t, err)
+	assert.Equal(t, StorageModePlaintext, mode)
+	assert.Equal(t, "file", got.(stubCache).source)
+
+	persisted, err := databrickscfg.GetConfiguredAuthStorage(ctx, configPath)
+	require.NoError(t, err)
+	assert.Equal(t, "plaintext", persisted, "auth_storage must be persisted on first fallback")
+}
+
+func TestResolveCacheForLogin_DoesNotOverwriteExistingAuthStorage(t *testing.T) {
+	hermetic(t)
+	ctx := env.Set(t.Context(), EnvVar, "secure")
+	configPath := env.Get(ctx, "DATABRICKS_CONFIG_FILE")
+	require.NoError(t, os.WriteFile(configPath, []byte("[__settings__]\nauth_storage = secure\n"), 0o600))
+
+	f := fakeFactories(t)
+	f.probeKeyring = func() error { return errors.New("no keyring") }
+
+	_, mode, err := resolveCacheForLoginWith(ctx, "", f)
+
+	require.NoError(t, err)
+	assert.Equal(t, StorageModePlaintext, mode)
+
+	persisted, err := databrickscfg.GetConfiguredAuthStorage(ctx, configPath)
+	require.NoError(t, err)
+	assert.Equal(t, "secure", persisted, "existing auth_storage must not be overwritten by fallback")
 }
 
 func TestWrapForOAuthArgument(t *testing.T) {

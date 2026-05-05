@@ -196,6 +196,29 @@ func SetDefaultProfile(ctx context.Context, profileName, configFilePath string) 
 	return writeConfigFile(ctx, configFile)
 }
 
+// SetConfiguredAuthStorage writes the auth_storage key to the [__settings__]
+// section. Used by auth login to persist a plaintext fallback when the OS
+// keyring is unreachable, so subsequent commands skip the keyring probe and
+// route directly to the file cache.
+func SetConfiguredAuthStorage(ctx context.Context, value, configFilePath string) error {
+	configFile, err := loadOrCreateConfigFile(ctx, configFilePath)
+	if err != nil {
+		return err
+	}
+
+	section, err := configFile.GetSection(databricksSettingsSection)
+	if err != nil {
+		section, err = configFile.NewSection(databricksSettingsSection)
+		if err != nil {
+			return fmt.Errorf("cannot create %s section: %w", databricksSettingsSection, err)
+		}
+	}
+
+	section.Key(authStorageKey).SetValue(value)
+
+	return writeConfigFile(ctx, configFile)
+}
+
 // ClearDefaultProfile removes the default_profile key from the [__settings__]
 // section if the current default matches the given profile name.
 func ClearDefaultProfile(ctx context.Context, profileName, configFilePath string) error {

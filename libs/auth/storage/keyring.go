@@ -17,6 +17,11 @@ import (
 // cache key the SDK passes through TokenCache.Store / Lookup.
 const keyringServiceName = "databricks-cli"
 
+// keyringProbeAccount is the account name ProbeKeyring writes and deletes
+// to verify the keyring is reachable. Distinct from any real cache key so a
+// concurrent probe cannot collide with an actual OAuth token entry.
+const keyringProbeAccount = "__probe__"
+
 // defaultKeyringTimeout is how long a single keyring operation is allowed
 // to run before the wrapper returns a TimeoutError. Matches the value used
 // by GitHub CLI.
@@ -77,6 +82,34 @@ func NewKeyringCache() cache.TokenCache {
 		timeout:        defaultKeyringTimeout,
 		keyringSvcName: keyringServiceName,
 	}
+}
+
+// ProbeKeyring returns nil if the OS keyring is reachable and accepts a
+// write+delete cycle within the standard timeout. A non-nil error means the
+// keyring cannot be used in this environment (no backend, headless Linux
+// session waiting on a UI prompt, locked keychain refusing access, etc.).
+//
+// Used by databricks auth login to decide whether to silently fall back to
+// plaintext storage before opening the browser, so the user does not
+// complete an OAuth flow only to fail at the final Store call.
+func ProbeKeyring() error {
+	return probeWithBackend(zalandoBackend{}, defaultKeyringTimeout)
+}
+
+func probeWithBackend(backend keyringBackend, timeout time.Duration) error {
+	c := &keyringCache{
+		backend:        backend,
+		timeout:        timeout,
+		keyringSvcName: keyringServiceName,
+	}
+	tok := &oauth2.Token{AccessToken: "probe"}
+	if err := c.Store(keyringProbeAccount, tok); err != nil {
+		return fmt.Errorf("write: %w", err)
+	}
+	if err := c.Store(keyringProbeAccount, nil); err != nil {
+		return fmt.Errorf("delete: %w", err)
+	}
+	return nil
 }
 
 // Store stores t under key. Nil t deletes the entry; deleting a missing
