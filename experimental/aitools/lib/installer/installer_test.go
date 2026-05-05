@@ -742,3 +742,15 @@ func TestSupportsProjectScopeSetCorrectly(t *testing.T) {
 		assert.Equal(t, want, agent.SupportsProjectScope, "SupportsProjectScope for %s", agent.Name)
 	}
 }
+
+func TestGetSkillsRefFallsBackToEmbeddedManifest(t *testing.T) {
+	// Do NOT set DATABRICKS_SKILLS_REF — exercises the production code path
+	// where the version is resolved from the embedded compatibility manifest.
+	t.Setenv("DATABRICKS_CACHE_DIR", t.TempDir())
+	ctx := t.Context()
+
+	ref, err := GetSkillsRef(ctx)
+	require.NoError(t, err, "GetSkillsRef should succeed via embedded manifest")
+	assert.NotEmpty(t, ref)
+	assert.True(t, len(ref) > 1 && ref[0] == 'v', "ref should start with 'v', got %q", ref)
+}

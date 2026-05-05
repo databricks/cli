@@ -84,6 +84,12 @@ func printVersionLine(ctx context.Context, label string, state *installer.Instal
 		skillNoun = "skill"
 	}
 
+	if latestRef == "" {
+		cmdio.LogString(ctx, fmt.Sprintf("  %s: v%s (%d %s)", label, version, len(state.Skills), skillNoun))
+		cmdio.LogString(ctx, "  Last updated: "+state.LastUpdated.Format("2006-01-02"))
+		return
+	}
+
 	if latestRef == state.Release {
 		cmdio.LogString(ctx, fmt.Sprintf("  %s: v%s (%d %s, up to date)", label, version, len(state.Skills), skillNoun))
 		cmdio.LogString(ctx, "  Last updated: "+state.LastUpdated.Format("2006-01-02"))
