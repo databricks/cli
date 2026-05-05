@@ -1,4 +1,4 @@
-package depversions
+package clicompat
 
 import (
 	"context"
@@ -178,7 +178,7 @@ func TestFetchManifest_RemoteFailFallsBackToEmbedded(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify it returned the embedded manifest values.
-	embedded, _ := parseManifest(build.EmbeddedManifestJSON)
+	embedded, _ := parseManifest(build.CLICompatManifestJSON)
 	assert.Equal(t, embedded["next"].AppKit, result["next"].AppKit)
 }
 
@@ -362,7 +362,7 @@ func TestEmbeddedDefaultAppKitVersion(t *testing.T) {
 // --- Embedded manifest validation (replaces AppKit TS validator) ---
 
 func TestEmbeddedManifest_IsWellFormed(t *testing.T) {
-	m, err := parseManifest(build.EmbeddedManifestJSON)
+	m, err := parseManifest(build.CLICompatManifestJSON)
 	require.NoError(t, err, "embedded manifest must be valid JSON")
 
 	// Must have "next" key.

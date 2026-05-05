@@ -11,10 +11,10 @@ Updates `internal/build/cli-compat.json` with new AppKit and Agent Skills versio
 
 ## Arguments
 
-Parse the user's input for optional version arguments:
+Parse the user's input for optional named flags:
 
-- `--appkit <version>` or first positional arg → AppKit version (e.g. `0.28.0`)
-- `--skills <version>` or second positional arg → Agent Skills version (e.g. `0.1.6`)
+- `--appkit <version>` → AppKit version (e.g. `0.28.0`)
+- `--skills <version>` → Agent Skills version (e.g. `0.1.6`)
 - No args → auto-detect latest versions from GitHub tags
 
 Versions should be provided **without** the `v` prefix (e.g. `0.28.0`, not `v0.28.0`). If provided with the prefix, strip it.
@@ -23,9 +23,9 @@ Versions should be provided **without** the `v` prefix (e.g. `0.28.0`, not `v0.2
 
 ### Step 1: Resolve versions
 
-If both `appkit` and `skills` versions were provided as arguments, skip to Step 2.
+If both `--appkit` and `--skills` versions were provided, skip to Step 2.
 
-Otherwise, fetch the latest tags from GitHub:
+For any missing version, fetch the latest tag from GitHub:
 
 ```bash
 # Latest appkit version (strip leading 'v')
@@ -47,14 +47,20 @@ Show the resolved versions to the user and ask:
 
 ### Step 2: Validate tags exist
 
-Verify that the corresponding Git tags exist on GitHub:
+Verify that the corresponding Git tags exist on GitHub. For AppKit, also validate the `template-v` tag (used by `apps init`):
 
 ```bash
-gh api repos/databricks/appkit/git/ref/tags/v{appkit_version} --jq '.ref' 2>&1
-gh api repos/databricks/databricks-agent-skills/git/ref/tags/v{skills_version} --jq '.ref' 2>&1
+# AppKit release tag
+gh api repos/databricks/appkit/git/ref/tags/v{appkit_version} --jq '.ref'
+
+# AppKit template tag (used by apps init)
+gh api repos/databricks/appkit/git/ref/tags/template-v{appkit_version} --jq '.ref'
+
+# Agent Skills tag
+gh api repos/databricks/databricks-agent-skills/git/ref/tags/v{skills_version} --jq '.ref'
 ```
 
-If either tag doesn't exist, report the error and stop.
+If any tag doesn't exist, report the error and stop.
 
 ### Step 3: Read current manifest
 
@@ -71,7 +77,7 @@ Write the updated `internal/build/cli-compat.json`.
 Run the Go tests to ensure the manifest is well-formed:
 
 ```bash
-go test ./libs/depversions/... -run TestEmbeddedManifest -v
+go test ./libs/clicompat/... -run TestEmbeddedManifest -v
 ```
 
 If validation fails, show the errors and fix them before proceeding.
@@ -84,12 +90,12 @@ git checkout -b bump-cli-compat-appkit-{appkit_version}-skills-{skills_version}
 
 # Stage and commit
 git add internal/build/cli-compat.json
-git commit -s -m "chore: bump cli-compat to appkit {appkit_version}, skills {skills_version}"
+git commit -s -m "Bump cli-compat to appkit {appkit_version}, skills {skills_version}"
 
 # Push and create PR
 git push -u origin HEAD
 gh pr create \
-  --title "chore: bump cli-compat to appkit {appkit_version}, skills {skills_version}" \
+  --title "Bump cli-compat to appkit {appkit_version}, skills {skills_version}" \
   --body "$(cat <<'EOF'
 ## Summary
 Bump `cli-compat.json` to use:
@@ -98,7 +104,7 @@ Bump `cli-compat.json` to use:
 
 ## Checklist
 - [ ] Evals passed with no regressions
-- [ ] `go test ./libs/depversions/... -run TestEmbeddedManifest` passes
+- [ ] `go test ./libs/clicompat/... -run TestEmbeddedManifest` passes
 EOF
 )"
 ```
@@ -109,9 +115,9 @@ Show the PR URL to the user when done.
 
 ### Example: With explicit versions
 ```
-/bump-cli-compat 0.28.0 0.1.6
+/bump-cli-compat --appkit 0.28.0 --skills 0.1.6
 ```
-Validates tags exist, updates manifest, creates PR.
+Validates tags exist (including `template-v0.28.0`), updates manifest, creates PR.
 
 ### Example: Auto-detect latest
 ```
@@ -119,8 +125,8 @@ Validates tags exist, updates manifest, creates PR.
 ```
 Fetches latest tags, asks for eval confirmation, then updates and creates PR.
 
-### Example: With flags
+### Example: Only bump AppKit
 ```
-/bump-cli-compat --appkit 0.28.0 --skills 0.1.6
+/bump-cli-compat --appkit 0.28.0
 ```
-Same as positional args.
+Auto-detects latest skills version, asks for confirmation, then updates both.

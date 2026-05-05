@@ -1,4 +1,4 @@
-package depversions
+package clicompat
 
 import (
 	"context"
@@ -34,6 +34,9 @@ const (
 
 	// localManifestFile is the filename for the locally cached manifest.
 	localManifestFile = "compat-manifest.json"
+
+	// devVersionPrefix identifies dev builds that always use the "next" entry.
+	devVersionPrefix = "0.0.0-dev"
 
 	fetchRetries      = 2
 	fetchRetryBackoff = 300 * time.Millisecond
@@ -94,20 +97,20 @@ func FetchManifest(ctx context.Context) (Manifest, error) {
 	}
 
 	// Tier 3b: embedded manifest.
-	m, embeddedErr := parseManifest(build.EmbeddedManifestJSON)
+	m, embeddedErr := parseManifest(build.CLICompatManifestJSON)
 	if embeddedErr == nil {
 		log.Debugf(ctx, "Using embedded manifest (remote and local cache failed)")
 		return m, nil
 	}
 
-	return nil, fmt.Errorf("all manifest sources failed (remote: %w, embedded: %v)", fetchErr, embeddedErr)
+	return nil, fmt.Errorf("all manifest sources failed (remote: %w, embedded: %w)", fetchErr, embeddedErr)
 }
 
 // EmbeddedDefaultAppKitVersion returns the "next" entry's AppKit version from
 // the embedded manifest. Used for help text defaults where a network call is
 // not appropriate. Returns "" if the embedded manifest is invalid.
 func EmbeddedDefaultAppKitVersion() string {
-	m, err := parseManifest(build.EmbeddedManifestJSON)
+	m, err := parseManifest(build.CLICompatManifestJSON)
 	if err != nil {
 		return ""
 	}
@@ -136,7 +139,7 @@ func Resolve(m Manifest, cliVersion string) (Entry, error) {
 	}
 
 	// Dev builds always use "next".
-	if strings.HasPrefix(cliVersion, "0.0.0-dev") {
+	if strings.HasPrefix(cliVersion, devVersionPrefix) {
 		return next, nil
 	}
 
