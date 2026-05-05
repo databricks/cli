@@ -40,25 +40,25 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 >>> [CLI] jobs get [BAR_ID]
 {
-  "created_time":[UNIX_TIME_MILLIS],
-  "creator_user_name":"[USERNAME]",
-  "job_id":[BAR_ID],
-  "run_as_user_name":"[USERNAME]",
+  "created_time": [UNIX_TIME_MILLIS],
+  "creator_user_name": "[USERNAME]",
+  "job_id": [BAR_ID],
+  "run_as_user_name": "[USERNAME]",
   "settings": {
     "deployment": {
-      "kind":"BUNDLE",
-      "metadata_file_path":"/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
     },
-    "description":"depends on foo id [FOO_ID]",
-    "edit_mode":"UI_LOCKED",
+    "description": "depends on foo id [FOO_ID]",
+    "edit_mode": "UI_LOCKED",
     "email_notifications": {},
-    "format":"MULTI_TASK",
-    "max_concurrent_runs":1,
-    "name":"bar",
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "bar",
     "queue": {
-      "enabled":true
+      "enabled": true
     },
-    "timeout_seconds":0,
+    "timeout_seconds": 0,
     "webhook_notifications": {}
   }
 }
