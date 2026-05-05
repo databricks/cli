@@ -146,4 +146,10 @@ func TestBuildPgxConfig(t *testing.T) {
 	assert.Equal(t, "secret", cfg.Password)
 	assert.Equal(t, "db", cfg.Database)
 	assert.Equal(t, 30*time.Second, cfg.ConnectTimeout)
+
+	// sslmode=require must produce a non-nil TLSConfig for the real host.
+	// Connecting in plaintext makes Lakebase reject the pgwire startup with
+	// "Invalid protocol version: 196608".
+	require.NotNil(t, cfg.TLSConfig, "TLSConfig must be set for sslmode=require")
+	assert.Equal(t, "host.example.com", cfg.TLSConfig.ServerName)
 }
