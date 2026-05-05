@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"net/url"
 	"time"
 
 	"github.com/databricks/cli/libs/cmdio"
@@ -48,20 +49,24 @@ type retryConfig struct {
 // is exercised by integration tests against real Lakebase endpoints.
 type connectFunc func(ctx context.Context, cfg *pgx.ConnConfig) (*pgx.Conn, error)
 
-// buildPgxConfig parses a base DSN to inherit pgx's TLS shape, then patches
-// in the resolved values. The DSN-then-patch pattern is the recommended way
-// to configure pgx for `sslmode=require` because building a pgx.ConnConfig
-// by hand omits internal fields that the parser sets.
+// buildPgxConfig parses a DSN that includes the real host so pgx derives the
+// right TLSConfig and Fallbacks for sslmode=require. An empty host in the DSN
+// makes pgx fall back to defaultHost(), which resolves to a unix-socket path.
+// pgconn classifies that as a unix socket and assigns TLSConfig=nil; patching
+// cfg.Host after the parse does not re-derive TLSConfig, so the connection
+// goes out in plaintext and Lakebase rejects the pgwire startup with
+// "Invalid protocol version: 196608". User, password, and connect timeout are
+// patched as fields because tokens can contain characters that would need
+// URL-escaping in userinfo.
 func buildPgxConfig(c connectConfig) (*pgx.ConnConfig, error) {
-	cfg, err := pgx.ParseConfig("postgresql:///?sslmode=require")
+	dsn := fmt.Sprintf("postgresql://%s:%d/%s?sslmode=require",
+		c.Host, c.Port, url.PathEscape(c.Database))
+	cfg, err := pgx.ParseConfig(dsn)
 	if err != nil {
 		return nil, fmt.Errorf("parse pgx config: %w", err)
 	}
-	cfg.Host = c.Host
-	cfg.Port = uint16(c.Port)
 	cfg.User = c.Username
 	cfg.Password = c.Password
-	cfg.Database = c.Database
 	cfg.ConnectTimeout = c.ConnectTimeout
 	return cfg, nil
 }
