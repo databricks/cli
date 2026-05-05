@@ -39,31 +39,31 @@ Deployment complete!
 === Fetch pipeline ID and verify remote state
 >>> [CLI] pipelines get [MY_ID]
 {
-  "creator_user_name":"[USERNAME]",
-  "effective_publishing_mode":"DEFAULT_PUBLISHING_MODE",
-  "last_modified":[UNIX_TIME_MILLIS],
-  "name":"test-pipeline-[UNIQUE_NAME]",
-  "pipeline_id":"[MY_ID]",
-  "run_as_user_name":"[USERNAME]",
+  "creator_user_name": "[USERNAME]",
+  "effective_publishing_mode": "DEFAULT_PUBLISHING_MODE",
+  "last_modified": [UNIX_TIME_MILLIS],
+  "name": "test-pipeline-[UNIQUE_NAME]",
+  "pipeline_id": "[MY_ID]",
+  "run_as_user_name": "[USERNAME]",
   "spec": {
-    "channel":"CURRENT",
+    "channel": "CURRENT",
     "deployment": {
-      "kind":"BUNDLE",
-      "metadata_file_path":"/Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/state/metadata.json"
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/state/metadata.json"
     },
-    "edition":"ADVANCED",
-    "id":"[MY_ID]",
+    "edition": "ADVANCED",
+    "id": "[MY_ID]",
     "libraries": [
       {
         "file": {
-          "path":"/Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/files/bar.py"
+          "path": "/Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/files/bar.py"
         }
       }
     ],
-    "name":"test-pipeline-[UNIQUE_NAME]",
-    "storage":"dbfs:/pipelines/[MY_ID]"
+    "name": "test-pipeline-[UNIQUE_NAME]",
+    "storage": "dbfs:/pipelines/[MY_ID]"
   },
-  "state":"IDLE"
+  "state": "IDLE"
 }
 
 === Destroy the pipeline and verify that it's removed from the state and from remote
