@@ -48,7 +48,10 @@ func newListCmd() *cobra.Command {
 func defaultListSkills(cmd *cobra.Command, scope string) error {
 	ctx := cmd.Context()
 
-	ref := installer.GetSkillsRef(ctx)
+	ref, err := installer.GetSkillsRef(ctx)
+	if err != nil {
+		return err
+	}
 
 	src := &installer.GitHubManifestSource{}
 	manifest, err := src.FetchManifest(ctx, ref)
