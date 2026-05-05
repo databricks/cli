@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"os"
 	"os/signal"
 	"strings"
@@ -23,9 +22,6 @@ import (
 )
 
 const (
-	// sqlFileExtension is the file extension used to auto-detect SQL files.
-	sqlFileExtension = ".sql"
-
 	// pollIntervalInitial is the starting interval between status polls.
 	pollIntervalInitial = 1 * time.Second
 
@@ -204,65 +200,21 @@ interactive table browser. Use --output csv to export results as CSV.`,
 }
 
 // resolveSQLs collects SQL statements from --file paths, positional args, and
-// stdin. The returned slice preserves source order: --file paths first (in flag
-// order), then positional args (in arg order), then stdin (only if no other
-// source produced anything). Each SQL is run through cleanSQL.
+// stdin via sqlcli.Collect, then runs each through cleanSQL (the warehouse
+// statement API doesn't care about line comments, so we strip them up front
+// to normalise the wire payload). Returns just the SQL strings so the rest of
+// this command's flow stays unchanged; the Source labels sqlcli adds are
+// dropped on the floor (this command surfaces statement_id, not source).
 func resolveSQLs(ctx context.Context, cmd *cobra.Command, args, filePaths []string) ([]string, error) {
-	var raws []string
-
-	for _, path := range filePaths {
-		data, err := os.ReadFile(path)
-		if err != nil {
-			return nil, fmt.Errorf("read SQL file %s: %w", path, err)
-		}
-		raws = append(raws, string(data))
+	inputs, err := sqlcli.Collect(ctx, cmd.InOrStdin(), args, filePaths, sqlcli.CollectOptions{Cleaner: cleanSQL})
+	if err != nil {
+		return nil, err
 	}
-
-	for _, arg := range args {
-		// If the argument looks like a .sql file, try to read it.
-		// Only fall through to literal SQL if the file doesn't exist.
-		// Surface other errors (permission denied, etc.) directly.
-		if strings.HasSuffix(arg, sqlFileExtension) {
-			data, err := os.ReadFile(arg)
-			if err != nil && !errors.Is(err, os.ErrNotExist) {
-				return nil, fmt.Errorf("read SQL file: %w", err)
-			}
-			if err == nil {
-				raws = append(raws, string(data))
-				continue
-			}
-		}
-		raws = append(raws, arg)
+	out := make([]string, len(inputs))
+	for i, in := range inputs {
+		out[i] = in.SQL
 	}
-
-	if len(raws) == 0 {
-		// No --file and no positional args: try reading from stdin if it's piped.
-		// If stdin was overridden (e.g. cmd.SetIn in tests), always read from it.
-		// Otherwise, only read if stdin is not a TTY (i.e. piped input).
-		in := cmd.InOrStdin()
-		_, isOsFile := in.(*os.File)
-		if isOsFile && cmdio.IsPromptSupported(ctx) {
-			return nil, errors.New("no SQL provided; pass a SQL string, use --file, or pipe via stdin")
-		}
-		data, err := io.ReadAll(in)
-		if err != nil {
-			return nil, fmt.Errorf("read stdin: %w", err)
-		}
-		raws = append(raws, string(data))
-	}
-
-	cleaned := make([]string, 0, len(raws))
-	for i, raw := range raws {
-		c := cleanSQL(raw)
-		if c == "" {
-			if len(raws) == 1 {
-				return nil, errors.New("SQL statement is empty after removing comments and blank lines")
-			}
-			return nil, fmt.Errorf("SQL statement #%d is empty after removing comments and blank lines", i+1)
-		}
-		cleaned = append(cleaned, c)
-	}
-	return cleaned, nil
+	return out, nil
 }
 
 // runBatch executes multiple SQL statements in parallel and renders the result
