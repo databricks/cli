@@ -149,7 +149,7 @@ func TestResolveCacheForLogin_SecureProbeOK(t *testing.T) {
 	assert.Equal(t, "keyring", got.(stubCache).source)
 }
 
-func TestResolveCacheForLogin_FallsBackWhenProbeFails(t *testing.T) {
+func TestResolveCacheForLogin_ExplicitEnvSecure_ProbeFail_Errors(t *testing.T) {
 	hermetic(t)
 	ctx := env.Set(t.Context(), EnvVar, "secure")
 	configPath := env.Get(ctx, "DATABRICKS_CONFIG_FILE")
@@ -157,7 +157,54 @@ func TestResolveCacheForLogin_FallsBackWhenProbeFails(t *testing.T) {
 	f := fakeFactories(t)
 	f.probeKeyring = func() error { return errors.New("no keyring") }
 
-	got, mode, err := resolveCacheForLoginWith(ctx, "", f)
+	_, _, err := resolveCacheForLoginWith(ctx, "", f)
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "secure storage was requested")
+
+	persisted, gerr := databrickscfg.GetConfiguredAuthStorage(ctx, configPath)
+	require.NoError(t, gerr)
+	assert.Equal(t, "", persisted, "env-set secure must not be persisted as plaintext")
+}
+
+func TestResolveCacheForLogin_ExplicitConfigSecure_ProbeFail_Errors(t *testing.T) {
+	hermetic(t)
+	ctx := t.Context()
+	configPath := env.Get(ctx, "DATABRICKS_CONFIG_FILE")
+	require.NoError(t, os.WriteFile(configPath, []byte("[__settings__]\nauth_storage = secure\n"), 0o600))
+
+	f := fakeFactories(t)
+	f.probeKeyring = func() error { return errors.New("no keyring") }
+
+	_, _, err := resolveCacheForLoginWith(ctx, "", f)
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "secure storage was requested")
+
+	persisted, gerr := databrickscfg.GetConfiguredAuthStorage(ctx, configPath)
+	require.NoError(t, gerr)
+	assert.Equal(t, "secure", persisted, "config-set secure must not be silently rewritten")
+}
+
+func TestResolveCacheForLogin_ExplicitOverrideSecure_ProbeFail_Errors(t *testing.T) {
+	hermetic(t)
+	ctx := t.Context()
+
+	f := fakeFactories(t)
+	f.probeKeyring = func() error { return errors.New("no keyring") }
+
+	_, _, err := resolveCacheForLoginWith(ctx, StorageModeSecure, f)
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "secure storage was requested")
+}
+
+func TestApplyLoginFallback_DefaultSecure_ProbeFail_FallsBackAndPersists(t *testing.T) {
+	hermetic(t)
+	ctx := t.Context()
+	configPath := env.Get(ctx, "DATABRICKS_CONFIG_FILE")
+
+	f := fakeFactories(t)
+	f.probeKeyring = func() error { return errors.New("no keyring") }
+
+	got, mode, err := applyLoginFallback(ctx, StorageModeSecure, false, f)
 
 	require.NoError(t, err)
 	assert.Equal(t, StorageModePlaintext, mode)
@@ -165,26 +212,24 @@ func TestResolveCacheForLogin_FallsBackWhenProbeFails(t *testing.T) {
 
 	persisted, err := databrickscfg.GetConfiguredAuthStorage(ctx, configPath)
 	require.NoError(t, err)
-	assert.Equal(t, "plaintext", persisted, "auth_storage must be persisted on first fallback")
+	assert.Equal(t, "plaintext", persisted, "default-mode fallback must persist auth_storage = plaintext")
 }
 
-func TestResolveCacheForLogin_DoesNotOverwriteExistingAuthStorage(t *testing.T) {
+func TestApplyLoginFallback_ExplicitSecure_ProbeFail_Errors(t *testing.T) {
 	hermetic(t)
-	ctx := env.Set(t.Context(), EnvVar, "secure")
+	ctx := t.Context()
 	configPath := env.Get(ctx, "DATABRICKS_CONFIG_FILE")
-	require.NoError(t, os.WriteFile(configPath, []byte("[__settings__]\nauth_storage = secure\n"), 0o600))
 
 	f := fakeFactories(t)
 	f.probeKeyring = func() error { return errors.New("no keyring") }
 
-	_, mode, err := resolveCacheForLoginWith(ctx, "", f)
+	_, _, err := applyLoginFallback(ctx, StorageModeSecure, true, f)
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "secure storage was requested")
 
-	require.NoError(t, err)
-	assert.Equal(t, StorageModePlaintext, mode)
-
-	persisted, err := databrickscfg.GetConfiguredAuthStorage(ctx, configPath)
-	require.NoError(t, err)
-	assert.Equal(t, "secure", persisted, "existing auth_storage must not be overwritten by fallback")
+	persisted, gerr := databrickscfg.GetConfiguredAuthStorage(ctx, configPath)
+	require.NoError(t, gerr)
+	assert.Equal(t, "", persisted, "explicit-secure error must not write config")
 }
 
 func TestWrapForOAuthArgument(t *testing.T) {

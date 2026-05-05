@@ -43,10 +43,16 @@ func ResolveCache(ctx context.Context, override StorageMode) (cache.TokenCache, 
 	return resolveCacheWith(ctx, override, defaultCacheFactories())
 }
 
-// ResolveCacheForLogin resolves the cache like ResolveCache, but if the
-// resolved mode is secure and the OS keyring is unreachable it silently
-// falls back to plaintext and persists auth_storage = plaintext to
-// .databrickscfg (only if no value is set there yet).
+// ResolveCacheForLogin resolves the cache like ResolveCache with extra rules
+// for the auth login path:
+//
+//  1. When the resolved mode is secure and the user did not explicitly ask for
+//     it (no override flag, no env var, no config), and the OS keyring is
+//     unreachable, fall back silently to plaintext and persist
+//     auth_storage = plaintext so subsequent commands skip the probe.
+//  2. When the user explicitly asked for secure (override, env var, or config)
+//     but the keyring is unreachable, return an error. An explicit "I want
+//     secure" is honored strictly: never silently downgrade.
 //
 // Login-specific. Read paths (auth token, bundle commands) keep the original
 // keyring error so they don't silently mint plaintext copies of tokens that
@@ -94,14 +100,34 @@ func resolveCacheWith(ctx context.Context, override StorageMode, f cacheFactorie
 // resolveCacheForLoginWith is the pure form of ResolveCacheForLogin. It takes
 // the factory set as a parameter so tests can inject stubs.
 func resolveCacheForLoginWith(ctx context.Context, override StorageMode, f cacheFactories) (cache.TokenCache, StorageMode, error) {
-	tokenCache, mode, err := resolveCacheWith(ctx, override, f)
+	mode, explicit, err := ResolveStorageModeWithSource(ctx, override)
 	if err != nil {
 		return nil, "", err
 	}
+	return applyLoginFallback(ctx, mode, explicit, f)
+}
+
+// applyLoginFallback realizes the login-time fallback rules given an already-
+// resolved mode and whether the user explicitly asked for it. Split out so
+// tests can drive the (mode, explicit) input space directly without depending
+// on whatever the resolver's default mode happens to be at any point in time.
+func applyLoginFallback(ctx context.Context, mode StorageMode, explicit bool, f cacheFactories) (cache.TokenCache, StorageMode, error) {
 	if mode != StorageModeSecure {
-		return tokenCache, mode, nil
+		switch mode {
+		case StorageModePlaintext:
+			c, err := f.newFile(ctx)
+			if err != nil {
+				return nil, "", fmt.Errorf("open file token cache: %w", err)
+			}
+			return c, mode, nil
+		default:
+			return nil, "", fmt.Errorf("unsupported storage mode %q", string(mode))
+		}
 	}
 	if probeErr := f.probeKeyring(); probeErr != nil {
+		if explicit {
+			return nil, "", fmt.Errorf("secure storage was requested but the OS keyring is not reachable: %w", probeErr)
+		}
 		log.Debugf(ctx, "secure storage unavailable (%v), falling back to plaintext", probeErr)
 		fileCache, fileErr := f.newFile(ctx)
 		if fileErr != nil {
@@ -112,21 +138,14 @@ func resolveCacheForLoginWith(ctx context.Context, override StorageMode, f cache
 		}
 		return fileCache, StorageModePlaintext, nil
 	}
-	return tokenCache, mode, nil
+	return f.newKeyring(), StorageModeSecure, nil
 }
 
 // persistPlaintextFallback writes auth_storage = plaintext to [__settings__]
-// in .databrickscfg, but only if the key is not already set. This makes the
-// silent fallback sticky across commands: future invocations resolve directly
-// to plaintext and skip the keyring probe.
+// in .databrickscfg. Only called when the user did not explicitly choose
+// secure, so overwriting any existing value would only happen if a previous
+// fallback already wrote the same value: a no-op write.
 func persistPlaintextFallback(ctx context.Context) error {
 	configPath := env.Get(ctx, "DATABRICKS_CONFIG_FILE")
-	existing, err := databrickscfg.GetConfiguredAuthStorage(ctx, configPath)
-	if err != nil {
-		return err
-	}
-	if existing != "" {
-		return nil
-	}
 	return databrickscfg.SetConfiguredAuthStorage(ctx, string(StorageModePlaintext), configPath)
 }
