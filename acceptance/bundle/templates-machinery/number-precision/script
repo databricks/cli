@@ -1,0 +1,4 @@
+trace $CLI bundle init .
+
+trace cat number.txt
+rm number.txt

@@ -34,7 +34,7 @@ func TestApplyBundlePermissions(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Workspace: config.Workspace{
-				RootPath: "/Users/foo@bar.com",
+				RootPath: "/Users/foo@bar.test",
 			},
 			Permissions: []resources.Permission{
 				{Level: permissions.CAN_MANAGE, UserName: "TestUser"},
@@ -156,7 +156,7 @@ func TestWarningOnOverlapPermission(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Workspace: config.Workspace{
-				RootPath: "/Users/foo@bar.com",
+				RootPath: "/Users/foo@bar.test",
 			},
 			Permissions: []resources.Permission{
 				{Level: permissions.CAN_MANAGE, UserName: "TestUser"},

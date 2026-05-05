@@ -3042,7 +3042,7 @@ resources.vector_search_endpoints.*.endpoint_status	*vectorsearch.EndpointStatus
 resources.vector_search_endpoints.*.endpoint_status.message	string	REMOTE
 resources.vector_search_endpoints.*.endpoint_status.state	vectorsearch.EndpointStatusState	REMOTE
 resources.vector_search_endpoints.*.endpoint_type	vectorsearch.EndpointType	ALL
-resources.vector_search_endpoints.*.endpoint_uuid	string	REMOTE
+resources.vector_search_endpoints.*.endpoint_uuid	string	REMOTE	STATE
 resources.vector_search_endpoints.*.id	string	INPUT	REMOTE
 resources.vector_search_endpoints.*.last_updated_timestamp	int64	REMOTE
 resources.vector_search_endpoints.*.last_updated_user	string	REMOTE

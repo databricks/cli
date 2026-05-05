@@ -1,4 +1,4 @@
-export DATABRICKS_AUTH_STORAGE=legacy
+export DATABRICKS_AUTH_STORAGE=plaintext
 
 cat > "./home/.databrickscfg" <<ENDCFG
 [dev]
