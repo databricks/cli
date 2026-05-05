@@ -2,6 +2,7 @@ package postgrescmd
 
 import (
 	"context"
+	"slices"
 	"time"
 
 	"github.com/databricks/cli/experimental/libs/sqlcli"
@@ -53,7 +54,12 @@ type bufferSink struct {
 }
 
 func (s *bufferSink) Begin(fields []pgconn.FieldDescription) error {
-	s.result.Fields = fields
+	// pgx reuses the FieldDescription backing array across queries on the same
+	// connection (pgConn.fieldDescriptions is a fixed-size buffer that's
+	// re-sliced per statement). Clone here so a buffered unit holds onto its
+	// own column descriptions; otherwise the multi-input renderers see every
+	// unit's Fields aliased to the last query's row description.
+	s.result.Fields = slices.Clone(fields)
 	return nil
 }
 
