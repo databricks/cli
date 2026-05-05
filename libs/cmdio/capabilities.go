@@ -48,6 +48,13 @@ func (c Capabilities) SupportsColor(w io.Writer) bool {
 	return isTTY(w) && c.color
 }
 
+// SupportsStdoutColor returns true if stdout supports colored output.
+// Use this when emitting colored bytes to a writer that wraps stdout (e.g.
+// a buffered flusher) where SupportsColor's isTTY check would be misled.
+func (c Capabilities) SupportsStdoutColor() bool {
+	return c.stdoutIsTTY && c.color
+}
+
 // SupportsPager returns true when we can drive an interactive pager.
 // It builds on SupportsPrompt (stderr+stdin TTY, not Git Bash) and
 // additionally requires stdout to be a TTY so rendered rows land on
