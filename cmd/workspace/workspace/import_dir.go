@@ -28,12 +28,15 @@ type importDirOptions struct {
 //   - leaks .git/config (often containing template-repo origin URLs and
 //     occasionally cached credentials) into deployed app source trees
 //   - copies the local bundle cache (.databricks) on top of any remote one
+//   - uploads node_modules/ for JS/TS apps, which is large and gets
+//     reinstalled in the runtime anyway
 //
 // Reported as DEPLOY-04 #2 in the EMEA Apps gaps doc; users have been
 // working around it by post-deploy scrubbing scripts.
 var defaultSkipDirs = map[string]struct{}{
-	".git":        {},
-	".databricks": {},
+	".git":         {},
+	".databricks":  {},
+	"node_modules": {},
 }
 
 // The callback function imports the file specified at sourcePath. This function is

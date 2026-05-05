@@ -112,6 +112,22 @@ func TestImportDirSkipsDatabricksCacheDirectory(t *testing.T) {
 	}
 }
 
+func TestImportDirSkipsNodeModulesDirectory(t *testing.T) {
+	src := t.TempDir()
+	writeFile(t, src, "package.json", "{}")
+	writeFile(t, src, "app.js", "console.log('hi')")
+	writeFile(t, src, "node_modules/react/index.js", "module.exports = {}")
+	writeFile(t, src, "node_modules/.package-lock.json", "{}")
+
+	rec := runWalk(t, src)
+
+	slices.Sort(rec.files)
+	assert.Equal(t, []string{"app.js", "package.json"}, rec.files)
+	for _, d := range rec.dirs {
+		assert.NotContains(t, d, "node_modules")
+	}
+}
+
 func TestImportDirCopiesGitignoreFile(t *testing.T) {
 	src := t.TempDir()
 	writeFile(t, src, ".gitignore", "*.pyc\n")
