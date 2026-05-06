@@ -15,7 +15,6 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
-	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 )
@@ -50,9 +49,6 @@ func isSuccess(task jobs.RunTask) bool {
 
 func (r *jobRunner) logFailedTasks(ctx context.Context, runId int64) {
 	w := r.bundle.WorkspaceClient(ctx)
-	red := color.New(color.FgRed).SprintFunc()
-	green := color.New(color.FgGreen).SprintFunc()
-	yellow := color.New(color.FgYellow).SprintFunc()
 	run, err := w.Jobs.GetRun(ctx, jobs.GetRunRequest{
 		RunId: runId,
 	})
@@ -65,21 +61,21 @@ func (r *jobRunner) logFailedTasks(ctx context.Context, runId int64) {
 	}
 	for _, task := range run.Tasks {
 		if isSuccess(task) {
-			log.Infof(ctx, "task %s completed successfully", green(task.TaskKey))
+			log.Infof(ctx, "task %s completed successfully", cmdio.Green(ctx, task.TaskKey))
 		} else if isFailed(task) {
 			taskInfo, err := w.Jobs.GetRunOutput(ctx, jobs.GetRunOutputRequest{
 				RunId: task.RunId,
 			})
 			if err != nil {
-				log.Errorf(ctx, "task %s failed. Unable to fetch error trace: %s", red(task.TaskKey), err)
+				log.Errorf(ctx, "task %s failed. Unable to fetch error trace: %s", cmdio.Red(ctx, task.TaskKey), err)
 				continue
 			}
 			cmdio.Log(ctx, progress.NewTaskErrorEvent(task.TaskKey, taskInfo.Error, taskInfo.ErrorTrace))
 			log.Errorf(ctx, "Task %s failed!\nError:\n%s\nTrace:\n%s",
-				red(task.TaskKey), taskInfo.Error, taskInfo.ErrorTrace)
+				cmdio.Red(ctx, task.TaskKey), taskInfo.Error, taskInfo.ErrorTrace)
 		} else {
 			log.Infof(ctx, "task %s is in state %s",
-				yellow(task.TaskKey), task.State.LifeCycleState)
+				cmdio.Yellow(ctx, task.TaskKey), task.State.LifeCycleState)
 		}
 	}
 }

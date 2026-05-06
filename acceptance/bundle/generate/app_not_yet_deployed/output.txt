@@ -2,20 +2,20 @@
 >>> [CLI] apps create my-app --no-compute --no-wait
 {
   "app_status": {
-    "message":"Application is running.",
-    "state":"RUNNING"
+    "message": "Application is running.",
+    "state": "RUNNING"
   },
-  "compute_size":"MEDIUM",
+  "compute_size": "MEDIUM",
   "compute_status": {
-    "message":"App compute is stopped.",
-    "state":"STOPPED"
+    "message": "App compute is stopped.",
+    "state": "STOPPED"
   },
-  "id":"1000",
-  "name":"my-app",
-  "service_principal_client_id":"[UUID]",
-  "service_principal_id":[NUMID],
-  "service_principal_name":"app-my-app",
-  "url":"my-app-123.cloud.databricksapps.com"
+  "id": "1000",
+  "name": "my-app",
+  "service_principal_client_id": "[UUID]",
+  "service_principal_id": [NUMID],
+  "service_principal_name": "app-my-app",
+  "url": "my-app-123.cloud.databricksapps.com"
 }
 
 >>> [CLI] bundle generate app --existing-app-name my-app --config-dir . --key out
