@@ -1,18 +1,4 @@
 {
-  "method": "POST",
-  "path": "/api/2.0/workspace/mkdirs",
-  "body": {
-    "path": "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-recreate/default/artifacts/.internal"
-  }
-}
-{
-  "method": "POST",
-  "path": "/api/2.0/workspace/mkdirs",
-  "body": {
-    "path": "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-recreate/default/files"
-  }
-}
-{
   "method": "PUT",
   "path": "/api/2.0/pipelines/[NEW_PIPELINE_ID]",
   "body": {

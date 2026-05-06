@@ -36,7 +36,7 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> print_requests.py ^//import-file/ ^//workspace/ ^//telemetry-ext
+>>> print_requests.py ^//workspace/ ^//telemetry-ext
 
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged

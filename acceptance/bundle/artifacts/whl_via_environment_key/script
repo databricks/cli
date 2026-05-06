@@ -6,6 +6,6 @@ title "Expecting 1 wheel in environments section in /jobs/create"
 trace jq -s '.[] | select(.path=="/api/2.2/jobs/create") | .body' out.requests.txt
 
 title "Expecting 1 wheel to be uploaded"
-trace jq .path < out.requests.txt | grep import | grep whl | sort
+trace jq -r '.body.multipart_form.path | strings' < out.requests.txt | grep whl | sort
 
 rm out.requests.txt

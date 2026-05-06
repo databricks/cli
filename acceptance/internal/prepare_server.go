@@ -1,8 +1,12 @@
 package internal
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
+	"mime"
+	"mime/multipart"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -324,11 +328,60 @@ func getLoggedRequest(req *testserver.Request, includedHeaders []string) LoggedR
 
 	if json.Valid(req.Body) {
 		result.Body = json.RawMessage(req.Body)
+	} else if normalized, ok := normalizeMultipartBody(req); ok {
+		// Multipart bodies contain a randomly generated boundary string and binary
+		// content; record a normalized form (sorted form-field names with sizes for
+		// file parts) so recorded requests stay deterministic and reviewable.
+		result.Body = normalized
 	} else {
 		result.RawBody = string(req.Body)
 	}
 
 	return result
+}
+
+// normalizeMultipartBody returns a deterministic representation of a multipart
+// form body if the request's Content-Type is multipart/*. The second return
+// value is false if the body is not multipart or cannot be parsed.
+//
+// File parts (i.e. parts with a filename) are recorded as the literal string
+// "[content]" — we don't include the body bytes or their length so that
+// recordings stay stable when the upload payload contains a serialized
+// timestamp (deploy.lock, deployment.json, etc.) whose JSON encoding can vary
+// in length by a byte or two between runs.
+func normalizeMultipartBody(req *testserver.Request) (any, bool) {
+	contentType := req.Headers.Get("Content-Type")
+	mediaType, params, err := mime.ParseMediaType(contentType)
+	if err != nil || !strings.HasPrefix(mediaType, "multipart/") {
+		return nil, false
+	}
+	boundary := params["boundary"]
+	if boundary == "" {
+		return nil, false
+	}
+	mr := multipart.NewReader(bytes.NewReader(req.Body), boundary)
+	parts := map[string]any{}
+	for {
+		part, err := mr.NextPart()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, false
+		}
+		data, err := io.ReadAll(part)
+		if err != nil {
+			return nil, false
+		}
+		name := part.FormName()
+		filename := part.FileName()
+		if filename != "" || !utf8.Valid(data) {
+			parts[name] = "[content]"
+			continue
+		}
+		parts[name] = string(data)
+	}
+	return map[string]any{"multipart_form": parts}, true
 }
 
 func filterHeaders(h http.Header, includedHeaders []string) http.Header {

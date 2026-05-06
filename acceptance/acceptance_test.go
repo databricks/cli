@@ -250,7 +250,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	// Skip building yamlfmt when running on workspace filesystem (DBR).
 	// This fails today on DBR. Can be looked into and fixed as a follow-up
 	// as and when needed.
-	if !WorkspaceTmpDir {
+	if !WorkspaceTmpDir && os.Getenv("SKIP_BUILD_YAMLFMT") == "" {
 		BuildYamlfmt(t)
 	}
 
