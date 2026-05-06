@@ -46,7 +46,7 @@ Example:
 				return fmt.Errorf("failed to create lakebox: %w", err)
 			}
 
-			s.ok("Lakebox " + cmdio.Cyan(ctx, result.SandboxID) + " is " + status(ctx, result.Status))
+			s.ok("Lakebox " + cmdio.Bold(ctx, result.SandboxID) + " is " + status(ctx, result.Status))
 
 			profile := w.Config.Profile
 			if profile == "" {

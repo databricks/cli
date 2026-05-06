@@ -43,7 +43,7 @@ Example:
 			}
 
 			if len(entries) == 0 {
-				fmt.Fprintf(cmd.ErrOrStderr(), "  %s\n", cmdio.HiBlack(ctx, "No lakeboxes found."))
+				fmt.Fprintf(cmd.ErrOrStderr(), "  %s\n", cmdio.Dim(ctx, "No lakeboxes found."))
 				return nil
 			}
 
@@ -73,8 +73,8 @@ Example:
 			blank(out)
 			header := fmt.Sprintf("%-*s  %-10s  %-*s  %s",
 				col, "ID", "STATUS", autostopCol, "AUTOSTOP", "DEFAULT")
-			fmt.Fprintf(out, "  %s\n", cmdio.HiBlack(ctx, header))
-			fmt.Fprintf(out, "  %s\n", cmdio.HiBlack(ctx, strings.Repeat("─", col+10+autostopCol+12)))
+			fmt.Fprintf(out, "  %s\n", cmdio.Dim(ctx, header))
+			fmt.Fprintf(out, "  %s\n", cmdio.Dim(ctx, strings.Repeat("─", col+10+autostopCol+12)))
 
 			for _, e := range entries {
 				id := e.SandboxID
@@ -89,11 +89,14 @@ Example:
 				stPad := max(10-len(e.Status), 0)
 				as := e.autoStopLabel()
 				asPad := max(autostopCol-len(as), 0)
-				idStr := cmdio.Cyan(ctx, id)
+				idStr := cmdio.Bold(ctx, id)
+				if strings.EqualFold(e.Status, "running") {
+					idStr = cmdio.Bold(ctx, cmdio.Cyan(ctx, id))
+				}
 				fmt.Fprintf(out, "  %s%s  %s%s  %s%s  %s\n",
 					idStr, strings.Repeat(" ", idPad),
 					st, strings.Repeat(" ", stPad),
-					cmdio.HiBlack(ctx, as), strings.Repeat(" ", asPad),
+					cmdio.Dim(ctx, as), strings.Repeat(" ", asPad),
 					def)
 			}
 			blank(out)

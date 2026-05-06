@@ -42,17 +42,17 @@ func status(ctx context.Context, s string) string {
 	case "running":
 		return cmdio.Cyan(ctx, "running")
 	case "stopped":
-		return cmdio.HiBlack(ctx, "stopped")
+		return cmdio.Dim(ctx, "stopped")
 	case "creating":
 		return cmdio.Cyan(ctx, "creating…")
 	default:
-		return cmdio.HiBlack(ctx, strings.ToLower(s))
+		return cmdio.Dim(ctx, strings.ToLower(s))
 	}
 }
 
 // field prints "  label  value" to w, where label is dimmed.
 func field(ctx context.Context, w io.Writer, label, value string) {
-	fmt.Fprintf(w, "  %-10s %s\n", cmdio.HiBlack(ctx, label), value)
+	fmt.Fprintf(w, "  %-10s %s\n", cmdio.Dim(ctx, label), value)
 }
 
 // ok prints "  ✓ message" to stderr via the cmdio context.

@@ -45,7 +45,7 @@ Example:
 
 			stderr := cmd.ErrOrStderr()
 			if generated {
-				ok(ctx, "Generated SSH key at "+cmdio.HiBlack(ctx, keyPath))
+				ok(ctx, "Generated SSH key at "+cmdio.Dim(ctx, keyPath))
 			} else {
 				field(ctx, stderr, "key", keyPath)
 			}
@@ -63,7 +63,7 @@ Example:
 			s.ok("SSH key registered")
 
 			blank(stderr)
-			fmt.Fprintf(stderr, "  Run %s to connect.\n\n", cmdio.Cyan(ctx, "databricks lakebox ssh"))
+			fmt.Fprintf(stderr, "  Run %s to connect.\n\n", cmdio.Bold(ctx, "databricks lakebox ssh"))
 			return nil
 		},
 	}

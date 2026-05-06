@@ -43,12 +43,12 @@ Example:
 
 			out := cmd.OutOrStdout()
 			blank(out)
-			field(ctx, out, "id", cmdio.Cyan(ctx, entry.SandboxID))
+			field(ctx, out, "id", cmdio.Bold(ctx, entry.SandboxID))
 			field(ctx, out, "status", status(ctx, entry.Status))
 			if entry.FQDN != "" {
-				field(ctx, out, "fqdn", cmdio.HiBlack(ctx, entry.FQDN))
+				field(ctx, out, "fqdn", cmdio.Dim(ctx, entry.FQDN))
 			}
-			field(ctx, out, "autostop", cmdio.HiBlack(ctx, entry.autoStopLabel()))
+			field(ctx, out, "autostop", cmdio.Dim(ctx, entry.autoStopLabel()))
 			blank(out)
 			return nil
 		},

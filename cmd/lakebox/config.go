@@ -88,8 +88,8 @@ Examples:
 			}
 
 			blank(out)
-			field(ctx, out, "id", cmdio.Cyan(ctx, updated.SandboxID))
-			field(ctx, out, "autostop", cmdio.HiBlack(ctx, updated.autoStopLabel()))
+			field(ctx, out, "id", cmdio.Bold(ctx, updated.SandboxID))
+			field(ctx, out, "autostop", cmdio.Dim(ctx, updated.autoStopLabel()))
 			blank(out)
 			return nil
 		},

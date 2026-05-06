@@ -40,9 +40,9 @@ Example:
 			}
 			if getDefault(ctx, profile) == lakeboxID {
 				_ = clearDefault(ctx, profile)
-				s.ok("Removed " + cmdio.Cyan(ctx, lakeboxID) + " " + cmdio.HiBlack(ctx, "(default cleared)"))
+				s.ok("Removed " + cmdio.Bold(ctx, lakeboxID) + " " + cmdio.Dim(ctx, "(default cleared)"))
 			} else {
-				s.ok("Removed " + cmdio.Cyan(ctx, lakeboxID))
+				s.ok("Removed " + cmdio.Bold(ctx, lakeboxID))
 			}
 			return nil
 		},

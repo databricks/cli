@@ -105,7 +105,7 @@ Examples:
 						return fmt.Errorf("failed to create lakebox: %w", err)
 					}
 					lakeboxID = result.SandboxID
-					s.ok("Lakebox " + cmdio.Cyan(ctx, lakeboxID) + " ready")
+					s.ok("Lakebox " + cmdio.Bold(ctx, lakeboxID) + " ready")
 
 					if err := setDefault(ctx, profile, lakeboxID); err != nil {
 						warn(ctx, fmt.Sprintf("Could not save default: %v", err))
@@ -118,8 +118,8 @@ Examples:
 				host = resolveGatewayHost(w.Config.Host)
 			}
 
-			s := spin(ctx, "Connecting to "+cmdio.Cyan(ctx, lakeboxID)+"…")
-			s.ok("Connected to " + cmdio.Cyan(ctx, lakeboxID))
+			s := spin(ctx, "Connecting to "+cmdio.Bold(ctx, lakeboxID)+"…")
+			s.ok("Connected to " + cmdio.Bold(ctx, lakeboxID))
 			return execSSHDirect(lakeboxID, host, gatewayPort, keyPath, extraArgs)
 		},
 	}
