@@ -43,6 +43,15 @@ type SyncOptions struct {
 	OutputHandler OutputHandler
 
 	DryRun bool
+
+	// Concurrency is the maximum number of in-flight filer requests during sync.
+	// Defaults to MaxRequestsInFlight when zero.
+	Concurrency int
+
+	// RetryTimeout bounds how long each filer call may keep retrying transient
+	// gateway errors (HTTP 502/503/504). Defaults to DefaultRetryTimeout when
+	// zero; a negative value disables sync-layer retries.
+	RetryTimeout time.Duration
 }
 
 type Sync struct {
@@ -96,6 +105,13 @@ func New(ctx context.Context, opts SyncOptions) (*Sync, error) {
 		return nil, errors.New("failed to resolve host for snapshot")
 	}
 
+	if opts.Concurrency == 0 {
+		opts.Concurrency = MaxRequestsInFlight
+	}
+	if opts.RetryTimeout == 0 {
+		opts.RetryTimeout = DefaultRetryTimeout
+	}
+
 	// For full sync, we start with an empty snapshot.
 	// For incremental sync, we try to load an existing snapshot to start from.
 	var snapshot *Snapshot
@@ -119,7 +135,7 @@ func New(ctx context.Context, opts SyncOptions) (*Sync, error) {
 	var notifier EventNotifier
 	outputWaitGroup := &stdsync.WaitGroup{}
 	if opts.OutputHandler != nil {
-		ch := make(chan Event, MaxRequestsInFlight)
+		ch := make(chan Event, opts.Concurrency)
 		notifier = &ChannelNotifier{ch}
 		outputWaitGroup.Go(func() {
 			opts.OutputHandler(ctx, ch)

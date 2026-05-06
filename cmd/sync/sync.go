@@ -26,15 +26,17 @@ import (
 
 type syncFlags struct {
 	// project files polling interval
-	interval    time.Duration
-	full        bool
-	watch       bool
-	output      flags.Output
-	exclude     []string
-	include     []string
-	dryRun      bool
-	excludeFrom string
-	includeFrom string
+	interval     time.Duration
+	full         bool
+	watch        bool
+	output       flags.Output
+	exclude      []string
+	include      []string
+	dryRun       bool
+	excludeFrom  string
+	includeFrom  string
+	concurrency  int
+	retryTimeout time.Duration
 }
 
 func readPatternsFile(filePath string) ([]string, error) {
@@ -89,6 +91,8 @@ func (f *syncFlags) syncOptionsFromBundle(cmd *cobra.Command, args []string, b *
 	opts.Include = append(opts.Include, f.include...)
 	opts.Include = append(opts.Include, includePatterns...)
 	opts.DryRun = f.dryRun
+	opts.Concurrency = f.concurrency
+	opts.RetryTimeout = f.retryTimeout
 	return opts, nil
 }
 
@@ -163,6 +167,8 @@ func (f *syncFlags) syncOptionsFromArgs(cmd *cobra.Command, args []string) (*syn
 
 		OutputHandler: outputHandler,
 		DryRun:        f.dryRun,
+		Concurrency:   f.concurrency,
+		RetryTimeout:  f.retryTimeout,
 	}
 	return &opts, nil
 }
@@ -187,6 +193,8 @@ func New() *cobra.Command {
 	cmd.Flags().StringVar(&f.excludeFrom, "exclude-from", "", "file containing patterns to exclude from sync (one pattern per line)")
 	cmd.Flags().StringVar(&f.includeFrom, "include-from", "", "file containing patterns to include to sync (one pattern per line)")
 	cmd.Flags().BoolVar(&f.dryRun, "dry-run", false, "simulate sync execution without making actual changes")
+	cmd.Flags().IntVar(&f.concurrency, "concurrency", 5, "maximum number of concurrent in-flight requests during sync")
+	cmd.Flags().DurationVar(&f.retryTimeout, "retry-timeout", sync.DefaultRetryTimeout, "per-call deadline for retrying transient gateway errors (HTTP 502/503/504)")
 
 	// Wrapper for [root.MustWorkspaceClient] that disables loading authentication configuration from a bundle.
 	mustWorkspaceClient := func(cmd *cobra.Command, args []string) error {
@@ -196,6 +204,13 @@ func New() *cobra.Command {
 
 	cmd.PreRunE = mustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+		if f.concurrency < 1 {
+			return fmt.Errorf("--concurrency must be a positive integer, got %d", f.concurrency)
+		}
+		if f.retryTimeout < 0 {
+			return fmt.Errorf("--retry-timeout must be non-negative, got %s", f.retryTimeout)
+		}
+
 		var opts *sync.SyncOptions
 		var err error
 
