@@ -162,9 +162,12 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 		return err
 	}
 
-	// The /workspace/import endpoint (multipart variant) handles uploads of arbitrary
-	// size, unlike the /workspace-files/import-file endpoint which is capped at 10 MiB
-	// for the JSON body.
+	// Use Workspace.Upload (multipart /api/2.0/workspace/import) instead of the
+	// JSON-body variant of the same endpoint, which caps payloads at 10 MiB for
+	// AUTO format (databricks.webapp.autoExportFormatLimitBytes). The multipart
+	// variant accepts up to 200 MiB (databricks.workspaceFilesystem.maxImportSizeBytes),
+	// matching the legacy /workspace-files/import-file endpoint we are migrating
+	// away from.
 	overwrite := slices.Contains(mode, OverwriteIfExists)
 	uploadOpts := []func(*workspace.Import){
 		workspace.UploadFormat(workspace.ImportFormatAuto),
