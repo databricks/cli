@@ -145,10 +145,10 @@ func TestSetHost(t *testing.T) {
 	assert.Equal(t, "val from --host", authArguments.Host)
 
 	// Test setting host from flag with trailing slash is stripped
-	authArguments.Host = "https://www.host1.com/"
+	authArguments.Host = "https://www.host1.test/"
 	err = setHostAndAccountId(ctx, profile1, &authArguments, []string{})
 	assert.NoError(t, err)
-	assert.Equal(t, "https://www.host1.com", authArguments.Host)
+	assert.Equal(t, "https://www.host1.test", authArguments.Host)
 
 	// Test setting host from argument
 	authArguments.Host = ""
@@ -158,21 +158,21 @@ func TestSetHost(t *testing.T) {
 
 	// Test setting host from argument with trailing slash is stripped
 	authArguments.Host = ""
-	err = setHostAndAccountId(ctx, profile1, &authArguments, []string{"https://www.host1.com/"})
+	err = setHostAndAccountId(ctx, profile1, &authArguments, []string{"https://www.host1.test/"})
 	assert.NoError(t, err)
-	assert.Equal(t, "https://www.host1.com", authArguments.Host)
+	assert.Equal(t, "https://www.host1.test", authArguments.Host)
 
 	// Test setting host from profile
 	authArguments.Host = ""
 	err = setHostAndAccountId(ctx, profile1, &authArguments, []string{})
 	assert.NoError(t, err)
-	assert.Equal(t, "https://www.host1.com", authArguments.Host)
+	assert.Equal(t, "https://www.host1.test", authArguments.Host)
 
 	// Test setting host from profile
 	authArguments.Host = ""
 	err = setHostAndAccountId(ctx, profile2, &authArguments, []string{})
 	assert.NoError(t, err)
-	assert.Equal(t, "https://www.host2.com", authArguments.Host)
+	assert.Equal(t, "https://www.host2.test", authArguments.Host)
 
 	// Test host is not set. Should prompt.
 	authArguments.Host = ""
@@ -275,14 +275,14 @@ func TestLoadProfileByNameAndClusterID(t *testing.T) {
 			name:              "cluster profile",
 			profile:           "cluster-profile",
 			configFileEnv:     "./testdata/.databrickscfg",
-			expectedHost:      "https://www.host2.com",
+			expectedHost:      "https://www.host2.test",
 			expectedClusterID: "cluster-from-config",
 		},
 		{
 			name:              "profile from home directory (existing)",
 			profile:           "cluster-profile",
 			homeDirOverride:   "testdata",
-			expectedHost:      "https://www.host2.com",
+			expectedHost:      "https://www.host2.test",
 			expectedClusterID: "cluster-from-config",
 		},
 		{

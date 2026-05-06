@@ -123,6 +123,8 @@ parentPath = "/Workspace" + parentPath
 
 **RULE: Do not add defensive `nil` checks for values the caller or framework is documented to always provide.** If a check exists "just in case", either remove it or attach a comment explaining why the invariant might be violated. Direct engine resource methods (`DoCreate`, `DoUpdate`, `RemapState`, etc.) never receive nil receivers or state from the framework, so extra nil-guards there are dead code.
 
+**RULE: Use a non-resolving TLD reserved by [RFC 2606 §2](https://datatracker.ietf.org/doc/html/rfc2606#section-2) (`.test`, `.example`, `.invalid`, `.localhost`) for any test fixture host — `Config.Host`, `databricks.yml`'s `workspace.host`, `.databrickscfg`.** Real domains hit the SDK well-known endpoint resolver and can stall tests for ~5 minutes per call when the runner network can't fast-fail the lookup. The repo convention is `.test` (the TLD RFC 2606 specifically reserves "for use in testing"). See PR #5125 for prior history.
+
 Where a panic is genuinely possible (e.g. `reflect.Type.Elem()` on a non-pointer, division by an empty slice's length), validate at the entry point and return an error.
 
 # Error Handling
