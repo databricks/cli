@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
@@ -228,19 +227,8 @@ To start using direct engine, set "engine: direct" under bundle in your databric
 		migratedDB := dstate.NewDatabase(stateDesc.Lineage, stateDesc.Serial+1)
 		migratedDB.State = state
 
-		// Write the migrated state to disk so CalculatePlan can read it via Open.
-		migratedStateJSON, err := json.MarshalIndent(migratedDB, "", " ")
-		if err != nil {
-			return fmt.Errorf("marshaling migrated state: %w", err)
-		}
-		if err := os.MkdirAll(filepath.Dir(tempStatePath), 0o755); err != nil {
-			return fmt.Errorf("creating state directory: %w", err)
-		}
-		if err := os.WriteFile(tempStatePath, migratedStateJSON, 0o600); err != nil {
-			return fmt.Errorf("writing migrated state to %s: %w", tempStatePath, err)
-		}
-
 		deploymentBundle := &direct.DeploymentBundle{}
+		deploymentBundle.StateDB.OpenWithData(tempStatePath, migratedDB)
 
 		tempStatePathAutoRemove := true
 
@@ -256,10 +244,6 @@ To start using direct engine, set "engine: direct" under bundle in your databric
 		bundle.ApplyContext(ctx, b, resourcemutator.SecretScopeFixups(engine.EngineDirect))
 		if logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted
-		}
-
-		if err := deploymentBundle.StateDB.Open(ctx, tempStatePath, dstate.WithRecovery(true), dstate.WithWrite(false)); err != nil {
-			return fmt.Errorf("failed to open state: %w", err)
 		}
 
 		plan, err := deploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(ctx), &b.Config)
@@ -293,10 +277,8 @@ To start using direct engine, set "engine: direct" under bundle in your databric
 			}
 		}
 
-		_ = deploymentBundle.StateDB.Finalize(ctx)
-		err = deploymentBundle.StateDB.Open(ctx, tempStatePath, dstate.WithRecovery(false), dstate.WithWrite(true))
-		if err != nil {
-			return fmt.Errorf("reopening state for apply: %w", err)
+		if err := deploymentBundle.StateDB.UpgradeToWrite(); err != nil {
+			return fmt.Errorf("upgrading state for apply: %w", err)
 		}
 
 		deploymentBundle.Apply(ctx, b.WorkspaceClient(ctx), plan, direct.MigrateMode(true))

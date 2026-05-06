@@ -201,6 +201,24 @@ func (db *DeploymentState) Open(ctx context.Context, path string, withRecovery W
 	return nil
 }
 
+// OpenWithData initializes the state from an in-memory database without reading from disk.
+// The state is opened in read mode; call UpgradeToWrite to transition to write mode.
+func (db *DeploymentState) OpenWithData(path string, data Database) {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
+	if db.Path != "" {
+		panic(fmt.Sprintf("state already opened: %v, cannot open %v", db.Path, path))
+	}
+
+	db.Path = path
+	db.Data = data
+	db.stateIDs = make(map[string]string)
+	for key, entry := range data.State {
+		db.stateIDs[key] = entry.ID
+	}
+}
+
 func (db *DeploymentState) Reload(ctx context.Context) error {
 	db.stateIDs = make(map[string]string)
 	data, err := os.ReadFile(db.Path)
