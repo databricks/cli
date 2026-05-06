@@ -169,7 +169,7 @@ var testCases = []testCase{
 }
 
 // TestRenderJSONColorGate verifies defaultRenderer.renderJson honors the
-// stdout TTY/color capabilities directly, independent of fatih/color globals.
+// stdout TTY/color capabilities directly.
 func TestRenderJSONColorGate(t *testing.T) {
 	tests := []struct {
 		name        string

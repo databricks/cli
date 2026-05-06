@@ -11,7 +11,6 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/iam"
-	"github.com/fatih/color"
 	"github.com/manifoldco/promptui"
 	"golang.org/x/mod/semver"
 )
@@ -66,6 +65,9 @@ var ErrNoCompatibleClusters = errors.New("no compatible clusters found")
 type compatibleCluster struct {
 	compute.ClusterDetails
 	versionName string
+	// renderedState caches the colorized ClusterDetails.State for display in
+	// promptui templates, which can't access ctx-bound color helpers.
+	renderedState string
 }
 
 func (v compatibleCluster) Access() string {
@@ -85,15 +87,7 @@ func (v compatibleCluster) Runtime() string {
 }
 
 func (v compatibleCluster) State() string {
-	state := v.ClusterDetails.State
-	switch state {
-	case compute.StateRunning, compute.StateResizing:
-		return color.GreenString(state.String())
-	case compute.StateError, compute.StateTerminated, compute.StateTerminating, compute.StateUnknown:
-		return color.RedString(state.String())
-	default:
-		return color.BlueString(state.String())
-	}
+	return v.renderedState
 }
 
 type clusterFilter func(cluster *compute.ClusterDetails, me *iam.User) bool
@@ -170,9 +164,19 @@ func loadInteractiveClusters(ctx context.Context, w *databricks.WorkspaceClient,
 		if skip {
 			continue
 		}
+		var renderedState string
+		switch cluster.State {
+		case compute.StateRunning, compute.StateResizing:
+			renderedState = cmdio.Green(ctx, cluster.State.String())
+		case compute.StateError, compute.StateTerminated, compute.StateTerminating, compute.StateUnknown:
+			renderedState = cmdio.Red(ctx, cluster.State.String())
+		default:
+			renderedState = cmdio.Blue(ctx, cluster.State.String())
+		}
 		compatible = append(compatible, compatibleCluster{
 			ClusterDetails: cluster,
 			versionName:    versions[cluster.SparkVersion],
+			renderedState:  renderedState,
 		})
 	}
 	return compatible, nil

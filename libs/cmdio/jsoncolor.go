@@ -6,18 +6,6 @@ import (
 	"fmt"
 )
 
-// SGR (Select Graphic Rendition) escapes; see
-// https://en.wikipedia.org/wiki/ANSI_escape_code#SGR
-const (
-	ansiReset     = "\x1b[0m"
-	ansiGreen     = "\x1b[32m"
-	ansiBoldGreen = "\x1b[32;1m"
-	ansiRed       = "\x1b[31m"
-	ansiCyan      = "\x1b[36m"
-	ansiMagenta   = "\x1b[35m"
-	ansiBoldBlue  = "\x1b[34;1m"
-)
-
 // marshalJSON returns indented JSON, optionally colorized for TTY output.
 func marshalJSON(v any, colorize bool) ([]byte, error) {
 	b, err := json.MarshalIndent(v, "", "  ")
