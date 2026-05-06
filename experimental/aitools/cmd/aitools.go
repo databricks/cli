@@ -10,7 +10,7 @@ func NewAitoolsCmd() *cobra.Command {
 		Use:    "aitools",
 		Hidden: true,
 		Short:  "Databricks AI Tools for coding agents",
-		Long: `Experimental coding-agent helpers. Skills management is at "databricks aitools".`,
+		Long:   `Experimental coding-agent helpers. Skills management is at "databricks aitools".`,
 	}
 
 	// Hidden silent backward-compatibility aliases for the skills-management
