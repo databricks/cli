@@ -10,6 +10,17 @@ import (
 	"go.yaml.in/yaml/v3"
 )
 
+// LocationError is an error with a YAML source location that can be displayed
+// to the user with a file path, line, and column number.
+type LocationError struct {
+	Loc     dyn.Location
+	Summary string
+}
+
+func (e *LocationError) Error() string {
+	return fmt.Sprintf("yaml (%s): %s", e.Loc, e.Summary)
+}
+
 type loader struct {
 	path string
 }
@@ -110,7 +121,12 @@ func (d *loader) loadMapping(node *yaml.Node, loc dyn.Location) (dyn.Value, erro
 			// However, when used as a key, it is treated as the string "null".
 		case "!!merge":
 			if merge != nil {
-				panic("merge node already set")
+				// The YAML merge key spec allows a single '<<' key per mapping.
+				// To merge multiple maps, use a sequence: '<<: [*anchor1, *anchor2]'.
+				return dyn.InvalidValue, &LocationError{
+					Loc:     d.location(key),
+					Summary: "duplicate YAML merge key ('<<') is not allowed; to merge multiple maps, use a sequence: '<<: [*anchor1, *anchor2]'",
+				}
 			}
 			merge = val
 			continue
