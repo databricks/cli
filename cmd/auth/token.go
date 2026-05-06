@@ -21,7 +21,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m/cache"
-	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
 	"golang.org/x/oauth2"
 )
@@ -40,19 +39,6 @@ const (
 	enterHostSelected                               // User chose "Enter a host URL manually"
 	createNewSelected                               // User chose "Create a new profile"
 )
-
-// applyUnifiedHostFlags copies unified host fields from the profile to the
-// auth arguments when they are not already set. WorkspaceID is NOT copied
-// here; it is deferred to setHostAndAccountId() so that URL query params
-// (?o=...) can override stale profile values.
-func applyUnifiedHostFlags(p *profile.Profile, args *auth.AuthArguments) {
-	if p == nil {
-		return
-	}
-	if !args.IsUnifiedHost && p.IsUnifiedHost {
-		args.IsUnifiedHost = p.IsUnifiedHost
-	}
-}
 
 func newTokenCommand(authArguments *auth.AuthArguments) *cobra.Command {
 	cmd := &cobra.Command{
@@ -145,9 +131,9 @@ type loadTokenArgs struct {
 	// responsible for construction so that tests can substitute an in-memory cache.
 	tokenCache cache.TokenCache
 
-	// mode is the resolved storage mode. When set to StorageModeLegacy, login
-	// paths mirror freshly minted tokens under the legacy host-based key so
-	// older SDKs that still look up by host continue to find them.
+	// mode is the resolved storage mode. When set to StorageModePlaintext,
+	// login paths mirror freshly minted tokens under the legacy host-based
+	// key so older SDKs that still look up by host continue to find them.
 	mode storage.StorageMode
 
 	// persistentAuthOpts are the options to pass to the persistent auth client.
@@ -195,8 +181,6 @@ func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
 		return nil, err
 	}
 
-	applyUnifiedHostFlags(existingProfile, args.authArguments)
-
 	// When no explicit profile, host, or positional args are provided, attempt to
 	// resolve the target through environment variables or interactive profile selection.
 	if args.profileName == "" && args.authArguments.Host == "" && len(args.args) == 0 {
@@ -206,7 +190,6 @@ func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
 			return nil, err
 		}
 		args.profileName = resolvedProfile
-		applyUnifiedHostFlags(existingProfile, args.authArguments)
 	}
 
 	err = setHostAndAccountId(ctx, existingProfile, args.authArguments, args.args)
@@ -342,9 +325,6 @@ func resolveNoArgsToken(ctx context.Context, profiler profile.Profiler, authArgs
 		if v := env.Get(ctx, "DATABRICKS_WORKSPACE_ID"); v != "" {
 			authArgs.WorkspaceID = v
 		}
-		if ok, _ := env.GetBool(ctx, "DATABRICKS_EXPERIMENTAL_IS_UNIFIED_HOST"); ok {
-			authArgs.IsUnifiedHost = true
-		}
 		return "", nil, nil
 	}
 
@@ -398,8 +378,8 @@ type profileSelectItem struct {
 	Host string
 }
 
-// promptForProfileSelection shows a promptui select list with all configured
-// profiles plus "Enter a host URL" and "Create a new profile" options.
+// promptForProfileSelection shows a select list with all configured profiles
+// plus "Enter a host URL" and "Create a new profile" options.
 // Returns the selection type and, when a profile is selected, its name.
 func promptForProfileSelection(ctx context.Context, profiles profile.Profiles) (profileSelectionResult, string, error) {
 	items := make([]profileSelectItem, 0, len(profiles)+2)
@@ -411,7 +391,7 @@ func promptForProfileSelection(ctx context.Context, profiles profile.Profiles) (
 	enterHostIdx := len(items)
 	items = append(items, profileSelectItem{Name: "Enter a host URL manually"})
 
-	i, _, err := cmdio.RunSelect(ctx, &promptui.Select{
+	i, err := cmdio.RunSelect(ctx, cmdio.SelectOptions{
 		Label:             "Select a profile",
 		Items:             items,
 		StartInSearchMode: len(profiles) > 5,
@@ -421,12 +401,10 @@ func promptForProfileSelection(ctx context.Context, profiles profile.Profiles) (
 			host := strings.ToLower(items[index].Host)
 			return strings.Contains(name, input) || strings.Contains(host, input)
 		},
-		Templates: &promptui.SelectTemplates{
-			Label:    "{{ . | faint }}",
-			Active:   `{{.Name | bold}}{{if .Host}} ({{.Host|faint}}){{end}}`,
-			Inactive: `{{.Name}}{{if .Host}} ({{.Host}}){{end}}`,
-			Selected: `{{ "Using profile" | faint }}: {{ .Name | bold }}`,
-		},
+		LabelTemplate: "{{ . | faint }}",
+		Active:        `{{.Name | bold}}{{if .Host}} ({{.Host|faint}}){{end}}`,
+		Inactive:      `{{.Name}}{{if .Host}} ({{.Host}}){{end}}`,
+		Selected:      `{{ "Using profile" | faint }}: {{ .Name | bold }}`,
 	})
 	if err != nil {
 		return 0, "", err
@@ -457,7 +435,6 @@ func runInlineLogin(ctx context.Context, profiler profile.Profiler, tokenCache c
 	}
 
 	loginArgs := &auth.AuthArguments{}
-	applyUnifiedHostFlags(existingProfile, loginArgs)
 
 	err = setHostAndAccountId(ctx, existingProfile, loginArgs, nil)
 	if err != nil {
@@ -480,7 +457,7 @@ func runInlineLogin(ctx context.Context, profiler profile.Profiler, tokenCache c
 	persistentAuthOpts := []u2m.PersistentAuthOption{
 		u2m.WithOAuthArgument(oauthArgument),
 		u2m.WithBrowser(func(url string) error { return browser.Open(ctx, url) }),
-		u2m.WithTokenCache(tokenCache),
+		u2m.WithTokenCache(storage.WrapForOAuthArgument(tokenCache, mode, oauthArgument)),
 	}
 	if len(scopesList) > 0 {
 		persistentAuthOpts = append(persistentAuthOpts, u2m.WithScopes(scopesList))
@@ -497,22 +474,18 @@ func runInlineLogin(ctx context.Context, profiler profile.Profiler, tokenCache c
 	if err = persistentAuth.Challenge(); err != nil {
 		return "", nil, err
 	}
-	dualWriteLegacyHostKey(ctx, tokenCache, oauthArgument, mode)
 
 	clearKeys := oauthLoginClearKeys()
-	if !loginArgs.IsUnifiedHost {
-		clearKeys = append(clearKeys, "experimental_is_unified_host")
-	}
+	clearKeys = append(clearKeys, databrickscfg.ExperimentalIsUnifiedHostKey)
 
 	err = databrickscfg.SaveToProfile(ctx, &config.Config{
-		Profile:                    profileName,
-		Host:                       loginArgs.Host,
-		AuthType:                   authTypeDatabricksCLI,
-		AccountID:                  loginArgs.AccountID,
-		WorkspaceID:                loginArgs.WorkspaceID,
-		Experimental_IsUnifiedHost: loginArgs.IsUnifiedHost,
-		ConfigFile:                 env.Get(ctx, "DATABRICKS_CONFIG_FILE"),
-		Scopes:                     scopesList,
+		Profile:     profileName,
+		Host:        loginArgs.Host,
+		AuthType:    authTypeDatabricksCLI,
+		AccountID:   loginArgs.AccountID,
+		WorkspaceID: loginArgs.WorkspaceID,
+		ConfigFile:  env.Get(ctx, "DATABRICKS_CONFIG_FILE"),
+		Scopes:      scopesList,
 	}, clearKeys...)
 	if err != nil {
 		return "", nil, err

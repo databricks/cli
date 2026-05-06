@@ -41,29 +41,21 @@ host = https://accounts.cloud.databricks.com
 account_id = abc123
 auth_type  = databricks-cli
 
-[my-unified]
-host = https://unified.cloud.databricks.com
-account_id = def456
-experimental_is_unified_host = true
-auth_type  = databricks-cli
-
 [my-m2m]
 host = https://my-m2m.cloud.databricks.com
 token = dev-token
 `
 
 var logoutTestTokensCacheConfig = map[string]*oauth2.Token{
-	"my-workspace":               {AccessToken: "shared-workspace-token"},
-	"shared-workspace":           {AccessToken: "shared-workspace-token"},
-	"my-unique-workspace":        {AccessToken: "my-unique-workspace-token"},
-	"my-workspace-stale-account": {AccessToken: "stale-account-token"},
-	"my-account":                 {AccessToken: "my-account-token"},
-	"my-unified":                 {AccessToken: "my-unified-token"},
+	"my-workspace":                                               {AccessToken: "shared-workspace-token"},
+	"shared-workspace":                                           {AccessToken: "shared-workspace-token"},
+	"my-unique-workspace":                                        {AccessToken: "my-unique-workspace-token"},
+	"my-workspace-stale-account":                                 {AccessToken: "stale-account-token"},
+	"my-account":                                                 {AccessToken: "my-account-token"},
 	"https://my-workspace.cloud.databricks.com":                  {AccessToken: "shared-workspace-host-token"},
 	"https://my-unique-workspace.cloud.databricks.com":           {AccessToken: "unique-workspace-host-token"},
 	"https://stale-account.cloud.databricks.com":                 {AccessToken: "stale-account-host-token"},
 	"https://accounts.cloud.databricks.com/oidc/accounts/abc123": {AccessToken: "account-host-token"},
-	"https://unified.cloud.databricks.com/oidc/accounts/def456":  {AccessToken: "unified-host-token"},
 	"my-m2m":                              {AccessToken: "m2m-service-token"},
 	"https://my-m2m.cloud.databricks.com": {AccessToken: "m2m-host-token"},
 }
@@ -121,13 +113,6 @@ func TestLogout(t *testing.T) {
 			autoApprove:  true,
 		},
 		{
-			name:         "existing unified profile",
-			profileName:  "my-unified",
-			hostBasedKey: "https://unified.cloud.databricks.com/oidc/accounts/def456",
-			isSharedKey:  false,
-			autoApprove:  true,
-		},
-		{
 			name:        "existing workspace profile without auto-approve in non-interactive mode",
 			profileName: "my-workspace",
 			autoApprove: false,
@@ -159,14 +144,6 @@ func TestLogout(t *testing.T) {
 			name:          "delete account profile",
 			profileName:   "my-account",
 			hostBasedKey:  "https://accounts.cloud.databricks.com/oidc/accounts/abc123",
-			isSharedKey:   false,
-			autoApprove:   true,
-			deleteProfile: true,
-		},
-		{
-			name:          "delete unified profile",
-			profileName:   "my-unified",
-			hostBasedKey:  "https://unified.cloud.databricks.com/oidc/accounts/def456",
 			isSharedKey:   false,
 			autoApprove:   true,
 			deleteProfile: true,
@@ -438,16 +415,6 @@ func TestHostCacheKeyAndMatchFn(t *testing.T) {
 				AccountID: "abc123",
 			},
 			wantKey: "https://accounts.cloud.databricks.com/oidc/accounts/abc123",
-		},
-		{
-			name: "unified host with flag",
-			profile: profile.Profile{
-				Name:          "unified",
-				Host:          wsServer.URL,
-				AccountID:     "def456",
-				IsUnifiedHost: true,
-			},
-			wantKey: wsServer.URL + "/oidc/accounts/def456",
 		},
 		{
 			name: "SPOG profile routes to account key via discovery",

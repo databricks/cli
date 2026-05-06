@@ -303,13 +303,12 @@ func hostCacheKeyAndMatchFn(p profile.Profile) (string, profile.ProfileMatchFunc
 	// Use ToOAuthArgument to derive the host-based cache key via the same
 	// routing logic the SDK used when the token was written during login.
 	// This includes a .well-known/databricks-config call that distinguishes
-	// classic workspace hosts from SPOG hosts — a distinction that cannot
+	// classic workspace hosts from SPOG hosts, a distinction that cannot
 	// be made from the profile fields alone.
 	arg, err := (auth.AuthArguments{
-		Host:          p.Host,
-		AccountID:     p.AccountID,
-		WorkspaceID:   p.WorkspaceID,
-		IsUnifiedHost: p.IsUnifiedHost,
+		Host:        p.Host,
+		AccountID:   p.AccountID,
+		WorkspaceID: p.WorkspaceID,
 		// Profile is deliberately empty so GetCacheKey returns the host-based
 		// key rather than the profile name.
 		// DiscoveryURL is left empty to force a fresh .well-known resolution

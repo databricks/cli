@@ -1,5 +1,3 @@
 Local = false
 Cloud = true
-
-[EnvMatrix]
-  DATABRICKS_BUNDLE_ENGINE = ["direct"]
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

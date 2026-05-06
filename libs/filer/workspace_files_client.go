@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"net/url"
 	"path"
-	"regexp"
 	"slices"
 	"strings"
 	"time"
@@ -209,16 +208,13 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 		return fileAlreadyExistsError{absPath}
 	}
 
-	// This API returns 400 if the file already exists, when the object type is notebook
-	regex := regexp.MustCompile(`Path \((.*)\) already exists.`)
-	if aerr.StatusCode == http.StatusBadRequest && regex.MatchString(aerr.Message) {
-		// Parse file path from regex capture group
-		matches := regex.FindStringSubmatch(aerr.Message)
-		if len(matches) == 2 {
-			return fileAlreadyExistsError{matches[1]}
-		}
-
-		// Default to path specified to filer.Write if regex capture fails
+	// This API returns 400 if the file already exists when the object type is notebook.
+	// Both the historical "Path (<path>) already exists." format and the newer
+	// "RESOURCE_ALREADY_EXISTS: <path> already exists. ..." format end with the same
+	// "already exists." marker; the JSON error_code is empty in both. The new format
+	// might not have been rolled out to all workspaces yet, so we anchor on the shared
+	// marker and return absPath rather than parsing the message.
+	if aerr.StatusCode == http.StatusBadRequest && strings.Contains(aerr.Message, "already exists.") {
 		return fileAlreadyExistsError{absPath}
 	}
 

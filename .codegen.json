@@ -12,9 +12,6 @@
     "toolchain": {
         "required": [
             "go"
-        ],
-        "post_generate": [
-            "./tools/post-generate.sh"
         ]
     }
 }

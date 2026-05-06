@@ -18,8 +18,8 @@ import (
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
 
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go/logger"
-	"github.com/fatih/color"
 
 	"github.com/databricks/cli/libs/python"
 
@@ -398,7 +398,7 @@ func (m *pythonMutator) runPythonMutator(ctx context.Context, root dyn.Value, op
 		diagnostic := diag.Diagnostic{
 			Severity: diag.Error,
 			Summary:  fmt.Sprintf("python mutator process failed: %q, use --debug to enable logging", processErr),
-			Detail:   explainProcessErr(stderrBuf.String()),
+			Detail:   explainProcessErr(ctx, stderrBuf.String()),
 		}
 
 		return dyn.InvalidValue, diag.Diagnostics{diagnostic}
@@ -436,10 +436,10 @@ or activate the environment before running CLI commands:
 // explainProcessErr provides additional explanation for common errors.
 // It's meant to be the best effort, and not all errors are covered.
 // Output should be used only used for error reporting.
-func explainProcessErr(stderr string) string {
+func explainProcessErr(ctx context.Context, stderr string) string {
 	// implemented in cpython/Lib/runpy.py and portable across Python 3.x, including pypy
 	if strings.Contains(stderr, "Error while finding module specification for 'databricks.bundles.build'") {
-		summary := color.CyanString("Explanation: ") + "'databricks-bundles' library is not installed in the Python environment.\n"
+		summary := cmdio.Cyan(ctx, "Explanation: ") + "'databricks-bundles' library is not installed in the Python environment.\n"
 
 		return stderr + "\n" + summary + "\n" + pythonInstallExplanation
 	}

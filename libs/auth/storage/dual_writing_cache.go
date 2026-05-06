@@ -32,6 +32,12 @@ func NewDualWritingTokenCache(inner u2m_cache.TokenCache, arg u2m.OAuthArgument)
 // also mirrored under the host key (when distinct); writes under any other
 // key pass through unchanged so that a Store(hostKey, t) from an older SDK
 // that still dual-writes internally does not recursively re-expand.
+//
+// The host-key mirror is best-effort: if the second Store fails, the error
+// is silently dropped. The host-key entry is a backward-compat shim for old
+// Go SDK versions (v0.61-v0.103) that still look up by host. Failing the
+// whole Store call would break primary login over a non-essential mirror,
+// so a stale host-key entry is the lesser harm.
 func (c *DualWritingTokenCache) Store(key string, t *oauth2.Token) error {
 	if err := c.inner.Store(key, t); err != nil {
 		return err
@@ -44,7 +50,8 @@ func (c *DualWritingTokenCache) Store(key string, t *oauth2.Token) error {
 	if hostKey == "" || hostKey == primaryKey {
 		return nil
 	}
-	return c.inner.Store(hostKey, t)
+	_ = c.inner.Store(hostKey, t)
+	return nil
 }
 
 // Lookup implements [u2m_cache.TokenCache]; delegates to the inner cache.
