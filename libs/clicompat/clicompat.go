@@ -106,18 +106,46 @@ func FetchManifest(ctx context.Context) (Manifest, error) {
 	return nil, fmt.Errorf("all manifest sources failed (remote: %w, embedded: %w)", fetchErr, embeddedErr)
 }
 
-// EmbeddedDefaultAppKitVersion returns the "next" entry's AppKit version from
-// the embedded manifest. Used for help text defaults where a network call is
-// not appropriate. Returns "" if the embedded manifest is invalid.
-func EmbeddedDefaultAppKitVersion() string {
+// ResolveEmbeddedAppKitVersion resolves the AppKit version from only the
+// embedded manifest for the current CLI version. Used as a fallback when the
+// primary version (from remote or cached manifest) points to a non-existent tag,
+// and for help text defaults where a network call is not appropriate.
+func ResolveEmbeddedAppKitVersion() (string, error) {
 	m, err := parseManifest(build.CLICompatManifestJSON)
 	if err != nil {
-		return ""
+		return "", fmt.Errorf("embedded manifest: %w", err)
 	}
-	if next, ok := m[nextKey]; ok {
-		return next.AppKit
+	entry, err := Resolve(m, build.GetInfo().Version)
+	if err != nil {
+		return "", fmt.Errorf("embedded manifest resolve: %w", err)
 	}
-	return ""
+	return entry.AppKit, nil
+}
+
+// ResolveEmbeddedAgentSkillsVersion resolves the Agent Skills version from only
+// the embedded manifest for the current CLI version. Used as a fallback when the
+// primary version points to a non-existent tag.
+func ResolveEmbeddedAgentSkillsVersion() (string, error) {
+	m, err := parseManifest(build.CLICompatManifestJSON)
+	if err != nil {
+		return "", fmt.Errorf("embedded manifest: %w", err)
+	}
+	entry, err := Resolve(m, build.GetInfo().Version)
+	if err != nil {
+		return "", fmt.Errorf("embedded manifest resolve: %w", err)
+	}
+	return entry.AgentSkills, nil
+}
+
+// IsNotFoundError reports whether the error indicates a "not found" condition
+// (e.g. HTTP 404, missing git branch/tag). Used by consumers to decide whether
+// to fall back to the embedded manifest.
+func IsNotFoundError(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := strings.ToLower(err.Error())
+	return strings.Contains(msg, "not found") || strings.Contains(msg, "404")
 }
 
 // Resolve returns the manifest entry for the given CLI version.

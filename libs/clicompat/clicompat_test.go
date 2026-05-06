@@ -350,12 +350,13 @@ func TestResolveEntry_RemoteFailUsesEmbedded(t *testing.T) {
 	assert.NotEmpty(t, entry.AppKit)
 }
 
-// --- EmbeddedDefaultAppKitVersion ---
+// --- ResolveEmbeddedAppKitVersion ---
 
-func TestEmbeddedDefaultAppKitVersion(t *testing.T) {
-	v := EmbeddedDefaultAppKitVersion()
-	assert.NotEmpty(t, v, "embedded manifest should have a next.appkit version")
-	assert.True(t, semver.IsValid("v"+v), "embedded default version should be valid semver")
+func TestResolveEmbeddedAppKitVersion(t *testing.T) {
+	v, err := ResolveEmbeddedAppKitVersion()
+	require.NoError(t, err)
+	assert.NotEmpty(t, v, "embedded manifest should resolve an appkit version")
+	assert.True(t, semver.IsValid("v"+v), "embedded resolved version should be valid semver")
 }
 
 // --- Embedded manifest validation (replaces AppKit TS validator) ---

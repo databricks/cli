@@ -104,6 +104,16 @@ func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgent
 	tag := strings.TrimPrefix(ref, "v")
 	cmdio.LogString(ctx, "Using skills version "+tag)
 	manifest, err := src.FetchManifest(ctx, ref)
+	if err != nil && clicompat.IsNotFoundError(err) {
+		// The resolved version doesn't exist. Fall back to the embedded manifest.
+		fallbackVersion, fbErr := clicompat.ResolveEmbeddedAgentSkillsVersion()
+		if fbErr == nil && fallbackVersion != "" && fallbackVersion != tag {
+			log.Warnf(ctx, "Skills version %s not found, falling back to embedded version %s", tag, fallbackVersion)
+			ref = "v" + fallbackVersion
+			tag = fallbackVersion
+			manifest, err = src.FetchManifest(ctx, ref)
+		}
+	}
 	if err != nil {
 		return err
 	}

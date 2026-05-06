@@ -170,7 +170,7 @@ Environment variables:
 	cmd.Flags().StringVar(&templatePath, "template", "", "Template path (local directory or GitHub URL)")
 	cmd.Flags().StringVar(&branch, "branch", "", "Git branch or tag (for GitHub templates, mutually exclusive with --version)")
 	versionDesc := "AppKit version to use (use 'latest' for main branch)"
-	if v := clicompat.EmbeddedDefaultAppKitVersion(); v != "" {
+	if v, err := clicompat.ResolveEmbeddedAppKitVersion(); err == nil && v != "" {
 		versionDesc = fmt.Sprintf("AppKit version to use (default: %s, use 'latest' for main branch)", v)
 	}
 	cmd.Flags().StringVar(&version, "version", "", versionDesc)
@@ -867,6 +867,17 @@ func runCreate(ctx context.Context, opts createOptions) error {
 
 	// Step 2: Wait for template (may already be done if the user took time typing the name)
 	resolvedPath, cleanup, err := awaitTemplate(ctx, templateCh)
+	if err != nil && usingDefaultTemplate && clicompat.IsNotFoundError(err) {
+		// The resolved version doesn't exist as a tag. Fall back to the
+		// embedded manifest which ships a known-good version.
+		fallbackVersion, fbErr := clicompat.ResolveEmbeddedAppKitVersion()
+		if fbErr == nil && fallbackVersion != "" {
+			log.Warnf(ctx, "Template version not found, falling back to embedded version %s", fallbackVersion)
+			fallbackRef := normalizeVersion(fallbackVersion)
+			templateCh = resolveTemplateAsync(ctx, templateSrc, fallbackRef, appkitTemplateDir)
+			resolvedPath, cleanup, err = awaitTemplate(ctx, templateCh)
+		}
+	}
 	if err != nil {
 		return err
 	}
