@@ -32,7 +32,7 @@ func TestDefaultWriterConfigureOnDBR(t *testing.T) {
 
 	ctx := dbr.MockRuntime(t.Context(), dbr.Environment{IsDbr: true, Version: "15.4"})
 	ctx = cmdctx.SetWorkspaceClient(ctx, &databricks.WorkspaceClient{
-		Config: &workspaceConfig.Config{Host: "https://myhost.com"},
+		Config: &workspaceConfig.Config{Host: "https://myhost.test"},
 	})
 	w := &defaultWriter{}
 	err := w.Configure(ctx, "/foo/bar", "/Workspace/out/abc")
