@@ -29,6 +29,7 @@ Deployment complete!
   "name": "[MY_PROJECT_ID]",
   "status": {
     "branch_logical_size_limit_bytes": [NUMID],
+    "default_branch": "[MY_PROJECT_ID]/branches/production",
     "default_endpoint_settings": {
       "autoscaling_limit_max_cu": 4,
       "autoscaling_limit_min_cu": 0.5,
@@ -100,6 +101,7 @@ Deployment complete!
   "name": "[MY_PROJECT_ID]",
   "status": {
     "branch_logical_size_limit_bytes": [NUMID],
+    "default_branch": "[MY_PROJECT_ID]/branches/production",
     "default_endpoint_settings": {
       "autoscaling_limit_max_cu": 4,
       "autoscaling_limit_min_cu": 0.5,
@@ -138,6 +140,7 @@ Deployment complete!
   "name": "[MY_PROJECT_ID]",
   "status": {
     "branch_logical_size_limit_bytes": [NUMID],
+    "default_branch": "[MY_PROJECT_ID]/branches/production",
     "default_endpoint_settings": {
       "autoscaling_limit_max_cu": 4,
       "autoscaling_limit_min_cu": 0.5,
