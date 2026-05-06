@@ -44,15 +44,17 @@ func status(ctx context.Context, s string) string {
 	case "stopped":
 		return cmdio.Dim(ctx, "stopped")
 	case "creating":
-		return cmdio.Cyan(ctx, "creating…")
+		return cmdio.Bold(ctx, cmdio.Cyan(ctx, "creating…"))
 	default:
 		return cmdio.Dim(ctx, strings.ToLower(s))
 	}
 }
 
-// field prints "  label  value" to w, where label is dimmed.
+// field prints "  label  value" to w, where label is dimmed and padded to a
+// fixed visible width. Padding has to happen before Dim so the SGR escapes
+// don't inflate the byte count and break column alignment.
 func field(ctx context.Context, w io.Writer, label, value string) {
-	fmt.Fprintf(w, "  %-10s %s\n", cmdio.Dim(ctx, label), value)
+	fmt.Fprintf(w, "  %s %s\n", cmdio.Dim(ctx, fmt.Sprintf("%-10s", label)), value)
 }
 
 // ok prints "  ✓ message" to stderr via the cmdio context.
