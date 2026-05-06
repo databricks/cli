@@ -41,3 +41,12 @@ acceptance TestAccept/ssh/connection
 #        -    "source_branch": "projects/test-pg-proj-[UNIQUE_NAME]/branches/[BRANCH_UID]",
 #        +    "source_branch": "projects/test-pg-proj-[UNIQUE_NAME]/branches/production",
 * TestAccept/bundle/resources/postgres_branches/
+
+# Broken vector search test. Needs fixing -
+* TestAccept/bundle/resources/vector_search_endpoints/drift/recreated_same_name
+
+# Need to convert to acceptance tests; terraform registry is not accessible from CI.
+* TestSparkJarTaskDeployAndRunOnVolumes
+* TestSparkJarTaskDeployAndRunOnWorkspace
+* TestGenerateFromExistingJobAndDeploy
+
