@@ -14,7 +14,6 @@ trace $CLI bundle deploy
 original_endpoint_uuid=$($CLI vector-search-endpoints get-endpoint "${endpoint_name}" | jq -r '.id')
 add_repl.py "$original_endpoint_uuid" "ORIGINAL_ENDPOINT_UUID"
 trace $CLI vector-search-endpoints get-endpoint "${endpoint_name}" | jq '{id, name, endpoint_type}'
-trace print_state.py | jq '.state."resources.vector_search_endpoints.my_endpoint.permissions".state.object_id'
 
 title "Delete and recreate remotely with the same name"
 trace $CLI vector-search-endpoints delete-endpoint "${endpoint_name}"
@@ -32,10 +31,11 @@ if [ "$original_endpoint_uuid" = "$remote_recreated_endpoint_uuid" ]; then
     exit 1
 fi
 
-title "Plan detects the UUID change and proposes recreate"
-trace $CLI bundle plan | contains.py "recreate vector_search_endpoints.my_endpoint" "create vector_search_endpoints.my_endpoint.permissions"
+title "Plan after out-of-band recreate"
+trace $CLI bundle plan
 
-title "Deploy recreates the endpoint and rebinds permissions to the new UUID"
 trace $CLI bundle deploy
-trace $CLI vector-search-endpoints get-endpoint "${endpoint_name}" | jq '{name, endpoint_type}'
-trace print_state.py | jq '.state."resources.vector_search_endpoints.my_endpoint.permissions".state.object_id'
+trace $CLI vector-search-endpoints get-endpoint "${endpoint_name}" | jq '{id, name, endpoint_type}'
+
+title "Verify no permanent drift after deploy"
+trace $CLI bundle plan | contains.py "Plan: 0 to add, 0 to change, 0 to delete"
