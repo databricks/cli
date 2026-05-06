@@ -564,13 +564,15 @@ tasks:
 
   cover:
     desc: Run tests with coverage
+    generates:
+      - test-output.json
     cmds:
       - rm -fr ./acceptance/build/cover/
       - |
         VERBOSE_TEST=1 {{.GO_TOOL}} gotestsum \
           --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
           --no-summary=skipped \
-          --jsonfile test-output.json \
+          --jsonfile test-output-unit.json \
           --rerun-fails \
           --packages "{{.TEST_PACKAGES}}" \
           -- -coverprofile=coverage.txt -timeout=${LOCAL_TIMEOUT:-30m}
@@ -578,10 +580,11 @@ tasks:
         VERBOSE_TEST=1 CLI_GOCOVERDIR=build/cover {{.GO_TOOL}} gotestsum \
           --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
           --no-summary=skipped \
-          --jsonfile test-output.json \
+          --jsonfile test-output-acc.json \
           --rerun-fails \
           --packages ./acceptance/... \
           -- -timeout=${LOCAL_TIMEOUT:-30m}{{if .ACCEPTANCE_TEST_FILTER}} -run "{{.ACCEPTANCE_TEST_FILTER}}"{{end}}
+      - cat test-output-unit.json test-output-acc.json > test-output.json
       - rm -fr ./acceptance/build/cover-merged/
       - mkdir -p acceptance/build/cover-merged/
       - "go tool covdata merge -i $(printf '%s,' acceptance/build/cover/* | sed 's/,$//') -o acceptance/build/cover-merged/"
