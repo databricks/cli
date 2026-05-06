@@ -55,10 +55,11 @@ jobs:
       - name: Determine release tag
         id: tag
         env:
-          GITHUB_REF: ${{ github.ref }}
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
         run: |
-          if [ "${{ github.event_name }}" = "push" ]; then
-            tag="${GITHUB_REF#refs/tags/}"
+          if [ "$REF_TYPE" = "tag" ]; then
+            tag="$REF_NAME"
           else
             tag=$(git tag --list 'v*' --sort=-version:refname | head -n 1)
           fi
