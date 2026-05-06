@@ -16,7 +16,9 @@ JOB_ID=$($CLI jobs create --json '{
   ]
 }' | jq -r '.job_id')
 echo "Created job"
-add_repl.py "$JOB_ID" JOB_ID
+# Disable MSYS_NO_PATHCONV when invoking python scripts: with it set, Git Bash on Windows
+# fails to translate the script path so the python interpreter can't find the file.
+env -u MSYS_NO_PATHCONV add_repl.py "$JOB_ID" JOB_ID
 
 cleanup() {
     title "Cleanup: delete the original job and notebook"
@@ -29,7 +31,7 @@ title "Generate bundle config from the job"
 trace $CLI bundle generate job --existing-job-id "$JOB_ID" --key out --config-dir resources --source-dir src --force
 
 title "Verify generated yaml has expected fields"
-cat resources/out.job.yml | contains.py "task_key: test_task" "notebook_task:" "notebook_path: ../src/test_notebook.py" > /dev/null
+cat resources/out.job.yml | env -u MSYS_NO_PATHCONV contains.py "task_key: test_task" "notebook_task:" "notebook_path: ../src/test_notebook.py" > /dev/null
 
 title "Deploy the generated bundle"
 trace $CLI bundle deploy
