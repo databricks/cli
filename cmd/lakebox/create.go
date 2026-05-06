@@ -27,7 +27,6 @@ Example:
 			ctx := cmd.Context()
 			w := cmdctx.WorkspaceClient(ctx)
 			api := newLakeboxAPI(w)
-			stderr := cmd.ErrOrStderr()
 
 			var publicKey string
 			if publicKeyFile != "" {
@@ -38,7 +37,7 @@ Example:
 				publicKey = string(data)
 			}
 
-			s := spin(stderr, "Provisioning your lakebox…")
+			s := spin(ctx, "Provisioning your lakebox…")
 
 			result, err := api.create(ctx, publicKey)
 			if err != nil {
@@ -46,7 +45,7 @@ Example:
 				return fmt.Errorf("failed to create lakebox: %w", err)
 			}
 
-			s.ok(fmt.Sprintf("Lakebox %s is %s", bold(result.SandboxID), status(result.Status)))
+			s.ok("Lakebox " + bold(result.SandboxID) + " is " + status(result.Status))
 
 			profile := w.Config.Profile
 			if profile == "" {
@@ -62,13 +61,13 @@ Example:
 			}
 			if shouldSetDefault {
 				if err := setDefault(ctx, profile, result.SandboxID); err != nil {
-					warn(stderr, fmt.Sprintf("Could not save default: %v", err))
+					warn(ctx, fmt.Sprintf("Could not save default: %v", err))
 				} else {
-					field(stderr, "default", result.SandboxID)
+					field(cmd.ErrOrStderr(), "default", result.SandboxID)
 				}
 			}
 
-			blank(stderr)
+			blank(cmd.ErrOrStderr())
 			fmt.Fprintln(cmd.OutOrStdout(), result.SandboxID)
 			return nil
 		},

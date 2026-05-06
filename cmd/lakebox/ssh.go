@@ -68,7 +68,6 @@ Examples:
 			if _, err := os.Stat(keyPath); errors.Is(err, fs.ErrNotExist) {
 				return fmt.Errorf("lakebox SSH key not found at %s — run 'databricks lakebox register' first", keyPath)
 			}
-			stderr := cmd.ErrOrStderr()
 
 			// Parse args: everything before -- is the optional lakebox ID,
 			// everything after -- is passed through to ssh.
@@ -98,7 +97,7 @@ Examples:
 						return fmt.Errorf("failed to read public key %s.pub: %w", keyPath, err)
 					}
 
-					s := spin(stderr, "Provisioning your lakebox…")
+					s := spin(ctx, "Provisioning your lakebox…")
 					result, err := api.create(ctx, string(pubKeyData))
 					if err != nil {
 						s.fail("Failed to create lakebox")
@@ -108,7 +107,7 @@ Examples:
 					s.ok("Lakebox " + bold(lakeboxID) + " ready")
 
 					if err := setDefault(ctx, profile, lakeboxID); err != nil {
-						warn(stderr, fmt.Sprintf("Could not save default: %v", err))
+						warn(ctx, fmt.Sprintf("Could not save default: %v", err))
 					}
 				}
 			}
@@ -118,7 +117,7 @@ Examples:
 				host = resolveGatewayHost(w.Config.Host)
 			}
 
-			s := spin(stderr, "Connecting to "+bold(lakeboxID)+"…")
+			s := spin(ctx, "Connecting to "+bold(lakeboxID)+"…")
 			s.ok("Connected to " + bold(lakeboxID))
 			return execSSHDirect(lakeboxID, host, gatewayPort, keyPath, extraArgs)
 		},

@@ -44,7 +44,7 @@ Example:
 
 			stderr := cmd.ErrOrStderr()
 			if generated {
-				ok(stderr, "Generated SSH key at "+dim(keyPath))
+				ok(ctx, "Generated SSH key at "+dim(keyPath))
 			} else {
 				field(stderr, "key", keyPath)
 			}
@@ -54,7 +54,7 @@ Example:
 				return fmt.Errorf("failed to read public key %s.pub: %w", keyPath, err)
 			}
 
-			s := spin(stderr, "Registering key…")
+			s := spin(ctx, "Registering key…")
 			if err := api.registerKey(ctx, string(pubKeyData)); err != nil {
 				s.fail("Failed to register key")
 				return fmt.Errorf("failed to register key: %w", err)

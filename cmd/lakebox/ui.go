@@ -1,15 +1,18 @@
 package lakebox
 
 import (
+	"context"
 	"fmt"
 	"io"
-	"os"
 	"strings"
-	"sync/atomic"
-	"time"
+
+	"github.com/databricks/cli/libs/cmdio"
 )
 
-// Single accent color throughout. Bold for emphasis. Dim for metadata.
+// ANSI escapes for inline highlighting. cmdio handles terminal capability
+// detection for the spinner, so we don't gate these on TTY here — strings
+// piped to a non-terminal still carry the codes, matching the behavior of
+// other CLI commands that call bold/dim helpers.
 const (
 	rs   = "\033[0m"  // reset
 	bo   = "\033[1m"  // bold
@@ -17,83 +20,34 @@ const (
 	cyan = "\033[36m" // accent
 )
 
-func isTTY(w io.Writer) bool {
-	if f, ok := w.(*os.File); ok {
-		fi, err := f.Stat()
-		if err != nil {
-			return false
-		}
-		return fi.Mode()&os.ModeCharDevice != 0
-	}
-	return false
-}
-
-// spinner shows a braille spinner like Claude Code.
+// spinner wraps cmdio.NewSpinner with terminal ok/fail markers. After the
+// first call to ok or fail, the spinner is closed and a final line is logged
+// to stderr; subsequent calls are no-ops.
 type spinner struct {
-	w        io.Writer
-	msg      string
-	done     chan struct{}
-	finished atomic.Bool
-	started  time.Time
+	ctx      context.Context
+	close    func()
+	finished bool
 }
 
-func spin(w io.Writer, msg string) *spinner {
-	s := &spinner{w: w, msg: msg, done: make(chan struct{}), started: time.Now()}
-	if isTTY(w) {
-		go s.run()
-	} else {
-		fmt.Fprintf(w, "* %s\n", msg)
-	}
-	return s
+func spin(ctx context.Context, msg string) *spinner {
+	sp := cmdio.NewSpinner(ctx)
+	sp.Update(msg)
+	return &spinner{ctx: ctx, close: sp.Close}
 }
 
-func (s *spinner) run() {
-	frames := []string{"⣾", "⣽", "⣻", "⢿", "⡿", "⣟", "⣯", "⣷"}
-	i := 0
-	ticker := time.NewTicker(80 * time.Millisecond)
-	defer ticker.Stop()
-	for {
-		select {
-		case <-s.done:
-			return
-		case <-ticker.C:
-			elapsed := time.Since(s.started).Truncate(time.Second)
-			fmt.Fprintf(s.w, "\r  %s%s%s %s%s%s %s(%s)%s  ",
-				cyan, frames[i%len(frames)], rs,
-				bo, s.msg, rs,
-				dm, elapsed, rs)
-			i++
-		}
-	}
-}
+func (s *spinner) ok(msg string)   { s.done("✓", msg) }
+func (s *spinner) fail(msg string) { s.done("✗", msg) }
 
-func (s *spinner) ok(msg string) {
-	if !s.finished.CompareAndSwap(false, true) {
+func (s *spinner) done(mark, msg string) {
+	if s.finished {
 		return
 	}
-	close(s.done)
-	if isTTY(s.w) {
-		fmt.Fprintf(s.w, "\r\033[K  %s✓%s %s\n", cyan, rs, msg)
-	} else {
-		fmt.Fprintf(s.w, "✓ %s\n", msg)
-	}
+	s.finished = true
+	s.close()
+	cmdio.LogString(s.ctx, "  "+cyan+mark+rs+" "+msg)
 }
 
-func (s *spinner) fail(msg string) {
-	if !s.finished.CompareAndSwap(false, true) {
-		return
-	}
-	close(s.done)
-	if isTTY(s.w) {
-		fmt.Fprintf(s.w, "\r\033[K  %s✗%s %s\n", cyan, rs, msg)
-	} else {
-		fmt.Fprintf(s.w, "✗ %s\n", msg)
-	}
-}
-
-// --- Consistent output primitives ---
-
-// status formats a status string with the accent color.
+// status formats a lakebox lifecycle status with the accent color.
 func status(s string) string {
 	switch strings.ToLower(s) {
 	case "running":
@@ -107,37 +61,26 @@ func status(s string) string {
 	}
 }
 
-// field prints "  label  value"
+// field prints "  label  value" to w.
 func field(w io.Writer, label, value string) {
 	fmt.Fprintf(w, "  %s%-10s%s %s\n", dm, label, rs, value)
 }
 
-// ok prints "  ✓ message"
-func ok(w io.Writer, msg string) {
-	fmt.Fprintf(w, "  %s✓%s %s\n", cyan, rs, msg)
+// ok prints "  ✓ message" to stderr via the cmdio context.
+func ok(ctx context.Context, msg string) {
+	cmdio.LogString(ctx, "  "+cyan+"✓"+rs+" "+msg)
 }
 
-// warn prints "  ! message"
-func warn(w io.Writer, msg string) {
-	fmt.Fprintf(w, "  %s!%s %s\n", cyan, rs, msg)
+// warn prints "  ! message" to stderr via the cmdio context.
+func warn(ctx context.Context, msg string) {
+	cmdio.LogString(ctx, "  "+cyan+"!"+rs+" "+msg)
 }
 
-// blank prints an empty line.
+// blank prints an empty line to w.
 func blank(w io.Writer) {
 	fmt.Fprintln(w)
 }
 
-// accent wraps text in the accent color.
-func accent(s string) string {
-	return cyan + s + rs
-}
-
-// bold wraps text in bold.
-func bold(s string) string {
-	return bo + s + rs
-}
-
-// dim wraps text in dim.
-func dim(s string) string {
-	return dm + s + rs
-}
+func accent(s string) string { return cyan + s + rs }
+func bold(s string) string   { return bo + s + rs }
+func dim(s string) string    { return dm + s + rs }

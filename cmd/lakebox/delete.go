@@ -24,10 +24,9 @@ Example:
 			ctx := cmd.Context()
 			w := cmdctx.WorkspaceClient(ctx)
 			api := newLakeboxAPI(w)
-			stderr := cmd.ErrOrStderr()
 
 			lakeboxID := args[0]
-			s := spin(stderr, "Removing "+lakeboxID+"…")
+			s := spin(ctx, "Removing "+lakeboxID+"…")
 
 			if err := api.delete(ctx, lakeboxID); err != nil {
 				s.fail("Failed to delete " + lakeboxID)
