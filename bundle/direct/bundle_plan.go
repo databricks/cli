@@ -72,29 +72,55 @@ func (b *DeploymentBundle) InitForApply(ctx context.Context, client *databricks.
 		return err
 	}
 
-	// Eagerly parse all StructVarJSON entries to catch parsing errors early.
-	// When the plan is read from JSON, Value contains raw JSON bytes.
-	// We parse them into typed structs and cache them for later use.
+	// Eagerly rehydrate serialized state in plan entries to catch parsing errors
+	// early. When the plan is read from JSON, NewState retains raw JSON bytes but
+	// RemoteState is decoded into untyped maps/slices.
 	for resourceKey, entry := range plan.Plan {
-		if entry.NewState == nil || len(entry.NewState.Value) == 0 {
-			continue
-		}
-
 		adapter, err := b.getAdapterForKey(resourceKey)
 		if err != nil {
 			return fmt.Errorf("converting plan entry %s: %w", resourceKey, err)
 		}
 
-		sv, err := entry.NewState.ToStructVar(adapter.StateType())
-		if err != nil {
-			return fmt.Errorf("loading plan entry %s: %w", resourceKey, err)
+		if entry.NewState != nil && len(entry.NewState.Value) > 0 {
+			sv, err := entry.NewState.ToStructVar(adapter.StateType())
+			if err != nil {
+				return fmt.Errorf("loading plan entry %s: %w", resourceKey, err)
+			}
+
+			b.StateCache.Store(resourceKey, sv)
 		}
 
-		b.StateCache.Store(resourceKey, sv)
+		entry.RemoteState, err = rehydratePlanState(entry.RemoteState, adapter.RemoteType())
+		if err != nil {
+			return fmt.Errorf("loading plan entry %s remote state: %w", resourceKey, err)
+		}
 	}
 
 	b.Plan = plan
 	return nil
+}
+
+func rehydratePlanState(state any, destType reflect.Type) (any, error) {
+	if state == nil {
+		return nil, nil
+	}
+
+	actualType := reflect.TypeOf(state)
+	if actualType.AssignableTo(destType) {
+		return state, nil
+	}
+
+	raw, err := json.Marshal(state)
+	if err != nil {
+		return nil, fmt.Errorf("marshalling %T: %w", state, err)
+	}
+
+	typedState, err := parseState(destType, raw)
+	if err != nil {
+		return nil, err
+	}
+
+	return typedState, nil
 }
 
 func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root) (*deployplan.Plan, error) {
@@ -199,7 +225,12 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		var preReadRemote any
 
 		if !hasEntry {
-			if id, remote, ok := tryImportGrants(ctx, resourceKey, adapter, sv.Value); ok {
+			id, remote, ok, err := tryImportGrants(ctx, resourceKey, adapter, sv.Value)
+			if err != nil {
+				logdiag.LogError(ctx, fmt.Errorf("%s: importing existing grants: %w", errorPrefix, err))
+				return false
+			}
+			if ok {
 				stateJSON, marshalErr := json.Marshal(remote)
 				if marshalErr != nil {
 					logdiag.LogError(ctx, fmt.Errorf("%s: marshalling imported state: %w", errorPrefix, marshalErr))
@@ -320,33 +351,34 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 // tryImportGrants attempts a DoRead on first plan for grants resources: the id
 // (securable_type/full_name) is fully derivable from config, so we can check
 // whether the desired grants already exist remotely and produce an accurate
-// plan (skip/update) instead of always showing "create".
-func tryImportGrants(ctx context.Context, resourceKey string, adapter *dresources.Adapter, svValue any) (string, any, bool) {
+// plan (skip/update) instead of always showing "create". Unexpected read
+// failures are returned to the caller because falling back to create would skip
+// revocations.
+func tryImportGrants(ctx context.Context, resourceKey string, adapter *dresources.Adapter, svValue any) (string, any, bool, error) {
 	if !strings.HasSuffix(resourceKey, ".grants") {
-		return "", nil, false
+		return "", nil, false, nil
 	}
 	state, ok := svValue.(*dresources.GrantsState)
 	if !ok {
-		return "", nil, false
+		return "", nil, false, nil
 	}
 	id := dresources.ComputeImportID(state)
 	if id == "" {
-		return "", nil, false
+		return "", nil, false, nil
 	}
 	remote, err := adapter.DoRead(ctx, id)
 	if err != nil {
 		if isResourceGone(err) {
-			return "", nil, false
+			return "", nil, false, nil
 		}
-		log.Debugf(ctx, "%s: import DoRead failed: %v", resourceKey, err)
-		return "", nil, false
+		return "", nil, false, err
 	}
 	remoteGrants, ok := remote.(*dresources.GrantsState)
 	if !ok || remoteGrants == nil || len(remoteGrants.EmbeddedSlice) == 0 {
 		// No grants remotely; let the normal create path handle it.
-		return "", nil, false
+		return "", nil, false, nil
 	}
-	return id, remoteGrants, true
+	return id, remoteGrants, true, nil
 }
 
 func getMaxAction(m map[string]*deployplan.ChangeDesc) deployplan.ActionType {
