@@ -153,8 +153,15 @@ jobs:
           ENVFILTER: DATABRICKS_BUNDLE_ENGINE=${{ matrix.deployment }}
         run: go tool -modfile=tools/task/go.mod task cover
 
-      - name: Analyze slow tests
-        run: go tool -modfile=tools/task/go.mod task slowest
+      - name: Upload gotestsum JSON output
+        # Always upload so we can inspect timing even if tests fail.
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: test-output-${{ matrix.os.name }}-${{ matrix.deployment }}
+          path: test-output.json
+          if-no-files-found: warn
+          retention-days: 7
 
       - name: Check out.test.toml files are up to date
         run: |
