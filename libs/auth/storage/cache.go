@@ -142,9 +142,18 @@ func applyLoginFallback(ctx context.Context, mode StorageMode, explicit bool, f 
 }
 
 // persistPlaintextFallback writes auth_storage = plaintext to [__settings__]
-// in .databrickscfg. Only called when the user did not explicitly choose
-// secure, so overwriting any existing value would only happen if a previous
-// fallback already wrote the same value: a no-op write.
+// in .databrickscfg so subsequent commands skip the (slow/blocking) keyring
+// probe and route straight to the file cache.
+//
+// We deliberately persist only on the default-mode + probe-fail path, never
+// on the success paths:
+//   - default + probe ok: writing the runtime mode would lock the current
+//     default into the user's config and prevent a future change to the
+//     default from reaching them.
+//   - explicit secure (override, env, config): the value is already set
+//     somewhere by definition, so a write would be redundant.
+//
+// The fallback is the only path where persisting changes future behavior.
 func persistPlaintextFallback(ctx context.Context) error {
 	configPath := env.Get(ctx, "DATABRICKS_CONFIG_FILE")
 	return databrickscfg.SetConfiguredAuthStorage(ctx, string(StorageModePlaintext), configPath)

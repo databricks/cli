@@ -137,6 +137,7 @@ func TestResolveStorageModeWithSource(t *testing.T) {
 		configBody   string
 		wantMode     StorageMode
 		wantExplicit bool
+		wantErrSub   string
 	}{
 		{
 			name:         "default is not explicit",
@@ -161,6 +162,16 @@ func TestResolveStorageModeWithSource(t *testing.T) {
 			wantMode:     StorageModeSecure,
 			wantExplicit: true,
 		},
+		{
+			name:       "invalid env is rejected",
+			envValue:   "bogus",
+			wantErrSub: "DATABRICKS_AUTH_STORAGE",
+		},
+		{
+			name:       "invalid config value is rejected",
+			configBody: "[__settings__]\nauth_storage = bogus\n",
+			wantErrSub: "auth_storage",
+		},
 	}
 
 	for _, tc := range cases {
@@ -173,6 +184,11 @@ func TestResolveStorageModeWithSource(t *testing.T) {
 			t.Setenv(EnvVar, tc.envValue)
 
 			mode, explicit, err := ResolveStorageModeWithSource(t.Context(), tc.override)
+			if tc.wantErrSub != "" {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tc.wantErrSub)
+				return
+			}
 			require.NoError(t, err)
 			assert.Equal(t, tc.wantMode, mode)
 			assert.Equal(t, tc.wantExplicit, explicit)
