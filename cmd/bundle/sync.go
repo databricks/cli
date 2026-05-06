@@ -17,11 +17,12 @@ import (
 )
 
 type syncFlags struct {
-	interval time.Duration
-	full     bool
-	watch    bool
-	output   flags.Output
-	dryRun   bool
+	interval    time.Duration
+	full        bool
+	watch       bool
+	output      flags.Output
+	dryRun      bool
+	concurrency int
 }
 
 func (f *syncFlags) syncOptionsFromBundle(cmd *cobra.Command, b *bundle.Bundle) (*sync.SyncOptions, error) {
@@ -48,6 +49,7 @@ func (f *syncFlags) syncOptionsFromBundle(cmd *cobra.Command, b *bundle.Bundle) 
 	opts.Full = f.full
 	opts.PollInterval = f.interval
 	opts.DryRun = f.dryRun
+	opts.Concurrency = f.concurrency
 	return opts, nil
 }
 
@@ -74,8 +76,13 @@ Use 'databricks bundle deploy' for full resource deployment.`,
 	cmd.Flags().BoolVar(&f.watch, "watch", false, "watch local file system for changes")
 	cmd.Flags().Var(&f.output, "output", "type of the output format")
 	cmd.Flags().BoolVar(&f.dryRun, "dry-run", false, "simulate sync execution without making actual changes")
+	cmd.Flags().IntVar(&f.concurrency, "concurrency", sync.MaxRequestsInFlight, "maximum number of concurrent in-flight requests during sync")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+		if f.concurrency < 1 {
+			return fmt.Errorf("--concurrency must be a positive integer, got %d", f.concurrency)
+		}
+
 		b, err := utils.ProcessBundle(cmd, utils.ProcessOptions{})
 		if err != nil {
 			return err

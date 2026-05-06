@@ -43,6 +43,12 @@ type SyncOptions struct {
 	OutputHandler OutputHandler
 
 	DryRun bool
+
+	// Concurrency is the maximum number of concurrent in-flight requests during
+	// sync (file uploads, deletes, mkdir, rmdir). When zero, MaxRequestsInFlight
+	// is used. Callers (e.g. the --concurrency flag) can set this to tune
+	// throughput against workspace API rate limits.
+	Concurrency int
 }
 
 type Sync struct {
@@ -96,6 +102,12 @@ func New(ctx context.Context, opts SyncOptions) (*Sync, error) {
 		return nil, errors.New("failed to resolve host for snapshot")
 	}
 
+	// Normalize concurrency so internal callers don't have to repeat the default.
+	// Negative values indicate a programming error and are rejected at the flag layer.
+	if opts.Concurrency <= 0 {
+		opts.Concurrency = MaxRequestsInFlight
+	}
+
 	// For full sync, we start with an empty snapshot.
 	// For incremental sync, we try to load an existing snapshot to start from.
 	var snapshot *Snapshot
@@ -119,7 +131,7 @@ func New(ctx context.Context, opts SyncOptions) (*Sync, error) {
 	var notifier EventNotifier
 	outputWaitGroup := &stdsync.WaitGroup{}
 	if opts.OutputHandler != nil {
-		ch := make(chan Event, MaxRequestsInFlight)
+		ch := make(chan Event, opts.Concurrency)
 		notifier = &ChannelNotifier{ch}
 		outputWaitGroup.Go(func() {
 			opts.OutputHandler(ctx, ch)
