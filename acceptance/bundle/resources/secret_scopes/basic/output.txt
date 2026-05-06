@@ -19,8 +19,8 @@ Deployment complete!
 
 >>> [CLI] secrets get-secret test-scope-[UNIQUE_NAME]-1 my-key
 {
-  "key":"my-key",
-  "value":"bXktc2VjcmV0LXZhbHVl"
+  "key": "my-key",
+  "value": "bXktc2VjcmV0LXZhbHVl"
 }
 
 >>> [CLI] secrets list-acls test-scope-[UNIQUE_NAME]-1
@@ -77,8 +77,8 @@ Deployment complete!
 
 >>> [CLI] secrets get-secret test-scope-[UNIQUE_NAME]-2 another-key
 {
-  "key":"another-key",
-  "value":"YW5vdGhlci1zZWNyZXQtdmFsdWU="
+  "key": "another-key",
+  "value": "YW5vdGhlci1zZWNyZXQtdmFsdWU="
 }
 
 >>> [CLI] secrets list-acls test-scope-[UNIQUE_NAME]-2

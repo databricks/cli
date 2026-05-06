@@ -2,5 +2,5 @@ Local = true
 Cloud = false
 
 [[Repls]]
-Old = '"dashboard_id":"[0-9a-f]+",'
-New = '"dashboard_id":"(redacted)",'
+Old = '"dashboard_id": "[0-9a-f]+",'
+New = '"dashboard_id": "(redacted)",'

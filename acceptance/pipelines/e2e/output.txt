@@ -51,28 +51,28 @@ View your pipeline lakeflow_project_etl_2 here: [DATABRICKS_URL]/pipelines/[UUID
 === Assert the second pipeline is created
 >>> [CLI] pipelines get [UUID]
 {
-  "creator_user_name":"[USERNAME]",
-  "effective_publishing_mode":"DEFAULT_PUBLISHING_MODE",
-  "last_modified":[UNIX_TIME_MILLIS],
-  "name":"[dev [USERNAME]] lakeflow_project_etl_2",
-  "pipeline_id":"[UUID]",
-  "run_as_user_name":"[USERNAME]",
+  "creator_user_name": "[USERNAME]",
+  "effective_publishing_mode": "DEFAULT_PUBLISHING_MODE",
+  "last_modified": [UNIX_TIME_MILLIS],
+  "name": "[dev [USERNAME]] lakeflow_project_etl_2",
+  "pipeline_id": "[UUID]",
+  "run_as_user_name": "[USERNAME]",
   "spec": {
-    "channel":"CURRENT",
+    "channel": "CURRENT",
     "deployment": {
-      "kind":"BUNDLE",
-      "metadata_file_path":"/Workspace/Users/[USERNAME]/.bundle/lakeflow_project/dev/state/metadata.json"
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/lakeflow_project/dev/state/metadata.json"
     },
-    "development":true,
-    "edition":"ADVANCED",
-    "id":"[UUID]",
-    "name":"[dev [USERNAME]] lakeflow_project_etl_2",
-    "storage":"dbfs:/pipelines/[UUID]",
+    "development": true,
+    "edition": "ADVANCED",
+    "id": "[UUID]",
+    "name": "[dev [USERNAME]] lakeflow_project_etl_2",
+    "storage": "dbfs:/pipelines/[UUID]",
     "tags": {
-      "dev":"[USERNAME]"
+      "dev": "[USERNAME]"
     }
   },
-  "state":"IDLE"
+  "state": "IDLE"
 }
 
 >>> [CLI] pipelines run lakeflow_project_etl_2

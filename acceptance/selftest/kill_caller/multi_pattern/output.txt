@@ -13,8 +13,8 @@ Me attempt 2 done
 
 >>> [CLI] current-user me
 {
-  "id":"123",
-  "userName":"test@example.com"
+  "id": "123",
+  "userName": "test@example.com"
 }
 Me attempt 3 done - success!
 
