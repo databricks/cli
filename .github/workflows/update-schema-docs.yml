@@ -12,10 +12,6 @@ on:
   push:
     tags:
       - "v*"
-    # TEMP: drives end-to-end test on the PR branch (workflow_dispatch is
-    # unavailable until the file lands on main). Remove before merging.
-    branches:
-      - workflow/update-schema-docs-on-release
 
   workflow_dispatch:
 
