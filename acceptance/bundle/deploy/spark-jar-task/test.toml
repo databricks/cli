@@ -1,0 +1,17 @@
+Local = true
+Cloud = true
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
+
+Ignore = [
+    'myjar/PrintArgs.jar',
+    'myjar/PrintArgs.class',
+]
+
+[[Server]]
+Pattern = "GET /api/2.2/jobs/runs/get-output"
+Response.Body = '''
+{
+	"run_id": 1234567890,
+	"logs": "Hello from Jar!\n[]"
+}
+'''
