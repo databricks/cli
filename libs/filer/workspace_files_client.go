@@ -198,14 +198,18 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 		return w.Write(ctx, name, bytes.NewReader(body), sliceWithout(mode, CreateParentDirectories)...)
 	}
 
-	// File already exists at the path.
-	if errors.Is(err, apierr.ErrResourceAlreadyExists) {
+	// File already exists at the path. The /workspace/import endpoint reports this
+	// with two different error_codes depending on whether the conflict was detected
+	// sequentially (400 RESOURCE_ALREADY_EXISTS) or under concurrent contention
+	// (409 ALREADY_EXISTS, observed in TestLock). Both are already-exists from the
+	// caller's perspective.
+	//
+	// Existing-object-with-mismatched-node-type (e.g. uploading a regular .py when a
+	// NOTEBOOK is at the path) surfaces as 400 INVALID_PARAMETER_VALUE with a
+	// "Requested node type" message — also already-exists from the caller's perspective.
+	if errors.Is(err, apierr.ErrResourceAlreadyExists) || errors.Is(err, apierr.ErrAlreadyExists) {
 		return fileAlreadyExistsError{absPath}
 	}
-
-	// Existing object's node type doesn't match the upload (e.g. uploading a regular .py
-	// when a NOTEBOOK is at the path, or vice versa). From the caller's perspective there
-	// is something at that path, so surface as already-exists.
 	if errors.Is(err, apierr.ErrInvalidParameterValue) {
 		var aerr *apierr.APIError
 		if errors.As(err, &aerr) && strings.Contains(aerr.Message, "Requested node type") {

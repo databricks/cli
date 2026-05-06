@@ -173,7 +173,16 @@ func TestWorkspaceFilesClientWriteErrorMapping(t *testing.T) {
 			apiErr: &apierr.APIError{
 				StatusCode: http.StatusBadRequest,
 				ErrorCode:  "RESOURCE_ALREADY_EXISTS",
-				Message:    "Path (/dir/file.txt) already exists.",
+				Message:    "/dir/file.txt already exists. Please pass overwrite=true to overwrite it.",
+			},
+			expectErrTarget: fileAlreadyExistsError{},
+		},
+		{
+			name: "409 ALREADY_EXISTS (concurrent contention) maps to fileAlreadyExistsError",
+			apiErr: &apierr.APIError{
+				StatusCode: http.StatusConflict,
+				ErrorCode:  "ALREADY_EXISTS",
+				Message:    "Node with name /dir/file.txt already exists. Please pass overwrite=true to update it.",
 			},
 			expectErrTarget: fileAlreadyExistsError{},
 		},
