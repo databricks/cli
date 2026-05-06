@@ -319,7 +319,7 @@ func TestNoErrorRenameWithIdenticalRemoteName(t *testing.T) {
 
 func defaultOptions(t *testing.T) *SyncOptions {
 	return &SyncOptions{
-		Host:             "www.foobar.com",
+		Host:             "www.foobar.test",
 		RemotePath:       "/Repos/foo/bar",
 		SnapshotBasePath: t.TempDir(),
 	}
@@ -341,7 +341,7 @@ func TestNewSnapshotDefaults(t *testing.T) {
 func TestOldSnapshotInvalidation(t *testing.T) {
 	oldVersionSnapshot := `{
 		"version": "v0",
-		"host": "www.foobar.com",
+		"host": "www.foobar.test",
 		"remote_path": "/Repos/foo/bar",
 		"last_modified_times": {},
 		"local_to_remote_names": {},
@@ -363,7 +363,7 @@ func TestOldSnapshotInvalidation(t *testing.T) {
 
 func TestNoVersionSnapshotInvalidation(t *testing.T) {
 	noVersionSnapshot := `{
-		"host": "www.foobar.com",
+		"host": "www.foobar.test",
 		"remote_path": "/Repos/foo/bar",
 		"last_modified_times": {},
 		"local_to_remote_names": {},
@@ -386,7 +386,7 @@ func TestNoVersionSnapshotInvalidation(t *testing.T) {
 func TestLatestVersionSnapshotGetsLoaded(t *testing.T) {
 	latestVersionSnapshot := fmt.Sprintf(`{
 			"version": "%s",
-			"host": "www.foobar.com",
+			"host": "www.foobar.test",
 			"remote_path": "/Repos/foo/bar",
 			"last_modified_times": {},
 			"local_to_remote_names": {},
@@ -405,6 +405,6 @@ func TestLatestVersionSnapshotGetsLoaded(t *testing.T) {
 	require.NoError(t, err)
 	assert.False(t, snapshot.New)
 	assert.Equal(t, LatestSnapshotVersion, snapshot.Version)
-	assert.Equal(t, "www.foobar.com", snapshot.Host)
+	assert.Equal(t, "www.foobar.test", snapshot.Host)
 	assert.Equal(t, "/Repos/foo/bar", snapshot.RemotePath)
 }

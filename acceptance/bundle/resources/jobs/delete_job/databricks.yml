@@ -11,7 +11,7 @@ resources:
             package_name: "whl"
             entry_point: "run"
           libraries:
-            - whl: /Workspace/Users/foo@bar.com/mywheel.whl
+            - whl: /Workspace/Users/foo@bar.test/mywheel.whl
         - task_key: TestTask2
           for_each_task:
             inputs: "[1]"
@@ -22,4 +22,4 @@ resources:
                 package_name: "whl"
                 entry_point: "run"
               libraries:
-                - whl: /Workspace/Users/foo@bar.com/mywheel.whl
+                - whl: /Workspace/Users/foo@bar.test/mywheel.whl

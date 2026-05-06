@@ -32,10 +32,9 @@ func promptForProfile(ctx context.Context, defaultValue string) (string, error) 
 		return "", nil
 	}
 
-	prompt := cmdio.Prompt(ctx)
-	prompt.Label = "Databricks profile name [" + defaultValue + "]"
-	prompt.AllowEdit = true
-	result, err := prompt.Run()
+	result, err := cmdio.RunPrompt(ctx, cmdio.PromptOptions{
+		Label: "Databricks profile name [" + defaultValue + "]",
+	})
 	if result == "" {
 		// Manually return the default value. We could use the prompt.Default
 		// field, but be inconsistent with other prompts in the CLI.
@@ -58,23 +57,6 @@ func discoveryErr(msg string, err error) error {
 		return fmt.Errorf("%s: %w%s", msg, err, discoveryFallbackTip)
 	}
 	return fmt.Errorf("%s%s", msg, discoveryFallbackTip)
-}
-
-// dualWriteLegacyHostKey mirrors the freshly minted token under the legacy
-// host-based cache key so users alternating between CLI and SDK find it.
-// Skipped for secure mode to avoid multiplying keyring entries.
-func dualWriteLegacyHostKey(ctx context.Context, tokenCache cache.TokenCache, arg u2m.OAuthArgument, mode storage.StorageMode) {
-	if mode != storage.StorageModeLegacy {
-		return
-	}
-	t, err := tokenCache.Lookup(arg.GetCacheKey())
-	if err != nil || t == nil {
-		return
-	}
-	dual := storage.NewDualWritingTokenCache(tokenCache, arg)
-	if err := dual.Store(arg.GetCacheKey(), t); err != nil {
-		log.Debugf(ctx, "token cache dual-write failed: %v", err)
-	}
 }
 
 type discoveryPersistentAuth interface {
@@ -231,13 +213,6 @@ a new profile is created.
 			})
 		}
 
-		// Load unified host flag from the profile if not explicitly set via CLI flag.
-		// WorkspaceID is NOT loaded here; it is deferred to setHostAndAccountId()
-		// so that URL query params (?o=...) can override stale profile values.
-		if !cmd.Flag("experimental-is-unified-host").Changed && existingProfile != nil {
-			authArguments.IsUnifiedHost = existingProfile.IsUnifiedHost
-		}
-
 		err = setHostAndAccountId(ctx, existingProfile, authArguments, args)
 		if err != nil {
 			return err
@@ -263,7 +238,7 @@ a new profile is created.
 		persistentAuthOpts := []u2m.PersistentAuthOption{
 			u2m.WithOAuthArgument(oauthArgument),
 			u2m.WithBrowser(getBrowserFunc(cmd)),
-			u2m.WithTokenCache(tokenCache),
+			u2m.WithTokenCache(storage.WrapForOAuthArgument(tokenCache, mode, oauthArgument)),
 		}
 		if len(scopesList) > 0 {
 			persistentAuthOpts = append(persistentAuthOpts, u2m.WithScopes(scopesList))
@@ -280,7 +255,6 @@ a new profile is created.
 		if err = persistentAuth.Challenge(); err != nil {
 			return err
 		}
-		dualWriteLegacyHostKey(ctx, tokenCache, oauthArgument, mode)
 		// At this point, an OAuth token has been successfully minted and stored
 		// in the CLI cache. The rest of the command focuses on:
 		// 1. Workspace selection for SPOG hosts (best-effort);
@@ -289,8 +263,7 @@ a new profile is created.
 
 		// If discovery gave us an account_id but we still have no workspace_id,
 		// prompt the user to select a workspace. This applies to any host where
-		// .well-known/databricks-config returned an account_id, regardless of
-		// whether IsUnifiedHost is set.
+		// .well-known/databricks-config returned an account_id.
 		shouldPromptWorkspace := authArguments.AccountID != "" &&
 			authArguments.WorkspaceID == "" &&
 			!skipWorkspace
@@ -314,15 +287,11 @@ a new profile is created.
 		var clusterID, serverlessComputeID string
 
 		// Keys to explicitly remove from the profile. OAuth login always
-		// clears incompatible credential fields (PAT, basic auth, M2M).
+		// clears incompatible credential fields (PAT, basic auth, M2M) and
+		// the deprecated experimental_is_unified_host key (routing now comes
+		// from .well-known discovery, so stale values would be misleading).
 		clearKeys := oauthLoginClearKeys()
-
-		// Boolean false is zero-valued and skipped by SaveToProfile's IsZero
-		// check. Explicitly clear experimental_is_unified_host when false so
-		// it doesn't remain sticky from a previous login.
-		if !authArguments.IsUnifiedHost {
-			clearKeys = append(clearKeys, "experimental_is_unified_host")
-		}
+		clearKeys = append(clearKeys, databrickscfg.ExperimentalIsUnifiedHostKey)
 
 		switch {
 		case configureCluster:
@@ -330,11 +299,10 @@ a new profile is created.
 			// We use a custom CredentialsStrategy that wraps the token we just minted,
 			// avoiding the need to spawn a child CLI process (which AuthType "databricks-cli" does).
 			w, err := databricks.NewWorkspaceClient(&databricks.Config{
-				Host:                       authArguments.Host,
-				AccountID:                  authArguments.AccountID,
-				WorkspaceID:                authArguments.WorkspaceID,
-				Experimental_IsUnifiedHost: authArguments.IsUnifiedHost,
-				Credentials:                config.NewTokenSourceStrategy("login-token", authconv.AuthTokenSource(persistentAuth)),
+				Host:        authArguments.Host,
+				AccountID:   authArguments.AccountID,
+				WorkspaceID: authArguments.WorkspaceID,
+				Credentials: config.NewTokenSourceStrategy("login-token", authconv.AuthTokenSource(persistentAuth)),
 			})
 			if err != nil {
 				return err
@@ -355,17 +323,19 @@ a new profile is created.
 		}
 
 		if profileName != "" {
+			// experimental_is_unified_host is no longer written to new profiles.
+			// Routing now comes from .well-known discovery; stale keys on existing
+			// profiles are cleaned up via clearKeys above.
 			err := databrickscfg.SaveToProfile(ctx, &config.Config{
-				Profile:                    profileName,
-				Host:                       authArguments.Host,
-				AuthType:                   authTypeDatabricksCLI,
-				AccountID:                  authArguments.AccountID,
-				WorkspaceID:                authArguments.WorkspaceID,
-				Experimental_IsUnifiedHost: authArguments.IsUnifiedHost,
-				ClusterID:                  clusterID,
-				ConfigFile:                 env.Get(ctx, "DATABRICKS_CONFIG_FILE"),
-				ServerlessComputeID:        serverlessComputeID,
-				Scopes:                     scopesList,
+				Profile:             profileName,
+				Host:                authArguments.Host,
+				AuthType:            authTypeDatabricksCLI,
+				AccountID:           authArguments.AccountID,
+				WorkspaceID:         authArguments.WorkspaceID,
+				ClusterID:           clusterID,
+				ConfigFile:          env.Get(ctx, "DATABRICKS_CONFIG_FILE"),
+				ServerlessComputeID: serverlessComputeID,
+				Scopes:              scopesList,
 			}, clearKeys...)
 			if err != nil {
 				return err
@@ -442,50 +412,30 @@ func setHostAndAccountId(ctx context.Context, existingProfile *profile.Profile, 
 	// are logged as warnings and never block login.
 	runHostDiscovery(ctx, authArguments)
 
-	// Determine the host type and handle account ID / workspace ID accordingly
-	cfg := &config.Config{
-		Host:                       authArguments.Host,
-		AccountID:                  authArguments.AccountID,
-		WorkspaceID:                authArguments.WorkspaceID,
-		Experimental_IsUnifiedHost: authArguments.IsUnifiedHost,
-	}
-
-	switch cfg.HostType() { //nolint:staticcheck // HostType() deprecated in SDK v0.127.0; SDK moving to host-agnostic behavior.
-	case config.AccountHost:
-		// Account host: prompt for account ID if not provided
-		if authArguments.AccountID == "" {
-			if existingProfile != nil && existingProfile.AccountID != "" {
-				authArguments.AccountID = existingProfile.AccountID
-			} else {
-				accountId, err := promptForAccountID(ctx)
-				if err != nil {
-					return err
-				}
-				authArguments.AccountID = accountId
+	if needsAccountIDPrompt(authArguments.Host, authArguments.DiscoveryURL) && authArguments.AccountID == "" {
+		if existingProfile != nil && existingProfile.AccountID != "" {
+			authArguments.AccountID = existingProfile.AccountID
+		} else {
+			accountId, err := promptForAccountID(ctx)
+			if err != nil {
+				return err
 			}
+			authArguments.AccountID = accountId
 		}
-	case config.UnifiedHost:
-		// Unified host requires an account ID for OAuth URL construction.
-		// Workspace selection happens post-OAuth via promptForWorkspaceSelection.
-		if authArguments.AccountID == "" {
-			if existingProfile != nil && existingProfile.AccountID != "" {
-				authArguments.AccountID = existingProfile.AccountID
-			} else {
-				accountId, err := promptForAccountID(ctx)
-				if err != nil {
-					return err
-				}
-				authArguments.AccountID = accountId
-			}
-		}
-	case config.WorkspaceHost:
-		// Regular workspace host: no additional prompts needed.
-		// If discovery already populated account_id/workspace_id, those are kept.
-	default:
-		return fmt.Errorf("unknown host type: %v", cfg.HostType()) //nolint:staticcheck // HostType() deprecated in SDK v0.127.0; SDK moving to host-agnostic behavior.
 	}
 
 	return nil
+}
+
+// needsAccountIDPrompt reports whether the target host requires an account ID
+// for OAuth URL construction. True for classic account hosts (accounts.*) and
+// for unified hosts detected via account-scoped DiscoveryURL.
+func needsAccountIDPrompt(host, discoveryURL string) bool {
+	canonicalHost := (&config.Config{Host: host}).CanonicalHostName()
+	if auth.IsClassicAccountHost(canonicalHost) {
+		return true
+	}
+	return auth.HasUnifiedHostSignal(discoveryURL)
 }
 
 // runHostDiscovery calls EnsureResolved() with a temporary config to fetch
@@ -577,7 +527,6 @@ func shouldUseDiscovery(hostFlag string, args []string, existingProfile *profile
 var discoveryIncompatibleFlags = []string{
 	"account-id",
 	"workspace-id",
-	"experimental-is-unified-host",
 	"configure-cluster",
 	"configure-serverless",
 }
@@ -625,7 +574,7 @@ func discoveryLogin(ctx context.Context, in discoveryLoginInputs) error {
 		u2m.WithOAuthArgument(arg),
 		u2m.WithBrowser(in.browserFunc),
 		u2m.WithDiscoveryLogin(),
-		u2m.WithTokenCache(in.tokenCache),
+		u2m.WithTokenCache(storage.WrapForOAuthArgument(in.tokenCache, in.mode, arg)),
 	}
 	if len(scopesList) > 0 {
 		opts = append(opts, u2m.WithScopes(scopesList))
@@ -645,7 +594,6 @@ func discoveryLogin(ctx context.Context, in discoveryLoginInputs) error {
 	if err := persistentAuth.Challenge(); err != nil {
 		return discoveryErr("login via login.databricks.com failed", err)
 	}
-	dualWriteLegacyHostKey(ctx, in.tokenCache, arg, in.mode)
 
 	discoveredHost := arg.GetDiscoveredHost()
 	if discoveredHost == "" {
@@ -696,7 +644,7 @@ func discoveryLogin(ctx context.Context, in discoveryLoginInputs) error {
 	clearKeys = append(clearKeys,
 		"account_id",
 		"workspace_id",
-		"experimental_is_unified_host",
+		databrickscfg.ExperimentalIsUnifiedHostKey,
 		"cluster_id",
 		"serverless_compute_id",
 	)
@@ -807,10 +755,9 @@ func promptForWorkspaceSelection(ctx context.Context, authArguments *auth.AuthAr
 // promptForWorkspaceID asks the user to manually enter a workspace ID.
 // Returns empty string if the user provides no input.
 func promptForWorkspaceID(ctx context.Context) (string, error) {
-	prompt := cmdio.Prompt(ctx)
-	prompt.Label = "Enter workspace ID (empty to skip)"
-	prompt.AllowEdit = true
-	result, err := prompt.Run()
+	result, err := cmdio.RunPrompt(ctx, cmdio.PromptOptions{
+		Label: "Enter workspace ID (empty to skip)",
+	})
 	if err != nil {
 		return "", err
 	}

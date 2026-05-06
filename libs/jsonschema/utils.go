@@ -110,7 +110,7 @@ func fromString(s string, T Type) (any, error) {
 	case BooleanType:
 		v, err = strconv.ParseBool(s)
 	case NumberType:
-		v, err = strconv.ParseFloat(s, 32)
+		v, err = strconv.ParseFloat(s, 64)
 	case IntegerType:
 		v, err = strconv.ParseInt(s, 10, 64)
 	case ArrayType, ObjectType:

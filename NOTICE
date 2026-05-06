@@ -127,6 +127,10 @@ google/jsonschema-go - https://github.com/google/jsonschema-go
 Copyright 2025 Google LLC
 License - https://github.com/google/jsonschema-go/blob/main/LICENSE
 
+jackc/pgx - https://github.com/jackc/pgx
+Copyright (c) 2013-2021 Jack Christensen
+License - https://github.com/jackc/pgx/blob/master/LICENSE
+
 charmbracelet/bubbles - https://github.com/charmbracelet/bubbles
 Copyright (c) 2020-2025 Charmbracelet, Inc
 License - https://github.com/charmbracelet/bubbles/blob/master/LICENSE
@@ -143,10 +147,6 @@ charmbracelet/lipgloss - https://github.com/charmbracelet/lipgloss
 Copyright (c) 2021-2025 Charmbracelet, Inc
 License - https://github.com/charmbracelet/lipgloss/blob/master/LICENSE
 
-fatih/color - https://github.com/fatih/color
-Copyright (c) 2013 Fatih Arslan
-License - https://github.com/fatih/color/blob/main/LICENSE.md
-
 Masterminds/semver - https://github.com/Masterminds/semver
 Copyright (C) 2014-2019, Matt Butcher and Matt Farina
 License - https://github.com/Masterminds/semver/blob/master/LICENSE.txt
@@ -154,10 +154,6 @@ License - https://github.com/Masterminds/semver/blob/master/LICENSE.txt
 mattn/go-isatty - https://github.com/mattn/go-isatty
 Copyright (c) Yasuhiro MATSUMOTO <mattn.jp@gmail.com>
 License - https://github.com/mattn/go-isatty/blob/master/LICENSE
-
-nwidger/jsoncolor - https://github.com/nwidger/jsoncolor
-Copyright (c) 2016 Niels Widger
-License - https://github.com/nwidger/jsoncolor/blob/master/LICENSE
 
 sabhiram/go-gitignore - https://github.com/sabhiram/go-gitignore
 Copyright (c) 2015 Shaba Abhiram

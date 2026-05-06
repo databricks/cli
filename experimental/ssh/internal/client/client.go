@@ -33,7 +33,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
-	"github.com/fatih/color"
 	"github.com/gorilla/websocket"
 )
 
@@ -228,7 +227,7 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 	if !opts.ProxyMode {
 		cmdio.LogString(ctx, fmt.Sprintf("Connecting to %s...", sessionID))
 		if opts.IsServerlessMode() && opts.Accelerator == "" {
-			cmdio.LogString(ctx, color.YellowString("WARNING: serverless compute without an accelerator is in private preview. If you are not enrolled, this command will likely time out with an error. Contact your Databricks account team to enroll."))
+			cmdio.LogString(ctx, cmdio.Yellow(ctx, "WARNING: serverless compute without an accelerator is in private preview. If you are not enrolled, this command will likely time out with an error. Contact your Databricks account team to enroll."))
 		}
 	}
 
@@ -314,7 +313,7 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 		if err != nil {
 			if opts.IsServerlessMode() && opts.Accelerator == "" && errors.Is(err, errServerMetadata) {
 				return fmt.Errorf("failed to ensure that ssh server is running: %w\n\n"+
-					color.YellowString("This may be because serverless compute without an accelerator is in private preview.\nContact your Databricks account team to enroll."), err)
+					cmdio.Yellow(ctx, "This may be because serverless compute without an accelerator is in private preview.\nContact your Databricks account team to enroll."), err)
 			}
 			return fmt.Errorf("failed to ensure that ssh server is running: %w", err)
 		}
@@ -454,7 +453,8 @@ func getServerMetadata(ctx context.Context, client *databricks.WorkspaceClient, 
 	if err := client.Config.Authenticate(req); err != nil {
 		return 0, "", "", err
 	}
-	resp, err := http.DefaultClient.Do(req)
+	httpClient := &http.Client{Transport: client.Config.HTTPTransport}
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return 0, "", "", err
 	}

@@ -138,13 +138,14 @@ func (c CLICredentials) persistentAuth(ctx context.Context, opts ...u2m.Persiste
 }
 
 // authArgumentsFromConfig converts an SDK config to AuthArguments.
+// DiscoveryURL is the primary (and only) unified-host signal; it is populated
+// by EnsureResolved() from .well-known/databricks-config before this runs.
 func authArgumentsFromConfig(cfg *config.Config) AuthArguments {
 	return AuthArguments{
-		Host:          cfg.Host,
-		AccountID:     cfg.AccountID,
-		WorkspaceID:   cfg.WorkspaceID,
-		IsUnifiedHost: cfg.Experimental_IsUnifiedHost,
-		Profile:       cfg.Profile,
-		DiscoveryURL:  cfg.DiscoveryURL,
+		Host:         cfg.Host,
+		AccountID:    cfg.AccountID,
+		WorkspaceID:  cfg.WorkspaceID,
+		Profile:      cfg.Profile,
+		DiscoveryURL: cfg.DiscoveryURL,
 	}
 }

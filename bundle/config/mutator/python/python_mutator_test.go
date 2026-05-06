@@ -20,6 +20,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/process"
 	"github.com/stretchr/testify/assert"
 )
@@ -488,7 +489,7 @@ or activate the environment before running CLI commands:
       venv_path: .venv
 `
 
-	out := explainProcessErr(stderr)
+	out := explainProcessErr(cmdio.MockDiscard(t.Context()), stderr)
 
 	assert.Equal(t, expected, out)
 }

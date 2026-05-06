@@ -29,6 +29,17 @@ func extractColumns(manifest *sql.ResultManifest) []string {
 	return columns
 }
 
+// renderBatchJSON writes batch results as a JSON array. The array preserves
+// input order and includes one object per submitted statement.
+func renderBatchJSON(w io.Writer, results []batchResult) error {
+	output, err := json.MarshalIndent(results, "", "  ")
+	if err != nil {
+		return fmt.Errorf("marshal batch results: %w", err)
+	}
+	fmt.Fprintf(w, "%s\n", output)
+	return nil
+}
+
 // renderJSON writes query results as a parseable JSON array to stdout.
 // Row count is written to stderr so stdout remains valid JSON for piping.
 func renderJSON(w io.Writer, columns []string, rows [][]string) error {

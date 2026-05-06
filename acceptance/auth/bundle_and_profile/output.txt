@@ -73,13 +73,13 @@ Validation OK!
 
 === Bundle commands load bundle configuration with -t and -p flag, validation not OK (profile host don't match bundle host)
 >>> errcode [CLI] bundle validate -t prod -p DEFAULT
-Warn: [hostmetadata] failed to fetch host metadata for https://bar.com, will skip for 1m0s
-Error: cannot resolve bundle auth configuration: the host in the profile ([DATABRICKS_TARGET]) doesn’t match the host configured in the bundle (https://bar.com)
+Warn: [hostmetadata] failed to fetch host metadata for https://bar.test, will skip for 1m0s
+Error: cannot resolve bundle auth configuration: the host in the profile ([DATABRICKS_TARGET]) doesn’t match the host configured in the bundle (https://bar.test)
 
 Name: test-auth
 Target: prod
 Workspace:
-  Host: https://bar.com
+  Host: https://bar.test
 
 Found 1 error
 

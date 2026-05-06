@@ -276,6 +276,12 @@ func matchOrCreateSection(ctx context.Context, configFile *config.File, cfg *con
 	return section, nil
 }
 
+// ExperimentalIsUnifiedHostKey is the INI key for the deprecated
+// experimental_is_unified_host flag. Unified hosts are now detected from
+// /.well-known/databricks-config; the key is only ever cleared from profiles
+// (never read or written) so stale values don't influence routing.
+const ExperimentalIsUnifiedHostKey = "experimental_is_unified_host"
+
 // AuthCredentialKeys returns the config file key names for all auth credential
 // fields from the SDK's ConfigAttributes. These are fields annotated with an
 // auth type (e.g. pat, basic, oauth, azure, google). Use this to clear stale
