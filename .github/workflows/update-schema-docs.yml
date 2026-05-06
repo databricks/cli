@@ -1,15 +1,12 @@
 name: update-schema-docs
 
-# Regenerate bundle/schema/jsonschema_for_docs.json after every release.
+# Regenerate bundle/schema/jsonschema_for_docs.json after every release and
+# publish it to the `docgen` branch.
 #
-# bundle/internal/schema/since_version.go computes `x-since-version` annotations
+# bundle/internal/schema/since_version.go derives `x-since-version` annotations
 # from the list of `v*` git tags that exist when the schema is generated. The
-# committed file is therefore stale by one release as soon as the next tag is
-# pushed: fields shipped in that tag don't get stamped until the file is
-# regenerated against a tag list that includes it.
-#
-# This workflow runs on every `v*` tag push, regenerates the file from `main`,
-# and pushes the updated file directly to `main`.
+# `docgen` branch is therefore stale by one release as soon as the next tag is
+# pushed; this workflow keeps it current.
 
 on:
   push:
@@ -17,10 +14,6 @@ on:
       - "v*"
 
   workflow_dispatch:
-    inputs:
-      tag:
-        description: "Release tag this run is updating annotations for (e.g. v0.299.0). Used in the commit message only."
-        required: false
 
 permissions:
   contents: write
@@ -35,10 +28,9 @@ jobs:
       - name: Checkout main
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-          # The commit lands on main, not the tagged commit, so check main out
-          # directly. fetch-depth: 0 + fetch-tags: true ensure since_version.go
-          # can resolve `git show <tag>:bundle/schema/jsonschema.json` for every
-          # historical release.
+          # Regen runs against `main`. fetch-depth: 0 + fetch-tags: true ensure
+          # since_version.go can resolve `git show <tag>:bundle/schema/jsonschema.json`
+          # for every historical release.
           ref: main
           fetch-depth: 0
           fetch-tags: true
@@ -55,49 +47,67 @@ jobs:
         id: tag
         env:
           GITHUB_REF: ${{ github.ref }}
-          INPUT_TAG: ${{ inputs.tag }}
         run: |
           if [ "${{ github.event_name }}" = "push" ]; then
             tag="${GITHUB_REF#refs/tags/}"
           else
-            tag="${INPUT_TAG:-manual}"
+            tag=$(git tag --list 'v*' --sort=-version:refname | head -n 1)
+          fi
+          if [ -z "$tag" ]; then
+            echo "Could not determine a v* tag to publish for." >&2
+            exit 1
           fi
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "Publishing for tag $tag"
 
       - name: Regenerate jsonschema_for_docs.json
         run: go tool -modfile=tools/task/go.mod task --force generate-schema-docs
 
-      - name: Show diff
-        run: git diff -- bundle/schema/jsonschema_for_docs.json
-
       # Fail loudly if regeneration touches anything other than the docs schema.
       # Anything else (annotations.yml, untracked files, ...) is a bug in the
-      # generator, not something we want to silently push to main.
-      - name: Assert only jsonschema_for_docs.json changed
-        id: check
+      # generator, not something we want to silently publish.
+      - name: Assert only jsonschema_for_docs.json changed on main
         run: |
           changed=$(git status --porcelain)
+          expected=" M bundle/schema/jsonschema_for_docs.json"
           if [ -z "$changed" ]; then
-            echo "No changes; skipping commit."
-            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "Regeneration produced no diff against main."
             exit 0
           fi
-          expected=" M bundle/schema/jsonschema_for_docs.json"
           if [ "$changed" != "$expected" ]; then
             echo "Expected only bundle/schema/jsonschema_for_docs.json to be modified."
             echo "Actual git status --porcelain:"
             echo "$changed"
             exit 1
           fi
-          echo "skip=false" >> "$GITHUB_OUTPUT"
 
-      - name: Commit and push to main
-        if: steps.check.outputs.skip != 'true'
+      - name: Capture regenerated file
+        run: |
+          mkdir -p "$RUNNER_TEMP/regen"
+          cp bundle/schema/jsonschema_for_docs.json "$RUNNER_TEMP/regen/jsonschema_for_docs.json"
+
+      - name: Check out docgen worktree
+        run: |
+          git fetch origin docgen
+          git worktree add "$RUNNER_TEMP/docgen" origin/docgen
+
+      - name: Stage regenerated file on docgen
+        working-directory: ${{ runner.temp }}/docgen
+        run: |
+          mkdir -p bundle/schema
+          cp "$RUNNER_TEMP/regen/jsonschema_for_docs.json" bundle/schema/jsonschema_for_docs.json
+          git add bundle/schema/jsonschema_for_docs.json
+
+      - name: Commit and push to docgen
+        working-directory: ${{ runner.temp }}/docgen
         env:
           TAG: ${{ steps.tag.outputs.tag }}
         run: |
+          if git diff --cached --quiet; then
+            echo "docgen already up to date for ${TAG}; nothing to commit."
+            exit 0
+          fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add bundle/schema/jsonschema_for_docs.json
-          git commit -m "Update jsonschema_for_docs.json since-versions for ${TAG}"
-          git push origin HEAD:main
+          git commit -m "Update jsonschema_for_docs.json for ${TAG}"
+          git push origin HEAD:docgen
