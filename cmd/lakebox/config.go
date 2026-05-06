@@ -7,6 +7,7 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/spf13/cobra"
 )
 
@@ -87,8 +88,8 @@ Examples:
 			}
 
 			blank(out)
-			field(out, "id", bold(updated.SandboxID))
-			field(out, "autostop", dim(updated.autoStopLabel()))
+			field(ctx, out, "id", cmdio.Cyan(ctx, updated.SandboxID))
+			field(ctx, out, "autostop", cmdio.HiBlack(ctx, updated.autoStopLabel()))
 			blank(out)
 			return nil
 		},

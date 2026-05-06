@@ -10,6 +10,7 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
 	"github.com/spf13/cobra"
 )
@@ -44,9 +45,9 @@ Example:
 
 			stderr := cmd.ErrOrStderr()
 			if generated {
-				ok(ctx, "Generated SSH key at "+dim(keyPath))
+				ok(ctx, "Generated SSH key at "+cmdio.HiBlack(ctx, keyPath))
 			} else {
-				field(stderr, "key", keyPath)
+				field(ctx, stderr, "key", keyPath)
 			}
 
 			pubKeyData, err := os.ReadFile(keyPath + ".pub")
@@ -62,7 +63,7 @@ Example:
 			s.ok("SSH key registered")
 
 			blank(stderr)
-			fmt.Fprintf(stderr, "  Run %s to connect.\n\n", bold("databricks lakebox ssh"))
+			fmt.Fprintf(stderr, "  Run %s to connect.\n\n", cmdio.Cyan(ctx, "databricks lakebox ssh"))
 			return nil
 		},
 	}

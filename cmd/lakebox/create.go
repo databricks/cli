@@ -6,6 +6,7 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/spf13/cobra"
 )
 
@@ -45,7 +46,7 @@ Example:
 				return fmt.Errorf("failed to create lakebox: %w", err)
 			}
 
-			s.ok("Lakebox " + bold(result.SandboxID) + " is " + status(result.Status))
+			s.ok("Lakebox " + cmdio.Cyan(ctx, result.SandboxID) + " is " + status(ctx, result.Status))
 
 			profile := w.Config.Profile
 			if profile == "" {
@@ -63,7 +64,7 @@ Example:
 				if err := setDefault(ctx, profile, result.SandboxID); err != nil {
 					warn(ctx, fmt.Sprintf("Could not save default: %v", err))
 				} else {
-					field(cmd.ErrOrStderr(), "default", result.SandboxID)
+					field(ctx, cmd.ErrOrStderr(), "default", result.SandboxID)
 				}
 			}
 

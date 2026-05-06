@@ -6,6 +6,7 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/spf13/cobra"
 )
 
@@ -42,12 +43,12 @@ Example:
 
 			out := cmd.OutOrStdout()
 			blank(out)
-			field(out, "id", bold(entry.SandboxID))
-			field(out, "status", status(entry.Status))
+			field(ctx, out, "id", cmdio.Cyan(ctx, entry.SandboxID))
+			field(ctx, out, "status", status(ctx, entry.Status))
 			if entry.FQDN != "" {
-				field(out, "fqdn", dim(entry.FQDN))
+				field(ctx, out, "fqdn", cmdio.HiBlack(ctx, entry.FQDN))
 			}
-			field(out, "autostop", dim(entry.autoStopLabel()))
+			field(ctx, out, "autostop", cmdio.HiBlack(ctx, entry.autoStopLabel()))
 			blank(out)
 			return nil
 		},

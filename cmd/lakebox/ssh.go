@@ -11,6 +11,7 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/spf13/cobra"
 )
 
@@ -104,7 +105,7 @@ Examples:
 						return fmt.Errorf("failed to create lakebox: %w", err)
 					}
 					lakeboxID = result.SandboxID
-					s.ok("Lakebox " + bold(lakeboxID) + " ready")
+					s.ok("Lakebox " + cmdio.Cyan(ctx, lakeboxID) + " ready")
 
 					if err := setDefault(ctx, profile, lakeboxID); err != nil {
 						warn(ctx, fmt.Sprintf("Could not save default: %v", err))
@@ -117,8 +118,8 @@ Examples:
 				host = resolveGatewayHost(w.Config.Host)
 			}
 
-			s := spin(ctx, "Connecting to "+bold(lakeboxID)+"…")
-			s.ok("Connected to " + bold(lakeboxID))
+			s := spin(ctx, "Connecting to "+cmdio.Cyan(ctx, lakeboxID)+"…")
+			s.ok("Connected to " + cmdio.Cyan(ctx, lakeboxID))
 			return execSSHDirect(lakeboxID, host, gatewayPort, keyPath, extraArgs)
 		},
 	}

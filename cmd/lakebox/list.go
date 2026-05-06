@@ -7,6 +7,7 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/spf13/cobra"
 )
 
@@ -42,7 +43,7 @@ Example:
 			}
 
 			if len(entries) == 0 {
-				fmt.Fprintf(cmd.ErrOrStderr(), "  %sNo lakeboxes found.%s\n", dm, rs)
+				fmt.Fprintf(cmd.ErrOrStderr(), "  %s\n", cmdio.HiBlack(ctx, "No lakeboxes found."))
 				return nil
 			}
 
@@ -70,31 +71,29 @@ Example:
 			autostopCol += 2
 
 			blank(out)
-			fmt.Fprintf(out, "  %s%-*s  %-10s  %-*s  %s%s\n",
-				dm, col, "ID", "STATUS", autostopCol, "AUTOSTOP", "DEFAULT", rs)
-			fmt.Fprintf(out, "  %s%s%s\n", dm, strings.Repeat("─", col+10+autostopCol+12), rs)
+			header := fmt.Sprintf("%-*s  %-10s  %-*s  %s",
+				col, "ID", "STATUS", autostopCol, "AUTOSTOP", "DEFAULT")
+			fmt.Fprintf(out, "  %s\n", cmdio.HiBlack(ctx, header))
+			fmt.Fprintf(out, "  %s\n", cmdio.HiBlack(ctx, strings.Repeat("─", col+10+autostopCol+12)))
 
 			for _, e := range entries {
 				id := e.SandboxID
 				def := ""
 				if id == defaultID {
-					def = accent("*")
+					def = cmdio.Cyan(ctx, "*")
 				}
-				// Pad ID manually to avoid ANSI codes breaking alignment.
+				// Pad ID manually so visible-width alignment is preserved
+				// after the helpers wrap each cell with ANSI escapes.
 				idPad := max(col-len(id), 0)
-				st := status(e.Status)
-				// Pad status to 10 visible chars.
+				st := status(ctx, e.Status)
 				stPad := max(10-len(e.Status), 0)
 				as := e.autoStopLabel()
 				asPad := max(autostopCol-len(as), 0)
-				idStr := bold(id)
-				if strings.EqualFold(e.Status, "running") {
-					idStr = cyan + bo + id + rs
-				}
+				idStr := cmdio.Cyan(ctx, id)
 				fmt.Fprintf(out, "  %s%s  %s%s  %s%s  %s\n",
 					idStr, strings.Repeat(" ", idPad),
 					st, strings.Repeat(" ", stPad),
-					dim(as), strings.Repeat(" ", asPad),
+					cmdio.HiBlack(ctx, as), strings.Repeat(" ", asPad),
 					def)
 			}
 			blank(out)

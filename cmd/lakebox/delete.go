@@ -5,6 +5,7 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/spf13/cobra"
 )
 
@@ -39,9 +40,9 @@ Example:
 			}
 			if getDefault(ctx, profile) == lakeboxID {
 				_ = clearDefault(ctx, profile)
-				s.ok("Removed " + bold(lakeboxID) + " " + dim("(default cleared)"))
+				s.ok("Removed " + cmdio.Cyan(ctx, lakeboxID) + " " + cmdio.HiBlack(ctx, "(default cleared)"))
 			} else {
-				s.ok("Removed " + bold(lakeboxID))
+				s.ok("Removed " + cmdio.Cyan(ctx, lakeboxID))
 			}
 			return nil
 		},
