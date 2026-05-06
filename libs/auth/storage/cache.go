@@ -154,6 +154,10 @@ func applyLoginFallback(ctx context.Context, mode StorageMode, explicit bool, f 
 //     somewhere by definition, so a write would be redundant.
 //
 // The fallback is the only path where persisting changes future behavior.
+// It also pins these users to plaintext explicitly, so any future changes to
+// this logic don't accidentally disrupt them: they're already using plaintext
+// implicitly (the keyring is unreachable), and the persisted setting makes
+// that choice stable across CLI versions.
 func persistPlaintextFallback(ctx context.Context) error {
 	configPath := env.Get(ctx, "DATABRICKS_CONFIG_FILE")
 	return databrickscfg.SetConfiguredAuthStorage(ctx, string(StorageModePlaintext), configPath)
