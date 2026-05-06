@@ -10,7 +10,6 @@ import (
 	"github.com/databricks/cli/aitools/lib/agents"
 	"github.com/databricks/cli/aitools/lib/installer"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 )
 
@@ -190,7 +189,7 @@ func filterProjectScopeAgents(detected []*agents.Agent) []*agents.Agent {
 
 // printNoAgentsMessage prints the "no agents detected" message.
 func printNoAgentsMessage(ctx context.Context) {
-	cmdio.LogString(ctx, color.YellowString("No supported coding agents detected."))
+	cmdio.LogString(ctx, cmdio.Yellow(ctx, "No supported coding agents detected."))
 	cmdio.LogString(ctx, "")
 	cmdio.LogString(ctx, "Supported agents: Claude Code, Cursor, Codex CLI, OpenCode, GitHub Copilot, Antigravity")
 	cmdio.LogString(ctx, "Please install at least one coding agent first.")

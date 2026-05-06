@@ -77,7 +77,7 @@ func countContentLines(s string) int {
 }
 
 func TestPagedTemplateDrainsFullIterator(t *testing.T) {
-	out := pagedOutput(t, t.Context(), &numberIterator{n: 23}, "", "{{range .}}{{.}}\n{{end}}", 5)
+	out := pagedOutput(t, MockDiscard(t.Context()), &numberIterator{n: 23}, "", "{{range .}}{{.}}\n{{end}}", 5)
 	assert.Equal(t, 23, countContentLines(out))
 	for i := 1; i <= 23; i++ {
 		assert.Contains(t, out, strconv.Itoa(i))
@@ -85,20 +85,20 @@ func TestPagedTemplateDrainsFullIterator(t *testing.T) {
 }
 
 func TestPagedTemplateRespectsLimit(t *testing.T) {
-	ctx := WithLimit(t.Context(), 7)
+	ctx := WithLimit(MockDiscard(t.Context()), 7)
 	out := pagedOutput(t, ctx, &numberIterator{n: 200}, "", "{{range .}}{{.}}\n{{end}}", 5)
 	assert.Equal(t, 7, countContentLines(out))
 }
 
 func TestPagedTemplatePrintsHeaderOnce(t *testing.T) {
-	out := pagedOutput(t, t.Context(), &numberIterator{n: 8}, "ID", "{{range .}}{{.}}\n{{end}}", 3)
+	out := pagedOutput(t, MockDiscard(t.Context()), &numberIterator{n: 8}, "ID", "{{range .}}{{.}}\n{{end}}", 3)
 	assert.Equal(t, 1, strings.Count(out, "ID"))
 }
 
 func TestPagedTemplatePropagatesFetchError(t *testing.T) {
 	var buf bytes.Buffer
 	err := renderIteratorPagedTemplateCore(
-		t.Context(),
+		MockDiscard(t.Context()),
 		&numberIterator{n: 100, err: errors.New("boom")},
 		strings.NewReader(""),
 		&buf,
@@ -111,7 +111,7 @@ func TestPagedTemplatePropagatesFetchError(t *testing.T) {
 }
 
 func TestPagedTemplateRendersHeaderAndRows(t *testing.T) {
-	out := pagedOutput(t, t.Context(), &numberIterator{n: 6}, "ID\tName", "{{range .}}{{.}}\titem-{{.}}\n{{end}}", 100)
+	out := pagedOutput(t, MockDiscard(t.Context()), &numberIterator{n: 6}, "ID\tName", "{{range .}}{{.}}\titem-{{.}}\n{{end}}", 100)
 	assert.Contains(t, out, "ID")
 	assert.Contains(t, out, "Name")
 	for i := 1; i <= 6; i++ {
@@ -125,7 +125,7 @@ func TestPagedTemplateEmptyIteratorStillFlushesHeader(t *testing.T) {
 	defer pw.Close()
 	var out bytes.Buffer
 	require.NoError(t, renderIteratorPagedTemplateCore(
-		t.Context(),
+		MockDiscard(t.Context()),
 		&numberIterator{n: 0},
 		pr,
 		&out,
@@ -141,7 +141,7 @@ func TestPagedTemplateEmptyIteratorStillFlushesHeader(t *testing.T) {
 func TestPagedTemplateColumnsStableAcrossBatches(t *testing.T) {
 	it := &numberIterator{n: 6}
 	tmpl := "{{range .}}col-{{.}}\tval\n{{end}}"
-	out := pagedOutput(t, t.Context(), it, "", tmpl, 3)
+	out := pagedOutput(t, MockDiscard(t.Context()), it, "", tmpl, 3)
 	lines := strings.Split(strings.TrimRight(out, "\n"), "\n")
 	var dataRows []string
 	for _, l := range lines {
@@ -167,14 +167,14 @@ func TestPagedTemplateMatchesNonPagedForSmallList(t *testing.T) {
 
 	var expected bytes.Buffer
 	refIter := listing.Iterator[int](&numberIterator{n: rows})
-	require.NoError(t, renderWithTemplate(t.Context(), newIteratorRenderer(refIter), flags.OutputText, &expected, "", tmpl))
+	require.NoError(t, renderWithTemplate(MockDiscard(t.Context()), newIteratorRenderer(refIter), flags.OutputText, &expected, "", tmpl))
 
 	pagedIter := listing.Iterator[int](&numberIterator{n: rows})
 	var actual bytes.Buffer
 	pr, pw := io.Pipe()
 	defer pw.Close()
 	require.NoError(t, renderIteratorPagedTemplateCore(
-		t.Context(),
+		MockDiscard(t.Context()),
 		pagedIter,
 		pr,
 		&actual,

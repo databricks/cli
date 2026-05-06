@@ -17,6 +17,7 @@ const (
 	footerHeight         = 1
 	searchFooterHeight   = 2
 	// headerLines is the number of non-data lines at the top (header + separator).
+	// These are rendered above the viewport so they stay visible while data scrolls.
 	headerLines = 2
 )
 
@@ -30,11 +31,14 @@ var (
 // Run displays tabular data in an interactive browser.
 // Writes to w (typically stdout). Blocks until user quits.
 func Run(w io.Writer, columns []string, rows [][]string) error {
-	lines := renderTableLines(columns, rows)
+	all := renderTableLines(columns, rows)
+	header := all[:headerLines]
+	dataLines := all[headerLines:]
 
 	m := model{
-		lines:  lines,
-		cursor: headerLines, // Start on first data row.
+		header: header,
+		lines:  dataLines,
+		cursor: 0,
 	}
 
 	p := tea.NewProgram(m, tea.WithOutput(w))
@@ -144,20 +148,21 @@ func (m model) renderContent() string {
 
 type model struct { //nolint:recvcheck // value receivers for tea.Model interface, pointer for cursor mutation
 	viewport viewport.Model
-	lines    []string
+	header   []string // sticky header lines (column names + separator)
+	lines    []string // data rows only
 	ready    bool
-	cursor   int // line index of the highlighted row
+	cursor   int // index into lines (data rows)
 
 	// Search state.
 	searching   bool
 	searchInput string
 	searchQuery string
-	matchLines  []int
+	matchLines  []int // indices into lines
 	matchIdx    int
 }
 
 func (m model) dataRowCount() int {
-	return max(len(m.lines)-headerLines, 0)
+	return len(m.lines)
 }
 
 func (m model) Init() tea.Cmd {
@@ -171,14 +176,16 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.searching {
 			fh = searchFooterHeight
 		}
+		// Reserve room for the sticky header above the viewport.
+		height := msg.Height - fh - len(m.header)
 		if !m.ready {
-			m.viewport = viewport.New(msg.Width, msg.Height-fh)
+			m.viewport = viewport.New(msg.Width, height)
 			m.viewport.SetHorizontalStep(horizontalScrollStep)
 			m.viewport.SetContent(m.renderContent())
 			m.ready = true
 		} else {
 			m.viewport.Width = msg.Width
-			m.viewport.Height = msg.Height - fh
+			m.viewport.Height = height
 		}
 		return m, nil
 
@@ -232,7 +239,7 @@ func (m model) updateNormal(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.moveCursor(m.viewport.Height)
 		return m, nil
 	case "g":
-		m.cursor = headerLines
+		m.cursor = 0
 		m.viewport.SetContent(m.renderContent())
 		m.viewport.GotoTop()
 		return m, nil
@@ -252,7 +259,7 @@ func (m model) updateNormal(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 // moveCursor moves the cursor by delta lines, clamped to data rows.
 func (m *model) moveCursor(delta int) {
 	m.cursor += delta
-	m.cursor = max(m.cursor, headerLines)
+	m.cursor = max(m.cursor, 0)
 	m.cursor = min(m.cursor, len(m.lines)-1)
 	m.viewport.SetContent(m.renderContent())
 	m.scrollToCursor()
@@ -311,7 +318,8 @@ func (m model) View() string {
 	}
 
 	footer := m.renderFooter()
-	return m.viewport.View() + "\n" + footer
+	header := strings.Join(m.header, "\n")
+	return header + "\n" + m.viewport.View() + "\n" + footer
 }
 
 func (m model) renderFooter() string {

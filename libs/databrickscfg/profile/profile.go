@@ -37,8 +37,8 @@ func (p Profile) Cloud() string {
 
 type Profiles []Profile
 
-// SearchCaseInsensitive implements the promptui.Searcher interface.
-// This allows the user to immediately starting typing to narrow down the list.
+// SearchCaseInsensitive matches the cmdio.SelectOptions.Searcher signature so
+// the user can immediately start typing to narrow down the list.
 func (p Profiles) SearchCaseInsensitive(input string, index int) bool {
 	input = strings.ToLower(input)
 	name := strings.ToLower(p[index].Name)

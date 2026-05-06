@@ -33,7 +33,7 @@ if [ "$original_endpoint_uuid" = "$remote_recreated_endpoint_uuid" ]; then
 fi
 
 title "Plan detects the UUID change and proposes recreate"
-trace $CLI bundle plan | contains.py "recreate vector_search_endpoints.my_endpoint" "update vector_search_endpoints.my_endpoint.permissions"
+trace $CLI bundle plan | contains.py "recreate vector_search_endpoints.my_endpoint" "create vector_search_endpoints.my_endpoint.permissions"
 
 title "Deploy recreates the endpoint and rebinds permissions to the new UUID"
 trace $CLI bundle deploy
