@@ -88,6 +88,9 @@ jobs:
       id-token: write
       contents: read
 
+    env:
+      TASK_CONCURRENCY: ${{ matrix.os.name == 'windows' && '1' || '' }}
+
     strategy:
       fail-fast: false
       matrix:
@@ -228,6 +231,9 @@ jobs:
       id-token: write
       contents: read
 
+    env:
+      TASK_CONCURRENCY: ${{ matrix.os.name == 'windows' && '1' || '' }}
+
     strategy:
       fail-fast: false
       matrix:
@@ -276,6 +282,9 @@ jobs:
     permissions:
       id-token: write
       contents: read
+
+    env:
+      TASK_CONCURRENCY: ${{ matrix.os.name == 'windows' && '1' || '' }}
 
     strategy:
       fail-fast: false
