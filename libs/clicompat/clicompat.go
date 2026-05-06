@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/databricks/cli/internal/build"
@@ -18,6 +19,20 @@ import (
 	"github.com/databricks/cli/libs/log"
 	"golang.org/x/mod/semver"
 )
+
+// ErrNotFound indicates that a requested resource (tag, branch, manifest)
+// does not exist at the remote.
+var ErrNotFound = errors.New("not found")
+
+// HTTPStatusError captures a non-200 HTTP status code from a manifest fetch.
+type HTTPStatusError struct {
+	StatusCode int
+}
+
+// Error implements the error interface.
+func (e *HTTPStatusError) Error() string {
+	return fmt.Sprintf("HTTP %d fetching manifest", e.StatusCode)
+}
 
 const (
 	// manifestURL is the raw GitHub URL for the compatibility manifest.
@@ -38,7 +53,7 @@ const (
 	// devVersionPrefix identifies dev builds that always use the "next" entry.
 	devVersionPrefix = "0.0.0-dev"
 
-	fetchRetries      = 2
+	maxFetchAttempts  = 3
 	fetchRetryBackoff = 300 * time.Millisecond
 )
 
@@ -63,7 +78,8 @@ func (c cachedManifest) isFresh(maxAge time.Duration) bool {
 }
 
 // httpClient is the HTTP client used for manifest fetches. Package-level var
-// so tests can replace it.
+// so tests can replace it. Not safe for parallel tests; the clicompat test
+// suite does not use t.Parallel().
 var httpClient = &http.Client{Timeout: fetchTimeout}
 
 // FetchManifest returns the compatibility manifest using a 4-tier fallback:
@@ -71,11 +87,25 @@ var httpClient = &http.Client{Timeout: fetchTimeout}
 //  2. Remote fetch from GitHub (with retry)
 //  3. Stale local file (if remote fails but a previously cached file exists)
 //  4. Embedded manifest compiled into the binary
+//
+// Set DATABRICKS_CACHE_ENABLED=false to bypass the local cache (tiers 1 and 3a),
+// which is useful to recover from a bad cached manifest.
 func FetchManifest(ctx context.Context) (Manifest, error) {
+	cacheEnabled := true
+	if enabled, ok := env.GetBool(ctx, "DATABRICKS_CACHE_ENABLED"); ok {
+		cacheEnabled = enabled
+	}
+
 	localPath := manifestLocalPath(ctx)
 
 	// Read local file once — reuse across tiers.
-	local, localErr := readLocalManifest(localPath)
+	var local cachedManifest
+	var localErr error
+	if cacheEnabled {
+		local, localErr = readLocalManifest(localPath)
+	} else {
+		localErr = errors.New("cache disabled")
+	}
 
 	// Tier 1: local file is fresh.
 	if localErr == nil && local.isFresh(cacheTTL) {
@@ -86,7 +116,9 @@ func FetchManifest(ctx context.Context) (Manifest, error) {
 	// Tier 2: fetch from remote (local file missing or stale).
 	m, fetchErr := fetchRemoteWithRetry(ctx)
 	if fetchErr == nil {
-		writeLocalManifest(ctx, localPath, m)
+		if cacheEnabled {
+			writeLocalManifest(ctx, localPath, m)
+		}
 		return m, nil
 	}
 
@@ -97,7 +129,7 @@ func FetchManifest(ctx context.Context) (Manifest, error) {
 	}
 
 	// Tier 3b: embedded manifest.
-	m, embeddedErr := parseManifest(build.CLICompatManifestJSON)
+	m, embeddedErr := parseEmbeddedManifest()
 	if embeddedErr == nil {
 		log.Debugf(ctx, "Using embedded manifest (remote and local cache failed)")
 		return m, nil
@@ -106,12 +138,17 @@ func FetchManifest(ctx context.Context) (Manifest, error) {
 	return nil, fmt.Errorf("all manifest sources failed (remote: %w, embedded: %w)", fetchErr, embeddedErr)
 }
 
+// parseEmbeddedManifest parses the embedded manifest once and caches the result.
+var parseEmbeddedManifest = sync.OnceValues(func() (Manifest, error) {
+	return parseManifest(build.CLICompatManifestJSON)
+})
+
 // ResolveEmbeddedAppKitVersion resolves the AppKit version from only the
 // embedded manifest for the current CLI version. Used as a fallback when the
 // primary version (from remote or cached manifest) points to a non-existent tag,
 // and for help text defaults where a network call is not appropriate.
 func ResolveEmbeddedAppKitVersion() (string, error) {
-	m, err := parseManifest(build.CLICompatManifestJSON)
+	m, err := parseEmbeddedManifest()
 	if err != nil {
 		return "", fmt.Errorf("embedded manifest: %w", err)
 	}
@@ -126,7 +163,7 @@ func ResolveEmbeddedAppKitVersion() (string, error) {
 // the embedded manifest for the current CLI version. Used as a fallback when the
 // primary version points to a non-existent tag.
 func ResolveEmbeddedAgentSkillsVersion() (string, error) {
-	m, err := parseManifest(build.CLICompatManifestJSON)
+	m, err := parseEmbeddedManifest()
 	if err != nil {
 		return "", fmt.Errorf("embedded manifest: %w", err)
 	}
@@ -144,8 +181,18 @@ func IsNotFoundError(err error) bool {
 	if err == nil {
 		return false
 	}
+	if errors.Is(err, ErrNotFound) {
+		return true
+	}
+	var httpErr *HTTPStatusError
+	if errors.As(err, &httpErr) && httpErr.StatusCode == http.StatusNotFound {
+		return true
+	}
+	// Git clone errors include "not found" in stderr when a branch/tag does not
+	// exist (e.g. "Remote branch X not found in upstream origin"). This is a
+	// pragmatic fallback until git.Clone wraps a typed error.
 	msg := strings.ToLower(err.Error())
-	return strings.Contains(msg, "not found") || strings.Contains(msg, "404")
+	return strings.Contains(msg, "not found")
 }
 
 // Resolve returns the manifest entry for the given CLI version.
@@ -241,6 +288,7 @@ func manifestLocalPath(ctx context.Context) string {
 	}
 	home, err := os.UserCacheDir()
 	if err != nil {
+		log.Debugf(ctx, "Could not determine user cache directory: %v", err)
 		return ""
 	}
 	return filepath.Join(home, "databricks", localManifestFile)
@@ -267,8 +315,7 @@ func readLocalManifest(path string) (cachedManifest, error) {
 }
 
 // writeLocalManifest writes the manifest to the local cache path using a
-// temp-file-then-rename pattern. The os.Remove before os.Rename is needed
-// for Windows, where Rename fails if the destination exists.
+// temp-file-then-rename pattern for atomicity.
 func writeLocalManifest(ctx context.Context, path string, m Manifest) {
 	if path == "" {
 		return
@@ -280,12 +327,12 @@ func writeLocalManifest(ctx context.Context, path string, m Manifest) {
 	}
 	dir := filepath.Dir(path)
 	if err := os.MkdirAll(dir, 0o700); err != nil {
-		log.Debugf(ctx, "Failed to create cache directory %s: %v", dir, err)
+		log.Warnf(ctx, "Failed to create cache directory %s: %v", dir, err)
 		return
 	}
 	tmp, err := os.CreateTemp(dir, ".compat-manifest-*.tmp")
 	if err != nil {
-		log.Debugf(ctx, "Failed to create temp cache file: %v", err)
+		log.Warnf(ctx, "Failed to create temp cache file: %v", err)
 		return
 	}
 	tmpPath := tmp.Name()
@@ -301,20 +348,20 @@ func writeLocalManifest(ctx context.Context, path string, m Manifest) {
 		log.Debugf(ctx, "Failed to close temp cache file: %v", err)
 		return
 	}
-	_ = os.Remove(path)
 	if err := os.Rename(tmpPath, path); err != nil {
-		log.Debugf(ctx, "Failed to rename temp cache file: %v", err)
+		log.Warnf(ctx, "Failed to rename temp cache file: %v", err)
 	}
 }
 
 // --- Remote fetch ---
 
-// fetchRemoteWithRetry wraps fetchRemote with retries.
+// fetchRemoteWithRetry wraps fetchRemote with retries on transient errors.
+// Client errors (4xx) are not retried since they will not recover.
 func fetchRemoteWithRetry(ctx context.Context) (Manifest, error) {
 	var lastErr error
-	for attempt := range fetchRetries + 1 {
+	for attempt := range maxFetchAttempts {
 		if attempt > 0 {
-			log.Debugf(ctx, "Retrying manifest fetch (attempt %d)", attempt+1)
+			log.Debugf(ctx, "Retrying manifest fetch (attempt %d/%d)", attempt+1, maxFetchAttempts)
 			select {
 			case <-ctx.Done():
 				return nil, ctx.Err()
@@ -326,6 +373,12 @@ func fetchRemoteWithRetry(ctx context.Context) (Manifest, error) {
 			return m, nil
 		}
 		lastErr = err
+
+		// Do not retry client errors (4xx) — they won't resolve on retry.
+		var httpErr *HTTPStatusError
+		if errors.As(err, &httpErr) && httpErr.StatusCode >= 400 && httpErr.StatusCode < 500 {
+			return nil, lastErr
+		}
 	}
 	return nil, lastErr
 }
@@ -336,6 +389,7 @@ func fetchRemote(ctx context.Context) (Manifest, error) {
 	if err != nil {
 		return nil, err
 	}
+	req.Header.Set("User-Agent", "databricks-cli/"+build.GetInfo().Version)
 
 	resp, err := httpClient.Do(req)
 	if err != nil {
@@ -344,7 +398,7 @@ func fetchRemote(ctx context.Context) (Manifest, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("HTTP %d fetching manifest", resp.StatusCode)
+		return nil, &HTTPStatusError{StatusCode: resp.StatusCode}
 	}
 
 	// Cap response size to guard against corrupted or malicious responses.
@@ -370,6 +424,20 @@ func parseManifest(data []byte) (Manifest, error) {
 	for k := range m {
 		if k != nextKey && !semver.IsValid("v"+k) {
 			return nil, fmt.Errorf("invalid semver key %q in compatibility manifest", k)
+		}
+	}
+	for k, entry := range m {
+		if entry.AppKit == "" {
+			return nil, fmt.Errorf("manifest entry %q has empty appkit version", k)
+		}
+		if entry.AgentSkills == "" {
+			return nil, fmt.Errorf("manifest entry %q has empty skills version", k)
+		}
+		if !semver.IsValid("v" + entry.AppKit) {
+			return nil, fmt.Errorf("manifest entry %q has invalid appkit version %q", k, entry.AppKit)
+		}
+		if !semver.IsValid("v" + entry.AgentSkills) {
+			return nil, fmt.Errorf("manifest entry %q has invalid skills version %q", k, entry.AgentSkills)
 		}
 	}
 	return m, nil

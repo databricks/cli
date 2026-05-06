@@ -169,11 +169,7 @@ Environment variables:
 
 	cmd.Flags().StringVar(&templatePath, "template", "", "Template path (local directory or GitHub URL)")
 	cmd.Flags().StringVar(&branch, "branch", "", "Git branch or tag (for GitHub templates, mutually exclusive with --version)")
-	versionDesc := "AppKit version to use (use 'latest' for main branch)"
-	if v, err := clicompat.ResolveEmbeddedAppKitVersion(); err == nil && v != "" {
-		versionDesc = fmt.Sprintf("AppKit version to use (default: %s, use 'latest' for main branch)", v)
-	}
-	cmd.Flags().StringVar(&version, "version", "", versionDesc)
+	cmd.Flags().StringVar(&version, "version", "", "AppKit version to use (default: auto-detected, use 'latest' for main branch)")
 	cmd.Flags().StringVar(&name, "name", "", "Project name (prompts if not provided)")
 	cmd.Flags().StringVar(&warehouseID, "warehouse-id", "", "SQL warehouse ID")
 	_ = cmd.Flags().MarkDeprecated("warehouse-id", "use --set <plugin>.sql-warehouse.id=<value> instead")

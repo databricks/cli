@@ -54,7 +54,7 @@ func defaultListSkills(cmd *cobra.Command, scope string) error {
 	}
 
 	src := &installer.GitHubManifestSource{}
-	manifest, err := src.FetchManifest(ctx, ref)
+	manifest, ref, err := installer.FetchSkillsManifestWithFallback(ctx, src, ref)
 	if err != nil {
 		return fmt.Errorf("failed to fetch manifest: %w", err)
 	}

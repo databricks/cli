@@ -52,4 +52,12 @@ The manifest is validated by Go tests in `libs/clicompat/`:
 go test ./libs/clicompat/... -run TestEmbeddedManifest -v
 ```
 
-This checks: valid JSON, `"next"` key present, at least one versioned entry, valid semver keys, `next` versions >= all entries, and ascending key order.
+This checks: valid JSON, `"next"` key present, at least one versioned entry, valid semver keys, valid semver entry values, `next` versions >= all entries, and ascending key order.
+
+## Pruning policy
+
+Entries MUST NOT be removed from the manifest. Older CLI binaries use the lowest entry as their floor when the CLI version is older than all entries. Pruning it causes them to silently resolve to a newer entry that may require CLI features they lack. If the manifest grows too large, consider archiving very old entries to a separate file while keeping the oldest entry as a sentinel.
+
+## Trust model
+
+The live manifest is fetched over HTTPS from GitHub (`raw.githubusercontent.com`). The trust boundary is: TLS certificate validation + GitHub's access controls + write access to the `main` branch of `databricks/cli`. A compromised manifest can only steer clients to existing published tags (AppKit or skills); it cannot inject arbitrary code. The CLI binary always ships an embedded fallback manifest that limits exposure to cache-TTL windows (1 hour). The local cache (`~/.cache/databricks/compat-manifest.json`) is trust-on-disk: an attacker with user-level write access to the cache directory could swap in a malicious manifest pointing to different tags.

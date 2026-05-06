@@ -91,7 +91,7 @@ func UpdateSkills(ctx context.Context, src ManifestSource, targetAgents []*agent
 		return &UpdateResult{Unchanged: slices.Sorted(maps.Keys(state.Skills))}, nil
 	}
 
-	manifest, err := src.FetchManifest(ctx, latestTag)
+	manifest, latestTag, err := FetchSkillsManifestWithFallback(ctx, src, latestTag)
 	if err != nil {
 		if opts.Check {
 			log.Warnf(ctx, "Could not fetch manifest: %v", err)

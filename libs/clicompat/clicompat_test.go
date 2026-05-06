@@ -3,6 +3,9 @@ package clicompat
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
+	"io/fs"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -430,4 +433,118 @@ func TestReadWriteLocalManifest(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "0.50.0", cached.manifest["next"].AppKit)
 	assert.True(t, cached.isFresh(cacheTTL), "just-written file should be fresh")
+}
+
+// --- IsNotFoundError tests ---
+
+func TestIsNotFoundError(t *testing.T) {
+	tests := []struct {
+		name string
+		err  error
+		want bool
+	}{
+		{name: "nil", err: nil, want: false},
+		{name: "unrelated error", err: errors.New("connection refused"), want: false},
+		{name: "sentinel ErrNotFound", err: ErrNotFound, want: true},
+		{name: "wrapped ErrNotFound", err: fmt.Errorf("fetching: %w", ErrNotFound), want: true},
+		{name: "HTTPStatusError 404", err: &HTTPStatusError{StatusCode: 404}, want: true},
+		{name: "wrapped HTTPStatusError 404", err: fmt.Errorf("fetch failed: %w", &HTTPStatusError{StatusCode: 404}), want: true},
+		{name: "HTTPStatusError 500", err: &HTTPStatusError{StatusCode: 500}, want: false},
+		{name: "HTTPStatusError 403", err: &HTTPStatusError{StatusCode: 403}, want: false},
+		{name: "git not found", err: errors.New("Remote branch template-v99 not found in upstream origin"), want: true},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, IsNotFoundError(tc.err))
+		})
+	}
+}
+
+// --- parseManifest entry validation tests ---
+
+func TestParseManifest_EmptyAppKit(t *testing.T) {
+	data := `{"next":{"appkit":"","skills":"0.1.5"}}`
+	_, err := parseManifest([]byte(data))
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "empty appkit version")
+}
+
+func TestParseManifest_EmptySkills(t *testing.T) {
+	data := `{"next":{"appkit":"0.27.0","skills":""}}`
+	_, err := parseManifest([]byte(data))
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "empty skills version")
+}
+
+func TestParseManifest_InvalidAppKitSemver(t *testing.T) {
+	data := `{"next":{"appkit":"not-semver","skills":"0.1.5"}}`
+	_, err := parseManifest([]byte(data))
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid appkit version")
+}
+
+func TestParseManifest_InvalidSkillsSemver(t *testing.T) {
+	data := `{"next":{"appkit":"0.27.0","skills":"abc"}}`
+	_, err := parseManifest([]byte(data))
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid skills version")
+}
+
+// --- FetchManifest no-retry-on-404 test ---
+
+func TestFetchManifest_NoRetryOn404(t *testing.T) {
+	ctx := testContext(t)
+	var callCount atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		callCount.Add(1)
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer srv.Close()
+	redirectToServer(t, srv)
+
+	// Should fall back to embedded manifest (since 404 is not retried).
+	result, err := FetchManifest(ctx)
+	require.NoError(t, err)
+
+	embedded, _ := parseEmbeddedManifest()
+	assert.Equal(t, embedded["next"].AppKit, result["next"].AppKit)
+	assert.Equal(t, int32(1), callCount.Load(), "404 should not be retried")
+}
+
+// --- FetchManifest cache-disabled test ---
+
+func TestFetchManifest_CacheDisabled(t *testing.T) {
+	ctx := testContext(t)
+	ctx = env.Set(ctx, "DATABRICKS_CACHE_ENABLED", "false")
+
+	want := Manifest{
+		"next":    {AppKit: "0.99.0", AgentSkills: "0.9.9"},
+		"0.296.0": {AppKit: "0.99.0", AgentSkills: "0.9.9"},
+	}
+	body, _ := json.Marshal(want)
+
+	var callCount atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		callCount.Add(1)
+		_, _ = w.Write(body)
+	}))
+	defer srv.Close()
+	redirectToServer(t, srv)
+
+	// First call fetches from remote.
+	result1, err := FetchManifest(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, "0.99.0", result1["next"].AppKit)
+
+	// Second call should also fetch from remote (cache is disabled).
+	result2, err := FetchManifest(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, "0.99.0", result2["next"].AppKit)
+
+	assert.Equal(t, int32(2), callCount.Load(), "with cache disabled, both calls should hit the server")
+
+	// Verify no cache file was written.
+	localPath := manifestLocalPath(ctx)
+	_, statErr := os.Stat(localPath)
+	assert.ErrorIs(t, statErr, fs.ErrNotExist, "cache file should not exist when cache is disabled")
 }
