@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/libs/apps/manifest"
 	"github.com/databricks/cli/libs/clicompat"
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/log"
 	"github.com/spf13/cobra"
 )
 
@@ -44,6 +45,14 @@ func runManifestOnly(ctx context.Context, templatePath, branch, version string) 
 		subdirForClone = appkitTemplateDir
 	}
 	resolvedPath, cleanup, err := resolveTemplate(ctx, templateSrc, branchForClone, subdirForClone)
+	if err != nil && usingDefaultTemplate && clicompat.IsNotFoundError(err) {
+		fallbackVersion, fbErr := clicompat.ResolveEmbeddedAppKitVersion()
+		if fbErr == nil && fallbackVersion != "" {
+			log.Warnf(ctx, "Template version not found, falling back to embedded version %s", fallbackVersion)
+			fallbackRef := normalizeVersion(fallbackVersion)
+			resolvedPath, cleanup, err = resolveTemplate(ctx, templateSrc, fallbackRef, appkitTemplateDir)
+		}
+	}
 	if err != nil {
 		return err
 	}

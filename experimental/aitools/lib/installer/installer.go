@@ -93,6 +93,24 @@ func fetchSkillFile(ctx context.Context, ref, skillName, filePath string) ([]byt
 	return io.ReadAll(resp.Body)
 }
 
+// FetchSkillsManifestWithFallback fetches the skills manifest at the given ref.
+// If the ref points to a non-existent tag (not-found error), it falls back to
+// the embedded manifest's skills version. Returns the manifest, the (possibly
+// updated) ref, and any error.
+func FetchSkillsManifestWithFallback(ctx context.Context, src ManifestSource, ref string) (*Manifest, string, error) {
+	tag := strings.TrimPrefix(ref, "v")
+	manifest, err := src.FetchManifest(ctx, ref)
+	if err != nil && clicompat.IsNotFoundError(err) {
+		fallbackVersion, fbErr := clicompat.ResolveEmbeddedAgentSkillsVersion()
+		if fbErr == nil && fallbackVersion != "" && fallbackVersion != tag {
+			log.Warnf(ctx, "Skills version %s not found, falling back to embedded version %s", tag, fallbackVersion)
+			ref = "v" + fallbackVersion
+			manifest, err = src.FetchManifest(ctx, ref)
+		}
+	}
+	return manifest, ref, err
+}
+
 // InstallSkillsForAgents fetches the manifest and installs skills for the given agents.
 // This is the core installation function. Callers are responsible for agent detection,
 // prompting, and printing the "Installing..." header.
@@ -101,19 +119,8 @@ func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgent
 	if err != nil {
 		return err
 	}
-	tag := strings.TrimPrefix(ref, "v")
-	cmdio.LogString(ctx, "Using skills version "+tag)
-	manifest, err := src.FetchManifest(ctx, ref)
-	if err != nil && clicompat.IsNotFoundError(err) {
-		// The resolved version doesn't exist. Fall back to the embedded manifest.
-		fallbackVersion, fbErr := clicompat.ResolveEmbeddedAgentSkillsVersion()
-		if fbErr == nil && fallbackVersion != "" && fallbackVersion != tag {
-			log.Warnf(ctx, "Skills version %s not found, falling back to embedded version %s", tag, fallbackVersion)
-			ref = "v" + fallbackVersion
-			tag = fallbackVersion
-			manifest, err = src.FetchManifest(ctx, ref)
-		}
-	}
+	cmdio.LogString(ctx, "Using skills version "+strings.TrimPrefix(ref, "v"))
+	manifest, ref, err := FetchSkillsManifestWithFallback(ctx, src, ref)
 	if err != nil {
 		return err
 	}
