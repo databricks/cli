@@ -6,4 +6,11 @@ Error: duplicate YAML merge key ('<<') is not allowed; to merge multiple maps, u
 
 Found 1 error
 
-Exit code: 1
+>>> [CLI] bundle validate
+Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Validation OK!
