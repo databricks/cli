@@ -14,11 +14,13 @@ import (
 
 func newTestPager(t *testing.T, iter listing.Iterator[int], pageSize int) *pagerModel[int] {
 	t.Helper()
-	rowT, err := template.New("row").Funcs(renderFuncMap).Parse("{{range .}}{{.}}\n{{end}}")
+	ctx := MockDiscard(t.Context())
+	fm := renderFuncMap(ctx)
+	rowT, err := template.New("row").Funcs(fm).Parse("{{range .}}{{.}}\n{{end}}")
 	require.NoError(t, err)
-	headerT, err := template.New("header").Funcs(renderFuncMap).Parse("")
+	headerT, err := template.New("header").Funcs(fm).Parse("")
 	require.NoError(t, err)
-	return newPagerModel(t.Context(), iter, &templatePager{
+	return newPagerModel(ctx, iter, &templatePager{
 		headerT: headerT,
 		rowT:    rowT,
 	}, pageSize, 0)
