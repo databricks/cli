@@ -2,7 +2,7 @@ bundle:
   name: ML
 
 workspace:
-  host: "https://myworkspace.com"
+  host: "https://myworkspace.test"
   root_path: /abc
 
 presets:
