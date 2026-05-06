@@ -113,7 +113,7 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 // e.g. "/api/{id}/files/{path...}" returns ["id", "path"].
 func wildcardNames(path string) []string {
 	var names []string
-	for _, part := range strings.Split(path, "/") {
+	for part := range strings.SplitSeq(path, "/") {
 		if strings.HasPrefix(part, "{") && strings.HasSuffix(part, "}") {
 			name := part[1 : len(part)-1]
 			name = strings.TrimSuffix(name, "...")
