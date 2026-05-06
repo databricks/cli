@@ -32,10 +32,10 @@ func promptForProfile(ctx context.Context, defaultValue string) (string, error) 
 		return "", nil
 	}
 
-	prompt := cmdio.Prompt(ctx)
-	prompt.Label = "Databricks profile name [" + defaultValue + "]"
-	prompt.AllowEdit = true
-	result, err := prompt.Run()
+	result, err := cmdio.RunPrompt(ctx, cmdio.PromptOptions{
+		Label:     "Databricks profile name [" + defaultValue + "]",
+		AllowEdit: true,
+	})
 	if result == "" {
 		// Manually return the default value. We could use the prompt.Default
 		// field, but be inconsistent with other prompts in the CLI.
@@ -756,10 +756,10 @@ func promptForWorkspaceSelection(ctx context.Context, authArguments *auth.AuthAr
 // promptForWorkspaceID asks the user to manually enter a workspace ID.
 // Returns empty string if the user provides no input.
 func promptForWorkspaceID(ctx context.Context) (string, error) {
-	prompt := cmdio.Prompt(ctx)
-	prompt.Label = "Enter workspace ID (empty to skip)"
-	prompt.AllowEdit = true
-	result, err := prompt.Run()
+	result, err := cmdio.RunPrompt(ctx, cmdio.PromptOptions{
+		Label:     "Enter workspace ID (empty to skip)",
+		AllowEdit: true,
+	})
 	if err != nil {
 		return "", err
 	}
