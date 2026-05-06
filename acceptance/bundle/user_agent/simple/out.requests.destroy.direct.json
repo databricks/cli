@@ -137,7 +137,7 @@
   "path": "/api/2.0/workspace/import",
   "body": {
     "multipart_form": {
-      "content": "[content]",
+      "content": "{\"ID\":\"[UUID]\",\"AcquisitionTime\":\"[TIMESTAMP]\",\"IsForced\":false,\"User\":\"[USERNAME]\"}",
       "format": "AUTO",
       "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock"
     }

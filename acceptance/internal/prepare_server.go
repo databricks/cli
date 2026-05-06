@@ -344,11 +344,12 @@ func getLoggedRequest(req *testserver.Request, includedHeaders []string) LoggedR
 // form body if the request's Content-Type is multipart/*. The second return
 // value is false if the body is not multipart or cannot be parsed.
 //
-// File parts (i.e. parts with a filename) are recorded as the literal string
-// "[content]" — we don't include the body bytes or their length so that
-// recordings stay stable when the upload payload contains a serialized
-// timestamp (deploy.lock, deployment.json, etc.) whose JSON encoding can vary
-// in length by a byte or two between runs.
+// Text parts are recorded as their literal content so reviewers can read what
+// was uploaded; existing global UNIX_TIME / UUID / USERNAME replacements
+// normalize the timestamp / id / email fields embedded in deploy.lock and
+// similar payloads. Non-UTF-8 (binary) parts and parts whose serialized
+// content would bloat the recording past multipartContentLimit are
+// summarized as "[binary content N bytes]".
 func normalizeMultipartBody(req *testserver.Request) (any, bool) {
 	contentType := req.Headers.Get("Content-Type")
 	mediaType, params, err := mime.ParseMediaType(contentType)
@@ -374,15 +375,19 @@ func normalizeMultipartBody(req *testserver.Request) (any, bool) {
 			return nil, false
 		}
 		name := part.FormName()
-		filename := part.FileName()
-		if filename != "" || !utf8.Valid(data) {
-			parts[name] = "[content]"
+		if !utf8.Valid(data) || len(data) > multipartContentLimit {
+			parts[name] = fmt.Sprintf("[binary content %d bytes]", len(data))
 			continue
 		}
 		parts[name] = string(data)
 	}
 	return map[string]any{"multipart_form": parts}, true
 }
+
+// Multipart parts larger than this limit are summarized as a size placeholder
+// to keep recorded fixtures small. Reviewers care about *what* was uploaded
+// (path, format, overwrite flag), not the bytes themselves, for large blobs.
+const multipartContentLimit = 4096
 
 func filterHeaders(h http.Header, includedHeaders []string) http.Header {
 	headers := make(http.Header)

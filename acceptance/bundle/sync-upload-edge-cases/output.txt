@@ -34,3 +34,39 @@ Uploaded with spaces.txt
 [
   "AUTO"
 ]
+
+=== recorded content for the small text inputs
+>>> jq -rs 
+  map(select(.path == "/api/2.0/workspace/import")) |
+  map(select(.body.multipart_form.path | test("/(notebook\\.py|héllo\\.txt|with spaces\\.txt|empty\\.txt|dashboard\\.lvdash\\.json)$"))) |
+  map({path: (.body.multipart_form.path | sub(".*/"; "")), content: .body.multipart_form.content}) |
+  sort_by(.path) | .[]
+ out.requests.txt
+{
+  "path": "dashboard.lvdash.json",
+  "content": "{\"datasets\":[],\"pages\":[]}\n"
+}
+{
+  "path": "empty.txt",
+  "content": ""
+}
+{
+  "path": "héllo.txt",
+  "content": "hello, naïve world\n"
+}
+{
+  "path": "notebook.py",
+  "content": "# Databricks notebook source\nprint(\"hello\")\n"
+}
+{
+  "path": "with spaces.txt",
+  "content": "hello, world\n"
+}
+
+=== 12 MiB binary upload is summarized, not stored byte-for-byte
+>>> jq -rs 
+  map(select(.path == "/api/2.0/workspace/import")) |
+  map(select(.body.multipart_form.path | endswith("/large.bin"))) |
+  .[].body.multipart_form.content
+ out.requests.txt
+[binary content [NUMID] bytes]

@@ -3,7 +3,7 @@
   "path": "/api/2.0/workspace/import",
   "body": {
     "multipart_form": {
-      "content": "[content]",
+      "content": "",
       "format": "AUTO",
       "overwrite": "true",
       "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/conf/dir/test.yml"

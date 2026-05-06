@@ -3,7 +3,7 @@
   "path": "/api/2.0/workspace/import",
   "body": {
     "multipart_form": {
-      "content": "[content]",
+      "content": "command:\n  - python\n  - app.py\n",
       "format": "AUTO",
       "overwrite": "true",
       "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/app/app.yml"
