@@ -27,14 +27,14 @@ func configureInteractive(cmd *cobra.Command, flags *configureFlags, cfg *config
 
 	// Ask user to specify the host if not already set.
 	if cfg.Host == "" {
-		prompt := cmdio.Prompt(ctx)
-		prompt.Label = "Databricks workspace host (https://...)"
-		prompt.AllowEdit = true
-		prompt.Validate = func(input string) error {
-			normalized := normalizeHost(input)
-			return validateHost(normalized)
-		}
-		out, err := prompt.Run()
+		out, err := cmdio.RunPrompt(ctx, cmdio.PromptOptions{
+			Label:     "Databricks workspace host (https://...)",
+			AllowEdit: true,
+			Validate: func(input string) error {
+				normalized := normalizeHost(input)
+				return validateHost(normalized)
+			},
+		})
 		if err != nil {
 			return err
 		}
@@ -43,10 +43,10 @@ func configureInteractive(cmd *cobra.Command, flags *configureFlags, cfg *config
 
 	// Ask user to specify the token is not already set.
 	if cfg.Token == "" {
-		prompt := cmdio.Prompt(ctx)
-		prompt.Label = "Personal access token"
-		prompt.Mask = '*'
-		out, err := prompt.Run()
+		out, err := cmdio.RunPrompt(ctx, cmdio.PromptOptions{
+			Label: "Personal access token",
+			Mask:  '*',
+		})
 		if err != nil {
 			return err
 		}
