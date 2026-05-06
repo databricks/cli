@@ -47,11 +47,9 @@ Deployment complete!
   "creator": "[USERNAME]"
 }
 
-=== Persistent drift after deploy: V1 permissions API leaves an ACL on the deleted endpoint id, so plan keeps showing an update.
+=== Verify no permanent drift after deploy
 >>> [CLI] bundle plan
-update model_serving_endpoints.my_endpoint.permissions
-
-Plan: 0 to add, 1 to change, 0 to delete, 1 unchanged
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

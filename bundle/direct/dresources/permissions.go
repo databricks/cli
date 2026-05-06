@@ -253,6 +253,20 @@ func (r *ResourcePermissions) DoUpdate(ctx context.Context, _ string, newState *
 	return nil, err
 }
 
+// DoUpdateWithID is identical to DoUpdate but reports newState.ObjectID as the new
+// resource ID so the framework persists it in deployment state. Without this, an
+// out-of-band recreate of the parent resource leaves the deployment state pointing
+// at the gone object_id; on V1 permissions APIs that still return ACL data for the
+// old parent (eventual consistency), this manifests as a permanent update on the
+// permissions resource.
+func (r *ResourcePermissions) DoUpdateWithID(ctx context.Context, _ string, newState *PermissionsState) (string, *PermissionsState, error) {
+	_, err := r.DoUpdate(ctx, newState.ObjectID, newState, nil)
+	if err != nil {
+		return "", nil, err
+	}
+	return newState.ObjectID, nil, nil
+}
+
 // DoDelete is activated in 2 distinct cases:
 // 1) 'permissions' field is deleted in DABs config. In that case terraform would restore the default permissions (IS_OWNER for current user).
 // 2) the parent resource is deleted; in that case there is no need to do anything; parent resource deletion is enough.

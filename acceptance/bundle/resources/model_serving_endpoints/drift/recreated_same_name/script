@@ -37,5 +37,5 @@ trace $CLI bundle plan
 trace $CLI bundle deploy
 trace $CLI serving-endpoints get "${endpoint_name}" | jq '{name, creator}'
 
-title "Persistent drift after deploy: V1 permissions API leaves an ACL on the deleted endpoint id, so plan keeps showing an update."
-trace $CLI bundle plan
+title "Verify no permanent drift after deploy"
+trace $CLI bundle plan | contains.py "Plan: 0 to add, 0 to change, 0 to delete"
