@@ -38,9 +38,9 @@ Remote recreated endpoint UUID: [REMOTE_RECREATED_ENDPOINT_UUID]
 === Plan detects the UUID change and proposes recreate
 >>> [CLI] bundle plan
 recreate vector_search_endpoints.my_endpoint
-update vector_search_endpoints.my_endpoint.permissions
+create vector_search_endpoints.my_endpoint.permissions
 
-Plan: 1 to add, 1 to change, 1 to delete, 0 unchanged
+Plan: 2 to add, 0 to change, 1 to delete, 0 unchanged
 
 === Deploy recreates the endpoint and rebinds permissions to the new UUID
 >>> [CLI] bundle deploy
