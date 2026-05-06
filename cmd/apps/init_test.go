@@ -773,6 +773,59 @@ func TestPluginHasResourceField(t *testing.T) {
 	assert.False(t, pluginHasResourceField(p, "nosuch", "id"))
 }
 
+func TestValidateRequiredResources(t *testing.T) {
+	tests := []struct {
+		name           string
+		resources      []manifest.Resource
+		resourceValues map[string]string
+		wantErr        string
+	}{
+		{
+			name: "all provided",
+			resources: []manifest.Resource{
+				{Alias: "SQL Warehouse", ResourceKey: "sql-warehouse", PluginName: "analytics"},
+			},
+			resourceValues: map[string]string{"sql-warehouse.id": "abc"},
+		},
+		{
+			name: "missing resource with fields includes plugin prefix in hint",
+			resources: []manifest.Resource{
+				{
+					Alias:       "Postgres",
+					ResourceKey: "postgres",
+					PluginName:  "lakebase",
+					Fields: map[string]manifest.ResourceField{
+						"branch":   {Description: "branch"},
+						"database": {Description: "database"},
+					},
+				},
+			},
+			resourceValues: map[string]string{},
+			wantErr:        `use --set lakebase.postgres.branch=value`,
+		},
+		{
+			name: "missing resource without fields defaults to id",
+			resources: []manifest.Resource{
+				{Alias: "SQL Warehouse", ResourceKey: "sql-warehouse", PluginName: "analytics"},
+			},
+			resourceValues: map[string]string{},
+			wantErr:        `use --set analytics.sql-warehouse.id=value`,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			err := validateRequiredResources(tc.resources, tc.resourceValues)
+			if tc.wantErr == "" {
+				assert.NoError(t, err)
+			} else {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tc.wantErr)
+			}
+		})
+	}
+}
+
 func TestAppendUnique(t *testing.T) {
 	result := appendUnique([]string{"a", "b"}, "b", "c", "a", "d")
 	assert.Equal(t, []string{"a", "b", "c", "d"}, result)
