@@ -32,12 +32,13 @@ func TestSyncOptionsFromBundle(t *testing.T) {
 		},
 	}
 
-	f := syncFlags{}
+	f := syncFlags{maxConcurrentRequests: 5}
 	opts, err := f.syncOptionsFromBundle(New(), []string{}, b)
 	require.NoError(t, err)
 	assert.Equal(t, tempDir, opts.LocalRoot.Native())
 	assert.Equal(t, "/Users/jane@doe.com/path", opts.RemotePath)
 	assert.Equal(t, filepath.Join(tempDir, ".databricks", "bundle", "default"), opts.SnapshotBasePath)
+	assert.Equal(t, 5, opts.MaxConcurrentRequests)
 	assert.NotNil(t, opts.WorkspaceClient)
 }
 
@@ -56,13 +57,25 @@ func TestSyncOptionsFromArgs(t *testing.T) {
 	local := t.TempDir()
 	remote := "/remote"
 
-	f := syncFlags{}
+	f := syncFlags{maxConcurrentRequests: 7}
 	cmd := New()
 	cmd.SetContext(cmdctx.SetWorkspaceClient(t.Context(), nil))
 	opts, err := f.syncOptionsFromArgs(cmd, []string{local, remote})
 	require.NoError(t, err)
 	assert.Equal(t, local, opts.LocalRoot.Native())
 	assert.Equal(t, remote, opts.RemotePath)
+	assert.Equal(t, 7, opts.MaxConcurrentRequests)
+}
+
+func TestSyncFlagsValidate(t *testing.T) {
+	f := syncFlags{maxConcurrentRequests: 1}
+	require.NoError(t, f.validate())
+
+	f.maxConcurrentRequests = 0
+	require.ErrorContains(t, f.validate(), "--max-concurrent-requests must be >= 1")
+
+	f.maxConcurrentRequests = -3
+	require.ErrorContains(t, f.validate(), "--max-concurrent-requests must be >= 1")
 }
 
 func TestExcludeFromFlag(t *testing.T) {

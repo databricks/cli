@@ -96,9 +96,9 @@ func groupRunSingle(ctx context.Context, group *errgroup.Group, fn func(context.
 	})
 }
 
-func groupRunParallel(ctx context.Context, paths []string, fn func(context.Context, string) error) error {
+func groupRunParallel(ctx context.Context, paths []string, limit int, fn func(context.Context, string) error) error {
 	group, ctx := errgroup.WithContext(ctx)
-	group.SetLimit(MaxRequestsInFlight)
+	group.SetLimit(limit)
 
 	for _, path := range paths {
 		groupRunSingle(ctx, group, fn, path)
@@ -110,16 +110,17 @@ func groupRunParallel(ctx context.Context, paths []string, fn func(context.Conte
 
 func (s *Sync) applyDiff(ctx context.Context, d diff) error {
 	var err error
+	limit := s.MaxConcurrentRequests
 
 	// Delete files in parallel.
-	err = groupRunParallel(ctx, d.delete, s.applyDelete)
+	err = groupRunParallel(ctx, d.delete, limit, s.applyDelete)
 	if err != nil {
 		return err
 	}
 
 	// Delete directories ordered by depth from leaf to root.
 	for _, group := range d.groupedRmdir() {
-		err = groupRunParallel(ctx, group, s.applyRmdir)
+		err = groupRunParallel(ctx, group, limit, s.applyRmdir)
 		if err != nil {
 			return err
 		}
@@ -127,14 +128,14 @@ func (s *Sync) applyDiff(ctx context.Context, d diff) error {
 
 	// Create directories (leafs only because intermediates are created automatically).
 	for _, group := range d.groupedMkdir() {
-		err = groupRunParallel(ctx, group, s.applyMkdir)
+		err = groupRunParallel(ctx, group, limit, s.applyMkdir)
 		if err != nil {
 			return err
 		}
 	}
 
 	// Put files in parallel.
-	err = groupRunParallel(ctx, d.put, s.applyPut)
+	err = groupRunParallel(ctx, d.put, limit, s.applyPut)
 
 	return err
 }
