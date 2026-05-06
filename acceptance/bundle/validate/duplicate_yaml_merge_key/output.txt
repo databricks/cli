@@ -14,3 +14,7 @@ Workspace:
   Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
 Validation OK!
+{
+  "num_workers": 1,
+  "spark_version": "13.3.x-scala2.12"
+}
