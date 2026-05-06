@@ -13,6 +13,7 @@ import (
 	"github.com/databricks/cli/libs/log"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgconn/ctxwatch"
 )
 
 // defaultConnectTimeout is the dial timeout for a single connect attempt.
@@ -59,6 +60,19 @@ type connectFunc func(ctx context.Context, cfg *pgx.ConnConfig) (*pgx.Conn, erro
 // "Invalid protocol version: 196608". User, password, and connect timeout are
 // patched as fields because tokens can contain characters that would need
 // URL-escaping in userinfo.
+//
+// The context-watcher handler is overridden so context cancellation issues
+// a Postgres CancelRequest on the side-channel rather than only closing the
+// underlying TCP connection. Without this override, a Ctrl+C during a long
+// SELECT would tear down the TCP socket but leave the server-side query
+// running until it noticed the broken connection on its next write.
+//
+// CancelRequestDelay = 0: send the cancel-request immediately on ctx cancel.
+// The user just hit Ctrl+C; we want the server to learn now.
+// DeadlineDelay = 5s: if the cancel-request has not gotten the server to
+// terminate the query within 5s, fall back to deadlining the connection.
+// Zero DeadlineDelay would race the cancel-request and could leave the
+// connection unusable.
 func buildPgxConfig(c connectConfig) (*pgx.ConnConfig, error) {
 	dsn := fmt.Sprintf("postgresql://%s/%s?sslmode=require",
 		net.JoinHostPort(c.Host, strconv.Itoa(c.Port)),
@@ -70,6 +84,14 @@ func buildPgxConfig(c connectConfig) (*pgx.ConnConfig, error) {
 	cfg.User = c.Username
 	cfg.Password = c.Password
 	cfg.ConnectTimeout = c.ConnectTimeout
+
+	cfg.BuildContextWatcherHandler = func(pgc *pgconn.PgConn) ctxwatch.Handler {
+		return &pgconn.CancelRequestContextWatcherHandler{
+			Conn:               pgc,
+			CancelRequestDelay: 0,
+			DeadlineDelay:      5 * time.Second,
+		}
+	}
 	return cfg, nil
 }
 
