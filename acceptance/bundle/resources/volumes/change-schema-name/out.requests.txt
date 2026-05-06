@@ -1,0 +1,8 @@
+{
+  "method": "GET",
+  "path": "/api/2.1/unity-catalog/volumes/main.myschema.myvolume"
+}
+{
+  "method": "GET",
+  "path": "/api/2.1/unity-catalog/volumes/main.myschema.mynewvolume"
+}
