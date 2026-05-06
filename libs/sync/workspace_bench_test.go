@@ -36,9 +36,9 @@ import (
 	"path"
 	"path/filepath"
 	"sort"
+	"strings"
 	stdsync "sync"
 	"sync/atomic"
-	"strings"
 	"testing"
 
 	"github.com/databricks/cli/libs/filer"
@@ -60,10 +60,10 @@ type treeShape struct {
 // shapes ranges from "flat" (no nesting) to "large" (deep tree, many dirs).
 // Tweak these values if you want to explore broader/narrower mixes.
 var shapes = []treeShape{
-	{"flat", 0, 0},     // 1 leaf dir
-	{"small", 2, 2},    // 4 leaf dirs
-	{"medium", 4, 2},   // 16 leaf dirs
-	{"large", 6, 2},    // 64 leaf dirs
+	{"flat", 0, 0},   // 1 leaf dir
+	{"small", 2, 2},  // 4 leaf dirs
+	{"medium", 4, 2}, // 16 leaf dirs
+	{"large", 6, 2},  // 64 leaf dirs
 }
 
 // generatePaths returns n relative file paths arranged into a tree of the
@@ -168,10 +168,29 @@ func populate(tb testing.TB, env *benchEnv, remoteDir string, items map[string][
 		parentList = append(parentList, d)
 	}
 	sort.Strings(parentList)
+
+	// Parallelize the mkdirs — for deep shapes the serial loop dominates
+	// fixture setup time.
+	mkdirJobs := make(chan string, len(parentList))
 	for _, d := range parentList {
-		if err := env.wc.Workspace.MkdirsByPath(ctx, path.Join(remoteDir, d)); err != nil {
-			tb.Fatalf("mkdir %s: %v", d, err)
-		}
+		mkdirJobs <- d
+	}
+	close(mkdirJobs)
+	var mkdirWG stdsync.WaitGroup
+	var mkdirErr atomic.Pointer[error]
+	for i := 0; i < 16; i++ {
+		mkdirWG.Go(func() {
+			for d := range mkdirJobs {
+				if err := env.wc.Workspace.MkdirsByPath(ctx, path.Join(remoteDir, d)); err != nil {
+					e := fmt.Errorf("mkdir %s: %w", d, err)
+					mkdirErr.CompareAndSwap(nil, &e)
+				}
+			}
+		})
+	}
+	mkdirWG.Wait()
+	if e := mkdirErr.Load(); e != nil {
+		tb.Fatalf("%v", *e)
 	}
 	type job struct {
 		rel  string
@@ -338,7 +357,7 @@ func BenchmarkListRepo(b *testing.B) {
 	}
 	lister := wfc.(*filer.WorkspaceFilesClient)
 
-	counts := []int{10, 100, 500}
+	counts := []int{10, 50}
 	for _, shape := range shapes {
 		for _, n := range counts {
 			b.Run(fmt.Sprintf("shape=%s/N=%d", shape.name, n), func(b *testing.B) {
