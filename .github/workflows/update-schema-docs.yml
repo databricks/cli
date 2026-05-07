@@ -110,7 +110,7 @@ jobs:
         working-directory: ${{ runner.temp }}/docgen
         env:
           TAG: ${{ steps.tag.outputs.tag }}
-        run: |
+        run: |-
           if git diff --cached --quiet; then
             echo "docgen already up to date for ${TAG}; nothing to commit."
             exit 0
