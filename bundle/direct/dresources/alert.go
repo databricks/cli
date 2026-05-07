@@ -23,7 +23,7 @@ func (*ResourceAlert) PrepareState(input *resources.Alert) *sql.AlertV2 {
 }
 
 // DoRead reads the alert by id.
-func (r *ResourceAlert) DoRead(ctx context.Context, id string) (*sql.AlertV2, error) {
+func (r *ResourceAlert) DoRead(ctx context.Context, id string, _ *sql.AlertV2) (*sql.AlertV2, error) {
 	alert, err := r.client.AlertsV2.GetAlertById(ctx, id)
 	if err != nil {
 		return nil, err

@@ -40,7 +40,7 @@ func TestResourceSchema_DoUpdate_WithUnsupportedForceSendFields(t *testing.T) {
 	_, err = adapter.DoUpdate(ctx, id, config, &PlanEntry{})
 	require.NoError(t, err)
 
-	result, err := adapter.DoRead(ctx, id)
+	result, err := adapter.DoRead(ctx, id, config)
 	require.NoError(t, err)
 
 	result.CreatedAt = 0

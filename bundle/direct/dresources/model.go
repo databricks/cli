@@ -39,7 +39,7 @@ func (*ResourceMlflowModel) RemapState(output *MlflowModelRemote) *ml.CreateMode
 	}
 }
 
-func (r *ResourceMlflowModel) DoRead(ctx context.Context, id string) (*MlflowModelRemote, error) {
+func (r *ResourceMlflowModel) DoRead(ctx context.Context, id string, _ *ml.CreateModelRequest) (*MlflowModelRemote, error) {
 	response, err := r.client.ModelRegistry.GetModel(ctx, ml.GetModelRequest{
 		Name: id,
 	})

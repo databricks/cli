@@ -106,7 +106,7 @@ func (*ResourceVectorSearchIndex) RemapState(remote *VectorSearchIndexRemote) *V
 	return state
 }
 
-func (r *ResourceVectorSearchIndex) DoRead(ctx context.Context, id string) (*VectorSearchIndexRemote, error) {
+func (r *ResourceVectorSearchIndex) DoRead(ctx context.Context, id string, _ *VectorSearchIndexState) (*VectorSearchIndexRemote, error) {
 	index, err := r.client.VectorSearchIndexes.GetIndexByIndexName(ctx, id)
 	if err != nil {
 		return nil, err

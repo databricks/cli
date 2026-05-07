@@ -36,7 +36,7 @@ func (*ResourceCatalog) RemapState(info *catalog.CatalogInfo) *catalog.CreateCat
 	}
 }
 
-func (r *ResourceCatalog) DoRead(ctx context.Context, id string) (*catalog.CatalogInfo, error) {
+func (r *ResourceCatalog) DoRead(ctx context.Context, id string, _ *catalog.CreateCatalog) (*catalog.CatalogInfo, error) {
 	return r.client.Catalogs.GetByName(ctx, id)
 }
 

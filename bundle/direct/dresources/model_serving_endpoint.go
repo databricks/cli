@@ -117,7 +117,7 @@ type ModelServingEndpointRemote struct {
 	EndpointId      string                           `json:"endpoint_id"`
 }
 
-func (r *ResourceModelServingEndpoint) DoRead(ctx context.Context, id string) (*ModelServingEndpointRemote, error) {
+func (r *ResourceModelServingEndpoint) DoRead(ctx context.Context, id string, _ *serving.CreateServingEndpoint) (*ModelServingEndpointRemote, error) {
 	endpoint, err := r.client.ServingEndpoints.GetByName(ctx, id)
 	if err != nil {
 		return nil, err

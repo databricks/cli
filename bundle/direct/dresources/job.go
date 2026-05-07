@@ -86,7 +86,7 @@ func (*ResourceJob) KeyedSlices() map[string]any {
 	}
 }
 
-func (r *ResourceJob) DoRead(ctx context.Context, id string) (*JobRemote, error) {
+func (r *ResourceJob) DoRead(ctx context.Context, id string, _ *jobs.JobSettings) (*JobRemote, error) {
 	idInt, err := parseJobID(id)
 	if err != nil {
 		return nil, err

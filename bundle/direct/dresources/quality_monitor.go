@@ -65,7 +65,7 @@ func (*ResourceQualityMonitor) RemapState(info *catalog.MonitorInfo) *QualityMon
 	}
 }
 
-func (r *ResourceQualityMonitor) DoRead(ctx context.Context, id string) (*catalog.MonitorInfo, error) {
+func (r *ResourceQualityMonitor) DoRead(ctx context.Context, id string, _ *QualityMonitorState) (*catalog.MonitorInfo, error) {
 	//nolint:staticcheck // Direct quality_monitor resource still uses legacy monitor endpoints; v1 data-quality migration is separate work.
 	return r.client.QualityMonitors.Get(ctx, catalog.GetQualityMonitorRequest{
 		TableName: id,

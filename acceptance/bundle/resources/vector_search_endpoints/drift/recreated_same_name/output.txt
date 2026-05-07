@@ -34,9 +34,9 @@ Remote recreated endpoint UUID: [REMOTE_RECREATED_ENDPOINT_UUID]
 
 === Plan after out-of-band recreate
 >>> [CLI] bundle plan
-create vector_search_endpoints.my_endpoint.permissions
+update vector_search_endpoints.my_endpoint.permissions
 
-Plan: 1 to add, 0 to change, 0 to delete, 1 unchanged
+Plan: 0 to add, 1 to change, 0 to delete, 1 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/drift-vs-endpoint-recreated-same-name-[UNIQUE_NAME]/default/files...

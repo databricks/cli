@@ -40,7 +40,7 @@ func (*ResourceExperiment) RemapState(experiment *ml.Experiment) *ml.CreateExper
 	}
 }
 
-func (r *ResourceExperiment) DoRead(ctx context.Context, id string) (*ml.Experiment, error) {
+func (r *ResourceExperiment) DoRead(ctx context.Context, id string, _ *ml.CreateExperiment) (*ml.Experiment, error) {
 	result, err := r.client.Experiments.GetExperiment(ctx, ml.GetExperimentRequest{
 		ExperimentId: id,
 	})

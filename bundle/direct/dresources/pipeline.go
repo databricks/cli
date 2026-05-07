@@ -57,7 +57,7 @@ func (*ResourcePipeline) RemapState(remote *PipelineRemote) *pipelines.CreatePip
 	return &remote.CreatePipeline
 }
 
-func (r *ResourcePipeline) DoRead(ctx context.Context, id string) (*PipelineRemote, error) {
+func (r *ResourcePipeline) DoRead(ctx context.Context, id string, _ *pipelines.CreatePipeline) (*PipelineRemote, error) {
 	resp, err := r.client.Pipelines.GetByPipelineId(ctx, id)
 	if err != nil {
 		return nil, err

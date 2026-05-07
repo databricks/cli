@@ -177,7 +177,17 @@ func parsePermissionsID(id string) (extractedType, extractedID string, err error
 	return extractedType, extractedID, nil
 }
 
-func (r *ResourcePermissions) DoRead(ctx context.Context, id string) (*PermissionsState, error) {
+// DoRead reads ACLs for the parent object identified by newState.ObjectID rather
+// than the (possibly stale) deployment state id. After an out-of-band recreate of
+// the parent, state still points at the gone object_id while planning has already
+// resolved newState.ObjectID to the new identifier; reading from the new identifier
+// avoids a permanent drift where the old object_id keeps returning ACL data on V1
+// permissions APIs.
+func (r *ResourcePermissions) DoRead(ctx context.Context, id string, newState *PermissionsState) (*PermissionsState, error) {
+	if newState != nil && newState.ObjectID != "" {
+		id = newState.ObjectID
+	}
+
 	extractedType, extractedID, err := parsePermissionsID(id)
 	if err != nil {
 		return nil, err

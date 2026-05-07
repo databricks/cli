@@ -21,7 +21,7 @@ func (*ResourceDatabaseInstance) PrepareState(input *resources.DatabaseInstance)
 	return &input.DatabaseInstance
 }
 
-func (d *ResourceDatabaseInstance) DoRead(ctx context.Context, id string) (*database.DatabaseInstance, error) {
+func (d *ResourceDatabaseInstance) DoRead(ctx context.Context, id string, _ *database.DatabaseInstance) (*database.DatabaseInstance, error) {
 	return d.client.Database.GetDatabaseInstanceByName(ctx, id)
 }
 

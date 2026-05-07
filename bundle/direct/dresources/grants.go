@@ -89,7 +89,7 @@ func (*ResourceGrants) KeyedSlices() map[string]any {
 	}
 }
 
-func (r *ResourceGrants) DoRead(ctx context.Context, id string) (*GrantsState, error) {
+func (r *ResourceGrants) DoRead(ctx context.Context, id string, _ *GrantsState) (*GrantsState, error) {
 	securableType, fullName, err := parseGrantsID(id)
 	if err != nil {
 		return nil, err

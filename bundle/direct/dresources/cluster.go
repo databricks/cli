@@ -124,7 +124,7 @@ func (r *ResourceCluster) RemapState(input *ClusterRemote) *ClusterState {
 	return spec
 }
 
-func (r *ResourceCluster) DoRead(ctx context.Context, id string) (*ClusterRemote, error) {
+func (r *ResourceCluster) DoRead(ctx context.Context, id string, _ *ClusterState) (*ClusterRemote, error) {
 	details, err := r.client.Clusters.GetByClusterId(ctx, id)
 	if err != nil {
 		return nil, err

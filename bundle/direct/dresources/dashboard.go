@@ -106,7 +106,7 @@ func (r *ResourceDashboard) RemapState(state *DashboardState) *DashboardState {
 	}
 }
 
-func (r *ResourceDashboard) DoRead(ctx context.Context, id string) (*DashboardState, error) {
+func (r *ResourceDashboard) DoRead(ctx context.Context, id string, _ *DashboardState) (*DashboardState, error) {
 	var dashboard *dashboards.Dashboard
 	var publishedDashboard *dashboards.PublishedDashboard
 	var publishedErr error
