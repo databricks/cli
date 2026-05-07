@@ -9,41 +9,34 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 )
 
-// spinner wraps cmdio.NewSpinner with terminal ok/fail markers. The first
-// call to ok, fail, or Close closes the underlying cmdio spinner; ok/fail
-// also log a final line to stderr. Subsequent calls are no-ops, so callers
-// are expected to `defer s.Close()` and call ok/fail on the success/failure
-// path. Close on its own (no marker) just stops the spinner — useful when an
-// error path returns before reaching ok/fail.
+// cmdioSpinner is the subset of *cmdio.spinner's method set we need.
+// Defining the interface locally lets us hold the unexported type as a
+// struct field; cmdio's spinner satisfies it structurally.
+type cmdioSpinner interface {
+	Close()
+}
+
+// spinner wraps cmdio.NewSpinner with ok/fail markers. ok and fail close the
+// underlying spinner and log a final ✓/✗ line; Close stops the spinner
+// without printing. cmdio's Close is itself idempotent, so a `defer s.Close()`
+// is safe alongside an ok/fail call on the success path.
 type spinner struct {
-	ctx      context.Context
-	inner    func()
-	finished bool
+	cmdioSpinner
+	ctx context.Context
 }
 
 func spin(ctx context.Context, msg string) *spinner {
 	sp := cmdio.NewSpinner(ctx)
 	sp.Update(msg)
-	return &spinner{ctx: ctx, inner: sp.Close}
+	return &spinner{cmdioSpinner: sp, ctx: ctx}
 }
 
-func (s *spinner) ok(msg string)   { s.done("✓", msg) }
-func (s *spinner) fail(msg string) { s.done("✗", msg) }
+func (s *spinner) ok(msg string)   { s.mark("✓", msg) }
+func (s *spinner) fail(msg string) { s.mark("✗", msg) }
 
-// Close stops the spinner without printing a marker. Safe to call multiple
-// times — combine with `defer s.Close()` to guarantee cleanup on early
-// returns.
-func (s *spinner) Close() { s.done("", "") }
-
-func (s *spinner) done(mark, msg string) {
-	if s.finished {
-		return
-	}
-	s.finished = true
-	s.inner()
-	if mark != "" {
-		cmdio.LogString(s.ctx, "  "+cmdio.Cyan(s.ctx, mark)+" "+msg)
-	}
+func (s *spinner) mark(mark, msg string) {
+	s.Close()
+	cmdio.LogString(s.ctx, "  "+cmdio.Cyan(s.ctx, mark)+" "+msg)
 }
 
 // status formats a lakebox lifecycle status with a color hint.
