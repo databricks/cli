@@ -88,13 +88,26 @@ Examples:
 
 			// Determine lakebox ID if not explicit.
 			if lakeboxID == "" {
+				api, err := newLakeboxAPI(w)
+				if err != nil {
+					return err
+				}
+
+				// If we have a saved default, confirm it still exists on the
+				// server. The lakebox may have been auto-stopped, deleted from
+				// another machine, or reaped by an admin since we wrote the
+				// state file. Clear the stale entry and fall through to
+				// provisioning a fresh one.
 				if def := getDefault(ctx, profile); def != "" {
-					lakeboxID = def
-				} else {
-					api, err := newLakeboxAPI(w)
-					if err != nil {
-						return err
+					if _, err := api.get(ctx, def); err == nil {
+						lakeboxID = def
+					} else {
+						warn(ctx, fmt.Sprintf("Saved default %s is gone; provisioning a new lakebox", def))
+						_ = clearDefault(ctx, profile)
 					}
+				}
+
+				if lakeboxID == "" {
 					pubKeyData, err := os.ReadFile(keyPath + ".pub")
 					if err != nil {
 						return fmt.Errorf("failed to read public key %s.pub: %w", keyPath, err)
