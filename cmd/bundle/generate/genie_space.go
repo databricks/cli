@@ -1,6 +1,7 @@
 package generate
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -26,12 +27,13 @@ import (
 	"github.com/databricks/cli/libs/dyn/yamlsaver"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/textutil"
-	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/spf13/cobra"
 	"go.yaml.in/yaml/v3"
 )
+
+const genieSpaceWatchInterval = 1 * time.Second
 
 type genieSpace struct {
 	// Lookup flags for one-time generate.
@@ -204,22 +206,6 @@ func (g *genieSpace) saveConfiguration(ctx context.Context, b *bundle.Bundle, ge
 	return nil
 }
 
-func waitForGenieSpaceChanges(ctx context.Context, w *databricks.WorkspaceClient, genieSpacePath string, lastModified int64) {
-	for {
-		obj, err := w.Workspace.GetStatusByPath(ctx, genieSpacePath) //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
-		if err != nil {
-			logdiag.LogError(ctx, err)
-			return
-		}
-
-		if obj.ModifiedAt > lastModified {
-			break
-		}
-
-		time.Sleep(1 * time.Second)
-	}
-}
-
 func (g *genieSpace) updateGenieSpaceForResource(ctx context.Context, b *bundle.Bundle) {
 	resource, ok := b.Config.Resources.GenieSpaces[g.resource]
 	if !ok {
@@ -237,7 +223,7 @@ func (g *genieSpace) updateGenieSpaceForResource(ctx context.Context, b *bundle.
 
 	w := b.WorkspaceClient(ctx)
 
-	var lastModified int64
+	first := true
 	for {
 		genieSpace, err := w.Genie.GetSpace(ctx, dashboards.GenieGetSpaceRequest{
 			SpaceId:                genieSpaceID,
@@ -248,20 +234,22 @@ func (g *genieSpace) updateGenieSpaceForResource(ctx context.Context, b *bundle.
 			return
 		}
 
-		// Get workspace status to check modification time.
-		obj, err := w.Workspace.GetStatusByPath(ctx, "/Workspace"+genieSpacePath) //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
-		if err != nil && !apierr.IsMissing(err) {
-			obj, err = w.Workspace.GetStatusByPath(ctx, genieSpacePath) //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
-		}
-
-		var currentModified int64
-		if err == nil {
-			currentModified = obj.ModifiedAt
-		}
-
-		if lastModified == 0 || currentModified > lastModified {
-			err = g.saveSerializedGenieSpace(ctx, b, genieSpace, genieSpacePath)
+		// Genie has no remote modification timestamp we can poll. Compare
+		// the canonicalized remote body against the on-disk body and only
+		// re-save when they differ. The first iteration always saves, to
+		// match the prior behavior of an unconditional initial sync.
+		shouldSave := first
+		if !first {
+			differs, err := genieSpaceBodyDiffersFromDisk(genieSpace.SerializedSpace, genieSpacePath)
 			if err != nil {
+				logdiag.LogError(ctx, err)
+				return
+			}
+			shouldSave = differs
+		}
+
+		if shouldSave {
+			if err := g.saveSerializedGenieSpace(ctx, b, genieSpace, genieSpacePath); err != nil {
 				logdiag.LogError(ctx, err)
 				return
 			}
@@ -271,14 +259,29 @@ func (g *genieSpace) updateGenieSpaceForResource(ctx context.Context, b *bundle.
 			return
 		}
 
-		lastModified = currentModified
-
-		if obj != nil {
-			waitForGenieSpaceChanges(ctx, w, obj.Path, lastModified)
-		} else {
-			time.Sleep(1 * time.Second)
-		}
+		first = false
+		time.Sleep(genieSpaceWatchInterval)
 	}
+}
+
+// genieSpaceBodyDiffersFromDisk reports whether the canonicalized remote
+// serialized_space differs from the contents of filename.
+func genieSpaceBodyDiffersFromDisk(remoteSerialized, filename string) (bool, error) {
+	if remoteSerialized == "" {
+		return false, nil
+	}
+	canonical, err := remarshalJSON([]byte(remoteSerialized))
+	if err != nil {
+		return false, err
+	}
+	onDisk, err := os.ReadFile(filename)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return true, nil
+		}
+		return false, err
+	}
+	return !bytes.Equal(canonical, onDisk), nil
 }
 
 func (g *genieSpace) generateForExisting(ctx context.Context, b *bundle.Bundle, genieSpaceID string) {
