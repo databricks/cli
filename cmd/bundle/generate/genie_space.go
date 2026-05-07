@@ -121,6 +121,10 @@ func (g *genieSpace) resolveFromID(ctx context.Context, b *bundle.Bundle) string
 }
 
 func (g *genieSpace) saveSerializedGenieSpace(ctx context.Context, b *bundle.Bundle, genieSpace *dashboards.GenieSpace, filename string) error {
+	if genieSpace.SerializedSpace == "" {
+		return fmt.Errorf("Genie space response did not include serialized_space; refusing to write %s", filepath.ToSlash(filename))
+	}
+
 	// Unmarshal and remarshal the serialized genie space to ensure it is formatted correctly.
 	// The result will have alphabetically sorted keys and be indented.
 	data, err := remarshalJSON([]byte(genieSpace.SerializedSpace))
