@@ -26,6 +26,17 @@ import (
 	"github.com/databricks/cli/libs/sync"
 )
 
+var deployApprovalGroups = []approvalGroup{
+	{group: "schemas", message: deleteOrRecreateSchemaMessage, skipChildren: true},
+	{group: "pipelines", message: deleteOrRecreatePipelineMessage},
+	{group: "volumes", message: deleteOrRecreateVolumeMessage},
+	{group: "dashboards", message: deleteOrRecreateDashboardMessage},
+	{group: "database_instances", message: deleteOrRecreateDatabaseInstanceMessage},
+	{group: "synced_database_tables", message: deleteOrRecreateSyncedDatabaseTableMessage},
+	{group: "postgres_projects", message: deleteOrRecreatePostgresProjectMessage},
+	{group: "postgres_branches", message: deleteOrRecreatePostgresBranchMessage},
+}
+
 func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) (bool, error) {
 	actions := plan.GetActions()
 
@@ -34,88 +45,10 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.P
 		return false, err
 	}
 
-	types := []deployplan.ActionType{deployplan.Recreate, deployplan.Delete}
-	schemaActions := filterGroup(actions, "schemas", types...)
-	pipelineActions := filterGroup(actions, "pipelines", types...)
-	volumeActions := filterGroup(actions, "volumes", types...)
-	dashboardActions := filterGroup(actions, "dashboards", types...)
-	databaseInstanceActions := filterGroup(actions, "database_instances", types...)
-	syncedDatabaseTableActions := filterGroup(actions, "synced_database_tables", types...)
-	postgresProjectActions := filterGroup(actions, "postgres_projects", types...)
-	postgresBranchActions := filterGroup(actions, "postgres_branches", types...)
-
-	// We don't need to display any prompts in this case.
-	if len(schemaActions) == 0 && len(pipelineActions) == 0 && len(volumeActions) == 0 && len(dashboardActions) == 0 &&
-		len(databaseInstanceActions) == 0 && len(syncedDatabaseTableActions) == 0 &&
-		len(postgresProjectActions) == 0 && len(postgresBranchActions) == 0 {
+	total := logApprovalGroups(ctx, actions, deployApprovalGroups, deployplan.Recreate, deployplan.Delete)
+	if total == 0 {
+		// No destructive actions in any tracked group: skip the prompt.
 		return true, nil
-	}
-
-	// One or more UC schema resources will be deleted or recreated.
-	if len(schemaActions) != 0 {
-		cmdio.LogString(ctx, deleteOrRecreateSchemaMessage)
-		for _, action := range schemaActions {
-			if action.IsChildResource() {
-				continue
-			}
-			cmdio.Log(ctx, action)
-		}
-	}
-
-	// One or more pipelines is being recreated.
-	if len(pipelineActions) != 0 {
-		cmdio.LogString(ctx, deleteOrRecreatePipelineMessage)
-		for _, action := range pipelineActions {
-			cmdio.Log(ctx, action)
-		}
-	}
-
-	// One or more volumes is being recreated.
-	if len(volumeActions) != 0 {
-		cmdio.LogString(ctx, deleteOrRecreateVolumeMessage)
-		for _, action := range volumeActions {
-			cmdio.Log(ctx, action)
-		}
-	}
-
-	// One or more dashboards is being recreated.
-	if len(dashboardActions) != 0 {
-		cmdio.LogString(ctx, deleteOrRecreateDashboardMessage)
-		for _, action := range dashboardActions {
-			cmdio.Log(ctx, action)
-		}
-	}
-
-	// One or more database instances is being deleted or recreated.
-	if len(databaseInstanceActions) != 0 {
-		cmdio.LogString(ctx, deleteOrRecreateDatabaseInstanceMessage)
-		for _, action := range databaseInstanceActions {
-			cmdio.Log(ctx, action)
-		}
-	}
-
-	// One or more synced database tables is being deleted or recreated.
-	if len(syncedDatabaseTableActions) != 0 {
-		cmdio.LogString(ctx, deleteOrRecreateSyncedDatabaseTableMessage)
-		for _, action := range syncedDatabaseTableActions {
-			cmdio.Log(ctx, action)
-		}
-	}
-
-	// One or more Lakebase projects is being deleted or recreated.
-	if len(postgresProjectActions) != 0 {
-		cmdio.LogString(ctx, deleteOrRecreatePostgresProjectMessage)
-		for _, action := range postgresProjectActions {
-			cmdio.Log(ctx, action)
-		}
-	}
-
-	// One or more Lakebase branches is being deleted or recreated.
-	if len(postgresBranchActions) != 0 {
-		cmdio.LogString(ctx, deleteOrRecreatePostgresBranchMessage)
-		for _, action := range postgresBranchActions {
-			cmdio.Log(ctx, action)
-		}
 	}
 
 	if b.AutoApprove {
@@ -127,12 +60,7 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.P
 	}
 
 	cmdio.LogString(ctx, "")
-	approved, err := cmdio.AskYesOrNo(ctx, "Would you like to proceed?")
-	if err != nil {
-		return false, err
-	}
-
-	return approved, nil
+	return cmdio.AskYesOrNo(ctx, "Would you like to proceed?")
 }
 
 func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, targetEngine engine.EngineType) {
