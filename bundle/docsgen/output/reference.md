@@ -1503,11 +1503,11 @@ genie_spaces:
   
 - - `description`
   - String
-  - 
+  - Description of the Genie space shown alongside the title in the Databricks UI.
   
 - - `file_path`
   - String
-  - 
+  - Local path to a `.genie.json` file holding the serialized Genie space definition. The contents are inlined into `serialized_space` at deploy time. Mutually exclusive with an inline `serialized_space`.
   
 - - `lifecycle`
   - Map
@@ -1515,7 +1515,7 @@ genie_spaces:
   
 - - `parent_path`
   - String
-  - 
+  - Workspace folder under which to create the Genie space. Immutable: changing this field recreates the resource.
   
 - - `permissions`
   - Sequence
@@ -1523,7 +1523,7 @@ genie_spaces:
   
 - - `serialized_space`
   - Any
-  - 
+  - Serialized Genie space body. May be provided inline as a JSON string (or YAML that will be marshalled to JSON) or referenced via `file_path`. To round-trip an existing space into a bundle, use `databricks bundle generate genie-space`.
   
 - - `space_id`
   - String
@@ -1531,11 +1531,11 @@ genie_spaces:
   
 - - `title`
   - String
-  - 
+  - Title of the Genie space shown in the Databricks UI.
   
 - - `warehouse_id`
   - String
-  - 
+  - ID of the SQL warehouse used to run queries for this Genie space.
   
 :::
   
@@ -3697,11 +3697,11 @@ genie_spaces:
   
 - - `description`
   - String
-  - 
+  - Description of the Genie space shown alongside the title in the Databricks UI.
   
 - - `file_path`
   - String
-  - 
+  - Local path to a `.genie.json` file holding the serialized Genie space definition. The contents are inlined into `serialized_space` at deploy time. Mutually exclusive with an inline `serialized_space`.
   
 - - `lifecycle`
   - Map
@@ -3709,7 +3709,7 @@ genie_spaces:
   
 - - `parent_path`
   - String
-  - 
+  - Workspace folder under which to create the Genie space. Immutable: changing this field recreates the resource.
   
 - - `permissions`
   - Sequence
@@ -3717,7 +3717,7 @@ genie_spaces:
   
 - - `serialized_space`
   - Any
-  - 
+  - Serialized Genie space body. May be provided inline as a JSON string (or YAML that will be marshalled to JSON) or referenced via `file_path`. To round-trip an existing space into a bundle, use `databricks bundle generate genie-space`.
   
 - - `space_id`
   - String
@@ -3725,11 +3725,11 @@ genie_spaces:
   
 - - `title`
   - String
-  - 
+  - Title of the Genie space shown in the Databricks UI.
   
 - - `warehouse_id`
   - String
-  - 
+  - ID of the SQL warehouse used to run queries for this Genie space.
   
 :::
   
