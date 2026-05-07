@@ -10,6 +10,7 @@
 ### Bundles
 * Validate that resource keys do not contain variable references ([#5169](https://github.com/databricks/cli/pull/5169))
 * engine/direct: Drop the deployment state entry on a recreate before the follow-up `Create`, so a `Create` failure no longer leaves a broken state with `invalid state: empty id` on the next `bundle plan` ([#5173](https://github.com/databricks/cli/pull/5173)).
+* `bundle debug list-targets`: skip nil entries in the targets map instead of panicking when a target is declared with a null value ([#5203](https://github.com/databricks/cli/pull/5203)).
 
 ### Dependency updates
 
