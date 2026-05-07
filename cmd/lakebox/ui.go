@@ -9,31 +9,41 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 )
 
-// spinner wraps cmdio.NewSpinner with terminal ok/fail markers. After the
-// first call to ok or fail, the spinner is closed and a final line is logged
-// to stderr; subsequent calls are no-ops.
+// spinner wraps cmdio.NewSpinner with terminal ok/fail markers. The first
+// call to ok, fail, or Close closes the underlying cmdio spinner; ok/fail
+// also log a final line to stderr. Subsequent calls are no-ops, so callers
+// are expected to `defer s.Close()` and call ok/fail on the success/failure
+// path. Close on its own (no marker) just stops the spinner — useful when an
+// error path returns before reaching ok/fail.
 type spinner struct {
 	ctx      context.Context
-	close    func()
+	inner    func()
 	finished bool
 }
 
 func spin(ctx context.Context, msg string) *spinner {
 	sp := cmdio.NewSpinner(ctx)
 	sp.Update(msg)
-	return &spinner{ctx: ctx, close: sp.Close}
+	return &spinner{ctx: ctx, inner: sp.Close}
 }
 
 func (s *spinner) ok(msg string)   { s.done("✓", msg) }
 func (s *spinner) fail(msg string) { s.done("✗", msg) }
+
+// Close stops the spinner without printing a marker. Safe to call multiple
+// times — combine with `defer s.Close()` to guarantee cleanup on early
+// returns.
+func (s *spinner) Close() { s.done("", "") }
 
 func (s *spinner) done(mark, msg string) {
 	if s.finished {
 		return
 	}
 	s.finished = true
-	s.close()
-	cmdio.LogString(s.ctx, "  "+cmdio.Cyan(s.ctx, mark)+" "+msg)
+	s.inner()
+	if mark != "" {
+		cmdio.LogString(s.ctx, "  "+cmdio.Cyan(s.ctx, mark)+" "+msg)
+	}
 }
 
 // status formats a lakebox lifecycle status with a color hint.

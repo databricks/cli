@@ -91,13 +91,17 @@ Examples:
 				if def := getDefault(ctx, profile); def != "" {
 					lakeboxID = def
 				} else {
-					api := newLakeboxAPI(w)
+					api, err := newLakeboxAPI(w)
+					if err != nil {
+						return err
+					}
 					pubKeyData, err := os.ReadFile(keyPath + ".pub")
 					if err != nil {
 						return fmt.Errorf("failed to read public key %s.pub: %w", keyPath, err)
 					}
 
 					s := spin(ctx, "Provisioning your lakebox…")
+					defer s.Close()
 					result, err := api.create(ctx, string(pubKeyData))
 					if err != nil {
 						s.fail("Failed to create lakebox")
@@ -118,6 +122,7 @@ Examples:
 			}
 
 			s := spin(ctx, "Connecting to "+cmdio.Bold(ctx, lakeboxID)+"…")
+			defer s.Close()
 			s.ok("Connected to " + cmdio.Bold(ctx, lakeboxID))
 			return execSSHDirect(lakeboxID, host, gatewayPort, keyPath, extraArgs)
 		},
