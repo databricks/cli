@@ -6,7 +6,6 @@ import (
 	"io/fs"
 	"os"
 	"os/exec"
-	"runtime"
 	"strings"
 
 	"github.com/databricks/cli/cmd/root"
@@ -130,16 +129,11 @@ Examples:
 	return cmd
 }
 
-// execSSHDirect execs into ssh with all options passed as args (no ~/.ssh/config needed).
-// Extra args are appended after the destination (for remote commands or ssh flags).
+// execSSHDirect runs ssh with all options passed as args (no ~/.ssh/config
+// needed). Extra args are appended after the destination for remote commands
+// or ssh flags.
 func execSSHDirect(lakeboxID, host, port, keyPath string, extraArgs []string) error {
-	sshPath, err := exec.LookPath("ssh")
-	if err != nil {
-		return fmt.Errorf("ssh not found in PATH: %w", err)
-	}
-
 	args := []string{
-		"ssh",
 		"-i", keyPath,
 		"-p", port,
 		"-o", "IdentitiesOnly=yes",
@@ -151,13 +145,9 @@ func execSSHDirect(lakeboxID, host, port, keyPath string, extraArgs []string) er
 	}
 	args = append(args, extraArgs...)
 
-	if runtime.GOOS == "windows" {
-		cmd := exec.Command(sshPath, args[1:]...)
-		cmd.Stdin = os.Stdin
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		return cmd.Run()
-	}
-
-	return execSyscall(sshPath, args)
+	cmd := exec.Command("ssh", args...)
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
 }
