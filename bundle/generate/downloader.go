@@ -73,7 +73,7 @@ func (n *Downloader) markFileForDownload(ctx context.Context, filePath *string) 
 		return err
 	}
 
-	*filePath = rel
+	*filePath = filepath.ToSlash(rel)
 	return nil
 }
 
@@ -109,7 +109,7 @@ func (n *Downloader) MarkDirectoryForDownload(ctx context.Context, dirPath *stri
 		return err
 	}
 
-	*dirPath = rel
+	*dirPath = filepath.ToSlash(rel)
 	return nil
 }
 
@@ -203,7 +203,7 @@ func (n *Downloader) markNotebookForDownload(ctx context.Context, notebookPath *
 		return err
 	}
 
-	*notebookPath = rel
+	*notebookPath = filepath.ToSlash(rel)
 	return nil
 }
 
