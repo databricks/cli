@@ -44,7 +44,7 @@ type SyncOptions struct {
 
 	DryRun bool
 
-	MaxConcurrentRequests int
+	Concurrency int
 }
 
 type Sync struct {
@@ -98,8 +98,8 @@ func New(ctx context.Context, opts SyncOptions) (*Sync, error) {
 		return nil, errors.New("failed to resolve host for snapshot")
 	}
 
-	if opts.MaxConcurrentRequests <= 0 {
-		opts.MaxConcurrentRequests = MaxRequestsInFlight
+	if opts.Concurrency <= 0 {
+		opts.Concurrency = MaxRequestsInFlight
 	}
 
 	// For full sync, we start with an empty snapshot.

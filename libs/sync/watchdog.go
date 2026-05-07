@@ -110,7 +110,7 @@ func groupRunParallel(ctx context.Context, paths []string, limit int, fn func(co
 
 func (s *Sync) applyDiff(ctx context.Context, d diff) error {
 	var err error
-	limit := s.MaxConcurrentRequests
+	limit := s.Concurrency
 
 	// Delete files in parallel.
 	err = groupRunParallel(ctx, d.delete, limit, s.applyDelete)

@@ -2,6 +2,7 @@ package bundle
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"time"
@@ -16,12 +17,22 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var errInvalidConcurrency = errors.New("--concurrency must be at least 1")
+
 type syncFlags struct {
-	interval time.Duration
-	full     bool
-	watch    bool
-	output   flags.Output
-	dryRun   bool
+	interval    time.Duration
+	full        bool
+	watch       bool
+	output      flags.Output
+	dryRun      bool
+	concurrency int
+}
+
+func (f *syncFlags) validate() error {
+	if f.concurrency < 1 {
+		return errInvalidConcurrency
+	}
+	return nil
 }
 
 func (f *syncFlags) syncOptionsFromBundle(cmd *cobra.Command, b *bundle.Bundle) (*sync.SyncOptions, error) {
@@ -48,6 +59,7 @@ func (f *syncFlags) syncOptionsFromBundle(cmd *cobra.Command, b *bundle.Bundle) 
 	opts.Full = f.full
 	opts.PollInterval = f.interval
 	opts.DryRun = f.dryRun
+	opts.Concurrency = f.concurrency
 	return opts, nil
 }
 
@@ -74,8 +86,13 @@ Use 'databricks bundle deploy' for full resource deployment.`,
 	cmd.Flags().BoolVar(&f.watch, "watch", false, "watch local file system for changes")
 	cmd.Flags().Var(&f.output, "output", "type of the output format")
 	cmd.Flags().BoolVar(&f.dryRun, "dry-run", false, "simulate sync execution without making actual changes")
+	cmd.Flags().IntVar(&f.concurrency, "concurrency", sync.MaxRequestsInFlight, "number of parallel requests to the workspace")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+		if err := f.validate(); err != nil {
+			return err
+		}
+
 		b, err := utils.ProcessBundle(cmd, utils.ProcessOptions{})
 		if err != nil {
 			return err

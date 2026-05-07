@@ -24,23 +24,25 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var errInvalidConcurrency = errors.New("--concurrency must be at least 1")
+
 type syncFlags struct {
 	// project files polling interval
-	interval              time.Duration
-	full                  bool
-	watch                 bool
-	output                flags.Output
-	exclude               []string
-	include               []string
-	dryRun                bool
-	excludeFrom           string
-	includeFrom           string
-	maxConcurrentRequests int
+	interval    time.Duration
+	full        bool
+	watch       bool
+	output      flags.Output
+	exclude     []string
+	include     []string
+	dryRun      bool
+	excludeFrom string
+	includeFrom string
+	concurrency int
 }
 
 func (f *syncFlags) validate() error {
-	if f.maxConcurrentRequests < 1 {
-		return fmt.Errorf("--max-concurrent-requests must be >= 1, got %d", f.maxConcurrentRequests)
+	if f.concurrency < 1 {
+		return errInvalidConcurrency
 	}
 	return nil
 }
@@ -97,7 +99,7 @@ func (f *syncFlags) syncOptionsFromBundle(cmd *cobra.Command, args []string, b *
 	opts.Include = append(opts.Include, f.include...)
 	opts.Include = append(opts.Include, includePatterns...)
 	opts.DryRun = f.dryRun
-	opts.MaxConcurrentRequests = f.maxConcurrentRequests
+	opts.Concurrency = f.concurrency
 	return opts, nil
 }
 
@@ -170,9 +172,9 @@ func (f *syncFlags) syncOptionsFromArgs(cmd *cobra.Command, args []string) (*syn
 		SnapshotBasePath: filepath.Join(args[0], ".databricks"),
 		WorkspaceClient:  client,
 
-		OutputHandler:         outputHandler,
-		DryRun:                f.dryRun,
-		MaxConcurrentRequests: f.maxConcurrentRequests,
+		OutputHandler: outputHandler,
+		DryRun:        f.dryRun,
+		Concurrency:   f.concurrency,
 	}
 	return &opts, nil
 }
@@ -197,7 +199,7 @@ func New() *cobra.Command {
 	cmd.Flags().StringVar(&f.excludeFrom, "exclude-from", "", "file containing patterns to exclude from sync (one pattern per line)")
 	cmd.Flags().StringVar(&f.includeFrom, "include-from", "", "file containing patterns to include to sync (one pattern per line)")
 	cmd.Flags().BoolVar(&f.dryRun, "dry-run", false, "simulate sync execution without making actual changes")
-	cmd.Flags().IntVar(&f.maxConcurrentRequests, "max-concurrent-requests", sync.MaxRequestsInFlight, "maximum number of concurrent requests to the workspace")
+	cmd.Flags().IntVar(&f.concurrency, "concurrency", sync.MaxRequestsInFlight, "number of parallel requests to the workspace")
 
 	// Wrapper for [root.MustWorkspaceClient] that disables loading authentication configuration from a bundle.
 	mustWorkspaceClient := func(cmd *cobra.Command, args []string) error {
