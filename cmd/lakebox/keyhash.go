@@ -3,7 +3,6 @@ package lakebox
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"strings"
 )
 
 // keyHash returns the identifier the lakebox SSH-keys API assigns to a
@@ -17,18 +16,16 @@ import (
 // GET /ssh-keys listing without sending the key contents back to the
 // server.
 func keyHash(publicKey string) string {
-	// Walk the splits and break out after the second token; the
-	// running offset is what we slice the original string by.
-	end := 0
-	seen := 0
-	for token := range strings.SplitSeq(publicKey, " ") {
-		if seen > 0 {
-			end++ // separator before this token
-		}
-		end += len(token)
-		seen++
-		if seen == 2 {
-			break
+	// Slice off the OpenSSH comment by stopping at the second space.
+	end := len(publicKey)
+	spaces := 0
+	for i, c := range publicKey {
+		if c == ' ' {
+			spaces++
+			if spaces == 2 {
+				end = i
+				break
+			}
 		}
 	}
 	sum := sha256.Sum256([]byte(publicKey[:end]))
