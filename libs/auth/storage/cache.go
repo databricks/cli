@@ -46,13 +46,17 @@ func ResolveCache(ctx context.Context, override StorageMode) (cache.TokenCache, 
 // ResolveCacheForLogin resolves the cache like ResolveCache with extra rules
 // for the auth login path:
 //
-//  1. When the resolved mode is secure and the user did not explicitly ask for
-//     it (no override flag, no env var, no config), and the OS keyring is
-//     unreachable, fall back silently to plaintext and persist
-//     auth_storage = plaintext so subsequent commands skip the probe.
-//  2. When the user explicitly asked for secure (override, env var, or config)
-//     but the keyring is unreachable, return an error. An explicit "I want
-//     secure" is honored strictly: never silently downgrade.
+//  1. After a successful resolution, pin the resolved mode by writing
+//     auth_storage to [__settings__] if the key is not already set. This
+//     locks in the first working behavior (secure or plaintext) so a
+//     subsequent invocation skips the keyring probe and doesn't oscillate
+//     between modes if the keyring becomes flaky.
+//  2. When the resolved mode is secure and the user did not explicitly ask
+//     for it (no override flag, no env var, no config), and the OS keyring
+//     is unreachable, fall back silently to plaintext.
+//  3. When the user explicitly asked for secure (override, env var, or
+//     config) but the keyring is unreachable, return an error. An explicit
+//     "I want secure" is honored strictly: never silently downgrade.
 //
 // Login-specific. Read paths (auth token, bundle commands) keep the original
 // keyring error so they don't silently mint plaintext copies of tokens that
@@ -112,53 +116,57 @@ func resolveCacheForLoginWith(ctx context.Context, override StorageMode, f cache
 // tests can drive the (mode, explicit) input space directly without depending
 // on whatever the resolver's default mode happens to be at any point in time.
 func applyLoginFallback(ctx context.Context, mode StorageMode, explicit bool, f cacheFactories) (cache.TokenCache, StorageMode, error) {
-	if mode != StorageModeSecure {
-		switch mode {
-		case StorageModePlaintext:
-			c, err := f.newFile(ctx)
-			if err != nil {
-				return nil, "", fmt.Errorf("open file token cache: %w", err)
+	switch mode {
+	case StorageModePlaintext:
+		c, err := f.newFile(ctx)
+		if err != nil {
+			return nil, "", fmt.Errorf("open file token cache: %w", err)
+		}
+		pinResolvedMode(ctx, mode)
+		return c, mode, nil
+	case StorageModeSecure:
+		if probeErr := f.probeKeyring(); probeErr != nil {
+			if explicit {
+				return nil, "", fmt.Errorf("secure storage was requested but the OS keyring is not reachable: %w", probeErr)
 			}
-			return c, mode, nil
-		default:
-			return nil, "", fmt.Errorf("unsupported storage mode %q", string(mode))
+			log.Debugf(ctx, "secure storage unavailable (%v), falling back to plaintext", probeErr)
+			fileCache, fileErr := f.newFile(ctx)
+			if fileErr != nil {
+				return nil, "", fmt.Errorf("open file token cache: %w", fileErr)
+			}
+			pinResolvedMode(ctx, StorageModePlaintext)
+			return fileCache, StorageModePlaintext, nil
 		}
+		pinResolvedMode(ctx, mode)
+		return f.newKeyring(), mode, nil
+	default:
+		return nil, "", fmt.Errorf("unsupported storage mode %q", string(mode))
 	}
-	if probeErr := f.probeKeyring(); probeErr != nil {
-		if explicit {
-			return nil, "", fmt.Errorf("secure storage was requested but the OS keyring is not reachable: %w", probeErr)
-		}
-		log.Debugf(ctx, "secure storage unavailable (%v), falling back to plaintext", probeErr)
-		fileCache, fileErr := f.newFile(ctx)
-		if fileErr != nil {
-			return nil, "", fmt.Errorf("open file token cache: %w", fileErr)
-		}
-		if err := persistPlaintextFallback(ctx); err != nil {
-			log.Debugf(ctx, "persisting auth_storage fallback failed: %v", err)
-		}
-		return fileCache, StorageModePlaintext, nil
-	}
-	return f.newKeyring(), StorageModeSecure, nil
 }
 
-// persistPlaintextFallback writes auth_storage = plaintext to [__settings__]
-// in .databrickscfg so subsequent commands skip the (slow/blocking) keyring
-// probe and route straight to the file cache.
+// pinResolvedMode writes auth_storage = mode to [__settings__] in
+// .databrickscfg only if the key is not already set. The first successful
+// login pins whichever mode worked; later logins with a different transient
+// source (override flag, env var) do not overwrite the user's pinned
+// preference. Once pinned, ResolveStorageModeWithSource reads the value as
+// "explicit" and the resolver routes straight to the chosen backend, which
+// also makes the keyring probe redundant for subsequent secure logins.
 //
-// We deliberately persist only on the default-mode + probe-fail path, never
-// on the success paths:
-//   - default + probe ok: writing the runtime mode would lock the current
-//     default into the user's config and prevent a future change to the
-//     default from reaching them.
-//   - explicit secure (override, env, config): the value is already set
-//     somewhere by definition, so a write would be redundant.
-//
-// The fallback is the only path where persisting changes future behavior.
-// It also pins these users to plaintext explicitly, so any future changes to
-// this logic don't accidentally disrupt them: they're already using plaintext
-// implicitly (the keyring is unreachable), and the persisted setting makes
-// that choice stable across CLI versions.
-func persistPlaintextFallback(ctx context.Context) error {
+// Best-effort: a write failure is logged at debug and not returned. Users
+// have already authenticated successfully by the time we get here, and the
+// only consequence of a missing pin is a redundant probe (or fallback) on
+// the next login.
+func pinResolvedMode(ctx context.Context, mode StorageMode) {
 	configPath := env.Get(ctx, "DATABRICKS_CONFIG_FILE")
-	return databrickscfg.SetConfiguredAuthStorage(ctx, string(StorageModePlaintext), configPath)
+	existing, err := databrickscfg.GetConfiguredAuthStorage(ctx, configPath)
+	if err != nil {
+		log.Debugf(ctx, "reading existing auth_storage failed: %v", err)
+		return
+	}
+	if existing != "" {
+		return
+	}
+	if err := databrickscfg.SetConfiguredAuthStorage(ctx, string(mode), configPath); err != nil {
+		log.Debugf(ctx, "persisting auth_storage = %s failed: %v", mode, err)
+	}
 }

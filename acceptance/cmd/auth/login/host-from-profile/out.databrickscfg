@@ -5,3 +5,6 @@
 host         = [DATABRICKS_URL]
 workspace_id = [NUMID]
 auth_type    = databricks-cli
+
+[__settings__]
+auth_storage = plaintext
