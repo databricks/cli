@@ -116,8 +116,7 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 
 	for _, app := range b.Config.Resources.Apps {
 		if app != nil && app.Lifecycle != nil && app.Lifecycle.Started != nil {
-			b.Metrics.SetBoolValue(metrics.AppLifecycleStarted, *app.Lifecycle.Started)
-			break
+			b.Metrics.AddBoolValue(metrics.AppLifecycleStarted, *app.Lifecycle.Started)
 		}
 	}
 
