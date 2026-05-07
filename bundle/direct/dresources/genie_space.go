@@ -164,7 +164,7 @@ func (r *ResourceGenieSpace) DoUpdate(ctx context.Context, id string, config *re
 	// If we still sent the unchanged local body on every update, the next
 	// update triggered by another field would clobber the UI edit. Only
 	// send it when the user actually changed it locally.
-	excludeForceSend := []string{}
+	var excludeForceSend []string
 	if !hasUpdate(entry, pathSerializedSpace) {
 		serializedSpace = ""
 		excludeForceSend = append(excludeForceSend, "SerializedSpace")
