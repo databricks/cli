@@ -128,3 +128,70 @@ func TestResolveStorageMode_SkipsConfigReadWhenOverrideOrEnvSet(t *testing.T) {
 		assert.Equal(t, StorageModeSecure, got)
 	})
 }
+
+func TestResolveStorageModeWithSource(t *testing.T) {
+	cases := []struct {
+		name         string
+		override     StorageMode
+		envValue     string
+		configBody   string
+		wantMode     StorageMode
+		wantExplicit bool
+		wantErrSub   string
+	}{
+		{
+			name:         "default is not explicit",
+			wantMode:     StorageModePlaintext,
+			wantExplicit: false,
+		},
+		{
+			name:         "override is explicit",
+			override:     StorageModeSecure,
+			wantMode:     StorageModeSecure,
+			wantExplicit: true,
+		},
+		{
+			name:         "env is explicit",
+			envValue:     "secure",
+			wantMode:     StorageModeSecure,
+			wantExplicit: true,
+		},
+		{
+			name:         "config is explicit",
+			configBody:   "[__settings__]\nauth_storage = secure\n",
+			wantMode:     StorageModeSecure,
+			wantExplicit: true,
+		},
+		{
+			name:       "invalid env is rejected",
+			envValue:   "bogus",
+			wantErrSub: "DATABRICKS_AUTH_STORAGE",
+		},
+		{
+			name:       "invalid config value is rejected",
+			configBody: "[__settings__]\nauth_storage = bogus\n",
+			wantErrSub: "auth_storage",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			cfgPath := filepath.Join(t.TempDir(), ".databrickscfg")
+			if tc.configBody != "" {
+				require.NoError(t, os.WriteFile(cfgPath, []byte(tc.configBody), 0o600))
+			}
+			t.Setenv("DATABRICKS_CONFIG_FILE", cfgPath)
+			t.Setenv(EnvVar, tc.envValue)
+
+			mode, explicit, err := ResolveStorageModeWithSource(t.Context(), tc.override)
+			if tc.wantErrSub != "" {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tc.wantErrSub)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tc.wantMode, mode)
+			assert.Equal(t, tc.wantExplicit, explicit)
+		})
+	}
+}

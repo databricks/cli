@@ -1,0 +1,17 @@
+Local = true
+Cloud = false
+RecordRequests = true
+
+# bundle open opens a browser; restrict to darwin to get stable output
+# (mirrors acceptance/bundle/open/test.toml).
+GOOS.windows = false
+GOOS.linux = false
+
+Ignore = [".databricks"]
+
+[EnvMatrix]
+  DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
+
+[[Repls]]
+Old = '(resources\.json|terraform\.tfstate)'
+New = 'STATE_FILENAME'
