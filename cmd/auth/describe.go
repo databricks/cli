@@ -6,9 +6,11 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/auth/storage"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
 )
@@ -21,10 +23,16 @@ var authTemplate = `{{"Host:" | bold}} {{.Status.Details.Host}}
 {{"User:" | bold}} {{.Status.Username}}
 {{- end}}
 {{"Authenticated with:" | bold}} {{.Status.Details.AuthType}}
+{{- if .Status.TokenStorage}}
+{{"Token storage:" | bold}} {{.Status.TokenStorage.Mode}}, {{.Status.TokenStorage.Location}} {{ printf "(from %s)" .Status.TokenStorage.Source | italic}}
+{{- end}}
 -----
 ` + configurationTemplate
 
 var errorTemplate = `Unable to authenticate: {{.Status.Error}}
+{{- if .Status.TokenStorage}}
+{{"Token storage:" | bold}} {{.Status.TokenStorage.Mode}}, {{.Status.TokenStorage.Location}} {{ printf "(from %s)" .Status.TokenStorage.Source | italic}}
+{{- end}}
 -----
 ` + configurationTemplate
 
@@ -80,10 +88,12 @@ func getAuthStatus(cmd *cobra.Command, args []string, showSensitive bool, fn try
 	cfg, isAccount, err := fn(cmd, args)
 	ctx := cmd.Context()
 	if err != nil {
+		details := getAuthDetails(cmd, cfg, showSensitive)
 		return &authStatus{ //nolint:nilerr // error is returned in the authStatus struct
-			Status:  "error",
-			Error:   err,
-			Details: getAuthDetails(cmd, cfg, showSensitive),
+			Status:       "error",
+			Error:        err,
+			Details:      details,
+			TokenStorage: resolveTokenStorageInfo(ctx, details.AuthType),
 		}, nil
 	}
 
@@ -93,18 +103,22 @@ func getAuthStatus(cmd *cobra.Command, args []string, showSensitive bool, fn try
 		// Doing a simple API call to check if the auth is valid
 		_, err := a.Workspaces.List(ctx)
 		if err != nil {
+			details := getAuthDetails(cmd, cfg, showSensitive)
 			return &authStatus{ //nolint:nilerr // error is returned in the authStatus struct
-				Status:  "error",
-				Error:   err,
-				Details: getAuthDetails(cmd, cfg, showSensitive),
+				Status:       "error",
+				Error:        err,
+				Details:      details,
+				TokenStorage: resolveTokenStorageInfo(ctx, details.AuthType),
 			}, nil
 		}
 
+		details := getAuthDetails(cmd, a.Config, showSensitive)
 		status := authStatus{
-			Status:    "success",
-			Details:   getAuthDetails(cmd, a.Config, showSensitive),
-			AccountID: a.Config.AccountID,
-			Username:  a.Config.Username,
+			Status:       "success",
+			Details:      details,
+			AccountID:    a.Config.AccountID,
+			Username:     a.Config.Username,
+			TokenStorage: resolveTokenStorageInfo(ctx, details.AuthType),
 		}
 
 		return &status, nil
@@ -113,17 +127,21 @@ func getAuthStatus(cmd *cobra.Command, args []string, showSensitive bool, fn try
 	w := cmdctx.WorkspaceClient(ctx)
 	me, err := w.CurrentUser.Me(ctx)
 	if err != nil {
+		details := getAuthDetails(cmd, cfg, showSensitive)
 		return &authStatus{ //nolint:nilerr // error is returned in the authStatus struct
-			Status:  "error",
-			Error:   err,
-			Details: getAuthDetails(cmd, cfg, showSensitive),
+			Status:       "error",
+			Error:        err,
+			Details:      details,
+			TokenStorage: resolveTokenStorageInfo(ctx, details.AuthType),
 		}, nil
 	}
 
+	details := getAuthDetails(cmd, w.Config, showSensitive)
 	status := authStatus{
-		Status:   "success",
-		Details:  getAuthDetails(cmd, w.Config, showSensitive),
-		Username: me.UserName,
+		Status:       "success",
+		Details:      details,
+		Username:     me.UserName,
+		TokenStorage: resolveTokenStorageInfo(ctx, details.AuthType),
 	}
 
 	return &status, nil
@@ -153,11 +171,56 @@ func render(ctx context.Context, cmd *cobra.Command, status *authStatus, templat
 }
 
 type authStatus struct {
-	Status    string             `json:"status"`
-	Error     error              `json:"error,omitempty"`
-	Username  string             `json:"username,omitempty"`
-	AccountID string             `json:"account_id,omitempty"`
-	Details   config.AuthDetails `json:"details"`
+	Status       string             `json:"status"`
+	Error        error              `json:"error,omitempty"`
+	Username     string             `json:"username,omitempty"`
+	AccountID    string             `json:"account_id,omitempty"`
+	Details      config.AuthDetails `json:"details"`
+	TokenStorage *tokenStorageInfo  `json:"token_storage,omitempty"`
+}
+
+// tokenStorageInfo describes where the U2M (databricks-cli) token cache lives
+// and which precedence level produced that choice. Populated only when the
+// active auth type is "databricks-cli"; other auth types do not use the
+// CLI's U2M token cache and the field is omitted.
+type tokenStorageInfo struct {
+	Mode     string `json:"mode"`
+	Location string `json:"location"`
+	Source   string `json:"source"`
+}
+
+const (
+	plaintextLocation = "~/.databricks/token-cache.json"
+	secureLocation    = "OS keyring (service: databricks-cli)"
+)
+
+// resolveTokenStorageInfo returns storage info for the U2M token cache, or
+// nil if the active auth type does not use the cache. Resolver errors are
+// logged at debug level and treated as "no info available" rather than
+// failing describe; the user-visible auth status is more important than
+// secondary metadata about where a token would have been stored.
+func resolveTokenStorageInfo(ctx context.Context, authType string) *tokenStorageInfo {
+	if authType != authTypeDatabricksCLI {
+		return nil
+	}
+	mode, source, err := storage.ResolveStorageModeWithSource(ctx, "")
+	if err != nil {
+		log.Debugf(ctx, "auth describe: resolve storage mode: %v", err)
+		return nil
+	}
+	info := &tokenStorageInfo{
+		Mode:   string(mode),
+		Source: source.String(),
+	}
+	switch mode {
+	case storage.StorageModePlaintext:
+		info.Location = plaintextLocation
+	case storage.StorageModeSecure:
+		info.Location = secureLocation
+	default:
+		return nil
+	}
+	return info
 }
 
 func getAuthDetails(cmd *cobra.Command, cfg *config.Config, showSensitive bool) config.AuthDetails {
