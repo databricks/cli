@@ -160,7 +160,7 @@ func acquireLock(ctx context.Context, b *bundle.Bundle, svc *tmpdms.DeploymentMe
 	return deploymentID, versionID, nil
 }
 
-// resolveDeploymentID reads the deployment ID from resources.json in the
+// resolveDeploymentID reads the deployment ID from managed_service.json in the
 // workspace state directory. If the file doesn't exist or has no deployment ID,
 // a new UUID is generated. The boolean return indicates whether this is a fresh
 // deployment (true) or an existing one (false). For fresh deployments, the
@@ -172,45 +172,45 @@ func resolveDeploymentID(ctx context.Context, b *bundle.Bundle) (string, bool, e
 		return "", false, fmt.Errorf("failed to create state filer: %w", err)
 	}
 
-	// Try reading existing deployment ID from resources.json.
-	reader, readErr := f.Read(ctx, "resources.json")
+	// Try reading existing deployment ID from managed_service.json.
+	reader, readErr := f.Read(ctx, statemgmt.ManagedServiceFileName)
 	if readErr == nil {
 		defer reader.Close()
 		data, err := io.ReadAll(reader)
 		if err != nil {
-			return "", false, fmt.Errorf("failed to read resources.json content: %w", err)
+			return "", false, fmt.Errorf("failed to read %s content: %w", statemgmt.ManagedServiceFileName, err)
 		}
-		var rj statemgmt.ResourcesJSON
-		if err := json.Unmarshal(data, &rj); err != nil {
-			return "", false, fmt.Errorf("failed to parse resources.json: %w", err)
+		var sj statemgmt.ManagedServiceJSON
+		if err := json.Unmarshal(data, &sj); err != nil {
+			return "", false, fmt.Errorf("failed to parse %s: %w", statemgmt.ManagedServiceFileName, err)
 		}
-		if rj.DeploymentID != "" {
-			return rj.DeploymentID, false, nil
+		if sj.DeploymentID != "" {
+			return sj.DeploymentID, false, nil
 		}
 	} else if !errors.Is(readErr, fs.ErrNotExist) {
-		return "", false, fmt.Errorf("failed to read resources.json: %w", readErr)
+		return "", false, fmt.Errorf("failed to read %s: %w", statemgmt.ManagedServiceFileName, readErr)
 	}
 
 	// Fresh deployment: generate a new ID but don't write yet.
 	return uuid.New().String(), true, nil
 }
 
-// writeDeploymentID writes the deployment ID to resources.json in the workspace
-// state directory. This should be called after the server-side deployment record
-// is created successfully.
+// writeDeploymentID writes the deployment ID to managed_service.json in the
+// workspace state directory. This should be called after the server-side
+// deployment record is created successfully.
 func writeDeploymentID(ctx context.Context, b *bundle.Bundle, deploymentID string) error {
 	f, err := deploy.StateFiler(b)
 	if err != nil {
 		return fmt.Errorf("failed to create state filer: %w", err)
 	}
-	rj := statemgmt.ResourcesJSON{DeploymentID: deploymentID}
-	data, err := json.Marshal(rj)
+	sj := statemgmt.ManagedServiceJSON{DeploymentID: deploymentID}
+	data, err := json.Marshal(sj)
 	if err != nil {
-		return fmt.Errorf("failed to marshal resources.json: %w", err)
+		return fmt.Errorf("failed to marshal %s: %w", statemgmt.ManagedServiceFileName, err)
 	}
-	err = f.Write(ctx, "resources.json", bytes.NewReader(data), filer.CreateParentDirectories, filer.OverwriteIfExists)
+	err = f.Write(ctx, statemgmt.ManagedServiceFileName, bytes.NewReader(data), filer.CreateParentDirectories, filer.OverwriteIfExists)
 	if err != nil {
-		return fmt.Errorf("failed to write resources.json: %w", err)
+		return fmt.Errorf("failed to write %s: %w", statemgmt.ManagedServiceFileName, err)
 	}
 	return nil
 }

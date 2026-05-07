@@ -319,29 +319,30 @@ func logStatesDiag(ctx context.Context, severity diag.Severity, msg string, stat
 	})
 }
 
-// readDeploymentID reads the DMS deployment ID from the workspace resources.json.
-// Returns "" if the file doesn't exist or doesn't contain a deployment_id.
+// readDeploymentID reads the DMS deployment ID from the workspace
+// managed_service.json. Returns "" if the file doesn't exist or doesn't
+// contain a deployment_id.
 func readDeploymentID(ctx context.Context, f filer.Filer) string {
-	reader, err := f.Read(ctx, "resources.json")
+	reader, err := f.Read(ctx, ManagedServiceFileName)
 	if errors.Is(err, fs.ErrNotExist) {
 		return ""
 	}
 	if err != nil {
-		log.Debugf(ctx, "Failed to read resources.json for deployment ID: %v", err)
+		log.Debugf(ctx, "Failed to read %s for deployment ID: %v", ManagedServiceFileName, err)
 		return ""
 	}
 	defer reader.Close()
 
 	data, err := io.ReadAll(reader)
 	if err != nil {
-		log.Debugf(ctx, "Failed to read resources.json content: %v", err)
+		log.Debugf(ctx, "Failed to read %s content: %v", ManagedServiceFileName, err)
 		return ""
 	}
 
-	var rj ResourcesJSON
-	if err := json.Unmarshal(data, &rj); err != nil {
-		log.Debugf(ctx, "Failed to parse resources.json: %v", err)
+	var sj ManagedServiceJSON
+	if err := json.Unmarshal(data, &sj); err != nil {
+		log.Debugf(ctx, "Failed to parse %s: %v", ManagedServiceFileName, err)
 		return ""
 	}
-	return rj.DeploymentID
+	return sj.DeploymentID
 }
