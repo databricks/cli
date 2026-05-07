@@ -9,51 +9,12 @@ import (
 	"github.com/databricks/cli/libs/diag"
 )
 
-type directOnlyResource struct {
-	resourceType string
-	pluralName   string
-	singularName string
-	getResources func(*bundle.Bundle) map[string]any
-}
-
-// Resources that are only supported in direct deployment mode
-var directOnlyResources = []directOnlyResource{
-	{
-		resourceType: "catalogs",
-		pluralName:   "Catalog",
-		singularName: "catalog",
-		getResources: func(b *bundle.Bundle) map[string]any {
-			result := make(map[string]any)
-			for k, v := range b.Config.Resources.Catalogs {
-				result[k] = v
-			}
-			return result
-		},
-	},
-	{
-		resourceType: "external_locations",
-		pluralName:   "External Location",
-		singularName: "external location",
-		getResources: func(b *bundle.Bundle) map[string]any {
-			result := make(map[string]any)
-			for k, v := range b.Config.Resources.ExternalLocations {
-				result[k] = v
-			}
-			return result
-		},
-	},
-	{
-		resourceType: "vector_search_endpoints",
-		pluralName:   "Vector Search Endpoint",
-		singularName: "vector search endpoint",
-		getResources: func(b *bundle.Bundle) map[string]any {
-			result := make(map[string]any)
-			for k, v := range b.Config.Resources.VectorSearchEndpoints {
-				result[k] = v
-			}
-			return result
-		},
-	},
+// directOnlyResourceTypes lists resources only supported in direct deployment mode.
+// Keys are PluralName values from resources.ResourceDescription.
+var directOnlyResourceTypes = map[string]bool{
+	"catalogs":                true,
+	"external_locations":      true,
+	"vector_search_endpoints": true,
 }
 
 type validateDirectOnlyResources struct {
@@ -76,20 +37,22 @@ func (m *validateDirectOnlyResources) Apply(ctx context.Context, b *bundle.Bundl
 	}
 
 	var diags diag.Diagnostics
-
-	for _, resource := range directOnlyResources {
-		resourceMap := resource.getResources(b)
-		if len(resourceMap) > 0 {
-			diags = diags.Append(diag.Diagnostic{
-				Severity: diag.Error,
-				Summary:  resource.pluralName + " resources are only supported with direct deployment mode",
-				Detail: fmt.Sprintf("%s resources require direct deployment mode. "+
-					"Please set the DATABRICKS_BUNDLE_ENGINE environment variable to 'direct' to use %s resources.\n"+
-					"Learn more at https://docs.databricks.com/dev-tools/bundles/direct",
-					resource.pluralName, resource.singularName),
-				Locations: b.Config.GetLocations("resources." + resource.resourceType),
-			})
+	for _, group := range b.Config.Resources.AllResources() {
+		if !directOnlyResourceTypes[group.Description.PluralName] {
+			continue
 		}
+		if len(group.Resources) == 0 {
+			continue
+		}
+		diags = diags.Append(diag.Diagnostic{
+			Severity: diag.Error,
+			Summary:  group.Description.SingularTitle + " resources are only supported with direct deployment mode",
+			Detail: fmt.Sprintf("%s resources require direct deployment mode. "+
+				"Please set the DATABRICKS_BUNDLE_ENGINE environment variable to 'direct' to use %s resources.\n"+
+				"Learn more at https://docs.databricks.com/dev-tools/bundles/direct",
+				group.Description.SingularTitle, group.Description.SingularName),
+			Locations: b.Config.GetLocations("resources." + group.Description.PluralName),
+		})
 	}
 
 	return diags
