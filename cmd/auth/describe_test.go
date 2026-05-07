@@ -44,7 +44,7 @@ func TestGetWorkspaceAuthStatus(t *testing.T) {
 
 	status, err := getAuthStatus(cmd, []string{}, showSensitive, func(cmd *cobra.Command, args []string) (*config.Config, bool, error) {
 		err := config.ConfigAttributes.ResolveFromStringMap(cfg, map[string]string{
-			"host":      "https://test.com",
+			"host":      "https://test.test",
 			"token":     "test-token",
 			"auth_type": "azure-cli",
 		})
@@ -55,7 +55,7 @@ func TestGetWorkspaceAuthStatus(t *testing.T) {
 	require.NotNil(t, status)
 	require.Equal(t, "success", status.Status)
 	require.Equal(t, "test-user", status.Username)
-	require.Equal(t, "https://test.com", status.Details.Host)
+	require.Equal(t, "https://test.test", status.Details.Host)
 	require.Equal(t, "azure-cli", status.Details.AuthType)
 
 	require.Equal(t, "azure-cli", status.Details.Configuration["auth_type"].Value)
@@ -97,7 +97,7 @@ func TestGetWorkspaceAuthStatusError(t *testing.T) {
 
 	status, err := getAuthStatus(cmd, []string{}, showSensitive, func(cmd *cobra.Command, args []string) (*config.Config, bool, error) {
 		err = config.ConfigAttributes.ResolveFromStringMap(cfg, map[string]string{
-			"host":      "https://test.com",
+			"host":      "https://test.test",
 			"token":     "test-token",
 			"auth_type": "azure-cli",
 		})
@@ -146,7 +146,7 @@ func TestGetWorkspaceAuthStatusSensitive(t *testing.T) {
 
 	status, err := getAuthStatus(cmd, []string{}, showSensitive, func(cmd *cobra.Command, args []string) (*config.Config, bool, error) {
 		err = config.ConfigAttributes.ResolveFromStringMap(cfg, map[string]string{
-			"host":      "https://test.com",
+			"host":      "https://test.test",
 			"token":     "test-token",
 			"auth_type": "azure-cli",
 		})
@@ -196,7 +196,7 @@ func TestGetAccountAuthStatus(t *testing.T) {
 		err = config.ConfigAttributes.ResolveFromStringMap(cfg, map[string]string{
 			"account_id": "test-account-id",
 			"username":   "test-user",
-			"host":       "https://test.com",
+			"host":       "https://test.test",
 			"token":      "test-token",
 			"auth_type":  "azure-cli",
 		})
@@ -207,7 +207,7 @@ func TestGetAccountAuthStatus(t *testing.T) {
 	require.Equal(t, "success", status.Status)
 
 	require.Equal(t, "test-user", status.Username)
-	require.Equal(t, "https://test.com", status.Details.Host)
+	require.Equal(t, "https://test.test", status.Details.Host)
 	require.Equal(t, "azure-cli", status.Details.AuthType)
 	require.Equal(t, "test-account-id", status.AccountID)
 

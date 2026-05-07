@@ -2,7 +2,7 @@ bundle:
   name: a job
 
 workspace:
-  host: "https://myworkspace.com"
+  host: "https://myworkspace.test"
   root_path: /abc
 
 presets:

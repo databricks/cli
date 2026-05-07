@@ -3,6 +3,7 @@ package config
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"reflect"
@@ -106,6 +107,14 @@ func LoadFromBytes(path string, raw []byte) (*Root, diag.Diagnostics) {
 	// Load configuration tree from YAML.
 	v, err := yamlloader.LoadYAML(path, bytes.NewBuffer(raw))
 	if err != nil {
+		var le *yamlloader.LocationError
+		if errors.As(err, &le) {
+			return nil, diag.Diagnostics{{
+				Severity:  diag.Error,
+				Summary:   le.Summary,
+				Locations: []dyn.Location{le.Loc},
+			}}
+		}
 		return nil, diag.Errorf("failed to load %s: %v", path, err)
 	}
 
