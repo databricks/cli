@@ -26,7 +26,7 @@ func setupDatabricksCfg(t *testing.T) {
 		homeEnvVar = "USERPROFILE"
 	}
 
-	cfg := []byte("[PROFILE-1]\nhost = https://a.com\ntoken = a\n[PROFILE-2]\nhost = https://a.com\ntoken = b\n")
+	cfg := []byte("[PROFILE-1]\nhost = https://a.test\ntoken = a\n[PROFILE-2]\nhost = https://a.test\ntoken = b\n")
 	err := os.WriteFile(filepath.Join(tempHomeDir, ".databrickscfg"), cfg, 0o644)
 	assert.NoError(t, err)
 
@@ -95,17 +95,17 @@ func TestBundleConfigureDefault(t *testing.T) {
 	}
 
 	cmd := emptyCommand(t)
-	diags := setupWithHost(t, cmd, "https://x.com")
+	diags := setupWithHost(t, cmd, "https://x.test")
 	require.Empty(t, diags)
 
-	assert.Equal(t, "https://x.com", cmdctx.ConfigUsed(cmd.Context()).Host)
+	assert.Equal(t, "https://x.test", cmdctx.ConfigUsed(cmd.Context()).Host)
 }
 
 func TestBundleConfigureWithMultipleMatches(t *testing.T) {
 	testutil.CleanupEnvironment(t)
 
 	cmd := emptyCommand(t)
-	diags := setupWithHost(t, cmd, "https://a.com")
+	diags := setupWithHost(t, cmd, "https://a.test")
 	require.Len(t, diags, 1)
 	assert.Contains(t, diags[0].Summary, "multiple profiles matched: PROFILE-1, PROFILE-2")
 	assert.Contains(t, diags[0].Summary, "Matching workspace profiles: PROFILE-1, PROFILE-2")
@@ -119,7 +119,7 @@ func TestBundleConfigureWithNonExistentProfileFlag(t *testing.T) {
 	err := cmd.Flag("profile").Value.Set("NOEXIST")
 	require.NoError(t, err)
 
-	diags := setupWithHost(t, cmd, "https://x.com")
+	diags := setupWithHost(t, cmd, "https://x.test")
 	require.Len(t, diags, 1)
 	assert.Contains(t, diags[0].Summary, "has no NOEXIST profile configured")
 }
@@ -131,8 +131,8 @@ func TestBundleConfigureWithMismatchedProfile(t *testing.T) {
 	err := cmd.Flag("profile").Value.Set("PROFILE-1")
 	require.NoError(t, err)
 
-	diags := setupWithHost(t, cmd, "https://x.com")
-	assert.Equal(t, []diag.Diagnostic{{Summary: "cannot resolve bundle auth configuration: the host in the profile (https://a.com) doesn’t match the host configured in the bundle (https://x.com)"}}, diags)
+	diags := setupWithHost(t, cmd, "https://x.test")
+	assert.Equal(t, []diag.Diagnostic{{Summary: "cannot resolve bundle auth configuration: the host in the profile (https://a.test) doesn’t match the host configured in the bundle (https://x.test)"}}, diags)
 }
 
 func TestBundleConfigureWithCorrectProfile(t *testing.T) {
@@ -141,10 +141,10 @@ func TestBundleConfigureWithCorrectProfile(t *testing.T) {
 	cmd := emptyCommand(t)
 	err := cmd.Flag("profile").Value.Set("PROFILE-1")
 	require.NoError(t, err)
-	diags := setupWithHost(t, cmd, "https://a.com")
+	diags := setupWithHost(t, cmd, "https://a.test")
 
 	require.Empty(t, diags)
-	assert.Equal(t, "https://a.com", cmdctx.ConfigUsed(cmd.Context()).Host)
+	assert.Equal(t, "https://a.test", cmdctx.ConfigUsed(cmd.Context()).Host)
 	assert.Equal(t, "PROFILE-1", cmdctx.ConfigUsed(cmd.Context()).Profile)
 }
 
@@ -154,8 +154,8 @@ func TestBundleConfigureWithMismatchedProfileEnvVariable(t *testing.T) {
 	t.Setenv("DATABRICKS_CONFIG_PROFILE", "PROFILE-1")
 	cmd := emptyCommand(t)
 
-	diags := setupWithHost(t, cmd, "https://x.com")
-	assert.Equal(t, []diag.Diagnostic{{Summary: "cannot resolve bundle auth configuration: the host in the profile (https://a.com) doesn’t match the host configured in the bundle (https://x.com)"}}, diags)
+	diags := setupWithHost(t, cmd, "https://x.test")
+	assert.Equal(t, []diag.Diagnostic{{Summary: "cannot resolve bundle auth configuration: the host in the profile (https://a.test) doesn’t match the host configured in the bundle (https://x.test)"}}, diags)
 }
 
 func TestBundleConfigureWithProfileFlagAndEnvVariable(t *testing.T) {
@@ -166,9 +166,9 @@ func TestBundleConfigureWithProfileFlagAndEnvVariable(t *testing.T) {
 	err := cmd.Flag("profile").Value.Set("PROFILE-1")
 	require.NoError(t, err)
 
-	diags := setupWithHost(t, cmd, "https://a.com")
+	diags := setupWithHost(t, cmd, "https://a.test")
 	require.Empty(t, diags)
-	assert.Equal(t, "https://a.com", cmdctx.ConfigUsed(cmd.Context()).Host)
+	assert.Equal(t, "https://a.test", cmdctx.ConfigUsed(cmd.Context()).Host)
 	assert.Equal(t, "PROFILE-1", cmdctx.ConfigUsed(cmd.Context()).Profile)
 }
 
@@ -180,7 +180,7 @@ func TestBundleConfigureProfileDefault(t *testing.T) {
 
 	diags := setupWithProfile(t, cmd, "PROFILE-1")
 	require.Empty(t, diags)
-	assert.Equal(t, "https://a.com", cmdctx.ConfigUsed(cmd.Context()).Host)
+	assert.Equal(t, "https://a.test", cmdctx.ConfigUsed(cmd.Context()).Host)
 	assert.Equal(t, "a", cmdctx.ConfigUsed(cmd.Context()).Token)
 	assert.Equal(t, "PROFILE-1", cmdctx.ConfigUsed(cmd.Context()).Profile)
 }
@@ -195,7 +195,7 @@ func TestBundleConfigureProfileFlag(t *testing.T) {
 
 	diags := setupWithProfile(t, cmd, "PROFILE-1")
 	require.Empty(t, diags)
-	assert.Equal(t, "https://a.com", cmdctx.ConfigUsed(cmd.Context()).Host)
+	assert.Equal(t, "https://a.test", cmdctx.ConfigUsed(cmd.Context()).Host)
 	assert.Equal(t, "b", cmdctx.ConfigUsed(cmd.Context()).Token)
 	assert.Equal(t, "PROFILE-2", cmdctx.ConfigUsed(cmd.Context()).Profile)
 }
@@ -209,7 +209,7 @@ func TestBundleConfigureProfileEnvVariable(t *testing.T) {
 
 	diags := setupWithProfile(t, cmd, "PROFILE-1")
 	require.Empty(t, diags)
-	assert.Equal(t, "https://a.com", cmdctx.ConfigUsed(cmd.Context()).Host)
+	assert.Equal(t, "https://a.test", cmdctx.ConfigUsed(cmd.Context()).Host)
 	assert.Equal(t, "b", cmdctx.ConfigUsed(cmd.Context()).Token)
 	assert.Equal(t, "PROFILE-2", cmdctx.ConfigUsed(cmd.Context()).Profile)
 }
@@ -225,7 +225,7 @@ func TestBundleConfigureProfileFlagAndEnvVariable(t *testing.T) {
 
 	diags := setupWithProfile(t, cmd, "PROFILE-1")
 	require.Empty(t, diags)
-	assert.Equal(t, "https://a.com", cmdctx.ConfigUsed(cmd.Context()).Host)
+	assert.Equal(t, "https://a.test", cmdctx.ConfigUsed(cmd.Context()).Host)
 	assert.Equal(t, "b", cmdctx.ConfigUsed(cmd.Context()).Token)
 	assert.Equal(t, "PROFILE-2", cmdctx.ConfigUsed(cmd.Context()).Profile)
 }
@@ -240,7 +240,7 @@ func TestBundleConfigureMultiMatchInteractivePromptFires(t *testing.T) {
 
 	contents := `
 workspace:
-  host: "https://a.com"
+  host: "https://a.test"
 `
 	err := os.WriteFile(filepath.Join(rootPath, "databricks.yml"), []byte(contents), 0o644)
 	require.NoError(t, err)
