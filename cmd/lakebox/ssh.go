@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
-	"os/exec"
 	"strings"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/execv"
 	"github.com/spf13/cobra"
 )
 
@@ -129,11 +129,13 @@ Examples:
 	return cmd
 }
 
-// execSSHDirect runs ssh with all options passed as args (no ~/.ssh/config
-// needed). Extra args are appended after the destination for remote commands
-// or ssh flags.
+// execSSHDirect replaces the CLI process with ssh (or simulates that on
+// Windows via execv). All options are passed on the command line, so no
+// ~/.ssh/config entry is required. Extra args are appended after the
+// destination for remote commands or ssh flags.
 func execSSHDirect(lakeboxID, host, port, keyPath string, extraArgs []string) error {
 	args := []string{
+		"ssh",
 		"-i", keyPath,
 		"-p", port,
 		"-o", "IdentitiesOnly=yes",
@@ -145,9 +147,8 @@ func execSSHDirect(lakeboxID, host, port, keyPath string, extraArgs []string) er
 	}
 	args = append(args, extraArgs...)
 
-	cmd := exec.Command("ssh", args...)
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	return cmd.Run()
+	return execv.Execv(execv.Options{
+		Args: args,
+		Env:  os.Environ(),
+	})
 }
