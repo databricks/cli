@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/databricks/databricks-sdk-go/credentials/u2m/cache"
+	"github.com/google/uuid"
 	"github.com/zalando/go-keyring"
 	"golang.org/x/oauth2"
 )
@@ -16,6 +17,14 @@ import (
 // to the OS-native secure store. The account field carries the per-entry
 // cache key the SDK passes through TokenCache.Store / Lookup.
 const keyringServiceName = "databricks-cli"
+
+// keyringProbeAccountPrefix is prefixed onto a per-call random suffix to form
+// the account name ProbeKeyring writes and deletes. A fixed name like
+// "__probe__" could collide with a user profile of the same name (which is
+// what keyringCache uses as the account field), so the probe would clobber
+// and delete that user's stored token. Per-call randomness also means
+// concurrent probes don't step on each other.
+const keyringProbeAccountPrefix = "__probe_"
 
 // defaultKeyringTimeout is how long a single keyring operation is allowed
 // to run before the wrapper returns a TimeoutError. Matches the value used
@@ -77,6 +86,35 @@ func NewKeyringCache() cache.TokenCache {
 		timeout:        defaultKeyringTimeout,
 		keyringSvcName: keyringServiceName,
 	}
+}
+
+// ProbeKeyring returns nil if the OS keyring is reachable and accepts a
+// write+delete cycle within the standard timeout. A non-nil error means the
+// keyring cannot be used in this environment (no backend, headless Linux
+// session waiting on a UI prompt, locked keychain refusing access, etc.).
+//
+// Used by databricks auth login to decide whether to silently fall back to
+// plaintext storage before opening the browser, so the user does not
+// complete an OAuth flow only to fail at the final Store call.
+func ProbeKeyring() error {
+	return probeWithBackend(zalandoBackend{}, defaultKeyringTimeout)
+}
+
+func probeWithBackend(backend keyringBackend, timeout time.Duration) error {
+	c := &keyringCache{
+		backend:        backend,
+		timeout:        timeout,
+		keyringSvcName: keyringServiceName,
+	}
+	account := keyringProbeAccountPrefix + uuid.NewString()
+	tok := &oauth2.Token{AccessToken: "probe"}
+	if err := c.Store(account, tok); err != nil {
+		return fmt.Errorf("write: %w", err)
+	}
+	if err := c.Store(account, nil); err != nil {
+		return fmt.Errorf("delete: %w", err)
+	}
+	return nil
 }
 
 // Store stores t under key. Nil t deletes the entry; deleting a missing

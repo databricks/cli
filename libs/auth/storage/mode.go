@@ -65,24 +65,37 @@ func ParseMode(raw string) StorageMode {
 // unrecognized env or config value is reported as an error wrapped with
 // the source name.
 func ResolveStorageMode(ctx context.Context, override StorageMode) (StorageMode, error) {
+	mode, _, err := ResolveStorageModeWithSource(ctx, override)
+	return mode, err
+}
+
+// ResolveStorageModeWithSource is like ResolveStorageMode but also reports
+// whether the resolved mode came from an explicit user choice (override flag,
+// env var, or config) versus the built-in default. Callers use this to honor
+// "I want secure" strictly: when the user explicitly asked for secure storage
+// but it cannot be provided, the right move is to error out, not to silently
+// downgrade.
+func ResolveStorageModeWithSource(ctx context.Context, override StorageMode) (StorageMode, bool, error) {
 	if override != StorageModeUnknown {
-		return override, nil
+		return override, true, nil
 	}
 
 	if raw := env.Get(ctx, EnvVar); raw != "" {
-		return parseFromSource(raw, EnvVar)
+		mode, err := parseFromSource(raw, EnvVar)
+		return mode, true, err
 	}
 
 	configPath := env.Get(ctx, "DATABRICKS_CONFIG_FILE")
 	raw, err := databrickscfg.GetConfiguredAuthStorage(ctx, configPath)
 	if err != nil {
-		return "", fmt.Errorf("read auth_storage setting: %w", err)
+		return "", false, fmt.Errorf("read auth_storage setting: %w", err)
 	}
 	if raw != "" {
-		return parseFromSource(raw, "auth_storage")
+		mode, err := parseFromSource(raw, "auth_storage")
+		return mode, true, err
 	}
 
-	return StorageModePlaintext, nil
+	return StorageModePlaintext, false, nil
 }
 
 func parseFromSource(raw, source string) (StorageMode, error) {
