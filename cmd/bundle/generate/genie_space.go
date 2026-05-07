@@ -295,7 +295,10 @@ func (g *genieSpace) generateForExisting(ctx context.Context, b *bundle.Bundle, 
 		return
 	}
 
-	key := textutil.NormalizeString(genieSpace.Title)
+	key := g.cmd.Flag("key").Value.String()
+	if key == "" {
+		key = textutil.NormalizeString(genieSpace.Title)
+	}
 	err = g.saveConfiguration(ctx, b, genieSpace, key)
 	if err != nil {
 		logdiag.LogError(ctx, err)
