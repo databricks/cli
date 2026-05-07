@@ -303,8 +303,8 @@ func TestProcessTargetModeDevelopment(t *testing.T) {
 	// Model serving endpoint 1
 	assert.Equal(t, "dev_lennart_servingendpoint1", b.Config.Resources.ModelServingEndpoints["servingendpoint1"].Name)
 
-	// Vector search endpoint 1
-	assert.Equal(t, "dev_lennart_vs_endpoint1", b.Config.Resources.VectorSearchEndpoints["vs_endpoint1"].Name)
+	// Vector search endpoint 1: name is the primary key, so it must not be prefixed.
+	assert.Equal(t, "vs_endpoint1", b.Config.Resources.VectorSearchEndpoints["vs_endpoint1"].Name)
 
 	// Registered model 1
 	assert.Equal(t, "dev_lennart_registeredmodel1", b.Config.Resources.RegisteredModels["registeredmodel1"].Name)
@@ -418,13 +418,14 @@ func TestAllResourcesMocked(t *testing.T) {
 func TestAllNonUcResourcesAreRenamed(t *testing.T) {
 	b := mockBundle(config.Development)
 
-	// UC resources should not have a prefix added to their name. Right now
-	// this list only contains the Volume, Catalog, and ExternalLocation resources since we have yet to remove
-	// prefixing support for UC schemas and registered models.
-	ucFields := []reflect.Type{
+	// Resources whose Name is the primary key/object id (not just a display
+	// name) should not have a prefix added. Prefixing would change the
+	// resource's identity, not its label.
+	notRenamedFields := []reflect.Type{
 		reflect.TypeFor[*resources.Catalog](),
 		reflect.TypeFor[*resources.ExternalLocation](),
 		reflect.TypeFor[*resources.Volume](),
+		reflect.TypeFor[*resources.VectorSearchEndpoint](),
 	}
 
 	diags := bundle.ApplySeq(t.Context(), b, ApplyTargetMode(), ApplyPresets())
@@ -450,7 +451,7 @@ func TestAllNonUcResourcesAreRenamed(t *testing.T) {
 					continue
 				}
 
-				if slices.Contains(ucFields, resource.Type()) {
+				if slices.Contains(notRenamedFields, resource.Type()) {
 					assert.NotContains(t, nameField.String(), "dev", "process_target_mode should not rename '%s' in '%s'", key, resources.Type().Field(i).Name)
 				} else {
 					assert.Contains(t, nameField.String(), "dev", "process_target_mode should rename '%s' in '%s'", key, resources.Type().Field(i).Name)
