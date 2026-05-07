@@ -133,10 +133,11 @@ func (r *ResourceVectorSearchIndex) DoCreate(ctx context.Context, config *Vector
 	return config.Name, &VectorSearchIndexRemote{VectorIndex: index, EndpointUuid: endpointUuid}, nil
 }
 
-func (r *ResourceVectorSearchIndex) DoUpdate(ctx context.Context, id string, config *VectorSearchIndexState, entry *PlanEntry) (*VectorSearchIndexRemote, error) {
-	// Vector search indexes have no update API; all field changes trigger recreation via resources.yml.
-	return nil, nil
-}
+// No DoUpdate: vector search indexes have no update API. All SDK fields are
+// declared in resources.yml under recreate_on_changes or ignore_remote_changes.
+// If a future SDK bump adds a new field that isn't classified, the framework
+// rejects the resulting Update plan at bundle_plan.go (see also the reflection
+// test in vector_search_index_test.go which catches it earlier at unit-test time).
 
 func (r *ResourceVectorSearchIndex) DoDelete(ctx context.Context, id string) error {
 	return r.client.VectorSearchIndexes.DeleteIndexByIndexName(ctx, id)
