@@ -61,15 +61,22 @@ func (s StorageSource) Explicit() bool {
 
 // String returns a human-readable label for the source, matching the style
 // used by the SDK's config.Source.String() (e.g. "DATABRICKS_HOST environment
-// variable", "--profile flag").
+// variable").
+//
+// The label for StorageSourceConfig intentionally does not name a specific
+// config file: callers that know the resolved path (e.g. auth describe)
+// should append it themselves to match the SDK's "from <path> config file"
+// convention. The label for StorageSourceOverride is generic because no
+// CLI command currently exposes a storage-mode flag; if one is added in
+// the future, that command can replace the label at the call site.
 func (s StorageSource) String() string {
 	switch s {
 	case StorageSourceOverride:
-		return "--auth-storage flag"
+		return "command-line override"
 	case StorageSourceEnvVar:
 		return EnvVar + " environment variable"
 	case StorageSourceConfig:
-		return "auth_storage in [__settings__] section of .databrickscfg"
+		return "auth_storage in [__settings__] section of config file"
 	default:
 		return "default"
 	}

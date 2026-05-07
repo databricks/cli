@@ -4,11 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"path/filepath"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/auth/storage"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/config"
@@ -210,7 +212,7 @@ func resolveTokenStorageInfo(ctx context.Context, authType string) *tokenStorage
 	}
 	info := &tokenStorageInfo{
 		Mode:   string(mode),
-		Source: source.String(),
+		Source: storageSourceLabel(ctx, source),
 	}
 	switch mode {
 	case storage.StorageModePlaintext:
@@ -221,6 +223,35 @@ func resolveTokenStorageInfo(ctx context.Context, authType string) *tokenStorage
 		return nil
 	}
 	return info
+}
+
+// storageSourceLabel returns a user-facing label for source. For
+// StorageSourceConfig, it appends the resolved config file path
+// (DATABRICKS_CONFIG_FILE or <home>/.databrickscfg) so the output matches
+// the SDK's config.Source style ("from <path> config file") rather than
+// hardcoding ".databrickscfg" when a custom path is in use.
+func storageSourceLabel(ctx context.Context, source storage.StorageSource) string {
+	if source != storage.StorageSourceConfig {
+		return source.String()
+	}
+	return "auth_storage in [__settings__] section of " + resolvedConfigPath(ctx)
+}
+
+// resolvedConfigPath returns the path the storage-mode resolver loaded from
+// for [__settings__].auth_storage: DATABRICKS_CONFIG_FILE if set, otherwise
+// <home>/.databrickscfg. Falls back to "~/.databrickscfg" only when the home
+// directory cannot be determined (rare; describe should not crash on this
+// secondary metadata path).
+func resolvedConfigPath(ctx context.Context) string {
+	if path := env.Get(ctx, "DATABRICKS_CONFIG_FILE"); path != "" {
+		return path
+	}
+	home, err := env.UserHomeDir(ctx)
+	if err != nil {
+		log.Debugf(ctx, "auth describe: resolve home dir: %v", err)
+		return "~/.databrickscfg"
+	}
+	return filepath.ToSlash(filepath.Join(home, ".databrickscfg"))
 }
 
 func getAuthDetails(cmd *cobra.Command, cfg *config.Config, showSensitive bool) config.AuthDetails {

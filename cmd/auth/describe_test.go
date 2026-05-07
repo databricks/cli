@@ -2,6 +2,7 @@ package auth
 
 import (
 	"errors"
+	"path/filepath"
 	"testing"
 
 	"github.com/databricks/cli/libs/auth/storage"
@@ -268,6 +269,32 @@ func TestResolveTokenStorageInfo(t *testing.T) {
 			assert.Equal(t, tc.want, got)
 		})
 	}
+}
+
+func TestStorageSourceLabel_ConfigUsesResolvedPath(t *testing.T) {
+	ctx := t.Context()
+	t.Setenv("DATABRICKS_CONFIG_FILE", "/custom/path/.databrickscfg")
+	got := storageSourceLabel(ctx, storage.StorageSourceConfig)
+	assert.Equal(t, "auth_storage in [__settings__] section of /custom/path/.databrickscfg", got)
+}
+
+func TestStorageSourceLabel_ConfigDefaultsToHome(t *testing.T) {
+	ctx := t.Context()
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home)
+	t.Setenv("DATABRICKS_CONFIG_FILE", "")
+	got := storageSourceLabel(ctx, storage.StorageSourceConfig)
+	expected := "auth_storage in [__settings__] section of " + filepath.ToSlash(filepath.Join(home, ".databrickscfg"))
+	assert.Equal(t, expected, got)
+}
+
+func TestStorageSourceLabel_NonConfigDelegatesToSource(t *testing.T) {
+	ctx := t.Context()
+	t.Setenv("DATABRICKS_CONFIG_FILE", "/should/not/appear")
+	assert.Equal(t, "default", storageSourceLabel(ctx, storage.StorageSourceDefault))
+	assert.Equal(t, "DATABRICKS_AUTH_STORAGE environment variable", storageSourceLabel(ctx, storage.StorageSourceEnvVar))
+	assert.Equal(t, "command-line override", storageSourceLabel(ctx, storage.StorageSourceOverride))
 }
 
 func TestGetWorkspaceAuthStatus_U2M_PopulatesTokenStorage(t *testing.T) {

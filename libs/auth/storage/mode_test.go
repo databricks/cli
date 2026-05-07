@@ -205,7 +205,7 @@ func TestStorageSource_Explicit(t *testing.T) {
 
 func TestStorageSource_String(t *testing.T) {
 	assert.Equal(t, "default", StorageSourceDefault.String())
-	assert.Equal(t, "--auth-storage flag", StorageSourceOverride.String())
+	assert.Equal(t, "command-line override", StorageSourceOverride.String())
 	assert.Equal(t, "DATABRICKS_AUTH_STORAGE environment variable", StorageSourceEnvVar.String())
-	assert.Equal(t, "auth_storage in [__settings__] section of .databrickscfg", StorageSourceConfig.String())
+	assert.Equal(t, "auth_storage in [__settings__] section of config file", StorageSourceConfig.String())
 }
