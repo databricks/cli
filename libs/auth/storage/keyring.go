@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/databricks/databricks-sdk-go/credentials/u2m/cache"
+	"github.com/google/uuid"
 	"github.com/zalando/go-keyring"
 	"golang.org/x/oauth2"
 )
@@ -17,10 +18,13 @@ import (
 // cache key the SDK passes through TokenCache.Store / Lookup.
 const keyringServiceName = "databricks-cli"
 
-// keyringProbeAccount is the account name ProbeKeyring writes and deletes
-// to verify the keyring is reachable. Distinct from any real cache key so a
-// concurrent probe cannot collide with an actual OAuth token entry.
-const keyringProbeAccount = "__probe__"
+// keyringProbeAccountPrefix is prefixed onto a per-call random suffix to form
+// the account name ProbeKeyring writes and deletes. A fixed name like
+// "__probe__" could collide with a user profile of the same name (which is
+// what keyringCache uses as the account field), so the probe would clobber
+// and delete that user's stored token. Per-call randomness also means
+// concurrent probes don't step on each other.
+const keyringProbeAccountPrefix = "__probe_"
 
 // defaultKeyringTimeout is how long a single keyring operation is allowed
 // to run before the wrapper returns a TimeoutError. Matches the value used
@@ -102,11 +106,12 @@ func probeWithBackend(backend keyringBackend, timeout time.Duration) error {
 		timeout:        timeout,
 		keyringSvcName: keyringServiceName,
 	}
+	account := keyringProbeAccountPrefix + uuid.NewString()
 	tok := &oauth2.Token{AccessToken: "probe"}
-	if err := c.Store(keyringProbeAccount, tok); err != nil {
+	if err := c.Store(account, tok); err != nil {
 		return fmt.Errorf("write: %w", err)
 	}
-	if err := c.Store(keyringProbeAccount, nil); err != nil {
+	if err := c.Store(account, nil); err != nil {
 		return fmt.Errorf("delete: %w", err)
 	}
 	return nil

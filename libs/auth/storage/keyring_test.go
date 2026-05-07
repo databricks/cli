@@ -272,8 +272,7 @@ func TestProbeKeyring(t *testing.T) {
 				assert.ErrorAs(t, err, &timeoutErr)
 			default:
 				require.NoError(t, err)
-				_, ok := backend.items[itemKey(keyringServiceName, keyringProbeAccount)]
-				assert.False(t, ok, "probe must clean up after itself")
+				assert.Empty(t, backend.items, "probe must clean up after itself")
 			}
 		})
 	}
