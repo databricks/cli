@@ -294,17 +294,10 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 	// (it's what GET/UPDATE/DELETE address by), so prefixing it would change
 	// the resource's identity rather than just its display name.
 
-	// Vector Search Indexes: Prefix
-	// The name is a 3-part UC identifier (catalog.schema.index); prefix only
-	// the last component since catalog and schema are external references.
-	for _, e := range r.VectorSearchIndexes {
-		if e == nil {
-			continue
-		}
-		if pos := vectorSearchIndexPrefixPos(e.Name); pos >= 0 {
-			e.Name = e.Name[:pos] + normalizePrefix(prefix) + e.Name[pos:]
-		}
-	}
+	// Vector Search Indexes: no prefix. The 3-part UC name (catalog.schema.index)
+	// is the API primary key (CreateIndex addresses by name and DoCreate returns
+	// it as the deployment id), so prefixing would change the resource's
+	// identity rather than just its display name.
 
 	return diags
 }
@@ -335,28 +328,6 @@ func toTagArray(tags map[string]string) []Tag {
 		return cmp.Compare(a.Key, b.Key)
 	})
 	return tagArray
-}
-
-// vectorSearchIndexPrefixPos returns the byte offset at which to insert the
-// name prefix into a vector search index name, or -1 to skip prefixing.
-//
-// ApplyPresets runs before reference/variable resolution, so the name may
-// still carry literal `${...}` tokens. We walk back from the end and prefix
-// at the first `.` we find, which is the catalog.schema.index separator
-// once the literal tail is non-empty. If we instead hit `$` or `}` first,
-// the tail is occluded by a `${...}` expression and prefixing would corrupt
-// it (e.g. `${var.full_name}` -> `${var.dev_user_full_name}`); in that case
-// skip and let the user compose the prefix into the variable.
-func vectorSearchIndexPrefixPos(name string) int {
-	for i := len(name) - 1; i >= 0; i-- {
-		switch name[i] {
-		case '.':
-			return i + 1
-		case '$', '}':
-			return -1
-		}
-	}
-	return 0
 }
 
 // normalizePrefix prefixes strings like '[dev lennart] ' to 'dev_lennart_'.

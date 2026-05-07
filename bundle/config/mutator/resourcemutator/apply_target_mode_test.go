@@ -316,8 +316,8 @@ func TestProcessTargetModeDevelopment(t *testing.T) {
 	// Vector search endpoint 1: name is the primary key, so it must not be prefixed.
 	assert.Equal(t, "vs_endpoint1", b.Config.Resources.VectorSearchEndpoints["vs_endpoint1"].Name)
 
-	// Vector search index 1: only the leaf name is prefixed, since catalog and schema are external
-	assert.Equal(t, "main.default.dev_lennart_vs_index1", b.Config.Resources.VectorSearchIndexes["vs_index1"].Name)
+	// Vector search index 1: name is the primary key, so it must not be prefixed.
+	assert.Equal(t, "main.default.vs_index1", b.Config.Resources.VectorSearchIndexes["vs_index1"].Name)
 
 	// Registered model 1
 	assert.Equal(t, "dev_lennart_registeredmodel1", b.Config.Resources.RegisteredModels["registeredmodel1"].Name)
@@ -440,6 +440,7 @@ func TestAppropriateResourcesAreRenamed(t *testing.T) {
 		reflect.TypeFor[*resources.ExternalLocation](),
 		reflect.TypeFor[*resources.Volume](),
 		reflect.TypeFor[*resources.VectorSearchEndpoint](),
+		reflect.TypeFor[*resources.VectorSearchIndex](),
 	}
 
 	// Resources whose Name is server-generated or otherwise not a user-facing
@@ -504,53 +505,6 @@ func TestDisableLockingDisabled(t *testing.T) {
 	diags := bundle.ApplySeq(ctx, b, ApplyTargetMode())
 	require.NoError(t, diags.Error())
 	assert.True(t, b.Config.Bundle.Deployment.Lock.IsEnabled(), "Deployment lock should remain enabled in development mode when explicitly enabled")
-}
-
-func TestVectorSearchIndexNamePrefixing(t *testing.T) {
-	cases := []struct {
-		key  string
-		name string
-		want string
-	}{
-		{
-			// Trailing component is a ref: skip, since prefixing would inject
-			// the prefix inside the ${var.index} expression.
-			key:  "vs_index_all_refs",
-			name: "${var.catalog}.${var.schema}.${var.index}",
-			want: "${var.catalog}.${var.schema}.${var.index}",
-		},
-		{
-			// Catalog and schema are refs but the leaf is literal: prefix the leaf.
-			key:  "vs_index_partial_ref",
-			name: "${var.catalog}.${var.schema}.non_ref_name",
-			want: "${var.catalog}.${var.schema}.dev_lennart_non_ref_name",
-		},
-		{
-			// Whole name is a single ref: skip.
-			key:  "vs_index_full_ref",
-			name: "${var.full_name}",
-			want: "${var.full_name}",
-		},
-	}
-
-	b := mockBundle(config.Development)
-	for _, c := range cases {
-		b.Config.Resources.VectorSearchIndexes[c.key] = &resources.VectorSearchIndex{
-			CreateVectorIndexRequest: vectorsearch.CreateVectorIndexRequest{
-				Name:         c.name,
-				EndpointName: "vs_endpoint1",
-				PrimaryKey:   "id",
-				IndexType:    vectorsearch.VectorIndexTypeDeltaSync,
-			},
-		}
-	}
-
-	diags := bundle.ApplySeq(t.Context(), b, ApplyTargetMode(), ApplyPresets())
-	require.NoError(t, diags.Error())
-
-	for _, c := range cases {
-		assert.Equal(t, c.want, b.Config.Resources.VectorSearchIndexes[c.key].Name, c.key)
-	}
 }
 
 func TestPrefixAlreadySet(t *testing.T) {

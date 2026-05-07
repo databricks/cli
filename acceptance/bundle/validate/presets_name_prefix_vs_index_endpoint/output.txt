@@ -11,19 +11,19 @@
     "vs_index_literal": {
       "endpoint_name": "vs_endpoint",
       "index_type": "DELTA_SYNC",
-      "name": "my_catalog.my_schema.prefix_literal_index",
+      "name": "my_catalog.my_schema.literal_index",
       "primary_key": "id"
     },
     "vs_index_partial_ref": {
       "endpoint_name": "${resources.vector_search_endpoints.vs_endpoint.name}",
       "index_type": "DELTA_SYNC",
-      "name": "my_catalog.my_schema.prefix_partial_ref_index",
+      "name": "my_catalog.my_schema.partial_ref_index",
       "primary_key": "id"
     },
     "vs_index_ref": {
       "endpoint_name": "${resources.vector_search_endpoints.vs_endpoint.name}",
       "index_type": "DELTA_SYNC",
-      "name": "my_catalog.my_schema.prefix_ref_index",
+      "name": "my_catalog.my_schema.ref_index",
       "primary_key": "id"
     }
   }
