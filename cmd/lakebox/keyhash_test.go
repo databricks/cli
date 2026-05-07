@@ -6,8 +6,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// All expected hashes were captured live from /api/2.0/lakebox/ssh-keys
-// (see PR description); they're the ground truth for the algorithm.
+// Inputs are synthetic; expected values are sha256(canonical input)[:16]
+// in hex. The algorithm was verified against the live
+// /api/2.0/lakebox/ssh-keys endpoint during exploration, so this test
+// pins the algorithm — not a known set of real registered keys.
 func TestKeyHash(t *testing.T) {
 	tests := []struct {
 		name  string
