@@ -36,7 +36,10 @@ Example:
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			w := cmdctx.WorkspaceClient(ctx)
-			api := newLakeboxAPI(w)
+			api, err := newLakeboxAPI(w)
+			if err != nil {
+				return err
+			}
 
 			keyPath, generated, err := ensureLakeboxKey(ctx)
 			if err != nil {
@@ -56,6 +59,7 @@ Example:
 			}
 
 			s := spin(ctx, "Registering key…")
+			defer s.Close()
 			if err := api.registerKey(ctx, string(pubKeyData)); err != nil {
 				s.fail("Failed to register key")
 				return fmt.Errorf("failed to register key: %w", err)

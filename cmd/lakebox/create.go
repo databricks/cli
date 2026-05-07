@@ -27,7 +27,10 @@ Example:
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			w := cmdctx.WorkspaceClient(ctx)
-			api := newLakeboxAPI(w)
+			api, err := newLakeboxAPI(w)
+			if err != nil {
+				return err
+			}
 
 			var publicKey string
 			if publicKeyFile != "" {
@@ -39,6 +42,7 @@ Example:
 			}
 
 			s := spin(ctx, "Provisioning your lakebox…")
+			defer s.Close()
 
 			result, err := api.create(ctx, publicKey)
 			if err != nil {

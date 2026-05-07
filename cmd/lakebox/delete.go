@@ -24,10 +24,14 @@ Example:
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			w := cmdctx.WorkspaceClient(ctx)
-			api := newLakeboxAPI(w)
+			api, err := newLakeboxAPI(w)
+			if err != nil {
+				return err
+			}
 
 			lakeboxID := args[0]
 			s := spin(ctx, "Removing "+lakeboxID+"…")
+			defer s.Close()
 
 			if err := api.delete(ctx, lakeboxID); err != nil {
 				s.fail("Failed to delete " + lakeboxID)

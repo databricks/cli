@@ -56,7 +56,10 @@ Examples:
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			w := cmdctx.WorkspaceClient(ctx)
-			api := newLakeboxAPI(w)
+			api, err := newLakeboxAPI(w)
+			if err != nil {
+				return err
+			}
 			out := cmd.OutOrStdout()
 
 			id := args[0]

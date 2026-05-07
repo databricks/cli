@@ -1,26 +1,35 @@
 package lakebox
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
 
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/client"
 )
 
 // Sandboxes live under the `/sandboxes` sub-collection of the lakebox service
 // namespace (see `lakebox.proto` `LakeboxService.CreateSandbox`).
 const lakeboxAPIPath = "/api/2.0/lakebox/sandboxes"
 
-// lakeboxAPI wraps raw HTTP calls to the lakebox REST API.
+// SSH keys are nested under the lakebox service namespace alongside
+// `sandboxes/` (see `LakeboxService.CreateSshKey`).
+const lakeboxKeysAPIPath = "/api/2.0/lakebox/ssh-keys"
+
+// orgIDHeader is sent by multi-workspace gateways (e.g. dogfood staging) so
+// the gateway can scope the credential to a specific workspace. Without it,
+// requests fail with "Credential was not sent or was of an unsupported type
+// for this API."
+const orgIDHeader = "X-Databricks-Org-Id"
+
+// lakeboxAPI wraps the SDK ApiClient with workspace-id-aware request headers.
 type lakeboxAPI struct {
-	w *databricks.WorkspaceClient
+	c    *client.DatabricksClient
+	wsID string
 }
 
 // createRequest is the JSON body for POST /api/2.0/lakebox/sandboxes.
@@ -126,83 +135,6 @@ type listResponse struct {
 	Sandboxes []sandboxEntry `json:"sandboxes"`
 }
 
-// apiError is the error body returned by the lakebox API.
-type apiError struct {
-	ErrorCode string `json:"error_code"`
-	Message   string `json:"message"`
-}
-
-func (e *apiError) Error() string {
-	return fmt.Sprintf("%s: %s", e.ErrorCode, e.Message)
-}
-
-func newLakeboxAPI(w *databricks.WorkspaceClient) *lakeboxAPI {
-	return &lakeboxAPI{w: w}
-}
-
-// create calls POST /api/2.0/lakebox with an optional public key.
-func (a *lakeboxAPI) create(ctx context.Context, publicKey string) (*createResponse, error) {
-	body := createRequest{PublicKey: publicKey}
-	jsonBody, err := json.Marshal(body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal request: %w", err)
-	}
-
-	resp, err := a.doRequest(ctx, "POST", lakeboxAPIPath, bytes.NewReader(jsonBody))
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, parseAPIError(resp)
-	}
-
-	var result createResponse
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
-	}
-	return &result, nil
-}
-
-// list calls GET /api/2.0/lakebox/sandboxes.
-func (a *lakeboxAPI) list(ctx context.Context) ([]sandboxEntry, error) {
-	resp, err := a.doRequest(ctx, "GET", lakeboxAPIPath, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, parseAPIError(resp)
-	}
-
-	var result listResponse
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
-	}
-	return result.Sandboxes, nil
-}
-
-// get calls GET /api/2.0/lakebox/sandboxes/{id}.
-func (a *lakeboxAPI) get(ctx context.Context, id string) (*sandboxEntry, error) {
-	resp, err := a.doRequest(ctx, "GET", lakeboxAPIPath+"/"+id, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, parseAPIError(resp)
-	}
-
-	var result sandboxEntry
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
-	}
-	return &result, nil
-}
-
 // updateBody is the PATCH request body. The proto declares
 // `UpdateSandboxRequest { Sandbox sandbox = 1 }` with `body: "sandbox"`
 // in the (google.api.http) annotation, so the HTTP body is the inner
@@ -220,16 +152,77 @@ type updateBody struct {
 	NoAutostop  *bool   `json:"no_autostop,omitempty"`
 }
 
+// registerKeyRequest is the JSON body for POST /api/2.0/lakebox/ssh-keys.
+type registerKeyRequest struct {
+	PublicKey string `json:"public_key"`
+	Name      string `json:"name,omitempty"`
+}
+
+func newLakeboxAPI(w *databricks.WorkspaceClient) (*lakeboxAPI, error) {
+	c, err := client.New(w.Config)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create lakebox API client: %w", err)
+	}
+	return &lakeboxAPI{c: c, wsID: resolveWorkspaceID(w)}, nil
+}
+
+// resolveWorkspaceID returns the workspace ID for the org-id header. Falls
+// back to the `?o=<id>` query parameter on the Host because some staging
+// gateways are configured that way and the SDK does not strip it into
+// Config.WorkspaceID.
+func resolveWorkspaceID(w *databricks.WorkspaceClient) string {
+	if id := w.Config.WorkspaceID; id != "" {
+		return id
+	}
+	parsed, err := url.Parse(w.Config.Host)
+	if err != nil {
+		return ""
+	}
+	return parsed.Query().Get("o")
+}
+
+func (a *lakeboxAPI) headers() map[string]string {
+	if a.wsID == "" {
+		return nil
+	}
+	return map[string]string{orgIDHeader: a.wsID}
+}
+
+// create calls POST /api/2.0/lakebox/sandboxes with an optional public key.
+func (a *lakeboxAPI) create(ctx context.Context, publicKey string) (*createResponse, error) {
+	var resp createResponse
+	err := a.c.Do(ctx, http.MethodPost, lakeboxAPIPath, a.headers(), nil, createRequest{PublicKey: publicKey}, &resp)
+	if err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
+// list calls GET /api/2.0/lakebox/sandboxes.
+func (a *lakeboxAPI) list(ctx context.Context) ([]sandboxEntry, error) {
+	var resp listResponse
+	err := a.c.Do(ctx, http.MethodGet, lakeboxAPIPath, a.headers(), nil, nil, &resp)
+	if err != nil {
+		return nil, err
+	}
+	return resp.Sandboxes, nil
+}
+
+// get calls GET /api/2.0/lakebox/sandboxes/{id}.
+func (a *lakeboxAPI) get(ctx context.Context, id string) (*sandboxEntry, error) {
+	var resp sandboxEntry
+	err := a.c.Do(ctx, http.MethodGet, lakeboxAPIPath+"/"+id, a.headers(), nil, nil, &resp)
+	if err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
 // update calls PATCH /api/2.0/lakebox/sandboxes/{id} with whichever of
 // `idle_timeout` / `no_autostop` the caller chose to set. Fields left
 // nil are omitted from the wire payload, so the server preserves their
 // current values. Returns the refreshed `sandboxEntry`.
-func (a *lakeboxAPI) update(
-	ctx context.Context,
-	id string,
-	idleTimeoutSecs *int64,
-	noAutostop *bool,
-) (*sandboxEntry, error) {
+func (a *lakeboxAPI) update(ctx context.Context, id string, idleTimeoutSecs *int64, noAutostop *bool) (*sandboxEntry, error) {
 	var idleTimeout *string
 	if idleTimeoutSecs != nil {
 		s := fmt.Sprintf("%ds", *idleTimeoutSecs)
@@ -240,121 +233,20 @@ func (a *lakeboxAPI) update(
 		IdleTimeout: idleTimeout,
 		NoAutostop:  noAutostop,
 	}
-	jsonBody, err := json.Marshal(body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal request: %w", err)
-	}
-
-	resp, err := a.doRequest(ctx, "PATCH", lakeboxAPIPath+"/"+id, bytes.NewReader(jsonBody))
+	var resp sandboxEntry
+	err := a.c.Do(ctx, http.MethodPatch, lakeboxAPIPath+"/"+id, a.headers(), nil, body, &resp)
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, parseAPIError(resp)
-	}
-
-	var result sandboxEntry
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
-	}
-	return &result, nil
+	return &resp, nil
 }
 
 // delete calls DELETE /api/2.0/lakebox/sandboxes/{id}.
 func (a *lakeboxAPI) delete(ctx context.Context, id string) error {
-	resp, err := a.doRequest(ctx, "DELETE", lakeboxAPIPath+"/"+id, nil)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return parseAPIError(resp)
-	}
-	return nil
-}
-
-// doRequest makes an authenticated HTTP request to the workspace.
-func (a *lakeboxAPI) doRequest(ctx context.Context, method, path string, body io.Reader) (*http.Response, error) {
-	// The configured host may be just a hostname or may carry a workspace
-	// selector in the query (e.g. `https://dogfood.staging.databricks.com/?o=...`).
-	// Parse it so we can append the API path while preserving the query, and so
-	// we can pull the workspace ID out of `?o=<id>` when the SDK config doesn't
-	// carry it on a separate `workspace_id` field.
-	parsed, err := url.Parse(a.w.Config.Host)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse host %q: %w", a.w.Config.Host, err)
-	}
-	wsid := a.w.Config.WorkspaceID
-	if wsid == "" {
-		if v := parsed.Query().Get("o"); v != "" {
-			wsid = v
-		}
-	}
-	parsed.Path = strings.TrimRight(parsed.Path, "/") + path
-
-	req, err := http.NewRequestWithContext(ctx, method, parsed.String(), body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
-
-	if err := a.w.Config.Authenticate(req); err != nil {
-		return nil, fmt.Errorf("failed to authenticate: %w", err)
-	}
-
-	// Multi-workspace gateways (e.g. dogfood.staging.databricks.com) need a
-	// workspace selector to route the request — without it the gateway can't
-	// scope the credential and rejects with "Credential was not sent or was of
-	// an unsupported type for this API". `?o=<id>` in the URL works as a
-	// fallback, but the explicit header is the well-defined contract.
-	if wsid != "" {
-		req.Header.Set("X-Databricks-Org-Id", wsid)
-	}
-
-	if body != nil {
-		req.Header.Set("Content-Type", "application/json")
-	}
-
-	return http.DefaultClient.Do(req)
-}
-
-func parseAPIError(resp *http.Response) error {
-	body, _ := io.ReadAll(resp.Body)
-	var apiErr apiError
-	if json.Unmarshal(body, &apiErr) == nil && apiErr.Message != "" {
-		return &apiErr
-	}
-	return fmt.Errorf("HTTP %d: %s", resp.StatusCode, string(body))
-}
-
-// SSH keys are now nested under the lakebox service namespace alongside
-// `sandboxes/` (see `LakeboxService.CreateSshKey`).
-const lakeboxKeysAPIPath = "/api/2.0/lakebox/ssh-keys"
-
-// registerKeyRequest is the JSON body for POST /api/2.0/lakebox/ssh-keys.
-type registerKeyRequest struct {
-	PublicKey string `json:"public_key"`
-	Name      string `json:"name,omitempty"`
+	return a.c.Do(ctx, http.MethodDelete, lakeboxAPIPath+"/"+id, a.headers(), nil, nil, nil)
 }
 
 // registerKey calls POST /api/2.0/lakebox/ssh-keys.
 func (a *lakeboxAPI) registerKey(ctx context.Context, publicKey string) error {
-	body := registerKeyRequest{PublicKey: publicKey}
-	jsonBody, err := json.Marshal(body)
-	if err != nil {
-		return fmt.Errorf("failed to marshal request: %w", err)
-	}
-
-	resp, err := a.doRequest(ctx, "POST", lakeboxKeysAPIPath, bytes.NewReader(jsonBody))
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return parseAPIError(resp)
-	}
-	return nil
+	return a.c.Do(ctx, http.MethodPost, lakeboxKeysAPIPath, a.headers(), nil, registerKeyRequest{PublicKey: publicKey}, nil)
 }
