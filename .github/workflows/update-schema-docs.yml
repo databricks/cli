@@ -11,7 +11,7 @@ name: update-schema-docs
 on:
   push:
     tags:
-      - "v*"
+      - "v[0-9]+.[0-9]+.[0-9]+*"
 
   workflow_dispatch:
 
@@ -57,10 +57,12 @@ jobs:
           if [ "$REF_TYPE" = "tag" ]; then
             tag="$REF_NAME"
           else
-            tag=$(git tag --list 'v*' --sort=-version:refname | head -n 1)
+            # git tag --list uses fnmatch (no `+`), so post-filter with grep
+            # to match the same shape as the trigger above.
+            tag=$(git tag --list 'v*' --sort=-version:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+' | head -n 1)
           fi
           if [ -z "$tag" ]; then
-            echo "Could not determine a v* tag to publish for." >&2
+            echo "Could not determine a release tag to publish for." >&2
             exit 1
           fi
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
