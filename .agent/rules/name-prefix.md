@@ -23,4 +23,4 @@ To check whether a field is identity-bearing, look at the matching `bundle/direc
 - If `DoCreate` returns the name as the deployment id (e.g. `id := config.Name`) and `DoRead`/`DoUpdate`/`DoDelete` look the resource up by that name, the name is the primary key — do not prefix it.
 - If the name is purely cosmetic and the API addresses the resource by a separate id (numeric, UUID, etc.), prefixing is fine.
 
-When you decide a resource's name must not be prefixed, also add the resource type to `notRenamedFields` in `bundle/config/mutator/resourcemutator/apply_target_mode_test.go`. `TestAllNonUcResourcesAreRenamed` enforces the invariant for every resource and will fail loudly if a future change reintroduces prefixing.
+When you decide a resource's name must not be prefixed, also add the resource type to `notRenamedFields` in `bundle/config/mutator/resourcemutator/apply_target_mode_test.go`. `TestAppropriateResourcesAreRenamed` enforces the invariant for every resource and will fail loudly if a future change reintroduces prefixing.

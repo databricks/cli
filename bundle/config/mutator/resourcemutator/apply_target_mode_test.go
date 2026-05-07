@@ -414,18 +414,34 @@ func TestAllResourcesMocked(t *testing.T) {
 	}
 }
 
-// Make sure that we at rename all non UC resources
-func TestAllNonUcResourcesAreRenamed(t *testing.T) {
+// TestAppropriateResourcesAreRenamed checks that every resource with a user-facing
+// Name field is renamed by dev-mode / presets.name_prefix, except for an
+// explicit carve-out list. The carve-out applies to resources whose Name is
+// the API primary key / object id (not a display name) — prefixing those
+// would change the resource's identity rather than its label. See
+// .agent/rules/name-prefix.md for the principle.
+func TestAppropriateResourcesAreRenamed(t *testing.T) {
 	b := mockBundle(config.Development)
 
-	// Resources whose Name is the primary key/object id (not just a display
-	// name) should not have a prefix added. Prefixing would change the
-	// resource's identity, not its label.
 	notRenamedFields := []reflect.Type{
 		reflect.TypeFor[*resources.Catalog](),
 		reflect.TypeFor[*resources.ExternalLocation](),
 		reflect.TypeFor[*resources.Volume](),
 		reflect.TypeFor[*resources.VectorSearchEndpoint](),
+	}
+
+	// Resources whose Name is server-generated or otherwise not a user-facing
+	// label, so the rename matrix doesn't apply. Reflection still finds a
+	// Name field on these via embedded SDK types, hence the explicit skip.
+	notUserNamed := []string{
+		"Apps",
+		"SecretScopes",
+		"DatabaseInstances",
+		"DatabaseCatalogs",
+		"SyncedDatabaseTables",
+		"PostgresProjects",
+		"PostgresBranches",
+		"PostgresEndpoints",
 	}
 
 	diags := bundle.ApplySeq(t.Context(), b, ApplyTargetMode(), ApplyPresets())
@@ -434,28 +450,24 @@ func TestAllNonUcResourcesAreRenamed(t *testing.T) {
 	resources := reflect.ValueOf(b.Config.Resources)
 	for i := range resources.NumField() {
 		field := resources.Field(i)
+		if field.Kind() != reflect.Map {
+			continue
+		}
+		resourceType := resources.Type().Field(i).Name
+		if slices.Contains(notUserNamed, resourceType) {
+			continue
+		}
+		for _, key := range field.MapKeys() {
+			resource := field.MapIndex(key)
+			nameField := resource.Elem().FieldByName("Name")
+			if !nameField.IsValid() || nameField.Kind() != reflect.String {
+				continue
+			}
 
-		if field.Kind() == reflect.Map {
-			for _, key := range field.MapKeys() {
-				resource := field.MapIndex(key)
-				nameField := resource.Elem().FieldByName("Name")
-				resourceType := resources.Type().Field(i).Name
-
-				// Skip resources that are not renamed (either because they don't have a user-facing Name field,
-				// or because their Name is server-generated rather than user-specified)
-				if resourceType == "Apps" || resourceType == "SecretScopes" || resourceType == "DatabaseInstances" || resourceType == "DatabaseCatalogs" || resourceType == "SyncedDatabaseTables" || resourceType == "PostgresProjects" || resourceType == "PostgresBranches" || resourceType == "PostgresEndpoints" {
-					continue
-				}
-
-				if !nameField.IsValid() || nameField.Kind() != reflect.String {
-					continue
-				}
-
-				if slices.Contains(notRenamedFields, resource.Type()) {
-					assert.NotContains(t, nameField.String(), "dev", "process_target_mode should not rename '%s' in '%s'", key, resources.Type().Field(i).Name)
-				} else {
-					assert.Contains(t, nameField.String(), "dev", "process_target_mode should rename '%s' in '%s'", key, resources.Type().Field(i).Name)
-				}
+			if slices.Contains(notRenamedFields, resource.Type()) {
+				assert.NotContains(t, nameField.String(), "dev", "process_target_mode should not rename '%s' in '%s'", key, resourceType)
+			} else {
+				assert.Contains(t, nameField.String(), "dev", "process_target_mode should rename '%s' in '%s'", key, resourceType)
 			}
 		}
 	}
