@@ -40,13 +40,6 @@ type syncFlags struct {
 	concurrency int
 }
 
-func (f *syncFlags) validate() error {
-	if f.concurrency < 1 {
-		return errInvalidConcurrency
-	}
-	return nil
-}
-
 func readPatternsFile(filePath string) ([]string, error) {
 	if filePath == "" {
 		return nil, nil
@@ -207,12 +200,13 @@ func New() *cobra.Command {
 		return root.MustWorkspaceClient(cmd, args)
 	}
 
-	cmd.PreRunE = mustWorkspaceClient
-	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		if err := f.validate(); err != nil {
-			return err
+	cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
+		if f.concurrency < 1 {
+			return errInvalidConcurrency
 		}
-
+		return mustWorkspaceClient(cmd, args)
+	}
+	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		var opts *sync.SyncOptions
 		var err error
 

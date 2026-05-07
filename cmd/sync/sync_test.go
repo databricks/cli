@@ -67,17 +67,6 @@ func TestSyncOptionsFromArgs(t *testing.T) {
 	assert.Equal(t, 7, opts.Concurrency)
 }
 
-func TestSyncFlagsValidate(t *testing.T) {
-	f := syncFlags{concurrency: 1}
-	require.NoError(t, f.validate())
-
-	f.concurrency = 0
-	require.ErrorIs(t, f.validate(), errInvalidConcurrency)
-
-	f.concurrency = -3
-	require.ErrorIs(t, f.validate(), errInvalidConcurrency)
-}
-
 func TestExcludeFromFlag(t *testing.T) {
 	// Create a temporary directory
 	tempDir := t.TempDir()
