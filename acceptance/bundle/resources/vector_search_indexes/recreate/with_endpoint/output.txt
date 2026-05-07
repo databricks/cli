@@ -50,12 +50,6 @@ Plan: 2 to add, 0 to change, 2 to delete, 0 unchanged
           "old": "STANDARD",
           "new": "STORAGE_OPTIMIZED",
           "remote": "STANDARD"
-        },
-        "endpoint_uuid": {
-          "action": "skip",
-          "reason": "custom",
-          "old": "[UUID]",
-          "remote": "[UUID]"
         }
       }
     },
