@@ -55,11 +55,9 @@ func ResolveCache(ctx context.Context, override StorageMode) (cache.TokenCache, 
 //  2. When the user explicitly asked for secure (override, env var, or
 //     config) but the keyring is unreachable, return an error. An explicit
 //     "I want secure" is honored strictly: never silently downgrade.
-//  3. When the probe times out, the keyring is reachable but locked — the
-//     OS unlock prompt is on screen and the user is mid-typing. Stay on
-//     keyring regardless of explicit. The unlock continues in parallel
-//     with the OAuth flow, and by the time the final Store runs the
-//     keyring will be unlocked.
+//  3. When the probe times out, stay on keyring regardless of explicit.
+//     The timeout is ambiguous (locked vs hung); a misdiagnosis fails
+//     the final Store rather than silently downgrading to plaintext.
 //
 // Rules 1 and 2 are dormant today: the resolver default is plaintext, so
 // (mode=Secure, explicit=false) is unreachable. They activate when the
@@ -139,16 +137,13 @@ func applyLoginFallback(ctx context.Context, mode StorageMode, explicit bool, f 
 		return c, mode, nil
 	case StorageModeSecure:
 		if probeErr := f.probeKeyring(); probeErr != nil {
-			// Timeout is indeterminate: usually a locked keyring with the
-			// GUI unlock prompt up and the user typing, but a hung or slow
-			// daemon produces the same error. Stay on keyring optimistically.
-			// If the user is unlocking, the final Store at end of OAuth lands
-			// in the now-unlocked keyring. If the keyring is genuinely stuck,
-			// the final Store also times out and login fails late, same
-			// outcome as failing here, but with no silently-plaintext token.
+			// Stay on keyring on timeout: a locked keyring being unlocked
+			// during OAuth is the common case, and a misdiagnosed hang
+			// fails the final Store anyway, which is better than a
+			// silent plaintext downgrade.
 			var timeoutErr *TimeoutError
 			if errors.As(probeErr, &timeoutErr) {
-				log.Debugf(ctx, "keyring probe timed out (%v); staying on keyring optimistically", probeErr)
+				log.Debugf(ctx, "keyring probe timed out (%v); staying on keyring", probeErr)
 				return f.newKeyring(), mode, nil
 			}
 			if explicit {
