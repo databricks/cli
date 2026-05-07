@@ -130,56 +130,71 @@ jobs:
 
     steps:
       # Mount a ReFS Dev Drive on Windows BEFORE the checkout so the checkout's
-      # files land on ReFS directly. Routes TEMP and Go's caches there too. The
-      # default C: drive on GH runners is ~4.3k IOPS; a Dev Drive is ~127k.
-      # Mounted at C:\dd (no drive letter) so every path the test process sees
-      # starts with C:\ — older databricks-bundles tests under bundle/python/*
-      # call os.path.commonpath across TEMP and the workspace, which raises
-      # `ValueError: Paths don't have the same drive` for cross-drive paths.
+      # files land on ReFS directly. The default C: drive on GH runners is
+      # ~4.3k IOPS; a Dev Drive is ~127k. Two access paths on the same volume:
+      #   - $GITHUB_WORKSPACE for the checkout (mounted as folder, not a
+      #     junction, so the runner's open handle on that dir is irrelevant)
+      #   - C:\dd for TEMP and Go caches (separate namespace so it doesn't
+      #     pollute the workspace tree)
+      # All paths start with C:\, so older databricks-bundles tests under
+      # bundle/python/* don't trip os.path.commonpath across drives.
       - name: Mount ReFS Dev Drive (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
 
-          $vhdPath = "$env:RUNNER_TEMP\devdrive.vhdx"
-          New-VHD -Path $vhdPath -SizeBytes 20GB -Dynamic | Out-Null
-          $disk = Mount-VHD -Path $vhdPath -Passthru |
+          # --- Volume A: workspace ---
+          $vhdA = "$env:RUNNER_TEMP\devdrive-ws.vhdx"
+          New-VHD -Path $vhdA -SizeBytes 15GB -Dynamic | Out-Null
+          $diskA = Mount-VHD -Path $vhdA -Passthru |
             Initialize-Disk -PartitionStyle GPT -Passthru
-          $part = New-Partition -DiskNumber $disk.Number -UseMaximumSize -DriveLetter Z
+          $partA = New-Partition -DiskNumber $diskA.Number -UseMaximumSize -DriveLetter Y
+          try {
+            Format-Volume -DriveLetter Y -FileSystem ReFS -DevDrive `
+              -NewFileSystemLabel DevDriveWS -Confirm:$false -Force | Out-Null
+          } catch {
+            Format-Volume -DriveLetter Y -FileSystem ReFS `
+              -NewFileSystemLabel DevDriveWS -Confirm:$false -Force | Out-Null
+          }
+
+          $ws = $env:GITHUB_WORKSPACE
+          if ((Get-ChildItem -Force $ws | Measure-Object).Count -gt 0) {
+            throw "GITHUB_WORKSPACE ($ws) is not empty; this step must run before actions/checkout."
+          }
+          Add-PartitionAccessPath -DiskNumber $diskA.Number `
+            -PartitionNumber $partA.PartitionNumber -AccessPath $ws
+          Remove-PartitionAccessPath -DiskNumber $diskA.Number `
+            -PartitionNumber $partA.PartitionNumber -AccessPath 'Y:\'
+
+          # --- Volume B: TEMP + Go caches ---
+          $vhdB = "$env:RUNNER_TEMP\devdrive-cache.vhdx"
+          New-VHD -Path $vhdB -SizeBytes 10GB -Dynamic | Out-Null
+          $diskB = Mount-VHD -Path $vhdB -Passthru |
+            Initialize-Disk -PartitionStyle GPT -Passthru
+          $partB = New-Partition -DiskNumber $diskB.Number -UseMaximumSize -DriveLetter Z
           try {
             Format-Volume -DriveLetter Z -FileSystem ReFS -DevDrive `
-              -NewFileSystemLabel DevDrive -Confirm:$false -Force | Out-Null
+              -NewFileSystemLabel DevDriveCache -Confirm:$false -Force | Out-Null
           } catch {
             Format-Volume -DriveLetter Z -FileSystem ReFS `
-              -NewFileSystemLabel DevDrive -Confirm:$false -Force | Out-Null
+              -NewFileSystemLabel DevDriveCache -Confirm:$false -Force | Out-Null
           }
 
           $mount = 'C:\dd'
           New-Item -ItemType Directory -Force -Path $mount | Out-Null
-          Add-PartitionAccessPath -DiskNumber $disk.Number `
-            -PartitionNumber $part.PartitionNumber -AccessPath $mount
-          Remove-PartitionAccessPath -DiskNumber $disk.Number `
-            -PartitionNumber $part.PartitionNumber -AccessPath 'Z:\'
+          Add-PartitionAccessPath -DiskNumber $diskB.Number `
+            -PartitionNumber $partB.PartitionNumber -AccessPath $mount
+          Remove-PartitionAccessPath -DiskNumber $diskB.Number `
+            -PartitionNumber $partB.PartitionNumber -AccessPath 'Z:\'
 
-          New-Item -ItemType Directory -Path C:\dd\tmp,C:\dd\go-build,C:\dd\go-mod,C:\dd\go-tmp,C:\dd\ws | Out-Null
+          New-Item -ItemType Directory -Path C:\dd\tmp,C:\dd\go-build,C:\dd\go-mod,C:\dd\go-tmp | Out-Null
 
           "TMP=C:\dd\tmp"           | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
           "TEMP=C:\dd\tmp"          | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
           "GOCACHE=C:\dd\go-build"  | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
           "GOMODCACHE=C:\dd\go-mod" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
           "GOTMPDIR=C:\dd\go-tmp"   | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
-
-          $ws = $env:GITHUB_WORKSPACE
-          if (Test-Path $ws) {
-            if ((Get-ChildItem -Force $ws | Measure-Object).Count -gt 0) {
-              throw "GITHUB_WORKSPACE ($ws) is not empty; this step must run before actions/checkout."
-            }
-            # The shell starts with CWD inside $ws; cd out before removing it.
-            Set-Location C:\
-            Remove-Item -Force $ws
-          }
-          New-Item -ItemType Junction -Path $ws -Target C:\dd\ws | Out-Null
 
       - name: Checkout repository and submodules
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -261,56 +276,71 @@ jobs:
 
     steps:
       # Mount a ReFS Dev Drive on Windows BEFORE the checkout so the checkout's
-      # files land on ReFS directly. Routes TEMP and Go's caches there too. The
-      # default C: drive on GH runners is ~4.3k IOPS; a Dev Drive is ~127k.
-      # Mounted at C:\dd (no drive letter) so every path the test process sees
-      # starts with C:\ — older databricks-bundles tests under bundle/python/*
-      # call os.path.commonpath across TEMP and the workspace, which raises
-      # `ValueError: Paths don't have the same drive` for cross-drive paths.
+      # files land on ReFS directly. The default C: drive on GH runners is
+      # ~4.3k IOPS; a Dev Drive is ~127k. Two access paths on the same volume:
+      #   - $GITHUB_WORKSPACE for the checkout (mounted as folder, not a
+      #     junction, so the runner's open handle on that dir is irrelevant)
+      #   - C:\dd for TEMP and Go caches (separate namespace so it doesn't
+      #     pollute the workspace tree)
+      # All paths start with C:\, so older databricks-bundles tests under
+      # bundle/python/* don't trip os.path.commonpath across drives.
       - name: Mount ReFS Dev Drive (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
 
-          $vhdPath = "$env:RUNNER_TEMP\devdrive.vhdx"
-          New-VHD -Path $vhdPath -SizeBytes 20GB -Dynamic | Out-Null
-          $disk = Mount-VHD -Path $vhdPath -Passthru |
+          # --- Volume A: workspace ---
+          $vhdA = "$env:RUNNER_TEMP\devdrive-ws.vhdx"
+          New-VHD -Path $vhdA -SizeBytes 15GB -Dynamic | Out-Null
+          $diskA = Mount-VHD -Path $vhdA -Passthru |
             Initialize-Disk -PartitionStyle GPT -Passthru
-          $part = New-Partition -DiskNumber $disk.Number -UseMaximumSize -DriveLetter Z
+          $partA = New-Partition -DiskNumber $diskA.Number -UseMaximumSize -DriveLetter Y
+          try {
+            Format-Volume -DriveLetter Y -FileSystem ReFS -DevDrive `
+              -NewFileSystemLabel DevDriveWS -Confirm:$false -Force | Out-Null
+          } catch {
+            Format-Volume -DriveLetter Y -FileSystem ReFS `
+              -NewFileSystemLabel DevDriveWS -Confirm:$false -Force | Out-Null
+          }
+
+          $ws = $env:GITHUB_WORKSPACE
+          if ((Get-ChildItem -Force $ws | Measure-Object).Count -gt 0) {
+            throw "GITHUB_WORKSPACE ($ws) is not empty; this step must run before actions/checkout."
+          }
+          Add-PartitionAccessPath -DiskNumber $diskA.Number `
+            -PartitionNumber $partA.PartitionNumber -AccessPath $ws
+          Remove-PartitionAccessPath -DiskNumber $diskA.Number `
+            -PartitionNumber $partA.PartitionNumber -AccessPath 'Y:\'
+
+          # --- Volume B: TEMP + Go caches ---
+          $vhdB = "$env:RUNNER_TEMP\devdrive-cache.vhdx"
+          New-VHD -Path $vhdB -SizeBytes 10GB -Dynamic | Out-Null
+          $diskB = Mount-VHD -Path $vhdB -Passthru |
+            Initialize-Disk -PartitionStyle GPT -Passthru
+          $partB = New-Partition -DiskNumber $diskB.Number -UseMaximumSize -DriveLetter Z
           try {
             Format-Volume -DriveLetter Z -FileSystem ReFS -DevDrive `
-              -NewFileSystemLabel DevDrive -Confirm:$false -Force | Out-Null
+              -NewFileSystemLabel DevDriveCache -Confirm:$false -Force | Out-Null
           } catch {
             Format-Volume -DriveLetter Z -FileSystem ReFS `
-              -NewFileSystemLabel DevDrive -Confirm:$false -Force | Out-Null
+              -NewFileSystemLabel DevDriveCache -Confirm:$false -Force | Out-Null
           }
 
           $mount = 'C:\dd'
           New-Item -ItemType Directory -Force -Path $mount | Out-Null
-          Add-PartitionAccessPath -DiskNumber $disk.Number `
-            -PartitionNumber $part.PartitionNumber -AccessPath $mount
-          Remove-PartitionAccessPath -DiskNumber $disk.Number `
-            -PartitionNumber $part.PartitionNumber -AccessPath 'Z:\'
+          Add-PartitionAccessPath -DiskNumber $diskB.Number `
+            -PartitionNumber $partB.PartitionNumber -AccessPath $mount
+          Remove-PartitionAccessPath -DiskNumber $diskB.Number `
+            -PartitionNumber $partB.PartitionNumber -AccessPath 'Z:\'
 
-          New-Item -ItemType Directory -Path C:\dd\tmp,C:\dd\go-build,C:\dd\go-mod,C:\dd\go-tmp,C:\dd\ws | Out-Null
+          New-Item -ItemType Directory -Path C:\dd\tmp,C:\dd\go-build,C:\dd\go-mod,C:\dd\go-tmp | Out-Null
 
           "TMP=C:\dd\tmp"           | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
           "TEMP=C:\dd\tmp"          | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
           "GOCACHE=C:\dd\go-build"  | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
           "GOMODCACHE=C:\dd\go-mod" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
           "GOTMPDIR=C:\dd\go-tmp"   | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
-
-          $ws = $env:GITHUB_WORKSPACE
-          if (Test-Path $ws) {
-            if ((Get-ChildItem -Force $ws | Measure-Object).Count -gt 0) {
-              throw "GITHUB_WORKSPACE ($ws) is not empty; this step must run before actions/checkout."
-            }
-            # The shell starts with CWD inside $ws; cd out before removing it.
-            Set-Location C:\
-            Remove-Item -Force $ws
-          }
-          New-Item -ItemType Junction -Path $ws -Target C:\dd\ws | Out-Null
 
       - name: Checkout repository and submodules
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -365,56 +395,71 @@ jobs:
 
     steps:
       # Mount a ReFS Dev Drive on Windows BEFORE the checkout so the checkout's
-      # files land on ReFS directly. Routes TEMP and Go's caches there too. The
-      # default C: drive on GH runners is ~4.3k IOPS; a Dev Drive is ~127k.
-      # Mounted at C:\dd (no drive letter) so every path the test process sees
-      # starts with C:\ — older databricks-bundles tests under bundle/python/*
-      # call os.path.commonpath across TEMP and the workspace, which raises
-      # `ValueError: Paths don't have the same drive` for cross-drive paths.
+      # files land on ReFS directly. The default C: drive on GH runners is
+      # ~4.3k IOPS; a Dev Drive is ~127k. Two access paths on the same volume:
+      #   - $GITHUB_WORKSPACE for the checkout (mounted as folder, not a
+      #     junction, so the runner's open handle on that dir is irrelevant)
+      #   - C:\dd for TEMP and Go caches (separate namespace so it doesn't
+      #     pollute the workspace tree)
+      # All paths start with C:\, so older databricks-bundles tests under
+      # bundle/python/* don't trip os.path.commonpath across drives.
       - name: Mount ReFS Dev Drive (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
 
-          $vhdPath = "$env:RUNNER_TEMP\devdrive.vhdx"
-          New-VHD -Path $vhdPath -SizeBytes 20GB -Dynamic | Out-Null
-          $disk = Mount-VHD -Path $vhdPath -Passthru |
+          # --- Volume A: workspace ---
+          $vhdA = "$env:RUNNER_TEMP\devdrive-ws.vhdx"
+          New-VHD -Path $vhdA -SizeBytes 15GB -Dynamic | Out-Null
+          $diskA = Mount-VHD -Path $vhdA -Passthru |
             Initialize-Disk -PartitionStyle GPT -Passthru
-          $part = New-Partition -DiskNumber $disk.Number -UseMaximumSize -DriveLetter Z
+          $partA = New-Partition -DiskNumber $diskA.Number -UseMaximumSize -DriveLetter Y
+          try {
+            Format-Volume -DriveLetter Y -FileSystem ReFS -DevDrive `
+              -NewFileSystemLabel DevDriveWS -Confirm:$false -Force | Out-Null
+          } catch {
+            Format-Volume -DriveLetter Y -FileSystem ReFS `
+              -NewFileSystemLabel DevDriveWS -Confirm:$false -Force | Out-Null
+          }
+
+          $ws = $env:GITHUB_WORKSPACE
+          if ((Get-ChildItem -Force $ws | Measure-Object).Count -gt 0) {
+            throw "GITHUB_WORKSPACE ($ws) is not empty; this step must run before actions/checkout."
+          }
+          Add-PartitionAccessPath -DiskNumber $diskA.Number `
+            -PartitionNumber $partA.PartitionNumber -AccessPath $ws
+          Remove-PartitionAccessPath -DiskNumber $diskA.Number `
+            -PartitionNumber $partA.PartitionNumber -AccessPath 'Y:\'
+
+          # --- Volume B: TEMP + Go caches ---
+          $vhdB = "$env:RUNNER_TEMP\devdrive-cache.vhdx"
+          New-VHD -Path $vhdB -SizeBytes 10GB -Dynamic | Out-Null
+          $diskB = Mount-VHD -Path $vhdB -Passthru |
+            Initialize-Disk -PartitionStyle GPT -Passthru
+          $partB = New-Partition -DiskNumber $diskB.Number -UseMaximumSize -DriveLetter Z
           try {
             Format-Volume -DriveLetter Z -FileSystem ReFS -DevDrive `
-              -NewFileSystemLabel DevDrive -Confirm:$false -Force | Out-Null
+              -NewFileSystemLabel DevDriveCache -Confirm:$false -Force | Out-Null
           } catch {
             Format-Volume -DriveLetter Z -FileSystem ReFS `
-              -NewFileSystemLabel DevDrive -Confirm:$false -Force | Out-Null
+              -NewFileSystemLabel DevDriveCache -Confirm:$false -Force | Out-Null
           }
 
           $mount = 'C:\dd'
           New-Item -ItemType Directory -Force -Path $mount | Out-Null
-          Add-PartitionAccessPath -DiskNumber $disk.Number `
-            -PartitionNumber $part.PartitionNumber -AccessPath $mount
-          Remove-PartitionAccessPath -DiskNumber $disk.Number `
-            -PartitionNumber $part.PartitionNumber -AccessPath 'Z:\'
+          Add-PartitionAccessPath -DiskNumber $diskB.Number `
+            -PartitionNumber $partB.PartitionNumber -AccessPath $mount
+          Remove-PartitionAccessPath -DiskNumber $diskB.Number `
+            -PartitionNumber $partB.PartitionNumber -AccessPath 'Z:\'
 
-          New-Item -ItemType Directory -Path C:\dd\tmp,C:\dd\go-build,C:\dd\go-mod,C:\dd\go-tmp,C:\dd\ws | Out-Null
+          New-Item -ItemType Directory -Path C:\dd\tmp,C:\dd\go-build,C:\dd\go-mod,C:\dd\go-tmp | Out-Null
 
           "TMP=C:\dd\tmp"           | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
           "TEMP=C:\dd\tmp"          | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
           "GOCACHE=C:\dd\go-build"  | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
           "GOMODCACHE=C:\dd\go-mod" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
           "GOTMPDIR=C:\dd\go-tmp"   | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
-
-          $ws = $env:GITHUB_WORKSPACE
-          if (Test-Path $ws) {
-            if ((Get-ChildItem -Force $ws | Measure-Object).Count -gt 0) {
-              throw "GITHUB_WORKSPACE ($ws) is not empty; this step must run before actions/checkout."
-            }
-            # The shell starts with CWD inside $ws; cd out before removing it.
-            Set-Location C:\
-            Remove-Item -Force $ws
-          }
-          New-Item -ItemType Junction -Path $ws -Target C:\dd\ws | Out-Null
 
       - name: Checkout repository and submodules
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -469,56 +514,71 @@ jobs:
 
     steps:
       # Mount a ReFS Dev Drive on Windows BEFORE the checkout so the checkout's
-      # files land on ReFS directly. Routes TEMP and Go's caches there too. The
-      # default C: drive on GH runners is ~4.3k IOPS; a Dev Drive is ~127k.
-      # Mounted at C:\dd (no drive letter) so every path the test process sees
-      # starts with C:\ — older databricks-bundles tests under bundle/python/*
-      # call os.path.commonpath across TEMP and the workspace, which raises
-      # `ValueError: Paths don't have the same drive` for cross-drive paths.
+      # files land on ReFS directly. The default C: drive on GH runners is
+      # ~4.3k IOPS; a Dev Drive is ~127k. Two access paths on the same volume:
+      #   - $GITHUB_WORKSPACE for the checkout (mounted as folder, not a
+      #     junction, so the runner's open handle on that dir is irrelevant)
+      #   - C:\dd for TEMP and Go caches (separate namespace so it doesn't
+      #     pollute the workspace tree)
+      # All paths start with C:\, so older databricks-bundles tests under
+      # bundle/python/* don't trip os.path.commonpath across drives.
       - name: Mount ReFS Dev Drive (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
 
-          $vhdPath = "$env:RUNNER_TEMP\devdrive.vhdx"
-          New-VHD -Path $vhdPath -SizeBytes 20GB -Dynamic | Out-Null
-          $disk = Mount-VHD -Path $vhdPath -Passthru |
+          # --- Volume A: workspace ---
+          $vhdA = "$env:RUNNER_TEMP\devdrive-ws.vhdx"
+          New-VHD -Path $vhdA -SizeBytes 15GB -Dynamic | Out-Null
+          $diskA = Mount-VHD -Path $vhdA -Passthru |
             Initialize-Disk -PartitionStyle GPT -Passthru
-          $part = New-Partition -DiskNumber $disk.Number -UseMaximumSize -DriveLetter Z
+          $partA = New-Partition -DiskNumber $diskA.Number -UseMaximumSize -DriveLetter Y
+          try {
+            Format-Volume -DriveLetter Y -FileSystem ReFS -DevDrive `
+              -NewFileSystemLabel DevDriveWS -Confirm:$false -Force | Out-Null
+          } catch {
+            Format-Volume -DriveLetter Y -FileSystem ReFS `
+              -NewFileSystemLabel DevDriveWS -Confirm:$false -Force | Out-Null
+          }
+
+          $ws = $env:GITHUB_WORKSPACE
+          if ((Get-ChildItem -Force $ws | Measure-Object).Count -gt 0) {
+            throw "GITHUB_WORKSPACE ($ws) is not empty; this step must run before actions/checkout."
+          }
+          Add-PartitionAccessPath -DiskNumber $diskA.Number `
+            -PartitionNumber $partA.PartitionNumber -AccessPath $ws
+          Remove-PartitionAccessPath -DiskNumber $diskA.Number `
+            -PartitionNumber $partA.PartitionNumber -AccessPath 'Y:\'
+
+          # --- Volume B: TEMP + Go caches ---
+          $vhdB = "$env:RUNNER_TEMP\devdrive-cache.vhdx"
+          New-VHD -Path $vhdB -SizeBytes 10GB -Dynamic | Out-Null
+          $diskB = Mount-VHD -Path $vhdB -Passthru |
+            Initialize-Disk -PartitionStyle GPT -Passthru
+          $partB = New-Partition -DiskNumber $diskB.Number -UseMaximumSize -DriveLetter Z
           try {
             Format-Volume -DriveLetter Z -FileSystem ReFS -DevDrive `
-              -NewFileSystemLabel DevDrive -Confirm:$false -Force | Out-Null
+              -NewFileSystemLabel DevDriveCache -Confirm:$false -Force | Out-Null
           } catch {
             Format-Volume -DriveLetter Z -FileSystem ReFS `
-              -NewFileSystemLabel DevDrive -Confirm:$false -Force | Out-Null
+              -NewFileSystemLabel DevDriveCache -Confirm:$false -Force | Out-Null
           }
 
           $mount = 'C:\dd'
           New-Item -ItemType Directory -Force -Path $mount | Out-Null
-          Add-PartitionAccessPath -DiskNumber $disk.Number `
-            -PartitionNumber $part.PartitionNumber -AccessPath $mount
-          Remove-PartitionAccessPath -DiskNumber $disk.Number `
-            -PartitionNumber $part.PartitionNumber -AccessPath 'Z:\'
+          Add-PartitionAccessPath -DiskNumber $diskB.Number `
+            -PartitionNumber $partB.PartitionNumber -AccessPath $mount
+          Remove-PartitionAccessPath -DiskNumber $diskB.Number `
+            -PartitionNumber $partB.PartitionNumber -AccessPath 'Z:\'
 
-          New-Item -ItemType Directory -Path C:\dd\tmp,C:\dd\go-build,C:\dd\go-mod,C:\dd\go-tmp,C:\dd\ws | Out-Null
+          New-Item -ItemType Directory -Path C:\dd\tmp,C:\dd\go-build,C:\dd\go-mod,C:\dd\go-tmp | Out-Null
 
           "TMP=C:\dd\tmp"           | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
           "TEMP=C:\dd\tmp"          | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
           "GOCACHE=C:\dd\go-build"  | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
           "GOMODCACHE=C:\dd\go-mod" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
           "GOTMPDIR=C:\dd\go-tmp"   | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
-
-          $ws = $env:GITHUB_WORKSPACE
-          if (Test-Path $ws) {
-            if ((Get-ChildItem -Force $ws | Measure-Object).Count -gt 0) {
-              throw "GITHUB_WORKSPACE ($ws) is not empty; this step must run before actions/checkout."
-            }
-            # The shell starts with CWD inside $ws; cd out before removing it.
-            Set-Location C:\
-            Remove-Item -Force $ws
-          }
-          New-Item -ItemType Junction -Path $ws -Target C:\dd\ws | Out-Null
 
       - name: Checkout repository and submodules
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
