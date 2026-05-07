@@ -13,15 +13,24 @@ import (
 // registering the same key under different comments yields the same hash.
 // Inputs that don't have a second token are hashed as-is.
 //
-// Useful for client-side checks like "is the local lakebox_rsa.pub already
-// registered?" without a list call against /api/2.0/lakebox/ssh-keys.
+// Useful for matching a locally-known key against entries in a
+// GET /ssh-keys listing without sending the key contents back to the
+// server.
 func keyHash(publicKey string) string {
-	canonical := publicKey
-	if i := strings.IndexByte(publicKey, ' '); i >= 0 {
-		if j := strings.IndexByte(publicKey[i+1:], ' '); j >= 0 {
-			canonical = publicKey[:i+1+j]
+	// Walk the splits and break out after the second token; the
+	// running offset is what we slice the original string by.
+	end := 0
+	seen := 0
+	for token := range strings.SplitSeq(publicKey, " ") {
+		if seen > 0 {
+			end++ // separator before this token
+		}
+		end += len(token)
+		seen++
+		if seen == 2 {
+			break
 		}
 	}
-	sum := sha256.Sum256([]byte(canonical))
+	sum := sha256.Sum256([]byte(publicKey[:end]))
 	return hex.EncodeToString(sum[:16])
 }
