@@ -1,0 +1,44 @@
+# Create a job in the workspace with a different name
+NEW_JOB_ID=$($CLI jobs create --json '{"name": "original-job-name", "environments": [{"environment_key": "default", "spec": {"client": "1"}}], "tasks": [{"task_key": "my_task", "environment_key": "default", "spark_python_task": {"python_file": "/Workspace/test.py"}}]}' | jq -r .job_id)
+add_repl.py $NEW_JOB_ID NEW_JOB_ID
+
+# Update the databricks.yml with the actual job ID
+update_file.py databricks.yml 'PLACEHOLDER_JOB_ID' "$NEW_JOB_ID"
+
+# Run plan - should show bind action (name differs from config)
+trace $CLI bundle plan
+
+# Deploy with auto-approve
+trace $CLI bundle deploy --auto-approve
+
+# Verify the job was updated
+trace $CLI jobs get $NEW_JOB_ID | jq -r .settings.name
+
+# Now update the job name again in the config and deploy again.
+# This time the action should be "update", not "bind", since the resource
+# is already bound in state.
+update_file.py databricks.yml 'updated-job-name' 'second-update-name'
+trace $CLI bundle plan
+trace $CLI bundle deploy --auto-approve
+
+# Verify the job was updated with the second name
+trace $CLI jobs get $NEW_JOB_ID | jq -r .settings.name
+
+# Remove bind block before destroy (destroy blocks on active bind blocks)
+python3 << 'PYSCRIPT'
+import re
+with open('databricks.yml', 'r') as f:
+    content = f.read()
+
+# Remove the bind block from the target (everything from "bind:" until the next top-level key or EOF)
+content = re.sub(r'\n    bind:.*', '', content, flags=re.DOTALL)
+
+with open('databricks.yml', 'w') as f:
+    f.write(content)
+PYSCRIPT
+
+# Remove .databricks directory that might cache old config
+rm -rf .databricks
+
+# Cleanup
+trace $CLI bundle destroy --auto-approve

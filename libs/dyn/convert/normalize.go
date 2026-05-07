@@ -116,6 +116,21 @@ func (n normalizeOptions) normalizeStruct(typ reflect.Type, src dyn.Value, seen 
 						}
 					}
 
+					// Bind is only valid under a target. Authors sometimes try to put it at
+					// the root, which would otherwise surface here as a generic "unknown
+					// field" warning that's easy to miss. Emit a targeted error so the
+					// misplaced block fails the build with actionable guidance.
+					if fieldName == "bind" && len(path) == 0 {
+						diags = diags.Append(diag.Diagnostic{
+							Severity:  diag.Error,
+							Summary:   "bind blocks are not allowed at the root level",
+							Detail:    "bind blocks must be defined within a target. Move the bind configuration under targets.<target_name>.bind",
+							Locations: pk.Locations(),
+							Paths:     []dyn.Path{path},
+						})
+						continue
+					}
+
 					diags = diags.Append(diag.Diagnostic{
 						Severity:  diag.Warning,
 						Summary:   "unknown field: " + fieldName,

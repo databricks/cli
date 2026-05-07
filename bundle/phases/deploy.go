@@ -256,11 +256,24 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 }
 
 func RunPlan(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) *deployplan.Plan {
+	// Bind blocks rely on direct-engine planning primitives (DoRead, RemapState),
+	// so reject them early when the user is on the terraform engine.
+	if !engine.IsDirect() && b.Target != nil && !b.Target.Bind.IsEmpty() {
+		logdiag.LogError(ctx, errors.New("bind blocks in the target configuration are only supported with the direct deployment engine; set DATABRICKS_BUNDLE_ENGINE=direct or remove the bind blocks"))
+		return nil
+	}
+
 	if engine.IsDirect() {
 		plan, err := b.DeploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(ctx), &b.Config)
 		if err != nil {
 			logdiag.LogError(ctx, err)
 			return nil
+		}
+		if b.Target != nil && !b.Target.Bind.IsEmpty() {
+			if err := b.DeploymentBundle.ApplyBindToPlan(ctx, &b.Config, b.Target.Bind); err != nil {
+				logdiag.LogError(ctx, err)
+				return nil
+			}
 		}
 		return plan
 	}
