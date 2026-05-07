@@ -198,6 +198,11 @@ jobs:
 
       - name: Checkout repository and submodules
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          # Skip the pre-checkout clean — the workspace is a freshly-mounted
+          # ReFS Dev Drive whose only contents are the system-protected
+          # "System Volume Information" folder, which scandir can't read.
+          clean: false
 
       - name: Setup build environment
         uses: ./.github/actions/setup-build-environment
@@ -344,6 +349,11 @@ jobs:
 
       - name: Checkout repository and submodules
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          # Skip the pre-checkout clean — the workspace is a freshly-mounted
+          # ReFS Dev Drive whose only contents are the system-protected
+          # "System Volume Information" folder, which scandir can't read.
+          clean: false
 
       - name: Setup build environment
         uses: ./.github/actions/setup-build-environment
@@ -463,6 +473,11 @@ jobs:
 
       - name: Checkout repository and submodules
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          # Skip the pre-checkout clean — the workspace is a freshly-mounted
+          # ReFS Dev Drive whose only contents are the system-protected
+          # "System Volume Information" folder, which scandir can't read.
+          clean: false
 
       - name: Setup build environment
         uses: ./.github/actions/setup-build-environment
@@ -582,6 +597,11 @@ jobs:
 
       - name: Checkout repository and submodules
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          # Skip the pre-checkout clean — the workspace is a freshly-mounted
+          # ReFS Dev Drive whose only contents are the system-protected
+          # "System Volume Information" folder, which scandir can't read.
+          clean: false
 
       - name: Setup build environment
         uses: ./.github/actions/setup-build-environment
