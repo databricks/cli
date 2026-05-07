@@ -146,10 +146,12 @@ a new profile is created.
 		ctx := cmd.Context()
 		profileName := cmd.Flag("profile").Value.String()
 
-		// Resolve the cache before the browser step so a missing/locked keyring
-		// surfaces here rather than after the user completes OAuth. When secure
-		// is selected but the keyring is unreachable, this silently falls back
-		// to plaintext and persists auth_storage = plaintext for next time.
+		// Resolve the cache before the browser step. The probe also acts as
+		// a side-channel that triggers the OS keyring unlock prompt early,
+		// so the user can answer it while OAuth is running. A genuinely
+		// unavailable keyring still surfaces here rather than after OAuth;
+		// a locked keyring (probe times out) is non-fatal and login stays
+		// on the keyring backend.
 		tokenCache, mode, err := storage.ResolveCacheForLogin(ctx, "")
 		if err != nil {
 			return err

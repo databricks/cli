@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/libs/databrickscfg"
@@ -54,8 +55,13 @@ func ResolveCache(ctx context.Context, override StorageMode) (cache.TokenCache, 
 //  2. When the user explicitly asked for secure (override, env var, or
 //     config) but the keyring is unreachable, return an error. An explicit
 //     "I want secure" is honored strictly: never silently downgrade.
+//  3. When the probe times out, the keyring is reachable but locked — the
+//     OS unlock prompt is on screen and the user is mid-typing. Stay on
+//     keyring regardless of explicit. The unlock continues in parallel
+//     with the OAuth flow, and by the time the final Store runs the
+//     keyring will be unlocked.
 //
-// Both rules are dormant today: the resolver default is plaintext, so
+// Rules 1 and 2 are dormant today: the resolver default is plaintext, so
 // (mode=Secure, explicit=false) is unreachable. They activate when the
 // default flips to secure (MS4 / cli-ga). Wiring lands now so MS4 is a
 // single-line default flip plus pin-on-success additions.
@@ -133,6 +139,18 @@ func applyLoginFallback(ctx context.Context, mode StorageMode, explicit bool, f 
 		return c, mode, nil
 	case StorageModeSecure:
 		if probeErr := f.probeKeyring(); probeErr != nil {
+			// A timeout means the keyring is reachable but locked: the OS
+			// unlock prompt is on screen and the user is mid-typing. Stay on
+			// keyring regardless of explicit; by the time OAuth finishes the
+			// prompt has been answered and the final Store will succeed
+			// against an unlocked keyring. Mirrors gh CLI's accidentally-
+			// similar flow where AuthTokenWriteable's early keyring.Get
+			// triggers the same dialog without committing to plaintext.
+			var timeoutErr *TimeoutError
+			if errors.As(probeErr, &timeoutErr) {
+				log.Debugf(ctx, "keyring probe timed out (%v); user is likely unlocking, staying on keyring", probeErr)
+				return f.newKeyring(), mode, nil
+			}
 			if explicit {
 				return nil, "", fmt.Errorf("secure storage was requested but the OS keyring is not reachable: %w", probeErr)
 			}

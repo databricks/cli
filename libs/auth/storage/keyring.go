@@ -88,14 +88,21 @@ func NewKeyringCache() cache.TokenCache {
 	}
 }
 
-// ProbeKeyring returns nil if the OS keyring is reachable and accepts a
-// write+delete cycle within the standard timeout. A non-nil error means the
-// keyring cannot be used in this environment (no backend, headless Linux
-// session waiting on a UI prompt, locked keychain refusing access, etc.).
+// ProbeKeyring returns nil if a write+delete cycle completed within the
+// standard timeout. Callers distinguish two non-nil shapes via errors.As:
 //
-// Used by databricks auth login to decide whether to silently fall back to
-// plaintext storage before opening the browser, so the user does not
-// complete an OAuth flow only to fail at the final Store call.
+//   - *TimeoutError: the keyring is reachable but locked. On Linux this
+//     usually means the GUI unlock prompt is up and the user has not
+//     finished typing yet. The login path treats this as "stay on keyring"
+//     because the prompt continues in parallel with OAuth and the final
+//     Store will succeed against the by-then-unlocked keyring.
+//   - any other error: the keyring is genuinely unavailable (no daemon,
+//     headless session with no secret service, ...). Login falls back to
+//     plaintext now rather than failing after OAuth.
+//
+// Probing also has a useful side effect: triggering the unlock prompt up
+// front, before the browser step. The user can answer it while OAuth is in
+// flight instead of after.
 func ProbeKeyring() error {
 	return probeWithBackend(zalandoBackend{}, defaultKeyringTimeout)
 }
