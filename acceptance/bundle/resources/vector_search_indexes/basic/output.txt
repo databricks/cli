@@ -15,17 +15,14 @@ Workspace:
   User: [USERNAME]
   Path: /Workspace/Users/[USERNAME]/.bundle/deploy-vs-index-[UNIQUE_NAME]/default
 Resources:
+  Vector Search Endpoints:
+    my_endpoint:
+      Name: vs-endpoint-[UNIQUE_NAME]
+      URL:  [DATABRICKS_URL]/compute/vector-search/vs-endpoint-[UNIQUE_NAME]?o=[NUMID]
   Vector Search Indexes:
     my_index:
       Name: vs-index-[UNIQUE_NAME]
       URL:  (not deployed)
-
->>> [CLI] vector-search-endpoints create-endpoint vs-endpoint-[UNIQUE_NAME] STANDARD
-{
-  "id": "[UUID]",
-  "name": "vs-endpoint-[UNIQUE_NAME]",
-  "endpoint_type": "STANDARD"
-}
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-vs-index-[UNIQUE_NAME]/default/files...
@@ -48,6 +45,10 @@ Workspace:
   User: [USERNAME]
   Path: /Workspace/Users/[USERNAME]/.bundle/deploy-vs-index-[UNIQUE_NAME]/default
 Resources:
+  Vector Search Endpoints:
+    my_endpoint:
+      Name: vs-endpoint-[UNIQUE_NAME]
+      URL:  [DATABRICKS_URL]/compute/vector-search/vs-endpoint-[UNIQUE_NAME]?o=[NUMID]
   Vector Search Indexes:
     my_index:
       Name: vs-index-[UNIQUE_NAME]
@@ -57,6 +58,7 @@ Resources:
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
+  delete resources.vector_search_endpoints.my_endpoint
   delete resources.vector_search_indexes.my_index
 
 This action will result in the deletion of the following Vector Search indexes.
@@ -68,5 +70,3 @@ All files and directories at the following location will be deleted: /Workspace/
 
 Deleting files...
 Destroy complete!
-
->>> [CLI] vector-search-endpoints delete-endpoint vs-endpoint-[UNIQUE_NAME]

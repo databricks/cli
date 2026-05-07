@@ -1,15 +1,11 @@
 envsubst < databricks.yml.tmpl > databricks.yml
-endpoint_name="vs-endpoint-${UNIQUE_NAME}"
 index_name="vs-index-${UNIQUE_NAME}"
 
 cleanup() {
     trace $CLI bundle destroy --auto-approve
-    trace $CLI vector-search-endpoints delete-endpoint "${endpoint_name}"
     rm -f out.requests.txt
 }
 trap cleanup EXIT
-
-trace $CLI vector-search-endpoints create-endpoint "${endpoint_name}" STANDARD | jq '{name, endpoint_type}'
 
 title "Initial deployment"
 trace $CLI bundle deploy

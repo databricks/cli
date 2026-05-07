@@ -1,12 +1,5 @@
 
 === Initial deployment with DELTA_SYNC index_type
->>> [CLI] vector-search-endpoints create-endpoint vs-endpoint-[UNIQUE_NAME] STANDARD
-{
-  "id": "[UUID]",
-  "name": "vs-endpoint-[UNIQUE_NAME]",
-  "endpoint_type": "STANDARD"
-}
-
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-vs-index-[UNIQUE_NAME]/default/files...
 Deploying resources...
@@ -27,7 +20,7 @@ Deployment complete!
 >>> [CLI] bundle plan
 recreate vector_search_indexes.my_index
 
-Plan: 1 to add, 0 to change, 1 to delete, 0 unchanged
+Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged
 
 >>> [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-vs-index-[UNIQUE_NAME]/default/files...
@@ -52,6 +45,7 @@ Deployment complete!
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
+  delete resources.vector_search_endpoints.my_endpoint
   delete resources.vector_search_indexes.my_index
 
 This action will result in the deletion of the following Vector Search indexes.
@@ -63,5 +57,3 @@ All files and directories at the following location will be deleted: /Workspace/
 
 Deleting files...
 Destroy complete!
-
->>> [CLI] vector-search-endpoints delete-endpoint vs-endpoint-[UNIQUE_NAME]

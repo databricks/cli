@@ -1,10 +1,4 @@
 
->>> [CLI] vector-search-endpoints create-endpoint vs-endpoint-[UNIQUE_NAME] STANDARD
-{
-  "name": "vs-endpoint-[UNIQUE_NAME]",
-  "endpoint_type": "STANDARD"
-}
-
 === Initial deployment
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/drift-vs-index-deleted-[UNIQUE_NAME]/default/files...
@@ -19,7 +13,7 @@ Deployment complete!
 >>> [CLI] bundle plan
 create vector_search_indexes.my_index
 
-Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
+Plan: 1 to add, 0 to change, 0 to delete, 1 unchanged
 
 === Deploy recreates the index
 >>> [CLI] bundle deploy
@@ -38,6 +32,7 @@ Deployment complete!
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
+  delete resources.vector_search_endpoints.my_endpoint
   delete resources.vector_search_indexes.my_index
 
 This action will result in the deletion of the following Vector Search indexes.
@@ -49,5 +44,3 @@ All files and directories at the following location will be deleted: /Workspace/
 
 Deleting files...
 Destroy complete!
-
->>> [CLI] vector-search-endpoints delete-endpoint vs-endpoint-[UNIQUE_NAME]
