@@ -13,6 +13,7 @@ import (
 // Defining the interface locally lets us hold the unexported type as a
 // struct field; cmdio's spinner satisfies it structurally.
 type cmdioSpinner interface {
+	Update(msg string)
 	Close()
 }
 
