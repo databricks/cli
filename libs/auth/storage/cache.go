@@ -46,17 +46,19 @@ func ResolveCache(ctx context.Context, override StorageMode) (cache.TokenCache, 
 // ResolveCacheForLogin resolves the cache like ResolveCache with extra rules
 // for the auth login path:
 //
-//  1. After a successful resolution, pin the resolved mode by writing
-//     auth_storage to [__settings__] if the key is not already set. This
-//     locks in the first working behavior (secure or plaintext) so a
-//     subsequent invocation skips the keyring probe and doesn't oscillate
-//     between modes if the keyring becomes flaky.
-//  2. When the resolved mode is secure and the user did not explicitly ask
+//  1. When the resolved mode is secure and the user did not explicitly ask
 //     for it (no override flag, no env var, no config), and the OS keyring
-//     is unreachable, fall back silently to plaintext.
-//  3. When the user explicitly asked for secure (override, env var, or
+//     is unreachable, fall back silently to plaintext and persist
+//     auth_storage = plaintext to [__settings__] so subsequent commands
+//     skip the (slow/blocking) probe and route directly to the file cache.
+//  2. When the user explicitly asked for secure (override, env var, or
 //     config) but the keyring is unreachable, return an error. An explicit
 //     "I want secure" is honored strictly: never silently downgrade.
+//
+// Both rules are dormant today: the resolver default is plaintext, so
+// (mode=Secure, explicit=false) is unreachable. They activate when the
+// default flips to secure (MS4 / cli-ga). Wiring lands now so MS4 is a
+// single-line default flip plus pin-on-success additions.
 //
 // Login-specific. Read paths (auth token, bundle commands) keep the original
 // keyring error so they don't silently mint plaintext copies of tokens that
@@ -115,6 +117,12 @@ func resolveCacheForLoginWith(ctx context.Context, override StorageMode, f cache
 // resolved mode and whether the user explicitly asked for it. Split out so
 // tests can drive the (mode, explicit) input space directly without depending
 // on whatever the resolver's default mode happens to be at any point in time.
+//
+// Pin-on-success across modes (locking in the first working behavior to
+// insulate users from keyring flakiness) is intentionally not implemented
+// here. It lands with MS4 alongside the default flip; pinning before the
+// flip would freeze every default user into plaintext and make the flip a
+// no-op for them.
 func applyLoginFallback(ctx context.Context, mode StorageMode, explicit bool, f cacheFactories) (cache.TokenCache, StorageMode, error) {
 	switch mode {
 	case StorageModePlaintext:
@@ -122,7 +130,6 @@ func applyLoginFallback(ctx context.Context, mode StorageMode, explicit bool, f 
 		if err != nil {
 			return nil, "", fmt.Errorf("open file token cache: %w", err)
 		}
-		pinResolvedMode(ctx, mode)
 		return c, mode, nil
 	case StorageModeSecure:
 		if probeErr := f.probeKeyring(); probeErr != nil {
@@ -134,39 +141,27 @@ func applyLoginFallback(ctx context.Context, mode StorageMode, explicit bool, f 
 			if fileErr != nil {
 				return nil, "", fmt.Errorf("open file token cache: %w", fileErr)
 			}
-			pinResolvedMode(ctx, StorageModePlaintext)
+			if err := persistPlaintextFallback(ctx); err != nil {
+				log.Debugf(ctx, "persisting auth_storage fallback failed: %v", err)
+			}
 			return fileCache, StorageModePlaintext, nil
 		}
-		pinResolvedMode(ctx, mode)
 		return f.newKeyring(), mode, nil
 	default:
 		return nil, "", fmt.Errorf("unsupported storage mode %q", string(mode))
 	}
 }
 
-// pinResolvedMode writes auth_storage = mode to [__settings__] in
-// .databrickscfg only if the key is not already set. The first successful
-// login pins whichever mode worked; later logins with a different transient
-// source (override flag, env var) do not overwrite the user's pinned
-// preference. Once pinned, ResolveStorageModeWithSource reads the value as
-// "explicit" and the resolver routes straight to the chosen backend, which
-// also makes the keyring probe redundant for subsequent secure logins.
+// persistPlaintextFallback writes auth_storage = plaintext to [__settings__]
+// in .databrickscfg so subsequent commands skip the (slow/blocking) keyring
+// probe and route straight to the file cache.
 //
-// Best-effort: a write failure is logged at debug and not returned. Users
-// have already authenticated successfully by the time we get here, and the
-// only consequence of a missing pin is a redundant probe (or fallback) on
-// the next login.
-func pinResolvedMode(ctx context.Context, mode StorageMode) {
+// Only called on the (mode=Secure, explicit=false) probe-failure branch. That
+// branch is unreachable today (resolver default is plaintext), so this is
+// dormant infrastructure: it activates when the default flips to secure
+// (MS4) and lets default-on-broken-keyring users avoid a 3s probe on every
+// command.
+func persistPlaintextFallback(ctx context.Context) error {
 	configPath := env.Get(ctx, "DATABRICKS_CONFIG_FILE")
-	existing, err := databrickscfg.GetConfiguredAuthStorage(ctx, configPath)
-	if err != nil {
-		log.Debugf(ctx, "reading existing auth_storage failed: %v", err)
-		return
-	}
-	if existing != "" {
-		return
-	}
-	if err := databrickscfg.SetConfiguredAuthStorage(ctx, string(mode), configPath); err != nil {
-		log.Debugf(ctx, "persisting auth_storage = %s failed: %v", mode, err)
-	}
+	return databrickscfg.SetConfiguredAuthStorage(ctx, string(StorageModePlaintext), configPath)
 }

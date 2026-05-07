@@ -197,9 +197,9 @@ func SetDefaultProfile(ctx context.Context, profileName, configFilePath string) 
 }
 
 // SetConfiguredAuthStorage writes the auth_storage key to the [__settings__]
-// section. Used by auth login to pin the resolved storage mode after a
-// successful login so subsequent commands skip the keyring probe and route
-// directly to the chosen backend.
+// section. Used by auth login to persist a plaintext fallback when the OS
+// keyring is unreachable, so subsequent commands skip the keyring probe and
+// route directly to the file cache.
 func SetConfiguredAuthStorage(ctx context.Context, value, configFilePath string) error {
 	configFile, err := loadOrCreateConfigFile(ctx, configFilePath)
 	if err != nil {

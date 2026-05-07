@@ -123,7 +123,6 @@ func TestResolveCache_FileFactoryErrorPropagates(t *testing.T) {
 func TestResolveCacheForLogin_PlaintextSkipsProbe(t *testing.T) {
 	hermetic(t)
 	ctx := t.Context()
-	configPath := env.Get(ctx, "DATABRICKS_CONFIG_FILE")
 	probed := false
 	f := fakeFactories(t)
 	f.probeKeyring = func() error {
@@ -137,26 +136,17 @@ func TestResolveCacheForLogin_PlaintextSkipsProbe(t *testing.T) {
 	assert.Equal(t, StorageModePlaintext, mode)
 	assert.Equal(t, "file", got.(stubCache).source)
 	assert.False(t, probed, "probe must not run when mode is already plaintext")
-
-	persisted, err := databrickscfg.GetConfiguredAuthStorage(ctx, configPath)
-	require.NoError(t, err)
-	assert.Equal(t, "plaintext", persisted, "first login pins the resolved mode")
 }
 
 func TestResolveCacheForLogin_SecureProbeOK(t *testing.T) {
 	hermetic(t)
 	ctx := env.Set(t.Context(), EnvVar, "secure")
-	configPath := env.Get(ctx, "DATABRICKS_CONFIG_FILE")
 
 	got, mode, err := resolveCacheForLoginWith(ctx, "", fakeFactories(t))
 
 	require.NoError(t, err)
 	assert.Equal(t, StorageModeSecure, mode)
 	assert.Equal(t, "keyring", got.(stubCache).source)
-
-	persisted, err := databrickscfg.GetConfiguredAuthStorage(ctx, configPath)
-	require.NoError(t, err)
-	assert.Equal(t, "secure", persisted, "first login pins the resolved mode")
 }
 
 func TestResolveCacheForLogin_ExplicitEnvSecure_ProbeFail_Errors(t *testing.T) {
@@ -240,51 +230,6 @@ func TestApplyLoginFallback_ExplicitSecure_ProbeFail_Errors(t *testing.T) {
 	persisted, gerr := databrickscfg.GetConfiguredAuthStorage(ctx, configPath)
 	require.NoError(t, gerr)
 	assert.Equal(t, "", persisted, "explicit-secure error must not write config")
-}
-
-func TestApplyLoginFallback_SecureProbeOK_PinsSecure(t *testing.T) {
-	hermetic(t)
-	ctx := t.Context()
-	configPath := env.Get(ctx, "DATABRICKS_CONFIG_FILE")
-
-	_, mode, err := applyLoginFallback(ctx, StorageModeSecure, false, fakeFactories(t))
-	require.NoError(t, err)
-	assert.Equal(t, StorageModeSecure, mode)
-
-	persisted, err := databrickscfg.GetConfiguredAuthStorage(ctx, configPath)
-	require.NoError(t, err)
-	assert.Equal(t, "secure", persisted)
-}
-
-func TestApplyLoginFallback_PlaintextMode_PinsPlaintext(t *testing.T) {
-	hermetic(t)
-	ctx := t.Context()
-	configPath := env.Get(ctx, "DATABRICKS_CONFIG_FILE")
-
-	_, mode, err := applyLoginFallback(ctx, StorageModePlaintext, false, fakeFactories(t))
-	require.NoError(t, err)
-	assert.Equal(t, StorageModePlaintext, mode)
-
-	persisted, err := databrickscfg.GetConfiguredAuthStorage(ctx, configPath)
-	require.NoError(t, err)
-	assert.Equal(t, "plaintext", persisted)
-}
-
-func TestApplyLoginFallback_AlreadyPinned_DoesNotOverwrite(t *testing.T) {
-	hermetic(t)
-	ctx := t.Context()
-	configPath := env.Get(ctx, "DATABRICKS_CONFIG_FILE")
-	require.NoError(t, os.WriteFile(configPath, []byte("[__settings__]\nauth_storage = plaintext\n"), 0o600))
-
-	// Override forces secure for this run, but the existing pin must be preserved
-	// so a one-off override flag does not silently change a stable user preference.
-	_, mode, err := applyLoginFallback(ctx, StorageModeSecure, true, fakeFactories(t))
-	require.NoError(t, err)
-	assert.Equal(t, StorageModeSecure, mode)
-
-	persisted, err := databrickscfg.GetConfiguredAuthStorage(ctx, configPath)
-	require.NoError(t, err)
-	assert.Equal(t, "plaintext", persisted)
 }
 
 func TestWrapForOAuthArgument(t *testing.T) {

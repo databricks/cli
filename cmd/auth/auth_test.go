@@ -1,8 +1,6 @@
 package auth
 
 import (
-	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/databricks/cli/cmd/root"
@@ -11,19 +9,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-// copyTestCfgToTempDir copies the checked-in fixture to a temp dir and returns
-// the temp path. Used by tests that drive the full login command end-to-end:
-// auth login pins auth_storage to the config file on success, which would
-// otherwise mutate the shared fixture.
-func copyTestCfgToTempDir(t *testing.T) string {
-	t.Helper()
-	src, err := os.ReadFile("./testdata/.databrickscfg")
-	require.NoError(t, err)
-	dst := filepath.Join(t.TempDir(), ".databrickscfg")
-	require.NoError(t, os.WriteFile(dst, src, 0o600))
-	return dst
-}
 
 func TestValidateProfileHostConflict(t *testing.T) {
 	profiler := profile.InMemoryProfiler{
@@ -128,9 +113,7 @@ func TestProfileHostConflictTokenViaCobra(t *testing.T) {
 // pass the conflict check (the command will fail later for other reasons, but
 // NOT with a conflict error).
 func TestProfileHostCompatibleViaCobra(t *testing.T) {
-	// Use a temp copy: the compatible path runs through to RunE, where login
-	// pins auth_storage to the config file.
-	t.Setenv("DATABRICKS_CONFIG_FILE", copyTestCfgToTempDir(t))
+	t.Setenv("DATABRICKS_CONFIG_FILE", "./testdata/.databrickscfg")
 
 	ctx := cmdctx.GenerateExecId(t.Context())
 	cli := root.New(ctx)
