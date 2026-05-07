@@ -2,17 +2,28 @@ package tui
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/spf13/cobra"
 )
 
+func validatePositive(n int) error {
+	if n < 1 {
+		return fmt.Errorf("--n must be at least 1, got %d", n)
+	}
+	return nil
+}
+
 func newSelectCmd() *cobra.Command {
 	var n int
 	cmd := &cobra.Command{
 		Use:   "select",
 		Short: "cmdio.Select (map; sorted alphabetically by name)",
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			return validatePositive(n)
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			tuples := buildItems(n)
@@ -41,6 +52,9 @@ func newSelectOrderedCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "select-ordered",
 		Short: "cmdio.SelectOrdered ([]Tuple; preserves insertion order)",
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			return validatePositive(n)
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			var items []cmdio.Tuple
@@ -93,7 +107,6 @@ func newRunSelectCmd() *cobra.Command {
 	return cmd
 }
 
-// runSelectPlain exercises RunSelect with the minimum required options.
 func runSelectPlain(ctx context.Context) error {
 	items := buildItems(5)
 	i, err := cmdio.RunSelect(ctx, cmdio.SelectOptions{
@@ -108,7 +121,7 @@ func runSelectPlain(ctx context.Context) error {
 }
 
 func runSelectRich(ctx context.Context) error {
-	items := buildClusterItems()
+	items := buildClusterItems(ctx)
 	i, err := cmdio.RunSelect(ctx, cmdio.SelectOptions{
 		Label: "Choose a cluster",
 		Items: items,
@@ -117,8 +130,8 @@ func runSelectRich(ctx context.Context) error {
 		},
 		StartInSearchMode: true,
 		LabelTemplate:     `{{ . | faint }}`,
-		Active:            `{{.Name | bold}} ({{.State}} Runtime {{.Runtime}}) ({{.Id | faint}})`,
-		Inactive:          `{{.Name}} ({{.State}} Runtime {{.Runtime}})`,
+		Active:            `{{.Name | bold}} ({{.State}} {{.Access}} Runtime {{.Runtime}}) ({{.Id | faint}})`,
+		Inactive:          `{{.Name}} ({{.State}} {{.Access}} Runtime {{.Runtime}})`,
 		Selected:          `{{ "Selected cluster" | faint }}: {{ .Name | bold }} ({{ .Id | faint }})`,
 	})
 	if err != nil {

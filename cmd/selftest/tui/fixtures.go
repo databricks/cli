@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -129,25 +130,38 @@ func buildLongItems() []cmdio.Tuple {
 	return items
 }
 
-// clusterItem mirrors the shape used by libs/databrickscfg/cfgpickers/clusters.go,
-// where Active/Inactive templates reference Name, State, Runtime, and Id.
+// clusterItem mirrors libs/databrickscfg/cfgpickers/clusters.go's
+// compatibleCluster: State, Access, and Runtime are exposed as methods so
+// the Active/Inactive templates exercise text/template's method-resolution
+// path, and State returns a pre-rendered colored string (matching the
+// renderedState cache in production) so the demo also exercises ANSI codes
+// emitted from inside a template.
 type clusterItem struct {
-	Name    string
-	State   string
-	Runtime string
-	Id      string
+	Name string
+	Id   string
+
+	access        string
+	runtimeName   string
+	renderedState string
 }
 
-func buildClusterItems() []clusterItem {
+func (c clusterItem) Access() string  { return c.access }
+func (c clusterItem) Runtime() string { return c.runtimeName }
+func (c clusterItem) State() string   { return c.renderedState }
+
+func buildClusterItems(ctx context.Context) []clusterItem {
+	green := func(s string) string { return cmdio.Green(ctx, s) }
+	red := func(s string) string { return cmdio.Red(ctx, s) }
+	blue := func(s string) string { return cmdio.Blue(ctx, s) }
 	return []clusterItem{
-		{Name: "shared-autoscaling-prod", State: "RUNNING", Runtime: "DBR 14.3 LTS", Id: "0123-456789-abcdef01"},
-		{Name: "ml-gpu-experiments", State: "TERMINATED", Runtime: "DBR 15.0 ML", Id: "0123-456789-abcdef02"},
-		{Name: "job-compute-bronze-etl", State: "RUNNING", Runtime: "DBR 13.3 LTS", Id: "0123-456789-abcdef03"},
-		{Name: "interactive-analytics", State: "PENDING", Runtime: "DBR 14.3", Id: "0123-456789-abcdef04"},
-		{Name: "photon-streaming-realtime", State: "RUNNING", Runtime: "DBR 14.3 Photon", Id: "0123-456789-abcdef05"},
-		{Name: "single-node-dev", State: "TERMINATED", Runtime: "DBR 14.3 LTS", Id: "0123-456789-abcdef06"},
-		{Name: "all-purpose-shared", State: "RUNNING", Runtime: "DBR 15.0", Id: "0123-456789-abcdef07"},
-		{Name: "legacy-data-eng", State: "TERMINATED", Runtime: "DBR 12.2 LTS", Id: "0123-456789-abcdef08"},
+		{Name: "shared-autoscaling-prod", Id: "0123-456789-abcdef01", access: "Shared", runtimeName: "DBR 14.3 LTS", renderedState: green("RUNNING")},
+		{Name: "ml-gpu-experiments", Id: "0123-456789-abcdef02", access: "Assigned", runtimeName: "DBR 15.0 ML", renderedState: red("TERMINATED")},
+		{Name: "job-compute-bronze-etl", Id: "0123-456789-abcdef03", access: "Shared", runtimeName: "DBR 13.3 LTS", renderedState: green("RUNNING")},
+		{Name: "interactive-analytics", Id: "0123-456789-abcdef04", access: "Assigned", runtimeName: "DBR 14.3", renderedState: blue("PENDING")},
+		{Name: "photon-streaming-realtime", Id: "0123-456789-abcdef05", access: "Shared", runtimeName: "DBR 14.3 Photon", renderedState: green("RUNNING")},
+		{Name: "single-node-dev", Id: "0123-456789-abcdef06", access: "Assigned", runtimeName: "DBR 14.3 LTS", renderedState: red("TERMINATED")},
+		{Name: "all-purpose-shared", Id: "0123-456789-abcdef07", access: "Shared", runtimeName: "DBR 15.0", renderedState: green("RUNNING")},
+		{Name: "legacy-data-eng", Id: "0123-456789-abcdef08", access: "Assigned", runtimeName: "DBR 12.2 LTS", renderedState: red("TERMINATED")},
 	}
 }
 
