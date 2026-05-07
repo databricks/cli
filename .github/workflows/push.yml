@@ -175,6 +175,8 @@ jobs:
             if ((Get-ChildItem -Force $ws | Measure-Object).Count -gt 0) {
               throw "GITHUB_WORKSPACE ($ws) is not empty; this step must run before actions/checkout."
             }
+            # The shell starts with CWD inside $ws; cd out before removing it.
+            Set-Location C:\
             Remove-Item -Force $ws
           }
           New-Item -ItemType Junction -Path $ws -Target C:\dd\ws | Out-Null
@@ -304,6 +306,8 @@ jobs:
             if ((Get-ChildItem -Force $ws | Measure-Object).Count -gt 0) {
               throw "GITHUB_WORKSPACE ($ws) is not empty; this step must run before actions/checkout."
             }
+            # The shell starts with CWD inside $ws; cd out before removing it.
+            Set-Location C:\
             Remove-Item -Force $ws
           }
           New-Item -ItemType Junction -Path $ws -Target C:\dd\ws | Out-Null
@@ -406,6 +410,8 @@ jobs:
             if ((Get-ChildItem -Force $ws | Measure-Object).Count -gt 0) {
               throw "GITHUB_WORKSPACE ($ws) is not empty; this step must run before actions/checkout."
             }
+            # The shell starts with CWD inside $ws; cd out before removing it.
+            Set-Location C:\
             Remove-Item -Force $ws
           }
           New-Item -ItemType Junction -Path $ws -Target C:\dd\ws | Out-Null
@@ -508,6 +514,8 @@ jobs:
             if ((Get-ChildItem -Force $ws | Measure-Object).Count -gt 0) {
               throw "GITHUB_WORKSPACE ($ws) is not empty; this step must run before actions/checkout."
             }
+            # The shell starts with CWD inside $ws; cd out before removing it.
+            Set-Location C:\
             Remove-Item -Force $ws
           }
           New-Item -ItemType Junction -Path $ws -Target C:\dd\ws | Out-Null
