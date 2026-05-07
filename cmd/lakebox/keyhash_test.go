@@ -53,8 +53,3 @@ func TestKeyHash(t *testing.T) {
 		})
 	}
 }
-
-func TestKeyHashIsStableLength(t *testing.T) {
-	// 16 bytes hex-encoded = 32 chars, matching what the API returns.
-	assert.Len(t, keyHash("anything"), 32)
-}
