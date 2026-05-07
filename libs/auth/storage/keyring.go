@@ -91,14 +91,20 @@ func NewKeyringCache() cache.TokenCache {
 // ProbeKeyring returns nil if a write+delete cycle completed within the
 // standard timeout. Callers distinguish two non-nil shapes via errors.As:
 //
-//   - *TimeoutError: the keyring is reachable but locked. On Linux this
-//     usually means the GUI unlock prompt is up and the user has not
-//     finished typing yet. The login path treats this as "stay on keyring"
-//     because the prompt continues in parallel with OAuth and the final
-//     Store will succeed against the by-then-unlocked keyring.
-//   - any other error: the keyring is genuinely unavailable (no daemon,
-//     headless session with no secret service, ...). Login falls back to
-//     plaintext now rather than failing after OAuth.
+//   - *TimeoutError: indeterminate. The keyring did not respond within
+//     the timeout. The common cause on Linux is a locked collection
+//     waiting on a GUI unlock prompt with the user mid-typing, but a
+//     hung or slow daemon produces the same shape. The login path
+//     optimistically stays on keyring: if the user is unlocking, the
+//     prompt continues in parallel with OAuth and the final Store
+//     succeeds against an unlocked keyring; if the keyring is genuinely
+//     stuck, the final Store also times out and login fails late
+//     instead of early. The cost of guessing wrong is one wasted OAuth
+//     ceremony, not a silently-plaintext token.
+//   - any other error: the keyring returned a definitive failure (no
+//     daemon, headless session with no secret service, dismissed prompt,
+//     ...). Login falls back to plaintext now rather than failing after
+//     OAuth.
 //
 // Probing also has a useful side effect: triggering the unlock prompt up
 // front, before the browser step. The user can answer it while OAuth is in

@@ -139,16 +139,16 @@ func applyLoginFallback(ctx context.Context, mode StorageMode, explicit bool, f 
 		return c, mode, nil
 	case StorageModeSecure:
 		if probeErr := f.probeKeyring(); probeErr != nil {
-			// A timeout means the keyring is reachable but locked: the OS
-			// unlock prompt is on screen and the user is mid-typing. Stay on
-			// keyring regardless of explicit; by the time OAuth finishes the
-			// prompt has been answered and the final Store will succeed
-			// against an unlocked keyring. Mirrors gh CLI's accidentally-
-			// similar flow where AuthTokenWriteable's early keyring.Get
-			// triggers the same dialog without committing to plaintext.
+			// Timeout is indeterminate: usually a locked keyring with the
+			// GUI unlock prompt up and the user typing, but a hung or slow
+			// daemon produces the same error. Stay on keyring optimistically.
+			// If the user is unlocking, the final Store at end of OAuth lands
+			// in the now-unlocked keyring. If the keyring is genuinely stuck,
+			// the final Store also times out and login fails late, same
+			// outcome as failing here, but with no silently-plaintext token.
 			var timeoutErr *TimeoutError
 			if errors.As(probeErr, &timeoutErr) {
-				log.Debugf(ctx, "keyring probe timed out (%v); user is likely unlocking, staying on keyring", probeErr)
+				log.Debugf(ctx, "keyring probe timed out (%v); staying on keyring optimistically", probeErr)
 				return f.newKeyring(), mode, nil
 			}
 			if explicit {
