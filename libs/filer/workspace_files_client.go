@@ -165,9 +165,17 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 	// Use Workspace.Upload (multipart /api/2.0/workspace/import) instead of the
 	// JSON-body variant of the same endpoint, which caps payloads at 10 MiB for
 	// AUTO format (databricks.webapp.autoExportFormatLimitBytes). The multipart
-	// variant accepts up to 200 MiB (databricks.workspaceFilesystem.maxImportSizeBytes),
-	// matching the legacy /workspace-files/import-file endpoint we are migrating
-	// away from.
+	// variant has been verified against a real workspace at 450 MB for regular
+	// files — strictly better than the legacy /workspace-files/import-file
+	// endpoint we are migrating away from, which has a 200 MiB body cap
+	// (databricks.workspaceFilesystem.maxImportSizeBytes) plus a 305s server-side
+	// request timeout that cuts off uploads above ~400 MB at typical bandwidth.
+	//
+	// Notebook content (any payload with a `# Databricks notebook source` header
+	// detected by format=AUTO) hits a separate 10 MiB cap on the server
+	// (databricks.notebook.maxNotebookSizeBytes); this cap is enforced regardless
+	// of which upload endpoint we use, so it is not a regression introduced by
+	// this migration.
 	overwrite := slices.Contains(mode, OverwriteIfExists)
 	uploadOpts := []func(*workspace.Import){
 		workspace.UploadFormat(workspace.ImportFormatAuto),
