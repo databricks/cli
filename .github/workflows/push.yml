@@ -167,6 +167,16 @@ jobs:
           Remove-PartitionAccessPath -DiskNumber $diskA.Number `
             -PartitionNumber $partA.PartitionNumber -AccessPath 'Y:\'
 
+          # ReFS auto-creates "System Volume Information" at the volume root;
+          # it has restrictive ACLs that make scandir fail with EPERM, which
+          # trips actions/checkout. Take ownership and remove it.
+          $svi = Join-Path $ws 'System Volume Information'
+          if (Test-Path $svi) {
+            cmd /c "takeown /F `"$svi`" /A /R" | Out-Null
+            cmd /c "icacls `"$svi`" /grant Administrators:F /T /C" | Out-Null
+            Remove-Item -Path $svi -Recurse -Force -ErrorAction SilentlyContinue
+          }
+
           # --- Volume B: TEMP + Go caches ---
           $vhdB = "$env:RUNNER_TEMP\devdrive-cache.vhdx"
           New-VHD -Path $vhdB -SizeBytes 10GB -Dynamic | Out-Null
@@ -198,11 +208,6 @@ jobs:
 
       - name: Checkout repository and submodules
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          # Skip the pre-checkout clean — the workspace is a freshly-mounted
-          # ReFS Dev Drive whose only contents are the system-protected
-          # "System Volume Information" folder, which scandir can't read.
-          clean: false
 
       - name: Setup build environment
         uses: ./.github/actions/setup-build-environment
@@ -318,6 +323,16 @@ jobs:
           Remove-PartitionAccessPath -DiskNumber $diskA.Number `
             -PartitionNumber $partA.PartitionNumber -AccessPath 'Y:\'
 
+          # ReFS auto-creates "System Volume Information" at the volume root;
+          # it has restrictive ACLs that make scandir fail with EPERM, which
+          # trips actions/checkout. Take ownership and remove it.
+          $svi = Join-Path $ws 'System Volume Information'
+          if (Test-Path $svi) {
+            cmd /c "takeown /F `"$svi`" /A /R" | Out-Null
+            cmd /c "icacls `"$svi`" /grant Administrators:F /T /C" | Out-Null
+            Remove-Item -Path $svi -Recurse -Force -ErrorAction SilentlyContinue
+          }
+
           # --- Volume B: TEMP + Go caches ---
           $vhdB = "$env:RUNNER_TEMP\devdrive-cache.vhdx"
           New-VHD -Path $vhdB -SizeBytes 10GB -Dynamic | Out-Null
@@ -349,11 +364,6 @@ jobs:
 
       - name: Checkout repository and submodules
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          # Skip the pre-checkout clean — the workspace is a freshly-mounted
-          # ReFS Dev Drive whose only contents are the system-protected
-          # "System Volume Information" folder, which scandir can't read.
-          clean: false
 
       - name: Setup build environment
         uses: ./.github/actions/setup-build-environment
@@ -442,6 +452,16 @@ jobs:
           Remove-PartitionAccessPath -DiskNumber $diskA.Number `
             -PartitionNumber $partA.PartitionNumber -AccessPath 'Y:\'
 
+          # ReFS auto-creates "System Volume Information" at the volume root;
+          # it has restrictive ACLs that make scandir fail with EPERM, which
+          # trips actions/checkout. Take ownership and remove it.
+          $svi = Join-Path $ws 'System Volume Information'
+          if (Test-Path $svi) {
+            cmd /c "takeown /F `"$svi`" /A /R" | Out-Null
+            cmd /c "icacls `"$svi`" /grant Administrators:F /T /C" | Out-Null
+            Remove-Item -Path $svi -Recurse -Force -ErrorAction SilentlyContinue
+          }
+
           # --- Volume B: TEMP + Go caches ---
           $vhdB = "$env:RUNNER_TEMP\devdrive-cache.vhdx"
           New-VHD -Path $vhdB -SizeBytes 10GB -Dynamic | Out-Null
@@ -473,11 +493,6 @@ jobs:
 
       - name: Checkout repository and submodules
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          # Skip the pre-checkout clean — the workspace is a freshly-mounted
-          # ReFS Dev Drive whose only contents are the system-protected
-          # "System Volume Information" folder, which scandir can't read.
-          clean: false
 
       - name: Setup build environment
         uses: ./.github/actions/setup-build-environment
@@ -566,6 +581,16 @@ jobs:
           Remove-PartitionAccessPath -DiskNumber $diskA.Number `
             -PartitionNumber $partA.PartitionNumber -AccessPath 'Y:\'
 
+          # ReFS auto-creates "System Volume Information" at the volume root;
+          # it has restrictive ACLs that make scandir fail with EPERM, which
+          # trips actions/checkout. Take ownership and remove it.
+          $svi = Join-Path $ws 'System Volume Information'
+          if (Test-Path $svi) {
+            cmd /c "takeown /F `"$svi`" /A /R" | Out-Null
+            cmd /c "icacls `"$svi`" /grant Administrators:F /T /C" | Out-Null
+            Remove-Item -Path $svi -Recurse -Force -ErrorAction SilentlyContinue
+          }
+
           # --- Volume B: TEMP + Go caches ---
           $vhdB = "$env:RUNNER_TEMP\devdrive-cache.vhdx"
           New-VHD -Path $vhdB -SizeBytes 10GB -Dynamic | Out-Null
@@ -597,11 +622,6 @@ jobs:
 
       - name: Checkout repository and submodules
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          # Skip the pre-checkout clean — the workspace is a freshly-mounted
-          # ReFS Dev Drive whose only contents are the system-protected
-          # "System Volume Information" folder, which scandir can't read.
-          clean: false
 
       - name: Setup build environment
         uses: ./.github/actions/setup-build-environment
