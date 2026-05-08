@@ -9,6 +9,7 @@ func New() *cobra.Command {
 		Use:     "lakebox",
 		Short:   "Manage Databricks Lakebox environments",
 		GroupID: "development",
+		Hidden:  true,
 		Long: `Manage Databricks Lakebox environments.
 
 Lakebox provides SSH-accessible development environments backed by
