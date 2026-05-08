@@ -11,9 +11,13 @@ import (
 )
 
 // TestPromptBaseline_CursorEditing pins how RunPrompt responds to cursor
-// movement and line-editing keys: ←/→, Home/End, Delete, Ctrl+W. Promptui
-// passes these through to readline; the hand-rolled bubbletea promptModel
-// must reproduce the visible result for every snapshot to match.
+// movement and line-editing keys: ←/→, Home/End, Backspace, Ctrl+W, Ctrl+U.
+// Promptui's Cursor.Listen handles Backspace; Ctrl+W and Ctrl+U have no case
+// there, so they're no-ops in this prompt — the goldens after them are
+// intentionally identical to the post-Backspace one. The Delete key (\x1b[3~)
+// is *not* covered here because it conflates with Ctrl+D in chzyer/readline
+// and exits the prompt; that behavior is pinned separately by
+// TestPromptBaseline_DeleteKeyExits.
 func TestPromptBaseline_CursorEditing(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("pty-based prompt tests are unix-only")
@@ -63,8 +67,8 @@ func TestPromptBaseline_CursorEditing(t *testing.T) {
 	tm.Type("Y")
 	tm.Golden("05-insert-mid")
 
-	tm.Type(termtest.KeyDelete)
-	tm.Golden("06-after-delete")
+	tm.Type(termtest.KeyBackspace)
+	tm.Golden("06-after-backspace")
 
 	tm.Type(termtest.KeyCtrlW)
 	tm.Golden("07-after-ctrl-w")
