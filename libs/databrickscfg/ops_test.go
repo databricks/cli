@@ -66,7 +66,7 @@ func TestMatchOrCreateSection_AccountID(t *testing.T) {
 
 func TestMatchOrCreateSection_NormalizeHost(t *testing.T) {
 	cfg := &config.Config{
-		Host: "https://query/?o=abracadabra",
+		Host: "https://query.test/?o=abracadabra",
 	}
 	file, err := loadOrCreateConfigFile(t.Context(), "profile/testdata/databrickscfg")
 	assert.NoError(t, err)
@@ -90,7 +90,7 @@ func TestMatchOrCreateSection_NoProfileOrHost(t *testing.T) {
 
 func TestMatchOrCreateSection_MultipleProfiles(t *testing.T) {
 	cfg := &config.Config{
-		Host: "https://foo",
+		Host: "https://foo.test",
 	}
 	file, err := loadOrCreateConfigFile(t.Context(), "profile/testdata/databrickscfg")
 	assert.NoError(t, err)
