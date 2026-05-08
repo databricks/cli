@@ -1,5 +1,5 @@
 
->>> print_requests.py ^//import-file/ ^//workspace/
+>>> print_requests.py ^//workspace/
 
 >>> [CLI] bundle summary -o json
 
@@ -31,4 +31,4 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> print_requests.py ^//import-file/ ^//workspace/ ^//telemetry-ext
+>>> print_requests.py ^//workspace/ ^//telemetry-ext

@@ -27,6 +27,6 @@ Deployment complete!
 ]
 
 === Expecting no wheels to be uploaded
->>> errcode sh -c jq .path < out.requests.txt | grep import | grep whl
+>>> errcode sh -c jq -r '.body.multipart_form.path | strings' < out.requests.txt | grep whl
 
 Exit code: 1

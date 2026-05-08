@@ -9,7 +9,6 @@ import (
 	"io"
 	"io/fs"
 	"net/http"
-	"net/url"
 	"path"
 	"slices"
 	"strings"
@@ -157,35 +156,42 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 		return err
 	}
 
-	// Remove leading "/" so we can use it in the URL.
-	overwrite := slices.Contains(mode, OverwriteIfExists)
-	urlPath := fmt.Sprintf(
-		"/api/2.0/workspace-files/import-file/%s?overwrite=%t",
-		url.PathEscape(strings.TrimLeft(absPath, "/")),
-		overwrite,
-	)
-
 	// Buffer the file contents because we may need to retry below and we cannot read twice.
 	body, err := io.ReadAll(reader)
 	if err != nil {
 		return err
 	}
 
-	err = w.apiClient.Do(ctx, http.MethodPost, urlPath, w.orgIDHeaders(), nil, body, nil)
+	// Use Workspace.Upload (multipart /api/2.0/workspace/import) instead of the
+	// JSON-body variant of the same endpoint, which caps payloads at 10 MiB for
+	// AUTO format (databricks.webapp.autoExportFormatLimitBytes). The multipart
+	// variant has been verified against a real workspace at 450 MB for regular
+	// files — strictly better than the previous /workspace-files/import-file
+	// endpoint, which has a 200 MiB body cap
+	// (databricks.workspaceFilesystem.maxImportSizeBytes) plus a 305s server-side
+	// request timeout that cuts off uploads above ~400 MB at typical bandwidth.
+	//
+	// Notebook content (any payload with a `# Databricks notebook source` header
+	// detected by format=AUTO) hits a separate 10 MiB cap on the server
+	// (databricks.notebook.maxNotebookSizeBytes). Both /workspace-files/import-file
+	// and /workspace/import enforce this same cap, so switching from the former
+	// to the latter does not regress maximum notebook upload size.
+	overwrite := slices.Contains(mode, OverwriteIfExists)
+	uploadOpts := []func(*workspace.Import){
+		workspace.UploadFormat(workspace.ImportFormatAuto),
+	}
+	if overwrite {
+		uploadOpts = append(uploadOpts, workspace.UploadOverwrite())
+	}
+	err = w.workspaceClient.Workspace.Upload(ctx, absPath, bytes.NewReader(body), uploadOpts...)
 
 	// Return early on success.
 	if err == nil {
 		return nil
 	}
 
-	// Special handling of this error only if it is an API error.
-	var aerr *apierr.APIError
-	if !errors.As(err, &aerr) {
-		return err
-	}
-
-	// This API returns a 404 if the parent directory does not exist.
-	if aerr.StatusCode == http.StatusNotFound {
+	// Parent directory does not exist.
+	if errors.Is(err, apierr.ErrNotFound) {
 		if !slices.Contains(mode, CreateParentDirectories) {
 			return noSuchDirectoryError{path.Dir(absPath)}
 		}
@@ -193,7 +199,7 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 		// Create parent directory.
 		err = w.workspaceClient.Workspace.MkdirsByPath(ctx, path.Dir(absPath)) //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
 		if err != nil {
-			if errors.As(err, &aerr) && aerr.StatusCode == http.StatusForbidden {
+			if errors.Is(err, apierr.ErrPermissionDenied) {
 				return permissionError{absPath}
 			}
 			return fmt.Errorf("unable to mkdir to write file %s: %w", absPath, err)
@@ -203,23 +209,50 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 		return w.Write(ctx, name, bytes.NewReader(body), sliceWithout(mode, CreateParentDirectories)...)
 	}
 
-	// This API returns 409 if the file already exists, when the object type is file
-	if aerr.StatusCode == http.StatusConflict {
+	// Path already taken. /workspace/import returns this in three shapes,
+	// verified against a real workspace:
+	//
+	//  - 400 RESOURCE_ALREADY_EXISTS — sequential conflict, no overwrite flag.
+	//    Example: "/Users/me/foo.txt already exists. Please pass overwrite=true
+	//    to overwrite it."
+	//
+	//  - 409 ALREADY_EXISTS — concurrent contention (observed in TestLock when
+	//    five lockers race to write deploy.lock).
+	//    Example: "Node with name /Users/me/.bundle/.../deploy.lock already
+	//    exists. Please pass overwrite=true to update it."
+	//
+	//  - 400 INVALID_PARAMETER_VALUE — overwrite=true on a path where the
+	//    existing object's node type differs from the upload. Two distinct
+	//    messages, both observed against aws-prod-ucws:
+	//
+	//    (a) "Cannot overwrite the asset at /Users/me/foo due to type mismatch
+	//        (asked: FILE, actual: NOTEBOOK)" — fires when the upload path is
+	//        the same as an existing NOTEBOOK and the new content has no
+	//        notebook header (so AUTO would store it as FILE), or the mirror
+	//        case with FILE/NOTEBOOK swapped.
+	//
+	//    (b) "Requested node type [FILE] is different from the existing node
+	//        type [NOTEBOOK]" — fires when /foo is already a NOTEBOOK (from a
+	//        prior /foo.py upload) and an overwrite-upload of regular content
+	//        targets /foo.py: AUTO would store the new content as FILE at
+	//        /foo.py, but the workspace treats /foo.py as the source view of
+	//        the existing /foo NOTEBOOK and rejects the type change.
+	//
+	//    The server refuses the overwrite even though the caller asked for
+	//    it; from the caller's perspective the path is occupied, so we
+	//    surface this as already-exists.
+	if errors.Is(err, apierr.ErrResourceAlreadyExists) || errors.Is(err, apierr.ErrAlreadyExists) {
 		return fileAlreadyExistsError{absPath}
 	}
-
-	// This API returns 400 if the file already exists when the object type is notebook.
-	// Both the historical "Path (<path>) already exists." format and the newer
-	// "RESOURCE_ALREADY_EXISTS: <path> already exists. ..." format end with the same
-	// "already exists." marker; the JSON error_code is empty in both. The new format
-	// might not have been rolled out to all workspaces yet, so we anchor on the shared
-	// marker and return absPath rather than parsing the message.
-	if aerr.StatusCode == http.StatusBadRequest && strings.Contains(aerr.Message, "already exists.") {
-		return fileAlreadyExistsError{absPath}
+	if errors.Is(err, apierr.ErrInvalidParameterValue) {
+		var aerr *apierr.APIError
+		if errors.As(err, &aerr) && (strings.Contains(aerr.Message, "type mismatch") || strings.Contains(aerr.Message, "node type")) {
+			return fileAlreadyExistsError{absPath}
+		}
 	}
 
-	// This API returns StatusForbidden when you have read access but don't have write access to a file
-	if aerr.StatusCode == http.StatusForbidden {
+	// Caller has read access but no write access.
+	if errors.Is(err, apierr.ErrPermissionDenied) {
 		return permissionError{absPath}
 	}
 
@@ -273,19 +306,14 @@ func (w *WorkspaceFilesClient) Delete(ctx context.Context, name string, mode ...
 		return nil
 	}
 
-	// Special handling of this error only if it is an API error.
-	var aerr *apierr.APIError
-	if !errors.As(err, &aerr) {
-		return err
+	if errors.Is(err, apierr.ErrNotFound) {
+		return fileDoesNotExistError{absPath}
 	}
 
-	switch aerr.StatusCode {
-	case http.StatusBadRequest:
-		if aerr.ErrorCode == "DIRECTORY_NOT_EMPTY" {
-			return directoryNotEmptyError{absPath}
-		}
-	case http.StatusNotFound:
-		return fileDoesNotExistError{absPath}
+	// No SDK sentinel for DIRECTORY_NOT_EMPTY; match the error_code directly.
+	var aerr *apierr.APIError
+	if errors.As(err, &aerr) && aerr.ErrorCode == "DIRECTORY_NOT_EMPTY" {
+		return directoryNotEmptyError{absPath}
 	}
 
 	return err
@@ -306,15 +334,9 @@ func (w *WorkspaceFilesClient) ReadDir(ctx context.Context, name string) ([]fs.D
 	}
 
 	if err != nil {
-		// If we got an API error we deal with it below.
-		var aerr *apierr.APIError
-		if !errors.As(err, &aerr) {
-			return nil, err
-		}
-
 		// NOTE: This API returns a 404 if the specified path does not exist,
 		// but can also do so if we don't have read access.
-		if aerr.StatusCode == http.StatusNotFound {
+		if errors.Is(err, apierr.ErrNotFound) {
 			return nil, noSuchDirectoryError{path.Dir(absPath)}
 		}
 		return nil, err
@@ -358,14 +380,8 @@ func (w *WorkspaceFilesClient) Stat(ctx context.Context, name string) (fs.FileIn
 		&stat,
 	)
 	if err != nil {
-		// If we got an API error we deal with it below.
-		var aerr *apierr.APIError
-		if !errors.As(err, &aerr) {
-			return nil, err
-		}
-
 		// This API returns a 404 if the specified path does not exist.
-		if aerr.StatusCode == http.StatusNotFound {
+		if errors.Is(err, apierr.ErrNotFound) {
 			return nil, fileDoesNotExistError{absPath}
 		}
 	}

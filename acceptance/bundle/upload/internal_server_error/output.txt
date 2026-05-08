@@ -1,7 +1,7 @@
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Error: Failed to acquire deployment lock: Internal Server Error
 Error: Internal Server Error (500)
 
-Endpoint: POST [DATABRICKS_URL]/api/2.0/workspace-files/import-file/Workspace%2FUsers%2F[USERNAME]%2F.bundle%2Ftest-bundle%2Fdefault%2Ffiles%2Ffile_to_upload.txt?overwrite=true
+Endpoint: POST [DATABRICKS_URL]/api/2.0/workspace/import
 HTTP Status: 500 Internal Server Error
 API error_code: 
 API message: Internal Server Error
