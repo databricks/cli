@@ -106,11 +106,11 @@ func resolveCacheWith(ctx context.Context, override StorageMode, f cacheFactorie
 // resolveCacheForLoginWith is the pure form of ResolveCacheForLogin. It takes
 // the factory set as a parameter so tests can inject stubs.
 func resolveCacheForLoginWith(ctx context.Context, override StorageMode, f cacheFactories) (cache.TokenCache, StorageMode, error) {
-	mode, explicit, err := ResolveStorageModeWithSource(ctx, override)
+	mode, source, err := ResolveStorageModeWithSource(ctx, override)
 	if err != nil {
 		return nil, "", err
 	}
-	return applyLoginFallback(ctx, mode, explicit, f)
+	return applyLoginFallback(ctx, mode, source.Explicit(), f)
 }
 
 // applyLoginFallback realizes the login-time fallback rules given an already-
