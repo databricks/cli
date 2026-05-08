@@ -35,6 +35,7 @@ import (
 	"sync"
 	"testing"
 	"time"
+	"unicode/utf8"
 
 	"github.com/creack/pty"
 	"github.com/hinshun/vt10x"
@@ -252,16 +253,57 @@ func (tm *Term) Close() {
 func (tm *Term) pump() {
 	defer close(tm.done)
 	buf := make([]byte, 4096)
+	// vt10x's Write decodes the input as UTF-8 and treats partial rune bytes
+	// at the tail as invalid: it logs each byte as an invalid-UTF-8 sequence
+	// and reports written-1 back, which is not enough to reconstruct the
+	// dropped bytes on the next call. The result is that a multi-byte rune
+	// (e.g. ✔ or █) split across two pty reads loses one or more bytes and
+	// corrupts vt10x's parser state for subsequent escape sequences,
+	// producing a screen that diverges from the actual byte stream.
+	//
+	// To prevent that, hold back any incomplete UTF-8 sequence at the end of
+	// each read and prepend it to the next read. utf8.FullRune detects the
+	// partial-tail case; bytes from any invalid sequence in the middle of
+	// the input are still passed through and vt10x handles them.
+	var pending []byte
 	for {
 		n, err := tm.ptm.Read(buf)
 		if n > 0 {
 			tm.mu.Lock()
 			tm.raw.Write(buf[:n])
-			_, _ = tm.term.Write(buf[:n])
+			input := buf[:n]
+			if len(pending) > 0 {
+				input = append(pending, input...)
+				pending = pending[:0]
+			}
+			consumed := completeUTF8End(input)
+			_, _ = tm.term.Write(input[:consumed])
+			if consumed < len(input) {
+				pending = append(pending, input[consumed:]...)
+			}
 			tm.mu.Unlock()
 		}
 		if err != nil {
 			return
 		}
 	}
+}
+
+// completeUTF8End returns the offset such that p[:offset] contains only
+// complete UTF-8 sequences (valid or invalid), and p[offset:] is the start
+// of an incomplete rune that needs more bytes. If p ends on a complete rune,
+// the offset is len(p).
+func completeUTF8End(p []byte) int {
+	n := len(p)
+	// A UTF-8 rune is at most 4 bytes, so the partial start can only be in
+	// the last 3 positions. Walk backwards looking for a rune-start byte.
+	for i := 1; i <= 3 && i <= n; i++ {
+		if utf8.RuneStart(p[n-i]) {
+			if !utf8.FullRune(p[n-i:]) {
+				return n - i
+			}
+			return n
+		}
+	}
+	return n
 }
