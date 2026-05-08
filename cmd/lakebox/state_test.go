@@ -70,9 +70,36 @@ func TestStateClearDefault(t *testing.T) {
 	assert.Equal(t, "lakebox-b", getDefault(ctx, "profile-b"))
 }
 
-func TestStateClearDefaultMissingProfileNoError(t *testing.T) {
-	ctx, _ := stateCtx(t)
-	assert.NoError(t, clearDefault(ctx, "no-such-profile"))
+func TestStateClearDefaultMissingProfileDoesNotCreateFile(t *testing.T) {
+	ctx, path := stateCtx(t)
+
+	require.NoError(t, clearDefault(ctx, "no-such-profile"))
+
+	_, err := os.Stat(path)
+	assert.ErrorIs(t, err, fs.ErrNotExist, "clearDefault must not create the state file when there's nothing to remove")
+}
+
+func TestStateSetDefaultSameValueDoesNotRewriteFile(t *testing.T) {
+	ctx, path := stateCtx(t)
+
+	require.NoError(t, setDefault(ctx, "profile-a", "lakebox-a"))
+	before, err := os.Stat(path)
+	require.NoError(t, err)
+
+	// Re-set with the same value should be a no-op.
+	require.NoError(t, setDefault(ctx, "profile-a", "lakebox-a"))
+	after, err := os.Stat(path)
+	require.NoError(t, err)
+	assert.Equal(t, before.ModTime(), after.ModTime(), "no-op setDefault must not rewrite the file")
+}
+
+func TestStateSetDefaultMissingNoFileBeforeWrite(t *testing.T) {
+	ctx, path := stateCtx(t)
+
+	// Loading state on a fresh tempdir must not create the file.
+	assert.Equal(t, "", getDefault(ctx, "profile-a"))
+	_, err := os.Stat(path)
+	assert.ErrorIs(t, err, fs.ErrNotExist, "getDefault must not create the state file")
 }
 
 // Pre-existing files from earlier CLI versions carry a `last_profile` field

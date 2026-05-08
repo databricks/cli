@@ -81,6 +81,9 @@ func setDefault(ctx context.Context, profile, lakeboxID string) error {
 	if err != nil {
 		return err
 	}
+	if state.Defaults[profile] == lakeboxID {
+		return nil
+	}
 	state.Defaults[profile] = lakeboxID
 	return saveState(ctx, state)
 }
@@ -89,6 +92,9 @@ func clearDefault(ctx context.Context, profile string) error {
 	state, err := loadState(ctx)
 	if err != nil {
 		return err
+	}
+	if _, ok := state.Defaults[profile]; !ok {
+		return nil
 	}
 	delete(state.Defaults, profile)
 	return saveState(ctx, state)
