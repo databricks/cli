@@ -8,20 +8,6 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 )
 
-// deploymentChoices feeds the AskSelect scenario; the entries vary in
-// length so the rendering is tested across short, medium, and wrap-width
-// options.
-var deploymentChoices = []string{
-	"Deploy bundle with Terraform",
-	"Deploy bundle with the direct engine",
-	"Validate bundle configuration",
-	"Generate deployment artifacts only",
-	"Run pre-deploy checks",
-	"Skip deploy and tail logs",
-	"Cancel",
-	"Show me the full plan output before deciding",
-}
-
 type spinnerMessage struct {
 	text     string
 	duration time.Duration

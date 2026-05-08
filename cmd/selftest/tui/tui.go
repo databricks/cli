@@ -10,7 +10,6 @@ func New() *cobra.Command {
 
 	cmd.AddCommand(
 		newAskCmd(),
-		newAskSelectCmd(),
 		newAskYesOrNoCmd(),
 		newColorsCmd(),
 		newPromptCmd(),

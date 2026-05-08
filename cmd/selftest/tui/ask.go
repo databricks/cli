@@ -44,18 +44,3 @@ func newAskYesOrNoCmd() *cobra.Command {
 	}
 }
 
-func newAskSelectCmd() *cobra.Command {
-	return &cobra.Command{
-		Use:   "ask-select",
-		Short: "cmdio.AskSelect (pick one of a fixed list of strings)",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx := cmd.Context()
-			ans, err := cmdio.AskSelect(ctx, "Choose a deployment strategy?", deploymentChoices)
-			if err != nil {
-				return err
-			}
-			cmdio.LogString(ctx, "Selected: "+ans)
-			return nil
-		},
-	}
-}
