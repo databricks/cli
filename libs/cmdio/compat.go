@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"io"
 	"strings"
-
-	"github.com/manifoldco/promptui"
 )
 
 /*
@@ -93,44 +91,4 @@ func AskYesOrNo(ctx context.Context, question string) (bool, error) {
 	}
 	ans = strings.ToLower(strings.TrimSpace(ans))
 	return ans == "y" || ans == "yes", nil
-}
-
-func splitAtLastNewLine(s string) (string, string) {
-	// Split at the newline character
-	if i := strings.LastIndex(s, "\n"); i != -1 {
-		return s[:i+1], s[i+1:]
-	}
-	// Return the original string if no newline found
-	return "", s
-}
-
-// AskSelect is a compatibility layer for the progress logger interfaces.
-// It prompts the user with a question and returns the answer.
-func AskSelect(ctx context.Context, question string, choices []string) (string, error) {
-	c := fromContext(ctx)
-
-	// Promptui does not support multiline prompts. So we split the question.
-	first, last := splitAtLastNewLine(question)
-	_, err := io.WriteString(c.err, first)
-	if err != nil {
-		return "", err
-	}
-
-	prompt := promptui.Select{
-		Label:    last,
-		Items:    choices,
-		HideHelp: true,
-		Templates: &promptui.SelectTemplates{
-			Label:    "{{.}}: ",
-			Selected: last + ": {{.}}",
-		},
-		Stdin:  c.promptStdin(),
-		Stdout: nopWriteCloser{c.err},
-	}
-
-	_, ans, err := prompt.Run()
-	if err != nil {
-		return "", err
-	}
-	return ans, nil
 }
