@@ -422,4 +422,3 @@ func TestResolveThreeLevelNestedVariableReference(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "${a_${b_z}}", getByPath(t, out, "final").MustString())
 }
-

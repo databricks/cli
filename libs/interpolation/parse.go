@@ -191,8 +191,8 @@ func Parse(s string) ([]Token, error) {
 // validatePath validates the path inside a ${...} reference by splitting on
 // '.' and validating each segment individually.
 func validatePath(path string) error {
-	segments := strings.Split(path, ".")
-	for _, seg := range segments {
+	segments := strings.SplitSeq(path, ".")
+	for seg := range segments {
 		if seg == "" {
 			return errors.New("invalid path")
 		}
