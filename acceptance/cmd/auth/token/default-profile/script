@@ -8,11 +8,11 @@ unset DATABRICKS_CONFIG_PROFILE
 # through to the non-interactive error "no profile specified".
 cat > "./home/.databrickscfg" <<'ENDCFG'
 [myprofile]
-host = https://myworkspace.cloud.databricks.com
+host = https://myworkspace.test
 auth_type = databricks-cli
 
 [other]
-host = https://other.example
+host = https://other.test
 auth_type = databricks-cli
 
 [__settings__]
@@ -25,7 +25,7 @@ trace errcode $CLI auth token
 title "default_profile pointing at a missing profile falls through to picker\n"
 cat > "./home/.databrickscfg" <<'ENDCFG'
 [myprofile]
-host = https://myworkspace.cloud.databricks.com
+host = https://myworkspace.test
 auth_type = databricks-cli
 
 [__settings__]
