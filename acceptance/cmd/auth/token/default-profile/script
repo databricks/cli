@@ -1,0 +1,34 @@
+sethome "./home"
+
+unset DATABRICKS_HOST
+unset DATABRICKS_TOKEN
+unset DATABRICKS_CONFIG_PROFILE
+
+# default_profile points at "myprofile". Without it, `auth token` would fall
+# through to the non-interactive error "no profile specified".
+cat > "./home/.databrickscfg" <<'ENDCFG'
+[myprofile]
+host = https://myworkspace.cloud.databricks.com
+auth_type = databricks-cli
+
+[other]
+host = https://other.example
+auth_type = databricks-cli
+
+[__settings__]
+default_profile = myprofile
+ENDCFG
+
+title "default_profile is honored when no args, --profile, or env var\n"
+trace errcode $CLI auth token
+
+title "default_profile pointing at a missing profile falls through to picker\n"
+cat > "./home/.databrickscfg" <<'ENDCFG'
+[myprofile]
+host = https://myworkspace.cloud.databricks.com
+auth_type = databricks-cli
+
+[__settings__]
+default_profile = does-not-exist
+ENDCFG
+trace errcode $CLI auth token
