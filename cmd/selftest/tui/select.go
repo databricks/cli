@@ -53,6 +53,9 @@ func newSelectOrderedCmd() *cobra.Command {
 		Use:   "select-ordered",
 		Short: "cmdio.SelectOrdered ([]Tuple; preserves insertion order)",
 		PreRunE: func(cmd *cobra.Command, args []string) error {
+			if long || filter {
+				return nil
+			}
 			return validatePositive(n)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
