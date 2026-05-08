@@ -180,6 +180,39 @@ a new profile is created.
 			}
 		}
 
+		// When interactive and nothing was specified, show a picker that lets
+		// the user re-login to an existing profile, create a new one, or enter
+		// a host URL.
+		if profileName == "" && authArguments.Host == "" && len(args) == 0 && cmdio.IsPromptSupported(ctx) {
+			allProfiles, err := profile.DefaultProfiler.LoadProfiles(ctx, profile.MatchAllProfiles)
+			if err != nil && !errors.Is(err, profile.ErrNoConfiguration) {
+				return err
+			}
+			if len(allProfiles) > 0 {
+				currentDefault, _ := databrickscfg.GetDefaultProfile(ctx, env.Get(ctx, "DATABRICKS_CONFIG_FILE"))
+				result, selected, err := pickAuthProfile(ctx, allProfiles, profilePickerOptions{
+					Label:         "Select a profile",
+					Default:       currentDefault,
+					IncludeExtras: true,
+				})
+				if err != nil {
+					return err
+				}
+				switch result {
+				case profilePickerProfile:
+					profileName = selected
+				case profilePickerEnterHost:
+					host, err := promptForHost(ctx)
+					if err != nil {
+						return err
+					}
+					authArguments.Host = host
+				case profilePickerCreateNew:
+					// Fall through to the profile name prompt below.
+				}
+			}
+		}
+
 		// If the user has not specified a profile name, prompt for one.
 		if profileName == "" {
 			var err error

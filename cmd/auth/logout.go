@@ -119,16 +119,17 @@ to specify it explicitly.
 			if err != nil {
 				return err
 			}
-			selected, err := profile.SelectProfile(ctx, profile.SelectConfig{
-				Label:             "Select a profile to log out of",
-				Profiles:          allProfiles,
-				StartInSearchMode: len(allProfiles) > 5,
-				ActiveTemplate:    `▸ {{.PaddedName | bold}}{{if .AccountID}} (account: {{.AccountID}}){{else}} ({{.Host}}){{end}}`,
-				InactiveTemplate:  `  {{.PaddedName}}{{if .AccountID}} (account: {{.AccountID | faint}}){{else}} ({{.Host | faint}}){{end}}`,
-				SelectedTemplate:  `{{ "Selected profile" | faint }}: {{ .Name | bold }}`,
+			currentDefault, _ := databrickscfg.GetDefaultProfile(ctx, env.Get(ctx, "DATABRICKS_CONFIG_FILE"))
+			result, selected, err := pickAuthProfile(ctx, allProfiles, profilePickerOptions{
+				Label:   "Select a profile to log out of",
+				Default: currentDefault,
 			})
 			if err != nil {
 				return err
+			}
+			// Without IncludeExtras, the picker only returns profile selections.
+			if result != profilePickerProfile {
+				return fmt.Errorf("unexpected picker result: %v", result)
 			}
 			profileName = selected
 		}

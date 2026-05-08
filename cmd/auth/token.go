@@ -30,16 +30,6 @@ func helpfulError(ctx context.Context, profile string, persistentAuth u2m.OAuthA
 	return fmt.Sprintf("Try logging in again with `%s` before retrying. If this fails, please report this issue to the Databricks CLI maintainers at https://github.com/databricks/cli/issues/new", loginMsg)
 }
 
-// profileSelectionResult represents the user's choice from the interactive
-// profile picker.
-type profileSelectionResult int
-
-const (
-	profileSelected   profileSelectionResult = iota // User picked a profile
-	enterHostSelected                               // User chose "Enter a host URL manually"
-	createNewSelected                               // User chose "Create a new profile"
-)
-
 func newTokenCommand(authArguments *auth.AuthArguments) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "token [PROFILE]",
@@ -352,15 +342,20 @@ func resolveNoArgsToken(ctx context.Context, profiler profile.Profiler, authArgs
 	}
 
 	// Interactive: show profile picker.
-	result, selectedName, err := promptForProfileSelection(ctx, allProfiles)
+	currentDefault, _ := databrickscfg.GetDefaultProfile(ctx, env.Get(ctx, "DATABRICKS_CONFIG_FILE"))
+	result, selectedName, err := pickAuthProfile(ctx, allProfiles, profilePickerOptions{
+		Label:         "Select a profile",
+		Default:       currentDefault,
+		IncludeExtras: true,
+	})
 	if err != nil {
 		return "", nil, err
 	}
 	switch result {
-	case enterHostSelected:
+	case profilePickerEnterHost:
 		// Fall through — setHostAndAccountId will prompt for the host.
 		return "", nil, nil
-	case createNewSelected:
+	case profilePickerCreateNew:
 		return runInlineLogin(ctx, profiler, tokenCache, mode)
 	default:
 		p, err := loadProfileByName(ctx, selectedName, profiler)
@@ -368,55 +363,6 @@ func resolveNoArgsToken(ctx context.Context, profiler profile.Profiler, authArgs
 			return "", nil, err
 		}
 		return selectedName, p, nil
-	}
-}
-
-// profileSelectItem is used by promptForProfileSelection to render both
-// regular profiles and special action options in the same select list.
-type profileSelectItem struct {
-	Name string
-	Host string
-}
-
-// promptForProfileSelection shows a select list with all configured profiles
-// plus "Enter a host URL" and "Create a new profile" options.
-// Returns the selection type and, when a profile is selected, its name.
-func promptForProfileSelection(ctx context.Context, profiles profile.Profiles) (profileSelectionResult, string, error) {
-	items := make([]profileSelectItem, 0, len(profiles)+2)
-	for _, p := range profiles {
-		items = append(items, profileSelectItem{Name: p.Name, Host: p.Host})
-	}
-	createProfileIdx := len(items)
-	items = append(items, profileSelectItem{Name: "Create a new profile"})
-	enterHostIdx := len(items)
-	items = append(items, profileSelectItem{Name: "Enter a host URL manually"})
-
-	i, err := cmdio.RunSelect(ctx, cmdio.SelectOptions{
-		Label:             "Select a profile",
-		Items:             items,
-		StartInSearchMode: len(profiles) > 5,
-		Searcher: func(input string, index int) bool {
-			input = strings.ToLower(input)
-			name := strings.ToLower(items[index].Name)
-			host := strings.ToLower(items[index].Host)
-			return strings.Contains(name, input) || strings.Contains(host, input)
-		},
-		LabelTemplate: "{{ . | faint }}",
-		Active:        `{{.Name | bold}}{{if .Host}} ({{.Host|faint}}){{end}}`,
-		Inactive:      `{{.Name}}{{if .Host}} ({{.Host}}){{end}}`,
-		Selected:      `{{ "Using profile" | faint }}: {{ .Name | bold }}`,
-	})
-	if err != nil {
-		return 0, "", err
-	}
-
-	switch i {
-	case enterHostIdx:
-		return enterHostSelected, "", nil
-	case createProfileIdx:
-		return createNewSelected, "", nil
-	default:
-		return profileSelected, profiles[i].Name, nil
 	}
 }
 
