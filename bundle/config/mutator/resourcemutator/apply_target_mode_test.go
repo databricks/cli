@@ -418,8 +418,7 @@ func TestAllResourcesMocked(t *testing.T) {
 // Name field is renamed by dev-mode / presets.name_prefix, except for an
 // explicit carve-out list. The carve-out applies to resources whose Name is
 // the API primary key / object id (not a display name) — prefixing those
-// would change the resource's identity rather than its label. See
-// .agent/rules/name-prefix.md for the principle.
+// would change the resource's identity rather than its label.
 func TestAppropriateResourcesAreRenamed(t *testing.T) {
 	b := mockBundle(config.Development)
 
