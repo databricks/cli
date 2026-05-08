@@ -265,6 +265,13 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 		}
 	}
 
+	isReconnect := opts.ServerMetadata != ""
+	var serverStartTimeMs int64
+	isSuccess := false
+	defer func() {
+		logSshTunnelEvent(ctx, opts, isSuccess, isReconnect, serverStartTimeMs)
+	}()
+
 	// Only check cluster state for dedicated clusters
 	if !opts.IsServerlessMode() {
 		cmdio.LogString(ctx, "Checking cluster state...")
@@ -302,9 +309,6 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 
 	version := build.GetInfo().Version
 
-	isReconnect := opts.ServerMetadata != ""
-	var serverStartTimeMs int64
-
 	if opts.ServerMetadata == "" {
 		cmdio.LogString(ctx, "Uploading binaries...")
 		sp := cmdio.NewSpinner(ctx, cmdio.WithElapsedTime())
@@ -317,7 +321,6 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 		serverStartTime := time.Now()
 		userName, serverPort, clusterID, err = ensureSSHServerIsRunning(ctx, client, version, secretScopeName, opts)
 		if err != nil {
-			logSshTunnelEvent(ctx, opts, false, isReconnect, 0)
 			if opts.IsServerlessMode() && opts.Accelerator == "" && errors.Is(err, errServerMetadata) {
 				return fmt.Errorf("failed to ensure that ssh server is running: %w\n\n"+
 					cmdio.Yellow(ctx, "This may be because serverless compute without an accelerator is in private preview.\nContact your Databricks account team to enroll."), err)
@@ -361,7 +364,7 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 		cmdio.LogString(ctx, "Connected!")
 	}
 
-	logSshTunnelEvent(ctx, opts, true, isReconnect, serverStartTimeMs)
+	isSuccess = true
 
 	if opts.ProxyMode {
 		return runSSHProxy(ctx, client, serverPort, clusterID, opts)
