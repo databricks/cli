@@ -1,8 +1,8 @@
 trace $CLI bundle deploy > /dev/null
 rm -f out.requests.txt
 
-title "Modify PATH so that real open is not run"
-export PATH=.:$PATH
+title "Use a fake browser that just prints the URL it would have opened"
+export BROWSER="echo_browser.py"
 
 # touch out.requests.txt before each print_requests.py call: the commands without
 # --force-pull make zero HTTP requests, so the file is never created and
@@ -19,11 +19,11 @@ touch out.requests.txt
 print_requests.py --get //workspace-files/
 
 title "bundle open without --force-pull: no remote state read\n"
-musterr trace $CLI bundle open foo > /dev/null
+trace $CLI bundle open foo > /dev/null
 touch out.requests.txt
 print_requests.py --get //workspace-files/
 
 title "bundle open --force-pull: remote state read\n"
-musterr trace $CLI bundle open foo --force-pull > /dev/null
+trace $CLI bundle open foo --force-pull > /dev/null
 touch out.requests.txt
 print_requests.py --get //workspace-files/
