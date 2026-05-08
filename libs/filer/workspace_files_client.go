@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"path"
 	"slices"
-	"strings"
 	"time"
 
 	"github.com/databricks/databricks-sdk-go"
@@ -209,23 +208,14 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 		return w.Write(ctx, name, bytes.NewReader(body), sliceWithout(mode, CreateParentDirectories)...)
 	}
 
-	// File already exists at the path. The /workspace/import endpoint reports this
-	// with two different error_codes depending on whether the conflict was detected
-	// sequentially (400 RESOURCE_ALREADY_EXISTS) or under concurrent contention
-	// (409 ALREADY_EXISTS, observed in TestLock). Both are already-exists from the
-	// caller's perspective.
-	//
-	// Existing-object-with-mismatched-node-type (e.g. uploading a regular .py when a
-	// NOTEBOOK is at the path) surfaces as 400 INVALID_PARAMETER_VALUE with a
-	// "Requested node type" message — also already-exists from the caller's perspective.
+	// Path already taken. /workspace/import returns 400 RESOURCE_ALREADY_EXISTS
+	// for sequential conflicts and 409 ALREADY_EXISTS under concurrent contention
+	// (observed in TestLock). Same-path collisions where the existing object is a
+	// different node type (e.g. NOTEBOOK at /a/foo, upload regular content to
+	// /a/foo) also surface here — verified against a real workspace, the server
+	// returns one of the two already-exists codes regardless of the type mismatch.
 	if errors.Is(err, apierr.ErrResourceAlreadyExists) || errors.Is(err, apierr.ErrAlreadyExists) {
 		return fileAlreadyExistsError{absPath}
-	}
-	if errors.Is(err, apierr.ErrInvalidParameterValue) {
-		var aerr *apierr.APIError
-		if errors.As(err, &aerr) && strings.Contains(aerr.Message, "Requested node type") {
-			return fileAlreadyExistsError{absPath}
-		}
 	}
 
 	// Caller has read access but no write access.

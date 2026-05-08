@@ -187,16 +187,20 @@ func TestWorkspaceFilesClientWriteErrorMapping(t *testing.T) {
 			expectErrTarget: fileAlreadyExistsError{},
 		},
 		{
-			name: "400 INVALID_PARAMETER_VALUE node type mismatch maps to fileAlreadyExistsError",
+			// Verified against a real workspace: when an existing NOTEBOOK at /a/foo
+			// (uploaded earlier as /a/foo.py with the source header) blocks a
+			// regular-content upload to /a/foo, the server returns 409 ALREADY_EXISTS
+			// rather than a node-type-specific code.
+			name: "409 ALREADY_EXISTS for cross-type collision maps to fileAlreadyExistsError",
 			apiErr: &apierr.APIError{
-				StatusCode: http.StatusBadRequest,
-				ErrorCode:  "INVALID_PARAMETER_VALUE",
-				Message:    "Requested node type [FILE] is different from the existing node type [NOTEBOOK]",
+				StatusCode: http.StatusConflict,
+				ErrorCode:  "ALREADY_EXISTS",
+				Message:    "Node with name /dir/foo.py already exists. Please pass overwrite=true to update it.",
 			},
 			expectErrTarget: fileAlreadyExistsError{},
 		},
 		{
-			name: "400 INVALID_PARAMETER_VALUE other message passes through",
+			name: "400 INVALID_PARAMETER_VALUE passes through",
 			apiErr: &apierr.APIError{
 				StatusCode: http.StatusBadRequest,
 				ErrorCode:  "INVALID_PARAMETER_VALUE",
