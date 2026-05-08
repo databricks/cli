@@ -1,0 +1,9 @@
+File successfully saved to src/my_folder/my_notebook.py
+File successfully saved to src/other_folder/other_notebook.py
+Job configuration successfully saved to out.job.yml
+=== old flattened files should be gone ===
+src/my_notebook.py removed
+src/other_notebook.py removed
+=== new nested files ===
+src/my_folder/my_notebook.py
+src/other_folder/other_notebook.py
