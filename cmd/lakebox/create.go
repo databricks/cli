@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/spf13/cobra"
 )
@@ -20,8 +21,8 @@ Creates a new personal development environment backed by a microVM.
 Blocks until the lakebox is running and prints the lakebox ID.
 
 Example:
-  lakebox create`,
-		PreRunE: mustWorkspaceClient,
+  databricks lakebox create`,
+		PreRunE: root.MustWorkspaceClient,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			w := cmdctx.WorkspaceClient(ctx)
@@ -52,7 +53,7 @@ Example:
 				profile = w.Config.Host
 			}
 
-			currentDefault := getDefault(profile)
+			currentDefault := getDefault(ctx, profile)
 			shouldSetDefault := currentDefault == ""
 			if !shouldSetDefault && currentDefault != "" {
 				if _, err := api.get(ctx, currentDefault); err != nil {
@@ -60,7 +61,7 @@ Example:
 				}
 			}
 			if shouldSetDefault {
-				if err := setDefault(profile, result.SandboxID); err != nil {
+				if err := setDefault(ctx, profile, result.SandboxID); err != nil {
 					warn(stderr, fmt.Sprintf("Could not save default: %v", err))
 				} else {
 					field(stderr, "default", result.SandboxID)

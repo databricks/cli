@@ -3,6 +3,7 @@ package lakebox
 import (
 	"fmt"
 
+	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/spf13/cobra"
 )
@@ -16,9 +17,9 @@ func newDeleteCommand() *cobra.Command {
 Permanently terminates and removes the specified lakebox.
 
 Example:
-  lakebox delete happy-panda-1234`,
+  databricks lakebox delete happy-panda-1234`,
 		Args:    cobra.ExactArgs(1),
-		PreRunE: mustWorkspaceClient,
+		PreRunE: root.MustWorkspaceClient,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			w := cmdctx.WorkspaceClient(ctx)
@@ -26,10 +27,10 @@ Example:
 			stderr := cmd.ErrOrStderr()
 
 			lakeboxID := args[0]
-			s := spin(stderr, fmt.Sprintf("Removing %s…", lakeboxID))
+			s := spin(stderr, "Removing "+lakeboxID+"…")
 
 			if err := api.delete(ctx, lakeboxID); err != nil {
-				s.fail(fmt.Sprintf("Failed to delete %s", lakeboxID))
+				s.fail("Failed to delete " + lakeboxID)
 				return fmt.Errorf("failed to delete lakebox %s: %w", lakeboxID, err)
 			}
 
@@ -37,11 +38,11 @@ Example:
 			if profile == "" {
 				profile = w.Config.Host
 			}
-			if getDefault(profile) == lakeboxID {
-				_ = clearDefault(profile)
-				s.ok(fmt.Sprintf("Removed %s %s", bold(lakeboxID), dim("(default cleared)")))
+			if getDefault(ctx, profile) == lakeboxID {
+				_ = clearDefault(ctx, profile)
+				s.ok("Removed " + bold(lakeboxID) + " " + dim("(default cleared)"))
 			} else {
-				s.ok(fmt.Sprintf("Removed %s", bold(lakeboxID)))
+				s.ok("Removed " + bold(lakeboxID))
 			}
 			return nil
 		},

@@ -1,9 +1,11 @@
 package lakebox
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
+	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/spf13/cobra"
 )
@@ -39,17 +41,17 @@ Two knobs are independent — pass either or both:
                               this is on. Setting --idle-timeout to a
                               non-zero value in a later call clears
                               --no-autostop automatically. Sandbox still
-                              stops on explicit 'lakebox delete'.
+                              stops on explicit 'databricks lakebox delete'.
 
 Examples:
-  lakebox config happy-panda-1234 --idle-timeout 15m
-  lakebox config happy-panda-1234 --idle-timeout 1h30m
-  lakebox config happy-panda-1234 --idle-timeout 0           # clear, use default
-  lakebox config happy-panda-1234 --no-autostop                  # never auto-stop
-  lakebox config happy-panda-1234 --no-autostop=false            # back to timeout path
-  lakebox config happy-panda-1234 --idle-timeout 30m --no-autostop=false`,
+  databricks lakebox config happy-panda-1234 --idle-timeout 15m
+  databricks lakebox config happy-panda-1234 --idle-timeout 1h30m
+  databricks lakebox config happy-panda-1234 --idle-timeout 0           # clear, use default
+  databricks lakebox config happy-panda-1234 --no-autostop                  # never auto-stop
+  databricks lakebox config happy-panda-1234 --no-autostop=false            # back to timeout path
+  databricks lakebox config happy-panda-1234 --idle-timeout 30m --no-autostop=false`,
 		Args:    cobra.ExactArgs(1),
-		PreRunE: mustWorkspaceClient,
+		PreRunE: root.MustWorkspaceClient,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			w := cmdctx.WorkspaceClient(ctx)
@@ -76,7 +78,7 @@ Examples:
 			}
 
 			if idleSecs == nil && noAutostop == nil {
-				return fmt.Errorf("nothing to update — pass --idle-timeout and/or --no-autostop")
+				return errors.New("nothing to update — pass --idle-timeout and/or --no-autostop")
 			}
 
 			updated, err := api.update(ctx, id, idleSecs, noAutostop)

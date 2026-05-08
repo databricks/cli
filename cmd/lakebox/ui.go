@@ -5,7 +5,7 @@ import (
 	"io"
 	"os"
 	"strings"
-	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -30,11 +30,11 @@ func isTTY(w io.Writer) bool {
 
 // spinner shows a braille spinner like Claude Code.
 type spinner struct {
-	w       io.Writer
-	msg     string
-	done    chan struct{}
-	once    sync.Once
-	started time.Time
+	w        io.Writer
+	msg      string
+	done     chan struct{}
+	finished atomic.Bool
+	started  time.Time
 }
 
 func spin(w io.Writer, msg string) *spinner {
@@ -68,25 +68,27 @@ func (s *spinner) run() {
 }
 
 func (s *spinner) ok(msg string) {
-	s.once.Do(func() {
-		close(s.done)
-		if isTTY(s.w) {
-			fmt.Fprintf(s.w, "\r\033[K  %s✓%s %s\n", cyan, rs, msg)
-		} else {
-			fmt.Fprintf(s.w, "✓ %s\n", msg)
-		}
-	})
+	if !s.finished.CompareAndSwap(false, true) {
+		return
+	}
+	close(s.done)
+	if isTTY(s.w) {
+		fmt.Fprintf(s.w, "\r\033[K  %s✓%s %s\n", cyan, rs, msg)
+	} else {
+		fmt.Fprintf(s.w, "✓ %s\n", msg)
+	}
 }
 
 func (s *spinner) fail(msg string) {
-	s.once.Do(func() {
-		close(s.done)
-		if isTTY(s.w) {
-			fmt.Fprintf(s.w, "\r\033[K  %s✗%s %s\n", cyan, rs, msg)
-		} else {
-			fmt.Fprintf(s.w, "✗ %s\n", msg)
-		}
-	})
+	if !s.finished.CompareAndSwap(false, true) {
+		return
+	}
+	close(s.done)
+	if isTTY(s.w) {
+		fmt.Fprintf(s.w, "\r\033[K  %s✗%s %s\n", cyan, rs, msg)
+	} else {
+		fmt.Fprintf(s.w, "✗ %s\n", msg)
+	}
 }
 
 // --- Consistent output primitives ---

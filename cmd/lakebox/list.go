@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/spf13/cobra"
 )
@@ -21,9 +22,9 @@ Shows all lakeboxes associated with your account, including their
 current status and ID.
 
 Example:
-  lakebox list
-  lakebox list --json`,
-		PreRunE: mustWorkspaceClient,
+  databricks lakebox list
+  databricks lakebox list --json`,
+		PreRunE: root.MustWorkspaceClient,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			w := cmdctx.WorkspaceClient(ctx)
@@ -49,7 +50,7 @@ Example:
 			if profile == "" {
 				profile = w.Config.Host
 			}
-			defaultID := getDefault(profile)
+			defaultID := getDefault(ctx, profile)
 
 			out := cmd.OutOrStdout()
 
@@ -80,21 +81,12 @@ Example:
 					def = accent("*")
 				}
 				// Pad ID manually to avoid ANSI codes breaking alignment.
-				idPad := col - len(id)
-				if idPad < 0 {
-					idPad = 0
-				}
+				idPad := max(col-len(id), 0)
 				st := status(e.Status)
 				// Pad status to 10 visible chars.
-				stPad := 10 - len(e.Status)
-				if stPad < 0 {
-					stPad = 0
-				}
+				stPad := max(10-len(e.Status), 0)
 				as := e.autoStopLabel()
-				asPad := autostopCol - len(as)
-				if asPad < 0 {
-					asPad = 0
-				}
+				asPad := max(autostopCol-len(as), 0)
 				idStr := bold(id)
 				if strings.EqualFold(e.Status, "running") {
 					idStr = cyan + bo + id + rs

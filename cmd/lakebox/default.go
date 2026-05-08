@@ -3,6 +3,7 @@ package lakebox
 import (
 	"fmt"
 
+	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/spf13/cobra"
 )
@@ -18,16 +19,17 @@ The default is stored locally in ~/.databricks/lakebox.json per profile.
 Example:
   databricks lakebox set-default happy-panda-1234`,
 		Args:    cobra.ExactArgs(1),
-		PreRunE: mustWorkspaceClient,
+		PreRunE: root.MustWorkspaceClient,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			w := cmdctx.WorkspaceClient(cmd.Context())
+			ctx := cmd.Context()
+			w := cmdctx.WorkspaceClient(ctx)
 			profile := w.Config.Profile
 			if profile == "" {
 				profile = w.Config.Host
 			}
 
 			lakeboxID := args[0]
-			if err := setDefault(profile, lakeboxID); err != nil {
+			if err := setDefault(ctx, profile, lakeboxID); err != nil {
 				return fmt.Errorf("failed to set default: %w", err)
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "Default lakebox set to: %s\n", lakeboxID)

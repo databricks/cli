@@ -1,12 +1,15 @@
 package lakebox
 
 import (
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"os/exec"
 	"runtime"
 	"strings"
 
+	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/spf13/cobra"
 )
@@ -41,13 +44,13 @@ after -- are passed directly to the ssh process. This lets you run
 remote commands, set up port forwarding, or pass any other ssh flags.
 
 Examples:
-  lakebox ssh                                  # interactive shell on default lakebox
-  lakebox ssh happy-panda-1234                 # interactive shell on specific lakebox
-  lakebox ssh -- ls -la /home                  # run command on default lakebox
-  lakebox ssh happy-panda-1234 -- cat /etc/os-release  # run command on specific lakebox
-  lakebox ssh -- -L 8080:localhost:8080        # port forwarding on default lakebox`,
+  databricks lakebox ssh                                  # interactive shell on default lakebox
+  databricks lakebox ssh happy-panda-1234                 # interactive shell on specific lakebox
+  databricks lakebox ssh -- ls -la /home                  # run command on default lakebox
+  databricks lakebox ssh happy-panda-1234 -- cat /etc/os-release  # run command on specific lakebox
+  databricks lakebox ssh -- -L 8080:localhost:8080        # port forwarding on default lakebox`,
 		Args:    cobra.ArbitraryArgs,
-		PreRunE: mustWorkspaceClient,
+		PreRunE: root.MustWorkspaceClient,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			w := cmdctx.WorkspaceClient(ctx)
@@ -58,12 +61,12 @@ Examples:
 			}
 
 			// Use the dedicated lakebox SSH key.
-			keyPath, err := lakeboxKeyPath()
+			keyPath, err := lakeboxKeyPath(ctx)
 			if err != nil {
 				return fmt.Errorf("failed to determine lakebox key path: %w", err)
 			}
-			if _, err := os.Stat(keyPath); os.IsNotExist(err) {
-				return fmt.Errorf("lakebox SSH key not found at %s — run 'lakebox register' first", keyPath)
+			if _, err := os.Stat(keyPath); errors.Is(err, fs.ErrNotExist) {
+				return fmt.Errorf("lakebox SSH key not found at %s — run 'databricks lakebox register' first", keyPath)
 			}
 			stderr := cmd.ErrOrStderr()
 
@@ -72,21 +75,21 @@ Examples:
 			var lakeboxID string
 			var extraArgs []string
 
-			dashAt := cmd.ArgsLenAtDash()
-			if dashAt == -1 {
+			switch dashAt := cmd.ArgsLenAtDash(); dashAt {
+			case -1:
 				if len(args) > 0 {
 					lakeboxID = args[0]
 				}
-			} else if dashAt == 0 {
+			case 0:
 				extraArgs = args[dashAt:]
-			} else {
+			default:
 				lakeboxID = args[0]
 				extraArgs = args[dashAt:]
 			}
 
 			// Determine lakebox ID if not explicit.
 			if lakeboxID == "" {
-				if def := getDefault(profile); def != "" {
+				if def := getDefault(ctx, profile); def != "" {
 					lakeboxID = def
 				} else {
 					api := newLakeboxAPI(w)
@@ -102,9 +105,9 @@ Examples:
 						return fmt.Errorf("failed to create lakebox: %w", err)
 					}
 					lakeboxID = result.SandboxID
-					s.ok(fmt.Sprintf("Lakebox %s ready", bold(lakeboxID)))
+					s.ok("Lakebox " + bold(lakeboxID) + " ready")
 
-					if err := setDefault(profile, lakeboxID); err != nil {
+					if err := setDefault(ctx, profile, lakeboxID); err != nil {
 						warn(stderr, fmt.Sprintf("Could not save default: %v", err))
 					}
 				}
@@ -115,8 +118,8 @@ Examples:
 				host = resolveGatewayHost(w.Config.Host)
 			}
 
-			s := spin(stderr, fmt.Sprintf("Connecting to %s…", bold(lakeboxID)))
-			s.ok(fmt.Sprintf("Connected to %s", bold(lakeboxID)))
+			s := spin(stderr, "Connecting to "+bold(lakeboxID)+"…")
+			s.ok("Connected to " + bold(lakeboxID))
 			return execSSHDirect(lakeboxID, host, gatewayPort, keyPath, extraArgs)
 		},
 	}
