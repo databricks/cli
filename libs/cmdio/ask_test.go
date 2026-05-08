@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestCompat_readLine(t *testing.T) {
+func TestReadLine(t *testing.T) {
 	tests := []struct {
 		name       string
 		reader     io.Reader
@@ -147,7 +147,7 @@ func (e *errorAfterNReader) Read(p []byte) (n int, err error) {
 	return 0, e.err
 }
 
-func TestCompat_AskYesOrNo(t *testing.T) {
+func TestAskYesOrNo(t *testing.T) {
 	tests := []struct {
 		name  string
 		input string
