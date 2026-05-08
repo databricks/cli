@@ -1,7 +1,6 @@
 package dynvar
 
 import (
-	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/interpolation"
 )
@@ -29,52 +28,22 @@ type Ref struct {
 //   - "${a.b[0].c}"
 //   - "${a} ${b} ${c}"
 func NewRef(v dyn.Value) (Ref, bool) {
-	ref, ok, _ := newRef(v)
-	return ref, ok
-}
-
-// NewRefWithDiagnostics returns a new Ref along with any diagnostics.
-// Parse errors for malformed references (e.g. "${foo.bar-}") are returned
-// as warnings. The second return value is false when no valid references
-// are found (either no references at all, or a parse error occurred).
-func NewRefWithDiagnostics(v dyn.Value) (Ref, bool, diag.Diagnostics) {
-	return newRef(v)
-}
-
-func newRef(v dyn.Value) (Ref, bool, diag.Diagnostics) {
 	s, ok := v.AsString()
 	if !ok {
-		return Ref{}, false, nil
+		return Ref{}, false
 	}
 
 	tokens, err := interpolation.Parse(s)
 	if err != nil {
-		// Return parse error as a warning diagnostic.
-		return Ref{}, false, diag.Diagnostics{{
-			Severity:  diag.Warning,
-			Summary:   err.Error(),
-			Locations: v.Locations(),
-		}}
+		return Ref{}, false
 	}
 
-	// Check if any token is a variable reference.
-	hasRef := false
 	for _, t := range tokens {
 		if t.Kind == interpolation.TokenRef {
-			hasRef = true
-			break
+			return Ref{Value: v, Str: s, Tokens: tokens}, true
 		}
 	}
-
-	if !hasRef {
-		return Ref{}, false, nil
-	}
-
-	return Ref{
-		Value:  v,
-		Str:    s,
-		Tokens: tokens,
-	}, true, nil
+	return Ref{}, false
 }
 
 // IsPure returns true if the variable reference contains a single

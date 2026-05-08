@@ -25,45 +25,37 @@ func (*warnMalformedReferences) Name() string {
 
 func (*warnMalformedReferences) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	var diags diag.Diagnostics
-	err := b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
-		_, err := dyn.Walk(root, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
-			// Only check values with source locations to avoid false positives
-			// from synthesized/computed values.
-			if len(v.Locations()) == 0 {
-				return v, nil
-			}
-
-			s, ok := v.AsString()
-			if !ok {
-				return v, nil
-			}
-
-			_, parseErr := interpolation.Parse(s)
-			if parseErr == nil {
-				return v, nil
-			}
-
-			var pe *interpolation.ParseError
-			if !errors.As(parseErr, &pe) {
-				return v, nil
-			}
-
-			// Clone locations and adjust column with the position offset
-			// so the diagnostic points to the problematic reference.
-			locs := slices.Clone(v.Locations())
-			if len(locs) > 0 {
-				locs[0].Column += pe.Pos
-			}
-
-			diags = append(diags, diag.Diagnostic{
-				Severity:  diag.Warning,
-				Summary:   pe.Msg,
-				Locations: locs,
-				Paths:     []dyn.Path{p},
-			})
+	_, err := dyn.Walk(b.Config.Value(), func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+		// Only check values with source locations to avoid false positives
+		// from synthesized/computed values.
+		if len(v.Locations()) == 0 {
 			return v, nil
+		}
+
+		s, ok := v.AsString()
+		if !ok {
+			return v, nil
+		}
+
+		var pe *interpolation.ParseError
+		if _, parseErr := interpolation.Parse(s); !errors.As(parseErr, &pe) {
+			return v, nil
+		}
+
+		// Clone locations and adjust column with the position offset
+		// so the diagnostic points to the problematic reference.
+		locs := slices.Clone(v.Locations())
+		if len(locs) > 0 {
+			locs[0].Column += pe.Pos
+		}
+
+		diags = append(diags, diag.Diagnostic{
+			Severity:  diag.Warning,
+			Summary:   pe.Msg,
+			Locations: locs,
+			Paths:     []dyn.Path{p},
 		})
-		return root, err
+		return v, nil
 	})
 	if err != nil {
 		diags = diags.Extend(diag.FromErr(err))
