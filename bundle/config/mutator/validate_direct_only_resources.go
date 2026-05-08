@@ -6,16 +6,10 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/engine"
+	"github.com/databricks/cli/bundle/deploy/terraform"
+	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/libs/diag"
 )
-
-// directOnlyResourceTypes lists resources only supported in direct deployment mode.
-// Keys are PluralName values from resources.ResourceDescription.
-var directOnlyResourceTypes = map[string]bool{
-	"catalogs":                true,
-	"external_locations":      true,
-	"vector_search_endpoints": true,
-}
 
 type validateDirectOnlyResources struct {
 	engine engine.EngineType
@@ -31,6 +25,15 @@ func (m *validateDirectOnlyResources) Name() string {
 	return "ValidateDirectOnlyResources"
 }
 
+// isDirectOnly reports whether a resource type (by PluralName) is supported only
+// by the direct engine — present in dresources.SupportedResources but absent
+// from terraform.GroupToTerraformName.
+func isDirectOnly(pluralName string) bool {
+	_, hasDirect := dresources.SupportedResources[pluralName]
+	_, hasTerraform := terraform.GroupToTerraformName[pluralName]
+	return hasDirect && !hasTerraform
+}
+
 func (m *validateDirectOnlyResources) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	if m.engine.IsDirect() {
 		return nil
@@ -38,10 +41,10 @@ func (m *validateDirectOnlyResources) Apply(ctx context.Context, b *bundle.Bundl
 
 	var diags diag.Diagnostics
 	for _, group := range b.Config.Resources.AllResources() {
-		if !directOnlyResourceTypes[group.Description.PluralName] {
+		if len(group.Resources) == 0 {
 			continue
 		}
-		if len(group.Resources) == 0 {
+		if !isDirectOnly(group.Description.PluralName) {
 			continue
 		}
 		diags = diags.Append(diag.Diagnostic{
