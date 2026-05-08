@@ -16,7 +16,6 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deploy"
 	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/filer"
@@ -36,6 +35,7 @@ type metadataServiceLock struct {
 	versionID string
 
 	stopHeartbeat func()
+	reporter      *asyncReporter
 }
 
 func newMetadataServiceLock(b *bundle.Bundle, versionType tmpdms.VersionType) *metadataServiceLock {
@@ -61,11 +61,15 @@ func (l *metadataServiceLock) Acquire(ctx context.Context) error {
 	l.b.DeploymentID = deploymentID
 	l.versionID = versionID
 	l.stopHeartbeat = startHeartbeat(ctx, svc, deploymentID, versionID)
-	l.b.DeploymentBundle.OperationReporter = makeOperationReporter(svc, deploymentID, versionID)
+	l.reporter = newAsyncReporter(ctx, makeSyncReporter(svc, deploymentID, versionID))
+	l.b.DeploymentBundle.OperationReporter = l.reporter.Reporter()
 	return nil
 }
 
 func (l *metadataServiceLock) Release(ctx context.Context, status DeploymentStatus) error {
+	if l.reporter != nil {
+		l.reporter.Close()
+	}
 	if l.stopHeartbeat != nil {
 		l.stopHeartbeat()
 	}
@@ -215,23 +219,18 @@ func writeDeploymentID(ctx context.Context, b *bundle.Bundle, deploymentID strin
 	return nil
 }
 
-// makeOperationReporter returns an OperationReporter that reports each resource
-// operation (success or failure) to the deployment metadata service.
-func makeOperationReporter(svc *tmpdms.DeploymentMetadataAPI, deploymentID, versionID string) direct.OperationReporter {
-	return func(
-		ctx context.Context,
-		resourceKey string,
-		resourceID string,
-		action deployplan.ActionType,
-		operationErr error,
-		state json.RawMessage,
-	) error {
+// makeSyncReporter returns the synchronous "send one event to DMS" function
+// consumed by asyncReporter's sender goroutine. Skip-actions short-circuit to
+// nil; mapping errors and API errors are returned to the caller (which logs
+// and continues — see asyncReporter).
+func makeSyncReporter(svc *tmpdms.DeploymentMetadataAPI, deploymentID, versionID string) func(context.Context, operationEvent) error {
+	return func(ctx context.Context, ev operationEvent) error {
 		// The internal state DB uses "resources.jobs.foo" keys but the API
 		// expects "jobs.foo" — strip the "resources." prefix.
-		apiKey := strings.TrimPrefix(resourceKey, "resources.")
-		actionType, err := planActionToOperationAction(action)
+		apiKey := strings.TrimPrefix(ev.resourceKey, "resources.")
+		actionType, err := planActionToOperationAction(ev.action)
 		if err != nil {
-			return fmt.Errorf("mapping action for resource %s: %w", resourceKey, err)
+			return fmt.Errorf("mapping action for resource %s: %w", ev.resourceKey, err)
 		}
 		if actionType == "" {
 			return nil
@@ -239,20 +238,20 @@ func makeOperationReporter(svc *tmpdms.DeploymentMetadataAPI, deploymentID, vers
 
 		status := tmpdms.OperationStatusSucceeded
 		var errorMessage string
-		if operationErr != nil {
+		if ev.operationErr != nil {
 			status = tmpdms.OperationStatusFailed
-			errorMessage = operationErr.Error()
+			errorMessage = ev.operationErr.Error()
 		}
 
 		op := &tmpdms.Operation{
 			ResourceKey:  apiKey,
-			ResourceID:   resourceID,
+			ResourceID:   ev.resourceID,
 			Status:       status,
 			ActionType:   actionType,
 			ErrorMessage: errorMessage,
 		}
-		if len(state) > 0 {
-			op.State = state
+		if len(ev.state) > 0 {
+			op.State = ev.state
 		}
 
 		_, err = svc.CreateOperation(ctx, tmpdms.CreateOperationRequest{
@@ -263,7 +262,7 @@ func makeOperationReporter(svc *tmpdms.DeploymentMetadataAPI, deploymentID, vers
 			Operation:    op,
 		})
 		if err != nil {
-			return fmt.Errorf("reporting operation for resource %s: %w", resourceKey, err)
+			return fmt.Errorf("reporting operation for resource %s: %w", ev.resourceKey, err)
 		}
 		return nil
 	}
