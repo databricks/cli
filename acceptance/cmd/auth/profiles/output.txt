@@ -8,7 +8,7 @@ Warn: [hostmetadata] failed to fetch host metadata for https://test.cloud.databr
       "host": "https://test.cloud.databricks.com",
       "cloud": "aws",
       "auth_type": "",
-      "valid": false
+      "status": "unvalidated"
     },
     {
       "name": "account-profile",
@@ -16,7 +16,7 @@ Warn: [hostmetadata] failed to fetch host metadata for https://test.cloud.databr
       "account_id": "test-account-123",
       "cloud": "aws",
       "auth_type": "",
-      "valid": false
+      "status": "unvalidated"
     },
     {
       "name": "unified-profile",
@@ -25,7 +25,7 @@ Warn: [hostmetadata] failed to fetch host metadata for https://test.cloud.databr
       "workspace_id": "[NUMID]",
       "cloud": "aws",
       "auth_type": "",
-      "valid": false
+      "status": "unvalidated"
     }
   ]
 }

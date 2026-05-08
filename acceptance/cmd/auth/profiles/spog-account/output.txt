@@ -10,6 +10,7 @@
       "workspace_id": "none",
       "cloud": "aws",
       "auth_type": "pat",
+      "status": "valid",
       "valid": true
     }
   ]

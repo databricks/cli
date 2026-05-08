@@ -1,0 +1,15 @@
+
+=== 5xx from validation endpoint: profile reported as unknown (transient)
+>>> [CLI] auth profiles --output json
+{
+  "profiles": [
+    {
+      "name": "transient",
+      "host": "[DATABRICKS_URL]",
+      "cloud": "aws",
+      "auth_type": "pat",
+      "status": "unknown",
+      "error": "server error: 500"
+    }
+  ]
+}

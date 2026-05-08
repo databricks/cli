@@ -1,15 +1,19 @@
 package auth
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"path/filepath"
 	"runtime"
 	"testing"
 
 	"github.com/databricks/cli/libs/databrickscfg"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -46,6 +50,8 @@ func TestProfiles(t *testing.T) {
 	assert.Equal(t, "https://abc.cloud.databricks.com", profile.Host)
 	assert.Equal(t, "aws", profile.Cloud)
 	assert.Equal(t, "pat", profile.AuthType)
+	assert.Equal(t, profileStatusUnvalidated, profile.Status)
+	assert.Nil(t, profile.Valid, "Valid should be unset for unvalidated")
 }
 
 func TestProfilesDefaultMarker(t *testing.T) {
@@ -139,33 +145,28 @@ func TestProfileLoadSPOGConfigType(t *testing.T) {
 		host        string
 		accountID   string
 		workspaceID string
-		wantValid   bool
 	}{
 		{
 			name:      "SPOG account profile validated as account",
 			host:      spogServer.URL,
 			accountID: "spog-acct",
-			wantValid: true,
 		},
 		{
 			name:        "SPOG workspace profile validated as workspace",
 			host:        spogServer.URL,
 			accountID:   "spog-acct",
 			workspaceID: "ws-123",
-			wantValid:   true,
 		},
 		{
 			name:        "SPOG profile with workspace_id=none validated as account",
 			host:        spogServer.URL,
 			accountID:   "spog-acct",
 			workspaceID: "none",
-			wantValid:   true,
 		},
 		{
 			name:      "classic workspace with account_id from discovery stays workspace",
 			host:      wsServer.URL,
 			accountID: "ws-acct",
-			wantValid: true,
 		},
 	}
 
@@ -194,7 +195,9 @@ func TestProfileLoadSPOGConfigType(t *testing.T) {
 			}
 			p.Load(t.Context(), configFile, false)
 
-			assert.Equal(t, tc.wantValid, p.Valid, "Valid mismatch")
+			assert.Equal(t, profileStatusValid, p.Status, "status mismatch")
+			require.NotNil(t, p.Valid)
+			assert.True(t, *p.Valid)
 			assert.NotEmpty(t, p.Host, "Host should be set")
 			assert.NotEmpty(t, p.AuthType, "AuthType should be set")
 		})
@@ -250,7 +253,204 @@ func TestProfileLoadNoDiscoveryStaysWorkspace(t *testing.T) {
 	}
 	p.Load(t.Context(), configFile, false)
 
-	assert.True(t, p.Valid, "should validate as workspace when discovery is unavailable")
+	assert.Equal(t, profileStatusValid, p.Status, "should validate as workspace when discovery is unavailable")
 	assert.NotEmpty(t, p.Host)
 	assert.Equal(t, "pat", p.AuthType)
+}
+
+func TestClassifyValidationError(t *testing.T) {
+	cases := []struct {
+		name       string
+		err        error
+		wantStatus profileStatus
+		wantMsgSub string
+	}{
+		{
+			name:       "nil error -> valid",
+			err:        nil,
+			wantStatus: profileStatusValid,
+		},
+		{
+			name:       "deadline exceeded -> unknown timeout",
+			err:        context.DeadlineExceeded,
+			wantStatus: profileStatusUnknown,
+			wantMsgSub: "validation timed out",
+		},
+		{
+			name:       "url.Error wrapping deadline -> unknown timeout",
+			err:        &url.Error{Op: "Get", URL: "https://x.test/", Err: context.DeadlineExceeded},
+			wantStatus: profileStatusUnknown,
+			wantMsgSub: "validation timed out",
+		},
+		{
+			name:       "401 -> invalid with auth remediation",
+			err:        &apierr.APIError{StatusCode: 401, Message: "unauthorized"},
+			wantStatus: profileStatusInvalid,
+			wantMsgSub: "databricks auth login -p test-profile",
+		},
+		{
+			name:       "403 -> invalid with permission message",
+			err:        &apierr.APIError{StatusCode: 403, Message: "forbidden"},
+			wantStatus: profileStatusInvalid,
+			wantMsgSub: "credentials lack permission",
+		},
+		{
+			name:       "500 -> unknown server error",
+			err:        &apierr.APIError{StatusCode: 500, Message: "internal"},
+			wantStatus: profileStatusUnknown,
+			wantMsgSub: "server error: 500",
+		},
+		{
+			name:       "503 -> unknown server error",
+			err:        &apierr.APIError{StatusCode: 503, Message: "unavailable"},
+			wantStatus: profileStatusUnknown,
+			wantMsgSub: "server error: 503",
+		},
+		{
+			name:       "network error -> unknown could-not-reach",
+			err:        &url.Error{Op: "Get", URL: "https://x.test/", Err: errors.New("dial tcp: lookup x.test: no such host")},
+			wantStatus: profileStatusUnknown,
+			wantMsgSub: "could not reach host",
+		},
+		{
+			name:       "fallthrough -> unknown with raw message",
+			err:        errors.New("strange unknown failure"),
+			wantStatus: profileStatusUnknown,
+			wantMsgSub: "strange unknown failure",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			status, msg := classifyValidationError("test-profile", tc.err)
+			assert.Equal(t, tc.wantStatus, status)
+			if tc.wantMsgSub == "" {
+				assert.Empty(t, msg)
+			} else {
+				assert.Contains(t, msg, tc.wantMsgSub)
+			}
+		})
+	}
+}
+
+func TestProfileLoadStatusMatrix(t *testing.T) {
+	// statusServer returns a configurable HTTP status for the validation
+	// endpoint. .well-known returns 404 so we land on WorkspaceConfig and
+	// CurrentUser.Me is the validation API call.
+	statusServer := func(t *testing.T, code int) *httptest.Server {
+		t.Helper()
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			switch r.URL.Path {
+			case "/.well-known/databricks-config":
+				w.WriteHeader(http.StatusNotFound)
+			case "/api/2.0/preview/scim/v2/Me":
+				w.WriteHeader(code)
+				_, _ = w.Write([]byte(`{"error_code":"X","message":"x"}`))
+			default:
+				w.WriteHeader(http.StatusNotFound)
+			}
+		}))
+		t.Cleanup(server.Close)
+		return server
+	}
+
+	t.Run("401 -> invalid", func(t *testing.T) {
+		s := statusServer(t, http.StatusUnauthorized)
+		p := loadFromHost(t, s.URL)
+		assert.Equal(t, profileStatusInvalid, p.Status)
+		require.NotNil(t, p.Valid)
+		assert.False(t, *p.Valid)
+		assert.Contains(t, p.Error, "databricks auth login")
+	})
+
+	t.Run("403 -> invalid", func(t *testing.T) {
+		s := statusServer(t, http.StatusForbidden)
+		p := loadFromHost(t, s.URL)
+		assert.Equal(t, profileStatusInvalid, p.Status)
+		require.NotNil(t, p.Valid)
+		assert.False(t, *p.Valid)
+		assert.Contains(t, p.Error, "permission")
+	})
+
+	t.Run("500 -> unknown", func(t *testing.T) {
+		s := statusServer(t, http.StatusInternalServerError)
+		p := loadFromHost(t, s.URL)
+		assert.Equal(t, profileStatusUnknown, p.Status)
+		assert.Nil(t, p.Valid, "Valid is omitted for unknown")
+		assert.Contains(t, p.Error, "server error")
+	})
+
+	t.Run("network down -> unknown", func(t *testing.T) {
+		// Start and immediately close the server to simulate a dead host.
+		s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+		s.Close()
+		p := loadFromHost(t, s.URL)
+		assert.Equal(t, profileStatusUnknown, p.Status)
+		assert.Nil(t, p.Valid)
+		assert.Contains(t, p.Error, "could not reach host")
+	})
+
+	t.Run("InvalidConfig -> invalid", func(t *testing.T) {
+		// experimental_is_unified_host=true forces HostType=UnifiedHost.
+		// Without an account_id (or a SPOG-shaped DiscoveryURL), ResolveConfigType
+		// can't pick a side and falls through to InvalidConfig.
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusNotFound)
+		}))
+		t.Cleanup(server.Close)
+
+		dir := t.TempDir()
+		configFile := filepath.Join(dir, ".databrickscfg")
+		t.Setenv("HOME", dir)
+		if runtime.GOOS == "windows" {
+			t.Setenv("USERPROFILE", dir)
+		}
+		content := "[bad]\nhost = " + server.URL + "\nexperimental_is_unified_host = true\ntoken = test-token\n"
+		require.NoError(t, os.WriteFile(configFile, []byte(content), 0o600))
+
+		p := &profileMetadata{Name: "bad", Host: server.URL}
+		p.Load(t.Context(), configFile, false)
+		assert.Equal(t, profileStatusInvalid, p.Status)
+		require.NotNil(t, p.Valid)
+		assert.False(t, *p.Valid)
+		assert.Contains(t, p.Error, "fields conflict")
+	})
+
+	t.Run("skip-validate -> unvalidated", func(t *testing.T) {
+		s := statusServer(t, http.StatusOK)
+		p := loadFromHost(t, s.URL, withSkipValidate())
+		assert.Equal(t, profileStatusUnvalidated, p.Status)
+		assert.Nil(t, p.Valid)
+		assert.Empty(t, p.Error)
+	})
+}
+
+type loadOpts struct {
+	skipValidate bool
+}
+
+type loadOpt func(*loadOpts)
+
+func withSkipValidate() loadOpt { return func(o *loadOpts) { o.skipValidate = true } }
+
+// loadFromHost writes a single PAT profile pointing at host into a temp
+// .databrickscfg, runs Load, and returns the populated profileMetadata.
+func loadFromHost(t *testing.T, host string, opts ...loadOpt) *profileMetadata {
+	t.Helper()
+	o := loadOpts{}
+	for _, opt := range opts {
+		opt(&o)
+	}
+	dir := t.TempDir()
+	configFile := filepath.Join(dir, ".databrickscfg")
+	t.Setenv("HOME", dir)
+	if runtime.GOOS == "windows" {
+		t.Setenv("USERPROFILE", dir)
+	}
+	content := "[test-profile]\nhost = " + host + "\ntoken = test-token\n"
+	require.NoError(t, os.WriteFile(configFile, []byte(content), 0o600))
+
+	p := &profileMetadata{Name: "test-profile", Host: host}
+	p.Load(t.Context(), configFile, o.skipValidate)
+	return p
 }

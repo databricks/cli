@@ -7,7 +7,7 @@
       "host": "[DATABRICKS_URL]",
       "cloud": "aws",
       "auth_type": "",
-      "valid": false
+      "status": "unvalidated"
     }
   ]
 }
@@ -20,7 +20,7 @@
       "host": "[DATABRICKS_URL]",
       "cloud": "aws",
       "auth_type": "",
-      "valid": false
+      "status": "unvalidated"
     }
   ]
 }

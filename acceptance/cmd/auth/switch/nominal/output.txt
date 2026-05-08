@@ -12,8 +12,8 @@ default_profile = profile-a
 
 >>> [CLI] auth profiles --skip-validate
 Name                 Host                    Valid
-profile-a (Default)  [DATABRICKS_URL]  NO
-profile-b            [DATABRICKS_URL]  NO
+profile-a (Default)  [DATABRICKS_URL]  -
+profile-b            [DATABRICKS_URL]  -
 
 === Switch to profile-b
 
@@ -28,5 +28,5 @@ default_profile = profile-b
 
 >>> [CLI] auth profiles --skip-validate
 Name                 Host                    Valid
-profile-a            [DATABRICKS_URL]  NO
-profile-b (Default)  [DATABRICKS_URL]  NO
+profile-a            [DATABRICKS_URL]  -
+profile-b (Default)  [DATABRICKS_URL]  -

@@ -2,7 +2,7 @@
 === Profiles before logout — logfood should be valid
 >>> [CLI] auth profiles
 Name               Host                    Valid
-logfood (Default)  [DATABRICKS_URL]  YES
+logfood (Default)  [DATABRICKS_URL]  valid
 
 === Token cache keys before logout
 [
@@ -32,7 +32,7 @@ default_profile = logfood
 === Profiles after logout — logfood should be invalid
 >>> [CLI] auth profiles
 Name               Host                    Valid
-logfood (Default)  [DATABRICKS_URL]  NO
+logfood (Default)  [DATABRICKS_URL]  unknown
 
 === Logged out profile should no longer return a token
 >>> musterr [CLI] auth token --profile logfood
