@@ -2,6 +2,9 @@ package cmdio
 
 import (
 	"context"
+	"fmt"
+	"slices"
+	"strings"
 
 	"github.com/manifoldco/promptui"
 )
@@ -26,6 +29,9 @@ type SelectOptions struct {
 	// HideHelp hides the navigation help line shown by promptui by default.
 	HideHelp bool
 
+	// HideSelected hides the rendered selection after the prompt closes.
+	HideSelected bool
+
 	// LabelTemplate renders Label. Empty uses the default.
 	LabelTemplate string
 
@@ -48,6 +54,7 @@ func RunSelect(ctx context.Context, opts SelectOptions) (int, error) {
 		Searcher:          opts.Searcher,
 		StartInSearchMode: opts.StartInSearchMode,
 		HideHelp:          opts.HideHelp,
+		HideSelected:      opts.HideSelected,
 		Templates: &promptui.SelectTemplates{
 			Label:    opts.LabelTemplate,
 			Active:   opts.Active,
@@ -59,4 +66,44 @@ func RunSelect(ctx context.Context, opts SelectOptions) (int, error) {
 	}
 	idx, _, err := sel.Run()
 	return idx, err
+}
+
+type Tuple struct{ Name, Id string }
+
+// Select shows a selection prompt where the user can pick one of the name/id
+// items. The items are sorted alphabetically by name.
+func Select[V any](ctx context.Context, names map[string]V, label string) (string, error) {
+	items := make([]Tuple, 0, len(names))
+	for k, v := range names {
+		items = append(items, Tuple{k, fmt.Sprint(v)})
+	}
+	slices.SortFunc(items, func(a, b Tuple) int {
+		return strings.Compare(a.Name, b.Name)
+	})
+	return SelectOrdered(ctx, items, label)
+}
+
+// SelectOrdered shows a selection prompt where the user can pick one of the
+// name/id items. The items appear in the order specified in the "items"
+// argument.
+func SelectOrdered(ctx context.Context, items []Tuple, label string) (string, error) {
+	c := fromContext(ctx)
+	if !c.capabilities.SupportsInteractive() {
+		return "", fmt.Errorf("expected to have %s", label)
+	}
+	idx, err := RunSelect(ctx, SelectOptions{
+		Label:             label,
+		Items:             items,
+		HideSelected:      true,
+		StartInSearchMode: true,
+		Searcher: func(input string, idx int) bool {
+			return strings.Contains(strings.ToLower(items[idx].Name), strings.ToLower(input))
+		},
+		Active:   `{{.Name | bold}} ({{.Id|faint}})`,
+		Inactive: `{{.Name}}`,
+	})
+	if err != nil {
+		return "", err
+	}
+	return items[idx].Id, nil
 }

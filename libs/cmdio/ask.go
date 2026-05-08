@@ -7,23 +7,6 @@ import (
 	"strings"
 )
 
-/*
-Temporary compatibility layer for the progress logger interfaces.
-*/
-
-// Log is a compatibility layer for the progress logger interfaces.
-// It writes the string representation of the stringer to the error writer.
-func Log(ctx context.Context, str fmt.Stringer) {
-	LogString(ctx, str.String())
-}
-
-// LogString is a compatibility layer for the progress logger interfaces.
-// It writes the string to the error writer.
-func LogString(ctx context.Context, str string) {
-	c := fromContext(ctx)
-	_, _ = io.WriteString(c.err, str+"\n")
-}
-
 // readLine reads a line from the reader and returns it without the trailing newline characters.
 // It is unbuffered because cmdio's stdin is also unbuffered.
 // If we were to add a [bufio.Reader] to the mix, we would need to update the other uses of the reader.
@@ -51,8 +34,8 @@ func readLine(r io.Reader) (string, error) {
 	return b.String(), nil
 }
 
-// Ask is a compatibility layer for the progress logger interfaces.
-// It prompts the user with a question and returns the answer.
+// Ask prompts the user with a question and returns the entered answer.
+// If the user just presses enter, defaultVal is returned.
 func Ask(ctx context.Context, question, defaultVal string) (string, error) {
 	c := fromContext(ctx)
 
@@ -82,8 +65,9 @@ func Ask(ctx context.Context, question, defaultVal string) (string, error) {
 	return ans, nil
 }
 
-// AskYesOrNo is a compatibility layer for the progress logger interfaces.
-// It prompts the user with a question and returns the answer.
+// AskYesOrNo prompts the user with a question and returns true if the answer
+// is "y" or "yes" (case-insensitive). Any other answer, including an empty
+// one, returns false.
 func AskYesOrNo(ctx context.Context, question string) (bool, error) {
 	ans, err := Ask(ctx, question+" [y/N]", "")
 	if err != nil {
