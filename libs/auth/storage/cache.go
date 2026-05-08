@@ -61,8 +61,7 @@ func ResolveCache(ctx context.Context, override StorageMode) (cache.TokenCache, 
 //
 // Rules 1 and 2 are dormant today: the resolver default is plaintext, so
 // (mode=Secure, explicit=false) is unreachable. They activate when the
-// default flips to secure (MS4 / cli-ga). Wiring lands now so MS4 is a
-// single-line default flip plus pin-on-success additions.
+// default flips to secure at GA.
 //
 // Login-specific. Read paths (auth token, bundle commands) keep the original
 // keyring error so they don't silently mint plaintext copies of tokens that
@@ -124,7 +123,7 @@ func resolveCacheForLoginWith(ctx context.Context, override StorageMode, f cache
 //
 // Pin-on-success across modes (locking in the first working behavior to
 // insulate users from keyring flakiness) is intentionally not implemented
-// here. It lands with MS4 alongside the default flip; pinning before the
+// here. It lands at GA alongside the default flip; pinning before the
 // flip would freeze every default user into plaintext and make the flip a
 // no-op for them.
 func applyLoginFallback(ctx context.Context, mode StorageMode, explicit bool, f cacheFactories) (cache.TokenCache, StorageMode, error) {
@@ -172,7 +171,7 @@ func applyLoginFallback(ctx context.Context, mode StorageMode, explicit bool, f 
 // Only called on the (mode=Secure, explicit=false) probe-failure branch. That
 // branch is unreachable today (resolver default is plaintext), so this is
 // dormant infrastructure: it activates when the default flips to secure
-// (MS4) and lets default-on-broken-keyring users avoid a 3s probe on every
+// at GA and lets default-on-broken-keyring users avoid a 3s probe on every
 // command.
 func persistPlaintextFallback(ctx context.Context) error {
 	configPath := env.Get(ctx, "DATABRICKS_CONFIG_FILE")
