@@ -33,13 +33,13 @@ func assertRootPathExists(ctx context.Context, b *bundle.Bundle) (bool, error) {
 }
 
 var destroyApprovalGroups = []approvalGroup{
-	{group: "schemas", message: deleteSchemaMessage, trailingGap: true},
-	{group: "pipelines", message: deletePipelineMessage, trailingGap: true},
-	{group: "volumes", message: deleteVolumeMessage, trailingGap: true},
-	{group: "database_instances", message: deleteDatabaseInstanceMessage, trailingGap: true},
-	{group: "synced_database_tables", message: deleteSyncedDatabaseTableMessage, trailingGap: true},
-	{group: "postgres_projects", message: deletePostgresProjectMessage, trailingGap: true},
-	{group: "postgres_branches", message: deletePostgresBranchMessage, trailingGap: true},
+	{group: "schemas", message: deleteSchemaMessage},
+	{group: "pipelines", message: deletePipelineMessage},
+	{group: "volumes", message: deleteVolumeMessage},
+	{group: "database_instances", message: deleteDatabaseInstanceMessage},
+	{group: "synced_database_tables", message: deleteSyncedDatabaseTableMessage},
+	{group: "postgres_projects", message: deletePostgresProjectMessage},
+	{group: "postgres_branches", message: deletePostgresBranchMessage},
 }
 
 func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) (bool, error) {
@@ -61,7 +61,7 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.
 		cmdio.LogString(ctx, "")
 	}
 
-	logApprovalGroups(ctx, deleteActions, destroyApprovalGroups, deployplan.Delete)
+	logApprovalGroups(ctx, deleteActions, destroyApprovalGroups, true, deployplan.Delete)
 
 	cmdio.LogString(ctx, "All files and directories at the following location will be deleted: "+b.Config.Workspace.RootPath)
 	cmdio.LogString(ctx, "")

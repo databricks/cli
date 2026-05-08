@@ -45,7 +45,7 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.P
 		return false, err
 	}
 
-	total := logApprovalGroups(ctx, actions, deployApprovalGroups, deployplan.Recreate, deployplan.Delete)
+	total := logApprovalGroups(ctx, actions, deployApprovalGroups, false, deployplan.Recreate, deployplan.Delete)
 	if total == 0 {
 		// No destructive actions in any tracked group: skip the prompt.
 		return true, nil
