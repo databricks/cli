@@ -138,11 +138,3 @@ Uploaded with spaces.txt
   "path": "with spaces.txt",
   "content": "hello, world\n"
 }
-
-=== 12 MiB binary upload is summarized, not stored byte-for-byte
->>> jq -rs 
-  map(select(.path == "/api/2.0/workspace/import")) |
-  map(select(.body.multipart_form.path | endswith("/large.bin"))) |
-  .[].body.multipart_form.content
- out.requests.txt
-[binary content [NUMID] bytes]

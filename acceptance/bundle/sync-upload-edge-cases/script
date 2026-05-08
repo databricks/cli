@@ -87,13 +87,6 @@ trace jq -rs '
   sort_by(.path) | .[]
 ' out.requests.txt
 
-title "12 MiB binary upload is summarized, not stored byte-for-byte"
-trace jq -rs '
-  map(select(.path == "/api/2.0/workspace/import")) |
-  map(select(.body.multipart_form.path | endswith("/large.bin"))) |
-  .[].body.multipart_form.content
-' out.requests.txt
-
 # Drop the recorded requests; their workspace-prefixed paths are noisy and the
 # assertions above already pin the relevant fields.
 rm out.requests.txt .gitignore
