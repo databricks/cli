@@ -213,17 +213,34 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 	// verified against a real workspace:
 	//
 	//  - 400 RESOURCE_ALREADY_EXISTS — sequential conflict, no overwrite flag.
-	//  - 409 ALREADY_EXISTS — concurrent contention (observed in TestLock).
-	//  - 400 INVALID_PARAMETER_VALUE with a "type mismatch" / "node type" message
-	//    — overwrite=true on a path where the existing object's node type differs
-	//    from the upload (e.g. NOTEBOOK at /a/foo, regular-content upload to
-	//    /a/foo with overwrite). The server refuses the overwrite even though the
-	//    caller asked for it; from the caller's perspective the path is occupied,
-	//    so we surface this as already-exists.
+	//    Example: "/Users/me/foo.txt already exists. Please pass overwrite=true
+	//    to overwrite it."
 	//
-	// Sources for the third bullet (`bundle deploy` issues with overwrite=true):
-	//   "Cannot overwrite the asset at X due to type mismatch (asked: ..., actual: ...)"
-	//   "Requested node type [...] is different from the existing node type [...]"
+	//  - 409 ALREADY_EXISTS — concurrent contention (observed in TestLock when
+	//    five lockers race to write deploy.lock).
+	//    Example: "Node with name /Users/me/.bundle/.../deploy.lock already
+	//    exists. Please pass overwrite=true to update it."
+	//
+	//  - 400 INVALID_PARAMETER_VALUE — overwrite=true on a path where the
+	//    existing object's node type differs from the upload. Two distinct
+	//    messages, both observed against aws-prod-ucws:
+	//
+	//    (a) "Cannot overwrite the asset at /Users/me/foo due to type mismatch
+	//        (asked: FILE, actual: NOTEBOOK)" — fires when the upload path is
+	//        the same as an existing NOTEBOOK and the new content has no
+	//        notebook header (so AUTO would store it as FILE), or the mirror
+	//        case with FILE/NOTEBOOK swapped.
+	//
+	//    (b) "Requested node type [FILE] is different from the existing node
+	//        type [NOTEBOOK]" — fires when /foo is already a NOTEBOOK (from a
+	//        prior /foo.py upload) and an overwrite-upload of regular content
+	//        targets /foo.py: AUTO would store the new content as FILE at
+	//        /foo.py, but the workspace treats /foo.py as the source view of
+	//        the existing /foo NOTEBOOK and rejects the type change.
+	//
+	//    The server refuses the overwrite even though the caller asked for
+	//    it; from the caller's perspective the path is occupied, so we
+	//    surface this as already-exists.
 	if errors.Is(err, apierr.ErrResourceAlreadyExists) || errors.Is(err, apierr.ErrAlreadyExists) {
 		return fileAlreadyExistsError{absPath}
 	}
