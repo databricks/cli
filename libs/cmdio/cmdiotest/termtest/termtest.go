@@ -59,7 +59,9 @@ const (
 	KeyEnd       = "\x1b[F"
 	KeyDelete    = "\x1b[3~"
 	KeyCtrlA     = "\x01"
+	KeyCtrlB     = "\x02"
 	KeyCtrlE     = "\x05"
+	KeyCtrlF     = "\x06"
 	KeyCtrlU     = "\x15"
 	KeyCtrlW     = "\x17"
 )
