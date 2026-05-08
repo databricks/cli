@@ -73,6 +73,7 @@ func newCreateIndex() *cobra.Command {
 
 	// TODO: complex arg: delta_sync_index_spec
 	// TODO: complex arg: direct_access_index_spec
+	cmd.Flags().Var(&createIndexReq.IndexSubtype, "index-subtype", `The subtype of the index. Supported values: [FULL_TEXT, HYBRID, VECTOR]`)
 
 	cmd.Use = "create-index NAME ENDPOINT_NAME PRIMARY_KEY INDEX_TYPE"
 	cmd.Short = `Create an index.`
@@ -93,7 +94,7 @@ func newCreateIndex() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name', 'endpoint_name', 'primary_key', 'index_type' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'name', 'endpoint_name', 'primary_key', 'index_type' in your JSON input")
 			}
 			return nil
 		}
@@ -139,6 +140,7 @@ func newCreateIndex() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -213,6 +215,7 @@ func newDeleteDataVectorIndex() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -323,6 +326,7 @@ func newGetIndex() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -351,8 +355,17 @@ func newListIndexes() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listIndexesReq vectorsearch.ListIndexesRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listIndexesLimit int
 
-	cmd.Flags().StringVar(&listIndexesReq.PageToken, "page-token", listIndexesReq.PageToken, `Token for pagination.`)
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listIndexesLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listIndexesReq.PageToken, "page-token", listIndexesReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-indexes ENDPOINT_NAME"
 	cmd.Short = `List indexes.`
@@ -378,6 +391,13 @@ func newListIndexes() *cobra.Command {
 		listIndexesReq.EndpointName = args[0]
 
 		response := w.VectorSearchIndexes.ListIndexes(ctx, listIndexesReq)
+		if listIndexesLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listIndexesLimit)
+		}
+		if listIndexesLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listIndexesLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -460,6 +480,7 @@ func newQueryIndex() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -535,6 +556,7 @@ func newQueryNextPage() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -610,6 +632,7 @@ func newScanIndex() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -749,6 +772,7 @@ func newUpsertDataVectorIndex() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 

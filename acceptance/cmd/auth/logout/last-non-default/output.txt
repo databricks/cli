@@ -5,11 +5,11 @@
 
 ; The only non-default profile
 [only-profile]
-host = https://only.cloud.databricks.com
+host = [DATABRICKS_URL]
 auth_type = databricks-cli
 
 === Delete the only non-default profile
->>> [CLI] auth logout --profile only-profile --force --delete
+>>> [CLI] auth logout --profile only-profile --auto-approve --delete
 Logged out of and deleted profile "only-profile".
 
 === Backup file should exist

@@ -3,6 +3,8 @@
 package consumer_fulfillments
 
 import (
+	"fmt"
+
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
@@ -48,9 +50,19 @@ func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getReq marketplace.GetListingContentMetadataRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var getLimit int
 
 	cmd.Flags().IntVar(&getReq.PageSize, "page-size", getReq.PageSize, ``)
-	cmd.Flags().StringVar(&getReq.PageToken, "page-token", getReq.PageToken, ``)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&getLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&getReq.PageToken, "page-token", getReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "get LISTING_ID"
 	cmd.Short = `Get listing content metadata.`
@@ -73,6 +85,13 @@ func newGet() *cobra.Command {
 		getReq.ListingId = args[0]
 
 		response := w.ConsumerFulfillments.Get(ctx, getReq)
+		if getLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", getLimit)
+		}
+		if getLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, getLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -101,9 +120,19 @@ func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listReq marketplace.ListFulfillmentsRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listLimit int
 
 	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, ``)
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, ``)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list LISTING_ID"
 	cmd.Short = `List all listing fulfillments.`
@@ -130,6 +159,13 @@ func newList() *cobra.Command {
 		listReq.ListingId = args[0]
 
 		response := w.ConsumerFulfillments.List(ctx, listReq)
+		if listLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
+		}
+		if listLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 

@@ -37,7 +37,12 @@ type ResourceMetastoreDataAccessGcpServiceAccountKey struct {
 	PrivateKeyId string `json:"private_key_id"`
 }
 
+type ResourceMetastoreDataAccessProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type ResourceMetastoreDataAccess struct {
+	Api                         string                                                  `json:"api,omitempty"`
 	Comment                     string                                                  `json:"comment,omitempty"`
 	ForceDestroy                bool                                                    `json:"force_destroy,omitempty"`
 	ForceUpdate                 bool                                                    `json:"force_update,omitempty"`
@@ -55,4 +60,5 @@ type ResourceMetastoreDataAccess struct {
 	CloudflareApiToken          *ResourceMetastoreDataAccessCloudflareApiToken          `json:"cloudflare_api_token,omitempty"`
 	DatabricksGcpServiceAccount *ResourceMetastoreDataAccessDatabricksGcpServiceAccount `json:"databricks_gcp_service_account,omitempty"`
 	GcpServiceAccountKey        *ResourceMetastoreDataAccessGcpServiceAccountKey        `json:"gcp_service_account_key,omitempty"`
+	ProviderConfig              *ResourceMetastoreDataAccessProviderConfig              `json:"provider_config,omitempty"`
 }

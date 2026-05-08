@@ -5,13 +5,6 @@ import (
 	"reflect"
 )
 
-// TypeOf returns reflect.Type for type parameter T, analogous to
-// reflect.TypeOf((*T)(nil)).Elem().
-func TypeOf[T any]() reflect.Type {
-	var t *T
-	return reflect.TypeOf(t).Elem()
-}
-
 // BoundCaller encapsulates a bound method and metadata about its signature.
 // It can invoke the underlying function and returns all non-error outputs and
 // the error (if the method returns one as the last return value).
@@ -102,8 +95,8 @@ func (c *BoundCaller) Call(args ...any) ([]any, error) {
 }
 
 var (
-	errType = TypeOf[error]()
-	anyType = TypeOf[any]()
+	errType = reflect.TypeFor[error]()
+	anyType = reflect.TypeFor[any]()
 )
 
 // PrepareCall creates a unified BoundCaller for the given method on receiver that matches the ifaceType method.

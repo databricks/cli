@@ -90,7 +90,7 @@ func newCreateKnowledgeAssistant() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'display_name', 'description' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'display_name', 'description' in your JSON input")
 			}
 			return nil
 		}
@@ -126,6 +126,7 @@ func newCreateKnowledgeAssistant() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -229,6 +230,7 @@ func newCreateKnowledgeSource() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -400,6 +402,7 @@ func newGetKnowledgeAssistant() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -457,6 +460,7 @@ func newGetKnowledgeSource() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -485,9 +489,19 @@ func newListKnowledgeAssistants() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listKnowledgeAssistantsReq knowledgeassistants.ListKnowledgeAssistantsRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listKnowledgeAssistantsLimit int
 
 	cmd.Flags().IntVar(&listKnowledgeAssistantsReq.PageSize, "page-size", listKnowledgeAssistantsReq.PageSize, `The maximum number of knowledge assistants to return.`)
-	cmd.Flags().StringVar(&listKnowledgeAssistantsReq.PageToken, "page-token", listKnowledgeAssistantsReq.PageToken, `A page token, received from a previous ListKnowledgeAssistants call.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listKnowledgeAssistantsLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listKnowledgeAssistantsReq.PageToken, "page-token", listKnowledgeAssistantsReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-knowledge-assistants"
 	cmd.Short = `List Knowledge Assistants.`
@@ -508,6 +522,13 @@ func newListKnowledgeAssistants() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.KnowledgeAssistants.ListKnowledgeAssistants(ctx, listKnowledgeAssistantsReq)
+		if listKnowledgeAssistantsLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listKnowledgeAssistantsLimit)
+		}
+		if listKnowledgeAssistantsLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listKnowledgeAssistantsLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -536,9 +557,19 @@ func newListKnowledgeSources() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listKnowledgeSourcesReq knowledgeassistants.ListKnowledgeSourcesRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listKnowledgeSourcesLimit int
 
 	cmd.Flags().IntVar(&listKnowledgeSourcesReq.PageSize, "page-size", listKnowledgeSourcesReq.PageSize, ``)
-	cmd.Flags().StringVar(&listKnowledgeSourcesReq.PageToken, "page-token", listKnowledgeSourcesReq.PageToken, ``)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listKnowledgeSourcesLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listKnowledgeSourcesReq.PageToken, "page-token", listKnowledgeSourcesReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-knowledge-sources PARENT"
 	cmd.Short = `List Knowledge Sources.`
@@ -565,6 +596,13 @@ func newListKnowledgeSources() *cobra.Command {
 		listKnowledgeSourcesReq.Parent = args[0]
 
 		response := w.KnowledgeAssistants.ListKnowledgeSources(ctx, listKnowledgeSourcesReq)
+		if listKnowledgeSourcesLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listKnowledgeSourcesLimit)
+		}
+		if listKnowledgeSourcesLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listKnowledgeSourcesLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -725,6 +763,7 @@ func newUpdateKnowledgeAssistant() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -835,6 +874,7 @@ func newUpdateKnowledgeSource() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 

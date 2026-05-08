@@ -3,6 +3,8 @@
 package queries_legacy
 
 import (
+	"fmt"
+
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
@@ -122,6 +124,7 @@ func newCreate() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -241,6 +244,7 @@ func newGet() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -269,11 +273,22 @@ func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listReq sql.ListQueriesLegacyRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listLimit int
 
 	cmd.Flags().StringVar(&listReq.Order, "order", listReq.Order, `Name of query attribute to order by.`)
-	cmd.Flags().IntVar(&listReq.Page, "page", listReq.Page, `Page number to retrieve.`)
-	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `Number of queries to return per page.`)
 	cmd.Flags().StringVar(&listReq.Q, "q", listReq.Q, `Full text search term.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().IntVar(&listReq.Page, "page", listReq.Page, `Page number to retrieve.`)
+	cmd.Flags().Lookup("page").Hidden = true
+	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `Number of results per API page.`)
+	cmd.Flags().Lookup("page-size").Hidden = true
 
 	cmd.Use = "list"
 	cmd.Short = `Get a list of queries.`
@@ -303,6 +318,13 @@ func newList() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.QueriesLegacy.List(ctx, listReq)
+		if listLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
+		}
+		if listLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -445,6 +467,7 @@ func newUpdate() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 

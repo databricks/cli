@@ -2,6 +2,7 @@ package filer
 
 import (
 	"bytes"
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
@@ -10,9 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"path"
-	"regexp"
 	"slices"
-	"sort"
 	"strings"
 	"time"
 
@@ -43,12 +42,12 @@ func wsfsDirEntriesFromObjectInfos(objects []workspace.ObjectInfo) []fs.DirEntry
 	}
 
 	// Sort by name for parity with os.ReadDir.
-	sort.Slice(info, func(i, j int) bool { return info[i].Name() < info[j].Name() })
+	slices.SortFunc(info, func(a, b fs.DirEntry) int { return cmp.Compare(a.Name(), b.Name()) })
 	return info
 }
 
 // Type that implements fs.FileInfo for WSFS.
-type wsfsFileInfo struct {
+type wsfsFileInfo struct { //nolint:recvcheck // value receivers for fs.FileInfo interface, pointer for JSON marshaling
 	workspace.ObjectInfo
 
 	// The export format of a notebook. This is not exposed by the SDK.
@@ -122,6 +121,22 @@ type WorkspaceFilesClient struct {
 	root WorkspaceRootPath
 }
 
+// orgIDHeaders returns headers with X-Databricks-Org-Id set if a workspace ID
+// is configured. SPOG hosts require this header to route requests to the
+// correct workspace.
+func (w *WorkspaceFilesClient) orgIDHeaders() map[string]string {
+	if w.workspaceClient == nil || w.workspaceClient.Config == nil {
+		return nil
+	}
+	wsID := w.workspaceClient.Config.WorkspaceID
+	if wsID == "" {
+		return nil
+	}
+	return map[string]string{
+		"X-Databricks-Org-Id": wsID,
+	}
+}
+
 func NewWorkspaceFilesClient(w *databricks.WorkspaceClient, root string) (Filer, error) {
 	apiClient, err := client.New(w.Config)
 	if err != nil {
@@ -156,7 +171,7 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 		return err
 	}
 
-	err = w.apiClient.Do(ctx, http.MethodPost, urlPath, nil, nil, body, nil)
+	err = w.apiClient.Do(ctx, http.MethodPost, urlPath, w.orgIDHeaders(), nil, body, nil)
 
 	// Return early on success.
 	if err == nil {
@@ -176,7 +191,7 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 		}
 
 		// Create parent directory.
-		err = w.workspaceClient.Workspace.MkdirsByPath(ctx, path.Dir(absPath))
+		err = w.workspaceClient.Workspace.MkdirsByPath(ctx, path.Dir(absPath)) //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
 		if err != nil {
 			if errors.As(err, &aerr) && aerr.StatusCode == http.StatusForbidden {
 				return permissionError{absPath}
@@ -193,16 +208,13 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 		return fileAlreadyExistsError{absPath}
 	}
 
-	// This API returns 400 if the file already exists, when the object type is notebook
-	regex := regexp.MustCompile(`Path \((.*)\) already exists.`)
-	if aerr.StatusCode == http.StatusBadRequest && regex.MatchString(aerr.Message) {
-		// Parse file path from regex capture group
-		matches := regex.FindStringSubmatch(aerr.Message)
-		if len(matches) == 2 {
-			return fileAlreadyExistsError{matches[1]}
-		}
-
-		// Default to path specified to filer.Write if regex capture fails
+	// This API returns 400 if the file already exists when the object type is notebook.
+	// Both the historical "Path (<path>) already exists." format and the newer
+	// "RESOURCE_ALREADY_EXISTS: <path> already exists. ..." format end with the same
+	// "already exists." marker; the JSON error_code is empty in both. The new format
+	// might not have been rolled out to all workspaces yet, so we anchor on the shared
+	// marker and return absPath rather than parsing the message.
+	if aerr.StatusCode == http.StatusBadRequest && strings.Contains(aerr.Message, "already exists.") {
 		return fileAlreadyExistsError{absPath}
 	}
 
@@ -251,7 +263,7 @@ func (w *WorkspaceFilesClient) Delete(ctx context.Context, name string, mode ...
 
 	recursive := slices.Contains(mode, DeleteRecursively)
 
-	err = w.workspaceClient.Workspace.Delete(ctx, workspace.Delete{
+	err = w.workspaceClient.Workspace.Delete(ctx, workspace.Delete{ //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
 		Path:      absPath,
 		Recursive: recursive,
 	})
@@ -285,7 +297,7 @@ func (w *WorkspaceFilesClient) ReadDir(ctx context.Context, name string) ([]fs.D
 		return nil, err
 	}
 
-	objects, err := w.workspaceClient.Workspace.ListAll(ctx, workspace.ListWorkspaceRequest{
+	objects, err := w.workspaceClient.Workspace.ListAll(ctx, workspace.ListWorkspaceRequest{ //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
 		Path: absPath,
 	})
 
@@ -317,7 +329,7 @@ func (w *WorkspaceFilesClient) Mkdir(ctx context.Context, name string) error {
 	if err != nil {
 		return err
 	}
-	return w.workspaceClient.Workspace.Mkdirs(ctx, workspace.Mkdirs{
+	return w.workspaceClient.Workspace.Mkdirs(ctx, workspace.Mkdirs{ //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
 		Path: dirPath,
 	})
 }
@@ -337,7 +349,7 @@ func (w *WorkspaceFilesClient) Stat(ctx context.Context, name string) (fs.FileIn
 		ctx,
 		http.MethodGet,
 		"/api/2.0/workspace/get-status",
-		nil,
+		w.orgIDHeaders(),
 		nil,
 		map[string]string{
 			"path":               absPath,

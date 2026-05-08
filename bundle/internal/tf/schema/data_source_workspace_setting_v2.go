@@ -93,7 +93,8 @@ type DataSourceWorkspaceSettingV2EffectivePersonalCompute struct {
 }
 
 type DataSourceWorkspaceSettingV2EffectiveRestrictWorkspaceAdmins struct {
-	Status string `json:"status"`
+	DisableGovTagCreation bool   `json:"disable_gov_tag_creation,omitempty"`
+	Status                string `json:"status"`
 }
 
 type DataSourceWorkspaceSettingV2EffectiveStringVal struct {
@@ -113,7 +114,8 @@ type DataSourceWorkspaceSettingV2ProviderConfig struct {
 }
 
 type DataSourceWorkspaceSettingV2RestrictWorkspaceAdmins struct {
-	Status string `json:"status"`
+	DisableGovTagCreation bool   `json:"disable_gov_tag_creation,omitempty"`
+	Status                string `json:"status"`
 }
 
 type DataSourceWorkspaceSettingV2StringVal struct {

@@ -53,11 +53,6 @@ func NewIO(ctx context.Context, outputFormat flags.Output, in io.Reader, out, er
 	}
 }
 
-func IsInteractive(ctx context.Context) bool {
-	c := fromContext(ctx)
-	return c.capabilities.SupportsInteractive()
-}
-
 func IsPromptSupported(ctx context.Context) bool {
 	c := fromContext(ctx)
 	return c.capabilities.SupportsPrompt()
@@ -164,21 +159,6 @@ type nopWriteCloser struct {
 
 func (nopWriteCloser) Close() error {
 	return nil
-}
-
-func Prompt(ctx context.Context) *promptui.Prompt {
-	c := fromContext(ctx)
-	return &promptui.Prompt{
-		Stdin:  c.promptStdin(),
-		Stdout: nopWriteCloser{c.err},
-	}
-}
-
-func RunSelect(ctx context.Context, prompt *promptui.Select) (int, string, error) {
-	c := fromContext(ctx)
-	prompt.Stdin = c.promptStdin()
-	prompt.Stdout = nopWriteCloser{c.err}
-	return prompt.Run()
 }
 
 // NewSpinner creates a new spinner for displaying progress indicators.

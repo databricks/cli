@@ -71,6 +71,7 @@ func newCreate() *cobra.Command {
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `User-provided free-form text description.`)
+	// TODO: complex arg: effective_file_event_queue
 	cmd.Flags().BoolVar(&createReq.EnableFileEvents, "enable-file-events", createReq.EnableFileEvents, `Whether to enable file events on this external location.`)
 	// TODO: complex arg: encryption_details
 	cmd.Flags().BoolVar(&createReq.Fallback, "fallback", createReq.Fallback, `Indicates whether fallback mode is enabled for this external location.`)
@@ -97,7 +98,7 @@ func newCreate() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name', 'url', 'credential_name' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'name', 'url', 'credential_name' in your JSON input")
 			}
 			return nil
 		}
@@ -136,6 +137,7 @@ func newCreate() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -255,6 +257,7 @@ func newGet() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -283,11 +286,22 @@ func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listReq catalog.ListExternalLocationsRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listLimit int
 
 	cmd.Flags().BoolVar(&listReq.IncludeBrowse, "include-browse", listReq.IncludeBrowse, `Whether to include external locations in the response for which the principal can only access selective metadata for.`)
 	cmd.Flags().BoolVar(&listReq.IncludeUnbound, "include-unbound", listReq.IncludeUnbound, `Whether to include external locations not bound to the workspace.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of external locations to return.`)
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
+	cmd.Flags().Lookup("max-results").Hidden = true
 
 	cmd.Use = "list"
 	cmd.Short = `List external locations.`
@@ -319,6 +333,13 @@ func newList() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.ExternalLocations.List(ctx, listReq)
+		if listLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
+		}
+		if listLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -353,6 +374,7 @@ func newUpdate() *cobra.Command {
 
 	cmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `User-provided free-form text description.`)
 	cmd.Flags().StringVar(&updateReq.CredentialName, "credential-name", updateReq.CredentialName, `Name of the storage credential used with this location.`)
+	// TODO: complex arg: effective_file_event_queue
 	cmd.Flags().BoolVar(&updateReq.EnableFileEvents, "enable-file-events", updateReq.EnableFileEvents, `Whether to enable file events on this external location.`)
 	// TODO: complex arg: encryption_details
 	cmd.Flags().BoolVar(&updateReq.Fallback, "fallback", updateReq.Fallback, `Indicates whether fallback mode is enabled for this external location.`)
@@ -406,6 +428,7 @@ func newUpdate() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 

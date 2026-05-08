@@ -22,6 +22,11 @@ variables:
     default: true
     description: "A boolean variable"
 
+  w_lookup:
+    description: "A variable with a lookup"
+    lookup:
+      cluster: "some-test-cluster" # id 4321
+
 targets:
   use-default-variable-values:
 
@@ -37,3 +42,13 @@ targets:
     variables:
       foo: "overridden_string"
       baz: false
+
+  override-lookup-variable-with-value:
+    variables:
+      w_lookup: "my-specific-cluster-id"
+
+  override-lookup-variable-with-lookup:
+    variables:
+      w_lookup:
+        lookup:
+          cluster: "some-other-cluster" # id 9876

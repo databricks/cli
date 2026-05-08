@@ -630,6 +630,18 @@ type ResourceJobSparkSubmitTask struct {
 	Parameters []string `json:"parameters,omitempty"`
 }
 
+type ResourceJobTaskAlertTaskSubscribers struct {
+	DestinationId string `json:"destination_id,omitempty"`
+	UserName      string `json:"user_name,omitempty"`
+}
+
+type ResourceJobTaskAlertTask struct {
+	AlertId       string                                `json:"alert_id,omitempty"`
+	WarehouseId   string                                `json:"warehouse_id,omitempty"`
+	WorkspacePath string                                `json:"workspace_path,omitempty"`
+	Subscribers   []ResourceJobTaskAlertTaskSubscribers `json:"subscribers,omitempty"`
+}
+
 type ResourceJobTaskCleanRoomsNotebookTask struct {
 	CleanRoomName          string            `json:"clean_room_name"`
 	Etag                   string            `json:"etag,omitempty"`
@@ -697,6 +709,18 @@ type ResourceJobTaskEmailNotifications struct {
 	OnStart                            []string `json:"on_start,omitempty"`
 	OnStreamingBacklogExceeded         []string `json:"on_streaming_backlog_exceeded,omitempty"`
 	OnSuccess                          []string `json:"on_success,omitempty"`
+}
+
+type ResourceJobTaskForEachTaskTaskAlertTaskSubscribers struct {
+	DestinationId string `json:"destination_id,omitempty"`
+	UserName      string `json:"user_name,omitempty"`
+}
+
+type ResourceJobTaskForEachTaskTaskAlertTask struct {
+	AlertId       string                                               `json:"alert_id,omitempty"`
+	WarehouseId   string                                               `json:"warehouse_id,omitempty"`
+	WorkspacePath string                                               `json:"workspace_path,omitempty"`
+	Subscribers   []ResourceJobTaskForEachTaskTaskAlertTaskSubscribers `json:"subscribers,omitempty"`
 }
 
 type ResourceJobTaskForEachTaskTaskCleanRoomsNotebookTask struct {
@@ -1212,6 +1236,7 @@ type ResourceJobTaskForEachTaskTask struct {
 	RunIf                   string                                                `json:"run_if,omitempty"`
 	TaskKey                 string                                                `json:"task_key"`
 	TimeoutSeconds          int                                                   `json:"timeout_seconds,omitempty"`
+	AlertTask               *ResourceJobTaskForEachTaskTaskAlertTask              `json:"alert_task,omitempty"`
 	CleanRoomsNotebookTask  *ResourceJobTaskForEachTaskTaskCleanRoomsNotebookTask `json:"clean_rooms_notebook_task,omitempty"`
 	Compute                 *ResourceJobTaskForEachTaskTaskCompute                `json:"compute,omitempty"`
 	ConditionTask           *ResourceJobTaskForEachTaskTaskConditionTask          `json:"condition_task,omitempty"`
@@ -1689,6 +1714,7 @@ type ResourceJobTask struct {
 	RunIf                   string                                 `json:"run_if,omitempty"`
 	TaskKey                 string                                 `json:"task_key"`
 	TimeoutSeconds          int                                    `json:"timeout_seconds,omitempty"`
+	AlertTask               *ResourceJobTaskAlertTask              `json:"alert_task,omitempty"`
 	CleanRoomsNotebookTask  *ResourceJobTaskCleanRoomsNotebookTask `json:"clean_rooms_notebook_task,omitempty"`
 	Compute                 *ResourceJobTaskCompute                `json:"compute,omitempty"`
 	ConditionTask           *ResourceJobTaskConditionTask          `json:"condition_task,omitempty"`

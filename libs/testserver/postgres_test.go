@@ -19,7 +19,7 @@ func TestPostgresProjectCRUD(t *testing.T) {
 	baseURL := server.URL
 
 	// Create project
-	createReq, _ := http.NewRequest("POST", baseURL+"/api/2.0/postgres/projects?project_id=test-project", nil)
+	createReq, _ := http.NewRequest(http.MethodPost, baseURL+"/api/2.0/postgres/projects?project_id=test-project", nil)
 	createReq.Header.Set("Authorization", "Bearer test-token")
 	createReq.Header.Set("Content-Type", "application/json")
 	createResp, err := client.Do(createReq)
@@ -32,7 +32,7 @@ func TestPostgresProjectCRUD(t *testing.T) {
 	createResp.Body.Close()
 
 	// Get project
-	getReq, _ := http.NewRequest("GET", baseURL+"/api/2.0/postgres/projects/test-project", nil)
+	getReq, _ := http.NewRequest(http.MethodGet, baseURL+"/api/2.0/postgres/projects/test-project", nil)
 	getReq.Header.Set("Authorization", "Bearer test-token")
 	getResp, err := client.Do(getReq)
 	require.NoError(t, err)
@@ -44,7 +44,7 @@ func TestPostgresProjectCRUD(t *testing.T) {
 	getResp.Body.Close()
 
 	// List projects
-	listReq, _ := http.NewRequest("GET", baseURL+"/api/2.0/postgres/projects", nil)
+	listReq, _ := http.NewRequest(http.MethodGet, baseURL+"/api/2.0/postgres/projects", nil)
 	listReq.Header.Set("Authorization", "Bearer test-token")
 	listResp, err := client.Do(listReq)
 	require.NoError(t, err)
@@ -56,7 +56,7 @@ func TestPostgresProjectCRUD(t *testing.T) {
 	listResp.Body.Close()
 
 	// Delete project
-	deleteReq, _ := http.NewRequest("DELETE", baseURL+"/api/2.0/postgres/projects/test-project", nil)
+	deleteReq, _ := http.NewRequest(http.MethodDelete, baseURL+"/api/2.0/postgres/projects/test-project", nil)
 	deleteReq.Header.Set("Authorization", "Bearer test-token")
 	deleteResp, err := client.Do(deleteReq)
 	require.NoError(t, err)
@@ -64,7 +64,7 @@ func TestPostgresProjectCRUD(t *testing.T) {
 	deleteResp.Body.Close()
 
 	// Verify project is deleted
-	getReq2, _ := http.NewRequest("GET", baseURL+"/api/2.0/postgres/projects/test-project", nil)
+	getReq2, _ := http.NewRequest(http.MethodGet, baseURL+"/api/2.0/postgres/projects/test-project", nil)
 	getReq2.Header.Set("Authorization", "Bearer test-token")
 	getResp2, err := client.Do(getReq2)
 	require.NoError(t, err)
@@ -79,7 +79,7 @@ func TestPostgresProjectNotFound(t *testing.T) {
 	client := &http.Client{}
 	baseURL := server.URL
 
-	getReq, _ := http.NewRequest("GET", baseURL+"/api/2.0/postgres/projects/nonexistent", nil)
+	getReq, _ := http.NewRequest(http.MethodGet, baseURL+"/api/2.0/postgres/projects/nonexistent", nil)
 	getReq.Header.Set("Authorization", "Bearer test-token")
 	getResp, err := client.Do(getReq)
 	require.NoError(t, err)
@@ -95,7 +95,7 @@ func TestPostgresProjectDuplicate(t *testing.T) {
 	baseURL := server.URL
 
 	// Create project
-	createReq, _ := http.NewRequest("POST", baseURL+"/api/2.0/postgres/projects?project_id=dup-project", nil)
+	createReq, _ := http.NewRequest(http.MethodPost, baseURL+"/api/2.0/postgres/projects?project_id=dup-project", nil)
 	createReq.Header.Set("Authorization", "Bearer test-token")
 	createResp, err := client.Do(createReq)
 	require.NoError(t, err)
@@ -103,7 +103,7 @@ func TestPostgresProjectDuplicate(t *testing.T) {
 	createResp.Body.Close()
 
 	// Try to create duplicate
-	createReq2, _ := http.NewRequest("POST", baseURL+"/api/2.0/postgres/projects?project_id=dup-project", nil)
+	createReq2, _ := http.NewRequest(http.MethodPost, baseURL+"/api/2.0/postgres/projects?project_id=dup-project", nil)
 	createReq2.Header.Set("Authorization", "Bearer test-token")
 	createResp2, err := client.Do(createReq2)
 	require.NoError(t, err)
@@ -119,7 +119,7 @@ func TestPostgresBranchCRUD(t *testing.T) {
 	baseURL := server.URL
 
 	// Create project first
-	createProjReq, _ := http.NewRequest("POST", baseURL+"/api/2.0/postgres/projects?project_id=branch-test-project", nil)
+	createProjReq, _ := http.NewRequest(http.MethodPost, baseURL+"/api/2.0/postgres/projects?project_id=branch-test-project", nil)
 	createProjReq.Header.Set("Authorization", "Bearer test-token")
 	createProjResp, err := client.Do(createProjReq)
 	require.NoError(t, err)
@@ -127,7 +127,7 @@ func TestPostgresBranchCRUD(t *testing.T) {
 	createProjResp.Body.Close()
 
 	// Create branch
-	createBranchReq, _ := http.NewRequest("POST", baseURL+"/api/2.0/postgres/projects/branch-test-project/branches?branch_id=main", nil)
+	createBranchReq, _ := http.NewRequest(http.MethodPost, baseURL+"/api/2.0/postgres/projects/branch-test-project/branches?branch_id=main", nil)
 	createBranchReq.Header.Set("Authorization", "Bearer test-token")
 	createBranchResp, err := client.Do(createBranchReq)
 	require.NoError(t, err)
@@ -135,7 +135,7 @@ func TestPostgresBranchCRUD(t *testing.T) {
 	createBranchResp.Body.Close()
 
 	// Get branch
-	getBranchReq, _ := http.NewRequest("GET", baseURL+"/api/2.0/postgres/projects/branch-test-project/branches/main", nil)
+	getBranchReq, _ := http.NewRequest(http.MethodGet, baseURL+"/api/2.0/postgres/projects/branch-test-project/branches/main", nil)
 	getBranchReq.Header.Set("Authorization", "Bearer test-token")
 	getBranchResp, err := client.Do(getBranchReq)
 	require.NoError(t, err)
@@ -147,7 +147,7 @@ func TestPostgresBranchCRUD(t *testing.T) {
 	getBranchResp.Body.Close()
 
 	// List branches
-	listBranchReq, _ := http.NewRequest("GET", baseURL+"/api/2.0/postgres/projects/branch-test-project/branches", nil)
+	listBranchReq, _ := http.NewRequest(http.MethodGet, baseURL+"/api/2.0/postgres/projects/branch-test-project/branches", nil)
 	listBranchReq.Header.Set("Authorization", "Bearer test-token")
 	listBranchResp, err := client.Do(listBranchReq)
 	require.NoError(t, err)
@@ -160,7 +160,7 @@ func TestPostgresBranchCRUD(t *testing.T) {
 	listBranchResp.Body.Close()
 
 	// Delete branch
-	deleteBranchReq, _ := http.NewRequest("DELETE", baseURL+"/api/2.0/postgres/projects/branch-test-project/branches/main", nil)
+	deleteBranchReq, _ := http.NewRequest(http.MethodDelete, baseURL+"/api/2.0/postgres/projects/branch-test-project/branches/main", nil)
 	deleteBranchReq.Header.Set("Authorization", "Bearer test-token")
 	deleteBranchResp, err := client.Do(deleteBranchReq)
 	require.NoError(t, err)
@@ -176,7 +176,7 @@ func TestPostgresBranchNotFoundWhenProjectNotExists(t *testing.T) {
 	baseURL := server.URL
 
 	// Try to create branch without project
-	createBranchReq, _ := http.NewRequest("POST", baseURL+"/api/2.0/postgres/projects/nonexistent/branches?branch_id=main", nil)
+	createBranchReq, _ := http.NewRequest(http.MethodPost, baseURL+"/api/2.0/postgres/projects/nonexistent/branches?branch_id=main", nil)
 	createBranchReq.Header.Set("Authorization", "Bearer test-token")
 	createBranchResp, err := client.Do(createBranchReq)
 	require.NoError(t, err)
@@ -192,7 +192,7 @@ func TestPostgresEndpointCRUD(t *testing.T) {
 	baseURL := server.URL
 
 	// Create project first
-	createProjReq, _ := http.NewRequest("POST", baseURL+"/api/2.0/postgres/projects?project_id=endpoint-test-project", nil)
+	createProjReq, _ := http.NewRequest(http.MethodPost, baseURL+"/api/2.0/postgres/projects?project_id=endpoint-test-project", nil)
 	createProjReq.Header.Set("Authorization", "Bearer test-token")
 	createProjResp, err := client.Do(createProjReq)
 	require.NoError(t, err)
@@ -200,7 +200,7 @@ func TestPostgresEndpointCRUD(t *testing.T) {
 	createProjResp.Body.Close()
 
 	// Create branch
-	createBranchReq, _ := http.NewRequest("POST", baseURL+"/api/2.0/postgres/projects/endpoint-test-project/branches?branch_id=main", nil)
+	createBranchReq, _ := http.NewRequest(http.MethodPost, baseURL+"/api/2.0/postgres/projects/endpoint-test-project/branches?branch_id=main", nil)
 	createBranchReq.Header.Set("Authorization", "Bearer test-token")
 	createBranchResp, err := client.Do(createBranchReq)
 	require.NoError(t, err)
@@ -208,7 +208,7 @@ func TestPostgresEndpointCRUD(t *testing.T) {
 	createBranchResp.Body.Close()
 
 	// Create endpoint
-	createEpReq, _ := http.NewRequest("POST", baseURL+"/api/2.0/postgres/projects/endpoint-test-project/branches/main/endpoints?endpoint_id=rw-endpoint", nil)
+	createEpReq, _ := http.NewRequest(http.MethodPost, baseURL+"/api/2.0/postgres/projects/endpoint-test-project/branches/main/endpoints?endpoint_id=rw-endpoint", nil)
 	createEpReq.Header.Set("Authorization", "Bearer test-token")
 	createEpResp, err := client.Do(createEpReq)
 	require.NoError(t, err)
@@ -216,7 +216,7 @@ func TestPostgresEndpointCRUD(t *testing.T) {
 	createEpResp.Body.Close()
 
 	// Get endpoint
-	getEpReq, _ := http.NewRequest("GET", baseURL+"/api/2.0/postgres/projects/endpoint-test-project/branches/main/endpoints/rw-endpoint", nil)
+	getEpReq, _ := http.NewRequest(http.MethodGet, baseURL+"/api/2.0/postgres/projects/endpoint-test-project/branches/main/endpoints/rw-endpoint", nil)
 	getEpReq.Header.Set("Authorization", "Bearer test-token")
 	getEpResp, err := client.Do(getEpReq)
 	require.NoError(t, err)
@@ -228,7 +228,7 @@ func TestPostgresEndpointCRUD(t *testing.T) {
 	getEpResp.Body.Close()
 
 	// List endpoints
-	listEpReq, _ := http.NewRequest("GET", baseURL+"/api/2.0/postgres/projects/endpoint-test-project/branches/main/endpoints", nil)
+	listEpReq, _ := http.NewRequest(http.MethodGet, baseURL+"/api/2.0/postgres/projects/endpoint-test-project/branches/main/endpoints", nil)
 	listEpReq.Header.Set("Authorization", "Bearer test-token")
 	listEpResp, err := client.Do(listEpReq)
 	require.NoError(t, err)
@@ -240,7 +240,7 @@ func TestPostgresEndpointCRUD(t *testing.T) {
 	listEpResp.Body.Close()
 
 	// Delete endpoint
-	deleteEpReq, _ := http.NewRequest("DELETE", baseURL+"/api/2.0/postgres/projects/endpoint-test-project/branches/main/endpoints/rw-endpoint", nil)
+	deleteEpReq, _ := http.NewRequest(http.MethodDelete, baseURL+"/api/2.0/postgres/projects/endpoint-test-project/branches/main/endpoints/rw-endpoint", nil)
 	deleteEpReq.Header.Set("Authorization", "Bearer test-token")
 	deleteEpResp, err := client.Do(deleteEpReq)
 	require.NoError(t, err)
@@ -256,7 +256,7 @@ func TestPostgresEndpointNotFoundWhenBranchNotExists(t *testing.T) {
 	baseURL := server.URL
 
 	// Create project first
-	createProjReq, _ := http.NewRequest("POST", baseURL+"/api/2.0/postgres/projects?project_id=ep-test-project", nil)
+	createProjReq, _ := http.NewRequest(http.MethodPost, baseURL+"/api/2.0/postgres/projects?project_id=ep-test-project", nil)
 	createProjReq.Header.Set("Authorization", "Bearer test-token")
 	createProjResp, err := client.Do(createProjReq)
 	require.NoError(t, err)
@@ -264,7 +264,7 @@ func TestPostgresEndpointNotFoundWhenBranchNotExists(t *testing.T) {
 	createProjResp.Body.Close()
 
 	// Try to create endpoint without branch
-	createEpReq, _ := http.NewRequest("POST", baseURL+"/api/2.0/postgres/projects/ep-test-project/branches/nonexistent/endpoints?endpoint_id=rw-endpoint", nil)
+	createEpReq, _ := http.NewRequest(http.MethodPost, baseURL+"/api/2.0/postgres/projects/ep-test-project/branches/nonexistent/endpoints?endpoint_id=rw-endpoint", nil)
 	createEpReq.Header.Set("Authorization", "Bearer test-token")
 	createEpResp, err := client.Do(createEpReq)
 	require.NoError(t, err)

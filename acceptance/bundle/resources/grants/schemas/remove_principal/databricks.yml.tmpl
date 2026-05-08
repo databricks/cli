@@ -1,0 +1,13 @@
+bundle:
+  name: schema-grants-remove-principal-$UNIQUE_NAME
+
+resources:
+  schemas:
+    grants_schema:
+      name: schema_remove_principal_$UNIQUE_NAME
+      catalog_name: main
+      grants:
+        - principal: $CURRENT_USER_NAME
+          privileges:
+            - CREATE_TABLE
+        - { principal: deco-test-user@databricks.com, privileges: [USE_SCHEMA] } # TO_REMOVE

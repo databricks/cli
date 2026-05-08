@@ -1,0 +1,15 @@
+sethome "./home"
+
+# Create a SPOG account profile: non-accounts.* host with account_id, no workspace_id.
+# Before the fix, this was misclassified as WorkspaceConfig and validated with
+# CurrentUser.Me, which fails on account-scoped SPOG hosts.
+cat > "./home/.databrickscfg" <<EOF
+[spog-account]
+host = ${DATABRICKS_HOST}
+account_id = spog-acct-123
+workspace_id = none
+token = test-token
+EOF
+
+title "SPOG account profile should be valid"
+trace $CLI auth profiles --output json

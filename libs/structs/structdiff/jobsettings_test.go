@@ -477,7 +477,7 @@ func TestJobDiff(t *testing.T) {
 	assert.Equal(t, "budget_policy_id", changes[0].Path.String())
 	assert.Equal(t, "550e8400-e29b-41d4-a716-446655440000", changes[0].Old)
 	assert.Equal(t, "", changes[0].New)
-	// Note: pause_status shows up as nil here because Continous does not have ForceSendFields field
+	// Note: pause_status shows up as nil here because Continuous does not have ForceSendFields field
 	assert.Equal(t, "continuous.pause_status", changes[1].Path.String())
 	assert.Equal(t, jobs.PauseStatus("UNPAUSED"), changes[1].Old)
 	assert.Nil(t, changes[1].New)
@@ -495,7 +495,7 @@ func TestJobDiff(t *testing.T) {
 	assert.Equal(t, "550e8400-e29b-41d4-a716-446655440000", changes[0].Old)
 	assert.Nil(t, changes[0].New)
 
-	// continous is completely deleted from jobExampleResponseNils
+	// continuous is completely deleted from jobExampleResponseNils
 	assert.Equal(t, "continuous", changes[1].Path.String())
 	assert.Equal(t, jobs.Continuous{PauseStatus: "UNPAUSED"}, changes[1].Old)
 	assert.Nil(t, changes[1].New)

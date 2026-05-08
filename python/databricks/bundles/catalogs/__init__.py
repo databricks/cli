@@ -1,4 +1,7 @@
 __all__ = [
+    "AzureEncryptionSettings",
+    "AzureEncryptionSettingsDict",
+    "AzureEncryptionSettingsParam",
     "Catalog",
     "CatalogDict",
     "CatalogGrant",
@@ -7,6 +10,9 @@ __all__ = [
     "CatalogGrantPrivilege",
     "CatalogGrantPrivilegeParam",
     "CatalogParam",
+    "EncryptionSettings",
+    "EncryptionSettingsDict",
+    "EncryptionSettingsParam",
     "Lifecycle",
     "LifecycleDict",
     "LifecycleParam",
@@ -18,10 +24,20 @@ __all__ = [
 ]
 
 
+from databricks.bundles.catalogs._models.azure_encryption_settings import (
+    AzureEncryptionSettings,
+    AzureEncryptionSettingsDict,
+    AzureEncryptionSettingsParam,
+)
 from databricks.bundles.catalogs._models.catalog import (
     Catalog,
     CatalogDict,
     CatalogParam,
+)
+from databricks.bundles.catalogs._models.encryption_settings import (
+    EncryptionSettings,
+    EncryptionSettingsDict,
+    EncryptionSettingsParam,
 )
 from databricks.bundles.catalogs._models.lifecycle import (
     Lifecycle,

@@ -9,17 +9,7 @@ EOF
 title "Initial profile with old host\n"
 cat "./home/.databrickscfg"
 
-# Use a fake browser that performs a GET on the authorization URL
-# and follows the redirect back to localhost.
-export BROWSER="browser.py"
-
-# Login with profile but provide a different host as positional argument
-# The positional argument should override the profile's host
-title "Login with positional host argument (should override profile)"
-trace $CLI auth login $DATABRICKS_HOST --profile override-test
-
-title "Profile after login (host should be updated)\n"
-cat "./home/.databrickscfg"
-
-# Track the .databrickscfg file that was created to surface changes.
-mv "./home/.databrickscfg" "./out.databrickscfg"
+# Login with --profile and --host where the profile has a different host.
+# This should error because the profile's host conflicts with --host.
+title "Login with --host flag (should error on conflict)"
+trace $CLI auth login --host $DATABRICKS_HOST --profile override-test

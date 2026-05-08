@@ -1,6 +1,9 @@
 package runlocal
 
-import "fmt"
+import (
+	"net"
+	"strconv"
+)
 
 type Config struct {
 	AppName       string
@@ -24,7 +27,7 @@ const (
 func NewConfig(workspaceHost string, workspaceID int64, appDir, host string, port int) *Config {
 	c := &Config{
 		AppName:       DEFAULT_APP_NAME,
-		AppURL:        fmt.Sprintf("http://%s:%d", host, port),
+		AppURL:        "http://" + net.JoinHostPort(host, strconv.Itoa(port)),
 		WorkspaceID:   workspaceID,
 		ServerName:    host,
 		Port:          port,

@@ -6,6 +6,7 @@ import (
 	"runtime"
 	"testing"
 
+	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/databricks-sdk-go/config"
@@ -34,7 +35,7 @@ func TestWorkspaceResolveProfileFromHost(t *testing.T) {
 
 	t.Run("no config file", func(t *testing.T) {
 		setupWorkspaceTest(t)
-		_, err := w.Client()
+		_, err := w.Client(t.Context())
 		assert.NoError(t, err)
 	})
 
@@ -49,7 +50,7 @@ func TestWorkspaceResolveProfileFromHost(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		client, err := w.Client()
+		client, err := w.Client(t.Context())
 		assert.NoError(t, err)
 		assert.Equal(t, "default", client.Config.Profile)
 	})
@@ -67,10 +68,110 @@ func TestWorkspaceResolveProfileFromHost(t *testing.T) {
 		require.NoError(t, err)
 
 		t.Setenv("DATABRICKS_CONFIG_FILE", filepath.Join(home, "customcfg"))
-		client, err := w.Client()
+		client, err := w.Client(t.Context())
 		assert.NoError(t, err)
 		assert.Equal(t, "custom", client.Config.Profile)
 	})
+}
+
+func TestWorkspaceNormalizeHostURL(t *testing.T) {
+	t.Run("extracts workspace_id from query param", func(t *testing.T) {
+		w := Workspace{
+			Host: "https://spog.databricks.com/?o=12345",
+		}
+		w.NormalizeHostURL()
+		assert.Equal(t, "https://spog.databricks.com", w.Host)
+		assert.Equal(t, "12345", w.WorkspaceID)
+	})
+
+	t.Run("extracts both workspace_id and account_id", func(t *testing.T) {
+		w := Workspace{
+			Host: "https://spog.databricks.com/?o=605&a=abc123",
+		}
+		w.NormalizeHostURL()
+		assert.Equal(t, "https://spog.databricks.com", w.Host)
+		assert.Equal(t, "605", w.WorkspaceID)
+		assert.Equal(t, "abc123", w.AccountID)
+	})
+
+	t.Run("explicit workspace_id takes precedence", func(t *testing.T) {
+		w := Workspace{
+			Host:        "https://spog.databricks.com/?o=999",
+			WorkspaceID: "explicit",
+		}
+		w.NormalizeHostURL()
+		assert.Equal(t, "https://spog.databricks.com", w.Host)
+		assert.Equal(t, "explicit", w.WorkspaceID)
+	})
+
+	t.Run("explicit account_id takes precedence", func(t *testing.T) {
+		w := Workspace{
+			Host:      "https://spog.databricks.com/?a=from-url",
+			AccountID: "explicit-account",
+		}
+		w.NormalizeHostURL()
+		assert.Equal(t, "https://spog.databricks.com", w.Host)
+		assert.Equal(t, "explicit-account", w.AccountID)
+	})
+
+	t.Run("no-op for host without query params", func(t *testing.T) {
+		w := Workspace{
+			Host: "https://normal.databricks.com",
+		}
+		w.NormalizeHostURL()
+		assert.Equal(t, "https://normal.databricks.com", w.Host)
+		assert.Empty(t, w.WorkspaceID)
+	})
+}
+
+func TestWorkspaceClientNormalizesHostBeforeProfileResolution(t *testing.T) {
+	// Regression test: Client() must normalize the host URL (strip ?o= and
+	// populate WorkspaceID) before building the SDK config and resolving
+	// profiles. This ensures workspace_id is available for disambiguation.
+	setupWorkspaceTest(t)
+
+	err := databrickscfg.SaveToProfile(t.Context(), &config.Config{
+		Profile:     "ws1",
+		Host:        "https://spog.databricks.com",
+		Token:       "token1",
+		WorkspaceID: "111",
+	})
+	require.NoError(t, err)
+
+	err = databrickscfg.SaveToProfile(t.Context(), &config.Config{
+		Profile:     "ws2",
+		Host:        "https://spog.databricks.com",
+		Token:       "token2",
+		WorkspaceID: "222",
+	})
+	require.NoError(t, err)
+
+	// Host with ?o= should be normalized and workspace_id used to disambiguate.
+	w := Workspace{
+		Host: "https://spog.databricks.com/?o=222",
+	}
+	client, err := w.Client(t.Context())
+	require.NoError(t, err)
+	assert.Equal(t, "ws2", client.Config.Profile)
+}
+
+func TestWorkspaceConfigHTTPTimeout(t *testing.T) {
+	for _, tc := range []struct {
+		envVal string
+		want   int
+	}{
+		{"", 90},
+		{"5", 5},
+		{"not-a-number", 90},
+	} {
+		t.Run(tc.envVal, func(t *testing.T) {
+			if tc.envVal != "" {
+				t.Setenv(env.HTTPTimeoutSecondsVariable, tc.envVal)
+			}
+			w := Workspace{}
+			assert.Equal(t, tc.want, w.Config(t.Context()).HTTPTimeoutSeconds)
+		})
+	}
 }
 
 func TestWorkspaceVerifyProfileForHost(t *testing.T) {
@@ -84,7 +185,7 @@ func TestWorkspaceVerifyProfileForHost(t *testing.T) {
 
 	t.Run("no config file", func(t *testing.T) {
 		setupWorkspaceTest(t)
-		_, err := w.Client()
+		_, err := w.Client(t.Context())
 		assert.ErrorIs(t, err, fs.ErrNotExist)
 	})
 
@@ -98,7 +199,7 @@ func TestWorkspaceVerifyProfileForHost(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		_, err = w.Client()
+		_, err = w.Client(t.Context())
 		assert.NoError(t, err)
 	})
 
@@ -112,7 +213,7 @@ func TestWorkspaceVerifyProfileForHost(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		_, err = w.Client()
+		_, err = w.Client(t.Context())
 		assert.ErrorContains(t, err, "doesn’t match the host configured in the bundle")
 	})
 
@@ -128,7 +229,7 @@ func TestWorkspaceVerifyProfileForHost(t *testing.T) {
 		require.NoError(t, err)
 
 		t.Setenv("DATABRICKS_CONFIG_FILE", filepath.Join(home, "customcfg"))
-		_, err = w.Client()
+		_, err = w.Client(t.Context())
 		assert.NoError(t, err)
 	})
 
@@ -144,7 +245,7 @@ func TestWorkspaceVerifyProfileForHost(t *testing.T) {
 		require.NoError(t, err)
 
 		t.Setenv("DATABRICKS_CONFIG_FILE", filepath.Join(home, "customcfg"))
-		_, err = w.Client()
+		_, err = w.Client(t.Context())
 		assert.ErrorContains(t, err, "doesn’t match the host configured in the bundle")
 	})
 }

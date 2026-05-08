@@ -93,7 +93,8 @@ type DataSourceAccountSettingV2EffectivePersonalCompute struct {
 }
 
 type DataSourceAccountSettingV2EffectiveRestrictWorkspaceAdmins struct {
-	Status string `json:"status"`
+	DisableGovTagCreation bool   `json:"disable_gov_tag_creation,omitempty"`
+	Status                string `json:"status"`
 }
 
 type DataSourceAccountSettingV2EffectiveStringVal struct {
@@ -109,7 +110,8 @@ type DataSourceAccountSettingV2PersonalCompute struct {
 }
 
 type DataSourceAccountSettingV2RestrictWorkspaceAdmins struct {
-	Status string `json:"status"`
+	DisableGovTagCreation bool   `json:"disable_gov_tag_creation,omitempty"`
+	Status                string `json:"status"`
 }
 
 type DataSourceAccountSettingV2StringVal struct {

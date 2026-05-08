@@ -1,3 +1,4 @@
+// Command codegen generates Go types from the Databricks Terraform provider schema.
 package main
 
 import (
@@ -11,12 +12,20 @@ import (
 func main() {
 	ctx := context.Background()
 
-	schema, err := schema.Load(ctx)
+	s, err := schema.Load(ctx)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	err = generator.Run(ctx, schema, "../schema")
+	log.Printf("fetching provider checksums for v%s", schema.ProviderVersion)
+	checksums, err := schema.FetchProviderChecksums(schema.ProviderVersion)
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Printf("  linux_amd64: %s", checksums.LinuxAmd64)
+	log.Printf("  linux_arm64: %s", checksums.LinuxArm64)
+
+	err = generator.Run(ctx, s, checksums, "../schema")
 	if err != nil {
 		log.Fatal(err)
 	}

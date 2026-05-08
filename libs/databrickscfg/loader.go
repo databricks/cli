@@ -98,7 +98,21 @@ func (l profileFromHostLoader) Configure(cfg *config.Config) error {
 	if err == errNoMatchingProfiles {
 		return nil
 	}
-	if err, ok := err.(errMultipleProfiles); ok {
+
+	// If multiple profiles match the same host and we have a workspace_id,
+	// try to disambiguate by matching workspace_id.
+	if names, ok := AsMultipleProfiles(err); ok && cfg.WorkspaceID != "" {
+		originalErr := err
+		match, err = l.disambiguateByWorkspaceID(ctx, configFile, host, cfg.WorkspaceID, names)
+		if err == errNoMatchingProfiles {
+			// workspace_id didn't match any of the host-matching profiles.
+			// Fall back to the original ambiguity error.
+			log.Debugf(ctx, "workspace_id=%s did not match any profiles for host %s: %v", cfg.WorkspaceID, host, names)
+			err = originalErr
+		}
+	}
+
+	if _, ok := AsMultipleProfiles(err); ok {
 		return fmt.Errorf(
 			"%s: %w: please set DATABRICKS_CONFIG_PROFILE or provide --profile flag to specify one",
 			host, err)
@@ -118,6 +132,33 @@ func (l profileFromHostLoader) Configure(cfg *config.Config) error {
 
 	cfg.Profile = match.Name()
 	return nil
+}
+
+// disambiguateByWorkspaceID filters the profiles that matched a host by workspace_id.
+func (l profileFromHostLoader) disambiguateByWorkspaceID(
+	ctx context.Context,
+	configFile *config.File,
+	host string,
+	workspaceID string,
+	profileNames []string,
+) (*ini.Section, error) {
+	log.Debugf(ctx, "Multiple profiles matched host %s, disambiguating by workspace_id=%s", host, workspaceID)
+
+	nameSet := make(map[string]bool, len(profileNames))
+	for _, name := range profileNames {
+		nameSet[name] = true
+	}
+
+	return findMatchingProfile(configFile, func(s *ini.Section) bool {
+		if !nameSet[s.Name()] {
+			return false
+		}
+		key, err := s.GetKey("workspace_id")
+		if err != nil {
+			return false
+		}
+		return key.Value() == workspaceID
+	})
 }
 
 func (l profileFromHostLoader) isAnyAuthConfigured(cfg *config.Config) bool {

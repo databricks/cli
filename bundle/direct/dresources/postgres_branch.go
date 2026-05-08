@@ -86,12 +86,12 @@ func (r *ResourcePostgresBranch) DoCreate(ctx context.Context, config *PostgresB
 	return result.Name, result, nil
 }
 
-func (r *ResourcePostgresBranch) DoUpdate(ctx context.Context, id string, config *PostgresBranchState, changes Changes) (*postgres.Branch, error) {
+func (r *ResourcePostgresBranch) DoUpdate(ctx context.Context, id string, config *PostgresBranchState, entry *PlanEntry) (*postgres.Branch, error) {
 	// Build update mask from fields that have action="update" in the changes map.
 	// This excludes immutable fields and fields that haven't changed.
 	// Prefix with "spec." because the API expects paths relative to the Branch object,
 	// not relative to our flattened state type.
-	fieldPaths := collectUpdatePathsWithPrefix(changes, "spec.")
+	fieldPaths := collectUpdatePathsWithPrefix(entry.Changes, "spec.")
 
 	waiter, err := r.client.Postgres.UpdateBranch(ctx, postgres.UpdateBranchRequest{
 		Branch: postgres.Branch{

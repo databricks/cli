@@ -105,10 +105,12 @@ type ResourceAppPendingDeployment struct {
 }
 
 type ResourceAppProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type ResourceAppResourcesApp struct {
+	Name       string `json:"name,omitempty"`
+	Permission string `json:"permission,omitempty"`
 }
 
 type ResourceAppResourcesDatabase struct {

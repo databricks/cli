@@ -1,7 +1,9 @@
 package main
 
 import (
+	"errors"
 	"fmt"
+	"io/fs"
 	"log"
 	"os"
 	"path"
@@ -30,7 +32,7 @@ func main() {
 	outputDir := path.Join(docsDir, "output")
 	templatesDir := path.Join(docsDir, "templates")
 
-	if _, err := os.Stat(outputDir); os.IsNotExist(err) {
+	if _, err := os.Stat(outputDir); errors.Is(err, fs.ErrNotExist) {
 		if err := os.MkdirAll(outputDir, 0o755); err != nil {
 			log.Fatal(err)
 		}
@@ -43,7 +45,7 @@ func main() {
 	err = generateDocs(
 		[]string{path.Join(annotationDir, "annotations.yml")},
 		path.Join(outputDir, rootFileName),
-		reflect.TypeOf(config.Root{}),
+		reflect.TypeFor[config.Root](),
 		fillTemplateVariables(string(rootHeader)),
 	)
 	if err != nil {
@@ -56,7 +58,7 @@ func main() {
 	err = generateDocs(
 		[]string{path.Join(annotationDir, "annotations_openapi.yml"), path.Join(annotationDir, "annotations_openapi_overrides.yml"), path.Join(annotationDir, "annotations.yml")},
 		path.Join(outputDir, resourcesFileName),
-		reflect.TypeOf(config.Resources{}),
+		reflect.TypeFor[config.Resources](),
 		fillTemplateVariables(string(resourcesHeader)),
 	)
 	if err != nil {

@@ -47,7 +47,7 @@ func (s *FakeWorkspace) AppsCreateUpdate(req Request, name string) Response {
 			return Response{Body: fmt.Sprintf("internal error: %s", err), StatusCode: http.StatusInternalServerError}
 		}
 
-		for _, field := range strings.Split(updateReq.UpdateMask, ",") {
+		for field := range strings.SplitSeq(updateReq.UpdateMask, ",") {
 			if v, ok := updateMap[strings.TrimSpace(field)]; ok {
 				existingMap[strings.TrimSpace(field)] = v
 			}
@@ -87,6 +87,83 @@ func (s *FakeWorkspace) AppsGetUpdate(_ Request, name string) Response {
 			},
 		},
 	}
+}
+
+func (s *FakeWorkspace) AppsCreateDeployment(req Request, name string) Response {
+	defer s.LockUnlock()()
+
+	app, ok := s.Apps[name]
+	if !ok {
+		return Response{StatusCode: 404}
+	}
+
+	var deployment apps.AppDeployment
+	if err := json.Unmarshal(req.Body, &deployment); err != nil {
+		return Response{StatusCode: 500, Body: fmt.Sprintf("internal error: %s", err)}
+	}
+
+	deployment.DeploymentId = fmt.Sprintf("deploy-%d", nextID())
+	deployment.Status = &apps.AppDeploymentStatus{
+		State:   apps.AppDeploymentStateSucceeded,
+		Message: "Deployment succeeded",
+	}
+
+	app.ActiveDeployment = &deployment
+	app.DefaultSourceCodePath = deployment.SourceCodePath
+	s.Apps[name] = app
+
+	return Response{Body: deployment}
+}
+
+func (s *FakeWorkspace) AppsGetDeployment(_ Request, name, deploymentID string) Response {
+	defer s.LockUnlock()()
+
+	_, ok := s.Apps[name]
+	if !ok {
+		return Response{StatusCode: 404}
+	}
+
+	return Response{Body: apps.AppDeployment{
+		DeploymentId: deploymentID,
+		Status: &apps.AppDeploymentStatus{
+			State:   apps.AppDeploymentStateSucceeded,
+			Message: "Deployment succeeded",
+		},
+	}}
+}
+
+func (s *FakeWorkspace) AppsStart(_ Request, name string) Response {
+	defer s.LockUnlock()()
+
+	app, ok := s.Apps[name]
+	if !ok {
+		return Response{StatusCode: 404}
+	}
+
+	app.ComputeStatus = &apps.ComputeStatus{
+		State:   apps.ComputeStateActive,
+		Message: "App compute is active.",
+	}
+	s.Apps[name] = app
+
+	return Response{Body: app}
+}
+
+func (s *FakeWorkspace) AppsStop(_ Request, name string) Response {
+	defer s.LockUnlock()()
+
+	app, ok := s.Apps[name]
+	if !ok {
+		return Response{StatusCode: 404}
+	}
+
+	app.ComputeStatus = &apps.ComputeStatus{
+		State:   apps.ComputeStateStopped,
+		Message: "App compute is stopped.",
+	}
+	s.Apps[name] = app
+
+	return Response{Body: app}
 }
 
 func (s *FakeWorkspace) AppsUpsert(req Request, name string) Response {
@@ -133,13 +210,39 @@ func (s *FakeWorkspace) AppsUpsert(req Request, name string) Response {
 		Message: "Application is running.",
 	}
 
-	app.ComputeStatus = &apps.ComputeStatus{
-		State:   "ACTIVE",
-		Message: "App compute is active.",
+	// Respect no_compute query param: if true, start the app in STOPPED state.
+	if req.URL.Query().Get("no_compute") == "true" {
+		app.ComputeStatus = &apps.ComputeStatus{
+			State:   apps.ComputeStateStopped,
+			Message: "App compute is stopped.",
+		}
+	} else {
+		app.ComputeStatus = &apps.ComputeStatus{
+			State:   "ACTIVE",
+			Message: "App compute is active.",
+		}
+
+		// Simulate the apps platform side effect: when an app is created, it is deployed with the default source code path.
+		deployment := apps.AppDeployment{
+			SourceCodePath: "/Workspace/Users/tester@databricks.com/" + name,
+		}
+
+		deployment.DeploymentId = fmt.Sprintf("deploy-%d", nextID())
+		deployment.Status = &apps.AppDeploymentStatus{
+			State:   apps.AppDeploymentStateSucceeded,
+			Message: "Deployment succeeded",
+		}
+
+		app.ActiveDeployment = &deployment
+		app.DefaultSourceCodePath = deployment.SourceCodePath
 	}
 
 	app.Url = name + "-123.cloud.databricksapps.com"
 	app.Id = strconv.Itoa(len(s.Apps) + 1000)
+
+	if app.ComputeSize == "" {
+		app.ComputeSize = "MEDIUM"
+	}
 
 	// Assign a service principal to the app, mimicking the real platform.
 	if app.ServicePrincipalClientId == "" {

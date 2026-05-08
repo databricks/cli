@@ -43,9 +43,9 @@ func copyFile(src, dst string) error {
 // Checks whether descriptions are added for new config fields in the annotations.yml file
 // If this test fails either manually add descriptions to the `annotations.yml` or do the following:
 //  1. for fields described outside of CLI package fetch latest schema from the OpenAPI spec and add path to file to DATABRICKS_OPENAPI_SPEC env variable
-//  2. run `make schema` from the repository root to add placeholder descriptions
+//  2. run `./task generate-schema` from the repository root to add placeholder descriptions
 //  2. replace all "PLACEHOLDER" values with the actual descriptions if possible
-//  3. run `make schema` again to regenerate the schema with acutal descriptions
+//  3. run `./task generate-schema` again to regenerate the schema with acutal descriptions
 func TestRequiredAnnotationsForNewFields(t *testing.T) {
 	workdir := t.TempDir()
 	annotationsPath := path.Join(workdir, "annotations.yml")
@@ -100,7 +100,7 @@ func TestNoDetachedAnnotations(t *testing.T) {
 		}
 	}
 
-	_, err := jsonschema.FromType(reflect.TypeOf(config.Root{}), []func(reflect.Type, jsonschema.Schema) jsonschema.Schema{
+	_, err := jsonschema.FromType(reflect.TypeFor[config.Root](), []func(reflect.Type, jsonschema.Schema) jsonschema.Schema{
 		func(typ reflect.Type, s jsonschema.Schema) jsonschema.Schema {
 			delete(types, getPath(typ))
 			return s
@@ -125,6 +125,7 @@ func getAnnotations(path string) (annotation.File, error) {
 	return data, err
 }
 
+//deadcode:allow disabled pending annotation system overhaul; preserved intentionally
 func DisabledTestNoDuplicatedAnnotations(t *testing.T) {
 	// Check for duplicated annotations in annotation files
 	files := []string{

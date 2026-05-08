@@ -10,6 +10,8 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"io/fs"
+	"maps"
 	"net/http"
 	"os"
 	"os/exec"
@@ -17,7 +19,6 @@ import (
 	"regexp"
 	"runtime"
 	"slices"
-	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -32,7 +33,6 @@ import (
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/testdiff"
 	"github.com/databricks/cli/libs/testserver"
-	"github.com/databricks/cli/libs/utils"
 	"github.com/stretchr/testify/require"
 )
 
@@ -237,7 +237,11 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 		execPath = filepath.Join(cwd, "bin", "callserver.py")
 	} else {
 		if UseVersion != "" {
-			execPath = DownloadCLI(t, buildDir, UseVersion)
+			version := UseVersion
+			if version == "latest" {
+				version = resolveLatestVersion(t, buildDir)
+			}
+			execPath = DownloadCLI(t, buildDir, version)
 		} else {
 			execPath = BuildCLI(t, buildDir, coverDir, runtime.GOOS, runtime.GOARCH)
 		}
@@ -275,8 +279,9 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	t.Setenv("UV_CACHE_DIR", uvCache)
 
 	// UV_CACHE_DIR only applies to packages but not Python installations.
-	// UV_PYTHON_INSTALL_DIR ensures we cache Python downloads as well
-	uvInstall := filepath.Join(uvCache, "python_installs")
+	// UV_PYTHON_INSTALL_DIR points to the actual managed Python directory so
+	// uv finds pre-installed versions without falling back to system PATH search.
+	uvInstall := getUVPythonInstallDir(t)
 	t.Setenv("UV_PYTHON_INSTALL_DIR", uvInstall)
 
 	cloudEnv := os.Getenv("CLOUD_ENV")
@@ -367,9 +372,11 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 
 			// Generate materialized config for this test.
 			// We do this before skipping the test, so the configs are generated for all tests.
-			materializedConfig, err := internal.GenerateMaterializedConfig(config)
-			require.NoError(t, err)
-			testutil.WriteFile(t, filepath.Join(dir, internal.MaterializedConfigFile), materializedConfig)
+			materializedConfig := internal.GenerateMaterializedConfig(&config)
+			outPath := filepath.Join(dir, internal.MaterializedConfigFile)
+			if existing, _ := os.ReadFile(outPath); string(existing) != materializedConfig {
+				testutil.WriteFile(t, outPath, materializedConfig)
+			}
 
 			// If only regenerating out.test.toml, skip the actual test execution
 			if OnlyOutTestToml {
@@ -416,14 +423,20 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 				expanded = internal.SubsetExpanded(expanded, dir, scriptUsesEngine)
 			}
 
-			for ind, envset := range expanded {
-				envname := strings.Join(envset, "/")
-				t.Run(envname, func(t *testing.T) {
-					if runParallel {
-						t.Parallel()
-					}
-					runTest(t, dir, ind, coverDir, repls.Clone(), config, envset, envFilters)
-				})
+			// If the matrix expands to a single empty envset, run the test directly
+			// without creating a subtest (avoids the "#00" dummy subtest name).
+			if len(expanded) == 1 && len(expanded[0]) == 0 {
+				runTest(t, dir, 0, coverDir, repls.Clone(), config, nil, envFilters)
+			} else {
+				for ind, envset := range expanded {
+					envname := strings.Join(envset, "/")
+					t.Run(envname, func(t *testing.T) {
+						if runParallel {
+							t.Parallel()
+						}
+						runTest(t, dir, ind, coverDir, repls.Clone(), config, envset, envFilters)
+					})
+				}
 			}
 		})
 	}
@@ -480,7 +493,7 @@ func getTests(t *testing.T) []string {
 	})
 	require.NoError(t, err)
 
-	sort.Strings(testDirs)
+	slices.Sort(testDirs)
 	return testDirs
 }
 
@@ -504,10 +517,6 @@ func getSkipReason(config *internal.TestConfig, configPath string) string {
 
 	if WorkspaceTmpDir && !isTruePtr(config.RunsOnDbr) {
 		return "Disabled because RunsOnDbr is not set in " + configPath
-	}
-
-	if isTruePtr(config.Slow) && testing.Short() {
-		return "Disabled via Slow setting in " + configPath
 	}
 
 	isEnabled, isPresent := config.GOOS[runtime.GOOS]
@@ -603,7 +612,7 @@ func runTest(t *testing.T,
 	if KeepTmp {
 		tempDirBase := filepath.Join(os.TempDir(), "acceptance")
 		_ = os.Mkdir(tempDirBase, 0o755)
-		tmpDir, err = os.MkdirTemp(tempDirBase, "")
+		tmpDir, err = os.MkdirTemp(tempDirBase, "") //nolint:usetesting // KeepTmp: dir must persist after test for debugging
 		require.NoError(t, err)
 		t.Logf("Created directory: %s", tmpDir)
 	} else if WorkspaceTmpDir {
@@ -812,7 +821,7 @@ func buildTestEnv(configEnv map[string]string, customEnv []string) []string {
 	env := make([]string, 0, len(configEnv)+len(customEnv))
 
 	// Add config.Env first (but skip keys that exist in customEnv)
-	for _, key := range utils.SortedKeys(configEnv) {
+	for _, key := range slices.Sorted(maps.Keys(configEnv)) {
 		if hasKey(customEnv, key) {
 			continue
 		}
@@ -1046,6 +1055,35 @@ func CreateReleaseArtifact(t *testing.T, cwd, releasesDir, coverDir, osName, arc
 	t.Logf("Created %s %s release: %s", osName, arch, zipPath)
 }
 
+// resolveLatestVersion returns the latest released CLI version (e.g. "0.293.0"),
+// using a file-based cache in buildDir valid for 1 hour.
+func resolveLatestVersion(t *testing.T, buildDir string) string {
+	cachePath := filepath.Join(buildDir, "latest_version.txt")
+	if info, err := os.Stat(cachePath); err == nil && time.Since(info.ModTime()) < time.Hour {
+		data, err := os.ReadFile(cachePath)
+		require.NoError(t, err)
+		if version := strings.TrimSpace(string(data)); version != "" {
+			return version
+		}
+	}
+
+	const url = "https://api.github.com/repos/databricks/cli/releases/latest"
+	resp, err := http.Get(url)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+	require.Equal(t, http.StatusOK, resp.StatusCode, "failed to fetch %s: %s", url, resp.Status)
+
+	var release struct {
+		TagName string `json:"tag_name"`
+	}
+	require.NoError(t, json.NewDecoder(resp.Body).Decode(&release))
+	version := strings.TrimPrefix(release.TagName, "v")
+	require.NotEmpty(t, version, "empty tag_name in GitHub latest release response")
+
+	require.NoError(t, os.WriteFile(cachePath, []byte(version), 0o644))
+	return version
+}
+
 // DownloadCLI downloads a released CLI binary archive for the given version,
 // extracts the executable, and returns its path.
 func DownloadCLI(t *testing.T, buildDir, version string) string {
@@ -1266,6 +1304,20 @@ func getUVDefaultCacheDir(t *testing.T) string {
 	}
 }
 
+// getUVPythonInstallDir returns the directory where uv stores managed Python installations.
+// Must be called before HOME is overridden in tests, so that uv resolves the real install path.
+func getUVPythonInstallDir(t *testing.T) string {
+	cmd := exec.Command("uv", "python", "dir")
+	out, err := cmd.Output()
+	if err != nil {
+		t.Logf("uv python dir failed: %v; falling back to cache-based path", err)
+		cacheDir, err2 := os.UserCacheDir()
+		require.NoError(t, err2)
+		return filepath.Join(cacheDir, "uv", "python_installs")
+	}
+	return strings.TrimSpace(string(out))
+}
+
 func RunCommand(t *testing.T, args []string, dir string, env []string) {
 	start := time.Now()
 	cmd := exec.Command(args[0], args[1:]...)
@@ -1456,11 +1508,7 @@ func prepareWheelBuildDirectory(t *testing.T, dir string) string {
 }
 
 func BuildYamlfmt(t *testing.T) {
-	// Using make here instead of "go build" directly cause it's faster when it's already built
-	args := []string{
-		"make", "-s", "tools/yamlfmt" + exeSuffix,
-	}
-	RunCommand(t, args, "..", []string{})
+	RunCommand(t, []string{"go", "tool", "-modfile=tools/task/go.mod", "task", "build-yamlfmt"}, "..", []string{})
 }
 
 // setupTerraform installs terraform and configures environment variables for tests.
@@ -1481,12 +1529,12 @@ func setupTerraform(t *testing.T, cwd, buildDir string, repls *testdiff.Replacem
 
 func loadUserReplacements(t *testing.T, repls *testdiff.ReplacementsContext, tmpDir string) {
 	b, err := os.ReadFile(filepath.Join(tmpDir, userReplacementsFilename))
-	if os.IsNotExist(err) {
+	if errors.Is(err, fs.ErrNotExist) {
 		return
 	}
 	require.NoError(t, err)
-	lines := strings.Split(string(b), "\n")
-	for _, line := range lines {
+	lines := strings.SplitSeq(string(b), "\n")
+	for line := range lines {
 		line = strings.TrimSpace(line)
 		if len(line) == 0 {
 			continue

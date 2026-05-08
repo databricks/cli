@@ -55,7 +55,7 @@ func (n *Downloader) MarkPipelineLibraryForDownload(ctx context.Context, lib *pi
 }
 
 func (n *Downloader) markFileForDownload(ctx context.Context, filePath *string) error {
-	_, err := n.w.Workspace.GetStatusByPath(ctx, *filePath)
+	_, err := n.w.Workspace.GetStatusByPath(ctx, *filePath) //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
 	if err != nil {
 		return err
 	}
@@ -78,7 +78,7 @@ func (n *Downloader) markFileForDownload(ctx context.Context, filePath *string) 
 }
 
 func (n *Downloader) MarkDirectoryForDownload(ctx context.Context, dirPath *string) error {
-	_, err := n.w.Workspace.GetStatusByPath(ctx, *dirPath)
+	_, err := n.w.Workspace.GetStatusByPath(ctx, *dirPath) //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
 	if err != nil {
 		return err
 	}
@@ -118,7 +118,7 @@ func (n *Downloader) MarkDirectoryForDownload(ctx context.Context, dirPath *stri
 func (n *Downloader) recursiveListWithExclusions(ctx context.Context, dirPath string) ([]workspace.ObjectInfo, error) {
 	var result []workspace.ObjectInfo
 
-	objects, err := n.w.Workspace.ListAll(ctx, workspace.ListWorkspaceRequest{
+	objects, err := n.w.Workspace.ListAll(ctx, workspace.ListWorkspaceRequest{ //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
 		Path: dirPath,
 	})
 	if err != nil {

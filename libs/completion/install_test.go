@@ -1,6 +1,7 @@
 package completion
 
 import (
+	"io/fs"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -135,7 +136,7 @@ func TestInstallFishCreatesDirectory(t *testing.T) {
 	fishDir := filepath.Join(home, ".config", "fish", "completions")
 
 	_, err := os.Stat(fishDir)
-	assert.True(t, os.IsNotExist(err))
+	assert.ErrorIs(t, err, fs.ErrNotExist)
 
 	_, _, err = Install(t.Context(), Fish, home)
 	require.NoError(t, err)

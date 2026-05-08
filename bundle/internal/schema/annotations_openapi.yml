@@ -180,6 +180,11 @@ github.com/databricks/cli/bundle/config/resources.Catalog:
   "connection_name":
     "description": |-
       The name of the connection to an external data source.
+  "managed_encryption_settings":
+    "description": |-
+      Control CMK encryption for managed catalog data
+    "x-databricks-preview": |-
+      PRIVATE
   "name":
     "description": |-
       Name of catalog.
@@ -564,6 +569,14 @@ github.com/databricks/cli/bundle/config/resources.ExternalLocation:
   "effective_enable_file_events":
     "description": |-
       The effective value of `enable_file_events` after applying server-side defaults.
+    "x-databricks-field-behaviors_output_only": |-
+      true
+  "effective_file_event_queue":
+    "description": |-
+      The effective file event queue configuration after applying server-side defaults.
+      Always populated when a queue is provisioned, regardless of whether the user explicitly
+      set `enable_file_events`. Use this field instead of `file_event_queue` for reading
+      the actual queue state.
     "x-databricks-field-behaviors_output_only": |-
       true
   "enable_file_events":
@@ -1116,6 +1129,25 @@ github.com/databricks/cli/bundle/config/resources.SyncedDatabaseTable:
       may be in "PROVISIONING" as it runs asynchronously).
     "x-databricks-field-behaviors_output_only": |-
       true
+github.com/databricks/cli/bundle/config/resources.VectorSearchEndpoint:
+  "budget_policy_id":
+    "description": |-
+      The budget policy id to be applied
+  "endpoint_type":
+    "description": |-
+      Type of endpoint
+  "min_qps":
+    "description": |-
+      Min QPS for the endpoint. Mutually exclusive with num_replicas.
+      The actual replica count is calculated at index creation/sync time based on this value.
+  "name":
+    "description": |-
+      Name of the vector search endpoint
+  "usage_policy_id":
+    "description": |-
+      The usage policy id to be applied once we've migrated to usage policies
+    "x-databricks-preview": |-
+      PRIVATE
 github.com/databricks/cli/bundle/config/resources.Volume:
   "catalog_name":
     "description": |-
@@ -1240,14 +1272,19 @@ github.com/databricks/databricks-sdk-go/service/apps.AppResource:
   "name":
     "description": |-
       Name of the App Resource.
-  "postgres":
-    "x-databricks-preview": |-
-      PRIVATE
+  "postgres": {}
   "secret": {}
   "serving_endpoint": {}
   "sql_warehouse": {}
   "uc_securable": {}
-github.com/databricks/databricks-sdk-go/service/apps.AppResourceApp: {}
+github.com/databricks/databricks-sdk-go/service/apps.AppResourceApp:
+  "name": {}
+  "permission": {}
+github.com/databricks/databricks-sdk-go/service/apps.AppResourceAppAppPermission:
+  "_":
+    "enum":
+      - |-
+        CAN_USE
 github.com/databricks/databricks-sdk-go/service/apps.AppResourceDatabase:
   "database_name": {}
   "instance_name": {}
@@ -1303,15 +1340,9 @@ github.com/databricks/databricks-sdk-go/service/apps.AppResourceJobJobPermission
       - |-
         CAN_VIEW
 github.com/databricks/databricks-sdk-go/service/apps.AppResourcePostgres:
-  "branch":
-    "x-databricks-preview": |-
-      PRIVATE
-  "database":
-    "x-databricks-preview": |-
-      PRIVATE
-  "permission":
-    "x-databricks-preview": |-
-      PRIVATE
+  "branch": {}
+  "database": {}
+  "permission": {}
 github.com/databricks/databricks-sdk-go/service/apps.AppResourcePostgresPostgresPermission:
   "_":
     "enum":
@@ -1555,6 +1586,10 @@ github.com/databricks/databricks-sdk-go/service/catalog.AwsSqsQueue:
     "description": |-
       The AQS queue url in the format https://sqs.{region}.amazonaws.com/{account id}/{queue name}.
       Only required for provided_sqs.
+github.com/databricks/databricks-sdk-go/service/catalog.AzureEncryptionSettings:
+  "azure_cmk_access_connector_id": {}
+  "azure_cmk_managed_identity_id": {}
+  "azure_tenant_id": {}
 github.com/databricks/databricks-sdk-go/service/catalog.AzureQueueStorage:
   "managed_resource_id":
     "description": |-
@@ -1582,6 +1617,20 @@ github.com/databricks/databricks-sdk-go/service/catalog.EncryptionDetails:
   "sse_encryption_details":
     "description": |-
       Server-Side Encryption properties for clients communicating with AWS s3.
+github.com/databricks/databricks-sdk-go/service/catalog.EncryptionSettings:
+  "_":
+    "description": |-
+      Encryption Settings are used to carry metadata for securable encryption at rest.
+      Currently used for catalogs, we can use the information supplied here to interact with a CMK.
+  "azure_encryption_settings":
+    "description": |-
+      optional Azure settings - only required if an Azure CMK is used.
+  "azure_key_vault_key_id":
+    "description": |-
+      the AKV URL in Azure, null otherwise.
+  "customer_managed_key_id":
+    "description": |-
+      the CMK uuid in AWS and GCP, null otherwise.
 github.com/databricks/databricks-sdk-go/service/catalog.FileEventQueue:
   "managed_aqs": {}
   "managed_pubsub": {}
@@ -2349,8 +2398,12 @@ github.com/databricks/databricks-sdk-go/service/compute.Environment:
       In this minimal environment spec, only pip and java dependencies are supported.
   "base_environment":
     "description": |-
-      The `base_environment` key refers to an `env.yaml` file that specifies an environment version and a collection of dependencies required for the environment setup.
-      This `env.yaml` file may itself include a `base_environment` reference pointing to another `env_1.yaml` file. However, when used as a base environment, `env_1.yaml` (or further nested references) will not be processed or included in the final environment, meaning that the resolution of `base_environment` references is not recursive.
+      The base environment this environment is built on top of. A base environment defines the environment version and a
+      list of dependencies for serverless compute. The value can be a file path to a custom `env.yaml` file
+      (e.g., `/Workspace/path/to/env.yaml`). Support for a Databricks-provided base environment ID
+      (e.g., `workspace-base-environments/databricks_ai_v4`) and workspace base environment ID
+      (e.g., `workspace-base-environments/dbe_b849b66e-b31a-4cb5-b161-1f2b10877fb7`) is in Beta.
+      Either `environment_version` or `base_environment` can be provided.  For more information, see
   "client":
     "description": |-
       Use `environment_version` instead.
@@ -4018,7 +4071,8 @@ github.com/databricks/databricks-sdk-go/service/jobs.TableUpdateTriggerConfigura
 github.com/databricks/databricks-sdk-go/service/jobs.Task:
   "alert_task":
     "description": |-
-      New alert v2 task
+      The task evaluates a Databricks alert and sends notifications to subscribers
+      when the `alert_task` field is present.
   "clean_rooms_notebook_task":
     "description": |-
       The task runs a [clean rooms](https://docs.databricks.com/clean-rooms/index.html) notebook
@@ -4310,6 +4364,28 @@ github.com/databricks/databricks-sdk-go/service/pipelines.ConnectionParameters:
       For Oracle databases, this maps to a service name.
     "x-databricks-preview": |-
       PRIVATE
+github.com/databricks/databricks-sdk-go/service/pipelines.ConnectorOptions:
+  "_":
+    "description": |-
+      Wrapper message for source-specific options to support multiple connector types
+  "gdrive_options":
+    "x-databricks-preview": |-
+      PRIVATE
+  "google_ads_options":
+    "description": |-
+      Google Ads specific options for ingestion (object-level).
+      When set, these values override the corresponding fields in GoogleAdsConfig
+      (source_configurations).
+    "x-databricks-preview": |-
+      PRIVATE
+  "sharepoint_options":
+    "x-databricks-preview": |-
+      PRIVATE
+  "tiktok_ads_options":
+    "description": |-
+      TikTok Ads specific options for ingestion
+    "x-databricks-preview": |-
+      PRIVATE
 github.com/databricks/databricks-sdk-go/service/pipelines.ConnectorType:
   "_":
     "description": |-
@@ -4382,6 +4458,82 @@ github.com/databricks/databricks-sdk-go/service/pipelines.EventLogSpec:
   "schema":
     "description": |-
       The UC schema the event log is published under.
+github.com/databricks/databricks-sdk-go/service/pipelines.FileFilter:
+  "modified_after":
+    "description": |-
+      Include files with modification times occurring after the specified time.
+      Timestamp format: YYYY-MM-DDTHH:mm:ss (e.g. 2020-06-01T13:00:00)
+      Based on https://spark.apache.org/docs/latest/sql-data-sources-generic-options.html#modification-time-path-filters
+  "modified_before":
+    "description": |-
+      Include files with modification times occurring before the specified time.
+      Timestamp format: YYYY-MM-DDTHH:mm:ss (e.g. 2020-06-01T13:00:00)
+      Based on https://spark.apache.org/docs/latest/sql-data-sources-generic-options.html#modification-time-path-filters
+  "path_filter":
+    "description": |-
+      Include files with file names matching the pattern
+      Based on https://spark.apache.org/docs/latest/sql-data-sources-generic-options.html#path-glob-filter
+github.com/databricks/databricks-sdk-go/service/pipelines.FileIngestionOptions:
+  "corrupt_record_column": {}
+  "file_filters":
+    "description": |-
+      Generic options
+  "format":
+    "description": |-
+      required for TableSpec
+  "format_options":
+    "description": |-
+      Format-specific options
+      Based on https://docs.databricks.com/aws/en/ingestion/cloud-object-storage/auto-loader/options#file-format-options
+  "ignore_corrupt_files": {}
+  "infer_column_types": {}
+  "reader_case_sensitive":
+    "description": |-
+      Column name case sensitivity
+      https://docs.databricks.com/aws/en/ingestion/cloud-object-storage/auto-loader/schema#change-case-sensitive-behavior
+  "rescued_data_column": {}
+  "schema_evolution_mode":
+    "description": |-
+      Based on https://docs.databricks.com/aws/en/ingestion/cloud-object-storage/auto-loader/schema#how-does-auto-loader-schema-evolution-work
+  "schema_hints":
+    "description": |-
+      Override inferred schema of specific columns
+      Based on https://docs.databricks.com/aws/en/ingestion/cloud-object-storage/auto-loader/schema#override-schema-inference-with-schema-hints
+  "single_variant_column": {}
+github.com/databricks/databricks-sdk-go/service/pipelines.FileIngestionOptionsFileFormat:
+  "_":
+    "enum":
+      - |-
+        BINARYFILE
+      - |-
+        JSON
+      - |-
+        CSV
+      - |-
+        XML
+      - |-
+        EXCEL
+      - |-
+        PARQUET
+      - |-
+        AVRO
+      - |-
+        ORC
+github.com/databricks/databricks-sdk-go/service/pipelines.FileIngestionOptionsSchemaEvolutionMode:
+  "_":
+    "description": |-
+      Based on https://docs.databricks.com/aws/en/ingestion/cloud-object-storage/auto-loader/schema#how-does-auto-loader-schema-evolution-work
+    "enum":
+      - |-
+        ADD_NEW_COLUMNS_WITH_TYPE_WIDENING
+      - |-
+        ADD_NEW_COLUMNS
+      - |-
+        RESCUE
+      - |-
+        FAIL_ON_NEW_COLUMNS
+      - |-
+        NONE
 github.com/databricks/databricks-sdk-go/service/pipelines.FileLibrary:
   "path":
     "description": |-
@@ -4393,6 +4545,41 @@ github.com/databricks/databricks-sdk-go/service/pipelines.Filters:
   "include":
     "description": |-
       Paths to include.
+github.com/databricks/databricks-sdk-go/service/pipelines.GoogleAdsOptions:
+  "_":
+    "description": |-
+      Google Ads specific options for ingestion (object-level).
+      When set, these values override the corresponding fields in GoogleAdsConfig
+      (source_configurations).
+  "lookback_window_days":
+    "description": |-
+      (Optional) Number of days to look back for report tables to capture late-arriving data.
+      If not specified, defaults to 30 days.
+  "manager_account_id":
+    "description": |-
+      (Optional at this level) Manager Account ID (also called MCC Account ID) used to list
+      and access customer accounts under this manager account.
+      Overrides GoogleAdsConfig.manager_account_id from source_configurations when set.
+  "sync_start_date":
+    "description": |-
+      (Optional) Start date for the initial sync of report tables in YYYY-MM-DD format.
+      This determines the earliest date from which to sync historical data.
+      If not specified, defaults to 2 years of historical data.
+github.com/databricks/databricks-sdk-go/service/pipelines.GoogleDriveOptions:
+  "entity_type": {}
+  "file_ingestion_options": {}
+  "url":
+    "description": |-
+      Google Drive URL.
+github.com/databricks/databricks-sdk-go/service/pipelines.GoogleDriveOptionsGoogleDriveEntityType:
+  "_":
+    "enum":
+      - |-
+        FILE
+      - |-
+        FILE_METADATA
+      - |-
+        PERMISSION
 github.com/databricks/databricks-sdk-go/service/pipelines.IngestionConfig:
   "report":
     "description": |-
@@ -4594,6 +4781,8 @@ github.com/databricks/databricks-sdk-go/service/pipelines.IngestionSourceType:
         SHAREPOINT
       - |-
         DYNAMICS365
+      - |-
+        GOOGLE_DRIVE
       - |-
         FOREIGN_CATALOG
 github.com/databricks/databricks-sdk-go/service/pipelines.ManualTrigger: {}
@@ -4892,6 +5081,11 @@ github.com/databricks/databricks-sdk-go/service/pipelines.RunAs:
     "description": |-
       The email of an active workspace user. Users can only set this field to their own email.
 github.com/databricks/databricks-sdk-go/service/pipelines.SchemaSpec:
+  "connector_options":
+    "description": |-
+      (Optional) Source Specific Connector Options
+    "x-databricks-preview": |-
+      PRIVATE
   "destination_catalog":
     "description": |-
       Required. Destination catalog to store tables.
@@ -4907,6 +5101,28 @@ github.com/databricks/databricks-sdk-go/service/pipelines.SchemaSpec:
   "table_configuration":
     "description": |-
       Configuration settings to control the ingestion of tables. These settings are applied to all tables in this schema and override the table_configuration defined in the IngestionPipelineDefinition object.
+github.com/databricks/databricks-sdk-go/service/pipelines.SharepointOptions:
+  "entity_type":
+    "description": |-
+      (Optional) The type of SharePoint entity to ingest.
+      If not specified, defaults to FILE.
+  "file_ingestion_options":
+    "description": |-
+      (Optional) File ingestion options for processing files.
+  "url":
+    "description": |-
+      Required. The SharePoint URL.
+github.com/databricks/databricks-sdk-go/service/pipelines.SharepointOptionsSharepointEntityType:
+  "_":
+    "enum":
+      - |-
+        FILE
+      - |-
+        FILE_METADATA
+      - |-
+        PERMISSION
+      - |-
+        LIST
 github.com/databricks/databricks-sdk-go/service/pipelines.SourceCatalogConfig:
   "_":
     "description": |-
@@ -4922,6 +5138,11 @@ github.com/databricks/databricks-sdk-go/service/pipelines.SourceConfig:
     "description": |-
       Catalog-level source configuration parameters
 github.com/databricks/databricks-sdk-go/service/pipelines.TableSpec:
+  "connector_options":
+    "description": |-
+      (Optional) Source Specific Connector Options
+    "x-databricks-preview": |-
+      PRIVATE
   "destination_catalog":
     "description": |-
       Required. Destination catalog to store table.
@@ -5014,6 +5235,74 @@ github.com/databricks/databricks-sdk-go/service/pipelines.TableSpecificConfigScd
         SCD_TYPE_2
       - |-
         APPEND_ONLY
+github.com/databricks/databricks-sdk-go/service/pipelines.TikTokAdsOptions:
+  "_":
+    "description": |-
+      TikTok Ads specific options for ingestion
+  "data_level":
+    "description": |-
+      (Optional) Data level for the report.
+      If not specified, defaults to AUCTION_CAMPAIGN.
+  "dimensions":
+    "description": |-
+      (Optional) Dimensions to include in the report.
+      Examples: "campaign_id", "adgroup_id", "ad_id", "stat_time_day", "stat_time_hour"
+      If not specified, defaults to campaign_id.
+  "lookback_window_days":
+    "description": |-
+      (Optional) Number of days to look back for report tables during incremental sync
+      to capture late-arriving conversions and attribution data.
+      If not specified, defaults to 7 days.
+  "metrics":
+    "description": |-
+      (Optional) Metrics to include in the report.
+      Examples: "spend", "impressions", "clicks", "conversion", "cpc"
+      If not specified, defaults to basic metrics (spend, impressions, clicks, etc.)
+  "query_lifetime":
+    "description": |-
+      (Optional) Whether to request lifetime metrics (all-time aggregated data).
+      When true, the report returns all-time data.
+      If not specified, defaults to false.
+  "report_type":
+    "description": |-
+      (Optional) Report type for the TikTok Ads API.
+      If not specified, defaults to BASIC.
+  "sync_start_date":
+    "description": |-
+      (Optional) Start date for the initial sync of report tables in YYYY-MM-DD format.
+      This determines the earliest date from which to sync historical data.
+      If not specified, defaults to 1 year of historical data for daily reports
+      and 30 days for hourly reports.
+github.com/databricks/databricks-sdk-go/service/pipelines.TikTokAdsOptionsTikTokDataLevel:
+  "_":
+    "description": |-
+      Data level for TikTok Ads report aggregation.
+    "enum":
+      - |-
+        AUCTION_ADVERTISER
+      - |-
+        AUCTION_CAMPAIGN
+      - |-
+        AUCTION_ADGROUP
+      - |-
+        AUCTION_AD
+github.com/databricks/databricks-sdk-go/service/pipelines.TikTokAdsOptionsTikTokReportType:
+  "_":
+    "description": |-
+      Report type for TikTok Ads API.
+    "enum":
+      - |-
+        BASIC
+      - |-
+        AUDIENCE
+      - |-
+        PLAYABLE_AD
+      - |-
+        DSA
+      - |-
+        BUSINESS_CENTER
+      - |-
+        GMV_MAX
 github.com/databricks/databricks-sdk-go/service/postgres.EndpointGroupSpec:
   "enable_readable_secondaries":
     "description": |-
@@ -5934,6 +6223,15 @@ github.com/databricks/databricks-sdk-go/service/sql.WarehousePermissionLevel:
         CAN_MONITOR
       - |-
         CAN_VIEW
+github.com/databricks/databricks-sdk-go/service/vectorsearch.EndpointType:
+  "_":
+    "description": |-
+      Type of endpoint.
+    "enum":
+      - |-
+        STORAGE_OPTIMIZED
+      - |-
+        STANDARD
 github.com/databricks/databricks-sdk-go/service/workspace.AzureKeyVaultSecretScopeMetadata:
   "_":
     "description": |-

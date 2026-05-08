@@ -1,6 +1,7 @@
 package completion
 
 import (
+	"io/fs"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -110,7 +111,7 @@ func TestUninstallFish(t *testing.T) {
 	assert.Equal(t, fishPath, filePath)
 
 	_, err = os.Stat(fishPath)
-	assert.True(t, os.IsNotExist(err))
+	assert.ErrorIs(t, err, fs.ErrNotExist)
 }
 
 func TestUninstallFishForeignFile(t *testing.T) {

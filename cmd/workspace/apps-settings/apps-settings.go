@@ -87,7 +87,7 @@ func newCreateCustomTemplate() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name', 'git_repo', 'path', 'manifest', 'git_provider' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'name', 'git_repo', 'path', 'manifest', 'git_provider' in your JSON input")
 			}
 			return nil
 		}
@@ -136,6 +136,7 @@ func newCreateCustomTemplate() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -192,6 +193,7 @@ func newDeleteCustomTemplate() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -248,6 +250,7 @@ func newGetCustomTemplate() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -276,9 +279,19 @@ func newListCustomTemplates() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listCustomTemplatesReq apps.ListCustomTemplatesRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listCustomTemplatesLimit int
 
 	cmd.Flags().IntVar(&listCustomTemplatesReq.PageSize, "page-size", listCustomTemplatesReq.PageSize, `Upper bound for items returned.`)
-	cmd.Flags().StringVar(&listCustomTemplatesReq.PageToken, "page-token", listCustomTemplatesReq.PageToken, `Pagination token to go to the next page of custom templates.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listCustomTemplatesLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listCustomTemplatesReq.PageToken, "page-token", listCustomTemplatesReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-custom-templates"
 	cmd.Short = `List templates.`
@@ -299,6 +312,13 @@ func newListCustomTemplates() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.AppsSettings.ListCustomTemplates(ctx, listCustomTemplatesReq)
+		if listCustomTemplatesLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listCustomTemplatesLimit)
+		}
+		if listCustomTemplatesLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listCustomTemplatesLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -404,6 +424,7 @@ func newUpdateCustomTemplate() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 

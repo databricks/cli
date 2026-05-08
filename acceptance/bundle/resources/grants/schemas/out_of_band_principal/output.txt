@@ -1,0 +1,30 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/schema-grants-out-of-band-principal-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] grants update schema main.schema_out_of_band_principal_[UNIQUE_NAME] --json @update.json
+
+>>> [CLI] bundle plan -o json
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/schema-grants-out-of-band-principal-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] bundle plan -o json
+
+>>> errcode [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.schemas.grants_schema
+
+This action will result in the deletion of the following UC schemas. Any underlying data may be lost:
+  delete resources.schemas.grants_schema
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/schema-grants-out-of-band-principal-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!

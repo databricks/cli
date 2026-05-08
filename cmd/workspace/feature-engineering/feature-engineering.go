@@ -99,7 +99,7 @@ func newCreateFeature() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'full_name', 'source', 'function' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'full_name', 'source', 'function' in your JSON input")
 			}
 			return nil
 		}
@@ -146,6 +146,7 @@ func newCreateFeature() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -206,7 +207,7 @@ func newCreateKafkaConfig() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name', 'bootstrap_servers', 'subscription_mode', 'auth_config' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'name', 'bootstrap_servers', 'subscription_mode', 'auth_config' in your JSON input")
 			}
 			return nil
 		}
@@ -256,6 +257,7 @@ func newCreateKafkaConfig() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -308,7 +310,7 @@ func newCreateMaterializedFeature() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'feature_name' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'feature_name' in your JSON input")
 			}
 			return nil
 		}
@@ -341,6 +343,7 @@ func newCreateMaterializedFeature() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -565,6 +568,7 @@ func newGetFeature() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -623,6 +627,7 @@ func newGetKafkaConfig() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -677,6 +682,7 @@ func newGetMaterializedFeature() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -705,9 +711,19 @@ func newListFeatures() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listFeaturesReq ml.ListFeaturesRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listFeaturesLimit int
 
 	cmd.Flags().IntVar(&listFeaturesReq.PageSize, "page-size", listFeaturesReq.PageSize, `The maximum number of results to return.`)
-	cmd.Flags().StringVar(&listFeaturesReq.PageToken, "page-token", listFeaturesReq.PageToken, `Pagination token to go to the next page based on a previous query.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listFeaturesLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listFeaturesReq.PageToken, "page-token", listFeaturesReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-features"
 	cmd.Short = `List features.`
@@ -728,6 +744,13 @@ func newListFeatures() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.FeatureEngineering.ListFeatures(ctx, listFeaturesReq)
+		if listFeaturesLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listFeaturesLimit)
+		}
+		if listFeaturesLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listFeaturesLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -756,9 +779,19 @@ func newListKafkaConfigs() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listKafkaConfigsReq ml.ListKafkaConfigsRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listKafkaConfigsLimit int
 
 	cmd.Flags().IntVar(&listKafkaConfigsReq.PageSize, "page-size", listKafkaConfigsReq.PageSize, `The maximum number of results to return.`)
-	cmd.Flags().StringVar(&listKafkaConfigsReq.PageToken, "page-token", listKafkaConfigsReq.PageToken, `Pagination token to go to the next page based on a previous query.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listKafkaConfigsLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listKafkaConfigsReq.PageToken, "page-token", listKafkaConfigsReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-kafka-configs"
 	cmd.Short = `List Kafka configs.`
@@ -781,6 +814,13 @@ func newListKafkaConfigs() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.FeatureEngineering.ListKafkaConfigs(ctx, listKafkaConfigsReq)
+		if listKafkaConfigsLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listKafkaConfigsLimit)
+		}
+		if listKafkaConfigsLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listKafkaConfigsLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -809,10 +849,20 @@ func newListMaterializedFeatures() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listMaterializedFeaturesReq ml.ListMaterializedFeaturesRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listMaterializedFeaturesLimit int
 
 	cmd.Flags().StringVar(&listMaterializedFeaturesReq.FeatureName, "feature-name", listMaterializedFeaturesReq.FeatureName, `Filter by feature name.`)
 	cmd.Flags().IntVar(&listMaterializedFeaturesReq.PageSize, "page-size", listMaterializedFeaturesReq.PageSize, `The maximum number of results to return.`)
-	cmd.Flags().StringVar(&listMaterializedFeaturesReq.PageToken, "page-token", listMaterializedFeaturesReq.PageToken, `Pagination token to go to the next page based on a previous query.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listMaterializedFeaturesLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listMaterializedFeaturesReq.PageToken, "page-token", listMaterializedFeaturesReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-materialized-features"
 	cmd.Short = `List materialized features.`
@@ -831,6 +881,13 @@ func newListMaterializedFeatures() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.FeatureEngineering.ListMaterializedFeatures(ctx, listMaterializedFeaturesReq)
+		if listMaterializedFeaturesLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listMaterializedFeaturesLimit)
+		}
+		if listMaterializedFeaturesLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listMaterializedFeaturesLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -936,6 +993,7 @@ func newUpdateFeature() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -1049,6 +1107,7 @@ func newUpdateKafkaConfig() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -1141,6 +1200,7 @@ func newUpdateMaterializedFeature() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 

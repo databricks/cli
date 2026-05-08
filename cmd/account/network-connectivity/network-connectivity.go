@@ -103,7 +103,7 @@ func newCreateNetworkConnectivityConfiguration() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name', 'region' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'name', 'region' in your JSON input")
 			}
 			return nil
 		}
@@ -139,6 +139,7 @@ func newCreateNetworkConnectivityConfiguration() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -175,6 +176,7 @@ func newCreatePrivateEndpointRule() *cobra.Command {
 	// TODO: array: domain_names
 	cmd.Flags().StringVar(&createPrivateEndpointRuleReq.PrivateEndpointRule.EndpointService, "endpoint-service", createPrivateEndpointRuleReq.PrivateEndpointRule.EndpointService, `The full target AWS endpoint service name that connects to the destination resources of the private endpoint.`)
 	cmd.Flags().StringVar(&createPrivateEndpointRuleReq.PrivateEndpointRule.ErrorMessage, "error-message", createPrivateEndpointRuleReq.PrivateEndpointRule.ErrorMessage, ``)
+	// TODO: complex arg: gcp_endpoint
 	cmd.Flags().StringVar(&createPrivateEndpointRuleReq.PrivateEndpointRule.GroupId, "group-id", createPrivateEndpointRuleReq.PrivateEndpointRule.GroupId, `Not used by customer-managed private endpoint services.`)
 	cmd.Flags().StringVar(&createPrivateEndpointRuleReq.PrivateEndpointRule.ResourceId, "resource-id", createPrivateEndpointRuleReq.PrivateEndpointRule.ResourceId, `The Azure resource ID of the target resource.`)
 	// TODO: array: resource_names
@@ -227,6 +229,7 @@ func newCreatePrivateEndpointRule() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -346,6 +349,7 @@ func newDeletePrivateEndpointRule() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -402,6 +406,7 @@ func newGetNetworkConnectivityConfiguration() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -460,6 +465,7 @@ func newGetPrivateEndpointRule() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -488,8 +494,17 @@ func newListNetworkConnectivityConfigurations() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listNetworkConnectivityConfigurationsReq settings.ListNetworkConnectivityConfigurationsRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listNetworkConnectivityConfigurationsLimit int
 
-	cmd.Flags().StringVar(&listNetworkConnectivityConfigurationsReq.PageToken, "page-token", listNetworkConnectivityConfigurationsReq.PageToken, `Pagination token to go to next page based on previous query.`)
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listNetworkConnectivityConfigurationsLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listNetworkConnectivityConfigurationsReq.PageToken, "page-token", listNetworkConnectivityConfigurationsReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-network-connectivity-configurations"
 	cmd.Short = `List network connectivity configurations.`
@@ -510,6 +525,13 @@ func newListNetworkConnectivityConfigurations() *cobra.Command {
 		a := cmdctx.AccountClient(ctx)
 
 		response := a.NetworkConnectivity.ListNetworkConnectivityConfigurations(ctx, listNetworkConnectivityConfigurationsReq)
+		if listNetworkConnectivityConfigurationsLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listNetworkConnectivityConfigurationsLimit)
+		}
+		if listNetworkConnectivityConfigurationsLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listNetworkConnectivityConfigurationsLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -538,8 +560,17 @@ func newListPrivateEndpointRules() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listPrivateEndpointRulesReq settings.ListPrivateEndpointRulesRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listPrivateEndpointRulesLimit int
 
-	cmd.Flags().StringVar(&listPrivateEndpointRulesReq.PageToken, "page-token", listPrivateEndpointRulesReq.PageToken, `Pagination token to go to next page based on previous query.`)
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listPrivateEndpointRulesLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listPrivateEndpointRulesReq.PageToken, "page-token", listPrivateEndpointRulesReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-private-endpoint-rules NETWORK_CONNECTIVITY_CONFIG_ID"
 	cmd.Short = `List private endpoint rules.`
@@ -565,6 +596,13 @@ func newListPrivateEndpointRules() *cobra.Command {
 		listPrivateEndpointRulesReq.NetworkConnectivityConfigId = args[0]
 
 		response := a.NetworkConnectivity.ListPrivateEndpointRules(ctx, listPrivateEndpointRulesReq)
+		if listPrivateEndpointRulesLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listPrivateEndpointRulesLimit)
+		}
+		if listPrivateEndpointRulesLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listPrivateEndpointRulesLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -601,6 +639,7 @@ func newUpdatePrivateEndpointRule() *cobra.Command {
 	// TODO: array: domain_names
 	cmd.Flags().BoolVar(&updatePrivateEndpointRuleReq.PrivateEndpointRule.Enabled, "enabled", updatePrivateEndpointRuleReq.PrivateEndpointRule.Enabled, `Only used by private endpoints towards an AWS S3 service.`)
 	cmd.Flags().StringVar(&updatePrivateEndpointRuleReq.PrivateEndpointRule.ErrorMessage, "error-message", updatePrivateEndpointRuleReq.PrivateEndpointRule.ErrorMessage, ``)
+	// TODO: complex arg: gcp_endpoint
 	// TODO: array: resource_names
 
 	cmd.Use = "update-private-endpoint-rule NETWORK_CONNECTIVITY_CONFIG_ID PRIVATE_ENDPOINT_RULE_ID UPDATE_MASK"
@@ -653,6 +692,7 @@ func newUpdatePrivateEndpointRule() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 

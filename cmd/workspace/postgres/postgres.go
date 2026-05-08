@@ -43,22 +43,28 @@ func New() *cobra.Command {
 
 	// Add methods
 	cmd.AddCommand(newCreateBranch())
+	cmd.AddCommand(newCreateCatalog())
 	cmd.AddCommand(newCreateDatabase())
 	cmd.AddCommand(newCreateEndpoint())
 	cmd.AddCommand(newCreateProject())
 	cmd.AddCommand(newCreateRole())
+	cmd.AddCommand(newCreateSyncedTable())
 	cmd.AddCommand(newDeleteBranch())
+	cmd.AddCommand(newDeleteCatalog())
 	cmd.AddCommand(newDeleteDatabase())
 	cmd.AddCommand(newDeleteEndpoint())
 	cmd.AddCommand(newDeleteProject())
 	cmd.AddCommand(newDeleteRole())
+	cmd.AddCommand(newDeleteSyncedTable())
 	cmd.AddCommand(newGenerateDatabaseCredential())
 	cmd.AddCommand(newGetBranch())
+	cmd.AddCommand(newGetCatalog())
 	cmd.AddCommand(newGetDatabase())
 	cmd.AddCommand(newGetEndpoint())
 	cmd.AddCommand(newGetOperation())
 	cmd.AddCommand(newGetProject())
 	cmd.AddCommand(newGetRole())
+	cmd.AddCommand(newGetSyncedTable())
 	cmd.AddCommand(newListBranches())
 	cmd.AddCommand(newListDatabases())
 	cmd.AddCommand(newListEndpoints())
@@ -198,6 +204,125 @@ func newCreateBranch() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range createBranchOverrides {
 		fn(cmd, &createBranchReq)
+	}
+
+	return cmd
+}
+
+// start create-catalog command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var createCatalogOverrides []func(
+	*cobra.Command,
+	*postgres.CreateCatalogRequest,
+)
+
+func newCreateCatalog() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var createCatalogReq postgres.CreateCatalogRequest
+	createCatalogReq.Catalog = postgres.Catalog{}
+	var createCatalogJson flags.JsonFlag
+
+	var createCatalogSkipWait bool
+	var createCatalogTimeout time.Duration
+
+	cmd.Flags().BoolVar(&createCatalogSkipWait, "no-wait", createCatalogSkipWait, `do not wait to reach DONE state`)
+	cmd.Flags().DurationVar(&createCatalogTimeout, "timeout", 0, `maximum amount of time to reach DONE state`)
+
+	cmd.Flags().Var(&createCatalogJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Flags().StringVar(&createCatalogReq.Catalog.Name, "name", createCatalogReq.Catalog.Name, `Output only.`)
+	// TODO: complex arg: spec
+	// TODO: complex arg: status
+
+	cmd.Use = "create-catalog CATALOG_ID"
+	cmd.Short = `Register a Database in UC.`
+	cmd.Long = `Register a Database in UC.
+
+  Register a Postgres database in the Unity Catalog.
+
+  This is a long-running operation. By default, the command waits for the
+  operation to complete. Use --no-wait to return immediately with the raw
+  operation details. The operation's 'name' field can then be used to poll for
+  completion using the get-operation command.
+
+  Arguments:
+    CATALOG_ID: The ID in the Unity Catalog. It becomes the full resource name, for
+      example "my_catalog" becomes "catalogs/my_catalog".`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := createCatalogJson.Unmarshal(&createCatalogReq.Catalog)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnostics(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		createCatalogReq.CatalogId = args[0]
+
+		// Determine which mode to execute based on flags.
+		switch {
+		case createCatalogSkipWait:
+			wait, err := w.Postgres.CreateCatalog(ctx, createCatalogReq)
+			if err != nil {
+				return err
+			}
+
+			// Return operation immediately without waiting.
+			operation, err := w.Postgres.GetOperation(ctx, postgres.GetOperationRequest{
+				Name: wait.Name(),
+			})
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, operation)
+
+		default:
+			wait, err := w.Postgres.CreateCatalog(ctx, createCatalogReq)
+			if err != nil {
+				return err
+			}
+
+			// Show spinner while waiting for completion.
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("Waiting for create-catalog to complete...")
+
+			// Wait for completion.
+			opts := api.WithTimeout(createCatalogTimeout)
+			response, err := wait.Wait(ctx, opts)
+			if err != nil {
+				return err
+			}
+			sp.Close()
+			return cmdio.Render(ctx, response)
+		}
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range createCatalogOverrides {
+		fn(cmd, &createCatalogReq)
 	}
 
 	return cmd
@@ -697,6 +822,135 @@ func newCreateRole() *cobra.Command {
 	return cmd
 }
 
+// start create-synced-table command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var createSyncedTableOverrides []func(
+	*cobra.Command,
+	*postgres.CreateSyncedTableRequest,
+)
+
+func newCreateSyncedTable() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var createSyncedTableReq postgres.CreateSyncedTableRequest
+	createSyncedTableReq.SyncedTable = postgres.SyncedTable{}
+	var createSyncedTableJson flags.JsonFlag
+
+	var createSyncedTableSkipWait bool
+	var createSyncedTableTimeout time.Duration
+
+	cmd.Flags().BoolVar(&createSyncedTableSkipWait, "no-wait", createSyncedTableSkipWait, `do not wait to reach DONE state`)
+	cmd.Flags().DurationVar(&createSyncedTableTimeout, "timeout", 0, `maximum amount of time to reach DONE state`)
+
+	cmd.Flags().Var(&createSyncedTableJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Flags().StringVar(&createSyncedTableReq.SyncedTable.Name, "name", createSyncedTableReq.SyncedTable.Name, `Output only.`)
+	// TODO: complex arg: spec
+	// TODO: complex arg: status
+
+	cmd.Use = "create-synced-table SYNCED_TABLE_ID"
+	cmd.Short = `Create a Synced Database Table.`
+	cmd.Long = `Create a Synced Database Table.
+
+  Create a Synced Table.
+
+  This is a long-running operation. By default, the command waits for the
+  operation to complete. Use --no-wait to return immediately with the raw
+  operation details. The operation's 'name' field can then be used to poll for
+  completion using the get-operation command.
+
+  Arguments:
+    SYNCED_TABLE_ID: The ID to use for the Synced Table. This becomes the final component of
+      the SyncedTable's resource name. ID is required and is the synced table
+      name, containing (catalog, schema, table) tuple. Elements of the tuple are
+      the UC entity names.
+
+      Example: "{catalog}.{schema}.{table}"
+
+      synced_table_id represents both of the following:
+
+      1. An online VIEW virtual table in the Unity Catalog accessible via the
+      Lakehouse Federation. 2. Postgres table named "{table}" in schema
+      "{schema}" in the connected Postgres database`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := createSyncedTableJson.Unmarshal(&createSyncedTableReq.SyncedTable)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnostics(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		createSyncedTableReq.SyncedTableId = args[0]
+
+		// Determine which mode to execute based on flags.
+		switch {
+		case createSyncedTableSkipWait:
+			wait, err := w.Postgres.CreateSyncedTable(ctx, createSyncedTableReq)
+			if err != nil {
+				return err
+			}
+
+			// Return operation immediately without waiting.
+			operation, err := w.Postgres.GetOperation(ctx, postgres.GetOperationRequest{
+				Name: wait.Name(),
+			})
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, operation)
+
+		default:
+			wait, err := w.Postgres.CreateSyncedTable(ctx, createSyncedTableReq)
+			if err != nil {
+				return err
+			}
+
+			// Show spinner while waiting for completion.
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("Waiting for create-synced-table to complete...")
+
+			// Wait for completion.
+			opts := api.WithTimeout(createSyncedTableTimeout)
+			response, err := wait.Wait(ctx, opts)
+			if err != nil {
+				return err
+			}
+			sp.Close()
+			return cmdio.Render(ctx, response)
+		}
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range createSyncedTableOverrides {
+		fn(cmd, &createSyncedTableReq)
+	}
+
+	return cmd
+}
+
 // start delete-branch command
 
 // Slice with functions to override default command behavior.
@@ -792,6 +1046,105 @@ func newDeleteBranch() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range deleteBranchOverrides {
 		fn(cmd, &deleteBranchReq)
+	}
+
+	return cmd
+}
+
+// start delete-catalog command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var deleteCatalogOverrides []func(
+	*cobra.Command,
+	*postgres.DeleteCatalogRequest,
+)
+
+func newDeleteCatalog() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var deleteCatalogReq postgres.DeleteCatalogRequest
+
+	var deleteCatalogSkipWait bool
+	var deleteCatalogTimeout time.Duration
+
+	cmd.Flags().BoolVar(&deleteCatalogSkipWait, "no-wait", deleteCatalogSkipWait, `do not wait to reach DONE state`)
+	cmd.Flags().DurationVar(&deleteCatalogTimeout, "timeout", 0, `maximum amount of time to reach DONE state`)
+
+	cmd.Use = "delete-catalog NAME"
+	cmd.Short = `Delete a Database Catalog.`
+	cmd.Long = `Delete a Database Catalog.
+
+  This is a long-running operation. By default, the command waits for the
+  operation to complete. Use --no-wait to return immediately with the raw
+  operation details. The operation's 'name' field can then be used to poll for
+  completion using the get-operation command.
+
+  Arguments:
+    NAME: The full resource path of the catalog to delete.
+
+      Format: "catalogs/{catalog_id}".`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		deleteCatalogReq.Name = args[0]
+
+		// Determine which mode to execute based on flags.
+		switch {
+		case deleteCatalogSkipWait:
+			wait, err := w.Postgres.DeleteCatalog(ctx, deleteCatalogReq)
+			if err != nil {
+				return err
+			}
+
+			// Return operation immediately without waiting.
+			operation, err := w.Postgres.GetOperation(ctx, postgres.GetOperationRequest{
+				Name: wait.Name(),
+			})
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, operation)
+
+		default:
+			wait, err := w.Postgres.DeleteCatalog(ctx, deleteCatalogReq)
+			if err != nil {
+				return err
+			}
+
+			// Show spinner while waiting for completion.
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("Waiting for delete-catalog to complete...")
+
+			// Wait for completion.
+			opts := api.WithTimeout(deleteCatalogTimeout)
+
+			err = wait.Wait(ctx, opts)
+			if err != nil {
+				return err
+			}
+			sp.Close()
+			return nil
+		}
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range deleteCatalogOverrides {
+		fn(cmd, &deleteCatalogReq)
 	}
 
 	return cmd
@@ -1200,6 +1553,107 @@ func newDeleteRole() *cobra.Command {
 	return cmd
 }
 
+// start delete-synced-table command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var deleteSyncedTableOverrides []func(
+	*cobra.Command,
+	*postgres.DeleteSyncedTableRequest,
+)
+
+func newDeleteSyncedTable() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var deleteSyncedTableReq postgres.DeleteSyncedTableRequest
+
+	var deleteSyncedTableSkipWait bool
+	var deleteSyncedTableTimeout time.Duration
+
+	cmd.Flags().BoolVar(&deleteSyncedTableSkipWait, "no-wait", deleteSyncedTableSkipWait, `do not wait to reach DONE state`)
+	cmd.Flags().DurationVar(&deleteSyncedTableTimeout, "timeout", 0, `maximum amount of time to reach DONE state`)
+
+	cmd.Use = "delete-synced-table NAME"
+	cmd.Short = `Delete a Synced Database Table.`
+	cmd.Long = `Delete a Synced Database Table.
+
+  Delete a Synced Table.
+
+  This is a long-running operation. By default, the command waits for the
+  operation to complete. Use --no-wait to return immediately with the raw
+  operation details. The operation's 'name' field can then be used to poll for
+  completion using the get-operation command.
+
+  Arguments:
+    NAME: The Full resource name of the synced table, of the format
+      "synced_tables/{catalog}.{schema}.{table}", where (catalog, schema, table)
+      are the UC entity names.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		deleteSyncedTableReq.Name = args[0]
+
+		// Determine which mode to execute based on flags.
+		switch {
+		case deleteSyncedTableSkipWait:
+			wait, err := w.Postgres.DeleteSyncedTable(ctx, deleteSyncedTableReq)
+			if err != nil {
+				return err
+			}
+
+			// Return operation immediately without waiting.
+			operation, err := w.Postgres.GetOperation(ctx, postgres.GetOperationRequest{
+				Name: wait.Name(),
+			})
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, operation)
+
+		default:
+			wait, err := w.Postgres.DeleteSyncedTable(ctx, deleteSyncedTableReq)
+			if err != nil {
+				return err
+			}
+
+			// Show spinner while waiting for completion.
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("Waiting for delete-synced-table to complete...")
+
+			// Wait for completion.
+			opts := api.WithTimeout(deleteSyncedTableTimeout)
+
+			err = wait.Wait(ctx, opts)
+			if err != nil {
+				return err
+			}
+			sp.Close()
+			return nil
+		}
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range deleteSyncedTableOverrides {
+		fn(cmd, &deleteSyncedTableReq)
+	}
+
+	return cmd
+}
+
 // start generate-database-credential command
 
 // Slice with functions to override default command behavior.
@@ -1234,7 +1688,7 @@ func newGenerateDatabaseCredential() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'endpoint' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'endpoint' in your JSON input")
 			}
 			return nil
 		}
@@ -1267,6 +1721,7 @@ func newGenerateDatabaseCredential() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -1324,6 +1779,7 @@ func newGetBranch() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -1334,6 +1790,63 @@ func newGetBranch() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range getBranchOverrides {
 		fn(cmd, &getBranchReq)
+	}
+
+	return cmd
+}
+
+// start get-catalog command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getCatalogOverrides []func(
+	*cobra.Command,
+	*postgres.GetCatalogRequest,
+)
+
+func newGetCatalog() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getCatalogReq postgres.GetCatalogRequest
+
+	cmd.Use = "get-catalog NAME"
+	cmd.Short = `Get a Database Catalog.`
+	cmd.Long = `Get a Database Catalog.
+
+  Arguments:
+    NAME: The full resource path of the catalog to retrieve.
+
+      Format: "catalogs/{catalog_id}".`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		getCatalogReq.Name = args[0]
+
+		response, err := w.Postgres.GetCatalog(ctx, getCatalogReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getCatalogOverrides {
+		fn(cmd, &getCatalogReq)
 	}
 
 	return cmd
@@ -1382,6 +1895,7 @@ func newGetDatabase() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -1440,6 +1954,7 @@ func newGetEndpoint() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -1496,6 +2011,7 @@ func newGetOperation() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -1553,6 +2069,7 @@ func newGetProject() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -1611,6 +2128,7 @@ func newGetRole() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -1621,6 +2139,64 @@ func newGetRole() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range getRoleOverrides {
 		fn(cmd, &getRoleReq)
+	}
+
+	return cmd
+}
+
+// start get-synced-table command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getSyncedTableOverrides []func(
+	*cobra.Command,
+	*postgres.GetSyncedTableRequest,
+)
+
+func newGetSyncedTable() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getSyncedTableReq postgres.GetSyncedTableRequest
+
+	cmd.Use = "get-synced-table NAME"
+	cmd.Short = `Get a Synced Database Table.`
+	cmd.Long = `Get a Synced Database Table.
+
+  Get a Synced Table.
+
+  Arguments:
+    NAME: Format: "synced_tables/{catalog}.{schema}.{table}", where (catalog,
+      schema, table) are the entity names in the Unity Catalog.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		getSyncedTableReq.Name = args[0]
+
+		response, err := w.Postgres.GetSyncedTable(ctx, getSyncedTableReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getSyncedTableOverrides {
+		fn(cmd, &getSyncedTableReq)
 	}
 
 	return cmd
@@ -1639,9 +2215,19 @@ func newListBranches() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listBranchesReq postgres.ListBranchesRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listBranchesLimit int
 
 	cmd.Flags().IntVar(&listBranchesReq.PageSize, "page-size", listBranchesReq.PageSize, `Upper bound for items returned.`)
-	cmd.Flags().StringVar(&listBranchesReq.PageToken, "page-token", listBranchesReq.PageToken, `Page token from a previous response.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listBranchesLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listBranchesReq.PageToken, "page-token", listBranchesReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-branches PARENT"
 	cmd.Short = `List Branches.`
@@ -1668,6 +2254,13 @@ func newListBranches() *cobra.Command {
 		listBranchesReq.Parent = args[0]
 
 		response := w.Postgres.ListBranches(ctx, listBranchesReq)
+		if listBranchesLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listBranchesLimit)
+		}
+		if listBranchesLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listBranchesLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -1696,9 +2289,19 @@ func newListDatabases() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listDatabasesReq postgres.ListDatabasesRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listDatabasesLimit int
 
 	cmd.Flags().IntVar(&listDatabasesReq.PageSize, "page-size", listDatabasesReq.PageSize, `Upper bound for items returned.`)
-	cmd.Flags().StringVar(&listDatabasesReq.PageToken, "page-token", listDatabasesReq.PageToken, `Pagination token to go to the next page of Databases.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listDatabasesLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listDatabasesReq.PageToken, "page-token", listDatabasesReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-databases PARENT"
 	cmd.Short = `List postgres databases in a branch.`
@@ -1728,6 +2331,13 @@ func newListDatabases() *cobra.Command {
 		listDatabasesReq.Parent = args[0]
 
 		response := w.Postgres.ListDatabases(ctx, listDatabasesReq)
+		if listDatabasesLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listDatabasesLimit)
+		}
+		if listDatabasesLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listDatabasesLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -1756,9 +2366,19 @@ func newListEndpoints() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listEndpointsReq postgres.ListEndpointsRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listEndpointsLimit int
 
 	cmd.Flags().IntVar(&listEndpointsReq.PageSize, "page-size", listEndpointsReq.PageSize, `Upper bound for items returned.`)
-	cmd.Flags().StringVar(&listEndpointsReq.PageToken, "page-token", listEndpointsReq.PageToken, `Page token from a previous response.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listEndpointsLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listEndpointsReq.PageToken, "page-token", listEndpointsReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-endpoints PARENT"
 	cmd.Short = `List Endpoints.`
@@ -1785,6 +2405,13 @@ func newListEndpoints() *cobra.Command {
 		listEndpointsReq.Parent = args[0]
 
 		response := w.Postgres.ListEndpoints(ctx, listEndpointsReq)
+		if listEndpointsLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listEndpointsLimit)
+		}
+		if listEndpointsLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listEndpointsLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -1813,9 +2440,19 @@ func newListProjects() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listProjectsReq postgres.ListProjectsRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listProjectsLimit int
 
 	cmd.Flags().IntVar(&listProjectsReq.PageSize, "page-size", listProjectsReq.PageSize, `Upper bound for items returned.`)
-	cmd.Flags().StringVar(&listProjectsReq.PageToken, "page-token", listProjectsReq.PageToken, `Page token from a previous response.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listProjectsLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listProjectsReq.PageToken, "page-token", listProjectsReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-projects"
 	cmd.Short = `List Projects.`
@@ -1837,6 +2474,13 @@ func newListProjects() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.Postgres.ListProjects(ctx, listProjectsReq)
+		if listProjectsLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listProjectsLimit)
+		}
+		if listProjectsLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listProjectsLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -1865,9 +2509,19 @@ func newListRoles() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listRolesReq postgres.ListRolesRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listRolesLimit int
 
 	cmd.Flags().IntVar(&listRolesReq.PageSize, "page-size", listRolesReq.PageSize, `Upper bound for items returned.`)
-	cmd.Flags().StringVar(&listRolesReq.PageToken, "page-token", listRolesReq.PageToken, `Page token from a previous response.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listRolesLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listRolesReq.PageToken, "page-token", listRolesReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-roles PARENT"
 	cmd.Short = `List Postgres Roles for a Branch.`
@@ -1894,6 +2548,13 @@ func newListRoles() *cobra.Command {
 		listRolesReq.Parent = args[0]
 
 		response := w.Postgres.ListRoles(ctx, listRolesReq)
+		if listRolesLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listRolesLimit)
+		}
+		if listRolesLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listRolesLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 

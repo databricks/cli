@@ -1,0 +1,22 @@
+
+>>> [CLI] bundle validate -t dev -o json
+{
+  "catalogs": {
+    "my_catalog": {
+      "name": "mycatalog"
+    }
+  },
+  "registered_models": {
+    "my_model": {
+      "catalog_name": "${resources.catalogs.my_catalog.name}",
+      "name": "dev_[USERNAME]_mymodel",
+      "schema_name": "${resources.schemas.my_schema.name}"
+    }
+  },
+  "schemas": {
+    "my_schema": {
+      "catalog_name": "${resources.catalogs.my_catalog.name}",
+      "name": "dev_[USERNAME]_myschema"
+    }
+  }
+}

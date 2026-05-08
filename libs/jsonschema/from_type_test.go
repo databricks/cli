@@ -36,35 +36,35 @@ func TestFromTypeBasic(t *testing.T) {
 	}{
 		{
 			name: "int",
-			typ:  reflect.TypeOf(int(0)),
+			typ:  reflect.TypeFor[int](),
 			expected: Schema{
 				Type: "integer",
 			},
 		},
 		{
 			name: "string",
-			typ:  reflect.TypeOf(string("")),
+			typ:  reflect.TypeFor[string](),
 			expected: Schema{
 				Type: "string",
 			},
 		},
 		{
 			name: "bool",
-			typ:  reflect.TypeOf(bool(true)),
+			typ:  reflect.TypeFor[bool](),
 			expected: Schema{
 				Type: "boolean",
 			},
 		},
 		{
 			name: "float64",
-			typ:  reflect.TypeOf(float64(0)),
+			typ:  reflect.TypeFor[float64](),
 			expected: Schema{
 				Type: "number",
 			},
 		},
 		{
 			name: "struct",
-			typ:  reflect.TypeOf(myStruct{}),
+			typ:  reflect.TypeFor[myStruct](),
 			expected: Schema{
 				Type: "object",
 				Definitions: map[string]any{
@@ -96,7 +96,7 @@ func TestFromTypeBasic(t *testing.T) {
 		},
 		{
 			name: "slice",
-			typ:  reflect.TypeOf([]bool{}),
+			typ:  reflect.TypeFor[[]bool](),
 			expected: Schema{
 				Type: "array",
 				Definitions: map[string]any{
@@ -111,7 +111,7 @@ func TestFromTypeBasic(t *testing.T) {
 		},
 		{
 			name: "map",
-			typ:  reflect.TypeOf(map[string]int{}),
+			typ:  reflect.TypeFor[map[string]int](),
 			expected: Schema{
 				Type: "object",
 				Definitions: map[string]any{
@@ -157,7 +157,7 @@ func TestGetStructFields(t *testing.T) {
 		OuterField string
 	}
 
-	fields := getStructFields(reflect.TypeOf(MyStruct{}))
+	fields := getStructFields(reflect.TypeFor[MyStruct]())
 	assert.Len(t, fields, 4)
 	assert.Equal(t, "OuterField", fields[0].Name)
 	assert.Equal(t, "FieldOne", fields[1].Name)
@@ -202,7 +202,7 @@ func TestHigherLevelEmbeddedFieldIsInSchema(t *testing.T) {
 		Required:             []string{},
 	}
 
-	s, err := FromType(reflect.TypeOf(Outer{}), nil)
+	s, err := FromType(reflect.TypeFor[Outer](), nil)
 	require.NoError(t, err)
 	assert.Equal(t, expected, s)
 }
@@ -251,7 +251,7 @@ func TestFromTypeNested(t *testing.T) {
 	}{
 		{
 			name: "struct in struct",
-			typ:  reflect.TypeOf(Outer{}),
+			typ:  reflect.TypeFor[Outer](),
 			expected: Schema{
 				Type:        "object",
 				Definitions: expectedDefinitions,
@@ -269,7 +269,7 @@ func TestFromTypeNested(t *testing.T) {
 		},
 		{
 			name: "struct as a map value",
-			typ:  reflect.TypeOf(map[string]*Inner{}),
+			typ:  reflect.TypeFor[map[string]*Inner](),
 			expected: Schema{
 				Type:        "object",
 				Definitions: expectedDefinitions,
@@ -280,7 +280,7 @@ func TestFromTypeNested(t *testing.T) {
 		},
 		{
 			name: "struct as a slice element",
-			typ:  reflect.TypeOf([]Inner{}),
+			typ:  reflect.TypeFor[[]Inner](),
 			expected: Schema{
 				Type:        "array",
 				Definitions: expectedDefinitions,
@@ -346,7 +346,7 @@ func TestFromTypeRecursive(t *testing.T) {
 		Required:             []string{"foo"},
 	}
 
-	s, err := FromType(reflect.TypeOf(test_types.Outer{}), nil)
+	s, err := FromType(reflect.TypeFor[test_types.Outer](), nil)
 	assert.NoError(t, err)
 	assert.Equal(t, expected, s)
 }
@@ -394,7 +394,7 @@ func TestFromTypeSelfReferential(t *testing.T) {
 		Required:             []string{},
 	}
 
-	s, err := FromType(reflect.TypeOf(test_types.OuterSelf{}), nil)
+	s, err := FromType(reflect.TypeFor[test_types.OuterSelf](), nil)
 	assert.NoError(t, err)
 	assert.Equal(t, expected, s)
 }
@@ -403,12 +403,12 @@ func TestFromTypeError(t *testing.T) {
 	// Maps with non-string keys should panic.
 	type mapOfInts map[int]int
 	assert.PanicsWithValue(t, "found map with non-string key: int", func() {
-		_, err := FromType(reflect.TypeOf(mapOfInts{}), nil)
+		_, err := FromType(reflect.TypeFor[mapOfInts](), nil)
 		require.NoError(t, err)
 	})
 
 	// Unsupported types should return an error.
-	_, err := FromType(reflect.TypeOf(complex64(0)), nil)
+	_, err := FromType(reflect.TypeFor[complex64](), nil)
 	assert.EqualError(t, err, "unsupported type: complex64")
 }
 
@@ -452,7 +452,7 @@ func TestFromTypeFunctionsArg(t *testing.T) {
 		return s
 	}
 
-	s, err := FromType(reflect.TypeOf(myStruct{}), []func(reflect.Type, Schema) Schema{
+	s, err := FromType(reflect.TypeFor[myStruct](), []func(reflect.Type, Schema) Schema{
 		addDescription,
 		addEnums,
 	})
@@ -468,43 +468,43 @@ func TestTypePath(t *testing.T) {
 		path string
 	}{
 		{
-			typ:  reflect.TypeOf(""),
+			typ:  reflect.TypeFor[string](),
 			path: "string",
 		},
 		{
-			typ:  reflect.TypeOf(int(0)),
+			typ:  reflect.TypeFor[int](),
 			path: "int",
 		},
 		{
-			typ:  reflect.TypeOf(true),
+			typ:  reflect.TypeFor[bool](),
 			path: "bool",
 		},
 		{
-			typ:  reflect.TypeOf(float64(0)),
+			typ:  reflect.TypeFor[float64](),
 			path: "float64",
 		},
 		{
-			typ:  reflect.TypeOf(myStruct{}),
+			typ:  reflect.TypeFor[myStruct](),
 			path: "github.com/databricks/cli/libs/jsonschema.myStruct",
 		},
 		{
-			typ:  reflect.TypeOf([]int{}),
+			typ:  reflect.TypeFor[[]int](),
 			path: "slice/int",
 		},
 		{
-			typ:  reflect.TypeOf(map[string]int{}),
+			typ:  reflect.TypeFor[map[string]int](),
 			path: "map/int",
 		},
 		{
-			typ:  reflect.TypeOf([]myStruct{}),
+			typ:  reflect.TypeFor[[]myStruct](),
 			path: "slice/github.com/databricks/cli/libs/jsonschema.myStruct",
 		},
 		{
-			typ:  reflect.TypeOf([][]map[string]map[string]myStruct{}),
+			typ:  reflect.TypeFor[[][]map[string]map[string]myStruct](),
 			path: "slice/slice/map/map/github.com/databricks/cli/libs/jsonschema.myStruct",
 		},
 		{
-			typ:  reflect.TypeOf(map[string]myStruct{}),
+			typ:  reflect.TypeFor[map[string]myStruct](),
 			path: "map/github.com/databricks/cli/libs/jsonschema.myStruct",
 		},
 	}
@@ -517,7 +517,7 @@ func TestTypePath(t *testing.T) {
 
 	// Maps with non-string keys should panic.
 	assert.PanicsWithValue(t, "found map with non-string key: int", func() {
-		typePath(reflect.TypeOf(map[int]int{}))
+		typePath(reflect.TypeFor[map[int]int]())
 	})
 }
 
@@ -526,7 +526,7 @@ func TestFromTypeDuration(t *testing.T) {
 		Timeout *duration.Duration `json:"timeout,omitempty"`
 	}
 
-	s, err := FromType(reflect.TypeOf(myStruct{}), nil)
+	s, err := FromType(reflect.TypeFor[myStruct](), nil)
 	require.NoError(t, err)
 
 	// The schema should have a property for timeout with a $ref

@@ -75,7 +75,7 @@ func newAddListingToExchange() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'listing_id', 'exchange_id' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'listing_id', 'exchange_id' in your JSON input")
 			}
 			return nil
 		}
@@ -111,6 +111,7 @@ func newAddListingToExchange() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -175,6 +176,7 @@ func newCreate() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -332,6 +334,7 @@ func newGet() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -360,9 +363,19 @@ func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listReq marketplace.ListExchangesRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listLimit int
 
 	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, ``)
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, ``)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list"
 	cmd.Short = `List exchanges.`
@@ -383,6 +396,13 @@ func newList() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.ProviderExchanges.List(ctx, listReq)
+		if listLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
+		}
+		if listLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -411,9 +431,19 @@ func newListExchangesForListing() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listExchangesForListingReq marketplace.ListExchangesForListingRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listExchangesForListingLimit int
 
 	cmd.Flags().IntVar(&listExchangesForListingReq.PageSize, "page-size", listExchangesForListingReq.PageSize, ``)
-	cmd.Flags().StringVar(&listExchangesForListingReq.PageToken, "page-token", listExchangesForListingReq.PageToken, ``)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listExchangesForListingLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listExchangesForListingReq.PageToken, "page-token", listExchangesForListingReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-exchanges-for-listing LISTING_ID"
 	cmd.Short = `List exchanges for listing.`
@@ -436,6 +466,13 @@ func newListExchangesForListing() *cobra.Command {
 		listExchangesForListingReq.ListingId = args[0]
 
 		response := w.ProviderExchanges.ListExchangesForListing(ctx, listExchangesForListingReq)
+		if listExchangesForListingLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listExchangesForListingLimit)
+		}
+		if listExchangesForListingLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listExchangesForListingLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -464,9 +501,19 @@ func newListListingsForExchange() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listListingsForExchangeReq marketplace.ListListingsForExchangeRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listListingsForExchangeLimit int
 
 	cmd.Flags().IntVar(&listListingsForExchangeReq.PageSize, "page-size", listListingsForExchangeReq.PageSize, ``)
-	cmd.Flags().StringVar(&listListingsForExchangeReq.PageToken, "page-token", listListingsForExchangeReq.PageToken, ``)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listListingsForExchangeLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listListingsForExchangeReq.PageToken, "page-token", listListingsForExchangeReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-listings-for-exchange EXCHANGE_ID"
 	cmd.Short = `List listings for exchange.`
@@ -489,6 +536,13 @@ func newListListingsForExchange() *cobra.Command {
 		listListingsForExchangeReq.ExchangeId = args[0]
 
 		response := w.ProviderExchanges.ListListingsForExchange(ctx, listListingsForExchangeReq)
+		if listListingsForExchangeLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listListingsForExchangeLimit)
+		}
+		if listListingsForExchangeLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listListingsForExchangeLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -559,6 +613,7 @@ func newUpdate() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 

@@ -13,13 +13,13 @@ title "Initial config\n"
 cat "./home/.databrickscfg"
 
 title "Logout without --delete — should report no changes for non-U2M profile"
-trace $CLI auth logout --profile dev --force
+trace $CLI auth logout --profile dev --auto-approve
 
 title "Config after logout — profile should be unchanged\n"
 cat "./home/.databrickscfg"
 
 title "Logout with --delete — should delete the profile"
-trace $CLI auth logout --profile dev --force --delete
+trace $CLI auth logout --profile dev --auto-approve --delete
 
 title "Backup file should exist\n"
 assert_backup_exists

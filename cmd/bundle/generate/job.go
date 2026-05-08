@@ -74,7 +74,7 @@ After generation, you can deploy this job to other targets using:
 			return root.ErrAlreadyPrinted
 		}
 
-		w := b.WorkspaceClient()
+		w := b.WorkspaceClient(ctx)
 		job, err := w.Jobs.Get(ctx, jobs.GetJobRequest{JobId: jobId})
 		if err != nil {
 			return err

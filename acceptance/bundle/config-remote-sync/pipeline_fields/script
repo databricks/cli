@@ -13,6 +13,8 @@ pipeline_id="$(read_id.py my_pipeline)"
 
 title "Modify pipeline fields remotely"
 edit_resource.py pipelines $pipeline_id <<EOF
+# Rename the pipeline remotely; config-remote-sync should strip the dev prefix
+r["name"] = r["name"].replace("test-pipeline-$UNIQUE_NAME", "renamed-pipeline-$UNIQUE_NAME")
 r["configuration"]["key2"] = "value2"
 r["notifications"][0]["email_recipients"].append("admin@example.com")
 r["notifications"][0]["alerts"].append("on-update-failure")

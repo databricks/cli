@@ -70,7 +70,7 @@ per target environment.`,
 			return root.ErrAlreadyPrinted
 		}
 
-		w := b.WorkspaceClient()
+		w := b.WorkspaceClient(ctx)
 		cmdio.LogString(ctx, fmt.Sprintf("Loading app '%s' configuration", appName))
 		app, err := w.Apps.Get(ctx, apps.GetAppRequest{Name: appName})
 		if err != nil {

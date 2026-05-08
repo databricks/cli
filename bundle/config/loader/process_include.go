@@ -1,10 +1,10 @@
 package loader
 
 import (
+	"cmp"
 	"context"
 	"fmt"
 	"slices"
-	"sort"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
@@ -98,7 +98,7 @@ func validateSingleResourceDefined(configRoot dyn.Value, ext, typ string) diag.D
 		lines = append(lines, fmt.Sprintf("  - %s (%s)\n", r.key, r.typ))
 	}
 	// Sort the lines to print to make the output deterministic.
-	sort.Strings(lines)
+	slices.Sort(lines)
 	// Compact the lines before writing them to the message to remove any duplicate lines.
 	// This is needed because we do not dedup earlier when gathering the resources
 	// and it's valid to define the same resource in both the resources and targets block.
@@ -114,11 +114,11 @@ func validateSingleResourceDefined(configRoot dyn.Value, ext, typ string) diag.D
 		paths = append(paths, rr.path)
 	}
 	// Sort the locations and paths to make the output deterministic.
-	sort.Slice(locations, func(i, j int) bool {
-		return locations[i].String() < locations[j].String()
+	slices.SortFunc(locations, func(a, b dyn.Location) int {
+		return cmp.Compare(a.String(), b.String())
 	})
-	sort.Slice(paths, func(i, j int) bool {
-		return paths[i].String() < paths[j].String()
+	slices.SortFunc(paths, func(a, b dyn.Path) int {
+		return cmp.Compare(a.String(), b.String())
 	})
 
 	return diag.Diagnostics{

@@ -57,7 +57,7 @@ type Variable struct {
 }
 
 // True if the variable has been assigned a default value. Variables without a
-// a default value are by defination required
+// default value are by definition required
 func (v *Variable) HasDefault() bool {
 	return v.Default != nil
 }

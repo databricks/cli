@@ -31,6 +31,7 @@ var (
 	colorGray   = lipgloss.Color("#A1A1AA") // Light gray, legible on dark backgrounds
 	colorYellow = lipgloss.Color("#FFAB00") // Databricks yellow / amber
 	colorOrange = lipgloss.Color("#FF5F40") // Databricks orange (code blocks)
+	colorDimmed = lipgloss.AdaptiveColor{Light: "#A1A1AA", Dark: "#52525B"}
 )
 
 // AppkitTheme returns a custom theme for appkit prompts.
@@ -41,6 +42,19 @@ func AppkitTheme() *huh.Theme {
 	t.Focused.Description = t.Focused.Description.Foreground(colorGray)
 	t.Focused.SelectedOption = t.Focused.SelectedOption.Foreground(colorYellow)
 	t.Focused.TextInput.Placeholder = t.Focused.TextInput.Placeholder.Foreground(colorGray)
+	bracketBorder := lipgloss.Border{Left: "[", Right: "]"}
+	t.Focused.FocusedButton = t.Focused.FocusedButton.
+		Foreground(colorYellow).
+		Background(lipgloss.Color("")).
+		Bold(true).
+		BorderStyle(bracketBorder).
+		BorderLeft(true).BorderRight(true).
+		BorderTop(false).BorderBottom(false).
+		BorderForeground(colorYellow)
+	t.Focused.BlurredButton = t.Focused.BlurredButton.
+		Foreground(colorDimmed).
+		Background(lipgloss.Color("")).
+		Bold(false)
 
 	return t
 }
@@ -53,6 +67,29 @@ var (
 				Foreground(colorYellow).
 				Bold(true)
 )
+
+// Stability tier styles, applied to the parenthetical suffix in plugin labels.
+var (
+	stabilityBetaStyle    = lipgloss.NewStyle().Foreground(colorYellow)
+	stabilityUnknownStyle = lipgloss.NewStyle().Foreground(colorGray)
+)
+
+// RenderStabilityTier renders a stability tier as a colored " (tier)" suffix,
+// or returns "" for GA/unset. Unknown tiers are rendered in gray so we
+// remain forward-compatible with future tier names.
+func RenderStabilityTier(tier string) string {
+	if tier == "" {
+		return ""
+	}
+	var style lipgloss.Style
+	switch tier {
+	case "beta":
+		style = stabilityBetaStyle
+	default:
+		style = stabilityUnknownStyle
+	}
+	return " " + style.Render("("+tier+")")
+}
 
 // PrintAnswered prints a completed prompt answer to keep history visible.
 func PrintAnswered(ctx context.Context, title, value string) {
@@ -451,20 +488,6 @@ func promptForPagedResource(ctx context.Context, r manifest.Resource, required b
 		return nil, promptErr
 	}
 	return singleValueResult(r, value), nil
-}
-
-// PromptForWarehouse shows a picker to select a SQL warehouse.
-func PromptForWarehouse(ctx context.Context) (string, error) {
-	var items []ListItem
-	err := RunWithSpinnerCtx(ctx, "Fetching SQL warehouses...", func() error {
-		var fetchErr error
-		items, fetchErr = ListSQLWarehousesItems(ctx)
-		return fetchErr
-	})
-	if err != nil {
-		return "", fmt.Errorf("failed to fetch SQL warehouses: %w", err)
-	}
-	return PromptFromList(ctx, "Select SQL Warehouse", "no SQL warehouses found. Create one in your workspace first", items, true)
 }
 
 // resourceTitle returns a prompt title for a resource, including the plugin name

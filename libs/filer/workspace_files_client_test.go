@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -55,6 +57,42 @@ func TestWorkspaceFilesDirEntry(t *testing.T) {
 	assert.True(t, i0.IsDir())
 	assert.False(t, i1.IsDir())
 	assert.True(t, i2.IsDir())
+}
+
+func TestWorkspaceFilesClientOrgIDHeaders(t *testing.T) {
+	tests := []struct {
+		name        string
+		workspaceID string
+		expect      map[string]string
+	}{
+		{
+			name:        "with workspace ID",
+			workspaceID: "7474644166319138",
+			expect:      map[string]string{"X-Databricks-Org-Id": "7474644166319138"},
+		},
+		{
+			name:        "without workspace ID",
+			workspaceID: "",
+			expect:      nil,
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			w := &WorkspaceFilesClient{
+				workspaceClient: &databricks.WorkspaceClient{
+					Config: &config.Config{
+						WorkspaceID: tc.workspaceID,
+					},
+				},
+			}
+			assert.Equal(t, tc.expect, w.orgIDHeaders())
+		})
+	}
+
+	t.Run("nil workspace client", func(t *testing.T) {
+		w := &WorkspaceFilesClient{}
+		assert.Nil(t, w.orgIDHeaders())
+	})
 }
 
 func TestWorkspaceFilesClient_wsfsUnmarshal(t *testing.T) {

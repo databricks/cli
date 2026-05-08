@@ -15,11 +15,11 @@ func (tag JSONTag) Name() string {
 		return ""
 	}
 
-	if idx := strings.IndexByte(s, ','); idx == -1 {
+	if before, _, ok := strings.Cut(s, ","); !ok {
 		// Whole tag is just the name
 		return s
 	} else {
-		return s[:idx]
+		return before
 	}
 }
 

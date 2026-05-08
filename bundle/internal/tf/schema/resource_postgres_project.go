@@ -32,6 +32,7 @@ type ResourcePostgresProjectSpecDefaultEndpointSettings struct {
 type ResourcePostgresProjectSpec struct {
 	BudgetPolicyId           string                                              `json:"budget_policy_id,omitempty"`
 	CustomTags               []ResourcePostgresProjectSpecCustomTags             `json:"custom_tags,omitempty"`
+	DefaultBranch            string                                              `json:"default_branch,omitempty"`
 	DefaultEndpointSettings  *ResourcePostgresProjectSpecDefaultEndpointSettings `json:"default_endpoint_settings,omitempty"`
 	DisplayName              string                                              `json:"display_name,omitempty"`
 	EnablePgNativeLogin      bool                                                `json:"enable_pg_native_login,omitempty"`
@@ -56,6 +57,7 @@ type ResourcePostgresProjectStatus struct {
 	BranchLogicalSizeLimitBytes int                                                   `json:"branch_logical_size_limit_bytes,omitempty"`
 	BudgetPolicyId              string                                                `json:"budget_policy_id,omitempty"`
 	CustomTags                  []ResourcePostgresProjectStatusCustomTags             `json:"custom_tags,omitempty"`
+	DefaultBranch               string                                                `json:"default_branch,omitempty"`
 	DefaultEndpointSettings     *ResourcePostgresProjectStatusDefaultEndpointSettings `json:"default_endpoint_settings,omitempty"`
 	DisplayName                 string                                                `json:"display_name,omitempty"`
 	EnablePgNativeLogin         bool                                                  `json:"enable_pg_native_login,omitempty"`

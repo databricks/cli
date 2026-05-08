@@ -1,0 +1,53 @@
+{
+  "plan_version": 2,
+  "cli_version": "[DEV_VERSION]",
+  "plan": {
+    "resources.catalogs.main_catalog": {
+      "action": "create",
+      "new_state": {
+        "value": {
+          "comment": "My catalog",
+          "name": "main",
+          "storage_root": "s3://my-s3-path/dbx/main"
+        }
+      }
+    },
+    "resources.schemas.raw_schema": {
+      "depends_on": [
+        {
+          "node": "resources.catalogs.main_catalog",
+          "label": "${resources.catalogs.main_catalog.name}"
+        }
+      ],
+      "action": "create",
+      "new_state": {
+        "value": {
+          "catalog_name": "main",
+          "name": "raw"
+        }
+      }
+    },
+    "resources.volumes.metadata": {
+      "depends_on": [
+        {
+          "node": "resources.catalogs.main_catalog",
+          "label": "${resources.catalogs.main_catalog.name}"
+        },
+        {
+          "node": "resources.schemas.raw_schema",
+          "label": "${resources.schemas.raw_schema.name}"
+        }
+      ],
+      "action": "create",
+      "new_state": {
+        "value": {
+          "catalog_name": "main",
+          "name": "metadata",
+          "schema_name": "raw",
+          "storage_location": "s3://my-s3-path/main_raw",
+          "volume_type": "EXTERNAL"
+        }
+      }
+    }
+  }
+}

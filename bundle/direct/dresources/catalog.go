@@ -23,15 +23,16 @@ func (*ResourceCatalog) PrepareState(input *resources.Catalog) *catalog.CreateCa
 
 func (*ResourceCatalog) RemapState(info *catalog.CatalogInfo) *catalog.CreateCatalog {
 	return &catalog.CreateCatalog{
-		Comment:         info.Comment,
-		ConnectionName:  info.ConnectionName,
-		Name:            info.Name,
-		Options:         info.Options,
-		Properties:      info.Properties,
-		ProviderName:    info.ProviderName,
-		ShareName:       info.ShareName,
-		StorageRoot:     info.StorageRoot,
-		ForceSendFields: utils.FilterFields[catalog.CreateCatalog](info.ForceSendFields),
+		Comment:                   info.Comment,
+		ConnectionName:            info.ConnectionName,
+		ManagedEncryptionSettings: info.ManagedEncryptionSettings,
+		Name:                      info.Name,
+		Options:                   info.Options,
+		Properties:                info.Properties,
+		ProviderName:              info.ProviderName,
+		ShareName:                 info.ShareName,
+		StorageRoot:               info.StorageRoot,
+		ForceSendFields:           utils.FilterFields[catalog.CreateCatalog](info.ForceSendFields),
 	}
 }
 
@@ -48,11 +49,12 @@ func (r *ResourceCatalog) DoCreate(ctx context.Context, config *catalog.CreateCa
 }
 
 // DoUpdate updates the catalog in place and returns remote state.
-func (r *ResourceCatalog) DoUpdate(ctx context.Context, id string, config *catalog.CreateCatalog, _ Changes) (*catalog.CatalogInfo, error) {
+func (r *ResourceCatalog) DoUpdate(ctx context.Context, id string, config *catalog.CreateCatalog, _ *PlanEntry) (*catalog.CatalogInfo, error) {
 	updateRequest := catalog.UpdateCatalog{
 		Comment:                      config.Comment,
 		EnablePredictiveOptimization: "", // Not supported by DABs
 		IsolationMode:                "", // Not supported by DABs
+		ManagedEncryptionSettings:    config.ManagedEncryptionSettings,
 		Name:                         id,
 		NewName:                      "", // Only set if name actually changes (see DoUpdateWithID)
 		Options:                      config.Options,
@@ -75,6 +77,7 @@ func (r *ResourceCatalog) DoUpdateWithID(ctx context.Context, id string, config 
 		Comment:                      config.Comment,
 		EnablePredictiveOptimization: "", // Not supported by DABs
 		IsolationMode:                "", // Not supported by DABs
+		ManagedEncryptionSettings:    config.ManagedEncryptionSettings,
 		Name:                         id,
 		NewName:                      "", // Initialized below if needed
 		Options:                      config.Options,

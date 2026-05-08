@@ -1,0 +1,21 @@
+
+=== Step 1: Deploy with job_1 only
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/stale_state_test/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Step 2: Save stale local state (has only job_1, serial=1)
+=== Step 3: Add job_2 to config and deploy again
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/stale_state_test/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Step 4: Record deployed job_2 ID from stateDeployed job_2 ID: [JOB_2_ID]
+
+=== Step 5: Restore stale local state (only job_1, serial=1)
+=== Step 6: Create external job and try to bind (should fail: remote state already has job_2)
+External job ID: [EXTERNAL_JOB_ID]

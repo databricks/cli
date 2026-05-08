@@ -15,6 +15,7 @@ import (
 type (
 	Changes    = deployplan.Changes
 	ChangeDesc = deployplan.ChangeDesc
+	PlanEntry  = deployplan.PlanEntry
 )
 
 // IResource describes core methods for the resource implementation.
@@ -55,8 +56,8 @@ type IResource interface {
 
 	// [Optional] DoUpdate updates the resource. ID must not change as a result of this operation. Returns optionally remote state.
 	// If remote state is available as part of the operation, return it; otherwise return nil.
-	// Example: func (r *ResourceSchema) DoUpdate(ctx context.Context, id string, newState *catalog.CreateSchema, changes Changes) (*catalog.SchemaInfo, error)
-	DoUpdate(ctx context.Context, id string, newState any, changes Changes) (remoteState any, e error)
+	// Example: func (r *ResourceSchema) DoUpdate(ctx context.Context, id string, newState *catalog.CreateSchema, entry *PlanEntry) (*catalog.SchemaInfo, error)
+	DoUpdate(ctx context.Context, id string, newState any, entry *PlanEntry) (remoteState any, e error)
 
 	// [Optional] DoUpdateWithID performs an update that may result in resource having a new ID. Returns new id and optionally remote state.
 	DoUpdateWithID(ctx context.Context, id string, newState any) (newID string, remoteState any, e error)
@@ -153,7 +154,7 @@ func loadKeyedSlices(call *calladapt.BoundCaller) (map[string]any, error) {
 }
 
 func (a *Adapter) initMethods(resource any) error {
-	err := calladapt.EnsureNoExtraMethods(resource, calladapt.TypeOf[IResource]())
+	err := calladapt.EnsureNoExtraMethods(resource, reflect.TypeFor[IResource]())
 	if err != nil {
 		return err
 	}
@@ -163,7 +164,7 @@ func (a *Adapter) initMethods(resource any) error {
 	}
 
 	// RemapState is optional when remote type already matches state type.
-	a.remapState, err = calladapt.PrepareCall(resource, calladapt.TypeOf[IResource](), "RemapState")
+	a.remapState, err = calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), "RemapState")
 	if err != nil {
 		return err
 	}
@@ -185,37 +186,37 @@ func (a *Adapter) initMethods(resource any) error {
 
 	// Optional methods with varying signatures:
 
-	a.doUpdate, err = calladapt.PrepareCall(resource, calladapt.TypeOf[IResource](), "DoUpdate")
+	a.doUpdate, err = calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), "DoUpdate")
 	if err != nil {
 		return err
 	}
 
-	a.doUpdateWithID, err = calladapt.PrepareCall(resource, calladapt.TypeOf[IResource](), "DoUpdateWithID")
+	a.doUpdateWithID, err = calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), "DoUpdateWithID")
 	if err != nil {
 		return err
 	}
 
-	a.waitAfterCreate, err = calladapt.PrepareCall(resource, calladapt.TypeOf[IResource](), "WaitAfterCreate")
+	a.waitAfterCreate, err = calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), "WaitAfterCreate")
 	if err != nil {
 		return err
 	}
 
-	a.waitAfterUpdate, err = calladapt.PrepareCall(resource, calladapt.TypeOf[IResource](), "WaitAfterUpdate")
+	a.waitAfterUpdate, err = calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), "WaitAfterUpdate")
 	if err != nil {
 		return err
 	}
 
-	a.overrideChangeDesc, err = calladapt.PrepareCall(resource, calladapt.TypeOf[IResource](), "OverrideChangeDesc")
+	a.overrideChangeDesc, err = calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), "OverrideChangeDesc")
 	if err != nil {
 		return err
 	}
 
-	a.doResize, err = calladapt.PrepareCall(resource, calladapt.TypeOf[IResource](), "DoResize")
+	a.doResize, err = calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), "DoResize")
 	if err != nil {
 		return err
 	}
 
-	keyedSlicesCall, err := calladapt.PrepareCall(resource, calladapt.TypeOf[IResource](), "KeyedSlices")
+	keyedSlicesCall, err := calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), "KeyedSlices")
 	if err != nil {
 		return err
 	}
@@ -435,14 +436,14 @@ func (a *Adapter) HasDoUpdate() bool {
 	return a.doUpdate != nil
 }
 
-// DoUpdate updates the resource with information about changes computed during plan.
+// DoUpdate updates the resource with the plan entry computed during plan.
 // Returns remote state if available, otherwise nil.
-func (a *Adapter) DoUpdate(ctx context.Context, id string, newState any, changes Changes) (any, error) {
+func (a *Adapter) DoUpdate(ctx context.Context, id string, newState any, entry *PlanEntry) (any, error) {
 	if a.doUpdate == nil {
 		return nil, errors.New("internal error: DoUpdate not found")
 	}
 
-	outs, err := a.doUpdate.Call(ctx, id, newState, changes)
+	outs, err := a.doUpdate.Call(ctx, id, newState, entry)
 	if err != nil {
 		return nil, err
 	}
@@ -534,7 +535,7 @@ func (a *Adapter) KeyedSlices() map[string]any {
 
 // prepareCallRequired prepares a call and ensures the method is found.
 func prepareCallRequired(resource any, methodName string) (*calladapt.BoundCaller, error) {
-	caller, err := calladapt.PrepareCall(resource, calladapt.TypeOf[IResource](), methodName)
+	caller, err := calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), methodName)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", methodName, err)
 	}

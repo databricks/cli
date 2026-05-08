@@ -1,0 +1,8 @@
+bundle:
+  name: engine-from-config
+  engine: direct
+
+resources:
+  jobs:
+    job_1:
+      name: My Job

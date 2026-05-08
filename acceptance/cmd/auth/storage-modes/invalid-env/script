@@ -1,0 +1,6 @@
+export DATABRICKS_AUTH_STORAGE=bogus
+
+# Any auth command that resolves the storage mode must surface the error.
+# auth token is the smallest reproducer because it doesn't perform any
+# network I/O before resolving the mode.
+trace $CLI auth token --profile nonexistent

@@ -30,6 +30,8 @@ type SetupOptions struct {
 	Profile string
 	// Proxy command to use for the SSH connection
 	ProxyCommand string
+	// Skip confirmation prompts (e.g. recreate existing host config without asking)
+	AutoApprove bool
 }
 
 func validateClusterAccess(ctx context.Context, client *databricks.WorkspaceClient, clusterID string) error {
@@ -112,13 +114,18 @@ func Setup(ctx context.Context, client *databricks.WorkspaceClient, opts SetupOp
 
 	recreate := false
 	if exists {
-		recreate, err = sshconfig.PromptRecreateConfig(ctx, opts.HostName)
-		if err != nil {
-			return err
-		}
-		if !recreate {
-			cmdio.LogString(ctx, fmt.Sprintf("Skipping setup for host '%s'", opts.HostName))
-			return nil
+		if opts.AutoApprove {
+			recreate = true
+			cmdio.LogString(ctx, fmt.Sprintf("Host '%s' already exists, recreating (--auto-approve)", opts.HostName))
+		} else {
+			recreate, err = sshconfig.PromptRecreateConfig(ctx, opts.HostName)
+			if err != nil {
+				return err
+			}
+			if !recreate {
+				cmdio.LogString(ctx, fmt.Sprintf("Skipping setup for host '%s'", opts.HostName))
+				return nil
+			}
 		}
 	}
 

@@ -1,11 +1,15 @@
 package manifest
 
 import (
+	"cmp"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io/fs"
+	"maps"
 	"os"
 	"path/filepath"
-	"sort"
+	"slices"
 	"strings"
 )
 
@@ -31,6 +35,10 @@ type Resource struct {
 	Permission  string                   `json:"permission"`  // e.g., "CAN_USE"
 	Fields      map[string]ResourceField `json:"fields"`      // field definitions with env var mappings
 
+	// PluginName is the machine name of the plugin (e.g., "lakebase").
+	// Set during resource collection. Not part of the JSON manifest.
+	PluginName string `json:"-"`
+
 	// PluginDisplayName is set during resource collection to identify which
 	// plugin requires this resource. Not part of the JSON manifest.
 	PluginDisplayName string `json:"-"`
@@ -54,12 +62,7 @@ func (r Resource) HasFields() bool {
 
 // FieldNames returns the field names in sorted order for deterministic iteration.
 func (r Resource) FieldNames() []string {
-	names := make([]string, 0, len(r.Fields))
-	for k := range r.Fields {
-		names = append(names, k)
-	}
-	sort.Strings(names)
-	return names
+	return slices.Sorted(maps.Keys(r.Fields))
 }
 
 // Resources defines the required and optional resources for a plugin.
@@ -77,6 +80,23 @@ type Plugin struct {
 	RequiredByTemplate bool      `json:"requiredByTemplate"`
 	Resources          Resources `json:"resources"`
 	OnSetupMessage     string    `json:"onSetupMessage"`
+
+	// Stability is one of "beta", "ga", or empty.
+	// Stored as a plain string so unknown future values round-trip unchanged.
+	// See https://github.com/databricks/appkit/pull/264.
+	Stability string `json:"stability,omitempty"`
+}
+
+// StabilityLabel returns a user-facing tier label for non-GA plugins.
+// Returns "" for GA, unset, or any value that maps to GA.
+// Unknown values pass through so we are forward-compatible with new tiers.
+func (p Plugin) StabilityLabel() string {
+	switch p.Stability {
+	case "", "ga":
+		return ""
+	default:
+		return p.Stability
+	}
 }
 
 // Manifest represents the appkit.plugins.json file structure.
@@ -91,7 +111,7 @@ func Load(templateDir string) (*Manifest, error) {
 	path := filepath.Join(templateDir, ManifestFileName)
 	data, err := os.ReadFile(path)
 	if err != nil {
-		if os.IsNotExist(err) {
+		if errors.Is(err, fs.ErrNotExist) {
 			return nil, fmt.Errorf("manifest file not found: %s", path)
 		}
 		return nil, fmt.Errorf("read manifest: %w", err)
@@ -122,8 +142,8 @@ func (m *Manifest) GetPlugins() []Plugin {
 		}
 		plugins = append(plugins, p)
 	}
-	sort.Slice(plugins, func(i, j int) bool {
-		return plugins[i].Name < plugins[j].Name
+	slices.SortFunc(plugins, func(a, b Plugin) int {
+		return cmp.Compare(a.Name, b.Name)
 	})
 	return plugins
 }
@@ -170,12 +190,7 @@ func (m *Manifest) GetPluginByName(name string) *Plugin {
 
 // GetPluginNames returns a list of all plugin names.
 func (m *Manifest) GetPluginNames() []string {
-	names := make([]string, 0, len(m.Plugins))
-	for name := range m.Plugins {
-		names = append(names, name)
-	}
-	sort.Strings(names)
-	return names
+	return slices.Sorted(maps.Keys(m.Plugins))
 }
 
 // ValidatePluginNames checks that all provided plugin names exist in the manifest.
@@ -207,6 +222,7 @@ func (m *Manifest) CollectResources(pluginNames []string) []Resource {
 			key := r.Type + ":" + r.Key()
 			if !seen[key] {
 				seen[key] = true
+				r.PluginName = name
 				r.PluginDisplayName = plugin.DisplayName
 				resources = append(resources, r)
 			}
@@ -235,6 +251,7 @@ func (m *Manifest) CollectOptionalResources(pluginNames []string) []Resource {
 			key := r.Type + ":" + r.Key()
 			if !seen[key] {
 				seen[key] = true
+				r.PluginName = name
 				r.PluginDisplayName = plugin.DisplayName
 				resources = append(resources, r)
 			}

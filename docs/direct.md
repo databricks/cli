@@ -1,6 +1,6 @@
 ## Status
 
-Status: experimental, only recommended for development targets or evaluation, not for production use.
+Status: Public Preview.
 Known issues: https://github.com/databricks/cli/issues?q=state%3Aopen%20label%3Aengine%2Fdirect
 
 ## Reporting bugs

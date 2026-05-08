@@ -1,9 +1,13 @@
 package config
 
 import (
+	"context"
 	"os"
 	"path/filepath"
+	"strconv"
 
+	"github.com/databricks/cli/bundle/env"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
@@ -42,7 +46,13 @@ type Workspace struct {
 	AzureLoginAppID  string `json:"azure_login_app_id,omitempty"`
 
 	// Unified host specific attributes.
+	//
+	// ExperimentalIsUnifiedHost is a deprecated no-op. Unified hosts are now
+	// detected automatically from /.well-known/databricks-config. The field is
+	// retained so existing databricks.yml files using it still validate against
+	// the bundle schema.
 	ExperimentalIsUnifiedHost bool   `json:"experimental_is_unified_host,omitempty"`
+	AccountID                 string `json:"account_id,omitempty"`
 	WorkspaceID               string `json:"workspace_id,omitempty"`
 
 	// CurrentUser holds the current user.
@@ -91,13 +101,20 @@ func (s User) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(s)
 }
 
-func (w *Workspace) Config() *config.Config {
+func (w *Workspace) Config(ctx context.Context) *config.Config {
+	// Once bundle deploy started, old deployment is partially destroyed, so we should do utmost to complete it.
+	// Having client-side timeouts that kill the deployment seems counter-productive. We should just keep on
+	// trying and the user should be the one interrupting it if they decide so.
+	// Default is 30s
+	httpTimeout := 90
+	if v, ok := env.HTTPTimeoutSeconds(ctx); ok {
+		if n, err := strconv.Atoi(v); err == nil {
+			httpTimeout = n
+		}
+	}
+
 	cfg := &config.Config{
-		// Once bundle deploy started, old deployment is partially destroyed, so we should do utmost to complete it.
-		// Having client-side timeouts that kill the deployment seems counter-productive. We should just keep on
-		// trying and the user should be the one interrupting it if they decide so.
-		// Default is 30s
-		HTTPTimeoutSeconds: 90,
+		HTTPTimeoutSeconds: httpTimeout,
 
 		// Default is 5min
 		RetryTimeoutSeconds: 15 * 60,
@@ -123,8 +140,8 @@ func (w *Workspace) Config() *config.Config {
 		AzureLoginAppID:  w.AzureLoginAppID,
 
 		// Unified host
-		Experimental_IsUnifiedHost: w.ExperimentalIsUnifiedHost,
-		WorkspaceID:                w.WorkspaceID,
+		AccountID:   w.AccountID,
+		WorkspaceID: w.WorkspaceID,
 	}
 
 	for k := range config.ConfigAttributes {
@@ -137,8 +154,29 @@ func (w *Workspace) Config() *config.Config {
 	return cfg
 }
 
-func (w *Workspace) Client() (*databricks.WorkspaceClient, error) {
-	cfg := w.Config()
+// NormalizeHostURL extracts query parameters from the host URL and populates
+// the corresponding fields if not already set. This allows users to paste SPOG
+// URLs (e.g. https://host.databricks.com/?o=12345) directly into their bundle
+// config. Must be called before Config() so the extracted fields are included
+// in the SDK config used for profile resolution and authentication.
+func (w *Workspace) NormalizeHostURL() {
+	params := auth.ExtractHostQueryParams(w.Host)
+	w.Host = params.Host
+	if w.WorkspaceID == "" {
+		w.WorkspaceID = params.WorkspaceID
+	}
+	if w.AccountID == "" {
+		w.AccountID = params.AccountID
+	}
+}
+
+func (w *Workspace) Client(ctx context.Context) (*databricks.WorkspaceClient, error) {
+	// Extract query parameters (?o=, ?a=) from the host URL before building
+	// the SDK config. This ensures workspace_id and account_id are available
+	// for profile resolution during EnsureResolved().
+	w.NormalizeHostURL()
+
+	cfg := w.Config(ctx)
 
 	// If only the host is configured, we try and unambiguously match it to
 	// a profile in the user's databrickscfg file. Override the default loaders.

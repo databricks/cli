@@ -1,0 +1,18 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+title "Initial deployment (no budget_policy_id)"
+trace $CLI bundle deploy
+
+endpoint_name="vs-endpoint-${UNIQUE_NAME}"
+
+title "Simulate remote drift: set budget_policy_id outside the bundle"
+trace $CLI vector-search-endpoints update-endpoint-budget-policy "${endpoint_name}" "remote-policy"
+
+title "Plan detects drift and proposes update"
+trace $CLI bundle plan | contains.py "Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged"

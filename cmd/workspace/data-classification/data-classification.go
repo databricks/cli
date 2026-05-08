@@ -108,6 +108,7 @@ func newCreateCatalogConfig() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -220,6 +221,7 @@ func newGetCatalogConfig() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -303,6 +305,7 @@ func newUpdateCatalogConfig() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 

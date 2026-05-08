@@ -7,6 +7,10 @@ type ResourceSqlPermissionsPrivilegeAssignments struct {
 	Privileges []string `json:"privileges"`
 }
 
+type ResourceSqlPermissionsProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type ResourceSqlPermissions struct {
 	AnonymousFunction    bool                                         `json:"anonymous_function,omitempty"`
 	AnyFile              bool                                         `json:"any_file,omitempty"`
@@ -17,4 +21,5 @@ type ResourceSqlPermissions struct {
 	Table                string                                       `json:"table,omitempty"`
 	View                 string                                       `json:"view,omitempty"`
 	PrivilegeAssignments []ResourceSqlPermissionsPrivilegeAssignments `json:"privilege_assignments,omitempty"`
+	ProviderConfig       *ResourceSqlPermissionsProviderConfig        `json:"provider_config,omitempty"`
 }

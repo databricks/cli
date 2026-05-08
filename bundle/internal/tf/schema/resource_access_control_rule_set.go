@@ -7,9 +7,15 @@ type ResourceAccessControlRuleSetGrantRules struct {
 	Role       string   `json:"role"`
 }
 
+type ResourceAccessControlRuleSetProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type ResourceAccessControlRuleSet struct {
-	Etag       string                                   `json:"etag,omitempty"`
-	Id         string                                   `json:"id,omitempty"`
-	Name       string                                   `json:"name"`
-	GrantRules []ResourceAccessControlRuleSetGrantRules `json:"grant_rules,omitempty"`
+	Api            string                                      `json:"api,omitempty"`
+	Etag           string                                      `json:"etag,omitempty"`
+	Id             string                                      `json:"id,omitempty"`
+	Name           string                                      `json:"name"`
+	GrantRules     []ResourceAccessControlRuleSetGrantRules    `json:"grant_rules,omitempty"`
+	ProviderConfig *ResourceAccessControlRuleSetProviderConfig `json:"provider_config,omitempty"`
 }

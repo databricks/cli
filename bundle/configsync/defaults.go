@@ -97,11 +97,19 @@ var serverSideDefaults = map[string]any{
 	"resources.pipelines.*.continuous": false,
 }
 
-func shouldSkipField(path string, value any) bool {
+// shouldSkipField checks if a field should be skipped in change detection.
+// When hasConfigValue is true (field is set in config or saved state), only
+// "always skip" fields are skipped. Backend defaults are only skipped when the
+// field is not in config/state, matching the behavior of shouldSkipBackendDefault
+// in the direct deployment engine.
+func shouldSkipField(path string, value any, hasConfigValue bool) bool {
 	for pattern, expected := range serverSideDefaults {
 		if matchPattern(pattern, path) {
 			if _, ok := expected.(skipAlways); ok {
 				return true
+			}
+			if hasConfigValue {
+				return false
 			}
 			if _, ok := expected.(skipIfZeroOrNil); ok {
 				return value == nil || value == int64(0)
@@ -174,5 +182,35 @@ func resetValueIfNeeded(path string, value any) any {
 			return expected
 		}
 	}
+	return value
+}
+
+// prefixedNameFields lists resource name field patterns where the name prefix
+// (e.g. "[dev user] ") is applied during deployment and should be stripped
+// when syncing remote changes back to config.
+var prefixedNameFields = []string{
+	"resources.jobs.*.name",
+	"resources.pipelines.*.name",
+	"resources.dashboards.*.display_name",
+}
+
+// stripNamePrefix strips the configured name prefix from name field values
+// so that the raw (unprefixed) name is written back to the config YAML.
+func stripNamePrefix(path string, value any, prefix string) any {
+	if prefix == "" {
+		return value
+	}
+
+	s, ok := value.(string)
+	if !ok {
+		return value
+	}
+
+	for _, pattern := range prefixedNameFields {
+		if matchPattern(pattern, path) {
+			return strings.TrimPrefix(s, prefix)
+		}
+	}
+
 	return value
 }

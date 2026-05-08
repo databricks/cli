@@ -1,4 +1,4 @@
-Error: failed to resolve service-principal: TIDALDBServAccount - usdev, err: ServicePrincipal named 'TIDALDBServAccount - usdev' does not exist
+Error: failed to resolve service-principal: TIDALDBServAccount - usdev, err: service principal named "TIDALDBServAccount - usdev" does not exist
 
 Name: issue-3039
 Target: personal

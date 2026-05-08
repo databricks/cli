@@ -3,12 +3,12 @@ package dynvar
 import (
 	"errors"
 	"fmt"
+	"maps"
 	"slices"
 	"strings"
 
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/interpolation"
-	"github.com/databricks/cli/libs/utils"
 )
 
 // Resolve resolves variable references in the given input value using the provided lookup function.
@@ -43,7 +43,7 @@ type lookupResult struct {
 	err error
 }
 
-type resolver struct {
+type resolver struct { //nolint:recvcheck // value receiver for run(), pointer for mutation methods
 	in dyn.Value
 	fn Lookup
 
@@ -102,7 +102,7 @@ func (r *resolver) resolveVariableReferences() (err error) {
 	// We sort the keys here to ensure that we always resolve the same variable reference first.
 	// This is done such that the cycle detection error is deterministic. If we did not do this,
 	// we could enter the cycle at any point in the cycle and return varying errors.
-	keys := utils.SortedKeys(r.refs)
+	keys := slices.Sorted(maps.Keys(r.refs))
 	for _, key := range keys {
 		v, err := r.resolveRef(r.refs[key], []string{key})
 		if err != nil {

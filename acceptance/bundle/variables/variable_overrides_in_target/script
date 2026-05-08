@@ -2,3 +2,5 @@ trace $CLI bundle validate -o json -t use-default-variable-values | jq .resource
 trace $CLI bundle validate -o json -t override-string-variable | jq .resources
 trace $CLI bundle validate -o json -t override-int-variable | jq .resources
 trace $CLI bundle validate -o json -t override-both-bool-and-string-variables | jq .resources
+trace $CLI bundle validate -o json -t override-lookup-variable-with-value | jq .variables.w_lookup.value
+trace $CLI bundle validate -o json -t override-lookup-variable-with-lookup | jq .variables.w_lookup.value

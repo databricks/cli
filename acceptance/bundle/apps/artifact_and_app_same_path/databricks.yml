@@ -1,0 +1,13 @@
+bundle:
+  name: test-bundle
+
+artifacts:
+  my_artifact:
+    type: whl
+    path: ./src/app
+
+resources:
+  apps:
+    my_app:
+      name: my-app
+      source_code_path: ./src/app

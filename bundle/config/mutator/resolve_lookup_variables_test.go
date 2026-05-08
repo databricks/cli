@@ -1,6 +1,7 @@
 package mutator
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -11,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
+	"github.com/databricks/databricks-sdk-go/listing"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 )
@@ -131,11 +133,18 @@ func TestResolveServicePrincipal(t *testing.T) {
 
 	m := mocks.NewMockWorkspaceClient(t)
 	b.SetWorkpaceClient(m.WorkspaceClient)
-	spApi := m.GetMockServicePrincipalsAPI()
-	spApi.EXPECT().GetByDisplayName(mock.Anything, spName).Return(&iam.ServicePrincipal{
-		Id:            "1234",
-		ApplicationId: "app-1234",
-	}, nil)
+
+	api := m.GetMockServicePrincipalsV2API()
+	iterator := listing.SliceIterator[iam.ServicePrincipal]([]iam.ServicePrincipal{
+		{
+			ApplicationId: "app-1234",
+		},
+	})
+	api.EXPECT().
+		List(mock.Anything, iam.ListServicePrincipalsRequest{
+			Filter: fmt.Sprintf("displayName eq '%s'", spName),
+		}).
+		Return(&iterator)
 
 	diags := bundle.Apply(t.Context(), b, ResolveLookupVariables())
 	require.NoError(t, diags.Error())

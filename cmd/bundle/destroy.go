@@ -3,10 +3,12 @@
 package bundle
 
 import (
+	"context"
 	"errors"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/phases"
+	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
@@ -65,17 +67,15 @@ func CommandBundleDestroy(cmd *cobra.Command, args []string, autoApprove, forceD
 		// Skip context initialization if already initialized by parent command
 		SkipInitContext: skipInitContext,
 		AlwaysPull:      true,
+		PostStateFunc: func(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc) error {
+			phases.Destroy(ctx, b, stateDesc.Engine)
+			if logdiag.HasError(ctx) {
+				return root.ErrAlreadyPrinted
+			}
+			return nil
+		},
 	}
 
-	b, stateDesc, err := utils.ProcessBundleRet(cmd, opts)
-	if err != nil {
-		return err
-	}
-
-	phases.Destroy(cmd.Context(), b, stateDesc.Engine)
-	if logdiag.HasError(cmd.Context()) {
-		return root.ErrAlreadyPrinted
-	}
-
-	return nil
+	_, _, err := utils.ProcessBundleRet(cmd, opts)
+	return err
 }

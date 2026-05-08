@@ -1,0 +1,12 @@
+bundle:
+  name: schema-grants-out-of-band-principal-$UNIQUE_NAME
+
+resources:
+  schemas:
+    grants_schema:
+      name: schema_out_of_band_principal_$UNIQUE_NAME
+      catalog_name: main
+      grants:
+        - principal: $CURRENT_USER_NAME
+          privileges:
+            - CREATE_TABLE

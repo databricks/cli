@@ -79,6 +79,7 @@ func newBatchGet() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -145,6 +146,7 @@ func newGet() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -173,6 +175,10 @@ func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listReq marketplace.ListListingsRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listLimit int
 
 	// TODO: array: assets
 	// TODO: array: categories
@@ -180,9 +186,15 @@ func newList() *cobra.Command {
 	cmd.Flags().BoolVar(&listReq.IsPrivateExchange, "is-private-exchange", listReq.IsPrivateExchange, `Filters each listing based on if it is a private exchange.`)
 	cmd.Flags().BoolVar(&listReq.IsStaffPick, "is-staff-pick", listReq.IsStaffPick, `Filters each listing based on whether it is a staff pick.`)
 	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, ``)
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, ``)
 	// TODO: array: provider_ids
 	// TODO: array: tags
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list"
 	cmd.Short = `List listings.`
@@ -204,6 +216,13 @@ func newList() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.ConsumerListings.List(ctx, listReq)
+		if listLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
+		}
+		if listLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -232,14 +251,24 @@ func newSearch() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var searchReq marketplace.SearchListingsRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var searchLimit int
 
 	// TODO: array: assets
 	// TODO: array: categories
 	cmd.Flags().BoolVar(&searchReq.IsFree, "is-free", searchReq.IsFree, ``)
 	cmd.Flags().BoolVar(&searchReq.IsPrivateExchange, "is-private-exchange", searchReq.IsPrivateExchange, ``)
 	cmd.Flags().IntVar(&searchReq.PageSize, "page-size", searchReq.PageSize, ``)
-	cmd.Flags().StringVar(&searchReq.PageToken, "page-token", searchReq.PageToken, ``)
 	// TODO: array: provider_ids
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&searchLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&searchReq.PageToken, "page-token", searchReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "search QUERY"
 	cmd.Short = `Search listings.`
@@ -279,6 +308,13 @@ func newSearch() *cobra.Command {
 		searchReq.Query = args[0]
 
 		response := w.ConsumerListings.Search(ctx, searchReq)
+		if searchLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", searchLimit)
+		}
+		if searchLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, searchLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 

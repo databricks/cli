@@ -18,7 +18,7 @@ import (
 var TestMetastore = catalog.MetastoreAssignment{
 	DefaultCatalogName: "hive_metastore",
 	MetastoreId:        "120efa64-9b68-46ba-be38-f319458430d2",
-	WorkspaceId:        470123456789500,
+	WorkspaceId:        900800700600,
 }
 
 func AddDefaultHandlers(server *Server) {
@@ -109,7 +109,7 @@ func AddDefaultHandlers(server *Server) {
 		return ""
 	})
 
-	server.Handle("POST", "/api/2.0/workspace-files/import-file/{path:.*}", func(req Request) any {
+	server.Handle("POST", "/api/2.0/workspace-files/import-file/{path...}", func(req Request) any {
 		path := req.Vars["path"]
 		overwrite := req.URL.Query().Get("overwrite") == "true"
 		return req.Workspace.WorkspaceFilesImportFile(path, req.Body, overwrite)
@@ -145,12 +145,12 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.WorkspaceFilesImportFile(request.Path, decoded, request.Overwrite)
 	})
 
-	server.Handle("GET", "/api/2.0/workspace-files/{path:.*}", func(req Request) any {
+	server.Handle("GET", "/api/2.0/workspace-files/{path...}", func(req Request) any {
 		path := req.Vars["path"]
 		return req.Workspace.WorkspaceFilesExportFile(path)
 	})
 
-	server.Handle("HEAD", "/api/2.0/fs/directories/{path:.*}", func(req Request) any {
+	server.Handle("HEAD", "/api/2.0/fs/directories/{path...}", func(req Request) any {
 		dirPath := req.Vars["path"]
 		if !strings.HasPrefix(dirPath, "/") {
 			dirPath = "/" + dirPath
@@ -165,7 +165,7 @@ func AddDefaultHandlers(server *Server) {
 		return Response{StatusCode: 404}
 	})
 
-	server.Handle("HEAD", "/api/2.0/fs/files/{path:.*}", func(req Request) any {
+	server.Handle("HEAD", "/api/2.0/fs/files/{path...}", func(req Request) any {
 		path := req.Vars["path"]
 		if req.Workspace.FileExists(path) {
 			return Response{StatusCode: 200}
@@ -173,7 +173,7 @@ func AddDefaultHandlers(server *Server) {
 		return Response{StatusCode: 404}
 	})
 
-	server.Handle("PUT", "/api/2.0/fs/directories/{path:.*}", func(req Request) any {
+	server.Handle("PUT", "/api/2.0/fs/directories/{path...}", func(req Request) any {
 		dirPath := req.Vars["path"]
 		if !strings.HasPrefix(dirPath, "/") {
 			dirPath = "/" + dirPath
@@ -194,13 +194,13 @@ func AddDefaultHandlers(server *Server) {
 		return Response{}
 	})
 
-	server.Handle("PUT", "/api/2.0/fs/files/{path:.*}", func(req Request) any {
+	server.Handle("PUT", "/api/2.0/fs/files/{path...}", func(req Request) any {
 		path := req.Vars["path"]
 		overwrite := req.URL.Query().Get("overwrite") == "true"
 		return req.Workspace.WorkspaceFilesImportFile(path, req.Body, overwrite)
 	})
 
-	server.Handle("GET", "/api/2.0/fs/files/{path:.*}", func(req Request) any {
+	server.Handle("GET", "/api/2.0/fs/files/{path...}", func(req Request) any {
 		path := req.Vars["path"]
 		data := req.Workspace.WorkspaceFilesExportFile(path)
 		if data == nil {
@@ -378,6 +378,22 @@ func AddDefaultHandlers(server *Server) {
 	})
 
 	// Apps:
+
+	server.Handle("POST", "/api/2.0/apps/{name}/deployments", func(req Request) any {
+		return req.Workspace.AppsCreateDeployment(req, req.Vars["name"])
+	})
+
+	server.Handle("GET", "/api/2.0/apps/{name}/deployments/{deployment_id}", func(req Request) any {
+		return req.Workspace.AppsGetDeployment(req, req.Vars["name"], req.Vars["deployment_id"])
+	})
+
+	server.Handle("POST", "/api/2.0/apps/{name}/start", func(req Request) any {
+		return req.Workspace.AppsStart(req, req.Vars["name"])
+	})
+
+	server.Handle("POST", "/api/2.0/apps/{name}/stop", func(req Request) any {
+		return req.Workspace.AppsStop(req, req.Vars["name"])
+	})
 
 	server.Handle("POST", "/api/2.0/apps/{name}/update", func(req Request) any {
 		return req.Workspace.AppsCreateUpdate(req, req.Vars["name"])
@@ -780,6 +796,32 @@ func AddDefaultHandlers(server *Server) {
 
 	server.Handle("PATCH", "/api/2.0/serving-endpoints/{name}/tags", func(req Request) any {
 		return req.Workspace.ServingEndpointPatchTags(req, req.Vars["name"])
+	})
+
+	// Vector Search Endpoints:
+
+	server.Handle("POST", "/api/2.0/vector-search/endpoints", func(req Request) any {
+		return req.Workspace.VectorSearchEndpointCreate(req)
+	})
+
+	server.Handle("GET", "/api/2.0/vector-search/endpoints", func(req Request) any {
+		return MapList(req.Workspace, req.Workspace.VectorSearchEndpoints, "endpoints")
+	})
+
+	server.Handle("GET", "/api/2.0/vector-search/endpoints/{endpoint_name}", func(req Request) any {
+		return MapGet(req.Workspace, req.Workspace.VectorSearchEndpoints, req.Vars["endpoint_name"])
+	})
+
+	server.Handle("PATCH", "/api/2.0/vector-search/endpoints/{endpoint_name}", func(req Request) any {
+		return req.Workspace.VectorSearchEndpointUpdate(req, req.Vars["endpoint_name"])
+	})
+
+	server.Handle("DELETE", "/api/2.0/vector-search/endpoints/{endpoint_name}", func(req Request) any {
+		return MapDelete(req.Workspace, req.Workspace.VectorSearchEndpoints, req.Vars["endpoint_name"])
+	})
+
+	server.Handle("PATCH", "/api/2.0/vector-search/endpoints/{endpoint_name}/budget-policy", func(req Request) any {
+		return req.Workspace.VectorSearchEndpointUpdateBudgetPolicy(req, req.Vars["endpoint_name"])
 	})
 
 	// Generic permissions endpoints

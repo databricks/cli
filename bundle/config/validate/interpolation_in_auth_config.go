@@ -42,6 +42,10 @@ func (f *noInterpolationInAuthConfig) Apply(ctx context.Context, b *bundle.Bundl
 		"azure_tenant_id",
 		"azure_environment",
 		"azure_login_app_id",
+
+		// Unified host specific attributes.
+		"account_id",
+		"workspace_id",
 	}
 
 	diags := diag.Diagnostics{}

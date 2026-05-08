@@ -1,10 +1,11 @@
 package cfgpickers
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/databricks/cli/libs/cmdio"
@@ -13,8 +14,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/httpclient"
 	"github.com/databricks/databricks-sdk-go/service/sql"
-	"github.com/fatih/color"
-	"github.com/manifoldco/promptui"
 )
 
 var ErrNoCompatibleWarehouses = errors.New("no compatible warehouses")
@@ -51,11 +50,11 @@ func AskForWarehouse(ctx context.Context, w *databricks.WorkspaceClient, filters
 		var state string
 		switch warehouse.State {
 		case sql.StateRunning:
-			state = color.GreenString(warehouse.State.String())
+			state = cmdio.Green(ctx, warehouse.State.String())
 		case sql.StateStopped, sql.StateDeleted, sql.StateStopping, sql.StateDeleting:
-			state = color.RedString(warehouse.State.String())
+			state = cmdio.Red(ctx, warehouse.State.String())
 		default:
-			state = color.BlueString(warehouse.State.String())
+			state = cmdio.Blue(ctx, warehouse.State.String())
 		}
 		visibleTouser := fmt.Sprintf("%s (%s %s)", warehouse.Name, state, warehouse.WarehouseType)
 		names[visibleTouser] = warehouse.Id
@@ -86,12 +85,11 @@ func sortWarehousesByState(all []sql.EndpointInfo) []sql.EndpointInfo {
 		sql.StateStopped:  3,
 		sql.StateStopping: 4,
 	}
-	sort.Slice(warehouses, func(i, j int) bool {
-		pi, pj := priorities[warehouses[i].State], priorities[warehouses[j].State]
-		if pi != pj {
-			return pi < pj
+	slices.SortFunc(warehouses, func(a, b sql.EndpointInfo) int {
+		if n := cmp.Compare(priorities[a.State], priorities[b.State]); n != 0 {
+			return n
 		}
-		return strings.ToLower(warehouses[i].Name) < strings.ToLower(warehouses[j].Name)
+		return cmp.Compare(strings.ToLower(a.Name), strings.ToLower(b.Name))
 	})
 
 	return warehouses
@@ -187,13 +185,16 @@ func SelectWarehouse(ctx context.Context, w *databricks.WorkspaceClient, descrip
 	defaultId := warehouses[0].Id
 
 	// Sort by running state first, then alphabetically for display
-	sort.Slice(warehouses, func(i, j int) bool {
-		iRunning := warehouses[i].State == sql.StateRunning
-		jRunning := warehouses[j].State == sql.StateRunning
-		if iRunning != jRunning {
-			return iRunning
+	slices.SortFunc(warehouses, func(a, b sql.EndpointInfo) int {
+		aRunning := a.State == sql.StateRunning
+		bRunning := b.State == sql.StateRunning
+		if aRunning != bRunning {
+			if aRunning {
+				return -1
+			}
+			return 1
 		}
-		return strings.ToLower(warehouses[i].Name) < strings.ToLower(warehouses[j].Name)
+		return cmp.Compare(strings.ToLower(a.Name), strings.ToLower(b.Name))
 	})
 
 	// Build options for the picker (● = running, ○ = not running)
@@ -201,9 +202,9 @@ func SelectWarehouse(ctx context.Context, w *databricks.WorkspaceClient, descrip
 	for _, warehouse := range warehouses {
 		var icon string
 		if warehouse.State == sql.StateRunning {
-			icon = color.GreenString("●")
+			icon = cmdio.Green(ctx, "●")
 		} else {
-			icon = color.HiBlackString("○")
+			icon = cmdio.HiBlack(ctx, "○")
 		}
 
 		// Show type info in gray
@@ -212,9 +213,9 @@ func SelectWarehouse(ctx context.Context, w *databricks.WorkspaceClient, descrip
 			typeInfo = "serverless"
 		}
 
-		name := fmt.Sprintf("%s %s %s", icon, warehouse.Name, color.HiBlackString(typeInfo))
+		name := fmt.Sprintf("%s %s %s", icon, warehouse.Name, cmdio.HiBlack(ctx, typeInfo))
 		if warehouse.Id == defaultId {
-			name += color.HiBlackString(" [DEFAULT]")
+			name += cmdio.HiBlack(ctx, " [DEFAULT]")
 		}
 		items = append(items, cmdio.Tuple{Name: name, Id: warehouse.Id})
 	}
@@ -222,7 +223,6 @@ func SelectWarehouse(ctx context.Context, w *databricks.WorkspaceClient, descrip
 	if description != "" {
 		cmdio.LogString(ctx, description)
 	}
-	promptui.SearchPrompt = "Search: "
 	warehouseId, err := cmdio.SelectOrdered(ctx, items, "warehouse\n")
 	if err != nil {
 		return "", err

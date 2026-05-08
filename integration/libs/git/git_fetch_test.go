@@ -69,7 +69,7 @@ func TestFetchRepositoryInfoAPI_FromNonRepo(t *testing.T) {
 	rootPath := ensureWorkspacePrefix(acc.TemporaryWorkspaceDir(wt, "testing-nonrepo-"))
 
 	// Create directory inside this root path (this is cleaned up as part of the root path).
-	err := wt.W.Workspace.MkdirsByPath(ctx, path.Join(rootPath, "a/b/c"))
+	err := wt.W.Workspace.MkdirsByPath(ctx, path.Join(rootPath, "a/b/c")) //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
 	require.NoError(t, err)
 
 	ctx = dbr.MockRuntime(ctx, dbr.Environment{IsDbr: true, Version: "15.4"})

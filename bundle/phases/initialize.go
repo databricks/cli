@@ -99,6 +99,9 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// (e.g. "${foo.bar-}") before variable resolution occurs.
 		mutator.WarnMalformedReferences(),
 
+		// Collect telemetry on $${} and \${} escape patterns before variable resolution.
+		mutator.CollectEscapeTelemetry(),
+
 		// Reads (dynamic): variables.* (checks if there's a value assigned to variable already or if it has lookup reference)
 		// Updates (dynamic): variables.*.value (sets values from environment variables, variable files, or defaults)
 		// Resolves and sets values for bundle variables in the following order: from environment variables, from variable files and then defaults

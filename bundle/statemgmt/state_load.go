@@ -39,11 +39,7 @@ func (l *load) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	var state ExportedResourcesMap
 
 	if l.engine.IsDirect() {
-		_, fullPathDirect := b.StateFilenameDirect(ctx)
-		state, err = b.DeploymentBundle.ExportState(ctx, fullPathDirect)
-		if err != nil {
-			return diag.FromErr(err)
-		}
+		state = b.DeploymentBundle.ExportState(ctx)
 	} else {
 		var err error
 		state, err = terraform.ParseResourcesState(ctx, b)

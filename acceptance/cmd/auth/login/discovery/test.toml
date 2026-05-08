@@ -4,6 +4,9 @@ Ignore = [
 RecordRequests = true
 
 # Override the introspection endpoint so we can verify it gets called.
+# Host discovery (via .well-known/databricks-config) provides workspace_id.
+# Introspection provides account_id as a fallback since the default
+# discovery handler doesn't return it.
 [[Server]]
 Pattern = "GET /api/2.0/tokens/introspect"
 Response.Body = '''

@@ -3,6 +3,7 @@ package apps
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -37,7 +38,7 @@ const (
 	appkitTemplateDir    = "template"
 	appkitDefaultBranch  = "main"
 	appkitTemplateTagPfx = "template-v"
-	appkitDefaultVersion = "template-v0.20.3"
+	appkitDefaultVersion = "template-v0.24.0"
 	defaultProfile       = "DEFAULT"
 )
 
@@ -76,6 +77,7 @@ func newInitCmd() *cobra.Command {
 		deploy       bool
 		run          string
 		setValues    []string
+		autoApprove  bool
 	)
 
 	cmd := &cobra.Command{
@@ -160,6 +162,7 @@ Environment variables:
 				runChanged:     cmd.Flags().Changed("run"),
 				pluginsChanged: cmd.Flags().Changed("features") || cmd.Flags().Changed("plugins"),
 				setValues:      setValues,
+				autoApprove:    autoApprove,
 			})
 		},
 	}
@@ -178,6 +181,7 @@ Environment variables:
 	_ = cmd.Flags().MarkHidden("plugins")
 	cmd.Flags().BoolVar(&deploy, "deploy", false, "Deploy the app after creation")
 	cmd.Flags().StringVar(&run, "run", "", "Run the app after creation (none, dev, dev-remote)")
+	cmd.Flags().BoolVar(&autoApprove, "auto-approve", false, "Skip confirmation prompts for optional resources. Optional resources are only configured when their values are provided via --set.")
 
 	return cmd
 }
@@ -198,6 +202,7 @@ type createOptions struct {
 	runChanged     bool     // true if --run flag was explicitly set
 	pluginsChanged bool     // true if --plugins flag was explicitly set
 	setValues      []string // --set plugin.resourceKey.field=value pairs
+	autoApprove    bool
 }
 
 // parseSetValues parses --set key=value pairs into the resourceValues map.
@@ -277,6 +282,28 @@ func pluginHasResourceField(p *manifest.Plugin, resourceKey, fieldName string) b
 	return false
 }
 
+// validateRequiredResources checks that all required resources have at least one
+// value in resourceValues. Returns an error with a --set hint if any are missing.
+func validateRequiredResources(resources []manifest.Resource, resourceValues map[string]string) error {
+	for _, r := range resources {
+		found := false
+		for k := range resourceValues {
+			if strings.HasPrefix(k, r.Key()+".") {
+				found = true
+				break
+			}
+		}
+		if !found {
+			fieldHint := "id"
+			if names := r.FieldNames(); len(names) > 0 {
+				fieldHint = names[0]
+			}
+			return fmt.Errorf("missing required resource %q for selected plugins (use --set %s.%s.%s=value)", r.Alias, r.PluginName, r.Key(), fieldHint)
+		}
+	}
+	return nil
+}
+
 // tmplBundle holds the generated bundle configuration strings.
 type tmplBundle struct {
 	Variables       string
@@ -290,9 +317,16 @@ type dotEnvVars struct {
 	Example string
 }
 
-// pluginVar represents a selected plugin. Currently empty, but extensible
-// with properties as the plugin model evolves.
-type pluginVar struct{}
+// pluginVar represents a selected plugin in template substitution.
+// Fields here are part of the AppKit template contract — the template
+// reads them via {{$p.Field}} on map values in templateVars.Plugins.
+type pluginVar struct {
+	// Stability mirrors manifest.Plugin.Stability ("" for GA, "beta"
+	// for beta, future tiers preserved). The AppKit template branches
+	// imports on this — see databricks/appkit#264 commit d826a532, which
+	// routes beta plugins through the `@databricks/appkit/beta` subpath.
+	Stability string
+}
 
 // templateVars holds the variables for template substitution.
 type templateVars struct {
@@ -332,7 +366,7 @@ func parseDeployAndRunFlags(deploy bool, run string) (bool, prompt.RunMode, erro
 
 // promptForPluginsAndDeps prompts for plugins and their resource dependencies using the manifest.
 // skipDeployRunPrompt indicates whether to skip prompting for deploy/run (because flags were provided).
-func promptForPluginsAndDeps(ctx context.Context, m *manifest.Manifest, preSelectedPlugins []string, skipDeployRunPrompt bool) (*prompt.CreateProjectConfig, error) {
+func promptForPluginsAndDeps(ctx context.Context, m *manifest.Manifest, preSelectedPlugins []string, skipDeployRunPrompt, autoApprove bool) (*prompt.CreateProjectConfig, error) {
 	config := &prompt.CreateProjectConfig{
 		Dependencies: make(map[string]string),
 		Features:     preSelectedPlugins, // Reuse Features field for plugin names
@@ -352,7 +386,7 @@ func promptForPluginsAndDeps(ctx context.Context, m *manifest.Manifest, preSelec
 	if len(config.Features) == 0 && len(selectablePlugins) > 0 {
 		options := make([]huh.Option[string], 0, len(selectablePlugins))
 		for _, p := range selectablePlugins {
-			label := p.DisplayName + " - " + p.Description
+			label := p.DisplayName + prompt.RenderStabilityTier(p.StabilityLabel()) + " - " + p.Description
 			options = append(options, huh.NewOption(label, p.Name))
 		}
 
@@ -389,19 +423,19 @@ func promptForPluginsAndDeps(ctx context.Context, m *manifest.Manifest, preSelec
 		if err != nil {
 			return nil, err
 		}
-		for k, v := range values {
-			config.Dependencies[k] = v
-		}
+		maps.Copy(config.Dependencies, values)
 	}
 
-	// Step 3: Prompt for optional plugin resource dependencies
-	for _, r := range optionalResources {
-		values, err := promptForResource(ctx, r, theme, false)
-		if err != nil {
-			return nil, err
-		}
-		for k, v := range values {
-			config.Dependencies[k] = v
+	// Step 3: Prompt for optional plugin resource dependencies.
+	// With --auto-approve, optional resources are skipped here; they're only
+	// configured when their values are supplied via --set (merged later).
+	if !autoApprove {
+		for _, r := range optionalResources {
+			values, err := promptForResource(ctx, r, theme, false)
+			if err != nil {
+				return nil, err
+			}
+			maps.Copy(config.Dependencies, values)
 		}
 	}
 
@@ -656,6 +690,14 @@ func startBackgroundNpmInstall(ctx context.Context, srcProjectDir, destDir, proj
 		return nil
 	}
 
+	// Copy any file: protocol dependencies (e.g., local .tgz tarballs) so npm ci can resolve them.
+	pkgData, err := os.ReadFile(filepath.Join(destDir, "package.json"))
+	if err != nil {
+		log.Warnf(ctx, "Failed to read package.json for file dep copy: %v", err)
+	} else {
+		copyFileDeps(ctx, pkgData, srcProjectDir, destDir)
+	}
+
 	// Copy package-lock.json raw (never has template vars).
 	lockData, err := os.ReadFile(lockFile)
 	if err != nil {
@@ -678,6 +720,41 @@ func startBackgroundNpmInstall(ctx context.Context, srcProjectDir, destDir, proj
 
 	log.Debugf(ctx, "Started background npm install in %s", destDir)
 	return ch
+}
+
+// copyFileDeps copies local file: protocol dependencies (e.g., .tgz tarballs)
+// from srcDir to destDir so that npm ci can resolve them.
+func copyFileDeps(ctx context.Context, pkgJSON []byte, srcDir, destDir string) {
+	var pkg struct {
+		Dependencies    map[string]string `json:"dependencies"`
+		DevDependencies map[string]string `json:"devDependencies"`
+	}
+	if err := json.Unmarshal(pkgJSON, &pkg); err != nil {
+		log.Debugf(ctx, "Failed to parse package.json for file dep copy: %v", err)
+		return
+	}
+	for _, deps := range []map[string]string{pkg.Dependencies, pkg.DevDependencies} {
+		for _, v := range deps {
+			if !strings.HasPrefix(v, "file:") {
+				continue
+			}
+			relPath := filepath.Clean(strings.TrimPrefix(v, "file:"))
+			src := filepath.Join(srcDir, relPath)
+			data, err := os.ReadFile(src)
+			if err != nil {
+				log.Debugf(ctx, "Skipping file dep %s: %v", relPath, err)
+				continue
+			}
+			dst := filepath.Join(destDir, relPath)
+			if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
+				log.Debugf(ctx, "Failed to create dir for file dep %s: %v", relPath, err)
+				continue
+			}
+			if err := os.WriteFile(dst, data, 0o644); err != nil {
+				log.Debugf(ctx, "Failed to copy file dep %s: %v", relPath, err)
+			}
+		}
+	}
 }
 
 // awaitBackgroundNpmInstall waits for the background npm install to complete.
@@ -791,10 +868,10 @@ func runCreate(ctx context.Context, opts createOptions) error {
 
 	// Check for generic subdirectory first (default for multi-template repos)
 	templateDir := filepath.Join(resolvedPath, "generic")
-	if _, err := os.Stat(templateDir); os.IsNotExist(err) {
+	if _, err := os.Stat(templateDir); errors.Is(err, fs.ErrNotExist) {
 		// Fall back to the provided path directly
 		templateDir = resolvedPath
-		if _, err := os.Stat(templateDir); os.IsNotExist(err) {
+		if _, err := os.Stat(templateDir); errors.Is(err, fs.ErrNotExist) {
 			return fmt.Errorf("template not found at %s (also checked %s/generic)", resolvedPath, resolvedPath)
 		}
 	}
@@ -830,7 +907,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 
 	if isInteractive && !opts.pluginsChanged && !flagsMode {
 		// Interactive mode without --plugins flag: prompt for plugins, dependencies, description
-		config, err := promptForPluginsAndDeps(ctx, m, selectedPlugins, skipDeployRunPrompt)
+		config, err := promptForPluginsAndDeps(ctx, m, selectedPlugins, skipDeployRunPrompt, opts.autoApprove)
 		if err != nil {
 			return err
 		}
@@ -880,9 +957,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		if resourceValues == nil {
 			resourceValues = make(map[string]string, len(setVals))
 		}
-		for k, v := range setVals {
-			resourceValues[k] = v
-		}
+		maps.Copy(resourceValues, setVals)
 	}
 
 	// Always include mandatory plugins regardless of user selection or flags.
@@ -914,21 +989,8 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		}
 
 		// Validate that all required resources are provided.
-		for _, r := range resources {
-			found := false
-			for k := range resourceValues {
-				if strings.HasPrefix(k, r.Key()+".") {
-					found = true
-					break
-				}
-			}
-			if !found {
-				fieldHint := "id"
-				if names := r.FieldNames(); len(names) > 0 {
-					fieldHint = names[0]
-				}
-				return fmt.Errorf("missing required resource %q for selected plugins (use --set %s.%s=value)", r.Alias, r.Key(), fieldHint)
-			}
+		if err := validateRequiredResources(resources, resourceValues); err != nil {
+			return err
 		}
 	}
 
@@ -990,7 +1052,11 @@ func runCreate(ctx context.Context, opts createOptions) error {
 
 	plugins := make(map[string]*pluginVar, len(selectedPlugins))
 	for _, name := range selectedPlugins {
-		plugins[name] = &pluginVar{}
+		pv := &pluginVar{}
+		if mp, ok := m.Plugins[name]; ok {
+			pv.Stability = mp.Stability
+		}
+		plugins[name] = pv
 	}
 
 	// Template variables with generated content
@@ -1404,8 +1470,8 @@ func removeEmptyDirs(root string) error {
 	if err != nil {
 		return err
 	}
-	for i := len(dirs) - 1; i >= 0; i-- {
-		_ = os.Remove(dirs[i])
+	for _, dir := range slices.Backward(dirs) {
+		_ = os.Remove(dir)
 	}
 	return nil
 }

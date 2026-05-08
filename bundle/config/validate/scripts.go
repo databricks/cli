@@ -3,12 +3,13 @@ package validate
 import (
 	"context"
 	"fmt"
+	"maps"
 	"regexp"
+	"slices"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/utils"
 )
 
 type validateScripts struct{}
@@ -28,7 +29,7 @@ func (f *validateScripts) Apply(ctx context.Context, b *bundle.Bundle) diag.Diag
 
 	// Sort the scripts to have a deterministic order for the
 	// generated diagnostics.
-	scriptKeys := utils.SortedKeys(b.Config.Scripts)
+	scriptKeys := slices.Sorted(maps.Keys(b.Config.Scripts))
 
 	for _, k := range scriptKeys {
 		script := b.Config.Scripts[k]

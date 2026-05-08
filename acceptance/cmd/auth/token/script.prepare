@@ -1,0 +1,31 @@
+setup_test_profile() {
+    export DATABRICKS_HOST_ORIG="$DATABRICKS_HOST"
+
+    sethome "./home"
+    unset DATABRICKS_HOST
+    unset DATABRICKS_TOKEN
+    unset DATABRICKS_CONFIG_PROFILE
+
+    cat > "./home/.databrickscfg" <<ENDCFG
+[test-profile]
+host = $DATABRICKS_HOST_ORIG
+auth_type = databricks-cli
+ENDCFG
+}
+
+setup_test_token_cache() {
+    mkdir -p "./home/.databricks"
+    cat > "./home/.databricks/token-cache.json" <<ENDCACHE
+{
+  "version": 1,
+  "tokens": {
+    "test-profile": {
+      "access_token": "cached-access-token",
+      "token_type": "Bearer",
+      "refresh_token": "test-refresh-token",
+      "expiry": "2099-01-01T00:00:00Z"
+    }
+  }
+}
+ENDCACHE
+}
