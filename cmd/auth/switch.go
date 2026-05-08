@@ -48,8 +48,9 @@ to see which profile is currently the default.`,
 				label = fmt.Sprintf("Current default: %s. Select a new default", currentDefault)
 			}
 			result, selected, err := pickAuthProfile(ctx, allProfiles, profilePickerOptions{
-				Label:   label,
-				Default: currentDefault,
+				Label:        label,
+				SelectedNoun: "Default profile",
+				Default:      currentDefault,
 			})
 			if err != nil {
 				return err

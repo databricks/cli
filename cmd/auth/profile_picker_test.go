@@ -55,15 +55,18 @@ func TestBuildPickerItems(t *testing.T) {
 		},
 	}
 
+	t.Run("empty profiles with extras shows only extras", func(t *testing.T) {
+		items := buildPickerItems(profile.Profiles{}, "", true)
+		assert.Equal(t, []string{profilePickerCreateNewLabel, profilePickerEnterHostLabel}, namesOf(items))
+	})
+
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			items := buildPickerItems(profiles, tc.defaultName, tc.includeExtras)
 
-			gotNames := make([]string, len(items))
 			gotDefault := ""
 			var gotExtras []profilePickerResult
-			for i, it := range items {
-				gotNames[i] = it.Name
+			for _, it := range items {
 				if it.IsDefault {
 					assert.Empty(t, gotDefault)
 					gotDefault = it.Name
@@ -72,9 +75,17 @@ func TestBuildPickerItems(t *testing.T) {
 					gotExtras = append(gotExtras, it.Extra)
 				}
 			}
-			assert.Equal(t, tc.wantNames, gotNames)
+			assert.Equal(t, tc.wantNames, namesOf(items))
 			assert.Equal(t, tc.wantDefault, gotDefault)
 			assert.Equal(t, tc.wantExtras, gotExtras)
 		})
 	}
+}
+
+func namesOf(items []pickerItem) []string {
+	names := make([]string, len(items))
+	for i, it := range items {
+		names[i] = it.Name
+	}
+	return names
 }

@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"errors"
 	"strings"
 
 	"github.com/databricks/cli/libs/cmdio"
@@ -27,12 +28,17 @@ type profilePickerOptions struct {
 	// Label shown above the picker.
 	Label string
 
+	// SelectedNoun is the noun shown after selection ("Using profile",
+	// "Selected profile", "Default profile"). Defaults to "Using profile".
+	SelectedNoun string
+
 	// Default is the name of the default profile. When set, it is moved to the
 	// top of the list and decorated with "[default]".
 	Default string
 
 	// IncludeExtras appends "Create a new profile" and "Enter a host URL
-	// manually" entries after the profile list.
+	// manually" entries after the profile list. Picker action entries are
+	// shown even when the profile list is empty.
 	IncludeExtras bool
 }
 
@@ -97,6 +103,13 @@ func buildPickerItems(profiles profile.Profiles, defaultName string, includeExtr
 // selected profile name. For the other results it is empty.
 func pickAuthProfile(ctx context.Context, profiles profile.Profiles, opts profilePickerOptions) (profilePickerResult, string, error) {
 	items := buildPickerItems(profiles, opts.Default, opts.IncludeExtras)
+	if len(items) == 0 {
+		return 0, "", errors.New("no profiles configured. Run 'databricks auth login' to create a profile")
+	}
+	noun := opts.SelectedNoun
+	if noun == "" {
+		noun = "Using profile"
+	}
 
 	idx, err := cmdio.RunSelect(ctx, cmdio.SelectOptions{
 		Label:             opts.Label,
@@ -111,7 +124,7 @@ func pickAuthProfile(ctx context.Context, profiles profile.Profiles, opts profil
 		LabelTemplate: "{{ . | faint }}",
 		Active:        `▸ {{.Name | bold}}{{if .IsDefault}} {{ "[default]" | green }}{{end}}{{if .AccountID}} (account: {{.AccountID|faint}}){{else if .Host}} ({{.Host|faint}}){{end}}`,
 		Inactive:      `  {{.Name}}{{if .IsDefault}} [default]{{end}}{{if .AccountID}} (account: {{.AccountID|faint}}){{else if .Host}} ({{.Host|faint}}){{end}}`,
-		Selected:      `{{ "Using profile" | faint }}: {{ .Name | bold }}`,
+		Selected:      `{{ "` + noun + `" | faint }}: {{ .Name | bold }}`,
 	})
 	if err != nil {
 		return 0, "", err

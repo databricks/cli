@@ -121,8 +121,9 @@ to specify it explicitly.
 			}
 			currentDefault, _ := databrickscfg.GetDefaultProfile(ctx, env.Get(ctx, "DATABRICKS_CONFIG_FILE"))
 			result, selected, err := pickAuthProfile(ctx, allProfiles, profilePickerOptions{
-				Label:   "Select a profile to log out of",
-				Default: currentDefault,
+				Label:        "Select a profile to log out of",
+				SelectedNoun: "Selected profile",
+				Default:      currentDefault,
 			})
 			if err != nil {
 				return err
