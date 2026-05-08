@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"path"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/databricks/databricks-sdk-go"
@@ -208,14 +209,29 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 		return w.Write(ctx, name, bytes.NewReader(body), sliceWithout(mode, CreateParentDirectories)...)
 	}
 
-	// Path already taken. /workspace/import returns 400 RESOURCE_ALREADY_EXISTS
-	// for sequential conflicts and 409 ALREADY_EXISTS under concurrent contention
-	// (observed in TestLock). Same-path collisions where the existing object is a
-	// different node type (e.g. NOTEBOOK at /a/foo, upload regular content to
-	// /a/foo) also surface here — verified against a real workspace, the server
-	// returns one of the two already-exists codes regardless of the type mismatch.
+	// Path already taken. /workspace/import returns this in three shapes,
+	// verified against a real workspace:
+	//
+	//  - 400 RESOURCE_ALREADY_EXISTS — sequential conflict, no overwrite flag.
+	//  - 409 ALREADY_EXISTS — concurrent contention (observed in TestLock).
+	//  - 400 INVALID_PARAMETER_VALUE with a "type mismatch" / "node type" message
+	//    — overwrite=true on a path where the existing object's node type differs
+	//    from the upload (e.g. NOTEBOOK at /a/foo, regular-content upload to
+	//    /a/foo with overwrite). The server refuses the overwrite even though the
+	//    caller asked for it; from the caller's perspective the path is occupied,
+	//    so we surface this as already-exists.
+	//
+	// Sources for the third bullet (`bundle deploy` issues with overwrite=true):
+	//   "Cannot overwrite the asset at X due to type mismatch (asked: ..., actual: ...)"
+	//   "Requested node type [...] is different from the existing node type [...]"
 	if errors.Is(err, apierr.ErrResourceAlreadyExists) || errors.Is(err, apierr.ErrAlreadyExists) {
 		return fileAlreadyExistsError{absPath}
+	}
+	if errors.Is(err, apierr.ErrInvalidParameterValue) {
+		var aerr *apierr.APIError
+		if errors.As(err, &aerr) && (strings.Contains(aerr.Message, "type mismatch") || strings.Contains(aerr.Message, "node type")) {
+			return fileAlreadyExistsError{absPath}
+		}
 	}
 
 	// Caller has read access but no write access.
