@@ -1,6 +1,6 @@
 
 >>> [CLI] bundle sync --output text
-Action: PUT: .gitignore, dashboard.lvdash.json, databricks.yml, empty.txt, héllo.txt, large.bin, notebook.py, with spaces.txt
+Action: PUT: .gitignore, dashboard.lvdash.json, databricks.yml, empty.txt, héllo.txt, large.bin, plain-script.py, pyNb.py, scalaNb.scala, sqlNb.sql, with spaces.txt
 Initial Sync Complete
 Uploaded .gitignore
 Uploaded dashboard.lvdash.json
@@ -8,8 +8,69 @@ Uploaded databricks.yml
 Uploaded empty.txt
 Uploaded héllo.txt
 Uploaded large.bin
-Uploaded notebook.py
+Uploaded plain-script.py
+Uploaded pyNb.py
+Uploaded scalaNb.scala
+Uploaded sqlNb.sql
 Uploaded with spaces.txt
+
+=== workspace state after sync — assert object_type and language for each upload
+>>> [CLI] workspace list -o json /Workspace/Users/[USERNAME]/.bundle/upload-edge-cases/default/files
+{
+  "name": ".gitignore",
+  "object_type": "FILE",
+  "language": null
+}
+{
+  "name": "dashboard.lvdash.json",
+  "object_type": "FILE",
+  "language": null
+}
+{
+  "name": "databricks.yml",
+  "object_type": "FILE",
+  "language": null
+}
+{
+  "name": "empty.txt",
+  "object_type": "FILE",
+  "language": null
+}
+{
+  "name": "héllo.txt",
+  "object_type": "FILE",
+  "language": null
+}
+{
+  "name": "large.bin",
+  "object_type": "FILE",
+  "language": null
+}
+{
+  "name": "plain-script.py",
+  "object_type": "FILE",
+  "language": null
+}
+{
+  "name": "pyNb",
+  "object_type": "NOTEBOOK",
+  "language": "PYTHON"
+}
+{
+  "name": "scalaNb",
+  "object_type": "NOTEBOOK",
+  "language": "SCALA"
+}
+{
+  "name": "sqlNb",
+  "object_type": "NOTEBOOK",
+  "language": "SQL"
+}
+{
+  "name": "with spaces.txt",
+  "object_type": "FILE",
+  "language": null
+}
 
 === uploaded paths from each multipart POST /workspace/import (sorted)
 >>> jq -rs 
@@ -23,7 +84,10 @@ Uploaded with spaces.txt
 /Workspace/Users/[USERNAME]/.bundle/upload-edge-cases/default/files/empty.txt
 /Workspace/Users/[USERNAME]/.bundle/upload-edge-cases/default/files/héllo.txt
 /Workspace/Users/[USERNAME]/.bundle/upload-edge-cases/default/files/large.bin
-/Workspace/Users/[USERNAME]/.bundle/upload-edge-cases/default/files/notebook.py
+/Workspace/Users/[USERNAME]/.bundle/upload-edge-cases/default/files/plain-script.py
+/Workspace/Users/[USERNAME]/.bundle/upload-edge-cases/default/files/pyNb.py
+/Workspace/Users/[USERNAME]/.bundle/upload-edge-cases/default/files/scalaNb.scala
+/Workspace/Users/[USERNAME]/.bundle/upload-edge-cases/default/files/sqlNb.sql
 /Workspace/Users/[USERNAME]/.bundle/upload-edge-cases/default/files/with spaces.txt
 
 === every upload set format=AUTO
@@ -38,7 +102,7 @@ Uploaded with spaces.txt
 === recorded content for the small text inputs
 >>> jq -rs 
   map(select(.path == "/api/2.0/workspace/import")) |
-  map(select(.body.multipart_form.path | test("/(notebook\\.py|héllo\\.txt|with spaces\\.txt|empty\\.txt|dashboard\\.lvdash\\.json)$"))) |
+  map(select(.body.multipart_form.path | test("/(pyNb\\.py|sqlNb\\.sql|scalaNb\\.scala|plain-script\\.py|héllo\\.txt|with spaces\\.txt|empty\\.txt|dashboard\\.lvdash\\.json)$"))) |
   map({path: (.body.multipart_form.path | sub(".*/"; "")), content: .body.multipart_form.content}) |
   sort_by(.path) | .[]
  out.requests.txt
@@ -55,8 +119,20 @@ Uploaded with spaces.txt
   "content": "hello, naïve world\n"
 }
 {
-  "path": "notebook.py",
+  "path": "plain-script.py",
+  "content": "print(\"plain script, no header\")\n"
+}
+{
+  "path": "pyNb.py",
   "content": "# Databricks notebook source\nprint(\"hello\")\n"
+}
+{
+  "path": "scalaNb.scala",
+  "content": "// Databricks notebook source\nprintln(\"hello\")\n"
+}
+{
+  "path": "sqlNb.sql",
+  "content": "-- Databricks notebook source\nSELECT 1\n"
 }
 {
   "path": "with spaces.txt",

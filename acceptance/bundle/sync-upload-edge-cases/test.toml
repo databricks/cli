@@ -7,8 +7,12 @@ EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 Ignore = [
   "large.bin",
   "empty.txt",
-  "notebook.py",
+  "pyNb.py",
+  "sqlNb.sql",
+  "scalaNb.scala",
+  "plain-script.py",
   "dashboard.lvdash.json",
   "héllo.txt",
   "with spaces.txt",
+  ".databricks",
 ]
