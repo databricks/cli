@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"net/url"
 	"strings"
 	"time"
 
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/client"
 )
@@ -28,8 +28,7 @@ const orgIDHeader = "X-Databricks-Org-Id"
 
 // lakeboxAPI wraps the SDK ApiClient with workspace-id-aware request headers.
 type lakeboxAPI struct {
-	c    *client.DatabricksClient
-	wsID string
+	c *client.DatabricksClient
 }
 
 // createRequest is the JSON body for POST /api/2.0/lakebox/sandboxes.
@@ -163,29 +162,20 @@ func newLakeboxAPI(w *databricks.WorkspaceClient) (*lakeboxAPI, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create lakebox API client: %w", err)
 	}
-	return &lakeboxAPI{c: c, wsID: resolveWorkspaceID(w)}, nil
+	return &lakeboxAPI{c: c}, nil
 }
 
-// resolveWorkspaceID returns the workspace ID for the org-id header. Falls
-// back to the `?o=<id>` query parameter on the Host because some staging
-// gateways are configured that way and the SDK does not strip it into
-// Config.WorkspaceID.
-func resolveWorkspaceID(w *databricks.WorkspaceClient) string {
-	if id := w.Config.WorkspaceID; id != "" {
-		return id
-	}
-	parsed, err := url.Parse(w.Config.Host)
-	if err != nil {
-		return ""
-	}
-	return parsed.Query().Get("o")
-}
-
+// headers attaches the workspace routing identifier so multi-workspace
+// gateways (e.g. SPOG hosts) can scope the credential. Mirrors the pattern
+// in libs/telemetry, libs/filer, and SDK-generated workspace services. The
+// auth.WorkspaceIDNone sentinel ("none") is treated as unset so the literal
+// string never goes on the wire.
 func (a *lakeboxAPI) headers() map[string]string {
-	if a.wsID == "" {
+	wsID := a.c.Config.WorkspaceID
+	if wsID == "" || wsID == auth.WorkspaceIDNone {
 		return nil
 	}
-	return map[string]string{orgIDHeader: a.wsID}
+	return map[string]string{orgIDHeader: wsID}
 }
 
 // create calls POST /api/2.0/lakebox/sandboxes with an optional public key.
