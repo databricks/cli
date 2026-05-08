@@ -52,3 +52,19 @@ func newPromptCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&validate, "validate", false, "require '://' in input")
 	return cmd
 }
+
+func newSecretCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "secret",
+		Short: "cmdio.Secret (masked password input)",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx := cmd.Context()
+			value, err := cmdio.Secret(ctx, "Personal access token")
+			if err != nil {
+				return err
+			}
+			cmdio.LogString(ctx, fmt.Sprintf("Entered %d characters", len(value)))
+			return nil
+		},
+	}
+}
