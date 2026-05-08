@@ -23,6 +23,9 @@ type SelectOptions struct {
 	// StartInSearchMode opens the prompt with the search input focused.
 	StartInSearchMode bool
 
+	// HideHelp hides the navigation help line shown by promptui by default.
+	HideHelp bool
+
 	// LabelTemplate renders Label. Empty uses the default.
 	LabelTemplate string
 
@@ -44,6 +47,7 @@ func RunSelect(ctx context.Context, opts SelectOptions) (int, error) {
 		Items:             opts.Items,
 		Searcher:          opts.Searcher,
 		StartInSearchMode: opts.StartInSearchMode,
+		HideHelp:          opts.HideHelp,
 		Templates: &promptui.SelectTemplates{
 			Label:    opts.LabelTemplate,
 			Active:   opts.Active,
