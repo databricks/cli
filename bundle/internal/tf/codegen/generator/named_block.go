@@ -53,7 +53,7 @@ func (b *namedBlock) Generate(path string) error {
 		return err
 	}
 
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	tmpl := template.Must(template.ParseFiles("./templates/block.go.tmpl"))
 	return tmpl.Execute(f, w)

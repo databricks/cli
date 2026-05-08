@@ -3,6 +3,7 @@ package env
 import (
 	"context"
 	"errors"
+	"maps"
 	"os"
 	"runtime"
 	"strconv"
@@ -13,9 +14,7 @@ var envContextKey int
 
 func copyMap(m map[string]string) map[string]string {
 	out := make(map[string]string, len(m))
-	for k, v := range m {
-		out[k] = v
-	}
+	maps.Copy(out, m)
 	return out
 }
 
@@ -135,8 +134,6 @@ func All(ctx context.Context) map[string]string {
 		m[split[0]] = split[1]
 	}
 	// override existing environment variables with the ones we set
-	for k, v := range getMap(ctx) {
-		m[k] = v
-	}
+	maps.Copy(m, getMap(ctx))
 	return m
 }

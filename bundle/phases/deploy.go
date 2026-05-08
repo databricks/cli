@@ -39,9 +39,15 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.P
 	pipelineActions := filterGroup(actions, "pipelines", types...)
 	volumeActions := filterGroup(actions, "volumes", types...)
 	dashboardActions := filterGroup(actions, "dashboards", types...)
+	databaseInstanceActions := filterGroup(actions, "database_instances", types...)
+	syncedDatabaseTableActions := filterGroup(actions, "synced_database_tables", types...)
+	postgresProjectActions := filterGroup(actions, "postgres_projects", types...)
+	postgresBranchActions := filterGroup(actions, "postgres_branches", types...)
 
 	// We don't need to display any prompts in this case.
-	if len(schemaActions) == 0 && len(pipelineActions) == 0 && len(volumeActions) == 0 && len(dashboardActions) == 0 {
+	if len(schemaActions) == 0 && len(pipelineActions) == 0 && len(volumeActions) == 0 && len(dashboardActions) == 0 &&
+		len(databaseInstanceActions) == 0 && len(syncedDatabaseTableActions) == 0 &&
+		len(postgresProjectActions) == 0 && len(postgresBranchActions) == 0 {
 		return true, nil
 	}
 
@@ -76,6 +82,38 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.P
 	if len(dashboardActions) != 0 {
 		cmdio.LogString(ctx, deleteOrRecreateDashboardMessage)
 		for _, action := range dashboardActions {
+			cmdio.Log(ctx, action)
+		}
+	}
+
+	// One or more database instances is being deleted or recreated.
+	if len(databaseInstanceActions) != 0 {
+		cmdio.LogString(ctx, deleteOrRecreateDatabaseInstanceMessage)
+		for _, action := range databaseInstanceActions {
+			cmdio.Log(ctx, action)
+		}
+	}
+
+	// One or more synced database tables is being deleted or recreated.
+	if len(syncedDatabaseTableActions) != 0 {
+		cmdio.LogString(ctx, deleteOrRecreateSyncedDatabaseTableMessage)
+		for _, action := range syncedDatabaseTableActions {
+			cmdio.Log(ctx, action)
+		}
+	}
+
+	// One or more Lakebase projects is being deleted or recreated.
+	if len(postgresProjectActions) != 0 {
+		cmdio.LogString(ctx, deleteOrRecreatePostgresProjectMessage)
+		for _, action := range postgresProjectActions {
+			cmdio.Log(ctx, action)
+		}
+	}
+
+	// One or more Lakebase branches is being deleted or recreated.
+	if len(postgresBranchActions) != 0 {
+		cmdio.LogString(ctx, deleteOrRecreatePostgresBranchMessage)
+		for _, action := range postgresBranchActions {
 			cmdio.Log(ctx, action)
 		}
 	}

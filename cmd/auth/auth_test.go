@@ -70,23 +70,23 @@ func TestValidateProfileHostConflict(t *testing.T) {
 // through Cobra's lifecycle (PreRunE on login) and that the root command's
 // PersistentPreRunE is NOT shadowed (it initializes logging, IO, user agent).
 func TestProfileHostConflictViaCobra(t *testing.T) {
-	// Point at a config file that has "profile-1" with host https://www.host1.com.
+	// Point at a config file that has "profile-1" with host https://www.host1.test.
 	t.Setenv("DATABRICKS_CONFIG_FILE", "./testdata/.databrickscfg")
 
 	ctx := cmdctx.GenerateExecId(t.Context())
 	cli := root.New(ctx)
 	cli.AddCommand(New())
 
-	// Set args: auth login --profile profile-1 --host https://other.host.com
+	// Set args: auth login --profile profile-1 --host https://other.host.test
 	cli.SetArgs([]string{
 		"auth", "login",
 		"--profile", "profile-1",
-		"--host", "https://other.host.com",
+		"--host", "https://other.host.test",
 	})
 
 	_, err := cli.ExecuteContextC(ctx)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), `--profile "profile-1" has host "https://www.host1.com", which conflicts with --host "https://other.host.com"`)
+	assert.Contains(t, err.Error(), `--profile "profile-1" has host "https://www.host1.test", which conflicts with --host "https://other.host.test"`)
 	assert.Contains(t, err.Error(), "Use --profile only to select a profile")
 }
 
@@ -101,12 +101,12 @@ func TestProfileHostConflictTokenViaCobra(t *testing.T) {
 	cli.SetArgs([]string{
 		"auth", "token",
 		"--profile", "profile-1",
-		"--host", "https://other.host.com",
+		"--host", "https://other.host.test",
 	})
 
 	_, err := cli.ExecuteContextC(ctx)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), `--profile "profile-1" has host "https://www.host1.com", which conflicts with --host "https://other.host.com"`)
+	assert.Contains(t, err.Error(), `--profile "profile-1" has host "https://www.host1.test", which conflicts with --host "https://other.host.test"`)
 }
 
 // TestProfileHostCompatibleViaCobra verifies that matching --profile and --host
@@ -122,7 +122,7 @@ func TestProfileHostCompatibleViaCobra(t *testing.T) {
 	cli.SetArgs([]string{
 		"auth", "login",
 		"--profile", "profile-1",
-		"--host", "https://www.host1.com",
+		"--host", "https://www.host1.test",
 	})
 
 	_, err := cli.ExecuteContextC(ctx)

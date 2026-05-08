@@ -62,8 +62,8 @@ func githubSlugFromModule(modPath string) string {
 			return parts[1] + "/" + parts[2]
 		}
 	}
-	if strings.HasPrefix(modPath, "golang.org/x/") {
-		return "golang/" + strings.TrimPrefix(modPath, "golang.org/x/")
+	if after, ok := strings.CutPrefix(modPath, "golang.org/x/"); ok {
+		return "golang/" + after
 	}
 	return ""
 }
@@ -87,7 +87,7 @@ func parseNoticeSections(content string) (map[string][]string, []string) {
 		block = nil
 	}
 
-	for _, line := range strings.Split(content, "\n") {
+	for line := range strings.SplitSeq(content, "\n") {
 		if m := sectionHeaderRe.FindStringSubmatch(line); m != nil {
 			flush()
 			key := strings.ToLower(strings.TrimSpace(m[1]))

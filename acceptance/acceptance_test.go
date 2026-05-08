@@ -237,7 +237,11 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 		execPath = filepath.Join(cwd, "bin", "callserver.py")
 	} else {
 		if UseVersion != "" {
-			execPath = DownloadCLI(t, buildDir, UseVersion)
+			version := UseVersion
+			if version == "latest" {
+				version = resolveLatestVersion(t, buildDir)
+			}
+			execPath = DownloadCLI(t, buildDir, version)
 		} else {
 			execPath = BuildCLI(t, buildDir, coverDir, runtime.GOOS, runtime.GOARCH)
 		}
@@ -368,9 +372,11 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 
 			// Generate materialized config for this test.
 			// We do this before skipping the test, so the configs are generated for all tests.
-			materializedConfig, err := internal.GenerateMaterializedConfig(config)
-			require.NoError(t, err)
-			testutil.WriteFile(t, filepath.Join(dir, internal.MaterializedConfigFile), materializedConfig)
+			materializedConfig := internal.GenerateMaterializedConfig(&config)
+			outPath := filepath.Join(dir, internal.MaterializedConfigFile)
+			if existing, _ := os.ReadFile(outPath); string(existing) != materializedConfig {
+				testutil.WriteFile(t, outPath, materializedConfig)
+			}
 
 			// If only regenerating out.test.toml, skip the actual test execution
 			if OnlyOutTestToml {
@@ -1049,6 +1055,35 @@ func CreateReleaseArtifact(t *testing.T, cwd, releasesDir, coverDir, osName, arc
 	t.Logf("Created %s %s release: %s", osName, arch, zipPath)
 }
 
+// resolveLatestVersion returns the latest released CLI version (e.g. "0.293.0"),
+// using a file-based cache in buildDir valid for 1 hour.
+func resolveLatestVersion(t *testing.T, buildDir string) string {
+	cachePath := filepath.Join(buildDir, "latest_version.txt")
+	if info, err := os.Stat(cachePath); err == nil && time.Since(info.ModTime()) < time.Hour {
+		data, err := os.ReadFile(cachePath)
+		require.NoError(t, err)
+		if version := strings.TrimSpace(string(data)); version != "" {
+			return version
+		}
+	}
+
+	const url = "https://api.github.com/repos/databricks/cli/releases/latest"
+	resp, err := http.Get(url)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+	require.Equal(t, http.StatusOK, resp.StatusCode, "failed to fetch %s: %s", url, resp.Status)
+
+	var release struct {
+		TagName string `json:"tag_name"`
+	}
+	require.NoError(t, json.NewDecoder(resp.Body).Decode(&release))
+	version := strings.TrimPrefix(release.TagName, "v")
+	require.NotEmpty(t, version, "empty tag_name in GitHub latest release response")
+
+	require.NoError(t, os.WriteFile(cachePath, []byte(version), 0o644))
+	return version
+}
+
 // DownloadCLI downloads a released CLI binary archive for the given version,
 // extracts the executable, and returns its path.
 func DownloadCLI(t *testing.T, buildDir, version string) string {
@@ -1473,11 +1508,7 @@ func prepareWheelBuildDirectory(t *testing.T, dir string) string {
 }
 
 func BuildYamlfmt(t *testing.T) {
-	// Using make here instead of "go build" directly cause it's faster when it's already built
-	args := []string{
-		"make", "-s", "tools/yamlfmt" + exeSuffix,
-	}
-	RunCommand(t, args, "..", []string{})
+	RunCommand(t, []string{"go", "tool", "-modfile=tools/task/go.mod", "task", "build-yamlfmt"}, "..", []string{})
 }
 
 // setupTerraform installs terraform and configures environment variables for tests.
@@ -1502,8 +1533,8 @@ func loadUserReplacements(t *testing.T, repls *testdiff.ReplacementsContext, tmp
 		return
 	}
 	require.NoError(t, err)
-	lines := strings.Split(string(b), "\n")
-	for _, line := range lines {
+	lines := strings.SplitSeq(string(b), "\n")
+	for line := range lines {
 		line = strings.TrimSpace(line)
 		if len(line) == 0 {
 			continue

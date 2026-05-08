@@ -29,7 +29,7 @@ func (event *ProgressEvent) String() string {
 	result.WriteString(fmt.Sprintf("%-15s", event.EventType) + " ")
 
 	result.WriteString(event.Level.String() + " ")
-	result.WriteString(fmt.Sprintf(`"%s"`, event.Message))
+	fmt.Fprintf(&result, `"%s"`, event.Message)
 
 	// construct error string if level=`Error`
 	if event.Level == pipelines.EventLevelError && event.Error != nil {

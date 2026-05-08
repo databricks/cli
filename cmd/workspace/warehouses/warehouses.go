@@ -1388,7 +1388,8 @@ func newUpdateDefaultWarehouseOverride() *cobra.Command {
 			}
 			return nil
 		}
-		return nil
+		check := root.ExactArgs(3)
+		return check(cmd, args)
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -1407,29 +1408,13 @@ func newUpdateDefaultWarehouseOverride() *cobra.Command {
 					return err
 				}
 			}
-		} else {
-			if len(args) == 0 {
-				sp := cmdio.NewSpinner(ctx)
-				sp.Update("No TYPE argument specified. Loading names for Warehouses drop-down.")
-				names, err := w.Warehouses.EndpointInfoNameToIdMap(ctx, sql.ListWarehousesRequest{})
-				sp.Close()
-				if err != nil {
-					return fmt.Errorf("failed to load names for Warehouses drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "The type of override behavior")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have the type of override behavior")
-			}
-			updateDefaultWarehouseOverrideReq.Name = args[0]
-			if args[1] != "" {
-				updateMaskArray := strings.Split(args[1], ",")
-				updateDefaultWarehouseOverrideReq.UpdateMask = *fieldmask.New(updateMaskArray)
-			}
+		}
+		updateDefaultWarehouseOverrideReq.Name = args[0]
+		if args[1] != "" {
+			updateMaskArray := strings.Split(args[1], ",")
+			updateDefaultWarehouseOverrideReq.UpdateMask = *fieldmask.New(updateMaskArray)
+		}
+		if !cmd.Flags().Changed("json") {
 			_, err = fmt.Sscan(args[2], &updateDefaultWarehouseOverrideReq.DefaultWarehouseOverride.Type)
 			if err != nil {
 				return fmt.Errorf("invalid TYPE: %s", args[2])

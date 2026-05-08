@@ -10,8 +10,7 @@ import (
 // "jobs" or "pipelines") to the Go type that represents a single resource instance inside
 // that group (for example `resources.Job`).
 var ResourcesTypes = func() map[string]reflect.Type {
-	var r Resources
-	rt := reflect.TypeOf(r)
+	rt := reflect.TypeFor[Resources]()
 	res := make(map[string]reflect.Type, rt.NumField())
 
 	for _, field := range reflect.VisibleFields(rt) {

@@ -19,15 +19,13 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
-	"github.com/fatih/color"
 	"golang.org/x/mod/semver"
 )
 
 const (
-	skillsRepoOwner      = "databricks"
-	skillsRepoName       = "databricks-agent-skills"
-	skillsRepoPath       = "skills"
-	defaultSkillsRepoRef = "v0.1.4"
+	skillsRepoOwner = "databricks"
+	skillsRepoName  = "databricks-agent-skills"
+	skillsRepoPath  = "skills"
 )
 
 // fetchFileFn is the function used to download individual skill files.
@@ -65,14 +63,6 @@ type InstallOptions struct {
 	IncludeExperimental bool
 	SpecificSkills      []string // empty = all skills
 	Scope               string   // ScopeGlobal or ScopeProject (default: global)
-}
-
-// FetchManifest fetches the skills manifest from the skills repo.
-// This is a convenience wrapper that uses the default GitHubManifestSource.
-func FetchManifest(ctx context.Context) (*Manifest, error) {
-	src := &GitHubManifestSource{}
-	ref := GetSkillsRef(ctx)
-	return src.FetchManifest(ctx, ref)
 }
 
 func fetchSkillFile(ctx context.Context, ref, skillName, filePath string) ([]byte, error) {
@@ -303,19 +293,6 @@ func InstallAllSkills(ctx context.Context) error {
 	return InstallSkillsForAgents(ctx, src, installed, InstallOptions{})
 }
 
-// InstallSkill installs a single skill by name for all detected agents.
-func InstallSkill(ctx context.Context, skillName string) error {
-	installed := agents.DetectInstalled(ctx)
-	if len(installed) == 0 {
-		printNoAgentsDetected(ctx)
-		return nil
-	}
-
-	PrintInstallingFor(ctx, installed)
-	src := &GitHubManifestSource{}
-	return InstallSkillsForAgents(ctx, src, installed, InstallOptions{SpecificSkills: []string{skillName}})
-}
-
 // PrintInstallingFor prints the "Installing..." header with agent names.
 func PrintInstallingFor(ctx context.Context, targetAgents []*agents.Agent) {
 	names := make([]string, len(targetAgents))
@@ -326,7 +303,7 @@ func PrintInstallingFor(ctx context.Context, targetAgents []*agents.Agent) {
 }
 
 func printNoAgentsDetected(ctx context.Context) {
-	cmdio.LogString(ctx, color.YellowString("No supported coding agents detected."))
+	cmdio.LogString(ctx, cmdio.Yellow(ctx, "No supported coding agents detected."))
 	cmdio.LogString(ctx, "")
 	cmdio.LogString(ctx, "Supported agents: Claude Code, Cursor, Codex CLI, OpenCode, GitHub Copilot, Antigravity")
 	cmdio.LogString(ctx, "Please install at least one coding agent first.")

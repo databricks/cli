@@ -37,6 +37,11 @@ func jobTaskRewritePatterns(base dyn.Pattern) []jobRewritePattern {
 			noSkipRewrite,
 		},
 		{
+			base.Append(dyn.Key("alert_task"), dyn.Key("workspace_path")),
+			TranslateModeFile,
+			noSkipRewrite,
+		},
+		{
 			base.Append(dyn.Key("libraries"), dyn.AnyIndex(), dyn.Key("requirements")),
 			TranslateModeFile,
 			noSkipRewrite,

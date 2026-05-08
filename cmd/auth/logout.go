@@ -22,6 +22,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/libs/auth"
+	"github.com/databricks/cli/libs/auth/storage"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
@@ -118,23 +119,25 @@ to specify it explicitly.
 			if err != nil {
 				return err
 			}
-			selected, err := profile.SelectProfile(ctx, profile.SelectConfig{
-				Label:             "Select a profile to log out of",
-				Profiles:          allProfiles,
-				StartInSearchMode: len(allProfiles) > 5,
-				ActiveTemplate:    `▸ {{.PaddedName | bold}}{{if .AccountID}} (account: {{.AccountID}}){{else}} ({{.Host}}){{end}}`,
-				InactiveTemplate:  `  {{.PaddedName}}{{if .AccountID}} (account: {{.AccountID | faint}}){{else}} ({{.Host | faint}}){{end}}`,
-				SelectedTemplate:  `{{ "Selected profile" | faint }}: {{ .Name | bold }}`,
+			currentDefault, _ := databrickscfg.GetDefaultProfile(ctx, env.Get(ctx, "DATABRICKS_CONFIG_FILE"))
+			result, selected, err := pickAuthProfile(ctx, allProfiles, profilePickerOptions{
+				Label:        "Select a profile to log out of",
+				SelectedNoun: "Selected profile",
+				Default:      currentDefault,
 			})
 			if err != nil {
 				return err
 			}
+			// Without IncludeExtras, the picker only returns profile selections.
+			if result != profilePickerProfile {
+				return fmt.Errorf("unexpected picker result: %v", result)
+			}
 			profileName = selected
 		}
 
-		tokenCache, err := cache.NewFileTokenCache()
+		tokenCache, _, err := storage.ResolveCache(ctx, "")
 		if err != nil {
-			return fmt.Errorf("failed to open token cache, please check if the file version is up-to-date and that the file is not corrupted: %w", err)
+			return fmt.Errorf("failed to open token cache: %w", err)
 		}
 
 		return runLogout(ctx, logoutArgs{
@@ -302,13 +305,12 @@ func hostCacheKeyAndMatchFn(p profile.Profile) (string, profile.ProfileMatchFunc
 	// Use ToOAuthArgument to derive the host-based cache key via the same
 	// routing logic the SDK used when the token was written during login.
 	// This includes a .well-known/databricks-config call that distinguishes
-	// classic workspace hosts from SPOG hosts — a distinction that cannot
+	// classic workspace hosts from SPOG hosts, a distinction that cannot
 	// be made from the profile fields alone.
 	arg, err := (auth.AuthArguments{
-		Host:          p.Host,
-		AccountID:     p.AccountID,
-		WorkspaceID:   p.WorkspaceID,
-		IsUnifiedHost: p.IsUnifiedHost,
+		Host:        p.Host,
+		AccountID:   p.AccountID,
+		WorkspaceID: p.WorkspaceID,
 		// Profile is deliberately empty so GetCacheKey returns the host-based
 		// key rather than the profile name.
 		// DiscoveryURL is left empty to force a fresh .well-known resolution

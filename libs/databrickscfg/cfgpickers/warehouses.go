@@ -14,8 +14,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/httpclient"
 	"github.com/databricks/databricks-sdk-go/service/sql"
-	"github.com/fatih/color"
-	"github.com/manifoldco/promptui"
 )
 
 var ErrNoCompatibleWarehouses = errors.New("no compatible warehouses")
@@ -52,11 +50,11 @@ func AskForWarehouse(ctx context.Context, w *databricks.WorkspaceClient, filters
 		var state string
 		switch warehouse.State {
 		case sql.StateRunning:
-			state = color.GreenString(warehouse.State.String())
+			state = cmdio.Green(ctx, warehouse.State.String())
 		case sql.StateStopped, sql.StateDeleted, sql.StateStopping, sql.StateDeleting:
-			state = color.RedString(warehouse.State.String())
+			state = cmdio.Red(ctx, warehouse.State.String())
 		default:
-			state = color.BlueString(warehouse.State.String())
+			state = cmdio.Blue(ctx, warehouse.State.String())
 		}
 		visibleTouser := fmt.Sprintf("%s (%s %s)", warehouse.Name, state, warehouse.WarehouseType)
 		names[visibleTouser] = warehouse.Id
@@ -204,9 +202,9 @@ func SelectWarehouse(ctx context.Context, w *databricks.WorkspaceClient, descrip
 	for _, warehouse := range warehouses {
 		var icon string
 		if warehouse.State == sql.StateRunning {
-			icon = color.GreenString("●")
+			icon = cmdio.Green(ctx, "●")
 		} else {
-			icon = color.HiBlackString("○")
+			icon = cmdio.HiBlack(ctx, "○")
 		}
 
 		// Show type info in gray
@@ -215,9 +213,9 @@ func SelectWarehouse(ctx context.Context, w *databricks.WorkspaceClient, descrip
 			typeInfo = "serverless"
 		}
 
-		name := fmt.Sprintf("%s %s %s", icon, warehouse.Name, color.HiBlackString(typeInfo))
+		name := fmt.Sprintf("%s %s %s", icon, warehouse.Name, cmdio.HiBlack(ctx, typeInfo))
 		if warehouse.Id == defaultId {
-			name += color.HiBlackString(" [DEFAULT]")
+			name += cmdio.HiBlack(ctx, " [DEFAULT]")
 		}
 		items = append(items, cmdio.Tuple{Name: name, Id: warehouse.Id})
 	}
@@ -225,7 +223,6 @@ func SelectWarehouse(ctx context.Context, w *databricks.WorkspaceClient, descrip
 	if description != "" {
 		cmdio.LogString(ctx, description)
 	}
-	promptui.SearchPrompt = "Search: "
 	warehouseId, err := cmdio.SelectOrdered(ctx, items, "warehouse\n")
 	if err != nil {
 		return "", err

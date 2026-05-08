@@ -1,16 +1,13 @@
 package auth
 
 import (
-	"context"
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
-	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
 )
 
@@ -46,11 +43,23 @@ to see which profile is currently the default.`,
 			}
 
 			currentDefault, _ := databrickscfg.GetDefaultProfile(ctx, configFile)
-			selectedName, err := promptForSwitchProfile(ctx, allProfiles, currentDefault)
+			label := "Select a profile to set as default"
+			if currentDefault != "" {
+				label = fmt.Sprintf("Current default: %s. Select a new default", currentDefault)
+			}
+			result, selected, err := pickAuthProfile(ctx, allProfiles, profilePickerOptions{
+				Label:        label,
+				SelectedNoun: "Default profile",
+				Default:      currentDefault,
+			})
 			if err != nil {
 				return err
 			}
-			profileName = selectedName
+			// Without IncludeExtras, the picker only returns profile selections.
+			if result != profilePickerProfile {
+				return fmt.Errorf("unexpected picker result: %v", result)
+			}
+			profileName = selected
 		} else {
 			// Validate the profile exists.
 			profiles, err := profile.DefaultProfiler.LoadProfiles(ctx, profile.WithName(profileName))
@@ -72,40 +81,4 @@ to see which profile is currently the default.`,
 	}
 
 	return cmd
-}
-
-// promptForSwitchProfile shows an interactive profile picker for the switch command.
-// Reuses profileSelectItem from token.go for consistent display.
-func promptForSwitchProfile(ctx context.Context, profiles profile.Profiles, currentDefault string) (string, error) {
-	items := make([]profileSelectItem, 0, len(profiles))
-	for _, p := range profiles {
-		items = append(items, profileSelectItem{Name: p.Name, Host: p.Host})
-	}
-
-	label := "Select a profile to set as default"
-	if currentDefault != "" {
-		label = fmt.Sprintf("Current default: %s. Select a new default", currentDefault)
-	}
-
-	i, _, err := cmdio.RunSelect(ctx, &promptui.Select{
-		Label:             label,
-		Items:             items,
-		StartInSearchMode: len(profiles) > 5,
-		Searcher: func(input string, index int) bool {
-			input = strings.ToLower(input)
-			name := strings.ToLower(items[index].Name)
-			host := strings.ToLower(items[index].Host)
-			return strings.Contains(name, input) || strings.Contains(host, input)
-		},
-		Templates: &promptui.SelectTemplates{
-			Label:    "{{ . | faint }}",
-			Active:   `{{.Name | bold}}{{if .Host}} ({{.Host|faint}}){{end}}`,
-			Inactive: `{{.Name}}{{if .Host}} ({{.Host}}){{end}}`,
-			Selected: `{{ "Default profile" | faint }}: {{ .Name | bold }}`,
-		},
-	})
-	if err != nil {
-		return "", err
-	}
-	return profiles[i].Name, nil
 }

@@ -14,8 +14,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/fatih/color"
 	"github.com/gorilla/websocket"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -221,19 +221,18 @@ func TestLogStreamerFiltersSources(t *testing.T) {
 }
 
 func TestFormatLogEntryColorizesWhenEnabled(t *testing.T) {
-	original := color.NoColor
-	color.NoColor = false
-	defer func() { color.NoColor = original }()
-
 	entry := &wsEntry{Source: "app", Timestamp: 1, Message: "hello\n"}
 
+	ttyCtx, _ := cmdio.SetupTest(t.Context(), cmdio.TestOptions{PromptSupported: true})
+	plainCtx := cmdio.MockDiscard(t.Context())
+
 	colorFormatter := newLogFormatter(true, flags.OutputText)
-	colored := colorFormatter.FormatEntry(entry)
+	colored := colorFormatter.FormatEntry(ttyCtx, entry)
 	assert.Contains(t, colored, "\x1b[")
-	assert.Contains(t, colored, fmt.Sprintf("[%s]", color.HiBlueString("APP")))
+	assert.Contains(t, colored, fmt.Sprintf("[%s]", cmdio.HiBlue(ttyCtx, "APP")))
 
 	plainFormatter := newLogFormatter(false, flags.OutputText)
-	plain := plainFormatter.FormatEntry(entry)
+	plain := plainFormatter.FormatEntry(plainCtx, entry)
 	assert.NotContains(t, plain, "\x1b[")
 	assert.Contains(t, plain, "[APP]")
 }

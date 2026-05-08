@@ -15,47 +15,47 @@ Deployment complete!
     {
       "all_permissions": [
         {
-          "inherited":false,
-          "permission_level":"CAN_VIEW"
+          "inherited": false,
+          "permission_level": "CAN_VIEW"
         }
       ],
-      "display_name":"viewer@example.com",
-      "user_name":"viewer@example.com"
+      "display_name": "viewer@example.com",
+      "user_name": "viewer@example.com"
     },
     {
       "all_permissions": [
         {
-          "inherited":false,
-          "permission_level":"CAN_MANAGE"
+          "inherited": false,
+          "permission_level": "CAN_MANAGE"
         }
       ],
-      "group_name":"data-team"
+      "group_name": "data-team"
     },
     {
       "all_permissions": [
         {
-          "inherited":false,
-          "permission_level":"IS_OWNER"
+          "inherited": false,
+          "permission_level": "IS_OWNER"
         }
       ],
-      "display_name":"[USERNAME]",
-      "user_name":"[USERNAME]"
+      "display_name": "[USERNAME]",
+      "user_name": "[USERNAME]"
     },
     {
       "all_permissions": [
         {
-          "inherited":true,
+          "inherited": true,
           "inherited_from_object": [
             "/jobs/"
           ],
-          "permission_level":"CAN_MANAGE"
+          "permission_level": "CAN_MANAGE"
         }
       ],
-      "group_name":"admins"
+      "group_name": "admins"
     }
   ],
-  "object_id":"/jobs/[JOB_WITH_PERMISSIONS_ID]",
-  "object_type":"job"
+  "object_id": "/jobs/[JOB_WITH_PERMISSIONS_ID]",
+  "object_type": "job"
 }
 
 === Delete permissions remotely
@@ -65,28 +65,28 @@ Deployment complete!
     {
       "all_permissions": [
         {
-          "inherited":false,
-          "permission_level":"IS_OWNER"
+          "inherited": false,
+          "permission_level": "IS_OWNER"
         }
       ],
-      "display_name":"[USERNAME]",
-      "user_name":"[USERNAME]"
+      "display_name": "[USERNAME]",
+      "user_name": "[USERNAME]"
     },
     {
       "all_permissions": [
         {
-          "inherited":true,
+          "inherited": true,
           "inherited_from_object": [
             "/jobs/"
           ],
-          "permission_level":"CAN_MANAGE"
+          "permission_level": "CAN_MANAGE"
         }
       ],
-      "group_name":"admins"
+      "group_name": "admins"
     }
   ],
-  "object_id":"/jobs/[JOB_WITH_PERMISSIONS_ID]",
-  "object_type":"job"
+  "object_id": "/jobs/[JOB_WITH_PERMISSIONS_ID]",
+  "object_type": "job"
 }
 
 >>> print_requests
@@ -119,45 +119,45 @@ Deployment complete!
     {
       "all_permissions": [
         {
-          "inherited":false,
-          "permission_level":"CAN_VIEW"
+          "inherited": false,
+          "permission_level": "CAN_VIEW"
         }
       ],
-      "display_name":"viewer@example.com",
-      "user_name":"viewer@example.com"
+      "display_name": "viewer@example.com",
+      "user_name": "viewer@example.com"
     },
     {
       "all_permissions": [
         {
-          "inherited":false,
-          "permission_level":"CAN_MANAGE"
+          "inherited": false,
+          "permission_level": "CAN_MANAGE"
         }
       ],
-      "group_name":"data-team"
+      "group_name": "data-team"
     },
     {
       "all_permissions": [
         {
-          "inherited":false,
-          "permission_level":"IS_OWNER"
+          "inherited": false,
+          "permission_level": "IS_OWNER"
         }
       ],
-      "display_name":"[USERNAME]",
-      "user_name":"[USERNAME]"
+      "display_name": "[USERNAME]",
+      "user_name": "[USERNAME]"
     },
     {
       "all_permissions": [
         {
-          "inherited":true,
+          "inherited": true,
           "inherited_from_object": [
             "/jobs/"
           ],
-          "permission_level":"CAN_MANAGE"
+          "permission_level": "CAN_MANAGE"
         }
       ],
-      "group_name":"admins"
+      "group_name": "admins"
     }
   ],
-  "object_id":"/jobs/[JOB_WITH_PERMISSIONS_ID]",
-  "object_type":"job"
+  "object_id": "/jobs/[JOB_WITH_PERMISSIONS_ID]",
+  "object_type": "job"
 }

@@ -1,0 +1,15 @@
+{
+  "plan": {
+    "resources.vector_search_endpoints.my_endpoint": {
+      "action": "update",
+      "changes": {
+        "min_qps": {
+          "action": "update",
+          "old": 1,
+          "new": 1,
+          "remote": 5
+        }
+      }
+    }
+  }
+}

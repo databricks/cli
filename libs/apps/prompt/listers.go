@@ -88,28 +88,6 @@ func ListSecretKeys(ctx context.Context, scope string) ([]ListItem, error) {
 	return out, nil
 }
 
-// ListSQLWarehousesItems returns SQL warehouses as ListItems (reuses same API as ListSQLWarehouses).
-func ListSQLWarehousesItems(ctx context.Context) ([]ListItem, error) {
-	w, err := workspaceClient(ctx)
-	if err != nil {
-		return nil, err
-	}
-	iter := w.Warehouses.List(ctx, sql.ListWarehousesRequest{})
-	whs, err := listing.ToSlice(ctx, iter)
-	if err != nil {
-		return nil, err
-	}
-	out := make([]ListItem, 0, min(len(whs), maxListResults))
-	for _, wh := range whs {
-		label := wh.Name
-		if wh.State != "" {
-			label = fmt.Sprintf("%s (%s)", wh.Name, wh.State)
-		}
-		out = append(out, ListItem{ID: wh.Id, Label: label})
-	}
-	return capResults(out), nil
-}
-
 // ListSchemas returns UC schemas within a catalog as selectable items.
 func ListSchemas(ctx context.Context, catalogName string) ([]ListItem, error) {
 	w, err := workspaceClient(ctx)

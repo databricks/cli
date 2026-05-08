@@ -221,6 +221,7 @@ func TestToken_loadToken(t *testing.T) {
 				args:          []string{},
 				tokenTimeout:  1 * time.Hour,
 				profiler:      profiler,
+				tokenCache:    tokenCache,
 				persistentAuthOpts: []u2m.PersistentAuthOption{
 					u2m.WithTokenCache(tokenCache),
 					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
@@ -241,6 +242,7 @@ func TestToken_loadToken(t *testing.T) {
 				args:         []string{},
 				tokenTimeout: 1 * time.Hour,
 				profiler:     profiler,
+				tokenCache:   tokenCache,
 				persistentAuthOpts: []u2m.PersistentAuthOption{
 					u2m.WithTokenCache(tokenCache),
 					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
@@ -258,6 +260,7 @@ func TestToken_loadToken(t *testing.T) {
 				args:          []string{},
 				tokenTimeout:  1 * time.Hour,
 				profiler:      profiler,
+				tokenCache:    tokenCache,
 				persistentAuthOpts: []u2m.PersistentAuthOption{
 					u2m.WithTokenCache(tokenCache),
 					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
@@ -275,6 +278,7 @@ func TestToken_loadToken(t *testing.T) {
 				args:          []string{},
 				tokenTimeout:  1 * time.Hour,
 				profiler:      profiler,
+				tokenCache:    tokenCache,
 				persistentAuthOpts: []u2m.PersistentAuthOption{
 					u2m.WithTokenCache(tokenCache),
 					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
@@ -292,6 +296,7 @@ func TestToken_loadToken(t *testing.T) {
 				args:          []string{},
 				tokenTimeout:  1 * time.Hour,
 				profiler:      profiler,
+				tokenCache:    tokenCache,
 				persistentAuthOpts: []u2m.PersistentAuthOption{
 					u2m.WithTokenCache(tokenCache),
 					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
@@ -308,6 +313,7 @@ func TestToken_loadToken(t *testing.T) {
 				args:          []string{},
 				tokenTimeout:  1 * time.Hour,
 				profiler:      profiler,
+				tokenCache:    tokenCache,
 				persistentAuthOpts: []u2m.PersistentAuthOption{
 					u2m.WithTokenCache(tokenCache),
 					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
@@ -324,6 +330,7 @@ func TestToken_loadToken(t *testing.T) {
 				args:          []string{},
 				tokenTimeout:  1 * time.Hour,
 				profiler:      profiler,
+				tokenCache:    tokenCache,
 				persistentAuthOpts: []u2m.PersistentAuthOption{
 					u2m.WithTokenCache(tokenCache),
 					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
@@ -340,6 +347,7 @@ func TestToken_loadToken(t *testing.T) {
 				args:          []string{"workspace-a"},
 				tokenTimeout:  1 * time.Hour,
 				profiler:      profiler,
+				tokenCache:    tokenCache,
 				persistentAuthOpts: []u2m.PersistentAuthOption{
 					u2m.WithTokenCache(tokenCache),
 					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
@@ -356,6 +364,7 @@ func TestToken_loadToken(t *testing.T) {
 				args:          []string{"workspace-a.cloud.databricks.com"},
 				tokenTimeout:  1 * time.Hour,
 				profiler:      profiler,
+				tokenCache:    tokenCache,
 				persistentAuthOpts: []u2m.PersistentAuthOption{
 					u2m.WithTokenCache(tokenCache),
 					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
@@ -372,6 +381,7 @@ func TestToken_loadToken(t *testing.T) {
 				args:          []string{"default.dev"},
 				tokenTimeout:  1 * time.Hour,
 				profiler:      profiler,
+				tokenCache:    tokenCache,
 				persistentAuthOpts: []u2m.PersistentAuthOption{
 					u2m.WithTokenCache(tokenCache),
 					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
@@ -388,6 +398,7 @@ func TestToken_loadToken(t *testing.T) {
 				args:          []string{"nonexistent.cloud.databricks.com"},
 				tokenTimeout:  1 * time.Hour,
 				profiler:      profiler,
+				tokenCache:    tokenCache,
 				persistentAuthOpts: []u2m.PersistentAuthOption{
 					u2m.WithTokenCache(tokenCache),
 					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
@@ -419,6 +430,7 @@ func TestToken_loadToken(t *testing.T) {
 				args:         []string{},
 				tokenTimeout: 1 * time.Hour,
 				profiler:     profiler,
+				tokenCache:   tokenCache,
 				persistentAuthOpts: []u2m.PersistentAuthOption{
 					u2m.WithTokenCache(tokenCache),
 					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
@@ -436,6 +448,7 @@ func TestToken_loadToken(t *testing.T) {
 				args:         []string{},
 				tokenTimeout: 1 * time.Hour,
 				profiler:     profiler,
+				tokenCache:   tokenCache,
 				persistentAuthOpts: []u2m.PersistentAuthOption{
 					u2m.WithTokenCache(tokenCache),
 					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
@@ -454,6 +467,7 @@ func TestToken_loadToken(t *testing.T) {
 				args:         []string{},
 				tokenTimeout: 1 * time.Hour,
 				profiler:     profiler,
+				tokenCache:   tokenCache,
 				persistentAuthOpts: []u2m.PersistentAuthOption{
 					u2m.WithTokenCache(tokenCache),
 					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
@@ -473,6 +487,7 @@ func TestToken_loadToken(t *testing.T) {
 				args:         []string{},
 				tokenTimeout: 1 * time.Hour,
 				profiler:     profiler,
+				tokenCache:   tokenCache,
 				persistentAuthOpts: []u2m.PersistentAuthOption{
 					u2m.WithTokenCache(tokenCache),
 					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
@@ -490,6 +505,7 @@ func TestToken_loadToken(t *testing.T) {
 				args:         []string{},
 				tokenTimeout: 1 * time.Hour,
 				profiler:     profiler,
+				tokenCache:   tokenCache,
 				persistentAuthOpts: []u2m.PersistentAuthOption{
 					u2m.WithTokenCache(tokenCache),
 					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
@@ -508,6 +524,7 @@ func TestToken_loadToken(t *testing.T) {
 				args:         []string{},
 				tokenTimeout: 1 * time.Hour,
 				profiler:     profiler,
+				tokenCache:   tokenCache,
 				persistentAuthOpts: []u2m.PersistentAuthOption{
 					u2m.WithTokenCache(tokenCache),
 					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
@@ -526,6 +543,7 @@ func TestToken_loadToken(t *testing.T) {
 				args:         []string{},
 				tokenTimeout: 1 * time.Hour,
 				profiler:     profiler,
+				tokenCache:   tokenCache,
 				persistentAuthOpts: []u2m.PersistentAuthOption{
 					u2m.WithTokenCache(tokenCache),
 					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
@@ -542,6 +560,7 @@ func TestToken_loadToken(t *testing.T) {
 				args:          []string{"workspace-a"},
 				tokenTimeout:  1 * time.Hour,
 				profiler:      profiler,
+				tokenCache:    tokenCache,
 				persistentAuthOpts: []u2m.PersistentAuthOption{
 					u2m.WithTokenCache(tokenCache),
 					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
@@ -557,6 +576,7 @@ func TestToken_loadToken(t *testing.T) {
 				args:               []string{},
 				tokenTimeout:       1 * time.Hour,
 				profiler:           profiler,
+				tokenCache:         tokenCache,
 				persistentAuthOpts: nil,
 			},
 			wantErr: "no profile specified. Use --profile <name> to specify which profile to use",
@@ -569,6 +589,7 @@ func TestToken_loadToken(t *testing.T) {
 				args:               []string{},
 				tokenTimeout:       1 * time.Hour,
 				profiler:           profile.InMemoryProfiler{},
+				tokenCache:         tokenCache,
 				persistentAuthOpts: nil,
 			},
 			wantErr: "no profiles configured. Run 'databricks auth login' to create a profile",
@@ -581,6 +602,7 @@ func TestToken_loadToken(t *testing.T) {
 				args:               []string{},
 				tokenTimeout:       1 * time.Hour,
 				profiler:           errProfiler{err: profile.ErrNoConfiguration},
+				tokenCache:         tokenCache,
 				persistentAuthOpts: nil,
 			},
 			wantErr: "no profiles configured. Run 'databricks auth login' to create a profile",
@@ -638,6 +660,7 @@ func TestToken_loadToken(t *testing.T) {
 				args:          []string{},
 				tokenTimeout:  1 * time.Hour,
 				profiler:      profiler,
+				tokenCache:    tokenCache,
 				persistentAuthOpts: []u2m.PersistentAuthOption{
 					u2m.WithTokenCache(tokenCache),
 					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
@@ -658,6 +681,7 @@ func TestToken_loadToken(t *testing.T) {
 				args:          []string{},
 				tokenTimeout:  1 * time.Hour,
 				profiler:      profiler,
+				tokenCache:    tokenCache,
 				persistentAuthOpts: []u2m.PersistentAuthOption{
 					u2m.WithTokenCache(tokenCache),
 					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
@@ -678,6 +702,7 @@ func TestToken_loadToken(t *testing.T) {
 				args:          []string{},
 				tokenTimeout:  1 * time.Hour,
 				profiler:      profiler,
+				tokenCache:    tokenCache,
 				persistentAuthOpts: []u2m.PersistentAuthOption{
 					u2m.WithTokenCache(tokenCache),
 					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
@@ -699,6 +724,7 @@ func TestToken_loadToken(t *testing.T) {
 				args:          []string{},
 				tokenTimeout:  1 * time.Hour,
 				profiler:      profiler,
+				tokenCache:    tokenCache,
 				persistentAuthOpts: []u2m.PersistentAuthOption{
 					u2m.WithTokenCache(tokenCache),
 					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
@@ -734,6 +760,7 @@ func TestToken_loadToken(t *testing.T) {
 				args:         []string{},
 				tokenTimeout: 1 * time.Hour,
 				profiler:     profiler,
+				tokenCache:   tokenCache,
 				persistentAuthOpts: []u2m.PersistentAuthOption{
 					u2m.WithTokenCache(tokenCache),
 					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
@@ -750,6 +777,7 @@ func TestToken_loadToken(t *testing.T) {
 				args:          []string{},
 				tokenTimeout:  1 * time.Hour,
 				profiler:      profiler,
+				tokenCache:    tokenCache,
 				persistentAuthOpts: []u2m.PersistentAuthOption{
 					u2m.WithTokenCache(tokenCache),
 					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
@@ -769,6 +797,7 @@ func TestToken_loadToken(t *testing.T) {
 				tokenTimeout:  1 * time.Hour,
 				forceRefresh:  true,
 				profiler:      profiler,
+				tokenCache:    tokenCache,
 				persistentAuthOpts: []u2m.PersistentAuthOption{
 					u2m.WithTokenCache(tokenCache),
 					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
@@ -786,6 +815,7 @@ func TestToken_loadToken(t *testing.T) {
 				tokenTimeout:  1 * time.Hour,
 				forceRefresh:  true,
 				profiler:      profiler,
+				tokenCache:    tokenCache,
 				persistentAuthOpts: []u2m.PersistentAuthOption{
 					u2m.WithTokenCache(tokenCache),
 					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),

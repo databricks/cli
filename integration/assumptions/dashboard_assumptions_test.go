@@ -71,7 +71,11 @@ func TestDashboardAssumptions_WorkspaceImport(t *testing.T) {
 				SerializedDashboard: string(dashboardPayload),
 			},
 		})
-		require.ErrorIs(t, err, apierr.ErrResourceAlreadyExists)
+		// Lakeview returns the generic gRPC error_code ALREADY_EXISTS, not
+		// Databricks' RESOURCE_ALREADY_EXISTS, so the SDK unwraps to
+		// ErrAlreadyExists rather than ErrResourceAlreadyExists. Assert the
+		// common 409 parent to stay resilient to either code.
+		require.ErrorIs(t, err, apierr.ErrResourceConflict)
 	}
 
 	// Retrieve the dashboard object and confirm that only select fields were updated by the import.
@@ -107,15 +111,10 @@ func TestDashboardAssumptions_WorkspaceImport(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		// Confirm that only the expected fields have been updated.
-		assert.ElementsMatch(t, []string{
-			"etag",
-			"update_time",
-		}, updatedFieldPaths)
-
-		// The warehouse_id field is cleared after workspace import.
-		assert.ElementsMatch(t, []string{
-			"warehouse_id",
-		}, deletedFieldPaths)
+		// etag and update_time always change after workspace import. serialized_dashboard and
+		// warehouse_id vary by Lakeview server version: observed on AWS staging but not GCP prod.
+		assert.Subset(t, updatedFieldPaths, []string{"etag", "update_time"})
+		assert.Subset(t, []string{"etag", "update_time", "serialized_dashboard"}, updatedFieldPaths)
+		assert.Subset(t, []string{"warehouse_id"}, deletedFieldPaths)
 	}
 }

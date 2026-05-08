@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"golang.org/x/sync/errgroup"
@@ -76,7 +77,6 @@ func checkAnyResourceRunning(ctx context.Context, w *databricks.WorkspaceClient,
 		if resourceType == "jobs" {
 			errs.Go(func() error {
 				isRunning, err := IsJobRunning(errCtx, w, id)
-				// If there's an error retrieving the job, we assume it's not running
 				if err != nil {
 					return err
 				}
@@ -91,7 +91,7 @@ func checkAnyResourceRunning(ctx context.Context, w *databricks.WorkspaceClient,
 			errs.Go(func() error {
 				isRunning, err := IsPipelineRunning(errCtx, w, id)
 				if err != nil {
-					return nil //nolint:nilerr // assume not running if pipeline check fails
+					return err
 				}
 				if isRunning {
 					return &ErrResourceIsRunning{resourceType: "pipeline", resourceId: id}
@@ -111,6 +111,9 @@ func IsJobRunning(ctx context.Context, w *databricks.WorkspaceClient, jobId stri
 	}
 
 	runs, err := w.Jobs.ListRunsAll(ctx, jobs.ListRunsRequest{JobId: int64(id), ActiveOnly: true})
+	if apierr.IsMissing(err) {
+		return false, nil
+	}
 	if err != nil {
 		return false, err
 	}
@@ -120,6 +123,9 @@ func IsJobRunning(ctx context.Context, w *databricks.WorkspaceClient, jobId stri
 
 func IsPipelineRunning(ctx context.Context, w *databricks.WorkspaceClient, pipelineId string) (bool, error) {
 	resp, err := w.Pipelines.Get(ctx, pipelines.GetPipelineRequest{PipelineId: pipelineId})
+	if apierr.IsMissing(err) {
+		return false, nil
+	}
 	if err != nil {
 		return false, err
 	}

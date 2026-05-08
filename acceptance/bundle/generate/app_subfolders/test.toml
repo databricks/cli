@@ -5,7 +5,7 @@ Response.Body = '''
     "app_id": "1234567890",
     "name": "my_app",
     "description": "This is a test app",
-    "default_source_code_path": "/Workspace/Users/foo@bar.com/my_app"
+    "default_source_code_path": "/Workspace/Users/foo@bar.test/my_app"
 }
 '''
 
@@ -15,7 +15,7 @@ Response.Body = '''
 {
     "objects": [
         {
-            "path": "/Workspace/Users/foo@bar.com/my_app/sub/folder/1.py",
+            "path": "/Workspace/Users/foo@bar.test/my_app/sub/folder/1.py",
             "object_type": "FILE"
         }
     ]
@@ -25,7 +25,7 @@ Response.Body = '''
 Pattern = "GET /api/2.0/workspace/get-status"
 Response.Body = '''
 {
-    "path": "/Workspace/Users/foo@bar.com/my_app/sub/folder/1.py",
+    "path": "/Workspace/Users/foo@bar.test/my_app/sub/folder/1.py",
     "object_type": "FILE"
 }
 '''

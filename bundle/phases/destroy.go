@@ -54,6 +54,10 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.
 	schemaActions := filterGroup(deleteActions, "schemas", deployplan.Delete)
 	pipelineActions := filterGroup(deleteActions, "pipelines", deployplan.Delete)
 	volumeActions := filterGroup(deleteActions, "volumes", deployplan.Delete)
+	databaseInstanceActions := filterGroup(deleteActions, "database_instances", deployplan.Delete)
+	syncedDatabaseTableActions := filterGroup(deleteActions, "synced_database_tables", deployplan.Delete)
+	postgresProjectActions := filterGroup(deleteActions, "postgres_projects", deployplan.Delete)
+	postgresBranchActions := filterGroup(deleteActions, "postgres_branches", deployplan.Delete)
 
 	if len(schemaActions) > 0 {
 		cmdio.LogString(ctx, deleteSchemaMessage)
@@ -74,6 +78,38 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.
 	if len(volumeActions) > 0 {
 		cmdio.LogString(ctx, deleteVolumeMessage)
 		for _, a := range volumeActions {
+			cmdio.Log(ctx, a)
+		}
+		cmdio.LogString(ctx, "")
+	}
+
+	if len(databaseInstanceActions) > 0 {
+		cmdio.LogString(ctx, deleteDatabaseInstanceMessage)
+		for _, a := range databaseInstanceActions {
+			cmdio.Log(ctx, a)
+		}
+		cmdio.LogString(ctx, "")
+	}
+
+	if len(syncedDatabaseTableActions) > 0 {
+		cmdio.LogString(ctx, deleteSyncedDatabaseTableMessage)
+		for _, a := range syncedDatabaseTableActions {
+			cmdio.Log(ctx, a)
+		}
+		cmdio.LogString(ctx, "")
+	}
+
+	if len(postgresProjectActions) > 0 {
+		cmdio.LogString(ctx, deletePostgresProjectMessage)
+		for _, a := range postgresProjectActions {
+			cmdio.Log(ctx, a)
+		}
+		cmdio.LogString(ctx, "")
+	}
+
+	if len(postgresBranchActions) > 0 {
+		cmdio.LogString(ctx, deletePostgresBranchMessage)
+		for _, a := range postgresBranchActions {
 			cmdio.Log(ctx, a)
 		}
 		cmdio.LogString(ctx, "")

@@ -159,7 +159,7 @@ func sortGroupedPatterns(groupedPatterns map[string][]RequiredPatternInfo) [][]R
 
 // RequiredFields returns grouped required field patterns for validation
 func requiredFields() ([][]RequiredPatternInfo, error) {
-	patterns, err := extractRequiredFields(reflect.TypeOf(config.Root{}))
+	patterns, err := extractRequiredFields(reflect.TypeFor[config.Root]())
 	if err != nil {
 		return nil, err
 	}

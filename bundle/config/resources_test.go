@@ -51,8 +51,7 @@ import (
 // a way to directly assert that MarshalJSON and UnmarshalJSON are implemented
 // at the top level.
 func TestCustomMarshallerIsImplemented(t *testing.T) {
-	r := Resources{}
-	rt := reflect.TypeOf(r)
+	rt := reflect.TypeFor[Resources]()
 
 	for i := range rt.NumField() {
 		field := rt.Field(i)
@@ -88,7 +87,7 @@ func TestCustomMarshallerIsImplemented(t *testing.T) {
 
 func TestResourcesAllResourcesCompleteness(t *testing.T) {
 	r := Resources{}
-	rt := reflect.TypeOf(r)
+	rt := reflect.TypeFor[Resources]()
 
 	// Collect set of includes resource types
 	var types []string
@@ -112,7 +111,7 @@ func TestSupportedResources(t *testing.T) {
 	// Please add your resource to the SupportedResources() function in resources.go if you add a new resource.
 	actual := SupportedResources()
 
-	typ := reflect.TypeOf(Resources{})
+	typ := reflect.TypeFor[Resources]()
 	for i := range typ.NumField() {
 		field := typ.Field(i)
 		jsonTags := strings.Split(field.Tag.Get("json"), ",")

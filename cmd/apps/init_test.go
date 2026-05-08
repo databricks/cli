@@ -4,8 +4,11 @@ import (
 	"bytes"
 	"errors"
 	"io"
+	"io/fs"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/databricks/cli/libs/apps/manifest"
@@ -247,6 +250,167 @@ func TestExecuteTemplateInvalidSyntaxReturnsOriginal(t *testing.T) {
 	result, err := executeTemplate(ctx, "test.js", []byte(input), vars)
 	require.NoError(t, err)
 	assert.Equal(t, input, string(result))
+}
+
+// TestExecuteTemplatePluginStability locks down the contract that the
+// AppKit init template relies on: ranging over .plugins exposes a
+// .Stability field per plugin, with GA/unset rendering as the empty
+// string. See databricks/appkit#264 commit d826a532 (server.ts branches
+// imports between `@databricks/appkit` and `@databricks/appkit/beta`).
+func TestExecuteTemplatePluginStability(t *testing.T) {
+	ctx := t.Context()
+	vars := templateVars{
+		Plugins: map[string]*pluginVar{
+			"ga-plugin":   {},
+			"beta-plugin": {Stability: "beta"},
+		},
+	}
+
+	input := `{{range $n, $p := .plugins}}{{$n}}={{$p.Stability}};{{end}}`
+	result, err := executeTemplate(ctx, "server.ts", []byte(input), vars)
+	require.NoError(t, err)
+	got := string(result)
+
+	assert.Contains(t, got, "ga-plugin=;")
+	assert.Contains(t, got, "beta-plugin=beta;")
+}
+
+// TestExecuteTemplateBetaImportAccumulator pins the full text/template
+// pattern used by the AppKit server.ts template (databricks/appkit#264
+// commit 488797fc): a string-accumulator pre-pass over .plugins that
+// reassigns an outer-scope variable inside `range` and concatenates
+// names via `printf`, then emits a single guarded import line.
+//
+// If a future refactor of executeTemplate breaks variable reassignment,
+// printf, or pointer-field access on map values, this test fails before
+// users see broken init output.
+func TestExecuteTemplateBetaImportAccumulator(t *testing.T) {
+	ctx := t.Context()
+
+	// Mirror of the relevant slice of template/server/server.ts in AppKit.
+	// Kept as a literal string (not loaded from the AppKit repo) so this
+	// test is hermetic and survives AppKit branch movement.
+	input := `{{- $betaImports := "" -}}
+{{- range $name, $p := .plugins -}}
+  {{- if eq $p.Stability "beta" -}}
+    {{- if eq $betaImports "" -}}
+      {{- $betaImports = $name -}}
+    {{- else -}}
+      {{- $betaImports = printf "%s, %s" $betaImports $name -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+import { createApp{{range $name, $p := .plugins}}{{if ne $p.Stability "beta"}}, {{$name}}{{end}}{{end}} } from '@databricks/appkit';
+{{- if ne $betaImports "" }}
+import { {{$betaImports}} } from '@databricks/appkit/beta';
+{{- end}}
+`
+
+	cases := []struct {
+		name            string
+		plugins         map[string]*pluginVar
+		wantGAImports   []string // names that must appear on the GA line
+		wantBetaImports []string // names that must appear on the beta line, "" means no beta line
+		wantNoBetaLine  bool
+	}{
+		{
+			name: "all GA: no beta line",
+			plugins: map[string]*pluginVar{
+				"server":    {},
+				"analytics": {},
+			},
+			wantGAImports:  []string{"server", "analytics"},
+			wantNoBetaLine: true,
+		},
+		{
+			name: "mixed single beta",
+			plugins: map[string]*pluginVar{
+				"server":  {},
+				"betaOne": {Stability: "beta"},
+			},
+			wantGAImports:   []string{"server"},
+			wantBetaImports: []string{"betaOne"},
+		},
+		{
+			name: "mixed multiple betas: combined into one import line",
+			plugins: map[string]*pluginVar{
+				"server":  {},
+				"betaOne": {Stability: "beta"},
+				"betaTwo": {Stability: "beta"},
+			},
+			wantGAImports:   []string{"server"},
+			wantBetaImports: []string{"betaOne", "betaTwo"},
+		},
+		{
+			name: "all beta: createApp alone on GA line",
+			plugins: map[string]*pluginVar{
+				"betaOne": {Stability: "beta"},
+				"betaTwo": {Stability: "beta"},
+			},
+			wantBetaImports: []string{"betaOne", "betaTwo"},
+		},
+		{
+			name: "future tier (alpha) routes to GA line for now",
+			plugins: map[string]*pluginVar{
+				"server":   {},
+				"alphaOne": {Stability: "alpha"},
+			},
+			wantGAImports:  []string{"server", "alphaOne"},
+			wantNoBetaLine: true,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			vars := templateVars{Plugins: tc.plugins}
+			result, err := executeTemplate(ctx, "server.ts", []byte(input), vars)
+			require.NoError(t, err)
+			got := string(result)
+
+			lines := strings.Split(got, "\n")
+			require.NotEmpty(t, lines)
+
+			// GA line is always first: starts with `import { createApp`
+			// and ends with `from '@databricks/appkit';`.
+			gaLine := lines[0]
+			assert.True(t, strings.HasPrefix(gaLine, "import { createApp"),
+				"GA line: %q", gaLine)
+			assert.True(t, strings.HasSuffix(gaLine, "} from '@databricks/appkit';"),
+				"GA line: %q", gaLine)
+			for _, name := range tc.wantGAImports {
+				assert.Contains(t, gaLine, name,
+					"GA line missing %q: %q", name, gaLine)
+			}
+			for _, name := range tc.wantBetaImports {
+				assert.NotContains(t, gaLine, ", "+name,
+					"beta plugin %q leaked onto GA line: %q", name, gaLine)
+			}
+
+			if tc.wantNoBetaLine {
+				assert.NotContains(t, got, "@databricks/appkit/beta",
+					"unexpected beta import emitted: %q", got)
+				return
+			}
+
+			// Beta line: exactly one `from '@databricks/appkit/beta'` line.
+			betaLineCount := strings.Count(got, "from '@databricks/appkit/beta'")
+			assert.Equal(t, 1, betaLineCount,
+				"expected exactly one beta import line, got %d: %q", betaLineCount, got)
+
+			var betaLine string
+			for _, l := range lines {
+				if strings.Contains(l, "@databricks/appkit/beta") {
+					betaLine = l
+					break
+				}
+			}
+			require.NotEmpty(t, betaLine, "beta line not found in: %q", got)
+			for _, name := range tc.wantBetaImports {
+				assert.Contains(t, betaLine, name,
+					"beta line missing %q: %q", name, betaLine)
+			}
+		})
+	}
 }
 
 func TestInitCmdBranchAndVersionMutuallyExclusive(t *testing.T) {
@@ -609,6 +773,59 @@ func TestPluginHasResourceField(t *testing.T) {
 	assert.False(t, pluginHasResourceField(p, "nosuch", "id"))
 }
 
+func TestValidateRequiredResources(t *testing.T) {
+	tests := []struct {
+		name           string
+		resources      []manifest.Resource
+		resourceValues map[string]string
+		wantErr        string
+	}{
+		{
+			name: "all provided",
+			resources: []manifest.Resource{
+				{Alias: "SQL Warehouse", ResourceKey: "sql-warehouse", PluginName: "analytics"},
+			},
+			resourceValues: map[string]string{"sql-warehouse.id": "abc"},
+		},
+		{
+			name: "missing resource with fields includes plugin prefix in hint",
+			resources: []manifest.Resource{
+				{
+					Alias:       "Postgres",
+					ResourceKey: "postgres",
+					PluginName:  "lakebase",
+					Fields: map[string]manifest.ResourceField{
+						"branch":   {Description: "branch"},
+						"database": {Description: "database"},
+					},
+				},
+			},
+			resourceValues: map[string]string{},
+			wantErr:        `use --set lakebase.postgres.branch=value`,
+		},
+		{
+			name: "missing resource without fields defaults to id",
+			resources: []manifest.Resource{
+				{Alias: "SQL Warehouse", ResourceKey: "sql-warehouse", PluginName: "analytics"},
+			},
+			resourceValues: map[string]string{},
+			wantErr:        `use --set analytics.sql-warehouse.id=value`,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			err := validateRequiredResources(tc.resources, tc.resourceValues)
+			if tc.wantErr == "" {
+				assert.NoError(t, err)
+			} else {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tc.wantErr)
+			}
+		})
+	}
+}
+
 func TestAppendUnique(t *testing.T) {
 	result := appendUnique([]string{"a", "b"}, "b", "c", "a", "d")
 	assert.Equal(t, []string{"a", "b", "c", "d"}, result)
@@ -686,4 +903,172 @@ func TestRunManifestOnlyUsesTemplatePathEnvVar(t *testing.T) {
 	_, _ = io.Copy(&buf, r)
 	out := buf.String()
 	assert.Equal(t, content, out)
+}
+
+func TestCopyFileDeps(t *testing.T) {
+	ctx := t.Context()
+
+	srcDir := t.TempDir()
+	destDir := t.TempDir()
+
+	// Create a fake tarball in srcDir
+	tgzContent := []byte("fake-tarball-content")
+	require.NoError(t, os.WriteFile(filepath.Join(srcDir, "my-pkg-1.0.0.tgz"), tgzContent, 0o644))
+
+	// package.json with file: dep, a registry dep, and a devDep with file:
+	pkgJSON := []byte(`{
+		"dependencies": {
+			"my-pkg": "file:./my-pkg-1.0.0.tgz",
+			"lodash": "4.17.21"
+		},
+		"devDependencies": {
+			"missing-pkg": "file:./nonexistent.tgz"
+		}
+	}`)
+
+	copyFileDeps(ctx, pkgJSON, srcDir, destDir)
+
+	// The file: dep should be copied
+	copied, err := os.ReadFile(filepath.Join(destDir, "my-pkg-1.0.0.tgz"))
+	require.NoError(t, err)
+	assert.Equal(t, tgzContent, copied)
+
+	// The registry dep should NOT create any file
+	_, err = os.Stat(filepath.Join(destDir, "4.17.21"))
+	assert.ErrorIs(t, err, fs.ErrNotExist)
+
+	// The missing file: dep should be skipped gracefully (no panic, no error)
+	_, err = os.Stat(filepath.Join(destDir, "nonexistent.tgz"))
+	assert.ErrorIs(t, err, fs.ErrNotExist)
+}
+
+func TestCopyFileDepsInvalidJSON(t *testing.T) {
+	ctx := t.Context()
+	srcDir := t.TempDir()
+	destDir := t.TempDir()
+
+	// Should not panic on invalid JSON
+	copyFileDeps(ctx, []byte("not json"), srcDir, destDir)
+
+	// destDir should remain empty
+	entries, err := os.ReadDir(destDir)
+	require.NoError(t, err)
+	assert.Empty(t, entries)
+}
+
+func TestCopyFileDepsNoDeps(t *testing.T) {
+	ctx := t.Context()
+	srcDir := t.TempDir()
+	destDir := t.TempDir()
+
+	// package.json with no file: deps
+	pkgJSON := []byte(`{"dependencies": {"react": "19.0.0"}}`)
+	copyFileDeps(ctx, pkgJSON, srcDir, destDir)
+
+	entries, err := os.ReadDir(destDir)
+	require.NoError(t, err)
+	assert.Empty(t, entries)
+}
+
+func skipIfNoNpm(t *testing.T) {
+	t.Helper()
+	if _, err := exec.LookPath("npm"); err != nil {
+		t.Skip("npm not found in PATH, skipping")
+	}
+}
+
+func TestStartBackgroundNpmInstall_NoLockFile(t *testing.T) {
+	srcDir := t.TempDir()
+	destDir := t.TempDir()
+
+	// Only package.json, no lock file
+	require.NoError(t, os.WriteFile(filepath.Join(srcDir, "package.json"), []byte(`{"name":"test"}`), 0o644))
+
+	ch := startBackgroundNpmInstall(t.Context(), srcDir, destDir, "test-app")
+	assert.Nil(t, ch)
+}
+
+func TestStartBackgroundNpmInstall_NoPackageJSON(t *testing.T) {
+	srcDir := t.TempDir()
+	destDir := t.TempDir()
+
+	// Only lock file, no package.json
+	require.NoError(t, os.WriteFile(filepath.Join(srcDir, "package-lock.json"), []byte(`{}`), 0o644))
+
+	ch := startBackgroundNpmInstall(t.Context(), srcDir, destDir, "test-app")
+	assert.Nil(t, ch)
+}
+
+func TestStartBackgroundNpmInstall_CopiesFiles(t *testing.T) {
+	skipIfNoNpm(t)
+
+	srcDir := t.TempDir()
+	destDir := filepath.Join(t.TempDir(), "output")
+
+	pkgJSON := []byte(`{"name":"{{.projectName}}","version":"1.0.0"}`)
+	lockJSON := []byte(`{"lockfileVersion":3,"packages":{}}`)
+	require.NoError(t, os.WriteFile(filepath.Join(srcDir, "package.json"), pkgJSON, 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(srcDir, "package-lock.json"), lockJSON, 0o644))
+
+	ch := startBackgroundNpmInstall(t.Context(), srcDir, destDir, "my-app")
+	require.NotNil(t, ch)
+
+	// Drain the channel to avoid goroutine leak (npm ci will fail on fake data)
+	<-ch
+
+	// package.json should be written with template substitution
+	got, err := os.ReadFile(filepath.Join(destDir, "package.json"))
+	require.NoError(t, err)
+	assert.Contains(t, string(got), `"my-app"`)
+	assert.NotContains(t, string(got), "{{.projectName}}")
+
+	// package-lock.json should be copied verbatim
+	gotLock, err := os.ReadFile(filepath.Join(destDir, "package-lock.json"))
+	require.NoError(t, err)
+	assert.Equal(t, lockJSON, gotLock)
+}
+
+func TestStartBackgroundNpmInstall_CopiesFileDeps(t *testing.T) {
+	skipIfNoNpm(t)
+
+	srcDir := t.TempDir()
+	destDir := filepath.Join(t.TempDir(), "output")
+
+	tgzContent := []byte("fake-tarball")
+	require.NoError(t, os.WriteFile(filepath.Join(srcDir, "my-pkg-1.0.0.tgz"), tgzContent, 0o644))
+
+	pkgJSON := []byte(`{"name":"test","dependencies":{"my-pkg":"file:./my-pkg-1.0.0.tgz"}}`)
+	lockJSON := []byte(`{"lockfileVersion":3,"packages":{}}`)
+	require.NoError(t, os.WriteFile(filepath.Join(srcDir, "package.json"), pkgJSON, 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(srcDir, "package-lock.json"), lockJSON, 0o644))
+
+	ch := startBackgroundNpmInstall(t.Context(), srcDir, destDir, "test-app")
+	require.NotNil(t, ch)
+	<-ch
+
+	// The file: dep tarball should be copied to destDir
+	copied, err := os.ReadFile(filepath.Join(destDir, "my-pkg-1.0.0.tgz"))
+	require.NoError(t, err)
+	assert.Equal(t, tgzContent, copied)
+}
+
+func TestStartBackgroundNpmInstall_TemplateSubstitution(t *testing.T) {
+	skipIfNoNpm(t)
+
+	srcDir := t.TempDir()
+	destDir := filepath.Join(t.TempDir(), "output")
+
+	pkgJSON := []byte(`{"name":"{{.projectName}}","description":"{{.appDescription}}"}`)
+	lockJSON := []byte(`{"lockfileVersion":3}`)
+	require.NoError(t, os.WriteFile(filepath.Join(srcDir, "package.json"), pkgJSON, 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(srcDir, "package-lock.json"), lockJSON, 0o644))
+
+	ch := startBackgroundNpmInstall(t.Context(), srcDir, destDir, "cool-project")
+	require.NotNil(t, ch)
+	<-ch
+
+	got, err := os.ReadFile(filepath.Join(destDir, "package.json"))
+	require.NoError(t, err)
+	assert.Contains(t, string(got), `"cool-project"`)
+	assert.NotContains(t, string(got), "{{.projectName}}")
 }
