@@ -101,6 +101,14 @@ sethome() {
     local home="$1"
     mkdir -p "$home"
 
+    # Resolve to an absolute path so HOME (and USERPROFILE) keep pointing at
+    # the same directory after the test cd's elsewhere. The SDK expands
+    # `~/.databrickscfg` against $HOME at lookup time; with a relative path
+    # the cfg silently disappears once the cwd changes, and helpers like
+    # databrickscfg.GetConfiguredDefaultProfile return "" instead of
+    # erroring. `cd && pwd` is portable across macOS/Linux/Windows-MSYS.
+    home="$(cd "$home" && pwd)"
+
     # For macOS and Linux, use HOME.
     export HOME="$home"
 
