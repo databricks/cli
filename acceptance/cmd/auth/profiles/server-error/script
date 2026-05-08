@@ -1,0 +1,10 @@
+sethome "./home"
+
+cat > "./home/.databrickscfg" <<EOF
+[transient]
+host = ${DATABRICKS_HOST}
+token = test-token
+EOF
+
+title "5xx from validation endpoint: profile reported as unknown (transient)"
+trace $CLI auth profiles --output json

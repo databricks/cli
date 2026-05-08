@@ -1,0 +1,10 @@
+sethome "./home"
+
+cat > "./home/.databrickscfg" <<EOF
+[expired]
+host = ${DATABRICKS_HOST}
+token = test-token
+EOF
+
+title "Expired token: profile is reported invalid with remediation hint"
+trace $CLI auth profiles --output json

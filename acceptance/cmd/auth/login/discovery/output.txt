@@ -5,7 +5,7 @@ Profile discovery-test was successfully saved
 
 >>> [CLI] auth profiles
 Name                      Host                    Valid
-discovery-test (Default)  [DATABRICKS_URL]  YES
+discovery-test (Default)  [DATABRICKS_URL]  valid
 
 >>> print_requests.py --get //tokens/introspect
 {
