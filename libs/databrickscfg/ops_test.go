@@ -66,7 +66,7 @@ func TestMatchOrCreateSection_AccountID(t *testing.T) {
 
 func TestMatchOrCreateSection_NormalizeHost(t *testing.T) {
 	cfg := &config.Config{
-		Host: "https://query/?o=abracadabra",
+		Host: "https://query.test/?o=abracadabra",
 	}
 	file, err := loadOrCreateConfigFile(t.Context(), "profile/testdata/databrickscfg")
 	assert.NoError(t, err)
@@ -90,7 +90,7 @@ func TestMatchOrCreateSection_NoProfileOrHost(t *testing.T) {
 
 func TestMatchOrCreateSection_MultipleProfiles(t *testing.T) {
 	cfg := &config.Config{
-		Host: "https://foo",
+		Host: "https://foo.test",
 	}
 	file, err := loadOrCreateConfigFile(t.Context(), "profile/testdata/databrickscfg")
 	assert.NoError(t, err)
@@ -708,4 +708,58 @@ func TestGetConfiguredAuthStorage_MissingFile(t *testing.T) {
 	got, err := GetConfiguredAuthStorage(t.Context(), path)
 	require.NoError(t, err)
 	assert.Equal(t, "", got)
+}
+
+func TestSetConfiguredAuthStorage(t *testing.T) {
+	cases := []struct {
+		name     string
+		contents string
+	}{
+		{
+			name:     "missing file is created",
+			contents: "",
+		},
+		{
+			name:     "missing settings section is created",
+			contents: "[my-ws]\nhost = https://example.cloud.databricks.com\n",
+		},
+		{
+			name:     "settings section without auth_storage gets the key added",
+			contents: "[__settings__]\ndefault_profile = my-ws\n",
+		},
+		{
+			name:     "existing auth_storage value is overwritten",
+			contents: "[__settings__]\nauth_storage = secure\n",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), ".databrickscfg")
+			if tc.contents != "" {
+				require.NoError(t, os.WriteFile(path, []byte(tc.contents), 0o600))
+			}
+
+			require.NoError(t, SetConfiguredAuthStorage(t.Context(), "plaintext", path))
+
+			got, err := GetConfiguredAuthStorage(t.Context(), path)
+			require.NoError(t, err)
+			assert.Equal(t, "plaintext", got)
+		})
+	}
+}
+
+func TestSetConfiguredAuthStorage_PreservesOtherSettings(t *testing.T) {
+	path := filepath.Join(t.TempDir(), ".databrickscfg")
+	require.NoError(t, os.WriteFile(path, []byte("[__settings__]\ndefault_profile = dev\n\n[dev]\nhost = https://example.cloud.databricks.com\n"), 0o600))
+
+	require.NoError(t, SetConfiguredAuthStorage(t.Context(), "plaintext", path))
+
+	defaultProfile, err := GetConfiguredDefaultProfile(t.Context(), path)
+	require.NoError(t, err)
+	assert.Equal(t, "dev", defaultProfile)
+
+	authStorage, err := GetConfiguredAuthStorage(t.Context(), path)
+	require.NoError(t, err)
+	assert.Equal(t, "plaintext", authStorage)
 }
