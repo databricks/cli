@@ -34,9 +34,18 @@ const (
 )
 
 // configureGroups adds groups to the command, only if a group
-// has at least one available command.
+// has at least one available command. When only one group survives
+// filtering, the grouping is dropped so Cobra's default "Available
+// Commands" heading is used — matching commands that don't define
+// groups at all.
 func configureGroups(cmd *cobra.Command, groups []cobra.Group) {
 	filteredGroups := cmdgroup.FilterGroups(groups, cmd.Commands())
+	if len(filteredGroups) <= 1 {
+		for _, sub := range cmd.Commands() {
+			sub.GroupID = ""
+		}
+		return
+	}
 	for i := range filteredGroups {
 		cmd.AddGroup(&filteredGroups[i])
 	}
