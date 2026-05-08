@@ -2,11 +2,6 @@ Local = true
 Cloud = false
 RecordRequests = true
 
-# bundle open opens a browser; restrict to darwin to get stable output
-# (mirrors acceptance/bundle/open/test.toml).
-GOOS.windows = false
-GOOS.linux = false
-
 Ignore = [".databricks"]
 
 [EnvMatrix]

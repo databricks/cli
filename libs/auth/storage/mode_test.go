@@ -131,36 +131,36 @@ func TestResolveStorageMode_SkipsConfigReadWhenOverrideOrEnvSet(t *testing.T) {
 
 func TestResolveStorageModeWithSource(t *testing.T) {
 	cases := []struct {
-		name         string
-		override     StorageMode
-		envValue     string
-		configBody   string
-		wantMode     StorageMode
-		wantExplicit bool
-		wantErrSub   string
+		name       string
+		override   StorageMode
+		envValue   string
+		configBody string
+		wantMode   StorageMode
+		wantSource StorageSource
+		wantErrSub string
 	}{
 		{
-			name:         "default is not explicit",
-			wantMode:     StorageModePlaintext,
-			wantExplicit: false,
+			name:       "default",
+			wantMode:   StorageModePlaintext,
+			wantSource: StorageSourceDefault,
 		},
 		{
-			name:         "override is explicit",
-			override:     StorageModeSecure,
-			wantMode:     StorageModeSecure,
-			wantExplicit: true,
+			name:       "override",
+			override:   StorageModeSecure,
+			wantMode:   StorageModeSecure,
+			wantSource: StorageSourceOverride,
 		},
 		{
-			name:         "env is explicit",
-			envValue:     "secure",
-			wantMode:     StorageModeSecure,
-			wantExplicit: true,
+			name:       "env",
+			envValue:   "secure",
+			wantMode:   StorageModeSecure,
+			wantSource: StorageSourceEnvVar,
 		},
 		{
-			name:         "config is explicit",
-			configBody:   "[__settings__]\nauth_storage = secure\n",
-			wantMode:     StorageModeSecure,
-			wantExplicit: true,
+			name:       "config",
+			configBody: "[__settings__]\nauth_storage = secure\n",
+			wantMode:   StorageModeSecure,
+			wantSource: StorageSourceConfig,
 		},
 		{
 			name:       "invalid env is rejected",
@@ -183,7 +183,7 @@ func TestResolveStorageModeWithSource(t *testing.T) {
 			t.Setenv("DATABRICKS_CONFIG_FILE", cfgPath)
 			t.Setenv(EnvVar, tc.envValue)
 
-			mode, explicit, err := ResolveStorageModeWithSource(t.Context(), tc.override)
+			mode, source, err := ResolveStorageModeWithSource(t.Context(), tc.override)
 			if tc.wantErrSub != "" {
 				require.Error(t, err)
 				assert.Contains(t, err.Error(), tc.wantErrSub)
@@ -191,7 +191,21 @@ func TestResolveStorageModeWithSource(t *testing.T) {
 			}
 			require.NoError(t, err)
 			assert.Equal(t, tc.wantMode, mode)
-			assert.Equal(t, tc.wantExplicit, explicit)
+			assert.Equal(t, tc.wantSource, source)
 		})
 	}
+}
+
+func TestStorageSource_Explicit(t *testing.T) {
+	assert.False(t, StorageSourceDefault.Explicit())
+	assert.True(t, StorageSourceOverride.Explicit())
+	assert.True(t, StorageSourceEnvVar.Explicit())
+	assert.True(t, StorageSourceConfig.Explicit())
+}
+
+func TestStorageSource_String(t *testing.T) {
+	assert.Equal(t, "default", StorageSourceDefault.String())
+	assert.Equal(t, "command-line override", StorageSourceOverride.String())
+	assert.Equal(t, "DATABRICKS_AUTH_STORAGE environment variable", StorageSourceEnvVar.String())
+	assert.Equal(t, "auth_storage in [__settings__] section of config file", StorageSourceConfig.String())
 }
