@@ -31,3 +31,15 @@ Exit code: 1
   "host": "[DATABRICKS_URL]",
   "profile": null
 }
+
+=== Bundle with workspace.profile: pinned profile wins over default_profile
+
+>>> errcode [CLI] bundle validate -o json
+Error: failed during request visitor: default auth: cannot configure default credentials, please check https://docs.databricks.com/en/dev-tools/auth.html#databricks-client-unified-authentication to configure credentials for your preferred authentication method. Config: profile=other, databricks_cli_path=[CLI]. Env: DATABRICKS_CLI_PATH
+
+
+Exit code: 1
+{
+  "host": null,
+  "profile": "other"
+}

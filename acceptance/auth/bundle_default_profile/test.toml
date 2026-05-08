@@ -2,6 +2,7 @@ Ignore = [
     "home",
     ".databricks",
     "bundle-with-host",
+    "bundle-with-profile",
 ]
 
 # Negative case: -p other tries to reach a non-existing host. Redact the

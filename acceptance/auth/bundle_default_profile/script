@@ -41,3 +41,18 @@ EOF
 
 title "Bundle with workspace.host: default_profile is NOT applied\n"
 (cd ./bundle-with-host && trace errcode $CLI bundle validate -o json | jq '{host: .workspace.host, profile: .workspace.profile}')
+
+# Switch to a bundle that pins workspace.profile but no host. The pinned
+# profile must win over default_profile — configureProfile's guard skips
+# default_profile when workspace.profile is already set.
+mkdir -p ./bundle-with-profile
+cat > ./bundle-with-profile/databricks.yml <<EOF
+bundle:
+  name: bundle-with-profile
+
+workspace:
+  profile: other
+EOF
+
+title "Bundle with workspace.profile: pinned profile wins over default_profile\n"
+(cd ./bundle-with-profile && trace errcode $CLI bundle validate -o json | jq '{host: .workspace.host, profile: .workspace.profile}')
