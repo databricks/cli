@@ -294,6 +294,35 @@ func TestBundleConfigureWithDefaultProfile_EnvVarOverrides(t *testing.T) {
 	assert.Equal(t, "PROFILE-2", cmdctx.ConfigUsed(cmd.Context()).Profile)
 }
 
+func TestBundleConfigureWithDefaultProfile_BundleProfileWins(t *testing.T) {
+	testutil.CleanupEnvironment(t)
+	// The bundle pins workspace.profile: PROFILE-2 but no host. cfg has
+	// default_profile = PROFILE-1. The bundle's pinned profile must win —
+	// configureProfile's guard skips default_profile when workspace.profile
+	// is already set. Inline the bundle write because setupWithProfile would
+	// overwrite the cfg fixture.
+	setupDatabricksCfgWithDefault(t, "PROFILE-1")
+
+	rootPath := t.TempDir()
+	t.Chdir(rootPath)
+
+	contents := `workspace:
+  profile: "PROFILE-2"
+`
+	err := os.WriteFile(filepath.Join(rootPath, "databricks.yml"), []byte(contents), 0o644)
+	require.NoError(t, err)
+
+	cmd := emptyCommand(t)
+	ctx := logdiag.InitContext(cmd.Context())
+	logdiag.SetCollect(ctx, true)
+	cmd.SetContext(ctx)
+	_ = MustConfigureBundle(cmd)
+	diags := logdiag.FlushCollected(ctx)
+	require.Empty(t, diags)
+	assert.Equal(t, "https://b.test", cmdctx.ConfigUsed(cmd.Context()).Host)
+	assert.Equal(t, "PROFILE-2", cmdctx.ConfigUsed(cmd.Context()).Profile)
+}
+
 func TestBundleConfigureWithDefaultProfile_BundleHostWins(t *testing.T) {
 	testutil.CleanupEnvironment(t)
 	// PROFILE-1 points at https://a.test, but the bundle pins https://b.test.
