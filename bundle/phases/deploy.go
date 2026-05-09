@@ -12,6 +12,7 @@ import (
 	"github.com/databricks/cli/bundle/deploy/files"
 	"github.com/databricks/cli/bundle/deploy/lock"
 	"github.com/databricks/cli/bundle/deploy/metadata"
+	"github.com/databricks/cli/bundle/deploy/pipelineenv"
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct"
@@ -180,6 +181,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		return
 	}
 
+	bundle.ApplyContext(ctx, b, pipelineenv.ApplyEnvironment())
 	bundle.ApplyContext(ctx, b, scripts.Execute(config.ScriptPostDeploy))
 }
 
