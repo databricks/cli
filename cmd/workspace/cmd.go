@@ -11,6 +11,7 @@ import (
 	apps "github.com/databricks/cli/cmd/workspace/apps"
 	apps_settings "github.com/databricks/cli/cmd/workspace/apps-settings"
 	artifact_allowlists "github.com/databricks/cli/cmd/workspace/artifact-allowlists"
+	bundle "github.com/databricks/cli/cmd/workspace/bundle"
 	catalogs "github.com/databricks/cli/cmd/workspace/catalogs"
 	clean_room_asset_revisions "github.com/databricks/cli/cmd/workspace/clean-room-asset-revisions"
 	clean_room_assets "github.com/databricks/cli/cmd/workspace/clean-room-assets"
@@ -139,6 +140,7 @@ func All() []*cobra.Command {
 	out = append(out, apps.New())
 	out = append(out, apps_settings.New())
 	out = append(out, artifact_allowlists.New())
+	out = append(out, bundle.New())
 	out = append(out, catalogs.New())
 	out = append(out, clean_room_asset_revisions.New())
 	out = append(out, clean_room_assets.New())
