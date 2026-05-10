@@ -170,11 +170,6 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 			logdiag.LogError(ctx, err)
 			return
 		}
-		defer func() {
-			if err := b.DeploymentBundle.StateDB.Finalize(ctx); err != nil {
-				logdiag.LogError(ctx, err)
-			}
-		}()
 	}
 
 	if planFromFile {
