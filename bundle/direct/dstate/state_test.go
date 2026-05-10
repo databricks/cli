@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestOpenCloseRoundTrip(t *testing.T) {
+func TestOpenSaveFinalizeRoundTrip(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "state.json")
 
 	var db DeploymentState
@@ -26,7 +26,7 @@ func TestOpenCloseRoundTrip(t *testing.T) {
 	require.NoError(t, db2.Finalize(t.Context()))
 }
 
-func TestCloseWithNoEntriesDoesNotWriteStateFile(t *testing.T) {
+func TestFinalizeWithNoEntriesDoesNotWriteStateFile(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "state.json")
 
 	var db DeploymentState
