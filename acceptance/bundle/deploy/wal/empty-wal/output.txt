@@ -12,7 +12,7 @@ Deployment complete!
 === Checking WAL file after deploy ===
 Empty WAL deleted (expected)
 === Corrupted WAL file ===
-Corrupted WAL file missing (unexpected)
+Corrupted WAL file missing (expected)
 === State file content ===
 {
   "lineage": "[UUID]",

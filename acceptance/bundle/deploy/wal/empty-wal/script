@@ -21,7 +21,7 @@ echo "=== Corrupted WAL file ==="
 if [ -f ".databricks/bundle/default/resources.json.wal.corrupted" ]; then
     ls -la .databricks/bundle/default/resources.json.wal.corrupted
 else
-    echo "Corrupted WAL file missing (unexpected)"
+    echo "Corrupted WAL file missing (expected)"
 fi
 
 echo "=== State file content ==="

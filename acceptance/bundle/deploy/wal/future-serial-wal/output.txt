@@ -9,4 +9,4 @@
 Error: reading state from [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: WAL recovery failed: WAL serial (5) is ahead of expected (3), state may be corrupted
 
 
-Exit code: [KILLED]
+Exit code: 1

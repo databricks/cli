@@ -9,4 +9,4 @@
 Error: reading state from [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: WAL recovery failed: WAL lineage (wal-lineage-bbb) does not match state lineage (state-lineage-aaa)
 
 
-Exit code: [KILLED]
+Exit code: 1
