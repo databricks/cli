@@ -81,6 +81,13 @@ func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, e
 		bundle.ApplyContext(ctx, b, terraform.Apply())
 	}
 
+	// Flush WAL to local state file before deleting remote files.
+	if engine.IsDirect() {
+		if err := b.DeploymentBundle.StateDB.Finalize(ctx); err != nil {
+			logdiag.LogError(ctx, err)
+		}
+	}
+
 	if logdiag.HasError(ctx) {
 		return
 	}
@@ -168,11 +175,6 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 				logdiag.LogError(ctx, err)
 				return
 			}
-			defer func() {
-				if err := b.DeploymentBundle.StateDB.Finalize(ctx); err != nil {
-					logdiag.LogError(ctx, err)
-				}
-			}()
 		}
 		destroyCore(ctx, b, plan, engine)
 	} else {
