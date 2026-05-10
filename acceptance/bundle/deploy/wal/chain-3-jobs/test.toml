@@ -1,9 +1,9 @@
-# Linear chain: job_01 -> job_02 -> ... -> job_10
-# Let first 9 jobs/create succeed, then kill on the 10th
+# Linear chain: job_01 -> job_02 -> job_03
+# Let first 2 jobs/create succeed, then kill on the 3rd
 
 [[Server]]
 Pattern = "POST /api/2.2/jobs/create"
-KillCallerOffset = 9
+KillCallerOffset = 2
 KillCaller = 1
 Response.Body = '{"job_id": 1001}'
 
