@@ -17,8 +17,8 @@ restore the defined STs and MVs through full refresh. Note that recreation is ne
 properties such as the 'catalog' or 'storage' are changed:
   recreate resources.pipelines.foo
 Error: the deployment requires destructive actions, but the current console does not support prompting.
-To proceed, use --auto-approve after reviewing the plan above. Deleted schemas, pipelines,
-and volumes may result in permanent data loss.
+To proceed, use --auto-approve after reviewing the plan above.
+Deleting schemas, pipelines, or volumes may cause permanent data loss.
 
 
 >>> [CLI] bundle deploy --auto-approve

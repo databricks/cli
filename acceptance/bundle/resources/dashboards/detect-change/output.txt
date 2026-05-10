@@ -61,7 +61,7 @@ Make sure that the local dashboard definition matches what you intend to deploy
 before proceeding with the deployment.
 
 To overwrite the remote changes with your local version, use --force.
-The remote modifications will be permanently lost.
+The remote modifications will be lost.
 
 update dashboards.file_reference
 
@@ -79,7 +79,7 @@ Make sure that the local dashboard definition matches what you intend to deploy
 before proceeding with the deployment.
 
 To overwrite the remote changes with your local version, use --force.
-The remote modifications will be permanently lost.
+The remote modifications will be lost.
 
 
 >>> errcode [CLI] bundle deploy
@@ -94,7 +94,7 @@ Make sure that the local dashboard definition matches what you intend to deploy
 before proceeding with the deployment.
 
 To overwrite the remote changes with your local version, use --force.
-The remote modifications will be permanently lost.
+The remote modifications will be lost.
 
 
 Exit code: 1

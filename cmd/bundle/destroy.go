@@ -49,11 +49,10 @@ Typical use cases:
 func CommandBundleDestroy(cmd *cobra.Command, args []string, autoApprove, forceDestroy bool) error {
 	// We require auto-approve for non-interactive terminals since prompts are not possible.
 	if !cmdio.IsPromptSupported(cmd.Context()) && !autoApprove {
-		return fmt.Errorf("this will permanently destroy all resources and data in the bundle target.\n"+
-			"This includes schemas (with underlying data), pipelines (with streaming tables),\n"+
+		return fmt.Errorf("this command will permanently destroy all resources and data in the bundle target,\n"+
+			"including schemas (with underlying data), pipelines (with streaming tables),\n"+
 			"managed volume files, and all workspace files in the deployment directory.\n"+
-			"To proceed without confirmation, use --auto-approve. This will permanently delete all\n"+
-			"the above resources and cannot be undone.%s",
+			"To proceed, use --auto-approve.%s",
 			agent.AgentNotice())
 	}
 
