@@ -13,4 +13,4 @@ WAL exists (expected)
 === State file after crash (should be empty) ===
 cat: .databricks/bundle/default/resources.json: No such file or directory
 
-Exit code: [KILLED]
+Exit code: 1

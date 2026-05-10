@@ -22,6 +22,13 @@ Exit code:"""
 Old = 'Exit code: 137'
 New = 'Exit code: [KILLED]'
 
+# On Linux, a KillCaller kill may surface as exit code 1 rather than 137.
+# Only normalise exit code 1 when it directly follows [PROCESS_KILLED] to
+# avoid masking genuine error exits (lineage-mismatch, future-serial-wal).
+[[Repls]]
+Old = '(\[PROCESS_KILLED\]\n\nExit code: )1'
+New = '${1}[KILLED]'
+
 # On Windows, no bash "Killed" message appears when CLI has produced output before termination.
 # Insert [PROCESS_KILLED] between last output line and exit code for consistency.
 [[Repls]]
