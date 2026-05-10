@@ -39,15 +39,13 @@ func (a *applyEnv) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics
 		return nil
 	}
 
-	newHash, err := pyprojectHash(b)
+	newHash, err := envInputHash(b)
 	if err != nil {
-		log.Debugf(ctx, "pipelineenv: skipping; could not hash pyproject.toml: %v", err)
+		log.Debugf(ctx, "pipelineenv: skipping; could not hash env inputs: %v", err)
 		return nil
 	}
 	prevHash := readPrevHash(ctx, b)
-	hashChanged := newHash != "" && newHash != prevHash
-
-	if !hashChanged && !hasWheelArtifact(b.Config.Artifacts) {
+	if newHash == prevHash {
 		return nil
 	}
 
@@ -78,7 +76,7 @@ func (a *applyEnv) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics
 
 	// Persist the hash only if every call succeeded (or soft-succeeded), so
 	// transient failures retry on the next deploy.
-	if allOK && hashChanged {
+	if allOK {
 		if err := writePrevHash(ctx, b, newHash); err != nil {
 			log.Debugf(ctx, "pipelineenv: failed to persist hash: %v", err)
 		}
@@ -109,31 +107,51 @@ func pipelinesNeedingEnvApply(b *bundle.Bundle) []*resources.Pipeline {
 	return out
 }
 
-func hasWheelArtifact(artifacts config.Artifacts) bool {
-	for _, art := range artifacts {
-		if art != nil && art.Type == config.ArtifactPythonWheel {
-			return true
-		}
-	}
-	return false
-}
-
-// pyprojectHash returns the sha256 of the bundle's pyproject.toml, or "" if
-// the file doesn't exist (bundles without a Python project are valid).
-func pyprojectHash(b *bundle.Bundle) (string, error) {
-	f, err := os.Open(filepath.Join(b.BundleRootPath, "pyproject.toml"))
-	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			return "", nil
-		}
-		return "", err
-	}
-	defer f.Close()
+// envInputHash returns a sha256 of every file that affects the pipeline's
+// installed Python environment: pyproject.toml at the bundle root plus the
+// pre-patchwheel content of each whl artifact. Patched wheels are skipped
+// because patchwheel embeds an mtime suffix that changes on every build.
+func envInputHash(b *bundle.Bundle) (string, error) {
 	h := sha256.New()
-	if _, err := io.Copy(h, f); err != nil {
+	if err := hashFileInto(h, filepath.Join(b.BundleRootPath, "pyproject.toml"), "pyproject.toml"); err != nil {
 		return "", err
+	}
+	keys := make([]string, 0, len(b.Config.Artifacts))
+	for k := range b.Config.Artifacts {
+		keys = append(keys, k)
+	}
+	slices.Sort(keys)
+	for _, k := range keys {
+		art := b.Config.Artifacts[k]
+		if art == nil || art.Type != config.ArtifactPythonWheel {
+			continue
+		}
+		for _, f := range art.Files {
+			if err := hashFileInto(h, f.Source, "wheel:"+filepath.Base(f.Source)); err != nil {
+				return "", err
+			}
+		}
 	}
 	return hex.EncodeToString(h.Sum(nil)), nil
+}
+
+func hashFileInto(h io.Writer, path, label string) error {
+	if path == "" {
+		return nil
+	}
+	f, err := os.Open(path)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return nil
+		}
+		return err
+	}
+	defer f.Close()
+	if _, err := io.WriteString(h, label+"\n"); err != nil {
+		return err
+	}
+	_, err = io.Copy(h, f)
+	return err
 }
 
 func readPrevHash(ctx context.Context, b *bundle.Bundle) string {

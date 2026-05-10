@@ -15,34 +15,14 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestHasWheelArtifact(t *testing.T) {
-	for _, tc := range []struct {
-		name      string
-		artifacts config.Artifacts
-		want      bool
-	}{
-		{name: "nil"},
-		{name: "empty", artifacts: config.Artifacts{}},
-		{name: "whl", artifacts: config.Artifacts{"a": {Type: config.ArtifactPythonWheel}}, want: true},
-		{name: "jar", artifacts: config.Artifacts{"a": {Type: config.ArtifactJar}}},
-		{name: "mixed", artifacts: config.Artifacts{"j": {Type: config.ArtifactJar}, "w": {Type: config.ArtifactPythonWheel}}, want: true},
-		{name: "nil entry", artifacts: config.Artifacts{"a": nil}},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			assert.Equal(t, tc.want, hasWheelArtifact(tc.artifacts))
-		})
-	}
-}
-
-func TestPyprojectHashRoundTrip(t *testing.T) {
+func TestEnvInputHashPyproject(t *testing.T) {
 	ctx := t.Context()
 	root := t.TempDir()
 	pyproject := filepath.Join(root, "pyproject.toml")
 	require.NoError(t, os.WriteFile(pyproject, []byte("[project]\nname='x'\n"), 0o600))
-
 	b := newBundle(root)
 
-	h1, err := pyprojectHash(b)
+	h1, err := envInputHash(b)
 	require.NoError(t, err)
 	assert.NotEmpty(t, h1)
 
@@ -50,15 +30,51 @@ func TestPyprojectHashRoundTrip(t *testing.T) {
 	assert.Equal(t, h1, readPrevHash(ctx, b))
 
 	require.NoError(t, os.WriteFile(pyproject, []byte("[project]\nname='y'\n"), 0o600))
-	h2, err := pyprojectHash(b)
+	h2, err := envInputHash(b)
 	require.NoError(t, err)
 	assert.NotEqual(t, h1, h2)
 }
 
-func TestPyprojectHashMissingFile(t *testing.T) {
-	h, err := pyprojectHash(newBundle(t.TempDir()))
+func TestEnvInputHashWheelContentChange(t *testing.T) {
+	root := t.TempDir()
+	wheelPath := filepath.Join(root, "envtest-0.0.1-py3-none-any.whl")
+	require.NoError(t, os.WriteFile(wheelPath, []byte("wheel-bytes-v1"), 0o600))
+
+	b := newBundle(root)
+	b.Config.Artifacts = config.Artifacts{
+		"w": {Type: config.ArtifactPythonWheel, Files: []config.ArtifactFile{{Source: wheelPath}}},
+	}
+
+	h1, err := envInputHash(b)
 	require.NoError(t, err)
-	assert.Empty(t, h)
+
+	require.NoError(t, os.WriteFile(wheelPath, []byte("wheel-bytes-v2"), 0o600))
+	h2, err := envInputHash(b)
+	require.NoError(t, err)
+	assert.NotEqual(t, h1, h2)
+}
+
+func TestEnvInputHashIgnoresJar(t *testing.T) {
+	root := t.TempDir()
+	jarPath := filepath.Join(root, "x.jar")
+	require.NoError(t, os.WriteFile(jarPath, []byte("jar-bytes"), 0o600))
+
+	b := newBundle(root)
+	h1, err := envInputHash(b)
+	require.NoError(t, err)
+
+	b.Config.Artifacts = config.Artifacts{
+		"j": {Type: config.ArtifactJar, Files: []config.ArtifactFile{{Source: jarPath}}},
+	}
+	h2, err := envInputHash(b)
+	require.NoError(t, err)
+	assert.Equal(t, h1, h2)
+}
+
+func TestEnvInputHashEmpty(t *testing.T) {
+	h, err := envInputHash(newBundle(t.TempDir()))
+	require.NoError(t, err)
+	assert.NotEmpty(t, h) // sha256 of empty input is still defined
 }
 
 func newBundle(root string) *bundle.Bundle {
