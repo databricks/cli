@@ -10,7 +10,7 @@ import (
 )
 
 // Glyphs drawn into the prompt's rendered output. cursorBlock stands in for
-// the (hidden) OS cursor — promptui's defaultCursor used the same character.
+// the (hidden) OS cursor at the current edit position.
 const (
 	cursorBlock  = "█"
 	glyphValid   = "✔"
@@ -91,8 +91,8 @@ func (m *promptModel) value() string {
 	return string(m.runes)
 }
 
-// glyph returns the leading status indicator with promptui's color treatment:
-// bold-green ✔ when valid, bold-red ✗ when validate rejects the buffer.
+// glyph returns the leading status indicator: bold-green ✔ when valid,
+// bold-red ✗ when validate rejects the buffer.
 func (m *promptModel) glyph() string {
 	if m.validate != nil && m.validate(m.value()) != nil {
 		return ansiBold + ansiRed + glyphInvalid + ansiReset
@@ -114,8 +114,7 @@ func (m *promptModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Quit
 
 	case tea.KeyEnter, tea.KeyCtrlJ:
-		// Enter sends CR, Ctrl+J sends LF. chzyer/readline (under promptui)
-		// maps both to CharEnter, so we treat them identically.
+		// Enter sends CR, Ctrl+J sends LF; treat both as submit.
 		if m.validate != nil {
 			if err := m.validate(m.value()); err != nil {
 				m.submitErr = err
@@ -126,33 +125,25 @@ func (m *promptModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Quit
 
 	case tea.KeyDelete, tea.KeyCtrlD:
-		// chzyer/readline (under promptui) maps Delete and Ctrl+D to the same
-		// rune and treats an empty buffer as EOF; promptui's listener resets
-		// the readline buffer after every keystroke, so both keys always
-		// land on the EOF path. We pin that surprising behavior here.
+		// Delete and Ctrl+D both exit the prompt with EOF, even on a
+		// non-empty buffer.
 		m.deleted = true
 		return m, tea.Quit
 
 	case tea.KeyLeft, tea.KeyCtrlB:
-		// Ctrl+B is readline's CharBackward; promptui's Cursor.Listen treats
-		// it the same as the left arrow.
 		if m.cursor > 0 {
 			m.cursor--
 		}
 
 	case tea.KeyRight, tea.KeyCtrlF:
-		// Ctrl+F is readline's CharForward; promptui maps it to right arrow.
 		if m.cursor < len(m.runes) {
 			m.cursor++
 		}
 
 	case tea.KeyBackspace, tea.KeyCtrlH:
-		// Backspace sends DEL, Ctrl+H sends BS. chzyer/readline maps both
-		// to CharBackspace, so we treat them identically.
-		//
-		// Alt+Backspace is the readline word-delete combo; promptui's
-		// Cursor.Listen leaves it as a no-op, so we drop it here too rather
-		// than treating it as a plain backspace.
+		// Backspace sends DEL, Ctrl+H sends BS; treat both as backspace.
+		// Alt+Backspace (the word-delete combo) is dropped rather than
+		// falling through as a plain backspace.
 		if key.Alt {
 			return m, nil
 		}
@@ -164,9 +155,8 @@ func (m *promptModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.submitErr = nil
 
 	case tea.KeyRunes, tea.KeySpace:
-		// Alt+<rune> (e.g. Alt+f, Alt+b) are readline word-nav combos that
-		// promptui's Cursor.Listen drops on the floor. Match that behavior
-		// instead of inserting the rune literally.
+		// Alt+<rune> (e.g. Alt+f, Alt+b) are word-nav combos we do not
+		// support; drop them rather than inserting the rune literally.
 		if key.Alt {
 			return m, nil
 		}
@@ -182,8 +172,7 @@ func (m *promptModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	default:
 		// All other key types are intentionally inert (Home/End,
-		// Ctrl+W/Ctrl+U, Ctrl+P/N, function keys, etc.) — promptui's
-		// Cursor.Listen drops them and reverts readline's buffer.
+		// Ctrl+W/Ctrl+U, Ctrl+P/N, function keys, etc.).
 	}
 
 	return m, nil
@@ -204,8 +193,8 @@ func (m *promptModel) View() string {
 		}
 	}
 
-	// Post-submit frame matches promptui's Success template: faint label,
-	// faint colon, then the entered value plain. No cursor block.
+	// Post-submit frame: faint label, faint colon, then the entered value
+	// plain. No cursor block.
 	//
 	// The trailing "\n" is load-bearing. On tea.Quit, bubbletea's renderer
 	// flushes one last frame (so this View runs with submitted=true), then
@@ -231,8 +220,8 @@ func (m *promptModel) View() string {
 	}
 
 	if m.submitErr != nil {
-		// promptui's ">> <error>" line in red, captured at the failed Enter
-		// and cleared on the next edit.
+		// Validation error line captured at the failed Enter; cleared on
+		// the next edit.
 		line += "\n" + ansiRed + ">> " + m.submitErr.Error() + ansiReset
 	}
 	return line

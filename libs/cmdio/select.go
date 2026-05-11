@@ -20,20 +20,19 @@ const (
 	gutterDown = "↓ "
 	gutter     = "  "
 
-	// Default templates match promptui's Select defaults: a blue "?" before
-	// the label, a bold "▸" + underlined item for the active row, "  " +
-	// item for inactive rows, and a green "✔" + faint item for the
-	// post-submit summary. They render reasonably for any item type whose
-	// fmt.Stringer / printf'd form is a single line.
+	// Default templates: blue "?" before the label, bold "▸" + underlined
+	// item for the active row, two-space prefix + item for inactive rows,
+	// green "✔" + faint item for the post-submit summary. They render
+	// reasonably for any item type whose fmt.Stringer / printf'd form is
+	// a single line.
 	defaultLabelTemplate    = `{{ "?" | blue }} {{.}}: `
 	defaultActiveTemplate   = `{{ "▸" | bold }} {{ . | underline }}`
 	defaultInactiveTemplate = `  {{.}}`
 	defaultSelectedTemplate = `{{ "✔" | green }} {{ . | faint }}`
 
-	// helpTextBase is shown above the label when search isn't active and
-	// HideHelp is unset; promptui renders its Help template entirely faint.
-	// When a Searcher is configured the " and / toggles search" suffix is
-	// appended to advertise the toggle.
+	// helpTextBase is shown faint above the label when search isn't active
+	// and HideHelp is unset. When a Searcher is configured the trailing
+	// suffix advertises the "/" toggle.
 	helpTextBase   = "Use the arrow keys to navigate: ↓ ↑ → ←"
 	helpTextSearch = helpTextBase + "  and / toggles search"
 )
@@ -249,30 +248,21 @@ func (m *selectModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Quit
 
 	case tea.KeyUp, tea.KeyCtrlP:
-		// Ctrl+P is readline's CharPrev; promptui's select listener handles
-		// it identically to the up arrow.
 		m.cursorUp()
 
 	case tea.KeyDown, tea.KeyCtrlN:
-		// Ctrl+N is readline's CharNext; same as the down arrow.
 		m.cursorDown()
 
 	case tea.KeyLeft, tea.KeyCtrlB:
-		// Left arrow / Ctrl+B page up; promptui binds both to its
-		// list.PageUp via KeyBackward.
 		m.pageUp()
 
 	case tea.KeyRight, tea.KeyCtrlF:
-		// Right arrow / Ctrl+F page down; both map to KeyForward in
-		// promptui and drive list.PageDown.
 		m.pageDown()
 
 	case tea.KeyBackspace, tea.KeyCtrlH:
-		// Backspace sends DEL, Ctrl+H sends BS; chzyer/readline treats both
-		// as CharBackspace inside the search buffer.
-		//
-		// Alt+Backspace is readline's word-delete combo; promptui drops it,
-		// so we drop it here too instead of deleting one rune.
+		// Backspace sends DEL, Ctrl+H sends BS; treat both as filter
+		// backspace. Alt+Backspace (word-delete) is dropped rather than
+		// deleting a single rune.
 		if key.Alt {
 			return m, nil
 		}
@@ -285,8 +275,8 @@ func (m *selectModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.recomputeMatches()
 
 	case tea.KeyTab, tea.KeyRunes, tea.KeySpace:
-		// Alt+<rune> are readline word-nav combos promptui ignores; don't
-		// let them sneak in as filter input.
+		// Alt+<rune> are word-nav combos; don't let them sneak in as
+		// filter input.
 		if key.Alt {
 			return m, nil
 		}
@@ -321,11 +311,10 @@ func (m *selectModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case tea.KeySpace:
 			m.filter += " "
 		default:
-			// "/" toggles search off (matching promptui): clear the filter
-			// and exit search mode. Any other runes in this KeyMsg are
-			// dropped — promptui dispatches per-rune so this only matters
-			// when bubbletea batches keystrokes, in which case the user
-			// almost certainly meant the toggle.
+			// "/" toggles search off: clear the filter and exit search
+			// mode. Any other runes batched in the same KeyMsg are dropped
+			// — when the user types "/" the surrounding characters almost
+			// certainly belong to a toggle, not the filter.
 			if slices.Contains(key.Runes, '/') {
 				m.filter = ""
 				m.searchActive = false
@@ -348,10 +337,9 @@ func (m *selectModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *selectModel) View() string {
 	var b strings.Builder
 
-	// After submission render only the Selected template — promptui replaced
-	// the prompt UI with a single-line confirmation, and the post-quit frame
-	// stays on screen as the user-visible result. HideSelected callers leave
-	// the screen blank.
+	// After submission render only the Selected template; the post-quit
+	// frame stays on screen as the user-visible result. HideSelected
+	// callers leave the screen blank.
 	//
 	// The trailing "\n" is load-bearing for the same reason as in
 	// promptModel.View: bubbletea's renderer wipes the cursor's row on
@@ -452,7 +440,7 @@ func (m *selectModel) cursorDown() {
 }
 
 // pageUp shifts the viewport up by one page, then drops the cursor onto the
-// new top if it was below it. Mirrors promptui's list.PageUp.
+// new top if it was below it.
 func (m *selectModel) pageUp() {
 	m.viewportTop = max(m.viewportTop-viewportSize, 0)
 	if m.viewportTop < m.cursor {
@@ -462,7 +450,7 @@ func (m *selectModel) pageUp() {
 
 // pageDown shifts the viewport down by one page, clamping so the last full
 // page stays visible, then bumps the cursor up to the new top if it lagged
-// behind. Mirrors promptui's list.PageDown.
+// behind.
 func (m *selectModel) pageDown() {
 	max := len(m.matches) - viewportSize
 	switch newTop := m.viewportTop + viewportSize; {
