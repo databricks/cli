@@ -62,6 +62,8 @@ const (
 	KeyCtrlB     = "\x02"
 	KeyCtrlE     = "\x05"
 	KeyCtrlF     = "\x06"
+	KeyCtrlH     = "\x08"
+	KeyCtrlJ     = "\x0a"
 	KeyCtrlN     = "\x0e"
 	KeyCtrlP     = "\x10"
 	KeyCtrlU     = "\x15"
