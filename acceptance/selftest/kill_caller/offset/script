@@ -1,3 +1,5 @@
+kill_after.py "GET /api/2.0/preview/scim/v2/Me" 2 2
+
 # First 2 attempts should succeed (offset period)
 trace $CLI current-user me
 echo "Attempt 1 done - success (offset)"

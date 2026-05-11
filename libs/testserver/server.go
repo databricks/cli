@@ -46,6 +46,8 @@ type Server struct {
 	fakeOidc       *FakeOidc
 	mu             sync.Mutex
 
+	kills *killRules
+
 	RequestCallback  func(request *Request)
 	ResponseCallback func(request *Request, response *EncodedResponse)
 }
@@ -58,6 +60,7 @@ type Request struct {
 	Vars      map[string]string
 	Workspace *FakeWorkspace
 	Context   context.Context
+	Token     string
 }
 
 type Response struct {
@@ -200,7 +203,19 @@ func getHeaders(value []byte) http.Header {
 
 func New(t testutil.TestingT) *Server {
 	router := NewRouter()
-	server := httptest.NewServer(router)
+	kills := newKillRules()
+
+	// Wrap the router so kill rules fire for ALL requests, including those with
+	// no registered handler that would otherwise bypass serve() entirely.
+	killMiddleware := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		token := getToken(r)
+		if kills.check(t, r.Method, r.URL.Path, token, r.Header) {
+			return
+		}
+		router.ServeHTTP(w, r)
+	})
+
+	server := httptest.NewServer(killMiddleware)
 	t.Cleanup(server.Close)
 
 	s := &Server{
@@ -209,6 +224,7 @@ func New(t testutil.TestingT) *Server {
 		t:              t,
 		fakeWorkspaces: map[string]*FakeWorkspace{},
 		fakeOidc:       &FakeOidc{url: server.URL},
+		kills:          kills,
 	}
 	router.Dispatch = s.serve
 
@@ -258,6 +274,9 @@ Response.Body = '<response body here>'
 	})
 	router.NotFound = notFoundFunc
 
+	// Register a test-only endpoint for setting up kill rules from scripts.
+	s.Handle("POST", "/__testserver/kill", killEndpointHandler(s.kills))
+
 	// Register a default handler for the SDK's host metadata discovery endpoint.
 	// The SDK resolves this during config initialization (as of v0.126.0) to
 	// determine workspace/account IDs, cloud, and OIDC endpoints. Without this
@@ -289,12 +308,15 @@ func (s *Server) getWorkspaceForToken(token string) *FakeWorkspace {
 }
 
 func (s *Server) serve(w http.ResponseWriter, r *http.Request, handler HandlerFunc, vars map[string]string) {
+	token := getToken(r)
+
 	// Each test uses unique DATABRICKS_TOKEN, we simulate each token having
 	// it's own fake fakeWorkspace to avoid interference between tests.
-	fakeWorkspace := s.getWorkspaceForToken(getToken(r))
+	fakeWorkspace := s.getWorkspaceForToken(token)
 
 	request := NewRequest(s.t, r, fakeWorkspace)
 	request.Vars = vars
+	request.Token = token
 
 	if s.RequestCallback != nil {
 		s.RequestCallback(&request)

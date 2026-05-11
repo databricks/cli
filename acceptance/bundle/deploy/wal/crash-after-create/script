@@ -1,3 +1,5 @@
+kill_after.py "GET /api/2.2/jobs/get" 0 1
+
 echo "=== First deploy (crashes after job_a create, before job_b) ==="
 trace errcode $CLI bundle deploy
 

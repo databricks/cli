@@ -1,3 +1,5 @@
+kill_after.py "POST /api/2.2/jobs/create" 2 1
+
 echo "=== First deploy (crashes on job_03) ==="
 trace errcode $CLI bundle deploy
 
