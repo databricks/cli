@@ -12,11 +12,7 @@ echo "=== Final state (should have recovered entries) ==="
 cat .databricks/bundle/default/resources.json | jq -S '{serial: .serial, state_keys: (.state | keys | sort)}'
 
 echo "=== Corrupted WAL entries file ==="
-if [ -f ".databricks/bundle/default/resources.json.wal.corrupted" ]; then
-    cat .databricks/bundle/default/resources.json.wal.corrupted
-else
-    echo "Missing corrupted WAL entries file (unexpected)"
-fi
+cat .databricks/bundle/default/resources.json.wal.corrupted
 
 echo "=== WAL after successful deploy ==="
 if [ -f ".databricks/bundle/default/resources.json.wal" ]; then
