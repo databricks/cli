@@ -585,8 +585,18 @@ func spawnSSHClient(ctx context.Context, userName, privateKeyPath string, server
 	if opts.UserKnownHostsFile != "" {
 		sshArgs = append(sshArgs, "-o", "UserKnownHostsFile="+opts.UserKnownHostsFile)
 	}
+	// When no remote command is specified, explicitly start bash as a login shell.
+	// The default login shell on Databricks compute images is often /bin/sh.
+	// The -t flag forces PTY allocation, which is required when specifying a remote command.
+	if len(opts.AdditionalArgs) == 0 {
+		sshArgs = append(sshArgs, "-t")
+	}
 	sshArgs = append(sshArgs, hostName)
-	sshArgs = append(sshArgs, opts.AdditionalArgs...)
+	if len(opts.AdditionalArgs) == 0 {
+		sshArgs = append(sshArgs, "/bin/bash", "-l")
+	} else {
+		sshArgs = append(sshArgs, opts.AdditionalArgs...)
+	}
 
 	log.Debugf(ctx, "Launching SSH client: ssh %s", strings.Join(sshArgs, " "))
 	sshCmd := exec.CommandContext(ctx, "ssh", sshArgs...)
