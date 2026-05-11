@@ -75,7 +75,7 @@ func TestParseResourcesStateWithExistingStateFile(t *testing.T) {
 				  "storage": "dbfs:/123456",
 				  "target": "test_dev",
 				  "timeouts": null,
-				  "url": "https://test.com"
+				  "url": "https://test.test"
 				},
 				"sensitive_attributes": []
 			  }

@@ -146,7 +146,11 @@ a new profile is created.
 		ctx := cmd.Context()
 		profileName := cmd.Flag("profile").Value.String()
 
-		tokenCache, mode, err := storage.ResolveCache(ctx, "")
+		// Resolve the cache before the browser step so a missing/locked keyring
+		// surfaces here rather than after the user completes OAuth. When secure
+		// is selected but the keyring is unreachable, this silently falls back
+		// to plaintext and persists auth_storage = plaintext for next time.
+		tokenCache, mode, err := storage.ResolveCacheForLogin(ctx, "")
 		if err != nil {
 			return err
 		}
@@ -173,6 +177,43 @@ a new profile is created.
 			} else {
 				authArguments.Host = resolvedHost
 				args = nil
+			}
+		}
+
+		// When interactive and nothing was specified, show a picker that lets
+		// the user re-login to an existing profile, create a new one, or enter
+		// a host URL. With no profiles configured the picker still shows the
+		// two action entries so the user can choose between web-based discovery
+		// (Create a new profile) and a manual host URL.
+		if profileName == "" && authArguments.Host == "" && len(args) == 0 && cmdio.IsPromptSupported(ctx) {
+			allProfiles, err := profile.DefaultProfiler.LoadProfiles(ctx, profile.MatchAllProfiles)
+			if err != nil && !errors.Is(err, profile.ErrNoConfiguration) {
+				return err
+			}
+			label := "Select a profile"
+			if len(allProfiles) == 0 {
+				label = "How would you like to log in?"
+			}
+			currentDefault, _ := databrickscfg.GetDefaultProfile(ctx, env.Get(ctx, "DATABRICKS_CONFIG_FILE"))
+			result, selected, err := pickAuthProfile(ctx, allProfiles, profilePickerOptions{
+				Label:         label,
+				Default:       currentDefault,
+				IncludeExtras: true,
+			})
+			if err != nil {
+				return err
+			}
+			switch result {
+			case profilePickerProfile:
+				profileName = selected
+			case profilePickerEnterHost:
+				host, err := promptForHost(ctx)
+				if err != nil {
+					return err
+				}
+				authArguments.Host = host
+			case profilePickerCreateNew:
+				// Fall through to the profile name prompt below.
 			}
 		}
 

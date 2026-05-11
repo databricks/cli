@@ -13,7 +13,7 @@ func TestCommandWorkspaceClient(t *testing.T) {
 	ctx := t.Context()
 	client := &databricks.WorkspaceClient{
 		Config: &config.Config{
-			Host: "https://test.com",
+			Host: "https://test.test",
 		},
 	}
 
@@ -29,7 +29,7 @@ func TestCommandWorkspaceClient(t *testing.T) {
 	assert.Same(t, w, cmdctx.WorkspaceClient(ctx))
 
 	// The client should have the correct configuration.
-	assert.Equal(t, "https://test.com", cmdctx.WorkspaceClient(ctx).Config.Host)
+	assert.Equal(t, "https://test.test", cmdctx.WorkspaceClient(ctx).Config.Host)
 
 	// Second call should panic.
 	assert.Panics(t, func() {

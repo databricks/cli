@@ -35,6 +35,12 @@ func collectTargets(targets map[string]*config.Target) []targetInfo {
 	result := make([]targetInfo, 0, len(names))
 	for _, name := range names {
 		t := targets[name]
+		// YAML decoding can leave a nil entry in the map when a target is
+		// declared with a null value. Skip rather than dereference and panic.
+		if t == nil {
+			result = append(result, targetInfo{Name: name})
+			continue
+		}
 		info := targetInfo{
 			Name:    name,
 			Default: t.Default,

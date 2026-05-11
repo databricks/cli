@@ -96,18 +96,18 @@ func TestAuthArgumentsFromConfig(t *testing.T) {
 		{
 			name: "all fields",
 			cfg: &config.Config{
-				Host:         "https://myhost.com",
+				Host:         "https://myhost.test",
 				AccountID:    "acc-123",
 				WorkspaceID:  "ws-456",
 				Profile:      "my-profile",
-				DiscoveryURL: "https://myhost.com/oidc/accounts/acc-123/.well-known/oauth-authorization-server",
+				DiscoveryURL: "https://myhost.test/oidc/accounts/acc-123/.well-known/oauth-authorization-server",
 			},
 			want: AuthArguments{
-				Host:         "https://myhost.com",
+				Host:         "https://myhost.test",
 				AccountID:    "acc-123",
 				WorkspaceID:  "ws-456",
 				Profile:      "my-profile",
-				DiscoveryURL: "https://myhost.com/oidc/accounts/acc-123/.well-known/oauth-authorization-server",
+				DiscoveryURL: "https://myhost.test/oidc/accounts/acc-123/.well-known/oauth-authorization-server",
 			},
 		},
 	}

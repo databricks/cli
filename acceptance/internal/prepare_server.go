@@ -188,8 +188,8 @@ func startLocalServer(t *testing.T,
 	killCountersMu := &sync.Mutex{}
 
 	for ind := range stubs {
-		// We want later stubs takes precedence, because then leaf configs take precedence over parent directory configs
-		// In gorilla/mux earlier handlers take precedence, so we need to reverse the order
+		// Later stubs take precedence over earlier ones (leaf configs override parent configs).
+		// The first handler registered for a given pattern wins, so we reverse the order.
 		stub := stubs[len(stubs)-1-ind]
 		require.NotEmpty(t, stub.Pattern)
 		items := strings.Split(stub.Pattern, " ")
@@ -226,7 +226,8 @@ func startLocalServer(t *testing.T,
 		})
 	}
 
-	// The earliest handlers take precedence, add default handlers last
+	// The first handler registered for a given pattern wins, so default
+	// handlers registered last serve as fallbacks.
 	testserver.AddDefaultHandlers(s)
 	return s.URL
 }
