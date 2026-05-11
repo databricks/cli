@@ -65,12 +65,29 @@ func uploadReleases(ctx context.Context, workspaceFiler filer.Filer, getRelease 
 		// producing the filerRoot/remoteSubFolder/*archive-contents* structure, with 'databricks' binary inside.
 		err = workspaceFiler.Write(ctx, remoteArchivePath, releaseReader, filer.OverwriteIfExists, filer.CreateParentDirectories)
 		if err != nil {
+			if isStreamResetError(err) {
+				return fmt.Errorf("failed to upload file %s to workspace: %w\n\n"+
+					"The connection was closed before the upload finished. "+
+					"This is usually caused by a network intermediary (corporate egress proxy, VPN, or firewall/WAF) "+
+					"enforcing a request-body size limit on POSTs to *.cloud.databricks.com. "+
+					"Try running this command from a network without such restrictions.",
+					remoteArchivePath, err)
+			}
 			return fmt.Errorf("failed to upload file %s to workspace: %w", remoteArchivePath, err)
 		}
 		log.Infof(ctx, "Successfully uploaded %s to workspace", remoteBinaryPath)
 	}
 
 	return nil
+}
+
+// isStreamResetError reports whether err looks like an HTTP/2 stream reset from
+// the server, which typically means an edge proxy or the workspace-files import
+// endpoint rejected the request body (e.g. body-size limit). Matches both the
+// raw http2.StreamError.Error() format and wrapped variants.
+func isStreamResetError(err error) bool {
+	msg := err.Error()
+	return strings.Contains(msg, "stream error") && strings.Contains(msg, "stream ID")
 }
 
 func getReleaseName(architecture, version string) string {
