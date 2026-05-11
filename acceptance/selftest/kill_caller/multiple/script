@@ -1,3 +1,4 @@
+# Kill the CLI 3 times, then allow the 4th request to succeed
 kill_after.py "GET /api/2.0/preview/scim/v2/Me" 0 3
 
 # First 3 attempts should be killed

@@ -1,3 +1,4 @@
+# Kill the CLI when it calls /Me endpoint (once, then allow)
 kill_after.py "GET /api/2.0/preview/scim/v2/Me" 0 1
 trace errcode $CLI current-user me
 echo "Script continued after kill"

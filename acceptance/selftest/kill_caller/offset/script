@@ -1,3 +1,4 @@
+# Let first 2 requests pass, kill next 2, then allow rest
 kill_after.py "GET /api/2.0/preview/scim/v2/Me" 2 2
 
 # First 2 attempts should succeed (offset period)
