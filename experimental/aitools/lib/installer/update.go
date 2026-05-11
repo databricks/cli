@@ -81,7 +81,7 @@ func UpdateSkills(ctx context.Context, src ManifestSource, targetAgents []*agent
 		return nil, errors.New("no skills installed. Run 'databricks experimental aitools install' to install")
 	}
 
-	latestTag, err := GetSkillsRef(ctx)
+	latestTag, explicit, err := GetSkillsRef(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -91,7 +91,7 @@ func UpdateSkills(ctx context.Context, src ManifestSource, targetAgents []*agent
 		return &UpdateResult{Unchanged: slices.Sorted(maps.Keys(state.Skills))}, nil
 	}
 
-	manifest, latestTag, err := FetchSkillsManifestWithFallback(ctx, src, latestTag)
+	manifest, latestTag, err := FetchSkillsManifestWithFallback(ctx, src, latestTag, !explicit)
 	if err != nil {
 		if opts.Check {
 			log.Warnf(ctx, "Could not fetch manifest: %v", err)

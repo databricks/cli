@@ -45,7 +45,7 @@ func newVersionCmd() *cobra.Command {
 				return nil
 			}
 
-			latestRef, err := installer.GetSkillsRef(ctx)
+			latestRef, _, err := installer.GetSkillsRef(ctx)
 			if err != nil {
 				log.Debugf(ctx, "could not resolve skills version: %v", err)
 			}

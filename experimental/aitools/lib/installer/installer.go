@@ -33,17 +33,18 @@ const (
 // It is a package-level var so tests can replace it with a mock.
 var fetchFileFn = fetchSkillFile
 
-// GetSkillsRef returns the skills repo ref to use.
+// GetSkillsRef returns the skills repo ref to use and whether it was explicitly
+// set via DATABRICKS_SKILLS_REF (as opposed to auto-resolved from the manifest).
 // Resolution order: DATABRICKS_SKILLS_REF env var → compatibility manifest → error.
-func GetSkillsRef(ctx context.Context) (string, error) {
+func GetSkillsRef(ctx context.Context) (ref string, explicit bool, err error) {
 	if ref := env.Get(ctx, "DATABRICKS_SKILLS_REF"); ref != "" {
-		return ref, nil
+		return ref, true, nil
 	}
 	v, err := clicompat.ResolveAgentSkillsVersion(ctx)
 	if err != nil {
-		return "", fmt.Errorf("could not resolve skills version: %w", err)
+		return "", false, fmt.Errorf("could not resolve skills version: %w", err)
 	}
-	return "v" + v, nil
+	return "v" + v, false, nil
 }
 
 // Manifest describes the skills manifest fetched from the skills repo.
@@ -97,10 +98,10 @@ func fetchSkillFile(ctx context.Context, ref, skillName, filePath string) ([]byt
 // If the ref points to a non-existent tag (not-found error), it falls back to
 // the embedded manifest's skills version. Returns the manifest, the (possibly
 // updated) ref, and any error.
-func FetchSkillsManifestWithFallback(ctx context.Context, src ManifestSource, ref string) (*Manifest, string, error) {
+func FetchSkillsManifestWithFallback(ctx context.Context, src ManifestSource, ref string, allowFallback bool) (*Manifest, string, error) {
 	tag := strings.TrimPrefix(ref, "v")
 	manifest, err := src.FetchManifest(ctx, ref)
-	if err != nil && clicompat.IsNotFoundError(err) {
+	if err != nil && allowFallback && clicompat.IsNotFoundError(err) {
 		fallbackVersion, fbErr := clicompat.ResolveEmbeddedAgentSkillsVersion()
 		if fbErr == nil && fallbackVersion != "" && fallbackVersion != tag {
 			log.Warnf(ctx, "Skills version %s not found, falling back to embedded version %s", tag, fallbackVersion)
@@ -117,12 +118,12 @@ func FetchSkillsManifestWithFallback(ctx context.Context, src ManifestSource, re
 // This is the core installation function. Callers are responsible for agent detection,
 // prompting, and printing the "Installing..." header.
 func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgents []*agents.Agent, opts InstallOptions) error {
-	ref, err := GetSkillsRef(ctx)
+	ref, explicit, err := GetSkillsRef(ctx)
 	if err != nil {
 		return err
 	}
 	cmdio.LogString(ctx, "Using skills version "+strings.TrimPrefix(ref, "v"))
-	manifest, ref, err := FetchSkillsManifestWithFallback(ctx, src, ref)
+	manifest, ref, err := FetchSkillsManifestWithFallback(ctx, src, ref, !explicit)
 	if err != nil {
 		return err
 	}

@@ -753,8 +753,9 @@ func TestGetSkillsRefResolvesFromManifest(t *testing.T) {
 	manifest := `{"next":{"appkit":"0.24.0","skills":"0.1.5"},"0.300.0":{"appkit":"0.24.0","skills":"0.1.5"}}`
 	require.NoError(t, os.WriteFile(cachePath, []byte(manifest), 0o644))
 
-	ref, err := GetSkillsRef(t.Context())
+	ref, explicit, err := GetSkillsRef(t.Context())
 	require.NoError(t, err, "GetSkillsRef should succeed via cached manifest")
+	assert.False(t, explicit, "ref resolved from manifest should not be explicit")
 	assert.NotEmpty(t, ref)
 	assert.True(t, len(ref) > 1 && ref[0] == 'v', "ref should start with 'v', got %q", ref)
 }
