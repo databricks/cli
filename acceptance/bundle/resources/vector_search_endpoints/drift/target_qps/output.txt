@@ -1,13 +1,13 @@
 
 === Initial deployment
 >>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/drift-vs-endpoint-min-qps-[UNIQUE_NAME]/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/drift-vs-endpoint-target-qps-[UNIQUE_NAME]/default/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
 
-=== Simulate remote drift: change min_qps to 5 outside the bundle
->>> [CLI] vector-search-endpoints patch-endpoint vs-endpoint-[UNIQUE_NAME] --min-qps 5
+=== Simulate remote drift: change target_qps to 5 outside the bundle
+>>> [CLI] vector-search-endpoints patch-endpoint vs-endpoint-[UNIQUE_NAME] --target-qps 5
 {
   "creation_timestamp": [UNIX_TIME_MILLIS][0],
   "creator": "[USERNAME]",
@@ -20,7 +20,7 @@ Deployment complete!
   "last_updated_user": "[USERNAME]",
   "name": "vs-endpoint-[UNIQUE_NAME]",
   "scaling_info": {
-    "requested_min_qps": 5
+    "requested_target_qps": 5
   }
 }
 
@@ -30,9 +30,9 @@ update vector_search_endpoints.my_endpoint
 
 Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
 
-=== Deploy restores min_qps to 1
+=== Deploy restores target_qps to 1
 >>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/drift-vs-endpoint-min-qps-[UNIQUE_NAME]/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/drift-vs-endpoint-target-qps-[UNIQUE_NAME]/default/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
@@ -42,7 +42,7 @@ Deployment complete!
   "method": "PATCH",
   "path": "/api/2.0/vector-search/endpoints/vs-endpoint-[UNIQUE_NAME]",
   "body": {
-    "min_qps": 1
+    "target_qps": 1
   }
 }
 
@@ -56,7 +56,7 @@ Deployment complete!
 The following resources will be deleted:
   delete resources.vector_search_endpoints.my_endpoint
 
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/drift-vs-endpoint-min-qps-[UNIQUE_NAME]/default
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/drift-vs-endpoint-target-qps-[UNIQUE_NAME]/default
 
 Deleting files...
 Destroy complete!

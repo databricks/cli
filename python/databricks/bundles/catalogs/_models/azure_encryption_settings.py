@@ -11,9 +11,7 @@ if TYPE_CHECKING:
 
 @dataclass(kw_only=True)
 class AzureEncryptionSettings:
-    """
-    :meta private: [EXPERIMENTAL]
-    """
+    """"""
 
     azure_tenant_id: VariableOr[str]
 

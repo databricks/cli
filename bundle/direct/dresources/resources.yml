@@ -388,6 +388,8 @@ resources:
     ignore_remote_changes:
       - field: space # This field is not yet supported by Update APIs but exposed in the API spec. TODO: fix when update APIs supports it.
         reason: managed
+      - field: thumbnail_url # Set server-side via the SetAppThumbnail API, not through the App Update API.
+        reason: output_only
 
   secret_scopes:
     backend_defaults:

@@ -80,7 +80,7 @@ class Pipeline(Resource):
 
     channel: VariableOrOptional[str] = None
     """
-    DLT Release Channel that specifies which version to use.
+    SDP Release Channel that specifies which version to use.
     """
 
     clusters: VariableOrList[PipelineCluster] = field(default_factory=list)
@@ -245,7 +245,7 @@ class PipelineDict(TypedDict, total=False):
 
     channel: VariableOrOptional[str]
     """
-    DLT Release Channel that specifies which version to use.
+    SDP Release Channel that specifies which version to use.
     """
 
     clusters: VariableOrList[PipelineClusterParam]

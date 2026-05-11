@@ -531,6 +531,9 @@ github.com/databricks/cli/bundle/config/resources.App:
       Git source configuration for app deployments. Specifies which git reference (branch, tag, or commit)
       to use when deploying the app. Used in conjunction with git_repository to deploy code directly from git.
       The source_code_path within git_source specifies the relative path to the app code within the repository.
+  "thumbnail_url":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.AppConfig:
   "command":
     "description": |-
@@ -971,13 +974,13 @@ github.com/databricks/cli/bundle/config/resources.VectorSearchEndpoint:
   "lifecycle":
     "description": |-
       PLACEHOLDER
-  "min_qps":
-    "description": |-
-      PLACEHOLDER
   "name":
     "description": |-
       PLACEHOLDER
   "permissions":
+    "description": |-
+      PLACEHOLDER
+  "target_qps":
     "description": |-
       PLACEHOLDER
   "usage_policy_id":

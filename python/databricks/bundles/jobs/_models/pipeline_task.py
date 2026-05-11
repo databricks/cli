@@ -20,7 +20,7 @@ class PipelineTask:
 
     full_refresh: VariableOrOptional[bool] = None
     """
-    If true, triggers a full refresh on the delta live table.
+    If true, triggers a full refresh on the spark declarative pipeline.
     """
 
     @classmethod
@@ -41,7 +41,7 @@ class PipelineTaskDict(TypedDict, total=False):
 
     full_refresh: VariableOrOptional[bool]
     """
-    If true, triggers a full refresh on the delta live table.
+    If true, triggers a full refresh on the spark declarative pipeline.
     """
 
 

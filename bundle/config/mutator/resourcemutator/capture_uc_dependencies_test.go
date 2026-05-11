@@ -239,6 +239,7 @@ func TestCaptureUCDependenciesModelServingEndpointEdgeCases(t *testing.T) {
 					// AutoCaptureConfig path.
 					"auto_capture": {CreateServingEndpoint: serving.CreateServingEndpoint{
 						Config: &serving.EndpointCoreConfigInput{
+							//nolint:staticcheck // SA1019: deprecated AutoCaptureConfigInput kept for bundle config compatibility
 							AutoCaptureConfig: &serving.AutoCaptureConfigInput{
 								CatalogName: "mycatalog", SchemaName: "myschema",
 							},

@@ -20,8 +20,8 @@ print_requests create
 endpoint_name="vs-endpoint-${UNIQUE_NAME}"
 trace $CLI vector-search-endpoints get-endpoint "${endpoint_name}" | jq '{name, endpoint_type}'
 
-title "Update min_qps"
-trace update_file.py databricks.yml "min_qps: 1" "min_qps: 2"
+title "Update target_qps"
+trace update_file.py databricks.yml "target_qps: 1" "target_qps: 2"
 
 trace $CLI bundle plan
 rm -f out.requests.txt
