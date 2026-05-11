@@ -14,6 +14,7 @@ import (
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/databricks-sdk-go/apierr"
@@ -82,9 +83,14 @@ func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, e
 	}
 
 	// Flush WAL to local state file before deleting remote files.
+	// Warn instead of hard-error: resources are already deleted, so proceed
+	// with file cleanup regardless of whether state flush succeeds.
 	if engine.IsDirect() {
 		if err := b.DeploymentBundle.StateDB.Finalize(ctx); err != nil {
-			logdiag.LogError(ctx, err)
+			diags := diag.WarningFromErr(err)
+			if len(diags) > 0 {
+				logdiag.LogDiag(ctx, diags[0])
+			}
 		}
 	}
 
