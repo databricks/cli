@@ -1,6 +1,6 @@
 module github.com/databricks/cli
 
-go 1.25.0
+go 1.25.8
 
 toolchain go1.25.10
 
@@ -17,7 +17,7 @@ require (
 	github.com/google/uuid v1.6.0 // BSD-3-Clause
 	github.com/gorilla/websocket v1.5.3 // BSD-2-Clause
 	github.com/hashicorp/go-version v1.9.0 // MPL-2.0
-	github.com/hashicorp/hc-install v0.9.3 // MPL-2.0
+	github.com/hashicorp/hc-install v0.9.4 // MPL-2.0
 	github.com/hashicorp/terraform-exec v0.25.0 // MPL-2.0
 	github.com/hashicorp/terraform-json v0.27.2 // MPL-2.0
 	github.com/hexops/gotextdiff v1.0.3 // BSD-3-Clause
@@ -47,7 +47,7 @@ require (
 	cloud.google.com/go/auth v0.18.1 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.8 // indirect
 	cloud.google.com/go/compute/metadata v0.9.0 // indirect
-	github.com/ProtonMail/go-crypto v1.3.0 // indirect
+	github.com/ProtonMail/go-crypto v1.4.1 // indirect
 	github.com/apparentlymart/go-textseg/v15 v15.0.0 // indirect
 	github.com/atotto/clipboard v0.1.4 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
