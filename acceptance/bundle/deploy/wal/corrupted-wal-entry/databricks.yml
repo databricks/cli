@@ -12,7 +12,6 @@ resources:
           new_cluster:
             spark_version: 15.4.x-scala2.12
             node_type_id: i3.xlarge
-            num_workers: 0
     another_valid:
       name: "another-valid"
       tasks:
@@ -22,4 +21,3 @@ resources:
           new_cluster:
             spark_version: 15.4.x-scala2.12
             node_type_id: i3.xlarge
-            num_workers: 0

@@ -13,7 +13,6 @@ resources:
           new_cluster:
             spark_version: 15.4.x-scala2.12
             node_type_id: i3.xlarge
-            num_workers: 0
     job_b:
       name: "test-job-b"
       description: "depends on ${resources.jobs.job_a.id}"
@@ -24,4 +23,3 @@ resources:
           new_cluster:
             spark_version: 15.4.x-scala2.12
             node_type_id: i3.xlarge
-            num_workers: 0

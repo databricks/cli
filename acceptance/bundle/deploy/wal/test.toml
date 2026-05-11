@@ -37,8 +37,3 @@ New = """${1}
 [PROCESS_KILLED]
 
 Exit code: [KILLED]"""
-
-# Strip single-node cluster warnings (they appear in varying order and aren't relevant to WAL tests)
-[[Repls]]
-Old = '(?s)Warning: Single node cluster.*?ResourceClass: SingleNode\n  \n\n'
-New = ''
