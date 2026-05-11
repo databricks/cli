@@ -9,9 +9,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/statemgmt/resourcestate"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
@@ -26,8 +24,8 @@ type (
 const ErrorOnEmptyState LoadMode = 0
 
 type load struct {
-	modes  []LoadMode
-	engine engine.EngineType
+	state ExportedResourcesMap
+	modes []LoadMode
 }
 
 func (l *load) Name() string {
@@ -35,31 +33,6 @@ func (l *load) Name() string {
 }
 
 func (l *load) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	var state ExportedResourcesMap
-
-	if l.engine.IsDirect() {
-		state = b.DeploymentBundle.ExportState(ctx)
-	} else {
-		var err error
-		state, err = terraform.ParseResourcesState(ctx, b)
-		if err != nil {
-			return diag.FromErr(err)
-		}
-	}
-
-	return applyState(ctx, b, state, l.modes)
-}
-
-type loadFromState struct {
-	state ExportedResourcesMap
-	modes []LoadMode
-}
-
-func (l *loadFromState) Name() string {
-	return "statemgmt.Load"
-}
-
-func (l *loadFromState) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	return applyState(ctx, b, l.state, l.modes)
 }
 
@@ -181,12 +154,7 @@ func validateLoadedState(state ExportedResourcesMap, modes []LoadMode) error {
 	return nil
 }
 
-func Load(engine engine.EngineType, modes ...LoadMode) bundle.Mutator {
-	return &load{modes: modes, engine: engine}
-}
-
-// LoadFromState returns a mutator that loads the provided pre-computed state into the bundle,
-// skipping the engine-specific state retrieval step.
-func LoadFromState(state ExportedResourcesMap, modes ...LoadMode) bundle.Mutator {
-	return &loadFromState{state: state, modes: modes}
+// Load returns a mutator that merges the provided resource state into the bundle configuration.
+func Load(state ExportedResourcesMap, modes ...LoadMode) bundle.Mutator {
+	return &load{state: state, modes: modes}
 }

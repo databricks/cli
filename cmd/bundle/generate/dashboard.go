@@ -19,6 +19,7 @@ import (
 	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/bundle/generate"
 	"github.com/databricks/cli/bundle/phases"
+	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/resources"
 	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/cmd/bundle/deployment"
@@ -398,8 +399,20 @@ func (d *dashboard) runForResource(ctx context.Context, b *bundle.Bundle) {
 		}
 	}
 
+	var state statemgmt.ExportedResourcesMap
+	if stateDesc.Engine.IsDirect() {
+		state = b.DeploymentBundle.ExportState(ctx)
+	} else {
+		var err error
+		state, err = terraform.ParseResourcesState(ctx, b)
+		if err != nil {
+			logdiag.LogError(ctx, err)
+			return
+		}
+	}
+
 	bundle.ApplySeqContext(ctx, b,
-		statemgmt.Load(stateDesc.Engine),
+		statemgmt.Load(state),
 	)
 	if logdiag.HasError(ctx) {
 		return

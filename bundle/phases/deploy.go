@@ -78,10 +78,10 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, ta
 	}
 
 	// Flush WAL to state file on disk; capture the resulting state for Load below.
-	var directState statemgmt.ExportedResourcesMap
+	var state statemgmt.ExportedResourcesMap
 	if targetEngine.IsDirect() {
 		var err error
-		directState, err = b.DeploymentBundle.StateDB.Finalize(ctx)
+		state, err = b.DeploymentBundle.StateDB.Finalize(ctx)
 		if err != nil {
 			logdiag.LogError(ctx, err)
 		}
@@ -93,15 +93,17 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, ta
 		return
 	}
 
-	var loadMutator bundle.Mutator
-	if targetEngine.IsDirect() {
-		loadMutator = statemgmt.LoadFromState(directState)
-	} else {
-		loadMutator = statemgmt.Load(targetEngine)
+	if !targetEngine.IsDirect() {
+		var err error
+		state, err = terraform.ParseResourcesState(ctx, b)
+		if err != nil {
+			logdiag.LogError(ctx, err)
+			return
+		}
 	}
 
 	bundle.ApplySeqContext(ctx, b,
-		loadMutator,
+		statemgmt.Load(state),
 		metadata.Compute(),
 		metadata.Upload(),
 		statemgmt.UploadStateForYamlSync(targetEngine),
