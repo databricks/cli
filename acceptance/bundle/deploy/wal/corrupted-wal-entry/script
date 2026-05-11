@@ -7,13 +7,7 @@ echo "$JOB2:JOB2_ID" >> ACC_REPLS
 mkdir -p .databricks/bundle/default
 cp resources.json .databricks/bundle/default/
 
-# Generate WAL with actual job IDs; truncate the partial_write entry to simulate corruption
-{
-  printf '{"lineage":"test-lineage-123","serial":6}\n'
-  printf '{"k":"resources.jobs.valid_job","v":{"__id__":"%s","state":{"name":"valid-job"}}}\n' "$JOB1"
-  printf '{"k":"resources.jobs.another_valid","v":{"__id__":"%s","state":{"name":"another-valid"}}}\n' "$JOB2"
-  printf '{"k":"resources.jobs.partial_write","v":{"__id__":"33","state":{"name":"partial-'
-} > .databricks/bundle/default/resources.json.wal
+envsubst < resources.json.wal.tmpl > .databricks/bundle/default/resources.json.wal
 
 trace cat .databricks/bundle/default/resources.json.wal
 trace $CLI bundle deploy
