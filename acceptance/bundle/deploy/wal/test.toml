@@ -39,10 +39,6 @@ New = """${1}
 Exit code: [KILLED]"""
 
 [[Repls]]
-Old = "\r"
-New = ''
-
-[[Repls]]
 Old = '"lineage":\s*"[0-9a-f-]+"'
 New = '"lineage": "[UUID]"'
 
