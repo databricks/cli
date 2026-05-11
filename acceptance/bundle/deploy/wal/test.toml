@@ -42,10 +42,6 @@ Exit code: [KILLED]"""
 Old = '"lineage":\s*"[0-9a-f-]+"'
 New = '"lineage": "[UUID]"'
 
-[[Repls]]
-Old = '"serial":\s*\d+'
-New = '"serial": [SERIAL]'
-
 # Strip single-node cluster warnings (they appear in varying order and aren't relevant to WAL tests)
 [[Repls]]
 Old = '(?s)Warning: Single node cluster.*?ResourceClass: SingleNode\n  \n\n'

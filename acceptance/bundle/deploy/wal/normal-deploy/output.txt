@@ -9,7 +9,7 @@ WAL file deleted after successful deploy (expected)
 === State file content ===
 {
   "lineage": "[UUID]",
-  "serial": [SERIAL],
+  "serial": 1,
   "state_keys": [
     "resources.jobs.test_job"
   ]
