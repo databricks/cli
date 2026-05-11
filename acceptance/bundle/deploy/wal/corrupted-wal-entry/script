@@ -27,7 +27,7 @@ trace $CLI bundle summary
 echo "=== Corrupted WAL entries file ==="
 trace cat .databricks/bundle/default/resources.json.wal.corrupted
 
-echo "=== WAL after successful deploy ==="
+printf "\n=== WAL after successful deploy ===\n"
 if [ -f ".databricks/bundle/default/resources.json.wal" ]; then
     echo "WAL exists (unexpected)"
 else
