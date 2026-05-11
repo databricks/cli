@@ -1,31 +1,17 @@
 # WAL recovery after real crash. First deploy creates job_a then crashes.
 # Second deploy recovers from WAL and completes successfully.
 # job_b depends on job_a, so jobs/get is called after job_a's SaveState.
-kill_after.py "GET /api/2.2/jobs/get" 0 1
+kill_after.py "POST /api/2.2/jobs/create" 1 1
 
 echo "=== First deploy (crashes after job_a create, before job_b) ==="
 trace errcode $CLI bundle deploy
 
-echo "=== WAL should exist after crash ==="
-if [ -f ".databricks/bundle/default/resources.json.wal" ]; then
-    echo "WAL exists (expected)"
-    cat .databricks/bundle/default/resources.json.wal
-else
-    echo "WAL missing (unexpected)"
-fi
+trace assert_exists.py .databricks/bundle/default/resources.json.wal
+trace assert_not_exists.py .databricks/bundle/default/resources.json
+trace cat .databricks/bundle/default/resources.json.wal | jq
 
-echo "=== State file after crash (should be empty) ==="
-cat .databricks/bundle/default/resources.json | jq -S '{serial: .serial, state_keys: (.state | keys)}'
+title "Any other command recovers state"
+$CLI bundle $COMMAND &> LOG.COMMAND.txt
 
-echo "=== Second deploy (should recover from WAL and complete) ==="
-trace $CLI bundle deploy --force-lock
-
-echo "=== State file after recovery ==="
-cat .databricks/bundle/default/resources.json | jq -S '{serial: .serial, state_keys: (.state | keys)}'
-
-echo "=== WAL file after successful deploy ==="
-if [ -f ".databricks/bundle/default/resources.json.wal" ]; then
-    echo "WAL file exists (unexpected)"
-else
-    echo "WAL file deleted (expected)"
-fi
+trace assert_exists.py .databricks/bundle/default/resources.json
+trace assert_not_exists.py .databricks/bundle/default/resources.json.wal
