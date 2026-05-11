@@ -12,19 +12,15 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestSelectBaseline_CtrlJ pins promptui Select's surprising response to
-// Ctrl+J. Ctrl+J sends LF (0x0a) and Enter sends CR (0x0d). In a vacuum,
-// chzyer/readline maps both to CharEnter — but inside promptui's Select
-// loop they don't behave identically. Ctrl+J does end the prompt cleanly
-// (no error), but the highlighted item is reset to the first one before
-// the result is returned: pressing Down to move onto "beta" and then
-// Ctrl+J yields "a", not "b".
-//
-// Plain Enter from the same state correctly returns "b" — that path is
-// pinned by TestSelectBaseline_DownEnter — so the divergence is real and
-// specific to LF. The baseline locks the current behaviour so a future
-// hand-rolled Select can decide whether to preserve, fix, or fail loudly
-// on it.
+// TestSelectBaseline_CtrlJ pins that Ctrl+J submits the Select prompt
+// cleanly. Ctrl+J sends LF (0x0a) and Enter sends CR (0x0d); chzyer/readline
+// maps both to CharEnter, so Ctrl+J ends the read loop the same way Enter
+// does. The test does not assert which item is returned: promptui's
+// listener has a bug where Ctrl+J resets the highlight to the first item
+// before returning (Enter from the same state correctly returns "b" —
+// pinned by TestSelectBaseline_DownEnter), and a future implementation
+// is free to fix that. We only require that submission succeeds and that
+// the returned id is one of the valid items.
 func TestSelectBaseline_CtrlJ(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("pty-based prompt tests are unix-only")
@@ -68,7 +64,8 @@ func TestSelectBaseline_CtrlJ(t *testing.T) {
 
 	res := <-resCh
 	require.NoError(t, res.err, "raw output: %q", tm.Raw())
-	// Highlighted item before Ctrl+J was beta; the returned id is alpha.
-	// This is the parity miss the test is here to pin.
-	assert.Equal(t, "a", res.id, "snapshot:\n%s", tm.Snapshot())
+	// promptui today returns "a" here (the first item) instead of the
+	// highlighted "b"; a future implementation may return "b". Accept any
+	// valid id so the test pins submission, not the parity miss.
+	assert.Contains(t, []string{"a", "b", "g"}, res.id, "snapshot:\n%s", tm.Snapshot())
 }
