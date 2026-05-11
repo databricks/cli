@@ -1,0 +1,19 @@
+bundle:
+  name: git
+  git:
+    # This is currently not supported
+    branch: ${var.deployment_branch}
+
+variables:
+  deployment_branch:
+    # By setting deployment_branch to "" we set bundle.git.branch to "" which is the same unsetting it.
+    # This this should make CLI read branch from git and update bundle.git.branch accordingly. It should
+    # Also set bundle.git.inferred to true.
+    default: ""
+
+targets:
+  prod:
+    default: true
+  dev:
+    variables:
+      deployment_branch: dev-branch
