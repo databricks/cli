@@ -2,14 +2,32 @@ package cmdio
 
 import (
 	"context"
+	"errors"
 	"io"
-	"os"
 	"strings"
 	"sync"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/databricks/cli/libs/flags"
 )
+
+// errCtrlC is returned when the user cancels a TUI prompt with Ctrl+C. The
+// "^C" string matches the historical wire format; goldens depend on it.
+var errCtrlC = errors.New("^C")
+
+// runTUI runs a tea.Program through cmdIO's tea program slot so spinners and
+// pagers can't fight a prompt for the terminal. Blocks until the model quits.
+func (c *cmdIO) runTUI(m tea.Model) (tea.Model, error) {
+	p := tea.NewProgram(m,
+		tea.WithInput(c.in),
+		tea.WithOutput(c.err),
+		// Ctrl+C is delivered as a key event so the model can return errCtrlC.
+		tea.WithoutSignalHandler(),
+	)
+	c.acquireTeaProgram(p)
+	defer c.releaseTeaProgram()
+	return p.Run()
+}
 
 // cmdIO is the private instance, that is not supposed to be accessed
 // outside of `cmdio` package. Use the public package-level functions
@@ -67,27 +85,6 @@ func SupportsColor(ctx context.Context, w io.Writer) bool {
 func GetInteractiveMode(ctx context.Context) InteractiveMode {
 	c := fromContext(ctx)
 	return c.capabilities.InteractiveMode()
-}
-
-// promptStdin returns the stdin reader for use with promptui.
-// If the reader is os.Stdin, it returns nil to let the underlying readline
-// library use its platform-specific default. On Windows, this is critical
-// because readline's default uses ReadConsoleInputW to read arrow keys
-// as virtual key events. Passing a wrapped os.Stdin would bypass this
-// and break arrow key navigation in selection prompts.
-func (c *cmdIO) promptStdin() io.ReadCloser {
-	if c.in == os.Stdin {
-		return nil
-	}
-	return io.NopCloser(c.in)
-}
-
-type nopWriteCloser struct {
-	io.Writer
-}
-
-func (nopWriteCloser) Close() error {
-	return nil
 }
 
 // NewSpinner creates a new spinner for displaying progress indicators.
