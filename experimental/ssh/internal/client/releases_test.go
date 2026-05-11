@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"golang.org/x/net/http2"
 )
 
 func TestIsStreamResetError(t *testing.T) {
@@ -15,13 +16,13 @@ func TestIsStreamResetError(t *testing.T) {
 		want bool
 	}{
 		{
-			name: "raw http2 stream error string",
-			err:  errors.New("stream error: stream ID 15; NO_ERROR"),
+			name: "typed http2.StreamError wrapped",
+			err:  fmt.Errorf(`Post "https://example/api/2.0/workspace-files/import-file/...": %w`, http2.StreamError{StreamID: 15, Code: http2.ErrCodeNo}),
 			want: true,
 		},
 		{
-			name: "wrapped peer-reset error (Go HTTP/2 client format)",
-			err:  fmt.Errorf(`Post "https://example/api/2.0/workspace-files/import-file/...": %w`, errors.New("stream error: stream ID 15; NO_ERROR; received from peer")),
+			name: "stringified stream error",
+			err:  errors.New("stream error: stream ID 15; NO_ERROR; received from peer"),
 			want: true,
 		},
 		{

@@ -15,6 +15,7 @@ import (
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
+	"golang.org/x/net/http2"
 )
 
 type releaseProvider func(ctx context.Context, architecture, version, releasesDir string) (io.ReadCloser, error)
@@ -83,9 +84,14 @@ func uploadReleases(ctx context.Context, workspaceFiler filer.Filer, getRelease 
 
 // isStreamResetError reports whether err looks like an HTTP/2 stream reset from
 // the server, which typically means an edge proxy or the workspace-files import
-// endpoint rejected the request body (e.g. body-size limit). Matches both the
-// raw http2.StreamError.Error() format and wrapped variants.
+// endpoint rejected the request body (e.g. body-size limit). The string fallback
+// catches cases where a transport layer re-formats the http2 error before it
+// reaches us, losing the typed value but preserving the message shape.
 func isStreamResetError(err error) bool {
+	var se http2.StreamError
+	if errors.As(err, &se) {
+		return true
+	}
 	msg := err.Error()
 	return strings.Contains(msg, "stream error") && strings.Contains(msg, "stream ID")
 }
