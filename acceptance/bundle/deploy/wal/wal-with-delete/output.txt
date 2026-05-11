@@ -9,9 +9,11 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 === Final state (should have no jobs) ===
-{
-  "serial": 2,
-  "state_keys": []
-}
-=== WAL after successful deploy ===
-WAL deleted (expected)
+
+>>> [CLI] bundle summary
+Name: wal-delete-test
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/wal-delete-test/default
+Resources:

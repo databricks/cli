@@ -9,11 +9,4 @@ echo "=== Deploy (should recover delete from WAL) ==="
 trace $CLI bundle deploy
 
 echo "=== Final state (should have no jobs) ==="
-cat .databricks/bundle/default/resources.json | jq -S '{serial: .serial, state_keys: (.state | keys)}'
-
-echo "=== WAL after successful deploy ==="
-if [ -f ".databricks/bundle/default/resources.json.wal" ]; then
-    echo "WAL exists (unexpected)"
-else
-    echo "WAL deleted (expected)"
-fi
+trace $CLI bundle summary
