@@ -11,9 +11,6 @@ type PromptOptions struct {
 	// Label is shown before the input field. Required.
 	Label string
 
-	// Default is the value pre-filled in the input field.
-	Default string
-
 	// Mask, when non-zero, replaces typed characters with the given rune
 	// (use '*' for password-style input).
 	Mask rune
@@ -31,7 +28,6 @@ func RunPrompt(ctx context.Context, opts PromptOptions) (string, error) {
 	c := fromContext(ctx)
 	p := promptui.Prompt{
 		Label:       opts.Label,
-		Default:     opts.Default,
 		Mask:        opts.Mask,
 		HideEntered: opts.HideEntered,
 		Validate:    opts.Validate,
