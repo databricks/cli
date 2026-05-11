@@ -92,11 +92,9 @@ After generation, you can deploy this job to other targets using:
 		if job.Settings.GitSource != nil {
 			cmdio.LogString(ctx, "Job is using Git source, skipping downloading files")
 		} else {
-			for _, task := range job.Settings.Tasks {
-				err := downloader.MarkTaskForDownload(ctx, &task)
-				if err != nil {
-					return err
-				}
+			err = downloader.MarkTasksForDownload(ctx, job.Settings.Tasks)
+			if err != nil {
+				return err
 			}
 		}
 
@@ -122,6 +120,8 @@ After generation, you can deploy this job to other targets using:
 		if err != nil {
 			return err
 		}
+
+		downloader.CleanupOldFiles(ctx)
 
 		oldFilename := filepath.Join(configDir, jobKey+".yml")
 		filename := filepath.Join(configDir, jobKey+".job.yml")
