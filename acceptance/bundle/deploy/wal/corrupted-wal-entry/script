@@ -15,16 +15,9 @@ cp resources.json .databricks/bundle/default/
   printf '{"k":"resources.jobs.partial_write","v":{"__id__":"33","state":{"name":"partial-'
 } > .databricks/bundle/default/resources.json.wal
 
-echo "=== WAL content ==="
-cat .databricks/bundle/default/resources.json.wal
-
-echo "=== Deploy (should recover valid entries, skip corrupted last line) ==="
+trace cat .databricks/bundle/default/resources.json.wal
 trace $CLI bundle deploy
-
-echo "=== Final state (should have recovered entries) ==="
 trace $CLI bundle summary
-
-echo "=== Corrupted WAL entries file ==="
 trace cat .databricks/bundle/default/resources.json.wal.corrupted
 
 printf "\n=== WAL after successful deploy ===\n"
