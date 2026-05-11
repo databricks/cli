@@ -1,12 +1,25 @@
-=== Creating state directory ===
-=== Creating state file (serial=2) ===
-=== Creating stale WAL with old serial (serial=1) ===
 === WAL content before deploy ===
-{"lineage":"stale-test-lineage","serial": [SERIAL]}
-{"k":"resources.jobs.stale_job","v":{"__id__": "[ID]","state":{"name":"stale-job"}}}
+{"lineage":"stale-test-lineage","serial":1}
+{"k":"resources.jobs.stale_job","v":{"__id__":"9999","state":{"name":"stale-job"}}}
 === Deploy (should ignore stale WAL) ===
 
 >>> [CLI] bundle deploy
+Warning: Single node cluster is not correctly configured
+  at resources.jobs.test_job.tasks[0].new_cluster
+  in databricks.yml:13:13
+
+num_workers should be 0 only for single-node clusters. To create a
+valid single node cluster please ensure that the following properties
+are correctly set in the cluster specification:
+
+  spark_conf:
+    spark.databricks.cluster.profile: singleNode
+    spark.master: local[*]
+
+  custom_tags:
+    ResourceClass: SingleNode
+  
+
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/wal-stale-test/default/files...
 Deploying resources...
 Updating deployment state...
@@ -15,7 +28,7 @@ Deployment complete!
 Stale WAL deleted (expected)
 === State file should NOT contain stale_job ===
 {
-  "serial": [SERIAL],
+  "serial": 3,
   "state_keys": [
     "resources.jobs.test_job"
   ]

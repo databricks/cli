@@ -1,27 +1,6 @@
-echo "=== Creating state directory ==="
 mkdir -p .databricks/bundle/default
-
-echo "=== Creating state file (serial=2) ==="
-cat > .databricks/bundle/default/resources.json << 'EOF'
-{
-  "state_version": 1,
-  "cli_version": "0.0.0",
-  "lineage": "stale-test-lineage",
-  "serial": 2,
-  "state": {
-    "resources.jobs.test_job": {
-      "__id__": "1001",
-      "state": {"name": "test-job"}
-    }
-  }
-}
-EOF
-
-echo "=== Creating stale WAL with old serial (serial=1) ==="
-cat > .databricks/bundle/default/resources.json.wal << 'EOF'
-{"lineage":"stale-test-lineage","serial":1}
-{"k":"resources.jobs.stale_job","v":{"__id__":"9999","state":{"name":"stale-job"}}}
-EOF
+cp resources.json .databricks/bundle/default/
+cp resources.json.wal .databricks/bundle/default/
 
 echo "=== WAL content before deploy ==="
 cat .databricks/bundle/default/resources.json.wal

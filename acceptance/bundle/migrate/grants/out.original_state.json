@@ -31,11 +31,7 @@
             "metastore": null,
             "model": null,
             "pipeline": null,
-            "provider_config": [
-              {
-                "workspace_id": "[NUMID]"
-              }
-            ],
+            "provider_config": [],
             "recipient": null,
             "schema": null,
             "share": null,
@@ -79,11 +75,7 @@
             "metastore": null,
             "model": null,
             "pipeline": null,
-            "provider_config": [
-              {
-                "workspace_id": "[NUMID]"
-              }
-            ],
+            "provider_config": [],
             "recipient": null,
             "schema": "main.schema_grants",
             "share": null,
@@ -126,11 +118,7 @@
             "metastore": null,
             "model": null,
             "pipeline": null,
-            "provider_config": [
-              {
-                "workspace_id": "[NUMID]"
-              }
-            ],
+            "provider_config": [],
             "recipient": null,
             "schema": null,
             "share": null,
@@ -167,11 +155,7 @@
             "metastore_id": "[UUID]",
             "name": "mymodel",
             "owner": "[USERNAME]",
-            "provider_config": [
-              {
-                "workspace_id": "[NUMID]"
-              }
-            ],
+            "provider_config": [],
             "schema_name": "schema_grants",
             "storage_location": null,
             "updated_at": [UNIX_TIME_MILLIS][0],
@@ -203,11 +187,7 @@
             "name": "schema_grants",
             "owner": "[USERNAME]",
             "properties": null,
-            "provider_config": [
-              {
-                "workspace_id": "[NUMID]"
-              }
-            ],
+            "provider_config": [],
             "schema_id": "[UUID]",
             "storage_root": null
           },
@@ -230,11 +210,7 @@
             "id": "main.schema_grants.volume_name",
             "name": "volume_name",
             "owner": "[USERNAME]",
-            "provider_config": [
-              {
-                "workspace_id": "[NUMID]"
-              }
-            ],
+            "provider_config": [],
             "schema_name": "schema_grants",
             "storage_location": "s3://[METASTORE_NAME]/metastore/[UUID]/volumes/[UUID]",
             "volume_path": "/Volumes/main/schema_grants/volume_name",

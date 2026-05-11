@@ -1,4 +1,4 @@
-echo "=== First deploy (crashes on job_10) ==="
+echo "=== First deploy (crashes on job_03) ==="
 trace errcode $CLI bundle deploy
 
 echo ""

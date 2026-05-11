@@ -55,11 +55,7 @@
             "parameter": [],
             "performance_target": null,
             "pipeline_task": [],
-            "provider_config": [
-              {
-                "workspace_id": "[NUMID]"
-              }
-            ],
+            "provider_config": [],
             "python_wheel_task": [],
             "queue": [
               {
@@ -212,11 +208,7 @@
             "name": "Test Migration Pipeline",
             "notification": [],
             "photon": false,
-            "provider_config": [
-              {
-                "workspace_id": "[NUMID]"
-              }
-            ],
+            "provider_config": [],
             "restart_window": [],
             "root_path": null,
             "run_as": [],
@@ -262,11 +254,7 @@
             "id": "mycat.myschema.myvol",
             "name": "myvol",
             "owner": "[USERNAME]",
-            "provider_config": [
-              {
-                "workspace_id": "[NUMID]"
-              }
-            ],
+            "provider_config": [],
             "schema_name": "myschema",
             "storage_location": "s3://[METASTORE_NAME]/metastore/[UUID]/volumes/[UUID]",
             "volume_path": "/Volumes/mycat/myschema/myvol",

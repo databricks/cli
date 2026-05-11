@@ -49,15 +49,10 @@ Terraform will perform the following actions:
               - include = "/Workspace/Users/foo@databricks.com/another/**" -> null
             }
         }
-
-      - provider_config {
-          - workspace_id = "[NUMID]" -> null
-        }
     }
 
 Plan: 1 to add, 0 to change, 1 to destroy.
 
 
-Error: this bind operation requires user confirmation, but the current console does not support prompting.
-To proceed, use --auto-approve after reviewing the plan above.
+Error: This bind operation requires user confirmation, but the current console does not support prompting. Please specify --auto-approve if you would like to skip prompts and proceed.
 

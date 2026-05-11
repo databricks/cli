@@ -1,25 +1,28 @@
 
 >>> errcode [CLI] current-user me
-[PROCESS_KILLED]
-
-Exit code: [KILLED]
+{
+  "id": "[USERID]",
+  "userName": "[USERNAME]"
+}
 Attempt 1 done
 
 >>> errcode [CLI] current-user me
-[PROCESS_KILLED]
-
-Exit code: [KILLED]
+{
+  "id": "[USERID]",
+  "userName": "[USERNAME]"
+}
 Attempt 2 done
 
 >>> errcode [CLI] current-user me
-[PROCESS_KILLED]
-
-Exit code: [KILLED]
+{
+  "id": "[USERID]",
+  "userName": "[USERNAME]"
+}
 Attempt 3 done
 
 >>> [CLI] current-user me
 {
-  "id": "123",
-  "userName": "test@example.com"
+  "id": "[USERID]",
+  "userName": "[USERNAME]"
 }
 Attempt 4 done - success!

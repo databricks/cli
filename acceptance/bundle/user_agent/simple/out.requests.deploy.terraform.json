@@ -246,11 +246,7 @@
               "name": "myschema",
               "owner": "[USERNAME]",
               "properties": null,
-              "provider_config": [
-                {
-                  "workspace_id": "[NUMID]"
-                }
-              ],
+              "provider_config": [],
               "schema_id": "[UUID]",
               "storage_root": null
             },
@@ -312,25 +308,7 @@
 {
   "headers": {
     "User-Agent": [
-      "databricks-tf-provider/1.115.0 databricks-sdk-go/[SDK_VERSION] go/1.25.8 os/[OS] cli/[DEV_VERSION] terraform/1.5.5 auth/pat"
-    ]
-  },
-  "method": "GET",
-  "path": "/api/2.0/preview/scim/v2/Me"
-}
-{
-  "headers": {
-    "User-Agent": [
-      "databricks-tf-provider/1.115.0 databricks-sdk-go/[SDK_VERSION] go/1.25.8 os/[OS] cli/[DEV_VERSION] terraform/1.5.5 auth/pat"
-    ]
-  },
-  "method": "GET",
-  "path": "/api/2.0/preview/scim/v2/Me"
-}
-{
-  "headers": {
-    "User-Agent": [
-      "databricks-tf-provider/1.115.0 databricks-sdk-go/[SDK_VERSION] go/1.25.8 os/[OS] cli/[DEV_VERSION] terraform/1.5.5 sdk/sdkv2 resource/schema auth/pat"
+      "databricks-tf-provider/1.113.0 databricks-sdk-go/[SDK_VERSION] go/1.24.0 os/[OS] cli/[DEV_VERSION] terraform/1.5.5 sdk/sdkv2 resource/schema auth/pat"
     ]
   },
   "method": "GET",
@@ -339,7 +317,7 @@
 {
   "headers": {
     "User-Agent": [
-      "databricks-tf-provider/1.115.0 databricks-sdk-go/[SDK_VERSION] go/1.25.8 os/[OS] cli/[DEV_VERSION] terraform/1.5.5 sdk/sdkv2 resource/schema auth/pat"
+      "databricks-tf-provider/1.113.0 databricks-sdk-go/[SDK_VERSION] go/1.24.0 os/[OS] cli/[DEV_VERSION] terraform/1.5.5 sdk/sdkv2 resource/schema auth/pat"
     ]
   },
   "method": "POST",
@@ -352,7 +330,7 @@
 {
   "headers": {
     "User-Agent": [
-      "databricks-tf-provider/1.115.0 databricks-sdk-go/[SDK_VERSION] go/1.25.8 os/[OS] cli/[DEV_VERSION] terraform/1.5.5"
+      "databricks-tf-provider/1.113.0 databricks-sdk-go/[SDK_VERSION] go/1.24.0 os/[OS] cli/[DEV_VERSION] terraform/1.5.5"
     ]
   },
   "method": "GET",
@@ -361,7 +339,7 @@
 {
   "headers": {
     "User-Agent": [
-      "databricks-tf-provider/1.115.0 databricks-sdk-go/[SDK_VERSION] go/1.25.8 os/[OS] cli/[DEV_VERSION] terraform/1.5.5"
+      "databricks-tf-provider/1.113.0 databricks-sdk-go/[SDK_VERSION] go/1.24.0 os/[OS] cli/[DEV_VERSION] terraform/1.5.5"
     ]
   },
   "method": "GET",
@@ -370,7 +348,7 @@
 {
   "headers": {
     "User-Agent": [
-      "databricks-tf-provider/1.115.0 databricks-sdk-go/[SDK_VERSION] go/1.25.8 os/[OS] cli/[DEV_VERSION] terraform/1.5.5"
+      "databricks-tf-provider/1.113.0 databricks-sdk-go/[SDK_VERSION] go/1.24.0 os/[OS] cli/[DEV_VERSION] terraform/1.5.5"
     ]
   },
   "method": "GET",
@@ -379,7 +357,7 @@
 {
   "headers": {
     "User-Agent": [
-      "databricks-tf-provider/1.115.0 databricks-sdk-go/[SDK_VERSION] go/1.25.8 os/[OS] cli/[DEV_VERSION] terraform/1.5.5"
+      "databricks-tf-provider/1.113.0 databricks-sdk-go/[SDK_VERSION] go/1.24.0 os/[OS] cli/[DEV_VERSION] terraform/1.5.5"
     ]
   },
   "method": "GET",

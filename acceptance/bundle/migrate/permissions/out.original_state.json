@@ -55,11 +55,7 @@
             "parameter": [],
             "performance_target": null,
             "pipeline_task": [],
-            "provider_config": [
-              {
-                "workspace_id": "[NUMID]"
-              }
-            ],
+            "provider_config": [],
             "python_wheel_task": [],
             "queue": [
               {
@@ -199,11 +195,7 @@
             "notebook_path": null,
             "object_type": "job",
             "pipeline_id": null,
-            "provider_config": [
-              {
-                "workspace_id": "[NUMID]"
-              }
-            ],
+            "provider_config": [],
             "registered_model_id": null,
             "repo_id": null,
             "repo_path": null,
@@ -265,11 +257,7 @@
             "notebook_path": null,
             "object_type": "pipelines",
             "pipeline_id": "[UUID]",
-            "provider_config": [
-              {
-                "workspace_id": "[NUMID]"
-              }
-            ],
+            "provider_config": [],
             "registered_model_id": null,
             "repo_id": null,
             "repo_path": null,
@@ -344,11 +332,7 @@
             "name": "Test Migration Pipeline",
             "notification": [],
             "photon": false,
-            "provider_config": [
-              {
-                "workspace_id": "[NUMID]"
-              }
-            ],
+            "provider_config": [],
             "restart_window": [],
             "root_path": null,
             "run_as": [],

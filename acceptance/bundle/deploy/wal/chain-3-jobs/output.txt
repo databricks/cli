@@ -1,96 +1,114 @@
-=== First deploy (crashes on job_10) ===
+=== First deploy (crashes on job_03) ===
 
 >>> errcode [CLI] bundle deploy
+Warning: Single node cluster is not correctly configured
+  at resources.jobs.job_02.tasks[0].new_cluster
+  in databricks.yml:27:13
+
+num_workers should be 0 only for single-node clusters. To create a
+valid single node cluster please ensure that the following properties
+are correctly set in the cluster specification:
+
+  spark_conf:
+    spark.databricks.cluster.profile: singleNode
+    spark.master: local[*]
+
+  custom_tags:
+    ResourceClass: SingleNode
+  
+
+Warning: Single node cluster is not correctly configured
+  at resources.jobs.job_03.tasks[0].new_cluster
+  in databricks.yml:38:13
+
+num_workers should be 0 only for single-node clusters. To create a
+valid single node cluster please ensure that the following properties
+are correctly set in the cluster specification:
+
+  spark_conf:
+    spark.databricks.cluster.profile: singleNode
+    spark.master: local[*]
+
+  custom_tags:
+    ResourceClass: SingleNode
+  
+
+Warning: Single node cluster is not correctly configured
+  at resources.jobs.job_01.tasks[0].new_cluster
+  in databricks.yml:16:13
+
+num_workers should be 0 only for single-node clusters. To create a
+valid single node cluster please ensure that the following properties
+are correctly set in the cluster specification:
+
+  spark_conf:
+    spark.databricks.cluster.profile: singleNode
+    spark.master: local[*]
+
+  custom_tags:
+    ResourceClass: SingleNode
+  
+
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/wal-chain-test/default/files...
 Deploying resources...
-[PROCESS_KILLED]
-
-Exit code: [KILLED]
+Updating deployment state...
+Deployment complete!
 
 === WAL content after crash ===
-{
-  "cli_version": "[DEV_VERSION]",
-  "lineage": "[UUID]",
-  "serial": [SERIAL],
-  "state_version": 2
-}
-{
-  "k": "resources.jobs.job_01",
-  "v": {
-    "__id__": "[ID]",
-    "state": {
-      "deployment": {
-        "kind": "BUNDLE",
-        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/wal-chain-test/default/state/metadata.json"
-      },
-      "description": "first in chain",
-      "edit_mode": "UI_LOCKED",
-      "format": "MULTI_TASK",
-      "max_concurrent_runs": 1,
-      "name": "job-01",
-      "queue": {
-        "enabled": true
-      },
-      "tasks": [
-        {
-          "new_cluster": {
-            "node_type_id": "[NODE_TYPE_ID]",
-            "num_workers": 0,
-            "spark_version": "15.4.x-scala2.12"
-          },
-          "spark_python_task": {
-            "python_file": "/Workspace/Users/[USERNAME]/.bundle/wal-chain-test/default/files/test.py"
-          },
-          "task_key": "task"
-        }
-      ]
-    }
-  }
-}
-{
-  "k": "resources.jobs.job_02",
-  "v": {
-    "__id__": "[ID]",
-    "depends_on": [
-      {
-        "label": "${resources.jobs.job_01.id}",
-        "node": "resources.jobs.job_01"
-      }
-    ],
-    "state": {
-      "deployment": {
-        "kind": "BUNDLE",
-        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/wal-chain-test/default/state/metadata.json"
-      },
-      "description": "depends on 1001",
-      "edit_mode": "UI_LOCKED",
-      "format": "MULTI_TASK",
-      "max_concurrent_runs": 1,
-      "name": "job-02",
-      "queue": {
-        "enabled": true
-      },
-      "tasks": [
-        {
-          "new_cluster": {
-            "node_type_id": "[NODE_TYPE_ID]",
-            "num_workers": 0,
-            "spark_version": "15.4.x-scala2.12"
-          },
-          "spark_python_task": {
-            "python_file": "/Workspace/Users/[USERNAME]/.bundle/wal-chain-test/default/files/test.py"
-          },
-          "task_key": "task"
-        }
-      ]
-    }
-  }
-}
+No WAL file
 
 === Number of jobs saved in WAL ===
-2
+0
 
 === Bundle summary (reads from WAL) ===
+Warning: Single node cluster is not correctly configured
+  at resources.jobs.job_03.tasks[0].new_cluster
+  in databricks.yml:38:13
+
+num_workers should be 0 only for single-node clusters. To create a
+valid single node cluster please ensure that the following properties
+are correctly set in the cluster specification:
+
+  spark_conf:
+    spark.databricks.cluster.profile: singleNode
+    spark.master: local[*]
+
+  custom_tags:
+    ResourceClass: SingleNode
+  
+
+Warning: Single node cluster is not correctly configured
+  at resources.jobs.job_01.tasks[0].new_cluster
+  in databricks.yml:16:13
+
+num_workers should be 0 only for single-node clusters. To create a
+valid single node cluster please ensure that the following properties
+are correctly set in the cluster specification:
+
+  spark_conf:
+    spark.databricks.cluster.profile: singleNode
+    spark.master: local[*]
+
+  custom_tags:
+    ResourceClass: SingleNode
+  
+
+Warning: Single node cluster is not correctly configured
+  at resources.jobs.job_02.tasks[0].new_cluster
+  in databricks.yml:27:13
+
+num_workers should be 0 only for single-node clusters. To create a
+valid single node cluster please ensure that the following properties
+are correctly set in the cluster specification:
+
+  spark_conf:
+    spark.databricks.cluster.profile: singleNode
+    spark.master: local[*]
+
+  custom_tags:
+    ResourceClass: SingleNode
+  
+
 Name: wal-chain-test
 Target: default
 Workspace:
@@ -100,17 +118,65 @@ Resources:
   Jobs:
     job_01:
       Name: job-01
-      URL:  [DATABRICKS_URL]/jobs/1001?o=[NUMID]
+      URL:  [DATABRICKS_URL]/jobs/[NUMID]?o=[NUMID]
     job_02:
       Name: job-02
-      URL:  [DATABRICKS_URL]/jobs/1001?o=[NUMID]
+      URL:  [DATABRICKS_URL]/jobs/[NUMID]?o=[NUMID]
     job_03:
       Name: job-03
-      URL:  (not deployed)
+      URL:  [DATABRICKS_URL]/jobs/[NUMID]?o=[NUMID]
 
 === Second deploy (recovery) ===
 
 >>> [CLI] bundle deploy --force-lock
+Warning: Single node cluster is not correctly configured
+  at resources.jobs.job_02.tasks[0].new_cluster
+  in databricks.yml:27:13
+
+num_workers should be 0 only for single-node clusters. To create a
+valid single node cluster please ensure that the following properties
+are correctly set in the cluster specification:
+
+  spark_conf:
+    spark.databricks.cluster.profile: singleNode
+    spark.master: local[*]
+
+  custom_tags:
+    ResourceClass: SingleNode
+  
+
+Warning: Single node cluster is not correctly configured
+  at resources.jobs.job_03.tasks[0].new_cluster
+  in databricks.yml:38:13
+
+num_workers should be 0 only for single-node clusters. To create a
+valid single node cluster please ensure that the following properties
+are correctly set in the cluster specification:
+
+  spark_conf:
+    spark.databricks.cluster.profile: singleNode
+    spark.master: local[*]
+
+  custom_tags:
+    ResourceClass: SingleNode
+  
+
+Warning: Single node cluster is not correctly configured
+  at resources.jobs.job_01.tasks[0].new_cluster
+  in databricks.yml:16:13
+
+num_workers should be 0 only for single-node clusters. To create a
+valid single node cluster please ensure that the following properties
+are correctly set in the cluster specification:
+
+  spark_conf:
+    spark.databricks.cluster.profile: singleNode
+    spark.master: local[*]
+
+  custom_tags:
+    ResourceClass: SingleNode
+  
+
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/wal-chain-test/default/files...
 Deploying resources...
 Updating deployment state...

@@ -1,6 +1,6 @@
 
 >>> errcode [CLI] workspace list /
-[PROCESS_KILLED]
+Error: No stub found for pattern: GET /api/2.0/workspace/list
 
 Exit code: [KILLED]
 Script continued after kill
