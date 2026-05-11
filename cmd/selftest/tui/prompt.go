@@ -11,9 +11,8 @@ import (
 
 func newPromptCmd() *cobra.Command {
 	var (
-		defaultVal string
-		mask       bool
-		validate   bool
+		mask     bool
+		validate bool
 	)
 	cmd := &cobra.Command{
 		Use:   "prompt",
@@ -21,8 +20,7 @@ func newPromptCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			opts := cmdio.PromptOptions{
-				Label:   "Enter a value",
-				Default: defaultVal,
+				Label: "Enter a value",
 			}
 			if mask {
 				opts.Mask = '*'
@@ -47,7 +45,6 @@ func newPromptCmd() *cobra.Command {
 			return nil
 		},
 	}
-	cmd.Flags().StringVar(&defaultVal, "default", "", "pre-fill the input with this value")
 	cmd.Flags().BoolVar(&mask, "mask", false, "echo input as '*'")
 	cmd.Flags().BoolVar(&validate, "validate", false, "require '://' in input")
 	return cmd
