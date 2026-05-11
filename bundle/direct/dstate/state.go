@@ -32,19 +32,25 @@ const (
 var errStaleWAL = errors.New("stale WAL")
 
 type DeploymentState struct {
-	Path     string
-	Data     Database
-	mu       sync.Mutex
-	walFile  *os.File
+	Path    string
+	Data    Database
+	mu      sync.Mutex
+	walFile *os.File
+
+	// Maps resource key to ID. Unlike Data.State, this is up to during writes (deploys).
 	stateIDs map[string]string
 }
 
 type Database struct {
-	StateVersion int                      `json:"state_version"`
-	CLIVersion   string                   `json:"cli_version"`
-	Lineage      string                   `json:"lineage"`
-	Serial       int                      `json:"serial"`
-	State        map[string]ResourceEntry `json:"state"`
+	StateVersion int    `json:"state_version"`
+	CLIVersion   string `json:"cli_version"`
+	Lineage      string `json:"lineage"`
+	Serial       int    `json:"serial"`
+
+	// Maps resource key to ResourceEntry which includes ID + full serialized state.
+	// This is not updated during write/deploy, those writes go to WAL instead.
+	// The State is then reconstructed from WAL.
+	State map[string]ResourceEntry `json:"state"`
 }
 
 type ResourceEntry struct {
@@ -346,14 +352,15 @@ func (db *DeploymentState) mergeWalIntoState(ctx context.Context) (bool, error) 
 	return lineNumber > 1, nil
 }
 
-// Finalize replays the WAL (if open for write) and resets the state.
+// Finalize replays the WAL (if open for write), captures the resulting state, and resets.
 // Safe to call multiple times or on an already-finalized state.
-func (db *DeploymentState) Finalize(ctx context.Context) error {
+// Returns the exported state as of the end of this operation.
+func (db *DeploymentState) Finalize(ctx context.Context) (resourcestate.ExportedResourcesMap, error) {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
 	if db.Path == "" {
-		return nil
+		return nil, nil
 	}
 
 	var err error
@@ -364,11 +371,13 @@ func (db *DeploymentState) Finalize(ctx context.Context) error {
 		err = db.replayWAL(ctx)
 	}
 
+	state := ExportStateFromData(db.Data)
+
 	db.Path = ""
 	db.Data = Database{}
-	db.stateIDs = make(map[string]string)
+	db.stateIDs = nil
 
-	return err
+	return state, err
 }
 
 // UpgradeToWrite transitions from read mode to write mode without re-reading state.
@@ -427,9 +436,10 @@ func (db *DeploymentState) AssertOpenedForWrite() {
 	}
 }
 
-func (db *DeploymentState) ExportState(ctx context.Context) resourcestate.ExportedResourcesMap {
+// ExportStateFromData extracts resource IDs and ETags from a database snapshot.
+func ExportStateFromData(data Database) resourcestate.ExportedResourcesMap {
 	result := make(resourcestate.ExportedResourcesMap)
-	for key, entry := range db.Data.State {
+	for key, entry := range data.State {
 		var etag string
 		// Extract etag for dashboards.
 		// covered by test case: bundle/deploy/dashboard/detect-change
@@ -448,6 +458,10 @@ func (db *DeploymentState) ExportState(ctx context.Context) resourcestate.Export
 		}
 	}
 	return result
+}
+
+func (db *DeploymentState) ExportState(ctx context.Context) resourcestate.ExportedResourcesMap {
+	return ExportStateFromData(db.Data)
 }
 
 func (db *DeploymentState) unlockedSave() error {

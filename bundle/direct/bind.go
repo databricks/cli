@@ -64,7 +64,9 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 	var checkStateDB dstate.DeploymentState
 	if err := checkStateDB.Open(ctx, statePath, dstate.WithRecovery(true), dstate.WithWrite(false)); err == nil {
 		existingID := checkStateDB.GetResourceID(resourceKey)
-		_ = checkStateDB.Finalize(ctx)
+		if _, err := checkStateDB.Finalize(ctx); err != nil {
+			log.Warnf(ctx, "failed to finalize state: %v", err)
+		}
 		if existingID != "" {
 			return nil, ErrResourceAlreadyBound{
 				ResourceKey: resourceKey,
@@ -98,7 +100,7 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 	}
 
 	// Finalize to persist temp state to disk
-	err = b.StateDB.Finalize(ctx)
+	_, err = b.StateDB.Finalize(ctx)
 	if err != nil {
 		os.Remove(tmpStatePath)
 		return nil, err
@@ -117,7 +119,9 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 		os.Remove(tmpStatePath)
 		return nil, err
 	}
-	_ = b.StateDB.Finalize(ctx)
+	if _, err := b.StateDB.Finalize(ctx); err != nil {
+		log.Warnf(ctx, "failed to finalize state: %v", err)
+	}
 
 	// Populate the state with the resolved config
 	entry := plan.Plan[resourceKey]
@@ -152,7 +156,7 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 			return nil, err
 		}
 
-		err = b.StateDB.Finalize(ctx)
+		_, err = b.StateDB.Finalize(ctx)
 		if err != nil {
 			os.Remove(tmpStatePath)
 			return nil, err
@@ -166,7 +170,9 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 		return nil, err
 	}
 	plan, err = b.CalculatePlan(ctx, client, configRoot)
-	_ = b.StateDB.Finalize(ctx)
+	if _, ferr := b.StateDB.Finalize(ctx); ferr != nil {
+		log.Warnf(ctx, "failed to finalize state: %v", ferr)
+	}
 	if err != nil {
 		os.Remove(tmpStatePath)
 		return nil, err
@@ -236,5 +242,6 @@ func (b *DeploymentBundle) Unbind(ctx context.Context, statePath, resourceKey st
 		}
 	}
 
-	return b.StateDB.Finalize(ctx)
+	_, err = b.StateDB.Finalize(ctx)
+	return err
 }

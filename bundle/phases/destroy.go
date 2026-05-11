@@ -86,7 +86,7 @@ func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, e
 	// Warn instead of hard-error: resources are already deleted, so proceed
 	// with file cleanup regardless of whether state flush succeeds.
 	if engine.IsDirect() {
-		if err := b.DeploymentBundle.StateDB.Finalize(ctx); err != nil {
+		if _, err := b.DeploymentBundle.StateDB.Finalize(ctx); err != nil {
 			diags := diag.WarningFromErr(err)
 			if len(diags) > 0 {
 				logdiag.LogDiag(ctx, diags[0])

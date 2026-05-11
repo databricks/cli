@@ -35,7 +35,6 @@ func (l *load) Name() string {
 }
 
 func (l *load) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	var err error
 	var state ExportedResourcesMap
 
 	if l.engine.IsDirect() {
@@ -48,14 +47,29 @@ func (l *load) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		}
 	}
 
-	err = l.validateState(state)
-	if err != nil {
+	return applyState(ctx, b, state, l.modes)
+}
+
+type loadFromState struct {
+	state ExportedResourcesMap
+	modes []LoadMode
+}
+
+func (l *loadFromState) Name() string {
+	return "statemgmt.Load"
+}
+
+func (l *loadFromState) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+	return applyState(ctx, b, l.state, l.modes)
+}
+
+// applyState merges the exported resource state into the bundle configuration.
+func applyState(ctx context.Context, b *bundle.Bundle, state ExportedResourcesMap, modes []LoadMode) diag.Diagnostics {
+	if err := validateLoadedState(state, modes); err != nil {
 		return diag.FromErr(err)
 	}
 
-	// Merge state into configuration.
-	err = StateToBundle(ctx, state, &b.Config)
-	if err != nil {
+	if err := StateToBundle(ctx, state, &b.Config); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -160,14 +174,19 @@ func StateToBundle(ctx context.Context, state ExportedResourcesMap, config *conf
 	})
 }
 
-func (l *load) validateState(state ExportedResourcesMap) error {
-	if len(state) == 0 && slices.Contains(l.modes, ErrorOnEmptyState) {
+func validateLoadedState(state ExportedResourcesMap, modes []LoadMode) error {
+	if len(state) == 0 && slices.Contains(modes, ErrorOnEmptyState) {
 		return errors.New("resource not found or not yet deployed. Did you forget to run 'databricks bundle deploy'?")
 	}
-
 	return nil
 }
 
 func Load(engine engine.EngineType, modes ...LoadMode) bundle.Mutator {
 	return &load{modes: modes, engine: engine}
+}
+
+// LoadFromState returns a mutator that loads the provided pre-computed state into the bundle,
+// skipping the engine-specific state retrieval step.
+func LoadFromState(state ExportedResourcesMap, modes ...LoadMode) bundle.Mutator {
+	return &loadFromState{state: state, modes: modes}
 }

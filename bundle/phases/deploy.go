@@ -15,7 +15,6 @@ import (
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct"
-	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/bundle/metrics"
 	"github.com/databricks/cli/bundle/permissions"
@@ -78,14 +77,12 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, ta
 		bundle.ApplyContext(ctx, b, terraform.Apply())
 	}
 
-	// Close state to replay WAL into state file, then reopen for read.
-	// PushResourcesState needs the file on disk, Load needs the state in memory.
+	// Flush WAL to state file on disk; capture the resulting state for Load below.
+	var directState statemgmt.ExportedResourcesMap
 	if targetEngine.IsDirect() {
-		if err := b.DeploymentBundle.StateDB.Finalize(ctx); err != nil {
-			logdiag.LogError(ctx, err)
-		}
-		_, localPath := b.StateFilenameDirect(ctx)
-		if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(true), dstate.WithWrite(false)); err != nil {
+		var err error
+		directState, err = b.DeploymentBundle.StateDB.Finalize(ctx)
+		if err != nil {
 			logdiag.LogError(ctx, err)
 		}
 	}
@@ -96,8 +93,15 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, ta
 		return
 	}
 
+	var loadMutator bundle.Mutator
+	if targetEngine.IsDirect() {
+		loadMutator = statemgmt.LoadFromState(directState)
+	} else {
+		loadMutator = statemgmt.Load(targetEngine)
+	}
+
 	bundle.ApplySeqContext(ctx, b,
-		statemgmt.Load(targetEngine),
+		loadMutator,
 		metadata.Compute(),
 		metadata.Upload(),
 		statemgmt.UploadStateForYamlSync(targetEngine),
