@@ -36,8 +36,6 @@ func promptForProfile(ctx context.Context, defaultValue string) (string, error) 
 		Label: "Databricks profile name [" + defaultValue + "]",
 	})
 	if result == "" {
-		// Manually return the default value. We could use the prompt.Default
-		// field, but be inconsistent with other prompts in the CLI.
 		return defaultValue, err
 	}
 	return result, err

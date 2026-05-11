@@ -64,9 +64,9 @@ func TestGenerateFromExistingPipelineAndDeploy(t *testing.T) {
 
 	require.Contains(t, generatedYaml, "libraries:")
 	require.Contains(t, generatedYaml, "- notebook:")
-	require.Contains(t, generatedYaml, "path: "+filepath.Join("..", "src", "notebook.py"))
+	require.Contains(t, generatedYaml, "path: "+filepath.ToSlash(filepath.Join("..", "src", "notebook.py")))
 	require.Contains(t, generatedYaml, "- file:")
-	require.Contains(t, generatedYaml, "path: "+filepath.Join("..", "src", "test.py"))
+	require.Contains(t, generatedYaml, "path: "+filepath.ToSlash(filepath.Join("..", "src", "test.py")))
 
 	deployBundle(t, ctx, bundleRoot)
 
