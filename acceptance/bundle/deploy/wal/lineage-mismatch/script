@@ -2,8 +2,7 @@ mkdir -p .databricks/bundle/default
 cp resources.json .databricks/bundle/default/
 cp resources.json.wal .databricks/bundle/default/
 
-echo "=== WAL content ==="
-cat .databricks/bundle/default/resources.json.wal
+echo "Any command should fail with lineage mismatch error"
+musterr $CLI bundle $COMMAND
 
-echo "=== Deploy (should fail with lineage mismatch error) ==="
-trace errcode $CLI bundle deploy
+trace musterr $CLI bundle destroy --auto-approve
