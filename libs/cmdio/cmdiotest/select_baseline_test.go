@@ -1,12 +1,11 @@
 package cmdiotest_test
 
 import (
-	"context"
 	"runtime"
 	"testing"
 
-	"github.com/databricks/cli/libs/cmdio/cmdiotest/termtest"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/cmdio/cmdiotest/termtest"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -33,7 +32,7 @@ func TestSelectBaseline_DownEnter(t *testing.T) {
 	t.Setenv("NO_COLOR", "")
 	t.Setenv("TERM", "xterm-256color")
 
-	ctx := context.Background()
+	ctx := t.Context()
 	io := cmdio.NewIO(ctx, flags.OutputText, pts, pts, pts, "", "")
 	ctx = cmdio.InContext(ctx, io)
 

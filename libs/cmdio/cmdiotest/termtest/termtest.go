@@ -206,7 +206,7 @@ func (tm *Term) Golden(step string) {
 	safeName := strings.ReplaceAll(tm.t.Name(), "/", "_")
 	path := filepath.Join("testdata", safeName, step+".golden")
 
-	if os.Getenv(updateEnv) != "" {
+	if os.Getenv(updateEnv) != "" { //nolint:forbidigo // test-only UPDATE flag; no ctx available in helper
 		require.NoError(tm.t, os.MkdirAll(filepath.Dir(path), 0o755))
 		require.NoError(tm.t, os.WriteFile(path, []byte(got+"\n"), 0o644))
 		return

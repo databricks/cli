@@ -1,7 +1,6 @@
 package cmdiotest_test
 
 import (
-	"context"
 	"fmt"
 	"runtime"
 	"strings"
@@ -34,7 +33,7 @@ func TestSelectBaseline_VimNavOutsideSearch(t *testing.T) {
 	t.Setenv("NO_COLOR", "")
 	t.Setenv("TERM", "xterm-256color")
 
-	ctx := context.Background()
+	ctx := t.Context()
 	io := cmdio.NewIO(ctx, flags.OutputText, pts, pts, pts, "", "")
 	ctx = cmdio.InContext(ctx, io)
 
