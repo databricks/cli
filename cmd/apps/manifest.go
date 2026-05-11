@@ -45,12 +45,15 @@ func runManifestOnly(ctx context.Context, templatePath, branch, version string) 
 		subdirForClone = appkitTemplateDir
 	}
 	resolvedPath, cleanup, err := resolveTemplate(ctx, templateSrc, branchForClone, subdirForClone)
-	if err != nil && usingDefaultTemplate && clicompat.IsNotFoundError(err) {
+	versionAutoResolved := version == "" && branch == ""
+	if err != nil && usingDefaultTemplate && versionAutoResolved && clicompat.IsNotFoundError(err) {
 		fallbackVersion, fbErr := clicompat.ResolveEmbeddedAppKitVersion()
-		if fbErr == nil && fallbackVersion != "" {
+		if fbErr == nil && fallbackVersion != "" && normalizeVersion(fallbackVersion) != gitRef {
 			log.Warnf(ctx, "Template version not found, falling back to embedded version %s", fallbackVersion)
 			fallbackRef := normalizeVersion(fallbackVersion)
 			resolvedPath, cleanup, err = resolveTemplate(ctx, templateSrc, fallbackRef, appkitTemplateDir)
+		} else if fbErr != nil {
+			log.Warnf(ctx, "Could not resolve embedded AppKit version: %v", fbErr)
 		}
 	}
 	if err != nil {

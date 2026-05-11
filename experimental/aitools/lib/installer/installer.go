@@ -106,6 +106,8 @@ func FetchSkillsManifestWithFallback(ctx context.Context, src ManifestSource, re
 			log.Warnf(ctx, "Skills version %s not found, falling back to embedded version %s", tag, fallbackVersion)
 			ref = "v" + fallbackVersion
 			manifest, err = src.FetchManifest(ctx, ref)
+		} else if fbErr != nil {
+			log.Warnf(ctx, "Could not resolve embedded skills version: %v", fbErr)
 		}
 	}
 	return manifest, ref, err

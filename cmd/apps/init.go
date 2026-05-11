@@ -863,15 +863,18 @@ func runCreate(ctx context.Context, opts createOptions) error {
 
 	// Step 2: Wait for template (may already be done if the user took time typing the name)
 	resolvedPath, cleanup, err := awaitTemplate(ctx, templateCh)
-	if err != nil && usingDefaultTemplate && clicompat.IsNotFoundError(err) {
-		// The resolved version doesn't exist as a tag. Fall back to the
-		// embedded manifest which ships a known-good version.
+	// Only fall back to the embedded version when the version was auto-resolved
+	// from the manifest, not when the user explicitly passed --version or --branch.
+	versionAutoResolved := opts.version == "" && opts.branch == ""
+	if err != nil && usingDefaultTemplate && versionAutoResolved && clicompat.IsNotFoundError(err) {
 		fallbackVersion, fbErr := clicompat.ResolveEmbeddedAppKitVersion()
-		if fbErr == nil && fallbackVersion != "" {
+		if fbErr == nil && fallbackVersion != "" && normalizeVersion(fallbackVersion) != branchForClone {
 			log.Warnf(ctx, "Template version not found, falling back to embedded version %s", fallbackVersion)
 			fallbackRef := normalizeVersion(fallbackVersion)
 			templateCh = resolveTemplateAsync(ctx, templateSrc, fallbackRef, appkitTemplateDir)
 			resolvedPath, cleanup, err = awaitTemplate(ctx, templateCh)
+		} else if fbErr != nil {
+			log.Warnf(ctx, "Could not resolve embedded AppKit version: %v", fbErr)
 		}
 	}
 	if err != nil {
