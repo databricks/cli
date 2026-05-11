@@ -1,4 +1,0 @@
-{"lineage":"test-lineage-123","serial":6}
-{"k":"resources.jobs.valid_job","v":{"__id__":"1111","state":{"name":"valid-job"}}}
-{"k":"resources.jobs.another_valid","v":{"__id__":"2222","state":{"name":"another-valid"}}}
-{"k":"resources.jobs.partial_write","v":{"__id__":"3333","state":{"name":"partial-

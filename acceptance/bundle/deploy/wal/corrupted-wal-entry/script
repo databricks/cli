@@ -1,18 +1,31 @@
+# Create pre-existing jobs in the testserver so WAL recovery triggers DoUpdate (reset) instead of DoCreate
+JOB1=$($CLI jobs create --json '{"name":"valid-job"}' | jq -r '.job_id')
+JOB2=$($CLI jobs create --json '{"name":"another-valid"}' | jq -r '.job_id')
+echo "$JOB1:JOB1_ID" >> ACC_REPLS
+echo "$JOB2:JOB2_ID" >> ACC_REPLS
+
 mkdir -p .databricks/bundle/default
 cp resources.json .databricks/bundle/default/
-cp resources.json.wal .databricks/bundle/default/
+
+# Generate WAL with actual job IDs; truncate the partial_write entry to simulate corruption
+{
+  printf '{"lineage":"test-lineage-123","serial":6}\n'
+  printf '{"k":"resources.jobs.valid_job","v":{"__id__":"%s","state":{"name":"valid-job"}}}\n' "$JOB1"
+  printf '{"k":"resources.jobs.another_valid","v":{"__id__":"%s","state":{"name":"another-valid"}}}\n' "$JOB2"
+  printf '{"k":"resources.jobs.partial_write","v":{"__id__":"33","state":{"name":"partial-'
+} > .databricks/bundle/default/resources.json.wal
 
 echo "=== WAL content ==="
 cat .databricks/bundle/default/resources.json.wal
 
 echo "=== Deploy (should recover valid entries, skip corrupted last line) ==="
-trace $CLI bundle deploy 2>&1
+trace $CLI bundle deploy
 
 echo "=== Final state (should have recovered entries) ==="
-cat .databricks/bundle/default/resources.json | jq -S '{serial: .serial, state_keys: (.state | keys | sort)}'
+trace $CLI bundle summary
 
 echo "=== Corrupted WAL entries file ==="
-cat .databricks/bundle/default/resources.json.wal.corrupted
+trace cat .databricks/bundle/default/resources.json.wal.corrupted
 
 echo "=== WAL after successful deploy ==="
 if [ -f ".databricks/bundle/default/resources.json.wal" ]; then
