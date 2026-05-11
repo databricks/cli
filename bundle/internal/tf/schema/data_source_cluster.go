@@ -106,6 +106,7 @@ type DataSourceClusterClusterInfoExecutors struct {
 type DataSourceClusterClusterInfoGcpAttributes struct {
 	Availability            string `json:"availability,omitempty"`
 	BootDiskSize            int    `json:"boot_disk_size,omitempty"`
+	ConfidentialComputeType string `json:"confidential_compute_type,omitempty"`
 	FirstOnDemand           int    `json:"first_on_demand,omitempty"`
 	GoogleServiceAccount    string `json:"google_service_account,omitempty"`
 	LocalSsdCount           int    `json:"local_ssd_count,omitempty"`
@@ -239,6 +240,7 @@ type DataSourceClusterClusterInfoSpecDriverNodeTypeFlexibility struct {
 type DataSourceClusterClusterInfoSpecGcpAttributes struct {
 	Availability            string `json:"availability,omitempty"`
 	BootDiskSize            int    `json:"boot_disk_size,omitempty"`
+	ConfidentialComputeType string `json:"confidential_compute_type,omitempty"`
 	FirstOnDemand           int    `json:"first_on_demand,omitempty"`
 	GoogleServiceAccount    string `json:"google_service_account,omitempty"`
 	LocalSsdCount           int    `json:"local_ssd_count,omitempty"`
@@ -302,7 +304,7 @@ type DataSourceClusterClusterInfoSpecLibraryMaven struct {
 }
 
 type DataSourceClusterClusterInfoSpecLibraryProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourceClusterClusterInfoSpecLibraryPypi struct {
@@ -322,7 +324,7 @@ type DataSourceClusterClusterInfoSpecLibrary struct {
 }
 
 type DataSourceClusterClusterInfoSpecProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourceClusterClusterInfoSpecWorkerNodeTypeFlexibility struct {
@@ -454,7 +456,7 @@ type DataSourceClusterClusterInfo struct {
 }
 
 type DataSourceClusterProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourceCluster struct {

@@ -16,7 +16,7 @@ type DataSourceFeatureEngineeringMaterializedFeaturesMaterializedFeaturesOnlineS
 }
 
 type DataSourceFeatureEngineeringMaterializedFeaturesMaterializedFeaturesProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourceFeatureEngineeringMaterializedFeaturesMaterializedFeatures struct {
@@ -33,7 +33,7 @@ type DataSourceFeatureEngineeringMaterializedFeaturesMaterializedFeatures struct
 }
 
 type DataSourceFeatureEngineeringMaterializedFeaturesProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourceFeatureEngineeringMaterializedFeatures struct {

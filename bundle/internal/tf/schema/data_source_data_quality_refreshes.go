@@ -3,11 +3,11 @@
 package schema
 
 type DataSourceDataQualityRefreshesProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourceDataQualityRefreshesRefreshesProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourceDataQualityRefreshesRefreshes struct {

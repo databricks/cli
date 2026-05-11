@@ -18,7 +18,7 @@ type DataSourceKnowledgeAssistantKnowledgeSourcesKnowledgeSourcesIndex struct {
 }
 
 type DataSourceKnowledgeAssistantKnowledgeSourcesKnowledgeSourcesProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourceKnowledgeAssistantKnowledgeSourcesKnowledgeSources struct {
@@ -37,7 +37,7 @@ type DataSourceKnowledgeAssistantKnowledgeSourcesKnowledgeSources struct {
 }
 
 type DataSourceKnowledgeAssistantKnowledgeSourcesProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourceKnowledgeAssistantKnowledgeSources struct {

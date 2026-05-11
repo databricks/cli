@@ -17,3 +17,4 @@
 ### Dependency updates
 
 * Bump Go toolchain to 1.25.10 ([#5213](https://github.com/databricks/cli/pull/5213)).
+* Bump Terraform provider to v1.115.0.
