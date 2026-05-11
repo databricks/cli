@@ -126,7 +126,9 @@ func (m *promptModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tea.KeyDelete, tea.KeyCtrlD:
 		// Delete and Ctrl+D both exit the prompt with EOF, even on a
-		// non-empty buffer.
+		// non-empty buffer. Surprising at first glance, but it matches the
+		// previous prompt library and is pinned by a baseline test —
+		// changing it would silently shift caller behavior.
 		m.deleted = true
 		return m, tea.Quit
 
@@ -156,7 +158,9 @@ func (m *promptModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tea.KeyRunes, tea.KeySpace:
 		// Alt+<rune> (e.g. Alt+f, Alt+b) are word-nav combos we do not
-		// support; drop them rather than inserting the rune literally.
+		// support. Drop them rather than inserting the rune literally —
+		// the baseline tests pin this as a no-op, and silently typing
+		// "f" when the user pressed Alt+f would be a regression.
 		if key.Alt {
 			return m, nil
 		}

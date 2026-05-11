@@ -275,8 +275,9 @@ func (m *selectModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.recomputeMatches()
 
 	case tea.KeyTab, tea.KeyRunes, tea.KeySpace:
-		// Alt+<rune> are word-nav combos; don't let them sneak in as
-		// filter input.
+		// Alt+<rune> are word-nav combos; drop them rather than letting
+		// the rune sneak into the filter buffer. The baseline tests pin
+		// this as a no-op for parity with the previous prompt library.
 		if key.Alt {
 			return m, nil
 		}
