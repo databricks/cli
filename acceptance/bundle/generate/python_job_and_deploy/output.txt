@@ -1,0 +1,29 @@
+
+=== Upload notebook to a workspace path
+>>> [CLI] workspace import /Workspace/Users/[USERNAME]/test_notebook.py --file test_notebook.py --format AUTO --overwrite
+
+=== Create a job that references the notebookCreated job
+
+=== Generate bundle config from the job
+>>> [CLI] bundle generate job --existing-job-id [JOB_ID] --key out --config-dir resources --source-dir src --force
+File successfully saved to src/test_notebook.py
+Job configuration successfully saved to resources/out.job.yml
+
+=== Verify generated yaml has expected fields
+=== Deploy the generated bundle
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/python_job_and_deploy/default/files...
+Deploying resources...
+Deployment complete!
+
+=== Destroy the deployed bundle
+>>> [CLI] bundle destroy --auto-approve
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/python_job_and_deploy/default
+
+Deleting files...
+Destroy complete!
+
+=== Cleanup: delete the original job and notebook
+>>> errcode [CLI] jobs delete [JOB_ID]
+
+>>> errcode [CLI] workspace delete /Workspace/Users/[USERNAME]/test_notebook

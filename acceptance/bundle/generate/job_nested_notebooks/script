@@ -1,0 +1,12 @@
+mkdir -p src
+echo "old" > src/my_notebook.py
+echo "old" > src/other_notebook.py
+
+$CLI bundle generate job --existing-job-id 1234 --config-dir . --key out --force --source-dir src 2>&1 | sort
+
+echo "=== old flattened files should be gone ==="
+test ! -f src/my_notebook.py && echo "src/my_notebook.py removed" || echo "src/my_notebook.py still exists"
+test ! -f src/other_notebook.py && echo "src/other_notebook.py removed" || echo "src/other_notebook.py still exists"
+
+echo "=== new nested files ==="
+find src -type f | sort
