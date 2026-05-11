@@ -77,11 +77,19 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, ta
 		bundle.ApplyContext(ctx, b, terraform.Apply())
 	}
 
-	// Flush WAL to state file on disk; capture the resulting state for Load below.
+	// Capture post-apply state for Load below.
+	// For direct: flush WAL to disk (Finalize) and capture the result.
+	// For terraform: parse the state file written by terraform.Apply.
 	var state statemgmt.ExportedResourcesMap
 	if targetEngine.IsDirect() {
 		var err error
 		state, err = b.DeploymentBundle.StateDB.Finalize(ctx)
+		if err != nil {
+			logdiag.LogError(ctx, err)
+		}
+	} else {
+		var err error
+		state, err = terraform.ParseResourcesState(ctx, b)
 		if err != nil {
 			logdiag.LogError(ctx, err)
 		}
@@ -91,15 +99,6 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, ta
 	statemgmt.PushResourcesState(ctx, b, targetEngine)
 	if logdiag.HasError(ctx) {
 		return
-	}
-
-	if !targetEngine.IsDirect() {
-		var err error
-		state, err = terraform.ParseResourcesState(ctx, b)
-		if err != nil {
-			logdiag.LogError(ctx, err)
-			return
-		}
 	}
 
 	bundle.ApplySeqContext(ctx, b,
