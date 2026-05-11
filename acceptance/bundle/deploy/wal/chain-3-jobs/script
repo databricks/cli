@@ -20,3 +20,5 @@ $CLI bundle summary
 echo ""
 echo "=== WAL after successful deploy ==="
 cat .databricks/bundle/default/resources.json.wal 2>/dev/null || echo "WAL deleted (expected)"
+
+replace_ids.py
