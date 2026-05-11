@@ -1,4 +1,0 @@
-# WAL recovery after real crash. First deploy creates job_a then crashes.
-# Second deploy recovers from WAL and completes successfully.
-# job_b depends on job_a, so jobs/get is called after job_a's SaveState.
-

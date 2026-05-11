@@ -1,3 +1,5 @@
+# Linear chain: job_01 -> job_02 -> job_03
+# Let first 2 jobs/create succeed, then kill on the 3rd
 kill_after.py "POST /api/2.2/jobs/create" 2 1
 
 echo "=== First deploy (crashes on job_03) ==="

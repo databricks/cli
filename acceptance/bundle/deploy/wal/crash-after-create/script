@@ -1,3 +1,6 @@
+# WAL recovery after real crash. First deploy creates job_a then crashes.
+# Second deploy recovers from WAL and completes successfully.
+# job_b depends on job_a, so jobs/get is called after job_a's SaveState.
 kill_after.py "GET /api/2.2/jobs/get" 0 1
 
 echo "=== First deploy (crashes after job_a create, before job_b) ==="
