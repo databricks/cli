@@ -219,7 +219,6 @@ func startLocalServer(t *testing.T,
 	return s.URL
 }
 
-
 func startProxyServer(t *testing.T,
 	recordRequests bool,
 	logRequests bool,
