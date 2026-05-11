@@ -88,7 +88,7 @@ func newCreateExample() *cobra.Command {
 	cmd.Long = `This command is in Beta and may change without notice.
 
 Create an example for a Supervisor Agent.
-  
+
   Creates an example for a Supervisor Agent.
 
   Arguments:
@@ -189,7 +189,7 @@ func newCreateSupervisorAgent() *cobra.Command {
 	cmd.Long = `This command is in Beta and may change without notice.
 
 Create a Supervisor Agent.
-  
+
   Creates a new Supervisor Agent.
 
   Arguments:
@@ -284,7 +284,7 @@ func newCreateTool() *cobra.Command {
 	cmd.Long = `This command is in Beta and may change without notice.
 
 Create a Tool.
-  
+
   Creates a Tool under a Supervisor Agent. Specify one of "genie_space",
   "knowledge_assistant", "uc_function", "uc_connection", "app", "volume",
   "lakeview_dashboard", "uc_table", "vector_search_index", "catalog", "schema",
@@ -378,7 +378,7 @@ func newDeleteExample() *cobra.Command {
 	cmd.Long = `This command is in Beta and may change without notice.
 
 Delete an example from a Supervisor Agent.
-  
+
   Deletes an example from a Supervisor Agent.
 
   Arguments:
@@ -439,7 +439,7 @@ func newDeleteSupervisorAgent() *cobra.Command {
 	cmd.Long = `This command is in Beta and may change without notice.
 
 Delete a Supervisor Agent.
-  
+
   Deletes a Supervisor Agent.
 
   Arguments:
@@ -500,7 +500,7 @@ func newDeleteTool() *cobra.Command {
 	cmd.Long = `This command is in Beta and may change without notice.
 
 Delete a Tool.
-  
+
   Deletes a Tool.
 
   Arguments:
@@ -561,7 +561,7 @@ func newGetExample() *cobra.Command {
 	cmd.Long = `This command is in Beta and may change without notice.
 
 Get an example from a Supervisor Agent.
-  
+
   Gets an example from a Supervisor Agent.
 
   Arguments:
@@ -623,7 +623,7 @@ func newGetPermissionLevels() *cobra.Command {
 	cmd.Long = `This command is in Beta and may change without notice.
 
 Get supervisor agent permission levels.
-  
+
   Gets the permission levels that a user can have on an object.
 
   Arguments:
@@ -684,7 +684,7 @@ func newGetPermissions() *cobra.Command {
 	cmd.Long = `This command is in Beta and may change without notice.
 
 Get supervisor agent permissions.
-  
+
   Gets the permissions of a supervisor agent. Supervisor agents can inherit
   permissions from their root object.
 
@@ -746,7 +746,7 @@ func newGetSupervisorAgent() *cobra.Command {
 	cmd.Long = `This command is in Beta and may change without notice.
 
 Get a Supervisor Agent.
-  
+
   Gets a Supervisor Agent.
 
   Arguments:
@@ -808,7 +808,7 @@ func newGetTool() *cobra.Command {
 	cmd.Long = `This command is in Beta and may change without notice.
 
 Get a Tool.
-  
+
   Gets a Tool.
 
   Arguments:
@@ -883,7 +883,7 @@ func newListExamples() *cobra.Command {
 	cmd.Long = `This command is in Beta and may change without notice.
 
 List examples for a Supervisor Agent.
-  
+
   Lists examples under a Supervisor Agent.
 
   Arguments:
@@ -961,7 +961,7 @@ func newListSupervisorAgents() *cobra.Command {
 	cmd.Long = `This command is in Beta and may change without notice.
 
 List Supervisor Agents.
-  
+
   Lists Supervisor Agents.`
 
 	cmd.Annotations = make(map[string]string)
@@ -1033,7 +1033,7 @@ func newListTools() *cobra.Command {
 	cmd.Long = `This command is in Beta and may change without notice.
 
 List Tools.
-  
+
   Lists Tools under a Supervisor Agent.
 
   Arguments:
@@ -1103,7 +1103,7 @@ func newSetPermissions() *cobra.Command {
 	cmd.Long = `This command is in Beta and may change without notice.
 
 Set supervisor agent permissions.
-  
+
   Sets permissions on an object, replacing existing permissions if they exist.
   Deletes all direct permissions if none are specified. Objects can inherit
   permissions from their root object.
@@ -1184,7 +1184,7 @@ func newUpdateExample() *cobra.Command {
 	cmd.Long = `This command is in Beta and may change without notice.
 
 Update an example in a Supervisor Agent.
-  
+
   Updates an example in a Supervisor Agent.
 
   Arguments:
@@ -1288,7 +1288,7 @@ func newUpdatePermissions() *cobra.Command {
 	cmd.Long = `This command is in Beta and may change without notice.
 
 Update supervisor agent permissions.
-  
+
   Updates the permissions on a supervisor agent. Supervisor agents can inherit
   permissions from their root object.
 
@@ -1370,7 +1370,7 @@ func newUpdateSupervisorAgent() *cobra.Command {
 	cmd.Long = `This command is in Beta and may change without notice.
 
 Update a Supervisor Agent.
-  
+
   Updates a Supervisor Agent. The fields that are required depend on the paths
   specified in update_mask. Only fields included in the mask will be updated.
 
@@ -1474,7 +1474,7 @@ func newUpdateTool() *cobra.Command {
 	cmd.Long = `This command is in Beta and may change without notice.
 
 Update a Tool.
-  
+
   Updates a Tool. Only the description field can be updated. To change
   immutable fields such as tool type, spec, or tool ID, delete the tool and
   recreate it.
