@@ -5,6 +5,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/databricks/cli/libs/env"
@@ -146,11 +147,16 @@ func TestStateSaveCreatesParentDirs(t *testing.T) {
 	// File and parent dir now exist with sensible perms.
 	info, err := os.Stat(path)
 	require.NoError(t, err)
-	assert.Equal(t, os.FileMode(0o600), info.Mode().Perm())
 
 	dirInfo, err := os.Stat(filepath.Dir(path))
 	require.NoError(t, err)
-	assert.Equal(t, os.FileMode(0o700), dirInfo.Mode().Perm())
+
+	// Windows does not honor Unix permission bits; os.Stat reports 0o666/0o777
+	// regardless of what was passed to OpenFile/MkdirAll.
+	if runtime.GOOS != "windows" {
+		assert.Equal(t, os.FileMode(0o600), info.Mode().Perm())
+		assert.Equal(t, os.FileMode(0o700), dirInfo.Mode().Perm())
+	}
 }
 
 // Defaults of nil on disk (legal but not what saveState produces) must still
