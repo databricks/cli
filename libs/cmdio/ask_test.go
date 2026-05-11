@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestCompat_readLine(t *testing.T) {
+func TestReadLine(t *testing.T) {
 	tests := []struct {
 		name       string
 		reader     io.Reader
@@ -147,55 +147,7 @@ func (e *errorAfterNReader) Read(p []byte) (n int, err error) {
 	return 0, e.err
 }
 
-func TestCompat_splitAtLastNewLine(t *testing.T) {
-	tests := []struct {
-		name      string
-		input     string
-		wantFirst string
-		wantLast  string
-	}{
-		{
-			name:      "LF newline in middle",
-			input:     "hello\nworld",
-			wantFirst: "hello\n",
-			wantLast:  "world",
-		},
-		{
-			name:      "CRLF newline in middle",
-			input:     "hello\r\nworld",
-			wantFirst: "hello\r\n",
-			wantLast:  "world",
-		},
-		{
-			name:      "no newline",
-			input:     "hello world",
-			wantFirst: "",
-			wantLast:  "hello world",
-		},
-		{
-			name:      "newline at end",
-			input:     "hello\nworld\n",
-			wantFirst: "hello\nworld\n",
-			wantLast:  "",
-		},
-		{
-			name:      "newline at start",
-			input:     "\nhello world",
-			wantFirst: "\n",
-			wantLast:  "hello world",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			first, last := splitAtLastNewLine(tt.input)
-			assert.Equal(t, tt.wantFirst, first)
-			assert.Equal(t, tt.wantLast, last)
-		})
-	}
-}
-
-func TestCompat_AskYesOrNo(t *testing.T) {
+func TestAskYesOrNo(t *testing.T) {
 	tests := []struct {
 		name  string
 		input string
