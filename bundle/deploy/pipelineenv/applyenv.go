@@ -84,11 +84,10 @@ func (a *applyEnv) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics
 	return nil
 }
 
-// pipelinesNeedingEnvApply returns the dev-mode classic-compute pipelines that
-// could be affected by env cache. Skipped:
+// pipelinesNeedingEnvApply returns the dev-mode pipelines that could be
+// affected by the SDP env cache. Skipped:
 //   - missing/not-yet-deployed (no ID)
 //   - production mode (env always reinstalls on every update)
-//   - serverless (each update gets a fresh cluster; env refreshes naturally)
 func pipelinesNeedingEnvApply(b *bundle.Bundle) []*resources.Pipeline {
 	keys := make([]string, 0, len(b.Config.Resources.Pipelines))
 	for k := range b.Config.Resources.Pipelines {
@@ -99,7 +98,7 @@ func pipelinesNeedingEnvApply(b *bundle.Bundle) []*resources.Pipeline {
 	out := make([]*resources.Pipeline, 0, len(keys))
 	for _, k := range keys {
 		p := b.Config.Resources.Pipelines[k]
-		if p == nil || p.ID == "" || !p.Development || p.Serverless {
+		if p == nil || p.ID == "" || !p.Development {
 			continue
 		}
 		out = append(out, p)

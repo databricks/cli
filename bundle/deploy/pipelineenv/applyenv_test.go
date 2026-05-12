@@ -98,8 +98,9 @@ func TestPipelinesNeedingEnvApply(t *testing.T) {
 	}}}
 
 	got := pipelinesNeedingEnvApply(b)
-	require.Len(t, got, 1)
+	require.Len(t, got, 2)
 	assert.Equal(t, "dev_classic", got[0].Name)
+	assert.Equal(t, "dev_serverless", got[1].Name)
 }
 
 func TestIsComputeNotRunning(t *testing.T) {
