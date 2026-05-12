@@ -107,13 +107,13 @@ func (locker *Locker) assertLockHeld(ctx context.Context) error {
 	if activeLockState.ID != locker.State.ID && !activeLockState.IsForced {
 		return fmt.Errorf("deploy lock acquired by %s at %v.\n"+
 			"Another deployment may be in progress. Use --force-lock to override, but this may\n"+
-			"conflict with the other deployment if it is still active.",
+			"conflict with the other deployment if it is still active",
 			activeLockState.User, activeLockState.AcquisitionTime)
 	}
 	if activeLockState.ID != locker.State.ID && activeLockState.IsForced {
 		return fmt.Errorf("deploy lock force-acquired by %s at %v.\n"+
 			"Another deployment may be in progress. Use --force-lock to override, but this may\n"+
-			"conflict with the other deployment if it is still active.",
+			"conflict with the other deployment if it is still active",
 			activeLockState.User, activeLockState.AcquisitionTime)
 	}
 	return nil
