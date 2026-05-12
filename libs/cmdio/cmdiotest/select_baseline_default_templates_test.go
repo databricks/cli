@@ -1,12 +1,10 @@
 package cmdiotest_test
 
 import (
-	"runtime"
 	"testing"
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/cmdio/cmdiotest/termtest"
-	"github.com/databricks/cli/libs/flags"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -22,23 +20,6 @@ import (
 // changes to the defaults — or accidental loss of a custom template at
 // a call site — produce a visible diff.
 func TestSelectBaseline_DefaultTemplates(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("pty-based prompt tests are unix-only")
-	}
-
-	tm := termtest.New(t)
-	defer tm.Close()
-
-	pts := tm.Pty()
-	t.Setenv("NO_COLOR", "")
-	t.Setenv("TERM", "xterm-256color")
-
-	ctx := t.Context()
-	io := cmdio.NewIO(ctx, flags.OutputText, pts, pts, pts, "", "")
-	ctx = cmdio.InContext(ctx, io)
-
-	require.True(t, cmdio.IsPromptSupported(ctx), "prompt support must be detected on the pty")
-
 	// Same data shape as cmd/selftest/tui/fixtures.go buildItems(5).
 	items := []cmdio.Tuple{
 		{Name: "unity-catalog", Id: "id-01"},
@@ -48,19 +29,10 @@ func TestSelectBaseline_DefaultTemplates(t *testing.T) {
 		{Name: "mlflow", Id: "id-05"},
 	}
 
-	type result struct {
-		idx int
-		err error
-	}
-	resCh := make(chan result, 1)
-	go func() {
-		idx, err := cmdio.RunSelect(ctx, cmdio.SelectOptions{
-			Label: "Pick an item",
-			Items: items,
-		})
-		resCh <- result{idx: idx, err: err}
-	}()
-
+	tm := termtest.NewSelect(t, cmdio.SelectOptions{
+		Label: "Pick an item",
+		Items: items,
+	})
 	tm.WaitFor("Pick an item")
 	tm.Golden("01-initial")
 
@@ -69,9 +41,9 @@ func TestSelectBaseline_DefaultTemplates(t *testing.T) {
 
 	tm.Type(termtest.KeyEnter)
 
-	res := <-resCh
-	require.NoError(t, res.err, "raw output: %q", tm.Raw())
-	assert.Equal(t, 1, res.idx, "snapshot:\n%s", tm.Snapshot())
+	idx, err := tm.Result()
+	require.NoError(t, err, "raw output: %q", tm.Raw())
+	assert.Equal(t, 1, idx, "snapshot:\n%s", tm.Snapshot())
 
 	tm.Golden("03-after-enter")
 }

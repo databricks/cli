@@ -6,8 +6,46 @@ import (
 	"context"
 	"io"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/databricks/cli/libs/flags"
 )
+
+// TestTerminalWidth and TestTerminalHeight are the virtual terminal
+// dimensions [NewTestIO] reports to bubbletea via a synthetic WindowSizeMsg.
+// They match what the termtest harness expects when rendering the screen.
+const (
+	TestTerminalWidth  = 120
+	TestTerminalHeight = 40
+)
+
+// NewTestIO returns a cmdIO with prompt support forced on regardless of
+// whether in/out/err are TTYs, and a fixed terminal size pre-queued for
+// bubbletea. It exists so tests can drive prompts through the real
+// [RunPrompt] / [Secret] / [SelectOrdered] entry points by wiring their own
+// streams; without forcing capabilities, the SupportsPrompt() gate would
+// reject non-TTY streams.
+func NewTestIO(in io.Reader, out, err io.Writer) *cmdIO {
+	return &cmdIO{
+		capabilities: Capabilities{
+			stdinIsTTY:  true,
+			stdoutIsTTY: true,
+			stderrIsTTY: true,
+			color:       true,
+		},
+		outputFormat: flags.OutputText,
+		in:           in,
+		out:          out,
+		err:          err,
+		// Pre-queue a WindowSizeMsg. bubbletea's auto-detection (tty.go:
+		// checkResize) returns early unless the err writer is an *os.File
+		// that passes term.IsTerminal, which test streams rarely are.
+		// Without this the standard renderer runs with width=0 and produces
+		// stale cells on shrinking redraws.
+		teaInitialMsgs: []tea.Msg{
+			tea.WindowSizeMsg{Width: TestTerminalWidth, Height: TestTerminalHeight},
+		},
+	}
+}
 
 type Test struct {
 	Done context.CancelFunc

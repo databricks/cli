@@ -1,12 +1,9 @@
 package cmdiotest_test
 
 import (
-	"runtime"
 	"testing"
 
-	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/cmdio/cmdiotest/termtest"
-	"github.com/databricks/cli/libs/flags"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -15,33 +12,7 @@ import (
 // each typed character should render as the configured mask ('*'), backspace
 // should erase one mask char, and Enter should return the typed value.
 func TestSecretBaseline_Typing(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("pty-based prompt tests are unix-only")
-	}
-
-	tm := termtest.New(t)
-	defer tm.Close()
-
-	pts := tm.Pty()
-	t.Setenv("NO_COLOR", "")
-	t.Setenv("TERM", "xterm-256color")
-
-	ctx := t.Context()
-	io := cmdio.NewIO(ctx, flags.OutputText, pts, pts, pts, "", "")
-	ctx = cmdio.InContext(ctx, io)
-
-	require.True(t, cmdio.IsPromptSupported(ctx), "prompt support must be detected on the pty")
-
-	type result struct {
-		value string
-		err   error
-	}
-	resCh := make(chan result, 1)
-	go func() {
-		v, err := cmdio.Secret(ctx, "Enter password")
-		resCh <- result{value: v, err: err}
-	}()
-
+	tm := termtest.NewSecret(t, "Enter password")
 	tm.WaitFor("Enter password")
 	tm.Golden("01-empty")
 
@@ -53,7 +24,7 @@ func TestSecretBaseline_Typing(t *testing.T) {
 
 	tm.Type(termtest.KeyEnter)
 
-	res := <-resCh
-	require.NoError(t, res.err, "raw output: %q", tm.Raw())
-	assert.Equal(t, "hunter", res.value, "snapshot:\n%s", tm.Snapshot())
+	v, err := tm.Result()
+	require.NoError(t, err, "raw output: %q", tm.Raw())
+	assert.Equal(t, "hunter", v, "snapshot:\n%s", tm.Snapshot())
 }

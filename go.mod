@@ -12,7 +12,7 @@ require (
 	github.com/charmbracelet/bubbletea v1.3.10 // MIT
 	github.com/charmbracelet/huh v1.0.0 // MIT
 	github.com/charmbracelet/lipgloss v1.1.0 // MIT
-	github.com/creack/pty v1.1.24 // MIT
+	github.com/charmbracelet/x/ansi v0.11.6 // MIT
 	github.com/databricks/databricks-sdk-go v0.128.0 // Apache-2.0
 	github.com/google/jsonschema-go v0.4.3 // MIT
 	github.com/google/uuid v1.6.0 // BSD-3-Clause
@@ -22,7 +22,6 @@ require (
 	github.com/hashicorp/terraform-exec v0.25.0 // MPL-2.0
 	github.com/hashicorp/terraform-json v0.27.2 // MPL-2.0
 	github.com/hexops/gotextdiff v1.0.3 // BSD-3-Clause
-	github.com/hinshun/vt10x v0.0.0-20220301184237-5011da428d02 // MIT
 	github.com/jackc/pgx/v5 v5.9.2 // MIT
 	github.com/mattn/go-isatty v0.0.21 // MIT
 	github.com/palantir/pkg/yamlpatch v1.5.0 // BSD-3-Clause
@@ -40,7 +39,6 @@ require (
 	golang.org/x/oauth2 v0.36.0 // BSD-3-Clause
 	golang.org/x/sync v0.20.0 // BSD-3-Clause
 	golang.org/x/sys v0.43.0 // BSD-3-Clause
-	golang.org/x/term v0.42.0 // BSD-3-Clause
 	golang.org/x/text v0.36.0 // BSD-3-Clause
 	gopkg.in/ini.v1 v1.67.1 // Apache-2.0
 )
@@ -56,7 +54,6 @@ require (
 	github.com/catppuccin/go v0.3.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/charmbracelet/colorprofile v0.4.1 // indirect
-	github.com/charmbracelet/x/ansi v0.11.6 // indirect
 	github.com/charmbracelet/x/cellbuf v0.0.15 // indirect
 	github.com/charmbracelet/x/exp/strings v0.0.0-20240722160745-212f7b056ed0 // indirect
 	github.com/charmbracelet/x/term v0.2.2 // indirect

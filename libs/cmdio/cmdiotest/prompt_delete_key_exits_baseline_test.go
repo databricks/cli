@@ -3,14 +3,11 @@ package cmdiotest_test
 import (
 	"errors"
 	"io"
-	"runtime"
 	"testing"
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/cmdio/cmdiotest/termtest"
-	"github.com/databricks/cli/libs/flags"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 // TestPromptBaseline_DeleteKeyExits pins a surprising behavior of
@@ -27,35 +24,9 @@ import (
 // This test pins the current behavior so that any change (e.g. a promptui or
 // readline upgrade that splits the two keys) is intentional.
 func TestPromptBaseline_DeleteKeyExits(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("pty-based prompt tests are unix-only")
-	}
-
-	tm := termtest.New(t)
-	defer tm.Close()
-
-	pts := tm.Pty()
-	t.Setenv("NO_COLOR", "")
-	t.Setenv("TERM", "xterm-256color")
-
-	ctx := t.Context()
-	io2 := cmdio.NewIO(ctx, flags.OutputText, pts, pts, pts, "", "")
-	ctx = cmdio.InContext(ctx, io2)
-
-	require.True(t, cmdio.IsPromptSupported(ctx), "prompt support must be detected on the pty")
-
-	type result struct {
-		value string
-		err   error
-	}
-	resCh := make(chan result, 1)
-	go func() {
-		v, err := cmdio.RunPrompt(ctx, cmdio.PromptOptions{
-			Label: "Workspace name",
-		})
-		resCh <- result{value: v, err: err}
-	}()
-
+	tm := termtest.NewPrompt(t, cmdio.PromptOptions{
+		Label: "Workspace name",
+	})
 	tm.WaitFor("Workspace name")
 
 	// Type some content first to prove the buffer is non-empty from the user's
@@ -64,8 +35,8 @@ func TestPromptBaseline_DeleteKeyExits(t *testing.T) {
 	tm.Type("hello")
 	tm.Type(termtest.KeyDelete)
 
-	res := <-resCh
-	assert.Empty(t, res.value, "Delete-as-EOF discards typed input")
-	assert.Truef(t, errors.Is(res.err, io.EOF) || res.err.Error() == "^D",
-		"Delete should exit with EOF; got err=%v (raw output: %q)", res.err, tm.Raw())
+	v, err := tm.Result()
+	assert.Empty(t, v, "Delete-as-EOF discards typed input")
+	assert.Truef(t, errors.Is(err, io.EOF) || err.Error() == "^D",
+		"Delete should exit with EOF; got err=%v (raw output: %q)", err, tm.Raw())
 }

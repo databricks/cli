@@ -26,6 +26,10 @@ func (c *cmdIO) runTUI(m tea.Model) (tea.Model, error) {
 	)
 	c.acquireTeaProgram(p)
 	defer c.releaseTeaProgram()
+	// Drain any pre-queued messages set by NewTestIO. Empty for production.
+	for _, msg := range c.teaInitialMsgs {
+		go p.Send(msg)
+	}
 	return p.Run()
 }
 
@@ -54,6 +58,11 @@ type cmdIO struct {
 	teaMu      sync.Mutex
 	teaProgram *tea.Program
 	teaDone    chan struct{}
+
+	// teaInitialMsgs is delivered to the tea.Program before any user input
+	// is processed. Populated only by NewTestIO so pipe-backed test runs
+	// receive a synthetic WindowSizeMsg.
+	teaInitialMsgs []tea.Msg
 }
 
 func NewIO(ctx context.Context, outputFormat flags.Output, in io.Reader, out, err io.Writer, headerTemplate, template string) *cmdIO {
