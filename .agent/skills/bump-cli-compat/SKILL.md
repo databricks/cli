@@ -66,9 +66,30 @@ If any tag doesn't exist, report the error and stop.
 
 Read `internal/build/cli-compat.json`. Note the current versions and the list of versioned entries.
 
-### Step 4: Update the manifest
+### Step 4: Determine update type
 
-Update **all entries** (both `next` and all versioned CLI entries) to the new appkit and skills versions. This is the "no template changes" scenario — a simple search & replace.
+Ask the user:
+
+> Do any of these apply?
+> - **AppKit**: The new templates require new CLI logic in `apps init` (e.g. new flags, prompts, or template handling that older CLIs don't have)
+> - **Skills**: The new skills version uses CLI commands that older CLIs don't support
+>
+> If **neither** applies, this is a non-breaking bump (default).
+
+- **No breaking changes** (default): proceed to Step 4a.
+- **Breaking changes**: proceed to Step 4b.
+
+### Step 4a: No breaking changes (update in-place)
+
+Update the **highest versioned entry** to the new appkit and skills versions. Do NOT add new versioned keys. The manifest is range-based: updating the highest entry automatically covers all CLI versions in that range.
+
+Write the updated `internal/build/cli-compat.json`.
+
+### Step 4b: Breaking changes (add new entry)
+
+Ask the user for the **minimum CLI version** that supports the new features.
+
+Add a new entry keyed to that CLI version with the new appkit and skills versions. Keep older entries unchanged so older CLI binaries stay compatible.
 
 Write the updated `internal/build/cli-compat.json`.
 

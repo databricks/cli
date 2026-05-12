@@ -6,22 +6,27 @@
 
 ```json
 {
-  "next": { "appkit": "0.24.0", "skills": "0.1.5" },
-  "0.300.0": { "appkit": "0.24.0", "skills": "0.1.5" }
+  "0.296.0": { "appkit": "0.27.0", "skills": "0.1.5" },
+  "0.290.0": { "appkit": "0.24.0", "skills": "0.1.4" },
+  "0.280.0": { "appkit": "0.20.0", "skills": "0.1.0" }
 }
 ```
 
-- Each key is a CLI version (`X.Y.Z`) or `"next"`.
-- Each value specifies the compatible `appkit` and `skills` versions.
-- `"next"` is used for dev builds (`0.0.0-dev*`). For production CLI versions newer than all listed entries, the highest versioned entry is used.
+Each key is a CLI version in semver format. Each entry defines a **range floor**: it applies to that CLI version and all versions above it, up to (but not including) the next entry. The manifest should be **sparse** — not every CLI version needs its own entry. Only add a new entry when a compatibility boundary changes.
+
+For example, with the manifest above:
+- CLI `0.285.0` → uses `0.280.0` entry (appkit `0.20.0`)
+- CLI `0.293.0` → uses `0.290.0` entry (appkit `0.24.0`)
+- CLI `0.300.0` → uses `0.296.0` entry (appkit `0.27.0`, highest versioned)
+- CLI `0.0.0-dev+abc` → uses `0.296.0` entry (dev builds use the highest versioned entry)
 
 ## How the CLI resolves versions
 
-1. **Exact match** on CLI version → use that entry.
-2. **No exact match**, between two entries → use the nearest lower version's entry.
-3. **Newer than all entries** → use the highest versioned entry.
-4. **Older than all entries** → use the lowest (oldest) entry.
-5. **Dev builds** (`0.0.0-dev*`) → use `"next"`.
+1. **Dev builds** (`0.0.0-dev*`) → use the highest versioned entry.
+2. **Exact match** on CLI version → use that entry.
+3. **No exact match**, between two entries → use the nearest lower version's entry.
+4. **Newer than all entries** → use the highest versioned entry.
+5. **Older than all entries** → use the lowest (oldest) entry.
 
 ## Manifest sources (fallback chain)
 
@@ -32,15 +37,16 @@ At runtime, the CLI resolves the manifest from four sources:
 3. **Stale local cache** — if remote fetch fails but a previously cached file exists (even if expired), it is used as-is.
 4. **Embedded manifest** — compiled into the binary via `go:embed`. Used as last resort when both remote and local cache fail.
 
+Set `DATABRICKS_FORCE_EMBEDDED_COMPAT=true` to skip all tiers and use only the embedded manifest. This is useful for local development when testing with a locally compiled binary that has a modified `cli-compat.json`.
+
 ## When to update
 
-After each AppKit or Agent Skills release:
+The goal is to **keep the manifest sparse** — only add entries at compatibility boundaries. After each AppKit or Agent Skills release:
 
 1. **Run evals** on the new AppKit version. If there is no regression, proceed.
 2. **Open a PR** to update `cli-compat.json`. The change depends on the type of release:
-   - **No template changes** (just an AppKit/skills version bump): search & replace all version occurrences in the manifest and update `next`.
-   - **Template changes that don't require new CLI features**: test the last 3 CLI versions with the new template and update matching entries.
-   - **Template changes that require new CLI features**: add a new entry for the minimum CLI version that supports them; older entries keep pointing to the previous template version.
+   - **No breaking changes** (the new AppKit/skills version works with all existing CLI versions): update the existing highest versioned entry's appkit/skills values in-place. Do NOT add a new versioned key. All CLI versions in that range automatically pick up the new versions.
+   - **Breaking changes** (the new AppKit templates require specific `apps init` features, or the new skills version requires CLI commands that older CLIs lack): add a new entry keyed to the **minimum CLI version** that supports the new features. Older entries keep their previous appkit/skills values so older CLI binaries stay compatible.
 
 This process is manual for now but can be automated as part of the release workflow in the future. Use the `/bump-cli-compat` Claude Code skill to automate the update and PR creation.
 
@@ -52,7 +58,7 @@ The manifest is validated by Go tests in `libs/clicompat/`:
 go test ./libs/clicompat/... -run TestEmbeddedManifest -v
 ```
 
-This checks: valid JSON, `"next"` key present, at least one versioned entry, valid semver keys, valid semver entry values, `next` versions >= all entries, and ascending key order.
+This checks: valid JSON, at least one entry, valid semver keys, valid semver entry values, and ascending key order.
 
 ## Pruning policy
 

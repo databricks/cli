@@ -53,78 +53,45 @@ func testContext(t *testing.T) context.Context {
 	return env.Set(t.Context(), "DATABRICKS_CACHE_DIR", t.TempDir())
 }
 
-func testManifest() Manifest {
-	return Manifest{
-		"next":    {AppKit: "0.27.0", AgentSkills: "0.1.5"},
-		"0.296.0": {AppKit: "0.27.0", AgentSkills: "0.1.5"},
-		"0.295.0": {AppKit: "0.27.0", AgentSkills: "0.1.5"},
-		"0.290.0": {AppKit: "0.24.0", AgentSkills: "0.1.5"},
-		"0.288.0": {AppKit: "0.24.0", AgentSkills: "0.1.4"},
-	}
-}
+// --- Resolve tests ---
 
-// --- Resolve tests (unchanged, no network) ---
-
-func TestResolve_ExactMatch(t *testing.T) {
-	m := testManifest()
-	entry, err := Resolve(m, "0.296.0")
-	require.NoError(t, err)
-	assert.Equal(t, "0.27.0", entry.AppKit)
-	assert.Equal(t, "0.1.5", entry.AgentSkills)
-}
-
-func TestResolve_NearestLower(t *testing.T) {
-	m := testManifest()
-	entry, err := Resolve(m, "0.293.0")
-	require.NoError(t, err)
-	assert.Equal(t, "0.24.0", entry.AppKit)
-	assert.Equal(t, "0.1.5", entry.AgentSkills)
-}
-
-func TestResolve_NewerThanAll(t *testing.T) {
+// TestResolve_Ranges verifies range-based resolution. Each versioned entry
+// defines a range floor: it applies to that CLI version and all versions above
+// it up to (but not including) the next entry. Dev builds use the highest
+// versioned entry. The manifest uses distinct appkit values so assertions are
+// unambiguous.
+func TestResolve_Ranges(t *testing.T) {
 	m := Manifest{
-		"next":    {AppKit: "0.99.0", AgentSkills: "0.9.9"},
 		"0.296.0": {AppKit: "0.27.0", AgentSkills: "0.1.5"},
-		"0.290.0": {AppKit: "0.24.0", AgentSkills: "0.1.5"},
+		"0.290.0": {AppKit: "0.24.0", AgentSkills: "0.1.4"},
+		"0.280.0": {AppKit: "0.20.0", AgentSkills: "0.1.0"},
 	}
-	entry, err := Resolve(m, "0.300.0")
-	require.NoError(t, err)
-	assert.Equal(t, "0.27.0", entry.AppKit)
-	assert.Equal(t, "0.1.5", entry.AgentSkills)
-}
 
-func TestResolve_DevBuild(t *testing.T) {
-	m := testManifest()
-	entry, err := Resolve(m, "0.0.0-dev+abc123def")
-	require.NoError(t, err)
-	assert.Equal(t, "0.27.0", entry.AppKit)
-	assert.Equal(t, "0.1.5", entry.AgentSkills)
-}
-
-func TestResolve_OlderThanAll(t *testing.T) {
-	m := testManifest()
-	entry, err := Resolve(m, "0.280.0")
-	require.NoError(t, err)
-	assert.Equal(t, "0.24.0", entry.AppKit)
-	assert.Equal(t, "0.1.4", entry.AgentSkills)
-}
-
-func TestResolve_OnlyNextKey(t *testing.T) {
-	m := Manifest{
-		"next": {AppKit: "0.27.0", AgentSkills: "0.1.5"},
+	tests := []struct {
+		name       string
+		cliVersion string
+		wantAppKit string
+		wantSkills string
+	}{
+		{"exact match at range floor", "0.280.0", "0.20.0", "0.1.0"},
+		{"mid-range", "0.285.0", "0.20.0", "0.1.0"},
+		{"just below next range", "0.289.9", "0.20.0", "0.1.0"},
+		{"exact match mid entry", "0.290.0", "0.24.0", "0.1.4"},
+		{"between mid and top", "0.293.0", "0.24.0", "0.1.4"},
+		{"exact match highest", "0.296.0", "0.27.0", "0.1.5"},
+		{"newer than all entries uses highest", "0.300.0", "0.27.0", "0.1.5"},
+		{"older than all entries uses lowest", "0.270.0", "0.20.0", "0.1.0"},
+		{"dev build uses highest", "0.0.0-dev+abc123", "0.27.0", "0.1.5"},
+		{"bare dev uses highest", "0.0.0-dev", "0.27.0", "0.1.5"},
 	}
-	entry, err := Resolve(m, "0.296.0")
-	require.NoError(t, err)
-	assert.Equal(t, "0.27.0", entry.AppKit)
-	assert.Equal(t, "0.1.5", entry.AgentSkills)
-}
-
-func TestResolve_LowestEntryExactMatch(t *testing.T) {
-	m := testManifest()
-	entry, err := Resolve(m, "0.288.0")
-	require.NoError(t, err)
-	assert.Equal(t, "0.24.0", entry.AppKit)
-	assert.Equal(t, "0.1.4", entry.AgentSkills)
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			entry, err := Resolve(m, tc.cliVersion)
+			require.NoError(t, err)
+			assert.Equal(t, tc.wantAppKit, entry.AppKit)
+			assert.Equal(t, tc.wantSkills, entry.AgentSkills)
+		})
+	}
 }
 
 func TestResolve_EmptyManifest(t *testing.T) {
@@ -134,21 +101,11 @@ func TestResolve_EmptyManifest(t *testing.T) {
 	assert.Contains(t, err.Error(), "empty compatibility manifest")
 }
 
-func TestResolve_MissingNextKey(t *testing.T) {
-	m := Manifest{
-		"0.296.0": {AppKit: "0.27.0", AgentSkills: "0.1.5"},
-	}
-	_, err := Resolve(m, "0.296.0")
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), `missing "next" key`)
-}
-
 // --- FetchManifest tests ---
 
 func TestFetchManifest_RemoteSuccess(t *testing.T) {
 	ctx := testContext(t)
 	want := Manifest{
-		"next":    {AppKit: "0.99.0", AgentSkills: "0.9.9"},
 		"0.296.0": {AppKit: "0.99.0", AgentSkills: "0.9.9"},
 	}
 	body, _ := json.Marshal(want)
@@ -164,7 +121,7 @@ func TestFetchManifest_RemoteSuccess(t *testing.T) {
 	result, err := FetchManifest(ctx)
 	require.NoError(t, err)
 	assert.True(t, called, "test server should have been called")
-	assert.Equal(t, "0.99.0", result["next"].AppKit)
+	assert.Equal(t, "0.99.0", result["0.296.0"].AppKit)
 }
 
 func TestFetchManifest_RemoteFailFallsBackToEmbedded(t *testing.T) {
@@ -181,7 +138,7 @@ func TestFetchManifest_RemoteFailFallsBackToEmbedded(t *testing.T) {
 
 	// Verify it returned the embedded manifest values.
 	embedded, _ := parseManifest(build.CLICompatManifestJSON)
-	assert.Equal(t, embedded["next"].AppKit, result["next"].AppKit)
+	assert.Equal(t, embedded["0.300.0"].AppKit, result["0.300.0"].AppKit)
 }
 
 func TestFetchManifest_RemoteFailFallsBackToStaleCache(t *testing.T) {
@@ -189,7 +146,6 @@ func TestFetchManifest_RemoteFailFallsBackToStaleCache(t *testing.T) {
 
 	// Pre-populate the local cache with a stale manifest.
 	staleManifest := Manifest{
-		"next":    {AppKit: "0.88.0", AgentSkills: "0.8.8"},
 		"0.296.0": {AppKit: "0.88.0", AgentSkills: "0.8.8"},
 	}
 	localPath := manifestLocalPath(ctx)
@@ -207,13 +163,12 @@ func TestFetchManifest_RemoteFailFallsBackToStaleCache(t *testing.T) {
 	result, err := FetchManifest(ctx)
 	require.NoError(t, err)
 	// Should return the stale cached manifest, not the embedded one.
-	assert.Equal(t, "0.88.0", result["next"].AppKit)
+	assert.Equal(t, "0.88.0", result["0.296.0"].AppKit)
 }
 
 func TestFetchManifest_RemoteSuccessWritesLocalCache(t *testing.T) {
 	ctx := testContext(t)
 	want := Manifest{
-		"next":    {AppKit: "0.99.0", AgentSkills: "0.9.9"},
 		"0.296.0": {AppKit: "0.99.0", AgentSkills: "0.9.9"},
 	}
 	body, _ := json.Marshal(want)
@@ -236,7 +191,6 @@ func TestFetchManifest_RemoteSuccessWritesLocalCache(t *testing.T) {
 func TestFetchManifest_CacheHit(t *testing.T) {
 	ctx := testContext(t)
 	want := Manifest{
-		"next":    {AppKit: "0.99.0", AgentSkills: "0.9.9"},
 		"0.296.0": {AppKit: "0.99.0", AgentSkills: "0.9.9"},
 	}
 	body, _ := json.Marshal(want)
@@ -252,12 +206,12 @@ func TestFetchManifest_CacheHit(t *testing.T) {
 	// First call: populates cache.
 	result1, err := FetchManifest(ctx)
 	require.NoError(t, err)
-	assert.Equal(t, "0.99.0", result1["next"].AppKit)
+	assert.Equal(t, "0.99.0", result1["0.296.0"].AppKit)
 
 	// Second call: should come from cache, not hitting the server again.
 	result2, err := FetchManifest(ctx)
 	require.NoError(t, err)
-	assert.Equal(t, "0.99.0", result2["next"].AppKit)
+	assert.Equal(t, "0.99.0", result2["0.296.0"].AppKit)
 
 	assert.Equal(t, int32(1), callCount.Load(), "server should only be called once; second call should be a cache hit")
 }
@@ -265,7 +219,6 @@ func TestFetchManifest_CacheHit(t *testing.T) {
 func TestFetchManifest_RetryOnTransientError(t *testing.T) {
 	ctx := testContext(t)
 	want := Manifest{
-		"next":    {AppKit: "0.99.0", AgentSkills: "0.9.9"},
 		"0.296.0": {AppKit: "0.99.0", AgentSkills: "0.9.9"},
 	}
 	body, _ := json.Marshal(want)
@@ -284,17 +237,16 @@ func TestFetchManifest_RetryOnTransientError(t *testing.T) {
 
 	result, err := FetchManifest(ctx)
 	require.NoError(t, err)
-	assert.Equal(t, "0.99.0", result["next"].AppKit)
+	assert.Equal(t, "0.99.0", result["0.296.0"].AppKit)
 	assert.Equal(t, int32(2), callCount.Load(), "should have retried after first failure")
 }
 
 // --- parseManifest tests ---
 
 func TestParseManifest_Valid(t *testing.T) {
-	data := `{"next":{"appkit":"0.27.0","skills":"0.1.5"},"0.296.0":{"appkit":"0.27.0","skills":"0.1.5"}}`
+	data := `{"0.296.0":{"appkit":"0.27.0","skills":"0.1.5"}}`
 	m, err := parseManifest([]byte(data))
 	require.NoError(t, err)
-	assert.Equal(t, "0.27.0", m["next"].AppKit)
 	assert.Equal(t, "0.27.0", m["0.296.0"].AppKit)
 }
 
@@ -302,13 +254,6 @@ func TestParseManifest_InvalidJSON(t *testing.T) {
 	_, err := parseManifest([]byte("not json"))
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid manifest JSON")
-}
-
-func TestParseManifest_MissingNext(t *testing.T) {
-	data := `{"0.296.0":{"appkit":"0.27.0","skills":"0.1.5"}}`
-	_, err := parseManifest([]byte(data))
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), `missing "next" key`)
 }
 
 func TestParseManifest_Empty(t *testing.T) {
@@ -322,7 +267,6 @@ func TestParseManifest_Empty(t *testing.T) {
 func TestResolveEntry_RemoteSuccess(t *testing.T) {
 	ctx := testContext(t)
 	want := Manifest{
-		"next":    {AppKit: "0.99.0", AgentSkills: "0.9.9"},
 		"0.296.0": {AppKit: "0.99.0", AgentSkills: "0.9.9"},
 	}
 	body, _ := json.Marshal(want)
@@ -367,47 +311,26 @@ func TestResolveEmbeddedAppKitVersion(t *testing.T) {
 func TestEmbeddedManifest_IsWellFormed(t *testing.T) {
 	m, err := parseManifest(build.CLICompatManifestJSON)
 	require.NoError(t, err, "embedded manifest must be valid JSON")
+	require.NotEmpty(t, m, "embedded manifest must have at least one entry")
 
-	// Must have "next" key.
-	next, ok := m[nextKey]
-	require.True(t, ok, "embedded manifest must have %q key", nextKey)
-	assert.NotEmpty(t, next.AppKit, "next.appkit must be set")
-	assert.NotEmpty(t, next.AgentSkills, "next.skills must be set")
-
-	// Must have at least one versioned entry.
-	var versionedKeys []string
+	// All keys must be valid semver.
+	var keys []string
 	for k := range m {
-		if k != nextKey {
-			versionedKeys = append(versionedKeys, k)
-		}
-	}
-	assert.NotEmpty(t, versionedKeys, "must have at least one versioned CLI entry besides %q", nextKey)
-
-	// All versioned keys must be valid semver.
-	for _, k := range versionedKeys {
 		assert.True(t, semver.IsValid("v"+k), "key %q must be valid semver", k)
+		keys = append(keys, k)
 	}
 
 	// Sort to get deterministic order from map iteration.
-	slices.SortFunc(versionedKeys, func(a, b string) int {
+	slices.SortFunc(keys, func(a, b string) int {
 		return semver.Compare("v"+a, "v"+b)
 	})
 
-	// "next" versions must be >= all versioned entries.
-	for _, k := range versionedKeys {
-		entry := m[k]
-		assert.GreaterOrEqual(t, semver.Compare("v"+next.AppKit, "v"+entry.AppKit), 0,
-			"next.appkit (%s) must be >= %s.appkit (%s)", next.AppKit, k, entry.AppKit)
-		assert.GreaterOrEqual(t, semver.Compare("v"+next.AgentSkills, "v"+entry.AgentSkills), 0,
-			"next.skills (%s) must be >= %s.skills (%s)", next.AgentSkills, k, entry.AgentSkills)
-	}
-
-	// Versioned keys must be in ascending semver order.
-	for i := 1; i < len(versionedKeys); i++ {
-		cmp := semver.Compare("v"+versionedKeys[i-1], "v"+versionedKeys[i])
+	// Keys must be in ascending semver order.
+	for i := 1; i < len(keys); i++ {
+		cmp := semver.Compare("v"+keys[i-1], "v"+keys[i])
 		assert.LessOrEqual(t, cmp, 0,
-			"versioned keys must be in ascending order: %s should come before %s",
-			versionedKeys[i-1], versionedKeys[i])
+			"keys must be in ascending order: %s should come before %s",
+			keys[i-1], keys[i])
 	}
 }
 
@@ -422,7 +345,6 @@ func TestManifestLocalPath(t *testing.T) {
 func TestReadWriteLocalManifest(t *testing.T) {
 	ctx := testContext(t)
 	m := Manifest{
-		"next":    {AppKit: "0.50.0", AgentSkills: "0.5.0"},
 		"0.300.0": {AppKit: "0.50.0", AgentSkills: "0.5.0"},
 	}
 
@@ -431,7 +353,7 @@ func TestReadWriteLocalManifest(t *testing.T) {
 
 	cached, err := readLocalManifest(path)
 	require.NoError(t, err)
-	assert.Equal(t, "0.50.0", cached.manifest["next"].AppKit)
+	assert.Equal(t, "0.50.0", cached.manifest["0.300.0"].AppKit)
 	assert.True(t, cached.isFresh(cacheTTL), "just-written file should be fresh")
 }
 
@@ -463,31 +385,38 @@ func TestIsNotFoundError(t *testing.T) {
 // --- parseManifest entry validation tests ---
 
 func TestParseManifest_EmptyAppKit(t *testing.T) {
-	data := `{"next":{"appkit":"","skills":"0.1.5"}}`
+	data := `{"0.296.0":{"appkit":"","skills":"0.1.5"}}`
 	_, err := parseManifest([]byte(data))
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "empty appkit version")
 }
 
 func TestParseManifest_EmptySkills(t *testing.T) {
-	data := `{"next":{"appkit":"0.27.0","skills":""}}`
+	data := `{"0.296.0":{"appkit":"0.27.0","skills":""}}`
 	_, err := parseManifest([]byte(data))
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "empty skills version")
 }
 
 func TestParseManifest_InvalidAppKitSemver(t *testing.T) {
-	data := `{"next":{"appkit":"not-semver","skills":"0.1.5"}}`
+	data := `{"0.296.0":{"appkit":"not-semver","skills":"0.1.5"}}`
 	_, err := parseManifest([]byte(data))
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid appkit version")
 }
 
 func TestParseManifest_InvalidSkillsSemver(t *testing.T) {
-	data := `{"next":{"appkit":"0.27.0","skills":"abc"}}`
+	data := `{"0.296.0":{"appkit":"0.27.0","skills":"abc"}}`
 	_, err := parseManifest([]byte(data))
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid skills version")
+}
+
+func TestParseManifest_InvalidKey(t *testing.T) {
+	data := `{"not-semver":{"appkit":"0.27.0","skills":"0.1.5"}}`
+	_, err := parseManifest([]byte(data))
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid semver key")
 }
 
 // --- FetchManifest no-retry-on-404 test ---
@@ -507,7 +436,7 @@ func TestFetchManifest_NoRetryOn404(t *testing.T) {
 	require.NoError(t, err)
 
 	embedded, _ := parseEmbeddedManifest()
-	assert.Equal(t, embedded["next"].AppKit, result["next"].AppKit)
+	assert.Equal(t, embedded["0.300.0"].AppKit, result["0.300.0"].AppKit)
 	assert.Equal(t, int32(1), callCount.Load(), "404 should not be retried")
 }
 
@@ -518,7 +447,6 @@ func TestFetchManifest_CacheDisabled(t *testing.T) {
 	ctx = env.Set(ctx, "DATABRICKS_CACHE_ENABLED", "false")
 
 	want := Manifest{
-		"next":    {AppKit: "0.99.0", AgentSkills: "0.9.9"},
 		"0.296.0": {AppKit: "0.99.0", AgentSkills: "0.9.9"},
 	}
 	body, _ := json.Marshal(want)
@@ -534,12 +462,12 @@ func TestFetchManifest_CacheDisabled(t *testing.T) {
 	// First call fetches from remote.
 	result1, err := FetchManifest(ctx)
 	require.NoError(t, err)
-	assert.Equal(t, "0.99.0", result1["next"].AppKit)
+	assert.Equal(t, "0.99.0", result1["0.296.0"].AppKit)
 
 	// Second call should also fetch from remote (cache is disabled).
 	result2, err := FetchManifest(ctx)
 	require.NoError(t, err)
-	assert.Equal(t, "0.99.0", result2["next"].AppKit)
+	assert.Equal(t, "0.99.0", result2["0.296.0"].AppKit)
 
 	assert.Equal(t, int32(2), callCount.Load(), "with cache disabled, both calls should hit the server")
 
@@ -547,4 +475,24 @@ func TestFetchManifest_CacheDisabled(t *testing.T) {
 	localPath := manifestLocalPath(ctx)
 	_, statErr := os.Stat(localPath)
 	assert.ErrorIs(t, statErr, fs.ErrNotExist, "cache file should not exist when cache is disabled")
+}
+
+func TestFetchManifest_ForceEmbedded(t *testing.T) {
+	ctx := testContext(t)
+	ctx = env.Set(ctx, "DATABRICKS_FORCE_EMBEDDED_COMPAT", "true")
+
+	var called bool
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		called = true
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+	redirectToServer(t, srv)
+
+	result, err := FetchManifest(ctx)
+	require.NoError(t, err)
+	assert.False(t, called, "server should not be called when DATABRICKS_FORCE_EMBEDDED_COMPAT=true")
+
+	embedded, _ := parseManifest(build.CLICompatManifestJSON)
+	assert.Equal(t, embedded["0.300.0"].AppKit, result["0.300.0"].AppKit)
 }

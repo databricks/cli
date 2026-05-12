@@ -41,16 +41,15 @@ const (
 	// fetchTimeout is the HTTP timeout for fetching the manifest at runtime.
 	fetchTimeout = 3 * time.Second
 
-	// nextKey is the special manifest key for CLI versions newer than any entry.
-	nextKey = "next"
-
 	// cacheTTL is how long a locally cached manifest is considered fresh.
 	cacheTTL = 1 * time.Hour
 
 	// localManifestFile is the filename for the locally cached manifest.
 	localManifestFile = "compat-manifest.json"
 
-	// devVersionPrefix identifies dev builds that always use the "next" entry.
+	// devVersionPrefix identifies dev builds whose semver (0.0.0) is lower than
+	// all real CLI versions. These are treated as bleeding-edge and resolve to
+	// the highest versioned entry.
 	devVersionPrefix = "0.0.0-dev"
 
 	maxFetchAttempts  = 3
@@ -88,9 +87,18 @@ var httpClient = &http.Client{Timeout: fetchTimeout}
 //  3. Stale local file (if remote fails but a previously cached file exists)
 //  4. Embedded manifest compiled into the binary
 //
+// Set DATABRICKS_FORCE_EMBEDDED_COMPAT=true to skip all tiers and use only
+// the embedded manifest. Useful for local development when testing with a
+// locally compiled binary.
+//
 // Set DATABRICKS_CACHE_ENABLED=false to bypass the local cache (tiers 1 and 3a),
 // which is useful to recover from a bad cached manifest.
 func FetchManifest(ctx context.Context) (Manifest, error) {
+	if force, ok := env.GetBool(ctx, "DATABRICKS_FORCE_EMBEDDED_COMPAT"); ok && force {
+		log.Debugf(ctx, "Using embedded manifest (DATABRICKS_FORCE_EMBEDDED_COMPAT=true)")
+		return parseEmbeddedManifest()
+	}
+
 	cacheEnabled := true
 	if enabled, ok := env.GetBool(ctx, "DATABRICKS_CACHE_ENABLED"); ok {
 		cacheEnabled = enabled
@@ -197,8 +205,11 @@ func IsNotFoundError(err error) bool {
 
 // Resolve returns the manifest entry for the given CLI version.
 //
+// Each versioned entry defines a range floor: it applies to that CLI version
+// and all versions above it, up to (but not including) the next entry.
+//
 // Resolution order:
-//  1. Dev builds (version starts with "0.0.0-dev") use the "next" entry.
+//  1. Dev builds (version starts with "0.0.0-dev") use the highest versioned entry.
 //  2. Exact match on CLI version.
 //  3. Nearest lower version (semver-sorted). This also handles CLI versions
 //     newer than all entries, returning the highest known entry.
@@ -208,33 +219,23 @@ func Resolve(m Manifest, cliVersion string) (Entry, error) {
 		return Entry{}, errors.New("empty compatibility manifest")
 	}
 
-	next, ok := m[nextKey]
-	if !ok {
-		return Entry{}, fmt.Errorf("compatibility manifest missing %q key", nextKey)
+	// Collect and sort versioned keys descending.
+	versions := sortedVersions(m)
+	if len(versions) == 0 {
+		return Entry{}, errors.New("compatibility manifest has no versioned entries")
 	}
 
-	// Dev builds always use "next".
+	// Dev builds (0.0.0-dev*) have semver lower than all real CLI versions,
+	// so they would incorrectly resolve to the lowest entry. Use the highest
+	// versioned entry instead, since dev builds represent the bleeding edge.
 	if strings.HasPrefix(cliVersion, devVersionPrefix) {
-		return next, nil
+		return m[versions[0]], nil
 	}
 
 	// Exact match.
 	if entry, ok := m[cliVersion]; ok {
 		return entry, nil
 	}
-
-	// Collect and sort versioned keys (exclude "next").
-	var versions []string
-	for k := range m {
-		if k != nextKey {
-			versions = append(versions, k)
-		}
-	}
-
-	// Sort descending by semver. The semver package requires a "v" prefix.
-	slices.SortFunc(versions, func(a, b string) int {
-		return semver.Compare("v"+b, "v"+a)
-	})
 
 	// Find the nearest lower version.
 	vCLI := "v" + cliVersion
@@ -244,12 +245,20 @@ func Resolve(m Manifest, cliVersion string) (Entry, error) {
 		}
 	}
 
-	// CLI is older than all entries — use the lowest (oldest) entry as closest match.
-	// If there are no versioned entries (only "next"), fall back to "next".
-	if len(versions) == 0 {
-		return next, nil
-	}
+	// CLI is older than all entries — use the lowest (oldest) entry.
 	return m[versions[len(versions)-1]], nil
+}
+
+// sortedVersions returns manifest keys sorted descending by semver.
+func sortedVersions(m Manifest) []string {
+	versions := make([]string, 0, len(m))
+	for k := range m {
+		versions = append(versions, k)
+	}
+	slices.SortFunc(versions, func(a, b string) int {
+		return semver.Compare("v"+b, "v"+a)
+	})
+	return versions
 }
 
 // resolveEntry fetches the manifest, resolves for the given CLI version.
@@ -418,11 +427,8 @@ func parseManifest(data []byte) (Manifest, error) {
 	if len(m) == 0 {
 		return nil, errors.New("empty compatibility manifest")
 	}
-	if _, ok := m[nextKey]; !ok {
-		return nil, fmt.Errorf("compatibility manifest missing %q key", nextKey)
-	}
 	for k := range m {
-		if k != nextKey && !semver.IsValid("v"+k) {
+		if !semver.IsValid("v" + k) {
 			return nil, fmt.Errorf("invalid semver key %q in compatibility manifest", k)
 		}
 	}
