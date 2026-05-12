@@ -88,14 +88,10 @@ func NewKeyringCache() cache.TokenCache {
 	}
 }
 
-// ProbeKeyring returns nil if the OS keyring is reachable and accepts a
-// write+delete cycle within the standard timeout. A non-nil error means the
-// keyring cannot be used in this environment (no backend, headless Linux
-// session waiting on a UI prompt, locked keychain refusing access, etc.).
-//
-// Used by databricks auth login to decide whether to silently fall back to
-// plaintext storage before opening the browser, so the user does not
-// complete an OAuth flow only to fail at the final Store call.
+// ProbeKeyring returns nil if the OS keyring accepted a write+delete
+// cycle within the standard timeout. *TimeoutError means the keyring
+// was unresponsive (locked or hung, indistinguishable here); other
+// errors are definitive failures.
 func ProbeKeyring() error {
 	return probeWithBackend(zalandoBackend{}, defaultKeyringTimeout)
 }

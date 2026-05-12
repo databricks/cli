@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/libs/databrickscfg"
@@ -54,11 +55,13 @@ func ResolveCache(ctx context.Context, override StorageMode) (cache.TokenCache, 
 //  2. When the user explicitly asked for secure (override, env var, or
 //     config) but the keyring is unreachable, return an error. An explicit
 //     "I want secure" is honored strictly: never silently downgrade.
+//  3. When the probe times out, stay on keyring regardless of explicit.
+//     The timeout is ambiguous (locked vs hung); a misdiagnosis fails
+//     the final Store rather than silently downgrading to plaintext.
 //
-// Both rules are dormant today: the resolver default is plaintext, so
+// Rules 1 and 2 are dormant today: the resolver default is plaintext, so
 // (mode=Secure, explicit=false) is unreachable. They activate when the
-// default flips to secure (MS4 / cli-ga). Wiring lands now so MS4 is a
-// single-line default flip plus pin-on-success additions.
+// default flips to secure at GA.
 //
 // Login-specific. Read paths (auth token, bundle commands) keep the original
 // keyring error so they don't silently mint plaintext copies of tokens that
@@ -120,7 +123,7 @@ func resolveCacheForLoginWith(ctx context.Context, override StorageMode, f cache
 //
 // Pin-on-success across modes (locking in the first working behavior to
 // insulate users from keyring flakiness) is intentionally not implemented
-// here. It lands with MS4 alongside the default flip; pinning before the
+// here. It lands at GA alongside the default flip; pinning before the
 // flip would freeze every default user into plaintext and make the flip a
 // no-op for them.
 func applyLoginFallback(ctx context.Context, mode StorageMode, explicit bool, f cacheFactories) (cache.TokenCache, StorageMode, error) {
@@ -133,6 +136,15 @@ func applyLoginFallback(ctx context.Context, mode StorageMode, explicit bool, f 
 		return c, mode, nil
 	case StorageModeSecure:
 		if probeErr := f.probeKeyring(); probeErr != nil {
+			// Stay on keyring on timeout: a locked keyring being unlocked
+			// during OAuth is the common case, and a misdiagnosed hang
+			// fails the final Store anyway, which is better than a
+			// silent plaintext downgrade.
+			var timeoutErr *TimeoutError
+			if errors.As(probeErr, &timeoutErr) {
+				log.Debugf(ctx, "keyring probe timed out (%v); staying on keyring", probeErr)
+				return f.newKeyring(), mode, nil
+			}
 			if explicit {
 				return nil, "", fmt.Errorf("secure storage was requested but the OS keyring is not reachable: %w", probeErr)
 			}
@@ -159,7 +171,7 @@ func applyLoginFallback(ctx context.Context, mode StorageMode, explicit bool, f 
 // Only called on the (mode=Secure, explicit=false) probe-failure branch. That
 // branch is unreachable today (resolver default is plaintext), so this is
 // dormant infrastructure: it activates when the default flips to secure
-// (MS4) and lets default-on-broken-keyring users avoid a 3s probe on every
+// at GA and lets default-on-broken-keyring users avoid a 3s probe on every
 // command.
 func persistPlaintextFallback(ctx context.Context) error {
 	configPath := env.Get(ctx, "DATABRICKS_CONFIG_FILE")
