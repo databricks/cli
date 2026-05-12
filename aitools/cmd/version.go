@@ -7,6 +7,7 @@ import (
 
 	"github.com/databricks/cli/aitools/lib/installer"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/log"
 	"github.com/spf13/cobra"
 )
 
@@ -44,7 +45,10 @@ func NewVersionCmd() *cobra.Command {
 				return nil
 			}
 
-			latestRef := installer.GetSkillsRef(ctx)
+			latestRef, _, err := installer.GetSkillsRef(ctx)
+			if err != nil {
+				log.Debugf(ctx, "could not resolve skills version: %v", err)
+			}
 			bothScopes := globalState != nil && projectState != nil
 
 			cmdio.LogString(ctx, "Databricks AI Tools:")
@@ -78,6 +82,12 @@ func printVersionLine(ctx context.Context, label string, state *installer.Instal
 	skillNoun := "skills"
 	if len(state.Skills) == 1 {
 		skillNoun = "skill"
+	}
+
+	if latestRef == "" {
+		cmdio.LogString(ctx, fmt.Sprintf("  %s: v%s (%d %s)", label, version, len(state.Skills), skillNoun))
+		cmdio.LogString(ctx, "  Last updated: "+state.LastUpdated.Format("2006-01-02"))
+		return
 	}
 
 	if latestRef == state.Release {

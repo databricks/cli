@@ -18,6 +18,7 @@ func installTestSkills(t *testing.T, tmp string) string {
 	t.Helper()
 	ctx := cmdio.MockDiscard(t.Context())
 	setupFetchMock(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
 
 	src := &mockManifestSource{manifest: testManifest()}
 	agent := testAgent(tmp)
@@ -48,6 +49,7 @@ func TestUninstallRemovesSymlinks(t *testing.T) {
 	tmp := setupTestHome(t)
 	ctx := cmdio.MockDiscard(t.Context())
 	setupFetchMock(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
 
 	// Use two registry-based agents so uninstall can find them.
 	// Create config dirs for claude-code and cursor (both in agents.Registry).
