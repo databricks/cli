@@ -107,6 +107,10 @@ golang.org/x/sys - https://github.com/golang/sys
 Copyright 2009 The Go Authors.
 License - https://github.com/golang/sys/blob/master/LICENSE
 
+golang.org/x/term - https://github.com/golang/term
+Copyright 2009 The Go Authors.
+License - https://github.com/golang/term/blob/master/LICENSE
+
 golang.org/x/text - https://github.com/golang/text
 Copyright 2009 The Go Authors.
 License - https://github.com/golang/text/blob/master/LICENSE
@@ -167,3 +171,11 @@ License - https://github.com/yaml/go-yaml/blob/v3/LICENSE
 zalando/go-keyring - https://github.com/zalando/go-keyring
 Copyright (c) 2016 Zalando SE
 License - https://github.com/zalando/go-keyring/blob/master/LICENSE
+
+creack/pty - https://github.com/creack/pty
+Copyright (c) 2019 Christopher Koch
+License - https://github.com/creack/pty/blob/master/LICENSE
+
+hinshun/vt10x - https://github.com/hinshun/vt10x
+Copyright (c) 2017 ActiveState Software Inc.
+License - https://github.com/hinshun/vt10x/blob/master/LICENSE
