@@ -14,9 +14,7 @@ New = '[PROCESS_KILLED]'
 
 [[Repls]]
 Old = '(\n>>> errcode [^\n]+\n)\nExit code:'
-New = """${1}[PROCESS_KILLED]
-
-Exit code:"""
+New = "${1}[PROCESS_KILLED]\n\nExit code:"
 
 [[Repls]]
 Old = 'Exit code: 137'
@@ -33,7 +31,4 @@ New = '${1}[KILLED]'
 # Match the raw exit code 1 (Windows never gets 137 or [PROCESS_KILLED] marker first).
 [[Repls]]
 Old = '(Deploying resources\.\.\.)\n\nExit code: 1'
-New = """${1}
-[PROCESS_KILLED]
-
-Exit code: [KILLED]"""
+New = "${1}\n[PROCESS_KILLED]\n\nExit code: [KILLED]"
