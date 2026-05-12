@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/databricks/cli/libs/clicompat"
 	"github.com/databricks/cli/libs/log"
 )
 
@@ -37,6 +38,9 @@ func (s *GitHubManifestSource) FetchManifest(ctx context.Context, ref string) (*
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode == http.StatusNotFound {
+		return nil, fmt.Errorf("skills manifest at %s@%s: %w", skillsRepoName, ref, clicompat.ErrNotFound)
+	}
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("failed to fetch manifest: HTTP %d", resp.StatusCode)
 	}
