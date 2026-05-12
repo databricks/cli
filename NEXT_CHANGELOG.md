@@ -2,6 +2,9 @@
 
 ## Release v0.299.2
 
+### Notable Changes
+* Breaking change: `vector_search_endpoints` renamed `min_qps` to `target_qps` in DABs configuration and the `vector-search-endpoints` commands, following the SDK rename in v0.131.0. Update any `databricks.yml` using `min_qps:` to `target_qps:` and any CLI invocations using `--min-qps` to `--target-qps`.
+
 ### CLI
 
 * `databricks auth describe` now reports where U2M (`databricks-cli`) tokens are stored: `plaintext` (`~/.databricks/token-cache.json`) or `secure` (OS keyring), and the source of the choice (env var, config setting, or default).
