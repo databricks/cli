@@ -63,10 +63,11 @@ func (c Capabilities) SupportsPager() bool {
 	return c.SupportsPrompt() && c.stdoutIsTTY
 }
 
-// detectGitBash returns true if running in Git Bash on Windows. We disable
-// prompting there because Git Bash's ANSI handling has historically broken
-// the line editor; the flag is kept so SupportsPrompt can gate on it and
-// callers don't accidentally render a garbled UI.
+// detectGitBash returns true if running under a Cygwin/MSYS2 environment on
+// Windows (Git Bash is the common case).
+//
+// We disable prompting there because bubbletea is not compatible with the
+// Cygwin/MSYS2 pty emulation; making it work is a follow-up.
 func detectGitBash(ctx context.Context) bool {
 	// Check if the MSYSTEM environment variable is set to "MINGW64"
 	msystem := env.Get(ctx, "MSYSTEM")
