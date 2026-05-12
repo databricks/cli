@@ -12,7 +12,7 @@ import (
 
 type rewriteWorkspacePrefix struct{}
 
-// RewriteWorkspacePrefix finds any strings in bundle configration that have
+// RewriteWorkspacePrefix finds any strings in bundle configuration that have
 // workspace prefix plus workspace path variable used and removes workspace prefix from it.
 func RewriteWorkspacePrefix() bundle.Mutator {
 	return &rewriteWorkspacePrefix{}

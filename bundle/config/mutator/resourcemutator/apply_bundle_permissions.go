@@ -18,7 +18,8 @@ import (
 
 var (
 	allowedLevels = []string{permissions.CAN_MANAGE, permissions.CAN_VIEW, permissions.CAN_RUN}
-	levelsMap     = map[string](map[string]string){
+	// Map of allowed permission levels to the corresponding permission level of specific resources
+	levelsMap = map[string](map[string]string){
 		"jobs": {
 			permissions.CAN_MANAGE: "CAN_MANAGE",
 			permissions.CAN_VIEW:   "CAN_VIEW",
@@ -77,6 +78,11 @@ var (
 			permissions.CAN_MANAGE: "CAN_MANAGE",
 			permissions.CAN_VIEW:   "CAN_ATTACH_TO",
 			permissions.CAN_RUN:    "CAN_RESTART",
+		},
+		"vector_search_endpoints": {
+			// https://docs.databricks.com/aws/en/security/auth/access-control/#vector-search-endpoint-acls
+			permissions.CAN_MANAGE: "CAN_MANAGE",
+			permissions.CAN_VIEW:   "CAN_USE",
 		},
 	}
 )

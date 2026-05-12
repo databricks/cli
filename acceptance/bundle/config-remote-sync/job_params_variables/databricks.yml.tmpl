@@ -1,0 +1,25 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+variables:
+  catalog:
+    default: main
+  schema:
+    default: dev
+
+resources:
+  jobs:
+    my_job:
+      parameters:
+        - name: catalog
+          default: ${var.catalog}
+        - name: schema
+          default: ${var.schema}
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/notebook
+
+targets:
+  default:
+    mode: development

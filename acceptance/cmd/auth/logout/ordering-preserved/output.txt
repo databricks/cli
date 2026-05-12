@@ -2,17 +2,17 @@
 === Initial config
 ; The profile defined in the DEFAULT section is to be used as a fallback when no profile is explicitly specified.
 [DEFAULT]
-host = https://default.cloud.databricks.com
+host = [DATABRICKS_URL]
 auth_type = databricks-cli
 
 ; First workspace — alpha
 [alpha]
-host = https://alpha.cloud.databricks.com
+host = [DATABRICKS_URL]
 auth_type = databricks-cli
 
 ; Second workspace — beta
 [beta]
-host = https://beta.cloud.databricks.com
+host = [DATABRICKS_URL]
 auth_type = databricks-cli
 
 ; Third workspace — gamma
@@ -22,7 +22,7 @@ account_id = account-id
 auth_type  = databricks-cli
 
 === Delete first non-default profile (alpha)
->>> [CLI] auth logout --profile alpha --force --delete
+>>> [CLI] auth logout --profile alpha --auto-approve --delete
 Logged out of and deleted profile "alpha".
 
 === Backup file should exist
@@ -31,12 +31,12 @@ OK: Backup file exists
 === Config after deleting alpha
 ; The profile defined in the DEFAULT section is to be used as a fallback when no profile is explicitly specified.
 [DEFAULT]
-host      = https://default.cloud.databricks.com
+host      = [DATABRICKS_URL]
 auth_type = databricks-cli
 
 ; Second workspace — beta
 [beta]
-host      = https://beta.cloud.databricks.com
+host      = [DATABRICKS_URL]
 auth_type = databricks-cli
 
 ; Third workspace — gamma
@@ -46,16 +46,16 @@ account_id = account-id
 auth_type  = databricks-cli
 
 === Delete last profile (gamma)
->>> [CLI] auth logout --profile gamma --force --delete
+>>> [CLI] auth logout --profile gamma --auto-approve --delete
 Logged out of and deleted profile "gamma".
 
 === Config after deleting gamma
 ; The profile defined in the DEFAULT section is to be used as a fallback when no profile is explicitly specified.
 [DEFAULT]
-host      = https://default.cloud.databricks.com
+host      = [DATABRICKS_URL]
 auth_type = databricks-cli
 
 ; Second workspace — beta
 [beta]
-host      = https://beta.cloud.databricks.com
+host      = [DATABRICKS_URL]
 auth_type = databricks-cli

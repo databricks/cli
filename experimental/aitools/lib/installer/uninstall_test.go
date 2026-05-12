@@ -2,6 +2,7 @@ package installer
 
 import (
 	"context"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"testing"
@@ -36,9 +37,9 @@ func TestUninstallRemovesSkillDirectories(t *testing.T) {
 
 	// Skill directories should be gone.
 	_, err = os.Stat(filepath.Join(globalDir, "databricks-sql"))
-	assert.True(t, os.IsNotExist(err))
+	assert.ErrorIs(t, err, fs.ErrNotExist)
 	_, err = os.Stat(filepath.Join(globalDir, "databricks-jobs"))
-	assert.True(t, os.IsNotExist(err))
+	assert.ErrorIs(t, err, fs.ErrNotExist)
 
 	assert.Contains(t, stderr.String(), "Uninstalled 2 skills.")
 }
@@ -80,11 +81,11 @@ func TestUninstallRemovesSymlinks(t *testing.T) {
 	for _, agentDir := range []string{".claude", ".cursor"} {
 		sqlLink := filepath.Join(tmp, agentDir, "skills", "databricks-sql")
 		_, err := os.Lstat(sqlLink)
-		assert.True(t, os.IsNotExist(err), "symlink should be removed from %s", agentDir)
+		assert.ErrorIs(t, err, fs.ErrNotExist, "symlink should be removed from %s", agentDir)
 
 		jobsLink := filepath.Join(tmp, agentDir, "skills", "databricks-jobs")
 		_, err = os.Lstat(jobsLink)
-		assert.True(t, os.IsNotExist(err), "symlink should be removed from %s", agentDir)
+		assert.ErrorIs(t, err, fs.ErrNotExist, "symlink should be removed from %s", agentDir)
 	}
 }
 
@@ -110,7 +111,7 @@ func TestUninstallCleansOrphanedSymlinks(t *testing.T) {
 
 	// Orphaned symlink should be removed.
 	_, err = os.Lstat(orphanLink)
-	assert.True(t, os.IsNotExist(err))
+	assert.ErrorIs(t, err, fs.ErrNotExist)
 }
 
 func TestUninstallDeletesStateFile(t *testing.T) {
@@ -127,7 +128,7 @@ func TestUninstallDeletesStateFile(t *testing.T) {
 
 	// State file should be gone.
 	_, err = os.Stat(filepath.Join(globalDir, ".state.json"))
-	assert.True(t, os.IsNotExist(err))
+	assert.ErrorIs(t, err, fs.ErrNotExist)
 }
 
 func TestUninstallNoStateReturnsError(t *testing.T) {
@@ -190,7 +191,7 @@ func TestUninstallHandlesBrokenSymlinksToCanonicalDir(t *testing.T) {
 
 	// Symlink pointing to canonical dir should be removed.
 	_, err = os.Lstat(link)
-	assert.True(t, os.IsNotExist(err))
+	assert.ErrorIs(t, err, fs.ErrNotExist)
 	assert.Contains(t, stderr.String(), "Uninstalled 1 skill.")
 }
 
@@ -266,7 +267,7 @@ func TestUninstallSelectiveRemovesOnlyNamedSkills(t *testing.T) {
 
 	// databricks-sql should be gone.
 	_, err = os.Stat(filepath.Join(globalDir, "databricks-sql"))
-	assert.True(t, os.IsNotExist(err))
+	assert.ErrorIs(t, err, fs.ErrNotExist)
 
 	// databricks-jobs should still exist.
 	_, err = os.Stat(filepath.Join(globalDir, "databricks-jobs"))
@@ -303,7 +304,7 @@ func TestUninstallSelectiveDuplicateNamesDeduplicates(t *testing.T) {
 
 	// databricks-sql should be gone.
 	_, err = os.Stat(filepath.Join(globalDir, "databricks-sql"))
-	assert.True(t, os.IsNotExist(err))
+	assert.ErrorIs(t, err, fs.ErrNotExist)
 
 	// databricks-jobs should still exist.
 	_, err = os.Stat(filepath.Join(globalDir, "databricks-jobs"))
@@ -329,5 +330,5 @@ func TestUninstallSelectiveAllRemovesStateFile(t *testing.T) {
 
 	// State file should be gone since all skills were removed.
 	_, err = os.Stat(filepath.Join(globalDir, ".state.json"))
-	assert.True(t, os.IsNotExist(err))
+	assert.ErrorIs(t, err, fs.ErrNotExist)
 }

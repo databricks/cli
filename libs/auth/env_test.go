@@ -10,7 +10,7 @@ import (
 func TestAuthEnv(t *testing.T) {
 	in := &config.Config{
 		Profile:            "myprofile",
-		Host:               "https://test.com",
+		Host:               "https://test.test",
 		Token:              "test-token",
 		Password:           "test-password",
 		MetadataServiceURL: "http://somurl.com",
@@ -25,7 +25,7 @@ func TestAuthEnv(t *testing.T) {
 
 	expected := map[string]string{
 		"DATABRICKS_CONFIG_PROFILE":       "myprofile",
-		"DATABRICKS_HOST":                 "https://test.com",
+		"DATABRICKS_HOST":                 "https://test.test",
 		"DATABRICKS_TOKEN":                "test-token",
 		"DATABRICKS_PASSWORD":             "test-password",
 		"DATABRICKS_METADATA_SERVICE_URL": "http://somurl.com",

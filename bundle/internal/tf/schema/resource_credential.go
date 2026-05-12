@@ -26,6 +26,10 @@ type ResourceCredentialDatabricksGcpServiceAccount struct {
 	PrivateKeyId string `json:"private_key_id,omitempty"`
 }
 
+type ResourceCredentialProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type ResourceCredential struct {
 	Comment                     string                                         `json:"comment,omitempty"`
 	CreatedAt                   int                                            `json:"created_at,omitempty"`
@@ -49,4 +53,5 @@ type ResourceCredential struct {
 	AzureManagedIdentity        *ResourceCredentialAzureManagedIdentity        `json:"azure_managed_identity,omitempty"`
 	AzureServicePrincipal       *ResourceCredentialAzureServicePrincipal       `json:"azure_service_principal,omitempty"`
 	DatabricksGcpServiceAccount *ResourceCredentialDatabricksGcpServiceAccount `json:"databricks_gcp_service_account,omitempty"`
+	ProviderConfig              *ResourceCredentialProviderConfig              `json:"provider_config,omitempty"`
 }

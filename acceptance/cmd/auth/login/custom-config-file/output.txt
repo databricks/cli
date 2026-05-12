@@ -5,18 +5,8 @@ host = https://old-host.cloud.databricks.com
 auth_type = pat
 token = old-token-123
 
-=== Login with new host (should override old host)
+=== Login with conflicting host (should error)
 >>> [CLI] auth login --host [DATABRICKS_URL] --profile custom-test
-Profile custom-test was successfully saved
+Error: --profile "custom-test" has host "https://old-host.cloud.databricks.com", which conflicts with --host "[DATABRICKS_URL]". Use --profile only to select a profile
 
-=== Default config file should NOT exist
-OK: Default .databrickscfg does not exist
-
-=== Custom config file after login (old host should be replaced)
-; The profile defined in the DEFAULT section is to be used as a fallback when no profile is explicitly specified.
-[DEFAULT]
-
-[custom-test]
-host         = [DATABRICKS_URL]
-auth_type    = databricks-cli
-workspace_id = [NUMID]
+Exit code: 1

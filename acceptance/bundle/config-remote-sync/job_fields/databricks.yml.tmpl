@@ -4,6 +4,7 @@ bundle:
 resources:
   jobs:
     my_job:
+      name: test-job-$UNIQUE_NAME
       email_notifications:
         on_success:
           - success@example.com

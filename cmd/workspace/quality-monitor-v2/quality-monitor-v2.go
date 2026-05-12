@@ -81,7 +81,7 @@ func newCreateQualityMonitor() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'object_type', 'object_id' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'object_type', 'object_id' in your JSON input")
 			}
 			return nil
 		}
@@ -117,6 +117,7 @@ func newCreateQualityMonitor() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -235,6 +236,7 @@ func newGetQualityMonitor() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -263,9 +265,19 @@ func newListQualityMonitor() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listQualityMonitorReq qualitymonitorv2.ListQualityMonitorRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listQualityMonitorLimit int
 
 	cmd.Flags().IntVar(&listQualityMonitorReq.PageSize, "page-size", listQualityMonitorReq.PageSize, ``)
-	cmd.Flags().StringVar(&listQualityMonitorReq.PageToken, "page-token", listQualityMonitorReq.PageToken, ``)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listQualityMonitorLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listQualityMonitorReq.PageToken, "page-token", listQualityMonitorReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-quality-monitor"
 	cmd.Short = `List quality monitors.`
@@ -287,6 +299,13 @@ func newListQualityMonitor() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.QualityMonitorV2.ListQualityMonitor(ctx, listQualityMonitorReq)
+		if listQualityMonitorLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listQualityMonitorLimit)
+		}
+		if listQualityMonitorLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listQualityMonitorLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -381,6 +400,7 @@ func newUpdateQualityMonitor() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 

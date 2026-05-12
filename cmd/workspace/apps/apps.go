@@ -37,6 +37,7 @@ func New() *cobra.Command {
 	cmd.AddCommand(newCreateSpace())
 	cmd.AddCommand(newCreateUpdate())
 	cmd.AddCommand(newDelete())
+	cmd.AddCommand(newDeleteAppThumbnail())
 	cmd.AddCommand(newDeleteSpace())
 	cmd.AddCommand(newDeploy())
 	cmd.AddCommand(newGet())
@@ -53,6 +54,7 @@ func New() *cobra.Command {
 	cmd.AddCommand(newStart())
 	cmd.AddCommand(newStop())
 	cmd.AddCommand(newUpdate())
+	cmd.AddCommand(newUpdateAppThumbnail())
 	cmd.AddCommand(newUpdatePermissions())
 	cmd.AddCommand(newUpdateSpace())
 
@@ -120,7 +122,7 @@ func newCreate() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'name' in your JSON input")
 			}
 			return nil
 		}
@@ -243,7 +245,7 @@ func newCreateSpace() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'name' in your JSON input")
 			}
 			return nil
 		}
@@ -484,6 +486,7 @@ func newDelete() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -494,6 +497,62 @@ func newDelete() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range deleteOverrides {
 		fn(cmd, &deleteReq)
+	}
+
+	return cmd
+}
+
+// start delete-app-thumbnail command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var deleteAppThumbnailOverrides []func(
+	*cobra.Command,
+	*apps.DeleteAppThumbnailRequest,
+)
+
+func newDeleteAppThumbnail() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var deleteAppThumbnailReq apps.DeleteAppThumbnailRequest
+
+	cmd.Use = "delete-app-thumbnail NAME"
+	cmd.Short = `Delete an app thumbnail.`
+	cmd.Long = `Delete an app thumbnail.
+
+  Deletes the thumbnail for an app.
+
+  Arguments:
+    NAME: The name of the app.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		deleteAppThumbnailReq.Name = args[0]
+
+		err = w.Apps.DeleteAppThumbnail(ctx, deleteAppThumbnailReq)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range deleteAppThumbnailOverrides {
+		fn(cmd, &deleteAppThumbnailReq)
 	}
 
 	return cmd
@@ -748,6 +807,7 @@ func newGet() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -807,6 +867,7 @@ func newGetDeployment() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -863,6 +924,7 @@ func newGetPermissionLevels() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -920,6 +982,7 @@ func newGetPermissions() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -979,6 +1042,7 @@ func newGetSpace() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -1038,6 +1102,7 @@ func newGetSpaceOperation() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -1094,6 +1159,7 @@ func newGetUpdate() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -1122,10 +1188,20 @@ func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listReq apps.ListAppsRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listLimit int
 
 	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `Upper bound for items returned.`)
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Pagination token to go to the next page of apps.`)
 	cmd.Flags().StringVar(&listReq.Space, "space", listReq.Space, `Filter apps by app space name.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list"
 	cmd.Short = `List apps.`
@@ -1146,6 +1222,13 @@ func newList() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.Apps.List(ctx, listReq)
+		if listLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
+		}
+		if listLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -1174,9 +1257,19 @@ func newListDeployments() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listDeploymentsReq apps.ListAppDeploymentsRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listDeploymentsLimit int
 
 	cmd.Flags().IntVar(&listDeploymentsReq.PageSize, "page-size", listDeploymentsReq.PageSize, `Upper bound for items returned.`)
-	cmd.Flags().StringVar(&listDeploymentsReq.PageToken, "page-token", listDeploymentsReq.PageToken, `Pagination token to go to the next page of apps.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listDeploymentsLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listDeploymentsReq.PageToken, "page-token", listDeploymentsReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-deployments APP_NAME"
 	cmd.Short = `List app deployments.`
@@ -1202,6 +1295,13 @@ func newListDeployments() *cobra.Command {
 		listDeploymentsReq.AppName = args[0]
 
 		response := w.Apps.ListDeployments(ctx, listDeploymentsReq)
+		if listDeploymentsLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listDeploymentsLimit)
+		}
+		if listDeploymentsLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listDeploymentsLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -1230,9 +1330,19 @@ func newListSpaces() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listSpacesReq apps.ListSpacesRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listSpacesLimit int
 
 	cmd.Flags().IntVar(&listSpacesReq.PageSize, "page-size", listSpacesReq.PageSize, `Upper bound for items returned.`)
-	cmd.Flags().StringVar(&listSpacesReq.PageToken, "page-token", listSpacesReq.PageToken, `Pagination token to go to the next page of app spaces.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listSpacesLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listSpacesReq.PageToken, "page-token", listSpacesReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-spaces"
 	cmd.Short = `List app spaces.`
@@ -1256,6 +1366,13 @@ func newListSpaces() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.Apps.ListSpaces(ctx, listSpacesReq)
+		if listSpacesLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listSpacesLimit)
+		}
+		if listSpacesLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listSpacesLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -1331,6 +1448,7 @@ func newSetPermissions() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -1581,6 +1699,7 @@ func newUpdate() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -1591,6 +1710,80 @@ func newUpdate() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range updateOverrides {
 		fn(cmd, &updateReq)
+	}
+
+	return cmd
+}
+
+// start update-app-thumbnail command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updateAppThumbnailOverrides []func(
+	*cobra.Command,
+	*apps.UpdateAppThumbnailRequest,
+)
+
+func newUpdateAppThumbnail() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var updateAppThumbnailReq apps.UpdateAppThumbnailRequest
+	var updateAppThumbnailJson flags.JsonFlag
+
+	cmd.Flags().Var(&updateAppThumbnailJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	// TODO: complex arg: app_thumbnail
+
+	cmd.Use = "update-app-thumbnail NAME"
+	cmd.Short = `Update an app thumbnail.`
+	cmd.Long = `Update an app thumbnail.
+
+  Updates the thumbnail for an app.
+
+  Arguments:
+    NAME: The name of the app.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := updateAppThumbnailJson.Unmarshal(&updateAppThumbnailReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnostics(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		updateAppThumbnailReq.Name = args[0]
+
+		response, err := w.Apps.UpdateAppThumbnail(ctx, updateAppThumbnailReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updateAppThumbnailOverrides {
+		fn(cmd, &updateAppThumbnailReq)
 	}
 
 	return cmd
@@ -1655,6 +1848,7 @@ func newUpdatePermissions() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 

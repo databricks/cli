@@ -67,17 +67,3 @@ func putSecret(ctx context.Context, client *databricks.WorkspaceClient, scope, k
 	}
 	return nil
 }
-
-// PutSecretInScope creates the secret scope if needed and stores the secret.
-// sessionID is the unique identifier for the session (cluster ID for dedicated clusters, connection name for serverless).
-func PutSecretInScope(ctx context.Context, client *databricks.WorkspaceClient, sessionID, key, value string) (string, error) {
-	scopeName, err := CreateKeysSecretScope(ctx, client, sessionID)
-	if err != nil {
-		return "", err
-	}
-	err = putSecret(ctx, client, scopeName, key, value)
-	if err != nil {
-		return "", err
-	}
-	return scopeName, nil
-}

@@ -11,6 +11,8 @@ type DataSourceAppSpacesSpacesProviderConfig struct {
 }
 
 type DataSourceAppSpacesSpacesResourcesApp struct {
+	Name       string `json:"name,omitempty"`
+	Permission string `json:"permission,omitempty"`
 }
 
 type DataSourceAppSpacesSpacesResourcesDatabase struct {

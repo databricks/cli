@@ -1,0 +1,7 @@
+{
+  "method": "PATCH",
+  "path": "/api/2.0/vector-search/endpoints/vs-endpoint-[UNIQUE_NAME]/budget-policy",
+  "body": {
+    "budget_policy_id": "test-policy-id"
+  }
+}

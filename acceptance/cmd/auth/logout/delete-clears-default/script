@@ -22,13 +22,13 @@ title "Initial settings section\n"
 cat "./home/.databrickscfg" | grep -A1 __settings__
 
 title "Delete the default profile"
-trace $CLI auth logout --profile workspace-a --force --delete
+trace $CLI auth logout --profile workspace-a --auto-approve --delete
 
 title "Settings after deleting default — default_profile should be cleared\n"
 cat "./home/.databrickscfg" | grep -A1 __settings__
 
 title "Delete a non-default profile"
-trace $CLI auth logout --profile workspace-b --force --delete
+trace $CLI auth logout --profile workspace-b --auto-approve --delete
 
 title "Settings after deleting non-default — section should still be present but empty\n"
 cat "./home/.databrickscfg" | grep -A1 __settings__

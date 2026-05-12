@@ -3,9 +3,11 @@ package terraform
 import (
 	"context"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 	"testing"
 
@@ -18,7 +20,6 @@ import (
 	"github.com/hashicorp/hc-install/product"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"golang.org/x/exp/maps"
 )
 
 func unsetEnv(t *testing.T, name string) {
@@ -208,7 +209,7 @@ func TestSetProxyEnvVars(t *testing.T) {
 	env = make(map[string]string, 0)
 	err = setProxyEnvVars(t.Context(), env, b)
 	require.NoError(t, err)
-	assert.ElementsMatch(t, []string{"HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY"}, maps.Keys(env))
+	assert.ElementsMatch(t, []string{"HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY"}, slices.Collect(maps.Keys(env)))
 
 	// Upper case set.
 	clearEnv()
@@ -218,7 +219,7 @@ func TestSetProxyEnvVars(t *testing.T) {
 	env = make(map[string]string, 0)
 	err = setProxyEnvVars(t.Context(), env, b)
 	require.NoError(t, err)
-	assert.ElementsMatch(t, []string{"HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY"}, maps.Keys(env))
+	assert.ElementsMatch(t, []string{"HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY"}, slices.Collect(maps.Keys(env)))
 }
 
 func TestSetUserAgentExtra_Python(t *testing.T) {

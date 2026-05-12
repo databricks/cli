@@ -65,6 +65,15 @@ var allClusterStatusesOverrides []func(
 
 func newAllClusterStatuses() *cobra.Command {
 	cmd := &cobra.Command{}
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var allClusterStatusesLimit int
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&allClusterStatusesLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
 
 	cmd.Use = "all-cluster-statuses"
 	cmd.Short = `Get all statuses.`
@@ -80,6 +89,13 @@ func newAllClusterStatuses() *cobra.Command {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
 		response := w.Libraries.AllClusterStatuses(ctx)
+		if allClusterStatusesLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", allClusterStatusesLimit)
+		}
+		if allClusterStatusesLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, allClusterStatusesLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -108,6 +124,15 @@ func newClusterStatus() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var clusterStatusReq compute.ClusterStatus
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var clusterStatusLimit int
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&clusterStatusLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
 
 	cmd.Use = "cluster-status CLUSTER_ID"
 	cmd.Short = `Get status.`
@@ -139,6 +164,13 @@ func newClusterStatus() *cobra.Command {
 		clusterStatusReq.ClusterId = args[0]
 
 		response := w.Libraries.ClusterStatus(ctx, clusterStatusReq)
+		if clusterStatusLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", clusterStatusLimit)
+		}
+		if clusterStatusLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, clusterStatusLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 

@@ -30,7 +30,7 @@ postgres_branches: postgres.BranchSpec
 
 postgres_endpoints: postgres.EndpointSpec
 
-postgres_projects: postgres.ProjectSpec
+postgres_projects: postgres.ProjectStatus
 
 quality_monitors: catalog.CreateMonitor
 
@@ -43,5 +43,7 @@ secret_scopes: workspace.CreateScope
 sql_warehouses: sql.EditWarehouseRequest
 
 synced_database_tables: database.SyncedDatabaseTable
+
+vector_search_endpoints: vectorsearch.CreateEndpoint
 
 volumes: catalog.CreateVolumeRequestContent

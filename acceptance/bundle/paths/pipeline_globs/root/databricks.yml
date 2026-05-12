@@ -6,8 +6,8 @@ include:
 
 variables:
   notebook_dir:
-    description: Directory with DLT notebooks
+    description: Directory with SDP notebooks
     default: notebooks
   file_dir:
-    description: Directory with DLT files
+    description: Directory with SDP files
     default: files

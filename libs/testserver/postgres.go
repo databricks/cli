@@ -74,6 +74,7 @@ func (s *FakeWorkspace) PostgresProjectCreate(req Request, projectID string) Res
 	// Copy spec fields to status (API returns status as materialized view)
 	if project.Spec != nil {
 		project.Status = &postgres.ProjectStatus{
+			DefaultBranch:               name + "/branches/production",
 			DisplayName:                 project.Spec.DisplayName,
 			PgVersion:                   project.Spec.PgVersion,
 			HistoryRetentionDuration:    project.Spec.HistoryRetentionDuration,
@@ -613,7 +614,7 @@ func (s *FakeWorkspace) createOperationLocked(resourceName string, response any)
 	op := postgres.Operation{
 		Name:     operationName,
 		Done:     true,
-		Metadata: []byte(fmt.Sprintf(`{"@type":"type.googleapis.com/databricks.postgres.v1.%sOperationMetadata"}`, resourceType)),
+		Metadata: fmt.Appendf(nil, `{"@type":"type.googleapis.com/databricks.postgres.v1.%sOperationMetadata"}`, resourceType),
 	}
 	if response != nil {
 		data, _ := json.Marshal(response)

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/appdeploy"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/config/resources"
@@ -50,7 +51,7 @@ func setupBundle(t *testing.T) (context.Context, *bundle.Bundle, *mocks.MockWork
 		SyncRoot:       vfs.MustNew(root),
 		Config: config.Root{
 			Workspace: config.Workspace{
-				RootPath: "/Workspace/Users/foo@bar.com/",
+				RootPath: "/Workspace/Users/foo@bar.test/",
 			},
 			Resources: config.Resources{
 				Apps: map[string]*resources.App{
@@ -106,7 +107,7 @@ func setupTestApp(t *testing.T, initialAppState apps.ApplicationState, initialCo
 		AppName: "my_app",
 		AppDeployment: apps.AppDeployment{
 			Mode:           apps.AppDeploymentModeSnapshot,
-			SourceCodePath: "/Workspace/Users/foo@bar.com/files/my_app",
+			SourceCodePath: "/Workspace/Users/foo@bar.test/files/my_app",
 		},
 	}).Return(wait, nil)
 
@@ -209,7 +210,7 @@ func TestAppDeployWithDeploymentInProgress(t *testing.T) {
 		AppName: "my_app",
 		AppDeployment: apps.AppDeployment{
 			Mode:           apps.AppDeploymentModeSnapshot,
-			SourceCodePath: "/Workspace/Users/foo@bar.com/files/my_app",
+			SourceCodePath: "/Workspace/Users/foo@bar.test/files/my_app",
 		},
 	}).Return(nil, errors.New("deployment in progress")).Once()
 
@@ -228,12 +229,12 @@ func TestAppDeployWithDeploymentInProgress(t *testing.T) {
 
 	appApi.EXPECT().WaitGetDeploymentAppSucceeded(mock.Anything, "my_app", "active_deployment_id", mock.Anything, mock.Anything).Return(nil, nil)
 
-	// Second one should succeeed
+	// Second one should succeed
 	appApi.EXPECT().Deploy(mock.Anything, apps.CreateAppDeploymentRequest{
 		AppName: "my_app",
 		AppDeployment: apps.AppDeployment{
 			Mode:           apps.AppDeploymentModeSnapshot,
-			SourceCodePath: "/Workspace/Users/foo@bar.com/files/my_app",
+			SourceCodePath: "/Workspace/Users/foo@bar.test/files/my_app",
 		},
 	}).Return(wait, nil).Once()
 
@@ -294,11 +295,7 @@ func TestBuildAppDeploymentWithValueFrom(t *testing.T) {
 		},
 	}
 
-	runner := &appRunner{
-		app: app,
-	}
-
-	deployment := runner.buildAppDeployment()
+	deployment := appdeploy.BuildDeployment(app.SourceCodePath, app.Config, app.GitSource)
 
 	require.Equal(t, apps.AppDeploymentModeSnapshot, deployment.Mode)
 	require.Equal(t, "/path/to/app", deployment.SourceCodePath)

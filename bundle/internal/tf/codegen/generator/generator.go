@@ -1,11 +1,14 @@
+// Package generator produces Go types from the Terraform provider schema.
 package generator
 
 import (
 	"context"
 	"fmt"
 	"log"
+	"maps"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"text/template"
 
@@ -29,7 +32,7 @@ func (c *collection) Generate(path string) error {
 		return err
 	}
 
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	return tmpl.Execute(f, c)
 }
@@ -48,15 +51,16 @@ func (r *root) Generate(path string) error {
 		return err
 	}
 
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	return tmpl.Execute(f, r)
 }
 
-func Run(ctx context.Context, schema *tfjson.ProviderSchema, checksums *schemapkg.ProviderChecksums, path string) error {
+// Run generates Go type files under path for every resource and data source in schema.
+func Run(_ context.Context, schema *tfjson.ProviderSchema, checksums *schemapkg.ProviderChecksums, path string) error {
 	// Generate types for resources
 	var resources []*namedBlock
-	for _, k := range sortKeys(schema.ResourceSchemas) {
+	for _, k := range slices.Sorted(maps.Keys(schema.ResourceSchemas)) {
 		// Skipping all plugin framework struct generation.
 		// TODO: This is a temporary fix, generation should be fixed in the future.
 		if strings.HasSuffix(k, "_pluginframework") {
@@ -87,7 +91,7 @@ func Run(ctx context.Context, schema *tfjson.ProviderSchema, checksums *schemapk
 
 	// Generate types for data sources.
 	var dataSources []*namedBlock
-	for _, k := range sortKeys(schema.DataSourceSchemas) {
+	for _, k := range slices.Sorted(maps.Keys(schema.DataSourceSchemas)) {
 		// Skipping all plugin framework struct generation.
 		// TODO: This is a temporary fix, generation should be fixed in the future.
 		if strings.HasSuffix(k, "_pluginframework") {

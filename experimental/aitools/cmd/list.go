@@ -3,7 +3,8 @@ package aitools
 import (
 	"errors"
 	"fmt"
-	"sort"
+	"maps"
+	"slices"
 	"strings"
 	"text/tabwriter"
 
@@ -80,11 +81,7 @@ func defaultListSkills(cmd *cobra.Command, scope string) error {
 	}
 
 	// Build sorted list of skill names.
-	names := make([]string, 0, len(manifest.Skills))
-	for name := range manifest.Skills {
-		names = append(names, name)
-	}
-	sort.Strings(names)
+	names := slices.Sorted(maps.Keys(manifest.Skills))
 
 	version := strings.TrimPrefix(ref, "v")
 	cmdio.LogString(ctx, "Available skills (v"+version+"):")

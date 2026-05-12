@@ -2,6 +2,10 @@
 
 package schema
 
+type DataSourceUsersProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type DataSourceUsersUsersEmails struct {
 	Display string `json:"display,omitempty"`
 	Primary bool   `json:"primary,omitempty"`
@@ -54,7 +58,9 @@ type DataSourceUsersUsers struct {
 }
 
 type DataSourceUsers struct {
-	ExtraAttributes string                 `json:"extra_attributes,omitempty"`
-	Filter          string                 `json:"filter,omitempty"`
-	Users           []DataSourceUsersUsers `json:"users,omitempty"`
+	Api             string                         `json:"api,omitempty"`
+	ExtraAttributes string                         `json:"extra_attributes,omitempty"`
+	Filter          string                         `json:"filter,omitempty"`
+	ProviderConfig  *DataSourceUsersProviderConfig `json:"provider_config,omitempty"`
+	Users           []DataSourceUsersUsers         `json:"users,omitempty"`
 }

@@ -115,7 +115,7 @@ func newCreateExternalMetadata() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name', 'system_type', 'entity_type' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'name', 'system_type', 'entity_type' in your JSON input")
 			}
 			return nil
 		}
@@ -158,6 +158,7 @@ func newCreateExternalMetadata() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -268,6 +269,7 @@ func newGetExternalMetadata() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -296,9 +298,19 @@ func newListExternalMetadata() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listExternalMetadataReq catalog.ListExternalMetadataRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listExternalMetadataLimit int
 
 	cmd.Flags().IntVar(&listExternalMetadataReq.PageSize, "page-size", listExternalMetadataReq.PageSize, `Specifies the maximum number of external metadata objects to return in a single response.`)
-	cmd.Flags().StringVar(&listExternalMetadataReq.PageToken, "page-token", listExternalMetadataReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listExternalMetadataLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listExternalMetadataReq.PageToken, "page-token", listExternalMetadataReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-external-metadata"
 	cmd.Short = `List external metadata objects.`
@@ -323,6 +335,13 @@ func newListExternalMetadata() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.ExternalMetadata.ListExternalMetadata(ctx, listExternalMetadataReq)
+		if listExternalMetadataLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listExternalMetadataLimit)
+		}
+		if listExternalMetadataLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listExternalMetadataLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -461,6 +480,7 @@ func newUpdateExternalMetadata() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 

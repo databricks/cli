@@ -67,12 +67,17 @@ var knownMissingInRemoteType = map[string][]string{
 	"postgres_projects": {
 		"budget_policy_id",
 		"custom_tags",
+		"default_branch",
 		"default_endpoint_settings",
 		"display_name",
 		"enable_pg_native_login",
 		"history_retention_duration",
 		"pg_version",
 		"project_id",
+	},
+	"vector_search_endpoints": {
+		"min_qps",
+		"usage_policy_id",
 	},
 }
 
@@ -92,9 +97,7 @@ var knownMissingInStateType = map[string][]string{
 		"file_path",
 	},
 	"apps": {
-		"config",
-		"source_code_path",
-		"git_source",
+		"lifecycle.prevent_destroy",
 	},
 	"dashboards": {
 		"file_path",

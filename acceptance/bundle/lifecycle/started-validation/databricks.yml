@@ -1,0 +1,16 @@
+bundle:
+  name: test_lifecycle_started_validation
+
+resources:
+  jobs:
+    my_job:
+      name: my_job
+      lifecycle:
+        started: true
+
+  apps:
+    my_app:
+      name: my_app
+      source_code_path: ./app
+      lifecycle:
+        started: true

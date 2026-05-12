@@ -1,6 +1,7 @@
 package filer
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"io"
@@ -8,7 +9,6 @@ import (
 	"net/http"
 	"path"
 	"slices"
-	"sort"
 	"strings"
 	"time"
 
@@ -273,7 +273,7 @@ func (w *DbfsClient) ReadDir(ctx context.Context, name string) ([]fs.DirEntry, e
 	}
 
 	// Sort by name for parity with os.ReadDir.
-	sort.Slice(info, func(i, j int) bool { return info[i].Name() < info[j].Name() })
+	slices.SortFunc(info, func(a, b fs.DirEntry) int { return cmp.Compare(a.Name(), b.Name()) })
 	return info, nil
 }
 

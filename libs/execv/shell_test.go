@@ -27,7 +27,7 @@ func TestShell_Windows(t *testing.T) {
 	// Configure PATH so that only cmd.exe shows up.
 	binDir := t.TempDir()
 	testutil.CopyFile(t, cmdExePath, filepath.Join(binDir, "cmd.exe"))
-	os.Setenv("PATH", binDir)
+	t.Setenv("PATH", binDir)
 
 	tests := []struct {
 		name     string

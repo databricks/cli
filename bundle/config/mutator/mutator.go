@@ -28,8 +28,9 @@ func DefaultMutators(ctx context.Context, b *bundle.Bundle) {
 		InitializeVariables(),
 		DefineDefaultTarget(),
 
-		// Note: This mutator must run before the target overrides are merged.
-		// See the mutator for more details.
+		// Note: These mutators must run before the target overrides are merged.
+		// See the mutators for more details.
+		validate.NoVariableReferenceInResourceKey(),
 		validate.UniqueResourceKeys(),
 	)
 }

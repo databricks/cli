@@ -8,6 +8,18 @@ type DataSourceCatalogCatalogInfoEffectivePredictiveOptimizationFlag struct {
 	Value             string `json:"value"`
 }
 
+type DataSourceCatalogCatalogInfoManagedEncryptionSettingsAzureEncryptionSettings struct {
+	AzureCmkAccessConnectorId string `json:"azure_cmk_access_connector_id,omitempty"`
+	AzureCmkManagedIdentityId string `json:"azure_cmk_managed_identity_id,omitempty"`
+	AzureTenantId             string `json:"azure_tenant_id"`
+}
+
+type DataSourceCatalogCatalogInfoManagedEncryptionSettings struct {
+	AzureKeyVaultKeyId      string                                                                        `json:"azure_key_vault_key_id,omitempty"`
+	CustomerManagedKeyId    string                                                                        `json:"customer_managed_key_id,omitempty"`
+	AzureEncryptionSettings *DataSourceCatalogCatalogInfoManagedEncryptionSettingsAzureEncryptionSettings `json:"azure_encryption_settings,omitempty"`
+}
+
 type DataSourceCatalogCatalogInfoProvisioningInfo struct {
 	State string `json:"state,omitempty"`
 }
@@ -35,6 +47,7 @@ type DataSourceCatalogCatalogInfo struct {
 	UpdatedAt                           int                                                              `json:"updated_at,omitempty"`
 	UpdatedBy                           string                                                           `json:"updated_by,omitempty"`
 	EffectivePredictiveOptimizationFlag *DataSourceCatalogCatalogInfoEffectivePredictiveOptimizationFlag `json:"effective_predictive_optimization_flag,omitempty"`
+	ManagedEncryptionSettings           *DataSourceCatalogCatalogInfoManagedEncryptionSettings           `json:"managed_encryption_settings,omitempty"`
 	ProvisioningInfo                    *DataSourceCatalogCatalogInfoProvisioningInfo                    `json:"provisioning_info,omitempty"`
 }
 

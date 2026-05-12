@@ -2,6 +2,49 @@
 
 package schema
 
+type ResourceExternalLocationEffectiveFileEventQueueManagedAqs struct {
+	ManagedResourceId string `json:"managed_resource_id,omitempty"`
+	QueueUrl          string `json:"queue_url,omitempty"`
+	ResourceGroup     string `json:"resource_group,omitempty"`
+	SubscriptionId    string `json:"subscription_id,omitempty"`
+}
+
+type ResourceExternalLocationEffectiveFileEventQueueManagedPubsub struct {
+	ManagedResourceId string `json:"managed_resource_id,omitempty"`
+	SubscriptionName  string `json:"subscription_name,omitempty"`
+}
+
+type ResourceExternalLocationEffectiveFileEventQueueManagedSqs struct {
+	ManagedResourceId string `json:"managed_resource_id,omitempty"`
+	QueueUrl          string `json:"queue_url,omitempty"`
+}
+
+type ResourceExternalLocationEffectiveFileEventQueueProvidedAqs struct {
+	ManagedResourceId string `json:"managed_resource_id,omitempty"`
+	QueueUrl          string `json:"queue_url,omitempty"`
+	ResourceGroup     string `json:"resource_group,omitempty"`
+	SubscriptionId    string `json:"subscription_id,omitempty"`
+}
+
+type ResourceExternalLocationEffectiveFileEventQueueProvidedPubsub struct {
+	ManagedResourceId string `json:"managed_resource_id,omitempty"`
+	SubscriptionName  string `json:"subscription_name,omitempty"`
+}
+
+type ResourceExternalLocationEffectiveFileEventQueueProvidedSqs struct {
+	ManagedResourceId string `json:"managed_resource_id,omitempty"`
+	QueueUrl          string `json:"queue_url,omitempty"`
+}
+
+type ResourceExternalLocationEffectiveFileEventQueue struct {
+	ManagedAqs     *ResourceExternalLocationEffectiveFileEventQueueManagedAqs     `json:"managed_aqs,omitempty"`
+	ManagedPubsub  *ResourceExternalLocationEffectiveFileEventQueueManagedPubsub  `json:"managed_pubsub,omitempty"`
+	ManagedSqs     *ResourceExternalLocationEffectiveFileEventQueueManagedSqs     `json:"managed_sqs,omitempty"`
+	ProvidedAqs    *ResourceExternalLocationEffectiveFileEventQueueProvidedAqs    `json:"provided_aqs,omitempty"`
+	ProvidedPubsub *ResourceExternalLocationEffectiveFileEventQueueProvidedPubsub `json:"provided_pubsub,omitempty"`
+	ProvidedSqs    *ResourceExternalLocationEffectiveFileEventQueueProvidedSqs    `json:"provided_sqs,omitempty"`
+}
+
 type ResourceExternalLocationEncryptionDetailsSseEncryptionDetails struct {
 	Algorithm    string `json:"algorithm,omitempty"`
 	AwsKmsKeyArn string `json:"aws_kms_key_arn,omitempty"`
@@ -59,28 +102,29 @@ type ResourceExternalLocationProviderConfig struct {
 }
 
 type ResourceExternalLocation struct {
-	BrowseOnly                bool                                       `json:"browse_only,omitempty"`
-	Comment                   string                                     `json:"comment,omitempty"`
-	CreatedAt                 int                                        `json:"created_at,omitempty"`
-	CreatedBy                 string                                     `json:"created_by,omitempty"`
-	CredentialId              string                                     `json:"credential_id,omitempty"`
-	CredentialName            string                                     `json:"credential_name"`
-	EffectiveEnableFileEvents bool                                       `json:"effective_enable_file_events,omitempty"`
-	EnableFileEvents          bool                                       `json:"enable_file_events,omitempty"`
-	Fallback                  bool                                       `json:"fallback,omitempty"`
-	ForceDestroy              bool                                       `json:"force_destroy,omitempty"`
-	ForceUpdate               bool                                       `json:"force_update,omitempty"`
-	Id                        string                                     `json:"id,omitempty"`
-	IsolationMode             string                                     `json:"isolation_mode,omitempty"`
-	MetastoreId               string                                     `json:"metastore_id,omitempty"`
-	Name                      string                                     `json:"name"`
-	Owner                     string                                     `json:"owner,omitempty"`
-	ReadOnly                  bool                                       `json:"read_only,omitempty"`
-	SkipValidation            bool                                       `json:"skip_validation,omitempty"`
-	UpdatedAt                 int                                        `json:"updated_at,omitempty"`
-	UpdatedBy                 string                                     `json:"updated_by,omitempty"`
-	Url                       string                                     `json:"url"`
-	EncryptionDetails         *ResourceExternalLocationEncryptionDetails `json:"encryption_details,omitempty"`
-	FileEventQueue            *ResourceExternalLocationFileEventQueue    `json:"file_event_queue,omitempty"`
-	ProviderConfig            *ResourceExternalLocationProviderConfig    `json:"provider_config,omitempty"`
+	BrowseOnly                bool                                             `json:"browse_only,omitempty"`
+	Comment                   string                                           `json:"comment,omitempty"`
+	CreatedAt                 int                                              `json:"created_at,omitempty"`
+	CreatedBy                 string                                           `json:"created_by,omitempty"`
+	CredentialId              string                                           `json:"credential_id,omitempty"`
+	CredentialName            string                                           `json:"credential_name"`
+	EffectiveEnableFileEvents bool                                             `json:"effective_enable_file_events,omitempty"`
+	EnableFileEvents          bool                                             `json:"enable_file_events,omitempty"`
+	Fallback                  bool                                             `json:"fallback,omitempty"`
+	ForceDestroy              bool                                             `json:"force_destroy,omitempty"`
+	ForceUpdate               bool                                             `json:"force_update,omitempty"`
+	Id                        string                                           `json:"id,omitempty"`
+	IsolationMode             string                                           `json:"isolation_mode,omitempty"`
+	MetastoreId               string                                           `json:"metastore_id,omitempty"`
+	Name                      string                                           `json:"name"`
+	Owner                     string                                           `json:"owner,omitempty"`
+	ReadOnly                  bool                                             `json:"read_only,omitempty"`
+	SkipValidation            bool                                             `json:"skip_validation,omitempty"`
+	UpdatedAt                 int                                              `json:"updated_at,omitempty"`
+	UpdatedBy                 string                                           `json:"updated_by,omitempty"`
+	Url                       string                                           `json:"url"`
+	EffectiveFileEventQueue   *ResourceExternalLocationEffectiveFileEventQueue `json:"effective_file_event_queue,omitempty"`
+	EncryptionDetails         *ResourceExternalLocationEncryptionDetails       `json:"encryption_details,omitempty"`
+	FileEventQueue            *ResourceExternalLocationFileEventQueue          `json:"file_event_queue,omitempty"`
+	ProviderConfig            *ResourceExternalLocationProviderConfig          `json:"provider_config,omitempty"`
 }

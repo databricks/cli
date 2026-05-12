@@ -1,0 +1,20 @@
+
+>>> [CLI] bundle validate
+Error: duplicate YAML merge key ('<<') is not allowed; to merge multiple maps, use a sequence: '<<: [*anchor1, *anchor2]'
+  in databricks.yml:18:13
+
+
+Found 1 error
+
+>>> [CLI] bundle validate
+Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Validation OK!
+{
+  "num_workers": 1,
+  "spark_version": "13.3.x-scala2.12"
+}

@@ -7,6 +7,8 @@ type DataSourceAppSpaceProviderConfig struct {
 }
 
 type DataSourceAppSpaceResourcesApp struct {
+	Name       string `json:"name,omitempty"`
+	Permission string `json:"permission,omitempty"`
 }
 
 type DataSourceAppSpaceResourcesDatabase struct {

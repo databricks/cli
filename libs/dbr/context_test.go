@@ -14,7 +14,7 @@ func TestContext_DetectRuntimePanics(t *testing.T) {
 
 	// Expect a panic if the detection is run twice.
 	assert.Panics(t, func() {
-		ctx = DetectRuntime(ctx)
+		ctx = DetectRuntime(ctx) //nolint:fatcontext // test verifies this panics on second call
 	})
 }
 

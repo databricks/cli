@@ -1,0 +1,48 @@
+package cmdio
+
+import (
+	"context"
+
+	"github.com/manifoldco/promptui"
+)
+
+// PromptOptions configures a single-line text prompt shown by [RunPrompt].
+type PromptOptions struct {
+	// Label is shown before the input field. Required.
+	Label string
+
+	// Mask, when non-zero, replaces typed characters with the given rune
+	// (use '*' for password-style input).
+	Mask rune
+
+	// HideEntered hides the entered value after the prompt closes.
+	HideEntered bool
+
+	// Validate, when set, is called on every keystroke; returning a non-nil
+	// error keeps the prompt open and shows the error to the user.
+	Validate func(input string) error
+}
+
+// RunPrompt shows a single-line text prompt and returns the entered value.
+func RunPrompt(ctx context.Context, opts PromptOptions) (string, error) {
+	c := fromContext(ctx)
+	p := promptui.Prompt{
+		Label:       opts.Label,
+		Mask:        opts.Mask,
+		HideEntered: opts.HideEntered,
+		Validate:    opts.Validate,
+		Stdin:       c.promptStdin(),
+		Stdout:      nopWriteCloser{c.err},
+	}
+	return p.Run()
+}
+
+// Secret prompts the user for a value while masking input with '*' and hiding
+// the entered value after submission.
+func Secret(ctx context.Context, label string) (string, error) {
+	return RunPrompt(ctx, PromptOptions{
+		Label:       label,
+		Mask:        '*',
+		HideEntered: true,
+	})
+}

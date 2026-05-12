@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/databricks/cli/internal/testutil"
-	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/stretchr/testify/require"
@@ -25,34 +24,6 @@ func WorkspaceTest(t testutil.TestingT) (context.Context, *WorkspaceT) {
 	testutil.LoadDebugEnvIfRunFromIDE(t, "workspace")
 
 	t.Logf("CLOUD_ENV=%s", testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
-
-	w, err := databricks.NewWorkspaceClient()
-	require.NoError(t, err)
-
-	wt := &WorkspaceT{
-		TestingT: t,
-
-		W: w,
-
-		ctx: t.Context(),
-	}
-
-	return wt.ctx, wt
-}
-
-// Run the workspace test only on UC workspaces.
-func UcWorkspaceTest(t testutil.TestingT) (context.Context, *WorkspaceT) {
-	t.Helper()
-	testutil.LoadDebugEnvIfRunFromIDE(t, "workspace")
-
-	t.Logf("CLOUD_ENV=%s", testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
-
-	if env.Get(t.Context(), "TEST_METASTORE_ID") == "" {
-		t.Skipf("Skipping on non-UC workspaces")
-	}
-	if env.Get(t.Context(), "DATABRICKS_ACCOUNT_ID") != "" {
-		t.Skipf("Skipping on accounts")
-	}
 
 	w, err := databricks.NewWorkspaceClient()
 	require.NoError(t, err)

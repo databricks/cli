@@ -1,0 +1,2 @@
+#!/bin/sh
+exec go tool -modfile="$(dirname "$0")/tools/task/go.mod" task "$@"

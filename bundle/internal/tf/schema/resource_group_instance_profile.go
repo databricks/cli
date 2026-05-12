@@ -2,8 +2,14 @@
 
 package schema
 
+type ResourceGroupInstanceProfileProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type ResourceGroupInstanceProfile struct {
-	GroupId           string `json:"group_id"`
-	Id                string `json:"id,omitempty"`
-	InstanceProfileId string `json:"instance_profile_id"`
+	Api               string                                      `json:"api,omitempty"`
+	GroupId           string                                      `json:"group_id"`
+	Id                string                                      `json:"id,omitempty"`
+	InstanceProfileId string                                      `json:"instance_profile_id"`
+	ProviderConfig    *ResourceGroupInstanceProfileProviderConfig `json:"provider_config,omitempty"`
 }

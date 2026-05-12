@@ -1,0 +1,44 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+title "Deploy with started=true: app created with compute running"
+trace errcode $CLI bundle deploy
+trace print_requests.py //apps
+rm -f out.requests.txt
+{ trace errcode $CLI apps get $UNIQUE_NAME | jq '.compute_status.state'; } || true
+
+title "Re-deploy with description change: code deployed again"
+trace update_file.py databricks.yml my_app_description MY_APP_DESCRIPTION
+trace errcode $CLI bundle deploy
+trace print_requests.py //deployments
+rm -f out.requests.txt
+
+title "Stop app externally while config says started=true: plan detects drift"
+{ trace errcode $CLI apps stop $UNIQUE_NAME | jq '.compute_status.state'; } || true
+trace $CLI bundle plan
+
+title "Deploy fixes the drift: compute restarted"
+trace errcode $CLI bundle deploy
+rm -f out.requests.txt
+
+title "Stop app externally, then deploy with started=false: app stays stopped"
+{ trace errcode $CLI apps stop $UNIQUE_NAME | jq '.compute_status.state'; } || true
+trace update_file.py databricks.yml "started: true" "started: false"
+trace update_file.py databricks.yml MY_APP_DESCRIPTION MY_APP_DESCRIPTION_2
+trace errcode $CLI bundle deploy
+trace print_requests.py //apps
+rm -f out.requests.txt
+{ trace errcode $CLI apps get $UNIQUE_NAME | jq '.compute_status.state'; } || true
+
+title "Deploy with started=true: compute restarted and code deployed"
+trace update_file.py databricks.yml "started: false" "started: true"
+trace update_file.py databricks.yml MY_APP_DESCRIPTION_2 MY_APP_DESCRIPTION_3
+trace errcode $CLI bundle deploy
+trace print_requests.py //apps
+rm -f out.requests.txt
+{ trace errcode $CLI apps get $UNIQUE_NAME | jq '.compute_status.state'; } || true

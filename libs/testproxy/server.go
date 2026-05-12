@@ -62,7 +62,7 @@ func New(t testutil.TestingT) *ProxyServer {
 func (s *ProxyServer) reqBody(r testserver.Request) any {
 	// The SDK expects the query parameters to be specified in the "request body"
 	// argument for GET, DELETE, and HEAD requests in the .Do method.
-	if r.Method == "GET" || r.Method == "DELETE" || r.Method == "HEAD" {
+	if r.Method == http.MethodGet || r.Method == http.MethodDelete || r.Method == http.MethodHead {
 		queryParams := make(map[string]any)
 		for k, v := range r.URL.Query() {
 			queryParams[k] = v[0]

@@ -1,0 +1,11 @@
+title "print URL for a job"
+trace $CLI experimental open --url jobs 123
+
+title "print URL for a notebook"
+trace $CLI experimental open --url notebooks 12345
+
+title "unknown resource type"
+errcode trace $CLI experimental open --url unknown 123
+
+title "test auto-completion handler"
+trace $CLI __complete experimental open ,

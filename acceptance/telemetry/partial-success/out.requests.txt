@@ -6,6 +6,9 @@
   "headers": {
     "Authorization": [
       "Bearer [DATABRICKS_TOKEN]"
+    ],
+    "X-Databricks-Org-Id": [
+      "[NUMID]"
     ]
   },
   "method": "POST",
@@ -23,6 +26,9 @@
   "headers": {
     "Authorization": [
       "Bearer [DATABRICKS_TOKEN]"
+    ],
+    "X-Databricks-Org-Id": [
+      "[NUMID]"
     ]
   },
   "method": "POST",
@@ -40,6 +46,9 @@
   "headers": {
     "Authorization": [
       "Bearer [DATABRICKS_TOKEN]"
+    ],
+    "X-Databricks-Org-Id": [
+      "[NUMID]"
     ]
   },
   "method": "POST",

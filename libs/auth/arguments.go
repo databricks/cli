@@ -1,8 +1,6 @@
 package auth
 
 import (
-	"strings"
-
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m"
 )
@@ -14,10 +12,9 @@ const WorkspaceIDNone = "none"
 // AuthArguments is a struct that contains the common arguments passed to
 // `databricks auth` commands.
 type AuthArguments struct {
-	Host          string
-	AccountID     string
-	WorkspaceID   string
-	IsUnifiedHost bool
+	Host        string
+	AccountID   string
+	WorkspaceID string
 
 	// Profile is the optional profile name. When set, the OAuth token cache
 	// key is the profile name instead of the host-based key.
@@ -30,7 +27,7 @@ type AuthArguments struct {
 
 // ToOAuthArgument converts the AuthArguments to an OAuthArgument from the Go SDK.
 // It calls EnsureResolved() to run host metadata discovery and routes based on
-// the resolved DiscoveryURL rather than the Experimental_IsUnifiedHost flag.
+// the resolved DiscoveryURL.
 func (a AuthArguments) ToOAuthArgument() (u2m.OAuthArgument, error) {
 	// Strip the "none" sentinel so it is never passed to the SDK.
 	workspaceID := a.WorkspaceID
@@ -39,45 +36,36 @@ func (a AuthArguments) ToOAuthArgument() (u2m.OAuthArgument, error) {
 	}
 
 	cfg := &config.Config{
-		Host:                       a.Host,
-		AccountID:                  a.AccountID,
-		WorkspaceID:                workspaceID,
-		Experimental_IsUnifiedHost: a.IsUnifiedHost,
-		HTTPTimeoutSeconds:         5,
+		Host:               a.Host,
+		AccountID:          a.AccountID,
+		WorkspaceID:        workspaceID,
+		HTTPTimeoutSeconds: 5,
 		// Skip config file loading. We only want host metadata resolution
 		// based on the explicit fields provided.
 		Loaders: []config.Loader{config.ConfigAttributes},
 	}
 
-	discoveryURL := a.DiscoveryURL
-	if discoveryURL == "" {
-		// No cached discovery, resolve fresh.
-		if err := cfg.EnsureResolved(); err == nil {
-			discoveryURL = cfg.DiscoveryURL
-		}
+	if a.DiscoveryURL != "" {
+		cfg.DiscoveryURL = a.DiscoveryURL
+	} else {
+		// EnsureResolved populates cfg.DiscoveryURL from .well-known.
+		_ = cfg.EnsureResolved()
 	}
 
 	host := cfg.CanonicalHostName()
 
-	// Classic accounts.* hosts always use account OAuth, even if discovery
-	// returned data. SPOG/unified hosts are handled below via discovery or
-	// the IsUnifiedHost flag.
-	if strings.HasPrefix(host, "https://accounts.") || strings.HasPrefix(host, "https://accounts-dod.") {
+	// Classic accounts.* hosts always use account OAuth.
+	if IsClassicAccountHost(host) {
 		return u2m.NewProfileAccountOAuthArgument(host, cfg.AccountID, a.Profile)
 	}
 
-	// Route based on discovery data: a non-accounts host with an account-scoped
-	// OIDC endpoint is a SPOG/unified host. We check a.AccountID (the caller-
-	// provided value) rather than cfg.AccountID to avoid env var contamination
-	// (e.g. DATABRICKS_ACCOUNT_ID set in the environment). We also require the
-	// DiscoveryURL to contain "/oidc/accounts/" to distinguish SPOG hosts from
-	// classic workspace hosts that may also return discovery metadata.
-	if a.AccountID != "" && discoveryURL != "" && strings.Contains(discoveryURL, "/oidc/accounts/") {
-		return u2m.NewProfileUnifiedOAuthArgument(host, cfg.AccountID, a.Profile)
-	}
-
-	// Legacy backward compat: existing profiles with IsUnifiedHost flag.
-	if a.IsUnifiedHost && a.AccountID != "" {
+	// Pass a.AccountID (not cfg.AccountID) because EnsureResolved can
+	// back-fill cfg.AccountID from two sources: the DATABRICKS_ACCOUNT_ID
+	// env var (via ConfigAttributes) and .well-known/databricks-config
+	// discovery (which returns account_id for every host since PR #4809).
+	// Using cfg.AccountID would cause IsSPOG to misroute plain workspace
+	// hosts as SPOG simply because their metadata includes an account_id.
+	if IsSPOG(cfg, a.AccountID) {
 		return u2m.NewProfileUnifiedOAuthArgument(host, cfg.AccountID, a.Profile)
 	}
 

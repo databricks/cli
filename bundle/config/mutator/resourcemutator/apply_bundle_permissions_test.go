@@ -34,7 +34,7 @@ func TestApplyBundlePermissions(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Workspace: config.Workspace{
-				RootPath: "/Users/foo@bar.com",
+				RootPath: "/Users/foo@bar.test",
 			},
 			Permissions: []resources.Permission{
 				{Level: permissions.CAN_MANAGE, UserName: "TestUser"},
@@ -77,6 +77,10 @@ func TestApplyBundlePermissions(t *testing.T) {
 				Apps: map[string]*resources.App{
 					"app_1": {},
 					"app_2": {},
+				},
+				VectorSearchEndpoints: map[string]*resources.VectorSearchEndpoint{
+					"vs_1": {},
+					"vs_2": {},
 				},
 			},
 		},
@@ -138,13 +142,21 @@ func TestApplyBundlePermissions(t *testing.T) {
 	require.Len(t, b.Config.Resources.Apps["app_1"].Permissions, 2)
 	require.Contains(t, b.Config.Resources.Apps["app_1"].Permissions, resources.AppPermission{Level: "CAN_MANAGE", UserName: "TestUser"})
 	require.Contains(t, b.Config.Resources.Apps["app_1"].Permissions, resources.AppPermission{Level: "CAN_USE", GroupName: "TestGroup"})
+
+	require.Len(t, b.Config.Resources.VectorSearchEndpoints["vs_1"].Permissions, 2)
+	require.Contains(t, b.Config.Resources.VectorSearchEndpoints["vs_1"].Permissions, resources.Permission{Level: "CAN_MANAGE", UserName: "TestUser"})
+	require.Contains(t, b.Config.Resources.VectorSearchEndpoints["vs_1"].Permissions, resources.Permission{Level: "CAN_USE", GroupName: "TestGroup"})
+
+	require.Len(t, b.Config.Resources.VectorSearchEndpoints["vs_2"].Permissions, 2)
+	require.Contains(t, b.Config.Resources.VectorSearchEndpoints["vs_2"].Permissions, resources.Permission{Level: "CAN_MANAGE", UserName: "TestUser"})
+	require.Contains(t, b.Config.Resources.VectorSearchEndpoints["vs_2"].Permissions, resources.Permission{Level: "CAN_USE", GroupName: "TestGroup"})
 }
 
 func TestWarningOnOverlapPermission(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Workspace: config.Workspace{
-				RootPath: "/Users/foo@bar.com",
+				RootPath: "/Users/foo@bar.test",
 			},
 			Permissions: []resources.Permission{
 				{Level: permissions.CAN_MANAGE, UserName: "TestUser"},

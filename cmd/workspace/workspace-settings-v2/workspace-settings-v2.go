@@ -3,6 +3,8 @@
 package workspace_settings_v2
 
 import (
+	"fmt"
+
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
@@ -80,6 +82,7 @@ func newGetPublicWorkspaceSetting() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -108,9 +111,19 @@ func newListWorkspaceSettingsMetadata() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listWorkspaceSettingsMetadataReq settingsv2.ListWorkspaceSettingsMetadataRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listWorkspaceSettingsMetadataLimit int
 
 	cmd.Flags().IntVar(&listWorkspaceSettingsMetadataReq.PageSize, "page-size", listWorkspaceSettingsMetadataReq.PageSize, `The maximum number of settings to return.`)
-	cmd.Flags().StringVar(&listWorkspaceSettingsMetadataReq.PageToken, "page-token", listWorkspaceSettingsMetadataReq.PageToken, `A page token, received from a previous ListWorkspaceSettingsMetadataRequest call.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listWorkspaceSettingsMetadataLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listWorkspaceSettingsMetadataReq.PageToken, "page-token", listWorkspaceSettingsMetadataReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-workspace-settings-metadata"
 	cmd.Short = `List valid setting keys and their metadata.`
@@ -133,6 +146,13 @@ func newListWorkspaceSettingsMetadata() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.WorkspaceSettingsV2.ListWorkspaceSettingsMetadata(ctx, listWorkspaceSettingsMetadataReq)
+		if listWorkspaceSettingsMetadataLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listWorkspaceSettingsMetadataLimit)
+		}
+		if listWorkspaceSettingsMetadataLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listWorkspaceSettingsMetadataLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -229,6 +249,7 @@ func newPatchPublicWorkspaceSetting() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 

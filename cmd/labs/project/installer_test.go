@@ -384,7 +384,7 @@ func TestInstallerWorksForDevelopment(t *testing.T) {
 	ctx = env.Set(ctx, "DATABRICKS_WAREHOUSE_ID", "efg-id")
 
 	home, _ := env.UserHomeDir(ctx)
-	err := os.WriteFile(filepath.Join(home, ".databrickscfg"), []byte(fmt.Sprintf(`
+	err := os.WriteFile(filepath.Join(home, ".databrickscfg"), fmt.Appendf(nil, `
 [profile-one]
 host = %s
 token = ...
@@ -392,7 +392,7 @@ token = ...
 [acc]
 host = %s
 account_id = abc
-	`, server.URL, server.URL)), ownerRW)
+	`, server.URL, server.URL), ownerRW)
 	require.NoError(t, err)
 
 	// We have the following state at this point:

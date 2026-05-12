@@ -3,6 +3,8 @@
 package workspace_bindings
 
 import (
+	"fmt"
+
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
@@ -98,6 +100,7 @@ func newGet() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -126,9 +129,19 @@ func newGetBindings() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getBindingsReq catalog.GetBindingsRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var getBindingsLimit int
 
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&getBindingsLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&getBindingsReq.PageToken, "page-token", getBindingsReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 	cmd.Flags().IntVar(&getBindingsReq.MaxResults, "max-results", getBindingsReq.MaxResults, `Maximum number of workspace bindings to return.`)
-	cmd.Flags().StringVar(&getBindingsReq.PageToken, "page-token", getBindingsReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
+	cmd.Flags().Lookup("max-results").Hidden = true
 
 	cmd.Use = "get-bindings SECURABLE_TYPE SECURABLE_NAME"
 	cmd.Short = `Get securable workspace bindings.`
@@ -166,6 +179,13 @@ func newGetBindings() *cobra.Command {
 		getBindingsReq.SecurableName = args[1]
 
 		response := w.WorkspaceBindings.GetBindings(ctx, getBindingsReq)
+		if getBindingsLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", getBindingsLimit)
+		}
+		if getBindingsLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, getBindingsLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -241,6 +261,7 @@ func newUpdate() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -319,6 +340,7 @@ func newUpdateBindings() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 

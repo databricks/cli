@@ -28,6 +28,16 @@
       }
     },
     "resources.volumes.metadata": {
+      "depends_on": [
+        {
+          "node": "resources.catalogs.main_catalog",
+          "label": "${resources.catalogs.main_catalog.name}"
+        },
+        {
+          "node": "resources.schemas.raw_schema",
+          "label": "${resources.schemas.raw_schema.name}"
+        }
+      ],
       "action": "create",
       "new_state": {
         "value": {

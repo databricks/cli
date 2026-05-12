@@ -1,0 +1,85 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+print_app_requests() {
+    jq --sort-keys 'select(.method != "GET" and (.path | contains("/apps")))' < out.requests.txt
+    rm out.requests.txt
+}
+
+title "(started omitted) -> deploy: app created with no_compute=true, no start/stop requests"
+trace $CLI bundle deploy
+trace print_app_requests
+
+title "(started omitted) -> started: false -> deploy: no start/stop requests"
+cat > databricks.yml <<DABSEOF
+bundle:
+  name: lifecycle-started-omitted-$UNIQUE_NAME
+
+resources:
+  apps:
+    mykey:
+      name: $UNIQUE_NAME
+      description: my_app_description
+      source_code_path: ./app
+      lifecycle:
+        started: false
+DABSEOF
+trace $CLI bundle deploy
+trace print_app_requests
+
+title "started: false -> (started omitted) -> deploy: no start/stop requests"
+cat > databricks.yml <<DABSEOF
+bundle:
+  name: lifecycle-started-omitted-$UNIQUE_NAME
+
+resources:
+  apps:
+    mykey:
+      name: $UNIQUE_NAME
+      description: my_app_description
+      source_code_path: ./app
+DABSEOF
+trace $CLI bundle deploy
+trace print_app_requests
+
+title "(started omitted) -> started: true -> deploy: app started"
+cat > databricks.yml <<DABSEOF
+bundle:
+  name: lifecycle-started-omitted-$UNIQUE_NAME
+
+resources:
+  apps:
+    mykey:
+      name: $UNIQUE_NAME
+      description: my_app_description
+      source_code_path: ./app
+      lifecycle:
+        started: true
+DABSEOF
+trace $CLI bundle deploy
+trace print_app_requests
+
+title "started: true -> (started omitted) -> deploy: no start/stop requests (compute stays as-is)"
+cat > databricks.yml <<DABSEOF
+bundle:
+  name: lifecycle-started-omitted-$UNIQUE_NAME
+
+resources:
+  apps:
+    mykey:
+      name: $UNIQUE_NAME
+      description: my_app_description
+      source_code_path: ./app
+DABSEOF
+trace $CLI bundle deploy
+trace print_app_requests
+
+title "(started omitted, app running) -> bundle plan shows no drift"
+$CLI bundle plan -o json > LOG.planjson
+verify_no_drift.py LOG.planjson
+echo "Plan: no drift detected"

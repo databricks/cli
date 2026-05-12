@@ -102,11 +102,11 @@ func (m spinnerModel) View() string {
 // The spinner automatically degrades in non-interactive terminals.
 // Context cancellation will automatically close the spinner.
 type spinner struct {
-	p    *tea.Program // nil in non-interactive mode
-	c    *cmdIO
-	ctx  context.Context
-	once sync.Once
-	done chan struct{} // Closed when tea.Program finishes
+	p        *tea.Program // nil in non-interactive mode
+	c        *cmdIO
+	ctx      context.Context
+	sendQuit func()
+	done     chan struct{} // Closed when tea.Program finishes
 }
 
 // Update sends a status message to the spinner.
@@ -121,11 +121,7 @@ func (sp *spinner) Update(msg string) {
 // It waits for the spinner to fully terminate before returning.
 // It is safe to call Close multiple times and from multiple goroutines.
 func (sp *spinner) Close() {
-	sp.once.Do(func() {
-		if sp.p != nil {
-			sp.p.Send(quitMsg{})
-		}
-	})
+	sp.sendQuit()
 	// Always wait for termination, even if we weren't the first caller
 	if sp.p != nil {
 		<-sp.done
@@ -147,7 +143,7 @@ func (sp *spinner) Close() {
 func (c *cmdIO) NewSpinner(ctx context.Context, opts ...SpinnerOption) *spinner {
 	// Don't show spinner if not interactive
 	if !c.capabilities.SupportsInteractive() {
-		return &spinner{p: nil, c: c, ctx: ctx}
+		return &spinner{p: nil, c: c, ctx: ctx, sendQuit: func() {}}
 	}
 
 	// Create model and program
@@ -167,10 +163,11 @@ func (c *cmdIO) NewSpinner(ctx context.Context, opts ...SpinnerOption) *spinner 
 
 	done := make(chan struct{})
 	sp := &spinner{
-		p:    p,
-		c:    c,
-		ctx:  ctx,
-		done: done,
+		p:        p,
+		c:        c,
+		ctx:      ctx,
+		sendQuit: sync.OnceFunc(func() { p.Send(quitMsg{}) }),
+		done:     done,
 	}
 
 	// Start program in background

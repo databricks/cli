@@ -5,6 +5,7 @@ import (
 	"net/url"
 
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/ml"
@@ -49,8 +50,7 @@ func (s *MlflowModel) InitializeURL(baseURL url.URL) {
 	if s.ID == "" {
 		return
 	}
-	baseURL.Path = "ml/models/" + s.ID
-	s.URL = baseURL.String()
+	s.URL = workspaceurls.ResourceURL(baseURL, "models", s.ID)
 }
 
 func (s *MlflowModel) GetName() string {

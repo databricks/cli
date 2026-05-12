@@ -3,8 +3,10 @@ package artifacts
 import (
 	"context"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
+	"slices"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
@@ -15,7 +17,6 @@ import (
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/patchwheel"
-	"github.com/databricks/cli/libs/utils"
 )
 
 func Build() bundle.Mutator {
@@ -37,7 +38,7 @@ func (m *build) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		})
 	}
 
-	for _, artifactName := range utils.SortedKeys(b.Config.Artifacts) {
+	for _, artifactName := range slices.Sorted(maps.Keys(b.Config.Artifacts)) {
 		a := b.Config.Artifacts[artifactName]
 
 		if a.BuildCommand != "" {
@@ -84,16 +85,19 @@ func doBuild(ctx context.Context, artifactName string, a *config.Artifact) error
 	cmdio.LogString(ctx, fmt.Sprintf("Building %s...", artifactName))
 
 	var executor *exec.Executor
-	var err error
 	if a.Executable != "" {
+		var err error
 		executor, err = exec.NewCommandExecutorWithExecutable(a.Path, a.Executable)
+		if err != nil {
+			return err
+		}
 	} else {
+		var err error
 		executor, err = exec.NewCommandExecutor(a.Path)
+		if err != nil {
+			return err
+		}
 		a.Executable = executor.ShellType()
-	}
-
-	if err != nil {
-		return err
 	}
 
 	out, err := executor.Exec(ctx, a.BuildCommand)

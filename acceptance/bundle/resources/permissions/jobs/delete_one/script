@@ -1,0 +1,35 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+if [ -n "$CLOUD_ENV" ]; then
+    # Cloud workspace needs these principals to exist; mock testserver doesn't care.
+    $CLI users create --user-name test-dabs-1@databricks.com &> /dev/null || true
+    $CLI users create --user-name test-dabs-2@databricks.com &> /dev/null || true
+    $CLI groups create --display-name test-dabs-group-1 &> /dev/null || true
+fi
+rm -f out.requests.txt
+
+trace $CLI bundle plan -o json > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
+
+cleanup() {
+    trace errcode $CLI bundle destroy --auto-approve
+    print_requests.py //jobs/ > out.requests_destroy.$DATABRICKS_BUNDLE_ENGINE.json
+}
+trap cleanup EXIT
+
+trace $CLI bundle deploy
+print_requests.py //jobs/ | gron.py --sort-arrays access_control_list > out.requests_create.txt
+
+trace $CLI bundle plan
+
+job_id="$(read_id.py job_with_permissions)"
+# display_name is omitted from cloud responses for freshly-created principals; drop it for parity with local mock.
+$CLI permissions get jobs "$job_id" | gron.py --sort-arrays access_control_list | grep -v display_name > out.permissions_create.txt
+rm -f out.requests.txt
+
+title "Delete one permission and deploy again\n"
+grep -v DELETE databricks.yml > tmp.yml && mv tmp.yml databricks.yml
+trace $CLI bundle deploy
+print_requests.py //jobs/ | gron.py --sort-arrays access_control_list > out.requests_update.txt
+
+$CLI permissions get jobs "$job_id" | gron.py --sort-arrays access_control_list | grep -v display_name > out.permissions_update.txt
+rm -f out.requests.txt

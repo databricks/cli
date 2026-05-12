@@ -31,13 +31,12 @@ const (
 	DefaultSql                TemplateName = "default-sql"
 	LakeflowPipelines         TemplateName = "lakeflow-pipelines"
 	// CLIPipelines is deprecated. Use LakeflowPipelines instead
-	CLIPipelines           TemplateName = "cli-pipelines"
-	DbtSql                 TemplateName = "dbt-sql"
-	MlopsStacks            TemplateName = "mlops-stacks"
-	Pydabs                 TemplateName = "pydabs"
-	Custom                 TemplateName = "custom"
-	ExperimentalJobsAsCode TemplateName = "experimental-jobs-as-code"
-	Default                TemplateName = "default"
+	CLIPipelines TemplateName = "cli-pipelines"
+	DbtSql       TemplateName = "dbt-sql"
+	MlopsStacks  TemplateName = "mlops-stacks"
+	Pydabs       TemplateName = "pydabs"
+	Custom       TemplateName = "custom"
+	Default      TemplateName = "default"
 )
 
 var databricksTemplates = []Template{
@@ -98,13 +97,6 @@ var databricksTemplates = []Template{
 		description: "A variant of the 'default-python' template that defines resources in Python instead of YAML",
 		Reader:      &builtinReader{name: string(Pydabs)},
 		Writer:      &writerWithFullTelemetry{defaultWriter: defaultWriter{name: Pydabs}},
-	},
-	{
-		name:        ExperimentalJobsAsCode,
-		hidden:      true,
-		description: "Jobs as code template (experimental)",
-		Reader:      &builtinReader{name: string(ExperimentalJobsAsCode)},
-		Writer:      &writerWithFullTelemetry{defaultWriter: defaultWriter{name: ExperimentalJobsAsCode}},
 	},
 }
 

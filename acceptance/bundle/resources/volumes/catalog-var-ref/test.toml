@@ -1,5 +1,3 @@
-Badness = "No depends_on for volume resource"
-
 Local = true
 Cloud = false
 RecordRequests = false

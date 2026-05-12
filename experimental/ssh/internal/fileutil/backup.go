@@ -2,6 +2,8 @@ package fileutil
 
 import (
 	"context"
+	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 
@@ -23,10 +25,10 @@ func BackupFile(ctx context.Context, path string, data []byte) error {
 	latestBak := path + SuffixLatestBak
 	var bakPath string
 	_, statErr := os.Stat(originalBak)
-	if statErr != nil && !os.IsNotExist(statErr) {
+	if statErr != nil && !errors.Is(statErr, fs.ErrNotExist) {
 		return statErr
 	}
-	if os.IsNotExist(statErr) {
+	if errors.Is(statErr, fs.ErrNotExist) {
 		bakPath = originalBak
 	} else {
 		bakPath = latestBak

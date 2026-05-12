@@ -21,6 +21,9 @@ __all__ = [
     "ConnectionParameters",
     "ConnectionParametersDict",
     "ConnectionParametersParam",
+    "ConnectorOptions",
+    "ConnectorOptionsDict",
+    "ConnectorOptionsParam",
     "ConnectorType",
     "ConnectorTypeParam",
     "DataStagingOptions",
@@ -36,6 +39,16 @@ __all__ = [
     "EventLogSpec",
     "EventLogSpecDict",
     "EventLogSpecParam",
+    "FileFilter",
+    "FileFilterDict",
+    "FileFilterParam",
+    "FileIngestionOptions",
+    "FileIngestionOptionsDict",
+    "FileIngestionOptionsFileFormat",
+    "FileIngestionOptionsFileFormatParam",
+    "FileIngestionOptionsParam",
+    "FileIngestionOptionsSchemaEvolutionMode",
+    "FileIngestionOptionsSchemaEvolutionModeParam",
     "FileLibrary",
     "FileLibraryDict",
     "FileLibraryParam",
@@ -50,6 +63,14 @@ __all__ = [
     "GcsStorageInfo",
     "GcsStorageInfoDict",
     "GcsStorageInfoParam",
+    "GoogleAdsOptions",
+    "GoogleAdsOptionsDict",
+    "GoogleAdsOptionsParam",
+    "GoogleDriveOptions",
+    "GoogleDriveOptionsDict",
+    "GoogleDriveOptionsGoogleDriveEntityType",
+    "GoogleDriveOptionsGoogleDriveEntityTypeParam",
+    "GoogleDriveOptionsParam",
     "IngestionConfig",
     "IngestionConfigDict",
     "IngestionConfigParam",
@@ -138,6 +159,11 @@ __all__ = [
     "SchemaSpec",
     "SchemaSpecDict",
     "SchemaSpecParam",
+    "SharepointOptions",
+    "SharepointOptionsDict",
+    "SharepointOptionsParam",
+    "SharepointOptionsSharepointEntityType",
+    "SharepointOptionsSharepointEntityTypeParam",
     "SourceCatalogConfig",
     "SourceCatalogConfigDict",
     "SourceCatalogConfigParam",
@@ -152,6 +178,13 @@ __all__ = [
     "TableSpecificConfigParam",
     "TableSpecificConfigScdType",
     "TableSpecificConfigScdTypeParam",
+    "TikTokAdsOptions",
+    "TikTokAdsOptionsDict",
+    "TikTokAdsOptionsParam",
+    "TikTokAdsOptionsTikTokDataLevel",
+    "TikTokAdsOptionsTikTokDataLevelParam",
+    "TikTokAdsOptionsTikTokReportType",
+    "TikTokAdsOptionsTikTokReportTypeParam",
     "VolumesStorageInfo",
     "VolumesStorageInfoDict",
     "VolumesStorageInfoParam",
@@ -199,6 +232,11 @@ from databricks.bundles.pipelines._models.connection_parameters import (
     ConnectionParametersDict,
     ConnectionParametersParam,
 )
+from databricks.bundles.pipelines._models.connector_options import (
+    ConnectorOptions,
+    ConnectorOptionsDict,
+    ConnectorOptionsParam,
+)
 from databricks.bundles.pipelines._models.connector_type import (
     ConnectorType,
     ConnectorTypeParam,
@@ -223,6 +261,24 @@ from databricks.bundles.pipelines._models.event_log_spec import (
     EventLogSpecDict,
     EventLogSpecParam,
 )
+from databricks.bundles.pipelines._models.file_filter import (
+    FileFilter,
+    FileFilterDict,
+    FileFilterParam,
+)
+from databricks.bundles.pipelines._models.file_ingestion_options import (
+    FileIngestionOptions,
+    FileIngestionOptionsDict,
+    FileIngestionOptionsParam,
+)
+from databricks.bundles.pipelines._models.file_ingestion_options_file_format import (
+    FileIngestionOptionsFileFormat,
+    FileIngestionOptionsFileFormatParam,
+)
+from databricks.bundles.pipelines._models.file_ingestion_options_schema_evolution_mode import (
+    FileIngestionOptionsSchemaEvolutionMode,
+    FileIngestionOptionsSchemaEvolutionModeParam,
+)
 from databricks.bundles.pipelines._models.file_library import (
     FileLibrary,
     FileLibraryDict,
@@ -246,6 +302,20 @@ from databricks.bundles.pipelines._models.gcs_storage_info import (
     GcsStorageInfo,
     GcsStorageInfoDict,
     GcsStorageInfoParam,
+)
+from databricks.bundles.pipelines._models.google_ads_options import (
+    GoogleAdsOptions,
+    GoogleAdsOptionsDict,
+    GoogleAdsOptionsParam,
+)
+from databricks.bundles.pipelines._models.google_drive_options import (
+    GoogleDriveOptions,
+    GoogleDriveOptionsDict,
+    GoogleDriveOptionsParam,
+)
+from databricks.bundles.pipelines._models.google_drive_options_google_drive_entity_type import (
+    GoogleDriveOptionsGoogleDriveEntityType,
+    GoogleDriveOptionsGoogleDriveEntityTypeParam,
 )
 from databricks.bundles.pipelines._models.ingestion_config import (
     IngestionConfig,
@@ -391,6 +461,15 @@ from databricks.bundles.pipelines._models.schema_spec import (
     SchemaSpecDict,
     SchemaSpecParam,
 )
+from databricks.bundles.pipelines._models.sharepoint_options import (
+    SharepointOptions,
+    SharepointOptionsDict,
+    SharepointOptionsParam,
+)
+from databricks.bundles.pipelines._models.sharepoint_options_sharepoint_entity_type import (
+    SharepointOptionsSharepointEntityType,
+    SharepointOptionsSharepointEntityTypeParam,
+)
 from databricks.bundles.pipelines._models.source_catalog_config import (
     SourceCatalogConfig,
     SourceCatalogConfigDict,
@@ -414,6 +493,19 @@ from databricks.bundles.pipelines._models.table_specific_config import (
 from databricks.bundles.pipelines._models.table_specific_config_scd_type import (
     TableSpecificConfigScdType,
     TableSpecificConfigScdTypeParam,
+)
+from databricks.bundles.pipelines._models.tik_tok_ads_options import (
+    TikTokAdsOptions,
+    TikTokAdsOptionsDict,
+    TikTokAdsOptionsParam,
+)
+from databricks.bundles.pipelines._models.tik_tok_ads_options_tik_tok_data_level import (
+    TikTokAdsOptionsTikTokDataLevel,
+    TikTokAdsOptionsTikTokDataLevelParam,
+)
+from databricks.bundles.pipelines._models.tik_tok_ads_options_tik_tok_report_type import (
+    TikTokAdsOptionsTikTokReportType,
+    TikTokAdsOptionsTikTokReportTypeParam,
 )
 from databricks.bundles.pipelines._models.volumes_storage_info import (
     VolumesStorageInfo,

@@ -3,6 +3,7 @@ package dresources
 import (
 	"context"
 	"errors"
+	"net/http"
 	"strings"
 	"time"
 
@@ -180,7 +181,7 @@ func (r *ResourcePostgresEndpoint) DoDelete(ctx context.Context, id string) erro
 		if err != nil {
 			// Check if this is a reconciliation in progress error
 			var apiErr *apierr.APIError
-			if errors.As(err, &apiErr) && apiErr.StatusCode == 409 &&
+			if errors.As(err, &apiErr) && apiErr.StatusCode == http.StatusConflict &&
 				strings.Contains(apiErr.Message, "reconciliation") {
 				// Check if we've exceeded the timeout
 				if time.Now().After(deadline) {

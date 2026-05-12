@@ -1,6 +1,10 @@
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, TypedDict
 
+from databricks.bundles.catalogs._models.encryption_settings import (
+    EncryptionSettings,
+    EncryptionSettingsParam,
+)
 from databricks.bundles.catalogs._models.lifecycle import Lifecycle, LifecycleParam
 from databricks.bundles.catalogs._models.privilege_assignment import (
     PrivilegeAssignment,
@@ -34,6 +38,13 @@ class Catalog(Resource):
 
     lifecycle: VariableOrOptional[Lifecycle] = None
 
+    managed_encryption_settings: VariableOrOptional[EncryptionSettings] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    Control CMK encryption for managed catalog data
+    """
+
     options: VariableOrDict[str] = field(default_factory=dict)
 
     properties: VariableOrDict[str] = field(default_factory=dict)
@@ -64,6 +75,13 @@ class CatalogDict(TypedDict, total=False):
     grants: VariableOrList[PrivilegeAssignmentParam]
 
     lifecycle: VariableOrOptional[LifecycleParam]
+
+    managed_encryption_settings: VariableOrOptional[EncryptionSettingsParam]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    Control CMK encryption for managed catalog data
+    """
 
     options: VariableOrDict[str]
 

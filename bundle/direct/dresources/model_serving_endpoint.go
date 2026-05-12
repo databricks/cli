@@ -86,7 +86,7 @@ func configOutputToInput(output *serving.EndpointCoreConfigOutput) *serving.Endp
 	}
 }
 
-func (*ResourceModelServingEndpoint) RemapState(state *RefreshOutput) *serving.CreateServingEndpoint {
+func (*ResourceModelServingEndpoint) RemapState(state *ModelServingEndpointRemote) *serving.CreateServingEndpoint {
 	details := state.EndpointDetails
 	// Map the remote state (ServingEndpointDetailed) to the local state (CreateServingEndpoint)
 	// for proper comparison during diff calculation
@@ -107,23 +107,23 @@ func (*ResourceModelServingEndpoint) RemapState(state *RefreshOutput) *serving.C
 	}
 }
 
-type RefreshOutput struct {
+type ModelServingEndpointRemote struct {
 	EndpointDetails *serving.ServingEndpointDetailed `json:"endpoint_details"`
 	EndpointId      string                           `json:"endpoint_id"`
 }
 
-func (r *ResourceModelServingEndpoint) DoRead(ctx context.Context, id string) (*RefreshOutput, error) {
+func (r *ResourceModelServingEndpoint) DoRead(ctx context.Context, id string) (*ModelServingEndpointRemote, error) {
 	endpoint, err := r.client.ServingEndpoints.GetByName(ctx, id)
 	if err != nil {
 		return nil, err
 	}
-	return &RefreshOutput{
+	return &ModelServingEndpointRemote{
 		EndpointDetails: endpoint,
 		EndpointId:      endpoint.Id,
 	}, nil
 }
 
-func (r *ResourceModelServingEndpoint) DoCreate(ctx context.Context, config *serving.CreateServingEndpoint) (string, *RefreshOutput, error) {
+func (r *ResourceModelServingEndpoint) DoCreate(ctx context.Context, config *serving.CreateServingEndpoint) (string, *ModelServingEndpointRemote, error) {
 	waiter, err := r.client.ServingEndpoints.Create(ctx, *config)
 	if err != nil {
 		return "", nil, err
@@ -133,23 +133,23 @@ func (r *ResourceModelServingEndpoint) DoCreate(ctx context.Context, config *ser
 }
 
 // waitForEndpointReady waits for the serving endpoint to be ready (not updating)
-func (r *ResourceModelServingEndpoint) waitForEndpointReady(ctx context.Context, name string) (*RefreshOutput, error) {
+func (r *ResourceModelServingEndpoint) waitForEndpointReady(ctx context.Context, name string) (*ModelServingEndpointRemote, error) {
 	details, err := r.client.ServingEndpoints.WaitGetServingEndpointNotUpdating(ctx, name, 35*time.Minute, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	return &RefreshOutput{
+	return &ModelServingEndpointRemote{
 		EndpointDetails: details,
 		EndpointId:      details.Id,
 	}, nil
 }
 
-func (r *ResourceModelServingEndpoint) WaitAfterCreate(ctx context.Context, config *serving.CreateServingEndpoint) (*RefreshOutput, error) {
+func (r *ResourceModelServingEndpoint) WaitAfterCreate(ctx context.Context, config *serving.CreateServingEndpoint) (*ModelServingEndpointRemote, error) {
 	return r.waitForEndpointReady(ctx, config.Name)
 }
 
-func (r *ResourceModelServingEndpoint) WaitAfterUpdate(ctx context.Context, config *serving.CreateServingEndpoint) (*RefreshOutput, error) {
+func (r *ResourceModelServingEndpoint) WaitAfterUpdate(ctx context.Context, config *serving.CreateServingEndpoint) (*ModelServingEndpointRemote, error) {
 	return r.waitForEndpointReady(ctx, config.Name)
 }
 
@@ -285,7 +285,7 @@ func (r *ResourceModelServingEndpoint) updateTags(ctx context.Context, id string
 	return nil
 }
 
-func (r *ResourceModelServingEndpoint) DoUpdate(ctx context.Context, id string, config *serving.CreateServingEndpoint, entry *PlanEntry) (*RefreshOutput, error) {
+func (r *ResourceModelServingEndpoint) DoUpdate(ctx context.Context, id string, config *serving.CreateServingEndpoint, entry *PlanEntry) (*ModelServingEndpointRemote, error) {
 	var err error
 
 	// Terraform makes these API calls sequentially. We do the same here.

@@ -78,6 +78,7 @@
             "tags": null,
             "task": [
               {
+                "alert_task": [],
                 "clean_rooms_notebook_task": [],
                 "compute": [],
                 "condition_task": [],

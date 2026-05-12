@@ -8,10 +8,10 @@ type DataSourceFeatureEngineeringKafkaConfigAuthConfig struct {
 
 type DataSourceFeatureEngineeringKafkaConfigBackfillSourceDeltaTableSource struct {
 	DataframeSchema   string   `json:"dataframe_schema,omitempty"`
-	EntityColumns     []string `json:"entity_columns"`
+	EntityColumns     []string `json:"entity_columns,omitempty"`
 	FilterCondition   string   `json:"filter_condition,omitempty"`
 	FullName          string   `json:"full_name"`
-	TimeseriesColumn  string   `json:"timeseries_column"`
+	TimeseriesColumn  string   `json:"timeseries_column,omitempty"`
 	TransformationSql string   `json:"transformation_sql,omitempty"`
 }
 

@@ -1,0 +1,23 @@
+
+>>> [CLI] bundle validate -t dev -o json
+{
+  "catalogs": {
+    "my_catalog": {
+      "name": "mycatalog"
+    }
+  },
+  "schemas": {
+    "my_schema": {
+      "catalog_name": "${resources.catalogs.my_catalog.name}",
+      "name": "dev_[USERNAME]_myschema"
+    }
+  },
+  "volumes": {
+    "my_volume": {
+      "catalog_name": "${resources.catalogs.my_catalog.name}",
+      "name": "myvolume",
+      "schema_name": "${resources.schemas.my_schema.name}",
+      "volume_type": "MANAGED"
+    }
+  }
+}

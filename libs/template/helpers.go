@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"math/rand"
+	"math/rand/v2"
 	"net/url"
 	"os"
 	"regexp"
@@ -66,9 +66,9 @@ func loadHelpers(ctx context.Context) template.FuncMap {
 		"regexp": func(expr string) (*regexp.Regexp, error) {
 			return regexp.Compile(expr)
 		},
-		// Alias for https://pkg.go.dev/math/rand#Intn. Returns, as an int, a non-negative pseudo-random number in the half-open interval [0,n).
+		// Alias for https://pkg.go.dev/math/rand/v2#IntN. Returns, as an int, a non-negative pseudo-random number in the half-open interval [0,n).
 		"random_int": func(n int) int {
-			return rand.Intn(n)
+			return rand.IntN(n)
 		},
 		// Alias for https://pkg.go.dev/github.com/google/uuid#New. Returns, as a string, a UUID which is a 128 bit (16 byte) Universal Unique IDentifier as defined in RFC 4122.
 		"uuid": func() string {

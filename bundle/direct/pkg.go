@@ -64,10 +64,7 @@ func (d *DeploymentUnit) SetRemoteState(remoteState any) error {
 	return nil
 }
 
-func (b *DeploymentBundle) ExportState(ctx context.Context, path string) (resourcestate.ExportedResourcesMap, error) {
-	err := b.StateDB.Open(path)
-	if err != nil {
-		return nil, err
-	}
-	return b.StateDB.ExportState(ctx), nil
+func (b *DeploymentBundle) ExportState(ctx context.Context) resourcestate.ExportedResourcesMap {
+	b.StateDB.AssertOpened()
+	return b.StateDB.ExportState(ctx)
 }

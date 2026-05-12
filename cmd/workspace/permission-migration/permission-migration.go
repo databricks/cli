@@ -76,7 +76,7 @@ func newMigratePermissions() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'workspace_id', 'from_workspace_group_name', 'to_account_group_name' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'workspace_id', 'from_workspace_group_name', 'to_account_group_name' in your JSON input")
 			}
 			return nil
 		}
@@ -119,6 +119,7 @@ func newMigratePermissions() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 

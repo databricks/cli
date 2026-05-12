@@ -14,7 +14,7 @@
       "depends_on": [
         {
           "node": "resources.models.foo",
-          "label": "${resources.models.foo.id}"
+          "label": "${resources.models.foo.model_id}"
         }
       ],
       "action": "create",
@@ -41,7 +41,7 @@
           ]
         },
         "vars": {
-          "object_id": "/registered-models/${resources.models.foo.id}"
+          "object_id": "/registered-models/${resources.models.foo.model_id}"
         }
       }
     }

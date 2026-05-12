@@ -121,11 +121,9 @@ func New(ctx context.Context, opts SyncOptions) (*Sync, error) {
 	if opts.OutputHandler != nil {
 		ch := make(chan Event, MaxRequestsInFlight)
 		notifier = &ChannelNotifier{ch}
-		outputWaitGroup.Add(1)
-		go func() {
-			defer outputWaitGroup.Done()
+		outputWaitGroup.Go(func() {
 			opts.OutputHandler(ctx, ch)
-		}()
+		})
 	} else {
 		notifier = &NopNotifier{}
 	}

@@ -1,0 +1,6 @@
+
+>>> [CLI] bundle validate -o json
+/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/src/app
+
+>>> [CLI] bundle validate -o json
+[TEST_TMP_DIR]/src/app

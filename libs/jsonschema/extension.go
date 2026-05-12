@@ -15,7 +15,7 @@ type Extension struct {
 	// Welcome message to print before prompting the user for input
 	WelcomeMessage string `json:"welcome_message,omitempty"`
 
-	// The message to print after the template is successfully initalized
+	// The message to print after the template is successfully initialized
 	SuccessMessage string `json:"success_message,omitempty"`
 
 	// PatternMatchFailureMessage is a user defined message that is displayed to the

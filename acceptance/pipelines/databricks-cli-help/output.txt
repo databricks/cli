@@ -31,6 +31,7 @@ Available Commands
   stop                  Stop a pipeline
 
 Management Commands
+  apply-environment     Apply the latest environment to the pipeline.
   clone                 Clone a pipeline.
   create                Create a pipeline.
   delete                Delete a pipeline.

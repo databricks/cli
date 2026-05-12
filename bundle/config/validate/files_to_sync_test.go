@@ -63,7 +63,7 @@ func setupBundleForFilesToSyncTest(t *testing.T) *bundle.Bundle {
 
 	m := mocks.NewMockWorkspaceClient(t)
 	m.WorkspaceClient.Config = &sdkconfig.Config{
-		Host: "https://foo.com",
+		Host: "https://foo.test",
 	}
 
 	// The initialization logic in [sync.New] performs a check on the destination path.

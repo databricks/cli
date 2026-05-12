@@ -27,6 +27,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/postgres"
 	"github.com/databricks/databricks-sdk-go/service/serving"
 	"github.com/databricks/databricks-sdk-go/service/sql"
+	"github.com/databricks/databricks-sdk-go/service/vectorsearch"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -239,6 +240,13 @@ var testConfig map[string]any = map[string]any{
 			DatasetSchema:  "myschema",
 		},
 	},
+
+	"vector_search_endpoints": &resources.VectorSearchEndpoint{
+		CreateEndpoint: vectorsearch.CreateEndpoint{
+			Name:         "my-endpoint",
+			EndpointType: vectorsearch.EndpointTypeStandard,
+		},
+	},
 }
 
 type prepareWorkspace func(ctx context.Context, client *databricks.WorkspaceClient) (any, error)
@@ -421,7 +429,7 @@ var testDeps = map[string]prepareWorkspace{
 		parentPath := "/Workspace/Users/user@example.com"
 
 		// Create parent directory if it doesn't exist
-		err := client.Workspace.MkdirsByPath(ctx, parentPath)
+		err := client.Workspace.MkdirsByPath(ctx, parentPath) //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
 		if err != nil {
 			return nil, err
 		}
@@ -466,6 +474,24 @@ var testDeps = map[string]prepareWorkspace{
 
 		return &PermissionsState{
 			ObjectID: "/serving-endpoints/" + waiter.Response.Name,
+			EmbeddedSlice: []StatePermission{{
+				Level:    "CAN_MANAGE",
+				UserName: "user@example.com",
+			}},
+		}, nil
+	},
+
+	"vector_search_endpoints.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		waiter, err := client.VectorSearchEndpoints.CreateEndpoint(ctx, vectorsearch.CreateEndpoint{
+			Name:         "vs-endpoint-permissions",
+			EndpointType: vectorsearch.EndpointTypeStandard,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		return &PermissionsState{
+			ObjectID: "/vector-search-endpoints/" + waiter.Response.Id,
 			EmbeddedSlice: []StatePermission{{
 				Level:    "CAN_MANAGE",
 				UserName: "user@example.com",

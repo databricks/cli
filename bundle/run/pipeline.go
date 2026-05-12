@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
+	"strings"
 	"time"
 
 	"github.com/databricks/cli/bundle"
@@ -27,23 +29,24 @@ func filterEventsByUpdateId(events []pipelines.PipelineEvent, updateId string) [
 }
 
 func (r *pipelineRunner) logEvent(ctx context.Context, event pipelines.PipelineEvent) {
-	logString := ""
+	var sb strings.Builder
 	if event.Message != "" {
-		logString += fmt.Sprintf(" %s\n", event.Message)
+		fmt.Fprintf(&sb, " %s\n", event.Message)
 	}
 	if event.Error != nil && len(event.Error.Exceptions) > 0 {
-		logString += "trace for most recent exception: \n"
-		for i := range len(event.Error.Exceptions) {
-			logString += event.Error.Exceptions[i].Message + "\n"
+		sb.WriteString("trace for most recent exception: \n")
+		for _, exc := range event.Error.Exceptions {
+			sb.WriteString(exc.Message)
+			sb.WriteByte('\n')
 		}
 	}
-	if logString != "" {
-		log.Errorf(ctx, "[%s] %s", event.EventType, logString)
+	if sb.Len() > 0 {
+		log.Errorf(ctx, "[%s] %s", event.EventType, sb.String())
 	}
 }
 
 func (r *pipelineRunner) logErrorEvent(ctx context.Context, pipelineId, updateId string) error {
-	w := r.bundle.WorkspaceClient()
+	w := r.bundle.WorkspaceClient(ctx)
 
 	// Note: For a 100 percent correct and complete solution we should use the
 	// w.Pipelines.ListPipelineEventsAll method to find all relevant events. However the
@@ -63,10 +66,9 @@ func (r *pipelineRunner) logErrorEvent(ctx context.Context, pipelineId, updateId
 		return err
 	}
 	updateEvents := filterEventsByUpdateId(events, updateId)
-	// The events API returns most recent events first. We iterate in a reverse order
-	// to print the events chronologically
-	for i := len(updateEvents) - 1; i >= 0; i-- {
-		r.logEvent(ctx, updateEvents[i])
+	// The events API returns most recent events first.
+	for _, event := range slices.Backward(updateEvents) {
+		r.logEvent(ctx, event)
 	}
 	return nil
 }
@@ -90,7 +92,7 @@ func (r *pipelineRunner) Run(ctx context.Context, opts *Options) (output.RunOutp
 
 	// Include resource key in logger.
 	ctx = log.NewContext(ctx, log.GetLogger(ctx).With("resource", r.Key()))
-	w := r.bundle.WorkspaceClient()
+	w := r.bundle.WorkspaceClient(ctx)
 
 	req, err := opts.Pipeline.toPayload(r.pipeline, pipelineID)
 	if err != nil {
@@ -165,7 +167,7 @@ func (r *pipelineRunner) Run(ctx context.Context, opts *Options) (output.RunOutp
 }
 
 func (r *pipelineRunner) Cancel(ctx context.Context) error {
-	w := r.bundle.WorkspaceClient()
+	w := r.bundle.WorkspaceClient(ctx)
 	wait, err := w.Pipelines.Stop(ctx, pipelines.StopRequest{
 		PipelineId: r.pipeline.ID,
 	})

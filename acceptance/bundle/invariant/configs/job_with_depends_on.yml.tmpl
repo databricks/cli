@@ -1,0 +1,22 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+resources:
+  jobs:
+    foo:
+      name: test-job-$UNIQUE_NAME
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: /Shared/notebook
+        - task_key: process
+          depends_on:
+            - task_key: main
+          notebook_task:
+            notebook_path: /Shared/notebook
+        - task_key: finalize
+          depends_on:
+            - task_key: process
+            - task_key: main
+          notebook_task:
+            notebook_path: /Shared/notebook

@@ -37,7 +37,12 @@ type ResourceStorageCredentialGcpServiceAccountKey struct {
 	PrivateKeyId string `json:"private_key_id"`
 }
 
+type ResourceStorageCredentialProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type ResourceStorageCredential struct {
+	Api                         string                                                `json:"api,omitempty"`
 	Comment                     string                                                `json:"comment,omitempty"`
 	ForceDestroy                bool                                                  `json:"force_destroy,omitempty"`
 	ForceUpdate                 bool                                                  `json:"force_update,omitempty"`
@@ -55,4 +60,5 @@ type ResourceStorageCredential struct {
 	CloudflareApiToken          *ResourceStorageCredentialCloudflareApiToken          `json:"cloudflare_api_token,omitempty"`
 	DatabricksGcpServiceAccount *ResourceStorageCredentialDatabricksGcpServiceAccount `json:"databricks_gcp_service_account,omitempty"`
 	GcpServiceAccountKey        *ResourceStorageCredentialGcpServiceAccountKey        `json:"gcp_service_account_key,omitempty"`
+	ProviderConfig              *ResourceStorageCredentialProviderConfig              `json:"provider_config,omitempty"`
 }

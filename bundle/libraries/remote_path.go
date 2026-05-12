@@ -3,13 +3,14 @@ package libraries
 import (
 	"context"
 	"fmt"
+	"maps"
 	"path"
 	"path/filepath"
+	"slices"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/utils"
 )
 
 // ReplaceWithRemotePath updates all the libraries paths to point to the remote location
@@ -25,7 +26,7 @@ func ReplaceWithRemotePath(ctx context.Context, b *bundle.Bundle) (map[string][]
 		return nil, diag.FromErr(err)
 	}
 
-	sources := utils.SortedKeys(libs)
+	sources := slices.Sorted(maps.Keys(libs))
 
 	// Update all the config paths to point to the uploaded location
 	err = b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {

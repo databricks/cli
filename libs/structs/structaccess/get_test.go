@@ -390,7 +390,7 @@ func TestGet_Embedded_NilPointerAnonymousNotDescended(t *testing.T) {
 	type host struct {
 		*embedded
 	}
-	require.NoError(t, ValidateByString(reflect.TypeOf(host{}), "hidden"))
+	require.NoError(t, ValidateByString(reflect.TypeFor[host](), "hidden"))
 	_, err := GetByString(host{}, "hidden")
 	require.EqualError(t, err, "hidden: field \"hidden\" not found in structaccess.host")
 }
@@ -403,7 +403,7 @@ func TestGet_Embedded_ValueAnonymousResolved(t *testing.T) {
 		embedded
 	}
 	in := host{embedded: embedded{Hidden: "x"}}
-	require.NoError(t, ValidateByString(reflect.TypeOf(in), "hidden"))
+	require.NoError(t, ValidateByString(reflect.TypeFor[host](), "hidden"))
 	testGet(t, in, "hidden", "x")
 }
 
@@ -422,15 +422,15 @@ func TestGet_BundleTag_SkipsDirect(t *testing.T) {
 	// Direct readonly/internal fields should be invisible
 	_, err := GetByString(S{A: "x", B: "y", C: "z"}, "a")
 	require.EqualError(t, err, "a: field \"a\" not found in structaccess.S")
-	require.EqualError(t, ValidateByString(reflect.TypeOf(S{}), "a"), "a: field \"a\" not found in structaccess.S")
+	require.EqualError(t, ValidateByString(reflect.TypeFor[S](), "a"), "a: field \"a\" not found in structaccess.S")
 
 	_, err = GetByString(S{}, "b")
 	require.EqualError(t, err, "b: field \"b\" not found in structaccess.S")
-	require.EqualError(t, ValidateByString(reflect.TypeOf(S{}), "b"), "b: field \"b\" not found in structaccess.S")
+	require.EqualError(t, ValidateByString(reflect.TypeFor[S](), "b"), "b: field \"b\" not found in structaccess.S")
 
 	// Visible field works
 	testGet(t, S{C: "z"}, "c", "z")
-	require.NoError(t, ValidateByString(reflect.TypeOf(S{}), "c"))
+	require.NoError(t, ValidateByString(reflect.TypeFor[S](), "c"))
 }
 
 func TestGet_BundleTag_SkipsPromoted(t *testing.T) {
@@ -443,7 +443,7 @@ func TestGet_BundleTag_SkipsPromoted(t *testing.T) {
 	// Promoted readonly field should be invisible
 	_, err := GetByString(host{embedded: embedded{Hidden: "x"}}, "hidden")
 	require.EqualError(t, err, "hidden: field \"hidden\" not found in structaccess.host")
-	require.EqualError(t, ValidateByString(reflect.TypeOf(host{}), "hidden"), "hidden: field \"hidden\" not found in structaccess.host")
+	require.EqualError(t, ValidateByString(reflect.TypeFor[host](), "hidden"), "hidden: field \"hidden\" not found in structaccess.host")
 }
 
 func TestGet_EmbeddedStructForceSendFields(t *testing.T) {
@@ -791,7 +791,7 @@ func TestValidate_EmbedTag(t *testing.T) {
 		EmbeddedSlice []Item `json:"items,omitempty"`
 	}
 
-	typ := reflect.TypeOf(Container{})
+	typ := reflect.TypeFor[Container]()
 
 	// Valid paths through EmbeddedSlice.
 	require.NoError(t, ValidateByString(typ, "[0].name"))
