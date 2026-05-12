@@ -19,8 +19,8 @@ const (
 )
 
 const (
-	profilePickerCreateNewLabel = "Create a new profile"
-	profilePickerEnterHostLabel = "Enter a host URL manually"
+	profilePickerCreateNewLabel = "+ Create a new profile"
+	profilePickerEnterHostLabel = "→ Enter a host URL manually"
 )
 
 // profilePickerOptions configures pickAuthProfile.
@@ -114,16 +114,22 @@ func pickAuthProfile(ctx context.Context, profiles profile.Profiles, opts profil
 	idx, err := cmdio.RunSelect(ctx, cmdio.SelectOptions{
 		Label:             opts.Label,
 		Items:             items,
-		StartInSearchMode: len(profiles) > 5,
+		StartInSearchMode: true,
 		Searcher: func(input string, index int) bool {
+			// Action entries (Create new / Enter host) stay visible regardless
+			// of the search query so the user can always reach them, including
+			// when the typed query doesn't match any profile.
+			if items[index].IsExtra {
+				return true
+			}
 			input = strings.ToLower(input)
 			return strings.Contains(strings.ToLower(items[index].Name), input) ||
 				strings.Contains(strings.ToLower(items[index].Host), input) ||
 				strings.Contains(strings.ToLower(items[index].AccountID), input)
 		},
 		LabelTemplate: "{{ . | faint }}",
-		Active:        `▸ {{.Name | bold}}{{if .IsDefault}} {{ "[default]" | green }}{{end}}{{if .AccountID}} (account: {{.AccountID|faint}}){{else if .Host}} ({{.Host|faint}}){{end}}`,
-		Inactive:      `  {{.Name}}{{if .IsDefault}} [default]{{end}}{{if .AccountID}} (account: {{.AccountID|faint}}){{else if .Host}} ({{.Host|faint}}){{end}}`,
+		Active:        `▸ {{if .IsExtra}}{{.Name | faint | bold}}{{else}}{{.Name | bold}}{{if .IsDefault}} {{ "[default]" | green }}{{end}}{{if .AccountID}} (account: {{.AccountID|faint}}){{else if .Host}} ({{.Host|faint}}){{end}}{{end}}`,
+		Inactive:      `  {{if .IsExtra}}{{.Name | faint}}{{else}}{{.Name}}{{if .IsDefault}} [default]{{end}}{{if .AccountID}} (account: {{.AccountID|faint}}){{else if .Host}} ({{.Host|faint}}){{end}}{{end}}`,
 		Selected:      `{{ "` + noun + `" | faint }}: {{ .Name | bold }}`,
 	})
 	if err != nil {
