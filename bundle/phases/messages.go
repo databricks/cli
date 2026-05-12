@@ -22,6 +22,10 @@ This action will result in the deletion or recreation of the following dashboard
 This will result in changed IDs and permanent URLs of the dashboards that will be recreated:`
 )
 
+// DataLossWarning is the warning shown when a non-interactive command is about
+// to delete data-bearing resources.
+const DataLossWarning = "Deleting data assets such as schemas, pipelines, or volumes may cause permanent data loss and should be carefully reviewed."
+
 // Messages for bundle destroy.
 const (
 	deleteSchemaMessage = `This action will result in the deletion of the following UC schemas. Any underlying data may be lost:`

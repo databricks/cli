@@ -3,7 +3,6 @@ package phases
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/artifacts"
@@ -87,10 +86,9 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.P
 	}
 
 	if !cmdio.IsPromptSupported(ctx) {
-		return false, fmt.Errorf("the deployment requires destructive actions, but the current console does not support prompting.\n"+
-			"To proceed, use --auto-approve after reviewing the plan above.\n"+
-			"Deleting schemas, pipelines, or volumes may cause permanent data loss.%s",
-			agent.AgentNotice())
+		return false, errors.New("the deployment requires destructive actions, but the current console does not support prompting.\n" +
+			DataLossWarning + "\n" +
+			"To proceed, use --auto-approve after reviewing the plan above." + agent.AgentNotice())
 	}
 
 	cmdio.LogString(ctx, "")

@@ -6,10 +6,10 @@
 >>> errcode [CLI] pipelines deploy
 Error: Failed to acquire deployment lock: deploy lock acquired by user-with-lock@databricks.com at [TIMESTAMP] +0000 UTC.
 Another deployment may be in progress. Use --force-lock to override, but this may
-corrupt the other deployment if it is still active.
+conflict with the other deployment if it is still active.
 Error: deploy lock acquired by user-with-lock@databricks.com at [TIMESTAMP] +0000 UTC.
 Another deployment may be in progress. Use --force-lock to override, but this may
-corrupt the other deployment if it is still active.
+conflict with the other deployment if it is still active.
 
 
 Exit code: 1

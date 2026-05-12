@@ -3,7 +3,7 @@
 package bundle
 
 import (
-	"fmt"
+	"errors"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/phases"
@@ -49,11 +49,10 @@ Typical use cases:
 func CommandBundleDestroy(cmd *cobra.Command, args []string, autoApprove, forceDestroy bool) error {
 	// We require auto-approve for non-interactive terminals since prompts are not possible.
 	if !cmdio.IsPromptSupported(cmd.Context()) && !autoApprove {
-		return fmt.Errorf("this command will permanently destroy all resources and data in the bundle target,\n"+
-			"including schemas (with underlying data), pipelines (with streaming tables),\n"+
-			"managed volume files, and all workspace files in the deployment directory.\n"+
-			"To proceed, use --auto-approve.%s",
-			agent.AgentNotice())
+		return errors.New("this command will destroy all resources deployed by this bundle, " +
+			"including workspace files in the deployment directory.\n" +
+			phases.DataLossWarning + "\n" +
+			"To proceed, use --auto-approve." + agent.AgentNotice())
 	}
 
 	// Check if context is already initialized (e.g., when called from apps delete override)

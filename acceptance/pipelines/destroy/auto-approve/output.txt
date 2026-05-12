@@ -8,9 +8,8 @@ Deployment complete!
 View your pipeline my_pipeline here: [DATABRICKS_URL]/pipelines/[UUID]?o=[NUMID]
 
 >>> errcode [CLI] pipelines destroy
-Error: this command will permanently destroy all resources and data in the bundle target,
-including schemas (with underlying data), pipelines (with streaming tables),
-managed volume files, and all workspace files in the deployment directory.
+Error: this command will destroy all resources deployed by this bundle, including workspace files in the deployment directory.
+Deleting data assets such as schemas, pipelines, or volumes may cause permanent data loss and should be carefully reviewed.
 To proceed, use --auto-approve.
 
 Exit code: 1
