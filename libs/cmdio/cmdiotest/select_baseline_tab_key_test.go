@@ -9,10 +9,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestSelectBaseline_TabKey pins the current promptui-driven Select behavior
-// when the user presses Tab. Tab is a common navigation key but its handling
-// in promptui's search-mode Select is unclear, so this test records the
-// observed behavior as a migration baseline for the bubbletea replacement.
+// TestSelectBaseline_TabKey pins Select's behavior when the user presses
+// Tab. Tab is a common navigation key but in search-mode Select it gets
+// typed into the filter; this test records that, plus how Enter behaves
+// after the filter has no matches.
 func TestSelectBaseline_TabKey(t *testing.T) {
 	t.Parallel()
 	tm := termtest.NewSelectOrdered(t, []cmdio.Tuple{

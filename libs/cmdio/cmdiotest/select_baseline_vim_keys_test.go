@@ -9,12 +9,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestSelectBaseline_VimKeys pins how the current promptui-driven Select
-// reacts to vim-style 'j' and 'k' keys. promptui's Select is configured with
-// StartInSearchMode: true, so letters likely flow into the filter rather than
-// acting as navigation. This baseline captures whatever it does today so the
-// upcoming bubbletea replacement can decide deliberately whether to preserve,
-// drop, or change that behavior.
+// TestSelectBaseline_VimKeys pins how Select reacts to vim-style 'j' and 'k'
+// keys. cmdio.SelectOrdered runs with StartInSearchMode: true, so letters
+// flow into the filter rather than acting as navigation.
 func TestSelectBaseline_VimKeys(t *testing.T) {
 	t.Parallel()
 	tm := termtest.NewSelectOrdered(t, []cmdio.Tuple{

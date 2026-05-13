@@ -9,9 +9,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestSelectBaseline_FilterNoMatch pins promptui's behavior when the user
+// TestSelectBaseline_FilterNoMatch pins Select's behavior when the user
 // types a filter query that matches none of the items, then backspaces it
-// out and hits Enter. Captured as a baseline for the bubbletea replacement.
+// out and hits Enter.
 func TestSelectBaseline_FilterNoMatch(t *testing.T) {
 	t.Parallel()
 	tm := termtest.NewSelectOrdered(t, []cmdio.Tuple{

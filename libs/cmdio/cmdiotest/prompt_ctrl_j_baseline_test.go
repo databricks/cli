@@ -10,12 +10,10 @@ import (
 )
 
 // TestPromptBaseline_CtrlJ pins that Ctrl+J submits the prompt in
-// [cmdio.RunPrompt] — the same as the Enter (Return) key.
-//
-// Enter sends CR (0x0d) and Ctrl+J sends LF (0x0a). chzyer/readline maps
-// both to CharEnter and ends the read loop, so promptui returns the
-// current buffer either way. A future hand-rolled prompt that only
-// reacts to CR would silently swallow Ctrl+J; this test pins the parity.
+// [cmdio.RunPrompt] — the same as the Enter (Return) key. Enter sends CR
+// (0x0d) and Ctrl+J sends LF (0x0a); the prompt model treats both as
+// submit. A future change that only reacts to CR would silently swallow
+// Ctrl+J; this test pins the parity.
 func TestPromptBaseline_CtrlJ(t *testing.T) {
 	t.Parallel()
 	tm := termtest.NewPrompt(t, cmdio.PromptOptions{

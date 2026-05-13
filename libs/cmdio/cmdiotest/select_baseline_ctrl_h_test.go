@@ -11,9 +11,9 @@ import (
 
 // TestSelectBaseline_CtrlH pins that Ctrl+H deletes the last character
 // from the search filter in [cmdio.Select] — the same as the Backspace
-// key. Ctrl+H sends BS (0x08) and Backspace sends DEL (0x7f); promptui's
-// readline maps both to CharBackspace inside the search buffer, so this
-// test pins the equivalence for the filter editor.
+// key. Ctrl+H sends BS (0x08) and Backspace sends DEL (0x7f); the select
+// model treats both as backspace inside the search buffer, and this test
+// pins that equivalence for the filter editor.
 func TestSelectBaseline_CtrlH(t *testing.T) {
 	t.Parallel()
 	tm := termtest.NewSelectOrdered(t, []cmdio.Tuple{

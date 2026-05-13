@@ -9,13 +9,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestSelectBaseline_EscKey pins the current promptui-driven Select behavior
-// when the user presses Esc at various states: the initial prompt, and after
-// typing into the search filter. cmdio.Select uses StartInSearchMode: true,
-// so the filter is active from the start.
-//
-// This test exists so the upcoming bubbletea replacement can be checked
-// against a known-good baseline.
+// TestSelectBaseline_EscKey pins Select's behavior when the user presses Esc
+// at various states: the initial prompt, and after typing into the search
+// filter. cmdio.Select uses StartInSearchMode: true, so the filter is active
+// from the start.
 func TestSelectBaseline_EscKey(t *testing.T) {
 	t.Parallel()
 	tm := termtest.NewSelectOrdered(t, []cmdio.Tuple{

@@ -12,18 +12,9 @@ import (
 // TestPromptBaseline_AltKeyNoop pins that Alt-prefixed keys are silent
 // no-ops in [cmdio.RunPrompt]. Specifically, Alt+f (the readline binding
 // for "move forward by word") must neither move the cursor nor insert a
-// literal 'f' into the buffer.
-//
-// Why: chzyer/readline does process Alt+f — it calls o.buf.MoveToNextWord
-// and fires the listener with key=MetaForward — but promptui's
-// Cursor.Listen has no case for MetaForward and falls to a default branch
-// that only does anything in erase-default mode. The listener wrapper
-// then returns (nil, 0, true), which makes readline overwrite its buffer
-// with empty. Net effect on the user-visible state (promptui's own
-// `cur`): nothing changes.
-//
-// The same shape applies to Alt+b, Alt+d, Alt+Backspace and any other
-// modified key promptui doesn't handle. Pinning Alt+f covers the class.
+// literal 'f' into the buffer. The same shape applies to Alt+b, Alt+d,
+// Alt+Backspace, and any other modified key the prompt model doesn't
+// handle; pinning Alt+f covers the class.
 func TestPromptBaseline_AltKeyNoop(t *testing.T) {
 	t.Parallel()
 	tm := termtest.NewPrompt(t, cmdio.PromptOptions{

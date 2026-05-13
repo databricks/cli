@@ -12,13 +12,9 @@ import (
 
 // TestSelectBaseline_CtrlFCtrlB pins that Ctrl+F and Ctrl+B page through
 // the selection list — distinct from Ctrl+N / Ctrl+P which move by one
-// item. Promptui maps these to KeyForward / KeyBackward (the same runes
-// the right and left arrow keys decode to), and the select widget treats
-// them as page-down / page-up.
-//
-// The list has 12 items against promptui's default visible window of 5,
-// so a single Ctrl+F should advance the highlighted item by roughly a
-// page rather than a single row, and Ctrl+B should walk it back.
+// item. The list has 12 items against the default 5-row viewport, so a
+// single Ctrl+F should advance the highlighted item by roughly a page
+// rather than a single row, and Ctrl+B should walk it back.
 func TestSelectBaseline_CtrlFCtrlB(t *testing.T) {
 	t.Parallel()
 	items := make([]cmdio.Tuple, 0, 12)

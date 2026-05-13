@@ -9,13 +9,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestSelectBaseline_FilterTyping pins the current promptui-driven Select
-// behavior when the user types letters that filter the list. cmdio.Select
-// uses StartInSearchMode: true with a case-insensitive substring searcher on
-// Name, so each keystroke immediately narrows the visible options.
-//
-// This test exists so the upcoming bubbletea replacement can be checked
-// against a known-good baseline.
+// TestSelectBaseline_FilterTyping pins Select's behavior when the user types
+// letters that filter the list. cmdio.Select uses StartInSearchMode: true
+// with a case-insensitive substring searcher on Name, so each keystroke
+// immediately narrows the visible options.
 func TestSelectBaseline_FilterTyping(t *testing.T) {
 	t.Parallel()
 	tm := termtest.NewSelectOrdered(t, []cmdio.Tuple{

@@ -11,12 +11,10 @@ import (
 
 // TestPromptBaseline_CtrlH pins that Ctrl+H deletes the character to the
 // left of the cursor in [cmdio.RunPrompt] — the same as the Backspace key.
-//
-// Ctrl+H sends BS (0x08) and Backspace sends DEL (0x7f). chzyer/readline
-// maps both to CharBackspace, and promptui's Cursor.Listen handles them
-// uniformly via its KeyBackspace case. So the control-character form is
-// a de-facto alias for the Backspace key; this test pins that equivalence
-// so a future hand-rolled prompt implementation can't silently drop it.
+// Ctrl+H sends BS (0x08) and Backspace sends DEL (0x7f); the prompt model
+// handles both as backspace, making the control-character form a de-facto
+// alias. This test pins that equivalence so a future change can't silently
+// drop it.
 func TestPromptBaseline_CtrlH(t *testing.T) {
 	t.Parallel()
 	tm := termtest.NewPrompt(t, cmdio.PromptOptions{

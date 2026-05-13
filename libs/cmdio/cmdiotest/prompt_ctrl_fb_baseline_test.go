@@ -11,13 +11,8 @@ import (
 
 // TestPromptBaseline_CtrlFCtrlB pins that Ctrl+F and Ctrl+B move the cursor
 // one character forward and backward in [cmdio.RunPrompt], the same as the
-// right and left arrow keys.
-//
-// chzyer/readline maps Ctrl+F to CharForward and Ctrl+B to CharBackward —
-// the same runes the arrow keys decode to — and promptui's Cursor.Listen
-// dispatches both via its KeyForward / KeyBackward cases. So the emacs-
-// style bindings are de-facto aliases for the arrow keys; this test pins
-// that equivalence.
+// right and left arrow keys. The emacs-style bindings are de-facto aliases
+// for the arrow keys; this test pins that equivalence.
 func TestPromptBaseline_CtrlFCtrlB(t *testing.T) {
 	t.Parallel()
 	tm := termtest.NewPrompt(t, cmdio.PromptOptions{

@@ -9,10 +9,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestSelectBaseline_SingleItem pins the current promptui-driven Select
-// behavior when the input list contains exactly one entry. It is a migration
-// baseline for the bubbletea replacement: we want to know whether promptui
-// renders a prompt at all, what KeyDown does, and what id Enter returns.
+// TestSelectBaseline_SingleItem pins Select's behavior when the input list
+// contains exactly one entry: whether a prompt renders, what KeyDown does
+// (no-op), and what id Enter returns.
 func TestSelectBaseline_SingleItem(t *testing.T) {
 	t.Parallel()
 	tm := termtest.NewSelectOrdered(t, []cmdio.Tuple{

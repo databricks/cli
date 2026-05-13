@@ -11,15 +11,14 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestSelectBaseline_VimNavOutsideSearch pins promptui's vim-style
-// navigation when the prompt opens outside search mode. With
-// StartInSearchMode=false, j/k move the highlighted item by one and
-// h/l page through the list; with search mode enabled (the default in
-// cmdio.SelectOrdered) those letters would flow into the filter
-// instead. Real callers that hit this branch:
+// TestSelectBaseline_VimNavOutsideSearch pins Select's vim-style navigation
+// when the prompt opens outside search mode. With StartInSearchMode=false,
+// j/k move the highlighted item by one and h/l page through the list; with
+// search mode enabled (the default in cmdio.SelectOrdered) those letters
+// would flow into the filter instead. Real callers that hit this branch:
 // cmd/auth/resolve.go and cmd/auth/profile_picker.go both set
-// StartInSearchMode based on len(items) > 5, so small lists open
-// outside search mode.
+// StartInSearchMode based on len(items) > 5, so small lists open outside
+// search mode.
 func TestSelectBaseline_VimNavOutsideSearch(t *testing.T) {
 	t.Parallel()
 	type item struct {

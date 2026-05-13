@@ -11,9 +11,9 @@ import (
 
 // TestSelectBaseline_DefaultTemplates pins the rendering of
 // [cmdio.RunSelect] when no Label / Active / Inactive / Selected
-// template is provided — promptui falls back to its built-in defaults,
-// which print {{.}} (i.e. Go's default formatting for the item struct
-// rather than any specific field).
+// template is provided — the model falls back to its built-in defaults,
+// which print {{.}} (Go's default formatting for the item struct rather
+// than any specific field).
 //
 // This mirrors the `databricks selftest tui run-select` plain mode
 // (cmd/selftest/tui/select.go: runSelectPlain) and exists so future

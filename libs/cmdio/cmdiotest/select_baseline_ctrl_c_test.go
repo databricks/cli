@@ -9,9 +9,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestSelectBaseline_CtrlC pins the current promptui-driven Select behavior
-// when the user cancels the prompt with Ctrl+C without making a selection.
-// Captured as a migration baseline for the upcoming bubbletea replacement.
+// TestSelectBaseline_CtrlC pins Select's behavior when the user cancels
+// the prompt with Ctrl+C without making a selection.
 func TestSelectBaseline_CtrlC(t *testing.T) {
 	t.Parallel()
 	tm := termtest.NewSelectOrdered(t, []cmdio.Tuple{

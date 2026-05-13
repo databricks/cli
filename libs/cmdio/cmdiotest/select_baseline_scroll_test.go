@@ -10,13 +10,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestSelectBaseline_Scroll pins the current promptui scrolling behavior for a
-// list larger than promptui's default visible window. It feeds enough KeyDown
-// presses to reach the last item and then keeps pressing past it, so the
-// goldens capture both the bottom-of-list state and the past-bottom state.
-//
-// This baseline lets the upcoming bubbletea reimplementation be diffed against
-// the exact rendering promptui produces today.
+// TestSelectBaseline_Scroll pins Select's scrolling behavior for a list
+// larger than the default visible window. It feeds enough KeyDown presses
+// to reach the last item and then keeps pressing past it, so the goldens
+// capture both the bottom-of-list state and the past-bottom state.
 func TestSelectBaseline_Scroll(t *testing.T) {
 	t.Parallel()
 	items := make([]cmdio.Tuple, 0, 12)

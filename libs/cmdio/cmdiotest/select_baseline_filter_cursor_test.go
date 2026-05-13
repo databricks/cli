@@ -9,11 +9,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestSelectBaseline_FilterCursor pins the current promptui-driven Select
-// behavior when the user has navigated to a non-first item, then types a
-// filter query. This documents how the cursor moves into and out of filter
-// mode so the upcoming bubbletea replacement can be checked against a known
-// baseline.
+// TestSelectBaseline_FilterCursor pins Select's behavior when the user has
+// navigated to a non-first item, then types a filter query. Documents how
+// the cursor moves into and out of filter mode.
 func TestSelectBaseline_FilterCursor(t *testing.T) {
 	t.Parallel()
 	tm := termtest.NewSelectOrdered(t, []cmdio.Tuple{

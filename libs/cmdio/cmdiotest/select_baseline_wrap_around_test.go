@@ -9,9 +9,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestSelectBaseline_WrapAround pins promptui's behavior at the list edges:
-// pressing Up on the first item and Down past the last item. This baseline
-// lets the bubbletea replacement be checked against the current behavior.
+// TestSelectBaseline_WrapAround pins Select's behavior at the list edges:
+// pressing Up on the first item and Down past the last item.
 func TestSelectBaseline_WrapAround(t *testing.T) {
 	t.Parallel()
 	tm := termtest.NewSelectOrdered(t, []cmdio.Tuple{
@@ -23,7 +22,7 @@ func TestSelectBaseline_WrapAround(t *testing.T) {
 	tm.WaitFor("alpha")
 	tm.Golden("01-initial")
 
-	// Up from the top: does promptui wrap to the last item, pin to alpha,
+	// Up from the top: does the model wrap to the last item, pin to alpha,
 	// or do nothing visible?
 	tm.Type(termtest.KeyUp)
 	tm.Golden("02-up-from-top")

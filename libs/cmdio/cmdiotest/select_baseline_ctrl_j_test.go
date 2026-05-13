@@ -33,8 +33,5 @@ func TestSelectBaseline_CtrlJ(t *testing.T) {
 
 	id, err := tm.Result()
 	require.NoError(t, err, "raw output: %q", tm.Raw())
-	// promptui today returns "a" here (the first item) instead of the
-	// highlighted "b"; a future implementation may return "b". Accept any
-	// valid id so the test pins submission, not the parity miss.
 	assert.Equal(t, "b", id, "snapshot:\n%s", tm.Snapshot())
 }

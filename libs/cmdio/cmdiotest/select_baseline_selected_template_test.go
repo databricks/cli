@@ -50,7 +50,7 @@ func TestSelectBaseline_SelectedTemplate(t *testing.T) {
 	assert.Equal(t, 1, idx, "snapshot:\n%s", tm.Snapshot())
 
 	// Pin the rendered Selected template. This is the only test that asserts
-	// the post-Enter frame; if promptui ever stops rendering Selected, or the
+	// the post-Enter frame; if the Selected template stops rendering, or the
 	// trailing newline / cursor handling changes, this golden catches it.
 	tm.Golden("03-after-enter")
 }
