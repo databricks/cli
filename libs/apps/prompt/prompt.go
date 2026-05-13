@@ -233,7 +233,10 @@ func ShouldOfferInPlace(cwd string) (string, bool) {
 }
 
 // PrintHeader prints the AppKit header banner.
-func PrintHeader(ctx context.Context) {
+// If refLabel is non-empty (e.g. "version 0.24.0" or "branch feature-x"),
+// an extra dimmed line shows the resolved template ref so the user can
+// decide whether to continue before naming the project.
+func PrintHeader(ctx context.Context, refLabel string) {
 	headerStyle := lipgloss.NewStyle().
 		Foreground(colorRed).
 		Bold(true)
@@ -244,6 +247,9 @@ func PrintHeader(ctx context.Context) {
 	cmdio.LogString(ctx, "")
 	cmdio.LogString(ctx, headerStyle.Render("◆ Create a new Databricks AppKit project"))
 	cmdio.LogString(ctx, subtitleStyle.Render("  Full-stack TypeScript • React • Tailwind CSS"))
+	if refLabel != "" {
+		cmdio.LogString(ctx, subtitleStyle.Render("  Template "+refLabel))
+	}
 	cmdio.LogString(ctx, "")
 }
 
@@ -282,8 +288,10 @@ func validateProjectNameForPrompt(s, outputDir string) error {
 // Used as the first step before resolving templates.
 // outputDir is used to check if the destination directory already exists,
 // and to reject the in-place sentinel "." when --output-dir is set.
+// The caller is responsible for printing the AppKit header before invoking
+// this function so the header also covers preceding prompts (e.g. the
+// in-place scaffold-location chooser).
 func PromptForProjectName(ctx context.Context, outputDir string) (string, error) {
-	PrintHeader(ctx)
 	theme := AppkitTheme()
 
 	var name string
