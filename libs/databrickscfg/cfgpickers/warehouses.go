@@ -5,12 +5,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"slices"
 	"strings"
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/httpclient"
 	"github.com/databricks/databricks-sdk-go/service/sql"
@@ -97,12 +99,13 @@ func sortWarehousesByState(all []sql.EndpointInfo) []sql.EndpointInfo {
 
 // GetDefaultWarehouse returns the default warehouse for the workspace.
 // It tries the following in order:
-// 1. The "default" warehouse via API (server-side convention, not yet fully rolled out)
+// 1. The server-side default via the getDefaultWarehouse RPC (not yet rolled out everywhere)
 // 2. The first usable warehouse sorted by state (running first)
 func GetDefaultWarehouse(ctx context.Context, w *databricks.WorkspaceClient) (*sql.EndpointInfo, error) {
-	// Try the "default" warehouse convention first
-	// This is a new server-side feature that may not be available everywhere yet
-	warehouse, err := w.Warehouses.Get(ctx, sql.GetWarehouseRequest{Id: "default"})
+	// The getDefaultWarehouse RPC is registered after getWarehouse on the same URL
+	// and takes precedence via "last one wins" proto routing; calling via
+	// Warehouses.Get would send getWarehouse fields the new RPC may reject.
+	warehouse, err := getDefaultWarehouseRaw(ctx, w)
 	if err == nil {
 		return &sql.EndpointInfo{
 			Id:    warehouse.Id,
@@ -124,6 +127,17 @@ func GetDefaultWarehouse(ctx context.Context, w *databricks.WorkspaceClient) (*s
 		return nil, ErrNoCompatibleWarehouses
 	}
 	return &warehouses[0], nil
+}
+
+// getDefaultWarehouseRaw calls GET /api/2.0/sql/warehouses/default.
+func getDefaultWarehouseRaw(ctx context.Context, w *databricks.WorkspaceClient) (*sql.GetWarehouseResponse, error) {
+	apiClient, err := client.New(w.Config)
+	if err != nil {
+		return nil, err
+	}
+	var response sql.GetWarehouseResponse
+	err = apiClient.Do(ctx, http.MethodGet, "/api/2.0/sql/warehouses/default", nil, nil, nil, &response)
+	return &response, err
 }
 
 // listUsableWarehouses returns warehouses the user has permission to use.
