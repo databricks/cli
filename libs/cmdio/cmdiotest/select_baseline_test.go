@@ -9,10 +9,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestSelectBaseline_DownEnter pins Select's rendering end-to-end: a real
-// pty is fed arrow-key bytes, vt10x captures the rendered screen, and we
-// assert on the chosen item plus a snapshot of the prompt and visible
-// options.
+// TestSelectBaseline_DownEnter pins Select's rendering end-to-end: the
+// termtest emulator captures the rendered screen and we assert on the chosen
+// item plus a snapshot of the prompt and visible options.
 func TestSelectBaseline_DownEnter(t *testing.T) {
 	t.Parallel()
 	tm := termtest.NewSelectOrdered(t, []cmdio.Tuple{

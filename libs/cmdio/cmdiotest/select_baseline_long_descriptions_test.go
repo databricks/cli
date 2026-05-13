@@ -9,14 +9,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestSelectBaseline_LongDescriptions pins the current promptui-driven Select
-// behavior when item Ids are long enough to potentially overflow the terminal
-// width. The active row uses the Tuple template
-// "{{.Name | bold}} ({{.Id|faint}})", so the long Id is only rendered on the
-// active line; non-active rows show only the Name.
-//
-// This is a migration baseline: the bubbletea replacement should produce the
-// same visible output, captured in goldens via vt10x.
+// TestSelectBaseline_LongDescriptions pins Select's behavior when item Ids
+// are long enough to potentially overflow the terminal width. The active row
+// uses the Tuple template "{{.Name | bold}} ({{.Id|faint}})", so the long Id
+// is only rendered on the active line; non-active rows show only the Name.
 func TestSelectBaseline_LongDescriptions(t *testing.T) {
 	t.Parallel()
 	items := []cmdio.Tuple{
