@@ -72,7 +72,8 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, ta
 	cmdio.LogString(ctx, "Deploying resources...")
 
 	// Apply resources and capture post-apply state.
-	// For direct: Finalize flushes the WAL to disk and returns the state.
+	// For direct: Finalize flushes the WAL to disk and returns the state;
+	// called even if Apply failed so partial progress is saved.
 	// For terraform: ParseResourcesState reads the file written by terraform.Apply.
 	var (
 		state statemgmt.ExportedResourcesMap
