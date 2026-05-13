@@ -76,7 +76,7 @@ var knownMissingInRemoteType = map[string][]string{
 		"project_id",
 	},
 	"vector_search_endpoints": {
-		"min_qps",
+		"target_qps",
 		"usage_policy_id",
 	},
 }

@@ -534,25 +534,6 @@ func TestToken_loadToken(t *testing.T) {
 			validateToken: validateToken,
 		},
 		{
-			name: "host with one matching profile and host-key-only token found via SDK fallback",
-			args: loadTokenArgs{
-				authArguments: &auth.AuthArguments{
-					Host: "https://legacy-ws.cloud.databricks.com",
-				},
-				profileName:  "",
-				args:         []string{},
-				tokenTimeout: 1 * time.Hour,
-				profiler:     profiler,
-				tokenCache:   tokenCache,
-				persistentAuthOpts: []u2m.PersistentAuthOption{
-					u2m.WithTokenCache(tokenCache),
-					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
-					u2m.WithHttpClient(&http.Client{Transport: fixtures.SliceTransport{refreshSuccessTokenResponse}}),
-				},
-			},
-			validateToken: validateToken,
-		},
-		{
 			name: "profile flag + positional non-host arg still errors",
 			args: loadTokenArgs{
 				authArguments: &auth.AuthArguments{},

@@ -7,7 +7,7 @@ type ResourceEnhancedSecurityMonitoringWorkspaceSettingEnhancedSecurityMonitorin
 }
 
 type ResourceEnhancedSecurityMonitoringWorkspaceSettingProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type ResourceEnhancedSecurityMonitoringWorkspaceSetting struct {

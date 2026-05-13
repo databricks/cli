@@ -29,7 +29,7 @@ type DataSourceDatabaseInstanceParentInstanceRef struct {
 }
 
 type DataSourceDatabaseInstanceProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourceDatabaseInstance struct {

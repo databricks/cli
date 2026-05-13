@@ -16,7 +16,7 @@ type ResourceFeatureEngineeringMaterializedFeatureOnlineStoreConfig struct {
 }
 
 type ResourceFeatureEngineeringMaterializedFeatureProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type ResourceFeatureEngineeringMaterializedFeature struct {

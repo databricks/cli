@@ -49,6 +49,10 @@ Terraform will perform the following actions:
               - include = "/Workspace/Users/foo@databricks.com/another/**" -> null
             }
         }
+
+      - provider_config {
+          - workspace_id = "[NUMID]" -> null
+        }
     }
 
 Plan: 1 to add, 0 to change, 1 to destroy.

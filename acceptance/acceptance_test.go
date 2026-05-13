@@ -198,6 +198,22 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	// Consistent behavior of locale-dependent tools, such as 'sort'
 	t.Setenv("LC_ALL", "C")
 
+	// Unset AI-agent detection env vars so the SDK's user-agent does not
+	// pick up the host's agent. Setting these to "" via test.toml is not
+	// enough: the SDK (since v0.132.0) treats empty values as a truthy
+	// signal because os.LookupEnv reports them as present.
+	for _, v := range []string{
+		"ANTIGRAVITY_AGENT",
+		"CLAUDECODE",
+		"CLINE_ACTIVE",
+		"CODEX_CI",
+		"CURSOR_AGENT",
+		"GEMINI_CLI",
+		"OPENCODE",
+	} {
+		os.Unsetenv(v) //nolint:usetesting // t.Setenv cannot unset
+	}
+
 	buildDir := getBuildDir(t, cwd, runtime.GOOS, runtime.GOARCH)
 
 	// Set up terraform for tests. Skip on DBR - tests with RunsOnDbr only use direct deployment.
