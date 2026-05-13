@@ -223,10 +223,7 @@ func (tt *Term[T]) WaitFor(substr string) string {
 	tt.t.Helper()
 	deadline := time.Now().Add(defaultTimeout)
 	for {
-		tt.drainPending()
-		tt.mu.Lock()
-		got := tt.raw.String()
-		tt.mu.Unlock()
+		got := tt.Raw()
 		if strings.Contains(got, substr) {
 			return got
 		}
