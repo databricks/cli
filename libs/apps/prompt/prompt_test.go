@@ -399,11 +399,16 @@ func TestCheckInPlaceDirectory(t *testing.T) {
 		assert.NoError(t, CheckInPlaceDirectory(dir))
 	})
 
-	t.Run("dotgit and gitignore are OK", func(t *testing.T) {
+	t.Run("pre-existing gitignore is rejected", func(t *testing.T) {
+		// .gitignore is intentionally NOT allow-listed: the template ships
+		// _gitignore that renames to .gitignore, which would silently
+		// overwrite the user's file.
 		dir := t.TempDir()
 		require.NoError(t, os.MkdirAll(filepath.Join(dir, ".git"), 0o755))
 		require.NoError(t, os.WriteFile(filepath.Join(dir, ".gitignore"), []byte("node_modules\n"), 0o644))
-		assert.NoError(t, CheckInPlaceDirectory(dir))
+		err := CheckInPlaceDirectory(dir)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "not empty")
 	})
 
 	t.Run("unexpected file is rejected", func(t *testing.T) {
@@ -420,8 +425,19 @@ func TestCheckInPlaceDirectory(t *testing.T) {
 	t.Run("mix of allowed and disallowed is rejected", func(t *testing.T) {
 		dir := t.TempDir()
 		require.NoError(t, os.MkdirAll(filepath.Join(dir, ".git"), 0o755))
-		require.NoError(t, os.WriteFile(filepath.Join(dir, ".gitignore"), []byte(""), 0o644))
 		require.NoError(t, os.WriteFile(filepath.Join(dir, "stray.txt"), []byte(""), 0o644))
+		err := CheckInPlaceDirectory(dir)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "not empty")
+	})
+
+	t.Run("symlink named .git is rejected", func(t *testing.T) {
+		// A symlink masquerading as .git would let os.WriteFile follow the
+		// link if any allow-listed name later became a write target.
+		dir := t.TempDir()
+		target := filepath.Join(t.TempDir(), "elsewhere")
+		require.NoError(t, os.MkdirAll(target, 0o755))
+		require.NoError(t, os.Symlink(target, filepath.Join(dir, ".git")))
 		err := CheckInPlaceDirectory(dir)
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "not empty")
@@ -465,6 +481,28 @@ func TestShouldOfferInPlace(t *testing.T) {
 	t.Run("declines when dir does not exist", func(t *testing.T) {
 		_, ok := ShouldOfferInPlace(filepath.Join(t.TempDir(), "missing"))
 		assert.False(t, ok)
+	})
+}
+
+func TestValidateProjectNameForPrompt(t *testing.T) {
+	t.Run("valid name without outputDir", func(t *testing.T) {
+		assert.NoError(t, validateProjectNameForPrompt("my-app", ""))
+	})
+
+	t.Run("in-place sentinel without outputDir is accepted", func(t *testing.T) {
+		assert.NoError(t, validateProjectNameForPrompt(InPlaceName, ""))
+	})
+
+	t.Run("in-place sentinel with outputDir is rejected with sentinel error", func(t *testing.T) {
+		err := validateProjectNameForPrompt(InPlaceName, "/some/dir")
+		require.Error(t, err)
+		assert.ErrorIs(t, err, ErrNameDotWithOutputDir)
+	})
+
+	t.Run("invalid name surfaces ValidateProjectName error", func(t *testing.T) {
+		err := validateProjectNameForPrompt("My_App", "")
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "lowercase letters")
 	})
 }
 

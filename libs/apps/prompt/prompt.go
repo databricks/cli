@@ -133,9 +133,14 @@ const (
 // inPlaceAllowedEntries lists entries permitted in the destination directory
 // when scaffolding in place. Anything else triggers an error so that the
 // template never overwrites existing user files.
+//
+// We don't allow anything that the template itself emits (including .gitignore via
+// the _gitignore rename) — otherwise
+// the user's existing file would be silently overwritten by os.WriteFile during
+// copyTemplate. Symlinks named like an allow-listed entry are rejected by
+// CheckInPlaceDirectory below to block symlink-follow overwrites.
 var inPlaceAllowedEntries = map[string]bool{
-	".git":       true,
-	".gitignore": true,
+	".git": true,
 }
 
 // projectNamePattern is the compiled regex for validating project names.
@@ -187,23 +192,28 @@ func DeriveInPlaceAppName(cwd string) (string, error) {
 }
 
 // CheckInPlaceDirectory verifies that dir contains nothing other than the
-// allow-listed entries (.git/, .gitignore). Returns a concise error
+// allow-listed entries (currently just .git). Returns a concise error
 // otherwise; we deliberately do not list the offending entries because the
 // user can `ls` themselves and a long list buries the actionable part.
+//
+// Symlinks named like an allow-listed entry are rejected too: os.WriteFile
+// follows symlinks, so a symlink named .git in cwd (or any future allow-listed
+// dotfile) would let the template scaffold overwrite an arbitrary file the
+// running user can reach.
 func CheckInPlaceDirectory(dir string) error {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		return fmt.Errorf("read directory %s: %w", dir, err)
 	}
 	for _, e := range entries {
-		if inPlaceAllowedEntries[e.Name()] {
+		if inPlaceAllowedEntries[e.Name()] && e.Type()&os.ModeSymlink == 0 {
 			continue
 		}
 		shown := dir
 		if abs, absErr := filepath.Abs(dir); absErr == nil {
 			shown = abs
 		}
-		return fmt.Errorf("%s is not empty; apps init --name . requires an empty directory (.git and .gitignore are allowed)", shown)
+		return fmt.Errorf("%s is not empty; apps init --name . requires an empty directory (.git is allowed)", shown)
 	}
 	return nil
 }
@@ -237,9 +247,41 @@ func PrintHeader(ctx context.Context) {
 	cmdio.LogString(ctx, "")
 }
 
+// ErrNameDotWithOutputDir is returned when --name . (or the equivalent typed at
+// the interactive prompt) is combined with a non-empty --output-dir. The two
+// are mutually exclusive: --name . already targets the current directory.
+var ErrNameDotWithOutputDir = errors.New("--name . and --output-dir are mutually exclusive: --name . already targets the current directory")
+
+// validateProjectNameForPrompt is the per-keystroke validator used by
+// PromptForProjectName. Exposed (unexported) as a helper so the sentinel
+// handling is unit-testable without a TTY.
+func validateProjectNameForPrompt(s, outputDir string) error {
+	if err := ValidateProjectName(s); err != nil {
+		return err
+	}
+	if s == InPlaceName {
+		if outputDir != "" {
+			return ErrNameDotWithOutputDir
+		}
+		// In-place: skip the directory-exists check; the caller will
+		// derive the app name from the cwd and verify the directory
+		// is suitable.
+		return nil
+	}
+	destDir := s
+	if outputDir != "" {
+		destDir = filepath.Join(outputDir, s)
+	}
+	if _, err := os.Stat(destDir); err == nil {
+		return fmt.Errorf("directory %s already exists", destDir)
+	}
+	return nil
+}
+
 // PromptForProjectName prompts only for project name.
 // Used as the first step before resolving templates.
-// outputDir is used to check if the destination directory already exists.
+// outputDir is used to check if the destination directory already exists,
+// and to reject the in-place sentinel "." when --output-dir is set.
 func PromptForProjectName(ctx context.Context, outputDir string) (string, error) {
 	PrintHeader(ctx)
 	theme := AppkitTheme()
@@ -251,23 +293,7 @@ func PromptForProjectName(ctx context.Context, outputDir string) (string, error)
 		Placeholder("my-app").
 		Value(&name).
 		Validate(func(s string) error {
-			if err := ValidateProjectName(s); err != nil {
-				return err
-			}
-			if s == InPlaceName {
-				// In-place: skip the directory-exists check; the caller will
-				// derive the app name from the cwd and verify the directory
-				// is suitable.
-				return nil
-			}
-			destDir := s
-			if outputDir != "" {
-				destDir = filepath.Join(outputDir, s)
-			}
-			if _, err := os.Stat(destDir); err == nil {
-				return fmt.Errorf("directory %s already exists", destDir)
-			}
-			return nil
+			return validateProjectNameForPrompt(s, outputDir)
 		}).
 		WithTheme(theme).
 		Run()

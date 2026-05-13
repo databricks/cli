@@ -619,7 +619,7 @@ func awaitTemplate(ctx context.Context, ch <-chan templateResult) (string, func(
 }
 
 // commitInPlace derives the app name from the cwd basename and verifies that
-// the cwd is suitable for in-place scaffolding (empty modulo .git/.gitignore).
+// the cwd is suitable for in-place scaffolding (empty modulo .git).
 // Returns the derived app name on success.
 func commitInPlace() (string, error) {
 	appName, err := prompt.DeriveInPlaceAppName(".")
@@ -849,7 +849,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 
 	// Step 1: Get project name (clone runs in parallel for remote templates)
 	if opts.name == prompt.InPlaceName && opts.outputDir != "" {
-		return errors.New("--name . and --output-dir are mutually exclusive: --name . already targets the current directory")
+		return prompt.ErrNameDotWithOutputDir
 	}
 
 	var (
@@ -881,21 +881,26 @@ func runCreate(ctx context.Context, opts createOptions) error {
 			return errors.New("--name is required in non-interactive mode")
 		}
 		// Offer in-place scaffolding when the current directory is empty
-		// (modulo .git / .gitignore) and its basename is a valid app name.
-		if basename, ok := prompt.ShouldOfferInPlace("."); ok {
-			useCurrent, err := prompt.PromptScaffoldLocation(ctx, basename)
-			if err != nil {
-				return err
-			}
-			if useCurrent {
-				// Re-check immediately before committing — the directory may
-				// have changed between offer and answer.
-				if err := prompt.CheckInPlaceDirectory("."); err != nil {
+		// (modulo .git) and its basename is a valid app name. Skipped when
+		// --output-dir was set, since in-place targets cwd and would silently
+		// drop the flag — same reasoning as the --name . / --output-dir mutex
+		// above.
+		if opts.outputDir == "" {
+			if basename, ok := prompt.ShouldOfferInPlace("."); ok {
+				useCurrent, err := prompt.PromptScaffoldLocation(ctx, basename)
+				if err != nil {
 					return err
 				}
-				opts.name = basename
-				destDir = "."
-				inPlace = true
+				if useCurrent {
+					// Re-check immediately before committing — the directory may
+					// have changed between offer and answer.
+					if err := prompt.CheckInPlaceDirectory("."); err != nil {
+						return err
+					}
+					opts.name = basename
+					destDir = "."
+					inPlace = true
+				}
 			}
 		}
 		if !inPlace {
@@ -1542,11 +1547,18 @@ func copyTemplate(ctx context.Context, src, dest string, vars templateVars) (int
 // removeEmptyDirs removes empty directories under root, deepest-first.
 // It is used to clean up directories that were created eagerly but ended up
 // with no files after conditional template rendering skipped their contents.
+//
+// .git is skipped so in-place scaffolding (root == ".") never walks into a
+// pre-existing repo and deletes its empty subdirectories (refs/heads,
+// refs/tags, objects/info, objects/pack are all empty after `git init`).
 func removeEmptyDirs(root string) error {
 	var dirs []string
 	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
+		}
+		if d.IsDir() && d.Name() == ".git" && path != root {
+			return filepath.SkipDir
 		}
 		if d.IsDir() && path != root {
 			dirs = append(dirs, path)

@@ -1092,15 +1092,28 @@ func TestCommitInPlace_Success(t *testing.T) {
 	assert.Equal(t, "my-app", name)
 }
 
-func TestCommitInPlace_AllowsGitArtifacts(t *testing.T) {
+func TestCommitInPlace_AllowsDotGit(t *testing.T) {
 	dir := makeChildDir(t, "my-app")
 	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".git"), 0o755))
-	require.NoError(t, os.WriteFile(filepath.Join(dir, ".gitignore"), []byte("node_modules\n"), 0o644))
 	t.Chdir(dir)
 
 	name, err := commitInPlace()
 	require.NoError(t, err)
 	assert.Equal(t, "my-app", name)
+}
+
+func TestCommitInPlace_RejectsPreExistingGitignore(t *testing.T) {
+	// The template ships _gitignore that renames to .gitignore on copy.
+	// Allowing a pre-existing .gitignore would silently destroy the user's
+	// file via os.WriteFile, so we refuse the directory up front.
+	dir := makeChildDir(t, "my-app")
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".git"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, ".gitignore"), []byte("node_modules\n"), 0o644))
+	t.Chdir(dir)
+
+	_, err := commitInPlace()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "not empty")
 }
 
 func TestCommitInPlace_RejectsStrayFiles(t *testing.T) {
@@ -1133,5 +1146,5 @@ func TestRunCreate_NameDotAndOutputDirAreMutuallyExclusive(t *testing.T) {
 		outputDir:    "elsewhere",
 	})
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "mutually exclusive")
+	assert.ErrorIs(t, err, prompt.ErrNameDotWithOutputDir)
 }
