@@ -29,7 +29,7 @@ type DataSourceRegisteredModelModelInfo struct {
 }
 
 type DataSourceRegisteredModelProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourceRegisteredModel struct {

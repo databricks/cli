@@ -16,6 +16,7 @@ type ResourceFeatureEngineeringKafkaConfigBackfillSourceDeltaTableSource struct 
 }
 
 type ResourceFeatureEngineeringKafkaConfigBackfillSource struct {
+	DeltaTableName   string                                                               `json:"delta_table_name,omitempty"`
 	DeltaTableSource *ResourceFeatureEngineeringKafkaConfigBackfillSourceDeltaTableSource `json:"delta_table_source,omitempty"`
 }
 
@@ -24,7 +25,7 @@ type ResourceFeatureEngineeringKafkaConfigKeySchema struct {
 }
 
 type ResourceFeatureEngineeringKafkaConfigProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type ResourceFeatureEngineeringKafkaConfigSubscriptionMode struct {
