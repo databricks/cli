@@ -30,6 +30,7 @@ Deployment complete!
   "name": "[DEV_BRANCH_ID]",
   "parent": "projects/test-pg-proj-[UNIQUE_NAME]",
   "status": {
+    "branch_id": "dev-branch",
     "current_state": "READY",
     "default": false,
     "is_protected": false,
@@ -104,6 +105,7 @@ Deployment complete!
   "name": "[DEV_BRANCH_ID]",
   "parent": "projects/test-pg-proj-[UNIQUE_NAME]",
   "status": {
+    "branch_id": "dev-branch",
     "current_state": "READY",
     "default": false,
     "is_protected": true,
@@ -138,6 +140,7 @@ Deployment complete!
   "name": "[DEV_BRANCH_ID]",
   "parent": "projects/test-pg-proj-[UNIQUE_NAME]",
   "status": {
+    "branch_id": "dev-branch",
     "current_state": "READY",
     "default": false,
     "is_protected": false,
