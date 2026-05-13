@@ -20,13 +20,19 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "system-schemas",
-		Short: `A system schema is a schema that lives within the system catalog.`,
-		Long: `A system schema is a schema that lives within the system catalog. A system
+		Short: `*Public Preview* A system schema is a schema that lives within the system catalog.`,
+		Long: `This command is in Public Preview and may change without notice.
+
+A system schema is a schema that lives within the system catalog. A system
   schema may contain information about customer usage of Unity Catalog such as
   audit-logs, billing-logs, lineage information, etc.`,
 		GroupID: "catalog",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	// Add methods
 	cmd.AddCommand(newDisable())
@@ -56,8 +62,10 @@ func newDisable() *cobra.Command {
 	var disableReq catalog.DisableRequest
 
 	cmd.Use = "disable METASTORE_ID SCHEMA_NAME"
-	cmd.Short = `Disable a system schema.`
-	cmd.Long = `Disable a system schema.
+	cmd.Short = `*Public Preview* Disable a system schema.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Disable a system schema.
 
   Disables the system schema and removes it from the system catalog. The caller
   must be an account admin or a metastore admin.
@@ -67,6 +75,8 @@ func newDisable() *cobra.Command {
     SCHEMA_NAME: Full name of the system schema.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -120,8 +130,10 @@ func newEnable() *cobra.Command {
 	cmd.Flags().StringVar(&enableReq.CatalogName, "catalog-name", enableReq.CatalogName, `the catalog for which the system schema is to enabled in.`)
 
 	cmd.Use = "enable METASTORE_ID SCHEMA_NAME"
-	cmd.Short = `Enable a system schema.`
-	cmd.Long = `Enable a system schema.
+	cmd.Short = `*Public Preview* Enable a system schema.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Enable a system schema.
 
   Enables the system schema and adds it to the system catalog. The caller must
   be an account admin or a metastore admin.
@@ -131,6 +143,8 @@ func newEnable() *cobra.Command {
     SCHEMA_NAME: Full name of the system schema.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -204,8 +218,10 @@ func newList() *cobra.Command {
 	cmd.Flags().Lookup("max-results").Hidden = true
 
 	cmd.Use = "list METASTORE_ID"
-	cmd.Short = `List system schemas.`
-	cmd.Long = `List system schemas.
+	cmd.Short = `*Public Preview* List system schemas.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+List system schemas.
 
   Gets an array of system schemas for a metastore. The caller must be an account
   admin or a metastore admin.
@@ -222,6 +238,8 @@ func newList() *cobra.Command {
     METASTORE_ID: The ID for the metastore in which the system schema resides.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)

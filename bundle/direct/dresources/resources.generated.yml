@@ -59,6 +59,8 @@ resources:
         reason: spec:output_only
       - field: service_principal_name
         reason: spec:output_only
+      - field: thumbnail_url
+        reason: spec:output_only
       - field: update_time
         reason: spec:output_only
       - field: updater

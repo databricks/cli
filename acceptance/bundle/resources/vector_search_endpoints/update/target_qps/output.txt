@@ -1,7 +1,7 @@
 
 === Initial deployment
 >>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-vs-endpoint-min-qps-[UNIQUE_NAME]/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-vs-endpoint-target-qps-[UNIQUE_NAME]/default/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
@@ -14,8 +14,8 @@ Deployment complete!
   "endpoint_type": "STANDARD"
 }
 
-=== Update min_qps
->>> update_file.py databricks.yml min_qps: 1 min_qps: 2
+=== Update target_qps
+>>> update_file.py databricks.yml target_qps: 1 target_qps: 2
 
 >>> [CLI] bundle plan
 update vector_search_endpoints.my_endpoint
@@ -24,7 +24,7 @@ update vector_search_endpoints.my_endpoint.permissions
 Plan: 0 to add, 2 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-vs-endpoint-min-qps-[UNIQUE_NAME]/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-vs-endpoint-target-qps-[UNIQUE_NAME]/default/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
@@ -41,7 +41,7 @@ Deployment complete!
 The following resources will be deleted:
   delete resources.vector_search_endpoints.my_endpoint
 
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/update-vs-endpoint-min-qps-[UNIQUE_NAME]/default
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/update-vs-endpoint-target-qps-[UNIQUE_NAME]/default
 
 Deleting files...
 Destroy complete!

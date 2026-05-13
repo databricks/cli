@@ -20,13 +20,19 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "access-control",
-		Short: `These APIs manage access rules on resources in an account.`,
-		Long: `These APIs manage access rules on resources in an account. Currently, only
+		Short: `*Public Preview* These APIs manage access rules on resources in an account.`,
+		Long: `This command is in Public Preview and may change without notice.
+
+These APIs manage access rules on resources in an account. Currently, only
   grant rules are supported. A grant rule specifies a role assigned to a set of
   principals. A list of rules attached to a resource is called a rule set.`,
 		GroupID: "iam",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	// Add methods
 	cmd.AddCommand(newGetAssignableRolesForResource())
@@ -56,8 +62,10 @@ func newGetAssignableRolesForResource() *cobra.Command {
 	var getAssignableRolesForResourceReq iam.GetAssignableRolesForResourceRequest
 
 	cmd.Use = "get-assignable-roles-for-resource RESOURCE"
-	cmd.Short = `Get assignable roles for a resource.`
-	cmd.Long = `Get assignable roles for a resource.
+	cmd.Short = `*Public Preview* Get assignable roles for a resource.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Get assignable roles for a resource.
 
   Gets all the roles that can be granted on an account level resource. A role is
   grantable if the rule set on the resource can contain an access rule of the
@@ -75,6 +83,8 @@ func newGetAssignableRolesForResource() *cobra.Command {
       name for the tag policy.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -123,8 +133,10 @@ func newGetRuleSet() *cobra.Command {
 	var getRuleSetReq iam.GetRuleSetRequest
 
 	cmd.Use = "get-rule-set NAME ETAG"
-	cmd.Short = `Get a rule set.`
-	cmd.Long = `Get a rule set.
+	cmd.Short = `*Public Preview* Get a rule set.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Get a rule set.
 
   Get a rule set by its name. A rule set is always attached to a resource and
   contains a list of access rules on the said resource. Currently only a default
@@ -157,6 +169,8 @@ func newGetRuleSet() *cobra.Command {
       etag encoded a specific version of the rule set to get or to be updated.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -209,14 +223,18 @@ func newUpdateRuleSet() *cobra.Command {
 	cmd.Flags().Var(&updateRuleSetJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "update-rule-set"
-	cmd.Short = `Update a rule set.`
-	cmd.Long = `Update a rule set.
+	cmd.Short = `*Public Preview* Update a rule set.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Update a rule set.
 
   Replace the rules of a rule set. First, use get to read the current version of
   the rule set before modifying it. This pattern helps prevent conflicts between
   concurrent updates.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
