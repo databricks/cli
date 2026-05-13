@@ -548,7 +548,7 @@ func cloneRepo(ctx context.Context, repoURL, branch string) (string, error) {
 // Used by commands that don't benefit from background cloning (e.g., manifest).
 func resolveTemplate(ctx context.Context, templatePath, branch, subdir string) (string, func(), error) {
 	ch := resolveTemplateAsync(ctx, templatePath, branch, subdir)
-	return awaitTemplate(ctx, ch)
+	return awaitTemplate(ctx, ch, "")
 }
 
 // templateResult holds the outcome of a background template resolution.
@@ -599,18 +599,24 @@ func resolveTemplateAsync(ctx context.Context, templatePath, branch, subdir stri
 // awaitTemplate waits for the background clone to finish.
 // If the result is already available it returns immediately with a
 // checkmark; otherwise it shows a spinner while waiting.
-func awaitTemplate(ctx context.Context, ch <-chan templateResult) (string, func(), error) {
+// refLabel, if non-empty (e.g. "version 0.24.0" or "branch feature-x"),
+// is appended to spinner and done messages.
+func awaitTemplate(ctx context.Context, ch <-chan templateResult, refLabel string) (string, func(), error) {
+	suffix := ""
+	if refLabel != "" {
+		suffix = " (" + refLabel + ")"
+	}
 	select {
 	case res := <-ch:
 		// Clone finished while the user was typing — print completion.
 		if res.err == nil && res.cleanup != nil {
-			prompt.PrintDone(ctx, "Template cloned")
+			prompt.PrintDone(ctx, "Template cloned"+suffix)
 		}
 		return res.path, res.cleanup, res.err
 	default:
 		// Still cloning — show a spinner for the remaining wait.
 		var res templateResult
-		err := prompt.RunWithSpinnerCtx(ctx, "Cloning template...", func() error {
+		err := prompt.RunWithSpinnerCtx(ctx, "Cloning template"+suffix+"...", func() error {
 			res = <-ch
 			return res.err
 		})
@@ -808,25 +814,36 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		templateSrc = env.Get(ctx, templatePathEnvVar)
 	}
 
-	// Resolve the git reference (branch/tag) to use for default appkit template
+	// Resolve the git reference (branch/tag) to use for default appkit template.
+	// refLabel is a human-readable description of the ref we're cloning
+	// (e.g. "version 0.24.0", "branch feature-x"). It's surfaced in the
+	// interactive header and the clone spinner so the user can cancel before
+	// naming the project. Empty when there's nothing meaningful to show
+	// (e.g. a custom --template URL with no explicit branch).
 	gitRef := opts.branch
+	var refLabel string
 	usingDefaultTemplate := templateSrc == ""
 	if usingDefaultTemplate {
 		// Using default appkit template - resolve version
 		switch {
 		case opts.branch != "":
 			// --branch takes precedence (already set in gitRef)
+			refLabel = "branch " + opts.branch
 		case opts.version != "":
 			gitRef = normalizeVersion(opts.version)
+			refLabel = "version " + opts.version
 		default:
-			appkitVersion, err := clicompat.ResolveAppKitVersion(ctx)
+			resolved, err := clicompat.ResolveAppKitVersion(ctx)
 			if err != nil {
 				return fmt.Errorf("could not resolve AppKit template version: %w; use --version to specify a version manually", err)
 			}
-			gitRef = normalizeVersion(appkitVersion)
-			cmdio.LogString(ctx, "Using AppKit template version "+appkitVersion)
+			gitRef = normalizeVersion(resolved)
+			refLabel = "version " + resolved
 		}
 		templateSrc = appkitRepoURL
+	} else if opts.branch != "" {
+		// Custom template with an explicit branch — show it for traceability.
+		refLabel = "branch " + opts.branch
 	}
 
 	// Start cloning in the background so it runs while the user types the name.
@@ -880,6 +897,11 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		if !isInteractive {
 			return errors.New("--name is required in non-interactive mode")
 		}
+		// Print the AppKit header once so it covers both the in-place
+		// scaffold-location prompt below and the project-name prompt that
+		// may follow, and so the resolved template ref is visible before
+		// the user commits to either path.
+		prompt.PrintHeader(ctx, refLabel)
 		// Offer in-place scaffolding when the current directory is empty
 		// (modulo .git) and its basename is a valid app name. Skipped when
 		// --output-dir was set, since in-place targets cwd and would silently
@@ -927,7 +949,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	}
 
 	// Step 2: Wait for template (may already be done if the user took time typing the name)
-	resolvedPath, cleanup, err := awaitTemplate(ctx, templateCh)
+	resolvedPath, cleanup, err := awaitTemplate(ctx, templateCh, refLabel)
 	// Only fall back to the embedded version when the version was auto-resolved
 	// from the manifest, not when the user explicitly passed --version or --branch.
 	versionAutoResolved := opts.version == "" && opts.branch == ""
@@ -937,7 +959,8 @@ func runCreate(ctx context.Context, opts createOptions) error {
 			log.Warnf(ctx, "Template version not found, falling back to embedded version %s", fallbackVersion)
 			fallbackRef := normalizeVersion(fallbackVersion)
 			templateCh = resolveTemplateAsync(ctx, templateSrc, fallbackRef, appkitTemplateDir)
-			resolvedPath, cleanup, err = awaitTemplate(ctx, templateCh)
+			refLabel = "version " + fallbackVersion
+			resolvedPath, cleanup, err = awaitTemplate(ctx, templateCh, refLabel)
 		} else if fbErr != nil {
 			log.Warnf(ctx, "Could not resolve embedded AppKit version: %v", fbErr)
 		}
