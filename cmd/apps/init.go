@@ -618,6 +618,20 @@ func awaitTemplate(ctx context.Context, ch <-chan templateResult) (string, func(
 	}
 }
 
+// commitInPlace derives the app name from the cwd basename and verifies that
+// the cwd is suitable for in-place scaffolding (empty modulo .git).
+// Returns the derived app name on success.
+func commitInPlace() (string, error) {
+	appName, err := prompt.DeriveInPlaceAppName(".")
+	if err != nil {
+		return "", err
+	}
+	if err := prompt.CheckInPlaceDirectory("."); err != nil {
+		return "", err
+	}
+	return appName, nil
+}
+
 // findProjectSrcDir locates the actual source directory inside a template.
 // Templates may nest their content inside a {{.project_name}} directory.
 func findProjectSrcDir(templateDir string) string {
@@ -834,30 +848,81 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	}()
 
 	// Step 1: Get project name (clone runs in parallel for remote templates)
-	destDir := opts.name
-	if opts.outputDir != "" {
-		destDir = filepath.Join(opts.outputDir, opts.name)
+	if opts.name == prompt.InPlaceName && opts.outputDir != "" {
+		return prompt.ErrNameDotWithOutputDir
 	}
 
-	if opts.name == "" {
-		if !isInteractive {
-			return errors.New("--name is required in non-interactive mode")
-		}
-		name, err := prompt.PromptForProjectName(ctx, opts.outputDir)
+	var (
+		destDir string
+		inPlace bool
+	)
+	switch {
+	case opts.name == prompt.InPlaceName:
+		appName, err := commitInPlace()
 		if err != nil {
 			return err
 		}
-		opts.name = name
+		opts.name = appName
+		destDir = "."
+		inPlace = true
+	case opts.name != "":
+		if err := prompt.ValidateProjectName(opts.name); err != nil {
+			return err
+		}
 		destDir = opts.name
 		if opts.outputDir != "" {
 			destDir = filepath.Join(opts.outputDir, opts.name)
 		}
-	} else {
-		if err := prompt.ValidateProjectName(opts.name); err != nil {
-			return err
-		}
 		if _, err := os.Stat(destDir); err == nil {
 			return fmt.Errorf("directory %s already exists", destDir)
+		}
+	default:
+		if !isInteractive {
+			return errors.New("--name is required in non-interactive mode")
+		}
+		// Offer in-place scaffolding when the current directory is empty
+		// (modulo .git) and its basename is a valid app name. Skipped when
+		// --output-dir was set, since in-place targets cwd and would silently
+		// drop the flag — same reasoning as the --name . / --output-dir mutex
+		// above.
+		if opts.outputDir == "" {
+			if basename, ok := prompt.ShouldOfferInPlace("."); ok {
+				useCurrent, err := prompt.PromptScaffoldLocation(ctx, basename)
+				if err != nil {
+					return err
+				}
+				if useCurrent {
+					// Re-check immediately before committing — the directory may
+					// have changed between offer and answer.
+					if err := prompt.CheckInPlaceDirectory("."); err != nil {
+						return err
+					}
+					opts.name = basename
+					destDir = "."
+					inPlace = true
+				}
+			}
+		}
+		if !inPlace {
+			name, err := prompt.PromptForProjectName(ctx, opts.outputDir)
+			if err != nil {
+				return err
+			}
+			if name == prompt.InPlaceName {
+				appName, err := commitInPlace()
+				if err != nil {
+					return err
+				}
+				opts.name = appName
+				destDir = "."
+				inPlace = true
+			} else {
+				opts.name = name
+				destDir = name
+				if opts.outputDir != "" {
+					destDir = filepath.Join(opts.outputDir, name)
+				}
+			}
 		}
 	}
 
@@ -1026,9 +1091,17 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	var projectCreated bool
 	var runErr error
 	defer func() {
-		if runErr != nil && (projectCreated || npmInstallCh != nil) {
-			os.RemoveAll(destDir)
+		if runErr == nil || (!projectCreated && npmInstallCh == nil) {
+			return
 		}
+		if inPlace {
+			// destDir is "." here; a wholesale RemoveAll would wipe the
+			// user's current directory (including any pre-existing .git).
+			// Leave the partial scaffold and tell the user to clean up.
+			log.Warnf(ctx, "scaffold failed in current directory; review and clean up generated files manually (e.g. with git status / git clean -fd)")
+			return
+		}
+		os.RemoveAll(destDir)
 	}()
 
 	// Set description default
@@ -1151,9 +1224,9 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	// Show next steps only if user didn't choose to deploy or run
 	showNextSteps := !shouldDeploy && runMode == prompt.RunModeNone
 	if showNextSteps {
-		prompt.PrintSuccess(ctx, opts.name, absOutputDir, fileCount, nextStepsCmd)
+		prompt.PrintSuccess(ctx, opts.name, absOutputDir, fileCount, nextStepsCmd, inPlace)
 	} else {
-		prompt.PrintSuccess(ctx, opts.name, absOutputDir, fileCount, "")
+		prompt.PrintSuccess(ctx, opts.name, absOutputDir, fileCount, "", inPlace)
 	}
 
 	// Print any onSetupMessage declared by selected plugins in the template manifest.
@@ -1474,11 +1547,18 @@ func copyTemplate(ctx context.Context, src, dest string, vars templateVars) (int
 // removeEmptyDirs removes empty directories under root, deepest-first.
 // It is used to clean up directories that were created eagerly but ended up
 // with no files after conditional template rendering skipped their contents.
+//
+// .git is skipped so in-place scaffolding (root == ".") never walks into a
+// pre-existing repo and deletes its empty subdirectories (refs/heads,
+// refs/tags, objects/info, objects/pack are all empty after `git init`).
 func removeEmptyDirs(root string) error {
 	var dirs []string
 	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
+		}
+		if d.IsDir() && d.Name() == ".git" && path != root {
+			return filepath.SkipDir
 		}
 		if d.IsDir() && path != root {
 			dirs = append(dirs, path)
