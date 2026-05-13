@@ -23,6 +23,7 @@ import (
 	"github.com/databricks/cli/libs/apps/initializer"
 	"github.com/databricks/cli/libs/apps/manifest"
 	"github.com/databricks/cli/libs/apps/prompt"
+	"github.com/databricks/cli/libs/clicompat"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
@@ -38,7 +39,6 @@ const (
 	appkitTemplateDir    = "template"
 	appkitDefaultBranch  = "main"
 	appkitTemplateTagPfx = "template-v"
-	appkitDefaultVersion = "template-v0.24.0"
 	defaultProfile       = "DEFAULT"
 )
 
@@ -169,7 +169,7 @@ Environment variables:
 
 	cmd.Flags().StringVar(&templatePath, "template", "", "Template path (local directory or GitHub URL)")
 	cmd.Flags().StringVar(&branch, "branch", "", "Git branch or tag (for GitHub templates, mutually exclusive with --version)")
-	cmd.Flags().StringVar(&version, "version", "", fmt.Sprintf("AppKit version to use (default: %s, use 'latest' for main branch)", appkitDefaultVersion))
+	cmd.Flags().StringVar(&version, "version", "", "AppKit version to use (default: auto-detected, use 'latest' for main branch)")
 	cmd.Flags().StringVar(&name, "name", "", "Project name (prompts if not provided)")
 	cmd.Flags().StringVar(&warehouseID, "warehouse-id", "", "SQL warehouse ID")
 	_ = cmd.Flags().MarkDeprecated("warehouse-id", "use --set <plugin>.sql-warehouse.id=<value> instead")
@@ -805,8 +805,12 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		case opts.version != "":
 			gitRef = normalizeVersion(opts.version)
 		default:
-			// Default: use pinned version
-			gitRef = appkitDefaultVersion
+			appkitVersion, err := clicompat.ResolveAppKitVersion(ctx)
+			if err != nil {
+				return fmt.Errorf("could not resolve AppKit template version: %w; use --version to specify a version manually", err)
+			}
+			gitRef = normalizeVersion(appkitVersion)
+			cmdio.LogString(ctx, "Using AppKit template version "+appkitVersion)
 		}
 		templateSrc = appkitRepoURL
 	}
@@ -859,6 +863,20 @@ func runCreate(ctx context.Context, opts createOptions) error {
 
 	// Step 2: Wait for template (may already be done if the user took time typing the name)
 	resolvedPath, cleanup, err := awaitTemplate(ctx, templateCh)
+	// Only fall back to the embedded version when the version was auto-resolved
+	// from the manifest, not when the user explicitly passed --version or --branch.
+	versionAutoResolved := opts.version == "" && opts.branch == ""
+	if err != nil && usingDefaultTemplate && versionAutoResolved && clicompat.IsNotFoundError(err) {
+		fallbackVersion, fbErr := clicompat.ResolveEmbeddedAppKitVersion()
+		if fbErr == nil && fallbackVersion != "" && normalizeVersion(fallbackVersion) != branchForClone {
+			log.Warnf(ctx, "Template version not found, falling back to embedded version %s", fallbackVersion)
+			fallbackRef := normalizeVersion(fallbackVersion)
+			templateCh = resolveTemplateAsync(ctx, templateSrc, fallbackRef, appkitTemplateDir)
+			resolvedPath, cleanup, err = awaitTemplate(ctx, templateCh)
+		} else if fbErr != nil {
+			log.Warnf(ctx, "Could not resolve embedded AppKit version: %v", fbErr)
+		}
+	}
 	if err != nil {
 		return err
 	}
