@@ -32,6 +32,10 @@ func New() *cobra.Command {
 		RunE:    root.ReportUnknownSubcommand,
 	}
 
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
+
 	// Add methods
 	cmd.AddCommand(newCreateNetworkPolicyRpc())
 	cmd.AddCommand(newDeleteNetworkPolicyRpc())
@@ -78,6 +82,8 @@ func newCreateNetworkPolicyRpc() *cobra.Command {
   accessed from the Databricks environment.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -146,6 +152,8 @@ func newDeleteNetworkPolicyRpc() *cobra.Command {
     NETWORK_POLICY_ID: The unique identifier of the network policy to delete.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -202,6 +210,8 @@ func newGetNetworkPolicyRpc() *cobra.Command {
     NETWORK_POLICY_ID: The unique identifier of the network policy to retrieve.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -267,6 +277,8 @@ func newListNetworkPoliciesRpc() *cobra.Command {
   Gets an array of network policies.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -335,6 +347,8 @@ func newUpdateNetworkPolicyRpc() *cobra.Command {
     NETWORK_POLICY_ID: The unique identifier for the network policy.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)

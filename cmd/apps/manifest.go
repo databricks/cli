@@ -9,7 +9,9 @@ import (
 	"path/filepath"
 
 	"github.com/databricks/cli/libs/apps/manifest"
+	"github.com/databricks/cli/libs/clicompat"
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/log"
 	"github.com/spf13/cobra"
 )
 
@@ -27,7 +29,11 @@ func runManifestOnly(ctx context.Context, templatePath, branch, version string) 
 		case version != "":
 			gitRef = normalizeVersion(version)
 		default:
-			gitRef = appkitDefaultVersion
+			appkitVersion, err := clicompat.ResolveAppKitVersion(ctx)
+			if err != nil {
+				return fmt.Errorf("could not resolve AppKit template version: %w; use --version to specify a version manually", err)
+			}
+			gitRef = normalizeVersion(appkitVersion)
 		}
 		templateSrc = appkitRepoURL
 	}
@@ -39,6 +45,17 @@ func runManifestOnly(ctx context.Context, templatePath, branch, version string) 
 		subdirForClone = appkitTemplateDir
 	}
 	resolvedPath, cleanup, err := resolveTemplate(ctx, templateSrc, branchForClone, subdirForClone)
+	versionAutoResolved := version == "" && branch == ""
+	if err != nil && usingDefaultTemplate && versionAutoResolved && clicompat.IsNotFoundError(err) {
+		fallbackVersion, fbErr := clicompat.ResolveEmbeddedAppKitVersion()
+		if fbErr == nil && fallbackVersion != "" && normalizeVersion(fallbackVersion) != gitRef {
+			log.Warnf(ctx, "Template version not found, falling back to embedded version %s", fallbackVersion)
+			fallbackRef := normalizeVersion(fallbackVersion)
+			resolvedPath, cleanup, err = resolveTemplate(ctx, templateSrc, fallbackRef, appkitTemplateDir)
+		} else if fbErr != nil {
+			log.Warnf(ctx, "Could not resolve embedded AppKit version: %v", fbErr)
+		}
+	}
 	if err != nil {
 		return err
 	}

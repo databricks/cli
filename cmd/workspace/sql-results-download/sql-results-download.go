@@ -20,12 +20,18 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "sql-results-download",
-		Short: `Controls whether users within the workspace are allowed to download results from the SQL Editor and AI/BI Dashboards UIs.`,
-		Long: `Controls whether users within the workspace are allowed to download results
+		Short: `*Public Preview* Controls whether users within the workspace are allowed to download results from the SQL Editor and AI/BI Dashboards UIs.`,
+		Long: `This command is in Public Preview and may change without notice.
+
+Controls whether users within the workspace are allowed to download results
   from the SQL Editor and AI/BI Dashboards UIs. By default, this setting is
   enabled (set to true)`,
 		RunE: root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	// Add methods
 	cmd.AddCommand(newDelete())
@@ -57,12 +63,16 @@ func newDelete() *cobra.Command {
 	cmd.Flags().StringVar(&deleteReq.Etag, "etag", deleteReq.Etag, `etag used for versioning.`)
 
 	cmd.Use = "delete"
-	cmd.Short = `Delete the SQL Results Download setting.`
-	cmd.Long = `Delete the SQL Results Download setting.
+	cmd.Short = `*Public Preview* Delete the SQL Results Download setting.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Delete the SQL Results Download setting.
 
   Reverts the SQL Results Download setting to its default value.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -111,12 +121,16 @@ func newGet() *cobra.Command {
 	cmd.Flags().StringVar(&getReq.Etag, "etag", getReq.Etag, `etag used for versioning.`)
 
 	cmd.Use = "get"
-	cmd.Short = `Get the SQL Results Download setting.`
-	cmd.Long = `Get the SQL Results Download setting.
+	cmd.Short = `*Public Preview* Get the SQL Results Download setting.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Get the SQL Results Download setting.
 
   Gets the SQL Results Download setting.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -166,12 +180,16 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "update"
-	cmd.Short = `Update the SQL Results Download setting.`
-	cmd.Long = `Update the SQL Results Download setting.
+	cmd.Short = `*Public Preview* Update the SQL Results Download setting.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Update the SQL Results Download setting.
 
   Updates the SQL Results Download setting.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {

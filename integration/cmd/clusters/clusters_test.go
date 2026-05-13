@@ -32,7 +32,7 @@ func TestClustersGet(t *testing.T) {
 	clusterId := findValidClusterID(t)
 	stdout, stderr := testcli.RequireSuccessfulRun(t, ctx, "clusters", "get", clusterId)
 	outStr := stdout.String()
-	assert.Contains(t, outStr, fmt.Sprintf(`"cluster_id":"%s"`, clusterId))
+	assert.Contains(t, outStr, fmt.Sprintf(`"cluster_id": "%s"`, clusterId))
 	assert.Equal(t, "", stderr.String())
 }
 

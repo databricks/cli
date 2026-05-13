@@ -36,8 +36,6 @@ func promptForProfile(ctx context.Context, defaultValue string) (string, error) 
 		Label: "Databricks profile name [" + defaultValue + "]",
 	})
 	if result == "" {
-		// Manually return the default value. We could use the prompt.Default
-		// field, but be inconsistent with other prompts in the CLI.
 		return defaultValue, err
 	}
 	return result, err
@@ -146,10 +144,10 @@ a new profile is created.
 		ctx := cmd.Context()
 		profileName := cmd.Flag("profile").Value.String()
 
-		// Resolve the cache before the browser step so a missing/locked keyring
-		// surfaces here rather than after the user completes OAuth. When secure
-		// is selected but the keyring is unreachable, this silently falls back
-		// to plaintext and persists auth_storage = plaintext for next time.
+		// Resolve the cache before the browser step so an unavailable
+		// keyring surfaces here rather than after OAuth. The probe also
+		// triggers the OS unlock prompt, which the user can answer during
+		// OAuth.
 		tokenCache, mode, err := storage.ResolveCacheForLogin(ctx, "")
 		if err != nil {
 			return err

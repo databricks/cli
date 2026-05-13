@@ -19,12 +19,18 @@ var cmdOverrides []func(*cobra.Command)
 
 func New() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "provider-providers",
-		Short:   `Providers are entities that manage assets in Marketplace.`,
-		Long:    `Providers are entities that manage assets in Marketplace.`,
+		Use:   "provider-providers",
+		Short: `*Public Preview* Providers are entities that manage assets in Marketplace.`,
+		Long: `This command is in Public Preview and may change without notice.
+
+Providers are entities that manage assets in Marketplace.`,
 		GroupID: "marketplace",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -59,12 +65,16 @@ func newCreate() *cobra.Command {
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "create"
-	cmd.Short = `Create a provider.`
-	cmd.Long = `Create a provider.
+	cmd.Short = `*Public Preview* Create a provider.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Create a provider.
 
   Create a provider`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -121,12 +131,16 @@ func newDelete() *cobra.Command {
 	var deleteReq marketplace.DeleteProviderRequest
 
 	cmd.Use = "delete ID"
-	cmd.Short = `Delete provider.`
-	cmd.Long = `Delete provider.
+	cmd.Short = `*Public Preview* Delete provider.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Delete provider.
 
   Delete provider`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -186,12 +200,16 @@ func newGet() *cobra.Command {
 	var getReq marketplace.GetProviderRequest
 
 	cmd.Use = "get ID"
-	cmd.Short = `Get provider.`
-	cmd.Long = `Get provider.
+	cmd.Short = `*Public Preview* Get provider.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Get provider.
 
   Get provider profile`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -265,12 +283,16 @@ func newList() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list"
-	cmd.Short = `List providers.`
-	cmd.Long = `List providers.
+	cmd.Short = `*Public Preview* List providers.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+List providers.
 
   List provider profiles for account.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -323,12 +345,16 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "update ID"
-	cmd.Short = `Update provider.`
-	cmd.Long = `Update provider.
+	cmd.Short = `*Public Preview* Update provider.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Update provider.
 
   Update provider profile`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)

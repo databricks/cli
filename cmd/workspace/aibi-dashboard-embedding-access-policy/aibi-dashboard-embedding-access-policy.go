@@ -20,12 +20,18 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "aibi-dashboard-embedding-access-policy",
-		Short: `Controls whether AI/BI published dashboard embedding is enabled, conditionally enabled, or disabled at the workspace level.`,
-		Long: `Controls whether AI/BI published dashboard embedding is enabled, conditionally
+		Short: `*Public Preview* Controls whether AI/BI published dashboard embedding is enabled, conditionally enabled, or disabled at the workspace level.`,
+		Long: `This command is in Public Preview and may change without notice.
+
+Controls whether AI/BI published dashboard embedding is enabled, conditionally
   enabled, or disabled at the workspace level. By default, this setting is
   conditionally enabled (ALLOW_APPROVED_DOMAINS).`,
 		RunE: root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	// Add methods
 	cmd.AddCommand(newDelete())
@@ -57,13 +63,17 @@ func newDelete() *cobra.Command {
 	cmd.Flags().StringVar(&deleteReq.Etag, "etag", deleteReq.Etag, `etag used for versioning.`)
 
 	cmd.Use = "delete"
-	cmd.Short = `Delete the AI/BI dashboard embedding access policy.`
-	cmd.Long = `Delete the AI/BI dashboard embedding access policy.
+	cmd.Short = `*Public Preview* Delete the AI/BI dashboard embedding access policy.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Delete the AI/BI dashboard embedding access policy.
 
   Delete the AI/BI dashboard embedding access policy, reverting back to the
   default.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -112,14 +122,18 @@ func newGet() *cobra.Command {
 	cmd.Flags().StringVar(&getReq.Etag, "etag", getReq.Etag, `etag used for versioning.`)
 
 	cmd.Use = "get"
-	cmd.Short = `Retrieve the AI/BI dashboard embedding access policy.`
-	cmd.Long = `Retrieve the AI/BI dashboard embedding access policy.
+	cmd.Short = `*Public Preview* Retrieve the AI/BI dashboard embedding access policy.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Retrieve the AI/BI dashboard embedding access policy.
 
   Retrieves the AI/BI dashboard embedding access policy. The default setting is
   ALLOW_APPROVED_DOMAINS, permitting AI/BI dashboards to be embedded on approved
   domains.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -169,12 +183,16 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "update"
-	cmd.Short = `Update the AI/BI dashboard embedding access policy.`
-	cmd.Long = `Update the AI/BI dashboard embedding access policy.
+	cmd.Short = `*Public Preview* Update the AI/BI dashboard embedding access policy.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Update the AI/BI dashboard embedding access policy.
 
   Updates the AI/BI dashboard embedding access policy at the workspace level.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {

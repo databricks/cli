@@ -34,6 +34,10 @@ func New() *cobra.Command {
 		RunE:    root.ReportUnknownSubcommand,
 	}
 
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
+
 	// Add methods
 	cmd.AddCommand(newCreate())
 	cmd.AddCommand(newDelete())
@@ -72,8 +76,10 @@ func newCreate() *cobra.Command {
 	// TODO: map via StringToStringVar: properties
 
 	cmd.Use = "create NAME CATALOG_NAME SCHEMA_NAME TABLE_TYPE DATA_SOURCE_FORMAT STORAGE_LOCATION"
-	cmd.Short = `Create a table.`
-	cmd.Long = `Create a table.
+	cmd.Short = `*Public Preview* Create a table.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Create a table.
 
   Creates a new table in the specified catalog and schema.
 
@@ -152,6 +158,8 @@ func newCreate() *cobra.Command {
     STORAGE_LOCATION: Storage root URL for table (for **MANAGED**, **EXTERNAL** tables).`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
@@ -257,6 +265,8 @@ func newDelete() *cobra.Command {
     FULL_NAME: Full name of the table.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -320,6 +330,8 @@ func newExists() *cobra.Command {
     FULL_NAME: Full name of the table.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -387,6 +399,8 @@ func newGet() *cobra.Command {
     FULL_NAME: Full name of the table.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -480,6 +494,8 @@ func newList() *cobra.Command {
     SCHEMA_NAME: Parent schema of tables.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -572,6 +588,8 @@ func newListSummaries() *cobra.Command {
     CATALOG_NAME: Name of parent catalog for tables of interest.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -644,6 +662,8 @@ func newUpdate() *cobra.Command {
 	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
