@@ -16,12 +16,18 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "current-user",
-		Short: `This API allows retrieving information about currently authenticated user or service principal.`,
-		Long: `This API allows retrieving information about currently authenticated user or
+		Short: `*Public Preview* This API allows retrieving information about currently authenticated user or service principal.`,
+		Long: `This command is in Public Preview and may change without notice.
+
+This API allows retrieving information about currently authenticated user or
   service principal.`,
 		GroupID: "iam",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	// Add methods
 	cmd.AddCommand(newMe())
@@ -46,12 +52,16 @@ func newMe() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	cmd.Use = "me"
-	cmd.Short = `Get current user info.`
-	cmd.Long = `Get current user info.
+	cmd.Short = `*Public Preview* Get current user info.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Get current user info.
 
   Get details about the current method caller's identity.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {

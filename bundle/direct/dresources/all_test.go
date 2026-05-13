@@ -141,6 +141,7 @@ var testConfig map[string]any = map[string]any{
 			Name: "my-endpoint",
 			Config: &serving.EndpointCoreConfigInput{
 				Name: "my-endpoint",
+				//nolint:staticcheck // SA1019: deprecated AutoCaptureConfigInput kept for bundle config compatibility
 				AutoCaptureConfig: &serving.AutoCaptureConfigInput{
 					CatalogName:     "main",
 					SchemaName:      "myschema",

@@ -31,6 +31,10 @@ func New() *cobra.Command {
 		RunE:    root.ReportUnknownSubcommand,
 	}
 
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
+
 	// Add methods
 	cmd.AddCommand(newDelete())
 	cmd.AddCommand(newExport())
@@ -74,10 +78,9 @@ func newDelete() *cobra.Command {
 	cmd.Short = `Delete a workspace object.`
 	cmd.Long = `Delete a workspace object.
 
-  Deprecated: use WorkspaceHierarchyService.DeleteTreeNode instead. Deletes an
-  object or a directory (and optionally recursively deletes all objects in the
-  directory). * If path does not exist, this call returns an error
-  RESOURCE_DOES_NOT_EXIST. * If path is a non-empty directory and
+  Deletes an object or a directory (and optionally recursively deletes all
+  objects in the directory). * If path does not exist, this call returns an
+  error RESOURCE_DOES_NOT_EXIST. * If path is a non-empty directory and
   recursive is set to false, this call returns an error
   DIRECTORY_NOT_EMPTY.
 
@@ -88,6 +91,8 @@ func newDelete() *cobra.Command {
     PATH: The absolute path of the notebook or directory.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
@@ -199,6 +204,8 @@ func newExport() *cobra.Command {
       only supported for the DBC, SOURCE, and AUTO format.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -271,6 +278,8 @@ func newGetPermissionLevels() *cobra.Command {
     WORKSPACE_OBJECT_ID: The workspace object for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -333,6 +342,8 @@ func newGetPermissions() *cobra.Command {
     WORKSPACE_OBJECT_ID: The workspace object for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -385,14 +396,15 @@ func newGetStatus() *cobra.Command {
 	cmd.Short = `Get status.`
 	cmd.Long = `Get status.
 
-  Deprecated: use WorkspaceHierarchyService.GetTreeNode instead. Gets the status
-  of an object or a directory. If path does not exist, this call returns an
-  error RESOURCE_DOES_NOT_EXIST.
+  Gets the status of an object or a directory. If path does not exist, this
+  call returns an error RESOURCE_DOES_NOT_EXIST.
 
   Arguments:
     PATH: The absolute path of the notebook or directory.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -472,6 +484,8 @@ func newImport() *cobra.Command {
       only supported for the DBC and SOURCE formats.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
@@ -554,14 +568,16 @@ func newList() *cobra.Command {
 	cmd.Short = `List contents.`
 	cmd.Long = `List contents.
 
-  Deprecated: use WorkspaceHierarchyService.ListTreeNodes instead. Lists the
-  contents of a directory, or the object if it is not a directory. If the input
-  path does not exist, this call returns an error RESOURCE_DOES_NOT_EXIST.
+  Lists the contents of a directory, or the object if it is not a directory. If
+  the input path does not exist, this call returns an error
+  RESOURCE_DOES_NOT_EXIST.
 
   Arguments:
     PATH: The absolute path of the notebook or directory.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -619,10 +635,9 @@ func newMkdirs() *cobra.Command {
 	cmd.Short = `Create a directory.`
 	cmd.Long = `Create a directory.
 
-  Deprecated: use WorkspaceHierarchyService.CreateTreeNode instead. Creates the
-  specified directory (and necessary parent directories if they do not exist).
-  If there is an object (not a directory) at any prefix of the input path, this
-  call returns an error RESOURCE_ALREADY_EXISTS.
+  Creates the specified directory (and necessary parent directories if they do
+  not exist). If there is an object (not a directory) at any prefix of the input
+  path, this call returns an error RESOURCE_ALREADY_EXISTS.
 
   Note that if this operation fails it may have succeeded in creating some of
   the necessary parent directories.
@@ -633,6 +648,8 @@ func newMkdirs() *cobra.Command {
       command will do nothing and succeed.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
@@ -735,6 +752,8 @@ func newSetPermissions() *cobra.Command {
     WORKSPACE_OBJECT_ID: The workspace object for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -814,6 +833,8 @@ func newUpdatePermissions() *cobra.Command {
     WORKSPACE_OBJECT_ID: The workspace object for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
