@@ -214,8 +214,8 @@ func (c *config) promptOnce(property *jsonschema.Schema, name, defaultVal, descr
 		if err != nil {
 			return err
 		}
-		// promptui only supports a single-line label, so render any preceding
-		// lines of the description separately.
+		// RunSelect's Label is single-line, so render any preceding lines
+		// of the description separately.
 		label := description
 		if i := strings.LastIndex(description, "\n"); i != -1 {
 			cmdio.LogString(c.ctx, description[:i])

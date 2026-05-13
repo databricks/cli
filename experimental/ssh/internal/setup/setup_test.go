@@ -295,7 +295,7 @@ func TestSetup_PromptsForClusterWhenNotProvided(t *testing.T) {
 	configPath := filepath.Join(tmpDir, "ssh_config")
 
 	// Replace the cluster picker with a stub returning a fixed ID. This lets the
-	// test exercise the empty-ClusterID path of Setup without driving promptui.
+	// test exercise the empty-ClusterID path of Setup without prompting.
 	origPrompt := clusterSelectionPrompt
 	t.Cleanup(func() { clusterSelectionPrompt = origPrompt })
 	promptCalled := false

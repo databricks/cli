@@ -22,7 +22,6 @@ require (
 	github.com/hashicorp/terraform-json v0.27.2 // MPL-2.0
 	github.com/hexops/gotextdiff v1.0.3 // BSD-3-Clause
 	github.com/jackc/pgx/v5 v5.9.2 // MIT
-	github.com/manifoldco/promptui v0.9.0 // BSD-3-Clause
 	github.com/mattn/go-isatty v0.0.22 // MIT
 	github.com/palantir/pkg/yamlpatch v1.5.0 // BSD-3-Clause
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c // BSD-2-Clause
@@ -58,7 +57,6 @@ require (
 	github.com/charmbracelet/x/cellbuf v0.0.15 // indirect
 	github.com/charmbracelet/x/exp/strings v0.0.0-20240722160745-212f7b056ed0 // indirect
 	github.com/charmbracelet/x/term v0.2.2 // indirect
-	github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e // indirect
 	github.com/clipperhouse/displaywidth v0.9.0 // indirect
 	github.com/clipperhouse/stringish v0.1.1 // indirect
 	github.com/clipperhouse/uax29/v2 v2.5.0 // indirect
