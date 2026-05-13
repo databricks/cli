@@ -53,6 +53,10 @@ func servedModelsInputToOutput(input []serving.ServedModelInput) []serving.Serve
 	return models
 }
 
+// AutoCaptureConfig is the legacy inference-table API; testserver mirrors
+// the production conversion until callers migrate to AI Gateway inference tables.
+//
+//nolint:staticcheck // SA1019: deprecated AutoCaptureConfig{Input,Output} kept for bundle config compatibility
 func autoCaptureConfigInputToOutput(input *serving.AutoCaptureConfigInput) *serving.AutoCaptureConfigOutput {
 	return &serving.AutoCaptureConfigOutput{
 		CatalogName:     input.CatalogName,

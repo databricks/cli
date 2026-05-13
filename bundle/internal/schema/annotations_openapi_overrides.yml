@@ -1023,6 +1023,10 @@ github.com/databricks/databricks-sdk-go/service/pipelines.PipelineTrigger:
   "manual":
     "description": |-
       PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/pipelines.SourceConfig:
+  "google_ads_config":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/pipelines.TableSpecificConfig:
   "workday_report_parameters":
     "description": |-

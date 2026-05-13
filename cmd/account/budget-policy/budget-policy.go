@@ -19,12 +19,18 @@ var cmdOverrides []func(*cobra.Command)
 
 func New() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "budget-policy",
-		Short:   `A service serves REST API about Budget policies.`,
-		Long:    `A service serves REST API about Budget policies`,
+		Use:   "budget-policy",
+		Short: `*Public Preview* A service serves REST API about Budget policies.`,
+		Long: `This command is in Public Preview and may change without notice.
+
+A service serves REST API about Budget policies`,
 		GroupID: "billing",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -62,12 +68,16 @@ func newCreate() *cobra.Command {
 	cmd.Flags().StringVar(&createReq.RequestId, "request-id", createReq.RequestId, `A unique identifier for this request.`)
 
 	cmd.Use = "create"
-	cmd.Short = `Create a budget policy.`
-	cmd.Long = `Create a budget policy.
+	cmd.Short = `*Public Preview* Create a budget policy.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Create a budget policy.
 
   Creates a new policy.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -127,8 +137,10 @@ func newDelete() *cobra.Command {
 	var deleteReq billing.DeleteBudgetPolicyRequest
 
 	cmd.Use = "delete POLICY_ID"
-	cmd.Short = `Delete a budget policy.`
-	cmd.Long = `Delete a budget policy.
+	cmd.Short = `*Public Preview* Delete a budget policy.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Delete a budget policy.
 
   Deletes a policy
 
@@ -136,6 +148,8 @@ func newDelete() *cobra.Command {
     POLICY_ID: The Id of the policy.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -183,8 +197,10 @@ func newGet() *cobra.Command {
 	var getReq billing.GetBudgetPolicyRequest
 
 	cmd.Use = "get POLICY_ID"
-	cmd.Short = `Get a budget policy.`
-	cmd.Long = `Get a budget policy.
+	cmd.Short = `*Public Preview* Get a budget policy.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Get a budget policy.
 
   Retrieves a policy by it's ID.
 
@@ -192,6 +208,8 @@ func newGet() *cobra.Command {
     POLICY_ID: The Id of the policy.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -255,13 +273,17 @@ func newList() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list"
-	cmd.Short = `List policies.`
-	cmd.Long = `List policies.
+	cmd.Short = `*Public Preview* List policies.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+List policies.
 
   Lists all policies. Policies are returned in the alphabetically ascending
   order of their names.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -320,8 +342,10 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().StringVar(&updateReq.Policy.PolicyName, "policy-name", updateReq.Policy.PolicyName, `The name of the policy.`)
 
 	cmd.Use = "update POLICY_ID"
-	cmd.Short = `Update a budget policy.`
-	cmd.Long = `Update a budget policy.
+	cmd.Short = `*Public Preview* Update a budget policy.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Update a budget policy.
 
   Updates a policy
 
@@ -330,6 +354,8 @@ func newUpdate() *cobra.Command {
       unique.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)

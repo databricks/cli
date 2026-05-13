@@ -21,14 +21,20 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "data-classification",
-		Short: `Manage data classification for Unity Catalog catalogs.`,
-		Long: `Manage data classification for Unity Catalog catalogs. Data classification
+		Short: `*Beta* Manage data classification for Unity Catalog catalogs.`,
+		Long: `This command is in Beta and may change without notice.
+
+Manage data classification for Unity Catalog catalogs. Data classification
   automatically identifies and tags sensitive data (PII) in Unity Catalog
   tables. Each catalog can have at most one configuration resource that controls
   scanning behavior and auto-tagging rules.`,
 		GroupID: "dataclassification",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	// Add methods
 	cmd.AddCommand(newCreateCatalogConfig())
@@ -67,8 +73,10 @@ func newCreateCatalogConfig() *cobra.Command {
 	cmd.Flags().StringVar(&createCatalogConfigReq.CatalogConfig.Name, "name", createCatalogConfigReq.CatalogConfig.Name, `Resource name in the format: catalogs/{catalog_name}/config.`)
 
 	cmd.Use = "create-catalog-config PARENT"
-	cmd.Short = `Create config for a catalog.`
-	cmd.Long = `Create config for a catalog.
+	cmd.Short = `*Beta* Create config for a catalog.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Create config for a catalog.
 
   Create Data Classification configuration for a catalog.
 
@@ -79,6 +87,8 @@ func newCreateCatalogConfig() *cobra.Command {
     PARENT: Parent resource in the format: catalogs/{catalog_name}`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -139,8 +149,10 @@ func newDeleteCatalogConfig() *cobra.Command {
 	var deleteCatalogConfigReq dataclassification.DeleteCatalogConfigRequest
 
 	cmd.Use = "delete-catalog-config NAME"
-	cmd.Short = `Delete config for a catalog.`
-	cmd.Long = `Delete config for a catalog.
+	cmd.Short = `*Beta* Delete config for a catalog.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Delete config for a catalog.
 
   Delete Data Classification configuration for a catalog.
 
@@ -148,6 +160,8 @@ func newDeleteCatalogConfig() *cobra.Command {
     NAME: Resource name in the format: catalogs/{catalog_name}/config`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -195,8 +209,10 @@ func newGetCatalogConfig() *cobra.Command {
 	var getCatalogConfigReq dataclassification.GetCatalogConfigRequest
 
 	cmd.Use = "get-catalog-config NAME"
-	cmd.Short = `Get config for a catalog.`
-	cmd.Long = `Get config for a catalog.
+	cmd.Short = `*Beta* Get config for a catalog.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Get config for a catalog.
 
   Get the Data Classification configuration for a catalog.
 
@@ -204,6 +220,8 @@ func newGetCatalogConfig() *cobra.Command {
     NAME: Resource name in the format: catalogs/{catalog_name}/config`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -260,8 +278,10 @@ func newUpdateCatalogConfig() *cobra.Command {
 	cmd.Flags().StringVar(&updateCatalogConfigReq.CatalogConfig.Name, "name", updateCatalogConfigReq.CatalogConfig.Name, `Resource name in the format: catalogs/{catalog_name}/config.`)
 
 	cmd.Use = "update-catalog-config NAME UPDATE_MASK"
-	cmd.Short = `Update config for a catalog.`
-	cmd.Long = `Update config for a catalog.
+	cmd.Short = `*Beta* Update config for a catalog.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Update config for a catalog.
 
   Update the Data Classification configuration for a catalog. - The config must
   already exist for the catalog. - Updates fields specified in the update_mask.
@@ -272,6 +292,8 @@ func newUpdateCatalogConfig() *cobra.Command {
     UPDATE_MASK: Field mask specifying which fields to update.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)

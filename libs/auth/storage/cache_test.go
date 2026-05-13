@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -230,6 +231,45 @@ func TestApplyLoginFallback_ExplicitSecure_ProbeFail_Errors(t *testing.T) {
 	persisted, gerr := databrickscfg.GetConfiguredAuthStorage(ctx, configPath)
 	require.NoError(t, gerr)
 	assert.Equal(t, "", persisted, "explicit-secure error must not write config")
+}
+
+// A locked keyring with a slow user surfaces as TimeoutError. We want login
+// to stay on the keyring so the final Store lands there once the user has
+// finished unlocking, regardless of whether secure was explicit. Cover both
+// the bare TimeoutError (in case probe wraps thinner in the future) and the
+// real wrapped form returned by probeWithBackend.
+func TestApplyLoginFallback_ProbeTimeout_StaysOnKeyring(t *testing.T) {
+	cases := []struct {
+		name     string
+		explicit bool
+		probeErr error
+	}{
+		{"default-secure, bare TimeoutError", false, &TimeoutError{Op: "set"}},
+		{"default-secure, wrapped TimeoutError", false, fmt.Errorf("write: %w", &TimeoutError{Op: "set"})},
+		{"explicit-secure, bare TimeoutError", true, &TimeoutError{Op: "set"}},
+		{"explicit-secure, wrapped TimeoutError", true, fmt.Errorf("write: %w", &TimeoutError{Op: "set"})},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			hermetic(t)
+			ctx := t.Context()
+			configPath := env.Get(ctx, "DATABRICKS_CONFIG_FILE")
+
+			f := fakeFactories(t)
+			f.probeKeyring = func() error { return tc.probeErr }
+
+			got, mode, err := applyLoginFallback(ctx, StorageModeSecure, tc.explicit, f)
+
+			require.NoError(t, err)
+			assert.Equal(t, StorageModeSecure, mode)
+			assert.Equal(t, "keyring", got.(stubCache).source)
+
+			persisted, gerr := databrickscfg.GetConfiguredAuthStorage(ctx, configPath)
+			require.NoError(t, gerr)
+			assert.Equal(t, "", persisted, "probe timeout must not persist plaintext fallback")
+		})
+	}
 }
 
 func TestWrapForOAuthArgument(t *testing.T) {
