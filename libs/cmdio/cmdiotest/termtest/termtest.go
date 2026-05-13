@@ -87,6 +87,15 @@ const (
 	// passed -update to regenerate goldens), so a small fixed sleep is
 	// enough — if the result looks mid-frame the author re-runs.
 	updateSettleWait = 200 * time.Millisecond
+
+	// typeInterKeyDelay is the pause [Term.Type] waits after writing each
+	// keystroke to the input pipe. Real terminals deliver keystrokes with
+	// ~100 ms between them; pipe writes from back-to-back Type calls would
+	// otherwise land in a single bubbletea Read and be parsed ambiguously
+	// (a lone `\x1b` followed by `a` parses as Alt+a, not Esc then 'a').
+	// 20 ms matches the ESC-disambiguation timeouts neovim and tmux use
+	// for the same problem.
+	typeInterKeyDelay = 20 * time.Millisecond
 )
 
 // resultMsg carries the (value, err) the goroutine running the cmdio entry
@@ -192,11 +201,14 @@ func (w *syncWriter) Write(p []byte) (int, error) {
 
 // Type writes a string into the program's stdin. The string can be ordinary
 // text or one of the Key* constants — they're all just bytes the user would
-// have typed on a real terminal.
+// have typed on a real terminal. Returns after [typeInterKeyDelay] so a
+// follow-up Type lands in a separate bubbletea Read; see the constant's
+// comment for why that matters.
 func (tt *Term[T]) Type(s string) {
 	tt.t.Helper()
 	_, err := tt.inW.Write([]byte(s))
 	require.NoError(tt.t, err, "write to stdin pipe")
+	time.Sleep(typeInterKeyDelay)
 }
 
 // WaitFor blocks until substr appears in the raw output stream, or the
