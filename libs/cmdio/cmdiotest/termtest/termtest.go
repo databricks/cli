@@ -23,7 +23,8 @@
 // testdata/<TestName>/<step>.golden. The screen comes from the emulator —
 // what the user would see — not the raw escape-sequence stream, so the
 // goldens are stable across rendering changes as long as the visible UI
-// matches. To create or refresh goldens, set UPDATE_TERMTEST=1.
+// matches. To create or refresh goldens, pass -update to `go test`
+// (the flag is registered by [testdiff.OverwriteMode]).
 package termtest
 
 import (
@@ -39,6 +40,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/testdiff"
 	"github.com/stretchr/testify/require"
 )
 
@@ -73,17 +75,18 @@ const (
 )
 
 const (
-	defaultTimeout = 3 * time.Second
+	// defaultTimeout bounds how long any single wait (Golden,
+	// WaitFor, Close, Result) blocks before declaring failure. Generous
+	// so heavy CI load doesn't fail tests that would otherwise pass — if
+	// the test is going to fail it fails anyway, just a bit slower.
+	defaultTimeout = 5 * time.Second
 	pollInterval   = 5 * time.Millisecond
 
-	// Stability window for Golden(): wait until no new bytes have arrived
-	// from the program for this long before snapshotting. NewTestIO caps
-	// bubbletea at 120 FPS (~8 ms/frame), so 15 ms covers one frame plus
-	// slack for scheduler jitter.
-	stabilityWindow = 15 * time.Millisecond
-	stabilityMax    = 1 * time.Second
-
-	updateEnv = "UPDATE_TERMTEST"
+	// updateSettleWait is the fixed delay Golden() waits in update mode
+	// before snapshotting. Update mode is interactive (the author has
+	// passed -update to regenerate goldens), so a small fixed sleep is
+	// enough — if the result looks mid-frame the author re-runs.
+	updateSettleWait = 200 * time.Millisecond
 )
 
 // resultMsg carries the (value, err) the goroutine running the cmdio entry
@@ -242,30 +245,50 @@ func (tt *Term[T]) Raw() string {
 	return tt.raw.String()
 }
 
-// Golden waits for the screen to settle, then compares the rendered output
-// against testdata/<TestName>/<step>.golden. With UPDATE_TERMTEST=1 the
-// golden file is (re)written instead. Step names are used verbatim as
-// filenames; prefer "01-", "02-", … to keep listings in checkpoint order.
+// Golden waits for the rendered screen to match
+// testdata/<TestName>/<step>.golden, then asserts they're equal. With
+// the testdiff -update flag set ([testdiff.OverwriteMode]) the golden
+// file is (re)written from the settled snapshot instead. Step names are
+// used verbatim as filenames; prefer "01-", "02-", … to keep listings
+// in checkpoint order.
 func (tt *Term[T]) Golden(step string) {
 	tt.t.Helper()
-	tt.waitStable()
-	got := tt.Snapshot()
-
 	safeName := strings.ReplaceAll(tt.t.Name(), "/", "_")
 	path := filepath.Join("testdata", safeName, step+".golden")
 
-	if os.Getenv(updateEnv) != "" { //nolint:forbidigo // test-only UPDATE flag; no ctx available in helper
+	if testdiff.OverwriteMode {
+		time.Sleep(updateSettleWait)
+		got := tt.Snapshot() + "\n"
 		require.NoError(tt.t, os.MkdirAll(filepath.Dir(path), 0o755))
-		require.NoError(tt.t, os.WriteFile(path, []byte(got+"\n"), 0o644))
+		require.NoError(tt.t, os.WriteFile(path, []byte(got), 0o644))
 		return
 	}
 
-	want, err := os.ReadFile(path)
+	wantBytes, err := os.ReadFile(path)
 	if err != nil {
-		tt.t.Fatalf("read golden %s: %v\nrun with %s=1 to create it\n--- current screen ---\n%s", path, err, updateEnv, got)
+		tt.t.Fatalf("read golden %s: %v\nrun with -update to create it\n--- current screen ---\n%s", path, err, tt.Snapshot())
 	}
-	if got+"\n" != string(want) {
-		tt.t.Fatalf("golden %s mismatch:\n--- want ---\n%s--- got ---\n%s\n", path, string(want), got)
+	want := string(wantBytes)
+	got := tt.waitForMatch(want) + "\n"
+	testdiff.AssertEqualTexts(tt.t, path, "actual", want, got)
+}
+
+// waitForMatch polls the rendered screen until it (with a trailing
+// newline appended, matching how goldens are stored on disk) equals
+// want, then returns. If defaultTimeout elapses without a match, returns the
+// last snapshot seen so the caller can produce a diff against it.
+func (tt *Term[T]) waitForMatch(want string) string {
+	tt.t.Helper()
+	deadline := time.Now().Add(defaultTimeout)
+	for {
+		got := tt.Snapshot()
+		if got+"\n" == want {
+			return got
+		}
+		if time.Now().After(deadline) {
+			return got
+		}
+		time.Sleep(pollInterval)
 	}
 }
 
@@ -318,33 +341,6 @@ func (tt *Term[T]) drainPending() {
 	_, _ = tt.term.Write(input[:consumed])
 	if consumed < len(input) {
 		tt.pending = append(tt.pending, input[consumed:]...)
-	}
-}
-
-// waitStable blocks until no new bytes have arrived from the program for one
-// stabilityWindow, or stabilityMax elapses. Used before snapshotting so
-// in-flight redraws don't get captured mid-stream.
-func (tt *Term[T]) waitStable() {
-	tt.t.Helper()
-	deadline := time.Now().Add(stabilityMax)
-	tt.drainPending()
-	tt.mu.Lock()
-	last := tt.raw.Len()
-	tt.mu.Unlock()
-	for {
-		time.Sleep(stabilityWindow)
-		tt.drainPending()
-		tt.mu.Lock()
-		now := tt.raw.Len()
-		tt.mu.Unlock()
-		if now == last {
-			return
-		}
-		if time.Now().After(deadline) {
-			tt.t.Logf("waitStable: output kept changing for %s; snapshotting anyway", stabilityMax)
-			return
-		}
-		last = now
 	}
 }
 
