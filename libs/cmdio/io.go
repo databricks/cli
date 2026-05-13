@@ -18,16 +18,12 @@ var errCtrlC = errors.New("^C")
 // runTUI runs a tea.Program through cmdIO's tea program slot so spinners and
 // pagers can't fight a prompt for the terminal. Blocks until the model quits.
 func (c *cmdIO) runTUI(m tea.Model) (tea.Model, error) {
-	opts := []tea.ProgramOption{
+	p := tea.NewProgram(m,
 		tea.WithInput(c.in),
 		tea.WithOutput(c.err),
 		// Ctrl+C is delivered as a key event so the model can return errCtrlC.
 		tea.WithoutSignalHandler(),
-	}
-	if c.teaFPS > 0 {
-		opts = append(opts, tea.WithFPS(c.teaFPS))
-	}
-	p := tea.NewProgram(m, opts...)
+	)
 	c.acquireTeaProgram(p)
 	defer c.releaseTeaProgram()
 	// NewTestIO sets a synthetic window size because bubbletea's auto-detect
@@ -68,10 +64,6 @@ type cmdIO struct {
 	// user input is processed. Populated only by NewTestIO so pipe-backed
 	// test runs receive a synthetic WindowSizeMsg.
 	teaWindowSize *tea.WindowSizeMsg
-
-	// teaFPS, when non-zero, is passed to tea.WithFPS. Tests crank this up
-	// so the renderer doesn't sit on a 60 FPS tick between keystrokes.
-	teaFPS int
 }
 
 func NewIO(ctx context.Context, outputFormat flags.Output, in io.Reader, out, err io.Writer, headerTemplate, template string) *cmdIO {
