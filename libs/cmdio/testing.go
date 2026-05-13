@@ -41,9 +41,7 @@ func NewTestIO(in io.Reader, out, err io.Writer) *cmdIO {
 		// that passes term.IsTerminal, which test streams rarely are.
 		// Without this the standard renderer runs with width=0 and produces
 		// stale cells on shrinking redraws.
-		teaInitialMsgs: []tea.Msg{
-			tea.WindowSizeMsg{Width: TestTerminalWidth, Height: TestTerminalHeight},
-		},
+		teaWindowSize: &tea.WindowSizeMsg{Width: TestTerminalWidth, Height: TestTerminalHeight},
 		// Bubbletea defaults to 60 FPS (one frame every ~17 ms). For
 		// pipe-backed tests there's no human eye to throttle for, so cap the
 		// renderer at the maximum 120 FPS — this halves the keystroke→render

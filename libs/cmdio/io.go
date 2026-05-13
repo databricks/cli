@@ -30,9 +30,10 @@ func (c *cmdIO) runTUI(m tea.Model) (tea.Model, error) {
 	p := tea.NewProgram(m, opts...)
 	c.acquireTeaProgram(p)
 	defer c.releaseTeaProgram()
-	// Drain any pre-queued messages set by NewTestIO. Empty for production.
-	for _, msg := range c.teaInitialMsgs {
-		go p.Send(msg)
+	// NewTestIO sets a synthetic window size because bubbletea's auto-detect
+	// doesn't fire on pipe-backed streams. Nil in production.
+	if c.teaWindowSize != nil {
+		go p.Send(*c.teaWindowSize)
 	}
 	return p.Run()
 }
@@ -63,10 +64,10 @@ type cmdIO struct {
 	teaProgram *tea.Program
 	teaDone    chan struct{}
 
-	// teaInitialMsgs is delivered to the tea.Program before any user input
-	// is processed. Populated only by NewTestIO so pipe-backed test runs
-	// receive a synthetic WindowSizeMsg.
-	teaInitialMsgs []tea.Msg
+	// teaWindowSize, when non-nil, is delivered to the tea.Program before any
+	// user input is processed. Populated only by NewTestIO so pipe-backed
+	// test runs receive a synthetic WindowSizeMsg.
+	teaWindowSize *tea.WindowSizeMsg
 
 	// teaFPS, when non-zero, is passed to tea.WithFPS. Tests crank this up
 	// so the renderer doesn't sit on a 60 FPS tick between keystrokes.
