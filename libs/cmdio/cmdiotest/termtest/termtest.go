@@ -87,10 +87,10 @@ const (
 )
 
 // resultMsg carries the (value, err) the goroutine running the cmdio entry
-// point produced. value's concrete type depends on which constructor was
-// used: string for RunPrompt / Secret / SelectOrdered, int for RunSelect.
-type resultMsg struct {
-	value any
+// point produced. T is string for RunPrompt / Secret / SelectOrdered and int
+// for RunSelect.
+type resultMsg[T any] struct {
+	value T
 	err   error
 }
 
@@ -99,13 +99,13 @@ type resultMsg struct {
 // unblock os.File-backed inputs cleanly on Quit; io.Pipe would leak the
 // input goroutine); cmdio's stderr (where the TUI renders) is a
 // synchronized buffer we drain into the VT emulator on demand.
-type Term struct {
+type Term[T any] struct {
 	t *testing.T
 
 	inW *os.File
 	inR *os.File
 
-	done     chan resultMsg
+	done     chan resultMsg[T]
 	finished chan struct{}
 
 	mu      sync.Mutex
@@ -115,65 +115,58 @@ type Term struct {
 	pending []byte
 }
 
-// PromptTerm drives a string-returning entry point ([cmdio.RunPrompt],
-// [cmdio.Secret], [cmdio.SelectOrdered]).
-type PromptTerm struct{ *Term }
-
-// SelectTerm drives an int-returning entry point ([cmdio.RunSelect]).
-type SelectTerm struct{ *Term }
-
 // NewPrompt runs [cmdio.RunPrompt] in a goroutine and returns a harness for
 // it.
-func NewPrompt(t *testing.T, opts cmdio.PromptOptions) *PromptTerm {
+func NewPrompt(t *testing.T, opts cmdio.PromptOptions) *Term[string] {
 	t.Helper()
-	return &PromptTerm{Term: run(t, func(ctx context.Context) (any, error) {
+	return run(t, func(ctx context.Context) (string, error) {
 		return cmdio.RunPrompt(ctx, opts)
-	})}
+	})
 }
 
 // NewSecret runs [cmdio.Secret] in a goroutine and returns a harness for it.
-func NewSecret(t *testing.T, label string) *PromptTerm {
+func NewSecret(t *testing.T, label string) *Term[string] {
 	t.Helper()
-	return &PromptTerm{Term: run(t, func(ctx context.Context) (any, error) {
+	return run(t, func(ctx context.Context) (string, error) {
 		return cmdio.Secret(ctx, label)
-	})}
+	})
 }
 
 // NewSelect runs [cmdio.RunSelect] in a goroutine and returns a harness for
 // it.
-func NewSelect(t *testing.T, opts cmdio.SelectOptions) *SelectTerm {
+func NewSelect(t *testing.T, opts cmdio.SelectOptions) *Term[int] {
 	t.Helper()
-	return &SelectTerm{Term: run(t, func(ctx context.Context) (any, error) {
+	return run(t, func(ctx context.Context) (int, error) {
 		return cmdio.RunSelect(ctx, opts)
-	})}
+	})
 }
 
 // NewSelectOrdered runs [cmdio.SelectOrdered] in a goroutine and returns a
 // harness for it.
-func NewSelectOrdered(t *testing.T, items []cmdio.Tuple, label string) *PromptTerm {
+func NewSelectOrdered(t *testing.T, items []cmdio.Tuple, label string) *Term[string] {
 	t.Helper()
-	return &PromptTerm{Term: run(t, func(ctx context.Context) (any, error) {
+	return run(t, func(ctx context.Context) (string, error) {
 		return cmdio.SelectOrdered(ctx, items, label)
-	})}
+	})
 }
 
-func run(t *testing.T, fn func(ctx context.Context) (any, error)) *Term {
+func run[T any](t *testing.T, fn func(ctx context.Context) (T, error)) *Term[T] {
 	inR, inW, err := os.Pipe()
 	require.NoError(t, err, "open input pipe")
-	tt := &Term{
+	tt := &Term[T]{
 		t:        t,
 		inW:      inW,
 		inR:      inR,
-		done:     make(chan resultMsg, 1),
+		done:     make(chan resultMsg[T], 1),
 		finished: make(chan struct{}),
 		term:     newEmulator(cmdio.TestTerminalWidth, cmdio.TestTerminalHeight),
 	}
-	io := cmdio.NewTestIO(inR, io.Discard, (*syncWriter)(tt))
+	io := cmdio.NewTestIO(inR, io.Discard, &syncWriter{mu: &tt.mu, buf: &tt.out})
 	ctx := cmdio.InContext(t.Context(), io)
 	go func() {
 		v, err := fn(ctx)
 		_ = inR.Close()
-		tt.done <- resultMsg{value: v, err: err}
+		tt.done <- resultMsg[T]{value: v, err: err}
 		close(tt.finished)
 	}()
 	t.Cleanup(tt.Close)
@@ -182,21 +175,22 @@ func run(t *testing.T, fn func(ctx context.Context) (any, error)) *Term {
 
 // syncWriter is the io.Writer cmdio gives bubbletea as stderr. Writes from
 // the program goroutine race with our drain calls, so the buffer is mutex-
-// guarded; the type is a thin alias rather than a wrapper to avoid an extra
-// pointer hop.
-type syncWriter Term
+// guarded.
+type syncWriter struct {
+	mu  *sync.Mutex
+	buf *bytes.Buffer
+}
 
 func (w *syncWriter) Write(p []byte) (int, error) {
-	tt := (*Term)(w)
-	tt.mu.Lock()
-	defer tt.mu.Unlock()
-	return tt.out.Write(p)
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	return w.buf.Write(p)
 }
 
 // Type writes a string into the program's stdin. The string can be ordinary
 // text or one of the Key* constants — they're all just bytes the user would
 // have typed on a real terminal.
-func (tt *Term) Type(s string) {
+func (tt *Term[T]) Type(s string) {
 	tt.t.Helper()
 	_, err := tt.inW.Write([]byte(s))
 	require.NoError(tt.t, err, "write to stdin pipe")
@@ -205,7 +199,7 @@ func (tt *Term) Type(s string) {
 // WaitFor blocks until substr appears in the raw output stream, or the
 // default timeout elapses. Returns the captured output for use in failure
 // messages.
-func (tt *Term) WaitFor(substr string) string {
+func (tt *Term[T]) WaitFor(substr string) string {
 	tt.t.Helper()
 	deadline := time.Now().Add(defaultTimeout)
 	for {
@@ -225,7 +219,7 @@ func (tt *Term) WaitFor(substr string) string {
 
 // Snapshot returns the current emulator screen contents with trailing
 // whitespace trimmed from each line and trailing empty lines dropped.
-func (tt *Term) Snapshot() string {
+func (tt *Term[T]) Snapshot() string {
 	tt.drainPending()
 	tt.mu.Lock()
 	defer tt.mu.Unlock()
@@ -241,7 +235,7 @@ func (tt *Term) Snapshot() string {
 
 // Raw returns the raw byte stream captured from the program, including all
 // escape sequences. Useful for debugging when Snapshot output is unexpected.
-func (tt *Term) Raw() string {
+func (tt *Term[T]) Raw() string {
 	tt.drainPending()
 	tt.mu.Lock()
 	defer tt.mu.Unlock()
@@ -252,7 +246,7 @@ func (tt *Term) Raw() string {
 // against testdata/<TestName>/<step>.golden. With UPDATE_TERMTEST=1 the
 // golden file is (re)written instead. Step names are used verbatim as
 // filenames; prefer "01-", "02-", … to keep listings in checkpoint order.
-func (tt *Term) Golden(step string) {
+func (tt *Term[T]) Golden(step string) {
 	tt.t.Helper()
 	tt.waitStable()
 	got := tt.Snapshot()
@@ -278,7 +272,7 @@ func (tt *Term) Golden(step string) {
 // Close releases the input pipe and waits for the goroutine running the
 // cmdio entry point to finish. Safe to call after Result has already drained
 // the return value, and safe to call repeatedly.
-func (tt *Term) Close() {
+func (tt *Term[T]) Close() {
 	_ = tt.inW.Close()
 	select {
 	case <-tt.finished:
@@ -287,35 +281,18 @@ func (tt *Term) Close() {
 	}
 }
 
-// Result waits for the goroutine running the prompt to finish and returns
-// the (string, error) it produced. Use on harnesses returned by NewPrompt,
-// NewSecret, or NewSelectOrdered.
-func (p *PromptTerm) Result() (string, error) {
-	r := p.await()
-	if r.value == nil {
-		return "", r.err
-	}
-	return r.value.(string), r.err
-}
-
-// Result waits for the goroutine running the select to finish and returns
-// the (int, error) it produced.
-func (s *SelectTerm) Result() (int, error) {
-	r := s.await()
-	if r.value == nil {
-		return 0, r.err
-	}
-	return r.value.(int), r.err
-}
-
-func (tt *Term) await() resultMsg {
+// Result waits for the goroutine running the cmdio entry point to finish and
+// returns the (value, error) it produced. For NewPrompt / NewSecret /
+// NewSelectOrdered T is string; for NewSelect T is int.
+func (tt *Term[T]) Result() (T, error) {
 	tt.t.Helper()
 	select {
 	case r := <-tt.done:
-		return r
+		return r.value, r.err
 	case <-time.After(defaultTimeout):
 		tt.t.Fatalf("cmdio call did not finish in %s; raw output:\n%s", defaultTimeout, tt.Raw())
-		return resultMsg{}
+		var zero T
+		return zero, nil
 	}
 }
 
@@ -323,7 +300,7 @@ func (tt *Term) await() resultMsg {
 // drain into the raw buffer and the VT emulator. The emulator's parser is
 // fed in UTF-8 boundary-aligned chunks because a multi-byte rune split
 // across two writes would otherwise be reported invalid and skip cells.
-func (tt *Term) drainPending() {
+func (tt *Term[T]) drainPending() {
 	tt.mu.Lock()
 	defer tt.mu.Unlock()
 	if tt.out.Len() == 0 {
@@ -347,7 +324,7 @@ func (tt *Term) drainPending() {
 // waitStable blocks until no new bytes have arrived from the program for one
 // stabilityWindow, or stabilityMax elapses. Used before snapshotting so
 // in-flight redraws don't get captured mid-stream.
-func (tt *Term) waitStable() {
+func (tt *Term[T]) waitStable() {
 	tt.t.Helper()
 	deadline := time.Now().Add(stabilityMax)
 	tt.drainPending()
