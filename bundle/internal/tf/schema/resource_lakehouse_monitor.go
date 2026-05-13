@@ -38,7 +38,7 @@ type ResourceLakehouseMonitorNotifications struct {
 }
 
 type ResourceLakehouseMonitorProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type ResourceLakehouseMonitorSchedule struct {

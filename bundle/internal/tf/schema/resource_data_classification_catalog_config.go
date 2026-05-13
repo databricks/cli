@@ -12,7 +12,7 @@ type ResourceDataClassificationCatalogConfigIncludedSchemas struct {
 }
 
 type ResourceDataClassificationCatalogConfigProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type ResourceDataClassificationCatalogConfig struct {

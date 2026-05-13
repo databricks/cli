@@ -3,7 +3,7 @@
 package schema
 
 type ResourcePostgresSyncedTableProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type ResourcePostgresSyncedTableSpecNewPipelineSpec struct {
@@ -51,6 +51,7 @@ type ResourcePostgresSyncedTableStatus struct {
 	Message                       string                                                `json:"message,omitempty"`
 	OngoingSyncProgress           *ResourcePostgresSyncedTableStatusOngoingSyncProgress `json:"ongoing_sync_progress,omitempty"`
 	PipelineId                    string                                                `json:"pipeline_id,omitempty"`
+	Project                       string                                                `json:"project,omitempty"`
 	ProvisioningPhase             string                                                `json:"provisioning_phase,omitempty"`
 	UnityCatalogProvisioningState string                                                `json:"unity_catalog_provisioning_state,omitempty"`
 }
