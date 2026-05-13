@@ -11,9 +11,7 @@ import (
 
 // TestSelectBaseline_CtrlNCtrlP pins that Ctrl+N and Ctrl+P move the
 // selection down and up by one item — the same as the down and up arrow
-// keys. Promptui exposes these as KeyNext (= readline.CharNext) and
-// KeyPrev (= readline.CharPrev), the same runes the arrow keys decode
-// to in chzyer/readline; this test pins that equivalence.
+// keys. This test pins that equivalence.
 func TestSelectBaseline_CtrlNCtrlP(t *testing.T) {
 	t.Parallel()
 	tm := termtest.NewSelectOrdered(t, []cmdio.Tuple{

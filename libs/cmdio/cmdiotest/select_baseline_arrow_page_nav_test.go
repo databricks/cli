@@ -12,9 +12,8 @@ import (
 
 // TestSelectBaseline_ArrowPageNav pins that the right and left arrow
 // keys page through the selection list — the same as Ctrl+F / Ctrl+B
-// (covered by TestSelectBaseline_CtrlFCtrlB). Promptui maps both pairs
-// to KeyForward / KeyBackward, which the select widget treats as
-// page-down / page-up rather than item-by-item movement.
+// (covered by TestSelectBaseline_CtrlFCtrlB). The select model treats
+// both pairs as page-down / page-up rather than item-by-item movement.
 func TestSelectBaseline_ArrowPageNav(t *testing.T) {
 	t.Parallel()
 	items := make([]cmdio.Tuple, 0, 12)

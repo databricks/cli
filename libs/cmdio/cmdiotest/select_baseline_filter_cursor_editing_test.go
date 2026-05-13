@@ -10,9 +10,8 @@ import (
 )
 
 // TestSelectBaseline_FilterCursorEditing pins how the search filter responds
-// to cursor-editing keys: ←/→, Home/End, Delete, Ctrl+W. Promptui's readline
-// supports all of these inside the search buffer; whether a hand-rolled
-// bubbletea filter does is the whole point of the baseline.
+// to cursor-editing keys: ←/→, Home/End, Delete, Ctrl+W. The goldens capture
+// which keys actually edit the filter buffer in the current model.
 func TestSelectBaseline_FilterCursorEditing(t *testing.T) {
 	t.Parallel()
 	tm := termtest.NewSelectOrdered(t, []cmdio.Tuple{

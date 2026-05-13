@@ -11,12 +11,11 @@ import (
 
 // TestPromptBaseline_CursorEditing pins how RunPrompt responds to cursor
 // movement and line-editing keys: ←/→, Home/End, Backspace, Ctrl+W, Ctrl+U.
-// Promptui's Cursor.Listen handles Backspace; Ctrl+W and Ctrl+U have no case
-// there, so they're no-ops in this prompt — the goldens after them are
-// intentionally identical to the post-Backspace one. The Delete key (\x1b[3~)
-// is *not* covered here because it conflates with Ctrl+D in chzyer/readline
-// and exits the prompt; that behavior is pinned separately by
-// TestPromptBaseline_DeleteKeyExits.
+// The prompt model handles ←/→ and Backspace; Home/End/Ctrl+W/Ctrl+U are
+// no-ops, so the goldens after them are intentionally identical to the
+// post-Backspace one. The Delete key (\x1b[3~) is *not* covered here
+// because it exits the prompt with EOF; that behavior is pinned separately
+// by TestPromptBaseline_DeleteKeyExits.
 func TestPromptBaseline_CursorEditing(t *testing.T) {
 	t.Parallel()
 	tm := termtest.NewPrompt(t, cmdio.PromptOptions{

@@ -12,11 +12,8 @@ import (
 // TestPromptBaseline_UTF8 pins multi-byte rune handling: typing "café"
 // (4 runes, 5 bytes) renders as 4 cells, one Backspace deletes one rune
 // not one byte, and the returned value preserves the original code points.
-//
-// Promptui delegates to readline which is rune-aware. A bubbletea
-// reimplementation that counts bytes will silently corrupt non-ASCII input
-// even though ASCII tests still pass — exactly the kind of regression a
-// migration baseline is meant to catch.
+// An implementation that counts bytes instead of runes would silently
+// corrupt non-ASCII input even with ASCII tests passing.
 func TestPromptBaseline_UTF8(t *testing.T) {
 	t.Parallel()
 	tm := termtest.NewPrompt(t, cmdio.PromptOptions{
