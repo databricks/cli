@@ -391,16 +391,13 @@ func (d *dashboard) runForResource(ctx context.Context, b *bundle.Bundle) {
 		return
 	}
 
+	var state statemgmt.ExportedResourcesMap
 	if stateDesc.Engine.IsDirect() {
 		_, localPath := b.StateFilenameDirect(ctx)
 		if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(true), dstate.WithWrite(false)); err != nil {
 			logdiag.LogError(ctx, err)
 			return
 		}
-	}
-
-	var state statemgmt.ExportedResourcesMap
-	if stateDesc.Engine.IsDirect() {
 		state = b.DeploymentBundle.ExportState(ctx)
 	} else {
 		var err error
