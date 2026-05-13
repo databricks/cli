@@ -71,28 +71,22 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, ta
 	// mutators need informed consent if they are potentially destructive.
 	cmdio.LogString(ctx, "Deploying resources...")
 
+	// Apply resources and capture post-apply state.
+	// For direct: Finalize flushes the WAL to disk and returns the state.
+	// For terraform: ParseResourcesState reads the file written by terraform.Apply.
+	var (
+		state statemgmt.ExportedResourcesMap
+		err   error
+	)
 	if targetEngine.IsDirect() {
 		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(ctx), plan, direct.MigrateMode(false))
+		state, err = b.DeploymentBundle.StateDB.Finalize(ctx)
 	} else {
 		bundle.ApplyContext(ctx, b, terraform.Apply())
-	}
-
-	// Capture post-apply state for Load below.
-	// For direct: flush WAL to disk (Finalize) and capture the result.
-	// For terraform: parse the state file written by terraform.Apply.
-	var state statemgmt.ExportedResourcesMap
-	if targetEngine.IsDirect() {
-		var err error
-		state, err = b.DeploymentBundle.StateDB.Finalize(ctx)
-		if err != nil {
-			logdiag.LogError(ctx, err)
-		}
-	} else {
-		var err error
 		state, err = terraform.ParseResourcesState(ctx, b)
-		if err != nil {
-			logdiag.LogError(ctx, err)
-		}
+	}
+	if err != nil {
+		logdiag.LogError(ctx, err)
 	}
 
 	// Even if deployment failed, there might be updates in states that we need to upload
