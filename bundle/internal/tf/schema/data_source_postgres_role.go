@@ -3,7 +3,7 @@
 package schema
 
 type DataSourcePostgresRoleProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourcePostgresRoleSpecAttributes struct {
@@ -32,6 +32,7 @@ type DataSourcePostgresRoleStatus struct {
 	IdentityType    string                                  `json:"identity_type,omitempty"`
 	MembershipRoles []string                                `json:"membership_roles,omitempty"`
 	PostgresRole    string                                  `json:"postgres_role,omitempty"`
+	RoleId          string                                  `json:"role_id,omitempty"`
 }
 
 type DataSourcePostgresRole struct {

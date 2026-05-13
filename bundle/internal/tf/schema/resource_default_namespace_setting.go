@@ -7,7 +7,7 @@ type ResourceDefaultNamespaceSettingNamespace struct {
 }
 
 type ResourceDefaultNamespaceSettingProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type ResourceDefaultNamespaceSetting struct {

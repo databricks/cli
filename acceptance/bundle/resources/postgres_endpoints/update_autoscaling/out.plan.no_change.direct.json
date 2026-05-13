@@ -15,6 +15,7 @@
       "autoscaling_limit_min_cu": 0.5,
       "current_state": "ACTIVE",
       "disabled": false,
+      "endpoint_id": "my-endpoint",
       "endpoint_type": "ENDPOINT_TYPE_READ_ONLY",
       "group": {
         "enable_readable_secondaries": true,

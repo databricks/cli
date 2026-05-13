@@ -48,6 +48,8 @@ __all__ = [
     "ConditionTaskOp",
     "ConditionTaskOpParam",
     "ConditionTaskParam",
+    "ConfidentialComputeType",
+    "ConfidentialComputeTypeParam",
     "Continuous",
     "ContinuousDict",
     "ContinuousParam",
@@ -371,6 +373,10 @@ from databricks.bundles.jobs._models.condition_task import (
 from databricks.bundles.jobs._models.condition_task_op import (
     ConditionTaskOp,
     ConditionTaskOpParam,
+)
+from databricks.bundles.jobs._models.confidential_compute_type import (
+    ConfidentialComputeType,
+    ConfidentialComputeTypeParam,
 )
 from databricks.bundles.jobs._models.continuous import (
     Continuous,

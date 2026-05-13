@@ -37,6 +37,10 @@ func New() *cobra.Command {
 		RunE:    root.ReportUnknownSubcommand,
 	}
 
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
+
 	// Add subservices
 	cmd.AddCommand(aibi_dashboard_embedding_access_policy.New())
 	cmd.AddCommand(aibi_dashboard_embedding_approved_domains.New())

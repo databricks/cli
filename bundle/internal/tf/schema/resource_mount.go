@@ -29,7 +29,7 @@ type ResourceMountGs struct {
 }
 
 type ResourceMountProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type ResourceMountS3 struct {

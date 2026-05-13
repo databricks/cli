@@ -34,6 +34,10 @@ func New() *cobra.Command {
 		RunE:    root.ReportUnknownSubcommand,
 	}
 
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
+
 	// Add methods
 	cmd.AddCommand(newCreateNetworkConnectivityConfiguration())
 	cmd.AddCommand(newCreatePrivateEndpointRule())
@@ -98,6 +102,8 @@ func newCreateNetworkConnectivityConfiguration() *cobra.Command {
       the same region can be attached to the network connectivity configuration.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
@@ -200,6 +206,8 @@ func newCreatePrivateEndpointRule() *cobra.Command {
     NETWORK_CONNECTIVITY_CONFIG_ID: Your Network Connectivity Configuration ID.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -269,6 +277,8 @@ func newDeleteNetworkConnectivityConfiguration() *cobra.Command {
     NETWORK_CONNECTIVITY_CONFIG_ID: Your Network Connectivity Configuration ID.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -321,7 +331,7 @@ func newDeletePrivateEndpointRule() *cobra.Command {
 
   Initiates deleting a private endpoint rule. If the connection state is PENDING
   or EXPIRED, the private endpoint is immediately deleted. Otherwise, the
-  private endpoint is deactivated and will be deleted after seven days of
+  private endpoint is deactivated and will be deleted after one day of
   deactivation. When a private endpoint is deactivated, the deactivated field
   is set to true and the private endpoint is not available to your serverless
   compute resources.
@@ -331,6 +341,8 @@ func newDeletePrivateEndpointRule() *cobra.Command {
     PRIVATE_ENDPOINT_RULE_ID: Your private endpoint rule ID.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -389,6 +401,8 @@ func newGetNetworkConnectivityConfiguration() *cobra.Command {
     NETWORK_CONNECTIVITY_CONFIG_ID: Your Network Connectivity Configuration ID.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -447,6 +461,8 @@ func newGetPrivateEndpointRule() *cobra.Command {
     PRIVATE_ENDPOINT_RULE_ID: Your private endpoint rule ID.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -513,6 +529,8 @@ func newListNetworkConnectivityConfigurations() *cobra.Command {
   Gets an array of network connectivity configurations.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -582,6 +600,8 @@ func newListPrivateEndpointRules() *cobra.Command {
     NETWORK_CONNECTIVITY_CONFIG_ID: Your Network Connectvity Configuration ID.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -637,7 +657,7 @@ func newUpdatePrivateEndpointRule() *cobra.Command {
 	cmd.Flags().Var(&updatePrivateEndpointRuleJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: domain_names
-	cmd.Flags().BoolVar(&updatePrivateEndpointRuleReq.PrivateEndpointRule.Enabled, "enabled", updatePrivateEndpointRuleReq.PrivateEndpointRule.Enabled, `Only used by private endpoints towards an AWS S3 service.`)
+	cmd.Flags().BoolVar(&updatePrivateEndpointRuleReq.PrivateEndpointRule.Enabled, "enabled", updatePrivateEndpointRuleReq.PrivateEndpointRule.Enabled, `Update this field to activate/deactivate this private endpoint to allow egress access from serverless compute resources.`)
 	cmd.Flags().StringVar(&updatePrivateEndpointRuleReq.PrivateEndpointRule.ErrorMessage, "error-message", updatePrivateEndpointRuleReq.PrivateEndpointRule.ErrorMessage, ``)
 	// TODO: complex arg: gcp_endpoint
 	// TODO: array: resource_names
@@ -661,6 +681,8 @@ func newUpdatePrivateEndpointRule() *cobra.Command {
       exactly match the resource field names.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(3)

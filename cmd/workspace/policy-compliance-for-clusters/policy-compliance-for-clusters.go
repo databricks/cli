@@ -35,6 +35,10 @@ func New() *cobra.Command {
 		RunE:    root.ReportUnknownSubcommand,
 	}
 
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
+
 	// Add methods
 	cmd.AddCommand(newEnforceCompliance())
 	cmd.AddCommand(newGetCompliance())
@@ -81,7 +85,7 @@ func newEnforceCompliance() *cobra.Command {
   TERMINATED. The next time the cluster is started, the new attributes will
   take effect.
 
-  Clusters created by the Databricks Jobs, DLT, or Models services cannot be
+  Clusters created by the Databricks Jobs, SDP, or Models services cannot be
   enforced by this API. Instead, use the "Enforce job policy compliance" API to
   enforce policy compliance on jobs.
 
@@ -89,6 +93,8 @@ func newEnforceCompliance() *cobra.Command {
     CLUSTER_ID: The ID of the cluster you want to enforce policy compliance on.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
@@ -168,6 +174,8 @@ func newGetCompliance() *cobra.Command {
     CLUSTER_ID: The ID of the cluster to get the compliance status`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -240,6 +248,8 @@ func newListCompliance() *cobra.Command {
     POLICY_ID: Canonical unique identifier for the cluster policy.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)

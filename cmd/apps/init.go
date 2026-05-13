@@ -548,7 +548,7 @@ func cloneRepo(ctx context.Context, repoURL, branch string) (string, error) {
 // Used by commands that don't benefit from background cloning (e.g., manifest).
 func resolveTemplate(ctx context.Context, templatePath, branch, subdir string) (string, func(), error) {
 	ch := resolveTemplateAsync(ctx, templatePath, branch, subdir)
-	return awaitTemplate(ctx, ch)
+	return awaitTemplate(ctx, ch, "")
 }
 
 // templateResult holds the outcome of a background template resolution.
@@ -599,23 +599,43 @@ func resolveTemplateAsync(ctx context.Context, templatePath, branch, subdir stri
 // awaitTemplate waits for the background clone to finish.
 // If the result is already available it returns immediately with a
 // checkmark; otherwise it shows a spinner while waiting.
-func awaitTemplate(ctx context.Context, ch <-chan templateResult) (string, func(), error) {
+// refLabel, if non-empty (e.g. "version 0.24.0" or "branch feature-x"),
+// is appended to spinner and done messages.
+func awaitTemplate(ctx context.Context, ch <-chan templateResult, refLabel string) (string, func(), error) {
+	suffix := ""
+	if refLabel != "" {
+		suffix = " (" + refLabel + ")"
+	}
 	select {
 	case res := <-ch:
 		// Clone finished while the user was typing — print completion.
 		if res.err == nil && res.cleanup != nil {
-			prompt.PrintDone(ctx, "Template cloned")
+			prompt.PrintDone(ctx, "Template cloned"+suffix)
 		}
 		return res.path, res.cleanup, res.err
 	default:
 		// Still cloning — show a spinner for the remaining wait.
 		var res templateResult
-		err := prompt.RunWithSpinnerCtx(ctx, "Cloning template...", func() error {
+		err := prompt.RunWithSpinnerCtx(ctx, "Cloning template"+suffix+"...", func() error {
 			res = <-ch
 			return res.err
 		})
 		return res.path, res.cleanup, err
 	}
+}
+
+// commitInPlace derives the app name from the cwd basename and verifies that
+// the cwd is suitable for in-place scaffolding (empty modulo .git).
+// Returns the derived app name on success.
+func commitInPlace() (string, error) {
+	appName, err := prompt.DeriveInPlaceAppName(".")
+	if err != nil {
+		return "", err
+	}
+	if err := prompt.CheckInPlaceDirectory("."); err != nil {
+		return "", err
+	}
+	return appName, nil
 }
 
 // findProjectSrcDir locates the actual source directory inside a template.
@@ -794,25 +814,36 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		templateSrc = env.Get(ctx, templatePathEnvVar)
 	}
 
-	// Resolve the git reference (branch/tag) to use for default appkit template
+	// Resolve the git reference (branch/tag) to use for default appkit template.
+	// refLabel is a human-readable description of the ref we're cloning
+	// (e.g. "version 0.24.0", "branch feature-x"). It's surfaced in the
+	// interactive header and the clone spinner so the user can cancel before
+	// naming the project. Empty when there's nothing meaningful to show
+	// (e.g. a custom --template URL with no explicit branch).
 	gitRef := opts.branch
+	var refLabel string
 	usingDefaultTemplate := templateSrc == ""
 	if usingDefaultTemplate {
 		// Using default appkit template - resolve version
 		switch {
 		case opts.branch != "":
 			// --branch takes precedence (already set in gitRef)
+			refLabel = "branch " + opts.branch
 		case opts.version != "":
 			gitRef = normalizeVersion(opts.version)
+			refLabel = "version " + opts.version
 		default:
-			appkitVersion, err := clicompat.ResolveAppKitVersion(ctx)
+			resolved, err := clicompat.ResolveAppKitVersion(ctx)
 			if err != nil {
 				return fmt.Errorf("could not resolve AppKit template version: %w; use --version to specify a version manually", err)
 			}
-			gitRef = normalizeVersion(appkitVersion)
-			cmdio.LogString(ctx, "Using AppKit template version "+appkitVersion)
+			gitRef = normalizeVersion(resolved)
+			refLabel = "version " + resolved
 		}
 		templateSrc = appkitRepoURL
+	} else if opts.branch != "" {
+		// Custom template with an explicit branch — show it for traceability.
+		refLabel = "branch " + opts.branch
 	}
 
 	// Start cloning in the background so it runs while the user types the name.
@@ -834,35 +865,91 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	}()
 
 	// Step 1: Get project name (clone runs in parallel for remote templates)
-	destDir := opts.name
-	if opts.outputDir != "" {
-		destDir = filepath.Join(opts.outputDir, opts.name)
+	if opts.name == prompt.InPlaceName && opts.outputDir != "" {
+		return prompt.ErrNameDotWithOutputDir
 	}
 
-	if opts.name == "" {
-		if !isInteractive {
-			return errors.New("--name is required in non-interactive mode")
-		}
-		name, err := prompt.PromptForProjectName(ctx, opts.outputDir)
+	var (
+		destDir string
+		inPlace bool
+	)
+	switch {
+	case opts.name == prompt.InPlaceName:
+		appName, err := commitInPlace()
 		if err != nil {
 			return err
 		}
-		opts.name = name
+		opts.name = appName
+		destDir = "."
+		inPlace = true
+	case opts.name != "":
+		if err := prompt.ValidateProjectName(opts.name); err != nil {
+			return err
+		}
 		destDir = opts.name
 		if opts.outputDir != "" {
 			destDir = filepath.Join(opts.outputDir, opts.name)
 		}
-	} else {
-		if err := prompt.ValidateProjectName(opts.name); err != nil {
-			return err
-		}
 		if _, err := os.Stat(destDir); err == nil {
 			return fmt.Errorf("directory %s already exists", destDir)
+		}
+	default:
+		if !isInteractive {
+			return errors.New("--name is required in non-interactive mode")
+		}
+		// Print the AppKit header once so it covers both the in-place
+		// scaffold-location prompt below and the project-name prompt that
+		// may follow, and so the resolved template ref is visible before
+		// the user commits to either path.
+		prompt.PrintHeader(ctx, refLabel)
+		// Offer in-place scaffolding when the current directory is empty
+		// (modulo .git) and its basename is a valid app name. Skipped when
+		// --output-dir was set, since in-place targets cwd and would silently
+		// drop the flag — same reasoning as the --name . / --output-dir mutex
+		// above.
+		if opts.outputDir == "" {
+			if basename, ok := prompt.ShouldOfferInPlace("."); ok {
+				useCurrent, err := prompt.PromptScaffoldLocation(ctx, basename)
+				if err != nil {
+					return err
+				}
+				if useCurrent {
+					// Re-check immediately before committing — the directory may
+					// have changed between offer and answer.
+					if err := prompt.CheckInPlaceDirectory("."); err != nil {
+						return err
+					}
+					opts.name = basename
+					destDir = "."
+					inPlace = true
+				}
+			}
+		}
+		if !inPlace {
+			name, err := prompt.PromptForProjectName(ctx, opts.outputDir)
+			if err != nil {
+				return err
+			}
+			if name == prompt.InPlaceName {
+				appName, err := commitInPlace()
+				if err != nil {
+					return err
+				}
+				opts.name = appName
+				destDir = "."
+				inPlace = true
+			} else {
+				opts.name = name
+				destDir = name
+				if opts.outputDir != "" {
+					destDir = filepath.Join(opts.outputDir, name)
+				}
+			}
 		}
 	}
 
 	// Step 2: Wait for template (may already be done if the user took time typing the name)
-	resolvedPath, cleanup, err := awaitTemplate(ctx, templateCh)
+	resolvedPath, cleanup, err := awaitTemplate(ctx, templateCh, refLabel)
 	// Only fall back to the embedded version when the version was auto-resolved
 	// from the manifest, not when the user explicitly passed --version or --branch.
 	versionAutoResolved := opts.version == "" && opts.branch == ""
@@ -872,7 +959,8 @@ func runCreate(ctx context.Context, opts createOptions) error {
 			log.Warnf(ctx, "Template version not found, falling back to embedded version %s", fallbackVersion)
 			fallbackRef := normalizeVersion(fallbackVersion)
 			templateCh = resolveTemplateAsync(ctx, templateSrc, fallbackRef, appkitTemplateDir)
-			resolvedPath, cleanup, err = awaitTemplate(ctx, templateCh)
+			refLabel = "version " + fallbackVersion
+			resolvedPath, cleanup, err = awaitTemplate(ctx, templateCh, refLabel)
 		} else if fbErr != nil {
 			log.Warnf(ctx, "Could not resolve embedded AppKit version: %v", fbErr)
 		}
@@ -1026,9 +1114,17 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	var projectCreated bool
 	var runErr error
 	defer func() {
-		if runErr != nil && (projectCreated || npmInstallCh != nil) {
-			os.RemoveAll(destDir)
+		if runErr == nil || (!projectCreated && npmInstallCh == nil) {
+			return
 		}
+		if inPlace {
+			// destDir is "." here; a wholesale RemoveAll would wipe the
+			// user's current directory (including any pre-existing .git).
+			// Leave the partial scaffold and tell the user to clean up.
+			log.Warnf(ctx, "scaffold failed in current directory; review and clean up generated files manually (e.g. with git status / git clean -fd)")
+			return
+		}
+		os.RemoveAll(destDir)
 	}()
 
 	// Set description default
@@ -1151,9 +1247,9 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	// Show next steps only if user didn't choose to deploy or run
 	showNextSteps := !shouldDeploy && runMode == prompt.RunModeNone
 	if showNextSteps {
-		prompt.PrintSuccess(ctx, opts.name, absOutputDir, fileCount, nextStepsCmd)
+		prompt.PrintSuccess(ctx, opts.name, absOutputDir, fileCount, nextStepsCmd, inPlace)
 	} else {
-		prompt.PrintSuccess(ctx, opts.name, absOutputDir, fileCount, "")
+		prompt.PrintSuccess(ctx, opts.name, absOutputDir, fileCount, "", inPlace)
 	}
 
 	// Print any onSetupMessage declared by selected plugins in the template manifest.
@@ -1474,11 +1570,18 @@ func copyTemplate(ctx context.Context, src, dest string, vars templateVars) (int
 // removeEmptyDirs removes empty directories under root, deepest-first.
 // It is used to clean up directories that were created eagerly but ended up
 // with no files after conditional template rendering skipped their contents.
+//
+// .git is skipped so in-place scaffolding (root == ".") never walks into a
+// pre-existing repo and deletes its empty subdirectories (refs/heads,
+// refs/tags, objects/info, objects/pack are all empty after `git init`).
 func removeEmptyDirs(root string) error {
 	var dirs []string
 	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
+		}
+		if d.IsDir() && d.Name() == ".git" && path != root {
+			return filepath.SkipDir
 		}
 		if d.IsDir() && path != root {
 			dirs = append(dirs, path)

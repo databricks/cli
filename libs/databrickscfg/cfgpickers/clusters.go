@@ -65,7 +65,7 @@ type compatibleCluster struct {
 	compute.ClusterDetails
 	versionName string
 	// renderedState caches the colorized ClusterDetails.State for display in
-	// promptui templates, which can't access ctx-bound color helpers.
+	// SelectOptions templates, which can't access ctx-bound color helpers.
 	renderedState string
 }
 
