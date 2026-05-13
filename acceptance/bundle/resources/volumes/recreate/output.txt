@@ -28,7 +28,7 @@ Deployment complete!
 {
   "privilege_assignments": [
     {
-      "principal":"account users",
+      "principal": "account users",
       "privileges": [
         "WRITE_VOLUME"
       ]
