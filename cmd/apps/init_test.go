@@ -13,6 +13,7 @@ import (
 
 	"github.com/databricks/cli/libs/apps/manifest"
 	"github.com/databricks/cli/libs/apps/prompt"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
@@ -1071,4 +1072,66 @@ func TestStartBackgroundNpmInstall_TemplateSubstitution(t *testing.T) {
 	require.NoError(t, err)
 	assert.Contains(t, string(got), `"cool-project"`)
 	assert.NotContains(t, string(got), "{{.projectName}}")
+}
+
+// makeChildDir creates and returns an empty subdirectory of t.TempDir() with
+// the requested name. Used to control filepath.Base(cwd) for in-place tests.
+func makeChildDir(t *testing.T, name string) string {
+	t.Helper()
+	dir := filepath.Join(t.TempDir(), name)
+	require.NoError(t, os.MkdirAll(dir, 0o755))
+	return dir
+}
+
+func TestCommitInPlace_Success(t *testing.T) {
+	dir := makeChildDir(t, "my-app")
+	t.Chdir(dir)
+
+	name, err := commitInPlace()
+	require.NoError(t, err)
+	assert.Equal(t, "my-app", name)
+}
+
+func TestCommitInPlace_AllowsGitArtifacts(t *testing.T) {
+	dir := makeChildDir(t, "my-app")
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".git"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, ".gitignore"), []byte("node_modules\n"), 0o644))
+	t.Chdir(dir)
+
+	name, err := commitInPlace()
+	require.NoError(t, err)
+	assert.Equal(t, "my-app", name)
+}
+
+func TestCommitInPlace_RejectsStrayFiles(t *testing.T) {
+	dir := makeChildDir(t, "my-app")
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "README.md"), []byte("hi"), 0o644))
+	t.Chdir(dir)
+
+	_, err := commitInPlace()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "not empty")
+}
+
+func TestCommitInPlace_RejectsInvalidBasename(t *testing.T) {
+	dir := makeChildDir(t, "My_App")
+	t.Chdir(dir)
+
+	_, err := commitInPlace()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "My_App")
+}
+
+func TestRunCreate_NameDotAndOutputDirAreMutuallyExclusive(t *testing.T) {
+	dir := makeChildDir(t, "my-app")
+	t.Chdir(dir)
+
+	ctx := cmdio.MockDiscard(t.Context())
+	err := runCreate(ctx, createOptions{
+		name:         prompt.InPlaceName,
+		nameProvided: true,
+		outputDir:    "elsewhere",
+	})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "mutually exclusive")
 }

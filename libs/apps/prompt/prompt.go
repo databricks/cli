@@ -124,7 +124,19 @@ type CreateProjectConfig struct {
 const (
 	MaxAppNameLength = 30
 	DevTargetPrefix  = "dev-"
+
+	// InPlaceName is the sentinel value for --name that scaffolds the app
+	// into the current working directory instead of a new subdirectory.
+	InPlaceName = "."
 )
+
+// inPlaceAllowedEntries lists entries permitted in the destination directory
+// when scaffolding in place. Anything else triggers an error so that the
+// template never overwrites existing user files.
+var inPlaceAllowedEntries = map[string]bool{
+	".git":       true,
+	".gitignore": true,
+}
 
 // projectNamePattern is the compiled regex for validating project names.
 // Pre-compiled for efficiency since validation is called on every keystroke.
@@ -133,8 +145,12 @@ var projectNamePattern = regexp.MustCompile(`^[a-z][a-z0-9-]*$`)
 // ValidateProjectName validates the project name for length and pattern constraints.
 // It checks that the name plus the "dev-" prefix doesn't exceed 30 characters,
 // and that the name follows the pattern: starts with a letter, contains only
-// lowercase letters, numbers, or hyphens.
+// lowercase letters, numbers, or hyphens. The literal "." is accepted as the
+// in-place sentinel and validated separately by DeriveInPlaceAppName.
 func ValidateProjectName(s string) error {
+	if s == InPlaceName {
+		return nil
+	}
 	if s == "" {
 		return errors.New("project name is required")
 	}
@@ -152,6 +168,58 @@ func ValidateProjectName(s string) error {
 	}
 
 	return nil
+}
+
+// DeriveInPlaceAppName returns the app name to use when scaffolding in place.
+// The name is taken from the basename of the absolute path of cwd and must
+// pass ValidateProjectName so that it is a legal Databricks app name.
+func DeriveInPlaceAppName(cwd string) (string, error) {
+	absCwd, err := filepath.Abs(cwd)
+	if err != nil {
+		return "", fmt.Errorf("resolve current directory: %w", err)
+	}
+	base := filepath.Base(absCwd)
+	if err := ValidateProjectName(base); err != nil {
+		maxAllowed := MaxAppNameLength - len(DevTargetPrefix)
+		return "", fmt.Errorf("current directory name %q is not a valid Databricks app name (must match [a-z][a-z0-9-]* and be at most %d chars): %w; rename the directory or run from one whose name is valid", base, maxAllowed, err)
+	}
+	return base, nil
+}
+
+// CheckInPlaceDirectory verifies that dir contains nothing other than the
+// allow-listed entries (.git/, .gitignore). Returns a concise error
+// otherwise; we deliberately do not list the offending entries because the
+// user can `ls` themselves and a long list buries the actionable part.
+func CheckInPlaceDirectory(dir string) error {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return fmt.Errorf("read directory %s: %w", dir, err)
+	}
+	for _, e := range entries {
+		if inPlaceAllowedEntries[e.Name()] {
+			continue
+		}
+		shown := dir
+		if abs, absErr := filepath.Abs(dir); absErr == nil {
+			shown = abs
+		}
+		return fmt.Errorf("%s is not empty; apps init --name . requires an empty directory (.git and .gitignore are allowed)", shown)
+	}
+	return nil
+}
+
+// ShouldOfferInPlace returns the cwd basename and true when both the
+// directory contents and basename are suitable for in-place scaffolding.
+// Used to decide whether the interactive flow surfaces the in-place option.
+func ShouldOfferInPlace(cwd string) (string, bool) {
+	if err := CheckInPlaceDirectory(cwd); err != nil {
+		return "", false
+	}
+	name, err := DeriveInPlaceAppName(cwd)
+	if err != nil {
+		return "", false
+	}
+	return name, true
 }
 
 // PrintHeader prints the AppKit header banner.
@@ -186,6 +254,12 @@ func PromptForProjectName(ctx context.Context, outputDir string) (string, error)
 			if err := ValidateProjectName(s); err != nil {
 				return err
 			}
+			if s == InPlaceName {
+				// In-place: skip the directory-exists check; the caller will
+				// derive the app name from the cwd and verify the directory
+				// is suitable.
+				return nil
+			}
 			destDir := s
 			if outputDir != "" {
 				destDir = filepath.Join(outputDir, s)
@@ -203,6 +277,40 @@ func PromptForProjectName(ctx context.Context, outputDir string) (string, error)
 
 	printAnswered(ctx, "Project name", name)
 	return name, nil
+}
+
+// PromptScaffoldLocation asks where the new app should be scaffolded when the
+// current directory is suitable for in-place use. Defaults to a new
+// subdirectory so users who hit Enter through the prompts get today's
+// behaviour. Returns true when the user opts in to in-place scaffolding.
+func PromptScaffoldLocation(ctx context.Context, basename string) (bool, error) {
+	theme := AppkitTheme()
+
+	const (
+		locSubdir  = "subdir"
+		locCurrent = "current"
+	)
+
+	choice := locSubdir
+	err := huh.NewSelect[string]().
+		Title("Where should we create the app?").
+		Options(
+			huh.NewOption("Create a new subdirectory", locSubdir),
+			huh.NewOption(fmt.Sprintf("Use the current directory (%q)", basename), locCurrent),
+		).
+		Value(&choice).
+		WithTheme(theme).
+		Run()
+	if err != nil {
+		return false, err
+	}
+
+	if choice == locCurrent {
+		printAnswered(ctx, "Location", "current directory")
+		return true, nil
+	}
+	printAnswered(ctx, "Location", "new subdirectory")
+	return false, nil
 }
 
 // PromptForDeployAndRun prompts for post-creation deploy and run options.
@@ -1048,7 +1156,9 @@ func PromptForAppSelection(ctx context.Context, title string) (string, error) {
 
 // PrintSuccess prints a success message after project creation.
 // If nextStepsCmd is non-empty, also prints the "Next steps" section with the given command.
-func PrintSuccess(ctx context.Context, projectName, outputDir string, fileCount int, nextStepsCmd string) {
+// When inPlace is true, the "cd <projectName>" line is omitted because the
+// user is already in the destination directory.
+func PrintSuccess(ctx context.Context, projectName, outputDir string, fileCount int, nextStepsCmd string, inPlace bool) {
 	successStyle := lipgloss.NewStyle().
 		Foreground(colorYellow).
 		Bold(true)
@@ -1069,7 +1179,9 @@ func PrintSuccess(ctx context.Context, projectName, outputDir string, fileCount 
 		cmdio.LogString(ctx, "")
 		cmdio.LogString(ctx, dimStyle.Render("  Next steps:"))
 		cmdio.LogString(ctx, "")
-		cmdio.LogString(ctx, codeStyle.Render("    cd "+projectName))
+		if !inPlace {
+			cmdio.LogString(ctx, codeStyle.Render("    cd "+projectName))
+		}
 		cmdio.LogString(ctx, codeStyle.Render("    "+nextStepsCmd))
 	}
 	cmdio.LogString(ctx, "")

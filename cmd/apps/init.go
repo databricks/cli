@@ -618,6 +618,20 @@ func awaitTemplate(ctx context.Context, ch <-chan templateResult) (string, func(
 	}
 }
 
+// commitInPlace derives the app name from the cwd basename and verifies that
+// the cwd is suitable for in-place scaffolding (empty modulo .git/.gitignore).
+// Returns the derived app name on success.
+func commitInPlace() (string, error) {
+	appName, err := prompt.DeriveInPlaceAppName(".")
+	if err != nil {
+		return "", err
+	}
+	if err := prompt.CheckInPlaceDirectory("."); err != nil {
+		return "", err
+	}
+	return appName, nil
+}
+
 // findProjectSrcDir locates the actual source directory inside a template.
 // Templates may nest their content inside a {{.project_name}} directory.
 func findProjectSrcDir(templateDir string) string {
@@ -834,30 +848,76 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	}()
 
 	// Step 1: Get project name (clone runs in parallel for remote templates)
-	destDir := opts.name
-	if opts.outputDir != "" {
-		destDir = filepath.Join(opts.outputDir, opts.name)
+	if opts.name == prompt.InPlaceName && opts.outputDir != "" {
+		return errors.New("--name . and --output-dir are mutually exclusive: --name . already targets the current directory")
 	}
 
-	if opts.name == "" {
-		if !isInteractive {
-			return errors.New("--name is required in non-interactive mode")
-		}
-		name, err := prompt.PromptForProjectName(ctx, opts.outputDir)
+	var (
+		destDir string
+		inPlace bool
+	)
+	switch {
+	case opts.name == prompt.InPlaceName:
+		appName, err := commitInPlace()
 		if err != nil {
 			return err
 		}
-		opts.name = name
+		opts.name = appName
+		destDir = "."
+		inPlace = true
+	case opts.name != "":
+		if err := prompt.ValidateProjectName(opts.name); err != nil {
+			return err
+		}
 		destDir = opts.name
 		if opts.outputDir != "" {
 			destDir = filepath.Join(opts.outputDir, opts.name)
 		}
-	} else {
-		if err := prompt.ValidateProjectName(opts.name); err != nil {
-			return err
-		}
 		if _, err := os.Stat(destDir); err == nil {
 			return fmt.Errorf("directory %s already exists", destDir)
+		}
+	default:
+		if !isInteractive {
+			return errors.New("--name is required in non-interactive mode")
+		}
+		// Offer in-place scaffolding when the current directory is empty
+		// (modulo .git / .gitignore) and its basename is a valid app name.
+		if basename, ok := prompt.ShouldOfferInPlace("."); ok {
+			useCurrent, err := prompt.PromptScaffoldLocation(ctx, basename)
+			if err != nil {
+				return err
+			}
+			if useCurrent {
+				// Re-check immediately before committing — the directory may
+				// have changed between offer and answer.
+				if err := prompt.CheckInPlaceDirectory("."); err != nil {
+					return err
+				}
+				opts.name = basename
+				destDir = "."
+				inPlace = true
+			}
+		}
+		if !inPlace {
+			name, err := prompt.PromptForProjectName(ctx, opts.outputDir)
+			if err != nil {
+				return err
+			}
+			if name == prompt.InPlaceName {
+				appName, err := commitInPlace()
+				if err != nil {
+					return err
+				}
+				opts.name = appName
+				destDir = "."
+				inPlace = true
+			} else {
+				opts.name = name
+				destDir = name
+				if opts.outputDir != "" {
+					destDir = filepath.Join(opts.outputDir, name)
+				}
+			}
 		}
 	}
 
@@ -1026,9 +1086,17 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	var projectCreated bool
 	var runErr error
 	defer func() {
-		if runErr != nil && (projectCreated || npmInstallCh != nil) {
-			os.RemoveAll(destDir)
+		if runErr == nil || (!projectCreated && npmInstallCh == nil) {
+			return
 		}
+		if inPlace {
+			// destDir is "." here; a wholesale RemoveAll would wipe the
+			// user's current directory (including any pre-existing .git).
+			// Leave the partial scaffold and tell the user to clean up.
+			log.Warnf(ctx, "scaffold failed in current directory; review and clean up generated files manually (e.g. with git status / git clean -fd)")
+			return
+		}
+		os.RemoveAll(destDir)
 	}()
 
 	// Set description default
@@ -1151,9 +1219,9 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	// Show next steps only if user didn't choose to deploy or run
 	showNextSteps := !shouldDeploy && runMode == prompt.RunModeNone
 	if showNextSteps {
-		prompt.PrintSuccess(ctx, opts.name, absOutputDir, fileCount, nextStepsCmd)
+		prompt.PrintSuccess(ctx, opts.name, absOutputDir, fileCount, nextStepsCmd, inPlace)
 	} else {
-		prompt.PrintSuccess(ctx, opts.name, absOutputDir, fileCount, "")
+		prompt.PrintSuccess(ctx, opts.name, absOutputDir, fileCount, "", inPlace)
 	}
 
 	// Print any onSetupMessage declared by selected plugins in the template manifest.
