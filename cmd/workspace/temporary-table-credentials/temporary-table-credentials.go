@@ -18,8 +18,10 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "temporary-table-credentials",
-		Short: `Temporary Table Credentials refer to short-lived, downscoped credentials used to access cloud storage locations where table data is stored in Databricks.`,
-		Long: `Temporary Table Credentials refer to short-lived, downscoped credentials used
+		Short: `*Public Preview* Temporary Table Credentials refer to short-lived, downscoped credentials used to access cloud storage locations where table data is stored in Databricks.`,
+		Long: `This command is in Public Preview and may change without notice.
+
+Temporary Table Credentials refer to short-lived, downscoped credentials used
   to access cloud storage locations where table data is stored in Databricks.
   These credentials are employed to provide secure and time-limited access to
   data in cloud environments such as AWS, Azure, and Google Cloud. Each cloud
@@ -33,12 +35,16 @@ func New() *cobra.Command {
   temporary table credentials API, a metastore admin needs to enable the
   external_access_enabled flag (off by default) at the metastore level, and user
   needs to be granted the EXTERNAL USE SCHEMA permission at the schema level by
-  catalog admin. Note that EXTERNAL USE SCHEMA is a schema level permission that
-  can only be granted by catalog admin explicitly and is not included in schema
+  catalog owner. Note that EXTERNAL USE SCHEMA is a schema level permission that
+  can only be granted by catalog owner explicitly and is not included in schema
   ownership or ALL PRIVILEGES on the schema for security reasons.`,
 		GroupID: "catalog",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	// Add methods
 	cmd.AddCommand(newGenerateTemporaryTableCredentials())
@@ -72,8 +78,10 @@ func newGenerateTemporaryTableCredentials() *cobra.Command {
 	cmd.Flags().StringVar(&generateTemporaryTableCredentialsReq.TableId, "table-id", generateTemporaryTableCredentialsReq.TableId, `UUID of the table to read or write.`)
 
 	cmd.Use = "generate-temporary-table-credentials"
-	cmd.Short = `Generate a temporary table credential.`
-	cmd.Long = `Generate a temporary table credential.
+	cmd.Short = `*Public Preview* Generate a temporary table credential.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Generate a temporary table credential.
 
   Get a short-lived credential for directly accessing the table data on cloud
   storage. The metastore must have **external_access_enabled** flag set to true
@@ -81,6 +89,8 @@ func newGenerateTemporaryTableCredentials() *cobra.Command {
   the parent schema and this privilege can only be granted by catalog owners.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)

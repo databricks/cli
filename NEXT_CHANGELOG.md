@@ -2,6 +2,9 @@
 
 ## Release v0.299.2
 
+### Notable Changes
+* Breaking change: `vector_search_endpoints` renamed `min_qps` to `target_qps` in DABs configuration and the `vector-search-endpoints` commands, following the SDK rename in v0.131.0. Update any `databricks.yml` using `min_qps:` to `target_qps:` and any CLI invocations using `--min-qps` to `--target-qps`.
+
 ### CLI
 
 * `auth login` no longer falls back to plaintext when the OS keyring is reachable but locked. The unlock prompt shown by the probe now runs in parallel with the OAuth flow, and the token is stored in the keyring once the user has typed their password.
@@ -20,3 +23,4 @@
 ### Dependency updates
 
 * Bump Go toolchain to 1.25.10 ([#5213](https://github.com/databricks/cli/pull/5213)).
+* Bump `github.com/databricks/databricks-sdk-go` from v0.128.0 to v0.132.0.
