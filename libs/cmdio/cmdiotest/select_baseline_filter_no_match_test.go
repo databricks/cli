@@ -13,6 +13,7 @@ import (
 // types a filter query that matches none of the items, then backspaces it
 // out and hits Enter. Captured as a baseline for the bubbletea replacement.
 func TestSelectBaseline_FilterNoMatch(t *testing.T) {
+	t.Parallel()
 	tm := termtest.NewSelectOrdered(t, []cmdio.Tuple{
 		{Name: "alpha", Id: "a"},
 		{Name: "beta", Id: "b"},

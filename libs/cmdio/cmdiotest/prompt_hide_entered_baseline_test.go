@@ -13,6 +13,7 @@ import (
 // of [cmdio.RunPrompt]: with HideEntered=false (the default), the entered
 // value is shown alongside the label after the prompt closes.
 func TestPromptBaseline_HideEnteredFalse(t *testing.T) {
+	t.Parallel()
 	tm := termtest.NewPrompt(t, cmdio.PromptOptions{
 		Label:       "Workspace name",
 		HideEntered: false,
@@ -32,6 +33,7 @@ func TestPromptBaseline_HideEnteredFalse(t *testing.T) {
 // prompt frame after the user submits, leaving no trace of the entered value
 // on screen. This is the path used by [cmdio.Secret].
 func TestPromptBaseline_HideEnteredTrue(t *testing.T) {
+	t.Parallel()
 	tm := termtest.NewPrompt(t, cmdio.PromptOptions{
 		Label:       "Workspace name",
 		HideEntered: true,

@@ -15,6 +15,7 @@ import (
 // the second press. The error sentinel and an empty returned id must match
 // the no-filter case.
 func TestSelectBaseline_CtrlCWithFilter(t *testing.T) {
+	t.Parallel()
 	tm := termtest.NewSelectOrdered(t, []cmdio.Tuple{
 		{Name: "alpha", Id: "a"},
 		{Name: "beta", Id: "b"},
@@ -30,6 +31,6 @@ func TestSelectBaseline_CtrlCWithFilter(t *testing.T) {
 
 	id, err := tm.Result()
 	require.Error(t, err)
+	assert.EqualError(t, err, "^C")
 	assert.Empty(t, id)
-	t.Logf("error: %v", err)
 }

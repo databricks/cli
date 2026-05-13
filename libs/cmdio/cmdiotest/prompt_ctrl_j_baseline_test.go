@@ -17,6 +17,7 @@ import (
 // current buffer either way. A future hand-rolled prompt that only
 // reacts to CR would silently swallow Ctrl+J; this test pins the parity.
 func TestPromptBaseline_CtrlJ(t *testing.T) {
+	t.Parallel()
 	tm := termtest.NewPrompt(t, cmdio.PromptOptions{
 		Label: "Workspace name",
 	})

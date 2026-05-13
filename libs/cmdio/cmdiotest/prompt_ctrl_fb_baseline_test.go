@@ -19,6 +19,7 @@ import (
 // style bindings are de-facto aliases for the arrow keys; this test pins
 // that equivalence.
 func TestPromptBaseline_CtrlFCtrlB(t *testing.T) {
+	t.Parallel()
 	tm := termtest.NewPrompt(t, cmdio.PromptOptions{
 		Label: "Workspace name",
 	})

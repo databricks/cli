@@ -6,6 +6,7 @@ import (
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/cmdio/cmdiotest/termtest"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -17,6 +18,7 @@ import (
 // 20 items named item-01 .. item-20; the filter "item-1" matches item-01
 // plus item-10..item-19 = 11 items, more than the 5-row viewport.
 func TestSelectBaseline_FilterScroll(t *testing.T) {
+	t.Parallel()
 	items := make([]cmdio.Tuple, 0, 20)
 	for i := 1; i <= 20; i++ {
 		items = append(items, cmdio.Tuple{
@@ -47,5 +49,5 @@ func TestSelectBaseline_FilterScroll(t *testing.T) {
 
 	id, err := tm.Result()
 	require.NoError(t, err, "raw output: %q", tm.Raw())
-	t.Logf("selected: %s", id)
+	assert.Equal(t, "id19", id, "snapshot:\n%s", tm.Snapshot())
 }

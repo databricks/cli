@@ -6,6 +6,7 @@ import (
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/cmdio/cmdiotest/termtest"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -19,6 +20,7 @@ import (
 // so a single Ctrl+F should advance the highlighted item by roughly a
 // page rather than a single row, and Ctrl+B should walk it back.
 func TestSelectBaseline_CtrlFCtrlB(t *testing.T) {
+	t.Parallel()
 	items := make([]cmdio.Tuple, 0, 12)
 	for i := 1; i <= 12; i++ {
 		items = append(items, cmdio.Tuple{
@@ -43,6 +45,7 @@ func TestSelectBaseline_CtrlFCtrlB(t *testing.T) {
 
 	tm.Type(termtest.KeyEnter)
 
-	_, err := tm.Result()
+	id, err := tm.Result()
 	require.NoError(t, err, "raw output: %q", tm.Raw())
+	assert.Equal(t, "id03", id, "snapshot:\n%s", tm.Snapshot())
 }

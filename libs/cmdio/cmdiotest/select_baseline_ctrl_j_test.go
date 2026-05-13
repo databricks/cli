@@ -10,15 +10,13 @@ import (
 )
 
 // TestSelectBaseline_CtrlJ pins that Ctrl+J submits the Select prompt
-// cleanly. Ctrl+J sends LF (0x0a) and Enter sends CR (0x0d); chzyer/readline
-// maps both to CharEnter, so Ctrl+J ends the read loop the same way Enter
-// does. The test does not assert which item is returned: promptui's
-// listener has a bug where Ctrl+J resets the highlight to the first item
-// before returning (Enter from the same state correctly returns "b" —
-// pinned by TestSelectBaseline_DownEnter), and a future implementation
-// is free to fix that. We only require that submission succeeds and that
-// the returned id is one of the valid items.
+// cleanly. Ctrl+J sends LF (0x0a) and Enter sends CR (0x0d); the bubbletea
+// model treats both as submit, so Ctrl+J ends the prompt the same way Enter
+// does. After one KeyDown the highlight is on "b" and that's what gets
+// returned — pin the exact value so a future change can't silently return a
+// different index while still rendering the same screen.
 func TestSelectBaseline_CtrlJ(t *testing.T) {
+	t.Parallel()
 	tm := termtest.NewSelectOrdered(t, []cmdio.Tuple{
 		{Name: "alpha", Id: "a"},
 		{Name: "beta", Id: "b"},
@@ -38,5 +36,5 @@ func TestSelectBaseline_CtrlJ(t *testing.T) {
 	// promptui today returns "a" here (the first item) instead of the
 	// highlighted "b"; a future implementation may return "b". Accept any
 	// valid id so the test pins submission, not the parity miss.
-	assert.Contains(t, []string{"a", "b", "g"}, id, "snapshot:\n%s", tm.Snapshot())
+	assert.Equal(t, "b", id, "snapshot:\n%s", tm.Snapshot())
 }

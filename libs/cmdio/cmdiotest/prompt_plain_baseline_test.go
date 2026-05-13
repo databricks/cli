@@ -13,6 +13,7 @@ import (
 // Label (no Validate, no Mask). This is the most common shape used across
 // cmd/auth and cmd/configure.
 func TestPromptBaseline_Plain(t *testing.T) {
+	t.Parallel()
 	tm := termtest.NewPrompt(t, cmdio.PromptOptions{
 		Label: "Workspace name",
 	})

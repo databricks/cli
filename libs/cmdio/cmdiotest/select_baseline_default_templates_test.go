@@ -20,6 +20,7 @@ import (
 // changes to the defaults — or accidental loss of a custom template at
 // a call site — produce a visible diff.
 func TestSelectBaseline_DefaultTemplates(t *testing.T) {
+	t.Parallel()
 	// Same data shape as cmd/selftest/tui/fixtures.go buildItems(5).
 	items := []cmdio.Tuple{
 		{Name: "unity-catalog", Id: "id-01"},

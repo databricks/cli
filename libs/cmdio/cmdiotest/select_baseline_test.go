@@ -14,6 +14,7 @@ import (
 // assert on the chosen item plus a snapshot of the prompt and visible
 // options.
 func TestSelectBaseline_DownEnter(t *testing.T) {
+	t.Parallel()
 	tm := termtest.NewSelectOrdered(t, []cmdio.Tuple{
 		{Name: "alpha", Id: "a"},
 		{Name: "beta", Id: "b"},

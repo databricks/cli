@@ -77,10 +77,10 @@ const (
 	pollInterval   = 5 * time.Millisecond
 
 	// Stability window for Golden(): wait until no new bytes have arrived
-	// from the program for this long before snapshotting. Long enough to
-	// absorb a keystroke → Update → View → render round trip, short enough
-	// that a passing test stays well under a tenth of a second.
-	stabilityWindow = 30 * time.Millisecond
+	// from the program for this long before snapshotting. NewTestIO caps
+	// bubbletea at 120 FPS (~8 ms/frame), so 15 ms covers one frame plus
+	// slack for scheduler jitter.
+	stabilityWindow = 15 * time.Millisecond
 	stabilityMax    = 1 * time.Second
 
 	updateEnv = "UPDATE_TERMTEST"

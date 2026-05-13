@@ -18,6 +18,7 @@ import (
 // This is a migration baseline: the bubbletea replacement should produce the
 // same visible output, captured in goldens via vt10x.
 func TestSelectBaseline_LongDescriptions(t *testing.T) {
+	t.Parallel()
 	items := []cmdio.Tuple{
 		{Name: "short", Id: "this-is-a-very-long-resource-identifier-that-exceeds-typical-width-1234567890"},
 		{Name: "medium-length-name", Id: "another-extremely-long-id-string-with-lots-of-content-aaaaaaaaaaaaaaaaaaaaaaaaaaa"},

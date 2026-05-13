@@ -25,6 +25,7 @@ import (
 // The same shape applies to Alt+b, Alt+d, Alt+Backspace and any other
 // modified key promptui doesn't handle. Pinning Alt+f covers the class.
 func TestPromptBaseline_AltKeyNoop(t *testing.T) {
+	t.Parallel()
 	tm := termtest.NewPrompt(t, cmdio.PromptOptions{
 		Label: "Workspace name",
 	})

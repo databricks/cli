@@ -7,6 +7,7 @@ import (
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/cmdio/cmdiotest/termtest"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -20,6 +21,7 @@ import (
 // StartInSearchMode based on len(items) > 5, so small lists open
 // outside search mode.
 func TestSelectBaseline_VimNavOutsideSearch(t *testing.T) {
+	t.Parallel()
 	type item struct {
 		Name string
 		Id   string
@@ -62,6 +64,7 @@ func TestSelectBaseline_VimNavOutsideSearch(t *testing.T) {
 
 	tm.Type(termtest.KeyEnter)
 
-	_, err := tm.Result()
+	idx, err := tm.Result()
 	require.NoError(t, err, "raw output: %q", tm.Raw())
+	assert.Equal(t, 0, idx, "snapshot:\n%s", tm.Snapshot())
 }

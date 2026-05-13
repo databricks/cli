@@ -1,13 +1,13 @@
 package cmdiotest_test
 
 import (
-	"errors"
 	"io"
 	"testing"
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/cmdio/cmdiotest/termtest"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestPromptBaseline_DeleteKeyExits pins a surprising behavior of
@@ -24,6 +24,7 @@ import (
 // This test pins the current behavior so that any change (e.g. a promptui or
 // readline upgrade that splits the two keys) is intentional.
 func TestPromptBaseline_DeleteKeyExits(t *testing.T) {
+	t.Parallel()
 	tm := termtest.NewPrompt(t, cmdio.PromptOptions{
 		Label: "Workspace name",
 	})
@@ -36,7 +37,7 @@ func TestPromptBaseline_DeleteKeyExits(t *testing.T) {
 	tm.Type(termtest.KeyDelete)
 
 	v, err := tm.Result()
+	require.Error(t, err, "raw output: %q", tm.Raw())
+	assert.ErrorIs(t, err, io.EOF)
 	assert.Empty(t, v, "Delete-as-EOF discards typed input")
-	assert.Truef(t, errors.Is(err, io.EOF) || err.Error() == "^D",
-		"Delete should exit with EOF; got err=%v (raw output: %q)", err, tm.Raw())
 }

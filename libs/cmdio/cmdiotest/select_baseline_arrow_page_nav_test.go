@@ -6,6 +6,7 @@ import (
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/cmdio/cmdiotest/termtest"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -15,6 +16,7 @@ import (
 // to KeyForward / KeyBackward, which the select widget treats as
 // page-down / page-up rather than item-by-item movement.
 func TestSelectBaseline_ArrowPageNav(t *testing.T) {
+	t.Parallel()
 	items := make([]cmdio.Tuple, 0, 12)
 	for i := 1; i <= 12; i++ {
 		items = append(items, cmdio.Tuple{
@@ -39,6 +41,7 @@ func TestSelectBaseline_ArrowPageNav(t *testing.T) {
 
 	tm.Type(termtest.KeyEnter)
 
-	_, err := tm.Result()
+	id, err := tm.Result()
 	require.NoError(t, err, "raw output: %q", tm.Raw())
+	assert.Equal(t, "id03", id, "snapshot:\n%s", tm.Snapshot())
 }

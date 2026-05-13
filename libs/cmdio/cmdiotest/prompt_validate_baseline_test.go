@@ -15,6 +15,7 @@ import (
 // callback is configured: validation re-runs on every keystroke, the
 // indicator glyph reflects the result, and Enter is blocked while invalid.
 func TestPromptBaseline_Validate(t *testing.T) {
+	t.Parallel()
 	tm := termtest.NewPrompt(t, cmdio.PromptOptions{
 		Label: "Workspace host",
 		Validate: func(s string) error {

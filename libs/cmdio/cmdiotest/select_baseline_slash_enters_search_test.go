@@ -18,6 +18,7 @@ import (
 // StartInSearchMode based on len(items) > 5, so for small lists the
 // only way to filter is to press "/".
 func TestSelectBaseline_SlashEntersSearch(t *testing.T) {
+	t.Parallel()
 	type item struct {
 		Name string
 		Id   string

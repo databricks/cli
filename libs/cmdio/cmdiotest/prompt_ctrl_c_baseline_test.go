@@ -13,6 +13,7 @@ import (
 // the equivalent Secret test: error is returned, value is empty, snapshot
 // captures any "^C" that the terminal echoed.
 func TestPromptBaseline_CtrlC(t *testing.T) {
+	t.Parallel()
 	tm := termtest.NewPrompt(t, cmdio.PromptOptions{
 		Label: "Workspace name",
 	})
@@ -26,6 +27,6 @@ func TestPromptBaseline_CtrlC(t *testing.T) {
 
 	v, err := tm.Result()
 	require.Error(t, err)
+	assert.EqualError(t, err, "^C")
 	assert.Empty(t, v)
-	t.Logf("error: %v", err)
 }

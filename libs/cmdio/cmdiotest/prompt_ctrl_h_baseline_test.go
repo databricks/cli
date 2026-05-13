@@ -18,6 +18,7 @@ import (
 // a de-facto alias for the Backspace key; this test pins that equivalence
 // so a future hand-rolled prompt implementation can't silently drop it.
 func TestPromptBaseline_CtrlH(t *testing.T) {
+	t.Parallel()
 	tm := termtest.NewPrompt(t, cmdio.PromptOptions{
 		Label: "Workspace name",
 	})

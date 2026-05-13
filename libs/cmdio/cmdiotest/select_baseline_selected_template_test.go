@@ -18,6 +18,7 @@ import (
 // libs/databrickscfg/cfgpickers/clusters.go. Without this test, breaking the
 // post-submit render or the Selected template behavior goes undetected.
 func TestSelectBaseline_SelectedTemplate(t *testing.T) {
+	t.Parallel()
 	type item struct {
 		Name string
 		Id   string

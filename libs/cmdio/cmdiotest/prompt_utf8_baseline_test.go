@@ -18,6 +18,7 @@ import (
 // even though ASCII tests still pass — exactly the kind of regression a
 // migration baseline is meant to catch.
 func TestPromptBaseline_UTF8(t *testing.T) {
+	t.Parallel()
 	tm := termtest.NewPrompt(t, cmdio.PromptOptions{
 		Label: "Name",
 	})

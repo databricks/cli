@@ -13,6 +13,7 @@ import (
 // when configured with Mask='*'. This is the shape used by `databricks
 // configure` for personal access token entry (cmd/configure/configure.go:46).
 func TestPromptBaseline_Mask(t *testing.T) {
+	t.Parallel()
 	tm := termtest.NewPrompt(t, cmdio.PromptOptions{
 		Label: "Personal access token",
 		Mask:  '*',

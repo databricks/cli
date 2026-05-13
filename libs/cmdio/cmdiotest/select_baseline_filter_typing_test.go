@@ -17,6 +17,7 @@ import (
 // This test exists so the upcoming bubbletea replacement can be checked
 // against a known-good baseline.
 func TestSelectBaseline_FilterTyping(t *testing.T) {
+	t.Parallel()
 	tm := termtest.NewSelectOrdered(t, []cmdio.Tuple{
 		{Name: "alpha", Id: "a"},
 		{Name: "beta", Id: "b"},

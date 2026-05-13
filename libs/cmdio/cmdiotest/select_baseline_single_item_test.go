@@ -14,6 +14,7 @@ import (
 // baseline for the bubbletea replacement: we want to know whether promptui
 // renders a prompt at all, what KeyDown does, and what id Enter returns.
 func TestSelectBaseline_SingleItem(t *testing.T) {
+	t.Parallel()
 	tm := termtest.NewSelectOrdered(t, []cmdio.Tuple{
 		{Name: "only", Id: "o"},
 	}, "Pick one")

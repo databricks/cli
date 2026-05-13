@@ -6,6 +6,7 @@ import (
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/cmdio/cmdiotest/termtest"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -17,6 +18,7 @@ import (
 // This baseline lets the upcoming bubbletea reimplementation be diffed against
 // the exact rendering promptui produces today.
 func TestSelectBaseline_Scroll(t *testing.T) {
+	t.Parallel()
 	items := make([]cmdio.Tuple, 0, 12)
 	for i := 1; i <= 12; i++ {
 		items = append(items, cmdio.Tuple{
@@ -42,6 +44,7 @@ func TestSelectBaseline_Scroll(t *testing.T) {
 
 	tm.Type(termtest.KeyEnter)
 
-	_, err := tm.Result()
+	id, err := tm.Result()
 	require.NoError(t, err, "raw output: %q", tm.Raw())
+	assert.Equal(t, "id12", id, "snapshot:\n%s", tm.Snapshot())
 }

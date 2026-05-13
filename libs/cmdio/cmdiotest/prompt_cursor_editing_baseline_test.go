@@ -5,6 +5,8 @@ import (
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/cmdio/cmdiotest/termtest"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestPromptBaseline_CursorEditing pins how RunPrompt responds to cursor
@@ -16,6 +18,7 @@ import (
 // and exits the prompt; that behavior is pinned separately by
 // TestPromptBaseline_DeleteKeyExits.
 func TestPromptBaseline_CursorEditing(t *testing.T) {
+	t.Parallel()
 	tm := termtest.NewPrompt(t, cmdio.PromptOptions{
 		Label: "Workspace name",
 	})
@@ -50,5 +53,8 @@ func TestPromptBaseline_CursorEditing(t *testing.T) {
 	tm.Type(termtest.KeyEnter)
 
 	v, err := tm.Result()
-	t.Logf("returned: %q (err=%v)", v, err)
+	require.NoError(t, err, "raw output: %q", tm.Raw())
+	// The goldens above show the visible buffer is "hello worldX!" when
+	// Enter fires; that's what the prompt returns.
+	assert.Equal(t, "hello worldX!", v, "snapshot:\n%s", tm.Snapshot())
 }

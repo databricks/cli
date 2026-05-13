@@ -2,10 +2,11 @@ package cmdiotest_test
 
 import (
 	"testing"
-	"time"
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/cmdio/cmdiotest/termtest"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestSelectBaseline_EscKey pins the current promptui-driven Select behavior
@@ -16,6 +17,7 @@ import (
 // This test exists so the upcoming bubbletea replacement can be checked
 // against a known-good baseline.
 func TestSelectBaseline_EscKey(t *testing.T) {
+	t.Parallel()
 	tm := termtest.NewSelectOrdered(t, []cmdio.Tuple{
 		{Name: "alpha", Id: "a"},
 		{Name: "beta", Id: "b"},
@@ -34,24 +36,12 @@ func TestSelectBaseline_EscKey(t *testing.T) {
 	tm.Type(termtest.KeyEsc)
 	tm.Golden("04-esc-clears-filter-or-not")
 
-	type result struct {
-		id  string
-		err error
-	}
-	resCh := make(chan result, 1)
-	go func() {
-		id, err := tm.Result()
-		resCh <- result{id: id, err: err}
-	}()
+	// Esc is inert in this Select model: it neither finalizes the prompt
+	// nor clears the filter. So the filter is still "a" here, which matches
+	// only "alpha"; Enter submits that match.
+	tm.Type(termtest.KeyEnter)
 
-	select {
-	case res := <-resCh:
-		t.Logf("prompt returned after Esc: id=%q err=%v", res.id, res.err)
-		t.Logf("snapshot:\n%s", tm.Snapshot())
-	case <-time.After(200 * time.Millisecond):
-		tm.Type(termtest.KeyEnter)
-		res := <-resCh
-		t.Logf("prompt finalized with Enter: id=%q err=%v", res.id, res.err)
-		t.Logf("snapshot:\n%s", tm.Snapshot())
-	}
+	id, err := tm.Result()
+	require.NoError(t, err, "raw output: %q", tm.Raw())
+	assert.Equal(t, "a", id, "snapshot:\n%s", tm.Snapshot())
 }

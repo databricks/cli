@@ -5,6 +5,7 @@ import (
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/cmdio/cmdiotest/termtest"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -14,6 +15,7 @@ import (
 // mode so the upcoming bubbletea replacement can be checked against a known
 // baseline.
 func TestSelectBaseline_FilterCursor(t *testing.T) {
+	t.Parallel()
 	tm := termtest.NewSelectOrdered(t, []cmdio.Tuple{
 		{Name: "alpha", Id: "a"},
 		{Name: "beta", Id: "b"},
@@ -39,5 +41,5 @@ func TestSelectBaseline_FilterCursor(t *testing.T) {
 
 	id, err := tm.Result()
 	require.NoError(t, err, "raw output: %q", tm.Raw())
-	t.Logf("selected: %s", id)
+	assert.Equal(t, "a", id, "snapshot:\n%s", tm.Snapshot())
 }

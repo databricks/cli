@@ -5,6 +5,7 @@ import (
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/cmdio/cmdiotest/termtest"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -12,6 +13,7 @@ import (
 // pressing Up on the first item and Down past the last item. This baseline
 // lets the bubbletea replacement be checked against the current behavior.
 func TestSelectBaseline_WrapAround(t *testing.T) {
+	t.Parallel()
 	tm := termtest.NewSelectOrdered(t, []cmdio.Tuple{
 		{Name: "alpha", Id: "a"},
 		{Name: "beta", Id: "b"},
@@ -37,5 +39,5 @@ func TestSelectBaseline_WrapAround(t *testing.T) {
 
 	id, err := tm.Result()
 	require.NoError(t, err, "raw output: %q", tm.Raw())
-	t.Logf("selected: %s", id)
+	assert.Equal(t, "g", id, "snapshot:\n%s", tm.Snapshot())
 }

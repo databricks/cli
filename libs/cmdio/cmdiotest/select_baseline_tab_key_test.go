@@ -5,6 +5,8 @@ import (
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/cmdio/cmdiotest/termtest"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestSelectBaseline_TabKey pins the current promptui-driven Select behavior
@@ -12,6 +14,7 @@ import (
 // in promptui's search-mode Select is unclear, so this test records the
 // observed behavior as a migration baseline for the bubbletea replacement.
 func TestSelectBaseline_TabKey(t *testing.T) {
+	t.Parallel()
 	tm := termtest.NewSelectOrdered(t, []cmdio.Tuple{
 		{Name: "alpha", Id: "a"},
 		{Name: "beta", Id: "b"},
@@ -27,13 +30,14 @@ func TestSelectBaseline_TabKey(t *testing.T) {
 	tm.Type(termtest.KeyTab)
 	tm.Golden("03-after-second-tab")
 
-	// Enter may not terminate the prompt: in search mode with no matching
-	// items, the model treats Enter as inert. Send Ctrl+C so Result returns
-	// cleanly. The diagnostic is what we're after — any error or selection
-	// is recorded.
+	// Enter does not terminate the prompt: in search mode with no matching
+	// items (the two Tab keystrokes typed two tab characters into the
+	// filter), the model treats Enter as inert. Ctrl+C cancels cleanly.
 	tm.Type(termtest.KeyEnter)
 	tm.Type(termtest.KeyCtrlC)
 
 	id, err := tm.Result()
-	t.Logf("returned id=%q err=%v", id, err)
+	require.Error(t, err)
+	assert.EqualError(t, err, "^C")
+	assert.Empty(t, id)
 }

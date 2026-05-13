@@ -11,6 +11,7 @@ import (
 // TestSecretBaseline_CtrlC pins Secret's behavior when the user cancels
 // with Ctrl+C after typing a few characters.
 func TestSecretBaseline_CtrlC(t *testing.T) {
+	t.Parallel()
 	tm := termtest.NewSecret(t, "Personal access token")
 	tm.WaitFor("Personal access token")
 	tm.Golden("01-empty")
@@ -22,7 +23,6 @@ func TestSecretBaseline_CtrlC(t *testing.T) {
 
 	v, err := tm.Result()
 	require.Error(t, err)
-	t.Logf("error: %v", err)
-	t.Logf("value: %q", v)
+	assert.EqualError(t, err, "^C")
 	assert.Empty(t, v, "snapshot:\n%s", tm.Snapshot())
 }

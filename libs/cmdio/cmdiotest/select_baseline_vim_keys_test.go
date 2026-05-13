@@ -5,6 +5,7 @@ import (
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/cmdio/cmdiotest/termtest"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -15,6 +16,7 @@ import (
 // upcoming bubbletea replacement can decide deliberately whether to preserve,
 // drop, or change that behavior.
 func TestSelectBaseline_VimKeys(t *testing.T) {
+	t.Parallel()
 	tm := termtest.NewSelectOrdered(t, []cmdio.Tuple{
 		{Name: "alpha", Id: "a"},
 		{Name: "beta", Id: "b"},
@@ -39,5 +41,5 @@ func TestSelectBaseline_VimKeys(t *testing.T) {
 
 	id, err := tm.Result()
 	require.NoError(t, err, "raw output: %q", tm.Raw())
-	t.Logf("Enter selected id=%q (snapshot:\n%s\n)", id, tm.Snapshot())
+	assert.Equal(t, "a", id, "snapshot:\n%s", tm.Snapshot())
 }

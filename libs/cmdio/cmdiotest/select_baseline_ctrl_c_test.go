@@ -5,6 +5,7 @@ import (
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/cmdio/cmdiotest/termtest"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -12,6 +13,7 @@ import (
 // when the user cancels the prompt with Ctrl+C without making a selection.
 // Captured as a migration baseline for the upcoming bubbletea replacement.
 func TestSelectBaseline_CtrlC(t *testing.T) {
+	t.Parallel()
 	tm := termtest.NewSelectOrdered(t, []cmdio.Tuple{
 		{Name: "alpha", Id: "a"},
 		{Name: "beta", Id: "b"},
@@ -25,6 +27,6 @@ func TestSelectBaseline_CtrlC(t *testing.T) {
 
 	id, err := tm.Result()
 	require.Error(t, err)
-	t.Logf("error: %v", err)
-	t.Logf("id: %q", id)
+	assert.EqualError(t, err, "^C")
+	assert.Empty(t, id)
 }

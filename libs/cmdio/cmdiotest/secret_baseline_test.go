@@ -12,6 +12,7 @@ import (
 // each typed character should render as the configured mask ('*'), backspace
 // should erase one mask char, and Enter should return the typed value.
 func TestSecretBaseline_Typing(t *testing.T) {
+	t.Parallel()
 	tm := termtest.NewSecret(t, "Enter password")
 	tm.WaitFor("Enter password")
 	tm.Golden("01-empty")

@@ -15,6 +15,7 @@ import (
 // KeyPrev (= readline.CharPrev), the same runes the arrow keys decode
 // to in chzyer/readline; this test pins that equivalence.
 func TestSelectBaseline_CtrlNCtrlP(t *testing.T) {
+	t.Parallel()
 	tm := termtest.NewSelectOrdered(t, []cmdio.Tuple{
 		{Name: "alpha", Id: "a"},
 		{Name: "beta", Id: "b"},

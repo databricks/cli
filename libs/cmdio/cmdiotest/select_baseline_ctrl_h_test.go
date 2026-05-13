@@ -15,6 +15,7 @@ import (
 // readline maps both to CharBackspace inside the search buffer, so this
 // test pins the equivalence for the filter editor.
 func TestSelectBaseline_CtrlH(t *testing.T) {
+	t.Parallel()
 	tm := termtest.NewSelectOrdered(t, []cmdio.Tuple{
 		{Name: "alpha", Id: "a"},
 		{Name: "beta", Id: "b"},
