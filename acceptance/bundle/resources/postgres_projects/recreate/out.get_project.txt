@@ -14,6 +14,7 @@
     "history_retention_duration": "604800s",
     "owner": "[USERNAME]",
     "pg_version": 16,
+    "project_id": "test-pg-new-[UNIQUE_NAME]",
     "synthetic_storage_size_bytes": 0
   },
   "uid": "[UUID]",
