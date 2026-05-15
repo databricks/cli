@@ -94,10 +94,6 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, ta
 		metadata.Upload(),
 		statemgmt.UploadStateForYamlSync(targetEngine),
 	)
-
-	if !logdiag.HasError(ctx) {
-		cmdio.LogString(ctx, "Deployment complete!")
-	}
 }
 
 // uploadLibraries uploads libraries to the workspace.
@@ -182,6 +178,11 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	}
 
 	bundle.ApplyContext(ctx, b, pipelineenv.ApplyEnvironment())
+
+	if !logdiag.HasError(ctx) {
+		cmdio.LogString(ctx, "Deployment complete!")
+	}
+
 	bundle.ApplyContext(ctx, b, scripts.Execute(config.ScriptPostDeploy))
 }
 

@@ -7,7 +7,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -49,11 +48,7 @@ func (a *applyEnv) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics
 		return nil
 	}
 
-	names := make([]string, 0, len(affected))
-	for _, p := range affected {
-		names = append(names, p.Name)
-	}
-	cmdio.LogString(ctx, fmt.Sprintf("Re-applying environment for pipeline(s) %s (using databricks pipelines apply-environment)", strings.Join(names, ", ")))
+	cmdio.LogString(ctx, "Change detected to Python environment: running 'databricks pipelines apply-environment' to update pipeline(s)...")
 
 	w := b.WorkspaceClient(ctx)
 	allOK := true
