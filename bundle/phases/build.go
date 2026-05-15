@@ -14,6 +14,7 @@ import (
 	"github.com/databricks/cli/libs/logdiag"
 )
 
+
 type LibLocationMap map[string][]libraries.LocationToUpdate
 
 // The build phase builds artifacts.
@@ -24,6 +25,7 @@ func Build(ctx context.Context, b *bundle.Bundle) LibLocationMap {
 		scripts.Execute(config.ScriptPreBuild),
 		artifacts.Build(),
 		scripts.Execute(config.ScriptPostBuild),
+
 		mutator.ResolveVariableReferencesWithoutResources(
 			"artifacts",
 		),
@@ -40,6 +42,12 @@ func Build(ctx context.Context, b *bundle.Bundle) LibLocationMap {
 		// SwitchToPatchedWheels must be run after ExpandGlobReferences and after build phase because it Artifact.Source and Artifact.Patched populated
 		libraries.SwitchToPatchedWheels(),
 	)
+
+	// For immutable bundles, library remote paths are set in the deploy phase
+	// after snapshot.Upload() provides the content-addressed workspace.artifact_path.
+	if b.Config.Bundle.Immutable {
+		return nil
+	}
 
 	libs, diags := libraries.ReplaceWithRemotePath(ctx, b)
 	for _, diag := range diags {

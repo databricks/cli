@@ -80,6 +80,12 @@ type Workspace struct {
 	// Remote workspace path for deployment state.
 	// This defaults to "${workspace.root}/state".
 	StatePath string `json:"state_path,omitempty"`
+
+	// SnapshotPath is the workspace path of the immutable snapshot uploaded during
+	// deployment. It is set by snapshot.Upload() and used to resolve
+	// ${workspace.snapshot_path} references in resource configurations.
+	// Only populated for bundles with bundle.immutable = true.
+	SnapshotPath string `json:"snapshot_path,omitempty" bundle:"internal"`
 }
 
 type User struct {
