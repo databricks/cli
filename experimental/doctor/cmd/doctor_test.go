@@ -340,10 +340,10 @@ func TestCheckIdentity(t *testing.T) {
 		{
 			name: "account success (unified host)",
 			cfg: &config.Config{
-				Host:                       accountOK.URL,
-				AccountID:                  "test-account-123",
-				Token:                      "test-token",
-				Experimental_IsUnifiedHost: true,
+				Host:         accountOK.URL,
+				AccountID:    "test-account-123",
+				Token:        "test-token",
+				DiscoveryURL: "https://spog.databricks.test/oidc/accounts/test-account-123/.well-known/oauth-authorization-server",
 			},
 			wantStatus: statusPass,
 			wantMsg:    "account test-account-123 (2 workspaces)",
@@ -351,10 +351,10 @@ func TestCheckIdentity(t *testing.T) {
 		{
 			name: "account failure (unified host)",
 			cfg: &config.Config{
-				Host:                       unauthorized.URL,
-				AccountID:                  "test-account-123",
-				Token:                      "bad-token",
-				Experimental_IsUnifiedHost: true,
+				Host:         unauthorized.URL,
+				AccountID:    "test-account-123",
+				Token:        "bad-token",
+				DiscoveryURL: "https://spog.databricks.test/oidc/accounts/test-account-123/.well-known/oauth-authorization-server",
 			},
 			wantStatus: statusFail,
 			wantMsg:    "Cannot list account workspaces",
@@ -391,27 +391,27 @@ func TestIsAccountLevelConfig(t *testing.T) {
 		{
 			name: "unified host with account ID",
 			cfg: &config.Config{
-				Host:                       "https://myhost.databricks.com",
-				AccountID:                  "test-account-123",
-				Experimental_IsUnifiedHost: true,
+				Host:         "https://myhost.databricks.test",
+				AccountID:    "test-account-123",
+				DiscoveryURL: "https://myhost.databricks.test/oidc/accounts/test-account-123/.well-known/oauth-authorization-server",
 			},
 			want: true,
 		},
 		{
 			name: "unified host with account and workspace ID is workspace-level",
 			cfg: &config.Config{
-				Host:                       "https://myhost.databricks.com",
-				AccountID:                  "test-account-123",
-				WorkspaceID:                "12345",
-				Experimental_IsUnifiedHost: true,
+				Host:         "https://myhost.databricks.test",
+				AccountID:    "test-account-123",
+				WorkspaceID:  "12345",
+				DiscoveryURL: "https://myhost.databricks.test/oidc/accounts/test-account-123/.well-known/oauth-authorization-server",
 			},
 			want: false,
 		},
 		{
 			name: "unified host without account ID is workspace",
 			cfg: &config.Config{
-				Host:                       "https://myhost.databricks.com",
-				Experimental_IsUnifiedHost: true,
+				Host:         "https://myhost.databricks.test",
+				DiscoveryURL: "https://myhost.databricks.test/oidc/accounts/test-account-123/.well-known/oauth-authorization-server",
 			},
 			want: false,
 		},
@@ -518,7 +518,7 @@ func TestRender(t *testing.T) {
 
 	t.Run("text", func(t *testing.T) {
 		var buf bytes.Buffer
-		require.NoError(t, render(&buf, results, flags.OutputText))
+		require.NoError(t, render(t.Context(), &buf, results, flags.OutputText))
 		out := buf.String()
 		assert.Contains(t, out, "Test")
 		assert.Contains(t, out, "all good")
@@ -528,7 +528,7 @@ func TestRender(t *testing.T) {
 
 	t.Run("json round-trips and ends with newline", func(t *testing.T) {
 		var buf bytes.Buffer
-		require.NoError(t, render(&buf, results, flags.OutputJSON))
+		require.NoError(t, render(t.Context(), &buf, results, flags.OutputJSON))
 		assert.Equal(t, byte('\n'), buf.Bytes()[buf.Len()-1])
 
 		var parsed DoctorReport
@@ -540,7 +540,7 @@ func TestRender(t *testing.T) {
 
 	t.Run("json omits empty detail", func(t *testing.T) {
 		var buf bytes.Buffer
-		require.NoError(t, render(&buf, []CheckResult{{Name: "Test", Status: statusPass, Message: "ok"}}, flags.OutputJSON))
+		require.NoError(t, render(t.Context(), &buf, []CheckResult{{Name: "Test", Status: statusPass, Message: "ok"}}, flags.OutputJSON))
 		assert.NotContains(t, buf.String(), "detail")
 	})
 }

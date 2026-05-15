@@ -1,14 +1,15 @@
 package doctor
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 )
 
@@ -54,7 +55,7 @@ func NewDoctorCmd() *cobra.Command {
 		profileName, fromFlag := profileFromCommand(cmd)
 		results := runChecks(cmd.Context(), profileName, fromFlag)
 
-		if err := render(cmd.OutOrStdout(), results, root.OutputType(cmd)); err != nil {
+		if err := render(cmd.Context(), cmd.OutOrStdout(), results, root.OutputType(cmd)); err != nil {
 			return err
 		}
 
@@ -75,7 +76,7 @@ func profileFromCommand(cmd *cobra.Command) (string, bool) {
 	return f.Value.String(), true
 }
 
-func render(w io.Writer, results []CheckResult, outputType flags.Output) error {
+func render(ctx context.Context, w io.Writer, results []CheckResult, outputType flags.Output) error {
 	switch outputType {
 	case flags.OutputJSON:
 		buf, err := json.MarshalIndent(DoctorReport{Results: results}, "", "  ")
@@ -86,35 +87,29 @@ func render(w io.Writer, results []CheckResult, outputType flags.Output) error {
 		_, err = w.Write(buf)
 		return err
 	case flags.OutputText:
-		renderText(w, results)
+		renderText(ctx, w, results)
 		return nil
 	default:
 		return fmt.Errorf("unknown output type %s", outputType)
 	}
 }
 
-func renderText(w io.Writer, results []CheckResult) {
-	green := color.New(color.FgGreen).SprintFunc()
-	red := color.New(color.FgRed).SprintFunc()
-	yellow := color.New(color.FgYellow).SprintFunc()
-	cyan := color.New(color.FgCyan).SprintFunc()
-	bold := color.New(color.Bold).SprintFunc()
-
+func renderText(ctx context.Context, w io.Writer, results []CheckResult) {
 	for _, r := range results {
 		var icon string
 		switch r.Status {
 		case statusPass:
-			icon = green("[ok]")
+			icon = cmdio.Green(ctx, "[ok]")
 		case statusFail:
-			icon = red("[FAIL]")
+			icon = cmdio.Red(ctx, "[FAIL]")
 		case statusWarn:
-			icon = yellow("[warn]")
+			icon = cmdio.Yellow(ctx, "[warn]")
 		case statusInfo:
-			icon = cyan("[info]")
+			icon = cmdio.Cyan(ctx, "[info]")
 		case statusSkip:
-			icon = yellow("[skip]")
+			icon = cmdio.Yellow(ctx, "[skip]")
 		}
-		msg := fmt.Sprintf("%s %s: %s", icon, bold(r.Name), r.Message)
+		msg := fmt.Sprintf("%s %s: %s", icon, cmdio.Bold(ctx, r.Name), r.Message)
 		if r.Detail != nil {
 			msg += fmt.Sprintf(" (%v)", r.Detail)
 		}
