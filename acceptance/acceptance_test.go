@@ -198,6 +198,22 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	// Consistent behavior of locale-dependent tools, such as 'sort'
 	t.Setenv("LC_ALL", "C")
 
+	// Unset AI-agent detection env vars so the SDK's user-agent does not
+	// pick up the host's agent. Setting these to "" via test.toml is not
+	// enough: the SDK (since v0.132.0) treats empty values as a truthy
+	// signal because os.LookupEnv reports them as present.
+	for _, v := range []string{
+		"ANTIGRAVITY_AGENT",
+		"CLAUDECODE",
+		"CLINE_ACTIVE",
+		"CODEX_CI",
+		"CURSOR_AGENT",
+		"GEMINI_CLI",
+		"OPENCODE",
+	} {
+		os.Unsetenv(v) //nolint:usetesting // t.Setenv cannot unset
+	}
+
 	buildDir := getBuildDir(t, cwd, runtime.GOOS, runtime.GOARCH)
 
 	// Set up terraform for tests. Skip on DBR - tests with RunsOnDbr only use direct deployment.
@@ -372,9 +388,11 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 
 			// Generate materialized config for this test.
 			// We do this before skipping the test, so the configs are generated for all tests.
-			materializedConfig, err := internal.GenerateMaterializedConfig(config)
-			require.NoError(t, err)
-			testutil.WriteFile(t, filepath.Join(dir, internal.MaterializedConfigFile), materializedConfig)
+			materializedConfig := internal.GenerateMaterializedConfig(&config)
+			outPath := filepath.Join(dir, internal.MaterializedConfigFile)
+			if existing, _ := os.ReadFile(outPath); string(existing) != materializedConfig {
+				testutil.WriteFile(t, outPath, materializedConfig)
+			}
 
 			// If only regenerating out.test.toml, skip the actual test execution
 			if OnlyOutTestToml {
@@ -1506,11 +1524,7 @@ func prepareWheelBuildDirectory(t *testing.T, dir string) string {
 }
 
 func BuildYamlfmt(t *testing.T) {
-	// Using make here instead of "go build" directly cause it's faster when it's already built
-	args := []string{
-		"make", "-s", "tools/yamlfmt" + exeSuffix,
-	}
-	RunCommand(t, args, "..", []string{})
+	RunCommand(t, []string{"go", "tool", "-modfile=tools/task/go.mod", "task", "build-yamlfmt"}, "..", []string{})
 }
 
 // setupTerraform installs terraform and configures environment variables for tests.

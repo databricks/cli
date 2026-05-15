@@ -74,6 +74,8 @@ func (s *FakeWorkspace) PostgresProjectCreate(req Request, projectID string) Res
 	// Copy spec fields to status (API returns status as materialized view)
 	if project.Spec != nil {
 		project.Status = &postgres.ProjectStatus{
+			ProjectId:                   projectID,
+			DefaultBranch:               name + "/branches/production",
 			DisplayName:                 project.Spec.DisplayName,
 			PgVersion:                   project.Spec.PgVersion,
 			HistoryRetentionDuration:    project.Spec.HistoryRetentionDuration,
@@ -247,6 +249,7 @@ func (s *FakeWorkspace) PostgresBranchCreate(req Request, parent, branchID strin
 
 	// Initialize status with all required fields
 	branch.Status = &postgres.BranchStatus{
+		BranchId:         branchID,
 		CurrentState:     postgres.BranchStatusStateReady,
 		StateChangeTime:  now,
 		Default:          false,
@@ -424,6 +427,7 @@ func (s *FakeWorkspace) PostgresEndpointCreate(req Request, parent, endpointID s
 
 	// Initialize status with all required fields
 	endpoint.Status = &postgres.EndpointStatus{
+		EndpointId:             endpointID,
 		CurrentState:           postgres.EndpointStatusStateActive,
 		Disabled:               false,
 		Settings:               &postgres.EndpointSettings{},
@@ -641,6 +645,7 @@ func (s *FakeWorkspace) createDefaultBranchLocked(projectName string) {
 		CreateTime: now,
 		UpdateTime: now,
 		Status: &postgres.BranchStatus{
+			BranchId:         "production",
 			CurrentState:     postgres.BranchStatusStateReady,
 			StateChangeTime:  now,
 			Default:          true,

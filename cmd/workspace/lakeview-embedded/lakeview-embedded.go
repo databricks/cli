@@ -23,6 +23,10 @@ func New() *cobra.Command {
 		RunE:    root.ReportUnknownSubcommand,
 	}
 
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
+
 	// Add methods
 	cmd.AddCommand(newGetPublishedDashboardTokenInfo())
 
@@ -52,8 +56,10 @@ func newGetPublishedDashboardTokenInfo() *cobra.Command {
 	cmd.Flags().StringVar(&getPublishedDashboardTokenInfoReq.ExternalViewerId, "external-viewer-id", getPublishedDashboardTokenInfoReq.ExternalViewerId, `Provided external viewer id to be included in the custom claim.`)
 
 	cmd.Use = "get-published-dashboard-token-info DASHBOARD_ID"
-	cmd.Short = `Read information of a published dashboard to mint an OAuth token.`
-	cmd.Long = `Read information of a published dashboard to mint an OAuth token.
+	cmd.Short = `*Public Preview* Read information of a published dashboard to mint an OAuth token.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Read information of a published dashboard to mint an OAuth token.
 
   Get a required authorization details and scopes of a published dashboard to
   mint an OAuth token.
@@ -62,6 +68,8 @@ func newGetPublishedDashboardTokenInfo() *cobra.Command {
     DASHBOARD_ID: UUID identifying the published dashboard.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)

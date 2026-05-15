@@ -1,5 +1,68 @@
 # Version changelog
 
+## Release v0.299.2 (2026-05-13)
+
+### Notable Changes
+* Breaking change: `vector_search_endpoints` renamed `min_qps` to `target_qps` in DABs configuration and the `vector-search-endpoints` commands, following the SDK rename in v0.131.0. Update any `databricks.yml` using `min_qps:` to `target_qps:` and any CLI invocations using `--min-qps` to `--target-qps`.
+
+### CLI
+
+* `auth login` no longer falls back to plaintext when the OS keyring is reachable but locked. The unlock prompt shown by the probe now runs in parallel with the OAuth flow, and the token is stored in the keyring once the user has typed their password.
+* `databricks auth describe` now reports where U2M (`databricks-cli`) tokens are stored: `plaintext` (`~/.databricks/token-cache.json`) or `secure` (OS keyring), and the source of the choice (env var, config setting, or default).
+* Marked the default profile in the interactive pickers shown by `databricks auth switch`, `databricks auth logout`, `databricks auth token`, and `databricks auth login`, and moved it to the top of the list. `databricks auth login` and `databricks auth logout` now offer the same selectors as `databricks auth token` and `databricks auth switch` respectively.
+* The interactive auth profile pickers now start in search mode so typing immediately filters the list, and the action entries (`+ Create a new profile`, `→ Enter a host URL manually`) are visually distinct from real profiles and stay visible regardless of the search query.
+* Shortened the host prompt label shown after `→ Enter a host URL manually` in `databricks auth login` so the prompt no longer leaves stale lines on screen when typing or pasting a host URL.
+
+### Bundles
+* Stop applying `presets.name_prefix` (and the dev-mode `[dev <user>]` rename) to `vector_search_endpoints` ([#5209](https://github.com/databricks/cli/pull/5209)).
+
+* Fix `bundle generate` job to preserve nested notebook directory structure ([#4596](https://github.com/databricks/cli/pull/4596))
+* Propagate authentication environment (including `DATABRICKS_CONFIG_PROFILE`) to the `experimental.python` subprocess so bundle validate/deploy no longer fails with a multi-profile host ambiguity error when several profiles in `~/.databrickscfg` share the same host.
+* Fixed `--force-pull` on `bundle summary` and `bundle open` so the flag bypasses the local state cache and reads state from the workspace.
+
+### Dependency updates
+
+* Bump Go toolchain to 1.25.10 ([#5213](https://github.com/databricks/cli/pull/5213)).
+* Bump `github.com/databricks/databricks-sdk-go` from v0.128.0 to v0.132.0.
+* Bump Terraform provider to v1.115.0.
+
+
+## Release v0.299.1 (2026-05-07)
+
+### CLI
+
+* `databricks api` now works against unified hosts. Adds `--account` to scope a call to the account API and `--workspace-id` to override the workspace routing identifier per call. A `?o=<workspace-id>` query parameter on the path (the SPOG URL convention used by the Databricks UI) is also recognized as a per-call workspace override, so URLs pasted from the browser route correctly.
+* JSON output for single objects now uses standard `"key": "value"` spacing (matching list output and `encoding/json` defaults).
+
+### Bundles
+* Validate that resource keys do not contain variable references ([#5169](https://github.com/databricks/cli/pull/5169))
+* engine/direct: Drop the deployment state entry on a recreate before the follow-up `Create`, so a `Create` failure no longer leaves a broken state with `invalid state: empty id` on the next `bundle plan` ([#5173](https://github.com/databricks/cli/pull/5173)).
+* `bundle debug list-targets`: skip nil entries in the targets map instead of panicking when a target is declared with a null value ([#5203](https://github.com/databricks/cli/pull/5203)).
+
+### Dependency updates
+
+* Added `github.com/jackc/pgx/v5` v5.9.1 (MIT) as a new dependency. Used by an experimental Postgres command added in this release; the package is dormant for users who do not invoke that command.
+
+
+## Release v0.299.0 (2026-04-29)
+
+### CLI
+
+* Moved file-based OAuth token cache management from the SDK to the CLI. No user-visible change; part of a three-PR sequence that makes the CLI the sole owner of its token cache ([#5056](https://github.com/databricks/cli/pull/5056)).
+* Remove the `--experimental-is-unified-host` flag and stop reading `experimental_is_unified_host` from `.databrickscfg` profiles and the `DATABRICKS_EXPERIMENTAL_IS_UNIFIED_HOST` env var. Unified hosts are now detected exclusively from `/.well-known/databricks-config` discovery. The `experimental_is_unified_host` field is retained as a no-op in `databricks.yml` for schema compatibility ([#5047](https://github.com/databricks/cli/pull/5047)).
+* Added interactive pagination for list commands that have a row template (jobs, clusters, apps, pipelines, etc.). When stdin, stdout, and stderr are all TTYs, `databricks <resource> list` now streams 50 rows at a time and prompts `[space] more  [enter] all  [q|esc] quit`. ENTER can be interrupted by `q`/`esc`/`Ctrl+C` between pages. Colors and alignment match the existing non-paged output; column widths stay stable across pages. Piped output and `--output json` are unchanged ([#5015](https://github.com/databricks/cli/pull/5015)).
+* Added experimental OS-native secure token storage opt-in via `DATABRICKS_AUTH_STORAGE=secure`. Legacy file-backed token storage remains the default ([#5008](https://github.com/databricks/cli/pull/5008), [#5013](https://github.com/databricks/cli/pull/5013)).
+* Fixed a panic in `databricks warehouses update-default-warehouse-override` when invoked without all required positional arguments (e.g. picking a warehouse from the interactive drop-down and then hitting an index-out-of-range crash). The command now validates arguments up front and returns a usage error. Fixes [#5070](https://github.com/databricks/cli/issues/5070) via [#5079](https://github.com/databricks/cli/pull/5079).
+
+### Bundles
+
+* Translate relative paths in `alert_task.workspace_path` on job tasks to fully qualified workspace paths, matching the behavior of other task path fields. Applies to both regular tasks and `for_each_task` nested tasks ([#4836](https://github.com/databricks/cli/pull/4836)).
+
+### Dependency updates
+
+* Added `github.com/zalando/go-keyring` as a new dependency (dormant until a later release enables experimental secure-storage for OAuth tokens) ([#5008](https://github.com/databricks/cli/pull/5008)).
+
+
 ## Release v0.298.0 (2026-04-22)
 
 ### CLI

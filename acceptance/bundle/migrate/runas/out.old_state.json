@@ -46,7 +46,11 @@
             "notebook_path": null,
             "object_type": "pipelines",
             "pipeline_id": "[UUID]",
-            "provider_config": [],
+            "provider_config": [
+              {
+                "workspace_id": "[NUMID]"
+              }
+            ],
             "registered_model_id": null,
             "repo_id": null,
             "repo_path": null,
@@ -121,7 +125,11 @@
             "name": "DABs Revenue Pipeline",
             "notification": [],
             "photon": false,
-            "provider_config": [],
+            "provider_config": [
+              {
+                "workspace_id": "[NUMID]"
+              }
+            ],
             "restart_window": [],
             "root_path": null,
             "run_as": [

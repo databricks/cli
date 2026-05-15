@@ -3,6 +3,8 @@ package prompt
 import (
 	"context"
 	"errors"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -86,6 +88,11 @@ func TestValidateProjectName(t *testing.T) {
 			projectName: "my@app!",
 			expectError: true,
 			errorMsg:    "lowercase letters, numbers, or hyphens",
+		},
+		{
+			name:        "in-place sentinel",
+			projectName: InPlaceName,
+			expectError: false,
 		},
 	}
 
@@ -309,4 +316,210 @@ func TestMaxAppNameLength(t *testing.T) {
 	invalidName := "abcdefghijklmnopqrstuvwxyz1" // 27 chars
 	assert.Len(t, invalidName, 27)
 	assert.Error(t, ValidateProjectName(invalidName))
+}
+
+func TestRenderStabilityTier(t *testing.T) {
+	tests := []struct {
+		tier       string
+		wantEmpty  bool
+		wantSubstr string
+	}{
+		{"", true, ""},
+		{"beta", false, "(beta)"},
+		{"alpha", false, "(alpha)"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.tier, func(t *testing.T) {
+			got := RenderStabilityTier(tc.tier)
+			if tc.wantEmpty {
+				assert.Empty(t, got)
+				return
+			}
+			assert.Contains(t, got, tc.wantSubstr)
+		})
+	}
+}
+
+// mkDirNamed creates a child directory with the given name under t.TempDir()
+// and returns its absolute path. Used to control filepath.Base(absCwd) when
+// exercising in-place name derivation.
+func mkDirNamed(t *testing.T, name string) string {
+	t.Helper()
+	dir := filepath.Join(t.TempDir(), name)
+	require.NoError(t, os.MkdirAll(dir, 0o755))
+	return dir
+}
+
+func TestDeriveInPlaceAppName(t *testing.T) {
+	t.Run("valid basename", func(t *testing.T) {
+		dir := mkDirNamed(t, "my-app")
+		got, err := DeriveInPlaceAppName(dir)
+		require.NoError(t, err)
+		assert.Equal(t, "my-app", got)
+	})
+
+	t.Run("uppercase basename rejected", func(t *testing.T) {
+		dir := mkDirNamed(t, "MyApp")
+		_, err := DeriveInPlaceAppName(dir)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "MyApp")
+		assert.Contains(t, err.Error(), "rename the directory")
+	})
+
+	t.Run("underscore basename rejected", func(t *testing.T) {
+		dir := mkDirNamed(t, "my_app")
+		_, err := DeriveInPlaceAppName(dir)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "my_app")
+	})
+
+	t.Run("leading digit basename rejected", func(t *testing.T) {
+		dir := mkDirNamed(t, "1app")
+		_, err := DeriveInPlaceAppName(dir)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "1app")
+	})
+
+	t.Run("too long basename rejected", func(t *testing.T) {
+		dir := mkDirNamed(t, "this-is-far-too-long-for-the-app-name-limit")
+		_, err := DeriveInPlaceAppName(dir)
+		require.Error(t, err)
+	})
+}
+
+func TestCheckInPlaceDirectory(t *testing.T) {
+	t.Run("empty directory is OK", func(t *testing.T) {
+		dir := t.TempDir()
+		assert.NoError(t, CheckInPlaceDirectory(dir))
+	})
+
+	t.Run("dotgit only is OK", func(t *testing.T) {
+		dir := t.TempDir()
+		require.NoError(t, os.MkdirAll(filepath.Join(dir, ".git"), 0o755))
+		assert.NoError(t, CheckInPlaceDirectory(dir))
+	})
+
+	t.Run("pre-existing gitignore is rejected", func(t *testing.T) {
+		// .gitignore is intentionally NOT allow-listed: the template ships
+		// _gitignore that renames to .gitignore, which would silently
+		// overwrite the user's file.
+		dir := t.TempDir()
+		require.NoError(t, os.MkdirAll(filepath.Join(dir, ".git"), 0o755))
+		require.NoError(t, os.WriteFile(filepath.Join(dir, ".gitignore"), []byte("node_modules\n"), 0o644))
+		err := CheckInPlaceDirectory(dir)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "not empty")
+	})
+
+	t.Run("unexpected file is rejected", func(t *testing.T) {
+		dir := t.TempDir()
+		require.NoError(t, os.WriteFile(filepath.Join(dir, "README.md"), []byte("hi"), 0o644))
+		err := CheckInPlaceDirectory(dir)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "not empty")
+		assert.Contains(t, err.Error(), "apps init --name .")
+		// Concise wording: we deliberately do not enumerate offending files.
+		assert.NotContains(t, err.Error(), "README.md")
+	})
+
+	t.Run("mix of allowed and disallowed is rejected", func(t *testing.T) {
+		dir := t.TempDir()
+		require.NoError(t, os.MkdirAll(filepath.Join(dir, ".git"), 0o755))
+		require.NoError(t, os.WriteFile(filepath.Join(dir, "stray.txt"), []byte(""), 0o644))
+		err := CheckInPlaceDirectory(dir)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "not empty")
+	})
+
+	t.Run("symlink named .git is rejected", func(t *testing.T) {
+		// A symlink masquerading as .git would let os.WriteFile follow the
+		// link if any allow-listed name later became a write target.
+		dir := t.TempDir()
+		target := filepath.Join(t.TempDir(), "elsewhere")
+		require.NoError(t, os.MkdirAll(target, 0o755))
+		require.NoError(t, os.Symlink(target, filepath.Join(dir, ".git")))
+		err := CheckInPlaceDirectory(dir)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "not empty")
+	})
+
+	t.Run("error message shows absolute path", func(t *testing.T) {
+		dir := t.TempDir()
+		require.NoError(t, os.WriteFile(filepath.Join(dir, "stray.txt"), []byte(""), 0o644))
+		err := CheckInPlaceDirectory(dir)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), dir)
+	})
+
+	t.Run("missing directory returns error", func(t *testing.T) {
+		err := CheckInPlaceDirectory(filepath.Join(t.TempDir(), "nope"))
+		require.Error(t, err)
+	})
+}
+
+func TestShouldOfferInPlace(t *testing.T) {
+	t.Run("returns basename when dir is empty and name is valid", func(t *testing.T) {
+		dir := mkDirNamed(t, "my-app")
+		name, ok := ShouldOfferInPlace(dir)
+		assert.True(t, ok)
+		assert.Equal(t, "my-app", name)
+	})
+
+	t.Run("declines when dir has stray files", func(t *testing.T) {
+		dir := mkDirNamed(t, "my-app")
+		require.NoError(t, os.WriteFile(filepath.Join(dir, "stray.txt"), []byte(""), 0o644))
+		_, ok := ShouldOfferInPlace(dir)
+		assert.False(t, ok)
+	})
+
+	t.Run("declines when basename is invalid", func(t *testing.T) {
+		dir := mkDirNamed(t, "Bad_Name")
+		_, ok := ShouldOfferInPlace(dir)
+		assert.False(t, ok)
+	})
+
+	t.Run("declines when dir does not exist", func(t *testing.T) {
+		_, ok := ShouldOfferInPlace(filepath.Join(t.TempDir(), "missing"))
+		assert.False(t, ok)
+	})
+}
+
+func TestValidateProjectNameForPrompt(t *testing.T) {
+	t.Run("valid name without outputDir", func(t *testing.T) {
+		assert.NoError(t, validateProjectNameForPrompt("my-app", ""))
+	})
+
+	t.Run("in-place sentinel without outputDir is accepted", func(t *testing.T) {
+		assert.NoError(t, validateProjectNameForPrompt(InPlaceName, ""))
+	})
+
+	t.Run("in-place sentinel with outputDir is rejected with sentinel error", func(t *testing.T) {
+		err := validateProjectNameForPrompt(InPlaceName, "/some/dir")
+		require.Error(t, err)
+		assert.ErrorIs(t, err, ErrNameDotWithOutputDir)
+	})
+
+	t.Run("invalid name surfaces ValidateProjectName error", func(t *testing.T) {
+		err := validateProjectNameForPrompt("My_App", "")
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "lowercase letters")
+	})
+}
+
+func TestPrintSuccessInPlace(t *testing.T) {
+	ctx, out := cmdio.NewTestContextWithStderr(t.Context())
+	PrintSuccess(ctx, "my-app", "/abs/path/my-app", 12, "npm run dev", true)
+	got := out.String()
+	assert.Contains(t, got, "Location: /abs/path/my-app")
+	assert.Contains(t, got, "Files: 12")
+	assert.Contains(t, got, "npm run dev")
+	assert.NotContains(t, got, "cd my-app")
+}
+
+func TestPrintSuccessNotInPlace(t *testing.T) {
+	ctx, out := cmdio.NewTestContextWithStderr(t.Context())
+	PrintSuccess(ctx, "my-app", "/abs/path/my-app", 12, "npm run dev", false)
+	got := out.String()
+	assert.Contains(t, got, "cd my-app")
+	assert.Contains(t, got, "npm run dev")
 }

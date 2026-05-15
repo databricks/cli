@@ -45,9 +45,14 @@ func promptForHost(ctx context.Context) (string, error) {
 		return "", errors.New("the command is being run in a non-interactive environment, please specify a host using --host")
 	}
 
-	prompt := cmdio.Prompt(ctx)
-	prompt.Label = "Databricks host (e.g. https://<databricks-instance>.cloud.databricks.com)"
-	return prompt.Run()
+	// The hint is printed separately so the prompt label stays short.
+	// promptui's screenbuf does not account for terminal line wrapping, and a
+	// long "label + value" line that wraps causes each keystroke to leave a
+	// stale render on screen instead of overwriting the previous one.
+	cmdio.LogString(ctx, "Example: https://<databricks-instance>.cloud.databricks.com")
+	return cmdio.RunPrompt(ctx, cmdio.PromptOptions{
+		Label: "Databricks host",
+	})
 }
 
 func promptForAccountID(ctx context.Context) (string, error) {
@@ -55,11 +60,9 @@ func promptForAccountID(ctx context.Context) (string, error) {
 		return "", errors.New("the command is being run in a non-interactive environment, please specify an account ID using --account-id")
 	}
 
-	prompt := cmdio.Prompt(ctx)
-	prompt.Label = "Databricks account ID"
-	prompt.Default = ""
-	prompt.AllowEdit = true
-	return prompt.Run()
+	return cmdio.RunPrompt(ctx, cmdio.PromptOptions{
+		Label: "Databricks account ID",
+	})
 }
 
 // validateProfileHostConflict checks that --profile and --host don't conflict.

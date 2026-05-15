@@ -11,8 +11,9 @@ class HardwareAcceleratorType(Enum):
 
     GPU_1X_A10 = "GPU_1xA10"
     GPU_8X_H100 = "GPU_8xH100"
+    GPU_1X_H100 = "GPU_1xH100"
 
 
 HardwareAcceleratorTypeParam = (
-    Literal["GPU_1xA10", "GPU_8xH100"] | HardwareAcceleratorType
+    Literal["GPU_1xA10", "GPU_8xH100", "GPU_1xH100"] | HardwareAcceleratorType
 )

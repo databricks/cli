@@ -1,4 +1,5 @@
 Badness = "run_as is still set even though it's not in bundle and not in reset request"
+Ignore = [".databricks/.gitignore"]
 
 Local = false
 Cloud = true

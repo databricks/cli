@@ -3,7 +3,7 @@
 package schema
 
 type ResourceKnowledgeAssistantProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type ResourceKnowledgeAssistant struct {

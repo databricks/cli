@@ -41,6 +41,10 @@ func New() *cobra.Command {
 		RunE:    root.ReportUnknownSubcommand,
 	}
 
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
+
 	// Add methods
 	cmd.AddCommand(newCreate())
 	cmd.AddCommand(newDelete())
@@ -73,6 +77,7 @@ func newCreate() *cobra.Command {
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: aws_key_info
+	// TODO: complex arg: azure_key_info
 	// TODO: complex arg: gcp_key_info
 
 	cmd.Use = "create"
@@ -95,9 +100,21 @@ func newCreate() *cobra.Command {
 
   This operation is available only if your account is on the E2 version of the
   platform or on a select custom plan that allows multiple workspaces per
-  account.`
+  account.
+
+  **GCP only**: To create a customer-managed key on GCP, you must include the
+  X-Databricks-GCP-SA-Access-Token HTTP header in your request. This header
+  must contain a Google Cloud OAuth access token with the cloud-platform
+  scope. The Google identity associated with the token must also have the
+  setIamPermissions and getIamPermissions IAM permissions on the key
+  resource. For details on obtaining this token, see [Authenticate with Google
+  ID tokens].
+
+  [Authenticate with Google ID tokens]: https://docs.databricks.com/gcp/en/dev-tools/auth/authentication-google-id.html`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -164,6 +181,8 @@ func newDelete() *cobra.Command {
     CUSTOMER_MANAGED_KEY_ID: Databricks encryption key configuration ID.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -235,6 +254,8 @@ func newGet() *cobra.Command {
     CUSTOMER_MANAGED_KEY_ID: Databricks encryption key configuration ID.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -286,6 +307,8 @@ func newList() *cobra.Command {
   Lists Databricks customer-managed key configurations for an account.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {

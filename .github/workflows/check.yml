@@ -36,7 +36,7 @@ jobs:
         run: git diff --exit-code
 
       - name: Run Go lint checks (does not include formatting checks)
-        run: go tool -modfile=tools/go.mod golangci-lint run --timeout=15m
+        run: go tool -modfile=tools/task/go.mod task lint
 
       - name: Run ruff (Python linter and formatter)
         uses: astral-sh/ruff-action@0ce1b0bf8b818ef400413f810f8a11cdbda0034b # v4.0.0
@@ -44,14 +44,18 @@ jobs:
           version: "0.9.1"
           args: "format --check"
 
-      - name: "make fmtfull: Python and Go formatting"
+      - name: Install uv
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          version: "0.8.9"
+
+      - name: "task fmt: Python and Go formatting"
         # Python formatting is already checked above, but this also checks Go and YAML formatting
-        # and verifies that the make command works correctly
         run: |
-          make fmtfull
+          go tool -modfile=tools/task/go.mod task fmt
           git diff --exit-code
 
-      - name: "make checks: custom checks outside of fmt and lint"
+      - name: "task checks: custom checks outside of fmt and lint"
         run: |-
-          make checks
+          go tool -modfile=tools/task/go.mod task checks
           git diff --exit-code

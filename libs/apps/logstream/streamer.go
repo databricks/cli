@@ -251,7 +251,7 @@ func (s *logStreamer) consume(ctx context.Context, conn *websocket.Conn) (retErr
 			continue
 		}
 
-		line := s.formatMessage(message)
+		line := s.formatMessage(ctx, message)
 		if line == "" {
 			continue
 		}
@@ -261,7 +261,7 @@ func (s *logStreamer) consume(ctx context.Context, conn *websocket.Conn) (retErr
 	}
 }
 
-func (s *logStreamer) formatMessage(message []byte) string {
+func (s *logStreamer) formatMessage(ctx context.Context, message []byte) string {
 	entry, err := parseLogEntry(message)
 	if err != nil {
 		return s.formatter.FormatPlain(message)
@@ -272,7 +272,7 @@ func (s *logStreamer) formatMessage(message []byte) string {
 			return ""
 		}
 	}
-	return s.formatter.FormatEntry(entry)
+	return s.formatter.FormatEntry(ctx, entry)
 }
 
 func (s *logStreamer) ensureToken(ctx context.Context) error {

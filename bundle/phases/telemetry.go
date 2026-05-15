@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/libraries"
+	"github.com/databricks/cli/bundle/metrics"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/telemetry"
@@ -112,6 +113,13 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 	slices.Sort(pipelineIds)
 	slices.Sort(clusterIds)
 	slices.Sort(dashboardIds)
+
+	for _, app := range b.Config.Resources.Apps {
+		if app != nil && app.Lifecycle != nil && app.Lifecycle.Started != nil {
+			b.Metrics.SetBoolValue(metrics.AppLifecycleStarted, *app.Lifecycle.Started)
+			break
+		}
+	}
 
 	// If the bundle UUID is not set, we use a default 0 value.
 	bundleUuid := "00000000-0000-0000-0000-000000000000"

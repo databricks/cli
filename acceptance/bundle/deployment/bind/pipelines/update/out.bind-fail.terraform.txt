@@ -36,6 +36,8 @@ Terraform will perform the following actions:
               - include = "/Workspace/Users/foo@databricks.com/another/**" -> null
             }
         }
+
+        # (1 unchanged block hidden)
     }
 
 Plan: 0 to add, 1 to change, 0 to destroy.

@@ -32,13 +32,10 @@ func promptForProfile(ctx context.Context, defaultValue string) (string, error) 
 		return "", nil
 	}
 
-	prompt := cmdio.Prompt(ctx)
-	prompt.Label = "Databricks profile name [" + defaultValue + "]"
-	prompt.AllowEdit = true
-	result, err := prompt.Run()
+	result, err := cmdio.RunPrompt(ctx, cmdio.PromptOptions{
+		Label: "Databricks profile name [" + defaultValue + "]",
+	})
 	if result == "" {
-		// Manually return the default value. We could use the prompt.Default
-		// field, but be inconsistent with other prompts in the CLI.
 		return defaultValue, err
 	}
 	return result, err
@@ -58,23 +55,6 @@ func discoveryErr(msg string, err error) error {
 		return fmt.Errorf("%s: %w%s", msg, err, discoveryFallbackTip)
 	}
 	return fmt.Errorf("%s%s", msg, discoveryFallbackTip)
-}
-
-// dualWriteLegacyHostKey mirrors the freshly minted token under the legacy
-// host-based cache key so users alternating between CLI and SDK find it.
-// Skipped for secure mode to avoid multiplying keyring entries.
-func dualWriteLegacyHostKey(ctx context.Context, tokenCache cache.TokenCache, arg u2m.OAuthArgument, mode storage.StorageMode) {
-	if mode != storage.StorageModeLegacy {
-		return
-	}
-	t, err := tokenCache.Lookup(arg.GetCacheKey())
-	if err != nil || t == nil {
-		return
-	}
-	dual := storage.NewDualWritingTokenCache(tokenCache, arg)
-	if err := dual.Store(arg.GetCacheKey(), t); err != nil {
-		log.Debugf(ctx, "token cache dual-write failed: %v", err)
-	}
 }
 
 type discoveryPersistentAuth interface {
@@ -164,7 +144,11 @@ a new profile is created.
 		ctx := cmd.Context()
 		profileName := cmd.Flag("profile").Value.String()
 
-		tokenCache, mode, err := storage.ResolveCache(ctx, "")
+		// Resolve the cache before the browser step so an unavailable
+		// keyring surfaces here rather than after OAuth. The probe also
+		// triggers the OS unlock prompt, which the user can answer during
+		// OAuth.
+		tokenCache, mode, err := storage.ResolveCacheForLogin(ctx, "")
 		if err != nil {
 			return err
 		}
@@ -191,6 +175,43 @@ a new profile is created.
 			} else {
 				authArguments.Host = resolvedHost
 				args = nil
+			}
+		}
+
+		// When interactive and nothing was specified, show a picker that lets
+		// the user re-login to an existing profile, create a new one, or enter
+		// a host URL. With no profiles configured the picker still shows the
+		// two action entries so the user can choose between web-based discovery
+		// (Create a new profile) and a manual host URL.
+		if profileName == "" && authArguments.Host == "" && len(args) == 0 && cmdio.IsPromptSupported(ctx) {
+			allProfiles, err := profile.DefaultProfiler.LoadProfiles(ctx, profile.MatchAllProfiles)
+			if err != nil && !errors.Is(err, profile.ErrNoConfiguration) {
+				return err
+			}
+			label := "Select a profile"
+			if len(allProfiles) == 0 {
+				label = "How would you like to log in?"
+			}
+			currentDefault, _ := databrickscfg.GetDefaultProfile(ctx, env.Get(ctx, "DATABRICKS_CONFIG_FILE"))
+			result, selected, err := pickAuthProfile(ctx, allProfiles, profilePickerOptions{
+				Label:         label,
+				Default:       currentDefault,
+				IncludeExtras: true,
+			})
+			if err != nil {
+				return err
+			}
+			switch result {
+			case profilePickerProfile:
+				profileName = selected
+			case profilePickerEnterHost:
+				host, err := promptForHost(ctx)
+				if err != nil {
+					return err
+				}
+				authArguments.Host = host
+			case profilePickerCreateNew:
+				// Fall through to the profile name prompt below.
 			}
 		}
 
@@ -256,7 +277,7 @@ a new profile is created.
 		persistentAuthOpts := []u2m.PersistentAuthOption{
 			u2m.WithOAuthArgument(oauthArgument),
 			u2m.WithBrowser(getBrowserFunc(cmd)),
-			u2m.WithTokenCache(tokenCache),
+			u2m.WithTokenCache(storage.WrapForOAuthArgument(tokenCache, mode, oauthArgument)),
 		}
 		if len(scopesList) > 0 {
 			persistentAuthOpts = append(persistentAuthOpts, u2m.WithScopes(scopesList))
@@ -273,7 +294,6 @@ a new profile is created.
 		if err = persistentAuth.Challenge(); err != nil {
 			return err
 		}
-		dualWriteLegacyHostKey(ctx, tokenCache, oauthArgument, mode)
 		// At this point, an OAuth token has been successfully minted and stored
 		// in the CLI cache. The rest of the command focuses on:
 		// 1. Workspace selection for SPOG hosts (best-effort);
@@ -593,7 +613,7 @@ func discoveryLogin(ctx context.Context, in discoveryLoginInputs) error {
 		u2m.WithOAuthArgument(arg),
 		u2m.WithBrowser(in.browserFunc),
 		u2m.WithDiscoveryLogin(),
-		u2m.WithTokenCache(in.tokenCache),
+		u2m.WithTokenCache(storage.WrapForOAuthArgument(in.tokenCache, in.mode, arg)),
 	}
 	if len(scopesList) > 0 {
 		opts = append(opts, u2m.WithScopes(scopesList))
@@ -613,7 +633,6 @@ func discoveryLogin(ctx context.Context, in discoveryLoginInputs) error {
 	if err := persistentAuth.Challenge(); err != nil {
 		return discoveryErr("login via login.databricks.com failed", err)
 	}
-	dualWriteLegacyHostKey(ctx, in.tokenCache, arg, in.mode)
 
 	discoveredHost := arg.GetDiscoveredHost()
 	if discoveredHost == "" {
@@ -775,10 +794,9 @@ func promptForWorkspaceSelection(ctx context.Context, authArguments *auth.AuthAr
 // promptForWorkspaceID asks the user to manually enter a workspace ID.
 // Returns empty string if the user provides no input.
 func promptForWorkspaceID(ctx context.Context) (string, error) {
-	prompt := cmdio.Prompt(ctx)
-	prompt.Label = "Enter workspace ID (empty to skip)"
-	prompt.AllowEdit = true
-	result, err := prompt.Run()
+	result, err := cmdio.RunPrompt(ctx, cmdio.PromptOptions{
+		Label: "Enter workspace ID (empty to skip)",
+	})
 	if err != nil {
 		return "", err
 	}

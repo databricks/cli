@@ -3,7 +3,7 @@
 package schema
 
 type DataSourceWarehousesDefaultWarehouseOverridesDefaultWarehouseOverridesProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourceWarehousesDefaultWarehouseOverridesDefaultWarehouseOverrides struct {
@@ -15,7 +15,7 @@ type DataSourceWarehousesDefaultWarehouseOverridesDefaultWarehouseOverrides stru
 }
 
 type DataSourceWarehousesDefaultWarehouseOverridesProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourceWarehousesDefaultWarehouseOverrides struct {

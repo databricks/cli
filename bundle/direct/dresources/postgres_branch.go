@@ -72,6 +72,8 @@ func (r *ResourcePostgresBranch) DoCreate(ctx context.Context, config *PostgresB
 			UpdateTime:      nil,
 			ForceSendFields: nil,
 		},
+		ReplaceExisting: false,
+		ForceSendFields: nil,
 	})
 	if err != nil {
 		return "", nil, err

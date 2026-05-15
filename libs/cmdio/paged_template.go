@@ -14,8 +14,8 @@ import (
 )
 
 // ansiCSIPattern matches ANSI SGR escape sequences so colored cells
-// aren't counted toward column widths. github.com/fatih/color emits CSI
-// ... m, which is all our templates use.
+// aren't counted toward column widths. The color helpers in this package
+// emit CSI ... m, which is all our templates produce.
 var ansiCSIPattern = regexp.MustCompile("\x1b\\[[0-9;]*m")
 
 // renderIteratorPagedTemplate pages an iterator through the template
@@ -89,11 +89,12 @@ func renderIteratorPagedTemplateCore[T any](
 	// Header and row templates must be separate *template.Template
 	// instances: Parse replaces the receiver's body in place, so sharing
 	// one makes the second Parse stomp the first.
-	headerT, err := template.New("header").Funcs(renderFuncMap).Parse(headerTemplate)
+	fm := renderFuncMap(ctx)
+	headerT, err := template.New("header").Funcs(fm).Parse(headerTemplate)
 	if err != nil {
 		return err
 	}
-	rowT, err := template.New("row").Funcs(renderFuncMap).Parse(tmpl)
+	rowT, err := template.New("row").Funcs(fm).Parse(tmpl)
 	if err != nil {
 		return err
 	}

@@ -1,5 +1,5 @@
 
 >>> [CLI] auth token --profile nonexistent
-Error: auth_storage: unknown storage mode "bogus" (want legacy, secure, or plaintext)
+Error: auth_storage: unknown storage mode "bogus" (want plaintext or secure)
 
 Exit code: 1

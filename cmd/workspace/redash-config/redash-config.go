@@ -25,6 +25,10 @@ func New() *cobra.Command {
 		RunE:   root.ReportUnknownSubcommand,
 	}
 
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
+
 	// Add methods
 	cmd.AddCommand(newGetConfig())
 
@@ -52,6 +56,8 @@ func newGetConfig() *cobra.Command {
 	cmd.Long = `Read workspace configuration for Redash-v2.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {

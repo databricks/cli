@@ -1,0 +1,6 @@
+
+>>> [CLI] bundle init .
+✨ Successfully initialized template
+
+>>> cat number.txt
+n: 1.1

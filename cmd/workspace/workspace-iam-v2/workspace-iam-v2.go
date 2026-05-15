@@ -20,12 +20,18 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "workspace-iam-v2",
-		Short: `These APIs are used to manage identities and the workspace access of these identities in <Databricks>.`,
-		Long: `These APIs are used to manage identities and the workspace access of these
+		Short: `*Beta* These APIs are used to manage identities and the workspace access of these identities in <Databricks>.`,
+		Long: `This command is in Beta and may change without notice.
+
+These APIs are used to manage identities and the workspace access of these
   identities in <Databricks>.`,
 		GroupID: "iam",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	// Add methods
 	cmd.AddCommand(newGetWorkspaceAccessDetailLocal())
@@ -58,8 +64,10 @@ func newGetWorkspaceAccessDetailLocal() *cobra.Command {
 	cmd.Flags().Var(&getWorkspaceAccessDetailLocalReq.View, "view", `Controls what fields are returned. Supported values: [BASIC, FULL]`)
 
 	cmd.Use = "get-workspace-access-detail-local PRINCIPAL_ID"
-	cmd.Short = `Get workspace access details for a principal.`
-	cmd.Long = `Get workspace access details for a principal.
+	cmd.Short = `*Beta* Get workspace access details for a principal.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Get workspace access details for a principal.
 
   Returns the access details for a principal in the current workspace. Allows
   for checking access details for any provisioned principal (user, service
@@ -73,6 +81,8 @@ func newGetWorkspaceAccessDetailLocal() *cobra.Command {
       access details are being requested.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -127,8 +137,10 @@ func newResolveGroupProxy() *cobra.Command {
 	cmd.Flags().Var(&resolveGroupProxyJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "resolve-group-proxy EXTERNAL_ID"
-	cmd.Short = `Resolve an external group in the Databricks account.`
-	cmd.Long = `Resolve an external group in the Databricks account.
+	cmd.Short = `*Beta* Resolve an external group in the Databricks account.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Resolve an external group in the Databricks account.
 
   Resolves a group with the given external ID from the customer's IdP. If the
   group does not exist, it will be created in the account. If the customer is
@@ -139,6 +151,8 @@ func newResolveGroupProxy() *cobra.Command {
     EXTERNAL_ID: Required. The external ID of the group in the customer's IdP.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
@@ -211,8 +225,10 @@ func newResolveServicePrincipalProxy() *cobra.Command {
 	cmd.Flags().Var(&resolveServicePrincipalProxyJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "resolve-service-principal-proxy EXTERNAL_ID"
-	cmd.Short = `Resolve an external service principal in the Databricks account.`
-	cmd.Long = `Resolve an external service principal in the Databricks account.
+	cmd.Short = `*Beta* Resolve an external service principal in the Databricks account.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Resolve an external service principal in the Databricks account.
 
   Resolves an SP with the given external ID from the customer's IdP. If the SP
   does not exist, it will be created. If the customer is not onboarded onto
@@ -222,6 +238,8 @@ func newResolveServicePrincipalProxy() *cobra.Command {
     EXTERNAL_ID: Required. The external ID of the service principal in the customer's IdP.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
@@ -294,8 +312,10 @@ func newResolveUserProxy() *cobra.Command {
 	cmd.Flags().Var(&resolveUserProxyJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "resolve-user-proxy EXTERNAL_ID"
-	cmd.Short = `Resolve an external user in the Databricks account.`
-	cmd.Long = `Resolve an external user in the Databricks account.
+	cmd.Short = `*Beta* Resolve an external user in the Databricks account.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Resolve an external user in the Databricks account.
 
   Resolves a user with the given external ID from the customer's IdP. If the
   user does not exist, it will be created. If the customer is not onboarded onto
@@ -305,6 +325,8 @@ func newResolveUserProxy() *cobra.Command {
     EXTERNAL_ID: Required. The external ID of the user in the customer's IdP.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {

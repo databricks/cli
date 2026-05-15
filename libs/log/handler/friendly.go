@@ -62,11 +62,11 @@ func NewFriendlyHandler(out io.Writer, opts *Options) slog.Handler {
 }
 
 func (h *friendlyHandler) sprint(color ttyColor, args ...any) string {
-	return h.ttyColors[color].Sprint(args...)
+	return h.ttyColors[color].Render(fmt.Sprint(args...))
 }
 
 func (h *friendlyHandler) sprintf(color ttyColor, format string, args ...any) string {
-	return h.ttyColors[color].Sprintf(format, args...)
+	return h.ttyColors[color].Render(fmt.Sprintf(format, args...))
 }
 
 func (h *friendlyHandler) coloredLevel(r slog.Record) string {

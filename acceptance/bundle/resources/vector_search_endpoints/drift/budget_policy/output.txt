@@ -9,7 +9,7 @@ Deployment complete!
 === Simulate remote drift: set budget_policy_id outside the bundle
 >>> [CLI] vector-search-endpoints update-endpoint-budget-policy vs-endpoint-[UNIQUE_NAME] remote-policy
 {
-  "effective_budget_policy_id":"remote-policy"
+  "effective_budget_policy_id": "remote-policy"
 }
 
 === Plan detects drift and proposes update

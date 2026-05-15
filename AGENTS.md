@@ -22,25 +22,27 @@ This is the Databricks CLI, a command-line interface for interacting with Databr
 
 ### Building and Testing
 
-- `make build` - Build the CLI binary
-- `make test` - Run unit tests for all packages
+- `./task build` - Build the CLI binary
+- `./task test` - Run unit and acceptance tests for all packages
 - `go test ./acceptance -run TestAccept/bundle/<path>/<to>/<folder> -tail -test.v` - run a single acceptance test
-- `make integration` - Run integration tests (requires environment variables)
-- `make cover` - Generate test coverage reports
+- `./task integration` - Run integration tests (requires environment variables)
+- `./task cover` - Generate test coverage reports
 
 ### Code Quality
 
-- `make lint` - Run linter on changed files only (uses lintdiff.py)
-- `make lintfull` - Run full linter with fixes (golangci-lint)
-- `make ws` - Run whitespace linter
-- `make fmt` - Format code (Go, Python, YAML)
-- `make checks` - Run quick checks (tidy, whitespace, links)
+- `./task lint` - Run full linter across all Go modules (root, tools, codegen)
+- `./task lint-q` - Run linter on changed files only (uses lintdiff.py, root module, with --fix)
+- `./task ws` - Run whitespace linter
+- `./task fmt` - Format all code (Go, Python, YAML)
+- `./task fmt-q` - Format changed files only (incremental Go + Python + YAML)
+- `./task checks` - Run quick checks (tidy, whitespace, links)
 
 ### Specialized Commands
 
-- `make schema` - Generate bundle JSON schema
-- `make docs` - Generate bundle documentation
-- `make generate` - Generate CLI code from OpenAPI spec (requires universe repo)
+- `./task generate-schema` - Generate bundle JSON schema
+- `./task generate-docs` - Generate bundle documentation
+- `./task generate-genkit` - Run genkit to generate CLI commands and tagging workflow (requires universe repo)
+- `./task generate` - Run all generators
 
 ### Git Commands
 
@@ -88,7 +90,7 @@ GIT_EDITOR=true GIT_SEQUENCE_EDITOR=true VISUAL=true GIT_PAGER=cat git rebase or
 
 # Development Tips
 
-- Use `make test-update` to regenerate acceptance test outputs after changes.
+- Use `./task test-update` to regenerate acceptance test outputs after changes.
 - The CLI binary supports both `databricks` and `pipelines` command modes based on executable name.
 
 **RULE: Comments should explain "why", not "what".** Reviewers consistently reject comments that merely restate the code.
@@ -120,6 +122,8 @@ parentPath = "/Workspace" + parentPath
 **RULE: Do not leave debug print statements in committed code.** `fmt.Println`, `log.Printf`, or similar. Always scrub before committing.
 
 **RULE: Do not add defensive `nil` checks for values the caller or framework is documented to always provide.** If a check exists "just in case", either remove it or attach a comment explaining why the invariant might be violated. Direct engine resource methods (`DoCreate`, `DoUpdate`, `RemapState`, etc.) never receive nil receivers or state from the framework, so extra nil-guards there are dead code.
+
+**RULE: Use a non-resolving TLD reserved by [RFC 2606 §2](https://datatracker.ietf.org/doc/html/rfc2606#section-2) (`.test`, `.example`, `.invalid`, `.localhost`) for any test fixture host — `Config.Host`, `databricks.yml`'s `workspace.host`, `.databrickscfg`.** Real domains hit the SDK well-known endpoint resolver and can stall tests for ~5 minutes per call when the runner network can't fast-fail the lookup. The repo convention is `.test` (the TLD RFC 2606 specifically reserves "for use in testing"). See PR #5125 for prior history.
 
 Where a panic is genuinely possible (e.g. `reflect.Type.Elem()` on a non-pointer, division by an empty slice's length), validate at the entry point and return an error.
 

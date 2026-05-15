@@ -161,6 +161,7 @@ type ResourceJobJobClusterNewClusterDriverNodeTypeFlexibility struct {
 type ResourceJobJobClusterNewClusterGcpAttributes struct {
 	Availability            string `json:"availability,omitempty"`
 	BootDiskSize            int    `json:"boot_disk_size,omitempty"`
+	ConfidentialComputeType string `json:"confidential_compute_type,omitempty"`
 	FirstOnDemand           int    `json:"first_on_demand,omitempty"`
 	GoogleServiceAccount    string `json:"google_service_account,omitempty"`
 	LocalSsdCount           int    `json:"local_ssd_count,omitempty"`
@@ -224,7 +225,7 @@ type ResourceJobJobClusterNewClusterLibraryMaven struct {
 }
 
 type ResourceJobJobClusterNewClusterLibraryProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type ResourceJobJobClusterNewClusterLibraryPypi struct {
@@ -244,7 +245,7 @@ type ResourceJobJobClusterNewClusterLibrary struct {
 }
 
 type ResourceJobJobClusterNewClusterProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type ResourceJobJobClusterNewClusterWorkerNodeTypeFlexibility struct {
@@ -319,7 +320,7 @@ type ResourceJobLibraryMaven struct {
 }
 
 type ResourceJobLibraryProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type ResourceJobLibraryPypi struct {
@@ -420,6 +421,7 @@ type ResourceJobNewClusterDriverNodeTypeFlexibility struct {
 type ResourceJobNewClusterGcpAttributes struct {
 	Availability            string `json:"availability,omitempty"`
 	BootDiskSize            int    `json:"boot_disk_size,omitempty"`
+	ConfidentialComputeType string `json:"confidential_compute_type,omitempty"`
 	FirstOnDemand           int    `json:"first_on_demand,omitempty"`
 	GoogleServiceAccount    string `json:"google_service_account,omitempty"`
 	LocalSsdCount           int    `json:"local_ssd_count,omitempty"`
@@ -483,7 +485,7 @@ type ResourceJobNewClusterLibraryMaven struct {
 }
 
 type ResourceJobNewClusterLibraryProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type ResourceJobNewClusterLibraryPypi struct {
@@ -503,7 +505,7 @@ type ResourceJobNewClusterLibrary struct {
 }
 
 type ResourceJobNewClusterProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type ResourceJobNewClusterWorkerNodeTypeFlexibility struct {
@@ -583,7 +585,7 @@ type ResourceJobPipelineTask struct {
 }
 
 type ResourceJobProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type ResourceJobPythonWheelTask struct {
@@ -831,7 +833,7 @@ type ResourceJobTaskForEachTaskTaskLibraryMaven struct {
 }
 
 type ResourceJobTaskForEachTaskTaskLibraryProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type ResourceJobTaskForEachTaskTaskLibraryPypi struct {
@@ -932,6 +934,7 @@ type ResourceJobTaskForEachTaskTaskNewClusterDriverNodeTypeFlexibility struct {
 type ResourceJobTaskForEachTaskTaskNewClusterGcpAttributes struct {
 	Availability            string `json:"availability,omitempty"`
 	BootDiskSize            int    `json:"boot_disk_size,omitempty"`
+	ConfidentialComputeType string `json:"confidential_compute_type,omitempty"`
 	FirstOnDemand           int    `json:"first_on_demand,omitempty"`
 	GoogleServiceAccount    string `json:"google_service_account,omitempty"`
 	LocalSsdCount           int    `json:"local_ssd_count,omitempty"`
@@ -995,7 +998,7 @@ type ResourceJobTaskForEachTaskTaskNewClusterLibraryMaven struct {
 }
 
 type ResourceJobTaskForEachTaskTaskNewClusterLibraryProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type ResourceJobTaskForEachTaskTaskNewClusterLibraryPypi struct {
@@ -1015,7 +1018,7 @@ type ResourceJobTaskForEachTaskTaskNewClusterLibrary struct {
 }
 
 type ResourceJobTaskForEachTaskTaskNewClusterProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type ResourceJobTaskForEachTaskTaskNewClusterWorkerNodeTypeFlexibility struct {
@@ -1308,7 +1311,7 @@ type ResourceJobTaskLibraryMaven struct {
 }
 
 type ResourceJobTaskLibraryProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type ResourceJobTaskLibraryPypi struct {
@@ -1409,6 +1412,7 @@ type ResourceJobTaskNewClusterDriverNodeTypeFlexibility struct {
 type ResourceJobTaskNewClusterGcpAttributes struct {
 	Availability            string `json:"availability,omitempty"`
 	BootDiskSize            int    `json:"boot_disk_size,omitempty"`
+	ConfidentialComputeType string `json:"confidential_compute_type,omitempty"`
 	FirstOnDemand           int    `json:"first_on_demand,omitempty"`
 	GoogleServiceAccount    string `json:"google_service_account,omitempty"`
 	LocalSsdCount           int    `json:"local_ssd_count,omitempty"`
@@ -1472,7 +1476,7 @@ type ResourceJobTaskNewClusterLibraryMaven struct {
 }
 
 type ResourceJobTaskNewClusterLibraryProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type ResourceJobTaskNewClusterLibraryPypi struct {
@@ -1492,7 +1496,7 @@ type ResourceJobTaskNewClusterLibrary struct {
 }
 
 type ResourceJobTaskNewClusterProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type ResourceJobTaskNewClusterWorkerNodeTypeFlexibility struct {

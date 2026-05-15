@@ -15,7 +15,6 @@ import (
 	"time"
 
 	"github.com/databricks/cli/libs/auth"
-	"github.com/databricks/cli/libs/auth/storage"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
@@ -146,10 +145,10 @@ func TestSetHost(t *testing.T) {
 	assert.Equal(t, "val from --host", authArguments.Host)
 
 	// Test setting host from flag with trailing slash is stripped
-	authArguments.Host = "https://www.host1.com/"
+	authArguments.Host = "https://www.host1.test/"
 	err = setHostAndAccountId(ctx, profile1, &authArguments, []string{})
 	assert.NoError(t, err)
-	assert.Equal(t, "https://www.host1.com", authArguments.Host)
+	assert.Equal(t, "https://www.host1.test", authArguments.Host)
 
 	// Test setting host from argument
 	authArguments.Host = ""
@@ -159,21 +158,21 @@ func TestSetHost(t *testing.T) {
 
 	// Test setting host from argument with trailing slash is stripped
 	authArguments.Host = ""
-	err = setHostAndAccountId(ctx, profile1, &authArguments, []string{"https://www.host1.com/"})
+	err = setHostAndAccountId(ctx, profile1, &authArguments, []string{"https://www.host1.test/"})
 	assert.NoError(t, err)
-	assert.Equal(t, "https://www.host1.com", authArguments.Host)
+	assert.Equal(t, "https://www.host1.test", authArguments.Host)
 
 	// Test setting host from profile
 	authArguments.Host = ""
 	err = setHostAndAccountId(ctx, profile1, &authArguments, []string{})
 	assert.NoError(t, err)
-	assert.Equal(t, "https://www.host1.com", authArguments.Host)
+	assert.Equal(t, "https://www.host1.test", authArguments.Host)
 
 	// Test setting host from profile
 	authArguments.Host = ""
 	err = setHostAndAccountId(ctx, profile2, &authArguments, []string{})
 	assert.NoError(t, err)
-	assert.Equal(t, "https://www.host2.com", authArguments.Host)
+	assert.Equal(t, "https://www.host2.test", authArguments.Host)
 
 	// Test host is not set. Should prompt.
 	authArguments.Host = ""
@@ -276,14 +275,14 @@ func TestLoadProfileByNameAndClusterID(t *testing.T) {
 			name:              "cluster profile",
 			profile:           "cluster-profile",
 			configFileEnv:     "./testdata/.databrickscfg",
-			expectedHost:      "https://www.host2.com",
+			expectedHost:      "https://www.host2.test",
 			expectedClusterID: "cluster-from-config",
 		},
 		{
 			name:              "profile from home directory (existing)",
 			profile:           "cluster-profile",
 			homeDirOverride:   "testdata",
-			expectedHost:      "https://www.host2.com",
+			expectedHost:      "https://www.host2.test",
 			expectedClusterID: "cluster-from-config",
 		},
 		{
@@ -1103,74 +1102,4 @@ func TestLoginRejectsPositionalArgWithProfileFlag(t *testing.T) {
 	cmd.SetArgs([]string{"--profile", "myprofile", "https://example.com"})
 	err := cmd.Execute()
 	assert.ErrorContains(t, err, `argument "https://example.com" cannot be combined with --host or --profile`)
-}
-
-func TestDualWriteLegacyHostKey(t *testing.T) {
-	const (
-		profileName = "dual-profile"
-		host        = "https://dual-host.example.com"
-	)
-	tok := &oauth2.Token{AccessToken: "abc", RefreshToken: "r"}
-
-	cacheWithToken := func() *inMemoryTokenCache {
-		return &inMemoryTokenCache{Tokens: map[string]*oauth2.Token{profileName: tok}}
-	}
-	emptyCache := func() *inMemoryTokenCache {
-		return &inMemoryTokenCache{Tokens: map[string]*oauth2.Token{}}
-	}
-	newArg := func(t *testing.T) *u2m.BasicDiscoveryOAuthArgument {
-		arg, err := u2m.NewBasicDiscoveryOAuthArgument(profileName)
-		require.NoError(t, err)
-		arg.SetDiscoveredHost(host)
-		return arg
-	}
-
-	cases := []struct {
-		name        string
-		mode        storage.StorageMode
-		cache       func() *inMemoryTokenCache
-		wantHostKey bool
-	}{
-		{
-			name:        "legacy mirrors cached token under host key",
-			mode:        storage.StorageModeLegacy,
-			cache:       cacheWithToken,
-			wantHostKey: true,
-		},
-		{
-			name:  "legacy is a no-op when cache has no entry",
-			mode:  storage.StorageModeLegacy,
-			cache: emptyCache,
-		},
-		{
-			name:  "secure skips dual-write",
-			mode:  storage.StorageModeSecure,
-			cache: cacheWithToken,
-		},
-		{
-			name:  "plaintext skips dual-write",
-			mode:  storage.StorageModePlaintext,
-			cache: cacheWithToken,
-		},
-		{
-			name:  "unknown mode skips dual-write",
-			mode:  storage.StorageModeUnknown,
-			cache: cacheWithToken,
-		},
-	}
-
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			c := tc.cache()
-			dualWriteLegacyHostKey(t.Context(), c, newArg(t), tc.mode)
-
-			got, err := c.Lookup(host)
-			if tc.wantHostKey {
-				require.NoError(t, err)
-				assert.Equal(t, tok, got)
-			} else {
-				assert.ErrorIs(t, err, cache.ErrNotFound)
-			}
-		})
-	}
 }

@@ -15,6 +15,7 @@ func newToolsCmd() *cobra.Command {
 	cmd.AddCommand(newQueryCmd())
 	cmd.AddCommand(newDiscoverSchemaCmd())
 	cmd.AddCommand(newGetDefaultWarehouseCmd())
+	cmd.AddCommand(newStatementCmd())
 
 	return cmd
 }

@@ -21,7 +21,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m/cache"
-	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
 	"golang.org/x/oauth2"
 )
@@ -30,16 +29,6 @@ func helpfulError(ctx context.Context, profile string, persistentAuth u2m.OAuthA
 	loginMsg := auth.BuildLoginCommand(ctx, profile, persistentAuth)
 	return fmt.Sprintf("Try logging in again with `%s` before retrying. If this fails, please report this issue to the Databricks CLI maintainers at https://github.com/databricks/cli/issues/new", loginMsg)
 }
-
-// profileSelectionResult represents the user's choice from the interactive
-// profile picker.
-type profileSelectionResult int
-
-const (
-	profileSelected   profileSelectionResult = iota // User picked a profile
-	enterHostSelected                               // User chose "Enter a host URL manually"
-	createNewSelected                               // User chose "Create a new profile"
-)
 
 func newTokenCommand(authArguments *auth.AuthArguments) *cobra.Command {
 	cmd := &cobra.Command{
@@ -132,9 +121,9 @@ type loadTokenArgs struct {
 	// responsible for construction so that tests can substitute an in-memory cache.
 	tokenCache cache.TokenCache
 
-	// mode is the resolved storage mode. When set to StorageModeLegacy, login
-	// paths mirror freshly minted tokens under the legacy host-based key so
-	// older SDKs that still look up by host continue to find them.
+	// mode is the resolved storage mode. When set to StorageModePlaintext,
+	// login paths mirror freshly minted tokens under the legacy host-based
+	// key so older SDKs that still look up by host continue to find them.
 	mode storage.StorageMode
 
 	// persistentAuthOpts are the options to pass to the persistent auth client.
@@ -353,15 +342,20 @@ func resolveNoArgsToken(ctx context.Context, profiler profile.Profiler, authArgs
 	}
 
 	// Interactive: show profile picker.
-	result, selectedName, err := promptForProfileSelection(ctx, allProfiles)
+	currentDefault, _ := databrickscfg.GetDefaultProfile(ctx, env.Get(ctx, "DATABRICKS_CONFIG_FILE"))
+	result, selectedName, err := pickAuthProfile(ctx, allProfiles, profilePickerOptions{
+		Label:         "Select a profile",
+		Default:       currentDefault,
+		IncludeExtras: true,
+	})
 	if err != nil {
 		return "", nil, err
 	}
 	switch result {
-	case enterHostSelected:
+	case profilePickerEnterHost:
 		// Fall through — setHostAndAccountId will prompt for the host.
 		return "", nil, nil
-	case createNewSelected:
+	case profilePickerCreateNew:
 		return runInlineLogin(ctx, profiler, tokenCache, mode)
 	default:
 		p, err := loadProfileByName(ctx, selectedName, profiler)
@@ -369,57 +363,6 @@ func resolveNoArgsToken(ctx context.Context, profiler profile.Profiler, authArgs
 			return "", nil, err
 		}
 		return selectedName, p, nil
-	}
-}
-
-// profileSelectItem is used by promptForProfileSelection to render both
-// regular profiles and special action options in the same select list.
-type profileSelectItem struct {
-	Name string
-	Host string
-}
-
-// promptForProfileSelection shows a promptui select list with all configured
-// profiles plus "Enter a host URL" and "Create a new profile" options.
-// Returns the selection type and, when a profile is selected, its name.
-func promptForProfileSelection(ctx context.Context, profiles profile.Profiles) (profileSelectionResult, string, error) {
-	items := make([]profileSelectItem, 0, len(profiles)+2)
-	for _, p := range profiles {
-		items = append(items, profileSelectItem{Name: p.Name, Host: p.Host})
-	}
-	createProfileIdx := len(items)
-	items = append(items, profileSelectItem{Name: "Create a new profile"})
-	enterHostIdx := len(items)
-	items = append(items, profileSelectItem{Name: "Enter a host URL manually"})
-
-	i, _, err := cmdio.RunSelect(ctx, &promptui.Select{
-		Label:             "Select a profile",
-		Items:             items,
-		StartInSearchMode: len(profiles) > 5,
-		Searcher: func(input string, index int) bool {
-			input = strings.ToLower(input)
-			name := strings.ToLower(items[index].Name)
-			host := strings.ToLower(items[index].Host)
-			return strings.Contains(name, input) || strings.Contains(host, input)
-		},
-		Templates: &promptui.SelectTemplates{
-			Label:    "{{ . | faint }}",
-			Active:   `{{.Name | bold}}{{if .Host}} ({{.Host|faint}}){{end}}`,
-			Inactive: `{{.Name}}{{if .Host}} ({{.Host}}){{end}}`,
-			Selected: `{{ "Using profile" | faint }}: {{ .Name | bold }}`,
-		},
-	})
-	if err != nil {
-		return 0, "", err
-	}
-
-	switch i {
-	case enterHostIdx:
-		return enterHostSelected, "", nil
-	case createProfileIdx:
-		return createNewSelected, "", nil
-	default:
-		return profileSelected, profiles[i].Name, nil
 	}
 }
 
@@ -460,7 +403,7 @@ func runInlineLogin(ctx context.Context, profiler profile.Profiler, tokenCache c
 	persistentAuthOpts := []u2m.PersistentAuthOption{
 		u2m.WithOAuthArgument(oauthArgument),
 		u2m.WithBrowser(func(url string) error { return browser.Open(ctx, url) }),
-		u2m.WithTokenCache(tokenCache),
+		u2m.WithTokenCache(storage.WrapForOAuthArgument(tokenCache, mode, oauthArgument)),
 	}
 	if len(scopesList) > 0 {
 		persistentAuthOpts = append(persistentAuthOpts, u2m.WithScopes(scopesList))
@@ -477,7 +420,6 @@ func runInlineLogin(ctx context.Context, profiler profile.Profiler, tokenCache c
 	if err = persistentAuth.Challenge(); err != nil {
 		return "", nil, err
 	}
-	dualWriteLegacyHostKey(ctx, tokenCache, oauthArgument, mode)
 
 	clearKeys := oauthLoginClearKeys()
 	clearKeys = append(clearKeys, databrickscfg.ExperimentalIsUnifiedHostKey)
