@@ -43,5 +43,6 @@ Terraform will perform the following actions:
 Plan: 0 to add, 1 to change, 0 to destroy.
 
 
-Error: This bind operation requires user confirmation, but the current console does not support prompting. Please specify --auto-approve if you would like to skip prompts and proceed.
+Error: this bind operation requires user confirmation, but the current console does not support prompting.
+To proceed, use --auto-approve after reviewing the plan above.
 
