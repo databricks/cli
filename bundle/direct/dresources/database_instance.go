@@ -46,12 +46,12 @@ func (d *ResourceDatabaseInstance) DoUpdate(ctx context.Context, id string, conf
 	return nil, err
 }
 
-func (d *ResourceDatabaseInstance) WaitAfterCreate(ctx context.Context, config *database.DatabaseInstance) (*database.DatabaseInstance, error) {
+func (d *ResourceDatabaseInstance) WaitAfterCreate(ctx context.Context, id string, config *database.DatabaseInstance) (*database.DatabaseInstance, error) {
 	waiter := &database.WaitGetDatabaseInstanceDatabaseAvailable[database.DatabaseInstance]{
 		Response: config,
-		Name:     config.Name,
+		Name:     id,
 		Poll: func(timeout time.Duration, callback func(*database.DatabaseInstance)) (*database.DatabaseInstance, error) {
-			return d.client.Database.WaitGetDatabaseInstanceDatabaseAvailable(ctx, config.Name, timeout, callback)
+			return d.client.Database.WaitGetDatabaseInstanceDatabaseAvailable(ctx, id, timeout, callback)
 		},
 	}
 

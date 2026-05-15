@@ -77,8 +77,8 @@ func (r *ResourceVectorSearchEndpoint) DoCreate(ctx context.Context, config *vec
 	return id, newVectorSearchEndpointRemote(waiter.Response), nil
 }
 
-func (r *ResourceVectorSearchEndpoint) WaitAfterCreate(ctx context.Context, config *vectorsearch.CreateEndpoint) (*VectorSearchEndpointRemote, error) {
-	info, err := r.client.VectorSearchEndpoints.WaitGetEndpointVectorSearchEndpointOnline(ctx, config.Name, 60*time.Minute, nil)
+func (r *ResourceVectorSearchEndpoint) WaitAfterCreate(ctx context.Context, id string, _ *vectorsearch.CreateEndpoint) (*VectorSearchEndpointRemote, error) {
+	info, err := r.client.VectorSearchEndpoints.WaitGetEndpointVectorSearchEndpointOnline(ctx, id, 60*time.Minute, nil)
 	if err != nil {
 		return nil, err
 	}

@@ -67,10 +67,10 @@ type IResource interface {
 
 	// [Optional] WaitAfterCreate waits for the resource to become ready after creation. Returns optionally updated remote state.
 	// TODO: wait status should be persisted in the state.
-	WaitAfterCreate(ctx context.Context, newState any) (remoteState any, e error)
+	WaitAfterCreate(ctx context.Context, id string, newState any) (remoteState any, e error)
 
 	// [Optional] WaitAfterUpdate waits for the resource to become ready after update. Returns optionally updated remote state.
-	WaitAfterUpdate(ctx context.Context, newState any) (remoteState any, e error)
+	WaitAfterUpdate(ctx context.Context, id string, newState any) (remoteState any, e error)
 
 	// [Optional] KeyedSlices returns a map from path patterns to KeyFunc for comparing slices by key instead of by index.
 	// Example: func (*ResourcePermissions) KeyedSlices(state *PermissionsState) map[string]any
@@ -306,7 +306,10 @@ func (a *Adapter) validate() error {
 	}
 
 	if a.waitAfterCreate != nil {
-		validations = append(validations, "WaitAfterCreate newState", a.waitAfterCreate.InTypes[1], stateType)
+		validations = append(validations,
+			"WaitAfterCreate id", a.waitAfterCreate.InTypes[1], reflect.TypeFor[string](),
+			"WaitAfterCreate newState", a.waitAfterCreate.InTypes[2], stateType,
+		)
 		// WaitAfterCreate must return (remoteType, error)
 		if len(a.waitAfterCreate.OutTypes) != 2 {
 			return fmt.Errorf("WaitAfterCreate must return (remoteType, error), got %d return values", len(a.waitAfterCreate.OutTypes))
@@ -315,7 +318,10 @@ func (a *Adapter) validate() error {
 	}
 
 	if a.waitAfterUpdate != nil {
-		validations = append(validations, "WaitAfterUpdate newState", a.waitAfterUpdate.InTypes[1], stateType)
+		validations = append(validations,
+			"WaitAfterUpdate id", a.waitAfterUpdate.InTypes[1], reflect.TypeFor[string](),
+			"WaitAfterUpdate newState", a.waitAfterUpdate.InTypes[2], stateType,
+		)
 		// WaitAfterUpdate must return (remoteType, error)
 		if len(a.waitAfterUpdate.OutTypes) != 2 {
 			return fmt.Errorf("WaitAfterUpdate must return (remoteType, error), got %d return values", len(a.waitAfterUpdate.OutTypes))
@@ -485,12 +491,12 @@ func (a *Adapter) DoResize(ctx context.Context, id string, newState any) error {
 // WaitAfterCreate waits for the resource to become ready after creation.
 // If the resource doesn't implement this method, this is a no-op.
 // Returns the updated remoteState if available, otherwise returns nil
-func (a *Adapter) WaitAfterCreate(ctx context.Context, newState any) (any, error) {
+func (a *Adapter) WaitAfterCreate(ctx context.Context, id string, newState any) (any, error) {
 	if a.waitAfterCreate == nil {
 		return nil, nil // no-op if not implemented
 	}
 
-	outs, err := a.waitAfterCreate.Call(ctx, newState)
+	outs, err := a.waitAfterCreate.Call(ctx, id, newState)
 	if err != nil {
 		return nil, err
 	}
@@ -502,12 +508,12 @@ func (a *Adapter) WaitAfterCreate(ctx context.Context, newState any) (any, error
 // WaitAfterUpdate waits for the resource to become ready after update.
 // If the resource doesn't implement this method, this is a no-op.
 // Returns the updated remoteState if available, otherwise returns nil.
-func (a *Adapter) WaitAfterUpdate(ctx context.Context, newState any) (any, error) {
+func (a *Adapter) WaitAfterUpdate(ctx context.Context, id string, newState any) (any, error) {
 	if a.waitAfterUpdate == nil {
 		return nil, nil // no-op if not implemented
 	}
 
-	outs, err := a.waitAfterUpdate.Call(ctx, newState)
+	outs, err := a.waitAfterUpdate.Call(ctx, id, newState)
 	if err != nil {
 		return nil, err
 	}

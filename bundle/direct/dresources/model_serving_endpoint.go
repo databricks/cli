@@ -150,12 +150,12 @@ func (r *ResourceModelServingEndpoint) waitForEndpointReady(ctx context.Context,
 	}, nil
 }
 
-func (r *ResourceModelServingEndpoint) WaitAfterCreate(ctx context.Context, config *serving.CreateServingEndpoint) (*ModelServingEndpointRemote, error) {
-	return r.waitForEndpointReady(ctx, config.Name)
+func (r *ResourceModelServingEndpoint) WaitAfterCreate(ctx context.Context, id string, _ *serving.CreateServingEndpoint) (*ModelServingEndpointRemote, error) {
+	return r.waitForEndpointReady(ctx, id)
 }
 
-func (r *ResourceModelServingEndpoint) WaitAfterUpdate(ctx context.Context, config *serving.CreateServingEndpoint) (*ModelServingEndpointRemote, error) {
-	return r.waitForEndpointReady(ctx, config.Name)
+func (r *ResourceModelServingEndpoint) WaitAfterUpdate(ctx context.Context, id string, _ *serving.CreateServingEndpoint) (*ModelServingEndpointRemote, error) {
+	return r.waitForEndpointReady(ctx, id)
 }
 
 func (r *ResourceModelServingEndpoint) updateAiGateway(ctx context.Context, id string, aiGateway *serving.AiGatewayConfig) error {

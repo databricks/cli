@@ -321,13 +321,13 @@ func (r *ResourceApp) DoDelete(ctx context.Context, id string) error {
 	return err
 }
 
-func (r *ResourceApp) WaitAfterCreate(ctx context.Context, config *AppState) (*AppRemote, error) {
-	remote, err := r.waitForApp(ctx, r.client, config.Name)
+func (r *ResourceApp) WaitAfterCreate(ctx context.Context, id string, config *AppState) (*AppRemote, error) {
+	remote, err := r.waitForApp(ctx, r.client, id)
 	if err != nil {
 		return nil, err
 	}
 	alreadyStarted := remote.Lifecycle != nil && remote.Lifecycle.Started != nil && *remote.Lifecycle.Started
-	if err := r.manageLifecycle(ctx, config.Name, config, alreadyStarted); err != nil {
+	if err := r.manageLifecycle(ctx, id, config, alreadyStarted); err != nil {
 		return nil, err
 	}
 	return remote, nil
