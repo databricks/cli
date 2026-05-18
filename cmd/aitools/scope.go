@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/libs/aitools/installer"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
+	"github.com/spf13/cobra"
 )
 
 // promptScopeSelection is a package-level var so tests can replace it with a mock.
@@ -81,6 +82,45 @@ func defaultPromptScopeSelection(ctx context.Context) (string, error) {
 }
 
 const scopeBoth = "both"
+
+// markScopeBoolsDeprecated hides --project and --global from help and emits a
+// stderr warning pointing at --scope when they're used. The booleans are kept
+// so existing scripts and the experimental backward-compat aliases keep
+// working through the next release.
+func markScopeBoolsDeprecated(cmd *cobra.Command) {
+	cmd.Flags().Lookup("project").Deprecated = "use --scope=project"
+	cmd.Flags().Lookup("project").Hidden = true
+	cmd.Flags().Lookup("global").Deprecated = "use --scope=global"
+	cmd.Flags().Lookup("global").Hidden = true
+}
+
+// parseScopeFlag translates --scope into the equivalent --project/--global bool pair.
+// Returns (projectFlag, globalFlag, nil) unchanged when --scope is empty so the
+// deprecated booleans can keep flowing through the existing resolveScope* helpers.
+// Errors if --scope is combined with --project or --global. When allowBoth is
+// false, --scope=both is rejected up front so install and uninstall don't have
+// to special-case it.
+func parseScopeFlag(scopeFlag string, projectFlag, globalFlag, allowBoth bool) (proj, glob bool, err error) {
+	if scopeFlag == "" {
+		return projectFlag, globalFlag, nil
+	}
+	if projectFlag || globalFlag {
+		return false, false, errors.New("cannot use --scope with --project or --global; --project and --global are deprecated aliases for --scope")
+	}
+	switch scopeFlag {
+	case installer.ScopeProject:
+		return true, false, nil
+	case installer.ScopeGlobal:
+		return false, true, nil
+	case scopeBoth:
+		if !allowBoth {
+			return false, false, errors.New("--scope=both is not supported for this command; use 'project' or 'global'")
+		}
+		return true, true, nil
+	default:
+		return false, false, fmt.Errorf("invalid --scope %q: must be one of project, global, both", scopeFlag)
+	}
+}
 
 // detectInstalledScopes checks which scopes have a .state.json file present.
 func detectInstalledScopes(globalDir, projectDir string) (global, project bool, err error) {

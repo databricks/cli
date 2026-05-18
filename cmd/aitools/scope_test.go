@@ -67,6 +67,47 @@ func interactiveCtx(t *testing.T) (context.Context, func()) {
 	return ctx, test.Done
 }
 
+// --- parseScopeFlag tests ---
+
+func TestParseScopeFlag(t *testing.T) {
+	tests := []struct {
+		name      string
+		scope     string
+		project   bool
+		global    bool
+		allowBoth bool
+		wantProj  bool
+		wantGlob  bool
+		wantErr   string
+	}{
+		{name: "unset", scope: ""},
+		{name: "legacy project only", project: true, wantProj: true},
+		{name: "legacy global only", global: true, wantGlob: true},
+		{name: "legacy both passthrough", project: true, global: true, wantProj: true, wantGlob: true},
+		{name: "scope project", scope: "project", wantProj: true},
+		{name: "scope global", scope: "global", wantGlob: true},
+		{name: "scope both allowed", scope: "both", allowBoth: true, wantProj: true, wantGlob: true},
+		{name: "scope both disallowed", scope: "both", wantErr: "--scope=both is not supported"},
+		{name: "scope invalid value", scope: "all", wantErr: `invalid --scope "all"`},
+		{name: "scope conflicts with project", scope: "project", project: true, wantErr: "cannot use --scope with --project or --global"},
+		{name: "scope conflicts with global", scope: "global", global: true, wantErr: "cannot use --scope with --project or --global"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			proj, glob, err := parseScopeFlag(tt.scope, tt.project, tt.global, tt.allowBoth)
+			if tt.wantErr != "" {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tt.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.wantProj, proj)
+			assert.Equal(t, tt.wantGlob, glob)
+		})
+	}
+}
+
 // --- detectInstalledScopes tests (table-driven) ---
 
 func TestDetectInstalledScopes(t *testing.T) {

@@ -1,7 +1,6 @@
 package aitools
 
 import (
-	"errors"
 	"fmt"
 	"maps"
 	"slices"
@@ -19,6 +18,7 @@ import (
 var listSkillsFn = defaultListSkills
 
 func NewListCmd() *cobra.Command {
+	var scopeFlag string
 	var projectFlag, globalFlag bool
 
 	cmd := &cobra.Command{
@@ -26,22 +26,27 @@ func NewListCmd() *cobra.Command {
 		Short: "List installed AI tools components",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if projectFlag && globalFlag {
-				return errors.New("cannot use --global and --project together")
+			projectFlag, globalFlag, err := parseScopeFlag(scopeFlag, projectFlag, globalFlag, true)
+			if err != nil {
+				return err
 			}
-			// For list: no flag = show both scopes (empty string).
+
+			// list: empty scope = show both. Both flags set is equivalent.
 			var scope string
-			if projectFlag {
+			switch {
+			case projectFlag && !globalFlag:
 				scope = installer.ScopeProject
-			} else if globalFlag {
+			case globalFlag && !projectFlag:
 				scope = installer.ScopeGlobal
 			}
 			return listSkillsFn(cmd, scope)
 		},
 	}
 
+	cmd.Flags().StringVar(&scopeFlag, "scope", "", "Scope to show: project, global, or both (default: both)")
 	cmd.Flags().BoolVar(&projectFlag, "project", false, "Show only project-scoped skills")
 	cmd.Flags().BoolVar(&globalFlag, "global", false, "Show only globally-scoped skills")
+	markScopeBoolsDeprecated(cmd)
 	return cmd
 }
 

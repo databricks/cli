@@ -11,7 +11,7 @@ import (
 
 func NewUpdateCmd() *cobra.Command {
 	var check, force, noNew bool
-	var skillsFlag string
+	var skillsFlag, scopeFlag string
 	var projectFlag, globalFlag bool
 
 	cmd := &cobra.Command{
@@ -31,6 +31,11 @@ preview what would change without downloading.`,
 				return err
 			}
 			projectDir, err := installer.ProjectSkillsDir(ctx)
+			if err != nil {
+				return err
+			}
+
+			projectFlag, globalFlag, err := parseScopeFlag(scopeFlag, projectFlag, globalFlag, true)
 			if err != nil {
 				return err
 			}
@@ -73,7 +78,9 @@ preview what would change without downloading.`,
 	cmd.Flags().BoolVar(&force, "force", false, "Re-download even if versions match")
 	cmd.Flags().BoolVar(&noNew, "no-new", false, "Don't auto-install new skills from manifest")
 	cmd.Flags().StringVar(&skillsFlag, "skills", "", "Specific skills to update (comma-separated)")
+	cmd.Flags().StringVar(&scopeFlag, "scope", "", "Update scope: project, global, or both")
 	cmd.Flags().BoolVar(&projectFlag, "project", false, "Update project-scoped skills")
 	cmd.Flags().BoolVar(&globalFlag, "global", false, "Update globally-scoped skills")
+	markScopeBoolsDeprecated(cmd)
 	return cmd
 }

@@ -6,7 +6,7 @@ import (
 )
 
 func NewUninstallCmd() *cobra.Command {
-	var skillsFlag string
+	var skillsFlag, scopeFlag string
 	var projectFlag, globalFlag bool
 
 	cmd := &cobra.Command{
@@ -18,6 +18,11 @@ By default, removes all skills. Use --skills to remove specific skills only.`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
+
+			projectFlag, globalFlag, err := parseScopeFlag(scopeFlag, projectFlag, globalFlag, false)
+			if err != nil {
+				return err
+			}
 
 			globalDir, err := installer.GlobalSkillsDir(ctx)
 			if err != nil {
@@ -42,7 +47,9 @@ By default, removes all skills. Use --skills to remove specific skills only.`,
 	}
 
 	cmd.Flags().StringVar(&skillsFlag, "skills", "", "Specific skills to uninstall (comma-separated)")
+	cmd.Flags().StringVar(&scopeFlag, "scope", "", "Uninstall scope: project or global")
 	cmd.Flags().BoolVar(&projectFlag, "project", false, "Uninstall project-scoped skills")
 	cmd.Flags().BoolVar(&globalFlag, "global", false, "Uninstall globally-scoped skills")
+	markScopeBoolsDeprecated(cmd)
 	return cmd
 }
