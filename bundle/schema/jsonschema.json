@@ -1511,6 +1511,56 @@
                   }
                 ]
               },
+              "resources.PostgresSyncedTable": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "branch": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "create_database_objects_if_missing": {
+                        "$ref": "#/$defs/bool"
+                      },
+                      "existing_pipeline_id": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "lifecycle": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
+                      },
+                      "new_pipeline_spec": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.NewPipelineSpec"
+                      },
+                      "postgres_database": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "primary_key_columns": {
+                        "$ref": "#/$defs/slice/string"
+                      },
+                      "scheduling_policy": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.SyncedTableSyncedTableSpecSyncedTableSchedulingPolicy"
+                      },
+                      "source_table_full_name": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "synced_table_id": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "timeseries_key": {
+                        "$ref": "#/$defs/string"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                      "synced_table_id"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
               "resources.QualityMonitor": {
                 "oneOf": [
                   {
@@ -2527,6 +2577,9 @@
                     },
                     "postgres_projects": {
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.PostgresProject"
+                    },
+                    "postgres_synced_tables": {
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.PostgresSyncedTable"
                     },
                     "quality_monitors": {
                       "description": "The quality monitor definitions for the bundle, where each key is the name of the quality monitor.",
@@ -9820,6 +9873,29 @@
                 }
               ]
             },
+            "postgres.NewPipelineSpec": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "budget_policy_id": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "storage_catalog": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "storage_schema": {
+                      "$ref": "#/$defs/string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
             "postgres.ProjectCustomTag": {
               "oneOf": [
                 {
@@ -9876,6 +9952,9 @@
                   "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
                 }
               ]
+            },
+            "postgres.SyncedTableSyncedTableSpecSyncedTableSchedulingPolicy": {
+              "type": "string"
             },
             "serving.Ai21LabsConfig": {
               "oneOf": [
@@ -11764,6 +11843,20 @@
                       "type": "object",
                       "additionalProperties": {
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.PostgresProject"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
+                "resources.PostgresSyncedTable": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.PostgresSyncedTable"
                       }
                     },
                     {
