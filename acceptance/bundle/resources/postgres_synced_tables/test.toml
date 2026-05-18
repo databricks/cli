@@ -1,0 +1,16 @@
+Local = true
+Cloud = false
+RequiresUnityCatalog = true
+
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+
+Ignore = [
+    "databricks.yml",
+    ".databricks",
+]
+
+[[Repls]]
+# Normalize postgres operation IDs (unique per operation).
+Old = '/operations/[A-Za-z0-9+/=-]+'
+New = '/operations/[OPERATION_ID]'
+Order = 2000

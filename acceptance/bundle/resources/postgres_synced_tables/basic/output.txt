@@ -1,0 +1,61 @@
+
+>>> [CLI] bundle validate
+Name: deploy-postgres-synced-table-[UNIQUE_NAME]
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-synced-table-[UNIQUE_NAME]/default
+
+Validation OK!
+
+>>> [CLI] bundle summary
+Name: deploy-postgres-synced-table-[UNIQUE_NAME]
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-synced-table-[UNIQUE_NAME]/default
+Resources:
+  Postgres synced tables:
+    my_table:
+      Name: main.public.trips_[UNIQUE_NAME]
+      URL:  [DATABRICKS_URL]/explore/data/main.public.trips_[UNIQUE_NAME]?o=[NUMID]
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-synced-table-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] postgres get-synced-table synced_tables/main.public.trips_[UNIQUE_NAME]
+{
+  "create_time": "[TIMESTAMP]",
+  "name": "synced_tables/main.public.trips_[UNIQUE_NAME]",
+  "status": {
+    "detailed_state": "SYNCED_TABLE_ONLINE",
+    "unity_catalog_provisioning_state": "ACTIVE"
+  },
+  "uid": "[UUID]"
+}
+
+>>> [CLI] bundle summary
+Name: deploy-postgres-synced-table-[UNIQUE_NAME]
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-synced-table-[UNIQUE_NAME]/default
+Resources:
+  Postgres synced tables:
+    my_table:
+      Name: main.public.trips_[UNIQUE_NAME]
+      URL:  [DATABRICKS_URL]/explore/data/main.public.trips_[UNIQUE_NAME]?o=[NUMID]
+
+>>> print_requests.py --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.postgres_synced_tables.my_table
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-synced-table-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!
