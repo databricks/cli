@@ -2733,6 +2733,25 @@ resources.postgres_branches.*.ttl	*duration.Duration	INPUT	STATE
 resources.postgres_branches.*.uid	string	REMOTE
 resources.postgres_branches.*.update_time	*time.Time	REMOTE
 resources.postgres_branches.*.url	string	INPUT
+resources.postgres_databases.*.create_time	*time.Time	REMOTE
+resources.postgres_databases.*.database_id	string	INPUT	STATE
+resources.postgres_databases.*.id	string	INPUT
+resources.postgres_databases.*.lifecycle	resources.Lifecycle	INPUT
+resources.postgres_databases.*.lifecycle.prevent_destroy	bool	INPUT
+resources.postgres_databases.*.modified_status	string	INPUT
+resources.postgres_databases.*.name	string	REMOTE
+resources.postgres_databases.*.parent	string	ALL
+resources.postgres_databases.*.postgres_database	string	INPUT	STATE
+resources.postgres_databases.*.role	string	INPUT	STATE
+resources.postgres_databases.*.spec	*postgres.DatabaseDatabaseSpec	REMOTE
+resources.postgres_databases.*.spec.postgres_database	string	REMOTE
+resources.postgres_databases.*.spec.role	string	REMOTE
+resources.postgres_databases.*.status	*postgres.DatabaseDatabaseStatus	REMOTE
+resources.postgres_databases.*.status.database_id	string	REMOTE
+resources.postgres_databases.*.status.postgres_database	string	REMOTE
+resources.postgres_databases.*.status.role	string	REMOTE
+resources.postgres_databases.*.update_time	*time.Time	REMOTE
+resources.postgres_databases.*.url	string	INPUT
 resources.postgres_endpoints.*.autoscaling_limit_max_cu	float64	INPUT	STATE
 resources.postgres_endpoints.*.autoscaling_limit_min_cu	float64	INPUT	STATE
 resources.postgres_endpoints.*.create_time	*time.Time	REMOTE

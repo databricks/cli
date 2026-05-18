@@ -1409,6 +1409,39 @@
                   }
                 ]
               },
+              "resources.PostgresDatabase": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "database_id": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "lifecycle": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
+                      },
+                      "parent": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "postgres_database": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "role": {
+                        "$ref": "#/$defs/string"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                      "database_id",
+                      "parent"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
               "resources.PostgresEndpoint": {
                 "oneOf": [
                   {
@@ -2521,6 +2554,9 @@
                     },
                     "postgres_branches": {
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.PostgresBranch"
+                    },
+                    "postgres_databases": {
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.PostgresDatabase"
                     },
                     "postgres_endpoints": {
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.PostgresEndpoint"
@@ -11736,6 +11772,20 @@
                       "type": "object",
                       "additionalProperties": {
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.PostgresBranch"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
+                "resources.PostgresDatabase": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.PostgresDatabase"
                       }
                     },
                     {
