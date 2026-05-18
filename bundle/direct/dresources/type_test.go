@@ -75,6 +75,18 @@ var knownMissingInRemoteType = map[string][]string{
 		"pg_version",
 		"project_id",
 	},
+	"postgres_synced_tables": {
+		"branch",
+		"create_database_objects_if_missing",
+		"existing_pipeline_id",
+		"new_pipeline_spec",
+		"postgres_database",
+		"primary_key_columns",
+		"scheduling_policy",
+		"source_table_full_name",
+		"synced_table_id",
+		"timeseries_key",
+	},
 	"vector_search_endpoints": {
 		"target_qps",
 		"usage_policy_id",
