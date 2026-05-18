@@ -273,6 +273,14 @@ func TestResourcesBindSupport(t *testing.T) {
 				},
 			},
 		},
+		PostgresDatabases: map[string]*resources.PostgresDatabase{
+			"my_postgres_database": {
+				PostgresDatabaseConfig: resources.PostgresDatabaseConfig{
+					DatabaseId: "my-postgres-database",
+					Parent:     "projects/my-postgres-project/branches/my-postgres-branch",
+				},
+			},
+		},
 		VectorSearchEndpoints: map[string]*resources.VectorSearchEndpoint{
 			"my_vector_search_endpoint": {
 				CreateEndpoint: vectorsearch.CreateEndpoint{
@@ -312,6 +320,7 @@ func TestResourcesBindSupport(t *testing.T) {
 	m.GetMockPostgresAPI().EXPECT().GetProject(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockPostgresAPI().EXPECT().GetBranch(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockPostgresAPI().EXPECT().GetEndpoint(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockPostgresAPI().EXPECT().GetDatabase(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockVectorSearchEndpointsAPI().EXPECT().GetEndpoint(mock.Anything, mock.Anything).Return(nil, nil)
 
 	allResources := supportedResources.AllResources()

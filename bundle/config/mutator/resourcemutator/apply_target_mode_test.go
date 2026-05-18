@@ -247,6 +247,14 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 						},
 					},
 				},
+				PostgresDatabases: map[string]*resources.PostgresDatabase{
+					"postgres_database1": {
+						PostgresDatabaseConfig: resources.PostgresDatabaseConfig{
+							DatabaseId: "postgres-database-1",
+							Parent:     "projects/postgres-project-1/branches/postgres-branch-1",
+						},
+					},
+				},
 				VectorSearchEndpoints: map[string]*resources.VectorSearchEndpoint{
 					"vs_endpoint1": {
 						CreateEndpoint: vectorsearch.CreateEndpoint{
@@ -441,6 +449,7 @@ func TestAppropriateResourcesAreRenamed(t *testing.T) {
 		"PostgresProjects",
 		"PostgresBranches",
 		"PostgresEndpoints",
+		"PostgresDatabases",
 	}
 
 	diags := bundle.ApplySeq(t.Context(), b, ApplyTargetMode(), ApplyPresets())
