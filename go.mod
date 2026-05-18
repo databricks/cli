@@ -7,7 +7,7 @@ toolchain go1.25.10
 require (
 	dario.cat/mergo v1.0.2 // BSD-3-Clause
 	github.com/BurntSushi/toml v1.6.0 // MIT
-	github.com/Masterminds/semver/v3 v3.4.0 // MIT
+	github.com/Masterminds/semver/v3 v3.5.0 // MIT
 	github.com/charmbracelet/bubbles v1.0.0 // MIT
 	github.com/charmbracelet/bubbletea v1.3.10 // MIT
 	github.com/charmbracelet/huh v1.0.0 // MIT
