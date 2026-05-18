@@ -96,7 +96,11 @@ func (*ResourceVectorSearchIndex) RemapState(remote *VectorSearchIndexRemote) *V
 			EmbeddingWritebackTable: remote.DeltaSyncIndexSpec.EmbeddingWritebackTable,
 			PipelineType:            remote.DeltaSyncIndexSpec.PipelineType,
 			SourceTable:             remote.DeltaSyncIndexSpec.SourceTable,
-			ForceSendFields:         nil,
+			// ForceSendFields is an SDK marshaling concern (which zero-valued
+			// fields to wire-serialize) that has no meaning on the read path.
+			// Local config doesn't carry one either, so leave it nil rather
+			// than copy whatever the response struct happened to use.
+			ForceSendFields: nil,
 		}
 	}
 	return state
