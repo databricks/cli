@@ -2733,6 +2733,28 @@ resources.postgres_branches.*.ttl	*duration.Duration	INPUT	STATE
 resources.postgres_branches.*.uid	string	REMOTE
 resources.postgres_branches.*.update_time	*time.Time	REMOTE
 resources.postgres_branches.*.url	string	INPUT
+resources.postgres_catalogs.*.branch	string	INPUT	STATE
+resources.postgres_catalogs.*.catalog_id	string	INPUT	STATE
+resources.postgres_catalogs.*.create_database_if_missing	bool	INPUT	STATE
+resources.postgres_catalogs.*.create_time	*time.Time	REMOTE
+resources.postgres_catalogs.*.id	string	INPUT
+resources.postgres_catalogs.*.lifecycle	resources.Lifecycle	INPUT
+resources.postgres_catalogs.*.lifecycle.prevent_destroy	bool	INPUT
+resources.postgres_catalogs.*.modified_status	string	INPUT
+resources.postgres_catalogs.*.name	string	REMOTE
+resources.postgres_catalogs.*.postgres_database	string	INPUT	STATE
+resources.postgres_catalogs.*.spec	*postgres.CatalogCatalogSpec	REMOTE
+resources.postgres_catalogs.*.spec.branch	string	REMOTE
+resources.postgres_catalogs.*.spec.create_database_if_missing	bool	REMOTE
+resources.postgres_catalogs.*.spec.postgres_database	string	REMOTE
+resources.postgres_catalogs.*.status	*postgres.CatalogCatalogStatus	REMOTE
+resources.postgres_catalogs.*.status.branch	string	REMOTE
+resources.postgres_catalogs.*.status.catalog_id	string	REMOTE
+resources.postgres_catalogs.*.status.postgres_database	string	REMOTE
+resources.postgres_catalogs.*.status.project	string	REMOTE
+resources.postgres_catalogs.*.uid	string	REMOTE
+resources.postgres_catalogs.*.update_time	*time.Time	REMOTE
+resources.postgres_catalogs.*.url	string	INPUT
 resources.postgres_endpoints.*.autoscaling_limit_max_cu	float64	INPUT	STATE
 resources.postgres_endpoints.*.autoscaling_limit_min_cu	float64	INPUT	STATE
 resources.postgres_endpoints.*.create_time	*time.Time	REMOTE
