@@ -18,7 +18,7 @@ Resources:
   Postgres synced tables:
     my_table:
       Name: main.public.trips_[UNIQUE_NAME]
-      URL:  [DATABRICKS_URL]/explore/data/main.public.trips_[UNIQUE_NAME]?o=[NUMID]
+      URL:  [DATABRICKS_URL]/explore/data/main.public.trips_[UNIQUE_NAME]
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-synced-table-[UNIQUE_NAME]/default/files...
@@ -47,7 +47,7 @@ Resources:
   Postgres synced tables:
     my_table:
       Name: main.public.trips_[UNIQUE_NAME]
-      URL:  [DATABRICKS_URL]/explore/data/main.public.trips_[UNIQUE_NAME]?o=[NUMID]
+      URL:  [DATABRICKS_URL]/explore/data/main.public.trips_[UNIQUE_NAME]
 
 >>> print_requests.py --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 

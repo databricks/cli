@@ -1,13 +1,23 @@
 Local = true
-Cloud = false
+Cloud = true
 RequiresUnityCatalog = true
 
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+# Lakebase v2 (postgres) is only available in AWS as of January 2026
+CloudEnvs.gcp = false
+CloudEnvs.azure = false
+
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct", "terraform"]
 
 Ignore = [
     "databricks.yml",
     ".databricks",
 ]
+
+[[Repls]]
+# Clean up ?o=<num> suffix after URL since not all workspaces have that
+Old = '\?o=\[(NUMID|ALPHANUMID)\]'
+New = ''
+Order = 1000
 
 [[Repls]]
 # Normalize postgres operation IDs (unique per operation).

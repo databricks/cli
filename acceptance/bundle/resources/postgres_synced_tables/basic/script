@@ -17,4 +17,4 @@ trace $CLI postgres get-synced-table "synced_tables/main.public.trips_${UNIQUE_N
 
 trace $CLI bundle summary
 
-trace print_requests.py --keep --get '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.json
+trace print_requests.py --keep --get '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.$DATABRICKS_BUNDLE_ENGINE.json

@@ -1,0 +1,27 @@
+{
+  "method": "POST",
+  "path": "/api/2.0/postgres/synced_tables",
+  "q": {
+    "synced_table_id": "main.public.trips_[UNIQUE_NAME]"
+  },
+  "body": {
+    "spec": {
+      "branch": "projects/p/branches/production",
+      "create_database_objects_if_missing": true,
+      "new_pipeline_spec": {
+        "storage_catalog": "main",
+        "storage_schema": "pipelines"
+      },
+      "postgres_database": "appdb",
+      "primary_key_columns": [
+        "id"
+      ],
+      "scheduling_policy": "SNAPSHOT",
+      "source_table_full_name": "main.raw.trips"
+    }
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/postgres/synced_tables/main.public.trips_[UNIQUE_NAME]"
+}

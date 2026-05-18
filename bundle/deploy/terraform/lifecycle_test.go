@@ -17,7 +17,6 @@ func TestConvertLifecycleForAllResources(t *testing.T) {
 	ignoredResources := []string{
 		"catalogs",
 		"external_locations",
-		"postgres_synced_tables",
 		"vector_search_endpoints",
 	}
 
