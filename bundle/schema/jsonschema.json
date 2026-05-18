@@ -2579,6 +2579,7 @@
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.PostgresProject"
                     },
                     "postgres_synced_tables": {
+                      "description": "The Postgres synced table definitions for the bundle, where each key is the name of the synced table. Each entry continuously replicates a Unity Catalog Delta source table into a Postgres table on a Lakebase Autoscaling instance.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.PostgresSyncedTable"
                     },
                     "quality_monitors": {

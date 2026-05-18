@@ -223,7 +223,7 @@ github.com/databricks/cli/bundle/config.Resources:
       PLACEHOLDER
   "postgres_synced_tables":
     "description": |-
-      PLACEHOLDER
+      The Postgres synced table definitions for the bundle, where each key is the name of the synced table. Each entry continuously replicates a Unity Catalog Delta source table into a Postgres table on a Lakebase Autoscaling instance.
   "quality_monitors":
     "description": |-
       The quality monitor definitions for the bundle, where each key is the name of the quality monitor.
