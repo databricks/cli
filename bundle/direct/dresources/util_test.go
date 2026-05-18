@@ -37,6 +37,7 @@ func TestParsePostgresName(t *testing.T) {
 		projectID  string
 		branchID   string
 		endpointID string
+		databaseID string
 		expectErr  bool
 	}{
 		{
@@ -58,11 +59,25 @@ func TestParsePostgresName(t *testing.T) {
 			endpointID: "my-endpoint",
 		},
 		{
+			name:       "database",
+			input:      "projects/my-project/branches/my-branch/databases/my-database",
+			projectID:  "my-project",
+			branchID:   "my-branch",
+			databaseID: "my-database",
+		},
+		{
 			name:       "with hyphens and numbers",
 			input:      "projects/my-app-123/branches/dev-branch/endpoints/primary-1",
 			projectID:  "my-app-123",
 			branchID:   "dev-branch",
 			endpointID: "primary-1",
+		},
+		{
+			name:       "database with hyphens and numbers",
+			input:      "projects/my-app-123/branches/dev-branch/databases/db-1",
+			projectID:  "my-app-123",
+			branchID:   "dev-branch",
+			databaseID: "db-1",
 		},
 		{
 			name:      "empty",
@@ -90,6 +105,11 @@ func TestParsePostgresName(t *testing.T) {
 			expectErr: true,
 		},
 		{
+			name:      "missing database id",
+			input:     "projects/my-project/branches/my-branch/databases/",
+			expectErr: true,
+		},
+		{
 			name:      "extra segments",
 			input:     "projects/my-project/branches/my-branch/endpoints/my-endpoint/extra",
 			expectErr: true,
@@ -102,6 +122,11 @@ func TestParsePostgresName(t *testing.T) {
 		{
 			name:      "endpoints without endpoint",
 			input:     "projects/my-project/branches/my-branch/endpoints",
+			expectErr: true,
+		},
+		{
+			name:      "databases without database",
+			input:     "projects/my-project/branches/my-branch/databases",
 			expectErr: true,
 		},
 	}
@@ -117,6 +142,7 @@ func TestParsePostgresName(t *testing.T) {
 			assert.Equal(t, tt.projectID, components.ProjectID)
 			assert.Equal(t, tt.branchID, components.BranchID)
 			assert.Equal(t, tt.endpointID, components.EndpointID)
+			assert.Equal(t, tt.databaseID, components.DatabaseID)
 		})
 	}
 }

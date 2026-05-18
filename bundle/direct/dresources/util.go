@@ -14,16 +14,18 @@ import (
 // - projects/{project_id}
 // - projects/{project_id}/branches/{branch_id}
 // - projects/{project_id}/branches/{branch_id}/endpoints/{endpoint_id}
-var postgresNamePattern = regexp.MustCompile(`^projects/([^/]+)(?:/branches/([^/]+)(?:/endpoints/([^/]+))?)?$`)
+// - projects/{project_id}/branches/{branch_id}/databases/{database_id}
+var postgresNamePattern = regexp.MustCompile(`^projects/([^/]+)(?:/branches/([^/]+)(?:/endpoints/([^/]+)|/databases/([^/]+))?)?$`)
 
 // PostgresNameComponents holds the extracted components from a Postgres resource name.
 type PostgresNameComponents struct {
 	ProjectID  string
 	BranchID   string
 	EndpointID string
+	DatabaseID string
 }
 
-// ParsePostgresName extracts project, branch, and endpoint IDs from a hierarchical Postgres resource name.
+// ParsePostgresName extracts project, branch, and endpoint or database IDs from a hierarchical Postgres resource name.
 // Returns an error if the name doesn't match the expected format.
 func ParsePostgresName(name string) (PostgresNameComponents, error) {
 	matches := postgresNamePattern.FindStringSubmatch(name)
@@ -35,6 +37,7 @@ func ParsePostgresName(name string) (PostgresNameComponents, error) {
 		ProjectID:  matches[1],
 		BranchID:   matches[2],
 		EndpointID: matches[3],
+		DatabaseID: matches[4],
 	}, nil
 }
 
