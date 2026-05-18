@@ -24,7 +24,6 @@ import (
 type ClusterState struct {
 	compute.ClusterSpec
 
-	ClusterId string          `json:"cluster_id,omitempty"`
 	Lifecycle *StateLifecycle `json:"lifecycle,omitempty"`
 }
 
@@ -153,7 +152,6 @@ func (r *ResourceCluster) DoCreate(ctx context.Context, config *ClusterState) (s
 	if err != nil {
 		return "", nil, err
 	}
-	config.ClusterId = wait.ClusterId
 	return wait.ClusterId, nil, nil
 }
 
@@ -164,8 +162,6 @@ func hasClusterChanges(entry *PlanEntry) bool {
 }
 
 func (r *ResourceCluster) DoUpdate(ctx context.Context, id string, config *ClusterState, entry *PlanEntry) (*ClusterRemote, error) {
-	config.ClusterId = id
-
 	if hasClusterChanges(entry) {
 		// Same retry as in TF provider logic
 		// https://github.com/databricks/terraform-provider-databricks/blob/3eecd0f90cf99d7777e79a3d03c41f9b2aafb004/clusters/resource_cluster.go#L624
@@ -210,32 +206,32 @@ func (r *ResourceCluster) DoUpdate(ctx context.Context, id string, config *Clust
 }
 
 // WaitAfterUpdate waits for the cluster to reach the desired lifecycle state after DoUpdate.
-func (r *ResourceCluster) WaitAfterUpdate(ctx context.Context, config *ClusterState) (*ClusterRemote, error) {
+func (r *ResourceCluster) WaitAfterUpdate(ctx context.Context, id string, config *ClusterState) (*ClusterRemote, error) {
 	if config.Lifecycle == nil || config.Lifecycle.Started == nil {
 		return nil, nil
 	}
 
 	if *config.Lifecycle.Started {
-		_, err := r.client.Clusters.WaitGetClusterRunning(ctx, config.ClusterId, 15*time.Minute, nil)
+		_, err := r.client.Clusters.WaitGetClusterRunning(ctx, id, 15*time.Minute, nil)
 		return nil, err
 	}
 
-	_, err := r.client.Clusters.WaitGetClusterTerminated(ctx, config.ClusterId, 15*time.Minute, nil)
+	_, err := r.client.Clusters.WaitGetClusterTerminated(ctx, id, 15*time.Minute, nil)
 	return nil, err
 }
 
 // WaitAfterCreate waits for the cluster to reach RUNNING state (clusters always start on creation).
 // When lifecycle.started=false, it then terminates the cluster.
-func (r *ResourceCluster) WaitAfterCreate(ctx context.Context, config *ClusterState) (*ClusterRemote, error) {
+func (r *ResourceCluster) WaitAfterCreate(ctx context.Context, id string, config *ClusterState) (*ClusterRemote, error) {
 	// Always wait for RUNNING first: clusters start in PENDING state and must be polled.
-	_, err := r.client.Clusters.WaitGetClusterRunning(ctx, config.ClusterId, 15*time.Minute, nil)
+	_, err := r.client.Clusters.WaitGetClusterRunning(ctx, id, 15*time.Minute, nil)
 	if err != nil {
 		return nil, err
 	}
 
 	if config.Lifecycle != nil && config.Lifecycle.Started != nil && !*config.Lifecycle.Started {
 		// started=false: terminate the cluster after it reaches RUNNING.
-		deleteWaiter, err := r.client.Clusters.Delete(ctx, compute.DeleteCluster{ClusterId: config.ClusterId})
+		deleteWaiter, err := r.client.Clusters.Delete(ctx, compute.DeleteCluster{ClusterId: id})
 		if err != nil {
 			return nil, err
 		}
