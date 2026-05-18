@@ -1,7 +1,6 @@
 
 >>> errcode [CLI] current-user me
-{
-  "id": "[USERID]",
-  "userName": "[USERNAME]"
-}
+[PROCESS_KILLED]
+
+Exit code: [KILLED]
 Script continued after kill

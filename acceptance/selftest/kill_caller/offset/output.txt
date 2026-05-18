@@ -14,17 +14,15 @@ Attempt 1 done - success (offset)
 Attempt 2 done - success (offset)
 
 >>> errcode [CLI] current-user me
-{
-  "id": "[USERID]",
-  "userName": "[USERNAME]"
-}
+[PROCESS_KILLED]
+
+Exit code: [KILLED]
 Attempt 3 done - killed
 
 >>> errcode [CLI] current-user me
-{
-  "id": "[USERID]",
-  "userName": "[USERNAME]"
-}
+[PROCESS_KILLED]
+
+Exit code: [KILLED]
 Attempt 4 done - killed
 
 >>> [CLI] current-user me

@@ -1,16 +1,14 @@
 
 >>> errcode [CLI] current-user me
-{
-  "id": "[USERID]",
-  "userName": "[USERNAME]"
-}
+[PROCESS_KILLED]
+
+Exit code: [KILLED]
 Me attempt 1 done
 
 >>> errcode [CLI] current-user me
-{
-  "id": "[USERID]",
-  "userName": "[USERNAME]"
-}
+[PROCESS_KILLED]
+
+Exit code: [KILLED]
 Me attempt 2 done
 
 >>> [CLI] current-user me
@@ -21,7 +19,9 @@ Me attempt 2 done
 Me attempt 3 done - success!
 
 >>> errcode [CLI] workspace list /
-ID  Type  Language  Path
+[PROCESS_KILLED]
+
+Exit code: [KILLED]
 Workspace attempt 1 done
 
 >>> [CLI] workspace list /

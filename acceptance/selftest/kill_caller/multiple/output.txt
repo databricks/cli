@@ -1,23 +1,20 @@
 
 >>> errcode [CLI] current-user me
-{
-  "id": "[USERID]",
-  "userName": "[USERNAME]"
-}
+[PROCESS_KILLED]
+
+Exit code: [KILLED]
 Attempt 1 done
 
 >>> errcode [CLI] current-user me
-{
-  "id": "[USERID]",
-  "userName": "[USERNAME]"
-}
+[PROCESS_KILLED]
+
+Exit code: [KILLED]
 Attempt 2 done
 
 >>> errcode [CLI] current-user me
-{
-  "id": "[USERID]",
-  "userName": "[USERNAME]"
-}
+[PROCESS_KILLED]
+
+Exit code: [KILLED]
 Attempt 3 done
 
 >>> [CLI] current-user me

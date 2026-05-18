@@ -1,57 +1,34 @@
-=== WAL content ===
+
+>>> cat .databricks/bundle/default/resources.json.wal
 {"lineage":"test-lineage-123","serial":6}
-{"k":"resources.jobs.valid_job","v":{"__id__":"1111","state":{"name":"valid-job"}}}
-{"k":"resources.jobs.another_valid","v":{"__id__":"2222","state":{"name":"another-valid"}}}
-{"k":"resources.jobs.partial_write","v":{"__id__":"3333","state":{"name":"partial-
-=== Deploy (should recover valid entries, skip corrupted last line) ===
+{"k":"resources.jobs.valid_job","v":{"__id__":"","state":{"name":"valid-job"}}}
+{"k":"resources.jobs.another_valid","v":{"__id__":"","state":{"name":"another-valid"}}}
+{"k":"resources.jobs.partial_write","v":{"__id__":"33","state":{"name":"partial-
 
 >>> [CLI] bundle deploy
-Warning: Single node cluster is not correctly configured
-  at resources.jobs.another_valid.tasks[0].new_cluster
-  in databricks.yml:23:13
-
-num_workers should be 0 only for single-node clusters. To create a
-valid single node cluster please ensure that the following properties
-are correctly set in the cluster specification:
-
-  spark_conf:
-    spark.databricks.cluster.profile: singleNode
-    spark.master: local[*]
-
-  custom_tags:
-    ResourceClass: SingleNode
-  
-
-Warning: Single node cluster is not correctly configured
-  at resources.jobs.valid_job.tasks[0].new_cluster
-  in databricks.yml:13:13
-
-num_workers should be 0 only for single-node clusters. To create a
-valid single node cluster please ensure that the following properties
-are correctly set in the cluster specification:
-
-  spark_conf:
-    spark.databricks.cluster.profile: singleNode
-    spark.master: local[*]
-
-  custom_tags:
-    ResourceClass: SingleNode
-  
-
 Warn: Skipping corrupted WAL entry at [TEST_TMP_DIR]/.databricks/bundle/default/resources.json.wal:4: unexpected end of JSON input
 Warn: Saved 1 corrupted WAL entries to [TEST_TMP_DIR]/.databricks/bundle/default/resources.json.wal.corrupted
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/wal-corrupted-test/default/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
-=== Final state (should have recovered entries) ===
-{
-  "serial": 7,
-  "state_keys": [
-    "resources.jobs.another_valid",
-    "resources.jobs.valid_job"
-  ]
-}
-=== Corrupted WAL entries file ===
-{"k":"resources.jobs.partial_write","v":{"__id__":"3333","state":{"name":"partial-=== WAL after successful deploy ===
+
+>>> [CLI] bundle summary
+Name: wal-corrupted-test
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/wal-corrupted-test/default
+Resources:
+  Jobs:
+    another_valid:
+      Name: another-valid
+      URL:  [DATABRICKS_URL]/jobs/[NUMID]?o=[NUMID]
+    valid_job:
+      Name: valid-job
+      URL:  [DATABRICKS_URL]/jobs/[NUMID]?o=[NUMID]
+
+>>> cat .databricks/bundle/default/resources.json.wal.corrupted
+{"k":"resources.jobs.partial_write","v":{"__id__":"33","state":{"name":"partial-
+=== WAL after successful deploy ===
 WAL deleted (expected)
