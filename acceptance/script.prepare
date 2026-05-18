@@ -106,14 +106,19 @@ sethome() {
     # `~/.databrickscfg` against $HOME at lookup time; with a relative path
     # the cfg silently disappears once the cwd changes, and helpers like
     # databrickscfg.GetConfiguredDefaultProfile return "" instead of
-    # erroring. `cd && pwd` is portable across macOS/Linux/Windows-MSYS.
-    home="$(cd "$home" && pwd)"
+    # erroring.
 
     # For macOS and Linux, use HOME.
-    export HOME="$home"
+    export HOME="$(cd "$home" && pwd)"
 
-    # For Windows, use USERPROFILE.
-    export USERPROFILE="$home"
+    # For Windows, use USERPROFILE. On Git Bash (MSYS), plain `pwd` returns
+    # Unix-style /c/... paths that the native Windows Go binary can't open;
+    # `pwd -W` returns the mixed C:/... form instead.
+    if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" || "$OSTYPE" == "win32" ]]; then
+        export USERPROFILE="$(cd "$home" && pwd -W)"
+    else
+        export USERPROFILE="$(cd "$home" && pwd)"
+    fi
 }
 
 as-test-sp() {
