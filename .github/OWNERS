@@ -60,8 +60,8 @@
 /internal/                  team:platform
 
 # AI tools
-/cmd/aitools/               team:eng-apps-devex @lennartkats-db
-/libs/aitools/              team:eng-apps-devex @lennartkats-db
+/cmd/aitools/               team:eng-apps-devex team:platform @lennartkats-db
+/libs/aitools/              team:eng-apps-devex team:platform @lennartkats-db
 
 # CLI compatibility manifest
 /internal/build/cli-compat.json  team:eng-apps-devex team:platform
