@@ -14,8 +14,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/databricks/cli/experimental/aitools/lib/agents"
 	"github.com/databricks/cli/internal/build"
+	"github.com/databricks/cli/libs/aitools/agents"
 	"github.com/databricks/cli/libs/clicompat"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
@@ -164,7 +164,7 @@ func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgent
 	if state == nil && scope == ScopeGlobal {
 		isLegacy := checkLegacyInstall(ctx, baseDir)
 		if isLegacy && len(opts.SpecificSkills) > 0 {
-			return errors.New("legacy install detected without state tracking; run 'databricks experimental aitools install' (without a skill name) first to rebuild state")
+			return errors.New("legacy install detected without state tracking; run 'databricks aitools install' (without a skill name) first to rebuild state")
 		}
 	}
 
@@ -342,7 +342,7 @@ func printNoAgentsDetected(ctx context.Context) {
 // Returns true if a legacy install was detected.
 func checkLegacyInstall(ctx context.Context, globalDir string) bool {
 	if hasSkillsOnDisk(globalDir) {
-		cmdio.LogString(ctx, "Found skills installed before state tracking was added. Run 'databricks experimental aitools install' to refresh.")
+		cmdio.LogString(ctx, "Found skills installed before state tracking was added. Run 'databricks aitools install' to refresh.")
 		return true
 	}
 	homeDir, err := env.UserHomeDir(ctx)
@@ -351,7 +351,7 @@ func checkLegacyInstall(ctx context.Context, globalDir string) bool {
 	}
 	legacyDir := filepath.Join(homeDir, ".databricks", "agent-skills")
 	if hasSkillsOnDisk(legacyDir) {
-		cmdio.LogString(ctx, "Found skills installed before state tracking was added. Run 'databricks experimental aitools install' to refresh.")
+		cmdio.LogString(ctx, "Found skills installed before state tracking was added. Run 'databricks aitools install' to refresh.")
 		return true
 	}
 	return false

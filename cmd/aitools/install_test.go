@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/databricks/cli/experimental/aitools/lib/agents"
-	"github.com/databricks/cli/experimental/aitools/lib/installer"
+	"github.com/databricks/cli/libs/aitools/agents"
+	"github.com/databricks/cli/libs/aitools/installer"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -53,6 +53,7 @@ func setupTestAgents(t *testing.T) string {
 	t.Helper()
 	tmp := t.TempDir()
 	t.Setenv("HOME", tmp)
+	t.Setenv("USERPROFILE", tmp)
 	// Create config dirs for two agents.
 	require.NoError(t, os.MkdirAll(filepath.Join(tmp, ".claude"), 0o755))
 	require.NoError(t, os.MkdirAll(filepath.Join(tmp, ".cursor"), 0o755))
@@ -64,7 +65,7 @@ func TestInstallAllSkillsForAllAgents(t *testing.T) {
 	calls := setupInstallMock(t)
 
 	ctx := cmdio.MockDiscard(t.Context())
-	cmd := newInstallCmd()
+	cmd := NewInstallCmd()
 	cmd.SetContext(ctx)
 
 	err := cmd.RunE(cmd, nil)
@@ -80,7 +81,7 @@ func TestInstallSpecificSkills(t *testing.T) {
 	calls := setupInstallMock(t)
 
 	ctx := cmdio.MockDiscard(t.Context())
-	cmd := newInstallCmd()
+	cmd := NewInstallCmd()
 	cmd.SetContext(ctx)
 	cmd.SetArgs([]string{"--skills", "databricks,databricks-apps"})
 
@@ -96,7 +97,7 @@ func TestInstallSingleSkill(t *testing.T) {
 	calls := setupInstallMock(t)
 
 	ctx := cmdio.MockDiscard(t.Context())
-	cmd := newInstallCmd()
+	cmd := NewInstallCmd()
 	cmd.SetContext(ctx)
 	cmd.SetArgs([]string{"--skills", "databricks"})
 
@@ -112,7 +113,7 @@ func TestInstallSpecificAgents(t *testing.T) {
 	calls := setupInstallMock(t)
 
 	ctx := cmdio.MockDiscard(t.Context())
-	cmd := newInstallCmd()
+	cmd := NewInstallCmd()
 	cmd.SetContext(ctx)
 	cmd.SetArgs([]string{"--agents", "claude-code"})
 
@@ -128,7 +129,7 @@ func TestInstallUnknownAgentErrors(t *testing.T) {
 	setupInstallMock(t)
 
 	ctx := cmdio.MockDiscard(t.Context())
-	cmd := newInstallCmd()
+	cmd := NewInstallCmd()
 	cmd.SetContext(ctx)
 	cmd.SetArgs([]string{"--agents", "invalid-agent"})
 	cmd.SilenceErrors = true
@@ -145,7 +146,7 @@ func TestInstallIncludeExperimental(t *testing.T) {
 	calls := setupInstallMock(t)
 
 	ctx := cmdio.MockDiscard(t.Context())
-	cmd := newInstallCmd()
+	cmd := NewInstallCmd()
 	cmd.SetContext(ctx)
 	cmd.SetArgs([]string{"--experimental"})
 
@@ -185,7 +186,7 @@ func TestInstallInteractivePrompt(t *testing.T) {
 	go drain(test.Stdout)
 	go drain(test.Stderr)
 
-	cmd := newInstallCmd()
+	cmd := NewInstallCmd()
 	cmd.SetContext(ctx)
 
 	err := cmd.RunE(cmd, nil)
@@ -210,7 +211,7 @@ func TestInstallNonInteractiveUsesAllAgents(t *testing.T) {
 	}
 
 	ctx := cmdio.MockDiscard(t.Context())
-	cmd := newInstallCmd()
+	cmd := NewInstallCmd()
 	cmd.SetContext(ctx)
 
 	err := cmd.RunE(cmd, nil)
@@ -224,11 +225,12 @@ func TestInstallNonInteractiveUsesAllAgents(t *testing.T) {
 func TestInstallNoAgentsDetected(t *testing.T) {
 	tmp := t.TempDir()
 	t.Setenv("HOME", tmp)
+	t.Setenv("USERPROFILE", tmp)
 
 	calls := setupInstallMock(t)
 	ctx := cmdio.MockDiscard(t.Context())
 
-	cmd := newInstallCmd()
+	cmd := NewInstallCmd()
 	cmd.SetContext(ctx)
 
 	err := cmd.RunE(cmd, nil)
@@ -250,7 +252,7 @@ func TestInstallAgentsFlagSkipsPrompt(t *testing.T) {
 	}
 
 	ctx := cmdio.MockDiscard(t.Context())
-	cmd := newInstallCmd()
+	cmd := NewInstallCmd()
 	cmd.SetContext(ctx)
 	cmd.SetArgs([]string{"--agents", "claude-code,cursor"})
 
@@ -262,103 +264,11 @@ func TestInstallAgentsFlagSkipsPrompt(t *testing.T) {
 	assert.Equal(t, []string{"claude-code", "cursor"}, (*calls)[0].agents)
 }
 
-func TestSkillsInstallDelegatesToInstall(t *testing.T) {
-	setupTestAgents(t)
-	calls := setupInstallMock(t)
-
-	ctx := cmdio.MockDiscard(t.Context())
-	cmd := newSkillsInstallCmd()
-	cmd.SetContext(ctx)
-
-	err := cmd.RunE(cmd, nil)
-	require.NoError(t, err)
-
-	require.Len(t, *calls, 1)
-	assert.Len(t, (*calls)[0].agents, 2)
-}
-
-func TestSkillsInstallForwardsSkillName(t *testing.T) {
-	setupTestAgents(t)
-	calls := setupInstallMock(t)
-
-	ctx := cmdio.MockDiscard(t.Context())
-	cmd := newSkillsInstallCmd()
-	cmd.SetContext(ctx)
-
-	err := cmd.RunE(cmd, []string{"databricks"})
-	require.NoError(t, err)
-
-	require.Len(t, *calls, 1)
-	assert.Equal(t, []string{"databricks"}, (*calls)[0].opts.SpecificSkills)
-}
-
-func TestSkillsInstallExecuteNoArgs(t *testing.T) {
-	setupTestAgents(t)
-	calls := setupInstallMock(t)
-
-	ctx := cmdio.MockDiscard(t.Context())
-	cmd := newSkillsInstallCmd()
-	cmd.SetContext(ctx)
-	cmd.SetArgs([]string{})
-
-	err := cmd.Execute()
-	require.NoError(t, err)
-
-	require.Len(t, *calls, 1)
-	assert.Len(t, (*calls)[0].agents, 2)
-	assert.Nil(t, (*calls)[0].opts.SpecificSkills)
-}
-
-func TestSkillsInstallExecuteWithSkillName(t *testing.T) {
-	setupTestAgents(t)
-	calls := setupInstallMock(t)
-
-	ctx := cmdio.MockDiscard(t.Context())
-	cmd := newSkillsInstallCmd()
-	cmd.SetContext(ctx)
-	cmd.SetArgs([]string{"databricks"})
-
-	err := cmd.Execute()
-	require.NoError(t, err)
-
-	require.Len(t, *calls, 1)
-	assert.Equal(t, []string{"databricks"}, (*calls)[0].opts.SpecificSkills)
-}
-
-func TestSkillsInstallForwardsExperimental(t *testing.T) {
-	setupTestAgents(t)
-	calls := setupInstallMock(t)
-
-	ctx := cmdio.MockDiscard(t.Context())
-	cmd := newSkillsInstallCmd()
-	cmd.SetContext(ctx)
-	cmd.SetArgs([]string{"--experimental"})
-
-	err := cmd.Execute()
-	require.NoError(t, err)
-
-	require.Len(t, *calls, 1)
-	assert.True(t, (*calls)[0].opts.IncludeExperimental, "--experimental should be forwarded")
-}
-
-func TestSkillsInstallExecuteRejectsTwoArgs(t *testing.T) {
-	ctx := cmdio.MockDiscard(t.Context())
-	cmd := newSkillsInstallCmd()
-	cmd.SetContext(ctx)
-	cmd.SetArgs([]string{"a", "b"})
-	cmd.SilenceErrors = true
-	cmd.SilenceUsage = true
-
-	err := cmd.Execute()
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "accepts at most 1 arg")
-}
-
 func TestInstallRejectsPositionalArgs(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
-	cmd := newInstallCmd()
+	cmd := NewInstallCmd()
 	cmd.SetContext(ctx)
-	cmd.SetArgs([]string{"databricks"})
+	cmd.SetArgs([]string{"databricks-jobs"})
 	cmd.SilenceErrors = true
 	cmd.SilenceUsage = true
 
@@ -369,7 +279,7 @@ func TestInstallRejectsPositionalArgs(t *testing.T) {
 
 func TestUpdateRejectsPositionalArgs(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
-	cmd := newUpdateCmd()
+	cmd := NewUpdateCmd()
 	cmd.SetContext(ctx)
 	cmd.SetArgs([]string{"databricks"})
 	cmd.SilenceErrors = true
@@ -382,7 +292,7 @@ func TestUpdateRejectsPositionalArgs(t *testing.T) {
 
 func TestUninstallRejectsPositionalArgs(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
-	cmd := newUninstallCmd()
+	cmd := NewUninstallCmd()
 	cmd.SetContext(ctx)
 	cmd.SetArgs([]string{"databricks"})
 	cmd.SilenceErrors = true
@@ -395,7 +305,7 @@ func TestUninstallRejectsPositionalArgs(t *testing.T) {
 
 func TestListRejectsPositionalArgs(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
-	cmd := newListCmd()
+	cmd := NewListCmd()
 	cmd.SetContext(ctx)
 	cmd.SetArgs([]string{"databricks"})
 	cmd.SilenceErrors = true
@@ -408,7 +318,7 @@ func TestListRejectsPositionalArgs(t *testing.T) {
 
 func TestVersionRejectsPositionalArgs(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
-	cmd := newVersionCmd()
+	cmd := NewVersionCmd()
 	cmd.SetContext(ctx)
 	cmd.SetArgs([]string{"databricks"})
 	cmd.SilenceErrors = true
@@ -458,7 +368,7 @@ func TestInstallProjectFlag(t *testing.T) {
 	calls := setupInstallMock(t)
 
 	ctx := cmdio.MockDiscard(t.Context())
-	cmd := newInstallCmd()
+	cmd := NewInstallCmd()
 	cmd.SetContext(ctx)
 	cmd.SetArgs([]string{"--project"})
 
@@ -474,7 +384,7 @@ func TestInstallGlobalFlag(t *testing.T) {
 	calls := setupInstallMock(t)
 
 	ctx := cmdio.MockDiscard(t.Context())
-	cmd := newInstallCmd()
+	cmd := NewInstallCmd()
 	cmd.SetContext(ctx)
 	cmd.SetArgs([]string{"--global"})
 
@@ -490,7 +400,7 @@ func TestInstallGlobalAndProjectErrors(t *testing.T) {
 	setupInstallMock(t)
 
 	ctx := cmdio.MockDiscard(t.Context())
-	cmd := newInstallCmd()
+	cmd := NewInstallCmd()
 	cmd.SetContext(ctx)
 	cmd.SetArgs([]string{"--global", "--project"})
 	cmd.SilenceErrors = true
@@ -506,7 +416,7 @@ func TestInstallNoFlagNonInteractiveUsesGlobal(t *testing.T) {
 	calls := setupInstallMock(t)
 
 	ctx := cmdio.MockDiscard(t.Context())
-	cmd := newInstallCmd()
+	cmd := NewInstallCmd()
 	cmd.SetContext(ctx)
 
 	err := cmd.RunE(cmd, nil)
@@ -543,7 +453,7 @@ func TestInstallNoFlagInteractiveShowsScopePrompt(t *testing.T) {
 	go drain(test.Stdout)
 	go drain(test.Stderr)
 
-	cmd := newInstallCmd()
+	cmd := NewInstallCmd()
 	cmd.SetContext(ctx)
 
 	err := cmd.RunE(cmd, nil)
