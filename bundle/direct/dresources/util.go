@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"strings"
 
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/structs/structpath"
@@ -72,4 +73,10 @@ func truncateAtIndex(path string) string {
 		return path
 	}
 	return p.Prefix(1).String()
+}
+
+// TrimSyncedTablesPrefix extracts the user-facing synced table id from the API name.
+// E.g. "synced_tables/main.public.trips" -> "main.public.trips".
+func TrimSyncedTablesPrefix(name string) string {
+	return strings.TrimPrefix(name, "synced_tables/")
 }
