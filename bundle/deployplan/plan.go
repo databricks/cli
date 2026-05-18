@@ -138,8 +138,10 @@ func (c *Changes) HasChangeExcept(prefixes ...string) bool {
 		return false
 	}
 	for field := range *c {
-		if slices.Contains(prefixes, field) {
-			return true
+		if !slices.Contains(prefixes, field) {
+			if (*c)[field].Action != Skip {
+				return true
+			}
 		}
 	}
 	return false
