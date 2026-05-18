@@ -1,0 +1,20 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+   # The production branch cannot be deleted independently of its project, so
+   # destroy by cascading from the project.
+   $CLI postgres delete-project "projects/test-pg-proj-${UNIQUE_NAME}" 2>/dev/null || true
+   rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+trace $CLI bundle validate
+
+rm -f out.requests.txt
+trace $CLI bundle deploy
+
+# The production branch defaults to is_protected=false. After deploy with
+# replace_existing=true, the bundle's spec must be applied: is_protected=true.
+trace $CLI postgres get-branch "projects/test-pg-proj-${UNIQUE_NAME}/branches/production" | jq 'del(.create_time, .update_time, .status.logical_size_bytes)'
+
+trace print_requests.py --keep --get '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.$DATABRICKS_BUNDLE_ENGINE.json

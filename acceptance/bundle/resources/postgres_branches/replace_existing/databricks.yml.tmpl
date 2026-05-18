@@ -1,0 +1,23 @@
+bundle:
+  name: deploy-postgres-replace-branch-$UNIQUE_NAME
+
+sync:
+  paths: []
+
+resources:
+  postgres_projects:
+    my_project:
+      project_id: test-pg-proj-$UNIQUE_NAME
+      display_name: "Replace existing branch test"
+      pg_version: 16
+      history_retention_duration: "604800s"
+
+  # Take over the implicitly-created production branch and flip is_protected
+  # from its default value (false) to true. A successful deploy with the new
+  # value reflected in get-branch proves replace_existing applied the spec.
+  postgres_branches:
+    production:
+      parent: ${resources.postgres_projects.my_project.id}
+      branch_id: production
+      replace_existing: true
+      is_protected: true

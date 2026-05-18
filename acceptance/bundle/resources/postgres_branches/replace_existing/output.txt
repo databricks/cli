@@ -1,0 +1,31 @@
+
+>>> [CLI] bundle validate
+Name: deploy-postgres-replace-branch-[UNIQUE_NAME]
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-replace-branch-[UNIQUE_NAME]/default
+
+Validation OK!
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-replace-branch-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] postgres get-branch projects/test-pg-proj-[UNIQUE_NAME]/branches/production
+{
+  "name": "projects/test-pg-proj-[UNIQUE_NAME]/branches/production",
+  "parent": "projects/test-pg-proj-[UNIQUE_NAME]",
+  "status": {
+    "branch_id": "production",
+    "current_state": "READY",
+    "default": true,
+    "is_protected": true,
+    "state_change_time": "[TIMESTAMP]"
+  },
+  "uid": "[BRANCH_UID]"
+}
+
+>>> print_requests.py --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
