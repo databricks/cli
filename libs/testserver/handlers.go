@@ -950,6 +950,11 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.PostgresSyncedTableDelete("synced_tables/" + req.Vars["id"])
 	})
 
+	server.Handle("GET", "/api/2.0/postgres/synced_tables/{id}/operations/{operation_id}", func(req Request) any {
+		name := "synced_tables/" + req.Vars["id"] + "/operations/" + req.Vars["operation_id"]
+		return req.Workspace.PostgresOperationGet(name)
+	})
+
 	server.Handle("GET", "/api/2.0/postgres/operations/{operation_id}", func(req Request) any {
 		return req.Workspace.PostgresOperationGet("operations/" + req.Vars["operation_id"])
 	})

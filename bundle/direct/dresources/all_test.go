@@ -191,6 +191,12 @@ var testConfig map[string]any = map[string]any{
 		},
 	},
 
+	"postgres_synced_tables": &resources.PostgresSyncedTable{
+		PostgresSyncedTableConfig: resources.PostgresSyncedTableConfig{
+			SyncedTableId: "main.public.trips_synced",
+		},
+	},
+
 	"alerts": &resources.Alert{
 		AlertV2: sql.AlertV2{
 			DisplayName: "my-alert",
