@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/databricks/cli/experimental/aitools/lib/agents"
 	"github.com/databricks/cli/internal/build"
+	"github.com/databricks/cli/libs/aitools/agents"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
 	"github.com/stretchr/testify/assert"
@@ -72,6 +72,7 @@ func setupTestHome(t *testing.T) string {
 	t.Helper()
 	tmp := t.TempDir()
 	t.Setenv("HOME", tmp)
+	t.Setenv("USERPROFILE", tmp)
 	// Create agent config dir so the agent is "detected".
 	require.NoError(t, os.MkdirAll(filepath.Join(tmp, ".test-agent"), 0o755))
 	return tmp

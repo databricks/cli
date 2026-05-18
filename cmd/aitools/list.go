@@ -8,7 +8,7 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/databricks/cli/experimental/aitools/lib/installer"
+	"github.com/databricks/cli/libs/aitools/installer"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
 	"github.com/spf13/cobra"
@@ -18,7 +18,7 @@ import (
 // It is a package-level var so tests can replace the data-fetching layer.
 var listSkillsFn = defaultListSkills
 
-func newListCmd() *cobra.Command {
+func NewListCmd() *cobra.Command {
 	var projectFlag, globalFlag bool
 
 	cmd := &cobra.Command{

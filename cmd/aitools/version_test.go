@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/databricks/cli/experimental/aitools/lib/installer"
+	"github.com/databricks/cli/libs/aitools/installer"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -15,6 +15,7 @@ import (
 func TestVersionShowsBothScopes(t *testing.T) {
 	tmp := t.TempDir()
 	t.Setenv("HOME", tmp)
+	t.Setenv("USERPROFILE", tmp)
 	t.Setenv("DATABRICKS_SKILLS_REF", "v0.1.0")
 
 	// Create global state.
@@ -51,7 +52,7 @@ func TestVersionShowsBothScopes(t *testing.T) {
 	require.NoError(t, installer.SaveState(projectSkillsDir, projectState))
 
 	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
-	cmd := newVersionCmd()
+	cmd := NewVersionCmd()
 	cmd.SetContext(ctx)
 
 	err := cmd.RunE(cmd, nil)
@@ -70,6 +71,7 @@ func TestVersionShowsBothScopes(t *testing.T) {
 func TestVersionShowsSingleScopeWithoutQualifier(t *testing.T) {
 	tmp := t.TempDir()
 	t.Setenv("HOME", tmp)
+	t.Setenv("USERPROFILE", tmp)
 	t.Setenv("DATABRICKS_SKILLS_REF", "v0.1.0")
 
 	// Create only global state.
@@ -90,7 +92,7 @@ func TestVersionShowsSingleScopeWithoutQualifier(t *testing.T) {
 	t.Chdir(projectDir)
 
 	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
-	cmd := newVersionCmd()
+	cmd := NewVersionCmd()
 	cmd.SetContext(ctx)
 
 	err := cmd.RunE(cmd, nil)

@@ -21,6 +21,7 @@ func TestHasDatabricksSkillsInstalledNoAgents(t *testing.T) {
 func TestHasDatabricksSkillsInstalledCanonicalOnly(t *testing.T) {
 	tmpHome := t.TempDir()
 	t.Setenv("HOME", tmpHome)
+	t.Setenv("USERPROFILE", tmpHome)
 	require.NoError(t, os.MkdirAll(filepath.Join(tmpHome, CanonicalSkillsDir, "databricks"), 0o755))
 
 	origRegistry := Registry
@@ -39,6 +40,7 @@ func TestHasDatabricksSkillsInstalledCanonicalOnly(t *testing.T) {
 func TestHasDatabricksSkillsInstalledIgnoresAgentDir(t *testing.T) {
 	tmpHome := t.TempDir()
 	t.Setenv("HOME", tmpHome)
+	t.Setenv("USERPROFILE", tmpHome)
 	// Skills in agent dir only (e.g., installed by another tool) should not count.
 	agentDir := filepath.Join(tmpHome, ".claude")
 	require.NoError(t, os.MkdirAll(filepath.Join(agentDir, "skills", "databricks"), 0o755))
@@ -59,6 +61,7 @@ func TestHasDatabricksSkillsInstalledIgnoresAgentDir(t *testing.T) {
 func TestHasDatabricksSkillsInstalledWithOnlyNonDatabricksSkills(t *testing.T) {
 	tmpDir := t.TempDir()
 	t.Setenv("HOME", tmpDir)
+	t.Setenv("USERPROFILE", tmpDir)
 	// Non-databricks skills should not count.
 	require.NoError(t, os.MkdirAll(filepath.Join(tmpDir, "skills", "mcp-builder"), 0o755))
 	require.NoError(t, os.MkdirAll(filepath.Join(tmpDir, "skills", "rust-webapp"), 0o755))
@@ -79,6 +82,7 @@ func TestHasDatabricksSkillsInstalledWithOnlyNonDatabricksSkills(t *testing.T) {
 func TestHasDatabricksSkillsInstalledNoSkillsDir(t *testing.T) {
 	tmpDir := t.TempDir()
 	t.Setenv("HOME", tmpDir)
+	t.Setenv("USERPROFILE", tmpDir)
 
 	origRegistry := Registry
 	Registry = []Agent{
@@ -96,6 +100,7 @@ func TestHasDatabricksSkillsInstalledNoSkillsDir(t *testing.T) {
 func TestHasDatabricksSkillsInstalledCustomSubdirNotChecked(t *testing.T) {
 	tmpHome := t.TempDir()
 	t.Setenv("HOME", tmpHome)
+	t.Setenv("USERPROFILE", tmpHome)
 	// Skills in agent's custom subdir should not count — only canonical matters.
 	require.NoError(t, os.MkdirAll(filepath.Join(tmpHome, ".gemini", "antigravity", "global_skills", "databricks"), 0o755))
 
@@ -116,6 +121,7 @@ func TestHasDatabricksSkillsInstalledCustomSubdirNotChecked(t *testing.T) {
 func TestHasDatabricksSkillsInstalledDatabricksAppsCanonical(t *testing.T) {
 	tmpHome := t.TempDir()
 	t.Setenv("HOME", tmpHome)
+	t.Setenv("USERPROFILE", tmpHome)
 	// databricks-apps prefix should match in canonical location.
 	require.NoError(t, os.MkdirAll(filepath.Join(tmpHome, CanonicalSkillsDir, "databricks-apps"), 0o755))
 
@@ -138,6 +144,7 @@ func TestHasDatabricksSkillsInstalledDatabricksAppsCanonical(t *testing.T) {
 func TestHasDatabricksSkillsInstalledLegacyPath(t *testing.T) {
 	tmpHome := t.TempDir()
 	t.Setenv("HOME", tmpHome)
+	t.Setenv("USERPROFILE", tmpHome)
 	// Skills only in the legacy location should still be detected.
 	require.NoError(t, os.MkdirAll(filepath.Join(tmpHome, legacySkillsDir, "databricks"), 0o755))
 
