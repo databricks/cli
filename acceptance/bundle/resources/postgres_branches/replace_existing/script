@@ -1,8 +1,8 @@
 envsubst < databricks.yml.tmpl > databricks.yml
 
 cleanup() {
-   # The production branch cannot be deleted independently of its project, so
-   # destroy by cascading from the project.
+   # bundle destroy cannot remove the implicit production branch, so the
+   # project will still exist after destroy. Cascade-delete to clean up.
    $CLI postgres delete-project "projects/test-pg-proj-${UNIQUE_NAME}" 2>/dev/null || true
    rm -f out.requests.txt
 }
@@ -13,8 +13,16 @@ trace $CLI bundle validate
 rm -f out.requests.txt
 trace $CLI bundle deploy
 
-# The production branch defaults to is_protected=false. After deploy with
-# replace_existing=true, the bundle's spec must be applied: is_protected=true.
+# Confirm the implicit production branch is now under management.
 trace $CLI postgres get-branch "projects/test-pg-proj-${UNIQUE_NAME}/branches/production" | jq 'del(.create_time, .update_time, .status.logical_size_bytes)'
 
-trace print_requests.py --keep --get '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.$DATABRICKS_BUNDLE_ENGINE.json
+trace print_requests.py --keep --get '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.deploy.$DATABRICKS_BUNDLE_ENGINE.json
+
+# bundle destroy is expected to fail: the production branch is the root
+# branch of its project and the backend rejects independent deletion. The
+# per-engine output captures the exact error shape so any regression in
+# engine error formatting (or in server behaviour) is detectable.
+title "bundle destroy (expected to fail on root branch)"
+$CLI bundle destroy --auto-approve > out.destroy.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1 || true
+
+trace print_requests.py --keep --get '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.destroy.$DATABRICKS_BUNDLE_ENGINE.json

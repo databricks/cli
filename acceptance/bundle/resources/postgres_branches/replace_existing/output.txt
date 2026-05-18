@@ -22,10 +22,13 @@ Deployment complete!
     "branch_id": "production",
     "current_state": "READY",
     "default": true,
-    "is_protected": true,
+    "is_protected": false,
     "state_change_time": "[TIMESTAMP]"
   },
   "uid": "[BRANCH_UID]"
 }
 
+>>> print_requests.py --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
+
+=== bundle destroy (expected to fail on root branch)
 >>> print_requests.py --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/

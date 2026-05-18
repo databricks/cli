@@ -21,11 +21,27 @@
   },
   "body": {
     "spec": {
-      "is_protected": true
+      "no_expiry": true
     }
   }
 }
 {
   "method": "GET",
   "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/production"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/production"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]"
+}
+{
+  "method": "DELETE",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/production"
+}
+{
+  "method": "DELETE",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]"
 }

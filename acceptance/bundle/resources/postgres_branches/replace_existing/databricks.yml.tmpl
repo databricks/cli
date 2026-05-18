@@ -12,12 +12,14 @@ resources:
       pg_version: 16
       history_retention_duration: "604800s"
 
-  # Take over the implicitly-created production branch and flip is_protected
-  # from its default value (false) to true. A successful deploy with the new
-  # value reflected in get-branch proves replace_existing applied the spec.
+  # Take over the implicitly-created production branch with replace_existing.
+  # is_protected is left at its default (false) so that bundle destroy can
+  # delete the branch at the end of the test. no_expiry is sent in the spec
+  # to demonstrate the create request goes through; the field is input-only
+  # and not surfaced in get-branch.
   postgres_branches:
     production:
       parent: ${resources.postgres_projects.my_project.id}
       branch_id: production
       replace_existing: true
-      is_protected: true
+      no_expiry: true

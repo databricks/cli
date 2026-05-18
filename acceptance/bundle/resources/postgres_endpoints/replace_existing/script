@@ -1,8 +1,8 @@
 envsubst < databricks.yml.tmpl > databricks.yml
 
 cleanup() {
-   # The primary read-write endpoint cannot be deleted independently of its
-   # branch, so destroy by cascading from the project.
+   # bundle destroy cannot remove the implicit primary endpoint, so the
+   # project will still exist after destroy. Cascade-delete to clean up.
    $CLI postgres delete-project "projects/test-pg-proj-${UNIQUE_NAME}" 2>/dev/null || true
    rm -f out.requests.txt
 }
@@ -18,4 +18,14 @@ trace $CLI bundle deploy
 # bundle's spec must be applied: 600s.
 trace $CLI postgres get-endpoint "projects/test-pg-proj-${UNIQUE_NAME}/branches/develop/endpoints/primary" | jq 'del(.create_time, .update_time)'
 
-trace print_requests.py --keep --get '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.$DATABRICKS_BUNDLE_ENGINE.json
+trace print_requests.py --keep --get '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.deploy.$DATABRICKS_BUNDLE_ENGINE.json
+
+# bundle destroy is expected to fail: the primary endpoint of the develop
+# branch is a read-write endpoint and the backend rejects independent
+# deletion. The per-engine output captures the exact error shape so any
+# regression in engine error formatting (or in server behaviour) is
+# detectable.
+title "bundle destroy (expected to fail on read-write endpoint)"
+$CLI bundle destroy --auto-approve > out.destroy.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1 || true
+
+trace print_requests.py --keep --get '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.destroy.$DATABRICKS_BUNDLE_ENGINE.json

@@ -20,9 +20,8 @@
     "replace_existing": "true"
   },
   "body": {
-    "parent": "projects/test-pg-proj-[UNIQUE_NAME]",
     "spec": {
-      "is_protected": true
+      "no_expiry": true
     }
   }
 }

@@ -26,6 +26,36 @@ func postgresErrorResponse(statusCode int, errorCode, message string) Response {
 	}
 }
 
+// postgresManagedByParentErrorResponse creates a 400 BAD_REQUEST response that
+// mirrors the real backend's "managed by parent" payload — including the
+// details[].ErrorInfo.metadata.declarative_context=MANAGED_BY_PARENT marker
+// that declarative clients (TF provider, direct engine) use to disregard the
+// delete and rely on the parent to cascade.
+func postgresManagedByParentErrorResponse(message string) Response {
+	return Response{
+		StatusCode: 400,
+		Body: map[string]any{
+			"error_code": "BAD_REQUEST",
+			"message":    message,
+			"details": []any{
+				map[string]any{
+					"@type":  "type.googleapis.com/google.rpc.ErrorInfo",
+					"domain": "databricks.com",
+					"reason": "RESOURCE_CONFLICT",
+					"metadata": map[string]string{
+						"declarative_context": "MANAGED_BY_PARENT",
+					},
+				},
+				map[string]any{
+					"@type":        "type.googleapis.com/google.rpc.RequestInfo",
+					"request_id":   nextUUID(),
+					"serving_data": "",
+				},
+			},
+		},
+	}
+}
+
 // postgresNotFoundResponse creates a NOT_FOUND error response for a resource type.
 func postgresNotFoundResponse(resourceType string) Response {
 	// Include trace ID to match real API behavior for not found errors
@@ -190,6 +220,22 @@ func (s *FakeWorkspace) PostgresProjectDelete(name string) Response {
 
 	if _, exists := s.PostgresProjects[name]; !exists {
 		return postgresNotFoundResponse("project")
+	}
+
+	// Deleting a project cascade-deletes all its branches and endpoints.
+	branchPrefix := name + "/branches/"
+	for brName := range s.PostgresBranches {
+		if strings.HasPrefix(brName, branchPrefix) {
+			delete(s.PostgresBranches, brName)
+			delete(s.postgresImplicitBranches, brName)
+			endpointPrefix := brName + "/endpoints/"
+			for epName := range s.PostgresEndpoints {
+				if strings.HasPrefix(epName, endpointPrefix) {
+					delete(s.PostgresEndpoints, epName)
+					delete(s.postgresImplicitEndpoints, epName)
+				}
+			}
+		}
 	}
 
 	delete(s.PostgresProjects, name)
@@ -383,12 +429,30 @@ func (s *FakeWorkspace) PostgresBranchDelete(name string) Response {
 		return postgresNotFoundResponse("branch")
 	}
 
-	// Check if branch is protected
 	if branch.Status != nil && branch.Status.IsProtected {
 		return postgresErrorResponse(400, "BAD_REQUEST", "cannot delete protected branch")
 	}
 
+	// Branches the server provisioned implicitly (the project's root branch)
+	// cannot be deleted independently; they are removed when the project is
+	// deleted. Matches the real backend's error payload including the
+	// declarative_context=MANAGED_BY_PARENT marker.
+	if s.postgresImplicitBranches[name] {
+		return postgresManagedByParentErrorResponse(fmt.Sprintf("Cannot delete root branch '%s'. Root branches cannot be deleted independently.", name))
+	}
+
+	// Deleting a branch cascade-deletes its endpoints (including the implicit
+	// primary).
+	endpointPrefix := name + "/endpoints/"
+	for epName := range s.PostgresEndpoints {
+		if strings.HasPrefix(epName, endpointPrefix) {
+			delete(s.PostgresEndpoints, epName)
+			delete(s.postgresImplicitEndpoints, epName)
+		}
+	}
+
 	delete(s.PostgresBranches, name)
+	delete(s.postgresImplicitBranches, name)
 
 	return Response{
 		Body: s.createOperationLocked(name, nil),
@@ -605,7 +669,16 @@ func (s *FakeWorkspace) PostgresEndpointDelete(name string) Response {
 		return postgresNotFoundResponse("endpoint")
 	}
 
+	// Endpoints the server provisioned implicitly (the primary read-write
+	// endpoint on every branch) cannot be deleted independently; they are
+	// removed when the parent branch is deleted. Matches the real backend's
+	// error payload including the declarative_context=MANAGED_BY_PARENT marker.
+	if s.postgresImplicitEndpoints[name] {
+		return postgresManagedByParentErrorResponse(fmt.Sprintf("Cannot delete read-write endpoint '%s'. Read-write endpoints cannot be deleted.", name))
+	}
+
 	delete(s.PostgresEndpoints, name)
+	delete(s.postgresImplicitEndpoints, name)
 
 	return Response{
 		Body: s.createOperationLocked(name, nil),
@@ -681,6 +754,7 @@ func (s *FakeWorkspace) createDefaultBranchLocked(projectName string) {
 	}
 
 	s.PostgresBranches[branchName] = defaultBranch
+	s.postgresImplicitBranches[branchName] = true
 
 	// Each branch implicitly provisions a primary read-write endpoint.
 	s.createDefaultEndpointLocked(branchName)
@@ -736,4 +810,5 @@ func (s *FakeWorkspace) createDefaultEndpointLocked(branchName string) {
 			ForceSendFields: []string{"Disabled"},
 		},
 	}
+	s.postgresImplicitEndpoints[endpointName] = true
 }
