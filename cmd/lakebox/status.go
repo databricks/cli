@@ -47,6 +47,9 @@ Example:
 			out := cmd.OutOrStdout()
 			blank(out)
 			field(ctx, out, "id", cmdio.Bold(ctx, entry.SandboxID))
+			if entry.Name != "" {
+				field(ctx, out, "name", entry.Name)
+			}
 			field(ctx, out, "status", status(ctx, entry.Status))
 			if entry.FQDN != "" {
 				field(ctx, out, "fqdn", cmdio.Dim(ctx, entry.FQDN))

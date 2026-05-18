@@ -2,7 +2,6 @@ package lakebox
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
@@ -11,7 +10,7 @@ import (
 )
 
 func newCreateCommand() *cobra.Command {
-	var publicKeyFile string
+	var name string
 
 	cmd := &cobra.Command{
 		Use:   "create",
@@ -21,8 +20,9 @@ func newCreateCommand() *cobra.Command {
 Creates a new personal development environment backed by a microVM.
 Blocks until the lakebox is running and prints the lakebox ID.
 
-Example:
-  databricks lakebox create`,
+Examples:
+  databricks lakebox create
+  databricks lakebox create --name my-project`,
 		PreRunE: root.MustWorkspaceClient,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
@@ -32,19 +32,10 @@ Example:
 				return err
 			}
 
-			var publicKey string
-			if publicKeyFile != "" {
-				data, err := os.ReadFile(publicKeyFile)
-				if err != nil {
-					return fmt.Errorf("failed to read public key file %s: %w", publicKeyFile, err)
-				}
-				publicKey = string(data)
-			}
-
 			s := spin(ctx, "Provisioning your lakebox…")
 			defer s.Close()
 
-			result, err := api.create(ctx, publicKey)
+			result, err := api.create(ctx, name)
 			if err != nil {
 				s.fail("Failed to create lakebox")
 				return fmt.Errorf("failed to create lakebox: %w", err)
@@ -78,7 +69,7 @@ Example:
 		},
 	}
 
-	cmd.Flags().StringVar(&publicKeyFile, "public-key-file", "", "Path to SSH public key file to install in the lakebox")
+	cmd.Flags().StringVar(&name, "name", "", "Display label for the lakebox (max 256 bytes)")
 
 	return cmd
 }
