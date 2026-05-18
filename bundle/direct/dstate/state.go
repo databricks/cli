@@ -366,7 +366,10 @@ func (db *DeploymentState) Finalize(ctx context.Context) (resourcestate.Exported
 	var err error
 
 	if db.walFile != nil {
-		db.walFile.Close()
+		closeErr := db.walFile.Close()
+		if closeErr != nil {
+			log.Warnf(ctx, "Error when closing .wal file, possibly corrupted state file: %s", closeErr)
+		}
 		db.walFile = nil
 		err = db.replayWAL(ctx)
 	}
