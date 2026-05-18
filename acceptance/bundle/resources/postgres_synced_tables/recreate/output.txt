@@ -1,0 +1,26 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/recreate-postgres-synced-table-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] bundle plan
+recreate postgres_synced_tables.my_table
+
+Plan: 1 to add, 0 to change, 1 to delete, 0 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/recreate-postgres-synced-table-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.postgres_synced_tables.my_table
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/recreate-postgres-synced-table-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!

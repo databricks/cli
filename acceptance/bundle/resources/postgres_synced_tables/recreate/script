@@ -1,0 +1,16 @@
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+export POLICY=SNAPSHOT
+envsubst < databricks.yml.tmpl > databricks.yml
+trace $CLI bundle deploy
+
+# Toggle a recreate-on-change field; plan must show delete + create.
+export POLICY=TRIGGERED
+envsubst < databricks.yml.tmpl > databricks.yml
+trace $CLI bundle plan | contains.py "Plan: 1 to add, 0 to change, 1 to delete, 0 unchanged"
+
+trace $CLI bundle deploy

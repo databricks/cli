@@ -1,0 +1,19 @@
+bundle:
+  name: recreate-postgres-synced-table-$UNIQUE_NAME
+
+sync:
+  paths: []
+
+resources:
+  postgres_synced_tables:
+    my_table:
+      synced_table_id: "main.public.trips_$UNIQUE_NAME"
+      source_table_full_name: "main.raw.trips"
+      primary_key_columns: ["id"]
+      scheduling_policy: $POLICY
+      postgres_database: appdb
+      branch: "projects/p/branches/production"
+      create_database_objects_if_missing: true
+      new_pipeline_spec:
+        storage_catalog: main
+        storage_schema: pipelines
