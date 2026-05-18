@@ -168,10 +168,11 @@ type FakeWorkspace struct {
 	DatabaseCatalogs     map[string]database.DatabaseCatalog
 	SyncedDatabaseTables map[string]database.SyncedDatabaseTable
 
-	PostgresProjects   map[string]postgres.Project
-	PostgresBranches   map[string]postgres.Branch
-	PostgresEndpoints  map[string]postgres.Endpoint
-	PostgresOperations map[string]postgres.Operation
+	PostgresProjects     map[string]postgres.Project
+	PostgresBranches     map[string]postgres.Branch
+	PostgresEndpoints    map[string]postgres.Endpoint
+	PostgresOperations   map[string]postgres.Operation
+	PostgresSyncedTables map[string]postgres.SyncedTable
 
 	// clusterVenvs caches Python venvs per existing cluster ID,
 	// matching cloud behavior where libraries are cached on running clusters.
@@ -300,6 +301,7 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		PostgresBranches:      map[string]postgres.Branch{},
 		PostgresEndpoints:     map[string]postgres.Endpoint{},
 		PostgresOperations:    map[string]postgres.Operation{},
+		PostgresSyncedTables:  map[string]postgres.SyncedTable{},
 		clusterVenvs:          map[string]*clusterEnv{},
 		Alerts:                map[string]sql.AlertV2{},
 		Experiments:           map[string]ml.GetExperimentResponse{},
