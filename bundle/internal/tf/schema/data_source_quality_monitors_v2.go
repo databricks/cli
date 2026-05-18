@@ -3,7 +3,7 @@
 package schema
 
 type DataSourceQualityMonitorsV2ProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourceQualityMonitorsV2QualityMonitorsAnomalyDetectionConfig struct {
@@ -13,7 +13,7 @@ type DataSourceQualityMonitorsV2QualityMonitorsAnomalyDetectionConfig struct {
 }
 
 type DataSourceQualityMonitorsV2QualityMonitorsProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourceQualityMonitorsV2QualityMonitorsValidityCheckConfigurationsPercentNullValidityCheck struct {

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/databricks/databricks-sdk-go/credentials/u2m/cache"
+	"github.com/google/uuid"
 	"github.com/zalando/go-keyring"
 	"golang.org/x/oauth2"
 )
@@ -16,6 +17,14 @@ import (
 // to the OS-native secure store. The account field carries the per-entry
 // cache key the SDK passes through TokenCache.Store / Lookup.
 const keyringServiceName = "databricks-cli"
+
+// keyringProbeAccountPrefix is prefixed onto a per-call random suffix to form
+// the account name ProbeKeyring writes and deletes. A fixed name like
+// "__probe__" could collide with a user profile of the same name (which is
+// what keyringCache uses as the account field), so the probe would clobber
+// and delete that user's stored token. Per-call randomness also means
+// concurrent probes don't step on each other.
+const keyringProbeAccountPrefix = "__probe_"
 
 // defaultKeyringTimeout is how long a single keyring operation is allowed
 // to run before the wrapper returns a TimeoutError. Matches the value used
@@ -77,6 +86,31 @@ func NewKeyringCache() cache.TokenCache {
 		timeout:        defaultKeyringTimeout,
 		keyringSvcName: keyringServiceName,
 	}
+}
+
+// ProbeKeyring returns nil if the OS keyring accepted a write+delete
+// cycle within the standard timeout. *TimeoutError means the keyring
+// was unresponsive (locked or hung, indistinguishable here); other
+// errors are definitive failures.
+func ProbeKeyring() error {
+	return probeWithBackend(zalandoBackend{}, defaultKeyringTimeout)
+}
+
+func probeWithBackend(backend keyringBackend, timeout time.Duration) error {
+	c := &keyringCache{
+		backend:        backend,
+		timeout:        timeout,
+		keyringSvcName: keyringServiceName,
+	}
+	account := keyringProbeAccountPrefix + uuid.NewString()
+	tok := &oauth2.Token{AccessToken: "probe"}
+	if err := c.Store(account, tok); err != nil {
+		return fmt.Errorf("write: %w", err)
+	}
+	if err := c.Store(account, nil); err != nil {
+		return fmt.Errorf("delete: %w", err)
+	}
+	return nil
 }
 
 // Store stores t under key. Nil t deletes the entry; deleting a missing

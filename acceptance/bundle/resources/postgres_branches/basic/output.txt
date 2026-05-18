@@ -35,6 +35,7 @@ Deployment complete!
   "name": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
   "parent": "projects/test-pg-proj-[UNIQUE_NAME]",
   "status": {
+    "branch_id": "main",
     "current_state": "READY",
     "default": false,
     "is_protected": false,

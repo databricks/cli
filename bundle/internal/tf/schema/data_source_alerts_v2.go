@@ -54,7 +54,7 @@ type DataSourceAlertsV2AlertsEvaluation struct {
 }
 
 type DataSourceAlertsV2AlertsProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourceAlertsV2AlertsRunAs struct {
@@ -89,7 +89,7 @@ type DataSourceAlertsV2Alerts struct {
 }
 
 type DataSourceAlertsV2ProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourceAlertsV2 struct {

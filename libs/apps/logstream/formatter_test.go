@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -11,10 +12,11 @@ import (
 
 func TestFormatter_FormatEntry(t *testing.T) {
 	entry := &wsEntry{Source: "app", Timestamp: 1705315800.0, Message: "hello world\n"}
+	ctx := cmdio.MockDiscard(t.Context())
 
 	t.Run("json output", func(t *testing.T) {
 		jsonFormatter := newLogFormatter(false, flags.OutputJSON)
-		output := jsonFormatter.FormatEntry(entry)
+		output := jsonFormatter.FormatEntry(ctx, entry)
 
 		var parsed wsEntry
 		require.NoError(t, json.Unmarshal([]byte(output), &parsed))
@@ -27,7 +29,7 @@ func TestFormatter_FormatEntry(t *testing.T) {
 
 	t.Run("text output", func(t *testing.T) {
 		textFormatter := newLogFormatter(false, flags.OutputText)
-		output := textFormatter.FormatEntry(entry)
+		output := textFormatter.FormatEntry(ctx, entry)
 
 		assert.Contains(t, output, "[APP]")
 		assert.Contains(t, output, "hello world")

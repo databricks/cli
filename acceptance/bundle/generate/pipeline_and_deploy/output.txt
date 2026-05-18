@@ -1,0 +1,32 @@
+
+=== Upload files to workspace
+>>> [CLI] workspace import /Workspace/Users/[USERNAME]/notebook.py --file notebook.py --format AUTO --overwrite
+
+>>> [CLI] workspace import /Workspace/Users/[USERNAME]/test.py --file test.py --format AUTO --overwrite
+
+=== Create a pipeline that references the filesCreated pipeline
+
+=== Generate bundle config from the pipelineFile successfully saved to src/notebook.py
+File successfully saved to src/test.py
+Pipeline configuration successfully saved to resources/out.pipeline.yml
+
+=== Verify generated yaml has expected fields
+=== Deploy the generated bundle
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/pipeline_and_deploy/default/files...
+Deploying resources...
+Deployment complete!
+
+=== Destroy the deployed bundle
+>>> [CLI] bundle destroy --auto-approve
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/pipeline_and_deploy/default
+
+Deleting files...
+Destroy complete!
+
+=== Cleanup: delete the original pipeline and files
+>>> errcode [CLI] pipelines delete [PIPELINE_ID]
+
+>>> errcode [CLI] workspace delete /Workspace/Users/[USERNAME]/notebook
+
+>>> errcode [CLI] workspace delete /Workspace/Users/[USERNAME]/test.py

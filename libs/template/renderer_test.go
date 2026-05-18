@@ -34,7 +34,7 @@ func assertBuiltinTemplateValid(t *testing.T, template string, settings map[stri
 	require.NoError(t, err)
 
 	w := &databricks.WorkspaceClient{
-		Config: &workspaceConfig.Config{Host: "https://myhost.com"},
+		Config: &workspaceConfig.Config{Host: "https://myhost.test"},
 	}
 
 	// Prepare helpers

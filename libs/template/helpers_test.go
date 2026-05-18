@@ -141,7 +141,7 @@ func TestWorkspaceHost(t *testing.T) {
 
 	w := &databricks.WorkspaceClient{
 		Config: &workspaceConfig.Config{
-			Host: "https://myhost.com",
+			Host: "https://myhost.test",
 		},
 	}
 	ctx = cmdctx.SetWorkspaceClient(ctx, w)
@@ -155,7 +155,7 @@ func TestWorkspaceHost(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Len(t, r.files, 1)
-	assert.Contains(t, string(r.files[0].(*inMemoryFile).content), "https://myhost.com")
+	assert.Contains(t, string(r.files[0].(*inMemoryFile).content), "https://myhost.test")
 	assert.Contains(t, string(r.files[0].(*inMemoryFile).content), "i3.xlarge")
 }
 

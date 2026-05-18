@@ -66,7 +66,7 @@ func (d *DeploymentUnit) Create(ctx context.Context, db *dstate.DeploymentState,
 		return fmt.Errorf("saving state after creating id=%s: %w", newID, err)
 	}
 
-	waitRemoteState, err := d.Adapter.WaitAfterCreate(ctx, newState)
+	waitRemoteState, err := d.Adapter.WaitAfterCreate(ctx, newID, newState)
 	if err != nil {
 		return fmt.Errorf("waiting after creating id=%s: %w", newID, err)
 	}
@@ -86,7 +86,9 @@ func (d *DeploymentUnit) Recreate(ctx context.Context, db *dstate.DeploymentStat
 		return fmt.Errorf("deleting old id=%s: %w", oldID, err)
 	}
 
-	err = db.SaveState(d.ResourceKey, "", nil, nil)
+	// Drop the state entry so a subsequent failure of Create leaves no malformed
+	// (empty-id) entry behind. The next plan will see "no state" and retry as Create.
+	err = db.DeleteState(d.ResourceKey)
 	if err != nil {
 		return fmt.Errorf("deleting state: %w", err)
 	}
@@ -114,7 +116,7 @@ func (d *DeploymentUnit) Update(ctx context.Context, db *dstate.DeploymentState,
 		return fmt.Errorf("saving state id=%s: %w", id, err)
 	}
 
-	waitRemoteState, err := d.Adapter.WaitAfterUpdate(ctx, newState)
+	waitRemoteState, err := d.Adapter.WaitAfterUpdate(ctx, id, newState)
 	if err != nil {
 		return fmt.Errorf("waiting after updating id=%s: %w", id, err)
 	}
@@ -150,7 +152,7 @@ func (d *DeploymentUnit) UpdateWithID(ctx context.Context, db *dstate.Deployment
 		return fmt.Errorf("saving state id=%s: %w", oldID, err)
 	}
 
-	waitRemoteState, err := d.Adapter.WaitAfterUpdate(ctx, newState)
+	waitRemoteState, err := d.Adapter.WaitAfterUpdate(ctx, newID, newState)
 	if err != nil {
 		return fmt.Errorf("waiting after updating id=%s: %w", newID, err)
 	}

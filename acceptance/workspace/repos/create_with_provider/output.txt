@@ -4,21 +4,21 @@
 === Get by id should work
 >>> [CLI] repos get [NUMID] -o json
 {
-  "branch":"main",
-  "id":[NUMID],
-  "path":"/Repos/me@databricks.com/test-repo",
-  "provider":"gitHub",
-  "url":"https://github.com/databricks/databricks-empty-ide-project.git"
+  "branch": "main",
+  "id": [NUMID],
+  "path": "/Repos/me@databricks.com/test-repo",
+  "provider": "gitHub",
+  "url": "https://github.com/databricks/databricks-empty-ide-project.git"
 }
 
 === Get by path should work
 >>> [CLI] repos get /Repos/me@databricks.com/test-repo -o json
 {
-  "branch":"main",
-  "id":[NUMID],
-  "path":"/Repos/me@databricks.com/test-repo",
-  "provider":"gitHub",
-  "url":"https://github.com/databricks/databricks-empty-ide-project.git"
+  "branch": "main",
+  "id": [NUMID],
+  "path": "/Repos/me@databricks.com/test-repo",
+  "provider": "gitHub",
+  "url": "https://github.com/databricks/databricks-empty-ide-project.git"
 }
 
 === Delete by id should work

@@ -15,7 +15,7 @@ targets:
     mode: development
     workspace:
       host: https://dev.example.com
-  staging: {}
+  staging:
   prod:
     mode: production
     workspace:

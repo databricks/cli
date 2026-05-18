@@ -141,6 +141,7 @@ var testConfig map[string]any = map[string]any{
 			Name: "my-endpoint",
 			Config: &serving.EndpointCoreConfigInput{
 				Name: "my-endpoint",
+				//nolint:staticcheck // SA1019: deprecated AutoCaptureConfigInput kept for bundle config compatibility
 				AutoCaptureConfig: &serving.AutoCaptureConfigInput{
 					CatalogName:     "main",
 					SchemaName:      "myschema",
@@ -797,7 +798,7 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 			"unexpected differences between remappedState and remappedRemoteStateFromCreate")
 	}
 
-	remoteStateFromWaitCreate, err := adapter.WaitAfterCreate(ctx, newState)
+	remoteStateFromWaitCreate, err := adapter.WaitAfterCreate(ctx, createdID, newState)
 	require.NoError(t, err)
 	if remoteStateFromWaitCreate != nil {
 		require.Equal(t, remote, remoteStateFromWaitCreate)
@@ -813,7 +814,7 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 				"unexpected differences between remappedState and remappedStateFromUpdate")
 		}
 
-		remoteStateFromWaitUpdate, err := adapter.WaitAfterUpdate(ctx, newState)
+		remoteStateFromWaitUpdate, err := adapter.WaitAfterUpdate(ctx, createdID, newState)
 		require.NoError(t, err)
 		if remoteStateFromWaitUpdate != nil {
 			remappedStateFromWaitUpdate, err := adapter.RemapState(remoteStateFromWaitUpdate)

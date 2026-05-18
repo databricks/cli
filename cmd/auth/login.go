@@ -32,13 +32,10 @@ func promptForProfile(ctx context.Context, defaultValue string) (string, error) 
 		return "", nil
 	}
 
-	prompt := cmdio.Prompt(ctx)
-	prompt.Label = "Databricks profile name [" + defaultValue + "]"
-	prompt.AllowEdit = true
-	result, err := prompt.Run()
+	result, err := cmdio.RunPrompt(ctx, cmdio.PromptOptions{
+		Label: "Databricks profile name [" + defaultValue + "]",
+	})
 	if result == "" {
-		// Manually return the default value. We could use the prompt.Default
-		// field, but be inconsistent with other prompts in the CLI.
 		return defaultValue, err
 	}
 	return result, err
@@ -147,7 +144,11 @@ a new profile is created.
 		ctx := cmd.Context()
 		profileName := cmd.Flag("profile").Value.String()
 
-		tokenCache, mode, err := storage.ResolveCache(ctx, "")
+		// Resolve the cache before the browser step so an unavailable
+		// keyring surfaces here rather than after OAuth. The probe also
+		// triggers the OS unlock prompt, which the user can answer during
+		// OAuth.
+		tokenCache, mode, err := storage.ResolveCacheForLogin(ctx, "")
 		if err != nil {
 			return err
 		}
@@ -174,6 +175,43 @@ a new profile is created.
 			} else {
 				authArguments.Host = resolvedHost
 				args = nil
+			}
+		}
+
+		// When interactive and nothing was specified, show a picker that lets
+		// the user re-login to an existing profile, create a new one, or enter
+		// a host URL. With no profiles configured the picker still shows the
+		// two action entries so the user can choose between web-based discovery
+		// (Create a new profile) and a manual host URL.
+		if profileName == "" && authArguments.Host == "" && len(args) == 0 && cmdio.IsPromptSupported(ctx) {
+			allProfiles, err := profile.DefaultProfiler.LoadProfiles(ctx, profile.MatchAllProfiles)
+			if err != nil && !errors.Is(err, profile.ErrNoConfiguration) {
+				return err
+			}
+			label := "Select a profile"
+			if len(allProfiles) == 0 {
+				label = "How would you like to log in?"
+			}
+			currentDefault, _ := databrickscfg.GetDefaultProfile(ctx, env.Get(ctx, "DATABRICKS_CONFIG_FILE"))
+			result, selected, err := pickAuthProfile(ctx, allProfiles, profilePickerOptions{
+				Label:         label,
+				Default:       currentDefault,
+				IncludeExtras: true,
+			})
+			if err != nil {
+				return err
+			}
+			switch result {
+			case profilePickerProfile:
+				profileName = selected
+			case profilePickerEnterHost:
+				host, err := promptForHost(ctx)
+				if err != nil {
+					return err
+				}
+				authArguments.Host = host
+			case profilePickerCreateNew:
+				// Fall through to the profile name prompt below.
 			}
 		}
 
@@ -756,10 +794,9 @@ func promptForWorkspaceSelection(ctx context.Context, authArguments *auth.AuthAr
 // promptForWorkspaceID asks the user to manually enter a workspace ID.
 // Returns empty string if the user provides no input.
 func promptForWorkspaceID(ctx context.Context) (string, error) {
-	prompt := cmdio.Prompt(ctx)
-	prompt.Label = "Enter workspace ID (empty to skip)"
-	prompt.AllowEdit = true
-	result, err := prompt.Run()
+	result, err := cmdio.RunPrompt(ctx, cmdio.PromptOptions{
+		Label: "Enter workspace ID (empty to skip)",
+	})
 	if err != nil {
 		return "", err
 	}

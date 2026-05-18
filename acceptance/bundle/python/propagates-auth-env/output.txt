@@ -1,0 +1,8 @@
+
+>>> uv run [UV_ARGS] -q [CLI] bundle summary -o json
+{
+  "profile": "my-profile"
+}
+
+>>> cat captured_env.txt
+my-profile
