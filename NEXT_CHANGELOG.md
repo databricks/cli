@@ -10,5 +10,6 @@
 
 ### Bundles
 * Make sure warnings asking for approval are understood by agents ([#5239](https://github.com/databricks/cli/pull/5239))
+* Add `postgres_catalogs` resource to bind a Unity Catalog catalog to a Postgres database on a Lakebase Autoscaling branch.
 
 ### Dependency updates
