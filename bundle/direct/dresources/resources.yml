@@ -508,6 +508,32 @@ resources:
       - field: endpoint_id
         reason: immutable
 
+  postgres_synced_tables:
+    recreate_on_changes:
+      # synced_table_id is part of the hierarchical name and immutable.
+      - field: synced_table_id
+        reason: immutable
+      # The Postgres SDK has no UpdateSyncedTable endpoint, so every spec
+      # change requires delete+create.
+      - field: branch
+        reason: immutable
+      - field: postgres_database
+        reason: immutable
+      - field: source_table_full_name
+        reason: immutable
+      - field: primary_key_columns
+        reason: immutable
+      - field: timeseries_key
+        reason: immutable
+      - field: scheduling_policy
+        reason: immutable
+      - field: create_database_objects_if_missing
+        reason: immutable
+      - field: new_pipeline_spec
+        reason: immutable
+      - field: existing_pipeline_id
+        reason: immutable
+
   vector_search_endpoints:
     recreate_on_changes:
       - field: endpoint_type
