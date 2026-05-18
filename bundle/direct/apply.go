@@ -80,9 +80,12 @@ func (d *DeploymentUnit) Create(ctx context.Context, db *dstate.DeploymentState,
 }
 
 func (d *DeploymentUnit) Recreate(ctx context.Context, db *dstate.DeploymentState, oldID string, newState any) error {
-	// Note, unlike Delete(), we hard error on 403 here intentionally
+	// Note, unlike Delete(), we hard error on 403 here intentionally.
+	// MANAGED_BY_PARENT is still disregarded — the subsequent Create with
+	// replace_existing=true will reconfigure the parent-managed resource in
+	// place, matching the Terraform provider's recreate behaviour.
 	err := d.Adapter.DoDelete(ctx, oldID)
-	if err != nil && !isResourceGone(err) {
+	if err != nil && !isResourceGone(err) && !isManagedByParent(err) {
 		return fmt.Errorf("deleting old id=%s: %w", oldID, err)
 	}
 
