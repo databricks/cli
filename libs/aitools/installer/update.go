@@ -125,7 +125,7 @@ func UpdateSkills(ctx context.Context, src ManifestSource, targetAgents []*agent
 		}
 
 		// Filter experimental skills unless state opted in.
-		if meta.Experimental && !state.IncludeExperimental {
+		if meta.IsExperimental() && !state.IncludeExperimental {
 			log.Debugf(ctx, "Skipping experimental skill %s", name)
 			result.Skipped = append(result.Skipped, name)
 			continue
@@ -177,7 +177,7 @@ func UpdateSkills(ctx context.Context, src ManifestSource, targetAgents []*agent
 
 	for _, change := range allChanges {
 		meta := manifest.Skills[change.Name]
-		if err := installSkillForAgents(ctx, change.Name, meta.Files, targetAgents, params); err != nil {
+		if err := installSkillForAgents(ctx, change.Name, meta, targetAgents, params); err != nil {
 			return nil, err
 		}
 	}

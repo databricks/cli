@@ -63,15 +63,30 @@ func UninstallSkillsOpts(ctx context.Context, opts UninstallOptions) error {
 	var toRemove []string
 	if len(opts.Skills) > 0 {
 		seen := make(map[string]bool)
-		for _, name := range opts.Skills {
+		for _, raw := range opts.Skills {
+			// Accept either variant: if the literal name isn't installed but
+			// the alternate variant is, use the alternate. This makes uninstall
+			// resilient to the experimental↔stable transition.
+			name := raw
+			if _, ok := state.Skills[name]; !ok {
+				if alt := alternateVariantKey(name); state.Skills[alt] != "" {
+					name = alt
+				} else {
+					return fmt.Errorf("skill %q is not installed", raw)
+				}
+			}
 			if seen[name] {
 				continue
 			}
 			seen[name] = true
-			if _, ok := state.Skills[name]; !ok {
-				return fmt.Errorf("skill %q is not installed", name)
-			}
 			toRemove = append(toRemove, name)
+
+			// If both variants are installed, remove both (the alternate is
+			// the stale "old version" of the same logical skill).
+			if alt := alternateVariantKey(name); state.Skills[alt] != "" && !seen[alt] {
+				seen[alt] = true
+				toRemove = append(toRemove, alt)
+			}
 		}
 	} else {
 		for name := range state.Skills {

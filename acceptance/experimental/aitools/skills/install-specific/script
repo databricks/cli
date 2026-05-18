@@ -1,0 +1,10 @@
+mkdir -p "$HOME/.claude"
+
+title "install only one specific stable skill via --skills"
+trace $CLI experimental aitools install --global --skills test-stable-a
+
+title "install a specific experimental skill (note the -experimental suffix)"
+trace $CLI experimental aitools install --global --skills test-exp-experimental --experimental
+
+title "asking for an experimental skill without --experimental flag errors out"
+errcode trace $CLI experimental aitools install --global --skills test-exp-experimental

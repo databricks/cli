@@ -24,14 +24,40 @@ import (
 )
 
 const (
-	skillsRepoOwner = "databricks"
-	skillsRepoName  = "databricks-agent-skills"
-	skillsRepoPath  = "skills"
+	skillsRepoOwner      = "databricks"
+	skillsRepoName       = "databricks-agent-skills"
+	stableSkillsRepoPath = "skills"
+	experimentalRepoPath = "experimental"
+	experimentalSuffix   = "-experimental"
 )
+
+// manifestHasExperimental reports whether the manifest contains at least one
+// experimental skill (sourced from the experimental/ directory upstream).
+func manifestHasExperimental(m *Manifest) bool {
+	for _, meta := range m.Skills {
+		if meta.IsExperimental() {
+			return true
+		}
+	}
+	return false
+}
+
+// alternateVariantKey returns the manifest key of the same logical skill
+// under the opposite experimental status. For "databricks-jobs" it returns
+// "databricks-jobs-experimental"; for "databricks-jobs-experimental" it
+// returns "databricks-jobs". Used to clean up the previously-installed
+// variant when a skill transitions between experimental and stable
+// upstream.
+func alternateVariantKey(key string) string {
+	if strings.HasSuffix(key, experimentalSuffix) {
+		return strings.TrimSuffix(key, experimentalSuffix)
+	}
+	return key + experimentalSuffix
+}
 
 // fetchFileFn is the function used to download individual skill files.
 // It is a package-level var so tests can replace it with a mock.
-var fetchFileFn = fetchSkillFile
+var fetchFileFn func(ctx context.Context, ref, repoDir, skillName, filePath string) ([]byte, error) = fetchSkillFile
 
 // GetSkillsRef returns the skills repo ref to use and whether it was explicitly
 // set via DATABRICKS_SKILLS_REF (as opposed to auto-resolved from the manifest).
@@ -47,7 +73,23 @@ func GetSkillsRef(ctx context.Context) (ref string, explicit bool, err error) {
 	return "v" + v, false, nil
 }
 
+// GetSkillsBaseURL returns the base URL for fetching the manifest and skill
+// files. If DATABRICKS_SKILLS_BASE_URL is set, it returns that; otherwise the
+// canonical raw.githubusercontent.com URL for the upstream repo. The override
+// is used by acceptance tests to point fetches at a mock HTTP server.
+func GetSkillsBaseURL(ctx context.Context) string {
+	if base := env.Get(ctx, "DATABRICKS_SKILLS_BASE_URL"); base != "" {
+		return strings.TrimRight(base, "/")
+	}
+	return "https://raw.githubusercontent.com/" + skillsRepoOwner + "/" + skillsRepoName
+}
+
 // Manifest describes the skills manifest fetched from the skills repo.
+//
+// The repo exposes stable skills under skills/ and experimental skills under
+// experimental/. Both appear in a single Skills map; each entry carries
+// RepoDir indicating which top-level directory holds its files, which is
+// also the source of truth for whether the skill is experimental.
 type Manifest struct {
 	Version   string               `json:"version"`
 	UpdatedAt string               `json:"updated_at"`
@@ -56,12 +98,31 @@ type Manifest struct {
 
 // SkillMeta describes a single skill entry in the manifest.
 type SkillMeta struct {
-	Version      string   `json:"version"`
-	UpdatedAt    string   `json:"updated_at"`
-	Files        []string `json:"files"`
-	Experimental bool     `json:"experimental,omitempty"`
-	Description  string   `json:"description,omitempty"`
-	MinCLIVer    string   `json:"min_cli_version,omitempty"`
+	Version     string   `json:"version"`
+	UpdatedAt   string   `json:"updated_at"`
+	Files       []string `json:"files"`
+	Description string   `json:"description,omitempty"`
+	MinCLIVer   string   `json:"min_cli_version,omitempty"`
+
+	// RepoDir is the top-level repo subdirectory (skills/ or experimental/)
+	// that holds this skill's files. Provided by the manifest; serves as
+	// the source of truth for whether the skill is experimental.
+	RepoDir string `json:"repo_dir,omitempty"`
+
+	// SourceName is the directory name within RepoDir that holds this
+	// skill's files in the upstream repo. For stable skills this equals
+	// the manifest key. For experimental skills the manifest key has a
+	// "-experimental" suffix appended for collision-free install paths,
+	// but the upstream repo dir does not — SourceName preserves it for
+	// the fetch URL. Populated during normalization; not part of the wire
+	// format.
+	SourceName string `json:"-"`
+}
+
+// IsExperimental reports whether the skill is sourced from the experimental/
+// directory of the upstream repo.
+func (s SkillMeta) IsExperimental() bool {
+	return s.RepoDir == experimentalRepoPath
 }
 
 // InstallOptions controls the behavior of InstallSkillsForAgents.
@@ -71,9 +132,12 @@ type InstallOptions struct {
 	Scope               string   // ScopeGlobal or ScopeProject (default: global)
 }
 
-func fetchSkillFile(ctx context.Context, ref, skillName, filePath string) ([]byte, error) {
-	url := fmt.Sprintf("https://raw.githubusercontent.com/%s/%s/%s/%s/%s/%s",
-		skillsRepoOwner, skillsRepoName, ref, skillsRepoPath, skillName, filePath)
+func fetchSkillFile(ctx context.Context, ref, repoDir, skillName, filePath string) ([]byte, error) {
+	if repoDir == "" {
+		repoDir = stableSkillsRepoPath
+	}
+	url := fmt.Sprintf("%s/%s/%s/%s/%s",
+		GetSkillsBaseURL(ctx), ref, repoDir, skillName, filePath)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
@@ -126,6 +190,12 @@ func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgent
 	manifest, ref, err := FetchSkillsManifestWithFallback(ctx, src, ref, !explicit)
 	if err != nil {
 		return err
+	}
+
+	// Helpful nudge for users testing --experimental against a ref that
+	// pre-dates the experimental/ directory upstream.
+	if opts.IncludeExperimental && !manifestHasExperimental(manifest) {
+		log.Warnf(ctx, "--experimental was set but the manifest at %s exposes no experimental skills. Set DATABRICKS_SKILLS_REF to a release that includes them (or =main for the latest).", ref)
 	}
 
 	scope := opts.Scope
@@ -186,6 +256,23 @@ func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgent
 
 	for _, name := range skillNames {
 		meta := targetSkills[name]
+
+		// Experimental↔stable transition: if the alternate variant of this
+		// skill was previously installed (upstream flipped its experimental
+		// status), remove the stale variant before installing the new one.
+		if state != nil {
+			alt := alternateVariantKey(name)
+			if _, ok := state.Skills[alt]; ok {
+				altDir := filepath.Join(baseDir, alt)
+				removeSymlinksFromAgents(ctx, alt, altDir, scope, cwd)
+				if err := os.RemoveAll(altDir); err != nil {
+					log.Warnf(ctx, "Failed to remove previous variant %s: %v", altDir, err)
+				}
+				delete(state.Skills, alt)
+				cmdio.LogString(ctx, fmt.Sprintf("Replaced previous variant %s with %s", alt, name))
+			}
+		}
+
 		// Idempotency: skip if same version is already installed, the canonical
 		// dir exists, AND every requested agent already has the skill on disk.
 		if state != nil && state.Skills[name] == meta.Version {
@@ -196,7 +283,7 @@ func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgent
 			}
 		}
 
-		if err := installSkillForAgents(ctx, name, meta.Files, targetAgents, params); err != nil {
+		if err := installSkillForAgents(ctx, name, meta, targetAgents, params); err != nil {
 			return err
 		}
 	}
@@ -287,7 +374,7 @@ func resolveSkills(ctx context.Context, skills map[string]SkillMeta, opts Instal
 
 	result := make(map[string]SkillMeta, len(candidates))
 	for name, meta := range candidates {
-		if meta.Experimental && !opts.IncludeExperimental {
+		if meta.IsExperimental() && !opts.IncludeExperimental {
 			if isSpecific {
 				return nil, fmt.Errorf("skill %q is experimental; use --experimental to install", name)
 			}
@@ -394,9 +481,9 @@ type installParams struct {
 	ref     string
 }
 
-func installSkillForAgents(ctx context.Context, skillName string, files []string, detectedAgents []*agents.Agent, params installParams) error {
+func installSkillForAgents(ctx context.Context, skillName string, meta SkillMeta, detectedAgents []*agents.Agent, params installParams) error {
 	canonicalDir := filepath.Join(params.baseDir, skillName)
-	if err := installSkillToDir(ctx, params.ref, skillName, canonicalDir, files); err != nil {
+	if err := installSkillToDir(ctx, params.ref, meta.RepoDir, meta.SourceName, canonicalDir, meta.Files); err != nil {
 		return err
 	}
 
@@ -494,7 +581,7 @@ func backupThirdPartySkill(ctx context.Context, destDir, canonicalDir, skillName
 	return nil
 }
 
-func installSkillToDir(ctx context.Context, ref, skillName, destDir string, files []string) error {
+func installSkillToDir(ctx context.Context, ref, repoDir, skillName, destDir string, files []string) error {
 	// remove existing skill directory for clean install
 	if err := os.RemoveAll(destDir); err != nil {
 		return fmt.Errorf("failed to remove existing skill: %w", err)
@@ -505,7 +592,7 @@ func installSkillToDir(ctx context.Context, ref, skillName, destDir string, file
 	}
 
 	for _, file := range files {
-		content, err := fetchFileFn(ctx, ref, skillName, file)
+		content, err := fetchFileFn(ctx, ref, repoDir, skillName, file)
 		if err != nil {
 			return err
 		}

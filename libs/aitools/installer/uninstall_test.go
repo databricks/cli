@@ -322,6 +322,81 @@ func TestUninstallSelectiveDuplicateNamesDeduplicates(t *testing.T) {
 	assert.Contains(t, stderr.String(), "Uninstalled 1 skill.")
 }
 
+func TestUninstallByEitherVariantRemovesBoth(t *testing.T) {
+	// Setup: both stable and experimental variants of databricks-jobs are
+	// installed (the transitional state we want uninstall to clean up).
+	// The new manifest format only carries one entry per logical skill, so
+	// the both-installed state is constructed here by installing the stable
+	// variant via the manifest and seeding the experimental variant directly
+	// on disk + in state — simulating an install left over from a prior ref
+	// where the same skill lived under experimental/.
+	tmp := setupTestHome(t)
+	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
+	setupFetchMock(t)
+	agent := testAgent(tmp)
+
+	stableManifest := &Manifest{
+		Version: "1",
+		Skills: map[string]SkillMeta{
+			"databricks-jobs": {Version: "0.1.0", Files: []string{"SKILL.md"}},
+		},
+	}
+	require.NoError(t, InstallSkillsForAgents(
+		ctx, &mockManifestSource{manifest: stableManifest},
+		[]*agents.Agent{agent}, InstallOptions{},
+	))
+
+	globalDir := filepath.Join(tmp, ".databricks", "aitools", "skills")
+	require.DirExists(t, filepath.Join(globalDir, "databricks-jobs"))
+
+	// Seed the leftover experimental variant.
+	expDir := filepath.Join(globalDir, "databricks-jobs-experimental")
+	require.NoError(t, os.MkdirAll(expDir, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(expDir, "SKILL.md"), []byte("# exp"), 0o644))
+	state, err := LoadState(globalDir)
+	require.NoError(t, err)
+	state.Skills["databricks-jobs-experimental"] = "0.0.1"
+	require.NoError(t, SaveState(globalDir, state))
+
+	// Uninstall using just the un-suffixed name; both variants should go.
+	require.NoError(t, UninstallSkillsOpts(ctx, UninstallOptions{
+		Skills: []string{"databricks-jobs"},
+	}))
+
+	assert.NoDirExists(t, filepath.Join(globalDir, "databricks-jobs"))
+	assert.NoDirExists(t, filepath.Join(globalDir, "databricks-jobs-experimental"))
+	assert.Contains(t, stderr.String(), "Uninstalled 2 skills.")
+}
+
+func TestUninstallByAlternateNameWhenOnlyOneVariantInstalled(t *testing.T) {
+	// Setup: only the experimental variant is installed.
+	tmp := setupTestHome(t)
+	ctx := cmdio.MockDiscard(t.Context())
+	setupFetchMock(t)
+	agent := testAgent(tmp)
+
+	manifest := &Manifest{
+		Version: "1",
+		Skills: map[string]SkillMeta{
+			"databricks-jobs": {Version: "0.0.1", Files: []string{"SKILL.md"}, RepoDir: experimentalRepoPath},
+		},
+	}
+	require.NoError(t, InstallSkillsForAgents(
+		ctx, &mockManifestSource{manifest: manifest},
+		[]*agents.Agent{agent}, InstallOptions{IncludeExperimental: true},
+	))
+
+	globalDir := filepath.Join(tmp, ".databricks", "aitools", "skills")
+	require.DirExists(t, filepath.Join(globalDir, "databricks-jobs-experimental"))
+
+	// User types the un-suffixed name (doesn't know which variant is on
+	// disk); uninstall should still find and remove it.
+	require.NoError(t, UninstallSkillsOpts(ctx, UninstallOptions{
+		Skills: []string{"databricks-jobs"},
+	}))
+	assert.NoDirExists(t, filepath.Join(globalDir, "databricks-jobs-experimental"))
+}
+
 func TestUninstallSelectiveAllRemovesStateFile(t *testing.T) {
 	tmp := setupTestHome(t)
 	globalDir := installTestSkills(t, tmp)

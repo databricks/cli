@@ -102,7 +102,7 @@ func defaultListSkills(cmd *cobra.Command, scope string) error {
 		meta := manifest.Skills[name]
 
 		tag := ""
-		if meta.Experimental {
+		if meta.IsExperimental() {
 			tag = " [experimental]"
 		}
 

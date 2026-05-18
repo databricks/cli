@@ -1,0 +1,23 @@
+
+=== install only one specific stable skill via --skills
+>>> [CLI] experimental aitools install --global --skills test-stable-a
+Command "install" is deprecated, use "databricks aitools install" instead.
+Installing Databricks AI skills for Claude Code...
+Using skills version test-ref
+Installed 1 skill.
+
+=== install a specific experimental skill (note the -experimental suffix)
+>>> [CLI] experimental aitools install --global --skills test-exp-experimental --experimental
+Command "install" is deprecated, use "databricks aitools install" instead.
+Installing Databricks AI skills for Claude Code...
+Using skills version test-ref
+Installed 1 skill.
+
+=== asking for an experimental skill without --experimental flag errors out
+>>> [CLI] experimental aitools install --global --skills test-exp-experimental
+Command "install" is deprecated, use "databricks aitools install" instead.
+Installing Databricks AI skills for Claude Code...
+Using skills version test-ref
+Error: skill "test-exp-experimental" is experimental; use --experimental to install
+
+Exit code: 1

@@ -132,7 +132,7 @@ func TestUpdateCheckDryRun(t *testing.T) {
 	fetchCalls := 0
 	orig := fetchFileFn
 	t.Cleanup(func() { fetchFileFn = orig })
-	fetchFileFn = func(_ context.Context, _, _, _ string) ([]byte, error) {
+	fetchFileFn = func(_ context.Context, _, _, _, _ string) ([]byte, error) {
 		fetchCalls++
 		return []byte("content"), nil
 	}
@@ -169,7 +169,7 @@ func TestUpdateForceRedownloads(t *testing.T) {
 	fetchCalls := 0
 	orig := fetchFileFn
 	t.Cleanup(func() { fetchFileFn = orig })
-	fetchFileFn = func(_ context.Context, _, _, _ string) ([]byte, error) {
+	fetchFileFn = func(_ context.Context, _, _, _, _ string) ([]byte, error) {
 		fetchCalls++
 		return []byte("content"), nil
 	}
@@ -345,10 +345,10 @@ func TestUpdateSkipsExperimentalSkills(t *testing.T) {
 
 	// New manifest with an experimental skill.
 	updatedManifest := testManifest()
-	updatedManifest.Skills["databricks-experimental"] = SkillMeta{
-		Version:      "0.1.0",
-		Files:        []string{"SKILL.md"},
-		Experimental: true,
+	updatedManifest.Skills["databricks-iceberg"] = SkillMeta{
+		Version: "0.1.0",
+		Files:   []string{"SKILL.md"},
+		RepoDir: experimentalRepoPath,
 	}
 	src2 := &mockManifestSource{manifest: updatedManifest}
 
@@ -356,7 +356,7 @@ func TestUpdateSkipsExperimentalSkills(t *testing.T) {
 	require.NoError(t, err)
 
 	// Experimental skill should be skipped.
-	assert.Contains(t, result.Skipped, "databricks-experimental")
+	assert.Contains(t, result.Skipped, "databricks-iceberg-experimental")
 	assert.Empty(t, result.Added)
 }
 

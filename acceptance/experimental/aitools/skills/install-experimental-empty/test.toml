@@ -1,0 +1,32 @@
+Env.DATABRICKS_SKILLS_BASE_URL = "$DATABRICKS_HOST"
+Env.DATABRICKS_SKILLS_REF = "test-ref"
+
+Ignore = [
+    ".databricks/aitools/skills/.state.json",
+]
+
+[EnvMatrix]
+DATABRICKS_BUNDLE_ENGINE = []
+
+# Manifest with stable skills only — no entries with repo_dir=experimental.
+# Simulates a release tag that pre-dates the experimental feature.
+[[Server]]
+Pattern = "GET /test-ref/manifest.json"
+Response.Body = '''
+{
+  "version": "2",
+  "updated_at": "2026-01-01T00:00:00Z",
+  "skills": {
+    "test-stable": {"version": "1.0.0", "files": ["SKILL.md"]}
+  }
+}
+'''
+
+[[Server]]
+Pattern = "GET /test-ref/skills/test-stable/SKILL.md"
+Response.Body = '''---
+name: test-stable
+---
+
+# Stable
+'''

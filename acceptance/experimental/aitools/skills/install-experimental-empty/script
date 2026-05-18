@@ -1,0 +1,4 @@
+mkdir -p "$HOME/.claude"
+
+title "--experimental against a manifest with no experimental skills logs a nudge"
+trace $CLI experimental aitools install --global --experimental
