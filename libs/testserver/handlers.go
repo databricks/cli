@@ -936,6 +936,33 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.PostgresEndpointDelete(name)
 	})
 
+	// Postgres Databases:
+	server.Handle("POST", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/databases", func(req Request) any {
+		parent := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"]
+		databaseID := req.URL.Query().Get("database_id")
+		return req.Workspace.PostgresDatabaseCreate(req, parent, databaseID)
+	})
+
+	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/databases", func(req Request) any {
+		parent := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"]
+		return req.Workspace.PostgresDatabaseList(parent)
+	})
+
+	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/databases/{database_id}", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/databases/" + req.Vars["database_id"]
+		return req.Workspace.PostgresDatabaseGet(name)
+	})
+
+	server.Handle("PATCH", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/databases/{database_id}", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/databases/" + req.Vars["database_id"]
+		return req.Workspace.PostgresDatabaseUpdate(req, name)
+	})
+
+	server.Handle("DELETE", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/databases/{database_id}", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/databases/" + req.Vars["database_id"]
+		return req.Workspace.PostgresDatabaseDelete(name)
+	})
+
 	// Catch-all handler for invalid postgres resource names.
 	// This handles cases like GET /api/2.0/postgres/1234 where "1234" is not a valid resource name.
 	server.Handle("GET", "/api/2.0/postgres/{name}", func(req Request) any {

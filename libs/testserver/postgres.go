@@ -587,6 +587,169 @@ func (s *FakeWorkspace) PostgresEndpointDelete(name string) Response {
 	}
 }
 
+// PostgresDatabaseCreate creates a new postgres database.
+func (s *FakeWorkspace) PostgresDatabaseCreate(req Request, parent, databaseID string) Response {
+	defer s.LockUnlock()()
+
+	if databaseID == "" {
+		return postgresErrorResponse(400, "INVALID_PARAMETER_VALUE", `Field 'database_id' is required, expected non-default value (not "")!`)
+	}
+
+	// Check if parent branch exists
+	if _, exists := s.PostgresBranches[parent]; !exists {
+		return postgresNotFoundResponse("branch")
+	}
+
+	var database postgres.Database
+	if len(req.Body) > 0 {
+		if err := json.Unmarshal(req.Body, &database); err != nil {
+			return Response{
+				StatusCode: 400,
+				Body:       fmt.Sprintf("cannot unmarshal request body: %v", err),
+			}
+		}
+	}
+
+	name := fmt.Sprintf("%s/databases/%s", parent, databaseID)
+
+	if _, exists := s.PostgresDatabases[name]; exists {
+		return postgresErrorResponse(409, "ALREADY_EXISTS", "database with such id already exists")
+	}
+
+	now := nowTime()
+	database.Name = name
+	database.Parent = parent
+	database.CreateTime = now
+	database.UpdateTime = now
+
+	// Mirror spec onto status; the real API only echoes Status on GET.
+	status := &postgres.DatabaseDatabaseStatus{}
+	if database.Spec != nil {
+		status.PostgresDatabase = database.Spec.PostgresDatabase
+		status.Role = database.Spec.Role
+	}
+	// When no role is provided, the real API assigns the project-owner role.
+	if status.Role == "" {
+		status.Role = parent + "/roles/" + TestUser.UserName
+	}
+	database.Status = status
+	database.Spec = nil
+
+	s.PostgresDatabases[name] = database
+
+	return Response{
+		Body: s.createOperationLocked(database.Name, database),
+	}
+}
+
+// PostgresDatabaseGet retrieves a postgres database by name.
+func (s *FakeWorkspace) PostgresDatabaseGet(name string) Response {
+	defer s.LockUnlock()()
+
+	// Extract project and branch names from database name
+	// Format: projects/{project}/branches/{branch}/databases/{database}
+	parts := strings.Split(name, "/branches/")
+	if len(parts) == 2 {
+		projectName := parts[0]
+		if _, exists := s.PostgresProjects[projectName]; !exists {
+			return postgresNotFoundResponse("project")
+		}
+		branchParts := strings.Split(parts[1], "/databases/")
+		if len(branchParts) == 2 {
+			branchName := projectName + "/branches/" + branchParts[0]
+			if _, exists := s.PostgresBranches[branchName]; !exists {
+				return postgresNotFoundResponse("branch")
+			}
+		}
+	}
+
+	database, exists := s.PostgresDatabases[name]
+	if !exists {
+		return postgresNotFoundResponse("database")
+	}
+
+	return Response{
+		Body: database,
+	}
+}
+
+// PostgresDatabaseList lists all postgres databases for a branch.
+func (s *FakeWorkspace) PostgresDatabaseList(parent string) Response {
+	defer s.LockUnlock()()
+
+	if _, exists := s.PostgresBranches[parent]; !exists {
+		return postgresNotFoundResponse("branch")
+	}
+
+	var databases []postgres.Database
+	prefix := parent + "/databases/"
+	for name, d := range s.PostgresDatabases {
+		if strings.HasPrefix(name, prefix) {
+			databases = append(databases, d)
+		}
+	}
+
+	return Response{
+		Body: postgres.ListDatabasesResponse{
+			Databases: databases,
+		},
+	}
+}
+
+// PostgresDatabaseUpdate updates a postgres database.
+func (s *FakeWorkspace) PostgresDatabaseUpdate(req Request, name string) Response {
+	defer s.LockUnlock()()
+
+	database, exists := s.PostgresDatabases[name]
+	if !exists {
+		return postgresNotFoundResponse("database")
+	}
+
+	var updateDatabase postgres.Database
+	if len(req.Body) > 0 {
+		if err := json.Unmarshal(req.Body, &updateDatabase); err != nil {
+			return Response{
+				StatusCode: 400,
+				Body:       fmt.Sprintf("cannot unmarshal request body: %v", err),
+			}
+		}
+	}
+
+	if updateDatabase.Spec != nil {
+		if database.Status == nil {
+			database.Status = &postgres.DatabaseDatabaseStatus{}
+		}
+		if updateDatabase.Spec.PostgresDatabase != "" {
+			database.Status.PostgresDatabase = updateDatabase.Spec.PostgresDatabase
+		}
+		if updateDatabase.Spec.Role != "" {
+			database.Status.Role = updateDatabase.Spec.Role
+		}
+	}
+
+	database.UpdateTime = nowTime()
+	s.PostgresDatabases[name] = database
+
+	return Response{
+		Body: s.createOperationLocked(database.Name, database),
+	}
+}
+
+// PostgresDatabaseDelete deletes a postgres database.
+func (s *FakeWorkspace) PostgresDatabaseDelete(name string) Response {
+	defer s.LockUnlock()()
+
+	if _, exists := s.PostgresDatabases[name]; !exists {
+		return postgresNotFoundResponse("database")
+	}
+
+	delete(s.PostgresDatabases, name)
+
+	return Response{
+		Body: s.createOperationLocked(name, nil),
+	}
+}
+
 // PostgresOperationGet retrieves a postgres operation by name.
 func (s *FakeWorkspace) PostgresOperationGet(name string) Response {
 	defer s.LockUnlock()()
@@ -606,11 +769,16 @@ func (s *FakeWorkspace) createOperationLocked(resourceName string, response any)
 	operationID := nextUUID()
 	operationName := resourceName + "/operations/" + operationID
 
-	// Determine resource type from name for metadata @type
+	// Determine resource type from name for metadata @type.
+	// Check the more specific suffixes first since database/endpoint names also
+	// contain "/branches/".
 	resourceType := "Project"
-	if strings.Contains(resourceName, "/endpoints/") {
+	switch {
+	case strings.Contains(resourceName, "/endpoints/"):
 		resourceType = "Endpoint"
-	} else if strings.Contains(resourceName, "/branches/") {
+	case strings.Contains(resourceName, "/databases/"):
+		resourceType = "Database"
+	case strings.Contains(resourceName, "/branches/"):
 		resourceType = "Branch"
 	}
 

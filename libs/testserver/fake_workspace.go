@@ -171,6 +171,7 @@ type FakeWorkspace struct {
 	PostgresProjects   map[string]postgres.Project
 	PostgresBranches   map[string]postgres.Branch
 	PostgresEndpoints  map[string]postgres.Endpoint
+	PostgresDatabases  map[string]postgres.Database
 	PostgresOperations map[string]postgres.Operation
 
 	// clusterVenvs caches Python venvs per existing cluster ID,
@@ -299,6 +300,7 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		PostgresProjects:      map[string]postgres.Project{},
 		PostgresBranches:      map[string]postgres.Branch{},
 		PostgresEndpoints:     map[string]postgres.Endpoint{},
+		PostgresDatabases:     map[string]postgres.Database{},
 		PostgresOperations:    map[string]postgres.Operation{},
 		clusterVenvs:          map[string]*clusterEnv{},
 		Alerts:                map[string]sql.AlertV2{},
