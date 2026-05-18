@@ -2,117 +2,113 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
-	"github.com/databricks/cli/cmd/psql"
-	ssh "github.com/databricks/cli/experimental/ssh/cmd"
-
-	"github.com/databricks/cli/cmd/account"
-	"github.com/databricks/cli/cmd/api"
 	"github.com/databricks/cli/cmd/auth"
-	"github.com/databricks/cli/cmd/bundle"
-	"github.com/databricks/cli/cmd/cache"
-	"github.com/databricks/cli/cmd/completion"
-	"github.com/databricks/cli/cmd/configure"
-	"github.com/databricks/cli/cmd/experimental"
-	"github.com/databricks/cli/cmd/fs"
-	"github.com/databricks/cli/cmd/labs"
-	"github.com/databricks/cli/cmd/pipelines"
+	"github.com/databricks/cli/cmd/lakebox"
 	"github.com/databricks/cli/cmd/root"
-	"github.com/databricks/cli/cmd/selftest"
-	"github.com/databricks/cli/cmd/sync"
-	"github.com/databricks/cli/cmd/version"
-	"github.com/databricks/cli/cmd/workspace"
-	"github.com/databricks/cli/libs/cmdgroup"
+	"github.com/databricks/databricks-sdk-go"
 	"github.com/spf13/cobra"
 )
 
-const (
-	mainGroup        = "main"
-	permissionsGroup = "permissions"
-)
-
-// configureGroups adds groups to the command, only if a group
-// has at least one available command.
-func configureGroups(cmd *cobra.Command, groups []cobra.Group) {
-	filteredGroups := cmdgroup.FilterGroups(groups, cmd.Commands())
-	for i := range filteredGroups {
-		cmd.AddGroup(&filteredGroups[i])
-	}
-}
-
-func accountCommand() *cobra.Command {
-	cmd := account.New()
-	configureGroups(cmd, account.Groups())
-	return cmd
-}
-
 func New(ctx context.Context) *cobra.Command {
 	cli := root.New(ctx)
+	cli.Use = "lakebox"
+	cli.Short = "Lakebox CLI — manage Databricks sandbox environments"
+	cli.Long = `Lakebox CLI — manage Databricks sandbox environments.
 
-	// Add account subcommand.
-	cli.AddCommand(accountCommand())
+Lakebox provides SSH-accessible development environments backed by
+microVM isolation. Each lakebox is a personal sandbox with pre-installed
+tooling (Python, Node.js, Rust, Databricks CLI) and persistent storage.
 
-	// Add workspace subcommands.
-	workspaceCommands := workspace.All()
-	for _, cmd := range workspaceCommands {
-		// Order the permissions subcommands after the main commands.
-		for _, sub := range cmd.Commands() {
-			// some commands override groups in overrides.go, leave them as-is
-			if sub.GroupID != "" {
-				continue
+Getting started:
+  lakebox auth login --host https://...   # authenticate to Databricks workspace and lakebox service
+  lakebox ssh                             # SSH to your default lakebox
+
+Common workflows:
+  lakebox ssh                             # SSH to your default lakebox
+  lakebox ssh my-project                  # SSH to a named lakebox
+  lakebox list                            # list your lakeboxes
+  lakebox create                          # create a new lakebox
+  lakebox delete my-project               # delete a lakebox
+  lakebox status my-project               # show lakebox status
+
+The CLI manages your ~/.ssh/config so you can also connect directly:
+  ssh my-project                          # after 'lakebox ssh'
+`
+	cli.CompletionOptions.DisableDefaultCmd = true
+
+	authCmd := auth.New()
+	// Hook into 'auth login' to auto-register SSH key after OAuth completes.
+	for _, sub := range authCmd.Commands() {
+		if sub.Name() == "login" {
+			origRunE := sub.RunE
+			sub.RunE = func(cmd *cobra.Command, args []string) error {
+				// Run the original auth login.
+				if err := origRunE(cmd, args); err != nil {
+					return err
+				}
+
+				// Auto-register: generate lakebox SSH key and register it.
+				fmt.Fprintln(cmd.ErrOrStderr(), "")
+				fmt.Fprintln(cmd.ErrOrStderr(), "Setting up SSH access...")
+
+				keyPath, pubKey, err := lakebox.EnsureAndReadKey()
+				if err != nil {
+					fmt.Fprintf(cmd.ErrOrStderr(),
+						"SSH key setup failed: %v\n"+
+							"You can set it up later with: lakebox register\n", err)
+					return nil
+				}
+				fmt.Fprintf(cmd.ErrOrStderr(), "Using SSH key: %s\n", keyPath)
+
+				host := cmd.Flag("host").Value.String()
+				if host == "" && len(args) > 0 {
+					host = args[0]
+				}
+				profile := cmd.Flag("profile").Value.String()
+				if profile == "" && host != "" {
+					// Derive profile name the same way auth login does.
+					h := strings.TrimPrefix(host, "https://")
+					h = strings.TrimPrefix(h, "http://")
+					profile = strings.SplitN(h, ".", 2)[0]
+				}
+				if profile != "" {
+					if err := lakebox.SetLastProfile(profile); err != nil {
+						fmt.Fprintf(cmd.ErrOrStderr(), "Warning: failed to save last profile: %v\n", err)
+					}
+				}
+				w, err := databricks.NewWorkspaceClient(&databricks.Config{
+					Host:    host,
+					Profile: profile,
+				})
+				if err != nil {
+					fmt.Fprintf(cmd.ErrOrStderr(),
+						"Could not initialize workspace client for key registration: %v\n"+
+							"Run 'lakebox register' to complete setup.\n", err)
+					return nil
+				}
+
+				if err := lakebox.RegisterKey(cmd.Context(), w, pubKey); err != nil {
+					fmt.Fprintf(cmd.ErrOrStderr(),
+						"Key registration failed: %v\n"+
+							"Run 'lakebox register' to retry.\n", err)
+					return nil
+				}
+
+				fmt.Fprintln(cmd.ErrOrStderr(), "SSH key registered. You're ready to use 'lakebox ssh'.")
+				return nil
 			}
-
-			switch {
-			case strings.HasSuffix(sub.Name(), "-permissions"), strings.HasSuffix(sub.Name(), "-permission-levels"):
-				sub.GroupID = permissionsGroup
-			default:
-				sub.GroupID = mainGroup
-			}
+			break
 		}
-
-		cli.AddCommand(cmd)
-
-		// Built-in groups for the workspace commands.
-		groups := []cobra.Group{
-			{
-				ID:    mainGroup,
-				Title: "Available Commands",
-			},
-			{
-				ID:    pipelines.ManagementGroupID,
-				Title: "Management Commands",
-			},
-			{
-				ID:    permissionsGroup,
-				Title: "Permission Commands",
-			},
-		}
-
-		configureGroups(cmd, groups)
 	}
+	cli.AddCommand(authCmd)
 
-	// Add other subcommands.
-	cli.AddCommand(api.New())
-	cli.AddCommand(auth.New())
-	cli.AddCommand(completion.New())
-	cli.AddCommand(bundle.New())
-	cli.AddCommand(cache.New())
-	cli.AddCommand(experimental.New())
-	cli.AddCommand(psql.New())
-	cli.AddCommand(configure.New())
-	cli.AddCommand(fs.New())
-	cli.AddCommand(labs.New(ctx))
-	cli.AddCommand(sync.New())
-	cli.AddCommand(version.New())
-	cli.AddCommand(selftest.New())
-	cli.AddCommand(ssh.New())
-
-	// Add workspace command groups, filtering out empty groups or groups with only hidden commands.
-	configureGroups(cli, append(workspace.Groups(), cobra.Group{
-		ID:    "development",
-		Title: "Developer Tools",
-	}))
+	// Register lakebox subcommands directly at root level.
+	for _, sub := range lakebox.New().Commands() {
+		cli.AddCommand(sub)
+	}
 
 	return cli
 }
