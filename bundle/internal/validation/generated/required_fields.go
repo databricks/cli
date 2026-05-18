@@ -219,6 +219,8 @@ var RequiredFields = map[string][]string{
 
 	"resources.postgres_branches.*": {"branch_id", "parent"},
 
+	"resources.postgres_databases.*": {"database_id", "parent"},
+
 	"resources.postgres_endpoints.*":       {"endpoint_type", "endpoint_id", "parent"},
 	"resources.postgres_endpoints.*.group": {"max", "min"},
 

@@ -49,6 +49,7 @@ func TestStateToBundleEmptyLocalResources(t *testing.T) {
 		"resources.postgres_projects.test_postgres_project":             {ID: "projects/test-project"},
 		"resources.postgres_branches.test_postgres_branch":              {ID: "projects/test-project/branches/main"},
 		"resources.postgres_endpoints.test_postgres_endpoint":           {ID: "projects/test-project/branches/main/endpoints/primary"},
+		"resources.postgres_databases.test_postgres_database":           {ID: "projects/test-project/branches/main/databases/test-db"},
 		"resources.vector_search_endpoints.test_vector_search_endpoint": {ID: "vs-endpoint-1"},
 	}
 	err := StateToBundle(t.Context(), state, &config)
@@ -117,6 +118,9 @@ func TestStateToBundleEmptyLocalResources(t *testing.T) {
 
 	assert.Equal(t, "projects/test-project/branches/main/endpoints/primary", config.Resources.PostgresEndpoints["test_postgres_endpoint"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.PostgresEndpoints["test_postgres_endpoint"].ModifiedStatus)
+
+	assert.Equal(t, "projects/test-project/branches/main/databases/test-db", config.Resources.PostgresDatabases["test_postgres_database"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.PostgresDatabases["test_postgres_database"].ModifiedStatus)
 
 	assert.Equal(t, "vs-endpoint-1", config.Resources.VectorSearchEndpoints["test_vector_search_endpoint"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.VectorSearchEndpoints["test_vector_search_endpoint"].ModifiedStatus)
@@ -292,6 +296,14 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 					},
 				},
 			},
+			PostgresDatabases: map[string]*resources.PostgresDatabase{
+				"test_postgres_database": {
+					PostgresDatabaseConfig: resources.PostgresDatabaseConfig{
+						DatabaseId: "test-db",
+						Parent:     "projects/test-project/branches/main",
+					},
+				},
+			},
 			VectorSearchEndpoints: map[string]*resources.VectorSearchEndpoint{
 				"test_vector_search_endpoint": {
 					CreateEndpoint: vectorsearch.CreateEndpoint{
@@ -373,6 +385,9 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 
 	assert.Equal(t, "", config.Resources.PostgresEndpoints["test_postgres_endpoint"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.PostgresEndpoints["test_postgres_endpoint"].ModifiedStatus)
+
+	assert.Equal(t, "", config.Resources.PostgresDatabases["test_postgres_database"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.PostgresDatabases["test_postgres_database"].ModifiedStatus)
 
 	assert.Equal(t, "", config.Resources.VectorSearchEndpoints["test_vector_search_endpoint"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.VectorSearchEndpoints["test_vector_search_endpoint"].ModifiedStatus)
@@ -661,6 +676,20 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 					},
 				},
 			},
+			PostgresDatabases: map[string]*resources.PostgresDatabase{
+				"test_postgres_database": {
+					PostgresDatabaseConfig: resources.PostgresDatabaseConfig{
+						DatabaseId: "test-db",
+						Parent:     "projects/test-project/branches/main",
+					},
+				},
+				"test_postgres_database_new": {
+					PostgresDatabaseConfig: resources.PostgresDatabaseConfig{
+						DatabaseId: "new-db",
+						Parent:     "projects/test-project-new/branches/dev",
+					},
+				},
+			},
 			VectorSearchEndpoints: map[string]*resources.VectorSearchEndpoint{
 				"test_vector_search_endpoint": {
 					CreateEndpoint: vectorsearch.CreateEndpoint{
@@ -716,6 +745,8 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 		"resources.postgres_branches.test_postgres_branch_old":              {ID: "projects/test-project/branches/old"},
 		"resources.postgres_endpoints.test_postgres_endpoint":               {ID: "projects/test-project/branches/main/endpoints/primary"},
 		"resources.postgres_endpoints.test_postgres_endpoint_old":           {ID: "projects/test-project/branches/main/endpoints/old"},
+		"resources.postgres_databases.test_postgres_database":               {ID: "projects/test-project/branches/main/databases/test-db"},
+		"resources.postgres_databases.test_postgres_database_old":           {ID: "projects/test-project/branches/main/databases/old-db"},
 		"resources.vector_search_endpoints.test_vector_search_endpoint":     {ID: "vs-endpoint-1"},
 		"resources.vector_search_endpoints.test_vector_search_endpoint_old": {ID: "vs-endpoint-old"},
 	}
@@ -863,6 +894,13 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.PostgresEndpoints["test_postgres_endpoint_old"].ModifiedStatus)
 	assert.Equal(t, "", config.Resources.PostgresEndpoints["test_postgres_endpoint_new"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.PostgresEndpoints["test_postgres_endpoint_new"].ModifiedStatus)
+
+	assert.Equal(t, "projects/test-project/branches/main/databases/test-db", config.Resources.PostgresDatabases["test_postgres_database"].ID)
+	assert.Equal(t, "", config.Resources.PostgresDatabases["test_postgres_database"].ModifiedStatus)
+	assert.Equal(t, "projects/test-project/branches/main/databases/old-db", config.Resources.PostgresDatabases["test_postgres_database_old"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.PostgresDatabases["test_postgres_database_old"].ModifiedStatus)
+	assert.Equal(t, "", config.Resources.PostgresDatabases["test_postgres_database_new"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.PostgresDatabases["test_postgres_database_new"].ModifiedStatus)
 
 	assert.Equal(t, "vs-endpoint-1", config.Resources.VectorSearchEndpoints["test_vector_search_endpoint"].ID)
 	assert.Equal(t, "", config.Resources.VectorSearchEndpoints["test_vector_search_endpoint"].ModifiedStatus)
