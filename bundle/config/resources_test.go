@@ -273,6 +273,13 @@ func TestResourcesBindSupport(t *testing.T) {
 				},
 			},
 		},
+		PostgresCatalogs: map[string]*resources.PostgresCatalog{
+			"my_postgres_catalog": {
+				PostgresCatalogConfig: resources.PostgresCatalogConfig{
+					CatalogId: "my_postgres_catalog",
+				},
+			},
+		},
 		PostgresSyncedTables: map[string]*resources.PostgresSyncedTable{
 			"my_postgres_synced_table": {
 				PostgresSyncedTableConfig: resources.PostgresSyncedTableConfig{
@@ -319,6 +326,7 @@ func TestResourcesBindSupport(t *testing.T) {
 	m.GetMockPostgresAPI().EXPECT().GetProject(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockPostgresAPI().EXPECT().GetBranch(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockPostgresAPI().EXPECT().GetEndpoint(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockPostgresAPI().EXPECT().GetCatalog(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockPostgresAPI().EXPECT().GetSyncedTable(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockVectorSearchEndpointsAPI().EXPECT().GetEndpoint(mock.Anything, mock.Anything).Return(nil, nil)
 

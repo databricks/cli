@@ -7,7 +7,7 @@ toolchain go1.25.10
 require (
 	dario.cat/mergo v1.0.2 // BSD-3-Clause
 	github.com/BurntSushi/toml v1.6.0 // MIT
-	github.com/Masterminds/semver/v3 v3.4.0 // MIT
+	github.com/Masterminds/semver/v3 v3.5.0 // MIT
 	github.com/charmbracelet/bubbles v1.0.0 // MIT
 	github.com/charmbracelet/bubbletea v1.3.10 // MIT
 	github.com/charmbracelet/huh v1.0.0 // MIT
@@ -19,7 +19,7 @@ require (
 	github.com/gorilla/websocket v1.5.3 // BSD-2-Clause
 	github.com/hashicorp/go-version v1.9.0 // MPL-2.0
 	github.com/hashicorp/hc-install v0.9.5 // MPL-2.0
-	github.com/hashicorp/terraform-exec v0.25.1 // MPL-2.0
+	github.com/hashicorp/terraform-exec v0.25.2 // MPL-2.0
 	github.com/hashicorp/terraform-json v0.27.2 // MPL-2.0
 	github.com/hexops/gotextdiff v1.0.3 // BSD-3-Clause
 	github.com/jackc/pgx/v5 v5.9.2 // MIT

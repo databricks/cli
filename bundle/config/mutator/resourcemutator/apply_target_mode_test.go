@@ -247,6 +247,13 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 						},
 					},
 				},
+				PostgresCatalogs: map[string]*resources.PostgresCatalog{
+					"postgres_catalog1": {
+						PostgresCatalogConfig: resources.PostgresCatalogConfig{
+							CatalogId: "postgres_catalog_1",
+						},
+					},
+				},
 				PostgresSyncedTables: map[string]*resources.PostgresSyncedTable{
 					"postgres_synced_table1": {
 						PostgresSyncedTableConfig: resources.PostgresSyncedTableConfig{
@@ -448,6 +455,7 @@ func TestAppropriateResourcesAreRenamed(t *testing.T) {
 		"PostgresProjects",
 		"PostgresBranches",
 		"PostgresEndpoints",
+		"PostgresCatalogs",
 		"PostgresSyncedTables",
 	}
 

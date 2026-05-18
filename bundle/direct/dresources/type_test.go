@@ -75,6 +75,12 @@ var knownMissingInRemoteType = map[string][]string{
 		"pg_version",
 		"project_id",
 	},
+	"postgres_catalogs": {
+		"branch",
+		"catalog_id",
+		"create_database_if_missing",
+		"postgres_database",
+	},
 	"postgres_synced_tables": {
 		"branch",
 		"create_database_objects_if_missing",

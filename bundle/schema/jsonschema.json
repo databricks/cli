@@ -1409,6 +1409,39 @@
                   }
                 ]
               },
+              "resources.PostgresCatalog": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "branch": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "catalog_id": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "create_database_if_missing": {
+                        "$ref": "#/$defs/bool"
+                      },
+                      "lifecycle": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
+                      },
+                      "postgres_database": {
+                        "$ref": "#/$defs/string"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                      "catalog_id",
+                      "postgres_database"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
               "resources.PostgresEndpoint": {
                 "oneOf": [
                   {
@@ -2571,6 +2604,10 @@
                     },
                     "postgres_branches": {
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.PostgresBranch"
+                    },
+                    "postgres_catalogs": {
+                      "description": "The Postgres catalog definitions for the bundle, where each key is the name of the catalog. Each entry binds a Unity Catalog catalog to a Postgres database on a Lakebase Autoscaling branch.",
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.PostgresCatalog"
                     },
                     "postgres_endpoints": {
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.PostgresEndpoint"
@@ -11816,6 +11853,20 @@
                       "type": "object",
                       "additionalProperties": {
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.PostgresBranch"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
+                "resources.PostgresCatalog": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.PostgresCatalog"
                       }
                     },
                     {

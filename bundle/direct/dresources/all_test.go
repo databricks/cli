@@ -191,6 +191,12 @@ var testConfig map[string]any = map[string]any{
 		},
 	},
 
+	"postgres_catalogs": &resources.PostgresCatalog{
+		PostgresCatalogConfig: resources.PostgresCatalogConfig{
+			CatalogId: "test_catalog",
+		},
+	},
+
 	"postgres_synced_tables": &resources.PostgresSyncedTable{
 		PostgresSyncedTableConfig: resources.PostgresSyncedTableConfig{
 			SyncedTableId: "main.public.trips_synced",
@@ -804,7 +810,7 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 			"unexpected differences between remappedState and remappedRemoteStateFromCreate")
 	}
 
-	remoteStateFromWaitCreate, err := adapter.WaitAfterCreate(ctx, newState)
+	remoteStateFromWaitCreate, err := adapter.WaitAfterCreate(ctx, createdID, newState)
 	require.NoError(t, err)
 	if remoteStateFromWaitCreate != nil {
 		require.Equal(t, remote, remoteStateFromWaitCreate)
@@ -820,7 +826,7 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 				"unexpected differences between remappedState and remappedStateFromUpdate")
 		}
 
-		remoteStateFromWaitUpdate, err := adapter.WaitAfterUpdate(ctx, newState)
+		remoteStateFromWaitUpdate, err := adapter.WaitAfterUpdate(ctx, createdID, newState)
 		require.NoError(t, err)
 		if remoteStateFromWaitUpdate != nil {
 			remappedStateFromWaitUpdate, err := adapter.RemapState(remoteStateFromWaitUpdate)

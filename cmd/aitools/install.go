@@ -6,13 +6,51 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/databricks/cli/experimental/aitools/lib/agents"
-	"github.com/databricks/cli/experimental/aitools/lib/installer"
+	"github.com/charmbracelet/huh"
+	"github.com/databricks/cli/libs/aitools/agents"
+	"github.com/databricks/cli/libs/aitools/installer"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/spf13/cobra"
 )
 
-func newInstallCmd() *cobra.Command {
+// Package-level for testability. Tests in this package override them via
+// helpers in install_test.go.
+var (
+	promptAgentSelection     = defaultPromptAgentSelection
+	installSkillsForAgentsFn = installer.InstallSkillsForAgents
+)
+
+func defaultPromptAgentSelection(ctx context.Context, detected []*agents.Agent) ([]*agents.Agent, error) {
+	options := make([]huh.Option[string], 0, len(detected))
+	agentsByName := make(map[string]*agents.Agent, len(detected))
+	for _, a := range detected {
+		options = append(options, huh.NewOption(a.DisplayName, a.Name).Selected(true))
+		agentsByName[a.Name] = a
+	}
+
+	var selected []string
+	err := huh.NewMultiSelect[string]().
+		Title("Select coding agents to install skills for").
+		Description("space to toggle, enter to confirm").
+		Options(options...).
+		Value(&selected).
+		Run()
+	if err != nil {
+		return nil, err
+	}
+
+	if len(selected) == 0 {
+		return nil, errors.New("at least one agent must be selected")
+	}
+
+	result := make([]*agents.Agent, 0, len(selected))
+	for _, name := range selected {
+		result = append(result, agentsByName[name])
+	}
+	return result, nil
+}
+
+func NewInstallCmd() *cobra.Command {
 	var skillsFlag, agentsFlag string
 	var includeExperimental bool
 	var projectFlag, globalFlag bool
@@ -26,6 +64,8 @@ By default, skills are installed globally to each agent's skills directory.
 Use --project to install to the current project directory instead.
 When multiple agents are detected, skills are stored in a canonical location
 and symlinked to each agent to avoid duplication.
+
+Use --skills name1,name2 to install specific skills.
 
 Supported agents: Claude Code, Cursor, Codex CLI, OpenCode, GitHub Copilot, Antigravity`,
 		Args: cobra.NoArgs,
