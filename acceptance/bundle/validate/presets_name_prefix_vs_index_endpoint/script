@@ -1,4 +1,0 @@
-PREFIX="[prefix]" envsubst < databricks.yml.tmpl > databricks.yml
-trace $CLI bundle validate -o json | jq '.resources | {vector_search_endpoints, vector_search_indexes}'
-
-rm databricks.yml
