@@ -1002,6 +1002,9 @@ github.com/databricks/cli/bundle/config/resources.VectorSearchIndex:
   "grants":
     "description": |-
       PLACEHOLDER
+  "index_subtype":
+    "description": |-
+      PLACEHOLDER
   "index_type":
     "description": |-
       PLACEHOLDER

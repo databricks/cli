@@ -1988,6 +1988,9 @@
                       "grants": {
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/catalog.PrivilegeAssignment"
                       },
+                      "index_subtype": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/vectorsearch.IndexSubtype"
+                      },
                       "index_type": {
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/vectorsearch.VectorIndexType"
                       },
@@ -11475,6 +11478,9 @@
                 {
                   "type": "object",
                   "properties": {
+                    "columns_to_index": {
+                      "$ref": "#/$defs/slice/string"
+                    },
                     "columns_to_sync": {
                       "$ref": "#/$defs/slice/string"
                     },
@@ -11584,6 +11590,9 @@
                   "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
                 }
               ]
+            },
+            "vectorsearch.IndexSubtype": {
+              "type": "string"
             },
             "vectorsearch.PipelineType": {
               "type": "string"
