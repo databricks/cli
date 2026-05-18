@@ -2,13 +2,16 @@ package auth
 
 import (
 	"errors"
+	"path/filepath"
 	"testing"
 
+	"github.com/databricks/cli/libs/auth/storage"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/spf13/cobra"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
@@ -44,7 +47,7 @@ func TestGetWorkspaceAuthStatus(t *testing.T) {
 
 	status, err := getAuthStatus(cmd, []string{}, showSensitive, func(cmd *cobra.Command, args []string) (*config.Config, bool, error) {
 		err := config.ConfigAttributes.ResolveFromStringMap(cfg, map[string]string{
-			"host":      "https://test.com",
+			"host":      "https://test.test",
 			"token":     "test-token",
 			"auth_type": "azure-cli",
 		})
@@ -55,7 +58,7 @@ func TestGetWorkspaceAuthStatus(t *testing.T) {
 	require.NotNil(t, status)
 	require.Equal(t, "success", status.Status)
 	require.Equal(t, "test-user", status.Username)
-	require.Equal(t, "https://test.com", status.Details.Host)
+	require.Equal(t, "https://test.test", status.Details.Host)
 	require.Equal(t, "azure-cli", status.Details.AuthType)
 
 	require.Equal(t, "azure-cli", status.Details.Configuration["auth_type"].Value)
@@ -97,7 +100,7 @@ func TestGetWorkspaceAuthStatusError(t *testing.T) {
 
 	status, err := getAuthStatus(cmd, []string{}, showSensitive, func(cmd *cobra.Command, args []string) (*config.Config, bool, error) {
 		err = config.ConfigAttributes.ResolveFromStringMap(cfg, map[string]string{
-			"host":      "https://test.com",
+			"host":      "https://test.test",
 			"token":     "test-token",
 			"auth_type": "azure-cli",
 		})
@@ -146,7 +149,7 @@ func TestGetWorkspaceAuthStatusSensitive(t *testing.T) {
 
 	status, err := getAuthStatus(cmd, []string{}, showSensitive, func(cmd *cobra.Command, args []string) (*config.Config, bool, error) {
 		err = config.ConfigAttributes.ResolveFromStringMap(cfg, map[string]string{
-			"host":      "https://test.com",
+			"host":      "https://test.test",
 			"token":     "test-token",
 			"auth_type": "azure-cli",
 		})
@@ -196,7 +199,7 @@ func TestGetAccountAuthStatus(t *testing.T) {
 		err = config.ConfigAttributes.ResolveFromStringMap(cfg, map[string]string{
 			"account_id": "test-account-id",
 			"username":   "test-user",
-			"host":       "https://test.com",
+			"host":       "https://test.test",
 			"token":      "test-token",
 			"auth_type":  "azure-cli",
 		})
@@ -207,7 +210,7 @@ func TestGetAccountAuthStatus(t *testing.T) {
 	require.Equal(t, "success", status.Status)
 
 	require.Equal(t, "test-user", status.Username)
-	require.Equal(t, "https://test.com", status.Details.Host)
+	require.Equal(t, "https://test.test", status.Details.Host)
 	require.Equal(t, "azure-cli", status.Details.AuthType)
 	require.Equal(t, "test-account-id", status.AccountID)
 
@@ -222,4 +225,142 @@ func TestGetAccountAuthStatus(t *testing.T) {
 	require.Equal(t, "my-profile", status.Details.Configuration["profile"].Value)
 	require.Equal(t, "--profile flag", status.Details.Configuration["profile"].Source.String())
 	require.False(t, status.Details.Configuration["profile"].AuthTypeMismatch)
+}
+
+func TestResolveTokenStorageInfo(t *testing.T) {
+	cases := []struct {
+		name     string
+		authType string
+		envValue string
+		want     *tokenStorageInfo
+	}{
+		{
+			name:     "non-databricks-cli auth has no token storage",
+			authType: "pat",
+			want:     nil,
+		},
+		{
+			name:     "databricks-cli with default plaintext",
+			authType: authTypeDatabricksCLI,
+			want: &tokenStorageInfo{
+				Mode:     "plaintext",
+				Location: plaintextLocation,
+				Source:   "default",
+			},
+		},
+		{
+			name:     "databricks-cli with secure from env",
+			authType: authTypeDatabricksCLI,
+			envValue: "secure",
+			want: &tokenStorageInfo{
+				Mode:     "secure",
+				Location: secureLocation,
+				Source:   "DATABRICKS_AUTH_STORAGE environment variable",
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Setenv(storage.EnvVar, tc.envValue)
+			t.Setenv("DATABRICKS_CONFIG_FILE", t.TempDir()+"/.databrickscfg")
+
+			got := resolveTokenStorageInfo(t.Context(), tc.authType)
+			assert.Equal(t, tc.want, got)
+		})
+	}
+}
+
+func TestStorageSourceLabel_ConfigUsesResolvedPath(t *testing.T) {
+	ctx := t.Context()
+	t.Setenv("DATABRICKS_CONFIG_FILE", "/custom/path/.databrickscfg")
+	got := storageSourceLabel(ctx, storage.StorageSourceConfig)
+	assert.Equal(t, "auth_storage in [__settings__] section of /custom/path/.databrickscfg", got)
+}
+
+func TestStorageSourceLabel_ConfigDefaultsToHome(t *testing.T) {
+	ctx := t.Context()
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home)
+	t.Setenv("DATABRICKS_CONFIG_FILE", "")
+	got := storageSourceLabel(ctx, storage.StorageSourceConfig)
+	expected := "auth_storage in [__settings__] section of " + filepath.ToSlash(filepath.Join(home, ".databrickscfg"))
+	assert.Equal(t, expected, got)
+}
+
+func TestStorageSourceLabel_NonConfigDelegatesToSource(t *testing.T) {
+	ctx := t.Context()
+	t.Setenv("DATABRICKS_CONFIG_FILE", "/should/not/appear")
+	assert.Equal(t, "default", storageSourceLabel(ctx, storage.StorageSourceDefault))
+	assert.Equal(t, "DATABRICKS_AUTH_STORAGE environment variable", storageSourceLabel(ctx, storage.StorageSourceEnvVar))
+	assert.Equal(t, "command-line override", storageSourceLabel(ctx, storage.StorageSourceOverride))
+}
+
+func TestGetWorkspaceAuthStatus_U2M_PopulatesTokenStorage(t *testing.T) {
+	ctx := t.Context()
+	m := mocks.NewMockWorkspaceClient(t)
+	ctx = cmdctx.SetWorkspaceClient(ctx, m.WorkspaceClient)
+
+	cmd := &cobra.Command{}
+	cmd.SetContext(ctx)
+
+	currentUserApi := m.GetMockCurrentUserAPI()
+	currentUserApi.EXPECT().Me(mock.Anything).Return(&iam.User{UserName: "u2m-user"}, nil)
+
+	cmd.Flags().String("host", "", "")
+	cmd.Flags().String("profile", "", "")
+	require.NoError(t, cmd.Flag("profile").Value.Set("u2m-profile"))
+	cmd.Flag("profile").Changed = true
+
+	cfg := &config.Config{Profile: "u2m-profile"}
+	m.WorkspaceClient.Config = cfg
+	t.Setenv(storage.EnvVar, "secure")
+	t.Setenv("DATABRICKS_CONFIG_FILE", t.TempDir()+"/.databrickscfg")
+	require.NoError(t, config.ConfigAttributes.Configure(cfg))
+
+	status, err := getAuthStatus(cmd, []string{}, false, func(cmd *cobra.Command, args []string) (*config.Config, bool, error) {
+		require.NoError(t, config.ConfigAttributes.ResolveFromStringMap(cfg, map[string]string{
+			"host":      "https://test.test",
+			"auth_type": authTypeDatabricksCLI,
+		}))
+		return cfg, false, nil
+	})
+	require.NoError(t, err)
+	require.NotNil(t, status)
+	require.NotNil(t, status.TokenStorage)
+	assert.Equal(t, "secure", status.TokenStorage.Mode)
+	assert.Equal(t, secureLocation, status.TokenStorage.Location)
+	assert.Equal(t, "DATABRICKS_AUTH_STORAGE environment variable", status.TokenStorage.Source)
+}
+
+func TestGetWorkspaceAuthStatus_NonU2M_OmitsTokenStorage(t *testing.T) {
+	ctx := t.Context()
+	m := mocks.NewMockWorkspaceClient(t)
+	ctx = cmdctx.SetWorkspaceClient(ctx, m.WorkspaceClient)
+
+	cmd := &cobra.Command{}
+	cmd.SetContext(ctx)
+
+	currentUserApi := m.GetMockCurrentUserAPI()
+	currentUserApi.EXPECT().Me(mock.Anything).Return(&iam.User{UserName: "pat-user"}, nil)
+
+	cmd.Flags().String("host", "", "")
+	cmd.Flags().String("profile", "", "")
+
+	cfg := &config.Config{}
+	m.WorkspaceClient.Config = cfg
+	require.NoError(t, config.ConfigAttributes.Configure(cfg))
+
+	status, err := getAuthStatus(cmd, []string{}, false, func(cmd *cobra.Command, args []string) (*config.Config, bool, error) {
+		require.NoError(t, config.ConfigAttributes.ResolveFromStringMap(cfg, map[string]string{
+			"host":      "https://test.test",
+			"token":     "pat-token",
+			"auth_type": "pat",
+		}))
+		return cfg, false, nil
+	})
+	require.NoError(t, err)
+	require.NotNil(t, status)
+	assert.Nil(t, status.TokenStorage)
 }

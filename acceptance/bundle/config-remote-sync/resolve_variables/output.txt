@@ -1,0 +1,123 @@
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Modify pipeline environment dependencies
+=== Add and replace parameters remotely
+=== Detect and save changes
+Detected changes in 2 resource(s):
+
+Resource: resources.jobs.my_job
+  environments[environment_key='default'].spec.dependencies: replace
+  environments[environment_key='secondary']: add
+  parameters[name='catalog'].default: replace
+  parameters[name='data_catalog']: add
+  parameters[name='deploy_env']: add
+  parameters[name='deploy_target']: add
+  parameters[name='env'].default: replace
+  parameters[name='file_sourced']: add
+  parameters[name='region']: add
+  parameters[name='some_schema']: add
+  tags['deployment']: add
+  tags['dev']: remove
+  tasks[task_key='main'].notebook_task.base_parameters['source_path']: replace
+  tasks[task_key='run_pipeline'].pipeline_task.full_refresh: replace
+  tasks[task_key='run_pipeline_again']: add
+  tasks[task_key='secondary']: add
+
+Resource: resources.pipelines.my_pipeline
+  environment.dependencies: replace
+
+
+
+=== Configuration changes
+
+>>> diff.py databricks.yml.backup databricks.yml
+--- databricks.yml.backup
++++ databricks.yml
+@@ -45,14 +45,14 @@
+         dependencies:
+           - ${var.my_env_dep}
+-          - --editable ${workspace.file_path}
++          - ${workspace.file_path}/extra
+           - nonexistent-test-pkg==1.2.3
+-
++          - another-pkg==2.0
+   jobs:
+     my_job:
+       parameters:
+         - name: catalog
++          default: staging_catalog
++        - name: env
+           default: ${var.my_catalog}
+-        - name: env
+-          default: ${var.target_env}
+         - name: file_val
+           default: ${var.file_override_var}
+@@ -66,4 +66,16 @@
+         - name: curated
+           default: ${var.curated_schema}
++        - default: ${var.my_catalog}
++          name: data_catalog
++        - default: ${var.target_env}
++          name: deploy_env
++        - default: ${bundle.target}
++          name: deploy_target
++        - default: ${var.file_override_var}
++          name: file_sourced
++        - default: us-west-2
++          name: region
++        - default: raw_data
++          name: some_schema
+       tasks:
+         - task_key: main
+@@ -72,5 +84,5 @@
+             base_parameters:
+               # Compound interpolation: mixes ${var.X} and ${bundle.X} refs.
+-              source_path: /mnt/${var.my_catalog}/${bundle.target}/raw/landing
++              source_path: /mnt/${var.my_catalog}/${bundle.target}/raw/landing_v2
+         # Resource reference: ${resources.pipelines.my_pipeline.id} resolves to
+         # the deployed pipeline's ID. Used to test that resource refs are
+@@ -79,5 +91,13 @@
+           pipeline_task:
+             pipeline_id: ${resources.pipelines.my_pipeline.id}
+-            full_refresh: false
++            full_refresh: true
++        - pipeline_task:
++            pipeline_id: ${resources.pipelines.my_pipeline.id}
++          task_key: run_pipeline_again
++        - notebook_task:
++            base_parameters:
++              source_path: /mnt/${var.my_catalog}/${bundle.target}/raw/landing_v2
++            notebook_path: /Users/{{workspace_user_name}}/notebook
++          task_key: secondary
+       # Job environments use ${var.my_env_dep} via a pure variable reference.
+       # The script adds a separate environments entry and modifies the existing
+@@ -89,4 +109,12 @@
+             dependencies:
+               - ${var.my_env_dep}
++              - nonexistent-other-pkg==2.0
++        - environment_key: secondary
++          spec:
++            dependencies:
++              - ${var.my_env_dep}
++            environment_version: "4"
++      tags:
++        deployment: main
+
+ targets:
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.my_job
+  delete resources.pipelines.my_pipeline
+
+This action will result in the deletion of the following Lakeflow Spark Declarative Pipelines along with the
+Streaming Tables (STs) and Materialized Views (MVs) managed by them:
+  delete resources.pipelines.my_pipeline
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!

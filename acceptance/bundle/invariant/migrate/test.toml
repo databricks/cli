@@ -19,3 +19,7 @@ EnvMatrixExclude.no_grant_ref = ["INPUT_CONFIG=schema_grant_ref.yml.tmpl"]
 
 # SQL warehouses currently failing with migration with permanent drift. TODO: fix this.
 EnvMatrixExclude.no_sql_warehouse = ["INPUT_CONFIG=sql_warehouse.yml.tmpl"]
+
+# The 1000-task scale case is covered by no_drift. Running it here adds ~1.5 min
+# per variant (deploy + migrate + plan at 1000 tasks) without incremental coverage.
+EnvMatrixExclude.no_pydabs_1000_tasks = ["INPUT_CONFIG=job_pydabs_1000_tasks.yml.tmpl"]

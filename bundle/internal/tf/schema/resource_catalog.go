@@ -21,7 +21,7 @@ type ResourceCatalogManagedEncryptionSettings struct {
 }
 
 type ResourceCatalogProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type ResourceCatalogProvisioningInfo struct {

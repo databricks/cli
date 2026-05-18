@@ -10,25 +10,10 @@ import (
 	"text/template"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/databricks-sdk-go/service/iam"
-	"github.com/fatih/color"
 )
-
-var renderFuncMap = template.FuncMap{
-	"red":     color.RedString,
-	"green":   color.GreenString,
-	"blue":    color.BlueString,
-	"yellow":  color.YellowString,
-	"magenta": color.MagentaString,
-	"cyan":    color.CyanString,
-	"bold": func(format string, a ...any) string {
-		return color.New(color.Bold).Sprintf(format, a...)
-	},
-	"italic": func(format string, a ...any) string {
-		return color.New(color.Italic).Sprintf(format, a...)
-	},
-}
 
 const summaryHeaderTemplate = `{{- if .Name -}}
 Name: {{ .Name | bold }}
@@ -82,13 +67,13 @@ func buildTrailer(ctx context.Context) string {
 	info := logdiag.Copy(ctx)
 	var parts []string
 	if info.Errors > 0 {
-		parts = append(parts, color.RedString(pluralize(info.Errors, "error", "errors")))
+		parts = append(parts, cmdio.Red(ctx, pluralize(info.Errors, "error", "errors")))
 	}
 	if info.Warnings > 0 {
-		parts = append(parts, color.YellowString(pluralize(info.Warnings, "warning", "warnings")))
+		parts = append(parts, cmdio.Yellow(ctx, pluralize(info.Warnings, "warning", "warnings")))
 	}
 	if info.Recommendations > 0 {
-		parts = append(parts, color.BlueString(pluralize(info.Recommendations, "recommendation", "recommendations")))
+		parts = append(parts, cmdio.Blue(ctx, pluralize(info.Recommendations, "recommendation", "recommendations")))
 	}
 	switch {
 	case len(parts) >= 3:
@@ -101,7 +86,7 @@ func buildTrailer(ctx context.Context) string {
 		return fmt.Sprintf("Found %s\n", parts[0])
 	default:
 		// No diagnostics to print.
-		return color.GreenString("Validation OK!\n")
+		return cmdio.Green(ctx, "Validation OK!\n")
 	}
 }
 
@@ -118,7 +103,7 @@ func renderSummaryHeaderTemplate(ctx context.Context, out io.Writer, b *bundle.B
 		}
 	}
 
-	t := template.Must(template.New("summary").Funcs(renderFuncMap).Parse(summaryHeaderTemplate))
+	t := template.Must(template.New("summary").Funcs(cmdio.RenderFuncMap(ctx)).Parse(summaryHeaderTemplate))
 	err := t.Execute(out, map[string]any{
 		"Name":   b.Config.Bundle.Name,
 		"Target": b.Config.Bundle.Target,
@@ -179,7 +164,7 @@ func RenderSummary(ctx context.Context, out io.Writer, b *bundle.Bundle) error {
 		}
 	}
 
-	if err := renderResourcesTemplate(out, resourceGroups); err != nil {
+	if err := renderResourcesTemplate(ctx, out, resourceGroups); err != nil {
 		return fmt.Errorf("failed to render resources template: %w", err)
 	}
 
@@ -187,7 +172,7 @@ func RenderSummary(ctx context.Context, out io.Writer, b *bundle.Bundle) error {
 }
 
 // Helper function to sort and render resource groups using the template
-func renderResourcesTemplate(out io.Writer, resourceGroups []ResourceGroup) error {
+func renderResourcesTemplate(ctx context.Context, out io.Writer, resourceGroups []ResourceGroup) error {
 	// Sort everything to ensure consistent output
 	slices.SortFunc(resourceGroups, func(a, b ResourceGroup) int {
 		return cmp.Compare(a.GroupName, b.GroupName)
@@ -198,7 +183,7 @@ func renderResourcesTemplate(out io.Writer, resourceGroups []ResourceGroup) erro
 		})
 	}
 
-	t := template.Must(template.New("resources").Funcs(renderFuncMap).Parse(resourcesTemplate))
+	t := template.Must(template.New("resources").Funcs(cmdio.RenderFuncMap(ctx)).Parse(resourcesTemplate))
 
 	return t.Execute(out, resourceGroups)
 }

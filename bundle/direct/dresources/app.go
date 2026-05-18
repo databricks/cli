@@ -300,7 +300,7 @@ func (r *ResourceApp) DoDelete(ctx context.Context, id string) error {
 	return err
 }
 
-func (r *ResourceApp) WaitAfterCreate(ctx context.Context, config *AppState) (*AppRemote, error) {
+func (r *ResourceApp) WaitAfterCreate(ctx context.Context, id string, config *AppState) (*AppRemote, error) {
 	remote, err := r.waitForApp(ctx, r.client, config.Name)
 	if err != nil {
 		return nil, err

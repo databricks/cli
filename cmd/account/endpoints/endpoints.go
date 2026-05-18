@@ -19,12 +19,18 @@ var cmdOverrides []func(*cobra.Command)
 
 func New() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "endpoints",
-		Short:   `These APIs manage endpoint configurations for this account.`,
-		Long:    `These APIs manage endpoint configurations for this account.`,
+		Use:   "endpoints",
+		Short: `*Beta* These APIs manage endpoint configurations for this account.`,
+		Long: `This command is in Beta and may change without notice.
+
+These APIs manage endpoint configurations for this account.`,
 		GroupID: "provisioning",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	// Add methods
 	cmd.AddCommand(newCreateEndpoint())
@@ -61,8 +67,10 @@ func newCreateEndpoint() *cobra.Command {
 	// TODO: complex arg: azure_private_endpoint_info
 
 	cmd.Use = "create-endpoint PARENT DISPLAY_NAME REGION"
-	cmd.Short = `Create a network endpoint.`
-	cmd.Long = `Create a network endpoint.
+	cmd.Short = `*Beta* Create a network endpoint.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Create a network endpoint.
 
   Creates a new network connectivity endpoint that enables private connectivity
   between your network resources and Databricks services.
@@ -83,6 +91,8 @@ func newCreateEndpoint() *cobra.Command {
     REGION: The cloud provider region where this endpoint is located.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
@@ -156,14 +166,18 @@ func newDeleteEndpoint() *cobra.Command {
 	var deleteEndpointReq networking.DeleteEndpointRequest
 
 	cmd.Use = "delete-endpoint NAME"
-	cmd.Short = `Delete a network endpoint.`
-	cmd.Long = `Delete a network endpoint.
+	cmd.Short = `*Beta* Delete a network endpoint.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Delete a network endpoint.
 
   Deletes a network endpoint. This will remove the endpoint configuration from
   Databricks. Depending on the endpoint type and use case, you may also need to
   delete corresponding network resources in your cloud provider account.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -211,12 +225,16 @@ func newGetEndpoint() *cobra.Command {
 	var getEndpointReq networking.GetEndpointRequest
 
 	cmd.Use = "get-endpoint NAME"
-	cmd.Short = `Get a network endpoint.`
-	cmd.Long = `Get a network endpoint.
+	cmd.Short = `*Beta* Get a network endpoint.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Get a network endpoint.
 
   Gets details of a specific network endpoint.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -278,8 +296,10 @@ func newListEndpoints() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-endpoints PARENT"
-	cmd.Short = `List network endpoints.`
-	cmd.Long = `List network endpoints.
+	cmd.Short = `*Beta* List network endpoints.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+List network endpoints.
 
   Lists all network connectivity endpoints for the account.
 
@@ -288,6 +308,8 @@ func newListEndpoints() *cobra.Command {
       accounts/{account_id}.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)

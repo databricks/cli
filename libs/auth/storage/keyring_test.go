@@ -217,3 +217,63 @@ func TestKeyringCache_StoreNil_TimesOut(t *testing.T) {
 	var timeoutErr *TimeoutError
 	assert.ErrorAs(t, err, &timeoutErr, "expected TimeoutError, got %T: %v", err, err)
 }
+
+func TestProbeKeyring(t *testing.T) {
+	boom := errors.New("backend boom")
+	cases := []struct {
+		name        string
+		setErr      error
+		deleteErr   error
+		setBlock    bool
+		timeout     time.Duration
+		wantErr     error
+		wantTimeout bool
+	}{
+		{
+			name:    "success leaves no entry",
+			timeout: 100 * time.Millisecond,
+		},
+		{
+			name:    "set error propagates",
+			setErr:  boom,
+			timeout: 100 * time.Millisecond,
+			wantErr: boom,
+		},
+		{
+			name:        "set times out",
+			setBlock:    true,
+			timeout:     50 * time.Millisecond,
+			wantTimeout: true,
+		},
+		{
+			name:      "delete error propagates",
+			deleteErr: boom,
+			timeout:   100 * time.Millisecond,
+			wantErr:   boom,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			backend := newFakeBackend()
+			backend.setErr = tc.setErr
+			backend.deleteErr = tc.deleteErr
+			backend.setBlock = tc.setBlock
+
+			err := probeWithBackend(backend, tc.timeout)
+
+			switch {
+			case tc.wantErr != nil:
+				require.Error(t, err)
+				assert.ErrorIs(t, err, tc.wantErr)
+			case tc.wantTimeout:
+				require.Error(t, err)
+				var timeoutErr *TimeoutError
+				assert.ErrorAs(t, err, &timeoutErr)
+			default:
+				require.NoError(t, err)
+				assert.Empty(t, backend.items, "probe must clean up after itself")
+			}
+		})
+	}
+}

@@ -3,7 +3,7 @@
 package schema
 
 type ResourcePostgresCatalogProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type ResourcePostgresCatalogSpec struct {
@@ -14,6 +14,7 @@ type ResourcePostgresCatalogSpec struct {
 
 type ResourcePostgresCatalogStatus struct {
 	Branch           string `json:"branch,omitempty"`
+	CatalogId        string `json:"catalog_id,omitempty"`
 	PostgresDatabase string `json:"postgres_database,omitempty"`
 	Project          string `json:"project,omitempty"`
 }

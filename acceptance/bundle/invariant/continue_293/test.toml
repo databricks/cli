@@ -11,3 +11,7 @@ EnvMatrixExclude.no_vector_search_endpoint = ["INPUT_CONFIG=vector_search_endpoi
 
 # Dotted pipeline configuration keys are not supported on v0.293.0
 EnvMatrixExclude.no_pipeline_config_dots = ["INPUT_CONFIG=pipeline_config_dots.yml.tmpl"]
+
+# The 1000-task scale case is covered by no_drift. Running it here adds ~1.5 min
+# per variant (two full deploys at 1000 tasks) without incremental coverage.
+EnvMatrixExclude.no_pydabs_1000_tasks = ["INPUT_CONFIG=job_pydabs_1000_tasks.yml.tmpl"]
