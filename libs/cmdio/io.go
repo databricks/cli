@@ -26,6 +26,11 @@ func (c *cmdIO) runTUI(m tea.Model) (tea.Model, error) {
 	)
 	c.acquireTeaProgram(p)
 	defer c.releaseTeaProgram()
+	// NewTestIO sets a synthetic window size because bubbletea's auto-detect
+	// doesn't fire on pipe-backed streams. Nil in production.
+	if c.teaWindowSize != nil {
+		go p.Send(*c.teaWindowSize)
+	}
 	return p.Run()
 }
 
@@ -54,6 +59,11 @@ type cmdIO struct {
 	teaMu      sync.Mutex
 	teaProgram *tea.Program
 	teaDone    chan struct{}
+
+	// teaWindowSize, when non-nil, is delivered to the tea.Program before any
+	// user input is processed. Populated only by NewTestIO so pipe-backed
+	// test runs receive a synthetic WindowSizeMsg.
+	teaWindowSize *tea.WindowSizeMsg
 }
 
 func NewIO(ctx context.Context, outputFormat flags.Output, in io.Reader, out, err io.Writer, headerTemplate, template string) *cmdIO {
