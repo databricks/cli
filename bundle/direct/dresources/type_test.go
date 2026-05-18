@@ -53,6 +53,11 @@ var knownMissingInRemoteType = map[string][]string{
 		"source_branch_time",
 		"ttl",
 	},
+	"postgres_databases": {
+		"database_id",
+		"postgres_database",
+		"role",
+	},
 	"postgres_endpoints": {
 		"autoscaling_limit_max_cu",
 		"autoscaling_limit_min_cu",
