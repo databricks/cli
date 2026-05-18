@@ -2,11 +2,11 @@
 >>> [CLI] auth describe --profile u2m-profile
 Warn: [hostmetadata] failed to fetch host metadata for https://u2m-profile.databricks.test, will skip for 1m0s
 Unable to authenticate: error getting token: cache: token not found
-Token storage: plaintext, ~/.databricks/token-cache.json (from auth_storage in [__settings__] section of home/.databrickscfg)
+Token storage: plaintext, ~/.databricks/token-cache.json (from auth_storage in [__settings__] section of [TEST_TMP_DIR]/home/.databrickscfg)
 -----
 Current configuration:
-  ✓ host: https://u2m-profile.databricks.test (from ./home/.databrickscfg config file)
+  ✓ host: https://u2m-profile.databricks.test (from [TEST_TMP_DIR]/home/.databrickscfg config file)
   ✓ profile: u2m-profile (from --profile flag)
   ✓ databricks_cli_path: [CLI]
-  ✓ auth_type: databricks-cli (from ./home/.databrickscfg config file)
+  ✓ auth_type: databricks-cli (from [TEST_TMP_DIR]/home/.databrickscfg config file)
   ✓ rate_limit: [NUMID] (from DATABRICKS_RATE_LIMIT environment variable)
