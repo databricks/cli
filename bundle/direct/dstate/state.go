@@ -23,7 +23,7 @@ import (
 const (
 	currentStateVersion = 2
 	initialBufferSize   = 64 * 1024
-	maxWalEntrySize     = 1024 * 1024
+	maxWalEntrySize     = 10 * 1024 * 1024
 	walSuffix           = ".wal"
 )
 
