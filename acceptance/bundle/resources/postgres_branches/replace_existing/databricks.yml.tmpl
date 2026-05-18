@@ -12,11 +12,10 @@ resources:
       pg_version: 16
       history_retention_duration: "604800s"
 
-  # Take over the implicitly-created production branch with replace_existing.
-  # is_protected is left at its default (false) so that bundle destroy can
-  # delete the branch at the end of the test. no_expiry is sent in the spec
-  # to demonstrate the create request goes through; the field is input-only
-  # and not surfaced in get-branch.
+  # Take over the implicitly-created production branch with replace_existing
+  # and apply a non-default spec (no_expiry: true). The field is input-only
+  # and not surfaced in get-branch, but it is visible in the recorded
+  # request body so the diff confirms it was sent.
   postgres_branches:
     production:
       parent: ${resources.postgres_projects.my_project.id}

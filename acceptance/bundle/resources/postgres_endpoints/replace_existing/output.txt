@@ -41,5 +41,5 @@ Deployment complete!
 
 >>> print_requests.py --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 
-=== bundle destroy (expected to fail on read-write endpoint)
+=== bundle destroy
 >>> print_requests.py --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
