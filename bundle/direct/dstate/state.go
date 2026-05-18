@@ -37,7 +37,7 @@ type DeploymentState struct {
 	mu      sync.Mutex
 	walFile *os.File
 
-	// Maps resource key to ID. Unlike Data.State, this is up to during writes (deploys).
+	// Maps resource key to ID. Unlike Data.State, this is up to date during writes (deploys).
 	stateIDs map[string]string
 }
 
