@@ -53,6 +53,7 @@ func setupTestAgents(t *testing.T) string {
 	t.Helper()
 	tmp := t.TempDir()
 	t.Setenv("HOME", tmp)
+	t.Setenv("USERPROFILE", tmp)
 	// Create config dirs for two agents.
 	require.NoError(t, os.MkdirAll(filepath.Join(tmp, ".claude"), 0o755))
 	require.NoError(t, os.MkdirAll(filepath.Join(tmp, ".cursor"), 0o755))
@@ -224,6 +225,7 @@ func TestInstallNonInteractiveUsesAllAgents(t *testing.T) {
 func TestInstallNoAgentsDetected(t *testing.T) {
 	tmp := t.TempDir()
 	t.Setenv("HOME", tmp)
+	t.Setenv("USERPROFILE", tmp)
 
 	calls := setupInstallMock(t)
 	ctx := cmdio.MockDiscard(t.Context())

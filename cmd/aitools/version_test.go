@@ -15,6 +15,7 @@ import (
 func TestVersionShowsBothScopes(t *testing.T) {
 	tmp := t.TempDir()
 	t.Setenv("HOME", tmp)
+	t.Setenv("USERPROFILE", tmp)
 	t.Setenv("DATABRICKS_SKILLS_REF", "v0.1.0")
 
 	// Create global state.
@@ -70,6 +71,7 @@ func TestVersionShowsBothScopes(t *testing.T) {
 func TestVersionShowsSingleScopeWithoutQualifier(t *testing.T) {
 	tmp := t.TempDir()
 	t.Setenv("HOME", tmp)
+	t.Setenv("USERPROFILE", tmp)
 	t.Setenv("DATABRICKS_SKILLS_REF", "v0.1.0")
 
 	// Create only global state.

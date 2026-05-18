@@ -17,6 +17,7 @@ func noopInstall(context.Context) error { return nil }
 func TestRecommendSkillsInstallSkipsWhenSkillsExist(t *testing.T) {
 	tmpDir := t.TempDir()
 	t.Setenv("HOME", tmpDir)
+	t.Setenv("USERPROFILE", tmpDir)
 	// Skills must be in canonical location to be detected.
 	require.NoError(t, os.MkdirAll(filepath.Join(tmpDir, CanonicalSkillsDir, "databricks"), 0o755))
 
@@ -39,7 +40,9 @@ func TestRecommendSkillsInstallSkipsWhenSkillsExist(t *testing.T) {
 }
 
 func TestRecommendSkillsInstallSkipsWhenNoAgents(t *testing.T) {
-	t.Setenv("HOME", t.TempDir())
+	tmp := t.TempDir()
+	t.Setenv("HOME", tmp)
+	t.Setenv("USERPROFILE", tmp)
 
 	origRegistry := Registry
 	Registry = []Agent{}
@@ -53,6 +56,7 @@ func TestRecommendSkillsInstallSkipsWhenNoAgents(t *testing.T) {
 func TestRecommendSkillsInstallNonInteractive(t *testing.T) {
 	tmpDir := t.TempDir()
 	t.Setenv("HOME", tmpDir)
+	t.Setenv("USERPROFILE", tmpDir)
 
 	origRegistry := Registry
 	Registry = []Agent{
@@ -73,6 +77,7 @@ func TestRecommendSkillsInstallNonInteractive(t *testing.T) {
 func TestRecommendSkillsInstallInteractiveDecline(t *testing.T) {
 	tmpDir := t.TempDir()
 	t.Setenv("HOME", tmpDir)
+	t.Setenv("USERPROFILE", tmpDir)
 
 	origRegistry := Registry
 	Registry = []Agent{

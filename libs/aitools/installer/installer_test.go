@@ -72,6 +72,7 @@ func setupTestHome(t *testing.T) string {
 	t.Helper()
 	tmp := t.TempDir()
 	t.Setenv("HOME", tmp)
+	t.Setenv("USERPROFILE", tmp)
 	// Create agent config dir so the agent is "detected".
 	require.NoError(t, os.MkdirAll(filepath.Join(tmp, ".test-agent"), 0o755))
 	return tmp
