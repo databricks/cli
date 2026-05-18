@@ -3,8 +3,8 @@ package aitools
 import (
 	"fmt"
 
-	"github.com/databricks/cli/aitools/lib/agents"
-	"github.com/databricks/cli/aitools/lib/installer"
+	"github.com/databricks/cli/libs/aitools/agents"
+	"github.com/databricks/cli/libs/aitools/installer"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/spf13/cobra"
 )

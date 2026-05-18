@@ -1,7 +1,7 @@
 package aitools
 
 import (
-	"github.com/databricks/cli/aitools/lib/installer"
+	"github.com/databricks/cli/libs/aitools/installer"
 	"github.com/spf13/cobra"
 )
 

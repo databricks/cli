@@ -2,7 +2,7 @@
 
 `databricks experimental aitools` is the remaining experimental surface for coding-agent workflows.
 
-The skills-management commands (`install`, `update`, `uninstall`, `list`, `version`) have been promoted to top-level `databricks aitools`. The old paths under `databricks experimental aitools` keep working as silent backward-compat aliases.
+The skills-management commands (`install`, `update`, `uninstall`, `list`, `version`) have been promoted to top-level `databricks aitools`. The old paths under `databricks experimental aitools` keep working as deprecated aliases that print a notice pointing to the new path.
 
 Current commands:
 

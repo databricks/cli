@@ -8,11 +8,11 @@ func NewAitoolsCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "aitools",
 		Short: "Databricks AI Tools for coding agents",
-		Long: `Manage Databricks AI Tools.
+		Long: `Install Databricks skills into your coding agent so it can work
+effectively with Databricks resources (bundles, jobs, SQL, and more).
 
-Provides commands to install, update, and manage Databricks skills for
-detected coding agents (Claude Code, Cursor, Codex CLI, OpenCode, GitHub
-Copilot, Antigravity).`,
+Supported agents: Claude Code, Cursor, Codex CLI, OpenCode, GitHub
+Copilot, Antigravity.`,
 	}
 
 	cmd.AddCommand(NewInstallCmd())

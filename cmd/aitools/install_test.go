@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/databricks/cli/aitools/lib/agents"
-	"github.com/databricks/cli/aitools/lib/installer"
+	"github.com/databricks/cli/libs/aitools/agents"
+	"github.com/databricks/cli/libs/aitools/installer"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -16,11 +16,11 @@ import (
 
 func setupInstallMock(t *testing.T) *[]installCall {
 	t.Helper()
-	orig := InstallSkillsForAgentsFn
-	t.Cleanup(func() { InstallSkillsForAgentsFn = orig })
+	orig := installSkillsForAgentsFn
+	t.Cleanup(func() { installSkillsForAgentsFn = orig })
 
 	var calls []installCall
-	InstallSkillsForAgentsFn = func(_ context.Context, _ installer.ManifestSource, targetAgents []*agents.Agent, opts installer.InstallOptions) error {
+	installSkillsForAgentsFn = func(_ context.Context, _ installer.ManifestSource, targetAgents []*agents.Agent, opts installer.InstallOptions) error {
 		names := make([]string, len(targetAgents))
 		for i, a := range targetAgents {
 			names[i] = a.Name
@@ -161,11 +161,11 @@ func TestInstallInteractivePrompt(t *testing.T) {
 	calls := setupInstallMock(t)
 	setupScopeMock(t, installer.ScopeGlobal)
 
-	origPrompt := PromptAgentSelection
-	t.Cleanup(func() { PromptAgentSelection = origPrompt })
+	origPrompt := promptAgentSelection
+	t.Cleanup(func() { promptAgentSelection = origPrompt })
 
 	promptCalled := false
-	PromptAgentSelection = func(_ context.Context, detected []*agents.Agent) ([]*agents.Agent, error) {
+	promptAgentSelection = func(_ context.Context, detected []*agents.Agent) ([]*agents.Agent, error) {
 		promptCalled = true
 		return detected[:1], nil
 	}
@@ -200,11 +200,11 @@ func TestInstallNonInteractiveUsesAllAgents(t *testing.T) {
 	setupTestAgents(t)
 	calls := setupInstallMock(t)
 
-	origPrompt := PromptAgentSelection
-	t.Cleanup(func() { PromptAgentSelection = origPrompt })
+	origPrompt := promptAgentSelection
+	t.Cleanup(func() { promptAgentSelection = origPrompt })
 
 	promptCalled := false
-	PromptAgentSelection = func(_ context.Context, detected []*agents.Agent) ([]*agents.Agent, error) {
+	promptAgentSelection = func(_ context.Context, detected []*agents.Agent) ([]*agents.Agent, error) {
 		promptCalled = true
 		return detected, nil
 	}
@@ -240,11 +240,11 @@ func TestInstallAgentsFlagSkipsPrompt(t *testing.T) {
 	setupTestAgents(t)
 	calls := setupInstallMock(t)
 
-	origPrompt := PromptAgentSelection
-	t.Cleanup(func() { PromptAgentSelection = origPrompt })
+	origPrompt := promptAgentSelection
+	t.Cleanup(func() { promptAgentSelection = origPrompt })
 
 	promptCalled := false
-	PromptAgentSelection = func(_ context.Context, detected []*agents.Agent) ([]*agents.Agent, error) {
+	promptAgentSelection = func(_ context.Context, detected []*agents.Agent) ([]*agents.Agent, error) {
 		promptCalled = true
 		return detected, nil
 	}
@@ -430,9 +430,9 @@ func TestInstallNoFlagInteractiveShowsScopePrompt(t *testing.T) {
 	scopePromptCalled := setupScopeMock(t, installer.ScopeProject)
 
 	// Also mock agent prompt since interactive mode triggers it.
-	origPrompt := PromptAgentSelection
-	t.Cleanup(func() { PromptAgentSelection = origPrompt })
-	PromptAgentSelection = func(_ context.Context, detected []*agents.Agent) ([]*agents.Agent, error) {
+	origPrompt := promptAgentSelection
+	t.Cleanup(func() { promptAgentSelection = origPrompt })
+	promptAgentSelection = func(_ context.Context, detected []*agents.Agent) ([]*agents.Agent, error) {
 		return detected, nil
 	}
 

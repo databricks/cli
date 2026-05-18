@@ -1,7 +1,9 @@
 package aitools
 
 import (
-	aitoolscmd "github.com/databricks/cli/aitools/cmd"
+	"fmt"
+
+	aitoolscmd "github.com/databricks/cli/cmd/aitools"
 	"github.com/spf13/cobra"
 )
 
@@ -13,23 +15,27 @@ func NewAitoolsCmd() *cobra.Command {
 		Long:   `Experimental coding-agent helpers. Skills management is at "databricks aitools".`,
 	}
 
-	// Hidden silent backward-compatibility aliases for the skills-management
-	// commands. They now live at top-level `databricks aitools <X>`; the old
-	// paths under `databricks experimental aitools <X>` keep working but are
-	// hidden so the canonical path is what shows in --help.
-	for _, mk := range []func() *cobra.Command{
-		aitoolscmd.NewInstallCmd,
-		aitoolscmd.NewUpdateCmd,
-		aitoolscmd.NewUninstallCmd,
-		aitoolscmd.NewListCmd,
-		aitoolscmd.NewVersionCmd,
-	} {
-		sub := mk()
+	// Backward-compat aliases for the skills-management commands. They live
+	// at top-level `databricks aitools <X>` now; the old paths still work
+	// but print a deprecation notice that points to the new path.
+	aliases := []struct {
+		name string
+		mk   func() *cobra.Command
+	}{
+		{"install", aitoolscmd.NewInstallCmd},
+		{"update", aitoolscmd.NewUpdateCmd},
+		{"uninstall", aitoolscmd.NewUninstallCmd},
+		{"list", aitoolscmd.NewListCmd},
+		{"version", aitoolscmd.NewVersionCmd},
+	}
+	for _, a := range aliases {
+		sub := a.mk()
 		sub.Hidden = true
+		sub.Deprecated = fmt.Sprintf(`use "databricks aitools %s" instead.`, a.name)
 		cmd.AddCommand(sub)
 	}
 
-	cmd.AddCommand(newSkillsCmd())
+	cmd.AddCommand(aitoolscmd.NewLegacySkillsCmd())
 	cmd.AddCommand(newToolsCmd())
 
 	return cmd

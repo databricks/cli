@@ -4,7 +4,7 @@ import (
 	"context"
 	"strings"
 
-	aitoolscmd "github.com/databricks/cli/aitools/cmd"
+	aitoolscmd "github.com/databricks/cli/cmd/aitools"
 	"github.com/databricks/cli/cmd/psql"
 	ssh "github.com/databricks/cli/experimental/ssh/cmd"
 

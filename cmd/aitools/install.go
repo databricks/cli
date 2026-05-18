@@ -7,18 +7,17 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/huh"
-	"github.com/databricks/cli/aitools/lib/agents"
-	"github.com/databricks/cli/aitools/lib/installer"
+	"github.com/databricks/cli/libs/aitools/agents"
+	"github.com/databricks/cli/libs/aitools/installer"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/spf13/cobra"
 )
 
-// PromptAgentSelection and InstallSkillsForAgentsFn are package-level for
-// testability. They are exported so wrappers in other packages
-// (experimental/aitools/cmd/skills.go) can override them in tests.
+// Package-level for testability. Tests in this package override them via
+// helpers in install_test.go.
 var (
-	PromptAgentSelection     = defaultPromptAgentSelection
-	InstallSkillsForAgentsFn = installer.InstallSkillsForAgents
+	promptAgentSelection     = defaultPromptAgentSelection
+	installSkillsForAgentsFn = installer.InstallSkillsForAgents
 )
 
 func defaultPromptAgentSelection(ctx context.Context, detected []*agents.Agent) ([]*agents.Agent, error) {
@@ -105,7 +104,7 @@ Supported agents: Claude Code, Cursor, Codex CLI, OpenCode, GitHub Copilot, Anti
 				case len(detected) == 1:
 					targetAgents = detected
 				case cmdio.IsPromptSupported(ctx):
-					targetAgents, err = PromptAgentSelection(ctx, detected)
+					targetAgents, err = promptAgentSelection(ctx, detected)
 					if err != nil {
 						return err
 					}
@@ -124,7 +123,7 @@ Supported agents: Claude Code, Cursor, Codex CLI, OpenCode, GitHub Copilot, Anti
 			installer.PrintInstallingFor(ctx, targetAgents)
 
 			src := &installer.GitHubManifestSource{}
-			return InstallSkillsForAgentsFn(ctx, src, targetAgents, opts)
+			return installSkillsForAgentsFn(ctx, src, targetAgents, opts)
 		},
 	}
 

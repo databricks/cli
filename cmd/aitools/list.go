@@ -8,15 +8,15 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/databricks/cli/aitools/lib/installer"
+	"github.com/databricks/cli/libs/aitools/installer"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
 	"github.com/spf13/cobra"
 )
 
-// ListSkillsFn is the function used to render the skills list.
+// listSkillsFn is the function used to render the skills list.
 // It is a package-level var so tests can replace the data-fetching layer.
-var ListSkillsFn = defaultListSkills
+var listSkillsFn = defaultListSkills
 
 func NewListCmd() *cobra.Command {
 	var projectFlag, globalFlag bool
@@ -36,7 +36,7 @@ func NewListCmd() *cobra.Command {
 			} else if globalFlag {
 				scope = installer.ScopeGlobal
 			}
-			return ListSkillsFn(cmd, scope)
+			return listSkillsFn(cmd, scope)
 		},
 	}
 

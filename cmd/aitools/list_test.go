@@ -15,11 +15,11 @@ func TestListCommandExists(t *testing.T) {
 }
 
 func TestListCommandCallsListFn(t *testing.T) {
-	orig := ListSkillsFn
-	t.Cleanup(func() { ListSkillsFn = orig })
+	orig := listSkillsFn
+	t.Cleanup(func() { listSkillsFn = orig })
 
 	called := false
-	ListSkillsFn = func(cmd *cobra.Command, scope string) error {
+	listSkillsFn = func(cmd *cobra.Command, scope string) error {
 		called = true
 		return nil
 	}

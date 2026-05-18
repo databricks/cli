@@ -1,57 +1,20 @@
 package aitools
 
 import (
-	"context"
-	"os"
-	"path/filepath"
 	"testing"
 
-	aitoolscmd "github.com/databricks/cli/aitools/cmd"
-	"github.com/databricks/cli/aitools/lib/agents"
-	"github.com/databricks/cli/aitools/lib/installer"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-type installCall struct {
-	agents []string
-	opts   installer.InstallOptions
-}
-
-func setupInstallMock(t *testing.T) *[]installCall {
-	t.Helper()
-	orig := aitoolscmd.InstallSkillsForAgentsFn
-	t.Cleanup(func() { aitoolscmd.InstallSkillsForAgentsFn = orig })
-
-	var calls []installCall
-	aitoolscmd.InstallSkillsForAgentsFn = func(_ context.Context, _ installer.ManifestSource, targetAgents []*agents.Agent, opts installer.InstallOptions) error {
-		names := make([]string, len(targetAgents))
-		for i, a := range targetAgents {
-			names[i] = a.Name
-		}
-		calls = append(calls, installCall{agents: names, opts: opts})
-		return nil
-	}
-	return &calls
-}
-
-func setupTestAgents(t *testing.T) string {
-	t.Helper()
-	tmp := t.TempDir()
-	t.Setenv("HOME", tmp)
-	require.NoError(t, os.MkdirAll(filepath.Join(tmp, ".claude"), 0o755))
-	require.NoError(t, os.MkdirAll(filepath.Join(tmp, ".cursor"), 0o755))
-	return tmp
-}
-
-func TestSkillsInstallDelegatesToInstall(t *testing.T) {
+func TestLegacySkillsInstallDelegatesToInstall(t *testing.T) {
 	setupTestAgents(t)
 	calls := setupInstallMock(t)
 
 	ctx := cmdio.MockDiscard(t.Context())
-	cmd := newSkillsInstallCmd()
+	cmd := newLegacySkillsInstallCmd()
 	cmd.SetContext(ctx)
 
 	err := cmd.RunE(cmd, nil)
@@ -61,12 +24,12 @@ func TestSkillsInstallDelegatesToInstall(t *testing.T) {
 	assert.Len(t, (*calls)[0].agents, 2)
 }
 
-func TestSkillsInstallForwardsSkillName(t *testing.T) {
+func TestLegacySkillsInstallForwardsSkillName(t *testing.T) {
 	setupTestAgents(t)
 	calls := setupInstallMock(t)
 
 	ctx := cmdio.MockDiscard(t.Context())
-	cmd := newSkillsInstallCmd()
+	cmd := newLegacySkillsInstallCmd()
 	cmd.SetContext(ctx)
 
 	err := cmd.RunE(cmd, []string{"databricks"})
@@ -76,12 +39,12 @@ func TestSkillsInstallForwardsSkillName(t *testing.T) {
 	assert.Equal(t, []string{"databricks"}, (*calls)[0].opts.SpecificSkills)
 }
 
-func TestSkillsInstallExecuteNoArgs(t *testing.T) {
+func TestLegacySkillsInstallExecuteNoArgs(t *testing.T) {
 	setupTestAgents(t)
 	calls := setupInstallMock(t)
 
 	ctx := cmdio.MockDiscard(t.Context())
-	cmd := newSkillsInstallCmd()
+	cmd := newLegacySkillsInstallCmd()
 	cmd.SetContext(ctx)
 	cmd.SetArgs([]string{})
 
@@ -93,12 +56,12 @@ func TestSkillsInstallExecuteNoArgs(t *testing.T) {
 	assert.Nil(t, (*calls)[0].opts.SpecificSkills)
 }
 
-func TestSkillsInstallExecuteWithSkillName(t *testing.T) {
+func TestLegacySkillsInstallExecuteWithSkillName(t *testing.T) {
 	setupTestAgents(t)
 	calls := setupInstallMock(t)
 
 	ctx := cmdio.MockDiscard(t.Context())
-	cmd := newSkillsInstallCmd()
+	cmd := newLegacySkillsInstallCmd()
 	cmd.SetContext(ctx)
 	cmd.SetArgs([]string{"databricks"})
 
@@ -109,12 +72,12 @@ func TestSkillsInstallExecuteWithSkillName(t *testing.T) {
 	assert.Equal(t, []string{"databricks"}, (*calls)[0].opts.SpecificSkills)
 }
 
-func TestSkillsInstallForwardsExperimental(t *testing.T) {
+func TestLegacySkillsInstallForwardsExperimental(t *testing.T) {
 	setupTestAgents(t)
 	calls := setupInstallMock(t)
 
 	ctx := cmdio.MockDiscard(t.Context())
-	cmd := newSkillsInstallCmd()
+	cmd := newLegacySkillsInstallCmd()
 	cmd.SetContext(ctx)
 	cmd.SetArgs([]string{"--experimental"})
 
@@ -125,9 +88,9 @@ func TestSkillsInstallForwardsExperimental(t *testing.T) {
 	assert.True(t, (*calls)[0].opts.IncludeExperimental, "--experimental should be forwarded")
 }
 
-func TestSkillsInstallExecuteRejectsTwoArgs(t *testing.T) {
+func TestLegacySkillsInstallExecuteRejectsTwoArgs(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
-	cmd := newSkillsInstallCmd()
+	cmd := newLegacySkillsInstallCmd()
 	cmd.SetContext(ctx)
 	cmd.SetArgs([]string{"a", "b"})
 	cmd.SilenceErrors = true
@@ -138,18 +101,18 @@ func TestSkillsInstallExecuteRejectsTwoArgs(t *testing.T) {
 	assert.Contains(t, err.Error(), "accepts at most 1 arg")
 }
 
-func TestSkillsListDelegatesToListFn(t *testing.T) {
-	orig := aitoolscmd.ListSkillsFn
-	t.Cleanup(func() { aitoolscmd.ListSkillsFn = orig })
+func TestLegacySkillsListDelegatesToListFn(t *testing.T) {
+	orig := listSkillsFn
+	t.Cleanup(func() { listSkillsFn = orig })
 
 	called := false
-	aitoolscmd.ListSkillsFn = func(cmd *cobra.Command, scope string) error {
+	listSkillsFn = func(cmd *cobra.Command, scope string) error {
 		called = true
 		return nil
 	}
 
 	ctx := cmdio.MockDiscard(t.Context())
-	cmd := newSkillsListCmd()
+	cmd := newLegacySkillsListCmd()
 	cmd.SetContext(ctx)
 
 	err := cmd.RunE(cmd, nil)

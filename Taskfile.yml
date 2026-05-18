@@ -611,7 +611,8 @@ tasks:
   test-exp-aitools:
     desc: Run aitools (top-level + experimental) unit and acceptance tests
     sources:
-      - aitools/**
+      - cmd/aitools/**
+      - libs/aitools/**
       - experimental/aitools/**
       - acceptance/apps/**
       - "{{.EMBED_SOURCES}}"
@@ -620,7 +621,7 @@ tasks:
         {{.GO_TOOL}} gotestsum \
           --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
           --no-summary=skipped \
-          --packages "./aitools/... ./experimental/aitools/..." \
+          --packages "./cmd/aitools/... ./libs/aitools/... ./experimental/aitools/..." \
           -- -timeout=${LOCAL_TIMEOUT:-30m}
       - |
         {{.GO_TOOL}} gotestsum \
