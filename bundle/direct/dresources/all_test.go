@@ -697,9 +697,11 @@ var testDeps = map[string]prepareWorkspace{
 
 		return &resources.PostgresDatabase{
 			PostgresDatabaseConfig: resources.PostgresDatabaseConfig{
-				Parent:               "projects/test-project-for-database/branches/test-branch-for-database",
-				DatabaseId:           "test-database",
-				DatabaseDatabaseSpec: postgres.DatabaseDatabaseSpec{},
+				Parent:     "projects/test-project-for-database/branches/test-branch-for-database",
+				DatabaseId: "test-database",
+				DatabaseDatabaseSpec: postgres.DatabaseDatabaseSpec{
+					PostgresDatabase: "app_db",
+				},
 			},
 		}, nil
 	},

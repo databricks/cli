@@ -28,6 +28,8 @@ pipelines: pipelines.CreatePipeline
 
 postgres_branches: postgres.BranchSpec
 
+postgres_databases: postgres.DatabaseDatabaseStatus
+
 postgres_endpoints: postgres.EndpointSpec
 
 postgres_projects: postgres.ProjectStatus
