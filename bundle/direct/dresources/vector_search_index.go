@@ -89,7 +89,8 @@ func (*ResourceVectorSearchIndex) RemapState(remote *VectorSearchIndexRemote) *V
 	}
 	if remote.DeltaSyncIndexSpec != nil {
 		state.DeltaSyncIndexSpec = &vectorsearch.DeltaSyncVectorIndexSpecRequest{
-			ColumnsToSync:           nil,
+			ColumnsToIndex:          remote.DeltaSyncIndexSpec.ColumnsToIndex,
+			ColumnsToSync:           remote.DeltaSyncIndexSpec.ColumnsToSync,
 			EmbeddingSourceColumns:  remote.DeltaSyncIndexSpec.EmbeddingSourceColumns,
 			EmbeddingVectorColumns:  remote.DeltaSyncIndexSpec.EmbeddingVectorColumns,
 			EmbeddingWritebackTable: remote.DeltaSyncIndexSpec.EmbeddingWritebackTable,
@@ -147,9 +148,9 @@ func (r *ResourceVectorSearchIndex) DoDelete(ctx context.Context, id string) err
 // immediately with metadata of an index whose embedding pipeline is still
 // provisioning; queries against an index that isn't ready fail. Blocking here
 // lets dependent resources (and the next plan) see a usable index.
-func (r *ResourceVectorSearchIndex) WaitAfterCreate(ctx context.Context, config *VectorSearchIndexState) (*VectorSearchIndexRemote, error) {
+func (r *ResourceVectorSearchIndex) WaitAfterCreate(ctx context.Context, id string, config *VectorSearchIndexState) (*VectorSearchIndexRemote, error) {
 	index, err := retries.Poll(ctx, createIndexTimeout, func() (*vectorsearch.VectorIndex, *retries.Err) {
-		idx, getErr := r.client.VectorSearchIndexes.GetIndexByIndexName(ctx, config.Name)
+		idx, getErr := r.client.VectorSearchIndexes.GetIndexByIndexName(ctx, id)
 		if getErr != nil {
 			return nil, retries.Halt(getErr)
 		}

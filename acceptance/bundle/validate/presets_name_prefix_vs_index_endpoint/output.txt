@@ -4,7 +4,7 @@
   "vector_search_endpoints": {
     "vs_endpoint": {
       "endpoint_type": "STANDARD",
-      "name": "prefix_vs_endpoint"
+      "name": "vs_endpoint"
     }
   },
   "vector_search_indexes": {

@@ -3160,8 +3160,10 @@ resources.vector_search_endpoints.*.permissions[*].user_name	string	ALL
 resources.vector_search_indexes.*.creator	string	REMOTE
 resources.vector_search_indexes.*.delta_sync_index_spec	*vectorsearch.DeltaSyncVectorIndexSpecRequest	INPUT	STATE
 resources.vector_search_indexes.*.delta_sync_index_spec	*vectorsearch.DeltaSyncVectorIndexSpecResponse	REMOTE
-resources.vector_search_indexes.*.delta_sync_index_spec.columns_to_sync	[]string	INPUT	STATE
-resources.vector_search_indexes.*.delta_sync_index_spec.columns_to_sync[*]	string	INPUT	STATE
+resources.vector_search_indexes.*.delta_sync_index_spec.columns_to_index	[]string	ALL
+resources.vector_search_indexes.*.delta_sync_index_spec.columns_to_index[*]	string	ALL
+resources.vector_search_indexes.*.delta_sync_index_spec.columns_to_sync	[]string	ALL
+resources.vector_search_indexes.*.delta_sync_index_spec.columns_to_sync[*]	string	ALL
 resources.vector_search_indexes.*.delta_sync_index_spec.embedding_source_columns	[]vectorsearch.EmbeddingSourceColumn	ALL
 resources.vector_search_indexes.*.delta_sync_index_spec.embedding_source_columns[*]	vectorsearch.EmbeddingSourceColumn	ALL
 resources.vector_search_indexes.*.delta_sync_index_spec.embedding_source_columns[*].embedding_model_endpoint_name	string	ALL
