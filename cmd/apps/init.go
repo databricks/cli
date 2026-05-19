@@ -81,9 +81,8 @@ func newInitCmd() *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:    "init",
-		Short:  "Initialize a new AppKit application from a template",
-		Hidden: true,
+		Use:   "init",
+		Short: "Initialize a new AppKit application from a template",
 		Long: `Initialize a new AppKit application from a template.
 
 When run without arguments, uses the default AppKit template and an interactive prompt
