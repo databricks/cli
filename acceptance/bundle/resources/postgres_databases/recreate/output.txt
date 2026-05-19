@@ -20,19 +20,26 @@ resources:
       branch_id: main
       no_expiry: true
 
+  postgres_roles:
+    owner:
+      parent: ${resources.postgres_branches.main.id}
+      role_id: app-owner
+      postgres_role: app_owner
+
   postgres_databases:
     my_database:
       parent: ${resources.postgres_branches.main.id}
       database_id: test-database-[UNIQUE_NAME]
       postgres_database: app_db
-      role: ${resources.postgres_branches.main.id}/roles/${workspace.current_user.domain_friendly_name}
+      role: ${resources.postgres_roles.owner.id}
 
 >>> [CLI] bundle plan
 create postgres_branches.main
 create postgres_databases.my_database
 create postgres_projects.my_project
+create postgres_roles.owner
 
-Plan: 3 to add, 0 to change, 0 to delete, 0 unchanged
+Plan: 4 to add, 0 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-database-recreate-[UNIQUE_NAME]/default/files...
@@ -58,8 +65,11 @@ Deployment complete!
       "no_expiry": true
   "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches",
     "branch_id": "main"
+      "postgres_role": "app_owner"
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles",
+    "role_id": "app-owner"
       "postgres_database": "app_db",
-      "role": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/[USERNAME]"
+      "role": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/app-owner"
   "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main/databases",
     "database_id": "test-database-[UNIQUE_NAME]"
 
@@ -84,17 +94,23 @@ resources:
       branch_id: main
       no_expiry: true
 
+  postgres_roles:
+    owner:
+      parent: ${resources.postgres_branches.main.id}
+      role_id: app-owner
+      postgres_role: app_owner
+
   postgres_databases:
     my_database:
       parent: ${resources.postgres_branches.main.id}
       database_id: test-database-[UNIQUE_NAME]-v2
       postgres_database: app_db
-      role: ${resources.postgres_branches.main.id}/roles/${workspace.current_user.domain_friendly_name}
+      role: ${resources.postgres_roles.owner.id}
 
 >>> [CLI] bundle plan
 recreate postgres_databases.my_database
 
-Plan: 1 to add, 0 to change, 1 to delete, 2 unchanged
+Plan: 1 to add, 0 to change, 1 to delete, 3 unchanged
 
 >>> [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-database-recreate-[UNIQUE_NAME]/default/files...
@@ -110,7 +126,7 @@ Deployment complete!
   "body": {
     "spec": {
       "postgres_database": "app_db",
-      "role": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/[USERNAME]"
+      "role": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/app-owner"
     }
   },
   "method": "POST",
@@ -125,8 +141,9 @@ Deployment complete!
   "name": "[MY_DATABASE_ID]-v2",
   "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
   "status": {
+    "database_id": "test-database-[UNIQUE_NAME]-v2",
     "postgres_database": "app_db",
-    "role": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/[USERNAME]"
+    "role": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/app-owner"
   }
 }
 
@@ -136,6 +153,7 @@ The following resources will be deleted:
   delete resources.postgres_branches.main
   delete resources.postgres_databases.my_database
   delete resources.postgres_projects.my_project
+  delete resources.postgres_roles.owner
 
 This action will result in the deletion of the following Lakebase projects along with
 all their branches, databases, and endpoints. All data stored in them will be permanently lost:
@@ -155,6 +173,7 @@ Destroy complete!
   "method": "DELETE",
   "path": "/api/2.0/postgres/[MY_DATABASE_ID]-v2"
 }
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/app-owner"
   "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main"
   "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]"
 

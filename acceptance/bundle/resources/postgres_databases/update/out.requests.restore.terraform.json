@@ -8,6 +8,10 @@
 }
 {
   "method": "GET",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/app-owner"
+}
+{
+  "method": "GET",
   "path": "/api/2.0/postgres/[MY_DATABASE_ID]"
 }
 {
@@ -21,7 +25,7 @@
     "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
     "spec": {
       "postgres_database": "initial_db_name",
-      "role": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/[USERNAME]"
+      "role": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/app-owner"
     }
   }
 }

@@ -8,5 +8,9 @@
 }
 {
   "method": "GET",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/app-owner"
+}
+{
+  "method": "GET",
   "path": "/api/2.0/postgres/[MY_DATABASE_ID]"
 }

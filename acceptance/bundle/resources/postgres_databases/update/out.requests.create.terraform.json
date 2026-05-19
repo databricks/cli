@@ -27,6 +27,19 @@
 }
 {
   "method": "POST",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles",
+  "q": {
+    "role_id": "app-owner"
+  },
+  "body": {
+    "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
+    "spec": {
+      "postgres_role": "app_owner"
+    }
+  }
+}
+{
+  "method": "POST",
   "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main/databases",
   "q": {
     "database_id": "my-database"
@@ -35,7 +48,7 @@
     "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
     "spec": {
       "postgres_database": "initial_db_name",
-      "role": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/[USERNAME]"
+      "role": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/app-owner"
     }
   }
 }

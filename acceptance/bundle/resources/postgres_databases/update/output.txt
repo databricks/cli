@@ -13,8 +13,9 @@ Validation OK!
 create postgres_branches.main
 create postgres_databases.my_database
 create postgres_projects.my_project
+create postgres_roles.owner
 
-Plan: 3 to add, 0 to change, 0 to delete, 0 unchanged
+Plan: 4 to add, 0 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle plan -o json
 
@@ -31,14 +32,15 @@ Deployment complete!
   "name": "[MY_DATABASE_ID]",
   "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
   "status": {
+    "database_id": "my-database",
     "postgres_database": "initial_db_name",
-    "role": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/[USERNAME]"
+    "role": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/app-owner"
   }
 }
 
 === Verify no changes
 >>> [CLI] bundle plan
-Plan: 0 to add, 0 to change, 0 to delete, 3 unchanged
+Plan: 0 to add, 0 to change, 0 to delete, 4 unchanged
 
 >>> [CLI] bundle plan -o json
 
@@ -74,17 +76,23 @@ resources:
       branch_id: main
       no_expiry: true
 
+  postgres_roles:
+    owner:
+      parent: ${resources.postgres_branches.main.id}
+      role_id: app-owner
+      postgres_role: app_owner
+
   postgres_databases:
     my_database:
       database_id: my-database
       parent: ${resources.postgres_branches.main.id}
       postgres_database: renamed_db_name
-      role: ${resources.postgres_branches.main.id}/roles/${workspace.current_user.domain_friendly_name}
+      role: ${resources.postgres_roles.owner.id}
 
 >>> [CLI] bundle plan
 update postgres_databases.my_database
 
-Plan: 0 to add, 1 to change, 0 to delete, 2 unchanged
+Plan: 0 to add, 1 to change, 0 to delete, 3 unchanged
 
 >>> [CLI] bundle plan -o json
 
@@ -101,8 +109,9 @@ Deployment complete!
   "name": "[MY_DATABASE_ID]",
   "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
   "status": {
+    "database_id": "my-database",
     "postgres_database": "renamed_db_name",
-    "role": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/[USERNAME]"
+    "role": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/app-owner"
   }
 }
 
@@ -112,7 +121,7 @@ Deployment complete!
 >>> [CLI] bundle plan
 update postgres_databases.my_database
 
-Plan: 0 to add, 1 to change, 0 to delete, 2 unchanged
+Plan: 0 to add, 1 to change, 0 to delete, 3 unchanged
 
 >>> [CLI] bundle plan -o json
 
@@ -129,8 +138,9 @@ Deployment complete!
   "name": "[MY_DATABASE_ID]",
   "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
   "status": {
+    "database_id": "my-database",
     "postgres_database": "initial_db_name",
-    "role": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/[USERNAME]"
+    "role": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/app-owner"
   }
 }
 
@@ -139,6 +149,7 @@ The following resources will be deleted:
   delete resources.postgres_branches.main
   delete resources.postgres_databases.my_database
   delete resources.postgres_projects.my_project
+  delete resources.postgres_roles.owner
 
 This action will result in the deletion of the following Lakebase projects along with
 all their branches, databases, and endpoints. All data stored in them will be permanently lost:

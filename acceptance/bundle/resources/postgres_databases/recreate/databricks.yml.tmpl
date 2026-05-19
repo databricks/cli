@@ -18,9 +18,15 @@ resources:
       branch_id: main
       no_expiry: true
 
+  postgres_roles:
+    owner:
+      parent: ${resources.postgres_branches.main.id}
+      role_id: app-owner
+      postgres_role: app_owner
+
   postgres_databases:
     my_database:
       parent: ${resources.postgres_branches.main.id}
       database_id: DATABASE_ID_PLACEHOLDER
       postgres_database: app_db
-      role: ${resources.postgres_branches.main.id}/roles/${workspace.current_user.domain_friendly_name}
+      role: ${resources.postgres_roles.owner.id}

@@ -27,6 +27,10 @@ Resources:
     my_project:
       Name: Test Project for Database
       URL:  (not deployed)
+  Postgres roles:
+    owner:
+      Name: 
+      URL:  (not deployed)
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-database-[UNIQUE_NAME]/default/files...
@@ -39,8 +43,9 @@ Deployment complete!
   "name": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/databases/my-database",
   "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
   "status": {
+    "database_id": "my-database",
     "postgres_database": "app_db",
-    "role": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/[USERNAME]"
+    "role": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/app-owner"
   }
 }
 
@@ -63,6 +68,10 @@ Resources:
     my_project:
       Name: Test Project for Database
       URL:  (not deployed)
+  Postgres roles:
+    owner:
+      Name: 
+      URL:  (not deployed)
 
 >>> print_requests.py --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 
@@ -71,6 +80,7 @@ The following resources will be deleted:
   delete resources.postgres_branches.main
   delete resources.postgres_databases.my_database
   delete resources.postgres_projects.my_project
+  delete resources.postgres_roles.owner
 
 This action will result in the deletion of the following Lakebase projects along with
 all their branches, databases, and endpoints. All data stored in them will be permanently lost:
