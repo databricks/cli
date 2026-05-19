@@ -272,6 +272,87 @@ func TestApplyLoginFallback_ProbeTimeout_StaysOnKeyring(t *testing.T) {
 	}
 }
 
+func TestPinSecureMode(t *testing.T) {
+	cases := []struct {
+		name        string
+		mode        StorageMode
+		envValue    string
+		configBody  string
+		wantWritten string
+		wantSkipMsg string
+	}{
+		{
+			name:        "secure from default persists secure",
+			mode:        StorageModeSecure,
+			wantWritten: "secure",
+		},
+		{
+			name:        "plaintext mode is a no-op",
+			mode:        StorageModePlaintext,
+			wantWritten: "",
+		},
+		{
+			name:        "secure from env is a no-op",
+			mode:        StorageModeSecure,
+			envValue:    "secure",
+			wantWritten: "",
+		},
+		{
+			name:        "secure from config is a no-op (already pinned)",
+			mode:        StorageModeSecure,
+			configBody:  "[__settings__]\nauth_storage = secure\n",
+			wantWritten: "secure",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			hermetic(t)
+			ctx := t.Context()
+			configPath := env.Get(ctx, "DATABRICKS_CONFIG_FILE")
+			if tc.configBody != "" {
+				require.NoError(t, os.WriteFile(configPath, []byte(tc.configBody), 0o600))
+			}
+			if tc.envValue != "" {
+				ctx = env.Set(ctx, EnvVar, tc.envValue)
+			}
+
+			PinSecureMode(ctx, tc.mode)
+
+			got, err := databrickscfg.GetConfiguredAuthStorage(ctx, configPath)
+			require.NoError(t, err)
+			assert.Equal(t, tc.wantWritten, got)
+		})
+	}
+}
+
+func TestPinSecureMode_IsIdempotent(t *testing.T) {
+	hermetic(t)
+	ctx := t.Context()
+	configPath := env.Get(ctx, "DATABRICKS_CONFIG_FILE")
+
+	PinSecureMode(ctx, StorageModeSecure)
+	first, err := databrickscfg.GetConfiguredAuthStorage(ctx, configPath)
+	require.NoError(t, err)
+	require.Equal(t, "secure", first)
+
+	// Second call should see source=Config and skip the write.
+	PinSecureMode(ctx, StorageModeSecure)
+	second, err := databrickscfg.GetConfiguredAuthStorage(ctx, configPath)
+	require.NoError(t, err)
+	assert.Equal(t, "secure", second)
+}
+
+func TestPinSecureMode_PersistFailureIsSwallowed(t *testing.T) {
+	hermetic(t)
+	ctx := t.Context()
+	// Point DATABRICKS_CONFIG_FILE at an unwritable path so SetConfiguredAuthStorage fails.
+	t.Setenv("DATABRICKS_CONFIG_FILE", filepath.Join(t.TempDir(), "no-such-dir", ".databrickscfg"))
+
+	// Must not panic or block; failures are logged at debug.
+	PinSecureMode(ctx, StorageModeSecure)
+}
+
 func TestWrapForOAuthArgument(t *testing.T) {
 	const (
 		host       = "https://example.com"

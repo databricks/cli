@@ -295,7 +295,11 @@ a new profile is created.
 			return err
 		}
 		// At this point, an OAuth token has been successfully minted and stored
-		// in the CLI cache. The rest of the command focuses on:
+		// in the CLI cache. Pin the resolved storage mode so a transient
+		// keyring failure on a future login can no longer silently demote a
+		// working secure-storage user to plaintext.
+		storage.PinSecureMode(ctx, mode)
+		// The rest of the command focuses on:
 		// 1. Workspace selection for SPOG hosts (best-effort);
 		// 2. Configuring cluster and serverless;
 		// 3. Saving the profile.
@@ -633,6 +637,7 @@ func discoveryLogin(ctx context.Context, in discoveryLoginInputs) error {
 	if err := persistentAuth.Challenge(); err != nil {
 		return discoveryErr("login via login.databricks.com failed", err)
 	}
+	storage.PinSecureMode(ctx, in.mode)
 
 	discoveredHost := arg.GetDiscoveredHost()
 	if discoveredHost == "" {

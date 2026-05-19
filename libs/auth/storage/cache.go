@@ -165,3 +165,35 @@ func persistPlaintextFallback(ctx context.Context) error {
 	configPath := env.Get(ctx, "DATABRICKS_CONFIG_FILE")
 	return databrickscfg.SetConfiguredAuthStorage(ctx, string(StorageModePlaintext), configPath)
 }
+
+// PinSecureMode persists auth_storage = secure to [__settings__] when the
+// user is currently on the secure-from-default path: mode resolved to secure
+// without an explicit override, env var, or config setting.
+//
+// Call this after a successful keyring write (post-Challenge in login). Once
+// pinned, subsequent invocations see source=Config and the explicit-secure
+// branch of applyLoginFallback returns an error instead of silently demoting
+// to plaintext, so a transient keyring probe failure cannot strand a working
+// user on the file cache.
+//
+// No-op when mode is not secure (e.g. silent plaintext fallback already
+// happened) or when the user already chose a mode explicitly. Persisting
+// failures are logged at debug; pinning is best-effort and must not block
+// login.
+func PinSecureMode(ctx context.Context, mode StorageMode) {
+	if mode != StorageModeSecure {
+		return
+	}
+	_, source, err := ResolveStorageModeWithSource(ctx, "")
+	if err != nil {
+		log.Debugf(ctx, "pin secure mode: resolve: %v", err)
+		return
+	}
+	if source.Explicit() {
+		return
+	}
+	configPath := env.Get(ctx, "DATABRICKS_CONFIG_FILE")
+	if err := databrickscfg.SetConfiguredAuthStorage(ctx, string(StorageModeSecure), configPath); err != nil {
+		log.Debugf(ctx, "pin secure mode: persist: %v", err)
+	}
+}
