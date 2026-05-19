@@ -1,9 +1,16 @@
 package aitools
 
 import (
+	"context"
+
 	"github.com/databricks/cli/libs/aitools/installer"
 	"github.com/spf13/cobra"
 )
+
+// Package-level for testability. Tests override via uninstall_test.go.
+var uninstallSkillsFn = func(ctx context.Context, opts installer.UninstallOptions) error {
+	return installer.UninstallSkillsOpts(ctx, opts)
+}
 
 func NewUninstallCmd() *cobra.Command {
 	var skillsFlag, scopeFlag string
@@ -42,7 +49,7 @@ By default, removes all skills. Use --skills to remove specific skills only.`,
 				Scope: scope,
 			}
 			opts.Skills = splitAndTrim(skillsFlag)
-			return installer.UninstallSkillsOpts(ctx, opts)
+			return uninstallSkillsFn(ctx, opts)
 		},
 	}
 

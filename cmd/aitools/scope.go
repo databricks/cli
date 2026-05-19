@@ -97,11 +97,18 @@ func markScopeBoolsDeprecated(cmd *cobra.Command) {
 // parseScopeFlag translates --scope into the equivalent --project/--global bool pair.
 // Returns (projectFlag, globalFlag, nil) unchanged when --scope is empty so the
 // deprecated booleans can keep flowing through the existing resolveScope* helpers.
-// Errors if --scope is combined with --project or --global. When allowBoth is
+// Errors if --scope is combined with --project or --global, or if both deprecated
+// flags are set together (matching the pre-refactor validation). When allowBoth is
 // false, --scope=both is rejected up front so install and uninstall don't have
 // to special-case it.
 func parseScopeFlag(scopeFlag string, projectFlag, globalFlag, allowBoth bool) (proj, glob bool, err error) {
 	if scopeFlag == "" {
+		// Preserve the pre-refactor behavior: combining the two deprecated flags
+		// is always wrong, regardless of allowBoth. Users who want both scopes
+		// should use --scope=both (where supported).
+		if projectFlag && globalFlag {
+			return false, false, errors.New("cannot use --global and --project together")
+		}
 		return projectFlag, globalFlag, nil
 	}
 	if projectFlag || globalFlag {
@@ -118,7 +125,10 @@ func parseScopeFlag(scopeFlag string, projectFlag, globalFlag, allowBoth bool) (
 		}
 		return true, true, nil
 	default:
-		return false, false, fmt.Errorf("invalid --scope %q: must be one of project, global, both", scopeFlag)
+		if allowBoth {
+			return false, false, fmt.Errorf("invalid --scope %q: must be one of project, global, both", scopeFlag)
+		}
+		return false, false, fmt.Errorf("invalid --scope %q: must be one of project, global", scopeFlag)
 	}
 }
 

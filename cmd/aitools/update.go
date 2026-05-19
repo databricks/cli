@@ -1,6 +1,7 @@
 package aitools
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/databricks/cli/libs/aitools/agents"
@@ -8,6 +9,11 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/spf13/cobra"
 )
+
+// Package-level for testability. Tests override via update_test.go.
+var updateSkillsFn = func(ctx context.Context, src installer.ManifestSource, installed []*agents.Agent, opts installer.UpdateOptions) (*installer.UpdateResult, error) {
+	return installer.UpdateSkills(ctx, src, installed, opts)
+}
 
 func NewUpdateCmd() *cobra.Command {
 	var check, force, noNew bool
@@ -62,7 +68,7 @@ preview what would change without downloading.`,
 				}
 				opts.Skills = skills
 
-				result, err := installer.UpdateSkills(ctx, src, installed, opts)
+				result, err := updateSkillsFn(ctx, src, installed, opts)
 				if err != nil {
 					return err
 				}

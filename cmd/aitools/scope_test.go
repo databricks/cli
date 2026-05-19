@@ -83,12 +83,13 @@ func TestParseScopeFlag(t *testing.T) {
 		{name: "unset", scope: ""},
 		{name: "legacy project only", project: true, wantProj: true},
 		{name: "legacy global only", global: true, wantGlob: true},
-		{name: "legacy both passthrough", project: true, global: true, wantProj: true, wantGlob: true},
+		{name: "legacy both flags together rejected", project: true, global: true, wantErr: "cannot use --global and --project together"},
 		{name: "scope project", scope: "project", wantProj: true},
 		{name: "scope global", scope: "global", wantGlob: true},
 		{name: "scope both allowed", scope: "both", allowBoth: true, wantProj: true, wantGlob: true},
 		{name: "scope both disallowed", scope: "both", wantErr: "--scope=both is not supported"},
-		{name: "scope invalid value", scope: "all", wantErr: `invalid --scope "all"`},
+		{name: "scope invalid value with allowBoth", scope: "all", allowBoth: true, wantErr: `invalid --scope "all": must be one of project, global, both`},
+		{name: "scope invalid value without allowBoth omits both from error", scope: "all", wantErr: `invalid --scope "all": must be one of project, global`},
 		{name: "scope conflicts with project", scope: "project", project: true, wantErr: "cannot use --scope with --project or --global"},
 		{name: "scope conflicts with global", scope: "global", global: true, wantErr: "cannot use --scope with --project or --global"},
 	}
@@ -106,6 +107,15 @@ func TestParseScopeFlag(t *testing.T) {
 			assert.Equal(t, tt.wantGlob, glob)
 		})
 	}
+
+	// Stronger check that the without-allowBoth invalid-value branch omits
+	// "both" from the error message (the table assertion uses Contains which
+	// can't distinguish a substring shared with the allowBoth variant).
+	t.Run("invalid scope error message without allowBoth does not mention both", func(t *testing.T) {
+		_, _, err := parseScopeFlag("all", false, false, false)
+		require.Error(t, err)
+		assert.NotContains(t, err.Error(), "both")
+	})
 }
 
 // --- detectInstalledScopes tests (table-driven) ---

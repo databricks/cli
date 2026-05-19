@@ -57,7 +57,7 @@ func TestListScopeFlag(t *testing.T) {
 		{name: "scope global", args: []string{"--scope", "global"}, wantScope: installer.ScopeGlobal},
 		{name: "scope both shows both", args: []string{"--scope", "both"}, wantScope: ""},
 		{name: "scope invalid", args: []string{"--scope", "all"}, wantErr: `invalid --scope "all"`},
-		{name: "legacy both flags shows both", args: []string{"--project", "--global"}, wantScope: ""},
+		{name: "legacy both flags together rejected", args: []string{"--project", "--global"}, wantErr: "cannot use --global and --project together"},
 	}
 
 	for _, tt := range tests {
