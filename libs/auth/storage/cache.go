@@ -59,10 +59,6 @@ func ResolveCache(ctx context.Context, override StorageMode) (cache.TokenCache, 
 //     The timeout is ambiguous (locked vs hung); a misdiagnosis fails
 //     the final Store rather than silently downgrading to plaintext.
 //
-// Rules 1 and 2 are dormant today: the resolver default is plaintext, so
-// (mode=Secure, explicit=false) is unreachable. They activate when the
-// default flips to secure at GA.
-//
 // Login-specific. Read paths (auth token, bundle commands) keep the original
 // keyring error so they don't silently mint plaintext copies of tokens that
 // were stored in the keyring on another machine.
@@ -120,12 +116,6 @@ func resolveCacheForLoginWith(ctx context.Context, override StorageMode, f cache
 // resolved mode and whether the user explicitly asked for it. Split out so
 // tests can drive the (mode, explicit) input space directly without depending
 // on whatever the resolver's default mode happens to be at any point in time.
-//
-// Pin-on-success across modes (locking in the first working behavior to
-// insulate users from keyring flakiness) is intentionally not implemented
-// here. It lands at GA alongside the default flip; pinning before the
-// flip would freeze every default user into plaintext and make the flip a
-// no-op for them.
 func applyLoginFallback(ctx context.Context, mode StorageMode, explicit bool, f cacheFactories) (cache.TokenCache, StorageMode, error) {
 	switch mode {
 	case StorageModePlaintext:
@@ -168,11 +158,9 @@ func applyLoginFallback(ctx context.Context, mode StorageMode, explicit bool, f 
 // in .databrickscfg so subsequent commands skip the (slow/blocking) keyring
 // probe and route straight to the file cache.
 //
-// Only called on the (mode=Secure, explicit=false) probe-failure branch. That
-// branch is unreachable today (resolver default is plaintext), so this is
-// dormant infrastructure: it activates when the default flips to secure
-// at GA and lets default-on-broken-keyring users avoid a 3s probe on every
-// command.
+// Only called on the (mode=Secure, explicit=false) probe-failure branch.
+// Persisting the fallback lets default-on-broken-keyring users avoid a 3s
+// probe on every command.
 func persistPlaintextFallback(ctx context.Context) error {
 	configPath := env.Get(ctx, "DATABRICKS_CONFIG_FILE")
 	return databrickscfg.SetConfiguredAuthStorage(ctx, string(StorageModePlaintext), configPath)

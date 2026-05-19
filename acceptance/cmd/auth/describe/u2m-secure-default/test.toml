@@ -1,0 +1,11 @@
+Ignore = [
+    "home"
+]
+
+# Normalize the platform-specific keyring lookup error. macOS returns
+# cache.ErrNotFound for a clean miss; Linux without D-Bus returns a
+# backend-specific error. The point of this test is the resolved storage
+# mode, not the lookup outcome.
+[[Repls]]
+Old = 'Unable to authenticate: error getting token: .*'
+New = 'Unable to authenticate: error getting token: [KEYRING_LOOKUP_ERROR]'

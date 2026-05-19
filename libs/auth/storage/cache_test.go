@@ -41,15 +41,15 @@ func hermetic(t *testing.T) {
 	t.Setenv("DATABRICKS_CONFIG_FILE", filepath.Join(t.TempDir(), "databrickscfg"))
 }
 
-func TestResolveCache_DefaultsToPlaintextFile(t *testing.T) {
+func TestResolveCache_DefaultsToSecureKeyring(t *testing.T) {
 	hermetic(t)
 	ctx := t.Context()
 
 	got, mode, err := resolveCacheWith(ctx, "", fakeFactories(t))
 
 	require.NoError(t, err)
-	assert.Equal(t, StorageModePlaintext, mode)
-	assert.Equal(t, "file", got.(stubCache).source)
+	assert.Equal(t, StorageModeSecure, mode)
+	assert.Equal(t, "keyring", got.(stubCache).source)
 }
 
 func TestResolveCache_OverrideSecureUsesKeyring(t *testing.T) {
