@@ -1,6 +1,7 @@
 package aitools
 
 import (
+	"errors"
 	"fmt"
 	"maps"
 	"slices"
@@ -26,12 +27,19 @@ func NewListCmd() *cobra.Command {
 		Short: "List installed AI tools components",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// Reject the legacy --project --global combination here so it
+			// doesn't silently degrade to --scope=both. Users who want both
+			// scopes should use --scope=both (the new explicit spelling).
+			if projectFlag && globalFlag && scopeFlag == "" {
+				return errors.New("cannot use --global and --project together")
+			}
+
 			projectFlag, globalFlag, err := parseScopeFlag(scopeFlag, projectFlag, globalFlag, true)
 			if err != nil {
 				return err
 			}
 
-			// list: empty scope = show both. Both flags set is equivalent.
+			// list: empty scope = show both. --scope=both also lands here.
 			var scope string
 			switch {
 			case projectFlag && !globalFlag:

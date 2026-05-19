@@ -83,7 +83,7 @@ func TestParseScopeFlag(t *testing.T) {
 		{name: "unset", scope: ""},
 		{name: "legacy project only", project: true, wantProj: true},
 		{name: "legacy global only", global: true, wantGlob: true},
-		{name: "legacy both flags together rejected", project: true, global: true, wantErr: "cannot use --global and --project together"},
+		{name: "legacy both passthrough", project: true, global: true, wantProj: true, wantGlob: true},
 		{name: "scope project", scope: "project", wantProj: true},
 		{name: "scope global", scope: "global", wantGlob: true},
 		{name: "scope both allowed", scope: "both", allowBoth: true, wantProj: true, wantGlob: true},
@@ -235,21 +235,21 @@ func TestCrossScopeHint(t *testing.T) {
 			scope:     installer.ScopeProject,
 			verb:      "update",
 			hasGlobal: true,
-			wantHint:  "without --project to update those",
+			wantHint:  "with --scope=global to update those",
 		},
 		{
 			name:      "ProjectMissingHintsGlobalUninstall",
 			scope:     installer.ScopeProject,
 			verb:      "uninstall",
 			hasGlobal: true,
-			wantHint:  "without --project to uninstall those",
+			wantHint:  "with --scope=global to uninstall those",
 		},
 		{
 			name:     "GlobalMissingHintsProject",
 			scope:    installer.ScopeGlobal,
 			verb:     "update",
 			hasProj:  true,
-			wantHint: "without --global to update those",
+			wantHint: "with --scope=project to update those",
 		},
 		{
 			name:  "NeitherInstalledNoHint",
@@ -276,7 +276,7 @@ func TestScopeNotInstalledErrorProjectIncludesPath(t *testing.T) {
 	projectDir := "/some/project/.databricks/aitools/skills"
 	err := scopeNotInstalledError(installer.ScopeProject, "update", projectDir, false, false)
 	assert.Contains(t, err.Error(), "no project-scoped skills found")
-	assert.Contains(t, err.Error(), "install --project")
+	assert.Contains(t, err.Error(), "install --scope=project")
 	assert.Contains(t, err.Error(), "Expected location:")
 	assert.Contains(t, err.Error(), "/some/project/.databricks/aitools/skills/")
 }
@@ -284,7 +284,7 @@ func TestScopeNotInstalledErrorProjectIncludesPath(t *testing.T) {
 func TestScopeNotInstalledErrorGlobal(t *testing.T) {
 	err := scopeNotInstalledError(installer.ScopeGlobal, "update", "/irrelevant", false, false)
 	assert.Contains(t, err.Error(), "no globally-scoped skills installed")
-	assert.Contains(t, err.Error(), "install --global")
+	assert.Contains(t, err.Error(), "install --scope=global")
 }
 
 // --- resolveScopeForUpdate tests ---
@@ -358,7 +358,7 @@ func TestResolveScopeForUpdateProjectFlagNoInstall(t *testing.T) {
 	_, err := resolveScopeForUpdate(ctx, true, false, globalDir, projectDir)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "no project-scoped skills found")
-	assert.Contains(t, err.Error(), "install --project")
+	assert.Contains(t, err.Error(), "install --scope=project")
 	assert.Contains(t, err.Error(), "Expected location:")
 	assert.Contains(t, err.Error(), ".databricks/aitools/skills/")
 }
@@ -402,8 +402,8 @@ func TestResolveScopeForUpdateNoFlagsBothNonInteractive(t *testing.T) {
 	_, err := resolveScopeForUpdate(ctx, false, false, globalDir, projectDir)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "skills are installed in both global and project scopes")
-	assert.Contains(t, err.Error(), "--global")
-	assert.Contains(t, err.Error(), "--project")
+	assert.Contains(t, err.Error(), "--scope=global")
+	assert.Contains(t, err.Error(), "--scope=project")
 }
 
 func TestResolveScopeForUpdateNoFlagsBothInteractive(t *testing.T) {
@@ -476,7 +476,7 @@ func TestResolveScopeForUninstallProjectFlagNoInstall(t *testing.T) {
 	_, err := resolveScopeForUninstall(ctx, true, false, globalDir, projectDir)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "no project-scoped skills found")
-	assert.Contains(t, err.Error(), "install --project")
+	assert.Contains(t, err.Error(), "install --scope=project")
 	assert.Contains(t, err.Error(), "Expected location:")
 }
 
@@ -519,8 +519,8 @@ func TestResolveScopeForUninstallNoFlagsBothNonInteractive(t *testing.T) {
 	_, err := resolveScopeForUninstall(ctx, false, false, globalDir, projectDir)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "skills are installed in both global and project scopes")
-	assert.Contains(t, err.Error(), "--global")
-	assert.Contains(t, err.Error(), "--project")
+	assert.Contains(t, err.Error(), "--scope=global")
+	assert.Contains(t, err.Error(), "--scope=project")
 }
 
 func TestResolveScopeForUninstallNoFlagsBothInteractive(t *testing.T) {
@@ -607,7 +607,7 @@ func TestResolveScopeForUninstallProjectFlagHintsUninstall(t *testing.T) {
 	// Project flag with no project state should hint about global using "uninstall" verb.
 	_, err := resolveScopeForUninstall(ctx, true, false, globalDir, projectDir)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "without --project to uninstall those")
+	assert.Contains(t, err.Error(), "with --scope=global to uninstall those")
 }
 
 func TestResolveScopeForUpdateProjectFlagHintsUpdate(t *testing.T) {
@@ -618,5 +618,5 @@ func TestResolveScopeForUpdateProjectFlagHintsUpdate(t *testing.T) {
 	// Project flag with no project state should hint about global using "update" verb.
 	_, err := resolveScopeForUpdate(ctx, true, false, globalDir, projectDir)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "without --project to update those")
+	assert.Contains(t, err.Error(), "with --scope=global to update those")
 }

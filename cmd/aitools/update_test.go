@@ -38,7 +38,10 @@ func TestUpdateScopeFlag(t *testing.T) {
 		{name: "scope both with no installs falls through to global", args: []string{"--scope", "both"}, wantScopes: []string{installer.ScopeGlobal}},
 		{name: "scope invalid value", args: []string{"--scope", "all"}, wantErr: `invalid --scope "all"`},
 		{name: "scope conflicts with legacy project", args: []string{"--scope", "global", "--project"}, wantErr: "cannot use --scope with --project or --global"},
-		{name: "legacy both flags together rejected", args: []string{"--project", "--global"}, wantErr: "cannot use --global and --project together"},
+		// Legacy `--project --global` is the supported "update both scopes" path
+		// (preserved until the deprecated flags are removed). Without state, it
+		// falls through to global per TestResolveScopeForUpdateBothFlagsNeitherInstalled.
+		{name: "legacy both flags fall through to global without state", args: []string{"--project", "--global"}, wantScopes: []string{installer.ScopeGlobal}},
 	}
 
 	for _, tt := range tests {

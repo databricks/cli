@@ -37,7 +37,7 @@ func TestUninstallScopeFlag(t *testing.T) {
 		{name: "scope both rejected", args: []string{"--scope", "both"}, wantErr: "--scope=both is not supported"},
 		{name: "scope invalid value", args: []string{"--scope", "all"}, wantErr: `invalid --scope "all"`},
 		{name: "scope conflicts with legacy project", args: []string{"--scope", "global", "--project"}, wantErr: "cannot use --scope with --project or --global"},
-		{name: "legacy both flags together rejected", args: []string{"--project", "--global"}, wantErr: "cannot use --global and --project together"},
+		{name: "legacy both flags together rejected", args: []string{"--project", "--global"}, wantErr: "cannot uninstall both scopes at once"},
 	}
 
 	for _, tt := range tests {
