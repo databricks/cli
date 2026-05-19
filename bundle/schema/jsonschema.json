@@ -1384,6 +1384,9 @@
                       "parent": {
                         "$ref": "#/$defs/string"
                       },
+                      "replace_existing": {
+                        "$ref": "#/$defs/bool"
+                      },
                       "source_branch": {
                         "$ref": "#/$defs/string"
                       },
@@ -1473,6 +1476,9 @@
                       },
                       "parent": {
                         "$ref": "#/$defs/string"
+                      },
+                      "replace_existing": {
+                        "$ref": "#/$defs/bool"
                       },
                       "settings": {
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.EndpointSettings"

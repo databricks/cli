@@ -15,7 +15,7 @@ func (c postgresBranchConverter) Convert(ctx context.Context, key string, vin dy
 	// The bundle config has flattened BranchSpec fields at the top level.
 	// Terraform expects them nested in a "spec" block.
 	specFields := specFieldNames(schema.ResourcePostgresBranchSpec{})
-	topLevelFields := []string{"branch_id", "parent"}
+	topLevelFields := []string{"branch_id", "parent", "replace_existing"}
 
 	// Build the spec block from the flattened fields
 	specMap := make(map[string]dyn.Value)

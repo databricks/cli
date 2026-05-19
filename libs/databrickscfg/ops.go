@@ -38,6 +38,28 @@ func GetConfiguredDefaultProfile(ctx context.Context, configFilePath string) (st
 	return GetConfiguredDefaultProfileFrom(configFile), nil
 }
 
+// ResolveDefaultProfile returns the [__settings__].default_profile value from
+// the config file pointed to by DATABRICKS_CONFIG_FILE (or ~/.databrickscfg
+// when unset). Returns "" with no error when the file is missing, the setting
+// is absent, or parsing fails (a warning is logged on parse error).
+//
+// Callers must respect their own higher-priority sources (an explicit
+// --profile flag or DATABRICKS_CONFIG_PROFILE env var) before consulting
+// this helper. default_profile is a CLI-level fallback; the SDK does not
+// know about it.
+func ResolveDefaultProfile(ctx context.Context) string {
+	configFilePath := env.Get(ctx, "DATABRICKS_CONFIG_FILE")
+	resolved, err := GetConfiguredDefaultProfile(ctx, configFilePath)
+	if err != nil {
+		log.Warnf(ctx, "Failed to load default profile: %v", err)
+		return ""
+	}
+	if resolved != "" {
+		log.Debugf(ctx, "profile %q resolved from [__settings__].default_profile", resolved)
+	}
+	return resolved
+}
+
 // GetConfiguredDefaultProfileFrom returns the explicit default profile from
 // [__settings__].default_profile, or "" when it is not set or when the value
 // is the reserved __settings__ section name itself.
