@@ -487,6 +487,14 @@ resources:
         reason: immutable
       - field: branch_id
         reason: immutable
+    ignore_remote_changes:
+      # replace_existing is a create-time query parameter; not returned by GET.
+      - field: replace_existing
+        reason: input_only
+    ignore_local_changes:
+      # replace_existing only takes effect on create; toggling it later is a no-op.
+      - field: replace_existing
+        reason: "input_only; cannot be updated after create"
 
   postgres_endpoints:
     recreate_on_changes:
@@ -495,6 +503,14 @@ resources:
         reason: immutable
       - field: endpoint_id
         reason: immutable
+    ignore_remote_changes:
+      # replace_existing is a create-time query parameter; not returned by GET.
+      - field: replace_existing
+        reason: input_only
+    ignore_local_changes:
+      # replace_existing only takes effect on create; toggling it later is a no-op.
+      - field: replace_existing
+        reason: "input_only; cannot be updated after create"
 
   vector_search_endpoints:
     recreate_on_changes:

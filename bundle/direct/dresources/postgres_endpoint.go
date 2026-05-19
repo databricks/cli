@@ -58,16 +58,22 @@ func (*ResourcePostgresEndpoint) New(client *databricks.WorkspaceClient) *Resour
 
 func (*ResourcePostgresEndpoint) PrepareState(input *resources.PostgresEndpoint) *PostgresEndpointState {
 	return &PostgresEndpointState{
-		EndpointId:   input.EndpointId,
-		Parent:       input.Parent,
-		EndpointSpec: input.EndpointSpec,
+		EndpointId:      input.EndpointId,
+		Parent:          input.Parent,
+		ReplaceExisting: input.ReplaceExisting,
+		EndpointSpec:    input.EndpointSpec,
 	}
 }
 
 func (*ResourcePostgresEndpoint) RemapState(remote *PostgresEndpointRemote) *PostgresEndpointState {
 	return &PostgresEndpointState{
-		EndpointId:   remote.EndpointId,
-		Parent:       remote.Parent,
+		EndpointId: remote.EndpointId,
+		Parent:     remote.Parent,
+
+		// replace_existing is a create-time-only flag; the GET API never returns
+		// it, so RemapState leaves it false.
+		ReplaceExisting: false,
+
 		EndpointSpec: remote.EndpointSpec,
 	}
 }
@@ -150,7 +156,7 @@ func (r *ResourcePostgresEndpoint) DoCreate(ctx context.Context, config *Postgre
 			UpdateTime:      nil,
 			ForceSendFields: nil,
 		},
-		ReplaceExisting: false,
+		ReplaceExisting: config.ReplaceExisting,
 		ForceSendFields: nil,
 	})
 	if err != nil {

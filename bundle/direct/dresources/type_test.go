@@ -43,6 +43,12 @@ var knownMissingInRemoteType = map[string][]string{
 		"scope",
 		"scope_backend_type",
 	},
+	"postgres_branches": {
+		"replace_existing",
+	},
+	"postgres_endpoints": {
+		"replace_existing",
+	},
 	"vector_search_endpoints": {
 		"target_qps",
 		"usage_policy_id",
