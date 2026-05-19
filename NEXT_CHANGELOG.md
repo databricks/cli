@@ -1,8 +1,10 @@
 # NEXT CHANGELOG
 
-## Release v0.300.0
+## Release v1.0.0
 
 ### Notable Changes
+
+* The Databricks CLI is now generally available. v1.0.0 is the first major release. From this version on, the CLI follows semantic versioning: breaking changes will only ship in a new major version. The 0.299.x line continues to receive security-critical patches through June 2027; see SECURITY.md for the support policy.
 
 ### CLI
 
