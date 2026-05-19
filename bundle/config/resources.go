@@ -36,6 +36,7 @@ type Resources struct {
 	PostgresBranches      map[string]*resources.PostgresBranch       `json:"postgres_branches,omitempty"`
 	PostgresEndpoints     map[string]*resources.PostgresEndpoint     `json:"postgres_endpoints,omitempty"`
 	PostgresDatabases     map[string]*resources.PostgresDatabase     `json:"postgres_databases,omitempty"`
+	PostgresRoles         map[string]*resources.PostgresRole         `json:"postgres_roles,omitempty"`
 	VectorSearchEndpoints map[string]*resources.VectorSearchEndpoint `json:"vector_search_endpoints,omitempty"`
 }
 
@@ -114,6 +115,7 @@ func (r *Resources) AllResources() []ResourceGroup {
 		collectResourceMap(descriptions["postgres_branches"], r.PostgresBranches),
 		collectResourceMap(descriptions["postgres_endpoints"], r.PostgresEndpoints),
 		collectResourceMap(descriptions["postgres_databases"], r.PostgresDatabases),
+		collectResourceMap(descriptions["postgres_roles"], r.PostgresRoles),
 		collectResourceMap(descriptions["vector_search_endpoints"], r.VectorSearchEndpoints),
 	}
 }
@@ -170,6 +172,7 @@ func SupportedResources() map[string]resources.ResourceDescription {
 		"postgres_branches":       (&resources.PostgresBranch{}).ResourceDescription(),
 		"postgres_endpoints":      (&resources.PostgresEndpoint{}).ResourceDescription(),
 		"postgres_databases":      (&resources.PostgresDatabase{}).ResourceDescription(),
+		"postgres_roles":          (&resources.PostgresRole{}).ResourceDescription(),
 		"vector_search_endpoints": (&resources.VectorSearchEndpoint{}).ResourceDescription(),
 	}
 }

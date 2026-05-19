@@ -11,3 +11,5 @@ postgres_databases: postgres.DatabaseDatabaseSpec
 postgres_endpoints: postgres.EndpointSpec
 
 postgres_projects: postgres.ProjectSpec
+
+postgres_roles: postgres.RoleRoleSpec

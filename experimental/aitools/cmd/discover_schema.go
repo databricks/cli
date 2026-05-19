@@ -10,6 +10,7 @@ import (
 	"slices"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"syscall"
 
 	"github.com/databricks/cli/cmd/root"
@@ -161,47 +162,20 @@ CancelExecution before the command exits.`,
 
 			gate := newSQLGate(concurrency)
 
-			results := make([]string, len(args))
-			g := new(errgroup.Group)
-			for i, table := range args {
-				g.Go(func() error {
-					result, err := discoverTable(pollCtx, gate, w, warehouseID, table)
-					if err != nil {
-						results[i] = fmt.Sprintf("Error discovering %s: %v", table, err)
-					} else {
-						results[i] = result
-					}
-					// A failure on one table shouldn't abort the others.
-					return nil
-				})
-			}
-			_ = g.Wait()
+			output, anyFailed := runDiscoverSchemas(pollCtx, gate, w, warehouseID, args)
 
 			if pollCtx.Err() != nil {
 				cancelDiscoverInFlight(ctx, w.StatementExecution, gate.trackedIDs())
 				return root.ErrAlreadyPrinted
 			}
 
-			// format output with dividers for multiple tables
-			var output string
-			if len(results) == 1 {
-				output = results[0]
-			} else {
-				divider := strings.Repeat("-", 70)
-				var sb strings.Builder
-				for i, result := range results {
-					if i > 0 {
-						sb.WriteByte('\n')
-						sb.WriteString(divider)
-						sb.WriteByte('\n')
-					}
-					fmt.Fprintf(&sb, "TABLE: %s\n%s\n", args[i], divider)
-					sb.WriteString(result)
-				}
-				output = sb.String()
-			}
-
 			cmdio.LogString(ctx, output)
+			if anyFailed {
+				// Per-table errors are already in `output`; ErrAlreadyPrinted
+				// gives a non-zero exit without re-printing them so scripts
+				// and CI can detect failure via the exit code.
+				return root.ErrAlreadyPrinted
+			}
 			return nil
 		},
 	}
@@ -209,6 +183,46 @@ CancelExecution before the command exits.`,
 	cmd.Flags().IntVar(&concurrency, "concurrency", defaultBatchConcurrency, "Maximum SQL statements in flight at once across all tables and probes")
 
 	return cmd
+}
+
+// runDiscoverSchemas discovers schemas for tables concurrently and returns the
+// rendered output. The bool is true if any table failed; per-table errors are
+// inlined into the output so one bad table doesn't abort the others.
+func runDiscoverSchemas(ctx context.Context, gate *sqlGate, w *databricks.WorkspaceClient, warehouseID string, tables []string) (string, bool) {
+	results := make([]string, len(tables))
+	var anyFailed atomic.Bool
+	g := new(errgroup.Group)
+	for i, table := range tables {
+		g.Go(func() error {
+			result, err := discoverTable(ctx, gate, w, warehouseID, table)
+			if err != nil {
+				results[i] = fmt.Sprintf("Error discovering %s: %v", table, err)
+				anyFailed.Store(true)
+			} else {
+				results[i] = result
+			}
+			// A failure on one table shouldn't abort the others.
+			return nil
+		})
+	}
+	_ = g.Wait()
+
+	if len(tables) == 1 {
+		return results[0], anyFailed.Load()
+	}
+
+	divider := strings.Repeat("-", 70)
+	var sb strings.Builder
+	for i, result := range results {
+		if i > 0 {
+			sb.WriteByte('\n')
+			sb.WriteString(divider)
+			sb.WriteByte('\n')
+		}
+		fmt.Fprintf(&sb, "TABLE: %s\n%s\n", tables[i], divider)
+		sb.WriteString(result)
+	}
+	return sb.String(), anyFailed.Load()
 }
 
 // cancelDiscoverInFlight sends CancelExecution for every recorded statement_id.

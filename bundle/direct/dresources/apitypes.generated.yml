@@ -34,6 +34,8 @@ postgres_endpoints: postgres.EndpointSpec
 
 postgres_projects: postgres.ProjectStatus
 
+postgres_roles: postgres.RoleRoleStatus
+
 quality_monitors: catalog.CreateMonitor
 
 registered_models: catalog.RegisteredModelInfo
