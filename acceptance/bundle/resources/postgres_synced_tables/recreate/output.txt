@@ -1,3 +1,7 @@
+Creating pipeline storage schema: main.pipeline_storage_[UNIQUE_NAME]
+{
+  "full_name": "main.pipeline_storage_[UNIQUE_NAME]"
+}
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/recreate-postgres-synced-table-[UNIQUE_NAME]/default/files...
@@ -8,7 +12,8 @@ Deployment complete!
 >>> [CLI] bundle plan
 recreate postgres_synced_tables.my_table
 
-Plan: 1 to add, 0 to change, 1 to delete, 0 unchanged
+Plan: 1 to add, 0 to change, 1 to delete, 2 unchanged
+contains error: 'Plan: 1 to add, 0 to change, 1 to delete, 0 unchanged' not found in the output.
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/recreate-postgres-synced-table-[UNIQUE_NAME]/default/files...
@@ -18,9 +23,16 @@ Deployment complete!
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
+  delete resources.postgres_catalogs.my_catalog
+  delete resources.postgres_projects.my_project
   delete resources.postgres_synced_tables.my_table
+
+This action will result in the deletion of the following Lakebase projects along with
+all their branches, databases, and endpoints. All data stored in them will be permanently lost:
+  delete resources.postgres_projects.my_project
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/recreate-postgres-synced-table-[UNIQUE_NAME]/default
 
 Deleting files...
 Destroy complete!
+Cleaning up pipeline storage schema

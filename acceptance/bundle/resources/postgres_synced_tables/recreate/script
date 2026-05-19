@@ -1,15 +1,23 @@
+# UC schema for the pipeline's internal state.
+echo "Creating pipeline storage schema: main.pipeline_storage_$UNIQUE_NAME"
+$CLI schemas create pipeline_storage_$UNIQUE_NAME main -o json | jq '{full_name}'
+
 cleanup() {
     trace $CLI bundle destroy --auto-approve
+    echo "Cleaning up pipeline storage schema"
+    $CLI schemas delete main.pipeline_storage_$UNIQUE_NAME || true
     rm -f out.requests.txt
 }
 trap cleanup EXIT
 
-export POLICY=SNAPSHOT
+export TIMESERIES_KEY=tpep_pickup_datetime
 envsubst < databricks.yml.tmpl > databricks.yml
 trace $CLI bundle deploy
 
 # Toggle a recreate-on-change field; plan must show delete + create.
-export POLICY=TRIGGERED
+# We toggle timeseries_key (not scheduling_policy) so we don't need CDF
+# on the source — samples.nyctaxi.trips is read-only.
+export TIMESERIES_KEY=tpep_dropoff_datetime
 envsubst < databricks.yml.tmpl > databricks.yml
 trace $CLI bundle plan | contains.py "Plan: 1 to add, 0 to change, 1 to delete, 0 unchanged"
 

@@ -1,7 +1,15 @@
 envsubst < databricks.yml.tmpl > databricks.yml
 
+# Create a UC schema for the pipeline's internal state. The synced-table
+# pipeline writes its event log and checkpoints under (storage_catalog,
+# storage_schema), and the schema must already exist.
+echo "Creating pipeline storage schema: main.pipeline_storage_$UNIQUE_NAME"
+$CLI schemas create pipeline_storage_$UNIQUE_NAME main -o json | jq '{full_name}'
+
 cleanup() {
     trace $CLI bundle destroy --auto-approve
+    echo "Cleaning up pipeline storage schema"
+    $CLI schemas delete main.pipeline_storage_$UNIQUE_NAME || true
     rm -f out.requests.txt
 }
 trap cleanup EXIT
@@ -13,8 +21,10 @@ trace $CLI bundle summary
 rm -f out.requests.txt
 trace $CLI bundle deploy
 
-trace $CLI postgres get-synced-table "synced_tables/main.public.trips_${UNIQUE_NAME}"
+# Hide volatile fields so cloud and local match.
+trace $CLI postgres get-synced-table "synced_tables/lakebase_test_${UNIQUE_NAME}.public.trips_synced" | jq 'del(.create_time, .update_time, .uid, .status.pipeline_id, .status.message)'
 
 trace $CLI bundle summary
 
+# Filter requests to only show postgres operations (exclude workspace, telemetry, and operation polling).
 trace print_requests.py --keep --get '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.$DATABRICKS_BUNDLE_ENGINE.json

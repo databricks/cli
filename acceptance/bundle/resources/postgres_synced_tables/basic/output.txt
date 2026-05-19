@@ -1,3 +1,7 @@
+Creating pipeline storage schema: main.pipeline_storage_[UNIQUE_NAME]
+{
+  "full_name": "main.pipeline_storage_[UNIQUE_NAME]"
+}
 
 >>> [CLI] bundle validate
 Name: deploy-postgres-synced-table-[UNIQUE_NAME]
@@ -15,10 +19,18 @@ Workspace:
   User: [USERNAME]
   Path: /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-synced-table-[UNIQUE_NAME]/default
 Resources:
+  Postgres catalogs:
+    my_catalog:
+      Name: lakebase_test_[UNIQUE_NAME]
+      URL:  [DATABRICKS_URL]/explore/data/lakebase_test_[UNIQUE_NAME]
+  Postgres projects:
+    my_project:
+      Name: Test Project for Synced Table
+      URL:  (not deployed)
   Postgres synced tables:
     my_table:
-      Name: main.public.trips_[UNIQUE_NAME]
-      URL:  [DATABRICKS_URL]/explore/data/main.public.trips_[UNIQUE_NAME]
+      Name: ${resources.postgres_catalogs.my_catalog.catalog_id}.public.trips_synced
+      URL:  [DATABRICKS_URL]/explore/data/$%7Bresources.postgres_catalogs.my_catalog.catalog_id%7D.public.trips_synced
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-synced-table-[UNIQUE_NAME]/default/files...
@@ -26,15 +38,13 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> [CLI] postgres get-synced-table synced_tables/main.public.trips_[UNIQUE_NAME]
+>>> [CLI] postgres get-synced-table synced_tables/lakebase_test_[UNIQUE_NAME].public.trips_synced
 {
-  "create_time": "[TIMESTAMP]",
-  "name": "synced_tables/main.public.trips_[UNIQUE_NAME]",
+  "name": "synced_tables/lakebase_test_[UNIQUE_NAME].public.trips_synced",
   "status": {
     "detailed_state": "SYNCED_TABLE_ONLINE",
     "unity_catalog_provisioning_state": "ACTIVE"
-  },
-  "uid": "[UUID]"
+  }
 }
 
 >>> [CLI] bundle summary
@@ -44,18 +54,33 @@ Workspace:
   User: [USERNAME]
   Path: /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-synced-table-[UNIQUE_NAME]/default
 Resources:
+  Postgres catalogs:
+    my_catalog:
+      Name: lakebase_test_[UNIQUE_NAME]
+      URL:  [DATABRICKS_URL]/explore/data/lakebase_test_[UNIQUE_NAME]
+  Postgres projects:
+    my_project:
+      Name: Test Project for Synced Table
+      URL:  (not deployed)
   Postgres synced tables:
     my_table:
-      Name: main.public.trips_[UNIQUE_NAME]
-      URL:  [DATABRICKS_URL]/explore/data/main.public.trips_[UNIQUE_NAME]
+      Name: ${resources.postgres_catalogs.my_catalog.catalog_id}.public.trips_synced
+      URL:  [DATABRICKS_URL]/explore/data/$%7Bresources.postgres_catalogs.my_catalog.catalog_id%7D.public.trips_synced
 
 >>> print_requests.py --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
+  delete resources.postgres_catalogs.my_catalog
+  delete resources.postgres_projects.my_project
   delete resources.postgres_synced_tables.my_table
+
+This action will result in the deletion of the following Lakebase projects along with
+all their branches, databases, and endpoints. All data stored in them will be permanently lost:
+  delete resources.postgres_projects.my_project
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-synced-table-[UNIQUE_NAME]/default
 
 Deleting files...
 Destroy complete!
+Cleaning up pipeline storage schema
