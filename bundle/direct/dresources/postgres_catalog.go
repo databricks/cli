@@ -5,8 +5,35 @@ import (
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go"
+	sdktime "github.com/databricks/databricks-sdk-go/common/types/time"
+	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/postgres"
 )
+
+// PostgresCatalogRemote is the return type for DoRead. It embeds CatalogCatalogSpec so
+// that all paths in StateType are valid paths in RemoteType, enabling drift detection
+// for spec fields once the backend echoes spec on GET.
+type PostgresCatalogRemote struct {
+	postgres.CatalogCatalogSpec
+
+	CatalogId string `json:"catalog_id,omitempty"`
+
+	Name       string                         `json:"name,omitempty"`
+	Status     *postgres.CatalogCatalogStatus `json:"status,omitempty"`
+	Uid        string                         `json:"uid,omitempty"`
+	CreateTime *sdktime.Time                  `json:"create_time,omitempty"`
+	UpdateTime *sdktime.Time                  `json:"update_time,omitempty"`
+}
+
+// Custom marshaler needed because embedded CatalogCatalogSpec has its own MarshalJSON
+// which would otherwise take over and ignore the additional fields.
+func (s *PostgresCatalogRemote) UnmarshalJSON(b []byte) error {
+	return marshal.Unmarshal(b, s)
+}
+
+func (s PostgresCatalogRemote) MarshalJSON() ([]byte, error) {
+	return marshal.Marshal(s)
+}
 
 type ResourcePostgresCatalog struct {
 	client *databricks.WorkspaceClient
@@ -25,35 +52,50 @@ func (*ResourcePostgresCatalog) PrepareState(input *resources.PostgresCatalog) *
 	}
 }
 
-func (*ResourcePostgresCatalog) RemapState(remote *postgres.Catalog) *PostgresCatalogState {
-	// Status.CatalogId is the short identifier and matches the user-supplied
-	// config. Prefer it over parsing remote.Name — semantic contract from the
-	// API rather than string manipulation on the hierarchical path.
-	//
-	// GET does not return the spec today (only status). Return an empty spec
-	// and rely on the spec:input_only classifications generated from the
-	// OpenAPI schema to suppress phantom drift until the backend starts
-	// echoing spec values on GET.
-	var catalogId string
-	if remote.Status != nil {
-		catalogId = remote.Status.CatalogId
-	}
+func (*ResourcePostgresCatalog) RemapState(remote *PostgresCatalogRemote) *PostgresCatalogState {
 	return &PostgresCatalogState{
-		CatalogId: catalogId,
-		CatalogCatalogSpec: postgres.CatalogCatalogSpec{
-			Branch:                  "",
-			CreateDatabaseIfMissing: false,
-			PostgresDatabase:        "",
-			ForceSendFields:         nil,
-		},
+		CatalogId:          remote.CatalogId,
+		CatalogCatalogSpec: remote.CatalogCatalogSpec,
 	}
 }
 
-func (r *ResourcePostgresCatalog) DoRead(ctx context.Context, id string) (*postgres.Catalog, error) {
-	return r.client.Postgres.GetCatalog(ctx, postgres.GetCatalogRequest{Name: id})
+// makePostgresCatalogRemote converts the SDK Catalog into the embedded remote shape.
+// GET does not echo spec today (only status is returned); the embedded spec fields
+// stay at their zero values, and resources.yml suppresses phantom drift via
+// ignore_remote_changes with reason spec:input_only.
+//
+// Status.CatalogId is the short identifier and matches the user-supplied config.
+// Prefer it over parsing remote.Name — semantic contract from the API rather than
+// string manipulation on the hierarchical path.
+func makePostgresCatalogRemote(catalog *postgres.Catalog) *PostgresCatalogRemote {
+	var spec postgres.CatalogCatalogSpec
+	if catalog.Spec != nil {
+		spec = *catalog.Spec
+	}
+	var catalogId string
+	if catalog.Status != nil {
+		catalogId = catalog.Status.CatalogId
+	}
+	return &PostgresCatalogRemote{
+		CatalogCatalogSpec: spec,
+		CatalogId:          catalogId,
+		Name:               catalog.Name,
+		Status:             catalog.Status,
+		Uid:                catalog.Uid,
+		CreateTime:         catalog.CreateTime,
+		UpdateTime:         catalog.UpdateTime,
+	}
 }
 
-func (r *ResourcePostgresCatalog) DoCreate(ctx context.Context, config *PostgresCatalogState) (string, *postgres.Catalog, error) {
+func (r *ResourcePostgresCatalog) DoRead(ctx context.Context, id string) (*PostgresCatalogRemote, error) {
+	catalog, err := r.client.Postgres.GetCatalog(ctx, postgres.GetCatalogRequest{Name: id})
+	if err != nil {
+		return nil, err
+	}
+	return makePostgresCatalogRemote(catalog), nil
+}
+
+func (r *ResourcePostgresCatalog) DoCreate(ctx context.Context, config *PostgresCatalogState) (string, *PostgresCatalogRemote, error) {
 	waiter, err := r.client.Postgres.CreateCatalog(ctx, postgres.CreateCatalogRequest{
 		CatalogId: config.CatalogId,
 		Catalog: postgres.Catalog{
@@ -76,7 +118,8 @@ func (r *ResourcePostgresCatalog) DoCreate(ctx context.Context, config *Postgres
 	if err != nil {
 		return "", nil, err
 	}
-	return result.Name, result, nil
+	remote := makePostgresCatalogRemote(result)
+	return remote.Name, remote, nil
 }
 
 func (r *ResourcePostgresCatalog) DoDelete(ctx context.Context, id string) error {
