@@ -6,8 +6,36 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
+	sdktime "github.com/databricks/databricks-sdk-go/common/types/time"
+	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/postgres"
 )
+
+// PostgresBranchRemote is the return type for DoRead. It embeds BranchSpec so that
+// all paths in StateType are valid paths in RemoteType, enabling drift detection
+// for spec fields once the backend echoes spec on GET.
+type PostgresBranchRemote struct {
+	postgres.BranchSpec
+
+	BranchId string `json:"branch_id,omitempty"`
+	Parent   string `json:"parent,omitempty"`
+
+	Name       string                 `json:"name,omitempty"`
+	Status     *postgres.BranchStatus `json:"status,omitempty"`
+	Uid        string                 `json:"uid,omitempty"`
+	CreateTime *sdktime.Time          `json:"create_time,omitempty"`
+	UpdateTime *sdktime.Time          `json:"update_time,omitempty"`
+}
+
+// Custom marshaler needed because embedded BranchSpec has its own MarshalJSON
+// which would otherwise take over and ignore the additional fields.
+func (s *PostgresBranchRemote) UnmarshalJSON(b []byte) error {
+	return marshal.Unmarshal(b, s)
+}
+
+func (s PostgresBranchRemote) MarshalJSON() ([]byte, error) {
+	return marshal.Marshal(s)
+}
 
 type ResourcePostgresBranch struct {
 	client *databricks.WorkspaceClient
@@ -27,36 +55,47 @@ func (*ResourcePostgresBranch) PrepareState(input *resources.PostgresBranch) *Po
 	}
 }
 
-func (*ResourcePostgresBranch) RemapState(remote *postgres.Branch) *PostgresBranchState {
-	// Extract branch_id from hierarchical name: "projects/{project_id}/branches/{branch_id}"
-	// TODO: log error when we have access to the context
-	components, _ := ParsePostgresName(remote.Name)
-
+func (*ResourcePostgresBranch) RemapState(remote *PostgresBranchRemote) *PostgresBranchState {
 	return &PostgresBranchState{
-		BranchId: components.BranchID,
-		Parent:   remote.Parent,
-
-		// The read API does not return the spec, only the status.
-		// This means we cannot detect remote drift for spec fields.
-		// Use an empty struct (not nil) so field-level diffing works correctly.
-		BranchSpec: postgres.BranchSpec{
-			ExpireTime:       nil,
-			IsProtected:      false,
-			NoExpiry:         false,
-			SourceBranch:     "",
-			SourceBranchLsn:  "",
-			SourceBranchTime: nil,
-			Ttl:              nil,
-			ForceSendFields:  nil,
-		},
+		BranchId:   remote.BranchId,
+		Parent:     remote.Parent,
+		BranchSpec: remote.BranchSpec,
 	}
 }
 
-func (r *ResourcePostgresBranch) DoRead(ctx context.Context, id string) (*postgres.Branch, error) {
-	return r.client.Postgres.GetBranch(ctx, postgres.GetBranchRequest{Name: id})
+// makePostgresBranchRemote converts the SDK Branch into the embedded remote shape.
+// GET does not echo spec today (only status is returned); the embedded spec fields
+// stay at their zero values, and resources.yml suppresses phantom drift via
+// ignore_remote_changes with reason spec:input_only.
+func makePostgresBranchRemote(branch *postgres.Branch) *PostgresBranchRemote {
+	// Extract branch_id from hierarchical name: "projects/{project_id}/branches/{branch_id}"
+	// TODO: log error when we have access to the context
+	components, _ := ParsePostgresName(branch.Name)
+	var spec postgres.BranchSpec
+	if branch.Spec != nil {
+		spec = *branch.Spec
+	}
+	return &PostgresBranchRemote{
+		BranchSpec: spec,
+		BranchId:   components.BranchID,
+		Parent:     branch.Parent,
+		Name:       branch.Name,
+		Status:     branch.Status,
+		Uid:        branch.Uid,
+		CreateTime: branch.CreateTime,
+		UpdateTime: branch.UpdateTime,
+	}
 }
 
-func (r *ResourcePostgresBranch) DoCreate(ctx context.Context, config *PostgresBranchState) (string, *postgres.Branch, error) {
+func (r *ResourcePostgresBranch) DoRead(ctx context.Context, id string) (*PostgresBranchRemote, error) {
+	branch, err := r.client.Postgres.GetBranch(ctx, postgres.GetBranchRequest{Name: id})
+	if err != nil {
+		return nil, err
+	}
+	return makePostgresBranchRemote(branch), nil
+}
+
+func (r *ResourcePostgresBranch) DoCreate(ctx context.Context, config *PostgresBranchState) (string, *PostgresBranchRemote, error) {
 	waiter, err := r.client.Postgres.CreateBranch(ctx, postgres.CreateBranchRequest{
 		BranchId: config.BranchId,
 		Parent:   config.Parent,
@@ -85,10 +124,11 @@ func (r *ResourcePostgresBranch) DoCreate(ctx context.Context, config *PostgresB
 		return "", nil, err
 	}
 
-	return result.Name, result, nil
+	remote := makePostgresBranchRemote(result)
+	return remote.Name, remote, nil
 }
 
-func (r *ResourcePostgresBranch) DoUpdate(ctx context.Context, id string, config *PostgresBranchState, entry *PlanEntry) (*postgres.Branch, error) {
+func (r *ResourcePostgresBranch) DoUpdate(ctx context.Context, id string, config *PostgresBranchState, entry *PlanEntry) (*PostgresBranchRemote, error) {
 	// Build update mask from fields that have action="update" in the changes map.
 	// This excludes immutable fields and fields that haven't changed.
 	// Prefix with "spec." because the API expects paths relative to the Branch object,
@@ -119,7 +159,10 @@ func (r *ResourcePostgresBranch) DoUpdate(ctx context.Context, id string, config
 
 	// Wait for the update to complete
 	result, err := waiter.Wait(ctx)
-	return result, err
+	if err != nil {
+		return nil, err
+	}
+	return makePostgresBranchRemote(result), nil
 }
 
 func (r *ResourcePostgresBranch) DoDelete(ctx context.Context, id string) error {
