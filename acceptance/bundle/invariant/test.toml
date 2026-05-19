@@ -44,6 +44,7 @@ EnvMatrix.INPUT_CONFIG = [
     "pipeline.yml.tmpl",
     "pipeline_config_dots.yml.tmpl",
     "postgres_branch.yml.tmpl",
+    "postgres_database.yml.tmpl",
     "postgres_endpoint.yml.tmpl",
     "postgres_project.yml.tmpl",
     "registered_model.yml.tmpl",
@@ -66,6 +67,7 @@ no_alert_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=alert.yml.tmpl"]
 # Postgres resources only work on AWS
 no_postgres_project_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=postgres_project.yml.tmpl"]
 no_postgres_branch_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=postgres_branch.yml.tmpl"]
+no_postgres_database_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=postgres_database.yml.tmpl"]
 no_postgres_endpoint_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=postgres_endpoint.yml.tmpl"]
 
 # External locations require actual storage credentials with cloud IAM setup
