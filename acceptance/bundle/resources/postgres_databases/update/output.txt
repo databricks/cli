@@ -79,6 +79,7 @@ resources:
       database_id: my-database
       parent: ${resources.postgres_branches.main.id}
       postgres_database: renamed_db_name
+      role: ${resources.postgres_branches.main.id}/roles/${workspace.current_user.domain_friendly_name}
 
 >>> [CLI] bundle plan
 update postgres_databases.my_database

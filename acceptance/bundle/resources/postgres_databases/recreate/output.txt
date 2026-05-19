@@ -25,6 +25,7 @@ resources:
       parent: ${resources.postgres_branches.main.id}
       database_id: test-database-[UNIQUE_NAME]
       postgres_database: app_db
+      role: ${resources.postgres_branches.main.id}/roles/${workspace.current_user.domain_friendly_name}
 
 >>> [CLI] bundle plan
 create postgres_branches.main
@@ -57,7 +58,8 @@ Deployment complete!
       "no_expiry": true
   "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches",
     "branch_id": "main"
-      "postgres_database": "app_db"
+      "postgres_database": "app_db",
+      "role": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/[USERNAME]"
   "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main/databases",
     "database_id": "test-database-[UNIQUE_NAME]"
 
@@ -87,6 +89,7 @@ resources:
       parent: ${resources.postgres_branches.main.id}
       database_id: test-database-[UNIQUE_NAME]-v2
       postgres_database: app_db
+      role: ${resources.postgres_branches.main.id}/roles/${workspace.current_user.domain_friendly_name}
 
 >>> [CLI] bundle plan
 recreate postgres_databases.my_database
@@ -106,7 +109,8 @@ Deployment complete!
 }
   "body": {
     "spec": {
-      "postgres_database": "app_db"
+      "postgres_database": "app_db",
+      "role": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/[USERNAME]"
     }
   },
   "method": "POST",

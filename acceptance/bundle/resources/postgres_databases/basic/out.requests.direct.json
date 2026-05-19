@@ -32,7 +32,8 @@
   },
   "body": {
     "spec": {
-      "postgres_database": "app_db"
+      "postgres_database": "app_db",
+      "role": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/[USERNAME]"
     }
   }
 }

@@ -23,3 +23,6 @@ resources:
       parent: ${resources.postgres_branches.main.id}
       database_id: my-database
       postgres_database: app_db
+      # The live API requires `role`. `domain_friendly_name` kebab-cases the user's
+      # email local part, which matches the auto-created project-owner role naming.
+      role: ${resources.postgres_branches.main.id}/roles/${workspace.current_user.domain_friendly_name}

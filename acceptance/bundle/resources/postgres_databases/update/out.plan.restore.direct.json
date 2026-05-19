@@ -10,7 +10,8 @@
     "value": {
       "database_id": "my-database",
       "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
-      "postgres_database": "initial_db_name"
+      "postgres_database": "initial_db_name",
+      "role": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/[USERNAME]"
     }
   },
   "remote_state": {
@@ -28,6 +29,12 @@
       "action": "update",
       "old": "renamed_db_name",
       "new": "initial_db_name"
+    },
+    "role": {
+      "action": "skip",
+      "reason": "spec:input_only",
+      "old": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/[USERNAME]",
+      "new": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/[USERNAME]"
     }
   }
 }

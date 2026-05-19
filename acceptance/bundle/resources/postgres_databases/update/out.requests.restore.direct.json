@@ -26,7 +26,8 @@
   },
   "body": {
     "spec": {
-      "postgres_database": "initial_db_name"
+      "postgres_database": "initial_db_name",
+      "role": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/[USERNAME]"
     }
   }
 }

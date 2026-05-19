@@ -22,6 +22,12 @@
       "reason": "spec:input_only",
       "old": "initial_db_name",
       "new": "initial_db_name"
+    },
+    "role": {
+      "action": "skip",
+      "reason": "spec:input_only",
+      "old": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/[USERNAME]",
+      "new": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/[USERNAME]"
     }
   }
 }
