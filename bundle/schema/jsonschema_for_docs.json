@@ -1967,8 +1967,7 @@
                     "x-since-version": "v0.298.0"
                   },
                   "target_qps": {
-                    "$ref": "#/$defs/int64",
-                    "x-since-version": "v0.299.2"
+                    "$ref": "#/$defs/int64"
                   },
                   "usage_policy_id": {
                     "$ref": "#/$defs/string",
@@ -4316,8 +4315,7 @@
                   "description": "The confidential computing technology for this cluster's instances.\nCurrently only SEV_SNP is supported, and only on N2D instance types.\nWhen not set, no confidential computing is applied.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.ConfidentialComputeType",
                   "x-databricks-preview": "PRIVATE",
-                  "doNotSuggest": true,
-                  "x-since-version": "v0.299.2"
+                  "doNotSuggest": true
                 },
                 "first_on_demand": {
                   "description": "The first `first_on_demand` nodes of the cluster will be placed on on-demand instances.\nThis value should be greater than 0, to make sure the cluster driver node is placed on an\non-demand instance. If this value is greater than or equal to the current cluster size, all\nnodes will be placed on on-demand instances. If this value is less than the current cluster\nsize, `first_on_demand` nodes will be placed on on-demand instances and the remainder will\nbe placed on `availability` instances. Note that this value does not affect\ncluster size and cannot currently be mutated over the lifetime of a cluster.",
@@ -6790,8 +6788,7 @@
               "properties": {
                 "include_confluence_spaces": {
                   "description": "(Optional) Spaces to filter Confluence data on",
-                  "$ref": "#/$defs/slice/string",
-                  "x-since-version": "v0.299.2"
+                  "$ref": "#/$defs/slice/string"
                 }
               },
               "additionalProperties": false
@@ -6815,8 +6812,7 @@
               "properties": {
                 "confluence_options": {
                   "description": "Confluence specific options for ingestion",
-                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.ConfluenceConnectorOptions",
-                  "x-since-version": "v0.299.2"
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.ConfluenceConnectorOptions"
                 },
                 "gdrive_options": {
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.GoogleDriveOptions",
@@ -6833,20 +6829,17 @@
                 },
                 "jira_options": {
                   "description": "Jira specific options for ingestion",
-                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.JiraConnectorOptions",
-                  "x-since-version": "v0.299.2"
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.JiraConnectorOptions"
                 },
                 "meta_ads_options": {
                   "description": "Meta Marketing (Meta Ads) specific options for ingestion",
-                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.MetaMarketingOptions",
-                  "x-since-version": "v0.299.2"
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.MetaMarketingOptions"
                 },
                 "outlook_options": {
                   "description": "Outlook specific options for ingestion",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.OutlookOptions",
                   "x-databricks-preview": "PRIVATE",
-                  "doNotSuggest": true,
-                  "x-since-version": "v0.299.2"
+                  "doNotSuggest": true
                 },
                 "sharepoint_options": {
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.SharepointOptions",
@@ -6858,8 +6851,7 @@
                   "description": "Smartsheet specific options for ingestion",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.SmartsheetOptions",
                   "x-databricks-preview": "PRIVATE",
-                  "doNotSuggest": true,
-                  "x-since-version": "v0.299.2"
+                  "doNotSuggest": true
                 },
                 "tiktok_ads_options": {
                   "description": "TikTok Ads specific options for ingestion",
@@ -6872,8 +6864,7 @@
                   "description": "Zendesk Support specific options for ingestion",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.ZendeskSupportOptions",
                   "x-databricks-preview": "PRIVATE",
-                  "doNotSuggest": true,
-                  "x-since-version": "v0.299.2"
+                  "doNotSuggest": true
                 }
               },
               "additionalProperties": false
@@ -7101,8 +7092,7 @@
               "properties": {
                 "manager_account_id": {
                   "description": "(Required) Manager Account ID (also called MCC Account ID) used to list and access\ncustomer accounts under this manager account. This is required for fetching the list\nof customer accounts during source selection.\nIf the same field is also set in the object-level GoogleAdsOptions (connector_options),\nthe object-level value takes precedence over this top-level config.",
-                  "$ref": "#/$defs/string",
-                  "x-since-version": "v0.299.2"
+                  "$ref": "#/$defs/string"
                 }
               },
               "additionalProperties": false
@@ -7461,8 +7451,7 @@
               "properties": {
                 "include_jira_spaces": {
                   "description": "(Optional) Projects to filter Jira data on",
-                  "$ref": "#/$defs/slice/string",
-                  "x-since-version": "v0.299.2"
+                  "$ref": "#/$defs/slice/string"
                 }
               },
               "additionalProperties": false
@@ -7477,43 +7466,35 @@
               "properties": {
                 "action_attribution_windows": {
                   "description": "(Optional) Action attribution windows for insights reporting (e.g. \"28d_click\", \"1d_view\")",
-                  "$ref": "#/$defs/slice/string",
-                  "x-since-version": "v0.299.2"
+                  "$ref": "#/$defs/slice/string"
                 },
                 "action_breakdowns": {
                   "description": "(Optional) Action breakdowns to configure for data aggregation",
-                  "$ref": "#/$defs/slice/string",
-                  "x-since-version": "v0.299.2"
+                  "$ref": "#/$defs/slice/string"
                 },
                 "action_report_time": {
                   "description": "(Optional) Timing used to report action statistics (impression, conversion, mixed, or lifetime)",
-                  "$ref": "#/$defs/string",
-                  "x-since-version": "v0.299.2"
+                  "$ref": "#/$defs/string"
                 },
                 "breakdowns": {
                   "description": "(Optional) Breakdowns to configure for data aggregation",
-                  "$ref": "#/$defs/slice/string",
-                  "x-since-version": "v0.299.2"
+                  "$ref": "#/$defs/slice/string"
                 },
                 "custom_insights_lookback_window": {
                   "description": "(Optional) Window in days to revisit data during sync to capture\nupdated conversion data from the API.",
-                  "$ref": "#/$defs/int",
-                  "x-since-version": "v0.299.2"
+                  "$ref": "#/$defs/int"
                 },
                 "level": {
                   "description": "(Optional) Granularity of data to pull (account, ad, adset, campaign)",
-                  "$ref": "#/$defs/string",
-                  "x-since-version": "v0.299.2"
+                  "$ref": "#/$defs/string"
                 },
                 "start_date": {
                   "description": "(Optional) Start date in yyyy-MM-dd format (e.g. 2025-01-15). Data added\nafter this date will be ingested",
-                  "$ref": "#/$defs/string",
-                  "x-since-version": "v0.299.2"
+                  "$ref": "#/$defs/string"
                 },
                 "time_increment": {
                   "description": "(Optional) Value in string by which to aggregate statistics (can take all_days, monthly or number of days)",
-                  "$ref": "#/$defs/string",
-                  "x-since-version": "v0.299.2"
+                  "$ref": "#/$defs/string"
                 }
               },
               "additionalProperties": false
@@ -7594,58 +7575,48 @@
               "properties": {
                 "attachment_mode": {
                   "description": "(Optional) Controls which attachments to ingest.\nIf not specified, defaults to ALL.",
-                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.OutlookAttachmentMode",
-                  "x-since-version": "v0.299.2"
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.OutlookAttachmentMode"
                 },
                 "body_format": {
                   "description": "(Optional) Defines how the body_content column is populated.\nTEXT_HTML: Preserves full formatting, links, and styling.\nTEXT_PLAIN: Converts body to plain text. Recommended for AI/RAG pipelines to reduce token usage and noise.",
-                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.OutlookBodyFormat",
-                  "x-since-version": "v0.299.2"
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.OutlookBodyFormat"
                 },
                 "folder_filter": {
                   "description": "Deprecated. Use include_folders instead.",
                   "$ref": "#/$defs/slice/string",
                   "deprecationMessage": "This field is deprecated",
-                  "x-since-version": "v0.299.2",
                   "deprecated": true
                 },
                 "include_folders": {
                   "description": "(Optional) Filter mail folders to include in the sync.\nIf not specified, all folders will be synced.\nExamples: Inbox, Sent Items, Custom_Folder\nFilter semantics: OR between different folders.",
-                  "$ref": "#/$defs/slice/string",
-                  "x-since-version": "v0.299.2"
+                  "$ref": "#/$defs/slice/string"
                 },
                 "include_mailboxes": {
                   "description": "(Optional) List of mailboxes to sync (e.g. mailbox email addresses or identifiers).\nIf not specified, all accessible mailboxes are ingested.\nFilter semantics: OR between different mailboxes.",
-                  "$ref": "#/$defs/slice/string",
-                  "x-since-version": "v0.299.2"
+                  "$ref": "#/$defs/slice/string"
                 },
                 "include_senders": {
                   "description": "(Optional) Filter emails by sender address. Uses exact email match.\nExamples: user@vendor.com, alerts@system.io, noreply@company.com\nIf not specified, emails from all senders will be synced.\nFilter semantics: OR between different senders.",
-                  "$ref": "#/$defs/slice/string",
-                  "x-since-version": "v0.299.2"
+                  "$ref": "#/$defs/slice/string"
                 },
                 "include_subjects": {
                   "description": "(Optional) Filter emails by subject line. Values ending with \"*\" use prefix match (subject starts with\nthe part before \"*\"); otherwise substring match (subject contains the value).\nExamples: \"Invoice\" (substring), \"Re:*\" (prefix), \"Support Ticket\", \"URGENT*\"\nIf not specified, emails with all subjects will be synced.\nFilter semantics: OR between different subjects.",
-                  "$ref": "#/$defs/slice/string",
-                  "x-since-version": "v0.299.2"
+                  "$ref": "#/$defs/slice/string"
                 },
                 "sender_filter": {
                   "description": "Deprecated. Use include_senders instead.",
                   "$ref": "#/$defs/slice/string",
                   "deprecationMessage": "This field is deprecated",
-                  "x-since-version": "v0.299.2",
                   "deprecated": true
                 },
                 "start_date": {
                   "description": "(Optional) Start date for the initial sync in YYYY-MM-DD format.\nFormat: YYYY-MM-DD (e.g., 2024-01-01)\nThis determines the earliest date from which to sync historical data.\nIf not specified, complete history is ingested.",
-                  "$ref": "#/$defs/string",
-                  "x-since-version": "v0.299.2"
+                  "$ref": "#/$defs/string"
                 },
                 "subject_filter": {
                   "description": "Deprecated. Use include_subjects instead.",
                   "$ref": "#/$defs/slice/string",
                   "deprecationMessage": "This field is deprecated",
-                  "x-since-version": "v0.299.2",
                   "deprecated": true
                 }
               },
@@ -8083,8 +8054,7 @@
               "properties": {
                 "enforce_schema": {
                   "description": "(Optional) When true, maps each column to its Smartsheet-declared type (Text/Number/Date/\nCheckbox/etc.). Cells that do not conform to the declared type are set to NULL.\nWhen false, all columns land as STRING. Use false for sheets with irregular data or columns\nthat frequently violate their own declared type.\nIf not specified, defaults to true.",
-                  "$ref": "#/$defs/bool",
-                  "x-since-version": "v0.299.2"
+                  "$ref": "#/$defs/bool"
                 }
               },
               "additionalProperties": false
@@ -8117,8 +8087,7 @@
                 "google_ads_config": {
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.GoogleAdsConfig",
                   "x-databricks-preview": "PRIVATE",
-                  "doNotSuggest": true,
-                  "x-since-version": "v0.299.2"
+                  "doNotSuggest": true
                 }
               },
               "additionalProperties": false
@@ -8312,8 +8281,7 @@
               "properties": {
                 "start_date": {
                   "description": "(Optional) Start date in YYYY-MM-DD format for the initial sync.\nThis determines the earliest date from which to sync historical data.",
-                  "$ref": "#/$defs/string",
-                  "x-since-version": "v0.299.2"
+                  "$ref": "#/$defs/string"
                 }
               },
               "additionalProperties": false
