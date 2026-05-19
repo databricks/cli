@@ -24,12 +24,3 @@ Order = 1000
 Old = '/operations/[A-Za-z0-9+/=-]+'
 New = '/operations/[OPERATION_ID]'
 Order = 2000
-
-# Fake SQL endpoint for local tests. The script runs CREATE TABLE on the source.
-[[Server]]
-Pattern = "POST /api/2.0/sql/statements/"
-Response.Body = '{"status": {"state": "SUCCEEDED"}, "manifest": {"schema": {"columns": []}}}'
-
-[[Server]]
-Pattern = "DELETE /api/2.1/unity-catalog/tables/{full_name}"
-Response.Body = '{"status": "OK"}'

@@ -5,6 +5,12 @@ sync:
   paths: []
 
 resources:
+  schemas:
+    pipeline_storage:
+      name: pipeline_storage_$UNIQUE_NAME
+      catalog_name: main
+      comment: "Pipeline storage for the synced-table test"
+
   postgres_projects:
     my_project:
       project_id: test-pg-proj-$UNIQUE_NAME
@@ -28,5 +34,5 @@ resources:
       branch: ${resources.postgres_projects.my_project.id}/branches/production
       create_database_objects_if_missing: true
       new_pipeline_spec:
-        storage_catalog: main
-        storage_schema: pipeline_storage_$UNIQUE_NAME
+        storage_catalog: ${resources.schemas.pipeline_storage.catalog_name}
+        storage_schema: ${resources.schemas.pipeline_storage.name}

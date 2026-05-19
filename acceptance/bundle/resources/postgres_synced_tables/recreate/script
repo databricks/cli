@@ -1,11 +1,5 @@
-# UC schema for the pipeline's internal state.
-echo "Creating pipeline storage schema: main.pipeline_storage_$UNIQUE_NAME"
-$CLI schemas create pipeline_storage_$UNIQUE_NAME main -o json | jq '{full_name}'
-
 cleanup() {
     trace $CLI bundle destroy --auto-approve
-    echo "Cleaning up pipeline storage schema"
-    $CLI schemas delete main.pipeline_storage_$UNIQUE_NAME || true
     rm -f out.requests.txt
 }
 trap cleanup EXIT

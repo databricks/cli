@@ -1,15 +1,7 @@
 envsubst < databricks.yml.tmpl > databricks.yml
 
-# Create a UC schema for the pipeline's internal state. The synced-table
-# pipeline writes its event log and checkpoints under (storage_catalog,
-# storage_schema), and the schema must already exist.
-echo "Creating pipeline storage schema: main.pipeline_storage_$UNIQUE_NAME"
-$CLI schemas create pipeline_storage_$UNIQUE_NAME main -o json | jq '{full_name}'
-
 cleanup() {
     trace $CLI bundle destroy --auto-approve
-    echo "Cleaning up pipeline storage schema"
-    $CLI schemas delete main.pipeline_storage_$UNIQUE_NAME || true
     rm -f out.requests.txt
 }
 trap cleanup EXIT
