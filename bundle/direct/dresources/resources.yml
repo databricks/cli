@@ -502,7 +502,7 @@ resources:
 
   postgres_databases:
     recreate_on_changes:
-      # parent and database_id are part of the hierarchical name and immutable.
+      # parent and database_id are immutable (part of hierarchical name, not in API spec)
       - field: parent
         reason: immutable
       - field: database_id
