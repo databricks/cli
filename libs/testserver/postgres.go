@@ -624,7 +624,9 @@ func (s *FakeWorkspace) PostgresDatabaseCreate(req Request, parent, databaseID s
 	database.UpdateTime = now
 
 	// Mirror spec onto status; the real API only echoes Status on GET.
-	status := &postgres.DatabaseDatabaseStatus{}
+	status := &postgres.DatabaseDatabaseStatus{
+		DatabaseId: databaseID,
+	}
 	if database.Spec != nil {
 		status.PostgresDatabase = database.Spec.PostgresDatabase
 		status.Role = database.Spec.Role
