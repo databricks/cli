@@ -66,6 +66,7 @@ func (r *ResourcePostgresDatabase) DoCreate(ctx context.Context, config *Postgre
 			UpdateTime:      nil,
 			ForceSendFields: nil,
 		},
+		ForceSendFields: nil,
 	})
 	if err != nil {
 		return "", nil, err
