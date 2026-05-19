@@ -30,9 +30,10 @@ func (*ResourcePostgresEndpoint) New(client *databricks.WorkspaceClient) *Resour
 
 func (*ResourcePostgresEndpoint) PrepareState(input *resources.PostgresEndpoint) *PostgresEndpointState {
 	return &PostgresEndpointState{
-		EndpointId:   input.EndpointId,
-		Parent:       input.Parent,
-		EndpointSpec: input.EndpointSpec,
+		EndpointId:      input.EndpointId,
+		Parent:          input.Parent,
+		ReplaceExisting: input.ReplaceExisting,
+		EndpointSpec:    input.EndpointSpec,
 	}
 }
 
@@ -44,6 +45,10 @@ func (*ResourcePostgresEndpoint) RemapState(remote *postgres.Endpoint) *Postgres
 	return &PostgresEndpointState{
 		EndpointId: components.EndpointID,
 		Parent:     remote.Parent,
+
+		// replace_existing is a create-time-only flag; the GET API never returns
+		// it, so RemapState leaves it false.
+		ReplaceExisting: false,
 
 		// The read API does not return the spec, only the status.
 		// This means we cannot detect remote drift for spec fields.
@@ -112,7 +117,7 @@ func (r *ResourcePostgresEndpoint) DoCreate(ctx context.Context, config *Postgre
 			UpdateTime:      nil,
 			ForceSendFields: nil,
 		},
-		ReplaceExisting: false,
+		ReplaceExisting: config.ReplaceExisting,
 		ForceSendFields: nil,
 	})
 	if err != nil {
