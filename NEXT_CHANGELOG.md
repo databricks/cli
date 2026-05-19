@@ -12,5 +12,5 @@
 * Make sure warnings asking for approval are understood by agents ([#5239](https://github.com/databricks/cli/pull/5239))
 
 ### Dependency updates
-
+* Bump `github.com/databricks/databricks-sdk-go` from v0.132.0 to v0.134.0.
 ### API Changes
