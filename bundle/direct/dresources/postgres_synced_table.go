@@ -2,6 +2,7 @@ package dresources
 
 import (
 	"context"
+	"strings"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go"
@@ -26,12 +27,17 @@ func (*ResourcePostgresSyncedTable) PrepareState(input *resources.PostgresSynced
 }
 
 func (*ResourcePostgresSyncedTable) RemapState(remote *postgres.SyncedTable) *PostgresSyncedTableState {
+	// Unlike postgres_catalogs (which has Status.CatalogId), the synced-table
+	// API doesn't expose the user-facing id as a named field. It only appears
+	// as the trailing component of remote.Name, so we strip the constant
+	// "synced_tables/" prefix.
+	//
+	// GET does not return the spec today (only status). Return an empty spec
+	// and rely on the spec:input_only classifications generated from the
+	// OpenAPI schema to suppress phantom drift until the backend starts
+	// echoing spec values on GET.
 	return &PostgresSyncedTableState{
-		SyncedTableId: TrimSyncedTablesPrefix(remote.Name),
-
-		// GET does not return the spec, only the status. Match the postgres_project /
-		// postgres_branch pattern: return an empty (non-nil) spec so field-level diffing
-		// works correctly and remote drift on spec fields is invisible.
+		SyncedTableId: strings.TrimPrefix(remote.Name, "synced_tables/"),
 		SyncedTableSyncedTableSpec: postgres.SyncedTableSyncedTableSpec{
 			Branch:                         "",
 			CreateDatabaseObjectsIfMissing: false,
