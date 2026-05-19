@@ -23,6 +23,7 @@ var SupportedResources = map[string]any{
 	"postgres_projects":       (*ResourcePostgresProject)(nil),
 	"postgres_branches":       (*ResourcePostgresBranch)(nil),
 	"postgres_endpoints":      (*ResourcePostgresEndpoint)(nil),
+	"postgres_roles":          (*ResourcePostgresRole)(nil),
 	"alerts":                  (*ResourceAlert)(nil),
 	"clusters":                (*ResourceCluster)(nil),
 	"registered_models":       (*ResourceRegisteredModel)(nil),

@@ -508,6 +508,14 @@ resources:
       - field: endpoint_id
         reason: immutable
 
+  postgres_roles:
+    recreate_on_changes:
+      # parent and role_id are immutable (together they form the hierarchical name).
+      - field: parent
+        reason: immutable
+      - field: role_id
+        reason: immutable
+
   vector_search_endpoints:
     recreate_on_changes:
       - field: endpoint_type

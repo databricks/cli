@@ -3,6 +3,7 @@ package testserver
 import (
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 
@@ -587,6 +588,209 @@ func (s *FakeWorkspace) PostgresEndpointDelete(name string) Response {
 	}
 }
 
+// roleIDPattern matches a valid postgres role_id per RFC 1123: lowercase letters,
+// numbers and hyphens; 4-63 chars; must start with a letter.
+var roleIDPattern = regexp.MustCompile(`^[a-z][a-z0-9-]{3,62}$`)
+
+// roleStatusFromSpec mirrors the real Postgres Role server's behavior of echoing
+// the spec onto Status (plus default-deriving fields the user did not specify)
+// while leaving Spec=nil on GET responses.
+func roleStatusFromSpec(spec *postgres.RoleRoleSpec) *postgres.RoleRoleStatus {
+	status := &postgres.RoleRoleStatus{}
+	if spec == nil {
+		return status
+	}
+	status.PostgresRole = spec.PostgresRole
+	status.MembershipRoles = spec.MembershipRoles
+	status.IdentityType = spec.IdentityType
+	if status.IdentityType == "" {
+		// Server returns IDENTITY_TYPE_UNSPECIFIED for plain Postgres roles.
+		status.IdentityType = "IDENTITY_TYPE_UNSPECIFIED"
+	}
+	status.AuthMethod = spec.AuthMethod
+	if status.AuthMethod == "" {
+		// Server derives auth_method from identity_type when the user omits it:
+		// see SDK comment on postgres.RoleRoleSpec.AuthMethod.
+		switch spec.IdentityType {
+		case postgres.RoleIdentityTypeGroup:
+			status.AuthMethod = postgres.RoleAuthMethodNoLogin
+		case postgres.RoleIdentityTypeUser, postgres.RoleIdentityTypeServicePrincipal:
+			status.AuthMethod = postgres.RoleAuthMethodLakebaseOauthV1
+		default:
+			status.AuthMethod = postgres.RoleAuthMethodPgPasswordScramSha256
+		}
+	}
+	// Real server always echoes an attributes block (all-false when unspecified).
+	attrs := &postgres.RoleAttributes{
+		ForceSendFields: []string{"Bypassrls", "Createdb", "Createrole"},
+	}
+	if spec.Attributes != nil {
+		attrs.Bypassrls = spec.Attributes.Bypassrls
+		attrs.Createdb = spec.Attributes.Createdb
+		attrs.Createrole = spec.Attributes.Createrole
+	}
+	status.Attributes = attrs
+	return status
+}
+
+// PostgresRoleCreate creates a new postgres role.
+func (s *FakeWorkspace) PostgresRoleCreate(req Request, parent, roleID string) Response {
+	defer s.LockUnlock()()
+
+	// Check if parent branch exists
+	if _, exists := s.PostgresBranches[parent]; !exists {
+		return postgresNotFoundResponse("branch")
+	}
+
+	// When role_id is empty the real API generates one; mirror that here so the
+	// CLI's "let the server pick" path is exercised by tests.
+	if roleID == "" {
+		roleID = "role-" + nextUUID()[:8]
+	}
+	if !roleIDPattern.MatchString(roleID) {
+		return postgresErrorResponse(400, "INVALID_PARAMETER_VALUE",
+			`Field 'role_id' must be 4-63 characters, start with a lowercase letter, and contain only lowercase letters, numbers and hyphens (RFC 1123).`)
+	}
+
+	var role postgres.Role
+	if len(req.Body) > 0 {
+		if err := json.Unmarshal(req.Body, &role); err != nil {
+			return Response{
+				StatusCode: 400,
+				Body:       fmt.Sprintf("cannot unmarshal request body: %v", err),
+			}
+		}
+	}
+
+	name := fmt.Sprintf("%s/roles/%s", parent, roleID)
+
+	if _, exists := s.PostgresRoles[name]; exists {
+		return postgresErrorResponse(409, "ALREADY_EXISTS", "role with such id already exists")
+	}
+
+	now := nowTime()
+	role.Name = name
+	role.Parent = parent
+	role.CreateTime = now
+	role.UpdateTime = now
+
+	role.Status = roleStatusFromSpec(role.Spec)
+	role.Status.RoleId = roleID
+	role.Spec = nil
+
+	s.PostgresRoles[name] = role
+
+	return Response{
+		Body: s.createOperationLocked(role.Name, role),
+	}
+}
+
+// PostgresRoleGet retrieves a postgres role by name.
+func (s *FakeWorkspace) PostgresRoleGet(name string) Response {
+	defer s.LockUnlock()()
+
+	// Extract project and branch names from role name
+	// Format: projects/{project}/branches/{branch}/roles/{role}
+	parts := strings.Split(name, "/branches/")
+	if len(parts) == 2 {
+		projectName := parts[0]
+		if _, exists := s.PostgresProjects[projectName]; !exists {
+			return postgresNotFoundResponse("project")
+		}
+		branchParts := strings.Split(parts[1], "/roles/")
+		if len(branchParts) == 2 {
+			branchName := projectName + "/branches/" + branchParts[0]
+			if _, exists := s.PostgresBranches[branchName]; !exists {
+				return postgresNotFoundResponse("branch")
+			}
+		}
+	}
+
+	role, exists := s.PostgresRoles[name]
+	if !exists {
+		return postgresNotFoundResponse("role")
+	}
+
+	return Response{
+		Body: role,
+	}
+}
+
+// PostgresRoleList lists all postgres roles for a branch.
+func (s *FakeWorkspace) PostgresRoleList(parent string) Response {
+	defer s.LockUnlock()()
+
+	if _, exists := s.PostgresBranches[parent]; !exists {
+		return postgresNotFoundResponse("branch")
+	}
+
+	var roles []postgres.Role
+	prefix := parent + "/roles/"
+	for name, r := range s.PostgresRoles {
+		if strings.HasPrefix(name, prefix) {
+			roles = append(roles, r)
+		}
+	}
+
+	return Response{
+		Body: postgres.ListRolesResponse{
+			Roles: roles,
+		},
+	}
+}
+
+// PostgresRoleUpdate updates a postgres role.
+func (s *FakeWorkspace) PostgresRoleUpdate(req Request, name string) Response {
+	defer s.LockUnlock()()
+
+	role, exists := s.PostgresRoles[name]
+	if !exists {
+		return postgresNotFoundResponse("role")
+	}
+
+	var updateRole postgres.Role
+	if len(req.Body) > 0 {
+		if err := json.Unmarshal(req.Body, &updateRole); err != nil {
+			return Response{
+				StatusCode: 400,
+				Body:       fmt.Sprintf("cannot unmarshal request body: %v", err),
+			}
+		}
+	}
+
+	if updateRole.Spec != nil {
+		// Preserve role_id which is derived from the resource name.
+		roleID := ""
+		if role.Status != nil {
+			roleID = role.Status.RoleId
+		}
+		role.Status = roleStatusFromSpec(updateRole.Spec)
+		role.Status.RoleId = roleID
+	}
+
+	role.UpdateTime = nowTime()
+	s.PostgresRoles[name] = role
+
+	return Response{
+		Body: s.createOperationLocked(role.Name, role),
+	}
+}
+
+// PostgresRoleDelete deletes a postgres role.
+func (s *FakeWorkspace) PostgresRoleDelete(name string) Response {
+	defer s.LockUnlock()()
+
+	if _, exists := s.PostgresRoles[name]; !exists {
+		return postgresNotFoundResponse("role")
+	}
+
+	delete(s.PostgresRoles, name)
+
+	return Response{
+		Body: s.createOperationLocked(name, nil),
+	}
+}
+
 // PostgresOperationGet retrieves a postgres operation by name.
 func (s *FakeWorkspace) PostgresOperationGet(name string) Response {
 	defer s.LockUnlock()()
@@ -606,11 +810,16 @@ func (s *FakeWorkspace) createOperationLocked(resourceName string, response any)
 	operationID := nextUUID()
 	operationName := resourceName + "/operations/" + operationID
 
-	// Determine resource type from name for metadata @type
+	// Determine resource type from name for metadata @type.
+	// Check the more specific suffixes first since role/endpoint names also
+	// contain "/branches/".
 	resourceType := "Project"
-	if strings.Contains(resourceName, "/endpoints/") {
+	switch {
+	case strings.Contains(resourceName, "/endpoints/"):
 		resourceType = "Endpoint"
-	} else if strings.Contains(resourceName, "/branches/") {
+	case strings.Contains(resourceName, "/roles/"):
+		resourceType = "Role"
+	case strings.Contains(resourceName, "/branches/"):
 		resourceType = "Branch"
 	}
 

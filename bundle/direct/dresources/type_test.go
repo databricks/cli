@@ -75,6 +75,17 @@ var knownMissingInRemoteType = map[string][]string{
 		"pg_version",
 		"project_id",
 	},
+	"postgres_roles": {
+		// RoleRoleSpec fields live under spec.* on the remote Role, not at top level.
+		"attributes",
+		"auth_method",
+		"identity_type",
+		"membership_roles",
+		"postgres_role",
+		// role_id is the leaf id derived from the hierarchical name; the
+		// remote Role only exposes the full Name.
+		"role_id",
+	},
 	"vector_search_endpoints": {
 		"target_qps",
 		"usage_policy_id",
