@@ -513,31 +513,14 @@ resources:
       # catalog_id is part of the hierarchical name and immutable.
       - field: catalog_id
         reason: immutable
-      # The Postgres API has no UpdateCatalog endpoint, so any local change to
-      # a spec field requires delete+create. recreate_on_changes fires on the
-      # intent diff (local config vs. persisted state); ignore_remote_changes
-      # below silences the orthogonal drift diff (persisted state vs. RemapState).
+      # The Postgres SDK has no UpdateCatalog endpoint, so any local change
+      # requires delete+create. The OpenAPI spec only marks postgres_database
+      # as IMMUTABLE (handled by autogen); branch and create_database_if_missing
+      # need explicit entries here.
       - field: branch
-        reason: immutable
-      - field: postgres_database
         reason: immutable
       - field: create_database_if_missing
         reason: immutable
-    ignore_remote_changes:
-      # The remote .Name always carries the "catalogs/" prefix while the
-      # user-supplied catalog_id does not. The framework's state ID still
-      # holds the full prefixed name; this just suppresses the cosmetic diff.
-      - field: catalog_id
-        reason: input_only
-      # The catalog API does not currently echo back spec values on GET; the
-      # missing remote values would otherwise trigger phantom drift. Lift
-      # these once the backend starts returning spec on GET.
-      - field: branch
-        reason: input_only
-      - field: postgres_database
-        reason: input_only
-      - field: create_database_if_missing
-        reason: input_only
 
   postgres_synced_tables:
     # The Postgres API has no UpdateSyncedTable endpoint, so every settable

@@ -26,16 +26,20 @@ func (*ResourcePostgresCatalog) PrepareState(input *resources.PostgresCatalog) *
 }
 
 func (*ResourcePostgresCatalog) RemapState(remote *postgres.Catalog) *PostgresCatalogState {
-	// The server-side ID is the full hierarchical name `catalogs/<catalog_id>`.
-	// Keep it as-is — the `catalogs/` prefix is an inherent part of the ID, not
-	// noise to strip.
+	// Status.CatalogId is the short identifier and matches the user-supplied
+	// config. Prefer it over parsing remote.Name — semantic contract from the
+	// API rather than string manipulation on the hierarchical path.
 	//
 	// GET does not return the spec today (only status). Return an empty spec
-	// and rely on the ignore_remote_changes / input_only classifications in
-	// resources.yml to suppress phantom drift until the backend starts
+	// and rely on the spec:input_only classifications generated from the
+	// OpenAPI schema to suppress phantom drift until the backend starts
 	// echoing spec values on GET.
+	var catalogId string
+	if remote.Status != nil {
+		catalogId = remote.Status.CatalogId
+	}
 	return &PostgresCatalogState{
-		CatalogId: remote.Name,
+		CatalogId: catalogId,
 		CatalogCatalogSpec: postgres.CatalogCatalogSpec{
 			Branch:                  "",
 			CreateDatabaseIfMissing: false,
