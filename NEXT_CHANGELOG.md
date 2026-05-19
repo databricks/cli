@@ -10,5 +10,6 @@
 
 ### Bundles
 * Make sure warnings asking for approval are understood by agents ([#5239](https://github.com/databricks/cli/pull/5239))
+* Add support for `postgres_databases` bundle resource.
 
 ### Dependency updates
