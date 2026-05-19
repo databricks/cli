@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/auth/storage"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/stretchr/testify/assert"
@@ -114,6 +115,10 @@ func TestProfileHostConflictTokenViaCobra(t *testing.T) {
 // NOT with a conflict error).
 func TestProfileHostCompatibleViaCobra(t *testing.T) {
 	t.Setenv("DATABRICKS_CONFIG_FILE", "./testdata/.databrickscfg")
+	// Force plaintext so the storage resolver does not probe the OS keyring
+	// and silently persist auth_storage = plaintext to the checked-in fixture
+	// on CI runners without a usable keyring.
+	t.Setenv(storage.EnvVar, "plaintext")
 
 	ctx := cmdctx.GenerateExecId(t.Context())
 	cli := root.New(ctx)

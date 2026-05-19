@@ -144,15 +144,6 @@ a new profile is created.
 		ctx := cmd.Context()
 		profileName := cmd.Flag("profile").Value.String()
 
-		// Resolve the cache before the browser step so an unavailable
-		// keyring surfaces here rather than after OAuth. The probe also
-		// triggers the OS unlock prompt, which the user can answer during
-		// OAuth.
-		tokenCache, mode, err := storage.ResolveCacheForLogin(ctx, "")
-		if err != nil {
-			return err
-		}
-
 		// Cluster and Serverless are mutually exclusive.
 		if configureCluster && configureServerless {
 			return errors.New("please either configure serverless or cluster, not both")
@@ -176,6 +167,16 @@ a new profile is created.
 				authArguments.Host = resolvedHost
 				args = nil
 			}
+		}
+
+		// Resolve the cache before the browser step so an unavailable
+		// keyring surfaces here rather than after OAuth. The probe also
+		// triggers the OS unlock prompt, which the user can answer during
+		// OAuth. Run after input validation so trivially-invalid commands
+		// fail without probing.
+		tokenCache, mode, err := storage.ResolveCacheForLogin(ctx, "")
+		if err != nil {
+			return err
 		}
 
 		// When interactive and nothing was specified, show a picker that lets
