@@ -21,9 +21,10 @@ func (*ResourcePostgresBranch) New(client *databricks.WorkspaceClient) *Resource
 
 func (*ResourcePostgresBranch) PrepareState(input *resources.PostgresBranch) *PostgresBranchState {
 	return &PostgresBranchState{
-		BranchId:   input.BranchId,
-		Parent:     input.Parent,
-		BranchSpec: input.BranchSpec,
+		BranchId:        input.BranchId,
+		Parent:          input.Parent,
+		ReplaceExisting: input.ReplaceExisting,
+		BranchSpec:      input.BranchSpec,
 	}
 }
 
@@ -35,6 +36,10 @@ func (*ResourcePostgresBranch) RemapState(remote *postgres.Branch) *PostgresBran
 	return &PostgresBranchState{
 		BranchId: components.BranchID,
 		Parent:   remote.Parent,
+
+		// replace_existing is a create-time-only flag; the GET API never returns
+		// it, so RemapState leaves it false.
+		ReplaceExisting: false,
 
 		// The read API does not return the spec, only the status.
 		// This means we cannot detect remote drift for spec fields.
@@ -72,7 +77,7 @@ func (r *ResourcePostgresBranch) DoCreate(ctx context.Context, config *PostgresB
 			UpdateTime:      nil,
 			ForceSendFields: nil,
 		},
-		ReplaceExisting: false,
+		ReplaceExisting: config.ReplaceExisting,
 		ForceSendFields: nil,
 	})
 	if err != nil {
