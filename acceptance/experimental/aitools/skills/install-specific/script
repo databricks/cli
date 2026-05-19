@@ -1,4 +1,8 @@
-mkdir -p "$HOME/.claude"
+# Stub a Claude Code install under the harness-set home dir so agent
+# detection picks it up. On Windows the harness sets USERPROFILE (Go's
+# os.UserHomeDir backing var on that platform), not HOME — use USERPROFILE
+# when set, fall back to HOME for Linux/macOS.
+mkdir -p "${USERPROFILE:-$HOME}/.claude"
 
 title "install only one specific stable skill via --skills"
 trace $CLI experimental aitools install --global --skills test-stable-a

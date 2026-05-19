@@ -49,8 +49,8 @@ func manifestHasExperimental(m *Manifest) bool {
 // variant when a skill transitions between experimental and stable
 // upstream.
 func alternateVariantKey(key string) string {
-	if strings.HasSuffix(key, experimentalSuffix) {
-		return strings.TrimSuffix(key, experimentalSuffix)
+	if base, ok := strings.CutSuffix(key, experimentalSuffix); ok {
+		return base
 	}
 	return key + experimentalSuffix
 }
