@@ -37,11 +37,11 @@ type PostgresRole struct {
 
 func (r *PostgresRole) Exists(ctx context.Context, w *databricks.WorkspaceClient, name string) (bool, error) {
 	_, err := w.Postgres.GetRole(ctx, postgres.GetRoleRequest{Name: name})
+	if apierr.IsMissing(err) {
+		log.Debugf(ctx, "postgres role %s does not exist", name)
+		return false, nil
+	}
 	if err != nil {
-		log.Debugf(ctx, "postgres role %s does not exist: %v", name, err)
-		if apierr.IsMissing(err) {
-			return false, nil
-		}
 		return false, err
 	}
 	return true, nil
