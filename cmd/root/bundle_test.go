@@ -63,6 +63,26 @@ workspace:
 	return logdiag.FlushCollected(ctx)
 }
 
+// setupBundleNameOnly writes a databricks.yml that declares only the bundle
+// name (no workspace host, no profile). Used to exercise the
+// [__settings__].default_profile fallback in configureProfile.
+func setupBundleNameOnly(t *testing.T, cmd *cobra.Command) []diag.Diagnostic {
+	rootPath := t.TempDir()
+	t.Chdir(rootPath)
+
+	contents := `bundle:
+  name: test-default-profile
+`
+	err := os.WriteFile(filepath.Join(rootPath, "databricks.yml"), []byte(contents), 0o644)
+	require.NoError(t, err)
+
+	ctx := logdiag.InitContext(cmd.Context())
+	logdiag.SetCollect(ctx, true)
+	cmd.SetContext(ctx)
+	_ = MustConfigureBundle(cmd)
+	return logdiag.FlushCollected(ctx)
+}
+
 func setupWithProfile(t *testing.T, cmd *cobra.Command, profile string) []diag.Diagnostic {
 	setupDatabricksCfg(t)
 
@@ -211,6 +231,94 @@ func TestBundleConfigureProfileEnvVariable(t *testing.T) {
 	require.Empty(t, diags)
 	assert.Equal(t, "https://a.test", cmdctx.ConfigUsed(cmd.Context()).Host)
 	assert.Equal(t, "b", cmdctx.ConfigUsed(cmd.Context()).Token)
+	assert.Equal(t, "PROFILE-2", cmdctx.ConfigUsed(cmd.Context()).Profile)
+}
+
+// setupDatabricksCfgWithDefault writes a databrickscfg with two profiles
+// and an explicit [__settings__].default_profile.
+func setupDatabricksCfgWithDefault(t *testing.T, defaultProfile string) {
+	tempHomeDir := t.TempDir()
+	homeEnvVar := "HOME"
+	if runtime.GOOS == "windows" {
+		homeEnvVar = "USERPROFILE"
+	}
+
+	cfg := fmt.Sprintf(`[PROFILE-1]
+host = https://a.test
+token = a
+
+[PROFILE-2]
+host = https://b.test
+token = b
+
+[__settings__]
+default_profile = %s
+`, defaultProfile)
+	err := os.WriteFile(filepath.Join(tempHomeDir, ".databrickscfg"), []byte(cfg), 0o644)
+	require.NoError(t, err)
+
+	t.Setenv("DATABRICKS_CONFIG_FILE", "")
+	t.Setenv(homeEnvVar, tempHomeDir)
+}
+
+func TestBundleConfigureWithDefaultProfile(t *testing.T) {
+	testutil.CleanupEnvironment(t)
+	setupDatabricksCfgWithDefault(t, "PROFILE-1")
+
+	cmd := emptyCommand(t)
+	diags := setupBundleNameOnly(t, cmd)
+	require.Empty(t, diags)
+	assert.Equal(t, "https://a.test", cmdctx.ConfigUsed(cmd.Context()).Host)
+	assert.Equal(t, "PROFILE-1", cmdctx.ConfigUsed(cmd.Context()).Profile)
+}
+
+func TestBundleConfigureWithDefaultProfile_ProfileFlagOverrides(t *testing.T) {
+	testutil.CleanupEnvironment(t)
+	setupDatabricksCfgWithDefault(t, "PROFILE-1")
+
+	cmd := emptyCommand(t)
+	require.NoError(t, cmd.Flag("profile").Value.Set("PROFILE-2"))
+	diags := setupBundleNameOnly(t, cmd)
+	require.Empty(t, diags)
+	assert.Equal(t, "PROFILE-2", cmdctx.ConfigUsed(cmd.Context()).Profile)
+}
+
+func TestBundleConfigureWithDefaultProfile_EnvVarOverrides(t *testing.T) {
+	testutil.CleanupEnvironment(t)
+	setupDatabricksCfgWithDefault(t, "PROFILE-1")
+	t.Setenv("DATABRICKS_CONFIG_PROFILE", "PROFILE-2")
+
+	cmd := emptyCommand(t)
+	diags := setupBundleNameOnly(t, cmd)
+	require.Empty(t, diags)
+	assert.Equal(t, "PROFILE-2", cmdctx.ConfigUsed(cmd.Context()).Profile)
+}
+
+func TestBundleConfigureWithDefaultProfile_BundleHostWins(t *testing.T) {
+	testutil.CleanupEnvironment(t)
+	// PROFILE-1 points at https://a.test, but the bundle pins https://b.test.
+	// The host-empty guard in configureProfile must NOT apply default_profile,
+	// otherwise the user would silently end up at the wrong host. Instead, the
+	// SDK matches the bundle's host against PROFILE-2 (which has host=b.test).
+	setupDatabricksCfgWithDefault(t, "PROFILE-1")
+
+	rootPath := t.TempDir()
+	t.Chdir(rootPath)
+
+	contents := `workspace:
+  host: "https://b.test"
+`
+	err := os.WriteFile(filepath.Join(rootPath, "databricks.yml"), []byte(contents), 0o644)
+	require.NoError(t, err)
+
+	cmd := emptyCommand(t)
+	ctx := logdiag.InitContext(cmd.Context())
+	logdiag.SetCollect(ctx, true)
+	cmd.SetContext(ctx)
+	_ = MustConfigureBundle(cmd)
+	diags := logdiag.FlushCollected(ctx)
+	require.Empty(t, diags)
+	assert.Equal(t, "https://b.test", cmdctx.ConfigUsed(cmd.Context()).Host)
 	assert.Equal(t, "PROFILE-2", cmdctx.ConfigUsed(cmd.Context()).Profile)
 }
 

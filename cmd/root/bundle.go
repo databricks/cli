@@ -70,6 +70,16 @@ func getProfile(cmd *cobra.Command) (value string) {
 // configureProfile applies the profile flag to the bundle.
 func configureProfile(cmd *cobra.Command, b *bundle.Bundle) {
 	profile := getProfile(cmd)
+
+	// Fall back to [__settings__].default_profile only when the bundle does
+	// not pin its own host. If the bundle declares workspace.host, applying
+	// default_profile here could route the user to a profile that points at
+	// a different host than the bundle expects — let the SDK resolve auth
+	// from the host instead.
+	if profile == "" && b.Config.Workspace.Host == "" && b.Config.Workspace.Profile == "" {
+		profile = databrickscfg.ResolveDefaultProfile(cmd.Context())
+	}
+
 	if profile == "" {
 		return
 	}
