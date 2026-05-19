@@ -1,0 +1,27 @@
+{
+  "depends_on": [
+    {
+      "node": "resources.postgres_branches.main",
+      "label": "${resources.postgres_branches.main.id}"
+    }
+  ],
+  "action": "skip",
+  "remote_state": {
+    "create_time": "[TIMESTAMP]",
+    "name": "[MY_DATABASE_ID]",
+    "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
+    "status": {
+      "postgres_database": "initial_db_name",
+      "role": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/[USERNAME]"
+    },
+    "update_time": "[TIMESTAMP]"
+  },
+  "changes": {
+    "postgres_database": {
+      "action": "skip",
+      "reason": "spec:input_only",
+      "old": "initial_db_name",
+      "new": "initial_db_name"
+    }
+  }
+}

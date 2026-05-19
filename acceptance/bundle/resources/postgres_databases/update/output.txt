@@ -1,0 +1,153 @@
+
+=== Initial deployment
+>>> [CLI] bundle validate
+Name: update-postgres-database-[UNIQUE_NAME]
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/update-postgres-database-[UNIQUE_NAME]/default
+
+Validation OK!
+
+>>> [CLI] bundle plan
+create postgres_branches.main
+create postgres_databases.my_database
+create postgres_projects.my_project
+
+Plan: 3 to add, 0 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle plan -o json
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-postgres-database-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
+
+>>> [CLI] postgres get-database [MY_DATABASE_ID]
+{
+  "name": "[MY_DATABASE_ID]",
+  "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
+  "status": {
+    "postgres_database": "initial_db_name",
+    "role": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/[USERNAME]"
+  }
+}
+
+=== Verify no changes
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 3 unchanged
+
+>>> [CLI] bundle plan -o json
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-postgres-database-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
+
+=== Update postgres_database and re-deploy
+>>> update_file.py databricks.yml postgres_database: initial_db_name postgres_database: renamed_db_name
+
+>>> cat databricks.yml
+bundle:
+  name: update-postgres-database-[UNIQUE_NAME]
+
+sync:
+  paths: []
+
+resources:
+  postgres_projects:
+    my_project:
+      project_id: test-pg-proj-[UNIQUE_NAME]
+      display_name: "Test Project for Database Update"
+      pg_version: 16
+      history_retention_duration: 604800s
+
+  postgres_branches:
+    main:
+      parent: ${resources.postgres_projects.my_project.id}
+      branch_id: main
+      no_expiry: true
+
+  postgres_databases:
+    my_database:
+      database_id: my-database
+      parent: ${resources.postgres_branches.main.id}
+      postgres_database: renamed_db_name
+
+>>> [CLI] bundle plan
+update postgres_databases.my_database
+
+Plan: 0 to add, 1 to change, 0 to delete, 2 unchanged
+
+>>> [CLI] bundle plan -o json
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-postgres-database-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
+
+>>> [CLI] postgres get-database [MY_DATABASE_ID]
+{
+  "name": "[MY_DATABASE_ID]",
+  "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
+  "status": {
+    "postgres_database": "renamed_db_name",
+    "role": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/[USERNAME]"
+  }
+}
+
+=== Restore postgres_database to original value
+>>> update_file.py databricks.yml postgres_database: renamed_db_name postgres_database: initial_db_name
+
+>>> [CLI] bundle plan
+update postgres_databases.my_database
+
+Plan: 0 to add, 1 to change, 0 to delete, 2 unchanged
+
+>>> [CLI] bundle plan -o json
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-postgres-database-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
+
+>>> [CLI] postgres get-database [MY_DATABASE_ID]
+{
+  "name": "[MY_DATABASE_ID]",
+  "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
+  "status": {
+    "postgres_database": "initial_db_name",
+    "role": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/[USERNAME]"
+  }
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.postgres_branches.main
+  delete resources.postgres_databases.my_database
+  delete resources.postgres_projects.my_project
+
+This action will result in the deletion of the following Lakebase projects along with
+all their branches, databases, and endpoints. All data stored in them will be permanently lost:
+  delete resources.postgres_projects.my_project
+
+This action will result in the deletion of the following Lakebase branches.
+All data stored in them will be permanently lost:
+  delete resources.postgres_branches.main
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/update-postgres-database-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!

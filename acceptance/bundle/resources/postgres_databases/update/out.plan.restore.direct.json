@@ -1,0 +1,33 @@
+{
+  "depends_on": [
+    {
+      "node": "resources.postgres_branches.main",
+      "label": "${resources.postgres_branches.main.id}"
+    }
+  ],
+  "action": "update",
+  "new_state": {
+    "value": {
+      "database_id": "my-database",
+      "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
+      "postgres_database": "initial_db_name"
+    }
+  },
+  "remote_state": {
+    "create_time": "[TIMESTAMP]",
+    "name": "[MY_DATABASE_ID]",
+    "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
+    "status": {
+      "postgres_database": "renamed_db_name",
+      "role": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/[USERNAME]"
+    },
+    "update_time": "[TIMESTAMP]"
+  },
+  "changes": {
+    "postgres_database": {
+      "action": "update",
+      "old": "renamed_db_name",
+      "new": "initial_db_name"
+    }
+  }
+}
