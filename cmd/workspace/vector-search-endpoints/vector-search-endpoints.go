@@ -21,8 +21,8 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "vector-search-endpoints",
-		Short:   `**Endpoint**: Represents the compute resources to host vector search indexes.`,
-		Long:    `**Endpoint**: Represents the compute resources to host vector search indexes.`,
+		Short:   `**Endpoint**: Represents the compute resources to host AI Search indexes.`,
+		Long:    `**Endpoint**: Represents the compute resources to host AI Search indexes.`,
 		GroupID: "vectorsearch",
 		RunE:    root.ReportUnknownSubcommand,
 	}
@@ -87,7 +87,7 @@ func newCreateEndpoint() *cobra.Command {
   Create a new endpoint.
 
   Arguments:
-    NAME: Name of the vector search endpoint
+    NAME: Name of the AI Search endpoint
     ENDPOINT_TYPE: Type of endpoint
       Supported values: [STANDARD, STORAGE_OPTIMIZED]`
 
@@ -191,10 +191,10 @@ func newDeleteEndpoint() *cobra.Command {
 	cmd.Short = `Delete an endpoint.`
 	cmd.Long = `Delete an endpoint.
 
-  Delete a vector search endpoint.
+  Delete an AI Search endpoint.
 
   Arguments:
-    ENDPOINT_NAME: Name of the vector search endpoint`
+    ENDPOINT_NAME: Name of the AI Search endpoint`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -249,7 +249,7 @@ func newGetEndpoint() *cobra.Command {
 	cmd.Short = `Get an endpoint.`
 	cmd.Long = `Get an endpoint.
 
-  Get details for a single vector search endpoint.
+  Get details for a single AI Search endpoint.
 
   Arguments:
     ENDPOINT_NAME: Name of the endpoint`
@@ -438,7 +438,7 @@ func newListEndpoints() *cobra.Command {
 	cmd.Short = `List all endpoints.`
 	cmd.Long = `List all endpoints.
 
-  List all vector search endpoints in the workspace.`
+  List all AI Search endpoints in the workspace.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -505,7 +505,7 @@ Update an endpoint.
   Update an endpoint
 
   Arguments:
-    ENDPOINT_NAME: Name of the vector search endpoint`
+    ENDPOINT_NAME: Name of the AI Search endpoint`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
@@ -585,7 +585,7 @@ func newRetrieveUserVisibleMetrics() *cobra.Command {
   Retrieve user-visible metrics for an endpoint
 
   Arguments:
-    NAME: Vector search endpoint name`
+    NAME: AI Search endpoint name`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -739,7 +739,7 @@ Update the budget policy of an endpoint.
   Update the budget policy of an endpoint
 
   Arguments:
-    ENDPOINT_NAME: Name of the vector search endpoint
+    ENDPOINT_NAME: Name of the AI Search endpoint
     BUDGET_POLICY_ID: The budget policy id to be applied`
 
 	cmd.Annotations = make(map[string]string)
@@ -822,7 +822,7 @@ func newUpdateEndpointCustomTags() *cobra.Command {
 	cmd.Long = `Update the custom tags of an endpoint.
 
   Arguments:
-    ENDPOINT_NAME: Name of the vector search endpoint`
+    ENDPOINT_NAME: Name of the AI Search endpoint`
 
 	// This command is being previewed; hide from help output.
 	cmd.Hidden = true

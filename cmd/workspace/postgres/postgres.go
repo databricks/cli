@@ -1743,9 +1743,8 @@ func newGenerateDatabaseCredential() *cobra.Command {
 Generate OAuth credentials for a Postgres database.
 
   Arguments:
-    ENDPOINT: This field is not yet supported. The endpoint for which this credential
-      will be generated. Format:
-      projects/{project_id}/branches/{branch_id}/endpoints/{endpoint_id}`
+    ENDPOINT: The endpoint resource name for which this credential will be generated.
+      Format: projects/{project_id}/branches/{branch_id}/endpoints/{endpoint_id}`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
@@ -2708,8 +2707,10 @@ func newUndeleteProject() *cobra.Command {
 	cmd.Flags().DurationVar(&undeleteProjectTimeout, "timeout", 0, `maximum amount of time to reach DONE state`)
 
 	cmd.Use = "undelete-project NAME"
-	cmd.Short = `Undelete a Project.`
-	cmd.Long = `Undelete a Project.
+	cmd.Short = `*Beta* Undelete a Project.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Undelete a Project.
 
   Undeletes a soft-deleted project.
 
@@ -2722,12 +2723,9 @@ func newUndeleteProject() *cobra.Command {
     NAME: The full resource path of the project to undelete. Format:
       projects/{project_id}`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
