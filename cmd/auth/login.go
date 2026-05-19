@@ -294,12 +294,13 @@ a new profile is created.
 		if err = persistentAuth.Challenge(); err != nil {
 			return err
 		}
-		// At this point, an OAuth token has been successfully minted and stored
-		// in the CLI cache. Pin the resolved storage mode so a transient
-		// keyring failure on a future login can no longer silently demote a
-		// working secure-storage user to plaintext.
+		// Lock secure mode in after a successful keyring write so a later
+		// transient keyring probe failure cannot silently demote this user
+		// to plaintext.
 		storage.PinSecureMode(ctx, mode)
-		// The rest of the command focuses on:
+
+		// At this point, an OAuth token has been successfully minted and stored
+		// in the CLI cache. The rest of the command focuses on:
 		// 1. Workspace selection for SPOG hosts (best-effort);
 		// 2. Configuring cluster and serverless;
 		// 3. Saving the profile.

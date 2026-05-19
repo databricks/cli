@@ -167,19 +167,15 @@ func persistPlaintextFallback(ctx context.Context) error {
 }
 
 // PinSecureMode persists auth_storage = secure to [__settings__] when the
-// user is currently on the secure-from-default path: mode resolved to secure
-// without an explicit override, env var, or config setting.
+// user is currently on the secure-from-default path. Once pinned, subsequent
+// invocations see source=Config (explicit), so applyLoginFallback returns an
+// error on a transient keyring probe failure instead of silently demoting
+// the user to plaintext.
 //
-// Call this after a successful keyring write (post-Challenge in login). Once
-// pinned, subsequent invocations see source=Config and the explicit-secure
-// branch of applyLoginFallback returns an error instead of silently demoting
-// to plaintext, so a transient keyring probe failure cannot strand a working
-// user on the file cache.
-//
-// No-op when mode is not secure (e.g. silent plaintext fallback already
-// happened) or when the user already chose a mode explicitly. Persisting
-// failures are logged at debug; pinning is best-effort and must not block
-// login.
+// No-op when mode is not secure or when the user already chose a mode
+// explicitly. Best-effort: persistence failures are logged at debug and
+// never block login. Concurrent logins racing this write is benign because
+// both write the same value.
 func PinSecureMode(ctx context.Context, mode StorageMode) {
 	if mode != StorageModeSecure {
 		return

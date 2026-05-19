@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"testing"
@@ -279,7 +280,6 @@ func TestPinSecureMode(t *testing.T) {
 		envValue    string
 		configBody  string
 		wantWritten string
-		wantSkipMsg string
 	}{
 		{
 			name:        "secure from default persists secure",
@@ -346,11 +346,18 @@ func TestPinSecureMode_IsIdempotent(t *testing.T) {
 func TestPinSecureMode_PersistFailureIsSwallowed(t *testing.T) {
 	hermetic(t)
 	ctx := t.Context()
-	// Point DATABRICKS_CONFIG_FILE at an unwritable path so SetConfiguredAuthStorage fails.
-	t.Setenv("DATABRICKS_CONFIG_FILE", filepath.Join(t.TempDir(), "no-such-dir", ".databrickscfg"))
+	// Point DATABRICKS_CONFIG_FILE at a path whose parent does not exist.
+	// loadOrCreateConfigFile does not mkdir, so the underlying os.OpenFile
+	// fails and SetConfiguredAuthStorage returns an error.
+	configPath := filepath.Join(t.TempDir(), "no-such-dir", ".databrickscfg")
+	t.Setenv("DATABRICKS_CONFIG_FILE", configPath)
 
 	// Must not panic or block; failures are logged at debug.
 	PinSecureMode(ctx, StorageModeSecure)
+
+	// The persist failure must not have produced any file.
+	_, err := os.Stat(configPath)
+	assert.ErrorIs(t, err, fs.ErrNotExist, "no file should have been written")
 }
 
 func TestWrapForOAuthArgument(t *testing.T) {
