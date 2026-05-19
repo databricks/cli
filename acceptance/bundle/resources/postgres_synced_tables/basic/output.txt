@@ -45,10 +45,7 @@ Deployment complete!
 >>> [CLI] postgres get-synced-table synced_tables/lakebase_test_[UNIQUE_NAME].public.trips_synced
 {
   "name": "synced_tables/lakebase_test_[UNIQUE_NAME].public.trips_synced",
-  "status": {
-    "detailed_state": "SYNCED_TABLE_ONLINE",
-    "unity_catalog_provisioning_state": "ACTIVE"
-  }
+  "unity_catalog_provisioning_state": "ACTIVE"
 }
 
 >>> [CLI] bundle summary

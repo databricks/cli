@@ -27,8 +27,11 @@ trace $CLI bundle summary
 rm -f out.requests.txt
 trace $CLI bundle deploy
 
-# Hide volatile fields so cloud and local match.
-trace $CLI postgres get-synced-table "synced_tables/lakebase_test_${UNIQUE_NAME}.public.trips_synced" | jq 'del(.create_time, .update_time, .uid, .status.pipeline_id, .status.message)'
+# Keep only the deterministic identity + provisioning-state. detailed_state
+# varies with pipeline-provisioning timing on cloud, ongoing_sync_progress and
+# project only appear there, and create_time/update_time/uid/pipeline_id are
+# random per run.
+trace $CLI postgres get-synced-table "synced_tables/lakebase_test_${UNIQUE_NAME}.public.trips_synced" | jq '{name, unity_catalog_provisioning_state: .status.unity_catalog_provisioning_state}'
 
 trace $CLI bundle summary
 
