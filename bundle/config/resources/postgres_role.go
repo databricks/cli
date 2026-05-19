@@ -6,6 +6,7 @@ import (
 
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/postgres"
 )
@@ -37,7 +38,10 @@ type PostgresRole struct {
 func (r *PostgresRole) Exists(ctx context.Context, w *databricks.WorkspaceClient, name string) (bool, error) {
 	_, err := w.Postgres.GetRole(ctx, postgres.GetRoleRequest{Name: name})
 	if err != nil {
-		log.Debugf(ctx, "postgres role %s does not exist", name)
+		log.Debugf(ctx, "postgres role %s does not exist: %v", name, err)
+		if apierr.IsMissing(err) {
+			return false, nil
+		}
 		return false, err
 	}
 	return true, nil
