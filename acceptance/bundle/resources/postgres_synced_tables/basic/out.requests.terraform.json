@@ -44,7 +44,7 @@
         "tpep_pickup_datetime"
       ],
       "scheduling_policy": "SNAPSHOT",
-      "source_table_full_name": "samples.nyctaxi.trips"
+      "source_table_full_name": "main.source_[UNIQUE_NAME].trips_source"
     }
   }
 }

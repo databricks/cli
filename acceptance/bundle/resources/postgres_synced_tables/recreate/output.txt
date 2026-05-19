@@ -1,3 +1,7 @@
+Creating temporary source table: main.source_[UNIQUE_NAME].trips_source
+{
+  "full_name": "main.source_[UNIQUE_NAME]"
+}
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/recreate-postgres-synced-table-[UNIQUE_NAME]/default/files...
@@ -35,3 +39,4 @@ All files and directories at the following location will be deleted: /Workspace/
 
 Deleting files...
 Destroy complete!
+Cleaning up temporary source table
