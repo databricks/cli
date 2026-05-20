@@ -12,5 +12,6 @@
 ### Bundles
 * Make sure warnings asking for approval are understood by agents ([#5239](https://github.com/databricks/cli/pull/5239))
 * Support `replace_existing: true` on `postgres_branches` and `postgres_endpoints` so bundles can manage the implicitly-created production branch and primary read-write endpoint of a Lakebase project.
+* Add `postgres_catalogs` resource to bind a Unity Catalog catalog to a Postgres database on a Lakebase Autoscaling branch ([#5265](https://github.com/databricks/cli/pull/5265)).
 
 ### Dependency updates
