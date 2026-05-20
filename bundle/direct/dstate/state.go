@@ -125,7 +125,8 @@ func (db *DeploymentState) DeleteState(key string) error {
 }
 
 func (db *DeploymentState) GetResourceEntry(key string) (ResourceEntry, bool) {
-	db.AssertOpenedForRead()
+	// Note, if opened for write, you get the state that you had at the beginning of deploy, not most recent one
+	db.AssertOpenedForReadOrWrite()
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
