@@ -57,40 +57,51 @@ func (c *profileMetadata) Load(ctx context.Context, configFilePath string, skipV
 		return
 	}
 
-	configType := auth.ResolveConfigType(cfg)
-	if configType != cfg.ConfigType() {
-		log.Debugf(ctx, "Profile %q: overrode config type from %s to %s (SPOG host)", c.Name, cfg.ConfigType(), configType)
+	// Validate by probing the API surfaces this profile has a signal for.
+	// Each signal — host shape or field presence — enables its corresponding
+	// probe, and the OR of the probe results is the verdict.
+
+	// Host signals.
+	// isAccountHost:   classic accounts.* host.
+	// isSPOGHost:      unified host with account-scoped OIDC discovery.
+	// isWorkspaceHost: classic workspace host (neither of the above).
+	isAccountHost := auth.IsClassicAccountHost(cfg.CanonicalHostName())
+	isSPOGHost := auth.IsSPOGHost(cfg)
+	isWorkspaceHost := auth.IsClassicWorkspaceHost(cfg)
+
+	// Field signals.
+	// hasAccountID:       account_id is set (from file, env, or discovery back-fill).
+	// hasRealWorkspaceID: workspace_id is set to a real value.
+	hasAccountID := cfg.AccountID != ""
+	// workspace_id is "" when not present in the profile, "none" when the user picked Skip during SPOG login.
+	hasRealWorkspaceID := cfg.WorkspaceID != "" && cfg.WorkspaceID != auth.WorkspaceIDNone
+
+	tryAccount := isAccountHost || isSPOGHost || hasAccountID
+	tryWorkspace := isWorkspaceHost || hasRealWorkspaceID
+
+	var accountOK, workspaceOK bool
+	if tryAccount {
+		a, err := databricks.NewAccountClient((*databricks.Config)(cfg))
+		if err == nil {
+			if _, err := a.Workspaces.List(ctx); err == nil {
+				accountOK = true
+			}
+		}
+	}
+	if tryWorkspace {
+		w, err := databricks.NewWorkspaceClient((*databricks.Config)(cfg))
+		if err == nil {
+			if _, err := w.CurrentUser.Me(ctx); err == nil {
+				workspaceOK = true
+			}
+		}
 	}
 
-	switch configType {
-	case config.AccountConfig:
-		a, err := databricks.NewAccountClient((*databricks.Config)(cfg))
-		if err != nil {
-			return
-		}
-		_, err = a.Workspaces.List(ctx)
-		c.Host = cfg.Host
-		c.AuthType = cfg.AuthType
-		if err != nil {
-			return
-		}
-		c.Valid = true
-	case config.WorkspaceConfig:
-		w, err := databricks.NewWorkspaceClient((*databricks.Config)(cfg))
-		if err != nil {
-			return
-		}
-		_, err = w.CurrentUser.Me(ctx)
-		c.Host = cfg.Host
-		c.AuthType = cfg.AuthType
-		if err != nil {
-			return
-		}
-		c.Valid = true
-	case config.InvalidConfig:
-		// Invalid configuration, skip validation
-		return
-	}
+	// Capture Host/AuthType after the probes run: SDK Authenticate() sets
+	// cfg.AuthType lazily based on the credentials it actually exercised.
+	c.Host = cfg.Host
+	c.AuthType = cfg.AuthType
+	c.Valid = accountOK || workspaceOK
 }
 
 func newProfilesCommand() *cobra.Command {
