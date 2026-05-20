@@ -28,4 +28,3 @@ func assertFieldsCovered(t *testing.T, sdkType, remoteType reflect.Type, skip ma
 		assert.Contains(t, remoteFields, field.Name, "field %s from %s is missing in %s", field.Name, sdkType.Name(), remoteType.Name())
 	}
 }
-
