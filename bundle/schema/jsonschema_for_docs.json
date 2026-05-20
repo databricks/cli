@@ -1391,6 +1391,31 @@
                   "parent"
                 ]
               },
+              "resources.PostgresCatalog": {
+                "type": "object",
+                "properties": {
+                  "branch": {
+                    "$ref": "#/$defs/string"
+                  },
+                  "catalog_id": {
+                    "$ref": "#/$defs/string"
+                  },
+                  "create_database_if_missing": {
+                    "$ref": "#/$defs/bool"
+                  },
+                  "lifecycle": {
+                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
+                  },
+                  "postgres_database": {
+                    "$ref": "#/$defs/string"
+                  }
+                },
+                "additionalProperties": false,
+                "required": [
+                  "catalog_id",
+                  "postgres_database"
+                ]
+              },
               "resources.PostgresEndpoint": {
                 "type": "object",
                 "properties": {
@@ -2485,6 +2510,10 @@
                 "postgres_branches": {
                   "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.PostgresBranch",
                   "x-since-version": "v0.287.0"
+                },
+                "postgres_catalogs": {
+                  "description": "The Postgres catalog definitions for the bundle, where each key is the name of the catalog. Each entry binds a Unity Catalog catalog to a Postgres database on a Lakebase Autoscaling branch.",
+                  "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.PostgresCatalog"
                 },
                 "postgres_endpoints": {
                   "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.PostgresEndpoint",
@@ -9714,6 +9743,12 @@
                   "type": "object",
                   "additionalProperties": {
                     "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.PostgresBranch"
+                  }
+                },
+                "resources.PostgresCatalog": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.PostgresCatalog"
                   }
                 },
                 "resources.PostgresEndpoint": {

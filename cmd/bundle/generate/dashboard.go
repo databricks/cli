@@ -16,6 +16,8 @@ import (
 	"time"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/deploy/terraform"
+	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/bundle/generate"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/bundle/resources"
@@ -389,16 +391,25 @@ func (d *dashboard) runForResource(ctx context.Context, b *bundle.Bundle) {
 		return
 	}
 
+	var state statemgmt.ExportedResourcesMap
 	if stateDesc.Engine.IsDirect() {
 		_, localPath := b.StateFilenameDirect(ctx)
-		if err := b.DeploymentBundle.StateDB.Open(localPath); err != nil {
+		if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(true), dstate.WithWrite(false)); err != nil {
+			logdiag.LogError(ctx, err)
+			return
+		}
+		state = b.DeploymentBundle.ExportState(ctx)
+	} else {
+		var err error
+		state, err = terraform.ParseResourcesState(ctx, b)
+		if err != nil {
 			logdiag.LogError(ctx, err)
 			return
 		}
 	}
 
 	bundle.ApplySeqContext(ctx, b,
-		statemgmt.Load(stateDesc.Engine),
+		statemgmt.Load(state),
 	)
 	if logdiag.HasError(ctx) {
 		return
