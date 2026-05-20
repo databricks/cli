@@ -293,29 +293,14 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 }
 
 // resolveDefaultProfile picks a profile name for cfg when none is specified
-// via --profile or DATABRICKS_CONFIG_PROFILE. Mirrors the SDK's config-file
-// resolution (resolveProfile in databricks-sdk-go/config/config_file.go):
-// [__settings__].default_profile, then a [DEFAULT] section if present.
+// via --profile or DATABRICKS_CONFIG_PROFILE. Mirrors the SDK's resolution:
+// [__settings__].default_profile, then the [DEFAULT] section.
 //
-// Pinning cfg.Profile before the SDK loader runs is important for the OAuth
-// token cache key. The SDK silently falls back to [DEFAULT] when cfg.Profile
-// is empty but does not write the resolved name back to cfg (the isFallback
-// branch in config_file.go). Login, by contrast, defaults the profile name
-// to "DEFAULT" when no flag is given. The result is that `databricks auth
-// login` writes a token under cache key "DEFAULT" while a later `databricks
-// auth describe` (or any other read) computes a cache key from
-// cfg.Profile="" and falls back to the host URL, so the lookup misses.
-// plaintext mode masked this with its host-key dual-write; secure mode does
-// not, so the mismatch surfaces as ErrNotFound or (with stale state at the
-// host key) InvalidRefreshTokenError.
+// Pinning cfg.Profile here keeps it non-empty after the SDK loader runs, so
+// the OAuth cache key derived from it matches what `databricks auth login`
+// writes (the SDK leaves cfg.Profile empty on its silent [DEFAULT] fallback).
 //
-// Single-profile fallback (using "the only profile in the file" as the
-// default) is intentionally NOT applied here: that is a CLI-prompt
-// convenience, not an auth rule, and it would cause a single account-only
-// profile to be silently picked up by the workspace-client path.
-//
-// The bundle path deliberately uses databrickscfg.ResolveDefaultProfile
-// (settings-only); see cmd/root/bundle.go.
+// Bundles use databrickscfg.ResolveDefaultProfile directly (settings-only).
 func resolveDefaultProfile(ctx context.Context, cfg *config.Config) {
 	if cfg.Profile != "" || envlib.Get(ctx, "DATABRICKS_CONFIG_PROFILE") != "" {
 		return

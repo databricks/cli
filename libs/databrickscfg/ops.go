@@ -106,18 +106,12 @@ func GetDefaultProfile(ctx context.Context, configFilePath string) (string, erro
 	return GetDefaultProfileFrom(configFile), nil
 }
 
-// GetAuthDefaultProfile returns the default profile name for auth resolution.
-// Mirrors the SDK's config-file resolution (resolveProfile in
-// databricks-sdk-go/config/config_file.go): the [__settings__].default_profile
-// setting takes precedence, then the [DEFAULT] section if it has a host key,
-// otherwise empty.
+// GetAuthDefaultProfile returns the default profile name for auth resolution:
+// [__settings__].default_profile, else [DEFAULT] if it has a host key, else "".
 //
-// Differs from GetDefaultProfile by NOT falling back to "the only profile
-// in the file". That convenience is fine for prompt-seeding (which is what
-// GetDefaultProfile is used for elsewhere) but is wrong for auth: a single
-// account-only profile would be picked up by the workspace-client path,
-// which since SDK v0.125 no longer rejects on host type and would silently
-// succeed, bypassing MustAnyClient's account-client fallback.
+// Unlike GetDefaultProfile, does NOT fall back to "the only profile in the
+// file": that is prompt-seeding convenience and would silently route a single
+// account-only profile through the workspace-client path.
 func GetAuthDefaultProfile(ctx context.Context, configFilePath string) (string, error) {
 	configFile, err := loadConfigFile(ctx, configFilePath)
 	if err != nil {

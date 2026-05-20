@@ -272,9 +272,7 @@ func TestGetAuthDefaultProfile(t *testing.T) {
 			want:    "my-workspace",
 		},
 		{
-			// The auth resolution skips single-profile fallback to match
-			// the SDK and avoid silently routing a single account-only
-			// profile through MustWorkspaceClient.
+			// SDK behavior: no single-profile fallback for auth.
 			name:    "single non-DEFAULT profile is NOT picked",
 			content: "[profile1]\nhost = https://abc\n",
 			want:    "",

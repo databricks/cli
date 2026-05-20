@@ -514,11 +514,7 @@ token = named-token
 
 	w := cmdctx.WorkspaceClient(cmd.Context())
 	require.NotNil(t, w)
-	// resolveDefaultProfile pins cfg.Profile to the resolved name before the
-	// SDK loader runs. Without this, the SDK silently falls back to [DEFAULT]
-	// but leaves cfg.Profile == "", which produces a host-URL OAuth cache
-	// key that does not match what `databricks auth login` (which uses
-	// "DEFAULT") writes.
+	// Pinned so the OAuth cache key matches what `databricks auth login` writes.
 	assert.Equal(t, "DEFAULT", w.Config.Profile)
 	assert.Equal(t, "https://default.cloud.databricks.com", w.Config.Host)
 }
@@ -549,9 +545,7 @@ func TestResolveDefaultProfile(t *testing.T) {
 			wantProfile: "settings-default",
 		},
 		{
-			// Mirrors the SDK: single-profile fallback is NOT applied here.
-			// A single account-only profile would otherwise be silently
-			// picked up by MustWorkspaceClient.
+			// SDK behavior: no single-profile fallback for auth.
 			name:        "single non-DEFAULT profile is NOT picked as the default",
 			configBody:  "[only-profile]\nhost = https://only.test\n",
 			wantProfile: "",
