@@ -41,11 +41,15 @@ type DeploymentState struct {
 	stateIDs map[string]string
 }
 
-type Database struct {
+type Header struct {
 	StateVersion int    `json:"state_version"`
 	CLIVersion   string `json:"cli_version"`
 	Lineage      string `json:"lineage"`
 	Serial       int    `json:"serial"`
+}
+
+type Database struct {
+	Header
 
 	// Maps resource key to ResourceEntry which includes ID + full serialized state.
 	// This is not updated during write/deploy, those writes go to WAL instead.
@@ -59,13 +63,6 @@ type ResourceEntry struct {
 	DependsOn []deployplan.DependsOnEntry `json:"depends_on,omitempty"`
 }
 
-type WALHeader struct {
-	Lineage      string `json:"lineage"`
-	Serial       int    `json:"serial"`
-	StateVersion int    `json:"state_version"`
-	CLIVersion   string `json:"cli_version"`
-}
-
 type WALEntry struct {
 	Key   string         `json:"k"`
 	Value *ResourceEntry `json:"v,omitempty"` // nil means delete
@@ -73,11 +70,13 @@ type WALEntry struct {
 
 func NewDatabase(lineage string, serial int) Database {
 	return Database{
-		StateVersion: currentStateVersion,
-		CLIVersion:   build.GetInfo().Version,
-		Lineage:      lineage,
-		Serial:       serial,
-		State:        make(map[string]ResourceEntry),
+		Header: Header{
+			StateVersion: currentStateVersion,
+			CLIVersion:   build.GetInfo().Version,
+			Lineage:      lineage,
+			Serial:       serial,
+		},
+		State: make(map[string]ResourceEntry),
 	}
 }
 
@@ -195,7 +194,7 @@ func (db *DeploymentState) Open(ctx context.Context, path string, withRecovery W
 			// state file is new, does not have lineage yet; store lineage in the WAL only
 			lineage = uuid.New().String()
 		}
-		walHead := WALHeader{
+		walHead := Header{
 			Lineage:      lineage,
 			Serial:       db.Data.Serial + 1,
 			StateVersion: currentStateVersion,
@@ -268,7 +267,7 @@ func (db *DeploymentState) replayWAL(ctx context.Context) error {
 	return nil
 }
 
-func (db *DeploymentState) validateWALHeader(header *WALHeader) error {
+func (db *DeploymentState) validateWALHeader(header *Header) error {
 	if header.Lineage != db.Data.Lineage && db.Data.Lineage != "" {
 		return fmt.Errorf("WAL lineage (%s) does not match state lineage (%s)", header.Lineage, db.Data.Lineage)
 	}
@@ -305,7 +304,7 @@ func (db *DeploymentState) mergeWalIntoState(ctx context.Context) (bool, error) 
 		lineNumber++
 		line := scanner.Bytes()
 		if lineNumber == 1 {
-			var header WALHeader
+			var header Header
 			if err := json.Unmarshal(line, &header); err != nil {
 				return false, fmt.Errorf("failed to parse WAL header: %w", err)
 			}
@@ -410,7 +409,7 @@ func (db *DeploymentState) UpgradeToWrite() error {
 	if lineage == "" {
 		lineage = uuid.New().String()
 	}
-	walHead := WALHeader{
+	walHead := Header{
 		Lineage:      lineage,
 		Serial:       db.Data.Serial + 1,
 		StateVersion: currentStateVersion,

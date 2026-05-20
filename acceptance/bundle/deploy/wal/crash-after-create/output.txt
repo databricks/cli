@@ -13,10 +13,10 @@ Exit code: [KILLED]
 
 >>> cat .databricks/bundle/default/resources.json.wal
 {
-  "lineage": "[UUID]",
-  "serial": 1,
   "state_version": 2,
-  "cli_version": "[DEV_VERSION]"
+  "cli_version": "[DEV_VERSION]",
+  "lineage": "[UUID]",
+  "serial": 1
 }
 {
   "k": "resources.jobs.job_a",
