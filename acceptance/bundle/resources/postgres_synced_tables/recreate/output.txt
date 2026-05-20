@@ -13,7 +13,6 @@ Deployment complete!
 recreate postgres_synced_tables.my_table
 
 Plan: 1 to add, 0 to change, 1 to delete, 3 unchanged
-contains error: 'Plan: 1 to add, 0 to change, 1 to delete, 0 unchanged' not found in the output.
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/recreate-postgres-synced-table-[UNIQUE_NAME]/default/files...

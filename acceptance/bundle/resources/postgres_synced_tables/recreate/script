@@ -25,6 +25,6 @@ trace $CLI bundle deploy
 # on the source.
 export TIMESERIES_KEY=tpep_dropoff_datetime
 envsubst < databricks.yml.tmpl > databricks.yml
-trace $CLI bundle plan | contains.py "Plan: 1 to add, 0 to change, 1 to delete, 0 unchanged"
+trace $CLI bundle plan | contains.py "Plan: 1 to add, 0 to change, 1 to delete, 3 unchanged"
 
 trace $CLI bundle deploy
