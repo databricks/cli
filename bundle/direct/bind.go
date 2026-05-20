@@ -86,7 +86,7 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 	}
 
 	// Open temp state
-	err := b.StateDB.Open(ctx, tmpStatePath, dstate.WithRecovery(true), dstate.WithWrite(true))
+	err := b.StateDB.Open(ctx, tmpStatePath, dstate.WithRecovery(false), dstate.WithWrite(true))
 	if err != nil {
 		os.Remove(tmpStatePath)
 		return nil, err
