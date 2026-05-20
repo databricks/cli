@@ -39,10 +39,6 @@ type DeploymentState struct {
 
 	// Maps resource key to ID. Unlike Data.State, this is up to date during writes (deploys).
 	stateIDs map[string]string
-
-	// Lineage UUID that was either read from state file or saved into .wal file (for new deployments)
-	// Once set, it must match what we read from the state file & wal file
-	lineage string
 }
 
 type Header struct {
@@ -168,12 +164,26 @@ func (db *DeploymentState) Open(ctx context.Context, path string, withRecovery W
 	}
 
 	db.Path = path
-	if err := db.reloadState(ctx); err != nil {
-		return err
+	data, err := os.ReadFile(db.Path)
+	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			db.Data = NewDatabase("", 0)
+		} else {
+			return err
+		}
+	} else {
+		if err := json.Unmarshal(data, &db.Data); err != nil {
+			return err
+		}
+	}
+
+	db.stateIDs = make(map[string]string)
+	for key, entry := range db.Data.State {
+		db.stateIDs[key] = entry.ID
 	}
 
 	walPath := db.Path + walSuffix
-	_, err := os.Stat(walPath)
+	_, err = os.Stat(walPath)
 	switch {
 	case errors.Is(err, fs.ErrNotExist):
 		// no WAL, nothing to do
@@ -202,13 +212,13 @@ func (db *DeploymentState) Open(ctx context.Context, path string, withRecovery W
 			return fmt.Errorf("failed to open WAL file %s: %w", walPath, err)
 		}
 		db.walFile = walFile
-		db.lineage = db.Data.Lineage
-		if db.lineage == "" {
+		lineage := db.Data.Lineage
+		if lineage == "" {
 			// state file is new, does not have lineage yet; store lineage in the WAL only
-			db.lineage = uuid.New().String()
+			lineage = uuid.New().String()
 		}
 		walHead := Header{
-			Lineage:      db.lineage,
+			Lineage:      lineage,
 			Serial:       db.Data.Serial + 1,
 			StateVersion: currentStateVersion,
 			CLIVersion:   build.GetInfo().Version,
@@ -237,33 +247,6 @@ func (db *DeploymentState) OpenWithData(path string, data Database) {
 	}
 }
 
-// reloadState clears Data amd stateIDs and loads it from db.Path
-func (db *DeploymentState) reloadState(ctx context.Context) error {
-	data, err := os.ReadFile(db.Path)
-	if err != nil {
-		if errors.Is(err, fs.ErrNotExist) {
-			db.Data = NewDatabase(db.lineage, 0)
-		} else {
-			return err
-		}
-	} else {
-		if err := json.Unmarshal(data, &db.Data); err != nil {
-			return err
-		}
-		if db.lineage == "" && db.Data.Lineage != "" {
-			db.lineage = db.Data.Lineage
-		} else {
-			return fmt.Errorf("unexpected lineage in %s: %q (expected %q)", db.Path, db.Data.Lineage, db.lineage)
-		}
-	}
-
-	db.stateIDs = make(map[string]string)
-	for key, entry := range db.Data.State {
-		db.stateIDs[key] = entry.ID
-	}
-	return nil
-}
-
 func (db *DeploymentState) replayWAL(ctx context.Context) error {
 	walPath := db.Path + walSuffix
 	hasEntries, err := db.mergeWalIntoState(ctx)
@@ -283,22 +266,6 @@ func (db *DeploymentState) replayWAL(ctx context.Context) error {
 	if err := os.Remove(walPath); err != nil {
 		return fmt.Errorf("failed to remove WAL file %s: %w", walPath, err)
 	}
-	return nil
-}
-
-func (db *DeploymentState) validateWALHeader(header *Header) error {
-	if header.Lineage != db.lineage {
-		return fmt.Errorf("WAL lineage (%s) does not match state lineage (%s)", header.Lineage, db.lineage)
-	}
-
-	expected := db.Data.Serial + 1
-	if header.Serial < expected {
-		return errStaleWAL
-	}
-	if header.Serial > expected {
-		return fmt.Errorf("WAL serial (%d) is ahead of expected (%d), state may be corrupted", header.Serial, expected)
-	}
-
 	return nil
 }
 
@@ -327,12 +294,21 @@ func (db *DeploymentState) mergeWalIntoState(ctx context.Context) (bool, error) 
 			if err := json.Unmarshal(line, &header); err != nil {
 				return false, fmt.Errorf("failed to parse WAL header: %w", err)
 			}
-			if err := db.validateWALHeader(&header); err != nil {
-				return false, err
+
+			if db.Data.Lineage == "" && header.Lineage != "" {
+				db.Data.Lineage = header.Lineage
+			} else if db.Data.Lineage != header.Lineage {
+				return false, fmt.Errorf("WAL lineage (%q) does not match state lineage (%q)", header.Lineage, db.Data.Lineage)
 			}
-			// Apply header metadata to state (lineage may be new for first deploy)
-			db.Data.Lineage = header.Lineage
-			db.Data.Serial = header.Serial
+
+			expectedSerial := db.Data.Serial + 1
+			if header.Serial < expectedSerial {
+				return false, errStaleWAL
+			}
+			if header.Serial > expectedSerial {
+				return false, fmt.Errorf("WAL serial (%d) is ahead of expected (%d), state may be corrupted", header.Serial, expectedSerial)
+			}
+			db.Data.Serial = expectedSerial
 		} else {
 			var entry WALEntry
 			if err := json.Unmarshal(line, &entry); err != nil {
