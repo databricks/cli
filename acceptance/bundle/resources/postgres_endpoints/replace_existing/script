@@ -1,0 +1,30 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+   # Belt-and-braces in case bundle destroy was skipped or partially failed.
+   $CLI postgres delete-project "projects/test-pg-proj-${UNIQUE_NAME}" 2>/dev/null || true
+   rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+trace $CLI bundle validate
+
+rm -f out.requests.txt
+trace $CLI bundle deploy
+
+# The implicit primary endpoint inherits suspend_timeout_duration from the
+# project default (300s). After deploy with replace_existing=true, the
+# bundle's spec must be applied: 600s.
+trace $CLI postgres get-endpoint "projects/test-pg-proj-${UNIQUE_NAME}/branches/develop/endpoints/primary" | jq 'del(.create_time, .update_time)'
+
+trace print_requests.py --keep --get '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.deploy.$DATABRICKS_BUNDLE_ENGINE.json
+
+# bundle destroy: the backend rejects independent deletion of the primary
+# read-write endpoint with a MANAGED_BY_PARENT marker; both engines
+# disregard that error and let the parent branch delete cascade-clean the
+# endpoint. Per-engine output is captured so regressions in either
+# engine's destroy flow show up in the diff.
+title "bundle destroy"
+$CLI bundle destroy --auto-approve > out.destroy.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1 || true
+
+trace print_requests.py --keep --get '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.destroy.$DATABRICKS_BUNDLE_ENGINE.json

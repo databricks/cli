@@ -46,6 +46,11 @@ const (
 	defaultTimeout          = 1 * time.Hour
 	authTypeDatabricksCLI   = "databricks-cli"
 	discoveryFallbackTip    = "\n\nTip: you can specify a workspace directly with: databricks auth login --host <url>"
+	// discoveryHostEnvVar overrides the default https://login.databricks.com
+	// host used by the discovery login flow. Intended for testing and
+	// development against non-production environments. See WithDiscoveryHost
+	// in github.com/databricks/databricks-sdk-go/credentials/u2m.
+	discoveryHostEnvVar = "DATABRICKS_DISCOVERY_HOST"
 )
 
 // discoveryErr wraps an error (or creates a new one) and appends the
@@ -144,15 +149,6 @@ a new profile is created.
 		ctx := cmd.Context()
 		profileName := cmd.Flag("profile").Value.String()
 
-		// Resolve the cache before the browser step so an unavailable
-		// keyring surfaces here rather than after OAuth. The probe also
-		// triggers the OS unlock prompt, which the user can answer during
-		// OAuth.
-		tokenCache, mode, err := storage.ResolveCacheForLogin(ctx, "")
-		if err != nil {
-			return err
-		}
-
 		// Cluster and Serverless are mutually exclusive.
 		if configureCluster && configureServerless {
 			return errors.New("please either configure serverless or cluster, not both")
@@ -176,6 +172,16 @@ a new profile is created.
 				authArguments.Host = resolvedHost
 				args = nil
 			}
+		}
+
+		// Resolve the cache before the browser step so an unavailable
+		// keyring surfaces here rather than after OAuth. The probe also
+		// triggers the OS unlock prompt, which the user can answer during
+		// OAuth. Run after input validation so trivially-invalid commands
+		// fail without probing.
+		tokenCache, mode, err := storage.ResolveCacheForLogin(ctx, "")
+		if err != nil {
+			return err
 		}
 
 		// When interactive and nothing was specified, show a picker that lets
@@ -294,6 +300,11 @@ a new profile is created.
 		if err = persistentAuth.Challenge(); err != nil {
 			return err
 		}
+		// Lock secure mode in after a successful keyring write so a later
+		// transient keyring probe failure cannot silently demote this user
+		// to plaintext.
+		storage.PinSecureMode(ctx, mode, storage.StorageModeUnknown)
+
 		// At this point, an OAuth token has been successfully minted and stored
 		// in the CLI cache. The rest of the command focuses on:
 		// 1. Workspace selection for SPOG hosts (best-effort);
@@ -618,6 +629,10 @@ func discoveryLogin(ctx context.Context, in discoveryLoginInputs) error {
 	if len(scopesList) > 0 {
 		opts = append(opts, u2m.WithScopes(scopesList))
 	}
+	discoveryHost := env.Get(ctx, discoveryHostEnvVar)
+	if discoveryHost != "" {
+		opts = append(opts, u2m.WithDiscoveryHost(discoveryHost))
+	}
 
 	// Apply timeout before creating PersistentAuth so Challenge() respects it.
 	ctx, cancel := context.WithTimeout(ctx, in.timeout)
@@ -629,10 +644,15 @@ func discoveryLogin(ctx context.Context, in discoveryLoginInputs) error {
 	}
 	defer persistentAuth.Close()
 
-	cmdio.LogString(ctx, "Opening login.databricks.com in your browser...")
+	displayHost := "login.databricks.com"
+	if discoveryHost != "" {
+		displayHost = discoveryHost
+	}
+	cmdio.LogString(ctx, fmt.Sprintf("Opening %s in your browser...", displayHost))
 	if err := persistentAuth.Challenge(); err != nil {
 		return discoveryErr("login via login.databricks.com failed", err)
 	}
+	storage.PinSecureMode(ctx, in.mode, storage.StorageModeUnknown)
 
 	discoveredHost := arg.GetDiscoveredHost()
 	if discoveredHost == "" {

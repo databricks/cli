@@ -1,0 +1,43 @@
+bundle:
+  name: deploy-postgres-replace-endpoint-$UNIQUE_NAME
+
+sync:
+  paths: []
+
+resources:
+  # The project's default_endpoint_settings are inherited by every implicit
+  # primary endpoint. We set suspend_timeout_duration to 300s here so the
+  # primary endpoint of the "develop" branch below would otherwise come up
+  # with 300s.
+  postgres_projects:
+    my_project:
+      project_id: test-pg-proj-$UNIQUE_NAME
+      display_name: "Replace existing endpoint test"
+      pg_version: 16
+      history_retention_duration: "604800s"
+      default_endpoint_settings:
+        autoscaling_limit_min_cu: 0.5
+        autoscaling_limit_max_cu: 4
+        suspend_timeout_duration: "300s"
+
+  # Non-default branch managed normally — the server auto-provisions its
+  # primary read-write endpoint with the project defaults above.
+  postgres_branches:
+    develop:
+      parent: ${resources.postgres_projects.my_project.id}
+      branch_id: develop
+      no_expiry: true
+
+  # Take over the implicitly-created primary endpoint of the develop branch
+  # and override the inherited suspend_timeout_duration (300s) with 600s. A
+  # successful deploy with 600s reflected in get-endpoint proves
+  # replace_existing applied the spec.
+  postgres_endpoints:
+    primary:
+      parent: ${resources.postgres_branches.develop.id}
+      endpoint_id: primary
+      replace_existing: true
+      endpoint_type: ENDPOINT_TYPE_READ_WRITE
+      autoscaling_limit_min_cu: 0.5
+      autoscaling_limit_max_cu: 4
+      suspend_timeout_duration: "600s"

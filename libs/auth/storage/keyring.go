@@ -92,6 +92,9 @@ func NewKeyringCache() cache.TokenCache {
 // cycle within the standard timeout. *TimeoutError means the keyring
 // was unresponsive (locked or hung, indistinguishable here); other
 // errors are definitive failures.
+//
+// Used by the login path, where we want to validate both read and write
+// capability before committing to the keyring backend.
 func ProbeKeyring() error {
 	return probeWithBackend(zalandoBackend{}, defaultKeyringTimeout)
 }
@@ -111,6 +114,35 @@ func probeWithBackend(backend keyringBackend, timeout time.Duration) error {
 		return fmt.Errorf("delete: %w", err)
 	}
 	return nil
+}
+
+// ProbeKeyringRead returns nil if the OS keyring accepted a Get for a
+// non-existent account within the standard timeout (i.e. the backend is
+// reachable and responded with keyring.ErrNotFound). *TimeoutError means
+// the keyring was unresponsive; other errors are definitive failures.
+//
+// Used by the read path so probing does not write to the keyring. A
+// successful probe is indistinguishable from the user not having an
+// entry for that probe account; we treat both as "reachable".
+func ProbeKeyringRead() error {
+	return probeReadWithBackend(zalandoBackend{}, defaultKeyringTimeout)
+}
+
+func probeReadWithBackend(backend keyringBackend, timeout time.Duration) error {
+	c := &keyringCache{
+		backend:        backend,
+		timeout:        timeout,
+		keyringSvcName: keyringServiceName,
+	}
+	account := keyringProbeAccountPrefix + uuid.NewString()
+	err := c.withTimeout("get", func() error {
+		_, gerr := c.backend.Get(c.keyringSvcName, account)
+		return gerr
+	})
+	if errors.Is(err, keyring.ErrNotFound) {
+		return nil
+	}
+	return err
 }
 
 // Store stores t under key. Nil t deletes the entry; deleting a missing
@@ -149,7 +181,7 @@ func (k *keyringCache) Lookup(key string) (*oauth2.Token, error) {
 		return nil, cache.ErrNotFound
 	}
 	if err != nil {
-		return nil, err
+		return nil, wrapKeyringUnreachable(err)
 	}
 
 	var entry keyringEntry
@@ -157,6 +189,24 @@ func (k *keyringCache) Lookup(key string) (*oauth2.Token, error) {
 		return nil, fmt.Errorf("unmarshal token: %w", err)
 	}
 	return entry.Token, nil
+}
+
+// wrapKeyringUnreachable wraps a non-ErrNotFound keyring error with
+// actionable guidance for users whose system has no usable keyring
+// backend (Linux without a Secret Service / D-Bus session bus, headless
+// containers, certain SSH sessions). Surfaces on the read path, where
+// the resolver does not silently fall back to plaintext: a missing
+// token might actually be reachable from the keyring on another machine,
+// so we surface the unreachability instead of minting a fresh plaintext
+// copy.
+//
+// ErrNotFound passes through unchanged because a clean miss is not an
+// availability problem.
+func wrapKeyringUnreachable(err error) error {
+	if err == nil || errors.Is(err, keyring.ErrNotFound) {
+		return err
+	}
+	return fmt.Errorf("OS keyring unreachable: %w (set DATABRICKS_AUTH_STORAGE=plaintext or run `databricks auth login` to use file-based token storage)", err)
 }
 
 // Compile-time confirmation that keyringCache satisfies the SDK interface.
