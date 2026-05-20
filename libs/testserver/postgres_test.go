@@ -234,9 +234,11 @@ func TestPostgresEndpointCRUD(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, 200, listEpResp.StatusCode)
 
+	// Each branch implicitly provisions a "primary" RW endpoint in addition to
+	// the explicitly-created "rw-endpoint".
 	var listEndpoints postgres.ListEndpointsResponse
 	require.NoError(t, json.NewDecoder(listEpResp.Body).Decode(&listEndpoints))
-	assert.Len(t, listEndpoints.Endpoints, 1)
+	assert.Len(t, listEndpoints.Endpoints, 2)
 	listEpResp.Body.Close()
 
 	// Delete endpoint

@@ -12,7 +12,6 @@ import (
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	envlib "github.com/databricks/cli/libs/env"
-	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
@@ -299,14 +298,8 @@ func resolveDefaultProfile(ctx context.Context, cfg *config.Config) {
 	if cfg.Profile != "" || envlib.Get(ctx, "DATABRICKS_CONFIG_PROFILE") != "" {
 		return
 	}
-	configFilePath := envlib.Get(ctx, "DATABRICKS_CONFIG_FILE")
-	resolvedProfile, err := databrickscfg.GetConfiguredDefaultProfile(ctx, configFilePath)
-	if err != nil {
-		log.Warnf(ctx, "Failed to load default profile: %v", err)
-		return
-	}
-	if resolvedProfile != "" {
-		cfg.Profile = resolvedProfile
+	if resolved := databrickscfg.ResolveDefaultProfile(ctx); resolved != "" {
+		cfg.Profile = resolved
 	}
 }
 

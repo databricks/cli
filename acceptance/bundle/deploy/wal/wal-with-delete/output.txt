@@ -1,0 +1,19 @@
+=== WAL content ===
+{"lineage":"delete-test-lineage","serial":2}
+{"k":"resources.jobs.test_job","v":null}
+=== Deploy (should recover delete from WAL) ===
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/wal-delete-test/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+=== Final state (should have no jobs) ===
+
+>>> [CLI] bundle summary
+Name: wal-delete-test
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/wal-delete-test/default
+Resources:

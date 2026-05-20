@@ -18,6 +18,7 @@ import (
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m/cache"
@@ -284,10 +285,22 @@ func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
 			//
 			// Older SDK versions check for a particular substring to determine if
 			// the OAuth authentication type can fall through or if it is a real error.
-			// This means we need to keep this error message constant for backwards compatibility.
+			// This means we need to keep "databricks OAuth is not configured for
+			// this host" present in the error for backwards compatibility.
 			//
 			// This is captured in an acceptance test under "cmd/auth/token".
-			err = errors.New("cache: databricks OAuth is not configured for this host")
+			const compatSubstring = "databricks OAuth is not configured for this host"
+			// When storage's notFoundHintCache wrapped the ErrNotFound with
+			// an actionable hint (e.g. the post-upgrade "stored credentials
+			// from older CLI versions are no longer used; run `databricks
+			// auth login`..." copy), surface it instead of the generic
+			// "Try logging in again with ... If this fails, please report
+			// this issue" trailer. The hint is more specific and avoids
+			// users reporting expected post-upgrade behavior as a bug.
+			if hint := storage.HintForNotFound(err); hint != "" {
+				return nil, fmt.Errorf("cache: %s. %s", compatSubstring, hint)
+			}
+			err = errors.New("cache: " + compatSubstring)
 		}
 		if rewritten, rewrittenErr := auth.RewriteAuthError(ctx, args.authArguments.Host, args.authArguments.AccountID, args.profileName, err); rewritten {
 			return nil, rewrittenErr
@@ -325,6 +338,18 @@ func resolveNoArgsToken(ctx context.Context, profiler profile.Profiler, authArgs
 			return "", nil, err
 		}
 		return envProfile, p, nil
+	}
+
+	// Step 2.5: Try [__settings__].default_profile from the config file.
+	// default_profile is advisory: if it points at a profile that no longer
+	// exists, fall through to the interactive picker rather than erroring.
+	if defaultProfile := databrickscfg.ResolveDefaultProfile(ctx); defaultProfile != "" {
+		p, err := loadProfileByName(ctx, defaultProfile, profiler)
+		if err != nil {
+			log.Warnf(ctx, "default_profile %q not loadable: %v", defaultProfile, err)
+		} else if p != nil {
+			return defaultProfile, p, nil
+		}
 	}
 
 	// Step 3: No env vars resolved. Load all profiles for interactive selection
@@ -420,6 +445,7 @@ func runInlineLogin(ctx context.Context, profiler profile.Profiler, tokenCache c
 	if err = persistentAuth.Challenge(); err != nil {
 		return "", nil, err
 	}
+	storage.PinSecureMode(ctx, mode, storage.StorageModeUnknown)
 
 	clearKeys := oauthLoginClearKeys()
 	clearKeys = append(clearKeys, databrickscfg.ExperimentalIsUnifiedHostKey)

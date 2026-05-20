@@ -227,12 +227,8 @@ To start using direct engine, set "engine: direct" under bundle in your databric
 		migratedDB := dstate.NewDatabase(stateDesc.Lineage, stateDesc.Serial+1)
 		migratedDB.State = state
 
-		deploymentBundle := &direct.DeploymentBundle{
-			StateDB: dstate.DeploymentState{
-				Path: tempStatePath,
-				Data: migratedDB,
-			},
-		}
+		deploymentBundle := &direct.DeploymentBundle{}
+		deploymentBundle.StateDB.OpenWithData(tempStatePath, migratedDB)
 
 		tempStatePathAutoRemove := true
 
@@ -281,8 +277,12 @@ To start using direct engine, set "engine: direct" under bundle in your databric
 			}
 		}
 
+		if err := deploymentBundle.StateDB.UpgradeToWrite(); err != nil {
+			return fmt.Errorf("upgrading state for apply: %w", err)
+		}
+
 		deploymentBundle.Apply(ctx, b.WorkspaceClient(ctx), plan, direct.MigrateMode(true))
-		if err := deploymentBundle.StateDB.Finalize(); err != nil {
+		if _, err := deploymentBundle.StateDB.Finalize(ctx); err != nil {
 			logdiag.LogError(ctx, err)
 		}
 		if logdiag.HasError(ctx) {
@@ -310,7 +310,7 @@ Validate the migration by running "databricks bundle plan%s", there should be no
 The state file is not synchronized to the workspace yet. To do that and finalize the migration, run "bundle deploy%s".
 
 To undo the migration, remove %s and rename %s to %s
-`, len(deploymentBundle.StateDB.Data.State), localPath, extraArgsStr, extraArgsStr, localPath, localTerraformBackupPath, localTerraformPath))
+`, len(state), localPath, extraArgsStr, extraArgsStr, localPath, localTerraformBackupPath, localTerraformPath))
 		return nil
 	}
 
