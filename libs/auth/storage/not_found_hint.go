@@ -58,6 +58,33 @@ type notFoundHint struct {
 func (e *notFoundHint) Error() string { return e.msg }
 func (e *notFoundHint) Unwrap() error { return cache.ErrNotFound }
 
+// HintForNotFound extracts the actionable hint message from an error
+// chain produced by notFoundHintCache. Returns the empty string if the
+// chain does not contain a notFoundHint (e.g. an unwrapped
+// cache.ErrNotFound from a plain TokenCache).
+//
+// Used by call sites like `auth token` that rewrite the SDK error for
+// backwards-compatibility (the "databricks OAuth is not configured for
+// this host" substring is load-bearing for older SDK fall-through
+// logic) but want to surface the actionable hint to the user instead of
+// dropping it.
+func HintForNotFound(err error) string {
+	var hint *notFoundHint
+	if errors.As(err, &hint) {
+		return hint.msg
+	}
+	return ""
+}
+
+// NewNotFoundHint returns an error that renders as msg but unwraps to
+// cache.ErrNotFound, mirroring what notFoundHintCache produces in
+// production. Exported so tests in other packages (e.g. cmd/auth) can
+// construct a hint-wrapped error without going through the full
+// resolver setup.
+func NewNotFoundHint(msg string) error {
+	return &notFoundHint{msg: msg}
+}
+
 // withNotFoundHint wraps inner so ErrNotFound from Lookup carries an
 // actionable hint. The legacy file path is resolved up front (where ctx
 // is available) so Lookup can do its check without needing a context.

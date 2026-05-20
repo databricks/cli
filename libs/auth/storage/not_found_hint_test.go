@@ -3,6 +3,7 @@ package storage
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -116,6 +117,36 @@ func TestNotFoundHintCache_SuccessfulLookupUnchanged(t *testing.T) {
 func TestNotFoundHintCache_StoreIsDelegated(t *testing.T) {
 	c := &notFoundHintCache{inner: missingCache{}, mode: StorageModeSecure, legacyCachePath: ""}
 	require.NoError(t, c.Store("k", &oauth2.Token{AccessToken: "abc"}))
+}
+
+func TestHintForNotFound(t *testing.T) {
+	t.Run("nil returns empty", func(t *testing.T) {
+		assert.Empty(t, HintForNotFound(nil))
+	})
+
+	t.Run("plain ErrNotFound returns empty", func(t *testing.T) {
+		// An unwrapped cache.ErrNotFound carries no hint, so the caller
+		// (e.g. `auth token`) falls back to its default error path.
+		assert.Empty(t, HintForNotFound(cache.ErrNotFound))
+	})
+
+	t.Run("unrelated error returns empty", func(t *testing.T) {
+		assert.Empty(t, HintForNotFound(errors.New("something else")))
+	})
+
+	t.Run("notFoundHint returns the hint message", func(t *testing.T) {
+		h := &notFoundHint{msg: "do the thing"}
+		assert.Equal(t, "do the thing", HintForNotFound(h))
+	})
+
+	t.Run("notFoundHint behind an fmt.Errorf wrap returns the hint", func(t *testing.T) {
+		// The SDK wraps every cache error with `cache: %w`, so the hint
+		// is one Unwrap away when it surfaces in callers. errors.As must
+		// still find it.
+		h := &notFoundHint{msg: "do the thing"}
+		wrapped := fmt.Errorf("cache: %w", h)
+		assert.Equal(t, "do the thing", HintForNotFound(wrapped))
+	})
 }
 
 func TestLegacyCacheHasTokens(t *testing.T) {

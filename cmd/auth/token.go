@@ -285,10 +285,22 @@ func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
 			//
 			// Older SDK versions check for a particular substring to determine if
 			// the OAuth authentication type can fall through or if it is a real error.
-			// This means we need to keep this error message constant for backwards compatibility.
+			// This means we need to keep "databricks OAuth is not configured for
+			// this host" present in the error for backwards compatibility.
 			//
 			// This is captured in an acceptance test under "cmd/auth/token".
-			err = errors.New("cache: databricks OAuth is not configured for this host")
+			const compatSubstring = "databricks OAuth is not configured for this host"
+			// When storage's notFoundHintCache wrapped the ErrNotFound with
+			// an actionable hint (e.g. the post-upgrade "stored credentials
+			// from older CLI versions are no longer used; run `databricks
+			// auth login`..." copy), surface it instead of the generic
+			// "Try logging in again with ... If this fails, please report
+			// this issue" trailer. The hint is more specific and avoids
+			// users reporting expected post-upgrade behavior as a bug.
+			if hint := storage.HintForNotFound(err); hint != "" {
+				return nil, fmt.Errorf("cache: %s. %s", compatSubstring, hint)
+			}
+			err = errors.New("cache: " + compatSubstring)
 		}
 		if rewritten, rewrittenErr := auth.RewriteAuthError(ctx, args.authArguments.Host, args.authArguments.AccountID, args.profileName, err); rewritten {
 			return nil, rewrittenErr
