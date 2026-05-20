@@ -165,8 +165,13 @@ func (db *DeploymentState) Open(ctx context.Context, path string, withRecovery W
 	}
 
 	walPath := db.Path + walSuffix
-	_, walError := os.Stat(walPath)
-	if walError == nil {
+	_, err := os.Stat(walPath)
+	switch {
+	case errors.Is(err, fs.ErrNotExist):
+		// no WAL, nothing to do
+	case err != nil:
+		return fmt.Errorf("failed to stat WAL file %s: %w", walPath, err)
+	default: // WAL exists
 		if withRecovery {
 			if err := db.replayWAL(ctx); err != nil {
 				return fmt.Errorf("reading state from %s: %w", path, err)
