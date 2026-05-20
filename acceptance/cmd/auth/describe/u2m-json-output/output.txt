@@ -2,7 +2,7 @@
 >>> [CLI] auth describe --profile u2m-profile --output json
 Warn: [hostmetadata] failed to fetch host metadata for https://u2m-profile.databricks.test, will skip for 1m0s
 {
-  "mode": "plaintext",
-  "location": "~/.databricks/token-cache.json",
+  "mode": "secure",
+  "location": "OS keyring (service: databricks-cli)",
   "source": "default"
 }

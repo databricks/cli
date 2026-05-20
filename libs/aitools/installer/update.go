@@ -113,19 +113,17 @@ func UpdateSkills(ctx context.Context, src ManifestSource, targetAgents []*agent
 
 	for _, name := range names {
 		meta, inManifest := manifest.Skills[name]
-		oldVersion := state.Skills[name]
 
 		if !inManifest {
-			_, wasInstalled := state.Skills[name]
-			if wasInstalled {
+			if _, ok := state.Skills[name]; ok {
 				log.Warnf(ctx, "Warning: %q not found in manifest %s (keeping installed version).", name, latestTag)
+				result.Unchanged = append(result.Unchanged, name)
 			}
-			result.Unchanged = append(result.Unchanged, name)
 			continue
 		}
 
 		// Filter experimental skills unless state opted in.
-		if meta.Experimental && !state.IncludeExperimental {
+		if meta.IsExperimental() && !state.IncludeExperimental {
 			log.Debugf(ctx, "Skipping experimental skill %s", name)
 			result.Skipped = append(result.Skipped, name)
 			continue
@@ -138,10 +136,9 @@ func UpdateSkills(ctx context.Context, src ManifestSource, targetAgents []*agent
 			continue
 		}
 
-		// Check if this is a new skill (not in state).
-		_, wasInstalled := state.Skills[name]
+		oldVersion, wasInstalled := state.Skills[name]
 
-		if meta.Version == oldVersion && !opts.Force {
+		if meta.Version == oldVersion && stateRepoDir(state, name) == meta.RepoDir && !opts.Force {
 			result.Unchanged = append(result.Unchanged, name)
 			continue
 		}
@@ -152,10 +149,10 @@ func UpdateSkills(ctx context.Context, src ManifestSource, targetAgents []*agent
 			NewVersion: meta.Version,
 		}
 
-		if !wasInstalled {
-			result.Added = append(result.Added, update)
-		} else {
+		if wasInstalled {
 			result.Updated = append(result.Updated, update)
+		} else {
+			result.Added = append(result.Added, update)
 		}
 	}
 
@@ -177,7 +174,7 @@ func UpdateSkills(ctx context.Context, src ManifestSource, targetAgents []*agent
 
 	for _, change := range allChanges {
 		meta := manifest.Skills[change.Name]
-		if err := installSkillForAgents(ctx, change.Name, meta.Files, targetAgents, params); err != nil {
+		if err := installSkillForAgents(ctx, change.Name, meta, targetAgents, params); err != nil {
 			return nil, err
 		}
 	}
@@ -185,8 +182,13 @@ func UpdateSkills(ctx context.Context, src ManifestSource, targetAgents []*agent
 	// Update state.
 	state.Release = latestTag
 	state.LastUpdated = time.Now()
+	if state.RepoDirs == nil {
+		state.RepoDirs = make(map[string]string, len(state.Skills)+len(allChanges))
+	}
 	for _, change := range allChanges {
+		meta := manifest.Skills[change.Name]
 		state.Skills[change.Name] = change.NewVersion
+		state.RepoDirs[change.Name] = meta.RepoDir
 	}
 	if err := SaveState(baseDir, state); err != nil {
 		return nil, err
@@ -200,7 +202,6 @@ func buildUpdateSkillSet(state *InstallState, manifest *Manifest, opts UpdateOpt
 	skillSet := make(map[string]bool)
 
 	if len(opts.Skills) > 0 {
-		// Only named skills.
 		for _, name := range opts.Skills {
 			skillSet[name] = true
 		}

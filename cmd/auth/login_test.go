@@ -1082,6 +1082,40 @@ auth_type = databricks-cli
 	assert.Equal(t, "222222", savedProfile.WorkspaceID, "workspace_id should be updated to fresh introspection value")
 }
 
+func TestDiscoveryLogin_OverridesHostFromEnv(t *testing.T) {
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, ".databrickscfg")
+	err := os.WriteFile(configPath, []byte(""), 0o600)
+	require.NoError(t, err)
+	t.Setenv("DATABRICKS_CONFIG_FILE", configPath)
+
+	oauthArg, err := u2m.NewBasicDiscoveryOAuthArgument("DISCOVERY")
+	require.NoError(t, err)
+	oauthArg.SetDiscoveredHost("https://workspace.example.com")
+
+	dc := &fakeDiscoveryClient{
+		oauthArg: oauthArg,
+		persistentAuth: &fakeDiscoveryPersistentAuth{
+			token: &oauth2.Token{AccessToken: "test-token"},
+		},
+		introspectionErr: errors.New("introspection failed"),
+	}
+
+	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
+	ctx = env.Set(ctx, "DATABRICKS_DISCOVERY_HOST", "https://login.staging.test")
+	err = discoveryLogin(ctx, discoveryLoginInputs{
+		dc:          dc,
+		profileName: "DISCOVERY",
+		timeout:     time.Second,
+		browserFunc: func(string) error { return nil },
+		tokenCache:  newTestTokenCache(),
+	})
+	require.NoError(t, err)
+
+	assert.Contains(t, stderr.String(), "Opening https://login.staging.test in your browser...")
+	assert.NotContains(t, stderr.String(), "Opening login.databricks.com in your browser...")
+}
+
 func TestLoginRejectsPositionalArgWithHostFlag(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
 	authArgs := &auth.AuthArguments{Host: "https://example.com"}

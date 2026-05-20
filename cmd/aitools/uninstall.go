@@ -1,12 +1,19 @@
 package aitools
 
 import (
+	"context"
+
 	"github.com/databricks/cli/libs/aitools/installer"
 	"github.com/spf13/cobra"
 )
 
+// Package-level for testability. Tests override via uninstall_test.go.
+var uninstallSkillsFn = func(ctx context.Context, opts installer.UninstallOptions) error {
+	return installer.UninstallSkillsOpts(ctx, opts)
+}
+
 func NewUninstallCmd() *cobra.Command {
-	var skillsFlag string
+	var skillsFlag, scopeFlag string
 	var projectFlag, globalFlag bool
 
 	cmd := &cobra.Command{
@@ -18,6 +25,11 @@ By default, removes all skills. Use --skills to remove specific skills only.`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
+
+			projectFlag, globalFlag, err := parseScopeFlag(scopeFlag, projectFlag, globalFlag, false)
+			if err != nil {
+				return err
+			}
 
 			globalDir, err := installer.GlobalSkillsDir(ctx)
 			if err != nil {
@@ -37,12 +49,14 @@ By default, removes all skills. Use --skills to remove specific skills only.`,
 				Scope: scope,
 			}
 			opts.Skills = splitAndTrim(skillsFlag)
-			return installer.UninstallSkillsOpts(ctx, opts)
+			return uninstallSkillsFn(ctx, opts)
 		},
 	}
 
 	cmd.Flags().StringVar(&skillsFlag, "skills", "", "Specific skills to uninstall (comma-separated)")
+	cmd.Flags().StringVar(&scopeFlag, "scope", "", "Uninstall scope: project or global")
 	cmd.Flags().BoolVar(&projectFlag, "project", false, "Uninstall project-scoped skills")
 	cmd.Flags().BoolVar(&globalFlag, "global", false, "Uninstall globally-scoped skills")
+	markScopeBoolsDeprecated(cmd)
 	return cmd
 }
