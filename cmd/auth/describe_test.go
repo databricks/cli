@@ -240,21 +240,21 @@ func TestResolveTokenStorageInfo(t *testing.T) {
 			want:     nil,
 		},
 		{
-			name:     "databricks-cli with default plaintext",
+			name:     "databricks-cli with default secure",
 			authType: authTypeDatabricksCLI,
 			want: &tokenStorageInfo{
-				Mode:     "plaintext",
-				Location: plaintextLocation,
+				Mode:     "secure",
+				Location: secureLocation,
 				Source:   "default",
 			},
 		},
 		{
-			name:     "databricks-cli with secure from env",
+			name:     "databricks-cli with plaintext from env",
 			authType: authTypeDatabricksCLI,
-			envValue: "secure",
+			envValue: "plaintext",
 			want: &tokenStorageInfo{
-				Mode:     "secure",
-				Location: secureLocation,
+				Mode:     "plaintext",
+				Location: plaintextLocation,
 				Source:   "DATABRICKS_AUTH_STORAGE environment variable",
 			},
 		},
