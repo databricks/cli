@@ -4,7 +4,7 @@
 
 ### Notable Changes
 
-* Breaking change: U2M (`auth_type = databricks-cli`) tokens are now stored in the OS-native secure store by default (Keychain on macOS, Credential Manager on Windows, Secret Service on Linux) instead of `~/.databricks/token-cache.json`. After upgrading, run `databricks auth login` once per profile to re-authenticate; cached tokens from older versions are not migrated. To keep the previous file-backed storage, set `DATABRICKS_AUTH_STORAGE=plaintext` or add `auth_storage = plaintext` under `[__settings__]` in `~/.databrickscfg` (the env var takes precedence over the config setting), then re-run `databricks auth login`.
+* Breaking change: OAuth tokens for interactive logins (`auth_type = databricks-cli`) are now stored in the OS-native secure store by default (Keychain on macOS, Credential Manager on Windows, Secret Service on Linux) instead of `~/.databricks/token-cache.json`. After upgrading, run `databricks auth login` once per profile to re-authenticate; cached tokens from older versions are not migrated. To keep the previous file-backed storage, set `DATABRICKS_AUTH_STORAGE=plaintext` or add `auth_storage = plaintext` under `[__settings__]` in `~/.databrickscfg` (the env var takes precedence over the config setting), then re-run `databricks auth login`.
 
 ### CLI
 

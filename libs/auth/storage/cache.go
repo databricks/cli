@@ -151,9 +151,7 @@ func applyLoginFallback(ctx context.Context, mode StorageMode, explicit bool, f 
 			if fileErr != nil {
 				return nil, "", fmt.Errorf("open file token cache: %w", fileErr)
 			}
-			if err := persistPlaintextFallback(ctx); err != nil {
-				log.Debugf(ctx, "persisting auth_storage fallback failed: %v", err)
-			}
+			persistPlaintextFallback(ctx)
 			return fileCache, StorageModePlaintext, nil
 		}
 		return f.newKeyring(), mode, nil
@@ -167,11 +165,13 @@ func applyLoginFallback(ctx context.Context, mode StorageMode, explicit bool, f 
 // probe and route straight to the file cache.
 //
 // Only called on the (mode=Secure, explicit=false) probe-failure branch.
-// Persisting the fallback lets default-on-broken-keyring users avoid a 3s
-// probe on every command.
-func persistPlaintextFallback(ctx context.Context) error {
+// Best-effort: persistence failures are logged at debug and never block
+// login.
+func persistPlaintextFallback(ctx context.Context) {
 	configPath := env.Get(ctx, "DATABRICKS_CONFIG_FILE")
-	return databrickscfg.SetConfiguredAuthStorage(ctx, string(StorageModePlaintext), configPath)
+	if err := databrickscfg.SetConfiguredAuthStorage(ctx, string(StorageModePlaintext), configPath); err != nil {
+		log.Debugf(ctx, "persist auth_storage=plaintext fallback failed: %v", err)
+	}
 }
 
 // PinSecureMode persists auth_storage = secure to [__settings__] when the
@@ -188,7 +188,7 @@ func PinSecureMode(ctx context.Context, mode StorageMode) {
 	if mode != StorageModeSecure {
 		return
 	}
-	_, source, err := ResolveStorageModeWithSource(ctx, "")
+	_, source, err := ResolveStorageModeWithSource(ctx, StorageModeUnknown)
 	if err != nil {
 		log.Debugf(ctx, "pin secure mode: resolve: %v", err)
 		return
@@ -198,6 +198,6 @@ func PinSecureMode(ctx context.Context, mode StorageMode) {
 	}
 	configPath := env.Get(ctx, "DATABRICKS_CONFIG_FILE")
 	if err := databrickscfg.SetConfiguredAuthStorage(ctx, string(StorageModeSecure), configPath); err != nil {
-		log.Debugf(ctx, "pin secure mode: persist: %v", err)
+		log.Debugf(ctx, "persist auth_storage=secure pin failed: %v", err)
 	}
 }
