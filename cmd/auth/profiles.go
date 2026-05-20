@@ -70,13 +70,15 @@ func (c *profileMetadata) Load(ctx context.Context, configFilePath string, skipV
 	isWorkspaceHost := auth.IsClassicWorkspaceHost(cfg)
 
 	// Field signals.
-	// hasAccountID:       account_id is set (from file, env, or discovery back-fill).
 	// hasRealWorkspaceID: workspace_id is set to a real value.
-	hasAccountID := cfg.AccountID != ""
 	// workspace_id is "" when not present in the profile, "none" when the user picked Skip during SPOG login.
 	hasRealWorkspaceID := cfg.WorkspaceID != "" && cfg.WorkspaceID != auth.WorkspaceIDNone
 
-	tryAccount := isAccountHost || isSPOGHost || hasAccountID
+	// account_id isn't a probe trigger on its own: it gets back-filled by
+	// discovery on workspace profiles and can linger from a prior login on
+	// the same profile name, so its presence on a non-account host doesn't
+	// imply the user has account access.
+	tryAccount := isAccountHost || isSPOGHost
 	tryWorkspace := isWorkspaceHost || hasRealWorkspaceID
 
 	var accountOK, workspaceOK bool
