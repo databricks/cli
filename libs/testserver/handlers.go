@@ -982,7 +982,6 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.PostgresOperationGet("operations/" + req.Vars["operation_id"])
 	})
 
-
 	// Catch-all handler for invalid postgres resource names.
 	// This handles cases like GET /api/2.0/postgres/1234 where "1234" is not a valid resource name.
 	server.Handle("GET", "/api/2.0/postgres/{name}", func(req Request) any {
