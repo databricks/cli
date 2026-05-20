@@ -41,7 +41,11 @@ func defaultCacheFactories() cacheFactories {
 // through u2m.WithTokenCache, otherwise the SDK defaults to the file cache
 // and splits the user's tokens across two backends.
 func ResolveCache(ctx context.Context, override StorageMode) (cache.TokenCache, StorageMode, error) {
-	return resolveCacheWith(ctx, override, defaultCacheFactories())
+	inner, mode, err := resolveCacheWith(ctx, override, defaultCacheFactories())
+	if err != nil {
+		return nil, "", err
+	}
+	return withNotFoundHint(ctx, inner, mode), mode, nil
 }
 
 // ResolveCacheForLogin resolves the cache like ResolveCache with extra rules
@@ -63,7 +67,11 @@ func ResolveCache(ctx context.Context, override StorageMode) (cache.TokenCache, 
 // keyring error so they don't silently mint plaintext copies of tokens that
 // were stored in the keyring on another machine.
 func ResolveCacheForLogin(ctx context.Context, override StorageMode) (cache.TokenCache, StorageMode, error) {
-	return resolveCacheForLoginWith(ctx, override, defaultCacheFactories())
+	inner, mode, err := resolveCacheForLoginWith(ctx, override, defaultCacheFactories())
+	if err != nil {
+		return nil, "", err
+	}
+	return withNotFoundHint(ctx, inner, mode), mode, nil
 }
 
 // WrapForOAuthArgument wraps tokenCache so SDK-side writes (Challenge, refresh)
