@@ -39,6 +39,10 @@ type DeploymentState struct {
 
 	// Maps resource key to ID. Unlike Data.State, this is up to date during writes (deploys).
 	stateIDs map[string]string
+
+	// Lineage UUID that was either read from state file or saved into .wal file (for new deployments)
+	// Once set, it must match what we read from the state file & wal file
+	lineage string
 }
 
 type Header struct {
@@ -164,7 +168,7 @@ func (db *DeploymentState) Open(ctx context.Context, path string, withRecovery W
 	}
 
 	db.Path = path
-	if err := db.Reload(ctx); err != nil {
+	if err := db.reloadState(ctx); err != nil {
 		return err
 	}
 
@@ -198,13 +202,13 @@ func (db *DeploymentState) Open(ctx context.Context, path string, withRecovery W
 			return fmt.Errorf("failed to open WAL file %s: %w", walPath, err)
 		}
 		db.walFile = walFile
-		lineage := db.Data.Lineage
-		if lineage == "" {
+		db.lineage = db.Data.Lineage
+		if db.lineage == "" {
 			// state file is new, does not have lineage yet; store lineage in the WAL only
-			lineage = uuid.New().String()
+			db.lineage = uuid.New().String()
 		}
 		walHead := Header{
-			Lineage:      lineage,
+			Lineage:      db.lineage,
 			Serial:       db.Data.Serial + 1,
 			StateVersion: currentStateVersion,
 			CLIVersion:   build.GetInfo().Version,
@@ -233,13 +237,12 @@ func (db *DeploymentState) OpenWithData(path string, data Database) {
 	}
 }
 
-func (db *DeploymentState) Reload(ctx context.Context) error {
-	db.stateIDs = make(map[string]string)
+// reloadState clears Data amd stateIDs and loads it from db.Path
+func (db *DeploymentState) reloadState(ctx context.Context) error {
 	data, err := os.ReadFile(db.Path)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
-			// Not initializing lineage yet, we might have that saved in WAL
-			db.Data = NewDatabase("", 0)
+			db.Data = NewDatabase(db.lineage, 0)
 		} else {
 			return err
 		}
@@ -247,7 +250,14 @@ func (db *DeploymentState) Reload(ctx context.Context) error {
 		if err := json.Unmarshal(data, &db.Data); err != nil {
 			return err
 		}
+		if db.lineage == "" && db.Data.Lineage != "" {
+			db.lineage = db.Data.Lineage
+		} else {
+			return fmt.Errorf("unexpected lineage in %s: %q (expected %q)", db.Path, db.Data.Lineage, db.lineage)
+		}
 	}
+
+	db.stateIDs = make(map[string]string)
 	for key, entry := range db.Data.State {
 		db.stateIDs[key] = entry.ID
 	}
@@ -277,8 +287,8 @@ func (db *DeploymentState) replayWAL(ctx context.Context) error {
 }
 
 func (db *DeploymentState) validateWALHeader(header *Header) error {
-	if header.Lineage != db.Data.Lineage && db.Data.Lineage != "" {
-		return fmt.Errorf("WAL lineage (%s) does not match state lineage (%s)", header.Lineage, db.Data.Lineage)
+	if header.Lineage != db.lineage {
+		return fmt.Errorf("WAL lineage (%s) does not match state lineage (%s)", header.Lineage, db.lineage)
 	}
 
 	expected := db.Data.Serial + 1
