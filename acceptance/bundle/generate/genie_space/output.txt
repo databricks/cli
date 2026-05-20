@@ -2,5 +2,5 @@
 >>> [CLI] workspace mkdirs /Workspace/test-[UNIQUE_NAME]
 
 >>> [CLI] bundle generate genie-space --existing-id [GENIE_SPACE_ID] --genie-space-dir out/genie_space --resource-dir out/resource
-Writing genie space to out/genie_space/test_genie_space.genie.json
+Writing genie space to out/genie_space/test_genie_space.geniespace.json
 Writing configuration to out/resource/test_genie_space.genie_space.yml

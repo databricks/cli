@@ -675,9 +675,12 @@ github.com/databricks/cli/bundle/config/resources.GenieSpace:
   "description":
     "description": |-
       Description of the Genie space shown alongside the title in the Databricks UI.
+  "etag":
+    "description": |-
+      PLACEHOLDER
   "file_path":
     "description": |-
-      Local path to a `.genie.json` file holding the serialized Genie space definition. The contents are inlined into `serialized_space` at deploy time. Mutually exclusive with an inline `serialized_space`.
+      Local path to a `.geniespace.json` file holding the serialized Genie space definition. The contents are inlined into `serialized_space` at deploy time. Mutually exclusive with an inline `serialized_space`.
   "lifecycle":
     "description": |-
       PLACEHOLDER

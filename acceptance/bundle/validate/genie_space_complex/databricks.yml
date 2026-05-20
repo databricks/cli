@@ -11,7 +11,7 @@ resources:
       warehouse_id: "my-warehouse-1234"
       title: "Full Featured Genie Space"
       description: "A comprehensive test of all genie space features"
-      file_path: ./full_featured.genie.json
+      file_path: ./full_featured.geniespace.json
 
     # Test with inline serialized_space (YAML syntax)
     inline_yaml:

@@ -5,6 +5,7 @@ import (
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
@@ -166,4 +167,94 @@ func TestGenieSpaceDoUpdateSendsSerializedSpaceWhenChanged(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, state)
 	assert.Equal(t, "{\"v\":1}", state.SerializedSpace)
+}
+
+func TestGenieSpaceDoUpdateRoundTripsEtag(t *testing.T) {
+	ctx := t.Context()
+	m := mocks.NewMockWorkspaceClient(t)
+	r := (&ResourceGenieSpace{}).New(m.WorkspaceClient)
+
+	entry := &deployplan.PlanEntry{
+		Changes: deployplan.Changes{
+			"title": {Action: deployplan.Update, Old: "old", New: "new"},
+		},
+	}
+
+	m.GetMockGenieAPI().EXPECT().
+		UpdateSpace(ctx, dashboards.GenieUpdateSpaceRequest{
+			SpaceId: "space-id",
+			Title:   "new",
+			Etag:    "etag-7",
+		}).
+		Return(&dashboards.GenieSpace{
+			SpaceId: "space-id",
+			Title:   "new",
+			Etag:    "etag-8",
+		}, nil).
+		Once()
+
+	state, err := r.DoUpdate(ctx, "space-id", &resources.GenieSpaceConfig{
+		Title: "new",
+		Etag:  "etag-7",
+	}, entry)
+	require.NoError(t, err)
+	require.NotNil(t, state)
+	assert.Equal(t, "etag-8", state.Etag)
+}
+
+func TestGenieSpaceDoUpdateKeepsPriorSerializedSpaceWhenBothEmpty(t *testing.T) {
+	ctx := t.Context()
+	m := mocks.NewMockWorkspaceClient(t)
+	r := (&ResourceGenieSpace{}).New(m.WorkspaceClient)
+
+	// Only title changed; serialized_space should be omitted from the request.
+	entry := &deployplan.PlanEntry{
+		Changes: deployplan.Changes{
+			"title": {Action: deployplan.Update, Old: "old", New: "new"},
+		},
+	}
+
+	m.GetMockGenieAPI().EXPECT().
+		UpdateSpace(ctx, dashboards.GenieUpdateSpaceRequest{
+			SpaceId: "space-id",
+			Title:   "new",
+		}).
+		Return(&dashboards.GenieSpace{
+			SpaceId: "space-id",
+			Title:   "new",
+			// API also omits serialized_space; we should keep the prior local value.
+		}, nil).
+		Once()
+
+	state, err := r.DoUpdate(ctx, "space-id", &resources.GenieSpaceConfig{
+		Title:           "new",
+		SerializedSpace: "{\"keep\":\"me\"}",
+	}, entry)
+	require.NoError(t, err)
+	require.NotNil(t, state)
+	assert.Equal(t, "{\"keep\":\"me\"}", state.SerializedSpace)
+}
+
+func TestGenieSpaceOverrideChangeDescEtag(t *testing.T) {
+	r := &ResourceGenieSpace{}
+	etagPath := structpath.MustParsePath("etag")
+
+	t.Run("Skip when stored matches remote", func(t *testing.T) {
+		change := &ChangeDesc{Old: "etag-7", Remote: "etag-7"}
+		require.NoError(t, r.OverrideChangeDesc(t.Context(), etagPath, change, nil))
+		assert.Equal(t, deployplan.Skip, change.Action)
+	})
+
+	t.Run("Update when stored differs from remote", func(t *testing.T) {
+		change := &ChangeDesc{Old: "etag-7", Remote: "etag-8"}
+		require.NoError(t, r.OverrideChangeDesc(t.Context(), etagPath, change, nil))
+		assert.Equal(t, deployplan.Update, change.Action)
+	})
+
+	t.Run("Other paths are untouched", func(t *testing.T) {
+		titlePath := structpath.MustParsePath("title")
+		change := &ChangeDesc{Action: deployplan.Update, Old: "a", Remote: "b"}
+		require.NoError(t, r.OverrideChangeDesc(t.Context(), titlePath, change, nil))
+		assert.Equal(t, deployplan.Update, change.Action)
+	})
 }

@@ -17,7 +17,7 @@ import (
 
 func TestTranslatePathsGenieSpaces_FilePathRelativeSubDirectory(t *testing.T) {
 	dir := t.TempDir()
-	touchEmptyFile(t, filepath.Join(dir, "src", "my_space.genie.json"))
+	touchEmptyFile(t, filepath.Join(dir, "src", "my_space.geniespace.json"))
 
 	b := &bundle.Bundle{
 		SyncRootPath:   dir,
@@ -30,7 +30,7 @@ func TestTranslatePathsGenieSpaces_FilePathRelativeSubDirectory(t *testing.T) {
 						GenieSpaceConfig: resources.GenieSpaceConfig{
 							Title: "My Genie Space",
 						},
-						FilePath: "../src/my_space.genie.json",
+						FilePath: "../src/my_space.geniespace.json",
 					},
 				},
 			},
@@ -41,12 +41,15 @@ func TestTranslatePathsGenieSpaces_FilePathRelativeSubDirectory(t *testing.T) {
 		File: filepath.Join(dir, "resources", "genie_space.yml"),
 	}})
 
+	// Genie space paths reuse the dashboard translator; there is no separate
+	// genie_space mutator. The dashboard translator walks all resource types
+	// that need path translation, so calling it covers genie_spaces too.
 	diags := bundle.ApplySeq(t.Context(), b, mutator.NormalizePaths(), mutator.TranslatePathsDashboards())
 	require.NoError(t, diags.Error())
 
 	assert.Equal(
 		t,
-		filepath.ToSlash(filepath.Join("src", "my_space.genie.json")),
+		filepath.ToSlash(filepath.Join("src", "my_space.geniespace.json")),
 		b.Config.Resources.GenieSpaces["genie_space"].FilePath,
 	)
 }

@@ -769,8 +769,11 @@
                         "description": "Description of the Genie space shown alongside the title in the Databricks UI.",
                         "$ref": "#/$defs/string"
                       },
+                      "etag": {
+                        "$ref": "#/$defs/string"
+                      },
                       "file_path": {
-                        "description": "Local path to a `.genie.json` file holding the serialized Genie space definition. The contents are inlined into `serialized_space` at deploy time. Mutually exclusive with an inline `serialized_space`.",
+                        "description": "Local path to a `.geniespace.json` file holding the serialized Genie space definition. The contents are inlined into `serialized_space` at deploy time. Mutually exclusive with an inline `serialized_space`.",
                         "$ref": "#/$defs/string"
                       },
                       "lifecycle": {

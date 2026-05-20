@@ -163,7 +163,7 @@ func (g *genieSpace) saveSerializedGenieSpace(ctx context.Context, b *bundle.Bun
 
 func (g *genieSpace) saveConfiguration(ctx context.Context, b *bundle.Bundle, genieSpace *dashboards.GenieSpace, key string) error {
 	// Save serialized genie space definition to the genie space directory.
-	genieSpaceBasename := key + ".genie.json"
+	genieSpaceBasename := key + ".geniespace.json"
 	genieSpacePath := filepath.Join(g.genieSpaceDir, genieSpaceBasename)
 	err := g.saveSerializedGenieSpace(ctx, b, genieSpace, genieSpacePath)
 	if err != nil {
@@ -264,7 +264,11 @@ func (g *genieSpace) updateGenieSpaceForResource(ctx context.Context, b *bundle.
 		}
 
 		first = false
-		time.Sleep(genieSpaceWatchInterval)
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.After(genieSpaceWatchInterval):
+		}
 	}
 }
 
@@ -306,6 +310,7 @@ func (g *genieSpace) generateForExisting(ctx context.Context, b *bundle.Bundle, 
 	err = g.saveConfiguration(ctx, b, genieSpace, key)
 	if err != nil {
 		logdiag.LogError(ctx, err)
+		return
 	}
 
 	if g.bind {
@@ -448,7 +453,7 @@ Examples:
 
 What gets generated:
 - Genie space configuration YAML file with settings and a reference to the Genie space definition
-- Genie space definition (.genie.json) file with the serialized space content
+- Genie space definition (.geniespace.json) file with the serialized space content
 
 Sync workflow for Genie space development:
 When developing Genie spaces, you can modify them in the Databricks UI and sync
