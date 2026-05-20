@@ -13,7 +13,7 @@ import (
 
 const (
 	defaultGatewayHost        = "uw2.dbrx.dev"
-	stagingDefaultGatewayHost = "uw2.s.dbrx.dev"
+	stagingDefaultGatewayHost = "ue1.s.dbrx.dev"
 	defaultGatewayPort        = "2222"
 )
 
