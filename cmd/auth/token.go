@@ -18,6 +18,7 @@ import (
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m/cache"
@@ -325,6 +326,18 @@ func resolveNoArgsToken(ctx context.Context, profiler profile.Profiler, authArgs
 			return "", nil, err
 		}
 		return envProfile, p, nil
+	}
+
+	// Step 2.5: Try [__settings__].default_profile from the config file.
+	// default_profile is advisory: if it points at a profile that no longer
+	// exists, fall through to the interactive picker rather than erroring.
+	if defaultProfile := databrickscfg.ResolveDefaultProfile(ctx); defaultProfile != "" {
+		p, err := loadProfileByName(ctx, defaultProfile, profiler)
+		if err != nil {
+			log.Warnf(ctx, "default_profile %q not loadable: %v", defaultProfile, err)
+		} else if p != nil {
+			return defaultProfile, p, nil
+		}
 	}
 
 	// Step 3: No env vars resolved. Load all profiles for interactive selection
