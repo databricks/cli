@@ -514,6 +514,78 @@ token = named-token
 
 	w := cmdctx.WorkspaceClient(cmd.Context())
 	require.NotNil(t, w)
-	assert.Equal(t, "", w.Config.Profile)
+	// resolveDefaultProfile pins cfg.Profile to the resolved name before the
+	// SDK loader runs. Without this, the SDK silently falls back to [DEFAULT]
+	// but leaves cfg.Profile == "", which produces a host-URL OAuth cache
+	// key that does not match what `databricks auth login` (which uses
+	// "DEFAULT") writes.
+	assert.Equal(t, "DEFAULT", w.Config.Profile)
 	assert.Equal(t, "https://default.cloud.databricks.com", w.Config.Host)
+}
+
+func TestResolveDefaultProfile(t *testing.T) {
+	cases := []struct {
+		name        string
+		configBody  string
+		startCfg    config.Config
+		envProfile  string
+		wantProfile string
+	}{
+		{
+			name:        "explicit cfg.Profile is preserved",
+			configBody:  "[__settings__]\ndefault_profile = settings-default\n",
+			startCfg:    config.Config{Profile: "preset"},
+			wantProfile: "preset",
+		},
+		{
+			name:        "DATABRICKS_CONFIG_PROFILE env wins over the resolver",
+			configBody:  "[__settings__]\ndefault_profile = settings-default\n",
+			envProfile:  "env-profile",
+			wantProfile: "",
+		},
+		{
+			name:        "[__settings__].default_profile is honored first",
+			configBody:  "[__settings__]\ndefault_profile = settings-default\n\n[DEFAULT]\nhost = https://default.test\n",
+			wantProfile: "settings-default",
+		},
+		{
+			name:        "single profile in the file is treated as the default",
+			configBody:  "[only-profile]\nhost = https://only.test\n",
+			wantProfile: "only-profile",
+		},
+		{
+			name:        "DEFAULT section is used when there are multiple profiles and no settings",
+			configBody:  "[DEFAULT]\nhost = https://default.test\n\n[a]\nhost = https://a.test\n\n[b]\nhost = https://b.test\n",
+			wantProfile: "DEFAULT",
+		},
+		{
+			name:        "no settings, no DEFAULT, multiple profiles resolves to empty",
+			configBody:  "[a]\nhost = https://a.test\n\n[b]\nhost = https://b.test\n",
+			wantProfile: "",
+		},
+		{
+			name:        "missing config file resolves to empty",
+			configBody:  "",
+			wantProfile: "",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			testutil.CleanupEnvironment(t)
+
+			configFile := filepath.Join(t.TempDir(), ".databrickscfg")
+			if tc.configBody != "" {
+				require.NoError(t, os.WriteFile(configFile, []byte(tc.configBody), 0o600))
+			}
+			t.Setenv("DATABRICKS_CONFIG_FILE", configFile)
+			if tc.envProfile != "" {
+				t.Setenv("DATABRICKS_CONFIG_PROFILE", tc.envProfile)
+			}
+
+			cfg := tc.startCfg
+			resolveDefaultProfile(t.Context(), &cfg)
+			assert.Equal(t, tc.wantProfile, cfg.Profile)
+		})
+	}
 }

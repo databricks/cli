@@ -292,13 +292,33 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-// resolveDefaultProfile applies the [__settings__].default_profile setting
-// when no profile is specified via --profile flag or DATABRICKS_CONFIG_PROFILE.
+// resolveDefaultProfile picks a profile name for cfg when none is specified
+// via --profile or DATABRICKS_CONFIG_PROFILE. Resolution order matches
+// databrickscfg.GetDefaultProfile: [__settings__].default_profile, then the
+// only profile in the file (if there is exactly one), then a [DEFAULT]
+// section if present.
+//
+// Pinning cfg.Profile before the SDK's config loader runs is important for
+// the OAuth token cache key. The SDK silently falls back to [DEFAULT] when
+// cfg.Profile is empty but does not write the resolved name back to cfg
+// (see config_file.go's isFallback branch). Login, by contrast, defaults
+// the profile name to "DEFAULT" when no flag is given. The result is that
+// `databricks auth login` writes a token under cache key "DEFAULT" while a
+// later `databricks auth describe` (or any other read) computes a cache
+// key from cfg.Profile="" and falls back to the host URL, so the lookup
+// misses. plaintext mode masked this with its host-key dual-write; secure
+// mode does not, so the mismatch surfaces as ErrNotFound or (with stale
+// state at the host key) InvalidRefreshTokenError.
+//
+// The bundle path deliberately uses databrickscfg.ResolveDefaultProfile
+// (settings-only); see cmd/root/bundle.go.
 func resolveDefaultProfile(ctx context.Context, cfg *config.Config) {
 	if cfg.Profile != "" || envlib.Get(ctx, "DATABRICKS_CONFIG_PROFILE") != "" {
 		return
 	}
-	if resolved := databrickscfg.ResolveDefaultProfile(ctx); resolved != "" {
+	configFilePath := envlib.Get(ctx, "DATABRICKS_CONFIG_FILE")
+	resolved, _ := databrickscfg.GetDefaultProfile(ctx, configFilePath)
+	if resolved != "" {
 		cfg.Profile = resolved
 	}
 }
