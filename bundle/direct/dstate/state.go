@@ -147,8 +147,12 @@ func (db *DeploymentState) GetResourceID(key string) string {
 }
 
 type (
+	// If true, then Open reads the WAL and merges it in the state. If false, and WAL is present, Open returns an error.
 	WithRecovery bool
-	WithWrite    bool
+
+	// If true, the state is opened in Write mode, which enables methods such as SaveState
+	// but disables GetResourceEntry (since writes go strictly into WAL and not in memory).
+	WithWrite bool
 )
 
 func (db *DeploymentState) Open(ctx context.Context, path string, withRecovery WithRecovery, withWrite WithWrite) error {
