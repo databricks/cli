@@ -292,13 +292,8 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-// resolveDefaultProfile applies the resolved default profile to cfg when
-// none is specified via --profile or DATABRICKS_CONFIG_PROFILE. See
-// databrickscfg.ResolveDefaultProfile for the resolution order.
-//
-// Pinning cfg.Profile here keeps it non-empty after the SDK loader runs, so
-// the OAuth cache key derived from it matches what `databricks auth login`
-// writes (the SDK leaves cfg.Profile empty on its silent [DEFAULT] fallback).
+// resolveDefaultProfile applies the [__settings__].default_profile setting
+// when no profile is specified via --profile flag or DATABRICKS_CONFIG_PROFILE.
 func resolveDefaultProfile(ctx context.Context, cfg *config.Config) {
 	if cfg.Profile != "" || envlib.Get(ctx, "DATABRICKS_CONFIG_PROFILE") != "" {
 		return
