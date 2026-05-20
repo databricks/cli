@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/libs/aitools/installer"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
+	"github.com/spf13/cobra"
 )
 
 // promptScopeSelection is a package-level var so tests can replace it with a mock.
@@ -82,6 +83,53 @@ func defaultPromptScopeSelection(ctx context.Context) (string, error) {
 
 const scopeBoth = "both"
 
+// markScopeBoolsDeprecated hides --project and --global from help and emits a
+// stderr warning pointing at --scope when they're used. The booleans are kept
+// so existing scripts and the experimental backward-compat aliases keep
+// working through the next release.
+func markScopeBoolsDeprecated(cmd *cobra.Command) {
+	cmd.Flags().Lookup("project").Deprecated = "use --scope=project"
+	cmd.Flags().Lookup("project").Hidden = true
+	cmd.Flags().Lookup("global").Deprecated = "use --scope=global"
+	cmd.Flags().Lookup("global").Hidden = true
+}
+
+// parseScopeFlag translates --scope into the equivalent --project/--global bool pair.
+// Returns (projectFlag, globalFlag, nil) unchanged when --scope is empty so the
+// deprecated booleans can keep flowing through the existing resolveScope* helpers
+// (including update's supported `--project --global` "both scopes" path). Errors
+// if --scope is combined with --project or --global. When allowBoth is false,
+// --scope=both is rejected up front so install and uninstall don't have to
+// special-case it.
+//
+// Note: install/list/uninstall reject the legacy `--project --global` combination
+// at their own RunE / resolveScope layer; update intentionally accepts it as the
+// "both scopes" path until those flags are removed.
+func parseScopeFlag(scopeFlag string, projectFlag, globalFlag, allowBoth bool) (proj, glob bool, err error) {
+	if scopeFlag == "" {
+		return projectFlag, globalFlag, nil
+	}
+	if projectFlag || globalFlag {
+		return false, false, errors.New("cannot use --scope with --project or --global; --project and --global are deprecated aliases for --scope")
+	}
+	switch scopeFlag {
+	case installer.ScopeProject:
+		return true, false, nil
+	case installer.ScopeGlobal:
+		return false, true, nil
+	case scopeBoth:
+		if !allowBoth {
+			return false, false, errors.New("--scope=both is not supported for this command; use 'project' or 'global'")
+		}
+		return true, true, nil
+	default:
+		if allowBoth {
+			return false, false, fmt.Errorf("invalid --scope %q: must be one of project, global, both", scopeFlag)
+		}
+		return false, false, fmt.Errorf("invalid --scope %q: must be one of project, global", scopeFlag)
+	}
+}
+
 // detectInstalledScopes checks which scopes have a .state.json file present.
 func detectInstalledScopes(globalDir, projectDir string) (global, project bool, err error) {
 	globalState, err := installer.LoadState(globalDir)
@@ -132,7 +180,7 @@ func resolveScopeForUpdate(ctx context.Context, projectFlag, globalFlag bool, gl
 	switch {
 	case hasGlobal && hasProject:
 		if !cmdio.IsPromptSupported(ctx) {
-			return nil, errors.New("skills are installed in both global and project scopes; use --global, --project, or both flags to specify which to update")
+			return nil, errors.New("skills are installed in both global and project scopes; use --scope=global, --scope=project, or --scope=both to specify which to update")
 		}
 		scopes, err := promptUpdateScopeSelection(ctx)
 		if err != nil {
@@ -158,7 +206,7 @@ func resolveScopeForUpdate(ctx context.Context, projectFlag, globalFlag bool, gl
 // Unlike update, uninstall never allows "both" scopes at once.
 func resolveScopeForUninstall(ctx context.Context, projectFlag, globalFlag bool, globalDir, projectDir string) (string, error) {
 	if projectFlag && globalFlag {
-		return "", errors.New("cannot uninstall both scopes at once; run uninstall separately for --global and --project")
+		return "", errors.New("cannot uninstall both scopes at once; run uninstall separately with --scope=global and --scope=project")
 	}
 
 	hasGlobal, hasProject, err := detectInstalledScopes(globalDir, projectDir)
@@ -182,7 +230,7 @@ func resolveScopeForUninstall(ctx context.Context, projectFlag, globalFlag bool,
 	switch {
 	case hasGlobal && hasProject:
 		if !cmdio.IsPromptSupported(ctx) {
-			return "", errors.New("skills are installed in both global and project scopes; use --global or --project to specify which to uninstall")
+			return "", errors.New("skills are installed in both global and project scopes; use --scope=global or --scope=project to specify which to uninstall")
 		}
 		scope, err := promptUninstallScopeSelection(ctx)
 		if err != nil {
@@ -230,10 +278,10 @@ func scopeNotInstalledError(scope, verb, projectDir string, hasGlobal, hasProjec
 			"no project-scoped skills found in the current directory.\n\n"+
 				"Project-scoped skills are detected based on your working directory.\n"+
 				"Make sure you are in the project root where you originally ran\n"+
-				"'databricks aitools install --project'.\n\n"+
+				"'databricks aitools install --scope=project'.\n\n"+
 				"Expected location: %s/", expectedPath)
 	} else {
-		msg = "no globally-scoped skills installed. Run 'databricks aitools install --global' to install"
+		msg = "no globally-scoped skills installed. Run 'databricks aitools install --scope=global' to install"
 	}
 
 	hint := crossScopeHint(scope, verb, hasGlobal, hasProject)
@@ -248,10 +296,10 @@ func scopeNotInstalledError(scope, verb, projectDir string, hasGlobal, hasProjec
 // The verb parameter (e.g. "update", "uninstall") controls the action in the hint message.
 func crossScopeHint(requestedScope, verb string, hasGlobal, hasProject bool) string {
 	if requestedScope == installer.ScopeProject && hasGlobal {
-		return fmt.Sprintf("Global skills are installed. Run without --project to %s those.", verb)
+		return fmt.Sprintf("Global skills are installed. Run with --scope=global to %s those.", verb)
 	}
 	if requestedScope == installer.ScopeGlobal && hasProject {
-		return fmt.Sprintf("Project-scoped skills are installed. Run without --global to %s those.", verb)
+		return fmt.Sprintf("Project-scoped skills are installed. Run with --scope=project to %s those.", verb)
 	}
 	return ""
 }

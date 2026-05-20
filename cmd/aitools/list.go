@@ -19,6 +19,7 @@ import (
 var listSkillsFn = defaultListSkills
 
 func NewListCmd() *cobra.Command {
+	var scopeFlag string
 	var projectFlag, globalFlag bool
 
 	cmd := &cobra.Command{
@@ -26,22 +27,34 @@ func NewListCmd() *cobra.Command {
 		Short: "List installed AI tools components",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if projectFlag && globalFlag {
+			// Reject the legacy --project --global combination here so it
+			// doesn't silently degrade to --scope=both. Users who want both
+			// scopes should use --scope=both (the new explicit spelling).
+			if projectFlag && globalFlag && scopeFlag == "" {
 				return errors.New("cannot use --global and --project together")
 			}
-			// For list: no flag = show both scopes (empty string).
+
+			projectFlag, globalFlag, err := parseScopeFlag(scopeFlag, projectFlag, globalFlag, true)
+			if err != nil {
+				return err
+			}
+
+			// list: empty scope = show both. --scope=both also lands here.
 			var scope string
-			if projectFlag {
+			switch {
+			case projectFlag && !globalFlag:
 				scope = installer.ScopeProject
-			} else if globalFlag {
+			case globalFlag && !projectFlag:
 				scope = installer.ScopeGlobal
 			}
 			return listSkillsFn(cmd, scope)
 		},
 	}
 
+	cmd.Flags().StringVar(&scopeFlag, "scope", "", "Scope to show: project, global, or both (default: both)")
 	cmd.Flags().BoolVar(&projectFlag, "project", false, "Show only project-scoped skills")
 	cmd.Flags().BoolVar(&globalFlag, "global", false, "Show only globally-scoped skills")
+	markScopeBoolsDeprecated(cmd)
 	return cmd
 }
 
