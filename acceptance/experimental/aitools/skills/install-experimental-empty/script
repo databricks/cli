@@ -1,0 +1,5 @@
+# Agent detection needs ~/.claude; prefer USERPROFILE on Windows.
+mkdir -p "${USERPROFILE:-$HOME}/.claude"
+
+title "--experimental against a manifest with no experimental skills logs a nudge"
+trace $CLI experimental aitools install --global --experimental

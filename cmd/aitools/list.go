@@ -136,7 +136,7 @@ func buildListOutput(ctx context.Context, scope string) (listOutput, error) {
 		entry := skillEntry{
 			Name:          name,
 			LatestVersion: meta.Version,
-			Experimental:  meta.Experimental,
+			Experimental:  meta.IsExperimental(),
 			Installed:     map[string]string{},
 		}
 		if globalState != nil {
