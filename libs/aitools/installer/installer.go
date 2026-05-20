@@ -28,7 +28,6 @@ const (
 	skillsRepoName       = "databricks-agent-skills"
 	stableSkillsRepoPath = "skills"
 	experimentalRepoPath = "experimental"
-	experimentalSuffix   = "-experimental"
 )
 
 func manifestHasExperimental(m *Manifest) bool {
@@ -40,41 +39,13 @@ func manifestHasExperimental(m *Manifest) bool {
 	return false
 }
 
-// alternateVariantKey maps between "foo" and "foo-experimental".
-func alternateVariantKey(key string) string {
-	if base, ok := strings.CutSuffix(key, experimentalSuffix); ok {
-		return base
+func stateRepoDir(state *InstallState, name string) string {
+	if state != nil && state.RepoDirs != nil {
+		if repoDir := state.RepoDirs[name]; repoDir != "" {
+			return repoDir
+		}
 	}
-	return key + experimentalSuffix
-}
-
-// installedSkillVersion returns the recorded version for name, or for its
-// stable/experimental alternate when only that variant is installed.
-func installedSkillVersion(state *InstallState, name string) (version string, selfInstalled, alternateInstalled bool) {
-	version, selfInstalled = state.Skills[name]
-	altVersion, alternateInstalled := state.Skills[alternateVariantKey(name)]
-	if !selfInstalled && alternateInstalled {
-		version = altVersion
-	}
-	return version, selfInstalled, alternateInstalled
-}
-
-func removeAlternateVariant(ctx context.Context, state *InstallState, baseDir, name, scope, cwd string) {
-	if state == nil {
-		return
-	}
-	alt := alternateVariantKey(name)
-	if _, ok := state.Skills[alt]; !ok {
-		return
-	}
-
-	altDir := filepath.Join(baseDir, alt)
-	removeSymlinksFromAgents(ctx, alt, altDir, scope, cwd)
-	if err := os.RemoveAll(altDir); err != nil {
-		log.Warnf(ctx, "Failed to remove previous variant %s: %v", altDir, err)
-	}
-	delete(state.Skills, alt)
-	cmdio.LogString(ctx, fmt.Sprintf("Replaced previous variant %s with %s", alt, name))
+	return stableSkillsRepoPath
 }
 
 // fetchFileFn is the function used to download individual skill files.
@@ -123,8 +94,7 @@ type SkillMeta struct {
 	RepoDir string `json:"repo_dir,omitempty"`
 
 	// SourceName is the upstream skill directory name within RepoDir.
-	// For experimental skills the manifest key is suffixed (-experimental)
-	// but SourceName is not; set during normalization, not from JSON.
+	// Set during normalization, not from JSON.
 	SourceName string `json:"-"`
 }
 
@@ -262,11 +232,9 @@ func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgent
 	for _, name := range skillNames {
 		meta := targetSkills[name]
 
-		removeAlternateVariant(ctx, state, baseDir, name, scope, cwd)
-
 		// Idempotency: skip if same version is already installed, the canonical
 		// dir exists, AND every requested agent already has the skill on disk.
-		if state != nil && state.Skills[name] == meta.Version {
+		if state != nil && state.Skills[name] == meta.Version && stateRepoDir(state, name) == meta.RepoDir {
 			skillDir := filepath.Join(baseDir, name)
 			if _, statErr := os.Stat(skillDir); statErr == nil && allAgentsHaveSkill(ctx, name, targetAgents, scope, cwd) {
 				log.Debugf(ctx, "%s v%s already installed for all agents, skipping", name, meta.Version)
@@ -285,7 +253,11 @@ func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgent
 		state = &InstallState{
 			SchemaVersion: 1,
 			Skills:        make(map[string]string, len(targetSkills)),
+			RepoDirs:      make(map[string]string, len(targetSkills)),
 		}
+	}
+	if state.RepoDirs == nil {
+		state.RepoDirs = make(map[string]string, len(state.Skills)+len(targetSkills))
 	}
 	state.Release = ref
 	state.LastUpdated = time.Now()
@@ -296,6 +268,7 @@ func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgent
 	state.Scope = scope
 	for name, meta := range targetSkills {
 		state.Skills[name] = meta.Version
+		state.RepoDirs[name] = meta.RepoDir
 	}
 	if err := SaveState(baseDir, state); err != nil {
 		return err

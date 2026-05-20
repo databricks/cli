@@ -26,6 +26,9 @@ func TestSaveAndLoadStateRoundtrip(t *testing.T) {
 		Skills: map[string]string{
 			"databricks": "1.0.0",
 		},
+		RepoDirs: map[string]string{
+			"databricks": stableSkillsRepoPath,
+		},
 	}
 
 	err := SaveState(dir, original)
@@ -104,6 +107,10 @@ func TestSaveAndLoadStateWithOptionalFields(t *testing.T) {
 		Skills: map[string]string{
 			"databricks": "1.0.0",
 			"sql-tools":  "0.2.0",
+		},
+		RepoDirs: map[string]string{
+			"databricks": stableSkillsRepoPath,
+			"sql-tools":  experimentalRepoPath,
 		},
 		Scope: "project",
 	}

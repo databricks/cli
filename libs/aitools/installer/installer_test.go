@@ -279,7 +279,7 @@ func TestExperimentalSkillsSkippedByDefault(t *testing.T) {
 	require.NoError(t, err)
 	// Only non-experimental skills should be installed.
 	assert.Len(t, state.Skills, 2)
-	assert.NotContains(t, state.Skills, "databricks-iceberg-experimental")
+	assert.NotContains(t, state.Skills, "databricks-iceberg")
 
 	assert.Contains(t, stderr.String(), "Installed 2 skills.")
 }
@@ -309,7 +309,7 @@ func TestExperimentalSkillsIncludedWithFlag(t *testing.T) {
 	state, err := LoadState(globalDir)
 	require.NoError(t, err)
 	assert.Len(t, state.Skills, 3)
-	assert.Contains(t, state.Skills, "databricks-iceberg-experimental")
+	assert.Contains(t, state.Skills, "databricks-iceberg")
 	assert.True(t, state.IncludeExperimental)
 
 	assert.Contains(t, stderr.String(), "Installed 3 skills.")
@@ -728,11 +728,17 @@ func TestInstallProjectScopeZeroCompatibleAgentsReturnsError(t *testing.T) {
 	assert.Contains(t, err.Error(), "No Project Agent")
 }
 
-func TestInstallReplacesAlternateVariant(t *testing.T) {
+func TestInstallKeepsNameWhenRepoDirChanges(t *testing.T) {
 	tmp := setupTestHome(t)
-	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
-	setupFetchMock(t)
+	ctx := cmdio.MockDiscard(t.Context())
 	agent := testAgent(tmp)
+	var fetchedFrom []string
+	orig := fetchFileFn
+	t.Cleanup(func() { fetchFileFn = orig })
+	fetchFileFn = func(_ context.Context, _, repoDir, skillName, filePath string) ([]byte, error) {
+		fetchedFrom = append(fetchedFrom, filepath.Join(repoDir, skillName, filePath))
+		return []byte("# " + skillName + "/" + filePath), nil
+	}
 
 	stableManifest := &Manifest{
 		Version: "1",
@@ -747,11 +753,13 @@ func TestInstallReplacesAlternateVariant(t *testing.T) {
 
 	globalDir := filepath.Join(tmp, ".databricks", "aitools", "skills")
 	require.DirExists(t, filepath.Join(globalDir, "databricks-jobs"))
+	assert.Contains(t, fetchedFrom, filepath.Join(stableSkillsRepoPath, "databricks-jobs", "SKILL.md"))
+	fetchedFrom = nil
 
 	experimentalManifest := &Manifest{
 		Version: "1",
 		Skills: map[string]SkillMeta{
-			"databricks-jobs": {Version: "0.2.0", Files: []string{"SKILL.md"}, RepoDir: experimentalRepoPath},
+			"databricks-jobs": {Version: "0.1.0", Files: []string{"SKILL.md"}, RepoDir: experimentalRepoPath},
 		},
 	}
 	require.NoError(t, InstallSkillsForAgents(
@@ -761,11 +769,10 @@ func TestInstallReplacesAlternateVariant(t *testing.T) {
 
 	state, err := LoadState(globalDir)
 	require.NoError(t, err)
-	assert.NotContains(t, state.Skills, "databricks-jobs")
-	assert.Equal(t, "0.2.0", state.Skills["databricks-jobs-experimental"])
-	assert.NoDirExists(t, filepath.Join(globalDir, "databricks-jobs"))
-	assert.DirExists(t, filepath.Join(globalDir, "databricks-jobs-experimental"))
-	assert.Contains(t, stderr.String(), "Replaced previous variant databricks-jobs with databricks-jobs-experimental")
+	assert.Equal(t, "0.1.0", state.Skills["databricks-jobs"])
+	assert.Equal(t, experimentalRepoPath, state.RepoDirs["databricks-jobs"])
+	assert.DirExists(t, filepath.Join(globalDir, "databricks-jobs"))
+	assert.Contains(t, fetchedFrom, filepath.Join(experimentalRepoPath, "databricks-jobs", "SKILL.md"))
 }
 
 func TestSupportsProjectScopeSetCorrectly(t *testing.T) {

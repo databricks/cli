@@ -53,23 +53,16 @@ func (s *GitHubManifestSource) FetchManifest(ctx context.Context, ref string) (*
 	return &manifest, nil
 }
 
-// normalizeManifest stamps SourceName, defaults RepoDir, and suffixes
-// experimental install keys while preserving unsuffixed upstream fetch paths.
+// normalizeManifest stamps SourceName and defaults RepoDir for older manifests.
 func normalizeManifest(m *Manifest) {
 	if m.Skills == nil {
 		m.Skills = map[string]SkillMeta{}
 	}
-	out := make(map[string]SkillMeta, len(m.Skills))
 	for name, meta := range m.Skills {
 		if meta.RepoDir == "" {
 			meta.RepoDir = stableSkillsRepoPath
 		}
 		meta.SourceName = name
-		if meta.IsExperimental() {
-			out[name+experimentalSuffix] = meta
-		} else {
-			out[name] = meta
-		}
+		m.Skills[name] = meta
 	}
-	m.Skills = out
 }

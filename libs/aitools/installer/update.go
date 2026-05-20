@@ -115,9 +115,6 @@ func UpdateSkills(ctx context.Context, src ManifestSource, targetAgents []*agent
 		meta, inManifest := manifest.Skills[name]
 
 		if !inManifest {
-			if _, moved := manifest.Skills[alternateVariantKey(name)]; moved {
-				continue
-			}
 			if _, ok := state.Skills[name]; ok {
 				log.Warnf(ctx, "Warning: %q not found in manifest %s (keeping installed version).", name, latestTag)
 				result.Unchanged = append(result.Unchanged, name)
@@ -139,9 +136,9 @@ func UpdateSkills(ctx context.Context, src ManifestSource, targetAgents []*agent
 			continue
 		}
 
-		oldVersion, wasInstalled, alternateInstalled := installedSkillVersion(state, name)
+		oldVersion, wasInstalled := state.Skills[name]
 
-		if meta.Version == oldVersion && !opts.Force && !alternateInstalled {
+		if meta.Version == oldVersion && stateRepoDir(state, name) == meta.RepoDir && !opts.Force {
 			result.Unchanged = append(result.Unchanged, name)
 			continue
 		}
@@ -152,7 +149,7 @@ func UpdateSkills(ctx context.Context, src ManifestSource, targetAgents []*agent
 			NewVersion: meta.Version,
 		}
 
-		if wasInstalled || alternateInstalled {
+		if wasInstalled {
 			result.Updated = append(result.Updated, update)
 		} else {
 			result.Added = append(result.Added, update)
@@ -177,7 +174,6 @@ func UpdateSkills(ctx context.Context, src ManifestSource, targetAgents []*agent
 
 	for _, change := range allChanges {
 		meta := manifest.Skills[change.Name]
-		removeAlternateVariant(ctx, state, baseDir, change.Name, scope, cwd)
 		if err := installSkillForAgents(ctx, change.Name, meta, targetAgents, params); err != nil {
 			return nil, err
 		}
@@ -186,8 +182,13 @@ func UpdateSkills(ctx context.Context, src ManifestSource, targetAgents []*agent
 	// Update state.
 	state.Release = latestTag
 	state.LastUpdated = time.Now()
+	if state.RepoDirs == nil {
+		state.RepoDirs = make(map[string]string, len(state.Skills)+len(allChanges))
+	}
 	for _, change := range allChanges {
+		meta := manifest.Skills[change.Name]
 		state.Skills[change.Name] = change.NewVersion
+		state.RepoDirs[change.Name] = meta.RepoDir
 	}
 	if err := SaveState(baseDir, state); err != nil {
 		return nil, err
@@ -203,7 +204,6 @@ func buildUpdateSkillSet(state *InstallState, manifest *Manifest, opts UpdateOpt
 	if len(opts.Skills) > 0 {
 		for _, name := range opts.Skills {
 			skillSet[name] = true
-			skillSet[alternateVariantKey(name)] = true
 		}
 		return skillSet
 	}
