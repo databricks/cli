@@ -1,0 +1,52 @@
+{
+  "plan_version": 2,
+  "cli_version": "[DEV_VERSION]",
+  "plan": {
+    "resources.genie_spaces.foo": {
+      "action": "create",
+      "new_state": {
+        "value": {
+          "parent_path": "/Workspace/Users/[USERNAME]",
+          "serialized_space": "{}",
+          "title": "Permissions Test Space",
+          "warehouse_id": "test-warehouse-id"
+        }
+      }
+    },
+    "resources.genie_spaces.foo.permissions": {
+      "depends_on": [
+        {
+          "node": "resources.genie_spaces.foo",
+          "label": "${resources.genie_spaces.foo.id}"
+        }
+      ],
+      "action": "create",
+      "new_state": {
+        "value": {
+          "object_id": "",
+          "__embed__": [
+            {
+              "level": "CAN_READ",
+              "user_name": "viewer@example.com"
+            },
+            {
+              "level": "CAN_MANAGE",
+              "group_name": "data-team"
+            },
+            {
+              "level": "CAN_MANAGE",
+              "service_principal_name": "[UUID]"
+            },
+            {
+              "level": "CAN_MANAGE",
+              "user_name": "[USERNAME]"
+            }
+          ]
+        },
+        "vars": {
+          "object_id": "/genie/spaces/${resources.genie_spaces.foo.id}"
+        }
+      }
+    }
+  }
+}

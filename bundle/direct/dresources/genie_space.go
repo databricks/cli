@@ -19,6 +19,24 @@ import (
 
 var pathSerializedSpace = structpath.MustParsePath("serialized_space")
 
+// ResourceGenieSpace mirrors the dashboard resource pattern (see dashboard.go),
+// with these intentional divergences:
+//   - No Published wrapper: Genie spaces have no publish lifecycle, so
+//     PrepareState returns the config directly.
+//   - RemapState filters fewer fields: Genie has no LifecycleState / CreateTime /
+//     Path / UpdateTime output-only fields to scrub.
+//   - DoRead clears ParentPath: the GET API does not reliably return parent_path,
+//     so we drop it from ForceSendFields and zero the value rather than re-adding
+//     a "/Workspace" prefix the way dashboard.go does in ensureWorkspacePrefix.
+//   - DoUpdate omits serialized_space when unchanged: serialized_space is in
+//     ignore_remote_changes (see resources.yml), so a UI edit produces no plan
+//     entry. Sending the local body anyway would clobber the UI edit on every
+//     unrelated update.
+//   - DoCreate has expanded missing-parent-path detection: see
+//     isMissingGenieParentPathError below.
+//
+// Permissions follow the standard /permissions/genie/{id} endpoint and are wired
+// up via the generic permissions adapter (permissions.go).
 type ResourceGenieSpace struct {
 	client *databricks.WorkspaceClient
 }
@@ -39,6 +57,7 @@ func (r *ResourceGenieSpace) RemapState(state *resources.GenieSpaceConfig) *reso
 
 	return &resources.GenieSpaceConfig{
 		Description:     state.Description,
+		Etag:            state.Etag,
 		Title:           state.Title,
 		WarehouseId:     state.WarehouseId,
 		ParentPath:      state.ParentPath,
@@ -86,6 +105,7 @@ func responseToGenieSpaceConfig(space *dashboards.GenieSpace, serializedSpace st
 
 	return &resources.GenieSpaceConfig{
 		Description:     space.Description,
+		Etag:            space.Etag,
 		Title:           space.Title,
 		WarehouseId:     space.WarehouseId,
 		ParentPath:      "",
@@ -97,6 +117,25 @@ func responseToGenieSpaceConfig(space *dashboards.GenieSpace, serializedSpace st
 	}
 }
 
+// isMissingGenieParentPathError reports whether the given Create error means
+// "the parent workspace folder does not exist", so DoCreate can mkdir and retry.
+//
+// Dashboard handles the equivalent condition with a plain apierr.IsMissing
+// check (see ResourceDashboard.DoCreate). Genie cannot, because it surfaces
+// the same condition in two different shapes depending on the workspace's
+// backend version:
+//
+//  1. Standard missing-resource error: HTTP 404, ErrorCode RESOURCE_DOES_NOT_EXIST.
+//     Caught by apierr.IsMissing. Observed on workspaces running the newer
+//     Genie service implementation.
+//  2. HTTP 400 with ErrorCode INVALID_PARAMETER_VALUE and a message of the
+//     form "Tree node with path '<path>' does not exist". Observed on
+//     workspaces still backed by the legacy implementation during integration
+//     testing in early 2026 (aws-prod-ucws and azure-prod-ucws clusters at
+//     the time). The string match is intentional: there is no distinct error
+//     code to key on.
+//
+// Both forms unambiguously mean "create the parent and retry once".
 func isMissingGenieParentPathError(err error) bool {
 	if apierr.IsMissing(err) {
 		return true
@@ -107,10 +146,6 @@ func isMissingGenieParentPathError(err error) bool {
 		return false
 	}
 
-	// Genie reports a missing parent folder inconsistently across environments.
-	// Some workspaces return a standard missing-resource error, while others
-	// return INVALID_PARAMETER_VALUE with a NOT_FOUND message embedded in the
-	// text. Treat both forms as "create the parent directory and retry once".
 	return apiErr.StatusCode == http.StatusBadRequest &&
 		apiErr.ErrorCode == "INVALID_PARAMETER_VALUE" &&
 		strings.Contains(apiErr.Message, "Tree node with path") &&
@@ -150,6 +185,12 @@ func (r *ResourceGenieSpace) DoCreate(ctx context.Context, config *resources.Gen
 		return "", nil, err
 	}
 
+	// Persist the etag in state. The deploy framework saves `config` (the input
+	// to DoCreate) as the state record, so mutating it here is what gets the
+	// backend-returned etag onto disk for the next plan's drift check.
+	// Matches the dashboard pattern (dashboard.go DoCreate).
+	config.Etag = createResp.Etag
+
 	return createResp.SpaceId, responseToGenieSpaceConfig(createResp, serializedSpace), nil
 }
 
@@ -165,8 +206,10 @@ func (r *ResourceGenieSpace) DoUpdate(ctx context.Context, id string, config *re
 	// update triggered by another field would clobber the UI edit. Only
 	// send it when the user actually changed it locally.
 	var excludeForceSend []string
+	sentSerialized := true
 	if !hasUpdate(entry, pathSerializedSpace) {
 		serializedSpace = ""
+		sentSerialized = false
 		excludeForceSend = append(excludeForceSend, "SerializedSpace")
 	}
 
@@ -176,8 +219,10 @@ func (r *ResourceGenieSpace) DoUpdate(ctx context.Context, id string, config *re
 		Title:           config.Title,
 		WarehouseId:     config.WarehouseId,
 		SerializedSpace: serializedSpace,
-		// Etag is for optimistic concurrency; we apply updates unconditionally.
-		Etag: "",
+		// Send the etag we last observed. The backend uses it as an If-Match
+		// guard against concurrent writes, and OverrideChangeDesc uses the
+		// post-update etag to detect drift on subsequent plans.
+		Etag: config.Etag,
 
 		ForceSendFields: utils.FilterFields[dashboards.GenieUpdateSpaceRequest](config.ForceSendFields, excludeForceSend...),
 	})
@@ -185,14 +230,44 @@ func (r *ResourceGenieSpace) DoUpdate(ctx context.Context, id string, config *re
 		return nil, err
 	}
 
-	// When the request omitted serialized_space, use the value the response
-	// echoes back so RemapState records the latest body.
+	// Persist the new etag in state (see DoCreate for the rationale).
+	config.Etag = updateResp.Etag
+
+	// Decide what to record as the new state's serialized_space.
+	//   - If we sent a new body, use it.
+	//   - If we omitted it (UI-edit protection above) but the API echoed back
+	//     a value, record that — it's the most up-to-date view we have.
+	//   - If neither side carries a value, keep whatever was already in state.
+	//     Otherwise RemapState would blank the field on every unrelated update.
 	respSerialized := serializedSpace
-	if respSerialized == "" {
+	if !sentSerialized {
 		respSerialized = updateResp.SerializedSpace
+		if respSerialized == "" {
+			if prior, ok := config.SerializedSpace.(string); ok {
+				respSerialized = prior
+			}
+		}
 	}
 
 	return responseToGenieSpaceConfig(updateResp, respSerialized), nil
+}
+
+// OverrideChangeDesc handles the etag field. The user never sets it directly;
+// we compare the stored etag against the remote one and Skip if they match.
+// This mirrors ResourceDashboard.OverrideChangeDesc.
+func (r *ResourceGenieSpace) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, change *ChangeDesc, _ *resources.GenieSpaceConfig) error {
+	switch path.String() {
+	case "etag":
+		// change.New is always nil for etag because it's not present in the
+		// user-authored config. Compare stored etag with remote one to decide
+		// whether anything changed out-of-band since the last deploy.
+		if change.Old == change.Remote {
+			change.Action = deployplan.Skip
+		} else {
+			change.Action = deployplan.Update
+		}
+	}
+	return nil
 }
 
 // hasUpdate reports whether entry has an Update-action change at the given path.

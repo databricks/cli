@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"path"
+	"strconv"
 	"strings"
 
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
@@ -51,6 +52,9 @@ func (s *FakeWorkspace) GenieSpaceCreate(req Request) Response {
 		ParentPath:      createReq.ParentPath,
 		WarehouseId:     createReq.WarehouseId,
 		SerializedSpace: createReq.SerializedSpace,
+		// Mirror libs/testserver/dashboards.go: initialize etag to a numeric
+		// string so each subsequent update can bump it monotonically.
+		Etag: "1",
 	}
 
 	s.GenieSpaces[spaceId] = genieSpace
@@ -61,7 +65,7 @@ func (s *FakeWorkspace) GenieSpaceCreate(req Request) Response {
 		if !strings.HasPrefix(workspacePath, "/Workspace") {
 			workspacePath = path.Join("/Workspace", workspacePath)
 		}
-		workspacePath = path.Join(workspacePath, createReq.Title+".genie")
+		workspacePath = path.Join(workspacePath, createReq.Title+".geniespace")
 
 		s.files[workspacePath] = FileEntry{
 			Info: workspace.ObjectInfo{
@@ -121,6 +125,18 @@ func (s *FakeWorkspace) GenieSpaceUpdate(req Request) Response {
 		}
 	}
 
+	// Optimistic concurrency: if the caller sent an etag, it must match the
+	// current one. Empty etag means apply unconditionally.
+	if updateReq.Etag != "" && updateReq.Etag != genieSpace.Etag {
+		return Response{
+			StatusCode: 409,
+			Body: map[string]string{
+				"message": "Etag mismatch: expected " + genieSpace.Etag + ", got " + updateReq.Etag,
+			},
+		}
+	}
+
+	prev := genieSpace
 	if updateReq.Title != "" {
 		genieSpace.Title = updateReq.Title
 	}
@@ -134,6 +150,26 @@ func (s *FakeWorkspace) GenieSpaceUpdate(req Request) Response {
 		genieSpace.SerializedSpace = updateReq.SerializedSpace
 	}
 
+	// Bump the etag only when the update actually changes user-visible state.
+	// Matches dashboard's behavior (libs/testserver/dashboards.go) and keeps
+	// no-op updates idempotent so TestAll can pass the same config to Create
+	// and Update without observing spurious drift.
+	if prev.Title != genieSpace.Title ||
+		prev.Description != genieSpace.Description ||
+		prev.WarehouseId != genieSpace.WarehouseId ||
+		prev.SerializedSpace != genieSpace.SerializedSpace {
+		prevEtag, err := strconv.Atoi(genieSpace.Etag)
+		if err != nil {
+			return Response{
+				StatusCode: 500,
+				Body: map[string]string{
+					"message": "Invalid stored etag: " + genieSpace.Etag,
+				},
+			}
+		}
+		genieSpace.Etag = strconv.Itoa(prevEtag + 1)
+	}
+
 	s.GenieSpaces[spaceId] = genieSpace
 
 	return Response{
@@ -145,7 +181,7 @@ func (s *FakeWorkspace) GenieSpaceTrash(req Request) Response {
 	defer s.LockUnlock()()
 
 	spaceId := req.Vars["space_id"]
-	_, ok := s.GenieSpaces[spaceId]
+	genieSpace, ok := s.GenieSpaces[spaceId]
 	if !ok {
 		return Response{
 			StatusCode: 404,
@@ -156,6 +192,18 @@ func (s *FakeWorkspace) GenieSpaceTrash(req Request) Response {
 	}
 
 	delete(s.GenieSpaces, spaceId)
+
+	// Also remove the synthetic workspace file entry registered by
+	// GenieSpaceCreate, so a trash+recreate flow does not resolve to stale
+	// state via the workspace path index.
+	if genieSpace.ParentPath != "" {
+		workspacePath := genieSpace.ParentPath
+		if !strings.HasPrefix(workspacePath, "/Workspace") {
+			workspacePath = path.Join("/Workspace", workspacePath)
+		}
+		workspacePath = path.Join(workspacePath, genieSpace.Title+".geniespace")
+		delete(s.files, workspacePath)
+	}
 
 	return Response{
 		StatusCode: 200,

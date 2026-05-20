@@ -14,6 +14,12 @@ import (
 type GenieSpaceConfig struct {
 	// Description of the Genie Space
 	Description string `json:"description,omitempty"`
+	// Etag for change detection. The bundle persists the value the backend
+	// returned on the last Create/Update and uses it both as an If-Match for
+	// the next Update and as the signal for `bundle plan` to detect remote
+	// drift (see OverrideChangeDesc in bundle/direct/dresources/genie_space.go).
+	// Mirrors dashboards.DashboardConfig.Etag.
+	Etag string `json:"etag,omitempty"`
 	// Genie space ID
 	SpaceId string `json:"space_id,omitempty"`
 	// Title of the Genie Space
@@ -50,7 +56,7 @@ type GenieSpace struct {
 
 	Permissions []Permission `json:"permissions,omitempty"`
 
-	// FilePath points to the local `.genie.json` file containing the Genie Space definition.
+	// FilePath points to the local `.geniespace.json` file containing the Genie Space definition.
 	// This is inlined into serialized_space during deployment. The file_path is kept around
 	// as metadata which is needed for `databricks bundle generate genie-space --resource <key>` to work.
 	// This is not part of GenieSpaceConfig because we don't need to store this in the resource state.

@@ -248,6 +248,15 @@ var testConfig map[string]any = map[string]any{
 		},
 	},
 
+	"genie_spaces": &resources.GenieSpace{
+		GenieSpaceConfig: resources.GenieSpaceConfig{
+			Title:           "my-genie-space",
+			WarehouseId:     "test-warehouse-id",
+			ParentPath:      "/Workspace/Users/user@example.com",
+			SerializedSpace: "{}",
+		},
+	},
+
 	"vector_search_endpoints": &resources.VectorSearchEndpoint{
 		CreateEndpoint: vectorsearch.CreateEndpoint{
 			Name:         "my-endpoint",

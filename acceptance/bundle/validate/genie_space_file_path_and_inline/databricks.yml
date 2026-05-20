@@ -6,6 +6,6 @@ resources:
     both_set:
       title: "Both set"
       warehouse_id: "test-warehouse-id"
-      file_path: "./contents.genie.json"
+      file_path: "./contents.geniespace.json"
       serialized_space:
         version: 1
