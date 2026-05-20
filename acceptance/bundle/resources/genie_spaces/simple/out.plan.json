@@ -2,7 +2,7 @@
   "plan_version": 2,
   "cli_version": "[DEV_VERSION]",
   "lineage": "[UUID]",
-  "serial": 6,
+  "serial": 7,
   "plan": {
     "resources.genie_spaces.sales_analytics": {
       "action": "skip",
