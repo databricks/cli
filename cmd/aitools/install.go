@@ -51,7 +51,7 @@ func defaultPromptAgentSelection(ctx context.Context, detected []*agents.Agent) 
 }
 
 func NewInstallCmd() *cobra.Command {
-	var skillsFlag, agentsFlag string
+	var skillsFlag, agentsFlag, scopeFlag string
 	var includeExperimental bool
 	var projectFlag, globalFlag bool
 
@@ -61,16 +61,29 @@ func NewInstallCmd() *cobra.Command {
 		Long: `Install Databricks AI skills for detected coding agents.
 
 By default, skills are installed globally to each agent's skills directory.
-Use --project to install to the current project directory instead.
+Use --scope=project to install to the current project directory instead.
 When multiple agents are detected, skills are stored in a canonical location
 and symlinked to each agent to avoid duplication.
 
 Use --skills name1,name2 to install specific skills.
 
+Agent selection:
+  --agents <name>[,<name>...]   Install only for the named agents.
+  (unset, interactive)          Multi-select prompt over detected agents.
+  (unset, non-interactive)      Install for every detected agent.
+
+The list of agents the command will act on is always logged to stderr before
+the install runs, so callers can verify what was picked.
+
 Supported agents: Claude Code, Cursor, Codex CLI, OpenCode, GitHub Copilot, Antigravity`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
+
+			projectFlag, globalFlag, err := parseScopeFlag(scopeFlag, projectFlag, globalFlag, false)
+			if err != nil {
+				return err
+			}
 
 			// Resolve scope.
 			scope, err := resolveScopeWithPrompt(ctx, projectFlag, globalFlag)
@@ -130,8 +143,10 @@ Supported agents: Claude Code, Cursor, Codex CLI, OpenCode, GitHub Copilot, Anti
 	cmd.Flags().StringVar(&skillsFlag, "skills", "", "Specific skills to install (comma-separated)")
 	cmd.Flags().StringVar(&agentsFlag, "agents", "", "Agents to install for (comma-separated, e.g. claude-code,cursor)")
 	cmd.Flags().BoolVar(&includeExperimental, "experimental", false, "Include experimental skills")
+	cmd.Flags().StringVar(&scopeFlag, "scope", "", "Install scope: project or global (default: global, or prompt when interactive)")
 	cmd.Flags().BoolVar(&projectFlag, "project", false, "Install to project directory (cwd)")
 	cmd.Flags().BoolVar(&globalFlag, "global", false, "Install globally (default)")
+	markScopeBoolsDeprecated(cmd)
 	return cmd
 }
 
