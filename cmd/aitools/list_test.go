@@ -1,6 +1,8 @@
 package aitools
 
 import (
+	"bytes"
+	"encoding/json"
 	"testing"
 
 	"github.com/databricks/cli/libs/aitools/installer"
@@ -44,6 +46,208 @@ func TestListCommandHasScopeFlags(t *testing.T) {
 	assert.NotEmpty(t, f.Deprecated, "--global should be marked deprecated")
 	f = cmd.Flags().Lookup("scope")
 	require.NotNil(t, f, "--scope flag should exist")
+}
+
+func TestRenderListJSON(t *testing.T) {
+	out := listOutput{
+		Release: "0.1.0",
+		Skills: []skillEntry{
+			{
+				Name:          "databricks-jobs",
+				LatestVersion: "1.0.0",
+				Experimental:  false,
+				Installed: map[string]string{
+					installer.ScopeGlobal:  "1.0.0",
+					installer.ScopeProject: "0.9.0",
+				},
+			},
+			{
+				Name:          "experimental-thing",
+				LatestVersion: "0.1.0",
+				Experimental:  true,
+				Installed:     map[string]string{},
+			},
+		},
+		Summary: map[string]scopeSummary{
+			installer.ScopeGlobal:  {Installed: 1, Total: 2},
+			installer.ScopeProject: {Installed: 1, Total: 2},
+		},
+	}
+
+	var buf bytes.Buffer
+	require.NoError(t, renderListJSON(&buf, out))
+
+	var got listOutput
+	require.NoError(t, json.Unmarshal(buf.Bytes(), &got))
+	assert.Equal(t, out, got)
+
+	var raw map[string]any
+	require.NoError(t, json.Unmarshal(buf.Bytes(), &raw))
+	assert.Contains(t, raw, "release")
+	assert.Contains(t, raw, "skills")
+	assert.Contains(t, raw, "summary")
+
+	skills := raw["skills"].([]any)
+	first := skills[0].(map[string]any)
+	assert.Equal(t, "databricks-jobs", first["name"])
+	assert.Equal(t, "1.0.0", first["latest_version"])
+	assert.Equal(t, false, first["experimental"])
+
+	installed := first["installed"].(map[string]any)
+	assert.Equal(t, "1.0.0", installed["global"])
+	assert.Equal(t, "0.9.0", installed["project"])
+
+	second := skills[1].(map[string]any)
+	assert.Equal(t, true, second["experimental"])
+	assert.Empty(t, second["installed"])
+}
+
+func TestRenderListJSONScopeFiltersSummary(t *testing.T) {
+	out := listOutput{
+		Release: "0.1.0",
+		Skills:  []skillEntry{},
+		Summary: map[string]scopeSummary{
+			installer.ScopeGlobal: {Installed: 0, Total: 5},
+		},
+	}
+
+	var buf bytes.Buffer
+	require.NoError(t, renderListJSON(&buf, out))
+
+	var raw map[string]any
+	require.NoError(t, json.Unmarshal(buf.Bytes(), &raw))
+	summary := raw["summary"].(map[string]any)
+	assert.Contains(t, summary, "global")
+	assert.NotContains(t, summary, "project")
+}
+
+func TestInstalledStatusFromEntry(t *testing.T) {
+	tests := []struct {
+		name       string
+		entry      skillEntry
+		bothScopes bool
+		want       string
+	}{
+		{
+			name:  "not installed",
+			entry: skillEntry{LatestVersion: "1.0.0", Installed: map[string]string{}},
+			want:  "not installed",
+		},
+		{
+			name: "global up to date",
+			entry: skillEntry{
+				LatestVersion: "1.0.0",
+				Installed:     map[string]string{installer.ScopeGlobal: "1.0.0"},
+			},
+			want: "v1.0.0 (up to date)",
+		},
+		{
+			name: "project update available",
+			entry: skillEntry{
+				LatestVersion: "1.0.0",
+				Installed:     map[string]string{installer.ScopeProject: "0.9.0"},
+			},
+			want: "v0.9.0 (update available)",
+		},
+		{
+			name: "both scopes installed",
+			entry: skillEntry{
+				LatestVersion: "1.0.0",
+				Installed: map[string]string{
+					installer.ScopeGlobal:  "1.0.0",
+					installer.ScopeProject: "0.9.0",
+				},
+			},
+			bothScopes: true,
+			want:       "v0.9.0 (update available) (project, global)",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, installedStatusFromEntry(tt.entry, tt.bothScopes))
+		})
+	}
+}
+
+func TestSummaryLinePreservesStatePresence(t *testing.T) {
+	tests := []struct {
+		name string
+		out  listOutput
+		want string
+	}{
+		{
+			name: "both state files loaded even with no installs",
+			out: listOutput{
+				Skills: []skillEntry{
+					{Name: "databricks-jobs", LatestVersion: "1.0.0", Installed: map[string]string{}},
+				},
+				Summary: map[string]scopeSummary{
+					installer.ScopeGlobal:  {Installed: 0, Total: 1, loaded: true},
+					installer.ScopeProject: {Installed: 0, Total: 1, loaded: true},
+				},
+			},
+			want: "0/1 skills installed (global), 0/1 (project)",
+		},
+		{
+			name: "only project state loaded",
+			out: listOutput{
+				Skills: []skillEntry{
+					{Name: "databricks-jobs", LatestVersion: "1.0.0", Installed: map[string]string{}},
+				},
+				Summary: map[string]scopeSummary{
+					installer.ScopeGlobal:  {Installed: 0, Total: 1},
+					installer.ScopeProject: {Installed: 0, Total: 1, loaded: true},
+				},
+			},
+			want: "0/1 skills installed (project)",
+		},
+		{
+			name: "only global state loaded",
+			out: listOutput{
+				Skills: []skillEntry{
+					{Name: "databricks-jobs", LatestVersion: "1.0.0", Installed: map[string]string{}},
+				},
+				Summary: map[string]scopeSummary{
+					installer.ScopeGlobal:  {Installed: 0, Total: 1, loaded: true},
+					installer.ScopeProject: {Installed: 0, Total: 1},
+				},
+			},
+			want: "0/1 skills installed (global)",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, summaryLine(tt.out, ""))
+		})
+	}
+}
+
+func TestRenderListTextUsesLoadedStateForScopeLabels(t *testing.T) {
+	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
+	out := listOutput{
+		Release: "0.1.0",
+		Skills: []skillEntry{
+			{
+				Name:          "databricks-jobs",
+				LatestVersion: "1.0.0",
+				Installed: map[string]string{
+					installer.ScopeGlobal: "1.0.0",
+				},
+			},
+		},
+		Summary: map[string]scopeSummary{
+			installer.ScopeGlobal:  {Installed: 1, Total: 1, loaded: true},
+			installer.ScopeProject: {Installed: 0, Total: 1, loaded: true},
+		},
+	}
+
+	renderListText(ctx, out, "")
+
+	got := stderr.String()
+	assert.Contains(t, got, "v1.0.0 (up to date) (global)")
+	assert.Contains(t, got, "1/1 skills installed (global), 0/1 (project)")
 }
 
 func TestListScopeFlag(t *testing.T) {
