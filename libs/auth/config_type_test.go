@@ -48,14 +48,17 @@ func TestResolveConfigType(t *testing.T) {
 			want: config.AccountConfig,
 		},
 		{
-			name: "SPOG account-scoped OIDC with workspace routes to WorkspaceConfig",
+			// SPOG OAuth is account-scoped, so even profiles with a real
+			// workspace_id route to AccountConfig — the token's audience is
+			// the account, and workspace-API validation can't authenticate it.
+			name: "SPOG with real workspace_id routes to AccountConfig",
 			cfg: &config.Config{
 				Host:         "https://spog.databricks.com",
 				AccountID:    "acct-123",
 				WorkspaceID:  "ws-456",
 				DiscoveryURL: "https://spog.databricks.com/oidc/accounts/acct-123/.well-known/oauth-authorization-server",
 			},
-			want: config.WorkspaceConfig,
+			want: config.AccountConfig,
 		},
 		{
 			name: "SPOG account-scoped OIDC with workspace_id=none routes to AccountConfig",

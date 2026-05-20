@@ -80,10 +80,10 @@ func TestProfilesDefaultMarker(t *testing.T) {
 }
 
 // newSPOGServer creates a mock SPOG server that returns account-scoped OIDC.
-// It serves both validation endpoints since SPOG workspace profiles (with a
-// real workspace_id) need CurrentUser.Me, while account profiles need
-// Workspaces.List. The workspace-only newWorkspaceServer omits the account
-// endpoint to prove routing correctness for non-SPOG hosts.
+// It serves only the account validation endpoint: every SPOG profile must
+// route through Workspaces.List, regardless of workspace_id (see
+// ResolveConfigType). The workspace endpoint deliberately returns 500 so any
+// regression that routes a SPOG profile to CurrentUser.Me fails the test.
 func newSPOGServer(t *testing.T, accountID string) *httptest.Server {
 	t.Helper()
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -97,8 +97,7 @@ func newSPOGServer(t *testing.T, accountID string) *httptest.Server {
 		case "/api/2.0/accounts/" + accountID + "/workspaces":
 			_ = json.NewEncoder(w).Encode([]map[string]any{})
 		case "/api/2.0/preview/scim/v2/Me":
-			// SPOG workspace profiles also need CurrentUser.Me to succeed.
-			_ = json.NewEncoder(w).Encode(map[string]any{"userName": "test-user"})
+			http.Error(w, "SPOG profiles must validate via Workspaces.List, not CurrentUser.Me", http.StatusInternalServerError)
 		default:
 			w.WriteHeader(http.StatusNotFound)
 		}
@@ -148,7 +147,10 @@ func TestProfileLoadSPOGConfigType(t *testing.T) {
 			wantValid: true,
 		},
 		{
-			name:        "SPOG workspace profile validated as workspace",
+			// Regression: this case used to route to CurrentUser.Me. The
+			// SPOG mock now returns 500 on that endpoint, so anything other
+			// than the account path produces wantValid=false.
+			name:        "SPOG workspace profile validated as account",
 			host:        spogServer.URL,
 			accountID:   "spog-acct",
 			workspaceID: "ws-123",

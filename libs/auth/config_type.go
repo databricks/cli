@@ -38,10 +38,12 @@ func IsSPOG(cfg *config.Config, accountID string) bool {
 	return HasUnifiedHostSignal(cfg.DiscoveryURL)
 }
 
-// ResolveConfigType determines the effective ConfigType for a resolved config.
-// The SDK's ConfigType() classifies based on the host URL prefix alone, which
-// misclassifies SPOG hosts (they don't match the accounts.* prefix). This
-// function additionally uses IsSPOG to detect SPOG hosts.
+// ResolveConfigType returns the effective ConfigType for a resolved config.
+// The SDK's ConfigType() never returns AccountConfig for SPOG hosts (they
+// don't match the accounts.* prefix and resolve to UnifiedHost). For SPOG
+// the OAuth issuer is account-scoped, so every token's audience is the
+// account and workspace-API validation is unreliable — return AccountConfig
+// regardless of workspace_id.
 //
 // The cfg must already be resolved (via EnsureResolved) before calling this.
 func ResolveConfigType(cfg *config.Config) config.ConfigType {
@@ -49,13 +51,8 @@ func ResolveConfigType(cfg *config.Config) config.ConfigType {
 	if configType == config.AccountConfig {
 		return configType
 	}
-
-	if !IsSPOG(cfg, cfg.AccountID) {
-		return configType
+	if IsSPOG(cfg, cfg.AccountID) {
+		return config.AccountConfig
 	}
-
-	if cfg.WorkspaceID != "" && cfg.WorkspaceID != WorkspaceIDNone {
-		return config.WorkspaceConfig
-	}
-	return config.AccountConfig
+	return configType
 }
