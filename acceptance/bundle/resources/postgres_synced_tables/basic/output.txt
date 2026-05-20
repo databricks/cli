@@ -30,7 +30,7 @@ Resources:
   Postgres synced tables:
     my_table:
       Name: ${resources.postgres_catalogs.my_catalog.catalog_id}.public.trips_synced
-      URL:  [DATABRICKS_URL]/explore/data/$%7Bresources.postgres_catalogs.my_catalog.catalog_id%7D.public.trips_synced
+      URL:  [DATABRICKS_URL]/explore/data/$%7Bresources/postgres_catalogs/my_catalog.catalog_id%7D.public.trips_synced
   Schemas:
     pipeline_storage:
       Name: pipeline_storage_[UNIQUE_NAME]
@@ -66,7 +66,7 @@ Resources:
   Postgres synced tables:
     my_table:
       Name: ${resources.postgres_catalogs.my_catalog.catalog_id}.public.trips_synced
-      URL:  [DATABRICKS_URL]/explore/data/$%7Bresources.postgres_catalogs.my_catalog.catalog_id%7D.public.trips_synced
+      URL:  [DATABRICKS_URL]/explore/data/$%7Bresources/postgres_catalogs/my_catalog.catalog_id%7D.public.trips_synced
   Schemas:
     pipeline_storage:
       Name: pipeline_storage_[UNIQUE_NAME]

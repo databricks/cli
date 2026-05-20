@@ -3,6 +3,7 @@ package resources
 import (
 	"context"
 	"net/url"
+	"strings"
 
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
@@ -63,6 +64,16 @@ func (s *PostgresSyncedTable) InitializeURL(baseURL url.URL) {
 	if s.SyncedTableId == "" {
 		return
 	}
-	baseURL.Path = "explore/data/" + s.SyncedTableId
+	// SyncedTableId is a three-part UC name (catalog.schema.table). UC explore
+	// expects the segments as path components, not a single dotted segment.
+	catalog, rest, ok := strings.Cut(s.SyncedTableId, ".")
+	if !ok {
+		return
+	}
+	schema, name, ok := strings.Cut(rest, ".")
+	if !ok {
+		return
+	}
+	baseURL.Path = "explore/data/" + catalog + "/" + schema + "/" + name
 	s.URL = baseURL.String()
 }
