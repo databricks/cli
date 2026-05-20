@@ -142,6 +142,10 @@ func newImportDir() *cobra.Command {
 	cmd.Long = `
 Import a directory recursively from the local file system to a Databricks workspace.
 Notebooks will have their extensions (one of .scala, .py, .sql, .ipynb, .r) stripped
+
+By default, .git, .databricks, and node_modules directories encountered during
+the recursive import are skipped. To import one of these directories deliberately,
+pass it as SOURCE_PATH.
 `
 
 	cmd.Annotations = make(map[string]string)
