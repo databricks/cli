@@ -12,6 +12,7 @@
 * `[__settings__].default_profile` is now consulted as a fallback by `databricks api`, `databricks auth token`, and bundle commands when neither `--profile` nor `DATABRICKS_CONFIG_PROFILE` is set. `databricks auth token` continues to give precedence to `DATABRICKS_HOST` over `default_profile`. For bundle commands, `default_profile` only applies when the bundle does not pin its own `workspace.host`.
 * `databricks workspace import-dir` now skips `.git`, `.databricks`, and `node_modules` directories during recursive imports. To import one of these directories deliberately, pass it as `SOURCE_PATH` ([#5118](https://github.com/databricks/cli/pull/5118)).
 * `databricks postgres create-role --help` now documents the `--json` body shape and rejects the common mistake of wrapping the body in `{"role": ...}` client-side with a hint pointing at the correct shape ([#5111](https://github.com/databricks/cli/pull/5111)).
+* `databricks aitools list` honors `--output json`, emitting a structured `{release, skills[...], summary{}}` document so coding agents and CI can consume the skill/version/installation matrix without scraping the tabular text output ([#5233](https://github.com/databricks/cli/pull/5233)).
 
 ### Bundles
 * Make sure warnings asking for approval are understood by agents ([#5239](https://github.com/databricks/cli/pull/5239))
