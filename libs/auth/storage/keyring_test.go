@@ -137,6 +137,25 @@ func TestKeyringCache_Lookup_PropagatesOtherErrors(t *testing.T) {
 	_, err := c.Lookup("my-profile")
 	require.Error(t, err)
 	assert.ErrorIs(t, err, boom)
+	// The non-ErrNotFound path wraps the backend error with actionable
+	// guidance so users on systems without a usable keyring backend
+	// (e.g. headless Linux) know what to do.
+	assert.Contains(t, err.Error(), "OS keyring unreachable")
+	assert.Contains(t, err.Error(), "DATABRICKS_AUTH_STORAGE=plaintext")
+	assert.Contains(t, err.Error(), "databricks auth login")
+}
+
+// ErrNotFound has to pass through unwrapped because callers branch on it
+// (cache.ErrNotFound is the "no token, please log in" signal). Wrapping it
+// with the unreachability hint would mislead the user.
+func TestKeyringCache_Lookup_NotFoundIsNotWrapped(t *testing.T) {
+	backend := newFakeBackend()
+	c := newTestCache(backend)
+
+	_, err := c.Lookup("nope")
+	require.Error(t, err)
+	assert.ErrorIs(t, err, cache.ErrNotFound)
+	assert.NotContains(t, err.Error(), "OS keyring unreachable")
 }
 
 func TestKeyringCache_Lookup_CorruptedJSONReturnsError(t *testing.T) {
@@ -273,6 +292,62 @@ func TestProbeKeyring(t *testing.T) {
 			default:
 				require.NoError(t, err)
 				assert.Empty(t, backend.items, "probe must clean up after itself")
+			}
+		})
+	}
+}
+
+func TestProbeKeyringRead(t *testing.T) {
+	boom := errors.New("backend boom")
+	cases := []struct {
+		name        string
+		getErr      error
+		getBlock    bool
+		timeout     time.Duration
+		wantErr     error
+		wantTimeout bool
+	}{
+		{
+			// keyring.ErrNotFound is the success signal: the backend
+			// responded that no entry exists for our probe account,
+			// which means it is reachable.
+			name:    "ErrNotFound counts as reachable",
+			getErr:  keyring.ErrNotFound,
+			timeout: 100 * time.Millisecond,
+		},
+		{
+			name:    "other backend error propagates",
+			getErr:  boom,
+			timeout: 100 * time.Millisecond,
+			wantErr: boom,
+		},
+		{
+			name:        "get times out",
+			getBlock:    true,
+			timeout:     50 * time.Millisecond,
+			wantTimeout: true,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			backend := newFakeBackend()
+			backend.getErr = tc.getErr
+			backend.getBlock = tc.getBlock
+
+			err := probeReadWithBackend(backend, tc.timeout)
+
+			switch {
+			case tc.wantErr != nil:
+				require.Error(t, err)
+				assert.ErrorIs(t, err, tc.wantErr)
+			case tc.wantTimeout:
+				require.Error(t, err)
+				var timeoutErr *TimeoutError
+				assert.ErrorAs(t, err, &timeoutErr)
+			default:
+				require.NoError(t, err)
+				assert.Empty(t, backend.items, "read probe must not write to the keyring")
 			}
 		})
 	}

@@ -144,15 +144,6 @@ a new profile is created.
 		ctx := cmd.Context()
 		profileName := cmd.Flag("profile").Value.String()
 
-		// Resolve the cache before the browser step so an unavailable
-		// keyring surfaces here rather than after OAuth. The probe also
-		// triggers the OS unlock prompt, which the user can answer during
-		// OAuth.
-		tokenCache, mode, err := storage.ResolveCacheForLogin(ctx, "")
-		if err != nil {
-			return err
-		}
-
 		// Cluster and Serverless are mutually exclusive.
 		if configureCluster && configureServerless {
 			return errors.New("please either configure serverless or cluster, not both")
@@ -176,6 +167,16 @@ a new profile is created.
 				authArguments.Host = resolvedHost
 				args = nil
 			}
+		}
+
+		// Resolve the cache before the browser step so an unavailable
+		// keyring surfaces here rather than after OAuth. The probe also
+		// triggers the OS unlock prompt, which the user can answer during
+		// OAuth. Run after input validation so trivially-invalid commands
+		// fail without probing.
+		tokenCache, mode, err := storage.ResolveCacheForLogin(ctx, "")
+		if err != nil {
+			return err
 		}
 
 		// When interactive and nothing was specified, show a picker that lets
@@ -294,6 +295,11 @@ a new profile is created.
 		if err = persistentAuth.Challenge(); err != nil {
 			return err
 		}
+		// Lock secure mode in after a successful keyring write so a later
+		// transient keyring probe failure cannot silently demote this user
+		// to plaintext.
+		storage.PinSecureMode(ctx, mode, storage.StorageModeUnknown)
+
 		// At this point, an OAuth token has been successfully minted and stored
 		// in the CLI cache. The rest of the command focuses on:
 		// 1. Workspace selection for SPOG hosts (best-effort);
@@ -633,6 +639,7 @@ func discoveryLogin(ctx context.Context, in discoveryLoginInputs) error {
 	if err := persistentAuth.Challenge(); err != nil {
 		return discoveryErr("login via login.databricks.com failed", err)
 	}
+	storage.PinSecureMode(ctx, in.mode, storage.StorageModeUnknown)
 
 	discoveredHost := arg.GetDiscoveredHost()
 	if discoveredHost == "" {
