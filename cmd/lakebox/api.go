@@ -26,12 +26,11 @@ type lakeboxAPI struct {
 // createRequest is the JSON body for POST /api/2.0/lakebox/sandboxes.
 //
 // The proto-defined `CreateSandboxRequest` carries a `Sandbox sandbox = 1`
-// field today (every member is server-chosen), but JSON transcoding accepts
-// the unwrapped form for forward-compatible callers. Keep `public_key` here
-// as a no-op compat shim so older `lakebox create --public-key-file=...`
-// invocations don't error — the manager ignores it on the wire.
+// field. Today every member is server-chosen so the payload is just an
+// empty wrapper; we still send the wrapper because the gateway no longer
+// accepts the unwrapped legacy shape.
 type createRequest struct {
-	PublicKey string `json:"public_key,omitempty"`
+	Sandbox struct{} `json:"sandbox"`
 }
 
 // createResponse is the JSON body returned by POST /api/2.0/lakebox/sandboxes.
@@ -140,9 +139,11 @@ func newLakeboxAPI(w *databricks.WorkspaceClient) *lakeboxAPI {
 	return &lakeboxAPI{w: w}
 }
 
-// create calls POST /api/2.0/lakebox with an optional public key.
-func (a *lakeboxAPI) create(ctx context.Context, publicKey string) (*createResponse, error) {
-	body := createRequest{PublicKey: publicKey}
+// create calls POST /api/2.0/lakebox/sandboxes. SSH keys are registered
+// separately via /api/2.0/lakebox/ssh-keys, so this body is just the empty
+// `Sandbox` wrapper.
+func (a *lakeboxAPI) create(ctx context.Context, _ string) (*createResponse, error) {
+	body := createRequest{}
 	jsonBody, err := json.Marshal(body)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal request: %w", err)
