@@ -44,7 +44,13 @@ func TestRejectWrappedRoleJSON(t *testing.T) {
 		assert.NoError(t, rejectWrappedRoleJSON(cmd))
 	})
 
-	t.Run("passes when --json flag is absent on the command", func(t *testing.T) {
-		assert.NoError(t, rejectWrappedRoleJSON(&cobra.Command{}))
+	t.Run("fails loudly when --json flag is absent on the command", func(t *testing.T) {
+		// Internal invariant: postgres create-role is a generated command and
+		// always has a --json flag. If a future codegen change drops it, this
+		// override is wired to the wrong command and should fail loudly so the
+		// regression is caught rather than silently disabling the guard.
+		err := rejectWrappedRoleJSON(&cobra.Command{})
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "internal:")
 	})
 }

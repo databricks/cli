@@ -1,9 +1,7 @@
 package postgres
 
 import (
-	"encoding/json"
-	"errors"
-	"strings"
+	"fmt"
 
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/postgres"
@@ -57,35 +55,21 @@ func createRoleOverride(createRoleCmd *cobra.Command, _ *postgres.CreateRoleRequ
 // body, and the server rejects with a confusing "Field 'role' is required"
 // message.
 func rejectWrappedRoleJSON(cmd *cobra.Command) error {
+	// These checks are internal invariants — postgres create-role is a
+	// generated command and always has a *flags.JsonFlag for --json. A
+	// future codegen/refactor change could break that, and we want loud
+	// breakage rather than a silently-disabled guard.
 	flag := cmd.Flags().Lookup("json")
 	if flag == nil {
-		return nil
+		return fmt.Errorf("internal: postgres create-role expected a --json flag; this override is wired to the wrong command")
 	}
 	jf, ok := flag.Value.(*flags.JsonFlag)
 	if !ok {
-		return nil
+		return fmt.Errorf("internal: postgres create-role --json flag has unexpected type %T; expected *flags.JsonFlag", flag.Value)
 	}
-	raw := jf.Raw()
-	if len(raw) == 0 {
-		return nil
-	}
-	var top map[string]json.RawMessage
-	if err := json.Unmarshal(raw, &top); err != nil {
-		return nil //nolint:nilerr // defer non-object inputs to the generated unmarshal so its diagnostics render
-	}
-	if _, hasRole := top["role"]; hasRole {
-		return errors.New(strings.TrimSpace(`
---json should NOT be wrapped in '{"role": ...}'.
-
-The flag binds to the inner Role object — supply 'spec'/'name'/etc.
-directly. Example:
-
-  databricks postgres create-role projects/<PROJECT_ID>/branches/<BRANCH_ID> \
+	return jf.RejectWrappedJSON("role", `databricks postgres create-role projects/<PROJECT_ID>/branches/<BRANCH_ID> \
     --role-id <SP_CLIENT_ID> \
-    --json '{"spec": {"identity_type": "SERVICE_PRINCIPAL", "postgres_role": "<SP_CLIENT_ID>", "auth_method": "LAKEBASE_OAUTH_V1"}}'
-`))
-	}
-	return nil
+    --json '{"spec": {"identity_type": "SERVICE_PRINCIPAL", "postgres_role": "<SP_CLIENT_ID>", "auth_method": "LAKEBASE_OAUTH_V1"}}'`)
 }
 
 func init() {
