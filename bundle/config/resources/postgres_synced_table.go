@@ -52,10 +52,11 @@ func (s *PostgresSyncedTable) ResourceDescription() ResourceDescription {
 }
 
 func (s *PostgresSyncedTable) GetName() string {
-	// Synced tables don't expose a display name distinct from their three-part id.
-	// Prefer the post-deploy ID ("synced_tables/{catalog}.{schema}.{table}") so
-	// bundle summary renders the resolved id even when SyncedTableId still has
-	// unresolved cross-resource references like ${resources.X.Y.Z}.
+	// Synced tables don't expose a display name distinct from their three-part
+	// id, so the id IS the name. Prefer the post-deploy ID
+	// ("synced_tables/{catalog}.{schema}.{table}") so bundle summary renders
+	// the resolved id even when SyncedTableId still has unresolved
+	// cross-resource references like ${resources.X.Y.Z}.
 	if id, ok := strings.CutPrefix(s.ID, "synced_tables/"); ok {
 		return id
 	}
