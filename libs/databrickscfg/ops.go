@@ -106,6 +106,35 @@ func GetDefaultProfile(ctx context.Context, configFilePath string) (string, erro
 	return GetDefaultProfileFrom(configFile), nil
 }
 
+// GetAuthDefaultProfile returns the default profile name for auth resolution.
+// Mirrors the SDK's config-file resolution (resolveProfile in
+// databricks-sdk-go/config/config_file.go): the [__settings__].default_profile
+// setting takes precedence, then the [DEFAULT] section if it has a host key,
+// otherwise empty.
+//
+// Differs from GetDefaultProfile by NOT falling back to "the only profile
+// in the file". That convenience is fine for prompt-seeding (which is what
+// GetDefaultProfile is used for elsewhere) but is wrong for auth: a single
+// account-only profile would be picked up by the workspace-client path,
+// which since SDK v0.125 no longer rejects on host type and would silently
+// succeed, bypassing MustAnyClient's account-client fallback.
+func GetAuthDefaultProfile(ctx context.Context, configFilePath string) (string, error) {
+	configFile, err := loadConfigFile(ctx, configFilePath)
+	if err != nil {
+		return "", err
+	}
+	if configFile == nil {
+		return "", nil
+	}
+	if profile := GetConfiguredDefaultProfileFrom(configFile); profile != "" {
+		return profile, nil
+	}
+	if section := configFile.Section(ini.DefaultSection); section.HasKey("host") {
+		return ini.DefaultSection, nil
+	}
+	return "", nil
+}
+
 // loadConfigFile loads a config file without creating it if it doesn't exist.
 // Returns (nil, nil) when the file is not found.
 func loadConfigFile(ctx context.Context, filename string) (*config.File, error) {

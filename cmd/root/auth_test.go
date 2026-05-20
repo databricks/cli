@@ -527,14 +527,14 @@ func TestResolveDefaultProfile(t *testing.T) {
 	cases := []struct {
 		name        string
 		configBody  string
-		startCfg    config.Config
+		presetCfg   string
 		envProfile  string
 		wantProfile string
 	}{
 		{
 			name:        "explicit cfg.Profile is preserved",
 			configBody:  "[__settings__]\ndefault_profile = settings-default\n",
-			startCfg:    config.Config{Profile: "preset"},
+			presetCfg:   "preset",
 			wantProfile: "preset",
 		},
 		{
@@ -549,9 +549,12 @@ func TestResolveDefaultProfile(t *testing.T) {
 			wantProfile: "settings-default",
 		},
 		{
-			name:        "single profile in the file is treated as the default",
+			// Mirrors the SDK: single-profile fallback is NOT applied here.
+			// A single account-only profile would otherwise be silently
+			// picked up by MustWorkspaceClient.
+			name:        "single non-DEFAULT profile is NOT picked as the default",
 			configBody:  "[only-profile]\nhost = https://only.test\n",
-			wantProfile: "only-profile",
+			wantProfile: "",
 		},
 		{
 			name:        "DEFAULT section is used when there are multiple profiles and no settings",
@@ -583,8 +586,8 @@ func TestResolveDefaultProfile(t *testing.T) {
 				t.Setenv("DATABRICKS_CONFIG_PROFILE", tc.envProfile)
 			}
 
-			cfg := tc.startCfg
-			resolveDefaultProfile(t.Context(), &cfg)
+			cfg := &config.Config{Profile: tc.presetCfg}
+			resolveDefaultProfile(t.Context(), cfg)
 			assert.Equal(t, tc.wantProfile, cfg.Profile)
 		})
 	}
