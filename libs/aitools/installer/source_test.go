@@ -18,17 +18,17 @@ func TestNormalizeManifestStampsSourceNameAndSuffixesExperimental(t *testing.T) 
 
 	stable := m.Skills["databricks-apps"]
 	assert.False(t, stable.IsExperimental())
-	assert.Equal(t, stableSkillsRepoPath, stable.RepoDir, "missing RepoDir defaults to stable")
-	assert.Equal(t, "databricks-apps", stable.SourceName, "stable SourceName equals key")
+	assert.Equal(t, stableSkillsRepoPath, stable.RepoDir)
+	assert.Equal(t, "databricks-apps", stable.SourceName)
 
 	exp, ok := m.Skills["databricks-iceberg-experimental"]
-	assert.True(t, ok, "experimental skills always get -experimental suffix on the manifest key")
+	assert.True(t, ok)
 	assert.True(t, exp.IsExperimental())
 	assert.Equal(t, experimentalRepoPath, exp.RepoDir)
 	assert.Equal(t, "databricks-iceberg", exp.SourceName, "SourceName preserves the upstream repo dir name (no suffix)")
 
 	_, original := m.Skills["databricks-iceberg"]
-	assert.False(t, original, "the un-suffixed key should not be present")
+	assert.False(t, original)
 }
 
 func TestManifestHasExperimental(t *testing.T) {
@@ -51,7 +51,6 @@ func TestManifestHasExperimental(t *testing.T) {
 func TestAlternateVariantKey(t *testing.T) {
 	assert.Equal(t, "databricks-jobs-experimental", alternateVariantKey("databricks-jobs"))
 	assert.Equal(t, "databricks-jobs", alternateVariantKey("databricks-jobs-experimental"))
-	// Idempotent under double application
 	assert.Equal(t, "databricks-jobs",
 		alternateVariantKey(alternateVariantKey("databricks-jobs")))
 }

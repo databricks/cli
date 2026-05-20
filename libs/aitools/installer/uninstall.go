@@ -64,11 +64,9 @@ func UninstallSkillsOpts(ctx context.Context, opts UninstallOptions) error {
 	if len(opts.Skills) > 0 {
 		seen := make(map[string]bool)
 		for _, name := range opts.Skills {
-			// Accept either variant: if the literal name isn't installed but
-			// the alternate variant is, use the alternate. This makes uninstall
-			// resilient to the experimental↔stable transition.
 			if _, ok := state.Skills[name]; !ok {
-				if alt := alternateVariantKey(name); state.Skills[alt] != "" {
+				alt := alternateVariantKey(name)
+				if _, ok := state.Skills[alt]; ok {
 					name = alt
 				} else {
 					return fmt.Errorf("skill %q is not installed", name)
@@ -80,11 +78,11 @@ func UninstallSkillsOpts(ctx context.Context, opts UninstallOptions) error {
 			seen[name] = true
 			toRemove = append(toRemove, name)
 
-			// If both variants are installed, remove both (the alternate is
-			// the stale "old version" of the same logical skill).
-			if alt := alternateVariantKey(name); state.Skills[alt] != "" && !seen[alt] {
-				seen[alt] = true
-				toRemove = append(toRemove, alt)
+			if alt := alternateVariantKey(name); !seen[alt] {
+				if _, ok := state.Skills[alt]; ok {
+					seen[alt] = true
+					toRemove = append(toRemove, alt)
+				}
 			}
 		}
 	} else {

@@ -113,14 +113,15 @@ func UpdateSkills(ctx context.Context, src ManifestSource, targetAgents []*agent
 
 	for _, name := range names {
 		meta, inManifest := manifest.Skills[name]
-		oldVersion := state.Skills[name]
 
 		if !inManifest {
-			_, wasInstalled := state.Skills[name]
-			if wasInstalled {
-				log.Warnf(ctx, "Warning: %q not found in manifest %s (keeping installed version).", name, latestTag)
+			if _, moved := manifest.Skills[alternateVariantKey(name)]; moved {
+				continue
 			}
-			result.Unchanged = append(result.Unchanged, name)
+			if _, ok := state.Skills[name]; ok {
+				log.Warnf(ctx, "Warning: %q not found in manifest %s (keeping installed version).", name, latestTag)
+				result.Unchanged = append(result.Unchanged, name)
+			}
 			continue
 		}
 
@@ -138,10 +139,9 @@ func UpdateSkills(ctx context.Context, src ManifestSource, targetAgents []*agent
 			continue
 		}
 
-		// Check if this is a new skill (not in state).
-		_, wasInstalled := state.Skills[name]
+		oldVersion, wasInstalled, alternateInstalled := installedSkillVersion(state, name)
 
-		if meta.Version == oldVersion && !opts.Force {
+		if meta.Version == oldVersion && !opts.Force && !alternateInstalled {
 			result.Unchanged = append(result.Unchanged, name)
 			continue
 		}
@@ -152,10 +152,10 @@ func UpdateSkills(ctx context.Context, src ManifestSource, targetAgents []*agent
 			NewVersion: meta.Version,
 		}
 
-		if !wasInstalled {
-			result.Added = append(result.Added, update)
-		} else {
+		if wasInstalled || alternateInstalled {
 			result.Updated = append(result.Updated, update)
+		} else {
+			result.Added = append(result.Added, update)
 		}
 	}
 
@@ -177,6 +177,7 @@ func UpdateSkills(ctx context.Context, src ManifestSource, targetAgents []*agent
 
 	for _, change := range allChanges {
 		meta := manifest.Skills[change.Name]
+		removeAlternateVariant(ctx, state, baseDir, change.Name, scope, cwd)
 		if err := installSkillForAgents(ctx, change.Name, meta, targetAgents, params); err != nil {
 			return nil, err
 		}
@@ -200,9 +201,9 @@ func buildUpdateSkillSet(state *InstallState, manifest *Manifest, opts UpdateOpt
 	skillSet := make(map[string]bool)
 
 	if len(opts.Skills) > 0 {
-		// Only named skills.
 		for _, name := range opts.Skills {
 			skillSet[name] = true
+			skillSet[alternateVariantKey(name)] = true
 		}
 		return skillSet
 	}

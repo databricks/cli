@@ -8,8 +8,7 @@ Ignore = [
 [EnvMatrix]
 DATABRICKS_BUNDLE_ENGINE = []
 
-# Manifest with stable skills only — no entries with repo_dir=experimental.
-# Simulates a release tag that pre-dates the experimental feature.
+# Stable-only manifest (no repo_dir=experimental).
 [[Server]]
 Pattern = "GET /test-ref/manifest.json"
 Response.Body = '''

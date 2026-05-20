@@ -31,8 +31,6 @@ const (
 	experimentalSuffix   = "-experimental"
 )
 
-// manifestHasExperimental reports whether the manifest contains at least one
-// experimental skill (sourced from the experimental/ directory upstream).
 func manifestHasExperimental(m *Manifest) bool {
 	for _, meta := range m.Skills {
 		if meta.IsExperimental() {
@@ -42,17 +40,41 @@ func manifestHasExperimental(m *Manifest) bool {
 	return false
 }
 
-// alternateVariantKey returns the manifest key of the same logical skill
-// under the opposite experimental status. For "databricks-jobs" it returns
-// "databricks-jobs-experimental"; for "databricks-jobs-experimental" it
-// returns "databricks-jobs". Used to clean up the previously-installed
-// variant when a skill transitions between experimental and stable
-// upstream.
+// alternateVariantKey maps between "foo" and "foo-experimental".
 func alternateVariantKey(key string) string {
 	if base, ok := strings.CutSuffix(key, experimentalSuffix); ok {
 		return base
 	}
 	return key + experimentalSuffix
+}
+
+// installedSkillVersion returns the recorded version for name, or for its
+// stable/experimental alternate when only that variant is installed.
+func installedSkillVersion(state *InstallState, name string) (version string, selfInstalled, alternateInstalled bool) {
+	version, selfInstalled = state.Skills[name]
+	altVersion, alternateInstalled := state.Skills[alternateVariantKey(name)]
+	if !selfInstalled && alternateInstalled {
+		version = altVersion
+	}
+	return version, selfInstalled, alternateInstalled
+}
+
+func removeAlternateVariant(ctx context.Context, state *InstallState, baseDir, name, scope, cwd string) {
+	if state == nil {
+		return
+	}
+	alt := alternateVariantKey(name)
+	if _, ok := state.Skills[alt]; !ok {
+		return
+	}
+
+	altDir := filepath.Join(baseDir, alt)
+	removeSymlinksFromAgents(ctx, alt, altDir, scope, cwd)
+	if err := os.RemoveAll(altDir); err != nil {
+		log.Warnf(ctx, "Failed to remove previous variant %s: %v", altDir, err)
+	}
+	delete(state.Skills, alt)
+	cmdio.LogString(ctx, fmt.Sprintf("Replaced previous variant %s with %s", alt, name))
 }
 
 // fetchFileFn is the function used to download individual skill files.
@@ -73,10 +95,8 @@ func GetSkillsRef(ctx context.Context) (ref string, explicit bool, err error) {
 	return "v" + v, false, nil
 }
 
-// GetSkillsBaseURL returns the base URL for fetching the manifest and skill
-// files. If DATABRICKS_SKILLS_BASE_URL is set, it returns that; otherwise the
-// canonical raw.githubusercontent.com URL for the upstream repo. The override
-// is used by acceptance tests to point fetches at a mock HTTP server.
+// GetSkillsBaseURL returns the manifest and skill fetch base URL.
+// DATABRICKS_SKILLS_BASE_URL overrides GitHub raw URLs for acceptance tests.
 func GetSkillsBaseURL(ctx context.Context) string {
 	if base := env.Get(ctx, "DATABRICKS_SKILLS_BASE_URL"); base != "" {
 		return strings.TrimRight(base, "/")
@@ -85,11 +105,6 @@ func GetSkillsBaseURL(ctx context.Context) string {
 }
 
 // Manifest describes the skills manifest fetched from the skills repo.
-//
-// The repo exposes stable skills under skills/ and experimental skills under
-// experimental/. Both appear in a single Skills map; each entry carries
-// RepoDir indicating which top-level directory holds its files, which is
-// also the source of truth for whether the skill is experimental.
 type Manifest struct {
 	Version   string               `json:"version"`
 	UpdatedAt string               `json:"updated_at"`
@@ -104,23 +119,15 @@ type SkillMeta struct {
 	Description string   `json:"description,omitempty"`
 	MinCLIVer   string   `json:"min_cli_version,omitempty"`
 
-	// RepoDir is the top-level repo subdirectory (skills/ or experimental/)
-	// that holds this skill's files. Provided by the manifest; serves as
-	// the source of truth for whether the skill is experimental.
+	// RepoDir is "skills" or "experimental" (manifest field repo_dir).
 	RepoDir string `json:"repo_dir,omitempty"`
 
-	// SourceName is the directory name within RepoDir that holds this
-	// skill's files in the upstream repo. For stable skills this equals
-	// the manifest key. For experimental skills the manifest key has a
-	// "-experimental" suffix appended for collision-free install paths,
-	// but the upstream repo dir does not — SourceName preserves it for
-	// the fetch URL. Populated during normalization; not part of the wire
-	// format.
+	// SourceName is the upstream skill directory name within RepoDir.
+	// For experimental skills the manifest key is suffixed (-experimental)
+	// but SourceName is not; set during normalization, not from JSON.
 	SourceName string `json:"-"`
 }
 
-// IsExperimental reports whether the skill is sourced from the experimental/
-// directory of the upstream repo.
 func (s SkillMeta) IsExperimental() bool {
 	return s.RepoDir == experimentalRepoPath
 }
@@ -192,8 +199,6 @@ func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgent
 		return err
 	}
 
-	// Helpful nudge for users testing --experimental against a ref that
-	// pre-dates the experimental/ directory upstream.
 	if opts.IncludeExperimental && !manifestHasExperimental(manifest) {
 		log.Warnf(ctx, "--experimental was set but the manifest at %s exposes no experimental skills. Set DATABRICKS_SKILLS_REF to a release that includes them (or =main for the latest).", ref)
 	}
@@ -257,21 +262,7 @@ func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgent
 	for _, name := range skillNames {
 		meta := targetSkills[name]
 
-		// Experimental↔stable transition: if the alternate variant of this
-		// skill was previously installed (upstream flipped its experimental
-		// status), remove the stale variant before installing the new one.
-		if state != nil {
-			alt := alternateVariantKey(name)
-			if _, ok := state.Skills[alt]; ok {
-				altDir := filepath.Join(baseDir, alt)
-				removeSymlinksFromAgents(ctx, alt, altDir, scope, cwd)
-				if err := os.RemoveAll(altDir); err != nil {
-					log.Warnf(ctx, "Failed to remove previous variant %s: %v", altDir, err)
-				}
-				delete(state.Skills, alt)
-				cmdio.LogString(ctx, fmt.Sprintf("Replaced previous variant %s with %s", alt, name))
-			}
-		}
+		removeAlternateVariant(ctx, state, baseDir, name, scope, cwd)
 
 		// Idempotency: skip if same version is already installed, the canonical
 		// dir exists, AND every requested agent already has the skill on disk.

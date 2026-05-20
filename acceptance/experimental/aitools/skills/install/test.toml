@@ -1,21 +1,15 @@
-# Point the manifest + skill-file fetch at the acceptance mock server
-# instead of raw.githubusercontent.com.
+# Mock server replaces raw.githubusercontent.com for manifest + skill files.
 Env.DATABRICKS_SKILLS_BASE_URL = "$DATABRICKS_HOST"
 Env.DATABRICKS_SKILLS_REF = "test-ref"
 
-# The state file mtime + path under $HOME contain timestamps and the
-# random temp dir name; squash those from the captured tree.
 Ignore = [
     ".databricks/aitools/skills/.state.json",
 ]
 
-# aitools doesn't use the bundle engine; opt out of the parent matrix.
 [EnvMatrix]
 DATABRICKS_BUNDLE_ENGINE = []
 
-# Mock the manifest. One stable skill, one experimental skill — the
-# experimental state is conveyed by the per-skill repo_dir field, not a
-# separate experimental_skills map.
+# Stable + experimental skills via repo_dir.
 [[Server]]
 Pattern = "GET /test-ref/manifest.json"
 Response.Body = '''
@@ -39,7 +33,6 @@ Response.Body = '''
 }
 '''
 
-# Mock the per-skill file fetches.
 [[Server]]
 Pattern = "GET /test-ref/skills/test-stable/SKILL.md"
 Response.Body = '''---

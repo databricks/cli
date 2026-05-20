@@ -53,14 +53,8 @@ func (s *GitHubManifestSource) FetchManifest(ctx context.Context, ref string) (*
 	return &manifest, nil
 }
 
-// normalizeManifest stamps SourceName, defaults a missing RepoDir to the
-// stable directory, and re-keys experimental skills with a "-experimental"
-// suffix so their on-disk install paths can't collide with stable skills
-// of the same name. SourceName preserves the upstream repo directory name
-// (which does not carry the suffix) for fetch URLs.
-//
-// RepoDir is provided by the manifest and is the source of truth for
-// whether a skill is experimental — see SkillMeta.IsExperimental.
+// normalizeManifest stamps SourceName, defaults RepoDir, and suffixes
+// experimental install keys while preserving unsuffixed upstream fetch paths.
 func normalizeManifest(m *Manifest) {
 	if m.Skills == nil {
 		m.Skills = map[string]SkillMeta{}

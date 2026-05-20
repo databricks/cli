@@ -323,13 +323,6 @@ func TestUninstallSelectiveDuplicateNamesDeduplicates(t *testing.T) {
 }
 
 func TestUninstallByEitherVariantRemovesBoth(t *testing.T) {
-	// Setup: both stable and experimental variants of databricks-jobs are
-	// installed (the transitional state we want uninstall to clean up).
-	// The new manifest format only carries one entry per logical skill, so
-	// the both-installed state is constructed here by installing the stable
-	// variant via the manifest and seeding the experimental variant directly
-	// on disk + in state — simulating an install left over from a prior ref
-	// where the same skill lived under experimental/.
 	tmp := setupTestHome(t)
 	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
 	setupFetchMock(t)
@@ -349,7 +342,7 @@ func TestUninstallByEitherVariantRemovesBoth(t *testing.T) {
 	globalDir := filepath.Join(tmp, ".databricks", "aitools", "skills")
 	require.DirExists(t, filepath.Join(globalDir, "databricks-jobs"))
 
-	// Seed the leftover experimental variant.
+	// Simulate a stale paired variant left over from an older manifest ref.
 	expDir := filepath.Join(globalDir, "databricks-jobs-experimental")
 	require.NoError(t, os.MkdirAll(expDir, 0o755))
 	require.NoError(t, os.WriteFile(filepath.Join(expDir, "SKILL.md"), []byte("# exp"), 0o644))
@@ -358,7 +351,6 @@ func TestUninstallByEitherVariantRemovesBoth(t *testing.T) {
 	state.Skills["databricks-jobs-experimental"] = "0.0.1"
 	require.NoError(t, SaveState(globalDir, state))
 
-	// Uninstall using just the un-suffixed name; both variants should go.
 	require.NoError(t, UninstallSkillsOpts(ctx, UninstallOptions{
 		Skills: []string{"databricks-jobs"},
 	}))
@@ -369,7 +361,6 @@ func TestUninstallByEitherVariantRemovesBoth(t *testing.T) {
 }
 
 func TestUninstallByAlternateNameWhenOnlyOneVariantInstalled(t *testing.T) {
-	// Setup: only the experimental variant is installed.
 	tmp := setupTestHome(t)
 	ctx := cmdio.MockDiscard(t.Context())
 	setupFetchMock(t)
@@ -389,8 +380,6 @@ func TestUninstallByAlternateNameWhenOnlyOneVariantInstalled(t *testing.T) {
 	globalDir := filepath.Join(tmp, ".databricks", "aitools", "skills")
 	require.DirExists(t, filepath.Join(globalDir, "databricks-jobs-experimental"))
 
-	// User types the un-suffixed name (doesn't know which variant is on
-	// disk); uninstall should still find and remove it.
 	require.NoError(t, UninstallSkillsOpts(ctx, UninstallOptions{
 		Skills: []string{"databricks-jobs"},
 	}))

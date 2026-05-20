@@ -729,10 +729,6 @@ func TestInstallProjectScopeZeroCompatibleAgentsReturnsError(t *testing.T) {
 }
 
 func TestInstallReplacesAlternateVariant(t *testing.T) {
-	// Setup: a skill called "databricks-jobs" is installed as stable.
-	// Then the manifest re-categorizes it as experimental (key becomes
-	// "databricks-jobs-experimental"). A new install with --experimental
-	// should remove the stale stable variant and install the experimental one.
 	tmp := setupTestHome(t)
 	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
 	setupFetchMock(t)
@@ -752,7 +748,6 @@ func TestInstallReplacesAlternateVariant(t *testing.T) {
 	globalDir := filepath.Join(tmp, ".databricks", "aitools", "skills")
 	require.DirExists(t, filepath.Join(globalDir, "databricks-jobs"))
 
-	// Now flip to experimental upstream. New install run.
 	experimentalManifest := &Manifest{
 		Version: "1",
 		Skills: map[string]SkillMeta{
@@ -766,9 +761,9 @@ func TestInstallReplacesAlternateVariant(t *testing.T) {
 
 	state, err := LoadState(globalDir)
 	require.NoError(t, err)
-	assert.NotContains(t, state.Skills, "databricks-jobs", "stale stable variant should be removed from state")
+	assert.NotContains(t, state.Skills, "databricks-jobs")
 	assert.Equal(t, "0.2.0", state.Skills["databricks-jobs-experimental"])
-	assert.NoDirExists(t, filepath.Join(globalDir, "databricks-jobs"), "stale stable install dir should be gone")
+	assert.NoDirExists(t, filepath.Join(globalDir, "databricks-jobs"))
 	assert.DirExists(t, filepath.Join(globalDir, "databricks-jobs-experimental"))
 	assert.Contains(t, stderr.String(), "Replaced previous variant databricks-jobs with databricks-jobs-experimental")
 }
