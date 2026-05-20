@@ -1,15 +1,20 @@
 package aitools
 
 import (
+	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"maps"
 	"slices"
 	"strings"
 	"text/tabwriter"
 
+	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/aitools/installer"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/log"
 	"github.com/spf13/cobra"
 )
@@ -58,128 +63,181 @@ func NewListCmd() *cobra.Command {
 	return cmd
 }
 
+// listOutput is the structured representation of `aitools list` used by both
+// text rendering and `--output json` consumers. The JSON shape is part of
+// the public CLI contract; do not break field names or types.
+type listOutput struct {
+	Release string                  `json:"release"`
+	Skills  []skillEntry            `json:"skills"`
+	Summary map[string]scopeSummary `json:"summary"`
+}
+
+type skillEntry struct {
+	Name          string            `json:"name"`
+	LatestVersion string            `json:"latest_version"`
+	Experimental  bool              `json:"experimental"`
+	Installed     map[string]string `json:"installed"`
+}
+
+type scopeSummary struct {
+	Installed int `json:"installed"`
+	Total     int `json:"total"`
+
+	// loaded preserves text rendering semantics without changing the JSON contract.
+	loaded bool
+}
+
 func defaultListSkills(cmd *cobra.Command, scope string) error {
 	ctx := cmd.Context()
 
-	ref, explicit, err := installer.GetSkillsRef(ctx)
+	out, err := buildListOutput(ctx, scope)
 	if err != nil {
 		return err
+	}
+
+	switch root.OutputType(cmd) {
+	case flags.OutputJSON:
+		return renderListJSON(cmd.OutOrStdout(), out)
+	default:
+		renderListText(ctx, out, scope)
+		return nil
+	}
+}
+
+// buildListOutput fetches the manifest and per-scope install state and
+// returns the structured listOutput. scope=="" loads both scopes; "global"
+// or "project" loads only that scope.
+func buildListOutput(ctx context.Context, scope string) (listOutput, error) {
+	ref, explicit, err := installer.GetSkillsRef(ctx)
+	if err != nil {
+		return listOutput{}, err
 	}
 
 	src := &installer.GitHubManifestSource{}
 	manifest, ref, err := installer.FetchSkillsManifestWithFallback(ctx, src, ref, !explicit)
 	if err != nil {
-		return fmt.Errorf("failed to fetch manifest: %w", err)
+		return listOutput{}, fmt.Errorf("failed to fetch manifest: %w", err)
 	}
 
-	// Load global state.
-	var globalState *installer.InstallState
-	if scope != installer.ScopeProject {
-		globalDir, gErr := installer.GlobalSkillsDir(ctx)
-		if gErr == nil {
-			globalState, err = installer.LoadState(globalDir)
-			if err != nil {
-				log.Debugf(ctx, "Could not load global install state: %v", err)
-			}
-		}
-	}
+	globalState := loadStateForScope(ctx, scope, installer.ScopeProject, installer.GlobalSkillsDir, "global")
+	projectState := loadStateForScope(ctx, scope, installer.ScopeGlobal, installer.ProjectSkillsDir, "project")
 
-	// Load project state.
-	var projectState *installer.InstallState
-	if scope != installer.ScopeGlobal {
-		projectDir, pErr := installer.ProjectSkillsDir(ctx)
-		if pErr == nil {
-			projectState, err = installer.LoadState(projectDir)
-			if err != nil {
-				log.Debugf(ctx, "Could not load project install state: %v", err)
-			}
-		}
-	}
-
-	// Build sorted list of skill names.
 	names := slices.Sorted(maps.Keys(manifest.Skills))
 
-	version := strings.TrimPrefix(ref, "v")
-	cmdio.LogString(ctx, "Available skills (v"+version+"):")
-	cmdio.LogString(ctx, "")
+	out := listOutput{
+		Release: strings.TrimPrefix(ref, "v"),
+		Skills:  make([]skillEntry, 0, len(names)),
+		Summary: map[string]scopeSummary{},
+	}
 
-	var buf strings.Builder
-	tw := tabwriter.NewWriter(&buf, 0, 4, 2, ' ', 0)
-	fmt.Fprintln(tw, "  NAME\tVERSION\tINSTALLED")
-
-	bothScopes := globalState != nil && projectState != nil
-
-	globalCount := 0
-	projectCount := 0
+	globalCount, projectCount := 0, 0
 	for _, name := range names {
 		meta := manifest.Skills[name]
-
-		tag := ""
-		if meta.Experimental {
-			tag = " [experimental]"
+		entry := skillEntry{
+			Name:          name,
+			LatestVersion: meta.Version,
+			Experimental:  meta.Experimental,
+			Installed:     map[string]string{},
 		}
-
-		installedStr := installedStatus(name, meta.Version, globalState, projectState, bothScopes)
 		if globalState != nil {
-			if _, ok := globalState.Skills[name]; ok {
+			if v, ok := globalState.Skills[name]; ok {
+				entry.Installed[installer.ScopeGlobal] = v
 				globalCount++
 			}
 		}
 		if projectState != nil {
-			if _, ok := projectState.Skills[name]; ok {
+			if v, ok := projectState.Skills[name]; ok {
+				entry.Installed[installer.ScopeProject] = v
 				projectCount++
 			}
 		}
+		out.Skills = append(out.Skills, entry)
+	}
 
-		fmt.Fprintf(tw, "  %s%s\tv%s\t%s\n", name, tag, meta.Version, installedStr)
+	// Include a summary entry for every scope that was queried, even when the
+	// install state is missing — agents should see "0/N" rather than guess
+	// from the absence of a key.
+	if scope != installer.ScopeProject {
+		out.Summary[installer.ScopeGlobal] = scopeSummary{Installed: globalCount, Total: len(names), loaded: globalState != nil}
+	}
+	if scope != installer.ScopeGlobal {
+		out.Summary[installer.ScopeProject] = scopeSummary{Installed: projectCount, Total: len(names), loaded: projectState != nil}
+	}
+
+	return out, nil
+}
+
+// loadStateForScope returns the install state for the named scope when the
+// scope filter allows it. excludeScope is the scope value that means "skip
+// loading this one" (so passing ScopeProject to the global loader skips
+// global when --scope=project).
+func loadStateForScope(ctx context.Context, scopeFilter, excludeScope string, dirFn func(context.Context) (string, error), label string) *installer.InstallState {
+	if scopeFilter == excludeScope {
+		return nil
+	}
+	dir, err := dirFn(ctx)
+	if err != nil {
+		return nil
+	}
+	state, err := installer.LoadState(dir)
+	if err != nil {
+		log.Debugf(ctx, "Could not load %s install state: %v", label, err)
+		return nil
+	}
+	return state
+}
+
+func renderListJSON(w io.Writer, out listOutput) error {
+	enc := json.NewEncoder(w)
+	enc.SetIndent("", "  ")
+	return enc.Encode(out)
+}
+
+func renderListText(ctx context.Context, out listOutput, scope string) {
+	cmdio.LogString(ctx, "Available skills (v"+out.Release+"):")
+	cmdio.LogString(ctx, "")
+
+	bothScopes := scope == "" &&
+		out.Summary[installer.ScopeGlobal].loaded &&
+		out.Summary[installer.ScopeProject].loaded
+
+	var buf strings.Builder
+	tw := tabwriter.NewWriter(&buf, 0, 4, 2, ' ', 0)
+	fmt.Fprintln(tw, "  NAME\tVERSION\tINSTALLED")
+	for _, s := range out.Skills {
+		tag := ""
+		if s.Experimental {
+			tag = " [experimental]"
+		}
+		fmt.Fprintf(tw, "  %s%s\tv%s\t%s\n", s.Name, tag, s.LatestVersion, installedStatusFromEntry(s, bothScopes))
 	}
 	tw.Flush()
 	cmdio.LogString(ctx, buf.String())
 
-	// Summary line.
-	switch {
-	case bothScopes:
-		cmdio.LogString(ctx, fmt.Sprintf("%d/%d skills installed (global), %d/%d (project)", globalCount, len(names), projectCount, len(names)))
-	case projectState != nil:
-		cmdio.LogString(ctx, fmt.Sprintf("%d/%d skills installed (project)", projectCount, len(names)))
-	case scope == installer.ScopeProject:
-		cmdio.LogString(ctx, fmt.Sprintf("%d/%d skills installed (project)", 0, len(names)))
-	default:
-		cmdio.LogString(ctx, fmt.Sprintf("%d/%d skills installed (global)", globalCount, len(names)))
-	}
-	return nil
+	cmdio.LogString(ctx, summaryLine(out, scope))
 }
 
-// installedStatus returns the display string for a skill's installation status.
-func installedStatus(name, latestVersion string, globalState, projectState *installer.InstallState, bothScopes bool) string {
-	globalVer := ""
-	projectVer := ""
-
-	if globalState != nil {
-		globalVer = globalState.Skills[name]
-	}
-	if projectState != nil {
-		projectVer = projectState.Skills[name]
-	}
+func installedStatusFromEntry(s skillEntry, bothScopes bool) string {
+	globalVer := s.Installed[installer.ScopeGlobal]
+	projectVer := s.Installed[installer.ScopeProject]
 
 	if globalVer == "" && projectVer == "" {
 		return "not installed"
 	}
 
-	// If both scopes have the skill, show the project version (takes precedence).
 	if bothScopes && globalVer != "" && projectVer != "" {
-		return versionLabel(projectVer, latestVersion) + " (project, global)"
+		return versionLabel(projectVer, s.LatestVersion) + " (project, global)"
 	}
 
 	if projectVer != "" {
-		label := versionLabel(projectVer, latestVersion)
+		label := versionLabel(projectVer, s.LatestVersion)
 		if bothScopes {
 			return label + " (project)"
 		}
 		return label
 	}
 
-	label := versionLabel(globalVer, latestVersion)
+	label := versionLabel(globalVer, s.LatestVersion)
 	if bothScopes {
 		return label + " (global)"
 	}
@@ -192,4 +250,26 @@ func versionLabel(installed, latest string) string {
 		return "v" + installed + " (up to date)"
 	}
 	return "v" + installed + " (update available)"
+}
+
+func summaryLine(out listOutput, scope string) string {
+	g, gOK := out.Summary[installer.ScopeGlobal]
+	p, pOK := out.Summary[installer.ScopeProject]
+
+	switch {
+	case gOK && pOK:
+		// Mirror prior behavior: only print the dual-scope line when both
+		// scopes have a state file; otherwise only mention the one that does.
+		if g.loaded && p.loaded {
+			return fmt.Sprintf("%d/%d skills installed (global), %d/%d (project)", g.Installed, g.Total, p.Installed, p.Total)
+		}
+		if p.loaded {
+			return fmt.Sprintf("%d/%d skills installed (project)", p.Installed, p.Total)
+		}
+		return fmt.Sprintf("%d/%d skills installed (global)", g.Installed, g.Total)
+	case pOK:
+		return fmt.Sprintf("%d/%d skills installed (project)", p.Installed, p.Total)
+	default:
+		return fmt.Sprintf("%d/%d skills installed (global)", g.Installed, g.Total)
+	}
 }
