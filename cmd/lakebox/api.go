@@ -46,10 +46,15 @@ type createRequest struct {
 
 // createResponse is the JSON body returned by POST /api/2.0/lakebox/sandboxes.
 // Mirrors the `Sandbox` proto message after JSON transcoding.
+//
+// `FQDN` is the manager's internal routing hostname — not user-actionable,
+// SSH always goes through the gateway. Tagged `omitempty` so the day the
+// manager stops returning it, both this struct and downstream `--json`
+// output drop the field cleanly instead of leaking a ghost empty string.
 type createResponse struct {
 	SandboxID string `json:"sandboxId"`
 	Status    string `json:"status"`
-	FQDN      string `json:"fqdn"`
+	FQDN      string `json:"fqdn,omitempty"`
 }
 
 // sandboxEntry is a single item in the list response.
@@ -65,7 +70,7 @@ type createResponse struct {
 type sandboxEntry struct {
 	SandboxID     string  `json:"sandboxId"`
 	Status        string  `json:"status"`
-	FQDN          string  `json:"fqdn"`
+	FQDN          string  `json:"fqdn,omitempty"`
 	Name          string  `json:"name,omitempty"`
 	CreateTime    string  `json:"createTime,omitempty"`
 	LastStartTime string  `json:"lastStartTime,omitempty"`
@@ -224,13 +229,20 @@ func (a *lakeboxAPI) list(ctx context.Context) ([]sandboxEntry, error) {
 
 // listPage fetches a single page of sandboxes. An empty `pageToken` requests
 // the first page; the server enforces ordering across pages.
+//
+// `query` is passed in slot 6 (`request`), not slot 5 (`queryParams`). On
+// GET, the SDK's makeRequestBody serializes `request` into the URL query
+// string and sends an empty body. Routing through `queryParams` instead
+// makes it write a literal `null` body, which the lakebox manager rejects
+// with `INVALID_PARAMETER_VALUE: Request body must be a JSON object`. See
+// databricks-sdk-go/httpclient/request.go:makeRequestBody.
 func (a *lakeboxAPI) listPage(ctx context.Context, pageToken string) (*listResponse, error) {
 	query := map[string]any{"page_size": listPageSize}
 	if pageToken != "" {
 		query["page_token"] = pageToken
 	}
 	var resp listResponse
-	err := a.c.Do(ctx, http.MethodGet, lakeboxAPIPath, a.headers(), query, nil, &resp)
+	err := a.c.Do(ctx, http.MethodGet, lakeboxAPIPath, a.headers(), nil, query, &resp)
 	if err != nil {
 		return nil, err
 	}
@@ -276,7 +288,41 @@ func (a *lakeboxAPI) delete(ctx context.Context, id string) error {
 	return a.c.Do(ctx, http.MethodDelete, lakeboxAPIPath+"/"+id, a.headers(), nil, nil, nil)
 }
 
-// registerKey calls POST /api/2.0/lakebox/ssh-keys.
-func (a *lakeboxAPI) registerKey(ctx context.Context, publicKey string) error {
-	return a.c.Do(ctx, http.MethodPost, lakeboxKeysAPIPath, a.headers(), nil, registerKeyRequest{PublicKey: publicKey}, nil)
+// registerKey calls POST /api/2.0/lakebox/ssh-keys. An empty `name` is
+// omitted from the wire payload so the server records "unset" rather than
+// an explicit empty string.
+func (a *lakeboxAPI) registerKey(ctx context.Context, publicKey, name string) error {
+	return a.c.Do(ctx, http.MethodPost, lakeboxKeysAPIPath, a.headers(), nil, registerKeyRequest{PublicKey: publicKey, Name: name}, nil)
+}
+
+// sshKeyEntry is a single item in the ssh-key list response. Mirrors the
+// `SshKey` proto message after JSON transcoding (`key_hash` → `keyHash`,
+// timestamps as RFC 3339 strings).
+type sshKeyEntry struct {
+	KeyHash     string `json:"keyHash"`
+	Name        string `json:"name,omitempty"`
+	CreateTime  string `json:"createTime,omitempty"`
+	LastUseTime string `json:"lastUseTime,omitempty"`
+}
+
+// listKeysResponse is the JSON body returned by GET /api/2.0/lakebox/ssh-keys.
+// Per-user keys are hard-capped at 100 server-side, so the full set fits in
+// one response — no pagination.
+type listKeysResponse struct {
+	SshKeys []sshKeyEntry `json:"sshKeys"`
+}
+
+// listKeys calls GET /api/2.0/lakebox/ssh-keys.
+func (a *lakeboxAPI) listKeys(ctx context.Context) ([]sshKeyEntry, error) {
+	var resp listKeysResponse
+	err := a.c.Do(ctx, http.MethodGet, lakeboxKeysAPIPath, a.headers(), nil, nil, &resp)
+	if err != nil {
+		return nil, err
+	}
+	return resp.SshKeys, nil
+}
+
+// deleteKey calls DELETE /api/2.0/lakebox/ssh-keys/{key_hash}.
+func (a *lakeboxAPI) deleteKey(ctx context.Context, keyHash string) error {
+	return a.c.Do(ctx, http.MethodDelete, lakeboxKeysAPIPath+"/"+keyHash, a.headers(), nil, nil, nil)
 }

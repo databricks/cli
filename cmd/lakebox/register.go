@@ -18,6 +18,8 @@ import (
 const lakeboxKeyName = "lakebox_rsa"
 
 func newRegisterCommand() *cobra.Command {
+	var name string
+
 	cmd := &cobra.Command{
 		Use:   "register",
 		Short: "Register this machine for lakebox SSH access",
@@ -25,13 +27,16 @@ func newRegisterCommand() *cobra.Command {
 
 This command:
 1. Generates an RSA SSH key at ~/.ssh/lakebox_rsa (if it doesn't exist)
-2. Registers the public key with the lakebox service
+2. Registers the public key with the lakebox service, labeled with --name
+   (defaults to this machine's hostname so 'ssh-key list' is meaningful
+   across multiple machines)
 
 After registration, 'databricks lakebox ssh' will use this key automatically.
 Run this once per machine.
 
-Example:
-  databricks lakebox register`,
+Examples:
+  databricks lakebox register
+  databricks lakebox register --name my-laptop`,
 		PreRunE: root.MustWorkspaceClient,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
@@ -58,9 +63,19 @@ Example:
 				return fmt.Errorf("failed to read public key %s.pub: %w", keyPath, err)
 			}
 
+			// Default the registered key's label to this machine's hostname so
+			// `lakebox ssh-key list` is meaningful when the user has keys from
+			// multiple machines. Failed hostname lookups fall through to the
+			// server's "unset" default rather than blocking registration.
+			if name == "" {
+				if host, err := os.Hostname(); err == nil {
+					name = host
+				}
+			}
+
 			s := spin(ctx, "Registering key…")
 			defer s.Close()
-			if err := api.registerKey(ctx, string(pubKeyData)); err != nil {
+			if err := api.registerKey(ctx, string(pubKeyData), name); err != nil {
 				s.fail("Failed to register key")
 				return fmt.Errorf("failed to register key: %w", err)
 			}
@@ -71,6 +86,10 @@ Example:
 			return nil
 		},
 	}
+
+	cmd.Flags().StringVar(&name, "name", "",
+		"Label for the registered key (defaults to this machine's hostname). "+
+			"Pass --name= to register without a label.")
 
 	return cmd
 }
