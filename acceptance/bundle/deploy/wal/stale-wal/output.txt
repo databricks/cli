@@ -1,0 +1,19 @@
+=== WAL content before deploy ===
+{"lineage":"stale-test-lineage","serial":1}
+{"k":"resources.jobs.stale_job","v":{"__id__":"9999","state":{"name":"stale-job"}}}
+=== Deploy (should ignore stale WAL) ===
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/wal-stale-test/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+=== Checking WAL file after deploy ===
+Stale WAL deleted (expected)
+=== State file should NOT contain stale_job ===
+{
+  "serial": 3,
+  "state_keys": [
+    "resources.jobs.test_job"
+  ]
+}
