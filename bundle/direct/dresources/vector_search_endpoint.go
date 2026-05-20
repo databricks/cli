@@ -110,6 +110,6 @@ func (r *ResourceVectorSearchEndpoint) DoUpdate(ctx context.Context, id string, 
 	return nil, nil
 }
 
-func (r *ResourceVectorSearchEndpoint) DoDelete(ctx context.Context, id string) error {
+func (r *ResourceVectorSearchEndpoint) DoDelete(ctx context.Context, id string, _ *vectorsearch.CreateEndpoint) error {
 	return r.client.VectorSearchEndpoints.DeleteEndpointByEndpointName(ctx, id)
 }

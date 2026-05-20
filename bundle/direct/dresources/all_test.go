@@ -849,7 +849,7 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 		assert.Equal(t, val, remoteValue, "path=%q\nnewState=%s\nremappedState=%s", path.String(), jsonDump(newState), jsonDump(remappedState))
 	}))
 
-	err = adapter.DoDelete(ctx, createdID)
+	err = adapter.DoDelete(ctx, createdID, newState)
 	require.NoError(t, err)
 
 	p, err := structpath.ParsePath("name")
