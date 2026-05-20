@@ -132,7 +132,7 @@ func TestUpdateCheckDryRun(t *testing.T) {
 	fetchCalls := 0
 	orig := fetchFileFn
 	t.Cleanup(func() { fetchFileFn = orig })
-	fetchFileFn = func(_ context.Context, _, _, _ string) ([]byte, error) {
+	fetchFileFn = func(_ context.Context, _, _, _, _ string) ([]byte, error) {
 		fetchCalls++
 		return []byte("content"), nil
 	}
@@ -169,7 +169,7 @@ func TestUpdateForceRedownloads(t *testing.T) {
 	fetchCalls := 0
 	orig := fetchFileFn
 	t.Cleanup(func() { fetchFileFn = orig })
-	fetchFileFn = func(_ context.Context, _, _, _ string) ([]byte, error) {
+	fetchFileFn = func(_ context.Context, _, _, _, _ string) ([]byte, error) {
 		fetchCalls++
 		return []byte("content"), nil
 	}
@@ -345,10 +345,10 @@ func TestUpdateSkipsExperimentalSkills(t *testing.T) {
 
 	// New manifest with an experimental skill.
 	updatedManifest := testManifest()
-	updatedManifest.Skills["databricks-experimental"] = SkillMeta{
-		Version:      "0.1.0",
-		Files:        []string{"SKILL.md"},
-		Experimental: true,
+	updatedManifest.Skills["databricks-iceberg"] = SkillMeta{
+		Version: "0.1.0",
+		Files:   []string{"SKILL.md"},
+		RepoDir: experimentalRepoPath,
 	}
 	src2 := &mockManifestSource{manifest: updatedManifest}
 
@@ -356,8 +356,160 @@ func TestUpdateSkipsExperimentalSkills(t *testing.T) {
 	require.NoError(t, err)
 
 	// Experimental skill should be skipped.
-	assert.Contains(t, result.Skipped, "databricks-experimental")
+	assert.Contains(t, result.Skipped, "databricks-iceberg")
 	assert.Empty(t, result.Added)
+}
+
+func TestUpdateKeepsNameWhenRepoDirChanges(t *testing.T) {
+	tests := []struct {
+		name              string
+		installedManifest func() *Manifest
+		updatedManifest   func() *Manifest
+		wantRepoDir       string
+	}{
+		{
+			name: "stable to experimental",
+			installedManifest: func() *Manifest {
+				return &Manifest{
+					Version: "1",
+					Skills: map[string]SkillMeta{
+						"databricks-jobs": {Version: "0.1.0", Files: []string{"SKILL.md"}},
+					},
+				}
+			},
+			updatedManifest: func() *Manifest {
+				return &Manifest{
+					Version: "1",
+					Skills: map[string]SkillMeta{
+						"databricks-jobs": {Version: "0.1.0", Files: []string{"SKILL.md"}, RepoDir: experimentalRepoPath},
+					},
+				}
+			},
+			wantRepoDir: experimentalRepoPath,
+		},
+		{
+			name: "experimental to stable",
+			installedManifest: func() *Manifest {
+				return &Manifest{
+					Version: "1",
+					Skills: map[string]SkillMeta{
+						"databricks-jobs": {Version: "0.1.0", Files: []string{"SKILL.md"}, RepoDir: experimentalRepoPath},
+					},
+				}
+			},
+			updatedManifest: func() *Manifest {
+				return &Manifest{
+					Version: "1",
+					Skills: map[string]SkillMeta{
+						"databricks-jobs": {Version: "0.1.0", Files: []string{"SKILL.md"}},
+					},
+				}
+			},
+			wantRepoDir: stableSkillsRepoPath,
+		},
+	}
+
+	for _, tt := range tests {
+		for _, targeted := range []bool{false, true} {
+			mode := "all"
+			opts := UpdateOptions{}
+			if targeted {
+				mode = "targeted"
+				opts.Skills = []string{"databricks-jobs"}
+			}
+
+			t.Run(tt.name+" "+mode, func(t *testing.T) {
+				tmp := setupTestHome(t)
+				ctx := cmdio.MockDiscard(t.Context())
+				setupFetchMock(t)
+				t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
+				agent := testAgent(tmp)
+
+				require.NoError(t, InstallSkillsForAgents(
+					ctx, &mockManifestSource{manifest: tt.installedManifest()},
+					[]*agents.Agent{agent}, InstallOptions{IncludeExperimental: true},
+				))
+
+				globalDir := filepath.Join(tmp, ".databricks", "aitools", "skills")
+				require.DirExists(t, filepath.Join(globalDir, "databricks-jobs"))
+
+				t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.0")
+				result, err := UpdateSkills(
+					ctx, &mockManifestSource{manifest: tt.updatedManifest()},
+					[]*agents.Agent{agent}, opts,
+				)
+				require.NoError(t, err)
+
+				require.Len(t, result.Updated, 1)
+				assert.Equal(t, "databricks-jobs", result.Updated[0].Name)
+				assert.Equal(t, "0.1.0", result.Updated[0].OldVersion)
+				assert.Equal(t, "0.1.0", result.Updated[0].NewVersion)
+				assert.NotContains(t, result.Unchanged, "databricks-jobs")
+				assert.Empty(t, result.Added)
+
+				state, err := LoadState(globalDir)
+				require.NoError(t, err)
+				assert.Equal(t, "0.1.0", state.Skills["databricks-jobs"])
+				assert.Equal(t, tt.wantRepoDir, state.RepoDirs["databricks-jobs"])
+				assert.DirExists(t, filepath.Join(globalDir, "databricks-jobs"))
+			})
+		}
+	}
+}
+
+func TestUpdateRepoDirChangeFromLegacyState(t *testing.T) {
+	tmp := setupTestHome(t)
+	ctx := cmdio.MockDiscard(t.Context())
+	agent := testAgent(tmp)
+	t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.0")
+
+	globalDir := filepath.Join(tmp, ".databricks", "aitools", "skills")
+	require.NoError(t, SaveState(globalDir, &InstallState{
+		SchemaVersion:       1,
+		IncludeExperimental: true,
+		Release:             testSkillsRef,
+		Skills: map[string]string{
+			"databricks-jobs": "0.1.0",
+		},
+	}))
+
+	fetchCalls := 0
+	orig := fetchFileFn
+	t.Cleanup(func() { fetchFileFn = orig })
+	fetchFileFn = func(_ context.Context, _, _, _, _ string) ([]byte, error) {
+		fetchCalls++
+		return []byte("content"), nil
+	}
+
+	stableManifest := &Manifest{
+		Version: "1",
+		Skills: map[string]SkillMeta{
+			"databricks-jobs": {Version: "0.1.0", Files: []string{"SKILL.md"}},
+		},
+	}
+	stableResult, err := UpdateSkills(ctx, &mockManifestSource{manifest: stableManifest}, []*agents.Agent{agent}, UpdateOptions{})
+	require.NoError(t, err)
+	assert.Contains(t, stableResult.Unchanged, "databricks-jobs")
+	assert.Equal(t, 0, fetchCalls)
+
+	t.Setenv("DATABRICKS_SKILLS_REF", "v0.3.0")
+	experimentalManifest := &Manifest{
+		Version: "1",
+		Skills: map[string]SkillMeta{
+			"databricks-jobs": {Version: "0.1.0", Files: []string{"SKILL.md"}, RepoDir: experimentalRepoPath},
+		},
+	}
+	experimentalResult, err := UpdateSkills(ctx, &mockManifestSource{manifest: experimentalManifest}, []*agents.Agent{agent}, UpdateOptions{})
+	require.NoError(t, err)
+	require.Len(t, experimentalResult.Updated, 1)
+	assert.Equal(t, "databricks-jobs", experimentalResult.Updated[0].Name)
+	assert.Equal(t, "0.1.0", experimentalResult.Updated[0].OldVersion)
+	assert.Equal(t, "0.1.0", experimentalResult.Updated[0].NewVersion)
+	assert.Positive(t, fetchCalls)
+
+	state, err := LoadState(globalDir)
+	require.NoError(t, err)
+	assert.Equal(t, experimentalRepoPath, state.RepoDirs["databricks-jobs"])
 }
 
 func TestUpdateSkipsMinCLIVersionSkills(t *testing.T) {

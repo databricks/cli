@@ -23,8 +23,7 @@ type GitHubManifestSource struct{}
 // FetchManifest fetches the skills manifest from GitHub at the given ref.
 func (s *GitHubManifestSource) FetchManifest(ctx context.Context, ref string) (*Manifest, error) {
 	log.Debugf(ctx, "Fetching skills manifest from %s/%s@%s", skillsRepoOwner, skillsRepoName, ref)
-	url := fmt.Sprintf("https://raw.githubusercontent.com/%s/%s/%s/manifest.json",
-		skillsRepoOwner, skillsRepoName, ref)
+	url := fmt.Sprintf("%s/%s/manifest.json", GetSkillsBaseURL(ctx), ref)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
@@ -50,5 +49,20 @@ func (s *GitHubManifestSource) FetchManifest(ctx context.Context, ref string) (*
 		return nil, fmt.Errorf("failed to parse manifest: %w", err)
 	}
 
+	normalizeManifest(&manifest)
 	return &manifest, nil
+}
+
+// normalizeManifest stamps SourceName and defaults RepoDir for older manifests.
+func normalizeManifest(m *Manifest) {
+	if m.Skills == nil {
+		m.Skills = map[string]SkillMeta{}
+	}
+	for name, meta := range m.Skills {
+		if meta.RepoDir == "" {
+			meta.RepoDir = stableSkillsRepoPath
+		}
+		meta.SourceName = name
+		m.Skills[name] = meta
+	}
 }

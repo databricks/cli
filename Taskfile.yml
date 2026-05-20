@@ -616,6 +616,7 @@ tasks:
       - libs/aitools/**
       - experimental/aitools/**
       - acceptance/apps/**
+      - acceptance/experimental/aitools/**
       - "{{.EMBED_SOURCES}}"
     cmds:
       - |
@@ -629,7 +630,7 @@ tasks:
           --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
           --no-summary=skipped \
           --packages ./acceptance/... \
-          -- -timeout=${LOCAL_TIMEOUT:-30m} -run "TestAccept/apps"
+          -- -timeout=${LOCAL_TIMEOUT:-30m} -run "TestAccept/(apps|experimental/aitools)"
 
   test-exp-ssh:
     desc: Run experimental SSH unit and acceptance tests
