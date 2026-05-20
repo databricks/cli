@@ -248,14 +248,20 @@ func persistPlaintextFallback(ctx context.Context) {
 // the user to plaintext.
 //
 // No-op when mode is not secure or when the user already chose a mode
-// explicitly. Best-effort: persistence failures are logged at debug and
-// never block login. Concurrent logins racing this write is benign because
-// both write the same value.
-func PinSecureMode(ctx context.Context, mode StorageMode) {
+// explicitly via override, env var, or config. override must be the same
+// value the caller passed to ResolveCacheForLogin so the source check sees
+// the caller's intent rather than re-resolving without it.
+//
+// Persistence failures are logged at warn: they do not block login, but
+// the user should know the pin did not happen, since a later transient
+// keyring failure could then silently route a default-secure user to
+// plaintext. Concurrent logins racing this write is benign because both
+// write the same value.
+func PinSecureMode(ctx context.Context, mode, override StorageMode) {
 	if mode != StorageModeSecure {
 		return
 	}
-	_, source, err := ResolveStorageModeWithSource(ctx, StorageModeUnknown)
+	_, source, err := ResolveStorageModeWithSource(ctx, override)
 	if err != nil {
 		log.Debugf(ctx, "pin secure mode: resolve: %v", err)
 		return
@@ -265,6 +271,6 @@ func PinSecureMode(ctx context.Context, mode StorageMode) {
 	}
 	configPath := env.Get(ctx, "DATABRICKS_CONFIG_FILE")
 	if err := databrickscfg.SetConfiguredAuthStorage(ctx, string(StorageModeSecure), configPath); err != nil {
-		log.Debugf(ctx, "persist auth_storage=secure pin failed: %v", err)
+		log.Warnf(ctx, "could not persist auth_storage=secure to %s: %v. Future commands may need DATABRICKS_AUTH_STORAGE=secure to keep using the OS keyring.", configPath, err)
 	}
 }

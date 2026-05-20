@@ -433,7 +433,7 @@ func runInlineLogin(ctx context.Context, profiler profile.Profiler, tokenCache c
 	if err = persistentAuth.Challenge(); err != nil {
 		return "", nil, err
 	}
-	storage.PinSecureMode(ctx, mode)
+	storage.PinSecureMode(ctx, mode, storage.StorageModeUnknown)
 
 	clearKeys := oauthLoginClearKeys()
 	clearKeys = append(clearKeys, databrickscfg.ExperimentalIsUnifiedHostKey)

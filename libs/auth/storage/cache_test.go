@@ -386,6 +386,7 @@ func TestPinSecureMode(t *testing.T) {
 	cases := []struct {
 		name        string
 		mode        StorageMode
+		override    StorageMode
 		envValue    string
 		configBody  string
 		wantWritten string
@@ -412,6 +413,16 @@ func TestPinSecureMode(t *testing.T) {
 			configBody:  "[__settings__]\nauth_storage = secure\n",
 			wantWritten: "secure",
 		},
+		{
+			// The override signal is per-invocation, so persisting it to
+			// config would silently turn an ephemeral choice into a
+			// persistent one. Honor the caller's explicit override by
+			// no-op'ing the pin.
+			name:        "secure from override is a no-op",
+			mode:        StorageModeSecure,
+			override:    StorageModeSecure,
+			wantWritten: "",
+		},
 	}
 
 	for _, tc := range cases {
@@ -426,7 +437,7 @@ func TestPinSecureMode(t *testing.T) {
 				ctx = env.Set(ctx, EnvVar, tc.envValue)
 			}
 
-			PinSecureMode(ctx, tc.mode)
+			PinSecureMode(ctx, tc.mode, tc.override)
 
 			got, err := databrickscfg.GetConfiguredAuthStorage(ctx, configPath)
 			require.NoError(t, err)
@@ -440,13 +451,13 @@ func TestPinSecureMode_IsIdempotent(t *testing.T) {
 	ctx := t.Context()
 	configPath := env.Get(ctx, "DATABRICKS_CONFIG_FILE")
 
-	PinSecureMode(ctx, StorageModeSecure)
+	PinSecureMode(ctx, StorageModeSecure, StorageModeUnknown)
 	first, err := databrickscfg.GetConfiguredAuthStorage(ctx, configPath)
 	require.NoError(t, err)
 	require.Equal(t, "secure", first)
 
 	// Second call should see source=Config and skip the write.
-	PinSecureMode(ctx, StorageModeSecure)
+	PinSecureMode(ctx, StorageModeSecure, StorageModeUnknown)
 	second, err := databrickscfg.GetConfiguredAuthStorage(ctx, configPath)
 	require.NoError(t, err)
 	assert.Equal(t, "secure", second)
@@ -461,8 +472,8 @@ func TestPinSecureMode_PersistFailureIsSwallowed(t *testing.T) {
 	configPath := filepath.Join(t.TempDir(), "no-such-dir", ".databrickscfg")
 	t.Setenv("DATABRICKS_CONFIG_FILE", configPath)
 
-	// Must not panic or block; failures are logged at debug.
-	PinSecureMode(ctx, StorageModeSecure)
+	// Must not panic or block; failure surfaces in the warn log.
+	PinSecureMode(ctx, StorageModeSecure, StorageModeUnknown)
 
 	// The persist failure must not have produced any file.
 	_, err := os.Stat(configPath)

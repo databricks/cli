@@ -298,7 +298,7 @@ a new profile is created.
 		// Lock secure mode in after a successful keyring write so a later
 		// transient keyring probe failure cannot silently demote this user
 		// to plaintext.
-		storage.PinSecureMode(ctx, mode)
+		storage.PinSecureMode(ctx, mode, storage.StorageModeUnknown)
 
 		// At this point, an OAuth token has been successfully minted and stored
 		// in the CLI cache. The rest of the command focuses on:
@@ -639,7 +639,7 @@ func discoveryLogin(ctx context.Context, in discoveryLoginInputs) error {
 	if err := persistentAuth.Challenge(); err != nil {
 		return discoveryErr("login via login.databricks.com failed", err)
 	}
-	storage.PinSecureMode(ctx, in.mode)
+	storage.PinSecureMode(ctx, in.mode, storage.StorageModeUnknown)
 
 	discoveredHost := arg.GetDiscoveredHost()
 	if discoveredHost == "" {
