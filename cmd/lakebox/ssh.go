@@ -16,13 +16,14 @@ import (
 
 const (
 	defaultGatewayHost        = "uw2.dbrx.dev"
-	stagingDefaultGatewayHost = "uw2.s.dbrx.dev"
+	stagingDefaultGatewayHost = "ue1.s.dbrx.dev"
 	defaultGatewayPort        = "2222"
 )
 
 // resolveGatewayHost picks the SSH gateway hostname based on the workspace host.
 // Staging workspaces (*.staging.cloud.databricks.com etc.) route through
-// uw2.s.dbrx.dev; everything else uses prod uw2.dbrx.dev.
+// ue1.s.dbrx.dev; everything else uses uw2.dbrx.dev. Both are dev-tier
+// listeners (`.dbrx.dev`); there is no prod listener yet.
 func resolveGatewayHost(workspaceHost string) string {
 	if strings.Contains(workspaceHost, ".staging.") {
 		return stagingDefaultGatewayHost
