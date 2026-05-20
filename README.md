@@ -40,7 +40,7 @@ You can find a detailed description at https://github.com/databricks/databricks-
 
 ### Feature stability
 
-Commands and flags are stable by default and will not break within a major version (see Breaking changes below).
+Commands and flags are stable by default and will not break within a major version.
 
 Some features are unstable and may change in any MINOR release:
 
