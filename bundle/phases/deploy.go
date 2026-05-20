@@ -71,17 +71,23 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, ta
 	// mutators need informed consent if they are potentially destructive.
 	cmdio.LogString(ctx, "Deploying resources...")
 
+	// Apply resources and capture post-apply state.
+	// For direct: Finalize flushes the WAL to disk and returns the state;
+	// called even if Apply failed so partial progress is saved.
+	// For terraform: ParseResourcesState reads the file written by terraform.Apply.
+	var (
+		state statemgmt.ExportedResourcesMap
+		err   error
+	)
 	if targetEngine.IsDirect() {
 		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(ctx), plan, direct.MigrateMode(false))
-		// Finalize state: write to disk even if deploy failed, so partial progress is saved.
-		// Skip for empty plans to avoid creating a state file when nothing was deployed.
-		if len(plan.Plan) > 0 {
-			if err := b.DeploymentBundle.StateDB.Finalize(); err != nil {
-				logdiag.LogError(ctx, err)
-			}
-		}
+		state, err = b.DeploymentBundle.StateDB.Finalize(ctx)
 	} else {
 		bundle.ApplyContext(ctx, b, terraform.Apply())
+		state, err = terraform.ParseResourcesState(ctx, b)
+	}
+	if err != nil {
+		logdiag.LogError(ctx, err)
 	}
 
 	// Even if deployment failed, there might be updates in states that we need to upload
@@ -91,7 +97,7 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, ta
 	}
 
 	bundle.ApplySeqContext(ctx, b,
-		statemgmt.Load(targetEngine),
+		statemgmt.Load(state),
 		metadata.Compute(),
 		metadata.Upload(),
 		statemgmt.UploadStateForYamlSync(targetEngine),
@@ -152,15 +158,27 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		return
 	}
 
-	if plan != nil {
+	planFromFile := plan != nil
+	if plan == nil {
+		// State is already open for read by process.go (for direct engine)
+		plan = RunPlan(ctx, b, engine)
+	}
+
+	if engine.IsDirect() {
+		// Upgrade from read (opened by process.go) to write mode
+		if err := b.DeploymentBundle.StateDB.UpgradeToWrite(); err != nil {
+			logdiag.LogError(ctx, err)
+			return
+		}
+	}
+
+	if planFromFile {
 		// Initialize DeploymentBundle for applying the loaded plan
 		err := b.DeploymentBundle.InitForApply(ctx, b.WorkspaceClient(ctx), plan)
 		if err != nil {
 			logdiag.LogError(ctx, err)
 			return
 		}
-	} else {
-		plan = RunPlan(ctx, b, engine)
 	}
 
 	if logdiag.HasError(ctx) {
