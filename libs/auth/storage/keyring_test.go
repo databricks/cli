@@ -137,6 +137,25 @@ func TestKeyringCache_Lookup_PropagatesOtherErrors(t *testing.T) {
 	_, err := c.Lookup("my-profile")
 	require.Error(t, err)
 	assert.ErrorIs(t, err, boom)
+	// The non-ErrNotFound path wraps the backend error with actionable
+	// guidance so users on systems without a usable keyring backend
+	// (e.g. headless Linux) know what to do.
+	assert.Contains(t, err.Error(), "OS keyring unreachable")
+	assert.Contains(t, err.Error(), "DATABRICKS_AUTH_STORAGE=plaintext")
+	assert.Contains(t, err.Error(), "databricks auth login")
+}
+
+// ErrNotFound has to pass through unwrapped because callers branch on it
+// (cache.ErrNotFound is the "no token, please log in" signal). Wrapping it
+// with the unreachability hint would mislead the user.
+func TestKeyringCache_Lookup_NotFoundIsNotWrapped(t *testing.T) {
+	backend := newFakeBackend()
+	c := newTestCache(backend)
+
+	_, err := c.Lookup("nope")
+	require.Error(t, err)
+	assert.ErrorIs(t, err, cache.ErrNotFound)
+	assert.NotContains(t, err.Error(), "OS keyring unreachable")
 }
 
 func TestKeyringCache_Lookup_CorruptedJSONReturnsError(t *testing.T) {
