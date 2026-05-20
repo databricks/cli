@@ -775,6 +775,9 @@ github.com/databricks/cli/bundle/config/resources.PostgresBranch:
   "parent":
     "description": |-
       PLACEHOLDER
+  "replace_existing":
+    "description": |-
+      PLACEHOLDER
   "source_branch":
     "description": |-
       PLACEHOLDER
@@ -847,6 +850,9 @@ github.com/databricks/cli/bundle/config/resources.PostgresEndpoint:
     "description": |-
       PLACEHOLDER
   "parent":
+    "description": |-
+      PLACEHOLDER
+  "replace_existing":
     "description": |-
       PLACEHOLDER
   "settings":

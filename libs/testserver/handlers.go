@@ -886,7 +886,8 @@ func AddDefaultHandlers(server *Server) {
 	server.Handle("POST", "/api/2.0/postgres/projects/{project_id}/branches", func(req Request) any {
 		parent := "projects/" + req.Vars["project_id"]
 		branchID := req.URL.Query().Get("branch_id")
-		return req.Workspace.PostgresBranchCreate(req, parent, branchID)
+		replaceExisting := req.URL.Query().Get("replace_existing") == "true"
+		return req.Workspace.PostgresBranchCreate(req, parent, branchID, replaceExisting)
 	})
 
 	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}/branches", func(req Request) any {
@@ -913,7 +914,8 @@ func AddDefaultHandlers(server *Server) {
 	server.Handle("POST", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/endpoints", func(req Request) any {
 		parent := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"]
 		endpointID := req.URL.Query().Get("endpoint_id")
-		return req.Workspace.PostgresEndpointCreate(req, parent, endpointID)
+		replaceExisting := req.URL.Query().Get("replace_existing") == "true"
+		return req.Workspace.PostgresEndpointCreate(req, parent, endpointID, replaceExisting)
 	})
 
 	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/endpoints", func(req Request) any {
@@ -979,6 +981,7 @@ func AddDefaultHandlers(server *Server) {
 	server.Handle("GET", "/api/2.0/postgres/operations/{operation_id}", func(req Request) any {
 		return req.Workspace.PostgresOperationGet("operations/" + req.Vars["operation_id"])
 	})
+
 
 	// Catch-all handler for invalid postgres resource names.
 	// This handles cases like GET /api/2.0/postgres/1234 where "1234" is not a valid resource name.

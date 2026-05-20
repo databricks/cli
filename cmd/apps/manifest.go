@@ -96,9 +96,8 @@ func newManifestCmd() *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:    "manifest",
-		Short:  "Print template manifest with available plugins and required resources",
-		Hidden: true,
+		Use:   "manifest",
+		Short: "Print template manifest with available plugins and required resources",
 		Long: `Resolves a template (default AppKit repo or --template URL), locates appkit.plugins.json,
 and prints its raw contents to stdout. No workspace authentication is required.
 

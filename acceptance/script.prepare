@@ -101,6 +101,25 @@ sethome() {
     local home="$1"
     mkdir -p "$home"
 
+    # Resolve to an absolute path so HOME (and USERPROFILE) keep pointing at
+    # the same directory after the test cd's elsewhere. The SDK expands
+    # `~/.databrickscfg` against $HOME at lookup time; with a relative path
+    # the cfg silently disappears once the cwd changes, and helpers like
+    # databrickscfg.GetConfiguredDefaultProfile return "" instead of
+    # erroring.
+    #
+    # On Git Bash (MSYS), plain `pwd` returns Unix-style /c/... paths that
+    # the native Windows Go binary can't open; `pwd -W` returns the mixed
+    # C:/... form instead. Use the same form for both HOME and USERPROFILE
+    # so tests that compare a `$HOME`-based placeholder against the CLI's
+    # `os.UserHomeDir()` output (which reads USERPROFILE on Windows) find
+    # a match.
+    if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" || "$OSTYPE" == "win32" ]]; then
+        home="$(cd "$home" && pwd -W)"
+    else
+        home="$(cd "$home" && pwd)"
+    fi
+
     # For macOS and Linux, use HOME.
     export HOME="$home"
 

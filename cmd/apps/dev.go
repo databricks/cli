@@ -120,9 +120,8 @@ func newDevRemoteCmd() *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:    "dev-remote",
-		Short:  "Run AppKit app locally with WebSocket bridge to remote server",
-		Hidden: true,
+		Use:   "dev-remote",
+		Short: "Run AppKit app locally with WebSocket bridge to remote server",
 		Long: `Run AppKit app locally with WebSocket bridge to remote server.
 
 Starts a local Vite development server and establishes a WebSocket bridge
