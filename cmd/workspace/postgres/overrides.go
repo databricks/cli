@@ -1,6 +1,7 @@
 package postgres
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/libs/flags"
@@ -61,7 +62,7 @@ func rejectWrappedRoleJSON(cmd *cobra.Command) error {
 	// breakage rather than a silently-disabled guard.
 	flag := cmd.Flags().Lookup("json")
 	if flag == nil {
-		return fmt.Errorf("internal: postgres create-role expected a --json flag; this override is wired to the wrong command")
+		return errors.New("internal: postgres create-role expected a --json flag; this override is wired to the wrong command")
 	}
 	jf, ok := flag.Value.(*flags.JsonFlag)
 	if !ok {
