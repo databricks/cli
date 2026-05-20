@@ -2,7 +2,7 @@
   "plan_version": 2,
   "cli_version": "[DEV_VERSION]",
   "lineage": "[UUID]",
-  "serial": 4,
+  "serial": 3,
   "plan": {
     "resources.dashboards.dashboard1": {
       "action": "skip",

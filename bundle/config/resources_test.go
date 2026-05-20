@@ -273,6 +273,13 @@ func TestResourcesBindSupport(t *testing.T) {
 				},
 			},
 		},
+		PostgresCatalogs: map[string]*resources.PostgresCatalog{
+			"my_postgres_catalog": {
+				PostgresCatalogConfig: resources.PostgresCatalogConfig{
+					CatalogId: "my_postgres_catalog",
+				},
+			},
+		},
 		VectorSearchEndpoints: map[string]*resources.VectorSearchEndpoint{
 			"my_vector_search_endpoint": {
 				CreateEndpoint: vectorsearch.CreateEndpoint{
@@ -312,6 +319,7 @@ func TestResourcesBindSupport(t *testing.T) {
 	m.GetMockPostgresAPI().EXPECT().GetProject(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockPostgresAPI().EXPECT().GetBranch(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockPostgresAPI().EXPECT().GetEndpoint(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockPostgresAPI().EXPECT().GetCatalog(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockVectorSearchEndpointsAPI().EXPECT().GetEndpoint(mock.Anything, mock.Anything).Return(nil, nil)
 
 	allResources := supportedResources.AllResources()

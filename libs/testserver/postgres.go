@@ -26,6 +26,36 @@ func postgresErrorResponse(statusCode int, errorCode, message string) Response {
 	}
 }
 
+// postgresManagedByParentErrorResponse creates a 400 BAD_REQUEST response that
+// mirrors the real backend's "managed by parent" payload — including the
+// details[].ErrorInfo.metadata.declarative_context=MANAGED_BY_PARENT marker
+// that declarative clients (TF provider, direct engine) use to disregard the
+// delete and rely on the parent to cascade.
+func postgresManagedByParentErrorResponse(message string) Response {
+	return Response{
+		StatusCode: 400,
+		Body: map[string]any{
+			"error_code": "BAD_REQUEST",
+			"message":    message,
+			"details": []any{
+				map[string]any{
+					"@type":  "type.googleapis.com/google.rpc.ErrorInfo",
+					"domain": "databricks.com",
+					"reason": "RESOURCE_CONFLICT",
+					"metadata": map[string]string{
+						"declarative_context": "MANAGED_BY_PARENT",
+					},
+				},
+				map[string]any{
+					"@type":        "type.googleapis.com/google.rpc.RequestInfo",
+					"request_id":   nextUUID(),
+					"serving_data": "",
+				},
+			},
+		},
+	}
+}
+
 // postgresNotFoundResponse creates a NOT_FOUND error response for a resource type.
 func postgresNotFoundResponse(resourceType string) Response {
 	// Include trace ID to match real API behavior for not found errors
@@ -192,6 +222,22 @@ func (s *FakeWorkspace) PostgresProjectDelete(name string) Response {
 		return postgresNotFoundResponse("project")
 	}
 
+	// Deleting a project cascade-deletes all its branches and endpoints.
+	branchPrefix := name + "/branches/"
+	for brName := range s.PostgresBranches {
+		if strings.HasPrefix(brName, branchPrefix) {
+			delete(s.PostgresBranches, brName)
+			delete(s.postgresImplicitBranches, brName)
+			endpointPrefix := brName + "/endpoints/"
+			for epName := range s.PostgresEndpoints {
+				if strings.HasPrefix(epName, endpointPrefix) {
+					delete(s.PostgresEndpoints, epName)
+					delete(s.postgresImplicitEndpoints, epName)
+				}
+			}
+		}
+	}
+
 	delete(s.PostgresProjects, name)
 
 	return Response{
@@ -200,7 +246,11 @@ func (s *FakeWorkspace) PostgresProjectDelete(name string) Response {
 }
 
 // PostgresBranchCreate creates a new postgres branch.
-func (s *FakeWorkspace) PostgresBranchCreate(req Request, parent, branchID string) Response {
+//
+// When replaceExisting is true, an existing branch with the same ID is updated
+// in place instead of returning ALREADY_EXISTS. This mirrors the backend behavior
+// that lets users bring the implicitly-created production branch under management.
+func (s *FakeWorkspace) PostgresBranchCreate(req Request, parent, branchID string, replaceExisting bool) Response {
 	defer s.LockUnlock()()
 
 	// Validate that branch_id is provided
@@ -225,50 +275,63 @@ func (s *FakeWorkspace) PostgresBranchCreate(req Request, parent, branchID strin
 
 	name := fmt.Sprintf("%s/branches/%s", parent, branchID)
 
-	// Check for duplicate
-	if _, exists := s.PostgresBranches[name]; exists {
+	existing, exists := s.PostgresBranches[name]
+	if exists && !replaceExisting {
 		return postgresErrorResponse(409, "ALREADY_EXISTS", "branch with such id already exists")
 	}
 
 	now := nowTime()
-	branch.Name = name
-	branch.Parent = parent
-	branch.Uid = "br-" + nextUUID()[:20]
-	branch.CreateTime = now
-	branch.UpdateTime = now
+	if exists {
+		// Preserve identifying / output-only fields; apply incoming spec to status.
+		branch.Name = existing.Name
+		branch.Parent = existing.Parent
+		branch.Uid = existing.Uid
+		branch.CreateTime = existing.CreateTime
+		branch.UpdateTime = now
+		branch.Status = existing.Status
+	} else {
+		branch.Name = name
+		branch.Parent = parent
+		branch.Uid = "br-" + nextUUID()[:20]
+		branch.CreateTime = now
+		branch.UpdateTime = now
+		branch.Status = &postgres.BranchStatus{
+			BranchId:         branchID,
+			CurrentState:     postgres.BranchStatusStateReady,
+			StateChangeTime:  now,
+			Default:          false,
+			IsProtected:      false,
+			LogicalSizeBytes: 0,
+			ForceSendFields:  []string{"Default", "IsProtected", "LogicalSizeBytes"},
+		}
 
-	// Find the default branch to use as source
-	var defaultBranch *postgres.Branch
-	prefix := parent + "/branches/"
-	for brName, br := range s.PostgresBranches {
-		if strings.HasPrefix(brName, prefix) && br.Status != nil && br.Status.Default {
-			defaultBranch = &br
-			break
+		// Set source branch info if a default branch exists.
+		prefix := parent + "/branches/"
+		for brName, br := range s.PostgresBranches {
+			if strings.HasPrefix(brName, prefix) && br.Status != nil && br.Status.Default {
+				branch.Status.SourceBranch = br.Name
+				branch.Status.SourceBranchLsn = "0/0"
+				branch.Status.SourceBranchTime = nowTime()
+				break
+			}
 		}
 	}
 
-	// Initialize status with all required fields
-	branch.Status = &postgres.BranchStatus{
-		BranchId:         branchID,
-		CurrentState:     postgres.BranchStatusStateReady,
-		StateChangeTime:  now,
-		Default:          false,
-		IsProtected:      false,
-		LogicalSizeBytes: 0,
-		ForceSendFields:  []string{"Default", "IsProtected", "LogicalSizeBytes"},
-	}
-
-	// Set source branch info if a default branch exists
-	if defaultBranch != nil {
-		branch.Status.SourceBranch = defaultBranch.Name
-		branch.Status.SourceBranchLsn = "0/0"
-		branch.Status.SourceBranchTime = nowTime()
+	// Apply user-provided spec fields to status (where input fields are surfaced).
+	if branch.Spec != nil {
+		branch.Status.IsProtected = branch.Spec.IsProtected
 	}
 
 	// Clear spec - API only returns status
 	branch.Spec = nil
 
 	s.PostgresBranches[name] = branch
+
+	// Each branch implicitly provisions a primary read-write endpoint. Only create
+	// it on first branch creation; on replace_existing the primary already exists.
+	if !exists {
+		s.createDefaultEndpointLocked(name)
+	}
 
 	return Response{
 		Body: s.createOperationLocked(branch.Name, branch),
@@ -366,12 +429,30 @@ func (s *FakeWorkspace) PostgresBranchDelete(name string) Response {
 		return postgresNotFoundResponse("branch")
 	}
 
-	// Check if branch is protected
 	if branch.Status != nil && branch.Status.IsProtected {
 		return postgresErrorResponse(400, "BAD_REQUEST", "cannot delete protected branch")
 	}
 
+	// Branches the server provisioned implicitly (the project's root branch)
+	// cannot be deleted independently; they are removed when the project is
+	// deleted. Matches the real backend's error payload including the
+	// declarative_context=MANAGED_BY_PARENT marker.
+	if s.postgresImplicitBranches[name] {
+		return postgresManagedByParentErrorResponse(fmt.Sprintf("Cannot delete root branch '%s'. Root branches cannot be deleted independently.", name))
+	}
+
+	// Deleting a branch cascade-deletes its endpoints (including the implicit
+	// primary).
+	endpointPrefix := name + "/endpoints/"
+	for epName := range s.PostgresEndpoints {
+		if strings.HasPrefix(epName, endpointPrefix) {
+			delete(s.PostgresEndpoints, epName)
+			delete(s.postgresImplicitEndpoints, epName)
+		}
+	}
+
 	delete(s.PostgresBranches, name)
+	delete(s.postgresImplicitBranches, name)
 
 	return Response{
 		Body: s.createOperationLocked(name, nil),
@@ -379,7 +460,12 @@ func (s *FakeWorkspace) PostgresBranchDelete(name string) Response {
 }
 
 // PostgresEndpointCreate creates a new postgres endpoint.
-func (s *FakeWorkspace) PostgresEndpointCreate(req Request, parent, endpointID string) Response {
+//
+// When replaceExisting is true, an existing endpoint with the same ID is updated
+// in place instead of returning ALREADY_EXISTS. This mirrors the backend behavior
+// that lets users bring the implicitly-created primary read-write endpoint under
+// management.
+func (s *FakeWorkspace) PostgresEndpointCreate(req Request, parent, endpointID string, replaceExisting bool) Response {
 	defer s.LockUnlock()()
 
 	// Validate that endpoint_id is provided
@@ -405,37 +491,56 @@ func (s *FakeWorkspace) PostgresEndpointCreate(req Request, parent, endpointID s
 
 	name := fmt.Sprintf("%s/endpoints/%s", parent, endpointID)
 
-	// Check for duplicate
-	if _, exists := s.PostgresEndpoints[name]; exists {
+	existing, exists := s.PostgresEndpoints[name]
+	if exists && !replaceExisting {
 		return postgresErrorResponse(409, "ALREADY_EXISTS", "endpoint with such id already exists")
 	}
 
 	now := nowTime()
-	endpoint.Name = name
-	endpoint.Parent = parent
-	endpoint.Uid = "ep-" + nextUUID()[:20]
-	endpoint.CreateTime = now
-	endpoint.UpdateTime = now
+	if exists {
+		endpoint.Name = existing.Name
+		endpoint.Parent = existing.Parent
+		endpoint.Uid = existing.Uid
+		endpoint.CreateTime = existing.CreateTime
+		endpoint.UpdateTime = now
+		endpoint.Status = existing.Status
+	} else {
+		endpoint.Name = name
+		endpoint.Parent = parent
+		endpoint.Uid = "ep-" + nextUUID()[:20]
+		endpoint.CreateTime = now
+		endpoint.UpdateTime = now
 
-	// Get default suspend timeout from project
-	var defaultSuspendTimeout *duration.Duration
-	if project, ok := s.PostgresProjects[branch.Parent]; ok {
-		if project.Status != nil && project.Status.DefaultEndpointSettings != nil {
-			defaultSuspendTimeout = project.Status.DefaultEndpointSettings.SuspendTimeoutDuration
+		// Inherit suspend timeout default from the project.
+		var defaultSuspendTimeout *duration.Duration
+		if project, ok := s.PostgresProjects[branch.Parent]; ok {
+			if project.Status != nil && project.Status.DefaultEndpointSettings != nil {
+				defaultSuspendTimeout = project.Status.DefaultEndpointSettings.SuspendTimeoutDuration
+			}
+		}
+
+		endpoint.Status = &postgres.EndpointStatus{
+			EndpointId:             endpointID,
+			CurrentState:           postgres.EndpointStatusStateActive,
+			Disabled:               false,
+			Settings:               &postgres.EndpointSettings{},
+			SuspendTimeoutDuration: defaultSuspendTimeout,
+			ForceSendFields:        []string{"Disabled"},
+		}
+
+		host := endpoint.Uid + ".database.us-east-1.cloud.databricks.com"
+		endpoint.Status.Hosts = &postgres.EndpointHosts{
+			Host:         host,
+			ReadOnlyHost: host,
+		}
+		endpoint.Status.Group = &postgres.EndpointGroupStatus{
+			EnableReadableSecondaries: true,
+			Max:                       1,
+			Min:                       1,
 		}
 	}
 
-	// Initialize status with all required fields
-	endpoint.Status = &postgres.EndpointStatus{
-		EndpointId:             endpointID,
-		CurrentState:           postgres.EndpointStatusStateActive,
-		Disabled:               false,
-		Settings:               &postgres.EndpointSettings{},
-		SuspendTimeoutDuration: defaultSuspendTimeout,
-		ForceSendFields:        []string{"Disabled"},
-	}
-
-	// Copy spec values to status
+	// Apply user-provided spec to status (where input fields are surfaced).
 	if endpoint.Spec != nil {
 		endpoint.Status.EndpointType = endpoint.Spec.EndpointType
 		endpoint.Status.AutoscalingLimitMinCu = endpoint.Spec.AutoscalingLimitMinCu
@@ -443,23 +548,7 @@ func (s *FakeWorkspace) PostgresEndpointCreate(req Request, parent, endpointID s
 		if endpoint.Spec.SuspendTimeoutDuration != nil {
 			endpoint.Status.SuspendTimeoutDuration = endpoint.Spec.SuspendTimeoutDuration
 		}
-		if endpoint.Spec.Disabled {
-			endpoint.Status.Disabled = true
-		}
-	}
-
-	// Generate fake hosts
-	host := endpoint.Uid + ".database.us-east-1.cloud.databricks.com"
-	endpoint.Status.Hosts = &postgres.EndpointHosts{
-		Host:         host,
-		ReadOnlyHost: host,
-	}
-
-	// Set default group status
-	endpoint.Status.Group = &postgres.EndpointGroupStatus{
-		EnableReadableSecondaries: true,
-		Max:                       1,
-		Min:                       1,
+		endpoint.Status.Disabled = endpoint.Spec.Disabled
 	}
 
 	// Clear spec - API only returns status
@@ -580,11 +669,97 @@ func (s *FakeWorkspace) PostgresEndpointDelete(name string) Response {
 		return postgresNotFoundResponse("endpoint")
 	}
 
+	// Endpoints the server provisioned implicitly (the primary read-write
+	// endpoint on every branch) cannot be deleted independently; they are
+	// removed when the parent branch is deleted. Matches the real backend's
+	// error payload including the declarative_context=MANAGED_BY_PARENT marker.
+	if s.postgresImplicitEndpoints[name] {
+		return postgresManagedByParentErrorResponse(fmt.Sprintf("Cannot delete read-write endpoint '%s'. Read-write endpoints cannot be deleted.", name))
+	}
+
 	delete(s.PostgresEndpoints, name)
+	delete(s.postgresImplicitEndpoints, name)
 
 	return Response{
 		Body: s.createOperationLocked(name, nil),
 	}
+}
+
+// PostgresCatalogCreate creates a new postgres catalog.
+func (s *FakeWorkspace) PostgresCatalogCreate(req Request, catalogID string) Response {
+	defer s.LockUnlock()()
+
+	if catalogID == "" {
+		return postgresErrorResponse(400, "INVALID_PARAMETER_VALUE", `Field 'catalog_id' is required, expected non-default value (not "")!`)
+	}
+
+	// The SDK sends request.Catalog (the inner struct) as the body — NOT a
+	// {"catalog": ...} wrapper. Unmarshal directly into postgres.Catalog.
+	var catalog postgres.Catalog
+	if len(req.Body) > 0 {
+		if err := json.Unmarshal(req.Body, &catalog); err != nil {
+			return Response{
+				StatusCode: 400,
+				Body:       fmt.Sprintf("cannot unmarshal request body: %v", err),
+			}
+		}
+	}
+
+	name := "catalogs/" + catalogID
+
+	if _, exists := s.PostgresCatalogs[name]; exists {
+		return postgresErrorResponse(409, "ALREADY_EXISTS", "catalog with such id already exists")
+	}
+
+	now := nowTime()
+	catalog.Name = name
+	catalog.Uid = nextUUID()
+	catalog.CreateTime = now
+	catalog.UpdateTime = now
+
+	status := &postgres.CatalogCatalogStatus{
+		CatalogId: catalogID,
+	}
+	if catalog.Spec != nil {
+		status.Branch = catalog.Spec.Branch
+		status.PostgresDatabase = catalog.Spec.PostgresDatabase
+		// Project portion of the status is "projects/{project_id}", derived
+		// from the branch name "projects/{project_id}/branches/{branch_id}".
+		if idx := strings.Index(catalog.Spec.Branch, "/branches/"); idx > 0 {
+			status.Project = catalog.Spec.Branch[:idx]
+		}
+	}
+	catalog.Status = status
+
+	// Real API only returns status on GET (no spec). Match that to keep
+	// acceptance test output stable between local and cloud.
+	catalog.Spec = nil
+
+	s.PostgresCatalogs[name] = catalog
+
+	return Response{Body: s.createOperationLocked(name, catalog)}
+}
+
+// PostgresCatalogGet retrieves a postgres catalog by name.
+func (s *FakeWorkspace) PostgresCatalogGet(name string) Response {
+	defer s.LockUnlock()()
+
+	catalog, exists := s.PostgresCatalogs[name]
+	if !exists {
+		return postgresNotFoundResponse("catalog")
+	}
+	return Response{Body: catalog}
+}
+
+// PostgresCatalogDelete deletes a postgres catalog.
+func (s *FakeWorkspace) PostgresCatalogDelete(name string) Response {
+	defer s.LockUnlock()()
+
+	if _, exists := s.PostgresCatalogs[name]; !exists {
+		return postgresNotFoundResponse("catalog")
+	}
+	delete(s.PostgresCatalogs, name)
+	return Response{Body: s.createOperationLocked(name, nil)}
 }
 
 // PostgresOperationGet retrieves a postgres operation by name.
@@ -608,9 +783,12 @@ func (s *FakeWorkspace) createOperationLocked(resourceName string, response any)
 
 	// Determine resource type from name for metadata @type
 	resourceType := "Project"
-	if strings.Contains(resourceName, "/endpoints/") {
+	switch {
+	case strings.HasPrefix(resourceName, "catalogs/"):
+		resourceType = "Catalog"
+	case strings.Contains(resourceName, "/endpoints/"):
 		resourceType = "Endpoint"
-	} else if strings.Contains(resourceName, "/branches/") {
+	case strings.Contains(resourceName, "/branches/"):
 		resourceType = "Branch"
 	}
 
@@ -656,4 +834,61 @@ func (s *FakeWorkspace) createDefaultBranchLocked(projectName string) {
 	}
 
 	s.PostgresBranches[branchName] = defaultBranch
+	s.postgresImplicitBranches[branchName] = true
+
+	// Each branch implicitly provisions a primary read-write endpoint.
+	s.createDefaultEndpointLocked(branchName)
+}
+
+// createDefaultEndpointLocked creates the implicit primary read-write endpoint for
+// a branch (caller must hold lock). The endpoint is named "primary" to match cloud
+// API behavior.
+func (s *FakeWorkspace) createDefaultEndpointLocked(branchName string) {
+	now := nowTime()
+	endpointName := branchName + "/endpoints/primary"
+
+	// Inherit default endpoint settings from the project where available.
+	var (
+		minCu, maxCu   float64
+		suspendTimeout *duration.Duration
+		projectName    = strings.Split(branchName, "/branches/")[0]
+	)
+	if project, ok := s.PostgresProjects[projectName]; ok {
+		if project.Status != nil && project.Status.DefaultEndpointSettings != nil {
+			minCu = project.Status.DefaultEndpointSettings.AutoscalingLimitMinCu
+			maxCu = project.Status.DefaultEndpointSettings.AutoscalingLimitMaxCu
+			suspendTimeout = project.Status.DefaultEndpointSettings.SuspendTimeoutDuration
+		}
+	}
+
+	endpointUID := "ep-" + nextUUID()[:20]
+	host := endpointUID + ".database.us-east-1.cloud.databricks.com"
+
+	s.PostgresEndpoints[endpointName] = postgres.Endpoint{
+		Name:       endpointName,
+		Parent:     branchName,
+		Uid:        endpointUID,
+		CreateTime: now,
+		UpdateTime: now,
+		Status: &postgres.EndpointStatus{
+			EndpointId:             "primary",
+			EndpointType:           postgres.EndpointTypeEndpointTypeReadWrite,
+			CurrentState:           postgres.EndpointStatusStateActive,
+			Disabled:               false,
+			Settings:               &postgres.EndpointSettings{},
+			AutoscalingLimitMinCu:  minCu,
+			AutoscalingLimitMaxCu:  maxCu,
+			SuspendTimeoutDuration: suspendTimeout,
+			// Primary read-write endpoint exposes only the read-write host;
+			// read_only_host is set on read-only endpoints created later.
+			Hosts: &postgres.EndpointHosts{Host: host},
+			Group: &postgres.EndpointGroupStatus{
+				Max:             1,
+				Min:             1,
+				ForceSendFields: []string{"EnableReadableSecondaries"},
+			},
+			ForceSendFields: []string{"Disabled"},
+		},
+	}
+	s.postgresImplicitEndpoints[endpointName] = true
 }

@@ -215,6 +215,9 @@ github.com/databricks/cli/bundle/config.Resources:
   "postgres_branches":
     "description": |-
       PLACEHOLDER
+  "postgres_catalogs":
+    "description": |-
+      The Postgres catalog definitions for the bundle, where each key is the name of the catalog. Each entry binds a Unity Catalog catalog to a Postgres database on a Lakebase Autoscaling branch.
   "postgres_endpoints":
     "description": |-
       PLACEHOLDER
@@ -769,6 +772,9 @@ github.com/databricks/cli/bundle/config/resources.PostgresBranch:
   "parent":
     "description": |-
       PLACEHOLDER
+  "replace_existing":
+    "description": |-
+      PLACEHOLDER
   "source_branch":
     "description": |-
       PLACEHOLDER
@@ -791,6 +797,22 @@ github.com/databricks/cli/bundle/config/resources.PostgresBranch:
     "description": |-
       PLACEHOLDER
   "update_time":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.PostgresCatalog:
+  "branch":
+    "description": |-
+      PLACEHOLDER
+  "catalog_id":
+    "description": |-
+      PLACEHOLDER
+  "create_database_if_missing":
+    "description": |-
+      PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
+  "postgres_database":
     "description": |-
       PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.PostgresEndpoint:
@@ -825,6 +847,9 @@ github.com/databricks/cli/bundle/config/resources.PostgresEndpoint:
     "description": |-
       PLACEHOLDER
   "parent":
+    "description": |-
+      PLACEHOLDER
+  "replace_existing":
     "description": |-
       PLACEHOLDER
   "settings":
