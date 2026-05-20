@@ -178,17 +178,27 @@ func TestMissingAppNameError(t *testing.T) {
 		writeErr := os.WriteFile(filepath.Join(dir, "app.yml"), []byte("command: [\"python\"]"), 0o644)
 		assert.NoError(t, writeErr)
 
-		for _, verb := range []string{"deploy", "start", "stop", "delete"} {
-			t.Run(verb, func(t *testing.T) {
+		for _, tc := range []struct {
+			verb string
+			use  string
+			arg  string
+		}{
+			{"deploy", "deploy [APP_NAME]", "APP_NAME"},
+			{"start", "start [NAME]", "NAME"},
+			{"stop", "stop [NAME]", "NAME"},
+			{"delete", "delete [NAME]", "NAME"},
+		} {
+			t.Run(tc.verb, func(t *testing.T) {
 				root := &cobra.Command{Use: "databricks"}
 				apps := &cobra.Command{Use: "apps"}
-				sub := &cobra.Command{Use: verb}
+				sub := &cobra.Command{Use: tc.use}
 				root.AddCommand(apps)
 				apps.AddCommand(sub)
 
 				err := missingAppNameError(sub)
-				assert.Contains(t, err.Error(), "Usage: databricks apps "+verb+" APP_NAME")
-				assert.Contains(t, err.Error(), "databricks apps "+verb+" "+filepath.Base(dir))
+				assert.Contains(t, err.Error(), "missing required argument: "+tc.arg)
+				assert.Contains(t, err.Error(), "Usage: databricks apps "+tc.verb+" "+tc.arg)
+				assert.Contains(t, err.Error(), "databricks apps "+tc.verb+" "+filepath.Base(dir))
 			})
 		}
 	})
@@ -214,6 +224,17 @@ func TestMakeArgsOptionalWithBundle(t *testing.T) {
 		cmd := &cobra.Command{}
 		makeArgsOptionalWithBundle(cmd, "test [NAME]")
 		assert.NotNil(t, cmd.Args)
+	})
+
+	t.Run("returns missing app name error when no bundle config exists", func(t *testing.T) {
+		t.Chdir(t.TempDir())
+
+		cmd := &cobra.Command{}
+		makeArgsOptionalWithBundle(cmd, "test [NAME]")
+
+		err := cmd.Args(cmd, nil)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "missing required argument: NAME")
 	})
 }
 

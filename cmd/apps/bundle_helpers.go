@@ -42,24 +42,37 @@ func makeArgsOptionalWithBundle(cmd *cobra.Command, usage string) {
 func missingAppNameError(cmd *cobra.Command) error {
 	hint := inferAppNameHint()
 	commandPath := "databricks apps <command>"
+	argName := "APP_NAME"
 	if cmd != nil {
 		if p := cmd.CommandPath(); p != "" {
 			commandPath = p
 		}
+		if name := positionalArgName(cmd.Use); name != "" {
+			argName = name
+		}
 	}
-	msg := fmt.Sprintf(`missing required argument: APP_NAME
+	msg := fmt.Sprintf(`missing required argument: %s
 
-Usage: %s APP_NAME
+Usage: %s %s
 
-APP_NAME is the name of the Databricks app to operate on.
+%s is the name of the Databricks app to operate on.
 Alternatively, run this command from a project directory containing
-databricks.yml to auto-detect the app name.`, commandPath)
+databricks.yml to auto-detect the app name.`, argName, commandPath, argName, argName)
 
 	if hint != "" {
 		msg += fmt.Sprintf("\n\nDid you mean?\n  %s %s", commandPath, hint)
 	}
 
 	return errors.New(msg)
+}
+
+func positionalArgName(use string) string {
+	start := strings.Index(use, "[")
+	end := strings.Index(use, "]")
+	if start < 0 || end <= start {
+		return ""
+	}
+	return use[start+1 : end]
 }
 
 // inferAppNameHint tries to suggest an app name from the local environment.
