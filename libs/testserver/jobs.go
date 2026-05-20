@@ -17,6 +17,8 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
+const missingJobGitProviderMessage = "git_source.git_provider must be one of: github,gitlab,bitbucketcloud,gitlabenterpriseedition,bitbucketserver,azuredevopsservices,githubenterprise,awscodecommit"
+
 // venvPython returns the path to the Python executable in a venv.
 // On Unix: venv/bin/python
 // On Windows: venv\Scripts\python.exe
@@ -27,6 +29,22 @@ func venvPython(venvDir string) string {
 	return filepath.Join(venvDir, "bin", "python")
 }
 
+// validateJobGitSource mirrors Jobs API validation for git_source requests.
+func validateJobGitSource(gitSource *jobs.GitSource) *Response {
+	if gitSource == nil || gitSource.GitProvider != "" {
+		return nil
+	}
+
+	response := Response{
+		StatusCode: 400,
+		Body: map[string]string{
+			"error_code": "INVALID_PARAMETER_VALUE",
+			"message":    missingJobGitProviderMessage,
+		},
+	}
+	return &response
+}
+
 func (s *FakeWorkspace) JobsCreate(req Request) Response {
 	var request jobs.CreateJob
 	if err := json.Unmarshal(req.Body, &request); err != nil {
@@ -34,6 +52,9 @@ func (s *FakeWorkspace) JobsCreate(req Request) Response {
 			StatusCode: 400,
 			Body:       fmt.Sprintf("request parsing error: %s", err),
 		}
+	}
+	if response := validateJobGitSource(request.GitSource); response != nil {
+		return *response
 	}
 
 	defer s.LockUnlock()()
@@ -69,6 +90,9 @@ func (s *FakeWorkspace) JobsReset(req Request) Response {
 			StatusCode: 400,
 			Body:       fmt.Sprintf("request parsing error: %s", err),
 		}
+	}
+	if response := validateJobGitSource(request.NewSettings.GitSource); response != nil {
+		return *response
 	}
 
 	defer s.LockUnlock()()
