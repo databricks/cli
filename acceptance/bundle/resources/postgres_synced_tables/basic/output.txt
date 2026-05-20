@@ -29,8 +29,8 @@ Resources:
       URL:  (not deployed)
   Postgres synced tables:
     my_table:
-      Name: lakebase_test_[UNIQUE_NAME].public.trips_synced
-      URL:  [DATABRICKS_URL]/explore/data/lakebase_test_[UNIQUE_NAME]/public/trips_synced
+      Name: ${resources.postgres_catalogs.my_catalog.catalog_id}.public.trips_synced
+      URL:  [DATABRICKS_URL]/explore/data/$%7Bresources/postgres_catalogs/my_catalog.catalog_id%7D.public.trips_synced
   Schemas:
     pipeline_storage:
       Name: pipeline_storage_[UNIQUE_NAME]
