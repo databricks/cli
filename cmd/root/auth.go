@@ -292,22 +292,18 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-// resolveDefaultProfile picks a profile name for cfg when none is specified
-// via --profile or DATABRICKS_CONFIG_PROFILE. Mirrors the SDK's resolution:
-// [__settings__].default_profile, then the [DEFAULT] section.
+// resolveDefaultProfile applies the resolved default profile to cfg when
+// none is specified via --profile or DATABRICKS_CONFIG_PROFILE. See
+// databrickscfg.ResolveDefaultProfile for the resolution order.
 //
 // Pinning cfg.Profile here keeps it non-empty after the SDK loader runs, so
 // the OAuth cache key derived from it matches what `databricks auth login`
 // writes (the SDK leaves cfg.Profile empty on its silent [DEFAULT] fallback).
-//
-// Bundles use databrickscfg.ResolveDefaultProfile directly (settings-only).
 func resolveDefaultProfile(ctx context.Context, cfg *config.Config) {
 	if cfg.Profile != "" || envlib.Get(ctx, "DATABRICKS_CONFIG_PROFILE") != "" {
 		return
 	}
-	configFilePath := envlib.Get(ctx, "DATABRICKS_CONFIG_FILE")
-	resolved, _ := databrickscfg.GetAuthDefaultProfile(ctx, configFilePath)
-	if resolved != "" {
+	if resolved := databrickscfg.ResolveDefaultProfile(ctx); resolved != "" {
 		cfg.Profile = resolved
 	}
 }

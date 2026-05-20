@@ -260,71 +260,6 @@ func TestGetDefaultProfile_NoFile(t *testing.T) {
 	assert.NoFileExists(t, path)
 }
 
-func TestGetAuthDefaultProfile(t *testing.T) {
-	testCases := []struct {
-		name    string
-		content string
-		want    string
-	}{
-		{
-			name:    "explicit default_profile setting",
-			content: "[__settings__]\ndefault_profile = my-workspace\n\n[my-workspace]\nhost = https://abc\n",
-			want:    "my-workspace",
-		},
-		{
-			// SDK behavior: no single-profile fallback for auth.
-			name:    "single non-DEFAULT profile is NOT picked",
-			content: "[profile1]\nhost = https://abc\n",
-			want:    "",
-		},
-		{
-			name:    "DEFAULT section with host is picked",
-			content: "[DEFAULT]\nhost = https://default.abc\n\n[profile1]\nhost = https://abc\n",
-			want:    "DEFAULT",
-		},
-		{
-			name:    "DEFAULT section without host is not picked",
-			content: "[DEFAULT]\naccount_id = 1234\n\n[profile1]\nhost = https://abc\n",
-			want:    "",
-		},
-		{
-			name:    "settings takes precedence over DEFAULT section",
-			content: "[__settings__]\ndefault_profile = override\n\n[DEFAULT]\nhost = https://default.abc\n\n[override]\nhost = https://override.abc\n",
-			want:    "override",
-		},
-		{
-			name:    "multiple non-DEFAULT profiles with no settings resolves to empty",
-			content: "[profile1]\nhost = https://abc\n\n[profile2]\nhost = https://def\n",
-			want:    "",
-		},
-		{
-			name:    "empty config file",
-			content: "",
-			want:    "",
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			path := filepath.Join(t.TempDir(), "databrickscfg")
-			err := os.WriteFile(path, []byte(tc.content), 0o600)
-			require.NoError(t, err)
-
-			got, err := GetAuthDefaultProfile(t.Context(), path)
-			require.NoError(t, err)
-			assert.Equal(t, tc.want, got)
-		})
-	}
-}
-
-func TestGetAuthDefaultProfile_NoFile(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "databrickscfg")
-	got, err := GetAuthDefaultProfile(t.Context(), path)
-	require.NoError(t, err)
-	assert.Equal(t, "", got)
-	assert.NoFileExists(t, path)
-}
-
 func TestGetConfiguredDefaultProfile(t *testing.T) {
 	testCases := []struct {
 		name    string
@@ -392,7 +327,7 @@ func TestResolveDefaultProfile(t *testing.T) {
 			want:     "my-workspace",
 		},
 		{
-			name:     "settings without default_profile",
+			name:     "settings without default_profile, no DEFAULT section",
 			contents: "[__settings__]\nauth_storage = secure\n\n[my-workspace]\nhost = https://abc\n",
 			want:     "",
 		},
@@ -405,6 +340,21 @@ func TestResolveDefaultProfile(t *testing.T) {
 			name:     "self-referencing __settings__ is ignored",
 			contents: "[__settings__]\ndefault_profile = __settings__\n\n[profile1]\nhost = https://abc\n",
 			want:     "",
+		},
+		{
+			name:     "DEFAULT section with host is used when settings is empty",
+			contents: "[DEFAULT]\nhost = https://default.abc\n\n[profile1]\nhost = https://abc\n",
+			want:     "DEFAULT",
+		},
+		{
+			name:     "DEFAULT section without host is ignored",
+			contents: "[DEFAULT]\naccount_id = 1234\n\n[profile1]\nhost = https://abc\n",
+			want:     "",
+		},
+		{
+			name:     "settings takes precedence over DEFAULT section",
+			contents: "[__settings__]\ndefault_profile = override\n\n[DEFAULT]\nhost = https://default.abc\n\n[override]\nhost = https://override.abc\n",
+			want:     "override",
 		},
 	}
 
