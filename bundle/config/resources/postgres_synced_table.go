@@ -54,7 +54,7 @@ func (s *PostgresSyncedTable) ResourceDescription() ResourceDescription {
 func (s *PostgresSyncedTable) GetName() string {
 	// Synced tables don't expose a display name distinct from their three-part id.
 	// Prefer the post-deploy ID ("synced_tables/{catalog}.{schema}.{table}") so
-	// bundle summary renders the resolved name even when SyncedTableId still has
+	// bundle summary renders the resolved id even when SyncedTableId still has
 	// unresolved cross-resource references like ${resources.X.Y.Z}.
 	if id, ok := strings.CutPrefix(s.ID, "synced_tables/"); ok {
 		return id
@@ -67,12 +67,8 @@ func (s *PostgresSyncedTable) GetURL() string {
 }
 
 func (s *PostgresSyncedTable) InitializeURL(baseURL url.URL) {
-	name, ok := strings.CutPrefix(s.ID, "synced_tables/")
-	if !ok {
-		name = s.SyncedTableId
-	}
 	// UC explore expects /{catalog}/{schema}/{table}, not a single dotted segment.
-	catalog, rest, ok := strings.Cut(name, ".")
+	catalog, rest, ok := strings.Cut(s.GetName(), ".")
 	if !ok {
 		return
 	}
