@@ -411,6 +411,45 @@ func TestInstallGlobalAndProjectErrors(t *testing.T) {
 	assert.Contains(t, err.Error(), "cannot use --global and --project together")
 }
 
+func TestInstallScopeFlag(t *testing.T) {
+	tests := []struct {
+		name      string
+		args      []string
+		wantScope string
+		wantErr   string
+	}{
+		{name: "scope project", args: []string{"--scope", "project"}, wantScope: installer.ScopeProject},
+		{name: "scope global", args: []string{"--scope", "global"}, wantScope: installer.ScopeGlobal},
+		{name: "scope both rejected", args: []string{"--scope", "both"}, wantErr: "--scope=both is not supported"},
+		{name: "scope invalid value", args: []string{"--scope", "all"}, wantErr: `invalid --scope "all"`},
+		{name: "scope conflicts with legacy", args: []string{"--scope", "global", "--project"}, wantErr: "cannot use --scope with --project or --global"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			setupTestAgents(t)
+			calls := setupInstallMock(t)
+
+			ctx := cmdio.MockDiscard(t.Context())
+			cmd := NewInstallCmd()
+			cmd.SetContext(ctx)
+			cmd.SetArgs(tt.args)
+			cmd.SilenceErrors = true
+			cmd.SilenceUsage = true
+
+			err := cmd.Execute()
+			if tt.wantErr != "" {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tt.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			require.Len(t, *calls, 1)
+			assert.Equal(t, tt.wantScope, (*calls)[0].opts.Scope)
+		})
+	}
+}
+
 func TestInstallNoFlagNonInteractiveUsesGlobal(t *testing.T) {
 	setupTestAgents(t)
 	calls := setupInstallMock(t)
