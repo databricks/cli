@@ -49,6 +49,10 @@ trace() {
 }
 
 git-repo-init() {
+    if git rev-parse --git-dir > /dev/null 2>&1; then
+        echo "git-repo-init: already inside a git repository" >&2
+        return 1
+    fi
     git init -qb main
     git config core.autocrlf false
     git config user.name "Tester"
