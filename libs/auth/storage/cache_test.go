@@ -28,9 +28,10 @@ func (stubCache) Lookup(string) (*oauth2.Token, error) { return nil, cache.ErrNo
 func fakeFactories(t *testing.T) cacheFactories {
 	t.Helper()
 	return cacheFactories{
-		newFile:      func(context.Context) (cache.TokenCache, error) { return stubCache{source: "file"}, nil },
-		newKeyring:   func() cache.TokenCache { return stubCache{source: "keyring"} },
-		probeKeyring: func() error { return nil },
+		newFile:          func(context.Context) (cache.TokenCache, error) { return stubCache{source: "file"}, nil },
+		newKeyring:       func() cache.TokenCache { return stubCache{source: "keyring"} },
+		probeKeyring:     func() error { return nil },
+		probeKeyringRead: func() error { return nil },
 	}
 }
 
@@ -111,15 +112,123 @@ func TestResolveCache_FileFactoryErrorPropagates(t *testing.T) {
 	ctx := t.Context()
 	boom := errors.New("disk full")
 	factories := cacheFactories{
-		newFile:      func(context.Context) (cache.TokenCache, error) { return nil, boom },
-		newKeyring:   func() cache.TokenCache { return stubCache{source: "keyring"} },
-		probeKeyring: func() error { return nil },
+		newFile:          func(context.Context) (cache.TokenCache, error) { return nil, boom },
+		newKeyring:       func() cache.TokenCache { return stubCache{source: "keyring"} },
+		probeKeyring:     func() error { return nil },
+		probeKeyringRead: func() error { return nil },
 	}
 
 	_, _, err := resolveCacheWith(ctx, StorageModePlaintext, factories)
 
 	require.Error(t, err)
 	assert.ErrorIs(t, err, boom)
+}
+
+// applyReadFallback mirrors applyLoginFallback's logic on the read path:
+// keyring is probed read-only, definitive failures fall through to the file
+// cache so legacy plaintext tokens stay reachable, timeouts stay on the
+// keyring, and explicit-secure is honored even when the probe fails.
+
+func TestApplyReadFallback_PlaintextSkipsProbe(t *testing.T) {
+	hermetic(t)
+	ctx := t.Context()
+	probed := false
+	f := fakeFactories(t)
+	f.probeKeyringRead = func() error {
+		probed = true
+		return nil
+	}
+
+	got, mode, err := applyReadFallback(ctx, StorageModePlaintext, false, f)
+
+	require.NoError(t, err)
+	assert.Equal(t, StorageModePlaintext, mode)
+	assert.Equal(t, "file", got.(stubCache).source)
+	assert.False(t, probed, "probe must not run when mode is already plaintext")
+}
+
+func TestApplyReadFallback_ExplicitSecureSkipsProbe(t *testing.T) {
+	hermetic(t)
+	ctx := t.Context()
+	probed := false
+	f := fakeFactories(t)
+	f.probeKeyringRead = func() error {
+		probed = true
+		return errors.New("unreachable")
+	}
+
+	got, mode, err := applyReadFallback(ctx, StorageModeSecure, true, f)
+
+	require.NoError(t, err)
+	assert.Equal(t, StorageModeSecure, mode)
+	assert.Equal(t, "keyring", got.(stubCache).source)
+	assert.False(t, probed, "probe must not run when user is explicit about secure mode")
+}
+
+func TestApplyReadFallback_DefaultSecure_ProbeOK_UsesKeyring(t *testing.T) {
+	hermetic(t)
+	ctx := t.Context()
+
+	got, mode, err := applyReadFallback(ctx, StorageModeSecure, false, fakeFactories(t))
+
+	require.NoError(t, err)
+	assert.Equal(t, StorageModeSecure, mode)
+	assert.Equal(t, "keyring", got.(stubCache).source)
+}
+
+func TestApplyReadFallback_DefaultSecure_ProbeFail_FallsBack(t *testing.T) {
+	hermetic(t)
+	ctx := t.Context()
+	configPath := env.Get(ctx, "DATABRICKS_CONFIG_FILE")
+
+	f := fakeFactories(t)
+	f.probeKeyringRead = func() error { return errors.New("no keyring") }
+
+	got, mode, err := applyReadFallback(ctx, StorageModeSecure, false, f)
+
+	require.NoError(t, err)
+	assert.Equal(t, StorageModePlaintext, mode)
+	assert.Equal(t, "file", got.(stubCache).source)
+
+	// Read-path fallback must NOT pin: pinning is reserved for login,
+	// where the write-probe gives stronger evidence of unavailability.
+	persisted, gerr := databrickscfg.GetConfiguredAuthStorage(ctx, configPath)
+	require.NoError(t, gerr)
+	assert.Equal(t, "", persisted, "read-path fallback must not persist auth_storage")
+}
+
+// A timeout could mean a locked keyring that will work once the user unlocks
+// it. Stay on the keyring so the actual Lookup surfaces the real outcome
+// rather than silently routing reads to the file cache.
+func TestApplyReadFallback_DefaultSecure_ProbeTimeout_StaysOnKeyring(t *testing.T) {
+	cases := []struct {
+		name     string
+		probeErr error
+	}{
+		{"bare TimeoutError", &TimeoutError{Op: "get"}},
+		{"wrapped TimeoutError", fmt.Errorf("get: %w", &TimeoutError{Op: "get"})},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			hermetic(t)
+			ctx := t.Context()
+			configPath := env.Get(ctx, "DATABRICKS_CONFIG_FILE")
+
+			f := fakeFactories(t)
+			f.probeKeyringRead = func() error { return tc.probeErr }
+
+			got, mode, err := applyReadFallback(ctx, StorageModeSecure, false, f)
+
+			require.NoError(t, err)
+			assert.Equal(t, StorageModeSecure, mode)
+			assert.Equal(t, "keyring", got.(stubCache).source)
+
+			persisted, gerr := databrickscfg.GetConfiguredAuthStorage(ctx, configPath)
+			require.NoError(t, gerr)
+			assert.Equal(t, "", persisted, "probe timeout must not persist anything")
+		})
+	}
 }
 
 func TestResolveCacheForLogin_PlaintextSkipsProbe(t *testing.T) {

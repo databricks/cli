@@ -296,3 +296,59 @@ func TestProbeKeyring(t *testing.T) {
 		})
 	}
 }
+
+func TestProbeKeyringRead(t *testing.T) {
+	boom := errors.New("backend boom")
+	cases := []struct {
+		name        string
+		getErr      error
+		getBlock    bool
+		timeout     time.Duration
+		wantErr     error
+		wantTimeout bool
+	}{
+		{
+			// keyring.ErrNotFound is the success signal: the backend
+			// responded that no entry exists for our probe account,
+			// which means it is reachable.
+			name:    "ErrNotFound counts as reachable",
+			getErr:  keyring.ErrNotFound,
+			timeout: 100 * time.Millisecond,
+		},
+		{
+			name:    "other backend error propagates",
+			getErr:  boom,
+			timeout: 100 * time.Millisecond,
+			wantErr: boom,
+		},
+		{
+			name:        "get times out",
+			getBlock:    true,
+			timeout:     50 * time.Millisecond,
+			wantTimeout: true,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			backend := newFakeBackend()
+			backend.getErr = tc.getErr
+			backend.getBlock = tc.getBlock
+
+			err := probeReadWithBackend(backend, tc.timeout)
+
+			switch {
+			case tc.wantErr != nil:
+				require.Error(t, err)
+				assert.ErrorIs(t, err, tc.wantErr)
+			case tc.wantTimeout:
+				require.Error(t, err)
+				var timeoutErr *TimeoutError
+				assert.ErrorAs(t, err, &timeoutErr)
+			default:
+				require.NoError(t, err)
+				assert.Empty(t, backend.items, "read probe must not write to the keyring")
+			}
+		})
+	}
+}
