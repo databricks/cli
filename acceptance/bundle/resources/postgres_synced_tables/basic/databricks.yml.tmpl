@@ -26,7 +26,7 @@ resources:
 
   postgres_synced_tables:
     my_table:
-      synced_table_id: ${resources.postgres_catalogs.my_catalog.catalog_id}.public.trips_synced
+      synced_table_id: lakebase_test_$UNIQUE_NAME.public.trips_synced
       source_table_full_name: main.source_$UNIQUE_NAME.trips_source
       primary_key_columns: ["tpep_pickup_datetime"]
       scheduling_policy: SNAPSHOT

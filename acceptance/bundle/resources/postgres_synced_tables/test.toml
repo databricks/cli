@@ -19,12 +19,6 @@ Old = '\?o=\[(NUMID|ALPHANUMID)\]'
 New = ''
 Order = 1000
 
-[[Repls]]
-# Normalize postgres operation IDs (unique per operation).
-Old = '/operations/[A-Za-z0-9+/=-]+'
-New = '/operations/[OPERATION_ID]'
-Order = 2000
-
 # Fake SQL endpoint for the per-test source table create in script.
 [[Server]]
 Pattern = "POST /api/2.0/sql/statements/"
