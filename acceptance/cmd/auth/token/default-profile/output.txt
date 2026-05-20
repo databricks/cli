@@ -1,0 +1,15 @@
+
+=== default_profile is honored when no args, --profile, or env var
+
+>>> errcode [CLI] auth token
+Warn: [hostmetadata] failed to fetch host metadata for https://myworkspace.test, will skip for 1m0s
+Error: cache: databricks OAuth is not configured for this host. Try logging in again with `databricks auth login --profile myprofile` before retrying. If this fails, please report this issue to the Databricks CLI maintainers at https://github.com/databricks/cli/issues/new
+
+Exit code: 1
+
+=== default_profile pointing at a missing profile falls through to picker
+
+>>> errcode [CLI] auth token
+Error: no profile specified. Use --profile <name> to specify which profile to use
+
+Exit code: 1

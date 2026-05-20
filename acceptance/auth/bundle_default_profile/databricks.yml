@@ -1,0 +1,5 @@
+bundle:
+  name: test-default-profile
+
+# No workspace.host on purpose: this is the surface where
+# [__settings__].default_profile should be applied.

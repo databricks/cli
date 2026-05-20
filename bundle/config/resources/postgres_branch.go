@@ -19,6 +19,11 @@ type PostgresBranchConfig struct {
 
 	// Parent is the project containing this branch. Format: "projects/{project_id}"
 	Parent string `json:"parent"`
+
+	// ReplaceExisting, when true, takes over an existing branch with the same ID
+	// instead of returning ALREADY_EXISTS. Used to manage the implicitly-created
+	// production branch of a new project. Input-only: not returned by the GET API.
+	ReplaceExisting bool `json:"replace_existing,omitempty"`
 }
 
 func (c *PostgresBranchConfig) UnmarshalJSON(b []byte) error {
