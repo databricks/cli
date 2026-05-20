@@ -1,7 +1,7 @@
 
 >>> [CLI] auth describe --profile u2m-profile
 Warn: [hostmetadata] failed to fetch host metadata for https://u2m-profile.databricks.test, will skip for 1m0s
-Unable to authenticate: error getting token: cache: token not found
+Unable to authenticate: error getting token: cache: no cached credentials; run `databricks auth login` to sign in
 Token storage: plaintext, ~/.databricks/token-cache.json (from auth_storage in [__settings__] section of [TEST_TMP_DIR]/home/.databrickscfg)
 -----
 Current configuration:
