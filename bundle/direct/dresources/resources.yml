@@ -512,6 +512,20 @@ resources:
       - field: replace_existing
         reason: "input_only; cannot be updated after create"
 
+  postgres_catalogs:
+    recreate_on_changes:
+      # catalog_id is part of the hierarchical name and immutable.
+      - field: catalog_id
+        reason: immutable
+      # The Postgres SDK has no UpdateCatalog endpoint, so any local change
+      # requires delete+create. The OpenAPI spec only marks postgres_database
+      # as IMMUTABLE (handled by autogen); branch and create_database_if_missing
+      # need explicit entries here.
+      - field: branch
+        reason: immutable
+      - field: create_database_if_missing
+        reason: immutable
+
   vector_search_endpoints:
     recreate_on_changes:
       - field: endpoint_type

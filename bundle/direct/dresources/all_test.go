@@ -191,6 +191,12 @@ var testConfig map[string]any = map[string]any{
 		},
 	},
 
+	"postgres_catalogs": &resources.PostgresCatalog{
+		PostgresCatalogConfig: resources.PostgresCatalogConfig{
+			CatalogId: "test_catalog",
+		},
+	},
+
 	"alerts": &resources.Alert{
 		AlertV2: sql.AlertV2{
 			DisplayName: "my-alert",

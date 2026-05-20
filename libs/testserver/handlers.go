@@ -938,6 +938,27 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.PostgresEndpointDelete(name)
 	})
 
+	// Postgres Catalogs:
+	server.Handle("POST", "/api/2.0/postgres/catalogs", func(req Request) any {
+		catalogID := req.URL.Query().Get("catalog_id")
+		return req.Workspace.PostgresCatalogCreate(req, catalogID)
+	})
+
+	server.Handle("GET", "/api/2.0/postgres/catalogs/{id}", func(req Request) any {
+		return req.Workspace.PostgresCatalogGet("catalogs/" + req.Vars["id"])
+	})
+
+	server.Handle("DELETE", "/api/2.0/postgres/catalogs/{id}", func(req Request) any {
+		return req.Workspace.PostgresCatalogDelete("catalogs/" + req.Vars["id"])
+	})
+
+	// Operations for catalogs are nested under the resource. Matches the real
+	// API and what the SDK polls based on the operation.Name we return.
+	server.Handle("GET", "/api/2.0/postgres/catalogs/{id}/operations/{operation_id}", func(req Request) any {
+		name := "catalogs/" + req.Vars["id"] + "/operations/" + req.Vars["operation_id"]
+		return req.Workspace.PostgresOperationGet(name)
+	})
+
 	// Catch-all handler for invalid postgres resource names.
 	// This handles cases like GET /api/2.0/postgres/1234 where "1234" is not a valid resource name.
 	server.Handle("GET", "/api/2.0/postgres/{name}", func(req Request) any {
