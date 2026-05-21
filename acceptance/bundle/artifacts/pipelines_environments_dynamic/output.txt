@@ -12,7 +12,7 @@ Deployment complete!
 my_test_code/dist/my_test_code-0.0.1-py3-none-any.whl
 
 === Expecting the patched wheel in the pipeline environment
->>> print_requests.py --sort --keep //api/2.0/pipelines
+>>> print_requests.py --keep //api/2.0/pipelines
 {
   "method": "POST",
   "path": "/api/2.0/pipelines",
