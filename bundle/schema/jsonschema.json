@@ -2677,6 +2677,9 @@
                   "properties": {
                     "content": {
                       "$ref": "#/$defs/string"
+                    },
+                    "env": {
+                      "$ref": "#/$defs/map/string"
                     }
                   },
                   "additionalProperties": false,
