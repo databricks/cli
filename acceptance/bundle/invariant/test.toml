@@ -48,6 +48,7 @@ EnvMatrix.INPUT_CONFIG = [
     "postgres_catalog.yml.tmpl",
     "postgres_endpoint.yml.tmpl",
     "postgres_project.yml.tmpl",
+    "postgres_synced_table.yml.tmpl",
     "registered_model.yml.tmpl",
     "schema.yml.tmpl",
     "schema_grant_ref.yml.tmpl",
@@ -70,6 +71,7 @@ no_postgres_project_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=postgres_proj
 no_postgres_branch_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=postgres_branch.yml.tmpl"]
 no_postgres_endpoint_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=postgres_endpoint.yml.tmpl"]
 no_postgres_catalog_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=postgres_catalog.yml.tmpl"]
+no_postgres_synced_table_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=postgres_synced_table.yml.tmpl"]
 
 # External locations require actual storage credentials with cloud IAM setup
 # which are environment-specific, so we only test locally with the mock server

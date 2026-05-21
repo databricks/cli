@@ -37,6 +37,7 @@ type Resources struct {
 	PostgresBranches      map[string]*resources.PostgresBranch       `json:"postgres_branches,omitempty"`
 	PostgresEndpoints     map[string]*resources.PostgresEndpoint     `json:"postgres_endpoints,omitempty"`
 	PostgresCatalogs      map[string]*resources.PostgresCatalog      `json:"postgres_catalogs,omitempty"`
+	PostgresSyncedTables  map[string]*resources.PostgresSyncedTable  `json:"postgres_synced_tables,omitempty"`
 	VectorSearchEndpoints map[string]*resources.VectorSearchEndpoint `json:"vector_search_endpoints,omitempty"`
 }
 
@@ -116,6 +117,7 @@ func (r *Resources) AllResources() []ResourceGroup {
 		collectResourceMap(descriptions["postgres_branches"], r.PostgresBranches),
 		collectResourceMap(descriptions["postgres_endpoints"], r.PostgresEndpoints),
 		collectResourceMap(descriptions["postgres_catalogs"], r.PostgresCatalogs),
+		collectResourceMap(descriptions["postgres_synced_tables"], r.PostgresSyncedTables),
 		collectResourceMap(descriptions["vector_search_endpoints"], r.VectorSearchEndpoints),
 	}
 }
@@ -173,6 +175,7 @@ func SupportedResources() map[string]resources.ResourceDescription {
 		"postgres_branches":       (&resources.PostgresBranch{}).ResourceDescription(),
 		"postgres_endpoints":      (&resources.PostgresEndpoint{}).ResourceDescription(),
 		"postgres_catalogs":       (&resources.PostgresCatalog{}).ResourceDescription(),
+		"postgres_synced_tables":  (&resources.PostgresSyncedTable{}).ResourceDescription(),
 		"vector_search_endpoints": (&resources.VectorSearchEndpoint{}).ResourceDescription(),
 	}
 }

@@ -261,6 +261,13 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 						},
 					},
 				},
+				PostgresSyncedTables: map[string]*resources.PostgresSyncedTable{
+					"postgres_synced_table1": {
+						PostgresSyncedTableConfig: resources.PostgresSyncedTableConfig{
+							SyncedTableId: "catalog.schema.table1",
+						},
+					},
+				},
 				VectorSearchEndpoints: map[string]*resources.VectorSearchEndpoint{
 					"vs_endpoint1": {
 						CreateEndpoint: vectorsearch.CreateEndpoint{
@@ -457,6 +464,7 @@ func TestAppropriateResourcesAreRenamed(t *testing.T) {
 		"PostgresBranches",
 		"PostgresEndpoints",
 		"PostgresCatalogs",
+		"PostgresSyncedTables",
 	}
 
 	diags := bundle.ApplySeq(t.Context(), b, ApplyTargetMode(), ApplyPresets())

@@ -36,6 +36,8 @@ postgres_endpoints: postgres.EndpointSpec
 
 postgres_projects: postgres.ProjectStatus
 
+postgres_synced_tables: postgres.SyncedTableSyncedTableSpec
+
 quality_monitors: catalog.CreateMonitor
 
 registered_models: catalog.RegisteredModelInfo
