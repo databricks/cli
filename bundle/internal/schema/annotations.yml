@@ -215,6 +215,9 @@ github.com/databricks/cli/bundle/config.Resources:
   "postgres_branches":
     "description": |-
       PLACEHOLDER
+  "postgres_catalogs":
+    "description": |-
+      The Postgres catalog definitions for the bundle, where each key is the name of the catalog. Each entry binds a Unity Catalog catalog to a Postgres database on a Lakebase Autoscaling branch.
   "postgres_endpoints":
     "description": |-
       PLACEHOLDER
@@ -531,6 +534,9 @@ github.com/databricks/cli/bundle/config/resources.App:
       Git source configuration for app deployments. Specifies which git reference (branch, tag, or commit)
       to use when deploying the app. Used in conjunction with git_repository to deploy code directly from git.
       The source_code_path within git_source specifies the relative path to the app code within the repository.
+  "thumbnail_url":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.AppConfig:
   "command":
     "description": |-
@@ -766,6 +772,9 @@ github.com/databricks/cli/bundle/config/resources.PostgresBranch:
   "parent":
     "description": |-
       PLACEHOLDER
+  "replace_existing":
+    "description": |-
+      PLACEHOLDER
   "source_branch":
     "description": |-
       PLACEHOLDER
@@ -788,6 +797,22 @@ github.com/databricks/cli/bundle/config/resources.PostgresBranch:
     "description": |-
       PLACEHOLDER
   "update_time":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.PostgresCatalog:
+  "branch":
+    "description": |-
+      PLACEHOLDER
+  "catalog_id":
+    "description": |-
+      PLACEHOLDER
+  "create_database_if_missing":
+    "description": |-
+      PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
+  "postgres_database":
     "description": |-
       PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.PostgresEndpoint:
@@ -822,6 +847,9 @@ github.com/databricks/cli/bundle/config/resources.PostgresEndpoint:
     "description": |-
       PLACEHOLDER
   "parent":
+    "description": |-
+      PLACEHOLDER
+  "replace_existing":
     "description": |-
       PLACEHOLDER
   "settings":
@@ -971,13 +999,13 @@ github.com/databricks/cli/bundle/config/resources.VectorSearchEndpoint:
   "lifecycle":
     "description": |-
       PLACEHOLDER
-  "min_qps":
-    "description": |-
-      PLACEHOLDER
   "name":
     "description": |-
       PLACEHOLDER
   "permissions":
+    "description": |-
+      PLACEHOLDER
+  "target_qps":
     "description": |-
       PLACEHOLDER
   "usage_policy_id":

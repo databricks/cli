@@ -125,7 +125,7 @@ type ResourceFeatureEngineeringFeatureLineageContext struct {
 }
 
 type ResourceFeatureEngineeringFeatureProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type ResourceFeatureEngineeringFeatureSourceDeltaTableSource struct {

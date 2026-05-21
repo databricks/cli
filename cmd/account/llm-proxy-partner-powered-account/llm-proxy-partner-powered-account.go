@@ -28,6 +28,10 @@ func New() *cobra.Command {
 		RunE:   root.ReportUnknownSubcommand,
 	}
 
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
+
 	// Add methods
 	cmd.AddCommand(newGet())
 	cmd.AddCommand(newUpdate())
@@ -63,6 +67,8 @@ func newGet() *cobra.Command {
   Gets the enable partner powered AI features account setting.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -118,6 +124,8 @@ func newUpdate() *cobra.Command {
   Updates the enable partner powered AI features account setting.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {

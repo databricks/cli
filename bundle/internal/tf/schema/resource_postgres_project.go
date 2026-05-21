@@ -13,7 +13,7 @@ type ResourcePostgresProjectInitialEndpointSpec struct {
 }
 
 type ResourcePostgresProjectProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type ResourcePostgresProjectSpecCustomTags struct {
@@ -64,15 +64,19 @@ type ResourcePostgresProjectStatus struct {
 	HistoryRetentionDuration    string                                                `json:"history_retention_duration,omitempty"`
 	Owner                       string                                                `json:"owner,omitempty"`
 	PgVersion                   int                                                   `json:"pg_version,omitempty"`
+	ProjectId                   string                                                `json:"project_id,omitempty"`
 	SyntheticStorageSizeBytes   int                                                   `json:"synthetic_storage_size_bytes,omitempty"`
 }
 
 type ResourcePostgresProject struct {
 	CreateTime          string                                      `json:"create_time,omitempty"`
+	DeleteTime          string                                      `json:"delete_time,omitempty"`
 	InitialEndpointSpec *ResourcePostgresProjectInitialEndpointSpec `json:"initial_endpoint_spec,omitempty"`
 	Name                string                                      `json:"name,omitempty"`
 	ProjectId           string                                      `json:"project_id"`
 	ProviderConfig      *ResourcePostgresProjectProviderConfig      `json:"provider_config,omitempty"`
+	PurgeOnDelete       bool                                        `json:"purge_on_delete,omitempty"`
+	PurgeTime           string                                      `json:"purge_time,omitempty"`
 	Spec                *ResourcePostgresProjectSpec                `json:"spec,omitempty"`
 	Status              *ResourcePostgresProjectStatus              `json:"status,omitempty"`
 	Uid                 string                                      `json:"uid,omitempty"`

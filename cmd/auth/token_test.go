@@ -10,14 +10,33 @@ import (
 	"time"
 
 	"github.com/databricks/cli/libs/auth"
+	"github.com/databricks/cli/libs/auth/storage"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m"
+	"github.com/databricks/databricks-sdk-go/credentials/u2m/cache"
 	"github.com/databricks/databricks-sdk-go/httpclient/fixtures"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/oauth2"
 )
+
+// upgradeHintTokenCache returns a notFoundHint-wrapped ErrNotFound on
+// Lookup, mirroring what storage.notFoundHintCache produces in
+// production when ~/.databricks/token-cache.json has entries and the
+// resolver picked secure mode by default. Used by TestToken_loadToken
+// to verify that auth token surfaces the upgrade-specific hint instead
+// of dropping it for the SDK-compat constant string.
+type upgradeHintTokenCache struct{}
+
+func (upgradeHintTokenCache) Store(string, *oauth2.Token) error { return nil }
+func (upgradeHintTokenCache) Lookup(string) (*oauth2.Token, error) {
+	return nil, storage.NewNotFoundHint(
+		"stored credentials from older CLI versions are no longer used; run `databricks auth login` to sign in again, or set DATABRICKS_AUTH_STORAGE=plaintext to keep using the file cache",
+	)
+}
+
+var _ cache.TokenCache = upgradeHintTokenCache{}
 
 type failOnCallTransport struct{}
 
@@ -409,6 +428,35 @@ func TestToken_loadToken(t *testing.T) {
 				"If this fails, please report this issue to the Databricks CLI maintainers at https://github.com/databricks/cli/issues/new",
 		},
 		{
+			// Regression test: when notFoundHintCache wraps ErrNotFound
+			// with the upgrade copy (post-upgrade default-secure user
+			// with a populated token-cache.json), `auth token` must
+			// surface that hint instead of dropping it for the SDK-compat
+			// constant string. The combined message keeps the
+			// "OAuth is not configured for this host" substring older
+			// SDK versions look for and skips the generic "Try logging
+			// in again ... If this fails, please report this issue"
+			// trailer, which would mislead users into reporting expected
+			// post-upgrade behavior.
+			name: "ErrNotFound carrying upgrade hint surfaces it",
+			args: loadTokenArgs{
+				authArguments: &auth.AuthArguments{},
+				profileName:   "",
+				args:          []string{"nonexistent.cloud.databricks.com"},
+				tokenTimeout:  1 * time.Hour,
+				profiler:      profiler,
+				tokenCache:    upgradeHintTokenCache{},
+				persistentAuthOpts: []u2m.PersistentAuthOption{
+					u2m.WithTokenCache(upgradeHintTokenCache{}),
+					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
+				},
+			},
+			wantErr: "cache: databricks OAuth is not configured for this host. " +
+				"stored credentials from older CLI versions are no longer used; " +
+				"run `databricks auth login` to sign in again, " +
+				"or set DATABRICKS_AUTH_STORAGE=plaintext to keep using the file cache",
+		},
+		{
 			name: "errors with clear message for non-host non-profile positional arg",
 			args: loadTokenArgs{
 				authArguments: &auth.AuthArguments{},
@@ -519,25 +567,6 @@ func TestToken_loadToken(t *testing.T) {
 			args: loadTokenArgs{
 				authArguments: &auth.AuthArguments{
 					Host: "https://no-profile.cloud.databricks.com",
-				},
-				profileName:  "",
-				args:         []string{},
-				tokenTimeout: 1 * time.Hour,
-				profiler:     profiler,
-				tokenCache:   tokenCache,
-				persistentAuthOpts: []u2m.PersistentAuthOption{
-					u2m.WithTokenCache(tokenCache),
-					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
-					u2m.WithHttpClient(&http.Client{Transport: fixtures.SliceTransport{refreshSuccessTokenResponse}}),
-				},
-			},
-			validateToken: validateToken,
-		},
-		{
-			name: "host with one matching profile and host-key-only token found via SDK fallback",
-			args: loadTokenArgs{
-				authArguments: &auth.AuthArguments{
-					Host: "https://legacy-ws.cloud.databricks.com",
 				},
 				profileName:  "",
 				args:         []string{},

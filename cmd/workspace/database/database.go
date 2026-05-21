@@ -20,12 +20,18 @@ var cmdOverrides []func(*cobra.Command)
 
 func New() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "database",
-		Short:   `Database Instances provide access to a database via REST API or direct SQL.`,
-		Long:    `Database Instances provide access to a database via REST API or direct SQL.`,
+		Use:   "database",
+		Short: `*Public Preview* Database Instances provide access to a database via REST API or direct SQL.`,
+		Long: `This command is in Public Preview and may change without notice.
+
+Database Instances provide access to a database via REST API or direct SQL.`,
 		GroupID: "database",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	// Add methods
 	cmd.AddCommand(newCreateDatabaseCatalog())
@@ -82,8 +88,10 @@ func newCreateDatabaseCatalog() *cobra.Command {
 	cmd.Flags().BoolVar(&createDatabaseCatalogReq.Catalog.CreateDatabaseIfNotExists, "create-database-if-not-exists", createDatabaseCatalogReq.Catalog.CreateDatabaseIfNotExists, ``)
 
 	cmd.Use = "create-database-catalog NAME DATABASE_INSTANCE_NAME DATABASE_NAME"
-	cmd.Short = `Create a Database Catalog.`
-	cmd.Long = `Create a Database Catalog.
+	cmd.Short = `*Public Preview* Create a Database Catalog.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Create a Database Catalog.
 
   Arguments:
     NAME: The name of the catalog in UC.
@@ -91,6 +99,8 @@ func newCreateDatabaseCatalog() *cobra.Command {
     DATABASE_NAME: The name of the database (in a instance) associated with the catalog.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
@@ -188,13 +198,17 @@ func newCreateDatabaseInstance() *cobra.Command {
 	cmd.Flags().StringVar(&createDatabaseInstanceReq.DatabaseInstance.UsagePolicyId, "usage-policy-id", createDatabaseInstanceReq.DatabaseInstance.UsagePolicyId, `The desired usage policy to associate with the instance.`)
 
 	cmd.Use = "create-database-instance NAME"
-	cmd.Short = `Create a Database Instance.`
-	cmd.Long = `Create a Database Instance.
+	cmd.Short = `*Public Preview* Create a Database Instance.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Create a Database Instance.
 
   Arguments:
     NAME: The name of the instance. This is the unique identifier for the instance.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
@@ -299,6 +313,8 @@ func newCreateDatabaseInstanceRole() *cobra.Command {
 	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
@@ -376,8 +392,10 @@ func newCreateDatabaseTable() *cobra.Command {
 	cmd.Flags().StringVar(&createDatabaseTableReq.Table.LogicalDatabaseName, "logical-database-name", createDatabaseTableReq.Table.LogicalDatabaseName, `Target Postgres database object (logical database) name for this table.`)
 
 	cmd.Use = "create-database-table NAME"
-	cmd.Short = `Create a Database Table.`
-	cmd.Long = `Create a Database Table.
+	cmd.Short = `*Public Preview* Create a Database Table.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Create a Database Table.
 
   Create a Database Table. Useful for registering pre-existing PG tables in UC.
   See CreateSyncedDatabaseTable for creating synced tables in PG from a source
@@ -387,6 +405,8 @@ func newCreateDatabaseTable() *cobra.Command {
     NAME: Full three-part (catalog, schema, table) name of the table.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
@@ -465,13 +485,17 @@ func newCreateSyncedDatabaseTable() *cobra.Command {
 	// TODO: complex arg: spec
 
 	cmd.Use = "create-synced-database-table NAME"
-	cmd.Short = `Create a Synced Database Table.`
-	cmd.Long = `Create a Synced Database Table.
+	cmd.Short = `*Public Preview* Create a Synced Database Table.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Create a Synced Database Table.
 
   Arguments:
     NAME: Full three-part (catalog, schema, table) name of the table.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
@@ -541,10 +565,14 @@ func newDeleteDatabaseCatalog() *cobra.Command {
 	var deleteDatabaseCatalogReq database.DeleteDatabaseCatalogRequest
 
 	cmd.Use = "delete-database-catalog NAME"
-	cmd.Short = `Delete a Database Catalog.`
-	cmd.Long = `Delete a Database Catalog.`
+	cmd.Short = `*Public Preview* Delete a Database Catalog.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Delete a Database Catalog.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -595,13 +623,17 @@ func newDeleteDatabaseInstance() *cobra.Command {
 	cmd.Flags().BoolVar(&deleteDatabaseInstanceReq.Purge, "purge", deleteDatabaseInstanceReq.Purge, `Deprecated.`)
 
 	cmd.Use = "delete-database-instance NAME"
-	cmd.Short = `Delete a Database Instance.`
-	cmd.Long = `Delete a Database Instance.
+	cmd.Short = `*Public Preview* Delete a Database Instance.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Delete a Database Instance.
 
   Arguments:
     NAME: Name of the instance to delete.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -661,6 +693,8 @@ func newDeleteDatabaseInstanceRole() *cobra.Command {
 	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -709,10 +743,14 @@ func newDeleteDatabaseTable() *cobra.Command {
 	var deleteDatabaseTableReq database.DeleteDatabaseTableRequest
 
 	cmd.Use = "delete-database-table NAME"
-	cmd.Short = `Delete a Database Table.`
-	cmd.Long = `Delete a Database Table.`
+	cmd.Short = `*Public Preview* Delete a Database Table.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Delete a Database Table.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -762,10 +800,14 @@ func newDeleteSyncedDatabaseTable() *cobra.Command {
 	cmd.Flags().BoolVar(&deleteSyncedDatabaseTableReq.PurgeData, "purge-data", deleteSyncedDatabaseTableReq.PurgeData, `Optional.`)
 
 	cmd.Use = "delete-synced-database-table NAME"
-	cmd.Short = `Delete a Synced Database Table.`
-	cmd.Long = `Delete a Synced Database Table.`
+	cmd.Short = `*Public Preview* Delete a Synced Database Table.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Delete a Synced Database Table.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -815,10 +857,14 @@ func newFindDatabaseInstanceByUid() *cobra.Command {
 	cmd.Flags().StringVar(&findDatabaseInstanceByUidReq.Uid, "uid", findDatabaseInstanceByUidReq.Uid, `UID of the cluster to get.`)
 
 	cmd.Use = "find-database-instance-by-uid"
-	cmd.Short = `Find a Database Instance by uid.`
-	cmd.Long = `Find a Database Instance by uid.`
+	cmd.Short = `*Public Preview* Find a Database Instance by uid.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Find a Database Instance by uid.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -872,10 +918,14 @@ func newGenerateDatabaseCredential() *cobra.Command {
 	cmd.Flags().StringVar(&generateDatabaseCredentialReq.RequestId, "request-id", generateDatabaseCredentialReq.RequestId, ``)
 
 	cmd.Use = "generate-database-credential"
-	cmd.Short = `Generates a credential that can be used to access database instances.`
-	cmd.Long = `Generates a credential that can be used to access database instances.`
+	cmd.Short = `*Public Preview* Generates a credential that can be used to access database instances.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Generates a credential that can be used to access database instances.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -935,10 +985,14 @@ func newGetDatabaseCatalog() *cobra.Command {
 	var getDatabaseCatalogReq database.GetDatabaseCatalogRequest
 
 	cmd.Use = "get-database-catalog NAME"
-	cmd.Short = `Get a Database Catalog.`
-	cmd.Long = `Get a Database Catalog.`
+	cmd.Short = `*Public Preview* Get a Database Catalog.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Get a Database Catalog.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -987,13 +1041,17 @@ func newGetDatabaseInstance() *cobra.Command {
 	var getDatabaseInstanceReq database.GetDatabaseInstanceRequest
 
 	cmd.Use = "get-database-instance NAME"
-	cmd.Short = `Get a Database Instance.`
-	cmd.Long = `Get a Database Instance.
+	cmd.Short = `*Public Preview* Get a Database Instance.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Get a Database Instance.
 
   Arguments:
     NAME: Name of the cluster to get.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -1051,6 +1109,8 @@ func newGetDatabaseInstanceRole() *cobra.Command {
 	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -1100,10 +1160,14 @@ func newGetDatabaseTable() *cobra.Command {
 	var getDatabaseTableReq database.GetDatabaseTableRequest
 
 	cmd.Use = "get-database-table NAME"
-	cmd.Short = `Get a Database Table.`
-	cmd.Long = `Get a Database Table.`
+	cmd.Short = `*Public Preview* Get a Database Table.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Get a Database Table.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -1152,10 +1216,14 @@ func newGetSyncedDatabaseTable() *cobra.Command {
 	var getSyncedDatabaseTableReq database.GetSyncedDatabaseTableRequest
 
 	cmd.Use = "get-synced-database-table NAME"
-	cmd.Short = `Get a Synced Database Table.`
-	cmd.Long = `Get a Synced Database Table.`
+	cmd.Short = `*Public Preview* Get a Synced Database Table.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Get a Synced Database Table.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -1229,6 +1297,8 @@ func newListDatabaseCatalogs() *cobra.Command {
 	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -1306,6 +1376,8 @@ func newListDatabaseInstanceRoles() *cobra.Command {
 	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -1370,10 +1442,14 @@ func newListDatabaseInstances() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-database-instances"
-	cmd.Short = `List Database Instances.`
-	cmd.Long = `List Database Instances.`
+	cmd.Short = `*Public Preview* List Database Instances.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+List Database Instances.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -1448,6 +1524,8 @@ func newListSyncedDatabaseTables() *cobra.Command {
 	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -1520,6 +1598,8 @@ func newUpdateDatabaseCatalog() *cobra.Command {
 	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
@@ -1610,8 +1690,10 @@ func newUpdateDatabaseInstance() *cobra.Command {
 	cmd.Flags().StringVar(&updateDatabaseInstanceReq.DatabaseInstance.UsagePolicyId, "usage-policy-id", updateDatabaseInstanceReq.DatabaseInstance.UsagePolicyId, `The desired usage policy to associate with the instance.`)
 
 	cmd.Use = "update-database-instance NAME UPDATE_MASK"
-	cmd.Short = `Update a Database Instance.`
-	cmd.Long = `Update a Database Instance.
+	cmd.Short = `*Public Preview* Update a Database Instance.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Update a Database Instance.
 
   Arguments:
     NAME: The name of the instance. This is the unique identifier for the instance.
@@ -1620,6 +1702,8 @@ func newUpdateDatabaseInstance() *cobra.Command {
       update_mask with an empty custom_tags map.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -1703,6 +1787,8 @@ func newUpdateSyncedDatabaseTable() *cobra.Command {
 	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)

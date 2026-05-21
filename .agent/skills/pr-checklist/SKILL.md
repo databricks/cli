@@ -16,14 +16,15 @@ Before submitting a PR, run these commands to match what CI checks. CI uses the 
 # 3. Tests (CI runs with both deployment engines)
 ./task test
 
-# 4. If you changed bundle config structs or schema-related code:
+# 4. If you changed bundle config structs, schema, or direct-engine resource code:
 ./task generate-schema
+./task generate-direct
 
 # 5. If you changed files in python/:
 ./task pydabs-codegen pydabs-test pydabs-lint pydabs-docs
 
-# 6. If you changed experimental/aitools or experimental/ssh:
-./task test-exp-aitools   # only if aitools code changed
+# 6. If you changed cmd/aitools/, libs/aitools/, experimental/aitools/, or experimental/ssh/:
+./task test-exp-aitools   # only if aitools code changed (top-level or experimental)
 ./task test-exp-ssh       # only if ssh code changed
 ```
 

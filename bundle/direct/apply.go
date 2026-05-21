@@ -66,7 +66,7 @@ func (d *DeploymentUnit) Create(ctx context.Context, db *dstate.DeploymentState,
 		return fmt.Errorf("saving state after creating id=%s: %w", newID, err)
 	}
 
-	waitRemoteState, err := d.Adapter.WaitAfterCreate(ctx, newState)
+	waitRemoteState, err := d.Adapter.WaitAfterCreate(ctx, newID, newState)
 	if err != nil {
 		return fmt.Errorf("waiting after creating id=%s: %w", newID, err)
 	}
@@ -80,9 +80,12 @@ func (d *DeploymentUnit) Create(ctx context.Context, db *dstate.DeploymentState,
 }
 
 func (d *DeploymentUnit) Recreate(ctx context.Context, db *dstate.DeploymentState, oldID string, newState any) error {
-	// Note, unlike Delete(), we hard error on 403 here intentionally
+	// Note, unlike Delete(), we hard error on 403 here intentionally.
+	// MANAGED_BY_PARENT is still disregarded — the subsequent Create with
+	// replace_existing=true will reconfigure the parent-managed resource in
+	// place, matching the Terraform provider's recreate behaviour.
 	err := d.Adapter.DoDelete(ctx, oldID)
-	if err != nil && !isResourceGone(err) {
+	if err != nil && !isResourceGone(err) && !isManagedByParent(err) {
 		return fmt.Errorf("deleting old id=%s: %w", oldID, err)
 	}
 
@@ -116,7 +119,7 @@ func (d *DeploymentUnit) Update(ctx context.Context, db *dstate.DeploymentState,
 		return fmt.Errorf("saving state id=%s: %w", id, err)
 	}
 
-	waitRemoteState, err := d.Adapter.WaitAfterUpdate(ctx, newState)
+	waitRemoteState, err := d.Adapter.WaitAfterUpdate(ctx, id, newState)
 	if err != nil {
 		return fmt.Errorf("waiting after updating id=%s: %w", id, err)
 	}
@@ -152,7 +155,7 @@ func (d *DeploymentUnit) UpdateWithID(ctx context.Context, db *dstate.Deployment
 		return fmt.Errorf("saving state id=%s: %w", oldID, err)
 	}
 
-	waitRemoteState, err := d.Adapter.WaitAfterUpdate(ctx, newState)
+	waitRemoteState, err := d.Adapter.WaitAfterUpdate(ctx, newID, newState)
 	if err != nil {
 		return fmt.Errorf("waiting after updating id=%s: %w", newID, err)
 	}
@@ -168,7 +171,7 @@ func (d *DeploymentUnit) UpdateWithID(ctx context.Context, db *dstate.Deployment
 
 func (d *DeploymentUnit) Delete(ctx context.Context, db *dstate.DeploymentState, oldID string) error {
 	err := d.Adapter.DoDelete(ctx, oldID)
-	if err != nil && !isResourceGone(err) {
+	if err != nil && !isResourceGone(err) && !isManagedByParent(err) {
 		// Rather than failing delete and requiring user to unbind, we perform unbind automatically there.
 		// Some services, e.g. jobs, return 403 for missing resources if caller did not have permissions to it when job existed.
 		// In those cases 403 hides 404. In other cases, user not having permissions to resource but having in the bundle might

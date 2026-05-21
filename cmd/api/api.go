@@ -11,6 +11,8 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/databrickscfg"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/config"
@@ -77,10 +79,19 @@ func makeCommand(method string) *cobra.Command {
 
 			cfg := &config.Config{}
 
-			// command-line flag can specify the profile in use
-			profileFlag := cmd.Flag("profile")
-			if profileFlag != nil {
+			// Resolve the profile mirroring MustWorkspaceClient precedence:
+			// 1. --profile flag, 2. DATABRICKS_CONFIG_PROFILE env var (the SDK
+			// also reads it, but setting cfg.Profile here keeps any error
+			// messages we render referring to the same name), 3.
+			// [__settings__].default_profile in the config file.
+			if profileFlag := cmd.Flag("profile"); profileFlag != nil {
 				cfg.Profile = profileFlag.Value.String()
+			}
+			if cfg.Profile == "" {
+				cfg.Profile = env.Get(cmd.Context(), "DATABRICKS_CONFIG_PROFILE")
+			}
+			if cfg.Profile == "" {
+				cfg.Profile = databrickscfg.ResolveDefaultProfile(cmd.Context())
 			}
 
 			api, err := client.New(cfg)

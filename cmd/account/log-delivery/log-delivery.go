@@ -91,6 +91,10 @@ func New() *cobra.Command {
 		RunE:    root.ReportUnknownSubcommand,
 	}
 
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
+
 	// Add methods
 	cmd.AddCommand(newCreate())
 	cmd.AddCommand(newGet())
@@ -153,6 +157,8 @@ func newCreate() *cobra.Command {
   [Deliver and access billable usage logs]: https://docs.databricks.com/administration-guide/account-settings/billable-usage-delivery.html`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -219,6 +225,8 @@ func newGet() *cobra.Command {
     LOG_DELIVERY_CONFIGURATION_ID: The log delivery configuration id of customer`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -301,6 +309,8 @@ func newList() *cobra.Command {
   specified by ID.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -372,6 +382,8 @@ func newPatchStatus() *cobra.Command {
       Supported values: [DISABLED, ENABLED]`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {

@@ -6,8 +6,38 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
+	sdktime "github.com/databricks/databricks-sdk-go/common/types/time"
+	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/postgres"
 )
+
+// PostgresProjectRemote is the return type for DoRead. It embeds ProjectSpec so
+// that all paths in StateType are valid paths in RemoteType, enabling drift
+// detection for spec fields once the backend echoes spec on GET.
+type PostgresProjectRemote struct {
+	postgres.ProjectSpec
+
+	ProjectId string `json:"project_id,omitempty"`
+
+	InitialEndpointSpec *postgres.InitialEndpointSpec `json:"initial_endpoint_spec,omitempty"`
+	Name                string                        `json:"name,omitempty"`
+	Status              *postgres.ProjectStatus       `json:"status,omitempty"`
+	Uid                 string                        `json:"uid,omitempty"`
+	CreateTime          *sdktime.Time                 `json:"create_time,omitempty"`
+	DeleteTime          *sdktime.Time                 `json:"delete_time,omitempty"`
+	PurgeTime           *sdktime.Time                 `json:"purge_time,omitempty"`
+	UpdateTime          *sdktime.Time                 `json:"update_time,omitempty"`
+}
+
+// Custom marshaler needed because embedded ProjectSpec has its own MarshalJSON
+// which would otherwise take over and ignore the additional fields.
+func (s *PostgresProjectRemote) UnmarshalJSON(b []byte) error {
+	return marshal.Unmarshal(b, s)
+}
+
+func (s PostgresProjectRemote) MarshalJSON() ([]byte, error) {
+	return marshal.Marshal(s)
+}
 
 type ResourcePostgresProject struct {
 	client *databricks.WorkspaceClient
@@ -26,36 +56,48 @@ func (*ResourcePostgresProject) PrepareState(input *resources.PostgresProject) *
 	}
 }
 
-func (*ResourcePostgresProject) RemapState(remote *postgres.Project) *PostgresProjectState {
-	// Extract project_id from hierarchical name: "projects/{project_id}"
-	// TODO: log error when we have access to the context
-	components, _ := ParsePostgresName(remote.Name)
-
+func (*ResourcePostgresProject) RemapState(remote *PostgresProjectRemote) *PostgresProjectState {
 	return &PostgresProjectState{
-		ProjectId: components.ProjectID,
-
-		// The read API does not return the spec, only the status.
-		// This means we cannot detect remote drift for spec fields.
-		// Use an empty struct (not nil) so field-level diffing works correctly.
-		ProjectSpec: postgres.ProjectSpec{
-			BudgetPolicyId:           "",
-			CustomTags:               nil,
-			DefaultBranch:            "",
-			DefaultEndpointSettings:  nil,
-			DisplayName:              "",
-			EnablePgNativeLogin:      false,
-			HistoryRetentionDuration: nil,
-			PgVersion:                0,
-			ForceSendFields:          nil,
-		},
+		ProjectId:   remote.ProjectId,
+		ProjectSpec: remote.ProjectSpec,
 	}
 }
 
-func (r *ResourcePostgresProject) DoRead(ctx context.Context, id string) (*postgres.Project, error) {
-	return r.client.Postgres.GetProject(ctx, postgres.GetProjectRequest{Name: id})
+// makePostgresProjectRemote converts the SDK Project into the embedded remote shape.
+// GET does not echo spec today (only status is returned); the embedded spec fields
+// stay at their zero values, and resources.yml suppresses phantom drift via
+// ignore_remote_changes with reason spec:input_only.
+func makePostgresProjectRemote(project *postgres.Project) *PostgresProjectRemote {
+	// Extract project_id from hierarchical name: "projects/{project_id}"
+	// TODO: log error when we have access to the context
+	components, _ := ParsePostgresName(project.Name)
+	var spec postgres.ProjectSpec
+	if project.Spec != nil {
+		spec = *project.Spec
+	}
+	return &PostgresProjectRemote{
+		ProjectSpec:         spec,
+		ProjectId:           components.ProjectID,
+		InitialEndpointSpec: project.InitialEndpointSpec,
+		Name:                project.Name,
+		Status:              project.Status,
+		Uid:                 project.Uid,
+		CreateTime:          project.CreateTime,
+		DeleteTime:          project.DeleteTime,
+		PurgeTime:           project.PurgeTime,
+		UpdateTime:          project.UpdateTime,
+	}
 }
 
-func (r *ResourcePostgresProject) DoCreate(ctx context.Context, config *PostgresProjectState) (string, *postgres.Project, error) {
+func (r *ResourcePostgresProject) DoRead(ctx context.Context, id string) (*PostgresProjectRemote, error) {
+	project, err := r.client.Postgres.GetProject(ctx, postgres.GetProjectRequest{Name: id})
+	if err != nil {
+		return nil, err
+	}
+	return makePostgresProjectRemote(project), nil
+}
+
+func (r *ResourcePostgresProject) DoCreate(ctx context.Context, config *PostgresProjectState) (string, *PostgresProjectRemote, error) {
 	waiter, err := r.client.Postgres.CreateProject(ctx, postgres.CreateProjectRequest{
 		ProjectId: config.ProjectId,
 		Project: postgres.Project{
@@ -64,7 +106,9 @@ func (r *ResourcePostgresProject) DoCreate(ctx context.Context, config *Postgres
 
 			// Output-only fields.
 			CreateTime:      nil,
+			DeleteTime:      nil,
 			Name:            "",
+			PurgeTime:       nil,
 			Status:          nil,
 			Uid:             "",
 			UpdateTime:      nil,
@@ -81,10 +125,11 @@ func (r *ResourcePostgresProject) DoCreate(ctx context.Context, config *Postgres
 		return "", nil, err
 	}
 
-	return result.Name, result, nil
+	remote := makePostgresProjectRemote(result)
+	return remote.Name, remote, nil
 }
 
-func (r *ResourcePostgresProject) DoUpdate(ctx context.Context, id string, config *PostgresProjectState, entry *PlanEntry) (*postgres.Project, error) {
+func (r *ResourcePostgresProject) DoUpdate(ctx context.Context, id string, config *PostgresProjectState, entry *PlanEntry) (*PostgresProjectRemote, error) {
 	// Build update mask from fields that have action="update" in the changes map.
 	// This excludes immutable fields and fields that haven't changed.
 	// Prefix with "spec." because the API expects paths relative to the Project object,
@@ -98,7 +143,9 @@ func (r *ResourcePostgresProject) DoUpdate(ctx context.Context, id string, confi
 
 			// Output-only fields.
 			CreateTime:      nil,
+			DeleteTime:      nil,
 			Name:            "",
+			PurgeTime:       nil,
 			Status:          nil,
 			Uid:             "",
 			UpdateTime:      nil,
@@ -115,12 +162,17 @@ func (r *ResourcePostgresProject) DoUpdate(ctx context.Context, id string, confi
 
 	// Wait for the update to complete
 	result, err := waiter.Wait(ctx)
-	return result, err
+	if err != nil {
+		return nil, err
+	}
+	return makePostgresProjectRemote(result), nil
 }
 
 func (r *ResourcePostgresProject) DoDelete(ctx context.Context, id string) error {
 	waiter, err := r.client.Postgres.DeleteProject(ctx, postgres.DeleteProjectRequest{
-		Name: id,
+		Name:            id,
+		Purge:           false,
+		ForceSendFields: nil,
 	})
 	if err != nil {
 		return err

@@ -59,6 +59,8 @@ resources:
         reason: spec:output_only
       - field: service_principal_name
         reason: spec:output_only
+      - field: thumbnail_url
+        reason: spec:output_only
       - field: update_time
         reason: spec:output_only
       - field: updater
@@ -204,6 +206,20 @@ resources:
       - field: source_branch_time
         reason: spec:input_only
       - field: ttl
+        reason: spec:input_only
+
+  postgres_catalogs:
+
+    recreate_on_changes:
+      - field: postgres_database
+        reason: spec:immutable
+
+    ignore_remote_changes:
+      - field: branch
+        reason: spec:input_only
+      - field: create_database_if_missing
+        reason: spec:input_only
+      - field: postgres_database
         reason: spec:input_only
 
   postgres_endpoints:

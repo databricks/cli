@@ -13,7 +13,7 @@ import (
 
 var (
 	pathBudgetPolicyId = structpath.MustParsePath("budget_policy_id")
-	pathMinQps         = structpath.MustParsePath("min_qps")
+	pathTargetQps      = structpath.MustParsePath("target_qps")
 )
 
 // VectorSearchEndpointRemote is remote state for a vector search endpoint. It embeds API response
@@ -46,16 +46,16 @@ func (*ResourceVectorSearchEndpoint) PrepareState(input *resources.VectorSearchE
 }
 
 func (*ResourceVectorSearchEndpoint) RemapState(remote *VectorSearchEndpointRemote) *vectorsearch.CreateEndpoint {
-	var minQps int64
+	var targetQps int64
 	if remote.ScalingInfo != nil {
-		minQps = remote.ScalingInfo.RequestedMinQps
+		targetQps = remote.ScalingInfo.RequestedTargetQps
 	}
 	return &vectorsearch.CreateEndpoint{
 		Name:            remote.Name,
 		EndpointType:    remote.EndpointType,
 		BudgetPolicyId:  remote.BudgetPolicyId,
 		UsagePolicyId:   "", // Missing in remote
-		MinQps:          minQps,
+		TargetQps:       targetQps,
 		ForceSendFields: utils.FilterFields[vectorsearch.CreateEndpoint](remote.ForceSendFields, "UsagePolicyId"),
 	}
 }
@@ -77,7 +77,7 @@ func (r *ResourceVectorSearchEndpoint) DoCreate(ctx context.Context, config *vec
 	return id, newVectorSearchEndpointRemote(waiter.Response), nil
 }
 
-func (r *ResourceVectorSearchEndpoint) WaitAfterCreate(ctx context.Context, config *vectorsearch.CreateEndpoint) (*VectorSearchEndpointRemote, error) {
+func (r *ResourceVectorSearchEndpoint) WaitAfterCreate(ctx context.Context, id string, config *vectorsearch.CreateEndpoint) (*VectorSearchEndpointRemote, error) {
 	info, err := r.client.VectorSearchEndpoints.WaitGetEndpointVectorSearchEndpointOnline(ctx, config.Name, 60*time.Minute, nil)
 	if err != nil {
 		return nil, err
@@ -96,10 +96,10 @@ func (r *ResourceVectorSearchEndpoint) DoUpdate(ctx context.Context, id string, 
 		}
 	}
 
-	if entry.Changes.HasChange(pathMinQps) {
+	if entry.Changes.HasChange(pathTargetQps) {
 		_, err := r.client.VectorSearchEndpoints.PatchEndpoint(ctx, vectorsearch.PatchEndpointRequest{
 			EndpointName:    id,
-			MinQps:          config.MinQps,
+			TargetQps:       config.TargetQps,
 			ForceSendFields: nil,
 		})
 		if err != nil {
