@@ -24,25 +24,25 @@ func TestUpdatesBefore(t *testing.T) {
 	}{
 		{
 			name:          "before 700",
-			timestamp:     int64Ptr(700),
+			timestamp:     new(int64(700)),
 			expectedCount: 3,
 			expectedFirst: 600,
 		},
 		{
 			name:          "before 1000",
-			timestamp:     int64Ptr(1000),
+			timestamp:     new(int64(1000)),
 			expectedCount: 5,
 			expectedFirst: 1000,
 		},
 		{
 			name:          "before 200",
-			timestamp:     int64Ptr(200),
+			timestamp:     new(int64(200)),
 			expectedCount: 1,
 			expectedFirst: 200,
 		},
 		{
 			name:          "before 100",
-			timestamp:     int64Ptr(100),
+			timestamp:     new(int64(100)),
 			expectedCount: 0,
 			expectedFirst: 0,
 		},
@@ -79,25 +79,25 @@ func TestUpdatesAfter(t *testing.T) {
 	}{
 		{
 			name:          "after 500",
-			timestamp:     int64Ptr(500),
+			timestamp:     new(int64(500)),
 			expectedCount: 3,
 			expectedFirst: 1000,
 		},
 		{
 			name:          "after 200",
-			timestamp:     int64Ptr(200),
+			timestamp:     new(int64(200)),
 			expectedCount: 5,
 			expectedFirst: 1000,
 		},
 		{
 			name:          "after 1000",
-			timestamp:     int64Ptr(1000),
+			timestamp:     new(int64(1000)),
 			expectedCount: 1,
 			expectedFirst: 1000,
 		},
 		{
 			name:          "after 1200",
-			timestamp:     int64Ptr(1200),
+			timestamp:     new(int64(1200)),
 			expectedCount: 0,
 			expectedFirst: 0,
 		},
@@ -181,7 +181,7 @@ func TestFilterUpdates(t *testing.T) {
 			name:          "start time nil, end time set",
 			updates:       updates,
 			startTime:     nil,
-			endTime:       int64Ptr(700),
+			endTime:       new(int64(700)),
 			expectedCount: 3,
 			expectedFirst: 600,
 			expectedLast:  200,
@@ -189,7 +189,7 @@ func TestFilterUpdates(t *testing.T) {
 		{
 			name:          "start time set, end time nil",
 			updates:       updates,
-			startTime:     int64Ptr(500),
+			startTime:     new(int64(500)),
 			endTime:       nil,
 			expectedCount: 3,
 			expectedFirst: 1000,
@@ -198,8 +198,8 @@ func TestFilterUpdates(t *testing.T) {
 		{
 			name:          "both times set within range",
 			updates:       updates,
-			startTime:     int64Ptr(300),
-			endTime:       int64Ptr(900),
+			startTime:     new(int64(300)),
+			endTime:       new(int64(900)),
 			expectedCount: 3,
 			expectedFirst: 800,
 			expectedLast:  400,
@@ -207,8 +207,8 @@ func TestFilterUpdates(t *testing.T) {
 		{
 			name:          "both times set, no overlap",
 			updates:       updates,
-			startTime:     int64Ptr(1200),
-			endTime:       int64Ptr(1500),
+			startTime:     new(int64(1200)),
+			endTime:       new(int64(1500)),
 			expectedCount: 0,
 			expectedFirst: 0,
 			expectedLast:  0,
@@ -216,7 +216,7 @@ func TestFilterUpdates(t *testing.T) {
 		{
 			name:          "start time after all updates",
 			updates:       updates,
-			startTime:     int64Ptr(1200),
+			startTime:     new(int64(1200)),
 			endTime:       nil,
 			expectedCount: 0,
 			expectedFirst: 0,
@@ -226,7 +226,7 @@ func TestFilterUpdates(t *testing.T) {
 			name:          "end time before all updates",
 			updates:       updates,
 			startTime:     nil,
-			endTime:       int64Ptr(100),
+			endTime:       new(int64(100)),
 			expectedCount: 0,
 			expectedFirst: 0,
 			expectedLast:  0,
@@ -234,8 +234,8 @@ func TestFilterUpdates(t *testing.T) {
 		{
 			name:          "start time after end time but within range",
 			updates:       updates,
-			startTime:     int64Ptr(700),
-			endTime:       int64Ptr(500),
+			startTime:     new(int64(700)),
+			endTime:       new(int64(500)),
 			expectedCount: 0,
 			expectedFirst: 0,
 			expectedLast:  0,
@@ -243,8 +243,8 @@ func TestFilterUpdates(t *testing.T) {
 		{
 			name:          "start and end time match exact values in list",
 			updates:       updates,
-			startTime:     int64Ptr(400),
-			endTime:       int64Ptr(800),
+			startTime:     new(int64(400)),
+			endTime:       new(int64(800)),
 			expectedCount: 3,
 			expectedFirst: 800,
 			expectedLast:  400,
@@ -289,8 +289,3 @@ func TestFilterUpdates(t *testing.T) {
 		})
 	}
 }
-
-// Helper function to create int64 pointers
-//
-//go:fix inline
-func int64Ptr(v int64) *int64 { return new(v) }

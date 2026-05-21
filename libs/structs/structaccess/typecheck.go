@@ -143,7 +143,6 @@ func FindStructFieldByKeyType(t reflect.Type, key string) (reflect.StructField, 
 
 	// First pass: direct fields
 	for sf := range t.Fields() {
-		sf := sf
 		if sf.PkgPath != "" { // unexported
 			continue
 		}
@@ -163,7 +162,6 @@ func FindStructFieldByKeyType(t reflect.Type, key string) (reflect.StructField, 
 
 	// Second pass: search embedded anonymous structs recursively (flattening semantics)
 	for sf := range t.Fields() {
-		sf := sf
 		if !sf.Anonymous {
 			continue
 		}

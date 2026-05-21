@@ -149,10 +149,3 @@ func TestAppSpecLoadEnvVars(t *testing.T) {
 		})
 	}
 }
-
-// Helper function to create a string pointer
-//
-//go:fix inline
-func stringPtr(s string) *string {
-	return new(s)
-}

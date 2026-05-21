@@ -13,14 +13,12 @@ func assertFieldsCovered(t *testing.T, sdkType, remoteType reflect.Type, skip ma
 	t.Helper()
 	remoteFields := map[string]bool{}
 	for f := range remoteType.Fields() {
-		f := f
 		if !f.Anonymous {
 			remoteFields[f.Name] = true
 		}
 	}
 
 	for field := range sdkType.Fields() {
-		field := field
 		if skip[field.Name] {
 			assert.NotContains(t, remoteFields, field.Name, "field %s is in skip list but present in %s; remove it from skip", field.Name, remoteType.Name())
 			continue

@@ -105,7 +105,6 @@ func walkTypeValue(path *structpath.PatternNode, typ reflect.Type, field *reflec
 
 func walkTypeStruct(path *structpath.PatternNode, st reflect.Type, visit VisitTypeFunc, visitedCount map[reflect.Type]int) {
 	for sf := range st.Fields() {
-		sf := sf
 		if sf.PkgPath != "" {
 			continue // unexported
 		}

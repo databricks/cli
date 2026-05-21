@@ -146,23 +146,3 @@ func TestConvertToString(t *testing.T) {
 		})
 	}
 }
-
-//go:fix inline
-func stringPtr(s string) *string {
-	return new(s)
-}
-
-//go:fix inline
-func intPtr(i int) *int {
-	return new(i)
-}
-
-//go:fix inline
-func float64Ptr(f float64) *float64 {
-	return new(f)
-}
-
-//go:fix inline
-func boolPtr(b bool) *bool {
-	return new(b)
-}

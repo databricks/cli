@@ -17,7 +17,6 @@ func EnsureNoExtraMethods(receiver any, ifaceTypes ...reflect.Type) error {
 	}
 
 	for m := range rt.Methods() {
-		m := m
 		if _, ok := allowed[m.Name]; !ok {
 			return fmt.Errorf("unexpected method %s on %v; only methods from %v are allowed", m.Name, rt, ifaceTypes)
 		}

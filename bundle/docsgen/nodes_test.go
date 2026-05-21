@@ -170,8 +170,3 @@ func TestDoNotSuggestFields(t *testing.T) {
 	assert.Len(t, nodes[0].Attributes, 1)
 	assert.Equal(t, "nestedNotDoNotSuggestField", nodes[0].Attributes[0].Title)
 }
-
-//go:fix inline
-func strPtr(s string) *string {
-	return new(s)
-}

@@ -30,7 +30,6 @@ func TestDashboardConfigIsSupersetOfSDKDashboard(t *testing.T) {
 	// Create a map of SDK fields by name and their JSON tags
 	sdkFields := make(map[string]string)
 	for field := range sdkType.Fields() {
-		field := field
 		jsonTag := field.Tag.Get("json")
 		jsonName := getJSONTagName(jsonTag)
 		if jsonName != "" {
@@ -41,7 +40,6 @@ func TestDashboardConfigIsSupersetOfSDKDashboard(t *testing.T) {
 	// Create a map of config fields by name and their JSON tags
 	configFields := make(map[string]string)
 	for field := range configType.Fields() {
-		field := field
 		jsonTag := field.Tag.Get("json")
 		jsonName := getJSONTagName(jsonTag)
 		if jsonName != "" {

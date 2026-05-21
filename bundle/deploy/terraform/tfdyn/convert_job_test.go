@@ -297,8 +297,6 @@ func TestSupportedTypeTasksComplete(t *testing.T) {
 	var tasksWithSource []string
 
 	for field := range taskType.Fields() {
-		field := field
-
 		// Skip non-task fields (like DependsOn, Libraries, etc.)
 		if !strings.HasSuffix(field.Name, "Task") {
 			continue
@@ -352,8 +350,6 @@ func findSourceFieldsShallow(t reflect.Type) []string {
 	var paths []string
 
 	for field := range t.Fields() {
-		field := field
-
 		// Check if this field is named "Source"
 		if field.Name == "Source" {
 			paths = append(paths, "")

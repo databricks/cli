@@ -54,8 +54,6 @@ func TestCustomMarshallerIsImplemented(t *testing.T) {
 	rt := reflect.TypeFor[Resources]()
 
 	for field := range rt.Fields() {
-		field := field
-
 		// Fields in Resources are expected be of the form map[string]*resourceStruct
 		assert.Equal(t, reflect.Map, field.Type.Kind(), "Resource %s is not a map", field.Name)
 		kt := field.Type.Key()
@@ -96,7 +94,6 @@ func TestResourcesAllResourcesCompleteness(t *testing.T) {
 	}
 
 	for field := range rt.Fields() {
-		field := field
 		jsonTag := field.Tag.Get("json")
 
 		if idx := strings.Index(jsonTag, ","); idx != -1 {
@@ -113,7 +110,6 @@ func TestSupportedResources(t *testing.T) {
 
 	typ := reflect.TypeFor[Resources]()
 	for field := range typ.Fields() {
-		field := field
 		jsonTags := strings.Split(field.Tag.Get("json"), ",")
 		pluralName := jsonTags[0]
 		assert.Equal(t, actual[pluralName].PluralName, pluralName)
