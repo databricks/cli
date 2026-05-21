@@ -42,6 +42,13 @@ Example:
 				s.fail("Failed to stop " + lakeboxID)
 				return fmt.Errorf("failed to stop lakebox %s: %w", lakeboxID, err)
 			}
+
+			profile := w.Config.Profile
+			if profile == "" {
+				profile = w.Config.Host
+			}
+			_ = setGatewayHost(ctx, profile, updated.GatewayHost)
+
 			s.ok("Stopped " + cmdio.Bold(ctx, updated.SandboxID))
 			return nil
 		},

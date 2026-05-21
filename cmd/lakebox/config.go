@@ -101,6 +101,12 @@ Examples:
 				return fmt.Errorf("failed to update lakebox %s: %w", id, err)
 			}
 
+			profile := w.Config.Profile
+			if profile == "" {
+				profile = w.Config.Host
+			}
+			_ = setGatewayHost(ctx, profile, updated.GatewayHost)
+
 			blank(out)
 			field(ctx, out, "id", cmdio.Bold(ctx, updated.SandboxID))
 			if updated.Name != "" {

@@ -38,6 +38,12 @@ Example:
 				return fmt.Errorf("failed to get lakebox %s: %w", lakeboxID, err)
 			}
 
+			profile := w.Config.Profile
+			if profile == "" {
+				profile = w.Config.Host
+			}
+			_ = setGatewayHost(ctx, profile, entry.GatewayHost)
+
 			if outputJSON {
 				enc := json.NewEncoder(cmd.OutOrStdout())
 				enc.SetIndent("", "  ")

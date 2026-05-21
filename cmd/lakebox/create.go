@@ -47,6 +47,7 @@ Examples:
 			if profile == "" {
 				profile = w.Config.Host
 			}
+			_ = setGatewayHost(ctx, profile, result.GatewayHost)
 
 			currentDefault := getDefault(ctx, profile)
 			shouldSetDefault := currentDefault == ""
