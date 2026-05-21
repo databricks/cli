@@ -141,14 +141,14 @@ func writeReauthSteps(ctx context.Context, cfg *config.Config, b *strings.Builde
 
 	case AuthTypePat:
 		if cfg.Profile != "" {
-			fmt.Fprintf(b, "\n  - Regenerate your access token or run: databricks auth login --profile %s", cfg.Profile)
+			fmt.Fprintf(b, "\n  - Regenerate your access token or run: %s", BuildLoginCommand(ctx, cfg.Profile, "", nil))
 		} else {
 			fmt.Fprint(b, "\n  - Regenerate your access token")
 		}
 
 	case AuthTypeBasic:
 		if cfg.Profile != "" {
-			fmt.Fprintf(b, "\n  - Check your username/password or run: databricks auth login --profile %s", cfg.Profile)
+			fmt.Fprintf(b, "\n  - Check your username/password or run: %s", BuildLoginCommand(ctx, cfg.Profile, "", nil))
 		} else {
 			fmt.Fprint(b, "\n  - Check your username and password")
 		}

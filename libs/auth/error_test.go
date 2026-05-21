@@ -139,6 +139,22 @@ func TestEnrichAuthError(t *testing.T) {
 				"\n  - Check your identity: databricks auth describe --profile dev",
 		},
 		{
+			name: "401 with profile needing shell-quoting and pat auth",
+			cfg: &config.Config{
+				Host:     "https://my-workspace.cloud.databricks.com",
+				Profile:  "weird name",
+				AuthType: AuthTypePat,
+			},
+			statusCode: 401,
+			wantMsg: "test error message\n" +
+				"\nProfile:   weird name" +
+				"\nHost:      https://my-workspace.cloud.databricks.com" +
+				"\nAuth type: Personal Access Token (pat)" +
+				"\n\nNext steps:" +
+				"\n  - Regenerate your access token or run: databricks auth login --profile 'weird name'" +
+				"\n  - Check your identity: databricks auth describe --profile 'weird name'",
+		},
+		{
 			name: "401 with profile and pat auth",
 			cfg: &config.Config{
 				Host:     "https://my-workspace.cloud.databricks.com",
