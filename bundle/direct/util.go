@@ -18,8 +18,8 @@ func isResourceGone(err error) bool {
 // the parent's Delete will cascade-clean. Mirrors the TF provider's
 // declarative.IsDeleteError suppression.
 func isManagedByParent(err error) bool {
-	var apiErr *apierr.APIError
-	if !errors.As(err, &apiErr) || apiErr == nil {
+	apiErr, ok := errors.AsType[*apierr.APIError](err)
+	if !ok || apiErr == nil {
 		return false
 	}
 	info := apiErr.ErrorDetails().ErrorInfo

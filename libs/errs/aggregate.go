@@ -60,7 +60,7 @@ func (ec errorChain) Unwrap() error {
 }
 
 func (ec errorChain) As(target any) bool {
-	return errors.As(ec[0], target)
+	return errors.As(ec[0], target) //nolint:forbidigo // forwarding the errors.As interface method; target type is dynamic and cannot use errors.AsType
 }
 
 func (ec errorChain) Is(target error) bool {

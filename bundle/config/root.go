@@ -107,8 +107,7 @@ func LoadFromBytes(path string, raw []byte) (*Root, diag.Diagnostics) {
 	// Load configuration tree from YAML.
 	v, err := yamlloader.LoadYAML(path, bytes.NewBuffer(raw))
 	if err != nil {
-		var le *yamlloader.LocationError
-		if errors.As(err, &le) {
+		if le, ok := errors.AsType[*yamlloader.LocationError](err); ok {
 			return nil, diag.Diagnostics{{
 				Severity:  diag.Error,
 				Summary:   le.Summary,
