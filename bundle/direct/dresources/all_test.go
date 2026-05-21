@@ -417,20 +417,19 @@ var testDeps = map[string]prepareWorkspace{
 	},
 
 	"postgres_projects.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		const projectID = "permissions-project"
 		waiter, err := client.Postgres.CreateProject(ctx, postgres.CreateProjectRequest{
-			ProjectId: "permissions-project",
+			ProjectId: projectID,
 		})
 		if err != nil {
 			return nil, err
 		}
-		result, err := waiter.Wait(ctx)
-		if err != nil {
+		if _, err := waiter.Wait(ctx); err != nil {
 			return nil, err
 		}
 
-		components, _ := ParsePostgresName(result.Name)
 		return &PermissionsState{
-			ObjectID: "/database-projects/" + components.ProjectID,
+			ObjectID: "/database-projects/" + projectID,
 			EmbeddedSlice: []StatePermission{{
 				Level:    "CAN_MANAGE",
 				UserName: "user@example.com",
