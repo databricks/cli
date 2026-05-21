@@ -259,14 +259,6 @@ func (r *ResourceCluster) DoDelete(ctx context.Context, id string) error {
 func (r *ResourceCluster) OverrideChangeDesc(ctx context.Context, p *structpath.PathNode, change *ChangeDesc, remoteState *ClusterRemote) error {
 	path := p.Prefix(1).String()
 
-	// cluster_id is stored in state for informational purposes only; it must not appear in plan output.
-	// PrepareState never sets it (input has no ID), so after the first deploy ch.Old="<id>" while ch.New="",
-	// causing a spurious Skip entry. Drop it unconditionally so it never pollutes plan JSON.
-	if path == "cluster_id" {
-		change.Reason = deployplan.ReasonDrop
-		return nil
-	}
-
 	// Remaining overrides only apply to Update actions.
 	if change.Action != deployplan.Update {
 		return nil
