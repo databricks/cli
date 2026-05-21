@@ -54,13 +54,19 @@ func AuthTypeDisplayName(authType string) string {
 
 // RewriteAuthError rewrites the error message for invalid refresh token error.
 // It returns whether the error was rewritten and the rewritten error.
-func RewriteAuthError(ctx context.Context, host, accountId, workspaceId, profile string, err error) (bool, error) {
+//
+// discoveryURL is required so unified/SPOG hosts are recognized: without it,
+// ToOAuthArgument falls back to host-shape heuristics and the suggested
+// reauth command would drop --account-id / --workspace-id for hosts that
+// actually need them (see HasUnifiedHostSignal).
+func RewriteAuthError(ctx context.Context, host, accountId, workspaceId, discoveryURL, profile string, err error) (bool, error) {
 	target := &u2m.InvalidRefreshTokenError{}
 	if errors.As(err, &target) {
 		oauthArgument, err := AuthArguments{
-			Host:        host,
-			AccountID:   accountId,
-			WorkspaceID: workspaceId,
+			Host:         host,
+			AccountID:    accountId,
+			WorkspaceID:  workspaceId,
+			DiscoveryURL: discoveryURL,
 		}.ToOAuthArgument()
 		if err != nil {
 			return false, err

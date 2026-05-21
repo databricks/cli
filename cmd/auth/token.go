@@ -302,7 +302,7 @@ func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
 			}
 			err = errors.New("cache: " + compatSubstring)
 		}
-		if rewritten, rewrittenErr := auth.RewriteAuthError(ctx, args.authArguments.Host, args.authArguments.AccountID, args.authArguments.WorkspaceID, args.profileName, err); rewritten {
+		if rewritten, rewrittenErr := auth.RewriteAuthError(ctx, args.authArguments.Host, args.authArguments.AccountID, args.authArguments.WorkspaceID, args.authArguments.DiscoveryURL, args.profileName, err); rewritten {
 			return nil, rewrittenErr
 		}
 		helpMsg := helpfulError(ctx, args.profileName, args.authArguments.WorkspaceID, oauthArgument)

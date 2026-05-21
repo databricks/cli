@@ -36,11 +36,14 @@ func TestBuildLoginCommand_AppendsWorkspaceID(t *testing.T) {
 		assert.Equal(t, "databricks auth login --profile dev", BuildLoginCommand(ctx, "dev", WorkspaceIDNone, nil))
 	})
 
+	// Use a .test TLD with an explicit DiscoveryURL so ToOAuthArgument never
+	// triggers a real .well-known resolution (which can stall CI for ~5min
+	// per call on networks that can't fast-fail public lookups). See PR #5125.
 	t.Run("unified host path emits --workspace-id when set", func(t *testing.T) {
 		oauthArg, err := AuthArguments{
-			Host:         "https://unified.cloud.databricks.com",
+			Host:         "https://unified.cloud.databricks.test",
 			AccountID:    "acc-123",
-			DiscoveryURL: "https://unified.cloud.databricks.com/oidc/accounts/acc-123/.well-known/oauth-authorization-server",
+			DiscoveryURL: "https://unified.cloud.databricks.test/oidc/accounts/acc-123/.well-known/oauth-authorization-server",
 		}.ToOAuthArgument()
 		require.NoError(t, err)
 
@@ -51,19 +54,21 @@ func TestBuildLoginCommand_AppendsWorkspaceID(t *testing.T) {
 
 	t.Run("workspace host path omits --workspace-id even when provided", func(t *testing.T) {
 		oauthArg, err := AuthArguments{
-			Host: "https://adb-123.azuredatabricks.net",
+			Host:         "https://adb-123.azuredatabricks.test",
+			DiscoveryURL: "https://adb-123.azuredatabricks.test/oidc/.well-known/oauth-authorization-server",
 		}.ToOAuthArgument()
 		require.NoError(t, err)
 
 		cmd := BuildLoginCommand(ctx, "", "ws-456", oauthArg)
-		assert.Contains(t, cmd, "--host https://adb-123.azuredatabricks.net")
+		assert.Contains(t, cmd, "--host https://adb-123.azuredatabricks.test")
 		assert.NotContains(t, cmd, "--workspace-id")
 	})
 
 	t.Run("account host path omits --workspace-id even when provided", func(t *testing.T) {
 		oauthArg, err := AuthArguments{
-			Host:      "https://accounts.cloud.databricks.com",
-			AccountID: "acc-123",
+			Host:         "https://accounts.cloud.databricks.test",
+			AccountID:    "acc-123",
+			DiscoveryURL: "https://accounts.cloud.databricks.test/oidc/accounts/acc-123/.well-known/oauth-authorization-server",
 		}.ToOAuthArgument()
 		require.NoError(t, err)
 
