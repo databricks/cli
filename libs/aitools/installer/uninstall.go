@@ -64,13 +64,13 @@ func UninstallSkillsOpts(ctx context.Context, opts UninstallOptions) error {
 	if len(opts.Skills) > 0 {
 		seen := make(map[string]bool)
 		for _, name := range opts.Skills {
+			if _, ok := state.Skills[name]; !ok {
+				return fmt.Errorf("skill %q is not installed", name)
+			}
 			if seen[name] {
 				continue
 			}
 			seen[name] = true
-			if _, ok := state.Skills[name]; !ok {
-				return fmt.Errorf("skill %q is not installed", name)
-			}
 			toRemove = append(toRemove, name)
 		}
 	} else {
@@ -89,6 +89,7 @@ func UninstallSkillsOpts(ctx context.Context, opts UninstallOptions) error {
 			log.Warnf(ctx, "Failed to remove %s: %v", canonicalDir, err)
 		}
 		delete(state.Skills, name)
+		delete(state.RepoDirs, name)
 	}
 
 	if removeAll {

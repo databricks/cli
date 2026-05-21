@@ -45,11 +45,11 @@ Deployment complete!
 === Should show that it's already migrated
 >>> musterr [CLI] bundle deployment migrate
 Error: already using direct engine
-Details: [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=11 lineage="[UUID]"
+Details: [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=9 lineage="[UUID]"
 
 >>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle debug states
-[TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=11 lineage="[UUID]"
+[TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=9 lineage="[UUID]"
 
 >>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle debug states --force-pull
-resources.json: remote direct state serial=11 lineage="[UUID]"
-[TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=11 lineage="[UUID]"
+resources.json: remote direct state serial=9 lineage="[UUID]"
+[TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=9 lineage="[UUID]"

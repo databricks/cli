@@ -1,9 +1,10 @@
 // Package storage selects and constructs the CLI's U2M token storage backend.
 //
-// Two modes are supported. Plaintext writes to ~/.databricks/token-cache.json
-// with host-key dual-write for older Go SDK versions (v0.61-v0.103); it is the
-// resolver default. Secure writes to the OS-native keyring under the profile
-// cache key only; it is opt-in pre-GA and slated to become the default at GA.
+// Two modes are supported. Secure writes to the OS-native keyring under the
+// profile cache key only; it is the resolver default. Plaintext writes to
+// ~/.databricks/token-cache.json with host-key dual-write for older Go SDK
+// versions (v0.61-v0.103); it is the opt-in fallback for environments where
+// the OS keyring is not available.
 package storage
 
 import (
@@ -26,12 +27,15 @@ const (
 
 	// StorageModePlaintext writes tokens to ~/.databricks/token-cache.json
 	// and mirrors each token under the legacy host-based cache key for
-	// older Go SDK versions (v0.61-v0.103). This is the resolver default.
+	// older Go SDK versions (v0.61-v0.103). Opt-in via DATABRICKS_AUTH_STORAGE
+	// or [__settings__].auth_storage for environments where the OS keyring
+	// is not available.
 	StorageModePlaintext StorageMode = "plaintext"
 
 	// StorageModeSecure writes tokens to the OS-native secure store
 	// (macOS Keychain, Windows Credential Manager, Linux Secret Service)
 	// under the profile cache key only. No host-key entry is written.
+	// This is the resolver default.
 	StorageModeSecure StorageMode = "secure"
 )
 
@@ -101,7 +105,7 @@ func ParseMode(raw string) StorageMode {
 //  1. override (typically from a command-level flag such as --secure-storage).
 //  2. DATABRICKS_AUTH_STORAGE env var.
 //  3. [__settings__].auth_storage in .databrickscfg.
-//  4. StorageModePlaintext.
+//  4. StorageModeSecure.
 //
 // StorageModeUnknown as override means "no flag set; fall through." The
 // override is trusted to be a valid StorageMode: callers that parse user
@@ -138,7 +142,7 @@ func ResolveStorageModeWithSource(ctx context.Context, override StorageMode) (St
 		return mode, StorageSourceConfig, err
 	}
 
-	return StorageModePlaintext, StorageSourceDefault, nil
+	return StorageModeSecure, StorageSourceDefault, nil
 }
 
 func parseFromSource(raw, source string) (StorageMode, error) {

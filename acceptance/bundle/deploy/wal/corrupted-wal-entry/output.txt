@@ -1,0 +1,34 @@
+
+>>> cat .databricks/bundle/default/resources.json.wal
+{"lineage":"test-lineage-123","serial":6}
+{"k":"resources.jobs.valid_job","v":{"__id__":"","state":{"name":"valid-job"}}}
+{"k":"resources.jobs.another_valid","v":{"__id__":"","state":{"name":"another-valid"}}}
+{"k":"resources.jobs.partial_write","v":{"__id__":"33","state":{"name":"partial-
+
+>>> [CLI] bundle deploy
+Warn: Skipping corrupted WAL entry at [TEST_TMP_DIR]/.databricks/bundle/default/resources.json.wal:4: unexpected end of JSON input
+Warn: Saved 1 corrupted WAL entries to [TEST_TMP_DIR]/.databricks/bundle/default/resources.json.wal.corrupted
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/wal-corrupted-test/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] bundle summary
+Name: wal-corrupted-test
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/wal-corrupted-test/default
+Resources:
+  Jobs:
+    another_valid:
+      Name: another-valid
+      URL:  [DATABRICKS_URL]/jobs/[NUMID]?o=[NUMID]
+    valid_job:
+      Name: valid-job
+      URL:  [DATABRICKS_URL]/jobs/[NUMID]?o=[NUMID]
+
+>>> cat .databricks/bundle/default/resources.json.wal.corrupted
+{"k":"resources.jobs.partial_write","v":{"__id__":"33","state":{"name":"partial-
+=== WAL after successful deploy ===
+WAL deleted (expected)

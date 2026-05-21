@@ -1,0 +1,2 @@
+EnvMatrix.COMMAND = ["plan", "deploy --force-lock", "summary"]
+EnvRepl.COMMAND = false
