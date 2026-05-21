@@ -131,6 +131,27 @@ func TestExecuteInterruptPrintsCancelled(t *testing.T) {
 	}
 }
 
+func TestExitCodeFor(t *testing.T) {
+	tests := []struct {
+		name string
+		err  error
+		want int
+	}{
+		{"nil", nil, 0},
+		{"random error", errors.New("boom"), 1},
+		{"already printed", ErrAlreadyPrinted, 1},
+		{"cmdio interrupt", cmdio.ErrInterrupted, ExitInterrupted},
+		{"huh aborted", huh.ErrUserAborted, ExitInterrupted},
+		{"wrapped cmdio interrupt", fmt.Errorf("prompt: %w", cmdio.ErrInterrupted), ExitInterrupted},
+		{"wrapped huh aborted", fmt.Errorf("form: %w", huh.ErrUserAborted), ExitInterrupted},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, ExitCodeFor(tc.err))
+		})
+	}
+}
+
 func TestExecuteErrAlreadyPrintedNotEnriched(t *testing.T) {
 	ctx := t.Context()
 	stderr := &bytes.Buffer{}

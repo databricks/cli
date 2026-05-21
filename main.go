@@ -15,10 +15,5 @@ import (
 func main() {
 	ctx := context.Background()
 	err := root.Execute(ctx, cmd.New(ctx))
-	if err != nil {
-		if root.IsInterrupted(err) {
-			os.Exit(root.ExitInterrupted)
-		}
-		os.Exit(1)
-	}
+	os.Exit(root.ExitCodeFor(err))
 }

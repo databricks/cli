@@ -8,6 +8,7 @@ import (
 	"os"
 	"runtime"
 	"runtime/debug"
+	"strconv"
 	"strings"
 	"time"
 
@@ -33,6 +34,20 @@ const ExitInterrupted = 130
 // huh library used by aitools. main.go reads this to pick an exit code.
 func IsInterrupted(err error) bool {
 	return errors.Is(err, cmdio.ErrInterrupted) || errors.Is(err, huh.ErrUserAborted)
+}
+
+// ExitCodeFor maps the result of Execute to a process exit code.
+// 0 = success, ExitInterrupted (130) = user Ctrl+C, 1 = any other error.
+// Single source of truth shared between Execute's telemetry and main.go.
+func ExitCodeFor(err error) int {
+	switch {
+	case err == nil:
+		return 0
+	case IsInterrupted(err):
+		return ExitInterrupted
+	default:
+		return 1
+	}
 }
 
 func New(ctx context.Context) *cobra.Command {
@@ -160,7 +175,8 @@ Stack Trace:
 	interrupted := IsInterrupted(err)
 	switch {
 	case err == nil, errors.Is(err, ErrAlreadyPrinted):
-		// nothing to print
+		// ErrAlreadyPrinted wins over interrupted: a subcommand that
+		// printed its own cancel message should not be overridden.
 	case interrupted:
 		fmt.Fprintln(cmd.ErrOrStderr(), "cancelled")
 	default:
@@ -171,14 +187,7 @@ Stack Trace:
 		fmt.Fprintf(cmd.ErrOrStderr(), "Error: %s\n", err.Error())
 	}
 
-	exitCode := 0
-	switch {
-	case err == nil:
-	case interrupted:
-		exitCode = ExitInterrupted
-	default:
-		exitCode = 1
-	}
+	exitCode := ExitCodeFor(err)
 
 	// Log exit status and error
 	// We only log if logger initialization succeeded and is stored in command
@@ -186,12 +195,14 @@ Stack Trace:
 	if logger, ok := log.FromContext(cmd.Context()); ok {
 		switch {
 		case err == nil:
-			logger.Info("completed execution", slog.Int("exit_code", exitCode))
-		case errors.Is(err, ErrAlreadyPrinted), interrupted:
-			logger.Debug("failed execution", slog.Int("exit_code", exitCode))
+			logger.Info("completed execution", slog.String("exit_code", strconv.Itoa(exitCode)))
+		case interrupted:
+			logger.Info("cancelled execution", slog.String("exit_code", strconv.Itoa(exitCode)))
+		case errors.Is(err, ErrAlreadyPrinted):
+			logger.Debug("failed execution", slog.String("exit_code", strconv.Itoa(exitCode)))
 		default:
 			logger.Info("failed execution",
-				slog.Int("exit_code", exitCode),
+				slog.String("exit_code", strconv.Itoa(exitCode)),
 				slog.String("error", err.Error()),
 			)
 		}
