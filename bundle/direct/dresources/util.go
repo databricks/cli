@@ -2,6 +2,8 @@ package dresources
 
 import (
 	"errors"
+	"fmt"
+	"regexp"
 
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/databricks-sdk-go/retries"
