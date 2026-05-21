@@ -288,6 +288,20 @@ func (a *lakeboxAPI) delete(ctx context.Context, id string) error {
 	return a.c.Do(ctx, http.MethodDelete, lakeboxAPIPath+"/"+id, a.headers(), nil, nil, nil)
 }
 
+// stop calls POST /api/2.0/lakebox/sandboxes/{id}/stop and returns the
+// refreshed sandbox. The proto's `StopSandboxRequest` carries `sandbox_id`
+// (redundant with the URL path) under `body: "*"`, so we mirror it
+// explicitly even though the transcoder fills the field from the path.
+func (a *lakeboxAPI) stop(ctx context.Context, id string) (*sandboxEntry, error) {
+	body := map[string]string{"sandbox_id": id}
+	var resp sandboxEntry
+	err := a.c.Do(ctx, http.MethodPost, lakeboxAPIPath+"/"+id+"/stop", a.headers(), nil, body, &resp)
+	if err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
 // registerKey calls POST /api/2.0/lakebox/ssh-keys. An empty `name` is
 // omitted from the wire payload so the server records "unset" rather than
 // an explicit empty string.

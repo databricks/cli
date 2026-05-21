@@ -38,6 +38,7 @@ Common workflows:
 	cmd.AddCommand(newListCommand())
 	cmd.AddCommand(newCreateCommand())
 	cmd.AddCommand(newDeleteCommand())
+	cmd.AddCommand(newStopCommand())
 	cmd.AddCommand(newStatusCommand())
 	cmd.AddCommand(newConfigCommand())
 
