@@ -1,9 +1,12 @@
 # NEXT CHANGELOG
 
-## Release v0.300.0
+## Release v1.0.0
 
 ### Notable Changes
 
+* The Databricks CLI is now generally available with version v1.0.0 as the first major release 🚀. From this version on, the CLI follows semantic versioning (see [README](README.md)). This change does not impact DABs or other existing commands beyond the changes listed below.
+* The 0.299.x line continues to receive security-critical patches through May 20, 2027; see [SECURITY](SECURITY.md) for the support policy.
+* Starting with v1.0.0, the CLI will use [immutable release tags](https://docs.github.com/en/code-security/concepts/supply-chain-security/immutable-releases) to increase security against supply chain attacks.
 * Breaking change: OAuth tokens for interactive logins (`auth_type = databricks-cli`) are now stored in the OS-native secure store by default (Keychain on macOS, Credential Manager on Windows, Secret Service on Linux) instead of `~/.databricks/token-cache.json`. After upgrading, run `databricks auth login` once per profile to re-authenticate; cached tokens from older versions are not migrated. To keep the previous file-backed storage, set `DATABRICKS_AUTH_STORAGE=plaintext` or add `auth_storage = plaintext` under `[__settings__]` in `~/.databrickscfg` (the env var takes precedence over the config setting), then re-run `databricks auth login`. On systems where the OS keyring is not reachable (e.g. Linux containers without a D-Bus session bus), the CLI transparently falls back to the file cache when reading tokens so legacy `token-cache.json` entries remain accessible without manual configuration.
 
 ### CLI
@@ -20,5 +23,3 @@
 * Add `postgres_catalogs` resource to bind a Unity Catalog catalog to a Postgres database on a Lakebase Autoscaling branch ([#5265](https://github.com/databricks/cli/pull/5265)).
 * Add `postgres_synced_tables` resource to sync a Unity Catalog Delta table into a Postgres table on a Lakebase Autoscaling branch ([#5268](https://github.com/databricks/cli/pull/5268)).
 * engine/direct: Changes to state file now persisted to .wal file right away instead of being saved in the end ([#5149](https://github.com/databricks/cli/pull/5149))
-
-### Dependency updates
