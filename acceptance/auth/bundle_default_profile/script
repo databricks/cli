@@ -20,9 +20,11 @@ unset DATABRICKS_HOST
 unset DATABRICKS_TOKEN
 unset DATABRICKS_CONFIG_PROFILE
 
+cp databricks.yml.no-host.tmpl databricks.yml
 title "Bundle without workspace.host: default_profile is honored\n"
 trace $CLI bundle validate -o json | jq '{host: .workspace.host, profile: .workspace.profile}'
 
+cp databricks.yml.no-host.tmpl databricks.yml
 title "--profile overrides default_profile (negative case)\n"
 trace errcode $CLI bundle validate -p other -o json | jq '{host: .workspace.host, profile: .workspace.profile}'
 
@@ -30,29 +32,13 @@ trace errcode $CLI bundle validate -p other -o json | jq '{host: .workspace.host
 # configureProfile must NOT apply default_profile here, because that would
 # silently route the user to a profile pointing at a different host than the
 # bundle declares.
-mkdir -p ./bundle-with-host
-cat > ./bundle-with-host/databricks.yml <<EOF
-bundle:
-  name: bundle-with-host
-
-workspace:
-  host: $host_value
-EOF
-
+DATABRICKS_HOST="$host_value" envsubst < databricks.yml.with-host.tmpl > databricks.yml
 title "Bundle with workspace.host: default_profile is NOT applied\n"
-(cd ./bundle-with-host && trace errcode $CLI bundle validate -o json | jq '{host: .workspace.host, profile: .workspace.profile}')
+trace errcode $CLI bundle validate -o json | jq '{host: .workspace.host, profile: .workspace.profile}'
 
 # Switch to a bundle that pins workspace.profile but no host. The pinned
 # profile must win over default_profile — configureProfile's guard skips
 # default_profile when workspace.profile is already set.
-mkdir -p ./bundle-with-profile
-cat > ./bundle-with-profile/databricks.yml <<EOF
-bundle:
-  name: bundle-with-profile
-
-workspace:
-  profile: other
-EOF
-
+cp databricks.yml.with-profile.tmpl databricks.yml
 title "Bundle with workspace.profile: pinned profile wins over default_profile\n"
-(cd ./bundle-with-profile && trace errcode $CLI bundle validate -o json | jq '{host: .workspace.host, profile: .workspace.profile}')
+trace errcode $CLI bundle validate -o json | jq '{host: .workspace.host, profile: .workspace.profile}'
