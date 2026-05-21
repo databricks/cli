@@ -224,6 +224,9 @@ github.com/databricks/cli/bundle/config.Resources:
   "postgres_projects":
     "description": |-
       PLACEHOLDER
+  "postgres_synced_tables":
+    "description": |-
+      The Postgres synced table definitions for the bundle, where each key is the name of the synced table. Each entry continuously replicates a Unity Catalog Delta source table into a Postgres table on a Lakebase Autoscaling instance.
   "quality_monitors":
     "description": |-
       The quality monitor definitions for the bundle, where each key is the name of the quality monitor.
@@ -920,6 +923,40 @@ github.com/databricks/cli/bundle/config/resources.PostgresProject:
     "description": |-
       PLACEHOLDER
   "update_time":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.PostgresSyncedTable:
+  "branch":
+    "description": |-
+      PLACEHOLDER
+  "create_database_objects_if_missing":
+    "description": |-
+      PLACEHOLDER
+  "existing_pipeline_id":
+    "description": |-
+      PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
+  "new_pipeline_spec":
+    "description": |-
+      PLACEHOLDER
+  "postgres_database":
+    "description": |-
+      PLACEHOLDER
+  "primary_key_columns":
+    "description": |-
+      PLACEHOLDER
+  "scheduling_policy":
+    "description": |-
+      PLACEHOLDER
+  "source_table_full_name":
+    "description": |-
+      PLACEHOLDER
+  "synced_table_id":
+    "description": |-
+      PLACEHOLDER
+  "timeseries_key":
     "description": |-
       PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.SecretScope:

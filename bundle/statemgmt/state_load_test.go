@@ -50,6 +50,7 @@ func TestStateToBundleEmptyLocalResources(t *testing.T) {
 		"resources.postgres_branches.test_postgres_branch":              {ID: "projects/test-project/branches/main"},
 		"resources.postgres_endpoints.test_postgres_endpoint":           {ID: "projects/test-project/branches/main/endpoints/primary"},
 		"resources.postgres_catalogs.test_postgres_catalog":             {ID: "catalogs/test_catalog"},
+		"resources.postgres_synced_tables.test_postgres_synced_table":   {ID: "synced_tables/main.public.test_synced_table"},
 		"resources.vector_search_endpoints.test_vector_search_endpoint": {ID: "vs-endpoint-1"},
 	}
 	err := StateToBundle(t.Context(), state, &config)
@@ -300,6 +301,13 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 				"test_postgres_catalog": {
 					PostgresCatalogConfig: resources.PostgresCatalogConfig{
 						CatalogId: "test_catalog",
+					},
+				},
+			},
+			PostgresSyncedTables: map[string]*resources.PostgresSyncedTable{
+				"test_postgres_synced_table": {
+					PostgresSyncedTableConfig: resources.PostgresSyncedTableConfig{
+						SyncedTableId: "main.public.test_synced_table",
 					},
 				},
 			},
@@ -684,6 +692,13 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 				"test_postgres_catalog_new": {
 					PostgresCatalogConfig: resources.PostgresCatalogConfig{
 						CatalogId: "test_catalog_new",
+					},
+				},
+			},
+			PostgresSyncedTables: map[string]*resources.PostgresSyncedTable{
+				"test_postgres_synced_table": {
+					PostgresSyncedTableConfig: resources.PostgresSyncedTableConfig{
+						SyncedTableId: "main.public.test_synced_table",
 					},
 				},
 			},
