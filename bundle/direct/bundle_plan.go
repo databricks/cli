@@ -283,31 +283,6 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		return nil, errors.New("planning failed")
 	}
 
-	// HACK: cascade Recreate from vector_search_endpoints to dependent
-	// vector_search_indexes. The framework has no per-resource recreate
-	// cascade rule yet; without this, recreating an endpoint orphans its
-	// indexes (or fails because indexes are still attached on delete).
-	// Replace with a generic rule when the framework grows one.
-	for resourceKey, entry := range plan.Plan {
-		if config.GetResourceTypeFromKey(resourceKey) != "vector_search_indexes" {
-			continue
-		}
-		if entry.Action == deployplan.Create || entry.Action == deployplan.Recreate || entry.Action == deployplan.Delete {
-			continue
-		}
-		for _, dep := range entry.DependsOn {
-			if config.GetResourceTypeFromKey(dep.Node) != "vector_search_endpoints" {
-				continue
-			}
-			parent, ok := plan.Plan[dep.Node]
-			if !ok || parent.Action != deployplan.Recreate {
-				continue
-			}
-			entry.Action = deployplan.Recreate
-			break
-		}
-	}
-
 	for _, entry := range plan.Plan {
 		if entry.Action == deployplan.Skip {
 			entry.NewState = nil

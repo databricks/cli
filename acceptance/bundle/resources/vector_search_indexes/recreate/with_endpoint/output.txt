@@ -6,14 +6,13 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
-=== Change endpoint_type (should recreate endpoint AND its dependent index)
+=== Change endpoint_type (recreates endpoint; index recreate cascade is not yet implemented)
 >>> update_file.py databricks.yml endpoint_type: STANDARD endpoint_type: STORAGE_OPTIMIZED
 
 >>> [CLI] bundle plan
 recreate vector_search_endpoints.my_endpoint
-recreate vector_search_indexes.my_index
 
-Plan: 2 to add, 0 to change, 2 to delete, 0 unchanged
+Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged
 
 >>> [CLI] bundle plan --output json
 {
@@ -60,18 +59,7 @@ Plan: 2 to add, 0 to change, 2 to delete, 0 unchanged
           "label": "${resources.vector_search_endpoints.my_endpoint.name}"
         }
       ],
-      "action": "recreate",
-      "new_state": {
-        "value": {
-          "direct_access_index_spec": {
-            "schema_json": "{\"columns\":[{\"name\":\"id\",\"type\":\"integer\"}]}"
-          },
-          "endpoint_name": "vs-endpoint-[UNIQUE_NAME]",
-          "index_type": "DIRECT_ACCESS",
-          "name": "vs-index-[UNIQUE_NAME]",
-          "primary_key": "id"
-        }
-      },
+      "action": "skip",
       "remote_state": {
         "creator": "[USERNAME]",
         "direct_access_index_spec": {
@@ -100,11 +88,6 @@ Plan: 2 to add, 0 to change, 2 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-vs-index-with-endpoint-[UNIQUE_NAME]/default/files...
-
-This action will result in the deletion or recreation of the following Vector Search indexes.
-Recreating a Delta Sync index re-runs the full embedding pipeline; recreating a Direct Access
-index drops all upserted vectors. Both can be expensive to rebuild:
-  recreate resources.vector_search_indexes.my_index
 Deploying resources...
 Updating deployment state...
 Deployment complete!
@@ -122,6 +105,23 @@ Deployment complete!
   "index_type": "DIRECT_ACCESS",
   "primary_key": "id"
 }
+
+=== Re-plan exposes the leftover drift: the index still points at the old endpoint UUID
+>>> [CLI] bundle plan
+recreate vector_search_indexes.my_index
+
+Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged
+
+>>> [CLI] bundle deploy --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-vs-index-with-endpoint-[UNIQUE_NAME]/default/files...
+
+This action will result in the deletion or recreation of the following Vector Search indexes.
+Recreating a Delta Sync index re-runs the full embedding pipeline; recreating a Direct Access
+index drops all upserted vectors. Both can be expensive to rebuild:
+  recreate resources.vector_search_indexes.my_index
+Deploying resources...
+Updating deployment state...
+Deployment complete!
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
