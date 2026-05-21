@@ -16,17 +16,19 @@ import (
 // so unit tests can inject stubs without hitting the real OS keyring or
 // filesystem. Production code uses defaultCacheFactories().
 type cacheFactories struct {
-	newFile      func(context.Context) (cache.TokenCache, error)
-	newKeyring   func() cache.TokenCache
-	probeKeyring func() error
+	newFile          func(context.Context) (cache.TokenCache, error)
+	newKeyring       func() cache.TokenCache
+	probeKeyring     func() error
+	probeKeyringRead func() error
 }
 
 // defaultCacheFactories returns the production factory set.
 func defaultCacheFactories() cacheFactories {
 	return cacheFactories{
-		newFile:      func(ctx context.Context) (cache.TokenCache, error) { return NewFileTokenCache(ctx) },
-		newKeyring:   NewKeyringCache,
-		probeKeyring: ProbeKeyring,
+		newFile:          func(ctx context.Context) (cache.TokenCache, error) { return NewFileTokenCache(ctx) },
+		newKeyring:       NewKeyringCache,
+		probeKeyring:     ProbeKeyring,
+		probeKeyringRead: ProbeKeyringRead,
 	}
 }
 
@@ -37,11 +39,22 @@ func defaultCacheFactories() cacheFactories {
 // override is usually the command-level flag value. Pass "" when the command
 // has no flag; precedence then falls through to env -> config -> default.
 //
+// When the resolver returns (mode=Secure, source=Default) and the OS
+// keyring is definitively unreachable (a non-timeout probe error), reads
+// fall back to the plaintext file cache so post-upgrade users with legacy
+// token-cache.json entries are not stranded. Unlike the login path, this
+// fallback does not persist auth_storage = plaintext to [__settings__];
+// pinning happens only on successful login.
+//
 // Every CLI code path that calls u2m.NewPersistentAuth must route the result
 // through u2m.WithTokenCache, otherwise the SDK defaults to the file cache
 // and splits the user's tokens across two backends.
 func ResolveCache(ctx context.Context, override StorageMode) (cache.TokenCache, StorageMode, error) {
-	return resolveCacheWith(ctx, override, defaultCacheFactories())
+	inner, mode, err := resolveCacheForReadWith(ctx, override, defaultCacheFactories())
+	if err != nil {
+		return nil, "", err
+	}
+	return withNotFoundHint(ctx, inner, mode), mode, nil
 }
 
 // ResolveCacheForLogin resolves the cache like ResolveCache with extra rules
@@ -59,15 +72,15 @@ func ResolveCache(ctx context.Context, override StorageMode) (cache.TokenCache, 
 //     The timeout is ambiguous (locked vs hung); a misdiagnosis fails
 //     the final Store rather than silently downgrading to plaintext.
 //
-// Rules 1 and 2 are dormant today: the resolver default is plaintext, so
-// (mode=Secure, explicit=false) is unreachable. They activate when the
-// default flips to secure at GA.
-//
 // Login-specific. Read paths (auth token, bundle commands) keep the original
 // keyring error so they don't silently mint plaintext copies of tokens that
 // were stored in the keyring on another machine.
 func ResolveCacheForLogin(ctx context.Context, override StorageMode) (cache.TokenCache, StorageMode, error) {
-	return resolveCacheForLoginWith(ctx, override, defaultCacheFactories())
+	inner, mode, err := resolveCacheForLoginWith(ctx, override, defaultCacheFactories())
+	if err != nil {
+		return nil, "", err
+	}
+	return withNotFoundHint(ctx, inner, mode), mode, nil
 }
 
 // WrapForOAuthArgument wraps tokenCache so SDK-side writes (Challenge, refresh)
@@ -85,8 +98,11 @@ func WrapForOAuthArgument(tokenCache cache.TokenCache, mode StorageMode, arg u2m
 	return NewDualWritingTokenCache(tokenCache, arg)
 }
 
-// resolveCacheWith is the pure form of ResolveCache. It takes the factory
-// set as a parameter so tests can inject stubs.
+// resolveCacheWith is the pure form of ResolveCache without the read-path
+// fallback. Takes the factory set as a parameter so tests can inject stubs.
+// Used directly by ResolveCacheForLogin (which has its own fallback rules)
+// and indirectly by ResolveCache (which adds the read-path fallback in
+// resolveCacheForReadWith).
 func resolveCacheWith(ctx context.Context, override StorageMode, f cacheFactories) (cache.TokenCache, StorageMode, error) {
 	mode, err := ResolveStorageMode(ctx, override)
 	if err != nil {
@@ -106,6 +122,61 @@ func resolveCacheWith(ctx context.Context, override StorageMode, f cacheFactorie
 	}
 }
 
+// resolveCacheForReadWith is the pure form of ResolveCache. It applies the
+// read-path fallback: when mode is secure-from-default and the keyring
+// probes as definitively unavailable, return the file cache instead.
+// Timeouts keep the keyring (could be transient).
+func resolveCacheForReadWith(ctx context.Context, override StorageMode, f cacheFactories) (cache.TokenCache, StorageMode, error) {
+	mode, source, err := ResolveStorageModeWithSource(ctx, override)
+	if err != nil {
+		return nil, "", err
+	}
+	return applyReadFallback(ctx, mode, source.Explicit(), f)
+}
+
+// applyReadFallback realizes the read-path fallback. Mirrors
+// applyLoginFallback but:
+//
+//   - Uses a read-only probe (ProbeKeyringRead) so calls do not write to
+//     the keyring on every CLI invocation.
+//   - Does not persist auth_storage = plaintext. Pinning happens only on
+//     successful login, where the write-probe gives us stronger evidence
+//     that the keyring is truly unavailable on this machine.
+//
+// Explicit secure is honored: callers who asked for secure get the keyring
+// cache even if the probe fails, so the actual Lookup error surfaces the
+// unreachability instead of silently using a different backend.
+func applyReadFallback(ctx context.Context, mode StorageMode, explicit bool, f cacheFactories) (cache.TokenCache, StorageMode, error) {
+	switch mode {
+	case StorageModePlaintext:
+		c, err := f.newFile(ctx)
+		if err != nil {
+			return nil, "", fmt.Errorf("open file token cache: %w", err)
+		}
+		return c, mode, nil
+	case StorageModeSecure:
+		if explicit {
+			return f.newKeyring(), mode, nil
+		}
+		if probeErr := f.probeKeyringRead(); probeErr != nil {
+			var timeoutErr *TimeoutError
+			if errors.As(probeErr, &timeoutErr) {
+				log.Debugf(ctx, "keyring read probe timed out (%v); staying on keyring", probeErr)
+				return f.newKeyring(), mode, nil
+			}
+			log.Debugf(ctx, "secure storage unavailable on read path (%v), using file cache", probeErr)
+			fileCache, fileErr := f.newFile(ctx)
+			if fileErr != nil {
+				return nil, "", fmt.Errorf("open file token cache: %w", fileErr)
+			}
+			return fileCache, StorageModePlaintext, nil
+		}
+		return f.newKeyring(), mode, nil
+	default:
+		return nil, "", fmt.Errorf("unsupported storage mode %q", string(mode))
+	}
+}
+
 // resolveCacheForLoginWith is the pure form of ResolveCacheForLogin. It takes
 // the factory set as a parameter so tests can inject stubs.
 func resolveCacheForLoginWith(ctx context.Context, override StorageMode, f cacheFactories) (cache.TokenCache, StorageMode, error) {
@@ -120,12 +191,6 @@ func resolveCacheForLoginWith(ctx context.Context, override StorageMode, f cache
 // resolved mode and whether the user explicitly asked for it. Split out so
 // tests can drive the (mode, explicit) input space directly without depending
 // on whatever the resolver's default mode happens to be at any point in time.
-//
-// Pin-on-success across modes (locking in the first working behavior to
-// insulate users from keyring flakiness) is intentionally not implemented
-// here. It lands at GA alongside the default flip; pinning before the
-// flip would freeze every default user into plaintext and make the flip a
-// no-op for them.
 func applyLoginFallback(ctx context.Context, mode StorageMode, explicit bool, f cacheFactories) (cache.TokenCache, StorageMode, error) {
 	switch mode {
 	case StorageModePlaintext:
@@ -153,9 +218,7 @@ func applyLoginFallback(ctx context.Context, mode StorageMode, explicit bool, f 
 			if fileErr != nil {
 				return nil, "", fmt.Errorf("open file token cache: %w", fileErr)
 			}
-			if err := persistPlaintextFallback(ctx); err != nil {
-				log.Debugf(ctx, "persisting auth_storage fallback failed: %v", err)
-			}
+			persistPlaintextFallback(ctx)
 			return fileCache, StorageModePlaintext, nil
 		}
 		return f.newKeyring(), mode, nil
@@ -168,12 +231,46 @@ func applyLoginFallback(ctx context.Context, mode StorageMode, explicit bool, f 
 // in .databrickscfg so subsequent commands skip the (slow/blocking) keyring
 // probe and route straight to the file cache.
 //
-// Only called on the (mode=Secure, explicit=false) probe-failure branch. That
-// branch is unreachable today (resolver default is plaintext), so this is
-// dormant infrastructure: it activates when the default flips to secure
-// at GA and lets default-on-broken-keyring users avoid a 3s probe on every
-// command.
-func persistPlaintextFallback(ctx context.Context) error {
+// Only called on the (mode=Secure, explicit=false) probe-failure branch.
+// Best-effort: persistence failures are logged at debug and never block
+// login.
+func persistPlaintextFallback(ctx context.Context) {
 	configPath := env.Get(ctx, "DATABRICKS_CONFIG_FILE")
-	return databrickscfg.SetConfiguredAuthStorage(ctx, string(StorageModePlaintext), configPath)
+	if err := databrickscfg.SetConfiguredAuthStorage(ctx, string(StorageModePlaintext), configPath); err != nil {
+		log.Debugf(ctx, "persist auth_storage=plaintext fallback failed: %v", err)
+	}
+}
+
+// PinSecureMode persists auth_storage = secure to [__settings__] when the
+// user is currently on the secure-from-default path. Once pinned, subsequent
+// invocations see source=Config (explicit), so applyLoginFallback returns an
+// error on a transient keyring probe failure instead of silently demoting
+// the user to plaintext.
+//
+// No-op when mode is not secure or when the user already chose a mode
+// explicitly via override, env var, or config. override must be the same
+// value the caller passed to ResolveCacheForLogin so the source check sees
+// the caller's intent rather than re-resolving without it.
+//
+// Persistence failures are logged at warn: they do not block login, but
+// the user should know the pin did not happen, since a later transient
+// keyring failure could then silently route a default-secure user to
+// plaintext. Concurrent logins racing this write is benign because both
+// write the same value.
+func PinSecureMode(ctx context.Context, mode, override StorageMode) {
+	if mode != StorageModeSecure {
+		return
+	}
+	_, source, err := ResolveStorageModeWithSource(ctx, override)
+	if err != nil {
+		log.Debugf(ctx, "pin secure mode: resolve: %v", err)
+		return
+	}
+	if source.Explicit() {
+		return
+	}
+	configPath := env.Get(ctx, "DATABRICKS_CONFIG_FILE")
+	if err := databrickscfg.SetConfiguredAuthStorage(ctx, string(StorageModeSecure), configPath); err != nil {
+		log.Warnf(ctx, "could not persist auth_storage=secure to %s: %v. Future commands may need DATABRICKS_AUTH_STORAGE=secure to keep using the OS keyring.", configPath, err)
+	}
 }

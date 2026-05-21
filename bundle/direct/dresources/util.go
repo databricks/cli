@@ -2,8 +2,6 @@ package dresources
 
 import (
 	"errors"
-	"fmt"
-	"regexp"
 
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/databricks-sdk-go/retries"
@@ -22,10 +20,6 @@ type PostgresNameComponents struct {
 	EndpointID string
 }
 
-type StateLifecycle struct {
-	Started *bool `json:"started,omitempty"`
-}
-
 // ParsePostgresName extracts project, branch, and endpoint IDs from a hierarchical Postgres resource name.
 // Returns an error if the name doesn't match the expected format.
 func ParsePostgresName(name string) (PostgresNameComponents, error) {
@@ -39,6 +33,10 @@ func ParsePostgresName(name string) (PostgresNameComponents, error) {
 		BranchID:   matches[2],
 		EndpointID: matches[3],
 	}, nil
+}
+
+type StateLifecycle struct {
+	Started *bool `json:"started,omitempty"`
 }
 
 // This is copied from the retries package of the databricks-sdk-go. It should be made public,

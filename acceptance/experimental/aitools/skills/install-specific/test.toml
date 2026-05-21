@@ -1,0 +1,50 @@
+Env.DATABRICKS_SKILLS_BASE_URL = "$DATABRICKS_HOST"
+Env.DATABRICKS_SKILLS_REF = "test-ref"
+
+Ignore = [
+    ".databricks/aitools/skills/.state.json",
+]
+
+[EnvMatrix]
+DATABRICKS_BUNDLE_ENGINE = []
+
+[[Server]]
+Pattern = "GET /test-ref/manifest.json"
+Response.Body = '''
+{
+  "version": "2",
+  "updated_at": "2026-01-01T00:00:00Z",
+  "skills": {
+    "test-stable-a": {"version": "1.0.0", "files": ["SKILL.md"], "repo_dir": "skills"},
+    "test-stable-b": {"version": "1.0.0", "files": ["SKILL.md"], "repo_dir": "skills"},
+    "test-exp":      {"version": "0.0.1", "files": ["SKILL.md"], "repo_dir": "experimental"}
+  }
+}
+'''
+
+[[Server]]
+Pattern = "GET /test-ref/skills/test-stable-a/SKILL.md"
+Response.Body = '''---
+name: test-stable-a
+---
+
+# A
+'''
+
+[[Server]]
+Pattern = "GET /test-ref/skills/test-stable-b/SKILL.md"
+Response.Body = '''---
+name: test-stable-b
+---
+
+# B
+'''
+
+[[Server]]
+Pattern = "GET /test-ref/experimental/test-exp/SKILL.md"
+Response.Body = '''---
+name: test-exp
+---
+
+# Exp
+'''
