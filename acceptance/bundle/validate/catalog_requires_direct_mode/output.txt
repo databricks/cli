@@ -1,7 +1,7 @@
 Error: Catalog resources are only supported with direct deployment mode
   in databricks.yml:6:5
 
-Catalog resources require direct deployment mode. Set 'bundle.engine: direct' in your databricks.yml or set the DATABRICKS_BUNDLE_ENGINE environment variable to 'direct' to use catalog resources.
+Catalog resources require direct deployment mode. Please set the DATABRICKS_BUNDLE_ENGINE environment variable to 'direct' to use catalog resources.
 Learn more at https://docs.databricks.com/dev-tools/bundles/direct
 
 
