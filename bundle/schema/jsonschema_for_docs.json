@@ -1368,6 +1368,10 @@
                     "$ref": "#/$defs/string",
                     "x-since-version": "v0.287.0"
                   },
+                  "replace_existing": {
+                    "$ref": "#/$defs/bool",
+                    "x-since-version": "v1.0.0"
+                  },
                   "source_branch": {
                     "$ref": "#/$defs/string",
                     "x-since-version": "v0.287.0"
@@ -1389,6 +1393,36 @@
                 "required": [
                   "branch_id",
                   "parent"
+                ]
+              },
+              "resources.PostgresCatalog": {
+                "type": "object",
+                "properties": {
+                  "branch": {
+                    "$ref": "#/$defs/string",
+                    "x-since-version": "v1.0.0"
+                  },
+                  "catalog_id": {
+                    "$ref": "#/$defs/string",
+                    "x-since-version": "v1.0.0"
+                  },
+                  "create_database_if_missing": {
+                    "$ref": "#/$defs/bool",
+                    "x-since-version": "v1.0.0"
+                  },
+                  "lifecycle": {
+                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle",
+                    "x-since-version": "v1.0.0"
+                  },
+                  "postgres_database": {
+                    "$ref": "#/$defs/string",
+                    "x-since-version": "v1.0.0"
+                  }
+                },
+                "additionalProperties": false,
+                "required": [
+                  "catalog_id",
+                  "postgres_database"
                 ]
               },
               "resources.PostgresEndpoint": {
@@ -1429,6 +1463,10 @@
                   "parent": {
                     "$ref": "#/$defs/string",
                     "x-since-version": "v0.287.0"
+                  },
+                  "replace_existing": {
+                    "$ref": "#/$defs/bool",
+                    "x-since-version": "v1.0.0"
                   },
                   "settings": {
                     "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.EndpointSettings",
@@ -1497,6 +1535,59 @@
                 "additionalProperties": false,
                 "required": [
                   "project_id"
+                ]
+              },
+              "resources.PostgresSyncedTable": {
+                "type": "object",
+                "properties": {
+                  "branch": {
+                    "$ref": "#/$defs/string",
+                    "x-since-version": "v1.0.0"
+                  },
+                  "create_database_objects_if_missing": {
+                    "$ref": "#/$defs/bool",
+                    "x-since-version": "v1.0.0"
+                  },
+                  "existing_pipeline_id": {
+                    "$ref": "#/$defs/string",
+                    "x-since-version": "v1.0.0"
+                  },
+                  "lifecycle": {
+                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle",
+                    "x-since-version": "v1.0.0"
+                  },
+                  "new_pipeline_spec": {
+                    "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.NewPipelineSpec",
+                    "x-since-version": "v1.0.0"
+                  },
+                  "postgres_database": {
+                    "$ref": "#/$defs/string",
+                    "x-since-version": "v1.0.0"
+                  },
+                  "primary_key_columns": {
+                    "$ref": "#/$defs/slice/string",
+                    "x-since-version": "v1.0.0"
+                  },
+                  "scheduling_policy": {
+                    "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.SyncedTableSyncedTableSpecSyncedTableSchedulingPolicy",
+                    "x-since-version": "v1.0.0"
+                  },
+                  "source_table_full_name": {
+                    "$ref": "#/$defs/string",
+                    "x-since-version": "v1.0.0"
+                  },
+                  "synced_table_id": {
+                    "$ref": "#/$defs/string",
+                    "x-since-version": "v1.0.0"
+                  },
+                  "timeseries_key": {
+                    "$ref": "#/$defs/string",
+                    "x-since-version": "v1.0.0"
+                  }
+                },
+                "additionalProperties": false,
+                "required": [
+                  "synced_table_id"
                 ]
               },
               "resources.QualityMonitor": {
@@ -2487,6 +2578,11 @@
                   "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.PostgresBranch",
                   "x-since-version": "v0.287.0"
                 },
+                "postgres_catalogs": {
+                  "description": "The Postgres catalog definitions for the bundle, where each key is the name of the catalog. Each entry binds a Unity Catalog catalog to a Postgres database on a Lakebase Autoscaling branch.",
+                  "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.PostgresCatalog",
+                  "x-since-version": "v1.0.0"
+                },
                 "postgres_endpoints": {
                   "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.PostgresEndpoint",
                   "x-since-version": "v0.287.0"
@@ -2494,6 +2590,11 @@
                 "postgres_projects": {
                   "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.PostgresProject",
                   "x-since-version": "v0.287.0"
+                },
+                "postgres_synced_tables": {
+                  "description": "The Postgres synced table definitions for the bundle, where each key is the name of the synced table. Each entry continuously replicates a Unity Catalog Delta source table into a Postgres table on a Lakebase Autoscaling instance.",
+                  "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.PostgresSyncedTable",
+                  "x-since-version": "v1.0.0"
                 },
                 "quality_monitors": {
                   "description": "The quality monitor definitions for the bundle, where each key is the name of the quality monitor.",
@@ -8334,6 +8435,24 @@
                 "ENDPOINT_TYPE_READ_ONLY"
               ]
             },
+            "postgres.NewPipelineSpec": {
+              "type": "object",
+              "properties": {
+                "budget_policy_id": {
+                  "$ref": "#/$defs/string",
+                  "x-since-version": "v1.0.0"
+                },
+                "storage_catalog": {
+                  "$ref": "#/$defs/string",
+                  "x-since-version": "v1.0.0"
+                },
+                "storage_schema": {
+                  "$ref": "#/$defs/string",
+                  "x-since-version": "v1.0.0"
+                }
+              },
+              "additionalProperties": false
+            },
             "postgres.ProjectCustomTag": {
               "type": "object",
               "properties": {
@@ -8381,6 +8500,9 @@
                 }
               },
               "additionalProperties": false
+            },
+            "postgres.SyncedTableSyncedTableSpecSyncedTableSchedulingPolicy": {
+              "type": "string"
             },
             "serving.Ai21LabsConfig": {
               "type": "object",
@@ -9748,6 +9870,12 @@
                     "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.PostgresBranch"
                   }
                 },
+                "resources.PostgresCatalog": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.PostgresCatalog"
+                  }
+                },
                 "resources.PostgresEndpoint": {
                   "type": "object",
                   "additionalProperties": {
@@ -9758,6 +9886,12 @@
                   "type": "object",
                   "additionalProperties": {
                     "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.PostgresProject"
+                  }
+                },
+                "resources.PostgresSyncedTable": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.PostgresSyncedTable"
                   }
                 },
                 "resources.QualityMonitor": {
