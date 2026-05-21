@@ -373,6 +373,9 @@ github.com/databricks/cli/bundle/config.Script:
   "content":
     "description": |-
       PLACEHOLDER
+  "env":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config.Sync:
   "exclude":
     "description": |-
