@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/charmbracelet/huh"
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
@@ -21,6 +22,18 @@ import (
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/spf13/cobra"
 )
+
+// ExitInterrupted is the exit code main.go uses when the user cancelled an
+// interactive prompt with Ctrl+C. Matches the POSIX 128+SIGINT convention so
+// shell scripts can distinguish a user cancel from a genuine command failure.
+const ExitInterrupted = 130
+
+// IsInterrupted reports whether err indicates the user cancelled an
+// interactive prompt with Ctrl+C. Covers both cmdio's TUI prompts and the
+// huh library used by aitools. main.go reads this to pick an exit code.
+func IsInterrupted(err error) bool {
+	return errors.Is(err, cmdio.ErrInterrupted) || errors.Is(err, huh.ErrUserAborted)
+}
 
 func New(ctx context.Context) *cobra.Command {
 	cmd := &cobra.Command{
@@ -144,7 +157,13 @@ Stack Trace:
 
 	// Run the command
 	cmd, err = cmd.ExecuteContextC(ctx)
-	if err != nil && !errors.Is(err, ErrAlreadyPrinted) {
+	interrupted := IsInterrupted(err)
+	switch {
+	case err == nil, errors.Is(err, ErrAlreadyPrinted):
+		// nothing to print
+	case interrupted:
+		fmt.Fprintln(cmd.ErrOrStderr(), "cancelled")
+	default:
 		if cmdctx.HasConfigUsed(cmd.Context()) {
 			cfg := cmdctx.ConfigUsed(cmd.Context())
 			err = auth.EnrichAuthError(cmd.Context(), cfg, err)
@@ -152,28 +171,30 @@ Stack Trace:
 		fmt.Fprintf(cmd.ErrOrStderr(), "Error: %s\n", err.Error())
 	}
 
+	exitCode := 0
+	switch {
+	case err == nil:
+	case interrupted:
+		exitCode = ExitInterrupted
+	default:
+		exitCode = 1
+	}
+
 	// Log exit status and error
 	// We only log if logger initialization succeeded and is stored in command
 	// context
 	if logger, ok := log.FromContext(cmd.Context()); ok {
-		if err == nil {
-			logger.Info("completed execution",
-				slog.String("exit_code", "0"))
-		} else if errors.Is(err, ErrAlreadyPrinted) {
-			logger.Debug("failed execution",
-				slog.String("exit_code", "1"),
-			)
-		} else {
+		switch {
+		case err == nil:
+			logger.Info("completed execution", slog.Int("exit_code", exitCode))
+		case errors.Is(err, ErrAlreadyPrinted), interrupted:
+			logger.Debug("failed execution", slog.Int("exit_code", exitCode))
+		default:
 			logger.Info("failed execution",
-				slog.String("exit_code", "1"),
+				slog.Int("exit_code", exitCode),
 				slog.String("error", err.Error()),
 			)
 		}
-	}
-
-	exitCode := 0
-	if err != nil {
-		exitCode = 1
 	}
 
 	commandStr := commandString(cmd)

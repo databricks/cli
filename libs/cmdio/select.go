@@ -521,7 +521,7 @@ func (c *cmdIO) runSelectModel(m *selectModel) (int, error) {
 	}
 	sm := final.(*selectModel)
 	if sm.cancelled {
-		return 0, errCtrlC
+		return 0, ErrInterrupted
 	}
 	return sm.originalIndex(), nil
 }
