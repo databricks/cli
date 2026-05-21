@@ -28,19 +28,12 @@ func TestBuildDescribeCommand(t *testing.T) {
 func TestBuildLoginCommand_AppendsWorkspaceID(t *testing.T) {
 	ctx := t.Context()
 
-	t.Run("profile path emits --workspace-id when set", func(t *testing.T) {
-		cmd := BuildLoginCommand(ctx, "dev", "12345", nil)
-		assert.Equal(t, "databricks auth login --profile dev --workspace-id 12345", cmd)
-	})
-
-	t.Run("profile path omits --workspace-id when empty", func(t *testing.T) {
-		cmd := BuildLoginCommand(ctx, "dev", "", nil)
-		assert.Equal(t, "databricks auth login --profile dev", cmd)
-	})
-
-	t.Run("profile path omits --workspace-id for the 'none' sentinel", func(t *testing.T) {
-		cmd := BuildLoginCommand(ctx, "dev", WorkspaceIDNone, nil)
-		assert.Equal(t, "databricks auth login --profile dev", cmd)
+	t.Run("profile path never emits --workspace-id", func(t *testing.T) {
+		// `auth login --profile foo` already picks up the profile's stored
+		// workspace_id, so we don't re-emit it regardless of value.
+		assert.Equal(t, "databricks auth login --profile dev", BuildLoginCommand(ctx, "dev", "", nil))
+		assert.Equal(t, "databricks auth login --profile dev", BuildLoginCommand(ctx, "dev", "12345", nil))
+		assert.Equal(t, "databricks auth login --profile dev", BuildLoginCommand(ctx, "dev", WorkspaceIDNone, nil))
 	})
 
 	t.Run("unified host path emits --workspace-id when set", func(t *testing.T) {

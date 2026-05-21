@@ -122,10 +122,9 @@ func writeReauthSteps(ctx context.Context, cfg *config.Config, b *strings.Builde
 	case AuthTypeDatabricksCli:
 		// When profile is set, BuildLoginCommand uses --profile and ignores
 		// the OAuthArgument, so skip the conversion entirely. Route through
-		// the helper so this branch picks up shell-quoting on the profile name
-		// and emits --workspace-id consistently with the host-based branch.
+		// the helper so this branch picks up shell-quoting on the profile name.
 		if cfg.Profile != "" {
-			fmt.Fprintf(b, "\n  - Re-authenticate: %s", BuildLoginCommand(ctx, cfg.Profile, cfg.WorkspaceID, nil))
+			fmt.Fprintf(b, "\n  - Re-authenticate: %s", BuildLoginCommand(ctx, cfg.Profile, "", nil))
 			return
 		}
 		oauthArg, argErr := AuthArguments{
@@ -173,14 +172,15 @@ func writeReauthSteps(ctx context.Context, cfg *config.Config, b *strings.Builde
 // workspaceID, when non-empty and not the WorkspaceIDNone sentinel, is
 // emitted as --workspace-id for unified hosts so the suggested reauth
 // targets the same workspace the failing call resolved against (the
-// information the OAuthArgument otherwise drops). It is also re-emitted on
-// the profile path so the suggested reauth pins the same workspace_id the
-// failing call resolved against, even if the profile's persisted value has
-// drifted.
+// information the OAuthArgument otherwise drops).
+//
+// On the profile path workspaceID is ignored: `auth login --profile foo`
+// already picks up the profile's stored workspace_id, so re-emitting it
+// would be redundant.
 //
 // For AccountOAuthArgument and WorkspaceOAuthArgument, workspaceID is
-// intentionally ignored: account args target the account API, and workspace
-// args already identify a workspace via --host.
+// also intentionally ignored: account args target the account API, and
+// workspace args already identify a workspace via --host.
 func BuildLoginCommand(ctx context.Context, profile, workspaceID string, arg u2m.OAuthArgument) string {
 	cmd := []string{
 		"databricks",
@@ -189,9 +189,6 @@ func BuildLoginCommand(ctx context.Context, profile, workspaceID string, arg u2m
 	}
 	if profile != "" {
 		cmd = append(cmd, "--profile", profile)
-		if isExplicitWorkspaceID(workspaceID) {
-			cmd = append(cmd, "--workspace-id", workspaceID)
-		}
 	} else {
 		switch arg := arg.(type) {
 		case u2m.UnifiedOAuthArgument:
