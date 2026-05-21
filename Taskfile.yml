@@ -283,8 +283,16 @@ tasks:
     cmds:
       - ./tools/check_deadcode.py
 
+  check-test-toml:
+    desc: Check that no acceptance test.toml is empty or comment-only
+    sources:
+      - acceptance/**/test.toml
+      - tools/check_test_toml.py
+    cmds:
+      - ./tools/check_test_toml.py
+
   checks:
-    desc: Run quick checks (tidy, whitespace, links, deadcode)
+    desc: Run quick checks (tidy, whitespace, links, deadcode, test.toml)
     # Sequential: `tidy` rewrites go.mod/go.sum and any future tidy work
     # touching more paths should not race with whitespace/link scanners.
     cmds:
@@ -292,6 +300,7 @@ tasks:
       - task: ws
       - task: links
       - task: deadcode
+      - task: check-test-toml
 
   install-pythons:
     desc: Install Python 3.9-3.13 via uv
