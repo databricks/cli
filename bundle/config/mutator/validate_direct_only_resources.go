@@ -51,7 +51,7 @@ func (m *validateDirectOnlyResources) Apply(ctx context.Context, b *bundle.Bundl
 			Severity: diag.Error,
 			Summary:  group.Description.SingularTitle + " resources are only supported with direct deployment mode",
 			Detail: fmt.Sprintf("%s resources require direct deployment mode. "+
-				"Please set the DATABRICKS_BUNDLE_ENGINE environment variable to 'direct' to use %s resources.\n"+
+				"Please set the DATABRICKS_BUNDLE_ENGINE environment variable to 'direct' or set 'bundle.engine: direct' in your databricks.yml to use %s resources.\n"+
 				"Learn more at https://docs.databricks.com/dev-tools/bundles/direct",
 				group.Description.SingularTitle, group.Description.SingularName),
 			Locations: b.Config.GetLocations("resources." + group.Description.PluralName),
