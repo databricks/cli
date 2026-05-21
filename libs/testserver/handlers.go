@@ -959,6 +959,29 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.PostgresOperationGet(name)
 	})
 
+	// Postgres Synced Tables:
+	server.Handle("POST", "/api/2.0/postgres/synced_tables", func(req Request) any {
+		syncedTableID := req.URL.Query().Get("synced_table_id")
+		return req.Workspace.PostgresSyncedTableCreate(req, syncedTableID)
+	})
+
+	server.Handle("GET", "/api/2.0/postgres/synced_tables/{id}", func(req Request) any {
+		return req.Workspace.PostgresSyncedTableGet("synced_tables/" + req.Vars["id"])
+	})
+
+	server.Handle("DELETE", "/api/2.0/postgres/synced_tables/{id}", func(req Request) any {
+		return req.Workspace.PostgresSyncedTableDelete("synced_tables/" + req.Vars["id"])
+	})
+
+	server.Handle("GET", "/api/2.0/postgres/synced_tables/{id}/operations/{operation_id}", func(req Request) any {
+		name := "synced_tables/" + req.Vars["id"] + "/operations/" + req.Vars["operation_id"]
+		return req.Workspace.PostgresOperationGet(name)
+	})
+
+	server.Handle("GET", "/api/2.0/postgres/operations/{operation_id}", func(req Request) any {
+		return req.Workspace.PostgresOperationGet("operations/" + req.Vars["operation_id"])
+	})
+
 	// Catch-all handler for invalid postgres resource names.
 	// This handles cases like GET /api/2.0/postgres/1234 where "1234" is not a valid resource name.
 	server.Handle("GET", "/api/2.0/postgres/{name}", func(req Request) any {
