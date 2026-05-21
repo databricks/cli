@@ -65,7 +65,7 @@ func (p *openapiParser) findRef(typ reflect.Type) (jsonschema.Schema, bool) {
 
 			// Deference current type if it's a pointer.
 			ctyp := typ.Field(i).Type
-			for ctyp.Kind() == reflect.Ptr {
+			for ctyp.Kind() == reflect.Pointer {
 				ctyp = ctyp.Elem()
 			}
 

@@ -121,7 +121,7 @@ func TypePath(typ reflect.Type) string {
 // JSON schema will refer to this path. See TestTypePath for examples outputs.
 func typePath(typ reflect.Type) string {
 	// Pointers have a typ.Name() of "". Dereference them to get the underlying type.
-	for typ.Kind() == reflect.Ptr {
+	for typ.Kind() == reflect.Pointer {
 		typ = typ.Elem()
 	}
 
@@ -159,7 +159,7 @@ func typePath(typ reflect.Type) string {
 // the corresponding $ref in the JSON schema.
 func (c *constructor) walk(typ reflect.Type) (string, error) {
 	// Dereference pointers if necessary.
-	for typ.Kind() == reflect.Ptr {
+	for typ.Kind() == reflect.Pointer {
 		typ = typ.Elem()
 	}
 

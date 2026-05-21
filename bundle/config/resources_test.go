@@ -61,7 +61,7 @@ func TestCustomMarshallerIsImplemented(t *testing.T) {
 		kt := field.Type.Key()
 		assert.Equal(t, reflect.String, kt.Kind(), "Resource %s is not a map with string keys", field.Name)
 		vt := field.Type.Elem()
-		assert.Equal(t, reflect.Ptr, vt.Kind(), "Resource %s is not a map with pointer values", field.Name)
+		assert.Equal(t, reflect.Pointer, vt.Kind(), "Resource %s is not a map with pointer values", field.Name)
 
 		// Marshalling a resourceStruct will panic if resourceStruct does not have a custom marshaller
 		// This is because resourceStruct embeds a Go SDK struct that implements
