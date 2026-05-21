@@ -1,71 +1,22 @@
 
 >>> [CLI] bundle debug refschema --help
-Service for managing bundle deployment metadata.
+Dumps all available fields for each resource type by walking the relevant types. Each line is a path to a field, type and set of tags:
+- INPUT: field is present in bundle config.
+- STATE: field is present in the state of the resource (direct deployment only).
+- REMOTE: field is present in the remote state of the resource (direct deployment only).
+- ALL: shortcut for all three.
 
 Usage:
-  databricks bundle [flags]
-  databricks bundle [command]
-
-Available Commands
-  complete-version  Complete a version.
-  create-deployment Create a deployment.
-  create-operation  Create an operation.
-  create-version    Create a version.
-  delete-deployment Delete a deployment.
-  get-deployment    Get a deployment.
-  get-operation     Get an operation.
-  get-resource      Get a resource.
-  get-version       Get a version.
-  heartbeat         Send a version heartbeat.
-  list-deployments  List deployments.
-  list-operations   List operations.
-  list-resources    List resources.
-  list-versions     List versions.
+  databricks bundle debug refschema [flags]
 
 Flags:
-  -h, --help   help for bundle
+  -h, --help   help for refschema
 
 Global Flags:
       --debug            enable debug logging
   -o, --output type      output type: text or json (default text)
   -p, --profile string   ~/.databrickscfg profile
   -t, --target string    bundle target to use (if applicable)
-
-Use "databricks bundle [command] --help" for more information about a command.
+      --var strings      set values for variables defined in bundle config. Example: --var="foo=bar"
 
 >>> [CLI] bundle debug refschema
-Error: unknown command "debug" for "databricks bundle"
-
-Usage:
-  databricks bundle [flags]
-  databricks bundle [command]
-
-Available Commands
-  complete-version  Complete a version.
-  create-deployment Create a deployment.
-  create-operation  Create an operation.
-  create-version    Create a version.
-  delete-deployment Delete a deployment.
-  get-deployment    Get a deployment.
-  get-operation     Get an operation.
-  get-resource      Get a resource.
-  get-version       Get a version.
-  heartbeat         Send a version heartbeat.
-  list-deployments  List deployments.
-  list-operations   List operations.
-  list-resources    List resources.
-  list-versions     List versions.
-
-Flags:
-  -h, --help   help for bundle
-
-Global Flags:
-      --debug            enable debug logging
-  -o, --output type      output type: text or json (default text)
-  -p, --profile string   ~/.databrickscfg profile
-  -t, --target string    bundle target to use (if applicable)
-
-Use "databricks bundle [command] --help" for more information about a command.
-
-
-Exit code: 1
