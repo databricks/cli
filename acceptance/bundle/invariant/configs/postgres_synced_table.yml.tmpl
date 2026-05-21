@@ -1,0 +1,16 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+resources:
+  postgres_synced_tables:
+    foo:
+      synced_table_id: lakebase_$UNIQUE_NAME.public.trips_synced
+      source_table_full_name: main.raw.trips
+      primary_key_columns: [id]
+      scheduling_policy: SNAPSHOT
+      postgres_database: appdb
+      branch: projects/test-pg-project-$UNIQUE_NAME/branches/production
+      create_database_objects_if_missing: true
+      new_pipeline_spec:
+        storage_catalog: main
+        storage_schema: pipelines
