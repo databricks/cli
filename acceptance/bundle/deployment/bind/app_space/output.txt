@@ -1,0 +1,46 @@
+
+>>> [CLI] apps create-space test-space-[UNIQUE_NAME] --description Pre-existing space
+{
+  "name": "test-space-[UNIQUE_NAME]",
+  "description": "Pre-existing space"
+}
+
+>>> [CLI] bundle deployment bind foo test-space-[UNIQUE_NAME] --auto-approve
+Updating deployment state...
+Successfully bound app_space with an id 'test-space-[UNIQUE_NAME]'
+Run 'bundle deploy' to deploy changes to your workspace
+
+=== Deploy bundle
+>>> [CLI] bundle deploy --force-lock --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] apps get-space test-space-[UNIQUE_NAME]
+{
+  "name": "test-space-[UNIQUE_NAME]",
+  "description": "This is a test app space"
+}
+
+=== Unbind app space
+>>> [CLI] bundle deployment unbind foo
+Updating deployment state...
+
+=== Destroy bundle
+>>> [CLI] bundle destroy --auto-approve
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!
+
+=== Read the pre-defined app space again (expecting it still exists): 
+>>> [CLI] apps get-space test-space-[UNIQUE_NAME]
+{
+  "name": "test-space-[UNIQUE_NAME]",
+  "description": "This is a test app space"
+}
+
+=== Test cleanup
+>>> [CLI] apps delete-space test-space-[UNIQUE_NAME]
+0

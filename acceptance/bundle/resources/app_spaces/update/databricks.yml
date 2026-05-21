@@ -1,0 +1,8 @@
+bundle:
+  name: test-bundle
+
+resources:
+  app_spaces:
+    mykey:
+      name: myspacename
+      description: my_space_description

@@ -1,0 +1,28 @@
+{
+  "method": "POST",
+  "path": "/api/2.0/app-spaces",
+  "body": {
+    "description": "my_space_description",
+    "name": "myspacename",
+    "resources": [
+      {
+        "name": "my-serving-endpoint",
+        "serving_endpoint": {
+          "name": "my-endpoint",
+          "permission": "CAN_QUERY"
+        }
+      },
+      {
+        "name": "my-warehouse",
+        "sql_warehouse": {
+          "id": "warehouse-id-1",
+          "permission": "CAN_USE"
+        }
+      }
+    ]
+  }
+}
+{
+  "method": "DELETE",
+  "path": "/api/2.0/app-spaces/myspacename"
+}
