@@ -1,0 +1,17 @@
+bundle:
+  name: test-bundle
+
+artifacts:
+  my_test_code:
+    type: whl
+    path: "./my_test_code"
+    build: python setup.py bdist_wheel
+    dynamic_version: true
+
+resources:
+  pipelines:
+    test_pipeline:
+      name: "My Wheel Pipeline"
+      environment:
+        dependencies:
+          - ./my_test_code/dist/*.whl
