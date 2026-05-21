@@ -113,6 +113,24 @@ func (c switchToPatchedWheels) Apply(ctx context.Context, b *bundle.Bundle) diag
 		}
 	}
 
+	// Update resources.pipelines.*.environment.dependencies[*]
+	for pipelineName, pipelineRef := range b.Config.Resources.Pipelines {
+		if pipelineRef == nil || pipelineRef.Environment == nil {
+			continue
+		}
+		deps := pipelineRef.Environment.Dependencies
+		for depInd, dep := range deps {
+			base, extras := patchwheel.SplitWheelExtras(dep)
+			repl := replacements[base]
+			if repl != "" {
+				log.Debugf(ctx, "Updating resources.pipelines.%s.environment.dependencies[%d] from %s to %s", pipelineName, depInd, dep, repl+extras)
+				deps[depInd] = repl + extras
+			} else {
+				log.Debugf(ctx, "Not updating resources.pipelines.%s.environment.dependencies[%d] from %s. Available replacements: %v", pipelineName, depInd, dep, slices.Sorted(maps.Keys(replacements)))
+			}
+		}
+	}
+
 	return nil
 }
 

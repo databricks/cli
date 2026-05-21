@@ -1,0 +1,13 @@
+trace $CLI bundle deploy
+
+trace find.py --expect 2 whl
+
+title "Expecting the patched wheel in the pipeline environment"
+trace print_requests.py --sort --keep //api/2.0/pipelines | contains.py \
+  'artifacts/.internal/my_test_code-0.0.1+' \
+  '!artifacts/.internal/my_test_code-0.0.1-py3-none-any.whl'
+
+title "Expecting the patched and original wheels to be uploaded"
+trace jq .path < out.requests.txt | grep import | grep whl | sort
+
+rm out.requests.txt
