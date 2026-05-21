@@ -20,8 +20,8 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "endpoints",
-		Short: `*Beta* These APIs manage endpoint configurations for this account.`,
-		Long: `This command is in Beta and may change without notice.
+		Short: `*Public Preview* These APIs manage endpoint configurations for this account.`,
+		Long: `This command is in Public Preview and may change without notice.
 
 These APIs manage endpoint configurations for this account.`,
 		GroupID: "provisioning",
@@ -29,8 +29,8 @@ These APIs manage endpoint configurations for this account.`,
 	}
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	// Add methods
 	cmd.AddCommand(newCreateEndpoint())
@@ -67,8 +67,8 @@ func newCreateEndpoint() *cobra.Command {
 	// TODO: complex arg: azure_private_endpoint_info
 
 	cmd.Use = "create-endpoint PARENT DISPLAY_NAME REGION"
-	cmd.Short = `*Beta* Create a network endpoint.`
-	cmd.Long = `This command is in Beta and may change without notice.
+	cmd.Short = `*Public Preview* Create a network endpoint.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
 
 Create a network endpoint.
 
@@ -91,8 +91,8 @@ Create a network endpoint.
     REGION: The cloud provider region where this endpoint is located.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
@@ -166,8 +166,8 @@ func newDeleteEndpoint() *cobra.Command {
 	var deleteEndpointReq networking.DeleteEndpointRequest
 
 	cmd.Use = "delete-endpoint NAME"
-	cmd.Short = `*Beta* Delete a network endpoint.`
-	cmd.Long = `This command is in Beta and may change without notice.
+	cmd.Short = `*Public Preview* Delete a network endpoint.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
 
 Delete a network endpoint.
 
@@ -176,8 +176,8 @@ Delete a network endpoint.
   delete corresponding network resources in your cloud provider account.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -225,16 +225,16 @@ func newGetEndpoint() *cobra.Command {
 	var getEndpointReq networking.GetEndpointRequest
 
 	cmd.Use = "get-endpoint NAME"
-	cmd.Short = `*Beta* Get a network endpoint.`
-	cmd.Long = `This command is in Beta and may change without notice.
+	cmd.Short = `*Public Preview* Get a network endpoint.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
 
 Get a network endpoint.
 
   Gets details of a specific network endpoint.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -296,8 +296,8 @@ func newListEndpoints() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-endpoints PARENT"
-	cmd.Short = `*Beta* List network endpoints.`
-	cmd.Long = `This command is in Beta and may change without notice.
+	cmd.Short = `*Public Preview* List network endpoints.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
 
 List network endpoints.
 
@@ -308,8 +308,8 @@ List network endpoints.
       accounts/{account_id}.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
