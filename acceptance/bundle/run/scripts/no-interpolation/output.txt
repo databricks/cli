@@ -1,40 +1,64 @@
 
 >>> [CLI] bundle deploy
-Error: Found ${FOO} in script one. Interpolation syntax ${...} is not allowed in scripts
+Error: Found ${FOO} in script one.content. Interpolation syntax ${...} is not supported in script content
   at scripts.one.content
   in databricks.yml:6:14
 
-We do not support the ${...} interpolation syntax in scripts because
-it's ambiguous whether it's a variable reference or reference to an
-environment variable.
+Script content is passed to the shell as-is, so ${...} is left for the shell to expand.
+To interpolate a bundle value into the script, declare an environment variable
+in the script's "env:" section and reference it from "content" with $NAME:
 
-Error: Found ${var.BAR} in script two. Interpolation syntax ${...} is not allowed in scripts
+  scripts:
+    one:
+      env:
+        MY_VAR: ${var.foo}
+      content: echo "$MY_VAR"
+
+Error: Found ${var.BAR} in script two.content. Interpolation syntax ${...} is not supported in script content
   at scripts.two.content
   in databricks.yml:8:14
 
-We do not support the ${...} interpolation syntax in scripts because
-it's ambiguous whether it's a variable reference or reference to an
-environment variable.
+Script content is passed to the shell as-is, so ${...} is left for the shell to expand.
+To interpolate a bundle value into the script, declare an environment variable
+in the script's "env:" section and reference it from "content" with $NAME:
+
+  scripts:
+    two:
+      env:
+        MY_VAR: ${var.foo}
+      content: echo "$MY_VAR"
 
 
 Exit code: 1
 
 >>> [CLI] bundle run foo
-Error: Found ${FOO} in script one. Interpolation syntax ${...} is not allowed in scripts
+Error: Found ${FOO} in script one.content. Interpolation syntax ${...} is not supported in script content
   at scripts.one.content
   in databricks.yml:6:14
 
-We do not support the ${...} interpolation syntax in scripts because
-it's ambiguous whether it's a variable reference or reference to an
-environment variable.
+Script content is passed to the shell as-is, so ${...} is left for the shell to expand.
+To interpolate a bundle value into the script, declare an environment variable
+in the script's "env:" section and reference it from "content" with $NAME:
 
-Error: Found ${var.BAR} in script two. Interpolation syntax ${...} is not allowed in scripts
+  scripts:
+    one:
+      env:
+        MY_VAR: ${var.foo}
+      content: echo "$MY_VAR"
+
+Error: Found ${var.BAR} in script two.content. Interpolation syntax ${...} is not supported in script content
   at scripts.two.content
   in databricks.yml:8:14
 
-We do not support the ${...} interpolation syntax in scripts because
-it's ambiguous whether it's a variable reference or reference to an
-environment variable.
+Script content is passed to the shell as-is, so ${...} is left for the shell to expand.
+To interpolate a bundle value into the script, declare an environment variable
+in the script's "env:" section and reference it from "content" with $NAME:
+
+  scripts:
+    two:
+      env:
+        MY_VAR: ${var.foo}
+      content: echo "$MY_VAR"
 
 
 Exit code: 1
