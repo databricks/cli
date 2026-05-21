@@ -149,8 +149,8 @@ func TestAppDoUpdate_UpdateMaskHasAllFields(t *testing.T) {
 
 	fields := reflect.TypeFor[apps.App]()
 	var allFields []string
-	for i := range fields.NumField() {
-		field := fields.Field(i)
+	for field := range fields.Fields() {
+		field := field
 		jsonTag := field.Tag.Get("json")
 		if jsonTag == "" || jsonTag == "-" {
 			continue

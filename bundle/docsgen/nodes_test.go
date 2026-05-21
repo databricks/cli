@@ -25,7 +25,7 @@ func TestBuildNodes_ChildExpansion(t *testing.T) {
 						Items: &jsonschema.Schema{
 							Type: "object",
 							Properties: map[string]*jsonschema.Schema{
-								"listSub": {Reference: strPtr("#/$defs/github.com/listSub")},
+								"listSub": {Reference: new("#/$defs/github.com/listSub")},
 							},
 						},
 					},
@@ -61,9 +61,9 @@ func TestBuildNodes_ChildExpansion(t *testing.T) {
 					"myMap": {
 						Type: "object",
 						AdditionalProperties: &jsonschema.Schema{
-							Reference: strPtr("#/$defs/github.com/myMap"),
+							Reference: new("#/$defs/github.com/myMap"),
 							Properties: map[string]*jsonschema.Schema{
-								"mapSub": {Type: "object", Reference: strPtr("#/$defs/github.com/mapSub")},
+								"mapSub": {Type: "object", Reference: new("#/$defs/github.com/mapSub")},
 							},
 						},
 					},
@@ -73,7 +73,7 @@ func TestBuildNodes_ChildExpansion(t *testing.T) {
 				"github.com/myMap": {
 					Type: "object",
 					Properties: map[string]*jsonschema.Schema{
-						"mapSub": {Type: "boolean", Reference: strPtr("#/$defs/github.com/mapSub")},
+						"mapSub": {Type: "boolean", Reference: new("#/$defs/github.com/mapSub")},
 					},
 				},
 				"github.com/mapSub": {
@@ -171,6 +171,7 @@ func TestDoNotSuggestFields(t *testing.T) {
 	assert.Equal(t, "nestedNotDoNotSuggestField", nodes[0].Attributes[0].Title)
 }
 
+//go:fix inline
 func strPtr(s string) *string {
-	return &s
+	return new(s)
 }
