@@ -6,7 +6,7 @@
 
 * The Databricks CLI is now generally available with version v1.0.0 as the first major release 🚀. From this version on, the CLI follows semantic versioning (see [README](README.md)). This change does not impact DABs or other existing commands beyond the changes listed below.
 * The 0.299.x line continues to receive security-critical patches through May 20, 2027; see [SECURITY](SECURITY.md) for the support policy.
-* Starting with v1.0.0, the CLI will use immutable release tags, providing users with better security guarantees.
+* Starting with v1.0.0, the CLI will use [immutable release tags](https://docs.github.com/en/code-security/concepts/supply-chain-security/immutable-releases) to increase security against supply chain attacks.
 
 ### CLI
 
