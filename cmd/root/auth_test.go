@@ -514,6 +514,7 @@ token = named-token
 
 	w := cmdctx.WorkspaceClient(cmd.Context())
 	require.NotNil(t, w)
-	assert.Equal(t, "", w.Config.Profile)
+	// Pinned so the OAuth cache key matches what `databricks auth login` writes.
+	assert.Equal(t, "DEFAULT", w.Config.Profile)
 	assert.Equal(t, "https://default.cloud.databricks.com", w.Config.Host)
 }
