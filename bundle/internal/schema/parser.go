@@ -58,13 +58,13 @@ func (p *openapiParser) findRef(typ reflect.Type) (jsonschema.Schema, bool) {
 
 	// Check for embedded Databricks Go SDK types.
 	if typ.Kind() == reflect.Struct {
-		for i := range typ.NumField() {
-			if !typ.Field(i).Anonymous {
+		for field := range typ.Fields() {
+			if !field.Anonymous {
 				continue
 			}
 
 			// Deference current type if it's a pointer.
-			ctyp := typ.Field(i).Type
+			ctyp := field.Type
 			for ctyp.Kind() == reflect.Ptr {
 				ctyp = ctyp.Elem()
 			}
