@@ -47,7 +47,7 @@ func (s VectorSearchIndexState) MarshalJSON() ([]byte, error) {
 // VectorSearchIndexRemote is remote state. endpoint_uuid is looked up from the
 // endpoint service since the index API itself doesn't return it.
 type VectorSearchIndexRemote struct {
-	*vectorsearch.VectorIndex
+	vectorsearch.VectorIndex
 	EndpointUuid string `json:"endpoint_uuid,omitempty"`
 }
 
@@ -116,7 +116,7 @@ func (r *ResourceVectorSearchIndex) DoRead(ctx context.Context, id string) (*Vec
 		return nil, err
 	}
 	return &VectorSearchIndexRemote{
-		VectorIndex:  index,
+		VectorIndex:  *index,
 		EndpointUuid: endpointUuid,
 	}, nil
 }
@@ -135,7 +135,7 @@ func (r *ResourceVectorSearchIndex) DoCreate(ctx context.Context, config *Vector
 		return "", nil, err
 	}
 	config.EndpointUuid = endpointUuid
-	return config.Name, &VectorSearchIndexRemote{VectorIndex: index, EndpointUuid: endpointUuid}, nil
+	return config.Name, &VectorSearchIndexRemote{VectorIndex: *index, EndpointUuid: endpointUuid}, nil
 }
 
 // No DoUpdate: vector search indexes have no update API. All SDK fields are
@@ -170,7 +170,7 @@ func (r *ResourceVectorSearchIndex) WaitAfterCreate(ctx context.Context, id stri
 	if err != nil {
 		return nil, err
 	}
-	return &VectorSearchIndexRemote{VectorIndex: index, EndpointUuid: config.EndpointUuid}, nil
+	return &VectorSearchIndexRemote{VectorIndex: *index, EndpointUuid: config.EndpointUuid}, nil
 }
 
 // WaitAfterDelete polls GetIndex until it returns 404. The DELETE call is
