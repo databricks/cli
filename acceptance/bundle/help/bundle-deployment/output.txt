@@ -19,9 +19,6 @@ After binding, the existing workspace resource will be managed by your bundle.
 Usage:
   databricks bundle deployment [command]
 
-Aliases:
-  deployment, deployments
-
 Available Commands:
   bind        Bind bundle-defined resources to existing resources
   get         Get a deployment.
