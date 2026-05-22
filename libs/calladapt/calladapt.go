@@ -46,7 +46,7 @@ func (c *BoundCaller) call(args ...any) ([]reflect.Value, error) {
 		it := c.InTypes[i]
 		if a == nil {
 			// Allow untyped nil for pointer types, converting to typed nil
-			if it.Kind() == reflect.Ptr {
+			if it.Kind() == reflect.Pointer {
 				in[i+1] = reflect.Zero(it)
 				continue
 			}

@@ -523,7 +523,7 @@ func isEmpty(rv reflect.Value) bool {
 }
 
 func isEmptyStruct(rv reflect.Value) bool {
-	if rv.Kind() == reflect.Ptr {
+	if rv.Kind() == reflect.Pointer {
 		if rv.IsNil() {
 			return false
 		}
