@@ -439,9 +439,14 @@ func ExportStateFromData(data Database) resourcestate.ExportedResourcesMap {
 	result := make(resourcestate.ExportedResourcesMap)
 	for key, entry := range data.State {
 		var etag string
-		// Extract etag for dashboards.
-		// covered by test case: bundle/deploy/dashboard/detect-change
-		if strings.Contains(key, ".dashboards.") && len(entry.State) > 0 {
+		// Extract etag for resources that use it for drift detection
+		// (dashboards and genie_spaces). Both follow the same pattern of
+		// persisting the backend-returned etag in state and comparing it
+		// against the remote on the next plan via OverrideChangeDesc.
+		// covered by test cases:
+		//   - bundle/deploy/dashboard/detect-change
+		//   - bundle/resources/genie_spaces/simple
+		if (strings.Contains(key, ".dashboards.") || strings.Contains(key, ".genie_spaces.")) && len(entry.State) > 0 {
 			var holder struct {
 				Etag string `json:"etag"`
 			}

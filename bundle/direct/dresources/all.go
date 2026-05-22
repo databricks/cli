@@ -29,6 +29,7 @@ var SupportedResources = map[string]any{
 	"clusters":                (*ResourceCluster)(nil),
 	"registered_models":       (*ResourceRegisteredModel)(nil),
 	"dashboards":              (*ResourceDashboard)(nil),
+	"genie_spaces":            (*ResourceGenieSpace)(nil),
 	"secret_scopes":           (*ResourceSecretScope)(nil),
 	"model_serving_endpoints": (*ResourceModelServingEndpoint)(nil),
 	"quality_monitors":        (*ResourceQualityMonitor)(nil),
@@ -48,6 +49,7 @@ var SupportedResources = map[string]any{
 	"secret_scopes.permissions":           (*ResourceSecretScopeAcls)(nil),
 	"model_serving_endpoints.permissions": (*ResourcePermissions)(nil),
 	"dashboards.permissions":              (*ResourcePermissions)(nil),
+	"genie_spaces.permissions":            (*ResourcePermissions)(nil),
 	"vector_search_endpoints.permissions": (*ResourcePermissions)(nil),
 
 	// Grants

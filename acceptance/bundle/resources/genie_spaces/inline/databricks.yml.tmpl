@@ -1,0 +1,22 @@
+bundle:
+  name: deploy-genie-space-inline-$UNIQUE_NAME
+
+resources:
+  genie_spaces:
+    sales_analytics:
+      title: "Sales Analytics Inline Genie"
+      description: "Inline serialized_space test"
+      warehouse_id: "test-warehouse-id"
+      parent_path: /Users/$CURRENT_USER_NAME
+      serialized_space:
+        version: 1
+        config:
+          sample_questions:
+            - id: "sq-001"
+              question: ["What is the total revenue?"]
+        data_sources:
+          tables:
+            - identifier: "main.sales.orders"
+              column_configs:
+                - column_name: "amount"
+                  get_example_values: true

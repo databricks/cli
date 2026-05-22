@@ -1,0 +1,2 @@
+# Genie spaces are only deployed via the direct deployment engine.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

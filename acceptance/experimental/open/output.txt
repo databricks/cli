@@ -9,7 +9,7 @@
 
 === unknown resource type
 >>> [CLI] experimental open --url unknown 123
-Error: unknown resource type "unknown", must be one of: alerts, apps, clusters, dashboards, experiments, jobs, model_serving_endpoints, models, notebooks, pipelines, queries, registered_models, warehouses
+Error: unknown resource type "unknown", must be one of: alerts, apps, clusters, dashboards, experiments, genie_spaces, jobs, model_serving_endpoints, models, notebooks, pipelines, queries, registered_models, warehouses
 
 Exit code: 1
 
@@ -20,6 +20,7 @@ apps
 clusters
 dashboards
 experiments
+genie_spaces
 jobs
 model_serving_endpoints
 models

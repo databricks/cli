@@ -192,6 +192,9 @@ github.com/databricks/cli/bundle/config.Resources:
   "external_locations":
     "description": |-
       PLACEHOLDER
+  "genie_spaces":
+    "description": |-
+      PLACEHOLDER
   "jobs":
     "description": |-
       The job definitions for the bundle, where each key is the name of the job.
@@ -656,6 +659,37 @@ github.com/databricks/cli/bundle/config/resources.ExternalLocation:
   "url":
     "description": |-
       PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.GenieSpace:
+  "description":
+    "description": |-
+      Description of the Genie space shown alongside the title in the Databricks UI.
+  "etag":
+    "description": |-
+      PLACEHOLDER
+  "file_path":
+    "description": |-
+      Local path to a `.geniespace.json` file holding the serialized Genie space definition. The contents are inlined into `serialized_space` at deploy time. Mutually exclusive with an inline `serialized_space`.
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
+  "parent_path":
+    "description": |-
+      Workspace folder under which to create the Genie space. Immutable: changing this field recreates the resource.
+  "permissions":
+    "description": |-
+      PLACEHOLDER
+  "serialized_space":
+    "description": |-
+      Serialized Genie space body. May be provided inline as a JSON string (or YAML that will be marshalled to JSON) or referenced via `file_path`. To round-trip an existing space into a bundle, use `databricks bundle generate genie-space`.
+  "space_id":
+    "description": |-
+      PLACEHOLDER
+  "title":
+    "description": |-
+      Title of the Genie space shown in the Databricks UI.
+  "warehouse_id":
+    "description": |-
+      ID of the SQL warehouse used to run queries for this Genie space.
 github.com/databricks/cli/bundle/config/resources.JobPermission:
   "group_name":
     "description": |-
