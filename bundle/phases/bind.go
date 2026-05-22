@@ -23,13 +23,20 @@ import (
 func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions, engine engine.EngineType) {
 	log.Info(ctx, "Phase: bind")
 
-	bundle.ApplyContext(ctx, b, lock.Acquire())
-	if logdiag.HasError(ctx) {
+	dl := lock.NewDeploymentLock(b, lock.GoalBind)
+	if err := dl.Acquire(ctx); err != nil {
+		logdiag.LogError(ctx, err)
 		return
 	}
 
 	defer func() {
-		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalBind))
+		status := lock.DeploymentSuccess
+		if logdiag.HasError(ctx) {
+			status = lock.DeploymentFailure
+		}
+		if err := dl.Release(ctx, status); err != nil {
+			log.Warnf(ctx, "Failed to release deployment lock: %v", err)
+		}
 	}()
 
 	if engine.IsDirect() {
@@ -119,13 +126,20 @@ func jsonDump(ctx context.Context, v any, field string) string {
 func Unbind(ctx context.Context, b *bundle.Bundle, bundleType, tfResourceType, resourceKey string, engine engine.EngineType) {
 	log.Info(ctx, "Phase: unbind")
 
-	bundle.ApplyContext(ctx, b, lock.Acquire())
-	if logdiag.HasError(ctx) {
+	dl := lock.NewDeploymentLock(b, lock.GoalUnbind)
+	if err := dl.Acquire(ctx); err != nil {
+		logdiag.LogError(ctx, err)
 		return
 	}
 
 	defer func() {
-		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalUnbind))
+		status := lock.DeploymentSuccess
+		if logdiag.HasError(ctx) {
+			status = lock.DeploymentFailure
+		}
+		if err := dl.Release(ctx, status); err != nil {
+			log.Warnf(ctx, "Failed to release deployment lock: %v", err)
+		}
 	}()
 
 	if engine.IsDirect() {
