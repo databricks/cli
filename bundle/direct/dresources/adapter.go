@@ -414,7 +414,7 @@ func normalizeNilPointer(v any) any {
 		return nil
 	}
 	rv := reflect.ValueOf(v)
-	if rv.Kind() == reflect.Ptr && rv.IsNil() {
+	if rv.Kind() == reflect.Pointer && rv.IsNil() {
 		return nil
 	}
 	return v
@@ -550,7 +550,7 @@ func validatePointerToStruct(t reflect.Type, context string) error {
 	if t == nil {
 		return fmt.Errorf("%s not set", context)
 	}
-	if t.Kind() != reflect.Ptr {
+	if t.Kind() != reflect.Pointer {
 		return fmt.Errorf("%s must be a pointer, got %s", context, t.Kind())
 	}
 	if t.Elem().Kind() != reflect.Struct {
