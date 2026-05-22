@@ -15,17 +15,14 @@ func New() *cobra.Command {
 		Use:    "ssh",
 		Short:  "Connect to Databricks compute with ssh",
 		Hidden: true,
-		Long: `Connect to Databricks compute with ssh.
-
-SSH commands let you setup and establish ssh connections to Databricks compute.
+		Long: `Connect to your Databricks compute and workspace with ssh.
 
 Common workflows:
-  databricks ssh connect                                          # connect to serverless compute
-  databricks ssh connect --cluster=<cluster-id>                   # connect to a dedicated cluster
-  databricks ssh setup --name=my-compute --cluster=<cluster-id>   # update local ssh config for a dedicated cluster
-  ssh my-compute                                                  # connect using the ssh client (after setup)
+  databricks ssh connect --ide=cursor                       		# connect to serverless through Cursor
+  databricks ssh setup --name=<connection> --cluster=<cluster-id>   # update ~/.ssh/config so you can reconnect to a dedicated cluster
+  ssh <connection>                                                  # connect to dedicated cluster after setup
 
-Use ` + "`databricks ssh connect --help`" + ` to see flags for serverless GPUs and serverless environment versions.
+Use ` + "`databricks ssh connect --help`" + ` to see all available flags.
 
 ` + disclaimer,
 	}

@@ -12,17 +12,12 @@ import (
 func newConnectCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "connect",
-		Short: "Connect to Databricks serverless or dedicated compute via SSH",
-		Long: `Connect to Databricks compute via SSH.
+		Short: "Connect to Databricks compute via SSH",
+		Long: `Connect to your Databricks compute and workspace with ssh.
 
-This command establishes an SSH connection to Databricks compute, setting up
-the SSH server and handling the connection proxy.
-
-Connect to serverless (no cluster ID needed):
+Connect to serverless:
   databricks ssh connect
-  databricks ssh connect --accelerator=GPU_1xA10            # serverless GPU
-  databricks ssh connect --environment-version=4            # custom serverless environment
-  databricks ssh connect --ide=cursor                       # launch Cursor remote window on connect
+  databricks ssh connect --accelerator=<GPU_type>	# AI Runtime
 
 Connect to a dedicated cluster:
   databricks ssh connect --cluster=<cluster-id>
@@ -47,7 +42,7 @@ Connect to a dedicated cluster:
 	var environmentVersion int
 	var autoApprove bool
 
-	cmd.Flags().StringVar(&clusterID, "cluster", "", "Databricks cluster ID (for dedicated clusters)")
+	cmd.Flags().StringVar(&clusterID, "cluster", "", "Databricks dedicated cluster ID")
 	cmd.Flags().DurationVar(&shutdownDelay, "shutdown-delay", defaultShutdownDelay, "Delay before shutting down the server after the last client disconnects")
 	cmd.Flags().IntVar(&maxClients, "max-clients", defaultMaxClients, "Maximum number of SSH clients")
 	cmd.Flags().BoolVar(&autoStartCluster, "auto-start-cluster", true, "Automatically start the cluster if it is not running")
@@ -75,7 +70,7 @@ Connect to a dedicated cluster:
 	cmd.Flags().BoolVar(&skipSettingsCheck, "skip-settings-check", false, "Skip checking and updating IDE settings")
 	cmd.Flags().MarkHidden("skip-settings-check")
 
-	cmd.Flags().IntVar(&environmentVersion, "environment-version", defaultEnvironmentVersion, "Serverless environment version to use for the session")
+	cmd.Flags().IntVar(&environmentVersion, "environment-version", defaultEnvironmentVersion, "Environment version for AI Runtime")
 
 	cmd.Flags().BoolVar(&autoApprove, "auto-approve", false, "Skip confirmation prompts, installing IDE extensions and applying IDE settings without asking")
 
