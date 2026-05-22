@@ -47,14 +47,16 @@ type createRequest struct {
 // createResponse is the JSON body returned by POST /api/2.0/lakebox/sandboxes.
 // Mirrors the `Sandbox` proto message after JSON transcoding.
 //
-// `FQDN` is the manager's internal routing hostname — not user-actionable,
-// SSH always goes through the gateway. Tagged `omitempty` so the day the
-// manager stops returning it, both this struct and downstream `--json`
-// output drop the field cleanly instead of leaking a ghost empty string.
+// `FQDN` is the manager's internal routing hostname — not user-actionable.
+// `GatewayHost` is the public SSH gateway hostname for the workspace,
+// stamped by the manager (universe#1966484) so the CLI no longer needs to
+// hardcode regional defaults. Both are `omitempty` so old/new wire shapes
+// round-trip cleanly.
 type createResponse struct {
-	SandboxID string `json:"sandboxId"`
-	Status    string `json:"status"`
-	FQDN      string `json:"fqdn,omitempty"`
+	SandboxID   string `json:"sandboxId"`
+	Status      string `json:"status"`
+	FQDN        string `json:"fqdn,omitempty"`
+	GatewayHost string `json:"gatewayHost,omitempty"`
 }
 
 // sandboxEntry is a single item in the list response.
@@ -71,6 +73,7 @@ type sandboxEntry struct {
 	SandboxID     string  `json:"sandboxId"`
 	Status        string  `json:"status"`
 	FQDN          string  `json:"fqdn,omitempty"`
+	GatewayHost   string  `json:"gatewayHost,omitempty"`
 	Name          string  `json:"name,omitempty"`
 	CreateTime    string  `json:"createTime,omitempty"`
 	LastStartTime string  `json:"lastStartTime,omitempty"`

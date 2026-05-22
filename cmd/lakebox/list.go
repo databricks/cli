@@ -39,6 +39,41 @@ Example:
 				return fmt.Errorf("failed to list lakeboxes: %w", err)
 			}
 
+			profile := w.Config.Profile
+			if profile == "" {
+				profile = w.Config.Host
+			}
+
+			// `list` returns the full set (the API client loops through every
+			// page), so it's the cheapest place to keep local state coherent:
+			//
+			//   - If our saved default isn't in the result, the lakebox was
+			//     deleted elsewhere — clear so the next `ssh` provisions fresh
+			//     instead of erroring against a missing ID.
+			//   - Cache the gateway hostname stamped on any returned entry so
+			//     subsequent `ssh <id>` invocations don't need their own `get`.
+			defaultID := getDefault(ctx, profile)
+			if defaultID != "" {
+				found := false
+				for _, e := range entries {
+					if e.SandboxID == defaultID {
+						found = true
+						break
+					}
+				}
+				if !found {
+					warn(ctx, fmt.Sprintf("Saved default %s no longer exists; clearing", defaultID))
+					_ = clearDefault(ctx, profile)
+					defaultID = ""
+				}
+			}
+			for _, e := range entries {
+				if e.GatewayHost != "" {
+					_ = setGatewayHost(ctx, profile, e.GatewayHost)
+					break
+				}
+			}
+
 			if outputJSON {
 				enc := json.NewEncoder(cmd.OutOrStdout())
 				enc.SetIndent("", "  ")
@@ -49,12 +84,6 @@ Example:
 				fmt.Fprintf(cmd.ErrOrStderr(), "  %s\n", cmdio.Dim(ctx, "No lakeboxes found."))
 				return nil
 			}
-
-			profile := w.Config.Profile
-			if profile == "" {
-				profile = w.Config.Host
-			}
-			defaultID := getDefault(ctx, profile)
 
 			out := cmd.OutOrStdout()
 

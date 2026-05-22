@@ -87,21 +87,28 @@ Examples:
 				extraArgs = args[dashAt:]
 			}
 
-			// Determine lakebox ID if not explicit.
-			if lakeboxID == "" {
-				api, err := newLakeboxAPI(w)
-				if err != nil {
-					return err
-				}
+			// sandboxGatewayHost captures the gateway hostname from any
+			// Sandbox response we touch in this command, so the resolution
+			// below can prefer it over the cached value. Stays "" when we
+			// never hit the API in this invocation (e.g. explicit-id ssh
+			// with a warm cache).
+			var sandboxGatewayHost string
 
+			api, err := newLakeboxAPI(w)
+			if err != nil {
+				return err
+			}
+
+			if lakeboxID == "" {
 				// If we have a saved default, confirm it still exists on the
 				// server. The lakebox may have been auto-stopped, deleted from
 				// another machine, or reaped by an admin since we wrote the
 				// state file. Clear the stale entry and fall through to
 				// provisioning a fresh one.
 				if def := getDefault(ctx, profile); def != "" {
-					if _, err := api.get(ctx, def); err == nil {
+					if sb, err := api.get(ctx, def); err == nil {
 						lakeboxID = def
+						sandboxGatewayHost = sb.GatewayHost
 					} else {
 						warn(ctx, fmt.Sprintf("Saved default %s is gone; provisioning a new lakebox", def))
 						_ = clearDefault(ctx, profile)
@@ -117,17 +124,40 @@ Examples:
 						return fmt.Errorf("failed to create lakebox: %w", err)
 					}
 					lakeboxID = result.SandboxID
+					sandboxGatewayHost = result.GatewayHost
 					s.ok("Lakebox " + cmdio.Bold(ctx, lakeboxID) + " ready")
 
 					if err := setDefault(ctx, profile, lakeboxID); err != nil {
 						warn(ctx, fmt.Sprintf("Could not save default: %v", err))
 					}
 				}
+			} else if getGatewayHost(ctx, profile) == "" {
+				// Explicit-id ssh on a profile we have no cached gateway for:
+				// one-time `get` to learn it. Subsequent invocations hit the
+				// cache and skip the round-trip. Failure here is non-fatal —
+				// we fall through to the workspace-host heuristic.
+				if sb, err := api.get(ctx, lakeboxID); err == nil {
+					sandboxGatewayHost = sb.GatewayHost
+				}
 			}
 
+			// Resolution precedence: --gateway flag → fresh API response →
+			// cached value for this profile → workspace-host heuristic.
 			host := gatewayHost
 			if host == "" {
+				host = sandboxGatewayHost
+			}
+			if host == "" {
+				host = getGatewayHost(ctx, profile)
+			}
+			if host == "" {
 				host = resolveGatewayHost(w.Config.Host)
+			}
+
+			// Persist whatever the server just told us, so the next invocation
+			// can short-circuit the explicit-id `get` above.
+			if sandboxGatewayHost != "" {
+				_ = setGatewayHost(ctx, profile, sandboxGatewayHost)
 			}
 
 			s := spin(ctx, "Connecting to "+cmdio.Bold(ctx, lakeboxID)+"…")

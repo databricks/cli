@@ -12,11 +12,16 @@ import (
 	"github.com/databricks/cli/libs/env"
 )
 
-// stateFile stores per-profile lakebox defaults on the local filesystem.
+// stateFile stores per-profile lakebox state on the local filesystem.
 // Located at ~/.databricks/lakebox.json.
 type stateFile struct {
 	// Profile name → default lakebox ID.
 	Defaults map[string]string `json:"defaults"`
+	// Profile name → SSH gateway hostname returned by the manager for any
+	// sandbox in that workspace. Cached so `ssh <id>` does not need to fetch
+	// the sandbox just to learn where to connect. Empty until the first
+	// command that reads a sandbox response populates it.
+	GatewayHosts map[string]string `json:"gatewayHosts,omitempty"`
 }
 
 func stateFilePath(ctx context.Context) (string, error) {
@@ -97,5 +102,36 @@ func clearDefault(ctx context.Context, profile string) error {
 		return nil
 	}
 	delete(state.Defaults, profile)
+	return saveState(ctx, state)
+}
+
+// getGatewayHost returns the cached SSH gateway hostname for the workspace
+// behind `profile`, or "" if nothing has been cached yet.
+func getGatewayHost(ctx context.Context, profile string) string {
+	state, err := loadState(ctx)
+	if err != nil {
+		return ""
+	}
+	return state.GatewayHosts[profile]
+}
+
+// setGatewayHost caches the SSH gateway hostname for `profile`. No-op when
+// `host` is empty or already equal to the cached value, so callers can pipe
+// every Sandbox response through here without churning the state file.
+func setGatewayHost(ctx context.Context, profile, host string) error {
+	if host == "" {
+		return nil
+	}
+	state, err := loadState(ctx)
+	if err != nil {
+		return err
+	}
+	if state.GatewayHosts[profile] == host {
+		return nil
+	}
+	if state.GatewayHosts == nil {
+		state.GatewayHosts = make(map[string]string)
+	}
+	state.GatewayHosts[profile] = host
 	return saveState(ctx, state)
 }
