@@ -12,13 +12,13 @@ import (
 func newServerCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "server",
-		Short: "Run SSH tunnel server",
-		Long: `Run SSH tunnel server.
+		Short: "[EXPERIMENTAL] Run SSH tunnel server",
+		Long: `[EXPERIMENTAL] Run SSH tunnel server.
+
+This is an experimental feature and is subject to change.
 
 This command starts an SSH tunnel server that accepts WebSocket connections
-and proxies them to local SSH daemon processes.
-
-` + disclaimer,
+and proxies them to local SSH daemon processes.`,
 		// This is an internal command spawned by the SSH client running the "ssh-server-bootstrap.py" job
 		Hidden: true,
 	}

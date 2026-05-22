@@ -12,17 +12,17 @@ import (
 func newConnectCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "connect",
-		Short: "Connect to your Databricks compute and workspace via SSH",
-		Long: `Connect to your Databricks compute and workspace via SSH.
+		Short: "[EXPERIMENTAL] Connect to your Databricks compute and workspace via SSH",
+		Long: `[EXPERIMENTAL] Connect to your Databricks compute and workspace via SSH.
+
+This is an experimental feature and is subject to change.
 
 Connect to serverless:
   databricks ssh connect
   databricks ssh connect --accelerator=<GPU_type>	# AI Runtime
 
 Connect to a dedicated cluster:
-  databricks ssh connect --cluster=<cluster-id>
-
-` + disclaimer,
+  databricks ssh connect --cluster=<cluster-id>`,
 	}
 
 	var clusterID string
