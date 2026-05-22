@@ -51,8 +51,9 @@ Examples:
   databricks lakebox ssh -- ls -la /home                  # run command on default lakebox
   databricks lakebox ssh happy-panda-1234 -- cat /etc/os-release  # run command on specific lakebox
   databricks lakebox ssh -- -L 8080:localhost:8080        # port forwarding on default lakebox`,
-		Args:    cobra.ArbitraryArgs,
-		PreRunE: root.MustWorkspaceClient,
+		Args:              cobra.ArbitraryArgs,
+		PreRunE:           root.MustWorkspaceClient,
+		ValidArgsFunction: completeSandboxIDs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			w := cmdctx.WorkspaceClient(ctx)
