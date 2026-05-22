@@ -24,12 +24,15 @@ Available Commands:
   generate           Generate bundle configuration
   init               Initialize using a bundle template
   open               Open a resource in the browser
+  operation          Read operation records in the bundle metadata service.
   plan               Show deployment plan
+  resource           Read resource records from the bundle metadata service.
   run                Run a job, pipeline update or app
   schema             Generate JSON Schema for bundle configuration
   summary            Summarize resources deployed by this bundle
   sync               Synchronize bundle tree to the workspace
   validate           Validate configuration
+  version            Read version records in the bundle metadata service.
 
 Flags:
   -h, --help          help for bundle
