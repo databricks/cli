@@ -12,8 +12,6 @@ import (
 var envKeysToIsolate = []string{
 	envTermProgram,
 	envTerminalEmulator,
-	"GITHUB_COPILOT_AGENT_VERSION",
-	"COPILOT_AGENT_INTEGRATION_ID",
 }
 
 func isolateHostEnv(t *testing.T, overrides map[string]string) {
@@ -40,14 +38,6 @@ func TestDetectHost(t *testing.T) {
 			name: "vscode and forks all classify as vscode",
 			envs: map[string]string{"TERM_PROGRAM": "vscode"},
 			want: HostVSCode,
-		},
-		{
-			name: "vscode with copilot agent env",
-			envs: map[string]string{
-				"TERM_PROGRAM":                 "vscode",
-				"GITHUB_COPILOT_AGENT_VERSION": "1.2.3",
-			},
-			want: HostVSCodeCopilot,
 		},
 		{
 			name: "jetbrains",

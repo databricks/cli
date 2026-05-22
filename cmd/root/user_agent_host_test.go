@@ -12,8 +12,6 @@ import (
 var hostEnvKeys = []string{
 	"TERM_PROGRAM",
 	"TERMINAL_EMULATOR",
-	"GITHUB_COPILOT_AGENT_VERSION",
-	"COPILOT_AGENT_INTEGRATION_ID",
 }
 
 func clearHostEnv(t *testing.T) {
@@ -33,12 +31,4 @@ func TestHostInUserAgent_VSCode(t *testing.T) {
 	t.Setenv("TERM_PROGRAM", "vscode")
 	ctx := withHostInUserAgent(t.Context())
 	assert.Contains(t, useragent.FromContext(ctx), "host/vscode")
-}
-
-func TestHostInUserAgent_VSCodeCopilotSentinel(t *testing.T) {
-	clearHostEnv(t)
-	t.Setenv("TERM_PROGRAM", "vscode")
-	t.Setenv("GITHUB_COPILOT_AGENT_VERSION", "1.2.3")
-	ctx := withHostInUserAgent(t.Context())
-	assert.Contains(t, useragent.FromContext(ctx), "host/vscode-copilot")
 }

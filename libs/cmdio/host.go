@@ -17,13 +17,6 @@ const (
 	// discriminator in env, so we deliberately don't try to split them apart.
 	HostVSCode Host = "vscode"
 
-	// HostVSCodeCopilot is a best-effort sentinel for invocations driven by
-	// VSCode's Copilot coding agent. The env vars Copilot sets are not
-	// publicly documented; the names checked here are educated guesses and
-	// may not fire in practice. Treat as a coarse signal to be refined once
-	// we observe real telemetry.
-	HostVSCodeCopilot Host = "vscode-copilot"
-
 	HostJetBrains     Host = "jetbrains"
 	HostAppleTerminal Host = "apple-terminal"
 	HostITerm         Host = "iterm"
@@ -44,12 +37,14 @@ const (
 // Only detections backed by direct observation or upstream documentation
 // are included. Anything we can't verify (Windsurf vs. Cursor split, Zed,
 // Hyper, Tabby, etc.) falls into HostUnknown until we see real evidence.
+//
+// Whether a user has a particular extension or AI agent active (Copilot,
+// Claude Code, Cursor Agent, etc.) is intentionally not modelled here.
+// That's an independent dimension, so a downstream query can ask "vscode
+// users without Copilot" by joining the two signals.
 func DetectHost(ctx context.Context) Host {
 	switch env.Get(ctx, envTermProgram) {
 	case "vscode":
-		if isCopilotAgent(ctx) {
-			return HostVSCodeCopilot
-		}
 		return HostVSCode
 	case "Apple_Terminal":
 		return HostAppleTerminal
@@ -70,9 +65,4 @@ func DetectHost(ctx context.Context) Host {
 	}
 
 	return HostUnknown
-}
-
-func isCopilotAgent(ctx context.Context) bool {
-	return env.Get(ctx, "GITHUB_COPILOT_AGENT_VERSION") != "" ||
-		env.Get(ctx, "COPILOT_AGENT_INTEGRATION_ID") != ""
 }
