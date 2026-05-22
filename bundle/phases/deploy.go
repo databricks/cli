@@ -125,19 +125,27 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 
 	// Core mutators that CRUD resources and modify deployment state. These
 	// mutators need informed consent if they are potentially destructive.
-	bundle.ApplySeqContext(ctx, b,
-		scripts.Execute(config.ScriptPreDeploy),
-		lock.Acquire(),
-	)
-
+	bundle.ApplyContext(ctx, b, scripts.Execute(config.ScriptPreDeploy))
 	if logdiag.HasError(ctx) {
 		// lock is not acquired here
 		return
 	}
 
+	dl := lock.NewDeploymentLock(b, lock.GoalDeploy)
+	if err := dl.Acquire(ctx); err != nil {
+		logdiag.LogError(ctx, err)
+		return
+	}
+
 	// lock is acquired here
 	defer func() {
-		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalDeploy))
+		status := lock.DeploymentSuccess
+		if logdiag.HasError(ctx) {
+			status = lock.DeploymentFailure
+		}
+		if err := dl.Release(ctx, status); err != nil {
+			log.Warnf(ctx, "Failed to release deployment lock: %v", err)
+		}
 	}()
 
 	uploadLibraries(ctx, b, libs)
