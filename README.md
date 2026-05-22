@@ -2,8 +2,6 @@
 
 [![build](https://github.com/databricks/cli/workflows/build/badge.svg?branch=main)](https://github.com/databricks/cli/actions?query=workflow%3Abuild+branch%3Amain)
 
-This project is in Public Preview.
-
 Documentation is available at https://docs.databricks.com/dev-tools/cli/databricks-cli.html.
 
 ## Installation
