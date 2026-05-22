@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/internal/testarchive"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/compute"
@@ -159,23 +160,23 @@ func uploadRunner(ctx context.Context, t *testing.T, w *databricks.WorkspaceClie
 }
 
 // buildBaseParams builds the common parameters for test tasks.
-func buildBaseParams(testDir, archiveName, debugLogPath string) map[string]string {
+func buildBaseParams(ctx context.Context, testDir, archiveName, debugLogPath string) map[string]string {
 	return map[string]string{
 		"archive_path":              path.Join(testDir, archiveName),
-		"cloud_env":                 os.Getenv("CLOUD_ENV"),
-		"test_default_warehouse_id": os.Getenv("TEST_DEFAULT_WAREHOUSE_ID"),
-		"test_default_cluster_id":   os.Getenv("TEST_DEFAULT_CLUSTER_ID"),
-		"test_instance_pool_id":     os.Getenv("TEST_INSTANCE_POOL_ID"),
-		"test_metastore_id":         os.Getenv("TEST_METASTORE_ID"),
-		"test_user_email":           os.Getenv("TEST_USER_EMAIL"),
-		"test_sp_application_id":    os.Getenv("TEST_SP_APPLICATION_ID"),
+		"cloud_env":                 env.Get(ctx, "CLOUD_ENV"),
+		"test_default_warehouse_id": env.Get(ctx, "TEST_DEFAULT_WAREHOUSE_ID"),
+		"test_default_cluster_id":   env.Get(ctx, "TEST_DEFAULT_CLUSTER_ID"),
+		"test_instance_pool_id":     env.Get(ctx, "TEST_INSTANCE_POOL_ID"),
+		"test_metastore_id":         env.Get(ctx, "TEST_METASTORE_ID"),
+		"test_user_email":           env.Get(ctx, "TEST_USER_EMAIL"),
+		"test_sp_application_id":    env.Get(ctx, "TEST_SP_APPLICATION_ID"),
 		"debug_log_path":            debugLogPath,
 	}
 }
 
 // runDbrTests creates a job and runs it to execute cloud and local acceptance tests on DBR.
 func runDbrTests(ctx context.Context, t *testing.T, w *databricks.WorkspaceClient, testDir, archiveName, runnerName string, config dbrTestConfig) {
-	cloudEnv := os.Getenv("CLOUD_ENV")
+	cloudEnv := env.Get(ctx, "CLOUD_ENV")
 	if cloudEnv == "" {
 		t.Fatal("CLOUD_ENV is not set. Please run DBR tests from a CI environment with deco env run.")
 	}
@@ -208,7 +209,7 @@ func runDbrTests(ctx context.Context, t *testing.T, w *databricks.WorkspaceClien
 	require.NoError(t, err)
 
 	// Build cloud test parameters (Cloud=true tests, run with CLOUD_ENV set)
-	cloudParams := buildBaseParams(testDir, archiveName, debugLogPath)
+	cloudParams := buildBaseParams(ctx, testDir, archiveName, debugLogPath)
 	cloudParams["test_type"] = "cloud"
 	cloudParams["test_filter"] = config.cloudTestFilter
 
@@ -349,16 +350,16 @@ func runDbrAcceptanceTests(t *testing.T, config dbrTestConfig) {
 //	OR
 //	make dbr-test
 func TestDbrAcceptance(t *testing.T) {
-	if os.Getenv("DBR_ENABLED") != "true" {
+	if env.Get(t.Context(), "DBR_ENABLED") != "true" {
 		t.Skip("Skipping DBR test: DBR_ENABLED not set")
 	}
 
-	if os.Getenv("CLOUD_ENV") == "" {
+	if env.Get(t.Context(), "CLOUD_ENV") == "" {
 		t.Skip("Skipping DBR test: CLOUD_ENV not set")
 	}
 
 	runDbrAcceptanceTests(t, dbrTestConfig{
 		timeout: 3 * time.Hour,
-		verbose: os.Getenv("DBR_TEST_VERBOSE") != "",
+		verbose: env.Get(t.Context(), "DBR_TEST_VERBOSE") != "",
 	})
 }

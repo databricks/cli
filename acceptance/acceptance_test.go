@@ -31,6 +31,7 @@ import (
 	"github.com/databricks/cli/acceptance/internal"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/auth"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/testdiff"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/stretchr/testify/require"
@@ -39,7 +40,7 @@ import (
 var (
 	KeepTmp         bool
 	NoRepl          bool
-	VerboseTest     bool = os.Getenv("VERBOSE_TEST") != ""
+	VerboseTest     bool
 	Tail            bool
 	Forcerun        bool
 	LogRequests     bool
@@ -63,7 +64,7 @@ var InprocessMode bool
 const TestLogPrefix = "TESTLOG: "
 
 // In benchmark mode we disable parallel run of all tests that contain work "benchmark" in their path
-var benchmarkMode = os.Getenv("BENCHMARK_PARAMS") != ""
+var benchmarkMode bool
 
 func init() {
 	flag.BoolVar(&InprocessMode, "inprocess", false, "Run CLI in the same process as test (for debugging)")
@@ -80,6 +81,16 @@ func init() {
 	flag.BoolVar(&WorkspaceTmpDir, "workspace-tmp-dir", false, "Run tests on the workspace file system (For DBR testing).")
 	flag.BoolVar(&OnlyOutTestToml, "only-out-test-toml", false, "Only regenerate out.test.toml files without running tests")
 	flag.BoolVar(&Subset, "subset", false, "Select a subset of EnvMatrix variants that cover all output files. Auto-enabled on -update (unless -run specifies a variant with '=').")
+
+	if v, _ := os.LookupEnv("VERBOSE_TEST"); v != "" {
+		VerboseTest = true
+	}
+	if v, _ := os.LookupEnv("BENCHMARK_PARAMS"); v != "" {
+		benchmarkMode = true
+	}
+	if v, _ := os.LookupEnv("GITHUB_WORKFLOW"); v != "" {
+		ApplyCITimeoutMultipler = true
+	}
 }
 
 const (
@@ -104,7 +115,7 @@ const (
 	userReplacementsFilename = "ACC_REPLS"
 )
 
-var ApplyCITimeoutMultipler = os.Getenv("GITHUB_WORKFLOW") != ""
+var ApplyCITimeoutMultipler bool
 
 var exeSuffix = func() string {
 	if runtime.GOOS == "windows" {
@@ -132,7 +143,7 @@ func TestInprocessMode(t *testing.T) {
 	if InprocessMode && !Forcerun {
 		t.Skip("Already tested by TestAccept")
 	}
-	if os.Getenv("CLOUD_ENV") != "" {
+	if env.Get(t.Context(), "CLOUD_ENV") != "" {
 		t.Skip("No need to run this as integration test.")
 	}
 
@@ -152,7 +163,7 @@ func setReplsForTestEnvVars(t *testing.T, repls *testdiff.ReplacementsContext) {
 		"TEST_INSTANCE_POOL_ID",
 	}
 	for _, envVar := range envVars {
-		if value := os.Getenv(envVar); value != "" {
+		if value := env.Get(t.Context(), envVar); value != "" {
 			repls.Set(value, "["+envVar+"]")
 		}
 	}
@@ -236,7 +247,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 		repls.SetPath(wheelPath, "[DATABRICKS_BUNDLES_WHEEL]")
 	}
 
-	coverDir := os.Getenv("CLI_GOCOVERDIR")
+	coverDir := env.Get(t.Context(), "CLI_GOCOVERDIR")
 
 	if coverDir != "" {
 		require.NoError(t, os.MkdirAll(coverDir, os.ModePerm))
@@ -286,7 +297,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 		// Make <ROOT>/tools/ available (e.g. yamlfmt)
 		filepath.Join(cwd, "..", "tools"),
 
-		os.Getenv("PATH"),
+		env.Get(t.Context(), "PATH"),
 	}
 	t.Setenv("PATH", strings.Join(paths, string(os.PathListSeparator)))
 
@@ -300,17 +311,17 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	uvInstall := getUVPythonInstallDir(t)
 	t.Setenv("UV_PYTHON_INSTALL_DIR", uvInstall)
 
-	cloudEnv := os.Getenv("CLOUD_ENV")
+	cloudEnv := env.Get(t.Context(), "CLOUD_ENV")
 
 	if cloudEnv == "" {
 		internal.StartDefaultServer(t, LogRequests)
-		if os.Getenv("TEST_DEFAULT_WAREHOUSE_ID") == "" {
+		if env.Get(t.Context(), "TEST_DEFAULT_WAREHOUSE_ID") == "" {
 			t.Setenv("TEST_DEFAULT_WAREHOUSE_ID", testserver.TestDefaultWarehouseId)
 		}
-		if os.Getenv("TEST_DEFAULT_CLUSTER_ID") == "" {
+		if env.Get(t.Context(), "TEST_DEFAULT_CLUSTER_ID") == "" {
 			t.Setenv("TEST_DEFAULT_CLUSTER_ID", testserver.TestDefaultClusterId)
 		}
-		if os.Getenv("TEST_INSTANCE_POOL_ID") == "" {
+		if env.Get(t.Context(), "TEST_INSTANCE_POOL_ID") == "" {
 			t.Setenv("TEST_INSTANCE_POOL_ID", testserver.TestDefaultInstancePoolId)
 		}
 	}
@@ -399,7 +410,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 				t.Skip("Skipping test execution (only regenerating out.test.toml)")
 			}
 
-			skipReason := getSkipReason(&config, configPath)
+			skipReason := getSkipReason(t, &config, configPath)
 			if skipReason != "" {
 				skippedDirs += 1
 				t.Skip(skipReason)
@@ -470,7 +481,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 }
 
 func getEnvFilters(t *testing.T) []string {
-	envFilterValue := os.Getenv(EnvFilterVar)
+	envFilterValue := env.Get(t.Context(), EnvFilterVar)
 	if envFilterValue == "" {
 		return nil
 	}
@@ -522,8 +533,8 @@ func validateTestPhase(phase int) error {
 }
 
 // Return a reason to skip the test. Empty string means "don't skip".
-func getSkipReason(config *internal.TestConfig, configPath string) string {
-	if os.Getenv("DATABRICKS_TEST_SKIPLOCAL") != "" && isTruePtr(config.Local) {
+func getSkipReason(t *testing.T, config *internal.TestConfig, configPath string) string {
+	if env.Get(t.Context(), "DATABRICKS_TEST_SKIPLOCAL") != "" && isTruePtr(config.Local) {
 		return "Disabled via DATABRICKS_TEST_SKIPLOCAL environment variable in " + configPath
 	}
 
@@ -540,7 +551,7 @@ func getSkipReason(config *internal.TestConfig, configPath string) string {
 		return fmt.Sprintf("Disabled via GOOS.%s setting in %s", runtime.GOOS, configPath)
 	}
 
-	cloudEnv := os.Getenv("CLOUD_ENV")
+	cloudEnv := env.Get(t.Context(), "CLOUD_ENV")
 	isRunningOnCloud := cloudEnv != ""
 
 	if isRunningOnCloud {
@@ -566,15 +577,15 @@ func getSkipReason(config *internal.TestConfig, configPath string) string {
 			)
 		}
 
-		if isTruePtr(config.RequiresUnityCatalog) && os.Getenv("TEST_METASTORE_ID") == "" {
+		if isTruePtr(config.RequiresUnityCatalog) && env.Get(t.Context(), "TEST_METASTORE_ID") == "" {
 			return fmt.Sprintf("Disabled via RequiresUnityCatalog setting in %s (TEST_METASTORE_ID is empty)", configPath)
 		}
 
-		if isTruePtr(config.RequiresWarehouse) && os.Getenv("TEST_DEFAULT_WAREHOUSE_ID") == "" {
+		if isTruePtr(config.RequiresWarehouse) && env.Get(t.Context(), "TEST_DEFAULT_WAREHOUSE_ID") == "" {
 			return fmt.Sprintf("Disabled via RequiresWarehouse setting in %s (TEST_DEFAULT_WAREHOUSE_ID is empty)", configPath)
 		}
 
-		if isTruePtr(config.RequiresCluster) && os.Getenv("TEST_DEFAULT_CLUSTER_ID") == "" {
+		if isTruePtr(config.RequiresCluster) && env.Get(t.Context(), "TEST_DEFAULT_CLUSTER_ID") == "" {
 			return fmt.Sprintf("Disabled via RequiresCluster setting in %s (TEST_DEFAULT_CLUSTER_ID is empty)", configPath)
 		}
 
@@ -611,7 +622,7 @@ func runTest(t *testing.T,
 	}
 
 	tailOutput := Tail
-	cloudEnv := os.Getenv("CLOUD_ENV")
+	cloudEnv := env.Get(t.Context(), "CLOUD_ENV")
 	isRunningOnCloud := cloudEnv != ""
 
 	if isRunningOnCloud && isTruePtr(config.CloudSlow) && testing.Verbose() {
@@ -685,7 +696,7 @@ func runTest(t *testing.T,
 
 	cmd.Env = auth.ProcessEnv(cfg)
 
-	rateLimit := os.Getenv("DATABRICKS_RATE_LIMIT")
+	rateLimit := env.Get(t.Context(), "DATABRICKS_RATE_LIMIT")
 	if rateLimit == "" {
 		if isRunningOnCloud {
 			rateLimit = "100"

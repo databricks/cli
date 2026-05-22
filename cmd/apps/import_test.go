@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/env"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -186,7 +187,7 @@ func TestInlineAppConfigFileErrors(t *testing.T) {
 
 		if runtime.GOOS == "windows" {
 			// On Windows, use icacls to deny read access to the current user
-			username := os.Getenv("USERNAME")
+			username := env.Get(t.Context(), "USERNAME")
 			cmd := exec.Command("icacls", filename, "/deny", username+":(R)")
 			err = cmd.Run()
 			require.NoError(t, err)

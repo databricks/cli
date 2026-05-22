@@ -1,13 +1,13 @@
 package fs_test
 
 import (
-	"os"
 	"path"
 	"path/filepath"
 
 	"github.com/databricks/cli/integration/internal/acc"
 	"github.com/databricks/cli/internal/testutil"
 
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/stretchr/testify/require"
 )
@@ -32,7 +32,7 @@ func setupDbfsFiler(t testutil.TestingT) (filer.Filer, string) {
 func setupUcVolumesFiler(t testutil.TestingT) (filer.Filer, string) {
 	_, wt := acc.WorkspaceTest(t)
 
-	if os.Getenv("TEST_METASTORE_ID") == "" {
+	if env.Get(t.Context(), "TEST_METASTORE_ID") == "" {
 		t.Skip("Skipping tests that require a UC Volume when metastore id is not set.")
 	}
 
