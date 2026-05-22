@@ -27,10 +27,10 @@ func HasUnifiedHostSignal(discoveryURL string) bool {
 // of an accountID guard: SPOG routing requires an account ID to construct the
 // OAuth URL, so a nil or empty accountID always returns false.
 //
-// The accountID parameter is separate from cfg.AccountID so that callers can
-// control the source: ResolveConfigType passes cfg.AccountID (from config file),
-// while ToOAuthArgument passes the caller-provided value to avoid env var
-// contamination (DATABRICKS_ACCOUNT_ID or .well-known back-fill).
+// The accountID parameter is separate from cfg.AccountID so that callers
+// (currently ToOAuthArgument) can pass the caller-provided value to avoid
+// env-var contamination (DATABRICKS_ACCOUNT_ID or .well-known back-fill)
+// that would otherwise misroute plain workspace hosts as SPOG.
 func IsSPOG(cfg *config.Config, accountID string) bool {
 	if accountID == "" {
 		return false
@@ -38,24 +38,19 @@ func IsSPOG(cfg *config.Config, accountID string) bool {
 	return HasUnifiedHostSignal(cfg.DiscoveryURL)
 }
 
-// ResolveConfigType determines the effective ConfigType for a resolved config.
-// The SDK's ConfigType() classifies based on the host URL prefix alone, which
-// misclassifies SPOG hosts (they don't match the accounts.* prefix). This
-// function additionally uses IsSPOG to detect SPOG hosts.
-//
-// The cfg must already be resolved (via EnsureResolved) before calling this.
-func ResolveConfigType(cfg *config.Config) config.ConfigType {
-	configType := cfg.ConfigType()
-	if configType == config.AccountConfig {
-		return configType
+// IsSPOGHost reports whether cfg points at a unified SPOG host: account-scoped
+// OIDC discovery and NOT a classic accounts.* host. Classic accounts.* hosts
+// share the same OIDC shape, so IsSPOG alone can't tell them apart; layer
+// IsClassicAccountHost on top to disambiguate.
+func IsSPOGHost(cfg *config.Config) bool {
+	if IsClassicAccountHost(cfg.CanonicalHostName()) {
+		return false
 	}
+	return IsSPOG(cfg, cfg.AccountID)
+}
 
-	if !IsSPOG(cfg, cfg.AccountID) {
-		return configType
-	}
-
-	if cfg.WorkspaceID != "" && cfg.WorkspaceID != WorkspaceIDNone {
-		return config.WorkspaceConfig
-	}
-	return config.AccountConfig
+// IsClassicWorkspaceHost reports whether cfg points at a classic workspace
+// host: neither a classic accounts.* host nor a SPOG host.
+func IsClassicWorkspaceHost(cfg *config.Config) bool {
+	return !IsClassicAccountHost(cfg.CanonicalHostName()) && !IsSPOG(cfg, cfg.AccountID)
 }

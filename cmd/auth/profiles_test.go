@@ -80,10 +80,11 @@ func TestProfilesDefaultMarker(t *testing.T) {
 }
 
 // newSPOGServer creates a mock SPOG server that returns account-scoped OIDC.
-// It serves both validation endpoints since SPOG workspace profiles (with a
-// real workspace_id) need CurrentUser.Me, while account profiles need
-// Workspaces.List. The workspace-only newWorkspaceServer omits the account
-// endpoint to prove routing correctness for non-SPOG hosts.
+// The workspace endpoint deliberately returns 500 to mirror real SPOG hosts
+// where account-audience OAuth tokens can't load workspace OAuth config.
+// auth profiles probes both surfaces and accepts either success, so the test
+// passes when Workspaces.List succeeds even though CurrentUser.Me fails —
+// and a regression that drops the account probe surfaces as Valid=false.
 func newSPOGServer(t *testing.T, accountID string) *httptest.Server {
 	t.Helper()
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -97,8 +98,7 @@ func newSPOGServer(t *testing.T, accountID string) *httptest.Server {
 		case "/api/2.0/accounts/" + accountID + "/workspaces":
 			_ = json.NewEncoder(w).Encode([]map[string]any{})
 		case "/api/2.0/preview/scim/v2/Me":
-			// SPOG workspace profiles also need CurrentUser.Me to succeed.
-			_ = json.NewEncoder(w).Encode(map[string]any{"userName": "test-user"})
+			http.Error(w, "SPOG profiles must validate via Workspaces.List, not CurrentUser.Me", http.StatusInternalServerError)
 		default:
 			w.WriteHeader(http.StatusNotFound)
 		}
@@ -108,8 +108,9 @@ func newSPOGServer(t *testing.T, accountID string) *httptest.Server {
 }
 
 // newWorkspaceServer creates a mock workspace server that returns workspace-scoped
-// OIDC and only serves the workspace validation endpoint. The account validation
-// endpoint returns 404 to prove the workspace path was taken.
+// OIDC and a workspace_id in discovery (mirroring real workspace hosts since
+// PR #4809). It serves CurrentUser.Me; the account endpoint returns 404 so a
+// workspace probe is the only path that produces Valid=true.
 func newWorkspaceServer(t *testing.T, accountID string) *httptest.Server {
 	t.Helper()
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -118,6 +119,7 @@ func newWorkspaceServer(t *testing.T, accountID string) *httptest.Server {
 		case "/.well-known/databricks-config":
 			_ = json.NewEncoder(w).Encode(map[string]any{
 				"account_id":    accountID,
+				"workspace_id":  "ws-from-discovery",
 				"oidc_endpoint": r.Host + "/oidc",
 			})
 		case "/api/2.0/preview/scim/v2/Me":
@@ -148,7 +150,10 @@ func TestProfileLoadSPOGConfigType(t *testing.T) {
 			wantValid: true,
 		},
 		{
-			name:        "SPOG workspace profile validated as workspace",
+			// SPOG with a real workspace_id: workspace probe (CurrentUser.Me)
+			// fails on the mock, account probe (Workspaces.List) succeeds —
+			// the OR makes the profile valid.
+			name:        "SPOG workspace profile valid when account probe succeeds",
 			host:        spogServer.URL,
 			accountID:   "spog-acct",
 			workspaceID: "ws-123",
@@ -201,6 +206,52 @@ func TestProfileLoadSPOGConfigType(t *testing.T) {
 	}
 }
 
+// TestProfileLoadSPOGWorkspaceCredential covers the inverse of the
+// account-OAuth case: a workspace-scoped credential (e.g. a PAT) against a
+// SPOG host. CurrentUser.Me succeeds, Workspaces.List fails (no account-level
+// access). The OR of the two probes must still mark the profile Valid=true.
+func TestProfileLoadSPOGWorkspaceCredential(t *testing.T) {
+	const accountID = "spog-acct"
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch r.URL.Path {
+		case "/.well-known/databricks-config":
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"account_id":    accountID,
+				"oidc_endpoint": r.Host + "/oidc/accounts/" + accountID,
+			})
+		case "/api/2.0/preview/scim/v2/Me":
+			_ = json.NewEncoder(w).Encode(map[string]any{"userName": "test-user"})
+		case "/api/2.0/accounts/" + accountID + "/workspaces":
+			http.Error(w, "user lacks account-level access", http.StatusForbidden)
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	t.Cleanup(server.Close)
+
+	dir := t.TempDir()
+	configFile := filepath.Join(dir, ".databrickscfg")
+	t.Setenv("HOME", dir)
+	if runtime.GOOS == "windows" {
+		t.Setenv("USERPROFILE", dir)
+	}
+
+	content := "[ws-cred-on-spog]\nhost = " + server.URL + "\ntoken = test-token\naccount_id = " + accountID + "\nworkspace_id = ws-123\n"
+	require.NoError(t, os.WriteFile(configFile, []byte(content), 0o600))
+
+	p := &profileMetadata{
+		Name:      "ws-cred-on-spog",
+		Host:      server.URL,
+		AccountID: accountID,
+	}
+	p.Load(t.Context(), configFile, false)
+
+	assert.True(t, p.Valid, "workspace probe alone should make the profile valid")
+	assert.NotEmpty(t, p.Host)
+	assert.NotEmpty(t, p.AuthType)
+}
+
 func TestClassicAccountsHostConfigType(t *testing.T) {
 	// Classic accounts.* hosts can't be tested through Load() because httptest
 	// generates 127.0.0.1 URLs. Verify directly that ConfigType() classifies
@@ -217,9 +268,12 @@ func TestClassicAccountsHostConfigType(t *testing.T) {
 }
 
 func TestProfileLoadNoDiscoveryStaysWorkspace(t *testing.T) {
-	// When .well-known returns 404 and the unified-host fallback is false,
-	// the SPOG override should NOT trigger even if account_id is set. The
-	// profile should stay WorkspaceConfig and validate via CurrentUser.Me.
+	// account_id can linger in a profile from a prior account login on the
+	// same profile name (e.g. user logged into accounts.cloud.databricks.com,
+	// logged out, then re-used the profile name for a workspace login). A
+	// stale account_id must not promote the profile to account validation
+	// when the host itself isn't an account/SPOG surface — the workspace
+	// probe is still the right signal.
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		switch r.URL.Path {

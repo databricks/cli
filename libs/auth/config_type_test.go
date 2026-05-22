@@ -24,79 +24,77 @@ func TestHasUnifiedHostSignal(t *testing.T) {
 	}
 }
 
-func TestResolveConfigType(t *testing.T) {
+func TestIsSPOG(t *testing.T) {
 	cases := []struct {
-		name string
-		cfg  *config.Config
-		want config.ConfigType
+		name      string
+		cfg       *config.Config
+		accountID string
+		want      bool
 	}{
 		{
-			name: "classic accounts host stays AccountConfig",
-			cfg: &config.Config{
-				Host:      "https://accounts.cloud.databricks.com",
-				AccountID: "acct-123",
-			},
-			want: config.AccountConfig,
+			name:      "account-scoped OIDC with account_id",
+			cfg:       &config.Config{DiscoveryURL: "https://spog.databricks.com/oidc/accounts/acct-123/.well-known/oauth-authorization-server"},
+			accountID: "acct-123",
+			want:      true,
 		},
 		{
-			name: "SPOG account-scoped OIDC without workspace routes to AccountConfig",
-			cfg: &config.Config{
-				Host:         "https://spog.databricks.com",
-				AccountID:    "acct-123",
-				DiscoveryURL: "https://spog.databricks.com/oidc/accounts/acct-123/.well-known/oauth-authorization-server",
-			},
-			want: config.AccountConfig,
+			name:      "account-scoped OIDC without account_id",
+			cfg:       &config.Config{DiscoveryURL: "https://spog.databricks.com/oidc/accounts/acct-123/.well-known/oauth-authorization-server"},
+			accountID: "",
+			want:      false,
 		},
 		{
-			name: "SPOG account-scoped OIDC with workspace routes to WorkspaceConfig",
-			cfg: &config.Config{
-				Host:         "https://spog.databricks.com",
-				AccountID:    "acct-123",
-				WorkspaceID:  "ws-456",
-				DiscoveryURL: "https://spog.databricks.com/oidc/accounts/acct-123/.well-known/oauth-authorization-server",
-			},
-			want: config.WorkspaceConfig,
-		},
-		{
-			name: "SPOG account-scoped OIDC with workspace_id=none routes to AccountConfig",
-			cfg: &config.Config{
-				Host:         "https://spog.databricks.com",
-				AccountID:    "acct-123",
-				WorkspaceID:  "none",
-				DiscoveryURL: "https://spog.databricks.com/oidc/accounts/acct-123/.well-known/oauth-authorization-server",
-			},
-			want: config.AccountConfig,
-		},
-		{
-			name: "workspace-scoped OIDC with account_id stays WorkspaceConfig",
-			cfg: &config.Config{
-				Host:         "https://workspace.databricks.com",
-				AccountID:    "acct-123",
-				DiscoveryURL: "https://workspace.databricks.com/oidc/.well-known/oauth-authorization-server",
-			},
-			want: config.WorkspaceConfig,
-		},
-		{
-			name: "no discovery stays WorkspaceConfig",
-			cfg: &config.Config{
-				Host:      "https://workspace.databricks.com",
-				AccountID: "acct-123",
-			},
-			want: config.WorkspaceConfig,
-		},
-		{
-			name: "plain workspace without account_id",
-			cfg: &config.Config{
-				Host: "https://workspace.databricks.com",
-			},
-			want: config.WorkspaceConfig,
+			name:      "workspace-scoped OIDC with account_id back-filled",
+			cfg:       &config.Config{DiscoveryURL: "https://workspace.databricks.com/oidc/.well-known/oauth-authorization-server"},
+			accountID: "acct-123",
+			want:      false,
 		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			got := ResolveConfigType(tc.cfg)
-			assert.Equal(t, tc.want, got)
+			assert.Equal(t, tc.want, IsSPOG(tc.cfg, tc.accountID))
 		})
 	}
+}
+
+// Configs used across the host-classification tests below. The three host
+// shapes are mutually exclusive: exactly one helper returns true per cfg.
+// accounts-dod.* is a second classic accounts variant — same OIDC shape
+// and classification as accounts.*, different URL prefix.
+var (
+	classicAccountCfg = &config.Config{
+		Host:         "https://accounts.cloud.databricks.com",
+		AccountID:    "acct-123",
+		DiscoveryURL: "https://accounts.cloud.databricks.com/oidc/accounts/acct-123/.well-known/oauth-authorization-server",
+	}
+	classicAccountDodCfg = &config.Config{
+		Host:         "https://accounts-dod.cloud.databricks.us",
+		AccountID:    "acct-123",
+		DiscoveryURL: "https://accounts-dod.cloud.databricks.us/oidc/accounts/acct-123/.well-known/oauth-authorization-server",
+	}
+	spogCfg = &config.Config{
+		Host:         "https://spog.gcp.databricks.com",
+		AccountID:    "acct-123",
+		DiscoveryURL: "https://spog.gcp.databricks.com/oidc/accounts/acct-123/.well-known/oauth-authorization-server",
+	}
+	classicWorkspaceCfg = &config.Config{
+		Host:         "https://dbc-xxxx.cloud.databricks.com",
+		AccountID:    "acct-123",
+		DiscoveryURL: "https://dbc-xxxx.cloud.databricks.com/oidc/.well-known/oauth-authorization-server",
+	}
+)
+
+func TestIsSPOGHost(t *testing.T) {
+	assert.False(t, IsSPOGHost(classicAccountCfg), "classic accounts.* shares the SPOG OIDC shape but is not SPOG")
+	assert.False(t, IsSPOGHost(classicAccountDodCfg), "classic accounts-dod.* shares the SPOG OIDC shape but is not SPOG")
+	assert.True(t, IsSPOGHost(spogCfg))
+	assert.False(t, IsSPOGHost(classicWorkspaceCfg))
+}
+
+func TestIsClassicWorkspaceHost(t *testing.T) {
+	assert.False(t, IsClassicWorkspaceHost(classicAccountCfg))
+	assert.False(t, IsClassicWorkspaceHost(classicAccountDodCfg))
+	assert.False(t, IsClassicWorkspaceHost(spogCfg))
+	assert.True(t, IsClassicWorkspaceHost(classicWorkspaceCfg))
 }
