@@ -93,7 +93,9 @@ func newCreateFeature() *cobra.Command {
   Create a Feature.
 
   Arguments:
-    FULL_NAME: The full three-part name (catalog, schema, name) of the feature.
+    FULL_NAME: The full three-part name (catalog, schema, name) of the feature. This is
+      the feature's resource identifier; the catalog_name, schema_name, and name
+      fields below are OUTPUT_ONLY decomposed views of this value.
     SOURCE: The data source of the feature.
     FUNCTION: The function by which the feature is computed.`
 
@@ -747,18 +749,22 @@ func newListFeatures() *cobra.Command {
 	cmd.Flags().StringVar(&listFeaturesReq.PageToken, "page-token", listFeaturesReq.PageToken, `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
-	cmd.Use = "list-features"
+	cmd.Use = "list-features CATALOG_NAME SCHEMA_NAME"
 	cmd.Short = `List features.`
 	cmd.Long = `List features.
 
-  List Features.`
+  List Features.
+
+  Arguments:
+    CATALOG_NAME: Name of parent catalog for features of interest.
+    SCHEMA_NAME: Name of parent schema relative to its parent catalog.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
 	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(0)
+		check := root.ExactArgs(2)
 		return check(cmd, args)
 	}
 
@@ -766,6 +772,9 @@ func newListFeatures() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+
+		listFeaturesReq.CatalogName = args[0]
+		listFeaturesReq.SchemaName = args[1]
 
 		response := w.FeatureEngineering.ListFeatures(ctx, listFeaturesReq)
 		if listFeaturesLimit < 0 {
@@ -964,7 +973,9 @@ func newUpdateFeature() *cobra.Command {
   Update a Feature.
 
   Arguments:
-    FULL_NAME: The full three-part name (catalog, schema, name) of the feature.
+    FULL_NAME: The full three-part name (catalog, schema, name) of the feature. This is
+      the feature's resource identifier; the catalog_name, schema_name, and name
+      fields below are OUTPUT_ONLY decomposed views of this value.
     UPDATE_MASK: The list of fields to update.
     SOURCE: The data source of the feature.
     FUNCTION: The function by which the feature is computed.`

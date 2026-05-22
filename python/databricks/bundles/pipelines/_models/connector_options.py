@@ -20,6 +20,10 @@ from databricks.bundles.pipelines._models.jira_connector_options import (
     JiraConnectorOptions,
     JiraConnectorOptionsParam,
 )
+from databricks.bundles.pipelines._models.kafka_options import (
+    KafkaOptions,
+    KafkaOptionsParam,
+)
 from databricks.bundles.pipelines._models.meta_marketing_options import (
     MetaMarketingOptions,
     MetaMarketingOptionsParam,
@@ -77,6 +81,11 @@ class ConnectorOptions:
     jira_options: VariableOrOptional[JiraConnectorOptions] = None
     """
     Jira specific options for ingestion
+    """
+
+    kafka_options: VariableOrOptional[KafkaOptions] = None
+    """
+    :meta private: [EXPERIMENTAL]
     """
 
     meta_ads_options: VariableOrOptional[MetaMarketingOptions] = None
@@ -150,6 +159,11 @@ class ConnectorOptionsDict(TypedDict, total=False):
     jira_options: VariableOrOptional[JiraConnectorOptionsParam]
     """
     Jira specific options for ingestion
+    """
+
+    kafka_options: VariableOrOptional[KafkaOptionsParam]
+    """
+    :meta private: [EXPERIMENTAL]
     """
 
     meta_ads_options: VariableOrOptional[MetaMarketingOptionsParam]
