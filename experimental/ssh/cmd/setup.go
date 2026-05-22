@@ -12,13 +12,14 @@ import (
 func newSetupCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "setup",
-		Short: "Setup SSH configuration for Databricks compute",
-		Long: `Setup SSH configuration for Databricks compute.
+		Short: "[EXPERIMENTAL] Setup SSH configuration for dedicated (single-user) clusters",
+		Long: `[EXPERIMENTAL] Setup SSH configuration for dedicated (single-user) clusters.
 
-This command configures SSH to connect to Databricks compute by adding
-an SSH host configuration to your SSH config file.
+This is an experimental feature and is subject to change.
 
-` + disclaimer,
+After running setup, you can connect with ` + "`ssh <name>`" + `.
+
+For serverless connections, use ` + "`databricks ssh connect`" + ` (no setup step needed).`,
 	}
 
 	var hostName string
