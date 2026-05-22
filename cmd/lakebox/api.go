@@ -305,6 +305,18 @@ func (a *lakeboxAPI) stop(ctx context.Context, id string) (*sandboxEntry, error)
 	return &resp, nil
 }
 
+// start calls POST /api/2.0/lakebox/sandboxes/{id}/start and returns the
+// refreshed sandbox. Mirror of `stop`; same body shape per `body: "*"`.
+func (a *lakeboxAPI) start(ctx context.Context, id string) (*sandboxEntry, error) {
+	body := map[string]string{"sandbox_id": id}
+	var resp sandboxEntry
+	err := a.c.Do(ctx, http.MethodPost, lakeboxAPIPath+"/"+id+"/start", a.headers(), nil, body, &resp)
+	if err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
 // registerKey calls POST /api/2.0/lakebox/ssh-keys. An empty `name` is
 // omitted from the wire payload so the server records "unset" rather than
 // an explicit empty string.
