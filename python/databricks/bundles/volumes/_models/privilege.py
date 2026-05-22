@@ -65,6 +65,8 @@ class Privilege(Enum):
     MANAGE_ACCESS = "MANAGE_ACCESS"
     MANAGE_ACCESS_CONTROL = "MANAGE_ACCESS_CONTROL"
     CREATE_SERVICE = "CREATE_SERVICE"
+    CREATE_FEATURE = "CREATE_FEATURE"
+    READ_FEATURE = "READ_FEATURE"
 
 
 PrivilegeParam = (
@@ -131,6 +133,8 @@ PrivilegeParam = (
         "MANAGE_ACCESS",
         "MANAGE_ACCESS_CONTROL",
         "CREATE_SERVICE",
+        "CREATE_FEATURE",
+        "READ_FEATURE",
     ]
     | Privilege
 )
