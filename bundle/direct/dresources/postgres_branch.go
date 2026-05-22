@@ -174,7 +174,9 @@ func (r *ResourcePostgresBranch) DoUpdate(ctx context.Context, id string, config
 
 func (r *ResourcePostgresBranch) DoDelete(ctx context.Context, id string) error {
 	waiter, err := r.client.Postgres.DeleteBranch(ctx, postgres.DeleteBranchRequest{
-		Name: id,
+		Name:            id,
+		Purge:           false,
+		ForceSendFields: nil,
 	})
 	if err != nil {
 		return err

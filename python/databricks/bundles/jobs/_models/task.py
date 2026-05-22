@@ -50,6 +50,10 @@ from databricks.bundles.jobs._models.pipeline_task import (
     PipelineTaskParam,
 )
 from databricks.bundles.jobs._models.power_bi_task import PowerBiTask, PowerBiTaskParam
+from databricks.bundles.jobs._models.python_operator_task import (
+    PythonOperatorTask,
+    PythonOperatorTaskParam,
+)
 from databricks.bundles.jobs._models.python_wheel_task import (
     PythonWheelTask,
     PythonWheelTaskParam,
@@ -160,8 +164,6 @@ class Task:
 
     disabled: VariableOrOptional[bool] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
     An optional flag to disable the task. If set to true, the task will not run even if it is part of a job.
     """
 
@@ -239,6 +241,13 @@ class Task:
     power_bi_task: VariableOrOptional[PowerBiTask] = None
     """
     The task triggers a Power BI semantic model update when the `power_bi_task` field is present.
+    """
+
+    python_operator_task: VariableOrOptional[PythonOperatorTask] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    The task runs a Python operator task.
     """
 
     python_wheel_task: VariableOrOptional[PythonWheelTask] = None
@@ -373,8 +382,6 @@ class TaskDict(TypedDict, total=False):
 
     disabled: VariableOrOptional[bool]
     """
-    :meta private: [EXPERIMENTAL]
-    
     An optional flag to disable the task. If set to true, the task will not run even if it is part of a job.
     """
 
@@ -452,6 +459,13 @@ class TaskDict(TypedDict, total=False):
     power_bi_task: VariableOrOptional[PowerBiTaskParam]
     """
     The task triggers a Power BI semantic model update when the `power_bi_task` field is present.
+    """
+
+    python_operator_task: VariableOrOptional[PythonOperatorTaskParam]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    The task runs a Python operator task.
     """
 
     python_wheel_task: VariableOrOptional[PythonWheelTaskParam]

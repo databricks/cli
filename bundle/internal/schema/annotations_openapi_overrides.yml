@@ -935,6 +935,13 @@ github.com/databricks/databricks-sdk-go/service/jobs.JobsHealthRules:
   "rules":
     "description": |-
       PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/jobs.PythonOperatorTaskParameter:
+  "name":
+    "description": |-
+      PLACEHOLDER
+  "value":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/jobs.RunJobTask:
   "python_named_params":
     "description": |-
@@ -973,6 +980,9 @@ github.com/databricks/databricks-sdk-go/service/jobs.Webhook:
       PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/pipelines.ConnectorOptions:
   "gdrive_options":
+    "description": |-
+      PLACEHOLDER
+  "kafka_options":
     "description": |-
       PLACEHOLDER
   "sharepoint_options":
@@ -1029,6 +1039,10 @@ github.com/databricks/databricks-sdk-go/service/pipelines.SourceConfig:
       PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/pipelines.TableSpecificConfig:
   "workday_report_parameters":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/pipelines.Transformer:
+  "json_options":
     "description": |-
       PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/serving.Route:
