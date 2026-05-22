@@ -1,0 +1,13 @@
+
+>>> [CLI] bundle validate
+Warning: unterminated variable reference
+  at bundle.name
+  in databricks.yml:2:9
+
+Name: ${foo.bar
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/${foo.bar/default
+
+Found 1 warning

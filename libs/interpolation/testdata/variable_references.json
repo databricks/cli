@@ -1,0 +1,142 @@
+[
+  {
+    "input": "${a.b}",
+    "is_pure_ref": true,
+    "path": "a.b",
+    "comment": "simple two-segment path"
+  },
+  {
+    "input": "${a.b.c}",
+    "is_pure_ref": true,
+    "path": "a.b.c",
+    "comment": "three-segment path"
+  },
+  {
+    "input": "${a.b[0].c}",
+    "is_pure_ref": true,
+    "path": "a.b[0].c",
+    "comment": "path with index"
+  },
+  {
+    "input": "${a[0]}",
+    "is_pure_ref": true,
+    "path": "a[0]",
+    "comment": "single key with index"
+  },
+  {
+    "input": "${a.b[0][1]}",
+    "is_pure_ref": true,
+    "path": "a.b[0][1]",
+    "comment": "path with multiple indices"
+  },
+  {
+    "input": "${a.b-c}",
+    "is_pure_ref": true,
+    "path": "a.b-c",
+    "comment": "hyphen in key"
+  },
+  {
+    "input": "${a.b_c}",
+    "is_pure_ref": true,
+    "path": "a.b_c",
+    "comment": "underscore in key"
+  },
+  {
+    "input": "${resources.jobs.my-job.id}",
+    "is_pure_ref": true,
+    "path": "resources.jobs.my-job.id",
+    "comment": "typical resource reference"
+  },
+  {
+    "input": "${var.my_var}",
+    "is_pure_ref": true,
+    "path": "var.my_var",
+    "comment": "typical variable reference"
+  },
+  {
+    "input": "${a}",
+    "is_pure_ref": true,
+    "path": "a",
+    "comment": "single key"
+  },
+  {
+    "input": "hello",
+    "is_pure_ref": false,
+    "comment": "plain string, no reference"
+  },
+  {
+    "input": "${a} ${b}",
+    "is_pure_ref": false,
+    "comment": "multiple references, not pure"
+  },
+  {
+    "input": "pre ${a.b} post",
+    "is_pure_ref": false,
+    "comment": "reference with surrounding text"
+  },
+  {
+    "input": "${a}${b}",
+    "is_pure_ref": false,
+    "comment": "adjacent references, not pure"
+  },
+  {
+    "input": "",
+    "is_pure_ref": false,
+    "comment": "empty string"
+  },
+  {
+    "input": "${}",
+    "is_pure_ref": false,
+    "comment": "empty reference"
+  },
+  {
+    "input": "${a.b",
+    "is_pure_ref": false,
+    "comment": "unterminated reference"
+  },
+  {
+    "input": "${foo.bar-}",
+    "is_pure_ref": false,
+    "comment": "trailing hyphen in key"
+  },
+  {
+    "input": "${foo..bar}",
+    "is_pure_ref": false,
+    "comment": "double dot in path"
+  },
+  {
+    "input": "${0foo}",
+    "is_pure_ref": false,
+    "comment": "leading digit in key"
+  },
+  {
+    "input": "${foo. bar}",
+    "is_pure_ref": false,
+    "comment": "space in path"
+  },
+  {
+    "input": "${foo.bar!}",
+    "is_pure_ref": false,
+    "comment": "special char in key"
+  },
+  {
+    "input": "${foo.bar_}",
+    "is_pure_ref": false,
+    "comment": "trailing underscore in key"
+  },
+  {
+    "input": "${foo._bar}",
+    "is_pure_ref": false,
+    "comment": "underscore-prefixed segment"
+  },
+  {
+    "input": "$x",
+    "is_pure_ref": false,
+    "comment": "dollar without brace"
+  },
+  {
+    "input": "abc$",
+    "is_pure_ref": false,
+    "comment": "trailing dollar"
+  }
+]
