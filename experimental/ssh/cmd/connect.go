@@ -12,8 +12,8 @@ import (
 func newConnectCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "connect",
-		Short: "Connect to Databricks compute via SSH",
-		Long: `Connect to your Databricks compute and workspace with ssh.
+		Short: "Connect to your Databricks compute and workspace via SSH",
+		Long: `Connect to your Databricks compute and workspace via SSH.
 
 Connect to serverless:
   databricks ssh connect
