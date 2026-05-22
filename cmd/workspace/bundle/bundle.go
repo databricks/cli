@@ -79,9 +79,9 @@ func newCompleteVersion() *cobra.Command {
 	cmd.Use = "complete-version NAME COMPLETION_REASON"
 	cmd.Short = `Complete a version.`
 	cmd.Long = `Complete a version.
-  
+
   Marks a version as complete and releases the deployment lock.
-  
+
   The server atomically: 1. Sets the version status to the provided terminal
   status. 2. Sets complete_time to the current server timestamp. 3. Releases
   the lock on the parent deployment. 4. Updates the parent deployment's status
@@ -92,7 +92,7 @@ func newCompleteVersion() *cobra.Command {
       deployments/{deployment_id}/versions/{version_id}
     COMPLETION_REASON: The reason for completing the version. Must be a terminal reason:
       VERSION_COMPLETE_SUCCESS, VERSION_COMPLETE_FAILURE, or
-      VERSION_COMPLETE_FORCE_ABORT. 
+      VERSION_COMPLETE_FORCE_ABORT.
       Supported values: [VERSION_COMPLETE_FAILURE, VERSION_COMPLETE_FORCE_ABORT, VERSION_COMPLETE_LEASE_EXPIRED, VERSION_COMPLETE_SUCCESS]`
 
 	cmd.Annotations = make(map[string]string)
@@ -181,9 +181,9 @@ func newCreateDeployment() *cobra.Command {
 	cmd.Use = "create-deployment DEPLOYMENT_ID"
 	cmd.Short = `Create a deployment.`
 	cmd.Long = `Create a deployment.
-  
+
   Creates a new deployment in the workspace.
-  
+
   The caller must provide a deployment_id which becomes the final component of
   the deployment's resource name. If a deployment with the same ID already
   exists, the server returns ALREADY_EXISTS.
@@ -261,13 +261,13 @@ func newCreateOperation() *cobra.Command {
 	cmd.Use = "create-operation PARENT"
 	cmd.Short = `Create an operation.`
 	cmd.Long = `Create an operation.
-  
+
   Creates a resource operation under a version.
-  
+
   The caller must provide a resource_key which becomes the final component of
   the operation's name. If an operation with the same key already exists under
   the version, the server returns ALREADY_EXISTS.
-  
+
   On success the server also updates the corresponding deployment-level Resource
   (creating it if this is the first operation for that resource_key, or removing
   it if action_type is DELETE).
@@ -357,9 +357,9 @@ func newCreateVersion() *cobra.Command {
 	cmd.Use = "create-version PARENT VERSION_ID CLI_VERSION VERSION_TYPE"
 	cmd.Short = `Create a version.`
 	cmd.Long = `Create a version.
-  
+
   Creates a new version under a deployment.
-  
+
   Creating a version acquires an exclusive lock on the deployment, preventing
   concurrent deploys. The caller provides a version_id which the server
   validates equals last_version_id + 1 on the deployment.
@@ -371,7 +371,7 @@ func newCreateVersion() *cobra.Command {
       equals last_version_id + 1 on the deployment. If it doesn't match, the
       server returns ABORTED.
     CLI_VERSION: CLI version used to initiate the version.
-    VERSION_TYPE: Type of version (deploy or destroy). 
+    VERSION_TYPE: Type of version (deploy or destroy).
       Supported values: [VERSION_TYPE_DEPLOY, VERSION_TYPE_DESTROY]`
 
 	cmd.Annotations = make(map[string]string)
@@ -457,9 +457,9 @@ func newDeleteDeployment() *cobra.Command {
 	cmd.Use = "delete-deployment NAME"
 	cmd.Short = `Delete a deployment.`
 	cmd.Long = `Delete a deployment.
-  
+
   Deletes a deployment.
-  
+
   The deployment is marked as deleted. It and all its children (versions and
   their operations) will be permanently deleted after the retention policy
   expires. If the deployment has an in-progress version, the server returns
@@ -521,7 +521,7 @@ func newGetDeployment() *cobra.Command {
 	cmd.Use = "get-deployment NAME"
 	cmd.Short = `Get a deployment.`
 	cmd.Long = `Get a deployment.
-  
+
   Retrieves a deployment by its resource name.
 
   Arguments:
@@ -581,7 +581,7 @@ func newGetOperation() *cobra.Command {
 	cmd.Use = "get-operation NAME"
 	cmd.Short = `Get an operation.`
 	cmd.Long = `Get an operation.
-  
+
   Retrieves a resource operation by its resource name.
 
   Arguments:
@@ -641,7 +641,7 @@ func newGetResource() *cobra.Command {
 	cmd.Use = "get-resource NAME"
 	cmd.Short = `Get a resource.`
 	cmd.Long = `Get a resource.
-  
+
   Retrieves a deployment resource by its resource name.
 
   Arguments:
@@ -701,7 +701,7 @@ func newGetVersion() *cobra.Command {
 	cmd.Use = "get-version NAME"
 	cmd.Short = `Get a version.`
 	cmd.Long = `Get a version.
-  
+
   Retrieves a version by its resource name.
 
   Arguments:
@@ -761,9 +761,9 @@ func newHeartbeat() *cobra.Command {
 	cmd.Use = "heartbeat NAME"
 	cmd.Short = `Send a version heartbeat.`
 	cmd.Long = `Send a version heartbeat.
-  
+
   Sends a heartbeat to renew the lock held by a version.
-  
+
   The server validates that the version is the active (non-terminal) version on
   the parent deployment and resets the lock expiry. If the lock has already
   expired or the version is no longer active, the server returns ABORTED.
@@ -838,7 +838,7 @@ func newListDeployments() *cobra.Command {
 	cmd.Use = "list-deployments"
 	cmd.Short = `List deployments.`
 	cmd.Long = `List deployments.
-  
+
   Lists deployments in the workspace.`
 
 	cmd.Annotations = make(map[string]string)
@@ -908,7 +908,7 @@ func newListOperations() *cobra.Command {
 	cmd.Use = "list-operations PARENT"
 	cmd.Short = `List operations.`
 	cmd.Long = `List operations.
-  
+
   Lists resource operations under a version.
 
   Arguments:
@@ -984,7 +984,7 @@ func newListResources() *cobra.Command {
 	cmd.Use = "list-resources PARENT"
 	cmd.Short = `List resources.`
 	cmd.Long = `List resources.
-  
+
   Lists resources under a deployment.
 
   Arguments:
@@ -1059,7 +1059,7 @@ func newListVersions() *cobra.Command {
 	cmd.Use = "list-versions PARENT"
 	cmd.Short = `List versions.`
 	cmd.Long = `List versions.
-  
+
   Lists versions under a deployment, ordered by version_id descending (most
   recent first).
 
