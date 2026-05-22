@@ -89,7 +89,7 @@ func TestBackgroundNoStdin(t *testing.T) {
 	ctx := t.Context()
 	res, err := Background(ctx, []string{"cat"})
 	assert.NoError(t, err)
-	assert.Equal(t, "", res)
+	assert.Empty(t, res)
 }
 
 func TestBackgroundFails(t *testing.T) {

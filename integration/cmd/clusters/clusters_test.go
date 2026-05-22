@@ -20,7 +20,7 @@ func TestClustersList(t *testing.T) {
 	assert.Contains(t, outStr, "ID")
 	assert.Contains(t, outStr, "Name")
 	assert.Contains(t, outStr, "State")
-	assert.Equal(t, "", stderr.String())
+	assert.Empty(t, stderr.String())
 
 	idRegExp := regexp.MustCompile(`[0-9]{4}\-[0-9]{6}-[a-z0-9]{8}`)
 	clusterId := idRegExp.FindString(outStr)
@@ -33,7 +33,7 @@ func TestClustersGet(t *testing.T) {
 	stdout, stderr := testcli.RequireSuccessfulRun(t, ctx, "clusters", "get", clusterId)
 	outStr := stdout.String()
 	assert.Contains(t, outStr, fmt.Sprintf(`"cluster_id": "%s"`, clusterId))
-	assert.Equal(t, "", stderr.String())
+	assert.Empty(t, stderr.String())
 }
 
 func TestClusterCreateErrorWhenNoArguments(t *testing.T) {
