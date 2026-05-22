@@ -13,9 +13,9 @@ const disclaimer = `WARNING! This is an experimental feature:
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:    "ssh",
-		Short:  "Connect to Databricks compute with ssh",
+		Short:  "Connect to your Databricks compute and workspace via SSH",
 		Hidden: true,
-		Long: `Connect to your Databricks compute and workspace with ssh.
+		Long: `Connect to your Databricks compute and workspace via SSH.
 
 Common workflows:
   databricks ssh connect --ide=cursor                       		# connect to serverless through Cursor
