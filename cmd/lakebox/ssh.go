@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/execv"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/spf13/cobra"
 )
 
@@ -131,13 +132,22 @@ Examples:
 						warn(ctx, fmt.Sprintf("Could not save default: %v", err))
 					}
 				}
-			} else if getGatewayHost(ctx, profile) == "" {
-				// Explicit-id ssh on a profile we have no cached gateway for:
-				// one-time `get` to learn it. Subsequent invocations hit the
-				// cache and skip the round-trip. Failure here is non-fatal —
-				// we fall through to the workspace-host heuristic.
-				if sb, err := api.get(ctx, lakeboxID); err == nil {
+			} else {
+				// Validate the explicit ID against the server. Two reasons:
+				//   1. Surface `lakebox ssh fake-id` as a clear 404 instead of
+				//      letting the user wade through `Permission denied` from
+				//      ssh when the gateway can't route an unknown sandbox.
+				//   2. Capture `gateway_host` to drive the resolution below.
+				// Non-NotFound errors fall through so transient API hiccups
+				// don't block a connection the gateway can still route.
+				sb, err := api.get(ctx, lakeboxID)
+				switch {
+				case err == nil:
 					sandboxGatewayHost = sb.GatewayHost
+				case errors.Is(err, apierr.ErrNotFound):
+					return fmt.Errorf("no lakebox named %q — `databricks lakebox list` shows available IDs", lakeboxID)
+				default:
+					warn(ctx, fmt.Sprintf("could not validate lakebox %s: %v", lakeboxID, err))
 				}
 			}
 
