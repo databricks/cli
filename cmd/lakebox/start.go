@@ -9,20 +9,21 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newStopCommand() *cobra.Command {
+func newStartCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "stop <lakebox-id>",
-		Short: "Stop a running Lakebox environment",
-		Long: `Stop a running Lakebox environment.
+		Use:   "start <lakebox-id>",
+		Short: "Start a stopped Lakebox environment",
+		Long: `Start a stopped Lakebox environment.
 
-Terminates the backing microVM but preserves the sandbox record and its
-persistent storage. To restart, run 'databricks lakebox ssh' — the
-gateway auto-starts a stopped sandbox on connection.
+Boots the backing microVM and brings the sandbox to Running.
+'databricks lakebox ssh' already auto-starts a stopped sandbox on
+connection, so this command is mostly useful for pre-warming an
+environment without immediately connecting.
 
-Stopping an already-stopped sandbox is a no-op.
+Starting an already-running sandbox is a no-op.
 
 Example:
-  databricks lakebox stop happy-panda-1234`,
+  databricks lakebox start happy-panda-1234`,
 		Args:              cobra.ExactArgs(1),
 		PreRunE:           root.MustWorkspaceClient,
 		ValidArgsFunction: completeSandboxIDs,
@@ -35,13 +36,13 @@ Example:
 			}
 
 			lakeboxID := args[0]
-			s := spin(ctx, "Stopping "+lakeboxID+"…")
+			s := spin(ctx, "Starting "+lakeboxID+"…")
 			defer s.Close()
 
-			updated, err := api.stop(ctx, lakeboxID)
+			updated, err := api.start(ctx, lakeboxID)
 			if err != nil {
-				s.fail("Failed to stop " + lakeboxID)
-				return fmt.Errorf("failed to stop lakebox %s: %w", lakeboxID, err)
+				s.fail("Failed to start " + lakeboxID)
+				return fmt.Errorf("failed to start lakebox %s: %w", lakeboxID, err)
 			}
 
 			profile := w.Config.Profile
@@ -50,7 +51,7 @@ Example:
 			}
 			_ = setGatewayHost(ctx, profile, updated.GatewayHost)
 
-			s.ok("Stopped " + cmdio.Bold(ctx, updated.SandboxID))
+			s.ok("Started " + cmdio.Bold(ctx, updated.SandboxID))
 			return nil
 		},
 	}

@@ -56,8 +56,9 @@ Examples:
   databricks lakebox config happy-panda-1234 --no-autostop                  # never auto-stop
   databricks lakebox config happy-panda-1234 --no-autostop=false            # back to timeout path
   databricks lakebox config happy-panda-1234 --idle-timeout 30m --no-autostop=false`,
-		Args:    cobra.ExactArgs(1),
-		PreRunE: root.MustWorkspaceClient,
+		Args:              cobra.ExactArgs(1),
+		PreRunE:           root.MustWorkspaceClient,
+		ValidArgsFunction: completeSandboxIDs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			w := cmdctx.WorkspaceClient(ctx)

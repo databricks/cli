@@ -21,8 +21,9 @@ func newStatusCommand() *cobra.Command {
 Example:
   lakebox status happy-panda-1234
   lakebox status happy-panda-1234 --json`,
-		Args:    cobra.ExactArgs(1),
-		PreRunE: root.MustWorkspaceClient,
+		Args:              cobra.ExactArgs(1),
+		PreRunE:           root.MustWorkspaceClient,
+		ValidArgsFunction: completeSandboxIDs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			w := cmdctx.WorkspaceClient(ctx)

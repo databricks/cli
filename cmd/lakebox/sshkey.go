@@ -35,8 +35,9 @@ private key will fail until the key is re-registered.
 
 Example:
   databricks lakebox ssh-key delete a1b2c3d4e5f6...`,
-		Args:    cobra.ExactArgs(1),
-		PreRunE: root.MustWorkspaceClient,
+		Args:              cobra.ExactArgs(1),
+		PreRunE:           root.MustWorkspaceClient,
+		ValidArgsFunction: completeSSHKeyHashes,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			w := cmdctx.WorkspaceClient(ctx)

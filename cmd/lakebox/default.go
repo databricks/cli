@@ -18,8 +18,9 @@ The default is stored locally in ~/.databricks/lakebox.json per profile.
 
 Example:
   databricks lakebox set-default happy-panda-1234`,
-		Args:    cobra.ExactArgs(1),
-		PreRunE: root.MustWorkspaceClient,
+		Args:              cobra.ExactArgs(1),
+		PreRunE:           root.MustWorkspaceClient,
+		ValidArgsFunction: completeSandboxIDs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			w := cmdctx.WorkspaceClient(ctx)
