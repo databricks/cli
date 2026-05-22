@@ -6,16 +6,14 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// envKeysToIsolate lists every environment variable read by DetectHost. Tests
-// clear all of them at the start so process env from the developer's shell
-// (e.g. TERM_PROGRAM=iTerm.app when running locally) cannot leak in.
+// envKeysToIsolate lists every environment variable read by DetectHost.
+// Tests clear all of them at the start so process env from the developer's
+// shell (e.g. TERM_PROGRAM=iTerm.app on a macOS dev machine) cannot leak in.
 var envKeysToIsolate = []string{
 	envTermProgram,
 	envTerminalEmulator,
-	envCursorTraceID,
-	envCFBundleID,
-	envCopilotAgent,
-	envCopilotIntegrator,
+	"GITHUB_COPILOT_AGENT_VERSION",
+	"COPILOT_AGENT_INTEGRATION_ID",
 }
 
 func isolateHostEnv(t *testing.T, overrides map[string]string) {
@@ -39,33 +37,17 @@ func TestDetectHost(t *testing.T) {
 			want: HostUnknown,
 		},
 		{
-			name: "vscode",
+			name: "vscode and forks all classify as vscode",
 			envs: map[string]string{"TERM_PROGRAM": "vscode"},
 			want: HostVSCode,
 		},
 		{
-			name: "vscode with copilot agent",
+			name: "vscode with copilot agent env",
 			envs: map[string]string{
 				"TERM_PROGRAM":                 "vscode",
 				"GITHUB_COPILOT_AGENT_VERSION": "1.2.3",
 			},
 			want: HostVSCodeCopilot,
-		},
-		{
-			name: "cursor wins over vscode TERM_PROGRAM",
-			envs: map[string]string{
-				"TERM_PROGRAM":    "vscode",
-				"CURSOR_TRACE_ID": "abc123",
-			},
-			want: HostCursor,
-		},
-		{
-			name: "windsurf wins over vscode TERM_PROGRAM",
-			envs: map[string]string{
-				"TERM_PROGRAM":         "vscode",
-				"__CFBundleIdentifier": "com.exafunction.windsurf",
-			},
-			want: HostWindsurf,
 		},
 		{
 			name: "jetbrains",
@@ -88,29 +70,14 @@ func TestDetectHost(t *testing.T) {
 			want: HostWarp,
 		},
 		{
-			name: "ghostty",
-			envs: map[string]string{"TERM_PROGRAM": "ghostty"},
-			want: HostGhostty,
-		},
-		{
 			name: "wezterm",
 			envs: map[string]string{"TERM_PROGRAM": "WezTerm"},
 			want: HostWezTerm,
 		},
 		{
-			name: "zed",
-			envs: map[string]string{"TERM_PROGRAM": "zed"},
-			want: HostZed,
-		},
-		{
-			name: "hyper",
-			envs: map[string]string{"TERM_PROGRAM": "Hyper"},
-			want: HostHyper,
-		},
-		{
-			name: "tabby",
-			envs: map[string]string{"TERM_PROGRAM": "Tabby"},
-			want: HostTabby,
+			name: "ghostty",
+			envs: map[string]string{"TERM_PROGRAM": "ghostty"},
+			want: HostGhostty,
 		},
 		{
 			name: "unknown TERM_PROGRAM falls through to unknown",
