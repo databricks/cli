@@ -23,6 +23,11 @@ type ExecutionContext struct {
 	// If true, the CLI is being run from a Databricks notebook / cluster web terminal.
 	FromWebTerminal bool `json:"from_web_terminal,omitempty"`
 
+	// Terminal or IDE the CLI is being run from, detected from environment
+	// variables (TERM_PROGRAM, TERMINAL_EMULATOR, etc.). Enum value, never a
+	// raw env value. See libs/cmdio/host.go for the full enum.
+	Host string `json:"host,omitempty"`
+
 	// Time taken for the CLI command to execute.
 	// We want to serialize the zero value as well so the omitempty tag is not set.
 	ExecutionTimeMs int64 `json:"execution_time_ms"`

@@ -79,6 +79,7 @@ func New(ctx context.Context) *cobra.Command {
 		ctx = withCommandExecIdInUserAgent(ctx)
 		ctx = withUpstreamInUserAgent(ctx)
 		ctx = withInteractiveModeInUserAgent(ctx)
+		ctx = withHostInUserAgent(ctx)
 		ctx = InjectTestPidToUserAgent(ctx)
 		cmd.SetContext(ctx)
 		return nil
@@ -185,6 +186,7 @@ Stack Trace:
 		Command:         commandStr,
 		OperatingSystem: runtime.GOOS,
 		DbrVersion:      dbr.RuntimeVersion(ctx).String(),
+		Host:            string(cmdio.DetectHost(ctx)),
 		ExecutionTimeMs: time.Since(startTime).Milliseconds(),
 		ExitCode:        int64(exitCode),
 	})
