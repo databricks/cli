@@ -100,19 +100,21 @@ func (e *sandboxEntry) idleTimeoutSecs() int64 {
 	return int64(d.Seconds())
 }
 
-// defaultAutoStopSecs mirrors the manager's `watchdog_idle_grace_secs`
-// fallback (10 minutes) used when a sandbox has no per-record override.
-// The value is also documented in `lakebox/CLAUDE.md` ("Sandbox
-// Watchdog" section). Hardcoded here so list/status can render the
-// effective timeout without an extra round-trip to fetch manager config.
-const defaultAutoStopSecs int64 = 600
-
 // autoStopLabel renders the auto-stop policy advertised by the manager
 // for one sandbox into a short human-readable string. Mirrors the wire
 // semantics from `lakebox/proto/lakebox.proto`:
 //   - `no_autostop == true` → never auto-stops
 //   - `idle_timeout` set and positive → that many seconds
-//   - otherwise → manager's global default (`defaultAutoStopSecs`)
+//   - otherwise → no enforcement today; render as "never"
+//
+// The "otherwise" branch used to render a hardcoded `10m` claiming to
+// mirror a manager-side `watchdog_idle_grace_secs` fallback. That
+// fallback does not exist in the current tree (only a stale comment in
+// `lakebox/proto/lakebox.proto`); the ESM-side `LakeboxChecker` is also
+// gated off via the `lakeboxCheckerEnabled` SAFE flag, so unset
+// `idle_timeout` is functionally "never auto-stops" today. Once the
+// manager enforces a real default, swap this branch back to a duration
+// label.
 func (e *sandboxEntry) autoStopLabel() string {
 	if e.NoAutostop != nil && *e.NoAutostop {
 		return "never"
@@ -120,7 +122,7 @@ func (e *sandboxEntry) autoStopLabel() string {
 	if secs := e.idleTimeoutSecs(); secs > 0 {
 		return formatDurationSecs(secs)
 	}
-	return formatDurationSecs(defaultAutoStopSecs)
+	return "never"
 }
 
 // formatDurationSecs prints `secs` as a compact duration (e.g. `90s`,
