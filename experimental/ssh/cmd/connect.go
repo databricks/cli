@@ -49,7 +49,7 @@ Connect to a dedicated cluster:
 
 	cmd.Flags().StringVar(&connectionName, "name", "", "Connection name to reuse across sessions (serverless only)")
 	cmd.Flags().StringVar(&accelerator, "accelerator", "", "Serverless GPU accelerator type (GPU_1xA10 or GPU_8xH100)")
-	cmd.Flags().StringVar(&ide, "ide", "", "Open a remote IDE window on connect (vscode or cursor)")
+	cmd.Flags().StringVar(&ide, "ide", "", "Open remote IDE window (vscode or cursor)")
 
 	cmd.Flags().BoolVar(&proxyMode, "proxy", false, "ProxyCommand mode")
 	cmd.Flags().MarkHidden("proxy")
