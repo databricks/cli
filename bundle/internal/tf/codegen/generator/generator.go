@@ -138,6 +138,18 @@ func Run(_ context.Context, schema *tfjson.ProviderSchema, checksums *schemapkg.
 		}
 	}
 
+	// Generate resource_schemas.go
+	{
+		cr := &collection{
+			OutputFile: "resource_schemas.go",
+			Blocks:     resources,
+		}
+		err := cr.Generate(path)
+		if err != nil {
+			return err
+		}
+	}
+
 	// Generate data_sources.go
 	{
 		cr := &collection{

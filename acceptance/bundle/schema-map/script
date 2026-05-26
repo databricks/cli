@@ -1,0 +1,2 @@
+trace $CLI bundle debug schema-map --help
+trace $CLI bundle debug schema-map > out.schema-map.txt
