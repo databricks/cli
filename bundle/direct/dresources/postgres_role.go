@@ -11,7 +11,6 @@ package dresources
 
 import (
 	"context"
-	"strings"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go"
@@ -52,9 +51,12 @@ func (*ResourcePostgresRole) PrepareState(input *resources.PostgresRole) *Postgr
 }
 
 func (*ResourcePostgresRole) RemapState(remote *postgres.Role) *PostgresRoleState {
+	var roleID string
+	if remote.Status != nil {
+		roleID = remote.Status.RoleId
+	}
 	return &PostgresRoleState{
-		// Derive role_id from the hierarchical name: "<parent>/roles/<role_id>".
-		RoleId: strings.TrimPrefix(remote.Name, remote.Parent+"/roles/"),
+		RoleId: roleID,
 		Parent: remote.Parent,
 
 		// The read API does not return the spec, only the status.
