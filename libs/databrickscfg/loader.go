@@ -25,8 +25,7 @@ func (e errMultipleProfiles) Error() string {
 // AsMultipleProfiles checks if the error is caused by multiple profiles
 // matching the same host. If so, it returns the matching profile names.
 func AsMultipleProfiles(err error) ([]string, bool) {
-	var e errMultipleProfiles
-	if errors.As(err, &e) {
+	if e, ok := errors.AsType[errMultipleProfiles](err); ok {
 		return []string(e), true
 	}
 	return nil, false

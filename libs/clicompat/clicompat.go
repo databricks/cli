@@ -192,8 +192,7 @@ func IsNotFoundError(err error) bool {
 	if errors.Is(err, ErrNotFound) {
 		return true
 	}
-	var httpErr *HTTPStatusError
-	if errors.As(err, &httpErr) && httpErr.StatusCode == http.StatusNotFound {
+	if httpErr, ok := errors.AsType[*HTTPStatusError](err); ok && httpErr.StatusCode == http.StatusNotFound {
 		return true
 	}
 	// Git clone errors include "not found" in stderr when a branch/tag does not
@@ -384,8 +383,7 @@ func fetchRemoteWithRetry(ctx context.Context) (Manifest, error) {
 		lastErr = err
 
 		// Do not retry client errors (4xx) — they won't resolve on retry.
-		var httpErr *HTTPStatusError
-		if errors.As(err, &httpErr) && httpErr.StatusCode >= 400 && httpErr.StatusCode < 500 {
+		if httpErr, ok := errors.AsType[*HTTPStatusError](err); ok && httpErr.StatusCode >= 400 && httpErr.StatusCode < 500 {
 			return nil, lastErr
 		}
 	}
