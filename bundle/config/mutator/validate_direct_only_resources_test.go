@@ -61,7 +61,7 @@ func TestValidateDirectOnlyResourcesTerraformEngineDirectOnlyEmitsError(t *testi
 			},
 			expectedSummary: "Catalog resources are only supported with direct deployment mode",
 			expectedDetail: "Catalog resources require direct deployment mode. " +
-				"Please set the DATABRICKS_BUNDLE_ENGINE environment variable to 'direct' to use catalog resources.\n" +
+				"Please set the DATABRICKS_BUNDLE_ENGINE environment variable to 'direct' or set 'bundle.engine: direct' in your databricks.yml to use catalog resources.\n" +
 				"Learn more at https://docs.databricks.com/dev-tools/bundles/direct",
 		},
 		{
@@ -77,7 +77,7 @@ func TestValidateDirectOnlyResourcesTerraformEngineDirectOnlyEmitsError(t *testi
 			},
 			expectedSummary: "External Location resources are only supported with direct deployment mode",
 			expectedDetail: "External Location resources require direct deployment mode. " +
-				"Please set the DATABRICKS_BUNDLE_ENGINE environment variable to 'direct' to use external_location resources.\n" +
+				"Please set the DATABRICKS_BUNDLE_ENGINE environment variable to 'direct' or set 'bundle.engine: direct' in your databricks.yml to use external_location resources.\n" +
 				"Learn more at https://docs.databricks.com/dev-tools/bundles/direct",
 		},
 		{
@@ -93,7 +93,7 @@ func TestValidateDirectOnlyResourcesTerraformEngineDirectOnlyEmitsError(t *testi
 			},
 			expectedSummary: "Vector Search Endpoint resources are only supported with direct deployment mode",
 			expectedDetail: "Vector Search Endpoint resources require direct deployment mode. " +
-				"Please set the DATABRICKS_BUNDLE_ENGINE environment variable to 'direct' to use vector_search_endpoint resources.\n" +
+				"Please set the DATABRICKS_BUNDLE_ENGINE environment variable to 'direct' or set 'bundle.engine: direct' in your databricks.yml to use vector_search_endpoint resources.\n" +
 				"Learn more at https://docs.databricks.com/dev-tools/bundles/direct",
 		},
 	}

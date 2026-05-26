@@ -1,0 +1,74 @@
+
+>>> [CLI] bundle validate
+Name: deploy-postgres-catalog-[UNIQUE_NAME]
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-catalog-[UNIQUE_NAME]/default
+
+Validation OK!
+
+>>> [CLI] bundle summary
+Name: deploy-postgres-catalog-[UNIQUE_NAME]
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-catalog-[UNIQUE_NAME]/default
+Resources:
+  Postgres catalogs:
+    my_catalog:
+      Name: lakebase_test_[UNIQUE_NAME]
+      URL:  [DATABRICKS_URL]/explore/data/lakebase_test_[UNIQUE_NAME]
+  Postgres projects:
+    my_project:
+      Name: Test Project for Catalog
+      URL:  (not deployed)
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-catalog-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] postgres get-catalog catalogs/lakebase_test_[UNIQUE_NAME]
+{
+  "name": "catalogs/lakebase_test_[UNIQUE_NAME]",
+  "status": {
+    "branch": "projects/test-pg-proj-[UNIQUE_NAME]/branches/production",
+    "catalog_id": "lakebase_test_[UNIQUE_NAME]",
+    "postgres_database": "appdb",
+    "project": "projects/test-pg-proj-[UNIQUE_NAME]"
+  }
+}
+
+>>> [CLI] bundle summary
+Name: deploy-postgres-catalog-[UNIQUE_NAME]
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-catalog-[UNIQUE_NAME]/default
+Resources:
+  Postgres catalogs:
+    my_catalog:
+      Name: lakebase_test_[UNIQUE_NAME]
+      URL:  [DATABRICKS_URL]/explore/data/lakebase_test_[UNIQUE_NAME]
+  Postgres projects:
+    my_project:
+      Name: Test Project for Catalog
+      URL:  (not deployed)
+
+>>> print_requests.py --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.postgres_catalogs.my_catalog
+  delete resources.postgres_projects.my_project
+
+This action will result in the deletion of the following Lakebase projects along with
+all their branches, databases, and endpoints. All data stored in them will be permanently lost:
+  delete resources.postgres_projects.my_project
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-catalog-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!

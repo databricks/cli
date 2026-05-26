@@ -68,16 +68,17 @@ func (*ResourcePostgresProject) RemapState(remote *PostgresProjectRemote) *Postg
 // stay at their zero values, and resources.yml suppresses phantom drift via
 // ignore_remote_changes with reason spec:input_only.
 func makePostgresProjectRemote(project *postgres.Project) *PostgresProjectRemote {
-	// Extract project_id from hierarchical name: "projects/{project_id}"
-	// TODO: log error when we have access to the context
-	components, _ := ParsePostgresName(project.Name)
 	var spec postgres.ProjectSpec
 	if project.Spec != nil {
 		spec = *project.Spec
 	}
+	var projectID string
+	if project.Status != nil {
+		projectID = project.Status.ProjectId
+	}
 	return &PostgresProjectRemote{
 		ProjectSpec:         spec,
-		ProjectId:           components.ProjectID,
+		ProjectId:           projectID,
 		InitialEndpointSpec: project.InitialEndpointSpec,
 		Name:                project.Name,
 		Status:              project.Status,

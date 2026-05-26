@@ -61,22 +61,22 @@ func TestConvertToString(t *testing.T) {
 		// Pointers
 		{
 			name:     "string pointer",
-			value:    stringPtr("test"),
+			value:    new("test"),
 			expected: "test",
 		},
 		{
 			name:     "int pointer",
-			value:    intPtr(123),
+			value:    new(123),
 			expected: "123",
 		},
 		{
 			name:     "float64 pointer",
-			value:    float64Ptr(2.5),
+			value:    new(2.5),
 			expected: "2.5",
 		},
 		{
 			name:     "bool pointer",
-			value:    boolPtr(true),
+			value:    new(true),
 			expected: "true",
 		},
 		{
@@ -145,20 +145,4 @@ func TestConvertToString(t *testing.T) {
 			}
 		})
 	}
-}
-
-func stringPtr(s string) *string {
-	return &s
-}
-
-func intPtr(i int) *int {
-	return &i
-}
-
-func float64Ptr(f float64) *float64 {
-	return &f
-}
-
-func boolPtr(b bool) *bool {
-	return &b
 }

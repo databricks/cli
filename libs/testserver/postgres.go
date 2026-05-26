@@ -109,11 +109,11 @@ func (s *FakeWorkspace) PostgresProjectCreate(req Request, projectID string) Res
 			DisplayName:                 project.Spec.DisplayName,
 			PgVersion:                   project.Spec.PgVersion,
 			HistoryRetentionDuration:    project.Spec.HistoryRetentionDuration,
-			EnablePgNativeLogin:         true,
+			EnablePgNativeLogin:         false,
 			Owner:                       TestUser.UserName,
 			BranchLogicalSizeLimitBytes: 8796093022208, // 8 TB (real API default)
 			SyntheticStorageSizeBytes:   0,
-			ForceSendFields:             []string{"SyntheticStorageSizeBytes"},
+			ForceSendFields:             []string{"EnablePgNativeLogin", "SyntheticStorageSizeBytes"},
 		}
 		if project.Spec.DefaultEndpointSettings != nil {
 			project.Status.DefaultEndpointSettings = &postgres.ProjectDefaultEndpointSettings{
@@ -685,6 +685,83 @@ func (s *FakeWorkspace) PostgresEndpointDelete(name string) Response {
 	}
 }
 
+// PostgresCatalogCreate creates a new postgres catalog.
+func (s *FakeWorkspace) PostgresCatalogCreate(req Request, catalogID string) Response {
+	defer s.LockUnlock()()
+
+	if catalogID == "" {
+		return postgresErrorResponse(400, "INVALID_PARAMETER_VALUE", `Field 'catalog_id' is required, expected non-default value (not "")!`)
+	}
+
+	// The SDK sends request.Catalog (the inner struct) as the body — NOT a
+	// {"catalog": ...} wrapper. Unmarshal directly into postgres.Catalog.
+	var catalog postgres.Catalog
+	if len(req.Body) > 0 {
+		if err := json.Unmarshal(req.Body, &catalog); err != nil {
+			return Response{
+				StatusCode: 400,
+				Body:       fmt.Sprintf("cannot unmarshal request body: %v", err),
+			}
+		}
+	}
+
+	name := "catalogs/" + catalogID
+
+	if _, exists := s.PostgresCatalogs[name]; exists {
+		return postgresErrorResponse(409, "ALREADY_EXISTS", "catalog with such id already exists")
+	}
+
+	now := nowTime()
+	catalog.Name = name
+	catalog.Uid = nextUUID()
+	catalog.CreateTime = now
+	catalog.UpdateTime = now
+
+	status := &postgres.CatalogCatalogStatus{
+		CatalogId: catalogID,
+	}
+	if catalog.Spec != nil {
+		status.Branch = catalog.Spec.Branch
+		status.PostgresDatabase = catalog.Spec.PostgresDatabase
+		// Project portion of the status is "projects/{project_id}", derived
+		// from the branch name "projects/{project_id}/branches/{branch_id}".
+		if idx := strings.Index(catalog.Spec.Branch, "/branches/"); idx > 0 {
+			status.Project = catalog.Spec.Branch[:idx]
+		}
+	}
+	catalog.Status = status
+
+	// Real API only returns status on GET (no spec). Match that to keep
+	// acceptance test output stable between local and cloud.
+	catalog.Spec = nil
+
+	s.PostgresCatalogs[name] = catalog
+
+	return Response{Body: s.createOperationLocked(name, catalog)}
+}
+
+// PostgresCatalogGet retrieves a postgres catalog by name.
+func (s *FakeWorkspace) PostgresCatalogGet(name string) Response {
+	defer s.LockUnlock()()
+
+	catalog, exists := s.PostgresCatalogs[name]
+	if !exists {
+		return postgresNotFoundResponse("catalog")
+	}
+	return Response{Body: catalog}
+}
+
+// PostgresCatalogDelete deletes a postgres catalog.
+func (s *FakeWorkspace) PostgresCatalogDelete(name string) Response {
+	defer s.LockUnlock()()
+
+	if _, exists := s.PostgresCatalogs[name]; !exists {
+		return postgresNotFoundResponse("catalog")
+	}
+	delete(s.PostgresCatalogs, name)
+	return Response{Body: s.createOperationLocked(name, nil)}
+}
+
 // PostgresOperationGet retrieves a postgres operation by name.
 func (s *FakeWorkspace) PostgresOperationGet(name string) Response {
 	defer s.LockUnlock()()
@@ -706,9 +783,14 @@ func (s *FakeWorkspace) createOperationLocked(resourceName string, response any)
 
 	// Determine resource type from name for metadata @type
 	resourceType := "Project"
-	if strings.Contains(resourceName, "/endpoints/") {
+	switch {
+	case strings.HasPrefix(resourceName, "catalogs/"):
+		resourceType = "Catalog"
+	case strings.HasPrefix(resourceName, "synced_tables/"):
+		resourceType = "SyncedTable"
+	case strings.Contains(resourceName, "/endpoints/"):
 		resourceType = "Endpoint"
-	} else if strings.Contains(resourceName, "/branches/") {
+	case strings.Contains(resourceName, "/branches/"):
 		resourceType = "Branch"
 	}
 
@@ -727,6 +809,67 @@ func (s *FakeWorkspace) createOperationLocked(resourceName string, response any)
 
 	s.PostgresOperations[operationName] = op
 	return op
+}
+
+// PostgresSyncedTableCreate creates a new postgres synced table.
+func (s *FakeWorkspace) PostgresSyncedTableCreate(req Request, syncedTableID string) Response {
+	defer s.LockUnlock()()
+
+	if syncedTableID == "" {
+		return postgresErrorResponse(400, "INVALID_PARAMETER_VALUE", `Field 'synced_table_id' is required, expected non-default value (not "")!`)
+	}
+
+	var table postgres.SyncedTable
+	if len(req.Body) > 0 {
+		if err := json.Unmarshal(req.Body, &table); err != nil {
+			return Response{
+				StatusCode: 400,
+				Body:       fmt.Sprintf("cannot unmarshal request body: %v", err),
+			}
+		}
+	}
+
+	name := "synced_tables/" + syncedTableID
+
+	if _, exists := s.PostgresSyncedTables[name]; exists {
+		return postgresErrorResponse(409, "ALREADY_EXISTS", "synced table with such id already exists")
+	}
+	table.Name = name
+	table.Uid = nextUUID()
+	table.CreateTime = nowTime()
+
+	// GET on the real API returns only status; clear spec to match.
+	table.Spec = nil
+	table.Status = &postgres.SyncedTableSyncedTableStatus{
+		DetailedState:                 postgres.SyncedTableStateSyncedTableOnline,
+		UnityCatalogProvisioningState: postgres.ProvisioningInfoStateActive,
+	}
+
+	s.PostgresSyncedTables[name] = table
+
+	return Response{Body: s.createOperationLocked(name, table)}
+}
+
+// PostgresSyncedTableGet retrieves a postgres synced table by name.
+func (s *FakeWorkspace) PostgresSyncedTableGet(name string) Response {
+	defer s.LockUnlock()()
+
+	table, exists := s.PostgresSyncedTables[name]
+	if !exists {
+		return postgresNotFoundResponse("synced table")
+	}
+	return Response{Body: table}
+}
+
+// PostgresSyncedTableDelete deletes a postgres synced table.
+func (s *FakeWorkspace) PostgresSyncedTableDelete(name string) Response {
+	defer s.LockUnlock()()
+
+	if _, exists := s.PostgresSyncedTables[name]; !exists {
+		return postgresNotFoundResponse("synced table")
+	}
+	delete(s.PostgresSyncedTables, name)
+	return Response{Body: s.createOperationLocked(name, nil)}
 }
 
 // createDefaultBranchLocked creates a default branch for a project (caller must hold lock).

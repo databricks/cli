@@ -41,7 +41,7 @@ func TestResolveStorageMode(t *testing.T) {
 	}{
 		{
 			name: "default when nothing is set",
-			want: StorageModePlaintext,
+			want: StorageModeSecure,
 		},
 		{
 			name:       "override wins over env and config",
@@ -63,8 +63,8 @@ func TestResolveStorageMode(t *testing.T) {
 		},
 		{
 			name:       "config sets mode when env and override unset",
-			configBody: "[__settings__]\nauth_storage = secure\n",
-			want:       StorageModeSecure,
+			configBody: "[__settings__]\nauth_storage = plaintext\n",
+			want:       StorageModePlaintext,
 		},
 		{
 			name:     "env value is case-insensitive and trimmed",
@@ -141,19 +141,19 @@ func TestResolveStorageModeWithSource(t *testing.T) {
 	}{
 		{
 			name:       "default",
-			wantMode:   StorageModePlaintext,
+			wantMode:   StorageModeSecure,
 			wantSource: StorageSourceDefault,
 		},
 		{
 			name:       "override",
-			override:   StorageModeSecure,
-			wantMode:   StorageModeSecure,
+			override:   StorageModePlaintext,
+			wantMode:   StorageModePlaintext,
 			wantSource: StorageSourceOverride,
 		},
 		{
 			name:       "env",
-			envValue:   "secure",
-			wantMode:   StorageModeSecure,
+			envValue:   "plaintext",
+			wantMode:   StorageModePlaintext,
 			wantSource: StorageSourceEnvVar,
 		},
 		{

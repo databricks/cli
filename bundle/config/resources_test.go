@@ -53,15 +53,13 @@ import (
 func TestCustomMarshallerIsImplemented(t *testing.T) {
 	rt := reflect.TypeFor[Resources]()
 
-	for i := range rt.NumField() {
-		field := rt.Field(i)
-
+	for field := range rt.Fields() {
 		// Fields in Resources are expected be of the form map[string]*resourceStruct
 		assert.Equal(t, reflect.Map, field.Type.Kind(), "Resource %s is not a map", field.Name)
 		kt := field.Type.Key()
 		assert.Equal(t, reflect.String, kt.Kind(), "Resource %s is not a map with string keys", field.Name)
 		vt := field.Type.Elem()
-		assert.Equal(t, reflect.Ptr, vt.Kind(), "Resource %s is not a map with pointer values", field.Name)
+		assert.Equal(t, reflect.Pointer, vt.Kind(), "Resource %s is not a map with pointer values", field.Name)
 
 		// Marshalling a resourceStruct will panic if resourceStruct does not have a custom marshaller
 		// This is because resourceStruct embeds a Go SDK struct that implements
@@ -95,8 +93,7 @@ func TestResourcesAllResourcesCompleteness(t *testing.T) {
 		types = append(types, group.Description.PluralName)
 	}
 
-	for i := range rt.NumField() {
-		field := rt.Field(i)
+	for field := range rt.Fields() {
 		jsonTag := field.Tag.Get("json")
 
 		if idx := strings.Index(jsonTag, ","); idx != -1 {
@@ -112,8 +109,7 @@ func TestSupportedResources(t *testing.T) {
 	actual := SupportedResources()
 
 	typ := reflect.TypeFor[Resources]()
-	for i := range typ.NumField() {
-		field := typ.Field(i)
+	for field := range typ.Fields() {
 		jsonTags := strings.Split(field.Tag.Get("json"), ",")
 		pluralName := jsonTags[0]
 		assert.Equal(t, actual[pluralName].PluralName, pluralName)
@@ -273,6 +269,20 @@ func TestResourcesBindSupport(t *testing.T) {
 				},
 			},
 		},
+		PostgresCatalogs: map[string]*resources.PostgresCatalog{
+			"my_postgres_catalog": {
+				PostgresCatalogConfig: resources.PostgresCatalogConfig{
+					CatalogId: "my_postgres_catalog",
+				},
+			},
+		},
+		PostgresSyncedTables: map[string]*resources.PostgresSyncedTable{
+			"my_postgres_synced_table": {
+				PostgresSyncedTableConfig: resources.PostgresSyncedTableConfig{
+					SyncedTableId: "catalog.schema.my_postgres_synced_table",
+				},
+			},
+		},
 		VectorSearchEndpoints: map[string]*resources.VectorSearchEndpoint{
 			"my_vector_search_endpoint": {
 				CreateEndpoint: vectorsearch.CreateEndpoint{
@@ -312,6 +322,8 @@ func TestResourcesBindSupport(t *testing.T) {
 	m.GetMockPostgresAPI().EXPECT().GetProject(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockPostgresAPI().EXPECT().GetBranch(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockPostgresAPI().EXPECT().GetEndpoint(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockPostgresAPI().EXPECT().GetCatalog(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockPostgresAPI().EXPECT().GetSyncedTable(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockVectorSearchEndpointsAPI().EXPECT().GetEndpoint(mock.Anything, mock.Anything).Return(nil, nil)
 
 	allResources := supportedResources.AllResources()

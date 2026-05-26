@@ -1,3 +1,9 @@
+# Force plaintext token storage so acceptance tests exercise the file-backed
+# cache rather than the OS keyring, which is not reliably reachable in CI.
+# Tests that want to exercise the secure path or the resolver default unset
+# or override this in their own script.prepare or script.
+export DATABRICKS_AUTH_STORAGE=plaintext
+
 errcode() {
     # Temporarily disable 'set -e' to prevent the script from exiting on error
     set +e

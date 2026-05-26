@@ -74,16 +74,17 @@ func (*ResourcePostgresBranch) RemapState(remote *PostgresBranchRemote) *Postgre
 // stay at their zero values, and resources.yml suppresses phantom drift via
 // ignore_remote_changes with reason spec:input_only.
 func makePostgresBranchRemote(branch *postgres.Branch) *PostgresBranchRemote {
-	// Extract branch_id from hierarchical name: "projects/{project_id}/branches/{branch_id}"
-	// TODO: log error when we have access to the context
-	components, _ := ParsePostgresName(branch.Name)
 	var spec postgres.BranchSpec
 	if branch.Spec != nil {
 		spec = *branch.Spec
 	}
+	var branchID string
+	if branch.Status != nil {
+		branchID = branch.Status.BranchId
+	}
 	return &PostgresBranchRemote{
 		BranchSpec: spec,
-		BranchId:   components.BranchID,
+		BranchId:   branchID,
 		Parent:     branch.Parent,
 		Name:       branch.Name,
 		Status:     branch.Status,
@@ -173,7 +174,9 @@ func (r *ResourcePostgresBranch) DoUpdate(ctx context.Context, id string, config
 
 func (r *ResourcePostgresBranch) DoDelete(ctx context.Context, id string, _ *PostgresBranchState) error {
 	waiter, err := r.client.Postgres.DeleteBranch(ctx, postgres.DeleteBranchRequest{
-		Name: id,
+		Name:            id,
+		Purge:           false,
+		ForceSendFields: nil,
 	})
 	if err != nil {
 		return err
