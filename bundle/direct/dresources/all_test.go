@@ -481,7 +481,7 @@ var testDeps = map[string]prepareWorkspace{
 		}
 
 		return &PermissionsState{
-			ObjectID: "/genie/spaces/" + resp.SpaceId,
+			ObjectID: "/genie/" + resp.SpaceId,
 			EmbeddedSlice: []StatePermission{{
 				Level:    "CAN_MANAGE",
 				UserName: "user@example.com",
