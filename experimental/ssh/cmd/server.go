@@ -12,10 +12,8 @@ import (
 func newServerCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "server",
-		Short: "[EXPERIMENTAL] Run SSH tunnel server",
-		Long: `[EXPERIMENTAL] Run SSH tunnel server.
-
-This is an experimental feature and is subject to change.
+		Short: "Run SSH tunnel server",
+		Long: `Run SSH tunnel server.
 
 This command starts an SSH tunnel server that accepts WebSocket connections
 and proxies them to local SSH daemon processes.`,
