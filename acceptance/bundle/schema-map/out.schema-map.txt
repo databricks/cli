@@ -1,22 +1,22 @@
-alerts (databricks_alert_v2): 46 matches, 0 renames, 2 dabs-only, 5 tf-only
-apps (databricks_app): 128 matches, 0 renames, 17 dabs-only, 4 tf-only
-clusters (databricks_cluster): 105 matches, 0 renames, 1 dabs-only, 31 tf-only
-dashboards (databricks_dashboard): 15 matches, 0 renames, 1 dabs-only, 4 tf-only
-database_catalogs (databricks_database_database_catalog): 5 matches, 0 renames, 2 dabs-only, 2 tf-only
-database_instances (databricks_database_instance): 40 matches, 0 renames, 2 dabs-only, 3 tf-only
-experiments (databricks_mlflow_experiment): 6 matches, 0 renames, 1 dabs-only, 7 tf-only
-jobs (databricks_job): 791 matches, 11 renames, 8 dabs-only, 281 tf-only
-model_serving_endpoints (databricks_model_serving): 142 matches, 0 renames, 1 dabs-only, 4 tf-only
-models (databricks_mlflow_model): 6 matches, 0 renames, 1 dabs-only, 3 tf-only
-pipelines (databricks_pipeline): 434 matches, 3 renames, 4 dabs-only, 15 tf-only
-postgres_branches (databricks_postgres_branch): 3 matches, 0 renames, 9 dabs-only, 26 tf-only
-postgres_catalogs (databricks_postgres_catalog): 1 matches, 0 renames, 5 dabs-only, 15 tf-only
-postgres_endpoints (databricks_postgres_endpoint): 3 matches, 0 renames, 15 dabs-only, 39 tf-only
-postgres_projects (databricks_postgres_project): 1 matches, 0 renames, 18 dabs-only, 52 tf-only
-quality_monitors (databricks_quality_monitor): 38 matches, 0 renames, 1 dabs-only, 5 tf-only
-registered_models (databricks_registered_model): 21 matches, 0 renames, 1 dabs-only, 2 tf-only
-schemas (databricks_schema): 7 matches, 0 renames, 1 dabs-only, 7 tf-only
-secret_scopes (databricks_secret_scope): 6 matches, 0 renames, 1 dabs-only, 3 tf-only
-sql_warehouses (databricks_sql_endpoint): 19 matches, 0 renames, 1 dabs-only, 10 tf-only
-synced_database_tables (databricks_database_synced_database_table): 58 matches, 0 renames, 2 dabs-only, 2 tf-only
-volumes (databricks_volume): 7 matches, 0 renames, 1 dabs-only, 4 tf-only
+alerts (databricks_alert_v2): 0 renames, 1 dabs-only, 3 tf-only
+apps (databricks_app): 0 renames, 16 dabs-only, 2 tf-only
+clusters (databricks_cluster): 0 renames, 0 dabs-only, 29 tf-only
+dashboards (databricks_dashboard): 0 renames, 0 dabs-only, 2 tf-only
+database_catalogs (databricks_database_database_catalog): 0 renames, 1 dabs-only, 0 tf-only
+database_instances (databricks_database_instance): 0 renames, 1 dabs-only, 1 tf-only
+experiments (databricks_mlflow_experiment): 0 renames, 0 dabs-only, 5 tf-only
+jobs (databricks_job): 11 renames, 7 dabs-only, 279 tf-only
+model_serving_endpoints (databricks_model_serving): 0 renames, 0 dabs-only, 2 tf-only
+models (databricks_mlflow_model): 0 renames, 0 dabs-only, 1 tf-only
+pipelines (databricks_pipeline): 3 renames, 3 dabs-only, 13 tf-only
+postgres_branches (databricks_postgres_branch): 0 renames, 8 dabs-only, 24 tf-only
+postgres_catalogs (databricks_postgres_catalog): 0 renames, 4 dabs-only, 13 tf-only
+postgres_endpoints (databricks_postgres_endpoint): 0 renames, 14 dabs-only, 37 tf-only
+postgres_projects (databricks_postgres_project): 0 renames, 17 dabs-only, 50 tf-only
+quality_monitors (databricks_quality_monitor): 0 renames, 0 dabs-only, 5 tf-only
+registered_models (databricks_registered_model): 0 renames, 0 dabs-only, 0 tf-only
+schemas (databricks_schema): 0 renames, 0 dabs-only, 5 tf-only
+secret_scopes (databricks_secret_scope): 0 renames, 0 dabs-only, 1 tf-only
+sql_warehouses (databricks_sql_endpoint): 0 renames, 0 dabs-only, 8 tf-only
+synced_database_tables (databricks_database_synced_database_table): 0 renames, 1 dabs-only, 0 tf-only
+volumes (databricks_volume): 0 renames, 0 dabs-only, 2 tf-only
