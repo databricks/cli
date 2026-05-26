@@ -17,7 +17,7 @@ func newConnectCommand() *cobra.Command {
 
 Connect to serverless:
   databricks ssh connect
-  databricks ssh connect --accelerator=<GPU_type>	# AI Runtime
+  databricks ssh connect --accelerator=<GPU_type>   # AI Runtime
 
 Connect to a dedicated cluster:
   databricks ssh connect --cluster=<cluster-id>
