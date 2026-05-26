@@ -122,6 +122,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 	// We're processing resources in DAG order because we're resolving references (that can be resolved at plan stage).
 	g.Run(defaultParallelism, func(resourceKey string, failedDependency *string) bool {
 		errorPrefix := "cannot plan " + resourceKey
+		ctx := log.WithPrefix(ctx, "planning "+resourceKey)
 
 		entry, err := plan.WriteLockEntry(resourceKey)
 		if err != nil {
