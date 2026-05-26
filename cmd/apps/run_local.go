@@ -18,6 +18,7 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/spf13/cobra"
 )
 
@@ -116,7 +117,7 @@ func setupProxy(ctx context.Context, cmd *cobra.Command, config *runlocal.Config
 		return err
 	}
 
-	me, err := w.CurrentUser.Me(ctx)
+	me, err := w.CurrentUser.Me(ctx, iam.MeRequest{})
 	if err != nil {
 		return err
 	}

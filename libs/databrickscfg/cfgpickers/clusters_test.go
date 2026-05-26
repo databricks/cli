@@ -92,7 +92,7 @@ func TestFirstCompatibleCluster(t *testing.T) {
 		},
 		{
 			Method:   "GET",
-			Resource: "/api/2.0/preview/scim/v2/Me",
+			Resource: "/api/2.0/preview/scim/v2/Me?",
 			Response: iam.User{
 				UserName: "serge",
 			},
@@ -139,7 +139,7 @@ func TestNoCompatibleClusters(t *testing.T) {
 		},
 		{
 			Method:   "GET",
-			Resource: "/api/2.0/preview/scim/v2/Me",
+			Resource: "/api/2.0/preview/scim/v2/Me?",
 			Response: iam.User{
 				UserName: "serge",
 			},
