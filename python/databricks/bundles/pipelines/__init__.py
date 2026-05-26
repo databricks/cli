@@ -103,6 +103,12 @@ __all__ = [
     "JiraConnectorOptions",
     "JiraConnectorOptionsDict",
     "JiraConnectorOptionsParam",
+    "JsonTransformerOptions",
+    "JsonTransformerOptionsDict",
+    "JsonTransformerOptionsParam",
+    "KafkaOptions",
+    "KafkaOptionsDict",
+    "KafkaOptionsParam",
     "Lifecycle",
     "LifecycleDict",
     "LifecycleParam",
@@ -209,6 +215,11 @@ __all__ = [
     "TikTokAdsOptionsTikTokDataLevelParam",
     "TikTokAdsOptionsTikTokReportType",
     "TikTokAdsOptionsTikTokReportTypeParam",
+    "Transformer",
+    "TransformerDict",
+    "TransformerFormat",
+    "TransformerFormatParam",
+    "TransformerParam",
     "VolumesStorageInfo",
     "VolumesStorageInfoDict",
     "VolumesStorageInfoParam",
@@ -398,6 +409,16 @@ from databricks.bundles.pipelines._models.jira_connector_options import (
     JiraConnectorOptionsDict,
     JiraConnectorOptionsParam,
 )
+from databricks.bundles.pipelines._models.json_transformer_options import (
+    JsonTransformerOptions,
+    JsonTransformerOptionsDict,
+    JsonTransformerOptionsParam,
+)
+from databricks.bundles.pipelines._models.kafka_options import (
+    KafkaOptions,
+    KafkaOptionsDict,
+    KafkaOptionsParam,
+)
 from databricks.bundles.pipelines._models.lifecycle import (
     Lifecycle,
     LifecycleDict,
@@ -575,6 +596,15 @@ from databricks.bundles.pipelines._models.tik_tok_ads_options_tik_tok_data_level
 from databricks.bundles.pipelines._models.tik_tok_ads_options_tik_tok_report_type import (
     TikTokAdsOptionsTikTokReportType,
     TikTokAdsOptionsTikTokReportTypeParam,
+)
+from databricks.bundles.pipelines._models.transformer import (
+    Transformer,
+    TransformerDict,
+    TransformerParam,
+)
+from databricks.bundles.pipelines._models.transformer_format import (
+    TransformerFormat,
+    TransformerFormatParam,
 )
 from databricks.bundles.pipelines._models.volumes_storage_info import (
     VolumesStorageInfo,
