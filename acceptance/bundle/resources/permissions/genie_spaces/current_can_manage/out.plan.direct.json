@@ -44,7 +44,7 @@
           ]
         },
         "vars": {
-          "object_id": "/genie/spaces/${resources.genie_spaces.foo.id}"
+          "object_id": "/genie/${resources.genie_spaces.foo.id}"
         }
       }
     }
