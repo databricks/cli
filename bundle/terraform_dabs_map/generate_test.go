@@ -265,47 +265,31 @@ func cleanPath(p string) string {
 	return strings.Trim(p, ".")
 }
 
-// segmentVariants returns all stem variants of a single path segment.
-// The original is listed first; variants with fewer transformations come before
-// variants with more (suffix-only, prefix-only, then both).
-func segmentVariants(seg string) []string {
-	vars := []string{seg}
-
-	// Suffix transformation: ies→y or s→"".
-	var suffixed string
+// stem returns the canonical stemmed form of a single field name: strips a leading
+// "git_" prefix, then applies plural→singular (ies→y, or trailing s→"").
+// Returns seg unchanged if no transformation applies.
+func stem(seg string) string {
+	seg = strings.TrimPrefix(seg, "git_")
 	if strings.HasSuffix(seg, "ies") {
-		suffixed = seg[:len(seg)-3] + "y"
-	} else if len(seg) > 1 && strings.HasSuffix(seg, "s") {
-		suffixed = seg[:len(seg)-1]
+		return seg[:len(seg)-3] + "y"
 	}
-	if suffixed != "" {
-		vars = append(vars, suffixed)
+	if len(seg) > 1 && strings.HasSuffix(seg, "s") {
+		return seg[:len(seg)-1]
 	}
-
-	// Prefix transformation: git_→"".
-	if strings.HasPrefix(seg, "git_") {
-		stripped := seg[4:]
-		if stripped != "" {
-			vars = append(vars, stripped)
-		}
-		// Also apply suffix transformation to the stripped form.
-		if strings.HasSuffix(stripped, "ies") {
-			vars = append(vars, stripped[:len(stripped)-3]+"y")
-		} else if len(stripped) > 1 && strings.HasSuffix(stripped, "s") {
-			vars = append(vars, stripped[:len(stripped)-1])
-		}
-	}
-
-	return vars
+	return seg
 }
 
 // matchToTF maps a DABs field path to its TF equivalent by processing one segment
-// at a time: each segment is matched via segmentVariants, and once a prefix is found
+// at a time: each segment is tried as-is and then stemmed, and once a prefix is found
 // in tfFields the tail is recursively resolved under that prefix.
 // Returns ("", false) when no match exists.
 func matchToTF(dabs string, tfFields map[string]bool) (string, bool) {
 	head, tail, hasTail := strings.Cut(dabs, ".")
-	for _, hv := range segmentVariants(head) {
+	hvs := []string{head}
+	if s := stem(head); s != head {
+		hvs = append(hvs, s)
+	}
+	for _, hv := range hvs {
 		if !hasTail {
 			if tfFields[hv] {
 				return hv, true
