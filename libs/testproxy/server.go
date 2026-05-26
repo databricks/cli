@@ -133,8 +133,7 @@ func (s *ProxyServer) proxyToCloud(w http.ResponseWriter, r *http.Request) {
 	// exactly what the workspace returned. Re-marshalling from the parsed
 	// APIError would drop fields the SDK doesn't surface (e.g. metadata in
 	// details[]) and silently break callers that inspect them.
-	apiErr := &apierr.APIError{}
-	if errors.As(err, &apiErr) {
+	if apiErr, ok := errors.AsType[*apierr.APIError](err); ok {
 		rw := apiErr.ResponseWrapper
 		if rw == nil {
 			// The SDK populates ResponseWrapper for every APIError produced

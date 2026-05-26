@@ -11,8 +11,7 @@ import (
 // This is copied from the retries package of the databricks-sdk-go. It should be made public,
 // but for now, I'm copying it here.
 func shouldRetry(err error) bool {
-	var e *retries.Err
-	if errors.As(err, &e) {
+	if e, ok := errors.AsType[*retries.Err](err); ok {
 		return !e.Halt
 	}
 	return false

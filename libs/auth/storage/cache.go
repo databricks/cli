@@ -159,8 +159,7 @@ func applyReadFallback(ctx context.Context, mode StorageMode, explicit bool, f c
 			return f.newKeyring(), mode, nil
 		}
 		if probeErr := f.probeKeyringRead(); probeErr != nil {
-			var timeoutErr *TimeoutError
-			if errors.As(probeErr, &timeoutErr) {
+			if _, ok := errors.AsType[*TimeoutError](probeErr); ok {
 				log.Debugf(ctx, "keyring read probe timed out (%v); staying on keyring", probeErr)
 				return f.newKeyring(), mode, nil
 			}
@@ -205,8 +204,7 @@ func applyLoginFallback(ctx context.Context, mode StorageMode, explicit bool, f 
 			// during OAuth is the common case, and a misdiagnosed hang
 			// fails the final Store anyway, which is better than a
 			// silent plaintext downgrade.
-			var timeoutErr *TimeoutError
-			if errors.As(probeErr, &timeoutErr) {
+			if _, ok := errors.AsType[*TimeoutError](probeErr); ok {
 				log.Debugf(ctx, "keyring probe timed out (%v); staying on keyring", probeErr)
 				return f.newKeyring(), mode, nil
 			}

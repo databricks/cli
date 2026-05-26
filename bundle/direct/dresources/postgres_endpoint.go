@@ -227,8 +227,7 @@ func (r *ResourcePostgresEndpoint) DoDelete(ctx context.Context, id string, _ *P
 		})
 		if err != nil {
 			// Check if this is a reconciliation in progress error
-			var apiErr *apierr.APIError
-			if errors.As(err, &apiErr) && apiErr.StatusCode == http.StatusConflict &&
+			if apiErr, ok := errors.AsType[*apierr.APIError](err); ok && apiErr.StatusCode == http.StatusConflict &&
 				strings.Contains(apiErr.Message, "reconciliation") {
 				// Check if we've exceeded the timeout
 				if time.Now().After(deadline) {

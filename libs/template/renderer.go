@@ -136,8 +136,7 @@ func (r *renderer) executeTemplate(templateDefinition string) (string, error) {
 	if err != nil {
 		// Parse and return a more readable error for missing values that are used
 		// by the template definition but are not provided in the passed config.
-		target := &template.ExecError{}
-		if errors.As(err, target) {
+		if target, ok := errors.AsType[template.ExecError](err); ok {
 			captureRegex := regexp.MustCompile(`map has no entry for key "(.*)"`)
 			matches := captureRegex.FindStringSubmatch(target.Err.Error())
 			if len(matches) != 2 {
@@ -200,7 +199,7 @@ func (r *renderer) computeFile(relPathTemplate string) (file, error) {
 	}
 	content, err := r.executeTemplate(string(contentTemplate))
 	// Capture errors caused by the "fail" helper function
-	if target := (&ErrFail{}); errors.As(err, target) {
+	if target, ok := errors.AsType[ErrFail](err); ok {
 		return nil, target
 	}
 	if err != nil {

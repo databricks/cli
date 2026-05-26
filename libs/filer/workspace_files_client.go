@@ -179,8 +179,8 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 	}
 
 	// Special handling of this error only if it is an API error.
-	var aerr *apierr.APIError
-	if !errors.As(err, &aerr) {
+	aerr, ok := errors.AsType[*apierr.APIError](err)
+	if !ok {
 		return err
 	}
 
@@ -193,7 +193,7 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 		// Create parent directory.
 		err = w.workspaceClient.Workspace.MkdirsByPath(ctx, path.Dir(absPath)) //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
 		if err != nil {
-			if errors.As(err, &aerr) && aerr.StatusCode == http.StatusForbidden {
+			if mkdirErr, ok := errors.AsType[*apierr.APIError](err); ok && mkdirErr.StatusCode == http.StatusForbidden {
 				return permissionError{absPath}
 			}
 			return fmt.Errorf("unable to mkdir to write file %s: %w", absPath, err)
@@ -274,8 +274,8 @@ func (w *WorkspaceFilesClient) Delete(ctx context.Context, name string, mode ...
 	}
 
 	// Special handling of this error only if it is an API error.
-	var aerr *apierr.APIError
-	if !errors.As(err, &aerr) {
+	aerr, ok := errors.AsType[*apierr.APIError](err)
+	if !ok {
 		return err
 	}
 
@@ -307,8 +307,8 @@ func (w *WorkspaceFilesClient) ReadDir(ctx context.Context, name string) ([]fs.D
 
 	if err != nil {
 		// If we got an API error we deal with it below.
-		var aerr *apierr.APIError
-		if !errors.As(err, &aerr) {
+		aerr, ok := errors.AsType[*apierr.APIError](err)
+		if !ok {
 			return nil, err
 		}
 
@@ -359,8 +359,8 @@ func (w *WorkspaceFilesClient) Stat(ctx context.Context, name string) (fs.FileIn
 	)
 	if err != nil {
 		// If we got an API error we deal with it below.
-		var aerr *apierr.APIError
-		if !errors.As(err, &aerr) {
+		aerr, ok := errors.AsType[*apierr.APIError](err)
+		if !ok {
 			return nil, err
 		}
 
