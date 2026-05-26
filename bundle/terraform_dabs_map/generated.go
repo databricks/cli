@@ -48,12 +48,6 @@ var DABsOnlyFields = map[string]map[string]bool{
 		"git_source.tag":                     true,
 		"source_code_path":                   true,
 	},
-	"database_catalogs": {
-		"id": true,
-	},
-	"database_instances": {
-		"id": true,
-	},
 	"jobs": {
 		"job_clusters.new_cluster.autotermination_minutes":             true,
 		"tasks.for_each_task.task.for_each_task":                       true,
@@ -70,7 +64,6 @@ var DABsOnlyFields = map[string]map[string]bool{
 	},
 	"postgres_branches": {
 		"expire_time":        true,
-		"id":                 true,
 		"is_protected":       true,
 		"no_expiry":          true,
 		"source_branch":      true,
@@ -81,7 +74,6 @@ var DABsOnlyFields = map[string]map[string]bool{
 	"postgres_catalogs": {
 		"branch":                     true,
 		"create_database_if_missing": true,
-		"id":                         true,
 		"postgres_database":          true,
 	},
 	"postgres_endpoints": {
@@ -93,7 +85,6 @@ var DABsOnlyFields = map[string]map[string]bool{
 		"group.enable_readable_secondaries": true,
 		"group.max":                         true,
 		"group.min":                         true,
-		"id":                                true,
 		"no_suspension":                     true,
 		"settings":                          true,
 		"settings.pg_settings":              true,
@@ -116,11 +107,7 @@ var DABsOnlyFields = map[string]map[string]bool{
 		"display_name":               true,
 		"enable_pg_native_login":     true,
 		"history_retention_duration": true,
-		"id":                         true,
 		"pg_version":                 true,
-	},
-	"synced_database_tables": {
-		"id": true,
 	},
 }
 

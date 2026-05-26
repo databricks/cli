@@ -53,6 +53,7 @@ tasks:
       # committed). Run `./task generate` explicitly when codegen inputs change.
       - task: generate-refschema
       - task: generate-schema
+      - task: generate-schema-map
       - task: generate-schema-docs
       - task: generate-validation
       - task: generate-docs
