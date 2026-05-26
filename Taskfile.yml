@@ -846,6 +846,19 @@ tasks:
     cmds:
       - "sh -c 'go run ./bundle/internal/validation/. && gofmt -w -s ./bundle/internal/validation/generated'"
 
+  generate-schema-map:
+    desc: Generate DABs↔Terraform schema field map
+    sources:
+      - "**/*.go"
+      - exclude: "**/*_test.go"
+      - go.mod
+      - go.sum
+      - "{{.EMBED_SOURCES}}"
+    generates:
+      - bundle/terraform_dabs_map/generated.go
+    cmds:
+      - "go run ./bundle/terraform_dabs_map/cmd/generate"
+
   generate-direct:
     desc: Generate direct engine config (apitypes + resources)
     deps: ['generate-direct-apitypes', 'generate-direct-resources']
