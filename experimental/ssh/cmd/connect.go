@@ -71,6 +71,7 @@ Connect to a dedicated cluster:
 	cmd.Flags().MarkHidden("skip-settings-check")
 
 	cmd.Flags().IntVar(&environmentVersion, "environment-version", defaultEnvironmentVersion, "Environment version for AI Runtime")
+	cmd.Flags().MarkHidden("environment-version")
 
 	cmd.Flags().BoolVar(&autoApprove, "auto-approve", false, "Skip confirmation prompts, installing IDE extensions and applying IDE settings without asking")
 
