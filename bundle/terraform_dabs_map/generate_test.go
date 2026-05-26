@@ -1,7 +1,6 @@
 package terraform_dabs_map_test
 
 import (
-	"flag"
 	"fmt"
 	"go/format"
 	"os"
@@ -15,11 +14,9 @@ import (
 	"github.com/databricks/cli/bundle/internal/tf/schema"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structwalk"
-	"github.com/stretchr/testify/assert"
+	"github.com/databricks/cli/libs/testdiff"
 	"github.com/stretchr/testify/require"
 )
-
-var update = flag.Bool("update", false, "update generated.go")
 
 // TestGenerateSchemaMap verifies that generated.go is up to date.
 // Run with -update to regenerate it.
@@ -30,7 +27,7 @@ func TestGenerateSchemaMap(t *testing.T) {
 	src, err := renderSource(results)
 	require.NoError(t, err)
 
-	if *update {
+	if testdiff.OverwriteMode {
 		require.NoError(t, os.WriteFile("generated.go", src, 0o644))
 		for _, r := range results {
 			if r.hasTFType {
@@ -43,8 +40,7 @@ func TestGenerateSchemaMap(t *testing.T) {
 
 	existing, err := os.ReadFile("generated.go")
 	require.NoError(t, err)
-	assert.Equal(t, string(src), string(existing),
-		"generated.go is out of date; regenerate with: go test ./bundle/terraform_dabs_map -run TestGenerateSchemaMap -update")
+	testdiff.AssertEqualTexts(t, "generated.go", "want", string(existing), string(src))
 }
 
 // tfTypes maps TF resource type name → Go struct type, built from ResourceSchemas.
