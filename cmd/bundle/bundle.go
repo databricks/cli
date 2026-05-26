@@ -45,18 +45,27 @@ Online documentation: https://docs.databricks.com/en/dev-tools/bundles/index.htm
 	// complete) are not user-facing yet and stay in the auto-generated
 	// `cmd/workspace/bundle` tree (which is filtered out of top-level
 	// registration in cmd/cmd.go).
+	//
+	// Hide everything from help output for now: the DMS API surface isn't
+	// documented as a user-facing CLI feature yet. Commands still route
+	// through cobra so callers who know about them can invoke them; they
+	// just don't show up in `bundle --help` / `bundle <group> --help`.
 	dms := metadataServiceCommands()
+	for _, c := range dms {
+		c.Hidden = true
+	}
 
 	// The DAB `deployment` group already exists for bind/unbind/migrate.
-	// Augment it additively with the DMS read-side verbs.
+	// Augment it additively with the (hidden) DMS read-side verbs.
 	deploymentCmd := deployment.NewDeploymentCommand()
 	deploymentCmd.AddCommand(renameTo(dms["get-deployment"], "get"))
 	deploymentCmd.AddCommand(renameTo(dms["list-deployments"], "list"))
 	cmd.AddCommand(deploymentCmd)
 
-	// The three new groups are hidden from help output until the DMS API
-	// surface is documented as a user-facing CLI feature. The commands
-	// still route through cobra; help just won't advertise them.
+	// The three new groups are hidden too; cobra hides a parent when all
+	// of its children are hidden, but we set the flag explicitly so the
+	// group disappears from `bundle --help` even if a future child is
+	// added without the hide flag.
 	versionCmd := &cobra.Command{
 		Use:    "version",
 		Short:  "Read version records in the bundle metadata service.",
