@@ -54,25 +54,31 @@ Online documentation: https://docs.databricks.com/en/dev-tools/bundles/index.htm
 	deploymentCmd.AddCommand(renameTo(dms["list-deployments"], "list"))
 	cmd.AddCommand(deploymentCmd)
 
+	// The three new groups are hidden from help output until the DMS API
+	// surface is documented as a user-facing CLI feature. The commands
+	// still route through cobra; help just won't advertise them.
 	versionCmd := &cobra.Command{
-		Use:   "version",
-		Short: "Read version records in the bundle metadata service.",
+		Use:    "version",
+		Short:  "Read version records in the bundle metadata service.",
+		Hidden: true,
 	}
 	versionCmd.AddCommand(renameTo(dms["get-version"], "get"))
 	versionCmd.AddCommand(renameTo(dms["list-versions"], "list"))
 	cmd.AddCommand(versionCmd)
 
 	resourceCmd := &cobra.Command{
-		Use:   "resource",
-		Short: "Read resource records from the bundle metadata service.",
+		Use:    "resource",
+		Short:  "Read resource records from the bundle metadata service.",
+		Hidden: true,
 	}
 	resourceCmd.AddCommand(renameTo(dms["get-resource"], "get"))
 	resourceCmd.AddCommand(renameTo(dms["list-resources"], "list"))
 	cmd.AddCommand(resourceCmd)
 
 	operationCmd := &cobra.Command{
-		Use:   "operation",
-		Short: "Read operation records in the bundle metadata service.",
+		Use:    "operation",
+		Short:  "Read operation records in the bundle metadata service.",
+		Hidden: true,
 	}
 	operationCmd.AddCommand(renameTo(dms["get-operation"], "get"))
 	operationCmd.AddCommand(renameTo(dms["list-operations"], "list"))

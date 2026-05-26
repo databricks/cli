@@ -21,8 +21,10 @@ func metadataServiceCommands() map[string]*cobra.Command {
 	out := make(map[string]*cobra.Command, len(subs))
 	for _, sub := range subs {
 		ws.RemoveCommand(sub)
-		// These ride under the DAB bundle now, which is visible.
-		sub.Hidden = false
+		// Hide from help output: the DMS API surface isn't documented as a
+		// user-facing CLI feature yet. The commands still work for callers
+		// who know to invoke them; they just don't clutter `bundle --help`.
+		sub.Hidden = true
 		out[sub.Name()] = sub
 	}
 	return out
