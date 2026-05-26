@@ -15,6 +15,7 @@ func newDebugCommand() *cobra.Command {
 	}
 	cmd.AddCommand(debug.NewTerraformCommand())
 	cmd.AddCommand(debug.NewRefSchemaCommand())
+	cmd.AddCommand(debug.NewSchemaMapCommand())
 	cmd.AddCommand(debug.NewStatesCommand())
 	cmd.AddCommand(debug.NewRenderTemplateSchemaCommand())
 	cmd.AddCommand(debug.NewListTargetsCommand())

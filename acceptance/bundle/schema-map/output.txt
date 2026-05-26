@@ -1,0 +1,28 @@
+
+>>> [CLI] bundle debug schema-map --help
+Print the bidirectional field mapping between DABs resource fields and
+Terraform resource fields. Each output line is tab-separated:
+
+  status  dabs_path  tf_resource  tf_path
+
+Status values:
+  match      field exists in both DABs and Terraform with the same name
+  renamed    field exists in both but under different names (e.g. tasks→task)
+  dabs_only  field exists in DABs but not in Terraform
+  tf_only    field exists in Terraform but not in DABs
+  no_tf_type DABs resource has no known Terraform resource type
+
+Usage:
+  databricks bundle debug schema-map [flags]
+
+Flags:
+  -h, --help   help for schema-map
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+      --var strings      set values for variables defined in bundle config. Example: --var="foo=bar"
+
+>>> [CLI] bundle debug schema-map
