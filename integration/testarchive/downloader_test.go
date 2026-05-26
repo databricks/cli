@@ -29,7 +29,7 @@ func TestUvDownloader(t *testing.T) {
 		files, err := os.ReadDir(filepath.Join(tmpDir, arch))
 		require.NoError(t, err)
 
-		assert.Equal(t, 1, len(files))
+		assert.Len(t, files, 1)
 		assert.Equal(t, "uv", files[0].Name())
 	}
 }
@@ -52,7 +52,7 @@ func TestJqDownloader(t *testing.T) {
 		files, err := os.ReadDir(filepath.Join(tmpDir, arch))
 		require.NoError(t, err)
 
-		assert.Equal(t, 1, len(files))
+		assert.Len(t, files, 1)
 		assert.Equal(t, "jq", files[0].Name())
 	}
 }
@@ -75,7 +75,7 @@ func TestGoDownloader(t *testing.T) {
 		entries, err := os.ReadDir(filepath.Join(tmpDir, arch))
 		require.NoError(t, err)
 
-		assert.Equal(t, 1, len(entries))
+		assert.Len(t, entries, 1)
 		assert.Equal(t, "go", entries[0].Name())
 		assert.True(t, entries[0].IsDir())
 

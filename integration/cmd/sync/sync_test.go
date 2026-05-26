@@ -225,7 +225,7 @@ func (a *syncTest) snapshotContains(files []string) {
 		_, ok := s.LastModifiedTimes[filePath]
 		assert.True(a.t, ok, "%s not in snapshot file: %v", filePath, s.LastModifiedTimes)
 	}
-	assert.Equal(a.t, len(files), len(s.LastModifiedTimes), "files=%s s.LastModifiedTimes=%s", files, s.LastModifiedTimes)
+	assert.Len(a.t, s.LastModifiedTimes, len(files), "files=%s s.LastModifiedTimes=%s", files, s.LastModifiedTimes)
 }
 
 func TestSyncFullFileSync(t *testing.T) {
