@@ -270,11 +270,11 @@ func cleanPath(p string) string {
 // Returns seg unchanged if no transformation applies.
 func stem(seg string) string {
 	seg = strings.TrimPrefix(seg, "git_")
-	if strings.HasSuffix(seg, "ies") {
-		return seg[:len(seg)-3] + "y"
+	if s, ok := strings.CutSuffix(seg, "ies"); ok {
+		return s + "y"
 	}
-	if len(seg) > 1 && strings.HasSuffix(seg, "s") {
-		return seg[:len(seg)-1]
+	if s, ok := strings.CutSuffix(seg, "s"); ok && s != "" {
+		return s
 	}
 	return seg
 }
