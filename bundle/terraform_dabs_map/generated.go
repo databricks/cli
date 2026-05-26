@@ -2,32 +2,6 @@
 
 package terraform_dabs_map
 
-// Groups lists the DABs resource groups included in the mapping (2-level groups only).
-var Groups = []string{
-	"alerts",
-	"apps",
-	"clusters",
-	"dashboards",
-	"database_catalogs",
-	"database_instances",
-	"experiments",
-	"jobs",
-	"model_serving_endpoints",
-	"models",
-	"pipelines",
-	"postgres_branches",
-	"postgres_catalogs",
-	"postgres_endpoints",
-	"postgres_projects",
-	"quality_monitors",
-	"registered_models",
-	"schemas",
-	"secret_scopes",
-	"sql_warehouses",
-	"synced_database_tables",
-	"volumes",
-}
-
 // TerraformToDABsFieldMap maps DABs group name → (TF field path → DABs field path)
 // for fields that exist in both but under different leaf names. Exact matches are omitted.
 var TerraformToDABsFieldMap = map[string]map[string]string{

@@ -14,7 +14,6 @@ postgres_catalogs (databricks_postgres_catalog): 0 renames, 4 dabs-only, 13 tf-o
 postgres_endpoints (databricks_postgres_endpoint): 0 renames, 14 dabs-only, 37 tf-only
 postgres_projects (databricks_postgres_project): 0 renames, 17 dabs-only, 50 tf-only
 quality_monitors (databricks_quality_monitor): 0 renames, 0 dabs-only, 5 tf-only
-registered_models (databricks_registered_model): 0 renames, 0 dabs-only, 0 tf-only
 schemas (databricks_schema): 0 renames, 0 dabs-only, 5 tf-only
 secret_scopes (databricks_secret_scope): 0 renames, 0 dabs-only, 1 tf-only
 sql_warehouses (databricks_sql_endpoint): 0 renames, 0 dabs-only, 8 tf-only
