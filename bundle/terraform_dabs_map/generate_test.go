@@ -60,15 +60,17 @@ var tfTypes = func() map[string]reflect.Type {
 
 // dabsKnownFields are top-level DABs fields with no TF equivalent; suppress from output.
 var dabsKnownFields = map[string]bool{
+	"id":              true,
 	"permissions":     true,
 	"url":             true,
 	"lifecycle":       true,
 	"grants":          true,
-	"modified_status": true, // DABs-internal deployment tracking field, not a Terraform concept
+	"modified_status": true,
 }
 
 // tfKnownFields are top-level TF fields with no DABs equivalent; suppress from output.
 var tfKnownFields = map[string]bool{
+	"id":              true,
 	"provider_config": true, // Terraform provider metadata, not a DABs concept
 }
 
