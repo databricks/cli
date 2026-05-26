@@ -25,6 +25,64 @@ func TestBuildDescribeCommand(t *testing.T) {
 	)
 }
 
+func TestBuildLoginCommand_AppendsWorkspaceID(t *testing.T) {
+	ctx := t.Context()
+
+	t.Run("profile path never emits --workspace-id", func(t *testing.T) {
+		// `auth login --profile foo` already picks up the profile's stored
+		// workspace_id, so we don't re-emit it regardless of value.
+		assert.Equal(t, "databricks auth login --profile dev", BuildLoginCommand(ctx, "dev", "", nil))
+		assert.Equal(t, "databricks auth login --profile dev", BuildLoginCommand(ctx, "dev", "12345", nil))
+		assert.Equal(t, "databricks auth login --profile dev", BuildLoginCommand(ctx, "dev", WorkspaceIDNone, nil))
+	})
+
+	// Use a .test TLD with an explicit DiscoveryURL so ToOAuthArgument never
+	// triggers a real .well-known resolution (which can stall CI for ~5min
+	// per call on networks that can't fast-fail public lookups). See PR #5125.
+	t.Run("unified host path emits --workspace-id when set", func(t *testing.T) {
+		oauthArg, err := AuthArguments{
+			Host:         "https://unified.cloud.databricks.test",
+			AccountID:    "acc-123",
+			DiscoveryURL: "https://unified.cloud.databricks.test/oidc/accounts/acc-123/.well-known/oauth-authorization-server",
+		}.ToOAuthArgument()
+		require.NoError(t, err)
+
+		cmd := BuildLoginCommand(ctx, "", "ws-456", oauthArg)
+		assert.Contains(t, cmd, "--account-id acc-123")
+		assert.Contains(t, cmd, "--workspace-id ws-456")
+	})
+
+	t.Run("workspace host path omits --workspace-id even when provided", func(t *testing.T) {
+		oauthArg, err := AuthArguments{
+			Host:         "https://adb-123.azuredatabricks.test",
+			DiscoveryURL: "https://adb-123.azuredatabricks.test/oidc/.well-known/oauth-authorization-server",
+		}.ToOAuthArgument()
+		require.NoError(t, err)
+
+		cmd := BuildLoginCommand(ctx, "", "ws-456", oauthArg)
+		assert.Contains(t, cmd, "--host https://adb-123.azuredatabricks.test")
+		assert.NotContains(t, cmd, "--workspace-id")
+	})
+
+	t.Run("account host path omits --workspace-id even when provided", func(t *testing.T) {
+		oauthArg, err := AuthArguments{
+			Host:         "https://accounts.cloud.databricks.test",
+			AccountID:    "acc-123",
+			DiscoveryURL: "https://accounts.cloud.databricks.test/oidc/accounts/acc-123/.well-known/oauth-authorization-server",
+		}.ToOAuthArgument()
+		require.NoError(t, err)
+
+		cmd := BuildLoginCommand(ctx, "", "ws-456", oauthArg)
+		assert.Contains(t, cmd, "--account-id acc-123")
+		assert.NotContains(t, cmd, "--workspace-id")
+	})
+
+	t.Run("profile path shell-quotes profile names with spaces", func(t *testing.T) {
+		cmd := BuildLoginCommand(ctx, "weird name", "", nil)
+		assert.Equal(t, "databricks auth login --profile 'weird name'", cmd)
+	})
+}
+
 func TestAuthTypeDisplayName(t *testing.T) {
 	assert.Equal(t, "Personal Access Token (pat)", AuthTypeDisplayName("pat"))
 	assert.Equal(t, "OAuth (databricks-cli)", AuthTypeDisplayName("databricks-cli"))
@@ -84,6 +142,22 @@ func TestEnrichAuthError(t *testing.T) {
 				"\n\nNext steps:" +
 				"\n  - Re-authenticate: databricks auth login --profile dev" +
 				"\n  - Check your identity: databricks auth describe --profile dev",
+		},
+		{
+			name: "401 with profile needing shell-quoting and pat auth",
+			cfg: &config.Config{
+				Host:     "https://my-workspace.cloud.databricks.com",
+				Profile:  "weird name",
+				AuthType: AuthTypePat,
+			},
+			statusCode: 401,
+			wantMsg: "test error message\n" +
+				"\nProfile:   weird name" +
+				"\nHost:      https://my-workspace.cloud.databricks.com" +
+				"\nAuth type: Personal Access Token (pat)" +
+				"\n\nNext steps:" +
+				"\n  - Regenerate your access token or run: databricks auth login --profile 'weird name'" +
+				"\n  - Check your identity: databricks auth describe --profile 'weird name'",
 		},
 		{
 			name: "401 with profile and pat auth",
@@ -241,7 +315,7 @@ func TestEnrichAuthError(t *testing.T) {
 				"\nHost:      https://unified.cloud.databricks.com" +
 				"\nAuth type: OAuth (databricks-cli)" +
 				"\n\nNext steps:" +
-				"\n  - Re-authenticate: databricks auth login --host https://unified.cloud.databricks.com --account-id acc-123" +
+				"\n  - Re-authenticate: databricks auth login --host https://unified.cloud.databricks.com --account-id acc-123 --workspace-id ws-456" +
 				"\n  - Check your identity: databricks auth describe" +
 				"\n  - Consider setting up a profile: databricks auth login --profile <name>",
 		},

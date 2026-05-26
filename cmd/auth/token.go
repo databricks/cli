@@ -26,9 +26,9 @@ import (
 	"golang.org/x/oauth2"
 )
 
-func helpfulError(ctx context.Context, profile string, persistentAuth u2m.OAuthArgument) string {
-	loginMsg := auth.BuildLoginCommand(ctx, profile, persistentAuth)
-	return fmt.Sprintf("Try logging in again with `%s` before retrying. If this fails, please report this issue to the Databricks CLI maintainers at https://github.com/databricks/cli/issues/new", loginMsg)
+func helpfulError(ctx context.Context, profile, workspaceID string, persistentAuth u2m.OAuthArgument) string {
+	loginMsg := auth.BuildLoginCommand(ctx, profile, workspaceID, persistentAuth)
+	return fmt.Sprintf("To reauthenticate, run the following command:\n\n  $ %s\n\nIf this fails, please report this issue to the Databricks CLI maintainers at https://github.com/databricks/cli/issues/new", loginMsg)
 }
 
 func newTokenCommand(authArguments *auth.AuthArguments) *cobra.Command {
@@ -268,8 +268,8 @@ func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
 	allArgs = append(allArgs, u2m.WithOAuthArgument(oauthArgument))
 	persistentAuth, err := u2m.NewPersistentAuth(ctx, allArgs...)
 	if err != nil {
-		helpMsg := helpfulError(ctx, args.profileName, oauthArgument)
-		return nil, fmt.Errorf("%w. %s", err, helpMsg)
+		helpMsg := helpfulError(ctx, args.profileName, args.authArguments.WorkspaceID, oauthArgument)
+		return nil, fmt.Errorf("%w.\n\n%s", err, helpMsg)
 	}
 	var t *oauth2.Token
 	if args.forceRefresh {
@@ -302,11 +302,11 @@ func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
 			}
 			err = errors.New("cache: " + compatSubstring)
 		}
-		if rewritten, rewrittenErr := auth.RewriteAuthError(ctx, args.authArguments.Host, args.authArguments.AccountID, args.profileName, err); rewritten {
+		if rewritten, rewrittenErr := auth.RewriteAuthError(ctx, args.authArguments.Host, args.authArguments.AccountID, args.authArguments.WorkspaceID, args.authArguments.DiscoveryURL, args.profileName, err); rewritten {
 			return nil, rewrittenErr
 		}
-		helpMsg := helpfulError(ctx, args.profileName, oauthArgument)
-		return nil, fmt.Errorf("%w. %s", err, helpMsg)
+		helpMsg := helpfulError(ctx, args.profileName, args.authArguments.WorkspaceID, oauthArgument)
+		return nil, fmt.Errorf("%w.\n\n%s", err, helpMsg)
 	}
 	return t, nil
 }
