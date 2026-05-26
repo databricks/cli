@@ -3,7 +3,10 @@ package debug
 import (
 	"fmt"
 	"io"
+	"maps"
+	"slices"
 
+	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/terraform_dabs_map"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/spf13/cobra"
@@ -12,18 +15,19 @@ import (
 func NewSchemaMapCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "schema-map",
-		Short: "Print the DABs↔Terraform field mapping",
-		Long: `Print the bidirectional field mapping between DABs resource fields and
-Terraform resource fields. Each output line is tab-separated:
+		Short: "Print the DABs↔Terraform field mapping summary",
+		Long: `Print a per-resource summary of the bidirectional field mapping between
+DABs resource fields and Terraform resource fields.
 
-  status  dabs_path  tf_resource  tf_path
+Each output line is:
 
-Status values:
-  match      field exists in both DABs and Terraform with the same name
-  renamed    field exists in both but under different names (e.g. tasks→task)
-  dabs_only  field exists in DABs but not in Terraform
-  tf_only    field exists in Terraform but not in DABs
-  no_tf_type DABs resource has no known Terraform resource type
+  resource (tf_type): N matches, N renames, N dabs-only, N tf-only
+
+Status meanings:
+  matches   fields that exist in both with the same leaf name
+  renames   fields that exist in both under different leaf names
+  dabs-only fields present in DABs but not in Terraform
+  tf-only   fields present in Terraform but not in DABs
 `,
 		Args: root.NoArgs,
 	}
@@ -36,14 +40,15 @@ Status values:
 }
 
 func printSchemaMap(out io.Writer) error {
-	entries, err := terraform_dabs_map.Build()
-	if err != nil {
-		return err
-	}
-
-	fmt.Fprintln(out, "status\tdabs_path\ttf_resource\ttf_path")
-	for _, e := range entries {
-		fmt.Fprintf(out, "%s\t%s\t%s\t%s\n", e.Status, e.DabsPath, e.TFType, e.TFPath)
+	groups := slices.Sorted(maps.Keys(terraform_dabs_map.MatchCounts))
+	for _, group := range groups {
+		tfType := terraform.GroupToTerraformName[group]
+		matches := terraform_dabs_map.MatchCounts[group]
+		renames := len(terraform_dabs_map.TerraformToDABsFieldMap[group])
+		dabsOnly := len(terraform_dabs_map.DABsOnlyFields[group])
+		tfOnly := len(terraform_dabs_map.TerraformOnlyFields[group])
+		fmt.Fprintf(out, "%s (%s): %d matches, %d renames, %d dabs-only, %d tf-only\n",
+			group, tfType, matches, renames, dabsOnly, tfOnly)
 	}
 	return nil
 }
