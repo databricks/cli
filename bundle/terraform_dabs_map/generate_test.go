@@ -70,7 +70,11 @@ var dabsKnownFields = map[string]bool{
 
 // tfKnownFields are top-level TF fields with no DABs equivalent; suppress from output.
 var tfKnownFields = map[string]bool{
-	"id":              true,
+	"id": true,
+}
+
+// tfKnownSegments are TF path segments that suppress any path containing them at any level.
+var tfKnownSegments = map[string]bool{
 	"provider_config": true, // Terraform provider metadata, not a DABs concept
 }
 
@@ -215,7 +219,7 @@ func buildGroup(group string, adapter *dresources.Adapter) (groupResult, error) 
 		}
 	}
 	for tf := range tfFields {
-		if !matchedTF[tf] && !tfKnownFields[topSegment(tf)] {
+		if !matchedTF[tf] && !tfKnownFields[topSegment(tf)] && !hasKnownSegment(tf, tfKnownSegments) {
 			res.tfOnly[tf] = true
 		}
 	}
@@ -229,6 +233,22 @@ func topSegment(path string) string {
 		return before
 	}
 	return path
+}
+
+// hasKnownSegment reports whether any segment of path is in known.
+func hasKnownSegment(path string, known map[string]bool) bool {
+	for seg := path; seg != ""; {
+		var head string
+		if before, after, ok := strings.Cut(seg, "."); ok {
+			head, seg = before, after
+		} else {
+			head, seg = seg, ""
+		}
+		if known[head] {
+			return true
+		}
+	}
+	return false
 }
 
 // lastSegment returns the last dot-separated segment of path.
@@ -282,32 +302,39 @@ func segmentVariants(seg string) []string {
 	return vars
 }
 
-// allStems returns all stemmed path variants, excluding the original.
-// Variants with fewer per-segment transformations come first.
+// allStems returns stemmed path variants to try for matching.
+//
+// For each segment, tries that segment stemmed while leaving all others original
+// (handles cases like git_source.git_branch → git_source.branch where only one
+// segment changes). Also appends a variant with all segments at their most-stemmed
+// form as a fallback for paths where multiple segments are renamed simultaneously
+// (e.g. tasks.libraries → task.library).
 func allStems(path string) []string {
 	segs := strings.Split(path, ".")
-	combos := []string{""}
-	for _, seg := range segs {
-		variants := segmentVariants(seg)
-		var next []string
-		for _, prefix := range combos {
-			for _, v := range variants {
-				if prefix == "" {
-					next = append(next, v)
-				} else {
-					next = append(next, prefix+"."+v)
-				}
-			}
-		}
-		combos = next
-	}
-	// Exclude the original (first combo is always the original).
+	seen := map[string]bool{path: true}
 	var result []string
-	for _, c := range combos {
-		if c != path {
-			result = append(result, c)
+	add := func(s string) {
+		if !seen[s] {
+			seen[s] = true
+			result = append(result, s)
 		}
 	}
+
+	maxStemmed := slices.Clone(segs)
+	for i, seg := range segs {
+		variants := segmentVariants(seg)
+		if len(variants) == 1 {
+			continue // no stems for this segment
+		}
+		maxStemmed[i] = variants[len(variants)-1]
+		for _, v := range variants[1:] {
+			parts := slices.Clone(segs)
+			parts[i] = v
+			add(strings.Join(parts, "."))
+		}
+	}
+	// Fallback: all segments at their most-stemmed form.
+	add(strings.Join(maxStemmed, "."))
 	return result
 }
 
