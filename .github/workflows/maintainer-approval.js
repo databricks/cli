@@ -57,6 +57,41 @@ async function findGroupApprover(owners, approverLogins, github, org, core) {
   return null;
 }
 
+// GitHub returns the full review history, so we collapse it to each user's
+// latest state before evaluating whether the PR is currently approved.
+function latestReviewsByUser(reviews) {
+  const latest = new Map();
+
+  for (const [index, review] of reviews.entries()) {
+    const login = review.user?.login?.toLowerCase();
+    if (!login) continue;
+
+    const previous = latest.get(login);
+    if (!previous) {
+      latest.set(login, { index, review });
+      continue;
+    }
+
+    const submittedAt = Date.parse(review.submitted_at || "");
+    const previousSubmittedAt = Date.parse(previous.review.submitted_at || "");
+    const useSubmittedAt =
+      !Number.isNaN(submittedAt) &&
+      !Number.isNaN(previousSubmittedAt) &&
+      submittedAt !== previousSubmittedAt;
+
+    if (
+      (useSubmittedAt && submittedAt > previousSubmittedAt) ||
+      (!useSubmittedAt && index > previous.index)
+    ) {
+      latest.set(login, { index, review });
+    }
+  }
+
+  return Array.from(latest.values())
+    .sort((a, b) => a.index - b.index)
+    .map(({ review }) => review);
+}
+
 /**
  * Per-path approval check. Each ownership group needs at least one
  * approval from its owners. Files matching only "*" require a maintainer.
@@ -465,9 +500,10 @@ module.exports = async ({ github, context, core }) => {
     repo: context.repo.repo,
     pull_number: context.issue.number,
   });
+  const latestReviews = latestReviewsByUser(reviews);
 
   // Maintainer approval -> success with simple comment
-  const maintainerApproval = reviews.find(
+  const maintainerApproval = latestReviews.find(
     ({ state, user }) =>
       state === "APPROVED" && user && maintainers.includes(user.login)
   );
@@ -486,7 +522,7 @@ module.exports = async ({ github, context, core }) => {
 
   // Maintainer-authored PR with any approval -> success
   if (authorLogin && maintainers.includes(authorLogin)) {
-    const hasAnyApproval = reviews.some(
+    const hasAnyApproval = latestReviews.some(
       ({ state, user }) =>
         state === "APPROVED" && user && user.login !== authorLogin
     );
@@ -503,8 +539,8 @@ module.exports = async ({ github, context, core }) => {
     }
   }
 
-  // Gather approved logins (excluding the PR author).
-  const approverLogins = reviews
+  // Gather currently approved logins (excluding the PR author).
+  const approverLogins = latestReviews
     .filter(
       ({ state, user }) =>
         state === "APPROVED" && user && user.login !== authorLogin

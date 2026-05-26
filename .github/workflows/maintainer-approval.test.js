@@ -334,6 +334,78 @@ describe("maintainer-approval", () => {
     assert.equal(github._checkRuns.length, 0);
   });
 
+  it("ignores an older maintainer approval after the same maintainer requests changes", async () => {
+    const github = makeGithub({
+      reviews: [
+        {
+          state: "APPROVED",
+          submitted_at: "2026-01-01T00:00:00Z",
+          user: { login: "maintainer1" },
+        },
+        {
+          state: "CHANGES_REQUESTED",
+          submitted_at: "2026-01-02T00:00:00Z",
+          user: { login: "maintainer1" },
+        },
+      ],
+      files: [{ filename: "cmd/pipelines/foo.go" }],
+    });
+    const core = makeCore();
+    const context = makeContext();
+
+    await runModule({ github, context, core });
+
+    assert.equal(github._checkRuns.length, 0);
+  });
+
+  it("ignores an older approval on a maintainer-authored PR after the same reviewer requests changes", async () => {
+    const github = makeGithub({
+      reviews: [
+        {
+          state: "APPROVED",
+          submitted_at: "2026-01-01T00:00:00Z",
+          user: { login: "randomreviewer" },
+        },
+        {
+          state: "CHANGES_REQUESTED",
+          submitted_at: "2026-01-02T00:00:00Z",
+          user: { login: "randomreviewer" },
+        },
+      ],
+      files: [{ filename: "cmd/pipelines/foo.go" }],
+    });
+    const core = makeCore();
+    const context = makeContext({ author: "maintainer1" });
+
+    await runModule({ github, context, core });
+
+    assert.equal(github._checkRuns.length, 0);
+  });
+
+  it("ignores an older path-owner approval after the same owner requests changes", async () => {
+    const github = makeGithub({
+      reviews: [
+        {
+          state: "APPROVED",
+          submitted_at: "2026-01-01T00:00:00Z",
+          user: { login: "jefferycheng1" },
+        },
+        {
+          state: "CHANGES_REQUESTED",
+          submitted_at: "2026-01-02T00:00:00Z",
+          user: { login: "jefferycheng1" },
+        },
+      ],
+      files: [{ filename: "cmd/pipelines/foo.go" }],
+    });
+    const core = makeCore();
+    const context = makeContext();
+
+    await runModule({ github, context, core });
+
+    assert.equal(github._checkRuns.length, 0);
+  });
+
   it("self-approval by PR author is excluded", async () => {
     const github = makeGithub({
       reviews: [
