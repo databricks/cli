@@ -408,11 +408,13 @@ func (a *Adapter) RemapState(remoteState any) (any, error) {
 }
 
 func (a *Adapter) DoRead(ctx context.Context, id string) (any, error) {
-	outs, err := a.doRefresh.Call(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-	return outs[0], nil
+	return retryOnTransient(ctx, func() (any, error) {
+		outs, err := a.doRefresh.Call(ctx, id)
+		if err != nil {
+			return nil, err
+		}
+		return outs[0], nil
+	})
 }
 
 func (a *Adapter) DoDelete(ctx context.Context, id string, state any) error {
@@ -456,13 +458,14 @@ func (a *Adapter) DoUpdate(ctx context.Context, id string, newState any, entry *
 		return nil, errors.New("internal error: DoUpdate not found")
 	}
 
-	outs, err := a.doUpdate.Call(ctx, id, newState, entry)
-	if err != nil {
-		return nil, err
-	}
-
-	remoteState := normalizeNilPointer(outs[0])
-	return remoteState, nil
+	result, err := retryOnTransient(ctx, func() (any, error) {
+		outs, err := a.doUpdate.Call(ctx, id, newState, entry)
+		if err != nil {
+			return nil, err
+		}
+		return outs[0], nil
+	})
+	return normalizeNilPointer(result), err
 }
 
 // HasDoUpdateWithID returns true if the resource implements DoUpdateWithID method.
@@ -476,14 +479,18 @@ func (a *Adapter) DoUpdateWithID(ctx context.Context, oldID string, newState any
 		return "", nil, errors.New("internal error: DoUpdateWithID not found")
 	}
 
-	outs, err := a.doUpdateWithID.Call(ctx, oldID, newState)
-	if err != nil {
-		return "", nil, err
+	type result struct {
+		id          string
+		remoteState any
 	}
-
-	id := outs[0].(string)
-	remoteState := normalizeNilPointer(outs[1])
-	return id, remoteState, nil
+	res, err := retryOnTransient(ctx, func() (result, error) {
+		outs, err := a.doUpdateWithID.Call(ctx, oldID, newState)
+		if err != nil {
+			return result{}, err
+		}
+		return result{outs[0].(string), outs[1]}, nil
+	})
+	return res.id, normalizeNilPointer(res.remoteState), err
 }
 
 func (a *Adapter) DoResize(ctx context.Context, id string, newState any) error {
@@ -491,8 +498,10 @@ func (a *Adapter) DoResize(ctx context.Context, id string, newState any) error {
 		return errors.New("internal error: DoResize not found")
 	}
 
-	_, err := a.doResize.Call(ctx, id, newState)
-	return err
+	return retryErr(ctx, func() error {
+		_, err := a.doResize.Call(ctx, id, newState)
+		return err
+	})
 }
 
 // WaitAfterCreate waits for the resource to become ready after creation.
@@ -503,13 +512,14 @@ func (a *Adapter) WaitAfterCreate(ctx context.Context, id string, newState any) 
 		return nil, nil // no-op if not implemented
 	}
 
-	outs, err := a.waitAfterCreate.Call(ctx, id, newState)
-	if err != nil {
-		return nil, err
-	}
-
-	remoteState := normalizeNilPointer(outs[0])
-	return remoteState, nil
+	result, err := retryOnTransient(ctx, func() (any, error) {
+		outs, err := a.waitAfterCreate.Call(ctx, id, newState)
+		if err != nil {
+			return nil, err
+		}
+		return outs[0], nil
+	})
+	return normalizeNilPointer(result), err
 }
 
 // WaitAfterUpdate waits for the resource to become ready after update.
