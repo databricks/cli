@@ -33,6 +33,7 @@ func allResourceTypes(t *testing.T) []string {
 	// also update this check when adding a new resource
 	require.Equal(t, []string{
 		"alerts",
+		"app_spaces",
 		"apps",
 		"catalogs",
 		"clusters",

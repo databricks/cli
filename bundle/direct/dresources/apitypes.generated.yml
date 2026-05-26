@@ -2,6 +2,8 @@
 
 alerts: sql.AlertV2
 
+app_spaces: apps.Space
+
 apps: apps.App
 
 catalogs: catalog.CreateCatalog
