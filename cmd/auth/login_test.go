@@ -248,7 +248,7 @@ func TestSetWorkspaceIDForUnifiedHost(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "https://unified.databricks.com", authArguments.Host)
 	assert.Equal(t, "test-unified-account", authArguments.AccountID)
-	assert.Equal(t, "", authArguments.WorkspaceID) // Empty is valid for account-level access
+	assert.Empty(t, authArguments.WorkspaceID) // Empty is valid for account-level access
 
 	// Test workspace_id is optional - should default to empty when no profile exists
 	authArguments = auth.AuthArguments{
@@ -259,7 +259,7 @@ func TestSetWorkspaceIDForUnifiedHost(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "https://unified.databricks.com", authArguments.Host)
 	assert.Equal(t, "test-unified-account", authArguments.AccountID)
-	assert.Equal(t, "", authArguments.WorkspaceID) // Empty is valid for account-level access
+	assert.Empty(t, authArguments.WorkspaceID) // Empty is valid for account-level access
 }
 
 func TestLoadProfileByNameAndClusterID(t *testing.T) {
@@ -462,8 +462,8 @@ func TestRunHostDiscovery_NoHost(t *testing.T) {
 	ctx := t.Context()
 	args := &auth.AuthArguments{}
 	runHostDiscovery(ctx, args)
-	assert.Equal(t, "", args.AccountID)
-	assert.Equal(t, "", args.WorkspaceID)
+	assert.Empty(t, args.AccountID)
+	assert.Empty(t, args.WorkspaceID)
 }
 
 func TestRunHostDiscovery_ExplicitFieldsNotOverridden(t *testing.T) {
@@ -525,7 +525,7 @@ func TestRunHostDiscovery_ClassicWorkspaceDoesNotSetAccountID(t *testing.T) {
 	runHostDiscovery(ctx, args)
 
 	// Only workspace_id is set; account_id stays empty since discovery didn't return it.
-	assert.Equal(t, "", args.AccountID)
+	assert.Empty(t, args.AccountID)
 	assert.Equal(t, "12345", args.WorkspaceID)
 }
 

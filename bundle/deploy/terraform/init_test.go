@@ -279,7 +279,7 @@ func TestInheritOIDCTokenEnv(t *testing.T) {
 	err := inheritEnvVars(ctx, env)
 	require.NoError(t, err)
 	assert.Equal(t, "foobar", env["DATABRICKS_OIDC_TOKEN"])
-	assert.Equal(t, "", env["DATABRICKS_OIDC_TOKEN_ENV"])
+	assert.Empty(t, env["DATABRICKS_OIDC_TOKEN_ENV"])
 }
 
 func TestInheritAzureDevOpsSystemVariablesIndividual(t *testing.T) {

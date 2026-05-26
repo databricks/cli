@@ -180,7 +180,7 @@ func TestWorkspaceOpenCommandOpensBrowserByDefault(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, "https://myworkspace.databricks.com/jobs/123", gotURL)
-	assert.Equal(t, "", stdout.String())
+	assert.Empty(t, stdout.String())
 	assert.Contains(t, stderr.String(), "Opening jobs 123 in the browser...")
 }
 
@@ -222,7 +222,7 @@ func TestWorkspaceOpenCommandURLFlag(t *testing.T) {
 
 	assert.False(t, browserOpened)
 	assert.Equal(t, "https://myworkspace.databricks.com/jobs/123?o=789\n", stdout.String())
-	assert.Equal(t, "", stderr.String())
+	assert.Empty(t, stderr.String())
 }
 
 func TestWorkspaceOpenCommandWarnsWhenWorkspaceIDLookupFails(t *testing.T) {

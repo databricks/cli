@@ -156,9 +156,6 @@ linters:
       enable-all: true
       disable:
         - require-error # good check, but we have too many assert.(No)?Errorf? so excluding for now
-        - empty
-        - len
-        - equal-values
         - encoded-compare # Always replaces Equal() with JSONEq, but sometimes exact string match is wanted for JSON
     exhaustive:
       default-signifies-exhaustive: true

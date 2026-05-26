@@ -255,7 +255,7 @@ func TestGetDefaultProfile_NoFile(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "databrickscfg")
 	got, err := GetDefaultProfile(t.Context(), path)
 	require.NoError(t, err)
-	assert.Equal(t, "", got)
+	assert.Empty(t, got)
 	// Verify the file was NOT created as a side effect.
 	assert.NoFileExists(t, path)
 }
@@ -310,7 +310,7 @@ func TestGetConfiguredDefaultProfile_NoFile(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "databrickscfg")
 	got, err := GetConfiguredDefaultProfile(t.Context(), path)
 	require.NoError(t, err)
-	assert.Equal(t, "", got)
+	assert.Empty(t, got)
 	// Verify the file was NOT created as a side effect.
 	assert.NoFileExists(t, path)
 }
@@ -790,7 +790,7 @@ func TestGetConfiguredAuthStorage_MissingFile(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "does-not-exist")
 	got, err := GetConfiguredAuthStorage(t.Context(), path)
 	require.NoError(t, err)
-	assert.Equal(t, "", got)
+	assert.Empty(t, got)
 }
 
 func TestSetConfiguredAuthStorage(t *testing.T) {
