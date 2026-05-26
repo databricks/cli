@@ -12,10 +12,8 @@ import (
 func newSetupCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "setup",
-		Short: "[EXPERIMENTAL] Setup SSH configuration for dedicated (single-user) clusters",
-		Long: `[EXPERIMENTAL] Setup SSH configuration for dedicated (single-user) clusters.
-
-This is an experimental feature and is subject to change.
+		Short: "Setup SSH configuration for dedicated (single-user) clusters",
+		Long: `Setup SSH configuration for dedicated (single-user) clusters.
 
 After running setup, you can connect with ` + "`ssh <name>`" + `.
 
