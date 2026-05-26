@@ -4,7 +4,7 @@ clusters (databricks_cluster): 0 renames, 0 dabs-only, 29 tf-only
 dashboards (databricks_dashboard): 0 renames, 0 dabs-only, 2 tf-only
 database_instances (databricks_database_instance): 0 renames, 0 dabs-only, 1 tf-only
 experiments (databricks_mlflow_experiment): 0 renames, 0 dabs-only, 5 tf-only
-jobs (databricks_job): 11 renames, 13 dabs-only, 263 tf-only
+jobs (databricks_job): 11 renames, 7 dabs-only, 257 tf-only
 model_serving_endpoints (databricks_model_serving): 0 renames, 0 dabs-only, 2 tf-only
 models (databricks_mlflow_model): 0 renames, 0 dabs-only, 1 tf-only
 pipelines (databricks_pipeline): 3 renames, 3 dabs-only, 13 tf-only
