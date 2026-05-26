@@ -120,7 +120,11 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 		return
 	}
 
-	dl := lock.NewDeploymentLock(b, lock.GoalDestroy)
+	dl, err := lock.NewDeploymentLock(ctx, b, lock.GoalDestroy)
+	if err != nil {
+		logdiag.LogError(ctx, err)
+		return
+	}
 	if err := dl.Acquire(ctx); err != nil {
 		logdiag.LogError(ctx, err)
 		return
