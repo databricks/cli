@@ -100,7 +100,7 @@ linters:
         - pattern: 'sync\.Once\b($|[^FV])'
           msg: Use sync.OnceFunc, sync.OnceValue, or sync.OnceValues instead.
         - pattern: 'errors\.As\b'
-          msg: 'Use errors.AsType[T](err) for type-safe error unwrapping (Go 1.26+). errors.As remains available but the generic form removes the need for a target variable.'
+          msg: 'Use errors.AsType[T](err) for type-safe error unwrapping (Go 1.26+).'
       analyze-types: true
     copyloopvar:
       check-alias: true
