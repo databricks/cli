@@ -6,6 +6,7 @@ Usage:
   databricks sync [flags] SRC DST
 
 Flags:
+      --concurrency int       number of parallel requests to the workspace (default 20)
       --dry-run               simulate sync execution without making actual changes
       --exclude strings       patterns to exclude from sync (can be specified multiple times)
       --exclude-from string   file containing patterns to exclude from sync (one pattern per line)

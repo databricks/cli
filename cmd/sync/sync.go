@@ -24,6 +24,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var errInvalidConcurrency = errors.New("--concurrency must be at least 1")
+
 type syncFlags struct {
 	// project files polling interval
 	interval    time.Duration
@@ -35,6 +37,7 @@ type syncFlags struct {
 	dryRun      bool
 	excludeFrom string
 	includeFrom string
+	concurrency int
 }
 
 func readPatternsFile(filePath string) ([]string, error) {
@@ -89,6 +92,7 @@ func (f *syncFlags) syncOptionsFromBundle(cmd *cobra.Command, args []string, b *
 	opts.Include = append(opts.Include, f.include...)
 	opts.Include = append(opts.Include, includePatterns...)
 	opts.DryRun = f.dryRun
+	opts.Concurrency = f.concurrency
 	return opts, nil
 }
 
@@ -163,6 +167,7 @@ func (f *syncFlags) syncOptionsFromArgs(cmd *cobra.Command, args []string) (*syn
 
 		OutputHandler: outputHandler,
 		DryRun:        f.dryRun,
+		Concurrency:   f.concurrency,
 	}
 	return &opts, nil
 }
@@ -187,6 +192,7 @@ func New() *cobra.Command {
 	cmd.Flags().StringVar(&f.excludeFrom, "exclude-from", "", "file containing patterns to exclude from sync (one pattern per line)")
 	cmd.Flags().StringVar(&f.includeFrom, "include-from", "", "file containing patterns to include to sync (one pattern per line)")
 	cmd.Flags().BoolVar(&f.dryRun, "dry-run", false, "simulate sync execution without making actual changes")
+	cmd.Flags().IntVar(&f.concurrency, "concurrency", sync.MaxRequestsInFlight, "number of parallel requests to the workspace")
 
 	// Wrapper for [root.MustWorkspaceClient] that disables loading authentication configuration from a bundle.
 	mustWorkspaceClient := func(cmd *cobra.Command, args []string) error {
@@ -194,7 +200,12 @@ func New() *cobra.Command {
 		return root.MustWorkspaceClient(cmd, args)
 	}
 
-	cmd.PreRunE = mustWorkspaceClient
+	cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
+		if f.concurrency < 1 {
+			return errInvalidConcurrency
+		}
+		return mustWorkspaceClient(cmd, args)
+	}
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		var opts *sync.SyncOptions
 		var err error

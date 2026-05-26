@@ -6,6 +6,8 @@
 
 ### CLI
 
+* Add `--concurrency` flag to `databricks sync` and `databricks bundle sync` to control the number of parallel requests to the workspace (default 20). Useful when uploading many medium-sized files where the previous fixed concurrency could trigger stream timeouts ([#5197](https://github.com/databricks/cli/pull/5197)).
+
 ### Bundles
 * The error reported when a direct-only resource (catalogs, external locations, vector search endpoints) is used with the terraform engine now also suggests setting `bundle.engine: direct` in `databricks.yml`, in addition to the `DATABRICKS_BUNDLE_ENGINE` environment variable ([#5295](https://github.com/databricks/cli/pull/5295)).
 

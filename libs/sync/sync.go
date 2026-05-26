@@ -43,6 +43,8 @@ type SyncOptions struct {
 	OutputHandler OutputHandler
 
 	DryRun bool
+
+	Concurrency int
 }
 
 type Sync struct {
@@ -94,6 +96,10 @@ func New(ctx context.Context, opts SyncOptions) (*Sync, error) {
 	opts.Host = opts.WorkspaceClient.Config.Host
 	if opts.Host == "" {
 		return nil, errors.New("failed to resolve host for snapshot")
+	}
+
+	if opts.Concurrency <= 0 {
+		opts.Concurrency = MaxRequestsInFlight
 	}
 
 	// For full sync, we start with an empty snapshot.

@@ -32,12 +32,13 @@ func TestSyncOptionsFromBundle(t *testing.T) {
 		},
 	}
 
-	f := syncFlags{}
+	f := syncFlags{concurrency: 5}
 	opts, err := f.syncOptionsFromBundle(New(), []string{}, b)
 	require.NoError(t, err)
 	assert.Equal(t, tempDir, opts.LocalRoot.Native())
 	assert.Equal(t, "/Users/jane@doe.com/path", opts.RemotePath)
 	assert.Equal(t, filepath.Join(tempDir, ".databricks", "bundle", "default"), opts.SnapshotBasePath)
+	assert.Equal(t, 5, opts.Concurrency)
 	assert.NotNil(t, opts.WorkspaceClient)
 }
 
@@ -56,13 +57,14 @@ func TestSyncOptionsFromArgs(t *testing.T) {
 	local := t.TempDir()
 	remote := "/remote"
 
-	f := syncFlags{}
+	f := syncFlags{concurrency: 7}
 	cmd := New()
 	cmd.SetContext(cmdctx.SetWorkspaceClient(t.Context(), nil))
 	opts, err := f.syncOptionsFromArgs(cmd, []string{local, remote})
 	require.NoError(t, err)
 	assert.Equal(t, local, opts.LocalRoot.Native())
 	assert.Equal(t, remote, opts.RemotePath)
+	assert.Equal(t, 7, opts.Concurrency)
 }
 
 func TestExcludeFromFlag(t *testing.T) {
