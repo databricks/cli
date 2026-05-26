@@ -8,6 +8,7 @@ import (
 
 	"github.com/databricks/cli/libs/apps/vite"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/env"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -54,7 +55,7 @@ func TestViteServerScriptContent(t *testing.T) {
 
 func TestStartViteDevServerNoNode(t *testing.T) {
 	// Skip this test if node is not available or in CI environments
-	if os.Getenv("CI") != "" {
+	if env.Get(t.Context(), "CI") != "" {
 		t.Skip("Skipping node-dependent test in CI")
 	}
 
