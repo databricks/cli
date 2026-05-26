@@ -36,7 +36,7 @@ Apps
   apps                                   Apps run directly on a customer's Databricks instance, integrate with their data, use and extend Databricks services, and enable users to interact through single sign-on.
 
 Vector Search
-  vector-search-endpoints                **Endpoint**: Represents the compute resources to host vector search indexes.
+  vector-search-endpoints                **Endpoint**: Represents the compute resources to host AI Search indexes.
   vector-search-indexes                  **Index**: An efficient representation of your embedding vectors that supports real-time and efficient approximate nearest neighbor (ANN) search queries.
 
 Identity and Access Management
@@ -92,6 +92,7 @@ Unity Catalog
   tables                                 A table resides in the third layer of Unity Catalog’s three-level namespace.
   temporary-path-credentials             *Public Preview* Temporary Path Credentials refer to short-lived, downscoped credentials used to access external cloud storage locations registered in Databricks.
   temporary-table-credentials            *Public Preview* Temporary Table Credentials refer to short-lived, downscoped credentials used to access cloud storage locations where table data is stored in Databricks.
+  temporary-volume-credentials           *Public Preview* Temporary Volume Credentials refer to short-lived, downscoped credentials used to access cloud storage locations where volume data is stored in Databricks.
   volumes                                Volumes are a Unity Catalog (UC) capability for accessing, storing, governing, organizing and processing files.
   workspace-bindings                     A securable in Databricks can be configured as __OPEN__ or __ISOLATED__.
 

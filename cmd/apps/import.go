@@ -34,6 +34,7 @@ import (
 	"github.com/databricks/cli/libs/textutil"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/apps"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/spf13/cobra"
 )
@@ -89,7 +90,7 @@ Examples:
 			w := cmdctx.WorkspaceClient(ctx)
 
 			// Get current user to filter apps
-			me, err := w.CurrentUser.Me(ctx)
+			me, err := w.CurrentUser.Me(ctx, iam.MeRequest{})
 			if err != nil {
 				return fmt.Errorf("failed to get current user: %w", err)
 			}

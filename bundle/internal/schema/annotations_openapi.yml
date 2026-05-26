@@ -115,6 +115,11 @@ github.com/databricks/cli/bundle/config/resources.App:
     "description": |-
       Git repository configuration for app deployments. When specified, deployments can
       reference code from this repository by providing only the git reference (branch, tag, or commit).
+  "git_source":
+    "description": |-
+      Complete git source specification including repository location and reference.
+    "x-databricks-preview": |-
+      PRIVATE
   "id":
     "description": |-
       The unique identifier of the app.
@@ -148,6 +153,9 @@ github.com/databricks/cli/bundle/config/resources.App:
   "service_principal_name":
     "x-databricks-field-behaviors_output_only": |-
       true
+  "source_code_path":
+    "x-databricks-preview": |-
+      PRIVATE
   "space":
     "description": |-
       Name of the space this app belongs to.
@@ -256,15 +264,14 @@ github.com/databricks/cli/bundle/config/resources.Cluster:
       Data security mode decides what data governance model to use when accessing data
       from a cluster.
 
-      The following modes can only be used when `kind = CLASSIC_PREVIEW`.
       * `DATA_SECURITY_MODE_AUTO`: Databricks will choose the most appropriate access mode depending on your compute configuration.
-      * `DATA_SECURITY_MODE_STANDARD`: Alias for `USER_ISOLATION`.
-      * `DATA_SECURITY_MODE_DEDICATED`: Alias for `SINGLE_USER`.
+      * `DATA_SECURITY_MODE_STANDARD`: A secure cluster that can be shared by multiple users. Cluster users are fully isolated so that they cannot see each other’s data and credentials. Most data governance features are supported in this mode. But programming languages and cluster features might be limited.
+      * `DATA_SECURITY_MODE_DEDICATED`: A secure cluster that can only be exclusively used by a single user specified in `single_user_name`. Most programming languages, cluster features and data governance features are available in this mode.
 
-      The following modes can be used regardless of `kind`.
-      * `NONE`: No security isolation for multiple users sharing the cluster. Data governance features are not available in this mode.
-      * `SINGLE_USER`: A secure cluster that can only be exclusively used by a single user specified in `single_user_name`. Most programming languages, cluster features and data governance features are available in this mode.
-      * `USER_ISOLATION`: A secure cluster that can be shared by multiple users. Cluster users are fully isolated so that they cannot see each other's data and credentials. Most data governance features are supported in this mode. But programming languages and cluster features might be limited.
+      The following modes are legacy aliases for the above modes:
+
+      * `USER_ISOLATION`: Legacy alias for `DATA_SECURITY_MODE_STANDARD`.
+      * `SINGLE_USER`: Legacy alias for `DATA_SECURITY_MODE_DEDICATED`.
 
       The following modes are deprecated starting with Databricks Runtime 15.0 and
       will be removed for future Databricks Runtime versions:
@@ -325,7 +332,6 @@ github.com/databricks/cli/bundle/config/resources.Cluster:
       Clusters with `kind = CLASSIC_PREVIEW` support the following fields, whereas clusters with no specified `kind` do not.
       * [is_single_node](/api/workspace/clusters/create#is_single_node)
       * [use_ml_runtime](/api/workspace/clusters/create#use_ml_runtime)
-      * [data_security_mode](/api/workspace/clusters/create#data_security_mode) set to `DATA_SECURITY_MODE_AUTO`, `DATA_SECURITY_MODE_DEDICATED`, or `DATA_SECURITY_MODE_STANDARD`
 
       By using the [simple form](https://docs.databricks.com/compute/simple-form.html), your clusters are automatically using `kind = CLASSIC_PREVIEW`.
   "node_type_id":
@@ -1139,7 +1145,7 @@ github.com/databricks/cli/bundle/config/resources.VectorSearchEndpoint:
       Type of endpoint
   "name":
     "description": |-
-      Name of the vector search endpoint
+      Name of the AI Search endpoint
   "target_qps":
     "description": |-
       Target QPS for the endpoint. Mutually exclusive with num_replicas.
@@ -1905,6 +1911,10 @@ github.com/databricks/databricks-sdk-go/service/catalog.Privilege:
         MANAGE_ACCESS_CONTROL
       - |-
         CREATE_SERVICE
+      - |-
+        CREATE_FEATURE
+      - |-
+        READ_FEATURE
 github.com/databricks/databricks-sdk-go/service/catalog.PrivilegeAssignment:
   "principal":
     "description": |-
@@ -2192,15 +2202,14 @@ github.com/databricks/databricks-sdk-go/service/compute.ClusterSpec:
       Data security mode decides what data governance model to use when accessing data
       from a cluster.
 
-      The following modes can only be used when `kind = CLASSIC_PREVIEW`.
       * `DATA_SECURITY_MODE_AUTO`: Databricks will choose the most appropriate access mode depending on your compute configuration.
-      * `DATA_SECURITY_MODE_STANDARD`: Alias for `USER_ISOLATION`.
-      * `DATA_SECURITY_MODE_DEDICATED`: Alias for `SINGLE_USER`.
+      * `DATA_SECURITY_MODE_STANDARD`: A secure cluster that can be shared by multiple users. Cluster users are fully isolated so that they cannot see each other’s data and credentials. Most data governance features are supported in this mode. But programming languages and cluster features might be limited.
+      * `DATA_SECURITY_MODE_DEDICATED`: A secure cluster that can only be exclusively used by a single user specified in `single_user_name`. Most programming languages, cluster features and data governance features are available in this mode.
 
-      The following modes can be used regardless of `kind`.
-      * `NONE`: No security isolation for multiple users sharing the cluster. Data governance features are not available in this mode.
-      * `SINGLE_USER`: A secure cluster that can only be exclusively used by a single user specified in `single_user_name`. Most programming languages, cluster features and data governance features are available in this mode.
-      * `USER_ISOLATION`: A secure cluster that can be shared by multiple users. Cluster users are fully isolated so that they cannot see each other's data and credentials. Most data governance features are supported in this mode. But programming languages and cluster features might be limited.
+      The following modes are legacy aliases for the above modes:
+
+      * `USER_ISOLATION`: Legacy alias for `DATA_SECURITY_MODE_STANDARD`.
+      * `SINGLE_USER`: Legacy alias for `DATA_SECURITY_MODE_DEDICATED`.
 
       The following modes are deprecated starting with Databricks Runtime 15.0 and
       will be removed for future Databricks Runtime versions:
@@ -2261,7 +2270,6 @@ github.com/databricks/databricks-sdk-go/service/compute.ClusterSpec:
       Clusters with `kind = CLASSIC_PREVIEW` support the following fields, whereas clusters with no specified `kind` do not.
       * [is_single_node](/api/workspace/clusters/create#is_single_node)
       * [use_ml_runtime](/api/workspace/clusters/create#use_ml_runtime)
-      * [data_security_mode](/api/workspace/clusters/create#data_security_mode) set to `DATA_SECURITY_MODE_AUTO`, `DATA_SECURITY_MODE_DEDICATED`, or `DATA_SECURITY_MODE_STANDARD`
 
       By using the [simple form](https://docs.databricks.com/compute/simple-form.html), your clusters are automatically using `kind = CLASSIC_PREVIEW`.
   "node_type_id":
@@ -2358,15 +2366,14 @@ github.com/databricks/databricks-sdk-go/service/compute.DataSecurityMode:
       Data security mode decides what data governance model to use when accessing data
       from a cluster.
 
-      The following modes can only be used when `kind = CLASSIC_PREVIEW`.
       * `DATA_SECURITY_MODE_AUTO`: Databricks will choose the most appropriate access mode depending on your compute configuration.
-      * `DATA_SECURITY_MODE_STANDARD`: Alias for `USER_ISOLATION`.
-      * `DATA_SECURITY_MODE_DEDICATED`: Alias for `SINGLE_USER`.
+      * `DATA_SECURITY_MODE_STANDARD`: A secure cluster that can be shared by multiple users. Cluster users are fully isolated so that they cannot see each other’s data and credentials. Most data governance features are supported in this mode. But programming languages and cluster features might be limited.
+      * `DATA_SECURITY_MODE_DEDICATED`: A secure cluster that can only be exclusively used by a single user specified in `single_user_name`. Most programming languages, cluster features and data governance features are available in this mode.
 
-      The following modes can be used regardless of `kind`.
-      * `NONE`: No security isolation for multiple users sharing the cluster. Data governance features are not available in this mode.
-      * `SINGLE_USER`: A secure cluster that can only be exclusively used by a single user specified in `single_user_name`. Most programming languages, cluster features and data governance features are available in this mode.
-      * `USER_ISOLATION`: A secure cluster that can be shared by multiple users. Cluster users are fully isolated so that they cannot see each other's data and credentials. Most data governance features are supported in this mode. But programming languages and cluster features might be limited.
+      The following modes are legacy aliases for the above modes:
+
+      * `USER_ISOLATION`: Legacy alias for `DATA_SECURITY_MODE_STANDARD`.
+      * `SINGLE_USER`: Legacy alias for `DATA_SECURITY_MODE_DEDICATED`.
 
       The following modes are deprecated starting with Databricks Runtime 15.0 and
       will be removed for future Databricks Runtime versions:
@@ -2439,7 +2446,10 @@ github.com/databricks/databricks-sdk-go/service/compute.Environment:
       (e.g., `/Workspace/path/to/env.yaml`). Support for a Databricks-provided base environment ID
       (e.g., `workspace-base-environments/databricks_ai_v4`) and workspace base environment ID
       (e.g., `workspace-base-environments/dbe_b849b66e-b31a-4cb5-b161-1f2b10877fb7`) is in Beta.
-      Either `environment_version` or `base_environment` can be provided.  For more information, see
+      Either `environment_version` or `base_environment` can be provided.
+      For more information about Databricks-provided base environments, see the
+      [list workspace base environments](:method:Environments/ListWorkspaceBaseEnvironments) API.
+      For more information, see
   "client":
     "description": |-
       Use `environment_version` instead.
@@ -2801,7 +2811,7 @@ github.com/databricks/databricks-sdk-go/service/database.DatabaseInstanceState:
       - |-
         FAILING_OVER
       - |-
-        MIGRATING
+        UPGRADING
 github.com/databricks/databricks-sdk-go/service/database.DeltaTableSyncInfo:
   "delta_commit_timestamp":
     "description": |-
@@ -3755,13 +3765,39 @@ github.com/databricks/databricks-sdk-go/service/jobs.PipelineParams:
   "full_refresh":
     "description": |-
       If true, triggers a full refresh on the spark declarative pipeline.
+  "full_refresh_selection":
+    "description": |-
+      A list of tables to update with fullRefresh.
+  "refresh_flow_selection":
+    "description": |-
+      Flow names to selectively refresh. These are unioned with other selective refresh
+      options (refresh_selection, full_refresh_selection) to determine the final set of flows to refresh.
+  "refresh_selection":
+    "description": |-
+      A list of tables to update without fullRefresh.
+  "reset_checkpoint_selection":
+    "description": |-
+      A list of streaming flows to reset checkpoints without clearing data.
 github.com/databricks/databricks-sdk-go/service/jobs.PipelineTask:
   "full_refresh":
     "description": |-
       If true, triggers a full refresh on the spark declarative pipeline.
+  "full_refresh_selection":
+    "description": |-
+      A list of tables to update with fullRefresh.
   "pipeline_id":
     "description": |-
       The full name of the pipeline task to execute.
+  "refresh_flow_selection":
+    "description": |-
+      Flow names to selectively refresh. These are unioned with other selective refresh
+      options (refresh_selection, full_refresh_selection) to determine the final set of flows to refresh.
+  "refresh_selection":
+    "description": |-
+      A list of tables to update without fullRefresh.
+  "reset_checkpoint_selection":
+    "description": |-
+      A list of streaming flows to reset checkpoints without clearing data.
 github.com/databricks/databricks-sdk-go/service/jobs.PowerBiModel:
   "authentication_method":
     "description": |-
@@ -3807,6 +3843,18 @@ github.com/databricks/databricks-sdk-go/service/jobs.PowerBiTask:
   "warehouse_id":
     "description": |-
       The SQL warehouse ID to use as the Power BI data source
+github.com/databricks/databricks-sdk-go/service/jobs.PythonOperatorTask:
+  "main":
+    "description": |-
+      Fully qualified name of the main class or function.
+      For example, `my_project.my_function` or `my_project.MyOperator`.
+  "parameters":
+    "description": |-
+      An ordered list of task parameters.
+      TODO(JOBS-30885): Add limits for parameters.
+github.com/databricks/databricks-sdk-go/service/jobs.PythonOperatorTaskParameter:
+  "name": {}
+  "value": {}
 github.com/databricks/databricks-sdk-go/service/jobs.PythonWheelTask:
   "entry_point":
     "description": |-
@@ -4162,8 +4210,6 @@ github.com/databricks/databricks-sdk-go/service/jobs.Task:
   "disabled":
     "description": |-
       An optional flag to disable the task. If set to true, the task will not run even if it is part of a job.
-    "x-databricks-preview": |-
-      PRIVATE
   "email_notifications":
     "description": |-
       An optional set of email addresses that is notified when runs of this task begin or complete as well as when this task is deleted. The default behavior is to not send any emails.
@@ -4213,6 +4259,11 @@ github.com/databricks/databricks-sdk-go/service/jobs.Task:
   "power_bi_task":
     "description": |-
       The task triggers a Power BI semantic model update when the `power_bi_task` field is present.
+  "python_operator_task":
+    "description": |-
+      The task runs a Python operator task.
+    "x-databricks-preview": |-
+      PRIVATE
   "python_wheel_task":
     "description": |-
       The task runs a Python wheel when the `python_wheel_task` field is present.
@@ -4440,6 +4491,9 @@ github.com/databricks/databricks-sdk-go/service/pipelines.ConnectorOptions:
   "jira_options":
     "description": |-
       Jira specific options for ingestion
+  "kafka_options":
+    "x-databricks-preview": |-
+      PRIVATE
   "meta_ads_options":
     "description": |-
       Meta Marketing (Meta Ads) specific options for ingestion
@@ -4599,6 +4653,8 @@ github.com/databricks/databricks-sdk-go/service/pipelines.FileIngestionOptionsFi
         AVRO
       - |-
         ORC
+      - |-
+        FILE
 github.com/databricks/databricks-sdk-go/service/pipelines.FileIngestionOptionsSchemaEvolutionMode:
   "_":
     "description": |-
@@ -4668,6 +4724,10 @@ github.com/databricks/databricks-sdk-go/service/pipelines.GoogleDriveOptionsGoog
         FILE_METADATA
       - |-
         PERMISSION
+      - |-
+        FILE_PERMISSION
+      - |-
+        GROUP_MEMBERSHIP
 github.com/databricks/databricks-sdk-go/service/pipelines.IngestionConfig:
   "report":
     "description": |-
@@ -5042,6 +5102,55 @@ github.com/databricks/databricks-sdk-go/service/pipelines.JiraConnectorOptions:
   "include_jira_spaces":
     "description": |-
       (Optional) Projects to filter Jira data on
+github.com/databricks/databricks-sdk-go/service/pipelines.JsonTransformerOptions:
+  "as_variant":
+    "description": |-
+      Parse the entire value as a single Variant column.
+  "schema":
+    "description": |-
+      Inline schema string for JSON parsing (Spark DDL format).
+  "schema_evolution_mode":
+    "description": |-
+      (Optional) Schema evolution mode for schema inference.
+  "schema_file_path":
+    "description": |-
+      Path to a schema file (.ddl).
+  "schema_hints":
+    "description": |-
+      (Optional) Schema hints as a comma-separated string of "column_name type" pairs.
+github.com/databricks/databricks-sdk-go/service/pipelines.KafkaOptions:
+  "client_config":
+    "description": |-
+      Undocumented backdoor mechanism for overriding parameters
+      to pass to the Kafka client.
+      This is not supported and may break at any time.
+    "x-databricks-preview": |-
+      PRIVATE
+  "key_transformer":
+    "description": |-
+      (Optional) Transformer for the message key.
+      If not specified, the key is left as raw bytes.
+  "max_offsets_per_trigger":
+    "description": |-
+      Internal option to control the maximum number of offsets to process per trigger.
+    "x-databricks-preview": |-
+      PRIVATE
+  "starting_offset":
+    "description": |-
+      (Optional) Where to begin reading when no checkpoint exists.
+      Valid values: "latest" and "earliest". Defaults to "latest".
+  "topic_pattern":
+    "description": |-
+      Java regex pattern to subscribe to matching topics.
+      Only one of topics or topic_pattern must be specified.
+  "topics":
+    "description": |-
+      Topics to subscribe to.
+      Only one of topics or topic_pattern must be specified.
+  "value_transformer":
+    "description": |-
+      (Optional) Transformer for the message value.
+      If not specified, the value is left as raw bytes.
 github.com/databricks/databricks-sdk-go/service/pipelines.ManualTrigger: {}
 github.com/databricks/databricks-sdk-go/service/pipelines.MetaMarketingOptions:
   "_":
@@ -5488,6 +5597,10 @@ github.com/databricks/databricks-sdk-go/service/pipelines.SharepointOptionsShare
         PERMISSION
       - |-
         LIST
+      - |-
+        FILE_PERMISSION
+      - |-
+        GROUP_MEMBERSHIP
 github.com/databricks/databricks-sdk-go/service/pipelines.SmartsheetOptions:
   "_":
     "description": |-
@@ -5674,6 +5787,25 @@ github.com/databricks/databricks-sdk-go/service/pipelines.TikTokAdsOptionsTikTok
         BUSINESS_CENTER
       - |-
         GMV_MAX
+github.com/databricks/databricks-sdk-go/service/pipelines.Transformer:
+  "_":
+    "description": |-
+      Specifies how to transform binary data into structured data.
+  "format":
+    "description": |-
+      Required: the wire format of the data.
+  "json_options": {}
+github.com/databricks/databricks-sdk-go/service/pipelines.TransformerFormat:
+  "_":
+    "enum":
+      - |-
+        STRING
+      - |-
+        JSON
+      - |-
+        AVRO
+      - |-
+        PROTOBUF
 github.com/databricks/databricks-sdk-go/service/pipelines.ZendeskSupportOptions:
   "_":
     "description": |-
@@ -5712,6 +5844,18 @@ github.com/databricks/databricks-sdk-go/service/postgres.EndpointType:
         ENDPOINT_TYPE_READ_WRITE
       - |-
         ENDPOINT_TYPE_READ_ONLY
+github.com/databricks/databricks-sdk-go/service/postgres.NewPipelineSpec:
+  "budget_policy_id":
+    "description": |-
+      Budget policy to set on the newly created pipeline.
+  "storage_catalog":
+    "description": |-
+      UC catalog for the pipeline to store intermediate files (checkpoints, event logs etc).
+      This needs to be a standard catalog where the user has permissions to create Delta tables.
+  "storage_schema":
+    "description": |-
+      UC schema for the pipeline to store intermediate files (checkpoints, event logs etc).
+      This needs to be in the standard catalog where the user has permissions to create Delta tables.
 github.com/databricks/databricks-sdk-go/service/postgres.ProjectCustomTag:
   "key":
     "description": |-
@@ -5742,6 +5886,17 @@ github.com/databricks/databricks-sdk-go/service/postgres.ProjectDefaultEndpointS
       Duration of inactivity after which the compute endpoint is automatically suspended.
       If specified should be between 60s and 604800s (1 minute to 1 week).
       Mutually exclusive with `no_suspension`. When updating, use `spec.project_default_settings.suspension` in the update_mask.
+github.com/databricks/databricks-sdk-go/service/postgres.SyncedTableSyncedTableSpecSyncedTableSchedulingPolicy:
+  "_":
+    "description": |-
+      Scheduling policy of the synced table's underlying pipeline.
+    "enum":
+      - |-
+        CONTINUOUS
+      - |-
+        TRIGGERED
+      - |-
+        SNAPSHOT
 github.com/databricks/databricks-sdk-go/service/serving.Ai21LabsConfig:
   "ai21labs_api_key":
     "description": |-
@@ -6365,6 +6520,8 @@ github.com/databricks/databricks-sdk-go/service/serving.ServedModelInputWorkload
         GPU_LARGE
       - |-
         MULTIGPU_MEDIUM
+      - |-
+        GPU_XLARGE
 github.com/databricks/databricks-sdk-go/service/serving.ServingEndpointPermissionLevel:
   "_":
     "description": |-
@@ -6391,6 +6548,8 @@ github.com/databricks/databricks-sdk-go/service/serving.ServingModelWorkloadType
         GPU_LARGE
       - |-
         MULTIGPU_MEDIUM
+      - |-
+        GPU_XLARGE
 github.com/databricks/databricks-sdk-go/service/serving.TrafficConfig:
   "routes":
     "description": |-

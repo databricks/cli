@@ -16,6 +16,7 @@ import (
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/spf13/cobra"
 	"gopkg.in/ini.v1"
 )
@@ -80,7 +81,7 @@ func (c *profileMetadata) Load(ctx context.Context, configFilePath string, skipV
 		if err != nil {
 			return
 		}
-		_, err = w.CurrentUser.Me(ctx)
+		_, err = w.CurrentUser.Me(ctx, iam.MeRequest{})
 		c.Host = cfg.Host
 		c.AuthType = cfg.AuthType
 		if err != nil {
