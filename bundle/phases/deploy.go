@@ -131,7 +131,11 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		return
 	}
 
-	dl := lock.NewDeploymentLock(b, lock.GoalDeploy)
+	dl, err := lock.NewDeploymentLock(ctx, b, lock.GoalDeploy)
+	if err != nil {
+		logdiag.LogError(ctx, err)
+		return
+	}
 	if err := dl.Acquire(ctx); err != nil {
 		logdiag.LogError(ctx, err)
 		return
