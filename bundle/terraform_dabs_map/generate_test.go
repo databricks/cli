@@ -186,11 +186,8 @@ func buildGroup(group string, adapter *dresources.Adapter) (groupResult, error) 
 		if matchedDABs[dabs] || dabsKnownFields[topSegment(dabs)] {
 			continue
 		}
-		for _, stem := range allStems(dabs) {
-			if tfFields[stem] && !matchedTF[stem] {
-				candidates[stem] = append(candidates[stem], dabs)
-				break
-			}
+		if tfPath, ok := matchToTF(dabs, tfFields); ok && !matchedTF[tfPath] {
+			candidates[tfPath] = append(candidates[tfPath], dabs)
 		}
 	}
 
@@ -302,40 +299,34 @@ func segmentVariants(seg string) []string {
 	return vars
 }
 
-// allStems returns stemmed path variants to try for matching.
-//
-// For each segment, tries that segment stemmed while leaving all others original
-// (handles cases like git_source.git_branch → git_source.branch where only one
-// segment changes). Also appends a variant with all segments at their most-stemmed
-// form as a fallback for paths where multiple segments are renamed simultaneously
-// (e.g. tasks.libraries → task.library).
-func allStems(path string) []string {
-	segs := strings.Split(path, ".")
-	seen := map[string]bool{path: true}
-	var result []string
-	add := func(s string) {
-		if !seen[s] {
-			seen[s] = true
-			result = append(result, s)
+// matchToTF maps a DABs field path to its TF equivalent by processing one segment
+// at a time: each segment is matched via segmentVariants, and once a prefix is found
+// in tfFields the tail is recursively resolved under that prefix.
+// Returns ("", false) when no match exists.
+func matchToTF(dabs string, tfFields map[string]bool) (string, bool) {
+	head, tail, hasTail := strings.Cut(dabs, ".")
+	for _, hv := range segmentVariants(head) {
+		if !hasTail {
+			if tfFields[hv] {
+				return hv, true
+			}
+			continue
+		}
+		prefix := hv + "."
+		subTF := make(map[string]bool)
+		for tf := range tfFields {
+			if after, ok := strings.CutPrefix(tf, prefix); ok {
+				subTF[after] = true
+			}
+		}
+		if len(subTF) == 0 {
+			continue
+		}
+		if sub, ok := matchToTF(tail, subTF); ok {
+			return hv + "." + sub, true
 		}
 	}
-
-	maxStemmed := slices.Clone(segs)
-	for i, seg := range segs {
-		variants := segmentVariants(seg)
-		if len(variants) == 1 {
-			continue // no stems for this segment
-		}
-		maxStemmed[i] = variants[len(variants)-1]
-		for _, v := range variants[1:] {
-			parts := slices.Clone(segs)
-			parts[i] = v
-			add(strings.Join(parts, "."))
-		}
-	}
-	// Fallback: all segments at their most-stemmed form.
-	add(strings.Join(maxStemmed, "."))
-	return result
+	return "", false
 }
 
 func renderSource(results []groupResult) ([]byte, error) {
