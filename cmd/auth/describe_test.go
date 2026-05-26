@@ -27,7 +27,7 @@ func TestGetWorkspaceAuthStatus(t *testing.T) {
 	showSensitive := false
 
 	currentUserApi := m.GetMockCurrentUserAPI()
-	currentUserApi.EXPECT().Me(mock.Anything).Return(&iam.User{
+	currentUserApi.EXPECT().Me(mock.Anything, mock.Anything).Return(&iam.User{
 		UserName: "test-user",
 	}, nil)
 
@@ -306,7 +306,7 @@ func TestGetWorkspaceAuthStatus_U2M_PopulatesTokenStorage(t *testing.T) {
 	cmd.SetContext(ctx)
 
 	currentUserApi := m.GetMockCurrentUserAPI()
-	currentUserApi.EXPECT().Me(mock.Anything).Return(&iam.User{UserName: "u2m-user"}, nil)
+	currentUserApi.EXPECT().Me(mock.Anything, mock.Anything).Return(&iam.User{UserName: "u2m-user"}, nil)
 
 	cmd.Flags().String("host", "", "")
 	cmd.Flags().String("profile", "", "")
@@ -343,7 +343,7 @@ func TestGetWorkspaceAuthStatus_NonU2M_OmitsTokenStorage(t *testing.T) {
 	cmd.SetContext(ctx)
 
 	currentUserApi := m.GetMockCurrentUserAPI()
-	currentUserApi.EXPECT().Me(mock.Anything).Return(&iam.User{UserName: "pat-user"}, nil)
+	currentUserApi.EXPECT().Me(mock.Anything, mock.Anything).Return(&iam.User{UserName: "pat-user"}, nil)
 
 	cmd.Flags().String("host", "", "")
 	cmd.Flags().String("profile", "", "")

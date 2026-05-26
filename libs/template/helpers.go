@@ -120,7 +120,7 @@ func loadHelpers(ctx context.Context) template.FuncMap {
 		"user_name": func() (string, error) {
 			if cachedUser == nil {
 				var err error
-				cachedUser, err = w.CurrentUser.Me(ctx)
+				cachedUser, err = w.CurrentUser.Me(ctx, iam.MeRequest{})
 				if err != nil {
 					return "", err
 				}
@@ -134,7 +134,7 @@ func loadHelpers(ctx context.Context) template.FuncMap {
 		"short_name": func() (string, error) {
 			if cachedUser == nil {
 				var err error
-				cachedUser, err = w.CurrentUser.Me(ctx)
+				cachedUser, err = w.CurrentUser.Me(ctx, iam.MeRequest{})
 				if err != nil {
 					return "", err
 				}
@@ -166,7 +166,7 @@ func loadHelpers(ctx context.Context) template.FuncMap {
 			}
 			if cachedUser == nil {
 				var err error
-				cachedUser, err = w.CurrentUser.Me(ctx)
+				cachedUser, err = w.CurrentUser.Me(ctx, iam.MeRequest{})
 				if err != nil {
 					return false, err
 				}
