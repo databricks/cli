@@ -117,7 +117,7 @@ func (r *ResourceExternalLocation) DoUpdateWithID(ctx context.Context, id string
 	return newID, response, nil
 }
 
-func (r *ResourceExternalLocation) DoDelete(ctx context.Context, id string) error {
+func (r *ResourceExternalLocation) DoDelete(ctx context.Context, id string, _ *catalog.CreateExternalLocation) error {
 	return r.client.ExternalLocations.Delete(ctx, catalog.DeleteExternalLocationRequest{
 		Name:            id,
 		Force:           true,

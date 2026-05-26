@@ -42,9 +42,11 @@ type IResource interface {
 	// Example: func (r *ResourceJob) DoRead(ctx context.Context, id string) (*jobs.Job, error)
 	DoRead(ctx context.Context, id string) (remoteState any, e error)
 
-	// DoDelete deletes the resource.
-	// Example: func (r *ResourceJob) DoDelete(ctx context.Context, id string) error
-	DoDelete(ctx context.Context, id string) error
+	// DoDelete deletes the resource. The state argument is the last-persisted
+	// state for the resource; resources that don't need it should accept it as
+	// _ to satisfy the interface.
+	// Example: func (r *ResourceJob) DoDelete(ctx context.Context, id string, _ *jobs.JobSettings) error
+	DoDelete(ctx context.Context, id string, state any) error
 
 	// [Optional] OverrideChangeDesc can implement custom logic to update a given ChangeDesc; it is run last after built-in classifiers and field triggers.
 	OverrideChangeDesc(ctx context.Context, path *structpath.PathNode, changedesc *ChangeDesc, remoteState any) error
@@ -264,6 +266,7 @@ func (a *Adapter) validate() error {
 	validations := []any{
 		"PrepareState return", a.prepareState.OutTypes[0], stateType,
 		"DoCreate newState", a.doCreate.InTypes[1], stateType,
+		"DoDelete state", a.doDelete.InTypes[2], stateType,
 	}
 
 	// If RemapState is implemented, validate its signature.
@@ -399,12 +402,9 @@ func (a *Adapter) DoRead(ctx context.Context, id string) (any, error) {
 	return outs[0], nil
 }
 
-func (a *Adapter) DoDelete(ctx context.Context, id string) error {
-	_, err := a.doDelete.Call(ctx, id)
-	if err != nil {
-		return err
-	}
-	return nil
+func (a *Adapter) DoDelete(ctx context.Context, id string, state any) error {
+	_, err := a.doDelete.Call(ctx, id, state)
+	return err
 }
 
 // normalizeNilPointer converts a nil pointer wrapped in an interface to a nil interface.

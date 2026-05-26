@@ -142,7 +142,7 @@ func (r *ResourceJob) DoUpdate(ctx context.Context, id string, config *jobs.JobS
 	return nil, r.client.Jobs.Reset(ctx, request)
 }
 
-func (r *ResourceJob) DoDelete(ctx context.Context, id string) error {
+func (r *ResourceJob) DoDelete(ctx context.Context, id string, _ *jobs.JobSettings) error {
 	idInt, err := parseJobID(id)
 	if err != nil {
 		return err

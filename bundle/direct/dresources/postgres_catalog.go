@@ -122,7 +122,7 @@ func (r *ResourcePostgresCatalog) DoCreate(ctx context.Context, config *Postgres
 	return remote.Name, remote, nil
 }
 
-func (r *ResourcePostgresCatalog) DoDelete(ctx context.Context, id string) error {
+func (r *ResourcePostgresCatalog) DoDelete(ctx context.Context, id string, _ *PostgresCatalogState) error {
 	waiter, err := r.client.Postgres.DeleteCatalog(ctx, postgres.DeleteCatalogRequest{
 		Name: id,
 	})

@@ -172,7 +172,7 @@ func (r *ResourcePostgresBranch) DoUpdate(ctx context.Context, id string, config
 	return makePostgresBranchRemote(result), nil
 }
 
-func (r *ResourcePostgresBranch) DoDelete(ctx context.Context, id string) error {
+func (r *ResourcePostgresBranch) DoDelete(ctx context.Context, id string, _ *PostgresBranchState) error {
 	waiter, err := r.client.Postgres.DeleteBranch(ctx, postgres.DeleteBranchRequest{
 		Name:            id,
 		Purge:           false,
