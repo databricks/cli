@@ -118,7 +118,7 @@ func (r *ResourcePostgresSyncedTable) DoCreate(ctx context.Context, config *Post
 	return remote.Name, remote, nil
 }
 
-func (r *ResourcePostgresSyncedTable) DoDelete(ctx context.Context, id string) error {
+func (r *ResourcePostgresSyncedTable) DoDelete(ctx context.Context, id string, _ *PostgresSyncedTableState) error {
 	waiter, err := r.client.Postgres.DeleteSyncedTable(ctx, postgres.DeleteSyncedTableRequest{
 		Name: id,
 	})
