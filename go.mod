@@ -34,12 +34,12 @@ require (
 	github.com/tailscale/hujson v0.0.0-20250605163823-992244df8c5a // BSD-3-Clause
 	github.com/zalando/go-keyring v0.2.8 // MIT
 	go.yaml.in/yaml/v3 v3.0.4 // MIT AND Apache-2.0
-	golang.org/x/crypto v0.50.0 // BSD-3-Clause
-	golang.org/x/mod v0.35.0 // BSD-3-Clause
+	golang.org/x/crypto v0.51.0 // BSD-3-Clause
+	golang.org/x/mod v0.36.0 // BSD-3-Clause
 	golang.org/x/oauth2 v0.36.0 // BSD-3-Clause
 	golang.org/x/sync v0.20.0 // BSD-3-Clause
 	golang.org/x/sys v0.44.0 // BSD-3-Clause
-	golang.org/x/text v0.36.0 // BSD-3-Clause
+	golang.org/x/text v0.37.0 // BSD-3-Clause
 	gopkg.in/ini.v1 v1.67.1 // Apache-2.0
 )
 
