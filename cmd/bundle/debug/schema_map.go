@@ -3,6 +3,8 @@ package debug
 import (
 	"fmt"
 	"io"
+	"maps"
+	"slices"
 
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/terraform_dabs_map"
@@ -37,7 +39,21 @@ Status meanings:
 }
 
 func printSchemaMap(out io.Writer) error {
-	for _, group := range terraform_dabs_map.Groups {
+	// Collect the union of all groups that appear in any generated map.
+	// This naturally excludes 3-level groups (permissions, grants, secret_acls)
+	// which have no adapter and therefore no entries in any map.
+	groups := make(map[string]bool)
+	for g := range terraform_dabs_map.TerraformToDABsFieldMap {
+		groups[g] = true
+	}
+	for g := range terraform_dabs_map.DABsOnlyFields {
+		groups[g] = true
+	}
+	for g := range terraform_dabs_map.TerraformOnlyFields {
+		groups[g] = true
+	}
+
+	for _, group := range slices.Sorted(maps.Keys(groups)) {
 		tfType := terraform.GroupToTerraformName[group]
 		renames := len(terraform_dabs_map.TerraformToDABsFieldMap[group])
 		dabsOnly := len(terraform_dabs_map.DABsOnlyFields[group])
