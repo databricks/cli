@@ -179,10 +179,6 @@ linters:
         path: "_test\\.go$"
         linters:
           - forbidigo
-      # TODO: remove these exceptions by moving the dependency out of experimental/.
-      - path: cmd/apps/init.go
-        linters:
-          - depguard
 issues:
   max-issues-per-linter: 1000
   max-same-issues: 1000
