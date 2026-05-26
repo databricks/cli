@@ -1,0 +1,7 @@
+bundle:
+  name: test-managed-state-gate-config
+  managed_state: true
+
+targets:
+  default:
+    default: true

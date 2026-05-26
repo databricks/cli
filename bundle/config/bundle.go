@@ -50,6 +50,15 @@ type Bundle struct {
 	// Can be overridden with the DATABRICKS_BUNDLE_ENGINE environment variable.
 	Engine engine.EngineType `json:"engine,omitempty"`
 
+	// ManagedState opts the bundle into server-side deployment state management
+	// via the Deployment Metadata Service. When true, deployment locks and
+	// resource state are held by the control plane instead of the workspace
+	// filesystem. Can be overridden with the DATABRICKS_BUNDLE_MANAGED_STATE
+	// environment variable.
+	//
+	// Experimental: this surface is subject to change without notice.
+	ManagedState bool `json:"managed_state,omitempty"`
+
 	// Deployment section specifies deployment related configuration for bundle
 	Deployment Deployment `json:"deployment,omitempty"`
 

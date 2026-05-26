@@ -1,0 +1,9 @@
+
+>>> DATABRICKS_BUNDLE_MANAGED_STATE=true [CLI] bundle validate -o json
+null
+
+>>> DATABRICKS_BUNDLE_MANAGED_STATE=false [CLI] bundle validate -o json
+null
+
+>>> [CLI] bundle validate -o json
+null

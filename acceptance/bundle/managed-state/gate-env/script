@@ -1,0 +1,7 @@
+# The env var does not surface in bundle config dumps; it is consumed lazily
+# at deploy/destroy/bind/unbind time via ResolveManagedStateSetting. This test
+# pins that contract by showing the env var leaves .bundle.managed_state
+# unset in the validated config, regardless of the env var value.
+trace DATABRICKS_BUNDLE_MANAGED_STATE=true $CLI bundle validate -o json | jq '.bundle.managed_state'
+trace DATABRICKS_BUNDLE_MANAGED_STATE=false $CLI bundle validate -o json | jq '.bundle.managed_state'
+trace $CLI bundle validate -o json | jq '.bundle.managed_state'
