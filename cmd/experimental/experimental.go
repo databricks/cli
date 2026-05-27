@@ -2,6 +2,7 @@ package experimental
 
 import (
 	aitoolscmd "github.com/databricks/cli/experimental/aitools/cmd"
+	doctorcmd "github.com/databricks/cli/experimental/doctor/cmd"
 	postgrescmd "github.com/databricks/cli/experimental/postgres/cmd"
 	"github.com/spf13/cobra"
 )
@@ -22,6 +23,7 @@ development. They may change or be removed in future versions without notice.`,
 	}
 
 	cmd.AddCommand(aitoolscmd.NewAitoolsCmd())
+	cmd.AddCommand(doctorcmd.NewDoctorCmd())
 	cmd.AddCommand(postgrescmd.New())
 	cmd.AddCommand(newWorkspaceOpenCommand())
 

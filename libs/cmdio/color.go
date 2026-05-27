@@ -44,6 +44,9 @@ func render(ctx context.Context, code, msg string) string {
 	return code + msg + ansiReset
 }
 
+// Bold renders msg in bold.
+func Bold(ctx context.Context, msg string) string { return render(ctx, ansiBold, msg) }
+
 // Red renders msg in red.
 func Red(ctx context.Context, msg string) string { return render(ctx, ansiRed, msg) }
 
