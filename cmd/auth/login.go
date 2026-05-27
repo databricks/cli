@@ -318,20 +318,17 @@ a new profile is created.
 			authArguments.WorkspaceID == "" &&
 			!skipWorkspace
 
-		if skipWorkspace && authArguments.WorkspaceID == "" {
-			authArguments.WorkspaceID = auth.WorkspaceIDNone
-		}
-
 		if shouldPromptWorkspace {
 			wsID, wsErr := promptForWorkspaceSelection(ctx, authArguments, persistentAuth)
 			if wsErr != nil {
 				log.Warnf(ctx, "Workspace selection failed: %v", wsErr)
-			} else if wsID == "" {
-				// User selected "Skip" from the prompt.
-				authArguments.WorkspaceID = auth.WorkspaceIDNone
-			} else {
+			} else if wsID != "" {
 				authArguments.WorkspaceID = wsID
 			}
+			// If wsID is empty, the user picked "Skip" — leave WorkspaceID empty.
+			// SaveToProfile omits the workspace_id key entirely for account-level
+			// profiles; MatchAccountProfiles treats absent workspace_id the same
+			// as the legacy "none" sentinel.
 		}
 
 		var clusterID, serverlessComputeID string
