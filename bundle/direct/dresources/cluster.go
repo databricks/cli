@@ -251,7 +251,7 @@ func (r *ResourceCluster) DoResize(ctx context.Context, id string, config *Clust
 	return err
 }
 
-func (r *ResourceCluster) DoDelete(ctx context.Context, id string, _ *compute.ClusterSpec) error {
+func (r *ResourceCluster) DoDelete(ctx context.Context, id string, _ *ClusterState) error {
 	return r.client.Clusters.PermanentDeleteByClusterId(ctx, id)
 }
 
