@@ -585,6 +585,12 @@ func TestShouldPromptWorkspace(t *testing.T) {
 			want:            true,
 		},
 		{
+			name:            "account-only profile for a different account still prompts",
+			authArguments:   auth.AuthArguments{AccountID: "different-account"},
+			existingProfile: legacyAccountProfile,
+			want:            true,
+		},
+		{
 			name:          "skipWorkspace suppresses the prompt",
 			authArguments: auth.AuthArguments{AccountID: "acc"},
 			skipWorkspace: true,
