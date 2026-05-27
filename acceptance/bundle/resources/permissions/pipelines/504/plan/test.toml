@@ -1,7 +1,0 @@
-# Test that a transient 504 from the permissions API during plan (GET) is retried and plan succeeds.
-# Only the direct engine uses the retrying transport; terraform is excluded.
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
-RecordRequests = true
-
-# Use a short retry interval so the test completes quickly.
-Env.DATABRICKS_BUNDLE_RETRY_INTERVAL_MS = "100"

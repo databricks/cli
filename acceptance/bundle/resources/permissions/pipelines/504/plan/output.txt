@@ -19,12 +19,12 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 >>> musterr [CLI] bundle plan
 Warn: planning resources.pipelines.foo.permissions: retrying after 504 Gateway Timeout from GET /api/2.0/permissions/pipelines/[UUID]
 Warn: planning resources.pipelines.foo.permissions: retrying after 504 Gateway Timeout from GET /api/2.0/permissions/pipelines/[UUID]
-Error: cannot plan resources.pipelines.foo.permissions: reading id="/pipelines/[UUID]": The service is taking too long to process your request. (504 TEMPORARILY_UNAVAILABLE)
+Error: cannot plan resources.pipelines.foo.permissions: reading id="/pipelines/[UUID]": Fault injected by test. (504 INJECTED)
 
 Endpoint: GET [DATABRICKS_URL]/api/2.0/permissions/pipelines/[UUID]?
 HTTP Status: 504 Gateway Timeout
-API error_code: TEMPORARILY_UNAVAILABLE
-API message: The service is taking too long to process your request.
+API error_code: INJECTED
+API message: Fault injected by test.
 
 Error: planning failed
 

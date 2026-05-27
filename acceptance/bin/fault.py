@@ -18,14 +18,6 @@ import os
 import sys
 import urllib.request
 
-_DEFAULT_BODIES = {
-    408: '{"error_code":"REQUEST_TIMEOUT","message":"Request timed out."}',
-    500: '{"error_code":"INTERNAL_ERROR","message":"Internal server error."}',
-    502: '{"error_code":"BAD_GATEWAY","message":"Bad gateway."}',
-    503: '{"error_code":"SERVICE_UNAVAILABLE","message":"Service unavailable."}',
-    504: '{"error_code":"TEMPORARILY_UNAVAILABLE","message":"The service is taking too long to process your request."}',
-}
-
 host = os.environ.get("DATABRICKS_HOST", "")
 token = os.environ.get("DATABRICKS_TOKEN", "")
 
@@ -38,7 +30,7 @@ if len(sys.argv) != 5:
     sys.exit(1)
 
 pattern, status_code, offset, times = sys.argv[1], int(sys.argv[2]), int(sys.argv[3]), int(sys.argv[4])
-body = _DEFAULT_BODIES.get(status_code, '{"error_code":"ERROR","message":"Fault injected by test."}')
+body = '{"error_code":"INJECTED","message":"Fault injected by test."}'
 
 data = json.dumps(
     {
