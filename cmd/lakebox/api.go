@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -11,6 +12,16 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/client"
 )
+
+// sandboxPath returns the URL path for a single sandbox resource. The ID is
+// path-escaped so a value like `foo;rm -rf /` lands on
+// `/sandboxes/foo%3Brm%20-rf%20%2F` and gets a clean 400 from
+// validate_sandbox_id on the server, rather than its unescaped `/` re-routing
+// the request to the list endpoint (which silently returns an empty result the
+// CLI then renders as an all-zero sandbox record).
+func sandboxPath(id string) string {
+	return lakeboxAPIPath + "/" + url.PathEscape(id)
+}
 
 // Sandboxes live under the `/sandboxes` sub-collection of the lakebox service
 // namespace (see `lakebox.proto` `LakeboxService.CreateSandbox`).
@@ -257,7 +268,7 @@ func (a *lakeboxAPI) listPage(ctx context.Context, pageToken string) (*listRespo
 // get calls GET /api/2.0/lakebox/sandboxes/{id}.
 func (a *lakeboxAPI) get(ctx context.Context, id string) (*sandboxEntry, error) {
 	var resp sandboxEntry
-	err := a.c.Do(ctx, http.MethodGet, lakeboxAPIPath+"/"+id, a.headers(), nil, nil, &resp)
+	err := a.c.Do(ctx, http.MethodGet, sandboxPath(id), a.headers(), nil, nil, &resp)
 	if err != nil {
 		return nil, err
 	}
@@ -281,7 +292,7 @@ func (a *lakeboxAPI) update(ctx context.Context, id string, name *string, idleTi
 		NoAutostop:  noAutostop,
 	}
 	var resp sandboxEntry
-	err := a.c.Do(ctx, http.MethodPatch, lakeboxAPIPath+"/"+id, a.headers(), nil, body, &resp)
+	err := a.c.Do(ctx, http.MethodPatch, sandboxPath(id), a.headers(), nil, body, &resp)
 	if err != nil {
 		return nil, err
 	}
@@ -290,7 +301,7 @@ func (a *lakeboxAPI) update(ctx context.Context, id string, name *string, idleTi
 
 // delete calls DELETE /api/2.0/lakebox/sandboxes/{id}.
 func (a *lakeboxAPI) delete(ctx context.Context, id string) error {
-	return a.c.Do(ctx, http.MethodDelete, lakeboxAPIPath+"/"+id, a.headers(), nil, nil, nil)
+	return a.c.Do(ctx, http.MethodDelete, sandboxPath(id), a.headers(), nil, nil, nil)
 }
 
 // stop calls POST /api/2.0/lakebox/sandboxes/{id}/stop and returns the
@@ -300,7 +311,7 @@ func (a *lakeboxAPI) delete(ctx context.Context, id string) error {
 func (a *lakeboxAPI) stop(ctx context.Context, id string) (*sandboxEntry, error) {
 	body := map[string]string{"sandbox_id": id}
 	var resp sandboxEntry
-	err := a.c.Do(ctx, http.MethodPost, lakeboxAPIPath+"/"+id+"/stop", a.headers(), nil, body, &resp)
+	err := a.c.Do(ctx, http.MethodPost, sandboxPath(id)+"/stop", a.headers(), nil, body, &resp)
 	if err != nil {
 		return nil, err
 	}
@@ -312,7 +323,7 @@ func (a *lakeboxAPI) stop(ctx context.Context, id string) (*sandboxEntry, error)
 func (a *lakeboxAPI) start(ctx context.Context, id string) (*sandboxEntry, error) {
 	body := map[string]string{"sandbox_id": id}
 	var resp sandboxEntry
-	err := a.c.Do(ctx, http.MethodPost, lakeboxAPIPath+"/"+id+"/start", a.headers(), nil, body, &resp)
+	err := a.c.Do(ctx, http.MethodPost, sandboxPath(id)+"/start", a.headers(), nil, body, &resp)
 	if err != nil {
 		return nil, err
 	}
@@ -355,5 +366,5 @@ func (a *lakeboxAPI) listKeys(ctx context.Context) ([]sshKeyEntry, error) {
 
 // deleteKey calls DELETE /api/2.0/lakebox/ssh-keys/{key_hash}.
 func (a *lakeboxAPI) deleteKey(ctx context.Context, keyHash string) error {
-	return a.c.Do(ctx, http.MethodDelete, lakeboxKeysAPIPath+"/"+keyHash, a.headers(), nil, nil, nil)
+	return a.c.Do(ctx, http.MethodDelete, lakeboxKeysAPIPath+"/"+url.PathEscape(keyHash), a.headers(), nil, nil, nil)
 }
