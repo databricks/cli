@@ -1,6 +1,8 @@
 package auth
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/databricks/cli/libs/cmdio"
@@ -125,6 +127,36 @@ func TestResolveHostToProfileMatchesMultipleProfiles(t *testing.T) {
 	assert.ErrorContains(t, err, "multiple profiles found matching host")
 	assert.ErrorContains(t, err, "dev1")
 	assert.ErrorContains(t, err, "dev2")
+}
+
+func TestResolveHostToProfilePrefersConfiguredDefault(t *testing.T) {
+	cfgPath := filepath.Join(t.TempDir(), ".databrickscfg")
+	err := os.WriteFile(cfgPath, []byte(`
+[__settings__]
+default_profile = dev2
+
+[dev1]
+host = https://shared.cloud.databricks.com
+auth_type = databricks-cli
+
+[dev2]
+host = https://shared.cloud.databricks.com
+auth_type = databricks-cli
+`), 0o600)
+	require.NoError(t, err)
+	t.Setenv("DATABRICKS_CONFIG_FILE", cfgPath)
+
+	ctx := cmdio.MockDiscard(t.Context())
+	profiler := profile.InMemoryProfiler{
+		Profiles: profile.Profiles{
+			{Name: "dev1", Host: "https://shared.cloud.databricks.com", AuthType: "databricks-cli"},
+			{Name: "dev2", Host: "https://shared.cloud.databricks.com", AuthType: "databricks-cli"},
+		},
+	}
+
+	resolved, err := resolveHostToProfile(ctx, "https://shared.cloud.databricks.com", profiler)
+	require.NoError(t, err)
+	assert.Equal(t, "dev2", resolved)
 }
 
 func TestResolveHostToProfileMatchesNothing(t *testing.T) {
