@@ -59,10 +59,30 @@ func TestExecuteAndPollImmediateSuccess(t *testing.T) {
 		Result:      &sql.ResultData{DataArray: [][]string{{"1"}}},
 	}, nil)
 
-	resp, err := executeAndPoll(ctx, mockAPI, "wh-123", "SELECT 1")
+	resp, err := executeAndPoll(ctx, mockAPI, "wh-123", "SELECT 1", nil)
 	require.NoError(t, err)
 	assert.Equal(t, sql.StatementStateSucceeded, resp.Status.State)
 	assert.Equal(t, "stmt-1", resp.StatementId)
+}
+
+func TestExecuteAndPollPassesParameters(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
+
+	params := []sql.StatementParameterListItem{
+		{Name: "name", Value: "alice"},
+		{Name: "since", Type: "DATE", Value: "2026-01-01"},
+	}
+
+	mockAPI.EXPECT().ExecuteStatement(mock.Anything, mock.MatchedBy(func(req sql.ExecuteStatementRequest) bool {
+		return assert.ObjectsAreEqual(params, req.Parameters)
+	})).Return(&sql.StatementResponse{
+		StatementId: "stmt-1",
+		Status:      &sql.StatementStatus{State: sql.StatementStateSucceeded},
+	}, nil)
+
+	_, err := executeAndPoll(ctx, mockAPI, "wh-123", "SELECT * FROM t WHERE name = :name AND ts > :since", params)
+	require.NoError(t, err)
 }
 
 func TestExecuteAndPollImmediateFailure(t *testing.T) {
@@ -80,7 +100,7 @@ func TestExecuteAndPollImmediateFailure(t *testing.T) {
 		},
 	}, nil)
 
-	_, err := executeAndPoll(ctx, mockAPI, "wh-123", "SELCT 1")
+	_, err := executeAndPoll(ctx, mockAPI, "wh-123", "SELCT 1", nil)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "SYNTAX_ERROR")
 	assert.Contains(t, err.Error(), "syntax error")
@@ -109,7 +129,7 @@ func TestExecuteAndPollWithPolling(t *testing.T) {
 		Result:      &sql.ResultData{DataArray: [][]string{{"42"}}},
 	}, nil).Once()
 
-	resp, err := executeAndPoll(ctx, mockAPI, "wh-123", "SELECT 42")
+	resp, err := executeAndPoll(ctx, mockAPI, "wh-123", "SELECT 42", nil)
 	require.NoError(t, err)
 	assert.Equal(t, sql.StatementStateSucceeded, resp.Status.State)
 	assert.Equal(t, [][]string{{"42"}}, resp.Result.DataArray)
@@ -132,7 +152,7 @@ func TestExecuteAndPollFailsDuringPolling(t *testing.T) {
 		},
 	}, nil).Once()
 
-	_, err := executeAndPoll(ctx, mockAPI, "wh-123", "SELECT 1")
+	_, err := executeAndPoll(ctx, mockAPI, "wh-123", "SELECT 1", nil)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "RESOURCE_EXHAUSTED")
 }
@@ -157,7 +177,7 @@ func TestExecuteAndPollCancelledContextCallsCancelExecution(t *testing.T) {
 
 	cancel()
 
-	_, err := executeAndPoll(ctx, mockAPI, "wh-123", "SELECT 1")
+	_, err := executeAndPoll(ctx, mockAPI, "wh-123", "SELECT 1", nil)
 	require.ErrorIs(t, err, root.ErrAlreadyPrinted)
 }
 
