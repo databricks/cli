@@ -295,7 +295,7 @@ func deploymentToAppConfig(d *apps.AppDeployment) *resources.AppConfig {
 	return config
 }
 
-func (r *ResourceApp) DoDelete(ctx context.Context, id string) error {
+func (r *ResourceApp) DoDelete(ctx context.Context, id string, _ *AppState) error {
 	_, err := r.client.Apps.DeleteByName(ctx, id)
 	return err
 }

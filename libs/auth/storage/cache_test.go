@@ -194,7 +194,7 @@ func TestApplyReadFallback_DefaultSecure_ProbeFail_FallsBack(t *testing.T) {
 	// where the write-probe gives stronger evidence of unavailability.
 	persisted, gerr := databrickscfg.GetConfiguredAuthStorage(ctx, configPath)
 	require.NoError(t, gerr)
-	assert.Equal(t, "", persisted, "read-path fallback must not persist auth_storage")
+	assert.Empty(t, persisted, "read-path fallback must not persist auth_storage")
 }
 
 // A timeout could mean a locked keyring that will work once the user unlocks
@@ -226,7 +226,7 @@ func TestApplyReadFallback_DefaultSecure_ProbeTimeout_StaysOnKeyring(t *testing.
 
 			persisted, gerr := databrickscfg.GetConfiguredAuthStorage(ctx, configPath)
 			require.NoError(t, gerr)
-			assert.Equal(t, "", persisted, "probe timeout must not persist anything")
+			assert.Empty(t, persisted, "probe timeout must not persist anything")
 		})
 	}
 }
@@ -274,7 +274,7 @@ func TestResolveCacheForLogin_ExplicitEnvSecure_ProbeFail_Errors(t *testing.T) {
 
 	persisted, gerr := databrickscfg.GetConfiguredAuthStorage(ctx, configPath)
 	require.NoError(t, gerr)
-	assert.Equal(t, "", persisted, "env-set secure must not be persisted as plaintext")
+	assert.Empty(t, persisted, "env-set secure must not be persisted as plaintext")
 }
 
 func TestResolveCacheForLogin_ExplicitConfigSecure_ProbeFail_Errors(t *testing.T) {
@@ -340,7 +340,7 @@ func TestApplyLoginFallback_ExplicitSecure_ProbeFail_Errors(t *testing.T) {
 
 	persisted, gerr := databrickscfg.GetConfiguredAuthStorage(ctx, configPath)
 	require.NoError(t, gerr)
-	assert.Equal(t, "", persisted, "explicit-secure error must not write config")
+	assert.Empty(t, persisted, "explicit-secure error must not write config")
 }
 
 // A locked keyring with a slow user surfaces as TimeoutError. We want login
@@ -377,7 +377,7 @@ func TestApplyLoginFallback_ProbeTimeout_StaysOnKeyring(t *testing.T) {
 
 			persisted, gerr := databrickscfg.GetConfiguredAuthStorage(ctx, configPath)
 			require.NoError(t, gerr)
-			assert.Equal(t, "", persisted, "probe timeout must not persist plaintext fallback")
+			assert.Empty(t, persisted, "probe timeout must not persist plaintext fallback")
 		})
 	}
 }

@@ -156,8 +156,7 @@ func isRetryableConnectError(err error) bool {
 		return false
 	}
 
-	var pgErr *pgconn.PgError
-	if errors.As(err, &pgErr) {
+	if pgErr, ok := errors.AsType[*pgconn.PgError](err); ok {
 		switch {
 		// 08xxx is the connection_exception class.
 		case len(pgErr.Code) == 5 && pgErr.Code[:2] == "08":
@@ -169,13 +168,11 @@ func isRetryableConnectError(err error) bool {
 		}
 	}
 
-	var connectErr *pgconn.ConnectError
-	if errors.As(err, &connectErr) {
+	if connectErr, ok := errors.AsType[*pgconn.ConnectError](err); ok {
 		return isRetryableConnectError(connectErr.Unwrap())
 	}
 
-	var opErr *net.OpError
-	if errors.As(err, &opErr) {
+	if opErr, ok := errors.AsType[*net.OpError](err); ok {
 		return opErr.Op == "dial"
 	}
 

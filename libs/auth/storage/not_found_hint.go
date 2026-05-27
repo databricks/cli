@@ -69,8 +69,7 @@ func (e *notFoundHint) Unwrap() error { return cache.ErrNotFound }
 // logic) but want to surface the actionable hint to the user instead of
 // dropping it.
 func HintForNotFound(err error) string {
-	var hint *notFoundHint
-	if errors.As(err, &hint) {
+	if hint, ok := errors.AsType[*notFoundHint](err); ok {
 		return hint.msg
 	}
 	return ""

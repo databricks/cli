@@ -169,7 +169,7 @@ func (r *ResourcePostgresProject) DoUpdate(ctx context.Context, id string, confi
 	return makePostgresProjectRemote(result), nil
 }
 
-func (r *ResourcePostgresProject) DoDelete(ctx context.Context, id string) error {
+func (r *ResourcePostgresProject) DoDelete(ctx context.Context, id string, _ *PostgresProjectState) error {
 	waiter, err := r.client.Postgres.DeleteProject(ctx, postgres.DeleteProjectRequest{
 		Name:            id,
 		Purge:           false,

@@ -58,9 +58,8 @@ func runPlanCheck(cmd *cobra.Command, extraArgs []string, extraArgsStr string) e
 	fmt.Fprint(cmd.OutOrStdout(), output)
 
 	if err != nil {
-		var exitErr *exec.ExitError
 		msg := ""
-		if errors.As(err, &exitErr) {
+		if exitErr, ok := errors.AsType[*exec.ExitError](err); ok {
 			msg = fmt.Sprintf("exit code %d", exitErr.ExitCode())
 		} else {
 			msg = err.Error()

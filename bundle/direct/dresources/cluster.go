@@ -175,8 +175,8 @@ func (r *ResourceCluster) DoUpdate(ctx context.Context, id string, config *Clust
 			var apiErr *apierr.APIError
 			// Only Running and Terminated clusters can be modified. In particular, autoscaling clusters cannot be modified
 			// while the resizing is ongoing. We retry in this case. Scaling can take several minutes.
-			if errors.As(err, &apiErr) && apiErr.ErrorCode == "INVALID_STATE" {
-				return nil, retries.Continues(fmt.Sprintf("cluster %s cannot be modified in its current state: %s", id, apiErr.Message))
+			if apiErr, ok := errors.AsType[*apierr.APIError](err); ok && apiErr.ErrorCode == "INVALID_STATE" {
+			  return nil, retries.Continues(fmt.Sprintf("cluster %s cannot be modified in its current state: %s", id, apiErr.Message))
 			}
 			return nil, retries.Halt(err)
 		})
@@ -252,7 +252,7 @@ func (r *ResourceCluster) DoResize(ctx context.Context, id string, config *Clust
 	return err
 }
 
-func (r *ResourceCluster) DoDelete(ctx context.Context, id string) error {
+func (r *ResourceCluster) DoDelete(ctx context.Context, id string, _ *compute.ClusterSpec) error {
 	return r.client.Clusters.PermanentDeleteByClusterId(ctx, id)
 }
 
