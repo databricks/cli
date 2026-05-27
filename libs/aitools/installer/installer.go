@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/databricks/cli/internal/build"
@@ -32,22 +33,24 @@ const (
 
 	// fetchConcurrency caps the number of in-flight skill file fetches.
 	// Each file is one HTTPS GET to raw.githubusercontent.com; sequential
-	// fetches were latency-bound on TLS handshakes.
+	// fetches were latency-bound on TLS handshakes. 8 is enough to amortise
+	// the round-trip across a typical skill's files without overwhelming the
+	// upstream CDN.
 	fetchConcurrency = 8
 )
 
 // httpClient is shared across all skill file fetches so the underlying
 // transport reuses TCP+TLS connections. The default MaxIdleConnsPerHost
-// (2) is bumped so parallel fetches to a single host (raw.githubusercontent.com)
-// don't churn through fresh handshakes.
-var httpClient = func() *http.Client {
+// (2) is bumped to leave headroom above fetchConcurrency so a brief overlap
+// between a closing and a new connection doesn't force a fresh handshake.
+var httpClient = sync.OnceValue(func() *http.Client {
 	t := http.DefaultTransport.(*http.Transport).Clone()
 	t.MaxIdleConnsPerHost = fetchConcurrency * 2
 	return &http.Client{
 		Timeout:   30 * time.Second,
 		Transport: t,
 	}
-}()
+})
 
 func manifestHasExperimental(m *Manifest) bool {
 	for _, meta := range m.Skills {
@@ -140,7 +143,7 @@ func fetchSkillFile(ctx context.Context, ref, repoDir, skillName, filePath strin
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
-	resp, err := httpClient.Do(req)
+	resp, err := httpClient().Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch %s: %w", filePath, err)
 	}

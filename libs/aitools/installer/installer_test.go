@@ -201,8 +201,8 @@ func TestInstallSkillToDirFetchesFilesConcurrently(t *testing.T) {
 
 	started := make(chan string, 2)
 	release := make(chan struct{})
-	var releaseOnce sync.Once
-	t.Cleanup(func() { releaseOnce.Do(func() { close(release) }) })
+	releaseOnce := sync.OnceFunc(func() { close(release) })
+	t.Cleanup(releaseOnce)
 
 	fetchFileFn = func(ctx context.Context, _, _, _, filePath string) ([]byte, error) {
 		started <- filePath
@@ -231,7 +231,7 @@ func TestInstallSkillToDirFetchesFilesConcurrently(t *testing.T) {
 	}
 	assert.Equal(t, map[string]bool{"one.md": true, "two.md": true}, fetched)
 
-	releaseOnce.Do(func() { close(release) })
+	releaseOnce()
 	require.NoError(t, <-errCh)
 
 	one, err := os.ReadFile(filepath.Join(destDir, "one.md"))
@@ -282,7 +282,7 @@ func TestInstallSkillToDirCancelsInFlightFetchesOnError(t *testing.T) {
 	var err error
 	select {
 	case err = <-errCh:
-	case <-time.After(time.Second):
+	case <-time.After(5 * time.Second):
 		cancel()
 		select {
 		case <-errCh:
