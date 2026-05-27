@@ -19,6 +19,7 @@ tooling (Python, Node.js, Rust, Databricks CLI) and persistent storage.
 Getting started:
   databricks auth login --host https://...   # authenticate to a Databricks workspace
   databricks lakebox register                # generate and register an SSH key
+  databricks lakebox create                  # provision a lakebox (becomes your default)
   databricks lakebox ssh                     # SSH to your default lakebox
 
 Common workflows:

@@ -1,11 +1,13 @@
 package lakebox
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/spf13/cobra"
 )
 
@@ -30,6 +32,18 @@ Example:
 			}
 
 			lakeboxID := args[0]
+
+			// Validate existence first so `delete <typo>` fails clearly
+			// instead of returning a confident "✓ Removed" on a sandbox
+			// the server never had — the DELETE endpoint treats 404 as
+			// idempotent success on the wire.
+			if _, err := api.get(ctx, lakeboxID); err != nil {
+				if errors.Is(err, apierr.ErrNotFound) {
+					return fmt.Errorf("no lakebox named %q — `databricks lakebox list` shows available IDs", lakeboxID)
+				}
+				return fmt.Errorf("failed to look up lakebox %s: %w", lakeboxID, err)
+			}
+
 			s := spin(ctx, "Removing "+lakeboxID+"…")
 			defer s.Close()
 
