@@ -53,12 +53,9 @@ func initProfileFlag(cmd *cobra.Command) {
 }
 
 // accountOnlyProfileError describes why a workspace command can't run against
-// a profile whose workspace_id sentinel marks it as account-only.
+// a profile that has an account_id but no workspace_id.
 func accountOnlyProfileError(profileName string) error {
-	if profileName == "" {
-		return errors.New("the active configuration has workspace_id = none, which marks it as account-only; this command requires a workspace. Set workspace_id to a real ID, or use a workspace-scoped profile")
-	}
-	return fmt.Errorf("profile %q has workspace_id = none, which marks it as account-only; this command requires a workspace. Edit the profile to set workspace_id to a real ID, or pass --profile with a workspace-scoped profile", profileName)
+	return fmt.Errorf("profile %q has no workspace_id set (account-only); this command requires a workspace. Edit the profile to set workspace_id to a real ID, or pass --profile with a workspace-scoped profile", profileName)
 }
 
 func profileFlagValue(cmd *cobra.Command) (string, bool) {
@@ -198,11 +195,17 @@ func MustAccountClient(cmd *cobra.Command, args []string) error {
 // Helper function to create a workspace client or prompt once if the given configuration is not valid.
 func workspaceClientOrPrompt(ctx context.Context, cfg *config.Config, allowPrompt bool) (*databricks.WorkspaceClient, error) {
 	w, err := databricks.NewWorkspaceClient((*databricks.Config)(cfg))
-	if err == nil && cfg.WorkspaceID == auth.WorkspaceIDNone {
-		// CLI-only sentinel marking an account-only profile (created with
-		// --skip-workspace). The SDK doesn't know "none" is a sentinel and
-		// would send it as a routing identifier, producing an opaque auth
-		// error. Reject up front with a message the user can act on.
+	if err == nil && cfg.Profile != "" && cfg.AccountID != "" &&
+		(cfg.WorkspaceID == "" || cfg.WorkspaceID == auth.WorkspaceIDNone) {
+		// Account-only profile (created with --skip-workspace): account_id is
+		// set but workspace_id is absent (new shape) or the legacy "none"
+		// sentinel. Without a workspace_id the SDK would either send "none" as
+		// a routing identifier or fail later with an opaque auth error.
+		// Reject up front with a message the user can act on.
+		//
+		// We require cfg.Profile to be set so we don't reject env-var-only
+		// configs targeting a unified host where workspace APIs are also
+		// served from the account host.
 		return nil, accountOnlyProfileError(cfg.Profile)
 	}
 	if err == nil {

@@ -455,26 +455,37 @@ func TestAccountClientOrPromptReturnsErrorForWrongHostType(t *testing.T) {
 }
 
 func TestWorkspaceClientOrPromptRejectsAccountOnlyProfile(t *testing.T) {
-	testutil.CleanupEnvironment(t)
-	t.Setenv("PATH", "")
-
-	// Profile created with --skip-workspace persists `workspace_id = none` as a
-	// CLI-internal sentinel; workspace commands cannot run against it.
-	cfg := &config.Config{
-		Host:          "https://example.test/",
-		AccountID:     "abc-123",
-		WorkspaceID:   "none",
-		Token:         "foobar",
-		Profile:       "bb",
-		HTTPTransport: noNetworkTransport,
+	tests := []struct {
+		name        string
+		workspaceID string
+	}{
+		// New shape: --skip-workspace omits workspace_id entirely.
+		{name: "empty workspace_id", workspaceID: ""},
+		// Legacy shape: older CLIs persisted the "none" sentinel.
+		{name: "legacy none sentinel", workspaceID: "none"},
 	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			testutil.CleanupEnvironment(t)
+			t.Setenv("PATH", "")
 
-	w, err := workspaceClientOrPrompt(t.Context(), cfg, false)
-	assert.Nil(t, w)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), `profile "bb"`)
-	assert.Contains(t, err.Error(), "account-only")
-	assert.Contains(t, err.Error(), "workspace_id = none")
+			cfg := &config.Config{
+				Host:          "https://example.test/",
+				AccountID:     "abc-123",
+				WorkspaceID:   tt.workspaceID,
+				Token:         "foobar",
+				Profile:       "bb",
+				HTTPTransport: noNetworkTransport,
+			}
+
+			w, err := workspaceClientOrPrompt(t.Context(), cfg, false)
+			assert.Nil(t, w)
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), `profile "bb"`)
+			assert.Contains(t, err.Error(), "account-only")
+			assert.Contains(t, err.Error(), "no workspace_id set")
+		})
+	}
 }
 
 func TestWorkspaceClientOrPromptReturnsSuccessWhenAuthSucceeds(t *testing.T) {
