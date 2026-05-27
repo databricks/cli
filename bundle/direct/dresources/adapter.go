@@ -91,7 +91,7 @@ type Adapter struct {
 	// Required:
 	prepareState *calladapt.BoundCaller
 	remapState   *calladapt.BoundCaller
-	doRefresh    *calladapt.BoundCaller
+	doRead       *calladapt.BoundCaller
 	doDelete     *calladapt.BoundCaller
 	doCreate     *calladapt.BoundCaller
 
@@ -125,7 +125,7 @@ func NewAdapter(typedNil any, resourceType string, client *databricks.WorkspaceC
 	adapter := &Adapter{
 		prepareState:            nil,
 		remapState:              nil,
-		doRefresh:               nil,
+		doRead:                  nil,
 		doDelete:                nil,
 		doCreate:                nil,
 		doUpdate:                nil,
@@ -179,7 +179,7 @@ func (a *Adapter) initMethods(resource any) error {
 		return err
 	}
 
-	a.doRefresh, err = prepareCallRequired(resource, "DoRead")
+	a.doRead, err = prepareCallRequired(resource, "DoRead")
 	if err != nil {
 		return err
 	}
@@ -367,7 +367,7 @@ func (a *Adapter) StateType() reflect.Type {
 }
 
 func (a *Adapter) RemoteType() reflect.Type {
-	return a.doRefresh.OutTypes[0]
+	return a.doRead.OutTypes[0]
 }
 
 func (a *Adapter) ResourceConfig() *ResourceLifecycleConfig {
@@ -409,7 +409,7 @@ func (a *Adapter) RemapState(remoteState any) (any, error) {
 
 func (a *Adapter) DoRead(ctx context.Context, id string) (any, error) {
 	return retryOnTransient(ctx, func() (any, error) {
-		outs, err := a.doRefresh.Call(ctx, id)
+		outs, err := a.doRead.Call(ctx, id)
 		if err != nil {
 			return nil, err
 		}
