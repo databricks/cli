@@ -115,6 +115,12 @@ func TestResolveHostToProfileMatchesOneProfile(t *testing.T) {
 }
 
 func TestResolveHostToProfileMatchesMultipleProfiles(t *testing.T) {
+	// Point at an isolated config file with no default_profile so the new
+	// prefer-default branch doesn't pick up the caller's real .databrickscfg.
+	cfgPath := filepath.Join(t.TempDir(), ".databrickscfg")
+	require.NoError(t, os.WriteFile(cfgPath, []byte(""), 0o600))
+	t.Setenv("DATABRICKS_CONFIG_FILE", cfgPath)
+
 	ctx := cmdio.MockDiscard(t.Context())
 	profiler := profile.InMemoryProfiler{
 		Profiles: profile.Profiles{
