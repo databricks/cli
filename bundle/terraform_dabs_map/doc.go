@@ -19,11 +19,11 @@ func (fs FieldSet) Len() int {
 	return n
 }
 
-// RenameNode represents a TF field at one path level. NewName is the corresponding DABs
-// segment name when it differs from TF; Children holds renames for deeper paths.
-// Both may be set when the segment itself is renamed and sub-fields are renamed too.
-// Unwrap marks a structural wrapper: this TF segment has no DABs equivalent and is
-// consumed without emitting a segment in the DABs path. Unwrap and NewName are mutually exclusive.
+// RenameNode is one node in a bidirectional rename tree. NewName is the counterpart segment
+// name in the other naming scheme when it differs from the key; Children holds renames for
+// deeper paths. Both may be set when the segment itself is renamed and sub-fields are renamed too.
+// Unwrap marks a structural wrapper in TerraformToDABsFieldMap: the TF segment has no DABs
+// equivalent and is consumed without emitting a segment. Unwrap and NewName are mutually exclusive.
 type RenameNode struct {
 	NewName  string
 	Unwrap   bool

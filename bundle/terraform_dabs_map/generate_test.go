@@ -420,6 +420,33 @@ func renderSource(results []groupResult) ([]byte, error) {
 		writeFieldSet(w, buildFieldSet(r.tfOnly), 2)
 		w("\t},\n")
 	}
+	w("}\n\n")
+
+	w("// DABsToTerraformRenameMap maps DABs group name → nested DABs segments → TF segment name.\n")
+	w("// Navigate using DABs field name segments; NewName is the TF name when it differs.\n")
+	w("var DABsToTerraformRenameMap = map[string]RenameTree{\n")
+	for _, r := range results {
+		if !r.hasTFType || len(r.renames) == 0 {
+			continue
+		}
+		w("\t%q: {\n", r.group)
+		writeRenameTree(w, buildRenameTree(invertRenames(r.renames), nil), 2)
+		w("\t},\n")
+	}
+	w("}\n\n")
+
+	w("// DABsToTerraformWrappers maps DABs group name → the TF wrapper segment to prepend.\n")
+	w("// For groups using Unwrap in TerraformToDABsFieldMap, every DABs path must be prefixed\n")
+	w("// with this segment to obtain the corresponding TF path.\n")
+	w("var DABsToTerraformWrappers = map[string]string{\n")
+	for _, r := range results {
+		if !r.hasTFType || len(r.unwraps) == 0 {
+			continue
+		}
+		for _, wrapper := range r.unwraps {
+			w("\t%q: %q,\n", r.group, wrapper)
+		}
+	}
 	w("}\n")
 
 	return format.Source([]byte(b.String()))
@@ -432,8 +459,17 @@ type rnode struct {
 	children map[string]*rnode
 }
 
-// buildRenameTree converts flat TF→DABs rename mappings and unwrap wrappers to a nested rnode tree.
-// At each level it stores the DABs segment name when it differs from the TF segment name.
+// invertRenames swaps key and value in a flat rename map, producing the inverse mapping.
+func invertRenames(renames map[string]string) map[string]string {
+	inv := make(map[string]string, len(renames))
+	for k, v := range renames {
+		inv[v] = k
+	}
+	return inv
+}
+
+// buildRenameTree converts flat rename mappings and unwrap wrappers to a nested rnode tree.
+// At each level it stores the renamed segment name when it differs from the key segment.
 func buildRenameTree(renames map[string]string, unwraps []string) map[string]*rnode {
 	root := make(map[string]*rnode)
 	for tfPath, dabsPath := range renames {

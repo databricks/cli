@@ -530,3 +530,43 @@ var TerraformOnlyFields = map[string]FieldSet{
 		"volume_path": {},
 	},
 }
+
+// DABsToTerraformRenameMap maps DABs group name → nested DABs segments → TF segment name.
+// Navigate using DABs field name segments; NewName is the TF name when it differs.
+var DABsToTerraformRenameMap = map[string]RenameTree{
+	"jobs": {
+		"environments": {NewName: "environment"},
+		"git_source": {Children: RenameTree{
+			"git_branch":   {NewName: "branch"},
+			"git_commit":   {NewName: "commit"},
+			"git_provider": {NewName: "provider"},
+			"git_tag":      {NewName: "tag"},
+			"git_url":      {NewName: "url"},
+		}},
+		"job_clusters": {NewName: "job_cluster"},
+		"parameters":   {NewName: "parameter"},
+		"tasks": {NewName: "task", Children: RenameTree{
+			"for_each_task": {Children: RenameTree{
+				"task": {Children: RenameTree{
+					"libraries": {NewName: "library"},
+				}},
+			}},
+			"libraries": {NewName: "library"},
+		}},
+	},
+	"pipelines": {
+		"clusters":      {NewName: "cluster"},
+		"libraries":     {NewName: "library"},
+		"notifications": {NewName: "notification"},
+	},
+}
+
+// DABsToTerraformWrappers maps DABs group name → the TF wrapper segment to prepend.
+// For groups using Unwrap in TerraformToDABsFieldMap, every DABs path must be prefixed
+// with this segment to obtain the corresponding TF path.
+var DABsToTerraformWrappers = map[string]string{
+	"postgres_branches":  "spec",
+	"postgres_catalogs":  "spec",
+	"postgres_endpoints": "spec",
+	"postgres_projects":  "spec",
+}
