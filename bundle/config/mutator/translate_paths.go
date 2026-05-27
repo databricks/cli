@@ -303,10 +303,10 @@ func (t *translateContext) translateLocalRelativeWithPrefixPath(ctx context.Cont
 func (t *translateContext) rewriteValue(ctx context.Context, p dyn.Path, v dyn.Value, dir string, opts translateOptions) (dyn.Value, error) {
 	out, err := t.rewritePath(ctx, dir, v.MustString(), opts)
 	if err != nil {
-		if target := (&ErrIsNotebook{}); errors.As(err, target) {
+		if target, ok := errors.AsType[ErrIsNotebook](err); ok {
 			return dyn.InvalidValue, fmt.Errorf(`expected a file for "%s" but got a notebook: %w`, p, target)
 		}
-		if target := (&ErrIsNotNotebook{}); errors.As(err, target) {
+		if target, ok := errors.AsType[ErrIsNotNotebook](err); ok {
 			return dyn.InvalidValue, fmt.Errorf(`expected a notebook for "%s" but got a file: %w`, p, target)
 		}
 		return dyn.InvalidValue, err

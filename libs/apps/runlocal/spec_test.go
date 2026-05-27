@@ -28,11 +28,11 @@ func TestAppSpecLoadEnvVars(t *testing.T) {
 					EnvVars: []AppEnvVar{
 						{
 							Name:  "VAR1",
-							Value: stringPtr("value1"),
+							Value: new("value1"),
 						},
 						{
 							Name:  "VAR2",
-							Value: stringPtr("value2"),
+							Value: new("value2"),
 						},
 					},
 				}
@@ -53,11 +53,11 @@ func TestAppSpecLoadEnvVars(t *testing.T) {
 					EnvVars: []AppEnvVar{
 						{
 							Name:      "VAR1",
-							ValueFrom: stringPtr("VAR1"),
+							ValueFrom: new("VAR1"),
 						},
 						{
 							Name:      "VAR2",
-							ValueFrom: stringPtr("VAR2"),
+							ValueFrom: new("VAR2"),
 						},
 					},
 				}
@@ -77,11 +77,11 @@ func TestAppSpecLoadEnvVars(t *testing.T) {
 					EnvVars: []AppEnvVar{
 						{
 							Name:  "VAR1",
-							Value: stringPtr("value1"),
+							Value: new("value1"),
 						},
 						{
 							Name:      "VAR2",
-							ValueFrom: stringPtr("VAR2"),
+							ValueFrom: new("VAR2"),
 						},
 					},
 				}
@@ -101,7 +101,7 @@ func TestAppSpecLoadEnvVars(t *testing.T) {
 					EnvVars: []AppEnvVar{
 						{
 							Name:      "VAR1",
-							ValueFrom: stringPtr("VAR1"),
+							ValueFrom: new("VAR1"),
 						},
 					},
 				}
@@ -121,7 +121,7 @@ func TestAppSpecLoadEnvVars(t *testing.T) {
 					EnvVars: []AppEnvVar{
 						{
 							Name:      "VAR1",
-							ValueFrom: stringPtr("MISSING_VAR"),
+							ValueFrom: new("MISSING_VAR"),
 						},
 					},
 				}
@@ -148,9 +148,4 @@ func TestAppSpecLoadEnvVars(t *testing.T) {
 			}
 		})
 	}
-}
-
-// Helper function to create a string pointer
-func stringPtr(s string) *string {
-	return &s
 }

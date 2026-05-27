@@ -153,12 +153,6 @@ type ServerStub struct {
 	// Configure as "1ms", "2s", "3m", etc.
 	// See [time.ParseDuration] for details.
 	Delay time.Duration
-
-	// Number of times to kill the caller process before returning normal responses.
-	// 0 = never kill (default), 1 = kill once then allow, 2 = kill twice then allow, etc.
-	// Useful for testing crash recovery scenarios where first deploy crashes but retry succeeds.
-	// Requires DATABRICKS_CLI_TEST_PID=1 to be set in the test environment.
-	KillCaller int
 }
 
 // FindConfigs finds all the config relevant for this test,
@@ -266,6 +260,10 @@ func DoLoadConfig(t *testing.T, path string) TestConfig {
 	var config TestConfig
 	meta, err := toml.Decode(string(bytes), &config)
 	require.NoError(t, err, "Failed to parse config %s", path)
+
+	if len(meta.Keys()) == 0 {
+		t.Fatalf("test.toml has no settings (delete it instead of leaving it empty): %s", path)
+	}
 
 	keys := meta.Undecoded()
 	for ind, key := range keys {

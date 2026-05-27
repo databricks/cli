@@ -15,14 +15,13 @@ const tailLinesSuggestedValue = 100
 // These are errors wrapped by retries.Halt() during GetWithTimeout().
 // Excludes API client errors (4xx) which are validation errors before deployment starts.
 func isDeploymentWaitError(err error) bool {
-	var retriesErr *retries.Err
-	if !errors.As(err, &retriesErr) || !retriesErr.Halt {
+	retriesErr, ok := errors.AsType[*retries.Err](err)
+	if !ok || !retriesErr.Halt {
 		return false
 	}
 
 	// Exclude API client errors (4xx) (e.g. app not found)
-	var apiErr *apierr.APIError
-	if errors.As(err, &apiErr) && apiErr.StatusCode >= 400 && apiErr.StatusCode < 500 {
+	if apiErr, ok := errors.AsType[*apierr.APIError](err); ok && apiErr.StatusCode >= 400 && apiErr.StatusCode < 500 {
 		return false
 	}
 

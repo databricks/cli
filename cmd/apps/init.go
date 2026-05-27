@@ -17,8 +17,8 @@ import (
 
 	"github.com/charmbracelet/huh"
 	"github.com/databricks/cli/cmd/root"
-	"github.com/databricks/cli/experimental/aitools/lib/agents"
-	"github.com/databricks/cli/experimental/aitools/lib/installer"
+	"github.com/databricks/cli/libs/aitools/agents"
+	"github.com/databricks/cli/libs/aitools/installer"
 	"github.com/databricks/cli/libs/apps/generator"
 	"github.com/databricks/cli/libs/apps/initializer"
 	"github.com/databricks/cli/libs/apps/manifest"
@@ -81,9 +81,8 @@ func newInitCmd() *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:    "init",
-		Short:  "Initialize a new AppKit application from a template",
-		Hidden: true,
+		Use:   "init",
+		Short: "Initialize a new AppKit application from a template",
 		Long: `Initialize a new AppKit application from a template.
 
 When run without arguments, uses the default AppKit template and an interactive prompt
@@ -1269,7 +1268,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	// In flags mode, only print a hint — never prompt interactively.
 	if flagsMode {
 		if !agents.HasDatabricksSkillsInstalled(ctx) {
-			cmdio.LogString(ctx, "Tip: coding agents detected without Databricks skills. Run 'databricks experimental aitools skills install' to install them.")
+			cmdio.LogString(ctx, "Tip: coding agents detected without Databricks skills. Run 'databricks aitools install' to install them.")
 		}
 	} else if err := agents.RecommendSkillsInstall(ctx, installer.InstallAllSkills); err != nil {
 		log.Warnf(ctx, "Skills recommendation failed: %v", err)

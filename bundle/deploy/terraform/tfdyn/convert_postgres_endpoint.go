@@ -15,7 +15,7 @@ func (c postgresEndpointConverter) Convert(ctx context.Context, key string, vin 
 	// The bundle config has flattened EndpointSpec fields at the top level.
 	// Terraform expects them nested in a "spec" block.
 	specFields := specFieldNames(schema.ResourcePostgresEndpointSpec{})
-	topLevelFields := []string{"endpoint_id", "parent"}
+	topLevelFields := []string{"endpoint_id", "parent", "replace_existing"}
 
 	// Build the spec block from the flattened fields
 	specMap := make(map[string]dyn.Value)

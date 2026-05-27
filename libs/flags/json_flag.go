@@ -59,7 +59,7 @@ func (j *JsonFlag) Unmarshal(v any) diag.Diagnostics {
 
 	if !nv.IsValid() {
 		kind := reflect.TypeOf(v).Kind()
-		if kind == reflect.Ptr {
+		if kind == reflect.Pointer {
 			kind = reflect.TypeOf(v).Elem().Kind()
 		}
 
@@ -88,7 +88,7 @@ func (j *JsonFlag) Unmarshal(v any) diag.Diagnostics {
 	}
 
 	kind := reflect.ValueOf(v).Kind()
-	if kind == reflect.Ptr {
+	if kind == reflect.Pointer {
 		kind = reflect.ValueOf(v).Elem().Kind()
 	}
 
@@ -112,4 +112,45 @@ func (j *JsonFlag) Unmarshal(v any) diag.Diagnostics {
 
 func (j *JsonFlag) Type() string {
 	return "JSON"
+}
+
+// Raw returns the raw JSON bytes the flag was set to (or nil when the flag
+// was not provided). Exposed so command overrides can do shape-level
+// validation before the generated Unmarshal call.
+func (j *JsonFlag) Raw() []byte {
+	return j.raw
+}
+
+// RejectWrappedJSON returns a clear client-side error when the --json body
+// is a top-level object containing outerKey. It detects the common mistake
+// of wrapping the body in '{"<outerKey>": ...}' when the flag binds to the
+// inner object (the SDK request type's JSON-tagged outer field). Returns
+// nil when the flag is unset, when the body isn't an object, or when no
+// outerKey is present at the top level.
+//
+// example, if non-empty, is appended to the error as a hint at the correct
+// shape. Callers typically construct it as a self-contained command line.
+//
+// This is the shared helper used by the postgres command overrides; the
+// same inner-body --json shape exists across siblings like create-branch,
+// create-database, create-endpoint, and create-project.
+func (j *JsonFlag) RejectWrappedJSON(outerKey, example string) error {
+	if len(j.raw) == 0 {
+		return nil
+	}
+	var top map[string]json.RawMessage
+	if err := json.Unmarshal(j.raw, &top); err != nil {
+		// Defer non-object inputs to the generated unmarshal so its
+		// diagnostics render the original parse error.
+		return nil //nolint:nilerr
+	}
+	if _, found := top[outerKey]; !found {
+		return nil
+	}
+	msg := fmt.Sprintf("--json should NOT be wrapped in '{%q: ...}'.\n\n"+
+		"The flag binds to the inner object — supply its fields directly.", outerKey)
+	if example != "" {
+		msg += "\n\nExample:\n\n  " + example
+	}
+	return fmt.Errorf("%s", msg)
 }

@@ -57,9 +57,9 @@ func printedText(t *testing.T, msg tea.Msg) string {
 	t.Helper()
 	rv := reflect.ValueOf(msg)
 	require.Equal(t, reflect.Struct, rv.Kind(), "expected a struct msg, got %T", msg)
-	for i := range rv.NumField() {
-		if rv.Field(i).Kind() == reflect.String {
-			return rv.Field(i).String()
+	for _, field := range rv.Fields() {
+		if field.Kind() == reflect.String {
+			return field.String()
 		}
 	}
 	t.Fatalf("no string field in %T", msg)

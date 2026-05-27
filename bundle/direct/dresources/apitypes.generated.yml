@@ -28,9 +28,13 @@ pipelines: pipelines.CreatePipeline
 
 postgres_branches: postgres.BranchSpec
 
+postgres_catalogs: postgres.CatalogCatalogSpec
+
 postgres_endpoints: postgres.EndpointSpec
 
 postgres_projects: postgres.ProjectStatus
+
+postgres_synced_tables: postgres.SyncedTableSyncedTableSpec
 
 quality_monitors: catalog.CreateMonitor
 

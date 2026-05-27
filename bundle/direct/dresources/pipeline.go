@@ -170,7 +170,7 @@ func (r *ResourcePipeline) DoUpdate(ctx context.Context, id string, config *pipe
 	return nil, r.client.Pipelines.Update(ctx, request)
 }
 
-func (r *ResourcePipeline) DoDelete(ctx context.Context, id string) error {
+func (r *ResourcePipeline) DoDelete(ctx context.Context, id string, _ *pipelines.CreatePipeline) error {
 	return r.client.Pipelines.DeleteByPipelineId(ctx, id)
 }
 

@@ -12,7 +12,6 @@ import (
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	envlib "github.com/databricks/cli/libs/env"
-	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
@@ -130,13 +129,13 @@ func MustAnyClient(cmd *cobra.Command, args []string) (bool, error) {
 	// If the error indicates a wrong config type (workspace host used for account client,
 	// or config type mismatch detected by workspaceClientOrPrompt), fall through to try
 	// account client.
-	if !errors.Is(werr, errNotWorkspaceClient) && !errors.As(werr, &ErrNoWorkspaceProfiles{}) {
+	if _, ok := errors.AsType[ErrNoWorkspaceProfiles](werr); !errors.Is(werr, errNotWorkspaceClient) && !ok {
 		return false, werr
 	}
 
 	// Otherwise, the config used is account client one, so try to create an account client
 	aerr := MustAccountClient(cmd, args)
-	if errors.As(aerr, &ErrNoAccountProfiles{}) {
+	if _, ok := errors.AsType[ErrNoAccountProfiles](aerr); ok {
 		return false, aerr
 	}
 
@@ -299,14 +298,8 @@ func resolveDefaultProfile(ctx context.Context, cfg *config.Config) {
 	if cfg.Profile != "" || envlib.Get(ctx, "DATABRICKS_CONFIG_PROFILE") != "" {
 		return
 	}
-	configFilePath := envlib.Get(ctx, "DATABRICKS_CONFIG_FILE")
-	resolvedProfile, err := databrickscfg.GetConfiguredDefaultProfile(ctx, configFilePath)
-	if err != nil {
-		log.Warnf(ctx, "Failed to load default profile: %v", err)
-		return
-	}
-	if resolvedProfile != "" {
-		cfg.Profile = resolvedProfile
+	if resolved := databrickscfg.ResolveDefaultProfile(ctx); resolved != "" {
+		cfg.Profile = resolved
 	}
 }
 
