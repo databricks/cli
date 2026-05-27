@@ -3,6 +3,7 @@ package root
 import (
 	"context"
 	"fmt"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -541,7 +542,13 @@ func TestWorkspaceClientOrPromptRejectsPATOnSPOGFromConfigFile(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{"account_id":"abc-123","oidc_endpoint":"https://spog.example.test/oidc/accounts/abc-123"}`))
 	})
-	server := httptest.NewServer(mux)
+	// Bind explicitly to IPv4 — httptest.NewServer falls through to IPv6 if
+	// the default listener fails, and the Windows GitHub runner doesn't have
+	// IPv6 configured, so the panic message is "listen tcp6 [::1]:0: socket".
+	ln, err := net.Listen("tcp4", "127.0.0.1:0")
+	require.NoError(t, err)
+	server := &httptest.Server{Listener: ln, Config: &http.Server{Handler: mux}}
+	server.Start()
 	t.Cleanup(server.Close)
 
 	configFile := filepath.Join(t.TempDir(), ".databrickscfg")
