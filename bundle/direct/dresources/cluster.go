@@ -172,7 +172,6 @@ func (r *ResourceCluster) DoUpdate(ctx context.Context, id string, config *Clust
 				return wait, nil
 			}
 
-			var apiErr *apierr.APIError
 			// Only Running and Terminated clusters can be modified. In particular, autoscaling clusters cannot be modified
 			// while the resizing is ongoing. We retry in this case. Scaling can take several minutes.
 			if apiErr, ok := errors.AsType[*apierr.APIError](err); ok && apiErr.ErrorCode == "INVALID_STATE" {
