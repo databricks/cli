@@ -31,8 +31,8 @@ func TestGenerateSchemaMap(t *testing.T) {
 		require.NoError(t, os.WriteFile("generated.go", src, 0o644))
 		for _, r := range results {
 			if r.hasTFType {
-				t.Logf("%s (%s): %d matches, %d renames, %d dabs-only, %d tf-only",
-					r.group, r.tfType, r.matchCount, len(r.renames), len(r.dabsOnly), len(r.tfOnly))
+				t.Logf("%s (%s): %d matches, %d renames, %d unwraps, %d dabs-only, %d tf-only",
+					r.group, r.tfType, r.matchCount, len(r.renames), len(r.unwraps), len(r.dabsOnly), len(r.tfOnly))
 			}
 		}
 		return
@@ -83,6 +83,7 @@ type groupResult struct {
 	tfType     string
 	hasTFType  bool
 	renames    map[string]string // TF path → DABs path (renamed fields only)
+	unwraps    []string          // TF paths that are structural wrappers (Unwrap: true)
 	dabsOnly   map[string]bool   // DABs clean paths with no Terraform equivalent
 	tfOnly     map[string]bool   // TF clean paths with no DABs equivalent
 	matchCount int               // used for stats output only, not written to generated.go
@@ -209,7 +210,48 @@ func buildGroup(group string, adapter *dresources.Adapter) (groupResult, error) 
 		}
 	}
 
-	// Step 3: remaining unmatched fields.
+	// Step 3: detect wrapper segments — TF segments that wrap DABs fields one level deeper
+	// with no name change (e.g. DABs "budget_policy_id" ↔ TF "spec.budget_policy_id").
+	// A wrapper is accepted only when ALL its sub-fields are accounted for by unmatched DABs
+	// fields; this rejects output-only wrappers like "status" that carry extra computed fields.
+	wrappers := make(map[string]bool)
+	for tf := range tfFields {
+		if !matchedTF[tf] {
+			if head, _, ok := strings.Cut(tf, "."); ok {
+				wrappers[head] = true
+			}
+		}
+	}
+	for wrapper := range wrappers {
+		prefix := wrapper + "."
+		subTF := make(map[string]bool)
+		for tf := range tfFields {
+			if !matchedTF[tf] {
+				if after, ok := strings.CutPrefix(tf, prefix); ok {
+					subTF[after] = true
+				}
+			}
+		}
+		// Collect unmatched DABs fields that have an exact counterpart in subTF.
+		var matching []string
+		for dabs := range dabsFields {
+			if !matchedDABs[dabs] && !dabsKnownFields[topSegment(dabs)] && subTF[dabs] {
+				matching = append(matching, dabs)
+			}
+		}
+		// Only treat as a wrapper when every sub-field is accounted for.
+		if len(matching) == 0 || len(matching) != len(subTF) {
+			continue
+		}
+		for _, dabs := range matching {
+			matchedDABs[dabs] = true
+			matchedTF[prefix+dabs] = true
+			res.matchCount++
+		}
+		res.unwraps = append(res.unwraps, wrapper)
+	}
+
+	// Step 4: remaining unmatched fields.
 	for dabs := range dabsFields {
 		if !matchedDABs[dabs] && !dabsKnownFields[topSegment(dabs)] {
 			res.dabsOnly[dabs] = true
@@ -326,11 +368,11 @@ func renderSource(results []groupResult) ([]byte, error) {
 	w("// Navigate using TF field name segments; DABs is the corresponding DABs name when it differs.\n")
 	w("var TerraformToDABsFieldMap = map[string]RenameTree{\n")
 	for _, r := range results {
-		if !r.hasTFType || len(r.renames) == 0 {
+		if !r.hasTFType || (len(r.renames) == 0 && len(r.unwraps) == 0) {
 			continue
 		}
 		w("\t%q: {\n", r.group)
-		writeRenameTree(w, buildRenameTree(r.renames), 2)
+		writeRenameTree(w, buildRenameTree(r.renames, r.unwraps), 2)
 		w("\t},\n")
 	}
 	w("}\n\n")
@@ -365,12 +407,13 @@ func renderSource(results []groupResult) ([]byte, error) {
 // rnode is an internal node used when building the RenameTree before rendering.
 type rnode struct {
 	dabs     string
+	unwrap   bool
 	children map[string]*rnode
 }
 
-// buildRenameTree converts flat TF→DABs rename mappings to a nested rnode tree.
+// buildRenameTree converts flat TF→DABs rename mappings and unwrap wrappers to a nested rnode tree.
 // At each level it stores the DABs segment name when it differs from the TF segment name.
-func buildRenameTree(renames map[string]string) map[string]*rnode {
+func buildRenameTree(renames map[string]string, unwraps []string) map[string]*rnode {
 	root := make(map[string]*rnode)
 	for tfPath, dabsPath := range renames {
 		tfSegs := strings.Split(tfPath, ".")
@@ -394,6 +437,12 @@ func buildRenameTree(renames map[string]string) map[string]*rnode {
 			}
 		}
 	}
+	for _, wrapper := range unwraps {
+		if root[wrapper] == nil {
+			root[wrapper] = &rnode{}
+		}
+		root[wrapper].unwrap = true
+	}
 	return root
 }
 
@@ -403,6 +452,12 @@ func writeRenameTree(w func(string, ...any), tree map[string]*rnode, depth int) 
 	for _, key := range sortedKeys(tree) {
 		n := tree[key]
 		switch {
+		case n.unwrap && len(n.children) == 0:
+			w("%s%q: {Unwrap: true},\n", indent, key)
+		case n.unwrap && len(n.children) > 0:
+			w("%s%q: {Unwrap: true, Children: RenameTree{\n", indent, key)
+			writeRenameTree(w, n.children, depth+1)
+			w("%s}},\n", indent)
 		case n.dabs != "" && len(n.children) == 0:
 			w("%s%q: {NewName: %q},\n", indent, key, n.dabs)
 		case n.dabs == "" && len(n.children) > 0:

@@ -46,6 +46,17 @@ func TestTerraformPathToDABs(t *testing.T) {
 
 		// Unknown group: path unchanged
 		{"unknown_group", "task", "task"},
+
+		// postgres resources: spec wrapper is unwrapped
+		{"postgres_projects", "spec.display_name", "display_name"},
+		{"postgres_projects", "spec.default_endpoint_settings.no_suspension", "default_endpoint_settings.no_suspension"},
+		{"postgres_branches", "spec.expire_time", "expire_time"},
+		{"postgres_catalogs", "spec.postgres_database", "postgres_database"},
+		{"postgres_endpoints", "spec.endpoint_type", "endpoint_type"},
+
+		// non-spec TF paths pass through unchanged (status, create_time, etc.)
+		{"postgres_projects", "status.display_name", "status.display_name"},
+		{"postgres_projects", "create_time", "create_time"},
 	}
 
 	for _, tt := range tests {

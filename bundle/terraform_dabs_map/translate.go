@@ -22,6 +22,11 @@ func TerraformPathToDABs(group string, path *structpath.PathNode) *structpath.Pa
 	for _, n := range path.AsSlice() {
 		if key, ok := n.StringKey(); ok {
 			if rn, found := tree[key]; found {
+				if rn.Unwrap {
+					// This TF segment is a structural wrapper with no DABs equivalent; skip it.
+					tree = rn.Children
+					continue
+				}
 				if rn.NewName != "" {
 					key = rn.NewName
 				}
