@@ -273,12 +273,26 @@ def git(*args, **kwargs):
 
 
 def resolve_base_ref(hint=None):
-    """Return the base ref for comparison, falling back from origin/main to main."""
+    """Return the symbolic base ref for comparison, falling back from origin/main to main."""
     if hint:
         return hint
     if git("rev-parse", "--verify", "origin/main").returncode == 0:
         return "origin/main"
     return "main"
+
+
+def compute_merge_base(base_ref):
+    """Return the merge-base SHA between HEAD and base_ref.
+
+    Using the merge base rather than the tip of base_ref ensures the diff
+    only reflects changes on the current branch, not commits that landed on
+    main after the branch was created.
+    """
+    result = git("merge-base", "HEAD", base_ref)
+    if result.returncode != 0:
+        # Fall back to the tip of base_ref if merge-base fails (e.g. unrelated histories).
+        return git("rev-parse", base_ref).stdout.strip()
+    return result.stdout.strip()
 
 
 def get_changed_files(base_ref):
@@ -721,25 +735,26 @@ def main():
     args = parser.parse_args()
 
     base_ref = resolve_base_ref(args.base)
-    base_commit = git("rev-parse", "--short", base_ref).stdout.strip()
+    merge_base = compute_merge_base(base_ref)
+    base_commit = git("rev-parse", "--short", merge_base).stdout.strip()
 
     head_hash = git("rev-parse", "--short", "HEAD").stdout.strip()
     head_title = git("log", "-1", "--format=%s", "HEAD").stdout.strip()
     is_dirty = bool(git("status", "--porcelain", "--untracked-files=no").stdout.strip())
     commit_header = f"Tested commit: {head_hash}{'-dirty' if is_dirty else ''} {head_title}"
 
-    print(f"Analyzing branch vs {base_ref}")
+    print(f"Analyzing branch vs {base_ref} (merge base: {base_commit})")
     print(f"HEAD: {commit_header}")
 
-    changed_files = get_changed_files(base_ref)
-    print(f"Files changed vs {base_ref}: {len(changed_files)}")
+    changed_files = get_changed_files(merge_base)
+    print(f"Files changed vs merge base ({base_commit}): {len(changed_files)}")
 
-    acc_added, acc_modified = collect_changed_acceptance_tests(changed_files, base_ref)
+    acc_added, acc_modified = collect_changed_acceptance_tests(changed_files, merge_base)
     acc_selected = acc_added[: args.max_tests]
     acc_selected += acc_modified[: args.max_tests - len(acc_selected)]
     print(f"Acceptance tests: {len(acc_added)} added, {len(acc_modified)} modified → {len(acc_selected)} selected")
 
-    unit_added, unit_modified = collect_changed_unit_tests(changed_files, base_ref)
+    unit_added, unit_modified = collect_changed_unit_tests(changed_files, merge_base)
     unit_selected_entries = unit_added[: args.max_tests]
     unit_selected_entries += unit_modified[: args.max_tests - len(unit_selected_entries)]
     unit_added_keys = {e[0] for e in unit_added}
@@ -820,7 +835,7 @@ def main():
         for tp in acc_selected:
             for leaf in acc_branch_info[tp]["passing_leaves"]:
                 print(f"  {leaf} ...", flush=True)
-                proc = run_acceptance_on_main(tp, leaf, base_ref)
+                proc = run_acceptance_on_main(tp, leaf, merge_base)
                 if proc is None:
                     acc_main_info[leaf] = {"status": "error", "output": ""}
                     continue
@@ -838,7 +853,7 @@ def main():
                 continue
             pkg_dir, changed_files_pkg, functions = unit_entry_map[key]
             print(f"  {pkg_dir} ...", flush=True)
-            proc = run_unit_tests_on_main(pkg_dir, changed_files_pkg, info["passing_functions"], base_ref)
+            proc = run_unit_tests_on_main(pkg_dir, changed_files_pkg, info["passing_functions"], merge_base)
             if proc is None:
                 unit_main_info[key] = {"compile_fail": False, "function_results": {}, "raw_output": ""}
                 continue
