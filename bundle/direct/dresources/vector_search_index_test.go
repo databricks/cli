@@ -29,8 +29,7 @@ func TestVectorSearchIndexAllSDKFieldsAreClassified(t *testing.T) {
 	}
 
 	sdkType := reflect.TypeFor[vectorsearch.CreateVectorIndexRequest]()
-	for i := range sdkType.NumField() {
-		field := sdkType.Field(i)
+	for field := range sdkType.Fields() {
 		jsonTag := field.Tag.Get("json")
 		if jsonTag == "" || jsonTag == "-" {
 			continue
