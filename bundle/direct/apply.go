@@ -105,7 +105,7 @@ func (d *DeploymentUnit) Recreate(ctx context.Context, db *dstate.DeploymentStat
 	// MANAGED_BY_PARENT is still disregarded — the subsequent Create with
 	// replace_existing=true will reconfigure the parent-managed resource in
 	// place, matching the Terraform provider's recreate behaviour.
-	err = retryErr(ctx, func() error { return d.Adapter.DoDelete(ctx, oldID, oldState) })
+	err = retryOnTransientErr(ctx, func() error { return d.Adapter.DoDelete(ctx, oldID, oldState) })
 	if err != nil && !isResourceGone(err) && !isManagedByParent(err) {
 		return fmt.Errorf("deleting old id=%s: %w", oldID, err)
 	}
@@ -172,7 +172,7 @@ func (d *DeploymentUnit) Update(ctx context.Context, db *dstate.DeploymentState,
 func (d *DeploymentUnit) UpdateWithID(ctx context.Context, db *dstate.DeploymentState, oldID string, newState any) error {
 	var newID string
 	var remoteState any
-	err := retryErr(ctx, func() error {
+	err := retryOnTransientErr(ctx, func() error {
 		var e error
 		newID, remoteState, e = d.Adapter.DoUpdateWithID(ctx, oldID, newState)
 		return e
@@ -251,7 +251,7 @@ func (d *DeploymentUnit) Delete(ctx context.Context, db *dstate.DeploymentState,
 }
 
 func (d *DeploymentUnit) Resize(ctx context.Context, db *dstate.DeploymentState, id string, newState any) error {
-	err := retryErr(ctx, func() error { return d.Adapter.DoResize(ctx, id, newState) })
+	err := retryOnTransientErr(ctx, func() error { return d.Adapter.DoResize(ctx, id, newState) })
 	if err != nil {
 		return fmt.Errorf("resizing id=%s: %w", id, err)
 	}

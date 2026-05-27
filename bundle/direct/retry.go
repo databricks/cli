@@ -67,8 +67,8 @@ func retryOnTransient[T any](ctx context.Context, fn func() (T, error)) (T, erro
 	return retryWith(ctx, func(err error) bool { return isTransient(ctx, err) }, fn)
 }
 
-// retryErr wraps retryOnTransient for functions that return only an error.
-func retryErr(ctx context.Context, fn func() error) error {
+// retryOnTransientErr wraps retryOnTransient for functions that return only an error.
+func retryOnTransientErr(ctx context.Context, fn func() error) error {
 	_, err := retryOnTransient(ctx, func() (struct{}, error) {
 		return struct{}{}, fn()
 	})
