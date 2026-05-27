@@ -23,7 +23,7 @@ func (fs FieldSet) Len() int {
 // segment name when it differs from TF; Children holds renames for deeper paths.
 // Both may be set when the segment itself is renamed and sub-fields are renamed too.
 type RenameNode struct {
-	DABs     string
+	NewName  string
 	Children RenameTree
 }
 
@@ -34,7 +34,7 @@ type RenameTree map[string]RenameNode
 func (rt RenameTree) Len() int {
 	n := 0
 	for _, node := range rt {
-		if node.DABs != "" {
+		if node.NewName != "" {
 			n++
 		}
 		n += node.Children.Len()

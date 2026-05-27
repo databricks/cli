@@ -6,29 +6,29 @@ package terraform_dabs_map
 // Navigate using TF field name segments; DABs is the corresponding DABs name when it differs.
 var TerraformToDABsFieldMap = map[string]RenameTree{
 	"jobs": {
-		"environment": {DABs: "environments"},
+		"environment": {NewName: "environments"},
 		"git_source": {Children: RenameTree{
-			"branch":   {DABs: "git_branch"},
-			"commit":   {DABs: "git_commit"},
-			"provider": {DABs: "git_provider"},
-			"tag":      {DABs: "git_tag"},
-			"url":      {DABs: "git_url"},
+			"branch":   {NewName: "git_branch"},
+			"commit":   {NewName: "git_commit"},
+			"provider": {NewName: "git_provider"},
+			"tag":      {NewName: "git_tag"},
+			"url":      {NewName: "git_url"},
 		}},
-		"job_cluster": {DABs: "job_clusters"},
-		"parameter":   {DABs: "parameters"},
-		"task": {DABs: "tasks", Children: RenameTree{
+		"job_cluster": {NewName: "job_clusters"},
+		"parameter":   {NewName: "parameters"},
+		"task": {NewName: "tasks", Children: RenameTree{
 			"for_each_task": {Children: RenameTree{
 				"task": {Children: RenameTree{
-					"library": {DABs: "libraries"},
+					"library": {NewName: "libraries"},
 				}},
 			}},
-			"library": {DABs: "libraries"},
+			"library": {NewName: "libraries"},
 		}},
 	},
 	"pipelines": {
-		"cluster":      {DABs: "clusters"},
-		"library":      {DABs: "libraries"},
-		"notification": {DABs: "notifications"},
+		"cluster":      {NewName: "clusters"},
+		"library":      {NewName: "libraries"},
+		"notification": {NewName: "notifications"},
 	},
 }
 

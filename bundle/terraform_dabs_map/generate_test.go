@@ -404,13 +404,13 @@ func writeRenameTree(w func(string, ...any), tree map[string]*rnode, depth int) 
 		n := tree[key]
 		switch {
 		case n.dabs != "" && len(n.children) == 0:
-			w("%s%q: {DABs: %q},\n", indent, key, n.dabs)
+			w("%s%q: {NewName: %q},\n", indent, key, n.dabs)
 		case n.dabs == "" && len(n.children) > 0:
 			w("%s%q: {Children: RenameTree{\n", indent, key)
 			writeRenameTree(w, n.children, depth+1)
 			w("%s}},\n", indent)
 		default: // both dabs and children
-			w("%s%q: {DABs: %q, Children: RenameTree{\n", indent, key, n.dabs)
+			w("%s%q: {NewName: %q, Children: RenameTree{\n", indent, key, n.dabs)
 			writeRenameTree(w, n.children, depth+1)
 			w("%s}},\n", indent)
 		}
