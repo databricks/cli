@@ -3,11 +3,14 @@ package installer
 import (
 	"bytes"
 	"context"
+	"errors"
 	"io/fs"
 	"log/slog"
 	"os"
 	"path/filepath"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/aitools/agents"
@@ -186,6 +189,114 @@ func TestBackupThirdPartySkillRegularFile(t *testing.T) {
 
 	_, err = os.Stat(destDir)
 	assert.ErrorIs(t, err, fs.ErrNotExist)
+}
+
+func TestInstallSkillToDirFetchesFilesConcurrently(t *testing.T) {
+	baseCtx, cancel := context.WithTimeout(t.Context(), 2*time.Second)
+	defer cancel()
+	ctx := cmdio.MockDiscard(baseCtx)
+
+	orig := fetchFileFn
+	t.Cleanup(func() { fetchFileFn = orig })
+
+	started := make(chan string, 2)
+	release := make(chan struct{})
+	var releaseOnce sync.Once
+	t.Cleanup(func() { releaseOnce.Do(func() { close(release) }) })
+
+	fetchFileFn = func(ctx context.Context, _, _, _, filePath string) ([]byte, error) {
+		started <- filePath
+		select {
+		case <-release:
+			return []byte(filePath), nil
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		}
+	}
+
+	destDir := filepath.Join(t.TempDir(), "databricks-test")
+	errCh := make(chan error, 1)
+	go func() {
+		errCh <- installSkillToDir(ctx, testSkillsRef, stableSkillsRepoPath, "databricks-test", destDir, []string{"one.md", "two.md"})
+	}()
+
+	fetched := make(map[string]bool, 2)
+	for range 2 {
+		select {
+		case filePath := <-started:
+			fetched[filePath] = true
+		case <-ctx.Done():
+			require.FailNow(t, "timed out waiting for concurrent fetches to start")
+		}
+	}
+	assert.Equal(t, map[string]bool{"one.md": true, "two.md": true}, fetched)
+
+	releaseOnce.Do(func() { close(release) })
+	require.NoError(t, <-errCh)
+
+	one, err := os.ReadFile(filepath.Join(destDir, "one.md"))
+	require.NoError(t, err)
+	assert.Equal(t, "one.md", string(one))
+	two, err := os.ReadFile(filepath.Join(destDir, "two.md"))
+	require.NoError(t, err)
+	assert.Equal(t, "two.md", string(two))
+}
+
+func TestInstallSkillToDirCancelsInFlightFetchesOnError(t *testing.T) {
+	baseCtx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+	ctx := cmdio.MockDiscard(baseCtx)
+
+	orig := fetchFileFn
+	t.Cleanup(func() { fetchFileFn = orig })
+
+	fetchErr := errors.New("fetch failed")
+	blockedStarted := make(chan struct{})
+	cancelled := make(chan struct{})
+
+	fetchFileFn = func(ctx context.Context, _, _, _, filePath string) ([]byte, error) {
+		switch filePath {
+		case "blocked.md":
+			close(blockedStarted)
+			<-ctx.Done()
+			close(cancelled)
+			return nil, ctx.Err()
+		case "fail.md":
+			select {
+			case <-blockedStarted:
+				return nil, fetchErr
+			case <-ctx.Done():
+				return nil, ctx.Err()
+			}
+		default:
+			return []byte(filePath), nil
+		}
+	}
+
+	destDir := filepath.Join(t.TempDir(), "databricks-test")
+	errCh := make(chan error, 1)
+	go func() {
+		errCh <- installSkillToDir(ctx, testSkillsRef, stableSkillsRepoPath, "databricks-test", destDir, []string{"blocked.md", "fail.md"})
+	}()
+
+	var err error
+	select {
+	case err = <-errCh:
+	case <-time.After(time.Second):
+		cancel()
+		select {
+		case <-errCh:
+		case <-time.After(time.Second):
+		}
+		require.FailNow(t, "timed out waiting for errgroup cancellation")
+	}
+	require.ErrorIs(t, err, fetchErr)
+
+	select {
+	case <-cancelled:
+	default:
+		require.Fail(t, "expected in-flight fetch to observe context cancellation")
+	}
 }
 
 // --- InstallSkillsForAgents tests ---
