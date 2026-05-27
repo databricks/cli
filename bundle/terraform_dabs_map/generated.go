@@ -30,6 +30,18 @@ var TerraformToDABsFieldMap = map[string]RenameTree{
 		"library":      {NewName: "libraries"},
 		"notification": {NewName: "notifications"},
 	},
+	"postgres_branches": {
+		"spec": {Unwrap: true},
+	},
+	"postgres_catalogs": {
+		"spec": {Unwrap: true},
+	},
+	"postgres_endpoints": {
+		"spec": {Unwrap: true},
+	},
+	"postgres_projects": {
+		"spec": {Unwrap: true},
+	},
 }
 
 // DABsOnlyFields maps DABs group name → FieldSet of DABs fields with no TF equivalent.
@@ -91,59 +103,6 @@ var DABsOnlyFields = map[string]FieldSet{
 			},
 		},
 		"dry_run": {},
-	},
-	"postgres_branches": {
-		"expire_time":        {},
-		"is_protected":       {},
-		"no_expiry":          {},
-		"source_branch":      {},
-		"source_branch_lsn":  {},
-		"source_branch_time": {},
-		"ttl":                {},
-	},
-	"postgres_catalogs": {
-		"branch":                     {},
-		"create_database_if_missing": {},
-		"postgres_database":          {},
-	},
-	"postgres_endpoints": {
-		"autoscaling_limit_max_cu": {},
-		"autoscaling_limit_min_cu": {},
-		"disabled":                 {},
-		"endpoint_type":            {},
-		"group": {
-			"enable_readable_secondaries": {},
-			"max":                         {},
-			"min":                         {},
-		},
-		"no_suspension": {},
-		"settings": {
-			"pg_settings": {
-				"*": {},
-			},
-		},
-		"suspend_timeout_duration": {},
-	},
-	"postgres_projects": {
-		"budget_policy_id": {},
-		"custom_tags": {
-			"key":   {},
-			"value": {},
-		},
-		"default_branch": {},
-		"default_endpoint_settings": {
-			"autoscaling_limit_max_cu": {},
-			"autoscaling_limit_min_cu": {},
-			"no_suspension":            {},
-			"pg_settings": {
-				"*": {},
-			},
-			"suspend_timeout_duration": {},
-		},
-		"display_name":               {},
-		"enable_pg_native_login":     {},
-		"history_retention_duration": {},
-		"pg_version":                 {},
 	},
 }
 
@@ -579,15 +538,7 @@ var TerraformOnlyFields = map[string]FieldSet{
 	"postgres_branches": {
 		"create_time": {},
 		"name":        {},
-		"spec": {
-			"expire_time":        {},
-			"is_protected":       {},
-			"no_expiry":          {},
-			"source_branch":      {},
-			"source_branch_lsn":  {},
-			"source_branch_time": {},
-			"ttl":                {},
-		},
+		"spec":        {},
 		"status": {
 			"branch_id":          {},
 			"current_state":      {},
@@ -607,11 +558,7 @@ var TerraformOnlyFields = map[string]FieldSet{
 	"postgres_catalogs": {
 		"create_time": {},
 		"name":        {},
-		"spec": {
-			"branch":                     {},
-			"create_database_if_missing": {},
-			"postgres_database":          {},
-		},
+		"spec":        {},
 		"status": {
 			"branch":            {},
 			"catalog_id":        {},
@@ -624,24 +571,7 @@ var TerraformOnlyFields = map[string]FieldSet{
 	"postgres_endpoints": {
 		"create_time": {},
 		"name":        {},
-		"spec": {
-			"autoscaling_limit_max_cu": {},
-			"autoscaling_limit_min_cu": {},
-			"disabled":                 {},
-			"endpoint_type":            {},
-			"group": {
-				"enable_readable_secondaries": {},
-				"max":                         {},
-				"min":                         {},
-			},
-			"no_suspension": {},
-			"settings": {
-				"pg_settings": {
-					"*": {},
-				},
-			},
-			"suspend_timeout_duration": {},
-		},
+		"spec":        {},
 		"status": {
 			"autoscaling_limit_max_cu": {},
 			"autoscaling_limit_min_cu": {},
@@ -682,27 +612,7 @@ var TerraformOnlyFields = map[string]FieldSet{
 		"name":            {},
 		"purge_on_delete": {},
 		"purge_time":      {},
-		"spec": {
-			"budget_policy_id": {},
-			"custom_tags": {
-				"key":   {},
-				"value": {},
-			},
-			"default_branch": {},
-			"default_endpoint_settings": {
-				"autoscaling_limit_max_cu": {},
-				"autoscaling_limit_min_cu": {},
-				"no_suspension":            {},
-				"pg_settings": {
-					"*": {},
-				},
-				"suspend_timeout_duration": {},
-			},
-			"display_name":               {},
-			"enable_pg_native_login":     {},
-			"history_retention_duration": {},
-			"pg_version":                 {},
-		},
+		"spec":            {},
 		"status": {
 			"branch_logical_size_limit_bytes": {},
 			"budget_policy_id":                {},
