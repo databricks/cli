@@ -5,6 +5,7 @@
 ### Notable Changes
 
 ### CLI
+* Recognize `?o=<workspace-id>` and `?a=<account-id>` in `DATABRICKS_HOST` so SPOG URLs pasted from the Databricks UI route correctly without manually splitting out `DATABRICKS_WORKSPACE_ID` / `DATABRICKS_ACCOUNT_ID`.
 
 ### Bundles
 * The error reported when a direct-only resource (catalogs, external locations, vector search endpoints) is used with the terraform engine now also suggests setting `bundle.engine: direct` in `databricks.yml`, in addition to the `DATABRICKS_BUNDLE_ENGINE` environment variable ([#5295](https://github.com/databricks/cli/pull/5295)).
