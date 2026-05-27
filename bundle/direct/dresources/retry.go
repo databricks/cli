@@ -17,14 +17,6 @@ const maxRetries = 2
 
 var defaultRetryInterval = 30 * time.Second
 
-var retriableCodes = map[int]bool{
-	408: true,
-	500: true,
-	502: true,
-	503: true,
-	504: true,
-}
-
 func retryInterval(ctx context.Context) time.Duration {
 	v, ok := bundleenv.RetryIntervalMs(ctx)
 	if !ok {
@@ -37,17 +29,37 @@ func retryInterval(ctx context.Context) time.Duration {
 	return time.Duration(ms) * time.Millisecond
 }
 
-func isTransient(err error) bool {
+// isTransient returns true for 504 errors that the SDK did not already retry.
+// The SDK retries 504s matching its allTransientErrors patterns (e.g. "deadline exceeded");
+// this covers the remaining 504s like TEMPORARILY_UNAVAILABLE.
+func isTransient(ctx context.Context, err error) bool {
 	var apiErr *apierr.APIError
-	return errors.As(err, &apiErr) && retriableCodes[apiErr.StatusCode]
+	return errors.As(err, &apiErr) && apiErr.StatusCode == 504 && !apiErr.IsRetriable(ctx)
 }
 
-// retryOnTransient retries fn on transient HTTP errors (408/500/502/503/504) up to maxRetries times.
-func retryOnTransient[T any](ctx context.Context, fn func() (T, error)) (T, error) {
+// retrySafeError wraps an error to signal that the failed DoCreate is safe to retry.
+type retrySafeError struct {
+	err error
+}
+
+func (e *retrySafeError) Error() string { return e.err.Error() }
+func (e *retrySafeError) Unwrap() error { return e.err }
+
+// retrySafe wraps err to mark the operation as safe to retry from DoCreate.
+// Use this when the create is idempotent (e.g. a PUT that can be repeated safely).
+func retrySafe(err error) error {
+	if err == nil {
+		return nil
+	}
+	return &retrySafeError{err: err}
+}
+
+// retryWith retries fn while check returns true for the error, up to maxRetries times.
+func retryWith[T any](ctx context.Context, check func(error) bool, fn func() (T, error)) (T, error) {
 	interval := retryInterval(ctx)
 	for attempt := 0; ; attempt++ {
 		result, err := fn()
-		if err == nil || attempt >= maxRetries || !isTransient(err) {
+		if err == nil || attempt >= maxRetries || !check(err) {
 			return result, err
 		}
 		var apiErr *apierr.APIError
@@ -65,6 +77,11 @@ func retryOnTransient[T any](ctx context.Context, fn func() (T, error)) (T, erro
 		case <-time.After(interval):
 		}
 	}
+}
+
+// retryOnTransient retries fn on transient 504 errors that the SDK did not already handle.
+func retryOnTransient[T any](ctx context.Context, fn func() (T, error)) (T, error) {
+	return retryWith(ctx, func(err error) bool { return isTransient(ctx, err) }, fn)
 }
 
 // retryErr wraps retryOnTransient for functions that return only an error.

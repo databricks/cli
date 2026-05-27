@@ -436,14 +436,26 @@ func normalizeNilPointer(v any) any {
 }
 
 func (a *Adapter) DoCreate(ctx context.Context, newState any) (string, any, error) {
-	outs, err := a.doCreate.Call(ctx, newState)
-	if err != nil {
-		return "", nil, err
+	type result struct {
+		id          string
+		remoteState any
 	}
-
-	id := outs[0].(string)
-	remoteState := normalizeNilPointer(outs[1])
-	return id, remoteState, nil
+	res, err := retryWith(ctx, func(err error) bool {
+		var safe *retrySafeError
+		return errors.As(err, &safe) && isTransient(ctx, err)
+	}, func() (result, error) {
+		outs, err := a.doCreate.Call(ctx, newState)
+		if err != nil {
+			return result{}, err
+		}
+		return result{outs[0].(string), normalizeNilPointer(outs[1])}, nil
+	})
+	// Unwrap retrySafeError — it's an internal marker not meaningful to callers.
+	var safe *retrySafeError
+	if errors.As(err, &safe) {
+		err = safe.err
+	}
+	return res.id, res.remoteState, err
 }
 
 // HasDoUpdate returns true if the resource implements DoUpdate method.

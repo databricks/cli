@@ -1,10 +1,9 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Deploying resources...
-Error: cannot create resources.pipelines.foo.permissions: The service is taking too long to process your request. (504 TEMPORARILY_UNAVAILABLE)
-
-Endpoint: PUT [DATABRICKS_URL]/api/2.0/permissions/pipelines/[UUID]
-HTTP Status: 504 Gateway Timeout
-API error_code: TEMPORARILY_UNAVAILABLE
-API message: The service is taking too long to process your request.
-
+Warn: deploying resources.pipelines.foo.permissions: retrying after 504 Gateway Timeout from PUT /api/2.0/permissions/pipelines/[UUID]
 Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py //api/2.0/permissions/pipelines
+"PUT /api/2.0/permissions/pipelines/[UUID]"
+"PUT /api/2.0/permissions/pipelines/[UUID]"
