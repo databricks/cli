@@ -152,6 +152,7 @@ func MustAccountClient(cmd *cobra.Command, args []string) error {
 	}
 
 	ctx := cmd.Context()
+	auth.NormalizeDatabricksConfigFromEnv(ctx, cfg)
 	ctx = cmdctx.SetConfigUsed(ctx, cfg)
 	cmd.SetContext(ctx)
 
@@ -250,6 +251,7 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 		cfg.Profile = profile
 	}
 
+	auth.NormalizeDatabricksConfigFromEnv(ctx, cfg)
 	resolveDefaultProfile(ctx, cfg)
 
 	_, isTargetFlagSet := targetFlagValue(cmd)

@@ -131,12 +131,6 @@ Stack Trace:
 %s`, version, r, string(trace))
 	}()
 
-	// Promote ?o=/?a= query parameters in DATABRICKS_HOST to
-	// DATABRICKS_WORKSPACE_ID/DATABRICKS_ACCOUNT_ID before the SDK reads the
-	// env var. Without this, SPOG URLs pasted from the Databricks UI lose
-	// their workspace routing identifier and API calls return HTML.
-	auth.NormalizeDatabricksHostEnv()
-
 	// Configure a telemetry logger and store it in the context.
 	ctx = telemetry.WithNewLogger(ctx)
 

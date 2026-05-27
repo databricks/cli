@@ -1,31 +1,40 @@
 package auth
 
-import "os"
+import (
+	"context"
+
+	"github.com/databricks/cli/libs/env"
+	sdkconfig "github.com/databricks/databricks-sdk-go/config"
+)
 
 // SPOG URLs from the Databricks UI carry the workspace ID as a ?o= query
 // parameter and the account ID as ?a=, e.g.
 // https://acme.databricks.net/?o=12345. The SDK strips path and query from
-// Host in fixHostIfNeeded without extracting these IDs, so pasting such a
-// URL into DATABRICKS_HOST drops the workspace identifier and API calls hit
+// Host in fixHostIfNeeded without extracting these IDs, so a DATABRICKS_HOST
+// env var with such a URL drops the workspace identifier and API calls hit
 // the SPOG without an X-Databricks-Org-Id header, which the server answers
 // with HTML (a login page) instead of JSON.
 //
 // TODO: stopgap. The matching SDK fix is databricks/databricks-sdk-go#1699,
-// which handles ?o=/?a= directly in fixHostIfNeeded. Delete this normalizer
-// on the next SDK bump that includes that change.
-const (
-	envHost        = "DATABRICKS_HOST"
-	envWorkspaceID = "DATABRICKS_WORKSPACE_ID"
-	envAccountID   = "DATABRICKS_ACCOUNT_ID"
-)
+// which handles ?o=/?a= directly in fixHostIfNeeded. Delete this helper on
+// the next SDK bump that includes that change.
 
-// NormalizeDatabricksHostEnv extracts ?o=/?workspace_id= and ?a=/?account_id=
-// from DATABRICKS_HOST and promotes them to DATABRICKS_WORKSPACE_ID and
-// DATABRICKS_ACCOUNT_ID respectively, then rewrites DATABRICKS_HOST without
-// the query string. Existing values of the destination env vars are never
-// overwritten. Safe to call when DATABRICKS_HOST is unset or has no query.
-func NormalizeDatabricksHostEnv() {
-	host, ok := os.LookupEnv(envHost)
+// NormalizeDatabricksConfigFromEnv promotes ?o=/?workspace_id= and
+// ?a=/?account_id= query parameters from the DATABRICKS_HOST env var into
+// the matching fields on cfg, and sets cfg.Host to the stripped URL. It
+// does not mutate process env, so the effect is scoped to the SDK config
+// built from this cfg (and any subprocess env derived from it via
+// auth.Env).
+//
+// Only fills in empty fields. If cfg.Host is already set, the query
+// params aren't promoted at all (an explicit host takes priority). If a
+// dedicated env var (DATABRICKS_WORKSPACE_ID, DATABRICKS_ACCOUNT_ID) is
+// set, that more explicit signal wins over the query param.
+func NormalizeDatabricksConfigFromEnv(ctx context.Context, cfg *sdkconfig.Config) {
+	if cfg.Host != "" {
+		return
+	}
+	host, ok := env.Lookup(ctx, "DATABRICKS_HOST")
 	if !ok || host == "" {
 		return
 	}
@@ -33,19 +42,11 @@ func NormalizeDatabricksHostEnv() {
 	if params.Host == host {
 		return
 	}
-	os.Setenv(envHost, params.Host)
-	// TODO: existing env vars take precedence over the query params here;
-	// they are treated as a more explicit signal than a value embedded in
-	// the host URL. Revisit once the SDK fix lands (see top of file),
-	// erroring on a real conflict may be preferable to silent-preserve.
-	if params.WorkspaceID != "" {
-		if cur, _ := os.LookupEnv(envWorkspaceID); cur == "" {
-			os.Setenv(envWorkspaceID, params.WorkspaceID)
-		}
+	cfg.Host = params.Host
+	if cfg.WorkspaceID == "" && params.WorkspaceID != "" && env.Get(ctx, "DATABRICKS_WORKSPACE_ID") == "" {
+		cfg.WorkspaceID = params.WorkspaceID
 	}
-	if params.AccountID != "" {
-		if cur, _ := os.LookupEnv(envAccountID); cur == "" {
-			os.Setenv(envAccountID, params.AccountID)
-		}
+	if cfg.AccountID == "" && params.AccountID != "" && env.Get(ctx, "DATABRICKS_ACCOUNT_ID") == "" {
+		cfg.AccountID = params.AccountID
 	}
 }
