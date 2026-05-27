@@ -44,7 +44,11 @@ var defaultPrefixes = []string{
 	"variables",
 }
 
-var artifactPath = dyn.MustPathFromString("artifacts")
+var (
+	artifactPath  = dyn.MustPathFromString("artifacts")
+	resourcesPath = dyn.MustPathFromString("resources")
+	varPath       = dyn.NewPath(dyn.Key("var"))
+)
 
 type resolveVariableReferences struct {
 	prefixes    []string
@@ -147,15 +151,11 @@ func (m *resolveVariableReferences) Apply(ctx context.Context, b *bundle.Bundle)
 		prefixes[i] = dyn.MustPathFromString(prefix)
 	}
 
-	// The path ${var.foo} is a shorthand for ${variables.foo.value}.
-	// We rewrite it here to make the resolution logic simpler.
-	varPath := dyn.NewPath(dyn.Key("var"))
-
 	var diags diag.Diagnostics
 	maxRounds := 1 + m.extraRounds
 
 	for round := range maxRounds {
-		hasUpdates, newDiags := m.resolveOnce(b, prefixes, varPath)
+		hasUpdates, newDiags := m.resolveOnce(b, prefixes)
 
 		diags = diags.Extend(newDiags)
 
@@ -184,7 +184,7 @@ func (m *resolveVariableReferences) Apply(ctx context.Context, b *bundle.Bundle)
 	return diags
 }
 
-func (m *resolveVariableReferences) resolveOnce(b *bundle.Bundle, prefixes []dyn.Path, varPath dyn.Path) (bool, diag.Diagnostics) {
+func (m *resolveVariableReferences) resolveOnce(b *bundle.Bundle, prefixes []dyn.Path) (bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	hasUpdates := false
 	err := m.selectivelyMutate(b, func(root dyn.Value) (dyn.Value, error) {
@@ -202,6 +202,8 @@ func (m *resolveVariableReferences) resolveOnce(b *bundle.Bundle, prefixes []dyn
 		// has already been normalized when it was first loaded from the configuration file.
 		//
 		normalized, _ := convert.Normalize(b.Config, root, convert.IncludeMissingFields)
+
+		suggestFn := m.makeSuggestFn(normalized)
 
 		// If the pattern is nil, we resolve references in the entire configuration.
 		root, err := dyn.MapByPattern(root, m.pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
@@ -234,8 +236,41 @@ func (m *resolveVariableReferences) resolveOnce(b *bundle.Bundle, prefixes []dyn
 					return value, err
 				}
 
+				// For references starting with "resources" that are not in
+				// the resolution prefixes: validate the path against the
+				// normalized tree. If invalid, emit a warning with a
+				// suggestion. Either way, skip resolution (resources are
+				// resolved later by terraform).
+				if path.HasPrefix(resourcesPath) {
+					_, lookupErr := m.lookupFn(normalized, path, b)
+					if lookupErr != nil && dyn.IsNoSuchKeyError(lookupErr) {
+						key := rewriteToVarShorthand(path.String())
+						msg := fmt.Sprintf("reference does not exist: ${%s}", key)
+						if suggestion := suggestFn(key); suggestion != "" {
+							msg += fmt.Sprintf(". Did you mean ${%s}?", suggestion)
+						}
+						diags = diags.Append(diag.Diagnostic{
+							Severity: diag.Warning,
+							Summary:  msg,
+						})
+					}
+					return dyn.InvalidValue, dynvar.ErrSkipResolution
+				}
+
+				// Check for prefix typos before skipping. Use the full
+				// suggestFn to correct all segments (not just the prefix).
+				// The reference is left unresolved to avoid breaking
+				// existing behavior.
+				key := rewriteToVarShorthand(path.String())
+				if suggestion := suggestFn(key); suggestion != "" {
+					diags = diags.Append(diag.Diagnostic{
+						Severity: diag.Warning,
+						Summary:  fmt.Sprintf("reference does not exist: ${%s}. Did you mean ${%s}?", key, suggestion),
+					})
+				}
+
 				return dyn.InvalidValue, dynvar.ErrSkipResolution
-			})
+			}, dynvar.WithSuggestFn(suggestFn))
 		})
 		if err != nil {
 			return dyn.InvalidValue, err
