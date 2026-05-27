@@ -31,8 +31,8 @@ func TestGenerateSchemaMap(t *testing.T) {
 		require.NoError(t, os.WriteFile("generated.go", src, 0o644))
 		for _, r := range results {
 			if r.hasTFType {
-				t.Logf("%s (%s): %d matches, %d renames, %d unwraps, %d dabs-only, %d tf-only",
-					r.group, r.tfType, r.matchCount, len(r.renames), len(r.unwraps), len(r.dabsOnly), len(r.tfOnly))
+				t.Logf("%s (%s): %d matches, %d renames, %d unwraps, %d dabs-only, %d tf-only, %d computed",
+					r.group, r.tfType, r.matchCount, len(r.renames), len(r.unwraps), len(r.dabsOnly), len(r.tfOnly), len(r.computed))
 			}
 		}
 		return
@@ -86,6 +86,7 @@ type groupResult struct {
 	unwraps    []string          // TF paths that are structural wrappers (Unwrap: true)
 	dabsOnly   map[string]bool   // DABs clean paths with no Terraform equivalent
 	tfOnly     map[string]bool   // TF clean paths with no DABs equivalent
+	computed   map[string]bool   // TF clean paths also present in RemoteType (read-only outputs)
 	matchCount int               // used for stats output only, not written to generated.go
 }
 
@@ -248,6 +249,7 @@ func buildGroup(group string, adapter *dresources.Adapter) (groupResult, error) 
 			matchedTF[prefix+dabs] = true
 			res.matchCount++
 		}
+		matchedTF[wrapper] = true // mark the wrapper segment itself to suppress it from tfOnly
 		res.unwraps = append(res.unwraps, wrapper)
 	}
 
@@ -260,6 +262,28 @@ func buildGroup(group string, adapter *dresources.Adapter) (groupResult, error) 
 	for tf := range tfFields {
 		if !matchedTF[tf] && !tfKnownFields[topSegment(tf)] && !hasKnownSegment(tf, tfKnownSegments) {
 			res.tfOnly[tf] = true
+		}
+	}
+
+	// Step 5: classify TF-only fields that are accessible via RemoteType as computed
+	// (server-generated outputs the direct engine can read, but the user doesn't configure).
+	remoteFields := make(map[string]bool)
+	err = structwalk.WalkType(adapter.RemoteType(), func(path *structpath.PatternNode, _ reflect.Type, _ *reflect.StructField) bool {
+		if path == nil {
+			return true
+		}
+		p := strings.TrimPrefix(path.String(), ".")
+		remoteFields[cleanPath(p)] = true
+		return true
+	})
+	if err != nil {
+		return groupResult{}, fmt.Errorf("walk remote type: %w", err)
+	}
+	res.computed = make(map[string]bool)
+	for tf := range res.tfOnly {
+		if remoteFields[tf] {
+			res.computed[tf] = true
+			delete(res.tfOnly, tf)
 		}
 	}
 
@@ -397,6 +421,19 @@ func renderSource(results []groupResult) ([]byte, error) {
 		}
 		w("\t%q: {\n", r.group)
 		writeFieldSet(w, buildFieldSet(r.tfOnly), 2)
+		w("\t},\n")
+	}
+	w("}\n\n")
+
+	w("// TerraformComputedFields maps DABs group name → FieldSet of TF fields that are\n")
+	w("// read-only server-generated outputs accessible via RemoteType in the direct engine.\n")
+	w("var TerraformComputedFields = map[string]FieldSet{\n")
+	for _, r := range results {
+		if !r.hasTFType || len(r.computed) == 0 {
+			continue
+		}
+		w("\t%q: {\n", r.group)
+		writeFieldSet(w, buildFieldSet(r.computed), 2)
 		w("\t},\n")
 	}
 	w("}\n")
