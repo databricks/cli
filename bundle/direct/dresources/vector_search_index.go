@@ -144,7 +144,7 @@ func (r *ResourceVectorSearchIndex) DoCreate(ctx context.Context, config *Vector
 // rejects the resulting Update plan at bundle_plan.go (see also the reflection
 // test in vector_search_index_test.go which catches it earlier at unit-test time).
 
-func (r *ResourceVectorSearchIndex) DoDelete(ctx context.Context, id string) error {
+func (r *ResourceVectorSearchIndex) DoDelete(ctx context.Context, id string, _ *VectorSearchIndexState) error {
 	return r.client.VectorSearchIndexes.DeleteIndexByIndexName(ctx, id)
 }
 
