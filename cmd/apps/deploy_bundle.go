@@ -33,19 +33,56 @@ func hasBundleConfig() bool {
 	return err == nil
 }
 
+// bundleDeployOptions holds flags for the bundle-aware deploy path.
+type bundleDeployOptions struct {
+	force            bool
+	forceLock        bool
+	failOnActiveRuns bool
+	autoApprove      bool
+	verbose          bool
+	clusterId        string
+	readPlanPath     string
+	skipValidation   bool
+	skipTests        bool
+}
+
+// applyDeployFlags writes the deploy flag values onto the bundle config.
+// Flags that override bundle YAML are only applied when explicitly set by the user.
+func applyDeployFlags(cmd *cobra.Command, b *bundle.Bundle, opts bundleDeployOptions) {
+	b.Config.Bundle.Force = opts.force
+	b.Config.Bundle.Deployment.Lock.Force = opts.forceLock
+	b.AutoApprove = opts.autoApprove
+
+	if cmd.Flag("compute-id").Changed {
+		b.Config.Bundle.ClusterId = opts.clusterId
+	}
+	if cmd.Flag("cluster-id").Changed {
+		b.Config.Bundle.ClusterId = opts.clusterId
+	}
+	if cmd.Flag("fail-on-active-runs").Changed {
+		b.Config.Bundle.Deployment.FailOnActiveRuns = opts.failOnActiveRuns
+	}
+}
+
 // BundleDeployOverrideWithWrapper creates a deploy override function that uses
 // the provided error wrapper for API fallback errors.
 func BundleDeployOverrideWithWrapper(wrapError ErrorWrapper) func(*cobra.Command, *apps.CreateAppDeploymentRequest) {
 	return func(deployCmd *cobra.Command, deployReq *apps.CreateAppDeploymentRequest) {
-		var (
-			force          bool
-			skipValidation bool
-			skipTests      bool
-		)
+		var opts bundleDeployOptions
 
-		deployCmd.Flags().BoolVar(&force, "force", false, "Force-override Git branch validation")
-		deployCmd.Flags().BoolVar(&skipValidation, "skip-validation", false, "Skip project validation (build, typecheck, lint)")
-		deployCmd.Flags().BoolVar(&skipTests, "skip-tests", true, "Skip running tests during validation")
+		deployCmd.Flags().BoolVar(&opts.force, "force", false, "Force-override Git branch validation.")
+		deployCmd.Flags().BoolVar(&opts.forceLock, "force-lock", false, "Force acquisition of deployment lock.")
+		deployCmd.Flags().BoolVar(&opts.failOnActiveRuns, "fail-on-active-runs", false, "Fail if there are running jobs or pipelines in the deployment.")
+		deployCmd.Flags().StringVar(&opts.clusterId, "compute-id", "", "Override cluster in the deployment with the given compute ID.")
+		deployCmd.Flags().StringVarP(&opts.clusterId, "cluster-id", "c", "", "Override cluster in the deployment with the given cluster ID.")
+		deployCmd.Flags().BoolVar(&opts.autoApprove, "auto-approve", false, "Skip interactive approvals that might be required for deployment.")
+		deployCmd.Flags().MarkDeprecated("compute-id", "use --cluster-id instead")
+		deployCmd.Flags().BoolVar(&opts.verbose, "verbose", false, "Enable verbose output.")
+		deployCmd.Flags().StringVar(&opts.readPlanPath, "plan", "", "Path to a JSON plan file to apply instead of planning (direct engine only).")
+		// Verbose flag currently only affects file sync output, it's used by the vscode extension
+		deployCmd.Flags().MarkHidden("verbose")
+		deployCmd.Flags().BoolVar(&opts.skipValidation, "skip-validation", false, "Skip project validation (build, typecheck, lint)")
+		deployCmd.Flags().BoolVar(&opts.skipTests, "skip-tests", true, "Skip running tests during validation")
 
 		makeArgsOptionalWithBundle(deployCmd, "deploy [APP_NAME]")
 
@@ -54,7 +91,7 @@ func BundleDeployOverrideWithWrapper(wrapError ErrorWrapper) func(*cobra.Command
 			if len(args) == 0 {
 				b := root.TryConfigureBundle(cmd)
 				if b != nil {
-					return runBundleDeploy(cmd, force, skipValidation, skipTests)
+					return runBundleDeploy(cmd, opts)
 				}
 			}
 
@@ -91,12 +128,21 @@ Examples:
   databricks apps deploy --skip-validation
 
   # Force deploy (override git branch validation)
-  databricks apps deploy --force`
+  databricks apps deploy --force
+
+  # Skip interactive approval prompts
+  databricks apps deploy --auto-approve
+
+  # Force-acquire the deployment lock if a previous run left it stale
+  databricks apps deploy --force-lock
+
+  # Override the cluster used for job resources in the bundle
+  databricks apps deploy --cluster-id 0123-456789-abcdef01`
 	}
 }
 
 // runBundleDeploy executes the enhanced deployment flow for project directories.
-func runBundleDeploy(cmd *cobra.Command, force, skipValidation, skipTests bool) error {
+func runBundleDeploy(cmd *cobra.Command, opts bundleDeployOptions) error {
 	ctx := cmd.Context()
 
 	workDir, err := os.Getwd()
@@ -105,13 +151,13 @@ func runBundleDeploy(cmd *cobra.Command, force, skipValidation, skipTests bool) 
 	}
 
 	// Step 1: Validate project (unless skipped)
-	if !skipValidation {
+	if !opts.skipValidation {
 		validator := validation.GetProjectValidator(workDir)
 		if validator != nil {
-			opts := validation.ValidateOptions{
-				SkipTests: skipTests,
+			vopts := validation.ValidateOptions{
+				SkipTests: opts.skipTests,
 			}
-			result, err := validator.Validate(ctx, workDir, opts)
+			result, err := validator.Validate(ctx, workDir, vopts)
 			if err != nil {
 				return fmt.Errorf("validation error: %w", err)
 			}
@@ -132,7 +178,7 @@ func runBundleDeploy(cmd *cobra.Command, force, skipValidation, skipTests bool) 
 	cmdio.LogString(ctx, "Deploying project...")
 	b, err := utils.ProcessBundle(cmd, utils.ProcessOptions{
 		InitFunc: func(b *bundle.Bundle) {
-			b.Config.Bundle.Force = force
+			applyDeployFlags(cmd, b, opts)
 		},
 		// Context is already initialized by the workspace command's PreRunE
 		SkipInitContext: true,
@@ -140,6 +186,8 @@ func runBundleDeploy(cmd *cobra.Command, force, skipValidation, skipTests bool) 
 		FastValidate:    true,
 		Build:           true,
 		Deploy:          true,
+		Verbose:         opts.verbose,
+		ReadPlanPath:    opts.readPlanPath,
 	})
 	if err != nil {
 		return fmt.Errorf("deploy failed: %w", err)

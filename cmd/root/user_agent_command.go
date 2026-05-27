@@ -9,7 +9,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// commandSeparator joins command names in a command hierachy.
+// commandSeparator joins command names in a command hierarchy.
 // We enforce no command name contains this character.
 // See unit test [main.TestCommandsDontUseUnderscoreInName].
 const commandSeparator = "_"

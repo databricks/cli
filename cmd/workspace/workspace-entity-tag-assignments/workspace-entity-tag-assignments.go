@@ -19,12 +19,18 @@ var cmdOverrides []func(*cobra.Command)
 
 func New() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "workspace-entity-tag-assignments",
-		Short:   `Manage tag assignments on workspace-scoped objects.`,
-		Long:    `Manage tag assignments on workspace-scoped objects.`,
+		Use:   "workspace-entity-tag-assignments",
+		Short: `*Beta* Manage tag assignments on workspace-scoped objects.`,
+		Long: `This command is in Beta and may change without notice.
+
+Manage tag assignments on workspace-scoped objects.`,
 		GroupID: "tags",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	// Add methods
 	cmd.AddCommand(newCreateTagAssignment())
@@ -62,8 +68,10 @@ func newCreateTagAssignment() *cobra.Command {
 	cmd.Flags().StringVar(&createTagAssignmentReq.TagAssignment.TagValue, "tag-value", createTagAssignmentReq.TagAssignment.TagValue, `The value of the tag.`)
 
 	cmd.Use = "create-tag-assignment ENTITY_TYPE ENTITY_ID TAG_KEY"
-	cmd.Short = `Create a tag assignment for an entity.`
-	cmd.Long = `Create a tag assignment for an entity.
+	cmd.Short = `*Beta* Create a tag assignment for an entity.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Create a tag assignment for an entity.
 
   Create a tag assignment
 
@@ -76,12 +84,14 @@ func newCreateTagAssignment() *cobra.Command {
       are not allowed`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'entity_type', 'entity_id', 'tag_key' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'entity_type', 'entity_id', 'tag_key' in your JSON input")
 			}
 			return nil
 		}
@@ -120,6 +130,7 @@ func newCreateTagAssignment() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -150,8 +161,10 @@ func newDeleteTagAssignment() *cobra.Command {
 	var deleteTagAssignmentReq tags.DeleteTagAssignmentRequest
 
 	cmd.Use = "delete-tag-assignment ENTITY_TYPE ENTITY_ID TAG_KEY"
-	cmd.Short = `Delete a tag assignment for an entity.`
-	cmd.Long = `Delete a tag assignment for an entity.
+	cmd.Short = `*Beta* Delete a tag assignment for an entity.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Delete a tag assignment for an entity.
 
   Delete a tag assignment
 
@@ -164,6 +177,8 @@ func newDeleteTagAssignment() *cobra.Command {
       are not allowed`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(3)
@@ -213,8 +228,10 @@ func newGetTagAssignment() *cobra.Command {
 	var getTagAssignmentReq tags.GetTagAssignmentRequest
 
 	cmd.Use = "get-tag-assignment ENTITY_TYPE ENTITY_ID TAG_KEY"
-	cmd.Short = `Get a tag assignment for an entity.`
-	cmd.Long = `Get a tag assignment for an entity.
+	cmd.Short = `*Beta* Get a tag assignment for an entity.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Get a tag assignment for an entity.
 
   Get a tag assignment
 
@@ -227,6 +244,8 @@ func newGetTagAssignment() *cobra.Command {
       are not allowed`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(3)
@@ -246,6 +265,7 @@ func newGetTagAssignment() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -274,13 +294,25 @@ func newListTagAssignments() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listTagAssignmentsReq tags.ListTagAssignmentsRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listTagAssignmentsLimit int
 
 	cmd.Flags().IntVar(&listTagAssignmentsReq.PageSize, "page-size", listTagAssignmentsReq.PageSize, `Optional.`)
-	cmd.Flags().StringVar(&listTagAssignmentsReq.PageToken, "page-token", listTagAssignmentsReq.PageToken, `Pagination token to go to the next page of tag assignments.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listTagAssignmentsLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listTagAssignmentsReq.PageToken, "page-token", listTagAssignmentsReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-tag-assignments ENTITY_TYPE ENTITY_ID"
-	cmd.Short = `List tag assignments for an entity.`
-	cmd.Long = `List tag assignments for an entity.
+	cmd.Short = `*Beta* List tag assignments for an entity.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+List tag assignments for an entity.
 
   List the tag assignments for an entity
 
@@ -291,6 +323,8 @@ func newListTagAssignments() *cobra.Command {
       entity_id is the app name`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -306,6 +340,13 @@ func newListTagAssignments() *cobra.Command {
 		listTagAssignmentsReq.EntityId = args[1]
 
 		response := w.WorkspaceEntityTagAssignments.ListTagAssignments(ctx, listTagAssignmentsReq)
+		if listTagAssignmentsLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listTagAssignmentsLimit)
+		}
+		if listTagAssignmentsLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listTagAssignmentsLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -342,8 +383,10 @@ func newUpdateTagAssignment() *cobra.Command {
 	cmd.Flags().StringVar(&updateTagAssignmentReq.TagAssignment.TagValue, "tag-value", updateTagAssignmentReq.TagAssignment.TagValue, `The value of the tag.`)
 
 	cmd.Use = "update-tag-assignment ENTITY_TYPE ENTITY_ID TAG_KEY UPDATE_MASK"
-	cmd.Short = `Update a tag assignment for an entity.`
-	cmd.Long = `Update a tag assignment for an entity.
+	cmd.Short = `*Beta* Update a tag assignment for an entity.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Update a tag assignment for an entity.
 
   Update a tag assignment
 
@@ -367,6 +410,8 @@ func newUpdateTagAssignment() *cobra.Command {
       future.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(4)
@@ -399,6 +444,7 @@ func newUpdateTagAssignment() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 

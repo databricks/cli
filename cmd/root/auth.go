@@ -12,12 +12,24 @@ import (
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	envlib "github.com/databricks/cli/libs/env"
-	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
 )
+
+// errNotWorkspaceClient is a CLI-internal sentinel error. It signals that the
+// configured host is an account host, not a workspace host.
+//
+// workspaceClientOrPrompt synthesizes this error (line ~214) when it detects a
+// wrong host type via cfg.HostType(). MustAnyClient checks for it to decide
+// whether to fall through and try an account client instead.
+//
+// The SDK exported this as databricks.ErrNotWorkspaceClient until v0.126.0. The
+// SDK stopped *returning* it in v0.125.0 (host-type validation moved to host
+// metadata resolution), but the CLI was already synthesizing it locally. The
+// SDK removed the variable entirely in v0.127.0, so we now own it here.
+var errNotWorkspaceClient = errors.New("invalid Databricks Workspace configuration - host is not a workspace host")
 
 type ErrNoWorkspaceProfiles struct {
 	path string
@@ -69,7 +81,7 @@ func accountClientOrPrompt(ctx context.Context, cfg *config.Config, allowPrompt 
 	// (as of v0.125.0, host-type validation was removed in favor of host
 	// metadata resolution). Use HostType() to detect the wrong host type.
 	var needsPrompt bool
-	switch cfg.HostType() {
+	switch cfg.HostType() { //nolint:staticcheck // HostType() deprecated in SDK v0.127.0; SDK moving to host-agnostic behavior.
 	case config.AccountHost, config.UnifiedHost:
 		// Valid host type for account client, but still need account ID.
 		needsPrompt = cfg.AccountID == ""
@@ -117,13 +129,13 @@ func MustAnyClient(cmd *cobra.Command, args []string) (bool, error) {
 	// If the error indicates a wrong config type (workspace host used for account client,
 	// or config type mismatch detected by workspaceClientOrPrompt), fall through to try
 	// account client.
-	if !errors.Is(werr, databricks.ErrNotWorkspaceClient) && !errors.As(werr, &ErrNoWorkspaceProfiles{}) {
+	if _, ok := errors.AsType[ErrNoWorkspaceProfiles](werr); !errors.Is(werr, errNotWorkspaceClient) && !ok {
 		return false, werr
 	}
 
 	// Otherwise, the config used is account client one, so try to create an account client
 	aerr := MustAccountClient(cmd, args)
-	if errors.As(aerr, &ErrNoAccountProfiles{}) {
+	if _, ok := errors.AsType[ErrNoAccountProfiles](aerr); ok {
 		return false, aerr
 	}
 
@@ -193,7 +205,7 @@ func workspaceClientOrPrompt(ctx context.Context, cfg *config.Config, allowPromp
 	// ErrNotWorkspaceClient from NewWorkspaceClient (as of v0.125.0, host-type
 	// validation was removed in favor of host metadata resolution). Use
 	// HostType() to detect wrong host type, and check for ErrCannotConfigureDefault.
-	wrongHostType := cfg.HostType() == config.AccountHost
+	wrongHostType := cfg.HostType() == config.AccountHost //nolint:staticcheck // HostType() deprecated in SDK v0.127.0; SDK moving to host-agnostic behavior.
 	needsPrompt := wrongHostType || errors.Is(err, config.ErrCannotConfigureDefault)
 
 	if !needsPrompt {
@@ -206,7 +218,7 @@ func workspaceClientOrPrompt(ctx context.Context, cfg *config.Config, allowPromp
 		// For other errors (e.g. ErrCannotConfigureDefault), return the
 		// original error to preserve actionable error messages.
 		if wrongHostType {
-			return w, databricks.ErrNotWorkspaceClient
+			return w, errNotWorkspaceClient
 		}
 		return w, err
 	}
@@ -259,9 +271,9 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 		}
 
 		if b != nil {
-			ctx = cmdctx.SetConfigUsed(ctx, b.Config.Workspace.Config())
+			ctx = cmdctx.SetConfigUsed(ctx, b.Config.Workspace.Config(ctx))
 			cmd.SetContext(ctx)
-			client, err := b.WorkspaceClientE()
+			client, err := b.WorkspaceClientE(ctx)
 			if err != nil {
 				return err
 			}
@@ -286,14 +298,8 @@ func resolveDefaultProfile(ctx context.Context, cfg *config.Config) {
 	if cfg.Profile != "" || envlib.Get(ctx, "DATABRICKS_CONFIG_PROFILE") != "" {
 		return
 	}
-	configFilePath := envlib.Get(ctx, "DATABRICKS_CONFIG_FILE")
-	resolvedProfile, err := databrickscfg.GetConfiguredDefaultProfile(ctx, configFilePath)
-	if err != nil {
-		log.Warnf(ctx, "Failed to load default profile: %v", err)
-		return
-	}
-	if resolvedProfile != "" {
-		cfg.Profile = resolvedProfile
+	if resolved := databrickscfg.ResolveDefaultProfile(ctx); resolved != "" {
+		cfg.Profile = resolved
 	}
 }
 

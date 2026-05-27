@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"slices"
 	"strings"
 	"time"
 
@@ -163,16 +162,23 @@ func (r *ResourceApp) DoCreate(ctx context.Context, config *AppState) (string, *
 	return app.Name, nil, nil
 }
 
+var UpdateMaskFields = []string{
+	"description",
+	"budget_policy_id",
+	"usage_policy_id",
+	"resources",
+	"user_api_scopes",
+	"compute_size",
+	"git_repository",
+	"telemetry_export_destinations",
+}
+
+var updateMask = strings.Join(UpdateMaskFields, ",")
+
 func (r *ResourceApp) DoUpdate(ctx context.Context, id string, config *AppState, entry *PlanEntry) (*AppRemote, error) {
 	// Deploy-only fields (source_code_path, config,
 	// git_source, lifecycle) are not part of apps.App and thus excluded from the request body.
 	if hasAppChanges(entry) {
-		fieldPaths := collectUpdatePathsWithPrefix(entry.Changes, "")
-		slices.Sort(fieldPaths)
-		for i, fieldPath := range fieldPaths {
-			fieldPaths[i] = truncateAtIndex(fieldPath)
-		}
-		updateMask := strings.Join(fieldPaths, ",")
 		request := apps.AsyncUpdateAppRequest{
 			App:        &config.App,
 			AppName:    id,
@@ -193,46 +199,48 @@ func (r *ResourceApp) DoUpdate(ctx context.Context, id string, config *AppState,
 		}
 	}
 
+	return nil, r.manageLifecycle(ctx, id, config, remoteIsStarted(entry))
+}
+
+func (r *ResourceApp) manageLifecycle(ctx context.Context, id string, config *AppState, alreadyStarted bool) error {
 	if config.Lifecycle == nil || config.Lifecycle.Started == nil {
-		return nil, nil
+		return nil
 	}
 
 	desiredStarted := *config.Lifecycle.Started
-	remoteStarted := remoteIsStarted(entry)
-
 	if desiredStarted {
 		// lifecycle.started=true: ensure the app compute is running and deploy the latest code.
-		if !remoteStarted {
+		if !alreadyStarted {
 			startWaiter, err := r.client.Apps.Start(ctx, apps.StartAppRequest{Name: id})
 			if err != nil {
-				return nil, err
+				return err
 			}
 			startedApp, err := startWaiter.Get()
 			if err != nil {
-				return nil, err
+				return err
 			}
 			if err := appdeploy.WaitForDeploymentToComplete(ctx, r.client, startedApp); err != nil {
-				return nil, err
+				return err
 			}
 		}
 		deployment := appdeploy.BuildDeployment(config.SourceCodePath, config.Config, config.GitSource)
 		if err := appdeploy.Deploy(ctx, r.client, id, deployment); err != nil {
-			return nil, err
+			return err
 		}
 	} else {
 		// lifecycle.started=false: ensure the app compute is stopped.
-		if remoteStarted {
+		if alreadyStarted {
 			stopWaiter, err := r.client.Apps.Stop(ctx, apps.StopAppRequest{Name: id})
 			if err != nil {
-				return nil, err
+				return err
 			}
 			if _, err = stopWaiter.Get(); err != nil {
-				return nil, err
+				return err
 			}
 		}
 	}
 
-	return nil, nil
+	return nil
 }
 
 // deployOnlyFields are AppState fields managed via the Deploy API, not the App Update API.
@@ -260,7 +268,7 @@ func hasAppChanges(entry *PlanEntry) bool {
 // OverrideChangeDesc skips source_code_path drift when the remote value is empty.
 // This happens when an app has no deployment yet (DefaultSourceCodePath is unset).
 func (*ResourceApp) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, change *ChangeDesc, remote *AppRemote) error {
-	if path.String() == "source_code_path" && remote.SourceCodePath == "" {
+	if path.String() == "source_code_path" && (remote.SourceCodePath == "" || remote.SourceCodePath == "null") {
 		change.Action = deployplan.Skip
 		change.Reason = "no deployment"
 	}
@@ -308,13 +316,21 @@ func deploymentToAppConfig(d *apps.AppDeployment) *resources.AppConfig {
 	return config
 }
 
-func (r *ResourceApp) DoDelete(ctx context.Context, id string) error {
+func (r *ResourceApp) DoDelete(ctx context.Context, id string, _ *AppState) error {
 	_, err := r.client.Apps.DeleteByName(ctx, id)
 	return err
 }
 
-func (r *ResourceApp) WaitAfterCreate(ctx context.Context, config *AppState) (*AppRemote, error) {
-	return r.waitForApp(ctx, r.client, config.Name)
+func (r *ResourceApp) WaitAfterCreate(ctx context.Context, id string, config *AppState) (*AppRemote, error) {
+	remote, err := r.waitForApp(ctx, r.client, config.Name)
+	if err != nil {
+		return nil, err
+	}
+	alreadyStarted := remote.Lifecycle != nil && remote.Lifecycle.Started != nil && *remote.Lifecycle.Started
+	if err := r.manageLifecycle(ctx, config.Name, config, alreadyStarted); err != nil {
+		return nil, err
+	}
+	return remote, nil
 }
 
 // waitForApp waits for the app to reach the target state. The target state is either ACTIVE or STOPPED.

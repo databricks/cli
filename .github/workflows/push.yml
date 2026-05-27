@@ -77,12 +77,19 @@ jobs:
 
     # Only run if the target is in the list of targets from testmask
     if: ${{ contains(fromJSON(needs.testmask.outputs.targets), 'test') }}
-    name: "make test (${{matrix.os.name}}, ${{matrix.deployment}})"
+    name: "task test (${{matrix.os.name}}, ${{matrix.deployment}})"
     runs-on: ${{ matrix.os.runner }}
+
+    defaults:
+      run:
+        shell: bash
 
     permissions:
       id-token: write
       contents: read
+
+    env:
+      TASK_CONCURRENCY: ${{ matrix.os.name == 'windows' && '1' || '' }}
 
     strategy:
       fail-fast: false
@@ -137,23 +144,29 @@ jobs:
         if: ${{ github.event_name == 'pull_request' || github.event_name == 'merge_group' || github.event_name == 'schedule' }}
         env:
           ENVFILTER: DATABRICKS_BUNDLE_ENGINE=${{ matrix.deployment }}
-        run: make test
+        run: go tool -modfile=tools/task/go.mod task test
 
       - name: Run tests with coverage
-        # Only run 'make cover' on push to main to make sure it does not get broken.
+        # Only run 'task cover' on push to main to make sure it does not get broken.
         if: ${{ github.event_name == 'push' }}
         env:
           ENVFILTER: DATABRICKS_BUNDLE_ENGINE=${{ matrix.deployment }}
-        run: make cover
+        run: go tool -modfile=tools/task/go.mod task cover
 
-      - name: Analyze slow tests
-        run: make slowest
+      - name: Upload gotestsum JSON output
+        # Always upload so we can inspect timing even if tests fail.
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: test-output-${{ matrix.os.name }}-${{ matrix.deployment }}
+          path: test-output.json
+          if-no-files-found: warn
+          retention-days: 7
 
       - name: Check out.test.toml files are up to date
-        shell: bash
         run: |
           if ! git diff --exit-code; then
-            echo "ERROR: detected changed files in the repository; Most likely you have out.test.toml files that are out of date. Run 'make generate-out-test-toml' to update."
+            echo "ERROR: detected changed files in the repository; Most likely you have out.test.toml files that are out of date. Run 'go test ./acceptance -run \"^TestAccept$\" -only-out-test-toml' to update."
             exit 1
           fi
 
@@ -164,8 +177,12 @@ jobs:
 
     # Only run if the target is in the list of targets from testmask
     if: ${{ contains(fromJSON(needs.testmask.outputs.targets), 'test-exp-aitools') }}
-    name: "make test-exp-aitools (${{matrix.os.name}})"
+    name: "task test-exp-aitools (${{matrix.os.name}})"
     runs-on: ${{ matrix.os.runner }}
+
+    defaults:
+      run:
+        shell: bash
 
     permissions:
       id-token: write
@@ -201,7 +218,7 @@ jobs:
 
       - name: Run tests
         run: |
-          make test-exp-aitools
+          go tool -modfile=tools/task/go.mod task test-exp-aitools
 
   test-exp-ssh:
     needs:
@@ -210,12 +227,19 @@ jobs:
 
     # Only run if the target is in the list of targets from testmask
     if: ${{ contains(fromJSON(needs.testmask.outputs.targets), 'test-exp-ssh') }}
-    name: "make test-exp-ssh (${{matrix.os.name}})"
+    name: "task test-exp-ssh (${{matrix.os.name}})"
     runs-on: ${{ matrix.os.runner }}
+
+    defaults:
+      run:
+        shell: bash
 
     permissions:
       id-token: write
       contents: read
+
+    env:
+      TASK_CONCURRENCY: ${{ matrix.os.name == 'windows' && '1' || '' }}
 
     strategy:
       fail-fast: false
@@ -246,7 +270,7 @@ jobs:
 
       - name: Run tests
         run: |
-          make test-exp-ssh
+          go tool -modfile=tools/task/go.mod task test-exp-ssh
 
   test-pipelines:
     needs:
@@ -255,12 +279,19 @@ jobs:
 
     # Only run if the target is in the list of targets from testmask
     if: ${{ contains(fromJSON(needs.testmask.outputs.targets), 'test-pipelines') }}
-    name: "make test-pipelines (${{matrix.os.name}})"
+    name: "task test-pipelines (${{matrix.os.name}})"
     runs-on: ${{ matrix.os.runner }}
+
+    defaults:
+      run:
+        shell: bash
 
     permissions:
       id-token: write
       contents: read
+
+    env:
+      TASK_CONCURRENCY: ${{ matrix.os.name == 'windows' && '1' || '' }}
 
     strategy:
       fail-fast: false
@@ -291,7 +322,7 @@ jobs:
 
       - name: Run tests
         run: |
-          make test-pipelines
+          go tool -modfile=tools/task/go.mod task test-pipelines
 
   # This job groups the result of all the above test jobs.
   # It is a required check, so it blocks auto-merge and the merge queue.
@@ -340,15 +371,15 @@ jobs:
 
       - name: Verify that the schema is up to date
         run: |
-          if ! ( make schema && git diff --exit-code ); then
-            echo "The schema is not up to date. Please run 'make schema' and commit the changes."
+          if ! ( go tool -modfile=tools/task/go.mod task --force generate-schema && git diff --exit-code ); then
+            echo "The schema is not up to date. Please run './task generate-schema' and commit the changes."
             exit 1
           fi
 
       - name: Verify that the generated enum and required fields are up to date
         run: |
-          if ! ( make generate-validation && git diff --exit-code ); then
-            echo "The generated enum and required fields are not up to date. Please run 'make generate-validation' and commit the changes."
+          if ! ( go tool -modfile=tools/task/go.mod task --force generate-validation && git diff --exit-code ); then
+            echo "The generated enum and required fields are not up to date. Please run './task generate-validation' and commit the changes."
             exit 1
           fi
 
@@ -360,41 +391,70 @@ jobs:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
+      - name: Setup Go
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
+        with:
+          go-version-file: go.mod
+
       - name: Install uv
-        uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
         with:
           version: "0.6.5"
 
       - name: Verify that python/codegen is up to date
-        working-directory: python
         run: |-
-          make codegen
+          go tool -modfile=tools/task/go.mod task pydabs-codegen
 
           if ! ( git diff --exit-code ); then
-            echo "Generated Python code is not up-to-date. Please run 'pushd python && make codegen' and commit the changes."
+            echo "Generated Python code is not up-to-date. Please run './task pydabs-codegen' and commit the changes."
 
             exit 1
           fi
 
-  # Skip integration tests (temporarily disabled).
-  # Creates a passing check for PRs and auto-approves for merge groups.
+  # Trigger integration tests in a separate repository.
+  # Writes the same-org "Integration Tests" check run for skip/auto-approve
+  # paths on deco runners. The cross-org `gh workflow run` dispatch is split
+  # into the sibling `trigger-tests` job so it can run on emu-access runners
+  # that are allowlisted in the databricks-eng org.
   integration-trigger:
+    needs:
+      - testmask
+
     if: >-
       (github.event_name == 'pull_request' && !github.event.pull_request.head.repo.fork && github.actor != 'dependabot[bot]') ||
       (github.event_name == 'merge_group')
 
     runs-on:
-      group: databricks-protected-runner-group-large
-      labels: linux-ubuntu-latest-large
+      group: databricks-deco-testing-runner-group
+      labels: ubuntu-latest-deco
 
     permissions:
       checks: write
+      contents: read
+
+    environment: "test-trigger-is"
 
     steps:
-      - name: Skip integration tests (pull request)
-        if: ${{ github.event_name == 'pull_request' }}
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+      - name: Generate GitHub App Token (check runs)
+        if: >-
+          (github.event_name == 'merge_group') ||
+          (github.event_name == 'pull_request' && !contains(fromJSON(needs.testmask.outputs.targets), 'test') && !contains(fromJSON(needs.testmask.outputs.targets), 'test-exp-ssh'))
+        id: generate-check-token
+        uses: actions/create-github-app-token@f8d387b68d61c58ab83c6c016672934102569859 # v3.0.0
         with:
+          app-id: ${{ secrets.DECO_TEST_APPROVAL_APP_ID }}
+          private-key: ${{ secrets.DECO_TEST_APPROVAL_PRIVATE_KEY }}
+          # DECO_TEST_APPROVAL is installed on the databricks org (not databricks-eng).
+          owner: databricks
+          repositories: cli
+
+      # Skip integration tests if the primary "test" target is not triggered by this change.
+      # Use Checks API (not Statuses API) to match the required "Integration Tests" check.
+      - name: Skip integration tests (pull request)
+        if: ${{ github.event_name == 'pull_request' && !contains(fromJSON(needs.testmask.outputs.targets), 'test') && !contains(fromJSON(needs.testmask.outputs.targets), 'test-exp-ssh') }}
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          github-token: ${{ steps.generate-check-token.outputs.token }}
           script: |
             await github.rest.checks.create({
               owner: context.repo.owner,
@@ -405,14 +465,16 @@ jobs:
               conclusion: 'success',
               output: {
                 title: 'Integration Tests',
-                summary: '⏭️ Skipped (integration test trigger is temporarily disabled)'
+                summary: '⏭️ Skipped (changes do not require integration tests)'
               }
             });
 
+      # Auto-approve for merge group since tests already passed on the PR.
       - name: Auto-approve for merge group
         if: ${{ github.event_name == 'merge_group' }}
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
+          github-token: ${{ steps.generate-check-token.outputs.token }}
           script: |
             await github.rest.checks.create({
               owner: context.repo.owner,
@@ -423,9 +485,58 @@ jobs:
               conclusion: 'success',
               output: {
                 title: 'Integration Tests',
-                summary: '⏭️ Skipped (integration test trigger is temporarily disabled)'
+                summary: '⏭️ Auto-approved for merge queue (tests already passed on PR)'
               }
             });
+
+  # Cross-org dispatch to databricks-eng/eng-dev-ecosystem. Must run on an
+  # emu-access runner because the databricks-eng org IP-allowlists only the
+  # release runner group, not deco. See databricks/databricks-sdk-go#1638.
+  trigger-tests:
+    needs:
+      - testmask
+
+    if: >-
+      (github.event_name == 'pull_request' && !github.event.pull_request.head.repo.fork && github.actor != 'dependabot[bot]' && (contains(fromJSON(needs.testmask.outputs.targets), 'test') || contains(fromJSON(needs.testmask.outputs.targets), 'test-exp-ssh'))) ||
+      (github.event_name == 'push')
+
+    runs-on:
+      group: databricks-release-runner-group-emu-access
+      labels: linux-ubuntu-latest-emu-access
+
+    permissions:
+      contents: read
+
+    environment: "test-trigger-is"
+
+    steps:
+      - name: Generate GitHub App Token
+        id: generate-token
+        uses: actions/create-github-app-token@f8d387b68d61c58ab83c6c016672934102569859 # v3.0.0
+        with:
+          app-id: ${{ secrets.DECO_WORKFLOW_TRIGGER_APP_ID }}
+          private-key: ${{ secrets.DECO_WORKFLOW_TRIGGER_PRIVATE_KEY }}
+          owner: ${{ secrets.ORG_NAME }}
+          repositories: ${{ secrets.REPO_NAME }}
+
+      - name: Trigger integration tests (pull request)
+        if: ${{ github.event_name == 'pull_request' }}
+        env:
+          GH_TOKEN: ${{ steps.generate-token.outputs.token }}
+        run: |-
+          gh workflow run cli-isolated-pr.yml -R ${{ secrets.ORG_NAME }}/${{ secrets.REPO_NAME }} \
+            --ref main \
+            -f pull_request_number=${{ github.event.pull_request.number }} \
+            -f commit_sha=${{ github.event.pull_request.head.sha }}
+
+      - name: Trigger integration tests (push to main)
+        if: ${{ github.event_name == 'push' }}
+        env:
+          GH_TOKEN: ${{ steps.generate-token.outputs.token }}
+        run: |-
+          gh workflow run cli-isolated-nightly.yml -R ${{ secrets.ORG_NAME }}/${{ secrets.REPO_NAME }} \
+            --ref main \
+            -f commit_sha=${{ github.event.after }}
 
   # Skip integration tests for dependabot PRs.
   # Dependabot has no access to the "test-trigger-is" environment secrets,
@@ -445,7 +556,7 @@ jobs:
 
     steps:
       - name: Skip integration tests
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           script: |-
             await github.rest.checks.create({

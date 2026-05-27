@@ -20,8 +20,10 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "default-namespace",
-		Short: `The default namespace setting API allows users to configure the default namespace for a Databricks workspace.`,
-		Long: `The default namespace setting API allows users to configure the default
+		Short: `*Public Preview* The default namespace setting API allows users to configure the default namespace for a Databricks workspace.`,
+		Long: `This command is in Public Preview and may change without notice.
+
+The default namespace setting API allows users to configure the default
   namespace for a Databricks workspace.
 
   Through this API, users can retrieve, set, or modify the default namespace
@@ -35,6 +37,10 @@ func New() *cobra.Command {
   Catalog-enabled compute.`,
 		RunE: root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	// Add methods
 	cmd.AddCommand(newDelete())
@@ -66,8 +72,10 @@ func newDelete() *cobra.Command {
 	cmd.Flags().StringVar(&deleteReq.Etag, "etag", deleteReq.Etag, `etag used for versioning.`)
 
 	cmd.Use = "delete"
-	cmd.Short = `Delete the default namespace setting.`
-	cmd.Long = `Delete the default namespace setting.
+	cmd.Short = `*Public Preview* Delete the default namespace setting.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Delete the default namespace setting.
 
   Deletes the default namespace setting for the workspace. A fresh etag needs to
   be provided in DELETE requests (as a query parameter). The etag can be
@@ -76,6 +84,8 @@ func newDelete() *cobra.Command {
   request must be retried by using the fresh etag in the 409 response.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -91,6 +101,7 @@ func newDelete() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -123,12 +134,16 @@ func newGet() *cobra.Command {
 	cmd.Flags().StringVar(&getReq.Etag, "etag", getReq.Etag, `etag used for versioning.`)
 
 	cmd.Use = "get"
-	cmd.Short = `Get the default namespace setting.`
-	cmd.Long = `Get the default namespace setting.
+	cmd.Short = `*Public Preview* Get the default namespace setting.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Get the default namespace setting.
 
   Gets the default namespace setting.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -144,6 +159,7 @@ func newGet() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -177,8 +193,10 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "update"
-	cmd.Short = `Update the default namespace setting.`
-	cmd.Long = `Update the default namespace setting.
+	cmd.Short = `*Public Preview* Update the default namespace setting.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Update the default namespace setting.
 
   Updates the default namespace setting for the workspace. A fresh etag needs to
   be provided in PATCH requests (as part of the setting field). The etag can
@@ -189,6 +207,8 @@ func newUpdate() *cobra.Command {
   must be retried by using the fresh etag in the 409 response.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -214,6 +234,7 @@ func newUpdate() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 

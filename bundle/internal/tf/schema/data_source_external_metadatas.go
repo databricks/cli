@@ -3,7 +3,7 @@
 package schema
 
 type DataSourceExternalMetadatasExternalMetadataProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourceExternalMetadatasExternalMetadata struct {
@@ -25,7 +25,7 @@ type DataSourceExternalMetadatasExternalMetadata struct {
 }
 
 type DataSourceExternalMetadatasProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourceExternalMetadatas struct {

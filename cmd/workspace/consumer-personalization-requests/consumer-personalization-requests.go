@@ -20,12 +20,18 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "consumer-personalization-requests",
-		Short: `Personalization Requests allow customers to interact with the individualized Marketplace listing flow.`,
-		Long: `Personalization Requests allow customers to interact with the individualized
+		Short: `*Public Preview* Personalization Requests allow customers to interact with the individualized Marketplace listing flow.`,
+		Long: `This command is in Public Preview and may change without notice.
+
+Personalization Requests allow customers to interact with the individualized
   Marketplace listing flow.`,
 		GroupID: "marketplace",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -65,12 +71,16 @@ func newCreate() *cobra.Command {
 	cmd.Flags().Var(&createReq.RecipientType, "recipient-type", `Supported values: [DELTA_SHARING_RECIPIENT_TYPE_DATABRICKS, DELTA_SHARING_RECIPIENT_TYPE_OPEN]`)
 
 	cmd.Use = "create LISTING_ID"
-	cmd.Short = `Create a personalization request.`
-	cmd.Long = `Create a personalization request.
+	cmd.Short = `*Public Preview* Create a personalization request.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Create a personalization request.
 
   Create a personalization request for a listing.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -102,6 +112,7 @@ func newCreate() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -132,13 +143,17 @@ func newGet() *cobra.Command {
 	var getReq marketplace.GetPersonalizationRequestRequest
 
 	cmd.Use = "get LISTING_ID"
-	cmd.Short = `Get the personalization request for a listing.`
-	cmd.Long = `Get the personalization request for a listing.
+	cmd.Short = `*Public Preview* Get the personalization request for a listing.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Get the personalization request for a listing.
 
   Get the personalization request for a listing. Each consumer can make at
   *most* one personalization request for a listing.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -156,6 +171,7 @@ func newGet() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -184,17 +200,31 @@ func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listReq marketplace.ListAllPersonalizationRequestsRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listLimit int
 
 	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, ``)
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, ``)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list"
-	cmd.Short = `List all personalization requests.`
-	cmd.Long = `List all personalization requests.
+	cmd.Short = `*Public Preview* List all personalization requests.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+List all personalization requests.
 
   List personalization requests for a consumer across all listings.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -207,6 +237,13 @@ func newList() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.ConsumerPersonalizationRequests.List(ctx, listReq)
+		if listLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
+		}
+		if listLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 

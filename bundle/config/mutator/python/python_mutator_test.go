@@ -20,6 +20,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/process"
 	"github.com/stretchr/testify/assert"
 )
@@ -157,7 +158,7 @@ workspace: { current_user: { userName: test }}`)
 	assert.Equal(t, int64(2), b.Metrics.PythonAddedResourcesCount)
 	assert.Equal(t, int64(0), b.Metrics.PythonUpdatedResourcesCount)
 
-	assert.Equal(t, 1, len(diags))
+	assert.Len(t, diags, 1)
 	assert.Equal(t, "job doesn't have any tasks", diags[0].Summary)
 	assert.Equal(t, []dyn.Location{
 		{
@@ -488,7 +489,7 @@ or activate the environment before running CLI commands:
       venv_path: .venv
 `
 
-	out := explainProcessErr(stderr)
+	out := explainProcessErr(cmdio.MockDiscard(t.Context()), stderr)
 
 	assert.Equal(t, expected, out)
 }

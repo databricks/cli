@@ -13,7 +13,7 @@ import (
 // Each node in the array represents one or more of:
 // 1. An [AnyKey] component. This is the "*" wildcard which matches any map key.
 // 2. An [AnyIndex] component. This is the "[*]" wildcard which matches any array index.
-// 3. Multiple [Key] components. These are multiple static path keys for this this node would match.
+// 3. Multiple [Key] components. These are multiple static path keys for this node would match.
 //
 // Note: It's valid for both anyKey and pathKey to be set at the same time.
 // For example, adding both "foo.*.bar" and "foo.bar" to a trie is valid.

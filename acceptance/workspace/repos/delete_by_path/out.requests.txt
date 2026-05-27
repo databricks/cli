@@ -13,10 +13,6 @@
 }
 {
   "method": "GET",
-  "path": "/.well-known/databricks-config"
-}
-{
-  "method": "GET",
   "path": "/api/2.0/workspace/get-status",
   "q": {
     "path": "/Repos/me@databricks.com/test-repo"
@@ -25,10 +21,6 @@
 {
   "method": "GET",
   "path": "/api/2.0/repos/[NUMID]"
-}
-{
-  "method": "GET",
-  "path": "/.well-known/databricks-config"
 }
 {
   "method": "GET",
@@ -40,10 +32,6 @@
 {
   "method": "DELETE",
   "path": "/api/2.0/repos/[NUMID]"
-}
-{
-  "method": "GET",
-  "path": "/.well-known/databricks-config"
 }
 {
   "method": "GET",

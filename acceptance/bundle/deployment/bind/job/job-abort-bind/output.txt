@@ -3,7 +3,11 @@
 Created job with ID: [JOB_ID]
 
 === Expect binding to fail without an auto-approve flag:
-Error: This bind operation requires user confirmation, but the current console does not support prompting. Please specify --auto-approve if you would like to skip prompts and proceed.
+Error: this bind operation requires user confirmation, but the current console does not support prompting.
+To proceed, use --auto-approve after reviewing the plan above.
+
+
+Exit code: 1
 
 === Deploy bundle:
 >>> [CLI] bundle deploy --force-lock

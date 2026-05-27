@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"strings"
 	"text/tabwriter"
 	"text/template"
@@ -16,14 +17,12 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/listing"
-	"github.com/fatih/color"
-	"github.com/nwidger/jsoncolor"
 )
 
 // Heredoc is the equivalent of compute.TrimLeadingWhitespace
 // (command-execution API helper from SDK), except it's more
 // friendly to non-printable characters.
-func Heredoc(tmpl string) (trimmed string) {
+func Heredoc(tmpl string) string {
 	lines := strings.Split(tmpl, "\n")
 	leadingWhitespace := 1<<31 - 1
 	for _, line := range lines {
@@ -39,17 +38,19 @@ func Heredoc(tmpl string) (trimmed string) {
 			break
 		}
 	}
+	var sb strings.Builder
 	for i := range lines {
 		if lines[i] == "" || strings.TrimSpace(lines[i]) == "" {
 			continue
 		}
 		if len(lines[i]) < leadingWhitespace {
-			trimmed += lines[i] + "\n" // or not..
+			sb.WriteString(lines[i])
 		} else {
-			trimmed += lines[i][leadingWhitespace:] + "\n"
+			sb.WriteString(lines[i][leadingWhitespace:])
 		}
+		sb.WriteByte('\n')
 	}
-	return strings.TrimSpace(trimmed)
+	return strings.TrimSpace(sb.String())
 }
 
 // writeFlusher represents a buffered writer that can be flushed. This is useful when
@@ -101,7 +102,11 @@ func (ir iteratorRenderer[T]) renderJson(ctx context.Context, w writeFlusher) er
 	if err != nil {
 		return err
 	}
+	limit := limitFromContext(ctx)
 	for i := 0; ir.t.HasNext(ctx); i++ {
+		if limit > 0 && i >= limit {
+			break
+		}
 		if i != 0 {
 			_, err = w.Write([]byte(",\n  "))
 			if err != nil {
@@ -136,7 +141,11 @@ func (ir iteratorRenderer[T]) renderJson(ctx context.Context, w writeFlusher) er
 
 func (ir iteratorRenderer[T]) renderTemplate(ctx context.Context, t *template.Template, w *tabwriter.Writer) error {
 	buf := make([]any, 0, ir.getBufferSize())
+	limit := limitFromContext(ctx)
 	for i := 0; ir.t.HasNext(ctx); i++ {
+		if limit > 0 && i >= limit {
+			break
+		}
 		n, err := ir.t.Next(ctx)
 		if err != nil {
 			return err
@@ -167,8 +176,9 @@ type defaultRenderer struct {
 	t any
 }
 
-func (d defaultRenderer) renderJson(_ context.Context, w writeFlusher) error {
-	pretty, err := fancyJSON(d.t)
+func (d defaultRenderer) renderJson(ctx context.Context, w writeFlusher) error {
+	c := fromContext(ctx)
+	pretty, err := marshalJSON(d.t, c.capabilities.SupportsStdoutColor())
 	if err != nil {
 		return err
 	}
@@ -263,69 +273,34 @@ func Render(ctx context.Context, v any) error {
 	return renderWithTemplate(ctx, newRenderer(v), c.outputFormat, c.out, c.headerTemplate, c.template)
 }
 
+// RenderIterator renders the items produced by i. When the terminal is
+// fully interactive (stdin + stdout + stderr all TTYs) and the command
+// has a row template, we page through the existing template + tabwriter
+// pipeline (same colors, same alignment as the non-paged path; widths are
+// locked from the first batch so columns stay aligned across pages).
+// Piped output and JSON output keep the existing non-paged behavior.
 func RenderIterator[T any](ctx context.Context, i listing.Iterator[T]) error {
 	c := fromContext(ctx)
+	if c.capabilities.SupportsPager() && c.outputFormat == flags.OutputText && c.template != "" {
+		return renderIteratorPagedTemplate(ctx, i, c.in, c.out, c.headerTemplate, c.template)
+	}
 	return renderWithTemplate(ctx, newIteratorRenderer(i), c.outputFormat, c.out, c.headerTemplate, c.template)
 }
 
 func RenderWithTemplate(ctx context.Context, v any, headerTemplate, template string) error {
 	c := fromContext(ctx)
 	if _, ok := v.(listingInterface); ok {
-		panic("use RenderIteratorWithTemplate instead")
+		panic("listings must use RenderIterator, not RenderWithTemplate")
 	}
 	return renderWithTemplate(ctx, newRenderer(v), c.outputFormat, c.out, headerTemplate, template)
 }
 
-func RenderIteratorWithTemplate[T any](ctx context.Context, i listing.Iterator[T], headerTemplate, template string) error {
-	c := fromContext(ctx)
-	return renderWithTemplate(ctx, newIteratorRenderer(i), c.outputFormat, c.out, headerTemplate, template)
-}
-
-func RenderIteratorJson[T any](ctx context.Context, i listing.Iterator[T]) error {
-	c := fromContext(ctx)
-	return renderWithTemplate(ctx, newIteratorRenderer(i), c.outputFormat, c.out, c.headerTemplate, c.template)
-}
-
-var renderFuncMap = template.FuncMap{
-	// we render colored output if stdout is TTY, otherwise we render text.
-	// in the future we'll check if we can explicitly check for stderr being
-	// a TTY
-	"header":  color.BlueString,
-	"red":     color.RedString,
-	"green":   color.GreenString,
-	"blue":    color.BlueString,
-	"yellow":  color.YellowString,
-	"magenta": color.MagentaString,
-	"cyan":    color.CyanString,
-	"bold": func(format string, a ...any) string {
-		return color.New(color.Bold).Sprintf(format, a...)
-	},
-	"italic": func(format string, a ...any) string {
-		return color.New(color.Italic).Sprintf(format, a...)
-	},
+// staticTemplateFuncs are the ctx-independent helpers shared across every
+// renderFuncMap call.
+var staticTemplateFuncs = template.FuncMap{
 	"replace": strings.ReplaceAll,
 	"join":    strings.Join,
-	"sub": func(a, b int) int {
-		return a - b
-	},
-	"bool": func(v bool) string {
-		if v {
-			return color.GreenString("YES")
-		}
-		return color.RedString("NO")
-	},
-	"pretty_json": func(in string) (string, error) {
-		var tmp any
-		err := json.Unmarshal([]byte(in), &tmp)
-		if err != nil {
-			return "", err
-		}
-		b, err := fancyJSON(tmp)
-		if err != nil {
-			return "", err
-		}
-		return string(b), nil
-	},
+	"sub":     func(a, b int) int { return a - b },
 	"pretty_date": func(t time.Time) string {
 		return t.Format("2006-01-02T15:04:05Z")
 	},
@@ -356,9 +331,37 @@ var renderFuncMap = template.FuncMap{
 	},
 }
 
+// renderFuncMap returns the template helpers used by cmdio's rendering
+// pipeline. Color helpers and the JSON pretty-printer depend on ctx; the
+// rest are taken from staticTemplateFuncs.
+func renderFuncMap(ctx context.Context) template.FuncMap {
+	fm := RenderFuncMap(ctx)
+	fm["header"] = fm["blue"]
+	fm["bool"] = func(v bool) string {
+		if v {
+			return Green(ctx, "YES")
+		}
+		return Red(ctx, "NO")
+	}
+	fm["pretty_json"] = func(in string) (string, error) {
+		var tmp any
+		err := json.Unmarshal([]byte(in), &tmp)
+		if err != nil {
+			return "", err
+		}
+		b, err := marshalJSON(tmp, colorEnabled(ctx))
+		if err != nil {
+			return "", err
+		}
+		return string(b), nil
+	}
+	maps.Copy(fm, staticTemplateFuncs)
+	return fm
+}
+
 func renderUsingTemplate(ctx context.Context, r templateRenderer, w io.Writer, headerTmpl, tmpl string) error {
 	tw := tabwriter.NewWriter(w, 0, 4, 2, ' ', 0)
-	base := template.New("command").Funcs(renderFuncMap)
+	base := template.New("command").Funcs(renderFuncMap(ctx))
 	if headerTmpl != "" {
 		headerT, err := base.Parse(headerTmpl)
 		if err != nil {
@@ -382,23 +385,6 @@ func renderUsingTemplate(ctx context.Context, r templateRenderer, w io.Writer, h
 		return err
 	}
 	return tw.Flush()
-}
-
-func fancyJSON(v any) ([]byte, error) {
-	// create custom formatter
-	f := jsoncolor.NewFormatter()
-
-	// set custom colors
-	f.StringColor = color.New(color.FgGreen)
-	f.TrueColor = color.New(color.FgGreen, color.Bold)
-	f.FalseColor = color.New(color.FgRed)
-	f.NumberColor = color.New(color.FgCyan)
-	f.NullColor = color.New(color.FgMagenta)
-	f.ObjectColor = color.New(color.Reset)
-	f.CommaColor = color.New(color.Reset)
-	f.ColonColor = color.New(color.Reset)
-
-	return jsoncolor.MarshalIndentWithFormatter(v, "", "  ", f)
 }
 
 const errorTemplate = `{{ "Error" | red }}: {{ .Summary }}
@@ -451,13 +437,14 @@ const recommendationTemplate = `{{ "Recommendation" | blue }}: {{ .Summary }}
 
 func RenderDiagnostics(ctx context.Context, diags diag.Diagnostics) error {
 	c := fromContext(ctx)
-	return renderDiagnostics(c.err, diags)
+	return renderDiagnostics(ctx, c.err, diags)
 }
 
-func renderDiagnostics(out io.Writer, diags diag.Diagnostics) error {
-	errorT := template.Must(template.New("error").Funcs(renderFuncMap).Parse(errorTemplate))
-	warningT := template.Must(template.New("warning").Funcs(renderFuncMap).Parse(warningTemplate))
-	recommendationT := template.Must(template.New("recommendation").Funcs(renderFuncMap).Parse(recommendationTemplate))
+func renderDiagnostics(ctx context.Context, out io.Writer, diags diag.Diagnostics) error {
+	fm := renderFuncMap(ctx)
+	errorT := template.Must(template.New("error").Funcs(fm).Parse(errorTemplate))
+	warningT := template.Must(template.New("warning").Funcs(fm).Parse(warningTemplate))
+	recommendationT := template.Must(template.New("recommendation").Funcs(fm).Parse(recommendationTemplate))
 
 	// Print errors and warnings.
 	for _, d := range diags {

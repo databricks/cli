@@ -3,6 +3,7 @@ package apps
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -16,12 +17,13 @@ import (
 
 	"github.com/charmbracelet/huh"
 	"github.com/databricks/cli/cmd/root"
-	"github.com/databricks/cli/experimental/aitools/lib/agents"
-	"github.com/databricks/cli/experimental/aitools/lib/installer"
+	"github.com/databricks/cli/libs/aitools/agents"
+	"github.com/databricks/cli/libs/aitools/installer"
 	"github.com/databricks/cli/libs/apps/generator"
 	"github.com/databricks/cli/libs/apps/initializer"
 	"github.com/databricks/cli/libs/apps/manifest"
 	"github.com/databricks/cli/libs/apps/prompt"
+	"github.com/databricks/cli/libs/clicompat"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
@@ -37,7 +39,6 @@ const (
 	appkitTemplateDir    = "template"
 	appkitDefaultBranch  = "main"
 	appkitTemplateTagPfx = "template-v"
-	appkitDefaultVersion = "template-v0.20.3"
 	defaultProfile       = "DEFAULT"
 )
 
@@ -76,12 +77,12 @@ func newInitCmd() *cobra.Command {
 		deploy       bool
 		run          string
 		setValues    []string
+		autoApprove  bool
 	)
 
 	cmd := &cobra.Command{
-		Use:    "init",
-		Short:  "Initialize a new AppKit application from a template",
-		Hidden: true,
+		Use:   "init",
+		Short: "Initialize a new AppKit application from a template",
 		Long: `Initialize a new AppKit application from a template.
 
 When run without arguments, uses the default AppKit template and an interactive prompt
@@ -160,13 +161,14 @@ Environment variables:
 				runChanged:     cmd.Flags().Changed("run"),
 				pluginsChanged: cmd.Flags().Changed("features") || cmd.Flags().Changed("plugins"),
 				setValues:      setValues,
+				autoApprove:    autoApprove,
 			})
 		},
 	}
 
 	cmd.Flags().StringVar(&templatePath, "template", "", "Template path (local directory or GitHub URL)")
 	cmd.Flags().StringVar(&branch, "branch", "", "Git branch or tag (for GitHub templates, mutually exclusive with --version)")
-	cmd.Flags().StringVar(&version, "version", "", fmt.Sprintf("AppKit version to use (default: %s, use 'latest' for main branch)", appkitDefaultVersion))
+	cmd.Flags().StringVar(&version, "version", "", "AppKit version to use (default: auto-detected, use 'latest' for main branch)")
 	cmd.Flags().StringVar(&name, "name", "", "Project name (prompts if not provided)")
 	cmd.Flags().StringVar(&warehouseID, "warehouse-id", "", "SQL warehouse ID")
 	_ = cmd.Flags().MarkDeprecated("warehouse-id", "use --set <plugin>.sql-warehouse.id=<value> instead")
@@ -178,6 +180,7 @@ Environment variables:
 	_ = cmd.Flags().MarkHidden("plugins")
 	cmd.Flags().BoolVar(&deploy, "deploy", false, "Deploy the app after creation")
 	cmd.Flags().StringVar(&run, "run", "", "Run the app after creation (none, dev, dev-remote)")
+	cmd.Flags().BoolVar(&autoApprove, "auto-approve", false, "Skip confirmation prompts for optional resources. Optional resources are only configured when their values are provided via --set.")
 
 	return cmd
 }
@@ -198,6 +201,7 @@ type createOptions struct {
 	runChanged     bool     // true if --run flag was explicitly set
 	pluginsChanged bool     // true if --plugins flag was explicitly set
 	setValues      []string // --set plugin.resourceKey.field=value pairs
+	autoApprove    bool
 }
 
 // parseSetValues parses --set key=value pairs into the resourceValues map.
@@ -277,6 +281,28 @@ func pluginHasResourceField(p *manifest.Plugin, resourceKey, fieldName string) b
 	return false
 }
 
+// validateRequiredResources checks that all required resources have at least one
+// value in resourceValues. Returns an error with a --set hint if any are missing.
+func validateRequiredResources(resources []manifest.Resource, resourceValues map[string]string) error {
+	for _, r := range resources {
+		found := false
+		for k := range resourceValues {
+			if strings.HasPrefix(k, r.Key()+".") {
+				found = true
+				break
+			}
+		}
+		if !found {
+			fieldHint := "id"
+			if names := r.FieldNames(); len(names) > 0 {
+				fieldHint = names[0]
+			}
+			return fmt.Errorf("missing required resource %q for selected plugins (use --set %s.%s.%s=value)", r.Alias, r.PluginName, r.Key(), fieldHint)
+		}
+	}
+	return nil
+}
+
 // tmplBundle holds the generated bundle configuration strings.
 type tmplBundle struct {
 	Variables       string
@@ -290,9 +316,16 @@ type dotEnvVars struct {
 	Example string
 }
 
-// pluginVar represents a selected plugin. Currently empty, but extensible
-// with properties as the plugin model evolves.
-type pluginVar struct{}
+// pluginVar represents a selected plugin in template substitution.
+// Fields here are part of the AppKit template contract — the template
+// reads them via {{$p.Field}} on map values in templateVars.Plugins.
+type pluginVar struct {
+	// Stability mirrors manifest.Plugin.Stability ("" for GA, "beta"
+	// for beta, future tiers preserved). The AppKit template branches
+	// imports on this — see databricks/appkit#264 commit d826a532, which
+	// routes beta plugins through the `@databricks/appkit/beta` subpath.
+	Stability string
+}
 
 // templateVars holds the variables for template substitution.
 type templateVars struct {
@@ -332,7 +365,7 @@ func parseDeployAndRunFlags(deploy bool, run string) (bool, prompt.RunMode, erro
 
 // promptForPluginsAndDeps prompts for plugins and their resource dependencies using the manifest.
 // skipDeployRunPrompt indicates whether to skip prompting for deploy/run (because flags were provided).
-func promptForPluginsAndDeps(ctx context.Context, m *manifest.Manifest, preSelectedPlugins []string, skipDeployRunPrompt bool) (*prompt.CreateProjectConfig, error) {
+func promptForPluginsAndDeps(ctx context.Context, m *manifest.Manifest, preSelectedPlugins []string, skipDeployRunPrompt, autoApprove bool) (*prompt.CreateProjectConfig, error) {
 	config := &prompt.CreateProjectConfig{
 		Dependencies: make(map[string]string),
 		Features:     preSelectedPlugins, // Reuse Features field for plugin names
@@ -352,7 +385,7 @@ func promptForPluginsAndDeps(ctx context.Context, m *manifest.Manifest, preSelec
 	if len(config.Features) == 0 && len(selectablePlugins) > 0 {
 		options := make([]huh.Option[string], 0, len(selectablePlugins))
 		for _, p := range selectablePlugins {
-			label := p.DisplayName + " - " + p.Description
+			label := p.DisplayName + prompt.RenderStabilityTier(p.StabilityLabel()) + " - " + p.Description
 			options = append(options, huh.NewOption(label, p.Name))
 		}
 
@@ -389,19 +422,19 @@ func promptForPluginsAndDeps(ctx context.Context, m *manifest.Manifest, preSelec
 		if err != nil {
 			return nil, err
 		}
-		for k, v := range values {
-			config.Dependencies[k] = v
-		}
+		maps.Copy(config.Dependencies, values)
 	}
 
-	// Step 3: Prompt for optional plugin resource dependencies
-	for _, r := range optionalResources {
-		values, err := promptForResource(ctx, r, theme, false)
-		if err != nil {
-			return nil, err
-		}
-		for k, v := range values {
-			config.Dependencies[k] = v
+	// Step 3: Prompt for optional plugin resource dependencies.
+	// With --auto-approve, optional resources are skipped here; they're only
+	// configured when their values are supplied via --set (merged later).
+	if !autoApprove {
+		for _, r := range optionalResources {
+			values, err := promptForResource(ctx, r, theme, false)
+			if err != nil {
+				return nil, err
+			}
+			maps.Copy(config.Dependencies, values)
 		}
 	}
 
@@ -514,7 +547,7 @@ func cloneRepo(ctx context.Context, repoURL, branch string) (string, error) {
 // Used by commands that don't benefit from background cloning (e.g., manifest).
 func resolveTemplate(ctx context.Context, templatePath, branch, subdir string) (string, func(), error) {
 	ch := resolveTemplateAsync(ctx, templatePath, branch, subdir)
-	return awaitTemplate(ctx, ch)
+	return awaitTemplate(ctx, ch, "")
 }
 
 // templateResult holds the outcome of a background template resolution.
@@ -565,23 +598,43 @@ func resolveTemplateAsync(ctx context.Context, templatePath, branch, subdir stri
 // awaitTemplate waits for the background clone to finish.
 // If the result is already available it returns immediately with a
 // checkmark; otherwise it shows a spinner while waiting.
-func awaitTemplate(ctx context.Context, ch <-chan templateResult) (string, func(), error) {
+// refLabel, if non-empty (e.g. "version 0.24.0" or "branch feature-x"),
+// is appended to spinner and done messages.
+func awaitTemplate(ctx context.Context, ch <-chan templateResult, refLabel string) (string, func(), error) {
+	suffix := ""
+	if refLabel != "" {
+		suffix = " (" + refLabel + ")"
+	}
 	select {
 	case res := <-ch:
 		// Clone finished while the user was typing — print completion.
 		if res.err == nil && res.cleanup != nil {
-			prompt.PrintDone(ctx, "Template cloned")
+			prompt.PrintDone(ctx, "Template cloned"+suffix)
 		}
 		return res.path, res.cleanup, res.err
 	default:
 		// Still cloning — show a spinner for the remaining wait.
 		var res templateResult
-		err := prompt.RunWithSpinnerCtx(ctx, "Cloning template...", func() error {
+		err := prompt.RunWithSpinnerCtx(ctx, "Cloning template"+suffix+"...", func() error {
 			res = <-ch
 			return res.err
 		})
 		return res.path, res.cleanup, err
 	}
+}
+
+// commitInPlace derives the app name from the cwd basename and verifies that
+// the cwd is suitable for in-place scaffolding (empty modulo .git).
+// Returns the derived app name on success.
+func commitInPlace() (string, error) {
+	appName, err := prompt.DeriveInPlaceAppName(".")
+	if err != nil {
+		return "", err
+	}
+	if err := prompt.CheckInPlaceDirectory("."); err != nil {
+		return "", err
+	}
+	return appName, nil
 }
 
 // findProjectSrcDir locates the actual source directory inside a template.
@@ -656,6 +709,14 @@ func startBackgroundNpmInstall(ctx context.Context, srcProjectDir, destDir, proj
 		return nil
 	}
 
+	// Copy any file: protocol dependencies (e.g., local .tgz tarballs) so npm ci can resolve them.
+	pkgData, err := os.ReadFile(filepath.Join(destDir, "package.json"))
+	if err != nil {
+		log.Warnf(ctx, "Failed to read package.json for file dep copy: %v", err)
+	} else {
+		copyFileDeps(ctx, pkgData, srcProjectDir, destDir)
+	}
+
 	// Copy package-lock.json raw (never has template vars).
 	lockData, err := os.ReadFile(lockFile)
 	if err != nil {
@@ -678,6 +739,41 @@ func startBackgroundNpmInstall(ctx context.Context, srcProjectDir, destDir, proj
 
 	log.Debugf(ctx, "Started background npm install in %s", destDir)
 	return ch
+}
+
+// copyFileDeps copies local file: protocol dependencies (e.g., .tgz tarballs)
+// from srcDir to destDir so that npm ci can resolve them.
+func copyFileDeps(ctx context.Context, pkgJSON []byte, srcDir, destDir string) {
+	var pkg struct {
+		Dependencies    map[string]string `json:"dependencies"`
+		DevDependencies map[string]string `json:"devDependencies"`
+	}
+	if err := json.Unmarshal(pkgJSON, &pkg); err != nil {
+		log.Debugf(ctx, "Failed to parse package.json for file dep copy: %v", err)
+		return
+	}
+	for _, deps := range []map[string]string{pkg.Dependencies, pkg.DevDependencies} {
+		for _, v := range deps {
+			if !strings.HasPrefix(v, "file:") {
+				continue
+			}
+			relPath := filepath.Clean(strings.TrimPrefix(v, "file:"))
+			src := filepath.Join(srcDir, relPath)
+			data, err := os.ReadFile(src)
+			if err != nil {
+				log.Debugf(ctx, "Skipping file dep %s: %v", relPath, err)
+				continue
+			}
+			dst := filepath.Join(destDir, relPath)
+			if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
+				log.Debugf(ctx, "Failed to create dir for file dep %s: %v", relPath, err)
+				continue
+			}
+			if err := os.WriteFile(dst, data, 0o644); err != nil {
+				log.Debugf(ctx, "Failed to copy file dep %s: %v", relPath, err)
+			}
+		}
+	}
 }
 
 // awaitBackgroundNpmInstall waits for the background npm install to complete.
@@ -717,21 +813,36 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		templateSrc = env.Get(ctx, templatePathEnvVar)
 	}
 
-	// Resolve the git reference (branch/tag) to use for default appkit template
+	// Resolve the git reference (branch/tag) to use for default appkit template.
+	// refLabel is a human-readable description of the ref we're cloning
+	// (e.g. "version 0.24.0", "branch feature-x"). It's surfaced in the
+	// interactive header and the clone spinner so the user can cancel before
+	// naming the project. Empty when there's nothing meaningful to show
+	// (e.g. a custom --template URL with no explicit branch).
 	gitRef := opts.branch
+	var refLabel string
 	usingDefaultTemplate := templateSrc == ""
 	if usingDefaultTemplate {
 		// Using default appkit template - resolve version
 		switch {
 		case opts.branch != "":
 			// --branch takes precedence (already set in gitRef)
+			refLabel = "branch " + opts.branch
 		case opts.version != "":
 			gitRef = normalizeVersion(opts.version)
+			refLabel = "version " + opts.version
 		default:
-			// Default: use pinned version
-			gitRef = appkitDefaultVersion
+			resolved, err := clicompat.ResolveAppKitVersion(ctx)
+			if err != nil {
+				return fmt.Errorf("could not resolve AppKit template version: %w; use --version to specify a version manually", err)
+			}
+			gitRef = normalizeVersion(resolved)
+			refLabel = "version " + resolved
 		}
 		templateSrc = appkitRepoURL
+	} else if opts.branch != "" {
+		// Custom template with an explicit branch — show it for traceability.
+		refLabel = "branch " + opts.branch
 	}
 
 	// Start cloning in the background so it runs while the user types the name.
@@ -753,35 +864,106 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	}()
 
 	// Step 1: Get project name (clone runs in parallel for remote templates)
-	destDir := opts.name
-	if opts.outputDir != "" {
-		destDir = filepath.Join(opts.outputDir, opts.name)
+	if opts.name == prompt.InPlaceName && opts.outputDir != "" {
+		return prompt.ErrNameDotWithOutputDir
 	}
 
-	if opts.name == "" {
-		if !isInteractive {
-			return errors.New("--name is required in non-interactive mode")
-		}
-		name, err := prompt.PromptForProjectName(ctx, opts.outputDir)
+	var (
+		destDir string
+		inPlace bool
+	)
+	switch {
+	case opts.name == prompt.InPlaceName:
+		appName, err := commitInPlace()
 		if err != nil {
 			return err
 		}
-		opts.name = name
+		opts.name = appName
+		destDir = "."
+		inPlace = true
+	case opts.name != "":
+		if err := prompt.ValidateProjectName(opts.name); err != nil {
+			return err
+		}
 		destDir = opts.name
 		if opts.outputDir != "" {
 			destDir = filepath.Join(opts.outputDir, opts.name)
 		}
-	} else {
-		if err := prompt.ValidateProjectName(opts.name); err != nil {
-			return err
-		}
 		if _, err := os.Stat(destDir); err == nil {
 			return fmt.Errorf("directory %s already exists", destDir)
+		}
+	default:
+		if !isInteractive {
+			return errors.New("--name is required in non-interactive mode")
+		}
+		// Print the AppKit header once so it covers both the in-place
+		// scaffold-location prompt below and the project-name prompt that
+		// may follow, and so the resolved template ref is visible before
+		// the user commits to either path.
+		prompt.PrintHeader(ctx, refLabel)
+		// Offer in-place scaffolding when the current directory is empty
+		// (modulo .git) and its basename is a valid app name. Skipped when
+		// --output-dir was set, since in-place targets cwd and would silently
+		// drop the flag — same reasoning as the --name . / --output-dir mutex
+		// above.
+		if opts.outputDir == "" {
+			if basename, ok := prompt.ShouldOfferInPlace("."); ok {
+				useCurrent, err := prompt.PromptScaffoldLocation(ctx, basename)
+				if err != nil {
+					return err
+				}
+				if useCurrent {
+					// Re-check immediately before committing — the directory may
+					// have changed between offer and answer.
+					if err := prompt.CheckInPlaceDirectory("."); err != nil {
+						return err
+					}
+					opts.name = basename
+					destDir = "."
+					inPlace = true
+				}
+			}
+		}
+		if !inPlace {
+			name, err := prompt.PromptForProjectName(ctx, opts.outputDir)
+			if err != nil {
+				return err
+			}
+			if name == prompt.InPlaceName {
+				appName, err := commitInPlace()
+				if err != nil {
+					return err
+				}
+				opts.name = appName
+				destDir = "."
+				inPlace = true
+			} else {
+				opts.name = name
+				destDir = name
+				if opts.outputDir != "" {
+					destDir = filepath.Join(opts.outputDir, name)
+				}
+			}
 		}
 	}
 
 	// Step 2: Wait for template (may already be done if the user took time typing the name)
-	resolvedPath, cleanup, err := awaitTemplate(ctx, templateCh)
+	resolvedPath, cleanup, err := awaitTemplate(ctx, templateCh, refLabel)
+	// Only fall back to the embedded version when the version was auto-resolved
+	// from the manifest, not when the user explicitly passed --version or --branch.
+	versionAutoResolved := opts.version == "" && opts.branch == ""
+	if err != nil && usingDefaultTemplate && versionAutoResolved && clicompat.IsNotFoundError(err) {
+		fallbackVersion, fbErr := clicompat.ResolveEmbeddedAppKitVersion()
+		if fbErr == nil && fallbackVersion != "" && normalizeVersion(fallbackVersion) != branchForClone {
+			log.Warnf(ctx, "Template version not found, falling back to embedded version %s", fallbackVersion)
+			fallbackRef := normalizeVersion(fallbackVersion)
+			templateCh = resolveTemplateAsync(ctx, templateSrc, fallbackRef, appkitTemplateDir)
+			refLabel = "version " + fallbackVersion
+			resolvedPath, cleanup, err = awaitTemplate(ctx, templateCh, refLabel)
+		} else if fbErr != nil {
+			log.Warnf(ctx, "Could not resolve embedded AppKit version: %v", fbErr)
+		}
+	}
 	if err != nil {
 		return err
 	}
@@ -830,7 +1012,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 
 	if isInteractive && !opts.pluginsChanged && !flagsMode {
 		// Interactive mode without --plugins flag: prompt for plugins, dependencies, description
-		config, err := promptForPluginsAndDeps(ctx, m, selectedPlugins, skipDeployRunPrompt)
+		config, err := promptForPluginsAndDeps(ctx, m, selectedPlugins, skipDeployRunPrompt, opts.autoApprove)
 		if err != nil {
 			return err
 		}
@@ -880,9 +1062,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		if resourceValues == nil {
 			resourceValues = make(map[string]string, len(setVals))
 		}
-		for k, v := range setVals {
-			resourceValues[k] = v
-		}
+		maps.Copy(resourceValues, setVals)
 	}
 
 	// Always include mandatory plugins regardless of user selection or flags.
@@ -914,21 +1094,8 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		}
 
 		// Validate that all required resources are provided.
-		for _, r := range resources {
-			found := false
-			for k := range resourceValues {
-				if strings.HasPrefix(k, r.Key()+".") {
-					found = true
-					break
-				}
-			}
-			if !found {
-				fieldHint := "id"
-				if names := r.FieldNames(); len(names) > 0 {
-					fieldHint = names[0]
-				}
-				return fmt.Errorf("missing required resource %q for selected plugins (use --set %s.%s=value)", r.Alias, r.Key(), fieldHint)
-			}
+		if err := validateRequiredResources(resources, resourceValues); err != nil {
+			return err
 		}
 	}
 
@@ -946,9 +1113,17 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	var projectCreated bool
 	var runErr error
 	defer func() {
-		if runErr != nil && (projectCreated || npmInstallCh != nil) {
-			os.RemoveAll(destDir)
+		if runErr == nil || (!projectCreated && npmInstallCh == nil) {
+			return
 		}
+		if inPlace {
+			// destDir is "." here; a wholesale RemoveAll would wipe the
+			// user's current directory (including any pre-existing .git).
+			// Leave the partial scaffold and tell the user to clean up.
+			log.Warnf(ctx, "scaffold failed in current directory; review and clean up generated files manually (e.g. with git status / git clean -fd)")
+			return
+		}
+		os.RemoveAll(destDir)
 	}()
 
 	// Set description default
@@ -990,7 +1165,11 @@ func runCreate(ctx context.Context, opts createOptions) error {
 
 	plugins := make(map[string]*pluginVar, len(selectedPlugins))
 	for _, name := range selectedPlugins {
-		plugins[name] = &pluginVar{}
+		pv := &pluginVar{}
+		if mp, ok := m.Plugins[name]; ok {
+			pv.Stability = mp.Stability
+		}
+		plugins[name] = pv
 	}
 
 	// Template variables with generated content
@@ -1067,9 +1246,9 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	// Show next steps only if user didn't choose to deploy or run
 	showNextSteps := !shouldDeploy && runMode == prompt.RunModeNone
 	if showNextSteps {
-		prompt.PrintSuccess(ctx, opts.name, absOutputDir, fileCount, nextStepsCmd)
+		prompt.PrintSuccess(ctx, opts.name, absOutputDir, fileCount, nextStepsCmd, inPlace)
 	} else {
-		prompt.PrintSuccess(ctx, opts.name, absOutputDir, fileCount, "")
+		prompt.PrintSuccess(ctx, opts.name, absOutputDir, fileCount, "", inPlace)
 	}
 
 	// Print any onSetupMessage declared by selected plugins in the template manifest.
@@ -1089,7 +1268,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	// In flags mode, only print a hint — never prompt interactively.
 	if flagsMode {
 		if !agents.HasDatabricksSkillsInstalled(ctx) {
-			cmdio.LogString(ctx, "Tip: coding agents detected without Databricks skills. Run 'databricks experimental aitools skills install' to install them.")
+			cmdio.LogString(ctx, "Tip: coding agents detected without Databricks skills. Run 'databricks aitools install' to install them.")
 		}
 	} else if err := agents.RecommendSkillsInstall(ctx, installer.InstallAllSkills); err != nil {
 		log.Warnf(ctx, "Skills recommendation failed: %v", err)
@@ -1390,11 +1569,18 @@ func copyTemplate(ctx context.Context, src, dest string, vars templateVars) (int
 // removeEmptyDirs removes empty directories under root, deepest-first.
 // It is used to clean up directories that were created eagerly but ended up
 // with no files after conditional template rendering skipped their contents.
+//
+// .git is skipped so in-place scaffolding (root == ".") never walks into a
+// pre-existing repo and deletes its empty subdirectories (refs/heads,
+// refs/tags, objects/info, objects/pack are all empty after `git init`).
 func removeEmptyDirs(root string) error {
 	var dirs []string
 	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
+		}
+		if d.IsDir() && d.Name() == ".git" && path != root {
+			return filepath.SkipDir
 		}
 		if d.IsDir() && path != root {
 			dirs = append(dirs, path)

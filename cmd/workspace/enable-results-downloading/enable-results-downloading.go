@@ -20,11 +20,17 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "enable-results-downloading",
-		Short: `Controls whether users can download notebook results.`,
-		Long: `Controls whether users can download notebook results. By default, this setting
+		Short: `*Public Preview* Controls whether users can download notebook results.`,
+		Long: `This command is in Public Preview and may change without notice.
+
+Controls whether users can download notebook results. By default, this setting
   is enabled.`,
 		RunE: root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	// Add methods
 	cmd.AddCommand(newGetEnableResultsDownloading())
@@ -50,12 +56,16 @@ func newGetEnableResultsDownloading() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	cmd.Use = "get-enable-results-downloading"
-	cmd.Short = `Get the Notebook results download setting.`
-	cmd.Long = `Get the Notebook results download setting.
+	cmd.Short = `*Public Preview* Get the Notebook results download setting.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Get the Notebook results download setting.
 
   Gets the Notebook results download setting.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -65,6 +75,7 @@ func newGetEnableResultsDownloading() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -98,14 +109,18 @@ func newPatchEnableResultsDownloading() *cobra.Command {
 	cmd.Flags().Var(&patchEnableResultsDownloadingJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "patch-enable-results-downloading"
-	cmd.Short = `Update the Notebook results download setting.`
-	cmd.Long = `Update the Notebook results download setting.
+	cmd.Short = `*Public Preview* Update the Notebook results download setting.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Update the Notebook results download setting.
 
   Updates the Notebook results download setting. The model follows eventual
   consistency, which means the get after the update operation might receive
   stale values for some time.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -131,6 +146,7 @@ func newPatchEnableResultsDownloading() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 

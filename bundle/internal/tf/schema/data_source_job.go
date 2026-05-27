@@ -242,7 +242,7 @@ type DataSourceJobJobSettingsSettingsLibraryMaven struct {
 }
 
 type DataSourceJobJobSettingsSettingsLibraryProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourceJobJobSettingsSettingsLibraryPypi struct {
@@ -601,7 +601,7 @@ type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskLibraryMaven struct {
 }
 
 type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskLibraryProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskLibraryPypi struct {
@@ -975,7 +975,7 @@ type DataSourceJobJobSettingsSettingsTaskLibraryMaven struct {
 }
 
 type DataSourceJobJobSettingsSettingsTaskLibraryProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourceJobJobSettingsSettingsTaskLibraryPypi struct {
@@ -1423,7 +1423,7 @@ type DataSourceJobJobSettings struct {
 }
 
 type DataSourceJobProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourceJob struct {

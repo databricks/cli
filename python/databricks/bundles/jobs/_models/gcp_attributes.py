@@ -4,6 +4,10 @@ from typing import TYPE_CHECKING, TypedDict
 from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
 from databricks.bundles.core._variable import VariableOrOptional
+from databricks.bundles.jobs._models.confidential_compute_type import (
+    ConfidentialComputeType,
+    ConfidentialComputeTypeParam,
+)
 from databricks.bundles.jobs._models.gcp_availability import (
     GcpAvailability,
     GcpAvailabilityParam,
@@ -24,6 +28,15 @@ class GcpAttributes:
     boot_disk_size: VariableOrOptional[int] = None
     """
     Boot disk size in GB
+    """
+
+    confidential_compute_type: VariableOrOptional[ConfidentialComputeType] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    The confidential computing technology for this cluster's instances.
+    Currently only SEV_SNP is supported, and only on N2D instance types.
+    When not set, no confidential computing is applied.
     """
 
     first_on_demand: VariableOrOptional[int] = None
@@ -86,6 +99,15 @@ class GcpAttributesDict(TypedDict, total=False):
     boot_disk_size: VariableOrOptional[int]
     """
     Boot disk size in GB
+    """
+
+    confidential_compute_type: VariableOrOptional[ConfidentialComputeTypeParam]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    The confidential computing technology for this cluster's instances.
+    Currently only SEV_SNP is supported, and only on N2D instance types.
+    When not set, no confidential computing is applied.
     """
 
     first_on_demand: VariableOrOptional[int]

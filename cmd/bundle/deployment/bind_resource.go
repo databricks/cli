@@ -33,7 +33,7 @@ func BindResource(cmd *cobra.Command, resourceKey, resourceId string, autoApprov
 		return err
 	}
 
-	w := b.WorkspaceClient()
+	w := b.WorkspaceClient(ctx)
 	exists, err := resource.Exists(ctx, w, resourceId)
 	if err != nil {
 		return fmt.Errorf("failed to fetch the resource, err: %w", err)

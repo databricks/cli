@@ -3,7 +3,7 @@
 package schema
 
 type DataSourceServicePrincipalsProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourceServicePrincipalsServicePrincipals struct {
@@ -20,6 +20,7 @@ type DataSourceServicePrincipalsServicePrincipals struct {
 }
 
 type DataSourceServicePrincipals struct {
+	Api                 string                                         `json:"api,omitempty"`
 	ApplicationIds      []string                                       `json:"application_ids,omitempty"`
 	DisplayNameContains string                                         `json:"display_name_contains,omitempty"`
 	Id                  string                                         `json:"id,omitempty"`

@@ -42,7 +42,7 @@ type lookupResult struct {
 	err error
 }
 
-type resolver struct {
+type resolver struct { //nolint:recvcheck // value receiver for run(), pointer for mutation methods
 	in dyn.Value
 	fn Lookup
 

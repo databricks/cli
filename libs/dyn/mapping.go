@@ -15,7 +15,7 @@ type Pair struct {
 // It exists because plain Go maps cannot use dynamic values for keys.
 // We need to use dynamic values for keys because it lets us associate metadata
 // with keys (i.e. their definition location). Keys must be strings.
-type Mapping struct {
+type Mapping struct { //nolint:recvcheck // value receivers for read-only accessors, pointer for mutators
 	pairs []Pair
 	index map[string]int
 }

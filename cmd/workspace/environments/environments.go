@@ -35,6 +35,10 @@ func New() *cobra.Command {
 		RunE:    root.ReportUnknownSubcommand,
 	}
 
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
+
 	// Add methods
 	cmd.AddCommand(newCreateWorkspaceBaseEnvironment())
 	cmd.AddCommand(newDeleteWorkspaceBaseEnvironment())
@@ -102,12 +106,14 @@ func newCreateWorkspaceBaseEnvironment() *cobra.Command {
     DISPLAY_NAME: Human-readable display name for the workspace base environment.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'display_name' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'display_name' in your JSON input")
 			}
 			return nil
 		}
@@ -213,6 +219,8 @@ func newDeleteWorkspaceBaseEnvironment() *cobra.Command {
       Format: workspace-base-environments/{workspace_base_environment}`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -272,6 +280,8 @@ func newGetDefaultWorkspaceBaseEnvironment() *cobra.Command {
       default-workspace-base-environment`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -289,6 +299,7 @@ func newGetDefaultWorkspaceBaseEnvironment() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -329,6 +340,8 @@ func newGetOperation() *cobra.Command {
     NAME: The name of the operation resource.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -346,6 +359,7 @@ func newGetOperation() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -386,6 +400,8 @@ func newGetWorkspaceBaseEnvironment() *cobra.Command {
       Format: workspace-base-environments/{workspace_base_environment}`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -403,6 +419,7 @@ func newGetWorkspaceBaseEnvironment() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -431,17 +448,41 @@ func newListWorkspaceBaseEnvironments() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listWorkspaceBaseEnvironmentsReq environments.ListWorkspaceBaseEnvironmentsRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listWorkspaceBaseEnvironmentsLimit int
 
 	cmd.Flags().IntVar(&listWorkspaceBaseEnvironmentsReq.PageSize, "page-size", listWorkspaceBaseEnvironmentsReq.PageSize, `The maximum number of environments to return per page.`)
-	cmd.Flags().StringVar(&listWorkspaceBaseEnvironmentsReq.PageToken, "page-token", listWorkspaceBaseEnvironmentsReq.PageToken, `Page token for pagination.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listWorkspaceBaseEnvironmentsLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listWorkspaceBaseEnvironmentsReq.PageToken, "page-token", listWorkspaceBaseEnvironmentsReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-workspace-base-environments"
 	cmd.Short = `List workspace base environments.`
 	cmd.Long = `List workspace base environments.
 
-  Lists all WorkspaceBaseEnvironments in the workspace.`
+  Lists all WorkspaceBaseEnvironments in the workspace.
+
+  Databricks provides the following base environments:
+
+  - workspace-base-environments/databricks_ai_...: includes popular AI and
+  deep learning packages for serverless GPU compute.
+
+  - workspace-base-environments/databricks_ml_...: includes popular ML
+  packages for serverless compute.
+
+  Databricks-provided base environments are versioned. For example,
+  workspace-base-environments/databricks_ml_v5 corresponds to the ML
+  environment built on environment version 5.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -454,6 +495,13 @@ func newListWorkspaceBaseEnvironments() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.Environments.ListWorkspaceBaseEnvironments(ctx, listWorkspaceBaseEnvironmentsReq)
+		if listWorkspaceBaseEnvironmentsLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listWorkspaceBaseEnvironmentsLimit)
+		}
+		if listWorkspaceBaseEnvironmentsLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listWorkspaceBaseEnvironmentsLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -509,6 +557,8 @@ func newRefreshWorkspaceBaseEnvironment() *cobra.Command {
       Format: workspace-base-environments/{workspace_base_environment}`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -615,6 +665,8 @@ func newUpdateDefaultWorkspaceBaseEnvironment() *cobra.Command {
       explicitly — the wildcard '*' cannot be used to unset fields.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -648,6 +700,7 @@ func newUpdateDefaultWorkspaceBaseEnvironment() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -711,6 +764,8 @@ func newUpdateWorkspaceBaseEnvironment() *cobra.Command {
     DISPLAY_NAME: Human-readable display name for the workspace base environment.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {

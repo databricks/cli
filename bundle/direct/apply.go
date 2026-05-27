@@ -66,7 +66,7 @@ func (d *DeploymentUnit) Create(ctx context.Context, db *dstate.DeploymentState,
 		return fmt.Errorf("saving state after creating id=%s: %w", newID, err)
 	}
 
-	waitRemoteState, err := d.Adapter.WaitAfterCreate(ctx, newState)
+	waitRemoteState, err := d.Adapter.WaitAfterCreate(ctx, newID, newState)
 	if err != nil {
 		return fmt.Errorf("waiting after creating id=%s: %w", newID, err)
 	}
@@ -80,13 +80,23 @@ func (d *DeploymentUnit) Create(ctx context.Context, db *dstate.DeploymentState,
 }
 
 func (d *DeploymentUnit) Recreate(ctx context.Context, db *dstate.DeploymentState, oldID string, newState any) error {
-	// Note, unlike Delete(), we hard error on 403 here intentionally
-	err := d.Adapter.DoDelete(ctx, oldID)
-	if err != nil && !isResourceGone(err) {
+	oldState, err := d.loadPersistedState(db)
+	if err != nil {
+		return err
+	}
+
+	// Note, unlike Delete(), we hard error on 403 here intentionally.
+	// MANAGED_BY_PARENT is still disregarded — the subsequent Create with
+	// replace_existing=true will reconfigure the parent-managed resource in
+	// place, matching the Terraform provider's recreate behaviour.
+	err = d.Adapter.DoDelete(ctx, oldID, oldState)
+	if err != nil && !isResourceGone(err) && !isManagedByParent(err) {
 		return fmt.Errorf("deleting old id=%s: %w", oldID, err)
 	}
 
-	err = db.SaveState(d.ResourceKey, "", nil, nil)
+	// Drop the state entry so a subsequent failure of Create leaves no malformed
+	// (empty-id) entry behind. The next plan will see "no state" and retry as Create.
+	err = db.DeleteState(d.ResourceKey)
 	if err != nil {
 		return fmt.Errorf("deleting state: %w", err)
 	}
@@ -114,7 +124,7 @@ func (d *DeploymentUnit) Update(ctx context.Context, db *dstate.DeploymentState,
 		return fmt.Errorf("saving state id=%s: %w", id, err)
 	}
 
-	waitRemoteState, err := d.Adapter.WaitAfterUpdate(ctx, newState)
+	waitRemoteState, err := d.Adapter.WaitAfterUpdate(ctx, id, newState)
 	if err != nil {
 		return fmt.Errorf("waiting after updating id=%s: %w", id, err)
 	}
@@ -150,7 +160,7 @@ func (d *DeploymentUnit) UpdateWithID(ctx context.Context, db *dstate.Deployment
 		return fmt.Errorf("saving state id=%s: %w", oldID, err)
 	}
 
-	waitRemoteState, err := d.Adapter.WaitAfterUpdate(ctx, newState)
+	waitRemoteState, err := d.Adapter.WaitAfterUpdate(ctx, newID, newState)
 	if err != nil {
 		return fmt.Errorf("waiting after updating id=%s: %w", newID, err)
 	}
@@ -165,8 +175,13 @@ func (d *DeploymentUnit) UpdateWithID(ctx context.Context, db *dstate.Deployment
 }
 
 func (d *DeploymentUnit) Delete(ctx context.Context, db *dstate.DeploymentState, oldID string) error {
-	err := d.Adapter.DoDelete(ctx, oldID)
-	if err != nil && !isResourceGone(err) {
+	oldState, err := d.loadPersistedState(db)
+	if err != nil {
+		return err
+	}
+
+	err = d.Adapter.DoDelete(ctx, oldID, oldState)
+	if err != nil && !isResourceGone(err) && !isManagedByParent(err) {
 		// Rather than failing delete and requiring user to unbind, we perform unbind automatically there.
 		// Some services, e.g. jobs, return 403 for missing resources if caller did not have permissions to it when job existed.
 		// In those cases 403 hides 404. In other cases, user not having permissions to resource but having in the bundle might
@@ -208,6 +223,23 @@ func parseState(destType reflect.Type, raw json.RawMessage) (any, error) {
 	}
 
 	return reflect.ValueOf(destPtr).Elem().Interface(), nil
+}
+
+// loadPersistedState reads and parses the resource's last-persisted state for
+// the DoDelete call. Returns a zero-value state pointer when nothing has been
+// persisted yet (e.g. delete after a partial-create failure), so the call site
+// always passes a typed value.
+func (d *DeploymentUnit) loadPersistedState(db *dstate.DeploymentState) (any, error) {
+	stateType := d.Adapter.StateType()
+	dbentry, ok := db.GetResourceEntry(d.ResourceKey)
+	if !ok || len(dbentry.State) == 0 {
+		return reflect.New(stateType.Elem()).Interface(), nil
+	}
+	state, err := parseState(stateType, dbentry.State)
+	if err != nil {
+		return nil, fmt.Errorf("parsing persisted state: %w", err)
+	}
+	return state, nil
 }
 
 func (d *DeploymentUnit) refreshRemoteState(ctx context.Context, id string) error {

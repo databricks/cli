@@ -2,6 +2,7 @@ package config
 
 import (
 	"encoding/json"
+	"net/url"
 	"reflect"
 	"strings"
 	"testing"
@@ -14,6 +15,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/serving"
 
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
@@ -21,7 +23,9 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/databricks/databricks-sdk-go/service/postgres"
+	"github.com/databricks/databricks-sdk-go/service/vectorsearch"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -47,18 +51,15 @@ import (
 // a way to directly assert that MarshalJSON and UnmarshalJSON are implemented
 // at the top level.
 func TestCustomMarshallerIsImplemented(t *testing.T) {
-	r := Resources{}
-	rt := reflect.TypeOf(r)
+	rt := reflect.TypeFor[Resources]()
 
-	for i := range rt.NumField() {
-		field := rt.Field(i)
-
+	for field := range rt.Fields() {
 		// Fields in Resources are expected be of the form map[string]*resourceStruct
 		assert.Equal(t, reflect.Map, field.Type.Kind(), "Resource %s is not a map", field.Name)
 		kt := field.Type.Key()
 		assert.Equal(t, reflect.String, kt.Kind(), "Resource %s is not a map with string keys", field.Name)
 		vt := field.Type.Elem()
-		assert.Equal(t, reflect.Ptr, vt.Kind(), "Resource %s is not a map with pointer values", field.Name)
+		assert.Equal(t, reflect.Pointer, vt.Kind(), "Resource %s is not a map with pointer values", field.Name)
 
 		// Marshalling a resourceStruct will panic if resourceStruct does not have a custom marshaller
 		// This is because resourceStruct embeds a Go SDK struct that implements
@@ -84,7 +85,7 @@ func TestCustomMarshallerIsImplemented(t *testing.T) {
 
 func TestResourcesAllResourcesCompleteness(t *testing.T) {
 	r := Resources{}
-	rt := reflect.TypeOf(r)
+	rt := reflect.TypeFor[Resources]()
 
 	// Collect set of includes resource types
 	var types []string
@@ -92,8 +93,7 @@ func TestResourcesAllResourcesCompleteness(t *testing.T) {
 		types = append(types, group.Description.PluralName)
 	}
 
-	for i := range rt.NumField() {
-		field := rt.Field(i)
+	for field := range rt.Fields() {
 		jsonTag := field.Tag.Get("json")
 
 		if idx := strings.Index(jsonTag, ","); idx != -1 {
@@ -108,12 +108,42 @@ func TestSupportedResources(t *testing.T) {
 	// Please add your resource to the SupportedResources() function in resources.go if you add a new resource.
 	actual := SupportedResources()
 
-	typ := reflect.TypeOf(Resources{})
-	for i := range typ.NumField() {
-		field := typ.Field(i)
+	typ := reflect.TypeFor[Resources]()
+	for field := range typ.Fields() {
 		jsonTags := strings.Split(field.Tag.Get("json"), ",")
 		pluralName := jsonTags[0]
 		assert.Equal(t, actual[pluralName].PluralName, pluralName)
+	}
+}
+
+// Bundle resources whose InitializeURL() resolves via workspaceurls. When a
+// pattern key or a bundle plural name drifts, ResourceURL returns "" and this
+// test fails loudly instead of silently producing empty URLs in bundle summary.
+func TestBundleResourcePluralNamesResolveInWorkspaceURLs(t *testing.T) {
+	withURLs := []string{
+		"alerts",
+		"apps",
+		"clusters",
+		"dashboards",
+		"experiments",
+		"jobs",
+		"models",
+		"model_serving_endpoints",
+		"pipelines",
+		"registered_models",
+		"sql_warehouses",
+	}
+
+	supported := SupportedResources()
+	for _, name := range withURLs {
+		_, ok := supported[name]
+		require.Truef(t, ok, "%q is not a bundle plural name, update SupportedResources or this test", name)
+	}
+
+	base := url.URL{Scheme: "https", Host: "example.com"}
+	for _, name := range withURLs {
+		got := workspaceurls.ResourceURL(base, name, "test-id")
+		assert.NotEmptyf(t, got, "workspaceurls.ResourceURL(%q) returned empty; pattern key renamed or alias missing", name)
 	}
 }
 
@@ -239,6 +269,28 @@ func TestResourcesBindSupport(t *testing.T) {
 				},
 			},
 		},
+		PostgresCatalogs: map[string]*resources.PostgresCatalog{
+			"my_postgres_catalog": {
+				PostgresCatalogConfig: resources.PostgresCatalogConfig{
+					CatalogId: "my_postgres_catalog",
+				},
+			},
+		},
+		PostgresSyncedTables: map[string]*resources.PostgresSyncedTable{
+			"my_postgres_synced_table": {
+				PostgresSyncedTableConfig: resources.PostgresSyncedTableConfig{
+					SyncedTableId: "catalog.schema.my_postgres_synced_table",
+				},
+			},
+		},
+		VectorSearchEndpoints: map[string]*resources.VectorSearchEndpoint{
+			"my_vector_search_endpoint": {
+				CreateEndpoint: vectorsearch.CreateEndpoint{
+					Name:         "my_vector_search_endpoint",
+					EndpointType: vectorsearch.EndpointTypeStandard,
+				},
+			},
+		},
 	}
 	unbindableResources := map[string]bool{
 		"model": true,
@@ -270,6 +322,9 @@ func TestResourcesBindSupport(t *testing.T) {
 	m.GetMockPostgresAPI().EXPECT().GetProject(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockPostgresAPI().EXPECT().GetBranch(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockPostgresAPI().EXPECT().GetEndpoint(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockPostgresAPI().EXPECT().GetCatalog(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockPostgresAPI().EXPECT().GetSyncedTable(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockVectorSearchEndpointsAPI().EXPECT().GetEndpoint(mock.Anything, mock.Anything).Return(nil, nil)
 
 	allResources := supportedResources.AllResources()
 	for _, group := range allResources {

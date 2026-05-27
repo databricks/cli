@@ -2,7 +2,6 @@ package testproxy
 
 import (
 	"bytes"
-	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -62,7 +61,7 @@ func New(t testutil.TestingT) *ProxyServer {
 func (s *ProxyServer) reqBody(r testserver.Request) any {
 	// The SDK expects the query parameters to be specified in the "request body"
 	// argument for GET, DELETE, and HEAD requests in the .Do method.
-	if r.Method == "GET" || r.Method == "DELETE" || r.Method == "HEAD" {
+	if r.Method == http.MethodGet || r.Method == http.MethodDelete || r.Method == http.MethodHead {
 		queryParams := make(map[string]any)
 		for k, v := range r.URL.Query() {
 			queryParams[k] = v[0]
@@ -129,22 +128,30 @@ func (s *ProxyServer) proxyToCloud(w http.ResponseWriter, r *http.Request) {
 
 	var encodedResponse *testserver.EncodedResponse
 
-	// API errors from the SDK are expected to be of the type [apierr.APIError]. If we
-	// get an API error then parse the error and forward it back to the client
-	// in an appropriate format.
-	apiErr := &apierr.APIError{}
-	if errors.As(err, &apiErr) {
-		body := map[string]string{
-			"error_code": apiErr.ErrorCode,
-			"message":    apiErr.Message,
+	// API errors from the SDK are of type [apierr.APIError]. Forward the raw
+	// response bytes verbatim — including any error details — so callers see
+	// exactly what the workspace returned. Re-marshalling from the parsed
+	// APIError would drop fields the SDK doesn't surface (e.g. metadata in
+	// details[]) and silently break callers that inspect them.
+	if apiErr, ok := errors.AsType[*apierr.APIError](err); ok {
+		rw := apiErr.ResponseWrapper
+		if rw == nil {
+			// The SDK populates ResponseWrapper for every APIError produced
+			// from a real HTTP response. If this ever fires the SDK changed
+			// shape and we need to revisit how we forward error bodies.
+			panic("apierr.APIError has no ResponseWrapper")
 		}
-
-		b, err := json.Marshal(body)
-		assert.NoError(s.t, err)
-
 		encodedResponse = &testserver.EncodedResponse{
-			StatusCode: apiErr.StatusCode,
-			Body:       b,
+			StatusCode: rw.Response.StatusCode,
+			Body:       rw.DebugBytes,
+		}
+		// Visitors registered via WithResponseHeader are not invoked when
+		// the SDK returns an error, so populate the include list directly
+		// from the original response headers.
+		for _, header := range includeResponseHeaders {
+			if v := rw.Response.Header.Get(header); v != "" {
+				*responseHeaders[header] = v
+			}
 		}
 	}
 

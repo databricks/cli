@@ -55,3 +55,30 @@
   "method": "GET",
   "path": "/.well-known/databricks-config"
 }
+{
+  "headers": {
+    "User-Agent": [
+      "databricks-tf-provider/1.115.0 databricks-sdk-go/[SDK_VERSION] go/1.25.8 os/[OS] cli/[DEV_VERSION] terraform/1.5.5 auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/preview/scim/v2/Me"
+}
+{
+  "headers": {
+    "User-Agent": [
+      "databricks-tf-provider/1.115.0 databricks-sdk-go/[SDK_VERSION] go/1.25.8 os/[OS] cli/[DEV_VERSION] terraform/1.5.5"
+    ]
+  },
+  "method": "GET",
+  "path": "/.well-known/databricks-config"
+}
+{
+  "headers": {
+    "User-Agent": [
+      "databricks-tf-provider/1.115.0 databricks-sdk-go/[SDK_VERSION] go/1.25.8 os/[OS] cli/[DEV_VERSION] terraform/1.5.5"
+    ]
+  },
+  "method": "GET",
+  "path": "/.well-known/databricks-config"
+}

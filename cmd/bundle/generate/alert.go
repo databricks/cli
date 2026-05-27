@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"path"
 	"path/filepath"
@@ -74,14 +75,13 @@ After generation, you can deploy this alert to other targets using:
 			return root.ErrAlreadyPrinted
 		}
 
-		w := b.WorkspaceClient()
+		w := b.WorkspaceClient(ctx)
 
 		// Get alert from Databricks
 		alert, err := w.AlertsV2.GetAlert(ctx, sql.GetAlertV2Request{Id: alertID})
 		if err != nil {
 			// Check if it's a not found error to provide a better message
-			var apiErr *apierr.APIError
-			if errors.As(err, &apiErr) && apiErr.StatusCode == 404 {
+			if apiErr, ok := errors.AsType[*apierr.APIError](err); ok && apiErr.StatusCode == http.StatusNotFound {
 				return fmt.Errorf("alert with ID %s not found", alertID)
 			}
 			return err

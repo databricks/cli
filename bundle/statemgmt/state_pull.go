@@ -220,7 +220,7 @@ func readStates(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull) []
 	terraformLocalState := localRead(ctx, localPathTerraform, engine.EngineTerraform)
 
 	if (directLocalState == nil && terraformLocalState == nil) || alwaysPull {
-		f, err := deploy.StateFiler(b)
+		f, err := deploy.StateFiler(ctx, b)
 		if err != nil {
 			logdiag.LogError(ctx, err)
 			return nil

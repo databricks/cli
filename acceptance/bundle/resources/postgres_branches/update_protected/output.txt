@@ -30,6 +30,7 @@ Deployment complete!
   "name": "[DEV_BRANCH_ID]",
   "parent": "projects/test-pg-proj-[UNIQUE_NAME]",
   "status": {
+    "branch_id": "dev-branch",
     "current_state": "READY",
     "default": false,
     "is_protected": false,
@@ -104,6 +105,7 @@ Deployment complete!
   "name": "[DEV_BRANCH_ID]",
   "parent": "projects/test-pg-proj-[UNIQUE_NAME]",
   "status": {
+    "branch_id": "dev-branch",
     "current_state": "READY",
     "default": false,
     "is_protected": true,
@@ -138,6 +140,7 @@ Deployment complete!
   "name": "[DEV_BRANCH_ID]",
   "parent": "projects/test-pg-proj-[UNIQUE_NAME]",
   "status": {
+    "branch_id": "dev-branch",
     "current_state": "READY",
     "default": false,
     "is_protected": false,
@@ -153,6 +156,14 @@ Deployment complete!
 The following resources will be deleted:
   delete resources.postgres_branches.dev_branch
   delete resources.postgres_projects.my_project
+
+This action will result in the deletion of the following Lakebase projects along with
+all their branches, databases, and endpoints. All data stored in them will be permanently lost:
+  delete resources.postgres_projects.my_project
+
+This action will result in the deletion of the following Lakebase branches.
+All data stored in them will be permanently lost:
+  delete resources.postgres_branches.dev_branch
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/update-postgres-branch-[UNIQUE_NAME]/default
 

@@ -21,6 +21,7 @@ const defaultComment = "The profile defined in the DEFAULT section is to be used
 const (
 	databricksSettingsSection = "__settings__"
 	defaultProfileKey         = "default_profile"
+	authStorageKey            = "auth_storage"
 )
 
 // GetConfiguredDefaultProfile returns the explicitly configured default profile
@@ -37,6 +38,44 @@ func GetConfiguredDefaultProfile(ctx context.Context, configFilePath string) (st
 	return GetConfiguredDefaultProfileFrom(configFile), nil
 }
 
+// ResolveDefaultProfile returns the default profile from the config file
+// pointed to by DATABRICKS_CONFIG_FILE (or ~/.databrickscfg when unset):
+// [__settings__].default_profile, else [DEFAULT] if it has a host key,
+// else "". Returns "" with no error when the file is missing or parsing
+// fails (a warning is logged on parse error).
+//
+// Callers must respect their own higher-priority sources (an explicit
+// --profile flag or DATABRICKS_CONFIG_PROFILE env var) before consulting
+// this helper. default_profile and [DEFAULT] are CLI-level fallbacks; the
+// SDK loader silently falls back to [DEFAULT] but leaves cfg.Profile empty,
+// which breaks the per-profile OAuth cache key. Pinning the name here keeps
+// cfg.Profile in sync with what the SDK would read.
+//
+// Single-profile fallback (using "the only profile in the file" as the
+// default) is intentionally NOT applied: that is a prompt-seeding convenience
+// (see GetDefaultProfile), not an auth rule, and it would silently route a
+// single account-only profile through the workspace-client path.
+func ResolveDefaultProfile(ctx context.Context) string {
+	configFilePath := env.Get(ctx, "DATABRICKS_CONFIG_FILE")
+	configFile, err := loadConfigFile(ctx, configFilePath)
+	if err != nil {
+		log.Warnf(ctx, "Failed to load default profile: %v", err)
+		return ""
+	}
+	if configFile == nil {
+		return ""
+	}
+	if profile := GetConfiguredDefaultProfileFrom(configFile); profile != "" {
+		log.Debugf(ctx, "profile %q resolved from [__settings__].default_profile", profile)
+		return profile
+	}
+	if section := configFile.Section(ini.DefaultSection); section.HasKey("host") {
+		log.Debugf(ctx, "profile %q resolved from the [DEFAULT] section", ini.DefaultSection)
+		return ini.DefaultSection
+	}
+	return ""
+}
+
 // GetConfiguredDefaultProfileFrom returns the explicit default profile from
 // [__settings__].default_profile, or "" when it is not set or when the value
 // is the reserved __settings__ section name itself.
@@ -46,6 +85,27 @@ func GetConfiguredDefaultProfileFrom(configFile *config.File) string {
 		return ""
 	}
 	return v
+}
+
+// GetConfiguredAuthStorage returns the explicitly configured auth_storage
+// value from [__settings__].auth_storage, or "" if not set. Loads the config
+// file at configFilePath. Returns "" (not an error) when the file does not
+// exist.
+func GetConfiguredAuthStorage(ctx context.Context, configFilePath string) (string, error) {
+	configFile, err := loadConfigFile(ctx, configFilePath)
+	if err != nil {
+		return "", err
+	}
+	if configFile == nil {
+		return "", nil
+	}
+	return GetConfiguredAuthStorageFrom(configFile), nil
+}
+
+// GetConfiguredAuthStorageFrom returns [__settings__].auth_storage from an
+// already-loaded config file, or "" when not set.
+func GetConfiguredAuthStorageFrom(configFile *config.File) string {
+	return configFile.Section(databricksSettingsSection).Key(authStorageKey).String()
 }
 
 // GetDefaultProfile returns the name of the default profile by loading the
@@ -174,6 +234,29 @@ func SetDefaultProfile(ctx context.Context, profileName, configFilePath string) 
 	return writeConfigFile(ctx, configFile)
 }
 
+// SetConfiguredAuthStorage writes the auth_storage key to the [__settings__]
+// section. Used by auth login to persist a plaintext fallback when the OS
+// keyring is unreachable, so subsequent commands skip the keyring probe and
+// route directly to the file cache.
+func SetConfiguredAuthStorage(ctx context.Context, value, configFilePath string) error {
+	configFile, err := loadOrCreateConfigFile(ctx, configFilePath)
+	if err != nil {
+		return err
+	}
+
+	section, err := configFile.GetSection(databricksSettingsSection)
+	if err != nil {
+		section, err = configFile.NewSection(databricksSettingsSection)
+		if err != nil {
+			return fmt.Errorf("cannot create %s section: %w", databricksSettingsSection, err)
+		}
+	}
+
+	section.Key(authStorageKey).SetValue(value)
+
+	return writeConfigFile(ctx, configFile)
+}
+
 // ClearDefaultProfile removes the default_profile key from the [__settings__]
 // section if the current default matches the given profile name.
 func ClearDefaultProfile(ctx context.Context, profileName, configFilePath string) error {
@@ -192,8 +275,7 @@ func ClearDefaultProfile(ctx context.Context, profileName, configFilePath string
 
 	section, err := configFile.GetSection(databricksSettingsSection)
 	if err != nil {
-		// No settings section means no default to clear.
-		return nil
+		return nil //nolint:nilerr // no settings section means no default to clear
 	}
 
 	section.DeleteKey(defaultProfileKey)
@@ -254,6 +336,12 @@ func matchOrCreateSection(ctx context.Context, configFile *config.File, cfg *con
 	}
 	return section, nil
 }
+
+// ExperimentalIsUnifiedHostKey is the INI key for the deprecated
+// experimental_is_unified_host flag. Unified hosts are now detected from
+// /.well-known/databricks-config; the key is only ever cleared from profiles
+// (never read or written) so stale values don't influence routing.
+const ExperimentalIsUnifiedHostKey = "experimental_is_unified_host"
 
 // AuthCredentialKeys returns the config file key names for all auth credential
 // fields from the SDK's ConfigAttributes. These are fields annotated with an

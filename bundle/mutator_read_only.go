@@ -32,7 +32,7 @@ func ApplyParallel(ctx context.Context, b *Bundle, mutators ...ReadOnlyMutator) 
 	contexts := make([]context.Context, len(mutators))
 
 	for ind, m := range mutators {
-		contexts[ind] = log.NewContext(ctx, log.GetLogger(ctx).With("mutator", m.Name()))
+		contexts[ind] = log.NewContext(ctx, log.GetLogger(ctx).With("mutator", m.Name())) //nolint:fatcontext // independent contexts from same parent, not nested
 		// log right away to have deterministic order of log messages
 		log.Debug(contexts[ind], "ApplyParallel")
 	}

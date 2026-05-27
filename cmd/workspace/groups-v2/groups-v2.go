@@ -3,6 +3,8 @@
 package groups_v2
 
 import (
+	"fmt"
+
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
@@ -18,8 +20,10 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "groups-v2",
-		Short: `Groups simplify identity management, making it easier to assign access to Databricks workspace, data, and other securable objects.`,
-		Long: `Groups simplify identity management, making it easier to assign access to
+		Short: `*Public Preview* Groups simplify identity management, making it easier to assign access to Databricks workspace, data, and other securable objects.`,
+		Long: `This command is in Public Preview and may change without notice.
+
+Groups simplify identity management, making it easier to assign access to
   Databricks workspace, data, and other securable objects.
 
   It is best practice to assign access to workspaces and access-control policies
@@ -29,6 +33,10 @@ func New() *cobra.Command {
 		GroupID: "iam",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -74,13 +82,17 @@ func newCreate() *cobra.Command {
 	// TODO: array: schemas
 
 	cmd.Use = "create"
-	cmd.Short = `Create a new group.`
-	cmd.Long = `Create a new group.
+	cmd.Short = `*Public Preview* Create a new group.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Create a new group.
 
   Creates a group in the Databricks workspace with a unique name, using the
   supplied group details.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -109,6 +121,7 @@ func newCreate() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -139,8 +152,10 @@ func newDelete() *cobra.Command {
 	var deleteReq iam.DeleteGroupRequest
 
 	cmd.Use = "delete ID"
-	cmd.Short = `Delete a group.`
-	cmd.Long = `Delete a group.
+	cmd.Short = `*Public Preview* Delete a group.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Delete a group.
 
   Deletes a group from the Databricks workspace.
 
@@ -148,6 +163,8 @@ func newDelete() *cobra.Command {
     ID: Unique ID for a group in the Databricks workspace.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -195,8 +212,10 @@ func newGet() *cobra.Command {
 	var getReq iam.GetGroupRequest
 
 	cmd.Use = "get ID"
-	cmd.Short = `Get group details.`
-	cmd.Long = `Get group details.
+	cmd.Short = `*Public Preview* Get group details.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Get group details.
 
   Gets the information for a specific group in the Databricks workspace.
 
@@ -204,6 +223,8 @@ func newGet() *cobra.Command {
     ID: Unique ID for a group in the Databricks workspace.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -221,6 +242,7 @@ func newGet() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -249,22 +271,37 @@ func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listReq iam.ListGroupsRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listLimit int
 
 	cmd.Flags().StringVar(&listReq.Attributes, "attributes", listReq.Attributes, `Comma-separated list of attributes to return in response.`)
-	cmd.Flags().Int64Var(&listReq.Count, "count", listReq.Count, `Desired number of results per page.`)
 	cmd.Flags().StringVar(&listReq.ExcludedAttributes, "excluded-attributes", listReq.ExcludedAttributes, `Comma-separated list of attributes to exclude in response.`)
 	cmd.Flags().StringVar(&listReq.Filter, "filter", listReq.Filter, `Query by which the results have to be filtered.`)
 	cmd.Flags().StringVar(&listReq.SortBy, "sort-by", listReq.SortBy, `Attribute to sort the results.`)
 	cmd.Flags().Var(&listReq.SortOrder, "sort-order", `The order to sort the results. Supported values: [ascending, descending]`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
 	cmd.Flags().Int64Var(&listReq.StartIndex, "start-index", listReq.StartIndex, `Specifies the index of the first result.`)
+	cmd.Flags().Lookup("start-index").Hidden = true
+	cmd.Flags().Int64Var(&listReq.Count, "count", listReq.Count, `Number of results per API page.`)
+	cmd.Flags().Lookup("count").Hidden = true
 
 	cmd.Use = "list"
-	cmd.Short = `List group details.`
-	cmd.Long = `List group details.
+	cmd.Short = `*Public Preview* List group details.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+List group details.
 
   Gets all details of the groups associated with the Databricks workspace.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -277,6 +314,13 @@ func newList() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.GroupsV2.List(ctx, listReq)
+		if listLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
+		}
+		if listLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -313,8 +357,10 @@ func newPatch() *cobra.Command {
 	// TODO: array: schemas
 
 	cmd.Use = "patch ID"
-	cmd.Short = `Update group details.`
-	cmd.Long = `Update group details.
+	cmd.Short = `*Public Preview* Update group details.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Update group details.
 
   Partially updates the details of a group.
 
@@ -322,6 +368,8 @@ func newPatch() *cobra.Command {
     ID: Unique ID in the Databricks workspace.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -393,8 +441,10 @@ func newUpdate() *cobra.Command {
 	// TODO: array: schemas
 
 	cmd.Use = "update ID"
-	cmd.Short = `Replace a group.`
-	cmd.Long = `Replace a group.
+	cmd.Short = `*Public Preview* Replace a group.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Replace a group.
 
   Updates the details of a group by replacing the entire group entity.
 
@@ -402,6 +452,8 @@ func newUpdate() *cobra.Command {
     ID: Databricks group ID`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)

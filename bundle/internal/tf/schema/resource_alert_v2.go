@@ -54,7 +54,7 @@ type ResourceAlertV2Evaluation struct {
 }
 
 type ResourceAlertV2ProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type ResourceAlertV2RunAs struct {

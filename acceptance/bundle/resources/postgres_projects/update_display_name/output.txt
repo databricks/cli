@@ -29,16 +29,18 @@ Deployment complete!
   "name": "[MY_PROJECT_ID]",
   "status": {
     "branch_logical_size_limit_bytes": [NUMID],
+    "default_branch": "[MY_PROJECT_ID]/branches/production",
     "default_endpoint_settings": {
       "autoscaling_limit_max_cu": 4,
       "autoscaling_limit_min_cu": 0.5,
       "suspend_timeout_duration": "300s"
     },
     "display_name": "Original Name",
-    "enable_pg_native_login": true,
+    "enable_pg_native_login": false,
     "history_retention_duration": "604800s",
     "owner": "[USERNAME]",
     "pg_version": 16,
+    "project_id": "test-pg-proj-[UNIQUE_NAME]",
     "synthetic_storage_size_bytes": 0
   },
   "uid": "[UUID]"
@@ -100,16 +102,18 @@ Deployment complete!
   "name": "[MY_PROJECT_ID]",
   "status": {
     "branch_logical_size_limit_bytes": [NUMID],
+    "default_branch": "[MY_PROJECT_ID]/branches/production",
     "default_endpoint_settings": {
       "autoscaling_limit_max_cu": 4,
       "autoscaling_limit_min_cu": 0.5,
       "suspend_timeout_duration": "300s"
     },
     "display_name": "Updated Name",
-    "enable_pg_native_login": true,
+    "enable_pg_native_login": false,
     "history_retention_duration": "604800s",
     "owner": "[USERNAME]",
     "pg_version": 16,
+    "project_id": "test-pg-proj-[UNIQUE_NAME]",
     "synthetic_storage_size_bytes": 0
   },
   "uid": "[UUID]"
@@ -138,16 +142,18 @@ Deployment complete!
   "name": "[MY_PROJECT_ID]",
   "status": {
     "branch_logical_size_limit_bytes": [NUMID],
+    "default_branch": "[MY_PROJECT_ID]/branches/production",
     "default_endpoint_settings": {
       "autoscaling_limit_max_cu": 4,
       "autoscaling_limit_min_cu": 0.5,
       "suspend_timeout_duration": "300s"
     },
     "display_name": "Original Name",
-    "enable_pg_native_login": true,
+    "enable_pg_native_login": false,
     "history_retention_duration": "604800s",
     "owner": "[USERNAME]",
     "pg_version": 16,
+    "project_id": "test-pg-proj-[UNIQUE_NAME]",
     "synthetic_storage_size_bytes": 0
   },
   "uid": "[UUID]"
@@ -155,6 +161,10 @@ Deployment complete!
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
+  delete resources.postgres_projects.my_project
+
+This action will result in the deletion of the following Lakebase projects along with
+all their branches, databases, and endpoints. All data stored in them will be permanently lost:
   delete resources.postgres_projects.my_project
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/update-postgres-project-[UNIQUE_NAME]/default

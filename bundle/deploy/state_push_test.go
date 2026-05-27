@@ -1,6 +1,7 @@
 package deploy
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 	"os"
@@ -15,7 +16,7 @@ import (
 )
 
 func TestStatePush(t *testing.T) {
-	s := &statePush{func(b *bundle.Bundle) (filer.Filer, error) {
+	s := &statePush{func(_ context.Context, b *bundle.Bundle) (filer.Filer, error) {
 		f := mockfiler.NewMockFiler(t)
 
 		f.EXPECT().Write(mock.Anything, DeploymentStateFileName, mock.MatchedBy(func(r *os.File) bool {

@@ -36,6 +36,7 @@ the SSH server and handling the connection proxy.
 	var liteswap string
 	var skipSettingsCheck bool
 	var environmentVersion int
+	var autoApprove bool
 
 	cmd.Flags().StringVar(&clusterID, "cluster", "", "Databricks cluster ID (for dedicated clusters)")
 	cmd.Flags().DurationVar(&shutdownDelay, "shutdown-delay", defaultShutdownDelay, "Delay before shutting down the server after the last client disconnects")
@@ -70,6 +71,8 @@ the SSH server and handling the connection proxy.
 
 	cmd.Flags().IntVar(&environmentVersion, "environment-version", defaultEnvironmentVersion, "Environment version for serverless compute")
 	cmd.Flags().MarkHidden("environment-version")
+
+	cmd.Flags().BoolVar(&autoApprove, "auto-approve", false, "Skip confirmation prompts, installing IDE extensions and applying IDE settings without asking")
 
 	cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
 		// CLI in the proxy mode is executed by the ssh client and can't prompt for input
@@ -110,6 +113,7 @@ the SSH server and handling the connection proxy.
 			SkipSettingsCheck:    skipSettingsCheck,
 			EnvironmentVersion:   environmentVersion,
 			AdditionalArgs:       args,
+			AutoApprove:          autoApprove,
 		}
 		if err := opts.Validate(); err != nil {
 			return err

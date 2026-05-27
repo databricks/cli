@@ -116,7 +116,11 @@
             ],
             "performance_target": null,
             "pipeline_task": [],
-            "provider_config": [],
+            "provider_config": [
+              {
+                "workspace_id": "[NUMID]"
+              }
+            ],
             "python_wheel_task": [],
             "queue": [
               {
@@ -141,6 +145,7 @@
             },
             "task": [
               {
+                "alert_task": [],
                 "clean_rooms_notebook_task": [],
                 "compute": [],
                 "condition_task": [],
@@ -207,6 +212,7 @@
                 "webhook_notifications": []
               },
               {
+                "alert_task": [],
                 "clean_rooms_notebook_task": [],
                 "compute": [],
                 "condition_task": [],
@@ -283,6 +289,7 @@
                 "webhook_notifications": []
               },
               {
+                "alert_task": [],
                 "clean_rooms_notebook_task": [],
                 "compute": [],
                 "condition_task": [],
@@ -438,7 +445,11 @@
             "name": "[dev [USERNAME]] my_default_python_etl",
             "notification": [],
             "photon": false,
-            "provider_config": [],
+            "provider_config": [
+              {
+                "workspace_id": "[NUMID]"
+              }
+            ],
             "restart_window": [],
             "root_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/files/src/my_default_python_etl",
             "run_as": [],

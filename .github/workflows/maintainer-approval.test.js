@@ -8,18 +8,23 @@ const runModule = require("./maintainer-approval");
 
 // --- Test helpers ---
 
-function makeTmpOwners(content) {
+function makeTmpOwners(content, ownerTeamsContent) {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "approval-test-"));
   const ghDir = path.join(tmpDir, ".github");
   fs.mkdirSync(ghDir);
   fs.writeFileSync(path.join(ghDir, "OWNERS"), content);
+  if (ownerTeamsContent) {
+    fs.writeFileSync(path.join(ghDir, "OWNERTEAMS"), ownerTeamsContent);
+  }
   return tmpDir;
 }
+
+const OWNERTEAMS_CONTENT = "team:eng-apps-devex @teamdev1 @teamdev2\n";
 
 const OWNERS_CONTENT = [
   "* @maintainer1 @maintainer2",
   "/cmd/pipelines/ @jefferycheng1 @kanterov",
-  "/cmd/apps/ @databricks/eng-apps-devex",
+  "/cmd/apps/ team:eng-apps-devex",
   "/bundle/ @bundleowner",
 ].join("\n");
 
@@ -121,7 +126,7 @@ describe("maintainer-approval", () => {
 
   before(() => {
     originalWorkspace = process.env.GITHUB_WORKSPACE;
-    tmpDir = makeTmpOwners(OWNERS_CONTENT);
+    tmpDir = makeTmpOwners(OWNERS_CONTENT, OWNERTEAMS_CONTENT);
     process.env.GITHUB_WORKSPACE = tmpDir;
   });
 
@@ -283,13 +288,12 @@ describe("maintainer-approval", () => {
     assert.equal(github._checkRuns.length, 0);
   });
 
-  it("team member approved -> success for team-owned path", async () => {
+  it("OWNERTEAMS member approved -> success for team-owned path", async () => {
     const github = makeGithub({
       reviews: [
         { state: "APPROVED", user: { login: "teamdev1" } },
       ],
       files: [{ filename: "cmd/apps/main.go" }],
-      teamMembers: { "eng-apps-devex": ["teamdev1"] },
     });
     const core = makeCore();
     const context = makeContext();
@@ -300,13 +304,12 @@ describe("maintainer-approval", () => {
     assert.equal(github._checkRuns[0].conclusion, "success");
   });
 
-  it("non-team-member approval for team-owned path -> pending", async () => {
+  it("non-OWNERTEAMS-member approval for team-owned path -> pending", async () => {
     const github = makeGithub({
       reviews: [
         { state: "APPROVED", user: { login: "outsider" } },
       ],
       files: [{ filename: "cmd/apps/main.go" }],
-      teamMembers: { "eng-apps-devex": [] },
     });
     const core = makeCore();
     const context = makeContext();
@@ -511,5 +514,48 @@ describe("maintainer-approval", () => {
     assert.ok(body.includes("`/bundle/`"));
     assert.ok(body.includes("approved by `@jefferycheng1`"));
     assert.ok(body.includes("needs approval"));
+  });
+
+  it("lists individual files when fewer than 4 in a group", async () => {
+    const github = makeGithub({
+      reviews: [],
+      files: [
+        { filename: "cmd/pipelines/foo.go" },
+        { filename: "bundle/config.go" },
+        { filename: "bundle/deploy.go" },
+      ],
+    });
+    const core = makeCore();
+    const context = makeContext();
+
+    await runModule({ github, context, core });
+
+    assert.equal(github._comments.length, 1);
+    const body = github._comments[0].body;
+    assert.ok(body.includes("Files:"), "should list individual files");
+    assert.ok(body.includes("`bundle/config.go`"));
+    assert.ok(body.includes("`bundle/deploy.go`"));
+  });
+
+  it("shows file count instead of listing when 4 or more files in a group", async () => {
+    const github = makeGithub({
+      reviews: [],
+      files: [
+        { filename: "cmd/pipelines/foo.go" },
+        { filename: "bundle/a.go" },
+        { filename: "bundle/b.go" },
+        { filename: "bundle/c.go" },
+        { filename: "bundle/d.go" },
+      ],
+    });
+    const core = makeCore();
+    const context = makeContext();
+
+    await runModule({ github, context, core });
+
+    assert.equal(github._comments.length, 1);
+    const body = github._comments[0].body;
+    assert.ok(body.includes("4 files changed"), "should show count for bundle group");
+    assert.ok(!body.includes("`bundle/a.go`"), "should not list individual bundle files");
   });
 });

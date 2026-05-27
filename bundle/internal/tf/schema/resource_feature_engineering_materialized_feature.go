@@ -16,12 +16,13 @@ type ResourceFeatureEngineeringMaterializedFeatureOnlineStoreConfig struct {
 }
 
 type ResourceFeatureEngineeringMaterializedFeatureProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type ResourceFeatureEngineeringMaterializedFeature struct {
 	CronSchedule            string                                                           `json:"cron_schedule,omitempty"`
 	FeatureName             string                                                           `json:"feature_name"`
+	IsOnline                bool                                                             `json:"is_online,omitempty"`
 	LastMaterializationTime string                                                           `json:"last_materialization_time,omitempty"`
 	MaterializedFeatureId   string                                                           `json:"materialized_feature_id,omitempty"`
 	OfflineStoreConfig      *ResourceFeatureEngineeringMaterializedFeatureOfflineStoreConfig `json:"offline_store_config,omitempty"`

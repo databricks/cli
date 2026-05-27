@@ -37,6 +37,7 @@ var RequiredFields = map[string][]string{
 	"resources.apps.*.telemetry_export_destinations[*].unity_catalog": {"logs_table", "metrics_table", "traces_table"},
 
 	"resources.catalogs.*": {"name"},
+	"resources.catalogs.*.managed_encryption_settings.azure_encryption_settings": {"azure_tenant_id"},
 
 	"resources.clusters.*.cluster_log_conf.dbfs":     {"destination"},
 	"resources.clusters.*.cluster_log_conf.s3":       {"destination"},
@@ -206,8 +207,10 @@ var RequiredFields = map[string][]string{
 	"resources.pipelines.*.ingestion_definition.objects[*].report":                                              {"destination_catalog", "destination_schema", "source_url"},
 	"resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration.auto_full_refresh_policy": {"enabled"},
 	"resources.pipelines.*.ingestion_definition.objects[*].schema":                                              {"destination_catalog", "destination_schema", "source_schema"},
+	"resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.google_ads_options":         {"manager_account_id"},
 	"resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration.auto_full_refresh_policy": {"enabled"},
 	"resources.pipelines.*.ingestion_definition.objects[*].table":                                               {"destination_catalog", "destination_schema", "source_table"},
+	"resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.google_ads_options":          {"manager_account_id"},
 	"resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.auto_full_refresh_policy":  {"enabled"},
 	"resources.pipelines.*.ingestion_definition.table_configuration.auto_full_refresh_policy":                   {"enabled"},
 	"resources.pipelines.*.libraries[*].maven":                                                                  {"coordinates"},
@@ -216,11 +219,15 @@ var RequiredFields = map[string][]string{
 
 	"resources.postgres_branches.*": {"branch_id", "parent"},
 
+	"resources.postgres_catalogs.*": {"postgres_database", "catalog_id"},
+
 	"resources.postgres_endpoints.*":       {"endpoint_type", "endpoint_id", "parent"},
 	"resources.postgres_endpoints.*.group": {"max", "min"},
 
 	"resources.postgres_projects.*":                {"project_id"},
 	"resources.postgres_projects.*.permissions[*]": {"level"},
+
+	"resources.postgres_synced_tables.*": {"synced_table_id"},
 
 	"resources.quality_monitors.*":                   {"assets_dir", "output_schema_name", "table_name"},
 	"resources.quality_monitors.*.custom_metrics[*]": {"definition", "input_columns", "name", "output_data_type", "type"},
@@ -237,6 +244,9 @@ var RequiredFields = map[string][]string{
 	"resources.sql_warehouses.*.permissions[*]": {"level"},
 
 	"resources.synced_database_tables.*": {"name"},
+
+	"resources.vector_search_endpoints.*":                {"endpoint_type", "name"},
+	"resources.vector_search_endpoints.*.permissions[*]": {"level"},
 
 	"resources.volumes.*": {"catalog_name", "name", "schema_name", "volume_type"},
 

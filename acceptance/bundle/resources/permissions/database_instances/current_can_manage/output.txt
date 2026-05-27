@@ -61,6 +61,10 @@ Warning: unknown field: instance_profile_arn
 The following resources will be deleted:
   delete resources.database_instances.foo
 
+This action will result in the deletion of the following Lakebase database instances.
+All data stored in them will be permanently lost:
+  delete resources.database_instances.foo
+
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
 Deleting files...

@@ -1,21 +1,15 @@
 # NEXT CHANGELOG
 
-## Release v0.297.0
+## Release v1.1.0
 
 ### Notable Changes
 
 ### CLI
-* Auth commands now accept a profile name as a positional argument ([#4840](https://github.com/databricks/cli/pull/4840))
-
-* Add `auth logout` command for clearing cached OAuth tokens and optionally removing profiles ([#4613](https://github.com/databricks/cli/pull/4613), [#4616](https://github.com/databricks/cli/pull/4616), [#4647](https://github.com/databricks/cli/pull/4647))
 
 ### Bundles
-* Added support for lifecycle.started option for apps ([#4672](https://github.com/databricks/cli/pull/4672))
-* engine/direct: Fix permissions for resources.models ([#4941](https://github.com/databricks/cli/pull/4941))
-* Fix resource references not correctly resolved in apps config section ([#4964](https://github.com/databricks/cli/pull/4964))
-* Allow run_as for dashboards with embed_credentials set to false ([#4961](https://github.com/databricks/cli/pull/4961))
-* direct: Pass changed fields into update mask for apps instead of wildcard ([#4963](https://github.com/databricks/cli/pull/4963))
+* The error reported when a direct-only resource (catalogs, external locations, vector search endpoints) is used with the terraform engine now also suggests setting `bundle.engine: direct` in `databricks.yml`, in addition to the `DATABRICKS_BUNDLE_ENGINE` environment variable ([#5295](https://github.com/databricks/cli/pull/5295)).
 
 ### Dependency updates
 
-### API Changes
+* Bump Go toolchain to 1.26.3 ([#5302](https://github.com/databricks/cli/pull/5302)).
+* Bump `github.com/databricks/databricks-sdk-go` from v0.132.0 to v0.136.0.

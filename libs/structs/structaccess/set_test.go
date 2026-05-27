@@ -464,7 +464,7 @@ func TestSet(t *testing.T) {
 			name:     "key-value no matching element",
 			path:     "nested_items[id='nonexistent'].name",
 			value:    "value",
-			errorMsg: "failed to navigate to parent nested_items[id='nonexistent']: nested_items[id='nonexistent']: no element found with id=\"nonexistent\"",
+			errorMsg: "failed to navigate to parent nested_items[id='nonexistent']: nested_items[id='nonexistent']: no element found with id=\"nonexistent\"", //nolint:dupword
 		},
 	}
 

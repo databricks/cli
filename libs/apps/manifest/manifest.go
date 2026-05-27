@@ -35,6 +35,10 @@ type Resource struct {
 	Permission  string                   `json:"permission"`  // e.g., "CAN_USE"
 	Fields      map[string]ResourceField `json:"fields"`      // field definitions with env var mappings
 
+	// PluginName is the machine name of the plugin (e.g., "lakebase").
+	// Set during resource collection. Not part of the JSON manifest.
+	PluginName string `json:"-"`
+
 	// PluginDisplayName is set during resource collection to identify which
 	// plugin requires this resource. Not part of the JSON manifest.
 	PluginDisplayName string `json:"-"`
@@ -76,6 +80,23 @@ type Plugin struct {
 	RequiredByTemplate bool      `json:"requiredByTemplate"`
 	Resources          Resources `json:"resources"`
 	OnSetupMessage     string    `json:"onSetupMessage"`
+
+	// Stability is one of "beta", "ga", or empty.
+	// Stored as a plain string so unknown future values round-trip unchanged.
+	// See https://github.com/databricks/appkit/pull/264.
+	Stability string `json:"stability,omitempty"`
+}
+
+// StabilityLabel returns a user-facing tier label for non-GA plugins.
+// Returns "" for GA, unset, or any value that maps to GA.
+// Unknown values pass through so we are forward-compatible with new tiers.
+func (p Plugin) StabilityLabel() string {
+	switch p.Stability {
+	case "", "ga":
+		return ""
+	default:
+		return p.Stability
+	}
 }
 
 // Manifest represents the appkit.plugins.json file structure.
@@ -201,6 +222,7 @@ func (m *Manifest) CollectResources(pluginNames []string) []Resource {
 			key := r.Type + ":" + r.Key()
 			if !seen[key] {
 				seen[key] = true
+				r.PluginName = name
 				r.PluginDisplayName = plugin.DisplayName
 				resources = append(resources, r)
 			}
@@ -229,6 +251,7 @@ func (m *Manifest) CollectOptionalResources(pluginNames []string) []Resource {
 			key := r.Type + ":" + r.Key()
 			if !seen[key] {
 				seen[key] = true
+				r.PluginName = name
 				r.PluginDisplayName = plugin.DisplayName
 				resources = append(resources, r)
 			}

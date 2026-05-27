@@ -20,8 +20,10 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "policies",
-		Short: `Attribute-Based Access Control (ABAC) provides high leverage governance for enforcing compliance policies in Unity Catalog.`,
-		Long: `Attribute-Based Access Control (ABAC) provides high leverage governance for
+		Short: `*Public Preview* Attribute-Based Access Control (ABAC) provides high leverage governance for enforcing compliance policies in Unity Catalog.`,
+		Long: `This command is in Public Preview and may change without notice.
+
+Attribute-Based Access Control (ABAC) provides high leverage governance for
   enforcing compliance policies in Unity Catalog. With ABAC policies, access is
   controlled in a hierarchical and scalable manner, based on data attributes
   rather than specific resources, enabling more flexible and comprehensive
@@ -32,6 +34,10 @@ func New() *cobra.Command {
 		GroupID: "catalog",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	// Add methods
 	cmd.AddCommand(newCreatePolicy())
@@ -95,8 +101,10 @@ func newCreatePolicy() *cobra.Command {
 	cmd.Flags().StringVar(&createPolicyReq.PolicyInfo.WhenCondition, "when-condition", createPolicyReq.PolicyInfo.WhenCondition, `Optional condition when the policy should take effect.`)
 
 	cmd.Use = "create-policy TO_PRINCIPALS FOR_SECURABLE_TYPE POLICY_TYPE"
-	cmd.Short = `Create an ABAC policy.`
-	cmd.Long = `Create an ABAC policy.
+	cmd.Short = `*Public Preview* Create an ABAC policy.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Create an ABAC policy.
 
   Creates a new policy on a securable. The new policy applies to the securable
   and all its descendants.
@@ -129,12 +137,14 @@ func newCreatePolicy() *cobra.Command {
       Supported values: [POLICY_TYPE_COLUMN_MASK, POLICY_TYPE_ROW_FILTER]`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'to_principals', 'for_securable_type', 'policy_type' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'to_principals', 'for_securable_type', 'policy_type' in your JSON input")
 			}
 			return nil
 		}
@@ -185,6 +195,7 @@ func newCreatePolicy() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -215,8 +226,10 @@ func newDeletePolicy() *cobra.Command {
 	var deletePolicyReq catalog.DeletePolicyRequest
 
 	cmd.Use = "delete-policy ON_SECURABLE_TYPE ON_SECURABLE_FULLNAME NAME"
-	cmd.Short = `Delete an ABAC policy.`
-	cmd.Long = `Delete an ABAC policy.
+	cmd.Short = `*Public Preview* Delete an ABAC policy.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Delete an ABAC policy.
 
   Delete an ABAC policy defined on a securable.
 
@@ -227,6 +240,8 @@ func newDeletePolicy() *cobra.Command {
     NAME: Required. The name of the policy to delete`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(3)
@@ -246,6 +261,7 @@ func newDeletePolicy() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -276,8 +292,10 @@ func newGetPolicy() *cobra.Command {
 	var getPolicyReq catalog.GetPolicyRequest
 
 	cmd.Use = "get-policy ON_SECURABLE_TYPE ON_SECURABLE_FULLNAME NAME"
-	cmd.Short = `Get an ABAC policy.`
-	cmd.Long = `Get an ABAC policy.
+	cmd.Short = `*Public Preview* Get an ABAC policy.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Get an ABAC policy.
 
   Get the policy definition on a securable
 
@@ -287,6 +305,8 @@ func newGetPolicy() *cobra.Command {
     NAME: Required. The name of the policy to retrieve.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(3)
@@ -306,6 +326,7 @@ func newGetPolicy() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -334,14 +355,26 @@ func newListPolicies() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listPoliciesReq catalog.ListPoliciesRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listPoliciesLimit int
 
 	cmd.Flags().BoolVar(&listPoliciesReq.IncludeInherited, "include-inherited", listPoliciesReq.IncludeInherited, `Optional.`)
 	cmd.Flags().IntVar(&listPoliciesReq.MaxResults, "max-results", listPoliciesReq.MaxResults, `Optional.`)
-	cmd.Flags().StringVar(&listPoliciesReq.PageToken, "page-token", listPoliciesReq.PageToken, `Optional.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listPoliciesLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listPoliciesReq.PageToken, "page-token", listPoliciesReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-policies ON_SECURABLE_TYPE ON_SECURABLE_FULLNAME"
-	cmd.Short = `List ABAC policies.`
-	cmd.Long = `List ABAC policies.
+	cmd.Short = `*Public Preview* List ABAC policies.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+List ABAC policies.
 
   List all policies defined on a securable. Optionally, the list can include
   inherited policies defined on the securable's parent schema or catalog.
@@ -356,6 +389,8 @@ func newListPolicies() *cobra.Command {
     ON_SECURABLE_FULLNAME: Required. The fully qualified name of securable to list policies for.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -371,6 +406,13 @@ func newListPolicies() *cobra.Command {
 		listPoliciesReq.OnSecurableFullname = args[1]
 
 		response := w.Policies.ListPolicies(ctx, listPoliciesReq)
+		if listPoliciesLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listPoliciesLimit)
+		}
+		if listPoliciesLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listPoliciesLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -434,8 +476,10 @@ func newUpdatePolicy() *cobra.Command {
 	cmd.Flags().StringVar(&updatePolicyReq.PolicyInfo.WhenCondition, "when-condition", updatePolicyReq.PolicyInfo.WhenCondition, `Optional condition when the policy should take effect.`)
 
 	cmd.Use = "update-policy ON_SECURABLE_TYPE ON_SECURABLE_FULLNAME NAME TO_PRINCIPALS FOR_SECURABLE_TYPE POLICY_TYPE"
-	cmd.Short = `Update an ABAC policy.`
-	cmd.Long = `Update an ABAC policy.
+	cmd.Short = `*Public Preview* Update an ABAC policy.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Update an ABAC policy.
 
   Update an ABAC policy on a securable.
 
@@ -471,6 +515,8 @@ func newUpdatePolicy() *cobra.Command {
       Supported values: [POLICY_TYPE_COLUMN_MASK, POLICY_TYPE_ROW_FILTER]`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
@@ -530,6 +576,7 @@ func newUpdatePolicy() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 

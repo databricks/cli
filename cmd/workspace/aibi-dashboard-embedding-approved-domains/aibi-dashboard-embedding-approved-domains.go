@@ -20,12 +20,18 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "aibi-dashboard-embedding-approved-domains",
-		Short: `Controls the list of domains approved to host the embedded AI/BI dashboards.`,
-		Long: `Controls the list of domains approved to host the embedded AI/BI dashboards.
+		Short: `*Public Preview* Controls the list of domains approved to host the embedded AI/BI dashboards.`,
+		Long: `This command is in Public Preview and may change without notice.
+
+Controls the list of domains approved to host the embedded AI/BI dashboards.
   The approved domains list can't be mutated when the current access policy is
   not set to ALLOW_APPROVED_DOMAINS.`,
 		RunE: root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	// Add methods
 	cmd.AddCommand(newDelete())
@@ -57,13 +63,17 @@ func newDelete() *cobra.Command {
 	cmd.Flags().StringVar(&deleteReq.Etag, "etag", deleteReq.Etag, `etag used for versioning.`)
 
 	cmd.Use = "delete"
-	cmd.Short = `Delete AI/BI dashboard embedding approved domains.`
-	cmd.Long = `Delete AI/BI dashboard embedding approved domains.
+	cmd.Short = `*Public Preview* Delete AI/BI dashboard embedding approved domains.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Delete AI/BI dashboard embedding approved domains.
 
   Delete the list of domains approved to host embedded AI/BI dashboards,
   reverting back to the default empty list.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -79,6 +89,7 @@ func newDelete() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -111,12 +122,16 @@ func newGet() *cobra.Command {
 	cmd.Flags().StringVar(&getReq.Etag, "etag", getReq.Etag, `etag used for versioning.`)
 
 	cmd.Use = "get"
-	cmd.Short = `Retrieve the list of domains approved to host embedded AI/BI dashboards.`
-	cmd.Long = `Retrieve the list of domains approved to host embedded AI/BI dashboards.
+	cmd.Short = `*Public Preview* Retrieve the list of domains approved to host embedded AI/BI dashboards.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Retrieve the list of domains approved to host embedded AI/BI dashboards.
 
   Retrieves the list of domains approved to host embedded AI/BI dashboards.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -132,6 +147,7 @@ func newGet() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -165,14 +181,18 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "update"
-	cmd.Short = `Update the list of domains approved to host embedded AI/BI dashboards.`
-	cmd.Long = `Update the list of domains approved to host embedded AI/BI dashboards.
+	cmd.Short = `*Public Preview* Update the list of domains approved to host embedded AI/BI dashboards.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Update the list of domains approved to host embedded AI/BI dashboards.
 
   Updates the list of domains approved to host embedded AI/BI dashboards. This
   update will fail if the current workspace access policy is not
   ALLOW_APPROVED_DOMAINS.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -198,6 +218,7 @@ func newUpdate() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 

@@ -34,7 +34,17 @@ cat LOG.deploy | contains.py '!panic:' '!internal error' > /dev/null
 
 echo INPUT_CONFIG_OK
 
-trace $CLI bundle deployment migrate &> LOG.migrate
+MIGRATE_ARGS=""
+# The terraform provider sorts depends_on entries alphabetically by task_key on Read
+# (see terraform-provider-databricks PR #3000). Since depends_on uses TypeList
+# (order-sensitive), terraform plan reports positional drift when the bundle config
+# specifies depends_on in a different order than the provider's sorted state.
+# This is a false positive -- the logical dependencies are identical.
+if [[ "$INPUT_CONFIG" == "job_with_depends_on.yml.tmpl" ]]; then
+    MIGRATE_ARGS="--noplancheck"
+fi
+
+trace $CLI bundle deployment migrate $MIGRATE_ARGS &> LOG.migrate
 
 cat LOG.migrate | contains.py '!panic:' '!internal error' > /dev/null
 

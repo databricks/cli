@@ -20,12 +20,18 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "consumer-installations",
-		Short: `Installations are entities that allow consumers to interact with Databricks Marketplace listings.`,
-		Long: `Installations are entities that allow consumers to interact with Databricks
+		Short: `*Public Preview* Installations are entities that allow consumers to interact with Databricks Marketplace listings.`,
+		Long: `This command is in Public Preview and may change without notice.
+
+Installations are entities that allow consumers to interact with Databricks
   Marketplace listings.`,
 		GroupID: "marketplace",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -66,12 +72,16 @@ func newCreate() *cobra.Command {
 	cmd.Flags().StringVar(&createReq.ShareName, "share-name", createReq.ShareName, ``)
 
 	cmd.Use = "create LISTING_ID"
-	cmd.Short = `Install from a listing.`
-	cmd.Long = `Install from a listing.
+	cmd.Short = `*Public Preview* Install from a listing.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Install from a listing.
 
   Install payload associated with a Databricks Marketplace listing.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -101,6 +111,7 @@ func newCreate() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -131,12 +142,16 @@ func newDelete() *cobra.Command {
 	var deleteReq marketplace.DeleteInstallationRequest
 
 	cmd.Use = "delete LISTING_ID INSTALLATION_ID"
-	cmd.Short = `Uninstall from a listing.`
-	cmd.Long = `Uninstall from a listing.
+	cmd.Short = `*Public Preview* Uninstall from a listing.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Uninstall from a listing.
 
   Uninstall an installation associated with a Databricks Marketplace listing.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -183,17 +198,31 @@ func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listReq marketplace.ListAllInstallationsRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listLimit int
 
 	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, ``)
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, ``)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list"
-	cmd.Short = `List all installations.`
-	cmd.Long = `List all installations.
+	cmd.Short = `*Public Preview* List all installations.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+List all installations.
 
   List all installations across all listings.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -206,6 +235,13 @@ func newList() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.ConsumerInstallations.List(ctx, listReq)
+		if listLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
+		}
+		if listLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -234,17 +270,31 @@ func newListListingInstallations() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listListingInstallationsReq marketplace.ListInstallationsRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listListingInstallationsLimit int
 
 	cmd.Flags().IntVar(&listListingInstallationsReq.PageSize, "page-size", listListingInstallationsReq.PageSize, ``)
-	cmd.Flags().StringVar(&listListingInstallationsReq.PageToken, "page-token", listListingInstallationsReq.PageToken, ``)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listListingInstallationsLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listListingInstallationsReq.PageToken, "page-token", listListingInstallationsReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-listing-installations LISTING_ID"
-	cmd.Short = `List installations for a listing.`
-	cmd.Long = `List installations for a listing.
+	cmd.Short = `*Public Preview* List installations for a listing.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+List installations for a listing.
 
   List all installations for a particular listing.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -259,6 +309,13 @@ func newListListingInstallations() *cobra.Command {
 		listListingInstallationsReq.ListingId = args[0]
 
 		response := w.ConsumerInstallations.ListListingInstallations(ctx, listListingInstallationsReq)
+		if listListingInstallationsLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listListingInstallationsLimit)
+		}
+		if listListingInstallationsLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listListingInstallationsLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -294,8 +351,10 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().BoolVar(&updateReq.RotateToken, "rotate-token", updateReq.RotateToken, ``)
 
 	cmd.Use = "update LISTING_ID INSTALLATION_ID"
-	cmd.Short = `Update an installation.`
-	cmd.Long = `Update an installation.
+	cmd.Short = `*Public Preview* Update an installation.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Update an installation.
 
   This is a update API that will update the part of the fields defined in the
   installation table as well as interact with external services according to the
@@ -304,6 +363,8 @@ func newUpdate() *cobra.Command {
   rotateToken flag is true and the tokenInfo field is empty`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -336,6 +397,7 @@ func newUpdate() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 

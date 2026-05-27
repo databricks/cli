@@ -206,8 +206,8 @@ func convertLinksToAbsoluteUrl(s string) string {
 		link := matches[2]
 
 		var text, absoluteURL string
-		if strings.HasPrefix(link, "#") {
-			text = strings.TrimPrefix(link, "#")
+		if after, ok := strings.CutPrefix(link, "#"); ok {
+			text = after
 			absoluteURL = fmt.Sprintf("%s%s%s", base, referencePage, link)
 
 			// Handle relative paths like /dev-tools/bundles/resources.html#dashboard
