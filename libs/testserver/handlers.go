@@ -79,6 +79,11 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.WorkspaceGetStatus(path)
 	})
 
+	server.Handle("GET", "/api/2.0/workspace/list-repo", func(req Request) any {
+		path := req.URL.Query().Get("path")
+		return req.Workspace.WorkspaceListRepo(path)
+	})
+
 	server.Handle("POST", "/api/2.0/workspace/mkdirs", func(req Request) any {
 		var request workspace.Mkdirs
 		if err := json.Unmarshal(req.Body, &request); err != nil {
