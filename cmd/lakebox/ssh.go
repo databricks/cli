@@ -149,11 +149,11 @@ Examples:
 				}
 			}
 
-			// The gateway implicitly starts a Stopped sandbox on first
-			// connect, which can take minutes. Print an explicit notice
-			// so the user understands why the connect spinner is hanging.
+			// A stopped sandbox is implicitly started on connect, which
+			// can take minutes. Print an explicit notice so the user
+			// understands why the connect spinner is hanging.
 			if strings.EqualFold(sandboxStatus, "stopped") {
-				warn(ctx, "Lakebox "+cmdio.Bold(ctx, lakeboxID)+" is stopped; the gateway will start it on connect (this can take a few minutes)")
+				warn(ctx, "Starting "+cmdio.Bold(ctx, lakeboxID)+"… (may take a few minutes)")
 			}
 
 			// Resolution precedence: --gateway flag → fresh API response →
