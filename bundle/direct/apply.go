@@ -15,7 +15,7 @@ import (
 )
 
 func (d *DeploymentUnit) Destroy(ctx context.Context, db *dstate.DeploymentState) error {
-	ctx = log.WithPrefix(ctx, "deploying "+d.ResourceKey)
+	ctx = log.WithPrefix(ctx, "destroying "+d.ResourceKey)
 	id := db.GetResourceID(d.ResourceKey)
 	if id == "" {
 		log.Infof(ctx, "Cannot delete %s: missing from state", d.ResourceKey)
