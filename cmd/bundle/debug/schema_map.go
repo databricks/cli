@@ -52,14 +52,18 @@ func printSchemaMap(out io.Writer) error {
 	for g := range terraform_dabs_map.TerraformOnlyFields {
 		groups[g] = true
 	}
+	for g := range terraform_dabs_map.TerraformComputedFields {
+		groups[g] = true
+	}
 
 	for _, group := range slices.Sorted(maps.Keys(groups)) {
 		tfType := terraform.GroupToTerraformName[group]
 		renames := terraform_dabs_map.TerraformToDABsFieldMap[group].Len()
 		dabsOnly := terraform_dabs_map.DABsOnlyFields[group].Len()
 		tfOnly := terraform_dabs_map.TerraformOnlyFields[group].Len()
-		fmt.Fprintf(out, "%s (%s): %d renames, %d dabs-only, %d tf-only\n",
-			group, tfType, renames, dabsOnly, tfOnly)
+		computed := terraform_dabs_map.TerraformComputedFields[group].Len()
+		fmt.Fprintf(out, "%s (%s): %d renames, %d dabs-only, %d tf-only, %d computed\n",
+			group, tfType, renames, dabsOnly, tfOnly, computed)
 	}
 	return nil
 }

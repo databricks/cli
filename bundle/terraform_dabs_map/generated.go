@@ -119,10 +119,8 @@ var TerraformOnlyFields = map[string]FieldSet{
 	},
 	"apps": {
 		"no_compute": {},
-		"url":        {},
 	},
 	"clusters": {
-		"cluster_id": {},
 		"cluster_mount_info": {
 			"local_mount_dir_path": {},
 			"network_filesystem_info": {
@@ -130,9 +128,6 @@ var TerraformOnlyFields = map[string]FieldSet{
 				"server_address": {},
 			},
 			"remote_mount_dir_path": {},
-		},
-		"default_tags": {
-			"*": {},
 		},
 		"idempotency_token": {},
 		"is_pinned":         {},
@@ -156,7 +151,6 @@ var TerraformOnlyFields = map[string]FieldSet{
 			"whl":          {},
 		},
 		"no_wait": {},
-		"state":   {},
 		"url":     {},
 	},
 	"dashboards": {
@@ -167,11 +161,7 @@ var TerraformOnlyFields = map[string]FieldSet{
 		"purge_on_delete": {},
 	},
 	"experiments": {
-		"creation_time":    {},
-		"description":      {},
-		"experiment_id":    {},
-		"last_update_time": {},
-		"lifecycle_stage":  {},
+		"description": {},
 	},
 	"jobs": {
 		"always_running":    {},
@@ -520,12 +510,52 @@ var TerraformOnlyFields = map[string]FieldSet{
 		"registered_model_id": {},
 	},
 	"pipelines": {
-		"cause":                  {},
-		"cluster_id":             {},
-		"creator_user_name":      {},
 		"expected_last_modified": {},
-		"health":                 {},
-		"last_modified":          {},
+		"url":                    {},
+	},
+	"postgres_projects": {
+		"purge_on_delete": {},
+	},
+	"schemas": {
+		"force_destroy": {},
+	},
+	"secret_scopes": {
+		"initial_manage_principal": {},
+	},
+	"sql_warehouses": {
+		"data_source_id": {},
+		"no_wait":        {},
+	},
+	"volumes": {
+		"volume_path": {},
+	},
+}
+
+// TerraformComputedFields maps DABs group name → FieldSet of TF fields that are
+// read-only server-generated outputs accessible via RemoteType in the direct engine.
+var TerraformComputedFields = map[string]FieldSet{
+	"apps": {
+		"url": {},
+	},
+	"clusters": {
+		"cluster_id": {},
+		"default_tags": {
+			"*": {},
+		},
+		"state": {},
+	},
+	"experiments": {
+		"creation_time":    {},
+		"experiment_id":    {},
+		"last_update_time": {},
+		"lifecycle_stage":  {},
+	},
+	"pipelines": {
+		"cause":             {},
+		"cluster_id":        {},
+		"creator_user_name": {},
+		"health":            {},
+		"last_modified":     {},
 		"latest_updates": {
 			"creation_time": {},
 			"state":         {},
@@ -533,12 +563,10 @@ var TerraformOnlyFields = map[string]FieldSet{
 		},
 		"run_as_user_name": {},
 		"state":            {},
-		"url":              {},
 	},
 	"postgres_branches": {
 		"create_time": {},
 		"name":        {},
-		"spec":        {},
 		"status": {
 			"branch_id":          {},
 			"current_state":      {},
@@ -558,7 +586,6 @@ var TerraformOnlyFields = map[string]FieldSet{
 	"postgres_catalogs": {
 		"create_time": {},
 		"name":        {},
-		"spec":        {},
 		"status": {
 			"branch":            {},
 			"catalog_id":        {},
@@ -571,7 +598,6 @@ var TerraformOnlyFields = map[string]FieldSet{
 	"postgres_endpoints": {
 		"create_time": {},
 		"name":        {},
-		"spec":        {},
 		"status": {
 			"autoscaling_limit_max_cu": {},
 			"autoscaling_limit_min_cu": {},
@@ -609,10 +635,8 @@ var TerraformOnlyFields = map[string]FieldSet{
 				"min":                         {},
 			},
 		},
-		"name":            {},
-		"purge_on_delete": {},
-		"purge_time":      {},
-		"spec":            {},
+		"name":       {},
+		"purge_time": {},
 		"status": {
 			"branch_logical_size_limit_bytes": {},
 			"budget_policy_id":                {},
@@ -650,26 +674,19 @@ var TerraformOnlyFields = map[string]FieldSet{
 	},
 	"schemas": {
 		"enable_predictive_optimization": {},
-		"force_destroy":                  {},
 		"metastore_id":                   {},
 		"owner":                          {},
 		"schema_id":                      {},
 	},
-	"secret_scopes": {
-		"initial_manage_principal": {},
-	},
 	"sql_warehouses": {
-		"data_source_id":      {},
 		"health":              {},
 		"jdbc_url":            {},
-		"no_wait":             {},
 		"num_active_sessions": {},
 		"num_clusters":        {},
 		"odbc_params":         {},
 		"state":               {},
 	},
 	"volumes": {
-		"owner":       {},
-		"volume_path": {},
+		"owner": {},
 	},
 }
