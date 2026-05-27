@@ -646,6 +646,16 @@ func TestQueryCommandConcurrencyRejection(t *testing.T) {
 	}
 }
 
+func TestQueryCommandRejectsInvalidParamBeforeWorkspaceClient(t *testing.T) {
+	// Parameter validation runs in PreRunE before MustWorkspaceClient, so a
+	// malformed flag returns an actionable error without auth/profile work.
+	cmd := newQueryCmd()
+	cmd.SetArgs([]string{"--param", "bad", "SELECT 1"})
+	err := cmd.Execute()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "expected name=value")
+}
+
 func TestQueryCommandOutputFlagIsCaseInsensitive(t *testing.T) {
 	cmd := newQueryCmd()
 	cmd.PreRunE = nil

@@ -69,6 +69,7 @@ func newQueryCmd() *cobra.Command {
 	var outputFormat string
 	var concurrency int
 	var paramFlags []string
+	var params []sql.StatementParameterListItem
 
 	cmd := &cobra.Command{
 		Use:   "query [SQL | file.sql]...",
@@ -96,7 +97,8 @@ interactive table browser. Use --output csv to export results as CSV.
 
 Pass named parameters with --param. Use ":name" markers in the SQL and
 "--param name=value" (string) or "--param name:TYPE=value" (typed, e.g.
-DATE, INT) to bind values. Positional "?" markers are not supported.`,
+DATE, INT) to bind values. Positional "?" markers are not supported. In
+multi-query mode, the same parameter set is applied to every statement.`,
 		Example: `  databricks experimental aitools tools query "SELECT * FROM samples.nyctaxi.trips LIMIT 5"
   databricks experimental aitools tools query --warehouse abc123 "SELECT 1"
   databricks experimental aitools tools query --file report.sql
@@ -111,6 +113,13 @@ DATE, INT) to bind values. Positional "?" markers are not supported.`,
 			if concurrency <= 0 {
 				return errInvalidBatchConcurrency
 			}
+
+			var err error
+			params, err = parseParams(paramFlags)
+			if err != nil {
+				return err
+			}
+
 			return root.MustWorkspaceClient(cmd, args)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -128,11 +137,6 @@ DATE, INT) to bind values. Positional "?" markers are not supported.`,
 			}
 
 			sqls, err := resolveSQLs(ctx, cmd, args, filePaths)
-			if err != nil {
-				return err
-			}
-
-			params, err := parseParams(paramFlags)
 			if err != nil {
 				return err
 			}
