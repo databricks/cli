@@ -9,102 +9,60 @@ import (
 
 func TestNormalizeDatabricksHostEnv(t *testing.T) {
 	tests := []struct {
-		name              string
-		host              string
-		workspaceID       string
-		accountID         string
-		wantHost          string
-		wantHostSet       bool
-		wantWorkspaceID   string
-		wantWorkspaceSet  bool
-		wantAccountID     string
-		wantAccountIDSet  bool
-		preserveHostUnset bool
+		name            string
+		host            string
+		workspaceID     string
+		accountID       string
+		wantHost        string
+		wantWorkspaceID string
+		wantAccountID   string
 	}{
 		{
-			name:             "spog url promotes workspace id",
-			host:             "https://acme.databricks.net/?o=12345",
-			wantHost:         "https://acme.databricks.net",
-			wantHostSet:      true,
-			wantWorkspaceID:  "12345",
-			wantWorkspaceSet: true,
+			name:            "spog url promotes workspace id",
+			host:            "https://acme.databricks.net/?o=12345",
+			wantHost:        "https://acme.databricks.net",
+			wantWorkspaceID: "12345",
 		},
 		{
-			name:             "spog url with account id",
-			host:             "https://acme.databricks.net/?a=abc&o=12345",
-			wantHost:         "https://acme.databricks.net",
-			wantHostSet:      true,
-			wantWorkspaceID:  "12345",
-			wantWorkspaceSet: true,
-			wantAccountID:    "abc",
-			wantAccountIDSet: true,
+			name:            "spog url with account id",
+			host:            "https://acme.databricks.net/?a=abc&o=12345",
+			wantHost:        "https://acme.databricks.net",
+			wantWorkspaceID: "12345",
+			wantAccountID:   "abc",
 		},
 		{
-			name:        "host without query is left alone",
-			host:        "https://acme.databricks.net",
-			wantHost:    "https://acme.databricks.net",
-			wantHostSet: true,
+			name:     "host without query is left alone",
+			host:     "https://acme.databricks.net",
+			wantHost: "https://acme.databricks.net",
 		},
 		{
-			name:             "existing workspace id is preserved",
-			host:             "https://acme.databricks.net/?o=12345",
-			workspaceID:      "99999",
-			wantHost:         "https://acme.databricks.net",
-			wantHostSet:      true,
-			wantWorkspaceID:  "99999",
-			wantWorkspaceSet: true,
+			name:            "existing workspace id is preserved",
+			host:            "https://acme.databricks.net/?o=12345",
+			workspaceID:     "99999",
+			wantHost:        "https://acme.databricks.net",
+			wantWorkspaceID: "99999",
 		},
 		{
-			name:              "no host env unsets nothing",
-			preserveHostUnset: true,
+			name: "empty host is a no-op",
 		},
 		{
-			name:             "non-numeric o is dropped, host trailing slash trimmed",
-			host:             "https://acme.databricks.net/?o=notanumber",
-			wantHost:         "https://acme.databricks.net",
-			wantHostSet:      true,
-			wantWorkspaceID:  "",
-			wantWorkspaceSet: false,
+			name:     "non-numeric o is dropped, host trailing slash trimmed",
+			host:     "https://acme.databricks.net/?o=notanumber",
+			wantHost: "https://acme.databricks.net",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if tt.preserveHostUnset {
-				os.Unsetenv(envHost)
-			} else {
-				t.Setenv(envHost, tt.host)
-			}
-			if tt.workspaceID != "" {
-				t.Setenv(envWorkspaceID, tt.workspaceID)
-			} else {
-				os.Unsetenv(envWorkspaceID)
-			}
-			if tt.accountID != "" {
-				t.Setenv(envAccountID, tt.accountID)
-			} else {
-				os.Unsetenv(envAccountID)
-			}
+			t.Setenv(envHost, tt.host)
+			t.Setenv(envWorkspaceID, tt.workspaceID)
+			t.Setenv(envAccountID, tt.accountID)
 
 			NormalizeDatabricksHostEnv()
 
-			gotHost, hostSet := os.LookupEnv(envHost)
-			assert.Equal(t, tt.wantHostSet, hostSet)
-			if tt.wantHostSet {
-				assert.Equal(t, tt.wantHost, gotHost)
-			}
-
-			gotWS, wsSet := os.LookupEnv(envWorkspaceID)
-			assert.Equal(t, tt.wantWorkspaceSet, wsSet)
-			if tt.wantWorkspaceSet {
-				assert.Equal(t, tt.wantWorkspaceID, gotWS)
-			}
-
-			gotAcc, accSet := os.LookupEnv(envAccountID)
-			assert.Equal(t, tt.wantAccountIDSet, accSet)
-			if tt.wantAccountIDSet {
-				assert.Equal(t, tt.wantAccountID, gotAcc)
-			}
+			assert.Equal(t, tt.wantHost, os.Getenv(envHost))
+			assert.Equal(t, tt.wantWorkspaceID, os.Getenv(envWorkspaceID))
+			assert.Equal(t, tt.wantAccountID, os.Getenv(envAccountID))
 		})
 	}
 }

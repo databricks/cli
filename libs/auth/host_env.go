@@ -34,13 +34,17 @@ func NormalizeDatabricksHostEnv() {
 		return
 	}
 	os.Setenv(envHost, params.Host)
+	// TODO: existing env vars take precedence over the query params here;
+	// they are treated as a more explicit signal than a value embedded in
+	// the host URL. Revisit once the SDK fix lands (see top of file),
+	// erroring on a real conflict may be preferable to silent-preserve.
 	if params.WorkspaceID != "" {
-		if _, set := os.LookupEnv(envWorkspaceID); !set {
+		if cur, _ := os.LookupEnv(envWorkspaceID); cur == "" {
 			os.Setenv(envWorkspaceID, params.WorkspaceID)
 		}
 	}
 	if params.AccountID != "" {
-		if _, set := os.LookupEnv(envAccountID); !set {
+		if cur, _ := os.LookupEnv(envAccountID); cur == "" {
 			os.Setenv(envAccountID, params.AccountID)
 		}
 	}
