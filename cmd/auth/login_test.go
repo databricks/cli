@@ -564,6 +564,55 @@ func TestSetHostAndAccountId_URLParamsOverrideProfile(t *testing.T) {
 	assert.Equal(t, "99999", args.WorkspaceID)
 }
 
+func TestGetProfileName(t *testing.T) {
+	tests := []struct {
+		name string
+		args *auth.AuthArguments
+		want string
+	}{
+		{
+			name: "account id set",
+			args: &auth.AuthArguments{Host: "https://db-deco-test.databricks.com", AccountID: "abc-123"},
+			want: "ACCOUNT-abc-123",
+		},
+		{
+			name: "no account id falls back to host",
+			args: &auth.AuthArguments{Host: "https://db-deco-test.databricks.com"},
+			want: "db-deco-test",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, getProfileName(tt.args))
+		})
+	}
+}
+
+// TestSkipWorkspaceProfileNameUsesDiscoveredAccountID verifies that the
+// pre-naming discovery block populates AccountID from .well-known so the
+// profile-name prompt suggests ACCOUNT-<account-id> instead of the host-based
+// default.
+func TestSkipWorkspaceProfileNameUsesDiscoveredAccountID(t *testing.T) {
+	server := newDiscoveryServer(t, map[string]any{
+		"account_id":    "abc-123",
+		"oidc_endpoint": "https://spog.example.com/oidc/accounts/abc-123",
+	})
+
+	ctx := t.Context()
+	args := &auth.AuthArguments{Host: server.URL}
+
+	// Mirrors the pre-naming block in newLoginCommand's RunE for --skip-workspace.
+	params := auth.ExtractHostQueryParams(args.Host)
+	args.Host = params.Host
+	if args.AccountID == "" {
+		args.AccountID = params.AccountID
+	}
+	runHostDiscovery(ctx, args)
+
+	assert.Equal(t, "abc-123", args.AccountID)
+	assert.Equal(t, "ACCOUNT-abc-123", getProfileName(args))
+}
+
 func TestValidateDiscoveryFlagCompatibility(t *testing.T) {
 	tests := []struct {
 		name    string
