@@ -11,131 +11,353 @@ import (
 
 func TestTerraformPathToDABs(t *testing.T) {
 	tests := []struct {
-		group     string
-		input     string // TF path
-		output    string // DABs path
-		roundtrip bool   // if true, DABsPathToTerraform(output) must equal input
+		group       string
+		terrPath    string
+		dabsPath    string
+		noRoundtrip bool // if true, DABsPathToTerraform(dabsPath) != terrPath (non-invertible path)
+		expectErr   bool // if true, translation must return an error (Terraform-only field)
 	}{
 		// Top-level renames - jobs
-		{"jobs", "task", "tasks", true},
-		{"jobs", "job_cluster", "job_clusters", true},
-		{"jobs", "parameter", "parameters", true},
-		{"jobs", "environment", "environments", true},
+		{
+			group:    "jobs",
+			terrPath: "task",
+			dabsPath: "tasks",
+		},
+		{
+			group:    "jobs",
+			terrPath: "job_cluster",
+			dabsPath: "job_clusters",
+		},
+		{
+			group:    "jobs",
+			terrPath: "parameter",
+			dabsPath: "parameters",
+		},
+		{
+			group:    "jobs",
+			terrPath: "environment",
+			dabsPath: "environments",
+		},
 
 		// Nested renames - jobs
-		{"jobs", "task.library", "tasks.libraries", true},
-		{"jobs", "task.for_each_task.task.library", "tasks.for_each_task.task.libraries", true},
+		{
+			group:    "jobs",
+			terrPath: "task.library",
+			dabsPath: "tasks.libraries",
+		},
+		{
+			group:    "jobs",
+			terrPath: "task.for_each_task.task.library",
+			dabsPath: "tasks.for_each_task.task.libraries",
+		},
 
 		// git_source: segment itself unchanged, children renamed
-		{"jobs", "git_source.branch", "git_source.git_branch", true},
-		{"jobs", "git_source.url", "git_source.git_url", true},
+		{
+			group:    "jobs",
+			terrPath: "git_source.branch",
+			dabsPath: "git_source.git_branch",
+		},
+		{
+			group:    "jobs",
+			terrPath: "git_source.url",
+			dabsPath: "git_source.git_url",
+		},
 
 		// Unknown fields pass through unchanged
-		{"jobs", "name", "name", true},
-		{"jobs", "format", "format", true},
+		{
+			group:    "jobs",
+			terrPath: "name",
+			dabsPath: "name",
+		},
+		{
+			group:    "jobs",
+			terrPath: "format",
+			dabsPath: "format",
+		},
 
 		// After an unrecognised segment, remaining segments pass through as-is
-		{"jobs", "task.new_cluster.node_type_id", "tasks.new_cluster.node_type_id", true},
+		{
+			group:    "jobs",
+			terrPath: "task.new_cluster.node_type_id",
+			dabsPath: "tasks.new_cluster.node_type_id",
+		},
 
 		// Array index passes through without advancing the rename tree
-		{"jobs", "task[0].library", "tasks[0].libraries", true},
+		{
+			group:    "jobs",
+			terrPath: "task[0].library",
+			dabsPath: "tasks[0].libraries",
+		},
 
 		// Pipelines
-		{"pipelines", "cluster", "clusters", true},
-		{"pipelines", "library", "libraries", true},
-		{"pipelines", "notification", "notifications", true},
+		{
+			group:    "pipelines",
+			terrPath: "cluster",
+			dabsPath: "clusters",
+		},
+		{
+			group:    "pipelines",
+			terrPath: "library",
+			dabsPath: "libraries",
+		},
+		{
+			group:    "pipelines",
+			terrPath: "notification",
+			dabsPath: "notifications",
+		},
 
 		// Unknown group: path unchanged
-		{"unknown_group", "task", "task", true},
+		{
+			group:    "unknown_group",
+			terrPath: "task",
+			dabsPath: "task",
+		},
 
 		// postgres resources: spec wrapper is unwrapped
-		{"postgres_projects", "spec.display_name", "display_name", true},
-		{"postgres_projects", "spec.default_endpoint_settings.no_suspension", "default_endpoint_settings.no_suspension", true},
-		{"postgres_branches", "spec.expire_time", "expire_time", true},
-		{"postgres_catalogs", "spec.postgres_database", "postgres_database", true},
-		{"postgres_endpoints", "spec.endpoint_type", "endpoint_type", true},
+		{
+			group:    "postgres_projects",
+			terrPath: "spec.display_name",
+			dabsPath: "display_name",
+		},
+		{
+			group:    "postgres_projects",
+			terrPath: "spec.default_endpoint_settings.no_suspension",
+			dabsPath: "default_endpoint_settings.no_suspension",
+		},
+		{
+			group:    "postgres_branches",
+			terrPath: "spec.expire_time",
+			dabsPath: "expire_time",
+		},
+		{
+			group:    "postgres_catalogs",
+			terrPath: "spec.postgres_database",
+			dabsPath: "postgres_database",
+		},
+		{
+			group:    "postgres_endpoints",
+			terrPath: "spec.endpoint_type",
+			dabsPath: "endpoint_type",
+		},
 
 		// TF-computed paths (status, timestamps) pass through unchanged but are not
 		// roundtrippable: DABsPathToTerraform would incorrectly prepend the spec wrapper.
-		{"postgres_projects", "status.display_name", "status.display_name", false},
-		{"postgres_projects", "create_time", "create_time", false},
+		{
+			group:       "postgres_projects",
+			terrPath:    "status.display_name",
+			dabsPath:    "status.display_name",
+			noRoundtrip: true,
+		},
+		{
+			group:       "postgres_projects",
+			terrPath:    "create_time",
+			dabsPath:    "create_time",
+			noRoundtrip: true,
+		},
+
+		// Terraform-only fields: must return an error
+		{
+			group:     "jobs",
+			terrPath:  "always_running",
+			expectErr: true,
+		},
+		{
+			group:     "jobs",
+			terrPath:  "new_cluster.node_type_id",
+			expectErr: true,
+		},
+		{
+			group:     "pipelines",
+			terrPath:  "url",
+			expectErr: true,
+		},
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.group+"/"+tt.input, func(t *testing.T) {
-			path, err := structpath.ParsePath(tt.input)
+		t.Run(tt.group+"/"+tt.terrPath, func(t *testing.T) {
+			path, err := structpath.ParsePath(tt.terrPath)
 			require.NoError(t, err)
 
-			result := terraform_dabs_map.TerraformPathToDABs(tt.group, path)
+			result, err := terraform_dabs_map.TerraformPathToDABs(tt.group, path)
+			if tt.expectErr {
+				require.Error(t, err)
+				assert.Nil(t, result)
+				return
+			}
+			require.NoError(t, err)
 			require.NotNil(t, result)
-			assert.Equal(t, tt.output, result.String())
+			assert.Equal(t, tt.dabsPath, result.String())
 
-			if tt.roundtrip {
-				back := terraform_dabs_map.DABsPathToTerraform(tt.group, result)
+			if !tt.noRoundtrip {
+				back, err := terraform_dabs_map.DABsPathToTerraform(tt.group, result)
+				require.NoError(t, err)
 				require.NotNil(t, back)
-				assert.Equal(t, tt.input, back.String(), "roundtrip DABsPathToTerraform(TerraformPathToDABs(input))")
+				assert.Equal(t, tt.terrPath, back.String(), "roundtrip DABsPathToTerraform(TerraformPathToDABs(terrPath))")
 			}
 		})
 	}
 }
 
 func TestTerraformPathToDABsNilPath(t *testing.T) {
-	assert.Nil(t, terraform_dabs_map.TerraformPathToDABs("jobs", nil))
+	result, err := terraform_dabs_map.TerraformPathToDABs("jobs", nil)
+	assert.NoError(t, err)
+	assert.Nil(t, result)
 }
 
 func TestDABsPathToTerraform(t *testing.T) {
 	tests := []struct {
-		group  string
-		input  string // DABs path
-		output string // TF path
+		group     string
+		dabsPath  string
+		terrPath  string
+		expectErr bool // if true, translation must return an error (DABs-only field)
 	}{
 		// Jobs renames (inverse)
-		{"jobs", "tasks", "task"},
-		{"jobs", "tasks.libraries", "task.library"},
-		{"jobs", "tasks.for_each_task.task.libraries", "task.for_each_task.task.library"},
-		{"jobs", "job_clusters", "job_cluster"},
-		{"jobs", "parameters", "parameter"},
-		{"jobs", "environments", "environment"},
-		{"jobs", "git_source.git_branch", "git_source.branch"},
-		{"jobs", "git_source.git_url", "git_source.url"},
+		{
+			group:    "jobs",
+			dabsPath: "tasks",
+			terrPath: "task",
+		},
+		{
+			group:    "jobs",
+			dabsPath: "tasks.libraries",
+			terrPath: "task.library",
+		},
+		{
+			group:    "jobs",
+			dabsPath: "tasks.for_each_task.task.libraries",
+			terrPath: "task.for_each_task.task.library",
+		},
+		{
+			group:    "jobs",
+			dabsPath: "job_clusters",
+			terrPath: "job_cluster",
+		},
+		{
+			group:    "jobs",
+			dabsPath: "parameters",
+			terrPath: "parameter",
+		},
+		{
+			group:    "jobs",
+			dabsPath: "environments",
+			terrPath: "environment",
+		},
+		{
+			group:    "jobs",
+			dabsPath: "git_source.git_branch",
+			terrPath: "git_source.branch",
+		},
+		{
+			group:    "jobs",
+			dabsPath: "git_source.git_url",
+			terrPath: "git_source.url",
+		},
 
 		// After unrecognised segment, remaining pass through
-		{"jobs", "tasks.new_cluster.node_type_id", "task.new_cluster.node_type_id"},
+		{
+			group:    "jobs",
+			dabsPath: "tasks.new_cluster.node_type_id",
+			terrPath: "task.new_cluster.node_type_id",
+		},
 
 		// Array index preserved
-		{"jobs", "tasks[0].libraries", "task[0].library"},
+		{
+			group:    "jobs",
+			dabsPath: "tasks[0].libraries",
+			terrPath: "task[0].library",
+		},
 
 		// Pipelines
-		{"pipelines", "clusters", "cluster"},
-		{"pipelines", "libraries", "library"},
-		{"pipelines", "notifications", "notification"},
+		{
+			group:    "pipelines",
+			dabsPath: "clusters",
+			terrPath: "cluster",
+		},
+		{
+			group:    "pipelines",
+			dabsPath: "libraries",
+			terrPath: "library",
+		},
+		{
+			group:    "pipelines",
+			dabsPath: "notifications",
+			terrPath: "notification",
+		},
 
 		// Unknown fields pass through
-		{"jobs", "name", "name"},
+		{
+			group:    "jobs",
+			dabsPath: "name",
+			terrPath: "name",
+		},
 
 		// Unknown group: path unchanged
-		{"unknown_group", "tasks", "tasks"},
+		{
+			group:    "unknown_group",
+			dabsPath: "tasks",
+			terrPath: "tasks",
+		},
 
 		// postgres resources: prepend spec wrapper
-		{"postgres_projects", "display_name", "spec.display_name"},
-		{"postgres_projects", "default_endpoint_settings.no_suspension", "spec.default_endpoint_settings.no_suspension"},
-		{"postgres_branches", "expire_time", "spec.expire_time"},
-		{"postgres_catalogs", "postgres_database", "spec.postgres_database"},
-		{"postgres_endpoints", "endpoint_type", "spec.endpoint_type"},
+		{
+			group:    "postgres_projects",
+			dabsPath: "display_name",
+			terrPath: "spec.display_name",
+		},
+		{
+			group:    "postgres_projects",
+			dabsPath: "default_endpoint_settings.no_suspension",
+			terrPath: "spec.default_endpoint_settings.no_suspension",
+		},
+		{
+			group:    "postgres_branches",
+			dabsPath: "expire_time",
+			terrPath: "spec.expire_time",
+		},
+		{
+			group:    "postgres_catalogs",
+			dabsPath: "postgres_database",
+			terrPath: "spec.postgres_database",
+		},
+		{
+			group:    "postgres_endpoints",
+			dabsPath: "endpoint_type",
+			terrPath: "spec.endpoint_type",
+		},
+
+		// DABs-only fields: must return an error
+		{
+			group:     "jobs",
+			dabsPath:  "tasks.new_cluster.autotermination_minutes",
+			expectErr: true,
+		},
+		{
+			group:     "pipelines",
+			dabsPath:  "dry_run",
+			expectErr: true,
+		},
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.group+"/"+tt.input, func(t *testing.T) {
-			path, err := structpath.ParsePath(tt.input)
+		t.Run(tt.group+"/"+tt.dabsPath, func(t *testing.T) {
+			path, err := structpath.ParsePath(tt.dabsPath)
 			require.NoError(t, err)
 
-			result := terraform_dabs_map.DABsPathToTerraform(tt.group, path)
+			result, err := terraform_dabs_map.DABsPathToTerraform(tt.group, path)
+			if tt.expectErr {
+				require.Error(t, err)
+				assert.Nil(t, result)
+				return
+			}
+			require.NoError(t, err)
 			require.NotNil(t, result)
-			assert.Equal(t, tt.output, result.String())
+			assert.Equal(t, tt.terrPath, result.String())
 		})
 	}
 }
 
 func TestDABsPathToTerraformNilPath(t *testing.T) {
-	assert.Nil(t, terraform_dabs_map.DABsPathToTerraform("jobs", nil))
+	result, err := terraform_dabs_map.DABsPathToTerraform("jobs", nil)
+	assert.NoError(t, err)
+	assert.Nil(t, result)
 }

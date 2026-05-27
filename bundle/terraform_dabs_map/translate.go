@@ -1,6 +1,10 @@
 package terraform_dabs_map
 
-import "github.com/databricks/cli/libs/structs/structpath"
+import (
+	"fmt"
+
+	"github.com/databricks/cli/libs/structs/structpath"
+)
 
 // DABsPathToTerraform translates a field path from DABs naming conventions
 // to Terraform naming conventions for the given resource group.
@@ -11,12 +15,17 @@ import "github.com/databricks/cli/libs/structs/structpath"
 // name is used and the tree descends for the remainder of the path. Array indices pass
 // through unchanged without advancing the tree position. An unrecognised segment stops
 // further renaming; remaining segments are kept as-is. Returns nil when path is nil.
+// Returns an error when path is a known DABs-only field with no Terraform equivalent.
 //
 // The path must be relative to the resource root (e.g. "tasks", not
 // "resources.jobs.my_job.tasks").
-func DABsPathToTerraform(group string, path *structpath.PathNode) *structpath.PathNode {
+func DABsPathToTerraform(group string, path *structpath.PathNode) (*structpath.PathNode, error) {
 	if path == nil {
-		return nil
+		return nil, nil
+	}
+
+	if DABsOnlyFields[group].Contains(path) {
+		return nil, fmt.Errorf("%s: %q is a DABs-only field with no Terraform equivalent", group, path)
 	}
 
 	// For groups with a TF wrapper (Unwrap inverse), prepend it as the first segment.
@@ -47,7 +56,7 @@ func DABsPathToTerraform(group string, path *structpath.PathNode) *structpath.Pa
 			result = structpath.NewKeyValue(result, k, v)
 		}
 	}
-	return result
+	return result, nil
 }
 
 // TerraformPathToDABs translates a field path from Terraform naming conventions
@@ -58,13 +67,19 @@ func DABsPathToTerraform(group string, path *structpath.PathNode) *structpath.Pa
 // path. Array indices pass through unchanged without advancing the tree position.
 // An unrecognised field name stops further renaming; remaining segments are kept
 // as-is. Returns nil when path is nil.
+// Returns an error when path is a known Terraform-only field with no DABs equivalent.
 //
 // The path must be relative to the resource root (e.g. "task.library", not
 // "resources.jobs.my_job.task.library").
-func TerraformPathToDABs(group string, path *structpath.PathNode) *structpath.PathNode {
+func TerraformPathToDABs(group string, path *structpath.PathNode) (*structpath.PathNode, error) {
 	if path == nil {
-		return nil
+		return nil, nil
 	}
+
+	if TerraformOnlyFields[group].Contains(path) {
+		return nil, fmt.Errorf("%s: %q is a Terraform-only field with no DABs equivalent", group, path)
+	}
+
 	tree := TerraformToDABsFieldMap[group]
 	var result *structpath.PathNode
 	for _, n := range path.AsSlice() {
@@ -93,5 +108,5 @@ func TerraformPathToDABs(group string, path *structpath.PathNode) *structpath.Pa
 			result = structpath.NewKeyValue(result, k, v)
 		}
 	}
-	return result
+	return result, nil
 }
