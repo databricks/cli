@@ -454,6 +454,75 @@ func TestAccountClientOrPromptReturnsErrorForWrongHostType(t *testing.T) {
 	assert.ErrorIs(t, err, databricks.ErrNotAccountClient)
 }
 
+func TestIsPATOnSPOGWithoutWorkspaceID(t *testing.T) {
+	tests := []struct {
+		name string
+		cfg  *config.Config
+		want bool
+	}{
+		{
+			name: "pat on spog without workspace_id",
+			cfg: &config.Config{
+				AuthType:     "pat",
+				DiscoveryURL: "https://spog.example.test/oidc/accounts/abc/.well-known/oauth-authorization-server",
+			},
+			want: true,
+		},
+		{
+			name: "pat on spog with workspace_id is fine",
+			cfg: &config.Config{
+				AuthType:     "pat",
+				WorkspaceID:  "12345",
+				DiscoveryURL: "https://spog.example.test/oidc/accounts/abc/.well-known/oauth-authorization-server",
+			},
+			want: false,
+		},
+		{
+			name: "pat on classic workspace host is fine",
+			cfg: &config.Config{
+				AuthType:     "pat",
+				DiscoveryURL: "https://workspace.example.test/oidc/.well-known/oauth-authorization-server",
+			},
+			want: false,
+		},
+		{
+			name: "u2m on spog is not affected (handled by other paths)",
+			cfg: &config.Config{
+				AuthType:     "databricks-cli",
+				DiscoveryURL: "https://spog.example.test/oidc/accounts/abc/.well-known/oauth-authorization-server",
+			},
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, isPATOnSPOGWithoutWorkspaceID(tt.cfg))
+		})
+	}
+}
+
+func TestWorkspaceClientOrPromptRejectsPATOnSPOGWithoutWorkspaceID(t *testing.T) {
+	testutil.CleanupEnvironment(t)
+	t.Setenv("PATH", "")
+
+	cfg := &config.Config{
+		Host:          "https://spog.example.test/",
+		AccountID:     "abc-123",
+		Token:         "dapi-fake",
+		Profile:       "spog-pat",
+		DiscoveryURL:  "https://spog.example.test/oidc/accounts/abc-123/.well-known/oauth-authorization-server",
+		AuthType:      "pat",
+		HTTPTransport: noNetworkTransport,
+	}
+
+	w, err := workspaceClientOrPrompt(t.Context(), cfg, false)
+	assert.Nil(t, w)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `profile "spog-pat"`)
+	assert.Contains(t, err.Error(), "workspace_id")
+	assert.Contains(t, err.Error(), "PAT")
+}
+
 func TestWorkspaceClientOrPromptReturnsSuccessWhenAuthSucceeds(t *testing.T) {
 	testutil.CleanupEnvironment(t)
 	t.Setenv("PATH", "")

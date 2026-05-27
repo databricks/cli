@@ -52,6 +52,24 @@ func initProfileFlag(cmd *cobra.Command) {
 	cmd.RegisterFlagCompletionFunc("profile", profile.ProfileCompletion)
 }
 
+// isPATOnSPOGWithoutWorkspaceID reports whether the resolved config is a PAT
+// profile pointing at a SPOG host with no workspace_id set. The SDK strips the
+// routing identifier from the request, which lands on the account-plane where
+// PATs aren't accepted.
+func isPATOnSPOGWithoutWorkspaceID(cfg *config.Config) bool {
+	return cfg.AuthType == auth.AuthTypePat &&
+		cfg.WorkspaceID == "" &&
+		auth.HasUnifiedHostSignal(cfg.DiscoveryURL)
+}
+
+// patSPOGNoWorkspaceIDError describes the configuration gap and how to fix it.
+func patSPOGNoWorkspaceIDError(profileName string) error {
+	if profileName == "" {
+		return errors.New("personal access token (PAT) auth on this host requires a workspace_id; PATs are workspace-scoped, but no workspace_id is set. Add workspace_id = <id> to the profile (or set DATABRICKS_WORKSPACE_ID) to the workspace the token was minted in")
+	}
+	return fmt.Errorf("profile %q uses PAT auth on a SPOG host but is missing workspace_id; PATs are workspace-scoped, so the request can't be routed. Edit the profile to add workspace_id = <id> matching the workspace the token was minted in", profileName)
+}
+
 func profileFlagValue(cmd *cobra.Command) (string, bool) {
 	profileFlag := cmd.Flag("profile")
 	if profileFlag == nil {
@@ -189,6 +207,14 @@ func MustAccountClient(cmd *cobra.Command, args []string) error {
 // Helper function to create a workspace client or prompt once if the given configuration is not valid.
 func workspaceClientOrPrompt(ctx context.Context, cfg *config.Config, allowPrompt bool) (*databricks.WorkspaceClient, error) {
 	w, err := databricks.NewWorkspaceClient((*databricks.Config)(cfg))
+	if err == nil && isPATOnSPOGWithoutWorkspaceID(cfg) {
+		// PATs are workspace-scoped. On a SPOG host without workspace_id the
+		// SDK can't add the routing identifier, the backend treats the call as
+		// account-plane, and PATs aren't accepted there. The result is an
+		// opaque "Credential was not sent" error from the auth endpoint;
+		// rewrite up front so the user sees what's actually wrong.
+		return nil, patSPOGNoWorkspaceIDError(cfg.Profile)
+	}
 	if err == nil {
 		err = w.Config.Authenticate(emptyHttpRequest(ctx))
 	}
