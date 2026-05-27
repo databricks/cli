@@ -2,7 +2,6 @@ package root
 
 import (
 	"context"
-	"errors"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -493,35 +492,31 @@ func TestWorkspaceClientOrPromptRejectsAccountOnlyProfile(t *testing.T) {
 
 func TestMustAnyClientFallsThroughOnAccountOnlyProfile(t *testing.T) {
 	testutil.CleanupEnvironment(t)
+	t.Setenv("PATH", "")
 
 	configFile := filepath.Join(t.TempDir(), ".databrickscfg")
 	err := os.WriteFile(configFile, []byte(`
 [skipws]
-host         = https://spog.example.test/
+host         = https://accounts.azuredatabricks.net/
 account_id   = abc-123
-auth_type    = databricks-cli
+token        = foobar
 workspace_id = none
 `), 0o600)
 	require.NoError(t, err)
 	t.Setenv("DATABRICKS_CONFIG_FILE", configFile)
-	t.Setenv("PATH", "")
 
-	// MustAnyClient should recognize ErrAccountOnlyProfile from the workspace
-	// path and try the account path so `auth describe` works on account-only
-	// profiles. We can't assert on a successful client here (no real OAuth
-	// token), but we can verify the workspace path produced the typed error
-	// and the fall-through reaches the account path.
-	cfg := &config.Config{
-		Host:          "https://spog.example.test/",
-		Profile:       "skipws",
-		AccountID:     "abc-123",
-		WorkspaceID:   "none",
-		HTTPTransport: noNetworkTransport,
-	}
-	_, err = workspaceClientOrPrompt(t.Context(), cfg, false)
-	require.Error(t, err)
-	_, ok := errors.AsType[ErrAccountOnlyProfile](err)
-	assert.True(t, ok, "expected ErrAccountOnlyProfile to surface; MustAnyClient depends on this type for fall-through")
+	ctx, tt := cmdio.SetupTest(t.Context(), cmdio.TestOptions{PromptSupported: true})
+	t.Cleanup(tt.Done)
+	cmd := New(ctx)
+	require.NoError(t, cmd.PersistentFlags().Set("profile", "skipws"))
+
+	// Workspace path returns ErrAccountOnlyProfile. MustAnyClient must
+	// recognize the type and fall through to the account client so
+	// `auth describe` shows account info for account-only profiles.
+	isAccount, err := MustAnyClient(cmd, []string{})
+	require.NoError(t, err)
+	require.True(t, isAccount, "expected fall-through to account client")
+	require.NotNil(t, cmdctx.AccountClient(cmd.Context()))
 }
 
 func TestWorkspaceClientOrPromptReturnsSuccessWhenAuthSucceeds(t *testing.T) {
