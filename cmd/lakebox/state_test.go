@@ -31,7 +31,7 @@ func TestStateLoadMissingFileReturnsEmpty(t *testing.T) {
 
 func TestStateGetDefaultMissingProfileReturnsEmpty(t *testing.T) {
 	ctx, _ := stateCtx(t)
-	assert.Equal(t, "", getDefault(ctx, "any-profile"))
+	assert.Empty(t, getDefault(ctx, "any-profile"))
 }
 
 func TestStateSetGetDefaultRoundTrip(t *testing.T) {
@@ -39,7 +39,7 @@ func TestStateSetGetDefaultRoundTrip(t *testing.T) {
 
 	require.NoError(t, setDefault(ctx, "profile-a", "lakebox-a"))
 	assert.Equal(t, "lakebox-a", getDefault(ctx, "profile-a"))
-	assert.Equal(t, "", getDefault(ctx, "profile-b"))
+	assert.Empty(t, getDefault(ctx, "profile-b"))
 }
 
 func TestStateMultipleProfilesIndependent(t *testing.T) {
@@ -67,7 +67,7 @@ func TestStateClearDefault(t *testing.T) {
 	require.NoError(t, setDefault(ctx, "profile-b", "lakebox-b"))
 
 	require.NoError(t, clearDefault(ctx, "profile-a"))
-	assert.Equal(t, "", getDefault(ctx, "profile-a"))
+	assert.Empty(t, getDefault(ctx, "profile-a"))
 	assert.Equal(t, "lakebox-b", getDefault(ctx, "profile-b"))
 }
 
@@ -98,7 +98,7 @@ func TestStateSetDefaultMissingNoFileBeforeWrite(t *testing.T) {
 	ctx, path := stateCtx(t)
 
 	// Loading state on a fresh tempdir must not create the file.
-	assert.Equal(t, "", getDefault(ctx, "profile-a"))
+	assert.Empty(t, getDefault(ctx, "profile-a"))
 	_, err := os.Stat(path)
 	assert.ErrorIs(t, err, fs.ErrNotExist, "getDefault must not create the state file")
 }
