@@ -5,6 +5,7 @@ import (
 	"go/format"
 	"os"
 	"reflect"
+	"maps"
 	"slices"
 	"strings"
 	"testing"
@@ -506,7 +507,7 @@ func buildRenameTree(renames map[string]string, unwraps []string) map[string]*rn
 // writeRenameTree writes a rnode tree as RenameTree Go source at the given indent depth.
 func writeRenameTree(w func(string, ...any), tree map[string]*rnode, depth int) {
 	indent := strings.Repeat("\t", depth)
-	for _, key := range sortedKeys(tree) {
+	for _, key := range slices.Sorted(maps.Keys(tree)) {
 		n := tree[key]
 		switch {
 		case n.unwrap && len(n.children) == 0:
@@ -548,7 +549,7 @@ func buildFieldSet(paths map[string]bool) map[string]any {
 // writeFieldSet writes a field set tree as nested FieldSet Go source at the given depth.
 func writeFieldSet(w func(string, ...any), tree map[string]any, depth int) {
 	indent := strings.Repeat("\t", depth)
-	for _, key := range sortedKeys(tree) {
+	for _, key := range slices.Sorted(maps.Keys(tree)) {
 		child := tree[key].(map[string]any)
 		if len(child) == 0 {
 			w("%s%q: {},\n", indent, key)
@@ -558,13 +559,4 @@ func writeFieldSet(w func(string, ...any), tree map[string]any, depth int) {
 			w("%s},\n", indent)
 		}
 	}
-}
-
-func sortedKeys[V any](m map[string]V) []string {
-	keys := make([]string, 0, len(m))
-	for k := range m {
-		keys = append(keys, k)
-	}
-	slices.Sort(keys)
-	return keys
 }
