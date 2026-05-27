@@ -52,6 +52,7 @@ func TestStateToBundleEmptyLocalResources(t *testing.T) {
 		"resources.postgres_catalogs.test_postgres_catalog":             {ID: "catalogs/test_catalog"},
 		"resources.postgres_synced_tables.test_postgres_synced_table":   {ID: "synced_tables/main.public.test_synced_table"},
 		"resources.vector_search_endpoints.test_vector_search_endpoint": {ID: "vs-endpoint-1"},
+		"resources.vector_search_indexes.test_vector_search_index":      {ID: "vs-index-1"},
 	}
 	err := StateToBundle(t.Context(), state, &config)
 	assert.NoError(t, err)
@@ -125,6 +126,9 @@ func TestStateToBundleEmptyLocalResources(t *testing.T) {
 
 	assert.Equal(t, "vs-endpoint-1", config.Resources.VectorSearchEndpoints["test_vector_search_endpoint"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.VectorSearchEndpoints["test_vector_search_endpoint"].ModifiedStatus)
+
+	assert.Equal(t, "vs-index-1", config.Resources.VectorSearchIndexes["test_vector_search_index"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.VectorSearchIndexes["test_vector_search_index"].ModifiedStatus)
 
 	AssertFullResourceCoverage(t, &config)
 }
@@ -318,6 +322,13 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 					},
 				},
 			},
+			VectorSearchIndexes: map[string]*resources.VectorSearchIndex{
+				"test_vector_search_index": {
+					CreateVectorIndexRequest: vectorsearch.CreateVectorIndexRequest{
+						Name: "test_vector_search_index",
+					},
+				},
+			},
 		},
 	}
 
@@ -398,6 +409,9 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 
 	assert.Empty(t, config.Resources.VectorSearchEndpoints["test_vector_search_endpoint"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.VectorSearchEndpoints["test_vector_search_endpoint"].ModifiedStatus)
+
+	assert.Empty(t, config.Resources.VectorSearchIndexes["test_vector_search_index"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.VectorSearchIndexes["test_vector_search_index"].ModifiedStatus)
 
 	AssertFullResourceCoverage(t, &config)
 }
@@ -714,6 +728,18 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 					},
 				},
 			},
+			VectorSearchIndexes: map[string]*resources.VectorSearchIndex{
+				"test_vector_search_index": {
+					CreateVectorIndexRequest: vectorsearch.CreateVectorIndexRequest{
+						Name: "test_vector_search_index",
+					},
+				},
+				"test_vector_search_index_new": {
+					CreateVectorIndexRequest: vectorsearch.CreateVectorIndexRequest{
+						Name: "test_vector_search_index_new",
+					},
+				},
+			},
 		},
 	}
 	state := ExportedResourcesMap{
@@ -761,6 +787,8 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 		"resources.postgres_catalogs.test_postgres_catalog_old":             {ID: "catalogs/test_catalog_old"},
 		"resources.vector_search_endpoints.test_vector_search_endpoint":     {ID: "vs-endpoint-1"},
 		"resources.vector_search_endpoints.test_vector_search_endpoint_old": {ID: "vs-endpoint-old"},
+		"resources.vector_search_indexes.test_vector_search_index":          {ID: "vs-index-1"},
+		"resources.vector_search_indexes.test_vector_search_index_old":      {ID: "vs-index-old"},
 	}
 	err := StateToBundle(t.Context(), state, &config)
 	assert.NoError(t, err)
@@ -920,6 +948,13 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.VectorSearchEndpoints["test_vector_search_endpoint_old"].ModifiedStatus)
 	assert.Empty(t, config.Resources.VectorSearchEndpoints["test_vector_search_endpoint_new"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.VectorSearchEndpoints["test_vector_search_endpoint_new"].ModifiedStatus)
+
+	assert.Equal(t, "vs-index-1", config.Resources.VectorSearchIndexes["test_vector_search_index"].ID)
+	assert.Empty(t, config.Resources.VectorSearchIndexes["test_vector_search_index"].ModifiedStatus)
+	assert.Equal(t, "vs-index-old", config.Resources.VectorSearchIndexes["test_vector_search_index_old"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.VectorSearchIndexes["test_vector_search_index_old"].ModifiedStatus)
+	assert.Empty(t, config.Resources.VectorSearchIndexes["test_vector_search_index_new"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.VectorSearchIndexes["test_vector_search_index_new"].ModifiedStatus)
 
 	AssertFullResourceCoverage(t, &config)
 }
