@@ -2,7 +2,9 @@ package root
 
 import (
 	"context"
+	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"testing"
@@ -515,6 +517,42 @@ func TestWorkspaceClientOrPromptRejectsPATOnSPOGWithoutWorkspaceID(t *testing.T)
 		HTTPTransport: noNetworkTransport,
 	}
 
+	w, err := workspaceClientOrPrompt(t.Context(), cfg, false)
+	assert.Nil(t, w)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `profile "spog-pat"`)
+	assert.Contains(t, err.Error(), "workspace_id")
+	assert.Contains(t, err.Error(), "PAT")
+}
+
+// TestWorkspaceClientOrPromptRejectsPATOnSPOGFromConfigFile exercises the
+// real .databrickscfg shape from the bug bash: `host` + `token` only, no
+// `auth_type`, no `workspace_id`. The SDK populates AuthType during
+// NewWorkspaceClient via its credential probe, so the PAT-on-SPOG detector
+// must keep working after going through that path.
+func TestWorkspaceClientOrPromptRejectsPATOnSPOGFromConfigFile(t *testing.T) {
+	testutil.CleanupEnvironment(t)
+	t.Setenv("PATH", "")
+
+	// Mock .well-known/databricks-config to return an account-scoped OIDC
+	// endpoint so the SDK populates cfg.DiscoveryURL with the SPOG signal.
+	mux := http.NewServeMux()
+	mux.HandleFunc("/.well-known/databricks-config", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"account_id":"abc-123","oidc_endpoint":"https://spog.example.test/oidc/accounts/abc-123"}`))
+	})
+	server := httptest.NewServer(mux)
+	t.Cleanup(server.Close)
+
+	configFile := filepath.Join(t.TempDir(), ".databrickscfg")
+	require.NoError(t, os.WriteFile(configFile, fmt.Appendf(nil, `
+[spog-pat]
+host  = %s
+token = dapi-fake
+`, server.URL), 0o600))
+	t.Setenv("DATABRICKS_CONFIG_FILE", configFile)
+
+	cfg := &config.Config{Profile: "spog-pat"}
 	w, err := workspaceClientOrPrompt(t.Context(), cfg, false)
 	assert.Nil(t, w)
 	require.Error(t, err)
