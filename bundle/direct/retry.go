@@ -15,7 +15,7 @@ import (
 
 const maxRetries = 2
 
-var defaultRetryInterval = 30 * time.Second
+var defaultRetryInterval = 15 * time.Second
 
 func retryInterval(ctx context.Context) time.Duration {
 	v, ok := bundleenv.RetryIntervalMs(ctx)
