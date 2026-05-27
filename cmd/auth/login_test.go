@@ -546,6 +546,69 @@ func TestSetHostAndAccountId_WorkspaceIDNoneSentinelInherited(t *testing.T) {
 	assert.Equal(t, auth.WorkspaceIDNone, args.WorkspaceID)
 }
 
+func TestShouldPromptWorkspace(t *testing.T) {
+	t.Setenv("DATABRICKS_CONFIG_FILE", "./testdata/.databrickscfg")
+	ctx, _ := cmdio.SetupTest(t.Context(), cmdio.TestOptions{})
+
+	legacyAccountProfile := loadTestProfile(t, ctx, "spog-skip-workspace")
+	newAccountProfile := loadTestProfile(t, ctx, "spog-skip-workspace-new")
+	workspaceProfile := loadTestProfile(t, ctx, "unified-workspace")
+
+	tests := []struct {
+		name            string
+		authArguments   auth.AuthArguments
+		existingProfile *profile.Profile
+		skipWorkspace   bool
+		want            bool
+	}{
+		{
+			name:          "no profile, account_id set, no workspace_id",
+			authArguments: auth.AuthArguments{AccountID: "acc"},
+			want:          true,
+		},
+		{
+			name:            "re-login into legacy account-only profile (workspace_id = none)",
+			authArguments:   auth.AuthArguments{AccountID: "spog-account"},
+			existingProfile: legacyAccountProfile,
+			want:            false,
+		},
+		{
+			name:            "re-login into new account-only profile (no workspace_id key)",
+			authArguments:   auth.AuthArguments{AccountID: "spog-account"},
+			existingProfile: newAccountProfile,
+			want:            false,
+		},
+		{
+			name:            "re-login into workspace profile prompts when workspace_id missing from args",
+			authArguments:   auth.AuthArguments{AccountID: "test-unified-account"},
+			existingProfile: workspaceProfile,
+			want:            true,
+		},
+		{
+			name:          "skipWorkspace suppresses the prompt",
+			authArguments: auth.AuthArguments{AccountID: "acc"},
+			skipWorkspace: true,
+			want:          false,
+		},
+		{
+			name:          "no account_id means no prompt",
+			authArguments: auth.AuthArguments{},
+			want:          false,
+		},
+		{
+			name:          "workspace_id already known means no prompt",
+			authArguments: auth.AuthArguments{AccountID: "acc", WorkspaceID: "12345"},
+			want:          false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := shouldPromptWorkspace(&tt.authArguments, tt.existingProfile, tt.skipWorkspace)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
 func TestSetHostAndAccountId_URLParamsOverrideProfile(t *testing.T) {
 	t.Setenv("DATABRICKS_CONFIG_FILE", "./testdata/.databrickscfg")
 	ctx, _ := cmdio.SetupTest(t.Context(), cmdio.TestOptions{})

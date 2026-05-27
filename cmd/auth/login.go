@@ -311,14 +311,7 @@ a new profile is created.
 		// 2. Configuring cluster and serverless;
 		// 3. Saving the profile.
 
-		// If discovery gave us an account_id but we still have no workspace_id,
-		// prompt the user to select a workspace. This applies to any host where
-		// .well-known/databricks-config returned an account_id.
-		shouldPromptWorkspace := authArguments.AccountID != "" &&
-			authArguments.WorkspaceID == "" &&
-			!skipWorkspace
-
-		if shouldPromptWorkspace {
+		if shouldPromptWorkspace(authArguments, existingProfile, skipWorkspace) {
 			wsID, wsErr := promptForWorkspaceSelection(ctx, authArguments, persistentAuth)
 			if wsErr != nil {
 				log.Warnf(ctx, "Workspace selection failed: %v", wsErr)
@@ -395,6 +388,23 @@ a new profile is created.
 	}
 
 	return cmd
+}
+
+// shouldPromptWorkspace reports whether the login flow should ask the user to
+// pick a workspace. We prompt when we have an account_id but no workspace_id
+// and the user did not pass --skip-workspace, with one exception: re-login
+// into an existing profile that's already account-only (account_id set,
+// workspace_id absent or the legacy "none" sentinel) honors the user's prior
+// "skip" choice instead of re-prompting on every login.
+func shouldPromptWorkspace(authArguments *auth.AuthArguments, existingProfile *profile.Profile, skipWorkspace bool) bool {
+	if authArguments.AccountID == "" || authArguments.WorkspaceID != "" || skipWorkspace {
+		return false
+	}
+	if existingProfile != nil && existingProfile.AccountID != "" &&
+		(existingProfile.WorkspaceID == "" || existingProfile.WorkspaceID == auth.WorkspaceIDNone) {
+		return false
+	}
+	return true
 }
 
 // Sets the host in the persistentAuth object based on the provided arguments and flags.
