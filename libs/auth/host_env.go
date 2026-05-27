@@ -9,6 +9,10 @@ import "os"
 // URL into DATABRICKS_HOST drops the workspace identifier and API calls hit
 // the SPOG without an X-Databricks-Org-Id header, which the server answers
 // with HTML (a login page) instead of JSON.
+//
+// TODO: stopgap. The matching SDK fix is databricks/databricks-sdk-go#1699,
+// which handles ?o=/?a= directly in fixHostIfNeeded. Delete this normalizer
+// on the next SDK bump that includes that change.
 const (
 	envHost        = "DATABRICKS_HOST"
 	envWorkspaceID = "DATABRICKS_WORKSPACE_ID"
