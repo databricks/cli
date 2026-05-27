@@ -30,10 +30,14 @@ func NormalizeDatabricksHostEnv() {
 		return
 	}
 	os.Setenv(envHost, params.Host)
-	if params.WorkspaceID != "" && os.Getenv(envWorkspaceID) == "" {
-		os.Setenv(envWorkspaceID, params.WorkspaceID)
+	if params.WorkspaceID != "" {
+		if _, set := os.LookupEnv(envWorkspaceID); !set {
+			os.Setenv(envWorkspaceID, params.WorkspaceID)
+		}
 	}
-	if params.AccountID != "" && os.Getenv(envAccountID) == "" {
-		os.Setenv(envAccountID, params.AccountID)
+	if params.AccountID != "" {
+		if _, set := os.LookupEnv(envAccountID); !set {
+			os.Setenv(envAccountID, params.AccountID)
+		}
 	}
 }
