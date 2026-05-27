@@ -221,6 +221,23 @@ a new profile is created.
 			}
 		}
 
+		// If --skip-workspace is set and we already know the host, eagerly run
+		// URL-param extraction and host discovery so getProfileName can suggest
+		// ACCOUNT-<account-id> as the default name. Without this, AccountID is
+		// only populated by setHostAndAccountId further down, which runs after
+		// the profile-name prompt.
+		if skipWorkspace && profileName == "" && authArguments.Host != "" && authArguments.AccountID == "" {
+			params := auth.ExtractHostQueryParams(authArguments.Host)
+			authArguments.Host = params.Host
+			if authArguments.AccountID == "" {
+				authArguments.AccountID = params.AccountID
+			}
+			if authArguments.WorkspaceID == "" {
+				authArguments.WorkspaceID = params.WorkspaceID
+			}
+			runHostDiscovery(ctx, authArguments)
+		}
+
 		// If the user has not specified a profile name, prompt for one.
 		if profileName == "" {
 			var err error
