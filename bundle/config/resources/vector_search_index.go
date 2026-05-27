@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/marshal"
@@ -51,19 +52,13 @@ func (e *VectorSearchIndex) ResourceDescription() ResourceDescription {
 }
 
 func (e *VectorSearchIndex) InitializeURL(baseURL url.URL) {
-	if e.Name == "" {
+	// UC explore expects /{catalog}/{schema}/{name}, so bail if the name isn't
+	// a fully resolved three-part identifier; an unresolved ${...} reference
+	// would otherwise produce a misleading URL.
+	if strings.Count(e.Name, ".") != 2 {
 		return
 	}
-	catalog, rest, ok := strings.Cut(e.Name, ".")
-	if !ok {
-		return
-	}
-	schema, name, ok := strings.Cut(rest, ".")
-	if !ok {
-		return
-	}
-	baseURL.Path = "explore/data/" + catalog + "/" + schema + "/" + name
-	e.URL = baseURL.String()
+	e.URL = workspaceurls.ResourceURL(baseURL, "vector_search_indexes", e.Name)
 }
 
 func (e *VectorSearchIndex) GetName() string {

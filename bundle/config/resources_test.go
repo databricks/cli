@@ -123,15 +123,26 @@ func TestBundleResourcePluralNamesResolveInWorkspaceURLs(t *testing.T) {
 	withURLs := []string{
 		"alerts",
 		"apps",
+		"catalogs",
 		"clusters",
 		"dashboards",
+		"database_catalogs",
+		"database_instances",
 		"experiments",
 		"jobs",
 		"models",
 		"model_serving_endpoints",
 		"pipelines",
+		"postgres_catalogs",
+		"postgres_synced_tables",
+		"quality_monitors",
 		"registered_models",
+		"schemas",
 		"sql_warehouses",
+		"synced_database_tables",
+		"vector_search_endpoints",
+		"vector_search_indexes",
+		"volumes",
 	}
 
 	supported := SupportedResources()
