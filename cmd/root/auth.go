@@ -52,6 +52,15 @@ func initProfileFlag(cmd *cobra.Command) {
 	cmd.RegisterFlagCompletionFunc("profile", profile.ProfileCompletion)
 }
 
+// accountOnlyProfileError describes why a workspace command can't run against
+// a profile whose workspace_id sentinel marks it as account-only.
+func accountOnlyProfileError(profileName string) error {
+	if profileName == "" {
+		return errors.New("the active configuration has workspace_id = none, which marks it as account-only; this command requires a workspace. Set workspace_id to a real ID, or use a workspace-scoped profile")
+	}
+	return fmt.Errorf("profile %q has workspace_id = none, which marks it as account-only; this command requires a workspace. Edit the profile to set workspace_id to a real ID, or pass --profile with a workspace-scoped profile", profileName)
+}
+
 func profileFlagValue(cmd *cobra.Command) (string, bool) {
 	profileFlag := cmd.Flag("profile")
 	if profileFlag == nil {
@@ -189,6 +198,13 @@ func MustAccountClient(cmd *cobra.Command, args []string) error {
 // Helper function to create a workspace client or prompt once if the given configuration is not valid.
 func workspaceClientOrPrompt(ctx context.Context, cfg *config.Config, allowPrompt bool) (*databricks.WorkspaceClient, error) {
 	w, err := databricks.NewWorkspaceClient((*databricks.Config)(cfg))
+	if err == nil && cfg.WorkspaceID == auth.WorkspaceIDNone {
+		// CLI-only sentinel marking an account-only profile (created with
+		// --skip-workspace). The SDK doesn't know "none" is a sentinel and
+		// would send it as a routing identifier, producing an opaque auth
+		// error. Reject up front with a message the user can act on.
+		return nil, accountOnlyProfileError(cfg.Profile)
+	}
 	if err == nil {
 		err = w.Config.Authenticate(emptyHttpRequest(ctx))
 	}

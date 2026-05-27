@@ -454,6 +454,29 @@ func TestAccountClientOrPromptReturnsErrorForWrongHostType(t *testing.T) {
 	assert.ErrorIs(t, err, databricks.ErrNotAccountClient)
 }
 
+func TestWorkspaceClientOrPromptRejectsAccountOnlyProfile(t *testing.T) {
+	testutil.CleanupEnvironment(t)
+	t.Setenv("PATH", "")
+
+	// Profile created with --skip-workspace persists `workspace_id = none` as a
+	// CLI-internal sentinel; workspace commands cannot run against it.
+	cfg := &config.Config{
+		Host:          "https://example.test/",
+		AccountID:     "abc-123",
+		WorkspaceID:   "none",
+		Token:         "foobar",
+		Profile:       "bb",
+		HTTPTransport: noNetworkTransport,
+	}
+
+	w, err := workspaceClientOrPrompt(t.Context(), cfg, false)
+	assert.Nil(t, w)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `profile "bb"`)
+	assert.Contains(t, err.Error(), "account-only")
+	assert.Contains(t, err.Error(), "workspace_id = none")
+}
+
 func TestWorkspaceClientOrPromptReturnsSuccessWhenAuthSucceeds(t *testing.T) {
 	testutil.CleanupEnvironment(t)
 	t.Setenv("PATH", "")
