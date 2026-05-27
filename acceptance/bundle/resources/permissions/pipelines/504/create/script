@@ -1,0 +1,3 @@
+fault.py "PUT /api/2.0/permissions/pipelines/*" 504 0 1
+# Currently we do not retry DoCreate, so this will fail
+musterr $CLI bundle deploy

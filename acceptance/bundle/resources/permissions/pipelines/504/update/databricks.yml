@@ -1,0 +1,10 @@
+bundle:
+  name: test-bundle
+
+resources:
+  pipelines:
+    foo:
+      name: foo
+      permissions:
+        - level: CAN_VIEW
+          user_name: viewer@example.com
