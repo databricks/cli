@@ -95,42 +95,39 @@ Examples:
 			// with a warm cache).
 			var sandboxGatewayHost string
 
+			// sandboxStatus is the server-side state observed in this
+			// invocation, used to print an explicit "starting from stopped"
+			// notice before the connect spinner. Empty when we never hit
+			// the API.
+			var sandboxStatus string
+
 			api, err := newLakeboxAPI(w)
 			if err != nil {
 				return err
 			}
 
 			if lakeboxID == "" {
-				// If we have a saved default, confirm it still exists on the
-				// server. The lakebox may have been auto-stopped, deleted from
-				// another machine, or reaped by an admin since we wrote the
-				// state file. Clear the stale entry and fall through to
-				// provisioning a fresh one.
-				if def := getDefault(ctx, profile); def != "" {
-					if sb, err := api.get(ctx, def); err == nil {
-						lakeboxID = def
-						sandboxGatewayHost = sb.GatewayHost
-					} else {
-						warn(ctx, fmt.Sprintf("Saved default %s is gone; provisioning a new lakebox", def))
-						_ = clearDefault(ctx, profile)
-					}
+				def := getDefault(ctx, profile)
+				if def == "" {
+					return errors.New("no default lakebox configured — run `databricks lakebox create` to provision one, or `databricks lakebox default <id>` to point at an existing sandbox")
 				}
-
-				if lakeboxID == "" {
-					s := spin(ctx, "Provisioning your lakebox…")
-					defer s.Close()
-					result, err := api.create(ctx, "")
-					if err != nil {
-						s.fail("Failed to create lakebox")
-						return fmt.Errorf("failed to create lakebox: %w", err)
-					}
-					lakeboxID = result.SandboxID
-					sandboxGatewayHost = result.GatewayHost
-					s.ok("Lakebox " + cmdio.Bold(ctx, lakeboxID) + " ready")
-
-					if err := setDefault(ctx, profile, lakeboxID); err != nil {
-						warn(ctx, fmt.Sprintf("Could not save default: %v", err))
-					}
+				// Confirm the saved default still exists. A stale entry is
+				// almost always user-correctable (deleted from another
+				// machine, reaped by an admin); fail fast with an actionable
+				// message rather than silently provisioning a fresh sandbox
+				// and surprising the user with a bill.
+				sb, err := api.get(ctx, def)
+				switch {
+				case err == nil:
+					lakeboxID = def
+					sandboxGatewayHost = sb.GatewayHost
+					sandboxStatus = sb.Status
+				case errors.Is(err, apierr.ErrNotFound):
+					_ = clearDefault(ctx, profile)
+					return fmt.Errorf("saved default %q no longer exists (cleared) — run `databricks lakebox create` to provision a new one, or `databricks lakebox default <id>` to point at an existing sandbox", def)
+				default:
+					warn(ctx, fmt.Sprintf("could not validate default %s: %v", def, err))
+					lakeboxID = def
 				}
 			} else {
 				// Validate the explicit ID against the server. Two reasons:
@@ -144,11 +141,19 @@ Examples:
 				switch {
 				case err == nil:
 					sandboxGatewayHost = sb.GatewayHost
+					sandboxStatus = sb.Status
 				case errors.Is(err, apierr.ErrNotFound):
 					return fmt.Errorf("no lakebox named %q — `databricks lakebox list` shows available IDs", lakeboxID)
 				default:
 					warn(ctx, fmt.Sprintf("could not validate lakebox %s: %v", lakeboxID, err))
 				}
+			}
+
+			// The gateway implicitly starts a Stopped sandbox on first
+			// connect, which can take minutes. Print an explicit notice
+			// so the user understands why the connect spinner is hanging.
+			if strings.EqualFold(sandboxStatus, "stopped") {
+				warn(ctx, "Lakebox "+cmdio.Bold(ctx, lakeboxID)+" is stopped; the gateway will start it on connect (this can take a few minutes)")
 			}
 
 			// Resolution precedence: --gateway flag → fresh API response →

@@ -131,6 +131,7 @@ Examples:
 			fmt.Fprintf(out, "    %s\n", cmdio.Dim(ctx, header))
 			fmt.Fprintf(out, "    %s\n", cmdio.Dim(ctx, strings.Repeat("─", nameCol+hashCol+timeCol+timeCol+6)))
 
+			localFound := false
 			for _, k := range keys {
 				// Pad NAME manually from the raw width because cmdio.Dim
 				// wraps the cell in ANSI escapes that throw off `%-*s`.
@@ -143,6 +144,7 @@ Examples:
 				gutter := "    "
 				if localHash != "" && k.KeyHash == localHash {
 					gutter = "  " + cmdio.Cyan(ctx, "*") + " "
+					localFound = true
 				}
 				fmt.Fprintf(out, "%s%s%s  %-*s  %-*s  %s\n",
 					gutter,
@@ -150,6 +152,18 @@ Examples:
 					hashCol, k.KeyHash,
 					timeCol, formatTimeShort(k.CreateTime),
 					formatTimeShort(k.LastUseTime))
+			}
+			// Without a legend the `*` (or its absence) is opaque. Print the
+			// meaning either way so users can tell "no `*` on any row" apart
+			// from "this terminal doesn't print the marker".
+			blank(out)
+			switch {
+			case localFound:
+				fmt.Fprintf(out, "  %s\n", cmdio.Dim(ctx, cmdio.Cyan(ctx, "*")+" key matches the one on this machine"))
+			case localHash != "":
+				fmt.Fprintf(out, "  %s\n", cmdio.Dim(ctx, "(no registered key matches this machine's local key — run `databricks lakebox register` to register it)"))
+			default:
+				fmt.Fprintf(out, "  %s\n", cmdio.Dim(ctx, "(no local lakebox key on this machine — run `databricks lakebox register` to create and register one)"))
 			}
 			blank(out)
 			return nil

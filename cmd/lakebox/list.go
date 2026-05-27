@@ -88,25 +88,52 @@ Example:
 			out := cmd.OutOrStdout()
 
 			// Compute column widths. AUTOSTOP holds short tokens like
-			// `default`, `never`, `15m`, `1h30m` — 8 chars covers them.
-			col := 10
+			// `never`, `15m`, `1h30m` — 8 chars covers them. NAME is
+			// rendered only when at least one entry sets a display name
+			// different from the ID — there's no point in a column of
+			// pet-names that duplicate the ID column.
+			idCol := 10
 			autostopCol := 8
+			nameCol := 4
+			showName := false
 			for _, e := range entries {
-				if l := len(e.SandboxID); l > col {
-					col = l
+				if l := len(e.SandboxID); l > idCol {
+					idCol = l
 				}
 				if l := len(e.autoStopLabel()); l > autostopCol {
 					autostopCol = l
 				}
+				if e.Name != "" && e.Name != e.SandboxID {
+					showName = true
+				}
+				if l := len(e.Name); l > nameCol {
+					nameCol = l
+				}
 			}
-			col += 2
+			idCol += 2
 			autostopCol += 2
+			if showName {
+				nameCol += 2
+			}
+			const statusCol = 10
+			const defaultCol = 7
 
 			blank(out)
-			header := fmt.Sprintf("%-*s  %-10s  %-*s  %s",
-				col, "ID", "STATUS", autostopCol, "AUTOSTOP", "DEFAULT")
+			var header string
+			if showName {
+				header = fmt.Sprintf("%-*s  %-*s  %-*s  %-*s  %s",
+					idCol, "ID", nameCol, "NAME", statusCol, "STATUS", autostopCol, "AUTOSTOP", "DEFAULT")
+			} else {
+				header = fmt.Sprintf("%-*s  %-*s  %-*s  %s",
+					idCol, "ID", statusCol, "STATUS", autostopCol, "AUTOSTOP", "DEFAULT")
+			}
 			fmt.Fprintf(out, "  %s\n", cmdio.Dim(ctx, header))
-			fmt.Fprintf(out, "  %s\n", cmdio.Dim(ctx, strings.Repeat("─", col+10+autostopCol+12)))
+
+			ruleLen := idCol + statusCol + autostopCol + defaultCol + 6
+			if showName {
+				ruleLen += nameCol + 2
+			}
+			fmt.Fprintf(out, "  %s\n", cmdio.Dim(ctx, strings.Repeat("─", ruleLen)))
 
 			for _, e := range entries {
 				id := e.SandboxID
@@ -114,22 +141,40 @@ Example:
 				if id == defaultID {
 					def = cmdio.Cyan(ctx, "*")
 				}
-				// Pad ID manually so visible-width alignment is preserved
-				// after the helpers wrap each cell with ANSI escapes.
-				idPad := max(col-len(id), 0)
+				// Pad each cell manually so visible-width alignment is
+				// preserved after the helpers wrap them with ANSI escapes.
+				idPad := max(idCol-len(id), 0)
 				st := status(ctx, e.Status)
-				stPad := max(10-len(e.Status), 0)
+				stPad := max(statusCol-len(e.Status), 0)
 				as := e.autoStopLabel()
 				asPad := max(autostopCol-len(as), 0)
 				idStr := cmdio.Bold(ctx, id)
 				if strings.EqualFold(e.Status, "running") {
 					idStr = cmdio.Bold(ctx, cmdio.Cyan(ctx, id))
 				}
-				fmt.Fprintf(out, "  %s%s  %s%s  %s%s  %s\n",
-					idStr, strings.Repeat(" ", idPad),
-					st, strings.Repeat(" ", stPad),
-					cmdio.Dim(ctx, as), strings.Repeat(" ", asPad),
-					def)
+				if showName {
+					nm := e.Name
+					if nm == "" || nm == id {
+						nm = "-"
+					}
+					nmPad := max(nameCol-len(nm), 0)
+					nmStr := nm
+					if nm == "-" {
+						nmStr = cmdio.Dim(ctx, "-")
+					}
+					fmt.Fprintf(out, "  %s%s  %s%s  %s%s  %s%s  %s\n",
+						idStr, strings.Repeat(" ", idPad),
+						nmStr, strings.Repeat(" ", nmPad),
+						st, strings.Repeat(" ", stPad),
+						cmdio.Dim(ctx, as), strings.Repeat(" ", asPad),
+						def)
+				} else {
+					fmt.Fprintf(out, "  %s%s  %s%s  %s%s  %s\n",
+						idStr, strings.Repeat(" ", idPad),
+						st, strings.Repeat(" ", stPad),
+						cmdio.Dim(ctx, as), strings.Repeat(" ", asPad),
+						def)
+				}
 			}
 			blank(out)
 			return nil
