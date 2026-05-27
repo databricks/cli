@@ -408,13 +408,11 @@ func (a *Adapter) RemapState(remoteState any) (any, error) {
 }
 
 func (a *Adapter) DoRead(ctx context.Context, id string) (any, error) {
-	return retryOnTransient(ctx, func() (any, error) {
-		outs, err := a.doRead.Call(ctx, id)
-		if err != nil {
-			return nil, err
-		}
-		return outs[0], nil
-	})
+	outs, err := a.doRead.Call(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	return outs[0], nil
 }
 
 func (a *Adapter) DoDelete(ctx context.Context, id string, state any) error {
@@ -436,26 +434,11 @@ func normalizeNilPointer(v any) any {
 }
 
 func (a *Adapter) DoCreate(ctx context.Context, newState any) (string, any, error) {
-	type result struct {
-		id          string
-		remoteState any
+	outs, err := a.doCreate.Call(ctx, newState)
+	if err != nil {
+		return "", nil, err
 	}
-	res, err := retryWith(ctx, func(err error) bool {
-		var safe *retrySafeError
-		return errors.As(err, &safe) && isTransient(ctx, err)
-	}, func() (result, error) {
-		outs, err := a.doCreate.Call(ctx, newState)
-		if err != nil {
-			return result{}, err
-		}
-		return result{outs[0].(string), normalizeNilPointer(outs[1])}, nil
-	})
-	// Unwrap retrySafeError — it's an internal marker not meaningful to callers.
-	var safe *retrySafeError
-	if errors.As(err, &safe) {
-		err = safe.err
-	}
-	return res.id, res.remoteState, err
+	return outs[0].(string), normalizeNilPointer(outs[1]), nil
 }
 
 // HasDoUpdate returns true if the resource implements DoUpdate method.
@@ -469,15 +452,11 @@ func (a *Adapter) DoUpdate(ctx context.Context, id string, newState any, entry *
 	if a.doUpdate == nil {
 		return nil, errors.New("internal error: DoUpdate not found")
 	}
-
-	result, err := retryOnTransient(ctx, func() (any, error) {
-		outs, err := a.doUpdate.Call(ctx, id, newState, entry)
-		if err != nil {
-			return nil, err
-		}
-		return outs[0], nil
-	})
-	return normalizeNilPointer(result), err
+	outs, err := a.doUpdate.Call(ctx, id, newState, entry)
+	if err != nil {
+		return nil, err
+	}
+	return normalizeNilPointer(outs[0]), nil
 }
 
 // HasDoUpdateWithID returns true if the resource implements DoUpdateWithID method.
@@ -490,48 +469,33 @@ func (a *Adapter) DoUpdateWithID(ctx context.Context, oldID string, newState any
 	if a.doUpdateWithID == nil {
 		return "", nil, errors.New("internal error: DoUpdateWithID not found")
 	}
-
-	type result struct {
-		id          string
-		remoteState any
+	outs, err := a.doUpdateWithID.Call(ctx, oldID, newState)
+	if err != nil {
+		return "", nil, err
 	}
-	res, err := retryOnTransient(ctx, func() (result, error) {
-		outs, err := a.doUpdateWithID.Call(ctx, oldID, newState)
-		if err != nil {
-			return result{}, err
-		}
-		return result{outs[0].(string), outs[1]}, nil
-	})
-	return res.id, normalizeNilPointer(res.remoteState), err
+	return outs[0].(string), normalizeNilPointer(outs[1]), nil
 }
 
 func (a *Adapter) DoResize(ctx context.Context, id string, newState any) error {
 	if a.doResize == nil {
 		return errors.New("internal error: DoResize not found")
 	}
-
-	return retryErr(ctx, func() error {
-		_, err := a.doResize.Call(ctx, id, newState)
-		return err
-	})
+	_, err := a.doResize.Call(ctx, id, newState)
+	return err
 }
 
 // WaitAfterCreate waits for the resource to become ready after creation.
 // If the resource doesn't implement this method, this is a no-op.
-// Returns the updated remoteState if available, otherwise returns nil
+// Returns the updated remoteState if available, otherwise returns nil.
 func (a *Adapter) WaitAfterCreate(ctx context.Context, id string, newState any) (any, error) {
 	if a.waitAfterCreate == nil {
-		return nil, nil // no-op if not implemented
+		return nil, nil
 	}
-
-	result, err := retryOnTransient(ctx, func() (any, error) {
-		outs, err := a.waitAfterCreate.Call(ctx, id, newState)
-		if err != nil {
-			return nil, err
-		}
-		return outs[0], nil
-	})
-	return normalizeNilPointer(result), err
+	outs, err := a.waitAfterCreate.Call(ctx, id, newState)
+	if err != nil {
+		return nil, err
+	}
+	return normalizeNilPointer(outs[0]), nil
 }
 
 // WaitAfterUpdate waits for the resource to become ready after update.
@@ -539,7 +503,7 @@ func (a *Adapter) WaitAfterCreate(ctx context.Context, id string, newState any) 
 // Returns the updated remoteState if available, otherwise returns nil.
 func (a *Adapter) WaitAfterUpdate(ctx context.Context, id string, newState any) (any, error) {
 	if a.waitAfterUpdate == nil {
-		return nil, nil // no-op if not implemented
+		return nil, nil
 	}
 
 	outs, err := a.waitAfterUpdate.Call(ctx, id, newState)
