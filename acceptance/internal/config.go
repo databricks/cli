@@ -55,6 +55,9 @@ type TestConfig struct {
 	// If true and Cloud=true, run this test only if unity catalog is available in the cloud environment
 	RequiresUnityCatalog *bool
 
+	// If true and Cloud=true, skip this test when Unity Catalog is available in the cloud environment
+	SkipOnUnityCatalog *bool
+
 	// If true and Cloud=true, run this test only if a default test cluster is available in the cloud environment
 	RequiresCluster *bool
 
