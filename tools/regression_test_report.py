@@ -607,6 +607,86 @@ def render_report(
             lines.append("| " + " | ".join(row.get(c, "") for c in columns) + " |")
         lines.append("")
 
+    # ---- details sections for failing tests ----
+    for tp in acc_selected:
+        info = acc_branch_info[tp]
+        leaf_entries_branch = info.get("leaf_entries", {})
+
+        if not info["leaves"]:
+            leaf = f"TestAccept/{tp}"
+            entry = leaf_entries_branch.get(leaf)
+            text = entry.output if entry else readable_output(info.get("raw_output", ""), max_lines=10000)
+            lines.append("<details>")
+            lines.append(f"<summary>{leaf} {FAIL} | {col_main} {NA} | {col_latest} {NA}</summary>")
+            lines.append("")
+            if text.strip():
+                lines.append("**branch:**")
+                lines.append("```")
+                lines.append(text.rstrip())
+                lines.append("```")
+                lines.append("")
+            lines.append("</details>")
+            lines.append("")
+            continue
+
+        for leaf in info["leaves"]:
+            branch_pass = leaf in set(info["passing_leaves"])
+            main_status = acc_main_info.get(leaf, {}).get("status", "")
+            latest_status = acc_latest_info.get(leaf, {}).get("status", "")
+
+            has_branch_fail = not branch_pass
+            has_main_fail = main_status not in ("pass", "skip", "")
+            has_latest_fail = latest_status not in ("pass", "skip", "")
+
+            if not (has_branch_fail or has_main_fail or has_latest_fail):
+                continue
+
+            b_mark = PASS if branch_pass else FAIL
+            m_mark = mark(main_status) if main_status else NA
+            l_mark = mark(latest_status) if latest_status else NA
+            summary = f"{leaf} {b_mark} | {col_main} {m_mark} | {col_latest} {l_mark}"
+
+            lines.append("<details>")
+            lines.append(f"<summary>{summary}</summary>")
+            lines.append("")
+
+            if has_branch_fail:
+                entry = leaf_entries_branch.get(leaf)
+                text = entry.output if entry else readable_output(info.get("raw_output", ""), max_lines=10000)
+                if text.strip():
+                    lines.append("**branch:**")
+                    lines.append("```")
+                    lines.append(text.rstrip())
+                    lines.append("```")
+                    lines.append("")
+
+            if has_main_fail:
+                raw = acc_main_info.get(leaf, {}).get("output", "")
+                parsed = parse_json_output(raw)
+                entry = parsed.get(leaf)
+                text = entry.output if entry else readable_output(raw, max_lines=10000)
+                if text.strip():
+                    lines.append(f"**{col_main}:**")
+                    lines.append("```")
+                    lines.append(text.rstrip())
+                    lines.append("```")
+                    lines.append("")
+
+            if has_latest_fail:
+                raw = acc_latest_info.get(leaf, {}).get("output", "")
+                parsed = parse_json_output(raw)
+                entry = parsed.get(leaf)
+                text = entry.output if entry else readable_output(raw, max_lines=10000)
+                if text.strip():
+                    lines.append(f"**{col_latest}:**")
+                    lines.append("```")
+                    lines.append(text.rstrip())
+                    lines.append("```")
+                    lines.append("")
+
+            lines.append("</details>")
+            lines.append("")
+
     return "\n".join(lines) + "\n"
 
 
@@ -694,6 +774,7 @@ def main():
                 "parent_status": parent_status,
                 "leaves": leaves,
                 "passing_leaves": passing_leaves,
+                "leaf_entries": tests,
             }
             print(f"    status={parent_status}, leaves={len(leaves)}, passing={len(passing_leaves)}")
             if proc.returncode != 0:
