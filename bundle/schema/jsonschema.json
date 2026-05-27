@@ -422,7 +422,7 @@
                       },
                       "lifecycle": {
                         "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
-                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.LifecycleWithStarted"
                       },
                       "node_type_id": {
                         "description": "This field encodes, through a single value, the resources available to each of\nthe Spark nodes in this cluster. For example, the Spark nodes can be provisioned\nand optimized for memory or compute intensive workloads. A list of available node\ntypes can be retrieved by using the :method:clusters/listNodeTypes API call.",

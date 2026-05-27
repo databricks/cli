@@ -1,0 +1,15 @@
+bundle:
+  name: lifecycle-started-toggle-$UNIQUE_NAME
+
+workspace:
+  root_path: ~/.bundle/$UNIQUE_NAME
+
+resources:
+  clusters:
+    mycluster:
+      cluster_name: $UNIQUE_NAME
+      spark_version: "15.4.x-scala2.12"
+      node_type_id: "i3.xlarge"
+      num_workers: 1
+      lifecycle:
+        started: false
