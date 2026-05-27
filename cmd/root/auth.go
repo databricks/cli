@@ -52,10 +52,23 @@ func initProfileFlag(cmd *cobra.Command) {
 	cmd.RegisterFlagCompletionFunc("profile", profile.ProfileCompletion)
 }
 
+// ErrAccountOnlyProfile signals that the resolved profile has an account_id
+// but no workspace_id, so workspace APIs can't be reached. Workspace-only
+// commands surface this as an actionable error; MustAnyClient (used by `auth
+// describe` and similar) recognizes the type and falls through to the account
+// client so account-only profiles still describe cleanly.
+type ErrAccountOnlyProfile struct {
+	profileName string
+}
+
+func (e ErrAccountOnlyProfile) Error() string {
+	return fmt.Sprintf("profile %q has no workspace_id set (account-only); this command requires a workspace. Edit the profile to set workspace_id to a real ID, or pass --profile with a workspace-scoped profile", e.profileName)
+}
+
 // accountOnlyProfileError describes why a workspace command can't run against
 // a profile that has an account_id but no workspace_id.
 func accountOnlyProfileError(profileName string) error {
-	return fmt.Errorf("profile %q has no workspace_id set (account-only); this command requires a workspace. Edit the profile to set workspace_id to a real ID, or pass --profile with a workspace-scoped profile", profileName)
+	return ErrAccountOnlyProfile{profileName: profileName}
 }
 
 func profileFlagValue(cmd *cobra.Command) (string, bool) {
@@ -133,9 +146,11 @@ func MustAnyClient(cmd *cobra.Command, args []string) (bool, error) {
 	}
 
 	// If the error indicates a wrong config type (workspace host used for account client,
-	// or config type mismatch detected by workspaceClientOrPrompt), fall through to try
-	// account client.
-	if _, ok := errors.AsType[ErrNoWorkspaceProfiles](werr); !errors.Is(werr, errNotWorkspaceClient) && !ok {
+	// or config type mismatch detected by workspaceClientOrPrompt), or an account-only
+	// profile (no workspace_id), fall through to try the account client.
+	_, noWorkspaceProfiles := errors.AsType[ErrNoWorkspaceProfiles](werr)
+	_, accountOnly := errors.AsType[ErrAccountOnlyProfile](werr)
+	if !errors.Is(werr, errNotWorkspaceClient) && !noWorkspaceProfiles && !accountOnly {
 		return false, werr
 	}
 

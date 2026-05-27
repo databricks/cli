@@ -2,6 +2,7 @@ package root
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -481,11 +482,46 @@ func TestWorkspaceClientOrPromptRejectsAccountOnlyProfile(t *testing.T) {
 			w, err := workspaceClientOrPrompt(t.Context(), cfg, false)
 			assert.Nil(t, w)
 			require.Error(t, err)
+			var accountOnly ErrAccountOnlyProfile
+			require.ErrorAs(t, err, &accountOnly)
 			assert.Contains(t, err.Error(), `profile "bb"`)
 			assert.Contains(t, err.Error(), "account-only")
 			assert.Contains(t, err.Error(), "no workspace_id set")
 		})
 	}
+}
+
+func TestMustAnyClientFallsThroughOnAccountOnlyProfile(t *testing.T) {
+	testutil.CleanupEnvironment(t)
+
+	configFile := filepath.Join(t.TempDir(), ".databrickscfg")
+	err := os.WriteFile(configFile, []byte(`
+[skipws]
+host         = https://spog.example.test/
+account_id   = abc-123
+auth_type    = databricks-cli
+workspace_id = none
+`), 0o600)
+	require.NoError(t, err)
+	t.Setenv("DATABRICKS_CONFIG_FILE", configFile)
+	t.Setenv("PATH", "")
+
+	// MustAnyClient should recognize ErrAccountOnlyProfile from the workspace
+	// path and try the account path so `auth describe` works on account-only
+	// profiles. We can't assert on a successful client here (no real OAuth
+	// token), but we can verify the workspace path produced the typed error
+	// and the fall-through reaches the account path.
+	cfg := &config.Config{
+		Host:          "https://spog.example.test/",
+		Profile:       "skipws",
+		AccountID:     "abc-123",
+		WorkspaceID:   "none",
+		HTTPTransport: noNetworkTransport,
+	}
+	_, err = workspaceClientOrPrompt(t.Context(), cfg, false)
+	require.Error(t, err)
+	_, ok := errors.AsType[ErrAccountOnlyProfile](err)
+	assert.True(t, ok, "expected ErrAccountOnlyProfile to surface; MustAnyClient depends on this type for fall-through")
 }
 
 func TestWorkspaceClientOrPromptReturnsSuccessWhenAuthSucceeds(t *testing.T) {
