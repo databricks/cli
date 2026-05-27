@@ -31,8 +31,8 @@ func TestGenerateSchemaMap(t *testing.T) {
 		require.NoError(t, os.WriteFile("generated.go", src, 0o644))
 		for _, r := range results {
 			if r.hasTFType {
-				t.Logf("%s (%s): %d matches, %d renames, %d unwraps, %d dabs-only, %d tf-only, %d computed",
-					r.group, r.tfType, r.matchCount, len(r.renames), len(r.unwraps), len(r.dabsOnly), len(r.tfOnly), len(r.computed))
+				t.Logf("%s (%s): %d matches, %d renames, %d unwraps, %d dabs-only, %d tf-only",
+					r.group, r.tfType, r.matchCount, len(r.renames), len(r.unwraps), len(r.dabsOnly), len(r.tfOnly))
 			}
 		}
 		return
@@ -86,7 +86,6 @@ type groupResult struct {
 	unwraps    []string          // TF paths that are structural wrappers (Unwrap: true)
 	dabsOnly   map[string]bool   // DABs clean paths with no Terraform equivalent
 	tfOnly     map[string]bool   // TF clean paths with no DABs equivalent
-	computed   map[string]bool   // TF clean paths also present in RemoteType (read-only outputs)
 	matchCount int               // used for stats output only, not written to generated.go
 }
 
@@ -279,10 +278,8 @@ func buildGroup(group string, adapter *dresources.Adapter) (groupResult, error) 
 	if err != nil {
 		return groupResult{}, fmt.Errorf("walk remote type: %w", err)
 	}
-	res.computed = make(map[string]bool)
 	for tf := range res.tfOnly {
 		if remoteFields[tf] {
-			res.computed[tf] = true
 			delete(res.tfOnly, tf)
 		}
 	}
@@ -421,19 +418,6 @@ func renderSource(results []groupResult) ([]byte, error) {
 		}
 		w("\t%q: {\n", r.group)
 		writeFieldSet(w, buildFieldSet(r.tfOnly), 2)
-		w("\t},\n")
-	}
-	w("}\n\n")
-
-	w("// TerraformComputedFields maps DABs group name → FieldSet of TF fields that are\n")
-	w("// read-only server-generated outputs accessible via RemoteType in the direct engine.\n")
-	w("var TerraformComputedFields = map[string]FieldSet{\n")
-	for _, r := range results {
-		if !r.hasTFType || len(r.computed) == 0 {
-			continue
-		}
-		w("\t%q: {\n", r.group)
-		writeFieldSet(w, buildFieldSet(r.computed), 2)
 		w("\t},\n")
 	}
 	w("}\n")
