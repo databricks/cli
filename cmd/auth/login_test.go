@@ -87,8 +87,9 @@ type fakeDiscoveryClient struct {
 	introspection     *auth.IntrospectionResult
 	introspectionErr  error
 	// For assertions
-	introspectHost  string
-	introspectToken string
+	introspectHost     string
+	introspectToken    string
+	persistentAuthOpts []u2m.PersistentAuthOption
 }
 
 func (f *fakeDiscoveryClient) NewOAuthArgument(profileName string) (*u2m.BasicDiscoveryOAuthArgument, error) {
@@ -99,6 +100,7 @@ func (f *fakeDiscoveryClient) NewOAuthArgument(profileName string) (*u2m.BasicDi
 }
 
 func (f *fakeDiscoveryClient) NewPersistentAuth(ctx context.Context, opts ...u2m.PersistentAuthOption) (discoveryPersistentAuth, error) {
+	f.persistentAuthOpts = opts
 	if f.persistentAuthErr != nil {
 		return nil, f.persistentAuthErr
 	}
@@ -1114,6 +1116,52 @@ func TestDiscoveryLogin_OverridesHostFromEnv(t *testing.T) {
 
 	assert.Contains(t, stderr.String(), "Opening https://login.staging.test in your browser...")
 	assert.NotContains(t, stderr.String(), "Opening login.databricks.com in your browser...")
+}
+
+func TestDiscoveryLogin_SkipWorkspaceAddsAccountTargetOption(t *testing.T) {
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, ".databrickscfg")
+	require.NoError(t, os.WriteFile(configPath, []byte(""), 0o600))
+	t.Setenv("DATABRICKS_CONFIG_FILE", configPath)
+
+	newDiscoveryClient := func(t *testing.T) *fakeDiscoveryClient {
+		oauthArg, err := u2m.NewBasicDiscoveryOAuthArgument("DISCOVERY")
+		require.NoError(t, err)
+		oauthArg.SetDiscoveredHost("https://workspace.example.com")
+		return &fakeDiscoveryClient{
+			oauthArg: oauthArg,
+			persistentAuth: &fakeDiscoveryPersistentAuth{
+				token: &oauth2.Token{AccessToken: "test-token"},
+			},
+			introspectionErr: errors.New("not asserted here"),
+		}
+	}
+
+	ctx, _ := cmdio.NewTestContextWithStdout(t.Context())
+
+	// Baseline: no --skip-workspace.
+	baselineDC := newDiscoveryClient(t)
+	require.NoError(t, discoveryLogin(ctx, discoveryLoginInputs{
+		dc:          baselineDC,
+		profileName: "DISCOVERY",
+		timeout:     time.Second,
+		browserFunc: func(string) error { return nil },
+		tokenCache:  newTestTokenCache(),
+	}))
+
+	// With --skip-workspace: expect exactly one extra option.
+	skipDC := newDiscoveryClient(t)
+	require.NoError(t, discoveryLogin(ctx, discoveryLoginInputs{
+		dc:            skipDC,
+		profileName:   "DISCOVERY",
+		timeout:       time.Second,
+		skipWorkspace: true,
+		browserFunc:   func(string) error { return nil },
+		tokenCache:    newTestTokenCache(),
+	}))
+
+	assert.Equal(t, len(baselineDC.persistentAuthOpts)+1, len(skipDC.persistentAuthOpts),
+		"--skip-workspace should add exactly one extra PersistentAuthOption (WithDiscoveryAccountTarget)")
 }
 
 func TestLoginRejectsPositionalArgWithHostFlag(t *testing.T) {
