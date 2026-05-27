@@ -1,0 +1,11 @@
+Local = true
+Cloud = true
+RequiresUnityCatalog = true
+
+Ignore = [
+    ".databricks",
+    "databricks.yml",
+]
+
+[EnvMatrix]
+  DATABRICKS_BUNDLE_ENGINE = ["direct"]
