@@ -1,0 +1,2 @@
+# Try to plan with a non-existent job ID - should fail
+trace musterr $CLI bundle plan

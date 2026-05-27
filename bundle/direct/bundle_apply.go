@@ -119,6 +119,8 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 					return false
 				}
 				err = b.StateDB.SaveState(resourceKey, id, sv.Value, entry.DependsOn)
+			} else if action.IsBind() {
+				err = d.DeclarativeBind(ctx, &b.StateDB, entry.BindID, sv.Value, action, entry)
 			} else {
 				// TODO: redo calcDiff to downgrade planned action if possible (?)
 				err = d.Deploy(ctx, &b.StateDB, sv.Value, action, entry)

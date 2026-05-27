@@ -90,6 +90,25 @@ func TestNormalizeStructUnknownField(t *testing.T) {
 	}, vout.AsAny())
 }
 
+func TestNormalizeStructBindAtRootIsError(t *testing.T) {
+	// "bind" at the root level is a common mistake — without this special case it
+	// would silently degrade to an "unknown field" warning. Make sure we surface a
+	// dedicated error with location info instead.
+	type Tmp struct {
+		Foo string `json:"foo"`
+	}
+
+	var typ Tmp
+
+	m := dyn.NewMapping()
+	m.SetLoc("bind", []dyn.Location{{File: "databricks.yml", Line: 1, Column: 1}}, dyn.V(map[string]dyn.Value{}))
+
+	_, diags := Normalize(typ, dyn.V(m))
+	assert.Len(t, diags, 1)
+	assert.Equal(t, diag.Error, diags[0].Severity)
+	assert.Equal(t, "bind blocks are not allowed at the root level", diags[0].Summary)
+}
+
 func TestNormalizeStructNil(t *testing.T) {
 	type Tmp struct {
 		Foo string `json:"foo"`

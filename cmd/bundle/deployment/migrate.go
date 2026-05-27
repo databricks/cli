@@ -165,6 +165,14 @@ to the workspace so that subsequent deploys of this bundle use direct deployment
 		}
 		ctx := cmd.Context()
 
+		// `bundle deployment migrate` runs against an existing terraform deployment to
+		// produce a direct-engine state. Bind is a direct-engine-only feature, so we
+		// don't have a defined behavior for "migrating" with bind blocks present. Reject
+		// it and let the user remove the bind blocks, migrate, then add them back.
+		if b.Target != nil && !b.Target.Bind.IsEmpty() {
+			return errors.New("cannot run 'bundle deployment migrate' when bind blocks are defined in the target configuration; bind blocks are only supported with the direct deployment engine")
+		}
+
 		if stateDesc.Lineage == "" {
 			cmdio.LogString(ctx, `Error: This command migrates the existing Terraform state file (terraform.tfstate) to a direct deployment state file (resources.json). However, no existing local or remote state was found.
 
