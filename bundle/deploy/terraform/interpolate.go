@@ -3,11 +3,14 @@ package terraform
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/terraform_dabs_map"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/dynvar"
+	"github.com/databricks/cli/libs/structs/structpath"
 )
 
 type interpolateMutator struct{}
@@ -56,6 +59,53 @@ func (m *interpolateMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.D
 			if !ok {
 				// Trigger "key not found" for unknown resource types.
 				return dyn.GetByPath(root, path)
+			}
+
+			// Try to resolve as a pre-deploy local config value.
+			// This handles TF-style field names (e.g. "git_source.branch" → "git_source.git_branch")
+			// and TF list-block [0] indices on single nested blocks (e.g. "task[0].library[0].whl").
+			// We translate TF key names to DABs key names via TerraformPathToDABs, reconstruct
+			// the full dyn.Path with translated keys and original indices, then look up in root.
+			// If the field is not in local config (e.g. "id" which is readonly/post-deploy),
+			// we fall through to emit a TF expression instead.
+			if len(path) >= 4 {
+				resourceName := path[2].Key()
+
+				// Build key-only field string for TF→DABs translation.
+				parts := make([]string, 0, len(path)-3)
+				for _, p := range path[3:] {
+					if k := p.Key(); k != "" {
+						parts = append(parts, k)
+					}
+				}
+				fieldStr := strings.Join(parts, ".")
+
+				if fieldNode, err := structpath.ParsePath(fieldStr); err == nil {
+					if dabsNode, err := terraform_dabs_map.TerraformPathToDABs(resourceType, fieldNode); err == nil {
+						// Reconstruct the dyn.Path with translated DABs keys and original indices.
+						// dabsNode contains only key components (fieldStr was key-only); original
+						// index components from path[3:] are re-inserted at their original positions.
+						dabsKeys := dabsNode.AsSlice()
+						dabsKeyIdx := 0
+						dabsPath := dyn.NewPath(dyn.Key("resources"), dyn.Key(resourceType), dyn.Key(resourceName))
+						for _, p := range path[3:] {
+							if p.Key() != "" {
+								if dabsKeyIdx < len(dabsKeys) {
+									if translatedKey, ok := dabsKeys[dabsKeyIdx].StringKey(); ok {
+										dabsPath = dabsPath.Append(dyn.Key(translatedKey))
+									}
+									dabsKeyIdx++
+								}
+							} else {
+								dabsPath = dabsPath.Append(p)
+							}
+						}
+
+						if val, err := dyn.GetByPath(root, dabsPath); err == nil && val.Kind() != dyn.KindNil {
+							return val, nil
+						}
+					}
+				}
 			}
 
 			// Replace the resource type with the Terraform resource name.

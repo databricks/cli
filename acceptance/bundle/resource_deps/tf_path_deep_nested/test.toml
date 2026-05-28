@@ -1,4 +1,0 @@
-# TF-style path translation is a direct engine feature;
-# the TF engine passes $resources references through to Terraform verbatim,
-# which then fails on "for_each_task.task" because TF requires "for_each_task[0].task".
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
