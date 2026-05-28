@@ -8,9 +8,11 @@ import (
 	"os"
 	"runtime"
 	"runtime/debug"
+	"strconv"
 	"strings"
 	"time"
 
+	"github.com/charmbracelet/huh"
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
@@ -21,6 +23,32 @@ import (
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/spf13/cobra"
 )
+
+// ExitInterrupted is the exit code main.go uses when the user cancelled an
+// interactive prompt with Ctrl+C. Matches the POSIX 128+SIGINT convention so
+// shell scripts can distinguish a user cancel from a genuine command failure.
+const ExitInterrupted = 130
+
+// IsInterrupted reports whether err indicates the user cancelled an
+// interactive prompt with Ctrl+C. Covers both cmdio's TUI prompts and the
+// huh library used by aitools. main.go reads this to pick an exit code.
+func IsInterrupted(err error) bool {
+	return errors.Is(err, cmdio.ErrInterrupted) || errors.Is(err, huh.ErrUserAborted)
+}
+
+// ExitCodeFor maps the result of Execute to a process exit code.
+// 0 = success, ExitInterrupted (130) = user Ctrl+C, 1 = any other error.
+// Single source of truth shared between Execute's telemetry and main.go.
+func ExitCodeFor(err error) int {
+	switch {
+	case err == nil:
+		return 0
+	case IsInterrupted(err):
+		return ExitInterrupted
+	default:
+		return 1
+	}
+}
 
 func New(ctx context.Context) *cobra.Command {
 	cmd := &cobra.Command{
@@ -144,7 +172,14 @@ Stack Trace:
 
 	// Run the command
 	cmd, err = cmd.ExecuteContextC(ctx)
-	if err != nil && !errors.Is(err, ErrAlreadyPrinted) {
+	interrupted := IsInterrupted(err)
+	switch {
+	case err == nil, errors.Is(err, ErrAlreadyPrinted):
+		// ErrAlreadyPrinted wins over interrupted: a subcommand that
+		// printed its own cancel message should not be overridden.
+	case interrupted:
+		fmt.Fprintln(cmd.ErrOrStderr(), "cancelled")
+	default:
 		if cmdctx.HasConfigUsed(cmd.Context()) {
 			cfg := cmdctx.ConfigUsed(cmd.Context())
 			err = auth.EnrichAuthError(cmd.Context(), cfg, err)
@@ -152,28 +187,25 @@ Stack Trace:
 		fmt.Fprintf(cmd.ErrOrStderr(), "Error: %s\n", err.Error())
 	}
 
+	exitCode := ExitCodeFor(err)
+
 	// Log exit status and error
 	// We only log if logger initialization succeeded and is stored in command
 	// context
 	if logger, ok := log.FromContext(cmd.Context()); ok {
-		if err == nil {
-			logger.Info("completed execution",
-				slog.String("exit_code", "0"))
-		} else if errors.Is(err, ErrAlreadyPrinted) {
-			logger.Debug("failed execution",
-				slog.String("exit_code", "1"),
-			)
-		} else {
+		switch {
+		case err == nil:
+			logger.Info("completed execution", slog.String("exit_code", strconv.Itoa(exitCode)))
+		case interrupted:
+			logger.Info("cancelled execution", slog.String("exit_code", strconv.Itoa(exitCode)))
+		case errors.Is(err, ErrAlreadyPrinted):
+			logger.Debug("failed execution", slog.String("exit_code", strconv.Itoa(exitCode)))
+		default:
 			logger.Info("failed execution",
-				slog.String("exit_code", "1"),
+				slog.String("exit_code", strconv.Itoa(exitCode)),
 				slog.String("error", err.Error()),
 			)
 		}
-	}
-
-	exitCode := 0
-	if err != nil {
-		exitCode = 1
 	}
 
 	commandStr := commandString(cmd)
