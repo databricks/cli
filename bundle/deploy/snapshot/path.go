@@ -26,10 +26,6 @@ import (
 // the zip was built or the file's mtime.
 var zipEpoch = time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC)
 
-// snapshotBaseDir is the workspace path under which all immutable snapshots are stored.
-// The full path for a snapshot is snapshotBaseDir/{bundle_name}/{snapshot_id}.
-const snapshotBaseDir = "/Workspace/Shared/.snapshots"
-
 // BundleZip builds the zip that is uploaded to the snapshot API.
 // It contains:
 //   - all files from the bundle sync root under the "files/" prefix,
@@ -70,12 +66,6 @@ func SnapshotID(ctx context.Context, b *bundle.Bundle) (string, error) {
 		return "", err
 	}
 	return IDFromContent(content), nil
-}
-
-// SnapshotPath returns the workspace path for a snapshot:
-// snapshotBaseDir/{bundleName}/{snapshotID}.
-func SnapshotPath(bundleName, snapshotID string) string {
-	return snapshotBaseDir + "/" + bundleName + "/" + snapshotID
 }
 
 // syncFiles returns the list of files to include in the snapshot zip using the

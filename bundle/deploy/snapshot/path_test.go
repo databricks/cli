@@ -89,11 +89,6 @@ func TestIDFromContent(t *testing.T) {
 	assert.Len(t, id, 64, "SHA-256 hex must be 64 characters")
 }
 
-func TestSnapshotPath(t *testing.T) {
-	p := snapshot.SnapshotPath("my-bundle", "abc123")
-	assert.Equal(t, "/Workspace/Shared/.snapshots/my-bundle/abc123", p)
-}
-
 func TestSnapshotIDMatchesBundleZipHash(t *testing.T) {
 	b := makeBundleWithFiles(t, map[string]string{"task.py": "x = 1"})
 
