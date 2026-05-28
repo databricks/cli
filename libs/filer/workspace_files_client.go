@@ -121,10 +121,10 @@ type WorkspaceFilesClient struct {
 	root WorkspaceRootPath
 }
 
-// orgIDHeaders returns headers with X-Databricks-Org-Id set if a workspace ID
-// is configured. SPOG hosts require this header to route requests to the
-// correct workspace.
-func (w *WorkspaceFilesClient) orgIDHeaders() map[string]string {
+// workspaceIDHeaders returns headers with X-Databricks-Workspace-Id set if a
+// workspace ID is configured. SPOG hosts require this header to route requests
+// to the correct workspace.
+func (w *WorkspaceFilesClient) workspaceIDHeaders() map[string]string {
 	if w.workspaceClient == nil || w.workspaceClient.Config == nil {
 		return nil
 	}
@@ -133,7 +133,7 @@ func (w *WorkspaceFilesClient) orgIDHeaders() map[string]string {
 		return nil
 	}
 	return map[string]string{
-		"X-Databricks-Org-Id": wsID,
+		"X-Databricks-Workspace-Id": wsID,
 	}
 }
 
@@ -171,7 +171,7 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 		return err
 	}
 
-	err = w.apiClient.Do(ctx, http.MethodPost, urlPath, w.orgIDHeaders(), nil, body, nil)
+	err = w.apiClient.Do(ctx, http.MethodPost, urlPath, w.workspaceIDHeaders(), nil, body, nil)
 
 	// Return early on success.
 	if err == nil {
@@ -349,7 +349,7 @@ func (w *WorkspaceFilesClient) Stat(ctx context.Context, name string) (fs.FileIn
 		ctx,
 		http.MethodGet,
 		"/api/2.0/workspace/get-status",
-		w.orgIDHeaders(),
+		w.workspaceIDHeaders(),
 		nil,
 		map[string]string{
 			"path":               absPath,
