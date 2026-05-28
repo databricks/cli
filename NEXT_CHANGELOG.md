@@ -9,5 +9,6 @@
 
 ### Bundles
 * Retry transient HTTP 504 Gateway Timeout errors in direct deployment engine ([#5349](https://github.com/databricks/cli/pull/5349)).
+* Preserve `.designer.ipynb` suffix when translating notebook task paths so Lakeflow Designer files referenced from a `notebook_task` resolve correctly in the workspace ([#5370](https://github.com/databricks/cli/pull/5370)).
 
 ### Dependency updates
