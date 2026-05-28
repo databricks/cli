@@ -874,7 +874,7 @@ tasks:
     generates:
       - bundle/direct/dresources/resources.generated.yml
     cmds:
-      - "sh -c 'python3 bundle/direct/tools/generate_resources.py .codegen/openapi.json bundle/direct/dresources/apitypes.generated.yml bundle/direct/dresources/apitypes.yml acceptance/bundle/refschema/out.fields.txt > bundle/direct/dresources/resources.generated.yml'"
+      - "sh -c 'uv run --script bundle/direct/tools/generate_resources.py .codegen/openapi.json bundle/direct/dresources/apitypes.generated.yml bundle/direct/dresources/apitypes.yml acceptance/bundle/refschema/out.fields.txt > bundle/direct/dresources/resources.generated.yml'"
 
   generate-openapi-json:
     desc: Download OpenAPI spec (triggered by _openapi_sha change)
