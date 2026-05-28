@@ -1,0 +1,14 @@
+bundle:
+  name: test-bundle
+
+resources:
+  jobs:
+    src:
+      name: source
+      git_source:
+        git_branch: main
+        git_url: https://github.com/databricks/cli
+        git_provider: gitHub
+    dst:
+      # TF path: "git_source.branch" → DABs: "git_source.git_branch"
+      name: ${resources.jobs.src.git_source.branch}

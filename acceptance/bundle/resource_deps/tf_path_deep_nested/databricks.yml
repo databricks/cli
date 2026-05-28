@@ -1,0 +1,21 @@
+bundle:
+  name: test-bundle
+
+resources:
+  jobs:
+    src:
+      name: source
+      tasks:
+        - task_key: outer
+          for_each_task:
+            inputs: '["a"]'
+            task:
+              task_key: inner
+              libraries:
+                - whl: /path/to/wheel.whl
+              notebook_task:
+                notebook_path: /Workspace/notebook
+    dst:
+      # TF path: "task[0].for_each_task.task.library[0].whl"
+      # → DABs:  "tasks[0].for_each_task.task.libraries[0].whl"
+      name: ${resources.jobs.src.task[0].for_each_task.task.library[0].whl}

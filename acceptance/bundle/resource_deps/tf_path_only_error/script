@@ -1,0 +1,4 @@
+musterr $CLI bundle deploy > out.deploy.direct.txt 2>&1
+# Strip trailing blank line that the CLI adds after error messages.
+truncate -s -1 out.deploy.direct.txt
+rm -f out.requests.txt
