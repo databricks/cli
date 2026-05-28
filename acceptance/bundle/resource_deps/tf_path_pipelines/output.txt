@@ -4,3 +4,6 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/defaul
 Deploying resources...
 Updating deployment state...
 Deployment complete!
+
+>>> print_requests.py //jobs
+json.body.name = "mycluster";
