@@ -24,12 +24,6 @@ func Upload() bundle.Mutator {
 	return &snapshotUpload{}
 }
 
-// UploadWithClient returns an upload mutator backed by the provided SnapshotUploader.
-// This is intended for use in tests.
-func UploadWithClient(uploader filer.SnapshotUploader) bundle.Mutator {
-	return &snapshotUpload{uploader: uploader}
-}
-
 func (m *snapshotUpload) Name() string {
 	return "snapshot.Upload"
 }
