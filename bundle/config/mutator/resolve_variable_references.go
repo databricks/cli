@@ -103,26 +103,7 @@ func lookup(v dyn.Value, path dyn.Path, b *bundle.Bundle) (dyn.Value, error) {
 	// Future opportunity: if we lookup this path in both the given root
 	// and the synthesized root, we know if it was explicitly set or implied to be empty.
 	// Then we can emit a warning if it was not explicitly set.
-	return getByPathSkipIndexOnMap(v, path)
-}
-
-// getByPathSkipIndexOnMap looks up path in v, treating Index(0) on a KindMap as a no-op.
-// This allows TF-style [0] on single nested blocks (e.g. schedule[0].quartz_cron_expression)
-// to resolve against DABs config where those blocks are plain mappings, not sequences.
-func getByPathSkipIndexOnMap(v dyn.Value, path dyn.Path) (dyn.Value, error) {
-	cur := v
-	for _, c := range path {
-		if c.Key() == "" && c.Index() == 0 && cur.Kind() == dyn.KindMap {
-			// [0] on a mapping is a no-op: TF uses list-block syntax for single nested objects.
-			continue
-		}
-		next, err := dyn.GetByPath(cur, dyn.NewPath(c))
-		if err != nil {
-			return dyn.InvalidValue, err
-		}
-		cur = next
-	}
-	return cur, nil
+	return dyn.GetByPath(v, path)
 }
 
 func lookupForVariables(v dyn.Value, path dyn.Path, b *bundle.Bundle) (dyn.Value, error) {

@@ -5,10 +5,12 @@ resources:
   jobs:
     src:
       name: source
-      schedule:
-        quartz_cron_expression: "0 0 * * * ?"
-        timezone_id: UTC
+      git_source:
+        git_branch: main
+        git_url: https://github.com/databricks/cli
+        git_provider: gitHub
     dst:
-      # schedule[0]: TF list-block syntax; [0] on a mapping is a no-op in dyn.
-      # schedule.quartz_cron_expression has the same name in TF and DABs.
-      name: ${resources.jobs.src.schedule[0].quartz_cron_expression}
+      # TF path: "git_source[0].branch" — git_source is a TF list-block ([0] required),
+      # and "branch" is the TF field name for DABs "git_branch".
+      # Direct engine: TerraformPathToDABs translates "branch" → "git_branch".
+      name: ${resources.jobs.src.git_source[0].branch}

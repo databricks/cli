@@ -5,10 +5,14 @@ resources:
   jobs:
     src:
       name: source
-      trigger:
-        file_arrival:
-          url: abfss://container@account.dfs.core.windows.net/path
+      tasks:
+        - task_key: main
+          libraries:
+            - whl: /path/to/wheel.whl
+          notebook_task:
+            notebook_path: /Workspace/notebook
     dst:
-      # trigger[0].file_arrival[0]: two levels of TF list-block syntax.
-      # [0] on a mapping is a no-op in dyn; field names are the same in TF and DABs.
-      name: ${resources.jobs.src.trigger[0].file_arrival[0].url}
+      # TF path: "task[0].library[0].whl" — "task" is TF name for DABs "tasks",
+      # "library" is TF name for DABs "libraries". Both are list-blocks in TF.
+      # Direct engine: TerraformPathToDABs translates both renames.
+      name: ${resources.jobs.src.task[0].library[0].whl}
