@@ -106,7 +106,7 @@ func (r *ResourcePostgresProject) DoRead(ctx context.Context, id string) (*Postg
 	return makePostgresProjectRemote(project), nil
 }
 
-func (r *ResourcePostgresProject) DoCreate(ctx context.Context, config *PostgresProjectState) (string, *PostgresProjectRemote, error) {
+func (r *ResourcePostgresProject) DoCreate(ctx context.Context, _ *Engine, config *PostgresProjectState) (string, *PostgresProjectRemote, error) {
 	waiter, err := r.client.Postgres.CreateProject(ctx, postgres.CreateProjectRequest{
 		ProjectId: config.ProjectId,
 		Project: postgres.Project{
@@ -138,7 +138,7 @@ func (r *ResourcePostgresProject) DoCreate(ctx context.Context, config *Postgres
 	return remote.Name, remote, nil
 }
 
-func (r *ResourcePostgresProject) DoUpdate(ctx context.Context, id string, config *PostgresProjectState, entry *PlanEntry) (*PostgresProjectRemote, error) {
+func (r *ResourcePostgresProject) DoUpdate(ctx context.Context, _ *Engine, id string, config *PostgresProjectState, entry *PlanEntry) (*PostgresProjectRemote, error) {
 	// Build the mask from the plan's change list and prefix with "spec." (the
 	// API expects paths relative to Project). The API rejects mask entries
 	// that aren't also populated in the request body, and a wildcard "*"

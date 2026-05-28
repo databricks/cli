@@ -121,8 +121,8 @@ func (r *ResourceVectorSearchIndex) DoRead(ctx context.Context, id string) (*Vec
 	}, nil
 }
 
-func (r *ResourceVectorSearchIndex) DoCreate(ctx context.Context, config *VectorSearchIndexState) (string, *VectorSearchIndexRemote, error) {
-	index, err := r.client.VectorSearchIndexes.CreateIndex(ctx, config.CreateVectorIndexRequest)
+func (r *ResourceVectorSearchIndex) DoCreate(ctx context.Context, engine *Engine, config *VectorSearchIndexState) (string, *VectorSearchIndexRemote, error) {
+	_, err := r.client.VectorSearchIndexes.CreateIndex(ctx, config.CreateVectorIndexRequest)
 	if err != nil {
 		return "", nil, err
 	}
@@ -135,26 +135,18 @@ func (r *ResourceVectorSearchIndex) DoCreate(ctx context.Context, config *Vector
 		return "", nil, err
 	}
 	config.EndpointUuid = endpointUuid
-	return config.Name, &VectorSearchIndexRemote{VectorIndex: *index, EndpointUuid: endpointUuid}, nil
-}
 
-// No DoUpdate: vector search indexes have no update API. All SDK fields are
-// declared in resources.yml under recreate_on_changes or ignore_remote_changes.
-// If a future SDK bump adds a new field that isn't classified, the framework
-// rejects the resulting Update plan at bundle_plan.go (see also the reflection
-// test in vector_search_index_test.go which catches it earlier at unit-test time).
+	// Save state immediately after the index is created (endpoint UUID now set) so it
+	// is not orphaned if the subsequent provisioning wait is interrupted.
+	engine.SetID(config.Name)
+	if err := engine.SaveState(config); err != nil {
+		return "", nil, err
+	}
 
-func (r *ResourceVectorSearchIndex) DoDelete(ctx context.Context, id string, _ *VectorSearchIndexState) error {
-	return r.client.VectorSearchIndexes.DeleteIndexByIndexName(ctx, id)
-}
-
-// WaitAfterCreate polls GetIndex until Status.Ready=true. CreateIndex returns
-// immediately with metadata of an index whose embedding pipeline is still
-// provisioning; queries against an index that isn't ready fail. Blocking here
-// lets dependent resources (and the next plan) see a usable index.
-func (r *ResourceVectorSearchIndex) WaitAfterCreate(ctx context.Context, id string, config *VectorSearchIndexState) (*VectorSearchIndexRemote, error) {
+	// CreateIndex returns immediately; poll until the embedding pipeline is ready so
+	// dependent resources and the next plan see a usable index.
 	index, err := retries.Poll(ctx, createIndexTimeout, func() (*vectorsearch.VectorIndex, *retries.Err) {
-		idx, getErr := r.client.VectorSearchIndexes.GetIndexByIndexName(ctx, id)
+		idx, getErr := r.client.VectorSearchIndexes.GetIndexByIndexName(ctx, config.Name)
 		if getErr != nil {
 			return nil, retries.Halt(getErr)
 		}
@@ -168,9 +160,19 @@ func (r *ResourceVectorSearchIndex) WaitAfterCreate(ctx context.Context, id stri
 		return idx, nil
 	})
 	if err != nil {
-		return nil, err
+		return "", nil, err
 	}
-	return &VectorSearchIndexRemote{VectorIndex: *index, EndpointUuid: config.EndpointUuid}, nil
+	return config.Name, &VectorSearchIndexRemote{VectorIndex: *index, EndpointUuid: endpointUuid}, nil
+}
+
+// No DoUpdate: vector search indexes have no update API. All SDK fields are
+// declared in resources.yml under recreate_on_changes or ignore_remote_changes.
+// If a future SDK bump adds a new field that isn't classified, the framework
+// rejects the resulting Update plan at bundle_plan.go (see also the reflection
+// test in vector_search_index_test.go which catches it earlier at unit-test time).
+
+func (r *ResourceVectorSearchIndex) DoDelete(ctx context.Context, id string, _ *VectorSearchIndexState) error {
+	return r.client.VectorSearchIndexes.DeleteIndexByIndexName(ctx, id)
 }
 
 // WaitAfterDelete polls GetIndex until it returns 404. The DELETE call is

@@ -116,7 +116,7 @@ func (r *ResourceApp) DoRead(ctx context.Context, id string) (*AppRemote, error)
 	return remote, nil
 }
 
-func (r *ResourceApp) DoCreate(ctx context.Context, config *AppState) (string, *AppRemote, error) {
+func (r *ResourceApp) DoCreate(ctx context.Context, engine *Engine, config *AppState) (string, *AppRemote, error) {
 	// Start app compute only when lifecycle.started=true is explicit.
 	// For nil (omitted) or false, use no_compute=true (do not start compute).
 	noCompute := config.Lifecycle == nil || config.Lifecycle.Started == nil || !*config.Lifecycle.Started
@@ -154,7 +154,22 @@ func (r *ResourceApp) DoCreate(ctx context.Context, config *AppState) (string, *
 		return "", nil, err
 	}
 
-	return app.Name, nil, nil
+	// Save state as soon as the app exists so it is not orphaned if the wait or
+	// lifecycle management is interrupted.
+	engine.SetID(app.Name)
+	if err := engine.SaveState(config); err != nil {
+		return "", nil, err
+	}
+
+	remote, err := r.waitForApp(ctx, r.client, config.Name)
+	if err != nil {
+		return "", nil, err
+	}
+	alreadyStarted := remote.Lifecycle != nil && remote.Lifecycle.Started != nil && *remote.Lifecycle.Started
+	if err := r.manageLifecycle(ctx, config.Name, config, alreadyStarted); err != nil {
+		return "", nil, err
+	}
+	return app.Name, remote, nil
 }
 
 var UpdateMaskFields = []string{
@@ -172,7 +187,7 @@ var UpdateMaskFields = []string{
 
 var updateMask = strings.Join(UpdateMaskFields, ",")
 
-func (r *ResourceApp) DoUpdate(ctx context.Context, id string, config *AppState, entry *PlanEntry) (*AppRemote, error) {
+func (r *ResourceApp) DoUpdate(ctx context.Context, _ *Engine, id string, config *AppState, entry *PlanEntry) (*AppRemote, error) {
 	// Deploy-only fields (source_code_path, config,
 	// git_source, lifecycle) are not part of apps.App and thus excluded from the request body.
 	if hasAppChanges(entry) {
@@ -300,18 +315,6 @@ func deploymentToAppConfig(d *apps.AppDeployment) *resources.AppConfig {
 func (r *ResourceApp) DoDelete(ctx context.Context, id string, _ *AppState) error {
 	_, err := r.client.Apps.DeleteByName(ctx, id)
 	return err
-}
-
-func (r *ResourceApp) WaitAfterCreate(ctx context.Context, id string, config *AppState) (*AppRemote, error) {
-	remote, err := r.waitForApp(ctx, r.client, config.Name)
-	if err != nil {
-		return nil, err
-	}
-	alreadyStarted := remote.Lifecycle != nil && remote.Lifecycle.Started != nil && *remote.Lifecycle.Started
-	if err := r.manageLifecycle(ctx, config.Name, config, alreadyStarted); err != nil {
-		return nil, err
-	}
-	return remote, nil
 }
 
 // waitForApp waits for the app to reach the target state. The target state is either ACTIVE or STOPPED.

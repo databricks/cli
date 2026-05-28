@@ -855,7 +855,8 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	require.Error(t, err)
 	// TODO: if errors.Is(err, databricks.ErrResourceDoesNotExist) {... }
 
-	createdID, remoteStateFromCreate, err := adapter.DoCreate(ctx, newState)
+	nopEngine := NewNopEngine(adapter.StateType())
+	createdID, remoteStateFromCreate, err := adapter.DoCreate(ctx, nopEngine, newState)
 	require.NoError(t, err, "DoCreate failed state=%v", newState)
 	require.NotEmpty(t, createdID, "ID returned from DoCreate was empty")
 
@@ -877,14 +878,8 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 			"unexpected differences between remappedState and remappedRemoteStateFromCreate")
 	}
 
-	remoteStateFromWaitCreate, err := adapter.WaitAfterCreate(ctx, createdID, newState)
-	require.NoError(t, err)
-	if remoteStateFromWaitCreate != nil {
-		require.Equal(t, remote, remoteStateFromWaitCreate)
-	}
-
 	if adapter.HasDoUpdate() {
-		remoteStateFromUpdate, err := adapter.DoUpdate(ctx, createdID, newState, &deployplan.PlanEntry{})
+		remoteStateFromUpdate, err := adapter.DoUpdate(ctx, nopEngine, createdID, newState, &deployplan.PlanEntry{})
 		require.NoError(t, err, "DoUpdate failed")
 		if remoteStateFromUpdate != nil {
 			remappedStateFromUpdate, err := adapter.RemapState(remoteStateFromUpdate)
@@ -893,14 +888,6 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 				"unexpected differences between remappedState and remappedStateFromUpdate")
 		}
 
-		remoteStateFromWaitUpdate, err := adapter.WaitAfterUpdate(ctx, createdID, newState)
-		require.NoError(t, err)
-		if remoteStateFromWaitUpdate != nil {
-			remappedStateFromWaitUpdate, err := adapter.RemapState(remoteStateFromWaitUpdate)
-			require.NoError(t, err)
-			ignoreFilter.requireEqual(t, remappedState, remappedStateFromWaitUpdate,
-				"unexpected differences between remappedState and remappedStateFromWaitUpdate")
-		}
 	}
 
 	require.NoError(t, structwalk.Walk(newState, func(path *structpath.PathNode, val any, field *reflect.StructField) {
