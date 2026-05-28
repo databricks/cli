@@ -66,6 +66,11 @@ func getValue(v any, path *structpath.PathNode) (reflect.Value, error) {
 			}
 			kind := cur.Kind()
 			if kind != reflect.Slice && kind != reflect.Array {
+				// Terraform represents single-block fields as lists and uses [0] to access them.
+				// Treat [0] on a struct as a no-op so TF-style paths work against DABs structs.
+				if idx == 0 && kind == reflect.Struct {
+					continue
+				}
 				return reflect.Value{}, fmt.Errorf("%s: cannot index %s", node.String(), kind)
 			}
 			if idx < 0 || idx >= cur.Len() {

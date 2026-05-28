@@ -3,9 +3,9 @@ package terraform_dabs_map_test
 import (
 	"fmt"
 	"go/format"
+	"maps"
 	"os"
 	"reflect"
-	"maps"
 	"slices"
 	"strings"
 	"testing"

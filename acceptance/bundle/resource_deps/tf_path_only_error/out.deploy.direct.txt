@@ -1,0 +1,4 @@
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Error: cannot plan resources.jobs.dst: cannot resolve "${resources.jobs.src.always_running}": jobs: "always_running" is a Terraform-only field with no DABs equivalent
+
+Error: planning failed
