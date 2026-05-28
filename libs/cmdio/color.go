@@ -11,7 +11,6 @@ import (
 const (
 	ansiReset     = "\x1b[0m"
 	ansiBold      = "\x1b[1m"
-	ansiDim       = "\x1b[2m"
 	ansiFaint     = "\x1b[2m"
 	ansiItalic    = "\x1b[3m"
 	ansiUnderline = "\x1b[4m"
@@ -45,11 +44,17 @@ func render(ctx context.Context, code, msg string) string {
 	return code + msg + ansiReset
 }
 
-// Bold renders msg in bold.
+// Bold renders msg with increased intensity (bold).
 func Bold(ctx context.Context, msg string) string { return render(ctx, ansiBold, msg) }
 
-// Dim renders msg in dim (faint) intensity.
-func Dim(ctx context.Context, msg string) string { return render(ctx, ansiDim, msg) }
+// Faint renders msg with decreased intensity (faint, dim).
+func Faint(ctx context.Context, msg string) string { return render(ctx, ansiFaint, msg) }
+
+// Italic renders msg in italic.
+func Italic(ctx context.Context, msg string) string { return render(ctx, ansiItalic, msg) }
+
+// Underline renders msg underlined.
+func Underline(ctx context.Context, msg string) string { return render(ctx, ansiUnderline, msg) }
 
 // Red renders msg in red.
 func Red(ctx context.Context, msg string) string { return render(ctx, ansiRed, msg) }
@@ -62,6 +67,9 @@ func Yellow(ctx context.Context, msg string) string { return render(ctx, ansiYel
 
 // Blue renders msg in blue.
 func Blue(ctx context.Context, msg string) string { return render(ctx, ansiBlue, msg) }
+
+// Magenta renders msg in magenta.
+func Magenta(ctx context.Context, msg string) string { return render(ctx, ansiMagenta, msg) }
 
 // Cyan renders msg in cyan.
 func Cyan(ctx context.Context, msg string) string { return render(ctx, ansiCyan, msg) }
@@ -77,14 +85,16 @@ func HiBlue(ctx context.Context, msg string) string { return render(ctx, ansiHiB
 // helpers accept a format string + args.
 func RenderFuncMap(ctx context.Context) template.FuncMap {
 	return template.FuncMap{
-		"red":     templateColor(ctx, ansiRed),
-		"green":   templateColor(ctx, ansiGreen),
-		"blue":    templateColor(ctx, ansiBlue),
-		"yellow":  templateColor(ctx, ansiYellow),
-		"magenta": templateColor(ctx, ansiMagenta),
-		"cyan":    templateColor(ctx, ansiCyan),
-		"bold":    templateColor(ctx, ansiBold),
-		"italic":  templateColor(ctx, ansiItalic),
+		"red":       templateColor(ctx, ansiRed),
+		"green":     templateColor(ctx, ansiGreen),
+		"blue":      templateColor(ctx, ansiBlue),
+		"yellow":    templateColor(ctx, ansiYellow),
+		"magenta":   templateColor(ctx, ansiMagenta),
+		"cyan":      templateColor(ctx, ansiCyan),
+		"bold":      templateColor(ctx, ansiBold),
+		"faint":     templateColor(ctx, ansiFaint),
+		"italic":    templateColor(ctx, ansiItalic),
+		"underline": templateColor(ctx, ansiUnderline),
 	}
 }
 

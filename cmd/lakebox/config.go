@@ -112,7 +112,7 @@ Examples:
 			if updated.Name != "" {
 				field(ctx, out, "name", updated.Name)
 			}
-			field(ctx, out, "autostop", cmdio.Dim(ctx, updated.autoStopLabel()))
+			field(ctx, out, "autostop", cmdio.Faint(ctx, updated.autoStopLabel()))
 			blank(out)
 			return nil
 		},

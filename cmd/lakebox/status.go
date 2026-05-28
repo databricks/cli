@@ -58,9 +58,9 @@ Example:
 			}
 			field(ctx, out, "status", status(ctx, entry.Status))
 			if entry.FQDN != "" {
-				field(ctx, out, "fqdn", cmdio.Dim(ctx, entry.FQDN))
+				field(ctx, out, "fqdn", cmdio.Faint(ctx, entry.FQDN))
 			}
-			field(ctx, out, "autostop", cmdio.Dim(ctx, entry.autoStopLabel()))
+			field(ctx, out, "autostop", cmdio.Faint(ctx, entry.autoStopLabel()))
 			blank(out)
 			return nil
 		},

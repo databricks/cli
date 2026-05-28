@@ -81,7 +81,7 @@ Example:
 			}
 
 			if len(entries) == 0 {
-				fmt.Fprintf(cmd.ErrOrStderr(), "  %s\n", cmdio.Dim(ctx, "No lakeboxes found."))
+				fmt.Fprintf(cmd.ErrOrStderr(), "  %s\n", cmdio.Faint(ctx, "No lakeboxes found."))
 				return nil
 			}
 
@@ -127,13 +127,13 @@ Example:
 				header = fmt.Sprintf("%-*s  %-*s  %-*s  %s",
 					idCol, "ID", statusCol, "STATUS", autostopCol, "AUTOSTOP", "DEFAULT")
 			}
-			fmt.Fprintf(out, "  %s\n", cmdio.Dim(ctx, header))
+			fmt.Fprintf(out, "  %s\n", cmdio.Faint(ctx, header))
 
 			ruleLen := idCol + statusCol + autostopCol + defaultCol + 6
 			if showName {
 				ruleLen += nameCol + 2
 			}
-			fmt.Fprintf(out, "  %s\n", cmdio.Dim(ctx, strings.Repeat("─", ruleLen)))
+			fmt.Fprintf(out, "  %s\n", cmdio.Faint(ctx, strings.Repeat("─", ruleLen)))
 
 			for _, e := range entries {
 				id := e.SandboxID
@@ -160,19 +160,19 @@ Example:
 					nmPad := max(nameCol-len(nm), 0)
 					nmStr := nm
 					if nm == "-" {
-						nmStr = cmdio.Dim(ctx, "-")
+						nmStr = cmdio.Faint(ctx, "-")
 					}
 					fmt.Fprintf(out, "  %s%s  %s%s  %s%s  %s%s  %s\n",
 						idStr, strings.Repeat(" ", idPad),
 						nmStr, strings.Repeat(" ", nmPad),
 						st, strings.Repeat(" ", stPad),
-						cmdio.Dim(ctx, as), strings.Repeat(" ", asPad),
+						cmdio.Faint(ctx, as), strings.Repeat(" ", asPad),
 						def)
 				} else {
 					fmt.Fprintf(out, "  %s%s  %s%s  %s%s  %s\n",
 						idStr, strings.Repeat(" ", idPad),
 						st, strings.Repeat(" ", stPad),
-						cmdio.Dim(ctx, as), strings.Repeat(" ", asPad),
+						cmdio.Faint(ctx, as), strings.Repeat(" ", asPad),
 						def)
 				}
 			}

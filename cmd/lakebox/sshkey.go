@@ -97,7 +97,7 @@ Examples:
 
 			if len(keys) == 0 {
 				fmt.Fprintf(cmd.ErrOrStderr(), "  %s\n",
-					cmdio.Dim(ctx, "No SSH keys registered. Run 'databricks lakebox register' to add one."))
+					cmdio.Faint(ctx, "No SSH keys registered. Run 'databricks lakebox register' to add one."))
 				return nil
 			}
 
@@ -128,16 +128,16 @@ Examples:
 			// the key matching this machine; header and separator leave it blank.
 			header := fmt.Sprintf("%-*s  %-*s  %-*s  %s",
 				nameCol, "NAME", hashCol, "KEY HASH", timeCol, "CREATED", "LAST USED")
-			fmt.Fprintf(out, "    %s\n", cmdio.Dim(ctx, header))
-			fmt.Fprintf(out, "    %s\n", cmdio.Dim(ctx, strings.Repeat("─", nameCol+hashCol+timeCol+timeCol+6)))
+			fmt.Fprintf(out, "    %s\n", cmdio.Faint(ctx, header))
+			fmt.Fprintf(out, "    %s\n", cmdio.Faint(ctx, strings.Repeat("─", nameCol+hashCol+timeCol+timeCol+6)))
 
 			localFound := false
 			for _, k := range keys {
-				// Pad NAME manually from the raw width because cmdio.Dim
+				// Pad NAME manually from the raw width because cmdio.Faint
 				// wraps the cell in ANSI escapes that throw off `%-*s`.
 				displayName, visibleNameLen := k.Name, len(k.Name)
 				if displayName == "" {
-					displayName = cmdio.Dim(ctx, "(unset)")
+					displayName = cmdio.Faint(ctx, "(unset)")
 					visibleNameLen = len("(unset)")
 				}
 				namePad := max(nameCol-visibleNameLen, 0)
@@ -159,11 +159,11 @@ Examples:
 			blank(out)
 			switch {
 			case localFound:
-				fmt.Fprintf(out, "  %s\n", cmdio.Dim(ctx, cmdio.Cyan(ctx, "*")+" key matches the one on this machine"))
+				fmt.Fprintf(out, "  %s\n", cmdio.Faint(ctx, cmdio.Cyan(ctx, "*")+" key matches the one on this machine"))
 			case localHash != "":
-				fmt.Fprintf(out, "  %s\n", cmdio.Dim(ctx, "(no registered key matches this machine's local key — run `databricks lakebox register` to register it)"))
+				fmt.Fprintf(out, "  %s\n", cmdio.Faint(ctx, "(no registered key matches this machine's local key — run `databricks lakebox register` to register it)"))
 			default:
-				fmt.Fprintf(out, "  %s\n", cmdio.Dim(ctx, "(no local lakebox key on this machine — run `databricks lakebox register` to create and register one)"))
+				fmt.Fprintf(out, "  %s\n", cmdio.Faint(ctx, "(no local lakebox key on this machine — run `databricks lakebox register` to create and register one)"))
 			}
 			blank(out)
 			return nil

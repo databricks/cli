@@ -53,7 +53,7 @@ Examples:
 
 			stderr := cmd.ErrOrStderr()
 			if generated {
-				ok(ctx, "Generated SSH key at "+cmdio.Dim(ctx, keyPath))
+				ok(ctx, "Generated SSH key at "+cmdio.Faint(ctx, keyPath))
 			} else {
 				field(ctx, stderr, "key", keyPath)
 			}
