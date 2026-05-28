@@ -54,6 +54,7 @@ func (d *DeploymentUnit) Create(ctx context.Context, db *dstate.DeploymentState,
 	var newID string
 	var remoteState any
 	_, err := retryWith(ctx, func(err error) bool {
+		// For DoCreate, retry feature is opt-in via retrySafe(err) error wrapper
 		_, ok := errors.AsType[*dresources.RetrySafeError](err)
 		return ok && isTransient(ctx, err)
 	}, func() (struct{}, error) {
