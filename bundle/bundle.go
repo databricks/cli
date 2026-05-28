@@ -21,7 +21,6 @@ import (
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cache"
 	"github.com/databricks/cli/libs/fileset"
-	"github.com/databricks/cli/libs/locker"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
 	libsync "github.com/databricks/cli/libs/sync"
@@ -128,9 +127,6 @@ type Bundle struct {
 
 	// Stores an initialized copy of this bundle's Terraform wrapper.
 	Terraform *tfexec.Terraform
-
-	// Stores the locker responsible for acquiring/releasing a deployment lock.
-	Locker *locker.Locker
 
 	// TerraformPlanPath is the path to the plan from the terraform CLI
 	TerraformPlanPath string
