@@ -16,33 +16,33 @@ Updating deployment state...
 Deployment complete!
 
 >>> [CLI] jobs get [NUMID]
-"/Workspace/Users/[UUID]/.snapshots/test-bundle-immutable-[UNIQUE_NAME]/73e0ad2064ac9c[NUMID]bd827ea506a8437f37516d3ba66ffa34a90276/src/files/src/main.py"
+"/Workspace/Users/[UUID]/.snapshots/test-bundle-immutable-[UNIQUE_NAME]/11f80ca6d8923bf75b57e475d4ca9ba4bb1d6d48c58aace8d3f2a1289b51c6e0/src/files/src/main.py"
 
 >>> [CLI] jobs get [NUMID]
-"/Workspace/Users/[UUID]/.snapshots/test-bundle-immutable-[UNIQUE_NAME]/73e0ad2064ac9c[NUMID]bd827ea506a8437f37516d3ba66ffa34a90276/src/files/src/notebook"
+"/Workspace/Users/[UUID]/.snapshots/test-bundle-immutable-[UNIQUE_NAME]/11f80ca6d8923bf75b57e475d4ca9ba4bb1d6d48c58aace8d3f2a1289b51c6e0/src/files/src/notebook"
 
 >>> [CLI] jobs get [NUMID]
 [
-  "/Workspace/Users/[UUID]/.snapshots/test-bundle-immutable-[UNIQUE_NAME]/73e0ad2064ac9c[NUMID]bd827ea506a8437f37516d3ba66ffa34a90276/src/artifacts/.internal/immutable-0.0.1-py3-none-any.whl"
+  "/Workspace/Users/[UUID]/.snapshots/test-bundle-immutable-[UNIQUE_NAME]/11f80ca6d8923bf75b57e475d4ca9ba4bb1d6d48c58aace8d3f2a1289b51c6e0/src/artifacts/.internal/immutable-0.0.1-py3-none-any.whl"
 ]
 
 >>> [CLI] bundle run my_job
 Run URL: [DATABRICKS_URL]/?o=[NUMID]#job/[NUMID]/run/[NUMID]
 
 [TIMESTAMP] "my job" RUNNING
-[TIMESTAMP] "my job" INTERNAL_ERROR FAILED Task notebook_task failed with message: Unexpected failure while fetching notebook at /Workspace/Users/[UUID]/.snapshots/test-bundle-immutable-[UNIQUE_NAME]/73e0ad2064ac9c[NUMID]bd827ea506a8437f37516d3ba66ffa34a90276/src/files/src/notebook: '/Workspace/Users/[UUID]/.snapshots/test-bundle-immutable-[UNIQUE_NAME]/73e0ad2064ac9c[NUMID]bd827ea506a8437f37516d3ba66ffa34a90276/src/files/src/notebook' is not a notebook.
-Task notebook_task FAILED:
-Run failed with error message
- Unexpected failure while fetching notebook at /Workspace/Users/[UUID]/.snapshots/test-bundle-immutable-[UNIQUE_NAME]/73e0ad2064ac9c[NUMID]bd827ea506a8437f37516d3ba66ffa34a90276/src/files/src/notebook: '/Workspace/Users/[UUID]/.snapshots/test-bundle-immutable-[UNIQUE_NAME]/73e0ad2064ac9c[NUMID]bd827ea506a8437f37516d3ba66ffa34a90276/src/files/src/notebook' is not a notebook.
+[TIMESTAMP] "my job" TERMINATED SUCCESS
+Output:
+=======
+Task python_wheel_task:
+Hello from Python Wheel Task!
 
+=======
+Task notebook_task:
 
-Error: Task notebook_task failed!
-Error:
-Run failed with error message
- Unexpected failure while fetching notebook at /Workspace/Users/[UUID]/.snapshots/test-bundle-immutable-[UNIQUE_NAME]/73e0ad2064ac9c[NUMID]bd827ea506a8437f37516d3ba66ffa34a90276/src/files/src/notebook: '/Workspace/Users/[UUID]/.snapshots/test-bundle-immutable-[UNIQUE_NAME]/73e0ad2064ac9c[NUMID]bd827ea506a8437f37516d3ba66ffa34a90276/src/files/src/notebook' is not a notebook.
-Trace:
+=======
+Task spark_python_task:
+Hello from Spark Python Task!
 
-Error: failed to reach TERMINATED or SKIPPED, got INTERNAL_ERROR: Task notebook_task failed with message: Unexpected failure while fetching notebook at /Workspace/Users/[UUID]/.snapshots/test-bundle-immutable-[UNIQUE_NAME]/73e0ad2064ac9c[NUMID]bd827ea506a8437f37516d3ba66ffa34a90276/src/files/src/notebook: '/Workspace/Users/[UUID]/.snapshots/test-bundle-immutable-[UNIQUE_NAME]/73e0ad2064ac9c[NUMID]bd827ea506a8437f37516d3ba66ffa34a90276/src/files/src/notebook' is not a notebook.
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
@@ -52,5 +52,3 @@ All files and directories at the following location will be deleted: /Workspace/
 
 Deleting files...
 Destroy complete!
-
-Exit code: 1

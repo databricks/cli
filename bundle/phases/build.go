@@ -14,7 +14,6 @@ import (
 	"github.com/databricks/cli/libs/logdiag"
 )
 
-
 type LibLocationMap map[string][]libraries.LocationToUpdate
 
 // The build phase builds artifacts.

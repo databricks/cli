@@ -11,13 +11,11 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
-	"strings"
 	"time"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/fileset"
 	"github.com/databricks/cli/libs/git"
-	"github.com/databricks/cli/libs/notebook"
 	"github.com/databricks/cli/libs/set"
 )
 
@@ -151,14 +149,7 @@ func addSyncRootToZip(ctx context.Context, zw *zip.Writer, b *bundle.Bundle) err
 			return fmt.Errorf("open %s: %w", f.Relative, err)
 		}
 
-		// Notebooks are stored without their file extension, matching how
-		// Databricks workspace imports them (e.g. sample_notebook.ipynb →
-		// sample_notebook). Job tasks reference the extension-stripped path.
 		entryPath := filepath.ToSlash(f.Relative)
-		if isNb, _, nbErr := notebook.DetectWithFS(b.SyncRoot, f.Relative); nbErr == nil && isNb {
-			entryPath = strings.TrimSuffix(entryPath, filepath.Ext(entryPath))
-		}
-
 		h := &zip.FileHeader{
 			Name:     "files/" + entryPath,
 			Method:   zip.Deflate,
