@@ -91,7 +91,7 @@ type Adapter struct {
 	// Required:
 	prepareState *calladapt.BoundCaller
 	remapState   *calladapt.BoundCaller
-	doRead       *calladapt.BoundCaller
+	doRefresh    *calladapt.BoundCaller
 	doDelete     *calladapt.BoundCaller
 	doCreate     *calladapt.BoundCaller
 
@@ -125,7 +125,7 @@ func NewAdapter(typedNil any, resourceType string, client *databricks.WorkspaceC
 	adapter := &Adapter{
 		prepareState:            nil,
 		remapState:              nil,
-		doRead:                  nil,
+		doRefresh:               nil,
 		doDelete:                nil,
 		doCreate:                nil,
 		doUpdate:                nil,
@@ -179,7 +179,7 @@ func (a *Adapter) initMethods(resource any) error {
 		return err
 	}
 
-	a.doRead, err = prepareCallRequired(resource, "DoRead")
+	a.doRefresh, err = prepareCallRequired(resource, "DoRead")
 	if err != nil {
 		return err
 	}
@@ -367,7 +367,7 @@ func (a *Adapter) StateType() reflect.Type {
 }
 
 func (a *Adapter) RemoteType() reflect.Type {
-	return a.doRead.OutTypes[0]
+	return a.doRefresh.OutTypes[0]
 }
 
 func (a *Adapter) ResourceConfig() *ResourceLifecycleConfig {
@@ -408,7 +408,7 @@ func (a *Adapter) RemapState(remoteState any) (any, error) {
 }
 
 func (a *Adapter) DoRead(ctx context.Context, id string) (any, error) {
-	outs, err := a.doRead.Call(ctx, id)
+	outs, err := a.doRefresh.Call(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -438,7 +438,10 @@ func (a *Adapter) DoCreate(ctx context.Context, newState any) (string, any, erro
 	if err != nil {
 		return "", nil, err
 	}
-	return outs[0].(string), normalizeNilPointer(outs[1]), nil
+
+	id := outs[0].(string)
+	remoteState := normalizeNilPointer(outs[1])
+	return id, remoteState, nil
 }
 
 // HasDoUpdate returns true if the resource implements DoUpdate method.
@@ -452,11 +455,14 @@ func (a *Adapter) DoUpdate(ctx context.Context, id string, newState any, entry *
 	if a.doUpdate == nil {
 		return nil, errors.New("internal error: DoUpdate not found")
 	}
+
 	outs, err := a.doUpdate.Call(ctx, id, newState, entry)
 	if err != nil {
 		return nil, err
 	}
-	return normalizeNilPointer(outs[0]), nil
+
+	remoteState := normalizeNilPointer(outs[0])
+	return remoteState, nil
 }
 
 // HasDoUpdateWithID returns true if the resource implements DoUpdateWithID method.
@@ -469,33 +475,41 @@ func (a *Adapter) DoUpdateWithID(ctx context.Context, oldID string, newState any
 	if a.doUpdateWithID == nil {
 		return "", nil, errors.New("internal error: DoUpdateWithID not found")
 	}
+
 	outs, err := a.doUpdateWithID.Call(ctx, oldID, newState)
 	if err != nil {
 		return "", nil, err
 	}
-	return outs[0].(string), normalizeNilPointer(outs[1]), nil
+
+	id := outs[0].(string)
+	remoteState := normalizeNilPointer(outs[1])
+	return id, remoteState, nil
 }
 
 func (a *Adapter) DoResize(ctx context.Context, id string, newState any) error {
 	if a.doResize == nil {
 		return errors.New("internal error: DoResize not found")
 	}
+
 	_, err := a.doResize.Call(ctx, id, newState)
 	return err
 }
 
 // WaitAfterCreate waits for the resource to become ready after creation.
 // If the resource doesn't implement this method, this is a no-op.
-// Returns the updated remoteState if available, otherwise returns nil.
+// Returns the updated remoteState if available, otherwise returns nil
 func (a *Adapter) WaitAfterCreate(ctx context.Context, id string, newState any) (any, error) {
 	if a.waitAfterCreate == nil {
-		return nil, nil
+		return nil, nil // no-op if not implemented
 	}
+
 	outs, err := a.waitAfterCreate.Call(ctx, id, newState)
 	if err != nil {
 		return nil, err
 	}
-	return normalizeNilPointer(outs[0]), nil
+
+	remoteState := normalizeNilPointer(outs[0])
+	return remoteState, nil
 }
 
 // WaitAfterUpdate waits for the resource to become ready after update.
@@ -503,7 +517,7 @@ func (a *Adapter) WaitAfterCreate(ctx context.Context, id string, newState any) 
 // Returns the updated remoteState if available, otherwise returns nil.
 func (a *Adapter) WaitAfterUpdate(ctx context.Context, id string, newState any) (any, error) {
 	if a.waitAfterUpdate == nil {
-		return nil, nil
+		return nil, nil // no-op if not implemented
 	}
 
 	outs, err := a.waitAfterUpdate.Call(ctx, id, newState)
