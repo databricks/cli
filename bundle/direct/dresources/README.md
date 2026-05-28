@@ -34,9 +34,9 @@ Do **not** derive update mask field names from `entry.Changes`. The paths in `en
 
 If a resource has fields that must not be sent in updates (deploy-only, lifecycle-only, etc.), document them explicitly with a `var` block and a comment explaining each exclusion.
 
-## Async APIs: WaitAfterCreate / WaitAfterUpdate
+## Async APIs
 
-For resources whose create or update is asynchronous (the resource is not immediately ready after the call returns), implement `WaitAfterCreate` and/or `WaitAfterUpdate` instead of polling inline inside DoCreate/DoUpdate. These are the correct extension points in the framework, and polling inline bypasses state persistence timing.
+For resources whose create or update is asynchronous, poll inline inside `DoCreate`/`DoUpdate` after the initial API call. To prevent orphaning if deployment is interrupted during a long wait, call `engine.SetID(id)` then `engine.SaveState(config)` immediately after the resource is created and before any waiting. The framework provides a `*Engine` as the second argument to both methods.
 
 ## Slice ordering: KeyedSlices
 

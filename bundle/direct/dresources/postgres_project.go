@@ -98,7 +98,7 @@ func (r *ResourcePostgresProject) DoRead(ctx context.Context, id string) (*Postg
 	return makePostgresProjectRemote(project), nil
 }
 
-func (r *ResourcePostgresProject) DoCreate(ctx context.Context, config *PostgresProjectState) (string, *PostgresProjectRemote, error) {
+func (r *ResourcePostgresProject) DoCreate(ctx context.Context, _ *Engine, config *PostgresProjectState) (string, *PostgresProjectRemote, error) {
 	waiter, err := r.client.Postgres.CreateProject(ctx, postgres.CreateProjectRequest{
 		ProjectId: config.ProjectId,
 		Project: postgres.Project{
@@ -130,7 +130,7 @@ func (r *ResourcePostgresProject) DoCreate(ctx context.Context, config *Postgres
 	return remote.Name, remote, nil
 }
 
-func (r *ResourcePostgresProject) DoUpdate(ctx context.Context, id string, config *PostgresProjectState, entry *PlanEntry) (*PostgresProjectRemote, error) {
+func (r *ResourcePostgresProject) DoUpdate(ctx context.Context, _ *Engine, id string, config *PostgresProjectState, entry *PlanEntry) (*PostgresProjectRemote, error) {
 	// Build update mask from fields that have action="update" in the changes map.
 	// This excludes immutable fields and fields that haven't changed.
 	// Prefix with "spec." because the API expects paths relative to the Project object,

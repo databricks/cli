@@ -141,7 +141,7 @@ func (r *ResourcePostgresEndpoint) waitForReconciliation(ctx context.Context, na
 	}
 }
 
-func (r *ResourcePostgresEndpoint) DoCreate(ctx context.Context, config *PostgresEndpointState) (string, *PostgresEndpointRemote, error) {
+func (r *ResourcePostgresEndpoint) DoCreate(ctx context.Context, _ *Engine, config *PostgresEndpointState) (string, *PostgresEndpointRemote, error) {
 	waiter, err := r.client.Postgres.CreateEndpoint(ctx, postgres.CreateEndpointRequest{
 		EndpointId: config.EndpointId,
 		Parent:     config.Parent,
@@ -179,7 +179,7 @@ func (r *ResourcePostgresEndpoint) DoCreate(ctx context.Context, config *Postgre
 	return remote.Name, remote, nil
 }
 
-func (r *ResourcePostgresEndpoint) DoUpdate(ctx context.Context, id string, config *PostgresEndpointState, entry *PlanEntry) (*PostgresEndpointRemote, error) {
+func (r *ResourcePostgresEndpoint) DoUpdate(ctx context.Context, _ *Engine, id string, config *PostgresEndpointState, entry *PlanEntry) (*PostgresEndpointRemote, error) {
 	// Build update mask from fields that have action="update" in the changes map.
 	// This excludes immutable fields and fields that haven't changed.
 	// Prefix with "spec." because the API expects paths relative to the Endpoint object,

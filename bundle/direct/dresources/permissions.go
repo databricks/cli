@@ -215,9 +215,9 @@ func (r *ResourcePermissions) DoRead(ctx context.Context, id string) (*Permissio
 }
 
 // DoCreate calls https://docs.databricks.com/api/workspace/jobs/setjobpermissions.
-func (r *ResourcePermissions) DoCreate(ctx context.Context, newState *PermissionsState) (string, *PermissionsState, error) {
+func (r *ResourcePermissions) DoCreate(ctx context.Context, engine *Engine, newState *PermissionsState) (string, *PermissionsState, error) {
 	// should we remember the default here?
-	_, err := r.DoUpdate(ctx, newState.ObjectID, newState, nil)
+	_, err := r.DoUpdate(ctx, engine, newState.ObjectID, newState, nil)
 	if err != nil {
 		// Permissions Set is idempotent (PUT), so retrying on transient errors is safe.
 		return "", nil, retrySafe(err)
@@ -227,7 +227,7 @@ func (r *ResourcePermissions) DoCreate(ctx context.Context, newState *Permission
 }
 
 // DoUpdate calls https://docs.databricks.com/api/workspace/jobs/setjobpermissions.
-func (r *ResourcePermissions) DoUpdate(ctx context.Context, _ string, newState *PermissionsState, _ *PlanEntry) (*PermissionsState, error) {
+func (r *ResourcePermissions) DoUpdate(ctx context.Context, _ *Engine, _ string, newState *PermissionsState, _ *PlanEntry) (*PermissionsState, error) {
 	extractedType, extractedID, err := parsePermissionsID(newState.ObjectID)
 	if err != nil {
 		return nil, err
