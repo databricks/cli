@@ -132,7 +132,7 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 			status = lock.DeploymentFailure
 		}
 		if err := dl.Release(ctx, status); err != nil {
-			log.Warnf(ctx, "Failed to release deployment lock: %v", err)
+			logdiag.LogError(ctx, err)
 		}
 	}()
 
