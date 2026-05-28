@@ -11,36 +11,40 @@ type faultRuleKey struct {
 	pattern string
 }
 
-type faultRule struct {
-	statusCode int
-	body       string
+// FaultRule describes a single injected fault: HTTP status, body, and remaining fire count.
+type FaultRule struct {
+	StatusCode int
+	Body       string
 	offset     int
 	times      int
 }
 
-type faultRules struct {
+// FaultRules holds the active fault injection rules for a test server.
+type FaultRules struct {
 	mu    sync.Mutex
-	rules map[faultRuleKey]*faultRule
+	rules map[faultRuleKey]*FaultRule
 }
 
-func newFaultRules() *faultRules {
-	return &faultRules{rules: make(map[faultRuleKey]*faultRule)}
+// NewFaultRules returns an empty FaultRules.
+func NewFaultRules() *FaultRules {
+	return &FaultRules{rules: make(map[faultRuleKey]*FaultRule)}
 }
 
-func (fr *faultRules) set(token, pattern string, statusCode int, body string, offset, times int) {
+// Set registers or replaces a fault rule for the given token and pattern.
+func (fr *FaultRules) Set(token, pattern string, statusCode int, body string, offset, times int) {
 	fr.mu.Lock()
 	defer fr.mu.Unlock()
-	fr.rules[faultRuleKey{token: token, pattern: pattern}] = &faultRule{
-		statusCode: statusCode,
-		body:       body,
+	fr.rules[faultRuleKey{token: token, pattern: pattern}] = &FaultRule{
+		StatusCode: statusCode,
+		Body:       body,
 		offset:     offset,
 		times:      times,
 	}
 }
 
-// check returns a matching fault rule and advances its counters, or nil if no rule matches.
+// Check returns a matching fault rule and advances its counters, or nil if no rule matches.
 // Pattern supports a trailing "*" wildcard, e.g. "PUT /api/2.0/permissions/pipelines/*".
-func (fr *faultRules) check(method, path, token string) *faultRule {
+func (fr *FaultRules) Check(method, path, token string) *FaultRule {
 	requestPattern := method + " " + path
 
 	fr.mu.Lock()
@@ -75,11 +79,12 @@ func (fr *faultRules) check(method, path, token string) *faultRule {
 		result := *rule
 		return &result
 	}
+
 	return nil
 }
 
 // faultEndpointHandler handles POST /__testserver/fault.
-func faultEndpointHandler(fr *faultRules) HandlerFunc {
+func faultEndpointHandler(fr *FaultRules) HandlerFunc {
 	return func(req Request) any {
 		var body struct {
 			Pattern    string `json:"pattern"`
@@ -91,7 +96,7 @@ func faultEndpointHandler(fr *faultRules) HandlerFunc {
 		if err := json.Unmarshal(req.Body, &body); err != nil {
 			return Response{StatusCode: 400, Body: map[string]string{"error": err.Error()}}
 		}
-		fr.set(req.Token, body.Pattern, body.StatusCode, body.Body, body.Offset, body.Times)
+		fr.Set(req.Token, body.Pattern, body.StatusCode, body.Body, body.Offset, body.Times)
 		return Response{StatusCode: 200}
 	}
 }

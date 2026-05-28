@@ -47,7 +47,7 @@ type Server struct {
 	mu             sync.Mutex
 
 	kills  *killRules
-	faults *faultRules
+	faults *FaultRules
 
 	RequestCallback  func(request *Request)
 	ResponseCallback func(request *Request, response *EncodedResponse)
@@ -205,7 +205,7 @@ func getHeaders(value []byte) http.Header {
 func New(t testutil.TestingT) *Server {
 	router := NewRouter()
 	kills := newKillRules()
-	faults := newFaultRules()
+	faults := NewFaultRules()
 
 	// Wrap the router so kill rules fire for ALL requests, including those with
 	// no registered handler that would otherwise bypass serve() entirely.
@@ -328,10 +328,10 @@ func (s *Server) serve(w http.ResponseWriter, r *http.Request, handler HandlerFu
 
 	var resp EncodedResponse
 
-	if rule := s.faults.check(r.Method, r.URL.Path, token); rule != nil {
+	if rule := s.faults.Check(r.Method, r.URL.Path, token); rule != nil {
 		resp = EncodedResponse{
-			StatusCode: rule.statusCode,
-			Body:       []byte(rule.body),
+			StatusCode: rule.StatusCode,
+			Body:       []byte(rule.Body),
 			Headers:    getJsonHeaders(),
 		}
 	} else if bytes.Contains(request.Body, []byte("INJECT_ERROR")) {
