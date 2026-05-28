@@ -28,11 +28,14 @@ func TestColorHelpersEmitSGRWhenEnabled(t *testing.T) {
 		want string
 	}{
 		{"Bold", cmdio.Bold(ctx, "id"), "\x1b[1mid\x1b[0m"},
-		{"Dim", cmdio.Dim(ctx, "hint"), "\x1b[2mhint\x1b[0m"},
+		{"Faint", cmdio.Faint(ctx, "hint"), "\x1b[2mhint\x1b[0m"},
+		{"Italic", cmdio.Italic(ctx, "em"), "\x1b[3mem\x1b[0m"},
+		{"Underline", cmdio.Underline(ctx, "link"), "\x1b[4mlink\x1b[0m"},
 		{"Red", cmdio.Red(ctx, "hello"), "\x1b[31mhello\x1b[0m"},
 		{"Green", cmdio.Green(ctx, "ok"), "\x1b[32mok\x1b[0m"},
 		{"Yellow", cmdio.Yellow(ctx, "warn"), "\x1b[33mwarn\x1b[0m"},
 		{"Blue", cmdio.Blue(ctx, "info"), "\x1b[34minfo\x1b[0m"},
+		{"Magenta", cmdio.Magenta(ctx, "trace"), "\x1b[35mtrace\x1b[0m"},
 		{"Cyan", cmdio.Cyan(ctx, "debug"), "\x1b[36mdebug\x1b[0m"},
 		{"HiBlack", cmdio.HiBlack(ctx, "dim"), "\x1b[90mdim\x1b[0m"},
 		{"HiBlue", cmdio.HiBlue(ctx, "APP"), "\x1b[94mAPP\x1b[0m"},
@@ -66,7 +69,7 @@ func TestRenderFuncMap(t *testing.T) {
 	ctx := ttyContext(t)
 	fm := cmdio.RenderFuncMap(ctx)
 
-	for _, name := range []string{"red", "green", "blue", "yellow", "magenta", "cyan", "bold", "italic"} {
+	for _, name := range []string{"red", "green", "blue", "yellow", "magenta", "cyan", "bold", "faint", "italic", "underline"} {
 		_, ok := fm[name].(func(string, ...any) string)
 		assert.True(t, ok, "FuncMap missing %q or wrong signature", name)
 	}
