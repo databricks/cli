@@ -23,7 +23,7 @@ import (
 func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions, engine engine.EngineType) {
 	log.Info(ctx, "Phase: bind")
 
-	dl := lock.NewDeploymentLock(b, lock.GoalBind)
+	dl := lock.NewDeploymentLock(ctx, b, lock.GoalBind)
 	if err := dl.Acquire(ctx); err != nil {
 		logdiag.LogError(ctx, err)
 		return
@@ -126,7 +126,7 @@ func jsonDump(ctx context.Context, v any, field string) string {
 func Unbind(ctx context.Context, b *bundle.Bundle, bundleType, tfResourceType, resourceKey string, engine engine.EngineType) {
 	log.Info(ctx, "Phase: unbind")
 
-	dl := lock.NewDeploymentLock(b, lock.GoalUnbind)
+	dl := lock.NewDeploymentLock(ctx, b, lock.GoalUnbind)
 	if err := dl.Acquire(ctx); err != nil {
 		logdiag.LogError(ctx, err)
 		return

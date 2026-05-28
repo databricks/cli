@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/permissions"
 )
 
 // Goal describes the purpose of a deployment operation.
@@ -34,8 +35,19 @@ type DeploymentLock interface {
 }
 
 // NewDeploymentLock returns a DeploymentLock backed by the workspace
-// filesystem. This factory exists so a future change can swap in alternative
-// lock implementations without touching callers.
-func NewDeploymentLock(b *bundle.Bundle, goal Goal) DeploymentLock {
-	return newWorkspaceFilesystemLock(b, goal)
+// filesystem. The factory captures everything the lock needs from the bundle
+// at construction time so the lock implementation itself does not depend on
+// bundle.Bundle.
+func NewDeploymentLock(ctx context.Context, b *bundle.Bundle, goal Goal) DeploymentLock {
+	return &workspaceFilesystemLock{
+		client:    b.WorkspaceClient(ctx),
+		user:      b.Config.Workspace.CurrentUser.UserName,
+		statePath: b.Config.Workspace.StatePath,
+		enabled:   b.Config.Bundle.Deployment.Lock.IsEnabled(),
+		force:     b.Config.Bundle.Deployment.Lock.Force,
+		goal:      goal,
+		reportPermissionError: func(ctx context.Context, path string) error {
+			return permissions.ReportPossiblePermissionDenied(ctx, b, path).Error()
+		},
+	}
 }
