@@ -9,6 +9,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/engine"
+	"github.com/databricks/cli/bundle/config/managedstate"
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/config/validate"
 	"github.com/databricks/cli/bundle/deploy/terraform"
@@ -372,6 +373,13 @@ func ResolveEngineSetting(ctx context.Context, b *bundle.Bundle) (engine.EngineS
 	}
 
 	return engine.EngineSetting{}, nil
+}
+
+// ResolveManagedStateSetting determines the effective managed-state setting by
+// combining bundle config and env var.
+// Priority: bundle.managed_state config > DATABRICKS_BUNDLE_MANAGED_STATE env var > Default.
+func ResolveManagedStateSetting(ctx context.Context, b *bundle.Bundle) (managedstate.Setting, error) {
+	return managedstate.Resolve(ctx, b.Config.Bundle.ManagedState, b.Config.Value())
 }
 
 func rejectDefinitions(ctx context.Context, b *bundle.Bundle) {

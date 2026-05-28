@@ -50,6 +50,9 @@ github.com/databricks/cli/bundle/config.Bundle:
       The Git version control details that are associated with your bundle.
     "markdown_description": |-
       The Git version control details that are associated with your bundle. For supported attributes see [\_](/dev-tools/bundles/settings.md#git).
+  "managed_state":
+    "description": |-
+      Whether the bundle uses server-side state management via the Deployment Metadata Service. When true, deployment locks and resource state are held by the control plane instead of the workspace filesystem. Takes priority over the `DATABRICKS_BUNDLE_MANAGED_STATE` environment variable. Experimental: this surface is subject to change without notice.
   "name":
     "description": |-
       The name of the bundle.

@@ -1,0 +1,6 @@
+bundle:
+  name: test-managed-state-gate-env
+
+targets:
+  default:
+    default: true
