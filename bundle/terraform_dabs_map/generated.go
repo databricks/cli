@@ -2,6 +2,31 @@
 
 package terraform_dabs_map
 
+// Summary (renames: DABs↔TF leaf-name differences; dabs-only/tf-only: unmatched fields):
+//   alerts (databricks_alert_v2): 0 renames, 1 dabs-only, 3 tf-only
+//   apps (databricks_app): 0 renames, 16 dabs-only, 1 tf-only
+//   clusters (databricks_cluster): 0 renames, 0 dabs-only, 25 tf-only
+//   dashboards (databricks_dashboard): 0 renames, 0 dabs-only, 2 tf-only
+//   database_catalogs (databricks_database_database_catalog): 0 renames, 0 dabs-only, 0 tf-only
+//   database_instances (databricks_database_instance): 0 renames, 0 dabs-only, 1 tf-only
+//   experiments (databricks_mlflow_experiment): 0 renames, 0 dabs-only, 1 tf-only
+//   jobs (databricks_job): 11 renames, 33 dabs-only, 257 tf-only
+//   model_serving_endpoints (databricks_model_serving): 0 renames, 0 dabs-only, 2 tf-only
+//   models (databricks_mlflow_model): 0 renames, 0 dabs-only, 1 tf-only
+//   pipelines (databricks_pipeline): 3 renames, 49 dabs-only, 2 tf-only
+//   postgres_branches (databricks_postgres_branch): 0 renames, 0 dabs-only, 0 tf-only
+//   postgres_catalogs (databricks_postgres_catalog): 0 renames, 0 dabs-only, 0 tf-only
+//   postgres_endpoints (databricks_postgres_endpoint): 0 renames, 0 dabs-only, 0 tf-only
+//   postgres_projects (databricks_postgres_project): 0 renames, 0 dabs-only, 1 tf-only
+//   postgres_synced_tables (databricks_postgres_synced_table): 0 renames, 0 dabs-only, 0 tf-only
+//   quality_monitors (databricks_quality_monitor): 0 renames, 0 dabs-only, 0 tf-only
+//   registered_models (databricks_registered_model): 0 renames, 0 dabs-only, 0 tf-only
+//   schemas (databricks_schema): 0 renames, 0 dabs-only, 1 tf-only
+//   secret_scopes (databricks_secret_scope): 0 renames, 0 dabs-only, 1 tf-only
+//   sql_warehouses (databricks_sql_endpoint): 0 renames, 0 dabs-only, 2 tf-only
+//   synced_database_tables (databricks_database_synced_database_table): 0 renames, 0 dabs-only, 0 tf-only
+//   volumes (databricks_volume): 0 renames, 0 dabs-only, 1 tf-only
+
 // TerraformToDABsFieldMap maps DABs group name → nested TF segments → DABs segment name.
 // Navigate using TF field name segments; DABs is the corresponding DABs name when it differs.
 var TerraformToDABsFieldMap = map[string]RenameTree{
