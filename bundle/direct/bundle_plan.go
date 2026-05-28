@@ -178,7 +178,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		}
 
 		dbentry, hasEntry := b.StateDB.GetResourceEntry(resourceKey)
-		// Tolerate empty-id entries from older partial-recreate failures
+		// Tolerate empty-ID entries from older partial-recreate failures
 		// (apply.Recreate now deletes state on the way through, but pre-fix
 		// state files may still carry a malformed entry). Treat as missing
 		// and let the resource be re-created on this plan.

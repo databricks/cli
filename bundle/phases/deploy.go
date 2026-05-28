@@ -36,6 +36,7 @@ var deployApprovalGroups = []approvalGroup{
 	{group: "synced_database_tables", message: deleteOrRecreateSyncedDatabaseTableMessage},
 	{group: "postgres_projects", message: deleteOrRecreatePostgresProjectMessage},
 	{group: "postgres_branches", message: deleteOrRecreatePostgresBranchMessage},
+	{group: "vector_search_indexes", message: deleteOrRecreateVectorSearchIndexMessage},
 }
 
 func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) (bool, error) {

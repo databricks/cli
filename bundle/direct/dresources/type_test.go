@@ -73,6 +73,9 @@ var knownMissingInStateType = map[string][]string{
 	"apps": {
 		"lifecycle.prevent_destroy",
 	},
+	"clusters": {
+		"lifecycle.prevent_destroy",
+	},
 	"dashboards": {
 		"file_path",
 	},
