@@ -62,7 +62,7 @@ func ResourceURL(baseURL url.URL, resourceType, id string) string {
 }
 
 // BuildResourceURL constructs a full workspace URL from a host string, resource
-// type name, ID, and workspace ID. It parses the host, appends ?o=<workspace-id>
+// type name, ID, and workspace ID. It parses the host, appends ?w=<workspace-id>
 // when needed, and formats the resource path.
 func BuildResourceURL(host, resourceType, id string, workspaceID int64) (string, error) {
 	baseURL, err := workspaceBaseURL(host, workspaceID)
@@ -94,13 +94,13 @@ func workspaceBaseURL(host string, workspaceID int64) (*url.URL, error) {
 		return baseURL, nil
 	}
 
-	orgID := strconv.FormatInt(workspaceID, 10)
-	if hasWorkspaceIDInHostname(baseURL.Hostname(), orgID) {
+	wsID := strconv.FormatInt(workspaceID, 10)
+	if hasWorkspaceIDInHostname(baseURL.Hostname(), wsID) {
 		return baseURL, nil
 	}
 
 	values := baseURL.Query()
-	values.Add("o", orgID)
+	values.Add("w", wsID)
 	baseURL.RawQuery = values.Encode()
 
 	return baseURL, nil

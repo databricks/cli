@@ -49,11 +49,11 @@ func TestWorkspaceBaseURL(t *testing.T) {
 		expected    string
 	}{
 		{"no workspace ID", "https://myworkspace.databricks.com", 0, "https://myworkspace.databricks.com"},
-		{"with workspace ID", "https://myworkspace.databricks.com", 123456, "https://myworkspace.databricks.com?o=123456"},
+		{"with workspace ID", "https://myworkspace.databricks.com", 123456, "https://myworkspace.databricks.com?w=123456"},
 		{"trailing slash stripped", "https://myworkspace.databricks.com/", 0, "https://myworkspace.databricks.com/"},
-		{"trailing slash with workspace ID", "https://myworkspace.databricks.com/", 789, "https://myworkspace.databricks.com/?o=789"},
+		{"trailing slash with workspace ID", "https://myworkspace.databricks.com/", 789, "https://myworkspace.databricks.com/?w=789"},
 		{"adb hostname skips query param", "https://adb-123456.azuredatabricks.net", 123456, "https://adb-123456.azuredatabricks.net"},
-		{"adb hostname mismatch adds param", "https://adb-999.azuredatabricks.net", 123456, "https://adb-999.azuredatabricks.net?o=123456"},
+		{"adb hostname mismatch adds param", "https://adb-999.azuredatabricks.net", 123456, "https://adb-999.azuredatabricks.net?w=123456"},
 	}
 
 	for _, tt := range tests {
@@ -80,9 +80,9 @@ func TestBuildResourceURL(t *testing.T) {
 		expected     string
 	}{
 		{"simple path", "https://host.com", "jobs", "123", 0, "https://host.com/jobs/123"},
-		{"path with workspace ID", "https://host.com", "jobs", "123", 456, "https://host.com/jobs/123?o=456"},
+		{"path with workspace ID", "https://host.com", "jobs", "123", 456, "https://host.com/jobs/123?w=456"},
 		{"fragment pattern", "https://host.com", "notebooks", "12345", 0, "https://host.com/#notebook/12345"},
-		{"fragment with workspace ID", "https://host.com", "notebooks", "12345", 789, "https://host.com/?o=789#notebook/12345"},
+		{"fragment with workspace ID", "https://host.com", "notebooks", "12345", 789, "https://host.com/?w=789#notebook/12345"},
 		{"registered model normalizes dots", "https://host.com", "registered_models", "catalog.schema.model", 0, "https://host.com/explore/data/models/catalog/schema/model"},
 	}
 

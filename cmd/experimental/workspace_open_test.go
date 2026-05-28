@@ -79,26 +79,26 @@ func TestBuildWorkspaceURLHostWithTrailingSlash(t *testing.T) {
 func TestBuildWorkspaceURLWithWorkspaceID(t *testing.T) {
 	got, err := workspaceurls.BuildResourceURL("https://myworkspace.databricks.com", "jobs", "123", 123456)
 	require.NoError(t, err)
-	assert.Equal(t, "https://myworkspace.databricks.com/jobs/123?o=123456", got)
+	assert.Equal(t, "https://myworkspace.databricks.com/jobs/123?w=123456", got)
 }
 
 func TestBuildWorkspaceURLWithWorkspaceIDInHostname(t *testing.T) {
 	got, err := workspaceurls.BuildResourceURL("https://adb-123456.azuredatabricks.net", "jobs", "123", 123456)
 	require.NoError(t, err)
-	// Workspace ID is already in the hostname, so ?o= should not be appended.
+	// Workspace ID is already in the hostname, so ?w= should not be appended.
 	assert.Equal(t, "https://adb-123456.azuredatabricks.net/jobs/123", got)
 }
 
 func TestBuildWorkspaceURLWithWorkspaceIDInVanityHostname(t *testing.T) {
 	got, err := workspaceurls.BuildResourceURL("https://workspace-123456.example.com", "jobs", "123", 123456)
 	require.NoError(t, err)
-	assert.Equal(t, "https://workspace-123456.example.com/jobs/123?o=123456", got)
+	assert.Equal(t, "https://workspace-123456.example.com/jobs/123?w=123456", got)
 }
 
 func TestBuildWorkspaceURLFragmentWithWorkspaceID(t *testing.T) {
 	got, err := workspaceurls.BuildResourceURL("https://myworkspace.databricks.com", "notebooks", "12345", 789)
 	require.NoError(t, err)
-	assert.Equal(t, "https://myworkspace.databricks.com/?o=789#notebook/12345", got)
+	assert.Equal(t, "https://myworkspace.databricks.com/?w=789#notebook/12345", got)
 }
 
 func TestWorkspaceOpenCommandCompletion(t *testing.T) {
@@ -221,7 +221,7 @@ func TestWorkspaceOpenCommandURLFlag(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.False(t, browserOpened)
-	assert.Equal(t, "https://myworkspace.databricks.com/jobs/123?o=789\n", stdout.String())
+	assert.Equal(t, "https://myworkspace.databricks.com/jobs/123?w=789\n", stdout.String())
 	assert.Equal(t, "", stderr.String())
 }
 
