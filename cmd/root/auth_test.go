@@ -454,6 +454,71 @@ func TestAccountClientOrPromptReturnsErrorForWrongHostType(t *testing.T) {
 	assert.ErrorIs(t, err, databricks.ErrNotAccountClient)
 }
 
+func TestWorkspaceClientOrPromptRejectsAccountOnlyProfile(t *testing.T) {
+	tests := []struct {
+		name        string
+		workspaceID string
+	}{
+		// New shape: --skip-workspace omits workspace_id entirely.
+		{name: "empty workspace_id", workspaceID: ""},
+		// Legacy shape: older CLIs persisted the "none" sentinel.
+		{name: "legacy none sentinel", workspaceID: "none"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			testutil.CleanupEnvironment(t)
+			t.Setenv("PATH", "")
+
+			cfg := &config.Config{
+				Host:          "https://example.test/",
+				AccountID:     "abc-123",
+				WorkspaceID:   tt.workspaceID,
+				Token:         "foobar",
+				Profile:       "bb",
+				HTTPTransport: noNetworkTransport,
+			}
+
+			w, err := workspaceClientOrPrompt(t.Context(), cfg, false)
+			assert.Nil(t, w)
+			require.Error(t, err)
+			var accountOnly ErrAccountOnlyProfile
+			require.ErrorAs(t, err, &accountOnly)
+			assert.Contains(t, err.Error(), `profile "bb"`)
+			assert.Contains(t, err.Error(), "account-only")
+			assert.Contains(t, err.Error(), "no workspace_id set")
+		})
+	}
+}
+
+func TestMustAnyClientFallsThroughOnAccountOnlyProfile(t *testing.T) {
+	testutil.CleanupEnvironment(t)
+	t.Setenv("PATH", "")
+
+	configFile := filepath.Join(t.TempDir(), ".databrickscfg")
+	err := os.WriteFile(configFile, []byte(`
+[skipws]
+host         = https://accounts.azuredatabricks.net/
+account_id   = abc-123
+token        = foobar
+workspace_id = none
+`), 0o600)
+	require.NoError(t, err)
+	t.Setenv("DATABRICKS_CONFIG_FILE", configFile)
+
+	ctx, tt := cmdio.SetupTest(t.Context(), cmdio.TestOptions{PromptSupported: true})
+	t.Cleanup(tt.Done)
+	cmd := New(ctx)
+	require.NoError(t, cmd.PersistentFlags().Set("profile", "skipws"))
+
+	// Workspace path returns ErrAccountOnlyProfile. MustAnyClient must
+	// recognize the type and fall through to the account client so
+	// `auth describe` shows account info for account-only profiles.
+	isAccount, err := MustAnyClient(cmd, []string{})
+	require.NoError(t, err)
+	require.True(t, isAccount, "expected fall-through to account client")
+	require.NotNil(t, cmdctx.AccountClient(cmd.Context()))
+}
+
 func TestWorkspaceClientOrPromptReturnsSuccessWhenAuthSucceeds(t *testing.T) {
 	testutil.CleanupEnvironment(t)
 	t.Setenv("PATH", "")

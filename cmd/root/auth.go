@@ -52,6 +52,25 @@ func initProfileFlag(cmd *cobra.Command) {
 	cmd.RegisterFlagCompletionFunc("profile", profile.ProfileCompletion)
 }
 
+// ErrAccountOnlyProfile signals that the resolved profile has an account_id
+// but no workspace_id, so workspace APIs can't be reached. Workspace-only
+// commands surface this as an actionable error; MustAnyClient (used by `auth
+// describe` and similar) recognizes the type and falls through to the account
+// client so account-only profiles still describe cleanly.
+type ErrAccountOnlyProfile struct {
+	profileName string
+}
+
+func (e ErrAccountOnlyProfile) Error() string {
+	return fmt.Sprintf("profile %q has no workspace_id set (account-only); this command requires a workspace. Edit the profile to set workspace_id to a real ID, or pass --profile with a workspace-scoped profile", e.profileName)
+}
+
+// accountOnlyProfileError describes why a workspace command can't run against
+// a profile that has an account_id but no workspace_id.
+func accountOnlyProfileError(profileName string) error {
+	return ErrAccountOnlyProfile{profileName: profileName}
+}
+
 func profileFlagValue(cmd *cobra.Command) (string, bool) {
 	profileFlag := cmd.Flag("profile")
 	if profileFlag == nil {
@@ -127,9 +146,11 @@ func MustAnyClient(cmd *cobra.Command, args []string) (bool, error) {
 	}
 
 	// If the error indicates a wrong config type (workspace host used for account client,
-	// or config type mismatch detected by workspaceClientOrPrompt), fall through to try
-	// account client.
-	if _, ok := errors.AsType[ErrNoWorkspaceProfiles](werr); !errors.Is(werr, errNotWorkspaceClient) && !ok {
+	// or config type mismatch detected by workspaceClientOrPrompt), or an account-only
+	// profile (no workspace_id), fall through to try the account client.
+	_, noWorkspaceProfiles := errors.AsType[ErrNoWorkspaceProfiles](werr)
+	_, accountOnly := errors.AsType[ErrAccountOnlyProfile](werr)
+	if !errors.Is(werr, errNotWorkspaceClient) && !noWorkspaceProfiles && !accountOnly {
 		return false, werr
 	}
 
@@ -190,6 +211,19 @@ func MustAccountClient(cmd *cobra.Command, args []string) error {
 // Helper function to create a workspace client or prompt once if the given configuration is not valid.
 func workspaceClientOrPrompt(ctx context.Context, cfg *config.Config, allowPrompt bool) (*databricks.WorkspaceClient, error) {
 	w, err := databricks.NewWorkspaceClient((*databricks.Config)(cfg))
+	if err == nil && cfg.Profile != "" && cfg.AccountID != "" &&
+		(cfg.WorkspaceID == "" || cfg.WorkspaceID == auth.WorkspaceIDNone) {
+		// Account-only profile (created with --skip-workspace): account_id is
+		// set but workspace_id is absent (new shape) or the legacy "none"
+		// sentinel. Without a workspace_id the SDK would either send "none" as
+		// a routing identifier or fail later with an opaque auth error.
+		// Reject up front with a message the user can act on.
+		//
+		// We require cfg.Profile to be set so we don't reject env-var-only
+		// configs targeting a unified host where workspace APIs are also
+		// served from the account host.
+		return nil, accountOnlyProfileError(cfg.Profile)
+	}
 	if err == nil {
 		err = w.Config.Authenticate(emptyHttpRequest(ctx))
 	}
