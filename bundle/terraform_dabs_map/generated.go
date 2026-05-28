@@ -42,6 +42,9 @@ var TerraformToDABsFieldMap = map[string]RenameTree{
 	"postgres_projects": {
 		"spec": {Unwrap: true},
 	},
+	"postgres_synced_tables": {
+		"spec": {Unwrap: true},
+	},
 }
 
 // DABsOnlyFields maps DABs group name → FieldSet of DABs fields with no TF equivalent.
@@ -88,10 +91,52 @@ var DABsOnlyFields = map[string]FieldSet{
 					"new_cluster": {
 						"autotermination_minutes": {},
 					},
+					"pipeline_task": {
+						"full_refresh_selection":     {},
+						"refresh_flow_selection":     {},
+						"refresh_selection":          {},
+						"reset_checkpoint_selection": {},
+					},
+					"python_operator_task": {
+						"main": {},
+						"parameters": {
+							"name":  {},
+							"value": {},
+						},
+					},
+					"run_job_task": {
+						"pipeline_params": {
+							"full_refresh_selection":     {},
+							"refresh_flow_selection":     {},
+							"refresh_selection":          {},
+							"reset_checkpoint_selection": {},
+						},
+					},
 				},
 			},
 			"new_cluster": {
 				"autotermination_minutes": {},
+			},
+			"pipeline_task": {
+				"full_refresh_selection":     {},
+				"refresh_flow_selection":     {},
+				"refresh_selection":          {},
+				"reset_checkpoint_selection": {},
+			},
+			"python_operator_task": {
+				"main": {},
+				"parameters": {
+					"name":  {},
+					"value": {},
+				},
+			},
+			"run_job_task": {
+				"pipeline_params": {
+					"full_refresh_selection":     {},
+					"refresh_flow_selection":     {},
+					"refresh_selection":          {},
+					"reset_checkpoint_selection": {},
+				},
 			},
 		},
 	},
@@ -103,6 +148,76 @@ var DABsOnlyFields = map[string]FieldSet{
 			},
 		},
 		"dry_run": {},
+		"ingestion_definition": {
+			"objects": {
+				"schema": {
+					"connector_options": {
+						"kafka_options": {
+							"client_config": {
+								"*": {},
+							},
+							"key_transformer": {
+								"format": {},
+								"json_options": {
+									"as_variant":            {},
+									"schema":                {},
+									"schema_evolution_mode": {},
+									"schema_file_path":      {},
+									"schema_hints":          {},
+								},
+							},
+							"max_offsets_per_trigger": {},
+							"starting_offset":         {},
+							"topic_pattern":           {},
+							"topics":                  {},
+							"value_transformer": {
+								"format": {},
+								"json_options": {
+									"as_variant":            {},
+									"schema":                {},
+									"schema_evolution_mode": {},
+									"schema_file_path":      {},
+									"schema_hints":          {},
+								},
+							},
+						},
+					},
+				},
+				"table": {
+					"connector_options": {
+						"kafka_options": {
+							"client_config": {
+								"*": {},
+							},
+							"key_transformer": {
+								"format": {},
+								"json_options": {
+									"as_variant":            {},
+									"schema":                {},
+									"schema_evolution_mode": {},
+									"schema_file_path":      {},
+									"schema_hints":          {},
+								},
+							},
+							"max_offsets_per_trigger": {},
+							"starting_offset":         {},
+							"topic_pattern":           {},
+							"topics":                  {},
+							"value_transformer": {
+								"format": {},
+								"json_options": {
+									"as_variant":            {},
+									"schema":                {},
+									"schema_evolution_mode": {},
+									"schema_file_path":      {},
+									"schema_hints":          {},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
 	},
 }
 
@@ -565,8 +680,9 @@ var DABsToTerraformRenameMap = map[string]RenameTree{
 // For groups using Unwrap in TerraformToDABsFieldMap, every DABs path must be prefixed
 // with this segment to obtain the corresponding TF path.
 var DABsToTerraformWrappers = map[string]string{
-	"postgres_branches":  "spec",
-	"postgres_catalogs":  "spec",
-	"postgres_endpoints": "spec",
-	"postgres_projects":  "spec",
+	"postgres_branches":      "spec",
+	"postgres_catalogs":      "spec",
+	"postgres_endpoints":     "spec",
+	"postgres_projects":      "spec",
+	"postgres_synced_tables": "spec",
 }
