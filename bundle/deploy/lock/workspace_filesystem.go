@@ -47,6 +47,8 @@ func (l *workspaceFilesystemLock) Acquire(ctx context.Context) error {
 	log.Infof(ctx, "Acquiring deployment lock (force: %v)", l.force)
 	err = lk.Lock(ctx, l.force)
 	if err != nil {
+		log.Errorf(ctx, "Failed to acquire deployment lock: %v", err)
+
 		// If we get a permission or "doesn't exist" error from the API this
 		// indicates we either don't have permissions or the path is invalid.
 		if errors.Is(err, fs.ErrPermission) || errors.Is(err, fs.ErrNotExist) {
