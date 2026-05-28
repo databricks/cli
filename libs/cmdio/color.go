@@ -11,6 +11,7 @@ import (
 const (
 	ansiReset     = "\x1b[0m"
 	ansiBold      = "\x1b[1m"
+	ansiDim       = "\x1b[2m"
 	ansiFaint     = "\x1b[2m"
 	ansiItalic    = "\x1b[3m"
 	ansiUnderline = "\x1b[4m"
@@ -43,6 +44,12 @@ func render(ctx context.Context, code, msg string) string {
 	}
 	return code + msg + ansiReset
 }
+
+// Bold renders msg in bold.
+func Bold(ctx context.Context, msg string) string { return render(ctx, ansiBold, msg) }
+
+// Dim renders msg in dim (faint) intensity.
+func Dim(ctx context.Context, msg string) string { return render(ctx, ansiDim, msg) }
 
 // Red renders msg in red.
 func Red(ctx context.Context, msg string) string { return render(ctx, ansiRed, msg) }

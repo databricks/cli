@@ -27,6 +27,8 @@ func TestColorHelpersEmitSGRWhenEnabled(t *testing.T) {
 		got  string
 		want string
 	}{
+		{"Bold", cmdio.Bold(ctx, "id"), "\x1b[1mid\x1b[0m"},
+		{"Dim", cmdio.Dim(ctx, "hint"), "\x1b[2mhint\x1b[0m"},
 		{"Red", cmdio.Red(ctx, "hello"), "\x1b[31mhello\x1b[0m"},
 		{"Green", cmdio.Green(ctx, "ok"), "\x1b[32mok\x1b[0m"},
 		{"Yellow", cmdio.Yellow(ctx, "warn"), "\x1b[33mwarn\x1b[0m"},
