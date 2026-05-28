@@ -8,12 +8,14 @@ import (
 	"reflect"
 
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/apierr"
 )
 
 func (d *DeploymentUnit) Destroy(ctx context.Context, db *dstate.DeploymentState) error {
+	ctx = log.WithPrefix(ctx, "destroying "+d.ResourceKey)
 	id := db.GetResourceID(d.ResourceKey)
 	if id == "" {
 		log.Infof(ctx, "Cannot delete %s: missing from state", d.ResourceKey)
@@ -24,6 +26,7 @@ func (d *DeploymentUnit) Destroy(ctx context.Context, db *dstate.DeploymentState
 }
 
 func (d *DeploymentUnit) Deploy(ctx context.Context, db *dstate.DeploymentState, newState any, actionType deployplan.ActionType, planEntry *deployplan.PlanEntry) error {
+	ctx = log.WithPrefix(ctx, "deploying "+d.ResourceKey)
 	if actionType == deployplan.Create {
 		return d.Create(ctx, db, newState)
 	}
@@ -48,7 +51,18 @@ func (d *DeploymentUnit) Deploy(ctx context.Context, db *dstate.DeploymentState,
 }
 
 func (d *DeploymentUnit) Create(ctx context.Context, db *dstate.DeploymentState, newState any) error {
-	newID, remoteState, err := d.Adapter.DoCreate(ctx, newState)
+	var newID string
+	var remoteState any
+	_, err := retryWith(ctx, func(err error) bool {
+		// For DoCreate, retry feature is opt-in via retrySafe(err) error wrapper
+		_, ok := errors.AsType[*dresources.RetrySafeError](err)
+		return ok && isTransient(ctx, err)
+	}, func() (struct{}, error) {
+		var e error
+		newID, remoteState, e = d.Adapter.DoCreate(ctx, newState)
+		return struct{}{}, e
+	})
+	err = dresources.UnwrapRetrySafe(err)
 	if err != nil {
 		// No need to prefix error, there is no ambiguity (only one operation - DoCreate) and no additional context (like id)
 		return err
@@ -66,7 +80,9 @@ func (d *DeploymentUnit) Create(ctx context.Context, db *dstate.DeploymentState,
 		return fmt.Errorf("saving state after creating id=%s: %w", newID, err)
 	}
 
-	waitRemoteState, err := d.Adapter.WaitAfterCreate(ctx, newID, newState)
+	waitRemoteState, err := retryOnTransient(ctx, func() (any, error) {
+		return d.Adapter.WaitAfterCreate(ctx, newID, newState)
+	})
 	if err != nil {
 		return fmt.Errorf("waiting after creating id=%s: %w", newID, err)
 	}
@@ -89,7 +105,7 @@ func (d *DeploymentUnit) Recreate(ctx context.Context, db *dstate.DeploymentStat
 	// MANAGED_BY_PARENT is still disregarded — the subsequent Create with
 	// replace_existing=true will reconfigure the parent-managed resource in
 	// place, matching the Terraform provider's recreate behaviour.
-	err = d.Adapter.DoDelete(ctx, oldID, oldState)
+	err = retryOnTransientErr(ctx, func() error { return d.Adapter.DoDelete(ctx, oldID, oldState) })
 	if err != nil && !isResourceGone(err) && !isManagedByParent(err) {
 		return fmt.Errorf("deleting old id=%s: %w", oldID, err)
 	}
@@ -118,7 +134,9 @@ func (d *DeploymentUnit) Update(ctx context.Context, db *dstate.DeploymentState,
 		return fmt.Errorf("internal error: DoUpdate not implemented for resource %s", d.ResourceKey)
 	}
 
-	remoteState, err := d.Adapter.DoUpdate(ctx, id, newState, planEntry)
+	remoteState, err := retryOnTransient(ctx, func() (any, error) {
+		return d.Adapter.DoUpdate(ctx, id, newState, planEntry)
+	})
 	if err != nil {
 		return fmt.Errorf("updating id=%s: %w", id, err)
 	}
@@ -133,7 +151,9 @@ func (d *DeploymentUnit) Update(ctx context.Context, db *dstate.DeploymentState,
 		return fmt.Errorf("saving state id=%s: %w", id, err)
 	}
 
-	waitRemoteState, err := d.Adapter.WaitAfterUpdate(ctx, id, newState)
+	waitRemoteState, err := retryOnTransient(ctx, func() (any, error) {
+		return d.Adapter.WaitAfterUpdate(ctx, id, newState)
+	})
 	if err != nil {
 		return fmt.Errorf("waiting after updating id=%s: %w", id, err)
 	}
@@ -148,7 +168,13 @@ func (d *DeploymentUnit) Update(ctx context.Context, db *dstate.DeploymentState,
 }
 
 func (d *DeploymentUnit) UpdateWithID(ctx context.Context, db *dstate.DeploymentState, oldID string, newState any) error {
-	newID, remoteState, err := d.Adapter.DoUpdateWithID(ctx, oldID, newState)
+	var newID string
+	var remoteState any
+	err := retryOnTransientErr(ctx, func() error {
+		var e error
+		newID, remoteState, e = d.Adapter.DoUpdateWithID(ctx, oldID, newState)
+		return e
+	})
 	if err != nil {
 		return fmt.Errorf("updating id=%s: %w", oldID, err)
 	}
@@ -169,7 +195,9 @@ func (d *DeploymentUnit) UpdateWithID(ctx context.Context, db *dstate.Deployment
 		return fmt.Errorf("saving state id=%s: %w", oldID, err)
 	}
 
-	waitRemoteState, err := d.Adapter.WaitAfterUpdate(ctx, newID, newState)
+	waitRemoteState, err := retryOnTransient(ctx, func() (any, error) {
+		return d.Adapter.WaitAfterUpdate(ctx, newID, newState)
+	})
 	if err != nil {
 		return fmt.Errorf("waiting after updating id=%s: %w", newID, err)
 	}
@@ -219,7 +247,7 @@ func (d *DeploymentUnit) Delete(ctx context.Context, db *dstate.DeploymentState,
 }
 
 func (d *DeploymentUnit) Resize(ctx context.Context, db *dstate.DeploymentState, id string, newState any) error {
-	err := d.Adapter.DoResize(ctx, id, newState)
+	err := retryOnTransientErr(ctx, func() error { return d.Adapter.DoResize(ctx, id, newState) })
 	if err != nil {
 		return fmt.Errorf("resizing id=%s: %w", id, err)
 	}
@@ -263,7 +291,9 @@ func (d *DeploymentUnit) refreshRemoteState(ctx context.Context, id string) erro
 	if d.RemoteState != nil {
 		return nil
 	}
-	remoteState, err := d.Adapter.DoRead(ctx, id)
+	remoteState, err := retryOnTransient(ctx, func() (any, error) {
+		return d.Adapter.DoRead(ctx, id)
+	})
 	if err != nil {
 		return fmt.Errorf("failed to refresh remote state id=%s: %w", id, err)
 	}
