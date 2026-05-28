@@ -1,0 +1,53 @@
+{
+  "plan_version": 2,
+  "cli_version": "[DEV_VERSION]",
+  "plan": {
+    "resources.jobs.dst": {
+      "depends_on": [
+        {
+          "node": "resources.jobs.src",
+          "label": "${resources.jobs.src.git_source.branch}"
+        }
+      ],
+      "action": "create",
+      "new_state": {
+        "value": {
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+          },
+          "edit_mode": "UI_LOCKED",
+          "format": "MULTI_TASK",
+          "max_concurrent_runs": 1,
+          "name": "main",
+          "queue": {
+            "enabled": true
+          }
+        }
+      }
+    },
+    "resources.jobs.src": {
+      "action": "create",
+      "new_state": {
+        "value": {
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+          },
+          "edit_mode": "UI_LOCKED",
+          "format": "MULTI_TASK",
+          "git_source": {
+            "git_branch": "main",
+            "git_provider": "gitHub",
+            "git_url": "https://github.com/databricks/cli"
+          },
+          "max_concurrent_runs": 1,
+          "name": "source",
+          "queue": {
+            "enabled": true
+          }
+        }
+      }
+    }
+  }
+}

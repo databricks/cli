@@ -1,0 +1,67 @@
+{
+  "plan_version": 2,
+  "cli_version": "[DEV_VERSION]",
+  "plan": {
+    "resources.jobs.dst": {
+      "depends_on": [
+        {
+          "node": "resources.jobs.src",
+          "label": "${resources.jobs.src.task[0].for_each_task.task.library[0].whl}"
+        }
+      ],
+      "action": "create",
+      "new_state": {
+        "value": {
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+          },
+          "edit_mode": "UI_LOCKED",
+          "format": "MULTI_TASK",
+          "max_concurrent_runs": 1,
+          "name": "/path/to/wheel.whl",
+          "queue": {
+            "enabled": true
+          }
+        }
+      }
+    },
+    "resources.jobs.src": {
+      "action": "create",
+      "new_state": {
+        "value": {
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+          },
+          "edit_mode": "UI_LOCKED",
+          "format": "MULTI_TASK",
+          "max_concurrent_runs": 1,
+          "name": "source",
+          "queue": {
+            "enabled": true
+          },
+          "tasks": [
+            {
+              "for_each_task": {
+                "inputs": "[\"a\"]",
+                "task": {
+                  "libraries": [
+                    {
+                      "whl": "/path/to/wheel.whl"
+                    }
+                  ],
+                  "notebook_task": {
+                    "notebook_path": "/Workspace/notebook"
+                  },
+                  "task_key": "inner"
+                }
+              },
+              "task_key": "outer"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

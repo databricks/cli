@@ -1,2 +1,3 @@
+trace $CLI bundle plan -o json > out.plan.json
 trace $CLI bundle deploy
-rm out.requests.txt
+print_requests.py //jobs > out.deploy.requests.json
