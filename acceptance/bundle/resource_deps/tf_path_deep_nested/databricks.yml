@@ -15,4 +15,4 @@ resources:
       # TF path: "task[0].library[0].whl" — "task" is TF name for DABs "tasks",
       # "library" is TF name for DABs "libraries". Both are list-blocks in TF.
       # Direct engine: TerraformPathToDABs translates both renames.
-      name: ${resources.jobs.src.task[0].library[0].whl}
+      name: "dst job ${resources.jobs.src.task[0].library[0].whl}"
