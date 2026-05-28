@@ -14,6 +14,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deploy"
+	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/log"
@@ -25,18 +26,6 @@ import (
 // defaultHeartbeatInterval is how often the background heartbeat goroutine
 // renews the DMS-side lock lease while a deployment is in progress.
 const defaultHeartbeatInterval = 30 * time.Second
-
-// managedServiceFileName is the workspace state file where the lock package
-// persists the DMS deployment_id across CLI invocations. It is intentionally
-// scoped to this package for now; once the state-from-DMS path lands the
-// file (and accompanying struct) will move to bundle/statemgmt so both the
-// lock and state managers can share it.
-const managedServiceFileName = "managed_service.json"
-
-// managedServiceJSON is the on-disk shape of managedServiceFileName.
-type managedServiceJSON struct {
-	DeploymentID string `json:"deployment_id"`
-}
 
 // metadataServiceLock implements DeploymentLock against the bundle deployment
 // metadata service (DMS). The lock is acquired by creating a new Version
@@ -91,6 +80,9 @@ func (l *metadataServiceLock) Acquire(ctx context.Context) error {
 
 	l.deploymentID = deploymentID
 	l.versionID = versionID
+	// Publish the deployment ID on the bundle so downstream code (e.g.
+	// statemgmt.LoadStateFromDMS) can address the right server-side record.
+	l.b.DeploymentID = deploymentID
 	l.stopHeartbeat = startHeartbeat(ctx, l.svc, deploymentID, versionID)
 
 	log.Infof(ctx, "Acquired deployment lock: deployment=%s version=%s", deploymentID, versionID)
@@ -218,23 +210,23 @@ func resolveDeploymentID(ctx context.Context, b *bundle.Bundle) (string, bool, e
 		return "", false, fmt.Errorf("failed to create state filer: %w", err)
 	}
 
-	reader, readErr := f.Read(ctx, managedServiceFileName)
+	reader, readErr := f.Read(ctx, statemgmt.ManagedServiceFileName)
 	if readErr == nil {
 		defer reader.Close()
 		data, err := io.ReadAll(reader)
 		if err != nil {
-			return "", false, fmt.Errorf("failed to read %s: %w", managedServiceFileName, err)
+			return "", false, fmt.Errorf("failed to read %s: %w", statemgmt.ManagedServiceFileName, err)
 		}
-		var sj managedServiceJSON
+		var sj statemgmt.ManagedServiceJSON
 		if err := json.Unmarshal(data, &sj); err != nil {
-			return "", false, fmt.Errorf("failed to parse %s: %w", managedServiceFileName, err)
+			return "", false, fmt.Errorf("failed to parse %s: %w", statemgmt.ManagedServiceFileName, err)
 		}
 		if sj.DeploymentID != "" {
 			return sj.DeploymentID, false, nil
 		}
 		// File exists but has no deployment_id — treat as fresh.
 	} else if !errors.Is(readErr, fs.ErrNotExist) {
-		return "", false, fmt.Errorf("failed to read %s: %w", managedServiceFileName, readErr)
+		return "", false, fmt.Errorf("failed to read %s: %w", statemgmt.ManagedServiceFileName, readErr)
 	}
 
 	return uuid.New().String(), true, nil
@@ -245,13 +237,13 @@ func writeDeploymentID(ctx context.Context, b *bundle.Bundle, deploymentID strin
 	if err != nil {
 		return fmt.Errorf("failed to create state filer: %w", err)
 	}
-	data, err := json.Marshal(managedServiceJSON{DeploymentID: deploymentID})
+	data, err := json.Marshal(statemgmt.ManagedServiceJSON{DeploymentID: deploymentID})
 	if err != nil {
-		return fmt.Errorf("failed to marshal %s: %w", managedServiceFileName, err)
+		return fmt.Errorf("failed to marshal %s: %w", statemgmt.ManagedServiceFileName, err)
 	}
-	if err := f.Write(ctx, managedServiceFileName, bytes.NewReader(data),
+	if err := f.Write(ctx, statemgmt.ManagedServiceFileName, bytes.NewReader(data),
 		filer.CreateParentDirectories, filer.OverwriteIfExists); err != nil {
-		return fmt.Errorf("failed to write %s: %w", managedServiceFileName, err)
+		return fmt.Errorf("failed to write %s: %w", statemgmt.ManagedServiceFileName, err)
 	}
 	return nil
 }

@@ -1,0 +1,10 @@
+Ignore = [".databricks"]
+
+# Verify the state-read path against the deployment metadata service:
+#  - bundle deploy populates managed_service.json with a deployment_id.
+#  - bundle plan / summary read state from DMS via ListResources rather than
+#    from the workspace resources.json file.
+#
+# Step 4 does not yet ship operation reporting (that is step 5), so the DMS
+# resources list is empty after deploy. The test still exercises every
+# state-read code path end-to-end.
