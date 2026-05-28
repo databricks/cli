@@ -8,18 +8,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/vectorsearch"
 )
 
-// fakeVectorSearchIndex captures the endpoint's UUID at index creation time.
-// On the real backend an index is bound to a specific endpoint instance, not
-// just the name: deleting and recreating an endpoint with the same name yields
-// a different UUID, and the existing index keeps pointing at the OLD UUID
-// (i.e. is orphaned). Tracking this here lets tests reason about that drift.
-// The field is omitted from JSON responses since the real API doesn't return
-// it on the index path; the CLI looks it up via GetEndpointByEndpointName.
-type fakeVectorSearchIndex struct {
-	vectorsearch.VectorIndex
-	EndpointUuid string `json:"-"`
-}
-
 func (s *FakeWorkspace) VectorSearchIndexCreate(req Request) Response {
 	defer s.LockUnlock()()
 
@@ -48,20 +36,22 @@ func (s *FakeWorkspace) VectorSearchIndexCreate(req Request) Response {
 		}
 	}
 
-	index := fakeVectorSearchIndex{
-		VectorIndex: vectorsearch.VectorIndex{
-			Creator:               s.CurrentUser().UserName,
-			EndpointName:          createReq.EndpointName,
-			IndexType:             createReq.IndexType,
-			Name:                  createReq.Name,
-			PrimaryKey:            createReq.PrimaryKey,
-			DeltaSyncIndexSpec:    remapDeltaSyncSpec(createReq.DeltaSyncIndexSpec),
-			DirectAccessIndexSpec: createReq.DirectAccessIndexSpec,
-			Status: &vectorsearch.VectorIndexStatus{
-				Ready: true,
-			},
+	// EndpointId is captured at index creation time. On the real backend an
+	// index is bound to a specific endpoint instance, not just the name:
+	// deleting and recreating an endpoint with the same name yields a
+	// different UUID. Storing it lets tests reason about that drift.
+	index := vectorsearch.VectorIndex{
+		Creator:               s.CurrentUser().UserName,
+		EndpointId:            endpoint.Id,
+		EndpointName:          createReq.EndpointName,
+		IndexType:             createReq.IndexType,
+		Name:                  createReq.Name,
+		PrimaryKey:            createReq.PrimaryKey,
+		DeltaSyncIndexSpec:    remapDeltaSyncSpec(createReq.DeltaSyncIndexSpec),
+		DirectAccessIndexSpec: createReq.DirectAccessIndexSpec,
+		Status: &vectorsearch.VectorIndexStatus{
+			Ready: true,
 		},
-		EndpointUuid: endpoint.Id,
 	}
 
 	s.VectorSearchIndexes[createReq.Name] = index

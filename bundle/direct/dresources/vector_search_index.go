@@ -3,7 +3,6 @@ package dresources
 import (
 	"context"
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
@@ -44,8 +43,9 @@ func (s VectorSearchIndexState) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(s)
 }
 
-// VectorSearchIndexRemote is remote state. endpoint_uuid is looked up from the
-// endpoint service since the index API itself doesn't return it.
+// VectorSearchIndexRemote is remote state. endpoint_uuid mirrors the index
+// response's endpoint_id so OverrideChangeDesc can compare it against the
+// saved state without a second API call.
 type VectorSearchIndexRemote struct {
 	vectorsearch.VectorIndex
 	EndpointUuid string `json:"endpoint_uuid,omitempty"`
@@ -111,13 +111,9 @@ func (r *ResourceVectorSearchIndex) DoRead(ctx context.Context, id string) (*Vec
 	if err != nil {
 		return nil, err
 	}
-	endpointUuid, err := r.lookupEndpointUuid(ctx, index.EndpointName)
-	if err != nil {
-		return nil, err
-	}
 	return &VectorSearchIndexRemote{
 		VectorIndex:  *index,
-		EndpointUuid: endpointUuid,
+		EndpointUuid: index.EndpointId,
 	}, nil
 }
 
@@ -126,16 +122,8 @@ func (r *ResourceVectorSearchIndex) DoCreate(ctx context.Context, config *Vector
 	if err != nil {
 		return "", nil, err
 	}
-	// Second API call (also done in DoRead): the index API does not return the
-	// endpoint UUID, but we need to persist it in state so a future plan can
-	// detect that the endpoint was replaced out-of-band (same name, different
-	// UUID -> orphan).
-	endpointUuid, err := r.lookupEndpointUuid(ctx, config.EndpointName)
-	if err != nil {
-		return "", nil, err
-	}
-	config.EndpointUuid = endpointUuid
-	return config.Name, &VectorSearchIndexRemote{VectorIndex: *index, EndpointUuid: endpointUuid}, nil
+	config.EndpointUuid = index.EndpointId
+	return config.Name, &VectorSearchIndexRemote{VectorIndex: *index, EndpointUuid: index.EndpointId}, nil
 }
 
 // No DoUpdate: vector search indexes have no update API. All SDK fields are
@@ -193,17 +181,13 @@ func (r *ResourceVectorSearchIndex) WaitAfterDelete(ctx context.Context, id stri
 }
 
 // OverrideChangeDesc classifies endpoint_uuid drift: Recreate when the saved
-// UUID differs from what's currently attached to the endpoint name, Skip
-// otherwise. endpoint_uuid is never present in config, so without Skip a
-// synthetic diff between empty newState and populated saved state would
-// otherwise leak into the plan.
+// UUID differs from the endpoint_id the index API now reports, Skip otherwise.
+// endpoint_uuid is never present in config, so without Skip a synthetic diff
+// between empty newState and populated saved state would leak into the plan.
 //
-// Unlike vector_search_endpoint, this intentionally does NOT require
-// remoteUuid != "". An empty remoteUuid here is the orphan signal: the index
-// still exists by name but its backing endpoint has been deleted out-of-band.
-// lookupEndpointUuid distinguishes this (404 -> "") from transient errors
-// (propagated through DoRead/DoCreate), so reaching this branch with empty
-// remoteUuid unambiguously means the endpoint is gone.
+// An empty remoteUuid is treated as drift (rather than ignored, as the endpoint
+// resource does for its own UUID). If the backend ever clears endpoint_id when
+// the endpoint is deleted out-of-band, this surfaces the orphan as a recreate.
 func (*ResourceVectorSearchIndex) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, change *ChangeDesc, remote *VectorSearchIndexRemote) error {
 	if path.String() != "endpoint_uuid" {
 		return nil
@@ -221,22 +205,4 @@ func (*ResourceVectorSearchIndex) OverrideChangeDesc(_ context.Context, path *st
 		change.Reason = "state-only field"
 	}
 	return nil
-}
-
-// lookupEndpointUuid returns the current UUID of the endpoint with the given
-// name. A 404 is converted to ("", nil) so the caller can distinguish a
-// genuinely missing endpoint (the orphan signal) from a transient or
-// permission error, which is propagated.
-func (r *ResourceVectorSearchIndex) lookupEndpointUuid(ctx context.Context, endpointName string) (string, error) {
-	if endpointName == "" {
-		return "", nil
-	}
-	info, err := r.client.VectorSearchEndpoints.GetEndpointByEndpointName(ctx, endpointName)
-	if err != nil {
-		if apierr.IsMissing(err) {
-			return "", nil
-		}
-		return "", fmt.Errorf("looking up vector search endpoint %q: %w", endpointName, err)
-	}
-	return info.Id, nil
 }
