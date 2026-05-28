@@ -15,8 +15,11 @@ import (
 // bundle's workspace state path. This preserves the historical behavior of
 // the previous lock.Acquire / lock.Release mutators.
 type workspaceFilesystemLock struct {
-	b    *bundle.Bundle
-	goal Goal
+	// b is retained for the workspace client and the permissions reporter on
+	// the Acquire error path; lock state itself lives on the struct.
+	b      *bundle.Bundle
+	locker *locker.Locker
+	goal   Goal
 }
 
 func newWorkspaceFilesystemLock(b *bundle.Bundle, goal Goal) *workspaceFilesystemLock {
@@ -39,7 +42,7 @@ func (l *workspaceFilesystemLock) Acquire(ctx context.Context) error {
 		return err
 	}
 
-	b.Locker = lk
+	l.locker = lk
 
 	force := b.Config.Bundle.Deployment.Lock.Force
 	log.Infof(ctx, "Acquiring deployment lock (force: %v)", force)
@@ -61,24 +64,22 @@ func (l *workspaceFilesystemLock) Acquire(ctx context.Context) error {
 }
 
 func (l *workspaceFilesystemLock) Release(ctx context.Context, _ DeploymentStatus) error {
-	b := l.b
-
 	// Return early if locking is disabled.
-	if !b.Config.Bundle.Deployment.Lock.IsEnabled() {
+	if !l.b.Config.Bundle.Deployment.Lock.IsEnabled() {
 		log.Infof(ctx, "Skipping; locking is disabled")
 		return nil
 	}
 
 	// Return early if the locker is not set.
 	// It is likely an error occurred prior to initialization of the locker instance.
-	if b.Locker == nil {
+	if l.locker == nil {
 		log.Warnf(ctx, "Unable to release lock if locker is not configured")
 		return nil
 	}
 
 	log.Infof(ctx, "Releasing deployment lock")
 	if l.goal == GoalDestroy {
-		return b.Locker.Unlock(ctx, locker.AllowLockFileNotExist)
+		return l.locker.Unlock(ctx, locker.AllowLockFileNotExist)
 	}
-	return b.Locker.Unlock(ctx)
+	return l.locker.Unlock(ctx)
 }
