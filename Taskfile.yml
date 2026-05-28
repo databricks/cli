@@ -752,7 +752,7 @@ tasks:
         fi
         git checkout $(cat {{.ROOT_DIR}}/.codegen/_openapi_sha)
       - echo "Building genkit..."
-      - cd {{.UNIVERSE_DIR}} && bazel build //openapi/genkit
+      - cd {{.UNIVERSE_DIR}} && ./tools/bazel build //openapi/genkit
       - echo "Generating CLI code..."
       - "{{.UNIVERSE_DIR}}/bazel-bin/openapi/genkit/genkit_/genkit update-sdk"
       - "cat .gitattributes.manual .gitattributes > .gitattributes.tmp && mv .gitattributes.tmp .gitattributes"
