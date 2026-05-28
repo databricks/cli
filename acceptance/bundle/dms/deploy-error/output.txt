@@ -1,0 +1,56 @@
+
+>>> musterr [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-deploy-error/default/files...
+Deploying resources...
+Error: cannot create resources.jobs.test_job: Invalid job configuration. (400 INVALID_PARAMETER_VALUE)
+
+Endpoint: POST [DATABRICKS_URL]/api/2.2/jobs/create
+HTTP Status: 400 Bad Request
+API error_code: INVALID_PARAMETER_VALUE
+API message: Invalid job configuration.
+
+
+>>> print_requests.py --get //bundle ^//workspace-files ^//import-file
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments",
+  "q": {
+    "deployment_id": "[UUID]"
+  },
+  "body": {
+    "target_name": "default"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[UUID]/versions",
+  "q": {
+    "version_id": "1"
+  },
+  "body": {
+    "cli_version": "[DEV_VERSION]",
+    "target_name": "default",
+    "version_type": "VERSION_TYPE_DEPLOY"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[UUID]/versions/1/operations",
+  "q": {
+    "resource_key": "jobs.test_job"
+  },
+  "body": {
+    "action_type": "OPERATION_ACTION_TYPE_CREATE",
+    "error_message": "Invalid job configuration.",
+    "resource_id": "",
+    "resource_key": "jobs.test_job",
+    "status": "OPERATION_STATUS_FAILED"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[UUID]/versions/1/complete",
+  "body": {
+    "completion_reason": "VERSION_COMPLETE_FAILURE"
+  }
+}

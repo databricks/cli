@@ -40,6 +40,7 @@ type metadataServiceLock struct {
 	versionID    string
 
 	stopHeartbeat context.CancelFunc
+	reporter      *asyncReporter
 }
 
 func newMetadataServiceLock(b *bundle.Bundle, goal Goal) (*metadataServiceLock, error) {
@@ -85,6 +86,13 @@ func (l *metadataServiceLock) Acquire(ctx context.Context) error {
 	l.b.DeploymentID = deploymentID
 	l.stopHeartbeat = startHeartbeat(ctx, l.svc, deploymentID, versionID)
 
+	// Wire per-resource operation reporting through an async dispatcher so
+	// apply workers don't synchronously wait on DMS round-trips. The
+	// reporter is closed in Release before CompleteVersion to ensure all
+	// operations are recorded under this version.
+	l.reporter = newAsyncReporter(ctx, makeOperationSender(l.svc, deploymentID, versionID))
+	l.b.DeploymentBundle.OperationReporter = l.reporter.Reporter()
+
 	log.Infof(ctx, "Acquired deployment lock: deployment=%s version=%s", deploymentID, versionID)
 	return nil
 }
@@ -94,6 +102,13 @@ func (l *metadataServiceLock) Release(ctx context.Context, status DeploymentStat
 	// CompleteVersion below.
 	if l.stopHeartbeat != nil {
 		l.stopHeartbeat()
+	}
+
+	// Drain pending operation reports before completing the version, so all
+	// per-resource events are recorded under this version_id on the server
+	// side. Close blocks until the sender goroutine exits.
+	if l.reporter != nil {
+		l.reporter.Close()
 	}
 
 	// If Acquire failed before reaching CreateVersion there is nothing to release.

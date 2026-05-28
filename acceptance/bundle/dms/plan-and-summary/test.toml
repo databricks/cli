@@ -5,6 +5,6 @@ Ignore = [".databricks"]
 #  - bundle plan / summary read state from DMS via ListResources rather than
 #    from the workspace resources.json file.
 #
-# Step 4 does not yet ship operation reporting (that is step 5), so the DMS
-# resources list is empty after deploy. The test still exercises every
-# state-read code path end-to-end.
+# With operation reporting (step 5) in place, the deploy reports a CREATE
+# operation so the subsequent plan sees the job as already deployed and the
+# summary renders its URL.

@@ -1,0 +1,6 @@
+Ignore = [".databricks"]
+
+# Three successive deploys exercise the full operation-reporting taxonomy:
+#  v1 — CREATE for test_job
+#  v2 — CREATE for new_job (test_job unchanged, no operation)
+#  v3 — DELETE for test_job (new_job unchanged)

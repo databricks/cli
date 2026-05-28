@@ -1,0 +1,7 @@
+bundle:
+  name: dms-deploy-error
+
+resources:
+  jobs:
+    test_job:
+      name: test-job
