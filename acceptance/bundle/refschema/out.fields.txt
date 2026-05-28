@@ -88,6 +88,8 @@ resources.apps.*.app_status	*apps.ApplicationStatus	ALL
 resources.apps.*.app_status.message	string	ALL
 resources.apps.*.app_status.state	apps.ApplicationState	ALL
 resources.apps.*.budget_policy_id	string	ALL
+resources.apps.*.compute_max_instances	int	ALL
+resources.apps.*.compute_min_instances	int	ALL
 resources.apps.*.compute_size	apps.ComputeSize	ALL
 resources.apps.*.compute_status	*apps.ComputeStatus	ALL
 resources.apps.*.compute_status.active_instances	int	ALL
@@ -2985,6 +2987,7 @@ resources.postgres_synced_tables.*.status.ongoing_sync_progress.total_row_count	
 resources.postgres_synced_tables.*.status.pipeline_id	string	REMOTE
 resources.postgres_synced_tables.*.status.project	string	REMOTE
 resources.postgres_synced_tables.*.status.provisioning_phase	postgres.ProvisioningPhase	REMOTE
+resources.postgres_synced_tables.*.status.synced_table_id	string	REMOTE
 resources.postgres_synced_tables.*.status.unity_catalog_provisioning_state	postgres.ProvisioningInfoState	REMOTE
 resources.postgres_synced_tables.*.synced_table_id	string	ALL
 resources.postgres_synced_tables.*.timeseries_key	string	ALL

@@ -50,4 +50,6 @@ synced_database_tables: database.SyncedDatabaseTable
 
 vector_search_endpoints: vectorsearch.CreateEndpoint
 
+vector_search_indexes: vectorsearch.CreateVectorIndexRequest
+
 volumes: catalog.CreateVolumeRequestContent
