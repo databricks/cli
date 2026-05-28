@@ -79,13 +79,11 @@ func (d *DeploymentUnit) Create(ctx context.Context, db *dstate.DeploymentState,
 		return fmt.Errorf("saving state after creating id=%s: %w", newID, err)
 	}
 
-	waitRemoteState, err := d.Adapter.WaitAfterCreate(ctx, newID, newState)
+	waitRemoteState, err := retryOnTransient(ctx, func() (any, error) {
+		return d.Adapter.WaitAfterCreate(ctx, newID, newState)
+	})
 	if err != nil {
-		if isTransient(ctx, err) {
-			log.Warnf(ctx, "waiting after creating id=%s: %s", newID, err)
-		} else {
-			return fmt.Errorf("waiting after creating id=%s: %w", newID, err)
-		}
+		return fmt.Errorf("waiting after creating id=%s: %w", newID, err)
 	}
 
 	err = d.SetRemoteState(waitRemoteState)
@@ -152,13 +150,11 @@ func (d *DeploymentUnit) Update(ctx context.Context, db *dstate.DeploymentState,
 		return fmt.Errorf("saving state id=%s: %w", id, err)
 	}
 
-	waitRemoteState, err := d.Adapter.WaitAfterUpdate(ctx, id, newState)
+	waitRemoteState, err := retryOnTransient(ctx, func() (any, error) {
+		return d.Adapter.WaitAfterUpdate(ctx, id, newState)
+	})
 	if err != nil {
-		if isTransient(ctx, err) {
-			log.Warnf(ctx, "waiting after updating id=%s: %s", id, err)
-		} else {
-			return fmt.Errorf("waiting after updating id=%s: %w", id, err)
-		}
+		return fmt.Errorf("waiting after updating id=%s: %w", id, err)
 	}
 
 	// Update remote state with the result from wait operation
@@ -198,13 +194,11 @@ func (d *DeploymentUnit) UpdateWithID(ctx context.Context, db *dstate.Deployment
 		return fmt.Errorf("saving state id=%s: %w", oldID, err)
 	}
 
-	waitRemoteState, err := d.Adapter.WaitAfterUpdate(ctx, newID, newState)
+	waitRemoteState, err := retryOnTransient(ctx, func() (any, error) {
+		return d.Adapter.WaitAfterUpdate(ctx, newID, newState)
+	})
 	if err != nil {
-		if isTransient(ctx, err) {
-			log.Warnf(ctx, "waiting after updating id=%s: %s", newID, err)
-		} else {
-			return fmt.Errorf("waiting after updating id=%s: %w", newID, err)
-		}
+		return fmt.Errorf("waiting after updating id=%s: %w", newID, err)
 	}
 
 	// Update remote state with the result from wait operation
