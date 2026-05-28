@@ -148,13 +148,22 @@ func (r *ResourceModelServingEndpoint) DoRead(ctx context.Context, id string) (*
 	return newModelServingEndpointRemote(endpoint), nil
 }
 
-func (r *ResourceModelServingEndpoint) DoCreate(ctx context.Context, config *serving.CreateServingEndpoint) (string, *ModelServingEndpointRemote, error) {
+func (r *ResourceModelServingEndpoint) DoCreate(ctx context.Context, engine *Engine, config *serving.CreateServingEndpoint) (string, *ModelServingEndpointRemote, error) {
 	waiter, err := r.client.ServingEndpoints.Create(ctx, *config)
 	if err != nil {
 		return "", nil, err
 	}
+	id := waiter.Response.Name
 
-	return waiter.Response.Name, nil, nil
+	// Save state immediately after the endpoint is created so it is not orphaned
+	// if the subsequent wait is interrupted.
+	engine.SetID(id)
+	if err := engine.SaveState(config); err != nil {
+		return "", nil, err
+	}
+
+	remote, err := r.waitForEndpointReady(ctx, config.Name)
+	return id, remote, err
 }
 
 // waitForEndpointReady waits for the serving endpoint to be ready (not updating)
@@ -164,14 +173,6 @@ func (r *ResourceModelServingEndpoint) waitForEndpointReady(ctx context.Context,
 		return nil, err
 	}
 	return newModelServingEndpointRemote(details), nil
-}
-
-func (r *ResourceModelServingEndpoint) WaitAfterCreate(ctx context.Context, id string, config *serving.CreateServingEndpoint) (*ModelServingEndpointRemote, error) {
-	return r.waitForEndpointReady(ctx, config.Name)
-}
-
-func (r *ResourceModelServingEndpoint) WaitAfterUpdate(ctx context.Context, id string, config *serving.CreateServingEndpoint) (*ModelServingEndpointRemote, error) {
-	return r.waitForEndpointReady(ctx, config.Name)
 }
 
 func (r *ResourceModelServingEndpoint) updateAiGateway(ctx context.Context, id string, aiGateway *serving.AiGatewayConfig) error {
@@ -306,7 +307,7 @@ func (r *ResourceModelServingEndpoint) updateTags(ctx context.Context, id string
 	return nil
 }
 
-func (r *ResourceModelServingEndpoint) DoUpdate(ctx context.Context, id string, config *serving.CreateServingEndpoint, entry *PlanEntry) (*ModelServingEndpointRemote, error) {
+func (r *ResourceModelServingEndpoint) DoUpdate(ctx context.Context, _ *Engine, id string, config *serving.CreateServingEndpoint, entry *PlanEntry) (*ModelServingEndpointRemote, error) {
 	var err error
 
 	// Terraform makes these API calls sequentially. We do the same here.
@@ -340,7 +341,7 @@ func (r *ResourceModelServingEndpoint) DoUpdate(ctx context.Context, id string, 
 		}
 	}
 
-	return nil, nil
+	return r.waitForEndpointReady(ctx, config.Name)
 }
 
 func (r *ResourceModelServingEndpoint) DoDelete(ctx context.Context, id string, _ *serving.CreateServingEndpoint) error {

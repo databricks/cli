@@ -50,7 +50,7 @@ func (r *ResourceExperiment) DoRead(ctx context.Context, id string) (*ml.Experim
 	return result.Experiment, nil
 }
 
-func (r *ResourceExperiment) DoCreate(ctx context.Context, config *ml.CreateExperiment) (string, *ml.Experiment, error) {
+func (r *ResourceExperiment) DoCreate(ctx context.Context, _ *Engine, config *ml.CreateExperiment) (string, *ml.Experiment, error) {
 	result, err := r.client.Experiments.CreateExperiment(ctx, *config)
 	if err != nil {
 		return "", nil, err
@@ -58,7 +58,7 @@ func (r *ResourceExperiment) DoCreate(ctx context.Context, config *ml.CreateExpe
 	return result.ExperimentId, nil, nil
 }
 
-func (r *ResourceExperiment) DoUpdate(ctx context.Context, id string, config *ml.CreateExperiment, _ *PlanEntry) (*ml.Experiment, error) {
+func (r *ResourceExperiment) DoUpdate(ctx context.Context, _ *Engine, id string, config *ml.CreateExperiment, _ *PlanEntry) (*ml.Experiment, error) {
 	updateReq := ml.UpdateExperiment{
 		ExperimentId:    id,
 		NewName:         config.Name,

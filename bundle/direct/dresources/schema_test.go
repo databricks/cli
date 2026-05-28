@@ -2,6 +2,7 @@ package dresources
 
 import (
 	"encoding/json"
+	"reflect"
 	"testing"
 
 	"github.com/databricks/databricks-sdk-go/service/catalog"
@@ -24,7 +25,8 @@ func TestResourceSchema_DoUpdate_WithUnsupportedForceSendFields(t *testing.T) {
 		ForceSendFields: nil,
 	}
 
-	id, _, err := adapter.DoCreate(ctx, config)
+	nopEngine := NewNopEngine(reflect.TypeOf(config))
+	id, _, err := adapter.DoCreate(ctx, nopEngine, config)
 	require.NoError(t, err)
 
 	config.Comment = "updated comment"
@@ -37,7 +39,7 @@ func TestResourceSchema_DoUpdate_WithUnsupportedForceSendFields(t *testing.T) {
 		"Owner",                        // Unsupported - should be filtered out
 	}
 
-	_, err = adapter.DoUpdate(ctx, id, config, &PlanEntry{})
+	_, err = adapter.DoUpdate(ctx, nopEngine, id, config, &PlanEntry{})
 	require.NoError(t, err)
 
 	result, err := adapter.DoRead(ctx, id)

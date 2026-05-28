@@ -44,7 +44,7 @@ func (r *ResourceExternalLocation) DoRead(ctx context.Context, id string) (*cata
 	return r.client.ExternalLocations.GetByName(ctx, id)
 }
 
-func (r *ResourceExternalLocation) DoCreate(ctx context.Context, config *catalog.CreateExternalLocation) (string, *catalog.ExternalLocationInfo, error) {
+func (r *ResourceExternalLocation) DoCreate(ctx context.Context, _ *Engine, config *catalog.CreateExternalLocation) (string, *catalog.ExternalLocationInfo, error) {
 	response, err := r.client.ExternalLocations.Create(ctx, *config)
 	if err != nil || response == nil {
 		return "", nil, err
@@ -53,7 +53,7 @@ func (r *ResourceExternalLocation) DoCreate(ctx context.Context, config *catalog
 }
 
 // DoUpdate updates the external location in place and returns remote state.
-func (r *ResourceExternalLocation) DoUpdate(ctx context.Context, id string, config *catalog.CreateExternalLocation, _ *PlanEntry) (*catalog.ExternalLocationInfo, error) {
+func (r *ResourceExternalLocation) DoUpdate(ctx context.Context, _ *Engine, id string, config *catalog.CreateExternalLocation, _ *PlanEntry) (*catalog.ExternalLocationInfo, error) {
 	updateRequest := catalog.UpdateExternalLocation{
 		Comment:                   config.Comment,
 		CredentialName:            config.CredentialName,
