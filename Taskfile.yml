@@ -794,7 +794,8 @@ tasks:
     generates:
       - acceptance/bundle/refschema/out.fields.txt
     cmds:
-      - go test ./acceptance -run TestAccept/bundle/refschema -update &> /dev/null
+      - cmd: go test ./acceptance -run TestAccept/bundle/refschema -update &> /dev/null
+        ignore_error: true  # -update returns non-zero exit code on changes
 
   generate-schema:
     desc: Generate bundle JSON schema
