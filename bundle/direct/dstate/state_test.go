@@ -71,6 +71,6 @@ func TestDeleteState(t *testing.T) {
 	var db3 DeploymentState
 	require.NoError(t, db3.Open(t.Context(), path, WithRecovery(false), WithWrite(false)))
 	assert.Equal(t, 2, db3.Data.Serial)
-	assert.Equal(t, "", db3.GetResourceID("jobs.my_job"))
+	assert.Empty(t, db3.GetResourceID("jobs.my_job"))
 	mustFinalize(t, &db3)
 }

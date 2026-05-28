@@ -17,8 +17,8 @@ import (
 // surface it directly. The richer LINE+caret rendering is out of scope for
 // this PR; we stick with the plain shape for now.
 func formatPgError(err error) string {
-	var pgErr *pgconn.PgError
-	if !errors.As(err, &pgErr) {
+	pgErr, ok := errors.AsType[*pgconn.PgError](err)
+	if !ok {
 		return err.Error()
 	}
 

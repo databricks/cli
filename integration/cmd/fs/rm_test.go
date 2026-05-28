@@ -31,8 +31,8 @@ func TestFsRmFile(t *testing.T) {
 
 			// Run rm command
 			stdout, stderr := testcli.RequireSuccessfulRun(t, ctx, "fs", "rm", path.Join(tmpDir, "hello.txt"))
-			assert.Equal(t, "", stderr.String())
-			assert.Equal(t, "", stdout.String())
+			assert.Empty(t, stderr.String())
+			assert.Empty(t, stdout.String())
 
 			// Assert file was deleted
 			_, err = f.Stat(t.Context(), "hello.txt")
@@ -60,8 +60,8 @@ func TestFsRmEmptyDir(t *testing.T) {
 
 			// Run rm command
 			stdout, stderr := testcli.RequireSuccessfulRun(t, ctx, "fs", "rm", path.Join(tmpDir, "a"))
-			assert.Equal(t, "", stderr.String())
-			assert.Equal(t, "", stdout.String())
+			assert.Empty(t, stderr.String())
+			assert.Empty(t, stdout.String())
 
 			// Assert directory was deleted
 			_, err = f.Stat(t.Context(), "a")
@@ -139,8 +139,8 @@ func TestFsRmDirRecursively(t *testing.T) {
 
 			// Run rm command
 			stdout, stderr := testcli.RequireSuccessfulRun(t, ctx, "fs", "rm", path.Join(tmpDir, "a"), "--recursive")
-			assert.Equal(t, "", stderr.String())
-			assert.Equal(t, "", stdout.String())
+			assert.Empty(t, stderr.String())
+			assert.Empty(t, stdout.String())
 
 			// Assert directory was deleted
 			_, err = f.Stat(t.Context(), "a")

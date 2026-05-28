@@ -42,9 +42,11 @@ type IResource interface {
 	// Example: func (r *ResourceJob) DoRead(ctx context.Context, id string) (*jobs.Job, error)
 	DoRead(ctx context.Context, id string) (remoteState any, e error)
 
-	// DoDelete deletes the resource.
-	// Example: func (r *ResourceJob) DoDelete(ctx context.Context, id string) error
-	DoDelete(ctx context.Context, id string) error
+	// DoDelete deletes the resource. The state argument is the last-persisted
+	// state for the resource; resources that don't need it should accept it as
+	// _ to satisfy the interface.
+	// Example: func (r *ResourceJob) DoDelete(ctx context.Context, id string, _ *jobs.JobSettings) error
+	DoDelete(ctx context.Context, id string, state any) error
 
 	// [Optional] OverrideChangeDesc can implement custom logic to update a given ChangeDesc; it is run last after built-in classifiers and field triggers.
 	OverrideChangeDesc(ctx context.Context, path *structpath.PathNode, changedesc *ChangeDesc, remoteState any) error
@@ -72,6 +74,12 @@ type IResource interface {
 	// [Optional] WaitAfterUpdate waits for the resource to become ready after update. Returns optionally updated remote state.
 	WaitAfterUpdate(ctx context.Context, id string, newState any) (remoteState any, e error)
 
+	// [Optional] WaitAfterDelete waits for the resource to be fully removed after DoDelete returns.
+	// Useful for backends with asynchronous deletion: a follow-up create on the same name (recreate path)
+	// would otherwise race with the in-progress teardown. State is dropped before this is called, so a
+	// timeout here leaves the bundle consistent (resource was requested deleted, retry on next plan).
+	WaitAfterDelete(ctx context.Context, id string) error
+
 	// [Optional] KeyedSlices returns a map from path patterns to KeyFunc for comparing slices by key instead of by index.
 	// Example: func (*ResourcePermissions) KeyedSlices(state *PermissionsState) map[string]any
 	KeyedSlices() map[string]any
@@ -92,6 +100,7 @@ type Adapter struct {
 	doUpdateWithID     *calladapt.BoundCaller
 	waitAfterCreate    *calladapt.BoundCaller
 	waitAfterUpdate    *calladapt.BoundCaller
+	waitAfterDelete    *calladapt.BoundCaller
 	overrideChangeDesc *calladapt.BoundCaller
 	doResize           *calladapt.BoundCaller
 
@@ -124,6 +133,7 @@ func NewAdapter(typedNil any, resourceType string, client *databricks.WorkspaceC
 		doResize:                nil,
 		waitAfterCreate:         nil,
 		waitAfterUpdate:         nil,
+		waitAfterDelete:         nil,
 		overrideChangeDesc:      nil,
 		resourceConfig:          GetResourceConfig(resourceType),
 		generatedResourceConfig: GetGeneratedResourceConfig(resourceType),
@@ -206,6 +216,11 @@ func (a *Adapter) initMethods(resource any) error {
 		return err
 	}
 
+	a.waitAfterDelete, err = calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), "WaitAfterDelete")
+	if err != nil {
+		return err
+	}
+
 	a.overrideChangeDesc, err = calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), "OverrideChangeDesc")
 	if err != nil {
 		return err
@@ -264,6 +279,7 @@ func (a *Adapter) validate() error {
 	validations := []any{
 		"PrepareState return", a.prepareState.OutTypes[0], stateType,
 		"DoCreate newState", a.doCreate.InTypes[1], stateType,
+		"DoDelete state", a.doDelete.InTypes[2], stateType,
 	}
 
 	// If RemapState is implemented, validate its signature.
@@ -399,12 +415,9 @@ func (a *Adapter) DoRead(ctx context.Context, id string) (any, error) {
 	return outs[0], nil
 }
 
-func (a *Adapter) DoDelete(ctx context.Context, id string) error {
-	_, err := a.doDelete.Call(ctx, id)
-	if err != nil {
-		return err
-	}
-	return nil
+func (a *Adapter) DoDelete(ctx context.Context, id string, state any) error {
+	_, err := a.doDelete.Call(ctx, id, state)
+	return err
 }
 
 // normalizeNilPointer converts a nil pointer wrapped in an interface to a nil interface.
@@ -414,7 +427,7 @@ func normalizeNilPointer(v any) any {
 		return nil
 	}
 	rv := reflect.ValueOf(v)
-	if rv.Kind() == reflect.Ptr && rv.IsNil() {
+	if rv.Kind() == reflect.Pointer && rv.IsNil() {
 		return nil
 	}
 	return v
@@ -516,6 +529,16 @@ func (a *Adapter) WaitAfterUpdate(ctx context.Context, id string, newState any) 
 	return remoteState, nil
 }
 
+// WaitAfterDelete waits for the resource to be fully removed after DoDelete.
+// If the resource doesn't implement this method, this is a no-op.
+func (a *Adapter) WaitAfterDelete(ctx context.Context, id string) error {
+	if a.waitAfterDelete == nil {
+		return nil // no-op if not implemented
+	}
+	_, err := a.waitAfterDelete.Call(ctx, id)
+	return err
+}
+
 // HasOverrideChangeDesc returns true if OverrideChangeDesc is defined for this resource impl
 func (a *Adapter) HasOverrideChangeDesc() bool {
 	return a.overrideChangeDesc != nil
@@ -550,7 +573,7 @@ func validatePointerToStruct(t reflect.Type, context string) error {
 	if t == nil {
 		return fmt.Errorf("%s not set", context)
 	}
-	if t.Kind() != reflect.Ptr {
+	if t.Kind() != reflect.Pointer {
 		return fmt.Errorf("%s must be a pointer, got %s", context, t.Kind())
 	}
 	if t.Elem().Kind() != reflect.Struct {

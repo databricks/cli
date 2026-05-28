@@ -24,8 +24,7 @@ func assertRootPathExists(ctx context.Context, b *bundle.Bundle) (bool, error) {
 	w := b.WorkspaceClient(ctx)
 	_, err := w.Workspace.GetStatusByPath(ctx, b.Config.Workspace.RootPath) //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
 
-	var aerr *apierr.APIError
-	if errors.As(err, &aerr) && aerr.StatusCode == http.StatusNotFound {
+	if aerr, ok := errors.AsType[*apierr.APIError](err); ok && aerr.StatusCode == http.StatusNotFound {
 		log.Infof(ctx, "Root path does not exist: %s", b.Config.Workspace.RootPath)
 		return false, nil
 	}
@@ -41,6 +40,7 @@ var destroyApprovalGroups = []approvalGroup{
 	{group: "synced_database_tables", message: deleteSyncedDatabaseTableMessage},
 	{group: "postgres_projects", message: deletePostgresProjectMessage},
 	{group: "postgres_branches", message: deletePostgresBranchMessage},
+	{group: "vector_search_indexes", message: deleteVectorSearchIndexMessage},
 }
 
 func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) (bool, error) {

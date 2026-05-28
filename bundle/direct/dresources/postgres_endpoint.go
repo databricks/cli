@@ -83,16 +83,17 @@ func (*ResourcePostgresEndpoint) RemapState(remote *PostgresEndpointRemote) *Pos
 // stay at their zero values, and resources.yml suppresses phantom drift via
 // ignore_remote_changes with reason spec:input_only.
 func makePostgresEndpointRemote(endpoint *postgres.Endpoint) *PostgresEndpointRemote {
-	// Extract endpoint_id from hierarchical name: "projects/{project_id}/branches/{branch_id}/endpoints/{endpoint_id}"
-	// TODO: log error when we have access to the context
-	components, _ := ParsePostgresName(endpoint.Name)
 	var spec postgres.EndpointSpec
 	if endpoint.Spec != nil {
 		spec = *endpoint.Spec
 	}
+	var endpointID string
+	if endpoint.Status != nil {
+		endpointID = endpoint.Status.EndpointId
+	}
 	return &PostgresEndpointRemote{
 		EndpointSpec: spec,
-		EndpointId:   components.EndpointID,
+		EndpointId:   endpointID,
 		Parent:       endpoint.Parent,
 		Name:         endpoint.Name,
 		Status:       endpoint.Status,
@@ -217,7 +218,7 @@ func (r *ResourcePostgresEndpoint) DoUpdate(ctx context.Context, id string, conf
 	return r.waitForReconciliation(ctx, id)
 }
 
-func (r *ResourcePostgresEndpoint) DoDelete(ctx context.Context, id string) error {
+func (r *ResourcePostgresEndpoint) DoDelete(ctx context.Context, id string, _ *PostgresEndpointState) error {
 	// Retry loop to handle "Endpoint reconciliation still in progress" errors
 	deadline := time.Now().Add(endpointReconciliationTimeout)
 	for {
@@ -226,8 +227,7 @@ func (r *ResourcePostgresEndpoint) DoDelete(ctx context.Context, id string) erro
 		})
 		if err != nil {
 			// Check if this is a reconciliation in progress error
-			var apiErr *apierr.APIError
-			if errors.As(err, &apiErr) && apiErr.StatusCode == http.StatusConflict &&
+			if apiErr, ok := errors.AsType[*apierr.APIError](err); ok && apiErr.StatusCode == http.StatusConflict &&
 				strings.Contains(apiErr.Message, "reconciliation") {
 				// Check if we've exceeded the timeout
 				if time.Now().After(deadline) {

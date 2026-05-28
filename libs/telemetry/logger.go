@@ -153,8 +153,7 @@ func Upload(ctx context.Context, ec protos.ExecutionContext) error {
 		//
 		// The UI infra team (who owns the /telemetry-ext API) recommends retrying for
 		// all 5xx responses.
-		var apiErr *apierr.APIError
-		if errors.As(err, &apiErr) && apiErr.StatusCode >= 500 {
+		if apiErr, ok := errors.AsType[*apierr.APIError](err); ok && apiErr.StatusCode >= 500 {
 			log.Infof(ctx, "Attempt %d failed due to a server side error. Retrying status code: %d", i+1, apiErr.StatusCode)
 
 			remainingTime := time.Until(deadline)

@@ -1,0 +1,5 @@
+catalogs/** linguist-generated=true
+jobs/** linguist-generated=true
+pipelines/** linguist-generated=true
+schemas/** linguist-generated=true
+volumes/** linguist-generated=true

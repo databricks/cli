@@ -261,6 +261,10 @@ func DoLoadConfig(t *testing.T, path string) TestConfig {
 	meta, err := toml.Decode(string(bytes), &config)
 	require.NoError(t, err, "Failed to parse config %s", path)
 
+	if len(meta.Keys()) == 0 {
+		t.Fatalf("test.toml has no settings (delete it instead of leaving it empty): %s", path)
+	}
+
 	keys := meta.Undecoded()
 	for ind, key := range keys {
 		t.Errorf("Undecoded key in %s[%d]: %#v", path, ind, key)

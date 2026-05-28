@@ -37,6 +37,6 @@ func TestTarget(t *testing.T) {
 	t.Run("not set", func(t *testing.T) {
 		target, ok := Target(ctx)
 		assert.False(t, ok)
-		assert.Equal(t, "", target)
+		assert.Empty(t, target)
 	})
 }
