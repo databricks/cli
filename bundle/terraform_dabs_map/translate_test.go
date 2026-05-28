@@ -171,6 +171,17 @@ func TestTerraformPathToDABs(t *testing.T) {
 			terrPath:  "url",
 			expectErr: true,
 		},
+		// Wildcard map fields: any key under a map-typed TF-only field is also TF-only
+		{
+			group:     "jobs",
+			terrPath:  "new_cluster.spark_conf.MY_KEY",
+			expectErr: true,
+		},
+		{
+			group:     "jobs",
+			terrPath:  "notebook_task.base_parameters.my_param",
+			expectErr: true,
+		},
 	}
 
 	for _, tt := range tests {
