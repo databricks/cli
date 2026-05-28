@@ -45,13 +45,16 @@ func retryWith[T any](ctx context.Context, check func(error) bool, fn func() (T,
 		if err == nil || attempt >= maxRetries || !check(err) {
 			return result, err
 		}
-		apiErr, _ := errors.AsType[*apierr.APIError](err)
-		endpoint := ""
-		if rw := apiErr.ResponseWrapper; rw != nil && rw.Response != nil && rw.Response.Request != nil {
-			req := rw.Response.Request
-			endpoint = fmt.Sprintf(" from %s %s", req.Method, req.URL.Path)
+		msg := "retrying"
+		if apiErr, ok := errors.AsType[*apierr.APIError](err); ok {
+			endpoint := ""
+			if rw := apiErr.ResponseWrapper; rw != nil && rw.Response != nil && rw.Response.Request != nil {
+				req := rw.Response.Request
+				endpoint = fmt.Sprintf(" from %s %s", req.Method, req.URL.Path)
+			}
+			msg = fmt.Sprintf("retrying after %d %s%s", apiErr.StatusCode, http.StatusText(apiErr.StatusCode), endpoint)
 		}
-		log.Warnf(ctx, "retrying after %d %s%s", apiErr.StatusCode, http.StatusText(apiErr.StatusCode), endpoint)
+		log.Warnf(ctx, "%s", msg)
 		select {
 		case <-ctx.Done():
 			var zero T
