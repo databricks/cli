@@ -6,7 +6,8 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/defaul
 Deploying resources...
 Updating deployment state...
 Deployment complete!
-
->>> print_requests.py //jobs
-json[0].body.name = "source";
-json[1].body.name = "dst job /path/to/wheel.whl";
+/path/to/wheel.whl
+main
+mycluster
+src-git
+src-tasks

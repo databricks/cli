@@ -1,2 +1,0 @@
-trace $CLI bundle deploy
-trace print_requests.py //jobs | gron.py | grep -w name
