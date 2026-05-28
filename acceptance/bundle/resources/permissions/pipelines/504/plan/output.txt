@@ -8,13 +8,13 @@ Warn: planning resources.pipelines.foo.permissions: retrying after 504 Gateway T
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 >>> print_requests.py //api/2.0/permissions/pipelines --get --oneline
-   2 {"method": "GET", "path": "/api/2.0/permissions/pipelines/[UUID]"}
+2 {"method": "GET", "path": "/api/2.0/permissions/pipelines/[UUID]"}
 
 >>> [CLI] bundle plan
 Warn: planning resources.pipelines.foo.permissions: retrying after 504 Gateway Timeout from GET /api/2.0/permissions/pipelines/[UUID]
 Warn: planning resources.pipelines.foo.permissions: retrying after 504 Gateway Timeout from GET /api/2.0/permissions/pipelines/[UUID]
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
-   3 {"method": "GET", "path": "/api/2.0/permissions/pipelines/[UUID]"}
+3 {"method": "GET", "path": "/api/2.0/permissions/pipelines/[UUID]"}
 
 >>> musterr [CLI] bundle plan
 Warn: planning resources.pipelines.foo.permissions: retrying after 504 Gateway Timeout from GET /api/2.0/permissions/pipelines/[UUID]
@@ -28,4 +28,4 @@ API message: Fault injected by test.
 
 Error: planning failed
 
-   3 {"method": "GET", "path": "/api/2.0/permissions/pipelines/[UUID]"}
+3 {"method": "GET", "path": "/api/2.0/permissions/pipelines/[UUID]"}
