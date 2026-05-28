@@ -67,6 +67,8 @@ func remapDeltaSyncSpec(req *vectorsearch.DeltaSyncVectorIndexSpecRequest) *vect
 		return nil
 	}
 	return &vectorsearch.DeltaSyncVectorIndexSpecResponse{
+		ColumnsToIndex:          req.ColumnsToIndex,
+		ColumnsToSync:           req.ColumnsToSync,
 		EmbeddingSourceColumns:  req.EmbeddingSourceColumns,
 		EmbeddingVectorColumns:  req.EmbeddingVectorColumns,
 		EmbeddingWritebackTable: req.EmbeddingWritebackTable,
