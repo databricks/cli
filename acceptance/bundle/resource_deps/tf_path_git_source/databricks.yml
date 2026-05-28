@@ -5,10 +5,10 @@ resources:
   jobs:
     src:
       name: source
-      git_source:
-        git_branch: main
-        git_url: https://github.com/databricks/cli
-        git_provider: gitHub
+      schedule:
+        quartz_cron_expression: "0 0 * * * ?"
+        timezone_id: UTC
     dst:
-      # TF path: "git_source.branch" → DABs: "git_source.git_branch"
-      name: ${resources.jobs.src.git_source.branch}
+      # schedule[0]: TF list-block syntax; [0] on a mapping is a no-op in dyn.
+      # schedule.quartz_cron_expression has the same name in TF and DABs.
+      name: ${resources.jobs.src.schedule[0].quartz_cron_expression}

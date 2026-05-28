@@ -1,0 +1,11 @@
+{
+  "cli_version": "[DEV_VERSION]",
+  "plan": {
+    "resources.jobs.dst": {
+      "action": "create"
+    },
+    "resources.jobs.src": {
+      "action": "create"
+    }
+  }
+}

@@ -5,17 +5,10 @@ resources:
   jobs:
     src:
       name: source
-      tasks:
-        - task_key: outer
-          for_each_task:
-            inputs: '["a"]'
-            task:
-              task_key: inner
-              libraries:
-                - whl: /path/to/wheel.whl
-              notebook_task:
-                notebook_path: /Workspace/notebook
+      trigger:
+        file_arrival:
+          url: abfss://container@account.dfs.core.windows.net/path
     dst:
-      # TF path: "task[0].for_each_task.task.library[0].whl"
-      # → DABs:  "tasks[0].for_each_task.task.libraries[0].whl"
-      name: ${resources.jobs.src.task[0].for_each_task.task.library[0].whl}
+      # trigger[0].file_arrival[0]: two levels of TF list-block syntax.
+      # [0] on a mapping is a no-op in dyn; field names are the same in TF and DABs.
+      name: ${resources.jobs.src.trigger[0].file_arrival[0].url}

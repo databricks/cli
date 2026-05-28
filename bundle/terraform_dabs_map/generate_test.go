@@ -43,7 +43,6 @@ var tfTypes = func() map[string]reflect.Type {
 	rt := reflect.TypeFor[schema.ResourceSchemas]()
 	m := make(map[string]reflect.Type, rt.NumField())
 	for f := range rt.Fields() {
-		f := f
 		tag := f.Tag.Get("json")
 		tfType := strings.SplitN(tag, ",", 2)[0]
 		if tfType != "" && tfType != "-" {
