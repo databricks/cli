@@ -21,15 +21,14 @@ func retrySafe(err error) error {
 
 // IsRetrySafe reports whether err was marked as safe to retry from DoCreate.
 func IsRetrySafe(err error) bool {
-	var safe *retrySafeError
-	return errors.As(err, &safe)
+	_, ok := errors.AsType[*retrySafeError](err)
+	return ok
 }
 
 // UnwrapRetrySafe removes the retrySafe wrapper, returning the underlying error.
 // If err is not retrySafe-wrapped, it returns err unchanged.
 func UnwrapRetrySafe(err error) error {
-	var safe *retrySafeError
-	if errors.As(err, &safe) {
+	if safe, ok := errors.AsType[*retrySafeError](err); ok {
 		return safe.err
 	}
 	return err
