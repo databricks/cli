@@ -20,6 +20,14 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 		panic("Planning is not done")
 	}
 
+	// Migrate mode rewrites local state in-place and does not call resource
+	// adapters, so there are no operations to report. Reject the combination
+	// rather than silently dropping migrations from the DMS view.
+	if migrateMode && b.OperationReporter != nil {
+		logdiag.LogError(ctx, errors.New("migration is not supported with the deployment metadata service"))
+		return
+	}
+
 	if len(plan.Plan) == 0 {
 		// Avoid creating state file if nothing to deploy
 		return
@@ -138,9 +146,11 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 
 			// Report the operation outcome to DMS (if enabled). On success
 			// we report the post-deploy resource ID + the new local state;
-			// on failure we report the action and error message and skip
+			// on failure we report the action and error message and omit
 			// the state payload (matches OPERATION_STATUS_FAILED conventions).
-			if !migrateMode {
+			// migrateMode is rejected up-front above when DMS is enabled, so
+			// it's safe to always go through reportOperation here.
+			if b.OperationReporter != nil {
 				var reportState json.RawMessage
 				var reportID string
 				if err == nil {
