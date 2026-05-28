@@ -1,0 +1,3 @@
+Cloud = false
+
+Badness = "Recreating a vector_search_endpoint does not cascade to its dependent vector_search_indexes. The first deploy recreates the endpoint and leaves the index attached to a stale endpoint UUID; a second plan/deploy is required to reconcile the index. Follow-up will add a generic per-resource recreate cascade rule to the framework."

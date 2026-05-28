@@ -94,6 +94,8 @@ func makeCommand(method string) *cobra.Command {
 				cfg.Profile = databrickscfg.ResolveDefaultProfile(cmd.Context())
 			}
 
+			auth.NormalizeDatabricksConfigFromEnv(cmd.Context(), cfg)
+
 			api, err := client.New(cfg)
 			if err != nil {
 				return err

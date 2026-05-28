@@ -513,13 +513,50 @@ func TestIsPATOnSPOGWithoutWorkspaceID(t *testing.T) {
 	}
 }
 
+func TestWorkspaceClientOrPromptRejectsAccountOnlyProfile(t *testing.T) {
+	tests := []struct {
+		name        string
+		workspaceID string
+	}{
+		// New shape: --skip-workspace omits workspace_id entirely.
+		{name: "empty workspace_id", workspaceID: ""},
+		// Legacy shape: older CLIs persisted the "none" sentinel.
+		{name: "legacy none sentinel", workspaceID: "none"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			testutil.CleanupEnvironment(t)
+			t.Setenv("PATH", "")
+
+			cfg := &config.Config{
+				Host:          "https://example.test/",
+				AccountID:     "abc-123",
+				WorkspaceID:   tt.workspaceID,
+				Token:         "foobar",
+				Profile:       "bb",
+				HTTPTransport: noNetworkTransport,
+			}
+
+			w, err := workspaceClientOrPrompt(t.Context(), cfg, false)
+			assert.Nil(t, w)
+			require.Error(t, err)
+			var accountOnly ErrAccountOnlyProfile
+			require.ErrorAs(t, err, &accountOnly)
+			assert.Contains(t, err.Error(), `profile "bb"`)
+			assert.Contains(t, err.Error(), "account-only")
+			assert.Contains(t, err.Error(), "no workspace_id set")
+		})
+	}
+}
+
 func TestWorkspaceClientOrPromptRejectsPATOnSPOGWithoutWorkspaceID(t *testing.T) {
 	testutil.CleanupEnvironment(t)
 	t.Setenv("PATH", "")
 
+	// No AccountID is set, so the account-only profile detector (which requires
+	// AccountID) does not fire and the PAT-on-SPOG detector is exercised.
 	cfg := &config.Config{
 		Host:          "https://spog.example.test/",
-		AccountID:     "abc-123",
 		Token:         "dapi-fake",
 		Profile:       "spog-pat",
 		DiscoveryURL:  "https://spog.example.test/oidc/accounts/abc-123/.well-known/oauth-authorization-server",
@@ -554,10 +591,12 @@ func TestWorkspaceClientOrPromptRejectsPATOnSPOGFromConfigFile(t *testing.T) {
 
 	// Mock .well-known/databricks-config to return an account-scoped OIDC
 	// endpoint so the SDK populates cfg.DiscoveryURL with the SPOG signal.
+	// Omit account_id so AccountID stays unset; otherwise the account-only
+	// profile detector would intercept this case before the PAT-on-SPOG check.
 	mux := http.NewServeMux()
 	mux.HandleFunc("/.well-known/databricks-config", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"account_id":"abc-123","oidc_endpoint":"https://spog.example.test/oidc/accounts/abc-123"}`))
+		_, _ = w.Write([]byte(`{"oidc_endpoint":"https://spog.example.test/oidc/accounts/abc-123"}`))
 	})
 	server := httptest.NewServer(mux)
 	t.Cleanup(server.Close)
@@ -577,6 +616,35 @@ token = dapi-fake
 	assert.Contains(t, err.Error(), `profile "spog-pat"`)
 	assert.Contains(t, err.Error(), "workspace_id")
 	assert.Contains(t, err.Error(), "PAT")
+}
+
+func TestMustAnyClientFallsThroughOnAccountOnlyProfile(t *testing.T) {
+	testutil.CleanupEnvironment(t)
+	t.Setenv("PATH", "")
+
+	configFile := filepath.Join(t.TempDir(), ".databrickscfg")
+	err := os.WriteFile(configFile, []byte(`
+[skipws]
+host         = https://accounts.azuredatabricks.net/
+account_id   = abc-123
+token        = foobar
+workspace_id = none
+`), 0o600)
+	require.NoError(t, err)
+	t.Setenv("DATABRICKS_CONFIG_FILE", configFile)
+
+	ctx, tt := cmdio.SetupTest(t.Context(), cmdio.TestOptions{PromptSupported: true})
+	t.Cleanup(tt.Done)
+	cmd := New(ctx)
+	require.NoError(t, cmd.PersistentFlags().Set("profile", "skipws"))
+
+	// Workspace path returns ErrAccountOnlyProfile. MustAnyClient must
+	// recognize the type and fall through to the account client so
+	// `auth describe` shows account info for account-only profiles.
+	isAccount, err := MustAnyClient(cmd, []string{})
+	require.NoError(t, err)
+	require.True(t, isAccount, "expected fall-through to account client")
+	require.NotNil(t, cmdctx.AccountClient(cmd.Context()))
 }
 
 func TestWorkspaceClientOrPromptReturnsSuccessWhenAuthSucceeds(t *testing.T) {

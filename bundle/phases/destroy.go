@@ -40,6 +40,7 @@ var destroyApprovalGroups = []approvalGroup{
 	{group: "synced_database_tables", message: deleteSyncedDatabaseTableMessage},
 	{group: "postgres_projects", message: deletePostgresProjectMessage},
 	{group: "postgres_branches", message: deletePostgresBranchMessage},
+	{group: "vector_search_indexes", message: deleteVectorSearchIndexMessage},
 }
 
 func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) (bool, error) {

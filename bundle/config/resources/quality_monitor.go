@@ -3,9 +3,9 @@ package resources
 import (
 	"context"
 	"net/url"
-	"strings"
 
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
@@ -54,8 +54,7 @@ func (s *QualityMonitor) InitializeURL(baseURL url.URL) {
 	if s.TableName == "" {
 		return
 	}
-	baseURL.Path = "explore/data/" + strings.ReplaceAll(s.TableName, ".", "/")
-	s.URL = baseURL.String()
+	s.URL = workspaceurls.ResourceURL(baseURL, "quality_monitors", s.TableName)
 }
 
 func (s *QualityMonitor) GetName() string {
