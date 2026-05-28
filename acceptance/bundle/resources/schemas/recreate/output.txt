@@ -83,6 +83,9 @@ Error: Resource catalog.SchemaInfo not found: main.myschema
   "metastore_id": "[UUID]",
   "name": "myschema",
   "owner": "[USERNAME]",
+  "properties": {
+    "unity.catalog.managed.delta.defaults.delta.enableRowTracking": "true"
+  },
   "schema_id": "[UUID]",
   "updated_at": [UNIX_TIME_MILLIS][0],
   "updated_by": "[USERNAME]"
