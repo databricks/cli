@@ -375,8 +375,10 @@ func newCreateDatabase() *cobra.Command {
 	// TODO: complex arg: status
 
 	cmd.Use = "create-database PARENT"
-	cmd.Short = `Create a Database.`
-	cmd.Long = `Create a Database.
+	cmd.Short = `*Beta* Create a Database.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Create a Database.
 
   Create a Database.
 
@@ -392,12 +394,9 @@ func newCreateDatabase() *cobra.Command {
     PARENT: The Branch where this Database will be created. Format:
       projects/{project_id}/branches/{branch_id}`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -1217,8 +1216,10 @@ func newDeleteDatabase() *cobra.Command {
 	cmd.Flags().DurationVar(&deleteDatabaseTimeout, "timeout", 0, `maximum amount of time to reach DONE state`)
 
 	cmd.Use = "delete-database NAME"
-	cmd.Short = `Delete a Database.`
-	cmd.Long = `Delete a Database.
+	cmd.Short = `*Beta* Delete a Database.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Delete a Database.
 
   This is a long-running operation. By default, the command waits for the
   operation to complete. Use --no-wait to return immediately with the raw
@@ -1229,12 +1230,9 @@ func newDeleteDatabase() *cobra.Command {
     NAME: The resource name of the postgres database. Format:
       projects/{project_id}/branches/{branch_id}/databases/{database_id}`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -1944,19 +1942,18 @@ func newGetDatabase() *cobra.Command {
 	var getDatabaseReq postgres.GetDatabaseRequest
 
 	cmd.Use = "get-database NAME"
-	cmd.Short = `Get a Database.`
-	cmd.Long = `Get a Database.
+	cmd.Short = `*Beta* Get a Database.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Get a Database.
 
   Arguments:
     NAME: The name of the Database to retrieve. Format:
       projects/{project_id}/branches/{branch_id}/databases/{database_id}`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -2409,8 +2406,10 @@ func newListDatabases() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-databases PARENT"
-	cmd.Short = `List postgres databases in a branch.`
-	cmd.Long = `List postgres databases in a branch.
+	cmd.Short = `*Beta* List postgres databases in a branch.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+List postgres databases in a branch.
 
   List Databases.
 
@@ -2418,12 +2417,9 @@ func newListDatabases() *cobra.Command {
     PARENT: The Branch that owns this collection of databases. Format:
       projects/{project_id}/branches/{branch_id}`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -3058,8 +3054,10 @@ func newUpdateDatabase() *cobra.Command {
 	// TODO: complex arg: status
 
 	cmd.Use = "update-database NAME UPDATE_MASK"
-	cmd.Short = `Update a Database.`
-	cmd.Long = `Update a Database.
+	cmd.Short = `*Beta* Update a Database.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Update a Database.
 
   This is a long-running operation. By default, the command waits for the
   operation to complete. Use --no-wait to return immediately with the raw
@@ -3072,12 +3070,9 @@ func newUpdateDatabase() *cobra.Command {
     UPDATE_MASK: The list of fields to update. If unspecified, all fields will be updated
       when possible.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
