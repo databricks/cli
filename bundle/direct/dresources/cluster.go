@@ -165,12 +165,40 @@ func (r *ResourceCluster) DoRead(ctx context.Context, id string) (*ClusterRemote
 	return remote, nil
 }
 
-func (r *ResourceCluster) DoCreate(ctx context.Context, config *ClusterState) (string, *ClusterRemote, error) {
+func (r *ResourceCluster) DoCreate(ctx context.Context, engine *Engine, config *ClusterState) (string, *ClusterRemote, error) {
 	wait, err := r.client.Clusters.Create(ctx, makeCreateCluster(&config.ClusterSpec))
 	if err != nil {
 		return "", nil, err
 	}
-	return wait.ClusterId, nil, nil
+	id := wait.ClusterId
+
+	// Save state immediately after the cluster is created so it is not orphaned
+	// if the subsequent wait or terminate is interrupted.
+	engine.SetID(id)
+	if err := engine.SaveState(config); err != nil {
+		return "", nil, err
+	}
+
+	// Always wait for RUNNING first: clusters start in PENDING state and must be polled.
+	_, err = r.client.Clusters.WaitGetClusterRunning(ctx, id, clusterWaitTimeout, nil)
+	if err != nil {
+		return "", nil, err
+	}
+
+	if config.Lifecycle != nil && config.Lifecycle.Started != nil && !*config.Lifecycle.Started {
+		// started=false: terminate the cluster after it reaches RUNNING.
+		// Note: Delete terminates the cluster; permanent removal is a separate API (permanent-delete).
+		deleteWaiter, err := r.client.Clusters.Delete(ctx, compute.DeleteCluster{ClusterId: id})
+		if err != nil {
+			return "", nil, err
+		}
+		_, err = deleteWaiter.GetWithTimeout(clusterWaitTimeout)
+		if err != nil {
+			return "", nil, err
+		}
+	}
+
+	return id, nil, nil
 }
 
 // hasClusterChanges reports whether the plan entry contains any Update changes
@@ -179,7 +207,7 @@ func hasClusterChanges(entry *PlanEntry) bool {
 	return entry.Changes.HasChangeExcept("lifecycle", "lifecycle.started")
 }
 
-func (r *ResourceCluster) DoUpdate(ctx context.Context, id string, config *ClusterState, entry *PlanEntry) (*ClusterRemote, error) {
+func (r *ResourceCluster) DoUpdate(ctx context.Context, _ *Engine, id string, config *ClusterState, entry *PlanEntry) (*ClusterRemote, error) {
 	if hasClusterChanges(entry) {
 		// Same retry as in TF provider logic
 		// https://github.com/databricks/terraform-provider-databricks/blob/3eecd0f90cf99d7777e79a3d03c41f9b2aafb004/clusters/resource_cluster.go#L624
@@ -208,51 +236,21 @@ func (r *ResourceCluster) DoUpdate(ctx context.Context, id string, config *Clust
 	desiredStarted := *config.Lifecycle.Started
 	alreadyRunning := remoteClusterIsRunning(entry)
 	if desiredStarted && !alreadyRunning {
-		// lifecycle.started=true: fire Start; WaitAfterUpdate polls for RUNNING.
+		// lifecycle.started=true: fire Start and wait for RUNNING.
 		_, err := r.client.Clusters.Start(ctx, compute.StartCluster{ClusterId: id})
-		return nil, err
-	} else if !desiredStarted && alreadyRunning {
-		// lifecycle.started=false: fire Delete; WaitAfterUpdate polls for TERMINATED.
-		// Note: Delete terminates the cluster; permanent removal is a separate API (permanent-delete).
-		_, err := r.client.Clusters.Delete(ctx, compute.DeleteCluster{ClusterId: id})
-		return nil, err
-	}
-
-	return nil, nil
-}
-
-// WaitAfterUpdate waits for the cluster to reach the desired lifecycle state after DoUpdate.
-func (r *ResourceCluster) WaitAfterUpdate(ctx context.Context, id string, config *ClusterState) (*ClusterRemote, error) {
-	if config.Lifecycle == nil || config.Lifecycle.Started == nil {
-		return nil, nil
-	}
-
-	if *config.Lifecycle.Started {
-		_, err := r.client.Clusters.WaitGetClusterRunning(ctx, id, clusterWaitTimeout, nil)
-		return nil, err
-	}
-
-	_, err := r.client.Clusters.WaitGetClusterTerminated(ctx, id, clusterWaitTimeout, nil)
-	return nil, err
-}
-
-// WaitAfterCreate waits for the cluster to reach RUNNING state (clusters always start on creation).
-// When lifecycle.started=false, it then terminates the cluster.
-func (r *ResourceCluster) WaitAfterCreate(ctx context.Context, id string, config *ClusterState) (*ClusterRemote, error) {
-	// Always wait for RUNNING first: clusters start in PENDING state and must be polled.
-	_, err := r.client.Clusters.WaitGetClusterRunning(ctx, id, clusterWaitTimeout, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	if config.Lifecycle != nil && config.Lifecycle.Started != nil && !*config.Lifecycle.Started {
-		// started=false: terminate the cluster after it reaches RUNNING.
-		// Note: Delete terminates the cluster; permanent removal is a separate API (permanent-delete).
-		deleteWaiter, err := r.client.Clusters.Delete(ctx, compute.DeleteCluster{ClusterId: id})
 		if err != nil {
 			return nil, err
 		}
-		_, err = deleteWaiter.GetWithTimeout(clusterWaitTimeout)
+		_, err = r.client.Clusters.WaitGetClusterRunning(ctx, id, clusterWaitTimeout, nil)
+		return nil, err
+	} else if !desiredStarted && alreadyRunning {
+		// lifecycle.started=false: fire Delete and wait for TERMINATED.
+		// Note: Delete terminates the cluster; permanent removal is a separate API (permanent-delete).
+		_, err := r.client.Clusters.Delete(ctx, compute.DeleteCluster{ClusterId: id})
+		if err != nil {
+			return nil, err
+		}
+		_, err = r.client.Clusters.WaitGetClusterTerminated(ctx, id, clusterWaitTimeout, nil)
 		return nil, err
 	}
 
@@ -276,8 +274,9 @@ func (r *ResourceCluster) DoResize(ctx context.Context, id string, config *Clust
 	}
 
 	// Cluster is not running; fall back to the full clusters/edit path.
+	// DoUpdate ignores its Engine argument, so passing nil here is safe.
 	log.Debugf(ctx, "cluster %s: resize returned INVALID_STATE (%s), falling back to edit", id, err)
-	_, err = r.DoUpdate(ctx, id, config, entry)
+	_, err = r.DoUpdate(ctx, nil, id, config, entry)
 	return err
 }
 

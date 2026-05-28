@@ -66,7 +66,7 @@ func (r *ResourceSecretScope) DoRead(ctx context.Context, id string) (*workspace
 	return nil, fmt.Errorf("secret scope %q not found", id)
 }
 
-func (r *ResourceSecretScope) DoCreate(ctx context.Context, state *SecretScopeConfig) (string, *workspace.SecretScope, error) {
+func (r *ResourceSecretScope) DoCreate(ctx context.Context, _ *Engine, state *SecretScopeConfig) (string, *workspace.SecretScope, error) {
 	err := r.client.Secrets.CreateScope(ctx, state.CreateScope)
 	if err != nil {
 		return "", nil, err
