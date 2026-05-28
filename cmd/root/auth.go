@@ -129,13 +129,13 @@ func MustAnyClient(cmd *cobra.Command, args []string) (bool, error) {
 	// If the error indicates a wrong config type (workspace host used for account client,
 	// or config type mismatch detected by workspaceClientOrPrompt), fall through to try
 	// account client.
-	if !errors.Is(werr, errNotWorkspaceClient) && !errors.As(werr, &ErrNoWorkspaceProfiles{}) {
+	if _, ok := errors.AsType[ErrNoWorkspaceProfiles](werr); !errors.Is(werr, errNotWorkspaceClient) && !ok {
 		return false, werr
 	}
 
 	// Otherwise, the config used is account client one, so try to create an account client
 	aerr := MustAccountClient(cmd, args)
-	if errors.As(aerr, &ErrNoAccountProfiles{}) {
+	if _, ok := errors.AsType[ErrNoAccountProfiles](aerr); ok {
 		return false, aerr
 	}
 
@@ -152,6 +152,7 @@ func MustAccountClient(cmd *cobra.Command, args []string) error {
 	}
 
 	ctx := cmd.Context()
+	auth.NormalizeDatabricksConfigFromEnv(ctx, cfg)
 	ctx = cmdctx.SetConfigUsed(ctx, cfg)
 	cmd.SetContext(ctx)
 
@@ -250,6 +251,7 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 		cfg.Profile = profile
 	}
 
+	auth.NormalizeDatabricksConfigFromEnv(ctx, cfg)
 	resolveDefaultProfile(ctx, cfg)
 
 	_, isTargetFlagSet := targetFlagValue(cmd)

@@ -635,6 +635,7 @@ func newGet() *cobra.Command {
 
 	var getReq jobs.GetJobRequest
 
+	cmd.Flags().BoolVar(&getReq.IncludeTriggerState, "include-trigger-state", getReq.IncludeTriggerState, `Flag that indicates that trigger state should be included in the response.`)
 	cmd.Flags().StringVar(&getReq.PageToken, "page-token", getReq.PageToken, `Use next_page_token returned from the previous GetJob response to request the next page of the job's array properties.`)
 
 	cmd.Use = "get JOB_ID"

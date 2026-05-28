@@ -255,7 +255,7 @@ func TestGetDefaultProfile_NoFile(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "databrickscfg")
 	got, err := GetDefaultProfile(t.Context(), path)
 	require.NoError(t, err)
-	assert.Equal(t, "", got)
+	assert.Empty(t, got)
 	// Verify the file was NOT created as a side effect.
 	assert.NoFileExists(t, path)
 }
@@ -310,7 +310,7 @@ func TestGetConfiguredDefaultProfile_NoFile(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "databrickscfg")
 	got, err := GetConfiguredDefaultProfile(t.Context(), path)
 	require.NoError(t, err)
-	assert.Equal(t, "", got)
+	assert.Empty(t, got)
 	// Verify the file was NOT created as a side effect.
 	assert.NoFileExists(t, path)
 }
@@ -327,7 +327,7 @@ func TestResolveDefaultProfile(t *testing.T) {
 			want:     "my-workspace",
 		},
 		{
-			name:     "settings without default_profile",
+			name:     "settings without default_profile, no DEFAULT section",
 			contents: "[__settings__]\nauth_storage = secure\n\n[my-workspace]\nhost = https://abc\n",
 			want:     "",
 		},
@@ -340,6 +340,21 @@ func TestResolveDefaultProfile(t *testing.T) {
 			name:     "self-referencing __settings__ is ignored",
 			contents: "[__settings__]\ndefault_profile = __settings__\n\n[profile1]\nhost = https://abc\n",
 			want:     "",
+		},
+		{
+			name:     "DEFAULT section with host is used when settings is empty",
+			contents: "[DEFAULT]\nhost = https://default.abc\n\n[profile1]\nhost = https://abc\n",
+			want:     "DEFAULT",
+		},
+		{
+			name:     "DEFAULT section without host is ignored",
+			contents: "[DEFAULT]\naccount_id = 1234\n\n[profile1]\nhost = https://abc\n",
+			want:     "",
+		},
+		{
+			name:     "settings takes precedence over DEFAULT section",
+			contents: "[__settings__]\ndefault_profile = override\n\n[DEFAULT]\nhost = https://default.abc\n\n[override]\nhost = https://override.abc\n",
+			want:     "override",
 		},
 	}
 
@@ -775,7 +790,7 @@ func TestGetConfiguredAuthStorage_MissingFile(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "does-not-exist")
 	got, err := GetConfiguredAuthStorage(t.Context(), path)
 	require.NoError(t, err)
-	assert.Equal(t, "", got)
+	assert.Empty(t, got)
 }
 
 func TestSetConfiguredAuthStorage(t *testing.T) {

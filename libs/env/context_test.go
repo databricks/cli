@@ -16,7 +16,7 @@ func TestContext(t *testing.T) {
 
 	// Get
 	assert.Equal(t, "bar", env.Get(ctx0, "FOO"))
-	assert.Equal(t, "", env.Get(ctx0, "dontexist"))
+	assert.Empty(t, env.Get(ctx0, "dontexist"))
 
 	// Lookup
 	v, ok := env.Lookup(ctx0, "FOO")
@@ -24,7 +24,7 @@ func TestContext(t *testing.T) {
 	assert.Equal(t, "bar", v)
 	v, ok = env.Lookup(ctx0, "dontexist")
 	assert.False(t, ok)
-	assert.Equal(t, "", v)
+	assert.Empty(t, v)
 
 	// Set and get new context.
 	// Verify that the previous context remains unchanged.

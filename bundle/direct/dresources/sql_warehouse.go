@@ -89,6 +89,6 @@ func (r *ResourceSqlWarehouse) DoUpdate(ctx context.Context, id string, config *
 	return nil, nil
 }
 
-func (r *ResourceSqlWarehouse) DoDelete(ctx context.Context, oldID string) error {
+func (r *ResourceSqlWarehouse) DoDelete(ctx context.Context, oldID string, _ *sql.CreateWarehouseRequest) error {
 	return r.client.Warehouses.DeleteById(ctx, oldID)
 }

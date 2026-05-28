@@ -30,8 +30,8 @@ type exportDirOptions struct {
 
 // isFileSizeError checks if the error is due to file size limits.
 func isFileSizeError(err error) bool {
-	var aerr *apierr.APIError
-	if !errors.As(err, &aerr) || aerr.StatusCode != http.StatusBadRequest {
+	aerr, ok := errors.AsType[*apierr.APIError](err)
+	if !ok || aerr.StatusCode != http.StatusBadRequest {
 		return false
 	}
 

@@ -719,6 +719,10 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.ClustersCreate(req)
 	})
 
+	server.Handle("POST", "/api/2.1/clusters/delete", func(req Request) any {
+		return req.Workspace.ClustersDelete(req)
+	})
+
 	server.Handle("POST", "/api/2.1/clusters/start", func(req Request) any {
 		return req.Workspace.ClustersStart(req)
 	})
@@ -822,6 +826,24 @@ func AddDefaultHandlers(server *Server) {
 
 	server.Handle("PATCH", "/api/2.0/vector-search/endpoints/{endpoint_name}/budget-policy", func(req Request) any {
 		return req.Workspace.VectorSearchEndpointUpdateBudgetPolicy(req, req.Vars["endpoint_name"])
+	})
+
+	// Vector Search Indexes:
+
+	server.Handle("POST", "/api/2.0/vector-search/indexes", func(req Request) any {
+		return req.Workspace.VectorSearchIndexCreate(req)
+	})
+
+	server.Handle("GET", "/api/2.0/vector-search/indexes", func(req Request) any {
+		return MapList(req.Workspace, req.Workspace.VectorSearchIndexes, "vector_indexes")
+	})
+
+	server.Handle("GET", "/api/2.0/vector-search/indexes/{index_name}", func(req Request) any {
+		return MapGet(req.Workspace, req.Workspace.VectorSearchIndexes, req.Vars["index_name"])
+	})
+
+	server.Handle("DELETE", "/api/2.0/vector-search/indexes/{index_name}", func(req Request) any {
+		return MapDelete(req.Workspace, req.Workspace.VectorSearchIndexes, req.Vars["index_name"])
 	})
 
 	// Generic permissions endpoints
@@ -957,6 +979,29 @@ func AddDefaultHandlers(server *Server) {
 	server.Handle("GET", "/api/2.0/postgres/catalogs/{id}/operations/{operation_id}", func(req Request) any {
 		name := "catalogs/" + req.Vars["id"] + "/operations/" + req.Vars["operation_id"]
 		return req.Workspace.PostgresOperationGet(name)
+	})
+
+	// Postgres Synced Tables:
+	server.Handle("POST", "/api/2.0/postgres/synced_tables", func(req Request) any {
+		syncedTableID := req.URL.Query().Get("synced_table_id")
+		return req.Workspace.PostgresSyncedTableCreate(req, syncedTableID)
+	})
+
+	server.Handle("GET", "/api/2.0/postgres/synced_tables/{id}", func(req Request) any {
+		return req.Workspace.PostgresSyncedTableGet("synced_tables/" + req.Vars["id"])
+	})
+
+	server.Handle("DELETE", "/api/2.0/postgres/synced_tables/{id}", func(req Request) any {
+		return req.Workspace.PostgresSyncedTableDelete("synced_tables/" + req.Vars["id"])
+	})
+
+	server.Handle("GET", "/api/2.0/postgres/synced_tables/{id}/operations/{operation_id}", func(req Request) any {
+		name := "synced_tables/" + req.Vars["id"] + "/operations/" + req.Vars["operation_id"]
+		return req.Workspace.PostgresOperationGet(name)
+	})
+
+	server.Handle("GET", "/api/2.0/postgres/operations/{operation_id}", func(req Request) any {
+		return req.Workspace.PostgresOperationGet("operations/" + req.Vars["operation_id"])
 	})
 
 	// Catch-all handler for invalid postgres resource names.

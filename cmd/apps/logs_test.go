@@ -79,7 +79,7 @@ func TestNormalizeOrigin(t *testing.T) {
 	assert.Equal(t, "https://example.com", normalizeOrigin("https://example.com/foo"))
 	assert.Equal(t, "http://example.com", normalizeOrigin("ws://example.com/foo"))
 	assert.Equal(t, "https://example.com", normalizeOrigin("wss://example.com/foo"))
-	assert.Equal(t, "", normalizeOrigin("://invalid"))
+	assert.Empty(t, normalizeOrigin("://invalid"))
 }
 
 func TestBuildSourceFilter(t *testing.T) {

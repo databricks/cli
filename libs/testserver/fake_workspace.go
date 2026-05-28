@@ -152,6 +152,7 @@ type FakeWorkspace struct {
 	RegisteredModels      map[string]catalog.RegisteredModelInfo
 	ServingEndpoints      map[string]serving.ServingEndpointDetailed
 	VectorSearchEndpoints map[string]vectorsearch.EndpointInfo
+	VectorSearchIndexes   map[string]fakeVectorSearchIndex
 
 	SecretScopes map[string]workspace.SecretScope
 	Secrets      map[string]map[string]string // scope -> key -> value
@@ -168,11 +169,12 @@ type FakeWorkspace struct {
 	DatabaseCatalogs     map[string]database.DatabaseCatalog
 	SyncedDatabaseTables map[string]database.SyncedDatabaseTable
 
-	PostgresProjects   map[string]postgres.Project
-	PostgresBranches   map[string]postgres.Branch
-	PostgresEndpoints  map[string]postgres.Endpoint
-	PostgresCatalogs   map[string]postgres.Catalog
-	PostgresOperations map[string]postgres.Operation
+	PostgresProjects     map[string]postgres.Project
+	PostgresBranches     map[string]postgres.Branch
+	PostgresEndpoints    map[string]postgres.Endpoint
+	PostgresCatalogs     map[string]postgres.Catalog
+	PostgresSyncedTables map[string]postgres.SyncedTable
+	PostgresOperations   map[string]postgres.Operation
 
 	// Branches and endpoints that the server provisioned implicitly together
 	// with their parent (e.g. the production branch on a new project, or the
@@ -295,6 +297,7 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		},
 		ServingEndpoints:          map[string]serving.ServingEndpointDetailed{},
 		VectorSearchEndpoints:     map[string]vectorsearch.EndpointInfo{},
+		VectorSearchIndexes:       map[string]fakeVectorSearchIndex{},
 		Repos:                     map[string]workspace.RepoInfo{},
 		SecretScopes:              map[string]workspace.SecretScope{},
 		Secrets:                   map[string]map[string]string{},
@@ -308,6 +311,7 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		PostgresBranches:          map[string]postgres.Branch{},
 		PostgresEndpoints:         map[string]postgres.Endpoint{},
 		PostgresCatalogs:          map[string]postgres.Catalog{},
+		PostgresSyncedTables:      map[string]postgres.SyncedTable{},
 		PostgresOperations:        map[string]postgres.Operation{},
 		postgresImplicitBranches:  map[string]bool{},
 		postgresImplicitEndpoints: map[string]bool{},

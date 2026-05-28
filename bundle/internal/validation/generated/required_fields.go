@@ -227,6 +227,8 @@ var RequiredFields = map[string][]string{
 	"resources.postgres_projects.*":                {"project_id"},
 	"resources.postgres_projects.*.permissions[*]": {"level"},
 
+	"resources.postgres_synced_tables.*": {"synced_table_id"},
+
 	"resources.quality_monitors.*":                   {"assets_dir", "output_schema_name", "table_name"},
 	"resources.quality_monitors.*.custom_metrics[*]": {"definition", "input_columns", "name", "output_data_type", "type"},
 	"resources.quality_monitors.*.inference_log":     {"granularities", "model_id_col", "prediction_col", "problem_type", "timestamp_col"},
@@ -245,6 +247,8 @@ var RequiredFields = map[string][]string{
 
 	"resources.vector_search_endpoints.*":                {"endpoint_type", "name"},
 	"resources.vector_search_endpoints.*.permissions[*]": {"level"},
+
+	"resources.vector_search_indexes.*": {"endpoint_name", "index_type", "name", "primary_key"},
 
 	"resources.volumes.*": {"catalog_name", "name", "schema_name", "volume_type"},
 
