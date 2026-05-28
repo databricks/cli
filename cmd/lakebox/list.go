@@ -74,6 +74,15 @@ Example:
 				}
 			}
 
+			// Replace the local (id, name) cache from this fresh list,
+			// so subsequent name-based commands (`lakebox ssh my-project`,
+			// etc.) resolve locally without another API call.
+			refs := make([]cachedSandbox, 0, len(entries))
+			for _, e := range entries {
+				refs = append(refs, cachedSandbox{ID: e.SandboxID, Name: e.Name})
+			}
+			_ = setSandboxes(ctx, profile, refs)
+
 			if outputJSON {
 				enc := json.NewEncoder(cmd.OutOrStdout())
 				enc.SetIndent("", "  ")

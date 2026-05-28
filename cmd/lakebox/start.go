@@ -35,7 +35,16 @@ Example:
 				return err
 			}
 
-			lakeboxID := args[0]
+			profile := w.Config.Profile
+			if profile == "" {
+				profile = w.Config.Host
+			}
+
+			lakeboxID, err := resolveLocalID(ctx, profile, args[0])
+			if err != nil {
+				return err
+			}
+
 			s := spin(ctx, "Starting "+lakeboxID+"…")
 			defer s.Close()
 
@@ -45,11 +54,8 @@ Example:
 				return fmt.Errorf("failed to start lakebox %s: %w", lakeboxID, err)
 			}
 
-			profile := w.Config.Profile
-			if profile == "" {
-				profile = w.Config.Host
-			}
 			_ = setGatewayHost(ctx, profile, updated.GatewayHost)
+			_ = upsertSandbox(ctx, profile, updated.SandboxID, updated.Name)
 
 			s.ok("Started " + cmdio.Bold(ctx, updated.SandboxID))
 			return nil

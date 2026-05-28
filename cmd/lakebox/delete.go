@@ -37,7 +37,15 @@ Examples:
 				return err
 			}
 
-			lakeboxID := args[0]
+			profile := w.Config.Profile
+			if profile == "" {
+				profile = w.Config.Host
+			}
+
+			lakeboxID, err := resolveLocalID(ctx, profile, args[0])
+			if err != nil {
+				return err
+			}
 
 			// Validate existence first so `delete <typo>` fails clearly
 			// instead of returning a confident "✓ Removed" on a sandbox
@@ -82,10 +90,7 @@ Examples:
 				return fmt.Errorf("failed to delete lakebox %s: %w", lakeboxID, err)
 			}
 
-			profile := w.Config.Profile
-			if profile == "" {
-				profile = w.Config.Host
-			}
+			_ = removeSandbox(ctx, profile, lakeboxID)
 			if getDefault(ctx, profile) == lakeboxID {
 				_ = clearDefault(ctx, profile)
 				s.ok("Removed " + cmdio.Bold(ctx, lakeboxID) + " " + cmdio.Faint(ctx, "(default cleared)"))

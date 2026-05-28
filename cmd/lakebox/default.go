@@ -35,12 +35,16 @@ Example:
 				profile = w.Config.Host
 			}
 
-			lakeboxID := args[0]
+			lakeboxID, err := resolveLocalID(ctx, profile, args[0])
+			if err != nil {
+				return err
+			}
 			api, err := newLakeboxAPI(w)
 			if err != nil {
 				return err
 			}
-			if _, err := api.get(ctx, lakeboxID); err != nil {
+			entry, err := api.get(ctx, lakeboxID)
+			if err != nil {
 				if errors.Is(err, apierr.ErrNotFound) {
 					return fmt.Errorf("no lakebox named %q — `databricks lakebox list` shows available IDs", lakeboxID)
 				}
@@ -50,6 +54,7 @@ Example:
 			if err := setDefault(ctx, profile, lakeboxID); err != nil {
 				return fmt.Errorf("failed to set default: %w", err)
 			}
+			_ = upsertSandbox(ctx, profile, entry.SandboxID, entry.Name)
 			fmt.Fprintf(cmd.OutOrStdout(), "Default lakebox set to: %s\n", lakeboxID)
 			return nil
 		},
