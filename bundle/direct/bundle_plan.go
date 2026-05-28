@@ -123,6 +123,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 	// We're processing resources in DAG order because we're resolving references (that can be resolved at plan stage).
 	g.Run(defaultParallelism, func(resourceKey string, failedDependency *string) bool {
 		errorPrefix := "cannot plan " + resourceKey
+		ctx := log.WithPrefix(ctx, "planning "+resourceKey)
 
 		entry, err := plan.WriteLockEntry(resourceKey)
 		if err != nil {
@@ -156,7 +157,9 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 				return false
 			}
 
-			remoteState, err := adapter.DoRead(ctx, id)
+			remoteState, err := retryOnTransient(ctx, func() (any, error) {
+				return adapter.DoRead(ctx, id)
+			})
 			if err != nil {
 				if isResourceGone(err) {
 					// no such resource
@@ -211,7 +214,9 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			return false
 		}
 
-		remoteState, err := adapter.DoRead(ctx, dbentry.ID)
+		remoteState, err := retryOnTransient(ctx, func() (any, error) {
+			return adapter.DoRead(ctx, dbentry.ID)
+		})
 		if err != nil {
 			if isResourceGone(err) {
 				remoteState = nil

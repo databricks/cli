@@ -46,7 +46,8 @@ type Server struct {
 	fakeOidc       *FakeOidc
 	mu             sync.Mutex
 
-	kills *killRules
+	kills  *killRules
+	faults *FaultRules
 
 	RequestCallback  func(request *Request)
 	ResponseCallback func(request *Request, response *EncodedResponse)
@@ -204,6 +205,7 @@ func getHeaders(value []byte) http.Header {
 func New(t testutil.TestingT) *Server {
 	router := NewRouter()
 	kills := newKillRules()
+	faults := NewFaultRules()
 
 	// Wrap the router so kill rules fire for ALL requests, including those with
 	// no registered handler that would otherwise bypass serve() entirely.
@@ -225,6 +227,7 @@ func New(t testutil.TestingT) *Server {
 		fakeWorkspaces: map[string]*FakeWorkspace{},
 		fakeOidc:       &FakeOidc{url: server.URL},
 		kills:          kills,
+		faults:         faults,
 	}
 	router.Dispatch = s.serve
 
@@ -274,8 +277,9 @@ Response.Body = '<response body here>'
 	})
 	router.NotFound = notFoundFunc
 
-	// Register a test-only endpoint for setting up kill rules from scripts.
+	// Register test-only endpoints for setting up kill and fault rules from scripts.
 	s.Handle("POST", "/__testserver/kill", killEndpointHandler(s.kills))
+	s.Handle("POST", "/__testserver/fault", faultEndpointHandler(s.faults))
 
 	// Register a default handler for the SDK's host metadata discovery endpoint.
 	// The SDK resolves this during config initialization (as of v0.126.0) to
@@ -324,7 +328,13 @@ func (s *Server) serve(w http.ResponseWriter, r *http.Request, handler HandlerFu
 
 	var resp EncodedResponse
 
-	if bytes.Contains(request.Body, []byte("INJECT_ERROR")) {
+	if rule := s.faults.Check(r.Method, r.URL.Path, token); rule != nil {
+		resp = EncodedResponse{
+			StatusCode: rule.StatusCode,
+			Body:       []byte(rule.Body),
+			Headers:    getJsonHeaders(),
+		}
+	} else if bytes.Contains(request.Body, []byte("INJECT_ERROR")) {
 		resp = EncodedResponse{
 			StatusCode: 500,
 			Body:       []byte("INJECTED"),
