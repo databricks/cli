@@ -41,7 +41,7 @@ func isTransient(ctx context.Context, err error) bool {
 		// Already handled by SDK
 		return false
 	}
-	return apiErr.StatusCode == http.StatusGatewayTimeout
+	return apiErr.StatusCode >= 500 && apiErr.StatusCode == http.StatusRequestTimeout
 }
 
 // retryWith retries fn while check returns true for the error, up to maxRetries times.
