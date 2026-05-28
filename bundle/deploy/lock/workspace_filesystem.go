@@ -5,56 +5,54 @@ import (
 	"errors"
 	"io/fs"
 
-	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/permissions"
 	"github.com/databricks/cli/libs/locker"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/databricks-sdk-go"
 )
 
 // workspaceFilesystemLock implements DeploymentLock using a lock file in the
-// bundle's workspace state path. This preserves the historical behavior of
-// the previous lock.Acquire / lock.Release mutators.
+// bundle's workspace state path. Holds only the primitives it needs so the
+// type doesn't pin a *bundle.Bundle; the bundle-aware wiring lives in the
+// NewDeploymentLock factory.
 type workspaceFilesystemLock struct {
-	// b is retained for the workspace client and the permissions reporter on
-	// the Acquire error path; lock state itself lives on the struct.
-	b      *bundle.Bundle
+	client    *databricks.WorkspaceClient
+	user      string
+	statePath string
+	enabled   bool
+	force     bool
+
+	// reportPermissionError explains an FS permission error from the lock
+	// path back to the user. Injected so this struct doesn't import
+	// bundle/permissions.
+	reportPermissionError func(ctx context.Context, path string) error
+
 	locker *locker.Locker
 	goal   Goal
 }
 
-func newWorkspaceFilesystemLock(b *bundle.Bundle, goal Goal) *workspaceFilesystemLock {
-	return &workspaceFilesystemLock{b: b, goal: goal}
-}
-
 func (l *workspaceFilesystemLock) Acquire(ctx context.Context) error {
-	b := l.b
-
 	// Return early if locking is disabled.
-	if !b.Config.Bundle.Deployment.Lock.IsEnabled() {
+	if !l.enabled {
 		log.Infof(ctx, "Skipping; locking is disabled")
 		return nil
 	}
 
-	user := b.Config.Workspace.CurrentUser.UserName
-	dir := b.Config.Workspace.StatePath
-	lk, err := locker.CreateLocker(user, dir, b.WorkspaceClient(ctx))
+	lk, err := locker.CreateLocker(l.user, l.statePath, l.client)
 	if err != nil {
 		return err
 	}
 
 	l.locker = lk
 
-	force := b.Config.Bundle.Deployment.Lock.Force
-	log.Infof(ctx, "Acquiring deployment lock (force: %v)", force)
-	err = lk.Lock(ctx, force)
+	log.Infof(ctx, "Acquiring deployment lock (force: %v)", l.force)
+	err = lk.Lock(ctx, l.force)
 	if err != nil {
 		log.Errorf(ctx, "Failed to acquire deployment lock: %v", err)
 
 		// If we get a permission or "doesn't exist" error from the API this
 		// indicates we either don't have permissions or the path is invalid.
 		if errors.Is(err, fs.ErrPermission) || errors.Is(err, fs.ErrNotExist) {
-			diags := permissions.ReportPossiblePermissionDenied(ctx, b, b.Config.Workspace.StatePath)
-			return diags.Error()
+			return l.reportPermissionError(ctx, l.statePath)
 		}
 
 		return err
@@ -65,7 +63,7 @@ func (l *workspaceFilesystemLock) Acquire(ctx context.Context) error {
 
 func (l *workspaceFilesystemLock) Release(ctx context.Context, _ DeploymentStatus) error {
 	// Return early if locking is disabled.
-	if !l.b.Config.Bundle.Deployment.Lock.IsEnabled() {
+	if !l.enabled {
 		log.Infof(ctx, "Skipping; locking is disabled")
 		return nil
 	}
