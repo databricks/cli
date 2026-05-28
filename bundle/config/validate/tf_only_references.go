@@ -91,14 +91,14 @@ func checkTFOnlyReference(ref string, loc dyn.Location, isDirect bool) *diag.Dia
 	if isDirect {
 		return &diag.Diagnostic{
 			Severity:  diag.Error,
-			Summary:   fmt.Sprintf("%q: %s: Terraform-only field; cross-resource references to Terraform-only fields are not supported by the direct engine", ref, p[3:]),
+			Summary:   fmt.Sprintf("%q: Terraform-only field; cross-resource references to Terraform-only fields are not supported by the direct engine", ref),
 			Locations: []dyn.Location{loc},
 		}
 	}
 
 	return &diag.Diagnostic{
 		Severity:  diag.Warning,
-		Summary:   fmt.Sprintf("%q: %s: Terraform-only field; this reference will not work with the direct engine", ref, p[3:]),
+		Summary:   fmt.Sprintf("%q: Terraform-only field; this reference will not work with the direct engine", ref),
 		Locations: []dyn.Location{loc},
 	}
 }
