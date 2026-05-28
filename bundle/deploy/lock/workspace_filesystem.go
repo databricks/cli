@@ -5,15 +5,16 @@ import (
 	"errors"
 	"io/fs"
 
+	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/permissions"
 	"github.com/databricks/cli/libs/locker"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 )
 
 // workspaceFilesystemLock implements DeploymentLock using a lock file in the
-// bundle's workspace state path. Holds only the primitives it needs so the
-// type doesn't pin a *bundle.Bundle; the bundle-aware wiring lives in the
-// NewDeploymentLock factory.
+// bundle's workspace state path. Holds only the primitives it needs from the
+// bundle plus a reference for the permission-error path.
 type workspaceFilesystemLock struct {
 	client    *databricks.WorkspaceClient
 	user      string
@@ -21,10 +22,9 @@ type workspaceFilesystemLock struct {
 	enabled   bool
 	force     bool
 
-	// reportPermissionError explains an FS permission error from the lock
-	// path back to the user. Injected so this struct doesn't import
-	// bundle/permissions.
-	reportPermissionError func(ctx context.Context, path string) error
+	// b is retained only for permissions.ReportPossiblePermissionDenied on
+	// the Acquire error path.
+	b *bundle.Bundle
 
 	locker *locker.Locker
 	goal   Goal
@@ -52,7 +52,8 @@ func (l *workspaceFilesystemLock) Acquire(ctx context.Context) error {
 		// If we get a permission or "doesn't exist" error from the API this
 		// indicates we either don't have permissions or the path is invalid.
 		if errors.Is(err, fs.ErrPermission) || errors.Is(err, fs.ErrNotExist) {
-			return l.reportPermissionError(ctx, l.statePath)
+			diags := permissions.ReportPossiblePermissionDenied(ctx, l.b, l.statePath)
+			return diags.Error()
 		}
 
 		return err
