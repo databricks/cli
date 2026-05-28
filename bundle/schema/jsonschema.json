@@ -144,6 +144,12 @@
                       "budget_policy_id": {
                         "$ref": "#/$defs/string"
                       },
+                      "compute_max_instances": {
+                        "$ref": "#/$defs/int"
+                      },
+                      "compute_min_instances": {
+                        "$ref": "#/$defs/int"
+                      },
                       "compute_size": {
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.ComputeSize"
                       },
