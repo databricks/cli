@@ -8,11 +8,11 @@
     },
     "endpoint_name": "vs-endpoint-[UNIQUE_NAME]",
     "index_type": "DELTA_SYNC",
-    "name": "vs-index-[UNIQUE_NAME]",
+    "name": "main.default.vs_index_[UNIQUE_NAME]",
     "primary_key": "id"
   }
 }
 {
   "method": "GET",
-  "path": "/api/2.0/vector-search/indexes/vs-index-[UNIQUE_NAME]"
+  "path": "/api/2.0/vector-search/indexes/main.default.vs_index_[UNIQUE_NAME]"
 }

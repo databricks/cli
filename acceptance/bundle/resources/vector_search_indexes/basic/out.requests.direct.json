@@ -8,7 +8,7 @@
     },
     "endpoint_name": "vs-endpoint-[UNIQUE_NAME]",
     "index_type": "DELTA_SYNC",
-    "name": "vs-index-[UNIQUE_NAME]",
+    "name": "main.default.vs_index_[UNIQUE_NAME]",
     "primary_key": "id"
   }
 }

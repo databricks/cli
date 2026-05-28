@@ -1,29 +1,35 @@
 {
   "method": "GET",
-  "path": "/api/2.0/vector-search/indexes/vs-index-[UNIQUE_NAME]"
+  "path": "/api/2.0/vector-search/indexes/main.default.vs_index_[UNIQUE_NAME]"
 }
 {
   "method": "DELETE",
-  "path": "/api/2.0/vector-search/indexes/vs-index-[UNIQUE_NAME]"
+  "path": "/api/2.0/vector-search/indexes/main.default.vs_index_[UNIQUE_NAME]"
 }
 {
   "method": "GET",
-  "path": "/api/2.0/vector-search/indexes/vs-index-[UNIQUE_NAME]"
+  "path": "/api/2.0/vector-search/indexes/main.default.vs_index_[UNIQUE_NAME]"
 }
 {
   "method": "POST",
   "path": "/api/2.0/vector-search/indexes",
   "body": {
     "direct_access_index_spec": {
-      "schema_json": "{\"columns\":[{\"name\":\"id\",\"type\":\"integer\"}]}"
+      "embedding_vector_columns": [
+        {
+          "embedding_dimension": 8,
+          "name": "vector"
+        }
+      ],
+      "schema_json": "{\"columns\":[{\"name\":\"id\",\"type\":\"integer\"},{\"name\":\"vector\",\"type\":\"array<float>\"}]}"
     },
     "endpoint_name": "vs-endpoint-[UNIQUE_NAME]",
     "index_type": "DIRECT_ACCESS",
-    "name": "vs-index-[UNIQUE_NAME]",
+    "name": "main.default.vs_index_[UNIQUE_NAME]",
     "primary_key": "id"
   }
 }
 {
   "method": "GET",
-  "path": "/api/2.0/vector-search/indexes/vs-index-[UNIQUE_NAME]"
+  "path": "/api/2.0/vector-search/indexes/main.default.vs_index_[UNIQUE_NAME]"
 }

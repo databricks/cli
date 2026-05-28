@@ -8,7 +8,7 @@ resources:
       endpoint_type: STANDARD
   vector_search_indexes:
     foo:
-      name: test-index-$UNIQUE_NAME
+      name: main.default.test_index_$UNIQUE_NAME
       endpoint_name: ${resources.vector_search_endpoints.bar.name}
       primary_key: id
       index_type: DELTA_SYNC

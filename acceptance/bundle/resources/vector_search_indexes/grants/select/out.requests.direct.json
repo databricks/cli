@@ -3,7 +3,13 @@
   "path": "/api/2.0/vector-search/indexes",
   "body": {
     "direct_access_index_spec": {
-      "schema_json": "{\"columns\":[{\"name\":\"id\",\"type\":\"integer\"}]}"
+      "embedding_vector_columns": [
+        {
+          "embedding_dimension": 8,
+          "name": "vector"
+        }
+      ],
+      "schema_json": "{\"columns\":[{\"name\":\"id\",\"type\":\"integer\"},{\"name\":\"vector\",\"type\":\"array<float>\"}]}"
     },
     "endpoint_name": "vs-endpoint-[UNIQUE_NAME]",
     "index_type": "DIRECT_ACCESS",
