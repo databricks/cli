@@ -52,6 +52,26 @@ func initProfileFlag(cmd *cobra.Command) {
 	cmd.RegisterFlagCompletionFunc("profile", profile.ProfileCompletion)
 }
 
+// isPATOnSPOGWithoutWorkspaceID reports whether the resolved config is a PAT
+// profile pointing at a SPOG host with no workspace_id set. The SDK strips the
+// routing identifier from the request, which lands on the account-plane where
+// PATs aren't accepted. The legacy "none" sentinel (auth.WorkspaceIDNone) is
+// treated as empty here, matching the convention used elsewhere in the repo
+// (e.g. libs/databrickscfg/profile/profiler.go).
+func isPATOnSPOGWithoutWorkspaceID(cfg *config.Config) bool {
+	return cfg.AuthType == auth.AuthTypePat &&
+		(cfg.WorkspaceID == "" || cfg.WorkspaceID == auth.WorkspaceIDNone) &&
+		auth.HasUnifiedHostSignal(cfg.DiscoveryURL)
+}
+
+// patSPOGNoWorkspaceIDError describes the configuration gap and how to fix it.
+func patSPOGNoWorkspaceIDError(profileName string) error {
+	if profileName == "" {
+		return errors.New("personal access token (PAT) auth on this host requires a workspace_id; PATs are workspace-scoped, but no workspace_id is set. Add workspace_id = <id> (or set DATABRICKS_WORKSPACE_ID) to the profile associated with this PAT token")
+	}
+	return fmt.Errorf("profile %q uses PAT auth on a SPOG host but is missing workspace_id; PATs are workspace-scoped, so the request can't be routed. Edit the profile to add workspace_id = <id> matching the workspace the token was minted in", profileName)
+}
+
 // ErrAccountOnlyProfile signals that the resolved profile has an account_id
 // but no workspace_id, so workspace APIs can't be reached. Workspace-only
 // commands surface this as an actionable error; MustAnyClient (used by `auth
@@ -221,8 +241,19 @@ func workspaceClientOrPrompt(ctx context.Context, cfg *config.Config, allowPromp
 		//
 		// We require cfg.Profile to be set so we don't reject env-var-only
 		// configs targeting a unified host where workspace APIs are also
-		// served from the account host.
+		// served from the account host. This branch runs first so MustAnyClient
+		// can recognize ErrAccountOnlyProfile and fall through to the account
+		// client; the PAT-on-SPOG check below handles the remaining cases
+		// (env-var-only configs and profiles without account_id resolved).
 		return nil, accountOnlyProfileError(cfg.Profile)
+	}
+	if err == nil && isPATOnSPOGWithoutWorkspaceID(cfg) {
+		// PATs are workspace-scoped. On a SPOG host without workspace_id the
+		// SDK can't add the routing identifier, the backend treats the call as
+		// account-plane, and PATs aren't accepted there. The result is an
+		// opaque "Credential was not sent" error from the auth endpoint;
+		// rewrite up front so the user sees what's actually wrong.
+		return nil, patSPOGNoWorkspaceIDError(cfg.Profile)
 	}
 	if err == nil {
 		err = w.Config.Authenticate(emptyHttpRequest(ctx))
