@@ -40,8 +40,8 @@ func TestFaultRulesOffset(t *testing.T) {
 	fr := testserver.NewFaultRules()
 	fr.Set("tok", "GET /foo", 504, "body", 2, 1)
 
-	assert.Nil(t, fr.Check("GET", "/foo", "tok")) // offset 2→1
-	assert.Nil(t, fr.Check("GET", "/foo", "tok")) // offset 1→0
+	assert.Nil(t, fr.Check("GET", "/foo", "tok"))    // offset 2→1
+	assert.Nil(t, fr.Check("GET", "/foo", "tok"))    // offset 1→0
 	assert.NotNil(t, fr.Check("GET", "/foo", "tok")) // fires
 	assert.Nil(t, fr.Check("GET", "/foo", "tok"))    // exhausted
 }

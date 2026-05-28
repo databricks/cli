@@ -34,7 +34,14 @@ func retryInterval(ctx context.Context) time.Duration {
 // this covers the remaining 504s like TEMPORARILY_UNAVAILABLE.
 func isTransient(ctx context.Context, err error) bool {
 	apiErr, ok := errors.AsType[*apierr.APIError](err)
-	return ok && apiErr.StatusCode == http.StatusGatewayTimeout && !apiErr.IsRetriable(ctx)
+	if !ok {
+		return false
+	}
+	if apiErr.IsRetriable(ctx) {
+		// Already handled by SDK
+		return false
+	}
+	return apiErr.StatusCode == http.StatusGatewayTimeout
 }
 
 // retryWith retries fn while check returns true for the error, up to maxRetries times.
