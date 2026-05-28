@@ -145,7 +145,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 			status = lock.DeploymentFailure
 		}
 		if err := dl.Release(ctx, status); err != nil {
-			log.Warnf(ctx, "Failed to release deployment lock: %v", err)
+			logdiag.LogError(ctx, err)
 		}
 	}()
 

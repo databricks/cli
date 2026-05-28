@@ -35,7 +35,7 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions, en
 			status = lock.DeploymentFailure
 		}
 		if err := dl.Release(ctx, status); err != nil {
-			log.Warnf(ctx, "Failed to release deployment lock: %v", err)
+			logdiag.LogError(ctx, err)
 		}
 	}()
 
@@ -138,7 +138,7 @@ func Unbind(ctx context.Context, b *bundle.Bundle, bundleType, tfResourceType, r
 			status = lock.DeploymentFailure
 		}
 		if err := dl.Release(ctx, status); err != nil {
-			log.Warnf(ctx, "Failed to release deployment lock: %v", err)
+			logdiag.LogError(ctx, err)
 		}
 	}()
 
