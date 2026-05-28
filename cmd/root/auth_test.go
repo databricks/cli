@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/internal/testutil"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go"
@@ -478,6 +479,15 @@ func TestIsPATOnSPOGWithoutWorkspaceID(t *testing.T) {
 				DiscoveryURL: "https://spog.example.test/oidc/accounts/abc/.well-known/oauth-authorization-server",
 			},
 			want: false,
+		},
+		{
+			name: "pat on spog with legacy 'none' sentinel is treated as missing",
+			cfg: &config.Config{
+				AuthType:     "pat",
+				WorkspaceID:  auth.WorkspaceIDNone,
+				DiscoveryURL: "https://spog.example.test/oidc/accounts/abc/.well-known/oauth-authorization-server",
+			},
+			want: true,
 		},
 		{
 			name: "pat on classic workspace host is fine",
