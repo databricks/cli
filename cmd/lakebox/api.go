@@ -37,6 +37,24 @@ const lakeboxKeysAPIPath = "/api/2.0/lakebox/ssh-keys"
 // for this API."
 const orgIDHeader = "X-Databricks-Org-Id"
 
+// maxNameBytes mirrors the manager-side `Sandbox.name` length cap. The
+// server measures bytes, not characters, so a name made of emoji or other
+// multi-byte UTF-8 hits the limit in fewer visible characters than the user
+// expects. Mirroring the constant client-side lets us fail fast with the
+// observed byte count instead of paying a round-trip for a 400.
+const maxNameBytes = 256
+
+// validateName returns an error when `name` exceeds the wire limit. The
+// error names the observed byte count so the user can recover in one shot
+// (the original server message just said "exceeds 256 bytes" without saying
+// by how much, which is unhelpful when emoji are in play).
+func validateName(name string) error {
+	if n := len(name); n > maxNameBytes {
+		return fmt.Errorf("--name is %d bytes; limit is %d (emoji and most non-ASCII characters count as 2-4 bytes each)", n, maxNameBytes)
+	}
+	return nil
+}
+
 // lakeboxAPI wraps the SDK ApiClient with workspace-id-aware request headers.
 type lakeboxAPI struct {
 	c *client.DatabricksClient

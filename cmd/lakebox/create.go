@@ -28,6 +28,10 @@ Examples:
   databricks lakebox create --json`,
 		PreRunE: root.MustWorkspaceClient,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := validateName(name); err != nil {
+				return err
+			}
+
 			ctx := cmd.Context()
 			w := cmdctx.WorkspaceClient(ctx)
 			api, err := newLakeboxAPI(w)
