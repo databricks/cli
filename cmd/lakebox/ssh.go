@@ -217,13 +217,13 @@ func execSSHDirect(lakeboxID, host, port, keyPath string, extraArgs []string) er
 // incompatible by default:
 //
 //   - Single arg that's already a complete shell command:
-//       `lakebox ssh <id> -- 'echo hi | head -3'`
+//     `lakebox ssh <id> -- 'echo hi | head -3'`
 //     The user expects the remote shell to split and execute this
 //     string. ssh's "concat with spaces" is a no-op here, so we hand
 //     the arg through untouched.
 //
 //   - Multi-arg exec-style invocation:
-//       `lakebox ssh <id> -- bash -c 'echo hi'`
+//     `lakebox ssh <id> -- bash -c 'echo hi'`
 //     Cobra splits this into `["bash", "-c", "echo hi"]`. ssh's join
 //     produces `bash -c echo hi` on the wire, which bash re-splits into
 //     `-c=echo` and `$0=hi` — bug F22. We fix that by shell-quoting

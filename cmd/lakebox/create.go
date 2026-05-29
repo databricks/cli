@@ -35,11 +35,13 @@ Examples:
 				return err
 			}
 
+			wantJSON := jsonOutput(cmd, outputJSON)
+
 			// In JSON mode, suppress the spinner+ok lines so the only thing
 			// on stdout/stderr that a scripted caller has to parse is the
 			// JSON body itself.
 			var result *createResponse
-			if outputJSON {
+			if wantJSON {
 				result, err = api.create(ctx, name)
 				if err != nil {
 					return fmt.Errorf("failed to create lakebox: %w", err)
@@ -72,12 +74,12 @@ Examples:
 			if shouldSetDefault {
 				if err := setDefault(ctx, profile, result.SandboxID); err != nil {
 					warn(ctx, fmt.Sprintf("Could not save default: %v", err))
-				} else if !outputJSON {
+				} else if !wantJSON {
 					field(ctx, cmd.ErrOrStderr(), "default", result.SandboxID)
 				}
 			}
 
-			if outputJSON {
+			if wantJSON {
 				enc := json.NewEncoder(cmd.OutOrStdout())
 				enc.SetIndent("", "  ")
 				return enc.Encode(result)

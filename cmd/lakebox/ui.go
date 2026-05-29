@@ -7,7 +7,23 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/spf13/cobra"
 )
+
+// jsonOutput reports whether the user asked for JSON output, via either
+// the lakebox-local `--json` flag or the framework-global `-o json`. The
+// global flag is the standard shape across other `databricks` commands
+// and the validator already rejects bogus values, but until this helper
+// existed lakebox commands silently ignored it and emitted text anyway.
+func jsonOutput(cmd *cobra.Command, jsonFlag bool) bool {
+	if jsonFlag {
+		return true
+	}
+	if f := cmd.Flag("output"); f != nil && f.Value.String() == "json" {
+		return true
+	}
+	return false
+}
 
 // cmdioSpinner is the subset of *cmdio.spinner's method set we need.
 // Defining the interface locally lets us hold the unexported type as a
