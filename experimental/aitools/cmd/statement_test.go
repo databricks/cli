@@ -29,11 +29,31 @@ func TestSubmitStatementReturnsHandle(t *testing.T) {
 		Status:      &sql.StatementStatus{State: sql.StatementStatePending},
 	}, nil).Once()
 
-	info, err := submitStatement(ctx, mockAPI, "SELECT 1", "wh-1")
+	info, err := submitStatement(ctx, mockAPI, "SELECT 1", "wh-1", nil)
 	require.NoError(t, err)
 	assert.Equal(t, "stmt-1", info.StatementID)
 	assert.Equal(t, sql.StatementStatePending, info.State)
 	assert.Equal(t, "wh-1", info.WarehouseID)
+}
+
+func TestSubmitStatementPassesParameters(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
+
+	params := []sql.StatementParameterListItem{
+		{Name: "since", Type: "DATE", Value: "2026-01-01"},
+	}
+
+	mockAPI.EXPECT().ExecuteStatement(mock.Anything, mock.MatchedBy(func(req sql.ExecuteStatementRequest) bool {
+		return assert.ObjectsAreEqual(params, req.Parameters)
+	})).Return(&sql.StatementResponse{
+		StatementId: "stmt-1",
+		Status:      &sql.StatementStatus{State: sql.StatementStatePending},
+	}, nil).Once()
+
+	info, err := submitStatement(ctx, mockAPI, "SELECT * FROM events WHERE ts > :since", "wh-1", params)
+	require.NoError(t, err)
+	assert.Equal(t, "stmt-1", info.StatementID)
 }
 
 func TestSubmitStatementWrapsTransportError(t *testing.T) {
@@ -43,7 +63,7 @@ func TestSubmitStatementWrapsTransportError(t *testing.T) {
 	mockAPI.EXPECT().ExecuteStatement(mock.Anything, mock.Anything).
 		Return(nil, errors.New("network unreachable")).Once()
 
-	_, err := submitStatement(ctx, mockAPI, "SELECT 1", "wh-1")
+	_, err := submitStatement(ctx, mockAPI, "SELECT 1", "wh-1", nil)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "execute statement")
 	assert.Contains(t, err.Error(), "network unreachable")
