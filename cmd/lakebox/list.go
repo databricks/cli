@@ -98,10 +98,16 @@ Example:
 			out := cmd.OutOrStdout()
 
 			// Compute column widths. AUTOSTOP holds short tokens like
-			// `never`, `15m`, `1h30m` — 8 chars covers them. NAME is
-			// rendered only when at least one entry sets a display name
-			// different from the ID — there's no point in a column of
-			// pet-names that duplicate the ID column.
+			// `never`, `15m`, `1h30m` — 8 chars covers them.
+			//
+			// NAME is *always* rendered, even when no sandbox has a
+			// custom --name set: yunquan flagged on the bug-bash form
+			// that the prior auto-hide made the table shape change
+			// between calls (NAME appears the moment you set --name on
+			// any one box and vanishes when you clear them all), which
+			// breaks scripts and muscle memory. Sandboxes without a
+			// custom name render as `-` in the NAME cell.
+			//
 			// All column widths are measured in *terminal cells*, not
 			// bytes or runes — emoji and CJK glyphs render as 2 cells
 			// despite being 1 rune / multi-byte, and using len() here
@@ -111,7 +117,6 @@ Example:
 			idCol := 10
 			autostopCol := 8
 			nameCol := 4
-			showName := false
 			for _, e := range entries {
 				if l := runewidth.StringWidth(e.SandboxID); l > idCol {
 					idCol = l
@@ -119,36 +124,28 @@ Example:
 				if l := runewidth.StringWidth(e.autoStopLabel()); l > autostopCol {
 					autostopCol = l
 				}
+				// Only let an actual custom name expand the column. A
+				// sandbox whose `name` happens to equal its `id` would
+				// otherwise drive the column to the ID's width — for no
+				// gain, since that row renders as `-`.
 				if e.Name != "" && e.Name != e.SandboxID {
-					showName = true
-				}
-				if l := runewidth.StringWidth(e.Name); l > nameCol {
-					nameCol = l
+					if l := runewidth.StringWidth(e.Name); l > nameCol {
+						nameCol = l
+					}
 				}
 			}
 			idCol += 2
 			autostopCol += 2
-			if showName {
-				nameCol += 2
-			}
+			nameCol += 2
 			const statusCol = 10
 			const defaultCol = 7
 
 			blank(out)
-			var header string
-			if showName {
-				header = fmt.Sprintf("%-*s  %-*s  %-*s  %-*s  %s",
-					idCol, "ID", nameCol, "NAME", statusCol, "STATUS", autostopCol, "AUTOSTOP", "DEFAULT")
-			} else {
-				header = fmt.Sprintf("%-*s  %-*s  %-*s  %s",
-					idCol, "ID", statusCol, "STATUS", autostopCol, "AUTOSTOP", "DEFAULT")
-			}
+			header := fmt.Sprintf("%-*s  %-*s  %-*s  %-*s  %s",
+				idCol, "ID", nameCol, "NAME", statusCol, "STATUS", autostopCol, "AUTOSTOP", "DEFAULT")
 			fmt.Fprintf(out, "  %s\n", cmdio.Faint(ctx, header))
 
-			ruleLen := idCol + statusCol + autostopCol + defaultCol + 6
-			if showName {
-				ruleLen += nameCol + 2
-			}
+			ruleLen := idCol + nameCol + statusCol + autostopCol + defaultCol + 8
 			fmt.Fprintf(out, "  %s\n", cmdio.Faint(ctx, strings.Repeat("─", ruleLen)))
 
 			for _, e := range entries {
@@ -168,29 +165,21 @@ Example:
 				if strings.EqualFold(e.Status, "running") {
 					idStr = cmdio.Bold(ctx, cmdio.Cyan(ctx, id))
 				}
-				if showName {
-					nm := e.Name
-					if nm == "" || nm == id {
-						nm = "-"
-					}
-					nmPad := max(nameCol-runewidth.StringWidth(nm), 0)
-					nmStr := nm
-					if nm == "-" {
-						nmStr = cmdio.Faint(ctx, "-")
-					}
-					fmt.Fprintf(out, "  %s%s  %s%s  %s%s  %s%s  %s\n",
-						idStr, strings.Repeat(" ", idPad),
-						nmStr, strings.Repeat(" ", nmPad),
-						st, strings.Repeat(" ", stPad),
-						cmdio.Faint(ctx, as), strings.Repeat(" ", asPad),
-						def)
-				} else {
-					fmt.Fprintf(out, "  %s%s  %s%s  %s%s  %s\n",
-						idStr, strings.Repeat(" ", idPad),
-						st, strings.Repeat(" ", stPad),
-						cmdio.Faint(ctx, as), strings.Repeat(" ", asPad),
-						def)
+				nm := e.Name
+				if nm == "" || nm == id {
+					nm = "-"
 				}
+				nmPad := max(nameCol-runewidth.StringWidth(nm), 0)
+				nmStr := nm
+				if nm == "-" {
+					nmStr = cmdio.Faint(ctx, "-")
+				}
+				fmt.Fprintf(out, "  %s%s  %s%s  %s%s  %s%s  %s\n",
+					idStr, strings.Repeat(" ", idPad),
+					nmStr, strings.Repeat(" ", nmPad),
+					st, strings.Repeat(" ", stPad),
+					cmdio.Faint(ctx, as), strings.Repeat(" ", asPad),
+					def)
 			}
 			blank(out)
 			return nil
