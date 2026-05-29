@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/execv"
+	"github.com/databricks/cli/libs/shellquote"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/spf13/cobra"
 )
@@ -201,9 +202,37 @@ Examples:
 
 // execSSHDirect replaces the CLI process with ssh (or simulates that on
 // Windows via execv). All options are passed on the command line, so no
-// ~/.ssh/config entry is required. Extra args are appended after the
-// destination for remote commands or ssh flags.
+// ~/.ssh/config entry is required.
 func execSSHDirect(lakeboxID, host, port, keyPath string, extraArgs []string) error {
+	return execv.Execv(execv.Options{
+		Args: buildSSHArgs(lakeboxID, host, port, keyPath, extraArgs),
+		Env:  os.Environ(),
+	})
+}
+
+// buildSSHArgs assembles the argv we hand to the `ssh` binary.
+//
+// `ssh` concatenates remote-command words with spaces and the remote
+// shell re-parses them. That makes the two natural user shapes
+// incompatible by default:
+//
+//   - Single arg that's already a complete shell command:
+//       `lakebox ssh <id> -- 'echo hi | head -3'`
+//     The user expects the remote shell to split and execute this
+//     string. ssh's "concat with spaces" is a no-op here, so we hand
+//     the arg through untouched.
+//
+//   - Multi-arg exec-style invocation:
+//       `lakebox ssh <id> -- bash -c 'echo hi'`
+//     Cobra splits this into `["bash", "-c", "echo hi"]`. ssh's join
+//     produces `bash -c echo hi` on the wire, which bash re-splits into
+//     `-c=echo` and `$0=hi` — bug F22. We fix that by shell-quoting
+//     each arg before append, so the remote sees `bash -c 'echo hi'`.
+//
+// The heuristic: if there's exactly one extra arg, pass it untouched;
+// otherwise quote every arg. shellquote.BashArg leaves safe args alone,
+// so `ls -la /tmp` round-trips unchanged in the multi-arg path.
+func buildSSHArgs(lakeboxID, host, port, keyPath string, extraArgs []string) []string {
 	args := []string{
 		"ssh",
 		"-i", keyPath,
@@ -215,10 +244,11 @@ func execSSHDirect(lakeboxID, host, port, keyPath string, extraArgs []string) er
 		"-o", "LogLevel=ERROR",
 		fmt.Sprintf("%s@%s", lakeboxID, host),
 	}
-	args = append(args, extraArgs...)
-
-	return execv.Execv(execv.Options{
-		Args: args,
-		Env:  os.Environ(),
-	})
+	if len(extraArgs) == 1 {
+		return append(args, extraArgs[0])
+	}
+	for _, a := range extraArgs {
+		args = append(args, shellquote.BashArg(a))
+	}
+	return args
 }
