@@ -20,13 +20,19 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "clean-room-auto-approval-rules",
-		Short: `Clean room auto-approval rules automatically create an approval on your behalf when an asset (e.g.`,
-		Long: `Clean room auto-approval rules automatically create an approval on your behalf
+		Short: `*Beta* Clean room auto-approval rules automatically create an approval on your behalf when an asset (e.g.`,
+		Long: `This command is in Beta and may change without notice.
+
+Clean room auto-approval rules automatically create an approval on your behalf
   when an asset (e.g. notebook) meeting specific criteria is shared in a clean
   room.`,
 		GroupID: "cleanrooms",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -61,8 +67,10 @@ func newCreate() *cobra.Command {
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "create CLEAN_ROOM_NAME"
-	cmd.Short = `Create an auto-approval rule.`
-	cmd.Long = `Create an auto-approval rule.
+	cmd.Short = `*Beta* Create an auto-approval rule.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Create an auto-approval rule.
 
   Create an auto-approval rule
 
@@ -70,6 +78,8 @@ func newCreate() *cobra.Command {
     CLEAN_ROOM_NAME: The name of the clean room this auto-approval rule belongs to.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -101,6 +111,7 @@ func newCreate() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -131,12 +142,16 @@ func newDelete() *cobra.Command {
 	var deleteReq cleanrooms.DeleteCleanRoomAutoApprovalRuleRequest
 
 	cmd.Use = "delete CLEAN_ROOM_NAME RULE_ID"
-	cmd.Short = `Delete an auto-approval rule.`
-	cmd.Long = `Delete an auto-approval rule.
+	cmd.Short = `*Beta* Delete an auto-approval rule.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Delete an auto-approval rule.
 
   Delete a auto-approval rule by rule ID`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -185,12 +200,16 @@ func newGet() *cobra.Command {
 	var getReq cleanrooms.GetCleanRoomAutoApprovalRuleRequest
 
 	cmd.Use = "get CLEAN_ROOM_NAME RULE_ID"
-	cmd.Short = `Get an auto-approval rule.`
-	cmd.Long = `Get an auto-approval rule.
+	cmd.Short = `*Beta* Get an auto-approval rule.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Get an auto-approval rule.
 
   Get a auto-approval rule by rule ID`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -209,6 +228,7 @@ func newGet() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -237,17 +257,31 @@ func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listReq cleanrooms.ListCleanRoomAutoApprovalRulesRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listLimit int
 
 	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `Maximum number of auto-approval rules to return.`)
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list CLEAN_ROOM_NAME"
-	cmd.Short = `List auto-approval rules.`
-	cmd.Long = `List auto-approval rules.
+	cmd.Short = `*Beta* List auto-approval rules.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+List auto-approval rules.
 
   List all auto-approval rules for the caller`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -262,6 +296,13 @@ func newList() *cobra.Command {
 		listReq.CleanRoomName = args[0]
 
 		response := w.CleanRoomAutoApprovalRules.List(ctx, listReq)
+		if listLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
+		}
+		if listLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -301,8 +342,10 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().StringVar(&updateReq.AutoApprovalRule.RunnerCollaboratorAlias, "runner-collaborator-alias", updateReq.AutoApprovalRule.RunnerCollaboratorAlias, `Collaborator alias of the runner covered by the rule.`)
 
 	cmd.Use = "update CLEAN_ROOM_NAME RULE_ID"
-	cmd.Short = `Update an auto-approval rule.`
-	cmd.Long = `Update an auto-approval rule.
+	cmd.Short = `*Beta* Update an auto-approval rule.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Update an auto-approval rule.
 
   Update a auto-approval rule by rule ID
 
@@ -311,6 +354,8 @@ func newUpdate() *cobra.Command {
     RULE_ID: A generated UUID identifying the rule.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -341,6 +386,7 @@ func newUpdate() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 

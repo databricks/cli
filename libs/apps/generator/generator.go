@@ -290,7 +290,7 @@ var appResourceSpecs = map[string]appResourceSpec{
 	},
 	"serving_endpoint": {
 		yamlKey:    "serving_endpoint",
-		varFields:  [][2]string{{"id", "name"}},
+		varFields:  [][2]string{{"name", "name"}},
 		permission: "CAN_QUERY",
 	},
 	"experiment": {

@@ -20,7 +20,28 @@ linters:
     - copyloopvar
     - forbidigo
     - depguard
+    - usestdlibvars
+    - nilerr
+    - fatcontext
+    - nosprintfhostport
+    - recvcheck
+    - usetesting
+    - dupword
+    - misspell
+    - nilnesserr
+    - durationcheck
+    - exptostd
+    - gocheckcompilerdirectives
+    - asciicheck
+    - reassign
+    - modernize
   settings:
+    modernize:
+      # omitzero changes JSON wire format for nested structs (unlike omitempty),
+      # so each site needs per-site review rather than a bulk rewrite.
+      disable:
+        - omitzero
+
     depguard:
       rules:
         no-experimental-imports:
@@ -34,6 +55,20 @@ linters:
           deny:
             - pkg: "github.com/databricks/cli/experimental"
               desc: "must not import experimental/ packages; use an interface or move the dependency"
+        no-legacy-rand:
+          deny:
+            - pkg: "math/rand$"
+              desc: "use math/rand/v2 instead of math/rand"
+        no-stdlib-log:
+          files:
+            - "**"
+            - "!**/bundle/docsgen/**"
+            - "!**/bundle/internal/schema/**"
+            - "!**/bundle/internal/tf/codegen/**"
+            - "!**/bundle/internal/validation/**"
+          deny:
+            - pkg: "log$"
+              desc: "use libs/log instead of the standard library log package"
     forbidigo:
       forbid:
         - pattern: 'term\.IsTerminal'
@@ -46,6 +81,26 @@ linters:
           msg: Use env.UserHomeDir(ctx) from libs/env instead.
         - pattern: 'os\.Getenv'
           msg: Use env.Get(ctx) from the libs/env package instead of os.Getenv.
+        - pattern: 'sort\.Slice'
+          msg: Use slices.SortFunc from the standard library instead.
+        - pattern: 'sort\.SliceStable'
+          msg: Use slices.SortStableFunc from the standard library instead.
+        - pattern: 'sort\.Strings'
+          msg: Use slices.Sort from the standard library instead.
+        - pattern: 'sort\.Ints'
+          msg: Use slices.Sort from the standard library instead.
+        - pattern: 'sort\.Float64s'
+          msg: Use slices.Sort from the standard library instead.
+        - pattern: 'os\.IsNotExist'
+          msg: Use errors.Is(err, fs.ErrNotExist) instead.
+        - pattern: 'os\.IsExist'
+          msg: Use errors.Is(err, fs.ErrExist) instead.
+        - pattern: 'os\.IsPermission'
+          msg: Use errors.Is(err, fs.ErrPermission) instead.
+        - pattern: 'sync\.Once\b($|[^FV])'
+          msg: Use sync.OnceFunc, sync.OnceValue, or sync.OnceValues instead.
+        - pattern: 'errors\.As\b'
+          msg: 'Use errors.AsType[T](err) for type-safe error unwrapping (Go 1.26+).'
       analyze-types: true
     copyloopvar:
       check-alias: true
@@ -103,9 +158,6 @@ linters:
       enable-all: true
       disable:
         - require-error # good check, but we have too many assert.(No)?Errorf? so excluding for now
-        - empty
-        - len
-        - equal-values
         - encoded-compare # Always replaces Equal() with JSONEq, but sometimes exact string match is wanted for JSON
     exhaustive:
       default-signifies-exhaustive: true
@@ -127,10 +179,6 @@ linters:
         path: "_test\\.go$"
         linters:
           - forbidigo
-      # TODO: remove these exceptions by moving the dependency out of experimental/.
-      - path: cmd/apps/init.go
-        linters:
-          - depguard
 issues:
   max-issues-per-linter: 1000
   max-same-issues: 1000

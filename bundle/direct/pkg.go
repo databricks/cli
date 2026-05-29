@@ -64,10 +64,9 @@ func (d *DeploymentUnit) SetRemoteState(remoteState any) error {
 	return nil
 }
 
-func (b *DeploymentBundle) ExportState(ctx context.Context, path string) (resourcestate.ExportedResourcesMap, error) {
-	err := b.StateDB.Open(path)
-	if err != nil {
-		return nil, err
-	}
-	return b.StateDB.ExportState(ctx), nil
+// ExportState exports the current deployment state as a resource map.
+// StateDB must already be open for read before calling this function.
+func (b *DeploymentBundle) ExportState(ctx context.Context) resourcestate.ExportedResourcesMap {
+	b.StateDB.AssertOpenedForRead()
+	return b.StateDB.ExportState(ctx)
 }

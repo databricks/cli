@@ -2,13 +2,14 @@ package root
 
 import (
 	"context"
+	"slices"
 	"strings"
 
 	"github.com/databricks/databricks-sdk-go/useragent"
 	"github.com/spf13/cobra"
 )
 
-// commandSeparator joins command names in a command hierachy.
+// commandSeparator joins command names in a command hierarchy.
 // We enforce no command name contains this character.
 // See unit test [main.TestCommandsDontUseUnderscoreInName].
 const commandSeparator = "_"
@@ -24,12 +25,8 @@ func commandString(cmd *cobra.Command) string {
 		reversed = append(reversed, p.Name())
 	})
 
-	ordered := make([]string, 0, len(reversed))
-	for i := len(reversed) - 1; i >= 0; i-- {
-		ordered = append(ordered, reversed[i])
-	}
-
-	return strings.Join(ordered, commandSeparator)
+	slices.Reverse(reversed)
+	return strings.Join(reversed, commandSeparator)
 }
 
 func withCommandInUserAgent(ctx context.Context, cmd *cobra.Command) context.Context {

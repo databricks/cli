@@ -34,7 +34,7 @@ func (r *ResourceSyncedDatabaseTable) DoCreate(ctx context.Context, config *data
 	return result.Name, nil, nil
 }
 
-func (r *ResourceSyncedDatabaseTable) DoUpdate(ctx context.Context, id string, config *database.SyncedDatabaseTable, _ Changes) (*database.SyncedDatabaseTable, error) {
+func (r *ResourceSyncedDatabaseTable) DoUpdate(ctx context.Context, id string, config *database.SyncedDatabaseTable, _ *PlanEntry) (*database.SyncedDatabaseTable, error) {
 	request := database.UpdateSyncedDatabaseTableRequest{
 		SyncedTable: *config,
 		Name:        id,
@@ -45,7 +45,7 @@ func (r *ResourceSyncedDatabaseTable) DoUpdate(ctx context.Context, id string, c
 	return nil, err
 }
 
-func (r *ResourceSyncedDatabaseTable) DoDelete(ctx context.Context, id string) error {
+func (r *ResourceSyncedDatabaseTable) DoDelete(ctx context.Context, id string, _ *database.SyncedDatabaseTable) error {
 	return r.client.Database.DeleteSyncedDatabaseTable(ctx, database.DeleteSyncedDatabaseTableRequest{
 		Name:            id,
 		PurgeData:       false,

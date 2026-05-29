@@ -1,0 +1,13 @@
+Local = true
+Cloud = true
+
+[[Server]]
+Pattern = "GET /api/2.0/preview/scim/v2/ServicePrincipals"
+Response.Body = '''{
+  "Resources": [
+    {
+      "displayName": "deco-test-spn",
+      "applicationId": "123e4567-e89b-12d3-a456-426614174000"
+    }
+  ]
+}'''

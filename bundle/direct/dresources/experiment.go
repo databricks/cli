@@ -58,7 +58,7 @@ func (r *ResourceExperiment) DoCreate(ctx context.Context, config *ml.CreateExpe
 	return result.ExperimentId, nil, nil
 }
 
-func (r *ResourceExperiment) DoUpdate(ctx context.Context, id string, config *ml.CreateExperiment, _ Changes) (*ml.Experiment, error) {
+func (r *ResourceExperiment) DoUpdate(ctx context.Context, id string, config *ml.CreateExperiment, _ *PlanEntry) (*ml.Experiment, error) {
 	updateReq := ml.UpdateExperiment{
 		ExperimentId:    id,
 		NewName:         config.Name,
@@ -68,7 +68,7 @@ func (r *ResourceExperiment) DoUpdate(ctx context.Context, id string, config *ml
 	return nil, r.client.Experiments.UpdateExperiment(ctx, updateReq)
 }
 
-func (r *ResourceExperiment) DoDelete(ctx context.Context, id string) error {
+func (r *ResourceExperiment) DoDelete(ctx context.Context, id string, _ *ml.CreateExperiment) error {
 	return r.client.Experiments.DeleteExperiment(ctx, ml.DeleteExperiment{
 		ExperimentId: id,
 	})

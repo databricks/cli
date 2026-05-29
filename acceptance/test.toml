@@ -3,8 +3,8 @@ Local = true
 Cloud = false
 
 # default timeouts
-Timeout = '30s'
-TimeoutWindows = '60s'
+Timeout = '60s'
+TimeoutWindows = '90s'
 
 # Slowest test I saw:
 # github.com/databricks/cli/acceptance TestAccept/bundle/integration_whl/interactive_single_user 18m8.69s
@@ -16,15 +16,6 @@ TimeoutCIMultiplier = 2
 Env.PYTHONDONTWRITEBYTECODE = "1"
 Env.PYTHONUNBUFFERED = "1"
 Env.PYTHONUTF8 = "1"
-
-# Clear agent env vars to prevent them from affecting test output
-Env.ANTIGRAVITY_AGENT = ""
-Env.CLAUDECODE = ""
-Env.CLINE_ACTIVE = ""
-Env.CODEX_CI = ""
-Env.CURSOR_AGENT = ""
-Env.GEMINI_CLI = ""
-Env.OPENCODE = ""
 
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
 EnvMatrixExclude.noplantf = ["DATABRICKS_BUNDLE_ENGINE=terraform", "READPLAN=1"]
@@ -95,3 +86,7 @@ Order = 9
 Old = '2\d\d\d-\d\d-\d\d(T| )\d\d:\d\d:\d\dZ?'
 New = "[TIMESTAMP]"
 Order = 9
+
+[[Repls]]
+Old = "deco-uc-prod-isolated-aws-us-east-1|metastore_azure_eastus2"
+New = "[METASTORE_NAME]"

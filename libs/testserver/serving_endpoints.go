@@ -3,7 +3,8 @@ package testserver
 import (
 	"encoding/json"
 	"fmt"
-	"sort"
+	"maps"
+	"slices"
 
 	"github.com/databricks/databricks-sdk-go/service/serving"
 )
@@ -52,6 +53,10 @@ func servedModelsInputToOutput(input []serving.ServedModelInput) []serving.Serve
 	return models
 }
 
+// AutoCaptureConfig is the legacy inference-table API; testserver mirrors
+// the production conversion until callers migrate to AI Gateway inference tables.
+//
+//nolint:staticcheck // SA1019: deprecated AutoCaptureConfig{Input,Output} kept for bundle config compatibility
 func autoCaptureConfigInputToOutput(input *serving.AutoCaptureConfigInput) *serving.AutoCaptureConfigOutput {
 	return &serving.AutoCaptureConfigOutput{
 		CatalogName:     input.CatalogName,
@@ -294,11 +299,7 @@ func (s *FakeWorkspace) ServingEndpointPatchTags(req Request, name string) Respo
 
 	// Convert back to slice sorted by key for stable output
 	tags := make([]serving.EndpointTag, 0, len(tagMap))
-	keys := make([]string, 0, len(tagMap))
-	for key := range tagMap {
-		keys = append(keys, key)
-	}
-	sort.Strings(keys)
+	keys := slices.Sorted(maps.Keys(tagMap))
 	for _, key := range keys {
 		tags = append(tags, serving.EndpointTag{Key: key, Value: tagMap[key]})
 	}

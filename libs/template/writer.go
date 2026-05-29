@@ -1,9 +1,10 @@
 package template
 
 import (
+	"cmp"
 	"context"
 	"path/filepath"
-	"sort"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -198,8 +199,8 @@ func (tmpl *writerWithFullTelemetry) LogTelemetry(ctx context.Context) {
 	}
 
 	// Sort the arguments by key for deterministic telemetry logging
-	sort.Slice(args, func(i, j int) bool {
-		return args[i].Key < args[j].Key
+	slices.SortFunc(args, func(a, b protos.BundleInitTemplateEnumArg) int {
+		return cmp.Compare(a.Key, b.Key)
 	})
 
 	telemetry.Log(ctx, protos.DatabricksCliLog{

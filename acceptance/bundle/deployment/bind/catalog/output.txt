@@ -1,0 +1,46 @@
+
+>>> [CLI] catalogs create test-catalog-[UNIQUE_NAME]
+{
+  "comment": null,
+  "name": "test-catalog-[UNIQUE_NAME]"
+}
+
+>>> [CLI] bundle deployment bind foo test-catalog-[UNIQUE_NAME] --auto-approve
+Updating deployment state...
+Successfully bound catalog with an id 'test-catalog-[UNIQUE_NAME]'
+Run 'bundle deploy' to deploy changes to your workspace
+
+=== Deploy bundle
+>>> [CLI] bundle deploy --force-lock --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] catalogs get test-catalog-[UNIQUE_NAME]
+{
+  "comment": "This is a test catalog",
+  "name": "test-catalog-[UNIQUE_NAME]"
+}
+
+=== Unbind catalog
+>>> [CLI] bundle deployment unbind foo
+Updating deployment state...
+
+=== Destroy bundle
+>>> [CLI] bundle destroy --auto-approve
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!
+
+=== Read the pre-defined catalog again (expecting it still exists): 
+>>> [CLI] catalogs get test-catalog-[UNIQUE_NAME]
+{
+  "comment": "This is a test catalog",
+  "name": "test-catalog-[UNIQUE_NAME]"
+}
+
+=== Test cleanup
+>>> [CLI] catalogs delete test-catalog-[UNIQUE_NAME] --force
+0

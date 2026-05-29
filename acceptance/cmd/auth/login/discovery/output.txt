@@ -1,0 +1,14 @@
+
+>>> [CLI] auth login --profile discovery-test
+Opening login.databricks.com in your browser...
+Profile discovery-test was successfully saved
+
+>>> [CLI] auth profiles
+Name                      Host                    Valid
+discovery-test (Default)  [DATABRICKS_URL]  YES
+
+>>> print_requests.py --get //tokens/introspect
+{
+  "method": "GET",
+  "path": "/api/2.0/tokens/introspect"
+}

@@ -49,7 +49,7 @@ func (r *ResourceAlert) DoCreate(ctx context.Context, config *sql.AlertV2) (stri
 }
 
 // DoUpdate updates the alert in place.
-func (r *ResourceAlert) DoUpdate(ctx context.Context, id string, config *sql.AlertV2, _ Changes) (*sql.AlertV2, error) {
+func (r *ResourceAlert) DoUpdate(ctx context.Context, id string, config *sql.AlertV2, _ *PlanEntry) (*sql.AlertV2, error) {
 	request := sql.UpdateAlertV2Request{
 		Id:         id,
 		Alert:      *config,
@@ -59,7 +59,7 @@ func (r *ResourceAlert) DoUpdate(ctx context.Context, id string, config *sql.Ale
 }
 
 // DoDelete deletes the alert by id.
-func (r *ResourceAlert) DoDelete(ctx context.Context, id string) error {
+func (r *ResourceAlert) DoDelete(ctx context.Context, id string, _ *sql.AlertV2) error {
 	return r.client.AlertsV2.TrashAlert(ctx, sql.TrashAlertV2Request{
 		Id:              id,
 		Purge:           true,

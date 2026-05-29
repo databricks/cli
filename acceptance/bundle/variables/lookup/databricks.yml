@@ -1,0 +1,10 @@
+bundle:
+  name: test-bundle
+
+variables:
+  sp:
+    lookup:
+      service_principal: "deco-test-spn"
+
+  result:
+    default: ${var.sp}

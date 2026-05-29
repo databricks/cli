@@ -2,12 +2,13 @@ package configsync
 
 import (
 	"bytes"
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
 	"os"
 	"regexp"
-	"sort"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -62,8 +63,8 @@ func ApplyChangesToYAML(ctx context.Context, b *bundle.Bundle, fieldChanges []Fi
 		})
 	}
 
-	sort.Slice(result, func(i, j int) bool {
-		return result[i].Path < result[j].Path
+	slices.SortFunc(result, func(a, b FileChange) int {
+		return cmp.Compare(a.Path, b.Path)
 	})
 
 	return result, nil
@@ -281,7 +282,7 @@ func strPathToJSONPointer(pathStr string) (string, error) {
 func clearAddedFlowStyle(content []byte, fieldChanges []FieldChange) ([]byte, error) {
 	var doc yaml.Node
 	if err := yaml.Unmarshal(content, &doc); err != nil {
-		return content, nil
+		return content, nil //nolint:nilerr // return original content if YAML parsing fails
 	}
 	for _, fc := range fieldChanges {
 		for _, candidate := range fc.FieldCandidates {

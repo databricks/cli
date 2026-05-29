@@ -1,0 +1,6 @@
+# Test: apps deploy in a bundle directory with bundle-style deploy flags
+# Expected: flags are accepted and the bundle deploy pipeline completes
+
+trace $CLI apps deploy --skip-validation --auto-approve --force-lock --fail-on-active-runs
+
+trace $CLI bundle destroy --auto-approve

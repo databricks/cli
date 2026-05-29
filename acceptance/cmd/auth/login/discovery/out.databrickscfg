@@ -1,0 +1,11 @@
+; The profile defined in the DEFAULT section is to be used as a fallback when no profile is explicitly specified.
+[DEFAULT]
+
+[discovery-test]
+host         = [DATABRICKS_URL]
+account_id   = test-account-123
+workspace_id = [NUMID]
+auth_type    = databricks-cli
+
+[__settings__]
+default_profile = discovery-test

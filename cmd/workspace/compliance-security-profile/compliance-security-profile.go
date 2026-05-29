@@ -20,14 +20,20 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "compliance-security-profile",
-		Short: `Controls whether to enable the compliance security profile for the current workspace.`,
-		Long: `Controls whether to enable the compliance security profile for the current
+		Short: `*Public Preview* Controls whether to enable the compliance security profile for the current workspace.`,
+		Long: `This command is in Public Preview and may change without notice.
+
+Controls whether to enable the compliance security profile for the current
   workspace. Enabling it on a workspace is permanent. By default, it is turned
   off.
 
   This settings can NOT be disabled once it is enabled.`,
 		RunE: root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	// Add methods
 	cmd.AddCommand(newGet())
@@ -58,12 +64,16 @@ func newGet() *cobra.Command {
 	cmd.Flags().StringVar(&getReq.Etag, "etag", getReq.Etag, `etag used for versioning.`)
 
 	cmd.Use = "get"
-	cmd.Short = `Get the compliance security profile setting.`
-	cmd.Long = `Get the compliance security profile setting.
+	cmd.Short = `*Public Preview* Get the compliance security profile setting.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Get the compliance security profile setting.
 
   Gets the compliance security profile setting.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -79,6 +89,7 @@ func newGet() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -112,8 +123,10 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "update"
-	cmd.Short = `Update the compliance security profile setting.`
-	cmd.Long = `Update the compliance security profile setting.
+	cmd.Short = `*Public Preview* Update the compliance security profile setting.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Update the compliance security profile setting.
 
   Updates the compliance security profile setting for the workspace. A fresh
   etag needs to be provided in PATCH requests (as part of the setting field).
@@ -122,6 +135,8 @@ func newUpdate() *cobra.Command {
   the request must be retried by using the fresh etag in the 409 response.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -147,6 +162,7 @@ func newUpdate() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 

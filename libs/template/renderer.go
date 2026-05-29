@@ -1,6 +1,7 @@
 package template
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
@@ -9,7 +10,6 @@ import (
 	"path"
 	"regexp"
 	"slices"
-	"sort"
 	"strings"
 	"text/template"
 
@@ -136,8 +136,7 @@ func (r *renderer) executeTemplate(templateDefinition string) (string, error) {
 	if err != nil {
 		// Parse and return a more readable error for missing values that are used
 		// by the template definition but are not provided in the passed config.
-		target := &template.ExecError{}
-		if errors.As(err, target) {
+		if target, ok := errors.AsType[template.ExecError](err); ok {
 			captureRegex := regexp.MustCompile(`map has no entry for key "(.*)"`)
 			matches := captureRegex.FindStringSubmatch(target.Err.Error())
 			if len(matches) != 2 {
@@ -200,7 +199,7 @@ func (r *renderer) computeFile(relPathTemplate string) (file, error) {
 	}
 	content, err := r.executeTemplate(string(contentTemplate))
 	// Capture errors caused by the "fail" helper function
-	if target := (&ErrFail{}); errors.As(err, target) {
+	if target, ok := errors.AsType[ErrFail](err); ok {
 		return nil, target
 	}
 	if err != nil {
@@ -288,8 +287,8 @@ func (r *renderer) walk() error {
 			return err
 		}
 		// Sort by name to ensure deterministic ordering
-		sort.Slice(entries, func(i, j int) bool {
-			return entries[i].Name() < entries[j].Name()
+		slices.SortFunc(entries, func(a, b fs.DirEntry) int {
+			return cmp.Compare(a.Name(), b.Name())
 		})
 		for _, entry := range entries {
 			if entry.IsDir() {

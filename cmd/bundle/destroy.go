@@ -3,12 +3,15 @@
 package bundle
 
 import (
+	"context"
 	"errors"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/phases"
+	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/agent"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/spf13/cobra"
@@ -48,7 +51,10 @@ Typical use cases:
 func CommandBundleDestroy(cmd *cobra.Command, args []string, autoApprove, forceDestroy bool) error {
 	// We require auto-approve for non-interactive terminals since prompts are not possible.
 	if !cmdio.IsPromptSupported(cmd.Context()) && !autoApprove {
-		return errors.New("please specify --auto-approve since terminal does not support interactive prompts")
+		return errors.New("this command will destroy all resources deployed by this bundle, " +
+			"including workspace files in the deployment directory.\n" +
+			phases.DataLossWarning + "\n" +
+			"To proceed, use --auto-approve." + agent.AgentNotice())
 	}
 
 	// Check if context is already initialized (e.g., when called from apps delete override)
@@ -65,17 +71,15 @@ func CommandBundleDestroy(cmd *cobra.Command, args []string, autoApprove, forceD
 		// Skip context initialization if already initialized by parent command
 		SkipInitContext: skipInitContext,
 		AlwaysPull:      true,
+		PostStateFunc: func(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc) error {
+			phases.Destroy(ctx, b, stateDesc.Engine)
+			if logdiag.HasError(ctx) {
+				return root.ErrAlreadyPrinted
+			}
+			return nil
+		},
 	}
 
-	b, stateDesc, err := utils.ProcessBundleRet(cmd, opts)
-	if err != nil {
-		return err
-	}
-
-	phases.Destroy(cmd.Context(), b, stateDesc.Engine)
-	if logdiag.HasError(cmd.Context()) {
-		return root.ErrAlreadyPrinted
-	}
-
-	return nil
+	_, _, err := utils.ProcessBundleRet(cmd, opts)
+	return err
 }

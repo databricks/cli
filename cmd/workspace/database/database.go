@@ -20,12 +20,18 @@ var cmdOverrides []func(*cobra.Command)
 
 func New() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "database",
-		Short:   `Database Instances provide access to a database via REST API or direct SQL.`,
-		Long:    `Database Instances provide access to a database via REST API or direct SQL.`,
+		Use:   "database",
+		Short: `*Public Preview* Database Instances provide access to a database via REST API or direct SQL.`,
+		Long: `This command is in Public Preview and may change without notice.
+
+Database Instances provide access to a database via REST API or direct SQL.`,
 		GroupID: "database",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	// Add methods
 	cmd.AddCommand(newCreateDatabaseCatalog())
@@ -82,8 +88,10 @@ func newCreateDatabaseCatalog() *cobra.Command {
 	cmd.Flags().BoolVar(&createDatabaseCatalogReq.Catalog.CreateDatabaseIfNotExists, "create-database-if-not-exists", createDatabaseCatalogReq.Catalog.CreateDatabaseIfNotExists, ``)
 
 	cmd.Use = "create-database-catalog NAME DATABASE_INSTANCE_NAME DATABASE_NAME"
-	cmd.Short = `Create a Database Catalog.`
-	cmd.Long = `Create a Database Catalog.
+	cmd.Short = `*Public Preview* Create a Database Catalog.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Create a Database Catalog.
 
   Arguments:
     NAME: The name of the catalog in UC.
@@ -91,12 +99,14 @@ func newCreateDatabaseCatalog() *cobra.Command {
     DATABASE_NAME: The name of the database (in a instance) associated with the catalog.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name', 'database_instance_name', 'database_name' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'name', 'database_instance_name', 'database_name' in your JSON input")
 			}
 			return nil
 		}
@@ -135,6 +145,7 @@ func newCreateDatabaseCatalog() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -187,19 +198,23 @@ func newCreateDatabaseInstance() *cobra.Command {
 	cmd.Flags().StringVar(&createDatabaseInstanceReq.DatabaseInstance.UsagePolicyId, "usage-policy-id", createDatabaseInstanceReq.DatabaseInstance.UsagePolicyId, `The desired usage policy to associate with the instance.`)
 
 	cmd.Use = "create-database-instance NAME"
-	cmd.Short = `Create a Database Instance.`
-	cmd.Long = `Create a Database Instance.
+	cmd.Short = `*Public Preview* Create a Database Instance.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Create a Database Instance.
 
   Arguments:
     NAME: The name of the instance. This is the unique identifier for the instance.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'name' in your JSON input")
 			}
 			return nil
 		}
@@ -298,6 +313,8 @@ func newCreateDatabaseInstanceRole() *cobra.Command {
 	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
@@ -337,6 +354,7 @@ func newCreateDatabaseInstanceRole() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -374,8 +392,10 @@ func newCreateDatabaseTable() *cobra.Command {
 	cmd.Flags().StringVar(&createDatabaseTableReq.Table.LogicalDatabaseName, "logical-database-name", createDatabaseTableReq.Table.LogicalDatabaseName, `Target Postgres database object (logical database) name for this table.`)
 
 	cmd.Use = "create-database-table NAME"
-	cmd.Short = `Create a Database Table.`
-	cmd.Long = `Create a Database Table.
+	cmd.Short = `*Public Preview* Create a Database Table.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Create a Database Table.
 
   Create a Database Table. Useful for registering pre-existing PG tables in UC.
   See CreateSyncedDatabaseTable for creating synced tables in PG from a source
@@ -385,12 +405,14 @@ func newCreateDatabaseTable() *cobra.Command {
     NAME: Full three-part (catalog, schema, table) name of the table.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'name' in your JSON input")
 			}
 			return nil
 		}
@@ -423,6 +445,7 @@ func newCreateDatabaseTable() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -462,19 +485,23 @@ func newCreateSyncedDatabaseTable() *cobra.Command {
 	// TODO: complex arg: spec
 
 	cmd.Use = "create-synced-database-table NAME"
-	cmd.Short = `Create a Synced Database Table.`
-	cmd.Long = `Create a Synced Database Table.
+	cmd.Short = `*Public Preview* Create a Synced Database Table.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Create a Synced Database Table.
 
   Arguments:
     NAME: Full three-part (catalog, schema, table) name of the table.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'name' in your JSON input")
 			}
 			return nil
 		}
@@ -507,6 +534,7 @@ func newCreateSyncedDatabaseTable() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -537,10 +565,14 @@ func newDeleteDatabaseCatalog() *cobra.Command {
 	var deleteDatabaseCatalogReq database.DeleteDatabaseCatalogRequest
 
 	cmd.Use = "delete-database-catalog NAME"
-	cmd.Short = `Delete a Database Catalog.`
-	cmd.Long = `Delete a Database Catalog.`
+	cmd.Short = `*Public Preview* Delete a Database Catalog.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Delete a Database Catalog.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -591,13 +623,17 @@ func newDeleteDatabaseInstance() *cobra.Command {
 	cmd.Flags().BoolVar(&deleteDatabaseInstanceReq.Purge, "purge", deleteDatabaseInstanceReq.Purge, `Deprecated.`)
 
 	cmd.Use = "delete-database-instance NAME"
-	cmd.Short = `Delete a Database Instance.`
-	cmd.Long = `Delete a Database Instance.
+	cmd.Short = `*Public Preview* Delete a Database Instance.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Delete a Database Instance.
 
   Arguments:
     NAME: Name of the instance to delete.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -657,6 +693,8 @@ func newDeleteDatabaseInstanceRole() *cobra.Command {
 	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -705,10 +743,14 @@ func newDeleteDatabaseTable() *cobra.Command {
 	var deleteDatabaseTableReq database.DeleteDatabaseTableRequest
 
 	cmd.Use = "delete-database-table NAME"
-	cmd.Short = `Delete a Database Table.`
-	cmd.Long = `Delete a Database Table.`
+	cmd.Short = `*Public Preview* Delete a Database Table.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Delete a Database Table.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -758,10 +800,14 @@ func newDeleteSyncedDatabaseTable() *cobra.Command {
 	cmd.Flags().BoolVar(&deleteSyncedDatabaseTableReq.PurgeData, "purge-data", deleteSyncedDatabaseTableReq.PurgeData, `Optional.`)
 
 	cmd.Use = "delete-synced-database-table NAME"
-	cmd.Short = `Delete a Synced Database Table.`
-	cmd.Long = `Delete a Synced Database Table.`
+	cmd.Short = `*Public Preview* Delete a Synced Database Table.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Delete a Synced Database Table.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -811,10 +857,14 @@ func newFindDatabaseInstanceByUid() *cobra.Command {
 	cmd.Flags().StringVar(&findDatabaseInstanceByUidReq.Uid, "uid", findDatabaseInstanceByUidReq.Uid, `UID of the cluster to get.`)
 
 	cmd.Use = "find-database-instance-by-uid"
-	cmd.Short = `Find a Database Instance by uid.`
-	cmd.Long = `Find a Database Instance by uid.`
+	cmd.Short = `*Public Preview* Find a Database Instance by uid.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Find a Database Instance by uid.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -830,6 +880,7 @@ func newFindDatabaseInstanceByUid() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -867,10 +918,14 @@ func newGenerateDatabaseCredential() *cobra.Command {
 	cmd.Flags().StringVar(&generateDatabaseCredentialReq.RequestId, "request-id", generateDatabaseCredentialReq.RequestId, ``)
 
 	cmd.Use = "generate-database-credential"
-	cmd.Short = `Generates a credential that can be used to access database instances.`
-	cmd.Long = `Generates a credential that can be used to access database instances.`
+	cmd.Short = `*Public Preview* Generates a credential that can be used to access database instances.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Generates a credential that can be used to access database instances.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -899,6 +954,7 @@ func newGenerateDatabaseCredential() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -929,10 +985,14 @@ func newGetDatabaseCatalog() *cobra.Command {
 	var getDatabaseCatalogReq database.GetDatabaseCatalogRequest
 
 	cmd.Use = "get-database-catalog NAME"
-	cmd.Short = `Get a Database Catalog.`
-	cmd.Long = `Get a Database Catalog.`
+	cmd.Short = `*Public Preview* Get a Database Catalog.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Get a Database Catalog.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -950,6 +1010,7 @@ func newGetDatabaseCatalog() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -980,13 +1041,17 @@ func newGetDatabaseInstance() *cobra.Command {
 	var getDatabaseInstanceReq database.GetDatabaseInstanceRequest
 
 	cmd.Use = "get-database-instance NAME"
-	cmd.Short = `Get a Database Instance.`
-	cmd.Long = `Get a Database Instance.
+	cmd.Short = `*Public Preview* Get a Database Instance.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Get a Database Instance.
 
   Arguments:
     NAME: Name of the cluster to get.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -1004,6 +1069,7 @@ func newGetDatabaseInstance() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -1043,6 +1109,8 @@ func newGetDatabaseInstanceRole() *cobra.Command {
 	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -1061,6 +1129,7 @@ func newGetDatabaseInstanceRole() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -1091,10 +1160,14 @@ func newGetDatabaseTable() *cobra.Command {
 	var getDatabaseTableReq database.GetDatabaseTableRequest
 
 	cmd.Use = "get-database-table NAME"
-	cmd.Short = `Get a Database Table.`
-	cmd.Long = `Get a Database Table.`
+	cmd.Short = `*Public Preview* Get a Database Table.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Get a Database Table.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -1112,6 +1185,7 @@ func newGetDatabaseTable() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -1142,10 +1216,14 @@ func newGetSyncedDatabaseTable() *cobra.Command {
 	var getSyncedDatabaseTableReq database.GetSyncedDatabaseTableRequest
 
 	cmd.Use = "get-synced-database-table NAME"
-	cmd.Short = `Get a Synced Database Table.`
-	cmd.Long = `Get a Synced Database Table.`
+	cmd.Short = `*Public Preview* Get a Synced Database Table.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Get a Synced Database Table.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -1163,6 +1241,7 @@ func newGetSyncedDatabaseTable() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -1191,9 +1270,19 @@ func newListDatabaseCatalogs() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listDatabaseCatalogsReq database.ListDatabaseCatalogsRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listDatabaseCatalogsLimit int
 
 	cmd.Flags().IntVar(&listDatabaseCatalogsReq.PageSize, "page-size", listDatabaseCatalogsReq.PageSize, `Upper bound for items returned.`)
-	cmd.Flags().StringVar(&listDatabaseCatalogsReq.PageToken, "page-token", listDatabaseCatalogsReq.PageToken, `Pagination token to go to the next page of synced database tables.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listDatabaseCatalogsLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listDatabaseCatalogsReq.PageToken, "page-token", listDatabaseCatalogsReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-database-catalogs INSTANCE_NAME"
 	cmd.Short = `List all Database Catalogs in a Database Instance.`
@@ -1208,6 +1297,8 @@ func newListDatabaseCatalogs() *cobra.Command {
 	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -1222,6 +1313,13 @@ func newListDatabaseCatalogs() *cobra.Command {
 		listDatabaseCatalogsReq.InstanceName = args[0]
 
 		response := w.Database.ListDatabaseCatalogs(ctx, listDatabaseCatalogsReq)
+		if listDatabaseCatalogsLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listDatabaseCatalogsLimit)
+		}
+		if listDatabaseCatalogsLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listDatabaseCatalogsLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -1250,9 +1348,19 @@ func newListDatabaseInstanceRoles() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listDatabaseInstanceRolesReq database.ListDatabaseInstanceRolesRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listDatabaseInstanceRolesLimit int
 
 	cmd.Flags().IntVar(&listDatabaseInstanceRolesReq.PageSize, "page-size", listDatabaseInstanceRolesReq.PageSize, `Upper bound for items returned.`)
-	cmd.Flags().StringVar(&listDatabaseInstanceRolesReq.PageToken, "page-token", listDatabaseInstanceRolesReq.PageToken, `Pagination token to go to the next page of Database Instances.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listDatabaseInstanceRolesLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listDatabaseInstanceRolesReq.PageToken, "page-token", listDatabaseInstanceRolesReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-database-instance-roles INSTANCE_NAME"
 	cmd.Short = `List roles for a Database Instance.`
@@ -1268,6 +1376,8 @@ func newListDatabaseInstanceRoles() *cobra.Command {
 	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -1282,6 +1392,13 @@ func newListDatabaseInstanceRoles() *cobra.Command {
 		listDatabaseInstanceRolesReq.InstanceName = args[0]
 
 		response := w.Database.ListDatabaseInstanceRoles(ctx, listDatabaseInstanceRolesReq)
+		if listDatabaseInstanceRolesLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listDatabaseInstanceRolesLimit)
+		}
+		if listDatabaseInstanceRolesLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listDatabaseInstanceRolesLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -1310,15 +1427,29 @@ func newListDatabaseInstances() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listDatabaseInstancesReq database.ListDatabaseInstancesRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listDatabaseInstancesLimit int
 
 	cmd.Flags().IntVar(&listDatabaseInstancesReq.PageSize, "page-size", listDatabaseInstancesReq.PageSize, `Upper bound for items returned.`)
-	cmd.Flags().StringVar(&listDatabaseInstancesReq.PageToken, "page-token", listDatabaseInstancesReq.PageToken, `Pagination token to go to the next page of Database Instances.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listDatabaseInstancesLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listDatabaseInstancesReq.PageToken, "page-token", listDatabaseInstancesReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-database-instances"
-	cmd.Short = `List Database Instances.`
-	cmd.Long = `List Database Instances.`
+	cmd.Short = `*Public Preview* List Database Instances.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+List Database Instances.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -1331,6 +1462,13 @@ func newListDatabaseInstances() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.Database.ListDatabaseInstances(ctx, listDatabaseInstancesReq)
+		if listDatabaseInstancesLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listDatabaseInstancesLimit)
+		}
+		if listDatabaseInstancesLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listDatabaseInstancesLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -1359,9 +1497,19 @@ func newListSyncedDatabaseTables() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listSyncedDatabaseTablesReq database.ListSyncedDatabaseTablesRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listSyncedDatabaseTablesLimit int
 
 	cmd.Flags().IntVar(&listSyncedDatabaseTablesReq.PageSize, "page-size", listSyncedDatabaseTablesReq.PageSize, `Upper bound for items returned.`)
-	cmd.Flags().StringVar(&listSyncedDatabaseTablesReq.PageToken, "page-token", listSyncedDatabaseTablesReq.PageToken, `Pagination token to go to the next page of synced database tables.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listSyncedDatabaseTablesLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listSyncedDatabaseTablesReq.PageToken, "page-token", listSyncedDatabaseTablesReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-synced-database-tables INSTANCE_NAME"
 	cmd.Short = `List all synced database tables in a Database Instance.`
@@ -1376,6 +1524,8 @@ func newListSyncedDatabaseTables() *cobra.Command {
 	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -1390,6 +1540,13 @@ func newListSyncedDatabaseTables() *cobra.Command {
 		listSyncedDatabaseTablesReq.InstanceName = args[0]
 
 		response := w.Database.ListSyncedDatabaseTables(ctx, listSyncedDatabaseTablesReq)
+		if listSyncedDatabaseTablesLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listSyncedDatabaseTablesLimit)
+		}
+		if listSyncedDatabaseTablesLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listSyncedDatabaseTablesLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -1441,6 +1598,8 @@ func newUpdateDatabaseCatalog() *cobra.Command {
 	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
@@ -1484,6 +1643,7 @@ func newUpdateDatabaseCatalog() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -1530,8 +1690,10 @@ func newUpdateDatabaseInstance() *cobra.Command {
 	cmd.Flags().StringVar(&updateDatabaseInstanceReq.DatabaseInstance.UsagePolicyId, "usage-policy-id", updateDatabaseInstanceReq.DatabaseInstance.UsagePolicyId, `The desired usage policy to associate with the instance.`)
 
 	cmd.Use = "update-database-instance NAME UPDATE_MASK"
-	cmd.Short = `Update a Database Instance.`
-	cmd.Long = `Update a Database Instance.
+	cmd.Short = `*Public Preview* Update a Database Instance.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Update a Database Instance.
 
   Arguments:
     NAME: The name of the instance. This is the unique identifier for the instance.
@@ -1540,6 +1702,8 @@ func newUpdateDatabaseInstance() *cobra.Command {
       update_mask with an empty custom_tags map.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -1570,6 +1734,7 @@ func newUpdateDatabaseInstance() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -1622,6 +1787,8 @@ func newUpdateSyncedDatabaseTable() *cobra.Command {
 	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -1652,6 +1819,7 @@ func newUpdateSyncedDatabaseTable() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 

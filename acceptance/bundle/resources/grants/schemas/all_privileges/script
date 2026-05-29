@@ -1,0 +1,12 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+# The direct engine puts ALL_PRIVILEGES in both the Add and Remove lists in the PATCH request,
+# which the backend rejects with "Duplicate privileges to add and delete".
+$CLI bundle deploy
+print_requests.py --get //permissions --keep > out.requests.$DATABRICKS_BUNDLE_ENGINE.txt

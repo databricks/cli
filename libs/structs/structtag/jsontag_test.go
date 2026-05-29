@@ -59,7 +59,7 @@ var benchTags = []JSONTag{
 }
 
 func BenchmarkJSONTagName(b *testing.B) {
-	for range b.N {
+	for b.Loop() {
 		for _, tag := range benchTags {
 			tag.Name()
 		}
@@ -67,7 +67,7 @@ func BenchmarkJSONTagName(b *testing.B) {
 }
 
 func BenchmarkJSONTagOmitEmpty(b *testing.B) {
-	for range b.N {
+	for b.Loop() {
 		for _, tag := range benchTags {
 			tag.OmitEmpty()
 		}

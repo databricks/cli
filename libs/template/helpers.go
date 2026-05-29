@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"math/rand"
+	"math/rand/v2"
 	"net/url"
 	"os"
 	"regexp"
@@ -66,9 +66,9 @@ func loadHelpers(ctx context.Context) template.FuncMap {
 		"regexp": func(expr string) (*regexp.Regexp, error) {
 			return regexp.Compile(expr)
 		},
-		// Alias for https://pkg.go.dev/math/rand#Intn. Returns, as an int, a non-negative pseudo-random number in the half-open interval [0,n).
+		// Alias for https://pkg.go.dev/math/rand/v2#IntN. Returns, as an int, a non-negative pseudo-random number in the half-open interval [0,n).
 		"random_int": func(n int) int {
-			return rand.Intn(n)
+			return rand.IntN(n)
 		},
 		// Alias for https://pkg.go.dev/github.com/google/uuid#New. Returns, as a string, a UUID which is a 128 bit (16 byte) Universal Unique IDentifier as defined in RFC 4122.
 		"uuid": func() string {
@@ -120,7 +120,7 @@ func loadHelpers(ctx context.Context) template.FuncMap {
 		"user_name": func() (string, error) {
 			if cachedUser == nil {
 				var err error
-				cachedUser, err = w.CurrentUser.Me(ctx)
+				cachedUser, err = w.CurrentUser.Me(ctx, iam.MeRequest{})
 				if err != nil {
 					return "", err
 				}
@@ -134,7 +134,7 @@ func loadHelpers(ctx context.Context) template.FuncMap {
 		"short_name": func() (string, error) {
 			if cachedUser == nil {
 				var err error
-				cachedUser, err = w.CurrentUser.Me(ctx)
+				cachedUser, err = w.CurrentUser.Me(ctx, iam.MeRequest{})
 				if err != nil {
 					return "", err
 				}
@@ -147,8 +147,7 @@ func loadHelpers(ctx context.Context) template.FuncMap {
 			if cachedCatalog == nil {
 				metastore, err := w.Metastores.Current(ctx)
 				if err != nil {
-					var aerr *apierr.APIError
-					if errors.As(err, &aerr) && (slices.Contains(metastoreDisabledErrorCodes, aerr.ErrorCode) || aerr.Message == "Bad Target: /api/2.1/unity-catalog/current-metastore-assignment") {
+					if aerr, ok := errors.AsType[*apierr.APIError](err); ok && (slices.Contains(metastoreDisabledErrorCodes, aerr.ErrorCode) || aerr.Message == "Bad Target: /api/2.1/unity-catalog/current-metastore-assignment") {
 						// Ignore: access denied or workspace doesn't have a metastore assigned
 						empty_default := ""
 						cachedCatalog = &empty_default
@@ -166,7 +165,7 @@ func loadHelpers(ctx context.Context) template.FuncMap {
 			}
 			if cachedUser == nil {
 				var err error
-				cachedUser, err = w.CurrentUser.Me(ctx)
+				cachedUser, err = w.CurrentUser.Me(ctx, iam.MeRequest{})
 				if err != nil {
 					return false, err
 				}

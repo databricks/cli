@@ -1,4 +1,3 @@
-echo "$DATABRICKS_BUNDLES_WHEEL" > "requirements-latest.txt"
 
 # each job should record location where add_job function was called
 

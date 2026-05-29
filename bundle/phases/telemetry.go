@@ -1,13 +1,14 @@
 package phases
 
 import (
+	"cmp"
 	"context"
 	"slices"
-	"sort"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/libraries"
+	"github.com/databricks/cli/bundle/metrics"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/telemetry"
@@ -18,8 +19,8 @@ func getExecutionTimes(b *bundle.Bundle) []protos.IntMapEntry {
 	executionTimes := b.Metrics.ExecutionTimes
 
 	// Sort the execution times in descending order.
-	sort.Slice(executionTimes, func(i, j int) bool {
-		return executionTimes[i].Value > executionTimes[j].Value
+	slices.SortFunc(executionTimes, func(a, b protos.IntMapEntry) int {
+		return cmp.Compare(b.Value, a.Value)
 	})
 
 	// Keep only the top 250 execution times. This keeps the telemetry event
@@ -33,7 +34,17 @@ func getExecutionTimes(b *bundle.Bundle) []protos.IntMapEntry {
 	return executionTimes
 }
 
-func logDeployTelemetry(ctx context.Context, b *bundle.Bundle) {
+// Maximum length of the error message included in telemetry.
+const maxErrorMessageLength = 500
+
+// LogDeployTelemetry logs a telemetry event for a bundle deploy command.
+func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
+	errMsg = scrubForTelemetry(errMsg)
+
+	if len(errMsg) > maxErrorMessageLength {
+		errMsg = errMsg[:maxErrorMessageLength]
+	}
+
 	resourcesCount := int64(0)
 	_, err := dyn.MapByPattern(b.Config.Value(), dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey()), func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
 		resourcesCount++
@@ -103,6 +114,20 @@ func logDeployTelemetry(ctx context.Context, b *bundle.Bundle) {
 	slices.Sort(clusterIds)
 	slices.Sort(dashboardIds)
 
+	for _, app := range b.Config.Resources.Apps {
+		if app != nil && app.Lifecycle != nil && app.Lifecycle.Started != nil {
+			b.Metrics.SetBoolValue(metrics.AppLifecycleStarted, *app.Lifecycle.Started)
+			break
+		}
+	}
+
+	for _, cluster := range b.Config.Resources.Clusters {
+		if cluster != nil && cluster.Lifecycle != nil && cluster.Lifecycle.Started != nil {
+			b.Metrics.SetBoolValue(metrics.ClusterLifecycleStarted, *cluster.Lifecycle.Started)
+			break
+		}
+	}
+
 	// If the bundle UUID is not set, we use a default 0 value.
 	bundleUuid := "00000000-0000-0000-0000-000000000000"
 	if b.Config.Bundle.Uuid != "" {
@@ -149,6 +174,7 @@ func logDeployTelemetry(ctx context.Context, b *bundle.Bundle) {
 		BundleDeployEvent: &protos.BundleDeployEvent{
 			BundleUuid:   bundleUuid,
 			DeploymentId: b.Metrics.DeploymentId.String(),
+			ErrorMessage: errMsg,
 
 			ResourceCount:                     resourcesCount,
 			ResourceJobCount:                  int64(len(b.Config.Resources.Jobs)),

@@ -8,7 +8,6 @@ package bundle
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -121,11 +120,8 @@ type Bundle struct {
 	// in the WSFS location containing the bundle state.
 	Metadata metadata.Metadata
 
-	// Store a pointer to the workspace client.
-	// It can be initialized on demand after loading the configuration.
-	clientOnce sync.Once
-	client     *databricks.WorkspaceClient
-	clientErr  error
+	// Returns the workspace client, initializing it on first call.
+	getClient func() (*databricks.WorkspaceClient, error)
 
 	// Files that are synced to the workspace.file_path
 	Files []fileset.File
@@ -225,20 +221,25 @@ func TryLoad(ctx context.Context) *Bundle {
 	return b
 }
 
-func (b *Bundle) WorkspaceClientE() (*databricks.WorkspaceClient, error) {
-	b.clientOnce.Do(func() {
-		var err error
-		b.client, err = b.Config.Workspace.Client()
+func (b *Bundle) initClientOnce(ctx context.Context) {
+	b.getClient = sync.OnceValues(func() (*databricks.WorkspaceClient, error) {
+		w, err := b.Config.Workspace.Client(ctx)
 		if err != nil {
-			b.clientErr = fmt.Errorf("cannot resolve bundle auth configuration: %w", err)
+			return nil, fmt.Errorf("cannot resolve bundle auth configuration: %w", err)
 		}
+		return w, nil
 	})
-
-	return b.client, b.clientErr
 }
 
-func (b *Bundle) WorkspaceClient() *databricks.WorkspaceClient {
-	client, err := b.WorkspaceClientE()
+func (b *Bundle) WorkspaceClientE(ctx context.Context) (*databricks.WorkspaceClient, error) {
+	if b.getClient == nil {
+		b.initClientOnce(ctx)
+	}
+	return b.getClient()
+}
+
+func (b *Bundle) WorkspaceClient(ctx context.Context) *databricks.WorkspaceClient {
+	client, err := b.WorkspaceClientE(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -249,16 +250,15 @@ func (b *Bundle) WorkspaceClient() *databricks.WorkspaceClient {
 // SetWorkpaceClient sets the workspace client for this bundle.
 // This is used to inject a mock client for testing.
 func (b *Bundle) SetWorkpaceClient(w *databricks.WorkspaceClient) {
-	b.clientOnce.Do(func() {})
-	b.client = w
+	b.getClient = func() (*databricks.WorkspaceClient, error) {
+		return w, nil
+	}
 }
 
 // ClearWorkspaceClient resets the workspace client cache, allowing
 // WorkspaceClientE() to attempt client creation again on the next call.
-func (b *Bundle) ClearWorkspaceClient() {
-	b.clientOnce = sync.Once{}
-	b.client = nil
-	b.clientErr = nil
+func (b *Bundle) ClearWorkspaceClient(ctx context.Context) {
+	b.initClientOnce(ctx)
 }
 
 // LocalStateDir returns directory to use for temporary files for this bundle without creating
@@ -346,13 +346,13 @@ func (b *Bundle) GetSyncIncludePatterns(ctx context.Context) ([]string, error) {
 //
 // This map can be used to configure authentication for tools that
 // we call into from this bundle context.
-func (b *Bundle) AuthEnv() (map[string]string, error) {
-	if b.client == nil {
-		return nil, errors.New("workspace client not initialized yet")
+func (b *Bundle) AuthEnv(ctx context.Context) (map[string]string, error) {
+	w, err := b.WorkspaceClientE(ctx)
+	if err != nil {
+		return nil, err
 	}
 
-	cfg := b.client.Config
-	return auth.Env(cfg), nil
+	return auth.Env(w.Config), nil
 }
 
 // StateFilenameDirect returns (relative remote path, relative local path) for direct engine resource state

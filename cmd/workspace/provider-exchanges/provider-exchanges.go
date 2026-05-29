@@ -20,12 +20,18 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "provider-exchanges",
-		Short: `Marketplace exchanges allow providers to share their listings with a curated set of customers.`,
-		Long: `Marketplace exchanges allow providers to share their listings with a curated
+		Short: `*Public Preview* Marketplace exchanges allow providers to share their listings with a curated set of customers.`,
+		Long: `This command is in Public Preview and may change without notice.
+
+Marketplace exchanges allow providers to share their listings with a curated
   set of customers.`,
 		GroupID: "marketplace",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	// Add methods
 	cmd.AddCommand(newAddListingToExchange())
@@ -64,18 +70,22 @@ func newAddListingToExchange() *cobra.Command {
 	cmd.Flags().Var(&addListingToExchangeJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "add-listing-to-exchange LISTING_ID EXCHANGE_ID"
-	cmd.Short = `Add an exchange for listing.`
-	cmd.Long = `Add an exchange for listing.
+	cmd.Short = `*Public Preview* Add an exchange for listing.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Add an exchange for listing.
 
   Associate an exchange with a listing`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'listing_id', 'exchange_id' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'listing_id', 'exchange_id' in your JSON input")
 			}
 			return nil
 		}
@@ -111,6 +121,7 @@ func newAddListingToExchange() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -144,12 +155,16 @@ func newCreate() *cobra.Command {
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "create"
-	cmd.Short = `Create an exchange.`
-	cmd.Long = `Create an exchange.
+	cmd.Short = `*Public Preview* Create an exchange.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Create an exchange.
 
   Create an exchange`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -175,6 +190,7 @@ func newCreate() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -205,12 +221,16 @@ func newDelete() *cobra.Command {
 	var deleteReq marketplace.DeleteExchangeRequest
 
 	cmd.Use = "delete ID"
-	cmd.Short = `Delete an exchange.`
-	cmd.Long = `Delete an exchange.
+	cmd.Short = `*Public Preview* Delete an exchange.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Delete an exchange.
 
   This removes a listing from marketplace.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -258,12 +278,16 @@ func newDeleteListingFromExchange() *cobra.Command {
 	var deleteListingFromExchangeReq marketplace.RemoveExchangeForListingRequest
 
 	cmd.Use = "delete-listing-from-exchange ID"
-	cmd.Short = `Remove an exchange for listing.`
-	cmd.Long = `Remove an exchange for listing.
+	cmd.Short = `*Public Preview* Remove an exchange for listing.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Remove an exchange for listing.
 
   Disassociate an exchange with a listing`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -311,10 +335,14 @@ func newGet() *cobra.Command {
 	var getReq marketplace.GetExchangeRequest
 
 	cmd.Use = "get ID"
-	cmd.Short = `Get an exchange.`
-	cmd.Long = `Get an exchange.`
+	cmd.Short = `*Public Preview* Get an exchange.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Get an exchange.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -332,6 +360,7 @@ func newGet() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -360,17 +389,31 @@ func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listReq marketplace.ListExchangesRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listLimit int
 
 	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, ``)
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, ``)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list"
-	cmd.Short = `List exchanges.`
-	cmd.Long = `List exchanges.
+	cmd.Short = `*Public Preview* List exchanges.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+List exchanges.
 
   List exchanges visible to provider`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -383,6 +426,13 @@ func newList() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.ProviderExchanges.List(ctx, listReq)
+		if listLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
+		}
+		if listLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -411,17 +461,31 @@ func newListExchangesForListing() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listExchangesForListingReq marketplace.ListExchangesForListingRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listExchangesForListingLimit int
 
 	cmd.Flags().IntVar(&listExchangesForListingReq.PageSize, "page-size", listExchangesForListingReq.PageSize, ``)
-	cmd.Flags().StringVar(&listExchangesForListingReq.PageToken, "page-token", listExchangesForListingReq.PageToken, ``)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listExchangesForListingLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listExchangesForListingReq.PageToken, "page-token", listExchangesForListingReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-exchanges-for-listing LISTING_ID"
-	cmd.Short = `List exchanges for listing.`
-	cmd.Long = `List exchanges for listing.
+	cmd.Short = `*Public Preview* List exchanges for listing.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+List exchanges for listing.
 
   List exchanges associated with a listing`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -436,6 +500,13 @@ func newListExchangesForListing() *cobra.Command {
 		listExchangesForListingReq.ListingId = args[0]
 
 		response := w.ProviderExchanges.ListExchangesForListing(ctx, listExchangesForListingReq)
+		if listExchangesForListingLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listExchangesForListingLimit)
+		}
+		if listExchangesForListingLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listExchangesForListingLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -464,17 +535,31 @@ func newListListingsForExchange() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listListingsForExchangeReq marketplace.ListListingsForExchangeRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listListingsForExchangeLimit int
 
 	cmd.Flags().IntVar(&listListingsForExchangeReq.PageSize, "page-size", listListingsForExchangeReq.PageSize, ``)
-	cmd.Flags().StringVar(&listListingsForExchangeReq.PageToken, "page-token", listListingsForExchangeReq.PageToken, ``)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listListingsForExchangeLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listListingsForExchangeReq.PageToken, "page-token", listListingsForExchangeReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-listings-for-exchange EXCHANGE_ID"
-	cmd.Short = `List listings for exchange.`
-	cmd.Long = `List listings for exchange.
+	cmd.Short = `*Public Preview* List listings for exchange.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+List listings for exchange.
 
   List listings associated with an exchange`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -489,6 +574,13 @@ func newListListingsForExchange() *cobra.Command {
 		listListingsForExchangeReq.ExchangeId = args[0]
 
 		response := w.ProviderExchanges.ListListingsForExchange(ctx, listListingsForExchangeReq)
+		if listListingsForExchangeLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listListingsForExchangeLimit)
+		}
+		if listListingsForExchangeLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listListingsForExchangeLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -522,12 +614,16 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "update ID"
-	cmd.Short = `Update exchange.`
-	cmd.Long = `Update exchange.
+	cmd.Short = `*Public Preview* Update exchange.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Update exchange.
 
   Update an exchange`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -559,6 +655,7 @@ func newUpdate() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 

@@ -2,7 +2,7 @@ Local = true
 Cloud = false # tests don't interact with APIs
 
 [EnvMatrix]
-UV_ARGS = [
+PYDAB_VERSION = [
     # pipelines are only supported in the latest version of the wheel
-    "--with-requirements requirements-latest.txt --no-cache",
+    "current",
 ]

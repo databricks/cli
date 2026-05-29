@@ -125,7 +125,7 @@
           "reason": "empty",
           "remote": {}
         },
-        "job_clusters[0].new_cluster.num_workers": {
+        "job_clusters[job_cluster_key='key'].new_cluster.num_workers": {
           "action": "skip",
           "reason": "empty",
           "old": 0,

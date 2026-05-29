@@ -5,5 +5,5 @@ Local = true
 Cloud = false
 
 [[Repls]]
-Old = '"databricks-bundles==0.\d+.\d+"'
+Old = '"databricks-bundles==\d+\.\d+\.\d+"'
 New = '"databricks-bundles==x.y.z"'

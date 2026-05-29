@@ -5,6 +5,8 @@ package pipelines
 import (
 	"encoding/json"
 	"fmt"
+	"maps"
+	"slices"
 
 	"github.com/databricks/cli/bundle/resources"
 	"github.com/databricks/cli/bundle/run"
@@ -14,7 +16,6 @@ import (
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/spf13/cobra"
-	"golang.org/x/exp/maps"
 )
 
 func dryRunCommand() *cobra.Command {
@@ -115,7 +116,7 @@ If there is only one pipeline in the project, KEY is optional and the pipeline w
 
 		if len(args) == 0 {
 			completions := resources.Completions(b, run.IsRunnable)
-			return maps.Keys(completions), cobra.ShellCompDirectiveNoFileComp
+			return slices.Collect(maps.Keys(completions)), cobra.ShellCompDirectiveNoFileComp
 		} else {
 			// If we know the resource to run, we can complete additional positional arguments.
 			runner, err := keyToRunner(b, args[0])

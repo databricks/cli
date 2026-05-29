@@ -1,52 +1,23 @@
 package dresources
 
 import (
-	"fmt"
-	"regexp"
+	"errors"
 
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/databricks-sdk-go/retries"
 )
 
-// postgresNamePattern matches hierarchical Postgres resource names:
-// - projects/{project_id}
-// - projects/{project_id}/branches/{branch_id}
-// - projects/{project_id}/branches/{branch_id}/endpoints/{endpoint_id}
-var postgresNamePattern = regexp.MustCompile(`^projects/([^/]+)(?:/branches/([^/]+)(?:/endpoints/([^/]+))?)?$`)
-
-// PostgresNameComponents holds the extracted components from a Postgres resource name.
-type PostgresNameComponents struct {
-	ProjectID  string
-	BranchID   string
-	EndpointID string
-}
-
-// ParsePostgresName extracts project, branch, and endpoint IDs from a hierarchical Postgres resource name.
-// Returns an error if the name doesn't match the expected format.
-func ParsePostgresName(name string) (PostgresNameComponents, error) {
-	matches := postgresNamePattern.FindStringSubmatch(name)
-	if matches == nil {
-		return PostgresNameComponents{}, fmt.Errorf("invalid postgres resource name format: %q", name)
-	}
-
-	return PostgresNameComponents{
-		ProjectID:  matches[1],
-		BranchID:   matches[2],
-		EndpointID: matches[3],
-	}, nil
+type StateLifecycle struct {
+	Started *bool `json:"started,omitempty"`
 }
 
 // This is copied from the retries package of the databricks-sdk-go. It should be made public,
 // but for now, I'm copying it here.
 func shouldRetry(err error) bool {
-	if err == nil {
-		return false
+	if e, ok := errors.AsType[*retries.Err](err); ok {
+		return !e.Halt
 	}
-	e := err.(*retries.Err)
-	if e == nil {
-		return false
-	}
-	return !e.Halt
+	return false
 }
 
 // collectUpdatePathsWithPrefix extracts field paths from Changes that have action=Update,

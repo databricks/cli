@@ -100,6 +100,7 @@ type ChangeDesc struct {
 const (
 	ReasonBackendDefault   = "backend_default"
 	ReasonAlias            = "alias"
+	ReasonURLNormalization = "url_normalization"
 	ReasonRemoteAlreadySet = "remote_already_set"
 	ReasonEmpty            = "empty"
 	ReasonCustom           = "custom"
@@ -128,6 +129,21 @@ func (c *Changes) HasChange(fieldPath *structpath.PathNode) bool {
 		}
 	}
 
+	return false
+}
+
+// HasChangeExcept checks if there are any changes for fields with the given prefixes.
+func (c *Changes) HasChangeExcept(prefixes ...string) bool {
+	if c == nil {
+		return false
+	}
+	for field := range *c {
+		if !slices.Contains(prefixes, field) {
+			if (*c)[field].Action != Skip {
+				return true
+			}
+		}
+	}
 	return false
 }
 

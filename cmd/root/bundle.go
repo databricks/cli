@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
+	"slices"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
@@ -16,7 +18,6 @@ import (
 	envlib "github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/spf13/cobra"
-	"golang.org/x/exp/maps"
 )
 
 // getTarget returns the name of the target to operate in.
@@ -69,6 +70,18 @@ func getProfile(cmd *cobra.Command) (value string) {
 // configureProfile applies the profile flag to the bundle.
 func configureProfile(cmd *cobra.Command, b *bundle.Bundle) {
 	profile := getProfile(cmd)
+
+	// Fall back to [__settings__].default_profile only when the bundle does
+	// not pin its own host. The legacy [DEFAULT] section is intentionally
+	// NOT considered here: a hostless bundle silently routing to whatever
+	// [DEFAULT] points at could deploy to the wrong workspace and mask a
+	// missing workspace.host. Auth-only paths use the broader
+	// databrickscfg.ResolveDefaultProfile, which also accepts [DEFAULT].
+	if profile == "" && b.Config.Workspace.Host == "" && b.Config.Workspace.Profile == "" {
+		configFilePath := envlib.Get(cmd.Context(), "DATABRICKS_CONFIG_FILE")
+		profile, _ = databrickscfg.GetConfiguredDefaultProfile(cmd.Context(), configFilePath)
+	}
+
 	if profile == "" {
 		return
 	}
@@ -161,7 +174,7 @@ func configureBundle(cmd *cobra.Command, b *bundle.Bundle) {
 	//
 	// Note that just initializing a workspace client and loading auth configuration
 	// is a fast operation. It does not perform network I/O or invoke processes (for example the Azure CLI).
-	client, err := b.WorkspaceClientE()
+	client, err := b.WorkspaceClientE(ctx)
 	if err != nil {
 		names, isMulti := databrickscfg.AsMultipleProfiles(err)
 		if !isMulti {
@@ -176,8 +189,8 @@ func configureBundle(cmd *cobra.Command, b *bundle.Bundle) {
 		}
 
 		b.Config.Workspace.Profile = selected
-		b.ClearWorkspaceClient()
-		client, err = b.WorkspaceClientE()
+		b.ClearWorkspaceClient(ctx)
+		client, err = b.WorkspaceClientE(ctx)
 		if err != nil {
 			logdiag.LogError(ctx, err)
 			return
@@ -239,7 +252,7 @@ func targetCompletion(cmd *cobra.Command, args []string, toComplete string) ([]s
 		return nil, cobra.ShellCompDirectiveError
 	}
 
-	return maps.Keys(b.Config.Targets), cobra.ShellCompDirectiveDefault
+	return slices.Collect(maps.Keys(b.Config.Targets)), cobra.ShellCompDirectiveDefault
 }
 
 func initTargetFlag(cmd *cobra.Command) {

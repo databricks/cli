@@ -35,6 +35,10 @@ func New() *cobra.Command {
 		RunE:   root.ReportUnknownSubcommand,
 	}
 
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
+
 	// Add methods
 	cmd.AddCommand(newCreateOnlineStore())
 	cmd.AddCommand(newDeleteOnlineStore())
@@ -84,12 +88,14 @@ func newCreateOnlineStore() *cobra.Command {
       "CU_8".`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name', 'capacity' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'name', 'capacity' in your JSON input")
 			}
 			return nil
 		}
@@ -125,6 +131,7 @@ func newCreateOnlineStore() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -162,6 +169,8 @@ func newDeleteOnlineStore() *cobra.Command {
     NAME: Name of the online store to delete.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -218,6 +227,8 @@ func newDeleteOnlineTable() *cobra.Command {
     ONLINE_TABLE_NAME: The full three-part (catalog, schema, table) name of the online table.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -272,6 +283,8 @@ func newGetOnlineStore() *cobra.Command {
     NAME: Name of the online store to get.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -289,6 +302,7 @@ func newGetOnlineStore() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -317,15 +331,27 @@ func newListOnlineStores() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listOnlineStoresReq ml.ListOnlineStoresRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listOnlineStoresLimit int
 
 	cmd.Flags().IntVar(&listOnlineStoresReq.PageSize, "page-size", listOnlineStoresReq.PageSize, `The maximum number of results to return.`)
-	cmd.Flags().StringVar(&listOnlineStoresReq.PageToken, "page-token", listOnlineStoresReq.PageToken, `Pagination token to go to the next page based on a previous query.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listOnlineStoresLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listOnlineStoresReq.PageToken, "page-token", listOnlineStoresReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-online-stores"
 	cmd.Short = `List Online Feature Stores.`
 	cmd.Long = `List Online Feature Stores.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -338,6 +364,13 @@ func newListOnlineStores() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.FeatureStore.ListOnlineStores(ctx, listOnlineStoresReq)
+		if listOnlineStoresLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listOnlineStoresLimit)
+		}
+		if listOnlineStoresLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listOnlineStoresLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -378,6 +411,8 @@ func newPublishTable() *cobra.Command {
     SOURCE_TABLE_NAME: The full three-part (catalog, schema, table) name of the source table.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -409,6 +444,7 @@ func newPublishTable() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -457,6 +493,8 @@ func newUpdateOnlineStore() *cobra.Command {
       "CU_8".`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
@@ -497,6 +535,7 @@ func newUpdateOnlineStore() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 

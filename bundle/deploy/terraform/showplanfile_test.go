@@ -76,3 +76,89 @@ func TestPopulatePlan(t *testing.T) {
 	// Unknown resource type should not be in the plan
 	assert.NotContains(t, plan.Plan, "resources.recreate whatever")
 }
+
+func TestPopulatePlanSecretAcl(t *testing.T) {
+	ctx := t.Context()
+	changes := []*tfjson.ResourceChange{
+		{
+			Type:   "databricks_secret_acl",
+			Change: &tfjson.Change{Actions: tfjson.Actions{tfjson.ActionCreate}},
+			Name:   "secret_acl_my_scope_0",
+		},
+		{
+			Type:   "databricks_secret_acl",
+			Change: &tfjson.Change{Actions: tfjson.Actions{tfjson.ActionDelete, tfjson.ActionCreate}},
+			Name:   "secret_acl_my_scope_1",
+		},
+	}
+
+	plan := deployplan.NewPlanTerraform()
+	populatePlan(ctx, plan, changes)
+
+	// Multiple ACL changes for the same scope with different actions are merged as Update.
+	assert.Equal(t, map[string]*deployplan.PlanEntry{
+		"resources.secret_scopes.my_scope.permissions": {Action: deployplan.Update},
+	}, plan.Plan)
+}
+
+func TestPopulatePlanSecretAclMixedCreateDelete(t *testing.T) {
+	ctx := t.Context()
+	changes := []*tfjson.ResourceChange{
+		{
+			Type:   "databricks_secret_acl",
+			Change: &tfjson.Change{Actions: tfjson.Actions{tfjson.ActionDelete}},
+			Name:   "secret_acl_my_scope_0",
+		},
+		{
+			Type:   "databricks_secret_acl",
+			Change: &tfjson.Change{Actions: tfjson.Actions{tfjson.ActionCreate}},
+			Name:   "secret_acl_my_scope_1",
+		},
+	}
+
+	plan := deployplan.NewPlanTerraform()
+	populatePlan(ctx, plan, changes)
+
+	assert.Equal(t, map[string]*deployplan.PlanEntry{
+		"resources.secret_scopes.my_scope.permissions": {Action: deployplan.Update},
+	}, plan.Plan)
+}
+
+func TestPopulatePlanSecretAclMixedRecreateDelete(t *testing.T) {
+	ctx := t.Context()
+	// Simulates a permission update where some ACLs are recreated (principal changed)
+	// and some are deleted (principal removed). This is the typical Terraform plan shape
+	// when updating secret scope permissions.
+	changes := []*tfjson.ResourceChange{
+		{
+			Type:   "databricks_secret_acl",
+			Change: &tfjson.Change{Actions: tfjson.Actions{tfjson.ActionDelete, tfjson.ActionCreate}},
+			Name:   "secret_acl_my_scope_0",
+		},
+		{
+			Type:   "databricks_secret_acl",
+			Change: &tfjson.Change{Actions: tfjson.Actions{tfjson.ActionDelete, tfjson.ActionCreate}},
+			Name:   "secret_acl_my_scope_1",
+		},
+		{
+			Type:   "databricks_secret_acl",
+			Change: &tfjson.Change{Actions: tfjson.Actions{tfjson.ActionDelete}},
+			Name:   "secret_acl_my_scope_2",
+		},
+	}
+
+	plan := deployplan.NewPlanTerraform()
+	populatePlan(ctx, plan, changes)
+
+	// When permissions are being updated (some ACLs recreated, some deleted),
+	// the aggregated action should be Update, not Delete.
+	assert.Equal(t, map[string]*deployplan.PlanEntry{
+		"resources.secret_scopes.my_scope.permissions": {Action: deployplan.Update},
+	}, plan.Plan)
+}
+
+func TestConvertSecretAclNameToScopeKey(t *testing.T) {
+	assert.Equal(t, "resources.secret_scopes.my_scope.permissions", convertSecretAclNameToScopeKey("secret_acl_my_scope_0"))
+	assert.Equal(t, "resources.secret_scopes.my_scope.permissions", convertSecretAclNameToScopeKey("secret_acl_my_scope_1"))
+	assert.Equal(t, "resources.secret_scopes.scope_123.permissions", convertSecretAclNameToScopeKey("secret_acl_scope_123_2"))
+}

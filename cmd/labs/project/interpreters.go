@@ -1,6 +1,7 @@
 package project
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
@@ -8,7 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/databricks/cli/libs/env"
@@ -75,8 +76,7 @@ func DetectInterpreters(ctx context.Context) (allInterpreters, error) {
 		// Keep in mind, that mswin installations get python.exe and pythonw.exe,
 		// which are slightly different: see https://stackoverflow.com/a/30313091
 		out, err := process.Background(ctx, []string{resolved, "--version"})
-		var processErr *process.ProcessError
-		if errors.As(err, &processErr) {
+		if processErr, ok := errors.AsType[*process.ProcessError](err); ok {
 			log.Debugf(ctx, "failed to check version for %s: %s", resolved, processErr.Err)
 			continue
 		}
@@ -100,21 +100,19 @@ func DetectInterpreters(ctx context.Context) (allInterpreters, error) {
 	if len(found) == 0 {
 		return nil, ErrNoPythonInterpreters
 	}
-	sort.Slice(found, func(i, j int) bool {
-		a := found[i].Version
-		b := found[j].Version
-		cmp := semver.Compare(a, b)
-		if cmp != 0 {
-			return cmp < 0
+	slices.SortFunc(found, func(a, b Interpreter) int {
+		c := semver.Compare(a.Version, b.Version)
+		if c != 0 {
+			return c
 		}
-		return a < b
+		return cmp.Compare(a.Version, b.Version)
 	})
 	return found, nil
 }
 
 func pythonicExecutablesFromPathEnvironment(ctx context.Context) (out []string, err error) {
-	paths := strings.Split(env.Get(ctx, "PATH"), string(os.PathListSeparator))
-	for _, prefix := range paths {
+	paths := strings.SplitSeq(env.Get(ctx, "PATH"), string(os.PathListSeparator))
+	for prefix := range paths {
 		info, err := os.Stat(prefix)
 		if errors.Is(err, fs.ErrNotExist) {
 			// some directories in $PATH may not exist

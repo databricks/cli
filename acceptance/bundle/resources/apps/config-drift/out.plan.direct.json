@@ -1,0 +1,45 @@
+{}
+{
+  "config.command": {
+    "action": "update",
+    "old": [
+      "python",
+      "app.py"
+    ],
+    "new": [
+      "python",
+      "app.py"
+    ],
+    "remote": [
+      "streamlit",
+      "run",
+      "dashboard.py"
+    ]
+  },
+  "config.env": {
+    "action": "update",
+    "old": [
+      {
+        "name": "MY_VAR",
+        "value": "original_value"
+      }
+    ],
+    "new": [
+      {
+        "name": "MY_VAR",
+        "value": "original_value"
+      }
+    ],
+    "remote": [
+      {
+        "name": "MY_VAR",
+        "value": "changed_value"
+      },
+      {
+        "name": "NEW_VAR",
+        "value": "new_value"
+      }
+    ]
+  }
+}
+{}

@@ -1,0 +1,6 @@
+Cloud = false # test leaves deployed job
+Ignore = [".databricks"]
+
+# Omit DATABRICKS_BUNDLE_ENGINE so bind must read engine from bundle.engine config.
+[EnvMatrix]
+  DATABRICKS_BUNDLE_ENGINE = []

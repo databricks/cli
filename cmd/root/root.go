@@ -179,15 +179,6 @@ Stack Trace:
 	commandStr := commandString(cmd)
 	ctx = cmd.Context()
 
-	// Log bundle deploy failures. Only log if we have successfully configured
-	// an authenticated Databricks client. We cannot log unauthenticated telemetry
-	// from the CLI yet.
-	if cmdctx.HasConfigUsed(ctx) && commandStr == "bundle_deploy" && exitCode != 0 {
-		telemetry.Log(ctx, protos.DatabricksCliLog{
-			BundleDeployEvent: &protos.BundleDeployEvent{},
-		})
-	}
-
 	telemetryErr := telemetry.Upload(cmd.Context(), protos.ExecutionContext{
 		CmdExecID:       cmdctx.ExecId(ctx),
 		Version:         build.GetInfo().Version,

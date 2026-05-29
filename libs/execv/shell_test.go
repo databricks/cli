@@ -27,7 +27,7 @@ func TestShell_Windows(t *testing.T) {
 	// Configure PATH so that only cmd.exe shows up.
 	binDir := t.TempDir()
 	testutil.CopyFile(t, cmdExePath, filepath.Join(binDir, "cmd.exe"))
-	os.Setenv("PATH", binDir)
+	t.Setenv("PATH", binDir)
 
 	tests := []struct {
 		name     string
@@ -70,7 +70,7 @@ func TestShell_Windows(t *testing.T) {
 		// Verify that the temporary file is cleaned up after execution.
 		files, err = os.ReadDir(dir)
 		require.NoError(t, err)
-		assert.Len(t, files, 0)
+		assert.Empty(t, files)
 
 		// Verify that CLI would exit with the correct exit code.
 		assert.Equal(t, test.exitCode, exitCode)

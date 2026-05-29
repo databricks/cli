@@ -46,7 +46,7 @@ func (r *ResourceSchema) DoCreate(ctx context.Context, config *catalog.CreateSch
 }
 
 // DoUpdate updates the schema in place and returns remote state.
-func (r *ResourceSchema) DoUpdate(ctx context.Context, id string, config *catalog.CreateSchema, _ Changes) (*catalog.SchemaInfo, error) {
+func (r *ResourceSchema) DoUpdate(ctx context.Context, id string, config *catalog.CreateSchema, _ *PlanEntry) (*catalog.SchemaInfo, error) {
 	updateRequest := catalog.UpdateSchema{
 		Comment:                      config.Comment,
 		EnablePredictiveOptimization: "", // Not supported by DABs
@@ -69,7 +69,7 @@ func (r *ResourceSchema) DoUpdate(ctx context.Context, id string, config *catalo
 	return response, nil
 }
 
-func (r *ResourceSchema) DoDelete(ctx context.Context, id string) error {
+func (r *ResourceSchema) DoDelete(ctx context.Context, id string, _ *catalog.CreateSchema) error {
 	return r.client.Schemas.Delete(ctx, catalog.DeleteSchemaRequest{
 		FullName:        id,
 		Force:           true,

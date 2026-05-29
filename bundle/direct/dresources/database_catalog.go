@@ -34,7 +34,7 @@ func (r *ResourceDatabaseCatalog) DoCreate(ctx context.Context, config *database
 	return result.Name, nil, nil
 }
 
-func (r *ResourceDatabaseCatalog) DoUpdate(ctx context.Context, id string, config *database.DatabaseCatalog, _ Changes) (*database.DatabaseCatalog, error) {
+func (r *ResourceDatabaseCatalog) DoUpdate(ctx context.Context, id string, config *database.DatabaseCatalog, _ *PlanEntry) (*database.DatabaseCatalog, error) {
 	request := database.UpdateDatabaseCatalogRequest{
 		DatabaseCatalog: *config,
 		Name:            id,
@@ -45,7 +45,7 @@ func (r *ResourceDatabaseCatalog) DoUpdate(ctx context.Context, id string, confi
 	return nil, err
 }
 
-func (r *ResourceDatabaseCatalog) DoDelete(ctx context.Context, id string) error {
+func (r *ResourceDatabaseCatalog) DoDelete(ctx context.Context, id string, _ *database.DatabaseCatalog) error {
 	return r.client.Database.DeleteDatabaseCatalog(ctx, database.DeleteDatabaseCatalogRequest{
 		Name: id,
 	})

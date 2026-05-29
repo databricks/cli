@@ -1,0 +1,11 @@
+{
+  "cli_version": "[DEV_VERSION]",
+  "plan": {
+    "resources.schemas.apps_schema": {
+      "action": "skip"
+    },
+    "resources.schemas.apps_schema.grants": {
+      "action": "skip"
+    }
+  }
+}

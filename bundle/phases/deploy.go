@@ -20,11 +20,24 @@ import (
 	"github.com/databricks/cli/bundle/permissions"
 	"github.com/databricks/cli/bundle/scripts"
 	"github.com/databricks/cli/bundle/statemgmt"
+	"github.com/databricks/cli/libs/agent"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/sync"
 )
+
+var deployApprovalGroups = []approvalGroup{
+	{group: "schemas", message: deleteOrRecreateSchemaMessage, skipChildren: true},
+	{group: "pipelines", message: deleteOrRecreatePipelineMessage},
+	{group: "volumes", message: deleteOrRecreateVolumeMessage},
+	{group: "dashboards", message: deleteOrRecreateDashboardMessage},
+	{group: "database_instances", message: deleteOrRecreateDatabaseInstanceMessage},
+	{group: "synced_database_tables", message: deleteOrRecreateSyncedDatabaseTableMessage},
+	{group: "postgres_projects", message: deleteOrRecreatePostgresProjectMessage},
+	{group: "postgres_branches", message: deleteOrRecreatePostgresBranchMessage},
+	{group: "vector_search_indexes", message: deleteOrRecreateVectorSearchIndexMessage},
+}
 
 func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) (bool, error) {
 	actions := plan.GetActions()
@@ -34,50 +47,10 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.P
 		return false, err
 	}
 
-	types := []deployplan.ActionType{deployplan.Recreate, deployplan.Delete}
-	schemaActions := filterGroup(actions, "schemas", types...)
-	dltActions := filterGroup(actions, "pipelines", types...)
-	volumeActions := filterGroup(actions, "volumes", types...)
-	dashboardActions := filterGroup(actions, "dashboards", types...)
-
-	// We don't need to display any prompts in this case.
-	if len(schemaActions) == 0 && len(dltActions) == 0 && len(volumeActions) == 0 && len(dashboardActions) == 0 {
+	total := logApprovalGroups(ctx, actions, deployApprovalGroups, false, deployplan.Recreate, deployplan.Delete)
+	if total == 0 {
+		// No destructive actions in any tracked group: skip the prompt.
 		return true, nil
-	}
-
-	// One or more UC schema resources will be deleted or recreated.
-	if len(schemaActions) != 0 {
-		cmdio.LogString(ctx, deleteOrRecreateSchemaMessage)
-		for _, action := range schemaActions {
-			if action.IsChildResource() {
-				continue
-			}
-			cmdio.Log(ctx, action)
-		}
-	}
-
-	// One or more DLT pipelines is being recreated.
-	if len(dltActions) != 0 {
-		cmdio.LogString(ctx, deleteOrRecreatePipelineMessage)
-		for _, action := range dltActions {
-			cmdio.Log(ctx, action)
-		}
-	}
-
-	// One or more volumes is being recreated.
-	if len(volumeActions) != 0 {
-		cmdio.LogString(ctx, deleteOrRecreateVolumeMessage)
-		for _, action := range volumeActions {
-			cmdio.Log(ctx, action)
-		}
-	}
-
-	// One or more dashboards is being recreated.
-	if len(dashboardActions) != 0 {
-		cmdio.LogString(ctx, deleteOrRecreateDashboardMessage)
-		for _, action := range dashboardActions {
-			cmdio.Log(ctx, action)
-		}
 	}
 
 	if b.AutoApprove {
@@ -85,16 +58,13 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.P
 	}
 
 	if !cmdio.IsPromptSupported(ctx) {
-		return false, errors.New("the deployment requires destructive actions, but current console does not support prompting. Please specify --auto-approve if you would like to skip prompts and proceed")
+		return false, errors.New("the deployment requires destructive actions, but the current console does not support prompting.\n" +
+			DataLossWarning + "\n" +
+			"To proceed, use --auto-approve after reviewing the plan above." + agent.AgentNotice())
 	}
 
 	cmdio.LogString(ctx, "")
-	approved, err := cmdio.AskYesOrNo(ctx, "Would you like to proceed?")
-	if err != nil {
-		return false, err
-	}
-
-	return approved, nil
+	return cmdio.AskYesOrNo(ctx, "Would you like to proceed?")
 }
 
 func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, targetEngine engine.EngineType) {
@@ -102,10 +72,23 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, ta
 	// mutators need informed consent if they are potentially destructive.
 	cmdio.LogString(ctx, "Deploying resources...")
 
+	// Apply resources and capture post-apply state.
+	// For direct: Finalize flushes the WAL to disk and returns the state;
+	// called even if Apply failed so partial progress is saved.
+	// For terraform: ParseResourcesState reads the file written by terraform.Apply.
+	var (
+		state statemgmt.ExportedResourcesMap
+		err   error
+	)
 	if targetEngine.IsDirect() {
-		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(), plan, direct.MigrateMode(false))
+		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(ctx), plan, direct.MigrateMode(false))
+		state, err = b.DeploymentBundle.StateDB.Finalize(ctx)
 	} else {
 		bundle.ApplyContext(ctx, b, terraform.Apply())
+		state, err = terraform.ParseResourcesState(ctx, b)
+	}
+	if err != nil {
+		logdiag.LogError(ctx, err)
 	}
 
 	// Even if deployment failed, there might be updates in states that we need to upload
@@ -115,7 +98,7 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, ta
 	}
 
 	bundle.ApplySeqContext(ctx, b,
-		statemgmt.Load(targetEngine),
+		statemgmt.Load(state),
 		metadata.Compute(),
 		metadata.Upload(),
 		statemgmt.UploadStateForYamlSync(targetEngine),
@@ -176,16 +159,27 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		return
 	}
 
-	if plan != nil {
+	planFromFile := plan != nil
+	if plan == nil {
+		// State is already open for read by process.go (for direct engine)
+		plan = RunPlan(ctx, b, engine)
+	}
+
+	if engine.IsDirect() {
+		// Upgrade from read (opened by process.go) to write mode
+		if err := b.DeploymentBundle.StateDB.UpgradeToWrite(); err != nil {
+			logdiag.LogError(ctx, err)
+			return
+		}
+	}
+
+	if planFromFile {
 		// Initialize DeploymentBundle for applying the loaded plan
-		_, localPath := b.StateFilenameDirect(ctx)
-		err := b.DeploymentBundle.InitForApply(ctx, b.WorkspaceClient(), localPath, plan)
+		err := b.DeploymentBundle.InitForApply(ctx, b.WorkspaceClient(ctx), plan)
 		if err != nil {
 			logdiag.LogError(ctx, err)
 			return
 		}
-	} else {
-		plan = RunPlan(ctx, b, engine)
 	}
 
 	if logdiag.HasError(ctx) {
@@ -208,14 +202,12 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		return
 	}
 
-	logDeployTelemetry(ctx, b)
 	bundle.ApplyContext(ctx, b, scripts.Execute(config.ScriptPostDeploy))
 }
 
 func RunPlan(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) *deployplan.Plan {
 	if engine.IsDirect() {
-		_, localPath := b.StateFilenameDirect(ctx)
-		plan, err := b.DeploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(), &b.Config, localPath)
+		plan, err := b.DeploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(ctx), &b.Config)
 		if err != nil {
 			logdiag.LogError(ctx, err)
 			return nil

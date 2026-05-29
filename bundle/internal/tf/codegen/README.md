@@ -7,6 +7,7 @@ The entry point for this tool is `.`.
 It uses `./tmp` a temporary data directory and `../schema` as output directory.
 
 It automatically installs the Terraform binary as well as the Databricks Terraform provider.
+It also fetches SHA256 checksums for the provider archive from GitHub releases.
 
 Run with:
 

@@ -12,7 +12,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/engine"
-
+	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct"
@@ -58,9 +58,8 @@ func runPlanCheck(cmd *cobra.Command, extraArgs []string, extraArgsStr string) e
 	fmt.Fprint(cmd.OutOrStdout(), output)
 
 	if err != nil {
-		var exitErr *exec.ExitError
 		msg := ""
-		if errors.As(err, &exitErr) {
+		if exitErr, ok := errors.AsType[*exec.ExitError](err); ok {
 			msg = fmt.Sprintf("exit code %d", exitErr.ExitCode())
 		} else {
 			msg = err.Error()
@@ -133,8 +132,6 @@ lineage and incremented serial number.
 
 Note, the migration is performed locally only. To finalize it, run 'bundle deploy'. This will synchronize the state file
 to the workspace so that subsequent deploys of this bundle use direct deployment engine as well.
-
-WARNING: Both direct deployment engine and this command are experimental and not recommended for production targets yet.
 `,
 		Args: root.NoArgs,
 	}
@@ -229,12 +226,8 @@ To start using direct engine, set "engine: direct" under bundle in your databric
 		migratedDB := dstate.NewDatabase(stateDesc.Lineage, stateDesc.Serial+1)
 		migratedDB.State = state
 
-		deploymentBundle := &direct.DeploymentBundle{
-			StateDB: dstate.DeploymentState{
-				Path: tempStatePath,
-				Data: migratedDB,
-			},
-		}
+		deploymentBundle := &direct.DeploymentBundle{}
+		deploymentBundle.StateDB.OpenWithData(tempStatePath, migratedDB)
 
 		tempStatePathAutoRemove := true
 
@@ -244,7 +237,15 @@ To start using direct engine, set "engine: direct" under bundle in your databric
 			}
 		}()
 
-		plan, err := deploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(), &b.Config, tempStatePath)
+		// Apply SecretScopeFixups so the config matches what the direct engine expects.
+		// This adds MANAGE ACL for the current user to all secret scopes, ensuring
+		// the migrated state and config agree on .permissions entries.
+		bundle.ApplyContext(ctx, b, resourcemutator.SecretScopeFixups(engine.EngineDirect))
+		if logdiag.HasError(ctx) {
+			return root.ErrAlreadyPrinted
+		}
+
+		plan, err := deploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(ctx), &b.Config)
 		if err != nil {
 			return err
 		}
@@ -275,7 +276,14 @@ To start using direct engine, set "engine: direct" under bundle in your databric
 			}
 		}
 
-		deploymentBundle.Apply(ctx, b.WorkspaceClient(), plan, direct.MigrateMode(true))
+		if err := deploymentBundle.StateDB.UpgradeToWrite(); err != nil {
+			return fmt.Errorf("upgrading state for apply: %w", err)
+		}
+
+		deploymentBundle.Apply(ctx, b.WorkspaceClient(ctx), plan, direct.MigrateMode(true))
+		if _, err := deploymentBundle.StateDB.Finalize(ctx); err != nil {
+			logdiag.LogError(ctx, err)
+		}
 		if logdiag.HasError(ctx) {
 			logdiag.LogError(ctx, errors.New("migration failed; ensure you have done full deploy before the migration"))
 			return root.ErrAlreadyPrinted
@@ -301,7 +309,7 @@ Validate the migration by running "databricks bundle plan%s", there should be no
 The state file is not synchronized to the workspace yet. To do that and finalize the migration, run "bundle deploy%s".
 
 To undo the migration, remove %s and rename %s to %s
-`, len(deploymentBundle.StateDB.Data.State), localPath, extraArgsStr, extraArgsStr, localPath, localTerraformBackupPath, localTerraformPath))
+`, len(state), localPath, extraArgsStr, extraArgsStr, localPath, localTerraformBackupPath, localTerraformPath))
 		return nil
 	}
 

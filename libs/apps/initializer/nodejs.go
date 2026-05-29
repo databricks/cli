@@ -74,7 +74,7 @@ func (i *InitializerNodeJs) runNpmInstall(ctx context.Context, workDir string) e
 	// Check if npm is available
 	if _, err := exec.LookPath("npm"); err != nil {
 		cmdio.LogString(ctx, "⚠ npm not found. Please install Node.js and run 'npm install' manually.")
-		return nil
+		return nil //nolint:nilerr // npm not found is a non-critical warning
 	}
 
 	return prompt.RunWithSpinnerCtx(ctx, "Installing dependencies...", func() error {
@@ -92,7 +92,7 @@ func (i *InitializerNodeJs) runAppkitSetup(ctx context.Context, workDir string) 
 	// Check if npx is available
 	if _, err := exec.LookPath("npx"); err != nil {
 		log.Debugf(ctx, "npx not found, skipping appkit setup")
-		return nil
+		return nil //nolint:nilerr // npx not found is a non-critical warning
 	}
 
 	return prompt.RunWithSpinnerCtx(ctx, "Running setup...", func() error {

@@ -20,20 +20,14 @@ func GetLogger(ctx context.Context) *slog.Logger {
 
 // helper function to abstract logging a string message.
 func log(ctx context.Context, logger *slog.Logger, level slog.Level, msg string) {
+	if prefix := getPrefix(ctx); prefix != "" {
+		msg = prefix + ": " + msg
+	}
 	var pcs [1]uintptr
 	// skip [runtime.Callers, this function, this function's caller].
 	runtime.Callers(3, pcs[:])
 	r := slog.NewRecord(time.Now(), level, msg, pcs[0])
 	_ = logger.Handler().Handle(ctx, r)
-}
-
-// Trace logs a string using the context-local or global logger.
-func Trace(ctx context.Context, msg string) {
-	logger := GetLogger(ctx)
-	if !logger.Enabled(ctx, LevelTrace) {
-		return
-	}
-	log(ctx, logger, LevelTrace, msg)
 }
 
 // Debug logs a string using the context-local or global logger.
@@ -61,15 +55,6 @@ func Warn(ctx context.Context, msg string) {
 		return
 	}
 	log(ctx, logger, LevelWarn, msg)
-}
-
-// Error logs a string using the context-local or global logger.
-func Error(ctx context.Context, msg string) {
-	logger := GetLogger(ctx)
-	if !logger.Enabled(ctx, LevelError) {
-		return
-	}
-	log(ctx, logger, LevelError, msg)
 }
 
 // Tracef logs a formatted string using the context-local or global logger.

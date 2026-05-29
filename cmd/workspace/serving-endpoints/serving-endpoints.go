@@ -39,6 +39,10 @@ func New() *cobra.Command {
 		RunE:    root.ReportUnknownSubcommand,
 	}
 
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
+
 	// Add methods
 	cmd.AddCommand(newBuildLogs())
 	cmd.AddCommand(newCreate())
@@ -97,6 +101,8 @@ func newBuildLogs() *cobra.Command {
       field is required.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -115,6 +121,7 @@ func newBuildLogs() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -172,12 +179,14 @@ func newCreate() *cobra.Command {
       alphanumeric characters, dashes, and underscores.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'name' in your JSON input")
 			}
 			return nil
 		}
@@ -267,10 +276,14 @@ func newCreateProvisionedThroughputEndpoint() *cobra.Command {
 	// TODO: array: tags
 
 	cmd.Use = "create-provisioned-throughput-endpoint"
-	cmd.Short = `Create a new PT serving endpoint.`
-	cmd.Long = `Create a new PT serving endpoint.`
+	cmd.Short = `*Public Preview* Create a new PT serving endpoint.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Create a new PT serving endpoint.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -343,6 +356,8 @@ func newDelete() *cobra.Command {
 	cmd.Long = `Delete a serving endpoint.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -401,6 +416,8 @@ func newExportMetrics() *cobra.Command {
       required.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -418,6 +435,7 @@ func newExportMetrics() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		defer response.Contents.Close()
 		return cmdio.Render(ctx, response.Contents)
 	}
@@ -458,6 +476,8 @@ func newGet() *cobra.Command {
     NAME: The name of the serving endpoint. This field is required.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -475,6 +495,7 @@ func newGet() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -505,8 +526,10 @@ func newGetOpenApi() *cobra.Command {
 	var getOpenApiReq serving.GetOpenApiRequest
 
 	cmd.Use = "get-open-api NAME"
-	cmd.Short = `Get the schema for a serving endpoint.`
-	cmd.Long = `Get the schema for a serving endpoint.
+	cmd.Short = `*Public Preview* Get the schema for a serving endpoint.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Get the schema for a serving endpoint.
 
   Get the query schema of the serving endpoint in OpenAPI format. The schema
   contains information for the supported paths, input and output format and
@@ -517,6 +540,8 @@ func newGetOpenApi() *cobra.Command {
       field is required.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -534,6 +559,7 @@ func newGetOpenApi() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		defer response.Contents.Close()
 		return cmdio.Render(ctx, response.Contents)
 	}
@@ -574,6 +600,8 @@ func newGetPermissionLevels() *cobra.Command {
     SERVING_ENDPOINT_ID: The serving endpoint for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -591,6 +619,7 @@ func newGetPermissionLevels() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -631,6 +660,8 @@ func newGetPermissions() *cobra.Command {
     SERVING_ENDPOINT_ID: The serving endpoint for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -648,6 +679,7 @@ func newGetPermissions() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -697,6 +729,8 @@ func newHttpRequest() *cobra.Command {
 	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(3)
@@ -720,6 +754,7 @@ func newHttpRequest() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		defer response.Contents.Close()
 		return cmdio.Render(ctx, response.Contents)
 	}
@@ -746,18 +781,36 @@ var listOverrides []func(
 
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listLimit int
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
 
 	cmd.Use = "list"
 	cmd.Short = `Get all serving endpoints.`
 	cmd.Long = `Get all serving endpoints.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
 		response := w.ServingEndpoints.List(ctx)
+		if listLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
+		}
+		if listLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -800,6 +853,8 @@ func newLogs() *cobra.Command {
       is required.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -818,6 +873,7 @@ func newLogs() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -865,6 +921,8 @@ func newPatch() *cobra.Command {
       required.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -894,6 +952,7 @@ func newPatch() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -929,8 +988,10 @@ func newPut() *cobra.Command {
 	// TODO: array: rate_limits
 
 	cmd.Use = "put NAME"
-	cmd.Short = `Update rate limits of a serving endpoint.`
-	cmd.Long = `Update rate limits of a serving endpoint.
+	cmd.Short = `*Public Preview* Update rate limits of a serving endpoint.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Update rate limits of a serving endpoint.
 
   Deprecated: Please use AI Gateway to manage rate limits instead.
 
@@ -939,6 +1000,8 @@ func newPut() *cobra.Command {
       field is required.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -968,6 +1031,7 @@ func newPut() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -1019,6 +1083,8 @@ func newPutAiGateway() *cobra.Command {
       field is required.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -1048,6 +1114,7 @@ func newPutAiGateway() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -1107,6 +1174,8 @@ func newQuery() *cobra.Command {
       via the path parameter.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -1136,6 +1205,7 @@ func newQuery() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -1182,6 +1252,8 @@ func newSetPermissions() *cobra.Command {
     SERVING_ENDPOINT_ID: The serving endpoint for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -1211,6 +1283,7 @@ func newSetPermissions() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -1267,6 +1340,8 @@ func newUpdateConfig() *cobra.Command {
     NAME: The name of the serving endpoint to update. This field is required.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -1354,6 +1429,8 @@ func newUpdateNotifications() *cobra.Command {
       This field is required.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -1383,6 +1460,7 @@ func newUpdateNotifications() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -1428,6 +1506,8 @@ func newUpdatePermissions() *cobra.Command {
     SERVING_ENDPOINT_ID: The serving endpoint for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -1457,6 +1537,7 @@ func newUpdatePermissions() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -1496,8 +1577,10 @@ func newUpdateProvisionedThroughputEndpointConfig() *cobra.Command {
 	cmd.Flags().Var(&updateProvisionedThroughputEndpointConfigJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "update-provisioned-throughput-endpoint-config NAME"
-	cmd.Short = `Update config of a PT serving endpoint.`
-	cmd.Long = `Update config of a PT serving endpoint.
+	cmd.Short = `*Public Preview* Update config of a PT serving endpoint.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Update config of a PT serving endpoint.
 
   Updates any combination of the pt endpoint's served entities, the compute
   configuration of those served entities, and the endpoint's traffic config.
@@ -1507,6 +1590,8 @@ func newUpdateProvisionedThroughputEndpointConfig() *cobra.Command {
     NAME: The name of the pt endpoint to update. This field is required.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)

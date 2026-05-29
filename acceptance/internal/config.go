@@ -1,11 +1,14 @@
 package internal
 
 import (
+	"errors"
+	"hash/fnv"
+	"io/fs"
+	"maps"
 	"os"
 	"path/filepath"
 	"reflect"
 	"slices"
-	"sort"
 	"strings"
 	"testing"
 	"time"
@@ -41,9 +44,6 @@ type TestConfig struct {
 
 	// If true, run this test when running locally with a testserver
 	Local *bool
-
-	// If true, this test will not be run in -short mode (which is default for make test / PR)
-	Slow *bool
 
 	// If true, run this test when running with cloud env configured
 	Cloud *bool
@@ -153,12 +153,6 @@ type ServerStub struct {
 	// Configure as "1ms", "2s", "3m", etc.
 	// See [time.ParseDuration] for details.
 	Delay time.Duration
-
-	// Number of times to kill the caller process before returning normal responses.
-	// 0 = never kill (default), 1 = kill once then allow, 2 = kill twice then allow, etc.
-	// Useful for testing crash recovery scenarios where first deploy crashes but retry succeeds.
-	// Requires DATABRICKS_CLI_TEST_PID=1 to be set in the test environment.
-	KillCaller int
 }
 
 // FindConfigs finds all the config relevant for this test,
@@ -180,7 +174,7 @@ func FindConfigs(t *testing.T, dir string) []string {
 
 		dir = filepath.Dir(dir)
 
-		if err == nil || os.IsNotExist(err) {
+		if err == nil || errors.Is(err, fs.ErrNotExist) {
 			continue
 		}
 
@@ -267,6 +261,10 @@ func DoLoadConfig(t *testing.T, path string) TestConfig {
 	meta, err := toml.Decode(string(bytes), &config)
 	require.NoError(t, err, "Failed to parse config %s", path)
 
+	if len(meta.Keys()) == 0 {
+		t.Fatalf("test.toml has no settings (delete it instead of leaving it empty): %s", path)
+	}
+
 	keys := meta.Undecoded()
 	for ind, key := range keys {
 		t.Errorf("Undecoded key in %s[%d]: %#v", path, ind, key)
@@ -345,11 +343,7 @@ func ExpandEnvMatrix(matrix, exclude map[string][]string, extraVars []string) []
 		return result
 	}
 
-	keys := make([]string, 0, len(filteredMatrix))
-	for key := range filteredMatrix {
-		keys = append(keys, key)
-	}
-	sort.Strings(keys)
+	keys := slices.Sorted(maps.Keys(filteredMatrix))
 
 	// Build an expansion of all combinations.
 	// At each step we look at a given key and append each possible value to each
@@ -427,17 +421,66 @@ func filterExcludedEnvSets(envSets [][]string, exclude map[string][]string) [][]
 	return filtered
 }
 
+// SubsetExpanded selects one variant per DATABRICKS_BUNDLE_ENGINE value (if scriptUsesEngine)
+// or one variant total from an already-expanded and exclusion-filtered list.
+// DATABRICKS_BUNDLE_ENGINE=direct has weight 10; all other variants have weight 1.
+func SubsetExpanded(expanded [][]string, testDir string, scriptUsesEngine bool) [][]string {
+	if len(expanded) <= 1 {
+		return expanded
+	}
+	if scriptUsesEngine {
+		// Collect candidates per engine key, preserving first-seen order.
+		// keyToIdx maps engine value -> index in result/groups slices.
+		var result [][]string
+		var groups [][][]string
+		keyToIdx := make(map[string]int)
+		for _, envset := range expanded {
+			engine := ""
+			for _, kv := range envset {
+				if v, ok := strings.CutPrefix(kv, "DATABRICKS_BUNDLE_ENGINE="); ok {
+					engine = v
+					break
+				}
+			}
+			idx, ok := keyToIdx[engine]
+			if !ok {
+				idx = len(result)
+				keyToIdx[engine] = idx
+				result = append(result, nil)
+				groups = append(groups, nil)
+			}
+			groups[idx] = append(groups[idx], envset)
+		}
+		for i, group := range groups {
+			result[i] = weightedSelect(group, testDir)
+		}
+		return result
+	}
+	return [][]string{weightedSelect(expanded, testDir)}
+}
+
+// weightedSelect picks one envset using weighted consistent hashing.
+// DATABRICKS_BUNDLE_ENGINE=direct has weight 10; all other envsets have weight 1.
+func weightedSelect(envsets [][]string, testDir string) []string {
+	var weighted [][]string
+	for _, envset := range envsets {
+		weight := 1
+		if slices.Contains(envset, "DATABRICKS_BUNDLE_ENGINE=direct") {
+			weight = 10
+		}
+		for range weight {
+			weighted = append(weighted, envset)
+		}
+	}
+	h := fnv.New64a()
+	h.Write([]byte(testDir))
+	return weighted[h.Sum64()%uint64(len(weighted))]
+}
+
 // matchesExclusionRule returns true if envSet contains all KEY=value pairs from excludeRule.
 func matchesExclusionRule(envSet, excludeRule []string) bool {
 	for _, excludePair := range excludeRule {
-		found := false
-		for _, envPair := range envSet {
-			if envPair == excludePair {
-				found = true
-				break
-			}
-		}
-		if !found {
+		if !slices.Contains(envSet, excludePair) {
 			return false
 		}
 	}

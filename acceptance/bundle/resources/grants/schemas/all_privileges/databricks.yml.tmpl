@@ -1,0 +1,12 @@
+bundle:
+  name: schema-dup-grants-$UNIQUE_NAME
+
+resources:
+  schemas:
+    apps_schema:
+      name: schema_dup_grants_$UNIQUE_NAME
+      catalog_name: main
+      grants:
+        - principal: deco-test-user@databricks.com
+          privileges:
+            - ALL_PRIVILEGES

@@ -1,4 +1,3 @@
-echo "$DATABRICKS_BUNDLES_WHEEL" > "requirements-latest.txt"
 
 # after mutators are applied, we expect to record location of the last mutator that had any effect
 

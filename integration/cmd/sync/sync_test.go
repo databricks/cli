@@ -23,6 +23,7 @@ import (
 	"github.com/databricks/cli/libs/testfile"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/client"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -36,7 +37,7 @@ var (
 // This test needs auth env vars to run.
 // Please run using the deco env test or deco env shell
 func setupRepo(t *testing.T, wsc *databricks.WorkspaceClient, ctx context.Context) (localRoot, remoteRoot string) {
-	me, err := wsc.CurrentUser.Me(ctx)
+	me, err := wsc.CurrentUser.Me(ctx, iam.MeRequest{})
 	require.NoError(t, err)
 	repoPath := fmt.Sprintf("/Repos/%s/%s", me.UserName, testutil.RandomName("empty-repo-sync-integration-"))
 
@@ -125,13 +126,13 @@ func (a *syncTest) waitForCompletionMarker() {
 func (a *syncTest) remoteDirContent(ctx context.Context, relativeDir string, expectedFiles []string) {
 	remoteDir := path.Join(a.remoteRoot, relativeDir)
 	a.c.Eventually(func() bool {
-		objects, err := a.w.Workspace.ListAll(ctx, workspace.ListWorkspaceRequest{
+		objects, err := a.w.Workspace.ListAll(ctx, workspace.ListWorkspaceRequest{ //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
 			Path: remoteDir,
 		})
 		require.NoError(a.t, err)
 		return len(objects) == len(expectedFiles)
 	}, 30*time.Second, 5*time.Second)
-	objects, err := a.w.Workspace.ListAll(ctx, workspace.ListWorkspaceRequest{
+	objects, err := a.w.Workspace.ListAll(ctx, workspace.ListWorkspaceRequest{ //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
 		Path: remoteDir,
 	})
 	require.NoError(a.t, err)
@@ -184,7 +185,7 @@ func (a *syncTest) objectType(ctx context.Context, relativePath, expected string
 	path := path.Join(a.remoteRoot, relativePath)
 
 	a.c.Eventually(func() bool {
-		metadata, err := a.w.Workspace.GetStatusByPath(ctx, path)
+		metadata, err := a.w.Workspace.GetStatusByPath(ctx, path) //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
 		if err != nil {
 			return false
 		}
@@ -196,7 +197,7 @@ func (a *syncTest) language(ctx context.Context, relativePath, expected string) 
 	path := path.Join(a.remoteRoot, relativePath)
 
 	a.c.Eventually(func() bool {
-		metadata, err := a.w.Workspace.GetStatusByPath(ctx, path)
+		metadata, err := a.w.Workspace.GetStatusByPath(ctx, path) //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
 		if err != nil {
 			return false
 		}
@@ -224,7 +225,7 @@ func (a *syncTest) snapshotContains(files []string) {
 		_, ok := s.LastModifiedTimes[filePath]
 		assert.True(a.t, ok, "%s not in snapshot file: %v", filePath, s.LastModifiedTimes)
 	}
-	assert.Equal(a.t, len(files), len(s.LastModifiedTimes), "files=%s s.LastModifiedTimes=%s", files, s.LastModifiedTimes)
+	assert.Len(a.t, s.LastModifiedTimes, len(files), "files=%s s.LastModifiedTimes=%s", files, s.LastModifiedTimes)
 }
 
 func TestSyncFullFileSync(t *testing.T) {
@@ -487,7 +488,7 @@ func TestSyncEnsureRemotePathIsUsableIfRepoDoesntExist(t *testing.T) {
 	ctx, wt := acc.WorkspaceTest(t)
 	wsc := wt.W
 
-	me, err := wsc.CurrentUser.Me(ctx)
+	me, err := wsc.CurrentUser.Me(ctx, iam.MeRequest{})
 	require.NoError(t, err)
 
 	// Hypothetical repo path doesn't exist.
@@ -517,7 +518,7 @@ func TestSyncEnsureRemotePathIsUsableIfRepoExists(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Verify that the directory has been created.
-	info, err := wsc.Workspace.GetStatusByPath(ctx, nestedPath)
+	info, err := wsc.Workspace.GetStatusByPath(ctx, nestedPath) //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
 	require.NoError(t, err)
 	require.Equal(t, workspace.ObjectTypeDirectory, info.ObjectType)
 }
@@ -526,7 +527,7 @@ func TestSyncEnsureRemotePathIsUsableInWorkspace(t *testing.T) {
 	ctx, wt := acc.WorkspaceTest(t)
 	wsc := wt.W
 
-	me, err := wsc.CurrentUser.Me(ctx)
+	me, err := wsc.CurrentUser.Me(ctx, iam.MeRequest{})
 	require.NoError(t, err)
 
 	remotePath := fmt.Sprintf("/Users/%s/%s", me.UserName, testutil.RandomName("ensure-path-exists-test-"))
@@ -535,14 +536,14 @@ func TestSyncEnsureRemotePathIsUsableInWorkspace(t *testing.T) {
 
 	// Clean up directory after test.
 	defer func() {
-		err := wsc.Workspace.Delete(ctx, workspace.Delete{
+		err := wsc.Workspace.Delete(ctx, workspace.Delete{ //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
 			Path: remotePath,
 		})
 		assert.NoError(t, err)
 	}()
 
 	// Verify that the directory has been created.
-	info, err := wsc.Workspace.GetStatusByPath(ctx, remotePath)
+	info, err := wsc.Workspace.GetStatusByPath(ctx, remotePath) //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
 	require.NoError(t, err)
 	require.Equal(t, workspace.ObjectTypeDirectory, info.ObjectType)
 }

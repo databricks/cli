@@ -8,14 +8,15 @@ type DataSourceFeatureEngineeringKafkaConfigsKafkaConfigsAuthConfig struct {
 
 type DataSourceFeatureEngineeringKafkaConfigsKafkaConfigsBackfillSourceDeltaTableSource struct {
 	DataframeSchema   string   `json:"dataframe_schema,omitempty"`
-	EntityColumns     []string `json:"entity_columns"`
+	EntityColumns     []string `json:"entity_columns,omitempty"`
 	FilterCondition   string   `json:"filter_condition,omitempty"`
 	FullName          string   `json:"full_name"`
-	TimeseriesColumn  string   `json:"timeseries_column"`
+	TimeseriesColumn  string   `json:"timeseries_column,omitempty"`
 	TransformationSql string   `json:"transformation_sql,omitempty"`
 }
 
 type DataSourceFeatureEngineeringKafkaConfigsKafkaConfigsBackfillSource struct {
+	DeltaTableName   string                                                                              `json:"delta_table_name,omitempty"`
 	DeltaTableSource *DataSourceFeatureEngineeringKafkaConfigsKafkaConfigsBackfillSourceDeltaTableSource `json:"delta_table_source,omitempty"`
 }
 
@@ -24,7 +25,7 @@ type DataSourceFeatureEngineeringKafkaConfigsKafkaConfigsKeySchema struct {
 }
 
 type DataSourceFeatureEngineeringKafkaConfigsKafkaConfigsProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourceFeatureEngineeringKafkaConfigsKafkaConfigsSubscriptionMode struct {
@@ -50,7 +51,7 @@ type DataSourceFeatureEngineeringKafkaConfigsKafkaConfigs struct {
 }
 
 type DataSourceFeatureEngineeringKafkaConfigsProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourceFeatureEngineeringKafkaConfigs struct {

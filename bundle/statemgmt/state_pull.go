@@ -59,7 +59,7 @@ func (s *StateDesc) HasRemoteTerraformState() bool {
 func localRead(ctx context.Context, fullPath string, engine engine.EngineType) *StateDesc {
 	content, err := os.ReadFile(fullPath)
 	if err != nil {
-		if !os.IsNotExist(err) {
+		if !errors.Is(err, fs.ErrNotExist) {
 			logdiag.LogError(ctx, fmt.Errorf("reading %s: %w", filepath.ToSlash(fullPath), err))
 		}
 		return nil
@@ -220,7 +220,7 @@ func readStates(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull) []
 	terraformLocalState := localRead(ctx, localPathTerraform, engine.EngineTerraform)
 
 	if (directLocalState == nil && terraformLocalState == nil) || alwaysPull {
-		f, err := deploy.StateFiler(b)
+		f, err := deploy.StateFiler(ctx, b)
 		if err != nil {
 			logdiag.LogError(ctx, err)
 			return nil

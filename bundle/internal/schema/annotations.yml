@@ -215,12 +215,18 @@ github.com/databricks/cli/bundle/config.Resources:
   "postgres_branches":
     "description": |-
       PLACEHOLDER
+  "postgres_catalogs":
+    "description": |-
+      The Postgres catalog definitions for the bundle, where each key is the name of the catalog. Each entry binds a Unity Catalog catalog to a Postgres database on a Lakebase Autoscaling branch.
   "postgres_endpoints":
     "description": |-
       PLACEHOLDER
   "postgres_projects":
     "description": |-
       PLACEHOLDER
+  "postgres_synced_tables":
+    "description": |-
+      The Postgres synced table definitions for the bundle, where each key is the name of the synced table. Each entry continuously replicates a Unity Catalog Delta source table into a Postgres table on a Lakebase Autoscaling instance.
   "quality_monitors":
     "description": |-
       The quality monitor definitions for the bundle, where each key is the name of the quality monitor.
@@ -247,6 +253,12 @@ github.com/databricks/cli/bundle/config.Resources:
     "markdown_description": |-
       The SQL warehouse definitions for the bundle, where each key is the name of the warehouse. See [\_](/dev-tools/bundles/resources.md#sql_warehouses).
   "synced_database_tables":
+    "description": |-
+      PLACEHOLDER
+  "vector_search_endpoints":
+    "description": |-
+      PLACEHOLDER
+  "vector_search_indexes":
     "description": |-
       PLACEHOLDER
   "volumes":
@@ -327,9 +339,9 @@ github.com/databricks/cli/bundle/config.Root:
       ```
   "run_as":
     "description": |-
-      The identity to use when running Declarative Automation Bundles workflows.
+      The identity to use when running Declarative Automation Bundles resources.
     "markdown_description": |-
-      The identity to use when running Declarative Automation Bundles workflows. See [\_](/dev-tools/bundles/run-as.md).
+      The identity to use when running Declarative Automation Bundles resources. See [\_](/dev-tools/bundles/run-as.md).
   "scripts":
     "description": |-
       PLACEHOLDER
@@ -415,9 +427,12 @@ github.com/databricks/cli/bundle/config.Target:
     "description": |-
       The Databricks workspace for the target.
 github.com/databricks/cli/bundle/config.Workspace:
+  "account_id":
+    "description": |-
+      The Databricks account ID.
   "artifact_path":
     "description": |-
-      The artifact path to use within the workspace for both deployments and workflow runs
+      The artifact path to use within the workspace for both deployments and job runs
   "auth_type":
     "description": |-
       The authentication type.
@@ -444,10 +459,10 @@ github.com/databricks/cli/bundle/config.Workspace:
       The client ID for the workspace
   "experimental_is_unified_host":
     "description": |-
-      Experimental feature flag to indicate if the host is a unified host
+      Deprecated: no-op. Unified hosts are now detected automatically from /.well-known/databricks-config. Retained for schema compatibility with existing databricks.yml files.
   "file_path":
     "description": |-
-      The file path to use within the workspace for both deployments and workflow runs
+      The file path to use within the workspace for both deployments and job runs
   "google_service_account":
     "description": |-
       The Google service account name
@@ -525,6 +540,9 @@ github.com/databricks/cli/bundle/config/resources.App:
       Git source configuration for app deployments. Specifies which git reference (branch, tag, or commit)
       to use when deploying the app. Used in conjunction with git_repository to deploy code directly from git.
       The source_code_path within git_source specifies the relative path to the app code within the repository.
+  "thumbnail_url":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.AppConfig:
   "command":
     "description": |-
@@ -658,6 +676,13 @@ github.com/databricks/cli/bundle/config/resources.Lifecycle:
   "prevent_destroy":
     "description": |-
       Lifecycle setting to prevent the resource from being destroyed.
+github.com/databricks/cli/bundle/config/resources.LifecycleWithStarted:
+  "prevent_destroy":
+    "description": |-
+      Lifecycle setting to prevent the resource from being destroyed.
+  "started":
+    "description": |-
+      Lifecycle setting to deploy the resource in started mode. Only supported for apps, clusters, and sql_warehouses in direct deployment mode.
 github.com/databricks/cli/bundle/config/resources.MlflowExperimentPermission:
   "group_name":
     "description": |-
@@ -753,6 +778,9 @@ github.com/databricks/cli/bundle/config/resources.PostgresBranch:
   "parent":
     "description": |-
       PLACEHOLDER
+  "replace_existing":
+    "description": |-
+      PLACEHOLDER
   "source_branch":
     "description": |-
       PLACEHOLDER
@@ -775,6 +803,22 @@ github.com/databricks/cli/bundle/config/resources.PostgresBranch:
     "description": |-
       PLACEHOLDER
   "update_time":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.PostgresCatalog:
+  "branch":
+    "description": |-
+      PLACEHOLDER
+  "catalog_id":
+    "description": |-
+      PLACEHOLDER
+  "create_database_if_missing":
+    "description": |-
+      PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
+  "postgres_database":
     "description": |-
       PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.PostgresEndpoint:
@@ -811,6 +855,9 @@ github.com/databricks/cli/bundle/config/resources.PostgresEndpoint:
   "parent":
     "description": |-
       PLACEHOLDER
+  "replace_existing":
+    "description": |-
+      PLACEHOLDER
   "settings":
     "description": |-
       PLACEHOLDER
@@ -837,6 +884,9 @@ github.com/databricks/cli/bundle/config/resources.PostgresProject:
     "description": |-
       PLACEHOLDER
   "custom_tags":
+    "description": |-
+      PLACEHOLDER
+  "default_branch":
     "description": |-
       PLACEHOLDER
   "default_endpoint_settings":
@@ -876,6 +926,40 @@ github.com/databricks/cli/bundle/config/resources.PostgresProject:
     "description": |-
       PLACEHOLDER
   "update_time":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.PostgresSyncedTable:
+  "branch":
+    "description": |-
+      PLACEHOLDER
+  "create_database_objects_if_missing":
+    "description": |-
+      PLACEHOLDER
+  "existing_pipeline_id":
+    "description": |-
+      PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
+  "new_pipeline_spec":
+    "description": |-
+      PLACEHOLDER
+  "postgres_database":
+    "description": |-
+      PLACEHOLDER
+  "primary_key_columns":
+    "description": |-
+      PLACEHOLDER
+  "scheduling_policy":
+    "description": |-
+      PLACEHOLDER
+  "source_table_full_name":
+    "description": |-
+      PLACEHOLDER
+  "synced_table_id":
+    "description": |-
+      PLACEHOLDER
+  "timeseries_key":
     "description": |-
       PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.SecretScope:
@@ -943,6 +1027,56 @@ github.com/databricks/cli/bundle/config/resources.SyncedDatabaseTable:
     "description": |-
       PLACEHOLDER
   "unity_catalog_provisioning_state":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.VectorSearchEndpoint:
+  "budget_policy_id":
+    "description": |-
+      PLACEHOLDER
+  "endpoint_type":
+    "description": |-
+      PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
+  "name":
+    "description": |-
+      PLACEHOLDER
+  "permissions":
+    "description": |-
+      PLACEHOLDER
+  "target_qps":
+    "description": |-
+      PLACEHOLDER
+  "usage_policy_id":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.VectorSearchIndex:
+  "delta_sync_index_spec":
+    "description": |-
+      PLACEHOLDER
+  "direct_access_index_spec":
+    "description": |-
+      PLACEHOLDER
+  "endpoint_name":
+    "description": |-
+      PLACEHOLDER
+  "grants":
+    "description": |-
+      PLACEHOLDER
+  "index_subtype":
+    "description": |-
+      PLACEHOLDER
+  "index_type":
+    "description": |-
+      PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
+  "name":
+    "description": |-
+      PLACEHOLDER
+  "primary_key":
     "description": |-
       PLACEHOLDER
 github.com/databricks/cli/bundle/config/variable.Lookup:

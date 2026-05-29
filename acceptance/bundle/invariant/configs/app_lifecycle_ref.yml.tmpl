@@ -1,0 +1,15 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+resources:
+  apps:
+    foo:
+      name: app-foo-$UNIQUE_NAME
+      source_code_path: ./app
+      lifecycle:
+        started: true
+    bar:
+      name: app-bar-$UNIQUE_NAME
+      source_code_path: ./app
+      lifecycle:
+        started: ${resources.apps.foo.lifecycle.started}

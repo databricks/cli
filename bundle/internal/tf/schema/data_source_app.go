@@ -105,6 +105,8 @@ type DataSourceAppAppPendingDeployment struct {
 }
 
 type DataSourceAppAppResourcesApp struct {
+	Name       string `json:"name,omitempty"`
+	Permission string `json:"permission,omitempty"`
 }
 
 type DataSourceAppAppResourcesDatabase struct {
@@ -208,6 +210,7 @@ type DataSourceAppApp struct {
 	ServicePrincipalName        string                                        `json:"service_principal_name,omitempty"`
 	Space                       string                                        `json:"space,omitempty"`
 	TelemetryExportDestinations []DataSourceAppAppTelemetryExportDestinations `json:"telemetry_export_destinations,omitempty"`
+	ThumbnailUrl                string                                        `json:"thumbnail_url,omitempty"`
 	UpdateTime                  string                                        `json:"update_time,omitempty"`
 	Updater                     string                                        `json:"updater,omitempty"`
 	Url                         string                                        `json:"url,omitempty"`
@@ -216,7 +219,7 @@ type DataSourceAppApp struct {
 }
 
 type DataSourceAppProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourceApp struct {

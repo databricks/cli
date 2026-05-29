@@ -54,8 +54,7 @@ func AuthTypeDisplayName(authType string) string {
 // RewriteAuthError rewrites the error message for invalid refresh token error.
 // It returns whether the error was rewritten and the rewritten error.
 func RewriteAuthError(ctx context.Context, host, accountId, profile string, err error) (bool, error) {
-	target := &u2m.InvalidRefreshTokenError{}
-	if errors.As(err, &target) {
+	if _, ok := errors.AsType[*u2m.InvalidRefreshTokenError](err); ok {
 		oauthArgument, err := AuthArguments{
 			Host:      host,
 			AccountID: accountId,
@@ -73,8 +72,8 @@ func RewriteAuthError(ctx context.Context, host, accountId, profile string, err 
 // EnrichAuthError appends identity context and remediation steps to 401/403 API errors.
 // For non-API errors or other status codes, the original error is returned unchanged.
 func EnrichAuthError(ctx context.Context, cfg *config.Config, err error) error {
-	var apiErr *apierr.APIError
-	if !errors.As(err, &apiErr) {
+	apiErr, ok := errors.AsType[*apierr.APIError](err)
+	if !ok {
 		return err
 	}
 	if apiErr.StatusCode != http.StatusUnauthorized && apiErr.StatusCode != http.StatusForbidden {
@@ -124,22 +123,16 @@ func writeReauthSteps(ctx context.Context, cfg *config.Config, b *strings.Builde
 			return
 		}
 		oauthArg, argErr := AuthArguments{
-			Host:          cfg.Host,
-			AccountID:     cfg.AccountID,
-			WorkspaceID:   cfg.WorkspaceID,
-			IsUnifiedHost: cfg.Experimental_IsUnifiedHost,
+			Host:         cfg.Host,
+			AccountID:    cfg.AccountID,
+			WorkspaceID:  cfg.WorkspaceID,
+			DiscoveryURL: cfg.DiscoveryURL,
 		}.ToOAuthArgument()
 		if argErr != nil {
 			fmt.Fprint(b, "\n  - Re-authenticate: databricks auth login")
 			return
 		}
-		loginCmd := BuildLoginCommand(ctx, "", oauthArg)
-		// For unified hosts, BuildLoginCommand (via OAuthArgument) doesn't carry
-		// workspace-id. Append it so the command is actionable.
-		if cfg.Experimental_IsUnifiedHost && cfg.WorkspaceID != "" {
-			loginCmd += " --workspace-id " + cfg.WorkspaceID
-		}
-		fmt.Fprintf(b, "\n  - Re-authenticate: %s", loginCmd)
+		fmt.Fprintf(b, "\n  - Re-authenticate: %s", BuildLoginCommand(ctx, "", oauthArg))
 
 	case AuthTypePat:
 		if cfg.Profile != "" {
@@ -178,7 +171,9 @@ func BuildLoginCommand(ctx context.Context, profile string, arg u2m.OAuthArgumen
 	} else {
 		switch arg := arg.(type) {
 		case u2m.UnifiedOAuthArgument:
-			cmd = append(cmd, "--host", arg.GetHost(), "--account-id", arg.GetAccountId(), "--experimental-is-unified-host")
+			// Discovery handles unified-host routing from --host + --account-id,
+			// so we no longer suggest --experimental-is-unified-host here.
+			cmd = append(cmd, "--host", arg.GetHost(), "--account-id", arg.GetAccountId())
 		case u2m.AccountOAuthArgument:
 			cmd = append(cmd, "--host", arg.GetAccountHost(), "--account-id", arg.GetAccountId())
 		case u2m.WorkspaceOAuthArgument:

@@ -3,6 +3,7 @@ package cfgpickers
 import (
 	"testing"
 
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/qa"
 	"github.com/databricks/databricks-sdk-go/service/sql"
@@ -34,7 +35,7 @@ func TestFirstCompatibleWarehouse(t *testing.T) {
 	defer server.Close()
 	w := databricks.Must(databricks.NewWorkspaceClient((*databricks.Config)(cfg)))
 
-	ctx := t.Context()
+	ctx := cmdio.MockDiscard(t.Context())
 	clusterID, err := AskForWarehouse(ctx, w, WithWarehouseTypes(sql.EndpointInfoWarehouseTypePro))
 	require.NoError(t, err)
 	assert.Equal(t, "efg-id", clusterID)
@@ -59,7 +60,7 @@ func TestNoCompatibleWarehouses(t *testing.T) {
 	defer server.Close()
 	w := databricks.Must(databricks.NewWorkspaceClient((*databricks.Config)(cfg)))
 
-	ctx := t.Context()
+	ctx := cmdio.MockDiscard(t.Context())
 	_, err := AskForWarehouse(ctx, w, WithWarehouseTypes(sql.EndpointInfoWarehouseTypePro))
 	assert.Equal(t, ErrNoCompatibleWarehouses, err)
 }

@@ -1,0 +1,6 @@
+Local = true
+
+[EnvMatrix]
+DATABRICKS_BUNDLE_ENGINE = []
+FIRST = ["alpha", "beta"]
+SECOND = []

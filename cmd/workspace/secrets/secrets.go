@@ -37,6 +37,10 @@ func New() *cobra.Command {
 		RunE:    root.ReportUnknownSubcommand,
 	}
 
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
+
 	// Add methods
 	cmd.AddCommand(newCreateScope())
 	cmd.AddCommand(newDeleteAcl())
@@ -124,12 +128,14 @@ func newCreateScope() *cobra.Command {
     SCOPE: Scope name requested by the user. Scope names are unique.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'scope' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'scope' in your JSON input")
 			}
 			return nil
 		}
@@ -218,12 +224,14 @@ func newDeleteAcl() *cobra.Command {
     PRINCIPAL: The principal to remove an existing ACL from.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'scope', 'principal' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'scope', 'principal' in your JSON input")
 			}
 			return nil
 		}
@@ -312,12 +320,14 @@ func newDeleteScope() *cobra.Command {
     SCOPE: Name of the scope to delete.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'scope' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'scope' in your JSON input")
 			}
 			return nil
 		}
@@ -405,12 +415,14 @@ func newDeleteSecret() *cobra.Command {
     KEY: Name of the secret to delete.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'scope', 'key' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'scope', 'key' in your JSON input")
 			}
 			return nil
 		}
@@ -499,6 +511,8 @@ func newGetAcl() *cobra.Command {
     PRINCIPAL: The principal to fetch ACL information for.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -517,6 +531,7 @@ func newGetAcl() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -583,6 +598,8 @@ func newGetSecret() *cobra.Command {
     KEY: Name of the secret to fetch value information.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -601,6 +618,7 @@ func newGetSecret() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -629,6 +647,15 @@ func newListAcls() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listAclsReq workspace.ListAclsRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listAclsLimit int
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listAclsLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
 
 	cmd.Use = "list-acls SCOPE"
 	cmd.Short = `Lists ACLs.`
@@ -653,6 +680,8 @@ func newListAcls() *cobra.Command {
     SCOPE: The name of the scope to fetch ACL information from.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -667,6 +696,13 @@ func newListAcls() *cobra.Command {
 		listAclsReq.Scope = args[0]
 
 		response := w.Secrets.ListAcls(ctx, listAclsReq)
+		if listAclsLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listAclsLimit)
+		}
+		if listAclsLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listAclsLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -692,6 +728,15 @@ var listScopesOverrides []func(
 
 func newListScopes() *cobra.Command {
 	cmd := &cobra.Command{}
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listScopesLimit int
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listScopesLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
 
 	cmd.Use = "list-scopes"
 	cmd.Short = `List all scopes.`
@@ -710,12 +755,21 @@ func newListScopes() *cobra.Command {
   API call.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
 		response := w.Secrets.ListScopes(ctx)
+		if listScopesLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listScopesLimit)
+		}
+		if listScopesLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listScopesLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -744,6 +798,15 @@ func newListSecrets() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listSecretsReq workspace.ListSecretsRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listSecretsLimit int
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listSecretsLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
 
 	cmd.Use = "list-secrets SCOPE"
 	cmd.Short = `List secret keys.`
@@ -771,6 +834,8 @@ func newListSecrets() *cobra.Command {
     SCOPE: The name of the scope to list secrets within.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -785,6 +850,13 @@ func newListSecrets() *cobra.Command {
 		listSecretsReq.Scope = args[0]
 
 		response := w.Secrets.ListSecrets(ctx, listSecretsReq)
+		if listSecretsLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listSecretsLimit)
+		}
+		if listSecretsLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listSecretsLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -862,12 +934,14 @@ func newPutAcl() *cobra.Command {
       Supported values: [MANAGE, READ, WRITE]`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'scope', 'principal', 'permission' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'scope', 'principal', 'permission' in your JSON input")
 			}
 			return nil
 		}

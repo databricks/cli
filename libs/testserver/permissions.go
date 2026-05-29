@@ -107,6 +107,19 @@ func (s *FakeWorkspace) GetPermissions(req Request) any {
 	}
 
 	responseObjectID := fmt.Sprintf("/%s/%s", requestObjectType, objectId)
+
+	// V2 permissions APIs cascade-delete ACLs with the parent, so the cloud
+	// returns 404 once the parent is gone. V1 APIs (jobs, pipelines, etc.)
+	// retain ACL data after delete via async/soft delete; for those, we
+	// fall through to the "empty ACL on miss" branch below, which is close
+	// enough. New V2 resources should add a case to permissionsParentExists.
+	if !s.permissionsParentExists(requestObjectType, objectId) {
+		return Response{
+			StatusCode: 404,
+			Body:       map[string]string{"message": fmt.Sprintf("%s %s not found.", requestObjectType, objectId)},
+		}
+	}
+
 	permissions, exists := s.Permissions[responseObjectID]
 
 	if !exists {
@@ -121,6 +134,23 @@ func (s *FakeWorkspace) GetPermissions(req Request) any {
 	return Response{
 		Body: permissions,
 	}
+}
+
+// permissionsParentExists reports whether the parent object backing a
+// permissions request exists in workspace state. Returns true for resource
+// types without a parent-existence check wired up; V1 resources rely on
+// that fallback to keep their "empty ACL on miss" behavior.
+func (s *FakeWorkspace) permissionsParentExists(requestObjectType, objectId string) bool {
+	switch requestObjectType {
+	case "vector-search-endpoints":
+		for _, ep := range s.VectorSearchEndpoints {
+			if ep.Id == objectId {
+				return true
+			}
+		}
+		return false
+	}
+	return true
 }
 
 func (s *FakeWorkspace) SetPermissions(req Request) any {

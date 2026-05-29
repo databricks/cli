@@ -1,0 +1,9 @@
+Cloud = false
+
+Ignore = [
+  "databricks_v2.yml",
+  "stale_state.json",
+]
+
+[EnvMatrix]
+DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]

@@ -55,7 +55,11 @@
             "parameter": [],
             "performance_target": null,
             "pipeline_task": [],
-            "provider_config": [],
+            "provider_config": [
+              {
+                "workspace_id": "[NUMID]"
+              }
+            ],
             "python_wheel_task": [],
             "queue": [
               {
@@ -78,6 +82,7 @@
             "tags": null,
             "task": [
               {
+                "alert_task": [],
                 "clean_rooms_notebook_task": [],
                 "compute": [],
                 "condition_task": [],
@@ -207,7 +212,11 @@
             "name": "Test Migration Pipeline",
             "notification": [],
             "photon": false,
-            "provider_config": [],
+            "provider_config": [
+              {
+                "workspace_id": "[NUMID]"
+              }
+            ],
             "restart_window": [],
             "root_path": null,
             "run_as": [],
@@ -222,7 +231,7 @@
               "myjob_timeout": "0",
               "myvolume_id": "mycat.myschema.myvol",
               "volume_catalog_name": "mycat",
-              "volume_storage_location": "s3://deco-uc-prod-isolated-aws-us-east-1/metastore/[UUID]/volumes/[UUID]"
+              "volume_storage_location": "s3://[METASTORE_NAME]/metastore/[UUID]/volumes/[UUID]"
             },
             "target": null,
             "timeouts": null,
@@ -253,9 +262,13 @@
             "id": "mycat.myschema.myvol",
             "name": "myvol",
             "owner": "[USERNAME]",
-            "provider_config": [],
+            "provider_config": [
+              {
+                "workspace_id": "[NUMID]"
+              }
+            ],
             "schema_name": "myschema",
-            "storage_location": "s3://deco-uc-prod-isolated-aws-us-east-1/metastore/[UUID]/volumes/[UUID]",
+            "storage_location": "s3://[METASTORE_NAME]/metastore/[UUID]/volumes/[UUID]",
             "volume_path": "/Volumes/mycat/myschema/myvol",
             "volume_type": "MANAGED"
           },

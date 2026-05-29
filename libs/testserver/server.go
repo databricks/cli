@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"maps"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -16,7 +17,6 @@ import (
 	"sync"
 
 	"github.com/databricks/cli/internal/testutil"
-	"github.com/gorilla/mux"
 )
 
 const testPidKey = "test-pid"
@@ -38,13 +38,16 @@ func ExtractPidFromHeaders(headers http.Header) int {
 
 type Server struct {
 	*httptest.Server
-	Router *mux.Router
+	*Router
 
 	t testutil.TestingT
 
 	fakeWorkspaces map[string]*FakeWorkspace
 	fakeOidc       *FakeOidc
 	mu             sync.Mutex
+
+	kills  *killRules
+	faults *FaultRules
 
 	RequestCallback  func(request *Request)
 	ResponseCallback func(request *Request, response *EncodedResponse)
@@ -58,6 +61,7 @@ type Request struct {
 	Vars      map[string]string
 	Workspace *FakeWorkspace
 	Context   context.Context
+	Token     string
 }
 
 type Response struct {
@@ -83,7 +87,6 @@ func NewRequest(t testutil.TestingT, r *http.Request, fakeWorkspace *FakeWorkspa
 		URL:       r.URL,
 		Headers:   r.Header,
 		Body:      body,
-		Vars:      mux.Vars(r),
 		Workspace: fakeWorkspace,
 		Context:   r.Context(),
 	}
@@ -200,8 +203,21 @@ func getHeaders(value []byte) http.Header {
 }
 
 func New(t testutil.TestingT) *Server {
-	router := mux.NewRouter()
-	server := httptest.NewServer(router)
+	router := NewRouter()
+	kills := newKillRules()
+	faults := NewFaultRules()
+
+	// Wrap the router so kill rules fire for ALL requests, including those with
+	// no registered handler that would otherwise bypass serve() entirely.
+	killMiddleware := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		token := getToken(r)
+		if kills.check(t, r.Method, r.URL.Path, token, r.Header) {
+			return
+		}
+		router.ServeHTTP(w, r)
+	})
+
+	server := httptest.NewServer(killMiddleware)
 	t.Cleanup(server.Close)
 
 	s := &Server{
@@ -210,7 +226,10 @@ func New(t testutil.TestingT) *Server {
 		t:              t,
 		fakeWorkspaces: map[string]*FakeWorkspace{},
 		fakeOidc:       &FakeOidc{url: server.URL},
+		kills:          kills,
+		faults:         faults,
 	}
+	router.Dispatch = s.serve
 
 	t.Cleanup(func() {
 		for _, ws := range s.fakeWorkspaces {
@@ -256,8 +275,11 @@ Response.Body = '<response body here>'
 			t.Errorf("Response write error: %s", err)
 		}
 	})
-	router.NotFoundHandler = notFoundFunc
-	router.MethodNotAllowedHandler = notFoundFunc
+	router.NotFound = notFoundFunc
+
+	// Register test-only endpoints for setting up kill and fault rules from scripts.
+	s.Handle("POST", "/__testserver/kill", killEndpointHandler(s.kills))
+	s.Handle("POST", "/__testserver/fault", faultEndpointHandler(s.faults))
 
 	// Register a default handler for the SDK's host metadata discovery endpoint.
 	// The SDK resolves this during config initialization (as of v0.126.0) to
@@ -267,7 +289,7 @@ Response.Body = '<response body here>'
 	s.Handle("GET", "/.well-known/databricks-config", func(_ Request) any {
 		return map[string]any{
 			"oidc_endpoint": server.URL + "/oidc",
-			"workspace_id":  "470123456789500",
+			"workspace_id":  "900800700600",
 		}
 	})
 
@@ -289,50 +311,54 @@ func (s *Server) getWorkspaceForToken(token string) *FakeWorkspace {
 	return s.fakeWorkspaces[token]
 }
 
-type HandlerFunc func(req Request) any
+func (s *Server) serve(w http.ResponseWriter, r *http.Request, handler HandlerFunc, vars map[string]string) {
+	token := getToken(r)
 
-func (s *Server) Handle(method, path string, handler HandlerFunc) {
-	s.Router.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
-		// Each test uses unique DATABRICKS_TOKEN, we simulate each token having
-		// it's own fake fakeWorkspace to avoid interference between tests.
-		fakeWorkspace := s.getWorkspaceForToken(getToken(r))
+	// Each test uses unique DATABRICKS_TOKEN, we simulate each token having
+	// it's own fake fakeWorkspace to avoid interference between tests.
+	fakeWorkspace := s.getWorkspaceForToken(token)
 
-		request := NewRequest(s.t, r, fakeWorkspace)
+	request := NewRequest(s.t, r, fakeWorkspace)
+	request.Vars = vars
+	request.Token = token
 
-		if s.RequestCallback != nil {
-			s.RequestCallback(&request)
+	if s.RequestCallback != nil {
+		s.RequestCallback(&request)
+	}
+
+	var resp EncodedResponse
+
+	if rule := s.faults.Check(r.Method, r.URL.Path, token); rule != nil {
+		resp = EncodedResponse{
+			StatusCode: rule.StatusCode,
+			Body:       []byte(rule.Body),
+			Headers:    getJsonHeaders(),
 		}
-
-		var resp EncodedResponse
-
-		if bytes.Contains(request.Body, []byte("INJECT_ERROR")) {
-			resp = EncodedResponse{
-				StatusCode: 500,
-				Body:       []byte("INJECTED"),
-			}
-		} else {
-			respAny := handler(request)
-			if respAny == nil && request.Context.Err() != nil {
-				return
-			}
-			resp = normalizeResponse(s.t, respAny)
+	} else if bytes.Contains(request.Body, []byte("INJECT_ERROR")) {
+		resp = EncodedResponse{
+			StatusCode: 500,
+			Body:       []byte("INJECTED"),
 		}
-
-		for k, v := range resp.Headers {
-			w.Header()[k] = v
-		}
-
-		w.WriteHeader(resp.StatusCode)
-
-		if s.ResponseCallback != nil {
-			s.ResponseCallback(&request, &resp)
-		}
-
-		if _, err := w.Write(resp.Body); err != nil {
-			s.t.Errorf("Failed to write response: %s", err)
+	} else {
+		respAny := handler(request)
+		if respAny == nil && request.Context.Err() != nil {
 			return
 		}
-	}).Methods(method)
+		resp = normalizeResponse(s.t, respAny)
+	}
+
+	maps.Copy(w.Header(), resp.Headers)
+
+	w.WriteHeader(resp.StatusCode)
+
+	if s.ResponseCallback != nil {
+		s.ResponseCallback(&request, &resp)
+	}
+
+	if _, err := w.Write(resp.Body); err != nil {
+		s.t.Errorf("Failed to write response: %s", err)
+		return
+	}
 }
 
 func getToken(r *http.Request) string {
@@ -352,7 +378,7 @@ func isNil(i any) bool {
 	}
 	v := reflect.ValueOf(i)
 	switch v.Kind() {
-	case reflect.Chan, reflect.Func, reflect.Map, reflect.Ptr, reflect.Interface, reflect.Slice:
+	case reflect.Chan, reflect.Func, reflect.Map, reflect.Pointer, reflect.Interface, reflect.Slice:
 		return v.IsNil()
 	default:
 		return false

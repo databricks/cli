@@ -1,0 +1,11 @@
+bundle:
+  name: lifecycle-started-toggle-$UNIQUE_NAME
+
+resources:
+  apps:
+    mykey:
+      name: $UNIQUE_NAME
+      description: my_app_description
+      source_code_path: ./app
+      lifecycle:
+        started: false

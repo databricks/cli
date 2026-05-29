@@ -70,7 +70,7 @@ func TestLoadProfilesMatchWorkspace(t *testing.T) {
 	profiler := FileProfilerImpl{}
 	profiles, err := profiler.LoadProfiles(ctx, MatchWorkspaceProfiles)
 	require.NoError(t, err)
-	assert.Equal(t, []string{"DEFAULT", "query", "foo1", "foo2"}, profiles.Names())
+	assert.Equal(t, []string{"DEFAULT", "query", "foo1", "foo2", "spog-ws1", "spog-ws2", "spog-dup1", "spog-dup2"}, profiles.Names())
 }
 
 func TestLoadProfilesMatchAccount(t *testing.T) {

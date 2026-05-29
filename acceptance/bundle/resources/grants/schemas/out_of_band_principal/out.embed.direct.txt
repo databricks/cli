@@ -1,0 +1,4 @@
+json[].principal = "[USERNAME]";
+json[].principal = "deco-test-user@databricks.com";
+json[].privileges[] = "CREATE_TABLE";
+json[].privileges[] = "USE_SCHEMA";

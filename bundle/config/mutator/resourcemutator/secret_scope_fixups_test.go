@@ -245,9 +245,9 @@ func TestAddManageForCurrentUser(t *testing.T) {
 			assert.ElementsMatch(t, tt.expectedPerms, scope.Permissions)
 
 			if tt.shouldAddNewPerm {
-				assert.Equal(t, initialCount+1, len(scope.Permissions))
+				assert.Len(t, scope.Permissions, initialCount+1)
 			} else {
-				assert.Equal(t, initialCount, len(scope.Permissions))
+				assert.Len(t, scope.Permissions, initialCount)
 			}
 		})
 	}

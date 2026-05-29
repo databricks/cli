@@ -1,10 +1,10 @@
 package resourcemutator
 
 import (
+	"cmp"
 	"context"
 	"path"
 	"slices"
-	"sort"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
@@ -290,6 +290,15 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		}
 	}
 
+	// Vector Search Endpoints: no prefix. The endpoint name is the primary key
+	// (it's what GET/UPDATE/DELETE address by), so prefixing it would change
+	// the resource's identity rather than just its display name.
+
+	// Vector Search Indexes: no prefix. The 3-part UC name (catalog.schema.index)
+	// is the API primary key (CreateIndex addresses by name and DoCreate returns
+	// it as the deployment id), so prefixing would change the resource's
+	// identity rather than just its display name.
+
 	return diags
 }
 
@@ -315,8 +324,8 @@ func toTagArray(tags map[string]string) []Tag {
 	for key, value := range tags {
 		tagArray = append(tagArray, Tag{Key: key, Value: value})
 	}
-	sort.Slice(tagArray, func(i, j int) bool {
-		return tagArray[i].Key < tagArray[j].Key
+	slices.SortFunc(tagArray, func(a, b Tag) int {
+		return cmp.Compare(a.Key, b.Key)
 	})
 	return tagArray
 }

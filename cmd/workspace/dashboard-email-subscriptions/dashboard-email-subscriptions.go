@@ -20,12 +20,18 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "dashboard-email-subscriptions",
-		Short: `Controls whether schedules or workload tasks for refreshing AI/BI Dashboards in the workspace can send subscription emails containing PDFs and/or images of the dashboard.`,
-		Long: `Controls whether schedules or workload tasks for refreshing AI/BI Dashboards
+		Short: `*Public Preview* Controls whether schedules or workload tasks for refreshing AI/BI Dashboards in the workspace can send subscription emails containing PDFs and/or images of the dashboard.`,
+		Long: `This command is in Public Preview and may change without notice.
+
+Controls whether schedules or workload tasks for refreshing AI/BI Dashboards
   in the workspace can send subscription emails containing PDFs and/or images of
   the dashboard. By default, this setting is enabled (set to true)`,
 		RunE: root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	// Add methods
 	cmd.AddCommand(newDelete())
@@ -57,12 +63,16 @@ func newDelete() *cobra.Command {
 	cmd.Flags().StringVar(&deleteReq.Etag, "etag", deleteReq.Etag, `etag used for versioning.`)
 
 	cmd.Use = "delete"
-	cmd.Short = `Delete the Dashboard Email Subscriptions setting.`
-	cmd.Long = `Delete the Dashboard Email Subscriptions setting.
+	cmd.Short = `*Public Preview* Delete the Dashboard Email Subscriptions setting.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Delete the Dashboard Email Subscriptions setting.
 
   Reverts the Dashboard Email Subscriptions setting to its default value.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -78,6 +88,7 @@ func newDelete() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -110,12 +121,16 @@ func newGet() *cobra.Command {
 	cmd.Flags().StringVar(&getReq.Etag, "etag", getReq.Etag, `etag used for versioning.`)
 
 	cmd.Use = "get"
-	cmd.Short = `Get the Dashboard Email Subscriptions setting.`
-	cmd.Long = `Get the Dashboard Email Subscriptions setting.
+	cmd.Short = `*Public Preview* Get the Dashboard Email Subscriptions setting.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Get the Dashboard Email Subscriptions setting.
 
   Gets the Dashboard Email Subscriptions setting.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -131,6 +146,7 @@ func newGet() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -164,12 +180,16 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "update"
-	cmd.Short = `Update the Dashboard Email Subscriptions setting.`
-	cmd.Long = `Update the Dashboard Email Subscriptions setting.
+	cmd.Short = `*Public Preview* Update the Dashboard Email Subscriptions setting.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Update the Dashboard Email Subscriptions setting.
 
   Updates the Dashboard Email Subscriptions setting.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -195,6 +215,7 @@ func newUpdate() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 

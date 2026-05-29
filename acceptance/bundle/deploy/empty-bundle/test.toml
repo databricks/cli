@@ -1,1 +1,4 @@
-Cloud=true
+Cloud = true
+
+[EnvMatrix]
+DATABRICKS_BUNDLE_ENABLE_EXPERIMENTAL_YAML_SYNC = ["", "true"]

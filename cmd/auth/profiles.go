@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
@@ -15,6 +16,7 @@ import (
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/spf13/cobra"
 	"gopkg.in/ini.v1"
 )
@@ -56,7 +58,12 @@ func (c *profileMetadata) Load(ctx context.Context, configFilePath string, skipV
 		return
 	}
 
-	switch cfg.ConfigType() {
+	configType := auth.ResolveConfigType(cfg)
+	if configType != cfg.ConfigType() {
+		log.Debugf(ctx, "Profile %q: overrode config type from %s to %s (SPOG host)", c.Name, cfg.ConfigType(), configType)
+	}
+
+	switch configType {
 	case config.AccountConfig:
 		a, err := databricks.NewAccountClient((*databricks.Config)(cfg))
 		if err != nil {
@@ -74,7 +81,7 @@ func (c *profileMetadata) Load(ctx context.Context, configFilePath string, skipV
 		if err != nil {
 			return
 		}
-		_, err = w.CurrentUser.Me(ctx)
+		_, err = w.CurrentUser.Me(ctx, iam.MeRequest{})
 		c.Host = cfg.Host
 		c.AuthType = cfg.AuthType
 		if err != nil {

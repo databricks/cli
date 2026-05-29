@@ -5,6 +5,7 @@ import (
 	"net/url"
 
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/compute"
@@ -14,7 +15,18 @@ type Cluster struct {
 	BaseResource
 	compute.ClusterSpec
 
+	// Lifecycle shadows BaseResource.Lifecycle to add support for lifecycle.started.
+	Lifecycle *LifecycleWithStarted `json:"lifecycle,omitempty"`
+
 	Permissions []ClusterPermission `json:"permissions,omitempty"`
+}
+
+// GetLifecycle returns the lifecycle settings, using LifecycleWithStarted.
+func (s *Cluster) GetLifecycle() LifecycleConfig {
+	if s.Lifecycle == nil {
+		return LifecycleWithStarted{}
+	}
+	return *s.Lifecycle
 }
 
 func (s *Cluster) UnmarshalJSON(b []byte) error {
@@ -47,8 +59,7 @@ func (s *Cluster) InitializeURL(baseURL url.URL) {
 	if s.ID == "" {
 		return
 	}
-	baseURL.Path = "compute/clusters/" + s.ID
-	s.URL = baseURL.String()
+	s.URL = workspaceurls.ResourceURL(baseURL, "clusters", s.ID)
 }
 
 func (s *Cluster) GetName() string {

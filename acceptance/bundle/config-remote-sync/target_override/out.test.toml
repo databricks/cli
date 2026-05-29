@@ -1,8 +1,4 @@
 Local = true
 Cloud = true
-
-[GOOS]
-  windows = false
-
-[EnvMatrix]
-  DATABRICKS_BUNDLE_ENGINE = ["direct", "terraform"]
+GOOS.windows = false
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct", "terraform"]

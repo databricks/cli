@@ -18,7 +18,7 @@ Usage:
   databricks pipelines [flags]
   databricks pipelines [command]
 
-Available Commands
+Main Commands
   deploy                Deploy pipelines
   destroy               Destroy a pipelines project
   dry-run               Validate correctness of the pipeline's graph
@@ -31,6 +31,7 @@ Available Commands
   stop                  Stop a pipeline
 
 Management Commands
+  apply-environment     *Public Preview* Apply the latest environment to the pipeline.
   clone                 Clone a pipeline.
   create                Create a pipeline.
   delete                Delete a pipeline.
