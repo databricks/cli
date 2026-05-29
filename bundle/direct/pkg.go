@@ -2,6 +2,7 @@ package direct
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"sync"
@@ -37,6 +38,20 @@ type DeploymentUnit struct {
 	DependsOn []deployplan.DependsOnEntry
 }
 
+// OperationReporter is called after each resource Create/Update/Delete to
+// report the outcome to the deployment metadata service (DMS). state holds
+// the post-operation local config and is nil for deletes and failed
+// operations. Returns an error when the reporter cannot deliver the event
+// (e.g. context cancelled); a non-nil error fails the deploy.
+type OperationReporter func(
+	ctx context.Context,
+	resourceKey string,
+	resourceID string,
+	action deployplan.ActionType,
+	operationErr error,
+	state json.RawMessage,
+) error
+
 // DeploymentBundle holds everything needed to deploy a bundle
 type DeploymentBundle struct {
 	StateDB          dstate.DeploymentState
@@ -44,6 +59,12 @@ type DeploymentBundle struct {
 	Plan             *deployplan.Plan
 	RemoteStateCache sync.Map
 	StateCache       structvar.Cache
+
+	// OperationReporter, when non-nil, is called inline after each successful
+	// or failed Create/Update/Delete to report the outcome to DMS. Apply
+	// leaves this nil when the DMS gate is off, so the file-state path is
+	// unaffected.
+	OperationReporter OperationReporter
 }
 
 // SetRemoteState updates the remote state with type validation and marks as fresh.

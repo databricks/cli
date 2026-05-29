@@ -1,0 +1,10 @@
+# Deploy with a server-side job creation failure injected via test.toml.
+# Expect the CLI to:
+#  - acquire the DMS lock (CreateDeployment + CreateVersion(1)),
+#  - attempt the job creation and fail,
+#  - report a FAILED CREATE operation carrying the error message,
+#  - release the lock with completion_reason=VERSION_COMPLETE_FAILURE.
+trace musterr $CLI bundle deploy
+
+trace print_requests.py --get //bundle ^//workspace-files ^//import-file
+print_requests.py --get > /dev/null 2>&1 || true

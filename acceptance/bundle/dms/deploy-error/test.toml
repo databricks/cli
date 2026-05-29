@@ -1,0 +1,10 @@
+Ignore = [".databricks"]
+
+# Inject a server-side failure on job creation and confirm that:
+#  - the failed operation is reported to DMS with OPERATION_STATUS_FAILED,
+#  - the lock is released with VERSION_COMPLETE_FAILURE.
+
+[[Server]]
+Pattern = "POST /api/2.2/jobs/create"
+Response.StatusCode = 400
+Response.Body = '{"error_code": "INVALID_PARAMETER_VALUE", "message": "Invalid job configuration."}'

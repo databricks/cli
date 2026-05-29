@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/deploy"
+	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/log"
@@ -16,7 +17,16 @@ import (
 )
 
 // PushResourcesState uploads the local state file to the remote location.
+// When the deployment metadata service is enabled the call is a no-op: DMS
+// owns resource state on the server, so there is no local state file worth
+// uploading. (Step 5 will stop the deploy path from writing local state in
+// the first place; until then the local file is written and then ignored.)
 func PushResourcesState(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
+	if env.IsManagedState(ctx) {
+		log.Debugf(ctx, "Skipping state push: DATABRICKS_BUNDLE_MANAGED_STATE is set, DMS owns the state")
+		return
+	}
+
 	f, err := deploy.StateFiler(ctx, b)
 	if err != nil {
 		logdiag.LogError(ctx, err)

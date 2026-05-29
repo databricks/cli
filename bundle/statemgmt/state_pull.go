@@ -16,6 +16,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/deploy"
+	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/log"
@@ -219,6 +220,23 @@ func readStates(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull) []
 	directLocalState := localRead(ctx, localPathDirect, engine.EngineDirect)
 	terraformLocalState := localRead(ctx, localPathTerraform, engine.EngineTerraform)
 
+	// When the deployment metadata service is enabled, resource state lives on
+	// the server. Pull only the deployment-id pointer from the workspace; the
+	// state itself is fetched later via LoadStateFromDMS. Returning nil here
+	// causes PullResourcesState to fall through to its "no states found" path,
+	// which yields an empty StateDesc — exactly what we want, since DMS state
+	// is loaded separately and does not participate in the local/remote
+	// lineage-and-serial winner-picking.
+	if env.IsManagedState(ctx) {
+		f, err := deploy.StateFiler(ctx, b)
+		if err != nil {
+			logdiag.LogError(ctx, err)
+			return nil
+		}
+		b.DeploymentID = readDeploymentID(ctx, f)
+		return nil
+	}
+
 	if (directLocalState == nil && terraformLocalState == nil) || alwaysPull {
 		f, err := deploy.StateFiler(ctx, b)
 		if err != nil {
@@ -292,6 +310,38 @@ func logStatesError(ctx context.Context, msg string, states []*StateDesc) {
 
 func logStatesWarning(ctx context.Context, msg string, states []*StateDesc) {
 	logStatesDiag(ctx, diag.Warning, msg, states)
+}
+
+// readDeploymentID returns the DMS deployment_id stored in the workspace
+// state directory's managed_service.json. An absent file or a missing/empty
+// deployment_id is not an error: it means "no prior deployment exists yet"
+// and the caller should proceed with an empty state. Read or parse failures
+// other than fs.ErrNotExist are logged at debug level and ignored — they are
+// recoverable on the next CLI invocation (the lock package will rewrite the
+// file after CreateDeployment).
+func readDeploymentID(ctx context.Context, f filer.Filer) string {
+	reader, err := f.Read(ctx, ManagedServiceFileName)
+	if errors.Is(err, fs.ErrNotExist) {
+		return ""
+	}
+	if err != nil {
+		log.Debugf(ctx, "Failed to read %s for deployment ID: %v", ManagedServiceFileName, err)
+		return ""
+	}
+	defer reader.Close()
+
+	data, err := io.ReadAll(reader)
+	if err != nil {
+		log.Debugf(ctx, "Failed to read %s content: %v", ManagedServiceFileName, err)
+		return ""
+	}
+
+	var sj ManagedServiceJSON
+	if err := json.Unmarshal(data, &sj); err != nil {
+		log.Debugf(ctx, "Failed to parse %s: %v", ManagedServiceFileName, err)
+		return ""
+	}
+	return sj.DeploymentID
 }
 
 func logStatesDiag(ctx context.Context, severity diag.Severity, msg string, states []*StateDesc) {

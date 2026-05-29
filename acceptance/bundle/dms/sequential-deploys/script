@@ -1,0 +1,36 @@
+# Deploy 1: create test_job. Expect a single CREATE operation under version 1.
+trace $CLI bundle deploy
+trace print_requests.py --get //bundle ^//workspace-files ^//import-file
+
+# Deploy 2: add new_job. Expect:
+#  - ListResources (state read) + GetDeployment (version bump)
+#  - one CREATE operation for new_job (test_job is unchanged — no SKIP is reported)
+#  - CompleteVersion 2.
+cat > databricks.yml << 'EOF'
+bundle:
+  name: dms-sequential-deploys
+
+resources:
+  jobs:
+    test_job:
+      name: test-job
+    new_job:
+      name: new-job
+EOF
+trace $CLI bundle deploy
+trace print_requests.py --get //bundle ^//workspace-files ^//import-file
+
+# Deploy 3: drop test_job. Expect one DELETE operation under version 3 with
+# the resource_id of the previously created job, no state payload.
+cat > databricks.yml << 'EOF'
+bundle:
+  name: dms-sequential-deploys
+
+resources:
+  jobs:
+    new_job:
+      name: new-job
+EOF
+trace $CLI bundle deploy
+trace print_requests.py --get //bundle ^//workspace-files ^//import-file
+print_requests.py --get > /dev/null 2>&1 || true

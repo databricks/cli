@@ -1,0 +1,7 @@
+bundle:
+  name: dms-add-resources
+
+resources:
+  jobs:
+    job_a:
+      name: job-a
