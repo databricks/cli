@@ -54,7 +54,7 @@ func validateNodeSlice(t reflect.Type, nodes []*structpath.PatternNode) error {
 		}
 
 		// Index access: slice/array
-		if _, isIndex := node.Index(); isIndex {
+		if idx, isIndex := node.Index(); isIndex {
 			if cur.Kind() == reflect.Struct {
 				if embedType := findEmbedFieldType(cur); embedType != nil {
 					cur = embedType
@@ -62,6 +62,11 @@ func validateNodeSlice(t reflect.Type, nodes []*structpath.PatternNode) error {
 			}
 			kind := cur.Kind()
 			if kind != reflect.Slice && kind != reflect.Array {
+				// [0] on a struct is a no-op: terraform represents single-block
+				// attributes as arrays of length 1, while the Go SDK uses plain structs.
+				if kind == reflect.Struct && idx == 0 {
+					continue
+				}
 				return fmt.Errorf("%s: cannot index %s", node.String(), kind)
 			}
 			cur = cur.Elem()

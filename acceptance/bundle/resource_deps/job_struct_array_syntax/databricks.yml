@@ -1,0 +1,18 @@
+bundle:
+  name: test-bundle
+
+resources:
+  jobs:
+    job_a:
+      name: job a
+      # continuous is a struct (*Continuous) in the Go SDK; terraform exposes it
+      # as a single-block attribute accessed with continuous[0].
+      continuous:
+        pause_status: "PAUSED"
+    job_b:
+      name: job b
+      continuous:
+        # Both terraform and the SDK use 'continuous' as the field name.
+        # The [0] is terraform-style syntax for a single-block attribute;
+        # structaccess.Get treats [0] on a plain struct as a no-op.
+        pause_status: ${resources.jobs.job_a.continuous[0].pause_status}

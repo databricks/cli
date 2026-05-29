@@ -66,6 +66,11 @@ func getValue(v any, path *structpath.PathNode) (reflect.Value, error) {
 			}
 			kind := cur.Kind()
 			if kind != reflect.Slice && kind != reflect.Array {
+				// [0] on a struct is a no-op: terraform represents single-block
+				// attributes as arrays of length 1, while the Go SDK uses plain structs.
+				if kind == reflect.Struct && idx == 0 {
+					continue
+				}
 				return reflect.Value{}, fmt.Errorf("%s: cannot index %s", node.String(), kind)
 			}
 			if idx < 0 || idx >= cur.Len() {

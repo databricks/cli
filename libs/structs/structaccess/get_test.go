@@ -192,9 +192,14 @@ func runCommonTests(t *testing.T, obj any) {
 			errFmt: "connection.missing: field \"missing\" not found in structaccess.inner",
 		},
 		{
-			name:   "wrong index target",
-			path:   "connection[0]",
-			errFmt: "connection[0]: cannot index struct",
+			name: "struct field [0] is no-op",
+			path: "connection[0].id",
+			want: "abc",
+		},
+		{
+			name:   "non-zero index on struct fails",
+			path:   "connection[1]",
+			errFmt: "connection[1]: cannot index struct",
 		},
 		{
 			name:     "out of range index",

@@ -5,6 +5,7 @@ import (
 
 	"github.com/databricks/cli/bundle/config"
 	cres "github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
 )
@@ -24,8 +25,19 @@ func TestConvertReferenceToMetric_Table(t *testing.T) {
 				"джоб": {
 					JobSettings: jobs.JobSettings{},
 				},
-
 				"niljob": nil,
+				"clustered": {
+					JobSettings: jobs.JobSettings{
+						Tasks: []jobs.Task{
+							{
+								TaskKey: "t1",
+								NewCluster: &compute.ClusterSpec{
+									SparkVersion: "15.0.x-scala2.12",
+								},
+							},
+						},
+					},
+				},
 			},
 		},
 	}
@@ -84,6 +96,12 @@ func TestConvertReferenceToMetric_Table(t *testing.T) {
 			name: "array index task key",
 			ref:  "resources.jobs.foo.task[0].task_key",
 			want: "resreferr_jobs.task",
+		},
+		{
+			// [0] on a struct is a no-op (terraform single-block syntax).
+			name: "struct field with terraform [0] syntax",
+			ref:  "resources.jobs.clustered.tasks[0].new_cluster[0].spark_version",
+			want: "resref_jobs.tasks.new_cluster.spark_version",
 		},
 	}
 

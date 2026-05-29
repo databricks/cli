@@ -1,0 +1,3 @@
+trace $CLI bundle deploy
+trace print_telemetry_bool_values > out.telemetry.$DATABRICKS_BUNDLE_ENGINE.txt
+rm out.requests.txt
