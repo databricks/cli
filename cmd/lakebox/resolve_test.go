@@ -126,3 +126,27 @@ func TestRemoveSandboxMissingIsNoop(t *testing.T) {
 	require.NoError(t, removeSandbox(ctx, "p", "nope"))
 	assert.Equal(t, []cachedSandbox{{ID: "keep-me"}}, getSandboxes(ctx, "p"))
 }
+
+// Removing the last sandbox for a profile must also drop the profile's
+// cached gateway host — otherwise lakebox.json accumulates orphan
+// gatewayHosts entries that no longer correspond to any sandbox.
+func TestRemoveSandboxClearsOrphanGatewayHost(t *testing.T) {
+	ctx, _ := stateCtx(t)
+	require.NoError(t, setSandboxes(ctx, "p", []cachedSandbox{{ID: "only-one"}}))
+	require.NoError(t, setGatewayHost(ctx, "p", "gw.example.test"))
+	require.Equal(t, "gw.example.test", getGatewayHost(ctx, "p"))
+
+	require.NoError(t, removeSandbox(ctx, "p", "only-one"))
+	assert.Empty(t, getSandboxes(ctx, "p"))
+	assert.Empty(t, getGatewayHost(ctx, "p"), "gateway host must be cleared when the last sandbox is removed")
+}
+
+// Removing one of many sandboxes must NOT touch the gateway host — it
+// still applies to the remaining sandboxes on the profile.
+func TestRemoveSandboxKeepsGatewayHostWhileSandboxesRemain(t *testing.T) {
+	ctx, _ := stateCtx(t)
+	require.NoError(t, setSandboxes(ctx, "p", []cachedSandbox{{ID: "keep"}, {ID: "drop"}}))
+	require.NoError(t, setGatewayHost(ctx, "p", "gw.example.test"))
+	require.NoError(t, removeSandbox(ctx, "p", "drop"))
+	assert.Equal(t, "gw.example.test", getGatewayHost(ctx, "p"))
+}
