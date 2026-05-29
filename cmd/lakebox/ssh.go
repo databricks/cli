@@ -187,9 +187,14 @@ Examples:
 				_ = setGatewayHost(ctx, profile, sandboxGatewayHost)
 			}
 
+			// Spinner runs until exec replaces this process (Linux/macOS)
+			// or until the ssh subprocess returns (Windows execv shim).
+			// We deliberately don't print "Connected" — at this point ssh
+			// hasn't actually handshaken yet, so any success affirmation
+			// here would be a lie that gets contradicted by ssh's own
+			// error output on the failure path.
 			s := spin(ctx, "Connecting to "+cmdio.Bold(ctx, lakeboxID)+"…")
 			defer s.Close()
-			s.ok("Connected to " + cmdio.Bold(ctx, lakeboxID))
 			return execSSHDirect(lakeboxID, host, gatewayPort, keyPath, extraArgs)
 		},
 	}
