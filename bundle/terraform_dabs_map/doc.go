@@ -8,19 +8,6 @@ import "github.com/databricks/cli/libs/structs/structpath"
 // an empty child FieldSet marks a leaf (the full path from root is present in the set).
 type FieldSet map[string]FieldSet
 
-// Len returns the number of leaf paths in the set.
-func (fs FieldSet) Len() int {
-	n := 0
-	for _, child := range fs {
-		if len(child) == 0 {
-			n++
-		} else {
-			n += child.Len()
-		}
-	}
-	return n
-}
-
 // Contains reports whether path is in the FieldSet.
 // Walking the path segment by segment, it returns true when a leaf node is
 // reached (covering all sub-paths) or when an exact match is found.
@@ -60,15 +47,3 @@ type RenameNode struct {
 
 // RenameTree maps single TF field name segments to their rename nodes.
 type RenameTree map[string]RenameNode
-
-// Len returns the total number of renamed paths in the tree.
-func (rt RenameTree) Len() int {
-	n := 0
-	for _, node := range rt {
-		if node.NewName != "" {
-			n++
-		}
-		n += node.Children.Len()
-	}
-	return n
-}
