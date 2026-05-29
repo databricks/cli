@@ -28,9 +28,24 @@ func TestExtractHostQueryParams(t *testing.T) {
 			want: HostParams{Host: "https://spog.example.com", AccountID: "abc"},
 		},
 		{
+			name: "extract workspace_id from ?w=",
+			host: "https://spog.example.com/?w=12345",
+			want: HostParams{Host: "https://spog.example.com", WorkspaceID: "12345"},
+		},
+		{
 			name: "extract workspace_id from ?workspace_id=",
 			host: "https://spog.example.com/?workspace_id=99999",
 			want: HostParams{Host: "https://spog.example.com", WorkspaceID: "99999"},
+		},
+		{
+			name: "?o= wins over ?w= when both present",
+			host: "https://spog.example.com/?o=11111&w=22222",
+			want: HostParams{Host: "https://spog.example.com", WorkspaceID: "11111"},
+		},
+		{
+			name: "?w= wins over ?workspace_id= when both present",
+			host: "https://spog.example.com/?w=11111&workspace_id=22222",
+			want: HostParams{Host: "https://spog.example.com", WorkspaceID: "11111"},
 		},
 		{
 			name: "no query params leaves host unchanged",
@@ -40,6 +55,11 @@ func TestExtractHostQueryParams(t *testing.T) {
 		{
 			name: "non-numeric ?o= is skipped",
 			host: "https://spog.example.com/?o=abc",
+			want: HostParams{Host: "https://spog.example.com"},
+		},
+		{
+			name: "non-numeric ?w= is skipped",
+			host: "https://spog.example.com/?w=abc",
 			want: HostParams{Host: "https://spog.example.com"},
 		},
 		{
