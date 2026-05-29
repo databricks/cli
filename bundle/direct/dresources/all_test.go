@@ -1022,6 +1022,11 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	deleteIsNoop := strings.HasSuffix(group, "permissions") || strings.HasSuffix(group, "grants")
 
 	remoteAfterDelete, err := adapter.DoRead(ctx, createdID)
+	// Some resources delete asynchronously (e.g. apps transition through a
+	// DELETING state). Read once more to let that pending state clear.
+	if err == nil && remoteAfterDelete != nil && !deleteIsNoop {
+		remoteAfterDelete, err = adapter.DoRead(ctx, createdID)
+	}
 	if deleteIsNoop {
 		require.NoError(t, err)
 	} else {
