@@ -68,7 +68,15 @@ Examples:
 			}
 			out := cmd.OutOrStdout()
 
-			id := args[0]
+			profile := w.Config.Profile
+			if profile == "" {
+				profile = w.Config.Host
+			}
+
+			id, err := resolveLocalID(ctx, profile, args[0])
+			if err != nil {
+				return err
+			}
 
 			// Translate flag presence + value into the proto3
 			// optional-field semantics the server expects.
@@ -101,12 +109,8 @@ Examples:
 			if err != nil {
 				return fmt.Errorf("failed to update lakebox %s: %w", id, err)
 			}
-
-			profile := w.Config.Profile
-			if profile == "" {
-				profile = w.Config.Host
-			}
 			_ = setGatewayHost(ctx, profile, updated.GatewayHost)
+			_ = upsertSandbox(ctx, profile, updated.SandboxID, updated.Name)
 
 			blank(out)
 			field(ctx, out, "id", cmdio.Bold(ctx, updated.SandboxID))

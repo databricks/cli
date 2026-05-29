@@ -60,6 +60,7 @@ Examples:
 				profile = w.Config.Host
 			}
 			_ = setGatewayHost(ctx, profile, result.GatewayHost)
+			_ = upsertSandbox(ctx, profile, result.SandboxID, name)
 
 			currentDefault := getDefault(ctx, profile)
 			shouldSetDefault := currentDefault == ""

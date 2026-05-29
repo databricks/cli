@@ -89,6 +89,16 @@ Examples:
 				extraArgs = args[dashAt:]
 			}
 
+			// Resolve a user-typed name to its ID using the local cache.
+			// No-op when arg is already an ID or not in cache.
+			if lakeboxID != "" {
+				resolved, err := resolveLocalID(ctx, profile, lakeboxID)
+				if err != nil {
+					return err
+				}
+				lakeboxID = resolved
+			}
+
 			// sandboxGatewayHost captures the gateway hostname from any
 			// Sandbox response we touch in this command, so the resolution
 			// below can prefer it over the cached value. Stays "" when we

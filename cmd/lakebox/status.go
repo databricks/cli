@@ -32,18 +32,23 @@ Example:
 				return err
 			}
 
-			lakeboxID := args[0]
+			profile := w.Config.Profile
+			if profile == "" {
+				profile = w.Config.Host
+			}
+
+			lakeboxID, err := resolveLocalID(ctx, profile, args[0])
+			if err != nil {
+				return err
+			}
 
 			entry, err := api.get(ctx, lakeboxID)
 			if err != nil {
 				return fmt.Errorf("failed to get lakebox %s: %w", lakeboxID, err)
 			}
 
-			profile := w.Config.Profile
-			if profile == "" {
-				profile = w.Config.Host
-			}
 			_ = setGatewayHost(ctx, profile, entry.GatewayHost)
+			_ = upsertSandbox(ctx, profile, entry.SandboxID, entry.Name)
 
 			if outputJSON {
 				enc := json.NewEncoder(cmd.OutOrStdout())
