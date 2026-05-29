@@ -50,7 +50,7 @@ Example:
 			_ = setGatewayHost(ctx, profile, entry.GatewayHost)
 			_ = upsertSandbox(ctx, profile, entry.SandboxID, entry.Name)
 
-			if outputJSON {
+			if jsonOutput(cmd, outputJSON) {
 				enc := json.NewEncoder(cmd.OutOrStdout())
 				enc.SetIndent("", "  ")
 				return enc.Encode(entry)
@@ -63,6 +63,9 @@ Example:
 				field(ctx, out, "name", entry.Name)
 			}
 			field(ctx, out, "status", status(ctx, entry.Status))
+			if entry.GatewayHost != "" {
+				field(ctx, out, "gateway", cmdio.Faint(ctx, entry.GatewayHost))
+			}
 			if entry.FQDN != "" {
 				field(ctx, out, "fqdn", cmdio.Faint(ctx, entry.FQDN))
 			}

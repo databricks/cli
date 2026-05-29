@@ -97,6 +97,9 @@ Examples:
 
 			var name *string
 			if cmd.Flags().Changed("name") {
+				if err := validateName(nameFlag); err != nil {
+					return err
+				}
 				n := nameFlag
 				name = &n
 			}

@@ -90,7 +90,7 @@ Examples:
 				return fmt.Errorf("failed to list ssh keys: %w", err)
 			}
 
-			if outputJSON {
+			if jsonOutput(cmd, outputJSON) {
 				enc := json.NewEncoder(cmd.OutOrStdout())
 				enc.SetIndent("", "  ")
 				return enc.Encode(keys)

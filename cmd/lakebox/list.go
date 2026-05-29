@@ -83,7 +83,7 @@ Example:
 			}
 			_ = setSandboxes(ctx, profile, refs)
 
-			if outputJSON {
+			if jsonOutput(cmd, outputJSON) {
 				enc := json.NewEncoder(cmd.OutOrStdout())
 				enc.SetIndent("", "  ")
 				return enc.Encode(entries)
