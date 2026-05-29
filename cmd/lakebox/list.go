@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/mattn/go-runewidth"
 	"github.com/spf13/cobra"
 )
 
@@ -101,21 +102,27 @@ Example:
 			// rendered only when at least one entry sets a display name
 			// different from the ID — there's no point in a column of
 			// pet-names that duplicate the ID column.
+			// All column widths are measured in *terminal cells*, not
+			// bytes or runes — emoji and CJK glyphs render as 2 cells
+			// despite being 1 rune / multi-byte, and using len() here
+			// (which counts bytes) misaligns the row whenever a `--name`
+			// includes wide characters. runewidth.StringWidth gives the
+			// East-Asian-Width-corrected cell count.
 			idCol := 10
 			autostopCol := 8
 			nameCol := 4
 			showName := false
 			for _, e := range entries {
-				if l := len(e.SandboxID); l > idCol {
+				if l := runewidth.StringWidth(e.SandboxID); l > idCol {
 					idCol = l
 				}
-				if l := len(e.autoStopLabel()); l > autostopCol {
+				if l := runewidth.StringWidth(e.autoStopLabel()); l > autostopCol {
 					autostopCol = l
 				}
 				if e.Name != "" && e.Name != e.SandboxID {
 					showName = true
 				}
-				if l := len(e.Name); l > nameCol {
+				if l := runewidth.StringWidth(e.Name); l > nameCol {
 					nameCol = l
 				}
 			}
@@ -152,11 +159,11 @@ Example:
 				}
 				// Pad each cell manually so visible-width alignment is
 				// preserved after the helpers wrap them with ANSI escapes.
-				idPad := max(idCol-len(id), 0)
+				idPad := max(idCol-runewidth.StringWidth(id), 0)
 				st := status(ctx, e.Status)
-				stPad := max(statusCol-len(e.Status), 0)
+				stPad := max(statusCol-runewidth.StringWidth(e.Status), 0)
 				as := e.autoStopLabel()
-				asPad := max(autostopCol-len(as), 0)
+				asPad := max(autostopCol-runewidth.StringWidth(as), 0)
 				idStr := cmdio.Bold(ctx, id)
 				if strings.EqualFold(e.Status, "running") {
 					idStr = cmdio.Bold(ctx, cmdio.Cyan(ctx, id))
@@ -166,7 +173,7 @@ Example:
 					if nm == "" || nm == id {
 						nm = "-"
 					}
-					nmPad := max(nameCol-len(nm), 0)
+					nmPad := max(nameCol-runewidth.StringWidth(nm), 0)
 					nmStr := nm
 					if nm == "-" {
 						nmStr = cmdio.Faint(ctx, "-")

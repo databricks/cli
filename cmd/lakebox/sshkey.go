@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/mattn/go-runewidth"
 	"github.com/spf13/cobra"
 )
 
@@ -115,9 +116,11 @@ Examples:
 			out := cmd.OutOrStdout()
 			blank(out)
 
+			// Measure in terminal cells (runewidth) so wide / emoji
+			// glyphs in `--name` don't misalign the row.
 			nameCol := 4
 			for _, k := range keys {
-				if l := len(k.Name); l > nameCol {
+				if l := runewidth.StringWidth(k.Name); l > nameCol {
 					nameCol = l
 				}
 			}
@@ -136,10 +139,10 @@ Examples:
 			for _, k := range keys {
 				// Pad NAME manually from the raw width because cmdio.Faint
 				// wraps the cell in ANSI escapes that throw off `%-*s`.
-				displayName, visibleNameLen := k.Name, len(k.Name)
+				displayName, visibleNameLen := k.Name, runewidth.StringWidth(k.Name)
 				if displayName == "" {
 					displayName = cmdio.Faint(ctx, "(unset)")
-					visibleNameLen = len("(unset)")
+					visibleNameLen = runewidth.StringWidth("(unset)")
 				}
 				namePad := max(nameCol-visibleNameLen, 0)
 				gutter := "    "

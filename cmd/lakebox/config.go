@@ -38,7 +38,7 @@ Three knobs are independent — pass any combination:
                               the sandbox after this much idle time. Pass
                               0 (or 0s) to clear and revert to the manager's
                               global default (10m). Valid range when set:
-                              60s to 24h.
+                              1m to 24h.
 
   --no-autostop[=true|false]  When true, the sandbox is exempt from
                               idle-driven auto-stop entirely. The
@@ -157,9 +157,15 @@ func checkIdleSecs(secs int64) (int64, error) {
 		return 0, nil // clear / revert to global default
 	}
 	if secs < minIdleTimeoutSecs || secs > maxIdleTimeoutSecs {
+		// Format both the bounds and the offending value as Go-style
+		// durations to match the input form the user typed and the
+		// flag's --help text (Anwell flagged the prior `86400s` /
+		// `90000s` echoes as confusing — same unit as input now).
 		return 0, fmt.Errorf(
-			"idle-timeout must be 0 (clear) or between %ds and %ds, got %ds",
-			minIdleTimeoutSecs, maxIdleTimeoutSecs, secs,
+			"idle-timeout must be 0 (clear) or between %s and %s, got %s",
+			formatDurationSecs(minIdleTimeoutSecs),
+			formatDurationSecs(maxIdleTimeoutSecs),
+			formatDurationSecs(secs),
 		)
 	}
 	return secs, nil
