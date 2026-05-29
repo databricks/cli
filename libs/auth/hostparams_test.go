@@ -53,19 +53,24 @@ func TestExtractHostQueryParams(t *testing.T) {
 			want: HostParams{Host: "https://spog.example.com"},
 		},
 		{
-			name: "non-numeric ?o= is skipped",
+			name: "non-numeric ?o= is passed through",
 			host: "https://spog.example.com/?o=abc",
-			want: HostParams{Host: "https://spog.example.com"},
+			want: HostParams{Host: "https://spog.example.com", WorkspaceID: "abc"},
 		},
 		{
-			name: "non-numeric ?w= is skipped",
+			name: "non-numeric ?w= is passed through",
 			host: "https://spog.example.com/?w=abc",
-			want: HostParams{Host: "https://spog.example.com"},
+			want: HostParams{Host: "https://spog.example.com", WorkspaceID: "abc"},
 		},
 		{
-			name: "non-numeric ?workspace_id= is skipped",
+			name: "non-numeric ?workspace_id= is passed through",
 			host: "https://spog.example.com/?workspace_id=abc",
-			want: HostParams{Host: "https://spog.example.com"},
+			want: HostParams{Host: "https://spog.example.com", WorkspaceID: "abc"},
+		},
+		{
+			name: "connection-id-style ?w= value passed through",
+			host: "https://spog.example.com/?w=123e4567-e89b-12d3-a456-426614174000",
+			want: HostParams{Host: "https://spog.example.com", WorkspaceID: "123e4567-e89b-12d3-a456-426614174000"},
 		},
 		{
 			name: "invalid URL is left unchanged",

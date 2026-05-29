@@ -2,7 +2,6 @@ package auth
 
 import (
 	"net/url"
-	"strconv"
 	"strings"
 )
 
@@ -12,7 +11,10 @@ type HostParams struct {
 	Host string
 
 	// WorkspaceID extracted from ?o=, ?w=, or ?workspace_id=.
-	// Empty if not present or not numeric.
+	// Empty if not present. Any non-empty value is accepted as-is —
+	// X-Databricks-Workspace-Id supports both classic numeric workspace IDs
+	// and non-numeric connection-style identifiers, and the server
+	// disambiguates.
 	WorkspaceID string
 
 	// AccountID extracted from ?a= or ?account_id=.
@@ -26,9 +28,10 @@ type HostParams struct {
 // X-Databricks-Workspace-Id routing header; "o" is the legacy SPOG form and
 // stays accepted so URLs already in databricks.yml / shell history keep
 // working. When more than one is present, "o" wins to preserve the meaning
-// of existing URLs. Workspace IDs must be numeric; non-numeric values are
-// ignored. The returned Host has all query parameters and fragments
-// stripped.
+// of existing URLs. Workspace ID values are passed through unchanged — the
+// server-side header accepts both classic numeric IDs and non-numeric
+// connection-style identifiers. The returned Host has all query parameters
+// and fragments stripped.
 func ExtractHostQueryParams(host string) HostParams {
 	u, err := url.Parse(host)
 	if err != nil || u.RawQuery == "" {
@@ -39,17 +42,11 @@ func ExtractHostQueryParams(host string) HostParams {
 
 	var workspaceID string
 	if v := q.Get("o"); v != "" {
-		if _, err := strconv.ParseInt(v, 10, 64); err == nil {
-			workspaceID = v
-		}
+		workspaceID = v
 	} else if v := q.Get("w"); v != "" {
-		if _, err := strconv.ParseInt(v, 10, 64); err == nil {
-			workspaceID = v
-		}
+		workspaceID = v
 	} else if v := q.Get("workspace_id"); v != "" {
-		if _, err := strconv.ParseInt(v, 10, 64); err == nil {
-			workspaceID = v
-		}
+		workspaceID = v
 	}
 
 	var accountID string
