@@ -219,6 +219,12 @@ func upsertSandbox(ctx context.Context, profile, id, name string) error {
 // removeSandbox drops a single cached entry for `profile`. Called from
 // `delete` so the cache doesn't keep referencing sandboxes that no
 // longer exist server-side.
+//
+// When the removal empties the sandbox list for a profile, also drop
+// the profile's `GatewayHosts` entry — there is nothing for the
+// gateway hostname to apply to until the user creates a new sandbox,
+// and leaving the entry behind accumulates orphan state across the
+// lifecycle of a profile (per Mitch's "Delete cleanup" CUJ).
 func removeSandbox(ctx context.Context, profile, id string) error {
 	state, err := loadState(ctx)
 	if err != nil {
@@ -228,6 +234,10 @@ func removeSandbox(ctx context.Context, profile, id string) error {
 	for i, s := range existing {
 		if s.ID == id {
 			state.Sandboxes[profile] = append(existing[:i], existing[i+1:]...)
+			if len(state.Sandboxes[profile]) == 0 {
+				delete(state.Sandboxes, profile)
+				delete(state.GatewayHosts, profile)
+			}
 			return saveState(ctx, state)
 		}
 	}
