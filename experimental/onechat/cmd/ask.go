@@ -46,13 +46,15 @@ Examples:
 				return agentstream.RenderDebug(body, cmd.OutOrStdout())
 			}
 
+			adapt := onechatlib.NewAdaptSSE()
+
 			outputType := root.OutputType(cmd)
 			if outputType == flags.OutputJSON {
-				return agentstream.RenderJSON(body, cmd.OutOrStdout(), onechatlib.AdaptSSE)
+				return agentstream.RenderJSON(body, cmd.OutOrStdout(), adapt)
 			}
 
 			opts := agentstream.RenderOptions{ShowSQL: includeSQL}
-			return agentstream.RenderText(body, cmd.OutOrStdout(), cmd.ErrOrStderr(), onechatlib.AdaptSSE, opts)
+			return agentstream.RenderText(body, cmd.OutOrStdout(), cmd.ErrOrStderr(), adapt, opts)
 		},
 	}
 

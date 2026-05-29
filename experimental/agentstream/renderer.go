@@ -29,16 +29,20 @@ func RenderDebug(r io.Reader, w io.Writer) error {
 
 // RenderText renders the SSE stream as human-readable text.
 // The adapt function converts each raw SSE payload into StreamEvents.
+// Viz charts are buffered and rendered after all text output so the
+// narrative context appears first.
 func RenderText(r io.Reader, stdout, stderr io.Writer, adapt AdapterFunc, opts RenderOptions) error {
 	reader := NewSSEReader(r)
 	status := newStatusLine(stderr)
 	status.update("Waiting for response...")
 
+	var vizBuffer []*VizEvent
+
 	for {
 		ev, err := reader.Next()
 		if err == io.EOF {
 			status.clear()
-			return nil
+			break
 		}
 		if err != nil {
 			status.clear()
@@ -58,6 +62,10 @@ func RenderText(r io.Reader, stdout, stderr io.Writer, adapt AdapterFunc, opts R
 					status.clear()
 					renderSQL(stdout, se.ToolCall.Name, se.ToolCall.Arguments)
 				}
+			case EventViz:
+				if se.Viz != nil {
+					vizBuffer = append(vizBuffer, se.Viz)
+				}
 			case EventError:
 				status.clear()
 				fmt.Fprintf(stderr, "Error: %s\n", se.Text)
@@ -70,6 +78,14 @@ func RenderText(r io.Reader, stdout, stderr io.Writer, adapt AdapterFunc, opts R
 			}
 		}
 	}
+
+	// Render charts after all text output.
+	tw := terminalWidth()
+	for _, viz := range vizBuffer {
+		RenderChart(stdout, viz, tw)
+	}
+
+	return nil
 }
 
 // RenderJSON accumulates all stream events and emits a single StreamResult JSON object.

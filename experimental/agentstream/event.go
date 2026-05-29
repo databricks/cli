@@ -9,6 +9,7 @@ const (
 	EventToolCall                  // function call (e.g. execute_sql)
 	EventError                     // API error
 	EventDone                      // stream completed
+	EventViz                       // visualization chart
 )
 
 // StreamEvent is the protocol-agnostic unit that renderers consume.
@@ -17,9 +18,34 @@ type StreamEvent struct {
 	Kind      EventKind
 	Text      string         // for Thinking, Text, Error
 	ToolCall  *ToolCallEvent // for ToolCall
+	Viz       *VizEvent      // for Viz
 	Status    string         // for Done ("completed", "failed")
 	ErrorCode string         // for Error
 	Raw       string         // original SSE data (for debug)
+}
+
+// VizEvent carries visualization data for terminal chart rendering.
+type VizEvent struct {
+	Spec *VizSpec
+	Data *TableData
+}
+
+// VizSpec describes how to render a visualization.
+type VizSpec struct {
+	Title      string
+	WidgetType string // "bar", "line", "area"
+	XField     string
+	YFields    []string
+	ColorField string
+	Layout     string // "stack", "group"
+	XTitle     string
+	YTitle     string
+}
+
+// TableData holds parsed tabular data.
+type TableData struct {
+	Columns []string
+	Rows    [][]string
 }
 
 // ToolCallEvent represents a function call emitted by an agent.

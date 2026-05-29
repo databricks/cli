@@ -11,16 +11,27 @@ import (
 // embeddedBlockRe matches <!-- begin-embedded:... --> ... <!-- end-embedded:... --> blocks.
 var embeddedBlockRe = regexp.MustCompile(`(?s)<!-- begin-embedded:\w+ -->\n?(.*?)<!-- end-embedded:\w+ -->`)
 
+// vizEmbedBlockRe matches embedded viz blocks that are rendered as terminal charts.
+// These blocks are removed entirely since the chart is rendered separately via EventViz.
+var vizEmbedBlockRe = regexp.MustCompile(`(?s)<!-- begin-embedded:viz_\w+ -->.*?<!-- end-embedded:viz_\w+ -->\n?`)
+
+// vizImageRe matches standalone ![title](#viz_xxx) image references.
+var vizImageRe = regexp.MustCompile(`!\[[^\]]*\]\(#viz_\w+\)\n?`)
+
 // renderMarkdown renders markdown text for the terminal using glamour.
-// Strips OneChat embedded query comment blocks before rendering.
+// Strips OneChat embedded blocks and viz image references before rendering.
 func renderMarkdown(w io.Writer, text string) {
-	// Strip <!-- begin-embedded:query_xxx --> ... <!-- end-embedded:query_xxx --> wrappers,
-	// keeping the content inside (which is a markdown table).
-	cleaned := embeddedBlockRe.ReplaceAllString(text, "$1")
+	// Remove viz embedded blocks entirely (rendered as terminal charts).
+	cleaned := vizEmbedBlockRe.ReplaceAllString(text, "")
+
+	// Remove any remaining standalone viz image references.
+	cleaned = vizImageRe.ReplaceAllString(cleaned, "")
+
+	// Strip query embedded block wrappers, keeping the content inside.
+	cleaned = embeddedBlockRe.ReplaceAllString(cleaned, "$1")
 
 	rendered, err := glamour.Render(cleaned, "auto")
 	if err != nil {
-		// Fall back to plain text on render failure.
 		fmt.Fprintln(w, text)
 		return
 	}

@@ -11,7 +11,7 @@ require (
 	github.com/charmbracelet/bubbles v1.0.0 // MIT
 	github.com/charmbracelet/bubbletea v1.3.10 // MIT
 	github.com/charmbracelet/huh v1.0.0
-	github.com/charmbracelet/lipgloss v1.1.0 // MIT
+	github.com/charmbracelet/lipgloss v1.1.1-0.20250404203927-76690c660834 // MIT
 	github.com/databricks/databricks-sdk-go v0.126.0 // Apache 2.0
 	github.com/fatih/color v1.18.0 // MIT
 	github.com/google/uuid v1.6.0 // BSD-3-Clause
@@ -50,7 +50,7 @@ require github.com/tailscale/hujson v0.0.0-20250605163823-992244df8c5a // BSD-3-
 
 require (
 	github.com/charmbracelet/glamour v0.10.0
-	golang.org/x/term v0.40.0
+	golang.org/x/term v0.41.0
 )
 
 require (
