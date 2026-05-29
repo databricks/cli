@@ -72,6 +72,42 @@ func (s *FakeWorkspace) AppsCreateUpdate(req Request, name string) Response {
 	}
 }
 
+func (s *FakeWorkspace) AppsGet(_ Request, name string) Response {
+	defer s.LockUnlock()()
+
+	app, ok := s.Apps[name]
+	if !ok {
+		return Response{StatusCode: 404, Body: map[string]string{"message": "App not found: " + name}}
+	}
+
+	// When an app is in DELETING state, remove it from the store after returning.
+	// This simulates deletion completing so the next create attempt succeeds.
+	if app.ComputeStatus != nil && app.ComputeStatus.State == apps.ComputeStateDeleting {
+		delete(s.Apps, name)
+	}
+
+	return Response{Body: app}
+}
+
+// AppsDelete marks an app as DELETING, simulating asynchronous deletion.
+// The app is removed from the store when it is next retrieved via AppsGet.
+func (s *FakeWorkspace) AppsDelete(_ Request, name string) Response {
+	defer s.LockUnlock()()
+
+	app, ok := s.Apps[name]
+	if !ok {
+		return Response{StatusCode: 404}
+	}
+
+	app.ComputeStatus = &apps.ComputeStatus{
+		State:   apps.ComputeStateDeleting,
+		Message: "App compute is being deleted.",
+	}
+	s.Apps[name] = app
+
+	return Response{}
+}
+
 func (s *FakeWorkspace) AppsGetUpdate(_ Request, name string) Response {
 	defer s.LockUnlock()()
 
