@@ -29,7 +29,7 @@ const SHUTDOWN_TIMEOUT = 15 * time.Second
 func setupWorkspaceAndConfig(cmd *cobra.Command, entryPoint string, appPort int) (*runlocal.Config, *runlocal.AppSpec, error) {
 	ctx := cmd.Context()
 	w := cmdctx.WorkspaceClient(ctx)
-	workspaceID, err := w.CurrentWorkspaceID(ctx)
+	workspaceID, err := auth.ResolveWorkspaceID(ctx, w)
 	if err != nil {
 		return nil, nil, err
 	}

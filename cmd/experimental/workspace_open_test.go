@@ -38,7 +38,7 @@ func TestBuildWorkspaceURLPathBasedResources(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.resourceType+"/"+tt.id, func(t *testing.T) {
-			got, err := workspaceurls.BuildResourceURL("https://myworkspace.databricks.com", tt.resourceType, tt.id, 0)
+			got, err := workspaceurls.BuildResourceURL("https://myworkspace.databricks.com", tt.resourceType, tt.id, "")
 			require.NoError(t, err)
 			assert.Equal(t, tt.expected, got)
 		})
@@ -57,7 +57,7 @@ func TestBuildWorkspaceURLFragmentBasedResources(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.id, func(t *testing.T) {
-			got, err := workspaceurls.BuildResourceURL("https://myworkspace.databricks.com", tt.resourceType, tt.id, 0)
+			got, err := workspaceurls.BuildResourceURL("https://myworkspace.databricks.com", tt.resourceType, tt.id, "")
 			require.NoError(t, err)
 			assert.Equal(t, tt.expected, got)
 		})
@@ -65,38 +65,38 @@ func TestBuildWorkspaceURLFragmentBasedResources(t *testing.T) {
 }
 
 func TestBuildWorkspaceURLUnknownResourceType(t *testing.T) {
-	_, err := workspaceurls.BuildResourceURL("https://myworkspace.databricks.com", "unknown", "123", 0)
+	_, err := workspaceurls.BuildResourceURL("https://myworkspace.databricks.com", "unknown", "123", "")
 	assert.ErrorContains(t, err, "unknown resource type \"unknown\"")
 	assert.ErrorContains(t, err, "alerts, apps, catalogs, clusters, dashboards, database_catalogs, database_instances, experiments, jobs, model_serving_endpoints, models, notebooks, pipelines, postgres_catalogs, postgres_synced_tables, quality_monitors, queries, registered_models, schemas, synced_database_tables, vector_search_endpoints, vector_search_indexes, volumes, warehouses")
 }
 
 func TestBuildWorkspaceURLHostWithTrailingSlash(t *testing.T) {
-	got, err := workspaceurls.BuildResourceURL("https://myworkspace.databricks.com/", "jobs", "123", 0)
+	got, err := workspaceurls.BuildResourceURL("https://myworkspace.databricks.com/", "jobs", "123", "")
 	require.NoError(t, err)
 	assert.Equal(t, "https://myworkspace.databricks.com/jobs/123", got)
 }
 
 func TestBuildWorkspaceURLWithWorkspaceID(t *testing.T) {
-	got, err := workspaceurls.BuildResourceURL("https://myworkspace.databricks.com", "jobs", "123", 123456)
+	got, err := workspaceurls.BuildResourceURL("https://myworkspace.databricks.com", "jobs", "123", "123456")
 	require.NoError(t, err)
 	assert.Equal(t, "https://myworkspace.databricks.com/jobs/123?w=123456", got)
 }
 
 func TestBuildWorkspaceURLWithWorkspaceIDInHostname(t *testing.T) {
-	got, err := workspaceurls.BuildResourceURL("https://adb-123456.azuredatabricks.net", "jobs", "123", 123456)
+	got, err := workspaceurls.BuildResourceURL("https://adb-123456.azuredatabricks.net", "jobs", "123", "123456")
 	require.NoError(t, err)
 	// Workspace ID is already in the hostname, so ?w= should not be appended.
 	assert.Equal(t, "https://adb-123456.azuredatabricks.net/jobs/123", got)
 }
 
 func TestBuildWorkspaceURLWithWorkspaceIDInVanityHostname(t *testing.T) {
-	got, err := workspaceurls.BuildResourceURL("https://workspace-123456.example.com", "jobs", "123", 123456)
+	got, err := workspaceurls.BuildResourceURL("https://workspace-123456.example.com", "jobs", "123", "123456")
 	require.NoError(t, err)
 	assert.Equal(t, "https://workspace-123456.example.com/jobs/123?w=123456", got)
 }
 
 func TestBuildWorkspaceURLFragmentWithWorkspaceID(t *testing.T) {
-	got, err := workspaceurls.BuildResourceURL("https://myworkspace.databricks.com", "notebooks", "12345", 789)
+	got, err := workspaceurls.BuildResourceURL("https://myworkspace.databricks.com", "notebooks", "12345", "789")
 	require.NoError(t, err)
 	assert.Equal(t, "https://myworkspace.databricks.com/?w=789#notebook/12345", got)
 }
@@ -158,15 +158,15 @@ func TestWorkspaceOpenCommandHelpText(t *testing.T) {
 }
 
 func TestWorkspaceOpenCommandOpensBrowserByDefault(t *testing.T) {
-	originalCurrentWorkspaceID := currentWorkspaceID
+	originalResolveWorkspaceID := resolveWorkspaceID
 	originalOpenWorkspaceURL := openWorkspaceURL
 	t.Cleanup(func() {
-		currentWorkspaceID = originalCurrentWorkspaceID
+		resolveWorkspaceID = originalResolveWorkspaceID
 		openWorkspaceURL = originalOpenWorkspaceURL
 	})
 
-	currentWorkspaceID = func(context.Context) (int64, error) {
-		return 0, nil
+	resolveWorkspaceID = func(context.Context) (string, error) {
+		return "", nil
 	}
 
 	var gotURL string
@@ -197,15 +197,15 @@ func TestWorkspaceOpenCommandOpensBrowserByDefault(t *testing.T) {
 }
 
 func TestWorkspaceOpenCommandURLFlag(t *testing.T) {
-	originalCurrentWorkspaceID := currentWorkspaceID
+	originalResolveWorkspaceID := resolveWorkspaceID
 	originalOpenWorkspaceURL := openWorkspaceURL
 	t.Cleanup(func() {
-		currentWorkspaceID = originalCurrentWorkspaceID
+		resolveWorkspaceID = originalResolveWorkspaceID
 		openWorkspaceURL = originalOpenWorkspaceURL
 	})
 
-	currentWorkspaceID = func(context.Context) (int64, error) {
-		return 789, nil
+	resolveWorkspaceID = func(context.Context) (string, error) {
+		return "789", nil
 	}
 
 	browserOpened := false
@@ -238,15 +238,15 @@ func TestWorkspaceOpenCommandURLFlag(t *testing.T) {
 }
 
 func TestWorkspaceOpenCommandWarnsWhenWorkspaceIDLookupFails(t *testing.T) {
-	originalCurrentWorkspaceID := currentWorkspaceID
+	originalResolveWorkspaceID := resolveWorkspaceID
 	originalOpenWorkspaceURL := openWorkspaceURL
 	t.Cleanup(func() {
-		currentWorkspaceID = originalCurrentWorkspaceID
+		resolveWorkspaceID = originalResolveWorkspaceID
 		openWorkspaceURL = originalOpenWorkspaceURL
 	})
 
-	currentWorkspaceID = func(context.Context) (int64, error) {
-		return 0, errors.New("lookup failed")
+	resolveWorkspaceID = func(context.Context) (string, error) {
+		return "", errors.New("lookup failed")
 	}
 
 	openWorkspaceURL = func(ctx context.Context, targetURL string) error {
