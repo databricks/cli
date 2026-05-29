@@ -26,8 +26,9 @@ confirmation interactively; pass --auto-approve to skip the prompt
 Examples:
   databricks lakebox delete happy-panda-1234
   databricks lakebox delete happy-panda-1234 --auto-approve`,
-		Args:    cobra.ExactArgs(1),
-		PreRunE: root.MustWorkspaceClient,
+		Args:              cobra.ExactArgs(1),
+		PreRunE:           root.MustWorkspaceClient,
+		ValidArgsFunction: completeSandboxIDs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			w := cmdctx.WorkspaceClient(ctx)
