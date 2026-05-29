@@ -53,9 +53,9 @@ func TestExtractHostQueryParams(t *testing.T) {
 			want: HostParams{Host: "https://spog.example.com"},
 		},
 		{
-			name: "non-numeric ?o= is passed through",
+			name: "non-numeric ?o= is skipped (legacy spelling stays numeric-only)",
 			host: "https://spog.example.com/?o=abc",
-			want: HostParams{Host: "https://spog.example.com", WorkspaceID: "abc"},
+			want: HostParams{Host: "https://spog.example.com"},
 		},
 		{
 			name: "non-numeric ?w= is passed through",
@@ -63,9 +63,9 @@ func TestExtractHostQueryParams(t *testing.T) {
 			want: HostParams{Host: "https://spog.example.com", WorkspaceID: "abc"},
 		},
 		{
-			name: "non-numeric ?workspace_id= is passed through",
+			name: "non-numeric ?workspace_id= is skipped (legacy spelling stays numeric-only)",
 			host: "https://spog.example.com/?workspace_id=abc",
-			want: HostParams{Host: "https://spog.example.com", WorkspaceID: "abc"},
+			want: HostParams{Host: "https://spog.example.com"},
 		},
 		{
 			name: "connection-id-style ?w= value passed through",

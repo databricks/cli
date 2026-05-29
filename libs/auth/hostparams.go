@@ -2,6 +2,7 @@ package auth
 
 import (
 	"net/url"
+	"strconv"
 	"strings"
 )
 
@@ -11,10 +12,9 @@ type HostParams struct {
 	Host string
 
 	// WorkspaceID extracted from ?o=, ?w=, or ?workspace_id=.
-	// Empty if not present. Any non-empty value is accepted as-is —
-	// X-Databricks-Workspace-Id supports both classic numeric workspace IDs
-	// and non-numeric connection-style identifiers, and the server
-	// disambiguates.
+	// Empty if not present. ?o= and ?workspace_id= are legacy spellings that
+	// remain numeric-only; ?w= is the new spelling and is passed through
+	// unchanged so non-numeric connection-style identifiers reach the server.
 	WorkspaceID string
 
 	// AccountID extracted from ?a= or ?account_id=.
@@ -25,13 +25,13 @@ type HostParams struct {
 // ExtractHostQueryParams parses recognized query parameters from a host URL.
 // Recognized parameters: o (workspace_id), w (workspace_id), workspace_id,
 // a (account_id), account_id. The "w" spelling matches the new
-// X-Databricks-Workspace-Id routing header; "o" is the legacy SPOG form and
-// stays accepted so URLs already in databricks.yml / shell history keep
-// working. When more than one is present, "o" wins to preserve the meaning
-// of existing URLs. Workspace ID values are passed through unchanged — the
-// server-side header accepts both classic numeric IDs and non-numeric
-// connection-style identifiers. The returned Host has all query parameters
-// and fragments stripped.
+// X-Databricks-Workspace-Id routing header and accepts any non-empty value
+// (including non-numeric connection-style identifiers). The legacy "o" and
+// "workspace_id" spellings remain numeric-only — they predate the broader
+// identifier shapes and historical URLs carrying those forms are always
+// numeric. When more than one spelling is present, "o" wins to preserve the
+// meaning of existing URLs. The returned Host has all query parameters and
+// fragments stripped.
 func ExtractHostQueryParams(host string) HostParams {
 	u, err := url.Parse(host)
 	if err != nil || u.RawQuery == "" {
@@ -42,11 +42,15 @@ func ExtractHostQueryParams(host string) HostParams {
 
 	var workspaceID string
 	if v := q.Get("o"); v != "" {
-		workspaceID = v
+		if _, err := strconv.ParseInt(v, 10, 64); err == nil {
+			workspaceID = v
+		}
 	} else if v := q.Get("w"); v != "" {
 		workspaceID = v
 	} else if v := q.Get("workspace_id"); v != "" {
-		workspaceID = v
+		if _, err := strconv.ParseInt(v, 10, 64); err == nil {
+			workspaceID = v
+		}
 	}
 
 	var accountID string

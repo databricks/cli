@@ -53,10 +53,9 @@ func TestNormalizeDatabricksConfigFromEnv(t *testing.T) {
 			name: "no host env is a no-op",
 		},
 		{
-			name:            "non-numeric o is passed through, host trailing slash trimmed",
-			host:            "https://acme.databricks.net/?o=notanumber",
-			wantHost:        "https://acme.databricks.net",
-			wantWorkspaceID: "notanumber",
+			name:     "non-numeric o is dropped, host trailing slash trimmed",
+			host:     "https://acme.databricks.net/?o=notanumber",
+			wantHost: "https://acme.databricks.net",
 		},
 	}
 
