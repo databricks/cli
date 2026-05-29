@@ -67,7 +67,7 @@ func TestBuildWorkspaceURLFragmentBasedResources(t *testing.T) {
 func TestBuildWorkspaceURLUnknownResourceType(t *testing.T) {
 	_, err := workspaceurls.BuildResourceURL("https://myworkspace.databricks.com", "unknown", "123", 0)
 	assert.ErrorContains(t, err, "unknown resource type \"unknown\"")
-	assert.ErrorContains(t, err, "alerts, apps, clusters, dashboards, experiments, jobs, model_serving_endpoints, models, notebooks, pipelines, queries, registered_models, warehouses")
+	assert.ErrorContains(t, err, "alerts, apps, catalogs, clusters, dashboards, database_catalogs, database_instances, experiments, jobs, model_serving_endpoints, models, notebooks, pipelines, postgres_catalogs, postgres_synced_tables, quality_monitors, queries, registered_models, schemas, synced_database_tables, vector_search_endpoints, vector_search_indexes, volumes, warehouses")
 }
 
 func TestBuildWorkspaceURLHostWithTrailingSlash(t *testing.T) {
@@ -106,20 +106,32 @@ func TestWorkspaceOpenCommandCompletion(t *testing.T) {
 
 	completions, directive := cmd.ValidArgsFunction(cmd, []string{}, "")
 	assert.Equal(t, cobra.ShellCompDirectiveNoFileComp, directive)
-	assert.Contains(t, completions, "alerts")
-	assert.Contains(t, completions, "apps")
-	assert.Contains(t, completions, "clusters")
-	assert.Contains(t, completions, "dashboards")
-	assert.Contains(t, completions, "experiments")
-	assert.Contains(t, completions, "jobs")
-	assert.Contains(t, completions, "models")
-	assert.Contains(t, completions, "model_serving_endpoints")
-	assert.Contains(t, completions, "notebooks")
-	assert.Contains(t, completions, "pipelines")
-	assert.Contains(t, completions, "queries")
-	assert.Contains(t, completions, "registered_models")
-	assert.Contains(t, completions, "warehouses")
-	assert.Len(t, completions, 13)
+	assert.Equal(t, []string{
+		"alerts",
+		"apps",
+		"catalogs",
+		"clusters",
+		"dashboards",
+		"database_catalogs",
+		"database_instances",
+		"experiments",
+		"jobs",
+		"model_serving_endpoints",
+		"models",
+		"notebooks",
+		"pipelines",
+		"postgres_catalogs",
+		"postgres_synced_tables",
+		"quality_monitors",
+		"queries",
+		"registered_models",
+		"schemas",
+		"synced_database_tables",
+		"vector_search_endpoints",
+		"vector_search_indexes",
+		"volumes",
+		"warehouses",
+	}, completions)
 }
 
 func TestWorkspaceOpenCommandCompletionSecondArg(t *testing.T) {
@@ -133,7 +145,7 @@ func TestWorkspaceOpenCommandCompletionSecondArg(t *testing.T) {
 func TestWorkspaceOpenCommandHelpText(t *testing.T) {
 	cmd := newWorkspaceOpenCommand()
 
-	assert.Contains(t, cmd.Long, "Supported resource types: alerts, apps, clusters, dashboards, experiments, jobs, model_serving_endpoints, models, notebooks, pipelines, queries, registered_models, warehouses.")
+	assert.Contains(t, cmd.Long, "Supported resource types: alerts, apps, catalogs, clusters, dashboards, database_catalogs, database_instances, experiments, jobs, model_serving_endpoints, models, notebooks, pipelines, postgres_catalogs, postgres_synced_tables, quality_monitors, queries, registered_models, schemas, synced_database_tables, vector_search_endpoints, vector_search_indexes, volumes, warehouses.")
 	assert.Contains(t, cmd.Long, "databricks experimental open jobs 123456789")
 	assert.Contains(t, cmd.Long, "databricks experimental open notebooks /Users/user@example.com/my-notebook")
 	assert.Contains(t, cmd.Long, "databricks experimental open registered_models catalog.schema.my_model")
@@ -180,7 +192,7 @@ func TestWorkspaceOpenCommandOpensBrowserByDefault(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, "https://myworkspace.databricks.com/jobs/123", gotURL)
-	assert.Equal(t, "", stdout.String())
+	assert.Empty(t, stdout.String())
 	assert.Contains(t, stderr.String(), "Opening jobs 123 in the browser...")
 }
 
@@ -222,7 +234,7 @@ func TestWorkspaceOpenCommandURLFlag(t *testing.T) {
 
 	assert.False(t, browserOpened)
 	assert.Equal(t, "https://myworkspace.databricks.com/jobs/123?w=789\n", stdout.String())
-	assert.Equal(t, "", stderr.String())
+	assert.Empty(t, stderr.String())
 }
 
 func TestWorkspaceOpenCommandWarnsWhenWorkspaceIDLookupFails(t *testing.T) {

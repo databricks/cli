@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/databricks/cli/internal/build"
@@ -21,6 +22,7 @@ import (
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 	"golang.org/x/mod/semver"
+	"golang.org/x/sync/errgroup"
 )
 
 const (
@@ -28,7 +30,27 @@ const (
 	skillsRepoName       = "databricks-agent-skills"
 	stableSkillsRepoPath = "skills"
 	experimentalRepoPath = "experimental"
+
+	// fetchConcurrency caps the number of in-flight skill file fetches.
+	// Each file is one HTTPS GET to raw.githubusercontent.com; sequential
+	// fetches were latency-bound on TLS handshakes. 8 is enough to amortise
+	// the round-trip across a typical skill's files without overwhelming the
+	// upstream CDN.
+	fetchConcurrency = 8
 )
+
+// httpClient is shared across all skill file fetches so the underlying
+// transport reuses TCP+TLS connections. The default MaxIdleConnsPerHost
+// (2) is bumped to leave headroom above fetchConcurrency so a brief overlap
+// between a closing and a new connection doesn't force a fresh handshake.
+var httpClient = sync.OnceValue(func() *http.Client {
+	t := http.DefaultTransport.(*http.Transport).Clone()
+	t.MaxIdleConnsPerHost = fetchConcurrency * 2
+	return &http.Client{
+		Timeout:   30 * time.Second,
+		Transport: t,
+	}
+})
 
 func manifestHasExperimental(m *Manifest) bool {
 	for _, meta := range m.Skills {
@@ -121,8 +143,7 @@ func fetchSkillFile(ctx context.Context, ref, repoDir, skillName, filePath strin
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
-	client := &http.Client{Timeout: 30 * time.Second}
-	resp, err := client.Do(req)
+	resp, err := httpClient().Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch %s: %w", filePath, err)
 	}
@@ -555,25 +576,29 @@ func installSkillToDir(ctx context.Context, ref, repoDir, skillName, destDir str
 		return fmt.Errorf("failed to create directory: %w", err)
 	}
 
+	// Fetch files concurrently. Each file is a separate HTTPS GET, so
+	// wall-clock time is dominated by per-request TLS handshakes rather
+	// than payload size.
+	g, gctx := errgroup.WithContext(ctx)
+	g.SetLimit(fetchConcurrency)
 	for _, file := range files {
-		content, err := fetchFileFn(ctx, ref, repoDir, skillName, file)
-		if err != nil {
-			return err
-		}
-
-		destPath := filepath.Join(destDir, file)
-
-		if err := os.MkdirAll(filepath.Dir(destPath), 0o755); err != nil {
-			return fmt.Errorf("failed to create directory: %w", err)
-		}
-
-		log.Debugf(ctx, "Downloading %s/%s", skillName, file)
-		if err := os.WriteFile(destPath, content, 0o644); err != nil {
-			return fmt.Errorf("failed to write %s: %w", file, err)
-		}
+		g.Go(func() error {
+			content, err := fetchFileFn(gctx, ref, repoDir, skillName, file)
+			if err != nil {
+				return err
+			}
+			destPath := filepath.Join(destDir, file)
+			if err := os.MkdirAll(filepath.Dir(destPath), 0o755); err != nil {
+				return fmt.Errorf("failed to create directory: %w", err)
+			}
+			log.Debugf(gctx, "Downloading %s/%s", skillName, file)
+			if err := os.WriteFile(destPath, content, 0o644); err != nil {
+				return fmt.Errorf("failed to write %s: %w", file, err)
+			}
+			return nil
+		})
 	}
-
-	return nil
+	return g.Wait()
 }
 
 // copyDir copies all files from src to dest, recreating the directory structure.

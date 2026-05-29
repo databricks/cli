@@ -190,7 +190,7 @@ func assertSameContentLines(t *testing.T, want, got string) {
 	t.Helper()
 	wantLines := nonEmptyLines(want)
 	gotLines := nonEmptyLines(got)
-	require.Equal(t, len(wantLines), len(gotLines), "line count mismatch\nwant:\n%s\ngot:\n%s", want, got)
+	require.Len(t, gotLines, len(wantLines), "line count mismatch\nwant:\n%s\ngot:\n%s", want, got)
 	for i := range wantLines {
 		assert.Equal(t, wantLines[i], gotLines[i], "line %d", i)
 	}

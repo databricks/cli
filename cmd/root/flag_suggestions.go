@@ -50,8 +50,8 @@ func levenshteinDistance(a, b string) int {
 // If a close match is found among the command's flags, it returns an enhanced error
 // with a "Did you mean" suggestion appended. Otherwise it returns the original error.
 func suggestFlagFromError(cmd *cobra.Command, err error) error {
-	var notExist *pflag.NotExistError
-	if !errors.As(err, &notExist) {
+	notExist, ok := errors.AsType[*pflag.NotExistError](err)
+	if !ok {
 		return err
 	}
 

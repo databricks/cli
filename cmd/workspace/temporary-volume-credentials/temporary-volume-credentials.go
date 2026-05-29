@@ -18,8 +18,10 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "temporary-volume-credentials",
-		Short: `Temporary Volume Credentials refer to short-lived, downscoped credentials used to access cloud storage locations where volume data is stored in Databricks.`,
-		Long: `Temporary Volume Credentials refer to short-lived, downscoped credentials used
+		Short: `*Public Preview* Temporary Volume Credentials refer to short-lived, downscoped credentials used to access cloud storage locations where volume data is stored in Databricks.`,
+		Long: `This command is in Public Preview and may change without notice.
+
+Temporary Volume Credentials refer to short-lived, downscoped credentials used
   to access cloud storage locations where volume data is stored in Databricks.
   These credentials are employed to provide secure and time-limited access to
   data in cloud environments such as AWS, Azure, and Google Cloud. Each cloud
@@ -37,15 +39,12 @@ func New() *cobra.Command {
   can only be granted by catalog owner explicitly and is not included in schema
   ownership or ALL PRIVILEGES on the schema for security reasons.`,
 		GroupID: "catalog",
-
-		// This service is being previewed; hide from help output.
-		Hidden: true,
-		RunE:   root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	// Add methods
 	cmd.AddCommand(newGenerateTemporaryVolumeCredentials())
@@ -79,8 +78,10 @@ func newGenerateTemporaryVolumeCredentials() *cobra.Command {
 	cmd.Flags().StringVar(&generateTemporaryVolumeCredentialsReq.VolumeId, "volume-id", generateTemporaryVolumeCredentialsReq.VolumeId, `Id of the volume to read or write.`)
 
 	cmd.Use = "generate-temporary-volume-credentials"
-	cmd.Short = `Generate a temporary volume credential.`
-	cmd.Long = `Generate a temporary volume credential.
+	cmd.Short = `*Public Preview* Generate a temporary volume credential.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Generate a temporary volume credential.
 
   Get a short-lived credential for directly accessing the volume data on cloud
   storage. The metastore must have **external_access_enabled** flag set to true
@@ -88,8 +89,8 @@ func newGenerateTemporaryVolumeCredentials() *cobra.Command {
   the parent schema and this privilege can only be granted by catalog owners.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)

@@ -32,9 +32,9 @@ func assertEmptyGitInfo(t *testing.T, info git.RepositoryInfo) {
 }
 
 func assertSparseGitInfo(t *testing.T, expectedRoot string, info git.RepositoryInfo) {
-	assert.Equal(t, "", info.CurrentBranch)
-	assert.Equal(t, "", info.LatestCommit)
-	assert.Equal(t, "", info.OriginURL)
+	assert.Empty(t, info.CurrentBranch)
+	assert.Empty(t, info.LatestCommit)
+	assert.Empty(t, info.OriginURL)
 	assert.Equal(t, expectedRoot, info.WorktreeRoot)
 }
 

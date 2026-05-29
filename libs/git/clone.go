@@ -41,8 +41,7 @@ func (opts cloneOptions) clone(ctx context.Context) error {
 	if errors.Is(err, exec.ErrNotFound) {
 		return fmt.Errorf("please install git CLI to clone a repository: %w", err)
 	}
-	var processErr *process.ProcessError
-	if errors.As(err, &processErr) {
+	if processErr, ok := errors.AsType[*process.ProcessError](err); ok {
 		return fmt.Errorf("git clone failed: %w. %s", err, processErr.Stderr)
 	}
 	if err != nil {

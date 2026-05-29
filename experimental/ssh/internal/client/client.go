@@ -31,6 +31,7 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/compute"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/gorilla/websocket"
@@ -370,7 +371,7 @@ func runIDE(ctx context.Context, client *databricks.WorkspaceClient, userName, k
 	}
 
 	// Get Databricks user name for the workspace path
-	currentUser, err := client.CurrentUser.Me(ctx)
+	currentUser, err := client.CurrentUser.Me(ctx, iam.MeRequest{})
 	if err != nil {
 		return fmt.Errorf("failed to get current user: %w", err)
 	}

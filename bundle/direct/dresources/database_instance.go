@@ -60,7 +60,7 @@ func (d *ResourceDatabaseInstance) WaitAfterCreate(ctx context.Context, id strin
 	return nil, err
 }
 
-func (d *ResourceDatabaseInstance) DoDelete(ctx context.Context, name string) error {
+func (d *ResourceDatabaseInstance) DoDelete(ctx context.Context, name string, _ *database.DatabaseInstance) error {
 	return d.client.Database.DeleteDatabaseInstance(ctx, database.DeleteDatabaseInstanceRequest{
 		Name:            name,
 		Purge:           true,

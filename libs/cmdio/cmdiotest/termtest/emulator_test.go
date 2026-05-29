@@ -233,7 +233,7 @@ func TestEmulator_EraseLineFromStart(t *testing.T) {
 
 func TestEmulator_EraseLineWhole(t *testing.T) {
 	e := feed("hello\x1b[2K")
-	assert.Equal(t, "", line(e, 0))
+	assert.Empty(t, line(e, 0))
 }
 
 func TestEmulator_EraseLineDefaultsToZero(t *testing.T) {
@@ -250,14 +250,14 @@ func TestEmulator_EraseDisplayToEnd(t *testing.T) {
 	// row 1 keeps the first char, rows 2+ blank.
 	assert.Equal(t, "aaa", line(e, 0))
 	assert.Equal(t, "b", line(e, 1))
-	assert.Equal(t, "", line(e, 2))
+	assert.Empty(t, line(e, 2))
 }
 
 func TestEmulator_EraseDisplayFromStart(t *testing.T) {
 	e := feed("aaa\r\nbbb\r\nccc\x1b[2;2H\x1b[1J")
 	// Cursor at (1,1). ED 1 clears start → (1,1). Row 0 blank, row 1 has
 	// space at cols 0..1 and 'b' at col 2, row 2 intact.
-	assert.Equal(t, "", line(e, 0))
+	assert.Empty(t, line(e, 0))
 	assert.Equal(t, "  b", line(e, 1))
 	assert.Equal(t, "ccc", line(e, 2))
 }
@@ -265,8 +265,8 @@ func TestEmulator_EraseDisplayFromStart(t *testing.T) {
 func TestEmulator_EraseDisplayWhole(t *testing.T) {
 	for _, n := range []string{"2", "3"} {
 		e := feed("aaa\nbbb\x1b[" + n + "J")
-		assert.Equal(t, "", line(e, 0))
-		assert.Equal(t, "", line(e, 1))
+		assert.Empty(t, line(e, 0))
+		assert.Empty(t, line(e, 1))
 	}
 }
 

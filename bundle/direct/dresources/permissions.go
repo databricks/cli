@@ -219,7 +219,8 @@ func (r *ResourcePermissions) DoCreate(ctx context.Context, newState *Permission
 	// should we remember the default here?
 	_, err := r.DoUpdate(ctx, newState.ObjectID, newState, nil)
 	if err != nil {
-		return "", nil, err
+		// Permissions Set is idempotent (PUT), so retrying on transient errors is safe.
+		return "", nil, retrySafe(err)
 	}
 
 	return newState.ObjectID, nil, nil
@@ -259,7 +260,7 @@ func (r *ResourcePermissions) DoUpdate(ctx context.Context, _ string, newState *
 // it themselves. Trying to fix permissions back requires
 // - making assumptions on what it should look like
 // - storing current user somewhere or storing original permissions somewhere
-func (r *ResourcePermissions) DoDelete(ctx context.Context, id string) error {
+func (r *ResourcePermissions) DoDelete(ctx context.Context, id string, _ *PermissionsState) error {
 	// intentional noop
 	return nil
 }

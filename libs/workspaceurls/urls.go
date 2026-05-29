@@ -11,16 +11,27 @@ import (
 var resourceURLPatterns = map[string]string{
 	"alerts":                  "sql/alerts-v2/%s",
 	"apps":                    "apps/%s",
+	"catalogs":                "explore/data/%s",
 	"clusters":                "compute/clusters/%s",
 	"dashboards":              "dashboardsv3/%s/published",
+	"database_catalogs":       "explore/data/%s",
+	"database_instances":      "compute/database-instances/%s",
 	"experiments":             "ml/experiments/%s",
 	"jobs":                    "jobs/%s",
 	"models":                  "ml/models/%s",
 	"model_serving_endpoints": "ml/endpoints/%s",
 	"notebooks":               "#notebook/%s",
 	"pipelines":               "pipelines/%s",
+	"postgres_catalogs":       "explore/data/%s",
+	"postgres_synced_tables":  "explore/data/%s",
+	"quality_monitors":        "explore/data/%s",
 	"queries":                 "sql/editor/%s",
 	"registered_models":       "explore/data/models/%s",
+	"schemas":                 "explore/data/%s",
+	"synced_database_tables":  "explore/data/%s",
+	"vector_search_endpoints": "compute/vector-search/%s",
+	"vector_search_indexes":   "explore/data/%s",
+	"volumes":                 "explore/data/volumes/%s",
 	"warehouses":              "sql/warehouses/%s",
 }
 
@@ -37,7 +48,13 @@ var resourceAliases = map[string]string{
 // provided as a dot-separated name (e.g. "catalog.schema.model") but the URL
 // requires slash-separated segments.
 var dotSeparatedResources = map[string]bool{
-	"registered_models": true,
+	"catalogs":               true,
+	"postgres_synced_tables": true,
+	"quality_monitors":       true,
+	"registered_models":      true,
+	"schemas":                true,
+	"vector_search_indexes":  true,
+	"volumes":                true,
 }
 
 // ResourceTypes returns a sorted list of all supported resource type names.

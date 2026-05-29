@@ -1,0 +1,81 @@
+
+>>> [CLI] bundle deployment list
+[
+  {
+    "display_name": "first deployment",
+    "name": "deployments/abc",
+    "status": "DEPLOYMENT_STATUS_ACTIVE",
+    "target_name": "dev"
+  },
+  {
+    "display_name": "second deployment",
+    "name": "deployments/def",
+    "status": "DEPLOYMENT_STATUS_ACTIVE",
+    "target_name": "prod"
+  }
+]
+
+>>> [CLI] bundle deployment get deployments/abc
+{
+  "display_name": "first deployment",
+  "last_version_id": "v1",
+  "name": "deployments/abc",
+  "status": "DEPLOYMENT_STATUS_ACTIVE",
+  "target_name": "dev"
+}
+
+>>> [CLI] bundle version list deployments/abc
+[
+  {
+    "cli_version": "[DEV_VERSION]",
+    "name": "deployments/abc/versions/v1",
+    "status": "VERSION_STATUS_COMPLETED",
+    "version_type": ""
+  }
+]
+
+>>> [CLI] bundle version get deployments/abc/versions/v1
+{
+  "cli_version": "[DEV_VERSION]",
+  "name": "deployments/abc/versions/v1",
+  "status": "VERSION_STATUS_COMPLETED",
+  "version_type": ""
+}
+
+>>> [CLI] bundle resource list deployments/abc
+[
+  {
+    "last_action_type": "OPERATION_ACTION_TYPE_CREATE",
+    "last_version_id": "v1",
+    "name": "deployments/abc/resources/my_job",
+    "resource_id": "12345",
+    "resource_type": "DEPLOYMENT_RESOURCE_TYPE_JOB"
+  }
+]
+
+>>> [CLI] bundle resource get deployments/abc/resources/my_job
+{
+  "last_action_type": "OPERATION_ACTION_TYPE_CREATE",
+  "last_version_id": "v1",
+  "name": "deployments/abc/resources/my_job",
+  "resource_id": "12345",
+  "resource_type": "DEPLOYMENT_RESOURCE_TYPE_JOB"
+}
+
+>>> [CLI] bundle operation list deployments/abc/versions/v1
+[
+  {
+    "action_type": "OPERATION_ACTION_TYPE_CREATE",
+    "name": "deployments/abc/versions/v1/operations/my_job",
+    "resource_id": "12345",
+    "status": "OPERATION_STATUS_SUCCEEDED"
+  }
+]
+
+>>> [CLI] bundle operation get deployments/abc/versions/v1/operations/my_job
+{
+  "action_type": "OPERATION_ACTION_TYPE_CREATE",
+  "name": "deployments/abc/versions/v1/operations/my_job",
+  "resource_id": "12345",
+  "status": "OPERATION_STATUS_SUCCEEDED"
+}

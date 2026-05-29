@@ -248,7 +248,7 @@ func TestSetWorkspaceIDForUnifiedHost(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "https://unified.databricks.com", authArguments.Host)
 	assert.Equal(t, "test-unified-account", authArguments.AccountID)
-	assert.Equal(t, "", authArguments.WorkspaceID) // Empty is valid for account-level access
+	assert.Empty(t, authArguments.WorkspaceID) // Empty is valid for account-level access
 
 	// Test workspace_id is optional - should default to empty when no profile exists
 	authArguments = auth.AuthArguments{
@@ -259,7 +259,7 @@ func TestSetWorkspaceIDForUnifiedHost(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "https://unified.databricks.com", authArguments.Host)
 	assert.Equal(t, "test-unified-account", authArguments.AccountID)
-	assert.Equal(t, "", authArguments.WorkspaceID) // Empty is valid for account-level access
+	assert.Empty(t, authArguments.WorkspaceID) // Empty is valid for account-level access
 }
 
 func TestLoadProfileByNameAndClusterID(t *testing.T) {
@@ -462,8 +462,8 @@ func TestRunHostDiscovery_NoHost(t *testing.T) {
 	ctx := t.Context()
 	args := &auth.AuthArguments{}
 	runHostDiscovery(ctx, args)
-	assert.Equal(t, "", args.AccountID)
-	assert.Equal(t, "", args.WorkspaceID)
+	assert.Empty(t, args.AccountID)
+	assert.Empty(t, args.WorkspaceID)
 }
 
 func TestRunHostDiscovery_ExplicitFieldsNotOverridden(t *testing.T) {
@@ -525,7 +525,7 @@ func TestRunHostDiscovery_ClassicWorkspaceDoesNotSetAccountID(t *testing.T) {
 	runHostDiscovery(ctx, args)
 
 	// Only workspace_id is set; account_id stays empty since discovery didn't return it.
-	assert.Equal(t, "", args.AccountID)
+	assert.Empty(t, args.AccountID)
 	assert.Equal(t, "12345", args.WorkspaceID)
 }
 
@@ -546,6 +546,75 @@ func TestSetHostAndAccountId_WorkspaceIDNoneSentinelInherited(t *testing.T) {
 	assert.Equal(t, auth.WorkspaceIDNone, args.WorkspaceID)
 }
 
+func TestShouldPromptWorkspace(t *testing.T) {
+	t.Setenv("DATABRICKS_CONFIG_FILE", "./testdata/.databrickscfg")
+	ctx, _ := cmdio.SetupTest(t.Context(), cmdio.TestOptions{})
+
+	legacyAccountProfile := loadTestProfile(t, ctx, "spog-skip-workspace")
+	newAccountProfile := loadTestProfile(t, ctx, "spog-skip-workspace-new")
+	workspaceProfile := loadTestProfile(t, ctx, "unified-workspace")
+
+	tests := []struct {
+		name            string
+		authArguments   auth.AuthArguments
+		existingProfile *profile.Profile
+		skipWorkspace   bool
+		want            bool
+	}{
+		{
+			name:          "no profile, account_id set, no workspace_id",
+			authArguments: auth.AuthArguments{AccountID: "acc"},
+			want:          true,
+		},
+		{
+			name:            "re-login into legacy account-only profile (workspace_id = none)",
+			authArguments:   auth.AuthArguments{AccountID: "spog-account"},
+			existingProfile: legacyAccountProfile,
+			want:            false,
+		},
+		{
+			name:            "re-login into new account-only profile (no workspace_id key)",
+			authArguments:   auth.AuthArguments{AccountID: "spog-account"},
+			existingProfile: newAccountProfile,
+			want:            false,
+		},
+		{
+			name:            "re-login into workspace profile prompts when workspace_id missing from args",
+			authArguments:   auth.AuthArguments{AccountID: "test-unified-account"},
+			existingProfile: workspaceProfile,
+			want:            true,
+		},
+		{
+			name:            "account-only profile for a different account still prompts",
+			authArguments:   auth.AuthArguments{AccountID: "different-account"},
+			existingProfile: legacyAccountProfile,
+			want:            true,
+		},
+		{
+			name:          "skipWorkspace suppresses the prompt",
+			authArguments: auth.AuthArguments{AccountID: "acc"},
+			skipWorkspace: true,
+			want:          false,
+		},
+		{
+			name:          "no account_id means no prompt",
+			authArguments: auth.AuthArguments{},
+			want:          false,
+		},
+		{
+			name:          "workspace_id already known means no prompt",
+			authArguments: auth.AuthArguments{AccountID: "acc", WorkspaceID: "12345"},
+			want:          false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := shouldPromptWorkspace(&tt.authArguments, tt.existingProfile, tt.skipWorkspace)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
 func TestSetHostAndAccountId_URLParamsOverrideProfile(t *testing.T) {
 	t.Setenv("DATABRICKS_CONFIG_FILE", "./testdata/.databrickscfg")
 	ctx, _ := cmdio.SetupTest(t.Context(), cmdio.TestOptions{})
@@ -562,6 +631,55 @@ func TestSetHostAndAccountId_URLParamsOverrideProfile(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "https://unified.databricks.com", args.Host)
 	assert.Equal(t, "99999", args.WorkspaceID)
+}
+
+func TestGetProfileName(t *testing.T) {
+	tests := []struct {
+		name string
+		args *auth.AuthArguments
+		want string
+	}{
+		{
+			name: "account id set",
+			args: &auth.AuthArguments{Host: "https://db-deco-test.databricks.com", AccountID: "abc-123"},
+			want: "ACCOUNT-abc-123",
+		},
+		{
+			name: "no account id falls back to host",
+			args: &auth.AuthArguments{Host: "https://db-deco-test.databricks.com"},
+			want: "db-deco-test",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, getProfileName(tt.args))
+		})
+	}
+}
+
+// TestSkipWorkspaceProfileNameUsesDiscoveredAccountID verifies that the
+// pre-naming discovery block populates AccountID from .well-known so the
+// profile-name prompt suggests ACCOUNT-<account-id> instead of the host-based
+// default.
+func TestSkipWorkspaceProfileNameUsesDiscoveredAccountID(t *testing.T) {
+	server := newDiscoveryServer(t, map[string]any{
+		"account_id":    "abc-123",
+		"oidc_endpoint": "https://spog.example.com/oidc/accounts/abc-123",
+	})
+
+	ctx := t.Context()
+	args := &auth.AuthArguments{Host: server.URL}
+
+	// Mirrors the pre-naming block in newLoginCommand's RunE for --skip-workspace.
+	params := auth.ExtractHostQueryParams(args.Host)
+	args.Host = params.Host
+	if args.AccountID == "" {
+		args.AccountID = params.AccountID
+	}
+	runHostDiscovery(ctx, args)
+
+	assert.Equal(t, "abc-123", args.AccountID)
+	assert.Equal(t, "ACCOUNT-abc-123", getProfileName(args))
 }
 
 func TestValidateDiscoveryFlagCompatibility(t *testing.T) {

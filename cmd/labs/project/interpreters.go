@@ -76,8 +76,7 @@ func DetectInterpreters(ctx context.Context) (allInterpreters, error) {
 		// Keep in mind, that mswin installations get python.exe and pythonw.exe,
 		// which are slightly different: see https://stackoverflow.com/a/30313091
 		out, err := process.Background(ctx, []string{resolved, "--version"})
-		var processErr *process.ProcessError
-		if errors.As(err, &processErr) {
+		if processErr, ok := errors.AsType[*process.ProcessError](err); ok {
 			log.Debugf(ctx, "failed to check version for %s: %s", resolved, processErr.Err)
 			continue
 		}
