@@ -339,6 +339,17 @@ func (s *Server) serve(w http.ResponseWriter, r *http.Request, handler HandlerFu
 			StatusCode: 500,
 			Body:       []byte("INJECTED"),
 		}
+	} else if token, found := detectUnexpandedVar(request.URL.Path, request.URL.RawQuery, request.Body); found {
+		s.t.Errorf("Unexpanded variable %q reached the test server in %s %s. "+
+			"A shell/test variable was sent to the API without being expanded "+
+			"(likely left inside single quotes in the script). Expand it, or if "+
+			"intentional add it to allowedDollarTokens in libs/testserver.",
+			token, request.Method, request.URL.Path)
+		resp = EncodedResponse{
+			StatusCode: 400,
+			Body:       fmt.Appendf(nil, "unexpanded variable %q in request", token),
+			Headers:    getJsonHeaders(),
+		}
 	} else {
 		respAny := handler(request)
 		if respAny == nil && request.Context.Err() != nil {
