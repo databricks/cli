@@ -12,27 +12,27 @@ import (
 	"github.com/databricks/databricks-sdk-go/credentials/u2m/cache"
 )
 
-// cacheFactories bundles the constructors ResolveCache depends on. Extracted
+// storeFactories bundles the constructors ResolveStore depends on. Extracted
 // so unit tests can inject stubs without hitting the real OS keyring or
-// filesystem. Production code uses defaultCacheFactories().
-type cacheFactories struct {
+// filesystem. Production code uses defaultStoreFactories().
+type storeFactories struct {
 	newFile          func(context.Context) (Store, error)
 	newKeyring       func() Store
 	probeKeyring     func() error
 	probeKeyringRead func() error
 }
 
-// defaultCacheFactories returns the production factory set.
-func defaultCacheFactories() cacheFactories {
-	return cacheFactories{
-		newFile:          func(ctx context.Context) (Store, error) { return NewFileTokenCache(ctx) },
-		newKeyring:       NewKeyringCache,
+// defaultStoreFactories returns the production factory set.
+func defaultStoreFactories() storeFactories {
+	return storeFactories{
+		newFile:          func(ctx context.Context) (Store, error) { return NewFileStore(ctx) },
+		newKeyring:       NewKeyringStore,
 		probeKeyring:     ProbeKeyring,
 		probeKeyringRead: ProbeKeyringRead,
 	}
 }
 
-// ResolveCache resolves the storage mode for this invocation and returns
+// ResolveStore resolves the storage mode for this invocation and returns
 // the corresponding token cache plus the resolved mode (so callers can log
 // or surface it).
 //
@@ -49,11 +49,11 @@ func defaultCacheFactories() cacheFactories {
 // Every CLI code path that calls u2m.NewPersistentAuth must route the result
 // through u2m.WithTokenCache, otherwise the SDK defaults to the file cache
 // and splits the user's tokens across two backends.
-func ResolveCache(ctx context.Context, override StorageMode) (Store, StorageMode, error) {
-	return resolveCacheForReadWith(ctx, override, defaultCacheFactories())
+func ResolveStore(ctx context.Context, override StorageMode) (Store, StorageMode, error) {
+	return resolveStoreForReadWith(ctx, override, defaultStoreFactories())
 }
 
-// ResolveCacheForLogin resolves the cache like ResolveCache with extra rules
+// ResolveStoreForLogin resolves the cache like ResolveStore with extra rules
 // for the auth login path:
 //
 //  1. When the resolved mode is secure and the user did not explicitly ask
@@ -71,8 +71,8 @@ func ResolveCache(ctx context.Context, override StorageMode) (Store, StorageMode
 // Login-specific. Read paths (auth token, bundle commands) keep the original
 // keyring error so they don't silently mint plaintext copies of tokens that
 // were stored in the keyring on another machine.
-func ResolveCacheForLogin(ctx context.Context, override StorageMode) (Store, StorageMode, error) {
-	return resolveCacheForLoginWith(ctx, override, defaultCacheFactories())
+func ResolveStoreForLogin(ctx context.Context, override StorageMode) (Store, StorageMode, error) {
+	return resolveStoreForLoginWith(ctx, override, defaultStoreFactories())
 }
 
 // OAuthTokenCache adapts a CLI Store to the SDK's u2m_cache.TokenCache for the
@@ -101,12 +101,12 @@ func WrapForOAuthArgument(ctx context.Context, c Store, mode StorageMode, arg u2
 	return NewDualWritingTokenCache(tc, arg)
 }
 
-// resolveCacheWith is the pure form of ResolveCache without the read-path
+// resolveStoreWith is the pure form of ResolveStore without the read-path
 // fallback. Takes the factory set as a parameter so tests can inject stubs.
-// Used directly by ResolveCacheForLogin (which has its own fallback rules)
-// and indirectly by ResolveCache (which adds the read-path fallback in
-// resolveCacheForReadWith).
-func resolveCacheWith(ctx context.Context, override StorageMode, f cacheFactories) (Store, StorageMode, error) {
+// Used directly by ResolveStoreForLogin (which has its own fallback rules)
+// and indirectly by ResolveStore (which adds the read-path fallback in
+// resolveStoreForReadWith).
+func resolveStoreWith(ctx context.Context, override StorageMode, f storeFactories) (Store, StorageMode, error) {
 	mode, err := ResolveStorageMode(ctx, override)
 	if err != nil {
 		return nil, "", err
@@ -125,11 +125,11 @@ func resolveCacheWith(ctx context.Context, override StorageMode, f cacheFactorie
 	}
 }
 
-// resolveCacheForReadWith is the pure form of ResolveCache. It applies the
+// resolveStoreForReadWith is the pure form of ResolveStore. It applies the
 // read-path fallback: when mode is secure-from-default and the keyring
 // probes as definitively unavailable, return the file cache instead.
 // Timeouts keep the keyring (could be transient).
-func resolveCacheForReadWith(ctx context.Context, override StorageMode, f cacheFactories) (Store, StorageMode, error) {
+func resolveStoreForReadWith(ctx context.Context, override StorageMode, f storeFactories) (Store, StorageMode, error) {
 	mode, source, err := ResolveStorageModeWithSource(ctx, override)
 	if err != nil {
 		return nil, "", err
@@ -149,7 +149,7 @@ func resolveCacheForReadWith(ctx context.Context, override StorageMode, f cacheF
 // Explicit secure is honored: callers who asked for secure get the keyring
 // cache even if the probe fails, so the actual Lookup error surfaces the
 // unreachability instead of silently using a different backend.
-func applyReadFallback(ctx context.Context, mode StorageMode, explicit bool, f cacheFactories) (Store, StorageMode, error) {
+func applyReadFallback(ctx context.Context, mode StorageMode, explicit bool, f storeFactories) (Store, StorageMode, error) {
 	switch mode {
 	case StorageModePlaintext:
 		c, err := f.newFile(ctx)
@@ -167,11 +167,11 @@ func applyReadFallback(ctx context.Context, mode StorageMode, explicit bool, f c
 				return f.newKeyring(), mode, nil
 			}
 			log.Debugf(ctx, "secure storage unavailable on read path (%v), using file cache", probeErr)
-			fileCache, fileErr := f.newFile(ctx)
+			store, fileErr := f.newFile(ctx)
 			if fileErr != nil {
 				return nil, "", fmt.Errorf("open file token cache: %w", fileErr)
 			}
-			return fileCache, StorageModePlaintext, nil
+			return store, StorageModePlaintext, nil
 		}
 		return f.newKeyring(), mode, nil
 	default:
@@ -179,9 +179,9 @@ func applyReadFallback(ctx context.Context, mode StorageMode, explicit bool, f c
 	}
 }
 
-// resolveCacheForLoginWith is the pure form of ResolveCacheForLogin. It takes
+// resolveStoreForLoginWith is the pure form of ResolveStoreForLogin. It takes
 // the factory set as a parameter so tests can inject stubs.
-func resolveCacheForLoginWith(ctx context.Context, override StorageMode, f cacheFactories) (Store, StorageMode, error) {
+func resolveStoreForLoginWith(ctx context.Context, override StorageMode, f storeFactories) (Store, StorageMode, error) {
 	mode, source, err := ResolveStorageModeWithSource(ctx, override)
 	if err != nil {
 		return nil, "", err
@@ -193,7 +193,7 @@ func resolveCacheForLoginWith(ctx context.Context, override StorageMode, f cache
 // resolved mode and whether the user explicitly asked for it. Split out so
 // tests can drive the (mode, explicit) input space directly without depending
 // on whatever the resolver's default mode happens to be at any point in time.
-func applyLoginFallback(ctx context.Context, mode StorageMode, explicit bool, f cacheFactories) (Store, StorageMode, error) {
+func applyLoginFallback(ctx context.Context, mode StorageMode, explicit bool, f storeFactories) (Store, StorageMode, error) {
 	switch mode {
 	case StorageModePlaintext:
 		c, err := f.newFile(ctx)
@@ -215,12 +215,12 @@ func applyLoginFallback(ctx context.Context, mode StorageMode, explicit bool, f 
 				return nil, "", fmt.Errorf("secure storage was requested but the OS keyring is not reachable: %w", probeErr)
 			}
 			log.Debugf(ctx, "secure storage unavailable (%v), falling back to plaintext", probeErr)
-			fileCache, fileErr := f.newFile(ctx)
+			fileStore, fileErr := f.newFile(ctx)
 			if fileErr != nil {
 				return nil, "", fmt.Errorf("open file token cache: %w", fileErr)
 			}
 			persistPlaintextFallback(ctx)
-			return fileCache, StorageModePlaintext, nil
+			return fileStore, StorageModePlaintext, nil
 		}
 		return f.newKeyring(), mode, nil
 	default:
@@ -250,7 +250,7 @@ func persistPlaintextFallback(ctx context.Context) {
 //
 // No-op when mode is not secure or when the user already chose a mode
 // explicitly via override, env var, or config. override must be the same
-// value the caller passed to ResolveCacheForLogin so the source check sees
+// value the caller passed to ResolveStoreForLogin so the source check sees
 // the caller's intent rather than re-resolving without it.
 //
 // Persistence failures are logged at warn: they do not block login, but

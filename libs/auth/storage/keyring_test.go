@@ -68,17 +68,17 @@ func (f *fakeBackend) Delete(service, account string) error {
 	return nil
 }
 
-func newTestCache(backend keyringBackend) *keyringCache {
-	return &keyringCache{
+func newTestStore(backend keyringBackend) *keyringStore {
+	return &keyringStore{
 		backend:        backend,
 		timeout:        100 * time.Millisecond,
 		keyringSvcName: "databricks-cli",
 	}
 }
 
-func TestKeyringCache_Store_WritesJSON(t *testing.T) {
+func TestKeyringStore_Store_WritesJSON(t *testing.T) {
 	backend := newFakeBackend()
-	c := newTestCache(backend)
+	c := newTestStore(backend)
 
 	tok := &oauth2.Token{AccessToken: "abc", TokenType: "Bearer"}
 
@@ -94,20 +94,20 @@ func TestKeyringCache_Store_WritesJSON(t *testing.T) {
 	assert.Equal(t, "Bearer", got.Token.TokenType)
 }
 
-func TestKeyringCache_Store_PropagatesBackendError(t *testing.T) {
+func TestKeyringStore_Store_PropagatesBackendError(t *testing.T) {
 	boom := errors.New("backend boom")
 	backend := newFakeBackend()
 	backend.setErr = boom
-	c := newTestCache(backend)
+	c := newTestStore(backend)
 
 	err := c.Put("my-profile", Entry{Token: &oauth2.Token{AccessToken: "x"}})
 	require.Error(t, err)
 	assert.ErrorIs(t, err, boom)
 }
 
-func TestKeyringCache_Lookup_ReturnsStoredToken(t *testing.T) {
+func TestKeyringStore_Lookup_ReturnsStoredToken(t *testing.T) {
 	backend := newFakeBackend()
-	c := newTestCache(backend)
+	c := newTestStore(backend)
 
 	want := &oauth2.Token{AccessToken: "abc", TokenType: "Bearer"}
 	require.NoError(t, c.Put("my-profile", Entry{Token: want}))
@@ -118,20 +118,20 @@ func TestKeyringCache_Lookup_ReturnsStoredToken(t *testing.T) {
 	assert.Equal(t, "Bearer", got.Token.TokenType)
 }
 
-func TestKeyringCache_Lookup_MissingReturnsCacheErrNotFound(t *testing.T) {
+func TestKeyringStore_Lookup_MissingReturnsCacheErrNotFound(t *testing.T) {
 	backend := newFakeBackend()
-	c := newTestCache(backend)
+	c := newTestStore(backend)
 
 	_, err := c.Lookup("nope")
 	require.Error(t, err)
 	assert.ErrorIs(t, err, ErrNotFound)
 }
 
-func TestKeyringCache_Lookup_PropagatesOtherErrors(t *testing.T) {
+func TestKeyringStore_Lookup_PropagatesOtherErrors(t *testing.T) {
 	boom := errors.New("backend boom")
 	backend := newFakeBackend()
 	backend.getErr = boom
-	c := newTestCache(backend)
+	c := newTestStore(backend)
 
 	_, err := c.Lookup("my-profile")
 	require.Error(t, err)
@@ -147,9 +147,9 @@ func TestKeyringCache_Lookup_PropagatesOtherErrors(t *testing.T) {
 // ErrNotFound has to pass through unwrapped because callers branch on it
 // (cache.ErrNotFound is the "no token, please log in" signal). Wrapping it
 // with the unreachability hint would mislead the user.
-func TestKeyringCache_Lookup_NotFoundIsNotWrapped(t *testing.T) {
+func TestKeyringStore_Lookup_NotFoundIsNotWrapped(t *testing.T) {
 	backend := newFakeBackend()
-	c := newTestCache(backend)
+	c := newTestStore(backend)
 
 	_, err := c.Lookup("nope")
 	require.Error(t, err)
@@ -157,19 +157,19 @@ func TestKeyringCache_Lookup_NotFoundIsNotWrapped(t *testing.T) {
 	assert.NotContains(t, err.Error(), "OS keyring unreachable")
 }
 
-func TestKeyringCache_Lookup_CorruptedJSONReturnsError(t *testing.T) {
+func TestKeyringStore_Lookup_CorruptedJSONReturnsError(t *testing.T) {
 	backend := newFakeBackend()
 	backend.items[itemKey("databricks-cli", "my-profile")] = "{not json"
-	c := newTestCache(backend)
+	c := newTestStore(backend)
 
 	_, err := c.Lookup("my-profile")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "unmarshal token")
 }
 
-func TestKeyringCache_StoreNil_DeletesEntry(t *testing.T) {
+func TestKeyringStore_StoreNil_DeletesEntry(t *testing.T) {
 	backend := newFakeBackend()
-	c := newTestCache(backend)
+	c := newTestStore(backend)
 
 	require.NoError(t, c.Put("my-profile", Entry{Token: &oauth2.Token{AccessToken: "abc"}}))
 	require.NoError(t, c.Delete("my-profile"))
@@ -178,30 +178,30 @@ func TestKeyringCache_StoreNil_DeletesEntry(t *testing.T) {
 	assert.False(t, ok, "entry should be gone after delete")
 }
 
-func TestKeyringCache_StoreNil_MissingIsIdempotent(t *testing.T) {
+func TestKeyringStore_StoreNil_MissingIsIdempotent(t *testing.T) {
 	backend := newFakeBackend()
 	backend.deleteErr = keyring.ErrNotFound
-	c := newTestCache(backend)
+	c := newTestStore(backend)
 
 	err := c.Delete("never-stored")
 	require.NoError(t, err, "deleting a missing entry must not error")
 }
 
-func TestKeyringCache_StoreNil_PropagatesOtherDeleteErrors(t *testing.T) {
+func TestKeyringStore_StoreNil_PropagatesOtherDeleteErrors(t *testing.T) {
 	boom := errors.New("backend boom")
 	backend := newFakeBackend()
 	backend.deleteErr = boom
-	c := newTestCache(backend)
+	c := newTestStore(backend)
 
 	err := c.Delete("my-profile")
 	require.Error(t, err)
 	assert.ErrorIs(t, err, boom)
 }
 
-func TestKeyringCache_Store_TimesOut(t *testing.T) {
+func TestKeyringStore_Store_TimesOut(t *testing.T) {
 	backend := newFakeBackend()
 	backend.setBlock = true
-	c := newTestCache(backend) // 100ms timeout from newTestCache
+	c := newTestStore(backend) // 100ms timeout from newTestStore
 
 	start := time.Now()
 	err := c.Put("my-profile", Entry{Token: &oauth2.Token{AccessToken: "x"}})
@@ -212,10 +212,10 @@ func TestKeyringCache_Store_TimesOut(t *testing.T) {
 	assert.Less(t, time.Since(start), 2*time.Second, "should time out quickly")
 }
 
-func TestKeyringCache_Lookup_TimesOut(t *testing.T) {
+func TestKeyringStore_Lookup_TimesOut(t *testing.T) {
 	backend := newFakeBackend()
 	backend.getBlock = true
-	c := newTestCache(backend)
+	c := newTestStore(backend)
 
 	_, err := c.Lookup("my-profile")
 	require.Error(t, err)
@@ -224,10 +224,10 @@ func TestKeyringCache_Lookup_TimesOut(t *testing.T) {
 	assert.ErrorAs(t, err, &timeoutErr, "expected TimeoutError, got %T: %v", err, err)
 }
 
-func TestKeyringCache_StoreNil_TimesOut(t *testing.T) {
+func TestKeyringStore_StoreNil_TimesOut(t *testing.T) {
 	backend := newFakeBackend()
 	backend.deleteBlock = true
-	c := newTestCache(backend)
+	c := newTestStore(backend)
 
 	err := c.Delete("my-profile")
 	require.Error(t, err)

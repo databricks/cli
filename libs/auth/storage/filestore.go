@@ -15,9 +15,11 @@ import (
 )
 
 const (
-	// tokenCacheFile is the path of the default token cache, relative to the
-	// user's home directory.
-	tokenCacheFilePath = ".databricks/token-cache.json"
+	// tokenStoreFilePath is the path of the default token store, relative to
+	// the user's home directory. The on-disk filename stays "token-cache.json"
+	// for backward compatibility with tokens written by older CLI versions,
+	// even though the Go identifiers now use the "store" vocabulary.
+	tokenStoreFilePath = ".databricks/token-cache.json"
 
 	// ownerExecReadWrite is the permission for the .databricks directory.
 	ownerExecReadWrite = 0o700
@@ -25,7 +27,7 @@ const (
 	// ownerReadWrite is the permission for the token-cache.json file.
 	ownerReadWrite = 0o600
 
-	// tokenCacheVersion is the version of the token cache file format.
+	// tokenStoreVersion is the version of the token store file format.
 	//
 	// Version 1 format:
 	//
@@ -40,7 +42,7 @@ const (
 	//     }
 	//   }
 	// }
-	tokenCacheVersion = 1
+	tokenStoreVersion = 1
 )
 
 // fileEntry is the per-key on-disk shape. The embedded *oauth2.Token promotes
@@ -50,44 +52,43 @@ type fileEntry struct {
 	*oauth2.Token
 }
 
-// tokenCacheFile is the format of the token cache file.
-type tokenCacheFile struct {
+// tokenStoreFile is the format of the token store file.
+type tokenStoreFile struct {
 	Version int                   `json:"version"`
 	Tokens  map[string]*fileEntry `json:"tokens"`
 }
 
-type FileTokenCacheOption func(*fileTokenCache)
+type FileStoreOption func(*fileStore)
 
-func WithFileLocation(fileLocation string) FileTokenCacheOption {
-	return func(c *fileTokenCache) {
+func WithFileLocation(fileLocation string) FileStoreOption {
+	return func(c *fileStore) {
 		c.fileLocation = fileLocation
 	}
 }
 
-// fileTokenCache caches tokens in "~/.databricks/token-cache.json". fileTokenCache
-// implements the TokenCache interface.
-type fileTokenCache struct {
+// fileStore stores tokens in "~/.databricks/token-cache.json". fileStore
+// implements the Store interface.
+type fileStore struct {
 	fileLocation string
 
-	// locker protects the token cache file from concurrent reads and writes.
+	// locker protects the token store file from concurrent reads and writes.
 	locker sync.Mutex
 }
 
-// NewFileTokenCache creates a new FileTokenCache. By default, the cache is
-// stored in "~/.databricks/token-cache.json". The cache file is created if it
-// does not already exist. The cache file is created with owner permissions
-// 0600 and the directory is created with owner permissions 0700. If the cache
-// file is corrupt or if its version does not match tokenCacheVersion, an error
-// is returned.
-func NewFileTokenCache(ctx context.Context, opts ...FileTokenCacheOption) (Store, error) {
-	c := &fileTokenCache{}
+// NewFileStore creates a new file-backed Store. By default, tokens are stored
+// in "~/.databricks/token-cache.json". The store file is created if it does
+// not already exist, with owner permissions 0600 and the directory with owner
+// permissions 0700. If the store file is corrupt or if its version does not
+// match tokenStoreVersion, an error is returned.
+func NewFileStore(ctx context.Context, opts ...FileStoreOption) (Store, error) {
+	c := &fileStore{}
 	for _, opt := range opts {
 		opt(c)
 	}
 	if err := c.init(ctx); err != nil {
 		return nil, err
 	}
-	// Fail fast if the cache is not working.
+	// Fail fast if the store is not working.
 	if _, err := c.load(); err != nil {
 		return nil, fmt.Errorf("load: %w", err)
 	}
@@ -95,7 +96,7 @@ func NewFileTokenCache(ctx context.Context, opts ...FileTokenCacheOption) (Store
 }
 
 // Put implements the Store interface.
-func (c *fileTokenCache) Put(key string, e Entry) error {
+func (c *fileStore) Put(key string, e Entry) error {
 	c.locker.Lock()
 	defer c.locker.Unlock()
 	f, err := c.load()
@@ -110,7 +111,7 @@ func (c *fileTokenCache) Put(key string, e Entry) error {
 }
 
 // Lookup implements the Store interface.
-func (c *fileTokenCache) Lookup(key string) (Entry, error) {
+func (c *fileStore) Lookup(key string) (Entry, error) {
 	c.locker.Lock()
 	defer c.locker.Unlock()
 	f, err := c.load()
@@ -125,7 +126,7 @@ func (c *fileTokenCache) Lookup(key string) (Entry, error) {
 }
 
 // Delete implements the Store interface. Removing a missing key is a no-op.
-func (c *fileTokenCache) Delete(key string) error {
+func (c *fileStore) Delete(key string) error {
 	c.locker.Lock()
 	defer c.locker.Unlock()
 	f, err := c.load()
@@ -136,8 +137,8 @@ func (c *fileTokenCache) Delete(key string) error {
 	return c.write(f)
 }
 
-// write marshals f and atomically replaces the cache file.
-func (c *fileTokenCache) write(f *tokenCacheFile) error {
+// write marshals f and atomically replaces the store file.
+func (c *fileStore) write(f *tokenStoreFile) error {
 	raw, err := json.MarshalIndent(f, "", "  ")
 	if err != nil {
 		return fmt.Errorf("marshal: %w", err)
@@ -148,18 +149,18 @@ func (c *fileTokenCache) write(f *tokenCacheFile) error {
 	return nil
 }
 
-// init initializes the token cache file. It creates the file and directory if
+// init initializes the token store file. It creates the file and directory if
 // they do not already exist.
-func (c *fileTokenCache) init(ctx context.Context) error {
+func (c *fileStore) init(ctx context.Context) error {
 	// set the default file location
 	if c.fileLocation == "" {
 		home, err := env.UserHomeDir(ctx)
 		if err != nil {
 			return fmt.Errorf("failed loading home directory: %w", err)
 		}
-		c.fileLocation = filepath.Join(home, tokenCacheFilePath)
+		c.fileLocation = filepath.Join(home, tokenStoreFilePath)
 	}
-	// Create the cache file if it does not exist.
+	// Create the store file if it does not exist.
 	if _, err := os.Stat(c.fileLocation); err != nil {
 		if !errors.Is(err, fs.ErrNotExist) {
 			return fmt.Errorf("stat file: %w", err)
@@ -169,9 +170,9 @@ func (c *fileTokenCache) init(ctx context.Context) error {
 			return fmt.Errorf("mkdir: %w", err)
 		}
 
-		// Create an empty cache file.
-		f := &tokenCacheFile{
-			Version: tokenCacheVersion,
+		// Create an empty store file.
+		f := &tokenStoreFile{
+			Version: tokenStoreVersion,
 			Tokens:  map[string]*fileEntry{},
 		}
 		raw, err := json.MarshalIndent(f, "", "  ")
@@ -179,28 +180,28 @@ func (c *fileTokenCache) init(ctx context.Context) error {
 			return fmt.Errorf("marshal: %w", err)
 		}
 		if err := c.atomicWriteFile(raw); err != nil {
-			return fmt.Errorf("error creating token cache file: %w", err)
+			return fmt.Errorf("error creating token store file: %w", err)
 		}
 	}
 	return nil
 }
 
-// load loads the token cache file from disk. If the file is corrupt or if its
-// version does not match tokenCacheVersion, it returns an error.
-func (c *fileTokenCache) load() (*tokenCacheFile, error) {
+// load loads the token store file from disk. If the file is corrupt or if its
+// version does not match tokenStoreVersion, it returns an error.
+func (c *fileStore) load() (*tokenStoreFile, error) {
 	raw, err := os.ReadFile(c.fileLocation)
 	if err != nil {
 		return nil, fmt.Errorf("read: %w", err)
 	}
-	f := &tokenCacheFile{}
+	f := &tokenStoreFile{}
 	if err := json.Unmarshal(raw, &f); err != nil {
 		return nil, fmt.Errorf("parse: %w", err)
 	}
-	if f.Version != tokenCacheVersion {
+	if f.Version != tokenStoreVersion {
 		// in the later iterations we could do state upgraders,
-		// so that we transform token cache from v1 to v2 without
+		// so that we transform token store from v1 to v2 without
 		// losing the tokens and asking the user to re-authenticate.
-		return nil, fmt.Errorf("needs version %d, got version %d", tokenCacheVersion, f.Version)
+		return nil, fmt.Errorf("needs version %d, got version %d", tokenStoreVersion, f.Version)
 	}
 	return f, nil
 }
@@ -208,7 +209,7 @@ func (c *fileTokenCache) load() (*tokenCacheFile, error) {
 // atomicWriteFile writes data to the file atomically by first writing to a
 // temporary file in the same directory and then renaming it to the target.
 // This prevents corruption from interrupted writes.
-func (c *fileTokenCache) atomicWriteFile(data []byte) error {
+func (c *fileStore) atomicWriteFile(data []byte) error {
 	tmp, err := c.writeTmpFile(data)
 	if err != nil {
 		return err
@@ -217,7 +218,7 @@ func (c *fileTokenCache) atomicWriteFile(data []byte) error {
 	return os.Rename(tmp, c.fileLocation)
 }
 
-func (c *fileTokenCache) writeTmpFile(data []byte) (string, error) {
+func (c *fileStore) writeTmpFile(data []byte) (string, error) {
 	tmp, err := os.CreateTemp(filepath.Dir(c.fileLocation), ".token-cache-*.tmp")
 	if err != nil {
 		return "", fmt.Errorf("create temp file: %w", err)

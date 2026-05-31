@@ -134,7 +134,7 @@ to specify it explicitly.
 			profileName = selected
 		}
 
-		tokenCache, _, err := storage.ResolveCache(ctx, "")
+		tokenStore, _, err := storage.ResolveStore(ctx, "")
 		if err != nil {
 			return fmt.Errorf("failed to open token cache: %w", err)
 		}
@@ -144,7 +144,7 @@ to specify it explicitly.
 			autoApprove:    autoApprove,
 			deleteProfile:  deleteProfile,
 			profiler:       profiler,
-			tokenCache:     tokenCache,
+			tokenStore:     tokenStore,
 			configFilePath: env.Get(ctx, "DATABRICKS_CONFIG_FILE"),
 		})
 	}
@@ -157,7 +157,7 @@ type logoutArgs struct {
 	autoApprove    bool
 	deleteProfile  bool
 	profiler       profile.Profiler
-	tokenCache     storage.Store
+	tokenStore     storage.Store
 	configFilePath string
 }
 
@@ -206,7 +206,7 @@ func runLogout(ctx context.Context, args logoutArgs) error {
 	// Otherwise, we could be deleting profiles that were created by other means (e.g. manually).
 	isCreatedByLogin := matchedProfile.AuthType == "databricks-cli"
 	if isCreatedByLogin {
-		err = clearTokenCache(ctx, *matchedProfile, args.profiler, args.tokenCache)
+		err = clearTokenStore(ctx, *matchedProfile, args.profiler, args.tokenStore)
 		if err != nil {
 			return fmt.Errorf("failed to clear token cache: %w", err)
 		}
@@ -262,15 +262,15 @@ func getMatchingProfile(ctx context.Context, profileName string, profiler profil
 	return &profiles[0], nil
 }
 
-// clearTokenCache removes cached OAuth tokens for the given profile from the
+// clearTokenStore removes cached OAuth tokens for the given profile from the
 // token cache. It removes:
 //  1. The entry keyed by the profile name.
 //  2. The entry keyed by the host-based cache key, but only if no other
 //     remaining profile references the same key. For account and unified
 //     profiles, the cache key includes the OIDC path
 //     (host/oidc/accounts/<account_id>).
-func clearTokenCache(ctx context.Context, p profile.Profile, profiler profile.Profiler, tokenCache storage.Store) error {
-	if err := tokenCache.Delete(p.Name); err != nil {
+func clearTokenStore(ctx context.Context, p profile.Profile, profiler profile.Profiler, tokenStore storage.Store) error {
+	if err := tokenStore.Delete(p.Name); err != nil {
 		return fmt.Errorf("failed to delete profile-keyed token for profile %q: %w", p.Name, err)
 	}
 
@@ -290,7 +290,7 @@ func clearTokenCache(ctx context.Context, p profile.Profile, profiler profile.Pr
 	}
 
 	if len(otherProfiles) == 0 {
-		if err := tokenCache.Delete(hostCacheKey); err != nil {
+		if err := tokenStore.Delete(hostCacheKey); err != nil {
 			return fmt.Errorf("failed to delete host-keyed token for %q: %w", hostCacheKey, err)
 		}
 	}
