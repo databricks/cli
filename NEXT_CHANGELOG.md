@@ -1,6 +1,6 @@
 # NEXT CHANGELOG
 
-## Release v1.2.0
+## Release v1.1.1
 
 ### Notable Changes
 
@@ -11,3 +11,4 @@
 * Retry transient HTTP 504 Gateway Timeout errors in direct deployment engine ([#5349](https://github.com/databricks/cli/pull/5349)).
 
 ### Dependency updates
+* Bump `golang.org/x/crypto` from 0.51.0 to 0.52.0 ([#5344](https://github.com/databricks/cli/pull/5344)).
