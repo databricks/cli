@@ -5,11 +5,11 @@
     "direct_access_index_spec": {
       "embedding_vector_columns": [
         {
-          "embedding_dimension": 8,
+          "embedding_dimension": 768,
           "name": "vector"
         }
       ],
-      "schema_json": "{\"columns\":[{\"name\":\"id\",\"type\":\"integer\"},{\"name\":\"vector\",\"type\":\"array<float>\"}]}"
+      "schema_json": "{\"id\":\"integer\",\"vector\":\"array<float>\"}"
     },
     "endpoint_name": "vs-endpoint-[UNIQUE_NAME]",
     "index_type": "DIRECT_ACCESS",

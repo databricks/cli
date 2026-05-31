@@ -11,7 +11,7 @@ trap cleanup EXIT
 
 trace $CLI vector-search-endpoints create-endpoint "${ENDPOINT_NAME}" STANDARD | jq '{name, endpoint_type}'
 
-trace $CLI vector-search-indexes create-index --json "{\"name\":\"${INDEX_NAME}\",\"endpoint_name\":\"${ENDPOINT_NAME}\",\"primary_key\":\"id\",\"index_type\":\"DIRECT_ACCESS\",\"direct_access_index_spec\":{\"schema_json\":\"{\\\"columns\\\":[{\\\"name\\\":\\\"id\\\",\\\"type\\\":\\\"integer\\\"},{\\\"name\\\":\\\"vector\\\",\\\"type\\\":\\\"array<float>\\\"}]}\",\"embedding_vector_columns\":[{\"name\":\"vector\",\"embedding_dimension\":8}]}}" | jq '{name, endpoint_name, index_type, primary_key}'
+trace $CLI vector-search-indexes create-index --json "{\"name\":\"${INDEX_NAME}\",\"endpoint_name\":\"${ENDPOINT_NAME}\",\"primary_key\":\"id\",\"index_type\":\"DIRECT_ACCESS\",\"direct_access_index_spec\":{\"schema_json\":\"{\\\"id\\\":\\\"integer\\\",\\\"vector\\\":\\\"array<float>\\\"}\",\"embedding_vector_columns\":[{\"name\":\"vector\",\"embedding_dimension\":768}]}}" | jq '{name, endpoint_name, index_type, primary_key}'
 
 trace $CLI bundle deployment bind index1 "${INDEX_NAME}" --auto-approve
 

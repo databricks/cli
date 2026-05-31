@@ -65,11 +65,11 @@ Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged
         "direct_access_index_spec": {
           "embedding_vector_columns": [
             {
-              "embedding_dimension": 8,
+              "embedding_dimension": 768,
               "name": "vector"
             }
           ],
-          "schema_json": "{\"columns\":[{\"name\":\"id\",\"type\":\"integer\"},{\"name\":\"vector\",\"type\":\"array\u003cfloat\u003e\"}]}"
+          "schema_json": "{\"id\":\"integer\",\"vector\":\"array\u003cfloat\u003e\"}"
         },
         "endpoint_name": "vs-endpoint-[UNIQUE_NAME]",
         "endpoint_uuid": "[UUID]",
