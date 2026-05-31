@@ -11,7 +11,7 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 )
 
-// workspaceFilesystemLock implements DeploymentLock using a lock file in the
+// workspaceFilesystemLock implements DeploymentManager using a lock file in the
 // bundle's workspace state path. Holds only the primitives it needs from the
 // bundle.
 type workspaceFilesystemLock struct {
@@ -30,16 +30,18 @@ type workspaceFilesystemLock struct {
 	goal   Goal
 }
 
-func (l *workspaceFilesystemLock) Acquire(ctx context.Context) error {
+func (l *workspaceFilesystemLock) CreateVersion(ctx context.Context, goal Goal) (int64, error) {
+	l.goal = goal
+
 	// Return early if locking is disabled.
 	if !l.enabled {
 		log.Infof(ctx, "Skipping; locking is disabled")
-		return nil
+		return 0, nil
 	}
 
 	lk, err := locker.CreateLocker(l.user, l.statePath, l.client)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	l.locker = lk
@@ -52,16 +54,16 @@ func (l *workspaceFilesystemLock) Acquire(ctx context.Context) error {
 		// If we get a permission or "doesn't exist" error from the API this
 		// indicates we either don't have permissions or the path is invalid.
 		if errors.Is(err, fs.ErrPermission) || errors.Is(err, fs.ErrNotExist) {
-			return l.reportPermissionError(ctx, l.statePath).Error()
+			return 0, l.reportPermissionError(ctx, l.statePath).Error()
 		}
 
-		return err
+		return 0, err
 	}
 
-	return nil
+	return 0, nil
 }
 
-func (l *workspaceFilesystemLock) Release(ctx context.Context, _ DeploymentStatus) error {
+func (l *workspaceFilesystemLock) CloseVersion(ctx context.Context, _ int64, _ DeploymentStatus) error {
 	// Return early if locking is disabled.
 	if !l.enabled {
 		log.Infof(ctx, "Skipping; locking is disabled")
@@ -77,6 +79,8 @@ func (l *workspaceFilesystemLock) Release(ctx context.Context, _ DeploymentStatu
 
 	log.Infof(ctx, "Releasing deployment lock")
 	if l.goal == GoalDestroy {
+		// AllowLockFileNotExist because the destroy phase deletes the remote
+		// state directory, which includes the lock file itself.
 		return l.locker.Unlock(ctx, locker.AllowLockFileNotExist)
 	}
 	return l.locker.Unlock(ctx)
