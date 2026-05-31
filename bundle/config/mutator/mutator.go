@@ -13,6 +13,7 @@ import (
 func DefaultMutators(ctx context.Context, b *bundle.Bundle) {
 	bundle.ApplySeqContext(ctx, b,
 		loader.EntryPoint(),
+		ApplyManagedStateEnv(),
 
 		// Execute preinit script before processing includes.
 		// It needs to be done before processing configuration files to allow

@@ -7,4 +7,11 @@ type Deployment struct {
 
 	// Lock configures locking behavior on deployment.
 	Lock Lock `json:"lock,omitempty"`
+
+	// ManagedState opts the bundle into the deployment metadata service (DMS)
+	// for locking and resource-state management. Defaults to false (historical
+	// filesystem-based behavior). Can also be set with the
+	// DATABRICKS_BUNDLE_MANAGED_STATE environment variable; configuration takes
+	// priority over the environment variable.
+	ManagedState *bool `json:"managed_state,omitempty"`
 }
