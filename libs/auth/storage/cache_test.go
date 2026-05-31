@@ -12,24 +12,41 @@ import (
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m"
-	"github.com/databricks/databricks-sdk-go/credentials/u2m/cache"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
 )
 
-// stubCache is a test double for cache.TokenCache that records the source
-// it was constructed from. It lets the tests confirm which factory ran.
+// stubCache is a test double for Store that records the source it was
+// constructed from. It lets the tests confirm which factory ran.
 type stubCache struct{ source string }
 
-func (stubCache) Store(string, *oauth2.Token) error    { return nil }
-func (stubCache) Lookup(string) (*oauth2.Token, error) { return nil, cache.ErrNotFound }
+func (stubCache) Put(string, Entry) error      { return nil }
+func (stubCache) Lookup(string) (Entry, error) { return Entry{}, ErrNotFound }
+func (stubCache) Delete(string) error          { return nil }
+
+// memStore is a functional in-memory Store for exercising the OAuth wrappers.
+type memStore struct{ entries map[string]Entry }
+
+func newMemStore() *memStore { return &memStore{entries: map[string]Entry{}} }
+
+func (m *memStore) Put(key string, e Entry) error { m.entries[key] = e; return nil }
+
+func (m *memStore) Lookup(key string) (Entry, error) {
+	e, ok := m.entries[key]
+	if !ok {
+		return Entry{}, ErrNotFound
+	}
+	return e, nil
+}
+
+func (m *memStore) Delete(key string) error { delete(m.entries, key); return nil }
 
 func fakeFactories(t *testing.T) cacheFactories {
 	t.Helper()
 	return cacheFactories{
-		newFile:          func(context.Context) (cache.TokenCache, error) { return stubCache{source: "file"}, nil },
-		newKeyring:       func() cache.TokenCache { return stubCache{source: "keyring"} },
+		newFile:          func(context.Context) (Store, error) { return stubCache{source: "file"}, nil },
+		newKeyring:       func() Store { return stubCache{source: "keyring"} },
 		probeKeyring:     func() error { return nil },
 		probeKeyringRead: func() error { return nil },
 	}
@@ -112,8 +129,8 @@ func TestResolveCache_FileFactoryErrorPropagates(t *testing.T) {
 	ctx := t.Context()
 	boom := errors.New("disk full")
 	factories := cacheFactories{
-		newFile:          func(context.Context) (cache.TokenCache, error) { return nil, boom },
-		newKeyring:       func() cache.TokenCache { return stubCache{source: "keyring"} },
+		newFile:          func(context.Context) (Store, error) { return nil, boom },
+		newKeyring:       func() Store { return stubCache{source: "keyring"} },
 		probeKeyring:     func() error { return nil },
 		probeKeyringRead: func() error { return nil },
 	}
@@ -500,8 +517,8 @@ func TestWrapForOAuthArgument(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			inner := newMemoryCache()
-			got := WrapForOAuthArgument(inner, tc.mode, arg)
+			inner := newMemStore()
+			got := WrapForOAuthArgument(t.Context(), inner, tc.mode, arg)
 
 			_, wrapped := got.(*DualWritingTokenCache)
 			assert.Equal(t, tc.wantWrap, wrapped, "wrapper presence")
@@ -511,13 +528,13 @@ func TestWrapForOAuthArgument(t *testing.T) {
 
 			primary, err := inner.Lookup(profileKey)
 			require.NoError(t, err, "primary key must always be written")
-			assert.Equal(t, tok, primary)
+			assert.Equal(t, tok, primary.Token)
 
 			_, err = inner.Lookup(host)
 			if tc.wantHostKey {
 				require.NoError(t, err, "host-key mirror expected in plaintext mode")
 			} else {
-				assert.ErrorIs(t, err, cache.ErrNotFound, "no host-key mirror expected outside plaintext mode")
+				assert.ErrorIs(t, err, ErrNotFound, "no host-key mirror expected outside plaintext mode")
 			}
 		})
 	}

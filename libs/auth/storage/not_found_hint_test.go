@@ -38,9 +38,9 @@ func (c boomCache) Lookup(string) (*oauth2.Token, error) { return nil, c.err }
 func writeLegacyCache(t *testing.T, path string, hasEntries bool) {
 	t.Helper()
 	require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o700))
-	tokens := map[string]*oauth2.Token{}
+	tokens := map[string]*fileEntry{}
 	if hasEntries {
-		tokens["my-profile"] = &oauth2.Token{AccessToken: "abc"}
+		tokens["my-profile"] = &fileEntry{Token: &oauth2.Token{AccessToken: "abc"}}
 	}
 	body, err := json.Marshal(tokenCacheFile{Version: tokenCacheVersion, Tokens: tokens})
 	require.NoError(t, err)
