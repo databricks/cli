@@ -71,51 +71,34 @@ jobs:
       - name: Regenerate jsonschema_for_docs.json
         run: go tool -modfile=tools/task/go.mod task --force generate-schema-docs
 
-      # Fail loudly if regeneration touches anything other than the docs schema.
-      # Anything else (annotations.yml, untracked files, ...) is a bug in the
-      # generator, not something we want to silently publish.
-      - name: Assert only jsonschema_for_docs.json changed on main
+      # The file is no longer tracked on `main`, so regeneration must produce
+      # exactly one untracked file. Anything else (annotations.yml churn, stray
+      # files, or no output at all) is a generator bug, not something to publish.
+      - name: Assert only jsonschema_for_docs.json was produced
         run: |
           changed=$(git status --porcelain)
-          expected=" M bundle/schema/jsonschema_for_docs.json"
-          if [ -z "$changed" ]; then
-            echo "Regeneration produced no diff against main."
-            exit 0
-          fi
-          if [ "$changed" != "$expected" ]; then
-            echo "Expected only bundle/schema/jsonschema_for_docs.json to be modified."
-            echo "Actual git status --porcelain:"
+          if [ "$changed" != "?? bundle/schema/jsonschema_for_docs.json" ]; then
+            echo "Expected exactly one untracked file (jsonschema_for_docs.json), got:"
             echo "$changed"
             exit 1
           fi
 
-      - name: Capture regenerated file
-        run: |
-          mkdir -p "$RUNNER_TEMP/regen"
-          cp bundle/schema/jsonschema_for_docs.json "$RUNNER_TEMP/regen/jsonschema_for_docs.json"
-
-      - name: Check out docgen worktree
-        run: |
-          git fetch origin docgen
-          git worktree add "$RUNNER_TEMP/docgen" origin/docgen
-
-      - name: Stage regenerated file on docgen
-        working-directory: ${{ runner.temp }}/docgen
-        run: |
-          mkdir -p bundle/schema
-          cp "$RUNNER_TEMP/regen/jsonschema_for_docs.json" bundle/schema/jsonschema_for_docs.json
-          git add bundle/schema/jsonschema_for_docs.json
-
-      - name: Commit and push to docgen
-        working-directory: ${{ runner.temp }}/docgen
+      # Publish to the `docgen` branch via a worktree, so both branches are
+      # checked out at once and we can copy the generated file straight across
+      # without disturbing `main`.
+      - name: Publish to docgen
         env:
           TAG: ${{ steps.tag.outputs.tag }}
         run: |-
-          if git diff --cached --quiet; then
+          git fetch origin docgen
+          git worktree add "$RUNNER_TEMP/docgen" origin/docgen
+          cp bundle/schema/jsonschema_for_docs.json "$RUNNER_TEMP/docgen/bundle/schema/jsonschema_for_docs.json"
+          cd "$RUNNER_TEMP/docgen"
+          if git diff --quiet; then
             echo "docgen already up to date for ${TAG}; nothing to commit."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -m "Update jsonschema_for_docs.json for ${TAG}"
+          git commit -am "Update jsonschema_for_docs.json for ${TAG}"
           git push origin HEAD:docgen
