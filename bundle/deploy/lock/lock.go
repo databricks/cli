@@ -30,19 +30,19 @@ const (
 //
 // DMS semantics: CreateVersion atomically succeeds only if no other deployment
 // is in progress and the returned version is exactly +1 to the latest closed
-// version, providing serialized optimistic concurrency control. CloseVersion
+// version, providing serialized optimistic concurrency control. CompleteVersion
 // records the outcome.
 //
 // Workspace-filesystem semantics: CreateVersion acquires the workspace lock
-// file; CloseVersion releases it. The returned version number is a placeholder
+// file; CompleteVersion releases it. The returned version number is a placeholder
 // (the lock file does not track a monotonic counter today).
 type DeploymentManager interface {
 	// CreateVersion begins a new deployment for the given goal.
 	// Returns the version number assigned by the backend.
 	CreateVersion(ctx context.Context, goal Goal) (int64, error)
 
-	// CloseVersion finalizes the deployment version created by CreateVersion.
-	CloseVersion(ctx context.Context, version int64, status DeploymentStatus) error
+	// CompleteVersion finalizes the deployment version created by CreateVersion.
+	CompleteVersion(ctx context.Context, version int64, status DeploymentStatus) error
 }
 
 // NewDeploymentManager returns a DeploymentManager backed by the workspace
