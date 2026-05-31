@@ -27,6 +27,21 @@ func TestIsManagedStateEnvVarOtherValues(t *testing.T) {
 	}
 }
 
+func TestIsManagedStateConfigTrue(t *testing.T) {
+	testutil.CleanupEnvironment(t)
+	enabled := true
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Bundle: config.Bundle{
+				Deployment: config.Deployment{
+					ManagedState: &enabled,
+				},
+			},
+		},
+	}
+	assert.True(t, bundle.IsManagedState(t.Context(), b))
+}
+
 func TestIsManagedStateConfigTakesPriority(t *testing.T) {
 	testutil.CleanupEnvironment(t)
 	t.Setenv("DATABRICKS_BUNDLE_MANAGED_STATE", "true")

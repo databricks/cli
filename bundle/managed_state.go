@@ -8,9 +8,8 @@ import (
 )
 
 // IsManagedState reports whether the bundle is opted into the deployment
-// metadata service (DMS) for locking and resource-state management.
-// Configuration takes priority over the DATABRICKS_BUNDLE_MANAGED_STATE
-// environment variable.
+// metadata service (DMS). Configuration takes priority over the
+// DATABRICKS_BUNDLE_MANAGED_STATE environment variable.
 func IsManagedState(ctx context.Context, b *Bundle) bool {
 	if b.Config.Bundle.Deployment.ManagedState != nil {
 		return *b.Config.Bundle.Deployment.ManagedState
