@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/databricks/databricks-sdk-go/credentials/u2m/cache"
 	"github.com/google/uuid"
 	"github.com/zalando/go-keyring"
 	"golang.org/x/oauth2"
@@ -80,7 +79,7 @@ type keyringCache struct {
 
 // NewKeyringCache returns a cache.TokenCache backed by the OS-native secure
 // store (via zalando/go-keyring) with a 3-second per-operation timeout.
-func NewKeyringCache() cache.TokenCache {
+func NewKeyringCache() Store {
 	return &keyringCache{
 		backend:        zalandoBackend{},
 		timeout:        defaultKeyringTimeout,
@@ -107,10 +106,10 @@ func probeWithBackend(backend keyringBackend, timeout time.Duration) error {
 	}
 	account := keyringProbeAccountPrefix + uuid.NewString()
 	tok := &oauth2.Token{AccessToken: "probe"}
-	if err := c.Store(account, tok); err != nil {
+	if err := c.Put(account, Entry{Token: tok}); err != nil {
 		return fmt.Errorf("write: %w", err)
 	}
-	if err := c.Store(account, nil); err != nil {
+	if err := c.Delete(account); err != nil {
 		return fmt.Errorf("delete: %w", err)
 	}
 	return nil
@@ -145,19 +144,9 @@ func probeReadWithBackend(backend keyringBackend, timeout time.Duration) error {
 	return err
 }
 
-// Store stores t under key. Nil t deletes the entry; deleting a missing
-// entry is not an error.
-func (k *keyringCache) Store(key string, t *oauth2.Token) error {
-	if t == nil {
-		return k.withTimeout("delete", func() error {
-			err := k.backend.Delete(k.keyringSvcName, key)
-			if errors.Is(err, keyring.ErrNotFound) {
-				return nil
-			}
-			return err
-		})
-	}
-	raw, err := json.Marshal(keyringEntry{Token: t})
+// Put implements the Store interface.
+func (k *keyringCache) Put(key string, e Entry) error {
+	raw, err := json.Marshal(keyringEntry(e))
 	if err != nil {
 		return fmt.Errorf("marshal token: %w", err)
 	}
@@ -166,8 +155,19 @@ func (k *keyringCache) Store(key string, t *oauth2.Token) error {
 	})
 }
 
-// Lookup returns the token under key or cache.ErrNotFound.
-func (k *keyringCache) Lookup(key string) (*oauth2.Token, error) {
+// Delete implements the Store interface. Removing a missing entry is a no-op.
+func (k *keyringCache) Delete(key string) error {
+	return k.withTimeout("delete", func() error {
+		err := k.backend.Delete(k.keyringSvcName, key)
+		if errors.Is(err, keyring.ErrNotFound) {
+			return nil
+		}
+		return err
+	})
+}
+
+// Lookup implements the Store interface, returning ErrNotFound on a miss.
+func (k *keyringCache) Lookup(key string) (Entry, error) {
 	var raw string
 	err := k.withTimeout("get", func() error {
 		got, gerr := k.backend.Get(k.keyringSvcName, key)
@@ -178,17 +178,17 @@ func (k *keyringCache) Lookup(key string) (*oauth2.Token, error) {
 		return nil
 	})
 	if errors.Is(err, keyring.ErrNotFound) {
-		return nil, cache.ErrNotFound
+		return Entry{}, ErrNotFound
 	}
 	if err != nil {
-		return nil, wrapKeyringUnreachable(err)
+		return Entry{}, wrapKeyringUnreachable(err)
 	}
 
 	var entry keyringEntry
 	if err := json.Unmarshal([]byte(raw), &entry); err != nil {
-		return nil, fmt.Errorf("unmarshal token: %w", err)
+		return Entry{}, fmt.Errorf("unmarshal token: %w", err)
 	}
-	return entry.Token, nil
+	return Entry(entry), nil
 }
 
 // wrapKeyringUnreachable wraps a non-ErrNotFound keyring error with
@@ -209,8 +209,8 @@ func wrapKeyringUnreachable(err error) error {
 	return fmt.Errorf("OS keyring unreachable: %w (set DATABRICKS_AUTH_STORAGE=plaintext or run `databricks auth login` to use file-based token storage)", err)
 }
 
-// Compile-time confirmation that keyringCache satisfies the SDK interface.
-var _ cache.TokenCache = (*keyringCache)(nil)
+// Compile-time confirmation that keyringCache satisfies the CLI interface.
+var _ Store = (*keyringCache)(nil)
 
 // TimeoutError is returned when a keyring operation exceeds the configured
 // timeout. Callers can use errors.As to detect and present a clear message.

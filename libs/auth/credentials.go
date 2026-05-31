@@ -103,13 +103,13 @@ func (c CLICredentials) Configure(ctx context.Context, cfg *config.Config) (cred
 	// across two backends: login writes to the keyring, but every workspace
 	// client built through this strategy would read an empty file cache and
 	// fail with "cache: token not found".
-	tokenCache, _, err := storage.ResolveCache(ctx, "")
+	tokenCache, mode, err := storage.ResolveCache(ctx, "")
 	if err != nil {
 		return nil, err
 	}
 	ts, err := c.persistentAuth(ctx,
 		u2m.WithOAuthArgument(oauthArg),
-		u2m.WithTokenCache(tokenCache),
+		u2m.WithTokenCache(storage.OAuthTokenCache(ctx, tokenCache, mode)),
 	)
 	if err != nil {
 		return nil, err

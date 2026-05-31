@@ -28,7 +28,6 @@ import (
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/databricks-sdk-go/config"
-	"github.com/databricks/databricks-sdk-go/credentials/u2m/cache"
 	"github.com/spf13/cobra"
 )
 
@@ -158,7 +157,7 @@ type logoutArgs struct {
 	autoApprove    bool
 	deleteProfile  bool
 	profiler       profile.Profiler
-	tokenCache     cache.TokenCache
+	tokenCache     storage.Store
 	configFilePath string
 }
 
@@ -270,8 +269,8 @@ func getMatchingProfile(ctx context.Context, profileName string, profiler profil
 //     remaining profile references the same key. For account and unified
 //     profiles, the cache key includes the OIDC path
 //     (host/oidc/accounts/<account_id>).
-func clearTokenCache(ctx context.Context, p profile.Profile, profiler profile.Profiler, tokenCache cache.TokenCache) error {
-	if err := tokenCache.Store(p.Name, nil); err != nil {
+func clearTokenCache(ctx context.Context, p profile.Profile, profiler profile.Profiler, tokenCache storage.Store) error {
+	if err := tokenCache.Delete(p.Name); err != nil {
 		return fmt.Errorf("failed to delete profile-keyed token for profile %q: %w", p.Name, err)
 	}
 
@@ -291,7 +290,7 @@ func clearTokenCache(ctx context.Context, p profile.Profile, profiler profile.Pr
 	}
 
 	if len(otherProfiles) == 0 {
-		if err := tokenCache.Store(hostCacheKey, nil); err != nil {
+		if err := tokenCache.Delete(hostCacheKey); err != nil {
 			return fmt.Errorf("failed to delete host-keyed token for %q: %w", hostCacheKey, err)
 		}
 	}

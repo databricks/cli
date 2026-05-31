@@ -22,7 +22,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/config/experimental/auth/authconv"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m"
-	"github.com/databricks/databricks-sdk-go/credentials/u2m/cache"
 	"github.com/spf13/cobra"
 	"golang.org/x/oauth2"
 )
@@ -300,7 +299,7 @@ a new profile is created.
 		persistentAuthOpts := []u2m.PersistentAuthOption{
 			u2m.WithOAuthArgument(oauthArgument),
 			u2m.WithBrowser(getBrowserFunc(cmd)),
-			u2m.WithTokenCache(storage.WrapForOAuthArgument(tokenCache, mode, oauthArgument)),
+			u2m.WithTokenCache(storage.WrapForOAuthArgument(ctx, tokenCache, mode, oauthArgument)),
 		}
 		if len(scopesList) > 0 {
 			persistentAuthOpts = append(persistentAuthOpts, u2m.WithScopes(scopesList))
@@ -629,7 +628,7 @@ type discoveryLoginInputs struct {
 	scopes          string
 	existingProfile *profile.Profile
 	browserFunc     func(string) error
-	tokenCache      cache.TokenCache
+	tokenCache      storage.Store
 	mode            storage.StorageMode
 }
 
@@ -651,7 +650,7 @@ func discoveryLogin(ctx context.Context, in discoveryLoginInputs) error {
 		u2m.WithOAuthArgument(arg),
 		u2m.WithBrowser(in.browserFunc),
 		u2m.WithDiscoveryLogin(),
-		u2m.WithTokenCache(storage.WrapForOAuthArgument(in.tokenCache, in.mode, arg)),
+		u2m.WithTokenCache(storage.WrapForOAuthArgument(ctx, in.tokenCache, in.mode, arg)),
 	}
 	if len(scopesList) > 0 {
 		opts = append(opts, u2m.WithScopes(scopesList))

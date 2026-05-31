@@ -16,8 +16,8 @@ import (
 // so unit tests can inject stubs without hitting the real OS keyring or
 // filesystem. Production code uses defaultCacheFactories().
 type cacheFactories struct {
-	newFile          func(context.Context) (cache.TokenCache, error)
-	newKeyring       func() cache.TokenCache
+	newFile          func(context.Context) (Store, error)
+	newKeyring       func() Store
 	probeKeyring     func() error
 	probeKeyringRead func() error
 }
@@ -25,7 +25,7 @@ type cacheFactories struct {
 // defaultCacheFactories returns the production factory set.
 func defaultCacheFactories() cacheFactories {
 	return cacheFactories{
-		newFile:          func(ctx context.Context) (cache.TokenCache, error) { return NewFileTokenCache(ctx) },
+		newFile:          func(ctx context.Context) (Store, error) { return NewFileTokenCache(ctx) },
 		newKeyring:       NewKeyringCache,
 		probeKeyring:     ProbeKeyring,
 		probeKeyringRead: ProbeKeyringRead,
@@ -49,12 +49,8 @@ func defaultCacheFactories() cacheFactories {
 // Every CLI code path that calls u2m.NewPersistentAuth must route the result
 // through u2m.WithTokenCache, otherwise the SDK defaults to the file cache
 // and splits the user's tokens across two backends.
-func ResolveCache(ctx context.Context, override StorageMode) (cache.TokenCache, StorageMode, error) {
-	inner, mode, err := resolveCacheForReadWith(ctx, override, defaultCacheFactories())
-	if err != nil {
-		return nil, "", err
-	}
-	return withNotFoundHint(ctx, inner, mode), mode, nil
+func ResolveCache(ctx context.Context, override StorageMode) (Store, StorageMode, error) {
+	return resolveCacheForReadWith(ctx, override, defaultCacheFactories())
 }
 
 // ResolveCacheForLogin resolves the cache like ResolveCache with extra rules
@@ -75,27 +71,34 @@ func ResolveCache(ctx context.Context, override StorageMode) (cache.TokenCache, 
 // Login-specific. Read paths (auth token, bundle commands) keep the original
 // keyring error so they don't silently mint plaintext copies of tokens that
 // were stored in the keyring on another machine.
-func ResolveCacheForLogin(ctx context.Context, override StorageMode) (cache.TokenCache, StorageMode, error) {
-	inner, mode, err := resolveCacheForLoginWith(ctx, override, defaultCacheFactories())
-	if err != nil {
-		return nil, "", err
-	}
-	return withNotFoundHint(ctx, inner, mode), mode, nil
+func ResolveCacheForLogin(ctx context.Context, override StorageMode) (Store, StorageMode, error) {
+	return resolveCacheForLoginWith(ctx, override, defaultCacheFactories())
 }
 
-// WrapForOAuthArgument wraps tokenCache so SDK-side writes (Challenge, refresh)
-// dual-write to the legacy host-based cache key when mode is plaintext. Other
-// modes return tokenCache unchanged: secure mode never writes a host-key entry,
-// and the wrapper has nothing to do for non-file backends.
+// OAuthTokenCache adapts a CLI Store to the SDK's u2m_cache.TokenCache for the
+// U2M PersistentAuth flow, applying the not-found hint so a cache miss carries
+// actionable "run databricks auth login" guidance. Use on read and credential
+// paths. M2M/OIDC callers use the CLI Store directly and must not route through
+// here: the login hint is the wrong remedy for those auth types.
+func OAuthTokenCache(ctx context.Context, c Store, mode StorageMode) cache.TokenCache {
+	return withNotFoundHint(ctx, ToU2MTokenCache(c), mode)
+}
+
+// WrapForOAuthArgument is OAuthTokenCache plus, in plaintext mode, a dual-write
+// of every Challenge/refresh write to the legacy host-based cache key. Use on
+// the login and refresh write paths. Other modes return the plain adapter:
+// secure mode never writes a host-key entry, and the dual-write has nothing to
+// do for non-file backends.
 //
 // Pass the OAuthArgument that the same NewPersistentAuth call will use. For
 // discovery arguments the discovered host is read at Store time, so it is
 // safe to wrap before Challenge populates it.
-func WrapForOAuthArgument(tokenCache cache.TokenCache, mode StorageMode, arg u2m.OAuthArgument) cache.TokenCache {
+func WrapForOAuthArgument(ctx context.Context, c Store, mode StorageMode, arg u2m.OAuthArgument) cache.TokenCache {
+	tc := OAuthTokenCache(ctx, c, mode)
 	if mode != StorageModePlaintext {
-		return tokenCache
+		return tc
 	}
-	return NewDualWritingTokenCache(tokenCache, arg)
+	return NewDualWritingTokenCache(tc, arg)
 }
 
 // resolveCacheWith is the pure form of ResolveCache without the read-path
@@ -103,7 +106,7 @@ func WrapForOAuthArgument(tokenCache cache.TokenCache, mode StorageMode, arg u2m
 // Used directly by ResolveCacheForLogin (which has its own fallback rules)
 // and indirectly by ResolveCache (which adds the read-path fallback in
 // resolveCacheForReadWith).
-func resolveCacheWith(ctx context.Context, override StorageMode, f cacheFactories) (cache.TokenCache, StorageMode, error) {
+func resolveCacheWith(ctx context.Context, override StorageMode, f cacheFactories) (Store, StorageMode, error) {
 	mode, err := ResolveStorageMode(ctx, override)
 	if err != nil {
 		return nil, "", err
@@ -126,7 +129,7 @@ func resolveCacheWith(ctx context.Context, override StorageMode, f cacheFactorie
 // read-path fallback: when mode is secure-from-default and the keyring
 // probes as definitively unavailable, return the file cache instead.
 // Timeouts keep the keyring (could be transient).
-func resolveCacheForReadWith(ctx context.Context, override StorageMode, f cacheFactories) (cache.TokenCache, StorageMode, error) {
+func resolveCacheForReadWith(ctx context.Context, override StorageMode, f cacheFactories) (Store, StorageMode, error) {
 	mode, source, err := ResolveStorageModeWithSource(ctx, override)
 	if err != nil {
 		return nil, "", err
@@ -146,7 +149,7 @@ func resolveCacheForReadWith(ctx context.Context, override StorageMode, f cacheF
 // Explicit secure is honored: callers who asked for secure get the keyring
 // cache even if the probe fails, so the actual Lookup error surfaces the
 // unreachability instead of silently using a different backend.
-func applyReadFallback(ctx context.Context, mode StorageMode, explicit bool, f cacheFactories) (cache.TokenCache, StorageMode, error) {
+func applyReadFallback(ctx context.Context, mode StorageMode, explicit bool, f cacheFactories) (Store, StorageMode, error) {
 	switch mode {
 	case StorageModePlaintext:
 		c, err := f.newFile(ctx)
@@ -178,7 +181,7 @@ func applyReadFallback(ctx context.Context, mode StorageMode, explicit bool, f c
 
 // resolveCacheForLoginWith is the pure form of ResolveCacheForLogin. It takes
 // the factory set as a parameter so tests can inject stubs.
-func resolveCacheForLoginWith(ctx context.Context, override StorageMode, f cacheFactories) (cache.TokenCache, StorageMode, error) {
+func resolveCacheForLoginWith(ctx context.Context, override StorageMode, f cacheFactories) (Store, StorageMode, error) {
 	mode, source, err := ResolveStorageModeWithSource(ctx, override)
 	if err != nil {
 		return nil, "", err
@@ -190,7 +193,7 @@ func resolveCacheForLoginWith(ctx context.Context, override StorageMode, f cache
 // resolved mode and whether the user explicitly asked for it. Split out so
 // tests can drive the (mode, explicit) input space directly without depending
 // on whatever the resolver's default mode happens to be at any point in time.
-func applyLoginFallback(ctx context.Context, mode StorageMode, explicit bool, f cacheFactories) (cache.TokenCache, StorageMode, error) {
+func applyLoginFallback(ctx context.Context, mode StorageMode, explicit bool, f cacheFactories) (Store, StorageMode, error) {
 	switch mode {
 	case StorageModePlaintext:
 		c, err := f.newFile(ctx)

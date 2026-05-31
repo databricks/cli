@@ -11,7 +11,6 @@ import (
 	"sync"
 
 	"github.com/databricks/cli/libs/env"
-	u2m_cache "github.com/databricks/databricks-sdk-go/credentials/u2m/cache"
 	"golang.org/x/oauth2"
 )
 
@@ -44,10 +43,17 @@ const (
 	tokenCacheVersion = 1
 )
 
+// fileEntry is the per-key on-disk shape. The embedded *oauth2.Token promotes
+// the token fields to the top level of the entry object so the layout matches
+// the historical bare-token format, leaving room for additive sibling fields.
+type fileEntry struct {
+	*oauth2.Token
+}
+
 // tokenCacheFile is the format of the token cache file.
 type tokenCacheFile struct {
-	Version int                      `json:"version"`
-	Tokens  map[string]*oauth2.Token `json:"tokens"`
+	Version int                   `json:"version"`
+	Tokens  map[string]*fileEntry `json:"tokens"`
 }
 
 type FileTokenCacheOption func(*fileTokenCache)
@@ -73,7 +79,7 @@ type fileTokenCache struct {
 // 0600 and the directory is created with owner permissions 0700. If the cache
 // file is corrupt or if its version does not match tokenCacheVersion, an error
 // is returned.
-func NewFileTokenCache(ctx context.Context, opts ...FileTokenCacheOption) (u2m_cache.TokenCache, error) {
+func NewFileTokenCache(ctx context.Context, opts ...FileTokenCacheOption) (Store, error) {
 	c := &fileTokenCache{}
 	for _, opt := range opts {
 		opt(c)
@@ -88,8 +94,8 @@ func NewFileTokenCache(ctx context.Context, opts ...FileTokenCacheOption) (u2m_c
 	return c, nil
 }
 
-// Store implements the TokenCache interface.
-func (c *fileTokenCache) Store(key string, t *oauth2.Token) error {
+// Put implements the Store interface.
+func (c *fileTokenCache) Put(key string, e Entry) error {
 	c.locker.Lock()
 	defer c.locker.Unlock()
 	f, err := c.load()
@@ -97,13 +103,41 @@ func (c *fileTokenCache) Store(key string, t *oauth2.Token) error {
 		return fmt.Errorf("load: %w", err)
 	}
 	if f.Tokens == nil {
-		f.Tokens = map[string]*oauth2.Token{}
+		f.Tokens = map[string]*fileEntry{}
 	}
-	if t == nil {
-		delete(f.Tokens, key)
-	} else {
-		f.Tokens[key] = t
+	f.Tokens[key] = &fileEntry{Token: e.Token}
+	return c.write(f)
+}
+
+// Lookup implements the Store interface.
+func (c *fileTokenCache) Lookup(key string) (Entry, error) {
+	c.locker.Lock()
+	defer c.locker.Unlock()
+	f, err := c.load()
+	if err != nil {
+		return Entry{}, fmt.Errorf("load: %w", err)
 	}
+	fe, ok := f.Tokens[key]
+	if !ok {
+		return Entry{}, ErrNotFound
+	}
+	return Entry{Token: fe.Token}, nil
+}
+
+// Delete implements the Store interface. Removing a missing key is a no-op.
+func (c *fileTokenCache) Delete(key string) error {
+	c.locker.Lock()
+	defer c.locker.Unlock()
+	f, err := c.load()
+	if err != nil {
+		return fmt.Errorf("load: %w", err)
+	}
+	delete(f.Tokens, key)
+	return c.write(f)
+}
+
+// write marshals f and atomically replaces the cache file.
+func (c *fileTokenCache) write(f *tokenCacheFile) error {
 	raw, err := json.MarshalIndent(f, "", "  ")
 	if err != nil {
 		return fmt.Errorf("marshal: %w", err)
@@ -112,21 +146,6 @@ func (c *fileTokenCache) Store(key string, t *oauth2.Token) error {
 		return fmt.Errorf("error storing token in local cache: %w", err)
 	}
 	return nil
-}
-
-// Lookup implements the TokenCache interface.
-func (c *fileTokenCache) Lookup(key string) (*oauth2.Token, error) {
-	c.locker.Lock()
-	defer c.locker.Unlock()
-	f, err := c.load()
-	if err != nil {
-		return nil, fmt.Errorf("load: %w", err)
-	}
-	t, ok := f.Tokens[key]
-	if !ok {
-		return nil, u2m_cache.ErrNotFound
-	}
-	return t, nil
 }
 
 // init initializes the token cache file. It creates the file and directory if
@@ -153,7 +172,7 @@ func (c *fileTokenCache) init(ctx context.Context) error {
 		// Create an empty cache file.
 		f := &tokenCacheFile{
 			Version: tokenCacheVersion,
-			Tokens:  map[string]*oauth2.Token{},
+			Tokens:  map[string]*fileEntry{},
 		}
 		raw, err := json.MarshalIndent(f, "", "  ")
 		if err != nil {

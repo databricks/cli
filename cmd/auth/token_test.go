@@ -15,7 +15,6 @@ import (
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m"
-	"github.com/databricks/databricks-sdk-go/credentials/u2m/cache"
 	"github.com/databricks/databricks-sdk-go/httpclient/fixtures"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/oauth2"
@@ -29,14 +28,15 @@ import (
 // of dropping it for the SDK-compat constant string.
 type upgradeHintTokenCache struct{}
 
-func (upgradeHintTokenCache) Store(string, *oauth2.Token) error { return nil }
-func (upgradeHintTokenCache) Lookup(string) (*oauth2.Token, error) {
-	return nil, storage.NewNotFoundHint(
+func (upgradeHintTokenCache) Put(string, storage.Entry) error { return nil }
+func (upgradeHintTokenCache) Delete(string) error             { return nil }
+func (upgradeHintTokenCache) Lookup(string) (storage.Entry, error) {
+	return storage.Entry{}, storage.NewNotFoundHint(
 		"stored credentials from older CLI versions are no longer used; run `databricks auth login` to sign in again, or set DATABRICKS_AUTH_STORAGE=plaintext to keep using the file cache",
 	)
 }
 
-var _ cache.TokenCache = upgradeHintTokenCache{}
+var _ storage.Store = upgradeHintTokenCache{}
 
 type failOnCallTransport struct{}
 
@@ -242,7 +242,7 @@ func TestToken_loadToken(t *testing.T) {
 				profiler:      profiler,
 				tokenCache:    tokenCache,
 				persistentAuthOpts: []u2m.PersistentAuthOption{
-					u2m.WithTokenCache(tokenCache),
+					u2m.WithTokenCache(storage.ToU2MTokenCache(tokenCache)),
 					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
 					u2m.WithHttpClient(&http.Client{Transport: fixtures.SliceTransport{refreshFailureTokenResponse}}),
 				},
@@ -263,7 +263,7 @@ func TestToken_loadToken(t *testing.T) {
 				profiler:     profiler,
 				tokenCache:   tokenCache,
 				persistentAuthOpts: []u2m.PersistentAuthOption{
-					u2m.WithTokenCache(tokenCache),
+					u2m.WithTokenCache(storage.ToU2MTokenCache(tokenCache)),
 					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
 					u2m.WithHttpClient(&http.Client{Transport: fixtures.SliceTransport{refreshFailureTokenResponse}}),
 				},
@@ -281,7 +281,7 @@ func TestToken_loadToken(t *testing.T) {
 				profiler:      profiler,
 				tokenCache:    tokenCache,
 				persistentAuthOpts: []u2m.PersistentAuthOption{
-					u2m.WithTokenCache(tokenCache),
+					u2m.WithTokenCache(storage.ToU2MTokenCache(tokenCache)),
 					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
 					u2m.WithHttpClient(&http.Client{Transport: fixtures.SliceTransport{refreshFailureInvalidResponse}}),
 				},
@@ -299,7 +299,7 @@ func TestToken_loadToken(t *testing.T) {
 				profiler:      profiler,
 				tokenCache:    tokenCache,
 				persistentAuthOpts: []u2m.PersistentAuthOption{
-					u2m.WithTokenCache(tokenCache),
+					u2m.WithTokenCache(storage.ToU2MTokenCache(tokenCache)),
 					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
 					u2m.WithHttpClient(&http.Client{Transport: fixtures.SliceTransport{refreshFailureOtherError}}),
 				},
@@ -317,7 +317,7 @@ func TestToken_loadToken(t *testing.T) {
 				profiler:      profiler,
 				tokenCache:    tokenCache,
 				persistentAuthOpts: []u2m.PersistentAuthOption{
-					u2m.WithTokenCache(tokenCache),
+					u2m.WithTokenCache(storage.ToU2MTokenCache(tokenCache)),
 					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
 					u2m.WithHttpClient(&http.Client{Transport: fixtures.SliceTransport{refreshSuccessTokenResponse}}),
 				},
@@ -334,7 +334,7 @@ func TestToken_loadToken(t *testing.T) {
 				profiler:      profiler,
 				tokenCache:    tokenCache,
 				persistentAuthOpts: []u2m.PersistentAuthOption{
-					u2m.WithTokenCache(tokenCache),
+					u2m.WithTokenCache(storage.ToU2MTokenCache(tokenCache)),
 					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
 					u2m.WithHttpClient(&http.Client{Transport: fixtures.SliceTransport{refreshSuccessTokenResponse}}),
 				},
@@ -351,7 +351,7 @@ func TestToken_loadToken(t *testing.T) {
 				profiler:      profiler,
 				tokenCache:    tokenCache,
 				persistentAuthOpts: []u2m.PersistentAuthOption{
-					u2m.WithTokenCache(tokenCache),
+					u2m.WithTokenCache(storage.ToU2MTokenCache(tokenCache)),
 					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
 					u2m.WithHttpClient(&http.Client{Transport: fixtures.SliceTransport{refreshSuccessTokenResponse}}),
 				},
@@ -368,7 +368,7 @@ func TestToken_loadToken(t *testing.T) {
 				profiler:      profiler,
 				tokenCache:    tokenCache,
 				persistentAuthOpts: []u2m.PersistentAuthOption{
-					u2m.WithTokenCache(tokenCache),
+					u2m.WithTokenCache(storage.ToU2MTokenCache(tokenCache)),
 					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
 					u2m.WithHttpClient(&http.Client{Transport: fixtures.SliceTransport{refreshSuccessTokenResponse}}),
 				},
@@ -385,7 +385,7 @@ func TestToken_loadToken(t *testing.T) {
 				profiler:      profiler,
 				tokenCache:    tokenCache,
 				persistentAuthOpts: []u2m.PersistentAuthOption{
-					u2m.WithTokenCache(tokenCache),
+					u2m.WithTokenCache(storage.ToU2MTokenCache(tokenCache)),
 					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
 					u2m.WithHttpClient(&http.Client{Transport: fixtures.SliceTransport{refreshSuccessTokenResponse}}),
 				},
@@ -402,7 +402,7 @@ func TestToken_loadToken(t *testing.T) {
 				profiler:      profiler,
 				tokenCache:    tokenCache,
 				persistentAuthOpts: []u2m.PersistentAuthOption{
-					u2m.WithTokenCache(tokenCache),
+					u2m.WithTokenCache(storage.ToU2MTokenCache(tokenCache)),
 					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
 					u2m.WithHttpClient(&http.Client{Transport: fixtures.SliceTransport{refreshSuccessTokenResponse}}),
 				},
@@ -419,7 +419,7 @@ func TestToken_loadToken(t *testing.T) {
 				profiler:      profiler,
 				tokenCache:    tokenCache,
 				persistentAuthOpts: []u2m.PersistentAuthOption{
-					u2m.WithTokenCache(tokenCache),
+					u2m.WithTokenCache(storage.ToU2MTokenCache(tokenCache)),
 					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
 				},
 			},
@@ -447,7 +447,7 @@ func TestToken_loadToken(t *testing.T) {
 				profiler:      profiler,
 				tokenCache:    upgradeHintTokenCache{},
 				persistentAuthOpts: []u2m.PersistentAuthOption{
-					u2m.WithTokenCache(upgradeHintTokenCache{}),
+					u2m.WithTokenCache(storage.ToU2MTokenCache(upgradeHintTokenCache{})),
 					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
 				},
 			},
@@ -480,7 +480,7 @@ func TestToken_loadToken(t *testing.T) {
 				profiler:     profiler,
 				tokenCache:   tokenCache,
 				persistentAuthOpts: []u2m.PersistentAuthOption{
-					u2m.WithTokenCache(tokenCache),
+					u2m.WithTokenCache(storage.ToU2MTokenCache(tokenCache)),
 					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
 				},
 			},
@@ -498,7 +498,7 @@ func TestToken_loadToken(t *testing.T) {
 				profiler:     profiler,
 				tokenCache:   tokenCache,
 				persistentAuthOpts: []u2m.PersistentAuthOption{
-					u2m.WithTokenCache(tokenCache),
+					u2m.WithTokenCache(storage.ToU2MTokenCache(tokenCache)),
 					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
 				},
 			},
@@ -517,7 +517,7 @@ func TestToken_loadToken(t *testing.T) {
 				profiler:     profiler,
 				tokenCache:   tokenCache,
 				persistentAuthOpts: []u2m.PersistentAuthOption{
-					u2m.WithTokenCache(tokenCache),
+					u2m.WithTokenCache(storage.ToU2MTokenCache(tokenCache)),
 					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
 					u2m.WithHttpClient(&http.Client{Transport: fixtures.SliceTransport{refreshSuccessTokenResponse}}),
 				},
@@ -537,7 +537,7 @@ func TestToken_loadToken(t *testing.T) {
 				profiler:     profiler,
 				tokenCache:   tokenCache,
 				persistentAuthOpts: []u2m.PersistentAuthOption{
-					u2m.WithTokenCache(tokenCache),
+					u2m.WithTokenCache(storage.ToU2MTokenCache(tokenCache)),
 					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
 				},
 			},
@@ -555,7 +555,7 @@ func TestToken_loadToken(t *testing.T) {
 				profiler:     profiler,
 				tokenCache:   tokenCache,
 				persistentAuthOpts: []u2m.PersistentAuthOption{
-					u2m.WithTokenCache(tokenCache),
+					u2m.WithTokenCache(storage.ToU2MTokenCache(tokenCache)),
 					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
 					u2m.WithHttpClient(&http.Client{Transport: fixtures.SliceTransport{refreshSuccessTokenResponse}}),
 				},
@@ -574,7 +574,7 @@ func TestToken_loadToken(t *testing.T) {
 				profiler:     profiler,
 				tokenCache:   tokenCache,
 				persistentAuthOpts: []u2m.PersistentAuthOption{
-					u2m.WithTokenCache(tokenCache),
+					u2m.WithTokenCache(storage.ToU2MTokenCache(tokenCache)),
 					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
 					u2m.WithHttpClient(&http.Client{Transport: fixtures.SliceTransport{refreshSuccessTokenResponse}}),
 				},
@@ -591,7 +591,7 @@ func TestToken_loadToken(t *testing.T) {
 				profiler:      profiler,
 				tokenCache:    tokenCache,
 				persistentAuthOpts: []u2m.PersistentAuthOption{
-					u2m.WithTokenCache(tokenCache),
+					u2m.WithTokenCache(storage.ToU2MTokenCache(tokenCache)),
 					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
 				},
 			},
@@ -691,7 +691,7 @@ func TestToken_loadToken(t *testing.T) {
 				profiler:      profiler,
 				tokenCache:    tokenCache,
 				persistentAuthOpts: []u2m.PersistentAuthOption{
-					u2m.WithTokenCache(tokenCache),
+					u2m.WithTokenCache(storage.ToU2MTokenCache(tokenCache)),
 					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
 					u2m.WithHttpClient(&http.Client{Transport: fixtures.SliceTransport{refreshSuccessTokenResponse}}),
 				},
@@ -712,7 +712,7 @@ func TestToken_loadToken(t *testing.T) {
 				profiler:      profiler,
 				tokenCache:    tokenCache,
 				persistentAuthOpts: []u2m.PersistentAuthOption{
-					u2m.WithTokenCache(tokenCache),
+					u2m.WithTokenCache(storage.ToU2MTokenCache(tokenCache)),
 					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
 					u2m.WithHttpClient(&http.Client{Transport: fixtures.SliceTransport{refreshSuccessTokenResponse}}),
 				},
@@ -733,7 +733,7 @@ func TestToken_loadToken(t *testing.T) {
 				profiler:      profiler,
 				tokenCache:    tokenCache,
 				persistentAuthOpts: []u2m.PersistentAuthOption{
-					u2m.WithTokenCache(tokenCache),
+					u2m.WithTokenCache(storage.ToU2MTokenCache(tokenCache)),
 					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
 					u2m.WithHttpClient(&http.Client{Transport: fixtures.SliceTransport{refreshSuccessTokenResponse}}),
 				},
@@ -755,7 +755,7 @@ func TestToken_loadToken(t *testing.T) {
 				profiler:      profiler,
 				tokenCache:    tokenCache,
 				persistentAuthOpts: []u2m.PersistentAuthOption{
-					u2m.WithTokenCache(tokenCache),
+					u2m.WithTokenCache(storage.ToU2MTokenCache(tokenCache)),
 					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
 					u2m.WithHttpClient(&http.Client{Transport: fixtures.SliceTransport{refreshSuccessTokenResponse}}),
 				},
@@ -791,7 +791,7 @@ func TestToken_loadToken(t *testing.T) {
 				profiler:     profiler,
 				tokenCache:   tokenCache,
 				persistentAuthOpts: []u2m.PersistentAuthOption{
-					u2m.WithTokenCache(tokenCache),
+					u2m.WithTokenCache(storage.ToU2MTokenCache(tokenCache)),
 					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
 					u2m.WithHttpClient(&http.Client{Transport: fixtures.SliceTransport{refreshSuccessTokenResponse}}),
 				},
@@ -808,7 +808,7 @@ func TestToken_loadToken(t *testing.T) {
 				profiler:      profiler,
 				tokenCache:    tokenCache,
 				persistentAuthOpts: []u2m.PersistentAuthOption{
-					u2m.WithTokenCache(tokenCache),
+					u2m.WithTokenCache(storage.ToU2MTokenCache(tokenCache)),
 					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
 					u2m.WithHttpClient(&http.Client{Transport: failOnCallTransport{}}),
 				},
@@ -828,7 +828,7 @@ func TestToken_loadToken(t *testing.T) {
 				profiler:      profiler,
 				tokenCache:    tokenCache,
 				persistentAuthOpts: []u2m.PersistentAuthOption{
-					u2m.WithTokenCache(tokenCache),
+					u2m.WithTokenCache(storage.ToU2MTokenCache(tokenCache)),
 					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
 					u2m.WithHttpClient(&http.Client{Transport: fixtures.SliceTransport{refreshSuccessTokenResponse}}),
 				},
@@ -846,7 +846,7 @@ func TestToken_loadToken(t *testing.T) {
 				profiler:      profiler,
 				tokenCache:    tokenCache,
 				persistentAuthOpts: []u2m.PersistentAuthOption{
-					u2m.WithTokenCache(tokenCache),
+					u2m.WithTokenCache(storage.ToU2MTokenCache(tokenCache)),
 					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
 					u2m.WithHttpClient(&http.Client{Transport: fixtures.SliceTransport{refreshFailureTokenResponse}}),
 				},

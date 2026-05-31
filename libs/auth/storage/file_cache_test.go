@@ -5,7 +5,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	u2m_cache "github.com/databricks/databricks-sdk-go/credentials/u2m/cache"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
@@ -19,29 +18,29 @@ func setup(t *testing.T) string {
 func TestStoreAndLookup(t *testing.T) {
 	c, err := NewFileTokenCache(t.Context(), WithFileLocation(setup(t)))
 	require.NoError(t, err)
-	err = c.Store("x", &oauth2.Token{
+	err = c.Put("x", Entry{Token: &oauth2.Token{
 		AccessToken: "abc",
-	})
+	}})
 	require.NoError(t, err)
 
-	err = c.Store("y", &oauth2.Token{
+	err = c.Put("y", Entry{Token: &oauth2.Token{
 		AccessToken: "bcd",
-	})
+	}})
 	require.NoError(t, err)
 
-	tok, err := c.Lookup("x")
+	got, err := c.Lookup("x")
 	require.NoError(t, err)
-	assert.Equal(t, "abc", tok.AccessToken)
+	assert.Equal(t, "abc", got.Token.AccessToken)
 
 	_, err = c.Lookup("z")
-	assert.Equal(t, u2m_cache.ErrNotFound, err)
+	assert.Equal(t, ErrNotFound, err)
 }
 
 func TestNoCacheFileReturnsErrNotConfigured(t *testing.T) {
 	l, err := NewFileTokenCache(t.Context(), WithFileLocation(setup(t)))
 	require.NoError(t, err)
 	_, err = l.Lookup("x")
-	assert.Equal(t, u2m_cache.ErrNotFound, err)
+	assert.Equal(t, ErrNotFound, err)
 }
 
 func TestLoadCorruptFile(t *testing.T) {
