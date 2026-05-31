@@ -1,15 +1,24 @@
 package lock
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"io/fs"
 
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/locker"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 )
+
+const versionFileName = "deployment_version.json"
+
+type versionRecord struct {
+	Version int64 `json:"version"`
+}
 
 // workspaceFilesystemLock implements DeploymentManager using a lock file in the
 // bundle's workspace state path. Holds only the primitives it needs from the
@@ -25,6 +34,10 @@ type workspaceFilesystemLock struct {
 	// when the workspace API returns ErrPermission/ErrNotExist from Lock.
 	// Lifted to a callback so this struct does not pin a *bundle.Bundle.
 	reportPermissionError func(ctx context.Context, path string) diag.Diagnostics
+
+	// newStateFiler creates the filer used to read/write deployment state files.
+	// Overridable in tests.
+	newStateFiler func(client *databricks.WorkspaceClient, path string) (filer.Filer, error)
 
 	locker *locker.Locker
 	goal   Goal
@@ -60,7 +73,19 @@ func (l *workspaceFilesystemLock) CreateVersion(ctx context.Context, goal Goal) 
 		return 0, err
 	}
 
-	return 0, nil
+	f, err := l.newStateFiler(l.client, l.statePath)
+	if err != nil {
+		_ = lk.Unlock(ctx)
+		return 0, err
+	}
+
+	version, err := incrementDeploymentVersion(ctx, f)
+	if err != nil {
+		_ = lk.Unlock(ctx)
+		return 0, err
+	}
+
+	return version, nil
 }
 
 func (l *workspaceFilesystemLock) CompleteVersion(ctx context.Context, _ int64, _ DeploymentStatus) error {
@@ -84,4 +109,34 @@ func (l *workspaceFilesystemLock) CompleteVersion(ctx context.Context, _ int64, 
 		return l.locker.Unlock(ctx, locker.AllowLockFileNotExist)
 	}
 	return l.locker.Unlock(ctx)
+}
+
+// incrementDeploymentVersion reads the current version from versionFileName,
+// increments it, writes the new value back, and returns the new version.
+// The first call (no file yet) creates version 1.
+func incrementDeploymentVersion(ctx context.Context, f filer.Filer) (int64, error) {
+	var current versionRecord
+
+	r, err := f.Read(ctx, versionFileName)
+	if err == nil {
+		defer r.Close()
+		if err := json.NewDecoder(r).Decode(&current); err != nil {
+			return 0, err
+		}
+	} else if !errors.Is(err, fs.ErrNotExist) {
+		return 0, err
+	}
+
+	next := current.Version + 1
+	data, err := json.Marshal(versionRecord{Version: next})
+	if err != nil {
+		return 0, err
+	}
+
+	err = f.Write(ctx, versionFileName, bytes.NewReader(data), filer.OverwriteIfExists, filer.CreateParentDirectories)
+	if err != nil {
+		return 0, err
+	}
+
+	return next, nil
 }

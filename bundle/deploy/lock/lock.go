@@ -6,6 +6,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/permissions"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/filer"
 )
 
 // Goal describes the purpose of a deployment operation.
@@ -60,6 +61,7 @@ func NewDeploymentManager(ctx context.Context, b *bundle.Bundle) DeploymentManag
 		reportPermissionError: func(ctx context.Context, path string) diag.Diagnostics {
 			return permissions.ReportPossiblePermissionDenied(ctx, b, path)
 		},
+		newStateFiler: filer.NewWorkspaceFilesClient,
 	}
 	if enabled {
 		l.client = b.WorkspaceClient(ctx)
