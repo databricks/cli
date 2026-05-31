@@ -26,28 +26,37 @@ const (
 	DeploymentFailure
 )
 
-// DeploymentLock manages the deployment lock lifecycle.
-type DeploymentLock interface {
-	// Acquire acquires the deployment lock.
-	Acquire(ctx context.Context) error
+// DeploymentManager controls the versioned lifecycle of deployment operations.
+//
+// DMS semantics: CreateVersion atomically succeeds only if no other deployment
+// is in progress and the returned version is exactly +1 to the latest closed
+// version, providing serialized optimistic concurrency control. CloseVersion
+// records the outcome.
+//
+// Workspace-filesystem semantics: CreateVersion acquires the workspace lock
+// file; CloseVersion releases it. The returned version number is a placeholder
+// (the lock file does not track a monotonic counter today).
+type DeploymentManager interface {
+	// CreateVersion begins a new deployment for the given goal.
+	// Returns the version number assigned by the backend.
+	CreateVersion(ctx context.Context, goal Goal) (int64, error)
 
-	// Release releases the deployment lock with the given deployment status.
-	Release(ctx context.Context, status DeploymentStatus) error
+	// CloseVersion finalizes the deployment version created by CreateVersion.
+	CloseVersion(ctx context.Context, version int64, status DeploymentStatus) error
 }
 
-// NewDeploymentLock returns a DeploymentLock backed by the workspace
-// filesystem. Captures everything the lock needs from the bundle at
-// construction time so the lock implementation itself does not retain a
-// *bundle.Bundle reference. The workspace client is only initialized when
-// locking is enabled to match the original lazy-init behavior.
-func NewDeploymentLock(ctx context.Context, b *bundle.Bundle, goal Goal) DeploymentLock {
+// NewDeploymentManager returns a DeploymentManager backed by the workspace
+// filesystem. Captures everything it needs from the bundle at construction time
+// so the implementation does not retain a *bundle.Bundle reference. The
+// workspace client is only initialized when locking is enabled to match the
+// original lazy-init behavior.
+func NewDeploymentManager(ctx context.Context, b *bundle.Bundle) DeploymentManager {
 	enabled := b.Config.Bundle.Deployment.Lock.IsEnabled()
 	l := &workspaceFilesystemLock{
 		user:      b.Config.Workspace.CurrentUser.UserName,
 		statePath: b.Config.Workspace.StatePath,
 		enabled:   enabled,
 		force:     b.Config.Bundle.Deployment.Lock.Force,
-		goal:      goal,
 		reportPermissionError: func(ctx context.Context, path string) diag.Diagnostics {
 			return permissions.ReportPossiblePermissionDenied(ctx, b, path)
 		},

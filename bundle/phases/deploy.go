@@ -127,23 +127,23 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	// mutators need informed consent if they are potentially destructive.
 	bundle.ApplyContext(ctx, b, scripts.Execute(config.ScriptPreDeploy))
 	if logdiag.HasError(ctx) {
-		// lock is not acquired here
+		// deployment version not yet created
 		return
 	}
 
-	dl := lock.NewDeploymentLock(ctx, b, lock.GoalDeploy)
-	if err := dl.Acquire(ctx); err != nil {
+	dm := lock.NewDeploymentManager(ctx, b)
+	version, err := dm.CreateVersion(ctx, lock.GoalDeploy)
+	if err != nil {
 		logdiag.LogError(ctx, err)
 		return
 	}
 
-	// lock is acquired here
 	defer func() {
 		status := lock.DeploymentSuccess
 		if logdiag.HasError(ctx) {
 			status = lock.DeploymentFailure
 		}
-		if err := dl.Release(ctx, status); err != nil {
+		if err := dm.CloseVersion(ctx, version, status); err != nil {
 			logdiag.LogError(ctx, err)
 		}
 	}()
