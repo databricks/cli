@@ -16,19 +16,14 @@ print_requests() {
     rm -f out.requests.txt
 }
 
-title "Initial deployment with DELTA_SYNC index_type"
+title "Initial deployment"
 rm -f out.requests.txt
 trace $CLI bundle deploy
 
 print_requests create
 
-title "Change index_type (should trigger recreation)"
-trace update_file.py databricks.yml "index_type: DELTA_SYNC" "index_type: DIRECT_ACCESS"
-trace update_file.py databricks.yml "delta_sync_index_spec:" "direct_access_index_spec:"
-trace update_file.py databricks.yml "source_table: main.default.source_${UNIQUE_NAME}" "schema_json: '{\"columns\":[{\"name\":\"id\",\"type\":\"integer\"},{\"name\":\"vector\",\"type\":\"array<float>\"}]}'"
-trace update_file.py databricks.yml "pipeline_type: TRIGGERED" "embedding_vector_columns:
-          - name: vector
-            embedding_dimension: 8"
+title "Change embedding_dimension (should trigger recreation)"
+trace update_file.py databricks.yml "embedding_dimension: 768" "embedding_dimension: 384"
 
 trace $CLI bundle plan
 rm -f out.requests.txt
