@@ -14,6 +14,7 @@ type applyManagedStateEnv struct{}
 // ApplyManagedStateEnv reads DATABRICKS_BUNDLE_MANAGED_STATE and writes it
 // into bundle.deployment.managed_state when the field is not already set in
 // configuration. Configuration takes priority over the environment variable.
+// Only the value "true" enables managed state; any other value is ignored.
 func ApplyManagedStateEnv() bundle.Mutator {
 	return &applyManagedStateEnv{}
 }
@@ -26,10 +27,10 @@ func (m *applyManagedStateEnv) Apply(ctx context.Context, b *bundle.Bundle) diag
 	if b.Config.Bundle.Deployment.ManagedState != nil {
 		return nil
 	}
-	v, ok := envlib.GetBool(ctx, bundleenv.ManagedStateVariable)
-	if !ok {
+	if envlib.Get(ctx, bundleenv.ManagedStateVariable) != "true" {
 		return nil
 	}
-	b.Config.Bundle.Deployment.ManagedState = &v
+	enabled := true
+	b.Config.Bundle.Deployment.ManagedState = &enabled
 	return nil
 }
