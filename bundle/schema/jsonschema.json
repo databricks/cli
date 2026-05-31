@@ -2410,6 +2410,9 @@
                     "lock": {
                       "description": "The deployment lock attributes.",
                       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Lock"
+                    },
+                    "managed_state": {
+                      "$ref": "#/$defs/bool"
                     }
                   },
                   "additionalProperties": false
