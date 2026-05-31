@@ -35,7 +35,7 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions, en
 		if logdiag.HasError(ctx) {
 			status = lock.DeploymentFailure
 		}
-		if err := dm.CloseVersion(ctx, version, status); err != nil {
+		if err := dm.CompleteVersion(ctx, version, status); err != nil {
 			logdiag.LogError(ctx, err)
 		}
 	}()
@@ -139,7 +139,7 @@ func Unbind(ctx context.Context, b *bundle.Bundle, bundleType, tfResourceType, r
 		if logdiag.HasError(ctx) {
 			status = lock.DeploymentFailure
 		}
-		if err := dm.CloseVersion(ctx, version, status); err != nil {
+		if err := dm.CompleteVersion(ctx, version, status); err != nil {
 			logdiag.LogError(ctx, err)
 		}
 	}()

@@ -132,7 +132,7 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 		if logdiag.HasError(ctx) {
 			status = lock.DeploymentFailure
 		}
-		if err := dm.CloseVersion(ctx, version, status); err != nil {
+		if err := dm.CompleteVersion(ctx, version, status); err != nil {
 			logdiag.LogError(ctx, err)
 		}
 	}()

@@ -63,7 +63,7 @@ func (l *workspaceFilesystemLock) CreateVersion(ctx context.Context, goal Goal) 
 	return 0, nil
 }
 
-func (l *workspaceFilesystemLock) CloseVersion(ctx context.Context, _ int64, _ DeploymentStatus) error {
+func (l *workspaceFilesystemLock) CompleteVersion(ctx context.Context, _ int64, _ DeploymentStatus) error {
 	// Return early if locking is disabled.
 	if !l.enabled {
 		log.Infof(ctx, "Skipping; locking is disabled")
