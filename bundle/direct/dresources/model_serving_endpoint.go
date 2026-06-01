@@ -137,8 +137,7 @@ func (r *ResourceModelServingEndpoint) DoCreate(ctx context.Context, engine *Eng
 
 	// Save state immediately after the endpoint is created so it is not orphaned
 	// if the subsequent wait is interrupted.
-	engine.SetID(id)
-	if err := engine.SaveState(config); err != nil {
+	if err := engine.SaveState(id, config); err != nil {
 		return "", nil, err
 	}
 

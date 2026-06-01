@@ -129,8 +129,6 @@ func (d *DeploymentUnit) Update(ctx context.Context, db *dstate.DeploymentState,
 	engine := dresources.NewEngine(d.Adapter.StateType(), func(_ string, x any) error {
 		return db.SaveState(d.ResourceKey, id, x, d.DependsOn)
 	})
-	engine.SetID(id)
-
 	remoteState, err := retryOnTransient(ctx, func() (any, error) {
 		return d.Adapter.DoUpdate(ctx, engine, id, newState, planEntry)
 	})

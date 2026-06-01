@@ -156,8 +156,7 @@ func (r *ResourceCluster) DoCreate(ctx context.Context, engine *Engine, config *
 
 	// Save state immediately after the cluster is created so it is not orphaned
 	// if the subsequent wait or terminate is interrupted.
-	engine.SetID(id)
-	if err := engine.SaveState(config); err != nil {
+	if err := engine.SaveState(id, config); err != nil {
 		return "", nil, err
 	}
 
