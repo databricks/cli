@@ -27,10 +27,13 @@ const (
 )
 
 // DeploymentLock manages the lifecycle of a bundle deployment.
-// The workspace-filesystem lock serializes concurrent deployments.
-// DMS version tracking will be added additively — see deployment_metadata_service.go.
+// The workspace-filesystem lock always serializes concurrent deployments.
+// DMS version tracking is additive: CreateVersion is called after acquiring
+// the file lock, CompleteVersion before releasing it.
 type DeploymentLock struct {
 	wfs workspaceFilesystemLock
+	// dms is nil until wired in via NewDeploymentLock.
+	dms *metadataServiceLock
 }
 
 // NewDeploymentLock returns a DeploymentLock for the bundle.
@@ -58,11 +61,30 @@ func NewDeploymentLock(ctx context.Context, b *bundle.Bundle, goal Goal) *Deploy
 }
 
 // Acquire acquires the deployment lock.
+// The workspace-filesystem lock is always acquired first.
+// When DMS is enabled, CreateVersion is called after the file lock so the
+// deployment is also registered server-side.
+//
+// Optimization: once managed_service.json exists (deployment already tracked
+// by DMS), the file lock could be skipped — DMS CreateVersion provides
+// equivalent concurrency control via the server-side version counter.
 func (l *DeploymentLock) Acquire(ctx context.Context) error {
-	return l.wfs.acquire(ctx)
+	if err := l.wfs.acquire(ctx); err != nil {
+		return err
+	}
+	if l.dms != nil {
+		return l.dms.createVersion(ctx)
+	}
+	return nil
 }
 
 // Release releases the deployment lock.
+// When DMS is enabled, CompleteVersion is called before releasing the file lock.
 func (l *DeploymentLock) Release(ctx context.Context, status DeploymentStatus) error {
+	if l.dms != nil {
+		if err := l.dms.completeVersion(ctx, status); err != nil {
+			return err
+		}
+	}
 	return l.wfs.release(ctx, status)
 }

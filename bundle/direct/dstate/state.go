@@ -147,6 +147,22 @@ func (db *DeploymentState) GetResourceID(key string) string {
 	return db.stateIDs[key]
 }
 
+// GetOrInitLineage returns the state lineage, generating and storing a new one
+// in memory if the state does not have a lineage yet (fresh deployment). Storing
+// it in Data.Lineage means a subsequent Open-for-write / UpgradeToWrite persists
+// the same value, so the lineage the caller observes here matches the one written
+// to the state file by the deploy. This lets the DMS lock derive a stable
+// deployment ID from the lineage even on the first deploy.
+func (db *DeploymentState) GetOrInitLineage() string {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
+	if db.Data.Lineage == "" {
+		db.Data.Lineage = uuid.New().String()
+	}
+	return db.Data.Lineage
+}
+
 type (
 	// If true, then Open reads the WAL and merges it in the state. If false, and WAL is present, Open returns an error.
 	WithRecovery bool
