@@ -125,9 +125,23 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 		return
 	}
 
+	// Record a DMS deployment version while the lock is held (no-op unless
+	// experimental.record_deployment_history is set).
+	recorder := lock.NewDeploymentVersionRecorder(b, lock.GoalDestroy)
 	defer func() {
+		status := lock.DeploymentSuccess
+		if logdiag.HasError(ctx) {
+			status = lock.DeploymentFailure
+		}
+		if err := recorder.CompleteVersion(ctx, status); err != nil {
+			logdiag.LogError(ctx, err)
+		}
 		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalDestroy))
 	}()
+	if err := recorder.CreateVersion(ctx); err != nil {
+		logdiag.LogError(ctx, err)
+		return
+	}
 
 	if !engine.IsDirect() {
 		bundle.ApplySeqContext(ctx, b,

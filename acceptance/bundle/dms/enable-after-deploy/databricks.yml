@@ -1,0 +1,7 @@
+bundle:
+  name: dms-enable-after-deploy
+
+resources:
+  jobs:
+    foo:
+      name: foo
