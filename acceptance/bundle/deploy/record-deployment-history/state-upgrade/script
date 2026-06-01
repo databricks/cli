@@ -1,0 +1,35 @@
+# State-version lifecycle for the DMS preview (experimental.record_deployment_history):
+#   1. Without the flag, deploys keep writing the baseline state version.
+#   2. Opting in upgrades the state version and records the DMS version.
+#   3. An older CLI that predates the DMS state version refuses to operate on the
+#      upgraded state and tells the user to upgrade, so it cannot mishandle it.
+#   4. With the flag set, a state stamped with a newer record_deployment_history
+#      version than this CLI knows is also refused (the state schema version is
+#      one we support). Without the flag the check is skipped.
+
+title "without the flag: state stays at the baseline schema version"
+trace $CLI bundle deploy
+trace print_state.py | jq '{state_version, dms_version}'
+
+title "with experimental.record_deployment_history: state upgrades and records the DMS version"
+# Also renames the job so the deploy writes state (a no-op deploy would not
+# rewrite the state file and the upgrade would not be observable yet).
+cp databricks.dms.yml databricks.yml
+trace $CLI bundle deploy
+trace print_state.py | jq '{state_version, dms_version}'
+
+title "an older CLI (v1.0.0, max state version 2) rejects operations on the upgraded state"
+trace errcode $CLI_V1 bundle plan 2>&1 | contains.py "state version 3 is newer than supported version 2; upgrade the CLI"
+
+title "with the flag, a state written by a newer record_deployment_history version is rejected"
+# The state must hold a record_deployment_history version greater than this CLI's
+# supported version (dmsVersion) to be rejected, so we set supported+1.
+# TODO: when dmsVersion is bumped, change the value written below to the new
+# supported+1. The error's version numbers are not asserted here, so the assertion
+# needs no change.
+trace update_file.py .databricks/bundle/default/resources.json '"dms_version": 1' '"dms_version": 2'
+trace errcode $CLI bundle plan 2>&1 | contains.py "record_deployment_history state version" "is newer than supported version" "upgrade the CLI"
+
+title "without the flag, the same state is accepted (the check is gated on opt-in)"
+trace update_file.py databricks.yml "record_deployment_history: true" "record_deployment_history: false"
+trace errcode $CLI bundle plan 2>&1 | contains.py "!is newer than supported version"

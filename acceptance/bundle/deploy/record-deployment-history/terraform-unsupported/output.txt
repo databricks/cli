@@ -1,0 +1,6 @@
+
+>>> errcode [CLI] bundle plan
+Error: experimental.record_deployment_history is only supported with the direct deployment engine
+
+
+Exit code: 1

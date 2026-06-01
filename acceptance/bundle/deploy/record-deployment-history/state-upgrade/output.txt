@@ -1,0 +1,52 @@
+
+=== without the flag: state stays at the baseline schema version
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-rdh-state-upgrade/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_state.py
+{
+  "state_version": 2,
+  "dms_version": null
+}
+
+=== with experimental.record_deployment_history: state upgrades and records the DMS version
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-rdh-state-upgrade/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_state.py
+{
+  "state_version": 3,
+  "dms_version": 1
+}
+
+=== an older CLI (v1.0.0, max state version 2) rejects operations on the upgraded state
+>>> errcode [CLI_V1] bundle plan
+Warning: unknown field: record_deployment_history
+  at experimental
+  in databricks.yml:5:3
+
+Error: migrating state [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: state version 3 is newer than supported version 2; upgrade the CLI
+
+
+Exit code: 1
+
+=== with the flag, a state written by a newer record_deployment_history version is rejected
+>>> update_file.py .databricks/bundle/default/resources.json "dms_version": 1 "dms_version": 2
+
+>>> errcode [CLI] bundle plan
+Error: record_deployment_history state version 2 is newer than supported version 1; upgrade the CLI
+
+
+Exit code: 1
+
+=== without the flag, the same state is accepted (the check is gated on opt-in)
+>>> update_file.py databricks.yml record_deployment_history: true record_deployment_history: false
+
+>>> errcode [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
