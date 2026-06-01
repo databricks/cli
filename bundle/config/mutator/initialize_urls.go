@@ -3,10 +3,10 @@ package mutator
 import (
 	"context"
 	"net/url"
-	"strconv"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/diag"
 )
 
@@ -25,13 +25,12 @@ func (m *initializeURLs) Name() string {
 }
 
 func (m *initializeURLs) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	workspaceId, err := b.WorkspaceClient(ctx).CurrentWorkspaceID(ctx)
+	workspaceID, err := auth.ResolveWorkspaceID(ctx, b.WorkspaceClient(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	workspaceIDStr := strconv.FormatInt(workspaceId, 10)
 	host := b.WorkspaceClient(ctx).Config.CanonicalHostName()
-	err = initializeForWorkspace(b, workspaceIDStr, host)
+	err = initializeForWorkspace(b, workspaceID, host)
 	if err != nil {
 		return diag.FromErr(err)
 	}
