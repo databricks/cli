@@ -7,6 +7,11 @@ name: update-schema-docs
 # from the list of `v*` git tags that exist when the schema is generated. The
 # `docgen` branch is therefore stale by one release as soon as the next tag is
 # pushed; this workflow keeps it current.
+#
+# The append-only since-versions state (bundle/schema/since_versions.json) also
+# lives on `docgen`. The generator reads it from the docgen worktree, refreshes
+# it (recorded versions never change), and this workflow commits it back — so
+# annotations stay stable across schema refactors without keeping state on main.
 
 on:
   push:
@@ -68,7 +73,21 @@ jobs:
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
           echo "Publishing for tag $tag"
 
+      # Check out docgen first: it holds the append-only since-versions state
+      # (bundle/schema/since_versions.json) that the generator reads and refreshes.
+      - name: Check out docgen worktree
+        run: |
+          git fetch origin docgen
+          git worktree add "$RUNNER_TEMP/docgen" origin/docgen
+
       - name: Regenerate jsonschema_for_docs.json
+        env:
+          # Point the generator at the since-versions state on docgen. It loads
+          # this map, refreshes it from git history (append-only — recorded
+          # versions never change), writes it back, and uses it to annotate the
+          # schema. Keeping it on docgen means x-since-version stays stable across
+          # schema refactors without adding an internal state file to main.
+          DATABRICKS_SINCE_VERSIONS_FILE: ${{ runner.temp }}/docgen/bundle/schema/since_versions.json
         run: go tool -modfile=tools/task/go.mod task --force generate-schema-docs
 
       # Fail loudly if regeneration touches anything other than the docs schema.
@@ -94,17 +113,13 @@ jobs:
           mkdir -p "$RUNNER_TEMP/regen"
           cp bundle/schema/jsonschema_for_docs.json "$RUNNER_TEMP/regen/jsonschema_for_docs.json"
 
-      - name: Check out docgen worktree
-        run: |
-          git fetch origin docgen
-          git worktree add "$RUNNER_TEMP/docgen" origin/docgen
-
-      - name: Stage regenerated file on docgen
+      - name: Stage regenerated files on docgen
         working-directory: ${{ runner.temp }}/docgen
         run: |
           mkdir -p bundle/schema
           cp "$RUNNER_TEMP/regen/jsonschema_for_docs.json" bundle/schema/jsonschema_for_docs.json
-          git add bundle/schema/jsonschema_for_docs.json
+          # since_versions.json was refreshed in place by the generator above.
+          git add bundle/schema/jsonschema_for_docs.json bundle/schema/since_versions.json
 
       - name: Commit and push to docgen
         working-directory: ${{ runner.temp }}/docgen
@@ -117,5 +132,5 @@ jobs:
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -m "Update jsonschema_for_docs.json for ${TAG}"
+          git commit -m "Update jsonschema_for_docs.json and since_versions.json for ${TAG}"
           git push origin HEAD:docgen
