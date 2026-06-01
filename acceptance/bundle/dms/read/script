@@ -1,8 +1,9 @@
-# Build synthetic DMS state for a deployment that, compared against the config in
-# databricks.yml, yields one of each plan action:
+# Read deployment state from DMS: build synthetic DMS state for a deployment
+# whose resources, compared with databricks.yml, exercise each plan action
 #   - create_me: in config, not in DMS  -> create
 #   - update_me: in both, names differ   -> update
 #   - delete_me: in DMS, not in config   -> delete
+# then verify both `bundle summary` and `bundle plan` read it from DMS.
 
 update_id=$($CLI pipelines create -o json --json '{"name":"update-me-old"}' | jq -r .pipeline_id)
 delete_id=$($CLI pipelines create -o json --json '{"name":"delete-me"}' | jq -r .pipeline_id)
@@ -10,7 +11,10 @@ delete_id=$($CLI pipelines create -o json --json '{"name":"delete-me"}' | jq -r 
 $CLI api post "/api/2.0/bundle/deployments/synthetic-dep/versions/1/operations" --json "{\"resource_key\":\"pipelines.update_me\",\"resource_id\":\"$update_id\",\"action_type\":\"OPERATION_ACTION_TYPE_CREATE\",\"status\":\"OPERATION_STATUS_SUCCEEDED\",\"state\":{\"name\":\"update-me-old\"}}" > /dev/null
 $CLI api post "/api/2.0/bundle/deployments/synthetic-dep/versions/1/operations" --json "{\"resource_key\":\"pipelines.delete_me\",\"resource_id\":\"$delete_id\",\"action_type\":\"OPERATION_ACTION_TYPE_CREATE\",\"status\":\"OPERATION_STATUS_SUCCEEDED\",\"state\":{\"name\":\"delete-me\"}}" > /dev/null
 
-$CLI api post "/api/2.0/workspace-files/import-file/Workspace/Users/$CURRENT_USER_NAME/.bundle/dms-plan/default/state/resources.json?overwrite=true" --json '{"state_version":2,"lineage":"synthetic-dep","serial":1,"state":{}}' > /dev/null
+$CLI api post "/api/2.0/workspace-files/import-file/Workspace/Users/$CURRENT_USER_NAME/.bundle/dms-read/default/state/resources.json?overwrite=true" --json '{"state_version":2,"lineage":"synthetic-dep","serial":1,"state":{}}' > /dev/null
+
+title "bundle summary reflects resources read from DMS (update_me resolves its id; create_me is not deployed)"
+trace $CLI bundle summary
 
 title "bundle plan derives actions from DMS state: create create_me, update update_me, delete delete_me"
 trace $CLI bundle plan

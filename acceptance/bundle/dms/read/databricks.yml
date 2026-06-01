@@ -3,7 +3,7 @@
 # are strings: the `databricks api` command rounds large int64 job ids in its
 # output, which would break the id round-trip this test relies on.
 bundle:
-  name: dms-plan
+  name: dms-read
 
 experimental:
   record_deployment_history: true

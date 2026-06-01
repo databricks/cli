@@ -1,4 +1,23 @@
 
+=== bundle summary reflects resources read from DMS (update_me resolves its id; create_me is not deployed)
+>>> [CLI] bundle summary
+Name: dms-read
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/dms-read/default
+Resources:
+  Pipelines:
+    create_me:
+      Name: create-me
+      URL:  (not deployed)
+    delete_me:
+      Name: 
+      URL:  [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
+    update_me:
+      Name: update-me-new
+      URL:  [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
+
 === bundle plan derives actions from DMS state: create create_me, update update_me, delete delete_me
 >>> [CLI] bundle plan
 create pipelines.create_me
@@ -22,7 +41,7 @@ Plan: 1 to add, 1 to change, 1 to delete, 0 unchanged
           "channel": "CURRENT",
           "deployment": {
             "kind": "BUNDLE",
-            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-plan/default/state/metadata.json"
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-read/default/state/metadata.json"
           },
           "edition": "ADVANCED",
           "name": "create-me"
@@ -50,7 +69,7 @@ Plan: 1 to add, 1 to change, 1 to delete, 0 unchanged
           "channel": "CURRENT",
           "deployment": {
             "kind": "BUNDLE",
-            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-plan/default/state/metadata.json"
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-read/default/state/metadata.json"
           },
           "edition": "ADVANCED",
           "name": "update-me-new"
@@ -76,7 +95,7 @@ Plan: 1 to add, 1 to change, 1 to delete, 0 unchanged
           "action": "update",
           "new": {
             "kind": "BUNDLE",
-            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-plan/default/state/metadata.json"
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-read/default/state/metadata.json"
           }
         },
         "edition": {
