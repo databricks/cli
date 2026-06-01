@@ -225,6 +225,15 @@ func AddDefaultHandlers(server *Server) {
 	server.Handle("GET", "/api/2.0/bundle/deployments/{deployment_id}/resources", func(req Request) any {
 		return req.Workspace.BundleListResources(req.Vars["deployment_id"])
 	})
+	server.Handle("POST", "/api/2.0/bundle/deployments/{deployment_id}/versions", func(req Request) any {
+		return req.Workspace.BundleCreateVersion(req, req.Vars["deployment_id"])
+	})
+	server.Handle("POST", "/api/2.0/bundle/deployments/{deployment_id}/versions/{version_id}/complete", func(req Request) any {
+		return req.Workspace.BundleCompleteVersion(req, req.Vars["deployment_id"], req.Vars["version_id"])
+	})
+	server.Handle("GET", "/api/2.0/bundle/deployments/{deployment_id}/versions", func(req Request) any {
+		return req.Workspace.BundleListVersions(req.Vars["deployment_id"])
+	})
 
 	server.Handle("POST", "/api/2.2/jobs/create", func(req Request) any {
 		return req.Workspace.JobsCreate(req)
