@@ -160,7 +160,9 @@ func fetchDeploymentResources(ctx context.Context, client sdkbundle.BundleInterf
 //
 //  1. record_deployment_history off: read everything from resources.json.
 //  2. on, but resources.json has no lineage (nothing deployed yet): read the
-//     (empty) local file.
+//     (empty) local file. The lineage is minted lazily on the first deploy, when
+//     the state DB is first opened for write (dstate.DeploymentState.UpgradeToWrite);
+//     reads open it write-disabled and never mint one.
 //  3. on, with a lineage, and DMS has a successfully-completed version for it:
 //     DMS owns the state, so read resources from DMS.
 //  4. on, with a lineage, but DMS has no successfully-completed version (DMS not
