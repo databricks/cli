@@ -89,9 +89,7 @@ func (r *ResourceVectorSearchEndpoint) DoCreate(ctx context.Context, engine *Eng
 
 	// Save state immediately after the endpoint is created so it is not orphaned
 	// if the subsequent wait is interrupted.
-	if err := engine.SaveState(id, config); err != nil {
-		return "", nil, err
-	}
+	engine.SaveState(ctx, id, config)
 
 	info, err := r.client.VectorSearchEndpoints.WaitGetEndpointVectorSearchEndpointOnline(ctx, config.Name, 60*time.Minute, nil)
 	if err != nil {

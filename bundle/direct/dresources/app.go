@@ -157,9 +157,7 @@ func (r *ResourceApp) DoCreate(ctx context.Context, engine *Engine, config *AppS
 	// Save state as soon as the app exists so it is not orphaned if the wait or
 	// lifecycle management is interrupted.
 
-	if err := engine.SaveState(app.Name, config); err != nil {
-		return "", nil, err
-	}
+	engine.SaveState(ctx, app.Name, config)
 
 	remote, err := r.waitForApp(ctx, r.client, config.Name)
 	if err != nil {
