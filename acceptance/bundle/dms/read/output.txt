@@ -1,0 +1,119 @@
+
+=== bundle summary reflects resources read from DMS (update_me resolves its id; create_me is not deployed)
+>>> [CLI] bundle summary
+Name: dms-read
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/dms-read/default
+Resources:
+  Pipelines:
+    create_me:
+      Name: create-me
+      URL:  (not deployed)
+    delete_me:
+      Name: 
+      URL:  [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
+    update_me:
+      Name: update-me-new
+      URL:  [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
+
+=== bundle plan derives actions from DMS state: create create_me, update update_me, delete delete_me
+>>> [CLI] bundle plan
+create pipelines.create_me
+delete pipelines.delete_me
+update pipelines.update_me
+
+Plan: 1 to add, 1 to change, 1 to delete, 0 unchanged
+
+=== full plan as JSON
+>>> [CLI] bundle plan -o json
+{
+  "plan_version": 2,
+  "cli_version": "[DEV_VERSION]",
+  "lineage": "synthetic-dep",
+  "serial": 1,
+  "plan": {
+    "resources.pipelines.create_me": {
+      "action": "create",
+      "new_state": {
+        "value": {
+          "channel": "CURRENT",
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-read/default/state/metadata.json"
+          },
+          "edition": "ADVANCED",
+          "name": "create-me"
+        }
+      }
+    },
+    "resources.pipelines.delete_me": {
+      "action": "delete",
+      "remote_state": {
+        "creator_user_name": "[USERNAME]",
+        "effective_publishing_mode": "DEFAULT_PUBLISHING_MODE",
+        "id": "[UUID]",
+        "last_modified": [UNIX_TIME_MILLIS][0],
+        "name": "delete-me",
+        "pipeline_id": "[UUID]",
+        "run_as_user_name": "[USERNAME]",
+        "state": "IDLE",
+        "storage": "dbfs:/pipelines/[UUID]"
+      }
+    },
+    "resources.pipelines.update_me": {
+      "action": "update",
+      "new_state": {
+        "value": {
+          "channel": "CURRENT",
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-read/default/state/metadata.json"
+          },
+          "edition": "ADVANCED",
+          "name": "update-me-new"
+        }
+      },
+      "remote_state": {
+        "creator_user_name": "[USERNAME]",
+        "effective_publishing_mode": "DEFAULT_PUBLISHING_MODE",
+        "id": "[UUID]",
+        "last_modified": [UNIX_TIME_MILLIS][1],
+        "name": "update-me-old",
+        "pipeline_id": "[UUID]",
+        "run_as_user_name": "[USERNAME]",
+        "state": "IDLE",
+        "storage": "dbfs:/pipelines/[UUID]"
+      },
+      "changes": {
+        "channel": {
+          "action": "update",
+          "new": "CURRENT"
+        },
+        "deployment": {
+          "action": "update",
+          "new": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-read/default/state/metadata.json"
+          }
+        },
+        "edition": {
+          "action": "update",
+          "new": "ADVANCED"
+        },
+        "name": {
+          "action": "update",
+          "old": "update-me-old",
+          "new": "update-me-new",
+          "remote": "update-me-old"
+        },
+        "storage": {
+          "action": "skip",
+          "reason": "backend_default",
+          "remote": "dbfs:/pipelines/[UUID]"
+        }
+      }
+    }
+  }
+}
