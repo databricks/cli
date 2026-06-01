@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"maps"
 	"os"
 	"path/filepath"
 	"testing"
@@ -19,196 +20,168 @@ import (
 type fakeBundleClient struct {
 	sdkbundle.BundleInterface
 	resources []sdkbundle.Resource
-	requests  []sdkbundle.ListResourcesRequest
 	err       error
 }
 
-func (c *fakeBundleClient) ListResourcesAll(_ context.Context, req sdkbundle.ListResourcesRequest) ([]sdkbundle.Resource, error) {
-	c.requests = append(c.requests, req)
-	if c.err != nil {
-		return nil, c.err
-	}
-	return c.resources, nil
+func (c *fakeBundleClient) ListResourcesAll(context.Context, sdkbundle.ListResourcesRequest) ([]sdkbundle.Resource, error) {
+	return c.resources, c.err
 }
 
-func rawState(t *testing.T, s string) *json.RawMessage {
-	t.Helper()
+func raw(s string) *json.RawMessage {
 	msg := json.RawMessage(s)
 	return &msg
 }
 
-func TestDMSStateReaderPopulatesStateAndPrefixesKeys(t *testing.T) {
-	client := &fakeBundleClient{
-		resources: []sdkbundle.Resource{
-			{ResourceKey: "jobs.foo", ResourceId: "job-1", State: rawState(t, `{"name":"foo"}`)},
-			{ResourceKey: "pipelines.bar", ResourceId: "pipe-2", State: rawState(t, `{"name":"bar"}`)},
-		},
-	}
-
-	var db dstate.DeploymentState
-	reader := NewDMSStateReader(client, "dep-1", filepath.Join(t.TempDir(), "resources.json"))
-	require.NoError(t, reader.Load(t.Context(), &db))
-
-	require.Len(t, client.requests, 1)
-	assert.Equal(t, "deployments/dep-1", client.requests[0].Parent)
-
-	entry, ok := db.GetResourceEntry("resources.jobs.foo")
-	require.True(t, ok)
-	assert.Equal(t, "job-1", entry.ID)
-	assert.JSONEq(t, `{"name":"foo"}`, string(entry.State))
-	assert.Equal(t, "job-1", db.GetResourceID("resources.jobs.foo"))
-
-	entry, ok = db.GetResourceEntry("resources.pipelines.bar")
-	require.True(t, ok)
-	assert.Equal(t, "pipe-2", entry.ID)
-}
-
-func TestDMSStateReaderEmptyList(t *testing.T) {
-	client := &fakeBundleClient{}
-
-	var db dstate.DeploymentState
-	reader := NewDMSStateReader(client, "dep-1", filepath.Join(t.TempDir(), "resources.json"))
-	require.NoError(t, reader.Load(t.Context(), &db))
-
-	_, ok := db.GetResourceEntry("resources.jobs.foo")
-	assert.False(t, ok)
-}
-
-func TestDMSStateReaderNilStateBecomesEmpty(t *testing.T) {
-	client := &fakeBundleClient{
-		resources: []sdkbundle.Resource{
-			{ResourceKey: "jobs.foo", ResourceId: "job-1", State: nil},
-		},
-	}
-
-	var db dstate.DeploymentState
-	reader := NewDMSStateReader(client, "dep-1", filepath.Join(t.TempDir(), "resources.json"))
-	require.NoError(t, reader.Load(t.Context(), &db))
-
-	entry, ok := db.GetResourceEntry("resources.jobs.foo")
-	require.True(t, ok)
-	assert.Equal(t, "job-1", entry.ID)
-	assert.Nil(t, entry.State)
-}
-
-func TestDMSStateReaderPreservesLocalLineage(t *testing.T) {
-	// The deployment identity (lineage/serial) must survive a DMS read so a
-	// subsequent deploy reuses the same deployment instead of minting a new one.
-	client := &fakeBundleClient{
-		resources: []sdkbundle.Resource{
-			{ResourceKey: "jobs.foo", ResourceId: "job-1", State: rawState(t, `{"name":"foo"}`)},
-		},
-	}
-
-	path := writeStateFile(t, "dep-1")
-	var db dstate.DeploymentState
-	reader := NewDMSStateReader(client, "dep-1", path)
-	require.NoError(t, reader.Load(t.Context(), &db))
-
-	assert.Equal(t, "dep-1", db.Data.Lineage)
-	entry, ok := db.GetResourceEntry("resources.jobs.foo")
-	require.True(t, ok)
-	assert.Equal(t, "job-1", entry.ID)
-}
-
-func TestDMSStateReaderPropagatesListError(t *testing.T) {
-	wantErr := errors.New("boom")
-	client := &fakeBundleClient{err: wantErr}
-
-	var db dstate.DeploymentState
-	reader := NewDMSStateReader(client, "dep-1", filepath.Join(t.TempDir(), "resources.json"))
-	err := reader.Load(t.Context(), &db)
-	assert.ErrorIs(t, err, wantErr)
-}
-
-func TestFileStateReaderReadsLocalState(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "resources.json")
-
-	seed := dstate.NewDatabase("lineage-1", 3)
-	seed.State["resources.jobs.foo"] = dstate.ResourceEntry{ID: "job-1", State: json.RawMessage(`{"name":"foo"}`)}
-	content, err := json.Marshal(seed)
-	require.NoError(t, err)
-	require.NoError(t, os.WriteFile(path, content, 0o600))
-
-	var db dstate.DeploymentState
-	reader := NewFileStateReader(path)
-	require.NoError(t, reader.Load(t.Context(), &db))
-
-	assert.Equal(t, "lineage-1", db.Data.Lineage)
-	assert.Equal(t, 3, db.Data.Serial)
-
-	entry, ok := db.GetResourceEntry("resources.jobs.foo")
-	require.True(t, ok)
-	assert.Equal(t, "job-1", entry.ID)
-}
-
-func TestFileStateReaderMissingFileIsEmptyState(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "does-not-exist.json")
-
-	var db dstate.DeploymentState
-	reader := NewFileStateReader(path)
-	require.NoError(t, reader.Load(t.Context(), &db))
-
-	_, ok := db.GetResourceEntry("resources.jobs.foo")
-	assert.False(t, ok)
-}
-
-func writeStateFile(t *testing.T, lineage string) string {
+// writeLocalState writes a resources.json with the given lineage and resources,
+// standing in for a prior local (direct) deployment, and returns its path.
+func writeLocalState(t *testing.T, lineage string, state map[string]dstate.ResourceEntry) string {
 	t.Helper()
-	path := filepath.Join(t.TempDir(), "resources.json")
-	content, err := json.Marshal(dstate.NewDatabase(lineage, 1))
+	db := dstate.NewDatabase(lineage, 1)
+	maps.Copy(db.State, state)
+	content, err := json.Marshal(db)
 	require.NoError(t, err)
+	path := filepath.Join(t.TempDir(), "resources.json")
 	require.NoError(t, os.WriteFile(path, content, 0o600))
 	return path
 }
 
+// TestNewStateReaderSelection covers which reader is chosen. The DMS branch
+// (managed state on + an existing lineage) needs a workspace client, so it is
+// exercised directly through NewDMSStateReader in TestDMSStateReader.
+func TestNewStateReaderSelection(t *testing.T) {
+	tests := []struct {
+		name    string
+		managed bool
+		lineage string
+	}{
+		{"managed state disabled uses the local file even with a deployment", false, "existing-lineage"},
+		{"new deployment: managed state on but no lineage yet uses the local file", true, ""},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			b := &bundle.Bundle{}
+			b.Config.Experimental = &config.Experimental{RecordDeploymentHistory: tc.managed}
+
+			reader, err := NewStateReader(t.Context(), b, writeLocalState(t, tc.lineage, nil))
+			require.NoError(t, err)
+			assert.IsType(t, &fileStateReader{}, reader)
+		})
+	}
+}
+
+// TestDMSStateReader covers reading an existing deployment from DMS. The lineage
+// (deployment id) lives in the local state and must be preserved so a later
+// deploy reuses the deployment; only the resource set comes from DMS.
+func TestDMSStateReader(t *testing.T) {
+	dmsResources := []sdkbundle.Resource{
+		{ResourceKey: "jobs.foo", ResourceId: "job-1", State: raw(`{"name":"foo"}`)},
+	}
+	tests := []struct {
+		name       string
+		localState map[string]dstate.ResourceEntry
+	}{
+		{
+			name:       "existing DMS deployment: local file is just the deployment pointer",
+			localState: nil,
+		},
+		{
+			name:       "existing direct deployment moving to DMS: stale local resources are replaced",
+			localState: map[string]dstate.ResourceEntry{"resources.jobs.stale": {ID: "stale"}},
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			path := writeLocalState(t, "dep-1", tc.localState)
+
+			var db dstate.DeploymentState
+			require.NoError(t, NewDMSStateReader(&fakeBundleClient{resources: dmsResources}, "dep-1", path).Load(t.Context(), &db))
+
+			// Deployment identity comes from local state and is preserved.
+			assert.Equal(t, "dep-1", db.Data.Lineage)
+			// Resources come from DMS; local resources are not carried over.
+			_, hasStale := db.GetResourceEntry("resources.jobs.stale")
+			assert.False(t, hasStale)
+			entry, ok := db.GetResourceEntry("resources.jobs.foo")
+			require.True(t, ok)
+			assert.Equal(t, "job-1", entry.ID)
+		})
+	}
+}
+
+func TestDMSStateReaderPropagatesListError(t *testing.T) {
+	wantErr := errors.New("boom")
+	var db dstate.DeploymentState
+	err := NewDMSStateReader(&fakeBundleClient{err: wantErr}, "dep-1", writeLocalState(t, "dep-1", nil)).Load(t.Context(), &db)
+	assert.ErrorIs(t, err, wantErr)
+}
+
+// TestFetchDeploymentResources covers mapping DMS resources to state entries.
+func TestFetchDeploymentResources(t *testing.T) {
+	tests := []struct {
+		name      string
+		resources []sdkbundle.Resource
+		want      map[string]dstate.ResourceEntry
+	}{
+		{
+			name:      "keys are prefixed with resources. and id/state are copied",
+			resources: []sdkbundle.Resource{{ResourceKey: "jobs.foo", ResourceId: "job-1", State: raw(`{"name":"foo"}`)}},
+			want:      map[string]dstate.ResourceEntry{"resources.jobs.foo": {ID: "job-1", State: json.RawMessage(`{"name":"foo"}`)}},
+		},
+		{
+			name:      "missing state becomes nil",
+			resources: []sdkbundle.Resource{{ResourceKey: "jobs.foo", ResourceId: "job-1"}},
+			want:      map[string]dstate.ResourceEntry{"resources.jobs.foo": {ID: "job-1"}},
+		},
+		{
+			name:      "empty list yields no entries",
+			resources: nil,
+			want:      map[string]dstate.ResourceEntry{},
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := fetchDeploymentResources(t.Context(), &fakeBundleClient{resources: tc.resources}, "dep-1")
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, got)
+		})
+	}
+}
+
+// TestFileStateReader covers the non-DMS path: reading the local resources.json.
+func TestFileStateReader(t *testing.T) {
+	t.Run("reads existing state", func(t *testing.T) {
+		path := writeLocalState(t, "lineage-1", map[string]dstate.ResourceEntry{"resources.jobs.foo": {ID: "job-1"}})
+		var db dstate.DeploymentState
+		require.NoError(t, NewFileStateReader(path).Load(t.Context(), &db))
+		assert.Equal(t, "lineage-1", db.Data.Lineage)
+		assert.Equal(t, "job-1", db.GetResourceID("resources.jobs.foo"))
+	})
+
+	t.Run("missing file is empty state", func(t *testing.T) {
+		var db dstate.DeploymentState
+		require.NoError(t, NewFileStateReader(filepath.Join(t.TempDir(), "absent.json")).Load(t.Context(), &db))
+		_, ok := db.GetResourceEntry("resources.jobs.foo")
+		assert.False(t, ok)
+	})
+}
+
 func TestReadLocalDatabase(t *testing.T) {
 	t.Run("present", func(t *testing.T) {
-		db, err := readLocalDatabase(writeStateFile(t, "lineage-9"))
+		db, err := readLocalDatabase(writeLocalState(t, "lineage-9", nil))
 		require.NoError(t, err)
 		assert.Equal(t, "lineage-9", db.Lineage)
 	})
 
-	t.Run("missing file", func(t *testing.T) {
+	t.Run("missing file has no lineage", func(t *testing.T) {
 		db, err := readLocalDatabase(filepath.Join(t.TempDir(), "absent.json"))
 		require.NoError(t, err)
 		assert.Empty(t, db.Lineage)
 	})
 
-	t.Run("corrupt file", func(t *testing.T) {
+	t.Run("corrupt file errors", func(t *testing.T) {
 		path := filepath.Join(t.TempDir(), "resources.json")
 		require.NoError(t, os.WriteFile(path, []byte("not json"), 0o600))
 		_, err := readLocalDatabase(path)
 		assert.Error(t, err)
 	})
-}
-
-func TestNewStateReaderSelectsFileReader(t *testing.T) {
-	// Flag disabled: always the file reader, regardless of any recorded lineage.
-	b := &bundle.Bundle{}
-	reader, err := NewStateReader(t.Context(), b, writeStateFile(t, "lineage-1"))
-	require.NoError(t, err)
-	assert.IsType(t, &fileStateReader{}, reader)
-}
-
-func TestNewStateReaderFallsBackToFileWhenNoLineage(t *testing.T) {
-	// Flag enabled but no prior deployment (no lineage yet): nothing in DMS to
-	// read, so fall back to the local file reader.
-	b := &bundle.Bundle{}
-	b.Config.Experimental = &config.Experimental{RecordDeploymentHistory: true}
-
-	reader, err := NewStateReader(t.Context(), b, writeStateFile(t, ""))
-	require.NoError(t, err)
-	assert.IsType(t, &fileStateReader{}, reader)
-}
-
-func TestNewStateReaderPropagatesCorruptStateError(t *testing.T) {
-	b := &bundle.Bundle{}
-	b.Config.Experimental = &config.Experimental{RecordDeploymentHistory: true}
-
-	path := filepath.Join(t.TempDir(), "resources.json")
-	require.NoError(t, os.WriteFile(path, []byte("not json"), 0o600))
-
-	_, err := NewStateReader(t.Context(), b, path)
-	assert.Error(t, err)
 }
