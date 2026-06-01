@@ -16,3 +16,9 @@ Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
 create jobs.job_a
 
 Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle plan --select job_a --select job_b
+create jobs.job_a
+create jobs.job_b
+
+Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged

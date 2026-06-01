@@ -73,3 +73,27 @@ func TestSelectResources_Ambiguous(t *testing.T) {
 	assert.ErrorContains(t, diags.Error(), "ambiguous resource: my_job")
 	assert.ErrorContains(t, diags.Error(), "use a qualified name to disambiguate")
 }
+
+func TestSelectResources_MultipleSelectors(t *testing.T) {
+	b := bundleWithJobsAndPipelines()
+	b.Config.Resources.Jobs["other_job"] = &resources.Job{}
+	b.Select = []string{"my_job", "my_pipeline"}
+	diags := bundle.Apply(t.Context(), b, mutator.SelectResources())
+	require.NoError(t, diags.Error())
+	assert.Len(t, b.Config.Resources.Jobs, 1)
+	assert.Contains(t, b.Config.Resources.Jobs, "my_job")
+	assert.Len(t, b.Config.Resources.Pipelines, 1)
+}
+
+// TestSelectResources_DependencyNotAutoIncluded verifies that the SelectResources mutator
+// itself does not auto-include resources referenced by selected ones. Downstream plan/deploy
+// phases are responsible for catching unresolvable references.
+func TestSelectResources_DependencyNotAutoIncluded(t *testing.T) {
+	b := bundleWithJobsAndPipelines()
+	b.Select = []string{"my_job"}
+	diags := bundle.Apply(t.Context(), b, mutator.SelectResources())
+	require.NoError(t, diags.Error())
+	assert.Len(t, b.Config.Resources.Jobs, 1)
+	// my_pipeline was not selected and is not auto-included even if my_job references it.
+	assert.Empty(t, b.Config.Resources.Pipelines)
+}
