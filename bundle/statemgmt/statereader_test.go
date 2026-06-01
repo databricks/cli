@@ -69,11 +69,13 @@ func TestNewStateReaderSelection(t *testing.T) {
 
 // TestDMSStateReader covers reading an existing deployment from DMS: the lineage
 // (deployment id) is kept from the local state so a later deploy reuses the
-// deployment, while the resource set is taken from DMS. Any resource state that a
-// prior direct deployment recorded in resources.json is dropped.
+// deployment, while the resource set is read from DMS rather than from the local
+// resources.json. resources.json always records the resource state too (so we can
+// migrate back to file-based state); the reader just sources resources from DMS
+// and ignores the local file's resource entries.
 func TestDMSStateReader(t *testing.T) {
 	path := writeLocalState(t, "dep-1", map[string]dstate.ResourceEntry{
-		"resources.jobs.stale": {ID: "stale"},
+		"resources.jobs.local_only": {ID: "local"},
 	})
 	client := &fakeBundleClient{resources: []sdkbundle.Resource{
 		{ResourceKey: "jobs.foo", ResourceId: "job-1", State: raw(`{"name":"foo"}`)},
@@ -84,8 +86,9 @@ func TestDMSStateReader(t *testing.T) {
 
 	assert.Equal(t, "dep-1", db.Data.Lineage)
 
-	_, hasStale := db.GetResourceEntry("resources.jobs.stale")
-	assert.False(t, hasStale)
+	// Resources come from DMS; the local file's resource entries are not used.
+	_, hasLocalOnly := db.GetResourceEntry("resources.jobs.local_only")
+	assert.False(t, hasLocalOnly)
 
 	entry, ok := db.GetResourceEntry("resources.jobs.foo")
 	require.True(t, ok)
