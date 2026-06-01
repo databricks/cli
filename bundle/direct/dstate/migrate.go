@@ -10,12 +10,15 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/iam"
 )
 
-// migrateState runs all necessary migrations on the database.
-// It is called after loading state from disk.
+// migrateState brings a freshly-loaded state up to the current schema version.
+// It is called after loading state from disk. Legacy states below the current
+// version are migrated forward via the migrations map; a state newer than the
+// current version was written by a newer CLI, so we refuse it rather than risk
+// mishandling a format we don't understand.
+//
+// Feature flags recorded in the state are validated separately; see
+// checkSupportedFeatures.
 func migrateState(db *Database) error {
-	if db.StateVersion == currentStateVersion {
-		return nil
-	}
 	if db.StateVersion > currentStateVersion {
 		return fmt.Errorf("state version %d is newer than supported version %d; upgrade the CLI", db.StateVersion, currentStateVersion)
 	}
@@ -39,6 +42,14 @@ func migrateState(db *Database) error {
 var migrations = map[int]func(*Database) error{
 	0: migrateV1ToV2,
 	1: migrateV1ToV2,
+	2: migrateV2ToV3,
+}
+
+// migrateV2ToV3 upgrades to the schema that carries the feature-flag list
+// (Header.Features). The list is optional and absent by default, so there is
+// nothing to transform.
+func migrateV2ToV3(db *Database) error {
+	return nil
 }
 
 // migrateV1ToV2 migrates permissions and grants entries from the old format

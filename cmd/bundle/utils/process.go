@@ -185,10 +185,20 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		}
 		cmd.SetContext(ctx)
 
+		// record_deployment_history drives DMS, which only the direct engine
+		// supports. Reject it under terraform rather than silently ignoring it.
+		recordDeploymentHistory := b.Config.Experimental != nil && b.Config.Experimental.RecordDeploymentHistory
+		if recordDeploymentHistory && !stateDesc.Engine.IsDirect() {
+			logdiag.LogError(ctx, errors.New("experimental.record_deployment_history is only supported with the direct deployment engine"))
+			return b, stateDesc, root.ErrAlreadyPrinted
+		}
+
 		// Open direct engine state once for all subsequent operations (ExportState, CalculatePlan, Apply, etc.)
 		needDirectState := stateDesc.Engine.IsDirect() && (opts.InitIDs || opts.ErrorOnEmptyState || opts.Deploy || opts.ReadPlanPath != "" || opts.PreDeployChecks || opts.PostStateFunc != nil)
 		if needDirectState {
 			_, localPath := b.StateFilenameDirect(ctx)
+			// Open validates recorded feature flags and rejects state that requires
+			// a newer CLI (see dstate.checkSupportedFeatures).
 			if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(true), dstate.WithWrite(false)); err != nil {
 				logdiag.LogError(ctx, err)
 				return b, stateDesc, root.ErrAlreadyPrinted

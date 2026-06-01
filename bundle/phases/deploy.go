@@ -15,6 +15,7 @@ import (
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct"
+	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/bundle/metrics"
 	"github.com/databricks/cli/bundle/permissions"
@@ -166,6 +167,12 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	}
 
 	if engine.IsDirect() {
+		// Record opted-in features in the state before the WAL is started so they
+		// are captured in the WAL header (RecordFeature panics if the WAL is already
+		// open, so it must run before UpgradeToWrite below).
+		if b.Config.Experimental != nil && b.Config.Experimental.RecordDeploymentHistory {
+			b.DeploymentBundle.StateDB.RecordFeature(dstate.FeatureRecordDeploymentHistory)
+		}
 		// Upgrade from read (opened by process.go) to write mode
 		if err := b.DeploymentBundle.StateDB.UpgradeToWrite(); err != nil {
 			logdiag.LogError(ctx, err)

@@ -1,0 +1,7 @@
+bundle:
+  name: test-rdh-state-upgrade
+
+resources:
+  jobs:
+    foo:
+      name: foo-job

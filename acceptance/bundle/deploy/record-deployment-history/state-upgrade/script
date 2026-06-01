@@ -1,0 +1,19 @@
+# Feature-flag lifecycle for the direct state:
+#   1. A normal deploy writes the baseline state version with no features.
+#   2. Opting into experimental.record_deployment_history records a feature flag,
+#      stamped with the CLI version that wrote it.
+#   3. An older CLI that predates this state version refuses to operate on it.
+
+title "without the flag: no features recorded"
+trace $CLI bundle deploy
+trace print_state.py | jq '{state_version, features}'
+
+title "with experimental.record_deployment_history: the feature is recorded"
+# Also renames the job so the deploy writes state (a no-op deploy would not
+# rewrite the state file and the change would not be observable yet).
+cp databricks.dms.yml databricks.yml
+trace $CLI bundle deploy
+trace print_state.py | jq '{state_version, features}'
+
+title "an older CLI (v1.0.0, max state version 2) rejects the upgraded state"
+trace errcode $CLI_V1 bundle plan 2>&1 | contains.py "state version 3 is newer than supported version 2; upgrade the CLI"

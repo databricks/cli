@@ -10,6 +10,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 
@@ -21,11 +22,28 @@ import (
 )
 
 const (
-	currentStateVersion = 2
-	initialBufferSize   = 64 * 1024
-	maxWalEntrySize     = 10 * 1024 * 1024
-	walSuffix           = ".wal"
+	// currentStateVersion is the schema version written for all direct deployments
+	// and the target older states are migrated up to on load. Version 3 introduced
+	// the per-state feature list (Header.Features): from v3 on, additive capabilities
+	// are recorded as feature flags rather than version bumps, so bump this only for a
+	// structural change older CLIs cannot read (and add a migration for it).
+	currentStateVersion = 3
+
+	initialBufferSize = 64 * 1024
+	maxWalEntrySize   = 10 * 1024 * 1024
+	walSuffix         = ".wal"
 )
+
+// FeatureRecordDeploymentHistory marks a state produced with the deployment
+// metadata service (experimental.record_deployment_history) enabled.
+const FeatureRecordDeploymentHistory = "record_deployment_history"
+
+// knownFeatures are the feature flags this CLI understands. A state that records
+// any feature not in this set was written by a newer CLI; checkSupportedFeatures
+// rejects it and points the user at the minimum CLI version the state recorded.
+var knownFeatures = map[string]struct{}{
+	FeatureRecordDeploymentHistory: {},
+}
 
 // errStaleWAL is returned when the WAL serial is behind the expected serial.
 // The caller should delete the stale WAL and proceed normally.
@@ -42,10 +60,17 @@ type DeploymentState struct {
 }
 
 type Header struct {
-	StateVersion int    `json:"state_version"`
-	CLIVersion   string `json:"cli_version"`
-	Lineage      string `json:"lineage"`
-	Serial       int    `json:"serial"`
+	StateVersion int `json:"state_version"`
+
+	// Features maps each feature flag this state depends on to the CLI version that
+	// recorded it. A CLI that does not recognize a feature reports that version so
+	// the user knows the minimum CLI to upgrade to (see checkSupportedFeatures).
+	// Empty/omitted for states that use no features.
+	Features map[string]string `json:"features,omitempty"`
+
+	CLIVersion string `json:"cli_version"`
+	Lineage    string `json:"lineage"`
+	Serial     int    `json:"serial"`
 }
 
 type Database struct {
@@ -204,6 +229,10 @@ func (db *DeploymentState) Open(ctx context.Context, path string, withRecovery W
 		return fmt.Errorf("migrating state %s: %w", path, err)
 	}
 
+	if err := checkSupportedFeatures(&db.Data); err != nil {
+		return err
+	}
+
 	if withWrite {
 		if err := os.MkdirAll(filepath.Dir(walPath), 0o755); err != nil {
 			return fmt.Errorf("failed to create state directory: %w", err)
@@ -221,7 +250,8 @@ func (db *DeploymentState) Open(ctx context.Context, path string, withRecovery W
 		walHead := Header{
 			Lineage:      lineage,
 			Serial:       db.Data.Serial + 1,
-			StateVersion: currentStateVersion,
+			StateVersion: db.Data.StateVersion,
+			Features:     db.Data.Features,
 			CLIVersion:   build.GetInfo().Version,
 		}
 		return appendJSONLine(db.walFile, walHead)
@@ -408,10 +438,42 @@ func (db *DeploymentState) UpgradeToWrite() error {
 	walHead := Header{
 		Lineage:      lineage,
 		Serial:       db.Data.Serial + 1,
-		StateVersion: currentStateVersion,
+		StateVersion: db.Data.StateVersion,
+		Features:     db.Data.Features,
 		CLIVersion:   build.GetInfo().Version,
 	}
 	return appendJSONLine(db.walFile, walHead)
+}
+
+// RecordFeature marks the state as depending on the named feature, stamping this
+// CLI's version as the minimum required to read it. It must be called before the
+// WAL is started (UpgradeToWrite) so the change is captured in the WAL header.
+func (db *DeploymentState) RecordFeature(name string) {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+	if db.walFile != nil {
+		panic("internal error: RecordFeature must be called before the state is opened for write")
+	}
+	if db.Data.Features == nil {
+		db.Data.Features = make(map[string]string)
+	}
+	db.Data.Features[name] = build.GetInfo().Version
+}
+
+// checkSupportedFeatures rejects a state that records a feature flag this CLI does
+// not understand, pointing the user at the minimum CLI version the state recorded.
+func checkSupportedFeatures(db *Database) error {
+	names := make([]string, 0, len(db.Features))
+	for name := range db.Features {
+		names = append(names, name)
+	}
+	slices.Sort(names)
+	for _, name := range names {
+		if _, ok := knownFeatures[name]; !ok {
+			return fmt.Errorf("the deployment state requires feature %q which this CLI (%s) does not support; upgrade to %s or newer", name, build.GetInfo().Version, db.Features[name])
+		}
+	}
+	return nil
 }
 
 func (db *DeploymentState) AssertOpenedForReadOrWrite() {

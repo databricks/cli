@@ -1,6 +1,7 @@
 package dstate
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
@@ -29,6 +30,67 @@ func TestOpenSaveFinalizeRoundTrip(t *testing.T) {
 	require.NoError(t, db2.Open(t.Context(), path, WithRecovery(false), WithWrite(false)))
 	assert.Equal(t, 1, db2.Data.Serial)
 	assert.Equal(t, "123", db2.GetResourceID("jobs.my_job"))
+	mustFinalize(t, &db2)
+}
+
+func TestRecordFeaturePersists(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "state.json")
+
+	// RecordFeature must run before the WAL is started (UpgradeToWrite), so the
+	// feature is captured in the WAL header and persisted.
+	var db DeploymentState
+	require.NoError(t, db.Open(t.Context(), path, WithRecovery(true), WithWrite(false)))
+	db.RecordFeature(FeatureRecordDeploymentHistory)
+	require.NoError(t, db.UpgradeToWrite())
+	require.NoError(t, db.SaveState("jobs.my_job", "123", map[string]string{"key": "val"}, nil))
+	mustFinalize(t, &db)
+
+	var db2 DeploymentState
+	require.NoError(t, db2.Open(t.Context(), path, WithRecovery(false), WithWrite(false)))
+	assert.Equal(t, currentStateVersion, db2.Data.StateVersion)
+	minVersion, ok := db2.Data.Features[FeatureRecordDeploymentHistory]
+	assert.True(t, ok)
+	assert.NotEmpty(t, minVersion)
+	mustFinalize(t, &db2)
+}
+
+func TestRecordFeaturePanicsAfterWALStarted(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "state.json")
+
+	var db DeploymentState
+	require.NoError(t, db.Open(t.Context(), path, WithRecovery(true), WithWrite(true)))
+	assert.Panics(t, func() { db.RecordFeature(FeatureRecordDeploymentHistory) })
+	mustFinalize(t, &db)
+}
+
+func TestOpenRejectsUnknownFeature(t *testing.T) {
+	// A state recording a feature this CLI does not know is rejected, naming the
+	// feature and the minimum CLI version the state recorded.
+	path := filepath.Join(t.TempDir(), "state.json")
+	data, err := json.Marshal(Database{Header: Header{
+		StateVersion: currentStateVersion,
+		Features:     map[string]string{"future_feature": "9.9.9"},
+	}})
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(path, data, 0o600))
+
+	var db DeploymentState
+	err = db.Open(t.Context(), path, WithRecovery(true), WithWrite(false))
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `feature "future_feature"`)
+	assert.Contains(t, err.Error(), "upgrade to 9.9.9 or newer")
+
+	// A known feature loads fine.
+	path2 := filepath.Join(t.TempDir(), "state.json")
+	data, err = json.Marshal(Database{Header: Header{
+		StateVersion: currentStateVersion,
+		Features:     map[string]string{FeatureRecordDeploymentHistory: "0.0.0-dev"},
+	}})
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(path2, data, 0o600))
+
+	var db2 DeploymentState
+	require.NoError(t, db2.Open(t.Context(), path2, WithRecovery(true), WithWrite(false)))
 	mustFinalize(t, &db2)
 }
 
