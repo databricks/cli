@@ -1,0 +1,3 @@
+the deployment state requires feature "future_feature" which this CLI ([DEV_VERSION]) does not support; upgrade to 9.9.9 or newer
+
+Exit code: 1

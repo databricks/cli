@@ -1,0 +1,6 @@
+mkdir -p .databricks/bundle/default
+cp resources.future.json .databricks/bundle/default/resources.json
+
+# The state records a feature this CLI does not know; it must refuse and point the
+# user at the minimum CLI version recorded in the state.
+trace $CLI bundle plan 2>&1 | grep -o 'the deployment state requires feature.*'

@@ -1,0 +1,39 @@
+
+=== without the flag: no features recorded
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-rdh-state-upgrade/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_state.py
+{
+  "state_version": 3,
+  "features": null
+}
+
+=== with experimental.record_deployment_history: the feature is recorded
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-rdh-state-upgrade/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_state.py
+{
+  "state_version": 3,
+  "features": {
+    "record_deployment_history": "1.2.0"
+  }
+}
+
+=== an older CLI (v1.0.0, max state version 2) rejects the upgraded state
+>>> errcode [CLI_V1] bundle plan
+Warning: unknown field: record_deployment_history
+  at experimental
+  in databricks.yml:5:3
+
+Error: migrating state [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: state version 3 is newer than supported version 2; upgrade the CLI
+
+
+Exit code: 1
