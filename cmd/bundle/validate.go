@@ -50,7 +50,7 @@ Please run this command before deploying to ensure configuration quality.`,
 	cmd.Flags().BoolVar(&includeLocations, "include-locations", false, "Include location information in the output")
 	cmd.Flags().MarkHidden("include-locations")
 	cmd.Flags().BoolVar(&strict, "strict", false, "Treat warnings as errors")
-	cmd.Flags().StringArrayVar(&selectResources, "select", nil, "Validate only the specified resource (e.g. 'my_job' or 'jobs.my_job'). Can be repeated.")
+	cmd.Flags().StringSliceVar(&selectResources, "select", nil, "Validate only the specified resource (e.g. 'my_job' or 'jobs.my_job'). Can be repeated or comma-separated.")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		b, err := utils.ProcessBundle(cmd, utils.ProcessOptions{

@@ -25,7 +25,7 @@ Useful after deployment to see what was created and where to find it.`,
 	cmd.Flags().BoolVar(&forcePull, "force-pull", false, "Skip local cache and load the state from the remote workspace")
 	cmd.Flags().BoolVar(&includeLocations, "include-locations", false, "Include location information in the output")
 	cmd.Flags().MarkHidden("include-locations")
-	cmd.Flags().StringArrayVar(&selectResources, "select", nil, "Show only the specified resource (e.g. 'my_job' or 'jobs.my_job'). Can be repeated.")
+	cmd.Flags().StringSliceVar(&selectResources, "select", nil, "Show only the specified resource (e.g. 'my_job' or 'jobs.my_job'). Can be repeated or comma-separated.")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		b, err := utils.ProcessBundle(cmd, utils.ProcessOptions{

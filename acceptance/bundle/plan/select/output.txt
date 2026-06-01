@@ -22,3 +22,9 @@ create jobs.job_a
 create jobs.job_b
 
 Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle plan --select job_a,job_b
+create jobs.job_a
+create jobs.job_b
+
+Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged

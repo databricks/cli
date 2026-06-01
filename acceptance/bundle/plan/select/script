@@ -12,3 +12,6 @@ trace $CLI bundle plan --select jobs.job_a
 
 # Repeated --select: both resources are included
 trace $CLI bundle plan --select job_a --select job_b
+
+# Comma-separated --select: both resources are included
+trace $CLI bundle plan --select job_a,job_b
