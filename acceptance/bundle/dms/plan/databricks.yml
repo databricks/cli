@@ -1,0 +1,15 @@
+bundle:
+  name: dms-plan
+
+experimental:
+  record_deployment_history: true
+
+resources:
+  jobs:
+    # Not recorded in DMS -> plan should create it.
+    create_me:
+      name: create-me
+    # Recorded in DMS with a different name -> plan should update it.
+    update_me:
+      name: update-me-new
+    # delete_me is recorded in DMS but absent here -> plan should delete it.

@@ -1,0 +1,8 @@
+
+=== bundle plan derives actions from DMS state: create create_me, update update_me, delete delete_me
+>>> [CLI] bundle plan
+create jobs.create_me
+delete jobs.delete_me
+update jobs.update_me
+
+Plan: 1 to add, 1 to change, 1 to delete, 0 unchanged

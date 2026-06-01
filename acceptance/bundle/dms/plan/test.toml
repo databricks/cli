@@ -1,0 +1,2 @@
+# DMS state reading is a direct-engine feature; pin the engine for stable output.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
