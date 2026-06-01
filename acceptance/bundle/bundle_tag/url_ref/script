@@ -1,5 +1,7 @@
 errcode $CLI bundle validate &> out.validate.$DATABRICKS_BUNDLE_ENGINE.txt
-errcode $CLI bundle validate -o json 2>> out.validate.$DATABRICKS_BUNDLE_ENGINE.txt | jq .resources >> out.validate.$DATABRICKS_BUNDLE_ENGINE.txt
+errcode $CLI bundle validate -o json > out.validate.json.tmp 2>> out.validate.$DATABRICKS_BUNDLE_ENGINE.txt
+jq .resources out.validate.json.tmp >> out.validate.$DATABRICKS_BUNDLE_ENGINE.txt
+rm out.validate.json.tmp
 errcode $CLI bundle plan &> out.plan.$DATABRICKS_BUNDLE_ENGINE.txt
 errcode $CLI bundle deploy &> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt
 errcode print_requests.py //jobs &> out.deploy-requests.$DATABRICKS_BUNDLE_ENGINE.txt

@@ -35,7 +35,9 @@ func TestGenerateSchemaMap(t *testing.T) {
 
 	existing, err := os.ReadFile("generated.go")
 	require.NoError(t, err)
-	testdiff.AssertEqualTexts(t, "generated.go", "want", string(existing), string(src))
+	// Normalize CRLF so the comparison is stable on Windows (Git autocrlf).
+	existingNorm := strings.ReplaceAll(string(existing), "\r\n", "\n")
+	testdiff.AssertEqualTexts(t, "generated.go", "want", existingNorm, string(src))
 }
 
 // tfTypes maps TF resource type name → Go struct type, built from AllResources.
