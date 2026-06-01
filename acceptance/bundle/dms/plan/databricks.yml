@@ -1,3 +1,5 @@
+# jobs.delete_me is recorded in DMS (see script) but intentionally absent here,
+# so the plan deletes it.
 bundle:
   name: dms-plan
 
@@ -12,4 +14,3 @@ resources:
     # Recorded in DMS with a different name -> plan should update it.
     update_me:
       name: update-me-new
-    # delete_me is recorded in DMS but absent here -> plan should delete it.
