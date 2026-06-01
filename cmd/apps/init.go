@@ -641,6 +641,80 @@ func commitInPlace() (string, error) {
 	return appName, nil
 }
 
+// isPreRenderedTemplate returns true when the template directory contains an
+// already-materialised project (e.g. one of the app-templates/appkit-* repos)
+// rather than a raw Go-template tree.
+//
+// Detection: there is no {{.project_name}} subdirectory AND the databricks.yml
+// file (if present) contains no Go template syntax ("{{").
+func isPreRenderedTemplate(templateDir string) bool {
+	entries, err := os.ReadDir(templateDir)
+	if err != nil {
+		return false
+	}
+	for _, e := range entries {
+		if e.IsDir() && strings.Contains(e.Name(), "{{.project_name}}") {
+			return false
+		}
+	}
+	data, err := os.ReadFile(filepath.Join(templateDir, "databricks.yml"))
+	if err != nil {
+		// No databricks.yml — can't tell, assume normal template.
+		return false
+	}
+	return !strings.Contains(string(data), "{{")
+}
+
+// replaceProjectName updates the project name in key files after copying a
+// pre-rendered template.  It reads the original bundle name from
+// databricks.yml and replaces it with newName in databricks.yml and
+// package.json.
+func replaceProjectName(destDir, newName string) error {
+	// Update package.json name field via JSON round-trip.
+	pkgPath := filepath.Join(destDir, "package.json")
+	if data, err := os.ReadFile(pkgPath); err == nil {
+		var pkg map[string]any
+		if err := json.Unmarshal(data, &pkg); err == nil {
+			pkg["name"] = newName
+			out, err := json.MarshalIndent(pkg, "", "  ")
+			if err == nil {
+				// Preserve trailing newline convention.
+				out = append(out, '\n')
+				_ = os.WriteFile(pkgPath, out, 0o644)
+			}
+		}
+	}
+
+	// Update databricks.yml: bundle name and app name.
+	ymlPath := filepath.Join(destDir, "databricks.yml")
+	data, err := os.ReadFile(ymlPath)
+	if err != nil {
+		return nil
+	}
+	content := string(data)
+
+	// Read the original bundle name so we can do a targeted replace of the
+	// app resource name that usually matches it.
+	origName := ""
+	for _, line := range strings.Split(content, "\n") {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "name:") && origName == "" {
+			origName = strings.TrimSpace(strings.TrimPrefix(trimmed, "name:"))
+			origName = strings.Trim(origName, "\"'")
+			break
+		}
+	}
+
+	// Replace the bundle name line (first occurrence of "name:" under "bundle:").
+	if origName != "" {
+		content = strings.Replace(content, "name: "+origName, "name: "+newName, 1)
+		// Replace the quoted app name in the resources section.
+		content = strings.Replace(content, "name: \""+origName+"\"", "name: \""+newName+"\"", 1)
+	}
+
+	return os.WriteFile(ymlPath, []byte(content), 0o644)
+}
+
 // findProjectSrcDir locates the actual source directory inside a template.
 // Templates may nest their content inside a {{.project_name}} directory.
 func findProjectSrcDir(templateDir string) string {
@@ -992,6 +1066,13 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		}
 	}
 
+	// Detect whether this is a pre-rendered template (already-materialised
+	// project with no Go template placeholders in databricks.yml).
+	preRendered := isPreRenderedTemplate(templateDir)
+	if preRendered {
+		log.Debugf(ctx, "Detected pre-rendered template at %s", templateDir)
+	}
+
 	// Start npm install in the background so it runs while the user answers prompts.
 	// This is a Node.js-only optimisation — non-Node templates skip this.
 	// Honour --skip-install by not kicking off the background install at all.
@@ -1025,7 +1106,17 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	// Skip deploy/run prompts if in flags mode or if deploy/run flags were explicitly set
 	skipDeployRunPrompt := flagsMode || opts.deployChanged || opts.runChanged
 
-	if isInteractive && !opts.pluginsChanged && !flagsMode {
+	if preRendered {
+		// Pre-rendered templates already have their plugins configured.
+		// Skip plugin/resource prompting entirely — just use mandatory plugins.
+		if isInteractive && !skipDeployRunPrompt {
+			var err error
+			shouldDeploy, runMode, err = prompt.PromptForDeployAndRun(ctx)
+			if err != nil {
+				return err
+			}
+		}
+	} else if isInteractive && !opts.pluginsChanged && !flagsMode {
 		// Interactive mode without --plugins flag: prompt for plugins, dependencies, description
 		config, err := promptForPluginsAndDeps(ctx, m, selectedPlugins, skipDeployRunPrompt, opts.autoApprove)
 		if err != nil {
@@ -1083,8 +1174,28 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	// Always include mandatory plugins regardless of user selection or flags.
 	selectedPlugins = appendUnique(selectedPlugins, m.GetMandatoryPluginNames()...)
 
+	// Warn when --features adds plugins that the pre-rendered template
+	// cannot inject (they'll appear in .env but not in databricks.yml,
+	// server.ts, or app.yaml).
+	if preRendered && opts.pluginsChanged {
+		mandatoryNames := m.GetMandatoryPluginNames()
+		mandatory := make(map[string]bool, len(mandatoryNames))
+		for _, n := range mandatoryNames {
+			mandatory[n] = true
+		}
+		for _, p := range opts.plugins {
+			if !mandatory[p] {
+				log.Warnf(ctx, "Feature %q is not supported by this pre-rendered template and will be ignored."+
+					" Only .env will include its configuration."+
+					" To use all features dynamically, use the default AppKit template instead.", p)
+			}
+		}
+	}
+
 	// In flags/non-interactive mode, resolve derived values and validate resources.
-	if flagsMode || !isInteractive {
+	// Skip validation for pre-rendered templates — their resources are already
+	// configured in databricks.yml.
+	if !preRendered && (flagsMode || !isInteractive) {
 		resources := m.CollectResources(selectedPlugins)
 
 		// Resolve derived values for resources that support it.
@@ -1228,6 +1339,14 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		return runErr
 	}
 	projectCreated = true // From here on, cleanup on failure
+
+	// For pre-rendered templates, update the project name in key files since
+	// Go template substitution had no placeholders to fill.
+	if preRendered {
+		if err := replaceProjectName(destDir, opts.name); err != nil {
+			log.Warnf(ctx, "Could not update project name in output files: %v", err)
+		}
+	}
 
 	// Get absolute path
 	absOutputDir, err := filepath.Abs(destDir)
