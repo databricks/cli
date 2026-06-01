@@ -31,6 +31,7 @@ import (
 	"github.com/databricks/cli/libs/log"
 	ignore "github.com/sabhiram/go-gitignore"
 	"github.com/spf13/cobra"
+	"go.yaml.in/yaml/v3"
 )
 
 const (
@@ -40,6 +41,13 @@ const (
 	appkitDefaultBranch  = "main"
 	appkitTemplateTagPfx = "template-v"
 	defaultProfile       = "DEFAULT"
+
+	// projectNamePlaceholder is the Go template variable used in template
+	// directory names to stand in for the user-provided project name.
+	projectNamePlaceholder = "{{.project_name}}"
+
+	// bundleConfigFile is the standard bundle configuration filename.
+	bundleConfigFile = "databricks.yml"
 )
 
 // normalizeVersion converts a version string to the template tag format "template-vX.X.X".
@@ -653,11 +661,11 @@ func isPreRenderedTemplate(templateDir string) bool {
 		return false
 	}
 	for _, e := range entries {
-		if e.IsDir() && strings.Contains(e.Name(), "{{.project_name}}") {
+		if e.IsDir() && strings.Contains(e.Name(), projectNamePlaceholder) {
 			return false
 		}
 	}
-	data, err := os.ReadFile(filepath.Join(templateDir, "databricks.yml"))
+	data, err := os.ReadFile(filepath.Join(templateDir, bundleConfigFile))
 	if err != nil {
 		// No databricks.yml — can't tell, assume normal template.
 		return false
@@ -666,8 +674,8 @@ func isPreRenderedTemplate(templateDir string) bool {
 }
 
 // replaceProjectName updates the project name in key files after copying a
-// pre-rendered template.  It reads the original bundle name from
-// databricks.yml and replaces it with newName in databricks.yml and
+// pre-rendered template.  It sets bundle.name and the first
+// resources.apps.*.name in databricks.yml, and the name field in
 // package.json.
 func replaceProjectName(destDir, newName string) error {
 	// Update package.json name field via JSON round-trip.
@@ -685,34 +693,87 @@ func replaceProjectName(destDir, newName string) error {
 		}
 	}
 
-	// Update databricks.yml: bundle name and app name.
-	ymlPath := filepath.Join(destDir, "databricks.yml")
+	// Update databricks.yml using yaml.Node to preserve comments and formatting.
+	ymlPath := filepath.Join(destDir, bundleConfigFile)
 	data, err := os.ReadFile(ymlPath)
 	if err != nil {
-		return nil
+		return err
 	}
-	content := string(data)
 
-	// Read the original bundle name so we can do a targeted replace of the
-	// app resource name that usually matches it.
-	origName := ""
-	for _, line := range strings.Split(content, "\n") {
-		trimmed := strings.TrimSpace(line)
-		if strings.HasPrefix(trimmed, "name:") && origName == "" {
-			origName = strings.TrimSpace(strings.TrimPrefix(trimmed, "name:"))
-			origName = strings.Trim(origName, "\"'")
-			break
+	var doc yaml.Node
+	if err := yaml.Unmarshal(data, &doc); err != nil {
+		return fmt.Errorf("parse %s: %w", bundleConfigFile, err)
+	}
+
+	setYAMLValue(&doc, []string{"bundle", "name"}, newName)
+	setFirstAppName(&doc, newName)
+
+	var buf bytes.Buffer
+	enc := yaml.NewEncoder(&buf)
+	enc.SetIndent(2)
+	if err := enc.Encode(&doc); err != nil {
+		return fmt.Errorf("encode %s: %w", bundleConfigFile, err)
+	}
+	enc.Close()
+
+	return os.WriteFile(ymlPath, buf.Bytes(), 0o644)
+}
+
+// setYAMLValue walks a yaml.Node tree following the given key path and
+// replaces the leaf scalar value. It handles both document and mapping nodes.
+func setYAMLValue(node *yaml.Node, keys []string, value string) {
+	if node.Kind == yaml.DocumentNode && len(node.Content) > 0 {
+		setYAMLValue(node.Content[0], keys, value)
+		return
+	}
+	if node.Kind != yaml.MappingNode || len(keys) == 0 {
+		return
+	}
+	for i := 0; i < len(node.Content)-1; i += 2 {
+		if node.Content[i].Value == keys[0] {
+			if len(keys) == 1 {
+				node.Content[i+1].Value = value
+				// Clear any explicit style so the encoder picks the
+				// simplest representation for the new value.
+				node.Content[i+1].Style = 0
+				return
+			}
+			setYAMLValue(node.Content[i+1], keys[1:], value)
+			return
 		}
 	}
+}
 
-	// Replace the bundle name line (first occurrence of "name:" under "bundle:").
-	if origName != "" {
-		content = strings.Replace(content, "name: "+origName, "name: "+newName, 1)
-		// Replace the quoted app name in the resources section.
-		content = strings.Replace(content, "name: \""+origName+"\"", "name: \""+newName+"\"", 1)
+// setFirstAppName sets the name field of the first app entry under
+// resources.apps in a yaml.Node tree.
+func setFirstAppName(node *yaml.Node, name string) {
+	if node.Kind == yaml.DocumentNode && len(node.Content) > 0 {
+		setFirstAppName(node.Content[0], name)
+		return
 	}
+	if node.Kind != yaml.MappingNode {
+		return
+	}
+	// Find resources → apps → first entry → name.
+	appsNode := yamlMapLookup(yamlMapLookup(node, "resources"), "apps")
+	if appsNode == nil || appsNode.Kind != yaml.MappingNode || len(appsNode.Content) < 2 {
+		return
+	}
+	// First app entry is at Content[1] (Content[0] is the key).
+	setYAMLValue(appsNode.Content[1], []string{"name"}, name)
+}
 
-	return os.WriteFile(ymlPath, []byte(content), 0o644)
+// yamlMapLookup returns the value node for a key in a mapping node, or nil.
+func yamlMapLookup(node *yaml.Node, key string) *yaml.Node {
+	if node == nil || node.Kind != yaml.MappingNode {
+		return nil
+	}
+	for i := 0; i < len(node.Content)-1; i += 2 {
+		if node.Content[i].Value == key {
+			return node.Content[i+1]
+		}
+	}
+	return nil
 }
 
 // findProjectSrcDir locates the actual source directory inside a template.
@@ -723,7 +784,7 @@ func findProjectSrcDir(templateDir string) string {
 		return templateDir
 	}
 	for _, e := range entries {
-		if e.IsDir() && strings.Contains(e.Name(), "{{.project_name}}") {
+		if e.IsDir() && strings.Contains(e.Name(), projectNamePlaceholder) {
 			return filepath.Join(templateDir, e.Name())
 		}
 	}
@@ -1185,9 +1246,9 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		}
 		for _, p := range opts.plugins {
 			if !mandatory[p] {
-				log.Warnf(ctx, "Feature %q is not supported by this pre-rendered template and will be ignored."+
-					" Only .env will include its configuration."+
-					" To use all features dynamically, use the default AppKit template instead.", p)
+				log.Warnf(ctx, "Adding feature %q to a pre-rendered template is not currently supported.\n"+
+					"To add it manually, register the plugin in server/server.ts and run `npx @databricks/appkit plugin sync --write`.\n"+
+					"To use all features dynamically, run `databricks apps init` without --template.", p)
 			}
 		}
 	}
@@ -1565,7 +1626,7 @@ func copyTemplate(ctx context.Context, src, dest string, vars templateVars) (int
 		return 0, err
 	}
 	for _, e := range entries {
-		if e.IsDir() && strings.Contains(e.Name(), "{{.project_name}}") {
+		if e.IsDir() && strings.Contains(e.Name(), projectNamePlaceholder) {
 			srcProjectDir = filepath.Join(src, e.Name())
 			break
 		}
