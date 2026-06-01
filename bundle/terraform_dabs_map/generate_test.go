@@ -421,7 +421,7 @@ func renderSource(results []groupResult) ([]byte, error) {
 			continue
 		}
 		w("\t%q: {\n", r.group)
-		writeFieldSet(w, buildFieldSet(r.dabsOnly), 2)
+		writeFieldSet(w, buildFieldSet(r.dabsOnly), 2, r.group)
 		w("\t},\n")
 	}
 	w("}\n\n")
@@ -433,7 +433,7 @@ func renderSource(results []groupResult) ([]byte, error) {
 			continue
 		}
 		w("\t%q: {\n", r.group)
-		writeFieldSet(w, buildFieldSet(r.tfOnly), 2)
+		writeFieldSet(w, buildFieldSet(r.tfOnly), 2, r.group)
 		w("\t},\n")
 	}
 	w("}\n\n")
@@ -562,12 +562,13 @@ func buildFieldSet(paths map[string]bool) map[string]any {
 }
 
 // writeFieldSet writes a field set tree as nested FieldSet Go source at the given depth.
-// Entries at depth ≥ 3 get a trailing comment showing the full dotted path.
-func writeFieldSet(w func(string, ...any), tree map[string]any, depth int) {
-	writeFieldSetPath(w, tree, depth, "")
+// Leaf entries at depth ≥ 3 get a trailing comment showing the full dotted path
+// including the resource group and a wildcard resource name: "group.*.field1.field2".
+func writeFieldSet(w func(string, ...any), tree map[string]any, depth int, group string) {
+	writeFieldSetPath(w, tree, depth, "", group)
 }
 
-func writeFieldSetPath(w func(string, ...any), tree map[string]any, depth int, prefix string) {
+func writeFieldSetPath(w func(string, ...any), tree map[string]any, depth int, prefix string, group string) {
 	indent := strings.Repeat("\t", depth)
 	for _, key := range slices.Sorted(maps.Keys(tree)) {
 		child := tree[key].(map[string]any)
@@ -578,12 +579,12 @@ func writeFieldSetPath(w func(string, ...any), tree map[string]any, depth int, p
 		if len(child) == 0 {
 			comment := ""
 			if depth >= 3 {
-				comment = " // " + path
+				comment = " // " + group + ".*." + path
 			}
 			w("%s%q: {},%s\n", indent, key, comment)
 		} else {
 			w("%s%q: {\n", indent, key)
-			writeFieldSetPath(w, child, depth+1, path)
+			writeFieldSetPath(w, child, depth+1, path, group)
 			w("%s},\n", indent)
 		}
 	}
