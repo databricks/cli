@@ -15,9 +15,7 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 )
 
-type MigrateMode bool
-
-func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.WorkspaceClient, plan *deployplan.Plan, migrateMode MigrateMode) {
+func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.WorkspaceClient, plan *deployplan.Plan) {
 	if plan == nil {
 		panic("Planning is not done")
 	}
@@ -52,9 +50,6 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 
 		action := entry.Action
 		errorPrefix := fmt.Sprintf("cannot %s %s", action, resourceKey)
-		if migrateMode {
-			errorPrefix = "cannot migrate " + resourceKey
-		}
 
 		if action == deployplan.Undefined {
 			logdiag.LogError(ctx, fmt.Errorf("cannot deploy %s: unknown action %q", resourceKey, action))
@@ -82,20 +77,6 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 		}
 
 		if action == deployplan.Delete {
-			if migrateMode {
-				// Resource is in terraform state but not in config. Preserve its ID in
-				// direct state so the next direct deploy will plan and execute deletion.
-				id := b.StateDB.GetResourceID(resourceKey)
-				if id == "" {
-					logdiag.LogError(ctx, fmt.Errorf("%s: internal error: no ID in state", errorPrefix))
-					return false
-				}
-				if err = b.StateDB.SaveState(resourceKey, id, json.RawMessage("{}"), entry.DependsOn); err != nil {
-					logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
-					return false
-				}
-				return true
-			}
 			err = d.Destroy(ctx, &b.StateDB)
 			if err != nil {
 				logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
@@ -123,18 +104,8 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 				return false
 			}
 
-			if migrateMode {
-				// In migration mode we're reading resources in DAG order so that we have fully resolved config snapshots stored
-				id := b.StateDB.GetResourceID(resourceKey)
-				if id == "" {
-					logdiag.LogError(ctx, fmt.Errorf("state entry not found for %q", resourceKey))
-					return false
-				}
-				err = b.StateDB.SaveState(resourceKey, id, sv.Value, entry.DependsOn)
-			} else {
-				// TODO: redo calcDiff to downgrade planned action if possible (?)
-				err = d.Deploy(ctx, &b.StateDB, sv.Value, action, entry)
-			}
+			// TODO: redo calcDiff to downgrade planned action if possible (?)
+			err = d.Deploy(ctx, &b.StateDB, sv.Value, action, entry)
 
 			if err != nil {
 				logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
