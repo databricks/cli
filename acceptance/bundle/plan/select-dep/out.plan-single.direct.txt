@@ -1,1 +1,0 @@
-Error: invalid dependency "${resources.jobs.bar.id}", no such node "resources.jobs.bar"

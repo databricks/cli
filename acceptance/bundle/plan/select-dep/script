@@ -1,10 +1,8 @@
-# Both resources selected: foo can reference bar's id at deploy time.
+# Both resources selected explicitly.
 trace $CLI bundle plan --select jobs.foo --select jobs.bar
 
 # Select the dependency alone: bar has no outgoing references.
 trace $CLI bundle plan --select jobs.bar
 
-# Select only foo: the plan fails because foo depends on bar which is not in the plan.
-# Error message differs per engine, so written to a per-engine file.
-musterr $CLI bundle plan --select jobs.foo &> out.plan-single.$DATABRICKS_BUNDLE_ENGINE.txt
-perl -0777 -i -pe 's/\n+$/\n/' out.plan-single.$DATABRICKS_BUNDLE_ENGINE.txt
+# Select only foo: bar is auto-included because foo references ${resources.jobs.bar.id}.
+trace $CLI bundle plan --select jobs.foo

@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
 func bundleWithJobsAndPipelines() *bundle.Bundle {
@@ -85,15 +86,41 @@ func TestSelectResources_MultipleSelectors(t *testing.T) {
 	assert.Len(t, b.Config.Resources.Pipelines, 1)
 }
 
-// TestSelectResources_DependencyNotAutoIncluded verifies that the SelectResources mutator
-// itself does not auto-include resources referenced by selected ones. Downstream plan/deploy
-// phases are responsible for catching unresolvable references.
-func TestSelectResources_DependencyNotAutoIncluded(t *testing.T) {
-	b := bundleWithJobsAndPipelines()
-	b.Select = []string{"my_job"}
+func TestSelectResources_DependencyAutoIncluded(t *testing.T) {
+	// foo references bar via ${resources.jobs.bar.id}; selecting foo alone
+	// should automatically include bar (and transitively its deps).
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Resources: config.Resources{
+				Jobs: map[string]*resources.Job{
+					"foo": {JobSettings: jobs.JobSettings{Description: "${resources.jobs.bar.id}"}},
+					"bar": {},
+				},
+			},
+		},
+	}
+	b.Select = []string{"jobs.foo"}
 	diags := bundle.Apply(t.Context(), b, mutator.SelectResources())
 	require.NoError(t, diags.Error())
-	assert.Len(t, b.Config.Resources.Jobs, 1)
-	// my_pipeline was not selected and is not auto-included even if my_job references it.
-	assert.Empty(t, b.Config.Resources.Pipelines)
+	assert.Contains(t, b.Config.Resources.Jobs, "foo")
+	assert.Contains(t, b.Config.Resources.Jobs, "bar")
+}
+
+func TestSelectResources_TransitiveDependency(t *testing.T) {
+	// foo → bar → baz; selecting foo alone should include all three.
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Resources: config.Resources{
+				Jobs: map[string]*resources.Job{
+					"foo": {JobSettings: jobs.JobSettings{Description: "${resources.jobs.bar.id}"}},
+					"bar": {JobSettings: jobs.JobSettings{Description: "${resources.jobs.baz.id}"}},
+					"baz": {},
+				},
+			},
+		},
+	}
+	b.Select = []string{"jobs.foo"}
+	diags := bundle.Apply(t.Context(), b, mutator.SelectResources())
+	require.NoError(t, diags.Error())
+	assert.Len(t, b.Config.Resources.Jobs, 3)
 }
