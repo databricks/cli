@@ -2,6 +2,7 @@ package lakebox
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 )
@@ -26,7 +27,7 @@ import (
 // Run `lakebox list` to refresh.
 func resolveLocalID(ctx context.Context, profile, arg string) (string, error) {
 	if arg == "" {
-		return "", fmt.Errorf("empty lakebox identifier")
+		return "", errors.New("empty lakebox identifier")
 	}
 
 	sbs := getSandboxes(ctx, profile)
