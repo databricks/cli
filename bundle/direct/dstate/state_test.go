@@ -32,6 +32,40 @@ func TestOpenSaveFinalizeRoundTrip(t *testing.T) {
 	mustFinalize(t, &db2)
 }
 
+func TestUpgradeToDMSPersistsVersions(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "state.json")
+
+	var db DeploymentState
+	require.NoError(t, db.Open(t.Context(), path, WithRecovery(true), WithWrite(true)))
+	db.UpgradeToDMS()
+	require.NoError(t, db.SaveState("jobs.my_job", "123", map[string]string{"key": "val"}, nil))
+	mustFinalize(t, &db)
+
+	// Re-open and verify the upgraded schema version and DMS version persisted,
+	// and that loading the upgraded state does not error or downgrade it.
+	var db2 DeploymentState
+	require.NoError(t, db2.Open(t.Context(), path, WithRecovery(false), WithWrite(false)))
+	assert.Equal(t, dmsStateVersion, db2.Data.StateVersion)
+	assert.Equal(t, currentDmsVersion, db2.Data.CurrentDmsVersion)
+	mustFinalize(t, &db2)
+}
+
+func TestEnsureSupportedDmsVersion(t *testing.T) {
+	// A state stamped with a record_deployment_history version newer than this CLI
+	// knows is rejected; an equal or absent version is accepted.
+	newer := &DeploymentState{Data: Database{Header: Header{CurrentDmsVersion: currentDmsVersion + 1}}}
+	err := newer.EnsureSupportedDmsVersion()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "record_deployment_history state version")
+	assert.Contains(t, err.Error(), "upgrade the CLI")
+
+	supported := &DeploymentState{Data: Database{Header: Header{CurrentDmsVersion: currentDmsVersion}}}
+	require.NoError(t, supported.EnsureSupportedDmsVersion())
+
+	nonDMS := &DeploymentState{Data: Database{Header: Header{}}}
+	require.NoError(t, nonDMS.EnsureSupportedDmsVersion())
+}
+
 func TestFinalizeWithNoEntriesDoesNotWriteStateFile(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "state.json")
 

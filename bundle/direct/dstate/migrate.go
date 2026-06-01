@@ -10,16 +10,25 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/iam"
 )
 
-// migrateState runs all necessary migrations on the database.
+// migrateState brings a freshly-loaded state up to a version this CLI can use.
 // It is called after loading state from disk.
+//
+// Two versions are "current" and left untouched: the baseline currentStateVersion
+// and the opt-in dmsStateVersion (written when a bundle previews DMS). Legacy
+// states below the baseline are migrated forward via the migrations map. A state
+// newer than dmsStateVersion was written by a newer CLI, so we refuse it rather
+// than risk mishandling a format we don't understand.
+//
+// The DMS protocol version (current_dms_version) is enforced separately and only
+// when the bundle has opted into DMS; see DeploymentState.EnsureSupportedDmsVersion.
 func migrateState(db *Database) error {
-	if db.StateVersion == currentStateVersion {
-		return nil
-	}
-	if db.StateVersion > currentStateVersion {
-		return fmt.Errorf("state version %d is newer than supported version %d; upgrade the CLI", db.StateVersion, currentStateVersion)
+	if db.StateVersion > dmsStateVersion {
+		return fmt.Errorf("state version %d is newer than supported version %d; upgrade the CLI", db.StateVersion, dmsStateVersion)
 	}
 
+	// Only legacy states (below the baseline) migrate here. The DMS upgrade is an
+	// explicit deploy-time step (see UpgradeToDMS), never an automatic migration,
+	// so a dmsStateVersion state falls through this loop unchanged.
 	for version := db.StateVersion; version < currentStateVersion; version++ {
 		fn, ok := migrations[version]
 		if !ok {

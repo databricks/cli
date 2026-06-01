@@ -1,0 +1,10 @@
+Local = true
+Cloud = false
+
+# databricks.yml is rewritten in-place by the script (flag added in the second step).
+Ignore = [".databricks", "databricks.yml"]
+
+# The state-version upgrade only applies to the direct engine; terraform stores
+# state differently and would diverge.
+[EnvMatrix]
+DATABRICKS_BUNDLE_ENGINE = ["direct"]
