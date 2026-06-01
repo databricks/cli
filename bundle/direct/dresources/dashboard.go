@@ -265,7 +265,7 @@ func responseToState(createOrUpdateResp *dashboards.Dashboard, publishResp *dash
 	}
 }
 
-func (r *ResourceDashboard) DoCreate(ctx context.Context, _ *Engine, config *DashboardState) (string, *DashboardState, error) {
+func (r *ResourceDashboard) DoCreate(ctx context.Context, engine *Engine, config *DashboardState) (string, *DashboardState, error) {
 	dashboard, err := prepareDashboardRequest(config)
 	if err != nil {
 		return "", nil, err
@@ -300,6 +300,7 @@ func (r *ResourceDashboard) DoCreate(ctx context.Context, _ *Engine, config *Das
 
 	// Persist the etag in state.
 	config.Etag = createResp.Etag
+	engine.SaveState(ctx, createResp.DashboardId, config)
 
 	var publishResp *dashboards.PublishedDashboard
 	// Note, today config.Published is always true (we do not have this field in input config).

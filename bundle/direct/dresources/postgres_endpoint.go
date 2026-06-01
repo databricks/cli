@@ -141,7 +141,7 @@ func (r *ResourcePostgresEndpoint) waitForReconciliation(ctx context.Context, na
 	}
 }
 
-func (r *ResourcePostgresEndpoint) DoCreate(ctx context.Context, _ *Engine, config *PostgresEndpointState) (string, *PostgresEndpointRemote, error) {
+func (r *ResourcePostgresEndpoint) DoCreate(ctx context.Context, engine *Engine, config *PostgresEndpointState) (string, *PostgresEndpointRemote, error) {
 	waiter, err := r.client.Postgres.CreateEndpoint(ctx, postgres.CreateEndpointRequest{
 		EndpointId: config.EndpointId,
 		Parent:     config.Parent,
@@ -164,6 +164,7 @@ func (r *ResourcePostgresEndpoint) DoCreate(ctx context.Context, _ *Engine, conf
 	if err != nil {
 		return "", nil, err
 	}
+	engine.SaveState(ctx, waiter.Name(), config)
 
 	// Wait for the operation to complete
 	result, err := waiter.Wait(ctx)

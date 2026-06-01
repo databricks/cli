@@ -106,7 +106,7 @@ func (r *ResourcePostgresProject) DoRead(ctx context.Context, id string) (*Postg
 	return makePostgresProjectRemote(project), nil
 }
 
-func (r *ResourcePostgresProject) DoCreate(ctx context.Context, _ *Engine, config *PostgresProjectState) (string, *PostgresProjectRemote, error) {
+func (r *ResourcePostgresProject) DoCreate(ctx context.Context, engine *Engine, config *PostgresProjectState) (string, *PostgresProjectRemote, error) {
 	waiter, err := r.client.Postgres.CreateProject(ctx, postgres.CreateProjectRequest{
 		ProjectId: config.ProjectId,
 		Project: postgres.Project{
@@ -128,6 +128,7 @@ func (r *ResourcePostgresProject) DoCreate(ctx context.Context, _ *Engine, confi
 	if err != nil {
 		return "", nil, err
 	}
+	engine.SaveState(ctx, waiter.Name(), config)
 
 	// Wait for the project to be ready (long-running operation)
 	result, err := waiter.Wait(ctx)
