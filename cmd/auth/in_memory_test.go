@@ -5,7 +5,7 @@ import (
 	"golang.org/x/oauth2"
 )
 
-type inMemoryTokenCache struct {
+type inMemoryStore struct {
 	Tokens map[string]*oauth2.Token
 }
 
@@ -13,7 +13,7 @@ type inMemoryTokenCache struct {
 // each lookup deserializes a fresh struct. Without the copy, callers that
 // mutate the returned token (e.g. clearing RefreshToken) would corrupt
 // entries shared across test cases.
-func (i *inMemoryTokenCache) Lookup(key string) (storage.Entry, error) {
+func (i *inMemoryStore) Lookup(key string) (storage.Entry, error) {
 	token, ok := i.Tokens[key]
 	if !ok {
 		return storage.Entry{}, storage.ErrNotFound
@@ -24,7 +24,7 @@ func (i *inMemoryTokenCache) Lookup(key string) (storage.Entry, error) {
 
 // Put stores a copy to prevent callers from mutating cached entries after
 // put returns (mirrors file-backed cache semantics).
-func (i *inMemoryTokenCache) Put(key string, e storage.Entry) error {
+func (i *inMemoryStore) Put(key string, e storage.Entry) error {
 	cp := *e.Token
 	i.Tokens[key] = &cp
 	return nil
@@ -32,9 +32,9 @@ func (i *inMemoryTokenCache) Put(key string, e storage.Entry) error {
 
 // Delete deletes the entry under key. Deleting a missing entry is not
 // an error.
-func (i *inMemoryTokenCache) Delete(key string) error {
+func (i *inMemoryStore) Delete(key string) error {
 	delete(i.Tokens, key)
 	return nil
 }
 
-var _ storage.Store = (*inMemoryTokenCache)(nil)
+var _ storage.Store = (*inMemoryStore)(nil)
