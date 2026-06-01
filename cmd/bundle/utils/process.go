@@ -247,9 +247,12 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			log.Warnf(ctx, "Plan was created with CLI version %s but current version is %s", plan.CLIVersion, currentVersion)
 		}
 
-		// Validate that the plan's lineage and serial match the current state
-		// This must happen before any file operations
-		err = direct.ValidatePlanAgainstState(&b.DeploymentBundle.StateDB, plan)
+		// Validate that the plan's lineage and serial match the current state.
+		// This must happen before any file operations. When DMS recording is
+		// enabled the serial is replaced by the deployment version, which is
+		// validated under the deploy lock instead (see DeploymentVersionRecorder).
+		dmsEnabled := b.Config.Experimental != nil && b.Config.Experimental.RecordDeploymentHistory
+		err = direct.ValidatePlanAgainstState(&b.DeploymentBundle.StateDB, plan, dmsEnabled)
 		if err != nil {
 			logdiag.LogError(ctx, err)
 			return b, stateDesc, root.ErrAlreadyPrinted
