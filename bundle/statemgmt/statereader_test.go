@@ -19,10 +19,15 @@ import (
 type fakeBundleClient struct {
 	sdkbundle.BundleInterface
 	resources []sdkbundle.Resource
+	versions  []sdkbundle.Version
 }
 
 func (c *fakeBundleClient) ListResourcesAll(context.Context, sdkbundle.ListResourcesRequest) ([]sdkbundle.Resource, error) {
 	return c.resources, nil
+}
+
+func (c *fakeBundleClient) ListVersionsAll(context.Context, sdkbundle.ListVersionsRequest) ([]sdkbundle.Version, error) {
+	return c.versions, nil
 }
 
 func raw(s string) *json.RawMessage {
@@ -67,43 +72,56 @@ func TestNewStateReaderSelection(t *testing.T) {
 	}
 }
 
-// TestDMSStateReader covers reading an existing deployment from DMS. The lineage
-// (deployment id) always comes from resources.json. The resource set comes from
-// DMS once DMS has it; until then (record_deployment_history just enabled on an
-// existing deployment) resources.json's resources are kept so they aren't
-// re-created.
+// TestDMSStateReader covers reading a deployment whose state DMS owns: the
+// identity (lineage) is kept from resources.json, and the resource set is taken
+// from DMS, replacing whatever resources.json held.
 func TestDMSStateReader(t *testing.T) {
-	const lineage = "dep-1"
-	localResources := map[string]dstate.ResourceEntry{
+	path := writeLocalState(t, "dep-1", map[string]dstate.ResourceEntry{
 		"resources.jobs.from_file": {ID: "file-1"},
+	})
+	client := &fakeBundleClient{resources: []sdkbundle.Resource{
+		{ResourceKey: "jobs.foo", ResourceId: "job-1", State: raw(`{"name":"foo"}`)},
+	}}
+
+	var db dstate.DeploymentState
+	require.NoError(t, NewDMSStateReader(client, "dep-1", path).Load(t.Context(), &db))
+
+	assert.Equal(t, "dep-1", db.Data.Lineage)
+	_, fromFile := db.GetResourceEntry("resources.jobs.from_file")
+	assert.False(t, fromFile)
+	entry, ok := db.GetResourceEntry("resources.jobs.foo")
+	require.True(t, ok)
+	assert.Equal(t, "job-1", entry.ID)
+}
+
+// TestDeploymentHasSuccessfulVersion is the gate that decides whether DMS owns a
+// deployment's state. DMS is authoritative only once a version has completed
+// successfully; otherwise (no versions, or only failed/in-progress ones) the
+// caller falls back to the local file.
+func TestDeploymentHasSuccessfulVersion(t *testing.T) {
+	completed := func(reason sdkbundle.VersionComplete) sdkbundle.Version {
+		return sdkbundle.Version{Status: sdkbundle.VersionStatusVersionStatusCompleted, CompletionReason: reason}
 	}
 	tests := []struct {
-		name         string
-		dmsResources []sdkbundle.Resource
-		wantKey      string // the single resource expected in the loaded state
+		name     string
+		versions []sdkbundle.Version
+		want     bool
 	}{
+		{"no versions", nil, false},
+		{"in progress", []sdkbundle.Version{{Status: sdkbundle.VersionStatusVersionStatusInProgress}}, false},
+		{"failed", []sdkbundle.Version{completed(sdkbundle.VersionCompleteVersionCompleteFailure)}, false},
+		{"succeeded", []sdkbundle.Version{completed(sdkbundle.VersionCompleteVersionCompleteSuccess)}, true},
 		{
-			name:         "DMS owns the resources: the set comes from DMS, not resources.json",
-			dmsResources: []sdkbundle.Resource{{ResourceKey: "jobs.foo", ResourceId: "job-1", State: raw(`{"name":"foo"}`)}},
-			wantKey:      "resources.jobs.foo",
-		},
-		{
-			name:         "feature just enabled on an existing deployment (DMS empty): resources.json is kept",
-			dmsResources: nil,
-			wantKey:      "resources.jobs.from_file",
+			"failed then succeeded",
+			[]sdkbundle.Version{completed(sdkbundle.VersionCompleteVersionCompleteFailure), completed(sdkbundle.VersionCompleteVersionCompleteSuccess)},
+			true,
 		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			path := writeLocalState(t, lineage, localResources)
-
-			var db dstate.DeploymentState
-			require.NoError(t, NewDMSStateReader(&fakeBundleClient{resources: tc.dmsResources}, lineage, path).Load(t.Context(), &db))
-
-			assert.Equal(t, lineage, db.Data.Lineage)
-			_, ok := db.GetResourceEntry(tc.wantKey)
-			assert.True(t, ok)
-			assert.Len(t, db.Data.State, 1)
+			got, err := deploymentHasSuccessfulVersion(t.Context(), &fakeBundleClient{versions: tc.versions}, "dep-1")
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, got)
 		})
 	}
 }

@@ -11,6 +11,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/direct/dstate"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	sdkbundle "github.com/databricks/databricks-sdk-go/service/bundle"
 )
 
@@ -60,10 +61,8 @@ func (r *fileStateReader) Load(ctx context.Context, db *dstate.DeploymentState) 
 }
 
 // dmsStateReader loads the identity from the local resources.json file and the
-// resource set from DMS. If DMS has no resources for the deployment yet — an
-// existing file-based deployment that just enabled record_deployment_history —
-// it keeps the resources from resources.json so they are not re-created; the next
-// deploy records them to DMS.
+// resource set from DMS. It is used only once DMS is the authoritative source for
+// the deployment (see NewStateReader), so it takes the DMS resources as-is.
 type dmsStateReader struct {
 	client       sdkbundle.BundleInterface
 	deploymentID string
@@ -87,21 +86,40 @@ func (r *dmsStateReader) Load(ctx context.Context, db *dstate.DeploymentState) e
 		return err
 	}
 
-	resources, err := fetchDeploymentResources(ctx, r.client, r.deploymentID)
+	data.State, err = fetchDeploymentResources(ctx, r.client, r.deploymentID)
 	if err != nil {
 		return err
 	}
 
-	// Once DMS has the resources, they are the source of truth. Until then — e.g.
-	// just after enabling record_deployment_history on an existing file-based
-	// deployment — DMS returns nothing, so keep resources.json's resources rather
-	// than treating everything as new. The next deploy records them to DMS.
-	if len(resources) > 0 {
-		data.State = resources
-	}
-
 	db.OpenWithData(r.path, data)
 	return nil
+}
+
+// deploymentHasSuccessfulVersion reports whether DMS holds a successfully
+// completed version for the deployment. That is the signal that DMS owns the
+// state: if the deployment was never recorded to DMS, or its initial DMS deploy
+// did not complete successfully, DMS state is absent or partial and callers
+// should fall back to the local file.
+func deploymentHasSuccessfulVersion(ctx context.Context, client sdkbundle.BundleInterface, deploymentID string) (bool, error) {
+	versions, err := client.ListVersionsAll(ctx, sdkbundle.ListVersionsRequest{
+		Parent: "deployments/" + deploymentID,
+	})
+	if err != nil {
+		// A deployment that was never recorded to DMS is not an error here: it just
+		// means DMS is not (yet) the source of truth.
+		if errors.Is(err, apierr.ErrNotFound) {
+			return false, nil
+		}
+		return false, fmt.Errorf("listing versions from deployment metadata service: %w", err)
+	}
+
+	for _, v := range versions {
+		if v.Status == sdkbundle.VersionStatusVersionStatusCompleted &&
+			v.CompletionReason == sdkbundle.VersionCompleteVersionCompleteSuccess {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 // fetchDeploymentResources lists every resource recorded for the deployment in
@@ -134,15 +152,17 @@ func fetchDeploymentResources(ctx context.Context, client sdkbundle.BundleInterf
 	return out, nil
 }
 
-// NewStateReader picks the reader for the bundle. Three cases:
+// NewStateReader picks the reader for the bundle. Four cases:
 //
 //  1. record_deployment_history off: read everything from resources.json.
-//  2. on, but resources.json has no lineage (nothing deployed yet): there is no
-//     DMS deployment to read, so read the (empty) local file.
-//  3. on, with a lineage: read resources from DMS for that deployment id. If DMS
-//     has none yet (record_deployment_history was just enabled on an existing
-//     deployment), the DMS reader keeps resources.json's resources; see
-//     dmsStateReader.Load.
+//  2. on, but resources.json has no lineage (nothing deployed yet): read the
+//     (empty) local file.
+//  3. on, with a lineage, and DMS has a successfully-completed version for it:
+//     DMS owns the state, so read resources from DMS.
+//  4. on, with a lineage, but DMS has no successfully-completed version (DMS not
+//     initialized for this deployment yet, e.g. record_deployment_history was just
+//     enabled on an existing deployment, or the initial DMS deploy failed): defer
+//     to the local file so existing resources are neither re-created nor lost.
 //
 // The lineage comes from the local resources.json, so PullResourcesState must
 // have synced it before this is called.
@@ -160,7 +180,16 @@ func NewStateReader(ctx context.Context, b *bundle.Bundle, path string) (StateRe
 		return NewFileStateReader(path), nil // case 2
 	}
 
-	return NewDMSStateReader(b.WorkspaceClient(ctx).Bundle, local.Lineage, path), nil // case 3
+	client := b.WorkspaceClient(ctx).Bundle
+	authoritative, err := deploymentHasSuccessfulVersion(ctx, client, local.Lineage)
+	if err != nil {
+		return nil, err
+	}
+	if !authoritative {
+		return NewFileStateReader(path), nil // case 4
+	}
+
+	return NewDMSStateReader(client, local.Lineage, path), nil // case 3
 }
 
 // readLocalDatabase parses the local resources.json file. A missing file yields
