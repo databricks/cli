@@ -11,9 +11,8 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 )
 
-// workspaceFilesystemLock implements DeploymentManager using a lock file in the
-// bundle's workspace state path. Holds only the primitives it needs from the
-// bundle.
+// workspaceFilesystemLock holds the state for the workspace-filesystem lock.
+// Methods are unexported; callers use DeploymentLock.Acquire / DeploymentLock.Release.
 type workspaceFilesystemLock struct {
 	client    *databricks.WorkspaceClient
 	user      string
@@ -30,18 +29,16 @@ type workspaceFilesystemLock struct {
 	goal   Goal
 }
 
-func (l *workspaceFilesystemLock) CreateVersion(ctx context.Context, goal Goal) (int64, error) {
-	l.goal = goal
-
+func (l *workspaceFilesystemLock) acquire(ctx context.Context) error {
 	// Return early if locking is disabled.
 	if !l.enabled {
 		log.Infof(ctx, "Skipping; locking is disabled")
-		return 0, nil
+		return nil
 	}
 
 	lk, err := locker.CreateLocker(l.user, l.statePath, l.client)
 	if err != nil {
-		return 0, err
+		return err
 	}
 
 	l.locker = lk
@@ -54,16 +51,16 @@ func (l *workspaceFilesystemLock) CreateVersion(ctx context.Context, goal Goal) 
 		// If we get a permission or "doesn't exist" error from the API this
 		// indicates we either don't have permissions or the path is invalid.
 		if errors.Is(err, fs.ErrPermission) || errors.Is(err, fs.ErrNotExist) {
-			return 0, l.reportPermissionError(ctx, l.statePath).Error()
+			return l.reportPermissionError(ctx, l.statePath).Error()
 		}
 
-		return 0, err
+		return err
 	}
 
-	return 0, nil
+	return nil
 }
 
-func (l *workspaceFilesystemLock) CompleteVersion(ctx context.Context, _ int64, _ DeploymentStatus) error {
+func (l *workspaceFilesystemLock) release(ctx context.Context, _ DeploymentStatus) error {
 	// Return early if locking is disabled.
 	if !l.enabled {
 		log.Infof(ctx, "Skipping; locking is disabled")

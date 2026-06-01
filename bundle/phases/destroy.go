@@ -120,9 +120,8 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 		return
 	}
 
-	dm := lock.NewDeploymentManager(ctx, b)
-	version, err := dm.CreateVersion(ctx, lock.GoalDestroy)
-	if err != nil {
+	dl := lock.NewDeploymentLock(ctx, b, lock.GoalDestroy)
+	if err := dl.Acquire(ctx); err != nil {
 		logdiag.LogError(ctx, err)
 		return
 	}
@@ -132,7 +131,7 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 		if logdiag.HasError(ctx) {
 			status = lock.DeploymentFailure
 		}
-		if err := dm.CompleteVersion(ctx, version, status); err != nil {
+		if err := dl.Release(ctx, status); err != nil {
 			logdiag.LogError(ctx, err)
 		}
 	}()
