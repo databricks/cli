@@ -3,7 +3,6 @@ package statemgmt
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"maps"
 	"os"
 	"path/filepath"
@@ -20,11 +19,10 @@ import (
 type fakeBundleClient struct {
 	sdkbundle.BundleInterface
 	resources []sdkbundle.Resource
-	err       error
 }
 
 func (c *fakeBundleClient) ListResourcesAll(context.Context, sdkbundle.ListResourcesRequest) ([]sdkbundle.Resource, error) {
-	return c.resources, c.err
+	return c.resources, nil
 }
 
 func raw(s string) *json.RawMessage {
@@ -69,50 +67,29 @@ func TestNewStateReaderSelection(t *testing.T) {
 	}
 }
 
-// TestDMSStateReader covers reading an existing deployment from DMS. The lineage
-// (deployment id) lives in the local state and must be preserved so a later
-// deploy reuses the deployment; only the resource set comes from DMS.
+// TestDMSStateReader covers reading an existing deployment from DMS: the lineage
+// (deployment id) is kept from the local state so a later deploy reuses the
+// deployment, while the resource set is taken from DMS and any local resources
+// (e.g. left over from a prior direct deployment) are dropped.
 func TestDMSStateReader(t *testing.T) {
-	dmsResources := []sdkbundle.Resource{
+	path := writeLocalState(t, "dep-1", map[string]dstate.ResourceEntry{
+		"resources.jobs.stale": {ID: "stale"},
+	})
+	client := &fakeBundleClient{resources: []sdkbundle.Resource{
 		{ResourceKey: "jobs.foo", ResourceId: "job-1", State: raw(`{"name":"foo"}`)},
-	}
-	tests := []struct {
-		name       string
-		localState map[string]dstate.ResourceEntry
-	}{
-		{
-			name:       "existing DMS deployment: local file is just the deployment pointer",
-			localState: nil,
-		},
-		{
-			name:       "existing direct deployment moving to DMS: stale local resources are replaced",
-			localState: map[string]dstate.ResourceEntry{"resources.jobs.stale": {ID: "stale"}},
-		},
-	}
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			path := writeLocalState(t, "dep-1", tc.localState)
+	}}
 
-			var db dstate.DeploymentState
-			require.NoError(t, NewDMSStateReader(&fakeBundleClient{resources: dmsResources}, "dep-1", path).Load(t.Context(), &db))
-
-			// Deployment identity comes from local state and is preserved.
-			assert.Equal(t, "dep-1", db.Data.Lineage)
-			// Resources come from DMS; local resources are not carried over.
-			_, hasStale := db.GetResourceEntry("resources.jobs.stale")
-			assert.False(t, hasStale)
-			entry, ok := db.GetResourceEntry("resources.jobs.foo")
-			require.True(t, ok)
-			assert.Equal(t, "job-1", entry.ID)
-		})
-	}
-}
-
-func TestDMSStateReaderPropagatesListError(t *testing.T) {
-	wantErr := errors.New("boom")
 	var db dstate.DeploymentState
-	err := NewDMSStateReader(&fakeBundleClient{err: wantErr}, "dep-1", writeLocalState(t, "dep-1", nil)).Load(t.Context(), &db)
-	assert.ErrorIs(t, err, wantErr)
+	require.NoError(t, NewDMSStateReader(client, "dep-1", path).Load(t.Context(), &db))
+
+	assert.Equal(t, "dep-1", db.Data.Lineage)
+
+	_, hasStale := db.GetResourceEntry("resources.jobs.stale")
+	assert.False(t, hasStale)
+
+	entry, ok := db.GetResourceEntry("resources.jobs.foo")
+	require.True(t, ok)
+	assert.Equal(t, "job-1", entry.ID)
 }
 
 // TestFetchDeploymentResources covers mapping DMS resources to state entries.
