@@ -156,8 +156,8 @@ func (r *ResourceApp) DoCreate(ctx context.Context, engine *Engine, config *AppS
 
 	// Save state as soon as the app exists so it is not orphaned if the wait or
 	// lifecycle management is interrupted.
-	engine.SetID(app.Name)
-	if err := engine.SaveState(config); err != nil {
+
+	if err := engine.SaveState(app.Name, config); err != nil {
 		return "", nil, err
 	}
 

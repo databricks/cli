@@ -53,7 +53,7 @@ type IResource interface {
 
 	// DoCreate creates a new resource from the newState. Returns id of the resource and optionally remote state.
 	// If remote state is available as part of the operation, return it; otherwise return nil.
-	// Call engine.SetID then engine.SaveState to persist intermediate state before long-running waits.
+	// Call engine.SaveState(id, state) to persist intermediate state before long-running waits.
 	// Example: func (r *ResourceVolume) DoCreate(ctx context.Context, _ *Engine, newState *catalog.CreateVolumeRequestContent) (string, *catalog.VolumeInfo, error)
 	DoCreate(ctx context.Context, engine *Engine, newState any) (id string, remoteState any, e error)
 
