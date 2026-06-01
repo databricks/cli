@@ -1238,13 +1238,14 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	// Initialize project based on type (Node.js, Python, etc.).
 	// For Node.js, if the background install succeeded node_modules exists
 	// and the initializer skips the redundant install step.
-	// With --skip-install we bypass Initialize entirely (which would run
-	// npm install / uv sync / pip install and any post-install setup) but
-	// still surface the project's next-steps command.
+	// With --skip-install we bypass Initialize entirely and instead prepend
+	// the install command to NextSteps so the user knows to install first.
 	var nextStepsCmd string
 	projectInitializer := initializer.GetProjectInitializer(absOutputDir)
 	if projectInitializer != nil {
-		if !opts.skipInstall {
+		if opts.skipInstall {
+			nextStepsCmd = prependInstall(projectInitializer.InstallCommand(), projectInitializer.NextSteps())
+		} else {
 			result := projectInitializer.Initialize(ctx, absOutputDir)
 			if !result.Success {
 				if result.Error != nil {
@@ -1252,13 +1253,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 				}
 				return errors.New(result.Message)
 			}
-		}
-		nextStepsCmd = projectInitializer.NextSteps()
-		// With --skip-install the dependency installer never ran, so prepend
-		// the install command (e.g. `npm ci`) to the suggested next steps so
-		// the user knows to install before running the app.
-		if opts.skipInstall {
-			nextStepsCmd = prependInstall(projectInitializer.InstallCommand(), nextStepsCmd)
+			nextStepsCmd = projectInitializer.NextSteps()
 		}
 	}
 
@@ -1384,14 +1379,13 @@ func runPostCreateDev(ctx context.Context, mode prompt.RunMode, projectInit init
 // prependInstall composes the install command and the project's NextSteps
 // suggestion into a single shell snippet, dropping either side if empty.
 func prependInstall(installCmd, nextStepsCmd string) string {
-	switch {
-	case installCmd == "":
+	if installCmd == "" {
 		return nextStepsCmd
-	case nextStepsCmd == "":
-		return installCmd
-	default:
-		return installCmd + " && " + nextStepsCmd
 	}
+	if nextStepsCmd == "" {
+		return installCmd
+	}
+	return installCmd + " && " + nextStepsCmd
 }
 
 // appendUnique appends values to a slice, skipping duplicates.

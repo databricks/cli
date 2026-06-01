@@ -1158,11 +1158,6 @@ func TestRunCreate_SkipInstallRejectsRun(t *testing.T) {
 				nameProvided: true,
 				skipInstall:  true,
 				run:          runMode,
-				runChanged:   true,
-				// --run=dev-remote also requires --deploy; set it so the
-				// error we hit is the skip-install one, not the run-flag one.
-				deploy:        true,
-				deployChanged: true,
 			})
 			require.Error(t, err)
 			assert.Contains(t, err.Error(), "--skip-install cannot be combined with --run")
