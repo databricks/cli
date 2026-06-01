@@ -3,16 +3,17 @@ package bundle
 import (
 	"context"
 
-	bundleenv "github.com/databricks/cli/bundle/env"
-	envlib "github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/bundle/config/engine"
 )
 
-// IsManagedState reports whether the bundle is opted into the deployment
-// metadata service (DMS). Configuration takes priority over the
-// DATABRICKS_BUNDLE_MANAGED_STATE environment variable.
+// IsManagedState reports whether the bundle uses the direct engine with
+// deployment history enabled (engine: direct_with_history).
+// Configuration takes priority over the DATABRICKS_BUNDLE_ENGINE environment variable.
 func IsManagedState(ctx context.Context, b *Bundle) bool {
-	if b.Config.Bundle.Deployment.ManagedState != nil {
-		return *b.Config.Bundle.Deployment.ManagedState
+	engineType := b.Config.Bundle.Engine
+	if engineType == engine.EngineNotSet {
+		envEngine, _ := engine.FromEnv(ctx)
+		engineType = envEngine
 	}
-	return envlib.Get(ctx, bundleenv.ManagedStateVariable) == "true"
+	return engineType.IsDirectWithHistory()
 }

@@ -5,37 +5,35 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestIsManagedStateEnvVar(t *testing.T) {
 	testutil.CleanupEnvironment(t)
-	t.Setenv("DATABRICKS_BUNDLE_MANAGED_STATE", "true")
+	t.Setenv("DATABRICKS_BUNDLE_ENGINE", "direct_with_history")
 	b := &bundle.Bundle{}
 	assert.True(t, bundle.IsManagedState(t.Context(), b))
 }
 
-func TestIsManagedStateEnvVarOtherValues(t *testing.T) {
-	for _, v := range []string{"false", "1", "yes", "on", "TRUE", "garbage", ""} {
+func TestIsManagedStateOtherEngines(t *testing.T) {
+	for _, v := range []string{"direct", "terraform", ""} {
 		t.Run(v, func(t *testing.T) {
 			testutil.CleanupEnvironment(t)
-			t.Setenv("DATABRICKS_BUNDLE_MANAGED_STATE", v)
+			t.Setenv("DATABRICKS_BUNDLE_ENGINE", v)
 			b := &bundle.Bundle{}
 			assert.False(t, bundle.IsManagedState(t.Context(), b))
 		})
 	}
 }
 
-func TestIsManagedStateConfigTrue(t *testing.T) {
+func TestIsManagedStateConfig(t *testing.T) {
 	testutil.CleanupEnvironment(t)
-	enabled := true
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Bundle: config.Bundle{
-				Deployment: config.Deployment{
-					ManagedState: &enabled,
-				},
+				Engine: engine.EngineDirectWithHistory,
 			},
 		},
 	}
@@ -44,14 +42,11 @@ func TestIsManagedStateConfigTrue(t *testing.T) {
 
 func TestIsManagedStateConfigTakesPriority(t *testing.T) {
 	testutil.CleanupEnvironment(t)
-	t.Setenv("DATABRICKS_BUNDLE_MANAGED_STATE", "true")
-	disabled := false
+	t.Setenv("DATABRICKS_BUNDLE_ENGINE", "direct_with_history")
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Bundle: config.Bundle{
-				Deployment: config.Deployment{
-					ManagedState: &disabled,
-				},
+				Engine: engine.EngineDirect,
 			},
 		},
 	}
