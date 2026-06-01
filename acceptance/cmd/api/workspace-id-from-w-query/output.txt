@@ -14,5 +14,8 @@
     ]
   },
   "method": "GET",
-  "path": "/api/2.0/clusters/list"
+  "path": "/api/2.0/clusters/list",
+  "q": {
+    "w": "999"
+  }
 }
