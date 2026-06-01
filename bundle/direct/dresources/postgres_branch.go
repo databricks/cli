@@ -102,7 +102,7 @@ func (r *ResourcePostgresBranch) DoRead(ctx context.Context, id string) (*Postgr
 	return makePostgresBranchRemote(branch), nil
 }
 
-func (r *ResourcePostgresBranch) DoCreate(ctx context.Context, _ *Engine, config *PostgresBranchState) (string, *PostgresBranchRemote, error) {
+func (r *ResourcePostgresBranch) DoCreate(ctx context.Context, engine *Engine, config *PostgresBranchState) (string, *PostgresBranchRemote, error) {
 	waiter, err := r.client.Postgres.CreateBranch(ctx, postgres.CreateBranchRequest{
 		BranchId: config.BranchId,
 		Parent:   config.Parent,
@@ -124,6 +124,7 @@ func (r *ResourcePostgresBranch) DoCreate(ctx context.Context, _ *Engine, config
 	if err != nil {
 		return "", nil, err
 	}
+	engine.SaveState(ctx, waiter.Name(), config)
 
 	// Wait for the branch to be ready (long-running operation)
 	result, err := waiter.Wait(ctx)
