@@ -14,27 +14,19 @@ import (
 	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
 	"github.com/databricks/cli/bundle/deploy/terraform"
-	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/bundle/direct"
+	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/bundle/direct/dstate"
+	"github.com/databricks/cli/bundle/migrate"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/shellquote"
-	"github.com/databricks/cli/libs/structs/structaccess"
-	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/spf13/cobra"
 )
 
 const backupSuffix = ".backup"
-
-// RunPlanCheck runs bundle plan and checks if there are any actions planned.
-// Returns error if plan fails or if there are actions planned.
-func RunPlanCheck(cmd *cobra.Command, extraArgs []string, extraArgsStr string) error {
-	return runPlanCheck(cmd, extraArgs, extraArgsStr)
-}
 
 // runPlanCheck runs bundle plan and checks if there are any actions planned.
 // Returns error if plan fails or if there are actions planned.
@@ -82,12 +74,6 @@ func runPlanCheck(cmd *cobra.Command, extraArgs []string, extraArgsStr string) e
 	}
 
 	return nil
-}
-
-// GetCommonArgs extracts common flags (target, profile, var) from the command into
-// argument slices suitable for forwarding to a subprocess.
-func GetCommonArgs(cmd *cobra.Command) ([]string, string) {
-	return getCommonArgs(cmd)
 }
 
 func getCommonArgs(cmd *cobra.Command) ([]string, string) {
@@ -221,6 +207,11 @@ To start using direct engine, set "engine: direct" under bundle in your databric
 			}
 		}
 
+		tfAttrs, err := migrate.ParseTFStateAttrs(localTerraformPath)
+		if err != nil {
+			return fmt.Errorf("failed to read terraform state attributes: %w", err)
+		}
+
 		etags := map[string]string{}
 
 		state := make(map[string]dstate.ResourceEntry)
@@ -238,8 +229,8 @@ To start using direct engine, set "engine: direct" under bundle in your databric
 		migratedDB := dstate.NewDatabase(stateDesc.Lineage, stateDesc.Serial+1)
 		migratedDB.State = state
 
-		deploymentBundle := &direct.DeploymentBundle{}
-		deploymentBundle.StateDB.OpenWithData(tempStatePath, migratedDB)
+		var stateDB dstate.DeploymentState
+		stateDB.OpenWithData(tempStatePath, migratedDB)
 
 		tempStatePathAutoRemove := true
 
@@ -257,55 +248,20 @@ To start using direct engine, set "engine: direct" under bundle in your databric
 			return root.ErrAlreadyPrinted
 		}
 
-		plan, err := deploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(ctx), &b.Config)
+		adapters, err := dresources.InitAll(b.WorkspaceClient(ctx))
 		if err != nil {
 			return err
 		}
 
-		for _, entry := range plan.Plan {
-			switch entry.Action {
-			case deployplan.Create:
-				// Resource is in config but not in terraform state; skip it during migration.
-				// It will be created on the first direct deploy.
-				entry.Action = deployplan.Skip
-			case deployplan.Delete:
-				// Resource is in terraform state but not in config. Keep as Delete so the
-				// apply migrate path can preserve its ID in direct state, allowing the next
-				// direct deploy to remove it.
-			default:
-				// Force existing resources to Update so migration reads their remote state
-				// and writes a full config snapshot.
-				entry.Action = deployplan.Update
-			}
-		}
-
-		// We need to copy ETag into new state.
-		// For most resources state consists of fully resolved local config snapshot + id.
-		// Dashboards are special in that they also store "etag" in state which is not provided by user but
-		// comes from remote state. If we don't store "etag" in state, we won't detect remote drift, because
-		// local=nil, remote="<some new etag>" which will be classified as a backend default and skipped.
-
-		for key := range plan.Plan {
-			etag := etags[key]
-			if etag == "" {
-				continue
-			}
-			sv, ok := deploymentBundle.StateCache.Load(key)
-			if !ok {
-				return fmt.Errorf("failed to read state for %q", key)
-			}
-			err := structaccess.Set(sv.Value, structpath.NewStringKey(nil, "etag"), etag)
-			if err != nil {
-				return fmt.Errorf("failed to set etag on %q: %w", key, err)
-			}
-		}
-
-		if err := deploymentBundle.StateDB.UpgradeToWrite(); err != nil {
+		if err := stateDB.UpgradeToWrite(); err != nil {
 			return fmt.Errorf("upgrading state for apply: %w", err)
 		}
 
-		deploymentBundle.Apply(ctx, b.WorkspaceClient(ctx), plan, direct.MigrateMode(true))
-		if _, err := deploymentBundle.StateDB.Finalize(ctx); err != nil {
+		if err := migrate.BuildStateFromTF(ctx, &b.Config, adapters, &stateDB, tfAttrs, terraformResources, etags); err != nil {
+			return err
+		}
+
+		if _, err := stateDB.Finalize(ctx); err != nil {
 			logdiag.LogError(ctx, err)
 		}
 		if logdiag.HasError(ctx) {
