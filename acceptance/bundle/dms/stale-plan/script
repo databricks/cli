@@ -1,0 +1,21 @@
+cleanup() {
+    title "Cleanup: destroy the deployment"
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt plan.json
+}
+trap cleanup EXIT
+
+title "Deploy creates the DMS deployment at version 1"
+trace $CLI bundle deploy
+rm -f out.requests.txt
+
+title "A plan records the DMS version it was generated against (version_id=1, no serial)"
+trace $CLI bundle plan -o json > plan.json
+trace jq '{version_id, serial}' plan.json
+
+title "The plan is usable in DMS mode: applying it succeeds and advances the deployment to version 2"
+trace $CLI bundle deploy --plan plan.json
+rm -f out.requests.txt
+
+title "Re-applying the same plan is now rejected as stale: its version_id (1) no longer matches the live version (2)"
+trace $CLI bundle deploy --plan plan.json

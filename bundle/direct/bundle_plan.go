@@ -24,6 +24,8 @@ import (
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
+	sdkbundle "github.com/databricks/databricks-sdk-go/service/bundle"
 )
 
 var errDelayed = errors.New("must be resolved after apply")
@@ -37,9 +39,15 @@ func (b *DeploymentBundle) init(client *databricks.WorkspaceClient) error {
 	return err
 }
 
-// ValidatePlanAgainstState validates that a plan's lineage and serial match the given state.
+// ValidatePlanAgainstState validates that a plan's lineage matches the given
+// state, and that its serial does too unless DMS recording is enabled.
 // If the plan has no lineage (first deployment), validation is skipped.
-func ValidatePlanAgainstState(stateDB *dstate.DeploymentState, plan *deployplan.Plan) error {
+//
+// When dmsEnabled is true the plan carries a version_id instead of a serial
+// (the two are mutually exclusive); freshness is then validated against the
+// live deployment version under the deploy lock, so the serial check is skipped
+// here.
+func ValidatePlanAgainstState(stateDB *dstate.DeploymentState, plan *deployplan.Plan, dmsEnabled bool) error {
 	if plan.Lineage == "" {
 		return nil
 	}
@@ -50,11 +58,31 @@ func ValidatePlanAgainstState(stateDB *dstate.DeploymentState, plan *deployplan.
 		return fmt.Errorf("plan lineage %q does not match state lineage %q; the state may have been modified by another process", plan.Lineage, stateDB.Data.Lineage)
 	}
 
+	if dmsEnabled {
+		return nil
+	}
+
 	if plan.Serial != stateDB.Data.Serial {
 		return fmt.Errorf("plan serial %d does not match state serial %d; the state has been modified since the plan was created. Please run 'bundle plan' again", plan.Serial, stateDB.Data.Serial)
 	}
 
 	return nil
+}
+
+// getDeploymentVersion returns the DMS deployment's current last_version_id, or
+// "" if the deployment does not exist yet. This is the version a plan is
+// generated against, mirroring the state serial for the file-state engine.
+func getDeploymentVersion(ctx context.Context, svc sdkbundle.BundleInterface, lineage string) (string, error) {
+	dep, err := svc.GetDeployment(ctx, sdkbundle.GetDeploymentRequest{
+		Name: "deployments/" + lineage,
+	})
+	if errors.Is(err, apierr.ErrNotFound) {
+		return "", nil
+	}
+	if err != nil {
+		return "", fmt.Errorf("failed to get deployment: %w", err)
+	}
+	return dep.LastVersionId, nil
 }
 
 // InitForApply initializes the DeploymentBundle for applying a pre-computed plan.
@@ -105,6 +133,19 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 	plan, err := b.makePlan(ctx, configRoot, &b.StateDB.Data)
 	if err != nil {
 		return nil, fmt.Errorf("reading config: %w", err)
+	}
+
+	// When DMS recording is enabled, the plan's freshness is tracked by the
+	// remote deployment version rather than the local state serial. Stamp the
+	// version the plan is generated against and clear the serial so the two stay
+	// mutually exclusive (see deployplan.Plan.VersionId).
+	if configRoot != nil && configRoot.Experimental != nil && configRoot.Experimental.RecordDeploymentHistory && plan.Lineage != "" {
+		versionID, err := getDeploymentVersion(ctx, client.Bundle, plan.Lineage)
+		if err != nil {
+			return nil, err
+		}
+		plan.VersionId = versionID
+		plan.Serial = 0
 	}
 
 	b.Plan = plan

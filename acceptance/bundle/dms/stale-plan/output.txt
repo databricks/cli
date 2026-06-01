@@ -1,0 +1,40 @@
+
+=== Deploy creates the DMS deployment at version 1
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-stale-plan/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== A plan records the DMS version it was generated against (version_id=1, no serial)
+>>> [CLI] bundle plan -o json
+
+>>> jq {version_id, serial} plan.json
+{
+  "version_id": "1",
+  "serial": null
+}
+
+=== The plan is usable in DMS mode: applying it succeeds and advances the deployment to version 2
+>>> [CLI] bundle deploy --plan plan.json
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-stale-plan/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Re-applying the same plan is now rejected as stale: its version_id (1) no longer matches the live version (2)
+>>> [CLI] bundle deploy --plan plan.json
+Error: plan is outdated: it was generated against deployment version 1, but the current version is 2. Please run 'bundle plan' again
+
+
+=== Cleanup: destroy the deployment
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.foo
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/dms-stale-plan/default
+
+Deleting files...
+Destroy complete!
+
+Exit code: 1

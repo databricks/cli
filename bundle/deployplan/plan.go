@@ -16,11 +16,18 @@ import (
 const currentPlanVersion = 2
 
 type Plan struct {
-	PlanVersion int                   `json:"plan_version,omitempty"`
-	CLIVersion  string                `json:"cli_version,omitempty"`
-	Lineage     string                `json:"lineage,omitempty"`
-	Serial      int                   `json:"serial,omitempty"`
-	Plan        map[string]*PlanEntry `json:"plan,omitzero"`
+	PlanVersion int    `json:"plan_version,omitempty"`
+	CLIVersion  string `json:"cli_version,omitempty"`
+	Lineage     string `json:"lineage,omitempty"`
+	Serial      int    `json:"serial,omitempty"`
+	// VersionId is the Deployment Metadata Service (DMS) version the plan was
+	// generated against. It is set instead of Serial when
+	// experimental.record_deployment_history is enabled, and is validated
+	// against the live deployment version when the plan is applied. The two are
+	// mutually exclusive: serial tracks the local state file, version_id tracks
+	// the remote DMS deployment.
+	VersionId string                `json:"version_id,omitempty"`
+	Plan      map[string]*PlanEntry `json:"plan,omitzero"`
 
 	mutex   sync.Mutex `json:"-"`
 	lockmap lockmap    `json:"-"`

@@ -137,8 +137,10 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	}
 
 	// lock is acquired here. Record a DMS deployment version while the lock is
-	// held (no-op unless experimental.record_deployment_history is set).
-	recorder := lock.NewDeploymentVersionRecorder(b, lock.GoalDeploy)
+	// held (no-op unless experimental.record_deployment_history is set). When
+	// applying a pre-computed plan (plan != nil), the plan's version_id is
+	// validated against the live deployment version here, under the lock.
+	recorder := lock.NewDeploymentVersionRecorder(b, lock.GoalDeploy, plan)
 	defer func() {
 		status := lock.DeploymentSuccess
 		if logdiag.HasError(ctx) {

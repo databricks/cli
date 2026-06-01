@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/apierr"
@@ -41,6 +42,12 @@ type DeploymentVersionRecorder struct {
 	goal    Goal
 	enabled bool
 
+	// validateVersion is set when applying a pre-computed plan: the plan's
+	// version_id must match the deployment's current version, otherwise the plan
+	// is stale and is rejected.
+	validateVersion bool
+	expectedVersion string
+
 	// populated by CreateVersion
 	svc           sdkbundle.BundleInterface
 	deploymentID  string
@@ -50,10 +57,16 @@ type DeploymentVersionRecorder struct {
 
 // NewDeploymentVersionRecorder returns a recorder for the given goal. The
 // returned recorder is a no-op unless experimental.record_deployment_history
-// is set.
-func NewDeploymentVersionRecorder(b *bundle.Bundle, goal Goal) *DeploymentVersionRecorder {
+// is set. When plan is non-nil (applying a pre-computed plan), the plan's
+// version_id is validated against the live deployment version at lock time.
+func NewDeploymentVersionRecorder(b *bundle.Bundle, goal Goal, plan *deployplan.Plan) *DeploymentVersionRecorder {
 	enabled := b.Config.Experimental != nil && b.Config.Experimental.RecordDeploymentHistory
-	return &DeploymentVersionRecorder{b: b, goal: goal, enabled: enabled}
+	r := &DeploymentVersionRecorder{b: b, goal: goal, enabled: enabled}
+	if plan != nil {
+		r.validateVersion = true
+		r.expectedVersion = plan.VersionId
+	}
+	return r
 }
 
 // CreateVersion registers a new deployment version with DMS, claiming it for the
@@ -68,13 +81,13 @@ func (r *DeploymentVersionRecorder) CreateVersion(ctx context.Context) error {
 		return fmt.Errorf("%s is not supported with the deployment metadata service", r.goal)
 	}
 
-	r.svc = r.b.WorkspaceClient(ctx).Bundle
+	svc := r.b.WorkspaceClient(ctx).Bundle
 
 	// The deployment ID is the state lineage. GetOrInitLineage generates one on
 	// the first deploy and stores it so the deploy persists the same value.
 	r.deploymentID = r.b.DeploymentBundle.StateDB.GetOrInitLineage()
 
-	versionID, err := createDeploymentVersion(ctx, r.b, r.svc, r.deploymentID, versionType)
+	versionID, err := createDeploymentVersion(ctx, r.b, svc, r.deploymentID, versionType, r.expectedVersion, r.validateVersion)
 	if err != nil {
 		return err
 	}
@@ -83,6 +96,11 @@ func (r *DeploymentVersionRecorder) CreateVersion(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to parse version ID %q: %w", versionID, err)
 	}
+
+	// Set svc only after the version is created so CompleteVersion is a no-op
+	// when creation failed (e.g. a stale plan was rejected): there is no version
+	// to complete.
+	r.svc = svc
 	r.versionNum = versionNum
 	r.stopHeartbeat = startHeartbeat(ctx, r.svc, r.deploymentID, versionID)
 	return nil
@@ -133,12 +151,20 @@ func (r *DeploymentVersionRecorder) CompleteVersion(ctx context.Context, status 
 // createDeploymentVersion ensures the deployment record exists, then creates a
 // new version. The deployment ID is the state lineage: we GetDeployment first
 // and only CreateDeployment when it does not exist yet.
-func createDeploymentVersion(ctx context.Context, b *bundle.Bundle, svc sdkbundle.BundleInterface, deploymentID string, versionType sdkbundle.VersionType) (versionID string, err error) {
+//
+// When validateVersion is set (applying a pre-computed plan), the deployment's
+// current version must equal expectedVersion — the version the plan was
+// generated against. Otherwise the deployment moved since the plan was created
+// and the plan is rejected as stale.
+func createDeploymentVersion(ctx context.Context, b *bundle.Bundle, svc sdkbundle.BundleInterface, deploymentID string, versionType sdkbundle.VersionType, expectedVersion string, validateVersion bool) (versionID string, err error) {
 	dep, getErr := svc.GetDeployment(ctx, sdkbundle.GetDeploymentRequest{
 		Name: "deployments/" + deploymentID,
 	})
 	switch {
 	case errors.Is(getErr, apierr.ErrNotFound):
+		if validateVersion && expectedVersion != "" {
+			return "", outdatedPlanErr(expectedVersion, "")
+		}
 		// Fresh deployment: create the record and start at version 1.
 		_, createErr := svc.CreateDeployment(ctx, sdkbundle.CreateDeploymentRequest{
 			DeploymentId: deploymentID,
@@ -153,6 +179,9 @@ func createDeploymentVersion(ctx context.Context, b *bundle.Bundle, svc sdkbundl
 	case getErr != nil:
 		return "", fmt.Errorf("failed to get deployment: %w", getErr)
 	default:
+		if validateVersion && dep.LastVersionId != expectedVersion {
+			return "", outdatedPlanErr(expectedVersion, dep.LastVersionId)
+		}
 		// Existing deployment: increment the last version to get the next one.
 		lastVersion, parseErr := strconv.ParseInt(dep.LastVersionId, 10, 64)
 		if parseErr != nil {
@@ -178,6 +207,15 @@ func createDeploymentVersion(ctx context.Context, b *bundle.Bundle, svc sdkbundl
 
 	log.Infof(ctx, "Created deployment version: deployment=%s version=%s", deploymentID, version.VersionId)
 	return versionID, nil
+}
+
+// outdatedPlanErr returns the error reported when a pre-computed plan was
+// generated against a deployment version that no longer matches the live one.
+func outdatedPlanErr(expectedVersion, currentVersion string) error {
+	if currentVersion == "" {
+		return fmt.Errorf("plan is outdated: it was generated against deployment version %s, but the deployment no longer exists. Please run 'bundle plan' again", expectedVersion)
+	}
+	return fmt.Errorf("plan is outdated: it was generated against deployment version %s, but the current version is %s. Please run 'bundle plan' again", expectedVersion, currentVersion)
 }
 
 // startHeartbeat starts a background goroutine that sends heartbeats to keep
