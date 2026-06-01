@@ -1,0 +1,52 @@
+
+=== create the catalog
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-rdh-update-id/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py //api/2.0/bundle
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/versions/0/operations",
+  "q": {
+    "resource_key": "resources.catalogs.cat"
+  },
+  "body": {
+    "action_type": "OPERATION_ACTION_TYPE_CREATE",
+    "resource_id": "my_catalog_a",
+    "resource_key": "resources.catalogs.cat",
+    "state": {
+      "name": "my_catalog_a"
+    },
+    "status": "OPERATION_STATUS_SUCCEEDED"
+  }
+}
+
+=== update_id: renaming the catalog changes its ID, records OPERATION_ACTION_TYPE_UPDATE_WITH_ID
+>>> update_file.py databricks.yml my_catalog_a my_catalog_b
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-rdh-update-id/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py //api/2.0/bundle
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/versions/0/operations",
+  "q": {
+    "resource_key": "resources.catalogs.cat"
+  },
+  "body": {
+    "action_type": "OPERATION_ACTION_TYPE_UPDATE_WITH_ID",
+    "resource_id": "my_catalog_b",
+    "resource_key": "resources.catalogs.cat",
+    "state": {
+      "name": "my_catalog_b"
+    },
+    "status": "OPERATION_STATUS_SUCCEEDED"
+  }
+}

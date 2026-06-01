@@ -1,0 +1,10 @@
+bundle:
+  name: test-rdh-update-id
+
+experimental:
+  record_deployment_history: true
+
+resources:
+  catalogs:
+    cat:
+      name: my_catalog_a
