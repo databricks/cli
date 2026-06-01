@@ -1,0 +1,13 @@
+title "create: records OPERATION_ACTION_TYPE_CREATE"
+trace $CLI bundle deploy
+trace print_requests.py //api/2.0/bundle
+
+title "update: records OPERATION_ACTION_TYPE_UPDATE"
+trace update_file.py databricks.yml foo-job foo-job-renamed
+trace $CLI bundle deploy
+trace print_requests.py //api/2.0/bundle
+
+title "delete: records OPERATION_ACTION_TYPE_DELETE (resource removed from config)"
+cp databricks.delete.yml databricks.yml
+trace $CLI bundle deploy
+trace print_requests.py //api/2.0/bundle

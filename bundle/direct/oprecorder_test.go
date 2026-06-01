@@ -26,9 +26,9 @@ func (c *fakeBundleClient) CreateOperation(_ context.Context, req sdkbundle.Crea
 	return &sdkbundle.Operation{}, nil
 }
 
-func TestSDKRecorderRecordsUnderVersionParent(t *testing.T) {
+func TestOperationRecorderRecordsUnderVersionParent(t *testing.T) {
 	client := &fakeBundleClient{}
-	rec := NewSDKRecorder(client, "dep-1", 7)
+	rec := NewOperationRecorder(client, "dep-1", 7)
 
 	err := rec.record(t.Context(), "resources.jobs.foo", deployplan.Create, "job-123", map[string]string{"name": "foo"})
 	require.NoError(t, err)
@@ -42,9 +42,9 @@ func TestSDKRecorderRecordsUnderVersionParent(t *testing.T) {
 	assert.Equal(t, sdkbundle.OperationStatusOperationStatusSucceeded, req.Operation.Status)
 }
 
-func TestSDKRecorderSerializesState(t *testing.T) {
+func TestOperationRecorderSerializesState(t *testing.T) {
 	client := &fakeBundleClient{}
-	rec := NewSDKRecorder(client, "dep", 1)
+	rec := NewOperationRecorder(client, "dep", 1)
 
 	err := rec.record(t.Context(), "resources.jobs.foo", deployplan.Update, "job-1", map[string]any{"name": "foo", "tasks": 2})
 	require.NoError(t, err)
@@ -58,9 +58,9 @@ func TestSDKRecorderSerializesState(t *testing.T) {
 	assert.Equal(t, "foo", decoded["name"])
 }
 
-func TestSDKRecorderOmitsStateForDelete(t *testing.T) {
+func TestOperationRecorderOmitsStateForDelete(t *testing.T) {
 	client := &fakeBundleClient{}
-	rec := NewSDKRecorder(client, "dep", 1)
+	rec := NewOperationRecorder(client, "dep", 1)
 
 	err := rec.record(t.Context(), "resources.jobs.foo", deployplan.Delete, "job-1", nil)
 	require.NoError(t, err)
@@ -70,10 +70,10 @@ func TestSDKRecorderOmitsStateForDelete(t *testing.T) {
 	assert.Equal(t, sdkbundle.OperationActionTypeOperationActionTypeDelete, client.requests[0].Operation.ActionType)
 }
 
-func TestSDKRecorderPropagatesAPIError(t *testing.T) {
+func TestOperationRecorderPropagatesAPIError(t *testing.T) {
 	wantErr := errors.New("boom")
 	client := &fakeBundleClient{err: wantErr}
-	rec := NewSDKRecorder(client, "dep", 1)
+	rec := NewOperationRecorder(client, "dep", 1)
 
 	err := rec.record(t.Context(), "resources.jobs.foo", deployplan.Create, "job-1", nil)
 	assert.ErrorIs(t, err, wantErr)

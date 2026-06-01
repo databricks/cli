@@ -1,0 +1,8 @@
+Local = true
+Cloud = false
+RecordRequests = true
+
+# Operation recording only runs for the direct engine; the terraform engine
+# would record nothing and produce divergent output.
+[EnvMatrix]
+DATABRICKS_BUNDLE_ENGINE = ["direct"]

@@ -84,7 +84,7 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, ta
 		if b.Config.Experimental != nil && b.Config.Experimental.RecordDeploymentHistory {
 			// TODO(DMS): source the deployment ID and version from the DMS
 			// CreateVersion response once the deployment-version flow is wired in.
-			b.DeploymentBundle.OpRec = direct.NewSDKRecorder(b.WorkspaceClient(ctx).Bundle, "", 0)
+			b.DeploymentBundle.OpRec = direct.NewOperationRecorder(b.WorkspaceClient(ctx).Bundle, "", 0)
 		}
 		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(ctx), plan, direct.MigrateMode(false))
 		state, err = b.DeploymentBundle.StateDB.Finalize(ctx)

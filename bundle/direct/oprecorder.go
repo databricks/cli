@@ -16,25 +16,25 @@ type opRecorder interface {
 	record(ctx context.Context, resourceKey string, action deployplan.ActionType, resourceID string, state any) error
 }
 
-// sdkRecorder records operations via the DMS CreateOperation API.
-type sdkRecorder struct {
+// operationRecorder records operations via the DMS CreateOperation API.
+type operationRecorder struct {
 	client sdkbundle.BundleInterface
 	// parent is the version the operations are recorded under, formatted as
 	// "deployments/{deployment_id}/versions/{version_id}".
 	parent string
 }
 
-// NewSDKRecorder returns an opRecorder backed by the DMS CreateOperation API.
-// deploymentID and version identify the deployment version assigned by DMS that
-// the operations are recorded under.
-func NewSDKRecorder(client sdkbundle.BundleInterface, deploymentID string, version int64) opRecorder {
-	return &sdkRecorder{
+// NewOperationRecorder returns an opRecorder backed by the DMS CreateOperation
+// API. deploymentID and version identify the deployment version assigned by DMS
+// that the operations are recorded under.
+func NewOperationRecorder(client sdkbundle.BundleInterface, deploymentID string, version int64) opRecorder {
+	return &operationRecorder{
 		client: client,
 		parent: fmt.Sprintf("deployments/%s/versions/%d", deploymentID, version),
 	}
 }
 
-func (r *sdkRecorder) record(ctx context.Context, resourceKey string, action deployplan.ActionType, resourceID string, state any) error {
+func (r *operationRecorder) record(ctx context.Context, resourceKey string, action deployplan.ActionType, resourceID string, state any) error {
 	actionType, err := deployActionToSDK(action)
 	if err != nil {
 		return err
