@@ -64,8 +64,9 @@ func (r *fileStateReader) Load(ctx context.Context, db *dstate.DeploymentState) 
 // file and the resource set from DMS, replacing whatever resources.json held.
 // NewStateReader only selects this reader once DMS is the authoritative source for
 // the deployment, so it trusts the DMS resource set even when it is empty (a
-// successful deploy with no resources); it never falls back to the local
-// resources.
+// successful deploy with no resources). It never falls back to resources.json for
+// resource state unless the user opts out of DMS by disabling
+// record_deployment_history.
 type dmsStateReader struct {
 	client       sdkbundle.BundleInterface
 	deploymentID string
