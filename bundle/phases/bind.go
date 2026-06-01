@@ -23,9 +23,8 @@ import (
 func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions, engine engine.EngineType) {
 	log.Info(ctx, "Phase: bind")
 
-	dm := lock.NewDeploymentManager(ctx, b)
-	version, err := dm.CreateVersion(ctx, lock.GoalBind)
-	if err != nil {
+	dl := lock.NewDeploymentLock(ctx, b, lock.GoalBind)
+	if err := dl.Acquire(ctx); err != nil {
 		logdiag.LogError(ctx, err)
 		return
 	}
@@ -35,7 +34,7 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions, en
 		if logdiag.HasError(ctx) {
 			status = lock.DeploymentFailure
 		}
-		if err := dm.CompleteVersion(ctx, version, status); err != nil {
+		if err := dl.Release(ctx, status); err != nil {
 			logdiag.LogError(ctx, err)
 		}
 	}()
@@ -127,9 +126,8 @@ func jsonDump(ctx context.Context, v any, field string) string {
 func Unbind(ctx context.Context, b *bundle.Bundle, bundleType, tfResourceType, resourceKey string, engine engine.EngineType) {
 	log.Info(ctx, "Phase: unbind")
 
-	dm := lock.NewDeploymentManager(ctx, b)
-	version, err := dm.CreateVersion(ctx, lock.GoalUnbind)
-	if err != nil {
+	dl := lock.NewDeploymentLock(ctx, b, lock.GoalUnbind)
+	if err := dl.Acquire(ctx); err != nil {
 		logdiag.LogError(ctx, err)
 		return
 	}
@@ -139,7 +137,7 @@ func Unbind(ctx context.Context, b *bundle.Bundle, bundleType, tfResourceType, r
 		if logdiag.HasError(ctx) {
 			status = lock.DeploymentFailure
 		}
-		if err := dm.CompleteVersion(ctx, version, status); err != nil {
+		if err := dl.Release(ctx, status); err != nil {
 			logdiag.LogError(ctx, err)
 		}
 	}()

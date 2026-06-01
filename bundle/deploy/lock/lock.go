@@ -26,43 +26,43 @@ const (
 	DeploymentFailure
 )
 
-// DeploymentManager controls the versioned lifecycle of deployment operations.
-//
-// DMS semantics: CreateVersion atomically succeeds only if no other deployment
-// is in progress and the returned version is exactly +1 to the latest closed
-// version, providing serialized optimistic concurrency control. CompleteVersion
-// records the outcome.
-//
-// Workspace-filesystem semantics: CreateVersion acquires the workspace lock
-// file; CompleteVersion releases it. The returned version number is a placeholder
-// (the lock file does not track a monotonic counter today).
-type DeploymentManager interface {
-	// CreateVersion begins a new deployment for the given goal.
-	// Returns the version number assigned by the backend.
-	CreateVersion(ctx context.Context, goal Goal) (int64, error)
-
-	// CompleteVersion finalizes the deployment version created by CreateVersion.
-	CompleteVersion(ctx context.Context, version int64, status DeploymentStatus) error
+// DeploymentLock manages the lifecycle of a bundle deployment.
+// The workspace-filesystem lock serializes concurrent deployments.
+// DMS version tracking will be added additively — see deployment_metadata_service.go.
+type DeploymentLock struct {
+	wfs workspaceFilesystemLock
 }
 
-// NewDeploymentManager returns a DeploymentManager backed by the workspace
-// filesystem. Captures everything it needs from the bundle at construction time
-// so the implementation does not retain a *bundle.Bundle reference. The
-// workspace client is only initialized when locking is enabled to match the
-// original lazy-init behavior.
-func NewDeploymentManager(ctx context.Context, b *bundle.Bundle) DeploymentManager {
+// NewDeploymentLock returns a DeploymentLock for the bundle.
+// Captures everything it needs from the bundle at construction time
+// so the lock does not retain a *bundle.Bundle reference. The
+// workspace client is only initialized when locking is enabled.
+func NewDeploymentLock(ctx context.Context, b *bundle.Bundle, goal Goal) *DeploymentLock {
 	enabled := b.Config.Bundle.Deployment.Lock.IsEnabled()
-	l := &workspaceFilesystemLock{
-		user:      b.Config.Workspace.CurrentUser.UserName,
-		statePath: b.Config.Workspace.StatePath,
-		enabled:   enabled,
-		force:     b.Config.Bundle.Deployment.Lock.Force,
-		reportPermissionError: func(ctx context.Context, path string) diag.Diagnostics {
-			return permissions.ReportPossiblePermissionDenied(ctx, b, path)
+	l := &DeploymentLock{
+		wfs: workspaceFilesystemLock{
+			user:      b.Config.Workspace.CurrentUser.UserName,
+			statePath: b.Config.Workspace.StatePath,
+			enabled:   enabled,
+			force:     b.Config.Bundle.Deployment.Lock.Force,
+			goal:      goal,
+			reportPermissionError: func(ctx context.Context, path string) diag.Diagnostics {
+				return permissions.ReportPossiblePermissionDenied(ctx, b, path)
+			},
 		},
 	}
 	if enabled {
-		l.client = b.WorkspaceClient(ctx)
+		l.wfs.client = b.WorkspaceClient(ctx)
 	}
 	return l
+}
+
+// Acquire acquires the deployment lock.
+func (l *DeploymentLock) Acquire(ctx context.Context) error {
+	return l.wfs.acquire(ctx)
+}
+
+// Release releases the deployment lock.
+func (l *DeploymentLock) Release(ctx context.Context, status DeploymentStatus) error {
+	return l.wfs.release(ctx, status)
 }
