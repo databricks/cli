@@ -11,4 +11,8 @@ trace $CLI api post "/api/2.0/workspace-files/import-file/Workspace/Users/$CURRE
 
 title "bundle summary resolves jobs.foo id (9999) from DMS ListResources"
 trace $CLI bundle summary
+
+title "full plan as JSON (jobs.foo is recorded in DMS; its workspace job no longer exists, so the plan re-creates it)"
+trace $CLI bundle plan -o json
+
 trace print_requests.py --get //api/2.0/bundle/deployments/synthetic-dep/resources

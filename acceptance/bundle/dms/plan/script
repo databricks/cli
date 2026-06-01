@@ -3,22 +3,17 @@
 #   - create_me: in config, not in DMS  -> create
 #   - update_me: in both, names differ   -> update
 #   - delete_me: in DMS, not in config   -> delete
-#
-# The plan reads each in-DMS resource's remote (jobs/get), so create real jobs
-# first and record those ids in DMS. Setup output is discarded; only the plan is
-# logged.
 
-# Extract job_id with grep, not jq: the ids are int64 values larger than 2^53 and
-# some jq versions round them to a float, producing an id that no longer matches
-# the created job. The jobs/create response is just {"job_id": N}.
-extract_job_id() { grep -oE '"job_id":[[:space:]]*[0-9]+' | grep -oE '[0-9]+'; }
-update_id=$($CLI api post /api/2.2/jobs/create --json '{"name":"update-me-old"}' | extract_job_id)
-delete_id=$($CLI api post /api/2.2/jobs/create --json '{"name":"delete-me"}' | extract_job_id)
+update_id=$($CLI api post /api/2.0/pipelines --json '{"name":"update-me-old"}' | jq -r .pipeline_id)
+delete_id=$($CLI api post /api/2.0/pipelines --json '{"name":"delete-me"}' | jq -r .pipeline_id)
 
-$CLI api post "/api/2.0/bundle/deployments/synthetic-dep/versions/1/operations" --json "{\"resource_key\":\"jobs.update_me\",\"resource_id\":\"$update_id\",\"action_type\":\"OPERATION_ACTION_TYPE_CREATE\",\"status\":\"OPERATION_STATUS_SUCCEEDED\",\"state\":{\"name\":\"update-me-old\"}}" > /dev/null
-$CLI api post "/api/2.0/bundle/deployments/synthetic-dep/versions/1/operations" --json "{\"resource_key\":\"jobs.delete_me\",\"resource_id\":\"$delete_id\",\"action_type\":\"OPERATION_ACTION_TYPE_CREATE\",\"status\":\"OPERATION_STATUS_SUCCEEDED\",\"state\":{\"name\":\"delete-me\"}}" > /dev/null
+$CLI api post "/api/2.0/bundle/deployments/synthetic-dep/versions/1/operations" --json "{\"resource_key\":\"pipelines.update_me\",\"resource_id\":\"$update_id\",\"action_type\":\"OPERATION_ACTION_TYPE_CREATE\",\"status\":\"OPERATION_STATUS_SUCCEEDED\",\"state\":{\"name\":\"update-me-old\"}}" > /dev/null
+$CLI api post "/api/2.0/bundle/deployments/synthetic-dep/versions/1/operations" --json "{\"resource_key\":\"pipelines.delete_me\",\"resource_id\":\"$delete_id\",\"action_type\":\"OPERATION_ACTION_TYPE_CREATE\",\"status\":\"OPERATION_STATUS_SUCCEEDED\",\"state\":{\"name\":\"delete-me\"}}" > /dev/null
 
 $CLI api post "/api/2.0/workspace-files/import-file/Workspace/Users/$CURRENT_USER_NAME/.bundle/dms-plan/default/state/resources.json?overwrite=true" --json '{"state_version":2,"lineage":"synthetic-dep","serial":1,"state":{}}' > /dev/null
 
 title "bundle plan derives actions from DMS state: create create_me, update update_me, delete delete_me"
 trace $CLI bundle plan
+
+title "full plan as JSON"
+trace $CLI bundle plan -o json

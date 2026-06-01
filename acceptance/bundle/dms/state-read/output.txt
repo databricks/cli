@@ -28,7 +28,67 @@ Resources:
       Name: foo
       URL:  [DATABRICKS_URL]/jobs/9999?w=[NUMID]
 
+=== full plan as JSON (jobs.foo is recorded in DMS; its workspace job no longer exists, so the plan re-creates it)
+>>> [CLI] bundle plan -o json
+{
+  "plan_version": 2,
+  "cli_version": "[DEV_VERSION]",
+  "lineage": "synthetic-dep",
+  "serial": 1,
+  "plan": {
+    "resources.jobs.foo": {
+      "action": "create",
+      "new_state": {
+        "value": {
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-state-read/default/state/metadata.json"
+          },
+          "edit_mode": "UI_LOCKED",
+          "format": "MULTI_TASK",
+          "max_concurrent_runs": 1,
+          "name": "foo",
+          "queue": {
+            "enabled": true
+          }
+        }
+      },
+      "changes": {
+        "deployment": {
+          "action": "update",
+          "new": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-state-read/default/state/metadata.json"
+          }
+        },
+        "edit_mode": {
+          "action": "update",
+          "new": "UI_LOCKED"
+        },
+        "format": {
+          "action": "update",
+          "new": "MULTI_TASK"
+        },
+        "max_concurrent_runs": {
+          "action": "update",
+          "new": 1
+        },
+        "queue": {
+          "action": "update",
+          "new": {
+            "enabled": true
+          }
+        }
+      }
+    }
+  }
+}
+
 >>> print_requests.py --get //api/2.0/bundle/deployments/synthetic-dep/resources
+{
+  "method": "GET",
+  "path": "/api/2.0/bundle/deployments/synthetic-dep/resources"
+}
 {
   "method": "GET",
   "path": "/api/2.0/bundle/deployments/synthetic-dep/resources"
