@@ -69,8 +69,8 @@ func TestNewStateReaderSelection(t *testing.T) {
 
 // TestDMSStateReader covers reading an existing deployment from DMS: the lineage
 // (deployment id) is kept from the local state so a later deploy reuses the
-// deployment, while the resource set is taken from DMS and any local resources
-// (e.g. left over from a prior direct deployment) are dropped.
+// deployment, while the resource set is taken from DMS. Any resource state that a
+// prior direct deployment recorded in resources.json is dropped.
 func TestDMSStateReader(t *testing.T) {
 	path := writeLocalState(t, "dep-1", map[string]dstate.ResourceEntry{
 		"resources.jobs.stale": {ID: "stale"},
