@@ -10,25 +10,25 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestIsManagedStateEnvVar(t *testing.T) {
+func TestIsDirectWithHistoryEnvVar(t *testing.T) {
 	testutil.CleanupEnvironment(t)
 	t.Setenv("DATABRICKS_BUNDLE_ENGINE", "direct_with_history")
 	b := &bundle.Bundle{}
-	assert.True(t, bundle.IsManagedState(t.Context(), b))
+	assert.True(t, bundle.IsDirectWithHistory(t.Context(), b))
 }
 
-func TestIsManagedStateOtherEngines(t *testing.T) {
+func TestIsDirectWithHistoryOtherEngines(t *testing.T) {
 	for _, v := range []string{"direct", "terraform", ""} {
 		t.Run(v, func(t *testing.T) {
 			testutil.CleanupEnvironment(t)
 			t.Setenv("DATABRICKS_BUNDLE_ENGINE", v)
 			b := &bundle.Bundle{}
-			assert.False(t, bundle.IsManagedState(t.Context(), b))
+			assert.False(t, bundle.IsDirectWithHistory(t.Context(), b))
 		})
 	}
 }
 
-func TestIsManagedStateConfig(t *testing.T) {
+func TestIsDirectWithHistoryConfig(t *testing.T) {
 	testutil.CleanupEnvironment(t)
 	b := &bundle.Bundle{
 		Config: config.Root{
@@ -37,10 +37,10 @@ func TestIsManagedStateConfig(t *testing.T) {
 			},
 		},
 	}
-	assert.True(t, bundle.IsManagedState(t.Context(), b))
+	assert.True(t, bundle.IsDirectWithHistory(t.Context(), b))
 }
 
-func TestIsManagedStateConfigTakesPriority(t *testing.T) {
+func TestIsDirectWithHistoryConfigTakesPriority(t *testing.T) {
 	testutil.CleanupEnvironment(t)
 	t.Setenv("DATABRICKS_BUNDLE_ENGINE", "direct_with_history")
 	b := &bundle.Bundle{
@@ -50,11 +50,11 @@ func TestIsManagedStateConfigTakesPriority(t *testing.T) {
 			},
 		},
 	}
-	assert.False(t, bundle.IsManagedState(t.Context(), b))
+	assert.False(t, bundle.IsDirectWithHistory(t.Context(), b))
 }
 
-func TestIsManagedStateUnset(t *testing.T) {
+func TestIsDirectWithHistoryUnset(t *testing.T) {
 	testutil.CleanupEnvironment(t)
 	b := &bundle.Bundle{}
-	assert.False(t, bundle.IsManagedState(t.Context(), b))
+	assert.False(t, bundle.IsDirectWithHistory(t.Context(), b))
 }

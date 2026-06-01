@@ -6,10 +6,10 @@ import (
 	"github.com/databricks/cli/bundle/config/engine"
 )
 
-// IsManagedState reports whether the bundle uses the direct engine with
+// IsDirectWithHistory reports whether the bundle uses the direct engine with
 // deployment history enabled (engine: direct_with_history).
 // Configuration takes priority over the DATABRICKS_BUNDLE_ENGINE environment variable.
-func IsManagedState(ctx context.Context, b *Bundle) bool {
+func IsDirectWithHistory(ctx context.Context, b *Bundle) bool {
 	engineType := b.Config.Bundle.Engine
 	if engineType == engine.EngineNotSet {
 		envEngine, _ := engine.FromEnv(ctx)
