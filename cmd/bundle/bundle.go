@@ -38,6 +38,7 @@ Online documentation: https://docs.databricks.com/en/dev-tools/bundles/index.htm
 	cmd.AddCommand(newDebugCommand())
 	cmd.AddCommand(newOpenCommand())
 	cmd.AddCommand(newPlanCommand())
+	cmd.AddCommand(newMigrateCommand())
 	cmd.AddCommand(newConfigRemoteSyncCommand())
 
 	// Bundle Metadata Service (DMS) read-only command groups. Only `get`

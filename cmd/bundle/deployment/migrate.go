@@ -30,6 +30,12 @@ import (
 
 const backupSuffix = ".backup"
 
+// RunPlanCheck runs bundle plan and checks if there are any actions planned.
+// Returns error if plan fails or if there are actions planned.
+func RunPlanCheck(cmd *cobra.Command, extraArgs []string, extraArgsStr string) error {
+	return runPlanCheck(cmd, extraArgs, extraArgsStr)
+}
+
 // runPlanCheck runs bundle plan and checks if there are any actions planned.
 // Returns error if plan fails or if there are actions planned.
 func runPlanCheck(cmd *cobra.Command, extraArgs []string, extraArgsStr string) error {
@@ -76,6 +82,12 @@ func runPlanCheck(cmd *cobra.Command, extraArgs []string, extraArgsStr string) e
 	}
 
 	return nil
+}
+
+// GetCommonArgs extracts common flags (target, profile, var) from the command into
+// argument slices suitable for forwarding to a subprocess.
+func GetCommonArgs(cmd *cobra.Command) ([]string, string) {
+	return getCommonArgs(cmd)
 }
 
 func getCommonArgs(cmd *cobra.Command) ([]string, string) {
