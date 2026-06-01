@@ -1,3 +1,5 @@
 errcode $CLI bundle validate > out.validate.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1
 errcode $CLI bundle plan > out.plan.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1
 errcode $CLI bundle deploy > out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1
+print_telemetry_bool_values > out.telemetry.$DATABRICKS_BUNDLE_ENGINE.txt
+rm out.requests.txt

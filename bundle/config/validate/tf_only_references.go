@@ -14,7 +14,7 @@ import (
 	"github.com/databricks/cli/libs/structs/structpath"
 )
 
-type tfOnlyReferences struct{ bundle.RO }
+type tfOnlyReferences struct{}
 
 // TFOnlyReferences validates that no cross-resource references point to
 // Terraform-only fields (fields that exist in TF schema but have no DABs equivalent).
@@ -22,7 +22,7 @@ type tfOnlyReferences struct{ bundle.RO }
 // In direct mode this is an error because the direct engine cannot resolve such
 // references at deploy time.  In Terraform mode it is a warning because the
 // reference will break if the bundle is later migrated to the direct engine.
-func TFOnlyReferences() bundle.ReadOnlyMutator {
+func TFOnlyReferences() bundle.Mutator {
 	return &tfOnlyReferences{}
 }
 
@@ -58,6 +58,10 @@ func (m *tfOnlyReferences) Apply(ctx context.Context, b *bundle.Bundle) diag.Dia
 		}
 		return nil
 	})
+
+	if len(diags) > 0 {
+		b.Metrics.AddBoolValue("has_tf_only_references", true)
+	}
 
 	return diags
 }
