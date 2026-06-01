@@ -67,32 +67,45 @@ func TestNewStateReaderSelection(t *testing.T) {
 	}
 }
 
-// TestDMSStateReader covers reading an existing deployment from DMS: the lineage
-// (deployment id) is kept from the local state so a later deploy reuses the
-// deployment, while the resource set is read from DMS rather than from the local
-// resources.json. resources.json always records the resource state too (so we can
-// migrate back to file-based state); the reader just sources resources from DMS
-// and ignores the local file's resource entries.
+// TestDMSStateReader covers reading an existing deployment from DMS. The lineage
+// (deployment id) always comes from resources.json. The resource set comes from
+// DMS once DMS has it; until then (record_deployment_history just enabled on an
+// existing deployment) resources.json's resources are kept so they aren't
+// re-created.
 func TestDMSStateReader(t *testing.T) {
-	path := writeLocalState(t, "dep-1", map[string]dstate.ResourceEntry{
-		"resources.jobs.local_only": {ID: "local"},
-	})
-	client := &fakeBundleClient{resources: []sdkbundle.Resource{
-		{ResourceKey: "jobs.foo", ResourceId: "job-1", State: raw(`{"name":"foo"}`)},
-	}}
+	const lineage = "dep-1"
+	localResources := map[string]dstate.ResourceEntry{
+		"resources.jobs.from_file": {ID: "file-1"},
+	}
+	tests := []struct {
+		name         string
+		dmsResources []sdkbundle.Resource
+		wantKey      string // the single resource expected in the loaded state
+	}{
+		{
+			name:         "DMS owns the resources: the set comes from DMS, not resources.json",
+			dmsResources: []sdkbundle.Resource{{ResourceKey: "jobs.foo", ResourceId: "job-1", State: raw(`{"name":"foo"}`)}},
+			wantKey:      "resources.jobs.foo",
+		},
+		{
+			name:         "feature just enabled on an existing deployment (DMS empty): resources.json is kept",
+			dmsResources: nil,
+			wantKey:      "resources.jobs.from_file",
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			path := writeLocalState(t, lineage, localResources)
 
-	var db dstate.DeploymentState
-	require.NoError(t, NewDMSStateReader(client, "dep-1", path).Load(t.Context(), &db))
+			var db dstate.DeploymentState
+			require.NoError(t, NewDMSStateReader(&fakeBundleClient{resources: tc.dmsResources}, lineage, path).Load(t.Context(), &db))
 
-	assert.Equal(t, "dep-1", db.Data.Lineage)
-
-	// Resources come from DMS; the local file's resource entries are not used.
-	_, hasLocalOnly := db.GetResourceEntry("resources.jobs.local_only")
-	assert.False(t, hasLocalOnly)
-
-	entry, ok := db.GetResourceEntry("resources.jobs.foo")
-	require.True(t, ok)
-	assert.Equal(t, "job-1", entry.ID)
+			assert.Equal(t, lineage, db.Data.Lineage)
+			_, ok := db.GetResourceEntry(tc.wantKey)
+			assert.True(t, ok)
+			assert.Len(t, db.Data.State, 1)
+		})
+	}
 }
 
 // TestFetchDeploymentResources covers mapping DMS resources to state entries.

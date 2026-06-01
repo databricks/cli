@@ -59,8 +59,11 @@ func (r *fileStateReader) Load(ctx context.Context, db *dstate.DeploymentState) 
 	return db.Open(ctx, r.path, dstate.WithRecovery(true), dstate.WithWrite(false))
 }
 
-// dmsStateReader loads the identity from the local resources.json file but the
-// resource set from DMS.
+// dmsStateReader loads the identity from the local resources.json file and the
+// resource set from DMS. If DMS has no resources for the deployment yet — an
+// existing file-based deployment that just enabled record_deployment_history —
+// it keeps the resources from resources.json so they are not re-created; the next
+// deploy records them to DMS.
 type dmsStateReader struct {
 	client       sdkbundle.BundleInterface
 	deploymentID string
@@ -75,18 +78,26 @@ func NewDMSStateReader(client sdkbundle.BundleInterface, deploymentID, path stri
 }
 
 func (r *dmsStateReader) Load(ctx context.Context, db *dstate.DeploymentState) error {
-	// Keep the identity from resources.json (the lineage is the DMS deployment id;
-	// a later deploy must reuse it rather than mint a new one) and swap in the
-	// resource set from DMS. resources.json keeps recording resources too, so the
-	// bundle can be migrated back to file-based state.
+	// Identity (lineage/serial) always comes from resources.json: the lineage is
+	// the DMS deployment id and a later deploy must reuse it rather than mint a new
+	// one. resources.json keeps recording resources too, so the bundle can be
+	// migrated back to file-based state.
 	data, err := readLocalDatabase(r.path)
 	if err != nil {
 		return err
 	}
 
-	data.State, err = fetchDeploymentResources(ctx, r.client, r.deploymentID)
+	resources, err := fetchDeploymentResources(ctx, r.client, r.deploymentID)
 	if err != nil {
 		return err
+	}
+
+	// Once DMS has the resources, they are the source of truth. Until then — e.g.
+	// just after enabling record_deployment_history on an existing file-based
+	// deployment — DMS returns nothing, so keep resources.json's resources rather
+	// than treating everything as new. The next deploy records them to DMS.
+	if len(resources) > 0 {
+		data.State = resources
 	}
 
 	db.OpenWithData(r.path, data)
@@ -128,7 +139,10 @@ func fetchDeploymentResources(ctx context.Context, client sdkbundle.BundleInterf
 //  1. record_deployment_history off: read everything from resources.json.
 //  2. on, but resources.json has no lineage (nothing deployed yet): there is no
 //     DMS deployment to read, so read the (empty) local file.
-//  3. on, with a lineage: read resources from DMS for that deployment id.
+//  3. on, with a lineage: read resources from DMS for that deployment id. If DMS
+//     has none yet (record_deployment_history was just enabled on an existing
+//     deployment), the DMS reader keeps resources.json's resources; see
+//     dmsStateReader.Load.
 //
 // The lineage comes from the local resources.json, so PullResourcesState must
 // have synced it before this is called.
