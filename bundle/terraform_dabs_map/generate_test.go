@@ -575,14 +575,14 @@ func writeFieldSetPath(w func(string, ...any), tree map[string]any, depth int, p
 		if prefix != "" {
 			path = prefix + "." + key
 		}
-		comment := ""
-		if depth >= 3 {
-			comment = " // " + path
-		}
 		if len(child) == 0 {
+			comment := ""
+			if depth >= 3 {
+				comment = " // " + path
+			}
 			w("%s%q: {},%s\n", indent, key, comment)
 		} else {
-			w("%s%q: {%s\n", indent, key, comment)
+			w("%s%q: {\n", indent, key)
 			writeFieldSetPath(w, child, depth+1, path)
 			w("%s},\n", indent)
 		}
