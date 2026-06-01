@@ -1,0 +1,12 @@
+Error: exit status 1
+
+Error: Reference to undeclared resource
+
+  on bundle.tf.json line 30, in resource.databricks_job.foo.task[0].run_job_task:
+  30:               "job_id": "${databricks_job.bar.id}"
+
+A managed resource "databricks_job" "bar" has not been declared in the root
+module.
+
+
+Exit code: 1

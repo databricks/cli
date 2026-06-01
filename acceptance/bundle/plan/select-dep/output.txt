@@ -9,9 +9,3 @@ Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
 create jobs.bar
 
 Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
-
->>> [CLI] bundle plan --select jobs.foo
-create jobs.bar
-create jobs.foo
-
-Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged

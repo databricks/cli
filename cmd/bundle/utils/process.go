@@ -170,6 +170,18 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		}
 	}
 
+	// For commands that don't compute a deployment plan (validate, summary),
+	// apply a simple exact-match config filter now. For plan/deploy with the
+	// direct engine, RunPlan calls plan.FilterToSelected which uses the
+	// DependsOn graph to auto-include transitive dependencies; the terraform
+	// engine is filtered inside RunPlan before writing the terraform JSON.
+	if len(b.Select) > 0 && !opts.PreDeployChecks && !opts.Deploy && opts.ReadPlanPath == "" {
+		bundle.ApplyContext(ctx, b, mutator.FilterSelectedResources())
+		if logdiag.HasError(ctx) {
+			return b, nil, root.ErrAlreadyPrinted
+		}
+	}
+
 	shouldReadState := opts.ReadState || opts.AlwaysPull || opts.InitIDs || opts.ErrorOnEmptyState || opts.PreDeployChecks || opts.Deploy || opts.ReadPlanPath != ""
 
 	if shouldReadState {
