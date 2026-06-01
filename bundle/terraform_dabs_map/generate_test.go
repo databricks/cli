@@ -562,15 +562,28 @@ func buildFieldSet(paths map[string]bool) map[string]any {
 }
 
 // writeFieldSet writes a field set tree as nested FieldSet Go source at the given depth.
+// Entries at depth ≥ 3 get a trailing comment showing the full dotted path.
 func writeFieldSet(w func(string, ...any), tree map[string]any, depth int) {
+	writeFieldSetPath(w, tree, depth, "")
+}
+
+func writeFieldSetPath(w func(string, ...any), tree map[string]any, depth int, prefix string) {
 	indent := strings.Repeat("\t", depth)
 	for _, key := range slices.Sorted(maps.Keys(tree)) {
 		child := tree[key].(map[string]any)
+		path := key
+		if prefix != "" {
+			path = prefix + "." + key
+		}
+		comment := ""
+		if depth >= 3 {
+			comment = " // " + path
+		}
 		if len(child) == 0 {
-			w("%s%q: {},\n", indent, key)
+			w("%s%q: {},%s\n", indent, key, comment)
 		} else {
-			w("%s%q: {\n", indent, key)
-			writeFieldSet(w, child, depth+1)
+			w("%s%q: {%s\n", indent, key, comment)
+			writeFieldSetPath(w, child, depth+1, path)
 			w("%s},\n", indent)
 		}
 	}

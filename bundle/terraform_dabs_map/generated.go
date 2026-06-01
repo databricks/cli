@@ -81,163 +81,163 @@ var DABsOnlyFields = map[string]FieldSet{
 	},
 	"apps": {
 		"config": {
-			"command": {},
-			"env": {
-				"name":       {},
-				"value":      {},
-				"value_from": {},
+			"command": {}, // config.command
+			"env": { // config.env
+				"name":       {}, // config.env.name
+				"value":      {}, // config.env.value
+				"value_from": {}, // config.env.value_from
 			},
 		},
 		"git_source": {
-			"branch": {},
-			"commit": {},
-			"git_repository": {
-				"provider": {},
-				"url":      {},
+			"branch": {}, // git_source.branch
+			"commit": {}, // git_source.commit
+			"git_repository": { // git_source.git_repository
+				"provider": {}, // git_source.git_repository.provider
+				"url":      {}, // git_source.git_repository.url
 			},
-			"resolved_commit":  {},
-			"source_code_path": {},
-			"tag":              {},
+			"resolved_commit":  {}, // git_source.resolved_commit
+			"source_code_path": {}, // git_source.source_code_path
+			"tag":              {}, // git_source.tag
 		},
 		"source_code_path": {},
 	},
 	"jobs": {
 		"job_clusters": {
-			"new_cluster": {
-				"autotermination_minutes": {},
+			"new_cluster": { // job_clusters.new_cluster
+				"autotermination_minutes": {}, // job_clusters.new_cluster.autotermination_minutes
 			},
 		},
 		"tasks": {
-			"for_each_task": {
-				"task": {
-					"for_each_task": {
-						"concurrency": {},
-						"inputs":      {},
-						"task":        {},
+			"for_each_task": { // tasks.for_each_task
+				"task": { // tasks.for_each_task.task
+					"for_each_task": { // tasks.for_each_task.task.for_each_task
+						"concurrency": {}, // tasks.for_each_task.task.for_each_task.concurrency
+						"inputs":      {}, // tasks.for_each_task.task.for_each_task.inputs
+						"task":        {}, // tasks.for_each_task.task.for_each_task.task
 					},
-					"new_cluster": {
-						"autotermination_minutes": {},
+					"new_cluster": { // tasks.for_each_task.task.new_cluster
+						"autotermination_minutes": {}, // tasks.for_each_task.task.new_cluster.autotermination_minutes
 					},
-					"pipeline_task": {
-						"full_refresh_selection":     {},
-						"refresh_flow_selection":     {},
-						"refresh_selection":          {},
-						"reset_checkpoint_selection": {},
+					"pipeline_task": { // tasks.for_each_task.task.pipeline_task
+						"full_refresh_selection":     {}, // tasks.for_each_task.task.pipeline_task.full_refresh_selection
+						"refresh_flow_selection":     {}, // tasks.for_each_task.task.pipeline_task.refresh_flow_selection
+						"refresh_selection":          {}, // tasks.for_each_task.task.pipeline_task.refresh_selection
+						"reset_checkpoint_selection": {}, // tasks.for_each_task.task.pipeline_task.reset_checkpoint_selection
 					},
-					"python_operator_task": {
-						"main": {},
-						"parameters": {
-							"name":  {},
-							"value": {},
+					"python_operator_task": { // tasks.for_each_task.task.python_operator_task
+						"main": {}, // tasks.for_each_task.task.python_operator_task.main
+						"parameters": { // tasks.for_each_task.task.python_operator_task.parameters
+							"name":  {}, // tasks.for_each_task.task.python_operator_task.parameters.name
+							"value": {}, // tasks.for_each_task.task.python_operator_task.parameters.value
 						},
 					},
-					"run_job_task": {
-						"pipeline_params": {
-							"full_refresh_selection":     {},
-							"refresh_flow_selection":     {},
-							"refresh_selection":          {},
-							"reset_checkpoint_selection": {},
+					"run_job_task": { // tasks.for_each_task.task.run_job_task
+						"pipeline_params": { // tasks.for_each_task.task.run_job_task.pipeline_params
+							"full_refresh_selection":     {}, // tasks.for_each_task.task.run_job_task.pipeline_params.full_refresh_selection
+							"refresh_flow_selection":     {}, // tasks.for_each_task.task.run_job_task.pipeline_params.refresh_flow_selection
+							"refresh_selection":          {}, // tasks.for_each_task.task.run_job_task.pipeline_params.refresh_selection
+							"reset_checkpoint_selection": {}, // tasks.for_each_task.task.run_job_task.pipeline_params.reset_checkpoint_selection
 						},
 					},
 				},
 			},
-			"new_cluster": {
-				"autotermination_minutes": {},
+			"new_cluster": { // tasks.new_cluster
+				"autotermination_minutes": {}, // tasks.new_cluster.autotermination_minutes
 			},
-			"pipeline_task": {
-				"full_refresh_selection":     {},
-				"refresh_flow_selection":     {},
-				"refresh_selection":          {},
-				"reset_checkpoint_selection": {},
+			"pipeline_task": { // tasks.pipeline_task
+				"full_refresh_selection":     {}, // tasks.pipeline_task.full_refresh_selection
+				"refresh_flow_selection":     {}, // tasks.pipeline_task.refresh_flow_selection
+				"refresh_selection":          {}, // tasks.pipeline_task.refresh_selection
+				"reset_checkpoint_selection": {}, // tasks.pipeline_task.reset_checkpoint_selection
 			},
-			"python_operator_task": {
-				"main": {},
-				"parameters": {
-					"name":  {},
-					"value": {},
+			"python_operator_task": { // tasks.python_operator_task
+				"main": {}, // tasks.python_operator_task.main
+				"parameters": { // tasks.python_operator_task.parameters
+					"name":  {}, // tasks.python_operator_task.parameters.name
+					"value": {}, // tasks.python_operator_task.parameters.value
 				},
 			},
-			"run_job_task": {
-				"pipeline_params": {
-					"full_refresh_selection":     {},
-					"refresh_flow_selection":     {},
-					"refresh_selection":          {},
-					"reset_checkpoint_selection": {},
+			"run_job_task": { // tasks.run_job_task
+				"pipeline_params": { // tasks.run_job_task.pipeline_params
+					"full_refresh_selection":     {}, // tasks.run_job_task.pipeline_params.full_refresh_selection
+					"refresh_flow_selection":     {}, // tasks.run_job_task.pipeline_params.refresh_flow_selection
+					"refresh_selection":          {}, // tasks.run_job_task.pipeline_params.refresh_selection
+					"reset_checkpoint_selection": {}, // tasks.run_job_task.pipeline_params.reset_checkpoint_selection
 				},
 			},
 		},
 	},
 	"pipelines": {
 		"clusters": {
-			"gcp_attributes": {
-				"boot_disk_size":            {},
-				"use_preemptible_executors": {},
+			"gcp_attributes": { // clusters.gcp_attributes
+				"boot_disk_size":            {}, // clusters.gcp_attributes.boot_disk_size
+				"use_preemptible_executors": {}, // clusters.gcp_attributes.use_preemptible_executors
 			},
 		},
 		"dry_run": {},
 		"ingestion_definition": {
-			"objects": {
-				"schema": {
-					"connector_options": {
-						"kafka_options": {
-							"client_config": {
-								"*": {},
+			"objects": { // ingestion_definition.objects
+				"schema": { // ingestion_definition.objects.schema
+					"connector_options": { // ingestion_definition.objects.schema.connector_options
+						"kafka_options": { // ingestion_definition.objects.schema.connector_options.kafka_options
+							"client_config": { // ingestion_definition.objects.schema.connector_options.kafka_options.client_config
+								"*": {}, // ingestion_definition.objects.schema.connector_options.kafka_options.client_config.*
 							},
-							"key_transformer": {
-								"format": {},
-								"json_options": {
-									"as_variant":            {},
-									"schema":                {},
-									"schema_evolution_mode": {},
-									"schema_file_path":      {},
-									"schema_hints":          {},
+							"key_transformer": { // ingestion_definition.objects.schema.connector_options.kafka_options.key_transformer
+								"format": {}, // ingestion_definition.objects.schema.connector_options.kafka_options.key_transformer.format
+								"json_options": { // ingestion_definition.objects.schema.connector_options.kafka_options.key_transformer.json_options
+									"as_variant":            {}, // ingestion_definition.objects.schema.connector_options.kafka_options.key_transformer.json_options.as_variant
+									"schema":                {}, // ingestion_definition.objects.schema.connector_options.kafka_options.key_transformer.json_options.schema
+									"schema_evolution_mode": {}, // ingestion_definition.objects.schema.connector_options.kafka_options.key_transformer.json_options.schema_evolution_mode
+									"schema_file_path":      {}, // ingestion_definition.objects.schema.connector_options.kafka_options.key_transformer.json_options.schema_file_path
+									"schema_hints":          {}, // ingestion_definition.objects.schema.connector_options.kafka_options.key_transformer.json_options.schema_hints
 								},
 							},
-							"max_offsets_per_trigger": {},
-							"starting_offset":         {},
-							"topic_pattern":           {},
-							"topics":                  {},
-							"value_transformer": {
-								"format": {},
-								"json_options": {
-									"as_variant":            {},
-									"schema":                {},
-									"schema_evolution_mode": {},
-									"schema_file_path":      {},
-									"schema_hints":          {},
+							"max_offsets_per_trigger": {}, // ingestion_definition.objects.schema.connector_options.kafka_options.max_offsets_per_trigger
+							"starting_offset":         {}, // ingestion_definition.objects.schema.connector_options.kafka_options.starting_offset
+							"topic_pattern":           {}, // ingestion_definition.objects.schema.connector_options.kafka_options.topic_pattern
+							"topics":                  {}, // ingestion_definition.objects.schema.connector_options.kafka_options.topics
+							"value_transformer": { // ingestion_definition.objects.schema.connector_options.kafka_options.value_transformer
+								"format": {}, // ingestion_definition.objects.schema.connector_options.kafka_options.value_transformer.format
+								"json_options": { // ingestion_definition.objects.schema.connector_options.kafka_options.value_transformer.json_options
+									"as_variant":            {}, // ingestion_definition.objects.schema.connector_options.kafka_options.value_transformer.json_options.as_variant
+									"schema":                {}, // ingestion_definition.objects.schema.connector_options.kafka_options.value_transformer.json_options.schema
+									"schema_evolution_mode": {}, // ingestion_definition.objects.schema.connector_options.kafka_options.value_transformer.json_options.schema_evolution_mode
+									"schema_file_path":      {}, // ingestion_definition.objects.schema.connector_options.kafka_options.value_transformer.json_options.schema_file_path
+									"schema_hints":          {}, // ingestion_definition.objects.schema.connector_options.kafka_options.value_transformer.json_options.schema_hints
 								},
 							},
 						},
 					},
 				},
-				"table": {
-					"connector_options": {
-						"kafka_options": {
-							"client_config": {
-								"*": {},
+				"table": { // ingestion_definition.objects.table
+					"connector_options": { // ingestion_definition.objects.table.connector_options
+						"kafka_options": { // ingestion_definition.objects.table.connector_options.kafka_options
+							"client_config": { // ingestion_definition.objects.table.connector_options.kafka_options.client_config
+								"*": {}, // ingestion_definition.objects.table.connector_options.kafka_options.client_config.*
 							},
-							"key_transformer": {
-								"format": {},
-								"json_options": {
-									"as_variant":            {},
-									"schema":                {},
-									"schema_evolution_mode": {},
-									"schema_file_path":      {},
-									"schema_hints":          {},
+							"key_transformer": { // ingestion_definition.objects.table.connector_options.kafka_options.key_transformer
+								"format": {}, // ingestion_definition.objects.table.connector_options.kafka_options.key_transformer.format
+								"json_options": { // ingestion_definition.objects.table.connector_options.kafka_options.key_transformer.json_options
+									"as_variant":            {}, // ingestion_definition.objects.table.connector_options.kafka_options.key_transformer.json_options.as_variant
+									"schema":                {}, // ingestion_definition.objects.table.connector_options.kafka_options.key_transformer.json_options.schema
+									"schema_evolution_mode": {}, // ingestion_definition.objects.table.connector_options.kafka_options.key_transformer.json_options.schema_evolution_mode
+									"schema_file_path":      {}, // ingestion_definition.objects.table.connector_options.kafka_options.key_transformer.json_options.schema_file_path
+									"schema_hints":          {}, // ingestion_definition.objects.table.connector_options.kafka_options.key_transformer.json_options.schema_hints
 								},
 							},
-							"max_offsets_per_trigger": {},
-							"starting_offset":         {},
-							"topic_pattern":           {},
-							"topics":                  {},
-							"value_transformer": {
-								"format": {},
-								"json_options": {
-									"as_variant":            {},
-									"schema":                {},
-									"schema_evolution_mode": {},
-									"schema_file_path":      {},
-									"schema_hints":          {},
+							"max_offsets_per_trigger": {}, // ingestion_definition.objects.table.connector_options.kafka_options.max_offsets_per_trigger
+							"starting_offset":         {}, // ingestion_definition.objects.table.connector_options.kafka_options.starting_offset
+							"topic_pattern":           {}, // ingestion_definition.objects.table.connector_options.kafka_options.topic_pattern
+							"topics":                  {}, // ingestion_definition.objects.table.connector_options.kafka_options.topics
+							"value_transformer": { // ingestion_definition.objects.table.connector_options.kafka_options.value_transformer
+								"format": {}, // ingestion_definition.objects.table.connector_options.kafka_options.value_transformer.format
+								"json_options": { // ingestion_definition.objects.table.connector_options.kafka_options.value_transformer.json_options
+									"as_variant":            {}, // ingestion_definition.objects.table.connector_options.kafka_options.value_transformer.json_options.as_variant
+									"schema":                {}, // ingestion_definition.objects.table.connector_options.kafka_options.value_transformer.json_options.schema
+									"schema_evolution_mode": {}, // ingestion_definition.objects.table.connector_options.kafka_options.value_transformer.json_options.schema_evolution_mode
+									"schema_file_path":      {}, // ingestion_definition.objects.table.connector_options.kafka_options.value_transformer.json_options.schema_file_path
+									"schema_hints":          {}, // ingestion_definition.objects.table.connector_options.kafka_options.value_transformer.json_options.schema_hints
 								},
 							},
 						},
@@ -252,9 +252,9 @@ var DABsOnlyFields = map[string]FieldSet{
 var TerraformOnlyFields = map[string]FieldSet{
 	"alerts": {
 		"evaluation": {
-			"notification": {
-				"effective_notify_on_ok":      {},
-				"effective_retrigger_seconds": {},
+			"notification": { // evaluation.notification
+				"effective_notify_on_ok":      {}, // evaluation.notification.effective_notify_on_ok
+				"effective_retrigger_seconds": {}, // evaluation.notification.effective_retrigger_seconds
 			},
 		},
 		"purge_on_delete": {},
@@ -264,33 +264,33 @@ var TerraformOnlyFields = map[string]FieldSet{
 	},
 	"clusters": {
 		"cluster_mount_info": {
-			"local_mount_dir_path": {},
-			"network_filesystem_info": {
-				"mount_options":  {},
-				"server_address": {},
+			"local_mount_dir_path": {}, // cluster_mount_info.local_mount_dir_path
+			"network_filesystem_info": { // cluster_mount_info.network_filesystem_info
+				"mount_options":  {}, // cluster_mount_info.network_filesystem_info.mount_options
+				"server_address": {}, // cluster_mount_info.network_filesystem_info.server_address
 			},
-			"remote_mount_dir_path": {},
+			"remote_mount_dir_path": {}, // cluster_mount_info.remote_mount_dir_path
 		},
 		"idempotency_token": {},
 		"is_pinned":         {},
 		"library": {
-			"cran": {
-				"package": {},
-				"repo":    {},
+			"cran": { // library.cran
+				"package": {}, // library.cran.package
+				"repo":    {}, // library.cran.repo
 			},
-			"egg": {},
-			"jar": {},
-			"maven": {
-				"coordinates": {},
-				"exclusions":  {},
-				"repo":        {},
+			"egg": {}, // library.egg
+			"jar": {}, // library.jar
+			"maven": { // library.maven
+				"coordinates": {}, // library.maven.coordinates
+				"exclusions":  {}, // library.maven.exclusions
+				"repo":        {}, // library.maven.repo
 			},
-			"pypi": {
-				"package": {},
-				"repo":    {},
+			"pypi": { // library.pypi
+				"package": {}, // library.pypi.package
+				"repo":    {}, // library.pypi.repo
 			},
-			"requirements": {},
-			"whl":          {},
+			"requirements": {}, // library.requirements
+			"whl":          {}, // library.whl
 		},
 		"no_wait": {},
 		"url":     {},
@@ -309,336 +309,336 @@ var TerraformOnlyFields = map[string]FieldSet{
 		"always_running":    {},
 		"control_run_state": {},
 		"dbt_task": {
-			"catalog":            {},
-			"commands":           {},
-			"profiles_directory": {},
-			"project_directory":  {},
-			"schema":             {},
-			"source":             {},
-			"warehouse_id":       {},
+			"catalog":            {}, // dbt_task.catalog
+			"commands":           {}, // dbt_task.commands
+			"profiles_directory": {}, // dbt_task.profiles_directory
+			"project_directory":  {}, // dbt_task.project_directory
+			"schema":             {}, // dbt_task.schema
+			"source":             {}, // dbt_task.source
+			"warehouse_id":       {}, // dbt_task.warehouse_id
 		},
 		"existing_cluster_id": {},
 		"job_cluster": {
-			"new_cluster": {
-				"__apply_policy_default_values_allow_list": {},
-				"cluster_id": {},
-				"cluster_mount_info": {
-					"local_mount_dir_path": {},
-					"network_filesystem_info": {
-						"mount_options":  {},
-						"server_address": {},
+			"new_cluster": { // job_cluster.new_cluster
+				"__apply_policy_default_values_allow_list": {}, // job_cluster.new_cluster.__apply_policy_default_values_allow_list
+				"cluster_id": {}, // job_cluster.new_cluster.cluster_id
+				"cluster_mount_info": { // job_cluster.new_cluster.cluster_mount_info
+					"local_mount_dir_path": {}, // job_cluster.new_cluster.cluster_mount_info.local_mount_dir_path
+					"network_filesystem_info": { // job_cluster.new_cluster.cluster_mount_info.network_filesystem_info
+						"mount_options":  {}, // job_cluster.new_cluster.cluster_mount_info.network_filesystem_info.mount_options
+						"server_address": {}, // job_cluster.new_cluster.cluster_mount_info.network_filesystem_info.server_address
 					},
-					"remote_mount_dir_path": {},
+					"remote_mount_dir_path": {}, // job_cluster.new_cluster.cluster_mount_info.remote_mount_dir_path
 				},
-				"idempotency_token": {},
-				"library": {
-					"cran": {
-						"package": {},
-						"repo":    {},
+				"idempotency_token": {}, // job_cluster.new_cluster.idempotency_token
+				"library": { // job_cluster.new_cluster.library
+					"cran": { // job_cluster.new_cluster.library.cran
+						"package": {}, // job_cluster.new_cluster.library.cran.package
+						"repo":    {}, // job_cluster.new_cluster.library.cran.repo
 					},
-					"egg": {},
-					"jar": {},
-					"maven": {
-						"coordinates": {},
-						"exclusions":  {},
-						"repo":        {},
+					"egg": {}, // job_cluster.new_cluster.library.egg
+					"jar": {}, // job_cluster.new_cluster.library.jar
+					"maven": { // job_cluster.new_cluster.library.maven
+						"coordinates": {}, // job_cluster.new_cluster.library.maven.coordinates
+						"exclusions":  {}, // job_cluster.new_cluster.library.maven.exclusions
+						"repo":        {}, // job_cluster.new_cluster.library.maven.repo
 					},
-					"pypi": {
-						"package": {},
-						"repo":    {},
+					"pypi": { // job_cluster.new_cluster.library.pypi
+						"package": {}, // job_cluster.new_cluster.library.pypi.package
+						"repo":    {}, // job_cluster.new_cluster.library.pypi.repo
 					},
-					"requirements": {},
-					"whl":          {},
+					"requirements": {}, // job_cluster.new_cluster.library.requirements
+					"whl":          {}, // job_cluster.new_cluster.library.whl
 				},
 			},
 		},
 		"library": {
-			"cran": {
-				"package": {},
-				"repo":    {},
+			"cran": { // library.cran
+				"package": {}, // library.cran.package
+				"repo":    {}, // library.cran.repo
 			},
-			"egg": {},
-			"jar": {},
-			"maven": {
-				"coordinates": {},
-				"exclusions":  {},
-				"repo":        {},
+			"egg": {}, // library.egg
+			"jar": {}, // library.jar
+			"maven": { // library.maven
+				"coordinates": {}, // library.maven.coordinates
+				"exclusions":  {}, // library.maven.exclusions
+				"repo":        {}, // library.maven.repo
 			},
-			"pypi": {
-				"package": {},
-				"repo":    {},
+			"pypi": { // library.pypi
+				"package": {}, // library.pypi.package
+				"repo":    {}, // library.pypi.repo
 			},
-			"requirements": {},
-			"whl":          {},
+			"requirements": {}, // library.requirements
+			"whl":          {}, // library.whl
 		},
 		"max_retries":               {},
 		"min_retry_interval_millis": {},
 		"new_cluster": {
-			"apply_policy_default_values": {},
-			"autoscale": {
-				"max_workers": {},
-				"min_workers": {},
+			"apply_policy_default_values": {}, // new_cluster.apply_policy_default_values
+			"autoscale": { // new_cluster.autoscale
+				"max_workers": {}, // new_cluster.autoscale.max_workers
+				"min_workers": {}, // new_cluster.autoscale.min_workers
 			},
-			"aws_attributes": {
-				"availability":           {},
-				"ebs_volume_count":       {},
-				"ebs_volume_iops":        {},
-				"ebs_volume_size":        {},
-				"ebs_volume_throughput":  {},
-				"ebs_volume_type":        {},
-				"first_on_demand":        {},
-				"instance_profile_arn":   {},
-				"spot_bid_price_percent": {},
-				"zone_id":                {},
+			"aws_attributes": { // new_cluster.aws_attributes
+				"availability":           {}, // new_cluster.aws_attributes.availability
+				"ebs_volume_count":       {}, // new_cluster.aws_attributes.ebs_volume_count
+				"ebs_volume_iops":        {}, // new_cluster.aws_attributes.ebs_volume_iops
+				"ebs_volume_size":        {}, // new_cluster.aws_attributes.ebs_volume_size
+				"ebs_volume_throughput":  {}, // new_cluster.aws_attributes.ebs_volume_throughput
+				"ebs_volume_type":        {}, // new_cluster.aws_attributes.ebs_volume_type
+				"first_on_demand":        {}, // new_cluster.aws_attributes.first_on_demand
+				"instance_profile_arn":   {}, // new_cluster.aws_attributes.instance_profile_arn
+				"spot_bid_price_percent": {}, // new_cluster.aws_attributes.spot_bid_price_percent
+				"zone_id":                {}, // new_cluster.aws_attributes.zone_id
 			},
-			"azure_attributes": {
-				"availability":    {},
-				"first_on_demand": {},
-				"log_analytics_info": {
-					"log_analytics_primary_key":  {},
-					"log_analytics_workspace_id": {},
+			"azure_attributes": { // new_cluster.azure_attributes
+				"availability":    {}, // new_cluster.azure_attributes.availability
+				"first_on_demand": {}, // new_cluster.azure_attributes.first_on_demand
+				"log_analytics_info": { // new_cluster.azure_attributes.log_analytics_info
+					"log_analytics_primary_key":  {}, // new_cluster.azure_attributes.log_analytics_info.log_analytics_primary_key
+					"log_analytics_workspace_id": {}, // new_cluster.azure_attributes.log_analytics_info.log_analytics_workspace_id
 				},
-				"spot_bid_max_price": {},
+				"spot_bid_max_price": {}, // new_cluster.azure_attributes.spot_bid_max_price
 			},
-			"cluster_id": {},
-			"cluster_log_conf": {
-				"dbfs": {
-					"destination": {},
+			"cluster_id": {}, // new_cluster.cluster_id
+			"cluster_log_conf": { // new_cluster.cluster_log_conf
+				"dbfs": { // new_cluster.cluster_log_conf.dbfs
+					"destination": {}, // new_cluster.cluster_log_conf.dbfs.destination
 				},
-				"s3": {
-					"canned_acl":        {},
-					"destination":       {},
-					"enable_encryption": {},
-					"encryption_type":   {},
-					"endpoint":          {},
-					"kms_key":           {},
-					"region":            {},
+				"s3": { // new_cluster.cluster_log_conf.s3
+					"canned_acl":        {}, // new_cluster.cluster_log_conf.s3.canned_acl
+					"destination":       {}, // new_cluster.cluster_log_conf.s3.destination
+					"enable_encryption": {}, // new_cluster.cluster_log_conf.s3.enable_encryption
+					"encryption_type":   {}, // new_cluster.cluster_log_conf.s3.encryption_type
+					"endpoint":          {}, // new_cluster.cluster_log_conf.s3.endpoint
+					"kms_key":           {}, // new_cluster.cluster_log_conf.s3.kms_key
+					"region":            {}, // new_cluster.cluster_log_conf.s3.region
 				},
-				"volumes": {
-					"destination": {},
-				},
-			},
-			"cluster_mount_info": {
-				"local_mount_dir_path": {},
-				"network_filesystem_info": {
-					"mount_options":  {},
-					"server_address": {},
-				},
-				"remote_mount_dir_path": {},
-			},
-			"cluster_name": {},
-			"custom_tags": {
-				"*": {},
-			},
-			"data_security_mode": {},
-			"docker_image": {
-				"basic_auth": {
-					"password": {},
-					"username": {},
-				},
-				"url": {},
-			},
-			"driver_instance_pool_id": {},
-			"driver_node_type_flexibility": {
-				"alternate_node_type_ids": {},
-			},
-			"driver_node_type_id":          {},
-			"enable_elastic_disk":          {},
-			"enable_local_disk_encryption": {},
-			"gcp_attributes": {
-				"availability":              {},
-				"boot_disk_size":            {},
-				"confidential_compute_type": {},
-				"first_on_demand":           {},
-				"google_service_account":    {},
-				"local_ssd_count":           {},
-				"use_preemptible_executors": {},
-				"zone_id":                   {},
-			},
-			"idempotency_token": {},
-			"init_scripts": {
-				"abfss": {
-					"destination": {},
-				},
-				"dbfs": {
-					"destination": {},
-				},
-				"file": {
-					"destination": {},
-				},
-				"gcs": {
-					"destination": {},
-				},
-				"s3": {
-					"canned_acl":        {},
-					"destination":       {},
-					"enable_encryption": {},
-					"encryption_type":   {},
-					"endpoint":          {},
-					"kms_key":           {},
-					"region":            {},
-				},
-				"volumes": {
-					"destination": {},
-				},
-				"workspace": {
-					"destination": {},
+				"volumes": { // new_cluster.cluster_log_conf.volumes
+					"destination": {}, // new_cluster.cluster_log_conf.volumes.destination
 				},
 			},
-			"instance_pool_id": {},
-			"is_single_node":   {},
-			"kind":             {},
-			"library": {
-				"cran": {
-					"package": {},
-					"repo":    {},
+			"cluster_mount_info": { // new_cluster.cluster_mount_info
+				"local_mount_dir_path": {}, // new_cluster.cluster_mount_info.local_mount_dir_path
+				"network_filesystem_info": { // new_cluster.cluster_mount_info.network_filesystem_info
+					"mount_options":  {}, // new_cluster.cluster_mount_info.network_filesystem_info.mount_options
+					"server_address": {}, // new_cluster.cluster_mount_info.network_filesystem_info.server_address
 				},
-				"egg": {},
-				"jar": {},
-				"maven": {
-					"coordinates": {},
-					"exclusions":  {},
-					"repo":        {},
+				"remote_mount_dir_path": {}, // new_cluster.cluster_mount_info.remote_mount_dir_path
+			},
+			"cluster_name": {}, // new_cluster.cluster_name
+			"custom_tags": { // new_cluster.custom_tags
+				"*": {}, // new_cluster.custom_tags.*
+			},
+			"data_security_mode": {}, // new_cluster.data_security_mode
+			"docker_image": { // new_cluster.docker_image
+				"basic_auth": { // new_cluster.docker_image.basic_auth
+					"password": {}, // new_cluster.docker_image.basic_auth.password
+					"username": {}, // new_cluster.docker_image.basic_auth.username
 				},
-				"pypi": {
-					"package": {},
-					"repo":    {},
+				"url": {}, // new_cluster.docker_image.url
+			},
+			"driver_instance_pool_id": {}, // new_cluster.driver_instance_pool_id
+			"driver_node_type_flexibility": { // new_cluster.driver_node_type_flexibility
+				"alternate_node_type_ids": {}, // new_cluster.driver_node_type_flexibility.alternate_node_type_ids
+			},
+			"driver_node_type_id":          {}, // new_cluster.driver_node_type_id
+			"enable_elastic_disk":          {}, // new_cluster.enable_elastic_disk
+			"enable_local_disk_encryption": {}, // new_cluster.enable_local_disk_encryption
+			"gcp_attributes": { // new_cluster.gcp_attributes
+				"availability":              {}, // new_cluster.gcp_attributes.availability
+				"boot_disk_size":            {}, // new_cluster.gcp_attributes.boot_disk_size
+				"confidential_compute_type": {}, // new_cluster.gcp_attributes.confidential_compute_type
+				"first_on_demand":           {}, // new_cluster.gcp_attributes.first_on_demand
+				"google_service_account":    {}, // new_cluster.gcp_attributes.google_service_account
+				"local_ssd_count":           {}, // new_cluster.gcp_attributes.local_ssd_count
+				"use_preemptible_executors": {}, // new_cluster.gcp_attributes.use_preemptible_executors
+				"zone_id":                   {}, // new_cluster.gcp_attributes.zone_id
+			},
+			"idempotency_token": {}, // new_cluster.idempotency_token
+			"init_scripts": { // new_cluster.init_scripts
+				"abfss": { // new_cluster.init_scripts.abfss
+					"destination": {}, // new_cluster.init_scripts.abfss.destination
 				},
-				"requirements": {},
-				"whl":          {},
+				"dbfs": { // new_cluster.init_scripts.dbfs
+					"destination": {}, // new_cluster.init_scripts.dbfs.destination
+				},
+				"file": { // new_cluster.init_scripts.file
+					"destination": {}, // new_cluster.init_scripts.file.destination
+				},
+				"gcs": { // new_cluster.init_scripts.gcs
+					"destination": {}, // new_cluster.init_scripts.gcs.destination
+				},
+				"s3": { // new_cluster.init_scripts.s3
+					"canned_acl":        {}, // new_cluster.init_scripts.s3.canned_acl
+					"destination":       {}, // new_cluster.init_scripts.s3.destination
+					"enable_encryption": {}, // new_cluster.init_scripts.s3.enable_encryption
+					"encryption_type":   {}, // new_cluster.init_scripts.s3.encryption_type
+					"endpoint":          {}, // new_cluster.init_scripts.s3.endpoint
+					"kms_key":           {}, // new_cluster.init_scripts.s3.kms_key
+					"region":            {}, // new_cluster.init_scripts.s3.region
+				},
+				"volumes": { // new_cluster.init_scripts.volumes
+					"destination": {}, // new_cluster.init_scripts.volumes.destination
+				},
+				"workspace": { // new_cluster.init_scripts.workspace
+					"destination": {}, // new_cluster.init_scripts.workspace.destination
+				},
 			},
-			"node_type_id":           {},
-			"num_workers":            {},
-			"policy_id":              {},
-			"remote_disk_throughput": {},
-			"runtime_engine":         {},
-			"single_user_name":       {},
-			"spark_conf": {
-				"*": {},
+			"instance_pool_id": {}, // new_cluster.instance_pool_id
+			"is_single_node":   {}, // new_cluster.is_single_node
+			"kind":             {}, // new_cluster.kind
+			"library": { // new_cluster.library
+				"cran": { // new_cluster.library.cran
+					"package": {}, // new_cluster.library.cran.package
+					"repo":    {}, // new_cluster.library.cran.repo
+				},
+				"egg": {}, // new_cluster.library.egg
+				"jar": {}, // new_cluster.library.jar
+				"maven": { // new_cluster.library.maven
+					"coordinates": {}, // new_cluster.library.maven.coordinates
+					"exclusions":  {}, // new_cluster.library.maven.exclusions
+					"repo":        {}, // new_cluster.library.maven.repo
+				},
+				"pypi": { // new_cluster.library.pypi
+					"package": {}, // new_cluster.library.pypi.package
+					"repo":    {}, // new_cluster.library.pypi.repo
+				},
+				"requirements": {}, // new_cluster.library.requirements
+				"whl":          {}, // new_cluster.library.whl
 			},
-			"spark_env_vars": {
-				"*": {},
+			"node_type_id":           {}, // new_cluster.node_type_id
+			"num_workers":            {}, // new_cluster.num_workers
+			"policy_id":              {}, // new_cluster.policy_id
+			"remote_disk_throughput": {}, // new_cluster.remote_disk_throughput
+			"runtime_engine":         {}, // new_cluster.runtime_engine
+			"single_user_name":       {}, // new_cluster.single_user_name
+			"spark_conf": { // new_cluster.spark_conf
+				"*": {}, // new_cluster.spark_conf.*
 			},
-			"spark_version":                  {},
-			"ssh_public_keys":                {},
-			"total_initial_remote_disk_size": {},
-			"use_ml_runtime":                 {},
-			"worker_node_type_flexibility": {
-				"alternate_node_type_ids": {},
+			"spark_env_vars": { // new_cluster.spark_env_vars
+				"*": {}, // new_cluster.spark_env_vars.*
 			},
-			"workload_type": {
-				"clients": {
-					"jobs":      {},
-					"notebooks": {},
+			"spark_version":                  {}, // new_cluster.spark_version
+			"ssh_public_keys":                {}, // new_cluster.ssh_public_keys
+			"total_initial_remote_disk_size": {}, // new_cluster.total_initial_remote_disk_size
+			"use_ml_runtime":                 {}, // new_cluster.use_ml_runtime
+			"worker_node_type_flexibility": { // new_cluster.worker_node_type_flexibility
+				"alternate_node_type_ids": {}, // new_cluster.worker_node_type_flexibility.alternate_node_type_ids
+			},
+			"workload_type": { // new_cluster.workload_type
+				"clients": { // new_cluster.workload_type.clients
+					"jobs":      {}, // new_cluster.workload_type.clients.jobs
+					"notebooks": {}, // new_cluster.workload_type.clients.notebooks
 				},
 			},
 		},
 		"notebook_task": {
-			"base_parameters": {
-				"*": {},
+			"base_parameters": { // notebook_task.base_parameters
+				"*": {}, // notebook_task.base_parameters.*
 			},
-			"notebook_path": {},
-			"source":        {},
-			"warehouse_id":  {},
+			"notebook_path": {}, // notebook_task.notebook_path
+			"source":        {}, // notebook_task.source
+			"warehouse_id":  {}, // notebook_task.warehouse_id
 		},
 		"pipeline_task": {
-			"full_refresh": {},
-			"pipeline_id":  {},
+			"full_refresh": {}, // pipeline_task.full_refresh
+			"pipeline_id":  {}, // pipeline_task.pipeline_id
 		},
 		"python_wheel_task": {
-			"entry_point": {},
-			"named_parameters": {
-				"*": {},
+			"entry_point": {}, // python_wheel_task.entry_point
+			"named_parameters": { // python_wheel_task.named_parameters
+				"*": {}, // python_wheel_task.named_parameters.*
 			},
-			"package_name": {},
-			"parameters":   {},
+			"package_name": {}, // python_wheel_task.package_name
+			"parameters":   {}, // python_wheel_task.parameters
 		},
 		"retry_on_timeout": {},
 		"run_job_task": {
-			"job_id": {},
-			"job_parameters": {
-				"*": {},
+			"job_id": {}, // run_job_task.job_id
+			"job_parameters": { // run_job_task.job_parameters
+				"*": {}, // run_job_task.job_parameters.*
 			},
 		},
 		"spark_jar_task": {
-			"jar_uri":         {},
-			"main_class_name": {},
-			"parameters":      {},
+			"jar_uri":         {}, // spark_jar_task.jar_uri
+			"main_class_name": {}, // spark_jar_task.main_class_name
+			"parameters":      {}, // spark_jar_task.parameters
 		},
 		"spark_python_task": {
-			"parameters":  {},
-			"python_file": {},
-			"source":      {},
+			"parameters":  {}, // spark_python_task.parameters
+			"python_file": {}, // spark_python_task.python_file
+			"source":      {}, // spark_python_task.source
 		},
 		"spark_submit_task": {
-			"parameters": {},
+			"parameters": {}, // spark_submit_task.parameters
 		},
 		"task": {
-			"for_each_task": {
-				"task": {
-					"new_cluster": {
-						"cluster_id": {},
-						"cluster_mount_info": {
-							"local_mount_dir_path": {},
-							"network_filesystem_info": {
-								"mount_options":  {},
-								"server_address": {},
+			"for_each_task": { // task.for_each_task
+				"task": { // task.for_each_task.task
+					"new_cluster": { // task.for_each_task.task.new_cluster
+						"cluster_id": {}, // task.for_each_task.task.new_cluster.cluster_id
+						"cluster_mount_info": { // task.for_each_task.task.new_cluster.cluster_mount_info
+							"local_mount_dir_path": {}, // task.for_each_task.task.new_cluster.cluster_mount_info.local_mount_dir_path
+							"network_filesystem_info": { // task.for_each_task.task.new_cluster.cluster_mount_info.network_filesystem_info
+								"mount_options":  {}, // task.for_each_task.task.new_cluster.cluster_mount_info.network_filesystem_info.mount_options
+								"server_address": {}, // task.for_each_task.task.new_cluster.cluster_mount_info.network_filesystem_info.server_address
 							},
-							"remote_mount_dir_path": {},
+							"remote_mount_dir_path": {}, // task.for_each_task.task.new_cluster.cluster_mount_info.remote_mount_dir_path
 						},
-						"idempotency_token": {},
-						"library": {
-							"cran": {
-								"package": {},
-								"repo":    {},
+						"idempotency_token": {}, // task.for_each_task.task.new_cluster.idempotency_token
+						"library": { // task.for_each_task.task.new_cluster.library
+							"cran": { // task.for_each_task.task.new_cluster.library.cran
+								"package": {}, // task.for_each_task.task.new_cluster.library.cran.package
+								"repo":    {}, // task.for_each_task.task.new_cluster.library.cran.repo
 							},
-							"egg": {},
-							"jar": {},
-							"maven": {
-								"coordinates": {},
-								"exclusions":  {},
-								"repo":        {},
+							"egg": {}, // task.for_each_task.task.new_cluster.library.egg
+							"jar": {}, // task.for_each_task.task.new_cluster.library.jar
+							"maven": { // task.for_each_task.task.new_cluster.library.maven
+								"coordinates": {}, // task.for_each_task.task.new_cluster.library.maven.coordinates
+								"exclusions":  {}, // task.for_each_task.task.new_cluster.library.maven.exclusions
+								"repo":        {}, // task.for_each_task.task.new_cluster.library.maven.repo
 							},
-							"pypi": {
-								"package": {},
-								"repo":    {},
+							"pypi": { // task.for_each_task.task.new_cluster.library.pypi
+								"package": {}, // task.for_each_task.task.new_cluster.library.pypi.package
+								"repo":    {}, // task.for_each_task.task.new_cluster.library.pypi.repo
 							},
-							"requirements": {},
-							"whl":          {},
+							"requirements": {}, // task.for_each_task.task.new_cluster.library.requirements
+							"whl":          {}, // task.for_each_task.task.new_cluster.library.whl
 						},
 					},
 				},
 			},
-			"new_cluster": {
-				"__apply_policy_default_values_allow_list": {},
-				"cluster_id": {},
-				"cluster_mount_info": {
-					"local_mount_dir_path": {},
-					"network_filesystem_info": {
-						"mount_options":  {},
-						"server_address": {},
+			"new_cluster": { // task.new_cluster
+				"__apply_policy_default_values_allow_list": {}, // task.new_cluster.__apply_policy_default_values_allow_list
+				"cluster_id": {}, // task.new_cluster.cluster_id
+				"cluster_mount_info": { // task.new_cluster.cluster_mount_info
+					"local_mount_dir_path": {}, // task.new_cluster.cluster_mount_info.local_mount_dir_path
+					"network_filesystem_info": { // task.new_cluster.cluster_mount_info.network_filesystem_info
+						"mount_options":  {}, // task.new_cluster.cluster_mount_info.network_filesystem_info.mount_options
+						"server_address": {}, // task.new_cluster.cluster_mount_info.network_filesystem_info.server_address
 					},
-					"remote_mount_dir_path": {},
+					"remote_mount_dir_path": {}, // task.new_cluster.cluster_mount_info.remote_mount_dir_path
 				},
-				"idempotency_token": {},
-				"library": {
-					"cran": {
-						"package": {},
-						"repo":    {},
+				"idempotency_token": {}, // task.new_cluster.idempotency_token
+				"library": { // task.new_cluster.library
+					"cran": { // task.new_cluster.library.cran
+						"package": {}, // task.new_cluster.library.cran.package
+						"repo":    {}, // task.new_cluster.library.cran.repo
 					},
-					"egg": {},
-					"jar": {},
-					"maven": {
-						"coordinates": {},
-						"exclusions":  {},
-						"repo":        {},
+					"egg": {}, // task.new_cluster.library.egg
+					"jar": {}, // task.new_cluster.library.jar
+					"maven": { // task.new_cluster.library.maven
+						"coordinates": {}, // task.new_cluster.library.maven.coordinates
+						"exclusions":  {}, // task.new_cluster.library.maven.exclusions
+						"repo":        {}, // task.new_cluster.library.maven.repo
 					},
-					"pypi": {
-						"package": {},
-						"repo":    {},
+					"pypi": { // task.new_cluster.library.pypi
+						"package": {}, // task.new_cluster.library.pypi.package
+						"repo":    {}, // task.new_cluster.library.pypi.repo
 					},
-					"requirements": {},
-					"whl":          {},
+					"requirements": {}, // task.new_cluster.library.requirements
+					"whl":          {}, // task.new_cluster.library.whl
 				},
 			},
 		},
