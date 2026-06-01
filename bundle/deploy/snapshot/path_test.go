@@ -113,7 +113,7 @@ func zipEntryNames(t *testing.T, zipContent []byte) []string {
 	return names
 }
 
-func TestBundleZipStripsNotebookExtensions(t *testing.T) {
+func TestBundleZipDoNotStripNotebookExtensions(t *testing.T) {
 	// Minimal valid Jupyter notebook content.
 	ipynb := `{"nbformat": 4, "nbformat_minor": 5, "cells": [], "metadata": {}}`
 	b := makeBundleWithFiles(t, map[string]string{
@@ -125,7 +125,6 @@ func TestBundleZipStripsNotebookExtensions(t *testing.T) {
 	require.NoError(t, err)
 
 	names := zipEntryNames(t, zipContent)
-	assert.True(t, slices.Contains(names, "files/src/my_notebook"), "notebook should have extension stripped")
-	assert.False(t, slices.Contains(names, "files/src/my_notebook.ipynb"), "notebook should not appear with .ipynb extension")
+	assert.True(t, slices.Contains(names, "files/src/my_notebook.ipynb"), "notebook should have extension stripped")
 	assert.True(t, slices.Contains(names, "files/src/script.py"), "regular Python file should keep its extension")
 }
