@@ -7,7 +7,7 @@ Resources:
   Jobs:
     bar:
       Name: Untitled
-      URL:  [DATABRICKS_URL]/jobs/[NUMID]?o=[NUMID]
+      URL:  [DATABRICKS_URL]/jobs/[NUMID]?w=[NUMID]
     foo:
       Name: Untitled
-      URL:  [DATABRICKS_URL]/jobs/[NUMID]?o=[NUMID]
+      URL:  [DATABRICKS_URL]/jobs/[NUMID]?w=[NUMID]

@@ -106,17 +106,17 @@ func TestInitializeURLs(t *testing.T) {
 	}
 
 	expectedURLs := map[string]string{
-		"job1":               "https://mycompany.databricks.com/jobs/1?o=123456",
-		"pipeline1":          "https://mycompany.databricks.com/pipelines/3?o=123456",
-		"experiment1":        "https://mycompany.databricks.com/ml/experiments/4?o=123456",
-		"model1":             "https://mycompany.databricks.com/ml/models/a%20model%20uses%20its%20name%20for%20identifier?o=123456",
-		"servingendpoint1":   "https://mycompany.databricks.com/ml/endpoints/my_serving_endpoint?o=123456",
-		"registeredmodel1":   "https://mycompany.databricks.com/explore/data/models/8?o=123456",
-		"qualityMonitor1":    "https://mycompany.databricks.com/explore/data/catalog/schema/qualityMonitor1?o=123456",
-		"vectorsearchindex1": "https://mycompany.databricks.com/explore/data/catalog/schema/vectorsearchindex1?o=123456",
-		"schema1":            "https://mycompany.databricks.com/explore/data/catalog/schema?o=123456",
-		"cluster1":           "https://mycompany.databricks.com/compute/clusters/1017-103929-vlr7jzcf?o=123456",
-		"dashboard1":         "https://mycompany.databricks.com/dashboardsv3/01ef8d56871e1d50ae30ce7375e42478/published?o=123456",
+		"job1":               "https://mycompany.databricks.com/jobs/1?w=123456",
+		"pipeline1":          "https://mycompany.databricks.com/pipelines/3?w=123456",
+		"experiment1":        "https://mycompany.databricks.com/ml/experiments/4?w=123456",
+		"model1":             "https://mycompany.databricks.com/ml/models/a%20model%20uses%20its%20name%20for%20identifier?w=123456",
+		"servingendpoint1":   "https://mycompany.databricks.com/ml/endpoints/my_serving_endpoint?w=123456",
+		"registeredmodel1":   "https://mycompany.databricks.com/explore/data/models/8?w=123456",
+		"qualityMonitor1":    "https://mycompany.databricks.com/explore/data/catalog/schema/qualityMonitor1?w=123456",
+		"vectorsearchindex1": "https://mycompany.databricks.com/explore/data/catalog/schema/vectorsearchindex1?w=123456",
+		"schema1":            "https://mycompany.databricks.com/explore/data/catalog/schema?w=123456",
+		"cluster1":           "https://mycompany.databricks.com/compute/clusters/1017-103929-vlr7jzcf?w=123456",
+		"dashboard1":         "https://mycompany.databricks.com/dashboardsv3/01ef8d56871e1d50ae30ce7375e42478/published?w=123456",
 	}
 
 	err := initializeForWorkspace(b, "123456", "https://mycompany.databricks.com/")

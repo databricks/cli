@@ -43,10 +43,10 @@ type Experimental struct {
 	// at which point we can deprecate or remove this field all together.
 	SkipNamePrefixForSchema bool `json:"skip_name_prefix_for_schema,omitempty"`
 
-	// UseDeploymentMetadataService opts the bundle into the deployment metadata
+	// RecordDeploymentHistory opts the bundle into the deployment metadata
 	// service (DMS), which records deployment history and tracks what changed
 	// across deployments.
-	UseDeploymentMetadataService bool `json:"use_deployment_metadata_service,omitempty"`
+	RecordDeploymentHistory bool `json:"record_deployment_history,omitempty"`
 }
 
 type Python struct {
