@@ -1,8 +1,8 @@
-trace $CLI bundle validate
-trace $CLI bundle validate -o json | jq .resources
+errcode $CLI bundle validate &> out.validate.$DATABRICKS_BUNDLE_ENGINE.txt
+errcode $CLI bundle validate -o json 2>> out.validate.$DATABRICKS_BUNDLE_ENGINE.txt | jq .resources >> out.validate.$DATABRICKS_BUNDLE_ENGINE.txt
 errcode $CLI bundle plan &> out.plan.$DATABRICKS_BUNDLE_ENGINE.txt
 errcode $CLI bundle deploy &> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt
-print_requests.py //jobs &> out.deploy-requests.$DATABRICKS_BUNDLE_ENGINE.txt
+errcode print_requests.py //jobs &> out.deploy-requests.$DATABRICKS_BUNDLE_ENGINE.txt
 errcode $CLI bundle summary &> out.summary.$DATABRICKS_BUNDLE_ENGINE.txt
-$CLI bundle destroy --auto-approve &> out.destroy.$DATABRICKS_BUNDLE_ENGINE.txt
-print_requests.py //jobs &> out.destroy-requests.$DATABRICKS_BUNDLE_ENGINE.txt
+errcode $CLI bundle destroy --auto-approve &> out.destroy.$DATABRICKS_BUNDLE_ENGINE.txt
+errcode print_requests.py //jobs &> out.destroy-requests.$DATABRICKS_BUNDLE_ENGINE.txt
