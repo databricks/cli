@@ -4,8 +4,8 @@
 #   - update_me: in both, names differ   -> update
 #   - delete_me: in DMS, not in config   -> delete
 
-update_id=$($CLI api post /api/2.0/pipelines --json '{"name":"update-me-old"}' | jq -r .pipeline_id)
-delete_id=$($CLI api post /api/2.0/pipelines --json '{"name":"delete-me"}' | jq -r .pipeline_id)
+update_id=$($CLI pipelines create -o json --json '{"name":"update-me-old"}' | jq -r .pipeline_id)
+delete_id=$($CLI pipelines create -o json --json '{"name":"delete-me"}' | jq -r .pipeline_id)
 
 $CLI api post "/api/2.0/bundle/deployments/synthetic-dep/versions/1/operations" --json "{\"resource_key\":\"pipelines.update_me\",\"resource_id\":\"$update_id\",\"action_type\":\"OPERATION_ACTION_TYPE_CREATE\",\"status\":\"OPERATION_STATUS_SUCCEEDED\",\"state\":{\"name\":\"update-me-old\"}}" > /dev/null
 $CLI api post "/api/2.0/bundle/deployments/synthetic-dep/versions/1/operations" --json "{\"resource_key\":\"pipelines.delete_me\",\"resource_id\":\"$delete_id\",\"action_type\":\"OPERATION_ACTION_TYPE_CREATE\",\"status\":\"OPERATION_STATUS_SUCCEEDED\",\"state\":{\"name\":\"delete-me\"}}" > /dev/null
