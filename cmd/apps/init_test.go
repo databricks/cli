@@ -1148,3 +1148,31 @@ func TestRunCreate_NameDotAndOutputDirAreMutuallyExclusive(t *testing.T) {
 	require.Error(t, err)
 	assert.ErrorIs(t, err, prompt.ErrNameDotWithOutputDir)
 }
+
+func TestRunCreate_SkipInstallRejectsRun(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	for _, runMode := range []string{"dev", "dev-remote"} {
+		t.Run(runMode, func(t *testing.T) {
+			err := runCreate(ctx, createOptions{
+				name:         "my-app",
+				nameProvided: true,
+				skipInstall:  true,
+				run:          runMode,
+				runChanged:   true,
+				// --run=dev-remote also requires --deploy; set it so the
+				// error we hit is the skip-install one, not the run-flag one.
+				deploy:        true,
+				deployChanged: true,
+			})
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), "--skip-install cannot be combined with --run")
+		})
+	}
+}
+
+func TestInitCmd_SkipInstallFlagRegistered(t *testing.T) {
+	cmd := newInitCmd()
+	flag := cmd.Flags().Lookup("skip-install")
+	require.NotNil(t, flag)
+	assert.Equal(t, "false", flag.DefValue)
+}
