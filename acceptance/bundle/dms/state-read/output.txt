@@ -1,0 +1,35 @@
+
+=== Seed a job resource into DMS for a synthetic deployment
+>>> [CLI] api post /api/2.0/bundle/deployments/synthetic-dep/versions/1/operations --json {"resource_key":"jobs.foo","resource_id":"9999","action_type":"OPERATION_ACTION_TYPE_CREATE","status":"OPERATION_STATUS_SUCCEEDED","state":{"name":"foo"}}
+{
+  "action_type": "OPERATION_ACTION_TYPE_CREATE",
+  "resource_id": "9999",
+  "resource_key": "jobs.foo",
+  "state": {
+    "name": "foo"
+  },
+  "status": "OPERATION_STATUS_SUCCEEDED"
+}
+
+=== Place the pointer state on the workspace (lineage == deployment id, no resource state); the CLI pulls it before reading
+>>> [CLI] api post /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/dms-state-read/default/state/resources.json?overwrite=true --json {"state_version":2,"lineage":"synthetic-dep","serial":1,"state":{}}
+null
+
+=== bundle summary resolves jobs.foo id (9999) from DMS ListResources
+>>> [CLI] bundle summary
+Name: dms-state-read
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/dms-state-read/default
+Resources:
+  Jobs:
+    foo:
+      Name: foo
+      URL:  [DATABRICKS_URL]/jobs/9999?w=[NUMID]
+
+>>> print_requests.py --get //api/2.0/bundle/deployments/synthetic-dep/resources
+{
+  "method": "GET",
+  "path": "/api/2.0/bundle/deployments/synthetic-dep/resources"
+}
