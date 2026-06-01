@@ -136,13 +136,19 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 				return false
 			}
 
-			// Record the operation with DMS. Migration only mirrors existing
-			// state into the local store; there is no operation to report.
-			if !migrateMode {
-				if err := b.recordOperation(ctx, resourceKey, action, b.StateDB.GetResourceID(resourceKey), sv.Value); err != nil {
-					logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
-					return false
-				}
+			// Record the operation with DMS. Migration adopts a resource that
+			// already exists in the workspace, so the first thing DMS learns
+			// about it is its registration (INITIAL_REGISTER) rather than the
+			// planned action.
+			var recErr error
+			if migrateMode {
+				recErr = b.RecordInitialRegister(ctx, resourceKey, b.StateDB.GetResourceID(resourceKey), sv.Value)
+			} else {
+				recErr = b.recordOperation(ctx, resourceKey, action, b.StateDB.GetResourceID(resourceKey), sv.Value)
+			}
+			if recErr != nil {
+				logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, recErr))
+				return false
 			}
 		}
 
@@ -213,6 +219,18 @@ func (b *DeploymentBundle) recordOperation(ctx context.Context, resourceKey stri
 		return nil
 	}
 	return b.OpRec.record(ctx, resourceKey, action, resourceID, state)
+}
+
+// RecordInitialRegister reports the one-time registration of an existing
+// resource with DMS. The migrate and bind workflows adopt a resource that
+// already exists in the workspace; this records that DMS has started tracking
+// it. It is a no-op unless the bundle is opted into managed state (OpRec is
+// set). It is exported because bind is driven from the phases package.
+func (b *DeploymentBundle) RecordInitialRegister(ctx context.Context, resourceKey, resourceID string, state any) error {
+	if b.OpRec == nil {
+		return nil
+	}
+	return b.OpRec.recordInitialRegister(ctx, resourceKey, resourceID, state)
 }
 
 func jsonDump(obj any) string {

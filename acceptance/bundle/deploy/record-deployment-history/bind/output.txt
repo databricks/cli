@@ -1,0 +1,36 @@
+
+=== bind: records OPERATION_ACTION_TYPE_INITIAL_REGISTER for an existing resource
+>>> [CLI] jobs create --json {"name": "foo-job"}
+
+>>> [CLI] bundle deployment bind foo [NUMID] --auto-approve
+Updating deployment state...
+Successfully bound job with an id '[NUMID]'
+Run 'bundle deploy' to deploy changes to your workspace
+
+>>> print_requests.py //api/2.0/bundle
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/abcd/versions/0/operations",
+  "q": {
+    "resource_key": "resources.jobs.foo"
+  },
+  "body": {
+    "action_type": "OPERATION_ACTION_TYPE_INITIAL_REGISTER",
+    "resource_id": "[NUMID]",
+    "resource_key": "resources.jobs.foo",
+    "state": {
+      "deployment": {
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-rdh-bind/default/state/metadata.json"
+      },
+      "edit_mode": "UI_LOCKED",
+      "format": "MULTI_TASK",
+      "max_concurrent_runs": 1,
+      "name": "foo-job",
+      "queue": {
+        "enabled": true
+      }
+    },
+    "status": "OPERATION_STATUS_SUCCEEDED"
+  }
+}

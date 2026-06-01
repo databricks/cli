@@ -13,6 +13,7 @@ import (
 	"github.com/databricks/cli/bundle/deploy/lock"
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/libs/agent"
 	"github.com/databricks/cli/libs/cmdio"
@@ -41,6 +42,13 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions, en
 		}
 		resourceKey := fmt.Sprintf("resources.%s.%s", groupName, opts.ResourceKey)
 		_, statePath := b.StateFilenameDirect(ctx)
+
+		if b.Config.Experimental != nil && b.Config.Experimental.RecordDeploymentHistory {
+			// TODO(DMS): source the deployment ID and version from the DMS
+			// CreateVersion response once the deployment-version flow is wired in.
+			// "abcd"/0 are placeholders until then.
+			b.DeploymentBundle.OpRec = direct.NewOperationRecorder(b.WorkspaceClient(ctx).Bundle, "abcd", 0)
+		}
 
 		result, err := b.DeploymentBundle.Bind(ctx, b.WorkspaceClient(ctx), &b.Config, statePath, resourceKey, opts.ResourceId)
 		if err != nil {
@@ -88,6 +96,14 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions, en
 
 		// Finalize: rename temp state to final location
 		err = result.Finalize()
+		if err != nil {
+			logdiag.LogError(ctx, err)
+			return
+		}
+
+		// Bind adopts an existing workspace resource, so DMS first learns about
+		// it through its registration rather than a deploy-time action.
+		err = b.DeploymentBundle.RecordInitialRegister(ctx, resourceKey, opts.ResourceId, result.State)
 		if err != nil {
 			logdiag.LogError(ctx, err)
 			return

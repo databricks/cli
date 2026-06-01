@@ -1,0 +1,4 @@
+title "bind: records OPERATION_ACTION_TYPE_INITIAL_REGISTER for an existing resource"
+job_id=$(trace $CLI jobs create --json '{"name": "foo-job"}' | jq -r '.job_id')
+trace $CLI bundle deployment bind foo "$job_id" --auto-approve
+trace print_requests.py //api/2.0/bundle

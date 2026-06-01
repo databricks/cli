@@ -280,6 +280,13 @@ To start using direct engine, set "engine: direct" under bundle in your databric
 			return fmt.Errorf("upgrading state for apply: %w", err)
 		}
 
+		if b.Config.Experimental != nil && b.Config.Experimental.RecordDeploymentHistory {
+			// TODO(DMS): source the deployment ID and version from the DMS
+			// CreateVersion response once the deployment-version flow is wired in.
+			// "abcd"/0 are placeholders until then.
+			deploymentBundle.OpRec = direct.NewOperationRecorder(b.WorkspaceClient(ctx).Bundle, "abcd", 0)
+		}
+
 		deploymentBundle.Apply(ctx, b.WorkspaceClient(ctx), plan, direct.MigrateMode(true))
 		if _, err := deploymentBundle.StateDB.Finalize(ctx); err != nil {
 			logdiag.LogError(ctx, err)
