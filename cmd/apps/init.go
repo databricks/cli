@@ -688,7 +688,9 @@ func replaceProjectName(destDir, newName string) error {
 			if err == nil {
 				// Preserve trailing newline convention.
 				out = append(out, '\n')
-				_ = os.WriteFile(pkgPath, out, 0o644)
+				if err := os.WriteFile(pkgPath, out, 0o644); err != nil {
+					return fmt.Errorf("write package.json: %w", err)
+				}
 			}
 		}
 	}
@@ -714,7 +716,9 @@ func replaceProjectName(destDir, newName string) error {
 	if err := enc.Encode(&doc); err != nil {
 		return fmt.Errorf("encode %s: %w", bundleConfigFile, err)
 	}
-	enc.Close()
+	if err := enc.Close(); err != nil {
+		return fmt.Errorf("encode %s: %w", bundleConfigFile, err)
+	}
 
 	return os.WriteFile(ymlPath, buf.Bytes(), 0o644)
 }
@@ -1232,12 +1236,18 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		maps.Copy(resourceValues, setVals)
 	}
 
+	// Pre-rendered templates have no Go template placeholders, so --set
+	// values cannot be injected into the output files.
+	if preRendered && len(setVals) > 0 {
+		log.Warnf(ctx, "--set values are ignored for pre-rendered templates (resources are already configured in %s)", bundleConfigFile)
+	}
+
 	// Always include mandatory plugins regardless of user selection or flags.
 	selectedPlugins = appendUnique(selectedPlugins, m.GetMandatoryPluginNames()...)
 
 	// Warn when --features adds plugins that the pre-rendered template
-	// cannot inject (they'll appear in .env but not in databricks.yml,
-	// server.ts, or app.yaml).
+	// cannot inject (its databricks.yml, server.ts, and app.yaml are
+	// already finalised).
 	if preRendered && opts.pluginsChanged {
 		mandatoryNames := m.GetMandatoryPluginNames()
 		mandatory := make(map[string]bool, len(mandatoryNames))
