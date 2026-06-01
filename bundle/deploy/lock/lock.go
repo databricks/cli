@@ -57,6 +57,9 @@ func NewDeploymentLock(ctx context.Context, b *bundle.Bundle, goal Goal) *Deploy
 	if enabled {
 		l.wfs.client = b.WorkspaceClient(ctx)
 	}
+	if b.Config.Experimental != nil && b.Config.Experimental.RecordDeploymentHistory {
+		l.dms = newMetadataServiceLock(b, goal)
+	}
 	return l
 }
 
