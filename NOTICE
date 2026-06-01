@@ -151,10 +151,6 @@ mattn/go-isatty - https://github.com/mattn/go-isatty
 Copyright (c) Yasuhiro MATSUMOTO <mattn.jp@gmail.com>
 License - https://github.com/mattn/go-isatty/blob/master/LICENSE
 
-mattn/go-runewidth - https://github.com/mattn/go-runewidth
-Copyright (c) 2016 Yasuhiro Matsumoto
-License - https://github.com/mattn/go-runewidth/blob/master/LICENSE
-
 sabhiram/go-gitignore - https://github.com/sabhiram/go-gitignore
 Copyright (c) 2015 Shaba Abhiram
 License - https://github.com/sabhiram/go-gitignore/blob/master/LICENSE

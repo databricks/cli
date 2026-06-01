@@ -10,7 +10,6 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/mattn/go-runewidth"
 	"github.com/spf13/cobra"
 )
 
@@ -116,11 +115,11 @@ Examples:
 			out := cmd.OutOrStdout()
 			blank(out)
 
-			// Measure in terminal cells (runewidth) so wide / emoji
+			// Measure in terminal cells (cmdio.Width) so wide / emoji
 			// glyphs in `--name` don't misalign the row.
 			nameCol := 4
 			for _, k := range keys {
-				if l := runewidth.StringWidth(k.Name); l > nameCol {
+				if l := cmdio.Width(k.Name); l > nameCol {
 					nameCol = l
 				}
 			}
@@ -137,22 +136,20 @@ Examples:
 
 			localFound := false
 			for _, k := range keys {
-				// Pad NAME manually from the raw width because cmdio.Faint
-				// wraps the cell in ANSI escapes that throw off `%-*s`.
-				displayName, visibleNameLen := k.Name, runewidth.StringWidth(k.Name)
+				// cmdio.PadRight measures visible width, so the ANSI escapes
+				// cmdio.Faint wraps the NAME cell in don't break alignment.
+				displayName := k.Name
 				if displayName == "" {
 					displayName = cmdio.Faint(ctx, "(unset)")
-					visibleNameLen = runewidth.StringWidth("(unset)")
 				}
-				namePad := max(nameCol-visibleNameLen, 0)
 				gutter := "    "
 				if localHash != "" && k.KeyHash == localHash {
 					gutter = "  " + cmdio.Cyan(ctx, "*") + " "
 					localFound = true
 				}
-				fmt.Fprintf(out, "%s%s%s  %-*s  %-*s  %s\n",
+				fmt.Fprintf(out, "%s%s  %-*s  %-*s  %s\n",
 					gutter,
-					displayName, strings.Repeat(" ", namePad),
+					cmdio.PadRight(displayName, nameCol),
 					hashCol, k.KeyHash,
 					timeCol, formatTimeShort(k.CreateTime),
 					formatTimeShort(k.LastUseTime))

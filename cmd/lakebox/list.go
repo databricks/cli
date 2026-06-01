@@ -8,7 +8,6 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/mattn/go-runewidth"
 	"github.com/spf13/cobra"
 )
 
@@ -112,16 +111,16 @@ Example:
 			// bytes or runes — emoji and CJK glyphs render as 2 cells
 			// despite being 1 rune / multi-byte, and using len() here
 			// (which counts bytes) misaligns the row whenever a `--name`
-			// includes wide characters. runewidth.StringWidth gives the
+			// includes wide characters. cmdio.Width gives the
 			// East-Asian-Width-corrected cell count.
 			idCol := 10
 			autostopCol := 8
 			nameCol := 4
 			for _, e := range entries {
-				if l := runewidth.StringWidth(e.SandboxID); l > idCol {
+				if l := cmdio.Width(e.SandboxID); l > idCol {
 					idCol = l
 				}
-				if l := runewidth.StringWidth(e.autoStopLabel()); l > autostopCol {
+				if l := cmdio.Width(e.autoStopLabel()); l > autostopCol {
 					autostopCol = l
 				}
 				// Only let an actual custom name expand the column. A
@@ -129,7 +128,7 @@ Example:
 				// otherwise drive the column to the ID's width — for no
 				// gain, since that row renders as `-`.
 				if e.Name != "" && e.Name != e.SandboxID {
-					if l := runewidth.StringWidth(e.Name); l > nameCol {
+					if l := cmdio.Width(e.Name); l > nameCol {
 						nameCol = l
 					}
 				}
@@ -154,31 +153,21 @@ Example:
 				if id == defaultID {
 					def = cmdio.Cyan(ctx, "*")
 				}
-				// Pad each cell manually so visible-width alignment is
-				// preserved after the helpers wrap them with ANSI escapes.
-				idPad := max(idCol-runewidth.StringWidth(id), 0)
-				st := status(ctx, e.Status)
-				stPad := max(statusCol-runewidth.StringWidth(e.Status), 0)
-				as := e.autoStopLabel()
-				asPad := max(autostopCol-runewidth.StringWidth(as), 0)
 				idStr := cmdio.Bold(ctx, id)
 				if strings.EqualFold(e.Status, "running") {
 					idStr = cmdio.Bold(ctx, cmdio.Cyan(ctx, id))
 				}
-				nm := e.Name
-				if nm == "" || nm == id {
-					nm = "-"
+				nm := cmdio.Faint(ctx, "-")
+				if e.Name != "" && e.Name != id {
+					nm = e.Name
 				}
-				nmPad := max(nameCol-runewidth.StringWidth(nm), 0)
-				nmStr := nm
-				if nm == "-" {
-					nmStr = cmdio.Faint(ctx, "-")
-				}
-				fmt.Fprintf(out, "  %s%s  %s%s  %s%s  %s%s  %s\n",
-					idStr, strings.Repeat(" ", idPad),
-					nmStr, strings.Repeat(" ", nmPad),
-					st, strings.Repeat(" ", stPad),
-					cmdio.Faint(ctx, as), strings.Repeat(" ", asPad),
+				// cmdio.PadRight measures visible width, so the ANSI escapes
+				// the color helpers wrap each cell in don't break alignment.
+				fmt.Fprintf(out, "  %s  %s  %s  %s  %s\n",
+					cmdio.PadRight(idStr, idCol),
+					cmdio.PadRight(nm, nameCol),
+					cmdio.PadRight(status(ctx, e.Status), statusCol),
+					cmdio.PadRight(cmdio.Faint(ctx, e.autoStopLabel()), autostopCol),
 					def)
 			}
 			blank(out)
