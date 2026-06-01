@@ -1254,6 +1254,12 @@ func runCreate(ctx context.Context, opts createOptions) error {
 			}
 		}
 		nextStepsCmd = projectInitializer.NextSteps()
+		// With --skip-install the dependency installer never ran, so prepend
+		// the install command (e.g. `npm ci`) to the suggested next steps so
+		// the user knows to install before running the app.
+		if opts.skipInstall {
+			nextStepsCmd = prependInstall(projectInitializer.InstallCommand(), nextStepsCmd)
+		}
 	}
 
 	// Validate dev-remote is only supported for appkit projects
@@ -1372,6 +1378,19 @@ func runPostCreateDev(ctx context.Context, mode prompt.RunMode, projectInit init
 		return cmd.Run()
 	default:
 		return nil
+	}
+}
+
+// prependInstall composes the install command and the project's NextSteps
+// suggestion into a single shell snippet, dropping either side if empty.
+func prependInstall(installCmd, nextStepsCmd string) string {
+	switch {
+	case installCmd == "":
+		return nextStepsCmd
+	case nextStepsCmd == "":
+		return installCmd
+	default:
+		return installCmd + " && " + nextStepsCmd
 	}
 }
 
