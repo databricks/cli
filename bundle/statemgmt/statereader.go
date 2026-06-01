@@ -14,76 +14,87 @@ import (
 	sdkbundle "github.com/databricks/databricks-sdk-go/service/bundle"
 )
 
-// StateReader populates the deployment resource-state DB used by the direct
-// engine's plan/apply path. It abstracts where the state comes from: the local
-// resources.json file (the historical source) or the deployment metadata
-// service (DMS), which owns the state server-side when the bundle opts into
-// recording deployment history.
+// StateReader loads a deployment's state into the in-memory DeploymentState that
+// the direct engine reads during plan/apply.
 //
-// Both implementations leave the DB open in read mode. The plan path may later
-// upgrade it to write mode; see dstate.DeploymentState.UpgradeToWrite.
+// Deployment state has two parts:
+//
+//   - Identity: the lineage (the deployment id) and serial. These always live in
+//     the local resources.json file and identify the deployment across runs.
+//   - Resources: each deployed resource's id and last-deployed config.
+//
+// Where the resources come from depends on whether the bundle records deployment
+// history, which is what the two implementations capture:
+//
+//   - fileStateReader: identity and resources both come from resources.json.
+//     This is the default and matches the behavior before DMS.
+//   - dmsStateReader: identity still comes from resources.json (its lineage is the
+//     DMS deployment id), but the resource set is read from the deployment
+//     metadata service (DMS).
+//
+// Both leave the DB open for reading; the plan path may later upgrade it to write
+// mode (see dstate.DeploymentState.UpgradeToWrite).
 type StateReader interface {
-	// Load opens db and populates it with the deployment's resource state.
+	// Load populates db with the deployment's state, leaving it open for reading.
 	Load(ctx context.Context, db *dstate.DeploymentState) error
 }
 
-// fileStateReader reads resource state from the local resources.json file.
+// fileStateReader loads both identity and resources from the local resources.json
+// file. "local" means the file in the bundle's state cache that PullResourcesState
+// has already synced from the workspace.
 type fileStateReader struct {
 	path string
 }
 
-// NewFileStateReader returns a StateReader backed by the local resources.json
-// file at path. This is the historical (non-DMS) source of resource state.
+// NewFileStateReader returns a StateReader that reads both identity and resources
+// from the local resources.json file at path.
 func NewFileStateReader(path string) StateReader {
 	return &fileStateReader{path: path}
 }
 
 func (r *fileStateReader) Load(ctx context.Context, db *dstate.DeploymentState) error {
-	// Recovery replays any leftover write-ahead log from a crashed deploy; the
-	// file reader owns the on-disk state, so recovery applies here.
+	// Open reads resources.json (identity + resources) into db. Recovery replays a
+	// leftover write-ahead log from a crashed deploy, which only the file-backed
+	// state can have.
 	return db.Open(ctx, r.path, dstate.WithRecovery(true), dstate.WithWrite(false))
 }
 
-// dmsStateReader reads resource state from the deployment metadata service.
+// dmsStateReader loads the identity from the local resources.json file but the
+// resource set from DMS.
 type dmsStateReader struct {
 	client       sdkbundle.BundleInterface
 	deploymentID string
-
-	// path is the local resources.json path. OpenWithData records it as the
-	// eventual write target if the plan path later upgrades the DB to write
-	// mode; the DMS reader itself never reads from or writes to it.
-	path string
+	path         string // local resources.json path; supplies the identity (lineage/serial)
 }
 
-// NewDMSStateReader returns a StateReader backed by the deployment metadata
-// service for the deployment identified by deploymentID, which must be
-// non-empty. path is the local resources.json path (see dmsStateReader.path).
+// NewDMSStateReader returns a StateReader that reads identity from the local
+// resources.json at path and the resource set from DMS for deploymentID (which is
+// the deployment's lineage).
 func NewDMSStateReader(client sdkbundle.BundleInterface, deploymentID, path string) StateReader {
 	return &dmsStateReader{client: client, deploymentID: deploymentID, path: path}
 }
 
 func (r *dmsStateReader) Load(ctx context.Context, db *dstate.DeploymentState) error {
-	// The deployment identity (lineage, serial) lives in the local resources.json:
-	// the lineage IS the DMS deployment ID, and a deploy must keep using it rather
-	// than minting a new one. Only the resource set is owned by the service, so we
-	// preserve the local header and replace the resources with what DMS reports.
+	// Keep the identity from resources.json (the lineage is the DMS deployment id;
+	// a later deploy must reuse it rather than mint a new one) and swap in the
+	// resource set from DMS. resources.json keeps recording resources too, so the
+	// bundle can be migrated back to file-based state.
 	data, err := readLocalDatabase(r.path)
 	if err != nil {
 		return err
 	}
 
-	resources, err := fetchDeploymentResources(ctx, r.client, r.deploymentID)
+	data.State, err = fetchDeploymentResources(ctx, r.client, r.deploymentID)
 	if err != nil {
 		return err
 	}
-	data.State = resources
 
 	db.OpenWithData(r.path, data)
 	return nil
 }
 
-// fetchDeploymentResources lists every resource recorded for the deployment and
-// maps them into state entries keyed by the fully-qualified resource key.
+// fetchDeploymentResources lists every resource recorded for the deployment in
+// DMS and maps them into state entries keyed by the fully-qualified resource key.
 func fetchDeploymentResources(ctx context.Context, client sdkbundle.BundleInterface, deploymentID string) (map[string]dstate.ResourceEntry, error) {
 	resources, err := client.ListResourcesAll(ctx, sdkbundle.ListResourcesRequest{
 		Parent: "deployments/" + deploymentID,
@@ -112,35 +123,34 @@ func fetchDeploymentResources(ctx context.Context, client sdkbundle.BundleInterf
 	return out, nil
 }
 
-// NewStateReader selects the StateReader for the bundle: the DMS reader when
-// experimental.record_deployment_history is enabled and a prior deployment
-// exists, otherwise the local resources.json reader.
+// NewStateReader picks the reader for the bundle. Three cases:
 //
-// The DMS deployment ID is the state lineage, which is recorded in the local
-// resources.json (see dstate.DeploymentState.GetOrInitLineage). When there is no
-// lineage yet — a first deploy that has not registered with DMS — there is
-// nothing to read from the service, so we read the (empty) local file instead.
+//  1. record_deployment_history off: read everything from resources.json.
+//  2. on, but resources.json has no lineage (nothing deployed yet): there is no
+//     DMS deployment to read, so read the (empty) local file.
+//  3. on, with a lineage: read resources from DMS for that deployment id.
+//
+// The lineage comes from the local resources.json, so PullResourcesState must
+// have synced it before this is called.
 func NewStateReader(ctx context.Context, b *bundle.Bundle, path string) (StateReader, error) {
-	if b.Config.Experimental == nil || !b.Config.Experimental.RecordDeploymentHistory {
-		return NewFileStateReader(path), nil
+	recordHistory := b.Config.Experimental != nil && b.Config.Experimental.RecordDeploymentHistory
+	if !recordHistory {
+		return NewFileStateReader(path), nil // case 1
 	}
 
 	local, err := readLocalDatabase(path)
 	if err != nil {
 		return nil, err
 	}
-	// No lineage yet means no prior deployment registered with DMS, so there is
-	// nothing to read from the service; fall back to the local file.
 	if local.Lineage == "" {
-		return NewFileStateReader(path), nil
+		return NewFileStateReader(path), nil // case 2
 	}
 
-	return NewDMSStateReader(b.WorkspaceClient(ctx).Bundle, local.Lineage, path), nil
+	return NewDMSStateReader(b.WorkspaceClient(ctx).Bundle, local.Lineage, path), nil // case 3
 }
 
-// readLocalDatabase parses the local resources.json state file. A missing file
-// yields an empty database (no lineage), which callers treat as "no prior
-// deployment".
+// readLocalDatabase parses the local resources.json file. A missing file yields
+// an empty database (no lineage), which callers read as "nothing deployed yet".
 func readLocalDatabase(path string) (dstate.Database, error) {
 	content, err := os.ReadFile(path)
 	if errors.Is(err, fs.ErrNotExist) {
