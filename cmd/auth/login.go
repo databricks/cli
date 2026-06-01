@@ -178,7 +178,7 @@ a new profile is created.
 		// triggers the OS unlock prompt, which the user can answer during
 		// OAuth. Run after input validation so trivially-invalid commands
 		// fail without probing.
-		tokenCache, mode, err := storage.ResolveCacheForLogin(ctx, "")
+		tokenStore, mode, err := storage.ResolveStoreForLogin(ctx, "")
 		if err != nil {
 			return err
 		}
@@ -269,7 +269,7 @@ a new profile is created.
 				scopes:          scopes,
 				existingProfile: existingProfile,
 				browserFunc:     getBrowserFunc(cmd),
-				tokenCache:      tokenCache,
+				tokenStore:      tokenStore,
 				mode:            mode,
 			})
 		}
@@ -299,7 +299,7 @@ a new profile is created.
 		persistentAuthOpts := []u2m.PersistentAuthOption{
 			u2m.WithOAuthArgument(oauthArgument),
 			u2m.WithBrowser(getBrowserFunc(cmd)),
-			u2m.WithTokenCache(storage.WrapForOAuthArgument(ctx, tokenCache, mode, oauthArgument)),
+			u2m.WithTokenCache(storage.WrapForOAuthArgument(ctx, tokenStore, mode, oauthArgument)),
 		}
 		if len(scopesList) > 0 {
 			persistentAuthOpts = append(persistentAuthOpts, u2m.WithScopes(scopesList))
@@ -628,7 +628,7 @@ type discoveryLoginInputs struct {
 	scopes          string
 	existingProfile *profile.Profile
 	browserFunc     func(string) error
-	tokenCache      storage.Store
+	tokenStore      storage.Store
 	mode            storage.StorageMode
 }
 
@@ -650,7 +650,7 @@ func discoveryLogin(ctx context.Context, in discoveryLoginInputs) error {
 		u2m.WithOAuthArgument(arg),
 		u2m.WithBrowser(in.browserFunc),
 		u2m.WithDiscoveryLogin(),
-		u2m.WithTokenCache(storage.WrapForOAuthArgument(ctx, in.tokenCache, in.mode, arg)),
+		u2m.WithTokenCache(storage.WrapForOAuthArgument(ctx, in.tokenStore, in.mode, arg)),
 	}
 	if len(scopesList) > 0 {
 		opts = append(opts, u2m.WithScopes(scopesList))

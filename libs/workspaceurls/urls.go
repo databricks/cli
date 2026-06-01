@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/url"
 	"slices"
-	"strconv"
 	"strings"
 )
 
@@ -79,9 +78,11 @@ func ResourceURL(baseURL url.URL, resourceType, id string) string {
 }
 
 // BuildResourceURL constructs a full workspace URL from a host string, resource
-// type name, ID, and workspace ID. It parses the host, appends ?o=<workspace-id>
-// when needed, and formats the resource path.
-func BuildResourceURL(host, resourceType, id string, workspaceID int64) (string, error) {
+// type name, ID, and workspace ID. It parses the host, appends ?w=<workspace-id>
+// when needed, and formats the resource path. An empty workspaceID skips the
+// query parameter (use when the workspace ID is unknown or already encoded in
+// the hostname).
+func BuildResourceURL(host, resourceType, id, workspaceID string) (string, error) {
 	baseURL, err := workspaceBaseURL(host, workspaceID)
 	if err != nil {
 		return "", err
@@ -101,23 +102,22 @@ func resolveAlias(resourceType string) string {
 	return resourceType
 }
 
-func workspaceBaseURL(host string, workspaceID int64) (*url.URL, error) {
+func workspaceBaseURL(host, workspaceID string) (*url.URL, error) {
 	baseURL, err := url.Parse(host)
 	if err != nil {
 		return nil, fmt.Errorf("invalid workspace host %q: %w", host, err)
 	}
 
-	if workspaceID == 0 {
+	if workspaceID == "" {
 		return baseURL, nil
 	}
 
-	orgID := strconv.FormatInt(workspaceID, 10)
-	if hasWorkspaceIDInHostname(baseURL.Hostname(), orgID) {
+	if hasWorkspaceIDInHostname(baseURL.Hostname(), workspaceID) {
 		return baseURL, nil
 	}
 
 	values := baseURL.Query()
-	values.Add("o", orgID)
+	values.Add("w", workspaceID)
 	baseURL.RawQuery = values.Encode()
 
 	return baseURL, nil

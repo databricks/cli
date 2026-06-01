@@ -98,10 +98,10 @@ Resources:
   Jobs:
     job_01:
       Name: job-01
-      URL:  [DATABRICKS_URL]/jobs/[JOB_01_ID]?o=[NUMID]
+      URL:  [DATABRICKS_URL]/jobs/[JOB_01_ID]?w=[NUMID]
     job_02:
       Name: job-02
-      URL:  [DATABRICKS_URL]/jobs/[JOB_02_ID]?o=[NUMID]
+      URL:  [DATABRICKS_URL]/jobs/[JOB_02_ID]?w=[NUMID]
     job_03:
       Name: job-03
       URL:  (not deployed)
