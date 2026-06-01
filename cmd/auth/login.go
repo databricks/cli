@@ -118,9 +118,11 @@ use the flags directly to specify both.
 
 The host URL may include query parameters to set the workspace and account ID:
 
-  databricks auth login --host "https://<host>?o=<workspace_id>&account_id=<id>"
+  databricks auth login --host "https://<host>?w=<workspace_id>&account_id=<id>"
 
-Note: URLs containing "?" must be quoted to prevent shell interpretation.
+The workspace ID may be passed as ?w= (preferred), ?o= (legacy), or
+?workspace_id=. Note: URLs containing "?" must be quoted to prevent shell
+interpretation.
 
 If a profile with the given name already exists, it is updated. Otherwise
 a new profile is created.
