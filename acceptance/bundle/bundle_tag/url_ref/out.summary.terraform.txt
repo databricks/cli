@@ -1,3 +1,6 @@
+Warning: "resources.jobs.foo.url": Terraform-only field; this reference will not work with the direct engine
+  in databricks.yml:11:12
+
 Name: test-bundle
 Target: default
 Workspace:
