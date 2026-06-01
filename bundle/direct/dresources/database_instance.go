@@ -36,9 +36,7 @@ func (d *ResourceDatabaseInstance) DoCreate(ctx context.Context, engine *Engine,
 
 	// Save state immediately after the instance is created so it is not orphaned
 	// if the subsequent wait is interrupted.
-	if err := engine.SaveState(id, config); err != nil {
-		return "", nil, err
-	}
+	engine.SaveState(ctx, id, config)
 
 	waiterObj := &database.WaitGetDatabaseInstanceDatabaseAvailable[database.DatabaseInstance]{
 		Response: config,

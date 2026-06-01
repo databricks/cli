@@ -1,8 +1,11 @@
 package dresources
 
 import (
+	"context"
 	"fmt"
 	"reflect"
+
+	"github.com/databricks/cli/libs/logdiag"
 )
 
 // Engine provides state persistence to resource implementations.
@@ -28,7 +31,9 @@ func NewNopEngine(stateType reflect.Type) *Engine {
 // SaveState saves the resource state. id must be the resource's identifier; on
 // the first call it is recorded, and subsequent calls panic if a different id is
 // passed. x must be a pointer to the same struct type as the resource's state.
-func (e *Engine) SaveState(id string, x any) error {
+// Failures to persist state are logged but do not abort the deployment — the
+// resource already exists and aborting would not undo its creation.
+func (e *Engine) SaveState(ctx context.Context, id string, x any) {
 	if e.id == "" {
 		e.id = id
 	} else if e.id != id {
@@ -36,7 +41,9 @@ func (e *Engine) SaveState(id string, x any) error {
 	}
 	xt := reflect.TypeOf(x)
 	if xt != e.stateType {
-		return fmt.Errorf("SaveState: type mismatch: expected %v, got %v", e.stateType, xt)
+		panic(fmt.Sprintf("SaveState: type mismatch: expected %v, got %v", e.stateType, xt))
 	}
-	return e.saveFunc(e.id, x)
+	if err := e.saveFunc(e.id, x); err != nil {
+		logdiag.LogError(ctx, err)
+	}
 }

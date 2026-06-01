@@ -156,9 +156,7 @@ func (r *ResourceCluster) DoCreate(ctx context.Context, engine *Engine, config *
 
 	// Save state immediately after the cluster is created so it is not orphaned
 	// if the subsequent wait or terminate is interrupted.
-	if err := engine.SaveState(id, config); err != nil {
-		return "", nil, err
-	}
+	engine.SaveState(ctx, id, config)
 
 	// Always wait for RUNNING first: clusters start in PENDING state and must be polled.
 	_, err = r.client.Clusters.WaitGetClusterRunning(ctx, id, 15*time.Minute, nil)
