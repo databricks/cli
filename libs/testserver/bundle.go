@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"slices"
 
-	bundlesdk "github.com/databricks/databricks-sdk-go/service/bundle"
+	sdkbundle "github.com/databricks/databricks-sdk-go/service/bundle"
 )
 
 // Minimal Deployment Metadata Service (DMS) handlers under /api/2.0/bundle,
@@ -16,7 +16,7 @@ import (
 // create/update operation upserts the deployment-level resource; a delete
 // operation removes it.
 func (s *FakeWorkspace) BundleCreateOperation(req Request, deploymentID string) Response {
-	var op bundlesdk.Operation
+	var op sdkbundle.Operation
 	if err := json.Unmarshal(req.Body, &op); err != nil {
 		return Response{StatusCode: 400, Body: map[string]string{"message": err.Error()}}
 	}
@@ -24,13 +24,13 @@ func (s *FakeWorkspace) BundleCreateOperation(req Request, deploymentID string) 
 	defer s.LockUnlock()()
 
 	if s.BundleResources[deploymentID] == nil {
-		s.BundleResources[deploymentID] = map[string]bundlesdk.Resource{}
+		s.BundleResources[deploymentID] = map[string]sdkbundle.Resource{}
 	}
 
-	if op.ActionType == bundlesdk.OperationActionTypeOperationActionTypeDelete {
+	if op.ActionType == sdkbundle.OperationActionTypeOperationActionTypeDelete {
 		delete(s.BundleResources[deploymentID], op.ResourceKey)
 	} else {
-		s.BundleResources[deploymentID][op.ResourceKey] = bundlesdk.Resource{
+		s.BundleResources[deploymentID][op.ResourceKey] = sdkbundle.Resource{
 			Name:           "deployments/" + deploymentID + "/resources/" + op.ResourceKey,
 			ResourceKey:    op.ResourceKey,
 			ResourceId:     op.ResourceId,
@@ -54,10 +54,10 @@ func (s *FakeWorkspace) BundleListResources(deploymentID string) Response {
 	}
 	slices.Sort(keys)
 
-	out := make([]bundlesdk.Resource, 0, len(keys))
+	out := make([]sdkbundle.Resource, 0, len(keys))
 	for _, k := range keys {
 		out = append(out, resources[k])
 	}
 
-	return Response{Body: bundlesdk.ListResourcesResponse{Resources: out}}
+	return Response{Body: sdkbundle.ListResourcesResponse{Resources: out}}
 }

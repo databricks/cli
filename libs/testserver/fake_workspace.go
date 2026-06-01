@@ -19,7 +19,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/databricks/databricks-sdk-go/service/apps"
-	bundlesdk "github.com/databricks/databricks-sdk-go/service/bundle"
+	sdkbundle "github.com/databricks/databricks-sdk-go/service/bundle"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -180,7 +180,7 @@ type FakeWorkspace struct {
 	// Deployment Metadata Service (DMS) resources recorded per deployment, keyed
 	// by deployment ID then by resource key. Populated from CreateOperation and
 	// served by ListResources.
-	BundleResources map[string]map[string]bundlesdk.Resource
+	BundleResources map[string]map[string]sdkbundle.Resource
 
 	// Branches and endpoints that the server provisioned implicitly together
 	// with their parent (e.g. the production branch on a new project, or the
@@ -319,7 +319,7 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		PostgresCatalogs:          map[string]postgres.Catalog{},
 		PostgresSyncedTables:      map[string]postgres.SyncedTable{},
 		PostgresOperations:        map[string]postgres.Operation{},
-		BundleResources:           map[string]map[string]bundlesdk.Resource{},
+		BundleResources:           map[string]map[string]sdkbundle.Resource{},
 		postgresImplicitBranches:  map[string]bool{},
 		postgresImplicitEndpoints: map[string]bool{},
 		clusterVenvs:              map[string]*clusterEnv{},
