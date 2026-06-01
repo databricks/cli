@@ -11,3 +11,6 @@
 * Retry transient HTTP 504 Gateway Timeout errors in direct deployment engine ([#5349](https://github.com/databricks/cli/pull/5349)).
 
 ### Dependency updates
+* Bump `github.com/databricks/databricks-sdk-go` from v0.136.0 to v0.138.0 ([#5361](https://github.com/databricks/cli/pull/5361))
+
+### API Changes

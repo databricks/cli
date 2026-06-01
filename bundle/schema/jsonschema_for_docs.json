@@ -92,6 +92,12 @@
                     "$ref": "#/$defs/string",
                     "x-since-version": "v0.243.0"
                   },
+                  "compute_max_instances": {
+                    "$ref": "#/$defs/int"
+                  },
+                  "compute_min_instances": {
+                    "$ref": "#/$defs/int"
+                  },
                   "compute_size": {
                     "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.ComputeSize",
                     "x-since-version": "v0.273.0"
@@ -384,7 +390,7 @@
                   },
                   "lifecycle": {
                     "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
-                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle",
+                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.LifecycleWithStarted",
                     "x-since-version": "v0.268.0"
                   },
                   "node_type_id": {
@@ -2057,28 +2063,40 @@
                 "type": "object",
                 "properties": {
                   "delta_sync_index_spec": {
-                    "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/vectorsearch.DeltaSyncVectorIndexSpecRequest"
+                    "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/vectorsearch.DeltaSyncVectorIndexSpecRequest",
+                    "x-since-version": "v1.1.0"
                   },
                   "direct_access_index_spec": {
-                    "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/vectorsearch.DirectAccessVectorIndexSpec"
+                    "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/vectorsearch.DirectAccessVectorIndexSpec",
+                    "x-since-version": "v1.1.0"
                   },
                   "endpoint_name": {
-                    "$ref": "#/$defs/string"
+                    "$ref": "#/$defs/string",
+                    "x-since-version": "v1.1.0"
                   },
                   "grants": {
-                    "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/catalog.PrivilegeAssignment"
+                    "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/catalog.PrivilegeAssignment",
+                    "x-since-version": "v1.1.0"
+                  },
+                  "index_subtype": {
+                    "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/vectorsearch.IndexSubtype",
+                    "x-since-version": "v1.1.0"
                   },
                   "index_type": {
-                    "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/vectorsearch.VectorIndexType"
+                    "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/vectorsearch.VectorIndexType",
+                    "x-since-version": "v1.1.0"
                   },
                   "lifecycle": {
-                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
+                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle",
+                    "x-since-version": "v1.1.0"
                   },
                   "name": {
-                    "$ref": "#/$defs/string"
+                    "$ref": "#/$defs/string",
+                    "x-since-version": "v1.1.0"
                   },
                   "primary_key": {
-                    "$ref": "#/$defs/string"
+                    "$ref": "#/$defs/string",
+                    "x-since-version": "v1.1.0"
                   }
                 },
                 "additionalProperties": false,
@@ -2675,7 +2693,8 @@
                   "x-since-version": "v0.298.0"
                 },
                 "vector_search_indexes": {
-                  "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.VectorSearchIndex"
+                  "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.VectorSearchIndex",
+                  "x-since-version": "v1.1.0"
                 },
                 "volumes": {
                   "description": "The volume definitions for the bundle, where each key is the name of the volume.",
@@ -5912,19 +5931,23 @@
                 },
                 "full_refresh_selection": {
                   "description": "A list of tables to update with fullRefresh.",
-                  "$ref": "#/$defs/slice/string"
+                  "$ref": "#/$defs/slice/string",
+                  "x-since-version": "v1.1.0"
                 },
                 "refresh_flow_selection": {
                   "description": "Flow names to selectively refresh. These are unioned with other selective refresh\noptions (refresh_selection, full_refresh_selection) to determine the final set of flows to refresh.",
-                  "$ref": "#/$defs/slice/string"
+                  "$ref": "#/$defs/slice/string",
+                  "x-since-version": "v1.1.0"
                 },
                 "refresh_selection": {
                   "description": "A list of tables to update without fullRefresh.",
-                  "$ref": "#/$defs/slice/string"
+                  "$ref": "#/$defs/slice/string",
+                  "x-since-version": "v1.1.0"
                 },
                 "reset_checkpoint_selection": {
                   "description": "A list of streaming flows to reset checkpoints without clearing data.",
-                  "$ref": "#/$defs/slice/string"
+                  "$ref": "#/$defs/slice/string",
+                  "x-since-version": "v1.1.0"
                 }
               },
               "additionalProperties": false
@@ -5939,7 +5962,8 @@
                 },
                 "full_refresh_selection": {
                   "description": "A list of tables to update with fullRefresh.",
-                  "$ref": "#/$defs/slice/string"
+                  "$ref": "#/$defs/slice/string",
+                  "x-since-version": "v1.1.0"
                 },
                 "pipeline_id": {
                   "description": "The full name of the pipeline task to execute.",
@@ -5948,15 +5972,18 @@
                 },
                 "refresh_flow_selection": {
                   "description": "Flow names to selectively refresh. These are unioned with other selective refresh\noptions (refresh_selection, full_refresh_selection) to determine the final set of flows to refresh.",
-                  "$ref": "#/$defs/slice/string"
+                  "$ref": "#/$defs/slice/string",
+                  "x-since-version": "v1.1.0"
                 },
                 "refresh_selection": {
                   "description": "A list of tables to update without fullRefresh.",
-                  "$ref": "#/$defs/slice/string"
+                  "$ref": "#/$defs/slice/string",
+                  "x-since-version": "v1.1.0"
                 },
                 "reset_checkpoint_selection": {
                   "description": "A list of streaming flows to reset checkpoints without clearing data.",
-                  "$ref": "#/$defs/slice/string"
+                  "$ref": "#/$defs/slice/string",
+                  "x-since-version": "v1.1.0"
                 }
               },
               "additionalProperties": false,
@@ -6057,11 +6084,13 @@
               "properties": {
                 "main": {
                   "description": "Fully qualified name of the main class or function.\nFor example, `my_project.my_function` or `my_project.MyOperator`.",
-                  "$ref": "#/$defs/string"
+                  "$ref": "#/$defs/string",
+                  "x-since-version": "v1.1.0"
                 },
                 "parameters": {
                   "description": "An ordered list of task parameters.\nTODO(JOBS-30885): Add limits for parameters.",
-                  "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/jobs.PythonOperatorTaskParameter"
+                  "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/jobs.PythonOperatorTaskParameter",
+                  "x-since-version": "v1.1.0"
                 }
               },
               "additionalProperties": false
@@ -6070,10 +6099,12 @@
               "type": "object",
               "properties": {
                 "name": {
-                  "$ref": "#/$defs/string"
+                  "$ref": "#/$defs/string",
+                  "x-since-version": "v1.1.0"
                 },
                 "value": {
-                  "$ref": "#/$defs/string"
+                  "$ref": "#/$defs/string",
+                  "x-since-version": "v1.1.0"
                 }
               },
               "additionalProperties": false
@@ -6663,7 +6694,8 @@
                   "description": "The task runs a Python operator task.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.PythonOperatorTask",
                   "x-databricks-preview": "PRIVATE",
-                  "doNotSuggest": true
+                  "doNotSuggest": true,
+                  "x-since-version": "v1.1.0"
                 },
                 "python_wheel_task": {
                   "description": "The task runs a Python wheel when the `python_wheel_task` field is present.",
@@ -7018,7 +7050,8 @@
                 "kafka_options": {
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.KafkaOptions",
                   "x-databricks-preview": "PRIVATE",
-                  "doNotSuggest": true
+                  "doNotSuggest": true,
+                  "x-since-version": "v1.1.0"
                 },
                 "meta_ads_options": {
                   "description": "Meta Marketing (Meta Ads) specific options for ingestion",
@@ -7659,23 +7692,28 @@
               "properties": {
                 "as_variant": {
                   "description": "Parse the entire value as a single Variant column.",
-                  "$ref": "#/$defs/bool"
+                  "$ref": "#/$defs/bool",
+                  "x-since-version": "v1.1.0"
                 },
                 "schema": {
                   "description": "Inline schema string for JSON parsing (Spark DDL format).",
-                  "$ref": "#/$defs/string"
+                  "$ref": "#/$defs/string",
+                  "x-since-version": "v1.1.0"
                 },
                 "schema_evolution_mode": {
                   "description": "(Optional) Schema evolution mode for schema inference.",
-                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.FileIngestionOptionsSchemaEvolutionMode"
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.FileIngestionOptionsSchemaEvolutionMode",
+                  "x-since-version": "v1.1.0"
                 },
                 "schema_file_path": {
                   "description": "Path to a schema file (.ddl).",
-                  "$ref": "#/$defs/string"
+                  "$ref": "#/$defs/string",
+                  "x-since-version": "v1.1.0"
                 },
                 "schema_hints": {
                   "description": "(Optional) Schema hints as a comma-separated string of \"column_name type\" pairs.",
-                  "$ref": "#/$defs/string"
+                  "$ref": "#/$defs/string",
+                  "x-since-version": "v1.1.0"
                 }
               },
               "additionalProperties": false
@@ -7687,33 +7725,40 @@
                   "description": "Undocumented backdoor mechanism for overriding parameters\nto pass to the Kafka client.\nThis is not supported and may break at any time.",
                   "$ref": "#/$defs/map/string",
                   "x-databricks-preview": "PRIVATE",
-                  "doNotSuggest": true
+                  "doNotSuggest": true,
+                  "x-since-version": "v1.1.0"
                 },
                 "key_transformer": {
                   "description": "(Optional) Transformer for the message key.\nIf not specified, the key is left as raw bytes.",
-                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.Transformer"
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.Transformer",
+                  "x-since-version": "v1.1.0"
                 },
                 "max_offsets_per_trigger": {
                   "description": "Internal option to control the maximum number of offsets to process per trigger.",
                   "$ref": "#/$defs/int64",
                   "x-databricks-preview": "PRIVATE",
-                  "doNotSuggest": true
+                  "doNotSuggest": true,
+                  "x-since-version": "v1.1.0"
                 },
                 "starting_offset": {
                   "description": "(Optional) Where to begin reading when no checkpoint exists.\nValid values: \"latest\" and \"earliest\". Defaults to \"latest\".",
-                  "$ref": "#/$defs/string"
+                  "$ref": "#/$defs/string",
+                  "x-since-version": "v1.1.0"
                 },
                 "topic_pattern": {
                   "description": "Java regex pattern to subscribe to matching topics.\nOnly one of topics or topic_pattern must be specified.",
-                  "$ref": "#/$defs/string"
+                  "$ref": "#/$defs/string",
+                  "x-since-version": "v1.1.0"
                 },
                 "topics": {
                   "description": "Topics to subscribe to.\nOnly one of topics or topic_pattern must be specified.",
-                  "$ref": "#/$defs/slice/string"
+                  "$ref": "#/$defs/slice/string",
+                  "x-since-version": "v1.1.0"
                 },
                 "value_transformer": {
                   "description": "(Optional) Transformer for the message value.\nIf not specified, the value is left as raw bytes.",
-                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.Transformer"
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.Transformer",
+                  "x-since-version": "v1.1.0"
                 }
               },
               "additionalProperties": false
@@ -8565,10 +8610,12 @@
               "properties": {
                 "format": {
                   "description": "Required: the wire format of the data.",
-                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.TransformerFormat"
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.TransformerFormat",
+                  "x-since-version": "v1.1.0"
                 },
                 "json_options": {
-                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.JsonTransformerOptions"
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.JsonTransformerOptions",
+                  "x-since-version": "v1.1.0"
                 }
               },
               "additionalProperties": false
@@ -9949,23 +9996,33 @@
             "vectorsearch.DeltaSyncVectorIndexSpecRequest": {
               "type": "object",
               "properties": {
+                "columns_to_index": {
+                  "$ref": "#/$defs/slice/string",
+                  "x-since-version": "v1.1.0"
+                },
                 "columns_to_sync": {
-                  "$ref": "#/$defs/slice/string"
+                  "$ref": "#/$defs/slice/string",
+                  "x-since-version": "v1.1.0"
                 },
                 "embedding_source_columns": {
-                  "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/vectorsearch.EmbeddingSourceColumn"
+                  "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/vectorsearch.EmbeddingSourceColumn",
+                  "x-since-version": "v1.1.0"
                 },
                 "embedding_vector_columns": {
-                  "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/vectorsearch.EmbeddingVectorColumn"
+                  "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/vectorsearch.EmbeddingVectorColumn",
+                  "x-since-version": "v1.1.0"
                 },
                 "embedding_writeback_table": {
-                  "$ref": "#/$defs/string"
+                  "$ref": "#/$defs/string",
+                  "x-since-version": "v1.1.0"
                 },
                 "pipeline_type": {
-                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/vectorsearch.PipelineType"
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/vectorsearch.PipelineType",
+                  "x-since-version": "v1.1.0"
                 },
                 "source_table": {
-                  "$ref": "#/$defs/string"
+                  "$ref": "#/$defs/string",
+                  "x-since-version": "v1.1.0"
                 }
               },
               "additionalProperties": false
@@ -9974,13 +10031,16 @@
               "type": "object",
               "properties": {
                 "embedding_source_columns": {
-                  "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/vectorsearch.EmbeddingSourceColumn"
+                  "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/vectorsearch.EmbeddingSourceColumn",
+                  "x-since-version": "v1.1.0"
                 },
                 "embedding_vector_columns": {
-                  "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/vectorsearch.EmbeddingVectorColumn"
+                  "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/vectorsearch.EmbeddingVectorColumn",
+                  "x-since-version": "v1.1.0"
                 },
                 "schema_json": {
-                  "$ref": "#/$defs/string"
+                  "$ref": "#/$defs/string",
+                  "x-since-version": "v1.1.0"
                 }
               },
               "additionalProperties": false
@@ -9989,13 +10049,16 @@
               "type": "object",
               "properties": {
                 "embedding_model_endpoint_name": {
-                  "$ref": "#/$defs/string"
+                  "$ref": "#/$defs/string",
+                  "x-since-version": "v1.1.0"
                 },
                 "model_endpoint_name_for_query": {
-                  "$ref": "#/$defs/string"
+                  "$ref": "#/$defs/string",
+                  "x-since-version": "v1.1.0"
                 },
                 "name": {
-                  "$ref": "#/$defs/string"
+                  "$ref": "#/$defs/string",
+                  "x-since-version": "v1.1.0"
                 }
               },
               "additionalProperties": false
@@ -10004,10 +10067,12 @@
               "type": "object",
               "properties": {
                 "embedding_dimension": {
-                  "$ref": "#/$defs/int"
+                  "$ref": "#/$defs/int",
+                  "x-since-version": "v1.1.0"
                 },
                 "name": {
-                  "$ref": "#/$defs/string"
+                  "$ref": "#/$defs/string",
+                  "x-since-version": "v1.1.0"
                 }
               },
               "additionalProperties": false
@@ -10020,6 +10085,9 @@
                 "STANDARD",
                 "STANDARD_ON_ORION"
               ]
+            },
+            "vectorsearch.IndexSubtype": {
+              "type": "string"
             },
             "vectorsearch.PipelineType": {
               "type": "string"

@@ -302,10 +302,13 @@ func newCreateMaterializedFeature() *cobra.Command {
 	cmd.Flags().Var(&createMaterializedFeatureJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createMaterializedFeatureReq.MaterializedFeature.CronSchedule, "cron-schedule", createMaterializedFeatureReq.MaterializedFeature.CronSchedule, `The quartz cron expression that defines the schedule of the materialization pipeline.`)
-	cmd.Flags().StringVar(&createMaterializedFeatureReq.MaterializedFeature.MaterializedFeatureId, "materialized-feature-id", createMaterializedFeatureReq.MaterializedFeature.MaterializedFeatureId, `Unique identifier for the materialized feature.`)
+	// TODO: complex arg: cron_schedule_trigger
+	cmd.Flags().StringVar(&createMaterializedFeatureReq.MaterializedFeature.MaterializedFeatureId, "materialized-feature-id", createMaterializedFeatureReq.MaterializedFeature.MaterializedFeatureId, `Server-assigned unique identifier for the materialized feature.`)
 	// TODO: complex arg: offline_store_config
 	// TODO: complex arg: online_store_config
 	cmd.Flags().Var(&createMaterializedFeatureReq.MaterializedFeature.PipelineScheduleState, "pipeline-schedule-state", `The schedule state of the materialization pipeline. Supported values: [ACTIVE, PAUSED, SNAPSHOT]`)
+	// TODO: complex arg: streaming_mode
+	// TODO: complex arg: table_trigger
 
 	cmd.Use = "create-materialized-feature FEATURE_NAME"
 	cmd.Short = `Create a materialized feature.`
@@ -1185,10 +1188,13 @@ func newUpdateMaterializedFeature() *cobra.Command {
 	cmd.Flags().Var(&updateMaterializedFeatureJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateMaterializedFeatureReq.MaterializedFeature.CronSchedule, "cron-schedule", updateMaterializedFeatureReq.MaterializedFeature.CronSchedule, `The quartz cron expression that defines the schedule of the materialization pipeline.`)
-	cmd.Flags().StringVar(&updateMaterializedFeatureReq.MaterializedFeature.MaterializedFeatureId, "materialized-feature-id", updateMaterializedFeatureReq.MaterializedFeature.MaterializedFeatureId, `Unique identifier for the materialized feature.`)
+	// TODO: complex arg: cron_schedule_trigger
+	cmd.Flags().StringVar(&updateMaterializedFeatureReq.MaterializedFeature.MaterializedFeatureId, "materialized-feature-id", updateMaterializedFeatureReq.MaterializedFeature.MaterializedFeatureId, `Server-assigned unique identifier for the materialized feature.`)
 	// TODO: complex arg: offline_store_config
 	// TODO: complex arg: online_store_config
 	cmd.Flags().Var(&updateMaterializedFeatureReq.MaterializedFeature.PipelineScheduleState, "pipeline-schedule-state", `The schedule state of the materialization pipeline. Supported values: [ACTIVE, PAUSED, SNAPSHOT]`)
+	// TODO: complex arg: streaming_mode
+	// TODO: complex arg: table_trigger
 
 	cmd.Use = "update-materialized-feature MATERIALIZED_FEATURE_ID UPDATE_MASK FEATURE_NAME"
 	cmd.Short = `Update a materialized feature.`
@@ -1197,7 +1203,7 @@ func newUpdateMaterializedFeature() *cobra.Command {
   Update a materialized feature (pause/resume).
 
   Arguments:
-    MATERIALIZED_FEATURE_ID: Unique identifier for the materialized feature.
+    MATERIALIZED_FEATURE_ID: Server-assigned unique identifier for the materialized feature.
     UPDATE_MASK: Provide the materialization feature fields which should be updated.
       Currently, only the pipeline_state field can be updated.
     FEATURE_NAME: The full name of the feature in Unity Catalog.`
