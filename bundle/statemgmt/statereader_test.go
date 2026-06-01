@@ -44,21 +44,21 @@ func writeLocalState(t *testing.T, lineage string, state map[string]dstate.Resou
 }
 
 // TestNewStateReaderSelection covers which reader is chosen. The DMS branch
-// (managed state on + an existing lineage) needs a workspace client, so it is
-// exercised directly through NewDMSStateReader in TestDMSStateReader.
+// (record deployment history on + an existing lineage) needs a workspace client,
+// so it is exercised directly through NewDMSStateReader in TestDMSStateReader.
 func TestNewStateReaderSelection(t *testing.T) {
 	tests := []struct {
-		name    string
-		managed bool
-		lineage string
+		name          string
+		recordHistory bool
+		lineage       string
 	}{
-		{"managed state disabled uses the local file even with a deployment", false, "existing-lineage"},
-		{"new deployment: managed state on but no lineage yet uses the local file", true, ""},
+		{"record deployment history disabled uses the local file even with a deployment", false, "existing-lineage"},
+		{"new deployment: record deployment history on but no lineage yet uses the local file", true, ""},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			b := &bundle.Bundle{}
-			b.Config.Experimental = &config.Experimental{RecordDeploymentHistory: tc.managed}
+			b.Config.Experimental = &config.Experimental{RecordDeploymentHistory: tc.recordHistory}
 
 			reader, err := NewStateReader(t.Context(), b, writeLocalState(t, tc.lineage, nil))
 			require.NoError(t, err)

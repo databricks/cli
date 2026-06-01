@@ -17,8 +17,8 @@ import (
 // StateReader populates the deployment resource-state DB used by the direct
 // engine's plan/apply path. It abstracts where the state comes from: the local
 // resources.json file (the historical source) or the deployment metadata
-// service (DMS), which owns the state server-side when the bundle is opted into
-// managed state.
+// service (DMS), which owns the state server-side when the bundle opts into
+// recording deployment history.
 //
 // Both implementations leave the DB open in read mode. The plan path may later
 // upgrade it to write mode; see dstate.DeploymentState.UpgradeToWrite.
