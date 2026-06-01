@@ -1,0 +1,8 @@
+title "create the cluster (running via lifecycle.started)"
+trace $CLI bundle deploy
+trace print_requests.py //api/2.0/bundle
+
+title "resize: changing num_workers on a running cluster records OPERATION_ACTION_TYPE_RESIZE"
+trace update_file.py databricks.yml "num_workers: 1" "num_workers: 2"
+trace $CLI bundle deploy
+trace print_requests.py //api/2.0/bundle
