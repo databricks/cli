@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"reflect"
+	"strings"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go"
@@ -119,6 +121,29 @@ func (r *Resources) AllResources() []ResourceGroup {
 		collectResourceMap(descriptions["postgres_synced_tables"], r.PostgresSyncedTables),
 		collectResourceMap(descriptions["vector_search_endpoints"], r.VectorSearchEndpoints),
 		collectResourceMap(descriptions["vector_search_indexes"], r.VectorSearchIndexes),
+	}
+}
+
+// FilterResources removes all resources whose "typePlural.name" key is not in keep.
+// It uses reflection to handle all resource types without manual enumeration.
+func (r *Resources) FilterResources(keep map[string]struct{}) {
+	rv := reflect.ValueOf(r).Elem()
+	rt := rv.Type()
+	for i := range rt.NumField() {
+		field := rt.Field(i)
+		typeName, _, _ := strings.Cut(field.Tag.Get("json"), ",")
+		if typeName == "" || typeName == "-" {
+			continue
+		}
+		fv := rv.Field(i)
+		if fv.Kind() != reflect.Map || fv.IsNil() {
+			continue
+		}
+		for _, k := range fv.MapKeys() {
+			if _, ok := keep[typeName+"."+k.String()]; !ok {
+				fv.SetMapIndex(k, reflect.Value{})
+			}
+		}
 	}
 }
 

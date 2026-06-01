@@ -142,6 +142,11 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// After PythonMutator, mutators must not change bundle resources, or such changes are not
 		// going to be visible in Python code.
 
+		// Filter resources to only those selected via --select, if any.
+		// Runs after all resource mutations so that dynamically added resources are visible,
+		// and before validation so that only selected resources are validated.
+		mutator.SelectResources(),
+
 		// Validate all required fields are set. This is run after variable interpolation and PyDABs mutators
 		// since they can also set and modify resources.
 		validate.Required(),

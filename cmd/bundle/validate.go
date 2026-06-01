@@ -46,14 +46,19 @@ Please run this command before deploying to ensure configuration quality.`,
 
 	var includeLocations bool
 	var strict bool
+	var selectResources []string
 	cmd.Flags().BoolVar(&includeLocations, "include-locations", false, "Include location information in the output")
 	cmd.Flags().MarkHidden("include-locations")
 	cmd.Flags().BoolVar(&strict, "strict", false, "Treat warnings as errors")
+	cmd.Flags().StringArrayVar(&selectResources, "select", nil, "Validate only the specified resource (e.g. 'my_job' or 'jobs.my_job'). Can be repeated.")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		b, err := utils.ProcessBundle(cmd, utils.ProcessOptions{
 			Validate:         true,
 			IncludeLocations: includeLocations,
+			InitFunc: func(b *bundle.Bundle) {
+				b.Select = selectResources
+			},
 		})
 		ctx := cmd.Context()
 

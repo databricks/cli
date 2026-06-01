@@ -1,0 +1,11 @@
+# Non-existent resource
+trace $CLI bundle plan --select no_such_resource || true
+
+# Qualified name for non-existent resource
+trace $CLI bundle plan --select jobs.no_such_job || true
+
+# Select a unique resource by unqualified name
+trace $CLI bundle plan --select job_b
+
+# Select a resource by qualified name
+trace $CLI bundle plan --select jobs.job_a
