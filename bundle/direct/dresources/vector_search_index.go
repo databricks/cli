@@ -138,9 +138,7 @@ func (r *ResourceVectorSearchIndex) DoCreate(ctx context.Context, engine *Engine
 
 	// Save state immediately after the index is created (endpoint UUID now set) so it
 	// is not orphaned if the subsequent provisioning wait is interrupted.
-	if err := engine.SaveState(config.Name, config); err != nil {
-		return "", nil, err
-	}
+	engine.SaveState(ctx, config.Name, config)
 
 	remote, err := r.waitForIndexReady(ctx, config.Name, endpointUuid)
 	if err != nil {
