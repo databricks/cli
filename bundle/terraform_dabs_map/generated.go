@@ -253,8 +253,8 @@ var TerraformOnlyFields = map[string]FieldSet{
 	"alerts": {
 		"evaluation": {
 			"notification": {
-				"effective_notify_on_ok":      {}, // alerts.*.evaluation.notification.effective_notify_on_ok
-				"effective_retrigger_seconds": {}, // alerts.*.evaluation.notification.effective_retrigger_seconds
+				"effective_notify_on_ok":      {}, // databricks_alert_v2.*.evaluation.notification.effective_notify_on_ok
+				"effective_retrigger_seconds": {}, // databricks_alert_v2.*.evaluation.notification.effective_retrigger_seconds
 			},
 		},
 		"purge_on_delete": {},
@@ -264,33 +264,33 @@ var TerraformOnlyFields = map[string]FieldSet{
 	},
 	"clusters": {
 		"cluster_mount_info": {
-			"local_mount_dir_path": {}, // clusters.*.cluster_mount_info.local_mount_dir_path
+			"local_mount_dir_path": {}, // databricks_cluster.*.cluster_mount_info.local_mount_dir_path
 			"network_filesystem_info": {
-				"mount_options":  {}, // clusters.*.cluster_mount_info.network_filesystem_info.mount_options
-				"server_address": {}, // clusters.*.cluster_mount_info.network_filesystem_info.server_address
+				"mount_options":  {}, // databricks_cluster.*.cluster_mount_info.network_filesystem_info.mount_options
+				"server_address": {}, // databricks_cluster.*.cluster_mount_info.network_filesystem_info.server_address
 			},
-			"remote_mount_dir_path": {}, // clusters.*.cluster_mount_info.remote_mount_dir_path
+			"remote_mount_dir_path": {}, // databricks_cluster.*.cluster_mount_info.remote_mount_dir_path
 		},
 		"idempotency_token": {},
 		"is_pinned":         {},
 		"library": {
 			"cran": {
-				"package": {}, // clusters.*.library.cran.package
-				"repo":    {}, // clusters.*.library.cran.repo
+				"package": {}, // databricks_cluster.*.library.cran.package
+				"repo":    {}, // databricks_cluster.*.library.cran.repo
 			},
-			"egg": {}, // clusters.*.library.egg
-			"jar": {}, // clusters.*.library.jar
+			"egg": {}, // databricks_cluster.*.library.egg
+			"jar": {}, // databricks_cluster.*.library.jar
 			"maven": {
-				"coordinates": {}, // clusters.*.library.maven.coordinates
-				"exclusions":  {}, // clusters.*.library.maven.exclusions
-				"repo":        {}, // clusters.*.library.maven.repo
+				"coordinates": {}, // databricks_cluster.*.library.maven.coordinates
+				"exclusions":  {}, // databricks_cluster.*.library.maven.exclusions
+				"repo":        {}, // databricks_cluster.*.library.maven.repo
 			},
 			"pypi": {
-				"package": {}, // clusters.*.library.pypi.package
-				"repo":    {}, // clusters.*.library.pypi.repo
+				"package": {}, // databricks_cluster.*.library.pypi.package
+				"repo":    {}, // databricks_cluster.*.library.pypi.repo
 			},
-			"requirements": {}, // clusters.*.library.requirements
-			"whl":          {}, // clusters.*.library.whl
+			"requirements": {}, // databricks_cluster.*.library.requirements
+			"whl":          {}, // databricks_cluster.*.library.whl
 		},
 		"no_wait": {},
 		"url":     {},
@@ -309,336 +309,336 @@ var TerraformOnlyFields = map[string]FieldSet{
 		"always_running":    {},
 		"control_run_state": {},
 		"dbt_task": {
-			"catalog":            {}, // jobs.*.dbt_task.catalog
-			"commands":           {}, // jobs.*.dbt_task.commands
-			"profiles_directory": {}, // jobs.*.dbt_task.profiles_directory
-			"project_directory":  {}, // jobs.*.dbt_task.project_directory
-			"schema":             {}, // jobs.*.dbt_task.schema
-			"source":             {}, // jobs.*.dbt_task.source
-			"warehouse_id":       {}, // jobs.*.dbt_task.warehouse_id
+			"catalog":            {}, // databricks_job.*.dbt_task.catalog
+			"commands":           {}, // databricks_job.*.dbt_task.commands
+			"profiles_directory": {}, // databricks_job.*.dbt_task.profiles_directory
+			"project_directory":  {}, // databricks_job.*.dbt_task.project_directory
+			"schema":             {}, // databricks_job.*.dbt_task.schema
+			"source":             {}, // databricks_job.*.dbt_task.source
+			"warehouse_id":       {}, // databricks_job.*.dbt_task.warehouse_id
 		},
 		"existing_cluster_id": {},
 		"job_cluster": {
 			"new_cluster": {
-				"__apply_policy_default_values_allow_list": {}, // jobs.*.job_cluster.new_cluster.__apply_policy_default_values_allow_list
-				"cluster_id": {}, // jobs.*.job_cluster.new_cluster.cluster_id
+				"__apply_policy_default_values_allow_list": {}, // databricks_job.*.job_cluster.new_cluster.__apply_policy_default_values_allow_list
+				"cluster_id": {}, // databricks_job.*.job_cluster.new_cluster.cluster_id
 				"cluster_mount_info": {
-					"local_mount_dir_path": {}, // jobs.*.job_cluster.new_cluster.cluster_mount_info.local_mount_dir_path
+					"local_mount_dir_path": {}, // databricks_job.*.job_cluster.new_cluster.cluster_mount_info.local_mount_dir_path
 					"network_filesystem_info": {
-						"mount_options":  {}, // jobs.*.job_cluster.new_cluster.cluster_mount_info.network_filesystem_info.mount_options
-						"server_address": {}, // jobs.*.job_cluster.new_cluster.cluster_mount_info.network_filesystem_info.server_address
+						"mount_options":  {}, // databricks_job.*.job_cluster.new_cluster.cluster_mount_info.network_filesystem_info.mount_options
+						"server_address": {}, // databricks_job.*.job_cluster.new_cluster.cluster_mount_info.network_filesystem_info.server_address
 					},
-					"remote_mount_dir_path": {}, // jobs.*.job_cluster.new_cluster.cluster_mount_info.remote_mount_dir_path
+					"remote_mount_dir_path": {}, // databricks_job.*.job_cluster.new_cluster.cluster_mount_info.remote_mount_dir_path
 				},
-				"idempotency_token": {}, // jobs.*.job_cluster.new_cluster.idempotency_token
+				"idempotency_token": {}, // databricks_job.*.job_cluster.new_cluster.idempotency_token
 				"library": {
 					"cran": {
-						"package": {}, // jobs.*.job_cluster.new_cluster.library.cran.package
-						"repo":    {}, // jobs.*.job_cluster.new_cluster.library.cran.repo
+						"package": {}, // databricks_job.*.job_cluster.new_cluster.library.cran.package
+						"repo":    {}, // databricks_job.*.job_cluster.new_cluster.library.cran.repo
 					},
-					"egg": {}, // jobs.*.job_cluster.new_cluster.library.egg
-					"jar": {}, // jobs.*.job_cluster.new_cluster.library.jar
+					"egg": {}, // databricks_job.*.job_cluster.new_cluster.library.egg
+					"jar": {}, // databricks_job.*.job_cluster.new_cluster.library.jar
 					"maven": {
-						"coordinates": {}, // jobs.*.job_cluster.new_cluster.library.maven.coordinates
-						"exclusions":  {}, // jobs.*.job_cluster.new_cluster.library.maven.exclusions
-						"repo":        {}, // jobs.*.job_cluster.new_cluster.library.maven.repo
+						"coordinates": {}, // databricks_job.*.job_cluster.new_cluster.library.maven.coordinates
+						"exclusions":  {}, // databricks_job.*.job_cluster.new_cluster.library.maven.exclusions
+						"repo":        {}, // databricks_job.*.job_cluster.new_cluster.library.maven.repo
 					},
 					"pypi": {
-						"package": {}, // jobs.*.job_cluster.new_cluster.library.pypi.package
-						"repo":    {}, // jobs.*.job_cluster.new_cluster.library.pypi.repo
+						"package": {}, // databricks_job.*.job_cluster.new_cluster.library.pypi.package
+						"repo":    {}, // databricks_job.*.job_cluster.new_cluster.library.pypi.repo
 					},
-					"requirements": {}, // jobs.*.job_cluster.new_cluster.library.requirements
-					"whl":          {}, // jobs.*.job_cluster.new_cluster.library.whl
+					"requirements": {}, // databricks_job.*.job_cluster.new_cluster.library.requirements
+					"whl":          {}, // databricks_job.*.job_cluster.new_cluster.library.whl
 				},
 			},
 		},
 		"library": {
 			"cran": {
-				"package": {}, // jobs.*.library.cran.package
-				"repo":    {}, // jobs.*.library.cran.repo
+				"package": {}, // databricks_job.*.library.cran.package
+				"repo":    {}, // databricks_job.*.library.cran.repo
 			},
-			"egg": {}, // jobs.*.library.egg
-			"jar": {}, // jobs.*.library.jar
+			"egg": {}, // databricks_job.*.library.egg
+			"jar": {}, // databricks_job.*.library.jar
 			"maven": {
-				"coordinates": {}, // jobs.*.library.maven.coordinates
-				"exclusions":  {}, // jobs.*.library.maven.exclusions
-				"repo":        {}, // jobs.*.library.maven.repo
+				"coordinates": {}, // databricks_job.*.library.maven.coordinates
+				"exclusions":  {}, // databricks_job.*.library.maven.exclusions
+				"repo":        {}, // databricks_job.*.library.maven.repo
 			},
 			"pypi": {
-				"package": {}, // jobs.*.library.pypi.package
-				"repo":    {}, // jobs.*.library.pypi.repo
+				"package": {}, // databricks_job.*.library.pypi.package
+				"repo":    {}, // databricks_job.*.library.pypi.repo
 			},
-			"requirements": {}, // jobs.*.library.requirements
-			"whl":          {}, // jobs.*.library.whl
+			"requirements": {}, // databricks_job.*.library.requirements
+			"whl":          {}, // databricks_job.*.library.whl
 		},
 		"max_retries":               {},
 		"min_retry_interval_millis": {},
 		"new_cluster": {
-			"apply_policy_default_values": {}, // jobs.*.new_cluster.apply_policy_default_values
+			"apply_policy_default_values": {}, // databricks_job.*.new_cluster.apply_policy_default_values
 			"autoscale": {
-				"max_workers": {}, // jobs.*.new_cluster.autoscale.max_workers
-				"min_workers": {}, // jobs.*.new_cluster.autoscale.min_workers
+				"max_workers": {}, // databricks_job.*.new_cluster.autoscale.max_workers
+				"min_workers": {}, // databricks_job.*.new_cluster.autoscale.min_workers
 			},
 			"aws_attributes": {
-				"availability":           {}, // jobs.*.new_cluster.aws_attributes.availability
-				"ebs_volume_count":       {}, // jobs.*.new_cluster.aws_attributes.ebs_volume_count
-				"ebs_volume_iops":        {}, // jobs.*.new_cluster.aws_attributes.ebs_volume_iops
-				"ebs_volume_size":        {}, // jobs.*.new_cluster.aws_attributes.ebs_volume_size
-				"ebs_volume_throughput":  {}, // jobs.*.new_cluster.aws_attributes.ebs_volume_throughput
-				"ebs_volume_type":        {}, // jobs.*.new_cluster.aws_attributes.ebs_volume_type
-				"first_on_demand":        {}, // jobs.*.new_cluster.aws_attributes.first_on_demand
-				"instance_profile_arn":   {}, // jobs.*.new_cluster.aws_attributes.instance_profile_arn
-				"spot_bid_price_percent": {}, // jobs.*.new_cluster.aws_attributes.spot_bid_price_percent
-				"zone_id":                {}, // jobs.*.new_cluster.aws_attributes.zone_id
+				"availability":           {}, // databricks_job.*.new_cluster.aws_attributes.availability
+				"ebs_volume_count":       {}, // databricks_job.*.new_cluster.aws_attributes.ebs_volume_count
+				"ebs_volume_iops":        {}, // databricks_job.*.new_cluster.aws_attributes.ebs_volume_iops
+				"ebs_volume_size":        {}, // databricks_job.*.new_cluster.aws_attributes.ebs_volume_size
+				"ebs_volume_throughput":  {}, // databricks_job.*.new_cluster.aws_attributes.ebs_volume_throughput
+				"ebs_volume_type":        {}, // databricks_job.*.new_cluster.aws_attributes.ebs_volume_type
+				"first_on_demand":        {}, // databricks_job.*.new_cluster.aws_attributes.first_on_demand
+				"instance_profile_arn":   {}, // databricks_job.*.new_cluster.aws_attributes.instance_profile_arn
+				"spot_bid_price_percent": {}, // databricks_job.*.new_cluster.aws_attributes.spot_bid_price_percent
+				"zone_id":                {}, // databricks_job.*.new_cluster.aws_attributes.zone_id
 			},
 			"azure_attributes": {
-				"availability":    {}, // jobs.*.new_cluster.azure_attributes.availability
-				"first_on_demand": {}, // jobs.*.new_cluster.azure_attributes.first_on_demand
+				"availability":    {}, // databricks_job.*.new_cluster.azure_attributes.availability
+				"first_on_demand": {}, // databricks_job.*.new_cluster.azure_attributes.first_on_demand
 				"log_analytics_info": {
-					"log_analytics_primary_key":  {}, // jobs.*.new_cluster.azure_attributes.log_analytics_info.log_analytics_primary_key
-					"log_analytics_workspace_id": {}, // jobs.*.new_cluster.azure_attributes.log_analytics_info.log_analytics_workspace_id
+					"log_analytics_primary_key":  {}, // databricks_job.*.new_cluster.azure_attributes.log_analytics_info.log_analytics_primary_key
+					"log_analytics_workspace_id": {}, // databricks_job.*.new_cluster.azure_attributes.log_analytics_info.log_analytics_workspace_id
 				},
-				"spot_bid_max_price": {}, // jobs.*.new_cluster.azure_attributes.spot_bid_max_price
+				"spot_bid_max_price": {}, // databricks_job.*.new_cluster.azure_attributes.spot_bid_max_price
 			},
-			"cluster_id": {}, // jobs.*.new_cluster.cluster_id
+			"cluster_id": {}, // databricks_job.*.new_cluster.cluster_id
 			"cluster_log_conf": {
 				"dbfs": {
-					"destination": {}, // jobs.*.new_cluster.cluster_log_conf.dbfs.destination
+					"destination": {}, // databricks_job.*.new_cluster.cluster_log_conf.dbfs.destination
 				},
 				"s3": {
-					"canned_acl":        {}, // jobs.*.new_cluster.cluster_log_conf.s3.canned_acl
-					"destination":       {}, // jobs.*.new_cluster.cluster_log_conf.s3.destination
-					"enable_encryption": {}, // jobs.*.new_cluster.cluster_log_conf.s3.enable_encryption
-					"encryption_type":   {}, // jobs.*.new_cluster.cluster_log_conf.s3.encryption_type
-					"endpoint":          {}, // jobs.*.new_cluster.cluster_log_conf.s3.endpoint
-					"kms_key":           {}, // jobs.*.new_cluster.cluster_log_conf.s3.kms_key
-					"region":            {}, // jobs.*.new_cluster.cluster_log_conf.s3.region
+					"canned_acl":        {}, // databricks_job.*.new_cluster.cluster_log_conf.s3.canned_acl
+					"destination":       {}, // databricks_job.*.new_cluster.cluster_log_conf.s3.destination
+					"enable_encryption": {}, // databricks_job.*.new_cluster.cluster_log_conf.s3.enable_encryption
+					"encryption_type":   {}, // databricks_job.*.new_cluster.cluster_log_conf.s3.encryption_type
+					"endpoint":          {}, // databricks_job.*.new_cluster.cluster_log_conf.s3.endpoint
+					"kms_key":           {}, // databricks_job.*.new_cluster.cluster_log_conf.s3.kms_key
+					"region":            {}, // databricks_job.*.new_cluster.cluster_log_conf.s3.region
 				},
 				"volumes": {
-					"destination": {}, // jobs.*.new_cluster.cluster_log_conf.volumes.destination
+					"destination": {}, // databricks_job.*.new_cluster.cluster_log_conf.volumes.destination
 				},
 			},
 			"cluster_mount_info": {
-				"local_mount_dir_path": {}, // jobs.*.new_cluster.cluster_mount_info.local_mount_dir_path
+				"local_mount_dir_path": {}, // databricks_job.*.new_cluster.cluster_mount_info.local_mount_dir_path
 				"network_filesystem_info": {
-					"mount_options":  {}, // jobs.*.new_cluster.cluster_mount_info.network_filesystem_info.mount_options
-					"server_address": {}, // jobs.*.new_cluster.cluster_mount_info.network_filesystem_info.server_address
+					"mount_options":  {}, // databricks_job.*.new_cluster.cluster_mount_info.network_filesystem_info.mount_options
+					"server_address": {}, // databricks_job.*.new_cluster.cluster_mount_info.network_filesystem_info.server_address
 				},
-				"remote_mount_dir_path": {}, // jobs.*.new_cluster.cluster_mount_info.remote_mount_dir_path
+				"remote_mount_dir_path": {}, // databricks_job.*.new_cluster.cluster_mount_info.remote_mount_dir_path
 			},
-			"cluster_name": {}, // jobs.*.new_cluster.cluster_name
+			"cluster_name": {}, // databricks_job.*.new_cluster.cluster_name
 			"custom_tags": {
-				"*": {}, // jobs.*.new_cluster.custom_tags.*
+				"*": {}, // databricks_job.*.new_cluster.custom_tags.*
 			},
-			"data_security_mode": {}, // jobs.*.new_cluster.data_security_mode
+			"data_security_mode": {}, // databricks_job.*.new_cluster.data_security_mode
 			"docker_image": {
 				"basic_auth": {
-					"password": {}, // jobs.*.new_cluster.docker_image.basic_auth.password
-					"username": {}, // jobs.*.new_cluster.docker_image.basic_auth.username
+					"password": {}, // databricks_job.*.new_cluster.docker_image.basic_auth.password
+					"username": {}, // databricks_job.*.new_cluster.docker_image.basic_auth.username
 				},
-				"url": {}, // jobs.*.new_cluster.docker_image.url
+				"url": {}, // databricks_job.*.new_cluster.docker_image.url
 			},
-			"driver_instance_pool_id": {}, // jobs.*.new_cluster.driver_instance_pool_id
+			"driver_instance_pool_id": {}, // databricks_job.*.new_cluster.driver_instance_pool_id
 			"driver_node_type_flexibility": {
-				"alternate_node_type_ids": {}, // jobs.*.new_cluster.driver_node_type_flexibility.alternate_node_type_ids
+				"alternate_node_type_ids": {}, // databricks_job.*.new_cluster.driver_node_type_flexibility.alternate_node_type_ids
 			},
-			"driver_node_type_id":          {}, // jobs.*.new_cluster.driver_node_type_id
-			"enable_elastic_disk":          {}, // jobs.*.new_cluster.enable_elastic_disk
-			"enable_local_disk_encryption": {}, // jobs.*.new_cluster.enable_local_disk_encryption
+			"driver_node_type_id":          {}, // databricks_job.*.new_cluster.driver_node_type_id
+			"enable_elastic_disk":          {}, // databricks_job.*.new_cluster.enable_elastic_disk
+			"enable_local_disk_encryption": {}, // databricks_job.*.new_cluster.enable_local_disk_encryption
 			"gcp_attributes": {
-				"availability":              {}, // jobs.*.new_cluster.gcp_attributes.availability
-				"boot_disk_size":            {}, // jobs.*.new_cluster.gcp_attributes.boot_disk_size
-				"confidential_compute_type": {}, // jobs.*.new_cluster.gcp_attributes.confidential_compute_type
-				"first_on_demand":           {}, // jobs.*.new_cluster.gcp_attributes.first_on_demand
-				"google_service_account":    {}, // jobs.*.new_cluster.gcp_attributes.google_service_account
-				"local_ssd_count":           {}, // jobs.*.new_cluster.gcp_attributes.local_ssd_count
-				"use_preemptible_executors": {}, // jobs.*.new_cluster.gcp_attributes.use_preemptible_executors
-				"zone_id":                   {}, // jobs.*.new_cluster.gcp_attributes.zone_id
+				"availability":              {}, // databricks_job.*.new_cluster.gcp_attributes.availability
+				"boot_disk_size":            {}, // databricks_job.*.new_cluster.gcp_attributes.boot_disk_size
+				"confidential_compute_type": {}, // databricks_job.*.new_cluster.gcp_attributes.confidential_compute_type
+				"first_on_demand":           {}, // databricks_job.*.new_cluster.gcp_attributes.first_on_demand
+				"google_service_account":    {}, // databricks_job.*.new_cluster.gcp_attributes.google_service_account
+				"local_ssd_count":           {}, // databricks_job.*.new_cluster.gcp_attributes.local_ssd_count
+				"use_preemptible_executors": {}, // databricks_job.*.new_cluster.gcp_attributes.use_preemptible_executors
+				"zone_id":                   {}, // databricks_job.*.new_cluster.gcp_attributes.zone_id
 			},
-			"idempotency_token": {}, // jobs.*.new_cluster.idempotency_token
+			"idempotency_token": {}, // databricks_job.*.new_cluster.idempotency_token
 			"init_scripts": {
 				"abfss": {
-					"destination": {}, // jobs.*.new_cluster.init_scripts.abfss.destination
+					"destination": {}, // databricks_job.*.new_cluster.init_scripts.abfss.destination
 				},
 				"dbfs": {
-					"destination": {}, // jobs.*.new_cluster.init_scripts.dbfs.destination
+					"destination": {}, // databricks_job.*.new_cluster.init_scripts.dbfs.destination
 				},
 				"file": {
-					"destination": {}, // jobs.*.new_cluster.init_scripts.file.destination
+					"destination": {}, // databricks_job.*.new_cluster.init_scripts.file.destination
 				},
 				"gcs": {
-					"destination": {}, // jobs.*.new_cluster.init_scripts.gcs.destination
+					"destination": {}, // databricks_job.*.new_cluster.init_scripts.gcs.destination
 				},
 				"s3": {
-					"canned_acl":        {}, // jobs.*.new_cluster.init_scripts.s3.canned_acl
-					"destination":       {}, // jobs.*.new_cluster.init_scripts.s3.destination
-					"enable_encryption": {}, // jobs.*.new_cluster.init_scripts.s3.enable_encryption
-					"encryption_type":   {}, // jobs.*.new_cluster.init_scripts.s3.encryption_type
-					"endpoint":          {}, // jobs.*.new_cluster.init_scripts.s3.endpoint
-					"kms_key":           {}, // jobs.*.new_cluster.init_scripts.s3.kms_key
-					"region":            {}, // jobs.*.new_cluster.init_scripts.s3.region
+					"canned_acl":        {}, // databricks_job.*.new_cluster.init_scripts.s3.canned_acl
+					"destination":       {}, // databricks_job.*.new_cluster.init_scripts.s3.destination
+					"enable_encryption": {}, // databricks_job.*.new_cluster.init_scripts.s3.enable_encryption
+					"encryption_type":   {}, // databricks_job.*.new_cluster.init_scripts.s3.encryption_type
+					"endpoint":          {}, // databricks_job.*.new_cluster.init_scripts.s3.endpoint
+					"kms_key":           {}, // databricks_job.*.new_cluster.init_scripts.s3.kms_key
+					"region":            {}, // databricks_job.*.new_cluster.init_scripts.s3.region
 				},
 				"volumes": {
-					"destination": {}, // jobs.*.new_cluster.init_scripts.volumes.destination
+					"destination": {}, // databricks_job.*.new_cluster.init_scripts.volumes.destination
 				},
 				"workspace": {
-					"destination": {}, // jobs.*.new_cluster.init_scripts.workspace.destination
+					"destination": {}, // databricks_job.*.new_cluster.init_scripts.workspace.destination
 				},
 			},
-			"instance_pool_id": {}, // jobs.*.new_cluster.instance_pool_id
-			"is_single_node":   {}, // jobs.*.new_cluster.is_single_node
-			"kind":             {}, // jobs.*.new_cluster.kind
+			"instance_pool_id": {}, // databricks_job.*.new_cluster.instance_pool_id
+			"is_single_node":   {}, // databricks_job.*.new_cluster.is_single_node
+			"kind":             {}, // databricks_job.*.new_cluster.kind
 			"library": {
 				"cran": {
-					"package": {}, // jobs.*.new_cluster.library.cran.package
-					"repo":    {}, // jobs.*.new_cluster.library.cran.repo
+					"package": {}, // databricks_job.*.new_cluster.library.cran.package
+					"repo":    {}, // databricks_job.*.new_cluster.library.cran.repo
 				},
-				"egg": {}, // jobs.*.new_cluster.library.egg
-				"jar": {}, // jobs.*.new_cluster.library.jar
+				"egg": {}, // databricks_job.*.new_cluster.library.egg
+				"jar": {}, // databricks_job.*.new_cluster.library.jar
 				"maven": {
-					"coordinates": {}, // jobs.*.new_cluster.library.maven.coordinates
-					"exclusions":  {}, // jobs.*.new_cluster.library.maven.exclusions
-					"repo":        {}, // jobs.*.new_cluster.library.maven.repo
+					"coordinates": {}, // databricks_job.*.new_cluster.library.maven.coordinates
+					"exclusions":  {}, // databricks_job.*.new_cluster.library.maven.exclusions
+					"repo":        {}, // databricks_job.*.new_cluster.library.maven.repo
 				},
 				"pypi": {
-					"package": {}, // jobs.*.new_cluster.library.pypi.package
-					"repo":    {}, // jobs.*.new_cluster.library.pypi.repo
+					"package": {}, // databricks_job.*.new_cluster.library.pypi.package
+					"repo":    {}, // databricks_job.*.new_cluster.library.pypi.repo
 				},
-				"requirements": {}, // jobs.*.new_cluster.library.requirements
-				"whl":          {}, // jobs.*.new_cluster.library.whl
+				"requirements": {}, // databricks_job.*.new_cluster.library.requirements
+				"whl":          {}, // databricks_job.*.new_cluster.library.whl
 			},
-			"node_type_id":           {}, // jobs.*.new_cluster.node_type_id
-			"num_workers":            {}, // jobs.*.new_cluster.num_workers
-			"policy_id":              {}, // jobs.*.new_cluster.policy_id
-			"remote_disk_throughput": {}, // jobs.*.new_cluster.remote_disk_throughput
-			"runtime_engine":         {}, // jobs.*.new_cluster.runtime_engine
-			"single_user_name":       {}, // jobs.*.new_cluster.single_user_name
+			"node_type_id":           {}, // databricks_job.*.new_cluster.node_type_id
+			"num_workers":            {}, // databricks_job.*.new_cluster.num_workers
+			"policy_id":              {}, // databricks_job.*.new_cluster.policy_id
+			"remote_disk_throughput": {}, // databricks_job.*.new_cluster.remote_disk_throughput
+			"runtime_engine":         {}, // databricks_job.*.new_cluster.runtime_engine
+			"single_user_name":       {}, // databricks_job.*.new_cluster.single_user_name
 			"spark_conf": {
-				"*": {}, // jobs.*.new_cluster.spark_conf.*
+				"*": {}, // databricks_job.*.new_cluster.spark_conf.*
 			},
 			"spark_env_vars": {
-				"*": {}, // jobs.*.new_cluster.spark_env_vars.*
+				"*": {}, // databricks_job.*.new_cluster.spark_env_vars.*
 			},
-			"spark_version":                  {}, // jobs.*.new_cluster.spark_version
-			"ssh_public_keys":                {}, // jobs.*.new_cluster.ssh_public_keys
-			"total_initial_remote_disk_size": {}, // jobs.*.new_cluster.total_initial_remote_disk_size
-			"use_ml_runtime":                 {}, // jobs.*.new_cluster.use_ml_runtime
+			"spark_version":                  {}, // databricks_job.*.new_cluster.spark_version
+			"ssh_public_keys":                {}, // databricks_job.*.new_cluster.ssh_public_keys
+			"total_initial_remote_disk_size": {}, // databricks_job.*.new_cluster.total_initial_remote_disk_size
+			"use_ml_runtime":                 {}, // databricks_job.*.new_cluster.use_ml_runtime
 			"worker_node_type_flexibility": {
-				"alternate_node_type_ids": {}, // jobs.*.new_cluster.worker_node_type_flexibility.alternate_node_type_ids
+				"alternate_node_type_ids": {}, // databricks_job.*.new_cluster.worker_node_type_flexibility.alternate_node_type_ids
 			},
 			"workload_type": {
 				"clients": {
-					"jobs":      {}, // jobs.*.new_cluster.workload_type.clients.jobs
-					"notebooks": {}, // jobs.*.new_cluster.workload_type.clients.notebooks
+					"jobs":      {}, // databricks_job.*.new_cluster.workload_type.clients.jobs
+					"notebooks": {}, // databricks_job.*.new_cluster.workload_type.clients.notebooks
 				},
 			},
 		},
 		"notebook_task": {
 			"base_parameters": {
-				"*": {}, // jobs.*.notebook_task.base_parameters.*
+				"*": {}, // databricks_job.*.notebook_task.base_parameters.*
 			},
-			"notebook_path": {}, // jobs.*.notebook_task.notebook_path
-			"source":        {}, // jobs.*.notebook_task.source
-			"warehouse_id":  {}, // jobs.*.notebook_task.warehouse_id
+			"notebook_path": {}, // databricks_job.*.notebook_task.notebook_path
+			"source":        {}, // databricks_job.*.notebook_task.source
+			"warehouse_id":  {}, // databricks_job.*.notebook_task.warehouse_id
 		},
 		"pipeline_task": {
-			"full_refresh": {}, // jobs.*.pipeline_task.full_refresh
-			"pipeline_id":  {}, // jobs.*.pipeline_task.pipeline_id
+			"full_refresh": {}, // databricks_job.*.pipeline_task.full_refresh
+			"pipeline_id":  {}, // databricks_job.*.pipeline_task.pipeline_id
 		},
 		"python_wheel_task": {
-			"entry_point": {}, // jobs.*.python_wheel_task.entry_point
+			"entry_point": {}, // databricks_job.*.python_wheel_task.entry_point
 			"named_parameters": {
-				"*": {}, // jobs.*.python_wheel_task.named_parameters.*
+				"*": {}, // databricks_job.*.python_wheel_task.named_parameters.*
 			},
-			"package_name": {}, // jobs.*.python_wheel_task.package_name
-			"parameters":   {}, // jobs.*.python_wheel_task.parameters
+			"package_name": {}, // databricks_job.*.python_wheel_task.package_name
+			"parameters":   {}, // databricks_job.*.python_wheel_task.parameters
 		},
 		"retry_on_timeout": {},
 		"run_job_task": {
-			"job_id": {}, // jobs.*.run_job_task.job_id
+			"job_id": {}, // databricks_job.*.run_job_task.job_id
 			"job_parameters": {
-				"*": {}, // jobs.*.run_job_task.job_parameters.*
+				"*": {}, // databricks_job.*.run_job_task.job_parameters.*
 			},
 		},
 		"spark_jar_task": {
-			"jar_uri":         {}, // jobs.*.spark_jar_task.jar_uri
-			"main_class_name": {}, // jobs.*.spark_jar_task.main_class_name
-			"parameters":      {}, // jobs.*.spark_jar_task.parameters
+			"jar_uri":         {}, // databricks_job.*.spark_jar_task.jar_uri
+			"main_class_name": {}, // databricks_job.*.spark_jar_task.main_class_name
+			"parameters":      {}, // databricks_job.*.spark_jar_task.parameters
 		},
 		"spark_python_task": {
-			"parameters":  {}, // jobs.*.spark_python_task.parameters
-			"python_file": {}, // jobs.*.spark_python_task.python_file
-			"source":      {}, // jobs.*.spark_python_task.source
+			"parameters":  {}, // databricks_job.*.spark_python_task.parameters
+			"python_file": {}, // databricks_job.*.spark_python_task.python_file
+			"source":      {}, // databricks_job.*.spark_python_task.source
 		},
 		"spark_submit_task": {
-			"parameters": {}, // jobs.*.spark_submit_task.parameters
+			"parameters": {}, // databricks_job.*.spark_submit_task.parameters
 		},
 		"task": {
 			"for_each_task": {
 				"task": {
 					"new_cluster": {
-						"cluster_id": {}, // jobs.*.task.for_each_task.task.new_cluster.cluster_id
+						"cluster_id": {}, // databricks_job.*.task.for_each_task.task.new_cluster.cluster_id
 						"cluster_mount_info": {
-							"local_mount_dir_path": {}, // jobs.*.task.for_each_task.task.new_cluster.cluster_mount_info.local_mount_dir_path
+							"local_mount_dir_path": {}, // databricks_job.*.task.for_each_task.task.new_cluster.cluster_mount_info.local_mount_dir_path
 							"network_filesystem_info": {
-								"mount_options":  {}, // jobs.*.task.for_each_task.task.new_cluster.cluster_mount_info.network_filesystem_info.mount_options
-								"server_address": {}, // jobs.*.task.for_each_task.task.new_cluster.cluster_mount_info.network_filesystem_info.server_address
+								"mount_options":  {}, // databricks_job.*.task.for_each_task.task.new_cluster.cluster_mount_info.network_filesystem_info.mount_options
+								"server_address": {}, // databricks_job.*.task.for_each_task.task.new_cluster.cluster_mount_info.network_filesystem_info.server_address
 							},
-							"remote_mount_dir_path": {}, // jobs.*.task.for_each_task.task.new_cluster.cluster_mount_info.remote_mount_dir_path
+							"remote_mount_dir_path": {}, // databricks_job.*.task.for_each_task.task.new_cluster.cluster_mount_info.remote_mount_dir_path
 						},
-						"idempotency_token": {}, // jobs.*.task.for_each_task.task.new_cluster.idempotency_token
+						"idempotency_token": {}, // databricks_job.*.task.for_each_task.task.new_cluster.idempotency_token
 						"library": {
 							"cran": {
-								"package": {}, // jobs.*.task.for_each_task.task.new_cluster.library.cran.package
-								"repo":    {}, // jobs.*.task.for_each_task.task.new_cluster.library.cran.repo
+								"package": {}, // databricks_job.*.task.for_each_task.task.new_cluster.library.cran.package
+								"repo":    {}, // databricks_job.*.task.for_each_task.task.new_cluster.library.cran.repo
 							},
-							"egg": {}, // jobs.*.task.for_each_task.task.new_cluster.library.egg
-							"jar": {}, // jobs.*.task.for_each_task.task.new_cluster.library.jar
+							"egg": {}, // databricks_job.*.task.for_each_task.task.new_cluster.library.egg
+							"jar": {}, // databricks_job.*.task.for_each_task.task.new_cluster.library.jar
 							"maven": {
-								"coordinates": {}, // jobs.*.task.for_each_task.task.new_cluster.library.maven.coordinates
-								"exclusions":  {}, // jobs.*.task.for_each_task.task.new_cluster.library.maven.exclusions
-								"repo":        {}, // jobs.*.task.for_each_task.task.new_cluster.library.maven.repo
+								"coordinates": {}, // databricks_job.*.task.for_each_task.task.new_cluster.library.maven.coordinates
+								"exclusions":  {}, // databricks_job.*.task.for_each_task.task.new_cluster.library.maven.exclusions
+								"repo":        {}, // databricks_job.*.task.for_each_task.task.new_cluster.library.maven.repo
 							},
 							"pypi": {
-								"package": {}, // jobs.*.task.for_each_task.task.new_cluster.library.pypi.package
-								"repo":    {}, // jobs.*.task.for_each_task.task.new_cluster.library.pypi.repo
+								"package": {}, // databricks_job.*.task.for_each_task.task.new_cluster.library.pypi.package
+								"repo":    {}, // databricks_job.*.task.for_each_task.task.new_cluster.library.pypi.repo
 							},
-							"requirements": {}, // jobs.*.task.for_each_task.task.new_cluster.library.requirements
-							"whl":          {}, // jobs.*.task.for_each_task.task.new_cluster.library.whl
+							"requirements": {}, // databricks_job.*.task.for_each_task.task.new_cluster.library.requirements
+							"whl":          {}, // databricks_job.*.task.for_each_task.task.new_cluster.library.whl
 						},
 					},
 				},
 			},
 			"new_cluster": {
-				"__apply_policy_default_values_allow_list": {}, // jobs.*.task.new_cluster.__apply_policy_default_values_allow_list
-				"cluster_id": {}, // jobs.*.task.new_cluster.cluster_id
+				"__apply_policy_default_values_allow_list": {}, // databricks_job.*.task.new_cluster.__apply_policy_default_values_allow_list
+				"cluster_id": {}, // databricks_job.*.task.new_cluster.cluster_id
 				"cluster_mount_info": {
-					"local_mount_dir_path": {}, // jobs.*.task.new_cluster.cluster_mount_info.local_mount_dir_path
+					"local_mount_dir_path": {}, // databricks_job.*.task.new_cluster.cluster_mount_info.local_mount_dir_path
 					"network_filesystem_info": {
-						"mount_options":  {}, // jobs.*.task.new_cluster.cluster_mount_info.network_filesystem_info.mount_options
-						"server_address": {}, // jobs.*.task.new_cluster.cluster_mount_info.network_filesystem_info.server_address
+						"mount_options":  {}, // databricks_job.*.task.new_cluster.cluster_mount_info.network_filesystem_info.mount_options
+						"server_address": {}, // databricks_job.*.task.new_cluster.cluster_mount_info.network_filesystem_info.server_address
 					},
-					"remote_mount_dir_path": {}, // jobs.*.task.new_cluster.cluster_mount_info.remote_mount_dir_path
+					"remote_mount_dir_path": {}, // databricks_job.*.task.new_cluster.cluster_mount_info.remote_mount_dir_path
 				},
-				"idempotency_token": {}, // jobs.*.task.new_cluster.idempotency_token
+				"idempotency_token": {}, // databricks_job.*.task.new_cluster.idempotency_token
 				"library": {
 					"cran": {
-						"package": {}, // jobs.*.task.new_cluster.library.cran.package
-						"repo":    {}, // jobs.*.task.new_cluster.library.cran.repo
+						"package": {}, // databricks_job.*.task.new_cluster.library.cran.package
+						"repo":    {}, // databricks_job.*.task.new_cluster.library.cran.repo
 					},
-					"egg": {}, // jobs.*.task.new_cluster.library.egg
-					"jar": {}, // jobs.*.task.new_cluster.library.jar
+					"egg": {}, // databricks_job.*.task.new_cluster.library.egg
+					"jar": {}, // databricks_job.*.task.new_cluster.library.jar
 					"maven": {
-						"coordinates": {}, // jobs.*.task.new_cluster.library.maven.coordinates
-						"exclusions":  {}, // jobs.*.task.new_cluster.library.maven.exclusions
-						"repo":        {}, // jobs.*.task.new_cluster.library.maven.repo
+						"coordinates": {}, // databricks_job.*.task.new_cluster.library.maven.coordinates
+						"exclusions":  {}, // databricks_job.*.task.new_cluster.library.maven.exclusions
+						"repo":        {}, // databricks_job.*.task.new_cluster.library.maven.repo
 					},
 					"pypi": {
-						"package": {}, // jobs.*.task.new_cluster.library.pypi.package
-						"repo":    {}, // jobs.*.task.new_cluster.library.pypi.repo
+						"package": {}, // databricks_job.*.task.new_cluster.library.pypi.package
+						"repo":    {}, // databricks_job.*.task.new_cluster.library.pypi.repo
 					},
-					"requirements": {}, // jobs.*.task.new_cluster.library.requirements
-					"whl":          {}, // jobs.*.task.new_cluster.library.whl
+					"requirements": {}, // databricks_job.*.task.new_cluster.library.requirements
+					"whl":          {}, // databricks_job.*.task.new_cluster.library.whl
 				},
 			},
 		},

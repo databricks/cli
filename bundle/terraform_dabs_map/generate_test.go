@@ -433,7 +433,7 @@ func renderSource(results []groupResult) ([]byte, error) {
 			continue
 		}
 		w("\t%q: {\n", r.group)
-		writeFieldSet(w, buildFieldSet(r.tfOnly), 2, r.group)
+		writeFieldSet(w, buildFieldSet(r.tfOnly), 2, r.tfType)
 		w("\t},\n")
 	}
 	w("}\n\n")
