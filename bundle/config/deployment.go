@@ -7,6 +7,4 @@ type Deployment struct {
 
 	// Lock configures locking behavior on deployment.
 	Lock Lock `json:"lock,omitempty"`
-
-
 }
