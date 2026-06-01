@@ -300,12 +300,6 @@ Response.Body = '<response body here>'
 	return s
 }
 
-// GetWorkspace returns (creating if necessary) the FakeWorkspace for the given token.
-// Use this in tests to pre-seed state before making requests.
-func (s *Server) GetWorkspace(token string) *FakeWorkspace {
-	return s.getWorkspaceForToken(token)
-}
-
 func (s *Server) getWorkspaceForToken(token string) *FakeWorkspace {
 	if token == "" {
 		return nil
