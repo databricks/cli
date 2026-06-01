@@ -1,0 +1,25 @@
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+title "Deploy without the feature: no DMS calls are made"
+trace $CLI bundle deploy
+trace print_requests.py //api/2.0/bundle --keep
+trace print_requests.py //deploy.lock
+
+title "Enable experimental.record_deployment_history"
+cat >> databricks.yml <<'YAML'
+
+experimental:
+  record_deployment_history: true
+YAML
+
+title "Delete local cache (.databricks) so the next deploy cannot rely on it"
+rm -rf .databricks
+
+title "Next deploy creates a DMS deployment + version 1 (lineage recovered from remote state, not local cache)"
+trace $CLI bundle deploy
+trace print_requests.py //api/2.0/bundle --keep
+trace print_requests.py //deploy.lock

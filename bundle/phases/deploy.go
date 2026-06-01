@@ -136,10 +136,23 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		return
 	}
 
-	// lock is acquired here
+	// lock is acquired here. Record a DMS deployment version while the lock is
+	// held (no-op unless experimental.record_deployment_history is set).
+	recorder := lock.NewDeploymentVersionRecorder(b, lock.GoalDeploy)
 	defer func() {
+		status := lock.DeploymentSuccess
+		if logdiag.HasError(ctx) {
+			status = lock.DeploymentFailure
+		}
+		if err := recorder.CompleteVersion(ctx, status); err != nil {
+			logdiag.LogError(ctx, err)
+		}
 		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalDeploy))
 	}()
+	if err := recorder.CreateVersion(ctx); err != nil {
+		logdiag.LogError(ctx, err)
+		return
+	}
 
 	uploadLibraries(ctx, b, libs)
 	if logdiag.HasError(ctx) {
