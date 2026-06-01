@@ -20,7 +20,6 @@ import (
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/bundle/migrate"
-	"github.com/databricks/cli/cmd/bundle/deployment"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
@@ -43,8 +42,9 @@ without making API calls. Cross-resource references are resolved from TF state.`
 		Args: root.NoArgs,
 	}
 
-	var noPlanCheck bool
-	cmd.Flags().BoolVar(&noPlanCheck, "noplancheck", false, "Skip running bundle plan before migration.")
+	// --noplancheck is kept for compatibility but has no effect: this command reads
+	// only from the local TF state file and never invokes the Terraform engine.
+	cmd.Flags().Bool("noplancheck", false, "No-op (kept for compatibility).")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		// Clear engine env var: we read TF state and produce a direct state.
@@ -79,15 +79,6 @@ without making API calls. Cross-resource references are resolved from TF state.`
 		_, localTerraformPath := b.StateFilenameTerraform(ctx)
 		if _, err := os.Stat(localTerraformPath); err != nil {
 			return fmt.Errorf("reading %s: %w", localTerraformPath, err)
-		}
-
-		// Run plan check unless --noplancheck is set.
-		if !noPlanCheck {
-			cmdio.LogString(ctx, "Note: Migration should be done after a full deploy. Running plan now to verify:")
-			extraArgs, extraArgsStr := deployment.GetCommonArgs(cmd)
-			if err := deployment.RunPlanCheck(cmd, extraArgs, extraArgsStr); err != nil {
-				return err
-			}
 		}
 
 		// Parse TF state: IDs (for state entries) and full attributes (for ref resolution).
