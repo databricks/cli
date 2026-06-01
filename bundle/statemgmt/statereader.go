@@ -3,8 +3,13 @@ package statemgmt
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io/fs"
+	"os"
+	"path/filepath"
 
+	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/direct/dstate"
 	sdkbundle "github.com/databricks/databricks-sdk-go/service/bundle"
 )
@@ -96,4 +101,46 @@ func fetchDeploymentState(ctx context.Context, client sdkbundle.BundleInterface,
 		}
 	}
 	return data, nil
+}
+
+// NewStateReader selects the StateReader for the bundle: the DMS reader when
+// experimental.record_deployment_history is enabled and a prior deployment
+// exists, otherwise the local resources.json reader.
+//
+// The DMS deployment ID is the state lineage, which is recorded in the local
+// resources.json (see dstate.DeploymentState.GetOrInitLineage). When there is no
+// lineage yet — a first deploy that has not registered with DMS — there is
+// nothing to read from the service, so we read the (empty) local file instead.
+func NewStateReader(ctx context.Context, b *bundle.Bundle, path string) (StateReader, error) {
+	if b.Config.Experimental == nil || !b.Config.Experimental.RecordDeploymentHistory {
+		return NewFileStateReader(path), nil
+	}
+
+	lineage, err := readLineage(path)
+	if err != nil {
+		return nil, err
+	}
+	if lineage == "" {
+		return NewFileStateReader(path), nil
+	}
+
+	return NewDMSStateReader(b.WorkspaceClient(ctx).Bundle, lineage, path), nil
+}
+
+// readLineage reads the deployment lineage from the local resources.json state
+// file. It returns an empty string when the file does not exist yet.
+func readLineage(path string) (string, error) {
+	content, err := os.ReadFile(path)
+	if errors.Is(err, fs.ErrNotExist) {
+		return "", nil
+	}
+	if err != nil {
+		return "", err
+	}
+
+	var db dstate.Database
+	if err := json.Unmarshal(content, &db); err != nil {
+		return "", fmt.Errorf("parsing %s: %w", filepath.ToSlash(path), err)
+	}
+	return db.Lineage, nil
 }

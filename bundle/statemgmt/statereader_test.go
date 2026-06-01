@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/direct/dstate"
 	sdkbundle "github.com/databricks/databricks-sdk-go/service/bundle"
 	"github.com/stretchr/testify/assert"
@@ -129,4 +131,64 @@ func TestFileStateReaderMissingFileIsEmptyState(t *testing.T) {
 
 	_, ok := db.GetResourceEntry("resources.jobs.foo")
 	assert.False(t, ok)
+}
+
+func writeStateFile(t *testing.T, lineage string) string {
+	t.Helper()
+	path := filepath.Join(t.TempDir(), "resources.json")
+	content, err := json.Marshal(dstate.NewDatabase(lineage, 1))
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(path, content, 0o600))
+	return path
+}
+
+func TestReadLineage(t *testing.T) {
+	t.Run("present", func(t *testing.T) {
+		lineage, err := readLineage(writeStateFile(t, "lineage-9"))
+		require.NoError(t, err)
+		assert.Equal(t, "lineage-9", lineage)
+	})
+
+	t.Run("missing file", func(t *testing.T) {
+		lineage, err := readLineage(filepath.Join(t.TempDir(), "absent.json"))
+		require.NoError(t, err)
+		assert.Empty(t, lineage)
+	})
+
+	t.Run("corrupt file", func(t *testing.T) {
+		path := filepath.Join(t.TempDir(), "resources.json")
+		require.NoError(t, os.WriteFile(path, []byte("not json"), 0o600))
+		_, err := readLineage(path)
+		assert.Error(t, err)
+	})
+}
+
+func TestNewStateReaderSelectsFileReader(t *testing.T) {
+	// Flag disabled: always the file reader, regardless of any recorded lineage.
+	b := &bundle.Bundle{}
+	reader, err := NewStateReader(t.Context(), b, writeStateFile(t, "lineage-1"))
+	require.NoError(t, err)
+	assert.IsType(t, &fileStateReader{}, reader)
+}
+
+func TestNewStateReaderFallsBackToFileWhenNoLineage(t *testing.T) {
+	// Flag enabled but no prior deployment (no lineage yet): nothing in DMS to
+	// read, so fall back to the local file reader.
+	b := &bundle.Bundle{}
+	b.Config.Experimental = &config.Experimental{RecordDeploymentHistory: true}
+
+	reader, err := NewStateReader(t.Context(), b, writeStateFile(t, ""))
+	require.NoError(t, err)
+	assert.IsType(t, &fileStateReader{}, reader)
+}
+
+func TestNewStateReaderPropagatesCorruptStateError(t *testing.T) {
+	b := &bundle.Bundle{}
+	b.Config.Experimental = &config.Experimental{RecordDeploymentHistory: true}
+
+	path := filepath.Join(t.TempDir(), "resources.json")
+	require.NoError(t, os.WriteFile(path, []byte("not json"), 0o600))
+
+	_, err := NewStateReader(t.Context(), b, path)
+	assert.Error(t, err)
 }
