@@ -38,9 +38,9 @@ func TestGenerateSchemaMap(t *testing.T) {
 	testdiff.AssertEqualTexts(t, "generated.go", "want", string(existing), string(src))
 }
 
-// tfTypes maps TF resource type name → Go struct type, built from ResourceSchemas.
+// tfTypes maps TF resource type name → Go struct type, built from AllResources.
 var tfTypes = func() map[string]reflect.Type {
-	rt := reflect.TypeFor[schema.ResourceSchemas]()
+	rt := reflect.TypeFor[schema.AllResources]()
 	m := make(map[string]reflect.Type, rt.NumField())
 	for f := range rt.Fields() {
 		tag := f.Tag.Get("json")

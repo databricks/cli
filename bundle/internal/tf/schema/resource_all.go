@@ -2,11 +2,11 @@
 
 package schema
 
-// ResourceSchemas provides typed access to resource struct types via reflection.
+// AllResources provides typed access to resource struct types via reflection.
 // Each field corresponds to a Terraform resource type; the field type is the
 // generated Go struct (e.g., ResourceJob) rather than map[string]any.
 // Use this for field enumeration without a manual type registry.
-type ResourceSchemas struct {
+type AllResources struct {
 	AccessControlRuleSet ResourceAccessControlRuleSet `json:"databricks_access_control_rule_set,omitempty"`
 	AccountFederationPolicy ResourceAccountFederationPolicy `json:"databricks_account_federation_policy,omitempty"`
 	AccountNetworkPolicy ResourceAccountNetworkPolicy `json:"databricks_account_network_policy,omitempty"`
