@@ -57,8 +57,8 @@ func TestNewStateReaderSelection(t *testing.T) {
 		recordHistory bool
 		lineage       string
 	}{
-		{"record deployment history disabled uses the local file even with a deployment", false, "existing-lineage"},
-		{"new deployment: record deployment history on but no lineage yet uses the local file", true, ""},
+		{"record deployment history off: use the direct file-based state even with an existing deployment", false, "existing-lineage"},
+		{"record deployment history on but nothing deployed yet: fall back to the direct file-based state", true, ""},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
