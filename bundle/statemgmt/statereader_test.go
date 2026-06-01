@@ -91,6 +91,26 @@ func TestDMSStateReaderNilStateBecomesEmpty(t *testing.T) {
 	assert.Nil(t, entry.State)
 }
 
+func TestDMSStateReaderPreservesLocalLineage(t *testing.T) {
+	// The deployment identity (lineage/serial) must survive a DMS read so a
+	// subsequent deploy reuses the same deployment instead of minting a new one.
+	client := &fakeBundleClient{
+		resources: []sdkbundle.Resource{
+			{ResourceKey: "jobs.foo", ResourceId: "job-1", State: rawState(t, `{"name":"foo"}`)},
+		},
+	}
+
+	path := writeStateFile(t, "dep-1")
+	var db dstate.DeploymentState
+	reader := NewDMSStateReader(client, "dep-1", path)
+	require.NoError(t, reader.Load(t.Context(), &db))
+
+	assert.Equal(t, "dep-1", db.Data.Lineage)
+	entry, ok := db.GetResourceEntry("resources.jobs.foo")
+	require.True(t, ok)
+	assert.Equal(t, "job-1", entry.ID)
+}
+
 func TestDMSStateReaderPropagatesListError(t *testing.T) {
 	wantErr := errors.New("boom")
 	client := &fakeBundleClient{err: wantErr}
@@ -142,23 +162,23 @@ func writeStateFile(t *testing.T, lineage string) string {
 	return path
 }
 
-func TestReadLineage(t *testing.T) {
+func TestReadLocalDatabase(t *testing.T) {
 	t.Run("present", func(t *testing.T) {
-		lineage, err := readLineage(writeStateFile(t, "lineage-9"))
+		db, err := readLocalDatabase(writeStateFile(t, "lineage-9"))
 		require.NoError(t, err)
-		assert.Equal(t, "lineage-9", lineage)
+		assert.Equal(t, "lineage-9", db.Lineage)
 	})
 
 	t.Run("missing file", func(t *testing.T) {
-		lineage, err := readLineage(filepath.Join(t.TempDir(), "absent.json"))
+		db, err := readLocalDatabase(filepath.Join(t.TempDir(), "absent.json"))
 		require.NoError(t, err)
-		assert.Empty(t, lineage)
+		assert.Empty(t, db.Lineage)
 	})
 
 	t.Run("corrupt file", func(t *testing.T) {
 		path := filepath.Join(t.TempDir(), "resources.json")
 		require.NoError(t, os.WriteFile(path, []byte("not json"), 0o600))
-		_, err := readLineage(path)
+		_, err := readLocalDatabase(path)
 		assert.Error(t, err)
 	})
 }

@@ -63,27 +63,36 @@ func NewDMSStateReader(client sdkbundle.BundleInterface, deploymentID, path stri
 }
 
 func (r *dmsStateReader) Load(ctx context.Context, db *dstate.DeploymentState) error {
-	data, err := fetchDeploymentState(ctx, r.client, r.deploymentID)
+	// The deployment identity (lineage, serial) lives in the local resources.json:
+	// the lineage IS the DMS deployment ID, and a deploy must keep using it rather
+	// than minting a new one. Only the resource set is owned by the service, so we
+	// preserve the local header and replace the resources with what DMS reports.
+	data, err := readLocalDatabase(r.path)
 	if err != nil {
 		return err
 	}
+
+	resources, err := fetchDeploymentResources(ctx, r.client, r.deploymentID)
+	if err != nil {
+		return err
+	}
+	data.State = resources
+
 	db.OpenWithData(r.path, data)
 	return nil
 }
 
-// fetchDeploymentState lists every resource recorded for the deployment and
-// assembles them into a state Database.
-func fetchDeploymentState(ctx context.Context, client sdkbundle.BundleInterface, deploymentID string) (dstate.Database, error) {
+// fetchDeploymentResources lists every resource recorded for the deployment and
+// maps them into state entries keyed by the fully-qualified resource key.
+func fetchDeploymentResources(ctx context.Context, client sdkbundle.BundleInterface, deploymentID string) (map[string]dstate.ResourceEntry, error) {
 	resources, err := client.ListResourcesAll(ctx, sdkbundle.ListResourcesRequest{
 		Parent: "deployments/" + deploymentID,
 	})
 	if err != nil {
-		return dstate.Database{}, fmt.Errorf("listing resources from deployment metadata service: %w", err)
+		return nil, fmt.Errorf("listing resources from deployment metadata service: %w", err)
 	}
 
-	// Lineage and serial are file-state concepts for detecting concurrent
-	// local edits; under DMS the server owns versioning, so they stay empty.
-	data := dstate.NewDatabase("", 0)
+	out := make(map[string]dstate.ResourceEntry, len(resources))
 	for _, res := range resources {
 		// DMS reports resource keys without the "resources." prefix (e.g.
 		// "jobs.foo"), but the local state DB keys are fully qualified
@@ -95,12 +104,12 @@ func fetchDeploymentState(ctx context.Context, client sdkbundle.BundleInterface,
 			state = *res.State
 		}
 
-		data.State[key] = dstate.ResourceEntry{
+		out[key] = dstate.ResourceEntry{
 			ID:    res.ResourceId,
 			State: state,
 		}
 	}
-	return data, nil
+	return out, nil
 }
 
 // NewStateReader selects the StateReader for the bundle: the DMS reader when
@@ -116,31 +125,34 @@ func NewStateReader(ctx context.Context, b *bundle.Bundle, path string) (StateRe
 		return NewFileStateReader(path), nil
 	}
 
-	lineage, err := readLineage(path)
+	local, err := readLocalDatabase(path)
 	if err != nil {
 		return nil, err
 	}
-	if lineage == "" {
+	// No lineage yet means no prior deployment registered with DMS, so there is
+	// nothing to read from the service; fall back to the local file.
+	if local.Lineage == "" {
 		return NewFileStateReader(path), nil
 	}
 
-	return NewDMSStateReader(b.WorkspaceClient(ctx).Bundle, lineage, path), nil
+	return NewDMSStateReader(b.WorkspaceClient(ctx).Bundle, local.Lineage, path), nil
 }
 
-// readLineage reads the deployment lineage from the local resources.json state
-// file. It returns an empty string when the file does not exist yet.
-func readLineage(path string) (string, error) {
+// readLocalDatabase parses the local resources.json state file. A missing file
+// yields an empty database (no lineage), which callers treat as "no prior
+// deployment".
+func readLocalDatabase(path string) (dstate.Database, error) {
 	content, err := os.ReadFile(path)
 	if errors.Is(err, fs.ErrNotExist) {
-		return "", nil
+		return dstate.NewDatabase("", 0), nil
 	}
 	if err != nil {
-		return "", err
+		return dstate.Database{}, err
 	}
 
 	var db dstate.Database
 	if err := json.Unmarshal(content, &db); err != nil {
-		return "", fmt.Errorf("parsing %s: %w", filepath.ToSlash(path), err)
+		return dstate.Database{}, fmt.Errorf("parsing %s: %w", filepath.ToSlash(path), err)
 	}
-	return db.Lineage, nil
+	return db, nil
 }
