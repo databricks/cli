@@ -568,14 +568,15 @@ func writeFieldSet(w func(string, ...any), tree map[string]any, depth int, group
 	writeFieldSetPath(w, tree, depth, "", group)
 }
 
-func writeFieldSetPath(w func(string, ...any), tree map[string]any, depth int, prefix string, group string) {
+func writeFieldSetPath(w func(string, ...any), tree map[string]any, depth int, prefix, group string) {
 	indent := strings.Repeat("\t", depth)
 	for _, key := range slices.Sorted(maps.Keys(tree)) {
 		child := tree[key].(map[string]any)
-		path := key
-		if prefix != "" {
-			path = prefix + "." + key
+		path := prefix
+		if path != "" {
+			path += "."
 		}
+		path += key
 		if len(child) == 0 {
 			comment := ""
 			if depth >= 3 {
