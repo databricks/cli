@@ -2041,7 +2041,7 @@
                         "$ref": "#/$defs/string"
                       },
                       "permissions": {
-                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission"
+                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.VectorSearchEndpointPermission"
                       },
                       "target_qps": {
                         "$ref": "#/$defs/int64"
@@ -2056,6 +2056,35 @@
                     "required": [
                       "endpoint_type",
                       "name"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "resources.VectorSearchEndpointPermission": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "group_name": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "level": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/vectorsearch.VectorSearchEndpointPermissionLevel"
+                      },
+                      "service_principal_name": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "user_name": {
+                        "$ref": "#/$defs/string"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                      "level"
                     ]
                   },
                   {
@@ -11955,6 +11984,9 @@
             "vectorsearch.VectorIndexType": {
               "type": "string"
             },
+            "vectorsearch.VectorSearchEndpointPermissionLevel": {
+              "type": "string"
+            },
             "workspace.AzureKeyVaultSecretScopeMetadata": {
               "oneOf": [
                 {
@@ -12697,6 +12729,20 @@
                       "type": "array",
                       "items": {
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.SqlWarehousePermission"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
+                "resources.VectorSearchEndpointPermission": {
+                  "oneOf": [
+                    {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.VectorSearchEndpointPermission"
                       }
                     },
                     {

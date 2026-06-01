@@ -152,7 +152,7 @@ type FakeWorkspace struct {
 	RegisteredModels      map[string]catalog.RegisteredModelInfo
 	ServingEndpoints      map[string]serving.ServingEndpointDetailed
 	VectorSearchEndpoints map[string]vectorsearch.EndpointInfo
-	VectorSearchIndexes   map[string]fakeVectorSearchIndex
+	VectorSearchIndexes   map[string]vectorsearch.VectorIndex
 
 	SecretScopes map[string]workspace.SecretScope
 	Secrets      map[string]map[string]string // scope -> key -> value
@@ -297,7 +297,7 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		},
 		ServingEndpoints:          map[string]serving.ServingEndpointDetailed{},
 		VectorSearchEndpoints:     map[string]vectorsearch.EndpointInfo{},
-		VectorSearchIndexes:       map[string]fakeVectorSearchIndex{},
+		VectorSearchIndexes:       map[string]vectorsearch.VectorIndex{},
 		Repos:                     map[string]workspace.RepoInfo{},
 		SecretScopes:              map[string]workspace.SecretScope{},
 		Secrets:                   map[string]map[string]string{},
