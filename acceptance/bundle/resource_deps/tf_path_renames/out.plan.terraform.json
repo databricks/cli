@@ -1,0 +1,23 @@
+{
+  "cli_version": "[DEV_VERSION]",
+  "plan": {
+    "resources.jobs.dst_git": {
+      "action": "create"
+    },
+    "resources.jobs.dst_pipeline": {
+      "action": "create"
+    },
+    "resources.jobs.dst_tasks": {
+      "action": "create"
+    },
+    "resources.jobs.src_git": {
+      "action": "create"
+    },
+    "resources.jobs.src_tasks": {
+      "action": "create"
+    },
+    "resources.pipelines.src_pipeline": {
+      "action": "create"
+    }
+  }
+}

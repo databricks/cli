@@ -53,6 +53,7 @@ tasks:
       # committed). Run `./task generate` explicitly when codegen inputs change.
       - task: generate-refschema
       - task: generate-schema
+      - task: generate-schema-map
       - task: generate-schema-docs
       - task: generate-validation
       - task: generate-docs
@@ -853,6 +854,19 @@ tasks:
       - bundle/internal/validation/generated/**/*.go
     cmds:
       - "sh -c 'go run ./bundle/internal/validation/. && gofmt -w -s ./bundle/internal/validation/generated'"
+
+  generate-schema-map:
+    desc: Regenerate bundle/terraform_dabs_map/generated.go
+    sources:
+      - "**/*.go"
+      - exclude: bundle/terraform_dabs_map/generated.go
+      - go.mod
+      - go.sum
+      - "{{.EMBED_SOURCES}}"
+    generates:
+      - bundle/terraform_dabs_map/generated.go
+    cmds:
+      - go test ./bundle/terraform_dabs_map -run TestGenerateSchemaMap -update -v
 
   generate-direct:
     desc: Generate direct engine config (apitypes + resources)

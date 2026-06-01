@@ -1,5 +1,5 @@
-Warning: "resources.jobs.foo.url": Terraform-only field; this reference will not work with the direct engine
-  in databricks.yml:11:12
+Warning: "resources.jobs.src.always_running": Terraform-only field; this reference will not work with the direct engine
+  in databricks.yml:10:13
 
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Deploying resources...
