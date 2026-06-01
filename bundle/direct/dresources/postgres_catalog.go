@@ -91,7 +91,7 @@ func (r *ResourcePostgresCatalog) DoRead(ctx context.Context, id string) (*Postg
 	return makePostgresCatalogRemote(catalog), nil
 }
 
-func (r *ResourcePostgresCatalog) DoCreate(ctx context.Context, _ *Engine, config *PostgresCatalogState) (string, *PostgresCatalogRemote, error) {
+func (r *ResourcePostgresCatalog) DoCreate(ctx context.Context, engine *Engine, config *PostgresCatalogState) (string, *PostgresCatalogRemote, error) {
 	waiter, err := r.client.Postgres.CreateCatalog(ctx, postgres.CreateCatalogRequest{
 		CatalogId: config.CatalogId,
 		Catalog: postgres.Catalog{
@@ -109,6 +109,7 @@ func (r *ResourcePostgresCatalog) DoCreate(ctx context.Context, _ *Engine, confi
 	if err != nil {
 		return "", nil, err
 	}
+	engine.SaveState(ctx, waiter.Name(), config)
 
 	result, err := waiter.Wait(ctx)
 	if err != nil {
