@@ -2451,6 +2451,10 @@
                       "description": "Skip adding the prefix that is either set in `presets.name_prefix` or computed when `mode: development`\nis set, to the names of UC schemas defined in the bundle.",
                       "$ref": "#/$defs/bool"
                     },
+                    "use_deployment_metadata_service": {
+                      "description": "Whether to use the deployment metadata service (DMS), which records deployment history and tracks what changed across deployments.",
+                      "$ref": "#/$defs/bool"
+                    },
                     "use_legacy_run_as": {
                       "description": "Whether to use the legacy run_as behavior.",
                       "$ref": "#/$defs/bool"
