@@ -1,0 +1,11 @@
+bundle:
+  name: test-rdh-recreate
+
+experimental:
+  record_deployment_history: true
+
+resources:
+  pipelines:
+    bar:
+      name: bar-pipeline
+      storage: /tmp/storage-a

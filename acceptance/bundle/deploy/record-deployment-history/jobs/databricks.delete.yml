@@ -1,0 +1,8 @@
+bundle:
+  name: test-rdh-jobs
+
+experimental:
+  record_deployment_history: true
+
+resources:
+  jobs: {}

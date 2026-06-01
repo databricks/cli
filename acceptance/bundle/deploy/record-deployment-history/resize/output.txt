@@ -1,0 +1,66 @@
+
+=== create the cluster (running via lifecycle.started)
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-rdh-resize/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py //api/2.0/bundle
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/abcd/versions/0/operations",
+  "q": {
+    "resource_key": "resources.clusters.cl"
+  },
+  "body": {
+    "action_type": "OPERATION_ACTION_TYPE_CREATE",
+    "resource_id": "[UUID]",
+    "resource_key": "resources.clusters.cl",
+    "state": {
+      "autotermination_minutes": 60,
+      "cluster_name": "test-cluster",
+      "lifecycle": {
+        "started": true
+      },
+      "node_type_id": "[NODE_TYPE_ID]",
+      "num_workers": 1,
+      "spark_version": "15.4.x-scala2.12"
+    },
+    "status": "OPERATION_STATUS_SUCCEEDED"
+  }
+}
+
+=== resize: changing num_workers on a running cluster records OPERATION_ACTION_TYPE_RESIZE
+>>> update_file.py databricks.yml num_workers: 1 num_workers: 2
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-rdh-resize/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py //api/2.0/bundle
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/abcd/versions/0/operations",
+  "q": {
+    "resource_key": "resources.clusters.cl"
+  },
+  "body": {
+    "action_type": "OPERATION_ACTION_TYPE_RESIZE",
+    "resource_id": "[UUID]",
+    "resource_key": "resources.clusters.cl",
+    "state": {
+      "autotermination_minutes": 60,
+      "cluster_name": "test-cluster",
+      "lifecycle": {
+        "started": true
+      },
+      "node_type_id": "[NODE_TYPE_ID]",
+      "num_workers": 2,
+      "spark_version": "15.4.x-scala2.12"
+    },
+    "status": "OPERATION_STATUS_SUCCEEDED"
+  }
+}

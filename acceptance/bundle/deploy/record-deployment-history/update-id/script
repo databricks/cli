@@ -1,0 +1,8 @@
+title "create the catalog"
+trace $CLI bundle deploy
+trace print_requests.py //api/2.0/bundle
+
+title "update_id: renaming the catalog changes its ID, records OPERATION_ACTION_TYPE_UPDATE_WITH_ID"
+trace update_file.py databricks.yml my_catalog_a my_catalog_b
+trace $CLI bundle deploy
+trace print_requests.py //api/2.0/bundle
