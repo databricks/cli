@@ -36,8 +36,7 @@ func (d *ResourceDatabaseInstance) DoCreate(ctx context.Context, engine *Engine,
 
 	// Save state immediately after the instance is created so it is not orphaned
 	// if the subsequent wait is interrupted.
-	engine.SetID(id)
-	if err := engine.SaveState(config); err != nil {
+	if err := engine.SaveState(id, config); err != nil {
 		return "", nil, err
 	}
 

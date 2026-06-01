@@ -1,7 +1,6 @@
 package dresources
 
 import (
-	"errors"
 	"fmt"
 	"reflect"
 )
@@ -26,18 +25,14 @@ func NewNopEngine(stateType reflect.Type) *Engine {
 	return NewEngine(stateType, func(_ string, _ any) error { return nil })
 }
 
-// SetID sets the resource id for subsequent SaveState calls.
-// Must be called before SaveState during DoCreate; for DoUpdate the Engine is
-// pre-configured with the existing id.
-func (e *Engine) SetID(id string) {
-	e.id = id
-}
-
-// SaveState saves the resource state. x must be of the same pointer-to-struct
-// type as the resource's state type. Returns an error if SetID was not called.
-func (e *Engine) SaveState(x any) error {
+// SaveState saves the resource state. id must be the resource's identifier; on
+// the first call it is recorded, and subsequent calls panic if a different id is
+// passed. x must be a pointer to the same struct type as the resource's state.
+func (e *Engine) SaveState(id string, x any) error {
 	if e.id == "" {
-		return errors.New("SaveState: id not set, call SetID first")
+		e.id = id
+	} else if e.id != id {
+		panic(fmt.Sprintf("SaveState: id mismatch: expected %q, got %q", e.id, id))
 	}
 	xt := reflect.TypeOf(x)
 	if xt != e.stateType {
