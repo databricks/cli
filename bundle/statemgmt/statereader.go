@@ -60,9 +60,12 @@ func (r *fileStateReader) Load(ctx context.Context, db *dstate.DeploymentState) 
 	return db.Open(ctx, r.path, dstate.WithRecovery(true), dstate.WithWrite(false))
 }
 
-// dmsStateReader loads the identity from the local resources.json file and the
-// resource set from DMS. It is used only once DMS is the authoritative source for
-// the deployment (see NewStateReader), so it takes the DMS resources as-is.
+// dmsStateReader loads the identity (lineage/serial) from the local resources.json
+// file and the resource set from DMS, replacing whatever resources.json held.
+// NewStateReader only selects this reader once DMS is the authoritative source for
+// the deployment, so it trusts the DMS resource set even when it is empty (a
+// successful deploy with no resources); it never falls back to the local
+// resources.
 type dmsStateReader struct {
 	client       sdkbundle.BundleInterface
 	deploymentID string
