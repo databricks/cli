@@ -193,6 +193,15 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 				logdiag.LogError(ctx, err)
 				return b, stateDesc, root.ErrAlreadyPrinted
 			}
+
+			// Enforce the recorded DMS protocol version only when this bundle has
+			// opted into DMS; a bundle that has not opted in does not act on it.
+			if b.Config.Experimental != nil && b.Config.Experimental.RecordDeploymentHistory {
+				if err := b.DeploymentBundle.StateDB.EnsureSupportedDmsVersion(); err != nil {
+					logdiag.LogError(ctx, err)
+					return b, stateDesc, root.ErrAlreadyPrinted
+				}
+			}
 		}
 
 		// These are not safe in plan/deploy because they insert empty config settings for deleted resources.

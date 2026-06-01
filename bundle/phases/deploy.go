@@ -81,6 +81,12 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, ta
 		err   error
 	)
 	if targetEngine.IsDirect() {
+		if b.Config.Experimental != nil && b.Config.Experimental.RecordDeploymentHistory {
+			// Opting into the deployment metadata service (DMS) upgrades the local
+			// state schema and records the DMS version, so future breaking changes
+			// can be gated on what the state was written with.
+			b.DeploymentBundle.StateDB.UpgradeToDMS()
+		}
 		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(ctx), plan, direct.MigrateMode(false))
 		state, err = b.DeploymentBundle.StateDB.Finalize(ctx)
 	} else {

@@ -21,10 +21,33 @@ import (
 )
 
 const (
+	// currentStateVersion is the schema version written for normal deployments
+	// and the target that older states are migrated up to on load.
+	//
+	// NOTE: the next bump to the baseline schema must go to 4, not 3 (which is
+	// reserved by dmsStateVersion below), and should delete dmsStateVersion,
+	// folding DMS state handling back into normal versioning.
 	currentStateVersion = 2
-	initialBufferSize   = 64 * 1024
-	maxWalEntrySize     = 10 * 1024 * 1024
-	walSuffix           = ".wal"
+
+	// dmsStateVersion is the schema version written when the bundle opts into the
+	// deployment metadata service via experimental.record_deployment_history. It
+	// is also the newest version this CLI understands; newer states are rejected.
+	//
+	// It is kept separate from currentStateVersion on purpose: previewing DMS
+	// must not force a state upgrade on everyone else. Non-DMS deploys stay at
+	// currentStateVersion while only DMS opt-in bumps the state to this version.
+	// Remove it once currentStateVersion is bumped (to 4) and the two reconcile.
+	dmsStateVersion = 3
+
+	// currentDmsVersion is the DMS protocol version this CLI understands. It is
+	// stamped into DMS-upgraded state (see Header.CurrentDmsVersion) and enforced
+	// on load: a state stamped with a higher version is rejected (see migrateState).
+	// Bump it when the DMS protocol changes in a way older CLIs must not act on.
+	currentDmsVersion = 1
+
+	initialBufferSize = 64 * 1024
+	maxWalEntrySize   = 10 * 1024 * 1024
+	walSuffix         = ".wal"
 )
 
 // errStaleWAL is returned when the WAL serial is behind the expected serial.
@@ -42,10 +65,17 @@ type DeploymentState struct {
 }
 
 type Header struct {
-	StateVersion int    `json:"state_version"`
-	CLIVersion   string `json:"cli_version"`
-	Lineage      string `json:"lineage"`
-	Serial       int    `json:"serial"`
+	StateVersion int `json:"state_version"`
+
+	// CurrentDmsVersion records the deployment metadata service (DMS) protocol
+	// version this state was written with. Set only for states opted into DMS
+	// (see dmsStateVersion) and omitted otherwise. On load, a state whose value
+	// exceeds this CLI's currentDmsVersion is rejected (see migrateState).
+	CurrentDmsVersion int `json:"current_dms_version,omitempty"`
+
+	CLIVersion string `json:"cli_version"`
+	Lineage    string `json:"lineage"`
+	Serial     int    `json:"serial"`
 }
 
 type Database struct {
@@ -412,6 +442,30 @@ func (db *DeploymentState) UpgradeToWrite() error {
 		CLIVersion:   build.GetInfo().Version,
 	}
 	return appendJSONLine(db.walFile, walHead)
+}
+
+// UpgradeToDMS marks the state as opted into the deployment metadata service
+// (DMS): it bumps the schema to dmsStateVersion and stamps the current DMS
+// version. The change is persisted on the next save. State must be open for write.
+func (db *DeploymentState) UpgradeToDMS() {
+	db.AssertOpenedForWrite()
+	db.mu.Lock()
+	defer db.mu.Unlock()
+	db.Data.StateVersion = dmsStateVersion
+	db.Data.CurrentDmsVersion = currentDmsVersion
+}
+
+// EnsureSupportedDmsVersion rejects a state stamped with a record_deployment_history
+// version newer than this CLI understands. Callers must invoke it only when the
+// bundle has opted into DMS: a CLI that has not opted in does not act on the
+// recorded version, so it must not be blocked by it.
+func (db *DeploymentState) EnsureSupportedDmsVersion() error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+	if db.Data.CurrentDmsVersion > currentDmsVersion {
+		return fmt.Errorf("record_deployment_history state version %d is newer than supported version %d; upgrade the CLI", db.Data.CurrentDmsVersion, currentDmsVersion)
+	}
+	return nil
 }
 
 func (db *DeploymentState) AssertOpenedForReadOrWrite() {

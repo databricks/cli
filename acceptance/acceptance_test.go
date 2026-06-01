@@ -277,6 +277,13 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 		cli293Path := DownloadCLI(t, buildDir, "0.293.0")
 		t.Setenv("CLI_293", cli293Path)
 		repls.SetPath(cli293Path, "[CLI_293]")
+
+		// v1.0.0 understands state schema versions only up to 2. Used by tests
+		// asserting that an older CLI rejects newer state (e.g. the v3 state
+		// written when a bundle opts into the deployment metadata service).
+		cliV1Path := DownloadCLI(t, buildDir, "1.0.0")
+		t.Setenv("CLI_V1", cliV1Path)
+		repls.SetPath(cliV1Path, "[CLI_V1]")
 	}
 
 	paths := []string{
