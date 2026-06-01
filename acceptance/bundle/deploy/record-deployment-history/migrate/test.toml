@@ -1,0 +1,2 @@
+# migrate renames terraform.tfstate to a .backup and writes resources.json.
+Ignore = [".databricks"]

@@ -1,0 +1,10 @@
+# Deploy with terraform first, then migrate to the direct engine. Migration adopts
+# the already-deployed job, so DMS records an INITIAL_REGISTER rather than a create.
+export DATABRICKS_BUNDLE_ENGINE=
+
+title "deploy with terraform (no DMS recording on the terraform engine)"
+trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
+
+title "migrate: records OPERATION_ACTION_TYPE_INITIAL_REGISTER for the existing job"
+trace $CLI bundle deployment migrate --noplancheck
+trace print_requests.py //api/2.0/bundle

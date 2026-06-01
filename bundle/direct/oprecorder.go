@@ -14,6 +14,9 @@ import (
 // local config after the operation and must be nil for delete operations.
 type opRecorder interface {
 	record(ctx context.Context, resourceKey string, action deployplan.ActionType, resourceID string, state any) error
+	// recordInitialRegister records the one-time registration of an existing
+	// resource that was already managed by DABs but not yet tracked by DMS.
+	recordInitialRegister(ctx context.Context, resourceKey, resourceID string, state any) error
 }
 
 // operationRecorder records operations via the DMS CreateOperation API.
@@ -39,7 +42,18 @@ func (r *operationRecorder) record(ctx context.Context, resourceKey string, acti
 	if err != nil {
 		return err
 	}
+	return r.recordAction(ctx, resourceKey, actionType, resourceID, state)
+}
 
+// recordInitialRegister records an INITIAL_REGISTER operation. The migrate and
+// bind workflows adopt an existing resource into the direct engine without a
+// deploy-time create/update, so the first operation DMS sees for that resource
+// is its registration rather than a mutation.
+func (r *operationRecorder) recordInitialRegister(ctx context.Context, resourceKey, resourceID string, state any) error {
+	return r.recordAction(ctx, resourceKey, sdkbundle.OperationActionTypeOperationActionTypeInitialRegister, resourceID, state)
+}
+
+func (r *operationRecorder) recordAction(ctx context.Context, resourceKey string, actionType sdkbundle.OperationActionType, resourceID string, state any) error {
 	op := sdkbundle.Operation{
 		ActionType:  actionType,
 		ResourceId:  resourceID,
@@ -59,7 +73,7 @@ func (r *operationRecorder) record(ctx context.Context, resourceKey string, acti
 		op.State = &msg
 	}
 
-	_, err = r.client.CreateOperation(ctx, sdkbundle.CreateOperationRequest{
+	_, err := r.client.CreateOperation(ctx, sdkbundle.CreateOperationRequest{
 		Parent:      r.parent,
 		ResourceKey: resourceKey,
 		Operation:   op,

@@ -46,6 +46,9 @@ type BindResult struct {
 	TempStatePath string
 	// StatePath is the path to the final state file
 	StatePath string
+	// State is the resolved config persisted for the bound resource. It is
+	// reported to DMS as the registered state once the bind is committed.
+	State any
 }
 
 // Bind adds an existing workspace resource to a temporary state and calculates
@@ -124,9 +127,11 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 	}
 
 	// Populate the state with the resolved config
+	var boundState any
 	entry := plan.Plan[resourceKey]
 	sv, ok := b.StateCache.Load(resourceKey)
 	if ok && sv != nil {
+		boundState = sv.Value
 		var dependsOn []deployplan.DependsOnEntry
 		if entry != nil {
 			dependsOn = entry.DependsOn
@@ -185,6 +190,7 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 		Plan:          plan,
 		TempStatePath: tmpStatePath,
 		StatePath:     statePath,
+		State:         boundState,
 	}
 
 	entry = plan.Plan[resourceKey]

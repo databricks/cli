@@ -1,0 +1,46 @@
+
+=== deploy with terraform (no DMS recording on the terraform engine)
+>>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-rdh-migrate/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== migrate: records OPERATION_ACTION_TYPE_INITIAL_REGISTER for the existing job
+>>> [CLI] bundle deployment migrate --noplancheck
+Success! Migrated 1 resources to direct engine state file: [TEST_TMP_DIR]/.databricks/bundle/default/resources.json
+
+Validate the migration by running "databricks bundle plan", there should be no actions planned.
+
+The state file is not synchronized to the workspace yet. To do that and finalize the migration, run "bundle deploy".
+
+To undo the migration, remove [TEST_TMP_DIR]/.databricks/bundle/default/resources.json and rename [TEST_TMP_DIR]/.databricks/bundle/default/terraform/terraform.tfstate.backup to [TEST_TMP_DIR]/.databricks/bundle/default/terraform/terraform.tfstate
+
+
+>>> print_requests.py //api/2.0/bundle
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/abcd/versions/0/operations",
+  "q": {
+    "resource_key": "resources.jobs.foo"
+  },
+  "body": {
+    "action_type": "OPERATION_ACTION_TYPE_INITIAL_REGISTER",
+    "resource_id": "[NUMID]",
+    "resource_key": "resources.jobs.foo",
+    "state": {
+      "deployment": {
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-rdh-migrate/default/state/metadata.json"
+      },
+      "edit_mode": "UI_LOCKED",
+      "format": "MULTI_TASK",
+      "max_concurrent_runs": 1,
+      "name": "foo-job",
+      "queue": {
+        "enabled": true
+      }
+    },
+    "status": "OPERATION_STATUS_SUCCEEDED"
+  }
+}

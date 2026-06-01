@@ -70,6 +70,20 @@ func TestOperationRecorderOmitsStateForDelete(t *testing.T) {
 	assert.Equal(t, sdkbundle.OperationActionTypeOperationActionTypeDelete, client.requests[0].Operation.ActionType)
 }
 
+func TestOperationRecorderRecordsInitialRegister(t *testing.T) {
+	client := &fakeBundleClient{}
+	rec := NewOperationRecorder(client, "dep", 1)
+
+	err := rec.recordInitialRegister(t.Context(), "resources.jobs.foo", "job-1", map[string]any{"name": "foo"})
+	require.NoError(t, err)
+
+	require.Len(t, client.requests, 1)
+	op := client.requests[0].Operation
+	assert.Equal(t, sdkbundle.OperationActionTypeOperationActionTypeInitialRegister, op.ActionType)
+	assert.Equal(t, "job-1", op.ResourceId)
+	require.NotNil(t, op.State)
+}
+
 func TestOperationRecorderPropagatesAPIError(t *testing.T) {
 	wantErr := errors.New("boom")
 	client := &fakeBundleClient{err: wantErr}

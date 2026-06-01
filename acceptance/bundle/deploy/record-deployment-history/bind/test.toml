@@ -1,0 +1,2 @@
+# bind writes the direct deployment state under .databricks; ignore it.
+Ignore = [".databricks"]
