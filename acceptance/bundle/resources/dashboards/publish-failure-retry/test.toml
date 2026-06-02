@@ -1,0 +1,12 @@
+Cloud = false
+Local = true
+RecordRequests = true
+
+# Only run with the direct engine: the test verifies direct engine's SaveState
+# behavior (draft persists on publish failure and is re-published on retry).
+[EnvMatrix]
+DATABRICKS_BUNDLE_ENGINE = ["direct"]
+
+[[Repls]]
+Old = "[0-9a-f]{32}"
+New = "[DASHBOARD_ID]"

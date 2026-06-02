@@ -1,0 +1,12 @@
+
+>>> [CLI] bundle summary
+Name: publish-failure-cleans-up-dashboard
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/publish-failure-cleans-up-dashboard/default
+Resources:
+  Dashboards:
+    dashboard1:
+      Name: my dashboard
+      URL:  (not deployed)

@@ -9,5 +9,6 @@ HTTP Status: 400 Bad Request
 API error_code: RESOURCE_DOES_NOT_EXIST
 API message: Warehouse doesnotexist does not exist
 
+Updating deployment state...
 
 Exit code: 1

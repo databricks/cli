@@ -4,9 +4,9 @@ envsubst < databricks.yml.tmpl > databricks.yml
 # Deploy the dashboard. The dashboard will be created but publish will fail because the warehouse does not exist.
 errcode trace $CLI bundle deploy &> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt
 
-trace $CLI bundle summary
+# After publish failure the dashboard draft should be in state (direct) or cleaned up (terraform).
+trace $CLI bundle summary &>> out.summary.$DATABRICKS_BUNDLE_ENGINE.txt
 
-# API should record a DELETE call to clean up the draft dashboard that was not published.
-# Request sequence is identical across terraform and direct modes.
+# API request sequence differs between engines (direct: no DELETE; terraform: DELETE to clean up).
 unset MSYS_NO_PATHCONV
-print_requests.py //lakeview/dashboards //workspace/mkdirs > out.dashboardrequests.txt
+print_requests.py //lakeview/dashboards //workspace/mkdirs > out.dashboardrequests.$DATABRICKS_BUNDLE_ENGINE.txt
