@@ -68,6 +68,8 @@ func newQueryCmd() *cobra.Command {
 	var filePaths []string
 	var outputFormat string
 	var concurrency int
+	var paramFlags []string
+	var params []sql.StatementParameterListItem
 
 	cmd := &cobra.Command{
 		Use:   "query [SQL | file.sql]...",
@@ -91,19 +93,33 @@ or the DATABRICKS_WAREHOUSE_ID environment variable is configured.
 
 For a single query, output is JSON in non-interactive contexts. In
 interactive terminals it renders tables, and large results open an
-interactive table browser. Use --output csv to export results as CSV.`,
+interactive table browser. Use --output csv to export results as CSV.
+
+Pass named parameters with --param. Use ":name" markers in the SQL and
+"--param name=value" (string) or "--param name:TYPE=value" (typed, e.g.
+DATE, INT) to bind values. Positional "?" markers are not supported. In
+multi-query mode, the same parameter set is applied to every statement.`,
 		Example: `  databricks experimental aitools tools query "SELECT * FROM samples.nyctaxi.trips LIMIT 5"
   databricks experimental aitools tools query --warehouse abc123 "SELECT 1"
   databricks experimental aitools tools query --file report.sql
   databricks experimental aitools tools query report.sql
   databricks experimental aitools tools query --output csv "SELECT * FROM samples.nyctaxi.trips LIMIT 5"
   databricks experimental aitools tools query --output json "SELECT 1" "SELECT 2" "SELECT 3"
+  databricks experimental aitools tools query --param name=alice "SELECT * FROM users WHERE name = :name"
+  databricks experimental aitools tools query --param since:DATE=2026-01-01 "SELECT * FROM events WHERE ts > :since"
   echo "SELECT 1" | databricks experimental aitools tools query`,
 		Args: cobra.ArbitraryArgs,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			if concurrency <= 0 {
 				return errInvalidBatchConcurrency
 			}
+
+			var err error
+			params, err = parseParams(paramFlags)
+			if err != nil {
+				return err
+			}
+
 			return root.MustWorkspaceClient(cmd, args)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -139,10 +155,10 @@ interactive table browser. Use --output csv to export results as CSV.`,
 			}
 
 			if len(sqls) > 1 {
-				return runBatch(ctx, cmd, w.StatementExecution, wID, sqls, concurrency)
+				return runBatch(ctx, cmd, w.StatementExecution, wID, sqls, params, concurrency)
 			}
 
-			resp, err := executeAndPoll(ctx, w.StatementExecution, wID, sqls[0])
+			resp, err := executeAndPoll(ctx, w.StatementExecution, wID, sqls[0], params)
 			if err != nil {
 				return err
 			}
@@ -185,6 +201,7 @@ interactive table browser. Use --output csv to export results as CSV.`,
 	cmd.Flags().StringVarP(&warehouseID, "warehouse", "w", "", "SQL warehouse ID to use for execution")
 	cmd.Flags().StringSliceVarP(&filePaths, "file", "f", nil, "Path to a SQL file to execute (repeatable; pair with positional SQLs to run a batch)")
 	cmd.Flags().IntVar(&concurrency, "concurrency", defaultBatchConcurrency, "Maximum in-flight statements when running a batch of queries")
+	cmd.Flags().StringArrayVar(&paramFlags, "param", nil, "Named parameter, repeatable. Format: name=value (STRING) or name:TYPE=value (e.g. name:DATE=2026-01-01). Empty value is sent as NULL.")
 	// Local --output flag shadows the root command's persistent --output flag,
 	// adding csv support for this command only.
 	cmd.Flags().StringVarP(&outputFormat, "output", "o", string(sqlcli.OutputText), "Output format: text, json, or csv")
@@ -222,8 +239,10 @@ func resolveSQLs(ctx context.Context, cmd *cobra.Command, args, filePaths []stri
 // without an extra error message) when any statement failed; the failure detail
 // is already encoded in the printed JSON. The caller is responsible for
 // rejecting incompatible output formats before invoking this.
-func runBatch(ctx context.Context, cmd *cobra.Command, api sql.StatementExecutionInterface, warehouseID string, sqls []string, concurrency int) error {
-	results := executeBatch(ctx, api, warehouseID, sqls, concurrency)
+//
+// params, if non-nil, are applied to every statement in the batch.
+func runBatch(ctx context.Context, cmd *cobra.Command, api sql.StatementExecutionInterface, warehouseID string, sqls []string, params []sql.StatementParameterListItem, concurrency int) error {
+	results := executeBatch(ctx, api, warehouseID, sqls, params, concurrency)
 	if err := renderBatchJSON(cmd.OutOrStdout(), results); err != nil {
 		return err
 	}
@@ -252,11 +271,12 @@ func resolveWarehouseID(ctx context.Context, w any, flagValue string) (string, e
 
 // executeAndPoll submits a SQL statement asynchronously and polls until completion.
 // It shows a spinner in interactive mode and supports Ctrl+C cancellation.
-func executeAndPoll(ctx context.Context, api sql.StatementExecutionInterface, warehouseID, statement string) (*sql.StatementResponse, error) {
+func executeAndPoll(ctx context.Context, api sql.StatementExecutionInterface, warehouseID, statement string, params []sql.StatementParameterListItem) (*sql.StatementResponse, error) {
 	// Submit asynchronously to get the statement ID immediately for cancellation.
 	resp, err := api.ExecuteStatement(ctx, sql.ExecuteStatementRequest{
 		WarehouseId:   warehouseID,
 		Statement:     statement,
+		Parameters:    params,
 		WaitTimeout:   "0s",
 		OnWaitTimeout: sql.ExecuteStatementRequestOnWaitTimeoutContinue,
 	})

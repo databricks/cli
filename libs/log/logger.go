@@ -20,6 +20,9 @@ func GetLogger(ctx context.Context) *slog.Logger {
 
 // helper function to abstract logging a string message.
 func log(ctx context.Context, logger *slog.Logger, level slog.Level, msg string) {
+	if prefix := getPrefix(ctx); prefix != "" {
+		msg = prefix + ": " + msg
+	}
 	var pcs [1]uintptr
 	// skip [runtime.Callers, this function, this function's caller].
 	runtime.Callers(3, pcs[:])

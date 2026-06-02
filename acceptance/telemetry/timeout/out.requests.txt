@@ -7,7 +7,7 @@
     "Authorization": [
       "Bearer [DATABRICKS_TOKEN]"
     ],
-    "X-Databricks-Org-Id": [
+    "X-Databricks-Workspace-Id": [
       "[NUMID]"
     ]
   },

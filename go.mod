@@ -34,11 +34,11 @@ require (
 	github.com/tailscale/hujson v0.0.0-20250605163823-992244df8c5a // BSD-3-Clause
 	github.com/zalando/go-keyring v0.2.8 // MIT
 	go.yaml.in/yaml/v3 v3.0.4 // MIT AND Apache-2.0
-	golang.org/x/crypto v0.51.0 // BSD-3-Clause
+	golang.org/x/crypto v0.52.0 // BSD-3-Clause
 	golang.org/x/mod v0.36.0 // BSD-3-Clause
 	golang.org/x/oauth2 v0.36.0 // BSD-3-Clause
 	golang.org/x/sync v0.20.0 // BSD-3-Clause
-	golang.org/x/sys v0.44.0 // BSD-3-Clause
+	golang.org/x/sys v0.45.0 // BSD-3-Clause
 	golang.org/x/text v0.37.0 // BSD-3-Clause
 	gopkg.in/ini.v1 v1.67.2 // Apache-2.0
 )
@@ -97,7 +97,7 @@ require (
 	go.opentelemetry.io/otel/metric v1.43.0 // indirect
 	go.opentelemetry.io/otel/trace v1.43.0 // indirect
 	golang.org/x/exp v0.0.0-20240222234643-814bf88cf225 // indirect
-	golang.org/x/net v0.53.0 // indirect
+	golang.org/x/net v0.54.0 // indirect
 	golang.org/x/time v0.14.0 // indirect
 	google.golang.org/api v0.265.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260203192932-546029d2fa20 // indirect

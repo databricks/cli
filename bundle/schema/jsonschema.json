@@ -2439,6 +2439,10 @@
                       "description": "Whether to use a Python wheel wrapper.",
                       "$ref": "#/$defs/bool"
                     },
+                    "record_deployment_history": {
+                      "description": "Whether to record deployment history using the deployment metadata service (DMS), which tracks what changed across deployments.",
+                      "$ref": "#/$defs/bool"
+                    },
                     "scripts": {
                       "description": "The commands to run.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config.Command"

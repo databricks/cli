@@ -18,7 +18,7 @@ Resources:
   Vector Search Endpoints:
     my_endpoint:
       Name: vs-endpoint-[UNIQUE_NAME]
-      URL:  [DATABRICKS_URL]/compute/vector-search/vs-endpoint-[UNIQUE_NAME]?o=[NUMID]
+      URL:  [DATABRICKS_URL]/compute/vector-search/vs-endpoint-[UNIQUE_NAME]?w=[NUMID]
   Vector Search Indexes:
     my_index:
       Name: main.default.vs_index_[UNIQUE_NAME]
@@ -48,7 +48,7 @@ Resources:
   Vector Search Endpoints:
     my_endpoint:
       Name: vs-endpoint-[UNIQUE_NAME]
-      URL:  [DATABRICKS_URL]/compute/vector-search/vs-endpoint-[UNIQUE_NAME]?o=[NUMID]
+      URL:  [DATABRICKS_URL]/compute/vector-search/vs-endpoint-[UNIQUE_NAME]?w=[NUMID]
   Vector Search Indexes:
     my_index:
       Name: main.default.vs_index_[UNIQUE_NAME]

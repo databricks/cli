@@ -78,6 +78,7 @@ func newInitCmd() *cobra.Command {
 		run          string
 		setValues    []string
 		autoApprove  bool
+		skipInstall  bool
 	)
 
 	cmd := &cobra.Command{
@@ -162,6 +163,7 @@ Environment variables:
 				pluginsChanged: cmd.Flags().Changed("features") || cmd.Flags().Changed("plugins"),
 				setValues:      setValues,
 				autoApprove:    autoApprove,
+				skipInstall:    skipInstall,
 			})
 		},
 	}
@@ -181,6 +183,7 @@ Environment variables:
 	cmd.Flags().BoolVar(&deploy, "deploy", false, "Deploy the app after creation")
 	cmd.Flags().StringVar(&run, "run", "", "Run the app after creation (none, dev, dev-remote)")
 	cmd.Flags().BoolVar(&autoApprove, "auto-approve", false, "Skip confirmation prompts for optional resources. Optional resources are only configured when their values are provided via --set.")
+	cmd.Flags().BoolVar(&skipInstall, "skip-install", false, "Skip installing project dependencies (e.g. npm install / uv sync). Cannot be combined with --run.")
 
 	return cmd
 }
@@ -202,6 +205,7 @@ type createOptions struct {
 	pluginsChanged bool     // true if --plugins flag was explicitly set
 	setValues      []string // --set plugin.resourceKey.field=value pairs
 	autoApprove    bool
+	skipInstall    bool
 }
 
 // parseSetValues parses --set key=value pairs into the resourceValues map.
@@ -796,6 +800,13 @@ func awaitBackgroundNpmInstall(ctx context.Context, ch <-chan error) error {
 }
 
 func runCreate(ctx context.Context, opts createOptions) error {
+	// --skip-install leaves the project without installed dependencies, so
+	// downstream `--run dev` / `--run dev-remote` would immediately fail.
+	// Reject the combination up front rather than after the scaffold runs.
+	if opts.skipInstall && opts.run != "" && opts.run != "none" {
+		return errors.New("--skip-install cannot be combined with --run (dev/dev-remote require dependencies to be installed)")
+	}
+
 	var selectedPlugins []string
 	var resourceValues map[string]string
 	var shouldDeploy bool
@@ -983,8 +994,12 @@ func runCreate(ctx context.Context, opts createOptions) error {
 
 	// Start npm install in the background so it runs while the user answers prompts.
 	// This is a Node.js-only optimisation — non-Node templates skip this.
+	// Honour --skip-install by not kicking off the background install at all.
 	srcProjectDir := findProjectSrcDir(templateDir)
-	npmInstallCh := startBackgroundNpmInstall(ctx, srcProjectDir, destDir, opts.name)
+	var npmInstallCh <-chan error
+	if !opts.skipInstall {
+		npmInstallCh = startBackgroundNpmInstall(ctx, srcProjectDir, destDir, opts.name)
+	}
 
 	// Step 3: Load manifest from template (optional — templates without it skip plugin/resource logic)
 	var m *manifest.Manifest
@@ -1223,17 +1238,23 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	// Initialize project based on type (Node.js, Python, etc.).
 	// For Node.js, if the background install succeeded node_modules exists
 	// and the initializer skips the redundant install step.
+	// With --skip-install we bypass Initialize entirely and instead prepend
+	// the install command to NextSteps so the user knows to install first.
 	var nextStepsCmd string
 	projectInitializer := initializer.GetProjectInitializer(absOutputDir)
 	if projectInitializer != nil {
-		result := projectInitializer.Initialize(ctx, absOutputDir)
-		if !result.Success {
-			if result.Error != nil {
-				return fmt.Errorf("%s: %w", result.Message, result.Error)
+		if opts.skipInstall {
+			nextStepsCmd = prependInstall(projectInitializer.InstallCommand(), projectInitializer.NextSteps())
+		} else {
+			result := projectInitializer.Initialize(ctx, absOutputDir)
+			if !result.Success {
+				if result.Error != nil {
+					return fmt.Errorf("%s: %w", result.Message, result.Error)
+				}
+				return errors.New(result.Message)
 			}
-			return errors.New(result.Message)
+			nextStepsCmd = projectInitializer.NextSteps()
 		}
-		nextStepsCmd = projectInitializer.NextSteps()
 	}
 
 	// Validate dev-remote is only supported for appkit projects
@@ -1353,6 +1374,18 @@ func runPostCreateDev(ctx context.Context, mode prompt.RunMode, projectInit init
 	default:
 		return nil
 	}
+}
+
+// prependInstall composes the install command and the project's NextSteps
+// suggestion into a single shell snippet, dropping either side if empty.
+func prependInstall(installCmd, nextStepsCmd string) string {
+	if installCmd == "" {
+		return nextStepsCmd
+	}
+	if nextStepsCmd == "" {
+		return installCmd
+	}
+	return installCmd + " && " + nextStepsCmd
 }
 
 // appendUnique appends values to a slice, skipping duplicates.
