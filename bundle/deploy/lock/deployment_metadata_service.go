@@ -118,7 +118,8 @@ func acquireLock(ctx context.Context, b *bundle.Bundle, svc *tmpdms.DeploymentMe
 		_, createErr := svc.CreateDeployment(ctx, tmpdms.CreateDeploymentRequest{
 			DeploymentID: deploymentID,
 			Deployment: &tmpdms.Deployment{
-				TargetName: b.Config.Bundle.Target,
+				DisplayName: b.Config.Bundle.Name,
+				TargetName:  b.Config.Bundle.Target,
 			},
 		})
 		if createErr != nil {

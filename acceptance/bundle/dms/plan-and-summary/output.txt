@@ -27,6 +27,7 @@ Resources:
     "deployment_id": "[UUID]"
   },
   "body": {
+    "display_name": "plan-summary-test",
     "target_name": "default"
   }
 }

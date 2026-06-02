@@ -12,6 +12,7 @@ Deployment complete!
     "deployment_id": "[UUID]"
   },
   "body": {
+    "display_name": "sequential-deploys-test",
     "target_name": "default"
   }
 }
