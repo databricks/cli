@@ -327,6 +327,6 @@ func (r *ResourceModelServingEndpoint) DoUpdate(ctx context.Context, id string, 
 	return nil, nil
 }
 
-func (r *ResourceModelServingEndpoint) DoDelete(ctx context.Context, id string) error {
+func (r *ResourceModelServingEndpoint) DoDelete(ctx context.Context, id string, _ *serving.CreateServingEndpoint) error {
 	return r.client.ServingEndpoints.DeleteByName(ctx, id)
 }

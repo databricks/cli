@@ -26,10 +26,12 @@ EnvMatrix.INPUT_CONFIG = [
   "pipeline.yml.tmpl",
   "pipeline_config_dots.yml.tmpl",
   "postgres_branch.yml.tmpl",
+  "postgres_catalog.yml.tmpl",
   "postgres_database.yml.tmpl",
   "postgres_endpoint.yml.tmpl",
   "postgres_project.yml.tmpl",
   "postgres_role.yml.tmpl",
+  "postgres_synced_table.yml.tmpl",
   "registered_model.yml.tmpl",
   "schema.yml.tmpl",
   "schema_grant_ref.yml.tmpl",
@@ -40,6 +42,7 @@ EnvMatrix.INPUT_CONFIG = [
   "sql_warehouse.yml.tmpl",
   "synced_database_table.yml.tmpl",
   "vector_search_endpoint.yml.tmpl",
+  "vector_search_index.yml.tmpl",
   "volume.yml.tmpl",
   "volume_external.yml.tmpl"
 ]

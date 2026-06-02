@@ -3,11 +3,14 @@ package installer
 import (
 	"bytes"
 	"context"
+	"errors"
 	"io/fs"
 	"log/slog"
 	"os"
 	"path/filepath"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/aitools/agents"
@@ -29,6 +32,7 @@ func (m *mockManifestSource) FetchManifest(_ context.Context, _ string) (*Manife
 	if m.fetchErr != nil {
 		return nil, m.fetchErr
 	}
+	normalizeManifest(m.manifest)
 	return m.manifest, nil
 }
 
@@ -53,7 +57,7 @@ func setupFetchMock(t *testing.T) {
 	t.Helper()
 	orig := fetchFileFn
 	t.Cleanup(func() { fetchFileFn = orig })
-	fetchFileFn = func(_ context.Context, _, skillName, filePath string) ([]byte, error) {
+	fetchFileFn = func(_ context.Context, _, _, skillName, filePath string) ([]byte, error) {
 		return []byte("# " + skillName + "/" + filePath), nil
 	}
 }
@@ -187,6 +191,114 @@ func TestBackupThirdPartySkillRegularFile(t *testing.T) {
 	assert.ErrorIs(t, err, fs.ErrNotExist)
 }
 
+func TestInstallSkillToDirFetchesFilesConcurrently(t *testing.T) {
+	baseCtx, cancel := context.WithTimeout(t.Context(), 2*time.Second)
+	defer cancel()
+	ctx := cmdio.MockDiscard(baseCtx)
+
+	orig := fetchFileFn
+	t.Cleanup(func() { fetchFileFn = orig })
+
+	started := make(chan string, 2)
+	release := make(chan struct{})
+	releaseOnce := sync.OnceFunc(func() { close(release) })
+	t.Cleanup(releaseOnce)
+
+	fetchFileFn = func(ctx context.Context, _, _, _, filePath string) ([]byte, error) {
+		started <- filePath
+		select {
+		case <-release:
+			return []byte(filePath), nil
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		}
+	}
+
+	destDir := filepath.Join(t.TempDir(), "databricks-test")
+	errCh := make(chan error, 1)
+	go func() {
+		errCh <- installSkillToDir(ctx, testSkillsRef, stableSkillsRepoPath, "databricks-test", destDir, []string{"one.md", "two.md"})
+	}()
+
+	fetched := make(map[string]bool, 2)
+	for range 2 {
+		select {
+		case filePath := <-started:
+			fetched[filePath] = true
+		case <-ctx.Done():
+			require.FailNow(t, "timed out waiting for concurrent fetches to start")
+		}
+	}
+	assert.Equal(t, map[string]bool{"one.md": true, "two.md": true}, fetched)
+
+	releaseOnce()
+	require.NoError(t, <-errCh)
+
+	one, err := os.ReadFile(filepath.Join(destDir, "one.md"))
+	require.NoError(t, err)
+	assert.Equal(t, "one.md", string(one))
+	two, err := os.ReadFile(filepath.Join(destDir, "two.md"))
+	require.NoError(t, err)
+	assert.Equal(t, "two.md", string(two))
+}
+
+func TestInstallSkillToDirCancelsInFlightFetchesOnError(t *testing.T) {
+	baseCtx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+	ctx := cmdio.MockDiscard(baseCtx)
+
+	orig := fetchFileFn
+	t.Cleanup(func() { fetchFileFn = orig })
+
+	fetchErr := errors.New("fetch failed")
+	blockedStarted := make(chan struct{})
+	cancelled := make(chan struct{})
+
+	fetchFileFn = func(ctx context.Context, _, _, _, filePath string) ([]byte, error) {
+		switch filePath {
+		case "blocked.md":
+			close(blockedStarted)
+			<-ctx.Done()
+			close(cancelled)
+			return nil, ctx.Err()
+		case "fail.md":
+			select {
+			case <-blockedStarted:
+				return nil, fetchErr
+			case <-ctx.Done():
+				return nil, ctx.Err()
+			}
+		default:
+			return []byte(filePath), nil
+		}
+	}
+
+	destDir := filepath.Join(t.TempDir(), "databricks-test")
+	errCh := make(chan error, 1)
+	go func() {
+		errCh <- installSkillToDir(ctx, testSkillsRef, stableSkillsRepoPath, "databricks-test", destDir, []string{"blocked.md", "fail.md"})
+	}()
+
+	var err error
+	select {
+	case err = <-errCh:
+	case <-time.After(5 * time.Second):
+		cancel()
+		select {
+		case <-errCh:
+		case <-time.After(time.Second):
+		}
+		require.FailNow(t, "timed out waiting for errgroup cancellation")
+	}
+	require.ErrorIs(t, err, fetchErr)
+
+	select {
+	case <-cancelled:
+	default:
+		require.Fail(t, "expected in-flight fetch to observe context cancellation")
+	}
+}
+
 // --- InstallSkillsForAgents tests ---
 
 func TestInstallSkillsForAgentsWritesState(t *testing.T) {
@@ -261,10 +373,10 @@ func TestExperimentalSkillsSkippedByDefault(t *testing.T) {
 	t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
 
 	manifest := testManifest()
-	manifest.Skills["databricks-experimental"] = SkillMeta{
-		Version:      "0.1.0",
-		Files:        []string{"SKILL.md"},
-		Experimental: true,
+	manifest.Skills["databricks-iceberg"] = SkillMeta{
+		Version: "0.1.0",
+		Files:   []string{"SKILL.md"},
+		RepoDir: experimentalRepoPath,
 	}
 
 	src := &mockManifestSource{manifest: manifest}
@@ -278,7 +390,7 @@ func TestExperimentalSkillsSkippedByDefault(t *testing.T) {
 	require.NoError(t, err)
 	// Only non-experimental skills should be installed.
 	assert.Len(t, state.Skills, 2)
-	assert.NotContains(t, state.Skills, "databricks-experimental")
+	assert.NotContains(t, state.Skills, "databricks-iceberg")
 
 	assert.Contains(t, stderr.String(), "Installed 2 skills.")
 }
@@ -290,10 +402,10 @@ func TestExperimentalSkillsIncludedWithFlag(t *testing.T) {
 	t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
 
 	manifest := testManifest()
-	manifest.Skills["databricks-experimental"] = SkillMeta{
-		Version:      "0.1.0",
-		Files:        []string{"SKILL.md"},
-		Experimental: true,
+	manifest.Skills["databricks-iceberg"] = SkillMeta{
+		Version: "0.1.0",
+		Files:   []string{"SKILL.md"},
+		RepoDir: experimentalRepoPath,
 	}
 
 	src := &mockManifestSource{manifest: manifest}
@@ -308,7 +420,7 @@ func TestExperimentalSkillsIncludedWithFlag(t *testing.T) {
 	state, err := LoadState(globalDir)
 	require.NoError(t, err)
 	assert.Len(t, state.Skills, 3)
-	assert.Contains(t, state.Skills, "databricks-experimental")
+	assert.Contains(t, state.Skills, "databricks-iceberg")
 	assert.True(t, state.IncludeExperimental)
 
 	assert.Contains(t, stderr.String(), "Installed 3 skills.")
@@ -392,7 +504,7 @@ func TestIdempotentSecondInstallSkips(t *testing.T) {
 	fetchCalls := 0
 	orig := fetchFileFn
 	t.Cleanup(func() { fetchFileFn = orig })
-	fetchFileFn = func(_ context.Context, _, skillName, filePath string) ([]byte, error) {
+	fetchFileFn = func(_ context.Context, _, _, skillName, filePath string) ([]byte, error) {
 		fetchCalls++
 		return []byte("# " + skillName + "/" + filePath), nil
 	}
@@ -430,7 +542,7 @@ func TestIdempotentInstallUpdatesNewVersions(t *testing.T) {
 	var fetchedSkills []string
 	orig := fetchFileFn
 	t.Cleanup(func() { fetchFileFn = orig })
-	fetchFileFn = func(_ context.Context, _, skillName, filePath string) ([]byte, error) {
+	fetchFileFn = func(_ context.Context, _, _, skillName, filePath string) ([]byte, error) {
 		fetchedSkills = append(fetchedSkills, skillName)
 		return []byte("# " + skillName + "/" + filePath), nil
 	}
@@ -517,7 +629,7 @@ func TestIdempotentInstallReinstallsForNewAgent(t *testing.T) {
 	fetchCalls := 0
 	orig := fetchFileFn
 	t.Cleanup(func() { fetchFileFn = orig })
-	fetchFileFn = func(_ context.Context, _, skillName, filePath string) ([]byte, error) {
+	fetchFileFn = func(_ context.Context, _, _, skillName, filePath string) ([]byte, error) {
 		fetchCalls++
 		return []byte("# " + skillName + "/" + filePath), nil
 	}
@@ -725,6 +837,53 @@ func TestInstallProjectScopeZeroCompatibleAgentsReturnsError(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "no agents support project-scoped skills")
 	assert.Contains(t, err.Error(), "No Project Agent")
+}
+
+func TestInstallKeepsNameWhenRepoDirChanges(t *testing.T) {
+	tmp := setupTestHome(t)
+	ctx := cmdio.MockDiscard(t.Context())
+	agent := testAgent(tmp)
+	var fetchedFrom []string
+	orig := fetchFileFn
+	t.Cleanup(func() { fetchFileFn = orig })
+	fetchFileFn = func(_ context.Context, _, repoDir, skillName, filePath string) ([]byte, error) {
+		fetchedFrom = append(fetchedFrom, filepath.Join(repoDir, skillName, filePath))
+		return []byte("# " + skillName + "/" + filePath), nil
+	}
+
+	stableManifest := &Manifest{
+		Version: "1",
+		Skills: map[string]SkillMeta{
+			"databricks-jobs": {Version: "0.1.0", Files: []string{"SKILL.md"}},
+		},
+	}
+	require.NoError(t, InstallSkillsForAgents(
+		ctx, &mockManifestSource{manifest: stableManifest},
+		[]*agents.Agent{agent}, InstallOptions{},
+	))
+
+	globalDir := filepath.Join(tmp, ".databricks", "aitools", "skills")
+	require.DirExists(t, filepath.Join(globalDir, "databricks-jobs"))
+	assert.Contains(t, fetchedFrom, filepath.Join(stableSkillsRepoPath, "databricks-jobs", "SKILL.md"))
+	fetchedFrom = nil
+
+	experimentalManifest := &Manifest{
+		Version: "1",
+		Skills: map[string]SkillMeta{
+			"databricks-jobs": {Version: "0.1.0", Files: []string{"SKILL.md"}, RepoDir: experimentalRepoPath},
+		},
+	}
+	require.NoError(t, InstallSkillsForAgents(
+		ctx, &mockManifestSource{manifest: experimentalManifest},
+		[]*agents.Agent{agent}, InstallOptions{IncludeExperimental: true},
+	))
+
+	state, err := LoadState(globalDir)
+	require.NoError(t, err)
+	assert.Equal(t, "0.1.0", state.Skills["databricks-jobs"])
+	assert.Equal(t, experimentalRepoPath, state.RepoDirs["databricks-jobs"])
+	assert.DirExists(t, filepath.Join(globalDir, "databricks-jobs"))
+	assert.Contains(t, fetchedFrom, filepath.Join(experimentalRepoPath, "databricks-jobs", "SKILL.md"))
 }
 
 func TestSupportsProjectScopeSetCorrectly(t *testing.T) {

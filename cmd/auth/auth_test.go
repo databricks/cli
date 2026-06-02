@@ -1,6 +1,8 @@
 package auth
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/databricks/cli/cmd/root"
@@ -113,7 +115,14 @@ func TestProfileHostConflictTokenViaCobra(t *testing.T) {
 // pass the conflict check (the command will fail later for other reasons, but
 // NOT with a conflict error).
 func TestProfileHostCompatibleViaCobra(t *testing.T) {
-	t.Setenv("DATABRICKS_CONFIG_FILE", "./testdata/.databrickscfg")
+	// Copy the fixture into a temp directory so the auth login flow's writes
+	// (e.g. silent plaintext-fallback persistence on CI runners without a
+	// usable keyring) cannot dirty the checked-in fixture.
+	configPath := filepath.Join(t.TempDir(), ".databrickscfg")
+	fixture, err := os.ReadFile("./testdata/.databrickscfg")
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(configPath, fixture, 0o600))
+	t.Setenv("DATABRICKS_CONFIG_FILE", configPath)
 
 	ctx := cmdctx.GenerateExecId(t.Context())
 	cli := root.New(ctx)
@@ -125,7 +134,7 @@ func TestProfileHostCompatibleViaCobra(t *testing.T) {
 		"--host", "https://www.host1.test",
 	})
 
-	_, err := cli.ExecuteContextC(ctx)
+	_, err = cli.ExecuteContextC(ctx)
 	// The command may fail for other reasons (no browser, non-interactive, etc.)
 	// but it should NOT fail with a conflict error.
 	if err != nil {

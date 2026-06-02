@@ -75,6 +75,9 @@ github.com/databricks/cli/bundle/config.Experimental:
   "python_wheel_wrapper":
     "description": |-
       Whether to use a Python wheel wrapper.
+  "record_deployment_history":
+    "description": |-
+      Whether to record deployment history using the deployment metadata service (DMS), which tracks what changed across deployments.
   "scripts":
     "description": |-
       The commands to run.
@@ -215,6 +218,9 @@ github.com/databricks/cli/bundle/config.Resources:
   "postgres_branches":
     "description": |-
       PLACEHOLDER
+  "postgres_catalogs":
+    "description": |-
+      The Postgres catalog definitions for the bundle, where each key is the name of the catalog. Each entry binds a Unity Catalog catalog to a Postgres database on a Lakebase Autoscaling branch.
   "postgres_databases":
     "description": |-
       PLACEHOLDER
@@ -227,6 +233,9 @@ github.com/databricks/cli/bundle/config.Resources:
   "postgres_roles":
     "description": |-
       PLACEHOLDER
+  "postgres_synced_tables":
+    "description": |-
+      The Postgres synced table definitions for the bundle, where each key is the name of the synced table. Each entry continuously replicates a Unity Catalog Delta source table into a Postgres table on a Lakebase Autoscaling instance.
   "quality_monitors":
     "description": |-
       The quality monitor definitions for the bundle, where each key is the name of the quality monitor.
@@ -256,6 +265,9 @@ github.com/databricks/cli/bundle/config.Resources:
     "description": |-
       PLACEHOLDER
   "vector_search_endpoints":
+    "description": |-
+      PLACEHOLDER
+  "vector_search_indexes":
     "description": |-
       PLACEHOLDER
   "volumes":
@@ -775,6 +787,9 @@ github.com/databricks/cli/bundle/config/resources.PostgresBranch:
   "parent":
     "description": |-
       PLACEHOLDER
+  "replace_existing":
+    "description": |-
+      PLACEHOLDER
   "source_branch":
     "description": |-
       PLACEHOLDER
@@ -797,6 +812,22 @@ github.com/databricks/cli/bundle/config/resources.PostgresBranch:
     "description": |-
       PLACEHOLDER
   "update_time":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.PostgresCatalog:
+  "branch":
+    "description": |-
+      PLACEHOLDER
+  "catalog_id":
+    "description": |-
+      PLACEHOLDER
+  "create_database_if_missing":
+    "description": |-
+      PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
+  "postgres_database":
     "description": |-
       PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.PostgresDatabase:
@@ -847,6 +878,9 @@ github.com/databricks/cli/bundle/config/resources.PostgresEndpoint:
     "description": |-
       PLACEHOLDER
   "parent":
+    "description": |-
+      PLACEHOLDER
+  "replace_existing":
     "description": |-
       PLACEHOLDER
   "settings":
@@ -944,6 +978,40 @@ github.com/databricks/cli/bundle/config/resources.PostgresRole:
   "role_id":
     "description": |-
       The user-specified role ID; becomes the final component of the role's resource name. Must be 4-63 characters, lowercase letters, numbers, and hyphens (RFC 1123).
+github.com/databricks/cli/bundle/config/resources.PostgresSyncedTable:
+  "branch":
+    "description": |-
+      PLACEHOLDER
+  "create_database_objects_if_missing":
+    "description": |-
+      PLACEHOLDER
+  "existing_pipeline_id":
+    "description": |-
+      PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
+  "new_pipeline_spec":
+    "description": |-
+      PLACEHOLDER
+  "postgres_database":
+    "description": |-
+      PLACEHOLDER
+  "primary_key_columns":
+    "description": |-
+      PLACEHOLDER
+  "scheduling_policy":
+    "description": |-
+      PLACEHOLDER
+  "source_table_full_name":
+    "description": |-
+      PLACEHOLDER
+  "synced_table_id":
+    "description": |-
+      PLACEHOLDER
+  "timeseries_key":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.SecretScope:
   "backend_type":
     "description": |-
@@ -1031,6 +1099,34 @@ github.com/databricks/cli/bundle/config/resources.VectorSearchEndpoint:
     "description": |-
       PLACEHOLDER
   "usage_policy_id":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.VectorSearchIndex:
+  "delta_sync_index_spec":
+    "description": |-
+      PLACEHOLDER
+  "direct_access_index_spec":
+    "description": |-
+      PLACEHOLDER
+  "endpoint_name":
+    "description": |-
+      PLACEHOLDER
+  "grants":
+    "description": |-
+      PLACEHOLDER
+  "index_subtype":
+    "description": |-
+      PLACEHOLDER
+  "index_type":
+    "description": |-
+      PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
+  "name":
+    "description": |-
+      PLACEHOLDER
+  "primary_key":
     "description": |-
       PLACEHOLDER
 github.com/databricks/cli/bundle/config/variable.Lookup:

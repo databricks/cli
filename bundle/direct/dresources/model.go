@@ -97,7 +97,7 @@ func (r *ResourceMlflowModel) DoUpdate(ctx context.Context, id string, config *m
 	}, nil
 }
 
-func (r *ResourceMlflowModel) DoDelete(ctx context.Context, id string) error {
+func (r *ResourceMlflowModel) DoDelete(ctx context.Context, id string, _ *ml.CreateModelRequest) error {
 	return r.client.ModelRegistry.DeleteModel(ctx, ml.DeleteModelRequest{
 		Name: id,
 	})

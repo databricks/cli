@@ -935,6 +935,13 @@ github.com/databricks/databricks-sdk-go/service/jobs.JobsHealthRules:
   "rules":
     "description": |-
       PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/jobs.PythonOperatorTaskParameter:
+  "name":
+    "description": |-
+      PLACEHOLDER
+  "value":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/jobs.RunJobTask:
   "python_named_params":
     "description": |-
@@ -973,6 +980,9 @@ github.com/databricks/databricks-sdk-go/service/jobs.Webhook:
       PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/pipelines.ConnectorOptions:
   "gdrive_options":
+    "description": |-
+      PLACEHOLDER
+  "kafka_options":
     "description": |-
       PLACEHOLDER
   "sharepoint_options":
@@ -1029,6 +1039,10 @@ github.com/databricks/databricks-sdk-go/service/pipelines.SourceConfig:
       PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/pipelines.TableSpecificConfig:
   "workday_report_parameters":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/pipelines.Transformer:
+  "json_options":
     "description": |-
       PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/serving.Route:
@@ -1100,5 +1114,51 @@ github.com/databricks/databricks-sdk-go/service/sql.EndpointTagPair:
       PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/sql.EndpointTags:
   "custom_tags":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/vectorsearch.DeltaSyncVectorIndexSpecRequest:
+  "columns_to_sync":
+    "description": |-
+      PLACEHOLDER
+  "embedding_source_columns":
+    "description": |-
+      PLACEHOLDER
+  "embedding_vector_columns":
+    "description": |-
+      PLACEHOLDER
+  "embedding_writeback_table":
+    "description": |-
+      PLACEHOLDER
+  "pipeline_type":
+    "description": |-
+      PLACEHOLDER
+  "source_table":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/vectorsearch.DirectAccessVectorIndexSpec:
+  "embedding_source_columns":
+    "description": |-
+      PLACEHOLDER
+  "embedding_vector_columns":
+    "description": |-
+      PLACEHOLDER
+  "schema_json":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/vectorsearch.EmbeddingSourceColumn:
+  "embedding_model_endpoint_name":
+    "description": |-
+      PLACEHOLDER
+  "model_endpoint_name_for_query":
+    "description": |-
+      PLACEHOLDER
+  "name":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/vectorsearch.EmbeddingVectorColumn:
+  "embedding_dimension":
+    "description": |-
+      PLACEHOLDER
+  "name":
     "description": |-
       PLACEHOLDER

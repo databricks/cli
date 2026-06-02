@@ -96,7 +96,7 @@ func parseResourcesState(ctx context.Context, path string) (ExportedResourcesMap
 				// The direct engine manages permissions as a sub-resource
 				// (SecretScopeFixups adds MANAGE ACL for the current user).
 				result[resourceKey+".permissions"] = ResourceState{ID: instance.Attributes.Name}
-			case "apps", "database_instances", "database_catalogs", "synced_database_tables", "postgres_projects", "postgres_branches", "postgres_databases", "postgres_endpoints", "postgres_roles":
+			case "apps", "database_instances", "database_catalogs", "synced_database_tables", "postgres_projects", "postgres_branches", "postgres_catalogs", "postgres_databases", "postgres_endpoints", "postgres_roles", "postgres_synced_tables":
 				resourceKey = "resources." + groupName + "." + resource.Name
 				resourceState = ResourceState{ID: instance.Attributes.Name}
 			case "dashboards":

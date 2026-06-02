@@ -2,51 +2,20 @@ package dresources
 
 import (
 	"errors"
-	"fmt"
-	"regexp"
 	"strings"
 
 	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go/retries"
 )
 
-// postgresNamePattern matches hierarchical Postgres resource names:
-// - projects/{project_id}
-// - projects/{project_id}/branches/{branch_id}
-// - projects/{project_id}/branches/{branch_id}/endpoints/{endpoint_id}
-// - projects/{project_id}/branches/{branch_id}/databases/{database_id}
-var postgresNamePattern = regexp.MustCompile(`^projects/([^/]+)(?:/branches/([^/]+)(?:/endpoints/([^/]+)|/databases/([^/]+))?)?$`)
-
-// PostgresNameComponents holds the extracted components from a Postgres resource name.
-type PostgresNameComponents struct {
-	ProjectID  string
-	BranchID   string
-	EndpointID string
-	DatabaseID string
-}
-
-// ParsePostgresName extracts project, branch, and endpoint or database IDs from a hierarchical Postgres resource name.
-// Returns an error if the name doesn't match the expected format.
-func ParsePostgresName(name string) (PostgresNameComponents, error) {
-	matches := postgresNamePattern.FindStringSubmatch(name)
-	if matches == nil {
-		return PostgresNameComponents{}, fmt.Errorf("invalid postgres resource name format: %q", name)
-	}
-
-	return PostgresNameComponents{
-		ProjectID:  matches[1],
-		BranchID:   matches[2],
-		EndpointID: matches[3],
-		DatabaseID: matches[4],
-	}, nil
+type StateLifecycle struct {
+	Started *bool `json:"started,omitempty"`
 }
 
 // This is copied from the retries package of the databricks-sdk-go. It should be made public,
 // but for now, I'm copying it here.
 func shouldRetry(err error) bool {
-	var e *retries.Err
-	if errors.As(err, &e) {
+	if e, ok := errors.AsType[*retries.Err](err); ok {
 		return !e.Halt
 	}
 	return false
@@ -81,17 +50,4 @@ func collectUpdatePathsWithPrefix(changes Changes, prefix string) []string {
 		}
 	}
 	return paths
-}
-
-// truncateAtIndex truncates a field path at the first bracket index (e.g. "[0]", "[*]",
-// "[key=value]"). Most update_mask APIs only support referencing entire collection
-// fields, not individual elements within them.
-// Examples: "resources[0].name" -> "resources", "description" -> "description",
-// "config.env[0].name" -> "config.env".
-func truncateAtIndex(path string) string {
-	p, err := structpath.ParsePath(path)
-	if err != nil {
-		return path
-	}
-	return p.Prefix(1).String()
 }

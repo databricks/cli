@@ -134,7 +134,7 @@ func (r *ResourcePostgresRole) DoUpdate(ctx context.Context, id string, config *
 	return waiter.Wait(ctx)
 }
 
-func (r *ResourcePostgresRole) DoDelete(ctx context.Context, id string) error {
+func (r *ResourcePostgresRole) DoDelete(ctx context.Context, id string, _ *PostgresRoleState) error {
 	waiter, err := r.client.Postgres.DeleteRole(ctx, postgres.DeleteRoleRequest{
 		Name: id,
 

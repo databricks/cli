@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/database"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/postgres"
 )
 
@@ -113,7 +114,7 @@ func resolveProvisioned(ctx context.Context, w *databricks.WorkspaceClient, inst
 		return nil, fmt.Errorf("database instance %q is not ready for accepting connections (state: %s)", instance.Name, instance.State)
 	}
 
-	user, err := w.CurrentUser.Me(ctx)
+	user, err := w.CurrentUser.Me(ctx, iam.MeRequest{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get current user: %w", err)
 	}
@@ -174,7 +175,7 @@ func resolveAutoscaling(ctx context.Context, w *databricks.WorkspaceClient, spec
 		return nil, err
 	}
 
-	user, err := w.CurrentUser.Me(ctx)
+	user, err := w.CurrentUser.Me(ctx, iam.MeRequest{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get current user: %w", err)
 	}

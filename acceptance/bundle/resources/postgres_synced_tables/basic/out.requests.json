@@ -1,0 +1,54 @@
+{
+  "method": "POST",
+  "path": "/api/2.0/postgres/projects",
+  "q": {
+    "project_id": "test-pg-proj-[UNIQUE_NAME]"
+  },
+  "body": {
+    "spec": {
+      "display_name": "Test Project for Synced Table",
+      "pg_version": 17
+    }
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/postgres/catalogs",
+  "q": {
+    "catalog_id": "lakebase_test_[UNIQUE_NAME]"
+  },
+  "body": {
+    "spec": {
+      "branch": "projects/test-pg-proj-[UNIQUE_NAME]/branches/production",
+      "create_database_if_missing": true,
+      "postgres_database": "appdb"
+    }
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/postgres/synced_tables",
+  "q": {
+    "synced_table_id": "lakebase_test_[UNIQUE_NAME].public.trips_synced"
+  },
+  "body": {
+    "spec": {
+      "branch": "projects/test-pg-proj-[UNIQUE_NAME]/branches/production",
+      "create_database_objects_if_missing": true,
+      "new_pipeline_spec": {
+        "storage_catalog": "main",
+        "storage_schema": "pipeline_storage_[UNIQUE_NAME]"
+      },
+      "postgres_database": "appdb",
+      "primary_key_columns": [
+        "tpep_pickup_datetime"
+      ],
+      "scheduling_policy": "SNAPSHOT",
+      "source_table_full_name": "main.source_[UNIQUE_NAME].trips_source"
+    }
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/postgres/synced_tables/lakebase_test_[UNIQUE_NAME].public.trips_synced"
+}

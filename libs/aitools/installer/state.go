@@ -27,6 +27,7 @@ type InstallState struct {
 	Release             string            `json:"release"`
 	LastUpdated         time.Time         `json:"last_updated"`
 	Skills              map[string]string `json:"skills"`
+	RepoDirs            map[string]string `json:"repo_dirs,omitempty"`
 	Scope               string            `json:"scope,omitempty"`
 }
 

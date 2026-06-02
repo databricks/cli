@@ -152,6 +152,7 @@ type FakeWorkspace struct {
 	RegisteredModels      map[string]catalog.RegisteredModelInfo
 	ServingEndpoints      map[string]serving.ServingEndpointDetailed
 	VectorSearchEndpoints map[string]vectorsearch.EndpointInfo
+	VectorSearchIndexes   map[string]fakeVectorSearchIndex
 
 	SecretScopes map[string]workspace.SecretScope
 	Secrets      map[string]map[string]string // scope -> key -> value
@@ -168,12 +169,21 @@ type FakeWorkspace struct {
 	DatabaseCatalogs     map[string]database.DatabaseCatalog
 	SyncedDatabaseTables map[string]database.SyncedDatabaseTable
 
-	PostgresProjects   map[string]postgres.Project
-	PostgresBranches   map[string]postgres.Branch
-	PostgresEndpoints  map[string]postgres.Endpoint
-	PostgresDatabases  map[string]postgres.Database
-	PostgresRoles      map[string]postgres.Role
-	PostgresOperations map[string]postgres.Operation
+	PostgresProjects     map[string]postgres.Project
+	PostgresBranches     map[string]postgres.Branch
+	PostgresCatalogs     map[string]postgres.Catalog
+	PostgresDatabases    map[string]postgres.Database
+	PostgresEndpoints    map[string]postgres.Endpoint
+	PostgresRoles        map[string]postgres.Role
+	PostgresSyncedTables map[string]postgres.SyncedTable
+	PostgresOperations   map[string]postgres.Operation
+
+	// Branches and endpoints that the server provisioned implicitly together
+	// with their parent (e.g. the production branch on a new project, or the
+	// primary endpoint on a new branch). The real backend rejects independent
+	// deletion of these — they go away only when the parent is deleted.
+	postgresImplicitBranches  map[string]bool
+	postgresImplicitEndpoints map[string]bool
 
 	// clusterVenvs caches Python venvs per existing cluster ID,
 	// matching cloud behavior where libraries are cached on running clusters.
@@ -287,28 +297,33 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 				State: sql.StateRunning,
 			},
 		},
-		ServingEndpoints:      map[string]serving.ServingEndpointDetailed{},
-		VectorSearchEndpoints: map[string]vectorsearch.EndpointInfo{},
-		Repos:                 map[string]workspace.RepoInfo{},
-		SecretScopes:          map[string]workspace.SecretScope{},
-		Secrets:               map[string]map[string]string{},
-		Acls:                  map[string][]workspace.AclItem{},
-		Permissions:           map[string]iam.ObjectPermissions{},
-		Groups:                map[string]iam.Group{},
-		DatabaseInstances:     map[string]database.DatabaseInstance{},
-		DatabaseCatalogs:      map[string]database.DatabaseCatalog{},
-		SyncedDatabaseTables:  map[string]database.SyncedDatabaseTable{},
-		PostgresProjects:      map[string]postgres.Project{},
-		PostgresBranches:      map[string]postgres.Branch{},
-		PostgresEndpoints:     map[string]postgres.Endpoint{},
-		PostgresDatabases:     map[string]postgres.Database{},
-		PostgresRoles:         map[string]postgres.Role{},
-		PostgresOperations:    map[string]postgres.Operation{},
-		clusterVenvs:          map[string]*clusterEnv{},
-		Alerts:                map[string]sql.AlertV2{},
-		Experiments:           map[string]ml.GetExperimentResponse{},
-		ModelRegistryModels:   map[string]ml.Model{},
-		ModelRegistryModelIDs: map[string]string{},
+		ServingEndpoints:          map[string]serving.ServingEndpointDetailed{},
+		VectorSearchEndpoints:     map[string]vectorsearch.EndpointInfo{},
+		VectorSearchIndexes:       map[string]fakeVectorSearchIndex{},
+		Repos:                     map[string]workspace.RepoInfo{},
+		SecretScopes:              map[string]workspace.SecretScope{},
+		Secrets:                   map[string]map[string]string{},
+		Acls:                      map[string][]workspace.AclItem{},
+		Permissions:               map[string]iam.ObjectPermissions{},
+		Groups:                    map[string]iam.Group{},
+		DatabaseInstances:         map[string]database.DatabaseInstance{},
+		DatabaseCatalogs:          map[string]database.DatabaseCatalog{},
+		SyncedDatabaseTables:      map[string]database.SyncedDatabaseTable{},
+		PostgresProjects:          map[string]postgres.Project{},
+		PostgresBranches:          map[string]postgres.Branch{},
+		PostgresCatalogs:          map[string]postgres.Catalog{},
+		PostgresDatabases:         map[string]postgres.Database{},
+		PostgresEndpoints:         map[string]postgres.Endpoint{},
+		PostgresRoles:             map[string]postgres.Role{},
+		PostgresSyncedTables:      map[string]postgres.SyncedTable{},
+		PostgresOperations:        map[string]postgres.Operation{},
+		postgresImplicitBranches:  map[string]bool{},
+		postgresImplicitEndpoints: map[string]bool{},
+		clusterVenvs:              map[string]*clusterEnv{},
+		Alerts:                    map[string]sql.AlertV2{},
+		Experiments:               map[string]ml.GetExperimentResponse{},
+		ModelRegistryModels:       map[string]ml.Model{},
+		ModelRegistryModelIDs:     map[string]string{},
 		Clusters: map[string]compute.ClusterDetails{
 			TestDefaultClusterId: {
 				ClusterId:   TestDefaultClusterId,

@@ -1148,3 +1148,45 @@ func TestRunCreate_NameDotAndOutputDirAreMutuallyExclusive(t *testing.T) {
 	require.Error(t, err)
 	assert.ErrorIs(t, err, prompt.ErrNameDotWithOutputDir)
 }
+
+func TestRunCreate_SkipInstallRejectsRun(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	for _, runMode := range []string{"dev", "dev-remote"} {
+		t.Run(runMode, func(t *testing.T) {
+			err := runCreate(ctx, createOptions{
+				name:         "my-app",
+				nameProvided: true,
+				skipInstall:  true,
+				run:          runMode,
+			})
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), "--skip-install cannot be combined with --run")
+		})
+	}
+}
+
+func TestInitCmd_SkipInstallFlagRegistered(t *testing.T) {
+	cmd := newInitCmd()
+	flag := cmd.Flags().Lookup("skip-install")
+	require.NotNil(t, flag)
+	assert.Equal(t, "false", flag.DefValue)
+}
+
+func TestPrependInstall(t *testing.T) {
+	tests := []struct {
+		name      string
+		install   string
+		nextSteps string
+		want      string
+	}{
+		{"both set", "npm ci", "npm run dev", "npm ci && npm run dev"},
+		{"empty install", "", "npm run dev", "npm run dev"},
+		{"empty next steps", "npm ci", "", "npm ci"},
+		{"both empty", "", "", ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, prependInstall(tt.install, tt.nextSteps))
+		})
+	}
+}

@@ -220,7 +220,7 @@ func TestCaptureUCDependenciesQualityMonitorEdgeCases(t *testing.T) {
 
 	assert.Equal(t, "${resources.catalogs.my_catalog.name}.other", b.Config.Resources.QualityMonitors["catalog_only"].OutputSchemaName)
 	assert.Equal(t, "other.other", b.Config.Resources.QualityMonitors["no_match"].OutputSchemaName)
-	assert.Equal(t, "", b.Config.Resources.QualityMonitors["empty"].OutputSchemaName)
+	assert.Empty(t, b.Config.Resources.QualityMonitors["empty"].OutputSchemaName)
 	assert.Equal(t, "nodot", b.Config.Resources.QualityMonitors["no_dot"].OutputSchemaName)
 	assert.Nil(t, b.Config.Resources.QualityMonitors["nil_monitor"])
 }

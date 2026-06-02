@@ -23,8 +23,10 @@ var SupportedResources = map[string]any{
 	"postgres_projects":       (*ResourcePostgresProject)(nil),
 	"postgres_branches":       (*ResourcePostgresBranch)(nil),
 	"postgres_endpoints":      (*ResourcePostgresEndpoint)(nil),
+	"postgres_catalogs":       (*ResourcePostgresCatalog)(nil),
 	"postgres_databases":      (*ResourcePostgresDatabase)(nil),
 	"postgres_roles":          (*ResourcePostgresRole)(nil),
+	"postgres_synced_tables":  (*ResourcePostgresSyncedTable)(nil),
 	"alerts":                  (*ResourceAlert)(nil),
 	"clusters":                (*ResourceCluster)(nil),
 	"registered_models":       (*ResourceRegisteredModel)(nil),
@@ -33,6 +35,7 @@ var SupportedResources = map[string]any{
 	"model_serving_endpoints": (*ResourceModelServingEndpoint)(nil),
 	"quality_monitors":        (*ResourceQualityMonitor)(nil),
 	"vector_search_endpoints": (*ResourceVectorSearchEndpoint)(nil),
+	"vector_search_indexes":   (*ResourceVectorSearchIndex)(nil),
 
 	// Permissions
 	"jobs.permissions":                    (*ResourcePermissions)(nil),
@@ -51,11 +54,12 @@ var SupportedResources = map[string]any{
 	"vector_search_endpoints.permissions": (*ResourcePermissions)(nil),
 
 	// Grants
-	"catalogs.grants":           (*ResourceGrants)(nil),
-	"schemas.grants":            (*ResourceGrants)(nil),
-	"external_locations.grants": (*ResourceGrants)(nil),
-	"volumes.grants":            (*ResourceGrants)(nil),
-	"registered_models.grants":  (*ResourceGrants)(nil),
+	"catalogs.grants":              (*ResourceGrants)(nil),
+	"schemas.grants":               (*ResourceGrants)(nil),
+	"external_locations.grants":    (*ResourceGrants)(nil),
+	"volumes.grants":               (*ResourceGrants)(nil),
+	"registered_models.grants":     (*ResourceGrants)(nil),
+	"vector_search_indexes.grants": (*ResourceGrants)(nil),
 }
 
 func InitAll(client *databricks.WorkspaceClient) (map[string]*Adapter, error) {

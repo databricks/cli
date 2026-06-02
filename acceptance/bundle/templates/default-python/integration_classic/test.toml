@@ -34,8 +34,8 @@ Old = "python setup.py bdist_wheel"
 New = "python3 setup.py bdist_wheel"
 
 [[Repls]]
-# clean up ?o=<num> suffix after URL since not all workspaces have that
-Old = '\?o=\[NUMID\]'
+# clean up ?[ow]=<num> suffix after URL since not all workspaces have that
+Old = '\?[ow]=\[NUMID\]'
 New = ''
 Order = 1000
 

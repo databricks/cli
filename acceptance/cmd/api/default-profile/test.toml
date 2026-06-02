@@ -1,0 +1,10 @@
+Ignore = [
+    "home",
+]
+
+# Redact the OS- and network-dependent suffix on the failed lookup so the
+# negative case (--profile overrides default_profile) is stable across
+# runners. We still assert the requested host appears in output.
+[[Repls]]
+Old = 'Get "https://other.test/api/2.0/clusters/list": .*'
+New = 'Get "https://other.test/api/2.0/clusters/list": (redacted)'

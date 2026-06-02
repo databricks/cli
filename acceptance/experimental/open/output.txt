@@ -1,15 +1,15 @@
 
 === print URL for a job
 >>> [CLI] experimental open --url jobs 123
-[DATABRICKS_URL]/jobs/123?o=[NUMID]
+[DATABRICKS_URL]/jobs/123?w=[NUMID]
 
 === print URL for a notebook
 >>> [CLI] experimental open --url notebooks 12345
-[DATABRICKS_URL]/?o=[NUMID]#notebook/12345
+[DATABRICKS_URL]/?w=[NUMID]#notebook/12345
 
 === unknown resource type
 >>> [CLI] experimental open --url unknown 123
-Error: unknown resource type "unknown", must be one of: alerts, apps, clusters, dashboards, experiments, jobs, model_serving_endpoints, models, notebooks, pipelines, queries, registered_models, warehouses
+Error: unknown resource type "unknown", must be one of: alerts, apps, catalogs, clusters, dashboards, database_catalogs, database_instances, experiments, jobs, model_serving_endpoints, models, notebooks, pipelines, postgres_catalogs, postgres_synced_tables, quality_monitors, queries, registered_models, schemas, synced_database_tables, vector_search_endpoints, vector_search_indexes, volumes, warehouses
 
 Exit code: 1
 
@@ -17,16 +17,27 @@ Exit code: 1
 >>> [CLI] __complete experimental open ,
 alerts
 apps
+catalogs
 clusters
 dashboards
+database_catalogs
+database_instances
 experiments
 jobs
 model_serving_endpoints
 models
 notebooks
 pipelines
+postgres_catalogs
+postgres_synced_tables
+quality_monitors
 queries
 registered_models
+schemas
+synced_database_tables
+vector_search_endpoints
+vector_search_indexes
+volumes
 warehouses
 :4
 Completion ended with directive: ShellCompDirectiveNoFileComp

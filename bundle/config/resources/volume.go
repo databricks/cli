@@ -3,11 +3,11 @@ package resources
 import (
 	"context"
 	"net/url"
-	"strings"
 
 	"github.com/databricks/databricks-sdk-go/apierr"
 
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
@@ -59,8 +59,7 @@ func (v *Volume) InitializeURL(baseURL url.URL) {
 	if v.ID == "" {
 		return
 	}
-	baseURL.Path = "explore/data/volumes/" + strings.ReplaceAll(v.ID, ".", "/")
-	v.URL = baseURL.String()
+	v.URL = workspaceurls.ResourceURL(baseURL, "volumes", v.ID)
 }
 
 func (v *Volume) GetURL() string {

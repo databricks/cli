@@ -6,6 +6,8 @@
 
 postgres_branches: postgres.BranchSpec
 
+postgres_catalogs: postgres.CatalogCatalogSpec
+
 postgres_databases: postgres.DatabaseDatabaseSpec
 
 postgres_endpoints: postgres.EndpointSpec
@@ -13,3 +15,5 @@ postgres_endpoints: postgres.EndpointSpec
 postgres_projects: postgres.ProjectSpec
 
 postgres_roles: postgres.RoleRoleSpec
+
+postgres_synced_tables: postgres.SyncedTableSyncedTableSpec
