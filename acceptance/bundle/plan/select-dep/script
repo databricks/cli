@@ -1,8 +1,12 @@
+# --select is only supported by the direct engine; terraform errors out.
+# Output differs per engine, so it is captured in a per-engine file.
+{
 # Both resources selected explicitly.
-trace $CLI bundle plan --select jobs.foo --select jobs.bar
+errcode trace $CLI bundle plan --select jobs.foo --select jobs.bar
 
 # Select the dependency alone: bar has no outgoing references.
-trace $CLI bundle plan --select jobs.bar
+errcode trace $CLI bundle plan --select jobs.bar
 
 # Select only foo: bar is auto-included because foo references ${resources.jobs.bar.id}.
-trace $CLI bundle plan --select jobs.foo
+errcode trace $CLI bundle plan --select jobs.foo
+} &> out.plan.$DATABRICKS_BUNDLE_ENGINE.txt

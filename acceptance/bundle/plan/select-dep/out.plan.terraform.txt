@@ -1,0 +1,18 @@
+
+>>> [CLI] bundle plan --select jobs.foo --select jobs.bar
+Error: --select is only supported with the direct engine. See https://docs.databricks.com/aws/en/dev-tools/bundles/direct
+
+
+Exit code: 1
+
+>>> [CLI] bundle plan --select jobs.bar
+Error: --select is only supported with the direct engine. See https://docs.databricks.com/aws/en/dev-tools/bundles/direct
+
+
+Exit code: 1
+
+>>> [CLI] bundle plan --select jobs.foo
+Error: --select is only supported with the direct engine. See https://docs.databricks.com/aws/en/dev-tools/bundles/direct
+
+
+Exit code: 1

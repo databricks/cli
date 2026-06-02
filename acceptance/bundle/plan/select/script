@@ -1,17 +1,21 @@
+# --select is only supported by the direct engine; terraform errors out.
+# Output differs per engine, so it is captured in a per-engine file.
+{
 # Non-existent resource
-trace $CLI bundle plan --select no_such_resource || true
+errcode trace $CLI bundle plan --select no_such_resource
 
 # Qualified name for non-existent resource
-trace $CLI bundle plan --select jobs.no_such_job || true
+errcode trace $CLI bundle plan --select jobs.no_such_job
 
 # Select a unique resource by unqualified name
-trace $CLI bundle plan --select job_b
+errcode trace $CLI bundle plan --select job_b
 
 # Select a resource by qualified name
-trace $CLI bundle plan --select jobs.job_a
+errcode trace $CLI bundle plan --select jobs.job_a
 
 # Repeated --select: both resources are included
-trace $CLI bundle plan --select job_a --select job_b
+errcode trace $CLI bundle plan --select job_a --select job_b
 
 # Comma-separated --select: both resources are included
-trace $CLI bundle plan --select job_a,job_b
+errcode trace $CLI bundle plan --select job_a,job_b
+} &> out.plan.$DATABRICKS_BUNDLE_ENGINE.txt

@@ -139,6 +139,23 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		bundle.ApplyFuncContext(ctx, b, func(context.Context, *bundle.Bundle) { opts.InitFunc(b) })
 	}
 
+	if len(b.Select) > 0 {
+		// --select (plan/deploy only) is only supported by the direct engine, which
+		// tracks resource dependencies in the plan graph. Reject it on terraform with
+		// an actionable error rather than silently planning/deploying every resource.
+		// Checked before Initialize so the engine mismatch is reported before any
+		// per-resource validation. The actual filtering happens in RunPlan via
+		// plan.FilterToSelected.
+		engineSetting, err := ResolveEngineSetting(ctx, b)
+		if err != nil {
+			return b, nil, err
+		}
+		if !engineSetting.Type.IsDirect() {
+			logdiag.LogError(ctx, errors.New("--select is only supported with the direct engine. See https://docs.databricks.com/aws/en/dev-tools/bundles/direct"))
+			return b, nil, root.ErrAlreadyPrinted
+		}
+	}
+
 	if !opts.SkipInitialize {
 		t0 := time.Now()
 		phases.Initialize(ctx, b)
@@ -167,21 +184,6 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		err := opts.PostInitFunc(ctx, b)
 		if err != nil {
 			return b, nil, err
-		}
-	}
-
-	if len(b.Select) > 0 {
-		// --select (plan/deploy only) is only supported by the direct engine, which
-		// tracks resource dependencies in the plan graph. Reject it on terraform with
-		// an actionable error rather than silently planning/deploying every resource.
-		// The actual filtering happens in RunPlan via plan.FilterToSelected.
-		engineSetting, err := ResolveEngineSetting(ctx, b)
-		if err != nil {
-			return b, nil, err
-		}
-		if !engineSetting.Type.IsDirect() {
-			logdiag.LogError(ctx, errors.New(`--select is only supported with the direct engine (set bundle.engine to "direct" or DATABRICKS_BUNDLE_ENGINE=direct)`))
-			return b, nil, root.ErrAlreadyPrinted
 		}
 	}
 

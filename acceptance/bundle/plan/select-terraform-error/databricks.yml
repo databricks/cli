@@ -1,7 +1,0 @@
-bundle:
-  name: plan-select-terraform-error
-
-resources:
-  jobs:
-    my_job:
-      name: my-job
