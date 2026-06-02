@@ -43,16 +43,19 @@ It is useful for previewing changes before running 'bundle deploy'.`,
 			PreDeployChecks: true,
 		}
 
-		opts.InitFunc = func(b *bundle.Bundle) {
-			b.Config.Bundle.Force = force
-			b.Select = selectResources
+		// Only add InitFunc if we need to set force, cluster ID or selection
+		if force || len(selectResources) > 0 || cmd.Flag("compute-id").Changed || cmd.Flag("cluster-id").Changed {
+			opts.InitFunc = func(b *bundle.Bundle) {
+				b.Config.Bundle.Force = force
+				b.Select = selectResources
 
-			if cmd.Flag("compute-id").Changed {
-				b.Config.Bundle.ClusterId = clusterId
-			}
+				if cmd.Flag("compute-id").Changed {
+					b.Config.Bundle.ClusterId = clusterId
+				}
 
-			if cmd.Flag("cluster-id").Changed {
-				b.Config.Bundle.ClusterId = clusterId
+				if cmd.Flag("cluster-id").Changed {
+					b.Config.Bundle.ClusterId = clusterId
+				}
 			}
 		}
 

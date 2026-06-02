@@ -1,12 +1,16 @@
 # --select is only supported by the direct engine; terraform errors out.
 # Output differs per engine, so it is captured in a per-engine file.
 {
-# Plan shows foo plus its dependency bar, but not the independent baz.
-errcode trace $CLI bundle plan --select jobs.foo
+# Serialize the filtered plan: only foo and its dependency bar, never baz.
+errcode trace $CLI bundle plan --select jobs.foo -o json > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 
-# Deploy only foo: bar is created as a dependency, baz is never deployed.
-errcode trace $CLI bundle deploy --select jobs.foo
+# Deploy only foo. Without --plan the plan is computed inline; with --plan
+# (READPLAN=1, direct only) the serialized plan above is applied as-is.
+# Not traced: readplanarg varies the command line between READPLAN variants,
+# which must produce identical output.
+title "bundle deploy --select jobs.foo\n"
+errcode $CLI bundle deploy --select jobs.foo $(readplanarg out.plan.direct.json)
 
-# Confirm via recorded requests that only bar and foo were created.
+# Confirm via recorded requests that only bar and foo were created, never baz.
 errcode trace print_requests.py --sort //jobs
 } &> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt

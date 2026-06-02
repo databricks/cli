@@ -1,11 +1,7 @@
 
->>> [CLI] bundle plan --select jobs.foo
-create jobs.bar
-create jobs.foo
+>>> [CLI] bundle plan --select jobs.foo -o json
 
-Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
-
->>> [CLI] bundle deploy --select jobs.foo
+=== bundle deploy --select jobs.foo
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/select-deploy/default/files...
 Deploying resources...
 Updating deployment state...

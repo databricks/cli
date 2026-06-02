@@ -1,11 +1,11 @@
 
->>> [CLI] bundle plan --select jobs.foo
+>>> [CLI] bundle plan --select jobs.foo -o json
 Error: --select is only supported with the direct engine. See https://docs.databricks.com/aws/en/dev-tools/bundles/direct
 
 
 Exit code: 1
 
->>> [CLI] bundle deploy --select jobs.foo
+=== bundle deploy --select jobs.foo
 Error: --select is only supported with the direct engine. See https://docs.databricks.com/aws/en/dev-tools/bundles/direct
 
 
