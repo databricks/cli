@@ -57,10 +57,9 @@ func ParseTFStateAttrs(path string) (TFStateAttrs, error) {
 
 // tfSchemaTypeMap maps TF resource type name → schema struct type (via AllResources json tags).
 var tfSchemaTypeMap = sync.OnceValue(func() map[string]reflect.Type {
-	t := reflect.TypeOf(tfschema.AllResources{})
+	t := reflect.TypeFor[tfschema.AllResources]()
 	m := make(map[string]reflect.Type, t.NumField())
-	for i := range t.NumField() {
-		f := t.Field(i)
+	for f := range t.Fields() {
 		tag := strings.Split(f.Tag.Get("json"), ",")[0]
 		if tag != "" && tag != "-" {
 			m[tag] = f.Type
