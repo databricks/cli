@@ -10,4 +10,8 @@ postgres_endpoints: postgres.EndpointSpec
 
 postgres_projects: postgres.ProjectSpec
 
+postgres_catalogs: postgres.CatalogCatalogSpec
+
+postgres_synced_tables: postgres.SyncedTableSyncedTableSpec
+
 postgres_roles: postgres.RoleRoleSpec

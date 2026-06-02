@@ -3,7 +3,6 @@ package resources
 import (
 	"context"
 	"net/url"
-	"strings"
 
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
@@ -11,6 +10,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/workspaceurls"
 )
 
 type Catalog struct {
@@ -48,8 +48,7 @@ func (c *Catalog) InitializeURL(baseURL url.URL) {
 	if c.ID == "" {
 		return
 	}
-	baseURL.Path = "explore/data/" + strings.ReplaceAll(c.ID, ".", "/")
-	c.URL = baseURL.String()
+	c.URL = workspaceurls.ResourceURL(baseURL, "catalogs", c.ID)
 }
 
 func (c *Catalog) GetURL() string {

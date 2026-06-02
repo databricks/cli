@@ -153,8 +153,7 @@ func Upload(ctx context.Context, ec protos.ExecutionContext) error {
 		//
 		// The UI infra team (who owns the /telemetry-ext API) recommends retrying for
 		// all 5xx responses.
-		var apiErr *apierr.APIError
-		if errors.As(err, &apiErr) && apiErr.StatusCode >= 500 {
+		if apiErr, ok := errors.AsType[*apierr.APIError](err); ok && apiErr.StatusCode >= 500 {
 			log.Infof(ctx, "Attempt %d failed due to a server side error. Retrying status code: %d", i+1, apiErr.StatusCode)
 
 			remainingTime := time.Until(deadline)
@@ -171,23 +170,23 @@ func Upload(ctx context.Context, ec protos.ExecutionContext) error {
 	return errors.New("failed to upload telemetry logs after three attempts")
 }
 
-// orgIDHeaders returns headers with X-Databricks-Org-Id set if a workspace ID
-// is configured. SPOG hosts require this header to route requests to the
-// correct workspace; without it, telemetry is recorded in a central shard
-// instead of the correct workspace.
-func orgIDHeaders(apiClient *client.DatabricksClient) map[string]string {
+// workspaceIDHeaders returns headers with X-Databricks-Workspace-Id set if a
+// workspace ID is configured. SPOG hosts require this header to route requests
+// to the correct workspace; without it, telemetry is recorded in a central
+// shard instead of the correct workspace.
+func workspaceIDHeaders(apiClient *client.DatabricksClient) map[string]string {
 	wsID := apiClient.Config.WorkspaceID
 	if wsID == "" {
 		return nil
 	}
 	return map[string]string{
-		"X-Databricks-Org-Id": wsID,
+		"X-Databricks-Workspace-Id": wsID,
 	}
 }
 
 func attempt(ctx context.Context, apiClient *client.DatabricksClient, protoLogs []string) (*ResponseBody, error) {
 	resp := &ResponseBody{}
-	err := apiClient.Do(ctx, http.MethodPost, "/telemetry-ext", orgIDHeaders(apiClient), nil, RequestBody{
+	err := apiClient.Do(ctx, http.MethodPost, "/telemetry-ext", workspaceIDHeaders(apiClient), nil, RequestBody{
 		UploadTime: time.Now().UnixMilli(),
 		// There is a bug in the `/telemetry-ext` API which requires us to
 		// send an empty array for the `Items` field. Otherwise the API returns

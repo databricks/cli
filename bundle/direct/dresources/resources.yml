@@ -117,18 +117,6 @@ resources:
       # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/pipelines/resource_pipeline.go#L209
       - field: ingestion_definition.ingest_from_uc_foreign_catalog
         reason: immutable
-      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/pipelines/resource_pipeline.go#L204
-      - field: gateway_definition.connection_id
-        reason: immutable
-      - field: gateway_definition.connection_name
-        reason: immutable
-      - field: gateway_definition.gateway_storage_catalog
-        reason: immutable
-      - field: gateway_definition.gateway_storage_schema
-        reason: immutable
-      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/pipelines/resource_pipeline.go#L209
-      - field: ingestion_definition.ingest_from_uc_foreign_catalog
-        reason: immutable
 
     ignore_remote_changes:
       # "id" is handled in a special way before any fields changed
@@ -424,8 +412,14 @@ resources:
         reason: managed
       - field: gcp_attributes
         reason: managed
-
     backend_defaults:
+      # lifecycle.started is derived from remote cluster state in RemapState, so the
+      # remote side always has a value. When the user omits lifecycle from config,
+      # both old and new are nil and backend_defaults correctly skips the remote value.
+      # When the user explicitly sets lifecycle.started, old/new are non-nil and normal
+      # drift detection applies (e.g. detecting out-of-band terminate).
+      - field: lifecycle
+      - field: lifecycle.started
       # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/clusters/resource_cluster.go#L331
       # s.SchemaPath("enable_elastic_disk").SetComputed()
       - field: enable_elastic_disk
@@ -499,6 +493,14 @@ resources:
         reason: immutable
       - field: branch_id
         reason: immutable
+    ignore_remote_changes:
+      # replace_existing is a create-time query parameter; not returned by GET.
+      - field: replace_existing
+        reason: input_only
+    ignore_local_changes:
+      # replace_existing only takes effect on create; toggling it later is a no-op.
+      - field: replace_existing
+        reason: "input_only; cannot be updated after create"
 
   postgres_endpoints:
     recreate_on_changes:
@@ -506,6 +508,58 @@ resources:
       - field: parent
         reason: immutable
       - field: endpoint_id
+        reason: immutable
+    ignore_remote_changes:
+      # replace_existing is a create-time query parameter; not returned by GET.
+      - field: replace_existing
+        reason: input_only
+    ignore_local_changes:
+      # replace_existing only takes effect on create; toggling it later is a no-op.
+      - field: replace_existing
+        reason: "input_only; cannot be updated after create"
+
+  postgres_catalogs:
+    recreate_on_changes:
+      # catalog_id is part of the hierarchical name and immutable.
+      - field: catalog_id
+        reason: immutable
+      # The Postgres SDK has no UpdateCatalog endpoint, so any local change
+      # requires delete+create. The OpenAPI spec only marks postgres_database
+      # as IMMUTABLE (handled by autogen); branch and create_database_if_missing
+      # need explicit entries here.
+      - field: branch
+        reason: immutable
+      - field: create_database_if_missing
+        reason: immutable
+
+  postgres_synced_tables:
+    # The Postgres API has no UpdateSyncedTable endpoint, so every settable
+    # field is recreate-only on the intent side (local YAML edit -> delete +
+    # create). The complementary ignore_remote_changes block for this resource
+    # lives in resources.generated.yml and handles the read side: it suppresses
+    # drift for the same fields because the GET API does not echo back the
+    # spec. Together they make no-op deploys idempotent while a real config
+    # edit still triggers a recreate. Same pattern as secret_scopes.
+    recreate_on_changes:
+      - field: synced_table_id
+        reason: immutable
+      - field: branch
+        reason: immutable
+      - field: postgres_database
+        reason: immutable
+      - field: source_table_full_name
+        reason: immutable
+      - field: primary_key_columns
+        reason: immutable
+      - field: timeseries_key
+        reason: immutable
+      - field: scheduling_policy
+        reason: immutable
+      - field: create_database_objects_if_missing
+        reason: immutable
+      - field: new_pipeline_spec
+        reason: immutable
+      - field: existing_pipeline_id
         reason: immutable
 
   postgres_roles:
@@ -519,4 +573,28 @@ resources:
   vector_search_endpoints:
     recreate_on_changes:
       - field: endpoint_type
+        reason: immutable
+    ignore_remote_changes:
+      # The API returns effective_budget_policy_id which may include inherited workspace policies,
+      # not the user-set budget_policy_id. Ignore until the API exposes the user-set value directly.
+      - field: budget_policy_id
+        reason: effective_vs_requested
+
+  vector_search_indexes:
+    recreate_on_changes:
+      # The index API has no rename or update path, so every config change
+      # has to go through delete + create.
+      - field: name
+        reason: immutable
+      - field: endpoint_name
+        reason: immutable
+      - field: index_type
+        reason: immutable
+      - field: index_subtype
+        reason: immutable
+      - field: primary_key
+        reason: immutable
+      - field: delta_sync_index_spec
+        reason: immutable
+      - field: direct_access_index_spec
         reason: immutable

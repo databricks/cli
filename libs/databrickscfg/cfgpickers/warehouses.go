@@ -110,8 +110,8 @@ func GetDefaultWarehouse(ctx context.Context, w *databricks.WorkspaceClient) (*s
 			State: warehouse.State,
 		}, nil
 	}
-	var apiErr *apierr.APIError
-	if !errors.As(err, &apiErr) || apiErr.StatusCode >= 500 {
+	apiErr, ok := errors.AsType[*apierr.APIError](err)
+	if !ok || apiErr.StatusCode >= 500 {
 		return nil, fmt.Errorf("get default warehouse: %w", err)
 	}
 

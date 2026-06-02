@@ -284,3 +284,44 @@ func TestJsonUnmarshalForRequestWithForceSendFields(t *testing.T) {
 	assert.NotContains(t, r.NewSettings.NotificationSettings.ForceSendFields, "NoAlertForSkippedRuns")
 	assert.Contains(t, r.NewSettings.NotificationSettings.ForceSendFields, "NoAlertForCanceledRuns")
 }
+
+func TestRejectWrappedJSON(t *testing.T) {
+	tests := []struct {
+		name     string
+		raw      string
+		outerKey string
+		wantErr  string
+	}{
+		{name: "empty body passes", raw: "", outerKey: "role"},
+		{name: "non-object body passes", raw: `"not-an-object"`, outerKey: "role"},
+		{name: "object without outer key passes", raw: `{"spec":{"foo":"bar"}}`, outerKey: "role"},
+		{name: "object with outer key rejected", raw: `{"role":{"spec":{"foo":"bar"}}}`, outerKey: "role", wantErr: `should NOT be wrapped`},
+		{name: "object with outer key plus siblings still rejected", raw: `{"role":{},"other":1}`, outerKey: "role", wantErr: `should NOT be wrapped`},
+		{name: "outer key differs from body's outer", raw: `{"branch":{}}`, outerKey: "role"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var jf JsonFlag
+			if tt.raw != "" {
+				require.NoError(t, jf.Set(tt.raw))
+			}
+			err := jf.RejectWrappedJSON(tt.outerKey, "")
+			if tt.wantErr != "" {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tt.wantErr)
+				return
+			}
+			assert.NoError(t, err)
+		})
+	}
+}
+
+func TestRejectWrappedJSONIncludesExample(t *testing.T) {
+	var jf JsonFlag
+	require.NoError(t, jf.Set(`{"role":{}}`))
+	err := jf.RejectWrappedJSON("role", "databricks postgres create-role --json '{\"spec\":{}}'")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "Example:")
+	assert.Contains(t, err.Error(), `--json '{"spec":{}}'`)
+}

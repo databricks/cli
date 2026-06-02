@@ -14,7 +14,7 @@ on:
     branches:
       - main
   schedule:
-    - cron: '0 0,12 * * *' # Runs at 00:00 and 12:00 UTC daily
+    - cron: '0 0 * * *' # Runs at 00:00 UTC daily
 
 env:
   GOTESTSUM_FORMAT: github-actions
@@ -137,21 +137,10 @@ jobs:
         with:
           cache-key: test-${{ matrix.deployment }}
 
-      - name: Run tests without coverage
-        # We run tests without coverage on PR, merge_group, and schedule because we don't make use of coverage information
-        # and would like to run the tests as fast as possible. We run it on schedule as well, because that is what
-        # populates the cache and cache may include test results.
-        if: ${{ github.event_name == 'pull_request' || github.event_name == 'merge_group' || github.event_name == 'schedule' }}
+      - name: Run tests
         env:
           ENVFILTER: DATABRICKS_BUNDLE_ENGINE=${{ matrix.deployment }}
         run: go tool -modfile=tools/task/go.mod task test
-
-      - name: Run tests with coverage
-        # Only run 'task cover' on push to main to make sure it does not get broken.
-        if: ${{ github.event_name == 'push' }}
-        env:
-          ENVFILTER: DATABRICKS_BUNDLE_ENGINE=${{ matrix.deployment }}
-        run: go tool -modfile=tools/task/go.mod task cover
 
       - name: Upload gotestsum JSON output
         # Always upload so we can inspect timing even if tests fail.

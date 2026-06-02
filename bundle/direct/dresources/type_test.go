@@ -44,36 +44,10 @@ var knownMissingInRemoteType = map[string][]string{
 		"scope_backend_type",
 	},
 	"postgres_branches": {
-		"branch_id",
-		"expire_time",
-		"is_protected",
-		"no_expiry",
-		"source_branch",
-		"source_branch_lsn",
-		"source_branch_time",
-		"ttl",
+		"replace_existing",
 	},
 	"postgres_endpoints": {
-		"autoscaling_limit_max_cu",
-		"autoscaling_limit_min_cu",
-		"disabled",
-		"endpoint_id",
-		"endpoint_type",
-		"group",
-		"no_suspension",
-		"settings",
-		"suspend_timeout_duration",
-	},
-	"postgres_projects": {
-		"budget_policy_id",
-		"custom_tags",
-		"default_branch",
-		"default_endpoint_settings",
-		"display_name",
-		"enable_pg_native_login",
-		"history_retention_duration",
-		"pg_version",
-		"project_id",
+		"replace_existing",
 	},
 	"postgres_roles": {
 		// RoleRoleSpec fields live under spec.* on the remote Role, not at top level.
@@ -108,6 +82,9 @@ var knownMissingInStateType = map[string][]string{
 		"file_path",
 	},
 	"apps": {
+		"lifecycle.prevent_destroy",
+	},
+	"clusters": {
 		"lifecycle.prevent_destroy",
 	},
 	"dashboards": {

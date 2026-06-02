@@ -44,9 +44,11 @@ EnvMatrix.INPUT_CONFIG = [
     "pipeline.yml.tmpl",
     "pipeline_config_dots.yml.tmpl",
     "postgres_branch.yml.tmpl",
+    "postgres_catalog.yml.tmpl",
     "postgres_endpoint.yml.tmpl",
     "postgres_project.yml.tmpl",
     "postgres_role.yml.tmpl",
+    "postgres_synced_table.yml.tmpl",
     "registered_model.yml.tmpl",
     "schema.yml.tmpl",
     "schema_grant_ref.yml.tmpl",
@@ -57,6 +59,7 @@ EnvMatrix.INPUT_CONFIG = [
     "sql_warehouse.yml.tmpl",
     "synced_database_table.yml.tmpl",
     "vector_search_endpoint.yml.tmpl",
+    "vector_search_index.yml.tmpl",
     "volume.yml.tmpl",
     "volume_external.yml.tmpl",
 ]
@@ -68,6 +71,8 @@ no_alert_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=alert.yml.tmpl"]
 no_postgres_project_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=postgres_project.yml.tmpl"]
 no_postgres_branch_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=postgres_branch.yml.tmpl"]
 no_postgres_endpoint_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=postgres_endpoint.yml.tmpl"]
+no_postgres_catalog_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=postgres_catalog.yml.tmpl"]
+no_postgres_synced_table_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=postgres_synced_table.yml.tmpl"]
 no_postgres_role_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=postgres_role.yml.tmpl"]
 
 # External locations require actual storage credentials with cloud IAM setup

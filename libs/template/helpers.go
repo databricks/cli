@@ -120,7 +120,7 @@ func loadHelpers(ctx context.Context) template.FuncMap {
 		"user_name": func() (string, error) {
 			if cachedUser == nil {
 				var err error
-				cachedUser, err = w.CurrentUser.Me(ctx)
+				cachedUser, err = w.CurrentUser.Me(ctx, iam.MeRequest{})
 				if err != nil {
 					return "", err
 				}
@@ -134,7 +134,7 @@ func loadHelpers(ctx context.Context) template.FuncMap {
 		"short_name": func() (string, error) {
 			if cachedUser == nil {
 				var err error
-				cachedUser, err = w.CurrentUser.Me(ctx)
+				cachedUser, err = w.CurrentUser.Me(ctx, iam.MeRequest{})
 				if err != nil {
 					return "", err
 				}
@@ -147,8 +147,7 @@ func loadHelpers(ctx context.Context) template.FuncMap {
 			if cachedCatalog == nil {
 				metastore, err := w.Metastores.Current(ctx)
 				if err != nil {
-					var aerr *apierr.APIError
-					if errors.As(err, &aerr) && (slices.Contains(metastoreDisabledErrorCodes, aerr.ErrorCode) || aerr.Message == "Bad Target: /api/2.1/unity-catalog/current-metastore-assignment") {
+					if aerr, ok := errors.AsType[*apierr.APIError](err); ok && (slices.Contains(metastoreDisabledErrorCodes, aerr.ErrorCode) || aerr.Message == "Bad Target: /api/2.1/unity-catalog/current-metastore-assignment") {
 						// Ignore: access denied or workspace doesn't have a metastore assigned
 						empty_default := ""
 						cachedCatalog = &empty_default
@@ -166,7 +165,7 @@ func loadHelpers(ctx context.Context) template.FuncMap {
 			}
 			if cachedUser == nil {
 				var err error
-				cachedUser, err = w.CurrentUser.Me(ctx)
+				cachedUser, err = w.CurrentUser.Me(ctx, iam.MeRequest{})
 				if err != nil {
 					return false, err
 				}

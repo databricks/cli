@@ -23,6 +23,22 @@ type importDirOptions struct {
 	overwrite bool
 }
 
+// defaultSkipDirs are directory names skipped when walking the source tree.
+// The previous behavior copied these verbatim into the workspace, which:
+//   - leaks .git/config (often containing template-repo origin URLs and
+//     occasionally cached credentials) into deployed app source trees
+//   - copies the local bundle cache (.databricks) on top of any remote one
+//   - uploads node_modules/ for JS/TS apps, which is large and gets
+//     reinstalled in the runtime anyway
+//
+// Reported as DEPLOY-04 #2 in the EMEA Apps gaps doc; users have been
+// working around it by post-deploy scrubbing scripts.
+var defaultSkipDirs = map[string]struct{}{
+	".git":         {},
+	".databricks":  {},
+	"node_modules": {},
+}
+
 // The callback function imports the file specified at sourcePath. This function is
 // meant to be used in conjunction with fs.WalkDir
 //
@@ -46,6 +62,15 @@ func (opts importDirOptions) callback(ctx context.Context, workspaceFiler filer.
 	return func(sourcePath string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
+		}
+
+		// Skip default-excluded directories (e.g. .git, .databricks). The check
+		// excludes the explicit root so a user who passes ".git" as the source
+		// can still copy it deliberately.
+		if d.IsDir() && sourcePath != sourceDir {
+			if _, skip := defaultSkipDirs[d.Name()]; skip {
+				return fs.SkipDir
+			}
 		}
 
 		// localName is the name for the file in the local file system
@@ -117,6 +142,10 @@ func newImportDir() *cobra.Command {
 	cmd.Long = `
 Import a directory recursively from the local file system to a Databricks workspace.
 Notebooks will have their extensions (one of .scala, .py, .sql, .ipynb, .r) stripped
+
+By default, .git, .databricks, and node_modules directories encountered during
+the recursive import are skipped. To import one of these directories deliberately,
+pass it as SOURCE_PATH.
 `
 
 	cmd.Annotations = make(map[string]string)

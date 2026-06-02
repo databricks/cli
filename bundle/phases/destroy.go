@@ -14,6 +14,7 @@ import (
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/databricks-sdk-go/apierr"
@@ -23,8 +24,7 @@ func assertRootPathExists(ctx context.Context, b *bundle.Bundle) (bool, error) {
 	w := b.WorkspaceClient(ctx)
 	_, err := w.Workspace.GetStatusByPath(ctx, b.Config.Workspace.RootPath) //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
 
-	var aerr *apierr.APIError
-	if errors.As(err, &aerr) && aerr.StatusCode == http.StatusNotFound {
+	if aerr, ok := errors.AsType[*apierr.APIError](err); ok && aerr.StatusCode == http.StatusNotFound {
 		log.Infof(ctx, "Root path does not exist: %s", b.Config.Workspace.RootPath)
 		return false, nil
 	}
@@ -40,6 +40,7 @@ var destroyApprovalGroups = []approvalGroup{
 	{group: "synced_database_tables", message: deleteSyncedDatabaseTableMessage},
 	{group: "postgres_projects", message: deletePostgresProjectMessage},
 	{group: "postgres_branches", message: deletePostgresBranchMessage},
+	{group: "vector_search_indexes", message: deleteVectorSearchIndexMessage},
 }
 
 func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) (bool, error) {
@@ -76,15 +77,21 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.
 func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, engine engine.EngineType) {
 	if engine.IsDirect() {
 		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(ctx), plan, direct.MigrateMode(false))
-		// Skip Finalize for empty plans to avoid creating a state file when nothing was destroyed.
-		if len(plan.Plan) > 0 {
-			if err := b.DeploymentBundle.StateDB.Finalize(); err != nil {
-				logdiag.LogError(ctx, err)
-			}
-		}
 	} else {
 		// Core destructive mutators for destroy. These require informed user consent.
 		bundle.ApplyContext(ctx, b, terraform.Apply())
+	}
+
+	// Flush WAL to local state file before deleting remote files.
+	// Warn instead of hard-error: resources are already deleted, so proceed
+	// with file cleanup regardless of whether state flush succeeds.
+	if engine.IsDirect() {
+		if _, err := b.DeploymentBundle.StateDB.Finalize(ctx); err != nil {
+			diags := diag.WarningFromErr(err)
+			if len(diags) > 0 {
+				logdiag.LogDiag(ctx, diags[0])
+			}
+		}
 	}
 
 	if logdiag.HasError(ctx) {
@@ -168,6 +175,13 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 	}
 
 	if hasApproval {
+		if engine.IsDirect() {
+			// Upgrade from read (opened by process.go) to write mode
+			if err := b.DeploymentBundle.StateDB.UpgradeToWrite(); err != nil {
+				logdiag.LogError(ctx, err)
+				return
+			}
+		}
 		destroyCore(ctx, b, plan, engine)
 	} else {
 		cmdio.LogString(ctx, "Destroy cancelled!")

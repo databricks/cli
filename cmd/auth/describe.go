@@ -10,10 +10,12 @@ import (
 	"github.com/databricks/cli/libs/auth/storage"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/config"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/spf13/cobra"
 )
 
@@ -64,6 +66,9 @@ func newDescribeCommand() *cobra.Command {
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
+		if err := resolveProfileFromHostFlag(cmd, profile.DefaultProfiler); err != nil {
+			return err
+		}
 		var status *authStatus
 		var err error
 		status, err = getAuthStatus(cmd, args, showSensitive, func(cmd *cobra.Command, args []string) (*config.Config, bool, error) {
@@ -82,6 +87,33 @@ func newDescribeCommand() *cobra.Command {
 	}
 
 	return cmd
+}
+
+// resolveProfileFromHostFlag translates an explicit --host into a --profile
+// for `auth describe`. Without this, the downstream profile resolver ignores
+// --host and either falls back to [__settings__].default_profile (silently
+// describing a different host than the one the user named) or errors with the
+// SDK's default-credentials message even though a host-matching profile
+// exists. DATABRICKS_CONFIG_PROFILE is left alone — it's an explicit signal
+// the user already made.
+func resolveProfileFromHostFlag(cmd *cobra.Command, profiler profile.Profiler) error {
+	hostFlag := cmd.Flag("host")
+	profileFlag := cmd.Flag("profile")
+	if hostFlag == nil || profileFlag == nil {
+		return nil
+	}
+	if !hostFlag.Changed || profileFlag.Changed {
+		return nil
+	}
+	ctx := cmd.Context()
+	if env.Get(ctx, "DATABRICKS_CONFIG_PROFILE") != "" {
+		return nil
+	}
+	profileName, err := resolveHostToProfile(ctx, hostFlag.Value.String(), profiler)
+	if err != nil {
+		return err
+	}
+	return profileFlag.Value.Set(profileName)
 }
 
 type tryAuth func(cmd *cobra.Command, args []string) (*config.Config, bool, error)
@@ -127,7 +159,7 @@ func getAuthStatus(cmd *cobra.Command, args []string, showSensitive bool, fn try
 	}
 
 	w := cmdctx.WorkspaceClient(ctx)
-	me, err := w.CurrentUser.Me(ctx)
+	me, err := w.CurrentUser.Me(ctx, iam.MeRequest{})
 	if err != nil {
 		details := getAuthDetails(cmd, cfg, showSensitive)
 		return &authStatus{ //nolint:nilerr // error is returned in the authStatus struct

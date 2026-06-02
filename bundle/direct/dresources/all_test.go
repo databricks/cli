@@ -191,6 +191,18 @@ var testConfig map[string]any = map[string]any{
 		},
 	},
 
+	"postgres_catalogs": &resources.PostgresCatalog{
+		PostgresCatalogConfig: resources.PostgresCatalogConfig{
+			CatalogId: "test_catalog",
+		},
+	},
+
+	"postgres_synced_tables": &resources.PostgresSyncedTable{
+		PostgresSyncedTableConfig: resources.PostgresSyncedTableConfig{
+			SyncedTableId: "main.public.trips_synced",
+		},
+	},
+
 	"alerts": &resources.Alert{
 		AlertV2: sql.AlertV2{
 			DisplayName: "my-alert",
@@ -248,6 +260,23 @@ var testConfig map[string]any = map[string]any{
 			EndpointType: vectorsearch.EndpointTypeStandard,
 		},
 	},
+
+	"vector_search_indexes": &resources.VectorSearchIndex{
+		CreateVectorIndexRequest: vectorsearch.CreateVectorIndexRequest{
+			Name:         "my-index",
+			EndpointName: "my-index-endpoint",
+			PrimaryKey:   "id",
+			IndexType:    vectorsearch.VectorIndexTypeDeltaSync,
+			DeltaSyncIndexSpec: &vectorsearch.DeltaSyncVectorIndexSpecRequest{
+				SourceTable:  "main.default.source_table",
+				PipelineType: vectorsearch.PipelineTypeTriggered,
+			},
+		},
+		Grants: []catalog.PrivilegeAssignment{{
+			Principal:  "user@example.com",
+			Privileges: []catalog.Privilege{catalog.PrivilegeSelect},
+		}},
+	},
 }
 
 type prepareWorkspace func(ctx context.Context, client *databricks.WorkspaceClient) (any, error)
@@ -267,6 +296,18 @@ var testDeps = map[string]prepareWorkspace{
 				DatabaseInstanceName: "mydbinstance1",
 			},
 		}, err
+	},
+
+	"vector_search_indexes": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		_, err := client.VectorSearchEndpoints.CreateEndpoint(ctx, vectorsearch.CreateEndpoint{
+			Name:         "my-index-endpoint",
+			EndpointType: vectorsearch.EndpointTypeStandard,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		return testConfig["vector_search_indexes"], nil
 	},
 
 	"jobs.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
@@ -405,20 +446,19 @@ var testDeps = map[string]prepareWorkspace{
 	},
 
 	"postgres_projects.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		const projectID = "permissions-project"
 		waiter, err := client.Postgres.CreateProject(ctx, postgres.CreateProjectRequest{
-			ProjectId: "permissions-project",
+			ProjectId: projectID,
 		})
 		if err != nil {
 			return nil, err
 		}
-		result, err := waiter.Wait(ctx)
-		if err != nil {
+		if _, err := waiter.Wait(ctx); err != nil {
 			return nil, err
 		}
 
-		components, _ := ParsePostgresName(result.Name)
 		return &PermissionsState{
-			ObjectID: "/database-projects/" + components.ProjectID,
+			ObjectID: "/database-projects/" + projectID,
 			EmbeddedSlice: []StatePermission{{
 				Level:    "CAN_MANAGE",
 				UserName: "user@example.com",
@@ -581,6 +621,17 @@ var testDeps = map[string]prepareWorkspace{
 			FullName:      "modelid",
 			EmbeddedSlice: []catalog.PrivilegeAssignment{{
 				Privileges: []catalog.Privilege{catalog.PrivilegeCreateView},
+				Principal:  "user@example.com",
+			}},
+		}, nil
+	},
+
+	"vector_search_indexes.grants": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		return &GrantsState{
+			SecurableType: "table",
+			FullName:      "main.default.my_index",
+			EmbeddedSlice: []catalog.PrivilegeAssignment{{
+				Privileges: []catalog.Privilege{catalog.PrivilegeSelect},
 				Principal:  "user@example.com",
 			}},
 		}, nil
@@ -885,7 +936,10 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 		assert.Equal(t, val, remoteValue, "path=%q\nnewState=%s\nremappedState=%s", path.String(), jsonDump(newState), jsonDump(remappedState))
 	}))
 
-	err = adapter.DoDelete(ctx, createdID)
+	err = adapter.DoDelete(ctx, createdID, newState)
+	require.NoError(t, err)
+
+	err = adapter.WaitAfterDelete(ctx, createdID)
 	require.NoError(t, err)
 
 	p, err := structpath.ParsePath("name")

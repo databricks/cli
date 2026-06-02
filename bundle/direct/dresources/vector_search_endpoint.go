@@ -19,16 +19,13 @@ var (
 // VectorSearchEndpointRemote is remote state for a vector search endpoint. It embeds API response
 // fields for drift comparison and adds endpoint_uuid for permissions; deployment state id remains the endpoint name.
 type VectorSearchEndpointRemote struct {
-	*vectorsearch.EndpointInfo
+	vectorsearch.EndpointInfo
 	EndpointUuid string `json:"endpoint_uuid"`
 }
 
 func newVectorSearchEndpointRemote(info *vectorsearch.EndpointInfo) *VectorSearchEndpointRemote {
-	if info == nil {
-		return nil
-	}
 	return &VectorSearchEndpointRemote{
-		EndpointInfo: info,
+		EndpointInfo: *info,
 		EndpointUuid: info.Id,
 	}
 }
@@ -110,6 +107,6 @@ func (r *ResourceVectorSearchEndpoint) DoUpdate(ctx context.Context, id string, 
 	return nil, nil
 }
 
-func (r *ResourceVectorSearchEndpoint) DoDelete(ctx context.Context, id string) error {
+func (r *ResourceVectorSearchEndpoint) DoDelete(ctx context.Context, id string, _ *vectorsearch.CreateEndpoint) error {
 	return r.client.VectorSearchEndpoints.DeleteEndpointByEndpointName(ctx, id)
 }

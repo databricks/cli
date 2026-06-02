@@ -18,7 +18,7 @@ Usage:
   databricks pipelines [flags]
   databricks pipelines [command]
 
-Available Commands
+Main Commands
   deploy                Deploy pipelines
   destroy               Destroy a pipelines project
   dry-run               Validate correctness of the pipeline's graph
