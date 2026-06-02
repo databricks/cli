@@ -51,7 +51,7 @@ func (r *ResourceAppSpace) DoUpdate(ctx context.Context, id string, config *apps
 	return waiter.Wait(ctx)
 }
 
-func (r *ResourceAppSpace) DoDelete(ctx context.Context, id string) error {
+func (r *ResourceAppSpace) DoDelete(ctx context.Context, id string, _ *apps.Space) error {
 	waiter, err := r.client.Apps.DeleteSpace(ctx, apps.DeleteSpaceRequest{Name: id})
 	if err != nil {
 		return err

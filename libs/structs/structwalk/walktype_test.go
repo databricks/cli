@@ -136,7 +136,7 @@ func TestTypeJobSettings(t *testing.T) {
 func TestTypeRoot(t *testing.T) {
 	testStruct(t,
 		reflect.TypeFor[config.Root](),
-		5000, 5800, // 5651 after SDK v0.136.0 bump
+		5000, 6000, // 5883 after adding app_spaces support
 		map[string]any{
 			"bundle.target":                "",
 			`variables.*.lookup.dashboard`: "",
