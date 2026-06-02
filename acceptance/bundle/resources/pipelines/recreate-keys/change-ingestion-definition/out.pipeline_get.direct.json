@@ -1,0 +1,31 @@
+{
+  "creator_user_name": "[USERNAME]",
+  "effective_publishing_mode": "DEFAULT_PUBLISHING_MODE",
+  "last_modified": [UNIX_TIME_MILLIS],
+  "name": "test-pipeline-[UNIQUE_NAME]",
+  "pipeline_id": "[MY_ID_2]",
+  "run_as_user_name": "[USERNAME]",
+  "spec": {
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/state/metadata.json"
+    },
+    "id": "[MY_ID_2]",
+    "ingestion_definition": {
+      "connection_name": "my_new_connection",
+      "objects": [
+        {}
+      ]
+    },
+    "libraries": [
+      {
+        "file": {
+          "path": "/Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/files/foo.py"
+        }
+      }
+    ],
+    "name": "test-pipeline-[UNIQUE_NAME]",
+    "storage": "dbfs:/pipelines/[MY_ID_2]"
+  },
+  "state": "IDLE"
+}
