@@ -53,26 +53,20 @@ type IResource interface {
 
 	// DoCreate creates a new resource from the newState. Returns id of the resource and optionally remote state.
 	// If remote state is available as part of the operation, return it; otherwise return nil.
-	// Example: func (r *ResourceVolume) DoCreate(ctx context.Context, newState *catalog.CreateVolumeRequestContent) (string, *catalog.VolumeInfo, error)
-	DoCreate(ctx context.Context, newState any) (id string, remoteState any, e error)
+	// Call engine.SaveState(ctx, id, state) to persist intermediate state before long-running waits.
+	// Example: func (r *ResourceVolume) DoCreate(ctx context.Context, _ *Engine, newState *catalog.CreateVolumeRequestContent) (string, *catalog.VolumeInfo, error)
+	DoCreate(ctx context.Context, engine *Engine, newState any) (id string, remoteState any, e error)
 
 	// [Optional] DoUpdate updates the resource. ID must not change as a result of this operation. Returns optionally remote state.
 	// If remote state is available as part of the operation, return it; otherwise return nil.
-	// Example: func (r *ResourceSchema) DoUpdate(ctx context.Context, id string, newState *catalog.CreateSchema, entry *PlanEntry) (*catalog.SchemaInfo, error)
-	DoUpdate(ctx context.Context, id string, newState any, entry *PlanEntry) (remoteState any, e error)
+	// Example: func (r *ResourceSchema) DoUpdate(ctx context.Context, _ *Engine, id string, newState *catalog.CreateSchema, entry *PlanEntry) (*catalog.SchemaInfo, error)
+	DoUpdate(ctx context.Context, engine *Engine, id string, newState any, entry *PlanEntry) (remoteState any, e error)
 
 	// [Optional] DoUpdateWithID performs an update that may result in resource having a new ID. Returns new id and optionally remote state.
 	DoUpdateWithID(ctx context.Context, id string, newState any) (newID string, remoteState any, e error)
 
 	// [Optional] DoResize resizes the resource. Only supported by clusters
 	DoResize(ctx context.Context, id string, newState any) error
-
-	// [Optional] WaitAfterCreate waits for the resource to become ready after creation. Returns optionally updated remote state.
-	// TODO: wait status should be persisted in the state.
-	WaitAfterCreate(ctx context.Context, id string, newState any) (remoteState any, e error)
-
-	// [Optional] WaitAfterUpdate waits for the resource to become ready after update. Returns optionally updated remote state.
-	WaitAfterUpdate(ctx context.Context, id string, newState any) (remoteState any, e error)
 
 	// [Optional] WaitAfterDelete waits for the resource to be fully removed after DoDelete returns.
 	// Useful for backends with asynchronous deletion: a follow-up create on the same name (recreate path)
@@ -98,8 +92,6 @@ type Adapter struct {
 	// Optional:
 	doUpdate           *calladapt.BoundCaller
 	doUpdateWithID     *calladapt.BoundCaller
-	waitAfterCreate    *calladapt.BoundCaller
-	waitAfterUpdate    *calladapt.BoundCaller
 	waitAfterDelete    *calladapt.BoundCaller
 	overrideChangeDesc *calladapt.BoundCaller
 	doResize           *calladapt.BoundCaller
@@ -131,8 +123,6 @@ func NewAdapter(typedNil any, resourceType string, client *databricks.WorkspaceC
 		doUpdate:                nil,
 		doUpdateWithID:          nil,
 		doResize:                nil,
-		waitAfterCreate:         nil,
-		waitAfterUpdate:         nil,
 		waitAfterDelete:         nil,
 		overrideChangeDesc:      nil,
 		resourceConfig:          GetResourceConfig(resourceType),
@@ -206,16 +196,6 @@ func (a *Adapter) initMethods(resource any) error {
 		return err
 	}
 
-	a.waitAfterCreate, err = calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), "WaitAfterCreate")
-	if err != nil {
-		return err
-	}
-
-	a.waitAfterUpdate, err = calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), "WaitAfterUpdate")
-	if err != nil {
-		return err
-	}
-
 	a.waitAfterDelete, err = calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), "WaitAfterDelete")
 	if err != nil {
 		return err
@@ -278,7 +258,7 @@ func (a *Adapter) validate() error {
 
 	validations := []any{
 		"PrepareState return", a.prepareState.OutTypes[0], stateType,
-		"DoCreate newState", a.doCreate.InTypes[1], stateType,
+		"DoCreate newState", a.doCreate.InTypes[2], stateType,
 		"DoDelete state", a.doDelete.InTypes[2], stateType,
 	}
 
@@ -301,7 +281,7 @@ func (a *Adapter) validate() error {
 
 	// Validate DoUpdate: must return (remoteType, error) if implemented
 	if a.doUpdate != nil {
-		validations = append(validations, "DoUpdate newState", a.doUpdate.InTypes[2], stateType)
+		validations = append(validations, "DoUpdate newState", a.doUpdate.InTypes[3], stateType)
 		if len(a.doUpdate.OutTypes) != 2 {
 			return fmt.Errorf("DoUpdate must return (remoteType, error), got %d return values", len(a.doUpdate.OutTypes))
 		}
@@ -319,24 +299,6 @@ func (a *Adapter) validate() error {
 			return fmt.Errorf("DoUpdateWithID must return (string, remoteType, error), got %d return values", len(a.doUpdateWithID.OutTypes))
 		}
 		validations = append(validations, "DoUpdateWithID remoteState return", a.doUpdateWithID.OutTypes[1], remoteType)
-	}
-
-	if a.waitAfterCreate != nil {
-		validations = append(validations, "WaitAfterCreate newState", a.waitAfterCreate.InTypes[2], stateType)
-		// WaitAfterCreate must return (remoteType, error)
-		if len(a.waitAfterCreate.OutTypes) != 2 {
-			return fmt.Errorf("WaitAfterCreate must return (remoteType, error), got %d return values", len(a.waitAfterCreate.OutTypes))
-		}
-		validations = append(validations, "WaitAfterCreate remoteState return", a.waitAfterCreate.OutTypes[0], remoteType)
-	}
-
-	if a.waitAfterUpdate != nil {
-		validations = append(validations, "WaitAfterUpdate newState", a.waitAfterUpdate.InTypes[2], stateType)
-		// WaitAfterUpdate must return (remoteType, error)
-		if len(a.waitAfterUpdate.OutTypes) != 2 {
-			return fmt.Errorf("WaitAfterUpdate must return (remoteType, error), got %d return values", len(a.waitAfterUpdate.OutTypes))
-		}
-		validations = append(validations, "WaitAfterUpdate remoteState return", a.waitAfterUpdate.OutTypes[0], remoteType)
 	}
 
 	err = validateTypes(validations...)
@@ -433,8 +395,8 @@ func normalizeNilPointer(v any) any {
 	return v
 }
 
-func (a *Adapter) DoCreate(ctx context.Context, newState any) (string, any, error) {
-	outs, err := a.doCreate.Call(ctx, newState)
+func (a *Adapter) DoCreate(ctx context.Context, engine *Engine, newState any) (string, any, error) {
+	outs, err := a.doCreate.Call(ctx, engine, newState)
 	if err != nil {
 		return "", nil, err
 	}
@@ -451,12 +413,12 @@ func (a *Adapter) HasDoUpdate() bool {
 
 // DoUpdate updates the resource with the plan entry computed during plan.
 // Returns remote state if available, otherwise nil.
-func (a *Adapter) DoUpdate(ctx context.Context, id string, newState any, entry *PlanEntry) (any, error) {
+func (a *Adapter) DoUpdate(ctx context.Context, engine *Engine, id string, newState any, entry *PlanEntry) (any, error) {
 	if a.doUpdate == nil {
 		return nil, errors.New("internal error: DoUpdate not found")
 	}
 
-	outs, err := a.doUpdate.Call(ctx, id, newState, entry)
+	outs, err := a.doUpdate.Call(ctx, engine, id, newState, entry)
 	if err != nil {
 		return nil, err
 	}
@@ -493,40 +455,6 @@ func (a *Adapter) DoResize(ctx context.Context, id string, newState any) error {
 
 	_, err := a.doResize.Call(ctx, id, newState)
 	return err
-}
-
-// WaitAfterCreate waits for the resource to become ready after creation.
-// If the resource doesn't implement this method, this is a no-op.
-// Returns the updated remoteState if available, otherwise returns nil
-func (a *Adapter) WaitAfterCreate(ctx context.Context, id string, newState any) (any, error) {
-	if a.waitAfterCreate == nil {
-		return nil, nil // no-op if not implemented
-	}
-
-	outs, err := a.waitAfterCreate.Call(ctx, id, newState)
-	if err != nil {
-		return nil, err
-	}
-
-	remoteState := normalizeNilPointer(outs[0])
-	return remoteState, nil
-}
-
-// WaitAfterUpdate waits for the resource to become ready after update.
-// If the resource doesn't implement this method, this is a no-op.
-// Returns the updated remoteState if available, otherwise returns nil.
-func (a *Adapter) WaitAfterUpdate(ctx context.Context, id string, newState any) (any, error) {
-	if a.waitAfterUpdate == nil {
-		return nil, nil // no-op if not implemented
-	}
-
-	outs, err := a.waitAfterUpdate.Call(ctx, id, newState)
-	if err != nil {
-		return nil, err
-	}
-
-	remoteState := normalizeNilPointer(outs[0])
-	return remoteState, nil
 }
 
 // WaitAfterDelete waits for the resource to be fully removed after DoDelete.

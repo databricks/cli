@@ -24,7 +24,7 @@ func (r *ResourceSyncedDatabaseTable) DoRead(ctx context.Context, name string) (
 	return r.client.Database.GetSyncedDatabaseTableByName(ctx, name)
 }
 
-func (r *ResourceSyncedDatabaseTable) DoCreate(ctx context.Context, config *database.SyncedDatabaseTable) (string, *database.SyncedDatabaseTable, error) {
+func (r *ResourceSyncedDatabaseTable) DoCreate(ctx context.Context, _ *Engine, config *database.SyncedDatabaseTable) (string, *database.SyncedDatabaseTable, error) {
 	result, err := r.client.Database.CreateSyncedDatabaseTable(ctx, database.CreateSyncedDatabaseTableRequest{
 		SyncedTable: *config,
 	})
@@ -34,7 +34,7 @@ func (r *ResourceSyncedDatabaseTable) DoCreate(ctx context.Context, config *data
 	return result.Name, nil, nil
 }
 
-func (r *ResourceSyncedDatabaseTable) DoUpdate(ctx context.Context, id string, config *database.SyncedDatabaseTable, _ *PlanEntry) (*database.SyncedDatabaseTable, error) {
+func (r *ResourceSyncedDatabaseTable) DoUpdate(ctx context.Context, _ *Engine, id string, config *database.SyncedDatabaseTable, _ *PlanEntry) (*database.SyncedDatabaseTable, error) {
 	request := database.UpdateSyncedDatabaseTableRequest{
 		SyncedTable: *config,
 		Name:        id,

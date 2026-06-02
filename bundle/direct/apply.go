@@ -51,6 +51,10 @@ func (d *DeploymentUnit) Deploy(ctx context.Context, db *dstate.DeploymentState,
 }
 
 func (d *DeploymentUnit) Create(ctx context.Context, db *dstate.DeploymentState, newState any) error {
+	engine := dresources.NewEngine(d.Adapter.StateType(), func(id string, x any) error {
+		return db.SaveState(d.ResourceKey, id, x, d.DependsOn)
+	})
+
 	var newID string
 	var remoteState any
 	_, err := retryWith(ctx, func(err error) bool {
@@ -59,7 +63,7 @@ func (d *DeploymentUnit) Create(ctx context.Context, db *dstate.DeploymentState,
 		return ok && isTransient(ctx, err)
 	}, func() (struct{}, error) {
 		var e error
-		newID, remoteState, e = d.Adapter.DoCreate(ctx, newState)
+		newID, remoteState, e = d.Adapter.DoCreate(ctx, engine, newState)
 		return struct{}{}, e
 	})
 	err = dresources.UnwrapRetrySafe(err)
@@ -78,18 +82,6 @@ func (d *DeploymentUnit) Create(ctx context.Context, db *dstate.DeploymentState,
 	err = db.SaveState(d.ResourceKey, newID, newState, d.DependsOn)
 	if err != nil {
 		return fmt.Errorf("saving state after creating id=%s: %w", newID, err)
-	}
-
-	waitRemoteState, err := retryOnTransient(ctx, func() (any, error) {
-		return d.Adapter.WaitAfterCreate(ctx, newID, newState)
-	})
-	if err != nil {
-		return fmt.Errorf("waiting after creating id=%s: %w", newID, err)
-	}
-
-	err = d.SetRemoteState(waitRemoteState)
-	if err != nil {
-		return err
 	}
 
 	return nil
@@ -134,8 +126,11 @@ func (d *DeploymentUnit) Update(ctx context.Context, db *dstate.DeploymentState,
 		return fmt.Errorf("internal error: DoUpdate not implemented for resource %s", d.ResourceKey)
 	}
 
+	engine := dresources.NewEngine(d.Adapter.StateType(), func(_ string, x any) error {
+		return db.SaveState(d.ResourceKey, id, x, d.DependsOn)
+	})
 	remoteState, err := retryOnTransient(ctx, func() (any, error) {
-		return d.Adapter.DoUpdate(ctx, id, newState, planEntry)
+		return d.Adapter.DoUpdate(ctx, engine, id, newState, planEntry)
 	})
 	if err != nil {
 		return fmt.Errorf("updating id=%s: %w", id, err)
@@ -149,19 +144,6 @@ func (d *DeploymentUnit) Update(ctx context.Context, db *dstate.DeploymentState,
 	err = db.SaveState(d.ResourceKey, id, newState, d.DependsOn)
 	if err != nil {
 		return fmt.Errorf("saving state id=%s: %w", id, err)
-	}
-
-	waitRemoteState, err := retryOnTransient(ctx, func() (any, error) {
-		return d.Adapter.WaitAfterUpdate(ctx, id, newState)
-	})
-	if err != nil {
-		return fmt.Errorf("waiting after updating id=%s: %w", id, err)
-	}
-
-	// Update remote state with the result from wait operation
-	err = d.SetRemoteState(waitRemoteState)
-	if err != nil {
-		return err
 	}
 
 	return nil
@@ -193,19 +175,6 @@ func (d *DeploymentUnit) UpdateWithID(ctx context.Context, db *dstate.Deployment
 	err = db.SaveState(d.ResourceKey, newID, newState, d.DependsOn)
 	if err != nil {
 		return fmt.Errorf("saving state id=%s: %w", oldID, err)
-	}
-
-	waitRemoteState, err := retryOnTransient(ctx, func() (any, error) {
-		return d.Adapter.WaitAfterUpdate(ctx, newID, newState)
-	})
-	if err != nil {
-		return fmt.Errorf("waiting after updating id=%s: %w", newID, err)
-	}
-
-	// Update remote state with the result from wait operation
-	err = d.SetRemoteState(waitRemoteState)
-	if err != nil {
-		return err
 	}
 
 	return nil

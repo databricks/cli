@@ -25,17 +25,32 @@ func (d *ResourceDatabaseInstance) DoRead(ctx context.Context, id string) (*data
 	return d.client.Database.GetDatabaseInstanceByName(ctx, id)
 }
 
-func (d *ResourceDatabaseInstance) DoCreate(ctx context.Context, config *database.DatabaseInstance) (string, *database.DatabaseInstance, error) {
+func (d *ResourceDatabaseInstance) DoCreate(ctx context.Context, engine *Engine, config *database.DatabaseInstance) (string, *database.DatabaseInstance, error) {
 	waiter, err := d.client.Database.CreateDatabaseInstance(ctx, database.CreateDatabaseInstanceRequest{
 		DatabaseInstance: *config,
 	})
 	if err != nil {
 		return "", nil, err
 	}
-	return waiter.Response.Name, nil, nil
+	id := waiter.Response.Name
+
+	// Save state immediately after the instance is created so it is not orphaned
+	// if the subsequent wait is interrupted.
+	engine.SaveState(ctx, id, config)
+
+	waiterObj := &database.WaitGetDatabaseInstanceDatabaseAvailable[database.DatabaseInstance]{
+		Response: config,
+		Name:     config.Name,
+		Poll: func(timeout time.Duration, callback func(*database.DatabaseInstance)) (*database.DatabaseInstance, error) {
+			return d.client.Database.WaitGetDatabaseInstanceDatabaseAvailable(ctx, config.Name, timeout, callback)
+		},
+	}
+	// _ is remoteState, should we return it here?
+	_, err = waiterObj.GetWithTimeout(20 * time.Minute)
+	return id, nil, err
 }
 
-func (d *ResourceDatabaseInstance) DoUpdate(ctx context.Context, id string, config *database.DatabaseInstance, _ *PlanEntry) (*database.DatabaseInstance, error) {
+func (d *ResourceDatabaseInstance) DoUpdate(ctx context.Context, _ *Engine, id string, config *database.DatabaseInstance, _ *PlanEntry) (*database.DatabaseInstance, error) {
 	request := database.UpdateDatabaseInstanceRequest{
 		DatabaseInstance: *config,
 		Name:             config.Name,
@@ -43,20 +58,6 @@ func (d *ResourceDatabaseInstance) DoUpdate(ctx context.Context, id string, conf
 	}
 	request.DatabaseInstance.Uid = id
 	_, err := d.client.Database.UpdateDatabaseInstance(ctx, request)
-	return nil, err
-}
-
-func (d *ResourceDatabaseInstance) WaitAfterCreate(ctx context.Context, id string, config *database.DatabaseInstance) (*database.DatabaseInstance, error) {
-	waiter := &database.WaitGetDatabaseInstanceDatabaseAvailable[database.DatabaseInstance]{
-		Response: config,
-		Name:     config.Name,
-		Poll: func(timeout time.Duration, callback func(*database.DatabaseInstance)) (*database.DatabaseInstance, error) {
-			return d.client.Database.WaitGetDatabaseInstanceDatabaseAvailable(ctx, config.Name, timeout, callback)
-		},
-	}
-
-	// _ is remoteState, should we return it here?
-	_, err := waiter.GetWithTimeout(20 * time.Minute)
 	return nil, err
 }
 

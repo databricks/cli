@@ -49,7 +49,7 @@ func (r *ResourceSqlWarehouse) DoRead(ctx context.Context, id string) (*sql.GetW
 }
 
 // DoCreate creates the warehouse and returns its id.
-func (r *ResourceSqlWarehouse) DoCreate(ctx context.Context, config *sql.CreateWarehouseRequest) (string, *sql.GetWarehouseResponse, error) {
+func (r *ResourceSqlWarehouse) DoCreate(ctx context.Context, _ *Engine, config *sql.CreateWarehouseRequest) (string, *sql.GetWarehouseResponse, error) {
 	waiter, err := r.client.Warehouses.Create(ctx, *config)
 	if err != nil {
 		return "", nil, err
@@ -58,7 +58,7 @@ func (r *ResourceSqlWarehouse) DoCreate(ctx context.Context, config *sql.CreateW
 }
 
 // DoUpdate updates the warehouse in place.
-func (r *ResourceSqlWarehouse) DoUpdate(ctx context.Context, id string, config *sql.CreateWarehouseRequest, _ *PlanEntry) (*sql.GetWarehouseResponse, error) {
+func (r *ResourceSqlWarehouse) DoUpdate(ctx context.Context, _ *Engine, id string, config *sql.CreateWarehouseRequest, _ *PlanEntry) (*sql.GetWarehouseResponse, error) {
 	request := sql.EditWarehouseRequest{
 		AutoStopMins:            config.AutoStopMins,
 		Channel:                 config.Channel,

@@ -65,24 +65,25 @@ func (r *ResourceVectorSearchEndpoint) DoRead(ctx context.Context, id string) (*
 	return newVectorSearchEndpointRemote(info), nil
 }
 
-func (r *ResourceVectorSearchEndpoint) DoCreate(ctx context.Context, config *vectorsearch.CreateEndpoint) (string, *VectorSearchEndpointRemote, error) {
-	waiter, err := r.client.VectorSearchEndpoints.CreateEndpoint(ctx, *config)
+func (r *ResourceVectorSearchEndpoint) DoCreate(ctx context.Context, engine *Engine, config *vectorsearch.CreateEndpoint) (string, *VectorSearchEndpointRemote, error) {
+	_, err := r.client.VectorSearchEndpoints.CreateEndpoint(ctx, *config)
 	if err != nil {
 		return "", nil, err
 	}
 	id := config.Name
-	return id, newVectorSearchEndpointRemote(waiter.Response), nil
-}
 
-func (r *ResourceVectorSearchEndpoint) WaitAfterCreate(ctx context.Context, id string, config *vectorsearch.CreateEndpoint) (*VectorSearchEndpointRemote, error) {
+	// Save state immediately after the endpoint is created so it is not orphaned
+	// if the subsequent wait is interrupted.
+	engine.SaveState(ctx, id, config)
+
 	info, err := r.client.VectorSearchEndpoints.WaitGetEndpointVectorSearchEndpointOnline(ctx, config.Name, 60*time.Minute, nil)
 	if err != nil {
-		return nil, err
+		return "", nil, err
 	}
-	return newVectorSearchEndpointRemote(info), nil
+	return id, newVectorSearchEndpointRemote(info), nil
 }
 
-func (r *ResourceVectorSearchEndpoint) DoUpdate(ctx context.Context, id string, config *vectorsearch.CreateEndpoint, entry *PlanEntry) (*VectorSearchEndpointRemote, error) {
+func (r *ResourceVectorSearchEndpoint) DoUpdate(ctx context.Context, _ *Engine, id string, config *vectorsearch.CreateEndpoint, entry *PlanEntry) (*VectorSearchEndpointRemote, error) {
 	if entry.Changes.HasChange(pathBudgetPolicyId) {
 		_, err := r.client.VectorSearchEndpoints.UpdateEndpointBudgetPolicy(ctx, vectorsearch.PatchEndpointBudgetPolicyRequest{
 			EndpointName:   id,

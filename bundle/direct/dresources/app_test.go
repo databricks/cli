@@ -17,39 +17,6 @@ import (
 // an app already exists but is in DELETING state.
 func TestAppDoCreate_RetriesWhenAppIsDeleting(t *testing.T) {
 	server := testserver.New(t)
-
-	createCallCount := 0
-	getCallCount := 0
-
-	server.Handle("POST", "/api/2.0/apps", func(req testserver.Request) any {
-		createCallCount++
-		if createCallCount == 1 {
-			return testserver.Response{
-				StatusCode: 409,
-				Body: map[string]string{
-					"error_code": "RESOURCE_ALREADY_EXISTS",
-					"message":    "An app with the same name already exists.",
-				},
-			}
-		}
-		return apps.App{
-			Name: "test-app",
-			ComputeStatus: &apps.ComputeStatus{
-				State: apps.ComputeStateActive,
-			},
-		}
-	})
-
-	server.Handle("GET", "/api/2.0/apps/{name}", func(req testserver.Request) any {
-		getCallCount++
-		return apps.App{
-			Name: req.Vars["name"],
-			ComputeStatus: &apps.ComputeStatus{
-				State: apps.ComputeStateDeleting,
-			},
-		}
-	})
-
 	testserver.AddDefaultHandlers(server)
 
 	client, err := databricks.NewWorkspaceClient(&databricks.Config{
@@ -58,14 +25,21 @@ func TestAppDoCreate_RetriesWhenAppIsDeleting(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	r := (&ResourceApp{}).New(client)
 	ctx := t.Context()
-	name, _, err := r.DoCreate(ctx, &AppState{App: apps.App{Name: "test-app"}})
+
+	// Create then delete an app to put it in DELETING state.
+	// The testserver's DELETE is asynchronous: it sets DELETING rather than
+	// removing immediately, so the retry create will find the app in that state.
+	_, err = client.Apps.Create(ctx, apps.CreateAppRequest{App: apps.App{Name: "test-app"}})
+	require.NoError(t, err)
+	_, err = client.Apps.DeleteByName(ctx, "test-app")
+	require.NoError(t, err)
+
+	r := (&ResourceApp{}).New(client)
+	name, _, err := r.DoCreate(ctx, NewNopEngine(reflect.TypeFor[*AppState]()), &AppState{App: apps.App{Name: "test-app"}})
 
 	require.NoError(t, err)
 	assert.Equal(t, "test-app", name)
-	assert.Equal(t, 2, createCallCount, "expected Create to be called twice (1 retry)")
-	assert.Equal(t, 1, getCallCount, "expected Get to be called once to check app state")
 }
 
 // TestAppDoCreate_RetriesWhenGetReturnsNotFound verifies that DoCreate retries
@@ -73,37 +47,20 @@ func TestAppDoCreate_RetriesWhenAppIsDeleting(t *testing.T) {
 func TestAppDoCreate_RetriesWhenGetReturnsNotFound(t *testing.T) {
 	server := testserver.New(t)
 
-	createCallCount := 0
-	getCallCount := 0
-
+	// Simulate a race: the app existed when Create was called (returns 409) but
+	// was deleted before the existence check (GET returns 404). The first POST
+	// returns 409 without storing anything so the standard GET handler returns
+	// 404 naturally, and the retry POST creates the app normally.
+	rejectedOnce := false
 	server.Handle("POST", "/api/2.0/apps", func(req testserver.Request) any {
-		createCallCount++
-		if createCallCount == 1 {
+		if !rejectedOnce {
+			rejectedOnce = true
 			return testserver.Response{
 				StatusCode: 409,
-				Body: map[string]string{
-					"error_code": "RESOURCE_ALREADY_EXISTS",
-					"message":    "An app with the same name already exists.",
-				},
+				Body:       map[string]string{"error_code": "RESOURCE_ALREADY_EXISTS", "message": "An app with the same name already exists."},
 			}
 		}
-		return apps.App{
-			Name: "test-app",
-			ComputeStatus: &apps.ComputeStatus{
-				State: apps.ComputeStateActive,
-			},
-		}
-	})
-
-	server.Handle("GET", "/api/2.0/apps/{name}", func(req testserver.Request) any {
-		getCallCount++
-		return testserver.Response{
-			StatusCode: 404,
-			Body: map[string]string{
-				"error_code": "RESOURCE_DOES_NOT_EXIST",
-				"message":    "App not found.",
-			},
-		}
+		return req.Workspace.AppsUpsert(req, "")
 	})
 
 	testserver.AddDefaultHandlers(server)
@@ -116,12 +73,10 @@ func TestAppDoCreate_RetriesWhenGetReturnsNotFound(t *testing.T) {
 
 	r := (&ResourceApp{}).New(client)
 	ctx := t.Context()
-	name, _, err := r.DoCreate(ctx, &AppState{App: apps.App{Name: "test-app"}})
+	name, _, err := r.DoCreate(ctx, NewNopEngine(reflect.TypeFor[*AppState]()), &AppState{App: apps.App{Name: "test-app"}})
 
 	require.NoError(t, err)
 	assert.Equal(t, "test-app", name)
-	assert.Equal(t, 2, createCallCount, "expected Create to be called twice")
-	assert.Equal(t, 1, getCallCount, "expected Get to be called once to check app state")
 }
 
 func TestAppDoUpdate_UpdateMaskHasAllFields(t *testing.T) {

@@ -122,7 +122,7 @@ func makePipelineRemote(p *pipelines.GetPipelineResponse) *PipelineRemote {
 	}
 }
 
-func (r *ResourcePipeline) DoCreate(ctx context.Context, config *pipelines.CreatePipeline) (string, *PipelineRemote, error) {
+func (r *ResourcePipeline) DoCreate(ctx context.Context, _ *Engine, config *pipelines.CreatePipeline) (string, *PipelineRemote, error) {
 	response, err := r.client.Pipelines.Create(ctx, *config)
 	if err != nil {
 		return "", nil, err
@@ -130,7 +130,7 @@ func (r *ResourcePipeline) DoCreate(ctx context.Context, config *pipelines.Creat
 	return response.PipelineId, nil, nil
 }
 
-func (r *ResourcePipeline) DoUpdate(ctx context.Context, id string, config *pipelines.CreatePipeline, _ *PlanEntry) (*PipelineRemote, error) {
+func (r *ResourcePipeline) DoUpdate(ctx context.Context, _ *Engine, id string, config *pipelines.CreatePipeline, _ *PlanEntry) (*PipelineRemote, error) {
 	request := pipelines.EditPipeline{
 		AllowDuplicateNames:  config.AllowDuplicateNames,
 		BudgetPolicyId:       config.BudgetPolicyId,
