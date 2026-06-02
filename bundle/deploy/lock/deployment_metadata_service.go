@@ -269,7 +269,6 @@ func makeSyncReporter(svc *tmpdms.DeploymentMetadataAPI, deploymentID, versionID
 	}
 }
 
-
 // planActionToOperationAction maps a deploy plan action to a metadata service
 // operation action type. No-op actions like Skip return ("", nil) and should
 // be ignored.
