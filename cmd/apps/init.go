@@ -48,6 +48,11 @@ const (
 
 	// bundleConfigFile is the standard bundle configuration filename.
 	bundleConfigFile = "databricks.yml"
+
+	// agenticModeEnvVar controls the agentic app creation flow where resources
+	// are not provided upfront. When set to "true", --set requirement and
+	// resource validation are skipped.
+	agenticModeEnvVar = "DATABRICKS_APPS_AGENTIC_MODE"
 )
 
 // normalizeVersion converts a version string to the template tag format "template-vX.X.X".
@@ -649,13 +654,14 @@ func commitInPlace() (string, error) {
 	return appName, nil
 }
 
-// isPreRenderedTemplate returns true when the template directory contains an
-// already-materialised project (e.g. one of the app-templates/appkit-* repos)
-// rather than a raw Go-template tree.
-//
-// Detection: there is no {{.project_name}} subdirectory AND the databricks.yml
-// file (if present) contains no Go template syntax ("{{").
-func isPreRenderedTemplate(templateDir string) bool {
+// shouldSkipPluginSelection returns true when the template has a plugin
+// manifest but no {{.project_name}} subdirectory — meaning plugins are
+// pre-baked in the code files (e.g. app-templates/appkit-* repos) and
+// the user should not be prompted to select plugins.
+func shouldSkipPluginSelection(templateDir string) bool {
+	if !manifest.HasManifest(templateDir) {
+		return false
+	}
 	entries, err := os.ReadDir(templateDir)
 	if err != nil {
 		return false
@@ -665,12 +671,7 @@ func isPreRenderedTemplate(templateDir string) bool {
 			return false
 		}
 	}
-	data, err := os.ReadFile(filepath.Join(templateDir, bundleConfigFile))
-	if err != nil {
-		// No databricks.yml — can't tell, assume normal template.
-		return false
-	}
-	return !strings.Contains(string(data), "{{")
+	return true
 }
 
 // replaceProjectName updates the project name in key files after copying a
@@ -1131,12 +1132,16 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		}
 	}
 
-	// Detect whether this is a pre-rendered template (already-materialised
-	// project with no Go template placeholders in databricks.yml).
-	preRendered := isPreRenderedTemplate(templateDir)
-	if preRendered {
-		log.Debugf(ctx, "Detected pre-rendered template at %s", templateDir)
+	// Check whether plugin selection should be skipped (pre-baked plugins
+	// in a pre-rendered template with a manifest but no {{.project_name}} dir).
+	skipPluginSelection := shouldSkipPluginSelection(templateDir)
+	if skipPluginSelection {
+		log.Debugf(ctx, "Skipping plugin selection for pre-rendered template at %s", templateDir)
 	}
+
+	// Agentic mode: resources are not provided upfront, skip --set
+	// requirement and validation.
+	agenticMode := env.Get(ctx, agenticModeEnvVar) == "true"
 
 	// Start npm install in the background so it runs while the user answers prompts.
 	// This is a Node.js-only optimisation — non-Node templates skip this.
@@ -1171,8 +1176,8 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	// Skip deploy/run prompts if in flags mode or if deploy/run flags were explicitly set
 	skipDeployRunPrompt := flagsMode || opts.deployChanged || opts.runChanged
 
-	if preRendered {
-		// Pre-rendered templates already have their plugins configured.
+	if skipPluginSelection {
+		// Pre-rendered templates already have their plugins configured in code.
 		// Skip plugin/resource prompting entirely — just use mandatory plugins.
 		if isInteractive && !skipDeployRunPrompt {
 			var err error
@@ -1236,19 +1241,12 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		maps.Copy(resourceValues, setVals)
 	}
 
-	// Pre-rendered templates have no Go template placeholders, so --set
-	// values cannot be injected into the output files.
-	if preRendered && len(setVals) > 0 {
-		log.Warnf(ctx, "--set values are ignored for pre-rendered templates (resources are already configured in %s)", bundleConfigFile)
-	}
-
 	// Always include mandatory plugins regardless of user selection or flags.
 	selectedPlugins = appendUnique(selectedPlugins, m.GetMandatoryPluginNames()...)
 
 	// Warn when --features adds plugins that the pre-rendered template
-	// cannot inject (its databricks.yml, server.ts, and app.yaml are
-	// already finalised).
-	if preRendered && opts.pluginsChanged {
+	// cannot inject (its server.ts and app.yaml are already finalised).
+	if skipPluginSelection && opts.pluginsChanged {
 		mandatoryNames := m.GetMandatoryPluginNames()
 		mandatory := make(map[string]bool, len(mandatoryNames))
 		for _, n := range mandatoryNames {
@@ -1264,9 +1262,8 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	}
 
 	// In flags/non-interactive mode, resolve derived values and validate resources.
-	// Skip validation for pre-rendered templates — their resources are already
-	// configured in databricks.yml.
-	if !preRendered && (flagsMode || !isInteractive) {
+	// Agentic mode skips validation — resources are filled in later.
+	if !agenticMode && (flagsMode || !isInteractive) {
 		resources := m.CollectResources(selectedPlugins)
 
 		// Resolve derived values for resources that support it.
@@ -1411,9 +1408,9 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	}
 	projectCreated = true // From here on, cleanup on failure
 
-	// For pre-rendered templates, update the project name in key files since
-	// Go template substitution had no placeholders to fill.
-	if preRendered {
+	// For pre-rendered templates, update package.json name (not a .tmpl file)
+	// and serve as a safety net for the agentic flow.
+	if skipPluginSelection {
 		if err := replaceProjectName(destDir, opts.name); err != nil {
 			log.Warnf(ctx, "Could not update project name in output files: %v", err)
 		}

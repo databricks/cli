@@ -1193,46 +1193,37 @@ func TestPrependInstall(t *testing.T) {
 	}
 }
 
-func TestIsPreRenderedTemplate(t *testing.T) {
+func TestShouldSkipPluginSelection(t *testing.T) {
 	tests := []struct {
 		name     string
 		setup    func(dir string)
 		expected bool
 	}{
 		{
-			name: "normal template with project_name dir",
+			name: "manifest present, no project_name dir",
 			setup: func(dir string) {
-				require.NoError(t, os.MkdirAll(filepath.Join(dir, "{{.project_name}}"), 0o755))
-				require.NoError(t, os.WriteFile(filepath.Join(dir, bundleConfigFile), []byte("bundle:\n  name: myapp\n"), 0o644))
-			},
-			expected: false,
-		},
-		{
-			name: "pre-rendered template",
-			setup: func(dir string) {
-				require.NoError(t, os.WriteFile(filepath.Join(dir, bundleConfigFile), []byte("bundle:\n  name: myapp\n"), 0o644))
+				require.NoError(t, os.WriteFile(filepath.Join(dir, manifest.ManifestFileName), []byte(`{"plugins":{}}`), 0o644))
 			},
 			expected: true,
 		},
 		{
-			name: "no databricks.yml",
+			name: "manifest present, project_name dir present",
+			setup: func(dir string) {
+				require.NoError(t, os.WriteFile(filepath.Join(dir, manifest.ManifestFileName), []byte(`{"plugins":{}}`), 0o644))
+				require.NoError(t, os.MkdirAll(filepath.Join(dir, "{{.project_name}}"), 0o755))
+			},
+			expected: false,
+		},
+		{
+			name: "no manifest",
 			setup: func(dir string) {
 				require.NoError(t, os.WriteFile(filepath.Join(dir, "README.md"), []byte("hello"), 0o644))
 			},
 			expected: false,
 		},
 		{
-			name: "databricks.yml with Go template syntax",
-			setup: func(dir string) {
-				require.NoError(t, os.WriteFile(filepath.Join(dir, bundleConfigFile), []byte("bundle:\n  name: {{.project_name}}\n"), 0o644))
-			},
-			expected: false,
-		},
-		{
-			name: "unreadable directory",
-			setup: func(_ string) {
-				// dir is replaced with a nonexistent path below.
-			},
+			name:     "unreadable directory",
+			setup:    func(_ string) {},
 			expected: false,
 		},
 	}
@@ -1245,7 +1236,7 @@ func TestIsPreRenderedTemplate(t *testing.T) {
 			} else {
 				tt.setup(dir)
 			}
-			assert.Equal(t, tt.expected, isPreRenderedTemplate(dir))
+			assert.Equal(t, tt.expected, shouldSkipPluginSelection(dir))
 		})
 	}
 }
