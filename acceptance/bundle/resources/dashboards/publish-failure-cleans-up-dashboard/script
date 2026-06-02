@@ -5,7 +5,7 @@ envsubst < databricks.yml.tmpl > databricks.yml
 errcode trace $CLI bundle deploy &> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt
 
 # After publish failure the dashboard draft should be in state (direct) or cleaned up (terraform).
-trace $CLI bundle summary &>> out.summary.$DATABRICKS_BUNDLE_ENGINE.txt
+trace $CLI bundle summary >> out.summary.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1
 
 # API request sequence differs between engines (direct: no DELETE; terraform: DELETE to clean up).
 unset MSYS_NO_PATHCONV
