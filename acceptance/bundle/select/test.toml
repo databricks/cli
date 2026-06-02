@@ -1,3 +1,7 @@
 Local = true
 Cloud = false
 Ignore = [".databricks", ".gitignore"]
+RecordRequests = true
+# Also run a variant that deploys a serialized (already filtered) plan via --plan.
+# terraform + READPLAN=1 is excluded globally (see root test.toml).
+EnvMatrix.READPLAN = ["", "1"]
