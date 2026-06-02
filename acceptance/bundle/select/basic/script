@@ -18,9 +18,10 @@ trace $CLI bundle plan --select jobs.bar,jobs.baz
 trace $CLI bundle plan --select jobs.foo
 
 # --- partial deploy ---
-# Serialize the filtered plan, then deploy it: inline, or via --plan (READPLAN=1).
-# The deploy is not traced because readplanarg varies the command line between
-# READPLAN variants, which must produce identical output.
+# Serialize the filtered plan to a temp file (kept out of the recorded output: the
+# JSON embeds remote state that differs between local and cloud), then deploy it:
+# inline, or via --plan (READPLAN=1). The deploy is not traced because readplanarg
+# varies the command line between READPLAN variants, which must produce identical output.
 $CLI bundle plan --select jobs.foo -o json > plan.json
 title "bundle deploy --select jobs.foo\n"
 $CLI bundle deploy --select jobs.foo $(readplanarg plan.json)
@@ -31,8 +32,9 @@ trace print_requests.py --sort //jobs
 # foo and bar are already deployed, so only baz remains to create.
 title "Full plan after partial deploy"
 trace $CLI bundle plan
-title "Full deploy"
-trace $CLI bundle deploy
+$CLI bundle plan -o json > plan-full.json
+title "Full deploy\n"
+$CLI bundle deploy $(readplanarg plan-full.json)
 # Only baz is created this time.
 trace print_requests.py --sort //jobs
 # Everything is deployed now: no changes.

@@ -6,5 +6,6 @@ RecordRequests = true
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 # Also run a variant that deploys a serialized (already filtered) plan via --plan.
 EnvMatrix.READPLAN = ["", "1"]
-# databricks.yml and plan.json are generated at runtime.
-Ignore = [".databricks", ".gitignore", "databricks.yml", "plan.json"]
+# databricks.yml and the serialized plans are generated at runtime; the plan JSON
+# is kept out of the recorded output because it embeds local/cloud-specific state.
+Ignore = [".databricks", ".gitignore", "databricks.yml", "plan.json", "plan-full.json"]
