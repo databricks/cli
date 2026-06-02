@@ -1,0 +1,41 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+   # After this test the destroy should be a soft delete; --purge here so the
+   # trash entry doesn't linger past the test.
+   $CLI postgres delete-project --purge "projects/test-pg-proj-${UNIQUE_NAME}" 2>/dev/null || true
+   rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+# Prints the persisted purge_on_delete value from the direct engine's
+# resources.json. The field is omitted from JSON when unset (omitempty +
+# ForceSendFields tracking), so absent => null, explicit true/false => bool.
+get_purge() {
+  jq -r '.state["resources.postgres_projects.proj"].state.purge_on_delete' .databricks/bundle/default/resources.json
+}
+
+title "Step 1: deploy with purge_on_delete unset"
+trace $CLI bundle deploy
+trace get_purge
+
+title "Step 2: set purge_on_delete: true"
+update_file.py databricks.yml "# PURGE_ON_DELETE" "purge_on_delete: true"
+trace $CLI bundle deploy
+trace get_purge
+
+title "Step 3: flip to purge_on_delete: false"
+update_file.py databricks.yml "purge_on_delete: true" "purge_on_delete: false"
+trace $CLI bundle deploy
+trace get_purge
+
+title "Step 4: remove the line again"
+update_file.py databricks.yml "purge_on_delete: false" "# PURGE_ON_DELETE"
+trace $CLI bundle deploy
+trace get_purge
+
+rm -f out.requests.txt
+
+title "bundle destroy (must be a plain DELETE, no ?purge=true)"
+$CLI bundle destroy --auto-approve > out.destroy.txt 2>&1 || true
+trace print_requests.py --keep --sort --get '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.destroy.json

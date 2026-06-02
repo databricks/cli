@@ -49,6 +49,9 @@ var knownMissingInRemoteType = map[string][]string{
 	"postgres_endpoints": {
 		"replace_existing",
 	},
+	"postgres_projects": {
+		"purge_on_delete",
+	},
 	"vector_search_endpoints": {
 		"target_qps",
 		"usage_policy_id",

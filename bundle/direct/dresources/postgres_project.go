@@ -2,6 +2,7 @@ package dresources
 
 import (
 	"context"
+	"slices"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go"
@@ -51,8 +52,10 @@ func (*ResourcePostgresProject) New(client *databricks.WorkspaceClient) *Resourc
 
 func (*ResourcePostgresProject) PrepareState(input *resources.PostgresProject) *PostgresProjectState {
 	return &PostgresProjectState{
-		ProjectId:   input.ProjectId,
-		ProjectSpec: input.ProjectSpec,
+		ProjectId:       input.ProjectId,
+		PurgeOnDelete:   input.PurgeOnDelete,
+		ProjectSpec:     input.ProjectSpec,
+		ForceSendFields: input.ForceSendFields,
 	}
 }
 
@@ -60,6 +63,11 @@ func (*ResourcePostgresProject) RemapState(remote *PostgresProjectRemote) *Postg
 	return &PostgresProjectState{
 		ProjectId:   remote.ProjectId,
 		ProjectSpec: remote.ProjectSpec,
+
+		// purge_on_delete is a delete-time query parameter; the GET API never
+		// returns it, so RemapState leaves it false.
+		PurgeOnDelete:   false,
+		ForceSendFields: nil,
 	}
 }
 
@@ -137,6 +145,17 @@ func (r *ResourcePostgresProject) DoUpdate(ctx context.Context, id string, confi
 	// not relative to our flattened state type.
 	fieldPaths := collectUpdatePathsWithPrefix(entry.Changes, "spec.")
 
+	// purge_on_delete is an input-only flag consulted at delete time; it is
+	// not a spec field. Strip it from the mask so toggling it between deploys
+	// becomes a state-only refresh (the framework saves newState when this
+	// returns nil error).
+	fieldPaths = slices.DeleteFunc(fieldPaths, func(p string) bool {
+		return p == "spec.purge_on_delete"
+	})
+	if len(fieldPaths) == 0 {
+		return nil, nil
+	}
+
 	waiter, err := r.client.Postgres.UpdateProject(ctx, postgres.UpdateProjectRequest{
 		Project: postgres.Project{
 			Spec:                &config.ProjectSpec,
@@ -169,10 +188,10 @@ func (r *ResourcePostgresProject) DoUpdate(ctx context.Context, id string, confi
 	return makePostgresProjectRemote(result), nil
 }
 
-func (r *ResourcePostgresProject) DoDelete(ctx context.Context, id string, _ *PostgresProjectState) error {
+func (r *ResourcePostgresProject) DoDelete(ctx context.Context, id string, state *PostgresProjectState) error {
 	waiter, err := r.client.Postgres.DeleteProject(ctx, postgres.DeleteProjectRequest{
 		Name:            id,
-		Purge:           false,
+		Purge:           state.PurgeOnDelete,
 		ForceSendFields: nil,
 	})
 	if err != nil {

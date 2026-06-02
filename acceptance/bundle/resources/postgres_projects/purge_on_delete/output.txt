@@ -1,0 +1,52 @@
+
+>>> [CLI] bundle validate
+Name: deploy-postgres-purge-[UNIQUE_NAME]
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-purge-[UNIQUE_NAME]/default
+
+Validation OK!
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-purge-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] postgres get-project projects/test-pg-proj-hard-[UNIQUE_NAME]
+{
+  "name": "projects/test-pg-proj-hard-[UNIQUE_NAME]",
+  "status": {
+    "branch_logical_size_limit_bytes": [NUMID],
+    "default_branch": "projects/test-pg-proj-hard-[UNIQUE_NAME]/branches/production",
+    "display_name": "purge_on_delete = true",
+    "enable_pg_native_login": false,
+    "owner": "[USERNAME]",
+    "pg_version": 16,
+    "project_id": "test-pg-proj-hard-[UNIQUE_NAME]",
+    "synthetic_storage_size_bytes": 0
+  },
+  "uid": "[UUID]"
+}
+
+>>> [CLI] postgres get-project projects/test-pg-proj-soft-[UNIQUE_NAME]
+{
+  "name": "projects/test-pg-proj-soft-[UNIQUE_NAME]",
+  "status": {
+    "branch_logical_size_limit_bytes": [NUMID],
+    "default_branch": "projects/test-pg-proj-soft-[UNIQUE_NAME]/branches/production",
+    "display_name": "purge_on_delete unset (soft delete)",
+    "enable_pg_native_login": false,
+    "owner": "[USERNAME]",
+    "pg_version": 16,
+    "project_id": "test-pg-proj-soft-[UNIQUE_NAME]",
+    "synthetic_storage_size_bytes": 0
+  },
+  "uid": "[UUID]"
+}
+
+>>> print_requests.py --keep --sort --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
+
+=== bundle destroy
+>>> print_requests.py --keep --sort --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
