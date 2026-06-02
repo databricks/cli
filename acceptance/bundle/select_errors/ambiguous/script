@@ -1,0 +1,4 @@
+# An ambiguous selector ("thing" is both a job and a pipeline) cannot actually be
+# reached: UniqueResourceKeys rejects the duplicate key at load time, before --select
+# is resolved. The ResolveSelect "ambiguous resource" branch is covered by a unit test.
+errcode trace $CLI bundle plan --select thing

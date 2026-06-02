@@ -1,6 +1,3 @@
 Local = true
 Cloud = false
 Ignore = [".databricks", ".gitignore"]
-# Selector resolution only happens on the direct engine; on terraform every
-# --select hits the engine-rejection error first (covered by bundle/select).
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

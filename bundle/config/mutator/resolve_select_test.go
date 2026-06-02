@@ -32,9 +32,10 @@ func TestResolveSelect_Normalizes(t *testing.T) {
 	assert.Len(t, b.Config.Resources.Pipelines, 1)
 }
 
-// TestResolveSelect_Ambiguous covers the ambiguous-selector error. This cannot be
-// exercised by an acceptance test: UniqueResourceKeys forbids two resources sharing
-// a key across types, so an ambiguous selection is unreachable in a loadable bundle.
+// TestResolveSelect_Ambiguous covers the ambiguous-selector error in isolation.
+// In a real bundle this is unreachable — UniqueResourceKeys rejects two resources
+// sharing a key across types before this mutator runs (see the acceptance test
+// bundle/select_errors/ambiguous for the real, load-time error).
 func TestResolveSelect_Ambiguous(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{

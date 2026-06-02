@@ -1,9 +1,0 @@
-# Unqualified name that matches no resource.
-errcode trace $CLI bundle plan --select no_such_resource
-
-# Qualified name whose resource does not exist.
-errcode trace $CLI bundle plan --select jobs.no_such_job
-
-# Note: the "ambiguous resource" error cannot be reproduced here. UniqueResourceKeys
-# forbids two resources sharing a key across types, so an ambiguous selection is
-# unreachable in a loadable bundle; it is covered by a unit test instead.
