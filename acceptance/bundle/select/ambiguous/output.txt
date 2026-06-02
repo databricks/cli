@@ -1,5 +1,5 @@
 
->>> [CLI] bundle plan --select thing
+>>> musterr [CLI] bundle plan --select thing
 Error: multiple resources or scripts have been defined with the same key: thing
   at resources.jobs.thing
      resources.pipelines.thing
@@ -7,4 +7,10 @@ Error: multiple resources or scripts have been defined with the same key: thing
      databricks.yml:13:7
 
 
-Exit code: 1
+>>> musterr [CLI] bundle deploy --select thing
+Error: multiple resources or scripts have been defined with the same key: thing
+  at resources.jobs.thing
+     resources.pipelines.thing
+  in databricks.yml:10:7
+     databricks.yml:13:7
+
