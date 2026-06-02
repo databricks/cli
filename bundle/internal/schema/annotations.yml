@@ -50,6 +50,9 @@ github.com/databricks/cli/bundle/config.Bundle:
       The Git version control details that are associated with your bundle.
     "markdown_description": |-
       The Git version control details that are associated with your bundle. For supported attributes see [\_](/dev-tools/bundles/settings.md#git).
+  "immutable":
+    "description": |-
+      Whether to upload bundle files and artifacts as a single immutable snapshot. When true, all files are packaged into a zip and uploaded via the snapshot API, and workspace.file_path and workspace.artifact_path are set to the returned content-addressed path. The validate and plan commands make no mutative API calls when this is enabled.
   "name":
     "description": |-
       The name of the bundle.

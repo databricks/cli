@@ -59,4 +59,11 @@ type Bundle struct {
 	// A stable generated UUID for the bundle. This is normally serialized by
 	// Databricks first party template when a user runs bundle init.
 	Uuid string `json:"uuid,omitempty"`
+
+	// Immutable specifies that bundle files and artifacts are uploaded as a single
+	// immutable snapshot rather than being synced individually. When true, the
+	// deployment calls /api/2.0/repos/snapshots with a zip containing all files
+	// and sets workspace.file_path and workspace.artifact_path to the returned
+	// content-addressed path. validate and plan make no mutative API calls.
+	Immutable bool `json:"immutable,omitempty"`
 }

@@ -1,0 +1,54 @@
+
+>>> [CLI] bundle validate
+Name: test-bundle-immutable-[UNIQUE_NAME]
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle-immutable-[UNIQUE_NAME]/default
+
+Validation OK!
+
+>>> [CLI] bundle deploy
+Building python_artifact...
+Uploading immutable bundle snapshot...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] jobs get [NUMID]
+"/Workspace/Users/[UUID]/.snapshots/test-bundle-immutable-[UNIQUE_NAME]/11f80ca6d8923bf75b57e475d4ca9ba4bb1d6d48c58aace8d3f2a1289b51c6e0/src/files/src/main.py"
+
+>>> [CLI] jobs get [NUMID]
+"/Workspace/Users/[UUID]/.snapshots/test-bundle-immutable-[UNIQUE_NAME]/11f80ca6d8923bf75b57e475d4ca9ba4bb1d6d48c58aace8d3f2a1289b51c6e0/src/files/src/notebook"
+
+>>> [CLI] jobs get [NUMID]
+[
+  "/Workspace/Users/[UUID]/.snapshots/test-bundle-immutable-[UNIQUE_NAME]/11f80ca6d8923bf75b57e475d4ca9ba4bb1d6d48c58aace8d3f2a1289b51c6e0/src/artifacts/.internal/immutable-0.0.1-py3-none-any.whl"
+]
+
+>>> [CLI] bundle run my_job
+Run URL: [DATABRICKS_URL]/?o=[NUMID]#job/[NUMID]/run/[NUMID]
+
+[TIMESTAMP] "my job" RUNNING
+[TIMESTAMP] "my job" TERMINATED SUCCESS
+Output:
+=======
+Task python_wheel_task:
+Hello from Python Wheel Task!
+
+=======
+Task notebook_task:
+
+=======
+Task spark_python_task:
+Hello from Spark Python Task!
+
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.my_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-immutable-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!

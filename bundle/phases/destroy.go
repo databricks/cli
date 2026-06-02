@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/deploy/files"
 	"github.com/databricks/cli/bundle/deploy/lock"
+	deploymetadata "github.com/databricks/cli/bundle/deploy/metadata"
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct"
@@ -130,17 +131,29 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 	}()
 
 	if !engine.IsDirect() {
-		bundle.ApplySeqContext(ctx, b,
+		mutators := []bundle.Mutator{
 			// We need to resolve artifact variable (how we do it in build phase)
 			// because some of the to-be-destroyed resource might use this variable.
 			// Not resolving might lead to terraform "Reference to undeclared resource" error
 			mutator.ResolveVariableReferencesWithoutResources("artifacts"),
 			mutator.ResolveVariableReferencesOnlyResources("artifacts"),
+		}
 
+		if b.Config.Bundle.Immutable {
+			// For immutable bundles, resource paths contain ${workspace.snapshot_path}
+			// which was set during deploy by snapshot.Upload(). Load it from the stored
+			// metadata so it can be resolved before Terraform processes the config.
+			mutators = append([]bundle.Mutator{deploymetadata.Load()}, mutators...)
+			mutators = append(mutators, mutator.ResolveVariableReferencesOnlyResources())
+		}
+
+		mutators = append(mutators,
 			terraform.Interpolate(),
 			terraform.Write(),
 			terraform.Plan(terraform.PlanGoal("destroy")),
 		)
+
+		bundle.ApplySeqContext(ctx, b, mutators...)
 	}
 
 	if logdiag.HasError(ctx) {
