@@ -1,0 +1,2 @@
+# --select is only supported by the direct engine; terraform must error out.
+trace $CLI bundle plan --select my_job

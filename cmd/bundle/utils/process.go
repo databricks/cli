@@ -170,15 +170,28 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		}
 	}
 
-	// For commands that don't compute a deployment plan (validate, summary),
-	// apply a simple exact-match config filter now. For plan/deploy with the
-	// direct engine, RunPlan calls plan.FilterToSelected which uses the
-	// DependsOn graph to auto-include transitive dependencies; the terraform
-	// engine is filtered inside RunPlan before writing the terraform JSON.
-	if len(b.Select) > 0 && !opts.PreDeployChecks && !opts.Deploy && opts.ReadPlanPath == "" {
-		bundle.ApplyContext(ctx, b, mutator.FilterSelectedResources())
-		if logdiag.HasError(ctx) {
+	if len(b.Select) > 0 {
+		// --select is only supported by the direct engine, which tracks resource
+		// dependencies in the plan graph. Reject it on terraform with an actionable
+		// error rather than silently planning/deploying every resource.
+		engineSetting, err := ResolveEngineSetting(ctx, b)
+		if err != nil {
+			return b, nil, err
+		}
+		if !engineSetting.Type.IsDirect() {
+			logdiag.LogError(ctx, errors.New(`--select is only supported with the direct engine (set bundle.engine to "direct" or DATABRICKS_BUNDLE_ENGINE=direct)`))
 			return b, nil, root.ErrAlreadyPrinted
+		}
+
+		// For commands that don't compute a deployment plan (validate, summary),
+		// apply a simple exact-match config filter now. For plan/deploy, RunPlan
+		// calls plan.FilterToSelected which uses the DependsOn graph to auto-include
+		// transitive dependencies.
+		if !opts.PreDeployChecks && !opts.Deploy && opts.ReadPlanPath == "" {
+			bundle.ApplyContext(ctx, b, mutator.FilterSelectedResources())
+			if logdiag.HasError(ctx) {
+				return b, nil, root.ErrAlreadyPrinted
+			}
 		}
 	}
 

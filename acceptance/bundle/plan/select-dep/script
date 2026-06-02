@@ -4,10 +4,5 @@ trace $CLI bundle plan --select jobs.foo --select jobs.bar
 # Select the dependency alone: bar has no outgoing references.
 trace $CLI bundle plan --select jobs.bar
 
-# Select only foo. For the direct engine bar is auto-included via the DependsOn
-# graph; for terraform deps are not tracked at this stage so the output differs.
-set +e
-$CLI bundle plan --select jobs.foo > out.select-single.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1
-echo "Exit code: $?" >> out.select-single.$DATABRICKS_BUNDLE_ENGINE.txt
-set -e
-perl -0777 -i -pe 's/\n+$/\n/' out.select-single.$DATABRICKS_BUNDLE_ENGINE.txt
+# Select only foo: bar is auto-included because foo references ${resources.jobs.bar.id}.
+trace $CLI bundle plan --select jobs.foo

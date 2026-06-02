@@ -1,0 +1,6 @@
+
+>>> [CLI] bundle plan --select my_job
+Error: --select is only supported with the direct engine (set bundle.engine to "direct" or DATABRICKS_BUNDLE_ENGINE=direct)
+
+
+Exit code: 1

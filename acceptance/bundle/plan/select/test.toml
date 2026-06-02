@@ -1,2 +1,4 @@
 Local = true
 Cloud = false
+# --select is only supported by the direct engine (terraform errors out, tested separately).
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

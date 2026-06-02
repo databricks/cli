@@ -8,7 +8,6 @@ import (
 	"github.com/databricks/cli/bundle/artifacts"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/engine"
-	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/deploy"
 	"github.com/databricks/cli/bundle/deploy/files"
 	"github.com/databricks/cli/bundle/deploy/lock"
@@ -219,10 +218,8 @@ func RunPlan(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) *d
 		return plan
 	}
 
-	// Terraform engine: filter config to the selected set before writing terraform JSON.
-	if len(b.Select) > 0 {
-		bundle.ApplyContext(ctx, b, mutator.FilterSelectedResources())
-	}
+	// b.Select is rejected for the terraform engine in ProcessBundleRet, so it is
+	// never set here.
 
 	bundle.ApplySeqContext(ctx, b,
 		terraform.Interpolate(),
