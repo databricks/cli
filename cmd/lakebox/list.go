@@ -1,20 +1,35 @@
 package lakebox
 
 import (
-	"encoding/json"
 	"fmt"
-	"strings"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/mattn/go-runewidth"
+	"github.com/databricks/cli/libs/flags"
 	"github.com/spf13/cobra"
 )
 
-func newListCommand() *cobra.Command {
-	var outputJSON bool
+// listRow embeds sandboxEntry so JSON output stays byte-identical to the
+// raw API response. Text-mode fields are tagged `json:"-"` so they don't
+// leak when the user passes `-o json`.
+type listRow struct {
+	sandboxEntry
+	DisplayName string `json:"-"`
+	AutoStop    string `json:"-"`
+	Default     string `json:"-"`
+}
 
+// State colors are picked from cmdio's RenderFuncMap palette. green,
+// yellow, and blue all emit same-byte-width SGR sequences, so the STATUS
+// column stays aligned under tabwriter even when colors vary per row.
+const (
+	listHeaderTemplate = `{{header "ID"}}	{{header "NAME"}}	{{header "STATUS"}}	{{header "AUTOSTOP"}}	{{header "DEFAULT"}}`
+	listRowTemplate    = `{{range .}}{{.SandboxID | bold}}	{{.DisplayName}}	{{if eq .Status "Running"}}{{green "%s" .Status}}{{else if eq .Status "Creating"}}{{yellow "%s" .Status}}{{else}}{{blue "%s" .Status}}{{end}}	{{.AutoStop | faint}}	{{.Default | cyan}}
+{{end}}`
+)
+
+func newListCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List your Lakebox environments",
@@ -25,8 +40,12 @@ current status and ID.
 
 Example:
   databricks lakebox list
-  databricks lakebox list --json`,
+  databricks lakebox list -o json`,
 		PreRunE: root.MustWorkspaceClient,
+		Annotations: map[string]string{
+			"headerTemplate": listHeaderTemplate,
+			"template":       listRowTemplate,
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			w := cmdctx.WorkspaceClient(ctx)
@@ -84,10 +103,10 @@ Example:
 			}
 			_ = setSandboxes(ctx, profile, refs)
 
-			if jsonOutput(cmd, outputJSON) {
-				enc := json.NewEncoder(cmd.OutOrStdout())
-				enc.SetIndent("", "  ")
-				return enc.Encode(entries)
+			// JSON path: emit the raw entries (not the display-row wrapper)
+			// so consumers see the same shape as the underlying API.
+			if root.OutputType(cmd) == flags.OutputJSON {
+				return cmdio.Render(ctx, entries)
 			}
 
 			if len(entries) == 0 {
@@ -95,98 +114,30 @@ Example:
 				return nil
 			}
 
-			out := cmd.OutOrStdout()
-
-			// Compute column widths. AUTOSTOP holds short tokens like
-			// `never`, `15m`, `1h30m` — 8 chars covers them.
-			//
-			// NAME is *always* rendered, even when no sandbox has a
-			// custom --name set: yunquan flagged on the bug-bash form
-			// that the prior auto-hide made the table shape change
-			// between calls (NAME appears the moment you set --name on
-			// any one box and vanishes when you clear them all), which
-			// breaks scripts and muscle memory. Sandboxes without a
-			// custom name render as `-` in the NAME cell.
-			//
-			// All column widths are measured in *terminal cells*, not
-			// bytes or runes — emoji and CJK glyphs render as 2 cells
-			// despite being 1 rune / multi-byte, and using len() here
-			// (which counts bytes) misaligns the row whenever a `--name`
-			// includes wide characters. runewidth.StringWidth gives the
-			// East-Asian-Width-corrected cell count.
-			idCol := 10
-			autostopCol := 8
-			nameCol := 4
-			for _, e := range entries {
-				if l := runewidth.StringWidth(e.SandboxID); l > idCol {
-					idCol = l
+			rows := make([]listRow, len(entries))
+			for i, e := range entries {
+				// "-" stands in for an unset NAME (or a NAME that just
+				// echoes the ID and so carries no extra information).
+				// Keep it ASCII so it doesn't add an ANSI wrapper that
+				// would throw off the column.
+				name := e.Name
+				if name == "" || name == e.SandboxID {
+					name = "-"
 				}
-				if l := runewidth.StringWidth(e.autoStopLabel()); l > autostopCol {
-					autostopCol = l
-				}
-				// Only let an actual custom name expand the column. A
-				// sandbox whose `name` happens to equal its `id` would
-				// otherwise drive the column to the ID's width — for no
-				// gain, since that row renders as `-`.
-				if e.Name != "" && e.Name != e.SandboxID {
-					if l := runewidth.StringWidth(e.Name); l > nameCol {
-						nameCol = l
-					}
-				}
-			}
-			idCol += 2
-			autostopCol += 2
-			nameCol += 2
-			const statusCol = 10
-			const defaultCol = 7
-
-			blank(out)
-			header := fmt.Sprintf("%-*s  %-*s  %-*s  %-*s  %s",
-				idCol, "ID", nameCol, "NAME", statusCol, "STATUS", autostopCol, "AUTOSTOP", "DEFAULT")
-			fmt.Fprintf(out, "  %s\n", cmdio.Faint(ctx, header))
-
-			ruleLen := idCol + nameCol + statusCol + autostopCol + defaultCol + 8
-			fmt.Fprintf(out, "  %s\n", cmdio.Faint(ctx, strings.Repeat("─", ruleLen)))
-
-			for _, e := range entries {
-				id := e.SandboxID
 				def := ""
-				if id == defaultID {
-					def = cmdio.Cyan(ctx, "*")
+				if e.SandboxID == defaultID {
+					def = "*"
 				}
-				// Pad each cell manually so visible-width alignment is
-				// preserved after the helpers wrap them with ANSI escapes.
-				idPad := max(idCol-runewidth.StringWidth(id), 0)
-				st := status(ctx, e.Status)
-				stPad := max(statusCol-runewidth.StringWidth(e.Status), 0)
-				as := e.autoStopLabel()
-				asPad := max(autostopCol-runewidth.StringWidth(as), 0)
-				idStr := cmdio.Bold(ctx, id)
-				if strings.EqualFold(e.Status, "running") {
-					idStr = cmdio.Bold(ctx, cmdio.Cyan(ctx, id))
+				rows[i] = listRow{
+					sandboxEntry: e,
+					DisplayName:  name,
+					AutoStop:     e.autoStopLabel(),
+					Default:      def,
 				}
-				nm := e.Name
-				if nm == "" || nm == id {
-					nm = "-"
-				}
-				nmPad := max(nameCol-runewidth.StringWidth(nm), 0)
-				nmStr := nm
-				if nm == "-" {
-					nmStr = cmdio.Faint(ctx, "-")
-				}
-				fmt.Fprintf(out, "  %s%s  %s%s  %s%s  %s%s  %s\n",
-					idStr, strings.Repeat(" ", idPad),
-					nmStr, strings.Repeat(" ", nmPad),
-					st, strings.Repeat(" ", stPad),
-					cmdio.Faint(ctx, as), strings.Repeat(" ", asPad),
-					def)
 			}
-			blank(out)
-			return nil
+			return cmdio.Render(ctx, rows)
 		},
 	}
-
-	cmd.Flags().BoolVar(&outputJSON, "json", false, "Output as JSON")
 
 	return cmd
 }

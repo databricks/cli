@@ -1,16 +1,14 @@
 package lakebox
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/mattn/go-runewidth"
+	"github.com/databricks/cli/libs/flags"
 	"github.com/spf13/cobra"
 )
 
@@ -61,9 +59,24 @@ Example:
 	return cmd
 }
 
-func newSSHKeyListCommand() *cobra.Command {
-	var outputJSON bool
+// sshKeyRow embeds sshKeyEntry so JSON output stays byte-identical to
+// the raw API response. Text-mode fields are tagged `json:"-"` so they
+// don't leak when the user passes `-o json`.
+type sshKeyRow struct {
+	sshKeyEntry
+	DisplayName string `json:"-"`
+	Created     string `json:"-"`
+	LastUsed    string `json:"-"`
+	Local       string `json:"-"`
+}
 
+const (
+	sshKeyHeaderTemplate = `{{header "LOCAL"}}	{{header "NAME"}}	{{header "KEY HASH"}}	{{header "CREATED"}}	{{header "LAST USED"}}`
+	sshKeyRowTemplate    = `{{range .}}{{.Local | cyan}}	{{.DisplayName}}	{{.KeyHash}}	{{.Created | faint}}	{{.LastUsed | faint}}
+{{end}}`
+)
+
+func newSSHKeyListCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List SSH keys registered with the lakebox service",
@@ -72,12 +85,16 @@ func newSSHKeyListCommand() *cobra.Command {
 Each row shows the server-assigned key hash (the identifier used to
 delete the key), the user-supplied name, and create / last-use
 timestamps. The locally-registered key (from 'databricks lakebox
-register') is marked when its hash matches one of the listed entries.
+register') is marked with a '*' in the LOCAL column.
 
 Examples:
   databricks lakebox ssh-key list
-  databricks lakebox ssh-key list --json`,
+  databricks lakebox ssh-key list -o json`,
 		PreRunE: root.MustWorkspaceClient,
+		Annotations: map[string]string{
+			"headerTemplate": sshKeyHeaderTemplate,
+			"template":       sshKeyRowTemplate,
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			w := cmdctx.WorkspaceClient(ctx)
@@ -91,10 +108,8 @@ Examples:
 				return fmt.Errorf("failed to list ssh keys: %w", err)
 			}
 
-			if jsonOutput(cmd, outputJSON) {
-				enc := json.NewEncoder(cmd.OutOrStdout())
-				enc.SetIndent("", "  ")
-				return enc.Encode(keys)
+			if root.OutputType(cmd) == flags.OutputJSON {
+				return cmdio.Render(ctx, keys)
 			}
 
 			if len(keys) == 0 {
@@ -103,9 +118,10 @@ Examples:
 				return nil
 			}
 
-			// Best-effort: compute the hash of the locally-registered key so
-			// we can highlight which row belongs to this machine. Missing key
-			// file or read errors are non-fatal — just skip the marker.
+			// Best-effort: compute the hash of the locally-registered key
+			// so we can highlight which row belongs to this machine.
+			// Missing key file or read errors are non-fatal — just skip
+			// the marker.
 			localHash := ""
 			if path, err := lakeboxKeyPath(ctx); err == nil {
 				if data, err := os.ReadFile(path + ".pub"); err == nil {
@@ -113,68 +129,45 @@ Examples:
 				}
 			}
 
-			out := cmd.OutOrStdout()
-			blank(out)
-
-			// Measure in terminal cells (runewidth) so wide / emoji
-			// glyphs in `--name` don't misalign the row.
-			nameCol := 4
-			for _, k := range keys {
-				if l := runewidth.StringWidth(k.Name); l > nameCol {
-					nameCol = l
-				}
-			}
-			nameCol += 2
-			const hashCol = 32
-			const timeCol = 20
-
-			// Leading 4-char gutter reserves space for a per-row `*` marker on
-			// the key matching this machine; header and separator leave it blank.
-			header := fmt.Sprintf("%-*s  %-*s  %-*s  %s",
-				nameCol, "NAME", hashCol, "KEY HASH", timeCol, "CREATED", "LAST USED")
-			fmt.Fprintf(out, "    %s\n", cmdio.Faint(ctx, header))
-			fmt.Fprintf(out, "    %s\n", cmdio.Faint(ctx, strings.Repeat("─", nameCol+hashCol+timeCol+timeCol+6)))
-
+			rows := make([]sshKeyRow, len(keys))
 			localFound := false
-			for _, k := range keys {
-				// Pad NAME manually from the raw width because cmdio.Faint
-				// wraps the cell in ANSI escapes that throw off `%-*s`.
-				displayName, visibleNameLen := k.Name, runewidth.StringWidth(k.Name)
-				if displayName == "" {
-					displayName = cmdio.Faint(ctx, "(unset)")
-					visibleNameLen = runewidth.StringWidth("(unset)")
+			for i, k := range keys {
+				name := k.Name
+				if name == "" {
+					name = "-"
 				}
-				namePad := max(nameCol-visibleNameLen, 0)
-				gutter := "    "
+				local := ""
 				if localHash != "" && k.KeyHash == localHash {
-					gutter = "  " + cmdio.Cyan(ctx, "*") + " "
+					local = "*"
 					localFound = true
 				}
-				fmt.Fprintf(out, "%s%s%s  %-*s  %-*s  %s\n",
-					gutter,
-					displayName, strings.Repeat(" ", namePad),
-					hashCol, k.KeyHash,
-					timeCol, formatTimeShort(k.CreateTime),
-					formatTimeShort(k.LastUseTime))
+				rows[i] = sshKeyRow{
+					sshKeyEntry: k,
+					DisplayName: name,
+					Created:     formatTimeShort(k.CreateTime),
+					LastUsed:    formatTimeShort(k.LastUseTime),
+					Local:       local,
+				}
 			}
-			// Without a legend the `*` (or its absence) is opaque. Print the
-			// meaning either way so users can tell "no `*` on any row" apart
-			// from "this terminal doesn't print the marker".
-			blank(out)
+
+			if err := cmdio.Render(ctx, rows); err != nil {
+				return err
+			}
+
+			// Without a legend the `*` (or its absence) is opaque. Print
+			// the meaning either way so users can tell "no `*` on any
+			// row" apart from "this terminal doesn't print the marker".
 			switch {
 			case localFound:
-				fmt.Fprintf(out, "  %s\n", cmdio.Faint(ctx, cmdio.Cyan(ctx, "*")+" key matches the one on this machine"))
+				cmdio.LogString(ctx, "  "+cmdio.Faint(ctx, cmdio.Cyan(ctx, "*")+" key matches the one on this machine"))
 			case localHash != "":
-				fmt.Fprintf(out, "  %s\n", cmdio.Faint(ctx, "(no registered key matches this machine's local key — run `databricks lakebox register` to register it)"))
+				cmdio.LogString(ctx, "  "+cmdio.Faint(ctx, "(no registered key matches this machine's local key — run `databricks lakebox register` to register it)"))
 			default:
-				fmt.Fprintf(out, "  %s\n", cmdio.Faint(ctx, "(no local lakebox key on this machine — run `databricks lakebox register` to create and register one)"))
+				cmdio.LogString(ctx, "  "+cmdio.Faint(ctx, "(no local lakebox key on this machine — run `databricks lakebox register` to create and register one)"))
 			}
-			blank(out)
 			return nil
 		},
 	}
-
-	cmd.Flags().BoolVar(&outputJSON, "json", false, "Output as JSON")
 	return cmd
 }
 
