@@ -1,0 +1,12 @@
+# --select is only supported by the direct engine; terraform errors out.
+# Output differs per engine, so it is captured in a per-engine file.
+{
+# Plan shows foo plus its dependency bar, but not the independent baz.
+errcode trace $CLI bundle plan --select jobs.foo
+
+# Deploy only foo: bar is created as a dependency, baz is never deployed.
+errcode trace $CLI bundle deploy --select jobs.foo
+
+# Confirm via recorded requests that only bar and foo were created.
+errcode trace print_requests.py --sort //jobs
+} &> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt

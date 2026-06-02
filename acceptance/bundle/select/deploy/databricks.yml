@@ -1,5 +1,5 @@
 bundle:
-  name: plan-select-dep
+  name: select-deploy
 
 resources:
   jobs:
@@ -12,3 +12,6 @@ resources:
         - task_key: run_bar
           run_job_task:
             job_id: ${resources.jobs.bar.id}
+
+    baz:
+      name: job-baz
