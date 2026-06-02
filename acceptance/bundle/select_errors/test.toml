@@ -1,3 +1,0 @@
-Local = true
-Cloud = false
-Ignore = [".databricks", ".gitignore"]
