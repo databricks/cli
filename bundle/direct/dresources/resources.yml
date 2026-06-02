@@ -569,6 +569,17 @@ resources:
         reason: immutable
       - field: role_id
         reason: immutable
+      # The PATCH update_mask only accepts spec.attributes and spec.membership_roles;
+      # the backend rejects spec.postgres_role, spec.auth_method, and spec.identity_type
+      # with 400 INVALID_PARAMETER_VALUE "Unknown field path in update_mask". These spec
+      # fields are not marked immutable in the OpenAPI definition yet, so the generator
+      # doesn't catch them — declare the constraint manually until upstream is fixed.
+      - field: postgres_role
+        reason: immutable
+      - field: auth_method
+        reason: immutable
+      - field: identity_type
+        reason: immutable
 
   vector_search_endpoints:
     recreate_on_changes:
