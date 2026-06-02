@@ -1,7 +1,0 @@
-bundle:
-  name: telemetry-select
-
-resources:
-  jobs:
-    my_job:
-      name: my-job

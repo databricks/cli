@@ -28,6 +28,9 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
+=== Telemetry:
+select_used true
+
 >>> print_requests.py --sort //jobs
 {
   "method": "POST",
@@ -71,6 +74,24 @@ Deployment complete!
     ]
   }
 }
+
+>>> [CLI] bundle summary
+Name: select-[UNIQUE_NAME]
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/select-[UNIQUE_NAME]/default
+Resources:
+  Jobs:
+    bar:
+      Name: bar-[UNIQUE_NAME]
+      URL:  [DATABRICKS_URL]/jobs/[NUMID]?w=[NUMID]
+    baz:
+      Name: baz-[UNIQUE_NAME]
+      URL:  (not deployed)
+    foo:
+      Name: foo-[UNIQUE_NAME]
+      URL:  [DATABRICKS_URL]/jobs/[NUMID]?w=[NUMID]
 
 === Full plan after partial deploy
 >>> [CLI] bundle plan
