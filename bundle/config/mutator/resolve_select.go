@@ -8,22 +8,23 @@ import (
 	"github.com/databricks/cli/libs/diag"
 )
 
-type selectResources struct{}
+type resolveSelect struct{}
 
-// SelectResources returns a mutator that resolves and validates the selectors in
-// b.Select. Selectors may be "type.name" (e.g. "jobs.myjob") or just "name" if
-// unique across all resource types. The mutator does not filter the config; callers
-// are responsible for filtering (via the plan graph or a direct config filter).
+// ResolveSelect returns a mutator that resolves and validates the selectors in
+// b.Select, normalizing each to its qualified "type.name" form. Selectors may be
+// "type.name" (e.g. "jobs.myjob") or just "name" if unique across all resource
+// types. The mutator does not filter the config; the direct engine selects against
+// the resolved keys later via plan.FilterToSelected.
 // If b.Select is empty, this is a no-op.
-func SelectResources() bundle.Mutator {
-	return &selectResources{}
+func ResolveSelect() bundle.Mutator {
+	return &resolveSelect{}
 }
 
-func (m *selectResources) Name() string {
-	return "SelectResources"
+func (m *resolveSelect) Name() string {
+	return "ResolveSelect"
 }
 
-func (m *selectResources) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (m *resolveSelect) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
 	if len(b.Select) == 0 {
 		return nil
 	}

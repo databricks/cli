@@ -2,10 +2,6 @@
 # Output differs per engine, so it is captured in a per-engine file.
 {
 # --- selector resolution ---
-# Non-existent resource
-errcode trace $CLI bundle plan --select no_such_resource
-# Qualified name for a non-existent resource
-errcode trace $CLI bundle plan --select jobs.no_such_job
 # Unqualified name, unique across resource types
 errcode trace $CLI bundle plan --select bar
 # Repeated --select

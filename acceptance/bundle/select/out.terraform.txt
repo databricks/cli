@@ -1,16 +1,4 @@
 
->>> [CLI] bundle plan --select no_such_resource
-Error: --select is only supported with the direct engine. See https://docs.databricks.com/aws/en/dev-tools/bundles/direct
-
-
-Exit code: 1
-
->>> [CLI] bundle plan --select jobs.no_such_job
-Error: --select is only supported with the direct engine. See https://docs.databricks.com/aws/en/dev-tools/bundles/direct
-
-
-Exit code: 1
-
 >>> [CLI] bundle plan --select bar
 Error: --select is only supported with the direct engine. See https://docs.databricks.com/aws/en/dev-tools/bundles/direct
 

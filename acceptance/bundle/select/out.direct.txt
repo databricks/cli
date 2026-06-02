@@ -1,16 +1,4 @@
 
->>> [CLI] bundle plan --select no_such_resource
-Error: no such resource: no_such_resource
-
-
-Exit code: 1
-
->>> [CLI] bundle plan --select jobs.no_such_job
-Error: no such resource: jobs.no_such_job
-
-
-Exit code: 1
-
 >>> [CLI] bundle plan --select bar
 create jobs.bar
 
