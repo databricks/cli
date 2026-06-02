@@ -13,6 +13,7 @@ Warn: Failed to release deployment lock: simulated complete version failure
     "deployment_id": "[UUID]"
   },
   "body": {
+    "display_name": "dms-release-lock-error",
     "target_name": "fail-complete"
   }
 }

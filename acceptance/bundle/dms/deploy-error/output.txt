@@ -18,6 +18,7 @@ API message: Invalid job configuration.
     "deployment_id": "[UUID]"
   },
   "body": {
+    "display_name": "metadata-service-error-test",
     "target_name": "default"
   }
 }

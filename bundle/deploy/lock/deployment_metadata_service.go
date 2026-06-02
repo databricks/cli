@@ -118,7 +118,8 @@ func acquireLock(ctx context.Context, b *bundle.Bundle, svc *tmpdms.DeploymentMe
 		_, createErr := svc.CreateDeployment(ctx, tmpdms.CreateDeploymentRequest{
 			DeploymentID: deploymentID,
 			Deployment: &tmpdms.Deployment{
-				TargetName: b.Config.Bundle.Target,
+				DisplayName: b.Config.Bundle.Name,
+				TargetName:  b.Config.Bundle.Target,
 			},
 		})
 		if createErr != nil {
@@ -267,7 +268,6 @@ func makeSyncReporter(svc *tmpdms.DeploymentMetadataAPI, deploymentID, versionID
 		return nil
 	}
 }
-
 
 // planActionToOperationAction maps a deploy plan action to a metadata service
 // operation action type. No-op actions like Skip return ("", nil) and should
