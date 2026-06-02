@@ -18,6 +18,11 @@ __all__ = [
     "ClusterLogConf",
     "ClusterLogConfDict",
     "ClusterLogConfParam",
+    "ConfidentialComputeType",
+    "ConfidentialComputeTypeParam",
+    "ConfluenceConnectorOptions",
+    "ConfluenceConnectorOptionsDict",
+    "ConfluenceConnectorOptionsParam",
     "ConnectionParameters",
     "ConnectionParametersDict",
     "ConnectionParametersParam",
@@ -63,6 +68,9 @@ __all__ = [
     "GcsStorageInfo",
     "GcsStorageInfoDict",
     "GcsStorageInfoParam",
+    "GoogleAdsConfig",
+    "GoogleAdsConfigDict",
+    "GoogleAdsConfigParam",
     "GoogleAdsOptions",
     "GoogleAdsOptionsDict",
     "GoogleAdsOptionsParam",
@@ -92,6 +100,15 @@ __all__ = [
     "InitScriptInfo",
     "InitScriptInfoDict",
     "InitScriptInfoParam",
+    "JiraConnectorOptions",
+    "JiraConnectorOptionsDict",
+    "JiraConnectorOptionsParam",
+    "JsonTransformerOptions",
+    "JsonTransformerOptionsDict",
+    "JsonTransformerOptionsParam",
+    "KafkaOptions",
+    "KafkaOptionsDict",
+    "KafkaOptionsParam",
     "Lifecycle",
     "LifecycleDict",
     "LifecycleParam",
@@ -104,6 +121,9 @@ __all__ = [
     "MavenLibrary",
     "MavenLibraryDict",
     "MavenLibraryParam",
+    "MetaMarketingOptions",
+    "MetaMarketingOptionsDict",
+    "MetaMarketingOptionsParam",
     "NotebookLibrary",
     "NotebookLibraryDict",
     "NotebookLibraryParam",
@@ -113,6 +133,13 @@ __all__ = [
     "OperationTimeWindow",
     "OperationTimeWindowDict",
     "OperationTimeWindowParam",
+    "OutlookAttachmentMode",
+    "OutlookAttachmentModeParam",
+    "OutlookBodyFormat",
+    "OutlookBodyFormatParam",
+    "OutlookOptions",
+    "OutlookOptionsDict",
+    "OutlookOptionsParam",
     "PathPattern",
     "PathPatternDict",
     "PathPatternParam",
@@ -164,6 +191,9 @@ __all__ = [
     "SharepointOptionsParam",
     "SharepointOptionsSharepointEntityType",
     "SharepointOptionsSharepointEntityTypeParam",
+    "SmartsheetOptions",
+    "SmartsheetOptionsDict",
+    "SmartsheetOptionsParam",
     "SourceCatalogConfig",
     "SourceCatalogConfigDict",
     "SourceCatalogConfigParam",
@@ -185,12 +215,20 @@ __all__ = [
     "TikTokAdsOptionsTikTokDataLevelParam",
     "TikTokAdsOptionsTikTokReportType",
     "TikTokAdsOptionsTikTokReportTypeParam",
+    "Transformer",
+    "TransformerDict",
+    "TransformerFormat",
+    "TransformerFormatParam",
+    "TransformerParam",
     "VolumesStorageInfo",
     "VolumesStorageInfoDict",
     "VolumesStorageInfoParam",
     "WorkspaceStorageInfo",
     "WorkspaceStorageInfoDict",
     "WorkspaceStorageInfoParam",
+    "ZendeskSupportOptions",
+    "ZendeskSupportOptionsDict",
+    "ZendeskSupportOptionsParam",
 ]
 
 
@@ -226,6 +264,15 @@ from databricks.bundles.pipelines._models.cluster_log_conf import (
     ClusterLogConf,
     ClusterLogConfDict,
     ClusterLogConfParam,
+)
+from databricks.bundles.pipelines._models.confidential_compute_type import (
+    ConfidentialComputeType,
+    ConfidentialComputeTypeParam,
+)
+from databricks.bundles.pipelines._models.confluence_connector_options import (
+    ConfluenceConnectorOptions,
+    ConfluenceConnectorOptionsDict,
+    ConfluenceConnectorOptionsParam,
 )
 from databricks.bundles.pipelines._models.connection_parameters import (
     ConnectionParameters,
@@ -303,6 +350,11 @@ from databricks.bundles.pipelines._models.gcs_storage_info import (
     GcsStorageInfoDict,
     GcsStorageInfoParam,
 )
+from databricks.bundles.pipelines._models.google_ads_config import (
+    GoogleAdsConfig,
+    GoogleAdsConfigDict,
+    GoogleAdsConfigParam,
+)
 from databricks.bundles.pipelines._models.google_ads_options import (
     GoogleAdsOptions,
     GoogleAdsOptionsDict,
@@ -352,6 +404,21 @@ from databricks.bundles.pipelines._models.init_script_info import (
     InitScriptInfoDict,
     InitScriptInfoParam,
 )
+from databricks.bundles.pipelines._models.jira_connector_options import (
+    JiraConnectorOptions,
+    JiraConnectorOptionsDict,
+    JiraConnectorOptionsParam,
+)
+from databricks.bundles.pipelines._models.json_transformer_options import (
+    JsonTransformerOptions,
+    JsonTransformerOptionsDict,
+    JsonTransformerOptionsParam,
+)
+from databricks.bundles.pipelines._models.kafka_options import (
+    KafkaOptions,
+    KafkaOptionsDict,
+    KafkaOptionsParam,
+)
 from databricks.bundles.pipelines._models.lifecycle import (
     Lifecycle,
     LifecycleDict,
@@ -372,6 +439,11 @@ from databricks.bundles.pipelines._models.maven_library import (
     MavenLibraryDict,
     MavenLibraryParam,
 )
+from databricks.bundles.pipelines._models.meta_marketing_options import (
+    MetaMarketingOptions,
+    MetaMarketingOptionsDict,
+    MetaMarketingOptionsParam,
+)
 from databricks.bundles.pipelines._models.notebook_library import (
     NotebookLibrary,
     NotebookLibraryDict,
@@ -386,6 +458,19 @@ from databricks.bundles.pipelines._models.operation_time_window import (
     OperationTimeWindow,
     OperationTimeWindowDict,
     OperationTimeWindowParam,
+)
+from databricks.bundles.pipelines._models.outlook_attachment_mode import (
+    OutlookAttachmentMode,
+    OutlookAttachmentModeParam,
+)
+from databricks.bundles.pipelines._models.outlook_body_format import (
+    OutlookBodyFormat,
+    OutlookBodyFormatParam,
+)
+from databricks.bundles.pipelines._models.outlook_options import (
+    OutlookOptions,
+    OutlookOptionsDict,
+    OutlookOptionsParam,
 )
 from databricks.bundles.pipelines._models.path_pattern import (
     PathPattern,
@@ -470,6 +555,11 @@ from databricks.bundles.pipelines._models.sharepoint_options_sharepoint_entity_t
     SharepointOptionsSharepointEntityType,
     SharepointOptionsSharepointEntityTypeParam,
 )
+from databricks.bundles.pipelines._models.smartsheet_options import (
+    SmartsheetOptions,
+    SmartsheetOptionsDict,
+    SmartsheetOptionsParam,
+)
 from databricks.bundles.pipelines._models.source_catalog_config import (
     SourceCatalogConfig,
     SourceCatalogConfigDict,
@@ -507,6 +597,15 @@ from databricks.bundles.pipelines._models.tik_tok_ads_options_tik_tok_report_typ
     TikTokAdsOptionsTikTokReportType,
     TikTokAdsOptionsTikTokReportTypeParam,
 )
+from databricks.bundles.pipelines._models.transformer import (
+    Transformer,
+    TransformerDict,
+    TransformerParam,
+)
+from databricks.bundles.pipelines._models.transformer_format import (
+    TransformerFormat,
+    TransformerFormatParam,
+)
 from databricks.bundles.pipelines._models.volumes_storage_info import (
     VolumesStorageInfo,
     VolumesStorageInfoDict,
@@ -516,4 +615,9 @@ from databricks.bundles.pipelines._models.workspace_storage_info import (
     WorkspaceStorageInfo,
     WorkspaceStorageInfoDict,
     WorkspaceStorageInfoParam,
+)
+from databricks.bundles.pipelines._models.zendesk_support_options import (
+    ZendeskSupportOptions,
+    ZendeskSupportOptionsDict,
+    ZendeskSupportOptionsParam,
 )

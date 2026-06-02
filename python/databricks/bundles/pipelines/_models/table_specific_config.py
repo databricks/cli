@@ -70,15 +70,11 @@ class TableSpecificConfig:
         IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfig
     ] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
     Configurations that are only applicable for query-based ingestion connectors.
     """
 
     row_filter: VariableOrOptional[str] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
     (Optional, Immutable) The row filter condition to be applied to the table.
     It must not contain the WHERE keyword, only the actual filter condition.
     It must be in DBSQL format.
@@ -93,8 +89,6 @@ class TableSpecificConfig:
 
     scd_type: VariableOrOptional[TableSpecificConfigScdType] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
     The SCD type to use to ingest the table.
     """
 
@@ -162,15 +156,11 @@ class TableSpecificConfigDict(TypedDict, total=False):
         IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfigParam
     ]
     """
-    :meta private: [EXPERIMENTAL]
-    
     Configurations that are only applicable for query-based ingestion connectors.
     """
 
     row_filter: VariableOrOptional[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
     (Optional, Immutable) The row filter condition to be applied to the table.
     It must not contain the WHERE keyword, only the actual filter condition.
     It must be in DBSQL format.
@@ -185,8 +175,6 @@ class TableSpecificConfigDict(TypedDict, total=False):
 
     scd_type: VariableOrOptional[TableSpecificConfigScdTypeParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
     The SCD type to use to ingest the table.
     """
 

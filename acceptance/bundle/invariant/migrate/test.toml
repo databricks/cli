@@ -1,5 +1,6 @@
-# vector_search_endpoints has no terraform converter
+# vector_search_endpoints and vector_search_indexes have no terraform converter
 EnvMatrixExclude.no_vector_search_endpoint = ["INPUT_CONFIG=vector_search_endpoint.yml.tmpl"]
+EnvMatrixExclude.no_vector_search_index = ["INPUT_CONFIG=vector_search_index.yml.tmpl"]
 
 # Error: Catalog resources are only supported with direct deployment mode
 EnvMatrixExclude.no_catalog = ["INPUT_CONFIG=catalog.yml.tmpl"]

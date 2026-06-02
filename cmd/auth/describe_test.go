@@ -2,11 +2,13 @@ package auth
 
 import (
 	"errors"
+	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/databricks/cli/libs/auth/storage"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/databricks/databricks-sdk-go/service/iam"
@@ -15,6 +17,67 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
+
+func newHostProfileCmd(t *testing.T) *cobra.Command {
+	t.Helper()
+	cmd := &cobra.Command{}
+	cmd.Flags().String("host", "", "")
+	cmd.Flags().String("profile", "", "")
+	cmd.SetContext(t.Context())
+	return cmd
+}
+
+func TestResolveProfileFromHostFlag(t *testing.T) {
+	cfgPath := filepath.Join(t.TempDir(), ".databrickscfg")
+	require.NoError(t, os.WriteFile(cfgPath, []byte(""), 0o600))
+	t.Setenv("DATABRICKS_CONFIG_FILE", cfgPath)
+
+	profiler := profile.InMemoryProfiler{
+		Profiles: profile.Profiles{
+			{Name: "dev", Host: "https://dev.cloud.databricks.com", AuthType: "databricks-cli"},
+		},
+	}
+
+	t.Run("no flags set is a no-op", func(t *testing.T) {
+		cmd := newHostProfileCmd(t)
+		require.NoError(t, resolveProfileFromHostFlag(cmd, profiler))
+		assert.Empty(t, cmd.Flag("profile").Value.String())
+	})
+
+	t.Run("--profile already set wins; --host is ignored", func(t *testing.T) {
+		cmd := newHostProfileCmd(t)
+		require.NoError(t, cmd.Flags().Set("host", "https://dev.cloud.databricks.com"))
+		require.NoError(t, cmd.Flags().Set("profile", "explicit"))
+		require.NoError(t, resolveProfileFromHostFlag(cmd, profiler))
+		assert.Equal(t, "explicit", cmd.Flag("profile").Value.String())
+	})
+
+	t.Run("--host with a single match wires --profile", func(t *testing.T) {
+		cmd := newHostProfileCmd(t)
+		require.NoError(t, cmd.Flags().Set("host", "https://dev.cloud.databricks.com"))
+		require.NoError(t, resolveProfileFromHostFlag(cmd, profiler))
+		assert.Equal(t, "dev", cmd.Flag("profile").Value.String())
+	})
+
+	t.Run("--host with no match surfaces a clear error", func(t *testing.T) {
+		cmd := newHostProfileCmd(t)
+		require.NoError(t, cmd.Flags().Set("host", "https://nope.cloud.databricks.com"))
+		err := resolveProfileFromHostFlag(cmd, profiler)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "no profile found matching host")
+		assert.Empty(t, cmd.Flag("profile").Value.String())
+	})
+
+	t.Run("DATABRICKS_CONFIG_PROFILE is left alone", func(t *testing.T) {
+		t.Setenv("DATABRICKS_CONFIG_PROFILE", "from-env")
+		cmd := newHostProfileCmd(t)
+		require.NoError(t, cmd.Flags().Set("host", "https://dev.cloud.databricks.com"))
+		require.NoError(t, resolveProfileFromHostFlag(cmd, profiler))
+		// We don't overwrite --profile when the user signalled an explicit
+		// choice via the env var.
+		assert.Empty(t, cmd.Flag("profile").Value.String())
+	})
+}
 
 func TestGetWorkspaceAuthStatus(t *testing.T) {
 	ctx := t.Context()
@@ -27,7 +90,7 @@ func TestGetWorkspaceAuthStatus(t *testing.T) {
 	showSensitive := false
 
 	currentUserApi := m.GetMockCurrentUserAPI()
-	currentUserApi.EXPECT().Me(mock.Anything).Return(&iam.User{
+	currentUserApi.EXPECT().Me(mock.Anything, mock.Anything).Return(&iam.User{
 		UserName: "test-user",
 	}, nil)
 
@@ -240,21 +303,21 @@ func TestResolveTokenStorageInfo(t *testing.T) {
 			want:     nil,
 		},
 		{
-			name:     "databricks-cli with default plaintext",
+			name:     "databricks-cli with default secure",
 			authType: authTypeDatabricksCLI,
 			want: &tokenStorageInfo{
-				Mode:     "plaintext",
-				Location: plaintextLocation,
+				Mode:     "secure",
+				Location: secureLocation,
 				Source:   "default",
 			},
 		},
 		{
-			name:     "databricks-cli with secure from env",
+			name:     "databricks-cli with plaintext from env",
 			authType: authTypeDatabricksCLI,
-			envValue: "secure",
+			envValue: "plaintext",
 			want: &tokenStorageInfo{
-				Mode:     "secure",
-				Location: secureLocation,
+				Mode:     "plaintext",
+				Location: plaintextLocation,
 				Source:   "DATABRICKS_AUTH_STORAGE environment variable",
 			},
 		},
@@ -306,7 +369,7 @@ func TestGetWorkspaceAuthStatus_U2M_PopulatesTokenStorage(t *testing.T) {
 	cmd.SetContext(ctx)
 
 	currentUserApi := m.GetMockCurrentUserAPI()
-	currentUserApi.EXPECT().Me(mock.Anything).Return(&iam.User{UserName: "u2m-user"}, nil)
+	currentUserApi.EXPECT().Me(mock.Anything, mock.Anything).Return(&iam.User{UserName: "u2m-user"}, nil)
 
 	cmd.Flags().String("host", "", "")
 	cmd.Flags().String("profile", "", "")
@@ -343,7 +406,7 @@ func TestGetWorkspaceAuthStatus_NonU2M_OmitsTokenStorage(t *testing.T) {
 	cmd.SetContext(ctx)
 
 	currentUserApi := m.GetMockCurrentUserAPI()
-	currentUserApi.EXPECT().Me(mock.Anything).Return(&iam.User{UserName: "pat-user"}, nil)
+	currentUserApi.EXPECT().Me(mock.Anything, mock.Anything).Return(&iam.User{UserName: "pat-user"}, nil)
 
 	cmd.Flags().String("host", "", "")
 	cmd.Flags().String("profile", "", "")

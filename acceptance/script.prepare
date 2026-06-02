@@ -1,3 +1,9 @@
+# Force plaintext token storage so acceptance tests exercise the file-backed
+# cache rather than the OS keyring, which is not reliably reachable in CI.
+# Tests that want to exercise the secure path or the resolver default unset
+# or override this in their own script.prepare or script.
+export DATABRICKS_AUTH_STORAGE=plaintext
+
 errcode() {
     # Temporarily disable 'set -e' to prevent the script from exiting on error
     set +e
@@ -49,6 +55,10 @@ trace() {
 }
 
 git-repo-init() {
+    if git rev-parse --git-dir > /dev/null 2>&1; then
+        echo "git-repo-init: already inside a git repository" >&2
+        return 1
+    fi
     git init -qb main
     git config core.autocrlf false
     git config user.name "Tester"
@@ -100,6 +110,25 @@ print_telemetry_bool_values() {
 sethome() {
     local home="$1"
     mkdir -p "$home"
+
+    # Resolve to an absolute path so HOME (and USERPROFILE) keep pointing at
+    # the same directory after the test cd's elsewhere. The SDK expands
+    # `~/.databrickscfg` against $HOME at lookup time; with a relative path
+    # the cfg silently disappears once the cwd changes, and helpers like
+    # databrickscfg.GetConfiguredDefaultProfile return "" instead of
+    # erroring.
+    #
+    # On Git Bash (MSYS), plain `pwd` returns Unix-style /c/... paths that
+    # the native Windows Go binary can't open; `pwd -W` returns the mixed
+    # C:/... form instead. Use the same form for both HOME and USERPROFILE
+    # so tests that compare a `$HOME`-based placeholder against the CLI's
+    # `os.UserHomeDir()` output (which reads USERPROFILE on Windows) find
+    # a match.
+    if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" || "$OSTYPE" == "win32" ]]; then
+        home="$(cd "$home" && pwd -W)"
+    else
+        home="$(cd "$home" && pwd)"
+    fi
 
     # For macOS and Linux, use HOME.
     export HOME="$home"

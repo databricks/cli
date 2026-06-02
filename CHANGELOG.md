@@ -1,5 +1,71 @@
 # Version changelog
 
+## Release v1.1.0 (2026-05-27)
+
+### Bundles
+* The error reported when a direct-only resource (catalogs, external locations, vector search endpoints) is used with the terraform engine now also suggests setting `bundle.engine: direct` in `databricks.yml`, in addition to the `DATABRICKS_BUNDLE_ENGINE` environment variable ([#5295](https://github.com/databricks/cli/pull/5295)).
+
+* Added `vector_search_indexes` as a bundle resource (direct engine only). Supports UC grants and prompts for confirmation on recreate or delete since both are destructive ([#5123](https://github.com/databricks/cli/pull/5123)).
+
+### Dependency updates
+
+* Bump Go toolchain to 1.26.3 ([#5302](https://github.com/databricks/cli/pull/5302)).
+* Bump `github.com/databricks/databricks-sdk-go` from v0.132.0 to v0.136.0.
+
+
+## Release v1.0.0 (2026-05-21)
+
+### Notable Changes
+
+* The Databricks CLI is now generally available with version v1.0.0 as the first major release 🚀. From this version on, the CLI follows semantic versioning (see [README](README.md)). This change does not impact DABs or other existing commands beyond the changes listed below.
+* The 0.299.x line continues to receive security-critical patches through May 20, 2027; see [SECURITY](SECURITY.md) for the support policy.
+* Starting with v1.0.0, the CLI will use [immutable release tags](https://docs.github.com/en/code-security/concepts/supply-chain-security/immutable-releases) to increase security against supply chain attacks.
+* Breaking change: OAuth tokens for interactive logins (`auth_type = databricks-cli`) are now stored in the OS-native secure store by default (Keychain on macOS, Credential Manager on Windows, Secret Service on Linux) instead of `~/.databricks/token-cache.json`. After upgrading, run `databricks auth login` once per profile to re-authenticate; cached tokens from older versions are not migrated. To keep the previous file-backed storage, set `DATABRICKS_AUTH_STORAGE=plaintext` or add `auth_storage = plaintext` under `[__settings__]` in `~/.databrickscfg` (the env var takes precedence over the config setting), then re-run `databricks auth login`. On systems where the OS keyring is not reachable (e.g. Linux containers without a D-Bus session bus), the CLI transparently falls back to the file cache when reading tokens so legacy `token-cache.json` entries remain accessible without manual configuration.
+
+### CLI
+
+* Added `databricks aitools` command group for installing Databricks skills into your coding agents (Claude Code, Cursor, Codex CLI, OpenCode, GitHub Copilot, Antigravity). Skills are fetched from [github.com/databricks/databricks-agent-skills](https://github.com/databricks/databricks-agent-skills) and either symlinked into each agent's skills directory or copied into the current project. Use `databricks aitools install` to set up, `update` to pull newer versions, `list` to see what's available, and `uninstall` to remove them. Pick where they go with `--scope=project|global` (`--scope=both` is accepted on `update` and `list`).
+* `[__settings__].default_profile` is now consulted as a fallback by `databricks api`, `databricks auth token`, and bundle commands when neither `--profile` nor `DATABRICKS_CONFIG_PROFILE` is set. `databricks auth token` continues to give precedence to `DATABRICKS_HOST` over `default_profile`. For bundle commands, `default_profile` only applies when the bundle does not pin its own `workspace.host`.
+* Fixed bug where auth commands did not load the DEFAULT profile properly during auth where type is `databricks-cli`.
+* `databricks workspace import-dir` now skips `.git`, `.databricks`, and `node_modules` directories during recursive imports. To import one of these directories deliberately, pass it as `SOURCE_PATH` ([#5118](https://github.com/databricks/cli/pull/5118)).
+* `databricks postgres create-role --help` now documents the `--json` body shape and rejects the common mistake of wrapping the body in `{"role": ...}` client-side with a hint pointing at the correct shape ([#5111](https://github.com/databricks/cli/pull/5111)).
+* `databricks aitools list` honors `--output json`, emitting a structured `{release, skills[...], summary{}}` document so coding agents and CI can consume the skill/version/installation matrix without scraping the tabular text output ([#5233](https://github.com/databricks/cli/pull/5233)).
+
+### Bundles
+* Make sure warnings asking for approval are understood by agents ([#5239](https://github.com/databricks/cli/pull/5239))
+* Support `replace_existing: true` on `postgres_branches` and `postgres_endpoints` so bundles can manage the implicitly-created production branch and primary read-write endpoint of a Lakebase project.
+* Add `postgres_catalogs` resource to bind a Unity Catalog catalog to a Postgres database on a Lakebase Autoscaling branch ([#5265](https://github.com/databricks/cli/pull/5265)).
+* Add `postgres_synced_tables` resource to sync a Unity Catalog Delta table into a Postgres table on a Lakebase Autoscaling branch ([#5268](https://github.com/databricks/cli/pull/5268)).
+* engine/direct: Changes to state file now persisted to .wal file right away instead of being saved in the end ([#5149](https://github.com/databricks/cli/pull/5149))
+
+
+## Release v0.299.2 (2026-05-13)
+
+### Notable Changes
+* Breaking change: `vector_search_endpoints` renamed `min_qps` to `target_qps` in DABs configuration and the `vector-search-endpoints` commands, following the SDK rename in v0.131.0. Update any `databricks.yml` using `min_qps:` to `target_qps:` and any CLI invocations using `--min-qps` to `--target-qps`.
+
+### CLI
+
+* `auth login` no longer falls back to plaintext when the OS keyring is reachable but locked. The unlock prompt shown by the probe now runs in parallel with the OAuth flow, and the token is stored in the keyring once the user has typed their password.
+* `databricks auth describe` now reports where U2M (`databricks-cli`) tokens are stored: `plaintext` (`~/.databricks/token-cache.json`) or `secure` (OS keyring), and the source of the choice (env var, config setting, or default).
+* Marked the default profile in the interactive pickers shown by `databricks auth switch`, `databricks auth logout`, `databricks auth token`, and `databricks auth login`, and moved it to the top of the list. `databricks auth login` and `databricks auth logout` now offer the same selectors as `databricks auth token` and `databricks auth switch` respectively.
+* The interactive auth profile pickers now start in search mode so typing immediately filters the list, and the action entries (`+ Create a new profile`, `→ Enter a host URL manually`) are visually distinct from real profiles and stay visible regardless of the search query.
+* Shortened the host prompt label shown after `→ Enter a host URL manually` in `databricks auth login` so the prompt no longer leaves stale lines on screen when typing or pasting a host URL.
+
+### Bundles
+* Stop applying `presets.name_prefix` (and the dev-mode `[dev <user>]` rename) to `vector_search_endpoints` ([#5209](https://github.com/databricks/cli/pull/5209)).
+
+* Fix `bundle generate` job to preserve nested notebook directory structure ([#4596](https://github.com/databricks/cli/pull/4596))
+* Propagate authentication environment (including `DATABRICKS_CONFIG_PROFILE`) to the `experimental.python` subprocess so bundle validate/deploy no longer fails with a multi-profile host ambiguity error when several profiles in `~/.databrickscfg` share the same host.
+* Fixed `--force-pull` on `bundle summary` and `bundle open` so the flag bypasses the local state cache and reads state from the workspace.
+
+### Dependency updates
+
+* Bump Go toolchain to 1.25.10 ([#5213](https://github.com/databricks/cli/pull/5213)).
+* Bump `github.com/databricks/databricks-sdk-go` from v0.128.0 to v0.132.0.
+* Bump Terraform provider to v1.115.0.
+
+
 ## Release v0.299.1 (2026-05-07)
 
 ### CLI

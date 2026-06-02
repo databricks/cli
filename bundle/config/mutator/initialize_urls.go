@@ -3,10 +3,10 @@ package mutator
 import (
 	"context"
 	"net/url"
-	"strconv"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/diag"
 )
 
@@ -25,35 +25,34 @@ func (m *initializeURLs) Name() string {
 }
 
 func (m *initializeURLs) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	workspaceId, err := b.WorkspaceClient(ctx).CurrentWorkspaceID(ctx)
+	workspaceID, err := auth.ResolveWorkspaceID(ctx, b.WorkspaceClient(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	orgId := strconv.FormatInt(workspaceId, 10)
 	host := b.WorkspaceClient(ctx).Config.CanonicalHostName()
-	err = initializeForWorkspace(b, orgId, host)
+	err = initializeForWorkspace(b, workspaceID, host)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 	return nil
 }
 
-func initializeForWorkspace(b *bundle.Bundle, orgId, host string) error {
+func initializeForWorkspace(b *bundle.Bundle, workspaceID, host string) error {
 	baseURL, err := url.Parse(host)
 	if err != nil {
 		return err
 	}
 
-	// Add ?o=<workspace id> only if <workspace id> wasn't in the subdomain already.
-	// The ?o= is needed when vanity URLs / legacy workspace URLs are used.
-	// If it's not needed we prefer to leave it out since these URLs are rather
-	// long for most terminals.
+	// Add ?w=<workspace id> only if <workspace id> wasn't in the subdomain
+	// already. The parameter is needed when vanity URLs / legacy workspace
+	// URLs are used. If it's not needed we prefer to leave it out since these
+	// URLs are rather long for most terminals.
 	//
-	// See https://docs.databricks.com/en/workspace/workspace-details.html for
-	// further reading about the '?o=' suffix.
-	if !strings.Contains(baseURL.Hostname(), orgId) {
+	// The legacy ?o= spelling is also accepted by the platform; we emit ?w=
+	// here to match the new workspace addressing convention.
+	if !strings.Contains(baseURL.Hostname(), workspaceID) {
 		values := baseURL.Query()
-		values.Add("o", orgId)
+		values.Add("w", workspaceID)
 		baseURL.RawQuery = values.Encode()
 	}
 

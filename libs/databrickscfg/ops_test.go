@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -254,7 +255,7 @@ func TestGetDefaultProfile_NoFile(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "databrickscfg")
 	got, err := GetDefaultProfile(t.Context(), path)
 	require.NoError(t, err)
-	assert.Equal(t, "", got)
+	assert.Empty(t, got)
 	// Verify the file was NOT created as a side effect.
 	assert.NoFileExists(t, path)
 }
@@ -309,9 +310,91 @@ func TestGetConfiguredDefaultProfile_NoFile(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "databrickscfg")
 	got, err := GetConfiguredDefaultProfile(t.Context(), path)
 	require.NoError(t, err)
-	assert.Equal(t, "", got)
+	assert.Empty(t, got)
 	// Verify the file was NOT created as a side effect.
 	assert.NoFileExists(t, path)
+}
+
+func TestResolveDefaultProfile(t *testing.T) {
+	cases := []struct {
+		name     string
+		contents string
+		want     string
+	}{
+		{
+			name:     "explicit default_profile",
+			contents: "[__settings__]\ndefault_profile = my-workspace\n\n[my-workspace]\nhost = https://abc\n",
+			want:     "my-workspace",
+		},
+		{
+			name:     "settings without default_profile, no DEFAULT section",
+			contents: "[__settings__]\nauth_storage = secure\n\n[my-workspace]\nhost = https://abc\n",
+			want:     "",
+		},
+		{
+			name:     "single profile is not auto-promoted",
+			contents: "[only]\nhost = https://abc\n",
+			want:     "",
+		},
+		{
+			name:     "self-referencing __settings__ is ignored",
+			contents: "[__settings__]\ndefault_profile = __settings__\n\n[profile1]\nhost = https://abc\n",
+			want:     "",
+		},
+		{
+			name:     "DEFAULT section with host is used when settings is empty",
+			contents: "[DEFAULT]\nhost = https://default.abc\n\n[profile1]\nhost = https://abc\n",
+			want:     "DEFAULT",
+		},
+		{
+			name:     "DEFAULT section without host is ignored",
+			contents: "[DEFAULT]\naccount_id = 1234\n\n[profile1]\nhost = https://abc\n",
+			want:     "",
+		},
+		{
+			name:     "settings takes precedence over DEFAULT section",
+			contents: "[__settings__]\ndefault_profile = override\n\n[DEFAULT]\nhost = https://default.abc\n\n[override]\nhost = https://override.abc\n",
+			want:     "override",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "databrickscfg")
+			require.NoError(t, os.WriteFile(path, []byte(tc.contents), 0o600))
+
+			ctx := env.Set(t.Context(), "DATABRICKS_CONFIG_FILE", path)
+			got := ResolveDefaultProfile(ctx)
+			assert.Equal(t, tc.want, got)
+		})
+	}
+}
+
+func TestResolveDefaultProfile_FileMissing(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "does-not-exist")
+	ctx := env.Set(t.Context(), "DATABRICKS_CONFIG_FILE", path)
+	assert.Empty(t, ResolveDefaultProfile(ctx))
+}
+
+func TestResolveDefaultProfile_DefaultsToHomeFile(t *testing.T) {
+	home := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(home, ".databrickscfg"),
+		[]byte("[__settings__]\ndefault_profile = home-profile\n\n[home-profile]\nhost = https://abc\n"),
+		0o600))
+
+	ctx := env.WithUserHomeDir(t.Context(), home)
+	// DATABRICKS_CONFIG_FILE intentionally unset.
+	ctx = env.Set(ctx, "DATABRICKS_CONFIG_FILE", "")
+	assert.Equal(t, "home-profile", ResolveDefaultProfile(ctx))
+}
+
+func TestResolveDefaultProfile_ParseError(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "databrickscfg")
+	require.NoError(t, os.WriteFile(path, []byte("not a valid ini file\n[unterminated"), 0o600))
+
+	ctx := env.Set(t.Context(), "DATABRICKS_CONFIG_FILE", path)
+	// Parse error is logged as a warning but ResolveDefaultProfile returns "".
+	assert.Empty(t, ResolveDefaultProfile(ctx))
 }
 
 func TestSetDefaultProfile(t *testing.T) {
@@ -707,7 +790,7 @@ func TestGetConfiguredAuthStorage_MissingFile(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "does-not-exist")
 	got, err := GetConfiguredAuthStorage(t.Context(), path)
 	require.NoError(t, err)
-	assert.Equal(t, "", got)
+	assert.Empty(t, got)
 }
 
 func TestSetConfiguredAuthStorage(t *testing.T) {

@@ -7,6 +7,6 @@ local.cache.miss true
 presets_name_prefix_is_set false
 python_wheel_wrapper_is_set false
 resref_jobs.tags.* true
-resref_jobs.tasks.python_wheel_task.entry_point true
+resreferr_jobs.task true
 run_as_set false
 skip_artifact_cleanup false

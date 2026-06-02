@@ -20,8 +20,10 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "restrict-workspace-admins",
-		Short: `The Restrict Workspace Admins setting lets you control the capabilities of workspace admins.`,
-		Long: `The Restrict Workspace Admins setting lets you control the capabilities of
+		Short: `*Public Preview* The Restrict Workspace Admins setting lets you control the capabilities of workspace admins.`,
+		Long: `This command is in Public Preview and may change without notice.
+
+The Restrict Workspace Admins setting lets you control the capabilities of
   workspace admins. With the setting status set to ALLOW_ALL, workspace admins
   can create service principal personal access tokens on behalf of any service
   principal in their workspace. Workspace admins can also change a job owner to
@@ -35,6 +37,10 @@ func New() *cobra.Command {
   which they have the Service Principal User role.`,
 		RunE: root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	// Add methods
 	cmd.AddCommand(newDelete())
@@ -66,8 +72,10 @@ func newDelete() *cobra.Command {
 	cmd.Flags().StringVar(&deleteReq.Etag, "etag", deleteReq.Etag, `etag used for versioning.`)
 
 	cmd.Use = "delete"
-	cmd.Short = `Delete the restrict workspace admins setting.`
-	cmd.Long = `Delete the restrict workspace admins setting.
+	cmd.Short = `*Public Preview* Delete the restrict workspace admins setting.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Delete the restrict workspace admins setting.
 
   Reverts the restrict workspace admins setting status for the workspace. A
   fresh etag needs to be provided in DELETE requests (as a query parameter).
@@ -76,6 +84,8 @@ func newDelete() *cobra.Command {
   the request must be retried by using the fresh etag in the 409 response.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -124,12 +134,16 @@ func newGet() *cobra.Command {
 	cmd.Flags().StringVar(&getReq.Etag, "etag", getReq.Etag, `etag used for versioning.`)
 
 	cmd.Use = "get"
-	cmd.Short = `Get the restrict workspace admins setting.`
-	cmd.Long = `Get the restrict workspace admins setting.
+	cmd.Short = `*Public Preview* Get the restrict workspace admins setting.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Get the restrict workspace admins setting.
 
   Gets the restrict workspace admins setting.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -179,8 +193,10 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "update"
-	cmd.Short = `Update the restrict workspace admins setting.`
-	cmd.Long = `Update the restrict workspace admins setting.
+	cmd.Short = `*Public Preview* Update the restrict workspace admins setting.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Update the restrict workspace admins setting.
 
   Updates the restrict workspace admins setting for the workspace. A fresh etag
   needs to be provided in PATCH requests (as part of the setting field). The
@@ -189,6 +205,8 @@ func newUpdate() *cobra.Command {
   must be retried by using the fresh etag in the 409 response.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {

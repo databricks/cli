@@ -23,6 +23,7 @@ import (
 	"github.com/databricks/cli/libs/testfile"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/client"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -36,7 +37,7 @@ var (
 // This test needs auth env vars to run.
 // Please run using the deco env test or deco env shell
 func setupRepo(t *testing.T, wsc *databricks.WorkspaceClient, ctx context.Context) (localRoot, remoteRoot string) {
-	me, err := wsc.CurrentUser.Me(ctx)
+	me, err := wsc.CurrentUser.Me(ctx, iam.MeRequest{})
 	require.NoError(t, err)
 	repoPath := fmt.Sprintf("/Repos/%s/%s", me.UserName, testutil.RandomName("empty-repo-sync-integration-"))
 
@@ -224,7 +225,7 @@ func (a *syncTest) snapshotContains(files []string) {
 		_, ok := s.LastModifiedTimes[filePath]
 		assert.True(a.t, ok, "%s not in snapshot file: %v", filePath, s.LastModifiedTimes)
 	}
-	assert.Equal(a.t, len(files), len(s.LastModifiedTimes), "files=%s s.LastModifiedTimes=%s", files, s.LastModifiedTimes)
+	assert.Len(a.t, s.LastModifiedTimes, len(files), "files=%s s.LastModifiedTimes=%s", files, s.LastModifiedTimes)
 }
 
 func TestSyncFullFileSync(t *testing.T) {
@@ -487,7 +488,7 @@ func TestSyncEnsureRemotePathIsUsableIfRepoDoesntExist(t *testing.T) {
 	ctx, wt := acc.WorkspaceTest(t)
 	wsc := wt.W
 
-	me, err := wsc.CurrentUser.Me(ctx)
+	me, err := wsc.CurrentUser.Me(ctx, iam.MeRequest{})
 	require.NoError(t, err)
 
 	// Hypothetical repo path doesn't exist.
@@ -526,7 +527,7 @@ func TestSyncEnsureRemotePathIsUsableInWorkspace(t *testing.T) {
 	ctx, wt := acc.WorkspaceTest(t)
 	wsc := wt.W
 
-	me, err := wsc.CurrentUser.Me(ctx)
+	me, err := wsc.CurrentUser.Me(ctx, iam.MeRequest{})
 	require.NoError(t, err)
 
 	remotePath := fmt.Sprintf("/Users/%s/%s", me.UserName, testutil.RandomName("ensure-path-exists-test-"))

@@ -1,4 +1,5 @@
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+Error: "resources.jobs.foo.url": Terraform-only field; cross-resource references to Terraform-only fields are not supported by the direct engine
+  in databricks.yml:11:12
 
-Deleting files...
-Destroy complete!
+
+Exit code: 1

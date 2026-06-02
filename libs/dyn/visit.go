@@ -24,8 +24,8 @@ func (e cannotTraverseNilError) Error() string {
 }
 
 func IsCannotTraverseNilError(err error) bool {
-	var target cannotTraverseNilError
-	return errors.As(err, &target)
+	_, ok := errors.AsType[cannotTraverseNilError](err)
+	return ok
 }
 
 type noSuchKeyError struct {
@@ -37,8 +37,8 @@ func (e noSuchKeyError) Error() string {
 }
 
 func IsNoSuchKeyError(err error) bool {
-	var target noSuchKeyError
-	return errors.As(err, &target)
+	_, ok := errors.AsType[noSuchKeyError](err)
+	return ok
 }
 
 type indexOutOfBoundsError struct {
@@ -50,8 +50,8 @@ func (e indexOutOfBoundsError) Error() string {
 }
 
 func IsIndexOutOfBoundsError(err error) bool {
-	var target indexOutOfBoundsError
-	return errors.As(err, &target)
+	_, ok := errors.AsType[indexOutOfBoundsError](err)
+	return ok
 }
 
 type expectedMapToIndexError struct {

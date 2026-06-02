@@ -24,6 +24,12 @@ type Initializer interface {
 	// NextSteps returns the next steps message for this project type.
 	NextSteps() string
 
+	// InstallCommand returns the shell command that installs the project's
+	// dependencies (and any prerequisites like a virtualenv). It is shown
+	// to the user when init was run with --skip-install so the user knows
+	// what to run before NextSteps.
+	InstallCommand() string
+
 	// RunDev starts the local development server.
 	RunDev(ctx context.Context, workDir string) error
 

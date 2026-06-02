@@ -1,0 +1,23 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+trace $CLI bundle validate
+
+trace $CLI bundle summary
+
+rm -f out.requests.txt
+trace $CLI bundle deploy
+
+# Get catalog details. Hide volatile fields so cloud and local match.
+catalog_name="catalogs/lakebase_test_${UNIQUE_NAME}"
+trace $CLI postgres get-catalog "${catalog_name}" | jq 'del(.create_time, .update_time, .uid)'
+
+trace $CLI bundle summary
+
+# Filter requests to only show postgres operations (exclude workspace, telemetry, and operation polling).
+trace print_requests.py --keep --get '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.json

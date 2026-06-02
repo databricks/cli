@@ -1,6 +1,7 @@
 package setup
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/databricks/cli/experimental/ssh/internal/client"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/stretchr/testify/assert"
@@ -134,10 +136,9 @@ func TestGenerateHostConfig_Valid(t *testing.T) {
 		SSHKeysDir:    tmpDir,
 		ShutdownDelay: 30 * time.Second,
 		Profile:       "test-profile",
-		ProxyCommand:  proxyCommand,
 	}
 
-	result, err := generateHostConfig(t.Context(), opts)
+	result, err := generateHostConfig(t.Context(), opts, proxyCommand)
 	assert.NoError(t, err)
 
 	assert.Contains(t, result, "Host test-host")
@@ -169,10 +170,9 @@ func TestGenerateHostConfig_WithoutProfile(t *testing.T) {
 		SSHKeysDir:    tmpDir,
 		ShutdownDelay: 30 * time.Second,
 		Profile:       "",
-		ProxyCommand:  proxyCommand,
 	}
 
-	result, err := generateHostConfig(t.Context(), opts)
+	result, err := generateHostConfig(t.Context(), opts, proxyCommand)
 	assert.NoError(t, err)
 
 	assert.NotContains(t, result, "--profile=")
@@ -193,7 +193,7 @@ func TestGenerateHostConfig_PathEscaping(t *testing.T) {
 		ShutdownDelay: 30 * time.Second,
 	}
 
-	result, err := generateHostConfig(t.Context(), opts)
+	result, err := generateHostConfig(t.Context(), opts, "")
 	assert.NoError(t, err)
 
 	// Check that quotes are properly escaped
@@ -225,17 +225,7 @@ func TestSetup_SuccessfulWithNewConfigFile(t *testing.T) {
 		Profile:       "test-profile",
 	}
 
-	clientOpts := client.ClientOptions{
-		ClusterID:        opts.ClusterID,
-		AutoStartCluster: opts.AutoStartCluster,
-		ShutdownDelay:    opts.ShutdownDelay,
-		Profile:          opts.Profile,
-	}
-	proxyCommand, err := clientOpts.ToProxyCommand()
-	require.NoError(t, err)
-	opts.ProxyCommand = proxyCommand
-
-	err = Setup(ctx, m.WorkspaceClient, opts)
+	err := Setup(ctx, m.WorkspaceClient, opts)
 	assert.NoError(t, err)
 
 	// Check that main config has Include directive
@@ -285,15 +275,7 @@ func TestSetup_AutoApproveRecreatesExistingHost(t *testing.T) {
 		AutoApprove:   true,
 	}
 
-	clientOpts := client.ClientOptions{
-		ClusterID:     opts.ClusterID,
-		ShutdownDelay: opts.ShutdownDelay,
-	}
-	proxyCommand, err := clientOpts.ToProxyCommand()
-	require.NoError(t, err)
-	opts.ProxyCommand = proxyCommand
-
-	err = Setup(ctx, m.WorkspaceClient, opts)
+	err := Setup(ctx, m.WorkspaceClient, opts)
 	assert.NoError(t, err)
 
 	// Host config should be recreated (no longer contains the stale User).
@@ -302,6 +284,50 @@ func TestSetup_AutoApproveRecreatesExistingHost(t *testing.T) {
 	s := string(content)
 	assert.NotContains(t, s, "User stale")
 	assert.Contains(t, s, "--cluster=cluster-123")
+}
+
+func TestSetup_PromptsForClusterWhenNotProvided(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	tmpDir := t.TempDir()
+	t.Setenv("HOME", tmpDir)
+	t.Setenv("USERPROFILE", tmpDir)
+
+	configPath := filepath.Join(tmpDir, "ssh_config")
+
+	// Replace the cluster picker with a stub returning a fixed ID. This lets the
+	// test exercise the empty-ClusterID path of Setup without prompting.
+	origPrompt := clusterSelectionPrompt
+	t.Cleanup(func() { clusterSelectionPrompt = origPrompt })
+	promptCalled := false
+	clusterSelectionPrompt = func(_ context.Context, _ *databricks.WorkspaceClient) (string, error) {
+		promptCalled = true
+		return "picked-cluster", nil
+	}
+
+	m := mocks.NewMockWorkspaceClient(t)
+	clustersAPI := m.GetMockClustersAPI()
+	clustersAPI.EXPECT().Get(ctx, compute.GetClusterRequest{ClusterId: "picked-cluster"}).Return(&compute.ClusterDetails{
+		DataSecurityMode: compute.DataSecurityModeSingleUser,
+	}, nil)
+
+	opts := SetupOptions{
+		HostName:      "test-host",
+		SSHConfigPath: configPath,
+		SSHKeysDir:    tmpDir,
+		ShutdownDelay: 30 * time.Second,
+	}
+
+	err := Setup(ctx, m.WorkspaceClient, opts)
+	require.NoError(t, err)
+	assert.True(t, promptCalled, "cluster picker should run when ClusterID is empty")
+
+	// The picked ID must be serialized into the ProxyCommand's --cluster= flag.
+	hostConfigPath := filepath.Join(tmpDir, ".databricks", "ssh-tunnel-configs", "test-host")
+	hostContent, err := os.ReadFile(hostConfigPath)
+	require.NoError(t, err)
+	hostConfigStr := string(hostContent)
+	assert.Contains(t, hostConfigStr, "--cluster=picked-cluster")
+	assert.NotContains(t, hostConfigStr, "--cluster= ")
 }
 
 func TestSetup_SuccessfulWithExistingConfigFile(t *testing.T) {
@@ -331,16 +357,6 @@ func TestSetup_SuccessfulWithExistingConfigFile(t *testing.T) {
 		SSHKeysDir:    tmpDir,
 		ShutdownDelay: 60 * time.Second,
 	}
-
-	clientOpts := client.ClientOptions{
-		ClusterID:        opts.ClusterID,
-		AutoStartCluster: opts.AutoStartCluster,
-		ShutdownDelay:    opts.ShutdownDelay,
-		Profile:          opts.Profile,
-	}
-	proxyCommand, err := clientOpts.ToProxyCommand()
-	require.NoError(t, err)
-	opts.ProxyCommand = proxyCommand
 
 	err = Setup(ctx, m.WorkspaceClient, opts)
 	assert.NoError(t, err)

@@ -19,7 +19,7 @@ func TestGetWithRealEnvSingleVariable(t *testing.T) {
 	// Not set.
 	v, ok = get(t.Context(), []string{"v2"})
 	require.False(t, ok)
-	assert.Equal(t, "", v)
+	assert.Empty(t, v)
 }
 
 func TestGetWithRealEnvMultipleVariables(t *testing.T) {
@@ -39,5 +39,5 @@ func TestGetWithRealEnvMultipleVariables(t *testing.T) {
 	// Not set.
 	v, ok := get(t.Context(), []string{"v2", "v3", "v4"})
 	require.False(t, ok)
-	assert.Equal(t, "", v)
+	assert.Empty(t, v)
 }

@@ -31,6 +31,10 @@ func New() *cobra.Command {
 		RunE:   root.ReportUnknownSubcommand,
 	}
 
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
+
 	// Add methods
 	cmd.AddCommand(newCreateFeature())
 	cmd.AddCommand(newCreateKafkaConfig())
@@ -89,11 +93,15 @@ func newCreateFeature() *cobra.Command {
   Create a Feature.
 
   Arguments:
-    FULL_NAME: The full three-part name (catalog, schema, name) of the feature.
+    FULL_NAME: The full three-part name (catalog, schema, name) of the feature. This is
+      the feature's resource identifier; the catalog_name, schema_name, and name
+      fields below are OUTPUT_ONLY decomposed views of this value.
     SOURCE: The data source of the feature.
     FUNCTION: The function by which the feature is computed.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
@@ -202,6 +210,8 @@ func newCreateKafkaConfig() *cobra.Command {
     AUTH_CONFIG: Authentication configuration for connection to topics.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
@@ -305,6 +315,8 @@ func newCreateMaterializedFeature() *cobra.Command {
     FEATURE_NAME: The full name of the feature in Unity Catalog.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
@@ -383,6 +395,8 @@ func newDeleteFeature() *cobra.Command {
     FULL_NAME: Name of the feature to delete.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -441,6 +455,8 @@ func newDeleteKafkaConfig() *cobra.Command {
     NAME: Name of the Kafka config to delete.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -495,6 +511,8 @@ func newDeleteMaterializedFeature() *cobra.Command {
     MATERIALIZED_FEATURE_ID: The ID of the materialized feature to delete.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -551,6 +569,8 @@ func newGetFeature() *cobra.Command {
     FULL_NAME: Name of the feature to get.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -610,6 +630,8 @@ func newGetKafkaConfig() *cobra.Command {
     NAME: Name of the Kafka config to get.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -665,6 +687,8 @@ func newGetMaterializedFeature() *cobra.Command {
     MATERIALIZED_FEATURE_ID: The ID of the materialized feature.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -725,16 +749,22 @@ func newListFeatures() *cobra.Command {
 	cmd.Flags().StringVar(&listFeaturesReq.PageToken, "page-token", listFeaturesReq.PageToken, `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
-	cmd.Use = "list-features"
+	cmd.Use = "list-features CATALOG_NAME SCHEMA_NAME"
 	cmd.Short = `List features.`
 	cmd.Long = `List features.
 
-  List Features.`
+  List Features.
+
+  Arguments:
+    CATALOG_NAME: Name of parent catalog for features of interest.
+    SCHEMA_NAME: Name of parent schema relative to its parent catalog.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(0)
+		check := root.ExactArgs(2)
 		return check(cmd, args)
 	}
 
@@ -742,6 +772,9 @@ func newListFeatures() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
+
+		listFeaturesReq.CatalogName = args[0]
+		listFeaturesReq.SchemaName = args[1]
 
 		response := w.FeatureEngineering.ListFeatures(ctx, listFeaturesReq)
 		if listFeaturesLimit < 0 {
@@ -802,6 +835,8 @@ func newListKafkaConfigs() *cobra.Command {
   config can delete it.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -869,6 +904,8 @@ func newListMaterializedFeatures() *cobra.Command {
 	cmd.Long = `List materialized features.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -936,12 +973,16 @@ func newUpdateFeature() *cobra.Command {
   Update a Feature.
 
   Arguments:
-    FULL_NAME: The full three-part name (catalog, schema, name) of the feature.
+    FULL_NAME: The full three-part name (catalog, schema, name) of the feature. This is
+      the feature's resource identifier; the catalog_name, schema_name, and name
+      fields below are OUTPUT_ONLY decomposed views of this value.
     UPDATE_MASK: The list of fields to update.
     SOURCE: The data source of the feature.
     FUNCTION: The function by which the feature is computed.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
@@ -1050,6 +1091,8 @@ func newUpdateKafkaConfig() *cobra.Command {
     AUTH_CONFIG: Authentication configuration for connection to topics.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
@@ -1160,6 +1203,8 @@ func newUpdateMaterializedFeature() *cobra.Command {
     FEATURE_NAME: The full name of the feature in Unity Catalog.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {

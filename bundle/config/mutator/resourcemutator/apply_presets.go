@@ -290,13 +290,14 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		}
 	}
 
-	// Vector Search Endpoints: Prefix
-	for _, e := range r.VectorSearchEndpoints {
-		if e == nil {
-			continue
-		}
-		e.Name = normalizePrefix(prefix) + e.Name
-	}
+	// Vector Search Endpoints: no prefix. The endpoint name is the primary key
+	// (it's what GET/UPDATE/DELETE address by), so prefixing it would change
+	// the resource's identity rather than just its display name.
+
+	// Vector Search Indexes: no prefix. The 3-part UC name (catalog.schema.index)
+	// is the API primary key (CreateIndex addresses by name and DoCreate returns
+	// it as the deployment id), so prefixing would change the resource's
+	// identity rather than just its display name.
 
 	return diags
 }

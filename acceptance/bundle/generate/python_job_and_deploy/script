@@ -1,0 +1,45 @@
+title "Upload notebook to a workspace path"
+trace $CLI workspace import "/Workspace/Users/${CURRENT_USER_NAME}/test_notebook.py" --file test_notebook.py --format AUTO --overwrite
+
+title "Create a job that references the notebook"
+JOB_ID=$($CLI jobs create --json '{
+  "name": "test-job",
+  "max_concurrent_runs": 1,
+  "queue": {"enabled": true},
+  "tasks": [
+    {
+      "task_key": "test_task",
+      "notebook_task": {
+        "notebook_path": "/Workspace/Users/'${CURRENT_USER_NAME}'/test_notebook"
+      },
+      "new_cluster": {
+        "spark_version": "'${DEFAULT_SPARK_VERSION}'",
+        "node_type_id": "'${NODE_TYPE_ID}'",
+        "num_workers": 1
+      }
+    }
+  ]
+}' | jq -r '.job_id')
+echo "Created job"
+# Disable MSYS_NO_PATHCONV when invoking python scripts: with it set, Git Bash on Windows
+# fails to translate the script path so the python interpreter can't find the file.
+env -u MSYS_NO_PATHCONV add_repl.py "$JOB_ID" JOB_ID
+
+cleanup() {
+    title "Cleanup: delete the original job and notebook"
+    trace errcode $CLI jobs delete "$JOB_ID"
+    trace errcode $CLI workspace delete "/Workspace/Users/${CURRENT_USER_NAME}/test_notebook"
+}
+trap cleanup EXIT
+
+title "Generate bundle config from the job"
+trace $CLI bundle generate job --existing-job-id "$JOB_ID" --key out --config-dir resources --source-dir src --force
+
+title "Verify generated yaml has expected fields"
+cat resources/out.job.yml | env -u MSYS_NO_PATHCONV contains.py "task_key: test_task" "notebook_task:" "notebook_path: ../src/test_notebook.py" > /dev/null
+
+title "Deploy the generated bundle"
+trace $CLI bundle deploy
+
+title "Destroy the deployed bundle"
+trace $CLI bundle destroy --auto-approve

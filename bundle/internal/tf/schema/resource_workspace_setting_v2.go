@@ -110,7 +110,7 @@ type ResourceWorkspaceSettingV2PersonalCompute struct {
 }
 
 type ResourceWorkspaceSettingV2ProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type ResourceWorkspaceSettingV2RestrictWorkspaceAdmins struct {
