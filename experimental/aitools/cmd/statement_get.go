@@ -6,6 +6,7 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/sqlexec"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/spf13/cobra"
 )
@@ -54,31 +55,33 @@ invoked the synchronous path.)`,
 // getStatementResult polls a statement until terminal, then assembles a
 // statementInfo with rows on success or an error object on failure.
 //
-// Context cancellation propagates from pollStatement WITHOUT cancelling the
+// Context cancellation propagates from the poll WITHOUT cancelling the
 // server-side statement (intentional: 'get' is a poll-only operation; use
 // 'cancel' to terminate explicitly).
 func getStatementResult(ctx context.Context, api sql.StatementExecutionInterface, statementID string) (statementInfo, error) {
-	// Fetch the current state first so pollStatement can short-circuit if
-	// the statement is already terminal.
-	resp, err := api.GetStatementByStatementId(ctx, statementID)
-	if err != nil {
-		return statementInfo{}, fmt.Errorf("get statement: %w", err)
-	}
+	// Get/Poll don't use the warehouse ID.
+	client := sqlexec.New(api, "")
 
-	pollResp, err := pollStatement(ctx, api, resp)
+	// Fetch the current state first so Poll can short-circuit if the statement
+	// is already terminal.
+	stmt, err := client.Get(ctx, statementID)
 	if err != nil {
 		return statementInfo{}, err
 	}
 
-	info := statementInfo{StatementID: pollResp.StatementId}
-	if pollResp.Status != nil {
-		info.State = pollResp.Status.State
+	stmt, err = client.Poll(ctx, stmt)
+	if err != nil {
+		return statementInfo{}, err
 	}
-	info.Error = statementErrorFromStatus(pollResp.Status)
+
+	info := statementInfo{
+		StatementID: stmt.ID,
+		State:       stmt.State,
+		Error:       statementError(stmt.Err()),
+	}
 
 	if info.State == sql.StatementStateSucceeded {
-		info.Columns = extractColumns(pollResp.Manifest)
-		rows, err := fetchAllRows(ctx, api, pollResp)
+		result, err := client.Results(ctx, stmt)
 		if err != nil {
 			// The query succeeded server-side but a later chunk fetch failed
 			// (network blip, throttling, transient 5xx). Surface this as a
@@ -90,7 +93,8 @@ func getStatementResult(ctx context.Context, api sql.StatementExecutionInterface
 			}
 			return info, nil
 		}
-		info.Rows = rows
+		info.Columns = result.Columns
+		info.Rows = result.Rows
 	}
 	return info, nil
 }
