@@ -1,0 +1,10 @@
+Local = true
+Cloud = true
+RecordRequests = true
+# --select is only supported by the direct engine, so this happy-path test runs on
+# direct only (the rejection on terraform is covered by bundle/select/rejected).
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+# Also run a variant that deploys a serialized (already filtered) plan via --plan.
+EnvMatrix.READPLAN = ["", "1"]
+# databricks.yml and plan.json are generated at runtime.
+Ignore = [".databricks", ".gitignore", "databricks.yml", "plan.json"]

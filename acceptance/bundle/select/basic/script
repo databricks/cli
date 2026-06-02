@@ -1,0 +1,40 @@
+envsubst '$UNIQUE_NAME' < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    title "Destroy"
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+# --- selector resolution ---
+# Unqualified name, unique across resource types.
+trace $CLI bundle plan --select bar
+# Repeated --select.
+trace $CLI bundle plan --select jobs.bar --select jobs.baz
+# Comma-separated --select (equivalent to repeating the flag).
+trace $CLI bundle plan --select jobs.bar,jobs.baz
+# Qualified name; foo pulls in its dependency bar but not the independent baz.
+trace $CLI bundle plan --select jobs.foo
+
+# --- partial deploy ---
+# Serialize the filtered plan, then deploy it: inline, or via --plan (READPLAN=1).
+# The deploy is not traced because readplanarg varies the command line between
+# READPLAN variants, which must produce identical output.
+$CLI bundle plan --select jobs.foo -o json > plan.json
+title "bundle deploy --select jobs.foo\n"
+$CLI bundle deploy --select jobs.foo $(readplanarg plan.json)
+# Only bar and foo were created, never baz.
+trace print_requests.py --sort //jobs
+
+# --- full plan/deploy after the partial deploy ---
+# foo and bar are already deployed, so only baz remains to create.
+title "Full plan after partial deploy"
+trace $CLI bundle plan
+title "Full deploy"
+trace $CLI bundle deploy
+# Only baz is created this time.
+trace print_requests.py --sort //jobs
+# Everything is deployed now: no changes.
+title "Full plan again"
+trace $CLI bundle plan
