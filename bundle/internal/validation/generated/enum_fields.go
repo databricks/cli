@@ -192,6 +192,10 @@ var EnumFields = map[string][]string{
 
 	"resources.postgres_projects.*.permissions[*].level": {"CAN_ATTACH_TO", "CAN_BIND", "CAN_CREATE", "CAN_CREATE_APP", "CAN_EDIT", "CAN_EDIT_METADATA", "CAN_MANAGE", "CAN_MANAGE_PRODUCTION_VERSIONS", "CAN_MANAGE_RUN", "CAN_MANAGE_STAGING_VERSIONS", "CAN_MONITOR", "CAN_MONITOR_ONLY", "CAN_QUERY", "CAN_READ", "CAN_RESTART", "CAN_RUN", "CAN_USE", "CAN_VIEW", "CAN_VIEW_METADATA", "IS_OWNER"},
 
+	"resources.postgres_roles.*.auth_method":         {"LAKEBASE_OAUTH_V1", "NO_LOGIN", "PG_PASSWORD_SCRAM_SHA_256"},
+	"resources.postgres_roles.*.identity_type":       {"GROUP", "SERVICE_PRINCIPAL", "USER"},
+	"resources.postgres_roles.*.membership_roles[*]": {"DATABRICKS_SUPERUSER"},
+
 	"resources.postgres_synced_tables.*.scheduling_policy": {"CONTINUOUS", "SNAPSHOT", "TRIGGERED"},
 
 	"resources.quality_monitors.*.custom_metrics[*].type":     {"CUSTOM_METRIC_TYPE_AGGREGATE", "CUSTOM_METRIC_TYPE_DERIVED", "CUSTOM_METRIC_TYPE_DRIFT"},

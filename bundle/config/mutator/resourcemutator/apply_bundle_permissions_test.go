@@ -32,6 +32,7 @@ var unsupportedResources = []string{
 	"postgres_catalogs",
 	"postgres_roles",
 	"postgres_synced_tables",
+	"postgres_roles",
 	"vector_search_indexes",
 }
 

@@ -227,6 +227,8 @@ var RequiredFields = map[string][]string{
 	"resources.postgres_projects.*":                {"project_id"},
 	"resources.postgres_projects.*.permissions[*]": {"level"},
 
+	"resources.postgres_roles.*": {"role_id", "parent"},
+
 	"resources.postgres_synced_tables.*": {"synced_table_id"},
 
 	"resources.quality_monitors.*":                   {"assets_dir", "output_schema_name", "table_name"},

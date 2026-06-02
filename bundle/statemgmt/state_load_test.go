@@ -440,6 +440,9 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 	assert.Empty(t, config.Resources.PostgresRoles["test_postgres_role"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.PostgresRoles["test_postgres_role"].ModifiedStatus)
 
+	assert.Empty(t, config.Resources.PostgresSyncedTables["test_postgres_synced_table"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.PostgresSyncedTables["test_postgres_synced_table"].ModifiedStatus)
+
 	assert.Empty(t, config.Resources.VectorSearchEndpoints["test_vector_search_endpoint"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.VectorSearchEndpoints["test_vector_search_endpoint"].ModifiedStatus)
 

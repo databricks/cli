@@ -12,6 +12,9 @@
 * Preserve `.designer.ipynb` suffix when translating notebook task paths so Lakeflow Designer files referenced from a `notebook_task` resolve correctly in the workspace ([#5370](https://github.com/databricks/cli/pull/5370)).
 * Fix script output dropping last line without trailing newline ([#4995](https://github.com/databricks/cli/pull/4995)).
 * Add Postgres role as a bundle resource (preview).
+<<<<<<< HEAD
 * Add support for `postgres_databases` bundle resource.
+=======
+>>>>>>> postgres-roles
 
 ### Dependency updates

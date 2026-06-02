@@ -17,3 +17,5 @@ postgres_projects: postgres.ProjectSpec
 postgres_roles: postgres.RoleRoleSpec
 
 postgres_synced_tables: postgres.SyncedTableSyncedTableSpec
+
+postgres_roles: postgres.RoleRoleSpec

@@ -1151,8 +1151,8 @@ func (s *FakeWorkspace) createOperationLocked(resourceName string, response any)
 	operationName := resourceName + "/operations/" + operationID
 
 	// Determine resource type from name for metadata @type.
-	// Check the more specific suffixes first since database/endpoint names also
-	// contain "/branches/".
+	// Check the more specific suffixes first since database/role/endpoint names
+	// also contain "/branches/".
 	resourceType := "Project"
 	switch {
 	case strings.HasPrefix(resourceName, "catalogs/"):
