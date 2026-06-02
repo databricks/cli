@@ -166,6 +166,12 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	}
 
 	if engine.IsDirect() {
+		// Opting into DMS bumps the state schema before the WAL is started so the
+		// version is captured in the WAL header (UpgradeToDMS panics if the WAL is
+		// already open, so it must run before UpgradeToWrite below).
+		if b.Config.Experimental != nil && b.Config.Experimental.RecordDeploymentHistory {
+			b.DeploymentBundle.StateDB.UpgradeToDMS()
+		}
 		// Upgrade from read (opened by process.go) to write mode
 		if err := b.DeploymentBundle.StateDB.UpgradeToWrite(); err != nil {
 			logdiag.LogError(ctx, err)

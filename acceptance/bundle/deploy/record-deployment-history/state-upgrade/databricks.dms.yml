@@ -1,0 +1,10 @@
+bundle:
+  name: test-rdh-state-upgrade
+
+experimental:
+  record_deployment_history: true
+
+resources:
+  jobs:
+    foo:
+      name: foo-job-renamed

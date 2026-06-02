@@ -1,0 +1,3 @@
+# record_deployment_history drives DMS, which only the direct engine supports.
+# Under the terraform engine the flag must be rejected, not silently ignored.
+trace errcode $CLI bundle plan 2>&1 | contains.py "experimental.record_deployment_history is only supported with the direct deployment engine"
