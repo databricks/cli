@@ -654,12 +654,17 @@ func commitInPlace() (string, error) {
 	return appName, nil
 }
 
-// shouldSkipPluginSelection returns true when the template has a plugin
-// manifest but no {{.project_name}} subdirectory — meaning plugins are
-// pre-baked in the code files (e.g. app-templates/appkit-* repos) and
-// the user should not be prompted to select plugins.
+// shouldSkipPluginSelection returns true when the template is a pre-rendered
+// appkit template: it has a plugin manifest, no {{.project_name}} subdirectory,
+// and a plain databricks.yml file. The full appkit template only has
+// databricks.yml.tmpl (no plain databricks.yml), so it is not matched here.
 func shouldSkipPluginSelection(templateDir string) bool {
 	if !manifest.HasManifest(templateDir) {
+		return false
+	}
+	// Pre-rendered templates ship a plain databricks.yml as a static reference.
+	// The full appkit template only has databricks.yml.tmpl.
+	if _, err := os.Stat(filepath.Join(templateDir, bundleConfigFile)); err != nil {
 		return false
 	}
 	entries, err := os.ReadDir(templateDir)

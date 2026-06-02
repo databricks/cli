@@ -1200,16 +1200,26 @@ func TestShouldSkipPluginSelection(t *testing.T) {
 		expected bool
 	}{
 		{
-			name: "manifest present, no project_name dir",
+			name: "pre-rendered: manifest + databricks.yml + no project_name dir",
 			setup: func(dir string) {
 				require.NoError(t, os.WriteFile(filepath.Join(dir, manifest.ManifestFileName), []byte(`{"plugins":{}}`), 0o644))
+				require.NoError(t, os.WriteFile(filepath.Join(dir, bundleConfigFile), []byte("bundle:\n  name: myapp\n"), 0o644))
 			},
 			expected: true,
+		},
+		{
+			name: "full appkit template: manifest + no databricks.yml",
+			setup: func(dir string) {
+				require.NoError(t, os.WriteFile(filepath.Join(dir, manifest.ManifestFileName), []byte(`{"plugins":{}}`), 0o644))
+				require.NoError(t, os.WriteFile(filepath.Join(dir, "databricks.yml.tmpl"), []byte("bundle:\n  name: {{.projectName}}\n"), 0o644))
+			},
+			expected: false,
 		},
 		{
 			name: "manifest present, project_name dir present",
 			setup: func(dir string) {
 				require.NoError(t, os.WriteFile(filepath.Join(dir, manifest.ManifestFileName), []byte(`{"plugins":{}}`), 0o644))
+				require.NoError(t, os.WriteFile(filepath.Join(dir, bundleConfigFile), []byte("bundle:\n  name: myapp\n"), 0o644))
 				require.NoError(t, os.MkdirAll(filepath.Join(dir, "{{.project_name}}"), 0o755))
 			},
 			expected: false,
