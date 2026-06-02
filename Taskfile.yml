@@ -707,13 +707,17 @@ tasks:
   # can be invoked standalone.
 
   generate:
-    desc: Run all generators (genkit, refschema, schema, docs, validation, direct, pydabs)
+    desc: Run all generators (genkit, tf-schema, refschema, schema, docs, validation, direct, pydabs)
     cmds:
       # Runs first: regenerates CLI command stubs from the OpenAPI spec at
       # .codegen/_openapi_sha. SDK version bumps (go.mod/go.sum) are a manual
       # step outside this task; TestConsistentDatabricksSdkVersion (run inside
       # generate-genkit) asserts the two stay in sync.
       - task: generate-genkit
+      # Requires Terraform provider access (set TF_CLI_CONFIG_FILE to a
+      # filesystem mirror, or rely on the public registry). Only re-runs when
+      # bundle/internal/tf/codegen/schema/version.go changes.
+      - task: generate-tf-schema
       # Refreshes acceptance/bundle/refschema/out.fields.txt, which feeds
       # generate-direct-apitypes and generate-direct-resources below.
       - task: generate-refschema
@@ -867,6 +871,19 @@ tasks:
       - bundle/terraform_dabs_map/generated.go
     cmds:
       - go test ./bundle/terraform_dabs_map -run TestGenerateSchemaMap -update -v
+
+  generate-tf-schema:
+    desc: Regenerate bundle/internal/tf/schema from the Databricks Terraform provider
+    dir: bundle/internal/tf/codegen
+    sources:
+      - schema/version.go
+      - templates/**
+      - "**/*.go"
+      - exclude: "**/*_test.go"
+    generates:
+      - ../schema/*.go
+    cmds:
+      - go run .
 
   generate-direct:
     desc: Generate direct engine config (apitypes + resources)
