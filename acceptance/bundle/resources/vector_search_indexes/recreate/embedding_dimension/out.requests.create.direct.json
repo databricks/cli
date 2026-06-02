@@ -18,19 +18,6 @@
   }
 }
 {
-  "method": "PATCH",
-  "path": "/api/2.1/unity-catalog/permissions/table/main.default.vs_index_[UNIQUE_NAME]",
-  "body": {
-    "changes": [
-      {
-        "add": [
-          "SELECT"
-        ],
-        "principal": "deco-test-user@databricks.com",
-        "remove": [
-          "ALL_PRIVILEGES"
-        ]
-      }
-    ]
-  }
+  "method": "GET",
+  "path": "/api/2.0/vector-search/indexes/main.default.vs_index_[UNIQUE_NAME]"
 }

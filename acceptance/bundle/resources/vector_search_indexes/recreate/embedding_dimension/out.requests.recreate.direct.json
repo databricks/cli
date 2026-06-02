@@ -1,11 +1,23 @@
 {
+  "method": "GET",
+  "path": "/api/2.0/vector-search/indexes/main.default.vs_index_[UNIQUE_NAME]"
+}
+{
+  "method": "DELETE",
+  "path": "/api/2.0/vector-search/indexes/main.default.vs_index_[UNIQUE_NAME]"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/vector-search/indexes/main.default.vs_index_[UNIQUE_NAME]"
+}
+{
   "method": "POST",
   "path": "/api/2.0/vector-search/indexes",
   "body": {
     "direct_access_index_spec": {
       "embedding_vector_columns": [
         {
-          "embedding_dimension": 768,
+          "embedding_dimension": 384,
           "name": "vector"
         }
       ],
@@ -18,19 +30,6 @@
   }
 }
 {
-  "method": "PATCH",
-  "path": "/api/2.1/unity-catalog/permissions/table/main.default.vs_index_[UNIQUE_NAME]",
-  "body": {
-    "changes": [
-      {
-        "add": [
-          "SELECT"
-        ],
-        "principal": "deco-test-user@databricks.com",
-        "remove": [
-          "ALL_PRIVILEGES"
-        ]
-      }
-    ]
-  }
+  "method": "GET",
+  "path": "/api/2.0/vector-search/indexes/main.default.vs_index_[UNIQUE_NAME]"
 }

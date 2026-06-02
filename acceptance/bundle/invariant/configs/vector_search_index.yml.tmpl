@@ -8,10 +8,12 @@ resources:
       endpoint_type: STANDARD
   vector_search_indexes:
     foo:
-      name: test-index-$UNIQUE_NAME
+      name: main.default.test_index_$UNIQUE_NAME
       endpoint_name: ${resources.vector_search_endpoints.bar.name}
       primary_key: id
-      index_type: DELTA_SYNC
-      delta_sync_index_spec:
-        source_table: main.default.source_$UNIQUE_NAME
-        pipeline_type: TRIGGERED
+      index_type: DIRECT_ACCESS
+      direct_access_index_spec:
+        schema_json: '{"id":"integer","vector":"array<float>"}'
+        embedding_vector_columns:
+          - name: vector
+            embedding_dimension: 768
