@@ -22,7 +22,7 @@ Resources:
   Vector Search Indexes:
     my_index:
       Name: main.default.vs_index_[UNIQUE_NAME]
-      URL:  [DATABRICKS_URL]/explore/data/main/default/vs_index_[UNIQUE_NAME]?o=[NUMID]
+      URL:  [DATABRICKS_URL]/explore/data/main/default/vs_index_[UNIQUE_NAME]?w=[NUMID]
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-vs-index-[UNIQUE_NAME]/default/files...
@@ -52,7 +52,7 @@ Resources:
   Vector Search Indexes:
     my_index:
       Name: main.default.vs_index_[UNIQUE_NAME]
-      URL:  [DATABRICKS_URL]/explore/data/main/default/vs_index_[UNIQUE_NAME]?o=[NUMID]
+      URL:  [DATABRICKS_URL]/explore/data/main/default/vs_index_[UNIQUE_NAME]?w=[NUMID]
 
 >>> print_requests.py //vector-search/indexes
 
