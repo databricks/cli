@@ -10,3 +10,8 @@ DATABRICKS_BUNDLE_ENGINE = ["direct"]
 [[Repls]]
 Old = "[0-9a-f]{32}"
 New = "[DASHBOARD_ID]"
+
+# Dashboard published URLs use ?o= (local testserver) or ?w= (cloud) for the workspace/org ID.
+[[Repls]]
+Old = '\?[ow]=\d+'
+New = "?[WSPARAM]=[NUMID]"
