@@ -21,8 +21,8 @@ Resources:
       URL:  [DATABRICKS_URL]/compute/vector-search/vs-endpoint-[UNIQUE_NAME]?w=[NUMID]
   Vector Search Indexes:
     my_index:
-      Name: vs-index-[UNIQUE_NAME]
-      URL:  (not deployed)
+      Name: main.default.vs_index_[UNIQUE_NAME]
+      URL:  [DATABRICKS_URL]/explore/data/main/default/vs_index_[UNIQUE_NAME]?o=[NUMID]
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-vs-index-[UNIQUE_NAME]/default/files...
@@ -30,11 +30,11 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> [CLI] vector-search-indexes get-index vs-index-[UNIQUE_NAME]
+>>> [CLI] vector-search-indexes get-index main.default.vs_index_[UNIQUE_NAME]
 {
-  "name": "vs-index-[UNIQUE_NAME]",
+  "name": "main.default.vs_index_[UNIQUE_NAME]",
   "endpoint_name": "vs-endpoint-[UNIQUE_NAME]",
-  "index_type": "DELTA_SYNC",
+  "index_type": "DIRECT_ACCESS",
   "primary_key": "id"
 }
 
@@ -51,8 +51,8 @@ Resources:
       URL:  [DATABRICKS_URL]/compute/vector-search/vs-endpoint-[UNIQUE_NAME]?w=[NUMID]
   Vector Search Indexes:
     my_index:
-      Name: vs-index-[UNIQUE_NAME]
-      URL:  (not deployed)
+      Name: main.default.vs_index_[UNIQUE_NAME]
+      URL:  [DATABRICKS_URL]/explore/data/main/default/vs_index_[UNIQUE_NAME]?o=[NUMID]
 
 >>> print_requests.py //vector-search/indexes
 
