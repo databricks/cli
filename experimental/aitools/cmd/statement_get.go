@@ -86,8 +86,10 @@ func getStatementResult(ctx context.Context, api sql.StatementExecutionInterface
 			// The query succeeded server-side but a later chunk fetch failed
 			// (network blip, throttling, transient 5xx). Surface this as a
 			// structured error on the same statementInfo so the caller still
-			// gets a parseable JSON response with the statement_id; RunE then
-			// signals exit-non-zero based on info.Error.
+			// gets a parseable JSON response with the statement_id and the
+			// column metadata (known from the manifest before any chunk fetch);
+			// RunE then signals exit-non-zero based on info.Error.
+			info.Columns = stmt.Columns()
 			info.Error = &batchResultError{
 				Message: fmt.Sprintf("fetch result rows: %v", err),
 			}

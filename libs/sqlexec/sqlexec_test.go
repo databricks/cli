@@ -370,3 +370,9 @@ func TestResultScalar(t *testing.T) {
 	assert.Empty(t, (&Result{Rows: [][]string{{}}}).Scalar())
 	assert.Equal(t, "x", (&Result{Rows: [][]string{{"x", "y"}}}).Scalar())
 }
+
+func TestStatementColumns(t *testing.T) {
+	assert.Equal(t, []string{"a", "b"}, newStatement(succeededResp([]string{"a", "b"}, nil)).Columns())
+	// No manifest (e.g. a DDL response): no columns.
+	assert.Nil(t, newStatement(statusResp(sql.StatementStateSucceeded)).Columns())
+}

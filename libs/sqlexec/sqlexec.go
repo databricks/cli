@@ -138,6 +138,13 @@ func (s *Statement) Err() error {
 	}
 }
 
+// Columns returns the result column names from the statement's manifest. They
+// are known once the statement has succeeded, before any row chunk is fetched,
+// so callers can still report column metadata when a later chunk fetch fails.
+func (s *Statement) Columns() []string {
+	return columns(s.resp.Manifest)
+}
+
 // StatementError describes a statement that reached a terminal non-success
 // state. FAILED statuses carry a backend error code and message (and, in the
 // FAILED case, an SQLSTATE); CANCELED and CLOSED carry no error object, so the

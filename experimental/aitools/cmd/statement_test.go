@@ -165,6 +165,9 @@ func TestGetStatementResultChunkFetchFailureRendersPartialInfo(t *testing.T) {
 	require.NotNil(t, info.Error)
 	assert.Contains(t, info.Error.Message, "fetch result rows")
 	assert.Contains(t, info.Error.Message, "network blip")
+	// Column metadata is known from the manifest before the failed chunk fetch,
+	// so it is still surfaced alongside the error.
+	assert.Equal(t, []string{"n"}, info.Columns)
 }
 
 func TestGetStatementStatusSinglePoll(t *testing.T) {
