@@ -19,3 +19,8 @@ New = "[ETAG]"
 [[Repls]]
 Old = "\"[0-9]{8,}\""
 New = "[ETAG]"
+
+# Dashboard published URLs use ?o= (local testserver) or ?w= (cloud) for the workspace/org ID.
+[[Repls]]
+Old = "\\?(o|w)="
+New = "?[WSPARAM]="
