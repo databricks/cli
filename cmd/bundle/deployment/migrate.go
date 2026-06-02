@@ -1,13 +1,11 @@
 package deployment
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
-	"os/exec"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
@@ -28,95 +26,31 @@ import (
 
 const backupSuffix = ".backup"
 
-// runPlanCheck runs bundle plan and checks if there are any actions planned.
-// Returns error if plan fails or if there are actions planned.
-func runPlanCheck(cmd *cobra.Command, extraArgs []string, extraArgsStr string) error {
-	ctx := cmd.Context()
-
-	executable, err := os.Executable()
-	if err != nil {
-		return fmt.Errorf("failed to get executable path: %w", err)
-	}
-
-	args := []string{"bundle", "plan"}
-	args = append(args, extraArgs...)
-
-	planCmd := exec.CommandContext(ctx, executable, args...)
-	var stdout bytes.Buffer
-	planCmd.Stdout = &stdout
-	planCmd.Stderr = cmd.ErrOrStderr()
-
-	// Use the engine encoded in the state
-	planCmd.Env = append(os.Environ(), "DATABRICKS_BUNDLE_ENGINE=terraform")
-
-	err = planCmd.Run()
-
-	// Output the plan stdout as is
-	output := stdout.String()
-	fmt.Fprint(cmd.OutOrStdout(), output)
-
-	if err != nil {
-		msg := ""
-		if exitErr, ok := errors.AsType[*exec.ExitError](err); ok {
-			msg = fmt.Sprintf("exit code %d", exitErr.ExitCode())
-		} else {
-			msg = err.Error()
-		}
-		return fmt.Errorf("bundle plan failed with %s, aborting migration. To proceed with migration anyway, re-run the command with --noplancheck option", msg)
-	}
-
-	if !strings.Contains(output, "Plan:") {
-		return fmt.Errorf("cannot parse 'databricks bundle plan%s' output, aborting migration. Skip plan check with --noplancheck option", extraArgsStr)
-	}
-
-	if !strings.Contains(output, "Plan: 0 to add, 0 to change, 0 to delete") {
-		return fmt.Errorf("'databricks bundle plan%s' shows actions planned, aborting migration. Please run 'databricks bundle deploy%s' first to ensure your bundle is up to date, If actions persist after deploy, skip plan check with --noplancheck option", extraArgsStr, extraArgsStr)
-	}
-
-	return nil
-}
-
-func getCommonArgs(cmd *cobra.Command) ([]string, string) {
-	var args []string
+func getCommonArgs(cmd *cobra.Command) string {
 	var quotedArgs []string
 
 	if flag := cmd.Flag("target"); flag != nil && flag.Changed {
-		target := flag.Value.String()
-		if target != "" {
-			args = append(args, "-t")
-			args = append(args, target)
-			quotedArgs = append(quotedArgs, "-t")
-			quotedArgs = append(quotedArgs, shellquote.BashArg(target))
+		if target := flag.Value.String(); target != "" {
+			quotedArgs = append(quotedArgs, "-t", shellquote.BashArg(target))
 		}
 	}
 	if flag := cmd.Flag("profile"); flag != nil && flag.Changed {
-		profile := flag.Value.String()
-		if profile != "" {
-			args = append(args, "-p")
-			args = append(args, profile)
-			quotedArgs = append(quotedArgs, "-p")
-			quotedArgs = append(quotedArgs, shellquote.BashArg(profile))
+		if profile := flag.Value.String(); profile != "" {
+			quotedArgs = append(quotedArgs, "-p", shellquote.BashArg(profile))
 		}
 	}
 	if flag := cmd.Flag("var"); flag != nil && flag.Changed {
-		varValues, err := cmd.Flags().GetStringSlice("var")
-		if err == nil {
+		if varValues, err := cmd.Flags().GetStringSlice("var"); err == nil {
 			for _, v := range varValues {
-				args = append(args, "--var")
-				args = append(args, v)
-				quotedArgs = append(quotedArgs, "--var")
-				quotedArgs = append(quotedArgs, shellquote.BashArg(v))
+				quotedArgs = append(quotedArgs, "--var", shellquote.BashArg(v))
 			}
 		}
 	}
 
-	argsStr := ""
-
-	if len(quotedArgs) > 0 {
-		argsStr = " " + strings.Join(quotedArgs, " ")
+	if len(quotedArgs) == 0 {
+		return ""
 	}
-
-	return args, argsStr
+	return " " + strings.Join(quotedArgs, " ")
 }
 
 func newMigrateCommand() *cobra.Command {
@@ -134,11 +68,8 @@ to the workspace so that subsequent deploys of this bundle use direct deployment
 		Args: root.NoArgs,
 	}
 
-	var noPlanCheck bool
-	cmd.Flags().BoolVar(&noPlanCheck, "noplancheck", false, "Skip running bundle plan before migration.")
-
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		extraArgs, extraArgsStr := getCommonArgs(cmd)
+		extraArgsStr := getCommonArgs(cmd)
 
 		// Clear the engine env var so migrate always uses terraform engine to read existing state,
 		// regardless of what the user may have set in their environment.
@@ -197,14 +128,6 @@ To start using direct engine, set "engine: direct" under bundle in your databric
 		}
 		if _, err = os.Stat(localPath); err == nil {
 			return fmt.Errorf("state file %s already exists", localPath)
-		}
-
-		// Run plan check unless --noplancheck is set
-		if !noPlanCheck {
-			cmdio.LogString(ctx, "Note: Migration should be done after a full deploy. Running plan now to verify that deployment was done:")
-			if err = runPlanCheck(cmd, extraArgs, extraArgsStr); err != nil {
-				return err
-			}
 		}
 
 		tfAttrs, err := migrate.ParseTFStateAttrs(localTerraformPath)

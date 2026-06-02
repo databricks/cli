@@ -74,5 +74,5 @@ func TestResolveFieldRefBool(t *testing.T) {
 	s := &target{}
 	err = structaccess.Set(s, fieldPath, value)
 	assert.NoError(t, err, "Set should parse string %q into bool field", value)
-	assert.Equal(t, true, s.AlwaysRunning)
+	assert.True(t, s.AlwaysRunning)
 }
