@@ -41,11 +41,7 @@ It is useful for previewing changes before running 'bundle deploy'.`,
 			FastValidate:    true,
 			Build:           true,
 			PreDeployChecks: true,
-		}
-
-		// Only add InitFunc if we need to set force, cluster ID or selection
-		if force || len(selectResources) > 0 || cmd.Flag("compute-id").Changed || cmd.Flag("cluster-id").Changed {
-			opts.InitFunc = func(b *bundle.Bundle) {
+			InitFunc: func(b *bundle.Bundle) {
 				b.Config.Bundle.Force = force
 				b.Select = selectResources
 
@@ -56,7 +52,7 @@ It is useful for previewing changes before running 'bundle deploy'.`,
 				if cmd.Flag("cluster-id").Changed {
 					b.Config.Bundle.ClusterId = clusterId
 				}
-			}
+			},
 		}
 
 		b, stateDesc, err := utils.ProcessBundleRet(cmd, opts)
