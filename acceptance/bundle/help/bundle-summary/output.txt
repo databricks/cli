@@ -7,9 +7,8 @@ Usage:
   databricks bundle summary [flags]
 
 Flags:
-      --force-pull       Skip local cache and load the state from the remote workspace
-  -h, --help             help for summary
-      --select strings   Show only the specified resource (e.g. 'my_job' or 'jobs.my_job'). Can be repeated or comma-separated.
+      --force-pull   Skip local cache and load the state from the remote workspace
+  -h, --help         help for summary
 
 Global Flags:
       --debug            enable debug logging

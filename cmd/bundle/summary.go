@@ -21,11 +21,9 @@ Useful after deployment to see what was created and where to find it.`,
 
 	var forcePull bool
 	var includeLocations bool
-	var selectResources []string
 	cmd.Flags().BoolVar(&forcePull, "force-pull", false, "Skip local cache and load the state from the remote workspace")
 	cmd.Flags().BoolVar(&includeLocations, "include-locations", false, "Include location information in the output")
 	cmd.Flags().MarkHidden("include-locations")
-	cmd.Flags().StringSliceVar(&selectResources, "select", nil, "Show only the specified resource (e.g. 'my_job' or 'jobs.my_job'). Can be repeated or comma-separated.")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		b, err := utils.ProcessBundle(cmd, utils.ProcessOptions{
@@ -33,9 +31,6 @@ Useful after deployment to see what was created and where to find it.`,
 			AlwaysPull:       forcePull,
 			IncludeLocations: includeLocations,
 			InitIDs:          true,
-			InitFunc: func(b *bundle.Bundle) {
-				b.Select = selectResources
-			},
 		})
 		if err != nil {
 			return err

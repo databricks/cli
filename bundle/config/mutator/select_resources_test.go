@@ -84,12 +84,3 @@ func TestSelectResources_MultipleSelectors(t *testing.T) {
 	require.NoError(t, diags.Error())
 	assert.Equal(t, []string{"jobs.my_job", "pipelines.my_pipeline"}, b.Select)
 }
-
-func TestFilterSelectedResources(t *testing.T) {
-	b := bundleWithJobsAndPipelines()
-	b.Select = []string{"jobs.my_job"}
-	diags := bundle.Apply(t.Context(), b, mutator.FilterSelectedResources())
-	require.NoError(t, diags.Error())
-	assert.Len(t, b.Config.Resources.Jobs, 1)
-	assert.Empty(t, b.Config.Resources.Pipelines)
-}

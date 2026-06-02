@@ -70,28 +70,3 @@ func (m *selectResources) Apply(_ context.Context, b *bundle.Bundle) diag.Diagno
 	b.Select = resolved
 	return nil
 }
-
-// FilterSelectedResources filters b.Config.Resources to only the resources in
-// b.Select (exact match, no dependency expansion). Used for commands that don't
-// compute a deployment plan (validate, summary, terraform).
-func FilterSelectedResources() bundle.Mutator {
-	return &filterSelectedResources{}
-}
-
-type filterSelectedResources struct{}
-
-func (m *filterSelectedResources) Name() string {
-	return "FilterSelectedResources"
-}
-
-func (m *filterSelectedResources) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
-	if len(b.Select) == 0 {
-		return nil
-	}
-	keep := make(map[string]struct{}, len(b.Select))
-	for _, key := range b.Select {
-		keep[key] = struct{}{}
-	}
-	b.Config.Resources.FilterResources(keep)
-	return nil
-}

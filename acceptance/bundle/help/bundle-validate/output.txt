@@ -15,9 +15,8 @@ Usage:
   databricks bundle validate [flags]
 
 Flags:
-  -h, --help             help for validate
-      --select strings   Validate only the specified resource (e.g. 'my_job' or 'jobs.my_job'). Can be repeated or comma-separated.
-      --strict           Treat warnings as errors
+  -h, --help     help for validate
+      --strict   Treat warnings as errors
 
 Global Flags:
       --debug            enable debug logging
