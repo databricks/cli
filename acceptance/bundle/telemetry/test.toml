@@ -20,3 +20,28 @@ New = '[OS]'
 [[Repls]]
 Old = '"local_cache_measurements_ms": \[[^\]]*\]'
 New = '"local_cache_measurements_ms": [...redacted...]'
+
+# Normalize the deployment engine name in resources_metadata so the same
+# fixture covers both DATABRICKS_BUNDLE_ENGINE=direct and =terraform runs.
+[[Repls]]
+Old = '"state_engine": "(direct|terraform)"'
+New = '"state_engine": "[ENGINE]"'
+
+# Normalize byte-size measurements in resources_metadata to placeholders.
+# Exact byte counts depend on resource state JSON formatting and would
+# make these golden files brittle across SDK changes.
+[[Repls]]
+Old = '"state_file_size_bytes": \d+'
+New = '"state_file_size_bytes": SMALL_INT'
+
+[[Repls]]
+Old = '"state_size_max_bytes": \d+'
+New = '"state_size_max_bytes": SMALL_INT'
+
+[[Repls]]
+Old = '"state_size_mean_bytes": \d+'
+New = '"state_size_mean_bytes": SMALL_INT'
+
+[[Repls]]
+Old = '"state_size_median_bytes": \d+'
+New = '"state_size_median_bytes": SMALL_INT'

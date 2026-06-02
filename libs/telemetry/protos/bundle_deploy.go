@@ -10,6 +10,9 @@ type BundleDeployEvent struct {
 	// Error message encountered during the bundle deploy command, if any.
 	ErrorMessage string `json:"error_message,omitempty"`
 
+	// Deprecated: use ResourcesMetadata.Resources[*].Count instead (per
+	// resource type; sum across types for the total). The new field derives
+	// counts from the bundle configuration at telemetry-emission time.
 	ResourceCount                     int64 `json:"resource_count"`
 	ResourceJobCount                  int64 `json:"resource_job_count"`
 	ResourcePipelineCount             int64 `json:"resource_pipeline_count"`
@@ -31,6 +34,9 @@ type BundleDeployEvent struct {
 	ResourcePipelineIDs  []string `json:"resource_pipeline_ids,omitempty"`
 	ResourceClusterIDs   []string `json:"resource_cluster_ids,omitempty"`
 	ResourceDashboardIDs []string `json:"resource_dashboard_ids,omitempty"`
+
+	// Per-resource-type metadata (counts and state-size statistics).
+	ResourcesMetadata *BundleResourcesMetadata `json:"resources_metadata,omitempty"`
 
 	Experimental *BundleDeployExperimental `json:"experimental,omitempty"`
 }
@@ -86,6 +92,52 @@ type BundleDeployExperimental struct {
 
 	// Local cache measurements in milliseconds (compute duration, potential savings, etc.)
 	LocalCacheMeasurementsMs []IntMapEntry `json:"local_cache_measurements_ms,omitempty"`
+}
+
+// BundleResourcesMetadata mirrors the universe proto. Per-resource-type
+// metadata for one bundle deployment, including counts (which replace the
+// deprecated DatabricksBundleDeployEvent.resource_*_count fields) and
+// state-size statistics.
+//
+// State sizes are computed by running each resource through the direct
+// engine's adapter.PrepareState (the same transformation direct uses to
+// derive the value it persists to resources.json) and marshaling with the
+// same indented encoding used by dstate.SaveState. So:
+//   - Under DATABRICKS_BUNDLE_ENGINE=direct, each per-resource size equals
+//     len(entry.State) on disk byte-for-byte.
+//   - Under =terraform, the same computation runs against the bundle config,
+//     producing identical numbers for the same logical bundle. Tfstate is
+//     never read here.
+type BundleResourcesMetadata struct {
+	// Effective deploy engine: "direct" or "terraform".
+	StateEngine string `json:"state_engine,omitempty"`
+
+	// Size in bytes of the simulated deployment state file: each resource's
+	// prepared state assembled into a dstate.Database and marshaled the way
+	// direct writes resources.json (envelope included, so this exceeds the
+	// per-resource sum). For direct deploys it differs from the on-disk
+	// resources.json only by the Lineage and Serial fields, which are left
+	// empty/0 here.
+	StateFileSizeBytes int64 `json:"state_file_size_bytes,omitempty"`
+
+	// One entry per resource type present in the bundle.
+	Resources []ResourceMetadata `json:"resources,omitempty"`
+}
+
+// ResourceMetadata holds metadata about resources of a single type within one
+// bundle deployment.
+type ResourceMetadata struct {
+	// Resource type name: "jobs", "pipelines", "schemas", ...
+	ResourceType string `json:"resource_type,omitempty"`
+
+	// Number of resources of this type declared in the bundle configuration.
+	Count int64 `json:"count,omitempty"`
+
+	// Per-resource state-size statistics, computed via the direct engine's
+	// PrepareState transformation. Zero when no resources of this type exist.
+	StateSizeMaxBytes    int64 `json:"state_size_max_bytes,omitempty"`
+	StateSizeMeanBytes   int64 `json:"state_size_mean_bytes,omitempty"`
+	StateSizeMedianBytes int64 `json:"state_size_median_bytes,omitempty"`
 }
 
 type BoolMapEntry struct {

@@ -35,6 +35,26 @@
           "[UUID]",
           "[UUID]"
         ],
+        "resources_metadata": {
+          "state_engine": "[ENGINE]",
+          "state_file_size_bytes": SMALL_INT,
+          "resources": [
+            {
+              "resource_type": "jobs",
+              "count": 3,
+              "state_size_max_bytes": SMALL_INT,
+              "state_size_mean_bytes": SMALL_INT,
+              "state_size_median_bytes": SMALL_INT
+            },
+            {
+              "resource_type": "pipelines",
+              "count": 2,
+              "state_size_max_bytes": SMALL_INT,
+              "state_size_mean_bytes": SMALL_INT,
+              "state_size_median_bytes": SMALL_INT
+            }
+          ]
+        },
         "experimental": {
           "configuration_file_count": 1,
           "variable_count": 0,
