@@ -9,4 +9,4 @@ Resources:
   Dashboards:
     dashboard1:
       Name: my dashboard
-      URL:  [DATABRICKS_URL]/dashboardsv3/[DASHBOARD_ID]/published?o=[NUMID]
+      URL:  [DATABRICKS_URL]/dashboardsv3/[DASHBOARD_ID]/published?[WSPARAM]=[NUMID]
