@@ -20,7 +20,7 @@ Flags:
       --force-lock            Force acquisition of deployment lock.
   -h, --help                  help for deploy
       --plan string           Path to a JSON plan file to apply instead of planning (direct engine only).
-      --select stringArray    Deploy only the specified resource (e.g. 'my_job' or 'jobs.my_job'). Can be repeated.
+      --select strings        Deploy only the specified resource (e.g. 'my_job' or 'jobs.my_job'). Can be repeated or comma-separated.
 
 Global Flags:
       --debug            enable debug logging
