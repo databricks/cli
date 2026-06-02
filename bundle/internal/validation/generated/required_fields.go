@@ -18,6 +18,18 @@ var RequiredFields = map[string][]string{
 	"resources.alerts.*.permissions[*]":              {"level"},
 	"resources.alerts.*.schedule":                    {"quartz_cron_schedule", "timezone_id"},
 
+	"resources.app_spaces.*":                               {"name"},
+	"resources.app_spaces.*.permissions[*]":                {"level"},
+	"resources.app_spaces.*.resources[*]":                  {"name"},
+	"resources.app_spaces.*.resources[*].database":         {"database_name", "instance_name", "permission"},
+	"resources.app_spaces.*.resources[*].experiment":       {"experiment_id", "permission"},
+	"resources.app_spaces.*.resources[*].genie_space":      {"name", "permission", "space_id"},
+	"resources.app_spaces.*.resources[*].job":              {"id", "permission"},
+	"resources.app_spaces.*.resources[*].secret":           {"key", "permission", "scope"},
+	"resources.app_spaces.*.resources[*].serving_endpoint": {"name", "permission"},
+	"resources.app_spaces.*.resources[*].sql_warehouse":    {"id", "permission"},
+	"resources.app_spaces.*.resources[*].uc_securable":     {"permission", "securable_full_name", "securable_type"},
+
 	"resources.apps.*": {"name"},
 	"resources.apps.*.active_deployment.git_source.git_repository":    {"provider", "url"},
 	"resources.apps.*.config.env[*]":                                  {"name"},

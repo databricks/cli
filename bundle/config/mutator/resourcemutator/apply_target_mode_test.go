@@ -161,6 +161,13 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 						},
 					},
 				},
+				AppSpaces: map[string]*resources.AppSpace{
+					"app_space1": {
+						Space: apps.Space{
+							Name: "app-space-1",
+						},
+					},
+				},
 				SecretScopes: map[string]*resources.SecretScope{
 					"secretScope1": {
 						Name: "secretScope1",
@@ -462,6 +469,7 @@ func TestAppropriateResourcesAreRenamed(t *testing.T) {
 	// Name field on these via embedded SDK types, hence the explicit skip.
 	notUserNamed := []string{
 		"Apps",
+		"AppSpaces",
 		"SecretScopes",
 		"DatabaseInstances",
 		"DatabaseCatalogs",

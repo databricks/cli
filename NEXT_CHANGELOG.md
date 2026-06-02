@@ -11,5 +11,6 @@
 * Retry transient HTTP 5xx and 408 errors in direct deployment engine ([#5349](https://github.com/databricks/cli/pull/5349), [#5364](https://github.com/databricks/cli/pull/5364)).
 * Preserve `.designer.ipynb` suffix when translating notebook task paths so Lakeflow Designer files referenced from a `notebook_task` resolve correctly in the workspace ([#5370](https://github.com/databricks/cli/pull/5370)).
 * Fix script output dropping last line without trailing newline ([#4995](https://github.com/databricks/cli/pull/4995)).
+* engine/direct: Added support for Databricks App Spaces (`app_spaces` resource type) ([#4982](https://github.com/databricks/cli/pull/4982))
 
 ### Dependency updates
