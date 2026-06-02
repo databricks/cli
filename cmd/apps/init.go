@@ -658,7 +658,7 @@ func commitInPlace() (string, error) {
 // appkit template: it has a plugin manifest, no {{.project_name}} subdirectory,
 // and a plain databricks.yml file. The full appkit template only has
 // databricks.yml.tmpl (no plain databricks.yml), so it is not matched here.
-func shouldSkipPluginSelection(templateDir string) bool {
+func shouldSkipPluginSelection(ctx context.Context, templateDir string) bool {
 	if !manifest.HasManifest(templateDir) {
 		return false
 	}
@@ -669,6 +669,7 @@ func shouldSkipPluginSelection(templateDir string) bool {
 	}
 	entries, err := os.ReadDir(templateDir)
 	if err != nil {
+		log.Debugf(ctx, "Could not read template directory %s: %v", templateDir, err)
 		return false
 	}
 	for _, e := range entries {
@@ -686,26 +687,32 @@ func shouldSkipPluginSelection(templateDir string) bool {
 func replaceProjectName(destDir, newName string) error {
 	// Update package.json name field via JSON round-trip.
 	pkgPath := filepath.Join(destDir, "package.json")
-	if data, err := os.ReadFile(pkgPath); err == nil {
+	data, err := os.ReadFile(pkgPath)
+	if err != nil && !errors.Is(err, fs.ErrNotExist) {
+		return fmt.Errorf("read package.json: %w", err)
+	}
+	if err == nil {
 		var pkg map[string]any
-		if err := json.Unmarshal(data, &pkg); err == nil {
-			pkg["name"] = newName
-			out, err := json.MarshalIndent(pkg, "", "  ")
-			if err == nil {
-				// Preserve trailing newline convention.
-				out = append(out, '\n')
-				if err := os.WriteFile(pkgPath, out, 0o644); err != nil {
-					return fmt.Errorf("write package.json: %w", err)
-				}
-			}
+		if err := json.Unmarshal(data, &pkg); err != nil {
+			return fmt.Errorf("parse package.json: %w", err)
+		}
+		pkg["name"] = newName
+		out, err := json.MarshalIndent(pkg, "", "  ")
+		if err != nil {
+			return fmt.Errorf("encode package.json: %w", err)
+		}
+		// Preserve trailing newline convention.
+		out = append(out, '\n')
+		if err := safeWriteFile(pkgPath, out); err != nil {
+			return err
 		}
 	}
 
 	// Update databricks.yml using yaml.Node to preserve comments and formatting.
 	ymlPath := filepath.Join(destDir, bundleConfigFile)
-	data, err := os.ReadFile(ymlPath)
+	data, err = os.ReadFile(ymlPath)
 	if err != nil {
-		return err
+		return fmt.Errorf("read %s: %w", bundleConfigFile, err)
 	}
 
 	var doc yaml.Node
@@ -713,8 +720,12 @@ func replaceProjectName(destDir, newName string) error {
 		return fmt.Errorf("parse %s: %w", bundleConfigFile, err)
 	}
 
-	setYAMLValue(&doc, []string{"bundle", "name"}, newName)
-	setFirstAppName(&doc, newName)
+	if err := setYAMLValue(&doc, []string{"bundle", "name"}, newName); err != nil {
+		return fmt.Errorf("set bundle.name in %s: %w", bundleConfigFile, err)
+	}
+	if err := setFirstAppName(&doc, newName); err != nil {
+		return fmt.Errorf("set app name in %s: %w", bundleConfigFile, err)
+	}
 
 	var buf bytes.Buffer
 	enc := yaml.NewEncoder(&buf)
@@ -726,51 +737,69 @@ func replaceProjectName(destDir, newName string) error {
 		return fmt.Errorf("encode %s: %w", bundleConfigFile, err)
 	}
 
-	return os.WriteFile(ymlPath, buf.Bytes(), 0o644)
+	return safeWriteFile(ymlPath, buf.Bytes())
+}
+
+// safeWriteFile writes data to a file while preserving the original file mode
+// and refusing to follow symlinks.
+func safeWriteFile(path string, data []byte) error {
+	info, err := os.Lstat(path)
+	if err != nil {
+		return fmt.Errorf("stat %s: %w", filepath.Base(path), err)
+	}
+	if info.Mode()&os.ModeSymlink != 0 {
+		return fmt.Errorf("refusing to write through symlink: %s", filepath.Base(path))
+	}
+	return os.WriteFile(path, data, info.Mode().Perm())
 }
 
 // setYAMLValue walks a yaml.Node tree following the given key path and
-// replaces the leaf scalar value. It handles both document and mapping nodes.
-func setYAMLValue(node *yaml.Node, keys []string, value string) {
+// replaces the leaf scalar value. Returns an error if the key path is not
+// found or the target node is not a scalar.
+func setYAMLValue(node *yaml.Node, keys []string, value string) error {
 	if node.Kind == yaml.DocumentNode && len(node.Content) > 0 {
-		setYAMLValue(node.Content[0], keys, value)
-		return
+		return setYAMLValue(node.Content[0], keys, value)
 	}
 	if node.Kind != yaml.MappingNode || len(keys) == 0 {
-		return
+		return fmt.Errorf("key path %v not found", keys)
 	}
 	for i := 0; i < len(node.Content)-1; i += 2 {
 		if node.Content[i].Value == keys[0] {
 			if len(keys) == 1 {
-				node.Content[i+1].Value = value
+				leaf := node.Content[i+1]
+				if leaf.Kind != yaml.ScalarNode {
+					return fmt.Errorf("expected scalar at %q, got kind %d", keys[0], leaf.Kind)
+				}
+				leaf.Value = value
 				// Clear any explicit style so the encoder picks the
 				// simplest representation for the new value.
-				node.Content[i+1].Style = 0
-				return
+				leaf.Style = 0
+				return nil
 			}
-			setYAMLValue(node.Content[i+1], keys[1:], value)
-			return
+			return setYAMLValue(node.Content[i+1], keys[1:], value)
 		}
 	}
+	return fmt.Errorf("key %q not found", keys[0])
 }
 
 // setFirstAppName sets the name field of the first app entry under
-// resources.apps in a yaml.Node tree.
-func setFirstAppName(node *yaml.Node, name string) {
+// resources.apps in a yaml.Node tree. Returns nil if resources.apps
+// is not present (not all templates have it).
+func setFirstAppName(node *yaml.Node, name string) error {
 	if node.Kind == yaml.DocumentNode && len(node.Content) > 0 {
-		setFirstAppName(node.Content[0], name)
-		return
+		return setFirstAppName(node.Content[0], name)
 	}
 	if node.Kind != yaml.MappingNode {
-		return
+		return nil
 	}
 	// Find resources → apps → first entry → name.
 	appsNode := yamlMapLookup(yamlMapLookup(node, "resources"), "apps")
 	if appsNode == nil || appsNode.Kind != yaml.MappingNode || len(appsNode.Content) < 2 {
-		return
+		// No resources.apps section — not an error, some templates lack it.
+		return nil
 	}
 	// First app entry is at Content[1] (Content[0] is the key).
-	setYAMLValue(appsNode.Content[1], []string{"name"}, name)
+	return setYAMLValue(appsNode.Content[1], []string{"name"}, name)
 }
 
 // yamlMapLookup returns the value node for a key in a mapping node, or nil.
@@ -1139,7 +1168,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 
 	// Check whether plugin selection should be skipped (pre-baked plugins
 	// in a pre-rendered template with a manifest but no {{.project_name}} dir).
-	skipPluginSelection := shouldSkipPluginSelection(templateDir)
+	skipPluginSelection := shouldSkipPluginSelection(ctx, templateDir)
 	if skipPluginSelection {
 		log.Debugf(ctx, "Skipping plugin selection for pre-rendered template at %s", templateDir)
 	}
@@ -1147,6 +1176,9 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	// Agentic mode: resources are not provided upfront, skip --set
 	// requirement and validation.
 	agenticMode := env.Get(ctx, agenticModeEnvVar) == "true"
+	if agenticMode {
+		cmdio.LogString(ctx, "Note: agentic mode active — resource validation skipped.")
+	}
 
 	// Start npm install in the background so it runs while the user answers prompts.
 	// This is a Node.js-only optimisation — non-Node templates skip this.
@@ -1417,7 +1449,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	// and serve as a safety net for the agentic flow.
 	if skipPluginSelection {
 		if err := replaceProjectName(destDir, opts.name); err != nil {
-			log.Warnf(ctx, "Could not update project name in output files: %v", err)
+			return fmt.Errorf("update project name: %w", err)
 		}
 	}
 
@@ -1720,7 +1752,9 @@ func copyTemplate(ctx context.Context, src, dest string, vars templateVars) (int
 			return err
 		}
 
-		// Handle .tmpl extension - strip it
+		// Handle .tmpl extension — strip it. When a template ships both
+		// foo and foo.tmpl, filepath.Walk's lexical order processes foo first
+		// and foo.tmpl second, so the rendered .tmpl overwrites the static file.
 		relPath = strings.TrimSuffix(relPath, ".tmpl")
 
 		// Apply file renames (e.g., _gitignore -> .gitignore)

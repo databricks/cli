@@ -1246,7 +1246,7 @@ func TestShouldSkipPluginSelection(t *testing.T) {
 			} else {
 				tt.setup(dir)
 			}
-			assert.Equal(t, tt.expected, shouldSkipPluginSelection(dir))
+			assert.Equal(t, tt.expected, shouldSkipPluginSelection(t.Context(), dir))
 		})
 	}
 }
@@ -1276,10 +1276,10 @@ func TestReplaceProjectName(t *testing.T) {
 			wantBundleName: "new-app",
 		},
 		{
-			name:        "no bundle.name, only app name",
-			yml:         "resources:\n  apps:\n    myapp:\n      name: \"myapp\"\n",
-			newName:     "new-app",
-			wantAppName: "new-app",
+			name:    "no bundle.name, only app name",
+			yml:     "resources:\n  apps:\n    myapp:\n      name: \"myapp\"\n",
+			newName: "new-app",
+			wantErr: true,
 		},
 		{
 			name:           "package.json round-trip",
@@ -1353,12 +1353,39 @@ func TestReplaceProjectNameNoDatabricksYml(t *testing.T) {
 	require.Error(t, err)
 }
 
+func TestReplaceProjectNameMalformedYAML(t *testing.T) {
+	dir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, bundleConfigFile), []byte("{{invalid yaml"), 0o644))
+	err := replaceProjectName(dir, "new-app")
+	assert.ErrorContains(t, err, "parse")
+}
+
+func TestReplaceProjectNameMalformedPackageJSON(t *testing.T) {
+	dir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, bundleConfigFile), []byte("bundle:\n  name: old\n"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "package.json"), []byte("{invalid json}"), 0o644))
+	err := replaceProjectName(dir, "new-app")
+	assert.ErrorContains(t, err, "parse package.json")
+}
+
+func TestReplaceProjectNameSymlinkRefused(t *testing.T) {
+	dir := t.TempDir()
+
+	// Create a real file and a symlink to it named databricks.yml.
+	realFile := filepath.Join(dir, "real.yml")
+	require.NoError(t, os.WriteFile(realFile, []byte("bundle:\n  name: old\n"), 0o644))
+	require.NoError(t, os.Symlink(realFile, filepath.Join(dir, bundleConfigFile)))
+
+	err := replaceProjectName(dir, "new-app")
+	assert.ErrorContains(t, err, "symlink")
+}
+
 func TestSetYAMLValue(t *testing.T) {
 	input := "top:\n  nested:\n    leaf: old\n"
 	var doc yaml.Node
 	require.NoError(t, yaml.Unmarshal([]byte(input), &doc))
 
-	setYAMLValue(&doc, []string{"top", "nested", "leaf"}, "new")
+	require.NoError(t, setYAMLValue(&doc, []string{"top", "nested", "leaf"}, "new"))
 
 	val := yamlMapLookup(yamlMapLookup(yamlMapLookup(doc.Content[0], "top"), "nested"), "leaf")
 	require.NotNil(t, val)
@@ -1370,12 +1397,21 @@ func TestSetYAMLValueMissingKey(t *testing.T) {
 	var doc yaml.Node
 	require.NoError(t, yaml.Unmarshal([]byte(input), &doc))
 
-	// Should not panic or modify the tree.
-	setYAMLValue(&doc, []string{"top", "nonexistent", "leaf"}, "new")
+	err := setYAMLValue(&doc, []string{"top", "nonexistent", "leaf"}, "new")
+	assert.Error(t, err)
 
 	val := yamlMapLookup(yamlMapLookup(yamlMapLookup(doc.Content[0], "top"), "nested"), "leaf")
 	require.NotNil(t, val)
 	assert.Equal(t, "old", val.Value)
+}
+
+func TestSetYAMLValueNonScalarLeaf(t *testing.T) {
+	input := "bundle:\n  name:\n    nested: value\n"
+	var doc yaml.Node
+	require.NoError(t, yaml.Unmarshal([]byte(input), &doc))
+
+	err := setYAMLValue(&doc, []string{"bundle", "name"}, "new-name")
+	assert.ErrorContains(t, err, "expected scalar")
 }
 
 func TestYamlMapLookup(t *testing.T) {
@@ -1395,7 +1431,7 @@ func TestSetFirstAppName(t *testing.T) {
 	var doc yaml.Node
 	require.NoError(t, yaml.Unmarshal([]byte(input), &doc))
 
-	setFirstAppName(&doc, "new-name")
+	require.NoError(t, setFirstAppName(&doc, "new-name"))
 
 	appsNode := yamlMapLookup(yamlMapLookup(doc.Content[0], "resources"), "apps")
 	require.NotNil(t, appsNode)
@@ -1414,8 +1450,8 @@ func TestSetFirstAppNameNoResources(t *testing.T) {
 	var doc yaml.Node
 	require.NoError(t, yaml.Unmarshal([]byte(input), &doc))
 
-	// Should not panic when resources.apps is absent.
-	setFirstAppName(&doc, "new-name")
+	// No error when resources.apps is absent.
+	require.NoError(t, setFirstAppName(&doc, "new-name"))
 
 	bundleName := yamlMapLookup(yamlMapLookup(doc.Content[0], "bundle"), "name")
 	require.NotNil(t, bundleName)
