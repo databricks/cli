@@ -22,3 +22,6 @@ INJECT_STALE_ON_DIRECT = "1"
 # which flaked these read-after-deploy checks. 20 attempts x 1000ms gives a ~20s window.
 RETRY_MAX_ATTEMPTS = "20"
 RETRY_INTERVAL_MS = "1000"
+[[Repls]]
+Old = "\\?(o|w)="
+New = "?[WSPARAM]="
