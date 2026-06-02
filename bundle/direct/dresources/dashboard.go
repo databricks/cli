@@ -10,7 +10,6 @@ import (
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
@@ -299,6 +298,9 @@ func (r *ResourceDashboard) DoCreate(ctx context.Context, engine *Engine, config
 
 	// Persist the etag in state.
 	config.Etag = createResp.Etag
+	// Save state before publishing so an interrupted publish leaves a tracked
+	// draft rather than an orphan. The next deploy finds the draft in state and
+	// re-publishes via DoUpdate without recreating the dashboard.
 	engine.SaveState(ctx, createResp.DashboardId, config)
 
 	var publishResp *dashboards.PublishedDashboard
@@ -306,16 +308,7 @@ func (r *ResourceDashboard) DoCreate(ctx context.Context, engine *Engine, config
 	if config.Published {
 		publishResp, err = r.publishDashboard(ctx, createResp.DashboardId, config)
 		if err != nil {
-			// If the publish fails, we should delete the dashboard to avoid leaving it in a bad state.
-			deleteErr := r.client.Lakeview.Trash(ctx, dashboards.TrashDashboardRequest{
-				DashboardId: createResp.DashboardId,
-			})
-			if deleteErr != nil {
-				log.Warnf(ctx, "failed to delete draft dashboard %s after publish failed: %v", createResp.DashboardId, deleteErr)
-				return "", nil, deleteErr
-			}
 			return "", nil, err
-			// QQQ: instead, we could store partial state with published=false
 		}
 	}
 
