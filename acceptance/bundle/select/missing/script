@@ -1,2 +1,8 @@
-trace musterr $CLI bundle plan --select no_such_resource
-trace musterr $CLI bundle deploy --select jobs.no_such_job
+# Selectors are resolved by the ResolveSelect mutator during initialize, before the
+# engine is known, so these errors are identical on both engines.
+
+# Unqualified name that matches no resource.
+errcode trace $CLI bundle plan --select no_such_resource
+
+# Qualified name whose resource does not exist.
+errcode trace $CLI bundle plan --select jobs.no_such_job
