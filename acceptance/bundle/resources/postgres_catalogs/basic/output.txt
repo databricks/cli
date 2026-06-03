@@ -35,7 +35,6 @@ Deployment complete!
   "name": "catalogs/lakebase_test_[UNIQUE_NAME]",
   "status": {
     "branch": "projects/test-pg-proj-[UNIQUE_NAME]/branches/production",
-    "catalog_id": "lakebase_test_[UNIQUE_NAME]",
     "postgres_database": "appdb",
     "project": "projects/test-pg-proj-[UNIQUE_NAME]"
   }
