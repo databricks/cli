@@ -44,6 +44,21 @@ API message: Invalid job configuration.
   "body": {
     "resource_key": "jobs.test_job",
     "action_type": "OPERATION_ACTION_TYPE_CREATE",
+    "state": {
+      "deployment": {
+        "deployment_id": "[UUID]",
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/metadata-service-error-test/default/state/metadata.json",
+        "version_id": "1"
+      },
+      "edit_mode": "UI_LOCKED",
+      "format": "MULTI_TASK",
+      "max_concurrent_runs": 1,
+      "name": "test-job",
+      "queue": {
+        "enabled": true
+      }
+    },
     "status": "OPERATION_STATUS_FAILED",
     "error_message": "Invalid job configuration."
   }

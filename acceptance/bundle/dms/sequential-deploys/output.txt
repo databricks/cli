@@ -46,6 +46,22 @@ Deployment complete!
   "body": {
     "resource_key": "jobs.test_job",
     "action_type": "OPERATION_ACTION_TYPE_CREATE",
+    "state": {
+      "deployment": {
+        "deployment_id": "[UUID]",
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/sequential-deploys-test/default/state/metadata.json",
+        "version_id": "1"
+      },
+      "edit_mode": "UI_LOCKED",
+      "format": "MULTI_TASK",
+      "max_concurrent_runs": 1,
+      "name": "test-job",
+      "queue": {
+        "enabled": true
+      }
+    },
+    "resource_id": "[NUMID]",
     "status": "OPERATION_STATUS_SUCCEEDED"
   }
 }
@@ -98,18 +114,22 @@ Deployment complete!
   "body": {
     "resource_key": "jobs.new_job",
     "action_type": "OPERATION_ACTION_TYPE_CREATE",
-    "status": "OPERATION_STATUS_SUCCEEDED"
-  }
-}
-{
-  "method": "POST",
-  "path": "/api/2.0/bundle/deployments/[UUID]/versions/2/operations",
-  "q": {
-    "resource_key": "jobs.test_job"
-  },
-  "body": {
-    "resource_key": "jobs.test_job",
-    "action_type": "OPERATION_ACTION_TYPE_CREATE",
+    "state": {
+      "deployment": {
+        "deployment_id": "[UUID]",
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/sequential-deploys-test/default/state/metadata.json",
+        "version_id": "2"
+      },
+      "edit_mode": "UI_LOCKED",
+      "format": "MULTI_TASK",
+      "max_concurrent_runs": 1,
+      "name": "new-job",
+      "queue": {
+        "enabled": true
+      }
+    },
+    "resource_id": "[NUMID]",
     "status": "OPERATION_STATUS_SUCCEEDED"
   }
 }
@@ -157,23 +177,12 @@ Deployment complete!
   "method": "POST",
   "path": "/api/2.0/bundle/deployments/[UUID]/versions/3/operations",
   "q": {
-    "resource_key": "jobs.new_job"
-  },
-  "body": {
-    "resource_key": "jobs.new_job",
-    "action_type": "OPERATION_ACTION_TYPE_CREATE",
-    "status": "OPERATION_STATUS_SUCCEEDED"
-  }
-}
-{
-  "method": "POST",
-  "path": "/api/2.0/bundle/deployments/[UUID]/versions/3/operations",
-  "q": {
     "resource_key": "jobs.test_job"
   },
   "body": {
     "resource_key": "jobs.test_job",
     "action_type": "OPERATION_ACTION_TYPE_DELETE",
+    "resource_id": "[NUMID]",
     "status": "OPERATION_STATUS_SUCCEEDED"
   }
 }

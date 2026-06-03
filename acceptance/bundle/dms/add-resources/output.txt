@@ -10,10 +10,10 @@ Deploying resources...
 Deployment complete!
 
 >>> [CLI] bundle plan
-create jobs.job_a
-create jobs.job_b
+update jobs.job_a
+update jobs.job_b
 
-Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
+Plan: 0 to add, 2 to change, 0 to delete, 0 unchanged
 
 >>> print_requests.py --get --sort //bundle ^//workspace-files ^//import-file
 {
@@ -90,6 +90,22 @@ Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
   "body": {
     "resource_key": "jobs.job_a",
     "action_type": "OPERATION_ACTION_TYPE_CREATE",
+    "state": {
+      "deployment": {
+        "deployment_id": "[UUID]",
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/add-resources-test/default/state/metadata.json",
+        "version_id": "1"
+      },
+      "edit_mode": "UI_LOCKED",
+      "format": "MULTI_TASK",
+      "max_concurrent_runs": 1,
+      "name": "job-a",
+      "queue": {
+        "enabled": true
+      }
+    },
+    "resource_id": "[NUMID]",
     "status": "OPERATION_STATUS_SUCCEEDED"
   }
 }
@@ -105,25 +121,27 @@ Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
   "method": "POST",
   "path": "/api/2.0/bundle/deployments/[UUID]/versions/2/operations",
   "q": {
-    "resource_key": "jobs.job_a"
-  },
-  "body": {
-    "resource_key": "jobs.job_a",
-    "action_type": "OPERATION_ACTION_TYPE_CREATE",
-    "status": "OPERATION_STATUS_SUCCEEDED"
-  }
-}
-{
-  "method": "POST",
-  "path": "/api/2.0/bundle/deployments/[UUID]/versions/2/operations",
-  "q": {
     "resource_key": "jobs.job_b"
   },
   "body": {
     "resource_key": "jobs.job_b",
     "action_type": "OPERATION_ACTION_TYPE_CREATE",
+    "state": {
+      "deployment": {
+        "deployment_id": "[UUID]",
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/add-resources-test/default/state/metadata.json",
+        "version_id": "2"
+      },
+      "edit_mode": "UI_LOCKED",
+      "format": "MULTI_TASK",
+      "max_concurrent_runs": 1,
+      "name": "job-b",
+      "queue": {
+        "enabled": true
+      }
+    },
+    "resource_id": "[NUMID]",
     "status": "OPERATION_STATUS_SUCCEEDED"
   }
 }
-
-Exit code: 1
