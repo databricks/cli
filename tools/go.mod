@@ -2,7 +2,7 @@ module github.com/databricks/cli/tools
 
 go 1.26.0
 
-toolchain go1.26.3
+toolchain go1.26.4
 
 require github.com/stretchr/testify v1.11.1
 

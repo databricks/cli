@@ -59,6 +59,34 @@ func (s *FakeWorkspace) SqlWarehousesUpsert(req Request, warehouseId string) Res
 	}
 }
 
+func (s *FakeWorkspace) SqlWarehousesStart(req Request, warehouseId string) Response {
+	defer s.LockUnlock()()
+
+	warehouse, ok := s.SqlWarehouses[warehouseId]
+	if !ok {
+		return Response{StatusCode: 404}
+	}
+
+	warehouse.State = sql.StateRunning
+	s.SqlWarehouses[warehouseId] = warehouse
+
+	return Response{}
+}
+
+func (s *FakeWorkspace) SqlWarehousesStop(req Request, warehouseId string) Response {
+	defer s.LockUnlock()()
+
+	warehouse, ok := s.SqlWarehouses[warehouseId]
+	if !ok {
+		return Response{StatusCode: 404}
+	}
+
+	warehouse.State = sql.StateStopped
+	s.SqlWarehouses[warehouseId] = warehouse
+
+	return Response{}
+}
+
 func (s *FakeWorkspace) SqlWarehousesList(req Request) Response {
 	var warehouses []sql.EndpointInfo
 	for _, warehouse := range s.SqlWarehouses {

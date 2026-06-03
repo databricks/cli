@@ -14,6 +14,7 @@
 * Add `--select` flag to `bundle plan` and `bundle deploy` to plan/deploy a subset of resources (e.g. `--select my_job` or `--select jobs.my_job`); resources referenced by the selection are included transitively. Direct engine only ([#5413](https://github.com/databricks/cli/pull/5413)).
 
 ### Dependency updates
+* Bump Go toolchain to 1.26.4 ([#5420](https://github.com/databricks/cli/pull/5420)).
 * Bump `github.com/databricks/databricks-sdk-go` from v0.136.0 to v0.138.0 ([#5361](https://github.com/databricks/cli/pull/5361))
 
 ### API Changes
