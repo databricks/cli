@@ -21,8 +21,10 @@
             "dbt_task": [],
             "deployment": [
               {
+                "deployment_id": "",
                 "kind": "BUNDLE",
-                "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/state/metadata.json"
+                "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/state/metadata.json",
+                "version_id": ""
               }
             ],
             "description": null,
@@ -199,6 +201,7 @@
                 "notification_settings": [],
                 "pipeline_task": [],
                 "power_bi_task": [],
+                "python_operator_task": [],
                 "python_wheel_task": [],
                 "retry_on_timeout": false,
                 "run_if": "ALL_SUCCESS",
@@ -264,6 +267,7 @@
                 "notification_settings": [],
                 "pipeline_task": [],
                 "power_bi_task": [],
+                "python_operator_task": [],
                 "python_wheel_task": [
                   {
                     "entry_point": "main",
@@ -331,10 +335,16 @@
                 "pipeline_task": [
                   {
                     "full_refresh": false,
-                    "pipeline_id": "[UUID]"
+                    "full_refresh_selection": null,
+                    "parameters": null,
+                    "pipeline_id": "[UUID]",
+                    "refresh_flow_selection": null,
+                    "refresh_selection": null,
+                    "reset_checkpoint_selection": null
                   }
                 ],
                 "power_bi_task": [],
+                "python_operator_task": [],
                 "python_wheel_task": [],
                 "retry_on_timeout": false,
                 "run_if": "ALL_SUCCESS",
@@ -405,8 +415,10 @@
             "creator_user_name": "[USERNAME]",
             "deployment": [
               {
+                "deployment_id": "",
                 "kind": "BUNDLE",
-                "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/state/metadata.json"
+                "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/state/metadata.json",
+                "version_id": ""
               }
             ],
             "development": true,
