@@ -149,6 +149,13 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		return
 	}
 
+	// Stamp the DMS deployment_id/version_id onto resources now that the lock is
+	// held and the version is known, so they are part of the config the plan diffs.
+	bundle.ApplyContext(ctx, b, metadata.AnnotateDeploymentVersion())
+	if logdiag.HasError(ctx) {
+		return
+	}
+
 	bundle.ApplySeqContext(ctx, b,
 		files.Upload(outputHandler),
 		deploy.StateUpdate(),

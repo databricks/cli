@@ -59,6 +59,7 @@ func (l *metadataServiceLock) Acquire(ctx context.Context) error {
 	}
 
 	l.b.DeploymentID = deploymentID
+	l.b.DeploymentVersionID = versionID
 	l.versionID = versionID
 	l.stopHeartbeat = startHeartbeat(ctx, svc, deploymentID, versionID)
 	l.reporter = newAsyncReporter(ctx, makeSyncReporter(svc, deploymentID, versionID))
@@ -337,9 +338,6 @@ func startHeartbeat(ctx context.Context, svc *tmpdms.DeploymentMetadataAPI, depl
 
 // isAborted checks if an error indicates the operation was aborted (HTTP 409 with ABORTED error code).
 func isAborted(err error) bool {
-	var apiErr *apierr.APIError
-	if errors.As(err, &apiErr) && apiErr.StatusCode == http.StatusConflict && apiErr.ErrorCode == "ABORTED" {
-		return true
-	}
-	return false
+	apiErr, ok := errors.AsType[*apierr.APIError](err)
+	return ok && apiErr.StatusCode == http.StatusConflict && apiErr.ErrorCode == "ABORTED"
 }

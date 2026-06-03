@@ -16,6 +16,15 @@
 resources:
 
   jobs:
+    ignore_local_changes:
+      # version_id is stamped with the current DMS deployment version on every
+      # deploy, so it changes constantly. Ignoring it as a local change keeps a
+      # new version from triggering an update on its own. When the job is updated
+      # for any other reason, DoUpdate sends the full config via Reset, so the
+      # current version_id is still recorded.
+      - field: deployment.version_id
+        reason: managed by the deployment metadata service
+
     ignore_remote_changes:
       # Same as clusters.{aws,azure,gcp}_attributes — see clusters/resource_cluster.go#L361-L363
       # s.SchemaPath("aws_attributes").SetSuppressDiff()
@@ -131,6 +140,11 @@ resources:
       # "id" is output-only, providing it in config would be a mistake
       - field: id
         reason: "!drop"
+      # version_id is stamped with the current DMS deployment version on every
+      # deploy. Ignoring it as a local change keeps a new version from triggering
+      # an update on its own; a real update still sends it via the full config.
+      - field: deployment.version_id
+        reason: managed by the deployment metadata service
 
     backend_defaults:
       # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/pipelines/resource_pipeline.go#L238

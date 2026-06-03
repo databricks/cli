@@ -146,6 +146,12 @@ type Bundle struct {
 	// Populated during state pull when the deployment metadata service is enabled.
 	DeploymentID string
 
+	// DeploymentVersionID is the DMS version created for the current deploy.
+	// Populated when the deployment lock is acquired (DMS enabled only) and
+	// stamped onto job/pipeline resources so each resource records the version
+	// that produced it.
+	DeploymentVersionID string
+
 	// if true, we skip approval checks for deploy, destroy resources and delete
 	// files
 	AutoApprove bool
