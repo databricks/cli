@@ -2915,6 +2915,7 @@ resources.postgres_projects.*.modified_status	string	INPUT
 resources.postgres_projects.*.name	string	REMOTE
 resources.postgres_projects.*.pg_version	int	ALL
 resources.postgres_projects.*.project_id	string	ALL
+resources.postgres_projects.*.purge_on_delete	bool	INPUT	STATE
 resources.postgres_projects.*.purge_time	*time.Time	REMOTE
 resources.postgres_projects.*.status	*postgres.ProjectStatus	REMOTE
 resources.postgres_projects.*.status.branch_logical_size_limit_bytes	int64	REMOTE
