@@ -1550,6 +1550,9 @@
                       },
                       "project_id": {
                         "$ref": "#/$defs/string"
+                      },
+                      "purge_on_delete": {
+                        "$ref": "#/$defs/bool"
                       }
                     },
                     "additionalProperties": false,

@@ -22,7 +22,6 @@ package terraform_dabs_map
 // postgres_catalogs / databricks_postgres_catalog: 1 tf-only
 // postgres_catalogs / databricks_postgres_catalog: 1 unwraps
 // postgres_endpoints / databricks_postgres_endpoint: 1 unwraps
-// postgres_projects / databricks_postgres_project: 1 tf-only
 // postgres_projects / databricks_postgres_project: 1 unwraps
 // postgres_synced_tables / databricks_postgres_synced_table: 1 unwraps
 // schemas / databricks_schema: 1 tf-only
@@ -679,9 +678,6 @@ var TerraformOnlyFields = map[string]FieldSet{
 		"status": {
 			"catalog_id": {}, // databricks_postgres_catalog.*.status.catalog_id
 		},
-	},
-	"postgres_projects": {
-		"purge_on_delete": {},
 	},
 	"schemas": {
 		"force_destroy": {},

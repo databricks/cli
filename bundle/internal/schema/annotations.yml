@@ -929,6 +929,9 @@ github.com/databricks/cli/bundle/config/resources.PostgresProject:
   "project_id":
     "description": |-
       PLACEHOLDER
+  "purge_on_delete":
+    "description": |-
+      PLACEHOLDER
   "spec":
     "description": |-
       PLACEHOLDER
