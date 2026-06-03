@@ -25,10 +25,15 @@ Resources:
       Name: my dashboard
       URL:  [DATABRICKS_URL]/dashboardsv3/[DASHBOARD_ID]/published?[WSPARAM]=[NUMID]
 
->>> [CLI] bundle plan
-update dashboards.dashboard1
+>>> [CLI] bundle plan -o json
 
-Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
+>>> cat out.plan_published_change.json
+{
+  "action": "update",
+  "old": false,
+  "new": true,
+  "remote": false
+}
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/publish-failure-retry/default/files...

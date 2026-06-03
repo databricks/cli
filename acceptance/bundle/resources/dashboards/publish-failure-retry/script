@@ -20,8 +20,10 @@ errcode trace $CLI bundle deploy
 # Dashboard should be in state (tracked) despite the publish failure.
 trace $CLI bundle summary
 
-# Plan should show that publishing is still needed.
-trace $CLI bundle plan
+# Plan should show published: false (saved state) -> true (desired).
+# Capture the Changes entry for 'published' to verify the diff direction.
+trace $CLI bundle plan -o json | jq '.plan["resources.dashboards.dashboard1"].changes.published' > out.plan_published_change.json
+trace cat out.plan_published_change.json
 
 # Discard first-deploy requests so the output only contains second-deploy
 # calls, making it easy to confirm no CREATE was issued.
