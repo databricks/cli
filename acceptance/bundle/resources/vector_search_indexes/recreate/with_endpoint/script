@@ -1,0 +1,29 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+title "Initial deployment with STANDARD endpoint_type"
+rm -f out.requests.txt
+trace $CLI bundle deploy
+
+title "Change endpoint_type (recreates endpoint; index recreate cascade is not yet implemented)"
+trace update_file.py databricks.yml "endpoint_type: STANDARD" "endpoint_type: STORAGE_OPTIMIZED"
+
+trace $CLI bundle plan
+trace $CLI bundle plan --output json
+rm -f out.requests.txt
+trace $CLI bundle deploy --auto-approve
+
+# Verify final state of both resources.
+endpoint_name="vs-endpoint-${UNIQUE_NAME}"
+index_name="main.default.vs_index_${UNIQUE_NAME}"
+trace $CLI vector-search-endpoints get-endpoint "${endpoint_name}" | jq '{name, endpoint_type}'
+trace $CLI vector-search-indexes get-index "${index_name}" | jq '{name, endpoint_name, index_type, primary_key}'
+
+title "Re-plan exposes the leftover drift: the index still points at the old endpoint UUID"
+trace $CLI bundle plan
+trace $CLI bundle deploy --auto-approve

@@ -15,6 +15,7 @@ import (
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/bundle/direct/dstate"
+	"github.com/databricks/cli/bundle/terraform_dabs_map"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/log"
@@ -122,6 +123,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 	// We're processing resources in DAG order because we're resolving references (that can be resolved at plan stage).
 	g.Run(defaultParallelism, func(resourceKey string, failedDependency *string) bool {
 		errorPrefix := "cannot plan " + resourceKey
+		ctx := log.WithPrefix(ctx, "planning "+resourceKey)
 
 		entry, err := plan.WriteLockEntry(resourceKey)
 		if err != nil {
@@ -155,7 +157,9 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 				return false
 			}
 
-			remoteState, err := adapter.DoRead(ctx, id)
+			remoteState, err := retryOnTransient(ctx, func() (any, error) {
+				return adapter.DoRead(ctx, id)
+			})
 			if err != nil {
 				if isResourceGone(err) {
 					// no such resource
@@ -178,7 +182,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		}
 
 		dbentry, hasEntry := b.StateDB.GetResourceEntry(resourceKey)
-		// Tolerate empty-id entries from older partial-recreate failures
+		// Tolerate empty-ID entries from older partial-recreate failures
 		// (apply.Recreate now deletes state on the way through, but pre-fix
 		// state files may still carry a malformed entry). Treat as missing
 		// and let the resource be re-created on this plan.
@@ -210,7 +214,9 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			return false
 		}
 
-		remoteState, err := adapter.DoRead(ctx, dbentry.ID)
+		remoteState, err := retryOnTransient(ctx, func() (any, error) {
+			return adapter.DoRead(ctx, dbentry.ID)
+		})
 		if err != nil {
 			if isResourceGone(err) {
 				remoteState = nil
@@ -565,6 +571,15 @@ func splitResourcePath(path *structpath.PathNode) (string, *structpath.PathNode)
 
 func (b *DeploymentBundle) LookupReferencePreDeploy(ctx context.Context, path *structpath.PathNode) (any, error) {
 	targetResourceKey, fieldPath := splitResourcePath(path)
+	targetGroup := config.GetResourceTypeFromKey(targetResourceKey)
+
+	// Translate Terraform-style field paths to DABs naming (e.g. "task" → "tasks",
+	// "git_source.branch" → "git_source.git_branch"). No-op for already-DABs paths.
+	// Returns an error for paths that are Terraform-only with no DABs equivalent.
+	fieldPath, err := terraform_dabs_map.TerraformPathToDABs(targetGroup, fieldPath)
+	if err != nil {
+		return nil, err
+	}
 	fieldPathS := fieldPath.String()
 
 	targetEntry, err := b.Plan.ReadLockEntry(targetResourceKey)
@@ -612,7 +627,6 @@ func (b *DeploymentBundle) LookupReferencePreDeploy(ctx context.Context, path *s
 
 	localConfig := sv.Value
 
-	targetGroup := config.GetResourceTypeFromKey(targetResourceKey)
 	adapter := b.Adapters[targetGroup]
 	if adapter == nil {
 		return nil, fmt.Errorf("internal error: %s: unknown resource type %q", targetResourceKey, targetGroup)

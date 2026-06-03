@@ -36,6 +36,7 @@ var deployApprovalGroups = []approvalGroup{
 	{group: "synced_database_tables", message: deleteOrRecreateSyncedDatabaseTableMessage},
 	{group: "postgres_projects", message: deleteOrRecreatePostgresProjectMessage},
 	{group: "postgres_branches", message: deleteOrRecreatePostgresBranchMessage},
+	{group: "vector_search_indexes", message: deleteOrRecreateVectorSearchIndexMessage},
 }
 
 func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) (bool, error) {
@@ -211,8 +212,14 @@ func RunPlan(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) *d
 			logdiag.LogError(ctx, err)
 			return nil
 		}
+		if len(b.Select) > 0 {
+			plan.FilterToSelected(b.Select)
+		}
 		return plan
 	}
+
+	// b.Select is rejected for the terraform engine in ProcessBundleRet, so it is
+	// never set here.
 
 	bundle.ApplySeqContext(ctx, b,
 		terraform.Interpolate(),

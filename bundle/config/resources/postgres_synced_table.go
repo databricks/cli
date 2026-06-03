@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/postgres"
@@ -68,15 +69,12 @@ func (s *PostgresSyncedTable) GetURL() string {
 }
 
 func (s *PostgresSyncedTable) InitializeURL(baseURL url.URL) {
-	// UC explore expects /{catalog}/{schema}/{table}, not a single dotted segment.
-	catalog, rest, ok := strings.Cut(s.GetName(), ".")
-	if !ok {
+	// UC explore expects /{catalog}/{schema}/{table}, so bail if the name isn't
+	// a fully resolved three-part identifier; an unresolved ${...} reference
+	// would otherwise produce a misleading URL.
+	name := s.GetName()
+	if strings.Count(name, ".") != 2 {
 		return
 	}
-	schema, table, ok := strings.Cut(rest, ".")
-	if !ok {
-		return
-	}
-	baseURL.Path = "explore/data/" + catalog + "/" + schema + "/" + table
-	s.URL = baseURL.String()
+	s.URL = workspaceurls.ResourceURL(baseURL, "postgres_synced_tables", name)
 }

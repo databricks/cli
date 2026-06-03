@@ -25,7 +25,7 @@ import (
 type notFoundHintCache struct {
 	inner           cache.TokenCache
 	mode            StorageMode
-	legacyCachePath string
+	legacyStorePath string
 }
 
 func (c *notFoundHintCache) Store(key string, t *oauth2.Token) error {
@@ -37,7 +37,7 @@ func (c *notFoundHintCache) Lookup(key string) (*oauth2.Token, error) {
 	if err == nil || !errors.Is(err, cache.ErrNotFound) {
 		return tok, err
 	}
-	if c.mode == StorageModeSecure && legacyCacheHasTokens(c.legacyCachePath) {
+	if c.mode == StorageModeSecure && legacyStoreHasTokens(c.legacyStorePath) {
 		return nil, &notFoundHint{msg: "stored credentials from older CLI versions are no longer used; run `databricks auth login` to sign in again, or set DATABRICKS_AUTH_STORAGE=plaintext to keep using the file cache"}
 	}
 	return nil, &notFoundHint{msg: "no cached credentials; run `databricks auth login` to sign in"}
@@ -89,21 +89,21 @@ func NewNotFoundHint(msg string) error {
 // is available) so Lookup can do its check without needing a context.
 //
 // Resolution failures for the home directory are not fatal: an empty
-// legacyCachePath simply disables the upgrade-specific message, which
+// legacyStorePath simply disables the upgrade-specific message, which
 // falls back to the generic "run auth login" hint.
 func withNotFoundHint(ctx context.Context, inner cache.TokenCache, mode StorageMode) cache.TokenCache {
-	var legacyCachePath string
+	var legacyStorePath string
 	if home, err := env.UserHomeDir(ctx); err == nil {
-		legacyCachePath = filepath.Join(home, tokenCacheFilePath)
+		legacyStorePath = filepath.Join(home, tokenStoreFilePath)
 	}
-	return &notFoundHintCache{inner: inner, mode: mode, legacyCachePath: legacyCachePath}
+	return &notFoundHintCache{inner: inner, mode: mode, legacyStorePath: legacyStorePath}
 }
 
-// legacyCacheHasTokens reports whether the file at path is a valid token
+// legacyStoreHasTokens reports whether the file at path is a valid token
 // cache with at least one entry. Best-effort and read-only: any I/O or
 // parse error returns false so we never claim "you have legacy tokens"
 // when we cannot actually tell.
-func legacyCacheHasTokens(path string) bool {
+func legacyStoreHasTokens(path string) bool {
 	if path == "" {
 		return false
 	}
@@ -111,7 +111,7 @@ func legacyCacheHasTokens(path string) bool {
 	if err != nil {
 		return false
 	}
-	var f tokenCacheFile
+	var f tokenStoreFile
 	if err := json.Unmarshal(raw, &f); err != nil {
 		return false
 	}

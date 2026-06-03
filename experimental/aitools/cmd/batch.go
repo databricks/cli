@@ -53,7 +53,11 @@ type batchResultError struct {
 // On context cancellation (Ctrl+C or parent context), still-running statements
 // are cancelled server-side via CancelExecution. Statements that finished
 // before cancellation are left as-is.
-func executeBatch(ctx context.Context, api sql.StatementExecutionInterface, warehouseID string, sqls []string, concurrency int) []batchResult {
+//
+// params, if non-nil, are bound on every statement. The same parameter set is
+// reused across the batch, so callers must ensure each SQL uses only markers
+// that are covered.
+func executeBatch(ctx context.Context, api sql.StatementExecutionInterface, warehouseID string, sqls []string, params []sql.StatementParameterListItem, concurrency int) []batchResult {
 	pollCtx, pollCancel := context.WithCancel(ctx)
 	defer pollCancel()
 
@@ -97,7 +101,7 @@ func executeBatch(ctx context.Context, api sql.StatementExecutionInterface, ware
 	g.SetLimit(concurrency)
 	for i, sqlStr := range sqls {
 		g.Go(func() error {
-			results[i] = runOneBatchQuery(pollCtx, api, warehouseID, sqlStr, statementIDs, i)
+			results[i] = runOneBatchQuery(pollCtx, api, warehouseID, sqlStr, params, statementIDs, i)
 			completed.Add(1)
 			return nil
 		})
@@ -115,13 +119,14 @@ func executeBatch(ctx context.Context, api sql.StatementExecutionInterface, ware
 
 // runOneBatchQuery submits one SQL, polls to completion, and returns its
 // batchResult. All errors are encoded into the result; never returns an error.
-func runOneBatchQuery(ctx context.Context, api sql.StatementExecutionInterface, warehouseID, sqlStr string, statementIDs []string, idx int) batchResult {
+func runOneBatchQuery(ctx context.Context, api sql.StatementExecutionInterface, warehouseID, sqlStr string, params []sql.StatementParameterListItem, statementIDs []string, idx int) batchResult {
 	start := time.Now()
 	result := batchResult{SQL: sqlStr}
 
 	resp, err := api.ExecuteStatement(ctx, sql.ExecuteStatementRequest{
 		WarehouseId:   warehouseID,
 		Statement:     sqlStr,
+		Parameters:    params,
 		WaitTimeout:   "0s",
 		OnWaitTimeout: sql.ExecuteStatementRequestOnWaitTimeoutContinue,
 	})

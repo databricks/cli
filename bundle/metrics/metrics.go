@@ -9,4 +9,5 @@ const (
 	AppLifecycleStarted                 = "app_lifecycle_started"
 	ClusterLifecycleStarted             = "cluster_lifecycle_started"
 	SqlWarehouseLifecycleStarted        = "sql_warehouse_lifecycle_started"
+	SelectUsed                          = "select_used"
 )

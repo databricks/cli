@@ -5,6 +5,7 @@ import (
 	"net/url"
 
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/postgres"
@@ -61,6 +62,5 @@ func (c *PostgresCatalog) InitializeURL(baseURL url.URL) {
 	if c.CatalogId == "" {
 		return
 	}
-	baseURL.Path = "explore/data/" + c.CatalogId
-	c.URL = baseURL.String()
+	c.URL = workspaceurls.ResourceURL(baseURL, "postgres_catalogs", c.CatalogId)
 }

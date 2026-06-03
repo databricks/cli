@@ -142,6 +142,12 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// After PythonMutator, mutators must not change bundle resources, or such changes are not
 		// going to be visible in Python code.
 
+		// Resolve --select selectors against the materialized resources: normalize
+		// each to its "type.name" form and validate it exists. Runs after all resource
+		// mutations so that dynamically added resources are visible. This does not
+		// filter resources; the direct engine selects against the resolved keys later.
+		mutator.ResolveSelect(),
+
 		// Validate all required fields are set. This is run after variable interpolation and PyDABs mutators
 		// since they can also set and modify resources.
 		validate.Required(),
@@ -151,6 +157,11 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 
 		// Validate that no dashboard etags are set. They are purely internal state and should not be set by the user.
 		validate.ValidateDashboardEtags(),
+
+		// Reads (dynamic): * (strings) (searches for ${resources.*} references)
+		// Warns (TF engine) or errors (direct engine) when a cross-resource reference
+		// points to a Terraform-only field with no DABs equivalent.
+		validate.TFOnlyReferences(),
 
 		// Reads (typed): b.Config.Permissions (checks if current user or their groups have CAN_MANAGE permissions)
 		// Reads (typed): b.Config.Workspace.CurrentUser (gets current user information)

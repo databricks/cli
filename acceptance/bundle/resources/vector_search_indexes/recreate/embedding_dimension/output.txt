@@ -1,0 +1,53 @@
+
+=== Initial deployment
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-vs-index-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py --get //vector-search/indexes
+
+=== Change embedding_dimension (should trigger recreation)
+>>> update_file.py databricks.yml embedding_dimension: 768 embedding_dimension: 384
+
+>>> [CLI] bundle plan
+recreate vector_search_indexes.my_index
+
+Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged
+
+>>> [CLI] bundle deploy --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-vs-index-[UNIQUE_NAME]/default/files...
+
+This action will result in the deletion or recreation of the following Vector Search indexes.
+Recreating a Delta Sync index re-runs the full embedding pipeline; recreating a Direct Access
+index drops all upserted vectors. Both can be expensive to rebuild:
+  recreate resources.vector_search_indexes.my_index
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py --get //vector-search/indexes
+
+>>> [CLI] vector-search-indexes get-index main.default.vs_index_[UNIQUE_NAME]
+{
+  "name": "main.default.vs_index_[UNIQUE_NAME]",
+  "endpoint_name": "vs-endpoint-[UNIQUE_NAME]",
+  "index_type": "DIRECT_ACCESS",
+  "primary_key": "id"
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.vector_search_endpoints.my_endpoint
+  delete resources.vector_search_indexes.my_index
+
+This action will result in the deletion of the following Vector Search indexes.
+For Delta Sync indexes, the source Delta Table is preserved but the embedding pipeline is removed.
+For Direct Access indexes, all upserted vectors are permanently lost:
+  delete resources.vector_search_indexes.my_index
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-vs-index-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!

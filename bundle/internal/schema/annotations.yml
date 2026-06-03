@@ -75,6 +75,9 @@ github.com/databricks/cli/bundle/config.Experimental:
   "python_wheel_wrapper":
     "description": |-
       Whether to use a Python wheel wrapper.
+  "record_deployment_history":
+    "description": |-
+      Whether to record deployment history using the deployment metadata service (DMS), which tracks what changed across deployments.
   "scripts":
     "description": |-
       The commands to run.
@@ -256,6 +259,9 @@ github.com/databricks/cli/bundle/config.Resources:
     "description": |-
       PLACEHOLDER
   "vector_search_endpoints":
+    "description": |-
+      PLACEHOLDER
+  "vector_search_indexes":
     "description": |-
       PLACEHOLDER
   "volumes":
@@ -1046,6 +1052,34 @@ github.com/databricks/cli/bundle/config/resources.VectorSearchEndpoint:
     "description": |-
       PLACEHOLDER
   "usage_policy_id":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.VectorSearchIndex:
+  "delta_sync_index_spec":
+    "description": |-
+      PLACEHOLDER
+  "direct_access_index_spec":
+    "description": |-
+      PLACEHOLDER
+  "endpoint_name":
+    "description": |-
+      PLACEHOLDER
+  "grants":
+    "description": |-
+      PLACEHOLDER
+  "index_subtype":
+    "description": |-
+      PLACEHOLDER
+  "index_type":
+    "description": |-
+      PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
+  "name":
+    "description": |-
+      PLACEHOLDER
+  "primary_key":
     "description": |-
       PLACEHOLDER
 github.com/databricks/cli/bundle/config/variable.Lookup:

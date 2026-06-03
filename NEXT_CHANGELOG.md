@@ -1,15 +1,16 @@
 # NEXT CHANGELOG
 
-## Release v1.1.0
+## Release v1.2.0
 
 ### Notable Changes
 
 ### CLI
+* `experimental open` now opens every DABs resource type that has a workspace URL, picking up `catalogs`, `schemas`, `volumes`, `database_instances`, `database_catalogs`, `synced_database_tables`, `postgres_catalogs`, `postgres_synced_tables`, `quality_monitors`, `vector_search_endpoints`, and `vector_search_indexes` ([#5346](https://github.com/databricks/cli/pull/5346)).
 
 ### Bundles
-* The error reported when a direct-only resource (catalogs, external locations, vector search endpoints) is used with the terraform engine now also suggests setting `bundle.engine: direct` in `databricks.yml`, in addition to the `DATABRICKS_BUNDLE_ENGINE` environment variable ([#5295](https://github.com/databricks/cli/pull/5295)).
+* Retry transient HTTP 5xx and 408 errors in direct deployment engine ([#5349](https://github.com/databricks/cli/pull/5349), [#5364](https://github.com/databricks/cli/pull/5364)).
+* Preserve `.designer.ipynb` suffix when translating notebook task paths so Lakeflow Designer files referenced from a `notebook_task` resolve correctly in the workspace ([#5370](https://github.com/databricks/cli/pull/5370)).
+* Fix script output dropping last line without trailing newline ([#4995](https://github.com/databricks/cli/pull/4995)).
+* Add `--select` flag to `bundle plan` and `bundle deploy` to plan/deploy a subset of resources (e.g. `--select my_job` or `--select jobs.my_job`); resources referenced by the selection are included transitively. Direct engine only ([#5413](https://github.com/databricks/cli/pull/5413)).
 
 ### Dependency updates
-
-* Bump Go toolchain to 1.26.3 ([#5302](https://github.com/databricks/cli/pull/5302)).
-* Bump `github.com/databricks/databricks-sdk-go` from v0.132.0 to v0.136.0.

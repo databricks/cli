@@ -26,8 +26,11 @@ import (
 	"github.com/databricks/cli/experimental/ssh/internal/vscode"
 	sshWorkspace "github.com/databricks/cli/experimental/ssh/internal/workspace"
 	"github.com/databricks/cli/internal/build"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/telemetry"
+	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/compute"
@@ -264,6 +267,13 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 		}
 	}
 
+	isReconnect := opts.ServerMetadata != ""
+	var serverStartTimeMs int64
+	isSuccess := false
+	defer func() {
+		logSshTunnelEvent(ctx, opts, isSuccess, isReconnect, serverStartTimeMs)
+	}()
+
 	// Only check cluster state for dedicated clusters
 	if !opts.IsServerlessMode() {
 		cmdio.LogString(ctx, "Checking cluster state...")
@@ -310,6 +320,7 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 		if err != nil {
 			return fmt.Errorf("failed to upload ssh-tunnel binaries: %w", err)
 		}
+		serverStartTime := time.Now()
 		userName, serverPort, clusterID, err = ensureSSHServerIsRunning(ctx, client, version, secretScopeName, opts)
 		if err != nil {
 			if opts.IsServerlessMode() && opts.Accelerator == "" && errors.Is(err, errServerMetadata) {
@@ -318,6 +329,7 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 			}
 			return fmt.Errorf("failed to ensure that ssh server is running: %w", err)
 		}
+		serverStartTimeMs = time.Since(serverStartTime).Milliseconds()
 	} else {
 		// Metadata format: "<user_name>,<port>,<cluster_id>"
 		metadata := strings.Split(opts.ServerMetadata, ",")
@@ -353,6 +365,8 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 	if !opts.ProxyMode {
 		cmdio.LogString(ctx, "Connected!")
 	}
+
+	isSuccess = true
 
 	if opts.ProxyMode {
 		return runSSHProxy(ctx, client, serverPort, clusterID, opts)
@@ -438,11 +452,11 @@ func getServerMetadata(ctx context.Context, client *databricks.WorkspaceClient, 
 		return 0, "", "", errors.Join(errServerMetadata, errors.New("cluster ID not available in metadata"))
 	}
 
-	workspaceID, err := client.CurrentWorkspaceID(ctx)
+	workspaceID, err := auth.ResolveWorkspaceID(ctx, client)
 	if err != nil {
 		return 0, "", "", err
 	}
-	metadataURL := fmt.Sprintf("%s/driver-proxy-api/o/%d/%s/%d/metadata", client.Config.Host, workspaceID, effectiveClusterID, wsMetadata.Port)
+	metadataURL := fmt.Sprintf("%s/driver-proxy-api/o/%s/%s/%d/metadata", client.Config.Host, workspaceID, effectiveClusterID, wsMetadata.Port)
 	log.Debugf(ctx, "Metadata URL: %s", metadataURL)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, metadataURL, nil)
 	if err != nil {
@@ -726,4 +740,34 @@ func ensureSSHServerIsRunning(ctx context.Context, client *databricks.WorkspaceC
 	}
 
 	return userName, serverPort, effectiveClusterID, nil
+}
+
+func logSshTunnelEvent(ctx context.Context, opts ClientOptions, isSuccess, isReconnect bool, serverStartTimeMs int64) {
+	computeType := protos.SshTunnelComputeTypeDedicated
+	if opts.IsServerlessMode() {
+		computeType = protos.SshTunnelComputeTypeServerless
+	}
+
+	var clientMode protos.SshTunnelClientMode
+	switch {
+	case opts.ProxyMode:
+		clientMode = protos.SshTunnelClientModeProxy
+	case opts.IDE != "":
+		clientMode = protos.SshTunnelClientModeIDE
+	default:
+		clientMode = protos.SshTunnelClientModeSSH
+	}
+
+	telemetry.Log(ctx, protos.DatabricksCliLog{
+		SshTunnelEvent: &protos.SshTunnelEvent{
+			ComputeType:       computeType,
+			AcceleratorType:   opts.Accelerator,
+			IdeType:           opts.IDE,
+			ClientMode:        clientMode,
+			IsReconnect:       isReconnect,
+			AutoStartCluster:  opts.AutoStartCluster,
+			ServerStartTimeMs: serverStartTimeMs,
+			IsSuccess:         isSuccess,
+		},
+	})
 }
