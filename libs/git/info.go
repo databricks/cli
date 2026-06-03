@@ -2,6 +2,8 @@ package git
 
 import (
 	"context"
+	"errors"
+	"io/fs"
 	"net/http"
 	"path"
 	"strings"
@@ -11,6 +13,7 @@ import (
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/vfs"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/client"
 )
 
@@ -36,18 +39,29 @@ type response struct {
 }
 
 // Fetch repository information either by quering .git or by fetching it from API (for dabs-in-workspace case).
-//   - In case we could not find git repository, all string fields of RepositoryInfo will be "" and err will be nil.
+//   - In case we could not find git repository (including when the path does not exist), all string fields of RepositoryInfo will be "" and err will be nil.
 //   - If there were any errors when trying to determine git root (e.g. API call returned an error or there were permission issues
 //     reading the file system), all strings fields of RepositoryInfo will be "" and err will be non-nil.
 //   - If we could determine git worktree root but there were errors when reading metadata (origin, branch, commit), those errors
 //     will be logged as warnings, RepositoryInfo is guaranteed to have non-empty WorktreeRoot and other fields on best effort basis.
 //   - In successful case, all fields are set to proper git repository metadata.
 func FetchRepositoryInfo(ctx context.Context, path string, w *databricks.WorkspaceClient) (RepositoryInfo, error) {
+	var info RepositoryInfo
+	var err error
 	if strings.HasPrefix(path, "/Workspace/") && dbr.RunsOnRuntime(ctx) {
-		return fetchRepositoryInfoAPI(ctx, path, w)
+		info, err = fetchRepositoryInfoAPI(ctx, path, w)
 	} else {
-		return fetchRepositoryInfoDotGit(ctx, path)
+		info, err = fetchRepositoryInfoDotGit(ctx, path)
 	}
+
+	// A path that does not exist just means there is no repository there, which
+	// is not an error. Both backends report this as fs.ErrNotExist (the API
+	// backend translates a workspace 404 to it), so it is normalized to a nil
+	// error in a single place rather than special-cased by every caller.
+	if errors.Is(err, fs.ErrNotExist) {
+		return info, nil
+	}
+	return info, err
 }
 
 func fetchRepositoryInfoAPI(ctx context.Context, path string, w *databricks.WorkspaceClient) (RepositoryInfo, error) {
@@ -74,6 +88,14 @@ func fetchRepositoryInfoAPI(ctx context.Context, path string, w *databricks.Work
 		&response,
 	)
 	if err != nil {
+		// The workspace API returns 404 when the path is not a workspace object
+		// (for example, an ephemeral directory that is not part of a Repo).
+		// Normalize it to fs.ErrNotExist, the same signal fetchRepositoryInfoDotGit
+		// produces for a missing local path, so FetchRepositoryInfo can treat
+		// "no path" as "no repository" uniformly.
+		if apierr.IsMissing(err) {
+			return result, fs.ErrNotExist
+		}
 		return result, err
 	}
 
