@@ -263,7 +263,7 @@ var testConfig map[string]any = map[string]any{
 
 	"vector_search_indexes": &resources.VectorSearchIndex{
 		CreateVectorIndexRequest: vectorsearch.CreateVectorIndexRequest{
-			Name:         "my-index",
+			Name:         "main.default.my_index",
 			EndpointName: "my-index-endpoint",
 			PrimaryKey:   "id",
 			IndexType:    vectorsearch.VectorIndexTypeDeltaSync,

@@ -28,9 +28,24 @@ func TestExtractHostQueryParams(t *testing.T) {
 			want: HostParams{Host: "https://spog.example.com", AccountID: "abc"},
 		},
 		{
+			name: "extract workspace_id from ?w=",
+			host: "https://spog.example.com/?w=12345",
+			want: HostParams{Host: "https://spog.example.com", WorkspaceID: "12345"},
+		},
+		{
 			name: "extract workspace_id from ?workspace_id=",
 			host: "https://spog.example.com/?workspace_id=99999",
 			want: HostParams{Host: "https://spog.example.com", WorkspaceID: "99999"},
+		},
+		{
+			name: "?o= wins over ?w= when both present",
+			host: "https://spog.example.com/?o=11111&w=22222",
+			want: HostParams{Host: "https://spog.example.com", WorkspaceID: "11111"},
+		},
+		{
+			name: "?w= wins over ?workspace_id= when both present",
+			host: "https://spog.example.com/?w=11111&workspace_id=22222",
+			want: HostParams{Host: "https://spog.example.com", WorkspaceID: "11111"},
 		},
 		{
 			name: "no query params leaves host unchanged",
@@ -38,14 +53,24 @@ func TestExtractHostQueryParams(t *testing.T) {
 			want: HostParams{Host: "https://spog.example.com"},
 		},
 		{
-			name: "non-numeric ?o= is skipped",
+			name: "non-numeric ?o= is skipped (legacy spelling stays numeric-only)",
 			host: "https://spog.example.com/?o=abc",
 			want: HostParams{Host: "https://spog.example.com"},
 		},
 		{
-			name: "non-numeric ?workspace_id= is skipped",
+			name: "non-numeric ?w= is passed through",
+			host: "https://spog.example.com/?w=abc",
+			want: HostParams{Host: "https://spog.example.com", WorkspaceID: "abc"},
+		},
+		{
+			name: "non-numeric ?workspace_id= is skipped (legacy spelling stays numeric-only)",
 			host: "https://spog.example.com/?workspace_id=abc",
 			want: HostParams{Host: "https://spog.example.com"},
+		},
+		{
+			name: "connection-id-style ?w= value passed through",
+			host: "https://spog.example.com/?w=123e4567-e89b-12d3-a456-426614174000",
+			want: HostParams{Host: "https://spog.example.com", WorkspaceID: "123e4567-e89b-12d3-a456-426614174000"},
 		},
 		{
 			name: "invalid URL is left unchanged",

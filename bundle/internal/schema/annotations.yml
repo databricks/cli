@@ -75,6 +75,9 @@ github.com/databricks/cli/bundle/config.Experimental:
   "python_wheel_wrapper":
     "description": |-
       Whether to use a Python wheel wrapper.
+  "record_deployment_history":
+    "description": |-
+      Whether to record deployment history using the deployment metadata service (DMS), which tracks what changed across deployments.
   "scripts":
     "description": |-
       The commands to run.
@@ -85,9 +88,6 @@ github.com/databricks/cli/bundle/config.Experimental:
     "description": |-
       Skip adding the prefix that is either set in `presets.name_prefix` or computed when `mode: development`
       is set, to the names of UC schemas defined in the bundle.
-  "use_deployment_metadata_service":
-    "description": |-
-      Whether to use the deployment metadata service (DMS), which records deployment history and tracks what changed across deployments.
   "use_legacy_run_as":
     "description": |-
       Whether to use the legacy run_as behavior.

@@ -20,17 +20,18 @@ import (
 )
 
 const (
-	// orgIDHeader is the workspace routing identifier sent on workspace-scope
-	// requests against unified hosts. Generated SDK service methods set this
-	// per-call when cfg.WorkspaceID is populated; we mirror the same idiom.
-	orgIDHeader = "X-Databricks-Org-Id"
-
-	// orgIDQueryParam is the SPOG (single-page-of-glass) URL convention used
-	// by the Databricks UI: "?o=<workspace-id>" identifies the workspace a URL
-	// targets. When present on the path, we treat it as a per-call override
-	// for the workspace routing identifier so that pasted SPOG URLs route
-	// correctly without requiring --workspace-id.
-	orgIDQueryParam = "o"
+	// orgIDQueryParam and workspaceIDQueryParam are the SPOG
+	// (single-page-of-glass) URL convention used by the Databricks UI:
+	// "?o=<workspace-id>" or "?w=<workspace-id>" identifies the workspace a
+	// URL targets. When present on the path, we treat it as a per-call
+	// override for the workspace routing identifier so that pasted SPOG URLs
+	// route correctly without requiring --workspace-id. "w" is the new
+	// spelling that matches the X-Databricks-Workspace-Id header; "o" stays
+	// accepted for URLs already pasted from older UI builds, shell history,
+	// or committed databricks.yml files. "o" takes precedence when both are
+	// present to preserve the meaning of existing URLs.
+	orgIDQueryParam       = "o"
+	workspaceIDQueryParam = "w"
 )
 
 // accountSegmentRe matches a non-empty segment immediately after "accounts/",
@@ -114,7 +115,7 @@ func makeCommand(method string) *cobra.Command {
 
 			headers := map[string]string{"Content-Type": "application/json"}
 			if orgID != "" {
-				headers[orgIDHeader] = orgID
+				headers[auth.WorkspaceIDHeader] = orgID
 			}
 
 			var response any
@@ -163,14 +164,19 @@ func hasAccountSegment(rawPath string) (bool, error) {
 	return accountSegmentRe.MatchString(p), nil
 }
 
-// extractOrgIDFromQuery returns the value of the "o" query parameter on path
-// (the SPOG URL convention), or "" if absent or empty.
-func extractOrgIDFromQuery(rawPath string) (string, error) {
+// extractWorkspaceIDFromQuery returns the workspace ID encoded in the path's
+// query string (the SPOG URL convention). It checks "o" first, then "w";
+// returns "" if neither is present or non-empty.
+func extractWorkspaceIDFromQuery(rawPath string) (string, error) {
 	u, err := url.Parse(rawPath)
 	if err != nil {
 		return "", fmt.Errorf("parse path: %w", err)
 	}
-	return u.Query().Get(orgIDQueryParam), nil
+	q := u.Query()
+	if v := q.Get(orgIDQueryParam); v != "" {
+		return v, nil
+	}
+	return q.Get(workspaceIDQueryParam), nil
 }
 
 // resolveOrgID picks the value (if any) for the workspace routing identifier
@@ -195,12 +201,12 @@ func resolveOrgID(
 		}
 		return workspaceIDFlag, nil
 	}
-	orgIDFromQuery, err := extractOrgIDFromQuery(path)
+	workspaceIDFromQuery, err := extractWorkspaceIDFromQuery(path)
 	if err != nil {
 		return "", err
 	}
-	if orgIDFromQuery != "" {
-		return orgIDFromQuery, nil
+	if workspaceIDFromQuery != "" {
+		return workspaceIDFromQuery, nil
 	}
 	isAccount, err := hasAccountSegment(path)
 	if err != nil {
