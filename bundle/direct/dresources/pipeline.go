@@ -153,6 +153,7 @@ func (r *ResourcePipeline) DoUpdate(ctx context.Context, id string, config *pipe
 		Libraries:            config.Libraries,
 		Name:                 config.Name,
 		Notifications:        config.Notifications,
+		Parameters:           config.Parameters,
 		Photon:               config.Photon,
 		RestartWindow:        config.RestartWindow,
 		RootPath:             config.RootPath,
