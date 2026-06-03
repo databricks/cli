@@ -105,26 +105,25 @@ func TestMultipleClients(t *testing.T) {
 	defer client2.Cleanup()
 
 	messageCount := 10
-	expectedClientOutput1 := ""
-	expectedClientOutput2 := ""
+	var expectedClientOutput1, expectedClientOutput2 []byte
 	for i := range messageCount {
 		message := fmt.Appendf(nil, "client 1 message %d\n", i)
 		_, err := client1.InputWriter.Write(message)
 		require.NoError(t, err)
 		err = client1.Output.AssertWrite(message)
 		require.NoError(t, err)
-		expectedClientOutput1 += string(message)
+		expectedClientOutput1 = append(expectedClientOutput1, message...)
 
 		message = fmt.Appendf(nil, "client 2 message %d\n", i)
 		_, err = client2.InputWriter.Write(message)
 		require.NoError(t, err)
 		err = client2.Output.AssertWrite(message)
 		require.NoError(t, err)
-		expectedClientOutput2 += string(message)
+		expectedClientOutput2 = append(expectedClientOutput2, message...)
 	}
 
-	assert.Equal(t, expectedClientOutput1, client1.Output.String())
-	assert.Equal(t, expectedClientOutput2, client2.Output.String())
+	assert.Equal(t, string(expectedClientOutput1), client1.Output.String())
+	assert.Equal(t, string(expectedClientOutput2), client2.Output.String())
 }
 
 func TestMaxClients(t *testing.T) {
@@ -168,7 +167,7 @@ func TestHandover(t *testing.T) {
 	client := createTestClient(t, server.URL, requestHandoverTick, nil)
 	defer client.Cleanup()
 
-	expectedOutput := ""
+	var expectedOutput []byte
 
 	wg := sync.WaitGroup{}
 	wg.Go(func() {
@@ -181,7 +180,7 @@ func TestHandover(t *testing.T) {
 			if err != nil {
 				t.Errorf("failed to write message %d: %v", i, err)
 			}
-			expectedOutput += string(message)
+			expectedOutput = append(expectedOutput, message...)
 		}
 	})
 
@@ -191,7 +190,7 @@ func TestHandover(t *testing.T) {
 	wg.Wait()
 
 	// client.Output is created by appending incoming messages as they arrive, so we are also test correct order here
-	assert.Equal(t, expectedOutput, client.Output.String())
+	assert.Equal(t, string(expectedOutput), client.Output.String())
 }
 
 // Tests handovers in quick succession with few messages in between.
@@ -207,7 +206,7 @@ func TestQuickHandover(t *testing.T) {
 	client := createTestClient(t, server.URL, requestHandoverTick, nil)
 	defer client.Cleanup()
 
-	expectedOutput := ""
+	var expectedOutput []byte
 
 	wg := sync.WaitGroup{}
 	wg.Go(func() {
@@ -220,7 +219,7 @@ func TestQuickHandover(t *testing.T) {
 			if err != nil {
 				t.Errorf("failed to write message %d: %v", i, err)
 			}
-			expectedOutput += string(message)
+			expectedOutput = append(expectedOutput, message...)
 		}
 	})
 
@@ -229,5 +228,5 @@ func TestQuickHandover(t *testing.T) {
 
 	wg.Wait()
 
-	assert.Equal(t, expectedOutput, client.Output.String())
+	assert.Equal(t, string(expectedOutput), client.Output.String())
 }

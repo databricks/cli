@@ -16,7 +16,7 @@ const (
 	Source            // Any other file type
 )
 
-type File struct {
+type File struct { //nolint:recvcheck // value receiver for read-only Modified(), pointer for IsNotebook() cache
 	// Root path of the fileset.
 	root vfs.Path
 

@@ -31,7 +31,7 @@ title "Stop app externally, then deploy with started=false: app stays stopped"
 trace update_file.py databricks.yml "started: true" "started: false"
 trace update_file.py databricks.yml MY_APP_DESCRIPTION MY_APP_DESCRIPTION_2
 trace errcode $CLI bundle deploy
-trace print_requests.py //deployments
+trace print_requests.py //apps
 rm -f out.requests.txt
 { trace errcode $CLI apps get $UNIQUE_NAME | jq '.compute_status.state'; } || true
 
@@ -39,6 +39,6 @@ title "Deploy with started=true: compute restarted and code deployed"
 trace update_file.py databricks.yml "started: false" "started: true"
 trace update_file.py databricks.yml MY_APP_DESCRIPTION_2 MY_APP_DESCRIPTION_3
 trace errcode $CLI bundle deploy
-trace print_requests.py //deployments
+trace print_requests.py //apps
 rm -f out.requests.txt
 { trace errcode $CLI apps get $UNIQUE_NAME | jq '.compute_status.state'; } || true

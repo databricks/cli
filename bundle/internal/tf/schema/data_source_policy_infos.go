@@ -19,7 +19,7 @@ type DataSourcePolicyInfosPoliciesMatchColumns struct {
 }
 
 type DataSourcePolicyInfosPoliciesProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourcePolicyInfosPoliciesRowFilterUsing struct {
@@ -54,7 +54,7 @@ type DataSourcePolicyInfosPolicies struct {
 }
 
 type DataSourcePolicyInfosProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourcePolicyInfos struct {

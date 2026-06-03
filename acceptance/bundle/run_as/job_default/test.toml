@@ -1,8 +1,9 @@
 Badness = "run_as is still set even though it's not in bundle and not in reset request"
+Ignore = [".databricks/.gitignore"]
 
 Local = false
 Cloud = true
 RecordRequests = true
 
 [EnvMatrix]
-  DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
+  DATABRICKS_BUNDLE_ENGINE = ["direct"]

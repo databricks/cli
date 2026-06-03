@@ -26,7 +26,7 @@ func PushResourcesState(ctx context.Context, b *bundle.Bundle, engine engine.Eng
 		return
 	}
 
-	f, err := deploy.StateFiler(b)
+	f, err := deploy.StateFiler(ctx, b)
 	if err != nil {
 		logdiag.LogError(ctx, err)
 		return
@@ -62,7 +62,7 @@ func PushResourcesState(ctx context.Context, b *bundle.Bundle, engine engine.Eng
 }
 
 func BackupRemoteTerraformState(ctx context.Context, b *bundle.Bundle) {
-	f, err := deploy.StateFiler(b)
+	f, err := deploy.StateFiler(ctx, b)
 	if err != nil {
 		logdiag.LogError(ctx, err)
 		return

@@ -31,6 +31,15 @@ func touchNotebookFile(t *testing.T, path string) {
 	f.Close()
 }
 
+// touchDesignerFile writes a minimal valid Lakeflow Designer notebook (Jupyter
+// JSON) so that notebook.DetectWithFS recognizes it as a notebook.
+func touchDesignerFile(t *testing.T, path string) {
+	err := os.MkdirAll(filepath.Dir(path), 0o700)
+	require.NoError(t, err)
+	contents := `{"cells":[],"metadata":{"application/vnd.databricks.v1+notebook":{"language":"python"}},"nbformat":4,"nbformat_minor":0}`
+	require.NoError(t, os.WriteFile(path, []byte(contents), 0o644))
+}
+
 func touchEmptyFile(t *testing.T, path string) {
 	err := os.MkdirAll(filepath.Dir(path), 0o700)
 	require.NoError(t, err)
@@ -290,6 +299,7 @@ func TestTranslatePathsInSubdirectories(t *testing.T) {
 	touchEmptyFile(t, filepath.Join(dir, "pipeline", "my_python_file.py"))
 	touchEmptyFile(t, filepath.Join(dir, "job", "my_sql_file.sql"))
 	touchEmptyFile(t, filepath.Join(dir, "job", "my_dbt_project", "dbt_project.yml"))
+	touchEmptyFile(t, filepath.Join(dir, "job", "my_alert.dbalert.json"))
 
 	b := &bundle.Bundle{
 		SyncRootPath:   dir,
@@ -327,6 +337,11 @@ func TestTranslatePathsInSubdirectories(t *testing.T) {
 								{
 									DbtTask: &jobs.DbtTask{
 										ProjectDirectory: "./my_dbt_project",
+									},
+								},
+								{
+									AlertTask: &jobs.AlertTask{
+										WorkspacePath: "./my_alert.dbalert.json",
 									},
 								},
 							},
@@ -375,6 +390,11 @@ func TestTranslatePathsInSubdirectories(t *testing.T) {
 		t,
 		"/bundle/job/my_dbt_project",
 		b.Config.Resources.Jobs["job"].Tasks[3].DbtTask.ProjectDirectory,
+	)
+	assert.Equal(
+		t,
+		"/bundle/job/my_alert.dbalert.json",
+		b.Config.Resources.Jobs["job"].Tasks[4].AlertTask.WorkspacePath,
 	)
 
 	assert.Equal(
@@ -766,10 +786,10 @@ func TestTranslatePathJobEnvironments(t *testing.T) {
 											"./dist/env1.whl",
 											"../dist/env2.whl",
 											"simplejson",
-											"/Workspace/Users/foo@bar.com/test.whl",
+											"/Workspace/Users/foo@bar.test/test.whl",
 											"--extra-index-url https://name:token@gitlab.com/api/v4/projects/9876/packages/pypi/simple foobar",
 											"foobar --extra-index-url https://name:token@gitlab.com/api/v4/projects/9876/packages/pypi/simple",
-											"https://foo@bar.com/packages/pypi/simple",
+											"https://foo@bar.test/packages/pypi/simple",
 										},
 									},
 								},
@@ -789,10 +809,10 @@ func TestTranslatePathJobEnvironments(t *testing.T) {
 	assert.Equal(t, "./job/dist/env1.whl", b.Config.Resources.Jobs["job"].Environments[0].Spec.Dependencies[0])
 	assert.Equal(t, "./dist/env2.whl", b.Config.Resources.Jobs["job"].Environments[0].Spec.Dependencies[1])
 	assert.Equal(t, "simplejson", b.Config.Resources.Jobs["job"].Environments[0].Spec.Dependencies[2])
-	assert.Equal(t, "/Workspace/Users/foo@bar.com/test.whl", b.Config.Resources.Jobs["job"].Environments[0].Spec.Dependencies[3])
+	assert.Equal(t, "/Workspace/Users/foo@bar.test/test.whl", b.Config.Resources.Jobs["job"].Environments[0].Spec.Dependencies[3])
 	assert.Equal(t, "--extra-index-url https://name:token@gitlab.com/api/v4/projects/9876/packages/pypi/simple foobar", b.Config.Resources.Jobs["job"].Environments[0].Spec.Dependencies[4])
 	assert.Equal(t, "foobar --extra-index-url https://name:token@gitlab.com/api/v4/projects/9876/packages/pypi/simple", b.Config.Resources.Jobs["job"].Environments[0].Spec.Dependencies[5])
-	assert.Equal(t, "https://foo@bar.com/packages/pypi/simple", b.Config.Resources.Jobs["job"].Environments[0].Spec.Dependencies[6])
+	assert.Equal(t, "https://foo@bar.test/packages/pypi/simple", b.Config.Resources.Jobs["job"].Environments[0].Spec.Dependencies[6])
 }
 
 func TestTranslatePathWithComplexVariables(t *testing.T) {
@@ -1112,4 +1132,111 @@ func TestTranslatePathsWithSkipLocalFileValidationDirectory(t *testing.T) {
 
 	// Directory path should be translated even though directory doesn't exist.
 	assert.Equal(t, "/bundle/pipeline_root", b.Config.Resources.Pipelines["pipeline"].RootPath)
+}
+
+// TestTranslatePathsDesignerNotebook verifies that Lakeflow Designer notebooks
+// (`*.designer.ipynb`) referenced by a notebook_task preserve their full
+// suffix in the deployed notebook_path, since the workspace keeps that suffix
+// on import (unlike regular `.ipynb`, which is stripped).
+func TestTranslatePathsDesignerNotebook(t *testing.T) {
+	dir := t.TempDir()
+	touchDesignerFile(t, filepath.Join(dir, "src", "designer.designer.ipynb"))
+	touchNotebookFile(t, filepath.Join(dir, "src", "regular.py"))
+
+	b := &bundle.Bundle{
+		SyncRootPath:   dir,
+		BundleRootPath: dir,
+		SyncRoot:       vfs.MustNew(dir),
+		Config: config.Root{
+			Workspace: config.Workspace{
+				FilePath: "/bundle",
+			},
+			Resources: config.Resources{
+				Jobs: map[string]*resources.Job{
+					"job": {
+						JobSettings: jobs.JobSettings{
+							Tasks: []jobs.Task{
+								{
+									NotebookTask: &jobs.NotebookTask{
+										NotebookPath: "./src/designer.designer.ipynb",
+									},
+								},
+								{
+									NotebookTask: &jobs.NotebookTask{
+										NotebookPath: "./src/regular.py",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	bundletest.SetLocation(b, ".", []dyn.Location{{File: filepath.Join(dir, "databricks.yml")}})
+
+	diags := bundle.ApplySeq(t.Context(), b, mutator.NormalizePaths(), mutator.TranslatePaths())
+	require.NoError(t, diags.Error())
+
+	// Designer notebook keeps its full ".designer.ipynb" suffix.
+	assert.Equal(t,
+		"/bundle/src/designer.designer.ipynb",
+		b.Config.Resources.Jobs["job"].Tasks[0].NotebookTask.NotebookPath)
+
+	// Regular notebook still has its extension stripped on import.
+	assert.Equal(t,
+		"/bundle/src/regular",
+		b.Config.Resources.Jobs["job"].Tasks[1].NotebookTask.NotebookPath)
+}
+
+// TestTranslatePathsDesignerNotebookSkipLocalFileValidation verifies the
+// designer-suffix preservation also holds on the config-remote-sync code path
+// where the local file is not inspected.
+func TestTranslatePathsDesignerNotebookSkipLocalFileValidation(t *testing.T) {
+	dir := t.TempDir()
+
+	b := &bundle.Bundle{
+		SyncRootPath:            dir,
+		BundleRootPath:          dir,
+		SyncRoot:                vfs.MustNew(dir),
+		SkipLocalFileValidation: true,
+		Config: config.Root{
+			Workspace: config.Workspace{
+				FilePath: "/bundle",
+			},
+			Resources: config.Resources{
+				Jobs: map[string]*resources.Job{
+					"job": {
+						JobSettings: jobs.JobSettings{
+							Tasks: []jobs.Task{
+								{
+									NotebookTask: &jobs.NotebookTask{
+										NotebookPath: "./src/designer.designer.ipynb",
+									},
+								},
+								{
+									NotebookTask: &jobs.NotebookTask{
+										NotebookPath: "./src/regular.ipynb",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	bundletest.SetLocation(b, ".", []dyn.Location{{File: filepath.Join(dir, "databricks.yml")}})
+
+	diags := bundle.ApplySeq(t.Context(), b, mutator.NormalizePaths(), mutator.TranslatePaths())
+	require.NoError(t, diags.Error())
+
+	assert.Equal(t,
+		"/bundle/src/designer.designer.ipynb",
+		b.Config.Resources.Jobs["job"].Tasks[0].NotebookTask.NotebookPath)
+	assert.Equal(t,
+		"/bundle/src/regular",
+		b.Config.Resources.Jobs["job"].Tasks[1].NotebookTask.NotebookPath)
 }

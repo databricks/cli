@@ -16,7 +16,7 @@ resources:
             entry_point: "run"
           libraries:
             - whl: whl/*.whl
-            - whl: /Workspace/Users/foo@bar.com/mywheel.whl
+            - whl: /Workspace/Users/foo@bar.test/mywheel.whl
         - task_key: TestTask2
           for_each_task:
             inputs: "[1]"
@@ -28,11 +28,11 @@ resources:
                 entry_point: "run"
               libraries:
                 - whl: whl/*.whl
-                - whl: /Workspace/Users/foo@bar.com/mywheel.whl
+                - whl: /Workspace/Users/foo@bar.test/mywheel.whl
       environments:
         - environment_key: "test_env"
           spec:
             client: "1"
             dependencies:
               - whl/source.whl
-              - /Workspace/Users/foo@bar.com/mywheel.whl
+              - /Workspace/Users/foo@bar.test/mywheel.whl

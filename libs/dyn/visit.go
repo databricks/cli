@@ -24,8 +24,8 @@ func (e cannotTraverseNilError) Error() string {
 }
 
 func IsCannotTraverseNilError(err error) bool {
-	var target cannotTraverseNilError
-	return errors.As(err, &target)
+	_, ok := errors.AsType[cannotTraverseNilError](err)
+	return ok
 }
 
 type noSuchKeyError struct {
@@ -37,8 +37,8 @@ func (e noSuchKeyError) Error() string {
 }
 
 func IsNoSuchKeyError(err error) bool {
-	var target noSuchKeyError
-	return errors.As(err, &target)
+	_, ok := errors.AsType[noSuchKeyError](err)
+	return ok
 }
 
 type indexOutOfBoundsError struct {
@@ -50,8 +50,8 @@ func (e indexOutOfBoundsError) Error() string {
 }
 
 func IsIndexOutOfBoundsError(err error) bool {
-	var target indexOutOfBoundsError
-	return errors.As(err, &target)
+	_, ok := errors.AsType[indexOutOfBoundsError](err)
+	return ok
 }
 
 type expectedMapToIndexError struct {
@@ -63,11 +63,6 @@ func (e expectedMapToIndexError) Error() string {
 	return fmt.Sprintf("expected a map to index %q, found %s", e.p, e.v.Kind())
 }
 
-func IsExpectedMapToIndexError(err error) bool {
-	var target expectedMapToIndexError
-	return errors.As(err, &target)
-}
-
 type expectedSequenceToIndexError struct {
 	p Path
 	v Value
@@ -75,11 +70,6 @@ type expectedSequenceToIndexError struct {
 
 func (e expectedSequenceToIndexError) Error() string {
 	return fmt.Sprintf("expected a sequence to index %q, found %s", e.p, e.v.Kind())
-}
-
-func IsExpectedSequenceToIndexError(err error) bool {
-	var target expectedSequenceToIndexError
-	return errors.As(err, &target)
 }
 
 type visitOptions struct {

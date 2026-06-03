@@ -51,6 +51,10 @@ resources:
 
 >>> [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-recreate-[UNIQUE_NAME]/default/files...
+
+This action will result in the deletion or recreation of the following Lakebase projects along with
+all their branches, databases, and endpoints. All data stored in them will be permanently lost:
+  recreate resources.postgres_projects.my_project
 Deploying resources...
 Updating deployment state...
 Deployment complete!
@@ -59,6 +63,10 @@ Deployment complete!
 === Destroy and verify cleanup
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
+  delete resources.postgres_projects.my_project
+
+This action will result in the deletion of the following Lakebase projects along with
+all their branches, databases, and endpoints. All data stored in them will be permanently lost:
   delete resources.postgres_projects.my_project
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-recreate-[UNIQUE_NAME]/default

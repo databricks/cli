@@ -47,7 +47,7 @@ func (l *metadataServiceLock) Acquire(ctx context.Context) error {
 		return errors.New("force lock is not supported with the deployment metadata service")
 	}
 
-	svc, err := tmpdms.NewDeploymentMetadataAPI(l.b.WorkspaceClient())
+	svc, err := tmpdms.NewDeploymentMetadataAPI(l.b.WorkspaceClient(ctx))
 	if err != nil {
 		return fmt.Errorf("failed to create metadata service client: %w", err)
 	}
@@ -178,7 +178,7 @@ func acquireLock(ctx context.Context, b *bundle.Bundle, svc *tmpdms.DeploymentMe
 // caller is responsible for writing the deployment ID to workspace after the
 // server-side deployment record is created successfully.
 func resolveDeploymentID(ctx context.Context, b *bundle.Bundle) (string, bool, error) {
-	f, err := deploy.StateFiler(b)
+	f, err := deploy.StateFiler(ctx, b)
 	if err != nil {
 		return "", false, fmt.Errorf("failed to create state filer: %w", err)
 	}
@@ -210,7 +210,7 @@ func resolveDeploymentID(ctx context.Context, b *bundle.Bundle) (string, bool, e
 // workspace state directory. This should be called after the server-side
 // deployment record is created successfully.
 func writeDeploymentID(ctx context.Context, b *bundle.Bundle, deploymentID string) error {
-	f, err := deploy.StateFiler(b)
+	f, err := deploy.StateFiler(ctx, b)
 	if err != nil {
 		return fmt.Errorf("failed to create state filer: %w", err)
 	}

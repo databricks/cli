@@ -22,9 +22,7 @@ func (a jobParameterArgs) ParseArgs(args []string, opts *Options) error {
 	if opts.Job.jobParams == nil {
 		opts.Job.jobParams = kv
 	} else {
-		for k, v := range kv {
-			opts.Job.jobParams[k] = v
-		}
+		maps.Copy(opts.Job.jobParams, kv)
 	}
 	return nil
 }
@@ -51,9 +49,7 @@ func (a jobTaskNotebookParamArgs) ParseArgs(args []string, opts *Options) error 
 	if opts.Job.notebookParams == nil {
 		opts.Job.notebookParams = kv
 	} else {
-		for k, v := range kv {
-			opts.Job.notebookParams[k] = v
-		}
+		maps.Copy(opts.Job.notebookParams, kv)
 	}
 	return nil
 }

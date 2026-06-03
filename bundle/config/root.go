@@ -3,6 +3,7 @@ package config
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"reflect"
@@ -25,7 +26,7 @@ type Script struct {
 	Content string `json:"content"`
 }
 
-type Root struct {
+type Root struct { //nolint:recvcheck // value receivers for read-only accessors, pointer for mutators
 	value dyn.Value
 	depth int
 
@@ -106,6 +107,13 @@ func LoadFromBytes(path string, raw []byte) (*Root, diag.Diagnostics) {
 	// Load configuration tree from YAML.
 	v, err := yamlloader.LoadYAML(path, bytes.NewBuffer(raw))
 	if err != nil {
+		if le, ok := errors.AsType[*yamlloader.LocationError](err); ok {
+			return nil, diag.Diagnostics{{
+				Severity:  diag.Error,
+				Summary:   le.Summary,
+				Locations: []dyn.Location{le.Loc},
+			}}
+		}
 		return nil, diag.Errorf("failed to load %s: %v", path, err)
 	}
 
@@ -443,7 +451,7 @@ var allowedVariableDefinitions = []([]string){
 	{"lookup"},
 }
 
-// isFullVariableOverrideDef checks if the given value is a full syntax varaible override.
+// isFullVariableOverrideDef checks if the given value is a full syntax variable override.
 // A full syntax variable override is a map with either 1 of 2 keys.
 // If it's 2 keys, the keys should be "default" and "type".
 // If it's 1 key, the key should be one of the following keys: "default", "lookup".
@@ -514,7 +522,7 @@ func rewriteShorthands(v dyn.Value) (dyn.Value, error) {
 
 				// Check if the original definition of variable has a type field.
 				// If it has a type field, it means the shorthand is a value of a complex type.
-				// Type might not be found if the variable overriden in a separate file
+				// Type might not be found if the variable overridden in a separate file
 				// and configuration is not merged yet.
 				typeV, err := dyn.GetByPath(v, p.Append(dyn.Key("type")))
 				if err == nil && typeV.MustString() == "complex" {

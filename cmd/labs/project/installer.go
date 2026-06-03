@@ -20,7 +20,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/sql"
-	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 )
 
@@ -152,8 +151,8 @@ func (i *installer) Upgrade(ctx context.Context) error {
 	return nil
 }
 
-func (i *installer) warningf(text string, v ...any) {
-	i.cmd.PrintErrln(color.YellowString(text, v...))
+func (i *installer) warning(s string) {
+	i.cmd.PrintErrln(cmdio.Yellow(i.cmd.Context(), s))
 }
 
 func (i *installer) cleanupLib(ctx context.Context) error {
@@ -288,7 +287,7 @@ func (i *installer) installPythonDependencies(ctx context.Context, spec string) 
 		process.WithCombinedOutput(&buf),
 		process.WithDir(libDir))
 	if err != nil {
-		i.warningf(buf.String())
+		i.warning(buf.String())
 		return fmt.Errorf("failed to install dependencies of %s", spec)
 	}
 	return nil

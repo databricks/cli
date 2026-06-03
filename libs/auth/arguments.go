@@ -1,8 +1,6 @@
 package auth
 
 import (
-	"strings"
-
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m"
 )
@@ -14,10 +12,9 @@ const WorkspaceIDNone = "none"
 // AuthArguments is a struct that contains the common arguments passed to
 // `databricks auth` commands.
 type AuthArguments struct {
-	Host          string
-	AccountID     string
-	WorkspaceID   string
-	IsUnifiedHost bool
+	Host        string
+	AccountID   string
+	WorkspaceID string
 
 	// Profile is the optional profile name. When set, the OAuth token cache
 	// key is the profile name instead of the host-based key.
@@ -30,7 +27,7 @@ type AuthArguments struct {
 
 // ToOAuthArgument converts the AuthArguments to an OAuthArgument from the Go SDK.
 // It calls EnsureResolved() to run host metadata discovery and routes based on
-// the resolved DiscoveryURL rather than the Experimental_IsUnifiedHost flag.
+// the resolved DiscoveryURL.
 func (a AuthArguments) ToOAuthArgument() (u2m.OAuthArgument, error) {
 	// Strip the "none" sentinel so it is never passed to the SDK.
 	workspaceID := a.WorkspaceID
@@ -39,11 +36,10 @@ func (a AuthArguments) ToOAuthArgument() (u2m.OAuthArgument, error) {
 	}
 
 	cfg := &config.Config{
-		Host:                       a.Host,
-		AccountID:                  a.AccountID,
-		WorkspaceID:                workspaceID,
-		Experimental_IsUnifiedHost: a.IsUnifiedHost,
-		HTTPTimeoutSeconds:         5,
+		Host:               a.Host,
+		AccountID:          a.AccountID,
+		WorkspaceID:        workspaceID,
+		HTTPTimeoutSeconds: 5,
 		// Skip config file loading. We only want host metadata resolution
 		// based on the explicit fields provided.
 		Loaders: []config.Loader{config.ConfigAttributes},
@@ -59,7 +55,7 @@ func (a AuthArguments) ToOAuthArgument() (u2m.OAuthArgument, error) {
 	host := cfg.CanonicalHostName()
 
 	// Classic accounts.* hosts always use account OAuth.
-	if strings.HasPrefix(host, "https://accounts.") || strings.HasPrefix(host, "https://accounts-dod.") {
+	if IsClassicAccountHost(host) {
 		return u2m.NewProfileAccountOAuthArgument(host, cfg.AccountID, a.Profile)
 	}
 

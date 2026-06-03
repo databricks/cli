@@ -1,0 +1,37 @@
+Local = true
+Cloud = false
+
+Ignore = [
+    '.databricks',
+]
+
+[EnvMatrix]
+  DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
+
+[[Server]]
+Pattern = "POST /api/2.0/apps/myapp/deployments"
+Response.Body = '''
+{
+  "deployment_id": "dep-123",
+  "source_code_path": "/Workspace/apps/myapp",
+  "mode": "SNAPSHOT",
+  "status": {
+    "state": "SUCCEEDED",
+    "message": "Deployment succeeded"
+  }
+}
+'''
+
+[[Server]]
+Pattern = "GET /api/2.0/apps/myapp/deployments/dep-123"
+Response.Body = '''
+{
+  "deployment_id": "dep-123",
+  "source_code_path": "/Workspace/apps/myapp",
+  "mode": "SNAPSHOT",
+  "status": {
+    "state": "SUCCEEDED",
+    "message": "Deployment succeeded"
+  }
+}
+'''

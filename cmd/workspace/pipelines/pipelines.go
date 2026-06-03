@@ -41,7 +41,12 @@ func New() *cobra.Command {
 		RunE:    root.ReportUnknownSubcommand,
 	}
 
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
+
 	// Add methods
+	cmd.AddCommand(newApplyEnvironment())
 	cmd.AddCommand(newClone())
 	cmd.AddCommand(newCreate())
 	cmd.AddCommand(newDelete())
@@ -61,6 +66,77 @@ func New() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
 		fn(cmd)
+	}
+
+	return cmd
+}
+
+// start apply-environment command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var applyEnvironmentOverrides []func(
+	*cobra.Command,
+	*pipelines.ApplyEnvironmentRequest,
+)
+
+func newApplyEnvironment() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var applyEnvironmentReq pipelines.ApplyEnvironmentRequest
+
+	cmd.Use = "apply-environment PIPELINE_ID"
+	cmd.Short = `*Public Preview* Apply the latest environment to the pipeline.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Apply the latest environment to the pipeline.
+
+  * Applies the current pipeline environment onto the pipeline compute. The
+  environment applied can be used by subsequent dev-mode updates.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if len(args) == 0 {
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No PIPELINE_ID argument specified. Loading names for Pipelines drop-down.")
+			names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
+			sp.Close()
+			if err != nil {
+				return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have ")
+		}
+		applyEnvironmentReq.PipelineId = args[0]
+
+		response, err := w.Pipelines.ApplyEnvironment(ctx, applyEnvironmentReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range applyEnvironmentOverrides {
+		fn(cmd, &applyEnvironmentReq)
 	}
 
 	return cmd
@@ -95,6 +171,8 @@ func newClone() *cobra.Command {
     PIPELINE_ID: Source pipeline to clone from`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -126,6 +204,7 @@ func newClone() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -166,6 +245,8 @@ func newCreate() *cobra.Command {
   If successful, this method returns the ID of the new pipeline.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -191,6 +272,7 @@ func newCreate() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -220,6 +302,7 @@ func newDelete() *cobra.Command {
 
 	var deleteReq pipelines.DeletePipelineRequest
 
+	cmd.Flags().BoolVar(&deleteReq.Cascade, "cascade", deleteReq.Cascade, `If false, pipeline deletion will not cascade to its datasets (MVs, STs, Views).`)
 	cmd.Flags().BoolVar(&deleteReq.Force, "force", deleteReq.Force, `If true, deletion will proceed even if resource cleanup fails.`)
 
 	cmd.Use = "delete PIPELINE_ID"
@@ -231,6 +314,8 @@ func newDelete() *cobra.Command {
   support for assistance to undo this action.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -294,6 +379,8 @@ func newGet() *cobra.Command {
 	cmd.Long = `Get a pipeline.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -323,6 +410,7 @@ func newGet() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -362,6 +450,8 @@ func newGetPermissionLevels() *cobra.Command {
     PIPELINE_ID: The pipeline for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -391,6 +481,7 @@ func newGetPermissionLevels() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -431,6 +522,8 @@ func newGetPermissions() *cobra.Command {
     PIPELINE_ID: The pipeline for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -460,6 +553,7 @@ func newGetPermissions() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -500,6 +594,8 @@ func newGetUpdate() *cobra.Command {
     UPDATE_ID: The ID of the update.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -518,6 +614,7 @@ func newGetUpdate() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -546,11 +643,21 @@ func newListPipelineEvents() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listPipelineEventsReq pipelines.ListPipelineEventsRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listPipelineEventsLimit int
 
 	cmd.Flags().StringVar(&listPipelineEventsReq.Filter, "filter", listPipelineEventsReq.Filter, `Criteria to select a subset of results, expressed using a SQL-like syntax.`)
 	cmd.Flags().IntVar(&listPipelineEventsReq.MaxResults, "max-results", listPipelineEventsReq.MaxResults, `Max number of entries to return in a single page.`)
 	// TODO: array: order_by
-	cmd.Flags().StringVar(&listPipelineEventsReq.PageToken, "page-token", listPipelineEventsReq.PageToken, `Page token returned by previous call.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listPipelineEventsLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listPipelineEventsReq.PageToken, "page-token", listPipelineEventsReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-pipeline-events PIPELINE_ID"
 	cmd.Short = `List pipeline events.`
@@ -562,6 +669,8 @@ func newListPipelineEvents() *cobra.Command {
     PIPELINE_ID: The pipeline to return events for.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -588,6 +697,13 @@ func newListPipelineEvents() *cobra.Command {
 		listPipelineEventsReq.PipelineId = args[0]
 
 		response := w.Pipelines.ListPipelineEvents(ctx, listPipelineEventsReq)
+		if listPipelineEventsLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listPipelineEventsLimit)
+		}
+		if listPipelineEventsLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listPipelineEventsLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -616,11 +732,21 @@ func newListPipelines() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listPipelinesReq pipelines.ListPipelinesRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listPipelinesLimit int
 
 	cmd.Flags().StringVar(&listPipelinesReq.Filter, "filter", listPipelinesReq.Filter, `Select a subset of results based on the specified criteria.`)
 	cmd.Flags().IntVar(&listPipelinesReq.MaxResults, "max-results", listPipelinesReq.MaxResults, `The maximum number of entries to return in a single page.`)
 	// TODO: array: order_by
-	cmd.Flags().StringVar(&listPipelinesReq.PageToken, "page-token", listPipelinesReq.PageToken, `Page token returned by previous call.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listPipelinesLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listPipelinesReq.PageToken, "page-token", listPipelinesReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-pipelines"
 	cmd.Short = `List pipelines.`
@@ -629,6 +755,8 @@ func newListPipelines() *cobra.Command {
   Lists pipelines defined in the Spark Declarative Pipelines system.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -641,6 +769,13 @@ func newListPipelines() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.Pipelines.ListPipelines(ctx, listPipelinesReq)
+		if listPipelinesLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listPipelinesLimit)
+		}
+		if listPipelinesLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listPipelinesLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -684,6 +819,8 @@ func newListUpdates() *cobra.Command {
     PIPELINE_ID: The pipeline to return updates for.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -713,6 +850,7 @@ func newListUpdates() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -759,6 +897,8 @@ func newSetPermissions() *cobra.Command {
     PIPELINE_ID: The pipeline for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -800,6 +940,7 @@ func newSetPermissions() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -858,6 +999,8 @@ func newStartUpdate() *cobra.Command {
   the pipeline, the request will fail and the active update will remain running.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -899,6 +1042,7 @@ func newStartUpdate() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -942,6 +1086,8 @@ func newStop() *cobra.Command {
   update for the pipeline, this request is a no-op.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -1018,7 +1164,7 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().BoolVar(&updateReq.AllowDuplicateNames, "allow-duplicate-names", updateReq.AllowDuplicateNames, `If false, deployment will fail if name has changed and conflicts the name of another pipeline.`)
 	cmd.Flags().StringVar(&updateReq.BudgetPolicyId, "budget-policy-id", updateReq.BudgetPolicyId, `Budget policy of this pipeline.`)
 	cmd.Flags().StringVar(&updateReq.Catalog, "catalog", updateReq.Catalog, `A catalog in Unity Catalog to publish data from this pipeline to.`)
-	cmd.Flags().StringVar(&updateReq.Channel, "channel", updateReq.Channel, `DLT Release Channel that specifies which version to use.`)
+	cmd.Flags().StringVar(&updateReq.Channel, "channel", updateReq.Channel, `SDP Release Channel that specifies which version to use.`)
 	// TODO: array: clusters
 	// TODO: map via StringToStringVar: configuration
 	cmd.Flags().BoolVar(&updateReq.Continuous, "continuous", updateReq.Continuous, `Whether the pipeline is continuous or triggered.`)
@@ -1035,6 +1181,7 @@ func newUpdate() *cobra.Command {
 	// TODO: array: libraries
 	cmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `Friendly identifier for this pipeline.`)
 	// TODO: array: notifications
+	// TODO: map via StringToStringVar: parameters
 	cmd.Flags().BoolVar(&updateReq.Photon, "photon", updateReq.Photon, `Whether Photon is enabled for this pipeline.`)
 	// TODO: complex arg: restart_window
 	cmd.Flags().StringVar(&updateReq.RootPath, "root-path", updateReq.RootPath, `Root path for this pipeline.`)
@@ -1057,6 +1204,8 @@ func newUpdate() *cobra.Command {
     PIPELINE_ID: Unique identifier for this pipeline.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -1143,6 +1292,8 @@ func newUpdatePermissions() *cobra.Command {
     PIPELINE_ID: The pipeline for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -1184,6 +1335,7 @@ func newUpdatePermissions() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 

@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"os"
 	"os/signal"
 	"strings"
@@ -14,30 +13,18 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/experimental/aitools/lib/middlewares"
 	"github.com/databricks/cli/experimental/aitools/lib/session"
+	"github.com/databricks/cli/experimental/libs/sqlcli"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/sqlexec"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/spf13/cobra"
 )
 
 const (
-	// sqlFileExtension is the file extension used to auto-detect SQL files.
-	sqlFileExtension = ".sql"
-
-	// pollIntervalInitial is the starting interval between status polls.
-	pollIntervalInitial = 1 * time.Second
-
-	// pollIntervalMax is the maximum interval between status polls.
-	pollIntervalMax = 5 * time.Second
-
 	// cancelTimeout is how long to wait for server-side cancellation.
 	cancelTimeout = 10 * time.Second
-
-	// staticTableThreshold is the maximum number of rows rendered as a static table.
-	// Beyond this, an interactive scrollable table is used.
-	staticTableThreshold = 30
 )
 
 type queryOutputMode int
@@ -48,8 +35,13 @@ const (
 	queryOutputModeInteractiveTable
 )
 
-func selectQueryOutputMode(outputType flags.Output, stdoutInteractive, promptSupported bool, rowCount int) queryOutputMode {
-	if outputType == flags.OutputJSON {
+// selectQueryOutputMode picks the rendering mode for a single-query result.
+// JSON is the only machine-readable option; static and interactive are
+// table variants chosen by row count and TTY capabilities. Sharing only
+// the threshold with sqlcli; the three-way decision is aitools-specific
+// because the postgres command's renderers have a different shape.
+func selectQueryOutputMode(format sqlcli.Format, stdoutInteractive, promptSupported bool, rowCount int) queryOutputMode {
+	if format == sqlcli.OutputJSON {
 		return queryOutputModeJSON
 	}
 	if !stdoutInteractive {
@@ -60,7 +52,7 @@ func selectQueryOutputMode(outputType flags.Output, stdoutInteractive, promptSup
 	if !promptSupported {
 		return queryOutputModeStaticTable
 	}
-	if rowCount <= staticTableThreshold {
+	if rowCount <= sqlcli.StaticTableThreshold {
 		return queryOutputModeStaticTable
 	}
 	return queryOutputModeInteractiveTable
@@ -68,52 +60,119 @@ func selectQueryOutputMode(outputType flags.Output, stdoutInteractive, promptSup
 
 func newQueryCmd() *cobra.Command {
 	var warehouseID string
-	var filePath string
+	var filePaths []string
+	var outputFormat string
+	var concurrency int
+	var paramFlags []string
+	var params []sql.StatementParameterListItem
 
 	cmd := &cobra.Command{
-		Use:   "query [SQL | file.sql]",
+		Use:   "query [SQL | file.sql]...",
 		Short: "Execute SQL against a Databricks warehouse",
-		Long: `Execute a SQL statement against a Databricks SQL warehouse and return results.
+		Long: `Execute one or more SQL statements against a Databricks SQL warehouse
+and return results.
 
-SQL can be provided as a positional argument, read from a file with --file,
-or piped via stdin. If the positional argument ends in .sql and the file
-exists, it is read as a SQL file automatically.
+A single SQL can be provided as a positional argument, read from a file with
+--file, or piped via stdin. If a positional argument ends in .sql and the
+file exists, it is read as a SQL file automatically.
+
+Pass multiple positional arguments and/or repeat --file to run several
+queries in parallel against the warehouse. Multi-query output is always
+JSON: an array of {sql, statement_id, state, elapsed_ms, columns, rows,
+error} objects. Result order is: --file inputs first (in flag order),
+then positional SQLs (in arg order). The exit code is non-zero if any
+query failed.
 
 The command auto-detects an available warehouse unless --warehouse is set
 or the DATABRICKS_WAREHOUSE_ID environment variable is configured.
 
-Output is JSON in non-interactive contexts. In interactive terminals it renders
-tables, and large results open an interactive table browser.`,
+For a single query, output is JSON in non-interactive contexts. In
+interactive terminals it renders tables, and large results open an
+interactive table browser. Use --output csv to export results as CSV.
+
+Pass named parameters with --param. Use ":name" markers in the SQL and
+"--param name=value" (string) or "--param name:TYPE=value" (typed, e.g.
+DATE, INT) to bind values. Positional "?" markers are not supported. In
+multi-query mode, the same parameter set is applied to every statement.`,
 		Example: `  databricks experimental aitools tools query "SELECT * FROM samples.nyctaxi.trips LIMIT 5"
   databricks experimental aitools tools query --warehouse abc123 "SELECT 1"
   databricks experimental aitools tools query --file report.sql
   databricks experimental aitools tools query report.sql
+  databricks experimental aitools tools query --output csv "SELECT * FROM samples.nyctaxi.trips LIMIT 5"
+  databricks experimental aitools tools query --output json "SELECT 1" "SELECT 2" "SELECT 3"
+  databricks experimental aitools tools query --param name=alice "SELECT * FROM users WHERE name = :name"
+  databricks experimental aitools tools query --param since:DATE=2026-01-01 "SELECT * FROM events WHERE ts > :since"
   echo "SELECT 1" | databricks experimental aitools tools query`,
-		Args:    cobra.MaximumNArgs(1),
-		PreRunE: root.MustWorkspaceClient,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx := cmd.Context()
-			w := cmdctx.WorkspaceClient(ctx)
+		Args: cobra.ArbitraryArgs,
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			if concurrency <= 0 {
+				return errInvalidBatchConcurrency
+			}
 
-			sqlStatement, err := resolveSQL(ctx, cmd, args, filePath)
+			var err error
+			params, err = parseParams(paramFlags)
 			if err != nil {
 				return err
 			}
+
+			return root.MustWorkspaceClient(cmd, args)
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx := cmd.Context()
+
+			// Resolve the effective format via sqlcli so the env-var
+			// precedence and explicit-text-on-pipe handling stays in sync
+			// across commands. We pass stdoutTTY=true to keep the original
+			// aitools behavior of not auto-falling-back to JSON here; the
+			// per-result render mode further down already handles the pipe
+			// case via selectQueryOutputMode.
+			format, err := sqlcli.ResolveFormat(ctx, outputFormat, cmd.Flag("output").Changed, true)
+			if err != nil {
+				return err
+			}
+
+			sqls, err := resolveSQLs(ctx, cmd, args, filePaths)
+			if err != nil {
+				return err
+			}
+
+			// Reject incompatible flag combinations before any API call so the
+			// user sees the real error instead of an auth/warehouse failure.
+			if len(sqls) > 1 && format != sqlcli.OutputJSON {
+				return fmt.Errorf("multiple queries require --output json (got %q); pass --output json to receive a JSON array of per-statement results", outputFormat)
+			}
+
+			w := cmdctx.WorkspaceClient(ctx)
 
 			wID, err := resolveWarehouseID(ctx, w, warehouseID)
 			if err != nil {
 				return err
 			}
 
-			resp, err := executeAndPoll(ctx, w.StatementExecution, wID, sqlStatement)
+			if len(sqls) > 1 {
+				return runBatch(ctx, cmd, w.StatementExecution, wID, sqls, params, concurrency)
+			}
+
+			client := sqlexec.New(w.StatementExecution, wID)
+
+			stmt, err := executeAndPoll(ctx, client, sqls[0], params)
 			if err != nil {
 				return err
 			}
 
-			columns := extractColumns(resp.Manifest)
-			rows, err := fetchAllRows(ctx, w.StatementExecution, resp)
+			result, err := client.Results(ctx, stmt)
 			if err != nil {
 				return err
+			}
+			columns := result.Columns
+			rows := result.Rows
+
+			// CSV bypasses the normal output mode selection.
+			if format == sqlcli.OutputCSV {
+				if len(columns) == 0 && len(rows) == 0 {
+					return nil
+				}
+				return renderCSV(cmd.OutOrStdout(), columns, rows)
 			}
 
 			if len(columns) == 0 && len(rows) == 0 {
@@ -126,7 +185,7 @@ tables, and large results open an interactive table browser.`,
 			stdoutInteractive := cmdio.SupportsColor(ctx, cmd.OutOrStdout())
 			promptSupported := cmdio.IsPromptSupported(ctx)
 
-			switch selectQueryOutputMode(root.OutputType(cmd), stdoutInteractive, promptSupported, len(rows)) {
+			switch selectQueryOutputMode(format, stdoutInteractive, promptSupported, len(rows)) {
 			case queryOutputModeJSON:
 				return renderJSON(cmd.OutOrStdout(), columns, rows)
 			case queryOutputModeStaticTable:
@@ -138,64 +197,60 @@ tables, and large results open an interactive table browser.`,
 	}
 
 	cmd.Flags().StringVarP(&warehouseID, "warehouse", "w", "", "SQL warehouse ID to use for execution")
-	cmd.Flags().StringVarP(&filePath, "file", "f", "", "Path to a SQL file to execute")
+	cmd.Flags().StringSliceVarP(&filePaths, "file", "f", nil, "Path to a SQL file to execute (repeatable; pair with positional SQLs to run a batch)")
+	cmd.Flags().IntVar(&concurrency, "concurrency", defaultBatchConcurrency, "Maximum in-flight statements when running a batch of queries")
+	cmd.Flags().StringArrayVar(&paramFlags, "param", nil, "Named parameter, repeatable. Format: name=value (STRING) or name:TYPE=value (e.g. name:DATE=2026-01-01). Empty value is sent as NULL.")
+	// Local --output flag shadows the root command's persistent --output flag,
+	// adding csv support for this command only.
+	cmd.Flags().StringVarP(&outputFormat, "output", "o", string(sqlcli.OutputText), "Output format: text, json, or csv")
+	cmd.RegisterFlagCompletionFunc("output", func(*cobra.Command, []string, string) ([]string, cobra.ShellCompDirective) {
+		out := make([]string, len(sqlcli.AllFormats))
+		for i, f := range sqlcli.AllFormats {
+			out[i] = string(f)
+		}
+		return out, cobra.ShellCompDirectiveNoFileComp
+	})
 
 	return cmd
 }
 
-// resolveSQL determines the SQL statement to execute from the available input sources.
-// Priority: --file flag > positional arg > stdin.
-func resolveSQL(ctx context.Context, cmd *cobra.Command, args []string, filePath string) (string, error) {
-	var raw string
+// resolveSQLs collects SQL statements from --file paths, positional args, and
+// stdin via sqlcli.Collect, then runs each through cleanSQL (the warehouse
+// statement API doesn't care about line comments, so we strip them up front
+// to normalise the wire payload). Returns just the SQL strings so the rest of
+// this command's flow stays unchanged; the Source labels sqlcli adds are
+// dropped on the floor (this command surfaces statement_id, not source).
+func resolveSQLs(ctx context.Context, cmd *cobra.Command, args, filePaths []string) ([]string, error) {
+	inputs, err := sqlcli.Collect(ctx, cmd.InOrStdin(), args, filePaths, sqlcli.CollectOptions{Cleaner: cleanSQL})
+	if err != nil {
+		return nil, err
+	}
+	out := make([]string, len(inputs))
+	for i, in := range inputs {
+		out[i] = in.SQL
+	}
+	return out, nil
+}
 
-	switch {
-	case filePath != "":
-		if len(args) > 0 {
-			return "", errors.New("cannot use both --file and a positional SQL argument")
-		}
-		data, err := os.ReadFile(filePath)
-		if err != nil {
-			return "", fmt.Errorf("read SQL file: %w", err)
-		}
-		raw = string(data)
-
-	case len(args) > 0:
-		// If the argument looks like a .sql file, try to read it.
-		// Only fall through to literal SQL if the file doesn't exist.
-		// Surface other errors (permission denied, etc.) directly.
-		if strings.HasSuffix(args[0], sqlFileExtension) {
-			data, err := os.ReadFile(args[0])
-			if err != nil && !errors.Is(err, os.ErrNotExist) {
-				return "", fmt.Errorf("read SQL file: %w", err)
-			}
-			if err == nil {
-				raw = string(data)
-				break
-			}
-		}
-		raw = args[0]
-
-	default:
-		// No args: try reading from stdin if it's piped.
-		// If stdin was overridden (e.g. cmd.SetIn in tests), always read from it.
-		// Otherwise, only read if stdin is not a TTY (i.e. piped input).
-		in := cmd.InOrStdin()
-		_, isOsFile := in.(*os.File)
-		if isOsFile && cmdio.IsPromptSupported(ctx) {
-			return "", errors.New("no SQL provided; pass a SQL string, use --file, or pipe via stdin")
-		}
-		data, err := io.ReadAll(in)
-		if err != nil {
-			return "", fmt.Errorf("read stdin: %w", err)
-		}
-		raw = string(data)
+// runBatch executes multiple SQL statements in parallel and renders the result
+// as a JSON array. Returns root.ErrAlreadyPrinted (so the exit code is non-zero
+// without an extra error message) when any statement failed; the failure detail
+// is already encoded in the printed JSON. The caller is responsible for
+// rejecting incompatible output formats before invoking this.
+//
+// params, if non-nil, are applied to every statement in the batch.
+func runBatch(ctx context.Context, cmd *cobra.Command, api sql.StatementExecutionInterface, warehouseID string, sqls []string, params []sql.StatementParameterListItem, concurrency int) error {
+	results := executeBatch(ctx, api, warehouseID, sqls, params, concurrency)
+	if err := renderBatchJSON(cmd.OutOrStdout(), results); err != nil {
+		return err
 	}
 
-	result := cleanSQL(raw)
-	if result == "" {
-		return "", errors.New("SQL statement is empty after removing comments and blank lines")
+	for _, r := range results {
+		if r.Error != nil {
+			return root.ErrAlreadyPrinted
+		}
 	}
-	return result, nil
+	return nil
 }
 
 // resolveWarehouseID returns the warehouse ID to use for query execution.
@@ -214,23 +269,14 @@ func resolveWarehouseID(ctx context.Context, w any, flagValue string) (string, e
 
 // executeAndPoll submits a SQL statement asynchronously and polls until completion.
 // It shows a spinner in interactive mode and supports Ctrl+C cancellation.
-func executeAndPoll(ctx context.Context, api sql.StatementExecutionInterface, warehouseID, statement string) (*sql.StatementResponse, error) {
+func executeAndPoll(ctx context.Context, client *sqlexec.Client, statement string, params []sql.StatementParameterListItem) (*sqlexec.Statement, error) {
 	// Submit asynchronously to get the statement ID immediately for cancellation.
-	resp, err := api.ExecuteStatement(ctx, sql.ExecuteStatementRequest{
-		WarehouseId: warehouseID,
-		Statement:   statement,
-		WaitTimeout: "0s",
-	})
+	stmt, err := client.Submit(ctx, statement, sqlexec.WithParameters(params))
 	if err != nil {
-		return nil, fmt.Errorf("execute statement: %w", err)
+		return nil, err
 	}
 
-	statementID := resp.StatementId
-
-	// Check if it completed immediately.
-	if isTerminalState(resp.Status) {
-		return resp, checkFailedState(resp.Status)
-	}
+	statementID := stmt.ID
 
 	// Set up Ctrl+C: signal cancels the poll context, cleanup is unified below.
 	pollCtx, pollCancel := context.WithCancel(ctx)
@@ -252,12 +298,13 @@ func executeAndPoll(ctx context.Context, api sql.StatementExecutionInterface, wa
 	// cancelStatement performs best-effort server-side cancellation.
 	// Called on any poll exit due to context cancellation (signal or parent).
 	cancelStatement := func() {
-		// Use the parent context (ctx), not the cancelled pollCtx.
-		cancelCtx, cancel := context.WithTimeout(ctx, cancelTimeout)
+		// Detach from any cancellation on the inbound ctx (the caller might
+		// have cancelled the parent before invoking this path): WithoutCancel
+		// preserves values but drops cancellation so the cancel RPC actually
+		// reaches the warehouse.
+		cancelCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), cancelTimeout)
 		defer cancel()
-		if err := api.CancelExecution(cancelCtx, sql.CancelExecutionRequest{
-			StatementId: statementID,
-		}); err != nil {
+		if err := client.Cancel(cancelCtx, statementID); err != nil {
 			log.Warnf(ctx, "Failed to cancel statement %s: %v", statementID, err)
 		}
 	}
@@ -282,97 +329,45 @@ func executeAndPoll(ctx context.Context, api sql.StatementExecutionInterface, wa
 		}
 	}()
 
-	// Poll with additive backoff: 1s, 2s, 3s, 4s, 5s (capped).
-	interval := pollIntervalInitial
-	for {
-		select {
-		case <-pollCtx.Done():
+	stmt, err = client.Poll(pollCtx, stmt)
+	if err != nil {
+		if pollCtx.Err() != nil {
 			cancelStatement()
 			cmdio.LogString(ctx, "Query cancelled.")
 			return nil, root.ErrAlreadyPrinted
-		case <-time.After(interval):
 		}
-
-		log.Debugf(ctx, "Polling statement %s: %s elapsed", statementID, time.Since(start).Truncate(time.Second))
-
-		pollResp, err := api.GetStatementByStatementId(pollCtx, statementID)
-		if err != nil {
-			if pollCtx.Err() != nil {
-				cancelStatement()
-				cmdio.LogString(ctx, "Query cancelled.")
-				return nil, root.ErrAlreadyPrinted
-			}
-			return nil, fmt.Errorf("poll statement status: %w", err)
-		}
-
-		if isTerminalState(pollResp.Status) {
-			sp.Close()
-			if err := checkFailedState(pollResp.Status); err != nil {
-				return nil, err
-			}
-			return &sql.StatementResponse{
-				StatementId: pollResp.StatementId,
-				Status:      pollResp.Status,
-				Manifest:    pollResp.Manifest,
-				Result:      pollResp.Result,
-			}, nil
-		}
-
-		interval = min(interval+time.Second, pollIntervalMax)
+		return nil, err
 	}
+
+	sp.Close()
+	if err := presentQueryError(stmt.Err()); err != nil {
+		return nil, err
+	}
+	return stmt, nil
 }
 
-// fetchAllRows collects all result rows, fetching additional chunks if needed.
-func fetchAllRows(ctx context.Context, api sql.StatementExecutionInterface, resp *sql.StatementResponse) ([][]string, error) {
-	if resp.Result == nil {
-		return nil, nil
-	}
-
-	rows := append([][]string{}, resp.Result.DataArray...)
-
-	totalChunks := 0
-	if resp.Manifest != nil {
-		totalChunks = resp.Manifest.TotalChunkCount
-	}
-
-	for chunk := 1; chunk < totalChunks; chunk++ {
-		log.Debugf(ctx, "Fetching result chunk %d/%d for statement %s", chunk+1, totalChunks, resp.StatementId)
-		chunkResp, err := api.GetStatementResultChunkNByStatementIdAndChunkIndex(ctx, resp.StatementId, chunk)
-		if err != nil {
-			return nil, fmt.Errorf("fetch result chunk %d: %w", chunk, err)
-		}
-		rows = append(rows, chunkResp.DataArray...)
-	}
-
-	return rows, nil
-}
-
-// isTerminalState returns true if the statement has reached a final state.
-func isTerminalState(status *sql.StatementStatus) bool {
-	if status == nil {
-		return false
-	}
-	switch status.State {
-	case sql.StatementStateSucceeded, sql.StatementStateFailed,
-		sql.StatementStateCanceled, sql.StatementStateClosed:
-		return true
-	case sql.StatementStatePending, sql.StatementStateRunning:
-		return false
-	}
-	return false
-}
-
-// checkFailedState returns an error if the statement is in a non-success terminal state.
-func checkFailedState(status *sql.StatementStatus) error {
-	if status == nil {
+// presentQueryError converts the engine's structured statement error into the
+// CLI-facing message for the query and discover-schema commands. It returns nil
+// for a nil error or any error that is not a *sqlexec.StatementError (the engine
+// only produces the latter on terminal non-success states).
+func presentQueryError(err error) error {
+	if err == nil {
 		return nil
 	}
-	switch status.State {
+	se, ok := errors.AsType[*sqlexec.StatementError](err)
+	if !ok {
+		return err
+	}
+
+	switch se.State {
 	case sql.StatementStateFailed:
 		msg := "query failed"
-		if status.Error != nil {
-			msg = fmt.Sprintf("query failed: %s %s", status.Error.ErrorCode, status.Error.Message)
-			if strings.Contains(status.Error.Message, "UNRESOLVED_MAP_KEY") {
+		// The engine populates Code only when the backend returned a
+		// ServiceError; otherwise Message is a synthesized state string we
+		// don't surface here, matching the original "query failed" fallback.
+		if se.Code != "" {
+			msg = fmt.Sprintf("query failed: %s %s", se.Code, se.Message)
+			if strings.Contains(se.Message, "UNRESOLVED_MAP_KEY") {
 				msg += "\n\nHint: your shell may have stripped quotes from the SQL string. " +
 					"Use single quotes for map keys (e.g. info['key']) or pass the query via --file."
 			}
@@ -382,10 +377,9 @@ func checkFailedState(status *sql.StatementStatus) error {
 		return errors.New("query was cancelled")
 	case sql.StatementStateClosed:
 		return errors.New("query was closed before results could be fetched")
-	case sql.StatementStatePending, sql.StatementStateRunning, sql.StatementStateSucceeded:
-		return nil
+	default:
+		return err
 	}
-	return nil
 }
 
 // cleanSQL removes surrounding quotes, empty lines, and SQL comments.
@@ -397,7 +391,7 @@ func cleanSQL(s string) string {
 	}
 
 	var lines []string
-	for _, line := range strings.Split(s, "\n") {
+	for line := range strings.SplitSeq(s, "\n") {
 		line = strings.TrimSpace(line)
 		if line == "" || strings.HasPrefix(line, "--") {
 			continue

@@ -6,7 +6,9 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/bundle/terraform_dabs_map"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structpath"
@@ -30,7 +32,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 		return
 	}
 
-	b.StateDB.AssertOpened()
+	b.StateDB.AssertOpenedForWrite()
 	b.RemoteStateCache.Clear()
 
 	g, err := makeGraph(plan)
@@ -190,6 +192,13 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 
 func (b *DeploymentBundle) LookupReferencePostDeploy(ctx context.Context, path *structpath.PathNode) (any, error) {
 	targetResourceKey, fieldPath := splitResourcePath(path)
+	targetGroup := config.GetResourceTypeFromKey(targetResourceKey)
+
+	// Translate Terraform-style field paths to DABs naming before lookup.
+	fieldPath, err := terraform_dabs_map.TerraformPathToDABs(targetGroup, fieldPath)
+	if err != nil {
+		return nil, err
+	}
 	fieldPathS := fieldPath.String()
 
 	targetEntry, err := b.Plan.ReadLockEntry(targetResourceKey)

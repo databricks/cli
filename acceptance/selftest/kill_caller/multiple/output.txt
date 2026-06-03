@@ -19,7 +19,7 @@ Attempt 3 done
 
 >>> [CLI] current-user me
 {
-  "id":"123",
-  "userName":"test@example.com"
+  "id": "[USERID]",
+  "userName": "[USERNAME]"
 }
 Attempt 4 done - success!

@@ -1,6 +1,11 @@
 package notebook
 
-import "github.com/databricks/databricks-sdk-go/service/workspace"
+import (
+	"path"
+	"strings"
+
+	"github.com/databricks/databricks-sdk-go/service/workspace"
+)
 
 const (
 	ExtensionNone    string = ""
@@ -9,7 +14,21 @@ const (
 	ExtensionScala   string = ".scala"
 	ExtensionSql     string = ".sql"
 	ExtensionJupyter string = ".ipynb"
+	// ExtensionDesigner is the compound suffix for Lakeflow Designer files.
+	// Unlike other notebook types, designer files keep this full suffix when
+	// imported into the workspace.
+	ExtensionDesigner string = ".designer.ipynb"
 )
+
+// StripExtension returns the workspace path for a local notebook file.
+// Designer files keep their full ".designer.ipynb" suffix in the workspace;
+// other notebook types lose their extension on import.
+func StripExtension(name string) string {
+	if strings.HasSuffix(name, ExtensionDesigner) {
+		return name
+	}
+	return strings.TrimSuffix(name, path.Ext(name))
+}
 
 // Extensions lists all notebook file extensions.
 var Extensions = []string{

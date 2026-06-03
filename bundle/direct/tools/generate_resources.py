@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+# /// script
+# dependencies = [
+#   "pyyaml",
+# ]
+# ///
 """
 Generate resources.generated.yml from OpenAPI schema field behaviors.
 """

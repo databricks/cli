@@ -1,3 +1,6 @@
+kill_after.py "GET /api/2.0/preview/scim/v2/Me" 0 2
+kill_after.py "GET /api/2.0/workspace/list" 0 1
+
 # Test pattern 1: /Me endpoint (kills first 2, then allows)
 trace errcode $CLI current-user me
 echo "Me attempt 1 done"

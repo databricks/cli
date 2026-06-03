@@ -129,14 +129,14 @@ func TestResolveWithTypeInterpolation(t *testing.T) {
 	require.NoError(t, err)
 
 	// Integer interpolation
-	assert.EqualValues(t, "1 2", getByPath(t, out, "c").MustString())
+	assert.Equal(t, "1 2", getByPath(t, out, "c").MustString())
 
 	// Float interpolation
-	assert.EqualValues(t, "Value: 3.14", getByPath(t, out, "float_interp").MustString())
+	assert.Equal(t, "Value: 3.14", getByPath(t, out, "float_interp").MustString())
 
 	// Bool interpolation
-	assert.EqualValues(t, "Enabled: true", getByPath(t, out, "bool_true_interp").MustString())
-	assert.EqualValues(t, "Disabled: false", getByPath(t, out, "bool_false_interp").MustString())
+	assert.Equal(t, "Enabled: true", getByPath(t, out, "bool_true_interp").MustString())
+	assert.Equal(t, "Disabled: false", getByPath(t, out, "bool_false_interp").MustString())
 
 	// Time interpolation should convert to string representation of time.Time
 	// Note: time.Time string representation includes timezone info
@@ -145,7 +145,7 @@ func TestResolveWithTypeInterpolation(t *testing.T) {
 	assert.Contains(t, timeResult, "00:00:00")
 
 	// Nil interpolation
-	assert.EqualValues(t, "Null: <nil>", getByPath(t, out, "nil_interp").MustString())
+	assert.Equal(t, "Null: <nil>", getByPath(t, out, "nil_interp").MustString())
 }
 
 func TestResolveWithTypeRetentionFailure(t *testing.T) {
@@ -188,8 +188,8 @@ func TestResolveWithTypeRetention(t *testing.T) {
 	assert.Zero(t, 1.0-getByPath(t, out, "float").MustFloat())
 	assert.Zero(t, 1.0-getByPath(t, out, "float_var").MustFloat())
 
-	assert.EqualValues(t, "a", getByPath(t, out, "string").MustString())
-	assert.EqualValues(t, "a", getByPath(t, out, "string_var").MustString())
+	assert.Equal(t, "a", getByPath(t, out, "string").MustString())
+	assert.Equal(t, "a", getByPath(t, out, "string_var").MustString())
 }
 
 func TestResolveWithSkip(t *testing.T) {
@@ -221,7 +221,7 @@ func TestResolveWithSkip(t *testing.T) {
 	// Check that the skipped variable references are not interpolated.
 	assert.Equal(t, "${b}", getByPath(t, out, "d").MustString())
 	assert.Equal(t, "a ${b}", getByPath(t, out, "e").MustString())
-	assert.Equal(t, "${b} a a ${b}", getByPath(t, out, "f").MustString())
+	assert.Equal(t, "${b} a a ${b}", getByPath(t, out, "f").MustString()) //nolint:dupword
 }
 
 func TestResolveWithSkipEverything(t *testing.T) {

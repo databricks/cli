@@ -71,12 +71,18 @@ func getEnvironmentKey(x jobs.JobEnvironment) (string, string) {
 	return "environment_key", x.EnvironmentKey
 }
 
+func getDependsOnTaskKey(x jobs.TaskDependency) (string, string) {
+	return "task_key", x.TaskKey
+}
+
 func (*ResourceJob) KeyedSlices() map[string]any {
 	return map[string]any{
-		"tasks":        getTaskKey,
-		"parameters":   getParameterName,
-		"job_clusters": getJobClusterKey,
-		"environments": getEnvironmentKey,
+		"tasks":                                  getTaskKey,
+		"parameters":                             getParameterName,
+		"job_clusters":                           getJobClusterKey,
+		"environments":                           getEnvironmentKey,
+		"tasks[*].depends_on":                    getDependsOnTaskKey,
+		"tasks[*].for_each_task.task.depends_on": getDependsOnTaskKey,
 	}
 }
 
@@ -88,9 +94,10 @@ func (r *ResourceJob) DoRead(ctx context.Context, id string) (*JobRemote, error)
 	// GetByJobId only fetches the first page (100 tasks). Jobs.Get handles
 	// pagination and returns the complete job with all tasks merged.
 	job, err := r.client.Jobs.Get(ctx, jobs.GetJobRequest{
-		JobId:           idInt,
-		PageToken:       "",
-		ForceSendFields: nil,
+		JobId:               idInt,
+		PageToken:           "",
+		IncludeTriggerState: false,
+		ForceSendFields:     nil,
 	})
 	if err != nil {
 		return nil, err
@@ -135,7 +142,7 @@ func (r *ResourceJob) DoUpdate(ctx context.Context, id string, config *jobs.JobS
 	return nil, r.client.Jobs.Reset(ctx, request)
 }
 
-func (r *ResourceJob) DoDelete(ctx context.Context, id string) error {
+func (r *ResourceJob) DoDelete(ctx context.Context, id string, _ *jobs.JobSettings) error {
 	idInt, err := parseJobID(id)
 	if err != nil {
 		return err

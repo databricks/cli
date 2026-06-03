@@ -20,8 +20,10 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "external-metadata",
-		Short: `External Metadata objects enable customers to register and manage metadata about external systems within Unity Catalog.`,
-		Long: `External Metadata objects enable customers to register and manage metadata
+		Short: `*Public Preview* External Metadata objects enable customers to register and manage metadata about external systems within Unity Catalog.`,
+		Long: `This command is in Public Preview and may change without notice.
+
+External Metadata objects enable customers to register and manage metadata
   about external systems within Unity Catalog.
 
   These APIs provide a standardized way to create, update, retrieve, list, and
@@ -31,6 +33,10 @@ func New() *cobra.Command {
 		GroupID: "catalog",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	// Add methods
 	cmd.AddCommand(newCreateExternalMetadata())
@@ -72,8 +78,10 @@ func newCreateExternalMetadata() *cobra.Command {
 	cmd.Flags().StringVar(&createExternalMetadataReq.ExternalMetadata.Url, "url", createExternalMetadataReq.ExternalMetadata.Url, `URL associated with the external metadata object.`)
 
 	cmd.Use = "create-external-metadata NAME SYSTEM_TYPE ENTITY_TYPE"
-	cmd.Short = `Create an external metadata object.`
-	cmd.Long = `Create an external metadata object.
+	cmd.Short = `*Public Preview* Create an external metadata object.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Create an external metadata object.
 
   Creates a new external metadata object in the parent metastore if the caller
   is a metastore admin or has the **CREATE_EXTERNAL_METADATA** privilege. Grants
@@ -110,12 +118,14 @@ func newCreateExternalMetadata() *cobra.Command {
     ENTITY_TYPE: Type of entity within the external system.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name', 'system_type', 'entity_type' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'name', 'system_type', 'entity_type' in your JSON input")
 			}
 			return nil
 		}
@@ -158,6 +168,7 @@ func newCreateExternalMetadata() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -188,14 +199,18 @@ func newDeleteExternalMetadata() *cobra.Command {
 	var deleteExternalMetadataReq catalog.DeleteExternalMetadataRequest
 
 	cmd.Use = "delete-external-metadata NAME"
-	cmd.Short = `Delete an external metadata object.`
-	cmd.Long = `Delete an external metadata object.
+	cmd.Short = `*Public Preview* Delete an external metadata object.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Delete an external metadata object.
 
   Deletes the external metadata object that matches the supplied name. The
   caller must be a metastore admin, the owner of the external metadata object,
   or a user that has the **MANAGE** privilege.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -243,14 +258,18 @@ func newGetExternalMetadata() *cobra.Command {
 	var getExternalMetadataReq catalog.GetExternalMetadataRequest
 
 	cmd.Use = "get-external-metadata NAME"
-	cmd.Short = `Get an external metadata object.`
-	cmd.Long = `Get an external metadata object.
+	cmd.Short = `*Public Preview* Get an external metadata object.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Get an external metadata object.
 
   Gets the specified external metadata object in a metastore. The caller must be
   a metastore admin, the owner of the external metadata object, or a user that
   has the **BROWSE** privilege.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -268,6 +287,7 @@ func newGetExternalMetadata() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -296,13 +316,25 @@ func newListExternalMetadata() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listExternalMetadataReq catalog.ListExternalMetadataRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listExternalMetadataLimit int
 
 	cmd.Flags().IntVar(&listExternalMetadataReq.PageSize, "page-size", listExternalMetadataReq.PageSize, `Specifies the maximum number of external metadata objects to return in a single response.`)
-	cmd.Flags().StringVar(&listExternalMetadataReq.PageToken, "page-token", listExternalMetadataReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listExternalMetadataLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listExternalMetadataReq.PageToken, "page-token", listExternalMetadataReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-external-metadata"
-	cmd.Short = `List external metadata objects.`
-	cmd.Long = `List external metadata objects.
+	cmd.Short = `*Public Preview* List external metadata objects.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+List external metadata objects.
 
   Gets an array of external metadata objects in the metastore. If the caller is
   the metastore admin, all external metadata objects will be retrieved.
@@ -311,6 +343,8 @@ func newListExternalMetadata() *cobra.Command {
   elements in the array.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -323,6 +357,13 @@ func newListExternalMetadata() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.ExternalMetadata.ListExternalMetadata(ctx, listExternalMetadataReq)
+		if listExternalMetadataLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listExternalMetadataLimit)
+		}
+		if listExternalMetadataLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listExternalMetadataLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -363,8 +404,10 @@ func newUpdateExternalMetadata() *cobra.Command {
 	cmd.Flags().StringVar(&updateExternalMetadataReq.ExternalMetadata.Url, "url", updateExternalMetadataReq.ExternalMetadata.Url, `URL associated with the external metadata object.`)
 
 	cmd.Use = "update-external-metadata NAME UPDATE_MASK SYSTEM_TYPE ENTITY_TYPE"
-	cmd.Short = `Update an external metadata object.`
-	cmd.Long = `Update an external metadata object.
+	cmd.Short = `*Public Preview* Update an external metadata object.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Update an external metadata object.
 
   Updates the external metadata object that matches the supplied name. The
   caller can only update either the owner or other metadata fields in one
@@ -414,6 +457,8 @@ func newUpdateExternalMetadata() *cobra.Command {
     ENTITY_TYPE: Type of entity within the external system.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
@@ -461,6 +506,7 @@ func newUpdateExternalMetadata() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 

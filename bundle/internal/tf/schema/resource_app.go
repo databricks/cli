@@ -105,10 +105,12 @@ type ResourceAppPendingDeployment struct {
 }
 
 type ResourceAppProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type ResourceAppResourcesApp struct {
+	Name       string `json:"name,omitempty"`
+	Permission string `json:"permission,omitempty"`
 }
 
 type ResourceAppResourcesDatabase struct {
@@ -214,6 +216,7 @@ type ResourceApp struct {
 	ServicePrincipalName        string                                   `json:"service_principal_name,omitempty"`
 	Space                       string                                   `json:"space,omitempty"`
 	TelemetryExportDestinations []ResourceAppTelemetryExportDestinations `json:"telemetry_export_destinations,omitempty"`
+	ThumbnailUrl                string                                   `json:"thumbnail_url,omitempty"`
 	UpdateTime                  string                                   `json:"update_time,omitempty"`
 	Updater                     string                                   `json:"updater,omitempty"`
 	Url                         string                                   `json:"url,omitempty"`

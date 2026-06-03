@@ -10,7 +10,9 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/notebook"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -55,7 +57,7 @@ func (n *Downloader) MarkPipelineLibraryForDownload(ctx context.Context, lib *pi
 }
 
 func (n *Downloader) markFileForDownload(ctx context.Context, filePath *string) error {
-	_, err := n.w.Workspace.GetStatusByPath(ctx, *filePath)
+	_, err := n.w.Workspace.GetStatusByPath(ctx, *filePath) //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
 	if err != nil {
 		return err
 	}
@@ -73,12 +75,12 @@ func (n *Downloader) markFileForDownload(ctx context.Context, filePath *string) 
 		return err
 	}
 
-	*filePath = rel
+	*filePath = filepath.ToSlash(rel)
 	return nil
 }
 
 func (n *Downloader) MarkDirectoryForDownload(ctx context.Context, dirPath *string) error {
-	_, err := n.w.Workspace.GetStatusByPath(ctx, *dirPath)
+	_, err := n.w.Workspace.GetStatusByPath(ctx, *dirPath) //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
 	if err != nil {
 		return err
 	}
@@ -109,7 +111,7 @@ func (n *Downloader) MarkDirectoryForDownload(ctx context.Context, dirPath *stri
 		return err
 	}
 
-	*dirPath = rel
+	*dirPath = filepath.ToSlash(rel)
 	return nil
 }
 
@@ -118,7 +120,7 @@ func (n *Downloader) MarkDirectoryForDownload(ctx context.Context, dirPath *stri
 func (n *Downloader) recursiveListWithExclusions(ctx context.Context, dirPath string) ([]workspace.ObjectInfo, error) {
 	var result []workspace.ObjectInfo
 
-	objects, err := n.w.Workspace.ListAll(ctx, workspace.ListWorkspaceRequest{
+	objects, err := n.w.Workspace.ListAll(ctx, workspace.ListWorkspaceRequest{ //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
 		Path: dirPath,
 	})
 	if err != nil {
@@ -161,7 +163,7 @@ func (n *Downloader) markNotebookForDownload(ctx context.Context, notebookPath *
 		ctx,
 		http.MethodGet,
 		"/api/2.0/workspace/get-status",
-		nil,
+		auth.WorkspaceIDHeaders(n.w.Config),
 		nil,
 		map[string]string{
 			"path":               *notebookPath,
@@ -203,8 +205,73 @@ func (n *Downloader) markNotebookForDownload(ctx context.Context, notebookPath *
 		return err
 	}
 
-	*notebookPath = rel
+	*notebookPath = filepath.ToSlash(rel)
 	return nil
+}
+
+func (n *Downloader) MarkTasksForDownload(ctx context.Context, tasks []jobs.Task) error {
+	var paths []string
+	for _, task := range tasks {
+		if task.NotebookTask != nil {
+			paths = append(paths, task.NotebookTask.NotebookPath)
+		}
+	}
+	if len(paths) > 0 {
+		n.basePath = commonDirPrefix(paths)
+	}
+	for i := range tasks {
+		if err := n.MarkTaskForDownload(ctx, &tasks[i]); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (n *Downloader) CleanupOldFiles(ctx context.Context) {
+	for targetPath := range n.files {
+		rel, err := filepath.Rel(n.sourceDir, targetPath)
+		if err != nil {
+			continue
+		}
+		if filepath.Base(rel) == rel {
+			continue
+		}
+		oldPath := filepath.Join(n.sourceDir, filepath.Base(rel))
+		if _, isNewFile := n.files[oldPath]; isNewFile {
+			continue
+		}
+		if err := os.Remove(oldPath); err == nil {
+			log.Infof(ctx, "Removed previously generated file %s", filepath.ToSlash(oldPath))
+		}
+	}
+}
+
+// commonDirPrefix returns the longest common directory-aligned prefix of the given paths.
+func commonDirPrefix(paths []string) string {
+	if len(paths) == 0 {
+		return ""
+	}
+	if len(paths) == 1 {
+		return path.Dir(paths[0])
+	}
+
+	prefix := paths[0]
+	for _, p := range paths[1:] {
+		for !strings.HasPrefix(p, prefix) {
+			prefix = prefix[:len(prefix)-1]
+			if prefix == "" {
+				return ""
+			}
+		}
+	}
+
+	// Truncate to last '/' to ensure directory alignment.
+	if i := strings.LastIndex(prefix, "/"); i >= 0 {
+		prefix = prefix[:i]
+	} else {
+		prefix = ""
+	}
+	return prefix
 }
 
 func (n *Downloader) relativePath(fullPath string) string {

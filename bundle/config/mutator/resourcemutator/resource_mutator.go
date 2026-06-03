@@ -116,8 +116,8 @@ func applyInitializeMutators(ctx context.Context, b *bundle.Bundle) {
 		DashboardFixups(),
 
 		// Reads (typed): b.Config.Permissions (validates permission levels)
-		// Reads (dynamic): resources.{jobs,pipelines,experiments,models,model_serving_endpoints,dashboards,apps}.*.permissions (reads existing permissions)
-		// Updates (dynamic): resources.{jobs,pipelines,experiments,models,model_serving_endpoints,dashboards,apps}.*.permissions (adds permissions from bundle-level configuration)
+		// Reads (dynamic): resources.{jobs,pipelines,experiments,models,model_serving_endpoints,dashboards,apps,vector_search_endpoints,...}.*.permissions (reads existing permissions)
+		// Updates (dynamic): resources.{jobs,pipelines,experiments,models,model_serving_endpoints,dashboards,apps,vector_search_endpoints,...}.*.permissions (adds permissions from bundle-level configuration)
 		// Applies bundle-level permissions to all supported resources
 		ApplyBundlePermissions(),
 
@@ -167,7 +167,7 @@ func applyNormalizeMutators(ctx context.Context, b *bundle.Bundle) {
 		// Updates (dynamic): resources.apps.*.resources (merges app resources with the same name)
 		MergeApps(),
 
-		// Reads (dynamic): resources.{catalogs,schemas,external_locations,volumes,registered_models}.*.grants
+		// Reads (dynamic): resources.{catalogs,schemas,external_locations,volumes,registered_models,vector_search_indexes}.*.grants
 		// Updates (dynamic): same paths — merges grant entries by principal and deduplicates privileges
 		MergeGrants(),
 

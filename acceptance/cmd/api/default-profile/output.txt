@@ -1,0 +1,28 @@
+
+=== default_profile is used when no --profile flag and no DATABRICKS_CONFIG_PROFILE
+
+>>> [CLI] api get /api/2.0/clusters/list
+{}
+
+>>> print_requests.py --get //api/2.0/clusters/list
+{
+  "headers": {
+    "Authorization": [
+      "Bearer [DATABRICKS_TOKEN]"
+    ],
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/api_get cmd-exec-id/[UUID] interactive/none auth/pat"
+    ],
+    "X-Databricks-Workspace-Id": [
+      "[NUMID]"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/clusters/list"
+}
+
+=== --profile overrides default_profile (negative case)
+Warn: [hostmetadata] failed to fetch host metadata for https://other.test, will skip for 1m0s
+Error: Get "https://other.test/api/2.0/clusters/list": (redacted)
+
+Exit code: 1

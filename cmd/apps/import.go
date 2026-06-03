@@ -34,6 +34,7 @@ import (
 	"github.com/databricks/cli/libs/textutil"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/apps"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/spf13/cobra"
 )
@@ -89,7 +90,7 @@ Examples:
 			w := cmdctx.WorkspaceClient(ctx)
 
 			// Get current user to filter apps
-			me, err := w.CurrentUser.Me(ctx)
+			me, err := w.CurrentUser.Me(ctx, iam.MeRequest{})
 			if err != nil {
 				return fmt.Errorf("failed to get current user: %w", err)
 			}
@@ -196,7 +197,7 @@ Examples:
 					cmdio.LogString(ctx, "Cleaning up previous app folder")
 				}
 
-				err = w.Workspace.Delete(ctx, workspace.Delete{
+				err = w.Workspace.Delete(ctx, workspace.Delete{ //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
 					Path:      oldSourceCodePath,
 					Recursive: true,
 				})
@@ -321,7 +322,7 @@ func runImport(ctx context.Context, w *databricks.WorkspaceClient, appName, outp
 		}
 
 		// Verify the app exists
-		exists, err := resource.Exists(ctx, b.WorkspaceClient(), app.Name)
+		exists, err := resource.Exists(ctx, b.WorkspaceClient(ctx), app.Name)
 		if err != nil {
 			return fmt.Errorf("failed to verify app exists: %w", err)
 		}

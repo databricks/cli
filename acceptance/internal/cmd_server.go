@@ -49,10 +49,10 @@ func chdir(t *testing.T, cwd string) func() {
 	require.NotEmpty(t, cwd)
 	prevDir, err := os.Getwd()
 	require.NoError(t, err)
-	err = os.Chdir(cwd)
+	err = os.Chdir(cwd) //nolint:usetesting // must restore before function ends, not at test cleanup
 	require.NoError(t, err)
 	return func() {
-		_ = os.Chdir(prevDir)
+		_ = os.Chdir(prevDir) //nolint:usetesting // see above
 	}
 }
 
@@ -62,7 +62,7 @@ func configureEnv(t *testing.T, env map[string]string) func() {
 	// Set current process's environment to match the input.
 	os.Clearenv()
 	for key, val := range env {
-		os.Setenv(key, val)
+		os.Setenv(key, val) //nolint:usetesting // custom restore needed; t.Setenv can't clearenv+restore all
 	}
 
 	// Function callback to use with defer to restore original environment.
@@ -70,7 +70,7 @@ func configureEnv(t *testing.T, env map[string]string) func() {
 		os.Clearenv()
 		for _, kv := range oldEnv {
 			kvs := strings.SplitN(kv, "=", 2)
-			os.Setenv(kvs[0], kvs[1])
+			os.Setenv(kvs[0], kvs[1]) //nolint:usetesting // see above
 		}
 	}
 }

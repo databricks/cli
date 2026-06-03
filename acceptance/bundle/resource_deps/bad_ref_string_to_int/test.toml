@@ -1,3 +1,5 @@
+RecordRequests = false
+
 [Env]
 DATABRICKS_CACHE_ENABLED = 'false'
 

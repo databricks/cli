@@ -20,12 +20,18 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "provider-personalization-requests",
-		Short: `Personalization requests are an alternate to instantly available listings.`,
-		Long: `Personalization requests are an alternate to instantly available listings.
+		Short: `*Public Preview* Personalization requests are an alternate to instantly available listings.`,
+		Long: `This command is in Public Preview and may change without notice.
+
+Personalization requests are an alternate to instantly available listings.
   Control the lifecycle of personalized solutions.`,
 		GroupID: "marketplace",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	// Add methods
 	cmd.AddCommand(newList())
@@ -52,18 +58,32 @@ func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listReq marketplace.ListAllPersonalizationRequestsRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listLimit int
 
 	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, ``)
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, ``)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list"
-	cmd.Short = `All personalization requests across all listings.`
-	cmd.Long = `All personalization requests across all listings.
+	cmd.Short = `*Public Preview* All personalization requests across all listings.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+All personalization requests across all listings.
 
   List personalization requests to this provider. This will return all
   personalization requests, regardless of which listing they are for.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -76,6 +96,13 @@ func newList() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.ProviderPersonalizationRequests.List(ctx, listReq)
+		if listLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
+		}
+		if listLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -112,13 +139,17 @@ func newUpdate() *cobra.Command {
 	// TODO: complex arg: share
 
 	cmd.Use = "update LISTING_ID REQUEST_ID STATUS"
-	cmd.Short = `Update personalization request status.`
-	cmd.Long = `Update personalization request status.
+	cmd.Short = `*Public Preview* Update personalization request status.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Update personalization request status.
 
   Update personalization request. This method only permits updating the status
   of the request.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
@@ -163,6 +194,7 @@ func newUpdate() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 

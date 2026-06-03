@@ -21,29 +21,136 @@ var cmdOverrides []func(*cobra.Command)
 
 func New() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "knowledge-assistants",
-		Short:   `Manage Knowledge Assistants and related resources.`,
-		Long:    `Manage Knowledge Assistants and related resources.`,
+		Use:   "knowledge-assistants",
+		Short: `*Beta* Manage Knowledge Assistants and related resources.`,
+		Long: `This command is in Beta and may change without notice.
+
+Manage Knowledge Assistants and related resources.`,
 		GroupID: "agentbricks",
 		RunE:    root.ReportUnknownSubcommand,
 	}
 
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
 	// Add methods
+	cmd.AddCommand(newCreateExample())
 	cmd.AddCommand(newCreateKnowledgeAssistant())
 	cmd.AddCommand(newCreateKnowledgeSource())
+	cmd.AddCommand(newDeleteExample())
 	cmd.AddCommand(newDeleteKnowledgeAssistant())
 	cmd.AddCommand(newDeleteKnowledgeSource())
+	cmd.AddCommand(newGetExample())
 	cmd.AddCommand(newGetKnowledgeAssistant())
 	cmd.AddCommand(newGetKnowledgeSource())
+	cmd.AddCommand(newGetPermissionLevels())
+	cmd.AddCommand(newGetPermissions())
+	cmd.AddCommand(newListExamples())
 	cmd.AddCommand(newListKnowledgeAssistants())
 	cmd.AddCommand(newListKnowledgeSources())
+	cmd.AddCommand(newSetPermissions())
 	cmd.AddCommand(newSyncKnowledgeSources())
+	cmd.AddCommand(newUpdateExample())
 	cmd.AddCommand(newUpdateKnowledgeAssistant())
 	cmd.AddCommand(newUpdateKnowledgeSource())
+	cmd.AddCommand(newUpdatePermissions())
 
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
 		fn(cmd)
+	}
+
+	return cmd
+}
+
+// start create-example command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var createExampleOverrides []func(
+	*cobra.Command,
+	*knowledgeassistants.CreateExampleRequest,
+)
+
+func newCreateExample() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var createExampleReq knowledgeassistants.CreateExampleRequest
+	createExampleReq.Example = knowledgeassistants.Example{}
+	var createExampleJson flags.JsonFlag
+
+	cmd.Flags().Var(&createExampleJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	// TODO: array: guidelines
+	cmd.Flags().StringVar(&createExampleReq.Example.Name, "name", createExampleReq.Example.Name, `Full resource name: knowledge-assistants/{knowledge_assistant_id}/examples/{example_id}.`)
+
+	cmd.Use = "create-example PARENT QUESTION"
+	cmd.Short = `*Beta* Create an example for a Knowledge Assistant.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Create an example for a Knowledge Assistant.
+
+  Creates an example for a Knowledge Assistant.
+
+  Arguments:
+    PARENT: Parent resource where this example will be created. Format:
+      knowledge-assistants/{knowledge_assistant_id}
+    QUESTION: The example question.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		if cmd.Flags().Changed("json") {
+			err := root.ExactArgs(1)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, provide only PARENT as positional arguments. Provide 'question' in your JSON input")
+			}
+			return nil
+		}
+		check := root.ExactArgs(2)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := createExampleJson.Unmarshal(&createExampleReq.Example)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnostics(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		createExampleReq.Parent = args[0]
+		if !cmd.Flags().Changed("json") {
+			createExampleReq.Example.Question = args[1]
+		}
+
+		response, err := w.KnowledgeAssistants.CreateExample(ctx, createExampleReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range createExampleOverrides {
+		fn(cmd, &createExampleReq)
 	}
 
 	return cmd
@@ -71,8 +178,10 @@ func newCreateKnowledgeAssistant() *cobra.Command {
 	cmd.Flags().StringVar(&createKnowledgeAssistantReq.KnowledgeAssistant.Name, "name", createKnowledgeAssistantReq.KnowledgeAssistant.Name, `The resource name of the Knowledge Assistant.`)
 
 	cmd.Use = "create-knowledge-assistant DISPLAY_NAME DESCRIPTION"
-	cmd.Short = `Create a Knowledge Assistant.`
-	cmd.Long = `Create a Knowledge Assistant.
+	cmd.Short = `*Beta* Create a Knowledge Assistant.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Create a Knowledge Assistant.
 
   Creates a Knowledge Assistant.
 
@@ -85,12 +194,14 @@ func newCreateKnowledgeAssistant() *cobra.Command {
       optional unless included in update_mask.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'display_name', 'description' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'display_name', 'description' in your JSON input")
 			}
 			return nil
 		}
@@ -126,6 +237,7 @@ func newCreateKnowledgeAssistant() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -165,8 +277,10 @@ func newCreateKnowledgeSource() *cobra.Command {
 	cmd.Flags().StringVar(&createKnowledgeSourceReq.KnowledgeSource.Name, "name", createKnowledgeSourceReq.KnowledgeSource.Name, `Full resource name: knowledge-assistants/{knowledge_assistant_id}/knowledge-sources/{knowledge_source_id}.`)
 
 	cmd.Use = "create-knowledge-source PARENT DISPLAY_NAME DESCRIPTION SOURCE_TYPE"
-	cmd.Short = `Create a Knowledge Source.`
-	cmd.Long = `Create a Knowledge Source.
+	cmd.Short = `*Beta* Create a Knowledge Source.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Create a Knowledge Source.
 
   Creates a Knowledge Source under a Knowledge Assistant.
 
@@ -184,6 +298,8 @@ func newCreateKnowledgeSource() *cobra.Command {
       is ignored.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
@@ -229,6 +345,7 @@ func newCreateKnowledgeSource() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -239,6 +356,67 @@ func newCreateKnowledgeSource() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range createKnowledgeSourceOverrides {
 		fn(cmd, &createKnowledgeSourceReq)
+	}
+
+	return cmd
+}
+
+// start delete-example command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var deleteExampleOverrides []func(
+	*cobra.Command,
+	*knowledgeassistants.DeleteExampleRequest,
+)
+
+func newDeleteExample() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var deleteExampleReq knowledgeassistants.DeleteExampleRequest
+
+	cmd.Use = "delete-example NAME"
+	cmd.Short = `*Beta* Delete an example from a Knowledge Assistant.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Delete an example from a Knowledge Assistant.
+
+  Deletes an example from a Knowledge Assistant.
+
+  Arguments:
+    NAME: The resource name of the example to delete. Format:
+      knowledge-assistants/{knowledge_assistant_id}/examples/{example_id}`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		deleteExampleReq.Name = args[0]
+
+		err = w.KnowledgeAssistants.DeleteExample(ctx, deleteExampleReq)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range deleteExampleOverrides {
+		fn(cmd, &deleteExampleReq)
 	}
 
 	return cmd
@@ -259,8 +437,10 @@ func newDeleteKnowledgeAssistant() *cobra.Command {
 	var deleteKnowledgeAssistantReq knowledgeassistants.DeleteKnowledgeAssistantRequest
 
 	cmd.Use = "delete-knowledge-assistant NAME"
-	cmd.Short = `Delete a Knowledge Assistant.`
-	cmd.Long = `Delete a Knowledge Assistant.
+	cmd.Short = `*Beta* Delete a Knowledge Assistant.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Delete a Knowledge Assistant.
 
   Deletes a Knowledge Assistant.
 
@@ -269,6 +449,8 @@ func newDeleteKnowledgeAssistant() *cobra.Command {
       knowledge-assistants/{knowledge_assistant_id}`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -316,8 +498,10 @@ func newDeleteKnowledgeSource() *cobra.Command {
 	var deleteKnowledgeSourceReq knowledgeassistants.DeleteKnowledgeSourceRequest
 
 	cmd.Use = "delete-knowledge-source NAME"
-	cmd.Short = `Delete a Knowledge Source.`
-	cmd.Long = `Delete a Knowledge Source.
+	cmd.Short = `*Beta* Delete a Knowledge Source.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Delete a Knowledge Source.
 
   Deletes a Knowledge Source.
 
@@ -326,6 +510,8 @@ func newDeleteKnowledgeSource() *cobra.Command {
       knowledge-assistants/{knowledge_assistant_id}/knowledge-sources/{knowledge_source_id}`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -358,6 +544,68 @@ func newDeleteKnowledgeSource() *cobra.Command {
 	return cmd
 }
 
+// start get-example command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getExampleOverrides []func(
+	*cobra.Command,
+	*knowledgeassistants.GetExampleRequest,
+)
+
+func newGetExample() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getExampleReq knowledgeassistants.GetExampleRequest
+
+	cmd.Use = "get-example NAME"
+	cmd.Short = `*Beta* Get an example from a Knowledge Assistant.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Get an example from a Knowledge Assistant.
+
+  Gets an example from a Knowledge Assistant.
+
+  Arguments:
+    NAME: The resource name of the example. Format:
+      knowledge-assistants/{knowledge_assistant_id}/examples/{example_id}`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		getExampleReq.Name = args[0]
+
+		response, err := w.KnowledgeAssistants.GetExample(ctx, getExampleReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getExampleOverrides {
+		fn(cmd, &getExampleReq)
+	}
+
+	return cmd
+}
+
 // start get-knowledge-assistant command
 
 // Slice with functions to override default command behavior.
@@ -373,8 +621,10 @@ func newGetKnowledgeAssistant() *cobra.Command {
 	var getKnowledgeAssistantReq knowledgeassistants.GetKnowledgeAssistantRequest
 
 	cmd.Use = "get-knowledge-assistant NAME"
-	cmd.Short = `Get a Knowledge Assistant.`
-	cmd.Long = `Get a Knowledge Assistant.
+	cmd.Short = `*Beta* Get a Knowledge Assistant.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Get a Knowledge Assistant.
 
   Gets a Knowledge Assistant.
 
@@ -383,6 +633,8 @@ func newGetKnowledgeAssistant() *cobra.Command {
       knowledge-assistants/{knowledge_assistant_id}`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -400,6 +652,7 @@ func newGetKnowledgeAssistant() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -430,8 +683,10 @@ func newGetKnowledgeSource() *cobra.Command {
 	var getKnowledgeSourceReq knowledgeassistants.GetKnowledgeSourceRequest
 
 	cmd.Use = "get-knowledge-source NAME"
-	cmd.Short = `Get a Knowledge Source.`
-	cmd.Long = `Get a Knowledge Source.
+	cmd.Short = `*Beta* Get a Knowledge Source.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Get a Knowledge Source.
 
   Gets a Knowledge Source.
 
@@ -440,6 +695,8 @@ func newGetKnowledgeSource() *cobra.Command {
       knowledge-assistants/{knowledge_assistant_id}/knowledge-sources/{knowledge_source_id}`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -457,6 +714,7 @@ func newGetKnowledgeSource() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -467,6 +725,207 @@ func newGetKnowledgeSource() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range getKnowledgeSourceOverrides {
 		fn(cmd, &getKnowledgeSourceReq)
+	}
+
+	return cmd
+}
+
+// start get-permission-levels command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getPermissionLevelsOverrides []func(
+	*cobra.Command,
+	*knowledgeassistants.GetKnowledgeAssistantPermissionLevelsRequest,
+)
+
+func newGetPermissionLevels() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getPermissionLevelsReq knowledgeassistants.GetKnowledgeAssistantPermissionLevelsRequest
+
+	cmd.Use = "get-permission-levels KNOWLEDGE_ASSISTANT_ID"
+	cmd.Short = `*Beta* Get knowledge assistant permission levels.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Get knowledge assistant permission levels.
+
+  Gets the permission levels that a user can have on an object.
+
+  Arguments:
+    KNOWLEDGE_ASSISTANT_ID: The knowledge assistant for which to get or manage permissions.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		getPermissionLevelsReq.KnowledgeAssistantId = args[0]
+
+		response, err := w.KnowledgeAssistants.GetPermissionLevels(ctx, getPermissionLevelsReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getPermissionLevelsOverrides {
+		fn(cmd, &getPermissionLevelsReq)
+	}
+
+	return cmd
+}
+
+// start get-permissions command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getPermissionsOverrides []func(
+	*cobra.Command,
+	*knowledgeassistants.GetKnowledgeAssistantPermissionsRequest,
+)
+
+func newGetPermissions() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getPermissionsReq knowledgeassistants.GetKnowledgeAssistantPermissionsRequest
+
+	cmd.Use = "get-permissions KNOWLEDGE_ASSISTANT_ID"
+	cmd.Short = `*Beta* Get knowledge assistant permissions.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Get knowledge assistant permissions.
+
+  Gets the permissions of a knowledge assistant. Knowledge assistants can
+  inherit permissions from their root object.
+
+  Arguments:
+    KNOWLEDGE_ASSISTANT_ID: The knowledge assistant for which to get or manage permissions.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		getPermissionsReq.KnowledgeAssistantId = args[0]
+
+		response, err := w.KnowledgeAssistants.GetPermissions(ctx, getPermissionsReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getPermissionsOverrides {
+		fn(cmd, &getPermissionsReq)
+	}
+
+	return cmd
+}
+
+// start list-examples command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listExamplesOverrides []func(
+	*cobra.Command,
+	*knowledgeassistants.ListExamplesRequest,
+)
+
+func newListExamples() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var listExamplesReq knowledgeassistants.ListExamplesRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listExamplesLimit int
+
+	cmd.Flags().IntVar(&listExamplesReq.PageSize, "page-size", listExamplesReq.PageSize, `The maximum number of examples to return.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listExamplesLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listExamplesReq.PageToken, "page-token", listExamplesReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
+
+	cmd.Use = "list-examples PARENT"
+	cmd.Short = `*Beta* List examples for a Knowledge Assistant.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+List examples for a Knowledge Assistant.
+
+  Lists examples under a Knowledge Assistant.
+
+  Arguments:
+    PARENT: Parent resource to list from. Format:
+      knowledge-assistants/{knowledge_assistant_id}`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		listExamplesReq.Parent = args[0]
+
+		response := w.KnowledgeAssistants.ListExamples(ctx, listExamplesReq)
+		if listExamplesLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listExamplesLimit)
+		}
+		if listExamplesLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listExamplesLimit)
+		}
+
+		return cmdio.RenderIterator(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listExamplesOverrides {
+		fn(cmd, &listExamplesReq)
 	}
 
 	return cmd
@@ -485,17 +944,31 @@ func newListKnowledgeAssistants() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listKnowledgeAssistantsReq knowledgeassistants.ListKnowledgeAssistantsRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listKnowledgeAssistantsLimit int
 
 	cmd.Flags().IntVar(&listKnowledgeAssistantsReq.PageSize, "page-size", listKnowledgeAssistantsReq.PageSize, `The maximum number of knowledge assistants to return.`)
-	cmd.Flags().StringVar(&listKnowledgeAssistantsReq.PageToken, "page-token", listKnowledgeAssistantsReq.PageToken, `A page token, received from a previous ListKnowledgeAssistants call.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listKnowledgeAssistantsLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listKnowledgeAssistantsReq.PageToken, "page-token", listKnowledgeAssistantsReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-knowledge-assistants"
-	cmd.Short = `List Knowledge Assistants.`
-	cmd.Long = `List Knowledge Assistants.
+	cmd.Short = `*Beta* List Knowledge Assistants.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+List Knowledge Assistants.
 
   List Knowledge Assistants`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -508,6 +981,13 @@ func newListKnowledgeAssistants() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.KnowledgeAssistants.ListKnowledgeAssistants(ctx, listKnowledgeAssistantsReq)
+		if listKnowledgeAssistantsLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listKnowledgeAssistantsLimit)
+		}
+		if listKnowledgeAssistantsLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listKnowledgeAssistantsLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -536,13 +1016,25 @@ func newListKnowledgeSources() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listKnowledgeSourcesReq knowledgeassistants.ListKnowledgeSourcesRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listKnowledgeSourcesLimit int
 
 	cmd.Flags().IntVar(&listKnowledgeSourcesReq.PageSize, "page-size", listKnowledgeSourcesReq.PageSize, ``)
-	cmd.Flags().StringVar(&listKnowledgeSourcesReq.PageToken, "page-token", listKnowledgeSourcesReq.PageToken, ``)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listKnowledgeSourcesLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listKnowledgeSourcesReq.PageToken, "page-token", listKnowledgeSourcesReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-knowledge-sources PARENT"
-	cmd.Short = `List Knowledge Sources.`
-	cmd.Long = `List Knowledge Sources.
+	cmd.Short = `*Beta* List Knowledge Sources.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+List Knowledge Sources.
 
   Lists Knowledge Sources under a Knowledge Assistant.
 
@@ -551,6 +1043,8 @@ func newListKnowledgeSources() *cobra.Command {
       knowledge-assistants/{knowledge_assistant_id}`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -565,6 +1059,13 @@ func newListKnowledgeSources() *cobra.Command {
 		listKnowledgeSourcesReq.Parent = args[0]
 
 		response := w.KnowledgeAssistants.ListKnowledgeSources(ctx, listKnowledgeSourcesReq)
+		if listKnowledgeSourcesLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listKnowledgeSourcesLimit)
+		}
+		if listKnowledgeSourcesLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listKnowledgeSourcesLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -575,6 +1076,86 @@ func newListKnowledgeSources() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range listKnowledgeSourcesOverrides {
 		fn(cmd, &listKnowledgeSourcesReq)
+	}
+
+	return cmd
+}
+
+// start set-permissions command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var setPermissionsOverrides []func(
+	*cobra.Command,
+	*knowledgeassistants.KnowledgeAssistantPermissionsRequest,
+)
+
+func newSetPermissions() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var setPermissionsReq knowledgeassistants.KnowledgeAssistantPermissionsRequest
+	var setPermissionsJson flags.JsonFlag
+
+	cmd.Flags().Var(&setPermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	// TODO: array: access_control_list
+
+	cmd.Use = "set-permissions KNOWLEDGE_ASSISTANT_ID"
+	cmd.Short = `*Beta* Set knowledge assistant permissions.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Set knowledge assistant permissions.
+
+  Sets permissions on an object, replacing existing permissions if they exist.
+  Deletes all direct permissions if none are specified. Objects can inherit
+  permissions from their root object.
+
+  Arguments:
+    KNOWLEDGE_ASSISTANT_ID: The knowledge assistant for which to get or manage permissions.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := setPermissionsJson.Unmarshal(&setPermissionsReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnostics(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		setPermissionsReq.KnowledgeAssistantId = args[0]
+
+		response, err := w.KnowledgeAssistants.SetPermissions(ctx, setPermissionsReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range setPermissionsOverrides {
+		fn(cmd, &setPermissionsReq)
 	}
 
 	return cmd
@@ -595,8 +1176,10 @@ func newSyncKnowledgeSources() *cobra.Command {
 	var syncKnowledgeSourcesReq knowledgeassistants.SyncKnowledgeSourcesRequest
 
 	cmd.Use = "sync-knowledge-sources NAME"
-	cmd.Short = `Syncs all Knowledge Sources for a Knowledge Assistant.`
-	cmd.Long = `Syncs all Knowledge Sources for a Knowledge Assistant.
+	cmd.Short = `*Beta* Syncs all Knowledge Sources for a Knowledge Assistant.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Syncs all Knowledge Sources for a Knowledge Assistant.
 
   Sync all non-index Knowledge Sources for a Knowledge Assistant (index sources
   do not require sync)
@@ -606,6 +1189,8 @@ func newSyncKnowledgeSources() *cobra.Command {
       knowledge-assistants/{knowledge_assistant_id}`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -638,6 +1223,104 @@ func newSyncKnowledgeSources() *cobra.Command {
 	return cmd
 }
 
+// start update-example command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updateExampleOverrides []func(
+	*cobra.Command,
+	*knowledgeassistants.UpdateExampleRequest,
+)
+
+func newUpdateExample() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var updateExampleReq knowledgeassistants.UpdateExampleRequest
+	updateExampleReq.Example = knowledgeassistants.Example{}
+	var updateExampleJson flags.JsonFlag
+
+	cmd.Flags().Var(&updateExampleJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	// TODO: array: guidelines
+	cmd.Flags().StringVar(&updateExampleReq.Example.Name, "name", updateExampleReq.Example.Name, `Full resource name: knowledge-assistants/{knowledge_assistant_id}/examples/{example_id}.`)
+
+	cmd.Use = "update-example NAME UPDATE_MASK QUESTION"
+	cmd.Short = `*Beta* Update an example in a Knowledge Assistant.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Update an example in a Knowledge Assistant.
+
+  Updates an example in a Knowledge Assistant.
+
+  Arguments:
+    NAME: The resource name of the example to update. Format:
+      knowledge-assistants/{knowledge_assistant_id}/examples/{example_id}
+    UPDATE_MASK: Comma-delimited list of fields to update on the example. Allowed values:
+      question, guidelines. Examples: - question - question,guidelines
+    QUESTION: The example question.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		if cmd.Flags().Changed("json") {
+			err := root.ExactArgs(2)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, provide only NAME, UPDATE_MASK as positional arguments. Provide 'question' in your JSON input")
+			}
+			return nil
+		}
+		check := root.ExactArgs(3)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := updateExampleJson.Unmarshal(&updateExampleReq.Example)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnostics(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		updateExampleReq.Name = args[0]
+		if args[1] != "" {
+			updateMaskArray := strings.Split(args[1], ",")
+			updateExampleReq.UpdateMask = *fieldmask.New(updateMaskArray)
+		}
+		if !cmd.Flags().Changed("json") {
+			updateExampleReq.Example.Question = args[2]
+		}
+
+		response, err := w.KnowledgeAssistants.UpdateExample(ctx, updateExampleReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updateExampleOverrides {
+		fn(cmd, &updateExampleReq)
+	}
+
+	return cmd
+}
+
 // start update-knowledge-assistant command
 
 // Slice with functions to override default command behavior.
@@ -660,8 +1343,10 @@ func newUpdateKnowledgeAssistant() *cobra.Command {
 	cmd.Flags().StringVar(&updateKnowledgeAssistantReq.KnowledgeAssistant.Name, "name", updateKnowledgeAssistantReq.KnowledgeAssistant.Name, `The resource name of the Knowledge Assistant.`)
 
 	cmd.Use = "update-knowledge-assistant NAME UPDATE_MASK DISPLAY_NAME DESCRIPTION"
-	cmd.Short = `Update a Knowledge Assistant.`
-	cmd.Long = `Update a Knowledge Assistant.
+	cmd.Short = `*Beta* Update a Knowledge Assistant.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Update a Knowledge Assistant.
 
   Updates a Knowledge Assistant.
 
@@ -679,6 +1364,8 @@ func newUpdateKnowledgeAssistant() *cobra.Command {
       optional unless included in update_mask.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
@@ -725,6 +1412,7 @@ func newUpdateKnowledgeAssistant() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -764,8 +1452,10 @@ func newUpdateKnowledgeSource() *cobra.Command {
 	cmd.Flags().StringVar(&updateKnowledgeSourceReq.KnowledgeSource.Name, "name", updateKnowledgeSourceReq.KnowledgeSource.Name, `Full resource name: knowledge-assistants/{knowledge_assistant_id}/knowledge-sources/{knowledge_source_id}.`)
 
 	cmd.Use = "update-knowledge-source NAME UPDATE_MASK DISPLAY_NAME DESCRIPTION SOURCE_TYPE"
-	cmd.Short = `Update a Knowledge Source.`
-	cmd.Long = `Update a Knowledge Source.
+	cmd.Short = `*Beta* Update a Knowledge Source.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Update a Knowledge Source.
 
   Updates a Knowledge Source.
 
@@ -786,6 +1476,8 @@ func newUpdateKnowledgeSource() *cobra.Command {
       is ignored.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
@@ -835,6 +1527,7 @@ func newUpdateKnowledgeSource() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -845,6 +1538,85 @@ func newUpdateKnowledgeSource() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range updateKnowledgeSourceOverrides {
 		fn(cmd, &updateKnowledgeSourceReq)
+	}
+
+	return cmd
+}
+
+// start update-permissions command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updatePermissionsOverrides []func(
+	*cobra.Command,
+	*knowledgeassistants.KnowledgeAssistantPermissionsRequest,
+)
+
+func newUpdatePermissions() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var updatePermissionsReq knowledgeassistants.KnowledgeAssistantPermissionsRequest
+	var updatePermissionsJson flags.JsonFlag
+
+	cmd.Flags().Var(&updatePermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	// TODO: array: access_control_list
+
+	cmd.Use = "update-permissions KNOWLEDGE_ASSISTANT_ID"
+	cmd.Short = `*Beta* Update knowledge assistant permissions.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Update knowledge assistant permissions.
+
+  Updates the permissions on a knowledge assistant. Knowledge assistants can
+  inherit permissions from their root object.
+
+  Arguments:
+    KNOWLEDGE_ASSISTANT_ID: The knowledge assistant for which to get or manage permissions.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := updatePermissionsJson.Unmarshal(&updatePermissionsReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnostics(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		updatePermissionsReq.KnowledgeAssistantId = args[0]
+
+		response, err := w.KnowledgeAssistants.UpdatePermissions(ctx, updatePermissionsReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updatePermissionsOverrides {
+		fn(cmd, &updatePermissionsReq)
 	}
 
 	return cmd

@@ -3,13 +3,14 @@
 package schema
 
 type DataSourceGroupProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourceGroup struct {
 	AclPrincipalId          string                         `json:"acl_principal_id,omitempty"`
 	AllowClusterCreate      bool                           `json:"allow_cluster_create,omitempty"`
 	AllowInstancePoolCreate bool                           `json:"allow_instance_pool_create,omitempty"`
+	Api                     string                         `json:"api,omitempty"`
 	ChildGroups             []string                       `json:"child_groups,omitempty"`
 	DatabricksSqlAccess     bool                           `json:"databricks_sql_access,omitempty"`
 	DisplayName             string                         `json:"display_name"`

@@ -102,7 +102,7 @@ on CI/CD setup.
 ## Manually deploying to Databricks with Declarative Automation Bundles
 
 Declarative Automation Bundles can be used to deploy to Databricks and to execute
-dbt commands as a job using Databricks Workflows. See
+dbt commands as a job using Databricks Jobs. See
 https://docs.databricks.com/dev-tools/bundles/index.html to learn more.
 
 Use the Databricks CLI to deploy a development copy of this project to a workspace:
@@ -117,7 +117,7 @@ is optional here.)
 This deploys everything that's defined for this project.
 For example, the default template would deploy a job called
 `[dev yourname] {{.project_name}}_job` to your workspace.
-You can find that job by opening your workpace and clicking on **Workflows**.
+You can find that job by opening your workpace and clicking on **Jobs & Pipelines**.
 
 You can also deploy to your production target directly from the command-line.
 The warehouse, catalog, and schema for that target are configured in `dbt_profiles/profiles.yml`.

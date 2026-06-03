@@ -33,6 +33,10 @@ func New() *cobra.Command {
 		RunE:    root.ReportUnknownSubcommand,
 	}
 
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
+
 	// Add methods
 	cmd.AddCommand(newApproveTransitionRequest())
 	cmd.AddCommand(newCreateComment())
@@ -120,12 +124,14 @@ func newApproveTransitionRequest() *cobra.Command {
       stage.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name', 'version', 'stage', 'archive_existing_versions' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'name', 'version', 'stage', 'archive_existing_versions' in your JSON input")
 			}
 			return nil
 		}
@@ -171,6 +177,7 @@ func newApproveTransitionRequest() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -217,12 +224,14 @@ func newCreateComment() *cobra.Command {
     COMMENT: User-provided comment on the action.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name', 'version', 'comment' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'name', 'version', 'comment' in your JSON input")
 			}
 			return nil
 		}
@@ -261,6 +270,7 @@ func newCreateComment() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -308,12 +318,14 @@ func newCreateModel() *cobra.Command {
     NAME: Register models under this name`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'name' in your JSON input")
 			}
 			return nil
 		}
@@ -346,6 +358,7 @@ func newCreateModel() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -394,12 +407,14 @@ func newCreateModelVersion() *cobra.Command {
     SOURCE: URI indicating the location of the model artifacts.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name', 'source' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'name', 'source' in your JSON input")
 			}
 			return nil
 		}
@@ -435,6 +450,7 @@ func newCreateModelVersion() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -489,12 +505,14 @@ func newCreateTransitionRequest() *cobra.Command {
       * Archived: Archived stage.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name', 'version', 'stage' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'name', 'version', 'stage' in your JSON input")
 			}
 			return nil
 		}
@@ -533,6 +551,7 @@ func newCreateTransitionRequest() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -578,6 +597,8 @@ func newCreateWebhook() *cobra.Command {
   **NOTE:** This endpoint is in Public Preview. Creates a registry webhook.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -603,6 +624,7 @@ func newCreateWebhook() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -642,6 +664,8 @@ func newDeleteComment() *cobra.Command {
     ID: Unique identifier of an activity`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -698,6 +722,8 @@ func newDeleteModel() *cobra.Command {
     NAME: Registered model unique name identifier.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -756,6 +782,8 @@ func newDeleteModelTag() *cobra.Command {
       not supported. Maximum size is 250 bytes.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -814,6 +842,8 @@ func newDeleteModelVersion() *cobra.Command {
     VERSION: Model version number`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -874,6 +904,8 @@ func newDeleteModelVersionTag() *cobra.Command {
       not supported. Maximum size is 250 bytes.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(3)
@@ -947,6 +979,8 @@ func newDeleteTransitionRequest() *cobra.Command {
       user will be deleted.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(4)
@@ -967,6 +1001,7 @@ func newDeleteTransitionRequest() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -1006,6 +1041,8 @@ func newDeleteWebhook() *cobra.Command {
     ID: Webhook ID required to delete a registry webhook.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -1052,10 +1089,19 @@ func newGetLatestVersions() *cobra.Command {
 
 	var getLatestVersionsReq ml.GetLatestVersionsRequest
 	var getLatestVersionsJson flags.JsonFlag
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var getLatestVersionsLimit int
 
 	cmd.Flags().Var(&getLatestVersionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: stages
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&getLatestVersionsLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
 
 	cmd.Use = "get-latest-versions NAME"
 	cmd.Short = `Get the latest version.`
@@ -1067,12 +1113,14 @@ func newGetLatestVersions() *cobra.Command {
     NAME: Registered model unique name identifier.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'name' in your JSON input")
 			}
 			return nil
 		}
@@ -1102,6 +1150,13 @@ func newGetLatestVersions() *cobra.Command {
 		}
 
 		response := w.ModelRegistry.GetLatestVersions(ctx, getLatestVersionsReq)
+		if getLatestVersionsLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", getLatestVersionsLimit)
+		}
+		if getLatestVersionsLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, getLatestVersionsLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -1145,6 +1200,8 @@ func newGetModel() *cobra.Command {
     NAME: Registered model unique name identifier.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -1162,6 +1219,7 @@ func newGetModel() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -1200,6 +1258,8 @@ func newGetModelVersion() *cobra.Command {
     VERSION: Model version number`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -1218,6 +1278,7 @@ func newGetModelVersion() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -1258,6 +1319,8 @@ func newGetModelVersionDownloadUri() *cobra.Command {
     VERSION: Model version number`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -1276,6 +1339,7 @@ func newGetModelVersionDownloadUri() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -1315,6 +1379,8 @@ func newGetPermissionLevels() *cobra.Command {
     REGISTERED_MODEL_ID: The registered model for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -1332,6 +1398,7 @@ func newGetPermissionLevels() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -1372,6 +1439,8 @@ func newGetPermissions() *cobra.Command {
     REGISTERED_MODEL_ID: The registered model for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -1389,6 +1458,7 @@ func newGetPermissions() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -1417,9 +1487,19 @@ func newListModels() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listModelsReq ml.ListModelsRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listModelsLimit int
 
 	cmd.Flags().Int64Var(&listModelsReq.MaxResults, "max-results", listModelsReq.MaxResults, `Maximum number of registered models desired.`)
-	cmd.Flags().StringVar(&listModelsReq.PageToken, "page-token", listModelsReq.PageToken, `Pagination token to go to the next page based on a previous query.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listModelsLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listModelsReq.PageToken, "page-token", listModelsReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-models"
 	cmd.Short = `List models.`
@@ -1429,6 +1509,8 @@ func newListModels() *cobra.Command {
   __max_results__.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -1441,6 +1523,13 @@ func newListModels() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.ModelRegistry.ListModels(ctx, listModelsReq)
+		if listModelsLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listModelsLimit)
+		}
+		if listModelsLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listModelsLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -1469,6 +1558,15 @@ func newListTransitionRequests() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listTransitionRequestsReq ml.ListTransitionRequestsRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listTransitionRequestsLimit int
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listTransitionRequestsLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
 
 	cmd.Use = "list-transition-requests NAME VERSION"
 	cmd.Short = `List transition requests.`
@@ -1481,6 +1579,8 @@ func newListTransitionRequests() *cobra.Command {
     VERSION: Version of the model.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -1496,6 +1596,13 @@ func newListTransitionRequests() *cobra.Command {
 		listTransitionRequestsReq.Version = args[1]
 
 		response := w.ModelRegistry.ListTransitionRequests(ctx, listTransitionRequestsReq)
+		if listTransitionRequestsLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listTransitionRequestsLimit)
+		}
+		if listTransitionRequestsLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listTransitionRequestsLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -1524,11 +1631,21 @@ func newListWebhooks() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listWebhooksReq ml.ListWebhooksRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listWebhooksLimit int
 
 	// TODO: array: events
 	cmd.Flags().Int64Var(&listWebhooksReq.MaxResults, "max-results", listWebhooksReq.MaxResults, ``)
 	cmd.Flags().StringVar(&listWebhooksReq.ModelName, "model-name", listWebhooksReq.ModelName, `Registered model name If not specified, all webhooks associated with the specified events are listed, regardless of their associated model.`)
-	cmd.Flags().StringVar(&listWebhooksReq.PageToken, "page-token", listWebhooksReq.PageToken, `Token indicating the page of artifact results to fetch.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listWebhooksLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listWebhooksReq.PageToken, "page-token", listWebhooksReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-webhooks"
 	cmd.Short = `List registry webhooks.`
@@ -1537,6 +1654,8 @@ func newListWebhooks() *cobra.Command {
   **NOTE:** This endpoint is in Public Preview. Lists all registry webhooks.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -1549,6 +1668,13 @@ func newListWebhooks() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.ModelRegistry.ListWebhooks(ctx, listWebhooksReq)
+		if listWebhooksLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listWebhooksLimit)
+		}
+		if listWebhooksLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listWebhooksLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -1603,12 +1729,14 @@ func newRejectTransitionRequest() *cobra.Command {
       * Archived: Archived stage.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name', 'version', 'stage' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'name', 'version', 'stage' in your JSON input")
 			}
 			return nil
 		}
@@ -1647,6 +1775,7 @@ func newRejectTransitionRequest() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -1691,12 +1820,14 @@ func newRenameModel() *cobra.Command {
     NAME: Registered model unique name identifier.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'name' in your JSON input")
 			}
 			return nil
 		}
@@ -1729,6 +1860,7 @@ func newRenameModel() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -1757,11 +1889,21 @@ func newSearchModelVersions() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var searchModelVersionsReq ml.SearchModelVersionsRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var searchModelVersionsLimit int
 
 	cmd.Flags().StringVar(&searchModelVersionsReq.Filter, "filter", searchModelVersionsReq.Filter, `String filter condition, like "name='my-model-name'".`)
 	cmd.Flags().Int64Var(&searchModelVersionsReq.MaxResults, "max-results", searchModelVersionsReq.MaxResults, `Maximum number of models desired.`)
 	// TODO: array: order_by
-	cmd.Flags().StringVar(&searchModelVersionsReq.PageToken, "page-token", searchModelVersionsReq.PageToken, `Pagination token to go to next page based on previous search query.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&searchModelVersionsLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&searchModelVersionsReq.PageToken, "page-token", searchModelVersionsReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "search-model-versions"
 	cmd.Short = `Search model versions.`
@@ -1770,6 +1912,8 @@ func newSearchModelVersions() *cobra.Command {
   Searches for specific model versions based on the supplied __filter__.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -1782,6 +1926,13 @@ func newSearchModelVersions() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.ModelRegistry.SearchModelVersions(ctx, searchModelVersionsReq)
+		if searchModelVersionsLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", searchModelVersionsLimit)
+		}
+		if searchModelVersionsLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, searchModelVersionsLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -1810,11 +1961,21 @@ func newSearchModels() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var searchModelsReq ml.SearchModelsRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var searchModelsLimit int
 
 	cmd.Flags().StringVar(&searchModelsReq.Filter, "filter", searchModelsReq.Filter, `String filter condition, like "name LIKE 'my-model-name'".`)
 	cmd.Flags().Int64Var(&searchModelsReq.MaxResults, "max-results", searchModelsReq.MaxResults, `Maximum number of models desired.`)
 	// TODO: array: order_by
-	cmd.Flags().StringVar(&searchModelsReq.PageToken, "page-token", searchModelsReq.PageToken, `Pagination token to go to the next page based on a previous search query.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&searchModelsLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&searchModelsReq.PageToken, "page-token", searchModelsReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "search-models"
 	cmd.Short = `Search models.`
@@ -1823,6 +1984,8 @@ func newSearchModels() *cobra.Command {
   Search for registered models based on the specified __filter__.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -1835,6 +1998,13 @@ func newSearchModels() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.ModelRegistry.SearchModels(ctx, searchModelsReq)
+		if searchModelsLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", searchModelsLimit)
+		}
+		if searchModelsLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, searchModelsLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -1884,12 +2054,14 @@ func newSetModelTag() *cobra.Command {
       5000 bytes in size.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name', 'key', 'value' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'name', 'key', 'value' in your JSON input")
 			}
 			return nil
 		}
@@ -1978,12 +2150,14 @@ func newSetModelVersionTag() *cobra.Command {
       5000 bytes in size.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name', 'version', 'key', 'value' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'name', 'version', 'key', 'value' in your JSON input")
 			}
 			return nil
 		}
@@ -2071,6 +2245,8 @@ func newSetPermissions() *cobra.Command {
     REGISTERED_MODEL_ID: The registered model for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -2100,6 +2276,7 @@ func newSetPermissions() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -2157,12 +2334,14 @@ func newTestRegistryWebhook() *cobra.Command {
     ID: Webhook ID`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'id' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'id' in your JSON input")
 			}
 			return nil
 		}
@@ -2195,6 +2374,7 @@ func newTestRegistryWebhook() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -2255,12 +2435,14 @@ func newTransitionStage() *cobra.Command {
       stage.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name', 'version', 'stage', 'archive_existing_versions' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'name', 'version', 'stage', 'archive_existing_versions' in your JSON input")
 			}
 			return nil
 		}
@@ -2306,6 +2488,7 @@ func newTransitionStage() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -2349,12 +2532,14 @@ func newUpdateComment() *cobra.Command {
     COMMENT: User-provided comment on the action.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'id', 'comment' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'id', 'comment' in your JSON input")
 			}
 			return nil
 		}
@@ -2390,6 +2575,7 @@ func newUpdateComment() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -2434,12 +2620,14 @@ func newUpdateModel() *cobra.Command {
     NAME: Registered model unique name identifier.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'name' in your JSON input")
 			}
 			return nil
 		}
@@ -2472,6 +2660,7 @@ func newUpdateModel() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -2517,12 +2706,14 @@ func newUpdateModelVersion() *cobra.Command {
     VERSION: Model version number`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name', 'version' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'name', 'version' in your JSON input")
 			}
 			return nil
 		}
@@ -2558,6 +2749,7 @@ func newUpdateModelVersion() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -2603,6 +2795,8 @@ func newUpdatePermissions() *cobra.Command {
     REGISTERED_MODEL_ID: The registered model for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -2632,6 +2826,7 @@ func newUpdatePermissions() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -2680,12 +2875,14 @@ func newUpdateWebhook() *cobra.Command {
     ID: Webhook ID`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'id' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'id' in your JSON input")
 			}
 			return nil
 		}
@@ -2718,6 +2915,7 @@ func newUpdateWebhook() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 

@@ -3,11 +3,12 @@ package appproxy
 import (
 	"context"
 	"io"
-	"log"
 	"net"
 	"net/http"
 	"net/url"
 	"strings"
+
+	"github.com/databricks/cli/libs/log"
 )
 
 type Proxy struct {
@@ -122,7 +123,7 @@ func (p *Proxy) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 		// If the error is not EOF, then there was a problem
 		if err != io.EOF {
 			// Log the error and perform cleanup
-			log.Printf("Error copying messages: %v", err)
+			log.Warnf(r.Context(), "error copying messages: %v", err)
 			middlewareConn.Close()
 			targetServerConn.Close()
 		}

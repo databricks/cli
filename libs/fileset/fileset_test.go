@@ -2,6 +2,7 @@ package fileset
 
 import (
 	"errors"
+	"slices"
 	"testing"
 
 	"github.com/databricks/cli/libs/vfs"
@@ -118,10 +119,8 @@ func (t testIgnorer) IgnoreDirectory(path string) (bool, error) {
 		return false, t.dirErr
 	}
 
-	for _, d := range t.dir {
-		if d == path {
-			return true, nil
-		}
+	if slices.Contains(t.dir, path) {
+		return true, nil
 	}
 
 	return false, nil
@@ -134,10 +133,8 @@ func (t testIgnorer) IgnoreFile(path string) (bool, error) {
 		return false, t.fileErr
 	}
 
-	for _, f := range t.file {
-		if f == path {
-			return true, nil
-		}
+	if slices.Contains(t.file, path) {
+		return true, nil
 	}
 
 	return false, nil

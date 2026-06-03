@@ -23,16 +23,12 @@ func NewGraph() *Graph {
 	}
 }
 
-func (g *Graph) Size() int { return len(g.Nodes) }
-
 func (g *Graph) AddNode(n string) {
 	if _, ok := g.Adj[n]; !ok {
 		g.Adj[n] = nil
 		g.Nodes = append(g.Nodes, n)
 	}
 }
-
-func (g *Graph) HasNode(n string) bool { _, ok := g.Adj[n]; return ok }
 
 func (g *Graph) AddDirectedEdge(from, to, label string) {
 	g.AddNode(from)

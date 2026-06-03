@@ -20,14 +20,20 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "esm-enablement-account",
-		Short: `The enhanced security monitoring setting at the account level controls whether to enable the feature on new workspaces.`,
-		Long: `The enhanced security monitoring setting at the account level controls whether
+		Short: `*Public Preview* The enhanced security monitoring setting at the account level controls whether to enable the feature on new workspaces.`,
+		Long: `This command is in Public Preview and may change without notice.
+
+The enhanced security monitoring setting at the account level controls whether
   to enable the feature on new workspaces. By default, this account-level
   setting is disabled for new workspaces. After workspace creation, account
   admins can enable enhanced security monitoring individually for each
   workspace.`,
 		RunE: root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	// Add methods
 	cmd.AddCommand(newGet())
@@ -58,12 +64,16 @@ func newGet() *cobra.Command {
 	cmd.Flags().StringVar(&getReq.Etag, "etag", getReq.Etag, `etag used for versioning.`)
 
 	cmd.Use = "get"
-	cmd.Short = `Get the enhanced security monitoring setting for new workspaces.`
-	cmd.Long = `Get the enhanced security monitoring setting for new workspaces.
+	cmd.Short = `*Public Preview* Get the enhanced security monitoring setting for new workspaces.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Get the enhanced security monitoring setting for new workspaces.
 
   Gets the enhanced security monitoring setting for new workspaces.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -79,6 +89,7 @@ func newGet() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -112,13 +123,17 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "update"
-	cmd.Short = `Update the enhanced security monitoring setting for new workspaces.`
-	cmd.Long = `Update the enhanced security monitoring setting for new workspaces.
+	cmd.Short = `*Public Preview* Update the enhanced security monitoring setting for new workspaces.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Update the enhanced security monitoring setting for new workspaces.
 
   Updates the value of the enhanced security monitoring setting for new
   workspaces.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -144,6 +159,7 @@ func newUpdate() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 

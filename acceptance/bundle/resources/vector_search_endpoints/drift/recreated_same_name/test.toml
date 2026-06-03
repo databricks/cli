@@ -1,0 +1,3 @@
+Badness = "After deleting and recreating a vector search endpoint remotely with the same name but a different UUID, bundle plan/deploy treats it as unchanged instead of deleting and recreating it."
+
+RecordRequests = false

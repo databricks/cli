@@ -93,7 +93,8 @@ type ResourceAccountSettingV2EffectivePersonalCompute struct {
 }
 
 type ResourceAccountSettingV2EffectiveRestrictWorkspaceAdmins struct {
-	Status string `json:"status"`
+	DisableGovTagCreation bool   `json:"disable_gov_tag_creation,omitempty"`
+	Status                string `json:"status"`
 }
 
 type ResourceAccountSettingV2EffectiveStringVal struct {
@@ -109,7 +110,8 @@ type ResourceAccountSettingV2PersonalCompute struct {
 }
 
 type ResourceAccountSettingV2RestrictWorkspaceAdmins struct {
-	Status string `json:"status"`
+	DisableGovTagCreation bool   `json:"disable_gov_tag_creation,omitempty"`
+	Status                string `json:"status"`
 }
 
 type ResourceAccountSettingV2StringVal struct {

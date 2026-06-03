@@ -22,11 +22,11 @@ func LoadStateFromDMS(ctx context.Context, b *bundle.Bundle) error {
 	// The local file contains {"deployment_id":"..."} with no resource state.
 	db := &b.DeploymentBundle.StateDB
 	_, localPath := b.StateFilenameDirect(ctx)
-	if err := db.Open(localPath); err != nil {
+	if err := db.Open(ctx, localPath, dstate.WithRecovery(true), dstate.WithWrite(false)); err != nil {
 		return fmt.Errorf("opening local state: %w", err)
 	}
 
-	svc, err := tmpdms.NewDeploymentMetadataAPI(b.WorkspaceClient())
+	svc, err := tmpdms.NewDeploymentMetadataAPI(b.WorkspaceClient(ctx))
 	if err != nil {
 		return fmt.Errorf("failed to create metadata service client: %w", err)
 	}

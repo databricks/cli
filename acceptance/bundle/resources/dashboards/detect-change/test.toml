@@ -16,8 +16,8 @@ Old = "[0-9a-z]{16,}"
 New = "[ALPHANUMID]"
 
 [[Repls]]
-# clean up ?o=<num> suffix after URL since not all workspaces have that
-Old = '\?o=\[(NUMID|ALPHANUMID)\]'
+# clean up ?[ow]=<num> suffix after URL since not all workspaces have that
+Old = '\?[ow]=\[(NUMID|ALPHANUMID)\]'
 New = ''
 Order = 1000
 

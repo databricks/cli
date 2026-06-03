@@ -122,7 +122,7 @@ func TestSetVariablesMutator(t *testing.T) {
 					Default:     defaultValForA,
 				},
 				"b": {
-					Description: "resolved from environment vairables",
+					Description: "resolved from environment variables",
 					Default:     defaultValForB,
 				},
 				"c": {

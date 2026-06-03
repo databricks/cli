@@ -3,6 +3,8 @@
 package workspace_settings_v2
 
 import (
+	"fmt"
+
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
@@ -17,12 +19,18 @@ var cmdOverrides []func(*cobra.Command)
 
 func New() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "workspace-settings-v2",
-		Short:   `APIs to manage workspace level settings.`,
-		Long:    `APIs to manage workspace level settings`,
+		Use:   "workspace-settings-v2",
+		Short: `*Public Preview* APIs to manage workspace level settings.`,
+		Long: `This command is in Public Preview and may change without notice.
+
+APIs to manage workspace level settings`,
 		GroupID: "settings",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	// Add methods
 	cmd.AddCommand(newGetPublicWorkspaceSetting())
@@ -52,8 +60,10 @@ func newGetPublicWorkspaceSetting() *cobra.Command {
 	var getPublicWorkspaceSettingReq settingsv2.GetPublicWorkspaceSettingRequest
 
 	cmd.Use = "get-public-workspace-setting NAME"
-	cmd.Short = `Get a workspace setting.`
-	cmd.Long = `Get a workspace setting.
+	cmd.Short = `*Public Preview* Get a workspace setting.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Get a workspace setting.
 
   Get a setting value at workspace level. See
   :method:settingsv2/listworkspacesettingsmetadata for list of setting available
@@ -63,6 +73,8 @@ func newGetPublicWorkspaceSetting() *cobra.Command {
     NAME: Name of the setting`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -80,6 +92,7 @@ func newGetPublicWorkspaceSetting() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -108,19 +121,33 @@ func newListWorkspaceSettingsMetadata() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listWorkspaceSettingsMetadataReq settingsv2.ListWorkspaceSettingsMetadataRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listWorkspaceSettingsMetadataLimit int
 
 	cmd.Flags().IntVar(&listWorkspaceSettingsMetadataReq.PageSize, "page-size", listWorkspaceSettingsMetadataReq.PageSize, `The maximum number of settings to return.`)
-	cmd.Flags().StringVar(&listWorkspaceSettingsMetadataReq.PageToken, "page-token", listWorkspaceSettingsMetadataReq.PageToken, `A page token, received from a previous ListWorkspaceSettingsMetadataRequest call.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listWorkspaceSettingsMetadataLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listWorkspaceSettingsMetadataReq.PageToken, "page-token", listWorkspaceSettingsMetadataReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-workspace-settings-metadata"
-	cmd.Short = `List valid setting keys and their metadata.`
-	cmd.Long = `List valid setting keys and their metadata.
+	cmd.Short = `*Public Preview* List valid setting keys and their metadata.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+List valid setting keys and their metadata.
 
   List valid setting keys and metadata. These settings are available to be
   referenced via GET :method:settingsv2/getpublicworkspacesetting and PATCH
   :method:settingsv2/patchpublicworkspacesetting APIs`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -133,6 +160,13 @@ func newListWorkspaceSettingsMetadata() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.WorkspaceSettingsV2.ListWorkspaceSettingsMetadata(ctx, listWorkspaceSettingsMetadataReq)
+		if listWorkspaceSettingsMetadataLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listWorkspaceSettingsMetadataLimit)
+		}
+		if listWorkspaceSettingsMetadataLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listWorkspaceSettingsMetadataLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -168,25 +202,33 @@ func newPatchPublicWorkspaceSetting() *cobra.Command {
 
 	// TODO: complex arg: aibi_dashboard_embedding_access_policy
 	// TODO: complex arg: aibi_dashboard_embedding_approved_domains
+	// TODO: complex arg: allowed_apps_user_api_scopes
 	// TODO: complex arg: automatic_cluster_update_workspace
 	// TODO: complex arg: boolean_val
+	// TODO: complex arg: collaboration_platform_connectivity
 	// TODO: complex arg: effective_aibi_dashboard_embedding_access_policy
 	// TODO: complex arg: effective_aibi_dashboard_embedding_approved_domains
+	// TODO: complex arg: effective_allowed_apps_user_api_scopes
 	// TODO: complex arg: effective_automatic_cluster_update_workspace
 	// TODO: complex arg: effective_boolean_val
+	// TODO: complex arg: effective_collaboration_platform_connectivity
 	// TODO: complex arg: effective_integer_val
+	// TODO: complex arg: effective_operational_email_custom_recipient
 	// TODO: complex arg: effective_personal_compute
 	// TODO: complex arg: effective_restrict_workspace_admins
 	// TODO: complex arg: effective_string_val
 	// TODO: complex arg: integer_val
 	cmd.Flags().StringVar(&patchPublicWorkspaceSettingReq.Setting.Name, "name", patchPublicWorkspaceSettingReq.Setting.Name, `Name of the setting.`)
+	// TODO: complex arg: operational_email_custom_recipient
 	// TODO: complex arg: personal_compute
 	// TODO: complex arg: restrict_workspace_admins
 	// TODO: complex arg: string_val
 
 	cmd.Use = "patch-public-workspace-setting NAME"
-	cmd.Short = `Update a workspace setting.`
-	cmd.Long = `Update a workspace setting.
+	cmd.Short = `*Public Preview* Update a workspace setting.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Update a workspace setting.
 
   Patch a setting value at workspace level. See
   :method:settingsv2/listworkspacesettingsmetadata for list of setting available
@@ -200,6 +242,8 @@ func newPatchPublicWorkspaceSetting() *cobra.Command {
     NAME: Name of the setting`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -229,6 +273,7 @@ func newPatchPublicWorkspaceSetting() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 

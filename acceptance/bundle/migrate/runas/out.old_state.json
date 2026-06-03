@@ -42,11 +42,16 @@
             "id": "/pipelines/[UUID]",
             "instance_pool_id": null,
             "job_id": null,
+            "knowledge_assistant_id": null,
             "notebook_id": null,
             "notebook_path": null,
             "object_type": "pipelines",
             "pipeline_id": "[UUID]",
-            "provider_config": [],
+            "provider_config": [
+              {
+                "workspace_id": "[NUMID]"
+              }
+            ],
             "registered_model_id": null,
             "repo_id": null,
             "repo_path": null,
@@ -55,6 +60,7 @@
             "sql_dashboard_id": null,
             "sql_endpoint_id": null,
             "sql_query_id": null,
+            "supervisor_agent_id": null,
             "vector_search_endpoint_id": null,
             "workspace_file_id": null,
             "workspace_file_path": null
@@ -88,8 +94,10 @@
             "creator_user_name": "[USERNAME]",
             "deployment": [
               {
+                "deployment_id": "",
                 "kind": "BUNDLE",
-                "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dabs_revenue-[UNIQUE_NAME]/production/state/metadata.json"
+                "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dabs_revenue-[UNIQUE_NAME]/production/state/metadata.json",
+                "version_id": ""
               }
             ],
             "development": false,
@@ -121,7 +129,11 @@
             "name": "DABs Revenue Pipeline",
             "notification": [],
             "photon": false,
-            "provider_config": [],
+            "provider_config": [
+              {
+                "workspace_id": "[NUMID]"
+              }
+            ],
             "restart_window": [],
             "root_path": null,
             "run_as": [

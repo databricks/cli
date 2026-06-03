@@ -190,7 +190,7 @@ func (s *structInfo) FieldValues(v reflect.Value) []FieldValue {
 }
 
 // Type of [dyn.Value].
-var configValueType = reflect.TypeOf((*dyn.Value)(nil)).Elem()
+var configValueType = reflect.TypeFor[dyn.Value]()
 
 // getForceSendFieldsValues collects ForceSendFields reflect.Values
 // Returns map[structKey]reflect.Value where structKey is -1 for direct fields, embedded index for embedded fields

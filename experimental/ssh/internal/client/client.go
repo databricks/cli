@@ -2,8 +2,10 @@ package client
 
 import (
 	"context"
+	"crypto/md5"
 	_ "embed"
 	"encoding/base64"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -24,14 +26,17 @@ import (
 	"github.com/databricks/cli/experimental/ssh/internal/vscode"
 	sshWorkspace "github.com/databricks/cli/experimental/ssh/internal/workspace"
 	"github.com/databricks/cli/internal/build"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/telemetry"
+	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/compute"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
-	"github.com/fatih/color"
 	"github.com/gorilla/websocket"
 )
 
@@ -97,6 +102,8 @@ type ClientOptions struct {
 	SkipSettingsCheck bool
 	// Environment version for serverless compute.
 	EnvironmentVersion int
+	// If true, skip confirmation prompts for IDE extension install and IDE settings updates.
+	AutoApprove bool
 }
 
 func (o *ClientOptions) Validate() error {
@@ -119,6 +126,20 @@ func (o *ClientOptions) Validate() error {
 		return fmt.Errorf("environment version must be >= %d, got %d", minEnvironmentVersion, o.EnvironmentVersion)
 	}
 	return nil
+}
+
+// GenerateDefaultConnectionName creates a deterministic connection name from
+// the workspace host and accelerator type. The name includes a hash of the
+// workspace host so that different workspaces produce different names,
+// avoiding SSH known_hosts conflicts.
+func GenerateDefaultConnectionName(host, accelerator string) string {
+	h := md5.Sum([]byte(host))
+	hashStr := hex.EncodeToString(h[:4])
+	if accelerator != "" {
+		acc := strings.ToLower(strings.ReplaceAll(accelerator, "_", "-"))
+		return fmt.Sprintf("databricks-%s-%s", acc, hashStr)
+	}
+	return "databricks-cpu-" + hashStr
 }
 
 func (o *ClientOptions) IsServerlessMode() bool {
@@ -210,7 +231,7 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 	if !opts.ProxyMode {
 		cmdio.LogString(ctx, fmt.Sprintf("Connecting to %s...", sessionID))
 		if opts.IsServerlessMode() && opts.Accelerator == "" {
-			cmdio.LogString(ctx, color.YellowString("WARNING: serverless compute without an accelerator is in private preview. If you are not enrolled, this command will likely time out with an error. Contact your Databricks account team to enroll."))
+			cmdio.LogString(ctx, cmdio.Yellow(ctx, "WARNING: serverless compute without an accelerator is in private preview. If you are not enrolled, this command will likely time out with an error. Contact your Databricks account team to enroll."))
 		}
 	}
 
@@ -218,7 +239,7 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 		if err := vscode.CheckIDECommand(opts.IDE); err != nil {
 			return err
 		}
-		if err := vscode.CheckIDESSHExtension(ctx, opts.IDE); err != nil {
+		if err := vscode.CheckIDESSHExtension(ctx, opts.IDE, opts.AutoApprove); err != nil {
 			return err
 		}
 	}
@@ -227,12 +248,15 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 	// desired server ports (or socket connection mode) for the connection to go through
 	// (as the majority of the localhost ports on the remote side are blocked by iptable rules).
 	// Plus the platform (always linux), and extensions (python and jupyter), to make the initial experience smoother.
-	if opts.IDE != "" && opts.IsServerlessMode() && !opts.ProxyMode && !opts.SkipSettingsCheck && cmdio.IsPromptSupported(ctx) {
-		err := vscode.CheckAndUpdateSettings(ctx, opts.IDE, opts.ConnectionName)
+	if opts.IDE != "" && opts.IsServerlessMode() && !opts.ProxyMode && !opts.SkipSettingsCheck {
+		err := vscode.CheckAndUpdateSettings(ctx, opts.IDE, opts.ConnectionName, opts.AutoApprove)
 		if err != nil {
 			cmdio.LogString(ctx, fmt.Sprintf("Failed to update IDE settings: %v", err))
 			cmdio.LogString(ctx, vscode.GetManualInstructions(opts.IDE, opts.ConnectionName))
 			cmdio.LogString(ctx, "Use --skip-settings-check to bypass IDE settings verification.")
+			if opts.AutoApprove {
+				return fmt.Errorf("aborted: IDE settings need to be updated manually: %w", err)
+			}
 			shouldProceed, promptErr := cmdio.AskYesOrNo(ctx, "Do you want to proceed with the connection?")
 			if promptErr != nil {
 				return fmt.Errorf("failed to prompt user: %w", promptErr)
@@ -242,6 +266,13 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 			}
 		}
 	}
+
+	isReconnect := opts.ServerMetadata != ""
+	var serverStartTimeMs int64
+	isSuccess := false
+	defer func() {
+		logSshTunnelEvent(ctx, opts, isSuccess, isReconnect, serverStartTimeMs)
+	}()
 
 	// Only check cluster state for dedicated clusters
 	if !opts.IsServerlessMode() {
@@ -289,14 +320,16 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 		if err != nil {
 			return fmt.Errorf("failed to upload ssh-tunnel binaries: %w", err)
 		}
+		serverStartTime := time.Now()
 		userName, serverPort, clusterID, err = ensureSSHServerIsRunning(ctx, client, version, secretScopeName, opts)
 		if err != nil {
 			if opts.IsServerlessMode() && opts.Accelerator == "" && errors.Is(err, errServerMetadata) {
 				return fmt.Errorf("failed to ensure that ssh server is running: %w\n\n"+
-					color.YellowString("This may be because serverless compute without an accelerator is in private preview.\nContact your Databricks account team to enroll."), err)
+					cmdio.Yellow(ctx, "This may be because serverless compute without an accelerator is in private preview.\nContact your Databricks account team to enroll."), err)
 			}
 			return fmt.Errorf("failed to ensure that ssh server is running: %w", err)
 		}
+		serverStartTimeMs = time.Since(serverStartTime).Milliseconds()
 	} else {
 		// Metadata format: "<user_name>,<port>,<cluster_id>"
 		metadata := strings.Split(opts.ServerMetadata, ",")
@@ -333,6 +366,8 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 		cmdio.LogString(ctx, "Connected!")
 	}
 
+	isSuccess = true
+
 	if opts.ProxyMode {
 		return runSSHProxy(ctx, client, serverPort, clusterID, opts)
 	} else if opts.IDE != "" {
@@ -350,7 +385,7 @@ func runIDE(ctx context.Context, client *databricks.WorkspaceClient, userName, k
 	}
 
 	// Get Databricks user name for the workspace path
-	currentUser, err := client.CurrentUser.Me(ctx)
+	currentUser, err := client.CurrentUser.Me(ctx, iam.MeRequest{})
 	if err != nil {
 		return fmt.Errorf("failed to get current user: %w", err)
 	}
@@ -417,13 +452,13 @@ func getServerMetadata(ctx context.Context, client *databricks.WorkspaceClient, 
 		return 0, "", "", errors.Join(errServerMetadata, errors.New("cluster ID not available in metadata"))
 	}
 
-	workspaceID, err := client.CurrentWorkspaceID(ctx)
+	workspaceID, err := auth.ResolveWorkspaceID(ctx, client)
 	if err != nil {
 		return 0, "", "", err
 	}
-	metadataURL := fmt.Sprintf("%s/driver-proxy-api/o/%d/%s/%d/metadata", client.Config.Host, workspaceID, effectiveClusterID, wsMetadata.Port)
+	metadataURL := fmt.Sprintf("%s/driver-proxy-api/o/%s/%s/%d/metadata", client.Config.Host, workspaceID, effectiveClusterID, wsMetadata.Port)
 	log.Debugf(ctx, "Metadata URL: %s", metadataURL)
-	req, err := http.NewRequestWithContext(ctx, "GET", metadataURL, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, metadataURL, nil)
 	if err != nil {
 		return 0, "", "", err
 	}
@@ -433,7 +468,8 @@ func getServerMetadata(ctx context.Context, client *databricks.WorkspaceClient, 
 	if err := client.Config.Authenticate(req); err != nil {
 		return 0, "", "", err
 	}
-	resp, err := http.DefaultClient.Do(req)
+	httpClient := &http.Client{Transport: client.Config.HTTPTransport}
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return 0, "", "", err
 	}
@@ -460,7 +496,7 @@ func submitSSHTunnelJob(ctx context.Context, client *databricks.WorkspaceClient,
 		return fmt.Errorf("failed to get workspace content directory: %w", err)
 	}
 
-	err = client.Workspace.MkdirsByPath(ctx, contentDir)
+	err = client.Workspace.MkdirsByPath(ctx, contentDir) //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
 	if err != nil {
 		return fmt.Errorf("failed to create directory in the remote workspace: %w", err)
 	}
@@ -704,4 +740,34 @@ func ensureSSHServerIsRunning(ctx context.Context, client *databricks.WorkspaceC
 	}
 
 	return userName, serverPort, effectiveClusterID, nil
+}
+
+func logSshTunnelEvent(ctx context.Context, opts ClientOptions, isSuccess, isReconnect bool, serverStartTimeMs int64) {
+	computeType := protos.SshTunnelComputeTypeDedicated
+	if opts.IsServerlessMode() {
+		computeType = protos.SshTunnelComputeTypeServerless
+	}
+
+	var clientMode protos.SshTunnelClientMode
+	switch {
+	case opts.ProxyMode:
+		clientMode = protos.SshTunnelClientModeProxy
+	case opts.IDE != "":
+		clientMode = protos.SshTunnelClientModeIDE
+	default:
+		clientMode = protos.SshTunnelClientModeSSH
+	}
+
+	telemetry.Log(ctx, protos.DatabricksCliLog{
+		SshTunnelEvent: &protos.SshTunnelEvent{
+			ComputeType:       computeType,
+			AcceleratorType:   opts.Accelerator,
+			IdeType:           opts.IDE,
+			ClientMode:        clientMode,
+			IsReconnect:       isReconnect,
+			AutoStartCluster:  opts.AutoStartCluster,
+			ServerStartTimeMs: serverStartTimeMs,
+			IsSuccess:         isSuccess,
+		},
+	})
 }

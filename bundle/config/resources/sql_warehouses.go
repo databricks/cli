@@ -5,6 +5,7 @@ import (
 	"net/url"
 
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/sql"
@@ -14,7 +15,18 @@ type SqlWarehouse struct {
 	BaseResource
 	sql.CreateWarehouseRequest
 
+	// Lifecycle shadows BaseResource.Lifecycle to add support for lifecycle.started.
+	Lifecycle *LifecycleWithStarted `json:"lifecycle,omitempty"`
+
 	Permissions []SqlWarehousePermission `json:"permissions,omitempty"`
+}
+
+// GetLifecycle returns the lifecycle settings, using LifecycleWithStarted.
+func (sw *SqlWarehouse) GetLifecycle() LifecycleConfig {
+	if sw.Lifecycle == nil {
+		return LifecycleWithStarted{}
+	}
+	return *sw.Lifecycle
 }
 
 func (sw *SqlWarehouse) UnmarshalJSON(b []byte) error {
@@ -47,8 +59,7 @@ func (sw *SqlWarehouse) InitializeURL(baseURL url.URL) {
 	if sw.ID == "" {
 		return
 	}
-	baseURL.Path = "sql/warehouses/" + sw.ID
-	sw.URL = baseURL.String()
+	sw.URL = workspaceurls.ResourceURL(baseURL, "warehouses", sw.ID)
 }
 
 func (sw *SqlWarehouse) GetName() string {

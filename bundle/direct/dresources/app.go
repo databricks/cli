@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"slices"
 	"strings"
 	"time"
 
@@ -19,11 +18,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/apps"
 )
 
-// AppStateLifecycle holds lifecycle settings persisted in state.
-type AppStateLifecycle struct {
-	Started *bool `json:"started,omitempty"`
-}
-
 // AppState is the state type for App resources. It extends apps.App with deployment-related
 // fields (source_code_path, config, git_source, lifecycle) that are persisted in state.
 type AppState struct {
@@ -31,7 +25,7 @@ type AppState struct {
 	SourceCodePath string               `json:"source_code_path,omitempty"`
 	Config         *resources.AppConfig `json:"config,omitempty"`
 	GitSource      *apps.GitSource      `json:"git_source,omitempty"`
-	Lifecycle      *AppStateLifecycle   `json:"lifecycle,omitempty"`
+	Lifecycle      *StateLifecycle      `json:"lifecycle,omitempty"`
 }
 
 // AppRemote extends apps.App with the same deployment fields as AppState so they
@@ -41,7 +35,7 @@ type AppRemote struct {
 	SourceCodePath string               `json:"source_code_path,omitempty"`
 	Config         *resources.AppConfig `json:"config,omitempty"`
 	GitSource      *apps.GitSource      `json:"git_source,omitempty"`
-	Lifecycle      *AppStateLifecycle   `json:"lifecycle,omitempty"`
+	Lifecycle      *StateLifecycle      `json:"lifecycle,omitempty"`
 }
 
 // Custom marshalers needed because embedded apps.App has its own MarshalJSON
@@ -79,7 +73,7 @@ func (*ResourceApp) PrepareState(input *resources.App) *AppState {
 		Lifecycle:      nil,
 	}
 	if input.Lifecycle != nil && input.Lifecycle.Started != nil {
-		s.Lifecycle = &AppStateLifecycle{Started: input.Lifecycle.Started}
+		s.Lifecycle = &StateLifecycle{Started: input.Lifecycle.Started}
 	}
 	return s
 }
@@ -95,7 +89,7 @@ func (*ResourceApp) RemapState(remote *AppRemote) *AppState {
 		SourceCodePath: remote.SourceCodePath,
 		Config:         remote.Config,
 		GitSource:      remote.GitSource,
-		Lifecycle:      &AppStateLifecycle{Started: &started},
+		Lifecycle:      &StateLifecycle{Started: &started},
 	}
 }
 
@@ -110,7 +104,7 @@ func (r *ResourceApp) DoRead(ctx context.Context, id string) (*AppRemote, error)
 		Config:         nil,
 		GitSource:      nil,
 		SourceCodePath: "",
-		Lifecycle:      &AppStateLifecycle{Started: &started},
+		Lifecycle:      &StateLifecycle{Started: &started},
 	}
 	if app.ActiveDeployment != nil {
 		// The source code path in active deployment is snapshotted version of the source code path in the app.
@@ -163,16 +157,25 @@ func (r *ResourceApp) DoCreate(ctx context.Context, config *AppState) (string, *
 	return app.Name, nil, nil
 }
 
+var UpdateMaskFields = []string{
+	"description",
+	"budget_policy_id",
+	"usage_policy_id",
+	"resources",
+	"user_api_scopes",
+	"compute_size",
+	"compute_min_instances",
+	"compute_max_instances",
+	"git_repository",
+	"telemetry_export_destinations",
+}
+
+var updateMask = strings.Join(UpdateMaskFields, ",")
+
 func (r *ResourceApp) DoUpdate(ctx context.Context, id string, config *AppState, entry *PlanEntry) (*AppRemote, error) {
 	// Deploy-only fields (source_code_path, config,
 	// git_source, lifecycle) are not part of apps.App and thus excluded from the request body.
 	if hasAppChanges(entry) {
-		fieldPaths := collectUpdatePathsWithPrefix(entry.Changes, "")
-		slices.Sort(fieldPaths)
-		for i, fieldPath := range fieldPaths {
-			fieldPaths[i] = truncateAtIndex(fieldPath)
-		}
-		updateMask := strings.Join(fieldPaths, ",")
 		request := apps.AsyncUpdateAppRequest{
 			App:        &config.App,
 			AppName:    id,
@@ -193,74 +196,60 @@ func (r *ResourceApp) DoUpdate(ctx context.Context, id string, config *AppState,
 		}
 	}
 
+	return nil, r.manageLifecycle(ctx, id, config, remoteIsStarted(entry))
+}
+
+func (r *ResourceApp) manageLifecycle(ctx context.Context, id string, config *AppState, alreadyStarted bool) error {
 	if config.Lifecycle == nil || config.Lifecycle.Started == nil {
-		return nil, nil
+		return nil
 	}
 
 	desiredStarted := *config.Lifecycle.Started
-	remoteStarted := remoteIsStarted(entry)
-
 	if desiredStarted {
 		// lifecycle.started=true: ensure the app compute is running and deploy the latest code.
-		if !remoteStarted {
+		if !alreadyStarted {
 			startWaiter, err := r.client.Apps.Start(ctx, apps.StartAppRequest{Name: id})
 			if err != nil {
-				return nil, err
+				return err
 			}
 			startedApp, err := startWaiter.Get()
 			if err != nil {
-				return nil, err
+				return err
 			}
 			if err := appdeploy.WaitForDeploymentToComplete(ctx, r.client, startedApp); err != nil {
-				return nil, err
+				return err
 			}
 		}
 		deployment := appdeploy.BuildDeployment(config.SourceCodePath, config.Config, config.GitSource)
 		if err := appdeploy.Deploy(ctx, r.client, id, deployment); err != nil {
-			return nil, err
+			return err
 		}
 	} else {
 		// lifecycle.started=false: ensure the app compute is stopped.
-		if remoteStarted {
+		if alreadyStarted {
 			stopWaiter, err := r.client.Apps.Stop(ctx, apps.StopAppRequest{Name: id})
 			if err != nil {
-				return nil, err
+				return err
 			}
 			if _, err = stopWaiter.Get(); err != nil {
-				return nil, err
+				return err
 			}
 		}
 	}
 
-	return nil, nil
-}
-
-// deployOnlyFields are AppState fields managed via the Deploy API, not the App Update API.
-// They have remote counterparts (populated from active deployment and compute status),
-// but must not appear in the App update_mask.
-var deployOnlyFields = map[string]bool{
-	"source_code_path":  true,
-	"config":            true,
-	"git_source":        true,
-	"lifecycle":         true,
-	"lifecycle.started": true,
+	return nil
 }
 
 // hasAppChanges reports whether the plan entry contains any Update changes
 // to fields that belong to the App Update API (i.e., not deploy-only fields).
 func hasAppChanges(entry *PlanEntry) bool {
-	for path, change := range entry.Changes {
-		if change.Action == deployplan.Update && !deployOnlyFields[truncateAtIndex(path)] {
-			return true
-		}
-	}
-	return false
+	return entry.Changes.HasChangeExcept("source_code_path", "config", "git_source", "lifecycle", "lifecycle.started")
 }
 
 // OverrideChangeDesc skips source_code_path drift when the remote value is empty.
 // This happens when an app has no deployment yet (DefaultSourceCodePath is unset).
 func (*ResourceApp) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, change *ChangeDesc, remote *AppRemote) error {
-	if path.String() == "source_code_path" && remote.SourceCodePath == "" {
+	if path.String() == "source_code_path" && (remote.SourceCodePath == "" || remote.SourceCodePath == "null") {
 		change.Action = deployplan.Skip
 		change.Reason = "no deployment"
 	}
@@ -308,13 +297,21 @@ func deploymentToAppConfig(d *apps.AppDeployment) *resources.AppConfig {
 	return config
 }
 
-func (r *ResourceApp) DoDelete(ctx context.Context, id string) error {
+func (r *ResourceApp) DoDelete(ctx context.Context, id string, _ *AppState) error {
 	_, err := r.client.Apps.DeleteByName(ctx, id)
 	return err
 }
 
-func (r *ResourceApp) WaitAfterCreate(ctx context.Context, config *AppState) (*AppRemote, error) {
-	return r.waitForApp(ctx, r.client, config.Name)
+func (r *ResourceApp) WaitAfterCreate(ctx context.Context, id string, config *AppState) (*AppRemote, error) {
+	remote, err := r.waitForApp(ctx, r.client, config.Name)
+	if err != nil {
+		return nil, err
+	}
+	alreadyStarted := remote.Lifecycle != nil && remote.Lifecycle.Started != nil && *remote.Lifecycle.Started
+	if err := r.manageLifecycle(ctx, config.Name, config, alreadyStarted); err != nil {
+		return nil, err
+	}
+	return remote, nil
 }
 
 // waitForApp waits for the app to reach the target state. The target state is either ACTIVE or STOPPED.
@@ -351,7 +348,7 @@ func (r *ResourceApp) waitForApp(ctx context.Context, w *databricks.WorkspaceCli
 		Config:         nil,
 		GitSource:      nil,
 		SourceCodePath: "",
-		Lifecycle:      &AppStateLifecycle{Started: &started},
+		Lifecycle:      &StateLifecycle{Started: &started},
 	}
 	if app.ActiveDeployment != nil {
 		remote.SourceCodePath = app.DefaultSourceCodePath

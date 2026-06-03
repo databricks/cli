@@ -8,13 +8,14 @@ import (
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/files"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/stretchr/testify/require"
 )
 
 func TemporaryWorkspaceDir(t *WorkspaceT, name ...string) string {
 	ctx := t.ctx
-	me, err := t.W.CurrentUser.Me(ctx)
+	me, err := t.W.CurrentUser.Me(ctx, iam.MeRequest{})
 	require.NoError(t, err)
 
 	// Prefix the name with "integration-test-" to make it easier to identify.
@@ -22,13 +23,13 @@ func TemporaryWorkspaceDir(t *WorkspaceT, name ...string) string {
 	basePath := fmt.Sprintf("/Users/%s/%s", me.UserName, testutil.RandomName(name...))
 
 	t.Logf("Creating workspace directory %s", basePath)
-	err = t.W.Workspace.MkdirsByPath(ctx, basePath)
+	err = t.W.Workspace.MkdirsByPath(ctx, basePath) //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
 	require.NoError(t, err)
 
 	// Remove test directory on test completion.
 	t.Cleanup(func() {
 		t.Logf("Removing workspace directory %s", basePath)
-		err := t.W.Workspace.Delete(context.WithoutCancel(ctx), workspace.Delete{
+		err := t.W.Workspace.Delete(context.WithoutCancel(ctx), workspace.Delete{ //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
 			Path:      basePath,
 			Recursive: true,
 		})
@@ -69,7 +70,7 @@ func TemporaryDbfsDir(t *WorkspaceT, name ...string) string {
 
 func TemporaryRepo(t *WorkspaceT, url string) string {
 	ctx := t.ctx
-	me, err := t.W.CurrentUser.Me(ctx)
+	me, err := t.W.CurrentUser.Me(ctx, iam.MeRequest{})
 	require.NoError(t, err)
 
 	// Prefix the path with "integration-test-" to make it easier to identify.

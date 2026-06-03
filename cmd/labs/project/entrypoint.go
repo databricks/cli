@@ -205,7 +205,7 @@ func (e *Entrypoint) getLoginConfig(cmd *cobra.Command) (*loginConfig, *config.C
 		b := root.TryConfigureBundle(cmd)
 		if b != nil {
 			log.Infof(ctx, "Using login configuration from Databricks Asset Bundle")
-			return &loginConfig{}, b.WorkspaceClient().Config, nil
+			return &loginConfig{}, b.WorkspaceClient(ctx).Config, nil
 		}
 	}
 	log.Debugf(ctx, "Using workspace-level login profile: %s", lc.WorkspaceProfile)

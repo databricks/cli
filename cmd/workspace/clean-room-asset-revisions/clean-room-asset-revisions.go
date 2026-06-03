@@ -19,12 +19,18 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "clean-room-asset-revisions",
-		Short: `Clean Room Asset Revisions denote new versions of uploaded assets (e.g.`,
-		Long: `Clean Room Asset Revisions denote new versions of uploaded assets (e.g.
+		Short: `*Beta* Clean Room Asset Revisions denote new versions of uploaded assets (e.g.`,
+		Long: `This command is in Beta and may change without notice.
+
+Clean Room Asset Revisions denote new versions of uploaded assets (e.g.
   notebooks) in the clean room.`,
 		GroupID: "cleanrooms",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	// Add methods
 	cmd.AddCommand(newGet())
@@ -53,8 +59,10 @@ func newGet() *cobra.Command {
 	var getReq cleanrooms.GetCleanRoomAssetRevisionRequest
 
 	cmd.Use = "get CLEAN_ROOM_NAME ASSET_TYPE NAME ETAG"
-	cmd.Short = `Get an asset revision.`
-	cmd.Long = `Get an asset revision.
+	cmd.Short = `*Beta* Get an asset revision.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Get an asset revision.
 
   Get a specific revision of an asset
 
@@ -67,6 +75,8 @@ func newGet() *cobra.Command {
       returned.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(4)
@@ -91,6 +101,7 @@ func newGet() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -119,13 +130,25 @@ func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listReq cleanrooms.ListCleanRoomAssetRevisionsRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listLimit int
 
 	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `Maximum number of asset revisions to return.`)
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque pagination token to go to next page based on the previous query.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list CLEAN_ROOM_NAME ASSET_TYPE NAME"
-	cmd.Short = `List asset revisions.`
-	cmd.Long = `List asset revisions.
+	cmd.Short = `*Beta* List asset revisions.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+List asset revisions.
 
   List revisions for an asset
 
@@ -136,6 +159,8 @@ func newList() *cobra.Command {
     NAME: Name of the asset.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(3)
@@ -156,6 +181,13 @@ func newList() *cobra.Command {
 		listReq.Name = args[2]
 
 		response := w.CleanRoomAssetRevisions.List(ctx, listReq)
+		if listLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
+		}
+		if listLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 

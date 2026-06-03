@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"maps"
 	"net/http"
 	"net/url"
 	"path"
@@ -14,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/client"
@@ -131,8 +133,8 @@ func (w *FilesClient) Write(ctx context.Context, name string, reader io.Reader, 
 	if !slices.Contains(mode, CreateParentDirectories) {
 		err := w.workspaceClient.Files.GetDirectoryMetadataByDirectoryPath(ctx, path.Dir(absPath))
 		if err != nil {
-			var aerr *apierr.APIError
-			if !errors.As(err, &aerr) {
+			aerr, ok := errors.AsType[*apierr.APIError](err)
+			if !ok {
 				return err
 			}
 
@@ -148,6 +150,7 @@ func (w *FilesClient) Write(ctx context.Context, name string, reader io.Reader, 
 	overwrite := slices.Contains(mode, OverwriteIfExists)
 	urlPath = fmt.Sprintf("%s?overwrite=%t", urlPath, overwrite)
 	headers := map[string]string{"Content-Type": "application/octet-stream"}
+	maps.Copy(headers, auth.WorkspaceIDHeaders(w.workspaceClient.Config))
 	err = w.apiClient.Do(ctx, http.MethodPut, urlPath, headers, nil, reader, nil)
 
 	// Return early on success.
@@ -156,8 +159,8 @@ func (w *FilesClient) Write(ctx context.Context, name string, reader io.Reader, 
 	}
 
 	// Special handling of this error only if it is an API error.
-	var aerr *apierr.APIError
-	if !errors.As(err, &aerr) {
+	aerr, ok := errors.AsType[*apierr.APIError](err)
+	if !ok {
 		return err
 	}
 
@@ -176,7 +179,7 @@ func (w *FilesClient) Read(ctx context.Context, name string) (io.ReadCloser, err
 	}
 
 	var reader io.ReadCloser
-	err = w.apiClient.Do(ctx, http.MethodGet, urlPath, nil, nil, nil, &reader)
+	err = w.apiClient.Do(ctx, http.MethodGet, urlPath, auth.WorkspaceIDHeaders(w.workspaceClient.Config), nil, nil, &reader)
 
 	// Return early on success.
 	if err == nil {
@@ -184,8 +187,8 @@ func (w *FilesClient) Read(ctx context.Context, name string) (io.ReadCloser, err
 	}
 
 	// Special handling of this error only if it is an API error.
-	var aerr *apierr.APIError
-	if !errors.As(err, &aerr) {
+	aerr, ok := errors.AsType[*apierr.APIError](err)
+	if !ok {
 		return nil, err
 	}
 
@@ -221,9 +224,9 @@ func (w *FilesClient) deleteFile(ctx context.Context, name string) error {
 		return nil
 	}
 
-	var aerr *apierr.APIError
 	// Special handling of this error only if it is an API error.
-	if !errors.As(err, &aerr) {
+	aerr, ok := errors.AsType[*apierr.APIError](err)
+	if !ok {
 		return err
 	}
 
@@ -248,9 +251,9 @@ func (w *FilesClient) deleteDirectory(ctx context.Context, name string) error {
 
 	err = w.workspaceClient.Files.DeleteDirectoryByDirectoryPath(ctx, absPath)
 
-	var aerr *apierr.APIError
 	// Special handling of this error only if it is an API error.
-	if !errors.As(err, &aerr) {
+	aerr, ok := errors.AsType[*apierr.APIError](err)
+	if !ok {
 		return err
 	}
 
@@ -386,13 +389,13 @@ func (w *FilesClient) ReadDir(ctx context.Context, name string) ([]fs.DirEntry, 
 	}
 
 	// Special handling of this error only if it is an API error.
-	var apierr *apierr.APIError
-	if !errors.As(err, &apierr) {
+	aerr, ok := errors.AsType[*apierr.APIError](err)
+	if !ok {
 		return nil, err
 	}
 
 	// This API returns a 404 if the specified path does not exist.
-	if apierr.StatusCode == http.StatusNotFound {
+	if aerr.StatusCode == http.StatusNotFound {
 		// Check if the path is a file. If so, return not a directory error.
 		if _, err := w.statFile(ctx, name); err == nil {
 			return nil, notADirectory{absPath}
@@ -415,8 +418,7 @@ func (w *FilesClient) Mkdir(ctx context.Context, name string) error {
 	})
 
 	// Special handling of this error only if it is an API error.
-	var aerr *apierr.APIError
-	if errors.As(err, &aerr) && aerr.StatusCode == http.StatusConflict {
+	if aerr, ok := errors.AsType[*apierr.APIError](err); ok && aerr.StatusCode == http.StatusConflict {
 		return fileAlreadyExistsError{absPath}
 	}
 
@@ -442,8 +444,8 @@ func (w *FilesClient) statFile(ctx context.Context, name string) (fs.FileInfo, e
 	}
 
 	// Special handling of this error only if it is an API error.
-	var aerr *apierr.APIError
-	if !errors.As(err, &aerr) {
+	aerr, ok := errors.AsType[*apierr.APIError](err)
+	if !ok {
 		return nil, err
 	}
 
@@ -470,8 +472,8 @@ func (w *FilesClient) statDir(ctx context.Context, name string) (fs.FileInfo, er
 	}
 
 	// Special handling of this error only if it is an API error.
-	var aerr *apierr.APIError
-	if !errors.As(err, &aerr) {
+	aerr, ok := errors.AsType[*apierr.APIError](err)
+	if !ok {
 		return nil, err
 	}
 

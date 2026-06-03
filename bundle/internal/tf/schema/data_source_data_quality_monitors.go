@@ -69,7 +69,7 @@ type DataSourceDataQualityMonitorsMonitorsDataProfilingConfig struct {
 }
 
 type DataSourceDataQualityMonitorsMonitorsProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourceDataQualityMonitorsMonitors struct {
@@ -81,7 +81,7 @@ type DataSourceDataQualityMonitorsMonitors struct {
 }
 
 type DataSourceDataQualityMonitorsProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourceDataQualityMonitors struct {

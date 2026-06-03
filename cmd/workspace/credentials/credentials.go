@@ -33,6 +33,10 @@ func New() *cobra.Command {
 		RunE:    root.ReportUnknownSubcommand,
 	}
 
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
+
 	// Add methods
 	cmd.AddCommand(newCreateCredential())
 	cmd.AddCommand(newDeleteCredential())
@@ -92,12 +96,14 @@ func newCreateCredential() *cobra.Command {
       credentials within the metastore.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'name' in your JSON input")
 			}
 			return nil
 		}
@@ -130,6 +136,7 @@ func newCreateCredential() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -172,6 +179,8 @@ func newDeleteCredential() *cobra.Command {
     NAME_ARG: Name of the credential.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -236,12 +245,14 @@ func newGenerateTemporaryServiceCredential() *cobra.Command {
     CREDENTIAL_NAME: The name of the service credential used to generate a temporary credential`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'credential_name' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'credential_name' in your JSON input")
 			}
 			return nil
 		}
@@ -274,6 +285,7 @@ func newGenerateTemporaryServiceCredential() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -315,6 +327,8 @@ func newGetCredential() *cobra.Command {
     NAME_ARG: Name of the credential.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -332,6 +346,7 @@ func newGetCredential() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -360,11 +375,21 @@ func newListCredentials() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listCredentialsReq catalog.ListCredentialsRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listCredentialsLimit int
 
 	cmd.Flags().BoolVar(&listCredentialsReq.IncludeUnbound, "include-unbound", listCredentialsReq.IncludeUnbound, `Whether to include credentials not bound to the workspace.`)
 	cmd.Flags().IntVar(&listCredentialsReq.MaxResults, "max-results", listCredentialsReq.MaxResults, `Maximum number of credentials to return.`)
-	cmd.Flags().StringVar(&listCredentialsReq.PageToken, "page-token", listCredentialsReq.PageToken, `Opaque token to retrieve the next page of results.`)
 	cmd.Flags().Var(&listCredentialsReq.Purpose, "purpose", `Return only credentials for the specified purpose. Supported values: [SERVICE, STORAGE]`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listCredentialsLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listCredentialsReq.PageToken, "page-token", listCredentialsReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-credentials"
 	cmd.Short = `List credentials.`
@@ -383,6 +408,8 @@ func newListCredentials() *cobra.Command {
   end of results has been reached.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -395,6 +422,13 @@ func newListCredentials() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.Credentials.ListCredentials(ctx, listCredentialsReq)
+		if listCredentialsLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listCredentialsLimit)
+		}
+		if listCredentialsLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listCredentialsLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -453,6 +487,8 @@ func newUpdateCredential() *cobra.Command {
     NAME_ARG: Name of the credential.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -482,6 +518,7 @@ func newUpdateCredential() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -544,6 +581,8 @@ func newValidateCredential() *cobra.Command {
   **CREATE_EXTERNAL_LOCATION** when purpose is **STORAGE**).`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -572,6 +611,7 @@ func newValidateCredential() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 

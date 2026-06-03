@@ -3,6 +3,8 @@
 package network_policies
 
 import (
+	"fmt"
+
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
@@ -29,6 +31,10 @@ func New() *cobra.Command {
 		GroupID: "settings",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	// Add methods
 	cmd.AddCommand(newCreateNetworkPolicyRpc())
@@ -63,8 +69,9 @@ func newCreateNetworkPolicyRpc() *cobra.Command {
 
 	cmd.Flags().Var(&createNetworkPolicyRpcJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createNetworkPolicyRpcReq.NetworkPolicy.AccountId, "account-id", createNetworkPolicyRpcReq.NetworkPolicy.AccountId, `The associated account ID for this Network Policy object.`)
 	// TODO: complex arg: egress
+	// TODO: complex arg: ingress
+	// TODO: complex arg: ingress_dry_run
 	cmd.Flags().StringVar(&createNetworkPolicyRpcReq.NetworkPolicy.NetworkPolicyId, "network-policy-id", createNetworkPolicyRpcReq.NetworkPolicy.NetworkPolicyId, `The unique identifier for the network policy.`)
 
 	cmd.Use = "create-network-policy-rpc"
@@ -75,6 +82,8 @@ func newCreateNetworkPolicyRpc() *cobra.Command {
   accessed from the Databricks environment.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -103,6 +112,7 @@ func newCreateNetworkPolicyRpc() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -142,6 +152,8 @@ func newDeleteNetworkPolicyRpc() *cobra.Command {
     NETWORK_POLICY_ID: The unique identifier of the network policy to delete.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -198,6 +210,8 @@ func newGetNetworkPolicyRpc() *cobra.Command {
     NETWORK_POLICY_ID: The unique identifier of the network policy to retrieve.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -215,6 +229,7 @@ func newGetNetworkPolicyRpc() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -243,8 +258,17 @@ func newListNetworkPoliciesRpc() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listNetworkPoliciesRpcReq settings.ListNetworkPoliciesRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listNetworkPoliciesRpcLimit int
 
-	cmd.Flags().StringVar(&listNetworkPoliciesRpcReq.PageToken, "page-token", listNetworkPoliciesRpcReq.PageToken, `Pagination token to go to next page based on previous query.`)
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listNetworkPoliciesRpcLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listNetworkPoliciesRpcReq.PageToken, "page-token", listNetworkPoliciesRpcReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-network-policies-rpc"
 	cmd.Short = `List network policies.`
@@ -253,6 +277,8 @@ func newListNetworkPoliciesRpc() *cobra.Command {
   Gets an array of network policies.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -265,6 +291,13 @@ func newListNetworkPoliciesRpc() *cobra.Command {
 		a := cmdctx.AccountClient(ctx)
 
 		response := a.NetworkPolicies.ListNetworkPoliciesRpc(ctx, listNetworkPoliciesRpcReq)
+		if listNetworkPoliciesRpcLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listNetworkPoliciesRpcLimit)
+		}
+		if listNetworkPoliciesRpcLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listNetworkPoliciesRpcLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -298,8 +331,9 @@ func newUpdateNetworkPolicyRpc() *cobra.Command {
 
 	cmd.Flags().Var(&updateNetworkPolicyRpcJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateNetworkPolicyRpcReq.NetworkPolicy.AccountId, "account-id", updateNetworkPolicyRpcReq.NetworkPolicy.AccountId, `The associated account ID for this Network Policy object.`)
 	// TODO: complex arg: egress
+	// TODO: complex arg: ingress
+	// TODO: complex arg: ingress_dry_run
 	cmd.Flags().StringVar(&updateNetworkPolicyRpcReq.NetworkPolicy.NetworkPolicyId, "network-policy-id", updateNetworkPolicyRpcReq.NetworkPolicy.NetworkPolicyId, `The unique identifier for the network policy.`)
 
 	cmd.Use = "update-network-policy-rpc NETWORK_POLICY_ID"
@@ -313,6 +347,8 @@ func newUpdateNetworkPolicyRpc() *cobra.Command {
     NETWORK_POLICY_ID: The unique identifier for the network policy.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -342,6 +378,7 @@ func newUpdateNetworkPolicyRpc() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 

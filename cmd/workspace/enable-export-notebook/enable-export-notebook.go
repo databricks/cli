@@ -20,11 +20,17 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "enable-export-notebook",
-		Short: `Controls whether users can export notebooks and files from the Workspace UI.`,
-		Long: `Controls whether users can export notebooks and files from the Workspace UI.
+		Short: `*Public Preview* Controls whether users can export notebooks and files from the Workspace UI.`,
+		Long: `This command is in Public Preview and may change without notice.
+
+Controls whether users can export notebooks and files from the Workspace UI.
   By default, this setting is enabled.`,
 		RunE: root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	// Add methods
 	cmd.AddCommand(newGetEnableExportNotebook())
@@ -50,12 +56,16 @@ func newGetEnableExportNotebook() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	cmd.Use = "get-enable-export-notebook"
-	cmd.Short = `Get the Notebook and File exporting setting.`
-	cmd.Long = `Get the Notebook and File exporting setting.
+	cmd.Short = `*Public Preview* Get the Notebook and File exporting setting.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Get the Notebook and File exporting setting.
 
   Gets the Notebook and File exporting setting.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -65,6 +75,7 @@ func newGetEnableExportNotebook() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -98,14 +109,18 @@ func newPatchEnableExportNotebook() *cobra.Command {
 	cmd.Flags().Var(&patchEnableExportNotebookJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "patch-enable-export-notebook"
-	cmd.Short = `Update the Notebook and File exporting setting.`
-	cmd.Long = `Update the Notebook and File exporting setting.
+	cmd.Short = `*Public Preview* Update the Notebook and File exporting setting.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Update the Notebook and File exporting setting.
 
   Updates the Notebook and File exporting setting. The model follows eventual
   consistency, which means the get after the update operation might receive
   stale values for some time.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -131,6 +146,7 @@ func newPatchEnableExportNotebook() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 

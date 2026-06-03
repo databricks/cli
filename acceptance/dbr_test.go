@@ -14,6 +14,7 @@ import (
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/compute"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/google/uuid"
@@ -27,7 +28,7 @@ func workspaceTmpDir(ctx context.Context, t *testing.T) string {
 	w, err := databricks.NewWorkspaceClient()
 	require.NoError(t, err)
 
-	currentUser, err := w.CurrentUser.Me(ctx)
+	currentUser, err := w.CurrentUser.Me(ctx, iam.MeRequest{})
 	require.NoError(t, err)
 
 	timestamp := time.Now().Format("2006-01-02T15:04:05Z")
@@ -79,13 +80,13 @@ func setupDbrTestDir(ctx context.Context, t *testing.T, uniqueID string) (*datab
 	w, err := databricks.NewWorkspaceClient()
 	require.NoError(t, err)
 
-	currentUser, err := w.CurrentUser.Me(ctx)
+	currentUser, err := w.CurrentUser.Me(ctx, iam.MeRequest{})
 	require.NoError(t, err)
 
 	// API path (without /Workspace prefix) for workspace API calls.
 	apiPath := path.Join("/Users", currentUser.UserName, "dbr-acceptance-test", uniqueID)
 
-	err = w.Workspace.MkdirsByPath(ctx, apiPath)
+	err = w.Workspace.MkdirsByPath(ctx, apiPath) //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
 	require.NoError(t, err)
 
 	// Note: We do not cleanup test directories created here. They are kept around
@@ -180,12 +181,12 @@ func runDbrTests(ctx context.Context, t *testing.T, w *databricks.WorkspaceClien
 		t.Fatal("CLOUD_ENV is not set. Please run DBR tests from a CI environment with deco env run.")
 	}
 
-	currentUser, err := w.CurrentUser.Me(ctx)
+	currentUser, err := w.CurrentUser.Me(ctx, iam.MeRequest{})
 	require.NoError(t, err)
 
 	// Create debug logs directory
 	debugLogsDir := path.Join("/Users", currentUser.UserName, "dbr_acceptance_tests")
-	err = w.Workspace.MkdirsByPath(ctx, debugLogsDir)
+	err = w.Workspace.MkdirsByPath(ctx, debugLogsDir) //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
 	require.NoError(t, err)
 
 	// Create an empty debug log file so we can get its URL before the job runs.
@@ -204,7 +205,7 @@ func runDbrTests(ctx context.Context, t *testing.T, w *databricks.WorkspaceClien
 	require.NoError(t, err)
 
 	// Get the file's object ID for the URL
-	debugLogStatus, err := w.Workspace.GetStatusByPath(ctx, debugLogPath)
+	debugLogStatus, err := w.Workspace.GetStatusByPath(ctx, debugLogPath) //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
 	require.NoError(t, err)
 
 	// Build cloud test parameters (Cloud=true tests, run with CLOUD_ENV set)

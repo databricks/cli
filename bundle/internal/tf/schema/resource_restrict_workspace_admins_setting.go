@@ -3,11 +3,12 @@
 package schema
 
 type ResourceRestrictWorkspaceAdminsSettingProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type ResourceRestrictWorkspaceAdminsSettingRestrictWorkspaceAdmins struct {
-	Status string `json:"status"`
+	DisableGovTagCreation bool   `json:"disable_gov_tag_creation,omitempty"`
+	Status                string `json:"status"`
 }
 
 type ResourceRestrictWorkspaceAdminsSetting struct {

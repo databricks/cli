@@ -212,18 +212,8 @@ func TestMatchWorkspaceProfiles(t *testing.T) {
 			want:    true,
 		},
 		{
-			name:    "legacy unified workspace (has workspace_id and IsUnifiedHost)",
-			profile: Profile{Host: "https://unified.example.com", AccountID: "acc-1", WorkspaceID: "ws-1", IsUnifiedHost: true},
-			want:    true,
-		},
-		{
 			name:    "regular account profile (has account_id, no workspace_id)",
 			profile: Profile{Host: "https://accounts.cloud.databricks.com", AccountID: "acc-1"},
-			want:    false,
-		},
-		{
-			name:    "legacy unified account (IsUnifiedHost, no workspace_id)",
-			profile: Profile{Host: "https://unified.example.com", AccountID: "acc-1", IsUnifiedHost: true},
 			want:    false,
 		},
 		{
@@ -254,11 +244,6 @@ func TestMatchAccountProfiles(t *testing.T) {
 		{
 			name:    "SPOG account profile (account_id, no workspace_id)",
 			profile: Profile{Host: "https://spog.example.com", AccountID: "acc-1"},
-			want:    true,
-		},
-		{
-			name:    "legacy unified account profile",
-			profile: Profile{Host: "https://unified.example.com", AccountID: "acc-1", IsUnifiedHost: true},
 			want:    true,
 		},
 		{
