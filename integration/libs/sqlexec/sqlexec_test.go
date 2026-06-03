@@ -14,8 +14,14 @@ import (
 // These tests exercise libs/sqlexec against a live SQL warehouse to confirm the
 // engine keeps working against the real Statement Execution API. They run in the
 // nightly integration suite and skip without CLOUD_ENV / TEST_DEFAULT_WAREHOUSE_ID.
+//
+// They are limited to UC workspaces: gating on TEST_METASTORE_ID (set only on the
+// *-ucws environments) keeps them off the non-UC workspaces, whose shared classic
+// warehouses are unreliable to start. CLOUD_ENV can't make this distinction
+// because azure-prod-ucws and the non-UC azure-prod both report CLOUD_ENV=azure.
 func newClient(t *testing.T) (*acc.WorkspaceT, *sqlexec.Client) {
 	t.Helper()
+	testutil.GetEnvOrSkipTest(t, "TEST_METASTORE_ID")
 	_, wt := acc.WorkspaceTest(t)
 	warehouseID := testutil.GetEnvOrSkipTest(t, "TEST_DEFAULT_WAREHOUSE_ID")
 	return wt, sqlexec.New(wt.W.StatementExecution, warehouseID)
