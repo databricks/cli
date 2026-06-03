@@ -65,6 +65,8 @@ func status(ctx context.Context, s string) string {
 		return cmdio.Faint(ctx, "stopped")
 	case "creating":
 		return cmdio.Bold(ctx, cmdio.Cyan(ctx, "creating…"))
+	case "stopping":
+		return cmdio.Yellow(ctx, "stopping…")
 	default:
 		return cmdio.Faint(ctx, strings.ToLower(s))
 	}
