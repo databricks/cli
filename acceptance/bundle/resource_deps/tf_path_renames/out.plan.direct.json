@@ -1,0 +1,152 @@
+{
+  "plan_version": 2,
+  "cli_version": "[DEV_VERSION]",
+  "plan": {
+    "resources.jobs.dst_git": {
+      "depends_on": [
+        {
+          "node": "resources.jobs.src_git",
+          "label": "${resources.jobs.src_git.git_source[0].branch}"
+        }
+      ],
+      "action": "create",
+      "new_state": {
+        "value": {
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+          },
+          "edit_mode": "UI_LOCKED",
+          "format": "MULTI_TASK",
+          "max_concurrent_runs": 1,
+          "name": "main",
+          "queue": {
+            "enabled": true
+          }
+        }
+      }
+    },
+    "resources.jobs.dst_pipeline": {
+      "depends_on": [
+        {
+          "node": "resources.pipelines.src_pipeline",
+          "label": "${resources.pipelines.src_pipeline.cluster[0].label}"
+        }
+      ],
+      "action": "create",
+      "new_state": {
+        "value": {
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+          },
+          "edit_mode": "UI_LOCKED",
+          "format": "MULTI_TASK",
+          "max_concurrent_runs": 1,
+          "name": "mycluster",
+          "queue": {
+            "enabled": true
+          }
+        }
+      }
+    },
+    "resources.jobs.dst_tasks": {
+      "depends_on": [
+        {
+          "node": "resources.jobs.src_tasks",
+          "label": "${resources.jobs.src_tasks.task[0].library[0].whl}"
+        }
+      ],
+      "action": "create",
+      "new_state": {
+        "value": {
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+          },
+          "edit_mode": "UI_LOCKED",
+          "format": "MULTI_TASK",
+          "max_concurrent_runs": 1,
+          "name": "/path/to/wheel.whl",
+          "queue": {
+            "enabled": true
+          }
+        }
+      }
+    },
+    "resources.jobs.src_git": {
+      "action": "create",
+      "new_state": {
+        "value": {
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+          },
+          "edit_mode": "UI_LOCKED",
+          "format": "MULTI_TASK",
+          "git_source": {
+            "git_branch": "main",
+            "git_provider": "gitHub",
+            "git_url": "https://github.com/databricks/cli"
+          },
+          "max_concurrent_runs": 1,
+          "name": "src-git",
+          "queue": {
+            "enabled": true
+          }
+        }
+      }
+    },
+    "resources.jobs.src_tasks": {
+      "action": "create",
+      "new_state": {
+        "value": {
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+          },
+          "edit_mode": "UI_LOCKED",
+          "format": "MULTI_TASK",
+          "max_concurrent_runs": 1,
+          "name": "src-tasks",
+          "queue": {
+            "enabled": true
+          },
+          "tasks": [
+            {
+              "libraries": [
+                {
+                  "whl": "/path/to/wheel.whl"
+                }
+              ],
+              "notebook_task": {
+                "notebook_path": "/Workspace/notebook"
+              },
+              "task_key": "main"
+            }
+          ]
+        }
+      }
+    },
+    "resources.pipelines.src_pipeline": {
+      "action": "create",
+      "new_state": {
+        "value": {
+          "channel": "CURRENT",
+          "clusters": [
+            {
+              "label": "mycluster",
+              "num_workers": 1
+            }
+          ],
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+          },
+          "edition": "ADVANCED",
+          "name": "source-pipeline"
+        }
+      }
+    }
+  }
+}
