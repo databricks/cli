@@ -202,15 +202,34 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	// pick up the host's agent. Setting these to "" via test.toml is not
 	// enough: the SDK (since v0.132.0) treats empty values as a truthy
 	// signal because os.LookupEnv reports them as present.
-	for _, v := range []string{
+	// Keep this list in sync with the SDK's useragent.listKnownAgents.
+	knownAgents := []string{
+		"AMP_CURRENT_THREAD_ID",
 		"ANTIGRAVITY_AGENT",
+		"AUGMENT_AGENT",
 		"CLAUDECODE",
 		"CLINE_ACTIVE",
 		"CODEX_CI",
+		"COPILOT_CLI",
 		"CURSOR_AGENT",
 		"GEMINI_CLI",
+		"GOOSE_TERMINAL",
+		"KIRO",
+		"OPENCLAW_SHELL",
 		"OPENCODE",
-	} {
+		"VSCODE_AGENT",
+		"WINDSURF_AGENT",
+	}
+
+	// AGENT and AI_AGENT are not in listKnownAgents; the SDK consults them as
+	// a generic fallback (useragent.agentEnvFallback) when none of the
+	// specific agents above is set.
+	genericAgents := []string{
+		"AGENT",
+		"AI_AGENT",
+	}
+
+	for _, v := range slices.Concat(knownAgents, genericAgents) {
 		os.Unsetenv(v) //nolint:usetesting // t.Setenv cannot unset
 	}
 
