@@ -5,6 +5,7 @@ import (
 
 	"github.com/databricks/cli/bundle/config"
 	cres "github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
 )
@@ -26,6 +27,13 @@ func TestConvertReferenceToMetric_Table(t *testing.T) {
 				},
 
 				"niljob": nil,
+			},
+			QualityMonitors: map[string]*cres.QualityMonitor{
+				"foo": {
+					CreateMonitor: catalog.CreateMonitor{
+						TableName: "catalog.schema.table",
+					},
+				},
 			},
 		},
 	}
@@ -74,6 +82,12 @@ func TestConvertReferenceToMetric_Table(t *testing.T) {
 			name: "err censor on missing job key",
 			ref:  "resources.jobs.missing.id",
 			want: "resreferr_jobs",
+		},
+		{
+			// id is TF-only for quality_monitors but the reference should still resolve cleanly.
+			name: "quality monitor id",
+			ref:  "resources.quality_monitors.foo.id",
+			want: "resref_quality_monitors.id",
 		},
 		{
 			name: "array index tasks key",

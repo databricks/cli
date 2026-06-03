@@ -1,0 +1,101 @@
+
+=== Deploy with started=true: warehouse created and running
+>>> errcode [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py //sql/warehouses
+{
+  "method": "POST",
+  "path": "/api/2.0/sql/warehouses",
+  "body": {
+    "auto_stop_mins": 120,
+    "cluster_size": "Medium",
+    "enable_photon": true,
+    "max_num_clusters": 1,
+    "name": "[UNIQUE_NAME]",
+    "spot_instance_policy": "COST_OPTIMIZED"
+  }
+}
+
+>>> errcode [CLI] warehouses get [UUID]
+"RUNNING"
+
+=== Stop warehouse externally while config says started=true: plan detects drift
+>>> errcode [CLI] warehouses stop [UUID]
+"STOPPED"
+
+>>> [CLI] bundle plan
+update sql_warehouses.mywarehouse
+
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
+
+=== Deploy fixes the drift: warehouse restarted
+>>> errcode [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py //sql/warehouses
+{
+  "method": "POST",
+  "path": "/api/2.0/sql/warehouses/[UUID]/stop"
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/sql/warehouses/[UUID]/start"
+}
+
+>>> errcode [CLI] warehouses get [UUID]
+"RUNNING"
+
+=== Deploy with started=false while warehouse is stopped: warehouse stays stopped
+>>> errcode [CLI] warehouses stop [UUID]
+"STOPPED"
+
+>>> update_file.py databricks.yml started: true started: false
+
+>>> errcode [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py //sql/warehouses
+{
+  "method": "POST",
+  "path": "/api/2.0/sql/warehouses/[UUID]/stop"
+}
+
+>>> errcode [CLI] warehouses get [UUID]
+"STOPPED"
+
+=== Deploy with started=true: warehouse restarted
+>>> update_file.py databricks.yml started: false started: true
+
+>>> errcode [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py //sql/warehouses
+{
+  "method": "POST",
+  "path": "/api/2.0/sql/warehouses/[UUID]/start"
+}
+
+>>> errcode [CLI] warehouses get [UUID]
+"RUNNING"
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.sql_warehouses.mywarehouse
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
+
+Deleting files...
+Destroy complete!

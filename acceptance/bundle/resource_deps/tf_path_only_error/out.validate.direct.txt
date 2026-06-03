@@ -1,0 +1,12 @@
+Error: "resources.jobs.src.always_running": Terraform-only field; cross-resource references to Terraform-only fields are not supported by the direct engine
+  in databricks.yml:10:13
+
+Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Found 1 error
+
+Exit code: 1

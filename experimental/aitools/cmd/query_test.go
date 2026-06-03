@@ -7,12 +7,12 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/experimental/libs/sqlcli"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/sqlexec"
 	mocksql "github.com/databricks/databricks-sdk-go/experimental/mocks/service/sql"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/spf13/cobra"
@@ -59,10 +59,10 @@ func TestExecuteAndPollImmediateSuccess(t *testing.T) {
 		Result:      &sql.ResultData{DataArray: [][]string{{"1"}}},
 	}, nil)
 
-	resp, err := executeAndPoll(ctx, mockAPI, "wh-123", "SELECT 1", nil)
+	stmt, err := executeAndPoll(ctx, sqlexec.New(mockAPI, "wh-123"), "SELECT 1", nil)
 	require.NoError(t, err)
-	assert.Equal(t, sql.StatementStateSucceeded, resp.Status.State)
-	assert.Equal(t, "stmt-1", resp.StatementId)
+	assert.Equal(t, sql.StatementStateSucceeded, stmt.State)
+	assert.Equal(t, "stmt-1", stmt.ID)
 }
 
 func TestExecuteAndPollPassesParameters(t *testing.T) {
@@ -81,7 +81,7 @@ func TestExecuteAndPollPassesParameters(t *testing.T) {
 		Status:      &sql.StatementStatus{State: sql.StatementStateSucceeded},
 	}, nil)
 
-	_, err := executeAndPoll(ctx, mockAPI, "wh-123", "SELECT * FROM t WHERE name = :name AND ts > :since", params)
+	_, err := executeAndPoll(ctx, sqlexec.New(mockAPI, "wh-123"), "SELECT * FROM t WHERE name = :name AND ts > :since", params)
 	require.NoError(t, err)
 }
 
@@ -100,7 +100,7 @@ func TestExecuteAndPollImmediateFailure(t *testing.T) {
 		},
 	}, nil)
 
-	_, err := executeAndPoll(ctx, mockAPI, "wh-123", "SELCT 1", nil)
+	_, err := executeAndPoll(ctx, sqlexec.New(mockAPI, "wh-123"), "SELCT 1", nil)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "SYNTAX_ERROR")
 	assert.Contains(t, err.Error(), "syntax error")
@@ -129,10 +129,14 @@ func TestExecuteAndPollWithPolling(t *testing.T) {
 		Result:      &sql.ResultData{DataArray: [][]string{{"42"}}},
 	}, nil).Once()
 
-	resp, err := executeAndPoll(ctx, mockAPI, "wh-123", "SELECT 42", nil)
+	client := sqlexec.New(mockAPI, "wh-123")
+	stmt, err := executeAndPoll(ctx, client, "SELECT 42", nil)
 	require.NoError(t, err)
-	assert.Equal(t, sql.StatementStateSucceeded, resp.Status.State)
-	assert.Equal(t, [][]string{{"42"}}, resp.Result.DataArray)
+	assert.Equal(t, sql.StatementStateSucceeded, stmt.State)
+
+	result, err := client.Results(ctx, stmt)
+	require.NoError(t, err)
+	assert.Equal(t, [][]string{{"42"}}, result.Rows)
 }
 
 func TestExecuteAndPollFailsDuringPolling(t *testing.T) {
@@ -152,7 +156,7 @@ func TestExecuteAndPollFailsDuringPolling(t *testing.T) {
 		},
 	}, nil).Once()
 
-	_, err := executeAndPoll(ctx, mockAPI, "wh-123", "SELECT 1", nil)
+	_, err := executeAndPoll(ctx, sqlexec.New(mockAPI, "wh-123"), "SELECT 1", nil)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "RESOURCE_EXHAUSTED")
 }
@@ -177,108 +181,8 @@ func TestExecuteAndPollCancelledContextCallsCancelExecution(t *testing.T) {
 
 	cancel()
 
-	_, err := executeAndPoll(ctx, mockAPI, "wh-123", "SELECT 1", nil)
+	_, err := executeAndPoll(ctx, sqlexec.New(mockAPI, "wh-123"), "SELECT 1", nil)
 	require.ErrorIs(t, err, root.ErrAlreadyPrinted)
-}
-
-func TestPollStatementImmediateTerminal(t *testing.T) {
-	ctx := cmdio.MockDiscard(t.Context())
-	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
-
-	resp := &sql.StatementResponse{
-		StatementId: "stmt-1",
-		Status:      &sql.StatementStatus{State: sql.StatementStateSucceeded},
-		Manifest:    &sql.ResultManifest{Schema: &sql.ResultSchema{Columns: []sql.ColumnInfo{{Name: "1"}}}},
-		Result:      &sql.ResultData{DataArray: [][]string{{"1"}}},
-	}
-
-	pollResp, err := pollStatement(ctx, mockAPI, resp)
-	require.NoError(t, err)
-	assert.Equal(t, sql.StatementStateSucceeded, pollResp.Status.State)
-	assert.Equal(t, "stmt-1", pollResp.StatementId)
-}
-
-func TestPollStatementTerminalFailureNotErrored(t *testing.T) {
-	// pollStatement returns the response without erroring on failed terminal
-	// states; callers (e.g. executeAndPoll) decide what to do via checkFailedState.
-	ctx := cmdio.MockDiscard(t.Context())
-	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
-
-	resp := &sql.StatementResponse{
-		StatementId: "stmt-1",
-		Status: &sql.StatementStatus{
-			State: sql.StatementStateFailed,
-			Error: &sql.ServiceError{ErrorCode: "ERR", Message: "boom"},
-		},
-	}
-
-	pollResp, err := pollStatement(ctx, mockAPI, resp)
-	require.NoError(t, err)
-	assert.Equal(t, sql.StatementStateFailed, pollResp.Status.State)
-}
-
-func TestPollStatementEventualSuccess(t *testing.T) {
-	ctx := cmdio.MockDiscard(t.Context())
-	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
-
-	initial := &sql.StatementResponse{
-		StatementId: "stmt-1",
-		Status:      &sql.StatementStatus{State: sql.StatementStatePending},
-	}
-
-	mockAPI.EXPECT().GetStatementByStatementId(mock.Anything, "stmt-1").Return(&sql.StatementResponse{
-		StatementId: "stmt-1",
-		Status:      &sql.StatementStatus{State: sql.StatementStateRunning},
-	}, nil).Once()
-
-	mockAPI.EXPECT().GetStatementByStatementId(mock.Anything, "stmt-1").Return(&sql.StatementResponse{
-		StatementId: "stmt-1",
-		Status:      &sql.StatementStatus{State: sql.StatementStateSucceeded},
-		Result:      &sql.ResultData{DataArray: [][]string{{"42"}}},
-	}, nil).Once()
-
-	pollResp, err := pollStatement(ctx, mockAPI, initial)
-	require.NoError(t, err)
-	assert.Equal(t, sql.StatementStateSucceeded, pollResp.Status.State)
-	assert.Equal(t, [][]string{{"42"}}, pollResp.Result.DataArray)
-}
-
-func TestPollStatementContextCancellationDoesNotCancelServerSide(t *testing.T) {
-	// The mock asserts (via t.Cleanup) that no unexpected calls are made.
-	// Specifically, pollStatement must NOT call CancelExecution on context
-	// cancellation; that is the caller's responsibility.
-	ctx, cancel := context.WithCancel(cmdio.MockDiscard(t.Context()))
-	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
-
-	initial := &sql.StatementResponse{
-		StatementId: "stmt-1",
-		Status:      &sql.StatementStatus{State: sql.StatementStatePending},
-	}
-
-	cancel()
-
-	pollResp, err := pollStatement(ctx, mockAPI, initial)
-	require.ErrorIs(t, err, context.Canceled)
-	assert.Nil(t, pollResp)
-}
-
-func TestPollStatementGetErrorPropagated(t *testing.T) {
-	ctx := cmdio.MockDiscard(t.Context())
-	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
-
-	initial := &sql.StatementResponse{
-		StatementId: "stmt-1",
-		Status:      &sql.StatementStatus{State: sql.StatementStatePending},
-	}
-
-	mockAPI.EXPECT().GetStatementByStatementId(mock.Anything, "stmt-1").
-		Return(nil, errors.New("network unreachable")).Once()
-
-	pollResp, err := pollStatement(ctx, mockAPI, initial)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "poll statement status")
-	assert.Contains(t, err.Error(), "network unreachable")
-	assert.Nil(t, pollResp)
 }
 
 func TestResolveWarehouseIDWithFlag(t *testing.T) {
@@ -286,6 +190,42 @@ func TestResolveWarehouseIDWithFlag(t *testing.T) {
 	id, err := resolveWarehouseID(ctx, nil, "explicit-id")
 	require.NoError(t, err)
 	assert.Equal(t, "explicit-id", id)
+}
+
+func TestPresentQueryError(t *testing.T) {
+	assert.NoError(t, presentQueryError(nil))
+
+	// Non-StatementError passes through unchanged.
+	plain := errors.New("boom")
+	assert.Equal(t, plain, presentQueryError(plain))
+
+	err := presentQueryError(&sqlexec.StatementError{
+		State:   sql.StatementStateFailed,
+		Code:    "ERR",
+		Message: "bad",
+	})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "query failed: ERR bad")
+
+	err = presentQueryError(&sqlexec.StatementError{State: sql.StatementStateCanceled})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "cancelled")
+
+	err = presentQueryError(&sqlexec.StatementError{State: sql.StatementStateClosed})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "closed")
+}
+
+func TestPresentQueryErrorMapKeyHint(t *testing.T) {
+	err := presentQueryError(&sqlexec.StatementError{
+		State:   sql.StatementStateFailed,
+		Code:    "BAD_REQUEST",
+		Message: "[UNRESOLVED_MAP_KEY.WITH_SUGGESTION] Cannot resolve column",
+	})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "Hint:")
+	assert.Contains(t, err.Error(), "single quotes")
+	assert.Contains(t, err.Error(), "--file")
 }
 
 func TestSelectQueryOutputMode(t *testing.T) {
@@ -345,116 +285,6 @@ func TestSelectQueryOutputMode(t *testing.T) {
 			assert.Equal(t, tc.want, got)
 		})
 	}
-}
-
-func TestFetchAllRowsSingleChunk(t *testing.T) {
-	ctx := cmdio.MockDiscard(t.Context())
-	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
-
-	resp := &sql.StatementResponse{
-		StatementId: "stmt-1",
-		Manifest:    &sql.ResultManifest{TotalChunkCount: 1},
-		Result:      &sql.ResultData{DataArray: [][]string{{"1", "alice"}, {"2", "bob"}}},
-	}
-
-	rows, err := fetchAllRows(ctx, mockAPI, resp)
-	require.NoError(t, err)
-	assert.Equal(t, [][]string{{"1", "alice"}, {"2", "bob"}}, rows)
-}
-
-func TestFetchAllRowsMultiChunk(t *testing.T) {
-	ctx := cmdio.MockDiscard(t.Context())
-	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
-
-	resp := &sql.StatementResponse{
-		StatementId: "stmt-1",
-		Manifest:    &sql.ResultManifest{TotalChunkCount: 3},
-		Result:      &sql.ResultData{DataArray: [][]string{{"1", "a"}}},
-	}
-
-	mockAPI.EXPECT().GetStatementResultChunkNByStatementIdAndChunkIndex(mock.Anything, "stmt-1", 1).
-		Return(&sql.ResultData{DataArray: [][]string{{"2", "b"}}}, nil).Once()
-	mockAPI.EXPECT().GetStatementResultChunkNByStatementIdAndChunkIndex(mock.Anything, "stmt-1", 2).
-		Return(&sql.ResultData{DataArray: [][]string{{"3", "c"}}}, nil).Once()
-
-	rows, err := fetchAllRows(ctx, mockAPI, resp)
-	require.NoError(t, err)
-	assert.Equal(t, [][]string{{"1", "a"}, {"2", "b"}, {"3", "c"}}, rows)
-}
-
-func TestFetchAllRowsNilResult(t *testing.T) {
-	ctx := cmdio.MockDiscard(t.Context())
-	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
-
-	resp := &sql.StatementResponse{StatementId: "stmt-1"}
-
-	rows, err := fetchAllRows(ctx, mockAPI, resp)
-	require.NoError(t, err)
-	assert.Nil(t, rows)
-}
-
-func TestIsTerminalState(t *testing.T) {
-	tests := []struct {
-		state    sql.StatementState
-		terminal bool
-	}{
-		{sql.StatementStateSucceeded, true},
-		{sql.StatementStateFailed, true},
-		{sql.StatementStateCanceled, true},
-		{sql.StatementStateClosed, true},
-		{sql.StatementStatePending, false},
-		{sql.StatementStateRunning, false},
-	}
-
-	for _, tc := range tests {
-		t.Run(string(tc.state), func(t *testing.T) {
-			status := &sql.StatementStatus{State: tc.state}
-			assert.Equal(t, tc.terminal, isTerminalState(status))
-		})
-	}
-
-	assert.False(t, isTerminalState(nil))
-}
-
-func TestCheckFailedState(t *testing.T) {
-	assert.NoError(t, checkFailedState(nil))
-	assert.NoError(t, checkFailedState(&sql.StatementStatus{State: sql.StatementStateSucceeded}))
-
-	err := checkFailedState(&sql.StatementStatus{
-		State: sql.StatementStateFailed,
-		Error: &sql.ServiceError{ErrorCode: "ERR", Message: "bad"},
-	})
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "ERR")
-	assert.Contains(t, err.Error(), "bad")
-
-	err = checkFailedState(&sql.StatementStatus{State: sql.StatementStateCanceled})
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "cancelled")
-
-	err = checkFailedState(&sql.StatementStatus{State: sql.StatementStateClosed})
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "closed")
-}
-
-func TestCheckFailedStateMapKeyHint(t *testing.T) {
-	err := checkFailedState(&sql.StatementStatus{
-		State: sql.StatementStateFailed,
-		Error: &sql.ServiceError{
-			ErrorCode: "BAD_REQUEST",
-			Message:   "[UNRESOLVED_MAP_KEY.WITH_SUGGESTION] Cannot resolve column",
-		},
-	})
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "Hint:")
-	assert.Contains(t, err.Error(), "single quotes")
-	assert.Contains(t, err.Error(), "--file")
-}
-
-func TestPollingConstants(t *testing.T) {
-	assert.Equal(t, 1*time.Second, pollIntervalInitial)
-	assert.Equal(t, 5*time.Second, pollIntervalMax)
-	assert.Equal(t, 10*time.Second, cancelTimeout)
 }
 
 // newTestCmd creates a minimal cobra.Command for testing resolveSQLs.

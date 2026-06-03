@@ -555,6 +555,14 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.SqlWarehousesUpsert(req, req.Vars["warehouse_id"])
 	})
 
+	server.Handle("POST", "/api/2.0/sql/warehouses/{warehouse_id}/start", func(req Request) any {
+		return req.Workspace.SqlWarehousesStart(req, req.Vars["warehouse_id"])
+	})
+
+	server.Handle("POST", "/api/2.0/sql/warehouses/{warehouse_id}/stop", func(req Request) any {
+		return req.Workspace.SqlWarehousesStop(req, req.Vars["warehouse_id"])
+	})
+
 	server.Handle("DELETE", "/api/2.0/sql/warehouses/{warehouse_id}", func(req Request) any {
 		return MapDelete(req.Workspace, req.Workspace.SqlWarehouses, req.Vars["warehouse_id"])
 	})
