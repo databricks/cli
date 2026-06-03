@@ -123,7 +123,31 @@ func (r *ResourceSqlWarehouse) DoCreate(ctx context.Context, _ *Engine, config *
 	if err != nil {
 		return "", nil, err
 	}
-	return waiter.Id, nil, nil
+	id := waiter.Id
+
+	if config.Lifecycle == nil || config.Lifecycle.Started == nil {
+		return id, nil, nil
+	}
+
+	// Always wait for RUNNING first: warehouses start asynchronously.
+	_, err = r.client.Warehouses.WaitGetWarehouseRunning(ctx, id, 20*time.Minute, nil)
+	if err != nil {
+		return "", nil, err
+	}
+
+	if !*config.Lifecycle.Started {
+		// started=false: stop the warehouse after it reaches RUNNING.
+		stopWaiter, err := r.client.Warehouses.Stop(ctx, sql.StopRequest{Id: id})
+		if err != nil {
+			return "", nil, err
+		}
+		_, err = stopWaiter.Get()
+		if err != nil {
+			return "", nil, err
+		}
+	}
+
+	return id, nil, nil
 }
 
 // hasWarehouseChanges reports whether the plan entry contains any Update changes
@@ -170,57 +194,23 @@ func (r *ResourceSqlWarehouse) DoUpdate(ctx context.Context, _ *Engine, id strin
 	desiredStarted := *config.Lifecycle.Started
 	alreadyRunning := remoteWarehouseIsRunning(entry)
 	if desiredStarted && !alreadyRunning {
-		// lifecycle.started=true: fire Start; WaitAfterUpdate polls for RUNNING.
 		_, err := r.client.Warehouses.Start(ctx, sql.StartRequest{Id: id})
-		return nil, err
-	} else if !desiredStarted && alreadyRunning {
-		// lifecycle.started=false: fire Stop; WaitAfterUpdate polls for STOPPED.
-		_, err := r.client.Warehouses.Stop(ctx, sql.StopRequest{Id: id})
-		return nil, err
-	}
-
-	return nil, nil
-}
-
-// WaitAfterUpdate waits for the warehouse to reach the desired lifecycle state after DoUpdate.
-func (r *ResourceSqlWarehouse) WaitAfterUpdate(ctx context.Context, id string, config *SqlWarehouseState) (*SqlWarehouseRemote, error) {
-	if config.Lifecycle == nil || config.Lifecycle.Started == nil {
-		return nil, nil
-	}
-
-	if *config.Lifecycle.Started {
-		_, err := r.client.Warehouses.WaitGetWarehouseRunning(ctx, id, 20*time.Minute, nil)
-		return nil, err
-	}
-
-	_, err := r.client.Warehouses.WaitGetWarehouseStopped(ctx, id, 20*time.Minute, nil)
-	return nil, err
-}
-
-// WaitAfterCreate waits for the warehouse to be ready, then stops it if lifecycle.started=false.
-// Warehouses are created in a starting state; WaitGetWarehouseRunning waits for them to be RUNNING.
-func (r *ResourceSqlWarehouse) WaitAfterCreate(ctx context.Context, id string, config *SqlWarehouseState) (*SqlWarehouseRemote, error) {
-	if config.Lifecycle == nil || config.Lifecycle.Started == nil {
-		return nil, nil
-	}
-
-	// Always wait for RUNNING first: warehouses start asynchronously.
-	_, err := r.client.Warehouses.WaitGetWarehouseRunning(ctx, id, 20*time.Minute, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	if !*config.Lifecycle.Started {
-		// started=false: stop the warehouse after it reaches RUNNING.
-		stopWaiter, err := r.client.Warehouses.Stop(ctx, sql.StopRequest{Id: id})
 		if err != nil {
 			return nil, err
 		}
-		_, err = stopWaiter.Get()
-		return nil, err
+	} else if !desiredStarted && alreadyRunning {
+		_, err := r.client.Warehouses.Stop(ctx, sql.StopRequest{Id: id})
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	return nil, nil
+	if desiredStarted {
+		_, err := r.client.Warehouses.WaitGetWarehouseRunning(ctx, id, 20*time.Minute, nil)
+		return nil, err
+	}
+	_, err := r.client.Warehouses.WaitGetWarehouseStopped(ctx, id, 20*time.Minute, nil)
+	return nil, err
 }
 
 func (r *ResourceSqlWarehouse) DoDelete(ctx context.Context, oldID string, _ *SqlWarehouseState) error {
