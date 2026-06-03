@@ -36,7 +36,7 @@ If a resource has fields that must not be sent in updates (deploy-only, lifecycl
 
 ## Async APIs
 
-For resources whose create or update is asynchronous, poll inline inside `DoCreate`/`DoUpdate` after the initial API call. To prevent orphaning if deployment is interrupted during a long wait, call `engine.SetID(id)` then `engine.SaveState(config)` immediately after the resource is created and before any waiting. The framework provides a `*Engine` as the second argument to both methods.
+For resources whose create or update is asynchronous, poll inline inside `DoCreate`/`DoUpdate` after the initial API call. To prevent orphaning if deployment is interrupted during a long wait, call `engine.SaveState(ctx, id, config)` immediately after the resource is created and before any waiting. The framework provides a `*Engine` as the second argument to both methods.
 
 ## Slice ordering: KeyedSlices
 
