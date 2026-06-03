@@ -899,13 +899,30 @@ func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirN
 		valueNew = repls.Replace(valueNew)
 	}
 
+	// In update mode, (re)generating the reference files is the goal, so applying
+	// a change is success, not failure. Write or remove the reference file to match
+	// what the test produced, then return without marking the test failed. Genuine
+	// problems still fail the run: read errors (reported by tryReading above) and
+	// write errors (via require/testutil below).
+	if testdiff.OverwriteMode {
+		switch {
+		case okRef && !okNew:
+			// The test no longer produces this output; drop the stale reference.
+			t.Logf("Removing output file: %s", relPath)
+			require.NoError(t, os.Remove(pathRef))
+		case !okRef && okNew:
+			t.Logf("Writing output file: %s", relPath)
+			testutil.WriteFile(t, pathRef, valueNew)
+		case valueRef != valueNew:
+			t.Logf("Overwriting existing output file: %s", relPath)
+			testutil.WriteFile(t, pathRef, valueNew)
+		}
+		return
+	}
+
 	// The test did not produce an expected output file.
 	if okRef && !okNew {
 		t.Errorf("Missing output file: %s", relPath)
-		if testdiff.OverwriteMode {
-			t.Logf("Removing output file: %s", relPath)
-			require.NoError(t, os.Remove(pathRef))
-		}
 		return
 	}
 
@@ -915,19 +932,11 @@ func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirN
 		if shouldShowDiff(pathNew, valueNew) {
 			testdiff.AssertEqualTexts(t, pathRef, pathNew, valueRef, valueNew)
 		}
-		if testdiff.OverwriteMode {
-			t.Logf("Writing output file: %s", relPath)
-			testutil.WriteFile(t, pathRef, valueNew)
-		}
 		return
 	}
 
 	// Compare the reference and new values.
 	equal := testdiff.AssertEqualTexts(t, pathRef, pathNew, valueRef, valueNew)
-	if !equal && testdiff.OverwriteMode {
-		t.Logf("Overwriting existing output file: %s", relPath)
-		testutil.WriteFile(t, pathRef, valueNew)
-	}
 
 	if VerboseTest && !equal && printedRepls != nil && !*printedRepls {
 		*printedRepls = true
