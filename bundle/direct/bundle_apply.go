@@ -149,11 +149,14 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 
 			// Report the operation inline to the metadata service.
 			if b.OperationReporter != nil {
-				var resourceID string
-				var resourceState json.RawMessage
-				if dbentry, ok := b.StateDB.GetResourceEntry(resourceKey); ok {
-					resourceID = dbentry.ID
-					resourceState = dbentry.State
+				// Data.State (via GetResourceEntry) is not updated until the WAL is
+				// merged, so during a deploy the ID comes from GetResourceID and the
+				// just-applied state from sv.Value — the same value SaveState persists.
+				resourceID := b.StateDB.GetResourceID(resourceKey)
+				resourceState, marshalErr := json.Marshal(sv.Value)
+				if marshalErr != nil {
+					logdiag.LogError(ctx, fmt.Errorf("%s: serializing state for operation: %w", errorPrefix, marshalErr))
+					return false
 				}
 				if reportErr := b.OperationReporter(ctx, resourceKey, resourceID, action, err, resourceState); reportErr != nil {
 					logdiag.LogError(ctx, fmt.Errorf("%s: failed to report operation: %w", errorPrefix, reportErr))

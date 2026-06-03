@@ -30,7 +30,7 @@ func (l *workspaceFilesystemLock) Acquire(ctx context.Context) error {
 
 	user := b.Config.Workspace.CurrentUser.UserName
 	dir := b.Config.Workspace.StatePath
-	lk, err := locker.CreateLocker(user, dir, b.WorkspaceClient())
+	lk, err := locker.CreateLocker(user, dir, b.WorkspaceClient(ctx))
 	if err != nil {
 		return err
 	}

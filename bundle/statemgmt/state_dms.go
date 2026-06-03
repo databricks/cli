@@ -11,19 +11,12 @@ import (
 )
 
 // LoadStateFromDMS loads resource state from the deployment metadata service
-// into the state DB. It first opens the local state file (which contains the
-// deployment ID pointer), then populates the resource state from the server.
+// into the state DB. It builds the in-memory database from the server's
+// resource list and opens the state DB with it, which is the read-mode
+// equivalent of opening a local state file when DMS is not in use.
 func LoadStateFromDMS(ctx context.Context, b *bundle.Bundle) error {
 	if b.DeploymentID == "" {
 		return nil
-	}
-
-	// Open the local state file first so the state DB path is set.
-	// The local file contains {"deployment_id":"..."} with no resource state.
-	db := &b.DeploymentBundle.StateDB
-	_, localPath := b.StateFilenameDirect(ctx)
-	if err := db.Open(ctx, localPath, dstate.WithRecovery(true), dstate.WithWrite(false)); err != nil {
-		return fmt.Errorf("opening local state: %w", err)
 	}
 
 	svc, err := tmpdms.NewDeploymentMetadataAPI(b.WorkspaceClient(ctx))
@@ -38,9 +31,7 @@ func LoadStateFromDMS(ctx context.Context, b *bundle.Bundle) error {
 		return fmt.Errorf("failed to list resources from deployment metadata service: %w", err)
 	}
 
-	// Populate resource state from the server.
-	db.Data.State = make(map[string]dstate.ResourceEntry)
-
+	data := dstate.NewDatabase("", 0)
 	for _, r := range resources {
 		// The DMS stores keys without the "resources." prefix (e.g., "jobs.foo").
 		// The state DB expects the full key (e.g., "resources.jobs.foo").
@@ -54,11 +45,16 @@ func LoadStateFromDMS(ctx context.Context, b *bundle.Bundle) error {
 			}
 		}
 
-		db.Data.State[resourceKey] = dstate.ResourceEntry{
+		data.State[resourceKey] = dstate.ResourceEntry{
 			ID:    r.ResourceID,
 			State: stateBytes,
 		}
 	}
 
+	// OpenWithData populates the resource-key→ID index that GetResourceID relies
+	// on. Writing Data.State directly would leave that index empty, so deletes
+	// would fail with "missing in state".
+	_, localPath := b.StateFilenameDirect(ctx)
+	b.DeploymentBundle.StateDB.OpenWithData(localPath, data)
 	return nil
 }
