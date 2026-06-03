@@ -717,9 +717,7 @@ func (s *FakeWorkspace) PostgresCatalogCreate(req Request, catalogID string) Res
 	catalog.CreateTime = now
 	catalog.UpdateTime = now
 
-	status := &postgres.CatalogCatalogStatus{
-		CatalogId: catalogID,
-	}
+	status := &postgres.CatalogCatalogStatus{}
 	if catalog.Spec != nil {
 		status.Branch = catalog.Spec.Branch
 		status.PostgresDatabase = catalog.Spec.PostgresDatabase
