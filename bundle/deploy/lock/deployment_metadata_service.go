@@ -155,6 +155,12 @@ func acquireLock(ctx context.Context, b *bundle.Bundle, svc *tmpdms.DeploymentMe
 			CliVersion:  build.GetInfo().Version,
 			VersionType: versionType,
 			TargetName:  b.Config.Bundle.Target,
+			// Same git provenance the CLI records in metadata.json.
+			GitInfo: &tmpdms.GitInfo{
+				OriginURL: b.Config.Bundle.Git.OriginURL,
+				Branch:    b.Config.Bundle.Git.Branch,
+				Commit:    b.Config.Bundle.Git.Commit,
+			},
 		},
 	})
 	if versionErr != nil {

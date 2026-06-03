@@ -26,7 +26,8 @@ Warn: Failed to release deployment lock: simulated complete version failure
   "body": {
     "cli_version": "[DEV_VERSION]",
     "version_type": "VERSION_TYPE_DEPLOY",
-    "target_name": "fail-complete"
+    "target_name": "fail-complete",
+    "git_info": {}
   }
 }
 {

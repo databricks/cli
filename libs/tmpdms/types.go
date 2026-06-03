@@ -121,6 +121,16 @@ type Version struct {
 	CompletedBy      string          `json:"completed_by,omitempty"`
 	DisplayName      string          `json:"display_name,omitempty"`
 	TargetName       string          `json:"target_name,omitempty"`
+	GitInfo          *GitInfo        `json:"git_info,omitempty"`
+}
+
+// GitInfo is the git provenance snapshot recorded on a version. It mirrors the
+// GitInfo proto message in the deployment metadata service and carries the same
+// values the CLI writes to metadata.json.
+type GitInfo struct {
+	OriginURL string `json:"origin_url,omitempty"`
+	Branch    string `json:"branch,omitempty"`
+	Commit    string `json:"commit,omitempty"`
 }
 
 type Operation struct {

@@ -33,7 +33,8 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
   "body": {
     "cli_version": "[DEV_VERSION]",
     "version_type": "VERSION_TYPE_DEPLOY",
-    "target_name": "default"
+    "target_name": "default",
+    "git_info": {}
   }
 }
 {
@@ -91,7 +92,8 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
   "body": {
     "cli_version": "[DEV_VERSION]",
     "version_type": "VERSION_TYPE_DEPLOY",
-    "target_name": "default"
+    "target_name": "default",
+    "git_info": {}
   }
 }
 {

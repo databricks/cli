@@ -25,7 +25,8 @@ Deployment complete!
   "body": {
     "cli_version": "[DEV_VERSION]",
     "version_type": "VERSION_TYPE_DEPLOY",
-    "target_name": "default"
+    "target_name": "default",
+    "git_info": {}
   }
 }
 {
@@ -90,7 +91,8 @@ Deployment complete!
   "body": {
     "cli_version": "[DEV_VERSION]",
     "version_type": "VERSION_TYPE_DEPLOY",
-    "target_name": "default"
+    "target_name": "default",
+    "git_info": {}
   }
 }
 {
@@ -155,7 +157,8 @@ Deployment complete!
   "body": {
     "cli_version": "[DEV_VERSION]",
     "version_type": "VERSION_TYPE_DEPLOY",
-    "target_name": "default"
+    "target_name": "default",
+    "git_info": {}
   }
 }
 {
