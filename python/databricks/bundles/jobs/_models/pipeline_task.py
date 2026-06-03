@@ -5,6 +5,7 @@ from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
 from databricks.bundles.core._variable import (
     VariableOr,
+    VariableOrDict,
     VariableOrList,
     VariableOrOptional,
 )
@@ -31,6 +32,8 @@ class PipelineTask:
     """
     A list of tables to update with fullRefresh.
     """
+
+    parameters: VariableOrDict[str] = field(default_factory=dict)
 
     refresh_flow_selection: VariableOrList[str] = field(default_factory=list)
     """
@@ -73,6 +76,8 @@ class PipelineTaskDict(TypedDict, total=False):
     """
     A list of tables to update with fullRefresh.
     """
+
+    parameters: VariableOrDict[str]
 
     refresh_flow_selection: VariableOrList[str]
     """

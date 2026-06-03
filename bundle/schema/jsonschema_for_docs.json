@@ -1256,6 +1256,9 @@
                     "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/pipelines.Notifications",
                     "x-since-version": "v0.229.0"
                   },
+                  "parameters": {
+                    "$ref": "#/$defs/map/string"
+                  },
                   "permissions": {
                     "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.PipelinePermission",
                     "x-since-version": "v0.229.0"
@@ -2427,6 +2430,10 @@
                   "description": "Whether to use a Python wheel wrapper.",
                   "$ref": "#/$defs/bool",
                   "x-since-version": "v0.229.0"
+                },
+                "record_deployment_history": {
+                  "description": "Whether to record deployment history using the deployment metadata service (DMS), which tracks what changed across deployments.",
+                  "$ref": "#/$defs/bool"
                 },
                 "scripts": {
                   "description": "The commands to run.",
@@ -5562,6 +5569,9 @@
             "jobs.JobDeployment": {
               "type": "object",
               "properties": {
+                "deployment_id": {
+                  "$ref": "#/$defs/string"
+                },
                 "kind": {
                   "description": "The kind of deployment that manages the job.\n\n* `BUNDLE`: The job is managed by Databricks Asset Bundle.\n* `SYSTEM_MANAGED`: The job is managed by Databricks and is read-only.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.JobDeploymentKind",
@@ -5571,6 +5581,9 @@
                   "description": "Path of the file that contains deployment metadata.",
                   "$ref": "#/$defs/string",
                   "x-since-version": "v0.229.0"
+                },
+                "version_id": {
+                  "$ref": "#/$defs/string"
                 }
               },
               "additionalProperties": false,
@@ -5964,6 +5977,9 @@
                   "description": "A list of tables to update with fullRefresh.",
                   "$ref": "#/$defs/slice/string",
                   "x-since-version": "v1.1.0"
+                },
+                "parameters": {
+                  "$ref": "#/$defs/map/string"
                 },
                 "pipeline_id": {
                   "description": "The full name of the pipeline task to execute.",
@@ -8095,6 +8111,9 @@
             "pipelines.PipelineDeployment": {
               "type": "object",
               "properties": {
+                "deployment_id": {
+                  "$ref": "#/$defs/string"
+                },
                 "kind": {
                   "description": "The deployment method that manages the pipeline.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.DeploymentKind",
@@ -8104,6 +8123,9 @@
                   "description": "The path to the file containing metadata about the deployment.",
                   "$ref": "#/$defs/string",
                   "x-since-version": "v0.229.0"
+                },
+                "version_id": {
+                  "$ref": "#/$defs/string"
                 }
               },
               "additionalProperties": false,
