@@ -128,6 +128,13 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 		}
 	}
 
+	for _, warehouse := range b.Config.Resources.SqlWarehouses {
+		if warehouse != nil && warehouse.Lifecycle != nil && warehouse.Lifecycle.Started != nil {
+			b.Metrics.SetBoolValue(metrics.SqlWarehouseLifecycleStarted, *warehouse.Lifecycle.Started)
+			break
+		}
+	}
+
 	// If the bundle UUID is not set, we use a default 0 value.
 	bundleUuid := "00000000-0000-0000-0000-000000000000"
 	if b.Config.Bundle.Uuid != "" {
