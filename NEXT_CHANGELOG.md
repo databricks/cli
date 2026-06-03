@@ -16,6 +16,7 @@
 
 ### Dependency updates
 * Bump Go toolchain to 1.26.4 ([#5420](https://github.com/databricks/cli/pull/5420)).
-* Bump `github.com/databricks/databricks-sdk-go` from v0.136.0 to v0.138.0 ([#5361](https://github.com/databricks/cli/pull/5361))
+* Bump `github.com/databricks/databricks-sdk-go` from v0.136.0 to v0.141.0 ([#5361](https://github.com/databricks/cli/pull/5361))
+* Bump Terraform provider from v1.115.0 to v1.117.0 ([#5421](https://github.com/databricks/cli/pull/5421))
 
 ### API Changes
