@@ -26,7 +26,7 @@ trace $CLI bundle plan
 # - Deploy 1: CREATE for job_a
 # - Deploy 2: ListResources + CREATE for job_b (job_a is unchanged)
 # - Plan: ListResources (no operations)
-trace print_requests.py --get //bundle ^//workspace-files ^//import-file
+trace print_requests.py --get --sort //bundle ^//workspace-files ^//import-file
 
 # Clean up.
 rm -rf .databricks

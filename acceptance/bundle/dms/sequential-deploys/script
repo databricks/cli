@@ -1,6 +1,6 @@
 # Deploy with one job.
 trace $CLI bundle deploy
-trace print_requests.py --get //bundle ^//workspace-files ^//import-file
+trace print_requests.py --get --sort //bundle ^//workspace-files ^//import-file
 
 # Add a second job and redeploy.
 cat > databricks.yml << 'EOF'
@@ -15,7 +15,7 @@ resources:
       name: new-job
 EOF
 trace $CLI bundle deploy
-trace print_requests.py --get //bundle ^//workspace-files ^//import-file
+trace print_requests.py --get --sort //bundle ^//workspace-files ^//import-file
 
 # Remove the first job and redeploy (should delete test_job).
 cat > databricks.yml << 'EOF'
@@ -28,5 +28,5 @@ resources:
       name: new-job
 EOF
 trace $CLI bundle deploy
-trace print_requests.py --get //bundle ^//workspace-files ^//import-file
+trace print_requests.py --get --sort //bundle ^//workspace-files ^//import-file
 print_requests.py --get > /dev/null 2>&1 || true
