@@ -3,16 +3,16 @@ envsubst < databricks.yml.tmpl > databricks.yml
 cleanup() {
    # After this test the destroy should be a soft delete; --purge here so the
    # trash entry doesn't linger past the test.
-   $CLI postgres delete-project --purge "projects/test-pg-proj-${UNIQUE_NAME}" 2>/dev/null || true
+   $CLI postgres delete-project --purge "projects/test-pg-proj-${UNIQUE_NAME}" 2>>LOG.delete-project || true
    rm -f out.requests.txt
 }
 trap cleanup EXIT
 
-# Prints the persisted purge_on_delete value from the direct engine's
+# Prints the persisted purge_on_delete assignment from the direct engine's
 # resources.json. The field is omitted from JSON when unset (omitempty +
-# ForceSendFields tracking), so absent => null, explicit true/false => bool.
+# ForceSendFields tracking), so an absent value falls back to "(unset)".
 get_purge() {
-  jq -r '.state["resources.postgres_projects.proj"].state.purge_on_delete' .databricks/bundle/default/resources.json
+  gron.py < .databricks/bundle/default/resources.json | grep purge_on_delete || echo '(unset)'
 }
 
 title "Step 1: deploy with purge_on_delete unset"
@@ -38,4 +38,4 @@ rm -f out.requests.txt
 
 title "bundle destroy (must be a plain DELETE, no ?purge=true)"
 $CLI bundle destroy --auto-approve > out.destroy.txt 2>&1 || true
-trace print_requests.py --keep --sort --get '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.destroy.json
+trace print_requests.py --sort --get '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.destroy.json

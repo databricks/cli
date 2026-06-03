@@ -46,7 +46,7 @@ Deployment complete!
   "uid": "[UUID]"
 }
 
->>> print_requests.py --keep --sort --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
+>>> print_requests.py --sort --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 
 === bundle destroy
->>> print_requests.py --keep --sort --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
+>>> print_requests.py --sort --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/

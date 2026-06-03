@@ -488,8 +488,7 @@ resources:
     ignore_remote_changes:
       # purge_on_delete is a delete-time query parameter; not returned by GET.
       # When the user changes it locally we still want the new value to land
-      # in state (so the next destroy honors it); DoUpdate strips it from the
-      # API field mask, leaving toggling as a state-only refresh.
+      # in state so the next destroy honors it.
       - field: purge_on_delete
         reason: input_only
 

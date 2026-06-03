@@ -7,7 +7,7 @@ Updating deployment state...
 Deployment complete!
 
 >>> get_purge
-null
+(unset)
 
 === Step 2: set purge_on_delete: true
 >>> [CLI] bundle deploy
@@ -17,7 +17,7 @@ Updating deployment state...
 Deployment complete!
 
 >>> get_purge
-true
+json.state.resources.postgres_projects.proj.state.purge_on_delete = true;
 
 === Step 3: flip to purge_on_delete: false
 >>> [CLI] bundle deploy
@@ -27,7 +27,7 @@ Updating deployment state...
 Deployment complete!
 
 >>> get_purge
-false
+json.state.resources.postgres_projects.proj.state.purge_on_delete = false;
 
 === Step 4: remove the line again
 >>> [CLI] bundle deploy
@@ -37,7 +37,7 @@ Updating deployment state...
 Deployment complete!
 
 >>> get_purge
-false
+json.state.resources.postgres_projects.proj.state.purge_on_delete = false;
 
 === bundle destroy (must be a plain DELETE, no ?purge=true)
->>> print_requests.py --keep --sort --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
+>>> print_requests.py --sort --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
