@@ -21,7 +21,8 @@ Deployment complete!
 }
 {
   "method": "POST",
-  "path": "/api/2.0/sql/warehouses/[UUID]/stop"
+  "path": "/api/2.0/sql/warehouses/[UUID]/stop",
+  "body": {}
 }
 
 >>> errcode [CLI] warehouses get [UUID]
@@ -39,7 +40,8 @@ Deployment complete!
 >>> print_requests.py //sql/warehouses
 {
   "method": "POST",
-  "path": "/api/2.0/sql/warehouses/[UUID]/start"
+  "path": "/api/2.0/sql/warehouses/[UUID]/start",
+  "body": {}
 }
 
 >>> errcode [CLI] warehouses get [UUID]
@@ -57,7 +59,8 @@ Deployment complete!
 >>> print_requests.py //sql/warehouses
 {
   "method": "POST",
-  "path": "/api/2.0/sql/warehouses/[UUID]/stop"
+  "path": "/api/2.0/sql/warehouses/[UUID]/stop",
+  "body": {}
 }
 
 >>> errcode [CLI] warehouses get [UUID]

@@ -92,6 +92,7 @@ func makePipelineRemote(p *pipelines.GetPipelineResponse) *PipelineRemote {
 			Libraries:           spec.Libraries,
 			Name:                spec.Name,
 			Notifications:       spec.Notifications,
+			Parameters:          p.Parameters,
 			Photon:              spec.Photon,
 			RestartWindow:       spec.RestartWindow,
 			RootPath:            spec.RootPath,
@@ -103,7 +104,7 @@ func makePipelineRemote(p *pipelines.GetPipelineResponse) *PipelineRemote {
 			Target:              spec.Target,
 			Trigger:             spec.Trigger,
 			UsagePolicyId:       spec.UsagePolicyId,
-			ForceSendFields:     utils.FilterFields[pipelines.CreatePipeline](spec.ForceSendFields, "AllowDuplicateNames", "DryRun", "RunAs"),
+			ForceSendFields:     utils.FilterFields[pipelines.CreatePipeline](spec.ForceSendFields, "AllowDuplicateNames", "DryRun", "Parameters", "RunAs"),
 		}
 	}
 	return &PipelineRemote{
@@ -152,6 +153,7 @@ func (r *ResourcePipeline) DoUpdate(ctx context.Context, id string, config *pipe
 		Libraries:            config.Libraries,
 		Name:                 config.Name,
 		Notifications:        config.Notifications,
+		Parameters:           config.Parameters,
 		Photon:               config.Photon,
 		RestartWindow:        config.RestartWindow,
 		RootPath:             config.RootPath,

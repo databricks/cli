@@ -2,6 +2,7 @@ package dresources
 
 import (
 	"context"
+	"strings"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go"
@@ -64,21 +65,16 @@ func (*ResourcePostgresCatalog) RemapState(remote *PostgresCatalogRemote) *Postg
 // stay at their zero values, and resources.yml suppresses phantom drift via
 // ignore_remote_changes with reason spec:input_only.
 //
-// Status.CatalogId is the short identifier and matches the user-supplied config.
-// Prefer it over parsing remote.Name — semantic contract from the API rather than
-// string manipulation on the hierarchical path.
+// The user-facing catalog id only appears as the trailing component of
+// remote.Name, so we strip the constant "catalogs/" prefix.
 func makePostgresCatalogRemote(catalog *postgres.Catalog) *PostgresCatalogRemote {
 	var spec postgres.CatalogCatalogSpec
 	if catalog.Spec != nil {
 		spec = *catalog.Spec
 	}
-	var catalogId string
-	if catalog.Status != nil {
-		catalogId = catalog.Status.CatalogId
-	}
 	return &PostgresCatalogRemote{
 		CatalogCatalogSpec: spec,
-		CatalogId:          catalogId,
+		CatalogId:          strings.TrimPrefix(catalog.Name, "catalogs/"),
 		Name:               catalog.Name,
 		Status:             catalog.Status,
 		Uid:                catalog.Uid,

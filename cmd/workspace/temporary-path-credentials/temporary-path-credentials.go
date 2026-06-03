@@ -20,10 +20,8 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "temporary-path-credentials",
-		Short: `*Public Preview* Temporary Path Credentials refer to short-lived, downscoped credentials used to access external cloud storage locations registered in Databricks.`,
-		Long: `This command is in Public Preview and may change without notice.
-
-Temporary Path Credentials refer to short-lived, downscoped credentials used
+		Short: `Temporary Path Credentials refer to short-lived, downscoped credentials used to access external cloud storage locations registered in Databricks.`,
+		Long: `Temporary Path Credentials refer to short-lived, downscoped credentials used
   to access external cloud storage locations registered in Databricks. These
   credentials are employed to provide secure and time-limited access to data in
   cloud environments such as AWS, Azure, and Google Cloud. Each cloud provider
@@ -52,8 +50,8 @@ Temporary Path Credentials refer to short-lived, downscoped credentials used
 	}
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	// Add methods
 	cmd.AddCommand(newGenerateTemporaryPathCredentials())
@@ -86,10 +84,8 @@ func newGenerateTemporaryPathCredentials() *cobra.Command {
 	cmd.Flags().BoolVar(&generateTemporaryPathCredentialsReq.DryRun, "dry-run", generateTemporaryPathCredentialsReq.DryRun, `Optional.`)
 
 	cmd.Use = "generate-temporary-path-credentials URL OPERATION"
-	cmd.Short = `*Public Preview* Generate a temporary path credential.`
-	cmd.Long = `This command is in Public Preview and may change without notice.
-
-Generate a temporary path credential.
+	cmd.Short = `Generate a temporary path credential.`
+	cmd.Long = `Generate a temporary path credential.
 
   Get a short-lived credential for directly accessing cloud storage locations
   registered in Databricks. The Generate Temporary Path Credentials API is only
@@ -108,8 +104,8 @@ Generate a temporary path credential.
       Supported values: [PATH_CREATE_TABLE, PATH_READ, PATH_READ_WRITE]`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {

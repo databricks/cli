@@ -144,6 +144,12 @@
                       "budget_policy_id": {
                         "$ref": "#/$defs/string"
                       },
+                      "compute_max_instances": {
+                        "$ref": "#/$defs/int"
+                      },
+                      "compute_min_instances": {
+                        "$ref": "#/$defs/int"
+                      },
                       "compute_size": {
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.ComputeSize"
                       },
@@ -1271,6 +1277,9 @@
                       "notifications": {
                         "description": "List of notification settings for this pipeline.",
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/pipelines.Notifications"
+                      },
+                      "parameters": {
+                        "$ref": "#/$defs/map/string"
                       },
                       "permissions": {
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.PipelinePermission"
@@ -6410,12 +6419,18 @@
                 {
                   "type": "object",
                   "properties": {
+                    "deployment_id": {
+                      "$ref": "#/$defs/string"
+                    },
                     "kind": {
                       "description": "The kind of deployment that manages the job.\n\n* `BUNDLE`: The job is managed by Databricks Asset Bundle.\n* `SYSTEM_MANAGED`: The job is managed by Databricks and is read-only.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.JobDeploymentKind"
                     },
                     "metadata_file_path": {
                       "description": "Path of the file that contains deployment metadata.",
+                      "$ref": "#/$defs/string"
+                    },
+                    "version_id": {
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -6954,6 +6969,9 @@
                     "full_refresh_selection": {
                       "description": "A list of tables to update with fullRefresh.",
                       "$ref": "#/$defs/slice/string"
+                    },
+                    "parameters": {
+                      "$ref": "#/$defs/map/string"
                     },
                     "pipeline_id": {
                       "description": "The full name of the pipeline task to execute.",
@@ -9445,12 +9463,18 @@
                 {
                   "type": "object",
                   "properties": {
+                    "deployment_id": {
+                      "$ref": "#/$defs/string"
+                    },
                     "kind": {
                       "description": "The deployment method that manages the pipeline.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.DeploymentKind"
                     },
                     "metadata_file_path": {
                       "description": "The path to the file containing metadata about the deployment.",
+                      "$ref": "#/$defs/string"
+                    },
+                    "version_id": {
                       "$ref": "#/$defs/string"
                     }
                   },

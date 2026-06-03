@@ -15,5 +15,7 @@
 * Support `purge_on_delete: true` on `postgres_projects` so bundles can hard-delete a Lakebase project on destroy (skipping the soft-delete retention window) ([#5414](https://github.com/databricks/cli/pull/5414)).
 
 ### Dependency updates
-
 * Bump Go toolchain to 1.26.4 ([#5420](https://github.com/databricks/cli/pull/5420)).
+* Bump `github.com/databricks/databricks-sdk-go` from v0.136.0 to v0.138.0 ([#5361](https://github.com/databricks/cli/pull/5361))
+
+### API Changes
