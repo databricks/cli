@@ -11,6 +11,9 @@
 * Retry transient HTTP 5xx and 408 errors in direct deployment engine ([#5349](https://github.com/databricks/cli/pull/5349), [#5364](https://github.com/databricks/cli/pull/5364)).
 * Preserve `.designer.ipynb` suffix when translating notebook task paths so Lakeflow Designer files referenced from a `notebook_task` resolve correctly in the workspace ([#5370](https://github.com/databricks/cli/pull/5370)).
 * Fix script output dropping last line without trailing newline ([#4995](https://github.com/databricks/cli/pull/4995)).
-* Support `purge_on_delete: true` on `postgres_projects` so bundles can hard-delete a Lakebase project on destroy (skipping the soft-delete retention window).
+* Add `--select` flag to `bundle plan` and `bundle deploy` to plan/deploy a subset of resources (e.g. `--select my_job` or `--select jobs.my_job`); resources referenced by the selection are included transitively. Direct engine only ([#5413](https://github.com/databricks/cli/pull/5413)).
+* Support `purge_on_delete: true` on `postgres_projects` so bundles can hard-delete a Lakebase project on destroy (skipping the soft-delete retention window) ([#5414](https://github.com/databricks/cli/pull/5414)).
 
 ### Dependency updates
+
+* Bump Go toolchain to 1.26.4 ([#5420](https://github.com/databricks/cli/pull/5420)).

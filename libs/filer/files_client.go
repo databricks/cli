@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"maps"
 	"net/http"
 	"net/url"
 	"path"
@@ -14,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/client"
@@ -109,19 +111,6 @@ func NewFilesClient(w *databricks.WorkspaceClient, root string) (Filer, error) {
 	}, nil
 }
 
-// workspaceIDHeaders returns headers with X-Databricks-Workspace-Id set if a
-// workspace ID is configured. SPOG hosts require this header to route requests
-// to the correct workspace.
-func (w *FilesClient) workspaceIDHeaders() map[string]string {
-	wsID := w.workspaceClient.Config.WorkspaceID
-	if wsID == "" {
-		return nil
-	}
-	return map[string]string{
-		"X-Databricks-Workspace-Id": wsID,
-	}
-}
-
 func (w *FilesClient) urlPath(name string) (string, string, error) {
 	absPath, err := w.root.Join(name)
 	if err != nil {
@@ -161,9 +150,7 @@ func (w *FilesClient) Write(ctx context.Context, name string, reader io.Reader, 
 	overwrite := slices.Contains(mode, OverwriteIfExists)
 	urlPath = fmt.Sprintf("%s?overwrite=%t", urlPath, overwrite)
 	headers := map[string]string{"Content-Type": "application/octet-stream"}
-	if wsID := w.workspaceClient.Config.WorkspaceID; wsID != "" {
-		headers["X-Databricks-Workspace-Id"] = wsID
-	}
+	maps.Copy(headers, auth.WorkspaceIDHeaders(w.workspaceClient.Config))
 	err = w.apiClient.Do(ctx, http.MethodPut, urlPath, headers, nil, reader, nil)
 
 	// Return early on success.
@@ -192,7 +179,7 @@ func (w *FilesClient) Read(ctx context.Context, name string) (io.ReadCloser, err
 	}
 
 	var reader io.ReadCloser
-	err = w.apiClient.Do(ctx, http.MethodGet, urlPath, w.workspaceIDHeaders(), nil, nil, &reader)
+	err = w.apiClient.Do(ctx, http.MethodGet, urlPath, auth.WorkspaceIDHeaders(w.workspaceClient.Config), nil, nil, &reader)
 
 	// Return early on success.
 	if err == nil {
