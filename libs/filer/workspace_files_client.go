@@ -15,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/client"
@@ -121,20 +122,16 @@ type WorkspaceFilesClient struct {
 	root WorkspaceRootPath
 }
 
-// workspaceIDHeaders returns headers with X-Databricks-Workspace-Id set if a
-// workspace ID is configured. SPOG hosts require this header to route requests
-// to the correct workspace.
+// workspaceIDHeaders returns the workspace routing header map for outbound
+// API calls, or nil if the workspace client is unset. Wraps the shared
+// auth.WorkspaceIDHeaders helper with a nil-safe workspaceClient guard
+// since this filer struct can legitimately be constructed without one in
+// some test setups.
 func (w *WorkspaceFilesClient) workspaceIDHeaders() map[string]string {
-	if w.workspaceClient == nil || w.workspaceClient.Config == nil {
+	if w.workspaceClient == nil {
 		return nil
 	}
-	wsID := w.workspaceClient.Config.WorkspaceID
-	if wsID == "" {
-		return nil
-	}
-	return map[string]string{
-		"X-Databricks-Workspace-Id": wsID,
-	}
+	return auth.WorkspaceIDHeaders(w.workspaceClient.Config)
 }
 
 func NewWorkspaceFilesClient(w *databricks.WorkspaceClient, root string) (Filer, error) {

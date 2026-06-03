@@ -6,6 +6,7 @@ import (
 	"path"
 	"strings"
 
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/folders"
 	"github.com/databricks/cli/libs/log"
@@ -65,7 +66,7 @@ func fetchRepositoryInfoAPI(ctx context.Context, path string, w *databricks.Work
 		ctx,
 		http.MethodGet,
 		apiEndpoint,
-		nil,
+		auth.WorkspaceIDHeaders(w.Config),
 		nil,
 		map[string]string{
 			"path":            path,
