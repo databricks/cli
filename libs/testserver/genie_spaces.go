@@ -100,8 +100,9 @@ func (s *FakeWorkspace) GenieSpaceGet(req Request) Response {
 	spaceId := req.Vars["space_id"]
 	genieSpace, ok := s.GenieSpaces[spaceId]
 	if !ok {
+		// The real API returns 403 (not 404) when a Genie space does not exist.
 		return Response{
-			StatusCode: 404,
+			StatusCode: 403,
 			Body: map[string]string{
 				"message": "Genie space not found",
 			},
@@ -126,8 +127,9 @@ func (s *FakeWorkspace) GenieSpaceUpdate(req Request) Response {
 	spaceId := req.Vars["space_id"]
 	genieSpace, ok := s.GenieSpaces[spaceId]
 	if !ok {
+		// The real API returns 403 (not 404) when a Genie space does not exist.
 		return Response{
-			StatusCode: 404,
+			StatusCode: 403,
 			Body: map[string]string{
 				"message": "Genie space not found",
 			},
@@ -210,8 +212,9 @@ func (s *FakeWorkspace) GenieSpaceTrash(req Request) Response {
 	spaceId := req.Vars["space_id"]
 	genieSpace, ok := s.GenieSpaces[spaceId]
 	if !ok {
+		// The real API returns 403 (not 404) when a Genie space does not exist.
 		return Response{
-			StatusCode: 404,
+			StatusCode: 403,
 			Body: map[string]string{
 				"message": "Genie space not found",
 			},
