@@ -70,6 +70,81 @@ jobs:
           # Always run all tests
           echo "targets=[\"test\"]" >> $GITHUB_OUTPUT
 
+  test-unit:
+    needs:
+      - cleanups
+      - testmask
+
+    # Only run if the target is in the list of targets from testmask
+    if: ${{ contains(fromJSON(needs.testmask.outputs.targets), 'test') }}
+    name: "task test-unit (${{matrix.os.name}})"
+    runs-on: ${{ matrix.os.runner }}
+
+    defaults:
+      run:
+        shell: bash
+
+    permissions:
+      id-token: write
+      contents: read
+
+    env:
+      TASK_CONCURRENCY: ${{ matrix.os.name == 'windows' && '1' || '' }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - name: linux
+            runner:
+              group: databricks-protected-runner-group-large
+              labels: linux-ubuntu-latest-large
+
+          - name: windows
+            runner:
+              group: databricks-protected-runner-group-large
+              labels: windows-server-latest-large
+
+          - name: macos
+            runner:
+              labels: macos-latest
+
+        # Include "event_name" in the matrix so we can include/exclude based on it.
+        event:
+          - ${{ github.event_name }}
+
+        # Run on Linux only in merge queue to reduce time to merge.
+        exclude:
+          - event: merge_group
+            os:
+              name: windows
+          - event: merge_group
+            os:
+              name: macos
+
+    steps:
+      - name: Checkout repository and submodules
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup build environment
+        uses: ./.github/actions/setup-build-environment
+        with:
+          # Sole writer of the shared "test" cache (test-acc shards restore it).
+          cache-key: test
+
+      - name: Run tests
+        run: go tool -modfile=tools/task/go.mod task test-unit
+
+      - name: Upload gotestsum JSON output
+        # Always upload so we can inspect timing even if tests fail.
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: test-output-unit-${{ matrix.os.name }}
+          path: test-output-unit.json
+          if-no-files-found: warn
+          retention-days: 7
+
   test:
     needs:
       - cleanups
@@ -77,7 +152,7 @@ jobs:
 
     # Only run if the target is in the list of targets from testmask
     if: ${{ contains(fromJSON(needs.testmask.outputs.targets), 'test') }}
-    name: "task test (${{matrix.os.name}}, ${{matrix.deployment}}, shard ${{matrix.shard_index}})"
+    name: "task test-acc (${{matrix.os.name}}, ${{matrix.deployment}}, shard ${{matrix.shard_index}})"
     runs-on: ${{ matrix.os.runner }}
 
     defaults:
@@ -137,14 +212,18 @@ jobs:
       - name: Setup build environment
         uses: ./.github/actions/setup-build-environment
         with:
-          cache-key: test-${{ matrix.deployment }}
+          # Shares the cache-key with test-unit so these shards restore the
+          # cache it saves. save-cache is false because many shard/deployment
+          # instances share this key; test-unit is the sole writer.
+          cache-key: test
+          save-cache: false
 
       - name: Run tests
         env:
           ENVFILTER: DATABRICKS_BUNDLE_ENGINE=${{ matrix.deployment }}
           SHARD_INDEX: ${{ matrix.shard_index }}
           SHARD_TOTAL: 4
-        run: go tool -modfile=tools/task/go.mod task test
+        run: go tool -modfile=tools/task/go.mod task test-acc
 
       - name: Upload gotestsum JSON output
         # Always upload so we can inspect timing even if tests fail.
@@ -152,7 +231,7 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: test-output-${{ matrix.os.name }}-${{ matrix.deployment }}-shard${{ matrix.shard_index }}
-          path: test-output.json
+          path: test-output-acc.json
           if-no-files-found: warn
           retention-days: 7
 
@@ -333,6 +412,7 @@ jobs:
   # Reference: https://github.com/orgs/community/discussions/25970
   test-result:
     needs:
+      - test-unit
       - test
       - test-exp-aitools
       - test-exp-ssh
