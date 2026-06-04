@@ -25,6 +25,7 @@ Deployment complete!
   "body": {
     "cli_version": "[DEV_VERSION]",
     "version_type": "VERSION_TYPE_DEPLOY",
+    "display_name": "sequential-deploys-test",
     "target_name": "default",
     "git_info": {}
   }
@@ -93,6 +94,7 @@ Deployment complete!
   "body": {
     "cli_version": "[DEV_VERSION]",
     "version_type": "VERSION_TYPE_DEPLOY",
+    "display_name": "sequential-deploys-test",
     "target_name": "default",
     "git_info": {}
   }
@@ -161,6 +163,7 @@ Deployment complete!
   "body": {
     "cli_version": "[DEV_VERSION]",
     "version_type": "VERSION_TYPE_DEPLOY",
+    "display_name": "sequential-deploys-test",
     "target_name": "default",
     "git_info": {}
   }

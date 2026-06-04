@@ -153,6 +153,7 @@ func acquireLock(ctx context.Context, b *bundle.Bundle, svc *tmpdms.DeploymentMe
 		Parent:       "deployments/" + deploymentID,
 		VersionID:    versionID,
 		Version: &tmpdms.Version{
+			DisplayName: b.Config.Bundle.Name,
 			CliVersion:  build.GetInfo().Version,
 			VersionType: versionType,
 			TargetName:  b.Config.Bundle.Target,

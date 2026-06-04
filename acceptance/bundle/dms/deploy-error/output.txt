@@ -31,6 +31,7 @@ API message: Invalid job configuration.
   "body": {
     "cli_version": "[DEV_VERSION]",
     "version_type": "VERSION_TYPE_DEPLOY",
+    "display_name": "metadata-service-error-test",
     "target_name": "default",
     "git_info": {}
   }
