@@ -9,6 +9,8 @@ trap cleanup EXIT
 title "Deploy with started=true: warehouse created and running"
 trace errcode $CLI bundle deploy
 WAREHOUSE_ID=$($CLI bundle summary -o json | jq -r '.resources.sql_warehouses.mywarehouse.id')
+add_repl.py "$WAREHOUSE_ID" "WAREHOUSE_ID"
+
 trace print_requests.py //sql/warehouses
 rm -f out.requests.txt
 { trace errcode $CLI warehouses get "$WAREHOUSE_ID" | jq '.state'; } || true
