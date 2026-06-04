@@ -17,6 +17,7 @@ import (
 	"sync"
 
 	"github.com/databricks/cli/internal/testutil"
+	"github.com/databricks/cli/libs/testserver/testsql"
 )
 
 const testPidKey = "test-pid"
@@ -48,6 +49,8 @@ type Server struct {
 
 	kills  *killRules
 	faults *FaultRules
+
+	sqlHandler *testsql.Handler
 
 	RequestCallback  func(request *Request)
 	ResponseCallback func(request *Request, response *EncodedResponse)
@@ -228,6 +231,7 @@ func New(t testutil.TestingT) *Server {
 		fakeOidc:       &FakeOidc{url: server.URL},
 		kills:          kills,
 		faults:         faults,
+		sqlHandler:     testsql.New(),
 	}
 	router.Dispatch = s.serve
 
@@ -292,6 +296,14 @@ Response.Body = '<response body here>'
 			"workspace_id":  "900800700600",
 		}
 	})
+
+	// Register the SQL Statement Execution lifecycle endpoints. Tests program
+	// these by registering matchers via Server.HandleSQL / HandleSQLPattern;
+	// see statements.go.
+	s.Handle("POST", "/api/2.0/sql/statements", s.sqlExecuteStatement)
+	s.Handle("GET", "/api/2.0/sql/statements/{statement_id}", s.sqlGetStatement)
+	s.Handle("GET", "/api/2.0/sql/statements/{statement_id}/result/chunks/{chunk_index}", s.sqlGetStatementResultChunk)
+	s.Handle("POST", "/api/2.0/sql/statements/{statement_id}/cancel", s.sqlCancelStatement)
 
 	return s
 }
