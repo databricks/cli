@@ -29,6 +29,10 @@ var pathSerializedSpace = structpath.MustParsePath("serialized_space")
 //     ignore_remote_changes (see resources.yml), so a UI edit produces no plan
 //     entry. Sending the local body anyway would clobber the UI edit on every
 //     unrelated update.
+//   - DoUpdate omits the etag (dashboard sends it as an If-Match guard): the
+//     backend bumps the etag when it migrates serialized_space to a newer
+//     schema version, so sending a stale etag would 409 the update after a
+//     migration. Drift is still detected on read via OverrideChangeDesc.
 //   - DoCreate has expanded missing-parent-path detection: see
 //     isMissingGenieParentPathError below.
 //
@@ -225,10 +229,12 @@ func (r *ResourceGenieSpace) DoUpdate(ctx context.Context, id string, config *re
 		WarehouseId:     config.WarehouseId,
 		ParentPath:      config.ParentPath,
 		SerializedSpace: serializedSpace,
-		// Send the etag we last observed. The backend uses it as an If-Match
-		// guard against concurrent writes, and OverrideChangeDesc uses the
-		// post-update etag to detect drift on subsequent plans.
-		Etag: config.Etag,
+		// Intentionally empty: we do not send an If-Match guard. The backend
+		// bumps the etag when it migrates serialized_space to a newer schema
+		// version, so sending the last-observed etag would fail the update with
+		// 409 after such a migration. Drift is still detected on read via
+		// OverrideChangeDesc, which compares the stored and remote etags.
+		Etag: "",
 
 		ForceSendFields: utils.FilterFields[dashboards.GenieUpdateSpaceRequest](config.ForceSendFields, excludeForceSend...),
 	})

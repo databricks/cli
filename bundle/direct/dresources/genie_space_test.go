@@ -181,11 +181,13 @@ func TestGenieSpaceDoUpdateRoundTripsEtag(t *testing.T) {
 		},
 	}
 
+	// The stored etag (etag-7) must NOT be sent as an If-Match guard — it would
+	// 409 after a backend serialized_space schema migration. Only the etag from
+	// the response is persisted, for drift detection on the next plan.
 	m.GetMockGenieAPI().EXPECT().
 		UpdateSpace(ctx, dashboards.GenieUpdateSpaceRequest{
 			SpaceId: "space-id",
 			Title:   "new",
-			Etag:    "etag-7",
 		}).
 		Return(&dashboards.GenieSpace{
 			SpaceId: "space-id",
