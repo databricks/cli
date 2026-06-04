@@ -70,6 +70,9 @@ func TestSQLExecFailedStatement(t *testing.T) {
 	assert.Equal(t, sql.StatementStateFailed, se.State)
 	assert.NotEmpty(t, se.Code)
 	assert.NotEmpty(t, se.Message)
+	// The API populates status.sql_state (SQLSTATE) on failures, e.g. 42P01 for
+	// a missing relation; assert it survives into the typed error.
+	assert.NotEmpty(t, se.SQLState)
 }
 
 func TestSQLExecSubmitAndCancel(t *testing.T) {
