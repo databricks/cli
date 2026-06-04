@@ -4,8 +4,6 @@
 # Set a value to null to remove a type:
 # jobs: null
 
-genie_spaces: dashboards.GenieSpace
-
 postgres_branches: postgres.BranchSpec
 
 postgres_endpoints: postgres.EndpointSpec
