@@ -26,6 +26,7 @@ Warn: Failed to release deployment lock: simulated complete version failure
   "body": {
     "cli_version": "[DEV_VERSION]",
     "version_type": "VERSION_TYPE_DEPLOY",
+    "display_name": "dms-release-lock-error",
     "target_name": "fail-complete",
     "git_info": {}
   }

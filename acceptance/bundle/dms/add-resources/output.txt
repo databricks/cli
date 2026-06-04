@@ -56,6 +56,7 @@ Plan: 0 to add, 2 to change, 0 to delete, 0 unchanged
   "body": {
     "cli_version": "[DEV_VERSION]",
     "version_type": "VERSION_TYPE_DEPLOY",
+    "display_name": "add-resources-test",
     "target_name": "default",
     "git_info": {}
   }
@@ -69,6 +70,7 @@ Plan: 0 to add, 2 to change, 0 to delete, 0 unchanged
   "body": {
     "cli_version": "[DEV_VERSION]",
     "version_type": "VERSION_TYPE_DEPLOY",
+    "display_name": "add-resources-test",
     "target_name": "default",
     "git_info": {}
   }
