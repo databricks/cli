@@ -1,0 +1,6 @@
+Local = true
+RecordRequests = true
+
+Ignore = [
+    "databricks.yml",
+]
