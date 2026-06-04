@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/deploy"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/statemgmt"
@@ -153,10 +154,11 @@ func acquireLock(ctx context.Context, b *bundle.Bundle, svc *tmpdms.DeploymentMe
 		Parent:       "deployments/" + deploymentID,
 		VersionID:    versionID,
 		Version: &tmpdms.Version{
-			DisplayName: b.Config.Bundle.Name,
-			CliVersion:  build.GetInfo().Version,
-			VersionType: versionType,
-			TargetName:  b.Config.Bundle.Target,
+			DisplayName:    b.Config.Bundle.Name,
+			DeploymentMode: deploymentMode(b.Config.Bundle.Mode),
+			CliVersion:     build.GetInfo().Version,
+			VersionType:    versionType,
+			TargetName:     b.Config.Bundle.Target,
 			// Same git provenance the CLI records in metadata.json.
 			GitInfo: &tmpdms.GitInfo{
 				OriginURL: b.Config.Bundle.Git.OriginURL,
@@ -341,4 +343,17 @@ func startHeartbeat(ctx context.Context, svc *tmpdms.DeploymentMetadataAPI, depl
 func isAborted(err error) bool {
 	apiErr, ok := errors.AsType[*apierr.APIError](err)
 	return ok && apiErr.StatusCode == http.StatusConflict && apiErr.ErrorCode == "ABORTED"
+}
+
+// deploymentMode maps a bundle target mode to the DMS deployment mode enum.
+// Unset target modes produce an empty value, which is omitted from the request.
+func deploymentMode(mode config.Mode) tmpdms.DeploymentMode {
+	switch mode {
+	case config.Development:
+		return tmpdms.DeploymentModeDevelopment
+	case config.Production:
+		return tmpdms.DeploymentModeProduction
+	default:
+		return ""
+	}
 }

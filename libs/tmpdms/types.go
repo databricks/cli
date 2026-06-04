@@ -17,6 +17,7 @@ type (
 	OperationStatus        string
 	OperationActionType    string
 	DeploymentResourceType string
+	DeploymentMode         string
 )
 
 const (
@@ -45,6 +46,11 @@ const (
 	VersionTypeUnspecified VersionType = "VERSION_TYPE_UNSPECIFIED"
 	VersionTypeDeploy      VersionType = "VERSION_TYPE_DEPLOY"
 	VersionTypeDestroy     VersionType = "VERSION_TYPE_DESTROY"
+)
+
+const (
+	DeploymentModeDevelopment DeploymentMode = "DEPLOYMENT_MODE_DEVELOPMENT"
+	DeploymentModeProduction  DeploymentMode = "DEPLOYMENT_MODE_PRODUCTION"
 )
 
 const (
@@ -119,6 +125,7 @@ type Version struct {
 	VersionType      VersionType     `json:"version_type,omitempty"`
 	CompletionReason VersionComplete `json:"completion_reason,omitempty"`
 	CompletedBy      string          `json:"completed_by,omitempty"`
+	DeploymentMode   DeploymentMode  `json:"deployment_mode,omitempty"`
 	DisplayName      string          `json:"display_name,omitempty"`
 	TargetName       string          `json:"target_name,omitempty"`
 	GitInfo          *GitInfo        `json:"git_info,omitempty"`
