@@ -19,6 +19,10 @@ const (
 	CAN_MANAGE = "CAN_MANAGE"
 	CAN_VIEW   = "CAN_VIEW"
 	CAN_RUN    = "CAN_RUN"
+
+	// CAN_EDIT is a workspace folder ACL level; it is not valid in the bundle's
+	// top-level permissions section.
+	CAN_EDIT = "CAN_EDIT"
 )
 
 func PermissionDiagnostics() bundle.Mutator {

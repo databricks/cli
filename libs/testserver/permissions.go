@@ -3,6 +3,9 @@ package testserver
 import (
 	"encoding/json"
 	"fmt"
+	"slices"
+	"strconv"
+	"strings"
 
 	"github.com/databricks/databricks-sdk-go/service/iam"
 )
@@ -294,7 +297,44 @@ func (s *FakeWorkspace) SetPermissions(req Request) any {
 
 	s.Permissions[responseObjectID] = existingPermissions
 
-	return Response{
-		Body: existingPermissions,
+	// A directory under /Workspace/Users/<owner> grants the owner CAN_MANAGE
+	// (inherited), mirroring real workspaces where a user manages everything in their
+	// home folder. This holds regardless of what the request configured for them, so
+	// it overrides any lower level. SetPermissions replaces the direct ACL but this
+	// inherited access persists, so we add it to the response (not the stored value).
+	response := existingPermissions
+	if requestObjectType == "directories" {
+		if owner := s.directoryHomeOwner(objectId); owner != "" {
+			response.AccessControlList = slices.Clone(existingPermissions.AccessControlList)
+			upsertACL(&response, iam.AccessControlResponse{
+				UserName:       owner,
+				AllPermissions: []iam.Permission{{PermissionLevel: "CAN_MANAGE", Inherited: true}},
+			})
+		}
 	}
+
+	return Response{
+		Body: response,
+	}
+}
+
+// directoryHomeOwner returns the home-directory owner for the directory with the
+// given object id, i.e. <owner> when its path is under /Workspace/Users/<owner>.
+// Returns an empty string otherwise.
+func (s *FakeWorkspace) directoryHomeOwner(objectId string) string {
+	const usersPrefix = "/Workspace/Users/"
+	for path, info := range s.directories {
+		if strconv.FormatInt(info.ObjectId, 10) != objectId {
+			continue
+		}
+		if !strings.HasPrefix(path, usersPrefix) {
+			return ""
+		}
+		rest := path[len(usersPrefix):]
+		if before, _, ok := strings.Cut(rest, "/"); ok {
+			return before
+		}
+		return rest
+	}
+	return ""
 }
