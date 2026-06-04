@@ -735,6 +735,7 @@ resources.external_locations.*.grants[*].principal	string	ALL
 resources.external_locations.*.grants[*].privileges	[]catalog.Privilege	ALL
 resources.external_locations.*.grants[*].privileges[*]	catalog.Privilege	ALL
 resources.genie_spaces.*.description	string	ALL
+resources.genie_spaces.*.etag	string	ALL
 resources.genie_spaces.*.file_path	string	INPUT
 resources.genie_spaces.*.id	string	INPUT
 resources.genie_spaces.*.lifecycle	resources.Lifecycle	INPUT

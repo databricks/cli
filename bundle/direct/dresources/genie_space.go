@@ -292,7 +292,7 @@ func hasUpdate(entry *PlanEntry, path *structpath.PathNode) bool {
 	return false
 }
 
-func (r *ResourceGenieSpace) DoDelete(ctx context.Context, id string) error {
+func (r *ResourceGenieSpace) DoDelete(ctx context.Context, id string, _ *resources.GenieSpaceConfig) error {
 	return r.client.Genie.TrashSpace(ctx, dashboards.GenieTrashSpaceRequest{
 		SpaceId: id,
 	})
