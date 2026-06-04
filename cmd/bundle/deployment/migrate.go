@@ -68,6 +68,10 @@ to the workspace so that subsequent deploys of this bundle use direct deployment
 		Args: root.NoArgs,
 	}
 
+	// --noplancheck kept for backward compatibility; the plan check was removed
+	// because the command no longer invokes the Terraform engine.
+	cmd.Flags().Bool("noplancheck", false, "No-op (kept for compatibility).")
+
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		extraArgsStr := getCommonArgs(cmd)
 

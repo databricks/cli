@@ -4,14 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"reflect"
-	"strings"
-	"sync"
 
 	"github.com/databricks/cli/bundle/deploy/terraform"
-	tfschema "github.com/databricks/cli/bundle/internal/tf/schema"
 	"github.com/databricks/cli/bundle/terraform_dabs_map"
-	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structpath"
 	tfjson "github.com/hashicorp/terraform-json"
 )
@@ -55,23 +50,9 @@ func ParseTFStateAttrs(path string) (TFStateAttrs, error) {
 	return result, nil
 }
 
-// tfSchemaTypeMap maps TF resource type name → schema struct type (via AllResources json tags).
-var tfSchemaTypeMap = sync.OnceValue(func() map[string]reflect.Type {
-	t := reflect.TypeFor[tfschema.AllResources]()
-	m := make(map[string]reflect.Type, t.NumField())
-	for f := range t.Fields() {
-		tag := strings.Split(f.Tag.Get("json"), ",")[0]
-		if tag != "" && tag != "-" {
-			m[tag] = f.Type
-		}
-	}
-	return m
-})
-
 // LookupTFField looks up a field from TF state attributes for a bundle resource.
 // group is the DABs group (e.g. "pipelines"), name is the resource name.
 // fieldPath is the path to the field (may be in DABs or TF naming; both handled by DABsPathToTerraform).
-// Returns (nil, nil) for empty/zero fields, error if the resource or field is not found.
 func LookupTFField(state TFStateAttrs, group, name string, fieldPath *structpath.PathNode) (any, error) {
 	tfType, ok := terraform.GroupToTerraformName[group]
 	if !ok {
@@ -91,16 +72,62 @@ func LookupTFField(state TFStateAttrs, group, name string, fieldPath *structpath
 		return nil, fmt.Errorf("%s.%s not found in TF state", tfType, name)
 	}
 
-	schemaType, ok := tfSchemaTypeMap()[tfType]
-	if !ok {
-		return nil, fmt.Errorf("no schema type registered for %q", tfType)
-	}
-
-	// Unmarshal attributes into a new instance of the schema struct.
-	ptr := reflect.New(schemaType)
-	if err := json.Unmarshal(attrsJSON, ptr.Interface()); err != nil {
+	// Unmarshal into map[string]any to handle TF list-blocks: in TF state, single-block
+	// fields are stored as single-element arrays [{"field": "value"}], not as plain objects.
+	// Navigating via map avoids the json.Unmarshal type mismatch between []T in JSON and
+	// struct-typed schema fields.
+	var attrs map[string]any
+	if err := json.Unmarshal(attrsJSON, &attrs); err != nil {
 		return nil, fmt.Errorf("cannot parse TF state for %s.%s: %w", tfType, name, err)
 	}
 
-	return structaccess.Get(ptr.Interface(), tfFieldPath)
+	return navigateTFState(attrs, tfFieldPath)
+}
+
+// navigateTFState walks the TF state map using the given path.
+// TF stores single-block fields as single-element arrays ([{…}]).  When a string-key
+// step encounters a []any, it auto-descends into element [0] so callers can use plain
+// paths like "continuous.pause_status" even though TF stores them as [{"pause_status":…}].
+func navigateTFState(data map[string]any, path *structpath.PathNode) (any, error) {
+	var current any = data
+	for _, node := range path.AsSlice() {
+		if current == nil {
+			return nil, nil
+		}
+
+		if key, ok := node.StringKey(); ok {
+			// Auto-unwrap TF list-blocks: if the current value is a single-element
+			// array and the next step wants a map key, descend into element 0.
+			if arr, isArr := current.([]any); isArr {
+				if len(arr) == 0 {
+					return nil, nil
+				}
+				current = arr[0]
+			}
+			m, ok := current.(map[string]any)
+			if !ok {
+				return nil, fmt.Errorf("expected map at %q, got %T", key, current)
+			}
+			val, ok := m[key]
+			if !ok {
+				return nil, fmt.Errorf("%q: key not found", key)
+			}
+			current = val
+		} else if idx, ok := node.Index(); ok {
+			switch v := current.(type) {
+			case []any:
+				if idx < 0 || idx >= len(v) {
+					return nil, fmt.Errorf("index %d out of range (len %d)", idx, len(v))
+				}
+				current = v[idx]
+			default:
+				// TF [0] on a non-slice (already unwrapped) is a no-op.
+				if idx == 0 {
+					continue
+				}
+				return nil, fmt.Errorf("index %d: not a slice (%T)", idx, current)
+			}
+		}
+	}
+	return current, nil
 }

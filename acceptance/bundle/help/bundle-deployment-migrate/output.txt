@@ -12,7 +12,8 @@ Usage:
   databricks bundle deployment migrate [flags]
 
 Flags:
-  -h, --help   help for migrate
+  -h, --help          help for migrate
+      --noplancheck   No-op (kept for compatibility).
 
 Global Flags:
       --debug            enable debug logging

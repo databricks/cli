@@ -24,7 +24,6 @@ Deployment complete!
 
 >>> musterr [CLI] bundle deployment migrate
 Building python_artifact...
-Note: Migration should be done after a full deploy. Running plan now to verify that deployment was done:
 Building python_artifact...
 update jobs.sample_job
 
