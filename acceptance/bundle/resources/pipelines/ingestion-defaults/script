@@ -1,10 +1,15 @@
 envsubst < databricks.yml.tmpl > databricks.yml
 
-# Deploy fails (invalid connection) but the POST /api/2.0/pipelines request is
-# sent and recorded. Direct engine: edition and channel are absent (the fix).
-# Terraform engine: edition and channel are present (provider injects them; being
-# fixed in terraform-provider-databricks).
-trace errcode $CLI bundle deploy > out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1
+cleanup() {
+    trace $CLI bundle destroy --auto-approve 2>/dev/null || true
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
 
-trace jq -s '.[] | select(.path=="/api/2.0/pipelines" and .method=="POST") | .body | {name, edition, channel}' out.requests.txt > out.post_body.$DATABRICKS_BUNDLE_ENGINE.json
-rm out.requests.txt
+# Deploy the ingestion pipeline. Verifies that:
+#   1. Deployment succeeds without "cluster settings" errors
+#   2. edition and channel are absent from the created pipeline's spec
+trace $CLI bundle deploy
+
+trace jq -s '.[] | select(.path=="/api/2.0/pipelines" and .method=="POST") | .body | {name, edition, channel}' out.requests.txt
+rm -f out.requests.txt

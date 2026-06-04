@@ -1,2 +1,13 @@
 
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-ingestion-defaults-[UNIQUE_NAME]/dev/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
 >>> jq -s .[] | select(.path=="/api/2.0/pipelines" and .method=="POST") | .body | {name, edition, channel} out.requests.txt
+{
+  "name": "test-ingestion-[UNIQUE_NAME]",
+  "edition": null,
+  "channel": null
+}

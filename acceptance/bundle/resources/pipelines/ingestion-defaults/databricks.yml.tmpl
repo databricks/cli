@@ -8,14 +8,8 @@ resources:
       catalog: main
       target: default
       ingestion_definition:
-        connection_name: does_not_exist_$UNIQUE_NAME
-        objects:
-          - table:
-              source_catalog: does_not_exist
-              source_schema: does_not_exist
-              source_table: does_not_exist
-              destination_catalog: main
-              destination_schema: default
+        connection_name: $INGESTION_CONNECTION_NAME
+        objects: []
 
 targets:
   dev:
