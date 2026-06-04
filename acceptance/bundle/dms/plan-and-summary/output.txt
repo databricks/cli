@@ -42,6 +42,7 @@ Resources:
   "body": {
     "cli_version": "[DEV_VERSION]",
     "version_type": "VERSION_TYPE_DEPLOY",
+    "display_name": "plan-summary-test",
     "target_name": "default",
     "git_info": {}
   }
