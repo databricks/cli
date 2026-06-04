@@ -6428,12 +6428,6 @@
                 {
                   "type": "object",
                   "properties": {
-                    "deployment_id": {
-                      "description": "ID of the deployment that manages this job. Only set when `kind` is\n`BUNDLE`. Used to look up deployment metadata from the Deployment\nMetadata service.",
-                      "$ref": "#/$defs/string",
-                      "x-databricks-preview": "PRIVATE",
-                      "doNotSuggest": true
-                    },
                     "kind": {
                       "description": "The kind of deployment that manages the job.\n\n* `BUNDLE`: The job is managed by Databricks Asset Bundle.\n* `SYSTEM_MANAGED`: The job is managed by Databricks and is read-only.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.JobDeploymentKind"
@@ -6441,12 +6435,6 @@
                     "metadata_file_path": {
                       "description": "Path of the file that contains deployment metadata.",
                       "$ref": "#/$defs/string"
-                    },
-                    "version_id": {
-                      "description": "ID of the version of the deployment that produced this job. Only set\nwhen `kind` is `BUNDLE`. Identifies a specific snapshot of the deployment\nin the Deployment Metadata service.",
-                      "$ref": "#/$defs/string",
-                      "x-databricks-preview": "PRIVATE",
-                      "doNotSuggest": true
                     }
                   },
                   "additionalProperties": false,
@@ -9475,12 +9463,6 @@
                 {
                   "type": "object",
                   "properties": {
-                    "deployment_id": {
-                      "description": "ID of the deployment that manages this pipeline. Only set when `kind` is\n`BUNDLE`. Used to look up deployment metadata from the Deployment\nMetadata service.",
-                      "$ref": "#/$defs/string",
-                      "x-databricks-preview": "PRIVATE",
-                      "doNotSuggest": true
-                    },
                     "kind": {
                       "description": "The deployment method that manages the pipeline.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.DeploymentKind"
@@ -9488,12 +9470,6 @@
                     "metadata_file_path": {
                       "description": "The path to the file containing metadata about the deployment.",
                       "$ref": "#/$defs/string"
-                    },
-                    "version_id": {
-                      "description": "ID of the version of the deployment that produced this pipeline. Only\nset when `kind` is `BUNDLE`. Identifies a specific snapshot of the\ndeployment in the Deployment Metadata service.",
-                      "$ref": "#/$defs/string",
-                      "x-databricks-preview": "PRIVATE",
-                      "doNotSuggest": true
                     }
                   },
                   "additionalProperties": false,
