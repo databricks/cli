@@ -138,7 +138,7 @@ func TestConvertToString(t *testing.T) {
 			if tt.errorMsg != "" {
 				require.Error(t, err)
 				assert.Equal(t, tt.errorMsg, err.Error())
-				assert.Equal(t, "", result)
+				assert.Empty(t, result)
 			} else {
 				require.NoError(t, err)
 				assert.Equal(t, tt.expected, result)

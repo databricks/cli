@@ -8,7 +8,10 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
+	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/config"
 )
 
@@ -72,6 +75,17 @@ func resolveHostToProfile(ctx context.Context, host string, profiler profile.Pro
 		names := strings.Join(allProfiles.Names(), ", ")
 		return "", fmt.Errorf("no profile found matching host %q. Available profiles: %s", host, names)
 	default:
+		// Prefer the configured default profile when it's one of the host
+		// matches, so commands that pass --host don't trip the picker for
+		// users who already picked a default.
+		if defaultProfile, _ := databrickscfg.GetDefaultProfile(ctx, env.Get(ctx, "DATABRICKS_CONFIG_FILE")); defaultProfile != "" {
+			for _, p := range hostProfiles {
+				if p.Name == defaultProfile {
+					log.Debugf(ctx, "multiple profiles match host %q; using default profile %q", host, defaultProfile)
+					return p.Name, nil
+				}
+			}
+		}
 		if cmdio.IsPromptSupported(ctx) {
 			selected, err := profile.SelectProfile(ctx, profile.SelectConfig{
 				Label:             fmt.Sprintf("Multiple profiles found for %q. Select one to use", host),

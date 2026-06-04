@@ -111,7 +111,7 @@ func TestInferAppNameHint(t *testing.T) {
 	t.Run("returns empty when no app config exists", func(t *testing.T) {
 		t.Chdir(t.TempDir())
 
-		assert.Equal(t, "", inferAppNameHint())
+		assert.Empty(t, inferAppNameHint())
 	})
 
 	t.Run("returns dir name when app.yml exists", func(t *testing.T) {
@@ -137,7 +137,7 @@ func TestInferAppNameHint(t *testing.T) {
 		t.Chdir(dir)
 		os.Remove(dir)
 
-		assert.Equal(t, "", inferAppNameHint())
+		assert.Empty(t, inferAppNameHint())
 	})
 }
 

@@ -2,7 +2,7 @@ module github.com/databricks/cli
 
 go 1.26.0
 
-toolchain go1.26.3
+toolchain go1.26.4
 
 require (
 	dario.cat/mergo v1.0.2 // BSD-3-Clause
@@ -12,8 +12,8 @@ require (
 	github.com/charmbracelet/bubbletea v1.3.10 // MIT
 	github.com/charmbracelet/huh v1.0.0 // MIT
 	github.com/charmbracelet/lipgloss v1.1.0 // MIT
-	github.com/charmbracelet/x/ansi v0.11.6 // MIT
-	github.com/databricks/databricks-sdk-go v0.132.0 // Apache-2.0
+	github.com/charmbracelet/x/ansi v0.11.7 // MIT
+	github.com/databricks/databricks-sdk-go v0.141.0 // Apache-2.0
 	github.com/google/jsonschema-go v0.4.3 // MIT
 	github.com/google/uuid v1.6.0 // BSD-3-Clause
 	github.com/gorilla/websocket v1.5.3 // BSD-2-Clause
@@ -34,13 +34,13 @@ require (
 	github.com/tailscale/hujson v0.0.0-20250605163823-992244df8c5a // BSD-3-Clause
 	github.com/zalando/go-keyring v0.2.8 // MIT
 	go.yaml.in/yaml/v3 v3.0.4 // MIT AND Apache-2.0
-	golang.org/x/crypto v0.50.0 // BSD-3-Clause
-	golang.org/x/mod v0.35.0 // BSD-3-Clause
+	golang.org/x/crypto v0.52.0 // BSD-3-Clause
+	golang.org/x/mod v0.36.0 // BSD-3-Clause
 	golang.org/x/oauth2 v0.36.0 // BSD-3-Clause
 	golang.org/x/sync v0.20.0 // BSD-3-Clause
-	golang.org/x/sys v0.44.0 // BSD-3-Clause
-	golang.org/x/text v0.36.0 // BSD-3-Clause
-	gopkg.in/ini.v1 v1.67.1 // Apache-2.0
+	golang.org/x/sys v0.45.0 // BSD-3-Clause
+	golang.org/x/text v0.37.0 // BSD-3-Clause
+	gopkg.in/ini.v1 v1.67.2 // Apache-2.0
 )
 
 require (
@@ -57,9 +57,8 @@ require (
 	github.com/charmbracelet/x/cellbuf v0.0.15 // indirect
 	github.com/charmbracelet/x/exp/strings v0.0.0-20240722160745-212f7b056ed0 // indirect
 	github.com/charmbracelet/x/term v0.2.2 // indirect
-	github.com/clipperhouse/displaywidth v0.9.0 // indirect
-	github.com/clipperhouse/stringish v0.1.1 // indirect
-	github.com/clipperhouse/uax29/v2 v2.5.0 // indirect
+	github.com/clipperhouse/displaywidth v0.11.0 // indirect
+	github.com/clipperhouse/uax29/v2 v2.7.0 // indirect
 	github.com/cloudflare/circl v1.6.3 // indirect
 	github.com/danieljoos/wincred v1.2.3 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
@@ -78,10 +77,10 @@ require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
-	github.com/lucasb-eyer/go-colorful v1.3.0 // indirect
+	github.com/lucasb-eyer/go-colorful v1.4.0 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-localereader v0.0.1 // indirect
-	github.com/mattn/go-runewidth v0.0.19 // indirect
+	github.com/mattn/go-runewidth v0.0.23 // indirect
 	github.com/mitchellh/hashstructure/v2 v2.0.2 // indirect
 	github.com/muesli/ansi v0.0.0-20230316100256-276c6243b2f6 // indirect
 	github.com/muesli/cancelreader v0.2.2 // indirect
@@ -98,7 +97,7 @@ require (
 	go.opentelemetry.io/otel/metric v1.43.0 // indirect
 	go.opentelemetry.io/otel/trace v1.43.0 // indirect
 	golang.org/x/exp v0.0.0-20240222234643-814bf88cf225 // indirect
-	golang.org/x/net v0.53.0 // indirect
+	golang.org/x/net v0.55.0 // indirect
 	golang.org/x/time v0.14.0 // indirect
 	google.golang.org/api v0.265.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260203192932-546029d2fa20 // indirect

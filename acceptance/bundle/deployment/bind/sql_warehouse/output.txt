@@ -14,7 +14,7 @@ Resources:
   SQL Warehouses:
     sql_warehouse1:
       Name: DEFAULT Test SQL Warehouse
-      URL:  [DATABRICKS_URL]/sql/warehouses/[SQL-WAREHOUSE-ID]?o=[NUMID]
+      URL:  [DATABRICKS_URL]/sql/warehouses/[SQL-WAREHOUSE-ID]?w=[NUMID]
 
 >>> [CLI] bundle deployment unbind sql_warehouse1
 Updating deployment state...

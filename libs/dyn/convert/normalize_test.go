@@ -852,7 +852,7 @@ func TestNormalizeAnchors(t *testing.T) {
 	})
 
 	vout, err := Normalize(typ, vin)
-	assert.Len(t, err, 0)
+	assert.Empty(t, err)
 
 	// The field that can be mapped to the struct field is retained.
 	assert.Equal(t, map[string]any{
@@ -866,7 +866,7 @@ func TestNormalizeAnyFromSlice(t *testing.T) {
 	v2 := dyn.NewValue(2, []dyn.Location{{File: "file", Line: 1, Column: 1}})
 	vin := dyn.NewValue([]dyn.Value{v1, v2}, []dyn.Location{{File: "file", Line: 1, Column: 1}})
 	vout, err := Normalize(&typ, vin)
-	assert.Len(t, err, 0)
+	assert.Empty(t, err)
 	assert.Equal(t, dyn.NewValue([]dyn.Value{v1, v2}, []dyn.Location{{File: "file", Line: 1, Column: 1}}), vout)
 }
 
@@ -874,7 +874,7 @@ func TestNormalizeAnyFromString(t *testing.T) {
 	var typ any
 	vin := dyn.NewValue("string", []dyn.Location{{File: "file", Line: 1, Column: 1}})
 	vout, err := Normalize(&typ, vin)
-	assert.Len(t, err, 0)
+	assert.Empty(t, err)
 	assert.Equal(t, dyn.NewValue("string", []dyn.Location{{File: "file", Line: 1, Column: 1}}), vout)
 }
 
@@ -882,7 +882,7 @@ func TestNormalizeAnyFromBool(t *testing.T) {
 	var typ any
 	vin := dyn.NewValue(false, []dyn.Location{{File: "file", Line: 1, Column: 1}})
 	vout, err := Normalize(&typ, vin)
-	assert.Len(t, err, 0)
+	assert.Empty(t, err)
 	assert.Equal(t, dyn.NewValue(false, []dyn.Location{{File: "file", Line: 1, Column: 1}}), vout)
 }
 
@@ -890,7 +890,7 @@ func TestNormalizeAnyFromInt(t *testing.T) {
 	var typ any
 	vin := dyn.NewValue(10, []dyn.Location{{File: "file", Line: 1, Column: 1}})
 	vout, err := Normalize(&typ, vin)
-	assert.Len(t, err, 0)
+	assert.Empty(t, err)
 	assert.Equal(t, dyn.NewValue(10, []dyn.Location{{File: "file", Line: 1, Column: 1}}), vout)
 }
 

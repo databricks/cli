@@ -65,10 +65,9 @@ func (*ResourcePostgresSyncedTable) RemapState(remote *PostgresSyncedTableRemote
 // embedded spec fields stay at their zero values, and resources.yml suppresses
 // phantom drift via ignore_remote_changes with reason spec:input_only.
 //
-// Unlike postgres_catalogs (which has Status.CatalogId), the synced-table API
-// doesn't expose the user-facing id as a named field. It only appears as the
-// trailing component of remote.Name, so we strip the constant "synced_tables/"
-// prefix.
+// The synced-table API doesn't expose the user-facing id as a named field. It
+// only appears as the trailing component of remote.Name, so we strip the
+// constant "synced_tables/" prefix.
 func makePostgresSyncedTableRemote(syncedTable *postgres.SyncedTable) *PostgresSyncedTableRemote {
 	var spec postgres.SyncedTableSyncedTableSpec
 	if syncedTable.Spec != nil {
@@ -118,7 +117,7 @@ func (r *ResourcePostgresSyncedTable) DoCreate(ctx context.Context, config *Post
 	return remote.Name, remote, nil
 }
 
-func (r *ResourcePostgresSyncedTable) DoDelete(ctx context.Context, id string) error {
+func (r *ResourcePostgresSyncedTable) DoDelete(ctx context.Context, id string, _ *PostgresSyncedTableState) error {
 	waiter, err := r.client.Postgres.DeleteSyncedTable(ctx, postgres.DeleteSyncedTableRequest{
 		Name: id,
 	})

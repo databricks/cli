@@ -98,8 +98,8 @@ func (w *DbfsClient) Write(ctx context.Context, name string, reader io.Reader, m
 	if !slices.Contains(mode, CreateParentDirectories) {
 		_, err = w.workspaceClient.Dbfs.GetStatusByPath(ctx, path.Dir(absPath))
 		if err != nil {
-			var aerr *apierr.APIError
-			if !errors.As(err, &aerr) {
+			aerr, ok := errors.AsType[*apierr.APIError](err)
+			if !ok {
 				return err
 			}
 
@@ -116,8 +116,8 @@ func (w *DbfsClient) Write(ctx context.Context, name string, reader io.Reader, m
 
 	handle, err := w.workspaceClient.Dbfs.Open(ctx, absPath, fileMode)
 	if err != nil {
-		var aerr *apierr.APIError
-		if !errors.As(err, &aerr) {
+		aerr, ok := errors.AsType[*apierr.APIError](err)
+		if !ok {
 			return err
 		}
 
@@ -153,8 +153,8 @@ func (w *DbfsClient) Read(ctx context.Context, name string) (io.ReadCloser, erro
 			return nil, notAFile{absPath}
 		}
 
-		var aerr *apierr.APIError
-		if !errors.As(err, &aerr) {
+		aerr, ok := errors.AsType[*apierr.APIError](err)
+		if !ok {
 			return nil, err
 		}
 
@@ -190,8 +190,8 @@ func (w *DbfsClient) Delete(ctx context.Context, name string, mode ...DeleteMode
 	//
 	_, err = w.workspaceClient.Dbfs.GetStatusByPath(ctx, absPath)
 	if err != nil {
-		var aerr *apierr.APIError
-		if !errors.As(err, &aerr) {
+		aerr, ok := errors.AsType[*apierr.APIError](err)
+		if !ok {
 			return err
 		}
 
@@ -218,8 +218,8 @@ func (w *DbfsClient) Delete(ctx context.Context, name string, mode ...DeleteMode
 	}
 
 	// Special handling of this error only if it is an API error.
-	var aerr *apierr.APIError
-	if !errors.As(err, &aerr) {
+	aerr, ok := errors.AsType[*apierr.APIError](err)
+	if !ok {
 		return err
 	}
 
@@ -248,8 +248,8 @@ func (w *DbfsClient) ReadDir(ctx context.Context, name string) ([]fs.DirEntry, e
 
 	res, err := w.workspaceClient.Dbfs.ListByPath(ctx, absPath)
 	if err != nil {
-		var aerr *apierr.APIError
-		if !errors.As(err, &aerr) {
+		aerr, ok := errors.AsType[*apierr.APIError](err)
+		if !ok {
 			return nil, err
 		}
 
@@ -294,8 +294,8 @@ func (w *DbfsClient) Stat(ctx context.Context, name string) (fs.FileInfo, error)
 
 	info, err := w.workspaceClient.Dbfs.GetStatusByPath(ctx, absPath)
 	if err != nil {
-		var aerr *apierr.APIError
-		if !errors.As(err, &aerr) {
+		aerr, ok := errors.AsType[*apierr.APIError](err)
+		if !ok {
 			return nil, err
 		}
 

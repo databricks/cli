@@ -214,7 +214,10 @@ func (s *FakeWorkspace) PostgresProjectUpdate(req Request, name string) Response
 	}
 }
 
-// PostgresProjectDelete deletes a postgres project.
+// PostgresProjectDelete deletes a postgres project. The `purge` query parameter
+// is ignored: acceptance tests assert on the recorded HTTP request rather than
+// on retention semantics, so a single "remove from map" action serves both
+// hard- and soft-delete paths.
 func (s *FakeWorkspace) PostgresProjectDelete(name string) Response {
 	defer s.LockUnlock()()
 
@@ -717,9 +720,7 @@ func (s *FakeWorkspace) PostgresCatalogCreate(req Request, catalogID string) Res
 	catalog.CreateTime = now
 	catalog.UpdateTime = now
 
-	status := &postgres.CatalogCatalogStatus{
-		CatalogId: catalogID,
-	}
+	status := &postgres.CatalogCatalogStatus{}
 	if catalog.Spec != nil {
 		status.Branch = catalog.Spec.Branch
 		status.PostgresDatabase = catalog.Spec.PostgresDatabase

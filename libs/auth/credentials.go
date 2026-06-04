@@ -103,13 +103,13 @@ func (c CLICredentials) Configure(ctx context.Context, cfg *config.Config) (cred
 	// across two backends: login writes to the keyring, but every workspace
 	// client built through this strategy would read an empty file cache and
 	// fail with "cache: token not found".
-	tokenCache, _, err := storage.ResolveCache(ctx, "")
+	tokenStore, mode, err := storage.ResolveStore(ctx, "")
 	if err != nil {
 		return nil, err
 	}
 	ts, err := c.persistentAuth(ctx,
 		u2m.WithOAuthArgument(oauthArg),
-		u2m.WithTokenCache(tokenCache),
+		u2m.WithTokenCache(storage.OAuthTokenCache(ctx, tokenStore, mode)),
 	)
 	if err != nil {
 		return nil, err
@@ -124,7 +124,7 @@ func (c CLICredentials) Configure(ctx context.Context, cfg *config.Config) (cred
 // overrides the default implementation of the persistent auth client if
 // an alternative implementation is provided for testing. The caller is
 // responsible for supplying the token cache via u2m.WithTokenCache; Configure
-// does this via storage.ResolveCache so login, refresh, and all workspace
+// does this via storage.ResolveStore so login, refresh, and all workspace
 // clients share the same backend.
 func (c CLICredentials) persistentAuth(ctx context.Context, opts ...u2m.PersistentAuthOption) (auth.TokenSource, error) {
 	if c.persistentAuthFn != nil {

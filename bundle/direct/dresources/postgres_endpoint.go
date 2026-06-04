@@ -218,7 +218,7 @@ func (r *ResourcePostgresEndpoint) DoUpdate(ctx context.Context, id string, conf
 	return r.waitForReconciliation(ctx, id)
 }
 
-func (r *ResourcePostgresEndpoint) DoDelete(ctx context.Context, id string) error {
+func (r *ResourcePostgresEndpoint) DoDelete(ctx context.Context, id string, _ *PostgresEndpointState) error {
 	// Retry loop to handle "Endpoint reconciliation still in progress" errors
 	deadline := time.Now().Add(endpointReconciliationTimeout)
 	for {
@@ -227,8 +227,7 @@ func (r *ResourcePostgresEndpoint) DoDelete(ctx context.Context, id string) erro
 		})
 		if err != nil {
 			// Check if this is a reconciliation in progress error
-			var apiErr *apierr.APIError
-			if errors.As(err, &apiErr) && apiErr.StatusCode == http.StatusConflict &&
+			if apiErr, ok := errors.AsType[*apierr.APIError](err); ok && apiErr.StatusCode == http.StatusConflict &&
 				strings.Contains(apiErr.Message, "reconciliation") {
 				// Check if we've exceeded the timeout
 				if time.Now().After(deadline) {

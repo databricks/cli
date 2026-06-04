@@ -4,7 +4,7 @@ trace $CLI workspace import "/Workspace/Users/${CURRENT_USER_NAME}/test.py" --fi
 
 title "Create a pipeline that references the files"
 PIPELINE_ID=$($CLI pipelines create --json '{
-  "name": "test-pipeline-${UNIQUE_NAME}",
+  "name": "test-pipeline-'${UNIQUE_NAME}'",
   "libraries": [
     {
       "notebook": {

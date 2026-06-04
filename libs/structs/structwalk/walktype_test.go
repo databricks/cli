@@ -112,8 +112,8 @@ func testStruct(t *testing.T, typ reflect.Type, minLen, maxLen int, present map[
 func TestTypeJobSettings(t *testing.T) {
 	testStruct(t,
 		reflect.TypeFor[jobs.JobSettings](),
-		// Verify we found a reasonable number of fields (it's 533 at the time of writing)
-		500, 600,
+		// Verify we found a reasonable number of fields (605 after SDK v0.136.0 bump)
+		500, 650,
 		map[string]any{
 			"name":                "",
 			"timeout_seconds":     0,
@@ -136,7 +136,7 @@ func TestTypeJobSettings(t *testing.T) {
 func TestTypeRoot(t *testing.T) {
 	testStruct(t,
 		reflect.TypeFor[config.Root](),
-		5000, 5500, // 5213 after SDK v0.127.0 bump
+		5000, 5800, // 5651 after SDK v0.136.0 bump
 		map[string]any{
 			"bundle.target":                "",
 			`variables.*.lookup.dashboard`: "",

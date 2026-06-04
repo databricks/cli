@@ -412,8 +412,14 @@ resources:
         reason: managed
       - field: gcp_attributes
         reason: managed
-
     backend_defaults:
+      # lifecycle.started is derived from remote cluster state in RemapState, so the
+      # remote side always has a value. When the user omits lifecycle from config,
+      # both old and new are nil and backend_defaults correctly skips the remote value.
+      # When the user explicitly sets lifecycle.started, old/new are non-nil and normal
+      # drift detection applies (e.g. detecting out-of-band terminate).
+      - field: lifecycle
+      - field: lifecycle.started
       # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/clusters/resource_cluster.go#L331
       # s.SchemaPath("enable_elastic_disk").SetComputed()
       - field: enable_elastic_disk
@@ -470,6 +476,14 @@ resources:
         reason: output_only
 
     backend_defaults:
+      # lifecycle.started is derived from remote warehouse state in RemapState, so the
+      # remote side always has a value. When the user omits lifecycle from config,
+      # both old and new are nil and backend_defaults correctly skips the remote value.
+      # When the user explicitly sets lifecycle.started, old/new are non-nil and normal
+      # drift detection applies (e.g. detecting out-of-band stop).
+      - field: lifecycle
+      - field: lifecycle.started
+
       # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/sql/resource_sql_endpoint.go#L69
       # m["enable_serverless_compute"].Computed = true
       - field: enable_serverless_compute
@@ -479,6 +493,12 @@ resources:
       # project_id is immutable (part of hierarchical name, not in API spec)
       - field: project_id
         reason: immutable
+    ignore_remote_changes:
+      # purge_on_delete is a delete-time query parameter; not returned by GET.
+      # When the user changes it locally we still want the new value to land
+      # in state so the next destroy honors it.
+      - field: purge_on_delete
+        reason: input_only
 
   postgres_branches:
     recreate_on_changes:
@@ -559,4 +579,28 @@ resources:
   vector_search_endpoints:
     recreate_on_changes:
       - field: endpoint_type
+        reason: immutable
+    ignore_remote_changes:
+      # The API returns effective_budget_policy_id which may include inherited workspace policies,
+      # not the user-set budget_policy_id. Ignore until the API exposes the user-set value directly.
+      - field: budget_policy_id
+        reason: effective_vs_requested
+
+  vector_search_indexes:
+    recreate_on_changes:
+      # The index API has no rename or update path, so every config change
+      # has to go through delete + create.
+      - field: name
+        reason: immutable
+      - field: endpoint_name
+        reason: immutable
+      - field: index_type
+        reason: immutable
+      - field: index_subtype
+        reason: immutable
+      - field: primary_key
+        reason: immutable
+      - field: delta_sync_index_spec
+        reason: immutable
+      - field: direct_access_index_spec
         reason: immutable

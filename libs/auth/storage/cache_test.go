@@ -12,24 +12,41 @@ import (
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m"
-	"github.com/databricks/databricks-sdk-go/credentials/u2m/cache"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
 )
 
-// stubCache is a test double for cache.TokenCache that records the source
-// it was constructed from. It lets the tests confirm which factory ran.
-type stubCache struct{ source string }
+// stubStore is a test double for Store that records the source it was
+// constructed from. It lets the tests confirm which factory ran.
+type stubStore struct{ source string }
 
-func (stubCache) Store(string, *oauth2.Token) error    { return nil }
-func (stubCache) Lookup(string) (*oauth2.Token, error) { return nil, cache.ErrNotFound }
+func (stubStore) Put(string, Entry) error      { return nil }
+func (stubStore) Lookup(string) (Entry, error) { return Entry{}, ErrNotFound }
+func (stubStore) Delete(string) error          { return nil }
 
-func fakeFactories(t *testing.T) cacheFactories {
+// memStore is a functional in-memory Store for exercising the OAuth wrappers.
+type memStore struct{ entries map[string]Entry }
+
+func newMemStore() *memStore { return &memStore{entries: map[string]Entry{}} }
+
+func (m *memStore) Put(key string, e Entry) error { m.entries[key] = e; return nil }
+
+func (m *memStore) Lookup(key string) (Entry, error) {
+	e, ok := m.entries[key]
+	if !ok {
+		return Entry{}, ErrNotFound
+	}
+	return e, nil
+}
+
+func (m *memStore) Delete(key string) error { delete(m.entries, key); return nil }
+
+func fakeFactories(t *testing.T) storeFactories {
 	t.Helper()
-	return cacheFactories{
-		newFile:          func(context.Context) (cache.TokenCache, error) { return stubCache{source: "file"}, nil },
-		newKeyring:       func() cache.TokenCache { return stubCache{source: "keyring"} },
+	return storeFactories{
+		newFile:          func(context.Context) (Store, error) { return stubStore{source: "file"}, nil },
+		newKeyring:       func() Store { return stubStore{source: "keyring"} },
 		probeKeyring:     func() error { return nil },
 		probeKeyringRead: func() error { return nil },
 	}
@@ -43,82 +60,82 @@ func hermetic(t *testing.T) {
 	t.Setenv("DATABRICKS_CONFIG_FILE", filepath.Join(t.TempDir(), "databrickscfg"))
 }
 
-func TestResolveCache_DefaultsToSecureKeyring(t *testing.T) {
+func TestResolveStore_DefaultsToSecureKeyring(t *testing.T) {
 	hermetic(t)
 	ctx := t.Context()
 
-	got, mode, err := resolveCacheWith(ctx, "", fakeFactories(t))
+	got, mode, err := resolveStoreWith(ctx, "", fakeFactories(t))
 
 	require.NoError(t, err)
 	assert.Equal(t, StorageModeSecure, mode)
-	assert.Equal(t, "keyring", got.(stubCache).source)
+	assert.Equal(t, "keyring", got.(stubStore).source)
 }
 
-func TestResolveCache_OverrideSecureUsesKeyring(t *testing.T) {
+func TestResolveStore_OverrideSecureUsesKeyring(t *testing.T) {
 	hermetic(t)
 	ctx := t.Context()
 
-	got, mode, err := resolveCacheWith(ctx, StorageModeSecure, fakeFactories(t))
+	got, mode, err := resolveStoreWith(ctx, StorageModeSecure, fakeFactories(t))
 
 	require.NoError(t, err)
 	assert.Equal(t, StorageModeSecure, mode)
-	assert.Equal(t, "keyring", got.(stubCache).source)
+	assert.Equal(t, "keyring", got.(stubStore).source)
 }
 
-func TestResolveCache_EnvVarSelectsSecure(t *testing.T) {
+func TestResolveStore_EnvVarSelectsSecure(t *testing.T) {
 	hermetic(t)
 	ctx := env.Set(t.Context(), EnvVar, "secure")
 
-	got, mode, err := resolveCacheWith(ctx, "", fakeFactories(t))
+	got, mode, err := resolveStoreWith(ctx, "", fakeFactories(t))
 
 	require.NoError(t, err)
 	assert.Equal(t, StorageModeSecure, mode)
-	assert.Equal(t, "keyring", got.(stubCache).source)
+	assert.Equal(t, "keyring", got.(stubStore).source)
 }
 
-func TestResolveCache_PlaintextOverrideUsesFile(t *testing.T) {
+func TestResolveStore_PlaintextOverrideUsesFile(t *testing.T) {
 	hermetic(t)
 	ctx := t.Context()
 
-	got, mode, err := resolveCacheWith(ctx, StorageModePlaintext, fakeFactories(t))
+	got, mode, err := resolveStoreWith(ctx, StorageModePlaintext, fakeFactories(t))
 
 	require.NoError(t, err)
 	assert.Equal(t, StorageModePlaintext, mode)
-	assert.Equal(t, "file", got.(stubCache).source)
+	assert.Equal(t, "file", got.(stubStore).source)
 }
 
-func TestResolveCache_InvalidOverrideReturnsError(t *testing.T) {
+func TestResolveStore_InvalidOverrideReturnsError(t *testing.T) {
 	hermetic(t)
 	ctx := t.Context()
 
-	_, _, err := resolveCacheWith(ctx, StorageMode("bogus"), fakeFactories(t))
+	_, _, err := resolveStoreWith(ctx, StorageMode("bogus"), fakeFactories(t))
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), `unsupported storage mode "bogus"`)
 }
 
-func TestResolveCache_InvalidEnvReturnsError(t *testing.T) {
+func TestResolveStore_InvalidEnvReturnsError(t *testing.T) {
 	hermetic(t)
 	ctx := env.Set(t.Context(), EnvVar, "bogus")
 
-	_, _, err := resolveCacheWith(ctx, "", fakeFactories(t))
+	_, _, err := resolveStoreWith(ctx, "", fakeFactories(t))
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "DATABRICKS_AUTH_STORAGE")
 }
 
-func TestResolveCache_FileFactoryErrorPropagates(t *testing.T) {
+func TestResolveStore_FileFactoryErrorPropagates(t *testing.T) {
 	hermetic(t)
 	ctx := t.Context()
 	boom := errors.New("disk full")
-	factories := cacheFactories{
-		newFile:          func(context.Context) (cache.TokenCache, error) { return nil, boom },
-		newKeyring:       func() cache.TokenCache { return stubCache{source: "keyring"} },
+	factories := storeFactories{
+		newFile:          func(context.Context) (Store, error) { return nil, boom },
+		newKeyring:       func() Store { return stubStore{source: "keyring"} },
 		probeKeyring:     func() error { return nil },
 		probeKeyringRead: func() error { return nil },
 	}
 
-	_, _, err := resolveCacheWith(ctx, StorageModePlaintext, factories)
+	_, _, err := resolveStoreWith(ctx, StorageModePlaintext, factories)
 
 	require.Error(t, err)
 	assert.ErrorIs(t, err, boom)
@@ -143,7 +160,7 @@ func TestApplyReadFallback_PlaintextSkipsProbe(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.Equal(t, StorageModePlaintext, mode)
-	assert.Equal(t, "file", got.(stubCache).source)
+	assert.Equal(t, "file", got.(stubStore).source)
 	assert.False(t, probed, "probe must not run when mode is already plaintext")
 }
 
@@ -161,7 +178,7 @@ func TestApplyReadFallback_ExplicitSecureSkipsProbe(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.Equal(t, StorageModeSecure, mode)
-	assert.Equal(t, "keyring", got.(stubCache).source)
+	assert.Equal(t, "keyring", got.(stubStore).source)
 	assert.False(t, probed, "probe must not run when user is explicit about secure mode")
 }
 
@@ -173,7 +190,7 @@ func TestApplyReadFallback_DefaultSecure_ProbeOK_UsesKeyring(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.Equal(t, StorageModeSecure, mode)
-	assert.Equal(t, "keyring", got.(stubCache).source)
+	assert.Equal(t, "keyring", got.(stubStore).source)
 }
 
 func TestApplyReadFallback_DefaultSecure_ProbeFail_FallsBack(t *testing.T) {
@@ -188,13 +205,13 @@ func TestApplyReadFallback_DefaultSecure_ProbeFail_FallsBack(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.Equal(t, StorageModePlaintext, mode)
-	assert.Equal(t, "file", got.(stubCache).source)
+	assert.Equal(t, "file", got.(stubStore).source)
 
 	// Read-path fallback must NOT pin: pinning is reserved for login,
 	// where the write-probe gives stronger evidence of unavailability.
 	persisted, gerr := databrickscfg.GetConfiguredAuthStorage(ctx, configPath)
 	require.NoError(t, gerr)
-	assert.Equal(t, "", persisted, "read-path fallback must not persist auth_storage")
+	assert.Empty(t, persisted, "read-path fallback must not persist auth_storage")
 }
 
 // A timeout could mean a locked keyring that will work once the user unlocks
@@ -222,16 +239,16 @@ func TestApplyReadFallback_DefaultSecure_ProbeTimeout_StaysOnKeyring(t *testing.
 
 			require.NoError(t, err)
 			assert.Equal(t, StorageModeSecure, mode)
-			assert.Equal(t, "keyring", got.(stubCache).source)
+			assert.Equal(t, "keyring", got.(stubStore).source)
 
 			persisted, gerr := databrickscfg.GetConfiguredAuthStorage(ctx, configPath)
 			require.NoError(t, gerr)
-			assert.Equal(t, "", persisted, "probe timeout must not persist anything")
+			assert.Empty(t, persisted, "probe timeout must not persist anything")
 		})
 	}
 }
 
-func TestResolveCacheForLogin_PlaintextSkipsProbe(t *testing.T) {
+func TestResolveStoreForLogin_PlaintextSkipsProbe(t *testing.T) {
 	hermetic(t)
 	ctx := t.Context()
 	probed := false
@@ -241,26 +258,26 @@ func TestResolveCacheForLogin_PlaintextSkipsProbe(t *testing.T) {
 		return nil
 	}
 
-	got, mode, err := resolveCacheForLoginWith(ctx, StorageModePlaintext, f)
+	got, mode, err := resolveStoreForLoginWith(ctx, StorageModePlaintext, f)
 
 	require.NoError(t, err)
 	assert.Equal(t, StorageModePlaintext, mode)
-	assert.Equal(t, "file", got.(stubCache).source)
+	assert.Equal(t, "file", got.(stubStore).source)
 	assert.False(t, probed, "probe must not run when mode is already plaintext")
 }
 
-func TestResolveCacheForLogin_SecureProbeOK(t *testing.T) {
+func TestResolveStoreForLogin_SecureProbeOK(t *testing.T) {
 	hermetic(t)
 	ctx := env.Set(t.Context(), EnvVar, "secure")
 
-	got, mode, err := resolveCacheForLoginWith(ctx, "", fakeFactories(t))
+	got, mode, err := resolveStoreForLoginWith(ctx, "", fakeFactories(t))
 
 	require.NoError(t, err)
 	assert.Equal(t, StorageModeSecure, mode)
-	assert.Equal(t, "keyring", got.(stubCache).source)
+	assert.Equal(t, "keyring", got.(stubStore).source)
 }
 
-func TestResolveCacheForLogin_ExplicitEnvSecure_ProbeFail_Errors(t *testing.T) {
+func TestResolveStoreForLogin_ExplicitEnvSecure_ProbeFail_Errors(t *testing.T) {
 	hermetic(t)
 	ctx := env.Set(t.Context(), EnvVar, "secure")
 	configPath := env.Get(ctx, "DATABRICKS_CONFIG_FILE")
@@ -268,16 +285,16 @@ func TestResolveCacheForLogin_ExplicitEnvSecure_ProbeFail_Errors(t *testing.T) {
 	f := fakeFactories(t)
 	f.probeKeyring = func() error { return errors.New("no keyring") }
 
-	_, _, err := resolveCacheForLoginWith(ctx, "", f)
+	_, _, err := resolveStoreForLoginWith(ctx, "", f)
 	require.Error(t, err)
 	assert.ErrorContains(t, err, "secure storage was requested")
 
 	persisted, gerr := databrickscfg.GetConfiguredAuthStorage(ctx, configPath)
 	require.NoError(t, gerr)
-	assert.Equal(t, "", persisted, "env-set secure must not be persisted as plaintext")
+	assert.Empty(t, persisted, "env-set secure must not be persisted as plaintext")
 }
 
-func TestResolveCacheForLogin_ExplicitConfigSecure_ProbeFail_Errors(t *testing.T) {
+func TestResolveStoreForLogin_ExplicitConfigSecure_ProbeFail_Errors(t *testing.T) {
 	hermetic(t)
 	ctx := t.Context()
 	configPath := env.Get(ctx, "DATABRICKS_CONFIG_FILE")
@@ -286,7 +303,7 @@ func TestResolveCacheForLogin_ExplicitConfigSecure_ProbeFail_Errors(t *testing.T
 	f := fakeFactories(t)
 	f.probeKeyring = func() error { return errors.New("no keyring") }
 
-	_, _, err := resolveCacheForLoginWith(ctx, "", f)
+	_, _, err := resolveStoreForLoginWith(ctx, "", f)
 	require.Error(t, err)
 	assert.ErrorContains(t, err, "secure storage was requested")
 
@@ -295,14 +312,14 @@ func TestResolveCacheForLogin_ExplicitConfigSecure_ProbeFail_Errors(t *testing.T
 	assert.Equal(t, "secure", persisted, "config-set secure must not be silently rewritten")
 }
 
-func TestResolveCacheForLogin_ExplicitOverrideSecure_ProbeFail_Errors(t *testing.T) {
+func TestResolveStoreForLogin_ExplicitOverrideSecure_ProbeFail_Errors(t *testing.T) {
 	hermetic(t)
 	ctx := t.Context()
 
 	f := fakeFactories(t)
 	f.probeKeyring = func() error { return errors.New("no keyring") }
 
-	_, _, err := resolveCacheForLoginWith(ctx, StorageModeSecure, f)
+	_, _, err := resolveStoreForLoginWith(ctx, StorageModeSecure, f)
 	require.Error(t, err)
 	assert.ErrorContains(t, err, "secure storage was requested")
 }
@@ -319,7 +336,7 @@ func TestApplyLoginFallback_DefaultSecure_ProbeFail_FallsBackAndPersists(t *test
 
 	require.NoError(t, err)
 	assert.Equal(t, StorageModePlaintext, mode)
-	assert.Equal(t, "file", got.(stubCache).source)
+	assert.Equal(t, "file", got.(stubStore).source)
 
 	persisted, err := databrickscfg.GetConfiguredAuthStorage(ctx, configPath)
 	require.NoError(t, err)
@@ -340,7 +357,7 @@ func TestApplyLoginFallback_ExplicitSecure_ProbeFail_Errors(t *testing.T) {
 
 	persisted, gerr := databrickscfg.GetConfiguredAuthStorage(ctx, configPath)
 	require.NoError(t, gerr)
-	assert.Equal(t, "", persisted, "explicit-secure error must not write config")
+	assert.Empty(t, persisted, "explicit-secure error must not write config")
 }
 
 // A locked keyring with a slow user surfaces as TimeoutError. We want login
@@ -373,11 +390,11 @@ func TestApplyLoginFallback_ProbeTimeout_StaysOnKeyring(t *testing.T) {
 
 			require.NoError(t, err)
 			assert.Equal(t, StorageModeSecure, mode)
-			assert.Equal(t, "keyring", got.(stubCache).source)
+			assert.Equal(t, "keyring", got.(stubStore).source)
 
 			persisted, gerr := databrickscfg.GetConfiguredAuthStorage(ctx, configPath)
 			require.NoError(t, gerr)
-			assert.Equal(t, "", persisted, "probe timeout must not persist plaintext fallback")
+			assert.Empty(t, persisted, "probe timeout must not persist plaintext fallback")
 		})
 	}
 }
@@ -500,8 +517,8 @@ func TestWrapForOAuthArgument(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			inner := newMemoryCache()
-			got := WrapForOAuthArgument(inner, tc.mode, arg)
+			inner := newMemStore()
+			got := WrapForOAuthArgument(t.Context(), inner, tc.mode, arg)
 
 			_, wrapped := got.(*DualWritingTokenCache)
 			assert.Equal(t, tc.wantWrap, wrapped, "wrapper presence")
@@ -511,13 +528,13 @@ func TestWrapForOAuthArgument(t *testing.T) {
 
 			primary, err := inner.Lookup(profileKey)
 			require.NoError(t, err, "primary key must always be written")
-			assert.Equal(t, tok, primary)
+			assert.Equal(t, tok, primary.Token)
 
 			_, err = inner.Lookup(host)
 			if tc.wantHostKey {
 				require.NoError(t, err, "host-key mirror expected in plaintext mode")
 			} else {
-				assert.ErrorIs(t, err, cache.ErrNotFound, "no host-key mirror expected outside plaintext mode")
+				assert.ErrorIs(t, err, ErrNotFound, "no host-key mirror expected outside plaintext mode")
 			}
 		})
 	}

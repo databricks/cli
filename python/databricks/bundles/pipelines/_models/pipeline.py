@@ -25,10 +25,7 @@ from databricks.bundles.pipelines._models.ingestion_pipeline_definition import (
     IngestionPipelineDefinition,
     IngestionPipelineDefinitionParam,
 )
-from databricks.bundles.pipelines._models.lifecycle import (
-    Lifecycle,
-    LifecycleParam,
-)
+from databricks.bundles.pipelines._models.lifecycle import Lifecycle, LifecycleParam
 from databricks.bundles.pipelines._models.notifications import (
     Notifications,
     NotificationsParam,
@@ -159,6 +156,8 @@ class Pipeline(Resource):
     """
     List of notification settings for this pipeline.
     """
+
+    parameters: VariableOrDict[str] = field(default_factory=dict)
 
     permissions: VariableOrList[PipelinePermission] = field(default_factory=list)
 
@@ -324,6 +323,8 @@ class PipelineDict(TypedDict, total=False):
     """
     List of notification settings for this pipeline.
     """
+
+    parameters: VariableOrDict[str]
 
     permissions: VariableOrList[PipelinePermissionParam]
 
