@@ -164,8 +164,8 @@ var UpdateMaskFields = []string{
 	"resources",
 	"user_api_scopes",
 	"compute_size",
-	"compute_min_instances",
-	"compute_max_instances",
+	// "compute_min_instances", // TODO: add back when update APIs correctly support it
+	// "compute_max_instances", // TODO: add back when update APIs correctly support it
 	"git_repository",
 	"telemetry_export_destinations",
 }
