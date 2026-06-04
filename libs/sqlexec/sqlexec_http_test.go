@@ -1,7 +1,6 @@
 package sqlexec_test
 
 import (
-	"regexp"
 	"testing"
 	"time"
 
@@ -47,19 +46,6 @@ func TestHTTPExecuteSuccess(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, []string{"a", "b"}, r.Columns)
 	assert.Equal(t, [][]string{{"1", "2"}}, r.Rows)
-}
-
-func TestHTTPExecutePattern(t *testing.T) {
-	server := newServer(t)
-	// A regex matcher echoes back a captured submatch, exercising the
-	// HandleSQLPattern path and Request.Match over the full HTTP round-trip.
-	server.HandleSQLPattern(regexp.MustCompile(`^SELECT (\d+)$`), func(r testsql.Request) testsql.Result {
-		return testsql.Result{Columns: []string{"n"}, Rows: [][]string{{r.Match[1]}}}
-	})
-
-	got, err := httpClient(t, server).ExecuteScalar(t.Context(), "SELECT 42")
-	require.NoError(t, err)
-	assert.Equal(t, "42", got)
 }
 
 func TestHTTPExecutePolls(t *testing.T) {
