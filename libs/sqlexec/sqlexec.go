@@ -180,7 +180,13 @@ func (e *StatementError) Error() string {
 // Columns and Rows.
 type Result struct {
 	Columns []string
-	Rows    [][]string
+	// Rows holds every result row with each cell as a string. A SQL NULL and an
+	// empty string are indistinguishable here: the API wire format encodes NULL
+	// as JSON null (distinct from ""), but the SDK models cells as [][]string, so
+	// JSON null is decoded as "". The distinction is recoverable only with a
+	// null-aware cell type (e.g. [][]*string) or the ARROW_STREAM format; no
+	// caller needs it today, so we keep the simpler string rows.
+	Rows [][]string
 }
 
 // Scalar returns the top-left cell of the result, or "" when there are no rows.

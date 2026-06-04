@@ -17,6 +17,7 @@ import (
 	"sync"
 
 	"github.com/databricks/cli/internal/testutil"
+	"github.com/databricks/cli/libs/testserver/testsql"
 )
 
 const testPidKey = "test-pid"
@@ -48,6 +49,8 @@ type Server struct {
 
 	kills  *killRules
 	faults *FaultRules
+
+	sqlHandler *testsql.Handler
 
 	RequestCallback  func(request *Request)
 	ResponseCallback func(request *Request, response *EncodedResponse)
@@ -228,6 +231,7 @@ func New(t testutil.TestingT) *Server {
 		fakeOidc:       &FakeOidc{url: server.URL},
 		kills:          kills,
 		faults:         faults,
+		sqlHandler:     testsql.New(),
 	}
 	router.Dispatch = s.serve
 
