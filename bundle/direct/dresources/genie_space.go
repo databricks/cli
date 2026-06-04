@@ -70,7 +70,7 @@ func (r *ResourceGenieSpace) RemapState(state *resources.GenieSpaceConfig) *reso
 func (r *ResourceGenieSpace) DoRead(ctx context.Context, id string) (*resources.GenieSpaceConfig, error) {
 	space, err := r.client.Genie.GetSpace(ctx, dashboards.GenieGetSpaceRequest{
 		SpaceId:                id,
-		IncludeSerializedSpace: true,
+		IncludeSerializedSpace: true, // otherwise etag isn't returned
 		ForceSendFields:        nil,
 	})
 	if err != nil {
