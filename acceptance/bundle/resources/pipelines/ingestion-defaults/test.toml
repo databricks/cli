@@ -1,0 +1,13 @@
+Local = false
+Cloud = true
+RecordRequests = true
+
+Ignore = [
+    "databricks.yml",
+]
+
+# Only test with direct engine: the Terraform provider independently injects
+# edition/channel defaults at the provider level regardless of what DABs sends,
+# so only the direct engine cleanly shows the DABs fix.
+[EnvMatrix]
+DATABRICKS_BUNDLE_ENGINE = ["direct"]

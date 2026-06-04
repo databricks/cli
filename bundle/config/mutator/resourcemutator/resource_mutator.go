@@ -104,27 +104,22 @@ func applyInitializeMutators(ctx context.Context, b *bundle.Bundle) {
 		}
 	}
 
-	// Pipelines: edition and channel defaults are only applied to non-ingestion
-	// pipelines. Ingestion pipelines (those with ingestion_definition) use
-	// serverless compute by default and the API rejects these fields in that mode.
+	// Apply edition and channel defaults only to non-ingestion pipelines.
+	// Ingestion pipelines use serverless compute by default; the API rejects
+	// these fields as incompatible cluster settings in that mode.
 	// https://github.com/databricks/terraform-provider-databricks/blob/v1.75.0/pipelines/resource_pipeline.go#L253
-	if err := b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
-		return dyn.MapByPattern(root,
-			dyn.NewPattern(dyn.Key("resources"), dyn.Key("pipelines"), dyn.AnyKey()),
-			func(_ dyn.Path, p dyn.Value) (dyn.Value, error) {
-				if _, err := dyn.GetByPath(p, dyn.NewPath(dyn.Key("ingestion_definition"))); err == nil {
-					return p, nil
-				}
-				var err error
-				if p, err = setPipelineDefault(p, "edition", "ADVANCED"); err != nil {
-					return dyn.InvalidValue, err
-				}
-				return setPipelineDefault(p, "channel", "CURRENT")
-			},
-		)
-	}); err != nil {
-		logdiag.LogError(ctx, err)
-		return
+	for name, p := range b.Config.Resources.Pipelines {
+		if p == nil || p.IngestionDefinition != nil {
+			continue
+		}
+		bundle.SetDefault(ctx, b, "resources.pipelines."+name+".edition", "ADVANCED")
+		if logdiag.HasError(ctx) {
+			return
+		}
+		bundle.SetDefault(ctx, b, "resources.pipelines."+name+".channel", "CURRENT")
+		if logdiag.HasError(ctx) {
+			return
+		}
 	}
 
 	bundle.ApplySeqContext(ctx, b,
@@ -412,15 +407,4 @@ func mergeResources(src, dst dyn.Value) (dyn.Value, error) {
 	}
 
 	return newDst, nil
-}
-
-// setPipelineDefault sets key to value on the pipeline dyn.Value only if key is not already set.
-func setPipelineDefault(v dyn.Value, key string, value any) (dyn.Value, error) {
-	path := dyn.NewPath(dyn.Key(key))
-	switch _, err := dyn.GetByPath(v, path); {
-	case dyn.IsNoSuchKeyError(err):
-		return dyn.SetByPath(v, path, dyn.V(value))
-	default:
-		return v, err
-	}
 }

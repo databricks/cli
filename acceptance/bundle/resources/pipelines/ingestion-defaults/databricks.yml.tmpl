@@ -1,0 +1,22 @@
+bundle:
+  name: test-ingestion-defaults-$UNIQUE_NAME
+
+resources:
+  pipelines:
+    ingestion:
+      name: test-ingestion-$UNIQUE_NAME
+      catalog: main
+      target: default
+      ingestion_definition:
+        connection_name: does_not_exist_$UNIQUE_NAME
+        objects:
+          - table:
+              source_catalog: does_not_exist
+              source_schema: does_not_exist
+              source_table: does_not_exist
+              destination_catalog: main
+              destination_schema: default
+
+targets:
+  dev:
+    default: true
