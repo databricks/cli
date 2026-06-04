@@ -376,6 +376,10 @@ resources:
     ignore_remote_changes:
       - field: space # This field is not yet supported by Update APIs but exposed in the API spec. TODO: fix when update APIs supports it.
         reason: managed
+      - field: compute_min_instances # This field does not work correctly in update_mask but exposed in the API spec. TODO: add back when update APIs correctly support it
+        reason: managed
+      - field: compute_max_instances # This field does not work correctly in update_mask but exposed in the API spec. TODO: add back when update APIs correctly support it
+        reason: managed
 
   secret_scopes:
     backend_defaults:
