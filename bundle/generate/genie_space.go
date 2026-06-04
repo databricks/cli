@@ -9,8 +9,10 @@ import (
 )
 
 func ConvertGenieSpaceToValue(genieSpace *dashboards.GenieSpace, filePath string) (dyn.Value, error) {
-	// The majority of fields of the genie space struct are read-only.
-	// We copy the relevant fields manually.
+	// Emit only the fields a user authors in a bundle. serialized_space is
+	// written to a separate file and referenced via file_path, and output-only
+	// fields (e.g. space_id, etag) must not appear in the generated config, so
+	// we build the value field by field rather than marshaling the struct.
 	dv := map[string]dyn.Value{
 		"title":        dyn.NewValue(genieSpace.Title, []dyn.Location{{Line: 1}}),
 		"warehouse_id": dyn.NewValue(genieSpace.WarehouseId, []dyn.Location{{Line: 2}}),
