@@ -1,5 +1,25 @@
 # Version changelog
 
+## Release v1.2.0 (2026-06-04)
+
+### CLI
+* `experimental open` now opens every DABs resource type that has a workspace URL, picking up `catalogs`, `schemas`, `volumes`, `database_instances`, `database_catalogs`, `synced_database_tables`, `postgres_catalogs`, `postgres_synced_tables`, `quality_monitors`, `vector_search_endpoints`, and `vector_search_indexes` ([#5346](https://github.com/databricks/cli/pull/5346)).
+
+### Bundles
+* Retry transient HTTP 5xx and 408 errors in direct deployment engine ([#5349](https://github.com/databricks/cli/pull/5349), [#5364](https://github.com/databricks/cli/pull/5364)).
+* Preserve `.designer.ipynb` suffix when translating notebook task paths so Lakeflow Designer files referenced from a `notebook_task` resolve correctly in the workspace ([#5370](https://github.com/databricks/cli/pull/5370)).
+* Fix script output dropping last line without trailing newline ([#4995](https://github.com/databricks/cli/pull/4995)).
+* engine/direct: Add `--select` flag to `bundle plan` and `bundle deploy` to plan/deploy a subset of resources (e.g. `--select my_job` or `--select jobs.my_job`); resources referenced by the selection are included transitively ([#5413](https://github.com/databricks/cli/pull/5413)).
+* Support `purge_on_delete: true` on `postgres_projects` so bundles can hard-delete a Lakebase project on destroy (skipping the soft-delete retention window) ([#5414](https://github.com/databricks/cli/pull/5414)).
+* Support terraform references in direct engine ([#5392](https://github.com/databricks/cli/pull/5392))
+* Support lifecycle.started for SQL warehouses ([#5348](https://github.com/databricks/cli/pull/5348))
+
+### Dependency updates
+* Bump Go toolchain to 1.26.4 ([#5420](https://github.com/databricks/cli/pull/5420)).
+* Bump `github.com/databricks/databricks-sdk-go` from v0.136.0 to v0.141.0 ([#5361](https://github.com/databricks/cli/pull/5361))
+* Bump Terraform provider from v1.115.0 to v1.117.0 ([#5421](https://github.com/databricks/cli/pull/5421))
+
+
 ## Release v1.1.0 (2026-05-27)
 
 ### Bundles
