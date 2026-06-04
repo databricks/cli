@@ -4,11 +4,13 @@ import (
 	"cmp"
 	"context"
 	"slices"
+	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/bundle/metrics"
+	"github.com/databricks/cli/bundle/permissions"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/telemetry"
@@ -36,6 +38,41 @@ func getExecutionTimes(b *bundle.Bundle) []protos.IntMapEntry {
 
 // Maximum length of the error message included in telemetry.
 const maxErrorMessageLength = 500
+
+// statePathScopeSignals computes telemetry describing how workspace.state_path's
+// permission scope relates to the declared permissions. It is intentionally
+// self-contained so the telemetry stays independent of the validation mutators.
+//
+// Returns:
+//   - isShared: state_path is under /Workspace/Shared (all workspace users get read/write).
+//   - outsideRoot: state_path is not nested under root_path (a separate permission scope).
+//   - scopeExceedsPermissions: state_path is shared but the permissions section does not
+//     grant group_name: users CAN_MANAGE, so the effective scope exceeds the declared one.
+func statePathScopeSignals(b *bundle.Bundle) (isShared, outsideRoot, scopeExceedsPermissions bool) {
+	statePath := b.Config.Workspace.StatePath
+	rootPath := b.Config.Workspace.RootPath
+
+	isShared = libraries.IsWorkspaceSharedPath(statePath)
+
+	usersGroupCanManage := false
+	for _, p := range b.Config.Permissions {
+		if p.GroupName == "users" && p.Level == permissions.CAN_MANAGE {
+			usersGroupCanManage = true
+			break
+		}
+	}
+	scopeExceedsPermissions = isShared && !usersGroupCanManage
+
+	if statePath != "" && rootPath != "" {
+		prefix := rootPath
+		if !strings.HasSuffix(prefix, "/") {
+			prefix += "/"
+		}
+		outsideRoot = !strings.HasPrefix(statePath, prefix)
+	}
+
+	return isShared, outsideRoot, scopeExceedsPermissions
+}
 
 // LogDeployTelemetry logs a telemetry event for a bundle deploy command.
 func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
@@ -177,6 +214,8 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 		experimentalConfig = &config.Experimental{}
 	}
 
+	statePathIsShared, statePathOutsideRootPath, statePathScopeExceedsPermissions := statePathScopeSignals(b)
+
 	telemetry.Log(ctx, protos.DatabricksCliLog{
 		BundleDeployEvent: &protos.BundleDeployEvent{
 			BundleUuid:   bundleUuid,
@@ -203,20 +242,23 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 			ResourceDashboardIDs: dashboardIds,
 
 			Experimental: &protos.BundleDeployExperimental{
-				BundleMode:                   mode,
-				ConfigurationFileCount:       b.Metrics.ConfigurationFileCount,
-				TargetCount:                  b.Metrics.TargetCount,
-				WorkspaceArtifactPathType:    artifactPathType,
-				BoolValues:                   b.Metrics.BoolValues,
-				LocalCacheMeasurementsMs:     b.Metrics.LocalCacheMeasurementsMs,
-				PythonAddedResourcesCount:    b.Metrics.PythonAddedResourcesCount,
-				PythonUpdatedResourcesCount:  b.Metrics.PythonUpdatedResourcesCount,
-				PythonResourceLoadersCount:   int64(len(experimentalConfig.Python.Resources)),
-				PythonResourceMutatorsCount:  int64(len(experimentalConfig.Python.Mutators)),
-				VariableCount:                int64(variableCount),
-				ComplexVariableCount:         complexVariableCount,
-				LookupVariableCount:          lookupVariableCount,
-				BundleMutatorExecutionTimeMs: getExecutionTimes(b),
+				BundleMode:                       mode,
+				ConfigurationFileCount:           b.Metrics.ConfigurationFileCount,
+				TargetCount:                      b.Metrics.TargetCount,
+				WorkspaceArtifactPathType:        artifactPathType,
+				BoolValues:                       b.Metrics.BoolValues,
+				LocalCacheMeasurementsMs:         b.Metrics.LocalCacheMeasurementsMs,
+				PythonAddedResourcesCount:        b.Metrics.PythonAddedResourcesCount,
+				PythonUpdatedResourcesCount:      b.Metrics.PythonUpdatedResourcesCount,
+				PythonResourceLoadersCount:       int64(len(experimentalConfig.Python.Resources)),
+				PythonResourceMutatorsCount:      int64(len(experimentalConfig.Python.Mutators)),
+				VariableCount:                    int64(variableCount),
+				ComplexVariableCount:             complexVariableCount,
+				LookupVariableCount:              lookupVariableCount,
+				BundleMutatorExecutionTimeMs:     getExecutionTimes(b),
+				StatePathScopeExceedsPermissions: statePathScopeExceedsPermissions,
+				StatePathIsShared:                statePathIsShared,
+				StatePathOutsideRootPath:         statePathOutsideRootPath,
 			},
 		},
 	})
