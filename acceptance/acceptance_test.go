@@ -202,14 +202,27 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	// pick up the host's agent. Setting these to "" via test.toml is not
 	// enough: the SDK (since v0.132.0) treats empty values as a truthy
 	// signal because os.LookupEnv reports them as present.
+	// Keep this list in sync with listKnownAgents() in
+	// github.com/databricks/databricks-sdk-go/useragent/agent.go
+	// plus the AGENT and AI_AGENT generic fallbacks.
 	for _, v := range []string{
+		"AGENT",
+		"AI_AGENT",
+		"AMP_CURRENT_THREAD_ID",
 		"ANTIGRAVITY_AGENT",
+		"AUGMENT_AGENT",
 		"CLAUDECODE",
 		"CLINE_ACTIVE",
 		"CODEX_CI",
+		"COPILOT_CLI",
 		"CURSOR_AGENT",
 		"GEMINI_CLI",
+		"GOOSE_TERMINAL",
+		"KIRO",
+		"OPENCLAW_SHELL",
 		"OPENCODE",
+		"VSCODE_AGENT",
+		"WINDSURF_AGENT",
 	} {
 		os.Unsetenv(v) //nolint:usetesting // t.Setenv cannot unset
 	}
