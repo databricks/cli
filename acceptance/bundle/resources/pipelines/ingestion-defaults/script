@@ -1,11 +1,10 @@
 envsubst < databricks.yml.tmpl > databricks.yml
 
-# Deploy the ingestion pipeline. It fails because the connection name is
-# intentionally invalid, but the POST /api/2.0/pipelines request is sent and
-# recorded first. The key assertion: edition and channel are absent from the
-# request body — DABs must not inject them for ingestion pipelines.
-trace errcode $CLI bundle deploy
+# Deploy fails (invalid connection) but the POST /api/2.0/pipelines request is
+# sent and recorded. Direct engine: edition and channel are absent (the fix).
+# Terraform engine: edition and channel are present (provider injects them; being
+# fixed in terraform-provider-databricks).
+trace errcode $CLI bundle deploy > out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1
 
-# Show what was sent to the API. edition and channel must be null (absent).
-trace jq -s '.[] | select(.path=="/api/2.0/pipelines" and .method=="POST") | .body | {name, edition, channel}' out.requests.txt
+trace jq -s '.[] | select(.path=="/api/2.0/pipelines" and .method=="POST") | .body | {name, edition, channel}' out.requests.txt > out.post_body.$DATABRICKS_BUNDLE_ENGINE.json
 rm out.requests.txt

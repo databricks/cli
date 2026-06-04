@@ -1,20 +1,2 @@
 
->>> errcode [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-ingestion-defaults-[UNIQUE_NAME]/dev/files...
-Deploying resources...
-Error: cannot create resources.pipelines.ingestion: Failed to retrieve connection 'does_not_exist_[UNIQUE_NAME]' from Unity Catalog. Please check whether the connection exists and contact support if the error persists. (400 INVALID_PARAMETER_VALUE)
-
-Endpoint: POST [DATABRICKS_URL]/api/2.0/pipelines
-HTTP Status: 400 Bad Request
-API error_code: INVALID_PARAMETER_VALUE
-API message: Failed to retrieve connection 'does_not_exist_[UNIQUE_NAME]' from Unity Catalog. Please check whether the connection exists and contact support if the error persists.
-
-
-Exit code: 1
-
 >>> jq -s .[] | select(.path=="/api/2.0/pipelines" and .method=="POST") | .body | {name, edition, channel} out.requests.txt
-{
-  "name": "test-ingestion-[UNIQUE_NAME]",
-  "edition": null,
-  "channel": null
-}

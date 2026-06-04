@@ -1,0 +1,17 @@
+
+>>> errcode [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-ingestion-defaults-[UNIQUE_NAME]/dev/files...
+Deploying resources...
+Error: terraform apply: exit status 1
+
+Error: cannot create pipeline: Failed to retrieve connection 'does_not_exist_[UNIQUE_NAME]' from Unity Catalog. Please check whether the connection exists and contact support if the error persists.
+
+  with databricks_pipeline.ingestion,
+  on bundle.tf.json line 37, in resource.databricks_pipeline.ingestion:
+  37:       }
+
+
+
+Updating deployment state...
+
+Exit code: 1

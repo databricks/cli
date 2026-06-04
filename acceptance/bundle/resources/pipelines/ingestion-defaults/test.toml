@@ -2,12 +2,11 @@ Local = false
 Cloud = true
 RecordRequests = true
 
+Badness = "Terraform engine still injects edition/channel via provider-level SetDefault (resource_pipeline.go:253); companion fix: terraform-provider-databricks#5783."
+
 Ignore = [
     "databricks.yml",
 ]
 
-# Only test with direct engine: the Terraform provider independently injects
-# edition/channel defaults at the provider level regardless of what DABs sends,
-# so only the direct engine cleanly shows the DABs fix.
 [EnvMatrix]
-DATABRICKS_BUNDLE_ENGINE = ["direct"]
+DATABRICKS_BUNDLE_ENGINE = ["direct", "terraform"]
