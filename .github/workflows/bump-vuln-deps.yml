@@ -26,23 +26,20 @@ jobs:
           # vulnbump lives in the tools module, which is what this job compiles.
           go-version-file: tools/go.mod
 
-      - name: Build tools
-        run: |
-          go -C tools build -o "$RUNNER_TEMP/govulncheck" golang.org/x/vuln/cmd/govulncheck
-          go -C tools/vulnbump build -o "$RUNNER_TEMP/vulnbump" .
+      - name: Build vulnbump
+        run: go -C tools/vulnbump build -o "$RUNNER_TEMP/vulnbump" .
 
       - name: Bump vulnerable dependencies
         id: bump
         run: |
           set -euo pipefail
 
-          # govulncheck is pinned as a tool dependency in tools/go.mod. Its
-          # vulnerability database is fetched from https://vuln.go.dev at runtime
-          # (govulncheck -db), so the pinned binary still uses the latest advisories.
-          govulncheck="$RUNNER_TEMP/govulncheck"
-
-          # Only the root module ships; tools/ and bundle/internal/tf/codegen are
-          # build- and CI-only, so they are intentionally not scanned.
+          # govulncheck is pinned as a tool dependency in tools/go.mod; -modfile
+          # resolves it from there while it scans the root module (the working
+          # directory). Only the root module ships; tools/ and
+          # bundle/internal/tf/codegen are build- and CI-only, so they are not
+          # scanned. Its vulnerability database is fetched from vuln.go.dev at
+          # runtime, so the pinned binary still uses the latest advisories.
           #
           # -scan module reports every advisory affecting a required module,
           # regardless of whether the vulnerable symbol is reachable. In JSON
@@ -50,7 +47,7 @@ jobs:
           # and non-zero only on a real error; a failure must abort the job
           # rather than be silently mistaken for "no vulnerabilities".
           scan="$(mktemp)"
-          if ! "$govulncheck" -scan module -format json > "$scan"; then
+          if ! go tool -modfile=tools/go.mod govulncheck -scan module -format json > "$scan"; then
             echo "::error::govulncheck failed"
             exit 1
           fi
