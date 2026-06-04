@@ -18,6 +18,16 @@ import (
 // test via server.HandleSQL matchers. Unlike the mock-interface unit tests they
 // exercise the full request/response JSON serialization, and unlike the
 // integration tests they are hermetic and run on every PR without a warehouse.
+// newServer returns a testserver with the default handlers installed, which is
+// where the SQL Statement Execution routes live (they delegate to the matchers
+// registered via server.HandleSQL).
+func newServer(t *testing.T) *testserver.Server {
+	t.Helper()
+	server := testserver.New(t)
+	testserver.AddDefaultHandlers(server)
+	return server
+}
+
 func httpClient(t *testing.T, server *testserver.Server) *sqlexec.Client {
 	t.Helper()
 	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
@@ -27,7 +37,7 @@ func httpClient(t *testing.T, server *testserver.Server) *sqlexec.Client {
 }
 
 func TestHTTPExecuteSuccess(t *testing.T) {
-	server := testserver.New(t)
+	server := newServer(t)
 	server.HandleSQL("SELECT 1 AS a, 2 AS b", func(testsql.Request) testsql.Result {
 		return testsql.Result{Columns: []string{"a", "b"}, Rows: [][]string{{"1", "2"}}}
 	})
@@ -39,7 +49,7 @@ func TestHTTPExecuteSuccess(t *testing.T) {
 }
 
 func TestHTTPExecutePolls(t *testing.T) {
-	server := testserver.New(t)
+	server := newServer(t)
 	server.HandleSQL("SELECT 1", func(testsql.Request) testsql.Result {
 		return testsql.Result{Rows: [][]string{{"done"}}, Polls: 1}
 	})
@@ -50,7 +60,7 @@ func TestHTTPExecutePolls(t *testing.T) {
 }
 
 func TestHTTPExecutePaginatesChunks(t *testing.T) {
-	server := testserver.New(t)
+	server := newServer(t)
 	server.HandleSQL("SELECT * FROM big", func(testsql.Request) testsql.Result {
 		return testsql.Result{Rows: [][]string{{"0"}, {"1"}, {"2"}}, Chunks: 3}
 	})
@@ -61,7 +71,7 @@ func TestHTTPExecutePaginatesChunks(t *testing.T) {
 }
 
 func TestHTTPExecuteFailedReturns200(t *testing.T) {
-	server := testserver.New(t)
+	server := newServer(t)
 	// A failed statement comes back as HTTP 200 with state=FAILED, not an HTTP
 	// error; the engine must inspect the body and surface a *StatementError.
 	server.HandleSQL("SELECT * FROM nope", func(testsql.Request) testsql.Result {
@@ -78,7 +88,7 @@ func TestHTTPExecuteFailedReturns200(t *testing.T) {
 }
 
 func TestHTTPSubmitAndCancel(t *testing.T) {
-	server := testserver.New(t)
+	server := newServer(t)
 	server.HandleSQL("SELECT 1", func(testsql.Request) testsql.Result {
 		return testsql.Result{}
 	})

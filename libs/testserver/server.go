@@ -297,14 +297,6 @@ Response.Body = '<response body here>'
 		}
 	})
 
-	// Register the SQL Statement Execution lifecycle endpoints. Tests program
-	// these by registering matchers via Server.HandleSQL / HandleSQLPattern;
-	// see statements.go.
-	s.Handle("POST", "/api/2.0/sql/statements", s.sqlExecuteStatement)
-	s.Handle("GET", "/api/2.0/sql/statements/{statement_id}", s.sqlGetStatement)
-	s.Handle("GET", "/api/2.0/sql/statements/{statement_id}/result/chunks/{chunk_index}", s.sqlGetStatementResultChunk)
-	s.Handle("POST", "/api/2.0/sql/statements/{statement_id}/cancel", s.sqlCancelStatement)
-
 	return s
 }
 
