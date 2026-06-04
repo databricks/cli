@@ -45,6 +45,13 @@ func (s *FakeWorkspace) GenieSpaceCreate(req Request) Response {
 		}
 	}
 
+	// Strip the /Workspace prefix from parent_path before storing. This matches
+	// the remote behavior: the GET API returns parent_path without the prefix,
+	// mirroring DashboardCreate.
+	if strings.HasPrefix(createReq.ParentPath, "/Workspace/") {
+		createReq.ParentPath = strings.TrimPrefix(createReq.ParentPath, "/Workspace")
+	}
+
 	genieSpace := dashboards.GenieSpace{
 		SpaceId:         spaceId,
 		Title:           createReq.Title,
@@ -146,6 +153,13 @@ func (s *FakeWorkspace) GenieSpaceUpdate(req Request) Response {
 	if updateReq.WarehouseId != "" {
 		genieSpace.WarehouseId = updateReq.WarehouseId
 	}
+	if updateReq.ParentPath != "" {
+		parentPath := updateReq.ParentPath
+		if strings.HasPrefix(parentPath, "/Workspace/") {
+			parentPath = strings.TrimPrefix(parentPath, "/Workspace")
+		}
+		genieSpace.ParentPath = parentPath
+	}
 	if updateReq.SerializedSpace != "" {
 		genieSpace.SerializedSpace = updateReq.SerializedSpace
 	}
@@ -157,6 +171,7 @@ func (s *FakeWorkspace) GenieSpaceUpdate(req Request) Response {
 	if prev.Title != genieSpace.Title ||
 		prev.Description != genieSpace.Description ||
 		prev.WarehouseId != genieSpace.WarehouseId ||
+		prev.ParentPath != genieSpace.ParentPath ||
 		prev.SerializedSpace != genieSpace.SerializedSpace {
 		prevEtag, err := strconv.Atoi(genieSpace.Etag)
 		if err != nil {

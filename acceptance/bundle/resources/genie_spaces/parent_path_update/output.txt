@@ -1,0 +1,21 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-genie-space-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Plan after changing parent_path should show update
+>>> [CLI] bundle plan
+update genie_spaces.update_target
+
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.genie_spaces.update_target
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/update-genie-space-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!

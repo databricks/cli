@@ -18,7 +18,7 @@ var permissionResourceToObjectType = map[string]string{
 	"apps":                    "/apps/",
 	"clusters":                "/clusters/",
 	"dashboards":              "/dashboards/",
-	"genie_spaces":            "/genie/spaces/",
+	"genie_spaces":            "/genie/",
 	"database_instances":      "/database-instances/",
 	"postgres_projects":       "/database-projects/",
 	"jobs":                    "/jobs/",

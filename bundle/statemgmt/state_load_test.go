@@ -906,10 +906,10 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Dashboards["test_dashboard_new"].ModifiedStatus)
 
 	assert.Equal(t, "1", config.Resources.GenieSpaces["test_genie_space"].ID)
-	assert.Equal(t, "", config.Resources.GenieSpaces["test_genie_space"].ModifiedStatus)
+	assert.Empty(t, config.Resources.GenieSpaces["test_genie_space"].ModifiedStatus)
 	assert.Equal(t, "2", config.Resources.GenieSpaces["test_genie_space_old"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.GenieSpaces["test_genie_space_old"].ModifiedStatus)
-	assert.Equal(t, "", config.Resources.GenieSpaces["test_genie_space_new"].ID)
+	assert.Empty(t, config.Resources.GenieSpaces["test_genie_space_new"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.GenieSpaces["test_genie_space_new"].ModifiedStatus)
 
 	assert.Equal(t, "test_app", config.Resources.Apps["test_app"].Name)

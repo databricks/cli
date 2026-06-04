@@ -360,17 +360,11 @@ resources:
         reason: input_only
 
   genie_spaces:
-    recreate_on_changes:
-      - field: parent_path
-        reason: immutable
     ignore_remote_changes:
       # serialized_space locally (structured YAML) and remotely (JSON string) will differ
       # textually, so we cannot meaningfully compare them for drift.
       - field: serialized_space
-        reason: input_only
-      # parent_path is not reliably returned by the GET Genie space API.
-      - field: parent_path
-        reason: input_only
+        reason: etag_based
 
   apps:
     recreate_on_changes:

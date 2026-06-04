@@ -25,9 +25,6 @@ var pathSerializedSpace = structpath.MustParsePath("serialized_space")
 //     PrepareState returns the config directly.
 //   - RemapState filters fewer fields: Genie has no LifecycleState / CreateTime /
 //     Path / UpdateTime output-only fields to scrub.
-//   - DoRead clears ParentPath: the GET API does not reliably return parent_path,
-//     so we drop it from ForceSendFields and zero the value rather than re-adding
-//     a "/Workspace" prefix the way dashboard.go does in ensureWorkspacePrefix.
 //   - DoUpdate omits serialized_space when unchanged: serialized_space is in
 //     ignore_remote_changes (see resources.yml), so a UI edit produces no plan
 //     entry. Sending the local body anyway would clobber the UI edit on every
@@ -97,18 +94,14 @@ func prepareGenieSpaceRequest(config *resources.GenieSpaceConfig) (string, error
 }
 
 func responseToGenieSpaceConfig(space *dashboards.GenieSpace, serializedSpace string) *resources.GenieSpaceConfig {
-	// Drop ParentPath from ForceSendFields. We always clear ParentPath
-	// below because the GET Genie space API does not reliably return it,
-	// and keeping it in ForceSendFields would force-emit parent_path: ""
-	// in state output even though the field is logically unset.
-	forceSendFields := utils.FilterFields[resources.GenieSpaceConfig](space.ForceSendFields, "ParentPath")
+	forceSendFields := utils.FilterFields[resources.GenieSpaceConfig](space.ForceSendFields)
 
 	return &resources.GenieSpaceConfig{
 		Description:     space.Description,
 		Etag:            space.Etag,
 		Title:           space.Title,
 		WarehouseId:     space.WarehouseId,
-		ParentPath:      "",
+		ParentPath:      ensureWorkspacePrefix(space.ParentPath),
 		SerializedSpace: serializedSpace,
 
 		// Output only fields
@@ -141,8 +134,8 @@ func isMissingGenieParentPathError(err error) bool {
 		return true
 	}
 
-	var apiErr *apierr.APIError
-	if !errors.As(err, &apiErr) {
+	apiErr, ok := errors.AsType[*apierr.APIError](err)
+	if !ok {
 		return false
 	}
 
@@ -218,6 +211,7 @@ func (r *ResourceGenieSpace) DoUpdate(ctx context.Context, id string, config *re
 		Description:     config.Description,
 		Title:           config.Title,
 		WarehouseId:     config.WarehouseId,
+		ParentPath:      config.ParentPath,
 		SerializedSpace: serializedSpace,
 		// Send the etag we last observed. The backend uses it as an If-Match
 		// guard against concurrent writes, and OverrideChangeDesc uses the
