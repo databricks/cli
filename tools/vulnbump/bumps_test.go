@@ -1,7 +1,7 @@
 package main
 
 import (
-	_ "embed"
+	"os"
 	"strings"
 	"testing"
 
@@ -9,11 +9,17 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-//go:embed testdata/govulncheck.json
-var sampleOutput string
+// sampleOutput reads the recorded `govulncheck -format json` fixture. Tests run
+// from the package directory, so testdata is read directly.
+func sampleOutput(t *testing.T) string {
+	t.Helper()
+	data, err := os.ReadFile("testdata/govulncheck.json")
+	require.NoError(t, err)
+	return string(data)
+}
 
 func TestParseBumps(t *testing.T) {
-	bumps, err := parseBumps(strings.NewReader(sampleOutput))
+	bumps, err := parseBumps(strings.NewReader(sampleOutput(t)))
 	require.NoError(t, err)
 
 	// golang.org/x/crypto takes the higher of its two fixed versions (v0.52.0

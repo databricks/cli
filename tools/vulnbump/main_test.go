@@ -22,7 +22,7 @@ func TestRunEndToEnd(t *testing.T) {
 	}
 
 	var out strings.Builder
-	require.NoError(t, run(".", strings.NewReader(sampleOutput), &out, runCmd))
+	require.NoError(t, run(".", strings.NewReader(sampleOutput(t)), &out, runCmd))
 
 	assert.Equal(t, [][]string{
 		{".", "go", "get", "golang.org/x/crypto@v0.52.0"},
@@ -56,6 +56,6 @@ func TestRunStopsOnError(t *testing.T) {
 		return errors.New("network down")
 	}
 
-	err := run(".", strings.NewReader(sampleOutput), io.Discard, runCmd)
+	err := run(".", strings.NewReader(sampleOutput(t)), io.Discard, runCmd)
 	require.Error(t, err)
 }
