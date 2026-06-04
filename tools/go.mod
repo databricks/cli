@@ -6,7 +6,10 @@ toolchain go1.26.3
 
 require github.com/stretchr/testify v1.11.1
 
-require gopkg.in/yaml.v3 v3.0.1
+require (
+	golang.org/x/mod v0.35.0
+	gopkg.in/yaml.v3 v3.0.1
+)
 
 require (
 	4d63.com/gocheckcompilerdirectives v1.3.0 // indirect
@@ -214,7 +217,6 @@ require (
 	go.uber.org/zap v1.27.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/exp/typeparams v0.0.0-20260209203927-2842357ff358 // indirect
-	golang.org/x/mod v0.35.0 // indirect
 	golang.org/x/sync v0.20.0 // indirect
 	golang.org/x/sys v0.43.0 // indirect
 	golang.org/x/telemetry v0.0.0-20260409153401-be6f6cb8b1fa // indirect
