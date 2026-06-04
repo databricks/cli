@@ -35,6 +35,11 @@ func (s *FakeWorkspace) GenieSpaceCreate(req Request) Response {
 		}
 	}
 
+	// Default to user's home directory if parent_path is not provided (matches cloud behavior)
+	if createReq.ParentPath == "" {
+		createReq.ParentPath = "/Users/" + s.CurrentUser().UserName
+	}
+
 	spaceId, err := generateGenieSpaceId()
 	if err != nil {
 		return Response{
