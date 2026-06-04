@@ -77,8 +77,9 @@ type matcher struct {
 type statement struct {
 	id      string
 	columns []string
-	// chunks always has length >= 1; chunk 0 carries the inline data returned
-	// with the terminal response and may be empty.
+	// chunks holds the result split into fetchable chunks. A statement with rows
+	// has at least one chunk (chunk 0 carries the inline data returned with the
+	// terminal response); a statement with no rows has zero chunks.
 	chunks         [][][]string
 	err            *Error
 	remainingPolls int
@@ -252,19 +253,28 @@ func (s *statement) terminalResponse() *sql.StatementResponse {
 		}
 		manifest.Schema = &sql.ResultSchema{Columns: cols}
 	}
+	// A no-row statement reports an empty result (matching the real API, which
+	// returns "result": {} with no data_array); otherwise chunk 0 is inlined.
+	result := &sql.ResultData{}
+	if len(s.chunks) > 0 {
+		result.DataArray = s.chunks[0]
+	}
 	return &sql.StatementResponse{
 		StatementId: s.id,
 		Status:      &sql.StatementStatus{State: sql.StatementStateSucceeded},
 		Manifest:    manifest,
-		Result:      &sql.ResultData{DataArray: s.chunks[0]},
+		Result:      result,
 	}
 }
 
 // splitChunks divides rows into max(1, chunks) chunks as evenly as possible by
-// ceil division. The returned slice always has at least one element so chunk 0
-// always exists (possibly empty); a no-rows DDL result therefore yields
-// TotalChunkCount=1 and an empty inline chunk.
+// ceil division. A statement with no rows yields zero chunks (TotalChunkCount=0
+// and an empty result), matching the real API's response to a 0-row SELECT or a
+// no-result-set DDL statement.
 func splitChunks(rows [][]string, chunks int) [][][]string {
+	if len(rows) == 0 {
+		return nil
+	}
 	n := max(1, chunks)
 	out := make([][][]string, n)
 	size := (len(rows) + n - 1) / n

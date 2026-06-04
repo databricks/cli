@@ -131,17 +131,20 @@ func TestChunkSplitting(t *testing.T) {
 	assert.Equal(t, [][]string{{"2"}}, e.Chunk(resp.StatementId, 2).DataArray)
 }
 
-func TestNoRowsSingleChunk(t *testing.T) {
+func TestNoRowsZeroChunks(t *testing.T) {
 	e := testsql.New()
 	e.Handle("CREATE TABLE foo", func(testsql.Request) testsql.Result {
 		return testsql.Result{}
 	})
 
+	// A no-row statement reports zero chunks and an empty result, matching the
+	// real API (a 0-row SELECT or a no-result-set DDL returns total_chunk_count=0).
 	resp := e.Submit("CREATE TABLE foo", "10s", nil)
 	require.Equal(t, sql.StatementStateSucceeded, resp.Status.State)
 	require.NotNil(t, resp.Manifest)
-	assert.Equal(t, 1, resp.Manifest.TotalChunkCount)
+	assert.Equal(t, 0, resp.Manifest.TotalChunkCount)
 	assert.Nil(t, resp.Manifest.Schema)
+	require.NotNil(t, resp.Result)
 	assert.Empty(t, resp.Result.DataArray)
 }
 
