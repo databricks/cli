@@ -510,6 +510,20 @@ func getTests(t *testing.T) []string {
 	require.NoError(t, err)
 
 	slices.Sort(testDirs)
+
+	// Shard the test list when SHARD_TOTAL > 1. Tests are sorted above so the
+	// split is deterministic and stable across runs.
+	if total, _ := strconv.Atoi(os.Getenv("SHARD_TOTAL")); total > 1 {
+		index, _ := strconv.Atoi(os.Getenv("SHARD_INDEX"))
+		sharded := testDirs[:0]
+		for i, d := range testDirs {
+			if i%total == index {
+				sharded = append(sharded, d)
+			}
+		}
+		testDirs = sharded
+	}
+
 	return testDirs
 }
 
