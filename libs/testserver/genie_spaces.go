@@ -108,6 +108,13 @@ func (s *FakeWorkspace) GenieSpaceGet(req Request) Response {
 		}
 	}
 
+	// The GET API only returns the etag when serialized_space is requested
+	// (include_serialized_space=true). genieSpace is a copy, so clearing the
+	// field here only affects the response.
+	if req.URL.Query().Get("include_serialized_space") != "true" {
+		genieSpace.Etag = ""
+	}
+
 	return Response{
 		Body: genieSpace,
 	}
