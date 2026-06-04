@@ -1,6 +1,7 @@
 package lakebox
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -161,11 +162,21 @@ Examples:
 				}
 			}
 
-			// A stopped sandbox is implicitly started on connect, which
-			// can take minutes. Print an explicit notice so the user
-			// understands why the connect spinner is hanging.
-			if strings.EqualFold(sandboxStatus, "stopped") {
-				warn(ctx, "Starting "+cmdio.Bold(ctx, lakeboxID)+"… (may take a few minutes)")
+			// Explicitly start (and wait for) the sandbox if it isn't
+			// already Running. The gateway will auto-start a stopped
+			// sandbox on connect, but that path is opaque (ssh just
+			// hangs for minutes with no progress) and races the
+			// cold-start timeout. Driving the start ourselves gives
+			// the user a visible spinner with elapsed time and a
+			// deterministic timeout (see start.go).
+			if sandboxStatus != "" && !strings.EqualFold(sandboxStatus, "running") {
+				final, err := ensureRunning(ctx, api, lakeboxID, sandboxStatus)
+				if err != nil {
+					return err
+				}
+				if final.GatewayHost != "" {
+					sandboxGatewayHost = final.GatewayHost
+				}
 			}
 
 			// Resolution precedence: --gateway flag → fresh API response →
@@ -203,6 +214,37 @@ Examples:
 	cmd.Flags().StringVar(&gatewayPort, "port", defaultGatewayPort, "Lakebox gateway SSH port")
 
 	return cmd
+}
+
+// ensureRunning brings the named sandbox to Running before ssh hands
+// off. Owns its own spinner lifecycle — caller must not have one open.
+// Calls api.start when the sandbox is currently Stopped; falls through
+// to a poll for already-transitioning states (Creating, Starting).
+func ensureRunning(ctx context.Context, api *lakeboxAPI, id, currentStatus string) (*sandboxEntry, error) {
+	s := spin(ctx, "Starting "+cmdio.Bold(ctx, id)+"…")
+	defer s.Close()
+
+	var sb *sandboxEntry
+	if strings.EqualFold(currentStatus, "stopped") {
+		updated, err := api.start(ctx, id)
+		if err != nil {
+			s.fail("Failed to start " + id)
+			return nil, fmt.Errorf("failed to start lakebox %s: %w", id, err)
+		}
+		sb = updated
+	}
+
+	if sb == nil || !strings.EqualFold(sb.Status, "running") {
+		final, err := waitForRunning(ctx, api, s, id)
+		if err != nil {
+			s.fail("Failed to start " + id)
+			return nil, err
+		}
+		sb = final
+	}
+
+	s.ok("Started " + cmdio.Bold(ctx, id))
+	return sb, nil
 }
 
 // execSSHDirect replaces the CLI process with ssh (or simulates that on
