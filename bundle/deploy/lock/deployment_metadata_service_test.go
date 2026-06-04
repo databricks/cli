@@ -3,6 +3,7 @@ package lock
 import (
 	"testing"
 
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/tmpdms"
 	"github.com/stretchr/testify/assert"
@@ -51,4 +52,22 @@ func TestGoalToVersionType(t *testing.T) {
 
 	_, ok = goalToVersionType(GoalUnbind)
 	assert.False(t, ok)
+}
+
+func TestDeploymentMode(t *testing.T) {
+	tests := []struct {
+		mode     config.Mode
+		expected tmpdms.DeploymentMode
+	}{
+		{config.Development, tmpdms.DeploymentModeDevelopment},
+		{config.Production, tmpdms.DeploymentModeProduction},
+		{"", ""},
+		{"unknown", ""},
+	}
+
+	for _, tt := range tests {
+		t.Run(string(tt.mode), func(t *testing.T) {
+			assert.Equal(t, tt.expected, deploymentMode(tt.mode))
+		})
+	}
 }
