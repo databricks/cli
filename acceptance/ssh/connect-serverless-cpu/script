@@ -1,0 +1,1 @@
+$CLI ssh connect --releases-dir=$CLI_RELEASES_DIR

@@ -1,0 +1,8 @@
+Local = false
+Cloud = true
+
+# Serverless worklaods are only available in newer environments
+RequiresUnityCatalog = true
+
+[EnvMatrix]
+  DATABRICKS_BUNDLE_ENGINE = ["direct"]

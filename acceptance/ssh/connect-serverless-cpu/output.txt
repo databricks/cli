@@ -1,0 +1,12 @@
+Connecting to databricks-cpu-6e7644d0...
+WARNING: serverless compute without an accelerator is in private preview. If you are not enrolled, this command will likely time out with an error. Contact your Databricks account team to enroll.
+Uploading binaries...
+Starting SSH server...
+Job submitted successfully with run ID: [NUMID]
+Error: failed to ensure that ssh server is running: failed to start the ssh server: server metadata error
+server is not ok, status code 503
+
+This may be because serverless compute without an accelerator is in private preview.
+Contact your Databricks account team to enroll.
+
+Exit code: 1
