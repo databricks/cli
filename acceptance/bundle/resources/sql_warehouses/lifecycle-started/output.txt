@@ -20,11 +20,11 @@ Deployment complete!
   }
 }
 
->>> errcode [CLI] warehouses get [UUID]
+>>> errcode [CLI] warehouses get [WAREHOUSE_ID]
 "RUNNING"
 
 === Stop warehouse externally while config says started=true: plan detects drift
->>> errcode [CLI] warehouses stop [UUID]
+>>> errcode [CLI] warehouses stop [WAREHOUSE_ID]
 "STOPPED"
 
 >>> [CLI] bundle plan
@@ -42,20 +42,20 @@ Deployment complete!
 >>> print_requests.py //sql/warehouses
 {
   "method": "POST",
-  "path": "/api/2.0/sql/warehouses/[UUID]/stop",
+  "path": "/api/2.0/sql/warehouses/[WAREHOUSE_ID]/stop",
   "body": {}
 }
 {
   "method": "POST",
-  "path": "/api/2.0/sql/warehouses/[UUID]/start",
+  "path": "/api/2.0/sql/warehouses/[WAREHOUSE_ID]/start",
   "body": {}
 }
 
->>> errcode [CLI] warehouses get [UUID]
+>>> errcode [CLI] warehouses get [WAREHOUSE_ID]
 "RUNNING"
 
 === Deploy with started=false while warehouse is stopped: warehouse stays stopped
->>> errcode [CLI] warehouses stop [UUID]
+>>> errcode [CLI] warehouses stop [WAREHOUSE_ID]
 "STOPPED"
 
 >>> update_file.py databricks.yml started: true started: false
@@ -69,11 +69,11 @@ Deployment complete!
 >>> print_requests.py //sql/warehouses
 {
   "method": "POST",
-  "path": "/api/2.0/sql/warehouses/[UUID]/stop",
+  "path": "/api/2.0/sql/warehouses/[WAREHOUSE_ID]/stop",
   "body": {}
 }
 
->>> errcode [CLI] warehouses get [UUID]
+>>> errcode [CLI] warehouses get [WAREHOUSE_ID]
 "STOPPED"
 
 === Deploy with started=true: warehouse restarted
@@ -88,11 +88,11 @@ Deployment complete!
 >>> print_requests.py //sql/warehouses
 {
   "method": "POST",
-  "path": "/api/2.0/sql/warehouses/[UUID]/start",
+  "path": "/api/2.0/sql/warehouses/[WAREHOUSE_ID]/start",
   "body": {}
 }
 
->>> errcode [CLI] warehouses get [UUID]
+>>> errcode [CLI] warehouses get [WAREHOUSE_ID]
 "RUNNING"
 
 >>> [CLI] bundle destroy --auto-approve
