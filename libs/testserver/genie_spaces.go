@@ -4,12 +4,10 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
-	"path"
 	"strconv"
 	"strings"
 
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
-	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
 // generateGenieSpaceId returns a random 32-character hex string.
@@ -71,23 +69,9 @@ func (s *FakeWorkspace) GenieSpaceCreate(req Request) Response {
 
 	s.GenieSpaces[spaceId] = genieSpace
 
-	// Register in the workspace files for path lookup.
-	if createReq.ParentPath != "" {
-		workspacePath := createReq.ParentPath
-		if !strings.HasPrefix(workspacePath, "/Workspace") {
-			workspacePath = path.Join("/Workspace", workspacePath)
-		}
-		workspacePath = path.Join(workspacePath, createReq.Title+".geniespace")
-
-		s.files[workspacePath] = FileEntry{
-			Info: workspace.ObjectInfo{
-				ObjectType: "FILE",
-				Path:       workspacePath,
-				ResourceId: spaceId,
-			},
-			Data: []byte(createReq.SerializedSpace),
-		}
-	}
+	// Genie spaces are not exposed as workspace files ("dataRoom is not
+	// user-facing"), so unlike dashboards we do not register a workspace path
+	// entry — there is nothing to resolve via the Workspace API.
 
 	return Response{
 		Body: genieSpace,
@@ -206,8 +190,7 @@ func (s *FakeWorkspace) GenieSpaceTrash(req Request) Response {
 	defer s.LockUnlock()()
 
 	spaceId := req.Vars["space_id"]
-	genieSpace, ok := s.GenieSpaces[spaceId]
-	if !ok {
+	if _, ok := s.GenieSpaces[spaceId]; !ok {
 		// The real API returns 403 (not 404) when a Genie space does not exist.
 		return Response{
 			StatusCode: 403,
@@ -218,18 +201,6 @@ func (s *FakeWorkspace) GenieSpaceTrash(req Request) Response {
 	}
 
 	delete(s.GenieSpaces, spaceId)
-
-	// Also remove the synthetic workspace file entry registered by
-	// GenieSpaceCreate, so a trash+recreate flow does not resolve to stale
-	// state via the workspace path index.
-	if genieSpace.ParentPath != "" {
-		workspacePath := genieSpace.ParentPath
-		if !strings.HasPrefix(workspacePath, "/Workspace") {
-			workspacePath = path.Join("/Workspace", workspacePath)
-		}
-		workspacePath = path.Join(workspacePath, genieSpace.Title+".geniespace")
-		delete(s.files, workspacePath)
-	}
 
 	return Response{
 		StatusCode: 200,
