@@ -37,12 +37,16 @@ func (c configureGenieSpaceSerializedSpace) Apply(_ context.Context, b *bundle.B
 			ss := v.Get(serializedSpaceFieldName)
 
 			if hasFilePath {
+				// file_path and serialized_space are two ways to provide the same
+				// content. Accepting both is ambiguous, so reject it instead of
+				// silently picking one.
 				if ss.IsValid() && ss.Kind() != dyn.KindNil {
 					diags = diags.Append(diag.Diagnostic{
-						Severity:  diag.Warning,
-						Summary:   "both file_path and serialized_space are set; file_path will be used and serialized_space will be ignored",
+						Severity:  diag.Error,
+						Summary:   "both file_path and serialized_space are set; specify only one",
 						Locations: ss.Locations(),
 					})
+					return v, nil
 				}
 				contents, err := b.SyncRoot.ReadFile(filePath)
 				if err != nil {
@@ -57,7 +61,9 @@ func (c configureGenieSpaceSerializedSpace) Apply(_ context.Context, b *bundle.B
 			// round-trip decodes them as `float64`, and structdiff reports
 			// false drift on every plan.
 			switch ss.Kind() {
-			case dyn.KindNil, dyn.KindString:
+			case dyn.KindInvalid, dyn.KindNil, dyn.KindString:
+				// KindInvalid means serialized_space is absent (neither it nor
+				// file_path is set); leave it for backend validation to reject.
 				return v, nil
 			case dyn.KindMap, dyn.KindSequence:
 				jsonBytes, err := json.Marshal(ss.AsAny())

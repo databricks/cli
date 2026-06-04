@@ -8,7 +8,7 @@ import (
 )
 
 func (t *translateContext) applyGenieSpaceTranslations(ctx context.Context, v dyn.Value) (dyn.Value, error) {
-	// Convert the `file_path` field to a local absolute path.
+	// Rewrite the `file_path` field to a path relative to the bundle sync root.
 	// We load the file at this path and use its contents for the genie space contents.
 
 	return paths.VisitGenieSpacePaths(v, func(p dyn.Path, mode paths.TranslateMode, v dyn.Value) (dyn.Value, error) {
