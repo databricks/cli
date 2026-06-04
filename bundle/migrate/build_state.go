@@ -4,15 +4,18 @@ import (
 	"context"
 	"fmt"
 	"maps"
+	"slices"
 	"strings"
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deploy/terraform"
+	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structpath"
@@ -120,6 +123,45 @@ func BuildStateFromTF(
 
 		sv := structvar.NewStructVar(newStateValue, refs)
 
+		// Compute depends_on from cross-resource references before resolving them
+		// (resolution deletes entries from the refs map).
+		// Same logic as makePlan in bundle/direct/bundle_plan.go.
+		var dependsOn []deployplan.DependsOnEntry //nolint:prealloc
+		for _, refTemplate := range refs {
+			ref, ok := dynvar.NewRef(dyn.V(refTemplate))
+			if !ok {
+				continue
+			}
+			for _, targetPath := range ref.References() {
+				targetPathParsed, err := dyn.NewPathFromString(targetPath)
+				if err != nil {
+					continue
+				}
+				targetNodeDP, _ := config.GetNodeAndType(targetPathParsed)
+				targetNode := targetNodeDP.String()
+				fullRef := "${" + targetPath + "}"
+				found := false
+				for _, dep := range dependsOn {
+					if dep.Node == targetNode && dep.Label == fullRef {
+						found = true
+						break
+					}
+				}
+				if !found {
+					dependsOn = append(dependsOn, deployplan.DependsOnEntry{
+						Node:  targetNode,
+						Label: fullRef,
+					})
+				}
+			}
+		}
+		slices.SortFunc(dependsOn, func(a, b deployplan.DependsOnEntry) int {
+			if a.Node != b.Node {
+				return strings.Compare(a.Node, b.Node)
+			}
+			return strings.Compare(a.Label, b.Label)
+		})
+
 		// Resolve each reference using TF state.
 		// node format: "resources.<group>.<name>" or "resources.<group>.<name>.permissions"
 		parts := strings.SplitN(node, ".", 4)
@@ -170,7 +212,7 @@ func BuildStateFromTF(
 			}
 		}
 
-		if err := stateDB.SaveState(node, idEntry.ID, sv.Value, nil); err != nil {
+		if err := stateDB.SaveState(node, idEntry.ID, sv.Value, dependsOn); err != nil {
 			return fmt.Errorf("%s: SaveState: %w", node, err)
 		}
 	}
