@@ -191,10 +191,10 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		apps.Validate(),
 
 		resourcemutator.ValidateTargetMode(),
-		// Reads (typed): b.Config.Workspace.RootPath (checks if path is in shared workspace)
-		// Reads (typed): b.Config.Permissions (checks if users group has CAN_MANAGE permission)
-		// Validates that when using a shared workspace path, appropriate permissions are configured
-		permissions.ValidateSharedRootPermissions(),
+		// Reads (typed): b.Config.Workspace.{RootPath,StatePath} and b.Config.Permissions.
+		// Warns when a workspace path is in /Workspace/Shared without the permissions
+		// section granting all workspace users CAN_MANAGE.
+		permissions.ValidateWorkspaceSharedPermissions(),
 
 		// Annotate resources with "deployment" metadata.
 		//
