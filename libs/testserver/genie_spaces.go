@@ -178,15 +178,11 @@ func (s *FakeWorkspace) GenieSpaceUpdate(req Request) Response {
 		genieSpace.SerializedSpace = updateReq.SerializedSpace
 	}
 
-	// Bump the etag only when the update actually changes user-visible state.
-	// Matches dashboard's behavior (libs/testserver/dashboards.go) and keeps
-	// no-op updates idempotent so TestAll can pass the same config to Create
-	// and Update without observing spurious drift.
-	if prev.Title != genieSpace.Title ||
-		prev.Description != genieSpace.Description ||
-		prev.WarehouseId != genieSpace.WarehouseId ||
-		prev.ParentPath != genieSpace.ParentPath ||
-		prev.SerializedSpace != genieSpace.SerializedSpace {
+	// The backend bumps the etag only when serialized_space changes; updates to
+	// other fields (title, description, warehouse_id, parent_path) leave it
+	// unchanged. This mirrors the GET API, which only returns the etag
+	// alongside serialized_space.
+	if prev.SerializedSpace != genieSpace.SerializedSpace {
 		prevEtag, err := strconv.Atoi(genieSpace.Etag)
 		if err != nil {
 			return Response{
