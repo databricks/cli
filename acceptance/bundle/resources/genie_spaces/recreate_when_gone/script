@@ -1,0 +1,18 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+trace $CLI bundle deploy
+GENIE_SPACE_ID=$($CLI bundle summary --output json | jq -r '.resources.genie_spaces.sales_analytics.id')
+echo "$GENIE_SPACE_ID:GENIE_SPACE_ID" >> ACC_REPLS
+
+# Delete the space out-of-band, simulating a UI deletion. The GET API then
+# returns 403; the resource maps that to "gone" so the plan recreates the
+# space instead of failing.
+trace $CLI genie trash-space $GENIE_SPACE_ID
+
+title "Plan after remote deletion should recreate the space"
+trace $CLI bundle plan
