@@ -93,12 +93,12 @@ jobs:
           # way to cut its wall time is more parallel jobs. direct is faster
           # than terraform and needs fewer shards.
           shard_counts = {
-              ("linux", "terraform"): 4,
+              ("linux", "terraform"): 2,
               ("linux", "direct"): 2,
-              ("macos", "terraform"): 4,
+              ("macos", "terraform"): 2,
               ("macos", "direct"): 2,
-              ("windows", "terraform"): 4,
-              ("windows", "direct"): 4,
+              ("windows", "terraform"): 2,
+              ("windows", "direct"): 2,
           }
 
           include = []
