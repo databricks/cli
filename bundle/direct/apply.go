@@ -51,8 +51,8 @@ func (d *DeploymentUnit) Deploy(ctx context.Context, db *dstate.DeploymentState,
 }
 
 func (d *DeploymentUnit) Create(ctx context.Context, db *dstate.DeploymentState, newState any) error {
-	engine := dresources.NewStateSaver(d.ResourceKey, d.Adapter.StateType(), func(id string, x any) error {
-		return db.SaveState(d.ResourceKey, id, x, d.DependsOn)
+	engine := dresources.NewStateSaver(d.ResourceKey, d.Adapter.StateType(), func(id string, b json.RawMessage) error {
+		return db.SaveStateJSON(d.ResourceKey, id, b, d.DependsOn)
 	})
 
 	var newID string
@@ -127,8 +127,8 @@ func (d *DeploymentUnit) Update(ctx context.Context, db *dstate.DeploymentState,
 		return fmt.Errorf("internal error: DoUpdate not implemented for resource %s", d.ResourceKey)
 	}
 
-	engine := dresources.NewStateSaver(d.ResourceKey, d.Adapter.StateType(), func(_ string, x any) error {
-		return db.SaveState(d.ResourceKey, id, x, d.DependsOn)
+	engine := dresources.NewStateSaver(d.ResourceKey, d.Adapter.StateType(), func(_ string, b json.RawMessage) error {
+		return db.SaveStateJSON(d.ResourceKey, id, b, d.DependsOn)
 	})
 	remoteState, err := retryOnTransient(ctx, func() (any, error) {
 		return d.Adapter.DoUpdate(ctx, engine, id, newState, planEntry)

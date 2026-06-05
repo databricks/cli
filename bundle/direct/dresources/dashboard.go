@@ -299,14 +299,9 @@ func (r *ResourceDashboard) DoCreate(ctx context.Context, engine *StateSaver, co
 
 	// Persist the etag in state.
 	config.Etag = createResp.Etag
-	// Save state with Published=false: the dashboard exists as a draft; publish
-	// has not succeeded yet. Using Published=false ensures the planner sees a
-	// real diff (false→true) if publish is interrupted, triggering a DoUpdate
-	// on the next deploy instead of silently treating the resource as up-to-date.
-	savedPublished := config.Published
-	config.Published = false
-	engine.SaveState(ctx, createResp.DashboardId, config)
-	config.Published = savedPublished
+	// Save with Published=false: draft exists, publish not yet done. Ensures the
+	// planner sees a real diff (false→true) if publish is interrupted.
+	SaveStateWith(engine, ctx, createResp.DashboardId, config, &config.Published, false)
 
 	var publishResp *dashboards.PublishedDashboard
 	// Note, today config.Published is always true (we do not have this field in input config).
@@ -345,10 +340,7 @@ func (r *ResourceDashboard) DoUpdate(ctx context.Context, engine *StateSaver, id
 	// sync (a stale etag would make the next Update fail with a conflict) and records
 	// published=false so the planner re-publishes on the next deploy.
 	config.Etag = updateResp.Etag
-	savedPublished := config.Published
-	config.Published = false
-	engine.SaveState(ctx, id, config)
-	config.Published = savedPublished
+	SaveStateWith(engine, ctx, id, config, &config.Published, false)
 
 	var publishResp *dashboards.PublishedDashboard
 	// Note, today config.Published is always true (we do not have this field in input config).
