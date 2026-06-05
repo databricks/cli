@@ -319,7 +319,7 @@ func (r *ResourceDashboard) DoCreate(ctx context.Context, engine *Engine, config
 	return createResp.DashboardId, responseToState(createResp, publishResp, dashboard.SerializedDashboard, config.Published), nil
 }
 
-func (r *ResourceDashboard) DoUpdate(ctx context.Context, _ *Engine, id string, config *DashboardState, _ *PlanEntry) (*DashboardState, error) {
+func (r *ResourceDashboard) DoUpdate(ctx context.Context, engine *Engine, id string, config *DashboardState, _ *PlanEntry) (*DashboardState, error) {
 	dashboard, err := prepareDashboardRequest(config)
 	if err != nil {
 		return nil, err
@@ -339,15 +339,21 @@ func (r *ResourceDashboard) DoUpdate(ctx context.Context, _ *Engine, id string, 
 		return nil, err
 	}
 
-	// Persist the etag in state.
+	// Persist the new etag with Published=false before publishing. Update() bumps the
+	// etag on the server; if a subsequent publish fails, saving here keeps the etag in
+	// sync (a stale etag would make the next Update fail with a conflict) and records
+	// published=false so the planner re-publishes on the next deploy.
 	config.Etag = updateResp.Etag
+	savedPublished := config.Published
+	config.Published = false
+	engine.SaveState(ctx, id, config)
+	config.Published = savedPublished
 
 	var publishResp *dashboards.PublishedDashboard
 	// Note, today config.Published is always true (we do not have this field in input config).
 	if config.Published {
 		publishResp, err = r.publishDashboard(ctx, id, config)
 		if err != nil {
-			// TODO: store partial state with published=false?
 			return nil, err
 		}
 	}
