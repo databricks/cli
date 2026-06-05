@@ -1,0 +1,4 @@
+Error: genie space with ID f00dcafe not found
+
+
+Exit code: 1

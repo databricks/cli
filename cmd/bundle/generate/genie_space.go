@@ -24,7 +24,6 @@ import (
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/yamlsaver"
 	"github.com/databricks/cli/libs/logdiag"
@@ -38,9 +37,8 @@ import (
 const genieSpaceWatchInterval = 1 * time.Second
 
 type genieSpace struct {
-	// Lookup flags for one-time generate.
-	existingPath string
-	existingID   string
+	// Lookup flag for one-time generate.
+	existingID string
 
 	// Lookup flag for existing bundle resource.
 	resource string
@@ -67,42 +65,6 @@ type genieSpace struct {
 	// Output and error streams.
 	out io.Writer
 	err io.Writer
-}
-
-func (g *genieSpace) resolveID(ctx context.Context, b *bundle.Bundle) string {
-	switch {
-	case g.existingPath != "":
-		return g.resolveFromPath(ctx, b)
-	case g.existingID != "":
-		return g.resolveFromID(ctx, b)
-	}
-
-	logdiag.LogError(ctx, errors.New("expected one of --existing-path, --existing-id"))
-	return ""
-}
-
-func (g *genieSpace) resolveFromPath(ctx context.Context, b *bundle.Bundle) string {
-	w := b.WorkspaceClient(ctx)
-	obj, err := w.Workspace.GetStatusByPath(ctx, g.existingPath) //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
-	if err != nil {
-		if apierr.IsMissing(err) {
-			logdiag.LogError(ctx, fmt.Errorf("genie space %q not found", path.Base(g.existingPath)))
-			return ""
-		}
-
-		logdiag.LogError(ctx, err)
-		return ""
-	}
-
-	if obj.ResourceId == "" {
-		logdiag.LogDiag(ctx, diag.Diagnostic{
-			Severity: diag.Error,
-			Summary:  "expected a non-empty genie space resource ID",
-		})
-		return ""
-	}
-
-	return obj.ResourceId
 }
 
 func (g *genieSpace) resolveFromID(ctx context.Context, b *bundle.Bundle) string {
@@ -390,7 +352,7 @@ func (g *genieSpace) runForResource(ctx context.Context, b *bundle.Bundle) {
 
 func (g *genieSpace) runForExisting(ctx context.Context, b *bundle.Bundle) {
 	// Resolve the ID of the genie space to generate configuration for.
-	genieSpaceID := g.resolveID(ctx, b)
+	genieSpaceID := g.resolveFromID(ctx, b)
 	if logdiag.HasError(ctx) {
 		return
 	}
@@ -454,14 +416,13 @@ This command downloads an existing Genie space and creates bundle files
 that you can use to deploy the Genie space to other environments or manage it as code.
 
 Examples:
-  # Import Genie space by workspace path
-  databricks bundle generate genie-space --existing-path /Users/me/my-genie-space
-
   # Import Genie space by ID
-  databricks bundle generate genie-space --existing-id abc123
+  databricks bundle generate genie-space --existing-id abc123 --key my_genie_space
 
   # Watch for changes to keep bundle in sync with UI modifications
   databricks bundle generate genie-space --resource my_genie_space --watch --force
+
+Use --key to set the resource name in the generated configuration.
 
 What gets generated:
 - Genie space configuration YAML file with settings and a reference to the Genie space definition
@@ -486,14 +447,11 @@ bundle files automatically, useful during active Genie space development.`,
 	}
 
 	// Lookup flags.
-	cmd.Flags().StringVar(&g.existingPath, "existing-path", "", `workspace path of the Genie space to generate configuration for`)
 	cmd.Flags().StringVar(&g.existingID, "existing-id", "", `ID of the Genie space to generate configuration for`)
 	cmd.Flags().StringVar(&g.resource, "resource", "", `resource key of Genie space to watch for changes`)
 
-	// Alias lookup flags that include the resource type name.
-	cmd.Flags().StringVar(&g.existingPath, "existing-genie-space-path", "", `workspace path of the Genie space to generate configuration for`)
+	// Alias lookup flag that includes the resource type name.
 	cmd.Flags().StringVar(&g.existingID, "existing-genie-space-id", "", `ID of the Genie space to generate configuration for`)
-	cmd.Flags().MarkHidden("existing-genie-space-path")
 	cmd.Flags().MarkHidden("existing-genie-space-id")
 
 	// Output flags.
@@ -506,7 +464,6 @@ bundle files automatically, useful during active Genie space development.`,
 
 	// Exactly one of the lookup flags must be provided.
 	cmd.MarkFlagsOneRequired(
-		"existing-path",
 		"existing-id",
 		"resource",
 	)
@@ -515,7 +472,6 @@ bundle files automatically, useful during active Genie space development.`,
 	cmd.Flags().BoolVar(&g.watch, "watch", false, `watch for changes to the Genie space and update the configuration`)
 
 	// Make sure the watch flag is only used with the existing-resource flag.
-	cmd.MarkFlagsMutuallyExclusive("watch", "existing-path")
 	cmd.MarkFlagsMutuallyExclusive("watch", "existing-id")
 
 	// Make sure the bind flag is only used with the existing-resource flag.
