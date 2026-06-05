@@ -4,7 +4,7 @@ export GENIE_SPACE_TITLE
 envsubst < databricks.yml.tmpl > databricks.yml
 
 # Create a Genie space out of band, then bind the bundle resource to it.
-GENIE_SPACE_ID=$($CLI genie create-space "test-warehouse-id" '{"version": 1, "display_name": "bind test space"}' --title "${GENIE_SPACE_TITLE}" | jq -r '.space_id')
+GENIE_SPACE_ID=$($CLI genie create-space "test-warehouse-id" '{"version":1}' --title "${GENIE_SPACE_TITLE}" | jq -r '.space_id')
 
 cleanupRemoveGenieSpace() {
     $CLI genie trash-space "${GENIE_SPACE_ID}"
@@ -12,6 +12,11 @@ cleanupRemoveGenieSpace() {
 trap cleanupRemoveGenieSpace EXIT
 
 trace $CLI bundle deployment bind genie_space1 "${GENIE_SPACE_ID}" --auto-approve
+
+# Bind must copy the remote etag into state, so the first plan after bind is
+# clean. Without that, the etag drift signal (empty stored vs remote) would
+# produce a bogus update here.
+trace $CLI bundle plan
 
 trace $CLI bundle deploy
 

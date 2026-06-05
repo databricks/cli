@@ -4,6 +4,9 @@ Updating deployment state...
 Successfully bound genie_space with an id '[GENIE_SPACE_ID]'
 Run 'bundle deploy' to deploy changes to your workspace
 
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Deploying resources...
