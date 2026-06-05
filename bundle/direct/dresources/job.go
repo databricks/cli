@@ -122,7 +122,7 @@ func makeJobRemote(job *jobs.Job) *JobRemote {
 	}
 }
 
-func (r *ResourceJob) DoCreate(ctx context.Context, _ *Engine, config *jobs.JobSettings) (string, *JobRemote, error) {
+func (r *ResourceJob) DoCreate(ctx context.Context, _ *StateSaver, config *jobs.JobSettings) (string, *JobRemote, error) {
 	request, err := makeCreateJob(*config)
 	if err != nil {
 		return "", nil, err
@@ -134,7 +134,7 @@ func (r *ResourceJob) DoCreate(ctx context.Context, _ *Engine, config *jobs.JobS
 	return strconv.FormatInt(response.JobId, 10), nil, nil
 }
 
-func (r *ResourceJob) DoUpdate(ctx context.Context, _ *Engine, id string, config *jobs.JobSettings, _ *PlanEntry) (*JobRemote, error) {
+func (r *ResourceJob) DoUpdate(ctx context.Context, _ *StateSaver, id string, config *jobs.JobSettings, _ *PlanEntry) (*JobRemote, error) {
 	request, err := makeResetJob(*config, id)
 	if err != nil {
 		return nil, err

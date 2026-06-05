@@ -54,13 +54,13 @@ type IResource interface {
 	// DoCreate creates a new resource from the newState. Returns id of the resource and optionally remote state.
 	// If remote state is available as part of the operation, return it; otherwise return nil.
 	// Call engine.SaveState(ctx, id, state) to persist intermediate state before long-running waits.
-	// Example: func (r *ResourceVolume) DoCreate(ctx context.Context, _ *Engine, newState *catalog.CreateVolumeRequestContent) (string, *catalog.VolumeInfo, error)
-	DoCreate(ctx context.Context, engine *Engine, newState any) (id string, remoteState any, e error)
+	// Example: func (r *ResourceVolume) DoCreate(ctx context.Context, _ *StateSaver, newState *catalog.CreateVolumeRequestContent) (string, *catalog.VolumeInfo, error)
+	DoCreate(ctx context.Context, engine *StateSaver, newState any) (id string, remoteState any, e error)
 
 	// [Optional] DoUpdate updates the resource. ID must not change as a result of this operation. Returns optionally remote state.
 	// If remote state is available as part of the operation, return it; otherwise return nil.
-	// Example: func (r *ResourceSchema) DoUpdate(ctx context.Context, _ *Engine, id string, newState *catalog.CreateSchema, entry *PlanEntry) (*catalog.SchemaInfo, error)
-	DoUpdate(ctx context.Context, engine *Engine, id string, newState any, entry *PlanEntry) (remoteState any, e error)
+	// Example: func (r *ResourceSchema) DoUpdate(ctx context.Context, _ *StateSaver, id string, newState *catalog.CreateSchema, entry *PlanEntry) (*catalog.SchemaInfo, error)
+	DoUpdate(ctx context.Context, engine *StateSaver, id string, newState any, entry *PlanEntry) (remoteState any, e error)
 
 	// [Optional] DoUpdateWithID performs an update that may result in resource having a new ID. Returns new id and optionally remote state.
 	DoUpdateWithID(ctx context.Context, id string, newState any) (newID string, remoteState any, e error)
@@ -403,7 +403,7 @@ func normalizeNilPointer(v any) any {
 	return v
 }
 
-func (a *Adapter) DoCreate(ctx context.Context, engine *Engine, newState any) (string, any, error) {
+func (a *Adapter) DoCreate(ctx context.Context, engine *StateSaver, newState any) (string, any, error) {
 	outs, err := a.doCreate.Call(ctx, engine, newState)
 	if err != nil {
 		return "", nil, err
@@ -421,7 +421,7 @@ func (a *Adapter) HasDoUpdate() bool {
 
 // DoUpdate updates the resource with the plan entry computed during plan.
 // Returns remote state if available, otherwise nil.
-func (a *Adapter) DoUpdate(ctx context.Context, engine *Engine, id string, newState any, entry *PlanEntry) (any, error) {
+func (a *Adapter) DoUpdate(ctx context.Context, engine *StateSaver, id string, newState any, entry *PlanEntry) (any, error) {
 	if a.doUpdate == nil {
 		return nil, errors.New("internal error: DoUpdate not found")
 	}

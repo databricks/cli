@@ -148,7 +148,7 @@ func (r *ResourceModelServingEndpoint) DoRead(ctx context.Context, id string) (*
 	return newModelServingEndpointRemote(endpoint), nil
 }
 
-func (r *ResourceModelServingEndpoint) DoCreate(ctx context.Context, engine *Engine, config *serving.CreateServingEndpoint) (string, *ModelServingEndpointRemote, error) {
+func (r *ResourceModelServingEndpoint) DoCreate(ctx context.Context, engine *StateSaver, config *serving.CreateServingEndpoint) (string, *ModelServingEndpointRemote, error) {
 	waiter, err := r.client.ServingEndpoints.Create(ctx, *config)
 	if err != nil {
 		return "", nil, err
@@ -304,7 +304,7 @@ func (r *ResourceModelServingEndpoint) updateTags(ctx context.Context, id string
 	return nil
 }
 
-func (r *ResourceModelServingEndpoint) DoUpdate(ctx context.Context, engine *Engine, id string, config *serving.CreateServingEndpoint, entry *PlanEntry) (*ModelServingEndpointRemote, error) {
+func (r *ResourceModelServingEndpoint) DoUpdate(ctx context.Context, engine *StateSaver, id string, config *serving.CreateServingEndpoint, entry *PlanEntry) (*ModelServingEndpointRemote, error) {
 	var err error
 
 	// Terraform makes these API calls sequentially. We do the same here.

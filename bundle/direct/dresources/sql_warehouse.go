@@ -118,7 +118,7 @@ func (r *ResourceSqlWarehouse) DoRead(ctx context.Context, id string) (*SqlWareh
 }
 
 // DoCreate creates the warehouse and returns its id.
-func (r *ResourceSqlWarehouse) DoCreate(ctx context.Context, engine *Engine, config *SqlWarehouseState) (string, *SqlWarehouseRemote, error) {
+func (r *ResourceSqlWarehouse) DoCreate(ctx context.Context, engine *StateSaver, config *SqlWarehouseState) (string, *SqlWarehouseRemote, error) {
 	waiter, err := r.client.Warehouses.Create(ctx, config.CreateWarehouseRequest)
 	if err != nil {
 		return "", nil, err
@@ -161,7 +161,7 @@ func hasWarehouseChanges(entry *PlanEntry) bool {
 }
 
 // DoUpdate updates the warehouse in place.
-func (r *ResourceSqlWarehouse) DoUpdate(ctx context.Context, _ *Engine, id string, config *SqlWarehouseState, entry *PlanEntry) (*SqlWarehouseRemote, error) {
+func (r *ResourceSqlWarehouse) DoUpdate(ctx context.Context, _ *StateSaver, id string, config *SqlWarehouseState, entry *PlanEntry) (*SqlWarehouseRemote, error) {
 	if hasWarehouseChanges(entry) {
 		request := sql.EditWarehouseRequest{
 			AutoStopMins:            config.AutoStopMins,

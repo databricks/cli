@@ -264,7 +264,7 @@ func responseToState(createOrUpdateResp *dashboards.Dashboard, publishResp *dash
 	}
 }
 
-func (r *ResourceDashboard) DoCreate(ctx context.Context, engine *Engine, config *DashboardState) (string, *DashboardState, error) {
+func (r *ResourceDashboard) DoCreate(ctx context.Context, engine *StateSaver, config *DashboardState) (string, *DashboardState, error) {
 	dashboard, err := prepareDashboardRequest(config)
 	if err != nil {
 		return "", nil, err
@@ -320,7 +320,7 @@ func (r *ResourceDashboard) DoCreate(ctx context.Context, engine *Engine, config
 	return createResp.DashboardId, responseToState(createResp, publishResp, dashboard.SerializedDashboard, config.Published), nil
 }
 
-func (r *ResourceDashboard) DoUpdate(ctx context.Context, engine *Engine, id string, config *DashboardState, _ *PlanEntry) (*DashboardState, error) {
+func (r *ResourceDashboard) DoUpdate(ctx context.Context, engine *StateSaver, id string, config *DashboardState, _ *PlanEntry) (*DashboardState, error) {
 	dashboard, err := prepareDashboardRequest(config)
 	if err != nil {
 		return nil, err

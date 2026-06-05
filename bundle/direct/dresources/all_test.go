@@ -931,7 +931,7 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	require.Error(t, err)
 	// TODO: if errors.Is(err, databricks.ErrResourceDoesNotExist) {... }
 
-	nopEngine := NewNopEngine(adapter.StateType())
+	nopEngine := NewNopStateSaver(adapter.StateType())
 	createdID, remoteStateFromCreate, err := adapter.DoCreate(ctx, nopEngine, newState)
 	require.NoError(t, err, "DoCreate failed state=%v", newState)
 	require.NotEmpty(t, createdID, "ID returned from DoCreate was empty")

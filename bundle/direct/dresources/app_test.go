@@ -36,7 +36,7 @@ func TestAppDoCreate_RetriesWhenAppIsDeleting(t *testing.T) {
 	require.NoError(t, err)
 
 	r := (&ResourceApp{}).New(client)
-	name, _, err := r.DoCreate(ctx, NewNopEngine(reflect.TypeFor[*AppState]()), &AppState{App: apps.App{Name: "test-app"}})
+	name, _, err := r.DoCreate(ctx, NewNopStateSaver(reflect.TypeFor[*AppState]()), &AppState{App: apps.App{Name: "test-app"}})
 
 	require.NoError(t, err)
 	assert.Equal(t, "test-app", name)
@@ -73,7 +73,7 @@ func TestAppDoCreate_RetriesWhenGetReturnsNotFound(t *testing.T) {
 
 	r := (&ResourceApp{}).New(client)
 	ctx := t.Context()
-	name, _, err := r.DoCreate(ctx, NewNopEngine(reflect.TypeFor[*AppState]()), &AppState{App: apps.App{Name: "test-app"}})
+	name, _, err := r.DoCreate(ctx, NewNopStateSaver(reflect.TypeFor[*AppState]()), &AppState{App: apps.App{Name: "test-app"}})
 
 	require.NoError(t, err)
 	assert.Equal(t, "test-app", name)
