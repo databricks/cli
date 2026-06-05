@@ -1,0 +1,1 @@
+Pipeline configuration successfully saved to out.pipeline.yml
