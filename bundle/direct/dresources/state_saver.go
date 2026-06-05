@@ -1,6 +1,7 @@
 package dresources
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -8,7 +9,6 @@ import (
 
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
-	"github.com/databricks/cli/libs/structs/structdiff"
 )
 
 // StateSaver provides state persistence to resource implementations.
@@ -18,19 +18,33 @@ type StateSaver struct {
 	resourceKey string
 	id          string
 	stateType   reflect.Type
-	saveFunc    func(id string, x any) error
-	lastSaved   any
+	saveFunc    func(id string, b json.RawMessage) error
+	lastSaved   []byte // JSON snapshot; stored by value to avoid aliasing with the live config pointer
 }
 
 // NewStateSaver creates an StateSaver with the given state type and save function.
 // The framework calls this before invoking DoCreate or DoUpdate.
-func NewStateSaver(resourceKey string, stateType reflect.Type, saveFunc func(id string, x any) error) *StateSaver {
+func NewStateSaver(resourceKey string, stateType reflect.Type, saveFunc func(id string, b json.RawMessage) error) *StateSaver {
 	return &StateSaver{resourceKey: resourceKey, id: "", stateType: stateType, saveFunc: saveFunc, lastSaved: nil}
 }
 
 // NewNopStateSaver creates an StateSaver that discards all saves. Use in tests.
 func NewNopStateSaver(stateType reflect.Type) *StateSaver {
-	return NewStateSaver("", stateType, func(_ string, _ any) error { return nil })
+	return NewStateSaver("", stateType, func(_ string, _ json.RawMessage) error { return nil })
+}
+
+// SaveStateWith saves state with field temporarily set to value, then restores it.
+// This is useful when the actual current state of a field differs from its desired
+// value in config — e.g. saving started=true before a stop, or published=false
+// before a publish, so the planner sees a real diff if the operation is interrupted.
+//
+// field must be a pointer to a field within config. Type safety is enforced by the
+// compiler: field and value must have the same type F.
+func SaveStateWith[F any](s *StateSaver, ctx context.Context, id string, config any, field *F, value F) {
+	saved := *field
+	*field = value
+	s.SaveState(ctx, id, config)
+	*field = saved
 }
 
 // SaveState saves the resource state. id must be the resource's identifier; on
@@ -49,19 +63,19 @@ func (e *StateSaver) SaveState(ctx context.Context, id string, x any) {
 	if xt != e.stateType {
 		panic(fmt.Sprintf("SaveState: type mismatch: expected %v, got %v", e.stateType, xt))
 	}
-	if e.lastSaved != nil && structdiff.IsEqual(e.lastSaved, x) {
+	b, _ := json.Marshal(x)
+	if bytes.Equal(e.lastSaved, b) {
 		log.Debugf(ctx, "SaveState: %s id=%s: skipping, state unchanged", e.resourceKey, id)
 		return
 	}
-	b, _ := json.Marshal(x)
 	preview := string(b)
 	if len(preview) > 100 {
 		preview = preview[:100]
 	}
 	log.Debugf(ctx, "SaveState: %s id=%s %d bytes: %s", e.resourceKey, id, len(b), preview)
-	if err := e.saveFunc(e.id, x); err != nil {
+	if err := e.saveFunc(e.id, b); err != nil {
 		logdiag.LogError(ctx, err)
 		return
 	}
-	e.lastSaved = x
+	e.lastSaved = b
 }
