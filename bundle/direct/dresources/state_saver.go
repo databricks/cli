@@ -11,10 +11,10 @@ import (
 	"github.com/databricks/cli/libs/structs/structdiff"
 )
 
-// Engine provides state persistence to resource implementations.
+// StateSaver provides state persistence to resource implementations.
 // Pass it to DoCreate or DoUpdate to save intermediate state before long-running
 // wait operations, so the resource is not orphaned if deployment is interrupted.
-type Engine struct {
+type StateSaver struct {
 	resourceKey string
 	id          string
 	stateType   reflect.Type
@@ -22,15 +22,15 @@ type Engine struct {
 	lastSaved   any
 }
 
-// NewEngine creates an Engine with the given state type and save function.
+// NewStateSaver creates an StateSaver with the given state type and save function.
 // The framework calls this before invoking DoCreate or DoUpdate.
-func NewEngine(resourceKey string, stateType reflect.Type, saveFunc func(id string, x any) error) *Engine {
-	return &Engine{resourceKey: resourceKey, id: "", stateType: stateType, saveFunc: saveFunc, lastSaved: nil}
+func NewStateSaver(resourceKey string, stateType reflect.Type, saveFunc func(id string, x any) error) *StateSaver {
+	return &StateSaver{resourceKey: resourceKey, id: "", stateType: stateType, saveFunc: saveFunc, lastSaved: nil}
 }
 
-// NewNopEngine creates an Engine that discards all saves. Use in tests.
-func NewNopEngine(stateType reflect.Type) *Engine {
-	return NewEngine("", stateType, func(_ string, _ any) error { return nil })
+// NewNopStateSaver creates an StateSaver that discards all saves. Use in tests.
+func NewNopStateSaver(stateType reflect.Type) *StateSaver {
+	return NewStateSaver("", stateType, func(_ string, _ any) error { return nil })
 }
 
 // SaveState saves the resource state. id must be the resource's identifier; on
@@ -39,7 +39,7 @@ func NewNopEngine(stateType reflect.Type) *Engine {
 // If the state is identical to what was last saved, the write is skipped.
 // Failures to persist state are logged but do not abort the deployment — the
 // resource already exists and aborting would not undo its creation.
-func (e *Engine) SaveState(ctx context.Context, id string, x any) {
+func (e *StateSaver) SaveState(ctx context.Context, id string, x any) {
 	if e.id == "" {
 		e.id = id
 	} else if e.id != id {

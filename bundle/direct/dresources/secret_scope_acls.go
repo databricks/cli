@@ -92,7 +92,7 @@ func (r *ResourceSecretScopeAcls) RemapState(remote *SecretScopeAclsState) *Secr
 	return remote
 }
 
-func (r *ResourceSecretScopeAcls) DoCreate(ctx context.Context, _ *Engine, state *SecretScopeAclsState) (string, *SecretScopeAclsState, error) {
+func (r *ResourceSecretScopeAcls) DoCreate(ctx context.Context, _ *StateSaver, state *SecretScopeAclsState) (string, *SecretScopeAclsState, error) {
 	err := r.setACLs(ctx, state.ScopeName, state.Acls)
 	if err != nil {
 		return "", nil, err
@@ -109,7 +109,7 @@ func (r *ResourceSecretScopeAcls) DoUpdateWithID(ctx context.Context, id string,
 	return state.ScopeName, nil, nil
 }
 
-func (r *ResourceSecretScopeAcls) DoUpdate(ctx context.Context, _ *Engine, id string, state *SecretScopeAclsState, _ *PlanEntry) (*SecretScopeAclsState, error) {
+func (r *ResourceSecretScopeAcls) DoUpdate(ctx context.Context, _ *StateSaver, id string, state *SecretScopeAclsState, _ *PlanEntry) (*SecretScopeAclsState, error) {
 	_, _, err := r.DoUpdateWithID(ctx, id, state)
 	return nil, err
 }

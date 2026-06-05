@@ -40,7 +40,7 @@ func (r *ResourceVolume) DoRead(ctx context.Context, id string) (*catalog.Volume
 	return r.client.Volumes.ReadByName(ctx, id)
 }
 
-func (r *ResourceVolume) DoCreate(ctx context.Context, _ *Engine, config *catalog.CreateVolumeRequestContent) (string, *catalog.VolumeInfo, error) {
+func (r *ResourceVolume) DoCreate(ctx context.Context, _ *StateSaver, config *catalog.CreateVolumeRequestContent) (string, *catalog.VolumeInfo, error) {
 	response, err := r.client.Volumes.Create(ctx, *config)
 	if err != nil {
 		return "", nil, err
@@ -48,7 +48,7 @@ func (r *ResourceVolume) DoCreate(ctx context.Context, _ *Engine, config *catalo
 	return response.FullName, response, nil
 }
 
-func (r *ResourceVolume) DoUpdate(ctx context.Context, _ *Engine, id string, config *catalog.CreateVolumeRequestContent, _ *PlanEntry) (*catalog.VolumeInfo, error) {
+func (r *ResourceVolume) DoUpdate(ctx context.Context, _ *StateSaver, id string, config *catalog.CreateVolumeRequestContent, _ *PlanEntry) (*catalog.VolumeInfo, error) {
 	updateRequest := catalog.UpdateVolumeRequestContent{
 		Comment: config.Comment,
 		Name:    id,

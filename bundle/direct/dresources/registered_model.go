@@ -55,7 +55,7 @@ func (r *ResourceRegisteredModel) DoRead(ctx context.Context, id string) (*catal
 	})
 }
 
-func (r *ResourceRegisteredModel) DoCreate(ctx context.Context, _ *Engine, config *catalog.CreateRegisteredModelRequest) (string, *catalog.RegisteredModelInfo, error) {
+func (r *ResourceRegisteredModel) DoCreate(ctx context.Context, _ *StateSaver, config *catalog.CreateRegisteredModelRequest) (string, *catalog.RegisteredModelInfo, error) {
 	response, err := r.client.RegisteredModels.Create(ctx, *config)
 	if err != nil {
 		return "", nil, err
@@ -64,7 +64,7 @@ func (r *ResourceRegisteredModel) DoCreate(ctx context.Context, _ *Engine, confi
 	return response.FullName, response, nil
 }
 
-func (r *ResourceRegisteredModel) DoUpdate(ctx context.Context, _ *Engine, id string, config *catalog.CreateRegisteredModelRequest, _ *PlanEntry) (*catalog.RegisteredModelInfo, error) {
+func (r *ResourceRegisteredModel) DoUpdate(ctx context.Context, _ *StateSaver, id string, config *catalog.CreateRegisteredModelRequest, _ *PlanEntry) (*catalog.RegisteredModelInfo, error) {
 	updateRequest := catalog.UpdateRegisteredModelRequest{
 		FullName:        id,
 		Comment:         config.Comment,

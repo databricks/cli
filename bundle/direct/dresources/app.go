@@ -116,7 +116,7 @@ func (r *ResourceApp) DoRead(ctx context.Context, id string) (*AppRemote, error)
 	return remote, nil
 }
 
-func (r *ResourceApp) DoCreate(ctx context.Context, engine *Engine, config *AppState) (string, *AppRemote, error) {
+func (r *ResourceApp) DoCreate(ctx context.Context, engine *StateSaver, config *AppState) (string, *AppRemote, error) {
 	// Start app compute only when lifecycle.started=true is explicit.
 	// For nil (omitted) or false, use no_compute=true (do not start compute).
 	noCompute := config.Lifecycle == nil || config.Lifecycle.Started == nil || !*config.Lifecycle.Started
@@ -185,7 +185,7 @@ var UpdateMaskFields = []string{
 
 var updateMask = strings.Join(UpdateMaskFields, ",")
 
-func (r *ResourceApp) DoUpdate(ctx context.Context, _ *Engine, id string, config *AppState, entry *PlanEntry) (*AppRemote, error) {
+func (r *ResourceApp) DoUpdate(ctx context.Context, _ *StateSaver, id string, config *AppState, entry *PlanEntry) (*AppRemote, error) {
 	// Deploy-only fields (source_code_path, config,
 	// git_source, lifecycle) are not part of apps.App and thus excluded from the request body.
 	if hasAppChanges(entry) {

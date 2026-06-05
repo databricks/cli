@@ -107,7 +107,7 @@ func (r *ResourceGrants) DoRead(ctx context.Context, id string) (*GrantsState, e
 	}, nil
 }
 
-func (r *ResourceGrants) DoCreate(ctx context.Context, engine *Engine, state *GrantsState) (string, *GrantsState, error) {
+func (r *ResourceGrants) DoCreate(ctx context.Context, engine *StateSaver, state *GrantsState) (string, *GrantsState, error) {
 	_, err := r.DoUpdate(ctx, engine, "", state, nil)
 	if err != nil {
 		// Grants Update is idempotent (additive PATCH), so retrying on transient errors is safe.
@@ -117,7 +117,7 @@ func (r *ResourceGrants) DoCreate(ctx context.Context, engine *Engine, state *Gr
 	return state.SecurableType + "/" + state.FullName, nil, nil
 }
 
-func (r *ResourceGrants) DoUpdate(ctx context.Context, _ *Engine, _ string, state *GrantsState, entry *PlanEntry) (*GrantsState, error) {
+func (r *ResourceGrants) DoUpdate(ctx context.Context, _ *StateSaver, _ string, state *GrantsState, entry *PlanEntry) (*GrantsState, error) {
 	if state.FullName == "" {
 		return nil, errors.New("internal error: grants full_name must be resolved before deployment")
 	}

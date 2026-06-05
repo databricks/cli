@@ -65,7 +65,7 @@ func (r *ResourceVectorSearchEndpoint) DoRead(ctx context.Context, id string) (*
 	return newVectorSearchEndpointRemote(info), nil
 }
 
-func (r *ResourceVectorSearchEndpoint) DoCreate(ctx context.Context, engine *Engine, config *vectorsearch.CreateEndpoint) (string, *VectorSearchEndpointRemote, error) {
+func (r *ResourceVectorSearchEndpoint) DoCreate(ctx context.Context, engine *StateSaver, config *vectorsearch.CreateEndpoint) (string, *VectorSearchEndpointRemote, error) {
 	_, err := r.client.VectorSearchEndpoints.CreateEndpoint(ctx, *config)
 	if err != nil {
 		return "", nil, err
@@ -83,7 +83,7 @@ func (r *ResourceVectorSearchEndpoint) DoCreate(ctx context.Context, engine *Eng
 	return id, newVectorSearchEndpointRemote(info), nil
 }
 
-func (r *ResourceVectorSearchEndpoint) DoUpdate(ctx context.Context, _ *Engine, id string, config *vectorsearch.CreateEndpoint, entry *PlanEntry) (*VectorSearchEndpointRemote, error) {
+func (r *ResourceVectorSearchEndpoint) DoUpdate(ctx context.Context, _ *StateSaver, id string, config *vectorsearch.CreateEndpoint, entry *PlanEntry) (*VectorSearchEndpointRemote, error) {
 	if entry.Changes.HasChange(pathBudgetPolicyId) {
 		_, err := r.client.VectorSearchEndpoints.UpdateEndpointBudgetPolicy(ctx, vectorsearch.PatchEndpointBudgetPolicyRequest{
 			EndpointName:   id,

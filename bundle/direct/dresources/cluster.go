@@ -147,7 +147,7 @@ func (r *ResourceCluster) DoRead(ctx context.Context, id string) (*ClusterRemote
 	return remote, nil
 }
 
-func (r *ResourceCluster) DoCreate(ctx context.Context, engine *Engine, config *ClusterState) (string, *ClusterRemote, error) {
+func (r *ResourceCluster) DoCreate(ctx context.Context, engine *StateSaver, config *ClusterState) (string, *ClusterRemote, error) {
 	wait, err := r.client.Clusters.Create(ctx, makeCreateCluster(&config.ClusterSpec))
 	if err != nil {
 		return "", nil, err
@@ -185,7 +185,7 @@ func hasClusterChanges(entry *PlanEntry) bool {
 	return entry.Changes.HasChangeExcept("lifecycle", "lifecycle.started")
 }
 
-func (r *ResourceCluster) DoUpdate(ctx context.Context, _ *Engine, id string, config *ClusterState, entry *PlanEntry) (*ClusterRemote, error) {
+func (r *ResourceCluster) DoUpdate(ctx context.Context, _ *StateSaver, id string, config *ClusterState, entry *PlanEntry) (*ClusterRemote, error) {
 	if hasClusterChanges(entry) {
 		// Same retry as in TF provider logic
 		// https://github.com/databricks/terraform-provider-databricks/blob/3eecd0f90cf99d7777e79a3d03c41f9b2aafb004/clusters/resource_cluster.go#L624

@@ -216,7 +216,7 @@ func (r *ResourcePermissions) DoRead(ctx context.Context, id string) (*Permissio
 }
 
 // DoCreate calls https://docs.databricks.com/api/workspace/jobs/setjobpermissions.
-func (r *ResourcePermissions) DoCreate(ctx context.Context, engine *Engine, newState *PermissionsState) (string, *PermissionsState, error) {
+func (r *ResourcePermissions) DoCreate(ctx context.Context, engine *StateSaver, newState *PermissionsState) (string, *PermissionsState, error) {
 	// should we remember the default here?
 	_, err := r.DoUpdate(ctx, engine, newState.ObjectID, newState, nil)
 	if err != nil {
@@ -228,7 +228,7 @@ func (r *ResourcePermissions) DoCreate(ctx context.Context, engine *Engine, newS
 }
 
 // DoUpdate calls https://docs.databricks.com/api/workspace/jobs/setjobpermissions.
-func (r *ResourcePermissions) DoUpdate(ctx context.Context, _ *Engine, _ string, newState *PermissionsState, _ *PlanEntry) (*PermissionsState, error) {
+func (r *ResourcePermissions) DoUpdate(ctx context.Context, _ *StateSaver, _ string, newState *PermissionsState, _ *PlanEntry) (*PermissionsState, error) {
 	extractedType, extractedID, err := parsePermissionsID(newState.ObjectID)
 	if err != nil {
 		return nil, err
