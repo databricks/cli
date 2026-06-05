@@ -11,6 +11,15 @@ import (
 	tfjson "github.com/hashicorp/terraform-json"
 )
 
+// tfStateFieldAliases maps DABs group → DABs field name → TF state field name for
+// cases where a DABs state-computed field has a different name in TF state.
+// These fields are not captured by DABsToTerraformRenameMap because they are
+// state-only (not part of the bundle config struct).
+var tfStateFieldAliases = map[string]map[string]string{
+	// models.model_id is the numeric model ID; TF stores it as registered_model_id.
+	"models": {"model_id": "registered_model_id"},
+}
+
 // TFStateAttrs maps (tfResourceType → resourceName → raw JSON attributes).
 type TFStateAttrs map[string]map[string]json.RawMessage
 
@@ -81,7 +90,40 @@ func LookupTFField(state TFStateAttrs, group, name string, fieldPath *structpath
 		return nil, fmt.Errorf("cannot parse TF state for %s.%s: %w", tfType, name, err)
 	}
 
-	return navigateTFState(attrs, tfFieldPath)
+	value, err := navigateTFState(attrs, tfFieldPath)
+	if err == nil {
+		return value, nil
+	}
+
+	// Some DABs fields are top-level in TF state but DABsPathToTerraform added a
+	// wrapper prefix (e.g. "spec" for postgres resources). When the wrapped path
+	// fails, retry with the original unwrapped path.
+	if _, hasWrapper := terraform_dabs_map.DABsToTerraformWrappers[group]; hasWrapper {
+		if v, e := navigateTFState(attrs, fieldPath); e == nil {
+			return v, nil
+		}
+	}
+
+	// Apply state-only field aliases for fields whose DABs name differs from TF state name.
+	if aliases, ok := tfStateFieldAliases[group]; ok {
+		// Replace the first path segment if it matches a known alias.
+		if head, ok := fieldPath.StringKey(); ok {
+			if tfName, ok := aliases[head]; ok {
+				aliasPath := structpath.NewStringKey(nil, tfName)
+				if rest := fieldPath.SkipPrefix(1); rest != nil {
+					_ = rest // navigate through the alias root
+				}
+				// Translate aliased path with full DABsToTerraform for the renamed field.
+				if aliasFieldPath, e := terraform_dabs_map.DABsPathToTerraform(group, aliasPath); e == nil {
+					if v, e := navigateTFState(attrs, aliasFieldPath); e == nil {
+						return v, nil
+					}
+				}
+			}
+		}
+	}
+
+	return nil, err
 }
 
 // navigateTFState walks the TF state map using the given path.
