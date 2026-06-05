@@ -301,7 +301,7 @@ func (r *ResourceDashboard) DoCreate(ctx context.Context, engine *StateSaver, co
 	config.Etag = createResp.Etag
 	// Save with Published=false: draft exists, publish not yet done. Ensures the
 	// planner sees a real diff (false→true) if publish is interrupted.
-	SaveStateWith(engine, ctx, createResp.DashboardId, config, &config.Published, false)
+	SaveStateWith(ctx, engine, createResp.DashboardId, config, &config.Published, false)
 
 	var publishResp *dashboards.PublishedDashboard
 	// Note, today config.Published is always true (we do not have this field in input config).
@@ -340,7 +340,7 @@ func (r *ResourceDashboard) DoUpdate(ctx context.Context, engine *StateSaver, id
 	// sync (a stale etag would make the next Update fail with a conflict) and records
 	// published=false so the planner re-publishes on the next deploy.
 	config.Etag = updateResp.Etag
-	SaveStateWith(engine, ctx, id, config, &config.Published, false)
+	SaveStateWith(ctx, engine, id, config, &config.Published, false)
 
 	var publishResp *dashboards.PublishedDashboard
 	// Note, today config.Published is always true (we do not have this field in input config).

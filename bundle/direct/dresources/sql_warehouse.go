@@ -128,7 +128,7 @@ func (r *ResourceSqlWarehouse) DoCreate(ctx context.Context, engine *StateSaver,
 	// Save with Lifecycle=nil: warehouse exists but lifecycle has not been applied yet
 	// (it always starts RUNNING). If the subsequent wait or stop is interrupted, the
 	// planner sees a real diff (nil→desired) and re-applies lifecycle on the next deploy.
-	SaveStateWith(engine, ctx, id, config, &config.Lifecycle, (*StateLifecycle)(nil))
+	SaveStateWith(ctx, engine, id, config, &config.Lifecycle, (*StateLifecycle)(nil))
 
 	if config.Lifecycle == nil || config.Lifecycle.Started == nil {
 		return id, nil, nil
