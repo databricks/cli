@@ -102,7 +102,7 @@ func (r *ResourcePostgresBranch) DoRead(ctx context.Context, id string) (*Postgr
 	return makePostgresBranchRemote(branch), nil
 }
 
-func (r *ResourcePostgresBranch) DoCreate(ctx context.Context, engine *Engine, config *PostgresBranchState) (string, *PostgresBranchRemote, error) {
+func (r *ResourcePostgresBranch) DoCreate(ctx context.Context, _ *Engine, config *PostgresBranchState) (string, *PostgresBranchRemote, error) {
 	waiter, err := r.client.Postgres.CreateBranch(ctx, postgres.CreateBranchRequest{
 		BranchId: config.BranchId,
 		Parent:   config.Parent,
@@ -124,7 +124,11 @@ func (r *ResourcePostgresBranch) DoCreate(ctx context.Context, engine *Engine, c
 	if err != nil {
 		return "", nil, err
 	}
-	engine.SaveState(ctx, waiter.Name(), config)
+	// TODO: save state before the wait to prevent orphaning on interruption.
+	// waiter.Name() returns the LRO operation name (e.g. .../operations/UUID),
+	// not the real resource name. We need the resource name to save a valid state
+	// entry; options: (1) derive it from input (Parent + resource-type + Id),
+	// (2) call waiter.Metadata() if it exposes the resource name early.
 
 	// Wait for the branch to be ready (long-running operation)
 	result, err := waiter.Wait(ctx)

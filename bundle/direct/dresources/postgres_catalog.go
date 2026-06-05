@@ -91,7 +91,7 @@ func (r *ResourcePostgresCatalog) DoRead(ctx context.Context, id string) (*Postg
 	return makePostgresCatalogRemote(catalog), nil
 }
 
-func (r *ResourcePostgresCatalog) DoCreate(ctx context.Context, engine *Engine, config *PostgresCatalogState) (string, *PostgresCatalogRemote, error) {
+func (r *ResourcePostgresCatalog) DoCreate(ctx context.Context, _ *Engine, config *PostgresCatalogState) (string, *PostgresCatalogRemote, error) {
 	waiter, err := r.client.Postgres.CreateCatalog(ctx, postgres.CreateCatalogRequest{
 		CatalogId: config.CatalogId,
 		Catalog: postgres.Catalog{
@@ -109,7 +109,11 @@ func (r *ResourcePostgresCatalog) DoCreate(ctx context.Context, engine *Engine, 
 	if err != nil {
 		return "", nil, err
 	}
-	engine.SaveState(ctx, waiter.Name(), config)
+	// TODO: save state before the wait to prevent orphaning on interruption.
+	// waiter.Name() returns the LRO operation name (e.g. .../operations/UUID),
+	// not the real resource name. We need the resource name to save a valid state
+	// entry; options: (1) derive it from input (Parent + resource-type + Id),
+	// (2) call waiter.Metadata() if it exposes the resource name early.
 
 	result, err := waiter.Wait(ctx)
 	if err != nil {
