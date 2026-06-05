@@ -4,12 +4,12 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
-	"os"
 	"testing"
 
 	"github.com/databricks/cli/integration/internal/acc"
 	"github.com/databricks/cli/internal/testcli"
 	"github.com/databricks/cli/internal/testutil"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -67,7 +67,7 @@ func assertSecretBytesValue(t *acc.WorkspaceT, scope, key string, expected []byt
 
 func TestSecretsPutSecretStringValue(tt *testing.T) {
 	// aws-prod-ucws sets CLOUD_ENV to "ucws"
-	if os.Getenv("CLOUD_ENV") == "ucws" {
+	if env.Get(tt.Context(), "CLOUD_ENV") == "ucws" {
 		/*
 					FAIL integration/cmd/secrets.TestSecretsPutSecretStringValue (re-run 2) (1201.25s)
 			      secrets_test.go:73:   args: secrets, put-secret, cli-acc-c4ea35e34b52466cbf9a090c431d6a0b, test-key, --string-value, test-value
@@ -95,7 +95,7 @@ func TestSecretsPutSecretStringValue(tt *testing.T) {
 }
 
 func TestSecretsPutSecretBytesValue(tt *testing.T) {
-	if os.Getenv("CLOUD_ENV") == "ucws" {
+	if env.Get(tt.Context(), "CLOUD_ENV") == "ucws" {
 		tt.Skip("Skipping to unblock PRs; re-enable if works")
 	}
 
