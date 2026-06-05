@@ -157,7 +157,7 @@ func (r *ResourceCluster) DoCreate(ctx context.Context, engine *StateSaver, conf
 	// Save with Lifecycle=nil: cluster exists but lifecycle has not been applied yet
 	// (it always starts RUNNING). If the subsequent wait or stop is interrupted, the
 	// planner sees a real diff (nil→desired) and re-applies lifecycle on the next deploy.
-	SaveStateWith(engine, ctx, id, config, &config.Lifecycle, (*StateLifecycle)(nil))
+	SaveStateWith(ctx, engine, id, config, &config.Lifecycle, (*StateLifecycle)(nil))
 
 	// Always wait for RUNNING first: clusters start in PENDING state and must be polled.
 	_, err = r.client.Clusters.WaitGetClusterRunning(ctx, id, 15*time.Minute, nil)

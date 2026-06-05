@@ -40,7 +40,7 @@ func NewNopStateSaver(stateType reflect.Type) *StateSaver {
 //
 // field must be a pointer to a field within config. Type safety is enforced by the
 // compiler: field and value must have the same type F.
-func SaveStateWith[F any](s *StateSaver, ctx context.Context, id string, config any, field *F, value F) {
+func SaveStateWith[F any](ctx context.Context, s *StateSaver, id string, config any, field *F, value F) {
 	saved := *field
 	*field = value
 	s.SaveState(ctx, id, config)
