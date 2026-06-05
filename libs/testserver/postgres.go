@@ -15,6 +15,15 @@ func nowTime() *sdktime.Time {
 	return sdktime.New(time.Now().UTC())
 }
 
+// Backend defaults applied to a project's status when the spec omits them.
+// These mirror the values the real API materializes on create.
+const (
+	defaultHistoryRetention      = 604800 * time.Second // 7 days
+	defaultSuspendTimeout        = 86400 * time.Second  // 1 day
+	defaultAutoscalingLimitMinCu = 1
+	defaultAutoscalingLimitMaxCu = 1
+)
+
 // postgresErrorResponse creates an error response with error code for postgres API.
 func postgresErrorResponse(statusCode int, errorCode, message string) Response {
 	return Response{
@@ -103,23 +112,40 @@ func (s *FakeWorkspace) PostgresProjectCreate(req Request, projectID string) Res
 
 	// Copy spec fields to status (API returns status as materialized view)
 	if project.Spec != nil {
+		// The backend materializes a default retention when the spec omits it.
+		historyRetention := project.Spec.HistoryRetentionDuration
+		if historyRetention == nil {
+			historyRetention = duration.New(defaultHistoryRetention)
+		}
+
 		project.Status = &postgres.ProjectStatus{
 			ProjectId:                   projectID,
 			DefaultBranch:               name + "/branches/production",
 			DisplayName:                 project.Spec.DisplayName,
 			PgVersion:                   project.Spec.PgVersion,
-			HistoryRetentionDuration:    project.Spec.HistoryRetentionDuration,
+			HistoryRetentionDuration:    historyRetention,
 			EnablePgNativeLogin:         false,
 			Owner:                       TestUser.UserName,
 			BranchLogicalSizeLimitBytes: 8796093022208, // 8 TB (real API default)
 			SyntheticStorageSizeBytes:   0,
 			ForceSendFields:             []string{"EnablePgNativeLogin", "SyntheticStorageSizeBytes"},
 		}
+
+		// The backend materializes default endpoint settings when the spec omits them.
+		project.Status.DefaultEndpointSettings = &postgres.ProjectDefaultEndpointSettings{
+			AutoscalingLimitMinCu:  defaultAutoscalingLimitMinCu,
+			AutoscalingLimitMaxCu:  defaultAutoscalingLimitMaxCu,
+			SuspendTimeoutDuration: duration.New(defaultSuspendTimeout),
+		}
 		if project.Spec.DefaultEndpointSettings != nil {
-			project.Status.DefaultEndpointSettings = &postgres.ProjectDefaultEndpointSettings{
-				AutoscalingLimitMinCu:  project.Spec.DefaultEndpointSettings.AutoscalingLimitMinCu,
-				AutoscalingLimitMaxCu:  project.Spec.DefaultEndpointSettings.AutoscalingLimitMaxCu,
-				SuspendTimeoutDuration: project.Spec.DefaultEndpointSettings.SuspendTimeoutDuration,
+			if project.Spec.DefaultEndpointSettings.AutoscalingLimitMinCu != 0 {
+				project.Status.DefaultEndpointSettings.AutoscalingLimitMinCu = project.Spec.DefaultEndpointSettings.AutoscalingLimitMinCu
+			}
+			if project.Spec.DefaultEndpointSettings.AutoscalingLimitMaxCu != 0 {
+				project.Status.DefaultEndpointSettings.AutoscalingLimitMaxCu = project.Spec.DefaultEndpointSettings.AutoscalingLimitMaxCu
+			}
+			if project.Spec.DefaultEndpointSettings.SuspendTimeoutDuration != nil {
+				project.Status.DefaultEndpointSettings.SuspendTimeoutDuration = project.Spec.DefaultEndpointSettings.SuspendTimeoutDuration
 			}
 		}
 		// Clear spec so it's not returned in response (API only returns status)

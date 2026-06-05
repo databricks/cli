@@ -888,7 +888,12 @@ tasks:
 
   generate-direct:
     desc: Generate direct engine config (apitypes + resources)
-    deps: ['generate-direct-apitypes', 'generate-direct-resources']
+    # Depend only on generate-direct-resources; it already pulls in
+    # generate-direct-apitypes transitively. Listing both as parallel deps
+    # races: resources reads apitypes.generated.yml while the apitypes step's
+    # `>` redirect is truncating it, silently dropping every resource whose
+    # type comes from that file. Keep this chain linear.
+    deps: ['generate-direct-resources']
 
   generate-direct-apitypes:
     desc: Generate direct engine API types YAML
