@@ -167,7 +167,7 @@ func TestPagedTemplateMatchesNonPagedForSmallList(t *testing.T) {
 
 	var expected bytes.Buffer
 	refIter := listing.Iterator[int](&numberIterator{n: rows})
-	require.NoError(t, renderWithTemplate(MockDiscard(t.Context()), newIteratorRenderer(refIter), flags.OutputText, &expected, "", tmpl))
+	require.NoError(t, renderWithTemplate(MockDiscard(t.Context()), newIteratorRenderer(refIter, nil), flags.OutputText, &expected, "", tmpl))
 
 	pagedIter := listing.Iterator[int](&numberIterator{n: rows})
 	var actual bytes.Buffer

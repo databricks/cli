@@ -85,8 +85,9 @@ func (r readerRenderer) renderText(_ context.Context, w io.Writer) error {
 }
 
 type iteratorRenderer[T any] struct {
-	t          listing.Iterator[T]
-	bufferSize int
+	t              listing.Iterator[T]
+	bufferSize     int
+	inputOnlyPaths []string
 }
 
 func (ir iteratorRenderer[T]) getBufferSize() int {
@@ -117,7 +118,11 @@ func (ir iteratorRenderer[T]) renderJson(ctx context.Context, w writeFlusher) er
 		if err != nil {
 			return err
 		}
-		res, err := json.MarshalIndent(n, "  ", "  ")
+		masked, err := applyInputOnlyMask(n, ir.inputOnlyPaths)
+		if err != nil {
+			return err
+		}
+		res, err := json.MarshalIndent(masked, "  ", "  ")
 		if err != nil {
 			return err
 		}
@@ -173,12 +178,17 @@ func (ir iteratorRenderer[T]) renderTemplate(ctx context.Context, t *template.Te
 }
 
 type defaultRenderer struct {
-	t any
+	t              any
+	inputOnlyPaths []string
 }
 
 func (d defaultRenderer) renderJson(ctx context.Context, w writeFlusher) error {
 	c := fromContext(ctx)
-	pretty, err := marshalJSON(d.t, c.capabilities.SupportsStdoutColor())
+	v, err := applyInputOnlyMask(d.t, d.inputOnlyPaths)
+	if err != nil {
+		return err
+	}
+	pretty, err := marshalJSON(v, c.capabilities.SupportsStdoutColor())
 	if err != nil {
 		return err
 	}
@@ -201,15 +211,20 @@ func (d defaultRenderer) renderTemplate(_ context.Context, t *template.Template,
 //   - jsonRenderer
 //   - textRenderer
 //   - templateRenderer
-func newRenderer(t any) any {
+//
+// inputOnlyPaths, when non-empty, lists dotted JSON paths that should be
+// stripped from the rendered value before it is written to stdout. The
+// paths are consulted only by the JSON render path; text/template
+// rendering operates on the raw value.
+func newRenderer(t any, inputOnlyPaths []string) any {
 	if r, ok := t.(io.Reader); ok {
 		return readerRenderer{reader: r}
 	}
-	return defaultRenderer{t: t}
+	return defaultRenderer{t: t, inputOnlyPaths: inputOnlyPaths}
 }
 
-func newIteratorRenderer[T any](i listing.Iterator[T]) iteratorRenderer[T] {
-	return iteratorRenderer[T]{t: i}
+func newIteratorRenderer[T any](i listing.Iterator[T], inputOnlyPaths []string) iteratorRenderer[T] {
+	return iteratorRenderer[T]{t: i, inputOnlyPaths: inputOnlyPaths}
 }
 
 type bufferedFlusher struct {
@@ -266,11 +281,20 @@ type listingInterface interface {
 }
 
 func Render(ctx context.Context, v any) error {
+	return RenderFiltered(ctx, v, nil)
+}
+
+// RenderFiltered behaves like Render but strips the given dotted JSON
+// paths from the value before it is marshaled. Used by generated CLI
+// commands for response types containing INPUT_ONLY fields (which the
+// SDK transport struct carries unconditionally) so those fields don't
+// leak into user-facing JSON output.
+func RenderFiltered(ctx context.Context, v any, inputOnlyPaths []string) error {
 	c := fromContext(ctx)
 	if _, ok := v.(listingInterface); ok {
 		panic("use RenderIterator instead")
 	}
-	return renderWithTemplate(ctx, newRenderer(v), c.outputFormat, c.out, c.headerTemplate, c.template)
+	return renderWithTemplate(ctx, newRenderer(v, inputOnlyPaths), c.outputFormat, c.out, c.headerTemplate, c.template)
 }
 
 // RenderIterator renders the items produced by i. When the terminal is
@@ -280,11 +304,18 @@ func Render(ctx context.Context, v any) error {
 // locked from the first batch so columns stay aligned across pages).
 // Piped output and JSON output keep the existing non-paged behavior.
 func RenderIterator[T any](ctx context.Context, i listing.Iterator[T]) error {
+	return RenderIteratorFiltered(ctx, i, nil)
+}
+
+// RenderIteratorFiltered behaves like RenderIterator but strips the given
+// dotted JSON paths from each element before it is marshaled. See
+// RenderFiltered for the motivation.
+func RenderIteratorFiltered[T any](ctx context.Context, i listing.Iterator[T], inputOnlyPaths []string) error {
 	c := fromContext(ctx)
 	if c.capabilities.SupportsPager() && c.outputFormat == flags.OutputText && c.template != "" {
 		return renderIteratorPagedTemplate(ctx, i, c.in, c.out, c.headerTemplate, c.template)
 	}
-	return renderWithTemplate(ctx, newIteratorRenderer(i), c.outputFormat, c.out, c.headerTemplate, c.template)
+	return renderWithTemplate(ctx, newIteratorRenderer(i, inputOnlyPaths), c.outputFormat, c.out, c.headerTemplate, c.template)
 }
 
 func RenderWithTemplate(ctx context.Context, v any, headerTemplate, template string) error {
@@ -292,7 +323,7 @@ func RenderWithTemplate(ctx context.Context, v any, headerTemplate, template str
 	if _, ok := v.(listingInterface); ok {
 		panic("listings must use RenderIterator, not RenderWithTemplate")
 	}
-	return renderWithTemplate(ctx, newRenderer(v), c.outputFormat, c.out, headerTemplate, template)
+	return renderWithTemplate(ctx, newRenderer(v, nil), c.outputFormat, c.out, headerTemplate, template)
 }
 
 // staticTemplateFuncs are the ctx-independent helpers shared across every
