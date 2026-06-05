@@ -633,7 +633,14 @@ func runTest(t *testing.T,
 	}
 
 	id := uuid.New()
-	uniqueName := strings.ToLower(strings.Trim(base32.StdEncoding.EncodeToString(id[:]), "="))
+	// Prefix the unique name so that cloud resources created by acceptance tests
+	// (SQL warehouses, clusters, schemas, ...) are attributable to the CLI acceptance
+	// suite and can be found and cleaned up in shared test workspaces. The replacement
+	// below keys on the full value, so output normalization to [UNIQUE_NAME] is unaffected.
+	// The prefix has no separator on purpose: the name feeds both bundle/project names
+	// (which allow only [a-zA-Z0-9_]) and app hostnames (which disallow underscores), so a
+	// separator-less alphanumeric prefix is the only form valid in every context.
+	uniqueName := "cli" + strings.ToLower(strings.Trim(base32.StdEncoding.EncodeToString(id[:]), "="))
 	repls.Set(uniqueName, "[UNIQUE_NAME]")
 
 	var tmpDir string
