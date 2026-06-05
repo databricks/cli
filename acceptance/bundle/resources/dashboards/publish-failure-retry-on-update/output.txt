@@ -1,0 +1,56 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/publish-failure-retry-on-update/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/publish-failure-retry-on-update/default/files...
+Deploying resources...
+Error: cannot update resources.dashboards.dashboard1: updating id=[DASHBOARD1_ID]: Fault injected by test. (400 INJECTED)
+
+Endpoint: POST [DATABRICKS_URL]/api/2.0/lakeview/dashboards/[DASHBOARD1_ID]/published
+HTTP Status: 400 Bad Request
+API error_code: INJECTED
+API message: Fault injected by test.
+
+Updating deployment state...
+
+Exit code: 1
+{
+  "method": "PATCH",
+  "path": "/api/2.0/lakeview/dashboards/[DASHBOARD1_ID]",
+  "body": {
+    "display_name": "my dashboard renamed",
+    "parent_path": "/Workspace/Users/[USERNAME]/.bundle/publish-failure-retry-on-update/default/resources",
+    "serialized_dashboard": "{\"pages\":[{\"name\":\"test-page\",\"displayName\":\"Test Dashboard\"}]}\n",
+    "warehouse_id": "someid"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/lakeview/dashboards/[DASHBOARD1_ID]/published",
+  "body": {
+    "embed_credentials": false,
+    "warehouse_id": "someid"
+  }
+}
+
+>>> [CLI] bundle plan -o json
+{
+  "action": "skip",
+  "reason": "remote_already_set",
+  "old": false,
+  "new": true,
+  "remote": true
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.dashboards.dashboard1
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/publish-failure-retry-on-update/default
+
+Deleting files...
+Destroy complete!

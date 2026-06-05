@@ -118,12 +118,16 @@ func (r *ResourceSqlWarehouse) DoRead(ctx context.Context, id string) (*SqlWareh
 }
 
 // DoCreate creates the warehouse and returns its id.
-func (r *ResourceSqlWarehouse) DoCreate(ctx context.Context, _ *Engine, config *SqlWarehouseState) (string, *SqlWarehouseRemote, error) {
+func (r *ResourceSqlWarehouse) DoCreate(ctx context.Context, engine *Engine, config *SqlWarehouseState) (string, *SqlWarehouseRemote, error) {
 	waiter, err := r.client.Warehouses.Create(ctx, config.CreateWarehouseRequest)
 	if err != nil {
 		return "", nil, err
 	}
 	id := waiter.Id
+
+	// Save state immediately after the warehouse is created so it is not orphaned
+	// if the subsequent wait or stop is interrupted.
+	engine.SaveState(ctx, id, config)
 
 	if config.Lifecycle == nil || config.Lifecycle.Started == nil {
 		return id, nil, nil
