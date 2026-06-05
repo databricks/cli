@@ -12,7 +12,9 @@ print_requests() {
     # without that, removing the wait would silently still pass against the
     # testserver (which finishes deletion synchronously) — the GET in the log
     # is the assertion that the wait actually fired.
-    trace print_requests.py --get '//vector-search/indexes' > out.requests.${name}.$DATABRICKS_BUNDLE_ENGINE.json
+    # --unique collapses the repeated identical poll GETs (one on the testserver,
+    # many on a real workspace that provisions asynchronously) to a stable count.
+    trace print_requests.py --get --unique '//vector-search/indexes' > out.requests.${name}.$DATABRICKS_BUNDLE_ENGINE.json
     rm -f out.requests.txt
 }
 
