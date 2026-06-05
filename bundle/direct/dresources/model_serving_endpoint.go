@@ -304,7 +304,7 @@ func (r *ResourceModelServingEndpoint) updateTags(ctx context.Context, id string
 	return nil
 }
 
-func (r *ResourceModelServingEndpoint) DoUpdate(ctx context.Context, _ *Engine, id string, config *serving.CreateServingEndpoint, entry *PlanEntry) (*ModelServingEndpointRemote, error) {
+func (r *ResourceModelServingEndpoint) DoUpdate(ctx context.Context, engine *Engine, id string, config *serving.CreateServingEndpoint, entry *PlanEntry) (*ModelServingEndpointRemote, error) {
 	var err error
 
 	// Terraform makes these API calls sequentially. We do the same here.
@@ -337,6 +337,10 @@ func (r *ResourceModelServingEndpoint) DoUpdate(ctx context.Context, _ *Engine, 
 			return nil, err
 		}
 	}
+
+	// All mutating calls have been applied; save the new config before the wait so
+	// an interrupted wait does not require re-applying them on the next deploy.
+	engine.SaveState(ctx, id, config)
 
 	return r.waitForEndpointReady(ctx, config.Name)
 }
