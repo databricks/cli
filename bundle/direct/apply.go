@@ -79,10 +79,11 @@ func (d *DeploymentUnit) Create(ctx context.Context, db *dstate.DeploymentState,
 		return err
 	}
 
-	err = db.SaveState(d.ResourceKey, newID, newState, d.DependsOn)
-	if err != nil {
-		return fmt.Errorf("saving state after creating id=%s: %w", newID, err)
-	}
+	// Route the final save through the engine so that the id-mismatch check catches
+	// any DoCreate implementation that called engine.SaveState with a wrong id (e.g.
+	// an LRO operation name instead of the real resource name). The engine also
+	// deduplicates: if DoCreate already saved identical state, this is a no-op.
+	engine.SaveState(ctx, newID, newState)
 
 	return nil
 }
@@ -141,10 +142,9 @@ func (d *DeploymentUnit) Update(ctx context.Context, db *dstate.DeploymentState,
 		return err
 	}
 
-	err = db.SaveState(d.ResourceKey, id, newState, d.DependsOn)
-	if err != nil {
-		return fmt.Errorf("saving state id=%s: %w", id, err)
-	}
+	// Route through the engine so the id-mismatch check fires if DoUpdate saved
+	// under a wrong id, and to deduplicate writes when DoUpdate already saved.
+	engine.SaveState(ctx, id, newState)
 
 	return nil
 }
