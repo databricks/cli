@@ -121,6 +121,22 @@ func NewDatabase(lineage string, serial int) Database {
 }
 
 func (db *DeploymentState) SaveState(key, newID string, state any, dependsOn []deployplan.DependsOnEntry) error {
+	// Redact sensitive fields before persisting: secrets must not appear on disk
+	// in plaintext. The original struct is not modified; the plan uses the
+	// unredacted in-memory value for API calls. RedactSensitiveFields marshals
+	// without indentation, so every WAL entry remains on a single line.
+	b, err := structwalk.RedactSensitiveFields(state, dyn.SensitiveValueRedacted)
+	if err != nil {
+		return err
+	}
+	return db.SaveStateJSON(key, newID, b, dependsOn)
+}
+
+// SaveStateJSON saves pre-marshaled JSON state, avoiding a redundant marshal when
+// the caller already holds the serialized bytes (e.g. the StateSaver dedup path).
+// Callers are responsible for redacting sensitive fields before marshaling; the
+// bytes are persisted as-is.
+func (db *DeploymentState) SaveStateJSON(key, newID string, state json.RawMessage, dependsOn []deployplan.DependsOnEntry) error {
 	db.AssertOpenedForWrite()
 	db.mu.Lock()
 	defer db.mu.Unlock()
@@ -129,21 +145,13 @@ func (db *DeploymentState) SaveState(key, newID string, state any, dependsOn []d
 		db.Data.State = make(map[string]ResourceEntry)
 	}
 
-	// Redact sensitive fields before persisting: secrets must not appear on disk
-	// in plaintext. The original struct is not modified; the plan uses the
-	// unredacted in-memory value for API calls.
-	jsonMessage, err := structwalk.RedactSensitiveFields(state, dyn.SensitiveValueRedacted)
-	if err != nil {
-		return err
-	}
-
 	entry := ResourceEntry{
 		ID:        newID,
-		State:     json.RawMessage(jsonMessage),
+		State:     state,
 		DependsOn: dependsOn,
 	}
 
-	err = appendJSONLine(db.walFile, WALEntry{Key: key, Value: &entry})
+	err := appendJSONLine(db.walFile, WALEntry{Key: key, Value: &entry})
 	if err == nil {
 		db.stateIDs[key] = newID
 	}
