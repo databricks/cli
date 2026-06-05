@@ -106,7 +106,7 @@ func (r *ResourcePostgresBranch) DoRead(ctx context.Context, id string) (*Postgr
 	return makePostgresBranchRemote(branch), nil
 }
 
-func (r *ResourcePostgresBranch) DoCreate(ctx context.Context, _ *Engine, config *PostgresBranchState) (string, *PostgresBranchRemote, error) {
+func (r *ResourcePostgresBranch) DoCreate(ctx context.Context, _ *StateSaver, config *PostgresBranchState) (string, *PostgresBranchRemote, error) {
 	waiter, err := r.client.Postgres.CreateBranch(ctx, postgres.CreateBranchRequest{
 		BranchId: config.BranchId,
 		Parent:   config.Parent,
@@ -145,7 +145,7 @@ func (r *ResourcePostgresBranch) DoCreate(ctx context.Context, _ *Engine, config
 	return remote.Name, remote, nil
 }
 
-func (r *ResourcePostgresBranch) DoUpdate(ctx context.Context, _ *Engine, id string, config *PostgresBranchState, entry *PlanEntry) (*PostgresBranchRemote, error) {
+func (r *ResourcePostgresBranch) DoUpdate(ctx context.Context, _ *StateSaver, id string, config *PostgresBranchState, entry *PlanEntry) (*PostgresBranchRemote, error) {
 	// Build the mask from the plan's change list and prefix with "spec." (the
 	// API expects paths relative to Branch). The API rejects mask entries
 	// that aren't also populated in the request body, and a wildcard "*"

@@ -25,7 +25,7 @@ func TestResourceSchema_DoUpdate_WithUnsupportedForceSendFields(t *testing.T) {
 		ForceSendFields: nil,
 	}
 
-	nopEngine := NewNopEngine(reflect.TypeOf(config))
+	nopEngine := NewNopStateSaver(reflect.TypeOf(config))
 	id, _, err := adapter.DoCreate(ctx, nopEngine, config)
 	require.NoError(t, err)
 

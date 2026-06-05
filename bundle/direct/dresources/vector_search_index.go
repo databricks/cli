@@ -128,7 +128,7 @@ func (r *ResourceVectorSearchIndex) DoRead(ctx context.Context, id string) (*Vec
 	}, nil
 }
 
-func (r *ResourceVectorSearchIndex) DoCreate(ctx context.Context, engine *Engine, config *VectorSearchIndexState) (string, *VectorSearchIndexRemote, error) {
+func (r *ResourceVectorSearchIndex) DoCreate(ctx context.Context, engine *StateSaver, config *VectorSearchIndexState) (string, *VectorSearchIndexRemote, error) {
 	_, err := r.createIndex(ctx, config.CreateVectorIndexRequest)
 	if err != nil {
 		return "", nil, err

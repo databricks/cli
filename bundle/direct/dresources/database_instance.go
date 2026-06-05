@@ -25,7 +25,7 @@ func (d *ResourceDatabaseInstance) DoRead(ctx context.Context, id string) (*data
 	return d.client.Database.GetDatabaseInstanceByName(ctx, id)
 }
 
-func (d *ResourceDatabaseInstance) DoCreate(ctx context.Context, engine *Engine, config *database.DatabaseInstance) (string, *database.DatabaseInstance, error) {
+func (d *ResourceDatabaseInstance) DoCreate(ctx context.Context, engine *StateSaver, config *database.DatabaseInstance) (string, *database.DatabaseInstance, error) {
 	waiter, err := d.client.Database.CreateDatabaseInstance(ctx, database.CreateDatabaseInstanceRequest{
 		DatabaseInstance: *config,
 	})
@@ -50,7 +50,7 @@ func (d *ResourceDatabaseInstance) DoCreate(ctx context.Context, engine *Engine,
 	return id, nil, err
 }
 
-func (d *ResourceDatabaseInstance) DoUpdate(ctx context.Context, _ *Engine, id string, config *database.DatabaseInstance, _ *PlanEntry) (*database.DatabaseInstance, error) {
+func (d *ResourceDatabaseInstance) DoUpdate(ctx context.Context, _ *StateSaver, id string, config *database.DatabaseInstance, _ *PlanEntry) (*database.DatabaseInstance, error) {
 	request := database.UpdateDatabaseInstanceRequest{
 		DatabaseInstance: *config,
 		Name:             config.Name,

@@ -91,7 +91,7 @@ func (r *ResourcePostgresSyncedTable) DoRead(ctx context.Context, id string) (*P
 	return makePostgresSyncedTableRemote(syncedTable), nil
 }
 
-func (r *ResourcePostgresSyncedTable) DoCreate(ctx context.Context, _ *Engine, config *PostgresSyncedTableState) (string, *PostgresSyncedTableRemote, error) {
+func (r *ResourcePostgresSyncedTable) DoCreate(ctx context.Context, _ *StateSaver, config *PostgresSyncedTableState) (string, *PostgresSyncedTableRemote, error) {
 	waiter, err := r.client.Postgres.CreateSyncedTable(ctx, postgres.CreateSyncedTableRequest{
 		SyncedTableId: config.SyncedTableId,
 		SyncedTable: postgres.SyncedTable{
