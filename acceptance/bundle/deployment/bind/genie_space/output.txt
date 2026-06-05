@@ -1,0 +1,34 @@
+
+>>> [CLI] bundle deployment bind genie_space1 [GENIE_SPACE_ID] --auto-approve
+Updating deployment state...
+Successfully bound genie_space with an id '[GENIE_SPACE_ID]'
+Run 'bundle deploy' to deploy changes to your workspace
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] genie get-space [GENIE_SPACE_ID]
+{
+  "parent_path": "/Users/[USERNAME]",
+  "title": "test genie space [UNIQUE_NAME]",
+  "warehouse_id": "test-warehouse-id"
+}
+
+>>> [CLI] bundle deployment unbind genie_space1
+Updating deployment state...
+
+>>> [CLI] bundle destroy --auto-approve
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!
+
+>>> [CLI] genie get-space [GENIE_SPACE_ID]
+{
+  "parent_path": "/Users/[USERNAME]",
+  "title": "test genie space [UNIQUE_NAME]",
+  "warehouse_id": "test-warehouse-id"
+}

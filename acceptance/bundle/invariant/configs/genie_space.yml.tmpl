@@ -1,0 +1,14 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+resources:
+  genie_spaces:
+    foo:
+      warehouse_id: $TEST_DEFAULT_WAREHOUSE_ID
+      title: test-genie-space-$UNIQUE_NAME
+      # Inline (structured) serialized_space is marshalled to a JSON string by
+      # ConfigureGenieSpaceSerializedSpace; this config doubles as a regression
+      # guard that the normalization produces a drift-free deploy.
+      serialized_space:
+        version: 1
+        display_name: test-genie-space-$UNIQUE_NAME

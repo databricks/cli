@@ -1,0 +1,25 @@
+GENIE_SPACE_TITLE="test genie space $UNIQUE_NAME"
+
+export GENIE_SPACE_TITLE
+envsubst < databricks.yml.tmpl > databricks.yml
+
+# Create a Genie space out of band, then bind the bundle resource to it.
+GENIE_SPACE_ID=$($CLI genie create-space "test-warehouse-id" '{"version": 1, "display_name": "bind test space"}' --title "${GENIE_SPACE_TITLE}" | jq -r '.space_id')
+
+cleanupRemoveGenieSpace() {
+    $CLI genie trash-space "${GENIE_SPACE_ID}"
+}
+trap cleanupRemoveGenieSpace EXIT
+
+trace $CLI bundle deployment bind genie_space1 "${GENIE_SPACE_ID}" --auto-approve
+
+trace $CLI bundle deploy
+
+trace $CLI genie get-space "${GENIE_SPACE_ID}" | jq --sort-keys '{title, parent_path, warehouse_id}'
+
+trace $CLI bundle deployment unbind genie_space1
+
+trace $CLI bundle destroy --auto-approve
+
+# Read the Genie space again (expecting it still exists and is not deleted):
+trace $CLI genie get-space "${GENIE_SPACE_ID}" | jq --sort-keys '{title, parent_path, warehouse_id}'
