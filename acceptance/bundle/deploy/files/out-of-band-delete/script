@@ -1,0 +1,31 @@
+# Redeploy after the remote bundle directory is deleted out-of-band (e.g. a user
+# deletes it in the workspace UI).
+#
+# After such a deletion the next "bundle deploy" does not re-upload the bundle files:
+# the local sync snapshot still records them as present remotely, and the remote
+# deployment state that would otherwise reset the snapshot was deleted too, so the
+# file sync computes an empty diff and uploads nothing.
+#
+# This test pins down the current behaviour: hello_world.py is missing from the
+# workspace after the redeploy even though the deploy reports success. If the file
+# sync is changed to re-upload in this case, the final get-status will succeed and
+# this output is expected to change.
+
+BUNDLE_PATH="/Workspace/Users/${CURRENT_USER_NAME}/.bundle/out-of-band-delete/default"
+
+trace $CLI bundle deploy
+
+title "After the initial deploy the job's python_file and the deployment state exist"
+trace $CLI workspace get-status "$BUNDLE_PATH/files/hello_world.py" | jq '{object_type,path}'
+trace $CLI workspace get-status "$BUNDLE_PATH/state/deployment.json" | jq '{object_type,path}'
+
+title "Delete the remote bundle directory out-of-band (simulates deleting it in the UI)"
+trace $CLI workspace delete --recursive "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/out-of-band-delete"
+
+title "Redeploy without changing any local file, so the stale sync snapshot is reused"
+trace $CLI bundle deploy
+
+title "After redeploy: the files dir and state are recreated, but the python_file is NOT re-uploaded"
+trace errcode $CLI workspace get-status "$BUNDLE_PATH/files/hello_world.py"
+trace $CLI workspace get-status "$BUNDLE_PATH/files" | jq '{object_type,path}'
+trace $CLI workspace get-status "$BUNDLE_PATH/state/deployment.json" | jq '{object_type,path}'

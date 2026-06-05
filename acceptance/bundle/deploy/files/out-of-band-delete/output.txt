@@ -1,0 +1,47 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/out-of-band-delete/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== After the initial deploy the job's python_file and the deployment state exist
+>>> [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/out-of-band-delete/default/files/hello_world.py
+{
+  "object_type": "FILE",
+  "path": "/Workspace/Users/[USERNAME]/.bundle/out-of-band-delete/default/files/hello_world.py"
+}
+
+>>> [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/out-of-band-delete/default/state/deployment.json
+{
+  "object_type": "FILE",
+  "path": "/Workspace/Users/[USERNAME]/.bundle/out-of-band-delete/default/state/deployment.json"
+}
+
+=== Delete the remote bundle directory out-of-band (simulates deleting it in the UI)
+>>> [CLI] workspace delete --recursive /Workspace/Users/[USERNAME]/.bundle/out-of-band-delete
+
+=== Redeploy without changing any local file, so the stale sync snapshot is reused
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/out-of-band-delete/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== After redeploy: the files dir and state are recreated, but the python_file is NOT re-uploaded
+>>> errcode [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/out-of-band-delete/default/files/hello_world.py
+Error: Workspace path not found
+
+Exit code: 1
+
+>>> [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/out-of-band-delete/default/files
+{
+  "object_type": "DIRECTORY",
+  "path": "/Workspace/Users/[USERNAME]/.bundle/out-of-band-delete/default/files"
+}
+
+>>> [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/out-of-band-delete/default/state/deployment.json
+{
+  "object_type": "FILE",
+  "path": "/Workspace/Users/[USERNAME]/.bundle/out-of-band-delete/default/state/deployment.json"
+}
