@@ -318,7 +318,7 @@ func execSSHDirect(lakeboxID, host, port, keyPath string, extraArgs []string) er
 //     `lakebox ssh <id> -- bash -c 'echo hi'`
 //     Cobra splits this into `["bash", "-c", "echo hi"]`. ssh's join
 //     produces `bash -c echo hi` on the wire, which bash re-splits into
-//     `-c=echo` and `$0=hi` — wrong. We fix that by shell-quoting
+//     `-c=echo` and `$0=hi` — losing the second word. We fix that by shell-quoting
 //     each arg before append, so the remote sees `bash -c 'echo hi'`.
 //
 // The heuristic: if there's exactly one extra arg, pass it untouched;
