@@ -25,8 +25,7 @@ const (
 
 // resolveGatewayHost picks the SSH gateway hostname based on the workspace host.
 // Staging workspaces (*.staging.cloud.databricks.com etc.) route through
-// ue1.s.dbrx.dev; everything else uses uw2.dbrx.dev. Both are dev-tier
-// listeners (`.dbrx.dev`); there is no prod listener yet.
+// ue1.s.dbrx.dev; everything else uses uw2.dbrx.dev.
 func resolveGatewayHost(workspaceHost string) string {
 	if strings.Contains(workspaceHost, ".staging.") {
 		return stagingDefaultGatewayHost
@@ -65,7 +64,6 @@ Examples:
 				profile = w.Config.Host
 			}
 
-			// Use the dedicated lakebox SSH key.
 			keyPath, err := lakeboxKeyPath(ctx)
 			if err != nil {
 				return fmt.Errorf("failed to determine lakebox key path: %w", err)
@@ -74,8 +72,6 @@ Examples:
 				return fmt.Errorf("lakebox SSH key not found at %s — run 'databricks lakebox register' first", keyPath)
 			}
 
-			// Parse args: everything before -- is the optional lakebox ID,
-			// everything after -- is passed through to ssh.
 			var lakeboxID string
 			var extraArgs []string
 
@@ -91,8 +87,6 @@ Examples:
 				extraArgs = args[dashAt:]
 			}
 
-			// Resolve a user-typed name to its ID using the local cache.
-			// No-op when arg is already an ID or not in cache.
 			if lakeboxID != "" {
 				resolved, err := resolveLocalID(ctx, profile, lakeboxID)
 				if err != nil {
@@ -101,36 +95,19 @@ Examples:
 				lakeboxID = resolved
 			}
 
-			// sandboxGatewayHost captures the gateway hostname from any
-			// Sandbox response we touch in this command, so the resolution
-			// below can prefer it over the cached value. Stays "" when we
-			// never hit the API in this invocation (e.g. explicit-id ssh
-			// with a warm cache).
-			var sandboxGatewayHost string
-
-			// sandboxStatus is the server-side state observed in this
-			// invocation, used to print an explicit "starting from stopped"
-			// notice before the connect spinner. Empty when we never hit
-			// the API.
-			var sandboxStatus string
+			// Captured from any Sandbox response we touch below; "" when
+			// we never hit the API in this invocation.
+			var (
+				sandboxGatewayHost string
+				sandboxStatus      string
+			)
 
 			api, err := newLakeboxAPI(w)
 			if err != nil {
 				return err
 			}
 
-			// Verify the local key is still registered before opening
-			// the SSH socket. The gateway's publickey-callback already
-			// checks the key (see lakebox/src/ssh/handler.rs's
-			// verify_ssh_key), but SSH_MSG_USERAUTH_FAILURE has no
-			// free-form reason field and SSH_MSG_USERAUTH_BANNER is
-			// swallowed by many client wrappers — so the gateway can't
-			// communicate "key not registered" through the SSH channel.
-			// The HTTP API is the only out-of-band wire that can
-			// surface a structured "run register" pointer to the user.
-			// listKeys errors fall through with a warning so a
-			// transient API hiccup doesn't block a connection the
-			// gateway could still route.
+			// Surface deleted-key errors before ssh's opaque "Permission denied".
 			if err := verifyKeyRegistered(ctx, api, keyPath); err != nil {
 				return err
 			}
@@ -178,13 +155,8 @@ Examples:
 				}
 			}
 
-			// Explicitly start (and wait for) the sandbox if it isn't
-			// already Running. The gateway will auto-start a stopped
-			// sandbox on connect, but that path is opaque (ssh just
-			// hangs for minutes with no progress) and races the
-			// cold-start timeout. Driving the start ourselves gives
-			// the user a visible spinner with elapsed time and a
-			// deterministic timeout (see start.go).
+			// Drive start ourselves so the user sees a spinner instead
+			// of an opaque multi-minute hang inside ssh's connect path.
 			if sandboxStatus != "" && !strings.EqualFold(sandboxStatus, "running") {
 				final, err := ensureRunning(ctx, api, lakeboxID, sandboxStatus)
 				if err != nil {
@@ -214,12 +186,9 @@ Examples:
 				_ = setGatewayHost(ctx, profile, sandboxGatewayHost)
 			}
 
-			// Spinner runs until exec replaces this process (Linux/macOS)
-			// or until the ssh subprocess returns (Windows execv shim).
-			// We deliberately don't print "Connected" — at this point ssh
-			// hasn't actually handshaken yet, so any success affirmation
-			// here would be a lie that gets contradicted by ssh's own
-			// error output on the failure path.
+			// Don't print "Connected" here — ssh hasn't completed the
+			// handshake yet, so any success message would race ssh's
+			// own error output on the failure path.
 			s := spin(ctx, "Connecting to "+cmdio.Bold(ctx, lakeboxID)+"…")
 			defer s.Close()
 			return execSSHDirect(lakeboxID, host, gatewayPort, keyPath, extraArgs)
@@ -238,11 +207,11 @@ Examples:
 // SSH protocol's reply surface (USERAUTH_FAILURE has no free-form
 // reason; USERAUTH_BANNER is widely swallowed) flattens "unknown
 // key", "key registered but not authorized for this sandbox", and
-// "ESM is down" into the same "Permission denied (publickey)". This
-// out-of-band HTTP check surfaces the specific case in language the
-// user can act on. listKeys errors fall through with a warning so a
-// transient API hiccup doesn't block a connection the gateway could
-// still route.
+// "upstream service is down" into the same "Permission denied
+// (publickey)". This out-of-band HTTP check surfaces the specific
+// case in language the user can act on. listKeys errors fall
+// through with a warning so a transient API hiccup doesn't block a
+// connection the gateway could still route.
 func verifyKeyRegistered(ctx context.Context, api *lakeboxAPI, keyPath string) error {
 	pub, err := os.ReadFile(keyPath + ".pub")
 	if err != nil {
@@ -263,10 +232,8 @@ func verifyKeyRegistered(ctx context.Context, api *lakeboxAPI, keyPath string) e
 	return fmt.Errorf("your lakebox SSH key (%s) is not registered with this workspace — run `databricks lakebox register` to re-register it", want)
 }
 
-// ensureRunning brings the named sandbox to Running before ssh hands
-// off. Owns its own spinner lifecycle — caller must not have one open.
-// Calls api.start when the sandbox is currently Stopped; falls through
-// to a poll for already-transitioning states (Creating, Starting).
+// ensureRunning brings the named sandbox to Running with its own
+// spinner — caller must not have one open.
 func ensureRunning(ctx context.Context, api *lakeboxAPI, id, currentStatus string) (*sandboxEntry, error) {
 	s := spin(ctx, "Starting "+cmdio.Bold(ctx, id)+"…")
 	defer s.Close()
@@ -320,7 +287,7 @@ func execSSHDirect(lakeboxID, host, port, keyPath string, extraArgs []string) er
 //     `lakebox ssh <id> -- bash -c 'echo hi'`
 //     Cobra splits this into `["bash", "-c", "echo hi"]`. ssh's join
 //     produces `bash -c echo hi` on the wire, which bash re-splits into
-//     `-c=echo` and `$0=hi` — bug F22. We fix that by shell-quoting
+//     `-c=echo` and `$0=hi` — losing the second word. We fix that by shell-quoting
 //     each arg before append, so the remote sees `bash -c 'echo hi'`.
 //
 // The heuristic: if there's exactly one extra arg, pass it untouched;

@@ -15,39 +15,31 @@ import (
 
 // sandboxPath returns the URL path for a single sandbox resource. The ID is
 // path-escaped so a value like `foo;rm -rf /` lands on
-// `/sandboxes/foo%3Brm%20-rf%20%2F` and gets a clean 400 from
-// validate_sandbox_id on the server, rather than its unescaped `/` re-routing
-// the request to the list endpoint (which silently returns an empty result the
-// CLI then renders as an all-zero sandbox record).
+// `/sandboxes/foo%3Brm%20-rf%20%2F` and gets a clean 400 from the server,
+// rather than its unescaped `/` re-routing the request to the list endpoint
+// (which silently returns an empty result the CLI then renders as an
+// all-zero sandbox record).
 func sandboxPath(id string) string {
 	return lakeboxAPIPath + "/" + url.PathEscape(id)
 }
 
-// Sandboxes live under the `/sandboxes` sub-collection of the lakebox service
-// namespace (see `lakebox.proto` `LakeboxService.CreateSandbox`).
-const lakeboxAPIPath = "/api/2.0/lakebox/sandboxes"
+// Sub-collections under the lakebox service namespace.
+const (
+	lakeboxAPIPath     = "/api/2.0/lakebox/sandboxes"
+	lakeboxKeysAPIPath = "/api/2.0/lakebox/ssh-keys"
+)
 
-// SSH keys are nested under the lakebox service namespace alongside
-// `sandboxes/` (see `LakeboxService.CreateSshKey`).
-const lakeboxKeysAPIPath = "/api/2.0/lakebox/ssh-keys"
-
-// orgIDHeader is sent by multi-workspace gateways (e.g. dogfood staging) so
-// the gateway can scope the credential to a specific workspace. Without it,
-// requests fail with "Credential was not sent or was of an unsupported type
-// for this API."
+// orgIDHeader scopes the credential to a workspace on multi-workspace
+// gateways. Without it, requests fail with "Credential was not sent or was
+// of an unsupported type for this API."
 const orgIDHeader = "X-Databricks-Org-Id"
 
-// maxNameBytes mirrors the manager-side `Sandbox.name` length cap. The
-// server measures bytes, not characters, so a name made of emoji or other
-// multi-byte UTF-8 hits the limit in fewer visible characters than the user
-// expects. Mirroring the constant client-side lets us fail fast with the
-// observed byte count instead of paying a round-trip for a 400.
+// maxNameBytes mirrors the server-side `Sandbox.name` cap. The server
+// measures bytes (not runes), so emoji hit the limit faster than expected;
+// mirroring it client-side lets us fail fast with the observed byte count.
 const maxNameBytes = 256
 
-// validateName returns an error when `name` exceeds the wire limit. The
-// error names the observed byte count so the user can recover in one shot
-// (the original server message just said "exceeds 256 bytes" without saying
-// by how much, which is unhelpful when emoji are in play).
+// validateName rejects names that exceed the wire limit (counted in bytes).
 func validateName(name string) error {
 	if n := len(name); n > maxNameBytes {
 		return fmt.Errorf("--name is %d bytes; limit is %d (emoji and most non-ASCII characters count as 2-4 bytes each)", n, maxNameBytes)
@@ -61,26 +53,20 @@ type lakeboxAPI struct {
 }
 
 // sandboxCreateBody is the inner `Sandbox` message in the create payload.
-// Only `name` is caller-settable today; all other fields are server-chosen.
+// Only `name` is caller-settable; the rest are server-chosen.
 type sandboxCreateBody struct {
 	Name string `json:"name,omitempty"`
 }
 
-// createRequest is the JSON body for POST /api/2.0/lakebox/sandboxes.
-// `CreateSandboxRequest { Sandbox sandbox = 1 }` has `body: "*"`, so the
-// wire body is the full request with a `sandbox` wrapper.
+// createRequest is the wrapped POST body for sandbox creation.
 type createRequest struct {
 	Sandbox sandboxCreateBody `json:"sandbox"`
 }
 
-// createResponse is the JSON body returned by POST /api/2.0/lakebox/sandboxes.
-// Mirrors the `Sandbox` proto message after JSON transcoding.
-//
-// `FQDN` is the manager's internal routing hostname — not user-actionable.
-// `GatewayHost` is the public SSH gateway hostname for the workspace,
-// stamped by the manager (universe#1966484) so the CLI no longer needs to
-// hardcode regional defaults. Both are `omitempty` so old/new wire shapes
-// round-trip cleanly.
+// createResponse mirrors the Sandbox proto after JSON transcoding. FQDN is
+// the manager's internal routing host (not user-actionable); GatewayHost is
+// the public SSH gateway. Both are `omitempty` so old and new server
+// versions round-trip cleanly.
 type createResponse struct {
 	SandboxID   string `json:"sandboxId"`
 	Status      string `json:"status"`
@@ -88,16 +74,11 @@ type createResponse struct {
 	GatewayHost string `json:"gatewayHost,omitempty"`
 }
 
-// sandboxEntry is a single item in the list response.
-// Mirrors the `Sandbox` proto message after JSON transcoding.
-//
-// IdleTimeout and NoAutostop correspond to the proto's `optional` fields;
-// they're pointers so we can tell "field absent on the wire" (server has
-// the global default) from "explicitly set to 0 / false."
-//
-// `IdleTimeout` is a `google.protobuf.Duration`. Proto3 JSON canonical
-// form serializes Duration as a string with an `s` suffix (e.g.
-// `"900s"`), so the Go field is `*string` and we parse on read.
+// sandboxEntry mirrors the Sandbox proto after JSON transcoding.
+// IdleTimeout and NoAutostop are pointer-typed so we can distinguish
+// "field absent on the wire" (server uses its default) from "explicitly
+// set to 0 / false". IdleTimeout is a proto3-canonical Duration string
+// (see idleTimeoutSecs).
 type sandboxEntry struct {
 	SandboxID     string  `json:"sandboxId"`
 	Status        string  `json:"status"`
@@ -129,21 +110,12 @@ func (e *sandboxEntry) idleTimeoutSecs() int64 {
 	return int64(d.Seconds())
 }
 
-// autoStopLabel renders the auto-stop policy advertised by the manager
-// for one sandbox into a short human-readable string. Mirrors the wire
-// semantics from `lakebox/proto/lakebox.proto`:
+// autoStopLabel renders the auto-stop policy for one sandbox:
 //   - `no_autostop == true` → never auto-stops
 //   - `idle_timeout` set and positive → that many seconds
 //   - otherwise → no enforcement today; render as "never"
 //
-// The "otherwise" branch used to render a hardcoded `10m` claiming to
-// mirror a manager-side `watchdog_idle_grace_secs` fallback. That
-// fallback does not exist in the current tree (only a stale comment in
-// `lakebox/proto/lakebox.proto`); the ESM-side `LakeboxChecker` is also
-// gated off via the `lakeboxCheckerEnabled` SAFE flag, so unset
-// `idle_timeout` is functionally "never auto-stops" today. Once the
-// manager enforces a real default, swap this branch back to a duration
-// label.
+// If the manager later enforces an idle-grace default, render it here.
 func (e *sandboxEntry) autoStopLabel() string {
 	if e.NoAutostop != nil && *e.NoAutostop {
 		return "never"
@@ -156,7 +128,7 @@ func (e *sandboxEntry) autoStopLabel() string {
 
 // formatDurationSecs prints `secs` as a compact duration (e.g. `90s`,
 // `15m`, `2h`, `1h30m`). Falls back to seconds if it's not a clean
-// minute/hour multiple. Avoids pulling in a dependency just for this.
+// minute/hour multiple.
 func formatDurationSecs(secs int64) string {
 	if secs < 60 {
 		return fmt.Sprintf("%ds", secs)
@@ -174,28 +146,17 @@ func formatDurationSecs(secs int64) string {
 }
 
 // listResponse is the JSON body returned by GET /api/2.0/lakebox/sandboxes.
-// `nextPageToken` is empty on the final page (or when the result fits in one).
 type listResponse struct {
 	Sandboxes     []sandboxEntry `json:"sandboxes"`
 	NextPageToken string         `json:"nextPageToken,omitempty"`
 }
 
-// listPageSize matches the manager-side default. Typical user fleets are
-// well under this, so one round-trip covers them; the pagination loop in
-// `list` handles the rare larger fleet.
+// listPageSize matches the manager-side default.
 const listPageSize = 100
 
-// updateBody is the PATCH request body. The proto declares
-// `UpdateSandboxRequest { Sandbox sandbox = 1 }` with `body: "sandbox"`
-// in the (google.api.http) annotation, so the HTTP body is the inner
-// `Sandbox` message directly — there is no `{"sandbox": {...}}`
-// wrapping on the wire.
-//
-// Pointer fields encode the proto3 `optional` semantics — only the
-// fields we explicitly set are emitted, leaving everything else
-// server-untouched. `IdleTimeout` is a proto3-canonical Duration
-// string (e.g. `"900s"`); the server-side wire type is
-// `google.protobuf.Duration`.
+// updateBody is the PATCH body; the server takes the inner `Sandbox`
+// message directly with no `{"sandbox": ...}` wrapping. Pointer fields
+// encode proto3 optional semantics (see sandboxEntry).
 type updateBody struct {
 	SandboxID   string  `json:"sandbox_id"`
 	Name        *string `json:"name,omitempty"`
@@ -209,6 +170,7 @@ type registerKeyRequest struct {
 	Name      string `json:"name,omitempty"`
 }
 
+// newLakeboxAPI returns a lakeboxAPI bound to the workspace client's config.
 func newLakeboxAPI(w *databricks.WorkspaceClient) (*lakeboxAPI, error) {
 	c, err := client.New(w.Config)
 	if err != nil {
@@ -218,10 +180,9 @@ func newLakeboxAPI(w *databricks.WorkspaceClient) (*lakeboxAPI, error) {
 }
 
 // headers attaches the workspace routing identifier so multi-workspace
-// gateways (e.g. SPOG hosts) can scope the credential. Mirrors the pattern
-// in libs/telemetry, libs/filer, and SDK-generated workspace services. The
-// auth.WorkspaceIDNone sentinel ("none") is treated as unset so the literal
-// string never goes on the wire.
+// gateways (e.g. SPOG hosts) can scope the credential. The
+// auth.WorkspaceIDNone sentinel ("none") is treated as unset so the
+// literal string never goes on the wire.
 func (a *lakeboxAPI) headers() map[string]string {
 	wsID := a.c.Config.WorkspaceID
 	if wsID == "" || wsID == auth.WorkspaceIDNone {
@@ -231,8 +192,7 @@ func (a *lakeboxAPI) headers() map[string]string {
 }
 
 // create calls POST /api/2.0/lakebox/sandboxes. An empty `name` is omitted
-// from the wire payload so the server treats it as "unset" rather than
-// "explicit empty string."
+// so the server treats it as "unset" rather than "explicit empty string".
 func (a *lakeboxAPI) create(ctx context.Context, name string) (*createResponse, error) {
 	body := createRequest{Sandbox: sandboxCreateBody{Name: name}}
 	var resp createResponse
@@ -244,7 +204,7 @@ func (a *lakeboxAPI) create(ctx context.Context, name string) (*createResponse, 
 }
 
 // list calls GET /api/2.0/lakebox/sandboxes, following pagination until the
-// server stops sending `next_page_token`. Returns the full set in one slice.
+// server stops sending `next_page_token`.
 func (a *lakeboxAPI) list(ctx context.Context) ([]sandboxEntry, error) {
 	var all []sandboxEntry
 	pageToken := ""
@@ -261,8 +221,7 @@ func (a *lakeboxAPI) list(ctx context.Context) ([]sandboxEntry, error) {
 	}
 }
 
-// listPage fetches a single page of sandboxes. An empty `pageToken` requests
-// the first page; the server enforces ordering across pages.
+// listPage fetches a single page of sandboxes.
 //
 // `query` is passed in slot 6 (`request`), not slot 5 (`queryParams`). On
 // GET, the SDK's makeRequestBody serializes `request` into the URL query
@@ -294,9 +253,9 @@ func (a *lakeboxAPI) get(ctx context.Context, id string) (*sandboxEntry, error) 
 }
 
 // update calls PATCH /api/2.0/lakebox/sandboxes/{id} with whichever of
-// `idle_timeout` / `no_autostop` the caller chose to set. Fields left
-// nil are omitted from the wire payload, so the server preserves their
-// current values. Returns the refreshed `sandboxEntry`.
+// `idle_timeout` / `no_autostop` the caller chose to set. Fields left nil
+// are omitted from the wire payload, so the server preserves their current
+// values. Returns the refreshed `sandboxEntry`.
 func (a *lakeboxAPI) update(ctx context.Context, id string, name *string, idleTimeoutSecs *int64, noAutostop *bool) (*sandboxEntry, error) {
 	var idleTimeout *string
 	if idleTimeoutSecs != nil {
@@ -323,9 +282,7 @@ func (a *lakeboxAPI) delete(ctx context.Context, id string) error {
 }
 
 // stop calls POST /api/2.0/lakebox/sandboxes/{id}/stop and returns the
-// refreshed sandbox. The proto's `StopSandboxRequest` carries `sandbox_id`
-// (redundant with the URL path) under `body: "*"`, so we mirror it
-// explicitly even though the transcoder fills the field from the path.
+// refreshed sandbox.
 func (a *lakeboxAPI) stop(ctx context.Context, id string) (*sandboxEntry, error) {
 	body := map[string]string{"sandbox_id": id}
 	var resp sandboxEntry
@@ -337,7 +294,7 @@ func (a *lakeboxAPI) stop(ctx context.Context, id string) (*sandboxEntry, error)
 }
 
 // start calls POST /api/2.0/lakebox/sandboxes/{id}/start and returns the
-// refreshed sandbox. Mirror of `stop`; same body shape per `body: "*"`.
+// refreshed sandbox.
 func (a *lakeboxAPI) start(ctx context.Context, id string) (*sandboxEntry, error) {
 	body := map[string]string{"sandbox_id": id}
 	var resp sandboxEntry
@@ -349,15 +306,12 @@ func (a *lakeboxAPI) start(ctx context.Context, id string) (*sandboxEntry, error
 }
 
 // registerKey calls POST /api/2.0/lakebox/ssh-keys. An empty `name` is
-// omitted from the wire payload so the server records "unset" rather than
-// an explicit empty string.
+// omitted so the server records "unset" rather than an explicit empty string.
 func (a *lakeboxAPI) registerKey(ctx context.Context, publicKey, name string) error {
 	return a.c.Do(ctx, http.MethodPost, lakeboxKeysAPIPath, a.headers(), nil, registerKeyRequest{PublicKey: publicKey, Name: name}, nil)
 }
 
-// sshKeyEntry is a single item in the ssh-key list response. Mirrors the
-// `SshKey` proto message after JSON transcoding (`key_hash` → `keyHash`,
-// timestamps as RFC 3339 strings).
+// sshKeyEntry is a single item in the ssh-key list response.
 type sshKeyEntry struct {
 	KeyHash     string `json:"keyHash"`
 	Name        string `json:"name,omitempty"`
@@ -366,8 +320,8 @@ type sshKeyEntry struct {
 }
 
 // listKeysResponse is the JSON body returned by GET /api/2.0/lakebox/ssh-keys.
-// Per-user keys are hard-capped at 100 server-side, so the full set fits in
-// one response — no pagination.
+// Per-user keys are hard-capped server-side, so the full set fits in one
+// response — no pagination.
 type listKeysResponse struct {
 	SshKeys []sshKeyEntry `json:"sshKeys"`
 }

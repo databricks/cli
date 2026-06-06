@@ -32,8 +32,6 @@ func resolveLocalID(ctx context.Context, profile, arg string) (string, error) {
 
 	sbs := getSandboxes(ctx, profile)
 
-	// ID-first so that a sandbox whose --name happens to collide with
-	// another sandbox's ID never gets mistakenly resolved by name.
 	for _, s := range sbs {
 		if s.ID == arg {
 			return arg, nil

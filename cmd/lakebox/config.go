@@ -11,9 +11,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// MIN_IDLE_TIMEOUT_SECS / MAX_IDLE_TIMEOUT_SECS mirror the manager-side
-// constants in lakebox/src/api/handlers/sandbox.rs. Pre-flighting client-side
-// gives a clearer error than waiting for the server's INVALID_ARGUMENT.
+// minIdleTimeoutSecs / maxIdleTimeoutSecs mirror the server-side bounds
+// on `idle_timeout`. Pre-flighting client-side gives a clearer error
+// than waiting for the server's INVALID_ARGUMENT.
 const (
 	minIdleTimeoutSecs = 60
 	maxIdleTimeoutSecs = 86_400
@@ -78,8 +78,6 @@ Examples:
 				return err
 			}
 
-			// Translate flag presence + value into the proto3
-			// optional-field semantics the server expects.
 			var idleSecs *int64
 			if cmd.Flags().Changed("idle-timeout") {
 				secs, err := parseIdleTimeoutFlag(idleTimeoutFlag)
@@ -157,10 +155,9 @@ func checkIdleSecs(secs int64) (int64, error) {
 		return 0, nil // clear / revert to global default
 	}
 	if secs < minIdleTimeoutSecs || secs > maxIdleTimeoutSecs {
-		// Format both the bounds and the offending value as Go-style
-		// durations to match the input form the user typed and the
-		// flag's --help text (Anwell flagged the prior `86400s` /
-		// `90000s` echoes as confusing — same unit as input now).
+		// Echo bounds in Go duration form so they match the input the
+		// user typed (raw seconds like `86400s` reads as a different
+		// unit).
 		return 0, fmt.Errorf(
 			"idle-timeout must be 0 (clear) or between %s and %s, got %s",
 			formatDurationSecs(minIdleTimeoutSecs),

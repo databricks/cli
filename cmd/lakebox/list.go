@@ -96,23 +96,11 @@ Example:
 
 			out := cmd.OutOrStdout()
 
-			// Compute column widths. AUTOSTOP holds short tokens like
-			// `never`, `15m`, `1h30m` — 8 chars covers them.
-			//
-			// NAME is *always* rendered, even when no sandbox has a
-			// custom --name set: yunquan flagged on the bug-bash form
-			// that the prior auto-hide made the table shape change
-			// between calls (NAME appears the moment you set --name on
-			// any one box and vanishes when you clear them all), which
-			// breaks scripts and muscle memory. Sandboxes without a
-			// custom name render as `-` in the NAME cell.
-			//
-			// All column widths are measured in *terminal cells*, not
-			// bytes or runes — emoji and CJK glyphs render as 2 cells
-			// despite being 1 rune / multi-byte, and using len() here
-			// (which counts bytes) misaligns the row whenever a `--name`
-			// includes wide characters. cmdio.Width gives the
-			// East-Asian-Width-corrected cell count.
+			// NAME is always rendered (even with no --name set on any
+			// row) so the table shape stays stable across calls;
+			// unnamed sandboxes render as `-`. Widths are measured in
+			// terminal cells via cmdio.Width so emoji / CJK names line
+			// up correctly.
 			idCol := 10
 			autostopCol := 8
 			nameCol := 4
@@ -123,10 +111,8 @@ Example:
 				if l := cmdio.Width(e.autoStopLabel()); l > autostopCol {
 					autostopCol = l
 				}
-				// Only let an actual custom name expand the column. A
-				// sandbox whose `name` happens to equal its `id` would
-				// otherwise drive the column to the ID's width — for no
-				// gain, since that row renders as `-`.
+				// A name equal to the id renders as `-`, so don't let
+				// it expand the column.
 				if e.Name != "" && e.Name != e.SandboxID {
 					if l := cmdio.Width(e.Name); l > nameCol {
 						nameCol = l
