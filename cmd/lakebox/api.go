@@ -23,18 +23,18 @@ func sandboxPath(id string) string {
 	return lakeboxAPIPath + "/" + url.PathEscape(id)
 }
 
-// Sandboxes live under the `/sandboxes` sub-collection of the lakebox service
-// namespace (see `lakebox.proto` `LakeboxService.CreateSandbox`).
+// Sandboxes live under the `/sandboxes` sub-collection of the lakebox
+// service namespace.
 const lakeboxAPIPath = "/api/2.0/lakebox/sandboxes"
 
 // SSH keys are nested under the lakebox service namespace alongside
-// `sandboxes/` (see `LakeboxService.CreateSshKey`).
+// `sandboxes/`.
 const lakeboxKeysAPIPath = "/api/2.0/lakebox/ssh-keys"
 
-// orgIDHeader is sent by multi-workspace gateways (e.g. dogfood staging) so
-// the gateway can scope the credential to a specific workspace. Without it,
-// requests fail with "Credential was not sent or was of an unsupported type
-// for this API."
+// orgIDHeader is sent by multi-workspace gateways so the gateway can
+// scope the credential to a specific workspace. Without it, requests
+// fail with "Credential was not sent or was of an unsupported type for
+// this API."
 const orgIDHeader = "X-Databricks-Org-Id"
 
 // maxNameBytes mirrors the manager-side `Sandbox.name` length cap. The
@@ -78,9 +78,9 @@ type createRequest struct {
 //
 // `FQDN` is the manager's internal routing hostname — not user-actionable.
 // `GatewayHost` is the public SSH gateway hostname for the workspace,
-// stamped by the manager (universe#1966484) so the CLI no longer needs to
-// hardcode regional defaults. Both are `omitempty` so old/new wire shapes
-// round-trip cleanly.
+// stamped by the manager so the CLI no longer needs to hardcode regional
+// defaults. Both are `omitempty` so old/new wire shapes round-trip
+// cleanly.
 type createResponse struct {
 	SandboxID   string `json:"sandboxId"`
 	Status      string `json:"status"`
@@ -130,20 +130,16 @@ func (e *sandboxEntry) idleTimeoutSecs() int64 {
 }
 
 // autoStopLabel renders the auto-stop policy advertised by the manager
-// for one sandbox into a short human-readable string. Mirrors the wire
-// semantics from `lakebox/proto/lakebox.proto`:
+// for one sandbox into a short human-readable string. Wire semantics:
 //   - `no_autostop == true` → never auto-stops
 //   - `idle_timeout` set and positive → that many seconds
 //   - otherwise → no enforcement today; render as "never"
 //
 // The "otherwise" branch used to render a hardcoded `10m` claiming to
-// mirror a manager-side `watchdog_idle_grace_secs` fallback. That
-// fallback does not exist in the current tree (only a stale comment in
-// `lakebox/proto/lakebox.proto`); the ESM-side `LakeboxChecker` is also
-// gated off via the `lakeboxCheckerEnabled` SAFE flag, so unset
-// `idle_timeout` is functionally "never auto-stops" today. Once the
-// manager enforces a real default, swap this branch back to a duration
-// label.
+// mirror a server-side idle-grace fallback. That fallback is not
+// currently enforced, so unset `idle_timeout` is functionally "never
+// auto-stops" today. Once the server enforces a real default, swap
+// this branch back to a duration label.
 func (e *sandboxEntry) autoStopLabel() string {
 	if e.NoAutostop != nil && *e.NoAutostop {
 		return "never"
@@ -185,11 +181,9 @@ type listResponse struct {
 // `list` handles the rare larger fleet.
 const listPageSize = 100
 
-// updateBody is the PATCH request body. The proto declares
-// `UpdateSandboxRequest { Sandbox sandbox = 1 }` with `body: "sandbox"`
-// in the (google.api.http) annotation, so the HTTP body is the inner
-// `Sandbox` message directly — there is no `{"sandbox": {...}}`
-// wrapping on the wire.
+// updateBody is the PATCH request body. The server takes the inner
+// `Sandbox` message as the request body directly — there is no
+// `{"sandbox": {...}}` wrapping on the wire.
 //
 // Pointer fields encode the proto3 `optional` semantics — only the
 // fields we explicitly set are emitted, leaving everything else

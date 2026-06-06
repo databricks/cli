@@ -50,7 +50,7 @@ func TestBuildSSHArgsQuoting(t *testing.T) {
 			expected:  []string{"ls", "-la", "/tmp"},
 		},
 		{
-			name: "bash -c '<cmd>' — third arg gets quoted (this is F22)",
+			name: "bash -c '<cmd>' — third arg gets quoted",
 			// The whole point: without the quoting, the remote shell
 			// re-splits "bash -c echo hi" and bash's -c eats just "echo".
 			extraArgs: []string{"bash", "-c", "echo hi"},

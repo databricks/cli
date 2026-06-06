@@ -100,12 +100,12 @@ Example:
 			// `never`, `15m`, `1h30m` — 8 chars covers them.
 			//
 			// NAME is *always* rendered, even when no sandbox has a
-			// custom --name set: yunquan flagged on the bug-bash form
-			// that the prior auto-hide made the table shape change
-			// between calls (NAME appears the moment you set --name on
-			// any one box and vanishes when you clear them all), which
-			// breaks scripts and muscle memory. Sandboxes without a
-			// custom name render as `-` in the NAME cell.
+			// custom --name set, so the table shape stays stable across
+			// calls. Auto-hiding the column means it appears the moment
+			// you set --name on any one box and vanishes when you clear
+			// them all — that breaks scripts that parse the output and
+			// flickers under the user's eyes between calls. Sandboxes
+			// without a custom name render as `-` in the NAME cell.
 			//
 			// All column widths are measured in *terminal cells*, not
 			// bytes or runes — emoji and CJK glyphs render as 2 cells

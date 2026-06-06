@@ -224,7 +224,7 @@ func upsertSandbox(ctx context.Context, profile, id, name string) error {
 // the profile's `GatewayHosts` entry — there is nothing for the
 // gateway hostname to apply to until the user creates a new sandbox,
 // and leaving the entry behind accumulates orphan state across the
-// lifecycle of a profile (per Mitch's "Delete cleanup" CUJ).
+// lifecycle of a profile.
 func removeSandbox(ctx context.Context, profile, id string) error {
 	state, err := loadState(ctx)
 	if err != nil {

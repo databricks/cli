@@ -25,8 +25,7 @@ const (
 
 // resolveGatewayHost picks the SSH gateway hostname based on the workspace host.
 // Staging workspaces (*.staging.cloud.databricks.com etc.) route through
-// ue1.s.dbrx.dev; everything else uses uw2.dbrx.dev. Both are dev-tier
-// listeners (`.dbrx.dev`); there is no prod listener yet.
+// ue1.s.dbrx.dev; everything else uses uw2.dbrx.dev.
 func resolveGatewayHost(workspaceHost string) string {
 	if strings.Contains(workspaceHost, ".staging.") {
 		return stagingDefaultGatewayHost
@@ -120,9 +119,8 @@ Examples:
 			}
 
 			// Verify the local key is still registered before opening
-			// the SSH socket. The gateway's publickey-callback already
-			// checks the key (see lakebox/src/ssh/handler.rs's
-			// verify_ssh_key), but SSH_MSG_USERAUTH_FAILURE has no
+			// the SSH socket. The gateway already checks the key
+			// during userauth, but SSH_MSG_USERAUTH_FAILURE has no
 			// free-form reason field and SSH_MSG_USERAUTH_BANNER is
 			// swallowed by many client wrappers — so the gateway can't
 			// communicate "key not registered" through the SSH channel.
@@ -238,11 +236,11 @@ Examples:
 // SSH protocol's reply surface (USERAUTH_FAILURE has no free-form
 // reason; USERAUTH_BANNER is widely swallowed) flattens "unknown
 // key", "key registered but not authorized for this sandbox", and
-// "ESM is down" into the same "Permission denied (publickey)". This
-// out-of-band HTTP check surfaces the specific case in language the
-// user can act on. listKeys errors fall through with a warning so a
-// transient API hiccup doesn't block a connection the gateway could
-// still route.
+// "upstream service is down" into the same "Permission denied
+// (publickey)". This out-of-band HTTP check surfaces the specific
+// case in language the user can act on. listKeys errors fall
+// through with a warning so a transient API hiccup doesn't block a
+// connection the gateway could still route.
 func verifyKeyRegistered(ctx context.Context, api *lakeboxAPI, keyPath string) error {
 	pub, err := os.ReadFile(keyPath + ".pub")
 	if err != nil {
@@ -320,7 +318,7 @@ func execSSHDirect(lakeboxID, host, port, keyPath string, extraArgs []string) er
 //     `lakebox ssh <id> -- bash -c 'echo hi'`
 //     Cobra splits this into `["bash", "-c", "echo hi"]`. ssh's join
 //     produces `bash -c echo hi` on the wire, which bash re-splits into
-//     `-c=echo` and `$0=hi` — bug F22. We fix that by shell-quoting
+//     `-c=echo` and `$0=hi` — wrong. We fix that by shell-quoting
 //     each arg before append, so the remote sees `bash -c 'echo hi'`.
 //
 // The heuristic: if there's exactly one extra arg, pass it untouched;

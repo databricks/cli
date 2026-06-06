@@ -19,8 +19,8 @@ func newStatusCommand() *cobra.Command {
 		Long: `Show detailed status of a Lakebox environment.
 
 Example:
-  lakebox status happy-panda-1234
-  lakebox status happy-panda-1234 --json`,
+  databricks lakebox status happy-panda-1234
+  databricks lakebox status happy-panda-1234 --json`,
 		Args:              cobra.ExactArgs(1),
 		PreRunE:           root.MustWorkspaceClient,
 		ValidArgsFunction: completeSandboxIDs,
