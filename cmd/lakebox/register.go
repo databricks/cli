@@ -15,7 +15,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const lakeboxKeyName = "lakebox_rsa"
+const lakeboxKeyName = "lakebox_ed25519"
 
 func newRegisterCommand() *cobra.Command {
 	var name string
@@ -26,10 +26,13 @@ func newRegisterCommand() *cobra.Command {
 		Long: `Generate a dedicated SSH key for lakebox and register it with the service.
 
 This command:
-1. Generates an RSA SSH key at ~/.ssh/lakebox_rsa (if it doesn't exist)
+1. Generates an Ed25519 SSH key at ~/.ssh/lakebox_ed25519 (if it doesn't exist)
 2. Registers the public key with the lakebox service, labeled with --name
    (defaults to this machine's hostname so 'ssh-key list' is meaningful
    across multiple machines)
+3. Optionally adds a 'Host lakebox-gw' alias to ~/.ssh/config (prompted
+   the first time) so editor Remote-SSH ("Open in VS Code / Cursor"
+   from the workspace UI) and plain 'ssh <id>@lakebox-gw' both work
 
 After registration, 'databricks lakebox ssh' will use this key automatically.
 Run this once per machine.
@@ -81,6 +84,23 @@ Examples:
 			}
 			s.ok("SSH key registered")
 
+			// Write the shared `lakebox-gw` SSH-config alias so editor
+			// Remote-SSH ("Open in VS Code/Cursor") deep links and
+			// `ssh <id>@lakebox-gw` from a plain shell both work
+			// without the user having to paste any config block. The
+			// alias name and shape are aligned with the workspace UI's
+			// "First time setup?" disclosure, so CLI users and
+			// pasted-snippet users converge on the same config.
+			//
+			// First register on this machine prompts for consent (the
+			// Include line we add to ~/.ssh/config is a permanent
+			// change to a user-managed file). Re-runs are silent — if
+			// the Include is already there, the user has opted in and
+			// we just refresh the managed file's contents.
+			if err := maybeWriteSSHConfig(ctx, keyPath, w.Config.Host); err != nil {
+				warn(ctx, fmt.Sprintf("registered key, but failed to update ~/.ssh/config: %v", err))
+			}
+
 			blank(stderr)
 			fmt.Fprintf(stderr, "  Run %s to connect.\n\n", cmdio.Bold(ctx, "databricks lakebox ssh"))
 			return nil
@@ -130,7 +150,7 @@ func ensureLakeboxKey(ctx context.Context) (string, bool, error) {
 		return "", false, fmt.Errorf("failed to create %s: %w", sshDir, err)
 	}
 
-	genCmd := exec.Command("ssh-keygen", "-t", "rsa", "-b", "4096", "-f", keyPath, "-N", "", "-q", "-C", "lakebox")
+	genCmd := exec.Command("ssh-keygen", "-t", "ed25519", "-f", keyPath, "-N", "", "-q", "-C", "lakebox")
 	genCmd.Stdin = os.Stdin
 	genCmd.Stdout = os.Stderr
 	genCmd.Stderr = os.Stderr

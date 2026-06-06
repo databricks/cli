@@ -119,6 +119,22 @@ Examples:
 				return err
 			}
 
+			// Verify the local key is still registered before opening
+			// the SSH socket. The gateway's publickey-callback already
+			// checks the key (see lakebox/src/ssh/handler.rs's
+			// verify_ssh_key), but SSH_MSG_USERAUTH_FAILURE has no
+			// free-form reason field and SSH_MSG_USERAUTH_BANNER is
+			// swallowed by many client wrappers — so the gateway can't
+			// communicate "key not registered" through the SSH channel.
+			// The HTTP API is the only out-of-band wire that can
+			// surface a structured "run register" pointer to the user.
+			// listKeys errors fall through with a warning so a
+			// transient API hiccup doesn't block a connection the
+			// gateway could still route.
+			if err := verifyKeyRegistered(ctx, api, keyPath); err != nil {
+				return err
+			}
+
 			if lakeboxID == "" {
 				def := getDefault(ctx, profile)
 				if def == "" {
@@ -214,6 +230,37 @@ Examples:
 	cmd.Flags().StringVar(&gatewayPort, "port", defaultGatewayPort, "Lakebox gateway SSH port")
 
 	return cmd
+}
+
+// verifyKeyRegistered confirms the local lakebox public key is still
+// registered with the workspace before we open the SSH socket. The
+// gateway itself already does this check during userauth, but the
+// SSH protocol's reply surface (USERAUTH_FAILURE has no free-form
+// reason; USERAUTH_BANNER is widely swallowed) flattens "unknown
+// key", "key registered but not authorized for this sandbox", and
+// "ESM is down" into the same "Permission denied (publickey)". This
+// out-of-band HTTP check surfaces the specific case in language the
+// user can act on. listKeys errors fall through with a warning so a
+// transient API hiccup doesn't block a connection the gateway could
+// still route.
+func verifyKeyRegistered(ctx context.Context, api *lakeboxAPI, keyPath string) error {
+	pub, err := os.ReadFile(keyPath + ".pub")
+	if err != nil {
+		return fmt.Errorf("reading public key %s.pub: %w", keyPath, err)
+	}
+	want := keyHash(string(pub))
+
+	keys, err := api.listKeys(ctx)
+	if err != nil {
+		warn(ctx, fmt.Sprintf("could not verify SSH key registration: %v", err))
+		return nil
+	}
+	for _, k := range keys {
+		if k.KeyHash == want {
+			return nil
+		}
+	}
+	return fmt.Errorf("your lakebox SSH key (%s) is not registered with this workspace — run `databricks lakebox register` to re-register it", want)
 }
 
 // ensureRunning brings the named sandbox to Running before ssh hands
