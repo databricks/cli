@@ -11,10 +11,7 @@ import (
 )
 
 // jsonOutput reports whether the user asked for JSON output, via either
-// the lakebox-local `--json` flag or the framework-global `-o json`. The
-// global flag is the standard shape across other `databricks` commands
-// and the validator already rejects bogus values, but until this helper
-// existed lakebox commands silently ignored it and emitted text anyway.
+// the local `--json` flag or the framework-global `-o json`.
 func jsonOutput(cmd *cobra.Command, jsonFlag bool) bool {
 	if jsonFlag {
 		return true
@@ -25,18 +22,15 @@ func jsonOutput(cmd *cobra.Command, jsonFlag bool) bool {
 	return false
 }
 
-// cmdioSpinner is the subset of *cmdio.spinner's method set we need.
-// Defining the interface locally lets us hold the unexported type as a
-// struct field; cmdio's spinner satisfies it structurally.
+// cmdioSpinner is the subset of *cmdio.spinner's method set we need,
+// defined locally so we can hold the unexported type as a field.
 type cmdioSpinner interface {
 	Update(msg string)
 	Close()
 }
 
-// spinner wraps cmdio.NewSpinner with ok/fail markers. ok and fail close the
-// underlying spinner and log a final ✓/✗ line; Close stops the spinner
-// without printing. cmdio's Close is itself idempotent, so a `defer s.Close()`
-// is safe alongside an ok/fail call on the success path.
+// spinner wraps cmdio.NewSpinner with ok/fail markers. Close (idempotent
+// in cmdio) is safe alongside ok/fail, so callers can `defer s.Close()`.
 type spinner struct {
 	cmdioSpinner
 	ctx context.Context

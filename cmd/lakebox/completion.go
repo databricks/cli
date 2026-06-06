@@ -6,19 +6,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// completeSandboxIDs is a Cobra ValidArgsFunction returning the caller's
-// sandbox IDs (and display names, when distinct from the ID) for tab
-// completion. Reads purely from the local cache populated by `lakebox
-// list` / `create` / `status` / etc. — no API call on `<TAB>`, so a flaky
-// network or unrefreshed auth token never makes the shell hang.
-//
-// Cobra runs ValidArgsFunction in a separate process from the main
-// command, so we still need to bootstrap the workspace client just to
-// learn which profile we're under. The cache itself is profile-scoped.
-//
-// Best-effort: any failure (no profile resolvable, empty cache) returns
-// no suggestions instead of an error so the shell stays usable and the
-// user can still type the ID by hand.
+// completeSandboxIDs returns sandbox IDs and (distinct) display names
+// from the local cache for tab completion. Cache-only so an unrefreshed
+// token never hangs the shell; any failure yields no suggestions.
 func completeSandboxIDs(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 	if len(args) > 0 {
 		return nil, cobra.ShellCompDirectiveNoFileComp
@@ -31,9 +21,7 @@ func completeSandboxIDs(cmd *cobra.Command, args []string, toComplete string) ([
 	if len(sbs) == 0 {
 		return nil, cobra.ShellCompDirectiveNoFileComp
 	}
-	// Offer the ID always, plus the display name when the user actually
-	// set one (server defaults `name` to the sandbox ID, so don't echo
-	// the same string twice).
+	// Server defaults `name` to the ID, so only emit the name when it's distinct.
 	suggestions := make([]string, 0, len(sbs)*2)
 	for _, s := range sbs {
 		suggestions = append(suggestions, s.ID)
@@ -44,10 +32,8 @@ func completeSandboxIDs(cmd *cobra.Command, args []string, toComplete string) ([
 	return suggestions, cobra.ShellCompDirectiveNoFileComp
 }
 
-// completeSSHKeyHashes is the equivalent for `ssh-key delete <hash>`,
-// returning the hashes of registered keys. SSH-key hashes aren't cached
-// locally (per-user cap is ~100 server-side and listing is cheap), so
-// this path still calls the API.
+// completeSSHKeyHashes returns registered key hashes for `ssh-key delete`.
+// Hashes aren't cached locally, so this path calls the API.
 func completeSSHKeyHashes(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 	if len(args) > 0 {
 		return nil, cobra.ShellCompDirectiveNoFileComp

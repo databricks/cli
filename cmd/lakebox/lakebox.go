@@ -4,6 +4,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// New returns the root command for the lakebox subcommand.
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "lakebox",

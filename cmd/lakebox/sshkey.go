@@ -127,8 +127,7 @@ Examples:
 			const hashCol = 32
 			const timeCol = 20
 
-			// Leading 4-char gutter reserves space for a per-row `*` marker on
-			// the key matching this machine; header and separator leave it blank.
+			// 4-char gutter holds a per-row `*` for the local key (blank in header).
 			header := fmt.Sprintf("%-*s  %-*s  %-*s  %s",
 				nameCol, "NAME", hashCol, "KEY HASH", timeCol, "CREATED", "LAST USED")
 			fmt.Fprintf(out, "    %s\n", cmdio.Faint(ctx, header))

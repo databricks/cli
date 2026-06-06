@@ -39,6 +39,7 @@ type cachedSandbox struct {
 	Name string `json:"name,omitempty"`
 }
 
+// stateFilePath returns the on-disk location of the lakebox state file.
 func stateFilePath(ctx context.Context) (string, error) {
 	home, err := env.UserHomeDir(ctx)
 	if err != nil {
@@ -47,6 +48,8 @@ func stateFilePath(ctx context.Context) (string, error) {
 	return filepath.Join(home, ".databricks", "lakebox.json"), nil
 }
 
+// loadState reads the lakebox state file, returning an empty state when
+// the file doesn't exist yet.
 func loadState(ctx context.Context) (*stateFile, error) {
 	path, err := stateFilePath(ctx)
 	if err != nil {
@@ -71,6 +74,7 @@ func loadState(ctx context.Context) (*stateFile, error) {
 	return &state, nil
 }
 
+// saveState writes the lakebox state file atomically.
 func saveState(ctx context.Context, state *stateFile) error {
 	path, err := stateFilePath(ctx)
 	if err != nil {

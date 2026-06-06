@@ -12,14 +12,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// Bounds for `start`'s "wait until Running" loop. The server's StartSandbox
-// RPC returns immediately with status="Creating" (reused for cold start),
-// so the CLI polls until it actually reaches Running. Matches `create`'s
-// blocking semantics so scripts can chain start → ssh / start → config
-// without racing the cold boot. The 10-minute timeout covers the observed
-// cold-start range (5–13 minutes) for the common case; truly stuck
-// sandboxes still surface as a timeout rather than hanging the script
-// forever.
+// Bounds for `start`'s "wait until Running" poll. StartSandbox returns
+// immediately with status="Creating", so we poll until it actually
+// reaches Running. 10 min covers the observed cold-start range
+// (5–13 min); stuck sandboxes surface as a timeout, not a hang.
 const (
 	startPollInterval = 2 * time.Second
 	startWaitTimeout  = 10 * time.Minute

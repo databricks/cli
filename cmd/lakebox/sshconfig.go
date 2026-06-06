@@ -33,8 +33,7 @@ const (
 )
 
 // sshConfigPaths returns (managedFile, mainConfig) under the user's
-// ~/.ssh directory. Side-effect free; safe to call before deciding
-// whether to actually write anything.
+// ~/.ssh directory.
 func sshConfigPaths(ctx context.Context) (string, string, error) {
 	home, err := env.UserHomeDir(ctx)
 	if err != nil {
@@ -45,9 +44,7 @@ func sshConfigPaths(ctx context.Context) (string, string, error) {
 }
 
 // sshConfigAlreadyManaged reports whether ~/.ssh/config already
-// contains the lakebox-managed Include block. Used by `register` to
-// decide whether to prompt the user for consent (first time) or
-// silently refresh the managed file (already opted in).
+// contains the lakebox-managed Include block.
 func sshConfigAlreadyManaged(ctx context.Context) (bool, error) {
 	_, mainPath, err := sshConfigPaths(ctx)
 	if err != nil {
@@ -66,8 +63,6 @@ func sshConfigAlreadyManaged(ctx context.Context) (bool, error) {
 // writeSSHConfig writes the lakebox-managed SSH config block to a
 // managed file and, if not already present, adds an Include directive
 // to the user's ~/.ssh/config pointing at that file.
-//
-// Returns (managedFilePath, mainConfigPath, error).
 func writeSSHConfig(ctx context.Context, keyPath, gatewayHost, gatewayPort string) (string, string, error) {
 	home, err := env.UserHomeDir(ctx)
 	if err != nil {
@@ -114,11 +109,8 @@ Host %s
 `, sshConfigAlias, gatewayHost, gatewayPort, keyPath)
 }
 
-// writeManagedConfig writes content to path with 0600 perms, atomically
-// via tmp + rename so a crash mid-write can't leave a half-written
-// file. Skips the write entirely when the existing content already
-// matches, so repeated `lakebox register` runs don't churn the file's
-// mtime.
+// writeManagedConfig writes content to path atomically with 0600
+// perms. No-op when the file already matches, to avoid churning mtime.
 func writeManagedConfig(path, content string) error {
 	if existing, err := os.ReadFile(path); err == nil && bytes.Equal(existing, []byte(content)) {
 		return nil
@@ -154,16 +146,12 @@ func ensureMainIncludesManaged(mainPath, managedPath string) error {
 		return fmt.Errorf("reading %s: %w", mainPath, err)
 	}
 
-	// Prepend our block. SSH processes the file top-down and uses the
-	// first value seen for each option; placing our Include first lets
-	// `lakebox-gw` always resolve to the managed values even if the
-	// user has a wildcard `Host *` block later.
+	// Prepend so our Include wins SSH's first-match-per-option
+	// semantics over any wildcard `Host *` block later in the file.
 	var buf bytes.Buffer
 	buf.WriteString(managedBlock)
 	if len(existing) > 0 {
-		// Ensure visual separation between our block and the user's
-		// content. If the existing file already starts with a blank
-		// line, don't add another.
+		// Avoid double blank lines if the file already starts with one.
 		if !strings.HasPrefix(string(existing), "\n") {
 			buf.WriteString("\n")
 		}
@@ -194,15 +182,8 @@ func hasOurMarkedBlock(text string) bool {
 }
 
 // maybeWriteSSHConfig writes the lakebox-managed SSH config, prompting
-// for consent the first time on this machine. Re-runs are silent: the
-// Include line in ~/.ssh/config signals prior opt-in, and we just
-// refresh the managed file's contents (e.g. if the gateway host has
-// changed).
-//
-// In non-interactive contexts (no TTY, no `--yes`-style flag here),
-// we skip the write rather than fail — `lakebox ssh` still works via
-// argv-explicit flags, only IDE Remote-SSH from the workspace UI
-// needs the config alias.
+// for consent the first time on this machine. Re-runs silently refresh
+// the managed file. Non-interactive contexts skip the write entirely.
 func maybeWriteSSHConfig(ctx context.Context, keyPath, workspaceHost string) error {
 	already, err := sshConfigAlreadyManaged(ctx)
 	if err != nil {

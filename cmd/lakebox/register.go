@@ -66,10 +66,7 @@ Examples:
 				return fmt.Errorf("failed to read public key %s.pub: %w", keyPath, err)
 			}
 
-			// Default the registered key's label to this machine's hostname so
-			// `lakebox ssh-key list` is meaningful when the user has keys from
-			// multiple machines. Failed hostname lookups fall through to the
-			// server's "unset" default rather than blocking registration.
+			// Default to hostname so `ssh-key list` is meaningful across machines.
 			if name == "" {
 				if host, err := os.Hostname(); err == nil {
 					name = host
@@ -84,19 +81,9 @@ Examples:
 			}
 			s.ok("SSH key registered")
 
-			// Write the shared `lakebox-gw` SSH-config alias so editor
-			// Remote-SSH ("Open in VS Code/Cursor") deep links and
-			// `ssh <id>@lakebox-gw` from a plain shell both work
-			// without the user having to paste any config block. The
-			// alias name and shape are aligned with the workspace UI's
-			// "First time setup?" disclosure, so CLI users and
-			// pasted-snippet users converge on the same config.
-			//
-			// First register on this machine prompts for consent (the
-			// Include line we add to ~/.ssh/config is a permanent
-			// change to a user-managed file). Re-runs are silent — if
-			// the Include is already there, the user has opted in and
-			// we just refresh the managed file's contents.
+			// Write the shared `lakebox-gw` ~/.ssh/config alias so editor
+			// Remote-SSH and plain `ssh <id>@lakebox-gw` both work without
+			// the user pasting any config block (see maybeWriteSSHConfig).
 			if err := maybeWriteSSHConfig(ctx, keyPath, w.Config.Host); err != nil {
 				warn(ctx, fmt.Sprintf("registered key, but failed to update ~/.ssh/config: %v", err))
 			}
@@ -124,7 +111,7 @@ func lakeboxKeyPath(ctx context.Context) (string, error) {
 }
 
 // ensureLakeboxKey returns the path to the lakebox SSH key, generating it if
-// it doesn't exist. Returns (path, wasGenerated, error).
+// it doesn't exist.
 func ensureLakeboxKey(ctx context.Context) (string, bool, error) {
 	keyPath, err := lakeboxKeyPath(ctx)
 	if err != nil {
@@ -135,7 +122,6 @@ func ensureLakeboxKey(ctx context.Context) (string, bool, error) {
 		return keyPath, false, nil
 	}
 
-	// Check that ssh-keygen is available before trying to generate.
 	if _, err := exec.LookPath("ssh-keygen"); err != nil {
 		return "", false, errors.New(
 			"ssh-keygen not found in PATH.\n" +

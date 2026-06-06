@@ -47,10 +47,8 @@ Examples:
 				return err
 			}
 
-			// Validate existence first so `delete <typo>` fails clearly
-			// instead of returning a confident "✓ Removed" on a sandbox
-			// the server never had — the DELETE endpoint treats 404 as
-			// idempotent success on the wire.
+			// DELETE returns success on 404, so pre-check existence to
+			// surface typos clearly.
 			entry, err := api.get(ctx, lakeboxID)
 			if err != nil {
 				if errors.Is(err, apierr.ErrNotFound) {
