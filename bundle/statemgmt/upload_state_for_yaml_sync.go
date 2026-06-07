@@ -98,50 +98,27 @@ func uploadState(ctx context.Context, b *bundle.Bundle) error {
 }
 
 func (m *uploadStateForYamlSync) convertState(ctx context.Context, b *bundle.Bundle, snapshotPath string) (bool, error) {
-	terraformResources, err := terraform.ParseResourcesState(ctx, b)
+	_, localTerraformPath := b.StateFilenameTerraform(ctx)
+	tfAttrs, terraformResources, tfMeta, err := migrate.ParseTFStateFull(ctx, localTerraformPath)
 	if err != nil {
 		return false, fmt.Errorf("failed to parse terraform state: %w", err)
 	}
 
-	// ParseResourcesState returns nil when the terraform state file doesn't exist
+	// ParseTFStateFull returns nil IDs when the terraform state file doesn't exist
 	// (e.g. first deploy with no resources).
 	if terraformResources == nil {
 		return false, nil
 	}
 
-	_, localTerraformPath := b.StateFilenameTerraform(ctx)
-	data, err := os.ReadFile(localTerraformPath)
-	if err != nil {
-		return false, fmt.Errorf("failed to read terraform state: %w", err)
-	}
-
-	tfAttrs, err := migrate.ParseTFStateAttrs(localTerraformPath)
-	if err != nil {
-		return false, fmt.Errorf("failed to read terraform state attributes: %w", err)
-	}
-
 	state := make(map[string]dstate.ResourceEntry)
-	etags := map[string]string{}
-
 	for key, resourceEntry := range terraformResources {
 		state[key] = dstate.ResourceEntry{
 			ID:    resourceEntry.ID,
 			State: json.RawMessage("{}"),
 		}
-		if resourceEntry.ETag != "" {
-			etags[key] = resourceEntry.ETag
-		}
 	}
 
-	var tfState struct {
-		Lineage string `json:"lineage"`
-		Serial  int    `json:"serial"`
-	}
-	if err := json.Unmarshal(data, &tfState); err != nil {
-		return false, err
-	}
-
-	migratedDB := dstate.NewDatabase(tfState.Lineage, tfState.Serial+1)
+	migratedDB := dstate.NewDatabase(tfMeta.Lineage, tfMeta.Serial+1)
 	migratedDB.State = state
 
 	var stateDB dstate.DeploymentState
@@ -181,7 +158,7 @@ func (m *uploadStateForYamlSync) convertState(ctx context.Context, b *bundle.Bun
 		return false, fmt.Errorf("upgrading state for apply: %w", err)
 	}
 
-	if err := migrate.BuildStateFromTF(ctx, &uninterpolatedConfig, adapters, &stateDB, tfAttrs, terraformResources, etags); err != nil {
+	if err := migrate.BuildStateFromTF(ctx, &uninterpolatedConfig, adapters, &stateDB, tfAttrs, terraformResources); err != nil {
 		return false, err
 	}
 

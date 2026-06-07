@@ -11,7 +11,6 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
-	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/bundle/migrate"
@@ -114,7 +113,7 @@ To start using direct engine, set "engine: direct" under bundle in your databric
 			return fmt.Errorf("reading %s: %w", localTerraformPath, err)
 		}
 
-		terraformResources, err := terraform.ParseResourcesState(ctx, b)
+		tfAttrs, terraformResources, _, err := migrate.ParseTFStateFull(ctx, localTerraformPath)
 		if err != nil {
 			return fmt.Errorf("failed to parse terraform state: %w", err)
 		}
@@ -134,22 +133,11 @@ To start using direct engine, set "engine: direct" under bundle in your databric
 			return fmt.Errorf("state file %s already exists", localPath)
 		}
 
-		tfAttrs, err := migrate.ParseTFStateAttrs(localTerraformPath)
-		if err != nil {
-			return fmt.Errorf("failed to read terraform state attributes: %w", err)
-		}
-
-		etags := map[string]string{}
-
 		state := make(map[string]dstate.ResourceEntry)
 		for key, resourceEntry := range terraformResources {
 			state[key] = dstate.ResourceEntry{
 				ID:    resourceEntry.ID,
 				State: json.RawMessage("{}"),
-			}
-			if resourceEntry.ETag != "" {
-				// dashboard:
-				etags[key] = resourceEntry.ETag
 			}
 		}
 
@@ -184,7 +172,7 @@ To start using direct engine, set "engine: direct" under bundle in your databric
 			return fmt.Errorf("upgrading state for apply: %w", err)
 		}
 
-		if err := migrate.BuildStateFromTF(ctx, &b.Config, adapters, &stateDB, tfAttrs, terraformResources, etags); err != nil {
+		if err := migrate.BuildStateFromTF(ctx, &b.Config, adapters, &stateDB, tfAttrs, terraformResources); err != nil {
 			return err
 		}
 

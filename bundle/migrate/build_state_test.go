@@ -40,7 +40,6 @@ func runBuildStateFromTF(
 	yaml string,
 	tfAttrs migrate.TFStateAttrs,
 	tfIDs terraform.ExportedResourcesMap,
-	etags map[string]string,
 ) map[string]dstate.ResourceEntry {
 	t.Helper()
 
@@ -54,7 +53,7 @@ func runBuildStateFromTF(
 	db.OpenWithData(statePath, dstate.NewDatabase("lineage", 1))
 	require.NoError(t, db.UpgradeToWrite())
 
-	err = migrate.BuildStateFromTF(t.Context(), &root, adapters, &db, tfAttrs, tfIDs, etags)
+	err = migrate.BuildStateFromTF(t.Context(), &root, adapters, &db, tfAttrs, tfIDs)
 	require.NoError(t, err)
 
 	_, err = db.Finalize(t.Context())
@@ -84,7 +83,7 @@ resources:
 		"resources.jobs.my_job": {ID: "123"},
 	}
 
-	state := runBuildStateFromTF(t, bundleYAML, tfAttrs, tfIDs, nil)
+	state := runBuildStateFromTF(t, bundleYAML, tfAttrs, tfIDs)
 	entry, ok := state["resources.jobs.my_job"]
 	require.True(t, ok)
 	assert.Equal(t, "123", entry.ID)
@@ -109,7 +108,7 @@ resources:
 		"resources.jobs.existing_job": {ID: "456"},
 	}
 
-	state := runBuildStateFromTF(t, bundleYAML, tfAttrs, tfIDs, nil)
+	state := runBuildStateFromTF(t, bundleYAML, tfAttrs, tfIDs)
 	assert.Contains(t, state, "resources.jobs.existing_job")
 	assert.NotContains(t, state, "resources.jobs.new_job")
 }
@@ -137,7 +136,7 @@ resources:
 		"resources.jobs.dst":      {ID: "j1"},
 	}
 
-	state := runBuildStateFromTF(t, bundleYAML, tfAttrs, tfIDs, nil)
+	state := runBuildStateFromTF(t, bundleYAML, tfAttrs, tfIDs)
 	entry, ok := state["resources.jobs.dst"]
 	require.True(t, ok)
 
@@ -179,7 +178,7 @@ resources:
 		"resources.jobs.dst_job": {ID: "222"},
 	}
 
-	state := runBuildStateFromTF(t, bundleYAML, tfAttrs, tfIDs, nil)
+	state := runBuildStateFromTF(t, bundleYAML, tfAttrs, tfIDs)
 
 	entry, ok := state["resources.jobs.dst_job"]
 	require.True(t, ok)
@@ -195,6 +194,7 @@ resources:
 }
 
 func TestBuildStateFromTF_EtagStoredForDashboard(t *testing.T) {
+	// Etag is a top-level attribute in the TF dashboard state JSON; no separate map needed.
 	bundleYAML := `
 resources:
   dashboards:
@@ -203,17 +203,14 @@ resources:
 `
 	tfAttrs := migrate.TFStateAttrs{
 		"databricks_dashboard": {
-			"my_dash": json.RawMessage(`{"id": "d1", "display_name": "My Dashboard"}`),
+			"my_dash": json.RawMessage(`{"id": "d1", "display_name": "My Dashboard", "etag": "etag-abc123"}`),
 		},
 	}
 	tfIDs := terraform.ExportedResourcesMap{
 		"resources.dashboards.my_dash": {ID: "d1"},
 	}
-	etags := map[string]string{
-		"resources.dashboards.my_dash": "etag-abc123",
-	}
 
-	state := runBuildStateFromTF(t, bundleYAML, tfAttrs, tfIDs, etags)
+	state := runBuildStateFromTF(t, bundleYAML, tfAttrs, tfIDs)
 	entry, ok := state["resources.dashboards.my_dash"]
 	require.True(t, ok)
 
