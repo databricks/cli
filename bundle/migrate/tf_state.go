@@ -3,6 +3,7 @@ package migrate
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 
@@ -36,6 +37,9 @@ type TFStateMeta struct {
 func ParseTFStateFull(ctx context.Context, path string) (TFStateAttrs, terraform.ExportedResourcesMap, TFStateMeta, error) {
 	raw, err := os.ReadFile(path)
 	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return nil, nil, TFStateMeta{}, nil
+		}
 		return nil, nil, TFStateMeta{}, err
 	}
 
