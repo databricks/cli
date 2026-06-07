@@ -46,6 +46,19 @@ func TestKeyHash(t *testing.T) {
 			input: "",
 			want:  "e3b0c44298fc1c149afbf4c8996fb924",
 		},
+		{
+			// `.pub` files end with a newline. Without trimming, a
+			// comment-less key would hash with `\n` mixed in and
+			// stop matching the server's value.
+			name:  "trailing newline does not change hash",
+			input: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDUMMY\n",
+			want:  "2b366430eb9743668b652921d3b22d54",
+		},
+		{
+			name:  "leading and trailing whitespace stripped",
+			input: "  ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDUMMY  \n",
+			want:  "2b366430eb9743668b652921d3b22d54",
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {

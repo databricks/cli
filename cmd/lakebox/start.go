@@ -28,7 +28,7 @@ func newStartCommand() *cobra.Command {
 		Long: `Start a stopped Lakebox environment.
 
 Boots the backing microVM and blocks until the sandbox reaches
-Running (or up to 5 minutes). 'databricks lakebox ssh' already
+Running (or up to 10 minutes). 'databricks lakebox ssh' already
 auto-starts a stopped sandbox on connection, so this command is
 mostly useful for pre-warming an environment without immediately
 connecting, or when a script needs to be sure the sandbox is up

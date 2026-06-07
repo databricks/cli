@@ -2,11 +2,13 @@ package lakebox
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/spf13/cobra"
 )
 
@@ -44,6 +46,9 @@ Example:
 
 			entry, err := api.get(ctx, lakeboxID)
 			if err != nil {
+				if errors.Is(err, apierr.ErrNotFound) {
+					return fmt.Errorf("no lakebox named %q — `databricks lakebox list` shows available IDs", lakeboxID)
+				}
 				return fmt.Errorf("failed to get lakebox %s: %w", lakeboxID, err)
 			}
 
@@ -65,9 +70,6 @@ Example:
 			field(ctx, out, "status", status(ctx, entry.Status))
 			if entry.GatewayHost != "" {
 				field(ctx, out, "gateway", cmdio.Faint(ctx, entry.GatewayHost))
-			}
-			if entry.FQDN != "" {
-				field(ctx, out, "fqdn", cmdio.Faint(ctx, entry.FQDN))
 			}
 			field(ctx, out, "autostop", cmdio.Faint(ctx, entry.autoStopLabel()))
 			blank(out)

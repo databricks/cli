@@ -76,7 +76,8 @@ Examples:
 					return err
 				}
 				if !confirmed {
-					return errors.New("aborted")
+					cmdio.LogString(ctx, "Cancelled.")
+					return nil
 				}
 			}
 

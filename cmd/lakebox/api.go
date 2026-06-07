@@ -63,14 +63,12 @@ type createRequest struct {
 	Sandbox sandboxCreateBody `json:"sandbox"`
 }
 
-// createResponse mirrors the Sandbox proto after JSON transcoding. FQDN is
-// the manager's internal routing host (not user-actionable); GatewayHost is
-// the public SSH gateway. Both are `omitempty` so old and new server
-// versions round-trip cleanly.
+// createResponse mirrors the Sandbox proto after JSON transcoding.
+// GatewayHost is `omitempty` so old and new server versions round-trip
+// cleanly.
 type createResponse struct {
 	SandboxID   string `json:"sandboxId"`
 	Status      string `json:"status"`
-	FQDN        string `json:"fqdn,omitempty"`
 	GatewayHost string `json:"gatewayHost,omitempty"`
 }
 
@@ -82,7 +80,6 @@ type createResponse struct {
 type sandboxEntry struct {
 	SandboxID     string  `json:"sandboxId"`
 	Status        string  `json:"status"`
-	FQDN          string  `json:"fqdn,omitempty"`
 	GatewayHost   string  `json:"gatewayHost,omitempty"`
 	Name          string  `json:"name,omitempty"`
 	CreateTime    string  `json:"createTime,omitempty"`
