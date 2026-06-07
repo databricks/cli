@@ -175,7 +175,7 @@ To start using direct engine, set "engine: direct" under bundle in your databric
 			return root.ErrAlreadyPrinted
 		}
 
-		adapters, err := dresources.InitAll(b.WorkspaceClient(ctx))
+		adapters, err := dresources.InitAll(nil)
 		if err != nil {
 			return err
 		}

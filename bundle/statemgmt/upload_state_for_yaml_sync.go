@@ -172,7 +172,7 @@ func (m *uploadStateForYamlSync) convertState(ctx context.Context, b *bundle.Bun
 		return false, fmt.Errorf("failed to create uninterpolated config: %w", err)
 	}
 
-	adapters, err := dresources.InitAll(b.WorkspaceClient(ctx))
+	adapters, err := dresources.InitAll(nil)
 	if err != nil {
 		return false, err
 	}
