@@ -32,7 +32,6 @@ func BuildStateFromTF(
 	stateDB *dstate.DeploymentState,
 	tfAttrs TFStateAttrs,
 	tfIDs terraform.ExportedResourcesMap,
-	etags map[string]string,
 ) error {
 	// Collect all resource nodes (same patterns as makePlan).
 	var nodes []string
@@ -205,10 +204,14 @@ func BuildStateFromTF(
 			return fmt.Errorf("%s: unresolved references: %v", node, sv.Refs)
 		}
 
-		// Handle etag for dashboards.
-		if etag := etags[node]; etag != "" {
-			if err := structaccess.Set(sv.Value, structpath.NewStringKey(nil, "etag"), etag); err != nil {
-				return fmt.Errorf("%s: cannot set etag: %w", node, err)
+		// Handle etag for dashboards: look it up directly from TF state attributes.
+		// The "etag" field is a computed TF attribute not present in the bundle config,
+		// so it does not flow through PrepareState/ExtractReferences.
+		if etag, err := LookupTFField(tfAttrs, group, srcName, structpath.NewStringKey(nil, "etag")); err == nil && etag != nil {
+			if etagStr, ok := etag.(string); ok && etagStr != "" {
+				if err := structaccess.Set(sv.Value, structpath.NewStringKey(nil, "etag"), etagStr); err != nil {
+					return fmt.Errorf("%s: cannot set etag: %w", node, err)
+				}
 			}
 		}
 

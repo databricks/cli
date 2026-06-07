@@ -1,6 +1,7 @@
 package migrate
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -23,13 +24,50 @@ var tfStateFieldAliases = map[string]map[string]string{
 // TFStateAttrs maps (tfResourceType → resourceName → raw JSON attributes).
 type TFStateAttrs map[string]map[string]json.RawMessage
 
+// TFStateMeta holds the top-level metadata from a terraform state file.
+type TFStateMeta struct {
+	Lineage string
+	Serial  int
+}
+
+// ParseTFStateFull reads the terraform state file once and returns the full
+// attribute map, the resource ID map, and the state metadata (lineage/serial).
+// Avoids reading and unmarshaling the file multiple times.
+func ParseTFStateFull(ctx context.Context, path string) (TFStateAttrs, terraform.ExportedResourcesMap, TFStateMeta, error) {
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return nil, nil, TFStateMeta{}, err
+	}
+
+	var meta struct {
+		Lineage string `json:"lineage"`
+		Serial  int    `json:"serial"`
+	}
+	if err := json.Unmarshal(raw, &meta); err != nil {
+		return nil, nil, TFStateMeta{}, err
+	}
+
+	attrs, err := parseTFStateAttrsFromBytes(raw)
+	if err != nil {
+		return nil, nil, TFStateMeta{}, err
+	}
+	ids, err := terraform.ParseResourcesStateFromBytes(ctx, raw)
+	if err != nil {
+		return nil, nil, TFStateMeta{}, err
+	}
+	return attrs, ids, TFStateMeta{Lineage: meta.Lineage, Serial: meta.Serial}, nil
+}
+
 // ParseTFStateAttrs parses the terraform state file returning full attribute JSON per resource.
 func ParseTFStateAttrs(path string) (TFStateAttrs, error) {
 	raw, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
+	return parseTFStateAttrsFromBytes(raw)
+}
 
+func parseTFStateAttrsFromBytes(raw []byte) (TFStateAttrs, error) {
 	var state struct {
 		Version   int `json:"version"`
 		Resources []struct {
@@ -41,11 +79,9 @@ func ParseTFStateAttrs(path string) (TFStateAttrs, error) {
 			} `json:"instances"`
 		} `json:"resources"`
 	}
-
 	if err := json.Unmarshal(raw, &state); err != nil {
 		return nil, err
 	}
-
 	result := make(TFStateAttrs)
 	for _, r := range state.Resources {
 		if r.Mode != tfjson.ManagedResourceMode || len(r.Instances) == 0 {
