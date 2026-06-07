@@ -58,6 +58,7 @@ func ParseTFStateFull(ctx context.Context, path string) (TFStateAttrs, terraform
 	return attrs, ids, TFStateMeta{Lineage: meta.Lineage, Serial: meta.Serial}, nil
 }
 
+//deadcode:allow retained as standalone API for callers that only need attributes.
 // ParseTFStateAttrs parses the terraform state file returning full attribute JSON per resource.
 func ParseTFStateAttrs(path string) (TFStateAttrs, error) {
 	raw, err := os.ReadFile(path)
