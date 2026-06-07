@@ -1,0 +1,19 @@
+{
+  "my": {
+    "channel": "CURRENT",
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/photon-false/default/state/metadata.json"
+    },
+    "edition": "ADVANCED",
+    "library": [
+      {
+        "file": {
+          "path": "/Workspace/Users/[USERNAME]/.bundle/photon-false/default/files/foo.py"
+        }
+      }
+    ],
+    "name": "test-pipeline",
+    "photon": false
+  }
+}
