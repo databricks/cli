@@ -154,10 +154,13 @@ func (r *ResourceApp) DoCreate(ctx context.Context, engine *StateSaver, config *
 		return "", nil, err
 	}
 
-	// Save state as soon as the app exists so it is not orphaned if the wait or
-	// lifecycle management is interrupted.
-
-	engine.SaveState(ctx, app.Name, config)
+	// Save with Lifecycle=nil: app exists but lifecycle has not been applied yet.
+	// If waitForApp or manageLifecycle is interrupted and the app reaches ACTIVE on
+	// its own (without a deployment), the planner on the next run sees a localDiff
+	// for lifecycle (nil→desired) and triggers DoUpdate → manageLifecycle → Deploy.
+	// Without this, OverrideChangeDesc silently skips source_code_path drift when
+	// the remote has no active deployment, leaving the app permanently un-deployed.
+	SaveStateWith(ctx, engine, app.Name, config, &config.Lifecycle, (*StateLifecycle)(nil))
 
 	remote, err := r.waitForApp(ctx, r.client, config.Name)
 	if err != nil {
