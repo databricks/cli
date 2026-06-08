@@ -73,6 +73,7 @@ go.work.sum
 .codegen/openapi.json
 
 .claude/settings.local.json
+.claude/scheduled_tasks.lock
 .cursor/cli.json
 tools/gofumpt
 .claude/worktrees/
