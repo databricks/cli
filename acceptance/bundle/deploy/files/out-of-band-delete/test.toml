@@ -1,3 +1,5 @@
+Badness = "After the remote bundle files are deleted out-of-band, the next deploy does not re-upload them until the local sync snapshot is removed."
+
 [Env]
 # This test passes absolute workspace paths like /Workspace/Users/.../hello_world.py
 # as CLI arguments. On Windows the script runs under MSYS2, which rewrites such
