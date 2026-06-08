@@ -538,6 +538,12 @@ github.com/databricks/cli/bundle/config/resources.Alert:
     "description": |-
       PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.App:
+  "compute_max_instances":
+    "description": |-
+      PLACEHOLDER
+  "compute_min_instances":
+    "description": |-
+      PLACEHOLDER
   "git_source":
     "description": |-
       Git source configuration for app deployments. Specifies which git reference (branch, tag, or commit)
@@ -743,6 +749,10 @@ github.com/databricks/cli/bundle/config/resources.Permission:
   "user_name":
     "description": |-
       The name of the user that has the permission set in level.
+github.com/databricks/cli/bundle/config/resources.Pipeline:
+  "parameters":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.PipelinePermission:
   "group_name":
     "description": |-
@@ -917,6 +927,9 @@ github.com/databricks/cli/bundle/config/resources.PostgresProject:
     "description": |-
       PLACEHOLDER
   "project_id":
+    "description": |-
+      PLACEHOLDER
+  "purge_on_delete":
     "description": |-
       PLACEHOLDER
   "spec":

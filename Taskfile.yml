@@ -765,7 +765,7 @@ tasks:
           echo "UNIVERSE_SKIP_CHECKOUT set; using current {{.UNIVERSE_DIR}} HEAD"
         fi
       - echo "Building genkit..."
-      - cd {{.UNIVERSE_DIR}} && bazel build //openapi/genkit
+      - cd {{.UNIVERSE_DIR}} && ./tools/bazel build //openapi/genkit
       - echo "Generating CLI code..."
       - "{{.UNIVERSE_DIR}}/bazel-bin/openapi/genkit/genkit_/genkit update-sdk"
       - "cat .gitattributes.manual .gitattributes > .gitattributes.tmp && mv .gitattributes.tmp .gitattributes"
@@ -799,7 +799,8 @@ tasks:
     generates:
       - acceptance/bundle/refschema/out.fields.txt
     cmds:
-      - go test ./acceptance -run TestAccept/bundle/refschema -update &> /dev/null
+      - cmd: go test ./acceptance -run TestAccept/bundle/refschema -update &> /dev/null
+        ignore_error: true # -update returns non-zero exit code on changes
 
   generate-schema:
     desc: Generate bundle JSON schema
@@ -887,7 +888,12 @@ tasks:
 
   generate-direct:
     desc: Generate direct engine config (apitypes + resources)
-    deps: ['generate-direct-apitypes', 'generate-direct-resources']
+    # Depend only on generate-direct-resources; it already pulls in
+    # generate-direct-apitypes transitively. Listing both as parallel deps
+    # races: resources reads apitypes.generated.yml while the apitypes step's
+    # `>` redirect is truncating it, silently dropping every resource whose
+    # type comes from that file. Keep this chain linear.
+    deps: ['generate-direct-resources']
 
   generate-direct-apitypes:
     desc: Generate direct engine API types YAML
@@ -913,7 +919,7 @@ tasks:
     generates:
       - bundle/direct/dresources/resources.generated.yml
     cmds:
-      - "sh -c 'python3 bundle/direct/tools/generate_resources.py .codegen/openapi.json bundle/direct/dresources/apitypes.generated.yml bundle/direct/dresources/apitypes.yml acceptance/bundle/refschema/out.fields.txt > bundle/direct/dresources/resources.generated.yml'"
+      - "sh -c 'uv run --script bundle/direct/tools/generate_resources.py .codegen/openapi.json bundle/direct/dresources/apitypes.generated.yml bundle/direct/dresources/apitypes.yml acceptance/bundle/refschema/out.fields.txt > bundle/direct/dresources/resources.generated.yml'"
 
   generate-openapi-json:
     desc: Download OpenAPI spec (triggered by _openapi_sha change)

@@ -82,7 +82,7 @@ sample_job = Job.from_dict(
                 "new_cluster": {
                     "spark_version": "16.4.x-scala2.12",
                     "node_type_id": "[NODE_TYPE_ID]",
-                    "data_security_mode": "SINGLE_USER",
+                    "data_security_mode": "DATA_SECURITY_MODE_AUTO",
                     "autoscale": {
                         "min_workers": 1,
                         "max_workers": 4,

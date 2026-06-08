@@ -352,11 +352,13 @@ func newPatchPublicAccountSetting() *cobra.Command {
 	// TODO: complex arg: allowed_apps_user_api_scopes
 	// TODO: complex arg: automatic_cluster_update_workspace
 	// TODO: complex arg: boolean_val
+	// TODO: complex arg: collaboration_platform_connectivity
 	// TODO: complex arg: effective_aibi_dashboard_embedding_access_policy
 	// TODO: complex arg: effective_aibi_dashboard_embedding_approved_domains
 	// TODO: complex arg: effective_allowed_apps_user_api_scopes
 	// TODO: complex arg: effective_automatic_cluster_update_workspace
 	// TODO: complex arg: effective_boolean_val
+	// TODO: complex arg: effective_collaboration_platform_connectivity
 	// TODO: complex arg: effective_integer_val
 	// TODO: complex arg: effective_operational_email_custom_recipient
 	// TODO: complex arg: effective_personal_compute

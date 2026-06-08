@@ -1,0 +1,1 @@
+$CLI bundle generate pipeline --existing-pipeline-id 1234 --config-dir . --key out --force --source-dir .

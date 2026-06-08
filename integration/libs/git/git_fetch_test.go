@@ -77,37 +77,21 @@ func TestFetchRepositoryInfoAPI_FromNonRepo(t *testing.T) {
 
 	ctx = dbr.MockRuntime(ctx, dbr.Environment{IsDbr: true, Version: "15.4"})
 
+	// A path outside a Repo has no git info; a non-existent path is treated the
+	// same way (no repository there), so all cases return empty info with no error.
 	tests := []struct {
 		name  string
 		input string
-		msg   string
 	}{
-		{
-			name:  "subdir",
-			input: path.Join(rootPath, "a/b/c"),
-			msg:   "",
-		},
-		{
-			name:  "root",
-			input: rootPath,
-			msg:   "",
-		},
-		{
-			name:  "non-existent",
-			input: path.Join(rootPath, "/non-existent"),
-			msg:   "doesn't exist",
-		},
+		{"subdir", path.Join(rootPath, "a/b/c")},
+		{"root", rootPath},
+		{"non-existent", path.Join(rootPath, "/non-existent")},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			info, err := git.FetchRepositoryInfo(ctx, test.input, wt.W)
-			if test.msg == "" {
-				assert.NoError(t, err)
-			} else {
-				assert.Error(t, err)
-				assert.ErrorContains(t, err, test.msg)
-			}
+			assert.NoError(t, err)
 			assertEmptyGitInfo(t, info)
 		})
 	}
@@ -162,7 +146,7 @@ func TestFetchRepositoryInfoDotGit_FromNonGitRepo(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			info, err := git.FetchRepositoryInfo(ctx, test.input, wt.W)
-			assert.ErrorIs(t, err, os.ErrNotExist)
+			assert.NoError(t, err)
 			assertEmptyGitInfo(t, info)
 		})
 	}

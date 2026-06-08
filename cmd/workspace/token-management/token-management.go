@@ -41,6 +41,7 @@ func New() *cobra.Command {
 	cmd.AddCommand(newList())
 	cmd.AddCommand(newSetPermissions())
 	cmd.AddCommand(newUpdatePermissions())
+	cmd.AddCommand(newUpdateTokenManagement())
 
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
@@ -67,6 +68,7 @@ func newCreateOboToken() *cobra.Command {
 
 	cmd.Flags().Var(&createOboTokenJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	cmd.Flags().BoolVar(&createOboTokenReq.AutoscopeEnabled, "autoscope-enabled", createOboTokenReq.AutoscopeEnabled, `Whether to enable autoscoping for this token.`)
 	cmd.Flags().StringVar(&createOboTokenReq.Comment, "comment", createOboTokenReq.Comment, `Comment that describes the purpose of the token.`)
 	cmd.Flags().Int64Var(&createOboTokenReq.LifetimeSeconds, "lifetime-seconds", createOboTokenReq.LifetimeSeconds, `The number of seconds before the token expires.`)
 	// TODO: array: scopes
@@ -596,6 +598,82 @@ func newUpdatePermissions() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range updatePermissionsOverrides {
 		fn(cmd, &updatePermissionsReq)
+	}
+
+	return cmd
+}
+
+// start update-token-management command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updateTokenManagementOverrides []func(
+	*cobra.Command,
+	*settings.UpdateTokenManagementRequest,
+)
+
+func newUpdateTokenManagement() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var updateTokenManagementReq settings.UpdateTokenManagementRequest
+	var updateTokenManagementJson flags.JsonFlag
+
+	cmd.Flags().Var(&updateTokenManagementJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Use = "update-token-management TOKEN_ID"
+	cmd.Short = `Update an on-behalf token.`
+	cmd.Long = `Update an on-behalf token.
+
+  Updates a token, specified by its ID.
+
+  Arguments:
+    TOKEN_ID: ID of the token.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := updateTokenManagementJson.Unmarshal(&updateTokenManagementReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnostics(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		} else {
+			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+		}
+		updateTokenManagementReq.TokenId = args[0]
+
+		response, err := w.TokenManagement.UpdateTokenManagement(ctx, updateTokenManagementReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updateTokenManagementOverrides {
+		fn(cmd, &updateTokenManagementReq)
 	}
 
 	return cmd
