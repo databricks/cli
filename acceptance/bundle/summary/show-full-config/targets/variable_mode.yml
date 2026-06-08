@@ -1,3 +1,0 @@
-targets:
-  variable_mode:
-    mode: ${var.mode}

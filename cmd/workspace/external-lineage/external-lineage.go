@@ -20,8 +20,10 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "external-lineage",
-		Short: `External Lineage APIs enable defining and managing lineage relationships between Databricks objects and external systems.`,
-		Long: `External Lineage APIs enable defining and managing lineage relationships
+		Short: `*Public Preview* External Lineage APIs enable defining and managing lineage relationships between Databricks objects and external systems.`,
+		Long: `This command is in Public Preview and may change without notice.
+
+External Lineage APIs enable defining and managing lineage relationships
   between Databricks objects and external systems. These APIs allow users to
   capture data flows connecting Databricks tables, models, and file paths with
   external metadata objects.
@@ -31,6 +33,10 @@ func New() *cobra.Command {
 		GroupID: "catalog",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	// Add methods
 	cmd.AddCommand(newCreateExternalLineageRelationship())
@@ -68,8 +74,10 @@ func newCreateExternalLineageRelationship() *cobra.Command {
 	// TODO: map via StringToStringVar: properties
 
 	cmd.Use = "create-external-lineage-relationship SOURCE TARGET"
-	cmd.Short = `Create an external lineage relationship.`
-	cmd.Long = `Create an external lineage relationship.
+	cmd.Short = `*Public Preview* Create an external lineage relationship.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Create an external lineage relationship.
 
   Creates an external lineage relationship between a Databricks or external
   metadata object and another external metadata object.
@@ -79,6 +87,8 @@ func newCreateExternalLineageRelationship() *cobra.Command {
     TARGET: Target object of the external lineage relationship.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
@@ -162,13 +172,17 @@ func newDeleteExternalLineageRelationship() *cobra.Command {
 	cmd.Flags().Var(&deleteExternalLineageRelationshipJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "delete-external-lineage-relationship"
-	cmd.Short = `Delete an external lineage relationship.`
-	cmd.Long = `Delete an external lineage relationship.
+	cmd.Short = `*Public Preview* Delete an external lineage relationship.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Delete an external lineage relationship.
 
   Deletes an external lineage relationship between a Databricks or external
   metadata object and another external metadata object.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -240,13 +254,17 @@ func newListExternalLineageRelationships() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-external-lineage-relationships"
-	cmd.Short = `List external lineage relationships.`
-	cmd.Long = `List external lineage relationships.
+	cmd.Short = `*Public Preview* List external lineage relationships.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+List external lineage relationships.
 
   Lists external lineage relationships of a Databricks object or external
   metadata given a supplied direction.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -313,8 +331,10 @@ func newUpdateExternalLineageRelationship() *cobra.Command {
 	// TODO: map via StringToStringVar: properties
 
 	cmd.Use = "update-external-lineage-relationship UPDATE_MASK SOURCE TARGET"
-	cmd.Short = `Update an external lineage relationship.`
-	cmd.Long = `Update an external lineage relationship.
+	cmd.Short = `*Public Preview* Update an external lineage relationship.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Update an external lineage relationship.
 
   Updates an external lineage relationship between a Databricks or external
   metadata object and another external metadata object.
@@ -335,6 +355,8 @@ func newUpdateExternalLineageRelationship() *cobra.Command {
     TARGET: Target object of the external lineage relationship.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {

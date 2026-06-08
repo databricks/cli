@@ -20,12 +20,18 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "data-quality",
-		Short: `Manage the data quality of Unity Catalog objects (currently support schema and table).`,
-		Long: `Manage the data quality of Unity Catalog objects (currently support schema
+		Short: `*Public Preview* Manage the data quality of Unity Catalog objects (currently support schema and table).`,
+		Long: `This command is in Public Preview and may change without notice.
+
+Manage the data quality of Unity Catalog objects (currently support schema
   and table)`,
 		GroupID: "dataquality",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	// Add methods
 	cmd.AddCommand(newCancelRefresh())
@@ -63,8 +69,10 @@ func newCancelRefresh() *cobra.Command {
 	var cancelRefreshReq dataquality.CancelRefreshRequest
 
 	cmd.Use = "cancel-refresh OBJECT_TYPE OBJECT_ID REFRESH_ID"
-	cmd.Short = `Cancel a refresh.`
-	cmd.Long = `Cancel a refresh.
+	cmd.Short = `*Public Preview* Cancel a refresh.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Cancel a refresh.
 
   Cancels a data quality monitor refresh. Currently only supported for the
   table object_type. The call must be made in the same workspace as where
@@ -97,6 +105,8 @@ func newCancelRefresh() *cobra.Command {
     REFRESH_ID: Unique id of the refresh operation.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(3)
@@ -157,8 +167,10 @@ func newCreateMonitor() *cobra.Command {
 	// TODO: complex arg: data_profiling_config
 
 	cmd.Use = "create-monitor OBJECT_TYPE OBJECT_ID"
-	cmd.Short = `Create a monitor.`
-	cmd.Long = `Create a monitor.
+	cmd.Short = `*Public Preview* Create a monitor.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Create a monitor.
 
   Create a data quality monitor on a Unity Catalog object. The caller must
   provide either anomaly_detection_config for a schema monitor or
@@ -199,6 +211,8 @@ func newCreateMonitor() *cobra.Command {
       [table_id]: https://docs.databricks.com/api/workspace/tables/get#table_id`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
@@ -275,8 +289,10 @@ func newCreateRefresh() *cobra.Command {
 	cmd.Flags().Var(&createRefreshJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "create-refresh OBJECT_TYPE OBJECT_ID"
-	cmd.Short = `Create a refresh.`
-	cmd.Long = `Create a refresh.
+	cmd.Short = `*Public Preview* Create a refresh.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Create a refresh.
 
   Creates a refresh. Currently only supported for the table object_type. The
   call must be made in the same workspace as where the monitor was created.
@@ -307,6 +323,8 @@ func newCreateRefresh() *cobra.Command {
       [table_id]: https://docs.databricks.com/api/workspace/tables/get#table_id`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -368,8 +386,10 @@ func newDeleteMonitor() *cobra.Command {
 	var deleteMonitorReq dataquality.DeleteMonitorRequest
 
 	cmd.Use = "delete-monitor OBJECT_TYPE OBJECT_ID"
-	cmd.Short = `Delete a monitor.`
-	cmd.Long = `Delete a monitor.
+	cmd.Short = `*Public Preview* Delete a monitor.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Delete a monitor.
 
   Delete a data quality monitor on Unity Catalog object.
 
@@ -407,6 +427,8 @@ func newDeleteMonitor() *cobra.Command {
       [table_id]: https://docs.databricks.com/api/workspace/tables/get#table_id`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -455,8 +477,10 @@ func newDeleteRefresh() *cobra.Command {
 	var deleteRefreshReq dataquality.DeleteRefreshRequest
 
 	cmd.Use = "delete-refresh OBJECT_TYPE OBJECT_ID REFRESH_ID"
-	cmd.Short = `Delete a refresh.`
-	cmd.Long = `Delete a refresh.
+	cmd.Short = `*Public Preview* Delete a refresh.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Delete a refresh.
 
   (Unimplemented) Delete a refresh
 
@@ -480,6 +504,8 @@ func newDeleteRefresh() *cobra.Command {
     REFRESH_ID: Unique id of the refresh operation.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(3)
@@ -532,8 +558,10 @@ func newGetMonitor() *cobra.Command {
 	var getMonitorReq dataquality.GetMonitorRequest
 
 	cmd.Use = "get-monitor OBJECT_TYPE OBJECT_ID"
-	cmd.Short = `Read a monitor.`
-	cmd.Long = `Read a monitor.
+	cmd.Short = `*Public Preview* Read a monitor.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Read a monitor.
 
   Read a data quality monitor on a Unity Catalog object.
 
@@ -573,6 +601,8 @@ func newGetMonitor() *cobra.Command {
       [table_id]: https://docs.databricks.com/api/workspace/tables/get#table_id`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -622,8 +652,10 @@ func newGetRefresh() *cobra.Command {
 	var getRefreshReq dataquality.GetRefreshRequest
 
 	cmd.Use = "get-refresh OBJECT_TYPE OBJECT_ID REFRESH_ID"
-	cmd.Short = `Get a refresh.`
-	cmd.Long = `Get a refresh.
+	cmd.Short = `*Public Preview* Get a refresh.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Get a refresh.
 
   Get data quality monitor refresh. The call must be made in the same workspace
   as where the monitor was created.
@@ -660,6 +692,8 @@ func newGetRefresh() *cobra.Command {
     REFRESH_ID: Unique id of the refresh operation.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(3)
@@ -726,12 +760,16 @@ func newListMonitor() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-monitor"
-	cmd.Short = `List monitors.`
-	cmd.Long = `List monitors.
+	cmd.Short = `*Public Preview* List monitors.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+List monitors.
 
   (Unimplemented) List data quality monitors.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -794,8 +832,10 @@ func newListRefresh() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-refresh OBJECT_TYPE OBJECT_ID"
-	cmd.Short = `List refreshes.`
-	cmd.Long = `List refreshes.
+	cmd.Short = `*Public Preview* List refreshes.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+List refreshes.
 
   List data quality monitor refreshes. The call must be made in the same
   workspace as where the monitor was created.
@@ -831,6 +871,8 @@ func newListRefresh() *cobra.Command {
       [table_id]: https://docs.databricks.com/api/workspace/tables/get#table_id`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -890,8 +932,10 @@ func newUpdateMonitor() *cobra.Command {
 	// TODO: complex arg: data_profiling_config
 
 	cmd.Use = "update-monitor OBJECT_TYPE OBJECT_ID UPDATE_MASK OBJECT_TYPE OBJECT_ID"
-	cmd.Short = `Update a monitor.`
-	cmd.Long = `Update a monitor.
+	cmd.Short = `*Public Preview* Update a monitor.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Update a monitor.
 
   Update a data quality monitor on Unity Catalog object.
 
@@ -945,6 +989,8 @@ func newUpdateMonitor() *cobra.Command {
       [table_id]: https://docs.databricks.com/api/workspace/tables/get#table_id`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
@@ -1024,8 +1070,10 @@ func newUpdateRefresh() *cobra.Command {
 	cmd.Flags().Var(&updateRefreshJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "update-refresh OBJECT_TYPE OBJECT_ID REFRESH_ID UPDATE_MASK OBJECT_TYPE OBJECT_ID"
-	cmd.Short = `Update a refresh.`
-	cmd.Long = `Update a refresh.
+	cmd.Short = `*Public Preview* Update a refresh.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Update a refresh.
 
   (Unimplemented) Update a refresh
 
@@ -1066,6 +1114,8 @@ func newUpdateRefresh() *cobra.Command {
       [table_id]: https://docs.databricks.com/api/workspace/tables/get#table_id`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {

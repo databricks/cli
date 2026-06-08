@@ -16,6 +16,7 @@
   "remote_state": {
     "create_time": "[TIMESTAMP]",
     "name": "[MY_PROJECT_ID]",
+    "project_id": "test-pg-proj-[UNIQUE_NAME]",
     "status": {
       "branch_logical_size_limit_bytes": [NUMID],
       "default_branch": "[MY_PROJECT_ID]/branches/production",
@@ -25,10 +26,11 @@
         "suspend_timeout_duration": "300s"
       },
       "display_name": "Original Name",
-      "enable_pg_native_login": true,
+      "enable_pg_native_login": false,
       "history_retention_duration": "604800s",
       "owner": "[USERNAME]",
       "pg_version": 16,
+      "project_id": "test-pg-proj-[UNIQUE_NAME]",
       "synthetic_storage_size_bytes": 0
     },
     "uid": "[UUID]",

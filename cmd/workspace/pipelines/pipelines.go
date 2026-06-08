@@ -41,6 +41,10 @@ func New() *cobra.Command {
 		RunE:    root.ReportUnknownSubcommand,
 	}
 
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
+
 	// Add methods
 	cmd.AddCommand(newApplyEnvironment())
 	cmd.AddCommand(newClone())
@@ -82,13 +86,17 @@ func newApplyEnvironment() *cobra.Command {
 	var applyEnvironmentReq pipelines.ApplyEnvironmentRequest
 
 	cmd.Use = "apply-environment PIPELINE_ID"
-	cmd.Short = `Apply the latest environment to the pipeline.`
-	cmd.Long = `Apply the latest environment to the pipeline.
+	cmd.Short = `*Public Preview* Apply the latest environment to the pipeline.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Apply the latest environment to the pipeline.
 
   * Applies the current pipeline environment onto the pipeline compute. The
   environment applied can be used by subsequent dev-mode updates.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -163,6 +171,8 @@ func newClone() *cobra.Command {
     PIPELINE_ID: Source pipeline to clone from`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -235,6 +245,8 @@ func newCreate() *cobra.Command {
   If successful, this method returns the ID of the new pipeline.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -302,6 +314,8 @@ func newDelete() *cobra.Command {
   support for assistance to undo this action.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -365,6 +379,8 @@ func newGet() *cobra.Command {
 	cmd.Long = `Get a pipeline.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -434,6 +450,8 @@ func newGetPermissionLevels() *cobra.Command {
     PIPELINE_ID: The pipeline for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -504,6 +522,8 @@ func newGetPermissions() *cobra.Command {
     PIPELINE_ID: The pipeline for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -574,6 +594,8 @@ func newGetUpdate() *cobra.Command {
     UPDATE_ID: The ID of the update.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -647,6 +669,8 @@ func newListPipelineEvents() *cobra.Command {
     PIPELINE_ID: The pipeline to return events for.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -731,6 +755,8 @@ func newListPipelines() *cobra.Command {
   Lists pipelines defined in the Spark Declarative Pipelines system.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -793,6 +819,8 @@ func newListUpdates() *cobra.Command {
     PIPELINE_ID: The pipeline to return updates for.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -869,6 +897,8 @@ func newSetPermissions() *cobra.Command {
     PIPELINE_ID: The pipeline for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -969,6 +999,8 @@ func newStartUpdate() *cobra.Command {
   the pipeline, the request will fail and the active update will remain running.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -1054,6 +1086,8 @@ func newStop() *cobra.Command {
   update for the pipeline, this request is a no-op.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -1130,7 +1164,7 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().BoolVar(&updateReq.AllowDuplicateNames, "allow-duplicate-names", updateReq.AllowDuplicateNames, `If false, deployment will fail if name has changed and conflicts the name of another pipeline.`)
 	cmd.Flags().StringVar(&updateReq.BudgetPolicyId, "budget-policy-id", updateReq.BudgetPolicyId, `Budget policy of this pipeline.`)
 	cmd.Flags().StringVar(&updateReq.Catalog, "catalog", updateReq.Catalog, `A catalog in Unity Catalog to publish data from this pipeline to.`)
-	cmd.Flags().StringVar(&updateReq.Channel, "channel", updateReq.Channel, `DLT Release Channel that specifies which version to use.`)
+	cmd.Flags().StringVar(&updateReq.Channel, "channel", updateReq.Channel, `SDP Release Channel that specifies which version to use.`)
 	// TODO: array: clusters
 	// TODO: map via StringToStringVar: configuration
 	cmd.Flags().BoolVar(&updateReq.Continuous, "continuous", updateReq.Continuous, `Whether the pipeline is continuous or triggered.`)
@@ -1147,6 +1181,7 @@ func newUpdate() *cobra.Command {
 	// TODO: array: libraries
 	cmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `Friendly identifier for this pipeline.`)
 	// TODO: array: notifications
+	// TODO: map via StringToStringVar: parameters
 	cmd.Flags().BoolVar(&updateReq.Photon, "photon", updateReq.Photon, `Whether Photon is enabled for this pipeline.`)
 	// TODO: complex arg: restart_window
 	cmd.Flags().StringVar(&updateReq.RootPath, "root-path", updateReq.RootPath, `Root path for this pipeline.`)
@@ -1169,6 +1204,8 @@ func newUpdate() *cobra.Command {
     PIPELINE_ID: Unique identifier for this pipeline.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -1255,6 +1292,8 @@ func newUpdatePermissions() *cobra.Command {
     PIPELINE_ID: The pipeline for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {

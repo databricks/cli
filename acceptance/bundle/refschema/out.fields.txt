@@ -88,6 +88,8 @@ resources.apps.*.app_status	*apps.ApplicationStatus	ALL
 resources.apps.*.app_status.message	string	ALL
 resources.apps.*.app_status.state	apps.ApplicationState	ALL
 resources.apps.*.budget_policy_id	string	ALL
+resources.apps.*.compute_max_instances	int	ALL
+resources.apps.*.compute_min_instances	int	ALL
 resources.apps.*.compute_size	apps.ComputeSize	ALL
 resources.apps.*.compute_status	*apps.ComputeStatus	ALL
 resources.apps.*.compute_status.active_instances	int	ALL
@@ -122,7 +124,7 @@ resources.apps.*.git_source.resolved_commit	string	ALL
 resources.apps.*.git_source.source_code_path	string	ALL
 resources.apps.*.git_source.tag	string	ALL
 resources.apps.*.id	string	ALL
-resources.apps.*.lifecycle	*dresources.AppStateLifecycle	REMOTE	STATE
+resources.apps.*.lifecycle	*dresources.StateLifecycle	REMOTE	STATE
 resources.apps.*.lifecycle	*resources.LifecycleWithStarted	INPUT
 resources.apps.*.lifecycle	resources.Lifecycle	INPUT
 resources.apps.*.lifecycle.prevent_destroy	bool	INPUT
@@ -210,6 +212,7 @@ resources.apps.*.telemetry_export_destinations[*].unity_catalog	*apps.UnityCatal
 resources.apps.*.telemetry_export_destinations[*].unity_catalog.logs_table	string	ALL
 resources.apps.*.telemetry_export_destinations[*].unity_catalog.metrics_table	string	ALL
 resources.apps.*.telemetry_export_destinations[*].unity_catalog.traces_table	string	ALL
+resources.apps.*.thumbnail_url	string	ALL
 resources.apps.*.update_time	string	ALL
 resources.apps.*.updater	string	ALL
 resources.apps.*.url	string	ALL
@@ -353,6 +356,7 @@ resources.clusters.*.executors[*].start_timestamp	int64	REMOTE
 resources.clusters.*.gcp_attributes	*compute.GcpAttributes	ALL
 resources.clusters.*.gcp_attributes.availability	compute.GcpAvailability	ALL
 resources.clusters.*.gcp_attributes.boot_disk_size	int	ALL
+resources.clusters.*.gcp_attributes.confidential_compute_type	compute.ConfidentialComputeType	ALL
 resources.clusters.*.gcp_attributes.first_on_demand	int	ALL
 resources.clusters.*.gcp_attributes.google_service_account	string	ALL
 resources.clusters.*.gcp_attributes.local_ssd_count	int	ALL
@@ -387,8 +391,11 @@ resources.clusters.*.jdbc_port	int	REMOTE
 resources.clusters.*.kind	compute.Kind	ALL
 resources.clusters.*.last_restarted_time	int64	REMOTE
 resources.clusters.*.last_state_loss_time	int64	REMOTE
+resources.clusters.*.lifecycle	*dresources.StateLifecycle	REMOTE	STATE
+resources.clusters.*.lifecycle	*resources.LifecycleWithStarted	INPUT
 resources.clusters.*.lifecycle	resources.Lifecycle	INPUT
 resources.clusters.*.lifecycle.prevent_destroy	bool	INPUT
+resources.clusters.*.lifecycle.started	*bool	ALL
 resources.clusters.*.modified_status	string	INPUT
 resources.clusters.*.node_type_id	string	ALL
 resources.clusters.*.num_workers	int	ALL
@@ -458,6 +465,7 @@ resources.clusters.*.spec.enable_local_disk_encryption	bool	REMOTE
 resources.clusters.*.spec.gcp_attributes	*compute.GcpAttributes	REMOTE
 resources.clusters.*.spec.gcp_attributes.availability	compute.GcpAvailability	REMOTE
 resources.clusters.*.spec.gcp_attributes.boot_disk_size	int	REMOTE
+resources.clusters.*.spec.gcp_attributes.confidential_compute_type	compute.ConfidentialComputeType	REMOTE
 resources.clusters.*.spec.gcp_attributes.first_on_demand	int	REMOTE
 resources.clusters.*.spec.gcp_attributes.google_service_account	string	REMOTE
 resources.clusters.*.spec.gcp_attributes.local_ssd_count	int	REMOTE
@@ -733,8 +741,10 @@ resources.jobs.*.continuous.task_retry_mode	jobs.TaskRetryMode	ALL
 resources.jobs.*.created_time	int64	REMOTE
 resources.jobs.*.creator_user_name	string	REMOTE
 resources.jobs.*.deployment	*jobs.JobDeployment	ALL
+resources.jobs.*.deployment.deployment_id	string	ALL
 resources.jobs.*.deployment.kind	jobs.JobDeploymentKind	ALL
 resources.jobs.*.deployment.metadata_file_path	string	ALL
+resources.jobs.*.deployment.version_id	string	ALL
 resources.jobs.*.description	string	ALL
 resources.jobs.*.edit_mode	jobs.JobEditMode	ALL
 resources.jobs.*.effective_budget_policy_id	string	REMOTE
@@ -844,6 +854,7 @@ resources.jobs.*.job_clusters[*].new_cluster.enable_local_disk_encryption	bool	A
 resources.jobs.*.job_clusters[*].new_cluster.gcp_attributes	*compute.GcpAttributes	ALL
 resources.jobs.*.job_clusters[*].new_cluster.gcp_attributes.availability	compute.GcpAvailability	ALL
 resources.jobs.*.job_clusters[*].new_cluster.gcp_attributes.boot_disk_size	int	ALL
+resources.jobs.*.job_clusters[*].new_cluster.gcp_attributes.confidential_compute_type	compute.ConfidentialComputeType	ALL
 resources.jobs.*.job_clusters[*].new_cluster.gcp_attributes.first_on_demand	int	ALL
 resources.jobs.*.job_clusters[*].new_cluster.gcp_attributes.google_service_account	string	ALL
 resources.jobs.*.job_clusters[*].new_cluster.gcp_attributes.local_ssd_count	int	ALL
@@ -1163,6 +1174,7 @@ resources.jobs.*.tasks[*].for_each_task.task.new_cluster.enable_local_disk_encry
 resources.jobs.*.tasks[*].for_each_task.task.new_cluster.gcp_attributes	*compute.GcpAttributes	ALL
 resources.jobs.*.tasks[*].for_each_task.task.new_cluster.gcp_attributes.availability	compute.GcpAvailability	ALL
 resources.jobs.*.tasks[*].for_each_task.task.new_cluster.gcp_attributes.boot_disk_size	int	ALL
+resources.jobs.*.tasks[*].for_each_task.task.new_cluster.gcp_attributes.confidential_compute_type	compute.ConfidentialComputeType	ALL
 resources.jobs.*.tasks[*].for_each_task.task.new_cluster.gcp_attributes.first_on_demand	int	ALL
 resources.jobs.*.tasks[*].for_each_task.task.new_cluster.gcp_attributes.google_service_account	string	ALL
 resources.jobs.*.tasks[*].for_each_task.task.new_cluster.gcp_attributes.local_ssd_count	int	ALL
@@ -1227,7 +1239,17 @@ resources.jobs.*.tasks[*].for_each_task.task.notification_settings.no_alert_for_
 resources.jobs.*.tasks[*].for_each_task.task.notification_settings.no_alert_for_skipped_runs	bool	ALL
 resources.jobs.*.tasks[*].for_each_task.task.pipeline_task	*jobs.PipelineTask	ALL
 resources.jobs.*.tasks[*].for_each_task.task.pipeline_task.full_refresh	bool	ALL
+resources.jobs.*.tasks[*].for_each_task.task.pipeline_task.full_refresh_selection	[]string	ALL
+resources.jobs.*.tasks[*].for_each_task.task.pipeline_task.full_refresh_selection[*]	string	ALL
+resources.jobs.*.tasks[*].for_each_task.task.pipeline_task.parameters	map[string]string	ALL
+resources.jobs.*.tasks[*].for_each_task.task.pipeline_task.parameters.*	string	ALL
 resources.jobs.*.tasks[*].for_each_task.task.pipeline_task.pipeline_id	string	ALL
+resources.jobs.*.tasks[*].for_each_task.task.pipeline_task.refresh_flow_selection	[]string	ALL
+resources.jobs.*.tasks[*].for_each_task.task.pipeline_task.refresh_flow_selection[*]	string	ALL
+resources.jobs.*.tasks[*].for_each_task.task.pipeline_task.refresh_selection	[]string	ALL
+resources.jobs.*.tasks[*].for_each_task.task.pipeline_task.refresh_selection[*]	string	ALL
+resources.jobs.*.tasks[*].for_each_task.task.pipeline_task.reset_checkpoint_selection	[]string	ALL
+resources.jobs.*.tasks[*].for_each_task.task.pipeline_task.reset_checkpoint_selection[*]	string	ALL
 resources.jobs.*.tasks[*].for_each_task.task.power_bi_task	*jobs.PowerBiTask	ALL
 resources.jobs.*.tasks[*].for_each_task.task.power_bi_task.connection_resource_name	string	ALL
 resources.jobs.*.tasks[*].for_each_task.task.power_bi_task.power_bi_model	*jobs.PowerBiModel	ALL
@@ -1244,6 +1266,12 @@ resources.jobs.*.tasks[*].for_each_task.task.power_bi_task.tables[*].name	string
 resources.jobs.*.tasks[*].for_each_task.task.power_bi_task.tables[*].schema	string	ALL
 resources.jobs.*.tasks[*].for_each_task.task.power_bi_task.tables[*].storage_mode	jobs.StorageMode	ALL
 resources.jobs.*.tasks[*].for_each_task.task.power_bi_task.warehouse_id	string	ALL
+resources.jobs.*.tasks[*].for_each_task.task.python_operator_task	*jobs.PythonOperatorTask	ALL
+resources.jobs.*.tasks[*].for_each_task.task.python_operator_task.main	string	ALL
+resources.jobs.*.tasks[*].for_each_task.task.python_operator_task.parameters	[]jobs.PythonOperatorTaskParameter	ALL
+resources.jobs.*.tasks[*].for_each_task.task.python_operator_task.parameters[*]	jobs.PythonOperatorTaskParameter	ALL
+resources.jobs.*.tasks[*].for_each_task.task.python_operator_task.parameters[*].name	string	ALL
+resources.jobs.*.tasks[*].for_each_task.task.python_operator_task.parameters[*].value	string	ALL
 resources.jobs.*.tasks[*].for_each_task.task.python_wheel_task	*jobs.PythonWheelTask	ALL
 resources.jobs.*.tasks[*].for_each_task.task.python_wheel_task.entry_point	string	ALL
 resources.jobs.*.tasks[*].for_each_task.task.python_wheel_task.named_parameters	map[string]string	ALL
@@ -1265,6 +1293,14 @@ resources.jobs.*.tasks[*].for_each_task.task.run_job_task.notebook_params	map[st
 resources.jobs.*.tasks[*].for_each_task.task.run_job_task.notebook_params.*	string	ALL
 resources.jobs.*.tasks[*].for_each_task.task.run_job_task.pipeline_params	*jobs.PipelineParams	ALL
 resources.jobs.*.tasks[*].for_each_task.task.run_job_task.pipeline_params.full_refresh	bool	ALL
+resources.jobs.*.tasks[*].for_each_task.task.run_job_task.pipeline_params.full_refresh_selection	[]string	ALL
+resources.jobs.*.tasks[*].for_each_task.task.run_job_task.pipeline_params.full_refresh_selection[*]	string	ALL
+resources.jobs.*.tasks[*].for_each_task.task.run_job_task.pipeline_params.refresh_flow_selection	[]string	ALL
+resources.jobs.*.tasks[*].for_each_task.task.run_job_task.pipeline_params.refresh_flow_selection[*]	string	ALL
+resources.jobs.*.tasks[*].for_each_task.task.run_job_task.pipeline_params.refresh_selection	[]string	ALL
+resources.jobs.*.tasks[*].for_each_task.task.run_job_task.pipeline_params.refresh_selection[*]	string	ALL
+resources.jobs.*.tasks[*].for_each_task.task.run_job_task.pipeline_params.reset_checkpoint_selection	[]string	ALL
+resources.jobs.*.tasks[*].for_each_task.task.run_job_task.pipeline_params.reset_checkpoint_selection[*]	string	ALL
 resources.jobs.*.tasks[*].for_each_task.task.run_job_task.python_named_params	map[string]string	ALL
 resources.jobs.*.tasks[*].for_each_task.task.run_job_task.python_named_params.*	string	ALL
 resources.jobs.*.tasks[*].for_each_task.task.run_job_task.python_params	[]string	ALL
@@ -1423,6 +1459,7 @@ resources.jobs.*.tasks[*].new_cluster.enable_local_disk_encryption	bool	ALL
 resources.jobs.*.tasks[*].new_cluster.gcp_attributes	*compute.GcpAttributes	ALL
 resources.jobs.*.tasks[*].new_cluster.gcp_attributes.availability	compute.GcpAvailability	ALL
 resources.jobs.*.tasks[*].new_cluster.gcp_attributes.boot_disk_size	int	ALL
+resources.jobs.*.tasks[*].new_cluster.gcp_attributes.confidential_compute_type	compute.ConfidentialComputeType	ALL
 resources.jobs.*.tasks[*].new_cluster.gcp_attributes.first_on_demand	int	ALL
 resources.jobs.*.tasks[*].new_cluster.gcp_attributes.google_service_account	string	ALL
 resources.jobs.*.tasks[*].new_cluster.gcp_attributes.local_ssd_count	int	ALL
@@ -1487,7 +1524,17 @@ resources.jobs.*.tasks[*].notification_settings.no_alert_for_canceled_runs	bool	
 resources.jobs.*.tasks[*].notification_settings.no_alert_for_skipped_runs	bool	ALL
 resources.jobs.*.tasks[*].pipeline_task	*jobs.PipelineTask	ALL
 resources.jobs.*.tasks[*].pipeline_task.full_refresh	bool	ALL
+resources.jobs.*.tasks[*].pipeline_task.full_refresh_selection	[]string	ALL
+resources.jobs.*.tasks[*].pipeline_task.full_refresh_selection[*]	string	ALL
+resources.jobs.*.tasks[*].pipeline_task.parameters	map[string]string	ALL
+resources.jobs.*.tasks[*].pipeline_task.parameters.*	string	ALL
 resources.jobs.*.tasks[*].pipeline_task.pipeline_id	string	ALL
+resources.jobs.*.tasks[*].pipeline_task.refresh_flow_selection	[]string	ALL
+resources.jobs.*.tasks[*].pipeline_task.refresh_flow_selection[*]	string	ALL
+resources.jobs.*.tasks[*].pipeline_task.refresh_selection	[]string	ALL
+resources.jobs.*.tasks[*].pipeline_task.refresh_selection[*]	string	ALL
+resources.jobs.*.tasks[*].pipeline_task.reset_checkpoint_selection	[]string	ALL
+resources.jobs.*.tasks[*].pipeline_task.reset_checkpoint_selection[*]	string	ALL
 resources.jobs.*.tasks[*].power_bi_task	*jobs.PowerBiTask	ALL
 resources.jobs.*.tasks[*].power_bi_task.connection_resource_name	string	ALL
 resources.jobs.*.tasks[*].power_bi_task.power_bi_model	*jobs.PowerBiModel	ALL
@@ -1504,6 +1551,12 @@ resources.jobs.*.tasks[*].power_bi_task.tables[*].name	string	ALL
 resources.jobs.*.tasks[*].power_bi_task.tables[*].schema	string	ALL
 resources.jobs.*.tasks[*].power_bi_task.tables[*].storage_mode	jobs.StorageMode	ALL
 resources.jobs.*.tasks[*].power_bi_task.warehouse_id	string	ALL
+resources.jobs.*.tasks[*].python_operator_task	*jobs.PythonOperatorTask	ALL
+resources.jobs.*.tasks[*].python_operator_task.main	string	ALL
+resources.jobs.*.tasks[*].python_operator_task.parameters	[]jobs.PythonOperatorTaskParameter	ALL
+resources.jobs.*.tasks[*].python_operator_task.parameters[*]	jobs.PythonOperatorTaskParameter	ALL
+resources.jobs.*.tasks[*].python_operator_task.parameters[*].name	string	ALL
+resources.jobs.*.tasks[*].python_operator_task.parameters[*].value	string	ALL
 resources.jobs.*.tasks[*].python_wheel_task	*jobs.PythonWheelTask	ALL
 resources.jobs.*.tasks[*].python_wheel_task.entry_point	string	ALL
 resources.jobs.*.tasks[*].python_wheel_task.named_parameters	map[string]string	ALL
@@ -1525,6 +1578,14 @@ resources.jobs.*.tasks[*].run_job_task.notebook_params	map[string]string	ALL
 resources.jobs.*.tasks[*].run_job_task.notebook_params.*	string	ALL
 resources.jobs.*.tasks[*].run_job_task.pipeline_params	*jobs.PipelineParams	ALL
 resources.jobs.*.tasks[*].run_job_task.pipeline_params.full_refresh	bool	ALL
+resources.jobs.*.tasks[*].run_job_task.pipeline_params.full_refresh_selection	[]string	ALL
+resources.jobs.*.tasks[*].run_job_task.pipeline_params.full_refresh_selection[*]	string	ALL
+resources.jobs.*.tasks[*].run_job_task.pipeline_params.refresh_flow_selection	[]string	ALL
+resources.jobs.*.tasks[*].run_job_task.pipeline_params.refresh_flow_selection[*]	string	ALL
+resources.jobs.*.tasks[*].run_job_task.pipeline_params.refresh_selection	[]string	ALL
+resources.jobs.*.tasks[*].run_job_task.pipeline_params.refresh_selection[*]	string	ALL
+resources.jobs.*.tasks[*].run_job_task.pipeline_params.reset_checkpoint_selection	[]string	ALL
+resources.jobs.*.tasks[*].run_job_task.pipeline_params.reset_checkpoint_selection[*]	string	ALL
 resources.jobs.*.tasks[*].run_job_task.python_named_params	map[string]string	ALL
 resources.jobs.*.tasks[*].run_job_task.python_named_params.*	string	ALL
 resources.jobs.*.tasks[*].run_job_task.python_params	[]string	ALL
@@ -2205,6 +2266,7 @@ resources.pipelines.*.clusters[*].enable_local_disk_encryption	bool	ALL
 resources.pipelines.*.clusters[*].gcp_attributes	*compute.GcpAttributes	ALL
 resources.pipelines.*.clusters[*].gcp_attributes.availability	compute.GcpAvailability	ALL
 resources.pipelines.*.clusters[*].gcp_attributes.boot_disk_size	int	ALL
+resources.pipelines.*.clusters[*].gcp_attributes.confidential_compute_type	compute.ConfidentialComputeType	ALL
 resources.pipelines.*.clusters[*].gcp_attributes.first_on_demand	int	ALL
 resources.pipelines.*.clusters[*].gcp_attributes.google_service_account	string	ALL
 resources.pipelines.*.clusters[*].gcp_attributes.local_ssd_count	int	ALL
@@ -2248,8 +2310,10 @@ resources.pipelines.*.configuration.*	string	ALL
 resources.pipelines.*.continuous	bool	ALL
 resources.pipelines.*.creator_user_name	string	REMOTE
 resources.pipelines.*.deployment	*pipelines.PipelineDeployment	ALL
+resources.pipelines.*.deployment.deployment_id	string	ALL
 resources.pipelines.*.deployment.kind	pipelines.DeploymentKind	ALL
 resources.pipelines.*.deployment.metadata_file_path	string	ALL
+resources.pipelines.*.deployment.version_id	string	ALL
 resources.pipelines.*.development	bool	ALL
 resources.pipelines.*.dry_run	bool	ALL
 resources.pipelines.*.edition	string	ALL
@@ -2330,6 +2394,9 @@ resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration
 resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration.workday_report_parameters.report_parameters[*].value	string	ALL
 resources.pipelines.*.ingestion_definition.objects[*].schema	*pipelines.SchemaSpec	ALL
 resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options	*pipelines.ConnectorOptions	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.confluence_options	*pipelines.ConfluenceConnectorOptions	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.confluence_options.include_confluence_spaces	[]string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.confluence_options.include_confluence_spaces[*]	string	ALL
 resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.gdrive_options	*pipelines.GoogleDriveOptions	ALL
 resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.gdrive_options.entity_type	pipelines.GoogleDriveOptionsGoogleDriveEntityType	ALL
 resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.gdrive_options.file_ingestion_options	*pipelines.FileIngestionOptions	ALL
@@ -2354,6 +2421,63 @@ resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.g
 resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.google_ads_options.lookback_window_days	int	ALL
 resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.google_ads_options.manager_account_id	string	ALL
 resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.google_ads_options.sync_start_date	string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.jira_options	*pipelines.JiraConnectorOptions	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.jira_options.include_jira_spaces	[]string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.jira_options.include_jira_spaces[*]	string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.kafka_options	*pipelines.KafkaOptions	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.kafka_options.client_config	map[string]string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.kafka_options.client_config.*	string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.kafka_options.key_transformer	*pipelines.Transformer	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.kafka_options.key_transformer.format	pipelines.TransformerFormat	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.kafka_options.key_transformer.json_options	*pipelines.JsonTransformerOptions	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.kafka_options.key_transformer.json_options.as_variant	bool	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.kafka_options.key_transformer.json_options.schema	string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.kafka_options.key_transformer.json_options.schema_evolution_mode	pipelines.FileIngestionOptionsSchemaEvolutionMode	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.kafka_options.key_transformer.json_options.schema_file_path	string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.kafka_options.key_transformer.json_options.schema_hints	string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.kafka_options.max_offsets_per_trigger	int64	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.kafka_options.starting_offset	string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.kafka_options.topic_pattern	string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.kafka_options.topics	[]string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.kafka_options.topics[*]	string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.kafka_options.value_transformer	*pipelines.Transformer	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.kafka_options.value_transformer.format	pipelines.TransformerFormat	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.kafka_options.value_transformer.json_options	*pipelines.JsonTransformerOptions	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.kafka_options.value_transformer.json_options.as_variant	bool	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.kafka_options.value_transformer.json_options.schema	string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.kafka_options.value_transformer.json_options.schema_evolution_mode	pipelines.FileIngestionOptionsSchemaEvolutionMode	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.kafka_options.value_transformer.json_options.schema_file_path	string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.kafka_options.value_transformer.json_options.schema_hints	string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.meta_ads_options	*pipelines.MetaMarketingOptions	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.meta_ads_options.action_attribution_windows	[]string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.meta_ads_options.action_attribution_windows[*]	string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.meta_ads_options.action_breakdowns	[]string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.meta_ads_options.action_breakdowns[*]	string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.meta_ads_options.action_report_time	string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.meta_ads_options.breakdowns	[]string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.meta_ads_options.breakdowns[*]	string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.meta_ads_options.custom_insights_lookback_window	int	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.meta_ads_options.level	string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.meta_ads_options.start_date	string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.meta_ads_options.time_increment	string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.outlook_options	*pipelines.OutlookOptions	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.outlook_options.attachment_mode	pipelines.OutlookAttachmentMode	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.outlook_options.body_format	pipelines.OutlookBodyFormat	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.outlook_options.folder_filter	[]string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.outlook_options.folder_filter[*]	string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.outlook_options.include_folders	[]string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.outlook_options.include_folders[*]	string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.outlook_options.include_mailboxes	[]string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.outlook_options.include_mailboxes[*]	string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.outlook_options.include_senders	[]string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.outlook_options.include_senders[*]	string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.outlook_options.include_subjects	[]string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.outlook_options.include_subjects[*]	string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.outlook_options.sender_filter	[]string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.outlook_options.sender_filter[*]	string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.outlook_options.start_date	string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.outlook_options.subject_filter	[]string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.outlook_options.subject_filter[*]	string	ALL
 resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.sharepoint_options	*pipelines.SharepointOptions	ALL
 resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.sharepoint_options.entity_type	pipelines.SharepointOptionsSharepointEntityType	ALL
 resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.sharepoint_options.file_ingestion_options	*pipelines.FileIngestionOptions	ALL
@@ -2374,6 +2498,8 @@ resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.s
 resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.sharepoint_options.file_ingestion_options.schema_hints	string	ALL
 resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.sharepoint_options.file_ingestion_options.single_variant_column	string	ALL
 resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.sharepoint_options.url	string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.smartsheet_options	*pipelines.SmartsheetOptions	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.smartsheet_options.enforce_schema	bool	ALL
 resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.tiktok_ads_options	*pipelines.TikTokAdsOptions	ALL
 resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.tiktok_ads_options.data_level	pipelines.TikTokAdsOptionsTikTokDataLevel	ALL
 resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.tiktok_ads_options.dimensions	[]string	ALL
@@ -2384,6 +2510,8 @@ resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.t
 resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.tiktok_ads_options.query_lifetime	bool	ALL
 resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.tiktok_ads_options.report_type	pipelines.TikTokAdsOptionsTikTokReportType	ALL
 resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.tiktok_ads_options.sync_start_date	string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.zendesk_support_options	*pipelines.ZendeskSupportOptions	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.zendesk_support_options.start_date	string	ALL
 resources.pipelines.*.ingestion_definition.objects[*].schema.destination_catalog	string	ALL
 resources.pipelines.*.ingestion_definition.objects[*].schema.destination_schema	string	ALL
 resources.pipelines.*.ingestion_definition.objects[*].schema.source_catalog	string	ALL
@@ -2418,6 +2546,9 @@ resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration
 resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration.workday_report_parameters.report_parameters[*].value	string	ALL
 resources.pipelines.*.ingestion_definition.objects[*].table	*pipelines.TableSpec	ALL
 resources.pipelines.*.ingestion_definition.objects[*].table.connector_options	*pipelines.ConnectorOptions	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.confluence_options	*pipelines.ConfluenceConnectorOptions	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.confluence_options.include_confluence_spaces	[]string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.confluence_options.include_confluence_spaces[*]	string	ALL
 resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.gdrive_options	*pipelines.GoogleDriveOptions	ALL
 resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.gdrive_options.entity_type	pipelines.GoogleDriveOptionsGoogleDriveEntityType	ALL
 resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.gdrive_options.file_ingestion_options	*pipelines.FileIngestionOptions	ALL
@@ -2442,6 +2573,63 @@ resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.go
 resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.google_ads_options.lookback_window_days	int	ALL
 resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.google_ads_options.manager_account_id	string	ALL
 resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.google_ads_options.sync_start_date	string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.jira_options	*pipelines.JiraConnectorOptions	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.jira_options.include_jira_spaces	[]string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.jira_options.include_jira_spaces[*]	string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.kafka_options	*pipelines.KafkaOptions	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.kafka_options.client_config	map[string]string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.kafka_options.client_config.*	string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.kafka_options.key_transformer	*pipelines.Transformer	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.kafka_options.key_transformer.format	pipelines.TransformerFormat	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.kafka_options.key_transformer.json_options	*pipelines.JsonTransformerOptions	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.kafka_options.key_transformer.json_options.as_variant	bool	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.kafka_options.key_transformer.json_options.schema	string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.kafka_options.key_transformer.json_options.schema_evolution_mode	pipelines.FileIngestionOptionsSchemaEvolutionMode	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.kafka_options.key_transformer.json_options.schema_file_path	string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.kafka_options.key_transformer.json_options.schema_hints	string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.kafka_options.max_offsets_per_trigger	int64	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.kafka_options.starting_offset	string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.kafka_options.topic_pattern	string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.kafka_options.topics	[]string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.kafka_options.topics[*]	string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.kafka_options.value_transformer	*pipelines.Transformer	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.kafka_options.value_transformer.format	pipelines.TransformerFormat	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.kafka_options.value_transformer.json_options	*pipelines.JsonTransformerOptions	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.kafka_options.value_transformer.json_options.as_variant	bool	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.kafka_options.value_transformer.json_options.schema	string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.kafka_options.value_transformer.json_options.schema_evolution_mode	pipelines.FileIngestionOptionsSchemaEvolutionMode	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.kafka_options.value_transformer.json_options.schema_file_path	string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.kafka_options.value_transformer.json_options.schema_hints	string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.meta_ads_options	*pipelines.MetaMarketingOptions	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.meta_ads_options.action_attribution_windows	[]string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.meta_ads_options.action_attribution_windows[*]	string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.meta_ads_options.action_breakdowns	[]string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.meta_ads_options.action_breakdowns[*]	string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.meta_ads_options.action_report_time	string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.meta_ads_options.breakdowns	[]string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.meta_ads_options.breakdowns[*]	string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.meta_ads_options.custom_insights_lookback_window	int	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.meta_ads_options.level	string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.meta_ads_options.start_date	string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.meta_ads_options.time_increment	string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.outlook_options	*pipelines.OutlookOptions	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.outlook_options.attachment_mode	pipelines.OutlookAttachmentMode	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.outlook_options.body_format	pipelines.OutlookBodyFormat	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.outlook_options.folder_filter	[]string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.outlook_options.folder_filter[*]	string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.outlook_options.include_folders	[]string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.outlook_options.include_folders[*]	string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.outlook_options.include_mailboxes	[]string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.outlook_options.include_mailboxes[*]	string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.outlook_options.include_senders	[]string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.outlook_options.include_senders[*]	string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.outlook_options.include_subjects	[]string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.outlook_options.include_subjects[*]	string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.outlook_options.sender_filter	[]string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.outlook_options.sender_filter[*]	string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.outlook_options.start_date	string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.outlook_options.subject_filter	[]string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.outlook_options.subject_filter[*]	string	ALL
 resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.sharepoint_options	*pipelines.SharepointOptions	ALL
 resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.sharepoint_options.entity_type	pipelines.SharepointOptionsSharepointEntityType	ALL
 resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.sharepoint_options.file_ingestion_options	*pipelines.FileIngestionOptions	ALL
@@ -2462,6 +2650,8 @@ resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.sh
 resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.sharepoint_options.file_ingestion_options.schema_hints	string	ALL
 resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.sharepoint_options.file_ingestion_options.single_variant_column	string	ALL
 resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.sharepoint_options.url	string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.smartsheet_options	*pipelines.SmartsheetOptions	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.smartsheet_options.enforce_schema	bool	ALL
 resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.tiktok_ads_options	*pipelines.TikTokAdsOptions	ALL
 resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.tiktok_ads_options.data_level	pipelines.TikTokAdsOptionsTikTokDataLevel	ALL
 resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.tiktok_ads_options.dimensions	[]string	ALL
@@ -2472,6 +2662,8 @@ resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.ti
 resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.tiktok_ads_options.query_lifetime	bool	ALL
 resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.tiktok_ads_options.report_type	pipelines.TikTokAdsOptionsTikTokReportType	ALL
 resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.tiktok_ads_options.sync_start_date	string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.zendesk_support_options	*pipelines.ZendeskSupportOptions	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.zendesk_support_options.start_date	string	ALL
 resources.pipelines.*.ingestion_definition.objects[*].table.destination_catalog	string	ALL
 resources.pipelines.*.ingestion_definition.objects[*].table.destination_schema	string	ALL
 resources.pipelines.*.ingestion_definition.objects[*].table.destination_table	string	ALL
@@ -2514,6 +2706,8 @@ resources.pipelines.*.ingestion_definition.source_configurations[*].catalog.post
 resources.pipelines.*.ingestion_definition.source_configurations[*].catalog.postgres.slot_config.publication_name	string	ALL
 resources.pipelines.*.ingestion_definition.source_configurations[*].catalog.postgres.slot_config.slot_name	string	ALL
 resources.pipelines.*.ingestion_definition.source_configurations[*].catalog.source_catalog	string	ALL
+resources.pipelines.*.ingestion_definition.source_configurations[*].google_ads_config	*pipelines.GoogleAdsConfig	ALL
+resources.pipelines.*.ingestion_definition.source_configurations[*].google_ads_config.manager_account_id	string	ALL
 resources.pipelines.*.ingestion_definition.source_type	pipelines.IngestionSourceType	ALL
 resources.pipelines.*.ingestion_definition.table_configuration	*pipelines.TableSpecificConfig	ALL
 resources.pipelines.*.ingestion_definition.table_configuration.auto_full_refresh_policy	*pipelines.AutoFullRefreshPolicy	ALL
@@ -2574,6 +2768,8 @@ resources.pipelines.*.notifications[*].alerts	[]string	ALL
 resources.pipelines.*.notifications[*].alerts[*]	string	ALL
 resources.pipelines.*.notifications[*].email_recipients	[]string	ALL
 resources.pipelines.*.notifications[*].email_recipients[*]	string	ALL
+resources.pipelines.*.parameters	map[string]string	ALL
+resources.pipelines.*.parameters.*	string	ALL
 resources.pipelines.*.photon	bool	ALL
 resources.pipelines.*.pipeline_id	string	REMOTE
 resources.pipelines.*.restart_window	*pipelines.RestartWindow	ALL
@@ -2606,82 +2802,83 @@ resources.pipelines.*.permissions[*].group_name	string	ALL
 resources.pipelines.*.permissions[*].level	iam.PermissionLevel	ALL
 resources.pipelines.*.permissions[*].service_principal_name	string	ALL
 resources.pipelines.*.permissions[*].user_name	string	ALL
-resources.postgres_branches.*.branch_id	string	INPUT	STATE
+resources.postgres_branches.*.branch_id	string	ALL
 resources.postgres_branches.*.create_time	*time.Time	REMOTE
-resources.postgres_branches.*.expire_time	*time.Time	INPUT	STATE
+resources.postgres_branches.*.expire_time	*time.Time	ALL
 resources.postgres_branches.*.id	string	INPUT
-resources.postgres_branches.*.is_protected	bool	INPUT	STATE
+resources.postgres_branches.*.is_protected	bool	ALL
 resources.postgres_branches.*.lifecycle	resources.Lifecycle	INPUT
 resources.postgres_branches.*.lifecycle.prevent_destroy	bool	INPUT
 resources.postgres_branches.*.modified_status	string	INPUT
 resources.postgres_branches.*.name	string	REMOTE
-resources.postgres_branches.*.no_expiry	bool	INPUT	STATE
+resources.postgres_branches.*.no_expiry	bool	ALL
 resources.postgres_branches.*.parent	string	ALL
-resources.postgres_branches.*.source_branch	string	INPUT	STATE
-resources.postgres_branches.*.source_branch_lsn	string	INPUT	STATE
-resources.postgres_branches.*.source_branch_time	*time.Time	INPUT	STATE
-resources.postgres_branches.*.spec	*postgres.BranchSpec	REMOTE
-resources.postgres_branches.*.spec.expire_time	*time.Time	REMOTE
-resources.postgres_branches.*.spec.is_protected	bool	REMOTE
-resources.postgres_branches.*.spec.no_expiry	bool	REMOTE
-resources.postgres_branches.*.spec.source_branch	string	REMOTE
-resources.postgres_branches.*.spec.source_branch_lsn	string	REMOTE
-resources.postgres_branches.*.spec.source_branch_time	*time.Time	REMOTE
-resources.postgres_branches.*.spec.ttl	*duration.Duration	REMOTE
+resources.postgres_branches.*.replace_existing	bool	INPUT	STATE
+resources.postgres_branches.*.source_branch	string	ALL
+resources.postgres_branches.*.source_branch_lsn	string	ALL
+resources.postgres_branches.*.source_branch_time	*time.Time	ALL
 resources.postgres_branches.*.status	*postgres.BranchStatus	REMOTE
+resources.postgres_branches.*.status.branch_id	string	REMOTE
 resources.postgres_branches.*.status.current_state	postgres.BranchStatusState	REMOTE
 resources.postgres_branches.*.status.default	bool	REMOTE
+resources.postgres_branches.*.status.delete_time	*time.Time	REMOTE
 resources.postgres_branches.*.status.expire_time	*time.Time	REMOTE
 resources.postgres_branches.*.status.is_protected	bool	REMOTE
 resources.postgres_branches.*.status.logical_size_bytes	int64	REMOTE
 resources.postgres_branches.*.status.pending_state	postgres.BranchStatusState	REMOTE
+resources.postgres_branches.*.status.purge_time	*time.Time	REMOTE
 resources.postgres_branches.*.status.source_branch	string	REMOTE
 resources.postgres_branches.*.status.source_branch_lsn	string	REMOTE
 resources.postgres_branches.*.status.source_branch_time	*time.Time	REMOTE
 resources.postgres_branches.*.status.state_change_time	*time.Time	REMOTE
-resources.postgres_branches.*.ttl	*duration.Duration	INPUT	STATE
+resources.postgres_branches.*.ttl	*duration.Duration	ALL
 resources.postgres_branches.*.uid	string	REMOTE
 resources.postgres_branches.*.update_time	*time.Time	REMOTE
 resources.postgres_branches.*.url	string	INPUT
-resources.postgres_endpoints.*.autoscaling_limit_max_cu	float64	INPUT	STATE
-resources.postgres_endpoints.*.autoscaling_limit_min_cu	float64	INPUT	STATE
+resources.postgres_catalogs.*.branch	string	ALL
+resources.postgres_catalogs.*.catalog_id	string	ALL
+resources.postgres_catalogs.*.create_database_if_missing	bool	ALL
+resources.postgres_catalogs.*.create_time	*time.Time	REMOTE
+resources.postgres_catalogs.*.id	string	INPUT
+resources.postgres_catalogs.*.lifecycle	resources.Lifecycle	INPUT
+resources.postgres_catalogs.*.lifecycle.prevent_destroy	bool	INPUT
+resources.postgres_catalogs.*.modified_status	string	INPUT
+resources.postgres_catalogs.*.name	string	REMOTE
+resources.postgres_catalogs.*.postgres_database	string	ALL
+resources.postgres_catalogs.*.status	*postgres.CatalogCatalogStatus	REMOTE
+resources.postgres_catalogs.*.status.branch	string	REMOTE
+resources.postgres_catalogs.*.status.postgres_database	string	REMOTE
+resources.postgres_catalogs.*.status.project	string	REMOTE
+resources.postgres_catalogs.*.uid	string	REMOTE
+resources.postgres_catalogs.*.update_time	*time.Time	REMOTE
+resources.postgres_catalogs.*.url	string	INPUT
+resources.postgres_endpoints.*.autoscaling_limit_max_cu	float64	ALL
+resources.postgres_endpoints.*.autoscaling_limit_min_cu	float64	ALL
 resources.postgres_endpoints.*.create_time	*time.Time	REMOTE
-resources.postgres_endpoints.*.disabled	bool	INPUT	STATE
-resources.postgres_endpoints.*.endpoint_id	string	INPUT	STATE
-resources.postgres_endpoints.*.endpoint_type	postgres.EndpointType	INPUT	STATE
-resources.postgres_endpoints.*.group	*postgres.EndpointGroupSpec	INPUT	STATE
-resources.postgres_endpoints.*.group.enable_readable_secondaries	bool	INPUT	STATE
-resources.postgres_endpoints.*.group.max	int	INPUT	STATE
-resources.postgres_endpoints.*.group.min	int	INPUT	STATE
+resources.postgres_endpoints.*.disabled	bool	ALL
+resources.postgres_endpoints.*.endpoint_id	string	ALL
+resources.postgres_endpoints.*.endpoint_type	postgres.EndpointType	ALL
+resources.postgres_endpoints.*.group	*postgres.EndpointGroupSpec	ALL
+resources.postgres_endpoints.*.group.enable_readable_secondaries	bool	ALL
+resources.postgres_endpoints.*.group.max	int	ALL
+resources.postgres_endpoints.*.group.min	int	ALL
 resources.postgres_endpoints.*.id	string	INPUT
 resources.postgres_endpoints.*.lifecycle	resources.Lifecycle	INPUT
 resources.postgres_endpoints.*.lifecycle.prevent_destroy	bool	INPUT
 resources.postgres_endpoints.*.modified_status	string	INPUT
 resources.postgres_endpoints.*.name	string	REMOTE
-resources.postgres_endpoints.*.no_suspension	bool	INPUT	STATE
+resources.postgres_endpoints.*.no_suspension	bool	ALL
 resources.postgres_endpoints.*.parent	string	ALL
-resources.postgres_endpoints.*.settings	*postgres.EndpointSettings	INPUT	STATE
-resources.postgres_endpoints.*.settings.pg_settings	map[string]string	INPUT	STATE
-resources.postgres_endpoints.*.settings.pg_settings.*	string	INPUT	STATE
-resources.postgres_endpoints.*.spec	*postgres.EndpointSpec	REMOTE
-resources.postgres_endpoints.*.spec.autoscaling_limit_max_cu	float64	REMOTE
-resources.postgres_endpoints.*.spec.autoscaling_limit_min_cu	float64	REMOTE
-resources.postgres_endpoints.*.spec.disabled	bool	REMOTE
-resources.postgres_endpoints.*.spec.endpoint_type	postgres.EndpointType	REMOTE
-resources.postgres_endpoints.*.spec.group	*postgres.EndpointGroupSpec	REMOTE
-resources.postgres_endpoints.*.spec.group.enable_readable_secondaries	bool	REMOTE
-resources.postgres_endpoints.*.spec.group.max	int	REMOTE
-resources.postgres_endpoints.*.spec.group.min	int	REMOTE
-resources.postgres_endpoints.*.spec.no_suspension	bool	REMOTE
-resources.postgres_endpoints.*.spec.settings	*postgres.EndpointSettings	REMOTE
-resources.postgres_endpoints.*.spec.settings.pg_settings	map[string]string	REMOTE
-resources.postgres_endpoints.*.spec.settings.pg_settings.*	string	REMOTE
-resources.postgres_endpoints.*.spec.suspend_timeout_duration	*duration.Duration	REMOTE
+resources.postgres_endpoints.*.replace_existing	bool	INPUT	STATE
+resources.postgres_endpoints.*.settings	*postgres.EndpointSettings	ALL
+resources.postgres_endpoints.*.settings.pg_settings	map[string]string	ALL
+resources.postgres_endpoints.*.settings.pg_settings.*	string	ALL
 resources.postgres_endpoints.*.status	*postgres.EndpointStatus	REMOTE
 resources.postgres_endpoints.*.status.autoscaling_limit_max_cu	float64	REMOTE
 resources.postgres_endpoints.*.status.autoscaling_limit_min_cu	float64	REMOTE
 resources.postgres_endpoints.*.status.current_state	postgres.EndpointStatusState	REMOTE
 resources.postgres_endpoints.*.status.disabled	bool	REMOTE
+resources.postgres_endpoints.*.status.endpoint_id	string	REMOTE
 resources.postgres_endpoints.*.status.endpoint_type	postgres.EndpointType	REMOTE
 resources.postgres_endpoints.*.status.group	*postgres.EndpointGroupStatus	REMOTE
 resources.postgres_endpoints.*.status.group.enable_readable_secondaries	bool	REMOTE
@@ -2695,27 +2892,28 @@ resources.postgres_endpoints.*.status.settings	*postgres.EndpointSettings	REMOTE
 resources.postgres_endpoints.*.status.settings.pg_settings	map[string]string	REMOTE
 resources.postgres_endpoints.*.status.settings.pg_settings.*	string	REMOTE
 resources.postgres_endpoints.*.status.suspend_timeout_duration	*duration.Duration	REMOTE
-resources.postgres_endpoints.*.suspend_timeout_duration	*duration.Duration	INPUT	STATE
+resources.postgres_endpoints.*.suspend_timeout_duration	*duration.Duration	ALL
 resources.postgres_endpoints.*.uid	string	REMOTE
 resources.postgres_endpoints.*.update_time	*time.Time	REMOTE
 resources.postgres_endpoints.*.url	string	INPUT
-resources.postgres_projects.*.budget_policy_id	string	INPUT	STATE
+resources.postgres_projects.*.budget_policy_id	string	ALL
 resources.postgres_projects.*.create_time	*time.Time	REMOTE
-resources.postgres_projects.*.custom_tags	[]postgres.ProjectCustomTag	INPUT	STATE
-resources.postgres_projects.*.custom_tags[*]	postgres.ProjectCustomTag	INPUT	STATE
-resources.postgres_projects.*.custom_tags[*].key	string	INPUT	STATE
-resources.postgres_projects.*.custom_tags[*].value	string	INPUT	STATE
-resources.postgres_projects.*.default_branch	string	INPUT	STATE
-resources.postgres_projects.*.default_endpoint_settings	*postgres.ProjectDefaultEndpointSettings	INPUT	STATE
-resources.postgres_projects.*.default_endpoint_settings.autoscaling_limit_max_cu	float64	INPUT	STATE
-resources.postgres_projects.*.default_endpoint_settings.autoscaling_limit_min_cu	float64	INPUT	STATE
-resources.postgres_projects.*.default_endpoint_settings.no_suspension	bool	INPUT	STATE
-resources.postgres_projects.*.default_endpoint_settings.pg_settings	map[string]string	INPUT	STATE
-resources.postgres_projects.*.default_endpoint_settings.pg_settings.*	string	INPUT	STATE
-resources.postgres_projects.*.default_endpoint_settings.suspend_timeout_duration	*duration.Duration	INPUT	STATE
-resources.postgres_projects.*.display_name	string	INPUT	STATE
-resources.postgres_projects.*.enable_pg_native_login	bool	INPUT	STATE
-resources.postgres_projects.*.history_retention_duration	*duration.Duration	INPUT	STATE
+resources.postgres_projects.*.custom_tags	[]postgres.ProjectCustomTag	ALL
+resources.postgres_projects.*.custom_tags[*]	postgres.ProjectCustomTag	ALL
+resources.postgres_projects.*.custom_tags[*].key	string	ALL
+resources.postgres_projects.*.custom_tags[*].value	string	ALL
+resources.postgres_projects.*.default_branch	string	ALL
+resources.postgres_projects.*.default_endpoint_settings	*postgres.ProjectDefaultEndpointSettings	ALL
+resources.postgres_projects.*.default_endpoint_settings.autoscaling_limit_max_cu	float64	ALL
+resources.postgres_projects.*.default_endpoint_settings.autoscaling_limit_min_cu	float64	ALL
+resources.postgres_projects.*.default_endpoint_settings.no_suspension	bool	ALL
+resources.postgres_projects.*.default_endpoint_settings.pg_settings	map[string]string	ALL
+resources.postgres_projects.*.default_endpoint_settings.pg_settings.*	string	ALL
+resources.postgres_projects.*.default_endpoint_settings.suspend_timeout_duration	*duration.Duration	ALL
+resources.postgres_projects.*.delete_time	*time.Time	REMOTE
+resources.postgres_projects.*.display_name	string	ALL
+resources.postgres_projects.*.enable_pg_native_login	bool	ALL
+resources.postgres_projects.*.history_retention_duration	*duration.Duration	ALL
 resources.postgres_projects.*.id	string	INPUT
 resources.postgres_projects.*.initial_endpoint_spec	*postgres.InitialEndpointSpec	REMOTE
 resources.postgres_projects.*.initial_endpoint_spec.group	*postgres.EndpointGroupSpec	REMOTE
@@ -2726,26 +2924,10 @@ resources.postgres_projects.*.lifecycle	resources.Lifecycle	INPUT
 resources.postgres_projects.*.lifecycle.prevent_destroy	bool	INPUT
 resources.postgres_projects.*.modified_status	string	INPUT
 resources.postgres_projects.*.name	string	REMOTE
-resources.postgres_projects.*.pg_version	int	INPUT	STATE
-resources.postgres_projects.*.project_id	string	INPUT	STATE
-resources.postgres_projects.*.spec	*postgres.ProjectSpec	REMOTE
-resources.postgres_projects.*.spec.budget_policy_id	string	REMOTE
-resources.postgres_projects.*.spec.custom_tags	[]postgres.ProjectCustomTag	REMOTE
-resources.postgres_projects.*.spec.custom_tags[*]	postgres.ProjectCustomTag	REMOTE
-resources.postgres_projects.*.spec.custom_tags[*].key	string	REMOTE
-resources.postgres_projects.*.spec.custom_tags[*].value	string	REMOTE
-resources.postgres_projects.*.spec.default_branch	string	REMOTE
-resources.postgres_projects.*.spec.default_endpoint_settings	*postgres.ProjectDefaultEndpointSettings	REMOTE
-resources.postgres_projects.*.spec.default_endpoint_settings.autoscaling_limit_max_cu	float64	REMOTE
-resources.postgres_projects.*.spec.default_endpoint_settings.autoscaling_limit_min_cu	float64	REMOTE
-resources.postgres_projects.*.spec.default_endpoint_settings.no_suspension	bool	REMOTE
-resources.postgres_projects.*.spec.default_endpoint_settings.pg_settings	map[string]string	REMOTE
-resources.postgres_projects.*.spec.default_endpoint_settings.pg_settings.*	string	REMOTE
-resources.postgres_projects.*.spec.default_endpoint_settings.suspend_timeout_duration	*duration.Duration	REMOTE
-resources.postgres_projects.*.spec.display_name	string	REMOTE
-resources.postgres_projects.*.spec.enable_pg_native_login	bool	REMOTE
-resources.postgres_projects.*.spec.history_retention_duration	*duration.Duration	REMOTE
-resources.postgres_projects.*.spec.pg_version	int	REMOTE
+resources.postgres_projects.*.pg_version	int	ALL
+resources.postgres_projects.*.project_id	string	ALL
+resources.postgres_projects.*.purge_on_delete	bool	INPUT	STATE
+resources.postgres_projects.*.purge_time	*time.Time	REMOTE
 resources.postgres_projects.*.status	*postgres.ProjectStatus	REMOTE
 resources.postgres_projects.*.status.branch_logical_size_limit_bytes	int64	REMOTE
 resources.postgres_projects.*.status.budget_policy_id	string	REMOTE
@@ -2766,6 +2948,7 @@ resources.postgres_projects.*.status.enable_pg_native_login	bool	REMOTE
 resources.postgres_projects.*.status.history_retention_duration	*duration.Duration	REMOTE
 resources.postgres_projects.*.status.owner	string	REMOTE
 resources.postgres_projects.*.status.pg_version	int	REMOTE
+resources.postgres_projects.*.status.project_id	string	REMOTE
 resources.postgres_projects.*.status.synthetic_storage_size_bytes	int64	REMOTE
 resources.postgres_projects.*.uid	string	REMOTE
 resources.postgres_projects.*.update_time	*time.Time	REMOTE
@@ -2776,6 +2959,49 @@ resources.postgres_projects.*.permissions[*].group_name	string	ALL
 resources.postgres_projects.*.permissions[*].level	iam.PermissionLevel	ALL
 resources.postgres_projects.*.permissions[*].service_principal_name	string	ALL
 resources.postgres_projects.*.permissions[*].user_name	string	ALL
+resources.postgres_synced_tables.*.branch	string	ALL
+resources.postgres_synced_tables.*.create_database_objects_if_missing	bool	ALL
+resources.postgres_synced_tables.*.create_time	*time.Time	REMOTE
+resources.postgres_synced_tables.*.existing_pipeline_id	string	ALL
+resources.postgres_synced_tables.*.id	string	INPUT
+resources.postgres_synced_tables.*.lifecycle	resources.Lifecycle	INPUT
+resources.postgres_synced_tables.*.lifecycle.prevent_destroy	bool	INPUT
+resources.postgres_synced_tables.*.modified_status	string	INPUT
+resources.postgres_synced_tables.*.name	string	REMOTE
+resources.postgres_synced_tables.*.new_pipeline_spec	*postgres.NewPipelineSpec	ALL
+resources.postgres_synced_tables.*.new_pipeline_spec.budget_policy_id	string	ALL
+resources.postgres_synced_tables.*.new_pipeline_spec.storage_catalog	string	ALL
+resources.postgres_synced_tables.*.new_pipeline_spec.storage_schema	string	ALL
+resources.postgres_synced_tables.*.postgres_database	string	ALL
+resources.postgres_synced_tables.*.primary_key_columns	[]string	ALL
+resources.postgres_synced_tables.*.primary_key_columns[*]	string	ALL
+resources.postgres_synced_tables.*.scheduling_policy	postgres.SyncedTableSyncedTableSpecSyncedTableSchedulingPolicy	ALL
+resources.postgres_synced_tables.*.source_table_full_name	string	ALL
+resources.postgres_synced_tables.*.status	*postgres.SyncedTableSyncedTableStatus	REMOTE
+resources.postgres_synced_tables.*.status.detailed_state	postgres.SyncedTableState	REMOTE
+resources.postgres_synced_tables.*.status.last_processed_commit_version	int64	REMOTE
+resources.postgres_synced_tables.*.status.last_sync	*postgres.SyncedTablePosition	REMOTE
+resources.postgres_synced_tables.*.status.last_sync.delta_table_sync_info	*postgres.DeltaTableSyncInfo	REMOTE
+resources.postgres_synced_tables.*.status.last_sync.delta_table_sync_info.delta_commit_time	*time.Time	REMOTE
+resources.postgres_synced_tables.*.status.last_sync.delta_table_sync_info.delta_commit_version	int64	REMOTE
+resources.postgres_synced_tables.*.status.last_sync.sync_end_time	*time.Time	REMOTE
+resources.postgres_synced_tables.*.status.last_sync.sync_start_time	*time.Time	REMOTE
+resources.postgres_synced_tables.*.status.last_sync_time	*time.Time	REMOTE
+resources.postgres_synced_tables.*.status.message	string	REMOTE
+resources.postgres_synced_tables.*.status.ongoing_sync_progress	*postgres.SyncedTablePipelineProgress	REMOTE
+resources.postgres_synced_tables.*.status.ongoing_sync_progress.estimated_completion_time_seconds	float64	REMOTE
+resources.postgres_synced_tables.*.status.ongoing_sync_progress.latest_version_currently_processing	int64	REMOTE
+resources.postgres_synced_tables.*.status.ongoing_sync_progress.sync_progress_completion	float64	REMOTE
+resources.postgres_synced_tables.*.status.ongoing_sync_progress.synced_row_count	int64	REMOTE
+resources.postgres_synced_tables.*.status.ongoing_sync_progress.total_row_count	int64	REMOTE
+resources.postgres_synced_tables.*.status.pipeline_id	string	REMOTE
+resources.postgres_synced_tables.*.status.project	string	REMOTE
+resources.postgres_synced_tables.*.status.provisioning_phase	postgres.ProvisioningPhase	REMOTE
+resources.postgres_synced_tables.*.status.unity_catalog_provisioning_state	postgres.ProvisioningInfoState	REMOTE
+resources.postgres_synced_tables.*.synced_table_id	string	ALL
+resources.postgres_synced_tables.*.timeseries_key	string	ALL
+resources.postgres_synced_tables.*.uid	string	REMOTE
+resources.postgres_synced_tables.*.url	string	INPUT
 resources.quality_monitors.*.assets_dir	string	ALL
 resources.quality_monitors.*.baseline_table_name	string	ALL
 resources.quality_monitors.*.custom_metrics	[]catalog.MonitorMetric	ALL
@@ -2937,8 +3163,11 @@ resources.sql_warehouses.*.health.summary	string	REMOTE
 resources.sql_warehouses.*.id	string	INPUT	REMOTE
 resources.sql_warehouses.*.instance_profile_arn	string	ALL
 resources.sql_warehouses.*.jdbc_url	string	REMOTE
+resources.sql_warehouses.*.lifecycle	*dresources.StateLifecycle	REMOTE	STATE
+resources.sql_warehouses.*.lifecycle	*resources.LifecycleWithStarted	INPUT
 resources.sql_warehouses.*.lifecycle	resources.Lifecycle	INPUT
 resources.sql_warehouses.*.lifecycle.prevent_destroy	bool	INPUT
+resources.sql_warehouses.*.lifecycle.started	*bool	ALL
 resources.sql_warehouses.*.max_num_clusters	int	ALL
 resources.sql_warehouses.*.min_num_clusters	int	ALL
 resources.sql_warehouses.*.modified_status	string	INPUT
@@ -3048,13 +3277,13 @@ resources.vector_search_endpoints.*.last_updated_timestamp	int64	REMOTE
 resources.vector_search_endpoints.*.last_updated_user	string	REMOTE
 resources.vector_search_endpoints.*.lifecycle	resources.Lifecycle	INPUT
 resources.vector_search_endpoints.*.lifecycle.prevent_destroy	bool	INPUT
-resources.vector_search_endpoints.*.min_qps	int64	INPUT	STATE
 resources.vector_search_endpoints.*.modified_status	string	INPUT
 resources.vector_search_endpoints.*.name	string	ALL
 resources.vector_search_endpoints.*.num_indexes	int	REMOTE
 resources.vector_search_endpoints.*.scaling_info	*vectorsearch.EndpointScalingInfo	REMOTE
-resources.vector_search_endpoints.*.scaling_info.requested_min_qps	int64	REMOTE
+resources.vector_search_endpoints.*.scaling_info.requested_target_qps	int64	REMOTE
 resources.vector_search_endpoints.*.scaling_info.state	vectorsearch.ScalingChangeState	REMOTE
+resources.vector_search_endpoints.*.target_qps	int64	INPUT	STATE
 resources.vector_search_endpoints.*.url	string	INPUT
 resources.vector_search_endpoints.*.usage_policy_id	string	INPUT	STATE
 resources.vector_search_endpoints.*.permissions.object_id	string	ALL
@@ -3063,6 +3292,59 @@ resources.vector_search_endpoints.*.permissions[*].group_name	string	ALL
 resources.vector_search_endpoints.*.permissions[*].level	iam.PermissionLevel	ALL
 resources.vector_search_endpoints.*.permissions[*].service_principal_name	string	ALL
 resources.vector_search_endpoints.*.permissions[*].user_name	string	ALL
+resources.vector_search_indexes.*.creator	string	REMOTE
+resources.vector_search_indexes.*.delta_sync_index_spec	*vectorsearch.DeltaSyncVectorIndexSpecRequest	INPUT	STATE
+resources.vector_search_indexes.*.delta_sync_index_spec	*vectorsearch.DeltaSyncVectorIndexSpecResponse	REMOTE
+resources.vector_search_indexes.*.delta_sync_index_spec.columns_to_index	[]string	ALL
+resources.vector_search_indexes.*.delta_sync_index_spec.columns_to_index[*]	string	ALL
+resources.vector_search_indexes.*.delta_sync_index_spec.columns_to_sync	[]string	ALL
+resources.vector_search_indexes.*.delta_sync_index_spec.columns_to_sync[*]	string	ALL
+resources.vector_search_indexes.*.delta_sync_index_spec.embedding_source_columns	[]vectorsearch.EmbeddingSourceColumn	ALL
+resources.vector_search_indexes.*.delta_sync_index_spec.embedding_source_columns[*]	vectorsearch.EmbeddingSourceColumn	ALL
+resources.vector_search_indexes.*.delta_sync_index_spec.embedding_source_columns[*].embedding_model_endpoint_name	string	ALL
+resources.vector_search_indexes.*.delta_sync_index_spec.embedding_source_columns[*].model_endpoint_name_for_query	string	ALL
+resources.vector_search_indexes.*.delta_sync_index_spec.embedding_source_columns[*].name	string	ALL
+resources.vector_search_indexes.*.delta_sync_index_spec.embedding_vector_columns	[]vectorsearch.EmbeddingVectorColumn	ALL
+resources.vector_search_indexes.*.delta_sync_index_spec.embedding_vector_columns[*]	vectorsearch.EmbeddingVectorColumn	ALL
+resources.vector_search_indexes.*.delta_sync_index_spec.embedding_vector_columns[*].embedding_dimension	int	ALL
+resources.vector_search_indexes.*.delta_sync_index_spec.embedding_vector_columns[*].name	string	ALL
+resources.vector_search_indexes.*.delta_sync_index_spec.embedding_writeback_table	string	ALL
+resources.vector_search_indexes.*.delta_sync_index_spec.pipeline_id	string	REMOTE
+resources.vector_search_indexes.*.delta_sync_index_spec.pipeline_type	vectorsearch.PipelineType	ALL
+resources.vector_search_indexes.*.delta_sync_index_spec.source_table	string	ALL
+resources.vector_search_indexes.*.direct_access_index_spec	*vectorsearch.DirectAccessVectorIndexSpec	ALL
+resources.vector_search_indexes.*.direct_access_index_spec.embedding_source_columns	[]vectorsearch.EmbeddingSourceColumn	ALL
+resources.vector_search_indexes.*.direct_access_index_spec.embedding_source_columns[*]	vectorsearch.EmbeddingSourceColumn	ALL
+resources.vector_search_indexes.*.direct_access_index_spec.embedding_source_columns[*].embedding_model_endpoint_name	string	ALL
+resources.vector_search_indexes.*.direct_access_index_spec.embedding_source_columns[*].model_endpoint_name_for_query	string	ALL
+resources.vector_search_indexes.*.direct_access_index_spec.embedding_source_columns[*].name	string	ALL
+resources.vector_search_indexes.*.direct_access_index_spec.embedding_vector_columns	[]vectorsearch.EmbeddingVectorColumn	ALL
+resources.vector_search_indexes.*.direct_access_index_spec.embedding_vector_columns[*]	vectorsearch.EmbeddingVectorColumn	ALL
+resources.vector_search_indexes.*.direct_access_index_spec.embedding_vector_columns[*].embedding_dimension	int	ALL
+resources.vector_search_indexes.*.direct_access_index_spec.embedding_vector_columns[*].name	string	ALL
+resources.vector_search_indexes.*.direct_access_index_spec.schema_json	string	ALL
+resources.vector_search_indexes.*.endpoint_name	string	ALL
+resources.vector_search_indexes.*.endpoint_uuid	string	REMOTE	STATE
+resources.vector_search_indexes.*.id	string	INPUT
+resources.vector_search_indexes.*.index_subtype	vectorsearch.IndexSubtype	ALL
+resources.vector_search_indexes.*.index_type	vectorsearch.VectorIndexType	ALL
+resources.vector_search_indexes.*.lifecycle	resources.Lifecycle	INPUT
+resources.vector_search_indexes.*.lifecycle.prevent_destroy	bool	INPUT
+resources.vector_search_indexes.*.modified_status	string	INPUT
+resources.vector_search_indexes.*.name	string	ALL
+resources.vector_search_indexes.*.primary_key	string	ALL
+resources.vector_search_indexes.*.status	*vectorsearch.VectorIndexStatus	REMOTE
+resources.vector_search_indexes.*.status.index_url	string	REMOTE
+resources.vector_search_indexes.*.status.indexed_row_count	int64	REMOTE
+resources.vector_search_indexes.*.status.message	string	REMOTE
+resources.vector_search_indexes.*.status.ready	bool	REMOTE
+resources.vector_search_indexes.*.url	string	INPUT
+resources.vector_search_indexes.*.grants.full_name	string	ALL
+resources.vector_search_indexes.*.grants.securable_type	string	ALL
+resources.vector_search_indexes.*.grants[*]	catalog.PrivilegeAssignment	ALL
+resources.vector_search_indexes.*.grants[*].principal	string	ALL
+resources.vector_search_indexes.*.grants[*].privileges	[]catalog.Privilege	ALL
+resources.vector_search_indexes.*.grants[*].privileges[*]	catalog.Privilege	ALL
 resources.volumes.*.access_point	string	REMOTE
 resources.volumes.*.browse_only	bool	REMOTE
 resources.volumes.*.catalog_name	string	ALL

@@ -66,10 +66,6 @@ google/uuid - https://github.com/google/uuid
 Copyright (c) 2009,2014 Google Inc. All rights reserved.
 License - https://github.com/google/uuid/blob/master/LICENSE
 
-manifoldco/promptui - https://github.com/manifoldco/promptui
-Copyright (c) 2017, Arigato Machine Inc. All rights reserved.
-License - https://github.com/manifoldco/promptui/blob/master/LICENSE.md
-
 hexops/gotextdiff - https://github.com/hexops/gotextdiff
 Copyright (c) 2009 The Go Authors. All rights reserved.
 License - https://github.com/hexops/gotextdiff/blob/main/LICENSE
@@ -142,6 +138,10 @@ License - https://github.com/charmbracelet/huh/blob/main/LICENSE
 charmbracelet/lipgloss - https://github.com/charmbracelet/lipgloss
 Copyright (c) 2021-2025 Charmbracelet, Inc
 License - https://github.com/charmbracelet/lipgloss/blob/master/LICENSE
+
+charmbracelet/x/ansi - https://github.com/charmbracelet/x
+Copyright (c) 2023-2025 Charmbracelet, Inc
+License - https://github.com/charmbracelet/x/blob/main/ansi/LICENSE
 
 Masterminds/semver - https://github.com/Masterminds/semver
 Copyright (C) 2014-2019, Matt Butcher and Matt Farina

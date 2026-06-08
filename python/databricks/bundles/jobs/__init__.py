@@ -48,6 +48,8 @@ __all__ = [
     "ConditionTaskOp",
     "ConditionTaskOpParam",
     "ConditionTaskParam",
+    "ConfidentialComputeType",
+    "ConfidentialComputeTypeParam",
     "Continuous",
     "ContinuousDict",
     "ContinuousParam",
@@ -194,6 +196,12 @@ __all__ = [
     "PowerBiTask",
     "PowerBiTaskDict",
     "PowerBiTaskParam",
+    "PythonOperatorTask",
+    "PythonOperatorTaskDict",
+    "PythonOperatorTaskParam",
+    "PythonOperatorTaskParameter",
+    "PythonOperatorTaskParameterDict",
+    "PythonOperatorTaskParameterParam",
     "PythonPyPiLibrary",
     "PythonPyPiLibraryDict",
     "PythonPyPiLibraryParam",
@@ -371,6 +379,10 @@ from databricks.bundles.jobs._models.condition_task import (
 from databricks.bundles.jobs._models.condition_task_op import (
     ConditionTaskOp,
     ConditionTaskOpParam,
+)
+from databricks.bundles.jobs._models.confidential_compute_type import (
+    ConfidentialComputeType,
+    ConfidentialComputeTypeParam,
 )
 from databricks.bundles.jobs._models.continuous import (
     Continuous,
@@ -602,6 +614,16 @@ from databricks.bundles.jobs._models.power_bi_task import (
     PowerBiTask,
     PowerBiTaskDict,
     PowerBiTaskParam,
+)
+from databricks.bundles.jobs._models.python_operator_task import (
+    PythonOperatorTask,
+    PythonOperatorTaskDict,
+    PythonOperatorTaskParam,
+)
+from databricks.bundles.jobs._models.python_operator_task_parameter import (
+    PythonOperatorTaskParameter,
+    PythonOperatorTaskParameterDict,
+    PythonOperatorTaskParameterParam,
 )
 from databricks.bundles.jobs._models.python_py_pi_library import (
     PythonPyPiLibrary,

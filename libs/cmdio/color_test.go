@@ -27,10 +27,15 @@ func TestColorHelpersEmitSGRWhenEnabled(t *testing.T) {
 		got  string
 		want string
 	}{
+		{"Bold", cmdio.Bold(ctx, "id"), "\x1b[1mid\x1b[0m"},
+		{"Faint", cmdio.Faint(ctx, "hint"), "\x1b[2mhint\x1b[0m"},
+		{"Italic", cmdio.Italic(ctx, "em"), "\x1b[3mem\x1b[0m"},
+		{"Underline", cmdio.Underline(ctx, "link"), "\x1b[4mlink\x1b[0m"},
 		{"Red", cmdio.Red(ctx, "hello"), "\x1b[31mhello\x1b[0m"},
 		{"Green", cmdio.Green(ctx, "ok"), "\x1b[32mok\x1b[0m"},
 		{"Yellow", cmdio.Yellow(ctx, "warn"), "\x1b[33mwarn\x1b[0m"},
 		{"Blue", cmdio.Blue(ctx, "info"), "\x1b[34minfo\x1b[0m"},
+		{"Magenta", cmdio.Magenta(ctx, "trace"), "\x1b[35mtrace\x1b[0m"},
 		{"Cyan", cmdio.Cyan(ctx, "debug"), "\x1b[36mdebug\x1b[0m"},
 		{"HiBlack", cmdio.HiBlack(ctx, "dim"), "\x1b[90mdim\x1b[0m"},
 		{"HiBlue", cmdio.HiBlue(ctx, "APP"), "\x1b[94mAPP\x1b[0m"},
@@ -60,11 +65,72 @@ func TestColorHelpersDoNotPanicWithoutCmdIO(t *testing.T) {
 	assert.Equal(t, "label: ", cmdio.Cyan(ctx, "label: "))
 }
 
+func TestWidth(t *testing.T) {
+	cases := []struct {
+		name string
+		in   string
+		want int
+	}{
+		{"empty", "", 0},
+		{"ascii", "hello", 5},
+		{"ansi wrapped", "\x1b[1mhello\x1b[0m", 5},
+		{"nested ansi", "\x1b[1m\x1b[36mid\x1b[0m", 2},
+		{"fullwidth latin", "ＮＡＭＥ", 8},
+		{"emoji", "🚀", 2},
+		{"ansi wrapped fullwidth", "\x1b[36mＣＬＩ\x1b[0m", 6},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			assert.Equal(t, c.want, cmdio.Width(c.in))
+		})
+	}
+}
+
+func TestPadRight(t *testing.T) {
+	cases := []struct {
+		name string
+		in   string
+		n    int
+		want string
+	}{
+		{"pads ascii", "hi", 5, "hi   "},
+		{"exact width unchanged", "hello", 5, "hello"},
+		{"over width unchanged", "toolong", 3, "toolong"},
+		{"measures past ansi", "\x1b[1mhi\x1b[0m", 5, "\x1b[1mhi\x1b[0m   "},
+		{"counts wide glyphs", "ＣＬＩ", 8, "ＣＬＩ  "},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			assert.Equal(t, c.want, cmdio.PadRight(c.in, c.n))
+		})
+	}
+}
+
+func TestPadLeft(t *testing.T) {
+	cases := []struct {
+		name string
+		in   string
+		n    int
+		want string
+	}{
+		{"pads ascii", "hi", 5, "   hi"},
+		{"exact width unchanged", "hello", 5, "hello"},
+		{"over width unchanged", "toolong", 3, "toolong"},
+		{"measures past ansi", "\x1b[1mhi\x1b[0m", 5, "   \x1b[1mhi\x1b[0m"},
+		{"counts wide glyphs", "ＣＬＩ", 8, "  ＣＬＩ"},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			assert.Equal(t, c.want, cmdio.PadLeft(c.in, c.n))
+		})
+	}
+}
+
 func TestRenderFuncMap(t *testing.T) {
 	ctx := ttyContext(t)
 	fm := cmdio.RenderFuncMap(ctx)
 
-	for _, name := range []string{"red", "green", "blue", "yellow", "magenta", "cyan", "bold", "italic"} {
+	for _, name := range []string{"red", "green", "blue", "yellow", "magenta", "cyan", "bold", "faint", "italic", "underline"} {
 		_, ok := fm[name].(func(string, ...any) string)
 		assert.True(t, ok, "FuncMap missing %q or wrong signature", name)
 	}

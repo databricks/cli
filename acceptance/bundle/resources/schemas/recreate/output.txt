@@ -23,7 +23,7 @@ Deployment complete!
     "comment": "COMMENT1",
     "id": "main.myschema",
     "name": "myschema",
-    "url": "[DATABRICKS_URL]/explore/data/main/myschema?o=[NUMID]"
+    "url": "[DATABRICKS_URL]/explore/data/main/myschema?w=[NUMID]"
   }
 }
 

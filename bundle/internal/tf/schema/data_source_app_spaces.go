@@ -3,11 +3,11 @@
 package schema
 
 type DataSourceAppSpacesProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourceAppSpacesSpacesProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourceAppSpacesSpacesResourcesApp struct {

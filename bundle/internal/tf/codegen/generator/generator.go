@@ -2,8 +2,10 @@
 package generator
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"go/format"
 	"log"
 	"maps"
 	"os"
@@ -16,6 +18,19 @@ import (
 	tfjson "github.com/hashicorp/terraform-json"
 )
 
+// generateFormatted executes tmpl with data, formats the output with gofmt, and writes it to path.
+func generateFormatted(path string, tmpl *template.Template, data any) error {
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, data); err != nil {
+		return err
+	}
+	src, err := format.Source(buf.Bytes())
+	if err != nil {
+		return fmt.Errorf("formatting %s: %w", path, err)
+	}
+	return os.WriteFile(path, src, 0o644)
+}
+
 func normalizeName(name string) string {
 	return strings.TrimPrefix(name, "databricks_")
 }
@@ -27,14 +42,7 @@ type collection struct {
 
 func (c *collection) Generate(path string) error {
 	tmpl := template.Must(template.ParseFiles(fmt.Sprintf("./templates/%s.tmpl", c.OutputFile)))
-	f, err := os.Create(filepath.Join(path, c.OutputFile))
-	if err != nil {
-		return err
-	}
-
-	defer func() { _ = f.Close() }()
-
-	return tmpl.Execute(f, c)
+	return generateFormatted(filepath.Join(path, c.OutputFile), tmpl, c)
 }
 
 type root struct {
@@ -46,14 +54,7 @@ type root struct {
 
 func (r *root) Generate(path string) error {
 	tmpl := template.Must(template.ParseFiles(fmt.Sprintf("./templates/%s.tmpl", r.OutputFile)))
-	f, err := os.Create(filepath.Join(path, r.OutputFile))
-	if err != nil {
-		return err
-	}
-
-	defer func() { _ = f.Close() }()
-
-	return tmpl.Execute(f, r)
+	return generateFormatted(filepath.Join(path, r.OutputFile), tmpl, r)
 }
 
 // Run generates Go type files under path for every resource and data source in schema.
@@ -130,6 +131,18 @@ func Run(_ context.Context, schema *tfjson.ProviderSchema, checksums *schemapkg.
 	{
 		cr := &collection{
 			OutputFile: "resources.go",
+			Blocks:     resources,
+		}
+		err := cr.Generate(path)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Generate resource_all.go
+	{
+		cr := &collection{
+			OutputFile: "resource_all.go",
 			Blocks:     resources,
 		}
 		err := cr.Generate(path)

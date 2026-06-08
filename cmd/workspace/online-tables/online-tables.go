@@ -21,12 +21,18 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "online-tables",
-		Short: `Online tables provide lower latency and higher QPS access to data from Delta tables.`,
-		Long: `Online tables provide lower latency and higher QPS access to data from Delta
+		Short: `*Public Preview* Online tables provide lower latency and higher QPS access to data from Delta tables.`,
+		Long: `This command is in Public Preview and may change without notice.
+
+Online tables provide lower latency and higher QPS access to data from Delta
   tables.`,
 		GroupID: "catalog",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -70,12 +76,16 @@ func newCreate() *cobra.Command {
 	// TODO: complex arg: status
 
 	cmd.Use = "create"
-	cmd.Short = `Create an Online Table.`
-	cmd.Long = `Create an Online Table.
+	cmd.Short = `*Public Preview* Create an Online Table.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Create an Online Table.
 
   Create a new Online Table.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -147,8 +157,10 @@ func newDelete() *cobra.Command {
 	var deleteReq catalog.DeleteOnlineTableRequest
 
 	cmd.Use = "delete NAME"
-	cmd.Short = `Delete an Online Table.`
-	cmd.Long = `Delete an Online Table.
+	cmd.Short = `*Public Preview* Delete an Online Table.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Delete an Online Table.
 
   Delete an online table. Warning: This will delete all the data in the online
   table. If the source Delta table was deleted or modified since this Online
@@ -158,6 +170,8 @@ func newDelete() *cobra.Command {
     NAME: Full three-part (catalog, schema, table) name of the table.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -205,8 +219,10 @@ func newGet() *cobra.Command {
 	var getReq catalog.GetOnlineTableRequest
 
 	cmd.Use = "get NAME"
-	cmd.Short = `Get an Online Table.`
-	cmd.Long = `Get an Online Table.
+	cmd.Short = `*Public Preview* Get an Online Table.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Get an Online Table.
 
   Get information about an existing online table and its status.
 
@@ -214,6 +230,8 @@ func newGet() *cobra.Command {
     NAME: Full three-part (catalog, schema, table) name of the table.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)

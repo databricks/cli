@@ -21,8 +21,10 @@
             "dbt_task": [],
             "deployment": [
               {
+                "deployment_id": "",
                 "kind": "BUNDLE",
-                "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+                "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json",
+                "version_id": ""
               }
             ],
             "description": null,
@@ -102,7 +104,11 @@
             "parameter": [],
             "performance_target": null,
             "pipeline_task": [],
-            "provider_config": [],
+            "provider_config": [
+              {
+                "workspace_id": "[NUMID]"
+              }
+            ],
             "python_wheel_task": [],
             "queue": [
               {
