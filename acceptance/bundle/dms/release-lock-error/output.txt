@@ -28,7 +28,11 @@ Warn: Failed to release deployment lock: simulated complete version failure
     "version_type": "VERSION_TYPE_DEPLOY",
     "display_name": "dms-release-lock-error",
     "target_name": "fail-complete",
-    "git_info": {}
+    "git_info": {},
+    "workspace_info": {
+      "root_path": "/Workspace/Users/[USERNAME]/.bundle/dms-release-lock-error/fail-complete",
+      "file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-release-lock-error/fail-complete/files"
+    }
   }
 }
 {

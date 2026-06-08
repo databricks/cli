@@ -58,7 +58,11 @@ Plan: 0 to add, 2 to change, 0 to delete, 0 unchanged
     "version_type": "VERSION_TYPE_DEPLOY",
     "display_name": "add-resources-test",
     "target_name": "default",
-    "git_info": {}
+    "git_info": {},
+    "workspace_info": {
+      "root_path": "/Workspace/Users/[USERNAME]/.bundle/add-resources-test/default",
+      "file_path": "/Workspace/Users/[USERNAME]/.bundle/add-resources-test/default/files"
+    }
   }
 }
 {
@@ -72,7 +76,11 @@ Plan: 0 to add, 2 to change, 0 to delete, 0 unchanged
     "version_type": "VERSION_TYPE_DEPLOY",
     "display_name": "add-resources-test",
     "target_name": "default",
-    "git_info": {}
+    "git_info": {},
+    "workspace_info": {
+      "root_path": "/Workspace/Users/[USERNAME]/.bundle/add-resources-test/default",
+      "file_path": "/Workspace/Users/[USERNAME]/.bundle/add-resources-test/default/files"
+    }
   }
 }
 {

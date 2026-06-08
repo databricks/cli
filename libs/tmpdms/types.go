@@ -129,6 +129,7 @@ type Version struct {
 	DisplayName      string          `json:"display_name,omitempty"`
 	TargetName       string          `json:"target_name,omitempty"`
 	GitInfo          *GitInfo        `json:"git_info,omitempty"`
+	WorkspaceInfo    *WorkspaceInfo  `json:"workspace_info,omitempty"`
 }
 
 // GitInfo is the git provenance snapshot recorded on a version. It mirrors the
@@ -138,6 +139,16 @@ type GitInfo struct {
 	OriginURL string `json:"origin_url,omitempty"`
 	Branch    string `json:"branch,omitempty"`
 	Commit    string `json:"commit,omitempty"`
+}
+
+// WorkspaceInfo is the workspace location of a bundle deployment recorded on a
+// version. It mirrors the WorkspaceInfo proto message in the deployment
+// metadata service and carries the same values the CLI writes to metadata.json.
+type WorkspaceInfo struct {
+	RootPath      string `json:"root_path,omitempty"`
+	FilePath      string `json:"file_path,omitempty"`
+	SourceLinked  bool   `json:"source_linked,omitempty"`
+	GitFolderPath string `json:"git_folder_path,omitempty"`
 }
 
 type Operation struct {

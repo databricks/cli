@@ -165,6 +165,8 @@ func acquireLock(ctx context.Context, b *bundle.Bundle, svc *tmpdms.DeploymentMe
 				Branch:    b.Config.Bundle.Git.Branch,
 				Commit:    b.Config.Bundle.Git.Commit,
 			},
+			// Same workspace location the CLI records in metadata.json.
+			WorkspaceInfo: workspaceInfo(b),
 		},
 	})
 	if versionErr != nil {
@@ -356,4 +358,27 @@ func deploymentMode(mode config.Mode) tmpdms.DeploymentMode {
 	default:
 		return ""
 	}
+}
+
+// workspaceInfo captures the deployment's workspace location for the version
+// record, mirroring the values the CLI writes to metadata.json (see
+// bundle/deploy/metadata/compute.go).
+func workspaceInfo(b *bundle.Bundle) *tmpdms.WorkspaceInfo {
+	info := &tmpdms.WorkspaceInfo{
+		RootPath: b.Config.Workspace.RootPath,
+		FilePath: b.Config.Workspace.FilePath,
+	}
+	// In source-linked deployments files are not copied into file_path;
+	// resources reference the source files directly, so the sync root is the
+	// effective file path.
+	if config.IsExplicitlyEnabled(b.Config.Presets.SourceLinkedDeployment) {
+		info.FilePath = b.SyncRootPath
+		info.SourceLinked = true
+	}
+	// git_folder_path is only meaningful for deployments from a workspace Git
+	// folder; it stays empty for local deploys.
+	if b.WorktreeRoot != nil && strings.HasPrefix(b.WorktreeRoot.Native(), "/Workspace/") {
+		info.GitFolderPath = b.WorktreeRoot.Native()
+	}
+	return info
 }

@@ -33,7 +33,11 @@ API message: Invalid job configuration.
     "version_type": "VERSION_TYPE_DEPLOY",
     "display_name": "metadata-service-error-test",
     "target_name": "default",
-    "git_info": {}
+    "git_info": {},
+    "workspace_info": {
+      "root_path": "/Workspace/Users/[USERNAME]/.bundle/metadata-service-error-test/default",
+      "file_path": "/Workspace/Users/[USERNAME]/.bundle/metadata-service-error-test/default/files"
+    }
   }
 }
 {

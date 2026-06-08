@@ -1,11 +1,14 @@
 package lock
 
 import (
+	"runtime"
 	"testing"
 
+	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/tmpdms"
+	"github.com/databricks/cli/libs/vfs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -70,4 +73,59 @@ func TestDeploymentMode(t *testing.T) {
 			assert.Equal(t, tt.expected, deploymentMode(tt.mode))
 		})
 	}
+}
+
+func TestWorkspaceInfo(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Workspace: config.Workspace{
+				RootPath: "/Workspace/Users/me@databricks.com/.bundle/my-bundle/prod",
+				FilePath: "/Workspace/Users/me@databricks.com/.bundle/my-bundle/prod/files",
+			},
+		},
+	}
+
+	info := workspaceInfo(b)
+	assert.Equal(t, "/Workspace/Users/me@databricks.com/.bundle/my-bundle/prod", info.RootPath)
+	assert.Equal(t, "/Workspace/Users/me@databricks.com/.bundle/my-bundle/prod/files", info.FilePath)
+	assert.False(t, info.SourceLinked)
+	assert.Empty(t, info.GitFolderPath)
+}
+
+func TestWorkspaceInfoSourceLinked(t *testing.T) {
+	enabled := true
+	syncRootPath := "/Workspace/Users/me@databricks.com/source"
+	b := &bundle.Bundle{
+		SyncRootPath: syncRootPath,
+		Config: config.Root{
+			Presets: config.Presets{
+				SourceLinkedDeployment: &enabled,
+			},
+			Workspace: config.Workspace{
+				RootPath: "/Workspace/Users/me@databricks.com/.bundle/my-bundle/prod",
+				FilePath: "/Workspace/Users/me@databricks.com/.bundle/my-bundle/prod/files",
+			},
+		},
+	}
+
+	info := workspaceInfo(b)
+	// In source-linked deployments the sync root is the effective file path.
+	assert.Equal(t, syncRootPath, info.FilePath)
+	assert.True(t, info.SourceLinked)
+}
+
+func TestWorkspaceInfoGitFolderPath(t *testing.T) {
+	// The native path of the worktree root on Windows will never match the
+	// /Workspace prefix, so GitFolderPath is never set there.
+	if runtime.GOOS == "windows" {
+		t.Skip("this test is not applicable on Windows")
+	}
+	gitFolderPath := "/Workspace/Users/me@databricks.com/git_folder"
+	b := &bundle.Bundle{
+		Config:       config.Root{},
+		WorktreeRoot: vfs.MustNew(gitFolderPath),
+	}
+
+	info := workspaceInfo(b)
+	assert.Equal(t, gitFolderPath, info.GitFolderPath)
 }

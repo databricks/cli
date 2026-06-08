@@ -27,7 +27,11 @@ Deployment complete!
     "version_type": "VERSION_TYPE_DEPLOY",
     "display_name": "sequential-deploys-test",
     "target_name": "default",
-    "git_info": {}
+    "git_info": {},
+    "workspace_info": {
+      "root_path": "/Workspace/Users/[USERNAME]/.bundle/sequential-deploys-test/default",
+      "file_path": "/Workspace/Users/[USERNAME]/.bundle/sequential-deploys-test/default/files"
+    }
   }
 }
 {
@@ -96,7 +100,11 @@ Deployment complete!
     "version_type": "VERSION_TYPE_DEPLOY",
     "display_name": "sequential-deploys-test",
     "target_name": "default",
-    "git_info": {}
+    "git_info": {},
+    "workspace_info": {
+      "root_path": "/Workspace/Users/[USERNAME]/.bundle/sequential-deploys-test/default",
+      "file_path": "/Workspace/Users/[USERNAME]/.bundle/sequential-deploys-test/default/files"
+    }
   }
 }
 {
@@ -165,7 +173,11 @@ Deployment complete!
     "version_type": "VERSION_TYPE_DEPLOY",
     "display_name": "sequential-deploys-test",
     "target_name": "default",
-    "git_info": {}
+    "git_info": {},
+    "workspace_info": {
+      "root_path": "/Workspace/Users/[USERNAME]/.bundle/sequential-deploys-test/default",
+      "file_path": "/Workspace/Users/[USERNAME]/.bundle/sequential-deploys-test/default/files"
+    }
   }
 }
 {
