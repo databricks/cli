@@ -88,6 +88,8 @@ resources.apps.*.app_status	*apps.ApplicationStatus	ALL
 resources.apps.*.app_status.message	string	ALL
 resources.apps.*.app_status.state	apps.ApplicationState	ALL
 resources.apps.*.budget_policy_id	string	ALL
+resources.apps.*.compute_max_instances	int	ALL
+resources.apps.*.compute_min_instances	int	ALL
 resources.apps.*.compute_size	apps.ComputeSize	ALL
 resources.apps.*.compute_status	*apps.ComputeStatus	ALL
 resources.apps.*.compute_status.active_instances	int	ALL
@@ -739,8 +741,10 @@ resources.jobs.*.continuous.task_retry_mode	jobs.TaskRetryMode	ALL
 resources.jobs.*.created_time	int64	REMOTE
 resources.jobs.*.creator_user_name	string	REMOTE
 resources.jobs.*.deployment	*jobs.JobDeployment	ALL
+resources.jobs.*.deployment.deployment_id	string	ALL
 resources.jobs.*.deployment.kind	jobs.JobDeploymentKind	ALL
 resources.jobs.*.deployment.metadata_file_path	string	ALL
+resources.jobs.*.deployment.version_id	string	ALL
 resources.jobs.*.description	string	ALL
 resources.jobs.*.edit_mode	jobs.JobEditMode	ALL
 resources.jobs.*.effective_budget_policy_id	string	REMOTE
@@ -1237,6 +1241,8 @@ resources.jobs.*.tasks[*].for_each_task.task.pipeline_task	*jobs.PipelineTask	AL
 resources.jobs.*.tasks[*].for_each_task.task.pipeline_task.full_refresh	bool	ALL
 resources.jobs.*.tasks[*].for_each_task.task.pipeline_task.full_refresh_selection	[]string	ALL
 resources.jobs.*.tasks[*].for_each_task.task.pipeline_task.full_refresh_selection[*]	string	ALL
+resources.jobs.*.tasks[*].for_each_task.task.pipeline_task.parameters	map[string]string	ALL
+resources.jobs.*.tasks[*].for_each_task.task.pipeline_task.parameters.*	string	ALL
 resources.jobs.*.tasks[*].for_each_task.task.pipeline_task.pipeline_id	string	ALL
 resources.jobs.*.tasks[*].for_each_task.task.pipeline_task.refresh_flow_selection	[]string	ALL
 resources.jobs.*.tasks[*].for_each_task.task.pipeline_task.refresh_flow_selection[*]	string	ALL
@@ -1520,6 +1526,8 @@ resources.jobs.*.tasks[*].pipeline_task	*jobs.PipelineTask	ALL
 resources.jobs.*.tasks[*].pipeline_task.full_refresh	bool	ALL
 resources.jobs.*.tasks[*].pipeline_task.full_refresh_selection	[]string	ALL
 resources.jobs.*.tasks[*].pipeline_task.full_refresh_selection[*]	string	ALL
+resources.jobs.*.tasks[*].pipeline_task.parameters	map[string]string	ALL
+resources.jobs.*.tasks[*].pipeline_task.parameters.*	string	ALL
 resources.jobs.*.tasks[*].pipeline_task.pipeline_id	string	ALL
 resources.jobs.*.tasks[*].pipeline_task.refresh_flow_selection	[]string	ALL
 resources.jobs.*.tasks[*].pipeline_task.refresh_flow_selection[*]	string	ALL
@@ -2302,8 +2310,10 @@ resources.pipelines.*.configuration.*	string	ALL
 resources.pipelines.*.continuous	bool	ALL
 resources.pipelines.*.creator_user_name	string	REMOTE
 resources.pipelines.*.deployment	*pipelines.PipelineDeployment	ALL
+resources.pipelines.*.deployment.deployment_id	string	ALL
 resources.pipelines.*.deployment.kind	pipelines.DeploymentKind	ALL
 resources.pipelines.*.deployment.metadata_file_path	string	ALL
+resources.pipelines.*.deployment.version_id	string	ALL
 resources.pipelines.*.development	bool	ALL
 resources.pipelines.*.dry_run	bool	ALL
 resources.pipelines.*.edition	string	ALL
@@ -2758,6 +2768,8 @@ resources.pipelines.*.notifications[*].alerts	[]string	ALL
 resources.pipelines.*.notifications[*].alerts[*]	string	ALL
 resources.pipelines.*.notifications[*].email_recipients	[]string	ALL
 resources.pipelines.*.notifications[*].email_recipients[*]	string	ALL
+resources.pipelines.*.parameters	map[string]string	ALL
+resources.pipelines.*.parameters.*	string	ALL
 resources.pipelines.*.photon	bool	ALL
 resources.pipelines.*.pipeline_id	string	REMOTE
 resources.pipelines.*.restart_window	*pipelines.RestartWindow	ALL
@@ -2835,7 +2847,6 @@ resources.postgres_catalogs.*.name	string	REMOTE
 resources.postgres_catalogs.*.postgres_database	string	ALL
 resources.postgres_catalogs.*.status	*postgres.CatalogCatalogStatus	REMOTE
 resources.postgres_catalogs.*.status.branch	string	REMOTE
-resources.postgres_catalogs.*.status.catalog_id	string	REMOTE
 resources.postgres_catalogs.*.status.postgres_database	string	REMOTE
 resources.postgres_catalogs.*.status.project	string	REMOTE
 resources.postgres_catalogs.*.uid	string	REMOTE
@@ -2931,6 +2942,7 @@ resources.postgres_projects.*.modified_status	string	INPUT
 resources.postgres_projects.*.name	string	REMOTE
 resources.postgres_projects.*.pg_version	int	ALL
 resources.postgres_projects.*.project_id	string	ALL
+resources.postgres_projects.*.purge_on_delete	bool	INPUT	STATE
 resources.postgres_projects.*.purge_time	*time.Time	REMOTE
 resources.postgres_projects.*.status	*postgres.ProjectStatus	REMOTE
 resources.postgres_projects.*.status.branch_logical_size_limit_bytes	int64	REMOTE
@@ -3207,8 +3219,11 @@ resources.sql_warehouses.*.health.summary	string	REMOTE
 resources.sql_warehouses.*.id	string	INPUT	REMOTE
 resources.sql_warehouses.*.instance_profile_arn	string	ALL
 resources.sql_warehouses.*.jdbc_url	string	REMOTE
+resources.sql_warehouses.*.lifecycle	*dresources.StateLifecycle	REMOTE	STATE
+resources.sql_warehouses.*.lifecycle	*resources.LifecycleWithStarted	INPUT
 resources.sql_warehouses.*.lifecycle	resources.Lifecycle	INPUT
 resources.sql_warehouses.*.lifecycle.prevent_destroy	bool	INPUT
+resources.sql_warehouses.*.lifecycle.started	*bool	ALL
 resources.sql_warehouses.*.max_num_clusters	int	ALL
 resources.sql_warehouses.*.min_num_clusters	int	ALL
 resources.sql_warehouses.*.modified_status	string	INPUT

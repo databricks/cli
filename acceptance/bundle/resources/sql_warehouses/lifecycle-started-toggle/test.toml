@@ -1,0 +1,8 @@
+Local = true
+Cloud = true
+RecordRequests = true
+
+Ignore = [".databricks", "databricks.yml"]
+
+[EnvMatrix]
+  DATABRICKS_BUNDLE_ENGINE = ["direct"]

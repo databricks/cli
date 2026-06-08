@@ -20,13 +20,6 @@ import (
 )
 
 const (
-	// workspaceIDHeader is the workspace routing identifier sent on
-	// workspace-scope requests against unified hosts. Generated SDK service
-	// methods set this per-call when cfg.WorkspaceID is populated; we mirror
-	// the same idiom. The gateway also accepts the legacy X-Databricks-Org-Id
-	// header for rollback safety.
-	workspaceIDHeader = "X-Databricks-Workspace-Id"
-
 	// orgIDQueryParam and workspaceIDQueryParam are the SPOG
 	// (single-page-of-glass) URL convention used by the Databricks UI:
 	// "?o=<workspace-id>" or "?w=<workspace-id>" identifies the workspace a
@@ -122,7 +115,7 @@ func makeCommand(method string) *cobra.Command {
 
 			headers := map[string]string{"Content-Type": "application/json"}
 			if orgID != "" {
-				headers[workspaceIDHeader] = orgID
+				headers[auth.WorkspaceIDHeader] = orgID
 			}
 
 			var response any

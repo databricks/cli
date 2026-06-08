@@ -2065,6 +2065,7 @@ func newUpdateSpace() *cobra.Command {
 
 	cmd.Flags().StringVar(&updateSpaceReq.Description, "description", updateSpaceReq.Description, `Optional description.`)
 	cmd.Flags().StringVar(&updateSpaceReq.Etag, "etag", updateSpaceReq.Etag, `ETag returned by a previous GET or UPDATE.`)
+	cmd.Flags().StringVar(&updateSpaceReq.ParentPath, "parent-path", updateSpaceReq.ParentPath, `Parent workspace folder path to move this Genie space under.`)
 	cmd.Flags().StringVar(&updateSpaceReq.SerializedSpace, "serialized-space", updateSpaceReq.SerializedSpace, `The contents of the Genie Space in serialized string form (full replacement).`)
 	cmd.Flags().StringVar(&updateSpaceReq.Title, "title", updateSpaceReq.Title, `Optional title override.`)
 	cmd.Flags().StringVar(&updateSpaceReq.WarehouseId, "warehouse-id", updateSpaceReq.WarehouseId, `Optional warehouse override.`)

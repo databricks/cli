@@ -92,6 +92,14 @@
                     "$ref": "#/$defs/string",
                     "x-since-version": "v0.243.0"
                   },
+                  "compute_max_instances": {
+                    "$ref": "#/$defs/int",
+                    "x-since-version": "v1.2.0"
+                  },
+                  "compute_min_instances": {
+                    "$ref": "#/$defs/int",
+                    "x-since-version": "v1.2.0"
+                  },
                   "compute_size": {
                     "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.ComputeSize",
                     "x-since-version": "v0.273.0"
@@ -1250,6 +1258,10 @@
                     "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/pipelines.Notifications",
                     "x-since-version": "v0.229.0"
                   },
+                  "parameters": {
+                    "$ref": "#/$defs/map/string",
+                    "x-since-version": "v1.2.0"
+                  },
                   "permissions": {
                     "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.PipelinePermission",
                     "x-since-version": "v0.229.0"
@@ -1429,6 +1441,31 @@
                   "postgres_database"
                 ]
               },
+              "resources.PostgresDatabase": {
+                "type": "object",
+                "properties": {
+                  "database_id": {
+                    "$ref": "#/$defs/string"
+                  },
+                  "lifecycle": {
+                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
+                  },
+                  "parent": {
+                    "$ref": "#/$defs/string"
+                  },
+                  "postgres_database": {
+                    "$ref": "#/$defs/string"
+                  },
+                  "role": {
+                    "$ref": "#/$defs/string"
+                  }
+                },
+                "additionalProperties": false,
+                "required": [
+                  "database_id",
+                  "parent"
+                ]
+              },
               "resources.PostgresEndpoint": {
                 "type": "object",
                 "properties": {
@@ -1534,6 +1571,10 @@
                   "project_id": {
                     "$ref": "#/$defs/string",
                     "x-since-version": "v0.287.0"
+                  },
+                  "purge_on_delete": {
+                    "$ref": "#/$defs/bool",
+                    "x-since-version": "v1.2.0"
                   }
                 },
                 "additionalProperties": false,
@@ -1962,7 +2003,7 @@
                   },
                   "lifecycle": {
                     "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
-                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle",
+                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.LifecycleWithStarted",
                     "x-since-version": "v0.268.0"
                   },
                   "max_num_clusters": {
@@ -2465,7 +2506,8 @@
                 },
                 "record_deployment_history": {
                   "description": "Whether to record deployment history using the deployment metadata service (DMS), which tracks what changed across deployments.",
-                  "$ref": "#/$defs/bool"
+                  "$ref": "#/$defs/bool",
+                  "x-since-version": "v1.2.0"
                 },
                 "scripts": {
                   "description": "The commands to run.",
@@ -2679,6 +2721,9 @@
                   "description": "The Postgres catalog definitions for the bundle, where each key is the name of the catalog. Each entry binds a Unity Catalog catalog to a Postgres database on a Lakebase Autoscaling branch.",
                   "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.PostgresCatalog",
                   "x-since-version": "v1.0.0"
+                },
+                "postgres_databases": {
+                  "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.PostgresDatabase"
                 },
                 "postgres_endpoints": {
                   "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.PostgresEndpoint",
@@ -5604,6 +5649,10 @@
             "jobs.JobDeployment": {
               "type": "object",
               "properties": {
+                "deployment_id": {
+                  "$ref": "#/$defs/string",
+                  "x-since-version": "v1.2.0"
+                },
                 "kind": {
                   "description": "The kind of deployment that manages the job.\n\n* `BUNDLE`: The job is managed by Databricks Asset Bundle.\n* `SYSTEM_MANAGED`: The job is managed by Databricks and is read-only.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.JobDeploymentKind",
@@ -5613,6 +5662,10 @@
                   "description": "Path of the file that contains deployment metadata.",
                   "$ref": "#/$defs/string",
                   "x-since-version": "v0.229.0"
+                },
+                "version_id": {
+                  "$ref": "#/$defs/string",
+                  "x-since-version": "v1.2.0"
                 }
               },
               "additionalProperties": false,
@@ -6006,6 +6059,10 @@
                   "description": "A list of tables to update with fullRefresh.",
                   "$ref": "#/$defs/slice/string",
                   "x-since-version": "v1.1.0"
+                },
+                "parameters": {
+                  "$ref": "#/$defs/map/string",
+                  "x-since-version": "v1.2.0"
                 },
                 "pipeline_id": {
                   "description": "The full name of the pipeline task to execute.",
@@ -8137,6 +8194,10 @@
             "pipelines.PipelineDeployment": {
               "type": "object",
               "properties": {
+                "deployment_id": {
+                  "$ref": "#/$defs/string",
+                  "x-since-version": "v1.2.0"
+                },
                 "kind": {
                   "description": "The deployment method that manages the pipeline.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.DeploymentKind",
@@ -8146,6 +8207,10 @@
                   "description": "The path to the file containing metadata about the deployment.",
                   "$ref": "#/$defs/string",
                   "x-since-version": "v0.229.0"
+                },
+                "version_id": {
+                  "$ref": "#/$defs/string",
+                  "x-since-version": "v1.2.0"
                 }
               },
               "additionalProperties": false,
@@ -10295,6 +10360,12 @@
                   "type": "object",
                   "additionalProperties": {
                     "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.PostgresCatalog"
+                  }
+                },
+                "resources.PostgresDatabase": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.PostgresDatabase"
                   }
                 },
                 "resources.PostgresEndpoint": {

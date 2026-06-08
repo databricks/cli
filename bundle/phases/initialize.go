@@ -142,6 +142,12 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// After PythonMutator, mutators must not change bundle resources, or such changes are not
 		// going to be visible in Python code.
 
+		// Resolve --select selectors against the materialized resources: normalize
+		// each to its "type.name" form and validate it exists. Runs after all resource
+		// mutations so that dynamically added resources are visible. This does not
+		// filter resources; the direct engine selects against the resolved keys later.
+		mutator.ResolveSelect(),
+
 		// Validate all required fields are set. This is run after variable interpolation and PyDABs mutators
 		// since they can also set and modify resources.
 		validate.Required(),

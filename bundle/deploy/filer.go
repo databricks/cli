@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/databricks-sdk-go/client"
 )
@@ -23,19 +24,6 @@ type stateFiler struct {
 
 	apiClient *client.DatabricksClient
 	root      filer.WorkspaceRootPath
-}
-
-// workspaceIDHeaders returns headers with X-Databricks-Workspace-Id set if a
-// workspace ID is configured. SPOG hosts require this header to route requests
-// to the correct workspace.
-func (s stateFiler) workspaceIDHeaders() map[string]string {
-	wsID := s.apiClient.Config.WorkspaceID
-	if wsID == "" {
-		return nil
-	}
-	return map[string]string{
-		"X-Databricks-Workspace-Id": wsID,
-	}
 }
 
 func (s stateFiler) Delete(ctx context.Context, path string, mode ...filer.DeleteMode) error {
@@ -63,7 +51,7 @@ func (s stateFiler) Read(ctx context.Context, path string) (io.ReadCloser, error
 
 	var buf bytes.Buffer
 	urlPath := "/api/2.0/workspace-files/" + url.PathEscape(strings.TrimLeft(absPath, "/"))
-	err = s.apiClient.Do(ctx, http.MethodGet, urlPath, s.workspaceIDHeaders(), nil, nil, &buf)
+	err = s.apiClient.Do(ctx, http.MethodGet, urlPath, auth.WorkspaceIDHeaders(s.apiClient.Config), nil, nil, &buf)
 	if err != nil {
 		return nil, err
 	}
