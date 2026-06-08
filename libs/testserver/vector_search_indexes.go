@@ -64,11 +64,18 @@ func (s *FakeWorkspace) VectorSearchIndexCreate(req Request) Response {
 		}
 	}
 
+	// The backend assigns index_subtype when the request omits it (HYBRID by default)
+	indexSubtype := createReq.IndexSubtype
+	if indexSubtype == "" {
+		indexSubtype = vectorsearch.IndexSubtypeHybrid
+	}
+
 	index := fakeVectorSearchIndex{
 		VectorIndex: vectorsearch.VectorIndex{
 			Creator:               s.CurrentUser().UserName,
 			EndpointName:          createReq.EndpointName,
 			IndexType:             createReq.IndexType,
+			IndexSubtype:          indexSubtype,
 			Name:                  createReq.Name,
 			PrimaryKey:            createReq.PrimaryKey,
 			DeltaSyncIndexSpec:    remapDeltaSyncSpec(createReq.DeltaSyncIndexSpec),
