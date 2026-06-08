@@ -3,6 +3,7 @@ package lakebox
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"strings"
 )
 
 // keyHash returns the identifier the lakebox SSH-keys API assigns to a
@@ -10,7 +11,10 @@ import (
 // the first 16 bytes and hex-encoded; the OpenSSH comment (anything after
 // the second whitespace-separated token) is stripped before hashing, so
 // registering the same key under different comments yields the same hash.
+// Leading and trailing whitespace are trimmed first — `.pub` files end
+// with a newline that would otherwise be hashed in for comment-less keys.
 func keyHash(publicKey string) string {
+	publicKey = strings.TrimSpace(publicKey)
 	end := len(publicKey)
 	spaces := 0
 	for i, c := range publicKey {

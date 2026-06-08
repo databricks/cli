@@ -2,11 +2,13 @@ package lakebox
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/spf13/cobra"
 )
 
@@ -68,10 +70,13 @@ Examples:
 			_ = setGatewayHost(ctx, profile, result.GatewayHost)
 			_ = upsertSandbox(ctx, profile, result.SandboxID, name)
 
+			// Only clobber an existing default if it's actually gone
+			// (404). Transient errors (5xx, network blip, rate limit)
+			// must not silently overwrite the user's chosen default.
 			currentDefault := getDefault(ctx, profile)
 			shouldSetDefault := currentDefault == ""
-			if !shouldSetDefault && currentDefault != "" {
-				if _, err := api.get(ctx, currentDefault); err != nil {
+			if !shouldSetDefault {
+				if _, err := api.get(ctx, currentDefault); errors.Is(err, apierr.ErrNotFound) {
 					shouldSetDefault = true
 				}
 			}

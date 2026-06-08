@@ -132,7 +132,7 @@ Examples:
 					_ = clearDefault(ctx, profile)
 					return fmt.Errorf("saved default %q no longer exists (cleared) — run `databricks lakebox create` to provision a new one, or `databricks lakebox default <id>` to point at an existing sandbox", def)
 				default:
-					warn(ctx, fmt.Sprintf("could not validate default %s: %v", def, err))
+					warn(ctx, fmt.Sprintf("Could not validate default %s: %v", def, err))
 					lakeboxID = def
 				}
 			} else {
@@ -151,7 +151,7 @@ Examples:
 				case errors.Is(err, apierr.ErrNotFound):
 					return fmt.Errorf("no lakebox named %q — `databricks lakebox list` shows available IDs", lakeboxID)
 				default:
-					warn(ctx, fmt.Sprintf("could not validate lakebox %s: %v", lakeboxID, err))
+					warn(ctx, fmt.Sprintf("Could not validate lakebox %s: %v", lakeboxID, err))
 				}
 			}
 
@@ -221,7 +221,7 @@ func verifyKeyRegistered(ctx context.Context, api *lakeboxAPI, keyPath string) e
 
 	keys, err := api.listKeys(ctx)
 	if err != nil {
-		warn(ctx, fmt.Sprintf("could not verify SSH key registration: %v", err))
+		warn(ctx, fmt.Sprintf("Could not verify SSH key registration: %v", err))
 		return nil
 	}
 	for _, k := range keys {

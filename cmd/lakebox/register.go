@@ -85,7 +85,7 @@ Examples:
 			// Remote-SSH and plain `ssh <id>@lakebox-gw` both work without
 			// the user pasting any config block (see maybeWriteSSHConfig).
 			if err := maybeWriteSSHConfig(ctx, keyPath, w.Config.Host); err != nil {
-				warn(ctx, fmt.Sprintf("registered key, but failed to update ~/.ssh/config: %v", err))
+				warn(ctx, fmt.Sprintf("Registered key, but failed to update ~/.ssh/config: %v", err))
 			}
 
 			blank(stderr)

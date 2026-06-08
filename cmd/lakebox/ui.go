@@ -78,9 +78,10 @@ func ok(ctx context.Context, msg string) {
 	cmdio.LogString(ctx, "  "+cmdio.Cyan(ctx, "✓")+" "+msg)
 }
 
-// warn prints "  ! message" to stderr via the cmdio context.
+// warn prints "  ! message" to stderr via the cmdio context. Yellow so
+// it visually differs from `ok`'s cyan ✓ and `spinner` cyan markers.
 func warn(ctx context.Context, msg string) {
-	cmdio.LogString(ctx, "  "+cmdio.Cyan(ctx, "!")+" "+msg)
+	cmdio.LogString(ctx, "  "+cmdio.Yellow(ctx, "!")+" "+msg)
 }
 
 // blank prints an empty line to w.
