@@ -1,0 +1,8 @@
+# Isolate the lakebox state file (~/.databricks/lakebox.json) per test
+# by pointing HOME at this test's unique TEST_TMP_DIR. Without this,
+# parallel lakebox tests race each other writing to the shared HOME's
+# state file and one read sees the other's half-written content.
+# Auth is unaffected: the test framework passes DATABRICKS_HOST /
+# DATABRICKS_TOKEN explicitly via env, so the CLI doesn't fall back to
+# ~/.databrickscfg.
+export HOME="$TEST_TMP_DIR"
