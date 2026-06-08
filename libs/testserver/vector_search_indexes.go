@@ -1,6 +1,7 @@
 package testserver
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -70,6 +71,13 @@ func (s *FakeWorkspace) VectorSearchIndexCreate(req Request) Response {
 		indexSubtype = vectorsearch.IndexSubtypeHybrid
 	}
 
+	// The backend canonicalizes the column type aliases in schema_json on create
+	// (e.g. "int" -> "integer") and returns the normalized form on read. Mirror
+	// that here so the create -> get round-trip matches the real API.
+	if createReq.DirectAccessIndexSpec != nil {
+		createReq.DirectAccessIndexSpec.SchemaJson = normalizeSchemaJSON(createReq.DirectAccessIndexSpec.SchemaJson)
+	}
+
 	index := fakeVectorSearchIndex{
 		VectorIndex: vectorsearch.VectorIndex{
 			Creator:               s.CurrentUser().UserName,
@@ -108,6 +116,55 @@ func isValidIndexName(name string) bool {
 		}
 	}
 	return true
+}
+
+// normalizeSchemaJSON rewrites the column types in a schema_json document to
+// the backend's canonical spelling. Returns the input unchanged when it isn't
+// the expected {"column":"type"} JSON object.
+func normalizeSchemaJSON(schemaJSON string) string {
+	if schemaJSON == "" {
+		return schemaJSON
+	}
+	var schema map[string]string
+	if err := json.Unmarshal([]byte(schemaJSON), &schema); err != nil {
+		return schemaJSON
+	}
+	for column, columnType := range schema {
+		schema[column] = normalizeColumnType(columnType)
+	}
+	// Disable HTML escaping so array<...> keeps its angle brackets verbatim
+	// rather than being rewritten to < / >.
+	var buf bytes.Buffer
+	enc := json.NewEncoder(&buf)
+	enc.SetEscapeHTML(false)
+	if err := enc.Encode(schema); err != nil {
+		return schemaJSON
+	}
+	return strings.TrimRight(buf.String(), "\n")
+}
+
+// normalizeColumnType folds the SQL type aliases the Vector Search backend
+// accepts to the canonical form it stores and returns, recursing into array
+// element types. Mirrors brickindex-common/src/utils/ColumnSpec.scala
+// (the columnType field); types not listed there pass through unchanged.
+func normalizeColumnType(columnType string) string {
+	if inner, ok := strings.CutPrefix(columnType, "array<"); ok {
+		if elem, ok := strings.CutSuffix(inner, ">"); ok {
+			return "array<" + normalizeColumnType(elem) + ">"
+		}
+	}
+	switch columnType {
+	case "int":
+		return "integer"
+	case "bigint":
+		return "long"
+	case "smallint":
+		return "short"
+	case "tinyint":
+		return "byte"
+	default:
+		return columnType
+	}
 }
 
 // remapDeltaSyncSpec converts a request spec to a response spec.
