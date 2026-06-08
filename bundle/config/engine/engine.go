@@ -18,7 +18,7 @@ const (
 )
 
 // Default is used for new bundles if user has not set the value
-const Default = EngineTerraform
+const Default = EngineDirect
 
 // Parse returns EngineType from string
 func Parse(engine string) (EngineType, bool) {

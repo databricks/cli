@@ -1,6 +1,6 @@
 ## Status
 
-Status: Public Preview.
+Status: Generally Available (GA). The direct engine is the default for new deployments.
 Known issues: https://github.com/databricks/cli/issues?q=state%3Aopen%20label%3Aengine%2Fdirect
 
 ## Reporting bugs
