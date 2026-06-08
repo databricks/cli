@@ -49,6 +49,9 @@ var knownMissingInRemoteType = map[string][]string{
 	"postgres_endpoints": {
 		"replace_existing",
 	},
+	"postgres_projects": {
+		"purge_on_delete",
+	},
 	"postgres_roles": {
 		// RoleRoleSpec fields live under spec.* on the remote Role, not at top level.
 		"attributes",
@@ -85,6 +88,9 @@ var knownMissingInStateType = map[string][]string{
 		"lifecycle.prevent_destroy",
 	},
 	"clusters": {
+		"lifecycle.prevent_destroy",
+	},
+	"sql_warehouses": {
 		"lifecycle.prevent_destroy",
 	},
 	"dashboards": {

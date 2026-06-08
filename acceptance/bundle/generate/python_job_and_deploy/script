@@ -1,3 +1,5 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
 title "Upload notebook to a workspace path"
 trace $CLI workspace import "/Workspace/Users/${CURRENT_USER_NAME}/test_notebook.py" --file test_notebook.py --format AUTO --overwrite
 

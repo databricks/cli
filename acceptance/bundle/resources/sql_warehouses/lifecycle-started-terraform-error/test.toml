@@ -1,0 +1,8 @@
+Local = true
+Cloud = true
+RecordRequests = false
+
+Ignore = [".databricks", "databricks.yml"]
+
+[EnvMatrix]
+  DATABRICKS_BUNDLE_ENGINE = ["terraform"]

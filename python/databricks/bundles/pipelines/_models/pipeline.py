@@ -157,6 +157,8 @@ class Pipeline(Resource):
     List of notification settings for this pipeline.
     """
 
+    parameters: VariableOrDict[str] = field(default_factory=dict)
+
     permissions: VariableOrList[PipelinePermission] = field(default_factory=list)
 
     photon: VariableOrOptional[bool] = None
@@ -321,6 +323,8 @@ class PipelineDict(TypedDict, total=False):
     """
     List of notification settings for this pipeline.
     """
+
+    parameters: VariableOrDict[str]
 
     permissions: VariableOrList[PipelinePermissionParam]
 

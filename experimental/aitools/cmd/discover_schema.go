@@ -19,6 +19,7 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/sqlexec"
 	"github.com/databricks/databricks-sdk-go"
 	dbsql "github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/spf13/cobra"
@@ -45,8 +46,10 @@ func newSQLGate(limit int) *sqlGate {
 // run executes a SQL statement asynchronously, polls until terminal, and
 // records the statement_id so it can be cancelled if the parent context is
 // cancelled. Acquires a slot from the gate before submitting and releases it
-// when polling completes (or the caller's context is cancelled).
-func (g *sqlGate) run(ctx context.Context, w *databricks.WorkspaceClient, warehouseID, statement string) (*dbsql.StatementResponse, error) {
+// when polling completes (or the caller's context is cancelled). On success it
+// returns the assembled result; a terminal non-success state is surfaced as the
+// CLI-facing query error.
+func (g *sqlGate) run(ctx context.Context, w *databricks.WorkspaceClient, warehouseID, statement string) (*sqlexec.Result, error) {
 	// If the caller cancelled before we even tried, don't enter the select:
 	// when the gate has free slots both cases are ready and Go picks one
 	// pseudo-randomly. Without this early-out we'd occasionally submit a
@@ -61,28 +64,25 @@ func (g *sqlGate) run(ctx context.Context, w *databricks.WorkspaceClient, wareho
 		return nil, ctx.Err()
 	}
 
-	resp, err := w.StatementExecution.ExecuteStatement(ctx, dbsql.ExecuteStatementRequest{
-		WarehouseId:   warehouseID,
-		Statement:     statement,
-		WaitTimeout:   "0s",
-		OnWaitTimeout: dbsql.ExecuteStatementRequestOnWaitTimeoutContinue,
-	})
+	client := sqlexec.New(w.StatementExecution, warehouseID)
+
+	stmt, err := client.Submit(ctx, statement)
 	if err != nil {
-		return nil, fmt.Errorf("execute statement: %w", err)
+		return nil, err
 	}
 
 	g.mu.Lock()
-	g.ids = append(g.ids, resp.StatementId)
+	g.ids = append(g.ids, stmt.ID)
 	g.mu.Unlock()
 
-	pollResp, err := pollStatement(ctx, w.StatementExecution, resp)
+	stmt, err = client.Poll(ctx, stmt)
 	if err != nil {
 		return nil, err
 	}
-	if err := checkFailedState(pollResp.Status); err != nil {
+	if err := presentQueryError(stmt.Err()); err != nil {
 		return nil, err
 	}
-	return pollResp, nil
+	return client.Results(ctx, stmt)
 }
 
 // trackedIDs returns a snapshot of statement_ids submitted through this gate.
@@ -235,9 +235,11 @@ func cancelDiscoverInFlight(ctx context.Context, api dbsql.StatementExecutionInt
 		cmdio.LogString(ctx, "discover-schema cancelled.")
 		return
 	}
+	// Cancel/Poll/Get don't use the warehouse ID, so an empty one is fine here.
+	client := sqlexec.New(api, "")
 	for _, id := range ids {
 		cancelCtx, cancel := context.WithTimeout(ctx, cancelTimeout)
-		if err := api.CancelExecution(cancelCtx, dbsql.CancelExecutionRequest{StatementId: id}); err != nil {
+		if err := client.Cancel(cancelCtx, id); err != nil {
 			log.Warnf(ctx, "Failed to cancel statement %s: %v", id, err)
 		}
 		cancel()
@@ -252,12 +254,12 @@ func discoverTable(ctx context.Context, gate *sqlGate, w *databricks.WorkspaceCl
 	}
 
 	// 1. describe table - get columns and types
-	descResp, err := gate.run(ctx, w, warehouseID, "DESCRIBE TABLE "+quoted)
+	descResult, err := gate.run(ctx, w, warehouseID, "DESCRIBE TABLE "+quoted)
 	if err != nil {
 		return "", fmt.Errorf("describe table: %w", err)
 	}
 
-	columns, types := parseDescribeResult(descResp)
+	columns, types := parseDescribeResult(descResult)
 	if len(columns) == 0 {
 		return "", errors.New("no columns found")
 	}
@@ -281,16 +283,16 @@ func discoverTable(ctx context.Context, gate *sqlGate, w *databricks.WorkspaceCl
 	nullSQL := fmt.Sprintf("SELECT COUNT(*) AS total_rows, %s FROM %s",
 		strings.Join(nullCountExprs, ", "), quoted)
 
-	var sampleResp, nullResp *dbsql.StatementResponse
+	var sampleResult, nullResult *sqlexec.Result
 	var sampleErr, nullErr error
 
 	g := new(errgroup.Group)
 	g.Go(func() error {
-		sampleResp, sampleErr = gate.run(ctx, w, warehouseID, sampleSQL)
+		sampleResult, sampleErr = gate.run(ctx, w, warehouseID, sampleSQL)
 		return nil
 	})
 	g.Go(func() error {
-		nullResp, nullErr = gate.run(ctx, w, warehouseID, nullSQL)
+		nullResult, nullErr = gate.run(ctx, w, warehouseID, nullSQL)
 		return nil
 	})
 	_ = g.Wait()
@@ -306,25 +308,21 @@ func discoverTable(ctx context.Context, gate *sqlGate, w *databricks.WorkspaceCl
 		fmt.Fprintf(&sb, "\nSAMPLE DATA: Error - %v\n", sampleErr)
 	} else {
 		sb.WriteString("\nSAMPLE DATA:\n")
-		sb.WriteString(formatTableData(sampleResp))
+		sb.WriteString(formatTableData(sampleResult))
 	}
 
 	if nullErr != nil {
 		fmt.Fprintf(&sb, "\nNULL COUNTS: Error - %v\n", nullErr)
 	} else {
 		sb.WriteString("\nNULL COUNTS:\n")
-		sb.WriteString(formatNullCounts(nullResp, columns))
+		sb.WriteString(formatNullCounts(nullResult, columns))
 	}
 
 	return sb.String(), nil
 }
 
-func parseDescribeResult(resp *dbsql.StatementResponse) (columns, types []string) {
-	if resp.Result == nil || resp.Result.DataArray == nil {
-		return nil, nil
-	}
-
-	for _, row := range resp.Result.DataArray {
+func parseDescribeResult(result *sqlexec.Result) (columns, types []string) {
+	for _, row := range result.Rows {
 		if len(row) < 2 {
 			continue
 		}
@@ -340,20 +338,15 @@ func parseDescribeResult(resp *dbsql.StatementResponse) (columns, types []string
 	return columns, types
 }
 
-func formatTableData(resp *dbsql.StatementResponse) string {
-	if resp.Result == nil || resp.Result.DataArray == nil || len(resp.Result.DataArray) == 0 {
+func formatTableData(result *sqlexec.Result) string {
+	if len(result.Rows) == 0 {
 		return "  (no data)\n"
 	}
 
 	var sb strings.Builder
-	var columns []string
-	if resp.Manifest != nil && resp.Manifest.Schema != nil {
-		for _, col := range resp.Manifest.Schema.Columns {
-			columns = append(columns, col.Name)
-		}
-	}
+	columns := result.Columns
 
-	for i, row := range resp.Result.DataArray {
+	for i, row := range result.Rows {
 		fmt.Fprintf(&sb, "  Row %d:\n", i+1)
 		for j, val := range row {
 			colName := fmt.Sprintf("col%d", j)
@@ -366,12 +359,12 @@ func formatTableData(resp *dbsql.StatementResponse) string {
 	return sb.String()
 }
 
-func formatNullCounts(resp *dbsql.StatementResponse, columns []string) string {
-	if resp.Result == nil || resp.Result.DataArray == nil || len(resp.Result.DataArray) == 0 {
+func formatNullCounts(result *sqlexec.Result, columns []string) string {
+	if len(result.Rows) == 0 {
 		return "  (no data)\n"
 	}
 
-	row := resp.Result.DataArray[0]
+	row := result.Rows[0]
 	var sb strings.Builder
 
 	// first value is total_rows

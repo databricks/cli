@@ -2,6 +2,7 @@ package dresources
 
 import (
 	"context"
+	"slices"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go"
@@ -51,8 +52,10 @@ func (*ResourcePostgresProject) New(client *databricks.WorkspaceClient) *Resourc
 
 func (*ResourcePostgresProject) PrepareState(input *resources.PostgresProject) *PostgresProjectState {
 	return &PostgresProjectState{
-		ProjectId:   input.ProjectId,
-		ProjectSpec: input.ProjectSpec,
+		ProjectId:       input.ProjectId,
+		PurgeOnDelete:   input.PurgeOnDelete,
+		ProjectSpec:     input.ProjectSpec,
+		ForceSendFields: input.ForceSendFields,
 	}
 }
 
@@ -60,6 +63,11 @@ func (*ResourcePostgresProject) RemapState(remote *PostgresProjectRemote) *Postg
 	return &PostgresProjectState{
 		ProjectId:   remote.ProjectId,
 		ProjectSpec: remote.ProjectSpec,
+
+		// purge_on_delete is a delete-time query parameter; the GET API never
+		// returns it, so RemapState leaves it false.
+		PurgeOnDelete:   false,
+		ForceSendFields: nil,
 	}
 }
 
@@ -131,11 +139,24 @@ func (r *ResourcePostgresProject) DoCreate(ctx context.Context, config *Postgres
 }
 
 func (r *ResourcePostgresProject) DoUpdate(ctx context.Context, id string, config *PostgresProjectState, entry *PlanEntry) (*PostgresProjectRemote, error) {
-	// Build update mask from fields that have action="update" in the changes map.
-	// This excludes immutable fields and fields that haven't changed.
-	// Prefix with "spec." because the API expects paths relative to the Project object,
-	// not relative to our flattened state type.
+	// Build the mask from the plan's change list and prefix with "spec." (the
+	// API expects paths relative to Project). The API rejects mask entries
+	// that aren't also populated in the request body, and a wildcard "*"
+	// expands to nested attributes the body would have to set too — so we
+	// can't use a static all-fields mask. The change list naturally tracks
+	// what the user actually set, so the body and mask stay consistent.
 	fieldPaths := collectUpdatePathsWithPrefix(entry.Changes, "spec.")
+
+	// purge_on_delete is an input-only flag consulted at delete time; it is
+	// not a spec field. Strip it from the mask so toggling it between deploys
+	// becomes a state-only refresh (the framework saves newState when this
+	// returns nil error).
+	fieldPaths = slices.DeleteFunc(fieldPaths, func(p string) bool {
+		return p == "spec.purge_on_delete"
+	})
+	if len(fieldPaths) == 0 {
+		return nil, nil
+	}
 
 	waiter, err := r.client.Postgres.UpdateProject(ctx, postgres.UpdateProjectRequest{
 		Project: postgres.Project{
@@ -169,10 +190,10 @@ func (r *ResourcePostgresProject) DoUpdate(ctx context.Context, id string, confi
 	return makePostgresProjectRemote(result), nil
 }
 
-func (r *ResourcePostgresProject) DoDelete(ctx context.Context, id string, _ *PostgresProjectState) error {
+func (r *ResourcePostgresProject) DoDelete(ctx context.Context, id string, state *PostgresProjectState) error {
 	waiter, err := r.client.Postgres.DeleteProject(ctx, postgres.DeleteProjectRequest{
 		Name:            id,
-		Purge:           false,
+		Purge:           state.PurgeOnDelete,
 		ForceSendFields: nil,
 	})
 	if err != nil {
