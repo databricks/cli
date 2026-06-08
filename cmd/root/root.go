@@ -19,6 +19,7 @@ import (
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
+	"github.com/databricks/cli/libs/versioncheck"
 	"github.com/spf13/cobra"
 )
 
@@ -81,6 +82,11 @@ func New(ctx context.Context) *cobra.Command {
 		ctx = withInteractiveModeInUserAgent(ctx)
 		ctx = InjectTestPidToUserAgent(ctx)
 		cmd.SetContext(ctx)
+
+		// Refresh the latest-version cache in the background (no-op when
+		// suppressed). The result is shown by [versioncheck.Notice] after the
+		// command completes, so this never blocks the command.
+		versioncheck.StartBackgroundRefresh(ctx, cmd)
 		return nil
 	}
 
@@ -190,6 +196,12 @@ Stack Trace:
 	})
 	if telemetryErr != nil {
 		log.Infof(ctx, "telemetry upload failed: %s", telemetryErr)
+	}
+
+	// Print a "new version available" notice if one is due (no-op when
+	// suppressed, on error, or when nothing is cached yet).
+	if msg := versioncheck.Notice(cmd.Context(), cmd, err); msg != "" {
+		fmt.Fprintln(cmd.ErrOrStderr(), msg)
 	}
 
 	return err
