@@ -1,6 +1,0 @@
-trace $CLI bundle deploy
-print_requests.py //api/2.0/pipelines > out.requests.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1
-
-if [ -f .databricks/bundle/default/terraform/bundle.tf.json ]; then
-  jq .resource.databricks_pipeline .databricks/bundle/default/terraform/bundle.tf.json > out.tf.$DATABRICKS_BUNDLE_ENGINE.json
-fi

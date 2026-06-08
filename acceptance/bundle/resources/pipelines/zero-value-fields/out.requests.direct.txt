@@ -3,19 +3,22 @@
   "path": "/api/2.0/pipelines",
   "body": {
     "channel": "CURRENT",
+    "continuous": false,
     "deployment": {
       "kind": "BUNDLE",
-      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/serverless-false/default/state/metadata.json"
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/zero-value-fields/default/state/metadata.json"
     },
+    "development": false,
     "edition": "ADVANCED",
     "libraries": [
       {
         "file": {
-          "path": "/Workspace/Users/[USERNAME]/.bundle/serverless-false/default/files/foo.py"
+          "path": "/Workspace/Users/[USERNAME]/.bundle/zero-value-fields/default/files/foo.py"
         }
       }
     ],
     "name": "test-pipeline",
+    "photon": false,
     "serverless": false
   }
 }
