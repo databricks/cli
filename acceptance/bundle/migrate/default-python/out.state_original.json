@@ -65,7 +65,7 @@
                     "cluster_mount_info": [],
                     "cluster_name": "",
                     "custom_tags": null,
-                    "data_security_mode": "SINGLE_USER",
+                    "data_security_mode": "DATA_SECURITY_MODE_AUTO",
                     "docker_image": [],
                     "driver_instance_pool_id": "",
                     "driver_node_type_flexibility": [],
