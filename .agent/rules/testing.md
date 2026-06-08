@@ -1,5 +1,9 @@
 ---
 description: Rules for the testing strategy of this repo
+paths:
+  - "**/*_test.go"
+  - "acceptance/**"
+  - "integration/**"
 ---
 
 # Rules for the testing strategy of this repo
