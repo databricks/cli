@@ -4,7 +4,9 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -52,7 +54,7 @@ func sshConfigAlreadyManaged(ctx context.Context) (bool, error) {
 	}
 	data, err := os.ReadFile(mainPath)
 	if err != nil {
-		if os.IsNotExist(err) {
+		if errors.Is(err, fs.ErrNotExist) {
 			return false, nil
 		}
 		return false, fmt.Errorf("reading %s: %w", mainPath, err)
@@ -140,7 +142,7 @@ func ensureMainIncludesManaged(mainPath, managedPath string) error {
 		if hasOurMarkedBlock(string(existing)) {
 			return nil
 		}
-	case os.IsNotExist(err):
+	case errors.Is(err, fs.ErrNotExist):
 		existing = nil
 	default:
 		return fmt.Errorf("reading %s: %w", mainPath, err)
