@@ -1,0 +1,7 @@
+[Env]
+# This test passes absolute workspace paths like /Workspace/Users/.../hello_world.py
+# as CLI arguments. On Windows the script runs under MSYS2, which rewrites such
+# leading-slash arguments to Windows paths (e.g. C:/Program Files/Git/Workspace/...)
+# before the CLI sees them, so workspace get-status would query the wrong path.
+# Setting this environment variable disables that conversion.
+MSYS_NO_PATHCONV = "1"
