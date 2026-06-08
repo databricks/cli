@@ -1,0 +1,4 @@
+  ✓ Lakebox happy-panda-1234 is running
+  default    happy-panda-1234
+
+happy-panda-1234
