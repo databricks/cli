@@ -47,10 +47,7 @@ jobs:
           # and non-zero only on a real error; a failure must abort the job
           # rather than be silently mistaken for "no vulnerabilities".
           scan="$(mktemp)"
-          if ! go tool -modfile=tools/go.mod govulncheck -scan module -format json > "$scan"; then
-            echo "::error::govulncheck failed"
-            exit 1
-          fi
+          go tool -modfile=tools/go.mod govulncheck -scan module -format json > "$scan"
 
           summary_file="$(mktemp)"
           "$RUNNER_TEMP/vulnbump" . < "$scan" > "$summary_file"
@@ -75,6 +72,8 @@ jobs:
         if: steps.bump.outputs.needed == 'true'
         uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
         with:
+          # A fixed branch means a daily run updates the existing open PR in
+          # place rather than opening a new one; no branch-suffix is needed.
           branch: auto/bump-vuln-deps
           commit-message: "Bump dependencies with known vulnerabilities"
           title: "Bump dependencies with known vulnerabilities"
