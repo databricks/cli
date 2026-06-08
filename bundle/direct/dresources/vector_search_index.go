@@ -2,8 +2,11 @@ package dresources
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
+	"strings"
 	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
@@ -192,11 +195,19 @@ func (r *ResourceVectorSearchIndex) WaitAfterDelete(ctx context.Context, id stri
 	return err
 }
 
-// OverrideChangeDesc classifies endpoint_uuid drift: Recreate when the saved
-// UUID differs from what's currently attached to the endpoint name, Skip
-// otherwise. endpoint_uuid is never present in config, so without Skip a
-// synthetic diff between empty newState and populated saved state would
-// otherwise leak into the plan.
+// OverrideChangeDesc suppresses two synthetic diffs the built-in classifiers
+// can't express; every other field is left untouched.
+//
+// schema_json: the backend canonicalizes SQL type aliases (e.g. "int" ->
+// "integer") and returns the normalized spelling, so an otherwise unchanged
+// config looks like a change to the immutable direct_access_index_spec and
+// would trigger a destructive recreate. Skip when the two schemas differ only
+// by those aliases. Mirrors brickindex-common/src/utils/ColumnSpec.scala.
+//
+// endpoint_uuid: Recreate when the saved UUID differs from what's currently
+// attached to the endpoint name, Skip otherwise. endpoint_uuid is never present
+// in config, so without Skip a synthetic diff between empty newState and
+// populated saved state would otherwise leak into the plan.
 //
 // Unlike vector_search_endpoint, this intentionally does NOT require
 // remoteUuid != "". An empty remoteUuid here is the orphan signal: the index
@@ -205,6 +216,19 @@ func (r *ResourceVectorSearchIndex) WaitAfterDelete(ctx context.Context, id stri
 // (propagated through DoRead/DoCreate), so reaching this branch with empty
 // remoteUuid unambiguously means the endpoint is gone.
 func (*ResourceVectorSearchIndex) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, change *ChangeDesc, remote *VectorSearchIndexRemote) error {
+	if path.String() == "direct_access_index_spec.schema_json" {
+		if change.Action == deployplan.Skip {
+			return nil
+		}
+		newSchema, newOk := change.New.(string)
+		remoteSchema, remoteOk := change.Remote.(string)
+		if newOk && remoteOk && schemaTypesEqual(newSchema, remoteSchema) {
+			change.Action = deployplan.Skip
+			change.Reason = deployplan.ReasonAlias
+		}
+		return nil
+	}
+
 	if path.String() != "endpoint_uuid" {
 		return nil
 	}
@@ -239,4 +263,55 @@ func (r *ResourceVectorSearchIndex) lookupEndpointUuid(ctx context.Context, endp
 		return "", fmt.Errorf("looking up vector search endpoint %q: %w", endpointName, err)
 	}
 	return info.Id, nil
+}
+
+// schemaTypesEqual reports whether two schema_json documents describe the same
+// columns and types once SQL type aliases are folded to their canonical form
+// (e.g. "int" == "integer"). Malformed input compares unequal so the caller
+// falls back to the default recreate.
+func schemaTypesEqual(a, b string) bool {
+	typesA, err := parseSchemaTypes(a)
+	if err != nil {
+		return false
+	}
+	typesB, err := parseSchemaTypes(b)
+	if err != nil {
+		return false
+	}
+	return maps.Equal(typesA, typesB)
+}
+
+func parseSchemaTypes(schemaJSON string) (map[string]string, error) {
+	var schema map[string]string
+	if err := json.Unmarshal([]byte(schemaJSON), &schema); err != nil {
+		return nil, err
+	}
+	for column, columnType := range schema {
+		schema[column] = normalizeColumnType(columnType)
+	}
+	return schema, nil
+}
+
+// normalizeColumnType folds the SQL type aliases the Vector Search backend
+// accepts to the canonical form it stores and returns, recursing into array
+// element types. Mirrors brickindex-common/src/utils/ColumnSpec.scala
+// (the columnType field); types not listed there pass through unchanged.
+func normalizeColumnType(columnType string) string {
+	if inner, ok := strings.CutPrefix(columnType, "array<"); ok {
+		if elem, ok := strings.CutSuffix(inner, ">"); ok {
+			return "array<" + normalizeColumnType(elem) + ">"
+		}
+	}
+	switch columnType {
+	case "int":
+		return "integer"
+	case "bigint":
+		return "long"
+	case "smallint":
+		return "short"
+	case "tinyint":
+		return "byte"
+	default:
+		return columnType
+	}
 }
