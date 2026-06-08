@@ -799,8 +799,7 @@ tasks:
     generates:
       - acceptance/bundle/refschema/out.fields.txt
     cmds:
-      - cmd: go test ./acceptance -run TestAccept/bundle/refschema -update &> /dev/null
-        ignore_error: true # -update returns non-zero exit code on changes
+      - go test ./acceptance -run TestAccept/bundle/refschema -update
 
   generate-schema:
     desc: Generate bundle JSON schema
@@ -888,7 +887,12 @@ tasks:
 
   generate-direct:
     desc: Generate direct engine config (apitypes + resources)
-    deps: ['generate-direct-apitypes', 'generate-direct-resources']
+    # Depend only on generate-direct-resources; it already pulls in
+    # generate-direct-apitypes transitively. Listing both as parallel deps
+    # races: resources reads apitypes.generated.yml while the apitypes step's
+    # `>` redirect is truncating it, silently dropping every resource whose
+    # type comes from that file. Keep this chain linear.
+    deps: ['generate-direct-resources']
 
   generate-direct-apitypes:
     desc: Generate direct engine API types YAML
