@@ -1,0 +1,5 @@
+# The test server returns schema_json column types in the backend's canonical
+# form (int -> integer, ...), which differs from the spelling a live workspace
+# returns, so the recorded output only matches locally. The point of this test
+# is the alias round-trip, which the test server reproduces hermetically.
+Cloud = false

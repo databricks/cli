@@ -1,0 +1,26 @@
+bundle:
+  name: vs-index-schema-$UNIQUE_NAME
+
+sync:
+  paths: []
+
+resources:
+  vector_search_endpoints:
+    my_endpoint:
+      name: vs-endpoint-$UNIQUE_NAME
+      endpoint_type: STANDARD
+  vector_search_indexes:
+    my_index:
+      name: main.default.vs_index_$UNIQUE_NAME
+      endpoint_name: ${resources.vector_search_endpoints.my_endpoint.name}
+      primary_key: id
+      index_type: DIRECT_ACCESS
+      direct_access_index_spec:
+        # Column types use the SQL aliases the backend canonicalizes on create:
+        # int->integer, bigint->long, smallint->short, tinyint->byte, and the
+        # same recursively inside array<...>. A redeploy must not see the
+        # normalized remote schema as drift on this immutable field.
+        schema_json: '{"id":"int","count":"bigint","small":"smallint","tiny":"tinyint","tags":"array<int>","score":"float","label":"string","vector":"array<float>"}'
+        embedding_vector_columns:
+          - name: vector
+            embedding_dimension: 768
