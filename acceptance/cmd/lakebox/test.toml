@@ -1,0 +1,4 @@
+# Acceptance tests for `databricks lakebox` subcommands. Common across
+# all leaves: ignore the local state file the CLI writes (lakebox.json)
+# so it doesn't bleed into the test directory's diff.
+Ignore = [".databricks"]
