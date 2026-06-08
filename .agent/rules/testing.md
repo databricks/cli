@@ -87,8 +87,6 @@ acceptance/cmd/fs/cp/file-to-dir/
 
 If the only reason for divergence is a server-side default that one engine sets and the other doesn't, set the field explicitly in `databricks.yml` so both engines produce identical output. Don't paper over it with per-engine files.
 
-**RULE: Limit `EnvMatrix.DATABRICKS_BUNDLE_ENGINE` when the test exercises engine-specific behavior.** Direct's `PrepareState` / `resources.json` shape and terraform's drift loop / `.tfstate` shape are not shared. If a test inspects either, set the matrix to just the relevant engine and leave a one-line `test.toml` comment explaining why. Cross-engine parity of the contract (request/response shape, destroy semantics) belongs in a sibling test that exercises both.
-
 ### Reference
 
 - Tests live in `acceptance/` with a nested directory structure.
@@ -134,37 +132,11 @@ Available on `PATH` during test execution (from `acceptance/bin/`):
 - `gron.py`: flatten JSON into greppable discrete assignments (simpler than `jq` for searching JSON).
 - `jq` is also available for JSON processing.
 
-**RULE: Prefer `gron.py | grep <field>` over inline `jq` paths for single-value lookups.** The gron form prints the full assignment (e.g. `json.state["resources.foo.bar"].state.purge_on_delete = true;`), so the path is self-evident in the test output and reviewers don't have to mentally walk a jq expression.
+**RULE: Prefer `gron.py | grep <field>` over inline `jq` paths for single-value lookups.** The gron output prints the JSON path inline, so the test log explains itself.
 
-GOOD:
+**RULE: Don't pass `--keep` to `print_requests.py` if a later `print_requests.py` call follows.** The buffer accumulates, so the second call double-prints the earlier requests.
 
-```bash
-gron.py < .databricks/bundle/default/resources.json | grep purge_on_delete
-```
-
-BAD:
-
-```bash
-jq -r '.state["resources.postgres_projects.proj"].state.purge_on_delete' .databricks/bundle/default/resources.json
-```
-
-**RULE: Don't pass `--keep` to `print_requests.py` if you make a later `print_requests.py` call in the same test.** `--keep` retains `out.requests.txt`, so the next call re-reads the same accumulated buffer and double-prints earlier requests. Use `--keep` only when this is the last invocation AND something else (e.g. a separate `jq`) needs to read the file afterward.
-
-### Diagnostic output
-
-**RULE: For cleanup-noise or other stderr a developer might want to see under `go test -v`, append to a `LOG.<name>` file instead of dropping it with `2>/dev/null`.** Files named `LOG` or `LOG.<suffix>` are surfaced by the test runner only in verbose mode (see `acceptance/selftest/log/`), and they aren't part of the diffed output so they don't trigger spurious failures.
-
-GOOD:
-
-```bash
-$CLI postgres delete-project --purge "projects/$NAME" 2>>LOG.delete-project || true
-```
-
-BAD:
-
-```bash
-$CLI postgres delete-project --purge "projects/$NAME" 2>/dev/null || true
-```
+**RULE: Send cleanup-noise stderr to `LOG.<name>` instead of `/dev/null`.** `LOG.*` files surface under `go test -v` but stay out of the diffed output — see `acceptance/selftest/log/`. Example: `$CLI postgres delete-project --purge ... 2>>LOG.delete-project || true`.
 
 ### Update workflow
 
