@@ -140,7 +140,7 @@ Available on `PATH` during test execution (from `acceptance/bin/`):
 
 **RULE: Don't pass `--keep` to `print_requests.py` if a later `print_requests.py` call follows.** The buffer accumulates, so the second call double-prints the earlier requests.
 
-**RULE: Send cleanup-noise stderr to `LOG.<name>` instead of `/dev/null`.** `LOG.*` files surface under `go test -v` but stay out of the diffed output — see `acceptance/selftest/log/`. Example: `$CLI postgres delete-project --purge ... 2>>LOG.delete-project || true`.
+**RULE: Route noisy or non-deterministic command output to `LOG.<name>` instead of `output.txt` or `/dev/null`.** `LOG.*` files are visible under `go test -v` but excluded from the diff — see `acceptance/selftest/log/`. Use `&> LOG.<name>` to capture both streams (then `contains.py` to assert invariants like `'!panic' '!internal error'`), or `2>>LOG.<name>` for cleanup-step stderr you'd otherwise drop to `/dev/null`.
 
 ### Update workflow
 
