@@ -5,13 +5,13 @@
     "channel": "CURRENT",
     "deployment": {
       "kind": "BUNDLE",
-      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/photon-false/default/state/metadata.json"
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/zero-value-fields/default/state/metadata.json"
     },
     "edition": "ADVANCED",
     "libraries": [
       {
         "file": {
-          "path": "/Workspace/Users/[USERNAME]/.bundle/photon-false/default/files/foo.py"
+          "path": "/Workspace/Users/[USERNAME]/.bundle/zero-value-fields/default/files/foo.py"
         }
       }
     ],
