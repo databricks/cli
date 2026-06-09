@@ -1,10 +1,14 @@
 package yamlloader_test
 
 import (
+	"bytes"
+	"os"
 	"testing"
 
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/dyn/yamlloader"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestYAMLAnchor01(t *testing.T) {
@@ -114,4 +118,25 @@ func TestYAMLAnchor08(t *testing.T) {
 	active := self.Get("user1").Get("active")
 	assert.Equal(t, true, active.AsAny())
 	assert.Equal(t, dyn.Location{File: file, Line: 2, Column: 11}, active.Location())
+}
+
+func TestYAMLAnchor09(t *testing.T) {
+	// A self-referential anchor must return an error instead of
+	// recursing until stack overflow.
+	file := "testdata/anchor_09.yml"
+	input, err := os.ReadFile(file)
+	require.NoError(t, err)
+
+	_, err = yamlloader.LoadYAML(file, bytes.NewBuffer(input))
+	assert.ErrorContains(t, err, `cyclic reference to anchor "x"`)
+}
+
+func TestYAMLAnchor10(t *testing.T) {
+	// Expanding the same alias node again on a different path is not a cycle.
+	file := "testdata/anchor_10.yml"
+	self := loadYAML(t, file)
+	assert.NotEqual(t, dyn.NilValue, self)
+
+	assert.Equal(t, 1, self.Get("use1").Get("value").AsAny())
+	assert.Equal(t, 1, self.Get("use2").Get("value").AsAny())
 }

@@ -23,6 +23,11 @@ func (e *LocationError) Error() string {
 
 type loader struct {
 	path string
+
+	// Aliases currently being expanded. A self-referential anchor (e.g.
+	// "a: &x {b: *x}") makes the yaml.v3 node graph cyclic; without this
+	// bookkeeping, expansion would recurse until stack overflow.
+	activeAliases map[*yaml.Node]bool
 }
 
 func errorf(loc dyn.Location, format string, args ...any) error {
@@ -31,7 +36,8 @@ func errorf(loc dyn.Location, format string, args ...any) error {
 
 func newLoader(path string) *loader {
 	return &loader{
-		path: path,
+		path:          path,
+		activeAliases: make(map[*yaml.Node]bool),
 	}
 }
 
@@ -271,5 +277,15 @@ func (d *loader) loadScalar(node *yaml.Node, loc dyn.Location) (dyn.Value, error
 }
 
 func (d *loader) loadAlias(node *yaml.Node, loc dyn.Location) (dyn.Value, error) {
+	if d.activeAliases[node] {
+		return dyn.InvalidValue, errorf(loc, "cyclic reference to anchor %q", node.Value)
+	}
+
+	// Remove the alias from the set once expanded: the same alias node may be
+	// reached again through another alias to an enclosing anchor, which is not
+	// a cycle.
+	d.activeAliases[node] = true
+	defer delete(d.activeAliases, node)
+
 	return d.load(node.Alias)
 }
