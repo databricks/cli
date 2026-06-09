@@ -8,11 +8,23 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/vfs"
+	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// newTestSyncCommand returns the sync command attached to a root command so
+// that the root persistent flags (--output, --profile) resolve like in
+// production.
+func newTestSyncCommand(t *testing.T) *cobra.Command {
+	syncCmd := New()
+	root.New(t.Context()).AddCommand(syncCmd)
+	return syncCmd
+}
 
 func TestSyncOptionsFromBundle(t *testing.T) {
 	tempDir := t.TempDir()
@@ -57,12 +69,27 @@ func TestSyncOptionsFromArgs(t *testing.T) {
 	remote := "/remote"
 
 	f := syncFlags{}
-	cmd := New()
+	cmd := newTestSyncCommand(t)
 	cmd.SetContext(cmdctx.SetWorkspaceClient(t.Context(), nil))
 	opts, err := f.syncOptionsFromArgs(cmd, []string{local, remote})
 	require.NoError(t, err)
 	assert.Equal(t, local, opts.LocalRoot.Native())
 	assert.Equal(t, remote, opts.RemotePath)
+}
+
+func TestSyncShorthandFlags(t *testing.T) {
+	cmd := newTestSyncCommand(t)
+	require.NoError(t, cmd.ParseFlags([]string{"-o", "json", "-p", "myprofile"}))
+	assert.Equal(t, flags.OutputJSON, root.OutputType(cmd))
+	assert.Equal(t, "myprofile", cmd.Flag("profile").Value.String())
+}
+
+func TestReadPatternsFileErrorNamesFlag(t *testing.T) {
+	missing := filepath.Join(t.TempDir(), "missing.txt")
+	_, err := readPatternsFile("exclude-from", missing)
+	assert.ErrorContains(t, err, "failed to read exclude-from file")
+	_, err = readPatternsFile("include-from", missing)
+	assert.ErrorContains(t, err, "failed to read include-from file")
 }
 
 func TestExcludeFromFlag(t *testing.T) {
@@ -83,7 +110,7 @@ func TestExcludeFromFlag(t *testing.T) {
 
 	// Set up the flags
 	f := syncFlags{excludeFrom: excludeFromPath}
-	cmd := New()
+	cmd := newTestSyncCommand(t)
 	cmd.SetContext(cmdctx.SetWorkspaceClient(t.Context(), nil))
 
 	// Test with both exclude flag and exclude-from flag
