@@ -120,15 +120,12 @@ func TestJsonLoaderNumbers(t *testing.T) {
 	}{
 		{`123`, int64(123)},
 		{`-1`, int64(-1)},
-		// Above 2^53: would come back as 123456789012345680 if parsed as float64.
 		{`123456789012345678`, int64(123456789012345678)},
 		{`-123456789012345678`, int64(-123456789012345678)},
 		{`9223372036854775807`, int64(9223372036854775807)},
-		// A fraction or exponent keeps the value a float.
 		{`2.0`, 2.0},
 		{`2.5`, 2.5},
 		{`1e3`, 1000.0},
-		// Integer literals that overflow int64 fall back to float64.
 		{`18446744073709551615`, 1.8446744073709552e+19},
 	} {
 		v, err := LoadJSON([]byte(tc.input), "(inline)")

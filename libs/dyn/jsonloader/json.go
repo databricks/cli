@@ -17,9 +17,7 @@ func LoadJSON(data []byte, source string) (dyn.Value, error) {
 	reader := bytes.NewReader(data)
 	decoder := json.NewDecoder(reader)
 
-	// Decode numbers as json.Number instead of float64: a float64 mantissa is
-	// 53 bits, so int64 values above 2^53 (e.g. job and run IDs) would silently
-	// lose precision. The token branch in decodeValue picks int64 or float64.
+	// Use json.Number to avoid losing precision on int64 values above 2^53 (e.g. job and run IDs).
 	decoder.UseNumber()
 
 	// Start decoding from the top-level value
@@ -113,10 +111,7 @@ func decodeValue(decoder *json.Decoder, o *Offset) (dyn.Value, error) {
 			return dyn.NewValue(arr, []dyn.Location{location}), nil
 		}
 	case json.Number:
-		// Integer literals become int64 to preserve precision; literals with
-		// a fraction or exponent (e.g. "2.0", "1e3") stay float64. Integer
-		// literals that overflow int64 also fall back to float64, matching
-		// the decoder's behavior before UseNumber was set.
+		// Integers that overflow int64 fall back to float64, matching the decoder's behavior without UseNumber.
 		if i64, err := tok.Int64(); err == nil {
 			return dyn.NewValue(i64, []dyn.Location{location}), nil
 		}
