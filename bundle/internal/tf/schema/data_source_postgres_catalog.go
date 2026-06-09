@@ -14,7 +14,6 @@ type DataSourcePostgresCatalogSpec struct {
 
 type DataSourcePostgresCatalogStatus struct {
 	Branch           string `json:"branch,omitempty"`
-	CatalogId        string `json:"catalog_id,omitempty"`
 	PostgresDatabase string `json:"postgres_database,omitempty"`
 	Project          string `json:"project,omitempty"`
 }
