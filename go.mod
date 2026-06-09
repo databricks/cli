@@ -44,8 +44,8 @@ require (
 )
 
 require (
-	github.com/charmbracelet/glamour v1.0.0
-	golang.org/x/term v0.43.0
+	github.com/charmbracelet/glamour v1.0.0 // MIT
+	golang.org/x/term v0.43.0 // BSD-3-Clause
 )
 
 require (

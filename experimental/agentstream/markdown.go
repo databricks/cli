@@ -32,7 +32,7 @@ func renderMarkdown(w io.Writer, text string) {
 
 	rendered, err := glamour.Render(cleaned, "auto")
 	if err != nil {
-		fmt.Fprintln(w, text)
+		fmt.Fprintln(w, cleaned)
 		return
 	}
 	fmt.Fprint(w, rendered)

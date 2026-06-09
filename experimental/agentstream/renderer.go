@@ -123,7 +123,7 @@ func RenderJSON(r io.Reader, w io.Writer, adapt AdapterFunc) error {
 			case EventThinking:
 				// Thinking events are only relevant for text rendering; skip in JSON.
 			case EventText:
-				result.Text = se.Text
+				result.Text += se.Text
 			case EventFinalResponse:
 				// Prefer the assistant message; use the tool-delivered answer
 				// only if no message text was captured.
@@ -165,7 +165,7 @@ func RenderJSON(r io.Reader, w io.Writer, adapt AdapterFunc) error {
 	enc := json.NewEncoder(w)
 	enc.SetIndent("", "  ")
 	if err := enc.Encode(result); err != nil {
-		return err
+		return fmt.Errorf("writing JSON output: %w", err)
 	}
 
 	return apiErr

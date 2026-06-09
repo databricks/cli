@@ -107,6 +107,10 @@ golang.org/x/sys - https://github.com/golang/sys
 Copyright 2009 The Go Authors.
 License - https://github.com/golang/sys/blob/master/LICENSE
 
+golang.org/x/term - https://github.com/golang/term
+Copyright 2009 The Go Authors.
+License - https://github.com/golang/term/blob/master/LICENSE
+
 golang.org/x/text - https://github.com/golang/text
 Copyright 2009 The Go Authors.
 License - https://github.com/golang/text/blob/master/LICENSE
@@ -142,6 +146,10 @@ License - https://github.com/charmbracelet/lipgloss/blob/master/LICENSE
 charmbracelet/x/ansi - https://github.com/charmbracelet/x
 Copyright (c) 2023-2025 Charmbracelet, Inc
 License - https://github.com/charmbracelet/x/blob/main/ansi/LICENSE
+
+charmbracelet/glamour - https://github.com/charmbracelet/glamour
+Copyright (c) 2019-2025 Charmbracelet, Inc
+License - https://github.com/charmbracelet/glamour/blob/master/LICENSE
 
 Masterminds/semver - https://github.com/Masterminds/semver
 Copyright (C) 2014-2019, Matt Butcher and Matt Farina

@@ -138,6 +138,22 @@ func TestAdaptSSE_QueryExecutionAndViz(t *testing.T) {
 	assert.Equal(t, []string{"Beta", "200"}, events[0].Viz.Data.Rows[1])
 }
 
+func TestAdaptSSE_QueryExecutionCanArriveAfterIncompleteOutput(t *testing.T) {
+	adapt := NewAdaptSSE()
+
+	incomplete := `{"type":"response.output_item.done","item":{"type":"function_call_output","id":"o4","call_id":"c1","status":"completed","metadata":{"ui_type":"QUERY_EXECUTION","statement_id":"stmt2"}}}`
+	assert.Empty(t, adapt(incomplete))
+
+	complete := `{"type":"response.output_item.done","item":{"type":"function_call_output","id":"o4","call_id":"c1","status":"completed","metadata":{"ui_type":"QUERY_EXECUTION","statement_id":"stmt2","result_data":{"columns":[{"name":"name"},{"name":"total"}],"preview_rows":[["Alpha","100"]]}}}}`
+	assert.Empty(t, adapt(complete))
+
+	viz := `{"type":"response.output_item.done","item":{"type":"function_call_output","id":"o5","call_id":"c2","status":"completed","metadata":{"ui_type":"VIZ","sql_id":"stmt2","embed_id":"v1","viz_definition":"{\"renderSpec\":{\"widgetType\":\"bar\",\"frame\":{\"title\":\"Total\"},\"encodings\":{\"x\":{\"fieldName\":\"name\"},\"y\":{\"fieldName\":\"total\"}}}}"}}}`
+	events := adapt(viz)
+	require.Len(t, events, 1)
+	require.NotNil(t, events[0].Viz.Data)
+	assert.Equal(t, []string{"Alpha", "100"}, events[0].Viz.Data.Rows[0])
+}
+
 func TestAdaptSSE_VizWithoutDefinitionIgnored(t *testing.T) {
 	adapt := NewAdaptSSE()
 	viz := `{"type":"response.output_item.done","item":{"type":"function_call_output","id":"o3","call_id":"c3","status":"completed","metadata":{"ui_type":"VIZ","embed_id":"v2"}}}`
@@ -172,6 +188,41 @@ func TestNewAdaptSSE_DedupsFunctionCall(t *testing.T) {
 	// The same item re-observed (e.g. on .done) must not emit a second time.
 	done := `{"type":"response.output_item.done","output_index":0,"item":{"type":"function_call","id":"f3","call_id":"c3","name":"output_final_response","arguments":"{\"response\":\"Hello.\"}"}}`
 	assert.Empty(t, adapt(done))
+}
+
+func TestNewAdaptSSE_DoesNotDedupEmptyFunctionCall(t *testing.T) {
+	adapt := NewAdaptSSE()
+	added := `{"type":"response.output_item.added","output_index":0,"item":{"type":"function_call","id":"f4","call_id":"c4","name":"output_final_response","arguments":""}}`
+	assert.Empty(t, adapt(added))
+
+	done := `{"type":"response.output_item.done","output_index":0,"item":{"type":"function_call","id":"f4","call_id":"c4","name":"output_final_response","arguments":"{\"response\":\"Hello after done.\"}"}}`
+	events := adapt(done)
+	require.Len(t, events, 1)
+	assert.Equal(t, agentstream.EventFinalResponse, events[0].Kind)
+	assert.Equal(t, "Hello after done.", events[0].Text)
+}
+
+func TestNewAdaptSSE_DedupsMessageAfterEmitting(t *testing.T) {
+	adapt := NewAdaptSSE()
+	added := `{"type":"response.output_item.added","output_index":0,"item":{"type":"message","id":"m2","role":"assistant","status":"completed","content":[{"type":"output_text","text":"Hello.","annotations":[]}]}}`
+	events := adapt(added)
+	require.Len(t, events, 1)
+	assert.Equal(t, agentstream.EventText, events[0].Kind)
+
+	done := `{"type":"response.output_item.done","output_index":0,"item":{"type":"message","id":"m2","role":"assistant","status":"completed","content":[{"type":"output_text","text":"Hello.","annotations":[]}]}}`
+	assert.Empty(t, adapt(done))
+}
+
+func TestNewAdaptSSE_MessageCanArriveOnDone(t *testing.T) {
+	adapt := NewAdaptSSE()
+	added := `{"type":"response.output_item.added","output_index":0,"item":{"type":"message","id":"m3","role":"assistant","status":"in_progress","content":[]}}`
+	assert.Empty(t, adapt(added))
+
+	done := `{"type":"response.output_item.done","output_index":0,"item":{"type":"message","id":"m3","role":"assistant","status":"completed","content":[{"type":"output_text","text":"Done text.","annotations":[]}]}}`
+	events := adapt(done)
+	require.Len(t, events, 1)
+	assert.Equal(t, agentstream.EventText, events[0].Kind)
+	assert.Equal(t, "Done text.", events[0].Text)
 }
 
 func TestAdaptSSE_FinalResponseWithArrayMetadata(t *testing.T) {

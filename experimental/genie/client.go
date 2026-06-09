@@ -39,11 +39,10 @@ func BuildRequest(question, warehouseID string) GenieRequest {
 // PostStream sends the request and returns the raw SSE response body.
 // The caller must close the returned ReadCloser.
 func PostStream(ctx context.Context, cfg *config.Config, req GenieRequest) (io.ReadCloser, error) {
-	// Use a longer inactivity timeout for streaming. The Genie agent can
-	// have multi-minute gaps between SSE events during tool execution.
-	cfg.HTTPTimeoutSeconds = streamingTimeoutSeconds
+	streamCfg := *cfg
+	streamCfg.HTTPTimeoutSeconds = streamingTimeoutSeconds
 
-	api, err := client.New(cfg)
+	api, err := client.New(&streamCfg)
 	if err != nil {
 		return nil, err
 	}

@@ -1,6 +1,8 @@
 package genie
 
 import (
+	"errors"
+
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/experimental/agentstream"
 	genielib "github.com/databricks/cli/experimental/genie"
@@ -31,6 +33,11 @@ Examples:
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
+			outputType := root.OutputType(cmd)
+			if debug && outputType == flags.OutputJSON {
+				return errors.New("--debug cannot be used with --output json")
+			}
+
 			w := cmdctx.WorkspaceClient(ctx)
 
 			question := args[0]
@@ -48,7 +55,6 @@ Examples:
 
 			adapt := genielib.NewAdaptSSE()
 
-			outputType := root.OutputType(cmd)
 			if outputType == flags.OutputJSON {
 				return agentstream.RenderJSON(body, cmd.OutOrStdout(), adapt)
 			}
@@ -60,7 +66,7 @@ Examples:
 
 	cmd.Flags().StringVar(&warehouseID, "warehouse-id", "", "SQL warehouse ID (auto-resolves if omitted)")
 	cmd.Flags().BoolVar(&debug, "debug", false, "Print raw SSE events for debugging")
-	cmd.Flags().BoolVar(&includeSQL, "include-sql", false, "Show SQL queries executed by the agent")
+	cmd.Flags().BoolVar(&includeSQL, "include-sql", false, "Show SQL queries executed by the agent in text output")
 
 	return cmd
 }

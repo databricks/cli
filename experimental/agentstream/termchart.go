@@ -202,17 +202,31 @@ func renderLineChart(w io.Writer, spec *VizSpec, data *TableData, width int, fil
 	pxH := ch * 4
 
 	// Y-axis range.
-	var yMin, yMax float64
+	yMin := math.Inf(1)
+	yMax := math.Inf(-1)
 	for _, s := range series {
 		for _, v := range s.Values {
+			yMin = math.Min(yMin, v)
 			yMax = math.Max(yMax, v)
 		}
+	}
+	if math.IsInf(yMin, 1) {
+		return
+	}
+	if yMin > 0 {
+		yMin = 0
+	}
+	if yMax < 0 {
+		yMax = 0
 	}
 	if yMin == yMax {
 		yMax = yMin + 1
 	}
-	// Add 5% headroom.
-	yMax *= 1.05
+	span := yMax - yMin
+	yMax += span * 0.05
+	if yMin < 0 {
+		yMin -= span * 0.05
+	}
 
 	grid := newBrailleGrid(cw, ch)
 
@@ -383,7 +397,7 @@ func extractSeries(spec *VizSpec, data *TableData) []dataSeries {
 		}
 		s := dataSeries{Name: yf}
 		for _, row := range data.Rows {
-			s.Values = append(s.Values, parseFloat(row[yi]))
+			s.Values = append(s.Values, parseFloat(rowString(row, yi)))
 		}
 		result = append(result, s)
 	}
@@ -395,7 +409,10 @@ func extractLongFormat(data *TableData, xIdx, yIdx, colorIdx int) []dataSeries {
 	var xValues []string
 	xSeen := map[string]bool{}
 	for _, row := range data.Rows {
-		x := row[xIdx]
+		x, ok := rowValue(row, xIdx)
+		if !ok {
+			continue
+		}
 		if !xSeen[x] {
 			xValues = append(xValues, x)
 			xSeen[x] = true
@@ -410,12 +427,19 @@ func extractLongFormat(data *TableData, xIdx, yIdx, colorIdx int) []dataSeries {
 	seriesMap := map[string]*seriesData{}
 
 	for _, row := range data.Rows {
-		sName := row[colorIdx]
+		x, ok := rowValue(row, xIdx)
+		if !ok {
+			continue
+		}
+		sName, ok := rowValue(row, colorIdx)
+		if !ok {
+			continue
+		}
 		if seriesMap[sName] == nil {
 			seriesMap[sName] = &seriesData{name: sName, values: map[string]float64{}}
 			seriesOrder = append(seriesOrder, sName)
 		}
-		seriesMap[sName].values[row[xIdx]] = parseFloat(row[yIdx])
+		seriesMap[sName].values[x] = parseFloat(rowString(row, yIdx))
 	}
 
 	var result []dataSeries
@@ -441,11 +465,26 @@ func columnIndex(columns []string, name string) int {
 	return -1
 }
 
+func rowValue(row []string, idx int) (string, bool) {
+	if idx < 0 || idx >= len(row) {
+		return "", false
+	}
+	return row[idx], true
+}
+
+func rowString(row []string, idx int) string {
+	v, _ := rowValue(row, idx)
+	return v
+}
+
 func uniqueXLabels(data *TableData, xIdx int) []string {
 	var labels []string
 	seen := map[string]bool{}
 	for _, row := range data.Rows {
-		l := row[xIdx]
+		l, ok := rowValue(row, xIdx)
+		if !ok {
+			continue
+		}
 		if !seen[l] {
 			labels = append(labels, l)
 			seen[l] = true
@@ -460,7 +499,7 @@ func extractXLabels(data *TableData, xIdx int, longFormat bool) []string {
 	}
 	labels := make([]string, len(data.Rows))
 	for i, row := range data.Rows {
-		labels[i] = row[xIdx]
+		labels[i] = rowString(row, xIdx)
 	}
 	return labels
 }
@@ -468,7 +507,10 @@ func extractXLabels(data *TableData, xIdx int, longFormat bool) []string {
 func parseFloat(s string) float64 {
 	s = strings.ReplaceAll(s, ",", "")
 	s = strings.TrimSpace(s)
-	v, _ := strconv.ParseFloat(s, 64)
+	v, err := strconv.ParseFloat(s, 64)
+	if err != nil || math.IsNaN(v) || math.IsInf(v, 0) {
+		return 0
+	}
 	return v
 }
 
@@ -510,10 +552,14 @@ func addThousandSep(s string) string {
 	return b.String()
 }
 
-func computeYLabels(_, yMax float64, rows int) []string {
+func computeYLabels(yMin, yMax float64, rows int) []string {
 	labels := make([]string, rows)
+	if rows == 1 {
+		labels[0] = formatNumber(yMax)
+		return labels
+	}
 	for i := range rows {
-		v := yMax - yMax*float64(i)/float64(rows-1)
+		v := yMax - (yMax-yMin)*float64(i)/float64(rows-1)
 		labels[i] = formatNumber(v)
 	}
 	return labels

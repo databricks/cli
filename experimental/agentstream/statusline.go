@@ -31,12 +31,13 @@ func (s *statusLine) update(text string) {
 
 	// Truncate by rune count (not bytes) so multi-byte characters don't wrap.
 	runes := []rune(text)
-	maxText := s.width - 2 // account for "> " prefix
-	if maxText > 0 && len(runes) > maxText {
-		runes = runes[:maxText-3]
-		text = string(runes) + "..."
-	} else {
+	maxText := max(s.width-2, 0) // account for "> " prefix
+	if len(runes) <= maxText {
 		text = string(runes)
+	} else if maxText <= 3 {
+		text = string(runes[:maxText])
+	} else {
+		text = string(runes[:maxText-3]) + "..."
 	}
 
 	if s.active {

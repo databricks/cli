@@ -134,7 +134,10 @@ func adaptOutputItem(b []byte, raw string) []agentstream.StreamEvent {
 		return nil
 	}
 
-	item := event.Item
+	return adaptOutputItemValue(event.Item, raw)
+}
+
+func adaptOutputItemValue(item OutputItem, raw string) []agentstream.StreamEvent {
 	switch item.Type {
 	case itemReasoning:
 		return []agentstream.StreamEvent{{
@@ -262,10 +265,7 @@ func adaptOutputItemStateful(b []byte, raw string, queryData map[string]*agentst
 	case itemFunctionCallOutput:
 		// Parse with funcCallOutputEvent which handles non-string metadata.
 		return adaptFuncCallOutput(b, raw, queryData, processed)
-	case itemFunctionCall:
-		// Dedup by item ID so an item seen on both .added and .done doesn't
-		// double-emit. This matters for output_final_response and
-		// ask_user_questions, which render (unlike hidden tool calls).
+	default:
 		var event SSEOutputItemEvent
 		if err := json.Unmarshal(b, &event); err != nil {
 			return nil
@@ -274,12 +274,12 @@ func adaptOutputItemStateful(b []byte, raw string, queryData map[string]*agentst
 			if processed[event.Item.ID] {
 				return nil
 			}
+		}
+		events := adaptOutputItemValue(event.Item, raw)
+		if len(events) > 0 && event.Item.ID != "" {
 			processed[event.Item.ID] = true
 		}
-		return adaptFunctionCall(event.Item, raw)
-	default:
-		// For other item types, use the original struct (metadata is string-only).
-		return adaptOutputItem(b, raw)
+		return events
 	}
 }
 
@@ -296,12 +296,10 @@ func adaptFuncCallOutput(b []byte, raw string, queryData map[string]*agentstream
 		return nil
 	}
 
-	// Dedup: skip if we already processed this item.
 	if item.ID != "" {
 		if processed[item.ID] {
 			return nil
 		}
-		processed[item.ID] = true
 	}
 
 	meta := item.Metadata
@@ -310,6 +308,9 @@ func adaptFuncCallOutput(b []byte, raw string, queryData map[string]*agentstream
 	if meta.UIType == uiTypeQueryExec && meta.StatementID != "" {
 		if td := tableDataFromResult(meta.ResultData); td != nil {
 			queryData[meta.StatementID] = td
+			if item.ID != "" {
+				processed[item.ID] = true
+			}
 		}
 		return nil
 	}
@@ -329,6 +330,13 @@ func adaptFuncCallOutput(b []byte, raw string, queryData map[string]*agentstream
 		if data == nil && meta.StatementID != "" {
 			data = queryData[meta.StatementID]
 		}
+		if data == nil {
+			return nil
+		}
+
+		if item.ID != "" {
+			processed[item.ID] = true
+		}
 
 		return []agentstream.StreamEvent{{
 			Kind: agentstream.EventViz,
@@ -347,7 +355,7 @@ func adaptFuncCallOutput(b []byte, raw string, queryData map[string]*agentstream
 // preview rows in array-of-arrays form) into TableData. Returns nil when there
 // are no rows to render.
 func tableDataFromResult(rd *queryResultData) *agentstream.TableData {
-	if rd == nil || len(rd.PreviewRows) == 0 {
+	if rd == nil || len(rd.Columns) == 0 || len(rd.PreviewRows) == 0 {
 		return nil
 	}
 	columns := make([]string, len(rd.Columns))
@@ -356,8 +364,8 @@ func tableDataFromResult(rd *queryResultData) *agentstream.TableData {
 	}
 	rows := make([][]string, 0, len(rd.PreviewRows))
 	for _, raw := range rd.PreviewRows {
-		row := make([]string, len(raw))
-		for i, v := range raw {
+		row := make([]string, len(columns))
+		for i, v := range raw[:min(len(raw), len(columns))] {
 			row[i] = stringifyCell(v)
 		}
 		rows = append(rows, row)

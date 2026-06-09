@@ -30,7 +30,7 @@ func (r *SSEReader) Next() (*SSEEvent, error) {
 	var dataLines []string
 
 	for r.scanner.Scan() {
-		line := r.scanner.Text()
+		line := strings.TrimSuffix(r.scanner.Text(), "\r")
 
 		if line == "" {
 			// Blank line terminates an event.

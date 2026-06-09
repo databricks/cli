@@ -170,6 +170,24 @@ func TestRenderJSON_FullStream(t *testing.T) {
 	assert.Equal(t, "Total Sales", result.ToolCalls[0].Title)
 }
 
+func TestRenderJSON_AppendsTextEvents(t *testing.T) {
+	adapt := testAdapter(map[string][]StreamEvent{
+		"text": {
+			{Kind: EventText, Text: "Total sales "},
+			{Kind: EventText, Text: "were $1,234,567."},
+		},
+		"done": {{Kind: EventDone, Status: "completed"}},
+	})
+	input := fakeSSE("text", "done")
+	var buf bytes.Buffer
+	err := RenderJSON(strings.NewReader(input), &buf, adapt)
+	require.NoError(t, err)
+
+	var result StreamResult
+	require.NoError(t, json.Unmarshal(buf.Bytes(), &result))
+	assert.Equal(t, "Total sales were $1,234,567.", result.Text)
+}
+
 func TestRenderJSON_ErrorEvent(t *testing.T) {
 	adapt := testAdapter(map[string][]StreamEvent{
 		"error": {{Kind: EventError, Text: "No eligible SQL warehouse found", ErrorCode: "RESOURCE_DOES_NOT_EXIST"}},
@@ -231,6 +249,16 @@ func TestRenderJSON_ExecuteSQLQuery(t *testing.T) {
 	require.Len(t, result.ToolCalls, 1)
 	assert.Equal(t, "execute_sql_query", result.ToolCalls[0].Name)
 	assert.Equal(t, "SELECT COUNT(*) FROM kie.test.bbc_articles", result.ToolCalls[0].SQL)
+}
+
+func TestStatusLine_TinyWidthDoesNotPanic(t *testing.T) {
+	var buf bytes.Buffer
+	status := &statusLine{w: &buf, width: 4}
+
+	require.NotPanics(t, func() {
+		status.update("Thinking...")
+		status.clear()
+	})
 }
 
 func TestRenderMarkdown_StripsEmbeddedBlocks(t *testing.T) {

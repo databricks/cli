@@ -70,6 +70,19 @@ func TestSSEReader_MultiLineData(t *testing.T) {
 	assert.Equal(t, "line1\nline2", ev.Data)
 }
 
+func TestSSEReader_CRLF(t *testing.T) {
+	input := "data: first\r\n\r\ndata: second\r\n\r\n"
+	r := NewSSEReader(strings.NewReader(input))
+
+	ev1, err := r.Next()
+	require.NoError(t, err)
+	assert.Equal(t, "first", ev1.Data)
+
+	ev2, err := r.Next()
+	require.NoError(t, err)
+	assert.Equal(t, "second", ev2.Data)
+}
+
 func TestSSEReader_EOFWithoutTrailingBlankLine(t *testing.T) {
 	input := "data: trailing"
 	r := NewSSEReader(strings.NewReader(input))
