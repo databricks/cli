@@ -2,6 +2,8 @@ package genie
 
 import (
 	"encoding/json"
+	"fmt"
+	"strconv"
 
 	"github.com/databricks/cli/experimental/agentstream"
 )
@@ -197,18 +199,17 @@ func adaptFuncCallOutput(b []byte, raw string, queryData map[string]*agentstream
 
 	meta := item.Metadata
 
-	// SQL query result: parse and store the markdown table.
+	// SQL query result: store the preview rows so a later viz can join to them.
 	if meta.UIType == uiTypeQueryExec && meta.StatementID != "" {
-		td := agentstream.ParseMarkdownTable(item.Output)
-		if td != nil {
+		if td := tableDataFromResult(meta.ResultData); td != nil {
 			queryData[meta.StatementID] = td
 		}
 		return nil
 	}
 
-	// Visualization: build a VizEvent from the render_spec + stored query data.
-	if meta.UIType == uiTypeViz && meta.RenderSpec != nil {
-		spec := vizSpecFromRenderSpec(meta.RenderSpec)
+	// Visualization: build a VizEvent from the viz_definition spec + stored data.
+	if meta.UIType == uiTypeViz && meta.VizDefinition != "" {
+		spec := vizSpecFromVizDefinition(meta.VizDefinition)
 		if spec == nil {
 			return nil
 		}
@@ -235,25 +236,103 @@ func adaptFuncCallOutput(b []byte, raw string, queryData map[string]*agentstream
 	return nil
 }
 
-// vizSpecFromRenderSpec converts a renderSpecJSON into a VizSpec.
-func vizSpecFromRenderSpec(rs *renderSpecJSON) *agentstream.VizSpec {
+// tableDataFromResult converts QUERY_EXECUTION result_data (columns plus
+// preview rows in array-of-arrays form) into TableData. Returns nil when there
+// are no rows to render.
+func tableDataFromResult(rd *queryResultData) *agentstream.TableData {
+	if rd == nil || len(rd.PreviewRows) == 0 {
+		return nil
+	}
+	columns := make([]string, len(rd.Columns))
+	for i, c := range rd.Columns {
+		columns[i] = c.Name
+	}
+	rows := make([][]string, 0, len(rd.PreviewRows))
+	for _, raw := range rd.PreviewRows {
+		row := make([]string, len(raw))
+		for i, v := range raw {
+			row[i] = stringifyCell(v)
+		}
+		rows = append(rows, row)
+	}
+	return &agentstream.TableData{Columns: columns, Rows: rows}
+}
+
+// stringifyCell renders a preview-row cell as a string. The Statement Execution
+// API returns cells as strings, but a numeric cell can arrive as a JSON number.
+func stringifyCell(v any) string {
+	switch x := v.(type) {
+	case nil:
+		return ""
+	case string:
+		return x
+	case float64:
+		return strconv.FormatFloat(x, 'f', -1, 64)
+	case bool:
+		return strconv.FormatBool(x)
+	default:
+		return fmt.Sprintf("%v", x)
+	}
+}
+
+// vizSpecFromVizDefinition parses the JSON-encoded Helios spec from
+// metadata.viz_definition and maps it to a VizSpec. Returns nil if the spec
+// can't be parsed or lacks usable x/y encodings.
+func vizSpecFromVizDefinition(vizDefinition string) *agentstream.VizSpec {
+	var def heliosVizDefinition
+	if err := json.Unmarshal([]byte(vizDefinition), &def); err != nil {
+		return nil
+	}
+	rs := def.RenderSpec
+	if rs == nil {
+		return nil
+	}
 	spec := &agentstream.VizSpec{
 		Title:      rs.Frame.Title,
 		WidgetType: rs.WidgetType,
-		Layout:     rs.Mark.Layout,
 	}
 	if rs.Encodings.X != nil {
-		spec.XField = rs.Encodings.X.FieldName
-		spec.XTitle = rs.Encodings.X.Axis.Title
+		spec.XField = encodingField(rs.Encodings.X)
+		spec.XTitle = rs.Encodings.X.DisplayName
 	}
 	if rs.Encodings.Y != nil {
-		spec.YFields = []string{rs.Encodings.Y.FieldName}
-		spec.YTitle = rs.Encodings.Y.Axis.Title
+		spec.YFields = encodingFields(rs.Encodings.Y)
+		spec.YTitle = rs.Encodings.Y.DisplayName
 	}
-	if rs.Encodings.Color != nil {
-		spec.ColorField = rs.Encodings.Color.FieldName
+	if spec.XField == "" || len(spec.YFields) == 0 {
+		return nil
 	}
 	return spec
+}
+
+// encodingField returns the single field name for an axis: FieldName, or the
+// first entry of Fields.
+func encodingField(e *heliosEncoding) string {
+	if e.FieldName != "" {
+		return e.FieldName
+	}
+	if len(e.Fields) > 0 {
+		return e.Fields[0].FieldName
+	}
+	return ""
+}
+
+// encodingFields returns every field name for an axis. A single FieldName
+// yields one series; Fields yields one per entry (multi-series).
+func encodingFields(e *heliosEncoding) []string {
+	if len(e.Fields) > 0 {
+		names := make([]string, 0, len(e.Fields))
+		for _, f := range e.Fields {
+			if f.FieldName != "" {
+				names = append(names, f.FieldName)
+			}
+		}
+		return names
+	}
+	if e.FieldName != "" {
+		return []string{e.FieldName}
+	}
+	return nil
 }
 
 func adaptMessage(item OutputItem, raw string) []agentstream.StreamEvent {

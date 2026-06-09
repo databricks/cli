@@ -111,3 +111,35 @@ func TestAdaptSSE_InvalidJSON(t *testing.T) {
 func TestAdaptSSE_UnknownEventType(t *testing.T) {
 	assert.Empty(t, AdaptSSE(`{"type":"response.unknown"}`))
 }
+
+func TestAdaptSSE_QueryExecutionAndViz(t *testing.T) {
+	adapt := NewAdaptSSE()
+
+	// A QUERY_EXECUTION output carries the preview rows under result_data.
+	qe := `{"type":"response.output_item.done","item":{"type":"function_call_output","id":"o1","call_id":"c1","status":"completed","metadata":{"ui_type":"QUERY_EXECUTION","statement_id":"stmt1","result_data":{"columns":[{"name":"franchise"},{"name":"total"}],"preview_rows":[["Alpha","100"],["Beta","200"]]}}}}`
+	assert.Empty(t, adapt(qe))
+
+	// A VIZ output carries the Helios spec under viz_definition (a JSON string,
+	// nested under renderSpec) and references the query by sql_id.
+	viz := `{"type":"response.output_item.done","item":{"type":"function_call_output","id":"o2","call_id":"c2","status":"completed","metadata":{"ui_type":"VIZ","sql_id":"stmt1","embed_id":"v1","viz_definition":"{\"renderSpec\":{\"widgetType\":\"bar\",\"frame\":{\"title\":\"Total by Franchise\"},\"encodings\":{\"x\":{\"fieldName\":\"franchise\"},\"y\":{\"fieldName\":\"total\",\"displayName\":\"Total Sales\"}}}}"}}}`
+	events := adapt(viz)
+	require.Len(t, events, 1)
+	assert.Equal(t, agentstream.EventViz, events[0].Kind)
+	require.NotNil(t, events[0].Viz)
+	require.NotNil(t, events[0].Viz.Spec)
+	assert.Equal(t, "bar", events[0].Viz.Spec.WidgetType)
+	assert.Equal(t, "Total by Franchise", events[0].Viz.Spec.Title)
+	assert.Equal(t, "franchise", events[0].Viz.Spec.XField)
+	assert.Equal(t, []string{"total"}, events[0].Viz.Spec.YFields)
+	assert.Equal(t, "Total Sales", events[0].Viz.Spec.YTitle)
+	require.NotNil(t, events[0].Viz.Data)
+	assert.Equal(t, []string{"franchise", "total"}, events[0].Viz.Data.Columns)
+	require.Len(t, events[0].Viz.Data.Rows, 2)
+	assert.Equal(t, []string{"Beta", "200"}, events[0].Viz.Data.Rows[1])
+}
+
+func TestAdaptSSE_VizWithoutDefinitionIgnored(t *testing.T) {
+	adapt := NewAdaptSSE()
+	viz := `{"type":"response.output_item.done","item":{"type":"function_call_output","id":"o3","call_id":"c3","status":"completed","metadata":{"ui_type":"VIZ","embed_id":"v2"}}}`
+	assert.Empty(t, adapt(viz))
+}

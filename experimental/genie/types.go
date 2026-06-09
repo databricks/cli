@@ -91,39 +91,62 @@ type funcCallOutputEvent struct {
 
 // funcCallOutputMeta holds metadata from function_call_output items.
 type funcCallOutputMeta struct {
-	UIType      string          `json:"ui_type"`
-	StatementID string          `json:"statement_id"`
-	SQLID       string          `json:"sql_id"`
-	EmbedID     string          `json:"embed_id"`
-	RenderSpec  *renderSpecJSON `json:"render_spec"`
+	UIType      string `json:"ui_type"`
+	StatementID string `json:"statement_id"`
+	SQLID       string `json:"sql_id"`
+	EmbedID     string `json:"embed_id"`
+	// VizDefinition is a JSON-encoded Helios chart spec (the spec itself is
+	// nested under "renderSpec"). The backend sends it as a string, not an
+	// object, and it carries no data.
+	VizDefinition string `json:"viz_definition"`
+	// ResultData carries the SQL preview rows for QUERY_EXECUTION outputs. A
+	// later viz is joined to this data by statement_id.
+	ResultData *queryResultData `json:"result_data"`
 }
 
-// renderSpecJSON is the Lakeview-style visualization specification.
-type renderSpecJSON struct {
+// heliosVizDefinition is the parsed metadata.viz_definition payload; the Helios
+// chart spec is nested under renderSpec.
+type heliosVizDefinition struct {
+	RenderSpec *heliosSpec `json:"renderSpec"`
+}
+
+// heliosSpec is the Helios chart specification: a widget type plus field
+// encodings. It carries no data; the rows live in the matching QUERY_EXECUTION
+// result_data, joined by statement_id.
+type heliosSpec struct {
 	WidgetType string          `json:"widgetType"`
-	Frame      renderSpecFrame `json:"frame"`
-	Encodings  renderSpecEnc   `json:"encodings"`
-	Mark       renderSpecMark  `json:"mark"`
+	Frame      heliosFrame     `json:"frame"`
+	Encodings  heliosEncodings `json:"encodings"`
 }
 
-type renderSpecFrame struct {
-	Title     string `json:"title"`
-	ShowTitle bool   `json:"showTitle"`
+type heliosFrame struct {
+	Title string `json:"title"`
 }
 
-type renderSpecEnc struct {
-	X     *renderSpecField `json:"x"`
-	Y     *renderSpecField `json:"y"`
-	Color *renderSpecField `json:"color"`
+type heliosEncodings struct {
+	X *heliosEncoding `json:"x"`
+	Y *heliosEncoding `json:"y"`
 }
 
-type renderSpecField struct {
+// heliosEncoding describes one axis. A single field uses FieldName; multiple
+// series use Fields. DisplayName is the axis label when present.
+type heliosEncoding struct {
+	FieldName   string        `json:"fieldName"`
+	DisplayName string        `json:"displayName"`
+	Fields      []heliosField `json:"fields"`
+}
+
+type heliosField struct {
 	FieldName string `json:"fieldName"`
-	Axis      struct {
-		Title string `json:"title"`
-	} `json:"axis"`
 }
 
-type renderSpecMark struct {
-	Layout string `json:"layout"`
+// queryResultData is the QUERY_EXECUTION result_data: column metadata plus
+// preview rows in array-of-arrays wire format.
+type queryResultData struct {
+	Columns     []queryResultColumn `json:"columns"`
+	PreviewRows [][]any             `json:"preview_rows"`
+}
+
+type queryResultColumn struct {
+	Name string `json:"name"`
 }

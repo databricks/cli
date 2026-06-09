@@ -44,7 +44,7 @@ func renderSQL(w io.Writer, name, arguments string) {
 	} else {
 		fmt.Fprintln(w, "SQL executed:")
 	}
-	for _, line := range strings.Split(sql, "\n") {
+	for line := range strings.SplitSeq(sql, "\n") {
 		fmt.Fprintf(w, "  %s\n", line)
 	}
 }

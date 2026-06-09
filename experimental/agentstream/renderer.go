@@ -122,6 +122,8 @@ func RenderJSON(r io.Reader, w io.Writer, adapt AdapterFunc) error {
 					}
 					result.ToolCalls = append(result.ToolCalls, tc)
 				}
+			case EventViz:
+				// Viz charts render only in text mode; JSON output omits them.
 			case EventError:
 				result.Status = statusError
 				result.Text = se.Text

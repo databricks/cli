@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"slices"
 	"strconv"
 	"strings"
 )
@@ -115,10 +116,7 @@ func renderBarChart(w io.Writer, spec *VizSpec, data *TableData, width int) {
 
 	// Bar width (chars available for the bar itself).
 	// Cap at 50 chars so bars stay readable on wide terminals.
-	barWidth := width - maxLabel - maxValLen - 8
-	if barWidth < minChartWidth {
-		barWidth = minChartWidth
-	}
+	barWidth := max(width-maxLabel-maxValLen-8, minChartWidth)
 	if barWidth > 50 {
 		barWidth = 50
 	}
@@ -198,18 +196,12 @@ func renderLineChart(w io.Writer, spec *VizSpec, data *TableData, width int, fil
 
 	// Chart dimensions. Cap width at 70 chars so charts stay
 	// compact on wide terminals.
-	cw := width - yLabelWidth - 4
-	if cw < minChartWidth {
-		cw = minChartWidth
-	}
+	cw := max(width-yLabelWidth-4, minChartWidth)
 	if cw > 70 {
 		cw = 70
 	}
 	// Height is roughly 40% of width for a pleasing aspect ratio.
-	ch := max(10, cw*2/5)
-	if ch > 25 {
-		ch = 25
-	}
+	ch := min(max(10, cw*2/5), 25)
 
 	// Pixel dimensions (braille: 2 dots wide x 4 dots tall per char).
 	pxW := cw * 2
@@ -232,8 +224,8 @@ func renderLineChart(w io.Writer, spec *VizSpec, data *TableData, width int, fil
 
 	// Plot each series. Render in reverse order so the first series
 	// (visually most important) wins color conflicts.
-	for si := len(series) - 1; si >= 0; si-- {
-		s := series[si]
+	for si, v := range slices.Backward(series) {
+		s := v
 		nPts := len(s.Values)
 		if nPts == 0 {
 			continue
@@ -447,46 +439,6 @@ func extractLongFormat(data *TableData, xIdx, yIdx, colorIdx int) []dataSeries {
 
 // --- Helpers ---
 
-// ParseMarkdownTable extracts column names and rows from a markdown table.
-func ParseMarkdownTable(text string) *TableData {
-	lines := strings.Split(text, "\n")
-	var tableLines []string
-	for _, line := range lines {
-		line = strings.TrimSpace(line)
-		if strings.HasPrefix(line, "|") {
-			tableLines = append(tableLines, line)
-		}
-	}
-	if len(tableLines) < 3 {
-		return nil
-	}
-
-	columns := splitTableRow(tableLines[0])
-	var rows [][]string
-	for _, line := range tableLines[2:] {
-		row := splitTableRow(line)
-		if len(row) == len(columns) {
-			rows = append(rows, row)
-		}
-	}
-	if len(rows) == 0 {
-		return nil
-	}
-	return &TableData{Columns: columns, Rows: rows}
-}
-
-func splitTableRow(line string) []string {
-	parts := strings.Split(line, "|")
-	var cells []string
-	for _, p := range parts {
-		p = strings.TrimSpace(p)
-		if p != "" && !strings.HasPrefix(p, "---") {
-			cells = append(cells, p)
-		}
-	}
-	return cells
-}
-
 func columnIndex(columns []string, name string) int {
 	for i, c := range columns {
 		if c == name {
@@ -565,7 +517,7 @@ func addThousandSep(s string) string {
 	return b.String()
 }
 
-func computeYLabels(_ float64, yMax float64, rows int) []string {
+func computeYLabels(_, yMax float64, rows int) []string {
 	labels := make([]string, rows)
 	for i := range rows {
 		v := yMax - yMax*float64(i)/float64(rows-1)
@@ -579,10 +531,7 @@ func renderXLabels(w io.Writer, labels []string, chartWidth, leftPad int) {
 		return
 	}
 
-	maxLabels := chartWidth / 12
-	if maxLabels < 2 {
-		maxLabels = 2
-	}
+	maxLabels := max(chartWidth/12, 2)
 	step := max(1, (len(labels)-1)/(maxLabels-1))
 
 	fmt.Fprintf(w, "%*s", leftPad, "")
