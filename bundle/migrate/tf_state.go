@@ -25,22 +25,26 @@ var tfStateFieldAliases = map[string]map[string]string{
 // TFStateAttrs maps (tfResourceType → resourceName → raw JSON attributes).
 type TFStateAttrs map[string]map[string]json.RawMessage
 
-// TFStateMeta holds the top-level metadata from a terraform state file.
-type TFStateMeta struct {
+// TFState holds everything parsed from a single terraform state file read.
+type TFState struct {
+	// Attrs maps (tfResourceType → resourceName → raw JSON attributes).
+	Attrs TFStateAttrs
+	// IDs maps bundle resource key → {ID, ETag} (same as terraform.ParseResourcesState).
+	IDs terraform.ExportedResourcesMap
+	// Lineage and Serial are the top-level state metadata used to seed the direct state.
 	Lineage string
 	Serial  int
 }
 
-// ParseTFStateFull reads the terraform state file once and returns the full
-// attribute map, the resource ID map, and the state metadata (lineage/serial).
-// Avoids reading and unmarshaling the file multiple times.
-func ParseTFStateFull(ctx context.Context, path string) (TFStateAttrs, terraform.ExportedResourcesMap, TFStateMeta, error) {
+// ParseTFStateFull reads the terraform state file once and returns all parsed data.
+// Returns nil without error when the file does not exist (first deploy with no resources).
+func ParseTFStateFull(ctx context.Context, path string) (*TFState, error) {
 	raw, err := os.ReadFile(path)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-			return nil, nil, TFStateMeta{}, nil
+			return nil, nil
 		}
-		return nil, nil, TFStateMeta{}, err
+		return nil, err
 	}
 
 	var meta struct {
@@ -48,18 +52,18 @@ func ParseTFStateFull(ctx context.Context, path string) (TFStateAttrs, terraform
 		Serial  int    `json:"serial"`
 	}
 	if err := json.Unmarshal(raw, &meta); err != nil {
-		return nil, nil, TFStateMeta{}, err
+		return nil, err
 	}
 
 	attrs, err := parseTFStateAttrsFromBytes(raw)
 	if err != nil {
-		return nil, nil, TFStateMeta{}, err
+		return nil, err
 	}
 	ids, err := terraform.ParseResourcesStateFromBytes(ctx, raw)
 	if err != nil {
-		return nil, nil, TFStateMeta{}, err
+		return nil, err
 	}
-	return attrs, ids, TFStateMeta{Lineage: meta.Lineage, Serial: meta.Serial}, nil
+	return &TFState{Attrs: attrs, IDs: ids, Lineage: meta.Lineage, Serial: meta.Serial}, nil
 }
 
 // ParseTFStateAttrs parses the terraform state file returning full attribute JSON per resource.

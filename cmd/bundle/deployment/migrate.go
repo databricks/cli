@@ -113,12 +113,12 @@ To start using direct engine, set "engine: direct" under bundle in your databric
 			return fmt.Errorf("reading %s: %w", localTerraformPath, err)
 		}
 
-		tfAttrs, terraformResources, _, err := migrate.ParseTFStateFull(ctx, localTerraformPath)
+		tfState, err := migrate.ParseTFStateFull(ctx, localTerraformPath)
 		if err != nil {
 			return fmt.Errorf("failed to parse terraform state: %w", err)
 		}
 
-		for key, resourceEntry := range terraformResources {
+		for key, resourceEntry := range tfState.IDs {
 			if resourceEntry.ID == "" {
 				return fmt.Errorf("failed to intepret terraform state for %s: missing ID", key)
 			}
@@ -134,7 +134,7 @@ To start using direct engine, set "engine: direct" under bundle in your databric
 		}
 
 		state := make(map[string]dstate.ResourceEntry)
-		for key, resourceEntry := range terraformResources {
+		for key, resourceEntry := range tfState.IDs {
 			state[key] = dstate.ResourceEntry{
 				ID:    resourceEntry.ID,
 				State: json.RawMessage("{}"),
@@ -172,7 +172,7 @@ To start using direct engine, set "engine: direct" under bundle in your databric
 			return fmt.Errorf("upgrading state for apply: %w", err)
 		}
 
-		if err := migrate.BuildStateFromTF(ctx, &b.Config, adapters, &stateDB, tfAttrs, terraformResources); err != nil {
+		if err := migrate.BuildStateFromTF(ctx, &b.Config, adapters, &stateDB, tfState.Attrs, tfState.IDs); err != nil {
 			return err
 		}
 
