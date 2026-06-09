@@ -58,8 +58,6 @@ func (p processStaticResources) Apply(ctx context.Context, b *bundle.Bundle) dia
 		// Updates (dynamic): resources.* (strings) (resolves variable references to their actual values)
 		// Resolves variable references in 'resources' using bundle, workspace, and variables prefixes
 		resourceResolver,
-		// After normal variable resolution, log all ${resources.*} references
-		mutator.LogResourceReferences(),
 		mutator.NormalizePaths(),
 
 		// Translate dashboard paths into paths in the workspace file system
