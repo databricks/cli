@@ -127,9 +127,17 @@ func setupProxy(ctx context.Context, cmd *cobra.Command, config *runlocal.Config
 	}
 
 	proxyAddr := fmt.Sprintf("localhost:%d", port)
+	// Bind synchronously so that a taken port fails the command instead of only
+	// printing an error from the goroutine while the command keeps running
+	// without a working proxy.
+	ln, err := proxy.Listen(proxyAddr)
+	if err != nil {
+		return fmt.Errorf("failed to start app proxy: %w", err)
+	}
+
+	cmdio.LogString(ctx, "To access your app go to http://"+proxyAddr)
 	go func() {
-		cmdio.LogString(ctx, "To access your app go to http://"+proxyAddr)
-		err := proxy.ListenAndServe(proxyAddr)
+		err := proxy.Serve(ln)
 		if err != nil {
 			cmd.PrintErrln(err)
 		}
@@ -140,6 +148,15 @@ func setupProxy(ctx context.Context, cmd *cobra.Command, config *runlocal.Config
 	}
 
 	return nil
+}
+
+// killAppProcess stops an already-started app process. Without it, a failure
+// after startAppProcess would leave the app running in the background, holding
+// the app port even after the CLI exits.
+func killAppProcess(appCmd *exec.Cmd) {
+	_ = appCmd.Process.Kill()
+	// Reap the process so it doesn't linger as a zombie until the CLI exits.
+	_ = appCmd.Wait()
 }
 
 // SIGTERM (not supported on Windows) and SIGINT (Ctrl+C, supported cross-platform)
@@ -226,6 +243,7 @@ func newRunLocal() *cobra.Command {
 
 		err = setupProxy(ctx, cmd, config, w, port, debug)
 		if err != nil {
+			killAppProcess(appCmd)
 			return err
 		}
 
