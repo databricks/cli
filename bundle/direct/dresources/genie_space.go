@@ -2,7 +2,6 @@ package dresources
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -77,18 +76,19 @@ func (r *ResourceGenieSpace) DoRead(ctx context.Context, id string) (*resources.
 	return responseToGenieSpaceConfig(space, space.SerializedSpace), nil
 }
 
+// prepareGenieSpaceRequest returns the serialized_space body to send to the API.
+// ConfigureGenieSpaceSerializedSpace normalizes serialized_space to a JSON string
+// (read from file_path, or marshalled from inline YAML) before the deploy engine
+// runs, so the value is always a string or unset by this point.
 func prepareGenieSpaceRequest(config *resources.GenieSpaceConfig) (string, error) {
-	v := config.SerializedSpace
-	if serializedSpace, ok := v.(string); ok {
-		return serializedSpace, nil
-	} else if v != nil {
-		b, err := json.Marshal(v)
-		if err != nil {
-			return "", fmt.Errorf("failed to marshal serialized_space: %w", err)
-		}
-		return string(b), nil
+	switch v := config.SerializedSpace.(type) {
+	case nil:
+		return "", nil
+	case string:
+		return v, nil
+	default:
+		return "", fmt.Errorf("internal error: serialized_space should have been normalized to a string, got %T", v)
 	}
-	return "", nil
 }
 
 func responseToGenieSpaceConfig(space *dashboards.GenieSpace, serializedSpace string) *resources.GenieSpaceConfig {
