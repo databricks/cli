@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"slices"
 	"strings"
 
@@ -63,7 +64,7 @@ func (m *loadDBAlertFiles) Apply(ctx context.Context, b *bundle.Bundle) diag.Dia
 		// No other fields other than allowedInYAML should be set in the bundle YAML.
 		m, ok := alertV.AsMap()
 		if !ok {
-			return diag.FromErr(fmt.Errorf("internal error: alert value is not a map: %w", err))
+			return diag.FromErr(fmt.Errorf("internal error: alert value is not a map, got %s", alertV.Kind()))
 		}
 
 		for _, p := range m.Pairs() {
@@ -90,7 +91,15 @@ func (m *loadDBAlertFiles) Apply(ctx context.Context, b *bundle.Bundle) diag.Dia
 			}
 		}
 
-		content, err := os.ReadFile(alert.FilePath)
+		// NormalizePaths rewrote file_path to be relative to the bundle root, but the
+		// process working directory can be any directory within the bundle, so anchor
+		// the read to the bundle root. Absolute paths are kept as-is by NormalizePaths.
+		filePath := alert.FilePath
+		if !filepath.IsAbs(filePath) {
+			filePath = filepath.Join(b.BundleRootPath, filePath)
+		}
+
+		content, err := os.ReadFile(filePath)
 		if err != nil {
 			return diag.Diagnostics{
 				{
