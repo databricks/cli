@@ -149,7 +149,7 @@ func formatDurationSecs(secs int64) string {
 	return fmt.Sprintf("%ds", secs)
 }
 
-// listResponse is the JSON body returned by GET /api/2.0/sandbox/sandboxes.
+// listResponse is the JSON body returned by GET /api/2.0/lakebox/sandboxes.
 type listResponse struct {
 	Sandboxes     []sandboxEntry `json:"sandboxes"`
 	NextPageToken string         `json:"nextPageToken,omitempty"`
@@ -168,7 +168,7 @@ type updateBody struct {
 	NoAutostop  *bool   `json:"no_autostop,omitempty"`
 }
 
-// registerKeyRequest is the JSON body for POST /api/2.0/sandbox/ssh-keys.
+// registerKeyRequest is the JSON body for POST /api/2.0/lakebox/ssh-keys.
 type registerKeyRequest struct {
 	PublicKey string `json:"public_key"`
 	Name      string `json:"name,omitempty"`
@@ -195,7 +195,7 @@ func (a *sandboxAPI) headers() map[string]string {
 	return map[string]string{orgIDHeader: wsID}
 }
 
-// create calls POST /api/2.0/sandbox/sandboxes. An empty `name` is omitted
+// create calls POST /api/2.0/lakebox/sandboxes. An empty `name` is omitted
 // so the server treats it as "unset" rather than "explicit empty string".
 func (a *sandboxAPI) create(ctx context.Context, name string) (*createResponse, error) {
 	body := createRequest{Sandbox: sandboxCreateBody{Name: name}}
@@ -207,7 +207,7 @@ func (a *sandboxAPI) create(ctx context.Context, name string) (*createResponse, 
 	return &resp, nil
 }
 
-// list calls GET /api/2.0/sandbox/sandboxes, following pagination until the
+// list calls GET /api/2.0/lakebox/sandboxes, following pagination until the
 // server stops sending `next_page_token`.
 func (a *sandboxAPI) list(ctx context.Context) ([]sandboxEntry, error) {
 	var all []sandboxEntry
@@ -246,7 +246,7 @@ func (a *sandboxAPI) listPage(ctx context.Context, pageToken string) (*listRespo
 	return &resp, nil
 }
 
-// get calls GET /api/2.0/sandbox/sandboxes/{id}.
+// get calls GET /api/2.0/lakebox/sandboxes/{id}.
 func (a *sandboxAPI) get(ctx context.Context, id string) (*sandboxEntry, error) {
 	var resp sandboxEntry
 	err := a.c.Do(ctx, http.MethodGet, sandboxPath(id), a.headers(), nil, nil, &resp)
@@ -256,7 +256,7 @@ func (a *sandboxAPI) get(ctx context.Context, id string) (*sandboxEntry, error) 
 	return &resp, nil
 }
 
-// update calls PATCH /api/2.0/sandbox/sandboxes/{id} with whichever of
+// update calls PATCH /api/2.0/lakebox/sandboxes/{id} with whichever of
 // `idle_timeout` / `no_autostop` the caller chose to set. Fields left nil
 // are omitted from the wire payload, so the server preserves their current
 // values. Returns the refreshed `sandboxEntry`.
@@ -280,12 +280,12 @@ func (a *sandboxAPI) update(ctx context.Context, id string, name *string, idleTi
 	return &resp, nil
 }
 
-// delete calls DELETE /api/2.0/sandbox/sandboxes/{id}.
+// delete calls DELETE /api/2.0/lakebox/sandboxes/{id}.
 func (a *sandboxAPI) delete(ctx context.Context, id string) error {
 	return a.c.Do(ctx, http.MethodDelete, sandboxPath(id), a.headers(), nil, nil, nil)
 }
 
-// stop calls POST /api/2.0/sandbox/sandboxes/{id}/stop and returns the
+// stop calls POST /api/2.0/lakebox/sandboxes/{id}/stop and returns the
 // refreshed sandbox.
 func (a *sandboxAPI) stop(ctx context.Context, id string) (*sandboxEntry, error) {
 	body := map[string]string{"sandbox_id": id}
@@ -297,7 +297,7 @@ func (a *sandboxAPI) stop(ctx context.Context, id string) (*sandboxEntry, error)
 	return &resp, nil
 }
 
-// start calls POST /api/2.0/sandbox/sandboxes/{id}/start and returns the
+// start calls POST /api/2.0/lakebox/sandboxes/{id}/start and returns the
 // refreshed sandbox.
 func (a *sandboxAPI) start(ctx context.Context, id string) (*sandboxEntry, error) {
 	body := map[string]string{"sandbox_id": id}
@@ -309,7 +309,7 @@ func (a *sandboxAPI) start(ctx context.Context, id string) (*sandboxEntry, error
 	return &resp, nil
 }
 
-// registerKey calls POST /api/2.0/sandbox/ssh-keys. An empty `name` is
+// registerKey calls POST /api/2.0/lakebox/ssh-keys. An empty `name` is
 // omitted so the server records "unset" rather than an explicit empty string.
 func (a *sandboxAPI) registerKey(ctx context.Context, publicKey, name string) error {
 	return a.c.Do(ctx, http.MethodPost, sandboxKeysAPIPath, a.headers(), nil, registerKeyRequest{PublicKey: publicKey, Name: name}, nil)
@@ -323,14 +323,14 @@ type sshKeyEntry struct {
 	LastUseTime string `json:"lastUseTime,omitempty"`
 }
 
-// listKeysResponse is the JSON body returned by GET /api/2.0/sandbox/ssh-keys.
+// listKeysResponse is the JSON body returned by GET /api/2.0/lakebox/ssh-keys.
 // Per-user keys are hard-capped server-side, so the full set fits in one
 // response — no pagination.
 type listKeysResponse struct {
 	SshKeys []sshKeyEntry `json:"sshKeys"`
 }
 
-// listKeys calls GET /api/2.0/sandbox/ssh-keys.
+// listKeys calls GET /api/2.0/lakebox/ssh-keys.
 func (a *sandboxAPI) listKeys(ctx context.Context) ([]sshKeyEntry, error) {
 	var resp listKeysResponse
 	err := a.c.Do(ctx, http.MethodGet, sandboxKeysAPIPath, a.headers(), nil, nil, &resp)
@@ -340,7 +340,7 @@ func (a *sandboxAPI) listKeys(ctx context.Context) ([]sshKeyEntry, error) {
 	return resp.SshKeys, nil
 }
 
-// deleteKey calls DELETE /api/2.0/sandbox/ssh-keys/{key_hash}.
+// deleteKey calls DELETE /api/2.0/lakebox/ssh-keys/{key_hash}.
 func (a *sandboxAPI) deleteKey(ctx context.Context, keyHash string) error {
 	return a.c.Do(ctx, http.MethodDelete, sandboxKeysAPIPath+"/"+url.PathEscape(keyHash), a.headers(), nil, nil, nil)
 }
