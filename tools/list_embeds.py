@@ -20,7 +20,7 @@ def main():
     # files are silently missed until the file is staged or committed.
     out = subprocess.check_output(
         ["git", "grep", "--no-color", "-E", "^" + EMBED, "--", "*.go"],
-        text=True,
+        universal_newlines=True,
     )
     paths = set()
     for line in out.splitlines():
