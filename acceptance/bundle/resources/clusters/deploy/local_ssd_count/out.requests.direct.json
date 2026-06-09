@@ -4,8 +4,12 @@
   "body": {
     "autotermination_minutes": 60,
     "cluster_name": "test-cluster-[UNIQUE_NAME]",
-    "gcp_attributes": {},
-    "instance_pool_id": "[TEST_INSTANCE_POOL_ID]",
+    "gcp_attributes": {
+      "availability": "PREEMPTIBLE_GCP",
+      "local_ssd_count": 0,
+      "zone_id": "auto"
+    },
+    "node_type_id": "[NODE_TYPE_ID]",
     "num_workers": 1,
     "spark_version": "13.3.x-snapshot-scala2.12"
   }
