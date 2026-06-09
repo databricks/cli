@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"io"
 	"regexp"
-
-	"github.com/charmbracelet/glamour"
 )
 
 // embeddedBlockRe matches <!-- begin-embedded:... --> ... <!-- end-embedded:... --> blocks.
@@ -18,8 +16,8 @@ var vizEmbedBlockRe = regexp.MustCompile(`(?s)<!-- begin-embedded:viz_\w+ -->.*?
 // vizImageRe matches standalone ![title](#viz_xxx) image references.
 var vizImageRe = regexp.MustCompile(`!\[[^\]]*\]\(#viz_\w+\)\n?`)
 
-// renderMarkdown renders markdown text for the terminal using glamour.
-// Strips Genie embedded blocks and viz image references before rendering.
+// renderMarkdown strips Genie embedded blocks and viz image references before
+// printing the remaining markdown as plain text.
 func renderMarkdown(w io.Writer, text string) {
 	// Remove viz embedded blocks entirely (rendered as terminal charts).
 	cleaned := vizEmbedBlockRe.ReplaceAllString(text, "")
@@ -30,10 +28,5 @@ func renderMarkdown(w io.Writer, text string) {
 	// Strip query embedded block wrappers, keeping the content inside.
 	cleaned = embeddedBlockRe.ReplaceAllString(cleaned, "$1")
 
-	rendered, err := glamour.Render(cleaned, "auto")
-	if err != nil {
-		fmt.Fprintln(w, cleaned)
-		return
-	}
-	fmt.Fprint(w, rendered)
+	fmt.Fprintln(w, cleaned)
 }

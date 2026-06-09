@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"io"
 	"strings"
-
-	"golang.org/x/term"
 )
 
 const ansiUpErase = "\033[1A\033[2K"
@@ -57,9 +55,5 @@ func (s *statusLine) clear() {
 
 // terminalWidth returns the terminal width, defaulting to 80.
 func terminalWidth() int {
-	w, _, err := term.GetSize(2) // fd 2 = stderr
-	if err != nil || w <= 0 {
-		return 80
-	}
-	return w
+	return 80
 }
