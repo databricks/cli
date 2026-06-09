@@ -2,11 +2,13 @@ package resources
 
 import (
 	"context"
+	"errors"
 	"net/url"
 
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
 )
@@ -66,7 +68,11 @@ func (*GenieSpace) Exists(ctx context.Context, w *databricks.WorkspaceClient, id
 		SpaceId: id,
 	})
 	if err != nil {
-		log.Debugf(ctx, "genie space %s does not exist", id)
+		// The Genie API returns 403 (not 404) when a space does not exist.
+		if apierr.IsMissing(err) || errors.Is(err, apierr.ErrPermissionDenied) {
+			log.Debugf(ctx, "genie space %s does not exist", id)
+			return false, nil
+		}
 		return false, err
 	}
 	return true, nil
