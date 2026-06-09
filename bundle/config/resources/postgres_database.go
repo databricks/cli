@@ -6,6 +6,7 @@ import (
 
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/postgres"
 )
@@ -36,8 +37,11 @@ type PostgresDatabase struct {
 
 func (d *PostgresDatabase) Exists(ctx context.Context, w *databricks.WorkspaceClient, name string) (bool, error) {
 	_, err := w.Postgres.GetDatabase(ctx, postgres.GetDatabaseRequest{Name: name})
-	if err != nil {
+	if apierr.IsMissing(err) {
 		log.Debugf(ctx, "postgres database %s does not exist", name)
+		return false, nil
+	}
+	if err != nil {
 		return false, err
 	}
 	return true, nil
