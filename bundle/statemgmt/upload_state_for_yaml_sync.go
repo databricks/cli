@@ -113,26 +113,26 @@ func uploadState(ctx context.Context, b *bundle.Bundle) error {
 
 func (m *uploadStateForYamlSync) convertState(ctx context.Context, b *bundle.Bundle, snapshotPath string) (bool, error) {
 	_, localTerraformPath := b.StateFilenameTerraform(ctx)
-	tfAttrs, terraformResources, tfMeta, err := migrate.ParseTFStateFull(ctx, localTerraformPath)
+	tfState, err := migrate.ParseTFStateFull(ctx, localTerraformPath)
 	if err != nil {
 		return false, fmt.Errorf("failed to parse terraform state: %w", err)
 	}
 
 	// ParseTFStateFull returns nil IDs when the terraform state file doesn't exist
 	// (e.g. first deploy with no resources).
-	if terraformResources == nil {
+	if tfState == nil {
 		return false, nil
 	}
 
 	state := make(map[string]dstate.ResourceEntry)
-	for key, resourceEntry := range terraformResources {
+	for key, resourceEntry := range tfState.IDs {
 		state[key] = dstate.ResourceEntry{
 			ID:    resourceEntry.ID,
 			State: json.RawMessage("{}"),
 		}
 	}
 
-	migratedDB := dstate.NewDatabase(tfMeta.Lineage, tfMeta.Serial+1)
+	migratedDB := dstate.NewDatabase(tfState.Lineage, tfState.Serial+1)
 	migratedDB.State = state
 
 	var stateDB dstate.DeploymentState
@@ -172,7 +172,7 @@ func (m *uploadStateForYamlSync) convertState(ctx context.Context, b *bundle.Bun
 		return false, fmt.Errorf("upgrading state for apply: %w", err)
 	}
 
-	if err := migrate.BuildStateFromTF(ctx, &uninterpolatedConfig, adapters, &stateDB, tfAttrs, terraformResources); err != nil {
+	if err := migrate.BuildStateFromTF(ctx, &uninterpolatedConfig, adapters, &stateDB, tfState.Attrs, tfState.IDs); err != nil {
 		return false, err
 	}
 
