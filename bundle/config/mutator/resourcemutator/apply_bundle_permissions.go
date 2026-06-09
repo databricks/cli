@@ -13,6 +13,7 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
+	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 )
 
@@ -236,9 +237,10 @@ func notifyForPermissionOverlap(
 	resourcePermissions []resources.Permission,
 	resourceName string,
 ) bool {
-	isOverlap, _ := isPermissionOverlap(permission, resourcePermissions, resourceName)
-	// TODO: When we start to collect all diagnostics at the top level and visualize jointly,
-	// use diagnostics returned from isPermissionOverlap to display warnings
+	isOverlap, diagnostics := isPermissionOverlap(permission, resourcePermissions, resourceName)
+	for _, d := range diagnostics {
+		logdiag.LogDiag(ctx, d)
+	}
 
 	return isOverlap
 }

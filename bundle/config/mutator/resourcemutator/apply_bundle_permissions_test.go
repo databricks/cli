@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -190,6 +191,10 @@ func TestWarningOnOverlapPermission(t *testing.T) {
 
 	diags := bundle.Apply(t.Context(), b, ApplyBundlePermissions())
 	require.NoError(t, diags.Error())
+
+	require.Len(t, diags, 1)
+	require.Equal(t, diag.Warning, diags[0].Severity)
+	require.Equal(t, "'jobs' already has permissions set for 'TestUser' user name", diags[0].Summary)
 
 	require.Contains(t, b.Config.Resources.Jobs["job_1"].Permissions, resources.JobPermission{Level: "CAN_VIEW", UserName: "TestUser"})
 	require.Contains(t, b.Config.Resources.Jobs["job_1"].Permissions, resources.JobPermission{Level: "CAN_VIEW", GroupName: "TestGroup"})
