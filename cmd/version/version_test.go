@@ -64,6 +64,16 @@ You're on the latest version.
 This is a development build; skipping the update check.
 `,
 		},
+		{
+			name: "check failed",
+			result: versioncheck.Result{
+				CurrentVersion: "0.240.0",
+				CheckFailed:    true,
+			},
+			want: `Databricks CLI v0.240.0
+Could not reach GitHub to check for a newer version. See https://github.com/databricks/cli/releases for the latest release.
+`,
+		},
 	}
 
 	for _, tt := range tests {

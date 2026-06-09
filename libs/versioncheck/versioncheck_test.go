@@ -112,12 +112,28 @@ func TestCheck(t *testing.T) {
 		assert.Empty(t, result.LatestVersion)
 	})
 
-	t.Run("server error surfaces", func(t *testing.T) {
+	t.Run("server error fails gently", func(t *testing.T) {
 		build.SetBuildVersion("0.240.0")
 		srv := newReleaseServer(t, http.StatusInternalServerError, "")
 		t.Setenv(gitHubAPIURLEnv, srv.URL)
 
-		_, err := Check(t.Context())
-		require.Error(t, err)
+		result, err := Check(t.Context())
+		require.NoError(t, err)
+		assert.True(t, result.CheckFailed)
+		assert.False(t, result.UpdateAvailable)
+		assert.Empty(t, result.LatestVersion)
+	})
+
+	t.Run("unreachable GitHub fails gently", func(t *testing.T) {
+		build.SetBuildVersion("0.240.0")
+		// A server closed immediately gives a definitely-refused port.
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+		url := srv.URL
+		srv.Close()
+		t.Setenv(gitHubAPIURLEnv, url)
+
+		result, err := Check(t.Context())
+		require.NoError(t, err)
+		assert.True(t, result.CheckFailed)
 	})
 }
