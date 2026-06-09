@@ -20,10 +20,12 @@ type DataSourcePostgresBranchStatus struct {
 	BranchId         string `json:"branch_id,omitempty"`
 	CurrentState     string `json:"current_state,omitempty"`
 	Default          bool   `json:"default,omitempty"`
+	DeleteTime       string `json:"delete_time,omitempty"`
 	ExpireTime       string `json:"expire_time,omitempty"`
 	IsProtected      bool   `json:"is_protected,omitempty"`
 	LogicalSizeBytes int    `json:"logical_size_bytes,omitempty"`
 	PendingState     string `json:"pending_state,omitempty"`
+	PurgeTime        string `json:"purge_time,omitempty"`
 	SourceBranch     string `json:"source_branch,omitempty"`
 	SourceBranchLsn  string `json:"source_branch_lsn,omitempty"`
 	SourceBranchTime string `json:"source_branch_time,omitempty"`
