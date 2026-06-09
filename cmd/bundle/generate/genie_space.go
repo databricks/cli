@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"maps"
 	"os"
 	"path"
@@ -61,10 +60,6 @@ type genieSpace struct {
 
 	// Automatically bind the generated resource to the existing resource.
 	bind bool
-
-	// Output and error streams.
-	out io.Writer
-	err io.Writer
 }
 
 func (g *genieSpace) resolveFromID(ctx context.Context, b *bundle.Bundle) string {
@@ -441,10 +436,7 @@ The --watch flag continuously polls for remote changes and updates your local
 bundle files automatically, useful during active Genie space development.`,
 	}
 
-	g := &genieSpace{
-		out: cmd.OutOrStdout(),
-		err: cmd.ErrOrStderr(),
-	}
+	g := &genieSpace{}
 
 	// Lookup flags.
 	cmd.Flags().StringVar(&g.existingID, "existing-id", "", `ID of the Genie space to generate configuration for`)
