@@ -1,9 +1,9 @@
-package onechat
+package genie
 
 import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/experimental/agentstream"
-	onechatlib "github.com/databricks/cli/experimental/onechat"
+	genielib "github.com/databricks/cli/experimental/genie"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/spf13/cobra"
@@ -16,14 +16,14 @@ func newAskCmd() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "ask QUESTION",
-		Short: "Ask a data question via Databricks One Chat",
-		Long: `Ask a data question and get an answer from Databricks One Chat.
+		Short: "Ask a data question via Databricks Genie",
+		Long: `Ask a data question and get an answer from Databricks Genie.
 
 Examples:
-  databricks experimental onechat ask "What were total sales last month?"
-  databricks experimental onechat ask "What tables exist?" --output json
-  databricks experimental onechat ask "What tables exist?" --warehouse-id abc123
-  databricks experimental onechat ask "What tables exist?" --debug`,
+  databricks experimental genie ask "What were total sales last month?"
+  databricks experimental genie ask "What tables exist?" --output json
+  databricks experimental genie ask "What tables exist?" --warehouse-id abc123
+  databricks experimental genie ask "What tables exist?" --debug`,
 		Args: root.ExactArgs(1),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			cmd.SetContext(root.SkipLoadBundle(cmd.Context()))
@@ -34,9 +34,9 @@ Examples:
 			w := cmdctx.WorkspaceClient(ctx)
 
 			question := args[0]
-			req := onechatlib.BuildRequest(question, warehouseID)
+			req := genielib.BuildRequest(question, warehouseID)
 
-			body, err := onechatlib.PostStream(ctx, w.Config, req)
+			body, err := genielib.PostStream(ctx, w.Config, req)
 			if err != nil {
 				return err
 			}
@@ -46,7 +46,7 @@ Examples:
 				return agentstream.RenderDebug(body, cmd.OutOrStdout())
 			}
 
-			adapt := onechatlib.NewAdaptSSE()
+			adapt := genielib.NewAdaptSSE()
 
 			outputType := root.OutputType(cmd)
 			if outputType == flags.OutputJSON {

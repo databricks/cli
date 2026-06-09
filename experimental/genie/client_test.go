@@ -1,4 +1,4 @@
-package onechat
+package genie
 
 import (
 	"testing"

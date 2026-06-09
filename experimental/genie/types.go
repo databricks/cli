@@ -1,7 +1,7 @@
-package onechat
+package genie
 
-// OneChatRequest is the request body for POST /api/2.0/data-rooms/tools/onechat/responses.
-type OneChatRequest struct {
+// GenieRequest is the request body for POST /api/2.0/data-rooms/tools/onechat/responses.
+type GenieRequest struct {
 	Input       []InputItem `json:"input"`
 	WarehouseID string      `json:"warehouseId,omitempty"`
 }
@@ -81,10 +81,10 @@ type SSEEventEnvelope struct {
 // It uses json.RawMessage for metadata since viz events contain nested objects.
 type funcCallOutputEvent struct {
 	Item struct {
-		Type     string          `json:"type"`
-		ID       string          `json:"id"`
-		Status   string          `json:"status"`
-		Output   string          `json:"output"`
+		Type     string             `json:"type"`
+		ID       string             `json:"id"`
+		Status   string             `json:"status"`
+		Output   string             `json:"output"`
 		Metadata funcCallOutputMeta `json:"metadata"`
 	} `json:"item"`
 }

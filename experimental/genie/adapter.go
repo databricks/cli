@@ -1,4 +1,4 @@
-package onechat
+package genie
 
 import (
 	"encoding/json"
@@ -37,7 +37,7 @@ const (
 	contentOutputText = "output_text"
 )
 
-// AdaptSSE converts a raw OneChat SSE data payload into StreamEvents.
+// AdaptSSE converts a raw Genie SSE data payload into StreamEvents.
 // This is the stateless version for backward compatibility. It does not
 // track query results, so it cannot emit viz events.
 func AdaptSSE(data string) []agentstream.StreamEvent {

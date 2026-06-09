@@ -19,7 +19,7 @@ var vizEmbedBlockRe = regexp.MustCompile(`(?s)<!-- begin-embedded:viz_\w+ -->.*?
 var vizImageRe = regexp.MustCompile(`!\[[^\]]*\]\(#viz_\w+\)\n?`)
 
 // renderMarkdown renders markdown text for the terminal using glamour.
-// Strips OneChat embedded blocks and viz image references before rendering.
+// Strips Genie embedded blocks and viz image references before rendering.
 func renderMarkdown(w io.Writer, text string) {
 	// Remove viz embedded blocks entirely (rendered as terminal charts).
 	cleaned := vizEmbedBlockRe.ReplaceAllString(text, "")

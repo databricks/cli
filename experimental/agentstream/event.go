@@ -55,7 +55,7 @@ type ToolCallEvent struct {
 }
 
 // AdapterFunc converts a raw SSE data payload into zero or more StreamEvents.
-// Each protocol (OneChat, ChatCompletions, Anthropic) implements one of these.
+// Each protocol (Genie, ChatCompletions, Anthropic) implements one of these.
 type AdapterFunc func(data string) []StreamEvent
 
 // RenderOptions controls what RenderText displays.
