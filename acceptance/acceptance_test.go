@@ -757,6 +757,21 @@ func runTest(t *testing.T,
 	cmd.Env = append(cmd.Env, "TESTDIR="+absDir)
 	cmd.Env = append(cmd.Env, "CLOUD_ENV="+cloudEnv)
 	cmd.Env = append(cmd.Env, "CURRENT_USER_NAME="+user.UserName)
+	if !isRunningOnCloud {
+		proxyURL := internal.StartBlockingProxy(t)
+		// Only block HTTPS: the local test server is plain HTTP (http://127.0.0.1:PORT)
+		// so HTTP_PROXY would intercept its traffic. All real external calls use HTTPS.
+		cmd.Env = append(cmd.Env, "HTTPS_PROXY="+proxyURL)
+		// Python's urllib does not automatically bypass the proxy for loopback
+		// addresses the way Go does, so the test-server helper scripts
+		// (kill_after.py, callserver.py, …) would route their requests through
+		// the blocking proxy. NO_PROXY exempts them.
+		cmd.Env = append(cmd.Env, "NO_PROXY=127.0.0.1,localhost")
+		// Terraform phones home to checkpoint-api.hashicorp.com on every run to
+		// check for updates. Disable it so these CONNECT requests don't reach the
+		// blocking proxy and fail every terraform-engine test.
+		cmd.Env = append(cmd.Env, "CHECKPOINT_DISABLE=1")
+	}
 	cmd.Dir = tmpDir
 
 	outputPath := filepath.Join(tmpDir, "output.txt")

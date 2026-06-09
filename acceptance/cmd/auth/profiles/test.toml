@@ -1,3 +1,9 @@
 Ignore = [
     "home"
 ]
+
+# auth profiles loads profiles concurrently, so hostmetadata warning order is
+# non-deterministic. Strip these lines so the output is stable.
+[[Repls]]
+Old = 'Warn: \[hostmetadata\] failed to fetch host metadata for .+, will skip for .+\n'
+New = ''
