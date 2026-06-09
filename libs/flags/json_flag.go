@@ -2,6 +2,7 @@ package flags
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"reflect"
@@ -23,6 +24,10 @@ func (j *JsonFlag) String() string {
 
 // TODO: Command.MarkFlagFilename()
 func (j *JsonFlag) Set(v string) error {
+	// Reject empty input (e.g. --json "$EMPTY_VAR") instead of panicking on v[0] below.
+	if v == "" {
+		return errors.New("expected inline JSON or @path/to/file, got an empty string")
+	}
 	// Load request from file if it starts with '@' (like curl).
 	if v[0] != '@' {
 		j.raw = []byte(v)
