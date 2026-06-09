@@ -143,3 +143,33 @@ func TestAdaptSSE_VizWithoutDefinitionIgnored(t *testing.T) {
 	viz := `{"type":"response.output_item.done","item":{"type":"function_call_output","id":"o3","call_id":"c3","status":"completed","metadata":{"ui_type":"VIZ","embed_id":"v2"}}}`
 	assert.Empty(t, adapt(viz))
 }
+
+func TestAdaptSSE_OutputFinalResponse(t *testing.T) {
+	data := `{"type":"response.output_item.added","output_index":0,"item":{"type":"function_call","id":"f1","call_id":"c1","name":"output_final_response","arguments":"{\"response\":\"The answer is 42.\"}"}}`
+	events := AdaptSSE(data)
+	require.Len(t, events, 1)
+	assert.Equal(t, agentstream.EventFinalResponse, events[0].Kind)
+	assert.Equal(t, "The answer is 42.", events[0].Text)
+}
+
+func TestAdaptSSE_AskUserQuestions(t *testing.T) {
+	data := `{"type":"response.output_item.added","output_index":0,"item":{"type":"function_call","id":"f2","call_id":"c2","name":"ask_user_questions","arguments":"{\"questions\":[{\"question\":\"Which region?\",\"type\":\"choice\",\"choices\":[{\"label\":\"US\",\"description\":\"United States\"},{\"label\":\"EU\"}]}]}"}}`
+	events := AdaptSSE(data)
+	require.Len(t, events, 1)
+	assert.Equal(t, agentstream.EventText, events[0].Kind)
+	assert.Contains(t, events[0].Text, "Which region?")
+	assert.Contains(t, events[0].Text, "US: United States")
+	assert.Contains(t, events[0].Text, "EU")
+}
+
+func TestNewAdaptSSE_DedupsFunctionCall(t *testing.T) {
+	adapt := NewAdaptSSE()
+	added := `{"type":"response.output_item.added","output_index":0,"item":{"type":"function_call","id":"f3","call_id":"c3","name":"output_final_response","arguments":"{\"response\":\"Hello.\"}"}}`
+	events := adapt(added)
+	require.Len(t, events, 1)
+	assert.Equal(t, agentstream.EventFinalResponse, events[0].Kind)
+
+	// The same item re-observed (e.g. on .done) must not emit a second time.
+	done := `{"type":"response.output_item.done","output_index":0,"item":{"type":"function_call","id":"f3","call_id":"c3","name":"output_final_response","arguments":"{\"response\":\"Hello.\"}"}}`
+	assert.Empty(t, adapt(done))
+}

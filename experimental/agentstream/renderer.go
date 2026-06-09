@@ -37,6 +37,8 @@ func RenderText(r io.Reader, stdout, stderr io.Writer, adapt AdapterFunc, opts R
 	status.update("Waiting for response...")
 
 	var vizBuffer []*VizEvent
+	var finalResponse string
+	renderedText := false
 
 	for {
 		ev, err := reader.Next()
@@ -57,6 +59,11 @@ func RenderText(r io.Reader, stdout, stderr io.Writer, adapt AdapterFunc, opts R
 			case EventText:
 				status.clear()
 				renderMarkdown(stdout, se.Text)
+				renderedText = true
+			case EventFinalResponse:
+				// Buffer the tool-delivered answer; render it after the stream
+				// only if no assistant message already showed the answer.
+				finalResponse = se.Text
 			case EventToolCall:
 				if se.ToolCall != nil && opts.ShowSQL && isSQLTool(se.ToolCall.Name) {
 					status.clear()
@@ -77,6 +84,12 @@ func RenderText(r io.Reader, stdout, stderr io.Writer, adapt AdapterFunc, opts R
 				}
 			}
 		}
+	}
+
+	// If the answer arrived only via output_final_response (no assistant
+	// message), render it now so it isn't lost.
+	if !renderedText && finalResponse != "" {
+		renderMarkdown(stdout, finalResponse)
 	}
 
 	// Render charts after all text output.
@@ -111,6 +124,12 @@ func RenderJSON(r io.Reader, w io.Writer, adapt AdapterFunc) error {
 				// Thinking events are only relevant for text rendering; skip in JSON.
 			case EventText:
 				result.Text = se.Text
+			case EventFinalResponse:
+				// Prefer the assistant message; use the tool-delivered answer
+				// only if no message text was captured.
+				if result.Text == "" {
+					result.Text = se.Text
+				}
 			case EventToolCall:
 				if se.ToolCall != nil {
 					tc := ToolCall{

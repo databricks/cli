@@ -4,12 +4,13 @@ package agentstream
 type EventKind int
 
 const (
-	EventThinking EventKind = iota // status line on stderr
-	EventText                      // markdown to stdout
-	EventToolCall                  // function call (e.g. execute_sql)
-	EventError                     // API error
-	EventDone                      // stream completed
-	EventViz                       // visualization chart
+	EventThinking      EventKind = iota // status line on stderr
+	EventText                           // markdown to stdout
+	EventToolCall                       // function call (e.g. execute_sql)
+	EventError                          // API error
+	EventDone                           // stream completed
+	EventViz                            // visualization chart
+	EventFinalResponse                  // answer delivered via the output_final_response tool
 )
 
 // StreamEvent is the protocol-agnostic unit that renderers consume.

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/databricks/cli/experimental/agentstream"
 )
@@ -37,6 +38,14 @@ const (
 const (
 	roleAssistant     = "assistant"
 	contentOutputText = "output_text"
+)
+
+// Tool names that carry user-facing output rather than hidden tool activity:
+// output_final_response delivers the answer, ask_user_questions asks the user
+// to clarify. Other tool calls are intermediate activity and stay hidden.
+const (
+	toolOutputFinalResponse = "output_final_response"
+	toolAskUserQuestions    = "ask_user_questions"
 )
 
 // AdaptSSE converts a raw Genie SSE data payload into StreamEvents.
@@ -136,6 +145,39 @@ func adaptOutputItem(b []byte, raw string) []agentstream.StreamEvent {
 	case itemMessage:
 		return adaptMessage(item, raw)
 	case itemFunctionCall:
+		return adaptFunctionCall(item, raw)
+	default:
+		return nil
+	}
+}
+
+// adaptFunctionCall converts a function_call item into stream events. Most tool
+// calls become EventToolCall (hidden unless they are SQL with --include-sql),
+// but two carry user-facing output that would otherwise be lost: the final
+// answer (output_final_response) and clarification prompts (ask_user_questions).
+func adaptFunctionCall(item OutputItem, raw string) []agentstream.StreamEvent {
+	switch item.Name {
+	case toolOutputFinalResponse:
+		text := finalResponseText(item.Arguments)
+		if text == "" {
+			return nil
+		}
+		return []agentstream.StreamEvent{{
+			Kind: agentstream.EventFinalResponse,
+			Text: text,
+			Raw:  raw,
+		}}
+	case toolAskUserQuestions:
+		text := formatQuestions(item.Arguments)
+		if text == "" {
+			return nil
+		}
+		return []agentstream.StreamEvent{{
+			Kind: agentstream.EventText,
+			Text: text,
+			Raw:  raw,
+		}}
+	default:
 		return []agentstream.StreamEvent{{
 			Kind: agentstream.EventToolCall,
 			ToolCall: &agentstream.ToolCallEvent{
@@ -144,9 +186,59 @@ func adaptOutputItem(b []byte, raw string) []agentstream.StreamEvent {
 			},
 			Raw: raw,
 		}}
-	default:
-		return nil
 	}
+}
+
+// finalResponseText extracts the answer from an output_final_response tool
+// call's arguments ({"response": "..."}).
+func finalResponseText(arguments string) string {
+	var args struct {
+		Response string `json:"response"`
+	}
+	if err := json.Unmarshal([]byte(arguments), &args); err != nil {
+		return ""
+	}
+	return args.Response
+}
+
+// formatQuestions renders an ask_user_questions tool call's arguments into a
+// readable clarification prompt. Arguments are
+// {"questions": [{"question", "type", "choices": [{"label", "description"}]}]}.
+func formatQuestions(arguments string) string {
+	var args struct {
+		Questions []struct {
+			Question string `json:"question"`
+			Type     string `json:"type"`
+			Choices  []struct {
+				Label       string `json:"label"`
+				Description string `json:"description"`
+			} `json:"choices"`
+		} `json:"questions"`
+	}
+	if err := json.Unmarshal([]byte(arguments), &args); err != nil {
+		return ""
+	}
+	if len(args.Questions) == 0 {
+		return ""
+	}
+	var b strings.Builder
+	b.WriteString("The agent needs clarification:\n")
+	for i, q := range args.Questions {
+		fmt.Fprintf(&b, "\n%d. %s", i+1, q.Question)
+		if q.Type == "confirmation" {
+			b.WriteString(" (yes / no)")
+		}
+		b.WriteString("\n")
+		for _, c := range q.Choices {
+			if c.Description != "" {
+				fmt.Fprintf(&b, "   - %s: %s\n", c.Label, c.Description)
+			} else {
+				fmt.Fprintf(&b, "   - %s\n", c.Label)
+			}
+		}
+	}
+	b.WriteString("\nReply in plain text to continue.")
+	return b.String()
 }
 
 // itemTypeEnvelope extracts just the item type from an SSE event.
@@ -170,6 +262,21 @@ func adaptOutputItemStateful(b []byte, raw string, queryData map[string]*agentst
 	case itemFunctionCallOutput:
 		// Parse with funcCallOutputEvent which handles non-string metadata.
 		return adaptFuncCallOutput(b, raw, queryData, processed)
+	case itemFunctionCall:
+		// Dedup by item ID so an item seen on both .added and .done doesn't
+		// double-emit. This matters for output_final_response and
+		// ask_user_questions, which render (unlike hidden tool calls).
+		var event SSEOutputItemEvent
+		if err := json.Unmarshal(b, &event); err != nil {
+			return nil
+		}
+		if event.Item.ID != "" {
+			if processed[event.Item.ID] {
+				return nil
+			}
+			processed[event.Item.ID] = true
+		}
+		return adaptFunctionCall(event.Item, raw)
 	default:
 		// For other item types, use the original struct (metadata is string-only).
 		return adaptOutputItem(b, raw)

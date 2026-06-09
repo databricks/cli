@@ -116,10 +116,7 @@ func renderBarChart(w io.Writer, spec *VizSpec, data *TableData, width int) {
 
 	// Bar width (chars available for the bar itself).
 	// Cap at 50 chars so bars stay readable on wide terminals.
-	barWidth := max(width-maxLabel-maxValLen-8, minChartWidth)
-	if barWidth > 50 {
-		barWidth = 50
-	}
+	barWidth := min(max(width-maxLabel-maxValLen-8, minChartWidth), 50)
 
 	multiSeries := len(series) > 1
 	nGroups := len(series[0].Values)
@@ -196,10 +193,7 @@ func renderLineChart(w io.Writer, spec *VizSpec, data *TableData, width int, fil
 
 	// Chart dimensions. Cap width at 70 chars so charts stay
 	// compact on wide terminals.
-	cw := max(width-yLabelWidth-4, minChartWidth)
-	if cw > 70 {
-		cw = 70
-	}
+	cw := min(max(width-yLabelWidth-4, minChartWidth), 70)
 	// Height is roughly 40% of width for a pleasing aspect ratio.
 	ch := min(max(10, cw*2/5), 25)
 
@@ -224,8 +218,7 @@ func renderLineChart(w io.Writer, spec *VizSpec, data *TableData, width int, fil
 
 	// Plot each series. Render in reverse order so the first series
 	// (visually most important) wins color conflicts.
-	for si, v := range slices.Backward(series) {
-		s := v
+	for si, s := range slices.Backward(series) {
 		nPts := len(s.Values)
 		if nPts == 0 {
 			continue
