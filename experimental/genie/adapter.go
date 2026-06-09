@@ -26,6 +26,9 @@ const (
 	itemFunctionCallOutput = "function_call_output"
 )
 
+// itemStatusCompleted is the item status carried by fully populated items.
+const itemStatusCompleted = "completed"
+
 // UI type metadata constants.
 const (
 	uiTypeThought       = "THOUGHT"
@@ -48,15 +51,13 @@ const (
 	toolAskUserQuestions    = "ask_user_questions"
 )
 
-// AdaptSSE converts a raw Genie SSE data payload into StreamEvents.
-// This is the stateless version for backward compatibility. It does not
-// track query results, so it cannot emit viz events.
-func AdaptSSE(data string) []agentstream.StreamEvent {
-	return adaptStateless(data)
-}
-
 // NewAdaptSSE creates a stateful adapter that tracks SQL query results
 // and emits EventViz events when visualizations are encountered.
+//
+// Unknown event types are ignored (the server may add new ones), but a known
+// event whose payload fails to decode becomes EventUnparsed: dropping those
+// silently is how a metadata type change once made this command print
+// nothing and exit 0.
 func NewAdaptSSE() agentstream.AdapterFunc {
 	queryData := make(map[string]*agentstream.TableData) // statement_id -> parsed table
 	processed := make(map[string]bool)                   // item ID -> already handled
@@ -66,7 +67,7 @@ func NewAdaptSSE() agentstream.AdapterFunc {
 
 		var envelope SSEEventEnvelope
 		if err := json.Unmarshal(b, &envelope); err != nil {
-			return nil
+			return unparsed(data)
 		}
 
 		switch envelope.Type {
@@ -82,34 +83,27 @@ func NewAdaptSSE() agentstream.AdapterFunc {
 	}
 }
 
-func adaptStateless(data string) []agentstream.StreamEvent {
-	b := []byte(data)
-
-	var envelope SSEEventEnvelope
-	if err := json.Unmarshal(b, &envelope); err != nil {
-		return nil
-	}
-
-	switch envelope.Type {
-	case eventError:
-		return adaptError(b, data)
-	case eventResponseDone, eventResponseComplete:
-		return adaptResponseDone(b, data)
-	case eventOutputItemAdded:
-		return adaptOutputItem(b, data)
-	default:
-		return nil
-	}
+// unparsed flags a payload the adapter recognized but could not decode.
+func unparsed(raw string) []agentstream.StreamEvent {
+	return []agentstream.StreamEvent{{
+		Kind: agentstream.EventUnparsed,
+		Raw:  raw,
+	}}
 }
 
+// adaptError converts a server error event. It never returns nil: an error
+// event in an unexpected shape must still fail the stream loudly, so the raw
+// payload stands in when no message can be extracted.
 func adaptError(b []byte, raw string) []agentstream.StreamEvent {
 	var sseErr SSEError
-	if err := json.Unmarshal(b, &sseErr); err != nil || sseErr.Message == "" {
-		return nil
+	_ = json.Unmarshal(b, &sseErr)
+	text := sseErr.Message
+	if text == "" {
+		text = raw
 	}
 	return []agentstream.StreamEvent{{
 		Kind:      agentstream.EventError,
-		Text:      sseErr.Message,
+		Text:      text,
 		ErrorCode: sseErr.ErrorCodeString(),
 		Raw:       raw,
 	}}
@@ -118,23 +112,15 @@ func adaptError(b []byte, raw string) []agentstream.StreamEvent {
 func adaptResponseDone(b []byte, raw string) []agentstream.StreamEvent {
 	var done SSEResponseDone
 	if err := json.Unmarshal(b, &done); err != nil {
-		return nil
+		// An undecodable completion event must not pass for a successful
+		// one; the renderers treat a stream without EventDone as incomplete.
+		return unparsed(raw)
 	}
 	return []agentstream.StreamEvent{{
 		Kind:   agentstream.EventDone,
 		Status: done.Response.Status,
 		Raw:    raw,
 	}}
-}
-
-// adaptOutputItem handles output items without state (original behavior).
-func adaptOutputItem(b []byte, raw string) []agentstream.StreamEvent {
-	var event SSEOutputItemEvent
-	if err := json.Unmarshal(b, &event); err != nil {
-		return nil
-	}
-
-	return adaptOutputItemValue(event.Item, raw)
 }
 
 func adaptOutputItemValue(item OutputItem, raw string) []agentstream.StreamEvent {
@@ -181,6 +167,12 @@ func adaptFunctionCall(item OutputItem, raw string) []agentstream.StreamEvent {
 			Raw:  raw,
 		}}
 	default:
+		// The .added event for a tool call can carry empty arguments that are
+		// only filled in on the matching .done event. Emitting the empty call
+		// would mark the item as processed and dedupe away the real one.
+		if item.Arguments == "" {
+			return nil
+		}
 		return []agentstream.StreamEvent{{
 			Kind: agentstream.EventToolCall,
 			ToolCall: &agentstream.ToolCallEvent{
@@ -258,7 +250,7 @@ func adaptOutputItemStateful(b []byte, raw string, queryData map[string]*agentst
 	// First pass: detect item type without parsing metadata.
 	var typeCheck itemTypeEnvelope
 	if err := json.Unmarshal(b, &typeCheck); err != nil {
-		return nil
+		return unparsed(raw)
 	}
 
 	switch typeCheck.Item.Type {
@@ -268,7 +260,7 @@ func adaptOutputItemStateful(b []byte, raw string, queryData map[string]*agentst
 	default:
 		var event SSEOutputItemEvent
 		if err := json.Unmarshal(b, &event); err != nil {
-			return nil
+			return unparsed(raw)
 		}
 		if event.Item.ID != "" {
 			if processed[event.Item.ID] {
@@ -288,11 +280,11 @@ func adaptOutputItemStateful(b []byte, raw string, queryData map[string]*agentst
 func adaptFuncCallOutput(b []byte, raw string, queryData map[string]*agentstream.TableData, processed map[string]bool) []agentstream.StreamEvent {
 	var event funcCallOutputEvent
 	if err := json.Unmarshal(b, &event); err != nil {
-		return nil
+		return unparsed(raw)
 	}
 
 	item := event.Item
-	if item.Status != "completed" {
+	if item.Status != itemStatusCompleted {
 		return nil
 	}
 

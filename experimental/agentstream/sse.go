@@ -2,6 +2,8 @@ package agentstream
 
 import (
 	"bufio"
+	"errors"
+	"fmt"
 	"io"
 	"strings"
 )
@@ -50,6 +52,10 @@ func (r *SSEReader) Next() (*SSEEvent, error) {
 	}
 
 	if err := r.scanner.Err(); err != nil {
+		// "token too long" means nothing to a user; say what limit was hit.
+		if errors.Is(err, bufio.ErrTooLong) {
+			return nil, fmt.Errorf("SSE event exceeds the %d MiB line limit: %w", maxSSELineSize>>20, err)
+		}
 		return nil, err
 	}
 

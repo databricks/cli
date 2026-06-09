@@ -1,19 +1,22 @@
 package genie
 
 import (
+	"context"
 	"errors"
+	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/experimental/agentstream"
 	genielib "github.com/databricks/cli/experimental/genie"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/spf13/cobra"
 )
 
 func newAskCmd() *cobra.Command {
 	var warehouseID string
-	var debug bool
+	var raw bool
 	var includeSQL bool
 
 	cmd := &cobra.Command{
@@ -25,7 +28,7 @@ Examples:
   databricks experimental genie ask "What were total sales last month?"
   databricks experimental genie ask "What tables exist?" --output json
   databricks experimental genie ask "What tables exist?" --warehouse-id abc123
-  databricks experimental genie ask "What tables exist?" --debug`,
+  databricks experimental genie ask "What tables exist?" --raw`,
 		Args: root.ExactArgs(1),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			cmd.SetContext(root.SkipLoadBundle(cmd.Context()))
@@ -34,14 +37,15 @@ Examples:
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			outputType := root.OutputType(cmd)
-			if debug && outputType == flags.OutputJSON {
-				return errors.New("--debug cannot be used with --output json")
+			if raw && outputType == flags.OutputJSON {
+				return errors.New("--raw cannot be used with --output json")
+			}
+			if raw && includeSQL {
+				return errors.New("--include-sql cannot be used with --raw")
 			}
 
 			w := cmdctx.WorkspaceClient(ctx)
-
-			question := args[0]
-			req := genielib.BuildRequest(question, warehouseID)
+			req := genielib.BuildRequest(args[0], warehouseID)
 
 			body, err := genielib.PostStream(ctx, w.Config, req)
 			if err != nil {
@@ -49,24 +53,33 @@ Examples:
 			}
 			defer body.Close()
 
-			if debug {
-				return agentstream.RenderDebug(body, cmd.OutOrStdout())
+			switch {
+			case raw:
+				err = agentstream.RenderDebug(body, cmd.OutOrStdout())
+			case outputType == flags.OutputJSON:
+				err = agentstream.RenderJSON(body, cmd.OutOrStdout(), cmd.ErrOrStderr(), genielib.NewAdaptSSE())
+			default:
+				opts := agentstream.RenderOptions{
+					ShowSQL: includeSQL,
+					Color:   cmdio.SupportsColor(ctx, cmd.OutOrStdout()),
+				}
+				err = agentstream.RenderText(ctx, body, cmd.OutOrStdout(), cmd.ErrOrStderr(), genielib.NewAdaptSSE(), opts)
 			}
 
-			adapt := genielib.NewAdaptSSE()
-
-			if outputType == flags.OutputJSON {
-				return agentstream.RenderJSON(body, cmd.OutOrStdout(), adapt)
+			// The SDK's inactivity timeout cancels the body's read context, so
+			// a stalled stream surfaces as context.Canceled while the command's
+			// own context is still alive. Translate it; "context canceled" is
+			// not actionable.
+			if err != nil && errors.Is(err, context.Canceled) && ctx.Err() == nil {
+				return fmt.Errorf("the response stream stalled (no data received for %d minutes): %w", genielib.StreamingTimeoutSeconds/60, err)
 			}
-
-			opts := agentstream.RenderOptions{ShowSQL: includeSQL}
-			return agentstream.RenderText(body, cmd.OutOrStdout(), cmd.ErrOrStderr(), adapt, opts)
+			return err
 		},
 	}
 
 	cmd.Flags().StringVar(&warehouseID, "warehouse-id", "", "SQL warehouse ID (auto-resolves if omitted)")
-	cmd.Flags().BoolVar(&debug, "debug", false, "Print raw SSE events for debugging")
-	cmd.Flags().BoolVar(&includeSQL, "include-sql", false, "Show SQL queries executed by the agent in text output")
+	cmd.Flags().BoolVar(&raw, "raw", false, "Print raw SSE events instead of rendered output")
+	cmd.Flags().BoolVar(&includeSQL, "include-sql", false, "Show SQL queries executed by the agent (text output; JSON always includes them)")
 
 	return cmd
 }

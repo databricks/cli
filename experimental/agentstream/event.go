@@ -11,6 +11,7 @@ const (
 	EventDone                           // stream completed
 	EventViz                            // visualization chart
 	EventFinalResponse                  // answer delivered via the output_final_response tool
+	EventUnparsed                       // event the adapter recognized but could not parse
 )
 
 // StreamEvent is the protocol-agnostic unit that renderers consume.
@@ -62,12 +63,14 @@ type AdapterFunc func(data string) []StreamEvent
 // RenderOptions controls what RenderText displays.
 type RenderOptions struct {
 	ShowSQL bool // display SQL queries executed by the agent
+	Color   bool // emit ANSI colors (callers gate this on cmdio.SupportsColor)
 }
 
 // StreamResult is the structured output for --output json mode.
 type StreamResult struct {
 	Status    string     `json:"status"`
 	Text      string     `json:"text,omitempty"`
+	Error     string     `json:"error,omitempty"`
 	ToolCalls []ToolCall `json:"tool_calls,omitempty"`
 }
 

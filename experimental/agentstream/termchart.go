@@ -7,6 +7,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 )
 
 // ANSI 256-color codes for chart series.
@@ -27,12 +28,35 @@ const (
 	ansiReset = "\033[0m"
 )
 
+// Widget types from the visualization spec.
+const (
+	widgetBar  = "bar"
+	widgetLine = "line"
+	widgetArea = "area"
+)
+
 // Chart layout constants.
 const (
 	yLabelWidth   = 8  // characters reserved for y-axis labels
 	minChartWidth = 20 // minimum usable chart width in characters
 	legendMaxCols = 4  // max legend items per row
+	maxLabelRunes = 30 // x labels longer than this are truncated
 )
+
+// chartStyle holds the ANSI sequences used by a render pass. When color is
+// disabled every sequence is empty, so piped or redirected output stays free
+// of escape codes.
+type chartStyle struct {
+	dim, bold, reset string
+	series           []string
+}
+
+func newChartStyle(color bool) chartStyle {
+	if !color {
+		return chartStyle{series: make([]string, len(seriesColors))}
+	}
+	return chartStyle{dim: ansiDim, bold: ansiBold, reset: ansiReset, series: seriesColors}
+}
 
 // dataSeries is a named series of float64 values.
 type dataSeries struct {
@@ -40,60 +64,99 @@ type dataSeries struct {
 	Values []float64
 }
 
-// RenderChart renders a terminal chart for the given visualization.
-// Prints nothing if the data cannot be mapped to a renderable chart.
-func RenderChart(w io.Writer, viz *VizEvent, width int) {
+// RenderChart renders a terminal chart for the given visualization and
+// reports whether anything was drawn, so the caller can show a placeholder
+// instead of silently dropping a chart the answer text refers to.
+func RenderChart(w io.Writer, viz *VizEvent, width int, color bool) bool {
 	if viz == nil || viz.Spec == nil || viz.Data == nil || len(viz.Data.Rows) == 0 {
-		return
+		return false
 	}
 
 	spec := viz.Spec
-	data := viz.Data
 
-	// Pre-check: only render if we can extract at least one series.
+	// Drop rows whose y values cannot be parsed instead of plotting them as
+	// zero: a fabricated zero bar misrepresents the data, which is worse than
+	// a missing row.
+	data := filterPlottableRows(spec, viz.Data)
+	if data == nil || len(data.Rows) == 0 {
+		return false
+	}
+
 	series := extractSeries(spec, data)
 	if len(series) == 0 {
-		return
+		return false
 	}
+
+	st := newChartStyle(color)
 
 	// Title.
 	fmt.Fprintln(w)
-	fmt.Fprintf(w, "  %s%s%s\n", ansiBold, spec.Title, ansiReset)
+	fmt.Fprintf(w, "  %s%s%s\n", st.bold, spec.Title, st.reset)
 	titleLen := min(len(spec.Title), width-4)
 	if titleLen > 0 {
-		fmt.Fprintf(w, "  %s%s%s\n", ansiDim, strings.Repeat("─", titleLen), ansiReset)
+		fmt.Fprintf(w, "  %s%s%s\n", st.dim, strings.Repeat("─", titleLen), st.reset)
 	}
 
 	switch spec.WidgetType {
-	case "bar":
-		renderBarChart(w, spec, data, width)
-	case "line", "area":
-		renderLineChart(w, spec, data, width, spec.WidgetType == "area")
+	case widgetLine, widgetArea:
+		renderLineChart(w, spec, data, series, width, spec.WidgetType == widgetArea, st)
 	default:
-		renderBarChart(w, spec, data, width)
+		// Bar is also the fallback for unknown widget types: bars stay
+		// readable for any categorical data.
+		renderBarChart(w, spec, data, series, width, st)
 	}
 
 	fmt.Fprintln(w)
+	return true
 }
 
-// renderBarChart draws horizontal bars with ANSI colors.
-func renderBarChart(w io.Writer, spec *VizSpec, data *TableData, width int) {
+// filterPlottableRows returns a copy of data containing only rows whose y
+// values all parse as finite numbers. Returns nil when no y field matches the
+// columns at all, so spec/column mismatches degrade to "no chart" rather than
+// a chart of zeros.
+func filterPlottableRows(spec *VizSpec, data *TableData) *TableData {
+	var yIdx []int
+	for _, yf := range spec.YFields {
+		if i := columnIndex(data.Columns, yf); i >= 0 {
+			yIdx = append(yIdx, i)
+		}
+	}
+	if len(yIdx) == 0 {
+		return nil
+	}
+
+	rows := make([][]string, 0, len(data.Rows))
+	for _, row := range data.Rows {
+		ok := true
+		for _, i := range yIdx {
+			if _, parsed := parseFloat(rowString(row, i)); !parsed {
+				ok = false
+				break
+			}
+		}
+		if ok {
+			rows = append(rows, row)
+		}
+	}
+	return &TableData{Columns: data.Columns, Rows: rows}
+}
+
+// renderBarChart draws horizontal bars.
+func renderBarChart(w io.Writer, spec *VizSpec, data *TableData, series []dataSeries, width int, st chartStyle) {
 	xIdx := columnIndex(data.Columns, spec.XField)
-	series := extractSeries(spec, data)
-	if xIdx < 0 || len(series) == 0 {
+	if xIdx < 0 {
 		return
 	}
 
-	// Collect labels.
+	// Collect labels. Measure and truncate in runes: byte-based slicing can
+	// split a multi-byte character, and fmt pads %*s by rune count.
 	labels := extractXLabels(data, xIdx, spec.ColorField != "")
 	maxLabel := 0
 	for _, l := range labels {
-		maxLabel = max(maxLabel, len(l))
+		maxLabel = max(maxLabel, utf8.RuneCountInString(l))
 	}
 	// Cap label width to prevent squishing the bars.
-	if maxLabel > 30 {
-		maxLabel = 30
-	}
+	maxLabel = min(maxLabel, maxLabelRunes)
 
 	// Find max value across all series.
 	var maxVal float64
@@ -129,10 +192,7 @@ func renderBarChart(w io.Writer, spec *VizSpec, data *TableData, width int) {
 	for gi := range nGroups {
 		label := ""
 		if gi < len(labels) {
-			label = labels[gi]
-			if len(label) > 30 {
-				label = label[:27] + "..."
-			}
+			label = truncateRunes(labels[gi], maxLabelRunes)
 		}
 
 		for si, s := range series {
@@ -149,7 +209,7 @@ func renderBarChart(w io.Writer, spec *VizSpec, data *TableData, width int) {
 			}
 
 			// Bar with sub-character precision.
-			color := seriesColors[si%len(seriesColors)]
+			color := st.series[si%len(st.series)]
 			exact := v / maxVal * float64(barWidth)
 			if exact < 0 {
 				exact = 0
@@ -163,13 +223,13 @@ func renderBarChart(w io.Writer, spec *VizSpec, data *TableData, width int) {
 			if partial > 0 && full < barWidth {
 				fmt.Fprint(w, blocks[8-partial])
 			}
-			fmt.Fprint(w, ansiReset)
+			fmt.Fprint(w, st.reset)
 
 			// Value right-aligned.
 			valStr := formatNumber(v)
 			fmt.Fprintf(w, " %*s", maxValLen, valStr)
 			if multiSeries {
-				fmt.Fprintf(w, " %s(%s)%s", ansiDim, s.Name, ansiReset)
+				fmt.Fprintf(w, " %s(%s)%s", st.dim, s.Name, st.reset)
 			}
 			fmt.Fprintln(w)
 		}
@@ -179,15 +239,14 @@ func renderBarChart(w io.Writer, spec *VizSpec, data *TableData, width int) {
 	}
 
 	if multiSeries {
-		renderLegend(w, series)
+		renderLegend(w, series, st)
 	}
 }
 
 // renderLineChart draws line (or area) charts using braille characters.
-func renderLineChart(w io.Writer, spec *VizSpec, data *TableData, width int, fill bool) {
+func renderLineChart(w io.Writer, spec *VizSpec, data *TableData, series []dataSeries, width int, fill bool, st chartStyle) {
 	xIdx := columnIndex(data.Columns, spec.XField)
-	series := extractSeries(spec, data)
-	if xIdx < 0 || len(series) == 0 {
+	if xIdx < 0 {
 		return
 	}
 
@@ -278,7 +337,7 @@ func renderLineChart(w io.Writer, spec *VizSpec, data *TableData, width int, fil
 			brChar := rune(0x2800) + grid.cells[row][col]
 			ci := grid.colors[row][col]
 			if ci >= 0 {
-				fmt.Fprintf(w, "%s%c%s", seriesColors[ci%len(seriesColors)], brChar, ansiReset)
+				fmt.Fprintf(w, "%s%c%s", st.series[ci%len(st.series)], brChar, st.reset)
 			} else {
 				fmt.Fprintf(w, "%c", brChar)
 			}
@@ -294,7 +353,7 @@ func renderLineChart(w io.Writer, spec *VizSpec, data *TableData, width int, fil
 	renderXLabels(w, xLabels, cw, yLabelWidth+3)
 
 	if len(series) > 1 {
-		renderLegend(w, series)
+		renderLegend(w, series, st)
 	}
 }
 
@@ -397,7 +456,10 @@ func extractSeries(spec *VizSpec, data *TableData) []dataSeries {
 		}
 		s := dataSeries{Name: yf}
 		for _, row := range data.Rows {
-			s.Values = append(s.Values, parseFloat(rowString(row, yi)))
+			// Rows are pre-filtered by filterPlottableRows, so the parse
+			// cannot fail here.
+			v, _ := parseFloat(rowString(row, yi))
+			s.Values = append(s.Values, v)
 		}
 		result = append(result, s)
 	}
@@ -439,7 +501,10 @@ func extractLongFormat(data *TableData, xIdx, yIdx, colorIdx int) []dataSeries {
 			seriesMap[sName] = &seriesData{name: sName, values: map[string]float64{}}
 			seriesOrder = append(seriesOrder, sName)
 		}
-		seriesMap[sName].values[x] = parseFloat(rowString(row, yIdx))
+		// Rows are pre-filtered by filterPlottableRows, so the parse cannot
+		// fail here.
+		v, _ := parseFloat(rowString(row, yIdx))
+		seriesMap[sName].values[x] = v
 	}
 
 	var result []dataSeries
@@ -504,14 +569,28 @@ func extractXLabels(data *TableData, xIdx int, longFormat bool) []string {
 	return labels
 }
 
-func parseFloat(s string) float64 {
+// parseFloat parses a table cell as a finite float. The second return value
+// distinguishes "zero" from "not a number at all" so unparseable cells can be
+// dropped instead of plotted as zero.
+func parseFloat(s string) (float64, bool) {
 	s = strings.ReplaceAll(s, ",", "")
 	s = strings.TrimSpace(s)
 	v, err := strconv.ParseFloat(s, 64)
 	if err != nil || math.IsNaN(v) || math.IsInf(v, 0) {
-		return 0
+		return 0, false
 	}
-	return v
+	return v, true
+}
+
+// truncateRunes shortens s to at most n runes, ending with "..." when
+// truncated. Slicing runes rather than bytes keeps multi-byte characters
+// intact.
+func truncateRunes(s string, n int) string {
+	runes := []rune(s)
+	if len(runes) <= n {
+		return s
+	}
+	return string(runes[:n-3]) + "..."
 }
 
 func formatNumber(v float64) string {
@@ -576,27 +655,24 @@ func renderXLabels(w io.Writer, labels []string, chartWidth, leftPad int) {
 	fmt.Fprintf(w, "%*s", leftPad, "")
 	pos := 0
 	for i := 0; i < len(labels); i += step {
-		label := labels[i]
-		if len(label) > 10 {
-			label = label[:10]
-		}
+		label := truncateRunes(labels[i], 10)
 		target := int(float64(i) / float64(max(len(labels)-1, 1)) * float64(chartWidth-1))
 		for pos < target {
 			fmt.Fprint(w, " ")
 			pos++
 		}
 		fmt.Fprint(w, label)
-		pos += len(label)
+		pos += utf8.RuneCountInString(label)
 	}
 	fmt.Fprintln(w)
 }
 
-func renderLegend(w io.Writer, series []dataSeries) {
+func renderLegend(w io.Writer, series []dataSeries, st chartStyle) {
 	fmt.Fprintln(w)
 	col := 0
 	for si, s := range series {
-		color := seriesColors[si%len(seriesColors)]
-		entry := fmt.Sprintf("  %s●%s %s", color, ansiReset, s.Name)
+		color := st.series[si%len(st.series)]
+		entry := fmt.Sprintf("  %s●%s %s", color, st.reset, s.Name)
 		fmt.Fprint(w, entry)
 		col++
 		if col >= legendMaxCols && si < len(series)-1 {

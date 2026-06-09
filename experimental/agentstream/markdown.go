@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"regexp"
+	"strings"
 )
 
 // embeddedBlockRe matches <!-- begin-embedded:... --> ... <!-- end-embedded:... --> blocks.
@@ -27,6 +28,10 @@ func renderMarkdown(w io.Writer, text string) {
 
 	// Strip query embedded block wrappers, keeping the content inside.
 	cleaned = embeddedBlockRe.ReplaceAllString(cleaned, "$1")
+
+	// Removed viz blocks can leave a pile of trailing newlines behind;
+	// Fprintln supplies the one that should remain.
+	cleaned = strings.TrimRight(cleaned, "\n")
 
 	fmt.Fprintln(w, cleaned)
 }

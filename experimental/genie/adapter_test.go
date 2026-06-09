@@ -29,38 +29,41 @@ const errorData = `{"type":"error","error_code":"RESOURCE_DOES_NOT_EXIST","messa
 
 const messageUpdatedData = `{"type":"response.output_item.updated","output_index":1,"item":{"type":"message","id":"m1","role":"assistant","status":"completed","content":[{"type":"output_text","text":"Total sales were $1,234,567.","annotations":[]}]}}`
 
-const messageDoneData = `{"type":"response.output_item.done","output_index":1,"item":{"type":"message","id":"m1","role":"assistant","status":"completed","content":[{"type":"output_text","text":"Total sales were $1,234,567.","annotations":[]}]}}`
+// adaptOne runs a single payload through a fresh stateful adapter.
+func adaptOne(data string) []agentstream.StreamEvent {
+	return NewAdaptSSE()(data)
+}
 
 func TestAdaptSSE_Reasoning(t *testing.T) {
-	events := AdaptSSE(reasoningData)
+	events := adaptOne(reasoningData)
 	require.Len(t, events, 1)
 	assert.Equal(t, agentstream.EventThinking, events[0].Kind)
 	assert.Equal(t, "Thinking...", events[0].Text)
 }
 
 func TestAdaptSSE_Message(t *testing.T) {
-	events := AdaptSSE(messageData)
+	events := adaptOne(messageData)
 	require.Len(t, events, 1)
 	assert.Equal(t, agentstream.EventText, events[0].Kind)
 	assert.Equal(t, "Total sales were $1,234,567.", events[0].Text)
 }
 
 func TestAdaptSSE_Thought(t *testing.T) {
-	events := AdaptSSE(thoughtData)
+	events := adaptOne(thoughtData)
 	require.Len(t, events, 1)
 	assert.Equal(t, agentstream.EventThinking, events[0].Kind)
 	assert.Equal(t, "I will search for tables...", events[0].Text)
 }
 
 func TestAdaptSSE_FinalResponse(t *testing.T) {
-	events := AdaptSSE(finalResponseData)
+	events := adaptOne(finalResponseData)
 	require.Len(t, events, 1)
 	assert.Equal(t, agentstream.EventText, events[0].Kind)
 	assert.Equal(t, "Here are your tables.", events[0].Text)
 }
 
 func TestAdaptSSE_FunctionCall(t *testing.T) {
-	events := AdaptSSE(sqlData)
+	events := adaptOne(sqlData)
 	require.Len(t, events, 1)
 	assert.Equal(t, agentstream.EventToolCall, events[0].Kind)
 	require.NotNil(t, events[0].ToolCall)
@@ -69,29 +72,47 @@ func TestAdaptSSE_FunctionCall(t *testing.T) {
 }
 
 func TestAdaptSSE_Error(t *testing.T) {
-	events := AdaptSSE(errorData)
+	events := adaptOne(errorData)
 	require.Len(t, events, 1)
 	assert.Equal(t, agentstream.EventError, events[0].Kind)
 	assert.Equal(t, "No eligible SQL warehouse found", events[0].Text)
 	assert.Equal(t, "RESOURCE_DOES_NOT_EXIST", events[0].ErrorCode)
 }
 
+func TestAdaptSSE_ErrorInUnexpectedShape(t *testing.T) {
+	// A server failure must never become an empty success, even when the
+	// error payload doesn't match the expected shape.
+	data := `{"type":"error","message":{"nested":"boom"}}`
+	events := adaptOne(data)
+	require.Len(t, events, 1)
+	assert.Equal(t, agentstream.EventError, events[0].Kind)
+	assert.Equal(t, data, events[0].Text)
+	assert.Empty(t, events[0].ErrorCode)
+}
+
 func TestAdaptSSE_DoneCompleted(t *testing.T) {
-	events := AdaptSSE(doneData)
+	events := adaptOne(doneData)
 	require.Len(t, events, 1)
 	assert.Equal(t, agentstream.EventDone, events[0].Kind)
 	assert.Equal(t, "completed", events[0].Status)
 }
 
 func TestAdaptSSE_DoneFailed(t *testing.T) {
-	events := AdaptSSE(doneFailedData)
+	events := adaptOne(doneFailedData)
 	require.Len(t, events, 1)
 	assert.Equal(t, agentstream.EventDone, events[0].Kind)
 	assert.Equal(t, "failed", events[0].Status)
 }
 
+func TestAdaptSSE_DoneInUnexpectedShape(t *testing.T) {
+	// An undecodable completion event must not pass for a successful one.
+	events := adaptOne(`{"type":"response.done","response":[1,2]}`)
+	require.Len(t, events, 1)
+	assert.Equal(t, agentstream.EventUnparsed, events[0].Kind)
+}
+
 func TestAdaptSSE_ExecuteSQLQuery(t *testing.T) {
-	events := AdaptSSE(sqlQueryData)
+	events := adaptOne(sqlQueryData)
 	require.Len(t, events, 1)
 	assert.Equal(t, agentstream.EventToolCall, events[0].Kind)
 	require.NotNil(t, events[0].ToolCall)
@@ -99,17 +120,29 @@ func TestAdaptSSE_ExecuteSQLQuery(t *testing.T) {
 	assert.Contains(t, events[0].ToolCall.Arguments, "SELECT * FROM kie.test.bbc_articles LIMIT 3")
 }
 
-func TestAdaptSSE_IgnoresUpdatedAndDoneItemVariants(t *testing.T) {
-	assert.Empty(t, AdaptSSE(messageUpdatedData))
-	assert.Empty(t, AdaptSSE(messageDoneData))
+func TestAdaptSSE_UpdatedItemVariantIgnored(t *testing.T) {
+	// Only .added and .done item events are processed; .updated duplicates
+	// what .done will carry.
+	assert.Empty(t, adaptOne(messageUpdatedData))
 }
 
 func TestAdaptSSE_InvalidJSON(t *testing.T) {
-	assert.Empty(t, AdaptSSE("not json"))
+	events := adaptOne("not json")
+	require.Len(t, events, 1)
+	assert.Equal(t, agentstream.EventUnparsed, events[0].Kind)
 }
 
-func TestAdaptSSE_UnknownEventType(t *testing.T) {
-	assert.Empty(t, AdaptSSE(`{"type":"response.unknown"}`))
+func TestAdaptSSE_UnknownEventTypeIgnored(t *testing.T) {
+	assert.Empty(t, adaptOne(`{"type":"response.unknown"}`))
+}
+
+func TestAdaptSSE_UnparseableItemFlagged(t *testing.T) {
+	// A known event type whose payload doesn't decode is exactly the failure
+	// mode that once made the command print nothing: it must be flagged.
+	data := `{"type":"response.output_item.added","item":{"type":"message","content":"not an array"}}`
+	events := adaptOne(data)
+	require.Len(t, events, 1)
+	assert.Equal(t, agentstream.EventUnparsed, events[0].Kind)
 }
 
 func TestAdaptSSE_QueryExecutionAndViz(t *testing.T) {
@@ -138,6 +171,39 @@ func TestAdaptSSE_QueryExecutionAndViz(t *testing.T) {
 	assert.Equal(t, []string{"Beta", "200"}, events[0].Viz.Data.Rows[1])
 }
 
+func TestAdaptSSE_QueryExecutionCellTypes(t *testing.T) {
+	adapt := NewAdaptSSE()
+
+	// Preview cells can be JSON numbers, booleans, or null, and rows can be
+	// shorter or longer than the column list.
+	qe := `{"type":"response.output_item.done","item":{"type":"function_call_output","id":"o1","call_id":"c1","status":"completed","metadata":{"ui_type":"QUERY_EXECUTION","statement_id":"stmt1","result_data":{"columns":[{"name":"name"},{"name":"total"}],"preview_rows":[["Alpha",100.5],["Beta",true],["Gamma",null],["Delta"],["Epsilon","1","extra"]]}}}}`
+	assert.Empty(t, adapt(qe))
+
+	viz := `{"type":"response.output_item.done","item":{"type":"function_call_output","id":"o2","call_id":"c2","status":"completed","metadata":{"ui_type":"VIZ","sql_id":"stmt1","embed_id":"v1","viz_definition":"{\"renderSpec\":{\"widgetType\":\"bar\",\"frame\":{\"title\":\"T\"},\"encodings\":{\"x\":{\"fieldName\":\"name\"},\"y\":{\"fieldName\":\"total\"}}}}"}}}`
+	events := adapt(viz)
+	require.Len(t, events, 1)
+	require.NotNil(t, events[0].Viz.Data)
+	assert.Equal(t, [][]string{
+		{"Alpha", "100.5"},
+		{"Beta", "true"},
+		{"Gamma", ""},
+		{"Delta", ""},
+		{"Epsilon", "1"},
+	}, events[0].Viz.Data.Rows)
+}
+
+func TestAdaptSSE_MultiSeriesYEncoding(t *testing.T) {
+	adapt := NewAdaptSSE()
+
+	qe := `{"type":"response.output_item.done","item":{"type":"function_call_output","id":"o1","call_id":"c1","status":"completed","metadata":{"ui_type":"QUERY_EXECUTION","statement_id":"stmt1","result_data":{"columns":[{"name":"month"},{"name":"a"},{"name":"b"}],"preview_rows":[["Jan","1","2"]]}}}}`
+	assert.Empty(t, adapt(qe))
+
+	viz := `{"type":"response.output_item.done","item":{"type":"function_call_output","id":"o2","call_id":"c2","status":"completed","metadata":{"ui_type":"VIZ","sql_id":"stmt1","embed_id":"v1","viz_definition":"{\"renderSpec\":{\"widgetType\":\"line\",\"frame\":{\"title\":\"T\"},\"encodings\":{\"x\":{\"fieldName\":\"month\"},\"y\":{\"fields\":[{\"fieldName\":\"a\"},{\"fieldName\":\"b\"}]}}}}"}}}`
+	events := adapt(viz)
+	require.Len(t, events, 1)
+	assert.Equal(t, []string{"a", "b"}, events[0].Viz.Spec.YFields)
+}
+
 func TestAdaptSSE_QueryExecutionCanArriveAfterIncompleteOutput(t *testing.T) {
 	adapt := NewAdaptSSE()
 
@@ -162,7 +228,7 @@ func TestAdaptSSE_VizWithoutDefinitionIgnored(t *testing.T) {
 
 func TestAdaptSSE_OutputFinalResponse(t *testing.T) {
 	data := `{"type":"response.output_item.added","output_index":0,"item":{"type":"function_call","id":"f1","call_id":"c1","name":"output_final_response","arguments":"{\"response\":\"The answer is 42.\"}"}}`
-	events := AdaptSSE(data)
+	events := adaptOne(data)
 	require.Len(t, events, 1)
 	assert.Equal(t, agentstream.EventFinalResponse, events[0].Kind)
 	assert.Equal(t, "The answer is 42.", events[0].Text)
@@ -170,12 +236,19 @@ func TestAdaptSSE_OutputFinalResponse(t *testing.T) {
 
 func TestAdaptSSE_AskUserQuestions(t *testing.T) {
 	data := `{"type":"response.output_item.added","output_index":0,"item":{"type":"function_call","id":"f2","call_id":"c2","name":"ask_user_questions","arguments":"{\"questions\":[{\"question\":\"Which region?\",\"type\":\"choice\",\"choices\":[{\"label\":\"US\",\"description\":\"United States\"},{\"label\":\"EU\"}]}]}"}}`
-	events := AdaptSSE(data)
+	events := adaptOne(data)
 	require.Len(t, events, 1)
 	assert.Equal(t, agentstream.EventText, events[0].Kind)
 	assert.Contains(t, events[0].Text, "Which region?")
 	assert.Contains(t, events[0].Text, "US: United States")
 	assert.Contains(t, events[0].Text, "EU")
+}
+
+func TestAdaptSSE_AskUserConfirmation(t *testing.T) {
+	data := `{"type":"response.output_item.added","output_index":0,"item":{"type":"function_call","id":"f2","call_id":"c2","name":"ask_user_questions","arguments":"{\"questions\":[{\"question\":\"Proceed with all regions?\",\"type\":\"confirmation\"}]}"}}`
+	events := adaptOne(data)
+	require.Len(t, events, 1)
+	assert.Contains(t, events[0].Text, "Proceed with all regions? (yes / no)")
 }
 
 func TestNewAdaptSSE_DedupsFunctionCall(t *testing.T) {
@@ -200,6 +273,21 @@ func TestNewAdaptSSE_DoesNotDedupEmptyFunctionCall(t *testing.T) {
 	require.Len(t, events, 1)
 	assert.Equal(t, agentstream.EventFinalResponse, events[0].Kind)
 	assert.Equal(t, "Hello after done.", events[0].Text)
+}
+
+func TestNewAdaptSSE_DoesNotDedupEmptyGenericToolCall(t *testing.T) {
+	// The .added event for execute_sql can carry empty arguments that are
+	// filled in on .done. Emitting the empty call would dedupe away the SQL.
+	adapt := NewAdaptSSE()
+	added := `{"type":"response.output_item.added","output_index":0,"item":{"type":"function_call","id":"f5","call_id":"c5","name":"execute_sql","arguments":""}}`
+	assert.Empty(t, adapt(added))
+
+	done := `{"type":"response.output_item.done","output_index":0,"item":{"type":"function_call","id":"f5","call_id":"c5","name":"execute_sql","arguments":"{\"sql\":\"SELECT 1\",\"title\":\"One\"}"}}`
+	events := adapt(done)
+	require.Len(t, events, 1)
+	assert.Equal(t, agentstream.EventToolCall, events[0].Kind)
+	require.NotNil(t, events[0].ToolCall)
+	assert.Contains(t, events[0].ToolCall.Arguments, "SELECT 1")
 }
 
 func TestNewAdaptSSE_DedupsMessageAfterEmitting(t *testing.T) {
@@ -230,7 +318,7 @@ func TestAdaptSSE_FinalResponseWithArrayMetadata(t *testing.T) {
 	// source_internal_ids array. The item must still parse and render; a
 	// map[string]string metadata type silently dropped the whole message.
 	data := `{"type":"response.output_item.added","output_index":0,"item":{"type":"message","id":"m1","role":"assistant","status":"completed","content":[{"type":"output_text","text":"The answer.","annotations":[]}],"metadata":{"ui_type":"FINAL_RESPONSE","source_internal_ids":["msg_abc"],"response_id":"resp_1"}}}`
-	events := AdaptSSE(data)
+	events := adaptOne(data)
 	require.Len(t, events, 1)
 	assert.Equal(t, agentstream.EventText, events[0].Kind)
 	assert.Equal(t, "The answer.", events[0].Text)
@@ -238,7 +326,7 @@ func TestAdaptSSE_FinalResponseWithArrayMetadata(t *testing.T) {
 
 func TestAdaptSSE_ThoughtWithArrayMetadata(t *testing.T) {
 	data := `{"type":"response.output_item.added","output_index":0,"item":{"type":"message","id":"t1","role":"assistant","status":"completed","content":[{"type":"output_text","text":"Looking...","annotations":[]}],"metadata":{"ui_type":"THOUGHT","source_internal_ids":["msg_x"]}}}`
-	events := AdaptSSE(data)
+	events := adaptOne(data)
 	require.Len(t, events, 1)
 	assert.Equal(t, agentstream.EventThinking, events[0].Kind)
 	assert.Equal(t, "Looking...", events[0].Text)
