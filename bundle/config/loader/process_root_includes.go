@@ -106,9 +106,7 @@ func (m *processRootIncludes) Apply(ctx context.Context, b *bundle.Bundle) diag.
 					Severity: diag.Error,
 					Summary:  "Files in the 'include' configuration section must be YAML or JSON files.",
 					Detail:   fmt.Sprintf("The file %s in the 'include' configuration section is not a YAML or JSON file, and only such files are supported. To include files to sync, specify them in the 'sync.include' configuration section instead.", rel),
-					// Attribute the diagnostic to the include entry whose glob produced
-					// this match; the index of the match within the glob is unrelated
-					// to the entry's position in the include list.
+					// The match's index within the glob is unrelated to the entry's position in the include list.
 					Locations: b.Config.GetLocations(fmt.Sprintf("include[%d]", entryIndex)),
 				})
 				continue

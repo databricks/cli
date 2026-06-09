@@ -106,8 +106,6 @@ func TestProcessRootIncludesNonYamlGlobLocations(t *testing.T) {
 	diags := bundle.Apply(t.Context(), b, loader.EntryPoint())
 	require.NoError(t, diags.Error())
 
-	// Both matches of the single glob must be attributed to the glob's own
-	// include entry, not to the match index within the glob.
 	expected := b.Config.GetLocations("include[0]")
 	require.NotEmpty(t, expected)
 
