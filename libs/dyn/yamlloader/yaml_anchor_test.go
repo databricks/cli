@@ -121,8 +121,6 @@ func TestYAMLAnchor08(t *testing.T) {
 }
 
 func TestYAMLAnchor09(t *testing.T) {
-	// A self-referential anchor must return an error instead of
-	// recursing until stack overflow.
 	file := "testdata/anchor_09.yml"
 	input, err := os.ReadFile(file)
 	require.NoError(t, err)
@@ -132,7 +130,6 @@ func TestYAMLAnchor09(t *testing.T) {
 }
 
 func TestYAMLAnchor10(t *testing.T) {
-	// Expanding the same alias node again on a different path is not a cycle.
 	file := "testdata/anchor_10.yml"
 	self := loadYAML(t, file)
 	assert.NotEqual(t, dyn.NilValue, self)

@@ -281,9 +281,8 @@ func (d *loader) loadAlias(node *yaml.Node, loc dyn.Location) (dyn.Value, error)
 		return dyn.InvalidValue, errorf(loc, "cyclic reference to anchor %q", node.Value)
 	}
 
-	// Remove the alias from the set once expanded: the same alias node may be
-	// reached again through another alias to an enclosing anchor, which is not
-	// a cycle.
+	// The same alias node may be reached again through another alias to an
+	// enclosing anchor, which is not a cycle.
 	d.activeAliases[node] = true
 	defer delete(d.activeAliases, node)
 
