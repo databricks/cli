@@ -22,20 +22,24 @@ type ContentItem struct {
 
 // OutputItem represents an item in the SSE response stream.
 type OutputItem struct {
-	Type      string            `json:"type"`
-	ID        string            `json:"id,omitempty"`
-	Role      string            `json:"role,omitempty"`
-	Status    string            `json:"status,omitempty"`
-	Name      string            `json:"name,omitempty"`
-	CallID    string            `json:"call_id,omitempty"`
-	Arguments string            `json:"arguments,omitempty"`
-	Content   []ContentItem     `json:"content,omitempty"`
-	Metadata  map[string]string `json:"metadata,omitempty"`
+	Type      string        `json:"type"`
+	ID        string        `json:"id,omitempty"`
+	Role      string        `json:"role,omitempty"`
+	Status    string        `json:"status,omitempty"`
+	Name      string        `json:"name,omitempty"`
+	CallID    string        `json:"call_id,omitempty"`
+	Arguments string        `json:"arguments,omitempty"`
+	Content   []ContentItem `json:"content,omitempty"`
+	// Metadata values are not all strings: the backend sends arrays (e.g.
+	// source_internal_ids) and objects, so this must be map[string]any or the
+	// whole item fails to unmarshal and the message/tool call is silently lost.
+	Metadata map[string]any `json:"metadata,omitempty"`
 }
 
 // UIType returns the metadata ui_type field (e.g. "THOUGHT", "FINAL_RESPONSE").
 func (o OutputItem) UIType() string {
-	return o.Metadata["ui_type"]
+	s, _ := o.Metadata["ui_type"].(string)
+	return s
 }
 
 // SSEOutputItemEvent is the payload for response.output_item.added events.

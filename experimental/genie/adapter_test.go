@@ -173,3 +173,22 @@ func TestNewAdaptSSE_DedupsFunctionCall(t *testing.T) {
 	done := `{"type":"response.output_item.done","output_index":0,"item":{"type":"function_call","id":"f3","call_id":"c3","name":"output_final_response","arguments":"{\"response\":\"Hello.\"}"}}`
 	assert.Empty(t, adapt(done))
 }
+
+func TestAdaptSSE_FinalResponseWithArrayMetadata(t *testing.T) {
+	// Real backend metadata carries non-string values such as the
+	// source_internal_ids array. The item must still parse and render; a
+	// map[string]string metadata type silently dropped the whole message.
+	data := `{"type":"response.output_item.added","output_index":0,"item":{"type":"message","id":"m1","role":"assistant","status":"completed","content":[{"type":"output_text","text":"The answer.","annotations":[]}],"metadata":{"ui_type":"FINAL_RESPONSE","source_internal_ids":["msg_abc"],"response_id":"resp_1"}}}`
+	events := AdaptSSE(data)
+	require.Len(t, events, 1)
+	assert.Equal(t, agentstream.EventText, events[0].Kind)
+	assert.Equal(t, "The answer.", events[0].Text)
+}
+
+func TestAdaptSSE_ThoughtWithArrayMetadata(t *testing.T) {
+	data := `{"type":"response.output_item.added","output_index":0,"item":{"type":"message","id":"t1","role":"assistant","status":"completed","content":[{"type":"output_text","text":"Looking...","annotations":[]}],"metadata":{"ui_type":"THOUGHT","source_internal_ids":["msg_x"]}}}`
+	events := AdaptSSE(data)
+	require.Len(t, events, 1)
+	assert.Equal(t, agentstream.EventThinking, events[0].Kind)
+	assert.Equal(t, "Looking...", events[0].Text)
+}
