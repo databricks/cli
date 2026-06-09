@@ -1,0 +1,10 @@
+bundle:
+  name: partial-create-$UNIQUE_NAME
+
+resources:
+  apps:
+    my_app:
+      name: app-$UNIQUE_NAME
+      source_code_path: ./app
+      lifecycle:
+        started: true

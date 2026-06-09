@@ -1,0 +1,23 @@
+
+>>> errcode [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/partial-create-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Error: cannot create resources.apps.my_app: waiting after creating id=app-[UNIQUE_NAME]: Invalid source code path: /Workspace/Users/[USERNAME]/.bundle/partial-create-[UNIQUE_NAME]/default/files/app. Path does not exist. (400 INVALID_PARAMETER_VALUE)
+
+Endpoint: POST [DATABRICKS_URL]/api/2.0/apps/app-[UNIQUE_NAME]/deployments
+HTTP Status: 400 Bad Request
+API error_code: INVALID_PARAMETER_VALUE
+API message: Invalid source code path: /Workspace/Users/[USERNAME]/.bundle/partial-create-[UNIQUE_NAME]/default/files/app. Path does not exist.
+
+Updating deployment state...
+
+Exit code: 1
+
+=== App exists even after failed deployment
+>>> [CLI] apps get app-[UNIQUE_NAME]
+{
+  "message": "App has status: App has not been deployed yet. Run your app by deploying source code",
+  "state": "UNAVAILABLE"
+}
+
+=== App resource is not in the state fileapps my_app 

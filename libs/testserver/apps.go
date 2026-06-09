@@ -102,6 +102,24 @@ func (s *FakeWorkspace) AppsCreateDeployment(req Request, name string) Response 
 		return Response{StatusCode: 500, Body: fmt.Sprintf("internal error: %s", err)}
 	}
 
+	// The real platform rejects deployments to workspace paths that don't exist.
+	// An empty SourceCodePath means a git-source deployment, which skips this check.
+	if deployment.SourceCodePath != "" {
+		p := deployment.SourceCodePath
+		if !strings.HasPrefix(p, "/") {
+			p = "/" + p
+		}
+		if _, exists := s.directories[p]; !exists {
+			return Response{
+				StatusCode: http.StatusBadRequest,
+				Body: map[string]string{
+					"error_code": "INVALID_PARAMETER_VALUE",
+					"message":    fmt.Sprintf("Invalid source code path: %s. Path does not exist.", deployment.SourceCodePath),
+				},
+			}
+		}
+	}
+
 	deployment.DeploymentId = fmt.Sprintf("deploy-%d", nextID())
 	deployment.Status = &apps.AppDeploymentStatus{
 		State:   apps.AppDeploymentStateSucceeded,
@@ -110,6 +128,10 @@ func (s *FakeWorkspace) AppsCreateDeployment(req Request, name string) Response 
 
 	app.ActiveDeployment = &deployment
 	app.DefaultSourceCodePath = deployment.SourceCodePath
+	app.AppStatus = &apps.ApplicationStatus{
+		State:   apps.ApplicationStateRunning,
+		Message: "Application is running.",
+	}
 	s.Apps[name] = app
 
 	return Response{Body: deployment}
@@ -205,36 +227,26 @@ func (s *FakeWorkspace) AppsUpsert(req Request, name string) Response {
 		}
 	}
 
-	app.AppStatus = &apps.ApplicationStatus{
-		State:   "RUNNING",
-		Message: "Application is running.",
-	}
-
 	// Respect no_compute query param: if true, start the app in STOPPED state.
 	if req.URL.Query().Get("no_compute") == "true" {
 		app.ComputeStatus = &apps.ComputeStatus{
 			State:   apps.ComputeStateStopped,
 			Message: "App compute is stopped.",
 		}
+		app.AppStatus = &apps.ApplicationStatus{
+			State:   apps.ApplicationStateRunning,
+			Message: "Application is running.",
+		}
 	} else {
+		// App compute is starting but no code has been deployed yet.
 		app.ComputeStatus = &apps.ComputeStatus{
 			State:   "ACTIVE",
 			Message: "App compute is active.",
 		}
-
-		// Simulate the apps platform side effect: when an app is created, it is deployed with the default source code path.
-		deployment := apps.AppDeployment{
-			SourceCodePath: "/Workspace/Users/tester@databricks.com/" + name,
+		app.AppStatus = &apps.ApplicationStatus{
+			State:   apps.ApplicationStateUnavailable,
+			Message: "App has status: App has not been deployed yet. Run your app by deploying source code",
 		}
-
-		deployment.DeploymentId = fmt.Sprintf("deploy-%d", nextID())
-		deployment.Status = &apps.AppDeploymentStatus{
-			State:   apps.AppDeploymentStateSucceeded,
-			Message: "Deployment succeeded",
-		}
-
-		app.ActiveDeployment = &deployment
-		app.DefaultSourceCodePath = deployment.SourceCodePath
 	}
 
 	app.Url = name + "-123.cloud.databricksapps.com"

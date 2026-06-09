@@ -1,0 +1,17 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+
+    $CLI bundle destroy --auto-approve > /dev/null 2>&1 || true
+    $CLI apps delete app-$UNIQUE_NAME > /dev/null 2>&1 || true
+    rm out.requests.txt
+}
+trap cleanup EXIT
+
+trace errcode $CLI bundle deploy
+
+title "App exists even after failed deployment"
+trace $CLI apps get app-$UNIQUE_NAME | jq '.app_status'
+
+title "App resource is not in the state file"
+read_state.py apps my_app
