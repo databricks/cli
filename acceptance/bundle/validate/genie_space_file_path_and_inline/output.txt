@@ -1,3 +1,5 @@
+
+>>> [CLI] bundle validate
 Error: both file_path and serialized_space are set; specify only one
   in databricks.yml:11:9
 
@@ -8,5 +10,3 @@ Workspace:
   Path: /Workspace/Users/[USERNAME]/.bundle/genie-space-file-path-and-inline/default
 
 Found 1 error
-
-Exit code: 1

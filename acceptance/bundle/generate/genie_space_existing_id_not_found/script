@@ -1,2 +1,2 @@
 # Test that bundle generate genie-space fails when the existing ID is not found
-exec $CLI bundle generate genie-space --existing-id f00dcafe
+musterr trace $CLI bundle generate genie-space --existing-id f00dcafe
