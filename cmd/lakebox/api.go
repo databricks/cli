@@ -23,10 +23,15 @@ func sandboxPath(id string) string {
 	return lakeboxAPIPath + "/" + url.PathEscape(id)
 }
 
+// lakeboxAPIRoot is the service namespace under which the sandbox and
+// ssh-key sub-collections live. Centralised so a server-side rename
+// (e.g. "lakebox" → "sandbox") is a one-line change.
+const lakeboxAPIRoot = "/api/2.0/lakebox"
+
 // Sub-collections under the lakebox service namespace.
 const (
-	lakeboxAPIPath     = "/api/2.0/lakebox/sandboxes"
-	lakeboxKeysAPIPath = "/api/2.0/lakebox/ssh-keys"
+	lakeboxAPIPath     = lakeboxAPIRoot + "/sandboxes"
+	lakeboxKeysAPIPath = lakeboxAPIRoot + "/ssh-keys"
 )
 
 // orgIDHeader scopes the credential to a workspace on multi-workspace
