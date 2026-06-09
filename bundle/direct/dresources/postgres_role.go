@@ -110,7 +110,7 @@ func (r *ResourcePostgresRole) DoUpdate(ctx context.Context, id string, config *
 	// Build update mask from fields that have action="update" in the changes map.
 	// Prefix with "spec." because the API expects paths relative to the Role
 	// object, not relative to our flattened state type.
-	fieldPaths := collectUpdatePathsWithPrefix(entry.Changes, "spec.")
+	fieldPaths := collectLeafUpdatePathsWithPrefix(entry.Changes, "spec.")
 
 	waiter, err := r.client.Postgres.UpdateRole(ctx, postgres.UpdateRoleRequest{
 		Name: id,

@@ -2,6 +2,7 @@ package dresources
 
 import (
 	"errors"
+	"slices"
 	"strings"
 
 	"github.com/databricks/cli/bundle/deployplan"
@@ -24,12 +25,24 @@ func shouldRetry(err error) bool {
 // collectUpdatePathsWithPrefix extracts field paths from Changes that have action=Update,
 // adding a prefix to each path. This is used when the state type has a flattened structure
 // but the API expects paths relative to a nested object (e.g., "spec.display_name").
-//
-// Parent paths are dropped when a more specific child path is also present, because
-// servers typically reject an update_mask that contains both a parent and a child (the
-// parent implies the whole subtree must be provided). E.g. {"attributes",
-// "attributes.createdb"} collapses to {"attributes.createdb"}.
 func collectUpdatePathsWithPrefix(changes Changes, prefix string) []string {
+	var paths []string
+	for path, change := range changes {
+		if change.Action == deployplan.Update {
+			paths = append(paths, prefix+path)
+		}
+	}
+	return paths
+}
+
+// collectLeafUpdatePathsWithPrefix is like collectUpdatePathsWithPrefix but drops a parent
+// path when a more specific child path is also being updated, and sorts the result.
+//
+// The Postgres Role PATCH endpoint rejects an update_mask that lists both a struct and one
+// of its sub-fields, since the parent already implies the whole subtree. E.g. {"attributes",
+// "attributes.createdb"} collapses to {"attributes.createdb"}. Sorting keeps the generated
+// update_mask stable regardless of map iteration order.
+func collectLeafUpdatePathsWithPrefix(changes Changes, prefix string) []string {
 	var paths []string
 	for path, change := range changes {
 		if change.Action != deployplan.Update {
@@ -49,5 +62,6 @@ func collectUpdatePathsWithPrefix(changes Changes, prefix string) []string {
 			paths = append(paths, prefix+path)
 		}
 	}
+	slices.Sort(paths)
 	return paths
 }
