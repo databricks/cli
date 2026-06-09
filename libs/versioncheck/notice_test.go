@@ -6,8 +6,11 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/cmdio"
@@ -111,7 +114,8 @@ func TestSuppressed(t *testing.T) {
 
 func TestTryAcquireRefreshLock(t *testing.T) {
 	// Isolate the lock to this test's temp dir.
-	t.Setenv(cacheDirEnv, t.TempDir())
+	dir := t.TempDir()
+	t.Setenv(cacheDirEnv, dir)
 	ctx := t.Context()
 
 	release, ok := tryAcquireRefreshLock(ctx)
@@ -126,6 +130,16 @@ func TestTryAcquireRefreshLock(t *testing.T) {
 	release2, ok3 := tryAcquireRefreshLock(ctx)
 	require.True(t, ok3)
 	release2()
+
+	// A lock left behind by a crashed holder (old mtime, never released) is
+	// reclaimed once it is older than lockStaleAfter.
+	lockPath := filepath.Join(dir, refreshLockName)
+	require.NoError(t, os.WriteFile(lockPath, nil, 0o600))
+	old := time.Now().Add(-2 * lockStaleAfter)
+	require.NoError(t, os.Chtimes(lockPath, old, old))
+	release3, ok4 := tryAcquireRefreshLock(ctx)
+	require.True(t, ok4)
+	release3()
 }
 
 func TestNotice(t *testing.T) {

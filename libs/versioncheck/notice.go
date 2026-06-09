@@ -45,10 +45,13 @@ const (
 
 	// refreshLockName is the single-flight sentinel: across many concurrent CLI
 	// processes only the one that creates it fetches, so a fleet starting at
-	// once sends at most one request to GitHub per machine. lockStaleAfter lets
-	// a later process reclaim it if the holder crashed mid-fetch.
+	// once sends at most one request to GitHub per machine.
 	refreshLockName = "databricks-cli-update-check.lock"
-	lockStaleAfter  = time.Minute
+	// lockStaleAfter reclaims a lock left behind when the process exited while
+	// the background goroutine was still fetching, so its deferred release never
+	// ran. It must comfortably exceed backgroundTimeout so a live fetch is never
+	// mistaken for an abandoned lock.
+	lockStaleAfter = 30 * time.Second
 )
 
 // StartBackgroundRefresh fetches the latest released version in the background
