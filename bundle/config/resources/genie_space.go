@@ -20,8 +20,6 @@ type GenieSpaceConfig struct {
 	// drift (see OverrideChangeDesc in bundle/direct/dresources/genie_space.go).
 	// Mirrors dashboards.DashboardConfig.Etag.
 	Etag string `json:"etag,omitempty"`
-	// Genie space ID
-	SpaceId string `json:"space_id,omitempty"`
 	// Title of the Genie Space
 	Title string `json:"title,omitempty"`
 	// Warehouse associated with the Genie Space

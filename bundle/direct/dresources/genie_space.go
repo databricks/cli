@@ -50,24 +50,18 @@ func (*ResourceGenieSpace) PrepareState(input *resources.GenieSpace) *resources.
 	return &input.GenieSpaceConfig
 }
 
-func (r *ResourceGenieSpace) RemapState(state *resources.GenieSpaceConfig) *resources.GenieSpaceConfig {
-	forceSendFields := utils.FilterFields[resources.GenieSpaceConfig](state.ForceSendFields, []string{
-		"SpaceId",
-		"SerializedSpace",
-	}...)
+func (r *ResourceGenieSpace) RemapState(remote *resources.GenieSpaceConfig) *resources.GenieSpaceConfig {
+	forceSendFields := utils.FilterFields[resources.GenieSpaceConfig](remote.ForceSendFields, "SerializedSpace")
 
 	return &resources.GenieSpaceConfig{
-		Description:     state.Description,
-		Etag:            state.Etag,
-		Title:           state.Title,
-		WarehouseId:     state.WarehouseId,
-		ParentPath:      state.ParentPath,
-		SerializedSpace: state.SerializedSpace,
+		Description:     remote.Description,
+		Etag:            remote.Etag,
+		Title:           remote.Title,
+		WarehouseId:     remote.WarehouseId,
+		ParentPath:      remote.ParentPath,
+		SerializedSpace: remote.SerializedSpace,
 
 		ForceSendFields: forceSendFields,
-
-		// Clear output only fields. They should not show up on remote diff computation.
-		SpaceId: "",
 	}
 }
 
@@ -108,8 +102,6 @@ func responseToGenieSpaceConfig(space *dashboards.GenieSpace, serializedSpace st
 		ParentPath:      ensureWorkspacePrefix(space.ParentPath),
 		SerializedSpace: serializedSpace,
 
-		// Output only fields
-		SpaceId:         space.SpaceId,
 		ForceSendFields: forceSendFields,
 	}
 }

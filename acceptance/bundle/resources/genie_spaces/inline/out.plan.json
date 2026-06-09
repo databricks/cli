@@ -11,7 +11,6 @@
         "etag": "1",
         "parent_path": "/Workspace/Users/[USERNAME]",
         "serialized_space": "{\"config\":{\"sample_questions\":[{\"id\":\"sq-001\",\"question\":[\"What is the total revenue?\"]}]},\"data_sources\":{\"tables\":[{\"column_configs\":[{\"column_name\":\"amount\",\"get_example_values\":true}],\"identifier\":\"main.sales.orders\"}]},\"version\":2}",
-        "space_id": "[GENIE_SPACE_ID]",
         "title": "Sales Analytics Inline Genie",
         "warehouse_id": "test-warehouse-id"
       },

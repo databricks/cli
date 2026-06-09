@@ -743,7 +743,6 @@ resources.genie_spaces.*.lifecycle.prevent_destroy	bool	INPUT
 resources.genie_spaces.*.modified_status	string	INPUT
 resources.genie_spaces.*.parent_path	string	ALL
 resources.genie_spaces.*.serialized_space	any	ALL
-resources.genie_spaces.*.space_id	string	ALL
 resources.genie_spaces.*.title	string	ALL
 resources.genie_spaces.*.url	string	INPUT
 resources.genie_spaces.*.warehouse_id	string	ALL
