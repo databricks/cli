@@ -57,12 +57,15 @@ async function findGroupApprover(owners, approverLogins, github, org, core) {
   return null;
 }
 
-// GitHub returns the full review history, so we collapse it to each user's
-// latest state before evaluating whether the PR is currently approved.
+const OPINIONATED_REVIEW_STATES = new Set(["APPROVED", "CHANGES_REQUESTED"]);
+
+// GitHub returns all reviews, but only opinionated reviews affect approval.
 function latestReviewsByUser(reviews) {
   const latest = new Map();
 
   for (const [index, review] of reviews.entries()) {
+    if (!OPINIONATED_REVIEW_STATES.has(review.state)) continue;
+
     const login = review.user?.login?.toLowerCase();
     if (!login) continue;
 
