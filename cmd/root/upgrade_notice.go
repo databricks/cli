@@ -3,7 +3,10 @@ package root
 import (
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
+	"runtime"
+	"strings"
 	"time"
 
 	"github.com/databricks/cli/internal/build"
@@ -18,10 +21,15 @@ import (
 
 const versionCheckCacheName = "cli-version-check.json"
 
+// installScriptCommand upgrades a CLI installed via the official install script.
+// https://docs.databricks.com/dev-tools/cli/install.html
+const installScriptCommand = "curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh"
+
 // startUpgradeCheck refreshes the cached latest-version record in the background
 // when it is stale. It never blocks the command: the refresh runs in a goroutine
 // and the upgrade notice (printed later by [printUpgradeNotice]) is rendered from
-// whatever the cache holds when the command finishes.
+// whatever the cache holds when the command finishes. A failed refresh (e.g. no
+// network) is intentionally silent; it is not surfaced as an error.
 func startUpgradeCheck(ctx context.Context, cmd *cobra.Command) {
 	if !upgradeCheckEnabled(ctx, cmd) {
 		return
@@ -31,12 +39,14 @@ func startUpgradeCheck(ctx context.Context, cmd *cobra.Command) {
 		log.Debugf(ctx, "cli version check: %v", err)
 		return
 	}
+	// Only contact GitHub when the cached record is older than the TTL, so the
+	// network is touched at most once per [upgradecheck] check interval.
 	if !upgradecheck.Stale(cacheFile, time.Now()) {
 		return
 	}
 	go func() {
 		if err := upgradecheck.Refresh(ctx, cacheFile); err != nil {
-			log.Debugf(ctx, "cli version check refresh failed: %v", err)
+			log.Debugf(ctx, "cli version check refresh skipped: %v", err)
 		}
 	}()
 }
@@ -58,14 +68,45 @@ func printUpgradeNotice(ctx context.Context, cmd *cobra.Command) {
 	if !ok {
 		return
 	}
-	cmd.PrintErrln(cmdio.Yellow(ctx, upgradeNoticeMessage(current, latest, url)))
+	cmd.PrintErrln(cmdio.Yellow(ctx, upgradeNoticeMessage(current, latest, url, upgradeCommand())))
 }
 
 // upgradeNoticeMessage formats the advisory shown when a newer release exists.
 // The leading blank line separates it from the command's own output.
-func upgradeNoticeMessage(current, latest, url string) string {
-	return fmt.Sprintf("\nA new release of the Databricks CLI is available: %s → %s\n%s",
-		trimV(current), trimV(latest), url)
+func upgradeNoticeMessage(current, latest, url, upgradeCmd string) string {
+	return fmt.Sprintf(
+		"\nA new release of the Databricks CLI is available: %s → %s\n%s\nTo upgrade, run: %s",
+		trimV(current), trimV(latest), url, upgradeCmd)
+}
+
+// upgradeCommand returns the command that upgrades the current installation. It
+// detects a Homebrew install from the binary location; otherwise it falls back
+// to the documented per-OS installer: WinGet on Windows, the install script
+// elsewhere. All are listed at https://docs.databricks.com/dev-tools/cli/install.html
+func upgradeCommand() string {
+	switch {
+	case installedViaHomebrew():
+		return "brew upgrade databricks"
+	case runtime.GOOS == "windows":
+		return "winget upgrade Databricks.DatabricksCLI"
+	default:
+		return installScriptCommand
+	}
+}
+
+// installedViaHomebrew reports whether the running binary is a Homebrew install.
+// Homebrew places formula binaries under a "Cellar" directory on every platform
+// (e.g. /opt/homebrew/Cellar, /usr/local/Cellar, Linuxbrew's Cellar) and the
+// command on PATH is a symlink into it, so symlinks are resolved before checking.
+func installedViaHomebrew() bool {
+	exe, err := os.Executable()
+	if err != nil {
+		return false
+	}
+	if resolved, err := filepath.EvalSymlinks(exe); err == nil {
+		exe = resolved
+	}
+	return strings.Contains(filepath.ToSlash(exe), "/Cellar/")
 }
 
 // upgradeCheckEnabled reports whether the outdated-version check should run for

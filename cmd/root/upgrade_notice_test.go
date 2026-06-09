@@ -35,10 +35,22 @@ func with(c notifyConditions, mut func(*notifyConditions)) notifyConditions {
 }
 
 func TestUpgradeNoticeMessage(t *testing.T) {
-	got := upgradeNoticeMessage("0.230.0", "v0.245.0", "https://github.com/databricks/cli/releases/tag/v0.245.0")
+	got := upgradeNoticeMessage("0.230.0", "v0.245.0",
+		"https://github.com/databricks/cli/releases/tag/v0.245.0", "brew upgrade databricks")
 	want := "\nA new release of the Databricks CLI is available: 0.230.0 → 0.245.0\n" +
-		"https://github.com/databricks/cli/releases/tag/v0.245.0"
+		"https://github.com/databricks/cli/releases/tag/v0.245.0\n" +
+		"To upgrade, run: brew upgrade databricks"
 	assert.Equal(t, want, got)
+}
+
+func TestUpgradeCommand(t *testing.T) {
+	// The returned command must be one of the documented upgrade methods.
+	valid := map[string]bool{
+		"brew upgrade databricks":                 true,
+		"winget upgrade Databricks.DatabricksCLI": true,
+		installScriptCommand:                      true,
+	}
+	assert.True(t, valid[upgradeCommand()], "unexpected upgrade command: %q", upgradeCommand())
 }
 
 func TestTrimV(t *testing.T) {

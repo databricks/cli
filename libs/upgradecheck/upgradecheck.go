@@ -24,8 +24,9 @@ import (
 )
 
 const (
-	// checkInterval throttles how often we hit the GitHub API. The latest
-	// version is served from the on-disk cache between refreshes.
+	// checkInterval is the cache TTL: the GitHub API is refreshed at most once
+	// per day. Between refreshes the latest version is served from the on-disk
+	// cache, so the common path performs no network I/O.
 	checkInterval = 24 * time.Hour
 
 	// fetchTimeout bounds the background refresh so it can never run unbounded.

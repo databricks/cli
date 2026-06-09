@@ -1,6 +1,7 @@
 package upgradecheck_test
 
 import (
+	"io/fs"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -86,7 +87,7 @@ func TestRefreshErrorOnServerFailure(t *testing.T) {
 	require.Error(t, err)
 	// A failed refresh must not create a cache file.
 	_, statErr := os.Stat(cacheFile)
-	assert.True(t, os.IsNotExist(statErr))
+	assert.ErrorIs(t, statErr, fs.ErrNotExist)
 }
 
 func TestCorruptCacheIsStaleAndNotOutdated(t *testing.T) {
