@@ -14,6 +14,7 @@ import (
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct"
+	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/cmd/root"
@@ -24,6 +25,7 @@ import (
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/sync"
 	"github.com/databricks/cli/libs/telemetry/protos"
+	sdkbundle "github.com/databricks/databricks-sdk-go/service/bundle"
 	"github.com/spf13/cobra"
 )
 
@@ -188,12 +190,16 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		needDirectState := stateDesc.Engine.IsDirect() && (opts.InitIDs || opts.ErrorOnEmptyState || opts.Deploy || opts.ReadPlanPath != "" || opts.PreDeployChecks || opts.PostStateFunc != nil)
 		if needDirectState {
 			_, localPath := b.StateFilenameDirect(ctx)
-			reader, err := statemgmt.NewStateReader(ctx, b, localPath)
-			if err != nil {
-				logdiag.LogError(ctx, err)
-				return b, stateDesc, root.ErrAlreadyPrinted
+
+			// When the bundle records deployment history, the deployment metadata
+			// service owns resource state, so hand Open its client to overlay DMS
+			// state on top of the local identity (lineage/serial). Reads open the
+			// state write-disabled, so no lineage is minted here.
+			var dmsClient sdkbundle.BundleInterface
+			if b.Config.Experimental != nil && b.Config.Experimental.RecordDeploymentHistory {
+				dmsClient = b.WorkspaceClient(ctx).Bundle
 			}
-			if err := reader.Load(ctx, &b.DeploymentBundle.StateDB); err != nil {
+			if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(true), dstate.WithWrite(false), dmsClient); err != nil {
 				logdiag.LogError(ctx, err)
 				return b, stateDesc, root.ErrAlreadyPrinted
 			}
