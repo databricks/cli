@@ -8,8 +8,10 @@ import (
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/internal/tf/schema"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
+	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/textutil"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -284,6 +286,53 @@ func TestConvertJobApplyPolicyDefaultValues(t *testing.T) {
 				"new_cluster": map[string]any{
 					"apply_policy_default_values": true,
 					"spark_version":               "16.4.x-scala2.12",
+				},
+			},
+		},
+	}, out.Job["my_job"])
+}
+
+func TestConvertJobFieldUnknownToTerraformSchema(t *testing.T) {
+	// autotermination_minutes is part of the SDK job schema but not part of
+	// the pinned Terraform provider schema for job clusters. If a provider
+	// bump adds it, this test fails and needs a different such field.
+	src := resources.Job{
+		JobSettings: jobs.JobSettings{
+			Name: "my job",
+			Tasks: []jobs.Task{
+				{
+					TaskKey: "key",
+					NewCluster: &compute.ClusterSpec{
+						SparkVersion:           "10.4.x-scala2.12",
+						AutoterminationMinutes: 60,
+					},
+				},
+			},
+		},
+	}
+
+	vin, err := convert.FromTyped(src, dyn.NilValue)
+	require.NoError(t, err)
+
+	ctx := logdiag.InitContext(t.Context())
+	logdiag.SetCollect(ctx, true)
+
+	out := schema.NewResources()
+	err = jobConverter{}.Convert(ctx, "my_job", vin, out)
+	require.NoError(t, err)
+
+	diags := logdiag.FlushCollected(ctx)
+	require.Len(t, diags, 1)
+	assert.Equal(t, diag.Warning, diags[0].Severity)
+	assert.Equal(t, "unknown field: autotermination_minutes", diags[0].Summary)
+
+	assert.Equal(t, map[string]any{
+		"name": "my job",
+		"task": []any{
+			map[string]any{
+				"task_key": "key",
+				"new_cluster": map[string]any{
+					"spark_version": "10.4.x-scala2.12",
 				},
 			},
 		},
