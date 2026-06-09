@@ -81,6 +81,11 @@ func New(ctx context.Context) *cobra.Command {
 		ctx = withInteractiveModeInUserAgent(ctx)
 		ctx = InjectTestPidToUserAgent(ctx)
 		cmd.SetContext(ctx)
+
+		// Refresh the cached latest-version record in the background if it is
+		// stale. This never blocks the command; the upgrade notice is printed
+		// from the cache after the command succeeds.
+		startUpgradeCheck(ctx, cmd)
 		return nil
 	}
 
@@ -155,6 +160,10 @@ Stack Trace:
 	// Log exit status and error
 	// We only log if logger initialization succeeded and is stored in command
 	// context
+	if err == nil {
+		printUpgradeNotice(cmd.Context(), cmd)
+	}
+
 	if logger, ok := log.FromContext(cmd.Context()); ok {
 		if err == nil {
 			logger.Info("completed execution",
