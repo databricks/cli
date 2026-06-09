@@ -308,6 +308,11 @@ func (p *Project) checkUpdates(cmd *cobra.Command) error {
 	if err != nil {
 		return err
 	}
+	// Repositories without releases cache an empty list and the offline
+	// fallback returns no versions, so there is nothing to advise on.
+	if len(versions) == 0 {
+		return nil
+	}
 	installed, err := p.InstalledVersion(ctx)
 	if err != nil {
 		return err
