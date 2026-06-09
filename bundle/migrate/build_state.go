@@ -204,14 +204,12 @@ func BuildStateFromTF(
 			return fmt.Errorf("%s: unresolved references: %v", node, sv.Refs)
 		}
 
-		// Handle etag for dashboards: look it up directly from TF state attributes.
+		// Handle etag for dashboards: read it directly from TF state attributes.
 		// The "etag" field is a computed TF attribute not present in the bundle config,
 		// so it does not flow through PrepareState/ExtractReferences.
-		if etag, err := LookupTFField(tfAttrs, group, srcName, structpath.NewStringKey(nil, "etag")); err == nil && etag != nil {
-			if etagStr, ok := etag.(string); ok && etagStr != "" {
-				if err := structaccess.Set(sv.Value, structpath.NewStringKey(nil, "etag"), etagStr); err != nil {
-					return fmt.Errorf("%s: cannot set etag: %w", node, err)
-				}
+		if etag := tfAttrs.ETagFor(group, srcName); etag != "" {
+			if err := structaccess.Set(sv.Value, structpath.NewStringKey(nil, "etag"), etag); err != nil {
+				return fmt.Errorf("%s: cannot set etag: %w", node, err)
 			}
 		}
 

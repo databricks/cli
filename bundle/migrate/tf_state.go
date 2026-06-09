@@ -25,6 +25,26 @@ var tfStateFieldAliases = map[string]map[string]string{
 // TFStateAttrs maps (tfResourceType → resourceName → raw JSON attributes).
 type TFStateAttrs map[string]map[string]json.RawMessage
 
+// ETagFor returns the "etag" attribute for a bundle resource, or "" if absent.
+// Reads directly from the raw JSON without full path translation.
+func (a TFStateAttrs) ETagFor(group, name string) string {
+	tfType, ok := terraform.GroupToTerraformName[group]
+	if !ok {
+		return ""
+	}
+	raw, ok := a[tfType][name]
+	if !ok {
+		return ""
+	}
+	var v struct {
+		Etag string `json:"etag,omitempty"`
+	}
+	if err := json.Unmarshal(raw, &v); err != nil {
+		return ""
+	}
+	return v.Etag
+}
+
 // TFState holds everything parsed from a single terraform state file read.
 type TFState struct {
 	// Attrs maps (tfResourceType → resourceName → raw JSON attributes).
