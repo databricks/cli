@@ -8,7 +8,7 @@ import (
 
 // Inputs are synthetic; expected values are sha256(canonical input)[:16]
 // in hex. The algorithm was verified against the live
-// /api/2.0/sandbox/ssh-keys endpoint during exploration, so this test
+// /api/2.0/lakebox/ssh-keys endpoint during exploration, so this test
 // pins the algorithm — not a known set of real registered keys.
 func TestKeyHash(t *testing.T) {
 	tests := []struct {
