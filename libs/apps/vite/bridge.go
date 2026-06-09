@@ -239,8 +239,7 @@ func (vb *Bridge) connectToTunnel(appDomain *url.URL) error {
 	return nil
 }
 
-// setTunnelConn atomically installs a new tunnel connection and closes the
-// previous one so a reconnect doesn't leak the old connection.
+// setTunnelConn installs a new tunnel connection, closing the old one so reconnects don't leak it.
 func (vb *Bridge) setTunnelConn(conn *websocket.Conn) {
 	if old := vb.tunnelConn.Swap(conn); old != nil {
 		old.Close()
@@ -421,8 +420,7 @@ func (vb *Bridge) handleMessage(msg *BridgeMessage) error {
 		return nil
 
 	case "connection:request":
-		// The consumer can be blocked on a stdin prompt (or gone after stop), so a
-		// bare send here could stall the tunnel reader and hang shutdown.
+		// The consumer may be blocked on a stdin prompt or gone after stop; a bare send could hang the tunnel reader.
 		select {
 		case vb.connectionRequests <- msg:
 			return nil
@@ -467,11 +465,9 @@ func (vb *Bridge) handleMessage(msg *BridgeMessage) error {
 	}
 }
 
-// readStdinLines forwards lines from r to stdinLines until read error or stop.
-// A single persistent reader (rather than one goroutine per prompt) ensures a
-// prompt that times out doesn't leak a goroutine that then swallows the user's
-// answer to the next prompt. The channel is closed on read error so pending and
-// future prompts fail instead of waiting for input that will never come.
+// readStdinLines forwards lines from r to stdinLines, closing the channel on read
+// error so prompts fail instead of hanging. A single persistent reader keeps a
+// timed-out prompt from leaking a goroutine that swallows the next prompt's answer.
 func (vb *Bridge) readStdinLines(r io.Reader) {
 	reader := bufio.NewReader(r)
 	for {
@@ -507,7 +503,6 @@ func (vb *Bridge) handleConnectionRequest(msg *BridgeMessage) error {
 			}
 			approved = strings.ToLower(strings.TrimSpace(input)) == "y"
 		case <-vb.stopChan:
-			// Shutting down; no point answering the request.
 			return nil
 		case <-time.After(BridgeConnTimeout):
 			// Default to denying after timeout
@@ -985,7 +980,6 @@ func (vb *Bridge) Start() error {
 		return nil
 	})
 
-	// Single persistent stdin reader for connection prompts; see readStdinLines.
 	if !vb.autoApprove {
 		go vb.readStdinLines(os.Stdin)
 	}

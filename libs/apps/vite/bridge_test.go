@@ -194,7 +194,6 @@ func TestBridgeHandleMessage(t *testing.T) {
 }
 
 // waitForMessage waits for the websocket test server to deliver a message.
-// Tests must synchronize on a channel (not a sleep) so they pass under -race.
 func waitForMessage(t *testing.T, received <-chan []byte) []byte {
 	select {
 	case message := <-received:
@@ -375,8 +374,7 @@ func TestNewBridge_AutoApprove(t *testing.T) {
 	assert.True(t, vb.autoApprove)
 }
 
-// newWSConn starts a websocket server that discards inbound messages and
-// returns a client connection to it.
+// newWSConn returns a client connection to a test server that discards inbound messages.
 func newWSConn(t *testing.T) *websocket.Conn {
 	upgrader := websocket.Upgrader{}
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -414,9 +412,7 @@ func TestBridgeSetTunnelConnSwapDuringWrites(t *testing.T) {
 	writerDone := make(chan struct{})
 	go func() {
 		defer close(writerDone)
-		// The writer may return an error if a queued write hits the
-		// just-closed old connection; this test only checks that the swap is
-		// race-free and closes the old connection.
+		// A queued write may hit the just-closed old connection, so the error is ignored.
 		_ = vb.tunnelWriter(ctx)
 	}()
 
@@ -427,7 +423,6 @@ func TestBridgeSetTunnelConnSwapDuringWrites(t *testing.T) {
 			priority:    1,
 		}
 		if i == 50 {
-			// Simulate the reconnect path swapping in a fresh connection.
 			vb.setTunnelConn(conn2)
 		}
 	}
@@ -477,8 +472,7 @@ func TestBridgeConnectionRequestSequentialPrompts(t *testing.T) {
 	vb := NewBridge(ctx, w, "test-app", 5173, false)
 	go vb.readStdinLines(strings.NewReader("y\nn\n"))
 
-	// Both prompts must get their own line; the old per-prompt reader leaked a
-	// goroutine on timeout that could swallow the answer to the next prompt.
+	// Each prompt must consume exactly one line; a leaked reader would swallow the next prompt's answer.
 	require.NoError(t, vb.handleConnectionRequest(&BridgeMessage{Type: "connection:request", Viewer: "a@example.com", RequestID: "req-1"}))
 	require.NoError(t, vb.handleConnectionRequest(&BridgeMessage{Type: "connection:request", Viewer: "b@example.com", RequestID: "req-2"}))
 
