@@ -5,6 +5,7 @@ import (
 	"testing"
 	"text/template"
 
+	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -24,12 +25,26 @@ func TestStatusTemplateSingleRun(t *testing.T) {
 	out := renderStatus(t, statusData{
 		RunID:        "123",
 		Status:       "RUNNING",
+		User:         "me@example.com",
 		DashboardURL: "https://example.test/run/123",
 	})
 	assert.Contains(t, out, "Run ID:       123")
 	assert.Contains(t, out, "Status:       RUNNING")
+	assert.Contains(t, out, "User:")
+	assert.Contains(t, out, "me@example.com")
 	assert.Contains(t, out, "Dashboard:    https://example.test/run/123")
 	assert.NotContains(t, out, "Sweep")
+}
+
+func TestYAMLConfigPath(t *testing.T) {
+	// No tasks, or a task without GenAiComputeTask, yields no path.
+	assert.Equal(t, "", yamlConfigPath(&jobs.Run{}))
+	assert.Equal(t, "", yamlConfigPath(&jobs.Run{Tasks: []jobs.RunTask{{}}}))
+
+	run := &jobs.Run{Tasks: []jobs.RunTask{{
+		GenAiComputeTask: &jobs.GenAiComputeTask{YamlParametersFilePath: "/Workspace/cfg.yaml"},
+	}}}
+	assert.Equal(t, "/Workspace/cfg.yaml", yamlConfigPath(run))
 }
 
 func TestStatusTemplateSweep(t *testing.T) {

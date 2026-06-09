@@ -1,12 +1,18 @@
 package ai
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"io"
 	"strconv"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/spf13/cobra"
@@ -29,6 +35,8 @@ type statusData struct {
 	Duration string `json:"-"`
 	// Accelerators describes the run's GPUs, e.g. "8x H100".
 	Accelerators string `json:"-"`
+	// User is the run's creator. Text-only; JSON omits it, matching `air status --json`.
+	User string `json:"-"`
 	// Sweep replaces the single-run view for foreach runs. Text-only; JSON omits it.
 	Sweep *sweepInfo `json:"-"`
 }
@@ -63,6 +71,9 @@ Duration:     {{.Data.Duration}}
 Retries:      {{.Data.AttemptNumber}}
 {{- if .Data.ExperimentName}}
 Experiment:   {{.Data.ExperimentName}}
+{{- end}}
+{{- if .Data.User}}
+User:         {{.Data.User}}
 {{- end}}
 {{- if .Data.Accelerators}}
 Accelerators: {{.Data.Accelerators}}
@@ -109,6 +120,14 @@ func newStatusCommand() *cobra.Command {
 		if task := findForEachTask(run); task != nil {
 			data.Sweep = buildSweepInfo(ctx, w, task)
 		}
+
+		// Text mode shows the training-config YAML before the status, mirroring
+		// `air status`. JSON output omits it, matching `air status --json`.
+		if root.OutputType(cmd) == flags.OutputText {
+			if path := yamlConfigPath(run); path != "" {
+				printConfigYAML(ctx, w, path)
+			}
+		}
 		return renderEnvelope(ctx, data)
 	}
 
@@ -126,9 +145,43 @@ func buildStatusData(run *jobs.Run) statusData {
 		ExperimentName:  experimentName(run),
 		DashboardURL:    run.RunPageUrl,
 		Accelerators:    accelerators(run),
+		User:            run.CreatorUserName,
 	}
 	if data.DurationSeconds != nil {
 		data.Duration = formatDuration(*data.DurationSeconds)
 	}
 	return data
+}
+
+// yamlConfigPath returns the run's training-config YAML path, or "" if none.
+func yamlConfigPath(run *jobs.Run) string {
+	if len(run.Tasks) == 0 {
+		return ""
+	}
+	task := run.Tasks[0].GenAiComputeTask
+	if task == nil {
+		return ""
+	}
+	return task.YamlParametersFilePath
+}
+
+// printConfigYAML downloads the run's training-config YAML and prints it. It is
+// best-effort: a failure is surfaced as a warning but does not fail status.
+func printConfigYAML(ctx context.Context, w *databricks.WorkspaceClient, path string) {
+	r, err := w.Workspace.Download(ctx, path)
+	if err != nil {
+		log.Warnf(ctx, "ai status: could not download training config %s: %v", path, err)
+		return
+	}
+	defer r.Close()
+
+	content, err := io.ReadAll(r)
+	if err != nil {
+		log.Warnf(ctx, "ai status: could not read training config %s: %v", path, err)
+		return
+	}
+
+	cmdio.LogString(ctx, "Training Configuration:")
+	cmdio.LogString(ctx, string(content))
+	cmdio.LogString(ctx, "")
 }
