@@ -98,9 +98,6 @@ func TestLoadDBAlertFilesRelativeToBundleRoot(t *testing.T) {
 			Resources: config.Resources{
 				Alerts: map[string]*resources.Alert{
 					"my_alert": {
-						// NormalizePaths rewrites file_path to be relative to the bundle root.
-						// The test process working directory is not the bundle root, so this
-						// read must be anchored to BundleRootPath to succeed.
 						FilePath: "alert.dbalert.json",
 						AlertV2: sql.AlertV2{
 							DisplayName: "Test Alert",
