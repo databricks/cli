@@ -44,7 +44,7 @@ func Build(ctx context.Context, b *bundle.Bundle) LibLocationMap {
 
 	// For immutable bundles, library remote paths are set in the deploy phase
 	// after snapshot.Upload() provides the content-addressed workspace.artifact_path.
-	if b.Config.Bundle.Immutable {
+	if b.Config.Bundle.Deployment.ImmutableFolder {
 		return nil
 	}
 

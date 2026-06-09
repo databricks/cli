@@ -327,7 +327,7 @@ const snapshotFilesRoot = "${workspace.snapshot_path}/src/files"
 
 func applyTranslations(ctx context.Context, b *bundle.Bundle, t *translateContext, translations []func(context.Context, dyn.Value) (dyn.Value, error)) diag.Diagnostics {
 	switch {
-	case b.Config.Bundle.Immutable:
+	case b.Config.Bundle.Deployment.ImmutableFolder:
 		// Use a placeholder root that is resolved after snapshot.Upload() sets
 		// workspace.snapshot_path. This defers path computation until the actual
 		// content-addressed path is known.

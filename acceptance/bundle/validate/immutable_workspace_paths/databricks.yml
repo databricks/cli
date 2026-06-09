@@ -1,6 +1,7 @@
 bundle:
   name: my-bundle
-  immutable: true
+  deployment:
+    immutable_folder: true
 
 sync:
   exclude:

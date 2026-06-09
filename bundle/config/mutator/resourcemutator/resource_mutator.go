@@ -132,7 +132,7 @@ func applyInitializeMutators(ctx context.Context, b *bundle.Bundle) {
 // ${workspace.artifact_path} are excluded: the API assigns the snapshot path
 // after upload, so they must remain as-is until snapshot.Upload() has run.
 func resourceVarResolver(b *bundle.Bundle) bundle.Mutator {
-	if b.Config.Bundle.Immutable {
+	if b.Config.Bundle.Deployment.ImmutableFolder {
 		return mutator.ResolveVariableReferencesOnlyResourcesExcluding(
 			"workspace.file_path", "workspace.artifact_path",
 		)

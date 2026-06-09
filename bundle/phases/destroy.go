@@ -132,7 +132,7 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 			mutator.ResolveVariableReferencesOnlyResources("artifacts"),
 		}
 
-		if b.Config.Bundle.Immutable {
+		if b.Config.Bundle.Deployment.ImmutableFolder {
 			// For immutable bundles, resource paths contain ${workspace.snapshot_path}
 			// which was set during deploy by snapshot.Upload(). Load it from the stored
 			// metadata so it can be resolved before Terraform processes the config.

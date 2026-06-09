@@ -43,7 +43,7 @@ func (p processStaticResources) Apply(ctx context.Context, b *bundle.Bundle) dia
 	// The actual snapshot path is only known after snapshot.Upload() returns the
 	// API-assigned path in the deploy phase.
 	var resourceResolver bundle.Mutator
-	if b.Config.Bundle.Immutable {
+	if b.Config.Bundle.Deployment.ImmutableFolder {
 		resourceResolver = mutator.ResolveVariableReferencesOnlyResourcesExcluding(
 			"workspace.snapshot_path",
 		)

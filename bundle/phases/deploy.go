@@ -133,7 +133,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalDeploy))
 	}()
 
-	if b.Config.Bundle.Immutable {
+	if b.Config.Bundle.Deployment.ImmutableFolder {
 		// Upload all source files and built artifacts as a single immutable snapshot.
 		// The API assigns a content-addressed path, so workspace.snapshot_path (and
 		// derived workspace.file_path / workspace.artifact_path) are only known after
@@ -157,7 +157,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		return
 	}
 
-	if !b.Config.Bundle.Immutable {
+	if !b.Config.Bundle.Deployment.ImmutableFolder {
 		bundle.ApplySeqContext(ctx, b, files.Upload(outputHandler))
 		if logdiag.HasError(ctx) {
 			return

@@ -2239,10 +2239,6 @@
                       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Git",
                       "markdownDescription": "The Git version control details that are associated with your bundle. For supported attributes see [git](https://docs.databricks.com/dev-tools/bundles/settings.html#git)."
                     },
-                    "immutable": {
-                      "description": "Whether to upload bundle files and artifacts as a single immutable snapshot. When true, all files are packaged into a zip and uploaded via the snapshot API, and workspace.file_path and workspace.artifact_path are set to the returned content-addressed path. The validate and plan commands make no mutative API calls when this is enabled.",
-                      "$ref": "#/$defs/bool"
-                    },
                     "name": {
                       "description": "The name of the bundle.",
                       "$ref": "#/$defs/string"
@@ -2273,6 +2269,10 @@
                   "properties": {
                     "fail_on_active_runs": {
                       "description": "Whether to fail on active runs. If this is set to true a deployment that is running can be interrupted.",
+                      "$ref": "#/$defs/bool"
+                    },
+                    "immutable_folder": {
+                      "description": "Whether to upload bundle files and artifacts as a single immutable snapshot. When true, all files are packaged into a zip and uploaded via the snapshot API, and workspace.file_path and workspace.artifact_path are set to the returned content-addressed path. The validate and plan commands make no mutative API calls when this is enabled.",
                       "$ref": "#/$defs/bool"
                     },
                     "lock": {
