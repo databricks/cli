@@ -4,5 +4,5 @@ bundle:
 resources:
   schemas:
     schema1:
-      name: myschema
+      name: schema_managed_defaults
       catalog_name: main

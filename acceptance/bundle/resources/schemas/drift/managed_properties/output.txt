@@ -21,4 +21,4 @@ Deployment complete!
 json.method = "POST";
 json.path = "/api/2.1/unity-catalog/schemas";
 json.body.catalog_name = "main";
-json.body.name = "myschema";
+json.body.name = "schema_managed_defaults";
