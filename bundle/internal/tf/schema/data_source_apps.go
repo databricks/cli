@@ -189,6 +189,8 @@ type DataSourceAppsApp struct {
 	ActiveDeployment            *DataSourceAppsAppActiveDeployment             `json:"active_deployment,omitempty"`
 	AppStatus                   *DataSourceAppsAppAppStatus                    `json:"app_status,omitempty"`
 	BudgetPolicyId              string                                         `json:"budget_policy_id,omitempty"`
+	ComputeMaxInstances         int                                            `json:"compute_max_instances,omitempty"`
+	ComputeMinInstances         int                                            `json:"compute_min_instances,omitempty"`
 	ComputeSize                 string                                         `json:"compute_size,omitempty"`
 	ComputeStatus               *DataSourceAppsAppComputeStatus                `json:"compute_status,omitempty"`
 	CreateTime                  string                                         `json:"create_time,omitempty"`
@@ -210,6 +212,7 @@ type DataSourceAppsApp struct {
 	ServicePrincipalName        string                                         `json:"service_principal_name,omitempty"`
 	Space                       string                                         `json:"space,omitempty"`
 	TelemetryExportDestinations []DataSourceAppsAppTelemetryExportDestinations `json:"telemetry_export_destinations,omitempty"`
+	ThumbnailUrl                string                                         `json:"thumbnail_url,omitempty"`
 	UpdateTime                  string                                         `json:"update_time,omitempty"`
 	Updater                     string                                         `json:"updater,omitempty"`
 	Url                         string                                         `json:"url,omitempty"`
@@ -218,7 +221,7 @@ type DataSourceAppsApp struct {
 }
 
 type DataSourceAppsProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourceApps struct {

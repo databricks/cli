@@ -1,0 +1,11 @@
+# Agent detection needs ~/.claude; prefer USERPROFILE on Windows.
+mkdir -p "${USERPROFILE:-$HOME}/.claude"
+
+title "stable-only install (no --experimental flag) installs 1 skill"
+trace $CLI experimental aitools install --global
+
+title "re-run with --experimental installs the experimental one too"
+trace $CLI experimental aitools install --global --experimental
+
+title "no-op re-run is idempotent (no new fetches, no errors)"
+trace $CLI experimental aitools install --global --experimental

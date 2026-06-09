@@ -1,0 +1,37 @@
+Error: "resources.jobs.foo.url": Terraform-only field; cross-resource references to Terraform-only fields are not supported by the direct engine
+  in databricks.yml:11:12
+
+Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Found 1 error
+
+Exit code: 1
+Error: "resources.jobs.foo.url": Terraform-only field; cross-resource references to Terraform-only fields are not supported by the direct engine
+  in databricks.yml:11:12
+
+
+Exit code: 1
+{
+  "jobs": {
+    "bar": {
+      "max_concurrent_runs": 1,
+      "name": "Untitled",
+      "queue": {
+        "enabled": true
+      },
+      "url": "${resources.jobs.foo.url}"
+    },
+    "foo": {
+      "max_concurrent_runs": 1,
+      "name": "Untitled",
+      "queue": {
+        "enabled": true
+      },
+      "url": "my_job_url"
+    }
+  }
+}

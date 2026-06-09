@@ -1,3 +1,5 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
 title "Upload notebook to a workspace path"
 trace $CLI workspace import "/Workspace/Users/${CURRENT_USER_NAME}/test_notebook.py" --file test_notebook.py --format AUTO --overwrite
 
@@ -11,6 +13,11 @@ JOB_ID=$($CLI jobs create --json '{
       "task_key": "test_task",
       "notebook_task": {
         "notebook_path": "/Workspace/Users/'${CURRENT_USER_NAME}'/test_notebook"
+      },
+      "new_cluster": {
+        "spark_version": "'${DEFAULT_SPARK_VERSION}'",
+        "node_type_id": "'${NODE_TYPE_ID}'",
+        "num_workers": 1
       }
     }
   ]

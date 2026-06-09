@@ -21,8 +21,10 @@
             "dbt_task": [],
             "deployment": [
               {
+                "deployment_id": "",
                 "kind": "BUNDLE",
-                "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/metadata.json"
+                "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/metadata.json",
+                "version_id": ""
               }
             ],
             "description": null,
@@ -55,7 +57,11 @@
             "parameter": [],
             "performance_target": null,
             "pipeline_task": [],
-            "provider_config": [],
+            "provider_config": [
+              {
+                "workspace_id": "[NUMID]"
+              }
+            ],
             "python_wheel_task": [],
             "queue": [
               {
@@ -121,6 +127,7 @@
                 "notification_settings": [],
                 "pipeline_task": [],
                 "power_bi_task": [],
+                "python_operator_task": [],
                 "python_wheel_task": [],
                 "retry_on_timeout": false,
                 "run_if": "ALL_SUCCESS",
@@ -175,8 +182,10 @@
             "creator_user_name": "[USERNAME]",
             "deployment": [
               {
+                "deployment_id": "",
                 "kind": "BUNDLE",
-                "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/metadata.json"
+                "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/metadata.json",
+                "version_id": ""
               }
             ],
             "development": false,
@@ -208,7 +217,11 @@
             "name": "Test Migration Pipeline",
             "notification": [],
             "photon": false,
-            "provider_config": [],
+            "provider_config": [
+              {
+                "workspace_id": "[NUMID]"
+              }
+            ],
             "restart_window": [],
             "root_path": null,
             "run_as": [],
@@ -254,7 +267,11 @@
             "id": "mycat.myschema.myvol",
             "name": "myvol",
             "owner": "[USERNAME]",
-            "provider_config": [],
+            "provider_config": [
+              {
+                "workspace_id": "[NUMID]"
+              }
+            ],
             "schema_name": "myschema",
             "storage_location": "s3://[METASTORE_NAME]/metastore/[UUID]/volumes/[UUID]",
             "volume_path": "/Volumes/mycat/myschema/myvol",

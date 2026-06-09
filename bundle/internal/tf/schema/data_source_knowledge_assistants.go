@@ -3,7 +3,7 @@
 package schema
 
 type DataSourceKnowledgeAssistantsKnowledgeAssistantsProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourceKnowledgeAssistantsKnowledgeAssistants struct {
@@ -22,7 +22,7 @@ type DataSourceKnowledgeAssistantsKnowledgeAssistants struct {
 }
 
 type DataSourceKnowledgeAssistantsProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourceKnowledgeAssistants struct {

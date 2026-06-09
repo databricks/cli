@@ -3,7 +3,7 @@
 package schema
 
 type ResourcePostgresBranchProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type ResourcePostgresBranchSpec struct {
@@ -17,12 +17,15 @@ type ResourcePostgresBranchSpec struct {
 }
 
 type ResourcePostgresBranchStatus struct {
+	BranchId         string `json:"branch_id,omitempty"`
 	CurrentState     string `json:"current_state,omitempty"`
 	Default          bool   `json:"default,omitempty"`
+	DeleteTime       string `json:"delete_time,omitempty"`
 	ExpireTime       string `json:"expire_time,omitempty"`
 	IsProtected      bool   `json:"is_protected,omitempty"`
 	LogicalSizeBytes int    `json:"logical_size_bytes,omitempty"`
 	PendingState     string `json:"pending_state,omitempty"`
+	PurgeTime        string `json:"purge_time,omitempty"`
 	SourceBranch     string `json:"source_branch,omitempty"`
 	SourceBranchLsn  string `json:"source_branch_lsn,omitempty"`
 	SourceBranchTime string `json:"source_branch_time,omitempty"`
@@ -30,13 +33,15 @@ type ResourcePostgresBranchStatus struct {
 }
 
 type ResourcePostgresBranch struct {
-	BranchId       string                                `json:"branch_id"`
-	CreateTime     string                                `json:"create_time,omitempty"`
-	Name           string                                `json:"name,omitempty"`
-	Parent         string                                `json:"parent"`
-	ProviderConfig *ResourcePostgresBranchProviderConfig `json:"provider_config,omitempty"`
-	Spec           *ResourcePostgresBranchSpec           `json:"spec,omitempty"`
-	Status         *ResourcePostgresBranchStatus         `json:"status,omitempty"`
-	Uid            string                                `json:"uid,omitempty"`
-	UpdateTime     string                                `json:"update_time,omitempty"`
+	BranchId        string                                `json:"branch_id"`
+	CreateTime      string                                `json:"create_time,omitempty"`
+	Name            string                                `json:"name,omitempty"`
+	Parent          string                                `json:"parent"`
+	ProviderConfig  *ResourcePostgresBranchProviderConfig `json:"provider_config,omitempty"`
+	PurgeOnDelete   bool                                  `json:"purge_on_delete,omitempty"`
+	ReplaceExisting bool                                  `json:"replace_existing,omitempty"`
+	Spec            *ResourcePostgresBranchSpec           `json:"spec,omitempty"`
+	Status          *ResourcePostgresBranchStatus         `json:"status,omitempty"`
+	Uid             string                                `json:"uid,omitempty"`
+	UpdateTime      string                                `json:"update_time,omitempty"`
 }

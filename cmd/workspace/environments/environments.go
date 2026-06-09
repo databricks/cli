@@ -35,6 +35,10 @@ func New() *cobra.Command {
 		RunE:    root.ReportUnknownSubcommand,
 	}
 
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
+
 	// Add methods
 	cmd.AddCommand(newCreateWorkspaceBaseEnvironment())
 	cmd.AddCommand(newDeleteWorkspaceBaseEnvironment())
@@ -102,6 +106,8 @@ func newCreateWorkspaceBaseEnvironment() *cobra.Command {
     DISPLAY_NAME: Human-readable display name for the workspace base environment.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
@@ -213,6 +219,8 @@ func newDeleteWorkspaceBaseEnvironment() *cobra.Command {
       Format: workspace-base-environments/{workspace_base_environment}`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -272,6 +280,8 @@ func newGetDefaultWorkspaceBaseEnvironment() *cobra.Command {
       default-workspace-base-environment`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -330,6 +340,8 @@ func newGetOperation() *cobra.Command {
     NAME: The name of the operation resource.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -388,6 +400,8 @@ func newGetWorkspaceBaseEnvironment() *cobra.Command {
       Format: workspace-base-environments/{workspace_base_environment}`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -452,9 +466,23 @@ func newListWorkspaceBaseEnvironments() *cobra.Command {
 	cmd.Short = `List workspace base environments.`
 	cmd.Long = `List workspace base environments.
 
-  Lists all WorkspaceBaseEnvironments in the workspace.`
+  Lists all WorkspaceBaseEnvironments in the workspace.
+
+  Databricks provides the following base environments:
+
+  - workspace-base-environments/databricks_ai_...: includes popular AI and
+  deep learning packages for serverless GPU compute.
+
+  - workspace-base-environments/databricks_ml_...: includes popular ML
+  packages for serverless compute.
+
+  Databricks-provided base environments are versioned. For example,
+  workspace-base-environments/databricks_ml_v5 corresponds to the ML
+  environment built on environment version 5.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -529,6 +557,8 @@ func newRefreshWorkspaceBaseEnvironment() *cobra.Command {
       Format: workspace-base-environments/{workspace_base_environment}`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -635,6 +665,8 @@ func newUpdateDefaultWorkspaceBaseEnvironment() *cobra.Command {
       explicitly — the wildcard '*' cannot be used to unset fields.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -732,6 +764,8 @@ func newUpdateWorkspaceBaseEnvironment() *cobra.Command {
     DISPLAY_NAME: Human-readable display name for the workspace base environment.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {

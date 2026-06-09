@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/databricks/databricks-sdk-go/credentials/u2m/cache"
 	"github.com/google/uuid"
 	"github.com/zalando/go-keyring"
 	"golang.org/x/oauth2"
@@ -21,7 +20,7 @@ const keyringServiceName = "databricks-cli"
 // keyringProbeAccountPrefix is prefixed onto a per-call random suffix to form
 // the account name ProbeKeyring writes and deletes. A fixed name like
 // "__probe__" could collide with a user profile of the same name (which is
-// what keyringCache uses as the account field), so the probe would clobber
+// what keyringStore uses as the account field), so the probe would clobber
 // and delete that user's stored token. Per-call randomness also means
 // concurrent probes don't step on each other.
 const keyringProbeAccountPrefix = "__probe_"
@@ -66,70 +65,88 @@ func (zalandoBackend) Delete(service, account string) error {
 	return keyring.Delete(service, account)
 }
 
-// keyringCache stores OAuth tokens in the OS-native secure store.
-// It implements the SDK's cache.TokenCache interface.
+// keyringStore stores OAuth tokens in the OS-native secure store.
+// It implements the Store interface.
 //
 // The type is unexported so that the only way to construct a working instance
-// is NewKeyringCache. A bare &keyringCache{} has a nil backend, which would
+// is NewKeyringStore. A bare &keyringStore{} has a nil backend, which would
 // panic on first use.
-type keyringCache struct {
+type keyringStore struct {
 	backend        keyringBackend
 	timeout        time.Duration
 	keyringSvcName string
 }
 
-// NewKeyringCache returns a cache.TokenCache backed by the OS-native secure
-// store (via zalando/go-keyring) with a 3-second per-operation timeout.
-func NewKeyringCache() cache.TokenCache {
-	return &keyringCache{
+// NewKeyringStore returns a Store backed by the OS-native secure store (via
+// zalando/go-keyring) with a 3-second per-operation timeout.
+func NewKeyringStore() Store {
+	return &keyringStore{
 		backend:        zalandoBackend{},
 		timeout:        defaultKeyringTimeout,
 		keyringSvcName: keyringServiceName,
 	}
 }
 
-// ProbeKeyring returns nil if the OS keyring is reachable and accepts a
-// write+delete cycle within the standard timeout. A non-nil error means the
-// keyring cannot be used in this environment (no backend, headless Linux
-// session waiting on a UI prompt, locked keychain refusing access, etc.).
+// ProbeKeyring returns nil if the OS keyring accepted a write+delete
+// cycle within the standard timeout. *TimeoutError means the keyring
+// was unresponsive (locked or hung, indistinguishable here); other
+// errors are definitive failures.
 //
-// Used by databricks auth login to decide whether to silently fall back to
-// plaintext storage before opening the browser, so the user does not
-// complete an OAuth flow only to fail at the final Store call.
+// Used by the login path, where we want to validate both read and write
+// capability before committing to the keyring backend.
 func ProbeKeyring() error {
 	return probeWithBackend(zalandoBackend{}, defaultKeyringTimeout)
 }
 
 func probeWithBackend(backend keyringBackend, timeout time.Duration) error {
-	c := &keyringCache{
+	c := &keyringStore{
 		backend:        backend,
 		timeout:        timeout,
 		keyringSvcName: keyringServiceName,
 	}
 	account := keyringProbeAccountPrefix + uuid.NewString()
 	tok := &oauth2.Token{AccessToken: "probe"}
-	if err := c.Store(account, tok); err != nil {
+	if err := c.Put(account, Entry{Token: tok}); err != nil {
 		return fmt.Errorf("write: %w", err)
 	}
-	if err := c.Store(account, nil); err != nil {
+	if err := c.Delete(account); err != nil {
 		return fmt.Errorf("delete: %w", err)
 	}
 	return nil
 }
 
-// Store stores t under key. Nil t deletes the entry; deleting a missing
-// entry is not an error.
-func (k *keyringCache) Store(key string, t *oauth2.Token) error {
-	if t == nil {
-		return k.withTimeout("delete", func() error {
-			err := k.backend.Delete(k.keyringSvcName, key)
-			if errors.Is(err, keyring.ErrNotFound) {
-				return nil
-			}
-			return err
-		})
+// ProbeKeyringRead returns nil if the OS keyring accepted a Get for a
+// non-existent account within the standard timeout (i.e. the backend is
+// reachable and responded with keyring.ErrNotFound). *TimeoutError means
+// the keyring was unresponsive; other errors are definitive failures.
+//
+// Used by the read path so probing does not write to the keyring. A
+// successful probe is indistinguishable from the user not having an
+// entry for that probe account; we treat both as "reachable".
+func ProbeKeyringRead() error {
+	return probeReadWithBackend(zalandoBackend{}, defaultKeyringTimeout)
+}
+
+func probeReadWithBackend(backend keyringBackend, timeout time.Duration) error {
+	c := &keyringStore{
+		backend:        backend,
+		timeout:        timeout,
+		keyringSvcName: keyringServiceName,
 	}
-	raw, err := json.Marshal(keyringEntry{Token: t})
+	account := keyringProbeAccountPrefix + uuid.NewString()
+	err := c.withTimeout("get", func() error {
+		_, gerr := c.backend.Get(c.keyringSvcName, account)
+		return gerr
+	})
+	if errors.Is(err, keyring.ErrNotFound) {
+		return nil
+	}
+	return err
+}
+
+// Put implements the Store interface.
+func (k *keyringStore) Put(key string, e Entry) error {
+	raw, err := json.Marshal(keyringEntry(e))
 	if err != nil {
 		return fmt.Errorf("marshal token: %w", err)
 	}
@@ -138,8 +155,19 @@ func (k *keyringCache) Store(key string, t *oauth2.Token) error {
 	})
 }
 
-// Lookup returns the token under key or cache.ErrNotFound.
-func (k *keyringCache) Lookup(key string) (*oauth2.Token, error) {
+// Delete implements the Store interface. Removing a missing entry is a no-op.
+func (k *keyringStore) Delete(key string) error {
+	return k.withTimeout("delete", func() error {
+		err := k.backend.Delete(k.keyringSvcName, key)
+		if errors.Is(err, keyring.ErrNotFound) {
+			return nil
+		}
+		return err
+	})
+}
+
+// Lookup implements the Store interface, returning ErrNotFound on a miss.
+func (k *keyringStore) Lookup(key string) (Entry, error) {
 	var raw string
 	err := k.withTimeout("get", func() error {
 		got, gerr := k.backend.Get(k.keyringSvcName, key)
@@ -150,21 +178,39 @@ func (k *keyringCache) Lookup(key string) (*oauth2.Token, error) {
 		return nil
 	})
 	if errors.Is(err, keyring.ErrNotFound) {
-		return nil, cache.ErrNotFound
+		return Entry{}, ErrNotFound
 	}
 	if err != nil {
-		return nil, err
+		return Entry{}, wrapKeyringUnreachable(err)
 	}
 
 	var entry keyringEntry
 	if err := json.Unmarshal([]byte(raw), &entry); err != nil {
-		return nil, fmt.Errorf("unmarshal token: %w", err)
+		return Entry{}, fmt.Errorf("unmarshal token: %w", err)
 	}
-	return entry.Token, nil
+	return Entry(entry), nil
 }
 
-// Compile-time confirmation that keyringCache satisfies the SDK interface.
-var _ cache.TokenCache = (*keyringCache)(nil)
+// wrapKeyringUnreachable wraps a non-ErrNotFound keyring error with
+// actionable guidance for users whose system has no usable keyring
+// backend (Linux without a Secret Service / D-Bus session bus, headless
+// containers, certain SSH sessions). Surfaces on the read path, where
+// the resolver does not silently fall back to plaintext: a missing
+// token might actually be reachable from the keyring on another machine,
+// so we surface the unreachability instead of minting a fresh plaintext
+// copy.
+//
+// ErrNotFound passes through unchanged because a clean miss is not an
+// availability problem.
+func wrapKeyringUnreachable(err error) error {
+	if err == nil || errors.Is(err, keyring.ErrNotFound) {
+		return err
+	}
+	return fmt.Errorf("OS keyring unreachable: %w (set DATABRICKS_AUTH_STORAGE=plaintext or run `databricks auth login` to use file-based token storage)", err)
+}
+
+// Compile-time confirmation that keyringStore satisfies the CLI interface.
+var _ Store = (*keyringStore)(nil)
 
 // TimeoutError is returned when a keyring operation exceeds the configured
 // timeout. Callers can use errors.As to detect and present a clear message.
@@ -181,7 +227,7 @@ func (e *TimeoutError) Error() string {
 // goroutine is not cancelled; it will complete (or outlive the process)
 // in the background. This mirrors the pattern used by GitHub CLI; see
 // https://github.com/cli/cli/blob/trunk/internal/keyring/keyring.go.
-func (k *keyringCache) withTimeout(op string, fn func() error) error {
+func (k *keyringStore) withTimeout(op string, fn func() error) error {
 	ch := make(chan error, 1)
 	go func() {
 		ch <- fn()

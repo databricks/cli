@@ -6,7 +6,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/stretchr/testify/assert"
@@ -59,7 +61,7 @@ func TestWorkspaceFilesDirEntry(t *testing.T) {
 	assert.True(t, i2.IsDir())
 }
 
-func TestWorkspaceFilesClientOrgIDHeaders(t *testing.T) {
+func TestWorkspaceFilesClientWorkspaceIDHeaders(t *testing.T) {
 	tests := []struct {
 		name        string
 		workspaceID string
@@ -68,7 +70,7 @@ func TestWorkspaceFilesClientOrgIDHeaders(t *testing.T) {
 		{
 			name:        "with workspace ID",
 			workspaceID: "7474644166319138",
-			expect:      map[string]string{"X-Databricks-Org-Id": "7474644166319138"},
+			expect:      map[string]string{"X-Databricks-Workspace-Id": "7474644166319138"},
 		},
 		{
 			name:        "without workspace ID",
@@ -85,13 +87,13 @@ func TestWorkspaceFilesClientOrgIDHeaders(t *testing.T) {
 					},
 				},
 			}
-			assert.Equal(t, tc.expect, w.orgIDHeaders())
+			assert.Equal(t, tc.expect, w.workspaceIDHeaders())
 		})
 	}
 
 	t.Run("nil workspace client", func(t *testing.T) {
 		w := &WorkspaceFilesClient{}
-		assert.Nil(t, w.orgIDHeaders())
+		assert.Nil(t, w.workspaceIDHeaders())
 	})
 }
 
@@ -130,4 +132,52 @@ func TestWorkspaceFilesClient_wsfsUnmarshal(t *testing.T) {
 	assert.Equal(t, time.UnixMilli(1671032235392), info.ModTime())
 	assert.False(t, info.IsDir())
 	assert.NotNil(t, info.Sys())
+}
+
+func statWithError(t *testing.T, statusCode int, errorCode string) error {
+	t.Helper()
+
+	server := testserver.New(t)
+	server.Handle("GET", "/api/2.0/workspace/get-status", func(req testserver.Request) any {
+		return testserver.Response{
+			StatusCode: statusCode,
+			Body: map[string]string{
+				"error_code": errorCode,
+				"message":    "test error",
+			},
+		}
+	})
+	testserver.AddDefaultHandlers(server)
+
+	client, err := databricks.NewWorkspaceClient(&databricks.Config{
+		Host:  server.URL,
+		Token: "testtoken",
+	})
+	require.NoError(t, err)
+
+	f, err := NewWorkspaceFilesClient(client, "/test")
+	require.NoError(t, err)
+
+	_, err = f.Stat(t.Context(), "file")
+	require.Error(t, err)
+	return err
+}
+
+func TestWorkspaceFilesClientStatForbidden(t *testing.T) {
+	err := statWithError(t, 403, "PERMISSION_DENIED")
+	var apiErr *apierr.APIError
+	require.ErrorAs(t, err, &apiErr)
+	assert.Equal(t, 403, apiErr.StatusCode)
+}
+
+func TestWorkspaceFilesClientStatInternalError(t *testing.T) {
+	err := statWithError(t, 500, "INTERNAL_ERROR")
+	var apiErr *apierr.APIError
+	require.ErrorAs(t, err, &apiErr)
+	assert.Equal(t, 500, apiErr.StatusCode)
+}
+
+func TestWorkspaceFilesClientStatNotFound(t *testing.T) {
+	err := statWithError(t, 404, "RESOURCE_DOES_NOT_EXIST")
+	assert.ErrorIs(t, err, fs.ErrNotExist)
 }

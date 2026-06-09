@@ -13,7 +13,7 @@ type ResourceSqlAlertOptions struct {
 }
 
 type ResourceSqlAlertProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type ResourceSqlAlert struct {

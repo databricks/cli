@@ -1,0 +1,3 @@
+Cloud = false
+# The parent sets CloudSlow=true; disable it here too, otherwise CloudSlow would imply Cloud=true.
+CloudSlow = false

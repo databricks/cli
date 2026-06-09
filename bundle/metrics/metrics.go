@@ -7,4 +7,7 @@ const (
 	ArtifactFilesIsSet                  = "artifact_files_is_set"
 	PresetsNamePrefixIsSet              = "presets_name_prefix_is_set"
 	AppLifecycleStarted                 = "app_lifecycle_started"
+	ClusterLifecycleStarted             = "cluster_lifecycle_started"
+	SqlWarehouseLifecycleStarted        = "sql_warehouse_lifecycle_started"
+	SelectUsed                          = "select_used"
 )

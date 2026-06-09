@@ -35,7 +35,7 @@ Deployment complete!
 
 === Summary should now show id and url
 "main.myschema.myvolume"
-"[DATABRICKS_URL]/explore/data/volumes/main/myschema/myvolume?o=[NUMID]"
+"[DATABRICKS_URL]/explore/data/volumes/main/myschema/myvolume?w=[NUMID]"
 
 === Verify deployment
 >>> [CLI] volumes read main.myschema.myvolume
@@ -64,7 +64,7 @@ Deployment complete!
   "id": "main.myschema.myvolume",
   "name": "myvolume",
   "schema_name": "myschema",
-  "url": "[DATABRICKS_URL]/explore/data/volumes/main/myschema/myvolume?o=[NUMID]",
+  "url": "[DATABRICKS_URL]/explore/data/volumes/main/myschema/myvolume?w=[NUMID]",
   "volume_type": "MANAGED"
 }
 

@@ -18,12 +18,18 @@ var cmdOverrides []func(*cobra.Command)
 
 func New() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "consumer-providers",
-		Short:   `Providers are the entities that publish listings to the Marketplace.`,
-		Long:    `Providers are the entities that publish listings to the Marketplace.`,
+		Use:   "consumer-providers",
+		Short: `*Public Preview* Providers are the entities that publish listings to the Marketplace.`,
+		Long: `This command is in Public Preview and may change without notice.
+
+Providers are the entities that publish listings to the Marketplace.`,
 		GroupID: "marketplace",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	// Add methods
 	cmd.AddCommand(newBatchGet())
@@ -55,13 +61,17 @@ func newBatchGet() *cobra.Command {
 	// TODO: array: ids
 
 	cmd.Use = "batch-get"
-	cmd.Short = `Get one batch of providers. One may specify up to 50 IDs per request.`
-	cmd.Long = `Get one batch of providers. One may specify up to 50 IDs per request.
+	cmd.Short = `*Public Preview* Get one batch of providers. One may specify up to 50 IDs per request.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Get one batch of providers. One may specify up to 50 IDs per request.
 
   Batch get a provider in the Databricks Marketplace with at least one visible
   listing.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -108,13 +118,17 @@ func newGet() *cobra.Command {
 	var getReq marketplace.GetProviderRequest
 
 	cmd.Use = "get ID"
-	cmd.Short = `Get a provider.`
-	cmd.Long = `Get a provider.
+	cmd.Short = `*Public Preview* Get a provider.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Get a provider.
 
   Get a provider in the Databricks Marketplace with at least one visible
   listing.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -189,13 +203,17 @@ func newList() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list"
-	cmd.Short = `List providers.`
-	cmd.Long = `List providers.
+	cmd.Short = `*Public Preview* List providers.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+List providers.
 
   List all providers in the Databricks Marketplace with at least one visible
   listing.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)

@@ -197,14 +197,14 @@ func TestRepositoryGitConfigWhenNotARepo(t *testing.T) {
 
 	branch, err := repo.CurrentBranch()
 	assert.NoError(t, err)
-	assert.Equal(t, "", branch)
+	assert.Empty(t, branch)
 
 	commit, err := repo.LatestCommit()
 	assert.NoError(t, err)
-	assert.Equal(t, "", commit)
+	assert.Empty(t, commit)
 
 	originUrl := repo.OriginUrl()
-	assert.Equal(t, "", originUrl)
+	assert.Empty(t, originUrl)
 }
 
 func TestRepositoryOriginUrlRemovesUserCreds(t *testing.T) {

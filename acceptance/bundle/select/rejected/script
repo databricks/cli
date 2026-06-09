@@ -1,0 +1,3 @@
+# --select is only supported by the direct engine; both plan and deploy reject it.
+errcode trace $CLI bundle plan --select my_job
+errcode trace $CLI bundle deploy --select my_job

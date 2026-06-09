@@ -26,7 +26,7 @@ var ResourcesTypes = func() map[string]reflect.Type {
 			continue
 		}
 		elemType := field.Type.Elem()
-		if elemType.Kind() == reflect.Ptr {
+		if elemType.Kind() == reflect.Pointer {
 			elemType = elemType.Elem()
 		}
 

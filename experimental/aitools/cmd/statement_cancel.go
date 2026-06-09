@@ -2,10 +2,10 @@ package aitools
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/sqlexec"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/spf13/cobra"
 )
@@ -41,10 +41,10 @@ the server-side state if you need certainty.`,
 // CancelExecution returns no body; the actual server-side state is verified
 // asynchronously. Use 'statement status' to confirm if certainty is required.
 func cancelStatementExecution(ctx context.Context, api sql.StatementExecutionInterface, statementID string) (statementInfo, error) {
-	if err := api.CancelExecution(ctx, sql.CancelExecutionRequest{
-		StatementId: statementID,
-	}); err != nil {
-		return statementInfo{}, fmt.Errorf("cancel statement: %w", err)
+	// Cancel doesn't use the warehouse ID.
+	client := sqlexec.New(api, "")
+	if err := client.Cancel(ctx, statementID); err != nil {
+		return statementInfo{}, err
 	}
 	return statementInfo{
 		StatementID: statementID,

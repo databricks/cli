@@ -39,7 +39,7 @@ Deployment complete!
 === Should show that it's already migrated
 >>> musterr [CLI] bundle deployment migrate
 Error: already using direct engine
-Details: [TEST_TMP_DIR]/.databricks/bundle/dev/resources.json: local direct state serial=7 lineage="[UUID]"
+Details: [TEST_TMP_DIR]/.databricks/bundle/dev/resources.json: local direct state serial=6 lineage="[UUID]"
 
 >>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 3 unchanged
@@ -86,14 +86,14 @@ Deployment complete!
 === Should show that it's already migrated
 >>> musterr [CLI] bundle deployment migrate
 Error: already using direct engine
-Details: [TEST_TMP_DIR]/.databricks/bundle/dev/resources.json: local direct state serial=8 lineage="[UUID]"
+Details: [TEST_TMP_DIR]/.databricks/bundle/dev/resources.json: local direct state serial=6 lineage="[UUID]"
 
 >>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle debug states
-[TEST_TMP_DIR]/.databricks/bundle/dev/resources.json: local direct state serial=8 lineage="[UUID]"
+[TEST_TMP_DIR]/.databricks/bundle/dev/resources.json: local direct state serial=6 lineage="[UUID]"
 
 >>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle debug states --force-pull
-resources.json: remote direct state serial=8 lineage="[UUID]"
-[TEST_TMP_DIR]/.databricks/bundle/dev/resources.json: local direct state serial=8 lineage="[UUID]"
+resources.json: remote direct state serial=6 lineage="[UUID]"
+[TEST_TMP_DIR]/.databricks/bundle/dev/resources.json: local direct state serial=6 lineage="[UUID]"
 
 === Extra plan: should have no drift
 >>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle plan

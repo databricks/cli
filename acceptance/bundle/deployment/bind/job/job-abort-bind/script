@@ -36,7 +36,7 @@ trap cleanup EXIT
 
 title "Expect binding to fail without an auto-approve flag:\n"
 trace errcode $CLI bundle deployment bind foo $JOB_ID &> out.bind-result.txt
-grep "^Error:" out.bind-result.txt
+sed -n '/^Error:/,$p' out.bind-result.txt
 rm out.bind-result.txt
 
 title "Deploy bundle:"

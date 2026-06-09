@@ -8,10 +8,7 @@ from databricks.bundles.core._variable import (
     VariableOrList,
     VariableOrOptional,
 )
-from databricks.bundles.pipelines._models.file_filter import (
-    FileFilter,
-    FileFilterParam,
-)
+from databricks.bundles.pipelines._models.file_filter import FileFilter, FileFilterParam
 from databricks.bundles.pipelines._models.file_ingestion_options_file_format import (
     FileIngestionOptionsFileFormat,
     FileIngestionOptionsFileFormatParam,

@@ -58,6 +58,11 @@ type DataSourceFeatureEngineeringFeaturesFeaturesFunctionAggregationFunctionTime
 	WindowDuration string `json:"window_duration"`
 }
 
+type DataSourceFeatureEngineeringFeaturesFeaturesFunctionAggregationFunctionTimeWindowRolling struct {
+	Delay          string `json:"delay,omitempty"`
+	WindowDuration string `json:"window_duration"`
+}
+
 type DataSourceFeatureEngineeringFeaturesFeaturesFunctionAggregationFunctionTimeWindowSliding struct {
 	SlideDuration  string `json:"slide_duration"`
 	WindowDuration string `json:"window_duration"`
@@ -69,6 +74,7 @@ type DataSourceFeatureEngineeringFeaturesFeaturesFunctionAggregationFunctionTime
 
 type DataSourceFeatureEngineeringFeaturesFeaturesFunctionAggregationFunctionTimeWindow struct {
 	Continuous *DataSourceFeatureEngineeringFeaturesFeaturesFunctionAggregationFunctionTimeWindowContinuous `json:"continuous,omitempty"`
+	Rolling    *DataSourceFeatureEngineeringFeaturesFeaturesFunctionAggregationFunctionTimeWindowRolling    `json:"rolling,omitempty"`
 	Sliding    *DataSourceFeatureEngineeringFeaturesFeaturesFunctionAggregationFunctionTimeWindowSliding    `json:"sliding,omitempty"`
 	Tumbling   *DataSourceFeatureEngineeringFeaturesFeaturesFunctionAggregationFunctionTimeWindowTumbling   `json:"tumbling,omitempty"`
 }
@@ -125,7 +131,7 @@ type DataSourceFeatureEngineeringFeaturesFeaturesLineageContext struct {
 }
 
 type DataSourceFeatureEngineeringFeaturesFeaturesProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourceFeatureEngineeringFeaturesFeaturesSourceDeltaTableSource struct {
@@ -176,6 +182,11 @@ type DataSourceFeatureEngineeringFeaturesFeaturesTimeWindowContinuous struct {
 	WindowDuration string `json:"window_duration"`
 }
 
+type DataSourceFeatureEngineeringFeaturesFeaturesTimeWindowRolling struct {
+	Delay          string `json:"delay,omitempty"`
+	WindowDuration string `json:"window_duration"`
+}
+
 type DataSourceFeatureEngineeringFeaturesFeaturesTimeWindowSliding struct {
 	SlideDuration  string `json:"slide_duration"`
 	WindowDuration string `json:"window_duration"`
@@ -187,6 +198,7 @@ type DataSourceFeatureEngineeringFeaturesFeaturesTimeWindowTumbling struct {
 
 type DataSourceFeatureEngineeringFeaturesFeaturesTimeWindow struct {
 	Continuous *DataSourceFeatureEngineeringFeaturesFeaturesTimeWindowContinuous `json:"continuous,omitempty"`
+	Rolling    *DataSourceFeatureEngineeringFeaturesFeaturesTimeWindowRolling    `json:"rolling,omitempty"`
 	Sliding    *DataSourceFeatureEngineeringFeaturesFeaturesTimeWindowSliding    `json:"sliding,omitempty"`
 	Tumbling   *DataSourceFeatureEngineeringFeaturesFeaturesTimeWindowTumbling   `json:"tumbling,omitempty"`
 }
@@ -196,6 +208,9 @@ type DataSourceFeatureEngineeringFeaturesFeaturesTimeseriesColumn struct {
 }
 
 type DataSourceFeatureEngineeringFeaturesFeatures struct {
+	CatalogName      string                                                        `json:"catalog_name,omitempty"`
+	CreatedAt        string                                                        `json:"created_at,omitempty"`
+	CreatedBy        string                                                        `json:"created_by,omitempty"`
 	Description      string                                                        `json:"description,omitempty"`
 	Entities         []DataSourceFeatureEngineeringFeaturesFeaturesEntities        `json:"entities,omitempty"`
 	FilterCondition  string                                                        `json:"filter_condition,omitempty"`
@@ -203,18 +218,22 @@ type DataSourceFeatureEngineeringFeaturesFeatures struct {
 	Function         *DataSourceFeatureEngineeringFeaturesFeaturesFunction         `json:"function,omitempty"`
 	Inputs           []string                                                      `json:"inputs,omitempty"`
 	LineageContext   *DataSourceFeatureEngineeringFeaturesFeaturesLineageContext   `json:"lineage_context,omitempty"`
+	Name             string                                                        `json:"name,omitempty"`
 	ProviderConfig   *DataSourceFeatureEngineeringFeaturesFeaturesProviderConfig   `json:"provider_config,omitempty"`
+	SchemaName       string                                                        `json:"schema_name,omitempty"`
 	Source           *DataSourceFeatureEngineeringFeaturesFeaturesSource           `json:"source,omitempty"`
 	TimeWindow       *DataSourceFeatureEngineeringFeaturesFeaturesTimeWindow       `json:"time_window,omitempty"`
 	TimeseriesColumn *DataSourceFeatureEngineeringFeaturesFeaturesTimeseriesColumn `json:"timeseries_column,omitempty"`
 }
 
 type DataSourceFeatureEngineeringFeaturesProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourceFeatureEngineeringFeatures struct {
+	CatalogName    string                                              `json:"catalog_name"`
 	Features       []DataSourceFeatureEngineeringFeaturesFeatures      `json:"features,omitempty"`
 	PageSize       int                                                 `json:"page_size,omitempty"`
 	ProviderConfig *DataSourceFeatureEngineeringFeaturesProviderConfig `json:"provider_config,omitempty"`
+	SchemaName     string                                              `json:"schema_name"`
 }

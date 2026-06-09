@@ -20,11 +20,17 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "automatic-cluster-update",
-		Short: `Controls whether automatic cluster update is enabled for the current workspace.`,
-		Long: `Controls whether automatic cluster update is enabled for the current
+		Short: `*Public Preview* Controls whether automatic cluster update is enabled for the current workspace.`,
+		Long: `This command is in Public Preview and may change without notice.
+
+Controls whether automatic cluster update is enabled for the current
   workspace. By default, it is turned off.`,
 		RunE: root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	// Add methods
 	cmd.AddCommand(newGet())
@@ -55,12 +61,16 @@ func newGet() *cobra.Command {
 	cmd.Flags().StringVar(&getReq.Etag, "etag", getReq.Etag, `etag used for versioning.`)
 
 	cmd.Use = "get"
-	cmd.Short = `Get the automatic cluster update setting.`
-	cmd.Long = `Get the automatic cluster update setting.
+	cmd.Short = `*Public Preview* Get the automatic cluster update setting.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Get the automatic cluster update setting.
 
   Gets the automatic cluster update setting.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -110,8 +120,10 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "update"
-	cmd.Short = `Update the automatic cluster update setting.`
-	cmd.Long = `Update the automatic cluster update setting.
+	cmd.Short = `*Public Preview* Update the automatic cluster update setting.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Update the automatic cluster update setting.
 
   Updates the automatic cluster update setting for the workspace. A fresh etag
   needs to be provided in PATCH requests (as part of the setting field). The
@@ -120,6 +132,8 @@ func newUpdate() *cobra.Command {
   must be retried by using the fresh etag in the 409 response.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {

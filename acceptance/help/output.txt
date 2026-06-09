@@ -36,24 +36,24 @@ Apps
   apps                                   Apps run directly on a customer's Databricks instance, integrate with their data, use and extend Databricks services, and enable users to interact through single sign-on.
 
 Vector Search
-  vector-search-endpoints                **Endpoint**: Represents the compute resources to host vector search indexes.
+  vector-search-endpoints                **Endpoint**: Represents the compute resources to host AI Search indexes.
   vector-search-indexes                  **Index**: An efficient representation of your embedding vectors that supports real-time and efficient approximate nearest neighbor (ANN) search queries.
 
 Identity and Access Management
-  current-user                           This API allows retrieving information about currently authenticated user or service principal.
+  current-user                           *Public Preview* This API allows retrieving information about currently authenticated user or service principal.
   groups                                 Groups simplify identity management, making it easier to assign access to Databricks workspace, data, and other securable objects.
-  groups-v2                              Groups simplify identity management, making it easier to assign access to Databricks workspace, data, and other securable objects.
+  groups-v2                              *Public Preview* Groups simplify identity management, making it easier to assign access to Databricks workspace, data, and other securable objects.
   permissions                            Permissions API are used to create read, write, edit, update and manage access for various users on different objects and endpoints.
   service-principals                     Identities for use with jobs, automated tools, and systems such as scripts, apps, and CI/CD platforms.
-  service-principals-v2                  Identities for use with jobs, automated tools, and systems such as scripts, apps, and CI/CD platforms.
+  service-principals-v2                  *Public Preview* Identities for use with jobs, automated tools, and systems such as scripts, apps, and CI/CD platforms.
   users                                  User identities recognized by Databricks and represented by email addresses.
-  users-v2                               User identities recognized by Databricks and represented by email addresses.
-  workspace-iam-v2                       These APIs are used to manage identities and the workspace access of these identities in <Databricks>.
+  users-v2                               *Public Preview* User identities recognized by Databricks and represented by email addresses.
+  workspace-iam-v2                       *Beta* These APIs are used to manage identities and the workspace access of these identities in <Databricks>.
 
 Databricks SQL
   alerts                                 The alerts API can be used to perform CRUD operations on alerts.
-  alerts-legacy                          The alerts API can be used to perform CRUD operations on alerts.
-  alerts-v2                              New version of SQL Alerts.
+  alerts-legacy                          *Public Preview* The alerts API can be used to perform CRUD operations on alerts.
+  alerts-v2                              *Public Preview* New version of SQL Alerts.
   dashboards                             In general, there is little need to modify dashboards using the API.
   data-sources                           This API is provided to assist you in making new query objects.
   queries                                The queries API can be used to perform CRUD operations on queries.
@@ -72,33 +72,34 @@ Unity Catalog
   connections                            Connections allow for creating a connection to an external data source.
   credentials                            A credential represents an authentication and authorization mechanism for accessing services on your cloud tenant.
   entity-tag-assignments                 Tags are attributes that include keys and optional values that you can use to organize and categorize entities in Unity Catalog.
-  external-lineage                       External Lineage APIs enable defining and managing lineage relationships between Databricks objects and external systems.
+  external-lineage                       *Public Preview* External Lineage APIs enable defining and managing lineage relationships between Databricks objects and external systems.
   external-locations                     An external location is an object that combines a cloud storage path with a storage credential that authorizes access to the cloud storage path.
-  external-metadata                      External Metadata objects enable customers to register and manage metadata about external systems within Unity Catalog.
+  external-metadata                      *Public Preview* External Metadata objects enable customers to register and manage metadata about external systems within Unity Catalog.
   functions                              Functions implement User-Defined Functions (UDFs) in Unity Catalog.
   grants                                 In Unity Catalog, data is secure by default.
   metastores                             A metastore is the top-level container of objects in Unity Catalog.
   model-versions                         Databricks provides a hosted version of MLflow Model Registry in Unity Catalog.
-  online-tables                          Online tables provide lower latency and higher QPS access to data from Delta tables.
+  online-tables                          *Public Preview* Online tables provide lower latency and higher QPS access to data from Delta tables.
   policies                               Attribute-Based Access Control (ABAC) provides high leverage governance for enforcing compliance policies in Unity Catalog.
   quality-monitors                       Deprecated: Please use the Data Quality Monitors API instead (REST: /api/data-quality/v1/monitors), which manages both Data Profiling and Anomaly Detection.
   registered-models                      Databricks provides a hosted version of MLflow Model Registry in Unity Catalog.
   resource-quotas                        Unity Catalog enforces resource quotas on all securable objects, which limits the number of resources that can be created.
-  rfa                                    Request for Access enables users to request access for Unity Catalog securables.
+  rfa                                    *Public Preview* Request for Access enables users to request access for Unity Catalog securables.
   schemas                                A schema (also called a database) is the second layer of Unity Catalog’s three-level namespace.
   storage-credentials                    A storage credential represents an authentication and authorization mechanism for accessing data stored on your cloud tenant.
-  system-schemas                         A system schema is a schema that lives within the system catalog.
+  system-schemas                         *Public Preview* A system schema is a schema that lives within the system catalog.
   table-constraints                      Primary key and foreign key constraints encode relationships between fields in tables.
   tables                                 A table resides in the third layer of Unity Catalog’s three-level namespace.
   temporary-path-credentials             Temporary Path Credentials refer to short-lived, downscoped credentials used to access external cloud storage locations registered in Databricks.
   temporary-table-credentials            Temporary Table Credentials refer to short-lived, downscoped credentials used to access cloud storage locations where table data is stored in Databricks.
+  temporary-volume-credentials           *Public Preview* Temporary Volume Credentials refer to short-lived, downscoped credentials used to access cloud storage locations where volume data is stored in Databricks.
   volumes                                Volumes are a Unity Catalog (UC) capability for accessing, storing, governing, organizing and processing files.
   workspace-bindings                     A securable in Databricks can be configured as __OPEN__ or __ISOLATED__.
 
 Delta Sharing
   providers                              A data provider is an object representing the organization in the real world who shares the data.
   recipient-activation                   The Recipient Activation API is only applicable in the open sharing model where the recipient object has the authentication type of TOKEN.
-  recipient-federation-policies          The Recipient Federation Policies APIs are only applicable in the open sharing model where the recipient object has the authentication type of OIDC_RECIPIENT, enabling data sharing from Databricks to non-Databricks recipients.
+  recipient-federation-policies          *Public Preview* The Recipient Federation Policies APIs are only applicable in the open sharing model where the recipient object has the authentication type of OIDC_RECIPIENT, enabling data sharing from Databricks to non-Databricks recipients.
   recipients                             A recipient is an object you create using :method:recipients/create to represent an organization which you want to allow access shares.
   shares                                 A share is a container instantiated with :method:shares/create.
 
@@ -109,54 +110,55 @@ Settings
   token-management                       Enables administrators to get all tokens and delete tokens for other users.
   tokens                                 The Token API allows you to create, list, and revoke tokens that can be used to authenticate and access Databricks REST APIs.
   workspace-conf                         This API allows updating known workspace settings for advanced users.
-  workspace-settings-v2                  APIs to manage workspace level settings.
+  workspace-settings-v2                  *Public Preview* APIs to manage workspace level settings.
 
 OAuth
   service-principal-secrets-proxy        These APIs enable administrators to manage service principal secrets at the workspace level.
 
 Marketplace
-  consumer-fulfillments                  Fulfillments are entities that allow consumers to preview installations.
-  consumer-installations                 Installations are entities that allow consumers to interact with Databricks Marketplace listings.
-  consumer-listings                      Listings are the core entities in the Marketplace.
-  consumer-personalization-requests      Personalization Requests allow customers to interact with the individualized Marketplace listing flow.
-  consumer-providers                     Providers are the entities that publish listings to the Marketplace.
-  provider-exchange-filters              Marketplace exchanges filters curate which groups can access an exchange.
-  provider-exchanges                     Marketplace exchanges allow providers to share their listings with a curated set of customers.
-  provider-files                         Marketplace offers a set of file APIs for various purposes such as preview notebooks and provider icons.
-  provider-listings                      Listings are the core entities in the Marketplace.
-  provider-personalization-requests      Personalization requests are an alternate to instantly available listings.
-  provider-provider-analytics-dashboards Manage templated analytics solution for providers.
-  provider-providers                     Providers are entities that manage assets in Marketplace.
+  consumer-fulfillments                  *Public Preview* Fulfillments are entities that allow consumers to preview installations.
+  consumer-installations                 *Public Preview* Installations are entities that allow consumers to interact with Databricks Marketplace listings.
+  consumer-listings                      *Public Preview* Listings are the core entities in the Marketplace.
+  consumer-personalization-requests      *Public Preview* Personalization Requests allow customers to interact with the individualized Marketplace listing flow.
+  consumer-providers                     *Public Preview* Providers are the entities that publish listings to the Marketplace.
+  provider-exchange-filters              *Public Preview* Marketplace exchanges filters curate which groups can access an exchange.
+  provider-exchanges                     *Public Preview* Marketplace exchanges allow providers to share their listings with a curated set of customers.
+  provider-files                         *Public Preview* Marketplace offers a set of file APIs for various purposes such as preview notebooks and provider icons.
+  provider-listings                      *Public Preview* Listings are the core entities in the Marketplace.
+  provider-personalization-requests      *Public Preview* Personalization requests are an alternate to instantly available listings.
+  provider-provider-analytics-dashboards *Public Preview* Manage templated analytics solution for providers.
+  provider-providers                     *Public Preview* Providers are entities that manage assets in Marketplace.
 
 Clean Rooms
-  clean-room-asset-revisions             Clean Room Asset Revisions denote new versions of uploaded assets (e.g.
+  clean-room-asset-revisions             *Beta* Clean Room Asset Revisions denote new versions of uploaded assets (e.g.
   clean-room-assets                      Clean room assets are data and code objects — Tables, volumes, and notebooks that are shared with the clean room.
-  clean-room-auto-approval-rules         Clean room auto-approval rules automatically create an approval on your behalf when an asset (e.g.
+  clean-room-auto-approval-rules         *Beta* Clean room auto-approval rules automatically create an approval on your behalf when an asset (e.g.
   clean-room-task-runs                   Clean room task runs are the executions of notebooks in a clean room.
   clean-rooms                            A clean room uses Delta Sharing and serverless compute to provide a secure and privacy-protecting environment where multiple parties can work together on sensitive enterprise data without direct access to each other's data.
 
 Quality Monitor
-  quality-monitor-v2                     Deprecated: Please use the Data Quality Monitoring API instead (REST: /api/data-quality/v1/monitors).
+  quality-monitor-v2                     *Beta* Deprecated: Please use the Data Quality Monitoring API instead (REST: /api/data-quality/v1/monitors).
 
 Data Classification
-  data-classification                    Manage data classification for Unity Catalog catalogs.
+  data-classification                    *Beta* Manage data classification for Unity Catalog catalogs.
 
 Data Quality Monitoring
-  data-quality                           Manage the data quality of Unity Catalog objects (currently support schema and table).
+  data-quality                           *Public Preview* Manage the data quality of Unity Catalog objects (currently support schema and table).
 
 Database Instances
-  database                               Database Instances provide access to a database via REST API or direct SQL.
+  database                               *Public Preview* Database Instances provide access to a database via REST API or direct SQL.
   psql                                   Connect to a Lakebase Postgres database
 
 Agent Bricks
-  knowledge-assistants                   Manage Knowledge Assistants and related resources.
+  knowledge-assistants                   *Beta* Manage Knowledge Assistants and related resources.
+  supervisor-agents                      *Beta* Manage Supervisor Agents and related resources.
 
 Tags
   tag-policies                           The Tag Policy API allows you to manage policies for governed tags in Databricks.
-  workspace-entity-tag-assignments       Manage tag assignments on workspace-scoped objects.
+  workspace-entity-tag-assignments       *Beta* Manage tag assignments on workspace-scoped objects.
 
 Postgres
-  postgres                               Use the Postgres API to create and manage Lakebase Autoscaling Postgres infrastructure, including projects, branches, compute endpoints, and roles.
+  postgres                               *Beta* Use the Postgres API to create and manage Lakebase Autoscaling Postgres infrastructure, including projects, branches, compute endpoints, and roles.
 
 Environments
   environments                           APIs to manage environment resources.
@@ -167,6 +169,7 @@ Developer Tools
 
 Additional Commands:
   account                                Databricks Account Commands
+  aitools                                Databricks AI Tools for coding agents
   api                                    Perform Databricks API call
   auth                                   Authentication related commands
   cache                                  Local cache related commands

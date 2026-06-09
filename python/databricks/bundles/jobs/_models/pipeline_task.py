@@ -1,9 +1,14 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, TypedDict
 
 from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
-from databricks.bundles.core._variable import VariableOr, VariableOrOptional
+from databricks.bundles.core._variable import (
+    VariableOr,
+    VariableOrDict,
+    VariableOrList,
+    VariableOrOptional,
+)
 
 if TYPE_CHECKING:
     from typing_extensions import Self
@@ -20,7 +25,34 @@ class PipelineTask:
 
     full_refresh: VariableOrOptional[bool] = None
     """
-    If true, triggers a full refresh on the delta live table.
+    If true, triggers a full refresh on the spark declarative pipeline.
+    """
+
+    full_refresh_selection: VariableOrList[str] = field(default_factory=list)
+    """
+    A list of tables to update with fullRefresh.
+    """
+
+    parameters: VariableOrDict[str] = field(default_factory=dict)
+    """
+    Key/value-map of parameters passed to the pipeline execution.
+    Limited to 10k characters in total.
+    """
+
+    refresh_flow_selection: VariableOrList[str] = field(default_factory=list)
+    """
+    Flow names to selectively refresh. These are unioned with other selective refresh
+    options (refresh_selection, full_refresh_selection) to determine the final set of flows to refresh.
+    """
+
+    refresh_selection: VariableOrList[str] = field(default_factory=list)
+    """
+    A list of tables to update without fullRefresh.
+    """
+
+    reset_checkpoint_selection: VariableOrList[str] = field(default_factory=list)
+    """
+    A list of streaming flows to reset checkpoints without clearing data.
     """
 
     @classmethod
@@ -41,7 +73,34 @@ class PipelineTaskDict(TypedDict, total=False):
 
     full_refresh: VariableOrOptional[bool]
     """
-    If true, triggers a full refresh on the delta live table.
+    If true, triggers a full refresh on the spark declarative pipeline.
+    """
+
+    full_refresh_selection: VariableOrList[str]
+    """
+    A list of tables to update with fullRefresh.
+    """
+
+    parameters: VariableOrDict[str]
+    """
+    Key/value-map of parameters passed to the pipeline execution.
+    Limited to 10k characters in total.
+    """
+
+    refresh_flow_selection: VariableOrList[str]
+    """
+    Flow names to selectively refresh. These are unioned with other selective refresh
+    options (refresh_selection, full_refresh_selection) to determine the final set of flows to refresh.
+    """
+
+    refresh_selection: VariableOrList[str]
+    """
+    A list of tables to update without fullRefresh.
+    """
+
+    reset_checkpoint_selection: VariableOrList[str]
+    """
+    A list of streaming flows to reset checkpoints without clearing data.
     """
 
 

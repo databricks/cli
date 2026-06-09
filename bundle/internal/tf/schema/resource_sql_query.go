@@ -94,7 +94,7 @@ type ResourceSqlQueryParameter struct {
 }
 
 type ResourceSqlQueryProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type ResourceSqlQueryScheduleContinuous struct {

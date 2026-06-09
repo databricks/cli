@@ -1,0 +1,11 @@
+Ignore = [
+    "home",
+    ".databricks",
+    "databricks.yml",
+]
+
+# Negative case: -p other tries to reach a non-existing host. Redact the
+# OS-/network-dependent suffix so the test is stable across runners.
+[[Repls]]
+Old = 'Get "https://other.test/api/2.0/preview/scim/v2/Me\??": .*'
+New = 'Get "https://other.test/api/2.0/preview/scim/v2/Me": (redacted)'

@@ -2,7 +2,6 @@ package generator
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
 	"text/template"
@@ -48,13 +47,7 @@ func (b *namedBlock) Generate(path string) error {
 		return err
 	}
 
-	f, err := os.Create(filepath.Join(path, fmt.Sprintf(b.filePattern, b.normalizedName())))
-	if err != nil {
-		return err
-	}
-
-	defer func() { _ = f.Close() }()
-
 	tmpl := template.Must(template.ParseFiles("./templates/block.go.tmpl"))
-	return tmpl.Execute(f, w)
+	outPath := filepath.Join(path, fmt.Sprintf(b.filePattern, b.normalizedName()))
+	return generateFormatted(outPath, tmpl, w)
 }

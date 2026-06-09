@@ -192,9 +192,21 @@ func runCommonTests(t *testing.T, obj any) {
 			errFmt: "connection.missing: field \"missing\" not found in structaccess.inner",
 		},
 		{
-			name:   "wrong index target",
-			path:   "connection[0]",
-			errFmt: "connection[0]: cannot index struct",
+			// [0] on a struct is a no-op (Terraform list-block syntax for single blocks)
+			name: "index [0] on struct is no-op",
+			path: "connection[0]",
+			want: inner{ID: "abc", Name: "x"},
+		},
+		{
+			name: "index [0] on struct then field",
+			path: "connection[0].id",
+			want: "abc",
+		},
+		{
+			// Non-zero index on a struct is still an error.
+			name:   "non-zero index on struct is error",
+			path:   "connection[1]",
+			errFmt: "connection[1]: cannot index struct",
 		},
 		{
 			name:     "out of range index",

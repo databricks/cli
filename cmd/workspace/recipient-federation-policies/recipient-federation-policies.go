@@ -20,8 +20,10 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "recipient-federation-policies",
-		Short: `The Recipient Federation Policies APIs are only applicable in the open sharing model where the recipient object has the authentication type of OIDC_RECIPIENT, enabling data sharing from Databricks to non-Databricks recipients.`,
-		Long: `The Recipient Federation Policies APIs are only applicable in the open sharing
+		Short: `*Public Preview* The Recipient Federation Policies APIs are only applicable in the open sharing model where the recipient object has the authentication type of OIDC_RECIPIENT, enabling data sharing from Databricks to non-Databricks recipients.`,
+		Long: `This command is in Public Preview and may change without notice.
+
+The Recipient Federation Policies APIs are only applicable in the open sharing
   model where the recipient object has the authentication type of
   OIDC_RECIPIENT, enabling data sharing from Databricks to non-Databricks
   recipients. OIDC Token Federation enables secure, secret-less authentication
@@ -49,6 +51,10 @@ func New() *cobra.Command {
 		GroupID: "sharing",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -87,8 +93,10 @@ func newCreate() *cobra.Command {
 	// TODO: complex arg: oidc_policy
 
 	cmd.Use = "create RECIPIENT_NAME"
-	cmd.Short = `Create recipient federation policy.`
-	cmd.Long = `Create recipient federation policy.
+	cmd.Short = `*Public Preview* Create recipient federation policy.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Create recipient federation policy.
 
   Create a federation policy for an OIDC_FEDERATION recipient for sharing data
   from Databricks to non-Databricks recipients. The caller must be the owner of
@@ -122,6 +130,8 @@ func newCreate() *cobra.Command {
       policy is being created.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -182,8 +192,10 @@ func newDelete() *cobra.Command {
 	var deleteReq sharing.DeleteFederationPolicyRequest
 
 	cmd.Use = "delete RECIPIENT_NAME NAME"
-	cmd.Short = `Delete recipient federation policy.`
-	cmd.Long = `Delete recipient federation policy.
+	cmd.Short = `*Public Preview* Delete recipient federation policy.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Delete recipient federation policy.
 
   Deletes an existing federation policy for an OIDC_FEDERATION recipient. The
   caller must be the owner of the recipient.
@@ -194,6 +206,8 @@ func newDelete() *cobra.Command {
     NAME: Name of the policy. This is the name of the policy to be deleted.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -242,8 +256,10 @@ func newGetFederationPolicy() *cobra.Command {
 	var getFederationPolicyReq sharing.GetFederationPolicyRequest
 
 	cmd.Use = "get-federation-policy RECIPIENT_NAME NAME"
-	cmd.Short = `Get recipient federation policy.`
-	cmd.Long = `Get recipient federation policy.
+	cmd.Short = `*Public Preview* Get recipient federation policy.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Get recipient federation policy.
 
   Reads an existing federation policy for an OIDC_FEDERATION recipient for
   sharing data from Databricks to non-Databricks recipients. The caller must
@@ -255,6 +271,8 @@ func newGetFederationPolicy() *cobra.Command {
     NAME: Name of the policy. This is the name of the policy to be retrieved.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -317,8 +335,10 @@ func newList() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list RECIPIENT_NAME"
-	cmd.Short = `List recipient federation policies.`
-	cmd.Long = `List recipient federation policies.
+	cmd.Short = `*Public Preview* List recipient federation policies.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+List recipient federation policies.
 
   Lists federation policies for an OIDC_FEDERATION recipient for sharing data
   from Databricks to non-Databricks recipients. The caller must have read access
@@ -329,6 +349,8 @@ func newList() *cobra.Command {
       policies are being listed.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
