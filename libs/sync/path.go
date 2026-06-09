@@ -56,9 +56,7 @@ func EnsureRemotePathIsUsable(ctx context.Context, wsc *databricks.WorkspaceClie
 			}
 		}
 
-		// A dry run must not modify the workspace, so skip creating the
-		// missing directory. There is nothing left to validate about a
-		// directory that doesn't exist yet.
+		// A dry run must not create the missing directory; nothing left to validate.
 		if dryRun {
 			return nil
 		}

@@ -13,15 +13,12 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# The remote directory does not exist: a dry run must not create it or upload
-# anything, so no mutating requests may be recorded by the print_requests.py
-# call below.
+# A dry run must not create the missing remote dir or upload anything.
 # Note: output line starting with Action lists files in non-deterministic order so we filter it out
 trace $CLI sync . /Users/$CURRENT_USER_NAME/missing-dir --dry-run | grep -v "^Action" | sort
 
 trace print_requests.py --sort //api/
 
-# Without --dry-run the same sync creates the remote directory and uploads files.
 trace $CLI sync . /Users/$CURRENT_USER_NAME/missing-dir | grep -v "^Action" | sort
 
 trace print_requests.py --sort //api/

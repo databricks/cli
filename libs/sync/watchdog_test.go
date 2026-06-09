@@ -16,8 +16,7 @@ func TestApplyPutDryRunSkipsLocalRead(t *testing.T) {
 		notifier: &NopNotifier{},
 	}
 
-	// A file that disappeared between listing and upload must not fail a dry
-	// run. The nil filer also guarantees no write is attempted.
+	// The missing file must not fail a dry run; the nil filer guarantees no write is attempted.
 	err := s.applyPut(t.Context(), "missing.txt")
 	assert.NoError(t, err)
 }
