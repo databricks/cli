@@ -14,21 +14,100 @@ import (
 
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/dbr"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func startReleaseServer(t *testing.T, tag string) string {
+func startReleaseServer(t *testing.T, tag, htmlURL string) string {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, _ = w.Write([]byte(`{"tag_name":"` + tag + `"}`))
+		_, _ = w.Write([]byte(`{"tag_name":"` + tag + `","html_url":"` + htmlURL + `"}`))
 	}))
 	t.Cleanup(srv.Close)
 	return srv.URL
 }
 
 func interactiveContext(t *testing.T) context.Context {
-	return cmdio.InContext(t.Context(), cmdio.NewTestIO(strings.NewReader(""), io.Discard, io.Discard))
+	ctx := cmdio.InContext(t.Context(), cmdio.NewTestIO(strings.NewReader(""), io.Discard, io.Discard))
+	// gatherConditions reads dbr.RunsOnRuntime, which requires a detected context.
+	return dbr.MockRuntime(ctx, dbr.Environment{})
+}
+
+func regularCmd(t *testing.T) *cobra.Command {
+	c := &cobra.Command{Use: "deploy"}
+	c.Flags().String("output", "text", "")
+	return c
+}
+
+func TestShouldNotify(t *testing.T) {
+	tests := []struct {
+		name string
+		c    notifyConditions
+		want bool
+	}{
+		{"all clear", notifyConditions{}, true},
+		{"development build", notifyConditions{developmentBuild: true}, false},
+		{"cache disabled", notifyConditions{cacheDisabled: true}, false},
+		{"opted out", notifyConditions{optedOut: true}, false},
+		{"on databricks runtime", notifyConditions{onRuntime: true}, false},
+		{"ci", notifyConditions{ci: true}, false},
+		{"non-interactive", notifyConditions{nonInteractive: true}, false},
+		{"json output", notifyConditions{jsonOutput: true}, false},
+		{"exempt command", notifyConditions{exemptCommand: true}, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, shouldNotify(tt.c))
+		})
+	}
+}
+
+func TestGatherConditions(t *testing.T) {
+	original := build.GetInfo().Version
+	t.Cleanup(func() { build.SetBuildVersion(original) })
+	build.SetBuildVersion("0.240.0")
+
+	t.Run("all clear for an interactive release build", func(t *testing.T) {
+		t.Setenv(ciEnv, "false")
+		t.Setenv(disableEnv, "false")
+		assert.True(t, shouldNotify(gatherConditions(interactiveContext(t), regularCmd(t))))
+	})
+
+	t.Run("CI env", func(t *testing.T) {
+		t.Setenv(ciEnv, "true")
+		t.Setenv(disableEnv, "false")
+		assert.True(t, gatherConditions(interactiveContext(t), regularCmd(t)).ci)
+	})
+
+	t.Run("opt-out env", func(t *testing.T) {
+		t.Setenv(ciEnv, "false")
+		t.Setenv(disableEnv, "true")
+		assert.True(t, gatherConditions(interactiveContext(t), regularCmd(t)).optedOut)
+	})
+
+	t.Run("cache disabled", func(t *testing.T) {
+		t.Setenv(ciEnv, "false")
+		t.Setenv(disableEnv, "false")
+		t.Setenv(cacheEnabledEnv, "false")
+		assert.True(t, gatherConditions(interactiveContext(t), regularCmd(t)).cacheDisabled)
+	})
+
+	t.Run("json output", func(t *testing.T) {
+		t.Setenv(ciEnv, "false")
+		t.Setenv(disableEnv, "false")
+		c := regularCmd(t)
+		require.NoError(t, c.Flags().Set("output", "json"))
+		assert.True(t, gatherConditions(interactiveContext(t), c).jsonOutput)
+	})
+
+	t.Run("non-interactive", func(t *testing.T) {
+		t.Setenv(ciEnv, "false")
+		t.Setenv(disableEnv, "false")
+		ctx, _ := cmdio.NewTestContextWithStdout(t.Context())
+		ctx = dbr.MockRuntime(ctx, dbr.Environment{})
+		assert.True(t, gatherConditions(ctx, regularCmd(t)).nonInteractive)
+	})
 }
 
 func TestIsExemptCommand(t *testing.T) {
@@ -52,7 +131,6 @@ func TestIsExemptCommand(t *testing.T) {
 		{"regular command", &cobra.Command{Use: "bundle"}, false},
 		{"regular subcommand", withParent("bundle", "deploy"), false},
 	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			assert.Equal(t, tt.want, isExemptCommand(tt.cmd))
@@ -60,60 +138,45 @@ func TestIsExemptCommand(t *testing.T) {
 	}
 }
 
-func TestSuppressed(t *testing.T) {
+func TestNoticeMessage(t *testing.T) {
 	original := build.GetInfo().Version
 	t.Cleanup(func() { build.SetBuildVersion(original) })
 
-	regularCmd := func(output string) *cobra.Command {
-		c := &cobra.Command{Use: "deploy"}
-		c.Flags().String("output", "text", "")
-		if output != "" {
-			require.NoError(t, c.Flags().Set("output", output))
-		}
-		return c
+	warm := func(t *testing.T, current, latestTag, latestURL string) {
+		t.Setenv(cacheDirEnv, t.TempDir())
+		t.Setenv(gitHubAPIURLEnv, startReleaseServer(t, latestTag, latestURL))
+		build.SetBuildVersion(current)
+		require.NoError(t, refreshLatest(t.Context()))
 	}
 
-	tests := []struct {
-		name         string
-		buildVersion string
-		ci           string
-		disable      string
-		cacheEnabled string
-		interactive  bool
-		cmd          *cobra.Command
-		want         bool
-	}{
-		{"interactive release build", "0.240.0", "false", "false", "", true, regularCmd(""), false},
-		{"development build", "0.0.0-dev+abc", "false", "false", "", true, regularCmd(""), true},
-		{"opt-out env", "0.240.0", "false", "true", "", true, regularCmd(""), true},
-		{"CI env", "0.240.0", "true", "false", "", true, regularCmd(""), true},
-		{"cache disabled", "0.240.0", "false", "false", "false", true, regularCmd(""), true},
-		{"non-interactive", "0.240.0", "false", "false", "", false, regularCmd(""), true},
-		{"json output", "0.240.0", "false", "false", "", true, regularCmd("json"), true},
-		{"exempt command", "0.240.0", "false", "false", "", true, &cobra.Command{Use: "version"}, true},
-	}
+	t.Run("update available, nudged at most once per day", func(t *testing.T) {
+		warm(t, "0.240.0", "v0.245.0", "https://example.test/releases/tag/v0.245.0")
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			build.SetBuildVersion(tt.buildVersion)
-			t.Setenv("CI", tt.ci)
-			t.Setenv(disableEnv, tt.disable)
-			if tt.cacheEnabled != "" {
-				t.Setenv(cacheEnabledEnv, tt.cacheEnabled)
-			}
+		msg := noticeMessage(t.Context())
+		assert.Contains(t, msg, "0.240.0 → 0.245.0")
+		assert.Contains(t, msg, "https://example.test/releases/tag/v0.245.0")
 
-			ctx := interactiveContext(t)
-			if !tt.interactive {
-				ctx, _ = cmdio.NewTestContextWithStdout(t.Context())
-			}
+		// Throttled the second time the same day.
+		assert.Empty(t, noticeMessage(t.Context()))
+	})
 
-			assert.Equal(t, tt.want, suppressed(ctx, tt.cmd))
-		})
-	}
+	t.Run("no notice when up to date", func(t *testing.T) {
+		warm(t, "0.245.0", "v0.245.0", "https://example.test/x")
+		assert.Empty(t, noticeMessage(t.Context()))
+	})
+
+	t.Run("no notice when cache is cold", func(t *testing.T) {
+		t.Setenv(cacheDirEnv, t.TempDir())
+		build.SetBuildVersion("0.240.0")
+		assert.Empty(t, noticeMessage(t.Context()))
+	})
+}
+
+func TestNoticeSuppressedOnError(t *testing.T) {
+	assert.Empty(t, Notice(t.Context(), &cobra.Command{Use: "deploy"}, errors.New("boom")))
 }
 
 func TestTryAcquireRefreshLock(t *testing.T) {
-	// Isolate the lock to this test's temp dir.
 	dir := t.TempDir()
 	t.Setenv(cacheDirEnv, dir)
 	ctx := t.Context()
@@ -140,70 +203,4 @@ func TestTryAcquireRefreshLock(t *testing.T) {
 	release3, ok4 := tryAcquireRefreshLock(ctx)
 	require.True(t, ok4)
 	release3()
-}
-
-func TestNotice(t *testing.T) {
-	original := build.GetInfo().Version
-	t.Cleanup(func() { build.SetBuildVersion(original) })
-
-	// neutralEnv isolates a subtest from the ambient environment (CI runners
-	// set CI=true) and points the cache + release lookup at test-local targets.
-	neutralEnv := func(t *testing.T, latestTag string) {
-		t.Setenv("DATABRICKS_CACHE_DIR", t.TempDir())
-		t.Setenv("CI", "false")
-		t.Setenv(disableEnv, "false")
-		t.Setenv(gitHubAPIURLEnv, startReleaseServer(t, latestTag))
-	}
-
-	regularCmd := func() *cobra.Command {
-		c := &cobra.Command{Use: "deploy"}
-		c.Flags().String("output", "text", "")
-		return c
-	}
-
-	t.Run("update available, nudged at most once per day", func(t *testing.T) {
-		neutralEnv(t, "v0.245.0")
-		build.SetBuildVersion("0.240.0")
-		require.NoError(t, refreshLatest(t.Context()))
-
-		msg := Notice(interactiveContext(t), regularCmd(), nil)
-		assert.Contains(t, msg, "0.245.0")
-		assert.Contains(t, msg, "0.240.0")
-
-		// A second invocation the same day is throttled.
-		assert.Empty(t, Notice(interactiveContext(t), regularCmd(), nil))
-	})
-
-	t.Run("no notice when up to date", func(t *testing.T) {
-		neutralEnv(t, "v0.240.0")
-		build.SetBuildVersion("0.240.0")
-		require.NoError(t, refreshLatest(t.Context()))
-
-		assert.Empty(t, Notice(interactiveContext(t), regularCmd(), nil))
-	})
-
-	t.Run("no notice when cache is cold", func(t *testing.T) {
-		neutralEnv(t, "v0.245.0")
-		build.SetBuildVersion("0.240.0")
-		// No refreshLatest call: nothing cached yet.
-
-		assert.Empty(t, Notice(interactiveContext(t), regularCmd(), nil))
-	})
-
-	t.Run("no notice on command error", func(t *testing.T) {
-		neutralEnv(t, "v0.245.0")
-		build.SetBuildVersion("0.240.0")
-		require.NoError(t, refreshLatest(t.Context()))
-
-		assert.Empty(t, Notice(interactiveContext(t), regularCmd(), errors.New("boom")))
-	})
-
-	t.Run("no notice when suppressed", func(t *testing.T) {
-		neutralEnv(t, "v0.245.0")
-		t.Setenv("CI", "true")
-		build.SetBuildVersion("0.240.0")
-		require.NoError(t, refreshLatest(t.Context()))
-
-		assert.Empty(t, Notice(interactiveContext(t), regularCmd(), nil))
-	})
 }

@@ -12,6 +12,7 @@ import (
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/cache"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 	"github.com/spf13/cobra"
@@ -43,6 +44,11 @@ const (
 	cacheDirEnv     = "DATABRICKS_CACHE_DIR"
 	cacheEnabledEnv = "DATABRICKS_CACHE_ENABLED"
 
+	// ciEnv: virtually all CI providers set this, so suppress the notice there
+	// even when a pseudo-TTY is allocated.
+	// https://docs.github.com/actions/learn-github-actions/variables
+	ciEnv = "CI"
+
 	// refreshLockName is the single-flight sentinel: across many concurrent CLI
 	// processes only the one that creates it fetches, so a fleet starting at
 	// once sends at most one request to GitHub per machine.
@@ -54,12 +60,12 @@ const (
 	lockStaleAfter = 30 * time.Second
 )
 
-// StartBackgroundRefresh fetches the latest released version in the background
-// (at most once per day) and stores it in the cache, so a later command can
-// show the notice without a blocking network call. It is a no-op when the
-// notice would be suppressed anyway. Safe to call on every invocation.
+// StartBackgroundRefresh fetches the latest release in the background (at most
+// once per day) and stores it in the cache, so a later command can show the
+// notice without a blocking network call. It is a no-op when the notice would
+// be suppressed anyway. Safe to call on every invocation.
 func StartBackgroundRefresh(ctx context.Context, cmd *cobra.Command) {
-	if suppressed(ctx, cmd) {
+	if !notifyEnabled(ctx, cmd) {
 		return
 	}
 	go func() {
@@ -77,14 +83,14 @@ func StartBackgroundRefresh(ctx context.Context, cmd *cobra.Command) {
 	}()
 }
 
-// refreshLatest fetches and caches the latest released version, but only when
-// the cached value is older than cacheTTL (or absent), and only one process at
-// a time per machine performs the fetch.
+// refreshLatest fetches and caches the latest release, but only when the cached
+// value is older than cacheTTL (or absent), and only one process at a time per
+// machine performs the fetch.
 func refreshLatest(ctx context.Context) error {
 	c := cache.NewCache(ctx, cacheComponent, cacheTTL, nil)
 
 	// Common path: a fresh entry means no fetch and no lock churn.
-	if _, fresh := cache.Get[string](ctx, c, latestFingerprint); fresh {
+	if _, fresh := cache.Get[latestRelease](ctx, c, latestFingerprint); fresh {
 		return nil
 	}
 
@@ -97,7 +103,7 @@ func refreshLatest(ctx context.Context) error {
 
 	// GetOrCompute re-checks freshness under the lock, so a process that lost
 	// the race reads the just-written value instead of fetching again.
-	_, err := cache.GetOrCompute(ctx, c, latestFingerprint, fetchLatestVersion)
+	_, err := cache.GetOrCompute(ctx, c, latestFingerprint, fetchLatestRelease)
 	return err
 }
 
@@ -133,10 +139,9 @@ func tryAcquireRefreshLock(ctx context.Context) (func(), bool) {
 	return nil, false
 }
 
-// Notice returns a one-line "new version available" message to print after a
-// command, or an empty string when nothing should be shown. It reads the
-// cached latest version (never the network) and nudges at most once per day.
-// runErr is the command's result; the notice is suppressed when it is non-nil.
+// Notice returns a "new release available" message to print after a command, or
+// an empty string when nothing should be shown. runErr is the command's result;
+// the notice is suppressed when it is non-nil so a hint never stacks on an error.
 func Notice(ctx context.Context, cmd *cobra.Command, runErr error) (msg string) {
 	// A failure here must never affect the user's command, which has already
 	// completed by the time this runs.
@@ -147,12 +152,18 @@ func Notice(ctx context.Context, cmd *cobra.Command, runErr error) (msg string) 
 		}
 	}()
 
-	if runErr != nil || suppressed(ctx, cmd) {
+	if runErr != nil || !notifyEnabled(ctx, cmd) {
 		return ""
 	}
+	return noticeMessage(ctx)
+}
 
+// noticeMessage renders the advisory from the cached latest release, or returns
+// "" when the CLI is current, the cache is cold, or the once-per-day nudge has
+// already fired. It reads the cache only, never the network.
+func noticeMessage(ctx context.Context) string {
 	c := cache.NewCache(ctx, cacheComponent, cacheTTL, nil)
-	latest, ok := cache.Get[string](ctx, c, latestFingerprint)
+	latest, ok := cache.Get[latestRelease](ctx, c, latestFingerprint)
 	if !ok {
 		// Not refreshed yet (cold or stale cache); a background refresh will
 		// warm it for a later command.
@@ -160,7 +171,7 @@ func Notice(ctx context.Context, cmd *cobra.Command, runErr error) (msg string) 
 	}
 
 	current := build.GetInfo().Version
-	if !isNewer(current, latest) {
+	if !isNewer(current, latest.Version) {
 		return ""
 	}
 
@@ -175,44 +186,67 @@ func Notice(ctx context.Context, cmd *cobra.Command, runErr error) (msg string) 
 	return noticeText(ctx, current, latest, command)
 }
 
-func noticeText(ctx context.Context, current, latest, upgradeCommand string) string {
-	msg := fmt.Sprintf("A new version of the Databricks CLI is available: %s (you have %s).", latest, current)
+// noticeText formats the advisory: the version delta, a link to the release for
+// the changelog, and the upgrade command for the detected install method.
+func noticeText(ctx context.Context, current string, latest latestRelease, upgradeCommand string) string {
+	msg := fmt.Sprintf("A new release of the Databricks CLI is available: %s → %s", current, latest.Version)
+	if latest.URL != "" {
+		msg += "\n" + latest.URL
+	}
 	if upgradeCommand != "" {
-		msg += fmt.Sprintf(" Run `%s` to upgrade.", upgradeCommand)
+		msg += "\nTo upgrade, run: " + upgradeCommand
 	} else {
-		msg += " See https://github.com/databricks/cli/releases to upgrade."
+		msg += "\nSee https://github.com/databricks/cli/releases to upgrade."
 	}
 	return cmdio.Yellow(ctx, msg)
 }
 
-// suppressed reports whether the passive notice should be withheld. It errs
-// toward staying quiet: anything non-interactive, scripted, or opted out is
-// suppressed.
-func suppressed(ctx context.Context, cmd *cobra.Command) bool {
-	if isDevelopmentBuild(build.GetInfo()) {
-		return true
+// notifyConditions captures the environment inputs for the passive-notice
+// decision, keeping the policy (shouldNotify) a pure, table-testable function.
+type notifyConditions struct {
+	developmentBuild bool // dev/snapshot build: nothing to upgrade to
+	cacheDisabled    bool // file cache off: nothing to store or read
+	optedOut         bool // DATABRICKS_CLI_DISABLE_UPDATE_CHECK
+	onRuntime        bool // Databricks Runtime: version is platform-managed
+	ci               bool // continuous integration
+	nonInteractive   bool // no usable terminal (pipes, cron, redirected)
+	jsonOutput       bool // machine-readable output kept clean for scripts
+	exemptCommand    bool // version/completion/help: notice would be noise
+}
+
+// shouldNotify reports whether the passive notice should run for the given
+// conditions. It errs toward silence: any single reason suppresses it.
+func shouldNotify(c notifyConditions) bool {
+	switch {
+	case c.developmentBuild, c.cacheDisabled, c.optedOut, c.onRuntime,
+		c.ci, c.nonInteractive, c.jsonOutput, c.exemptCommand:
+		return false
 	}
-	if disabled, ok := env.GetBool(ctx, disableEnv); ok && disabled {
-		return true
-	}
-	// The notice relies on the file cache; if it's disabled there is nothing to
-	// store or read, so don't fetch at all.
+	return true
+}
+
+// notifyEnabled gathers the current conditions and applies the policy.
+func notifyEnabled(ctx context.Context, cmd *cobra.Command) bool {
+	return shouldNotify(gatherConditions(ctx, cmd))
+}
+
+func gatherConditions(ctx context.Context, cmd *cobra.Command) notifyConditions {
+	optedOut, _ := env.GetBool(ctx, disableEnv)
+	ci, _ := env.GetBool(ctx, ciEnv)
+	cacheDisabled := false
 	if enabled, ok := env.GetBool(ctx, cacheEnabledEnv); ok && !enabled {
-		return true
+		cacheDisabled = true
 	}
-	// Honor the common CI convention even when a pseudo-TTY is allocated.
-	// https://github.blog/changelog/2020-04-15-github-actions-sets-the-ci-environment-variable-to-true/
-	if ci, ok := env.GetBool(ctx, "CI"); ok && ci {
-		return true
+	return notifyConditions{
+		developmentBuild: isDevelopmentBuild(build.GetInfo()),
+		cacheDisabled:    cacheDisabled,
+		optedOut:         optedOut,
+		onRuntime:        dbr.RunsOnRuntime(ctx),
+		ci:               ci,
+		nonInteractive:   cmdio.GetInteractiveMode(ctx) == cmdio.InteractiveModeNone,
+		jsonOutput:       isJSONOutput(cmd),
+		exemptCommand:    isExemptCommand(cmd),
 	}
-	// No usable terminal (pipes, cron, stderr redirected).
-	if cmdio.GetInteractiveMode(ctx) == cmdio.InteractiveModeNone {
-		return true
-	}
-	if isJSONOutput(cmd) {
-		return true
-	}
-	return isExemptCommand(cmd)
 }
 
 func isJSONOutput(cmd *cobra.Command) bool {

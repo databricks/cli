@@ -127,7 +127,13 @@ func isNewer(current, latest string) bool {
 	return semver.Compare(lv, cv) > 0
 }
 
-func fetchLatestVersion(ctx context.Context) (string, error) {
+// latestRelease is the subset of a GitHub release we cache and display.
+type latestRelease struct {
+	Version string `json:"version"`
+	URL     string `json:"url"`
+}
+
+func fetchLatestRelease(ctx context.Context) (latestRelease, error) {
 	base := env.Get(ctx, gitHubAPIURLEnv)
 	if base == "" {
 		base = defaultGitHubAPIURL
@@ -136,7 +142,7 @@ func fetchLatestVersion(ctx context.Context) (string, error) {
 	url := base + latestReleasePath
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
-		return "", err
+		return latestRelease{}, err
 	}
 	// GitHub rejects requests without a User-Agent and recommends pinning the
 	// API version. https://docs.github.com/en/rest/using-the-rest-api
@@ -145,26 +151,33 @@ func fetchLatestVersion(ctx context.Context) (string, error) {
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return "", fmt.Errorf("fetch latest release: %w", err)
+		return latestRelease{}, fmt.Errorf("fetch latest release: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("fetch latest release: unexpected status %s", resp.Status)
+		return latestRelease{}, fmt.Errorf("fetch latest release: unexpected status %s", resp.Status)
 	}
 
-	var release struct {
+	var rel struct {
 		TagName string `json:"tag_name"`
+		HTMLURL string `json:"html_url"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&release); err != nil {
-		return "", fmt.Errorf("parse latest release: %w", err)
+	if err := json.NewDecoder(resp.Body).Decode(&rel); err != nil {
+		return latestRelease{}, fmt.Errorf("parse latest release: %w", err)
 	}
 
-	version := strings.TrimPrefix(release.TagName, "v")
+	version := strings.TrimPrefix(rel.TagName, "v")
 	if version == "" {
-		return "", errors.New("latest release has an empty tag_name")
+		return latestRelease{}, errors.New("latest release has an empty tag_name")
 	}
-	return version, nil
+	return latestRelease{Version: version, URL: rel.HTMLURL}, nil
+}
+
+// fetchLatestVersion returns just the latest version, for the explicit check.
+func fetchLatestVersion(ctx context.Context) (string, error) {
+	rel, err := fetchLatestRelease(ctx)
+	return rel.Version, err
 }
 
 // DetectInstallMethod inspects the running executable's path to infer how the
