@@ -532,14 +532,6 @@ apps:
   - String
   - 
   
-- - `compute_max_instances`
-  - Integer
-  - 
-  
-- - `compute_min_instances`
-  - Integer
-  - 
-  
 - - `compute_size`
   - String
   - 
@@ -3380,10 +3372,6 @@ Deployment information for jobs managed by external sources.
   - Type
   - Description
   
-- - `deployment_id`
-  - String
-  - 
-  
 - - `kind`
   - String
   - The kind of deployment that manages the job.  * `BUNDLE`: The job is managed by Databricks Asset Bundle. * `SYSTEM_MANAGED`: The job is managed by Databricks and is read-only.
@@ -3391,10 +3379,6 @@ Deployment information for jobs managed by external sources.
 - - `metadata_file_path`
   - String
   - Path of the file that contains deployment metadata.
-  
-- - `version_id`
-  - String
-  - 
   
 :::
   
@@ -6261,7 +6245,7 @@ The task triggers a pipeline update when the `pipeline_task` field is present. O
   
 - - `parameters`
   - Map
-  - 
+  - Key/value-map of parameters passed to the pipeline execution. Limited to 10k characters in total.
   
 - - `pipeline_id`
   - String
@@ -9209,10 +9193,6 @@ Deployment type of this pipeline.
   - Type
   - Description
   
-- - `deployment_id`
-  - String
-  - 
-  
 - - `kind`
   - String
   - The deployment method that manages the pipeline.
@@ -9220,10 +9200,6 @@ Deployment type of this pipeline.
 - - `metadata_file_path`
   - String
   - The path to the file containing metadata about the deployment.
-  
-- - `version_id`
-  - String
-  - 
   
 :::
   
@@ -9321,6 +9297,14 @@ The configuration for a managed ingestion pipeline. These settings cannot be use
   - String
   - The Unity Catalog connection that this ingestion pipeline uses to communicate with the source. This is used with both connectors for applications like Salesforce, Workday, and so on, and also database connectors like Oracle, (connector_type = QUERY_BASED OR connector_type = CDC). If connection name corresponds to database connectors like Oracle, and connector_type is not provided then connector_type defaults to QUERY_BASED. If connector_type is passed as CDC we use Combined Cdc Managed Ingestion pipeline. Under certain conditions, this can be replaced with ingestion_gateway_id to change the connector to Cdc Managed Ingestion Pipeline with Gateway pipeline.
   
+- - `connector_type`
+  - String
+  - (Optional) Connector Type for sources. Ex: CDC, Query Based.
+  
+- - `data_staging_options`
+  - Map
+  - (Optional) Location of staged data storage. This is required for migration from Cdc Managed Ingestion Pipeline with Gateway pipeline to Combined Cdc Managed Ingestion Pipeline. If not specified, the volume for staged data will be created in catalog and schema/target specified in the top level pipeline definition. See [\_](#pipelinesnameingestion_definitiondata_staging_options).
+  
 - - `full_refresh_window`
   - Map
   - (Optional) A window that specifies a set of time ranges for snapshot queries in CDC. See [\_](#pipelinesnameingestion_definitionfull_refresh_window).
@@ -9344,6 +9328,38 @@ The configuration for a managed ingestion pipeline. These settings cannot be use
 - - `table_configuration`
   - Map
   - Configuration settings to control the ingestion of tables. These settings are applied to all tables in the pipeline. See [\_](#pipelinesnameingestion_definitiontable_configuration).
+  
+:::
+  
+  
+### pipelines._name_.ingestion_definition.data_staging_options
+  
+**`Type: Map`**
+  
+(Optional) Location of staged data storage. This is required for migration from Cdc Managed Ingestion Pipeline
+with Gateway pipeline to Combined Cdc Managed Ingestion Pipeline.
+If not specified, the volume for staged data will be created in catalog and schema/target specified in the
+top level pipeline definition.
+  
+  
+  
+:::list-table
+  
+- - Key
+  - Type
+  - Description
+  
+- - `catalog_name`
+  - String
+  - (Required, Immutable) The name of the catalog for the connector's staging storage location.
+  
+- - `schema_name`
+  - String
+  - (Required, Immutable) The name of the schema for the connector's staging storage location.
+  
+- - `volume_name`
+  - String
+  - (Optional) The Unity Catalog-compatible name for the storage location. This is the volume to use for the data that is extracted by the connector. Spark Declarative Pipelines system will automatically create the volume under the catalog and schema. For Combined Cdc Managed Ingestion pipelines default name for the volume would be : __databricks_ingestion_gateway_staging_data-$pipelineId
   
 :::
   
@@ -12394,11 +12410,11 @@ vector_search_indexes:
   
 - - `index_subtype`
   - String
-  - 
+  - The subtype of the AI Search index, determining the indexing and retrieval strategy. - `VECTOR`: Not supported. Use `HYBRID` instead. - `FULL_TEXT`: An index that uses full-text search without vector embeddings. - `HYBRID`: An index that uses vector embeddings for similarity search and hybrid search.
   
 - - `index_type`
   - String
-  - 
+  - There are 2 types of AI Search indexes: - `DELTA_SYNC`: An index that automatically syncs with a source Delta Table, automatically and incrementally updating the index as the underlying data in the Delta Table changes. - `DIRECT_ACCESS`: An index that supports direct read and write of vectors and metadata through our REST and SDK APIs. With this model, the user manages index updates.
   
 - - `lifecycle`
   - Map
@@ -12431,7 +12447,7 @@ vector_search_indexes:
   
 - - `columns_to_index`
   - Sequence
-  - 
+  - [Optional] Alias for columns_to_sync. Select the columns to include in the vector index. If you leave this field blank, all columns from the source table are included. The primary key column and embedding source column or embedding vector column are always included. Only one of columns_to_sync or columns_to_index may be specified.
   
 - - `columns_to_sync`
   - Sequence
@@ -12451,7 +12467,7 @@ vector_search_indexes:
   
 - - `pipeline_type`
   - String
-  - 
+  - Pipeline execution mode. - `TRIGGERED`: If the pipeline uses the triggered execution mode, the system stops processing after successfully refreshing the source table in the pipeline once, ensuring the table is updated based on the data available when the update started. - `CONTINUOUS`: If the pipeline uses continuous execution, the pipeline processes new data as it arrives in the source table to keep vector index fresh.
   
 - - `source_table`
   - String

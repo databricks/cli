@@ -456,8 +456,9 @@ func ExportStateFromData(data Database) resourcestate.ExportedResourcesMap {
 		}
 
 		result[key] = resourcestate.ResourceState{
-			ID:   entry.ID,
-			ETag: etag,
+			ID:             entry.ID,
+			ETag:           etag,
+			StateSizeBytes: len(entry.State),
 		}
 	}
 	return result

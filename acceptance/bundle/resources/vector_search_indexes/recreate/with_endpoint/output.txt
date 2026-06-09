@@ -73,6 +73,7 @@ Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged
         },
         "endpoint_name": "vs-endpoint-[UNIQUE_NAME]",
         "endpoint_uuid": "[UUID]",
+        "index_subtype": "HYBRID",
         "index_type": "DIRECT_ACCESS",
         "name": "main.default.vs_index_[UNIQUE_NAME]",
         "primary_key": "id",
@@ -86,6 +87,11 @@ Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged
           "reason": "state-only field",
           "old": "[UUID]",
           "remote": "[UUID]"
+        },
+        "index_subtype": {
+          "action": "skip",
+          "reason": "backend_default",
+          "remote": "HYBRID"
         }
       }
     }

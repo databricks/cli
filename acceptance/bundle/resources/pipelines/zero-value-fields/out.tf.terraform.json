@@ -1,0 +1,22 @@
+{
+  "my": {
+    "channel": "CURRENT",
+    "continuous": false,
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/zero-value-fields/default/state/metadata.json"
+    },
+    "development": false,
+    "edition": "ADVANCED",
+    "library": [
+      {
+        "file": {
+          "path": "/Workspace/Users/[USERNAME]/.bundle/zero-value-fields/default/files/foo.py"
+        }
+      }
+    ],
+    "name": "test-pipeline",
+    "photon": false,
+    "serverless": false
+  }
+}

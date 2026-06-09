@@ -71,7 +71,6 @@ Deployment complete!
 >>> print_state.py
 3
 13
-contains error: '11' not found in the output.
 
 >>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
@@ -92,7 +91,6 @@ Deployment complete!
 >>> print_state.py
 3
 13
-contains error: '12' not found in the output.
 
 >>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle debug states
 [TEST_TMP_DIR]/.databricks/bundle/default/terraform/terraform.tfstate: local terraform state serial=3 lineage="test-lineage"
