@@ -124,6 +124,15 @@ func (w *WorkspaceFilesExtensionsClient) getNotebookStatByNameWithoutExt(ctx con
 		ext = notebook.ExtensionJupyter
 	}
 
+	// Notebooks with an unmapped language have no extension. Without one the entry
+	// cannot round-trip through this filer: [Stat] and [Read] deliberately report
+	// extension-less notebook names as not found. Return nil so [ReadDir] omits the
+	// entry instead of listing a name that cannot be accessed.
+	if ext == "" {
+		log.Warnf(ctx, "skipping notebook %s: no file extension is associated with notebook language %q", path.Join(w.root, name), stat.Language)
+		return nil, nil
+	}
+
 	// Modify the stat object path to include the extension. This stat object will be used
 	// to return the fs.DirEntry object in the ReadDir method.
 	stat.Path = stat.Path + ext
@@ -205,6 +214,7 @@ func (w *WorkspaceFilesExtensionsClient) ReadDir(ctx context.Context, name strin
 	}
 
 	seenPaths := make(map[string]workspace.ObjectInfo)
+	result := make([]fs.DirEntry, 0, len(entries))
 	for i := range entries {
 		info, err := entries[i].Info()
 		if err != nil {
@@ -217,6 +227,12 @@ func (w *WorkspaceFilesExtensionsClient) ReadDir(ctx context.Context, name strin
 			stat, err := w.getNotebookStatByNameWithoutExt(ctx, path.Join(name, entries[i].Name()))
 			if err != nil {
 				return nil, err
+			}
+			// A nil stat means no extension is associated with the notebook's
+			// language, so the entry has no name that can round-trip through
+			// [Stat] or [Read]. Omit it from the listing.
+			if stat == nil {
+				continue
 			}
 			// Replace the entry with the new entry that includes the extension.
 			entries[i] = wsfsDirEntry{wsfsFileInfo{ObjectInfo: stat.ObjectInfo}}
@@ -232,9 +248,10 @@ func (w *WorkspaceFilesExtensionsClient) ReadDir(ctx context.Context, name strin
 			}
 		}
 		seenPaths[entries[i].Name()] = sysInfo
+		result = append(result, entries[i])
 	}
 
-	return entries, nil
+	return result, nil
 }
 
 // Note: The import API returns opaque internal errors for namespace clashes
