@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -19,6 +20,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// cacheDirEnv relocates the file cache, and with it the refresh lock, so tests
+// never touch the user's real cache.
+const cacheDirEnv = "DATABRICKS_CACHE_DIR"
 
 func startReleaseServer(t *testing.T, tag, htmlURL string) string {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -108,6 +113,16 @@ func TestGatherConditions(t *testing.T) {
 		ctx = dbr.MockRuntime(ctx, dbr.Environment{})
 		assert.True(t, gatherConditions(ctx, regularCmd(t)).nonInteractive)
 	})
+
+	t.Run("bare context without cmdio or dbr detection", func(t *testing.T) {
+		// Help invocations skip PersistentPreRunE (no cmdio) and tests execute
+		// commands without root.Execute (no dbr detection); neither may panic.
+		t.Setenv(ciEnv, "false")
+		t.Setenv(disableEnv, "false")
+		c := gatherConditions(t.Context(), regularCmd(t))
+		assert.True(t, c.nonInteractive)
+		assert.False(t, c.onRuntime)
+	})
 }
 
 func TestIsExemptCommand(t *testing.T) {
@@ -174,6 +189,30 @@ func TestNoticeMessage(t *testing.T) {
 
 func TestNoticeSuppressedOnError(t *testing.T) {
 	assert.Empty(t, Notice(t.Context(), &cobra.Command{Use: "deploy"}, errors.New("boom")))
+}
+
+func TestRefreshLatestCachesFailure(t *testing.T) {
+	original := build.GetInfo().Version
+	t.Cleanup(func() { build.SetBuildVersion(original) })
+	build.SetBuildVersion("0.240.0")
+	t.Setenv(cacheDirEnv, t.TempDir())
+
+	var hits atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		hits.Add(1)
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	t.Cleanup(srv.Close)
+	t.Setenv(gitHubAPIURLEnv, srv.URL)
+
+	require.Error(t, refreshLatest(t.Context()))
+	require.Equal(t, int32(1), hits.Load())
+
+	// The failure is cached: the next command neither retries the fetch nor
+	// shows a notice until the entry expires.
+	require.NoError(t, refreshLatest(t.Context()))
+	assert.Equal(t, int32(1), hits.Load())
+	assert.Empty(t, noticeMessage(t.Context()))
 }
 
 func TestTryAcquireRefreshLock(t *testing.T) {

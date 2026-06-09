@@ -38,10 +38,9 @@ const (
 	// disableEnv is an explicit opt-out for the passive notice.
 	disableEnv = "DATABRICKS_CLI_DISABLE_UPDATE_CHECK"
 
-	// cacheDirEnv and cacheEnabledEnv mirror libs/cache's env knobs. We read
-	// them directly to place the single-flight lock alongside the cache and to
-	// skip the check entirely when caching is turned off.
-	cacheDirEnv     = "DATABRICKS_CACHE_DIR"
+	// cacheEnabledEnv mirrors libs/cache's env knob. We read it directly to
+	// skip the check entirely when caching is turned off: with the cache in
+	// measurement-only mode, every command would otherwise refetch.
 	cacheEnabledEnv = "DATABRICKS_CACHE_ENABLED"
 
 	// ciEnv: virtually all CI providers set this, so suppress the notice there
@@ -104,6 +103,12 @@ func refreshLatest(ctx context.Context) error {
 	// GetOrCompute re-checks freshness under the lock, so a process that lost
 	// the race reads the just-written value instead of fetching again.
 	_, err := cache.GetOrCompute(ctx, c, latestFingerprint, fetchLatestRelease)
+	if err != nil {
+		// Cache the failure too: an offline or airgapped machine should not
+		// retry GitHub on every command. The empty entry reads as "no update
+		// available" and expires with the normal TTL.
+		cache.Put(ctx, c, latestFingerprint, latestRelease{})
+	}
 	return err
 }
 
@@ -115,9 +120,13 @@ func refreshLatest(ctx context.Context) error {
 // a thundering herd, not a correctness-critical lock; a dedicated flock library
 // would avoid the staleness heuristic but isn't a dependency here.
 func tryAcquireRefreshLock(ctx context.Context) (func(), bool) {
-	dir := env.Get(ctx, cacheDirEnv)
-	if dir == "" {
-		dir = os.TempDir()
+	// The lock lives in the cache root: per-user, so another user's stale lock
+	// on a shared machine can never block (or be stolen by) this one. The
+	// directory exists by the time this runs because refreshLatest constructs
+	// the cache first; if that failed, failing to lock here is the right call.
+	dir, err := cache.BaseDir(ctx)
+	if err != nil {
+		return nil, false
 	}
 	lockPath := filepath.Join(dir, refreshLockName)
 
@@ -237,13 +246,20 @@ func gatherConditions(ctx context.Context, cmd *cobra.Command) notifyConditions 
 	if enabled, ok := env.GetBool(ctx, cacheEnabledEnv); ok && !enabled {
 		cacheDisabled = true
 	}
+	// Both probes below panic on a context that skipped the usual command
+	// setup, which legitimately happens here: cobra resolves --help and bare
+	// invocations before PersistentPreRunE installs cmdio, and tests execute
+	// commands without root.Execute's dbr detection. Missing IO means we have
+	// no terminal to print to (suppress); unknown runtime means not DBR.
+	nonInteractive := !cmdio.HasIO(ctx) || cmdio.GetInteractiveMode(ctx) == cmdio.InteractiveModeNone
+	onRuntime := dbr.HasDetection(ctx) && dbr.RunsOnRuntime(ctx)
 	return notifyConditions{
 		developmentBuild: isDevelopmentBuild(build.GetInfo()),
 		cacheDisabled:    cacheDisabled,
 		optedOut:         optedOut,
-		onRuntime:        dbr.RunsOnRuntime(ctx),
+		onRuntime:        onRuntime,
 		ci:               ci,
-		nonInteractive:   cmdio.GetInteractiveMode(ctx) == cmdio.InteractiveModeNone,
+		nonInteractive:   nonInteractive,
 		jsonOutput:       isJSONOutput(cmd),
 		exemptCommand:    isExemptCommand(cmd),
 	}
