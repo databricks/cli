@@ -400,8 +400,6 @@ tasks:
       # internal/build reads these at test time.
       - NOTICE
       - .codegen/_openapi_sha
-      # internal/cligen TestCliJSONIsInterpretable reads the committed cli.json.
-      - .codegen/cli.json
       # bundle/internal/schema TestRequiredAnnotationsForNewFields reads these.
       - bundle/internal/schema/annotations*.yml
     generates:
@@ -774,7 +772,7 @@ tasks:
     cmds:
       - echo "Building genkit..."
       - cd {{.UNIVERSE_DIR}} && ./tools/bazel build //openapi/genkit
-      - echo "Generating cli.json..."
+      - echo "Generating CLI code..."
       - '{{.UNIVERSE_DIR}}/bazel-bin/openapi/genkit/genkit_/genkit update-sdk --dir {{.ROOT_DIR}}'
       - git checkout -- .gitattributes
       - go test -timeout 240s -run TestConsistentDatabricksSdkVersion github.com/databricks/cli/internal/build
