@@ -29,6 +29,7 @@ EnvMatrix.INPUT_CONFIG = [
   "postgres_catalog.yml.tmpl",
   "postgres_endpoint.yml.tmpl",
   "postgres_project.yml.tmpl",
+  "postgres_role.yml.tmpl",
   "postgres_synced_table.yml.tmpl",
   "registered_model.yml.tmpl",
   "schema.yml.tmpl",

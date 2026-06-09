@@ -93,10 +93,12 @@
                     "x-since-version": "v0.243.0"
                   },
                   "compute_max_instances": {
-                    "$ref": "#/$defs/int"
+                    "$ref": "#/$defs/int",
+                    "x-since-version": "v1.2.0"
                   },
                   "compute_min_instances": {
-                    "$ref": "#/$defs/int"
+                    "$ref": "#/$defs/int",
+                    "x-since-version": "v1.2.0"
                   },
                   "compute_size": {
                     "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.ComputeSize",
@@ -1257,7 +1259,8 @@
                     "x-since-version": "v0.229.0"
                   },
                   "parameters": {
-                    "$ref": "#/$defs/map/string"
+                    "$ref": "#/$defs/map/string",
+                    "x-since-version": "v1.2.0"
                   },
                   "permissions": {
                     "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.PipelinePermission",
@@ -1543,11 +1546,56 @@
                   "project_id": {
                     "$ref": "#/$defs/string",
                     "x-since-version": "v0.287.0"
+                  },
+                  "purge_on_delete": {
+                    "$ref": "#/$defs/bool",
+                    "x-since-version": "v1.2.0"
                   }
                 },
                 "additionalProperties": false,
                 "required": [
                   "project_id"
+                ]
+              },
+              "resources.PostgresRole": {
+                "type": "object",
+                "properties": {
+                  "attributes": {
+                    "description": "The desired API-exposed Postgres role attributes to associate with the role.",
+                    "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.RoleAttributes"
+                  },
+                  "auth_method": {
+                    "description": "How the role is authenticated when connecting to Postgres. If left unspecified, a meaningful authentication method is derived from the identity_type.",
+                    "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.RoleAuthMethod"
+                  },
+                  "identity_type": {
+                    "description": "The type of the Databricks managed identity that this Role represents. Leave empty to create a regular Postgres role not associated with a Databricks identity.",
+                    "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.RoleIdentityType"
+                  },
+                  "lifecycle": {
+                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
+                  },
+                  "membership_roles": {
+                    "description": "Standard roles that this role is a member of.",
+                    "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/postgres.RoleMembershipRole"
+                  },
+                  "parent": {
+                    "description": "The branch where this role is created. Format projects/{project_id}/branches/{branch_id}.",
+                    "$ref": "#/$defs/string"
+                  },
+                  "postgres_role": {
+                    "description": "The name of the Postgres role. Required when creating the role.",
+                    "$ref": "#/$defs/string"
+                  },
+                  "role_id": {
+                    "description": "The user-specified role ID; becomes the final component of the role's resource name. Must be 4-63 characters, lowercase letters, numbers, and hyphens (RFC 1123).",
+                    "$ref": "#/$defs/string"
+                  }
+                },
+                "additionalProperties": false,
+                "required": [
+                  "role_id",
+                  "parent"
                 ]
               },
               "resources.PostgresSyncedTable": {
@@ -1930,7 +1978,7 @@
                   },
                   "lifecycle": {
                     "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
-                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle",
+                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.LifecycleWithStarted",
                     "x-since-version": "v0.268.0"
                   },
                   "max_num_clusters": {
@@ -2433,7 +2481,8 @@
                 },
                 "record_deployment_history": {
                   "description": "Whether to record deployment history using the deployment metadata service (DMS), which tracks what changed across deployments.",
-                  "$ref": "#/$defs/bool"
+                  "$ref": "#/$defs/bool",
+                  "x-since-version": "v1.2.0"
                 },
                 "scripts": {
                   "description": "The commands to run.",
@@ -2655,6 +2704,9 @@
                 "postgres_projects": {
                   "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.PostgresProject",
                   "x-since-version": "v0.287.0"
+                },
+                "postgres_roles": {
+                  "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.PostgresRole"
                 },
                 "postgres_synced_tables": {
                   "description": "The Postgres synced table definitions for the bundle, where each key is the name of the synced table. Each entry continuously replicates a Unity Catalog Delta source table into a Postgres table on a Lakebase Autoscaling instance.",
@@ -5570,7 +5622,8 @@
               "type": "object",
               "properties": {
                 "deployment_id": {
-                  "$ref": "#/$defs/string"
+                  "$ref": "#/$defs/string",
+                  "x-since-version": "v1.2.0"
                 },
                 "kind": {
                   "description": "The kind of deployment that manages the job.\n\n* `BUNDLE`: The job is managed by Databricks Asset Bundle.\n* `SYSTEM_MANAGED`: The job is managed by Databricks and is read-only.",
@@ -5583,7 +5636,8 @@
                   "x-since-version": "v0.229.0"
                 },
                 "version_id": {
-                  "$ref": "#/$defs/string"
+                  "$ref": "#/$defs/string",
+                  "x-since-version": "v1.2.0"
                 }
               },
               "additionalProperties": false,
@@ -5979,7 +6033,8 @@
                   "x-since-version": "v1.1.0"
                 },
                 "parameters": {
-                  "$ref": "#/$defs/map/string"
+                  "$ref": "#/$defs/map/string",
+                  "x-since-version": "v1.2.0"
                 },
                 "pipeline_id": {
                   "description": "The full name of the pipeline task to execute.",
@@ -8112,7 +8167,8 @@
               "type": "object",
               "properties": {
                 "deployment_id": {
-                  "$ref": "#/$defs/string"
+                  "$ref": "#/$defs/string",
+                  "x-since-version": "v1.2.0"
                 },
                 "kind": {
                   "description": "The deployment method that manages the pipeline.",
@@ -8125,7 +8181,8 @@
                   "x-since-version": "v0.229.0"
                 },
                 "version_id": {
-                  "$ref": "#/$defs/string"
+                  "$ref": "#/$defs/string",
+                  "x-since-version": "v1.2.0"
                 }
               },
               "additionalProperties": false,
@@ -8776,6 +8833,30 @@
                 }
               },
               "additionalProperties": false
+            },
+            "postgres.RoleAttributes": {
+              "type": "object",
+              "properties": {
+                "bypassrls": {
+                  "$ref": "#/$defs/bool"
+                },
+                "createdb": {
+                  "$ref": "#/$defs/bool"
+                },
+                "createrole": {
+                  "$ref": "#/$defs/bool"
+                }
+              },
+              "additionalProperties": false
+            },
+            "postgres.RoleAuthMethod": {
+              "type": "string"
+            },
+            "postgres.RoleIdentityType": {
+              "type": "string"
+            },
+            "postgres.RoleMembershipRole": {
+              "type": "string"
             },
             "postgres.SyncedTableSyncedTableSpecSyncedTableSchedulingPolicy": {
               "type": "string",
@@ -10265,6 +10346,12 @@
                     "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.PostgresProject"
                   }
                 },
+                "resources.PostgresRole": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.PostgresRole"
+                  }
+                },
                 "resources.PostgresSyncedTable": {
                   "type": "object",
                   "additionalProperties": {
@@ -10658,6 +10745,12 @@
                 "type": "array",
                 "items": {
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.ProjectCustomTag"
+                }
+              },
+              "postgres.RoleMembershipRole": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.RoleMembershipRole"
                 }
               },
               "serving.AiGatewayRateLimit": {

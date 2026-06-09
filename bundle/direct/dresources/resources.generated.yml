@@ -275,6 +275,20 @@ resources:
       - field: pg_version
         reason: spec:input_only
 
+  postgres_roles:
+
+    ignore_remote_changes:
+      - field: attributes
+        reason: spec:input_only
+      - field: auth_method
+        reason: spec:input_only
+      - field: identity_type
+        reason: spec:input_only
+      - field: membership_roles
+        reason: spec:input_only
+      - field: postgres_role
+        reason: spec:input_only
+
   postgres_synced_tables:
 
     ignore_remote_changes:

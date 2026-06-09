@@ -294,6 +294,17 @@ func TestResourcesBindSupport(t *testing.T) {
 				},
 			},
 		},
+		PostgresRoles: map[string]*resources.PostgresRole{
+			"my_postgres_role": {
+				PostgresRoleConfig: resources.PostgresRoleConfig{
+					RoleId: "my-postgres-role",
+					Parent: "projects/my-postgres-project/branches/my-postgres-branch",
+					RoleRoleSpec: postgres.RoleRoleSpec{
+						PostgresRole: "my_postgres_role",
+					},
+				},
+			},
+		},
 		VectorSearchEndpoints: map[string]*resources.VectorSearchEndpoint{
 			"my_vector_search_endpoint": {
 				CreateEndpoint: vectorsearch.CreateEndpoint{
@@ -345,6 +356,7 @@ func TestResourcesBindSupport(t *testing.T) {
 	m.GetMockPostgresAPI().EXPECT().GetEndpoint(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockPostgresAPI().EXPECT().GetCatalog(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockPostgresAPI().EXPECT().GetSyncedTable(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockPostgresAPI().EXPECT().GetRole(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockVectorSearchEndpointsAPI().EXPECT().GetEndpoint(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockVectorSearchIndexesAPI().EXPECT().GetIndexByIndexName(mock.Anything, mock.Anything).Return(nil, nil)
 

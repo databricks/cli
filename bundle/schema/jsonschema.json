@@ -1566,6 +1566,55 @@
                   }
                 ]
               },
+              "resources.PostgresRole": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "attributes": {
+                        "description": "The desired API-exposed Postgres role attributes to associate with the role.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.RoleAttributes"
+                      },
+                      "auth_method": {
+                        "description": "How the role is authenticated when connecting to Postgres. If left unspecified, a meaningful authentication method is derived from the identity_type.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.RoleAuthMethod"
+                      },
+                      "identity_type": {
+                        "description": "The type of the Databricks managed identity that this Role represents. Leave empty to create a regular Postgres role not associated with a Databricks identity.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.RoleIdentityType"
+                      },
+                      "lifecycle": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
+                      },
+                      "membership_roles": {
+                        "description": "Standard roles that this role is a member of.",
+                        "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/postgres.RoleMembershipRole"
+                      },
+                      "parent": {
+                        "description": "The branch where this role is created. Format projects/{project_id}/branches/{branch_id}.",
+                        "$ref": "#/$defs/string"
+                      },
+                      "postgres_role": {
+                        "description": "The name of the Postgres role. Required when creating the role.",
+                        "$ref": "#/$defs/string"
+                      },
+                      "role_id": {
+                        "description": "The user-specified role ID; becomes the final component of the role's resource name. Must be 4-63 characters, lowercase letters, numbers, and hyphens (RFC 1123).",
+                        "$ref": "#/$defs/string"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                      "role_id",
+                      "parent"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
               "resources.PostgresSyncedTable": {
                 "oneOf": [
                   {
@@ -2687,6 +2736,9 @@
                     },
                     "postgres_projects": {
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.PostgresProject"
+                    },
+                    "postgres_roles": {
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.PostgresRole"
                     },
                     "postgres_synced_tables": {
                       "description": "The Postgres synced table definitions for the bundle, where each key is the name of the synced table. Each entry continuously replicates a Unity Catalog Delta source table into a Postgres table on a Lakebase Autoscaling instance.",
@@ -10294,6 +10346,38 @@
                 }
               ]
             },
+            "postgres.RoleAttributes": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "bypassrls": {
+                      "$ref": "#/$defs/bool"
+                    },
+                    "createdb": {
+                      "$ref": "#/$defs/bool"
+                    },
+                    "createrole": {
+                      "$ref": "#/$defs/bool"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "postgres.RoleAuthMethod": {
+              "type": "string"
+            },
+            "postgres.RoleIdentityType": {
+              "type": "string"
+            },
+            "postgres.RoleMembershipRole": {
+              "type": "string"
+            },
             "postgres.SyncedTableSyncedTableSpecSyncedTableSchedulingPolicy": {
               "oneOf": [
                 {
@@ -12332,6 +12416,20 @@
                     }
                   ]
                 },
+                "resources.PostgresRole": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.PostgresRole"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
                 "resources.PostgresSyncedTable": {
                   "oneOf": [
                     {
@@ -13223,6 +13321,20 @@
                     "type": "array",
                     "items": {
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.ProjectCustomTag"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "postgres.RoleMembershipRole": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.RoleMembershipRole"
                     }
                   },
                   {
