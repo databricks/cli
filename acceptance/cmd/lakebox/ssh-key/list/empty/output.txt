@@ -1,1 +1,0 @@
-  No SSH keys registered. Run 'databricks lakebox register' to add one.

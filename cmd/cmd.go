@@ -18,9 +18,9 @@ import (
 	"github.com/databricks/cli/cmd/experimental"
 	"github.com/databricks/cli/cmd/fs"
 	"github.com/databricks/cli/cmd/labs"
-	"github.com/databricks/cli/cmd/lakebox"
 	"github.com/databricks/cli/cmd/pipelines"
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/cmd/sandbox"
 	"github.com/databricks/cli/cmd/selftest"
 	"github.com/databricks/cli/cmd/sync"
 	"github.com/databricks/cli/cmd/version"
@@ -122,7 +122,7 @@ func New(ctx context.Context) *cobra.Command {
 	cli.AddCommand(configure.New())
 	cli.AddCommand(fs.New())
 	cli.AddCommand(labs.New(ctx))
-	cli.AddCommand(lakebox.New())
+	cli.AddCommand(sandbox.New())
 	cli.AddCommand(sync.New())
 	cli.AddCommand(version.New())
 	cli.AddCommand(selftest.New())
