@@ -1,0 +1,5 @@
+bundle:
+  name: non_yaml_glob
+
+include:
+  - "*.txt"
