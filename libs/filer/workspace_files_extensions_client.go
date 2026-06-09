@@ -124,10 +124,8 @@ func (w *WorkspaceFilesExtensionsClient) getNotebookStatByNameWithoutExt(ctx con
 		ext = notebook.ExtensionJupyter
 	}
 
-	// Notebooks with an unmapped language have no extension. Without one the entry
-	// cannot round-trip through this filer: [Stat] and [Read] deliberately report
-	// extension-less notebook names as not found. Return nil so [ReadDir] omits the
-	// entry instead of listing a name that cannot be accessed.
+	// Extension-less notebook names cannot round-trip through [Stat] or [Read],
+	// which report them as not found, so return nil to have [ReadDir] omit the entry.
 	if ext == "" {
 		log.Warnf(ctx, "skipping notebook %s: no file extension is associated with notebook language %q", path.Join(w.root, name), stat.Language)
 		return nil, nil
@@ -228,9 +226,7 @@ func (w *WorkspaceFilesExtensionsClient) ReadDir(ctx context.Context, name strin
 			if err != nil {
 				return nil, err
 			}
-			// A nil stat means no extension is associated with the notebook's
-			// language, so the entry has no name that can round-trip through
-			// [Stat] or [Read]. Omit it from the listing.
+			// A nil stat means the notebook's language has no extension mapping; omit the entry.
 			if stat == nil {
 				continue
 			}

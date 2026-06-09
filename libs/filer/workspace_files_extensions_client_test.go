@@ -222,7 +222,6 @@ func TestFilerWorkspaceFilesExtensionsReadDirWithUnmappedLanguage(t *testing.T) 
 			expectedNames:        []string{"bar.py"},
 		},
 		{
-			// All languages are supported for Jupyter notebooks, so the entry is kept.
 			name:                 "jupyter notebook with unknown language keeps the .ipynb extension",
 			language:             workspace.Language("FUTURELANG"),
 			notebookExportFormat: workspace.ExportFormatJupyter,
@@ -233,7 +232,6 @@ func TestFilerWorkspaceFilesExtensionsReadDirWithUnmappedLanguage(t *testing.T) 
 			mockedWorkspaceClient := mocks.NewMockWorkspaceClient(t)
 			mockedApiClient := mockApiClient{}
 
-			// Mock the workspace API's ListAll method.
 			workspaceApi := mockedWorkspaceClient.GetMockWorkspaceAPI()
 			workspaceApi.EXPECT().ListAll(mock.Anything, workspace.ListWorkspaceRequest{
 				Path: "/dir",
@@ -249,8 +247,7 @@ func TestFilerWorkspaceFilesExtensionsReadDirWithUnmappedLanguage(t *testing.T) 
 				},
 			}, nil)
 
-			// Mock bespoke API calls to /api/2.0/workspace/get-status, that are
-			// used to figure out the right file extension for the notebook.
+			// Mock the get-status call used to figure out the notebook's file extension.
 			statNotebook := wsfsFileInfo{
 				ObjectInfo: workspace.ObjectInfo{
 					Path:       "/dir/foo",
@@ -285,7 +282,6 @@ func TestFilerWorkspaceFilesExtensionsReadDirWithUnmappedLanguage(t *testing.T) 
 			}
 			assert.Equal(t, tc.expectedNames, names)
 
-			// assert the mocked methods were actually called, as a sanity check.
 			workspaceApi.AssertNumberOfCalls(t, "ListAll", 1)
 			mockedApiClient.AssertNumberOfCalls(t, "Do", 1)
 		})
