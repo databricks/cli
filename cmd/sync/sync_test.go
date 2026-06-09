@@ -17,9 +17,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// newTestSyncCommand returns the sync command attached to a root command so
-// that the root persistent flags (--output, --profile) resolve like in
-// production.
+// newTestSyncCommand attaches the sync command to a root command so the root persistent flags resolve.
 func newTestSyncCommand(t *testing.T) *cobra.Command {
 	syncCmd := New()
 	root.New(t.Context()).AddCommand(syncCmd)

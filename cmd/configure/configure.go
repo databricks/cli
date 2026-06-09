@@ -119,8 +119,8 @@ The host must be specified with the --host flag or the DATABRICKS_HOST environme
 			return fmt.Errorf("unable to instantiate configuration from environment variables: %w", err)
 		}
 
-		// Populate configuration from flags (if set). The profile flag is the
-		// root persistent flag, so the -p shorthand works here too.
+		// Populate configuration from flags (if set).
+		// The profile flag is the root persistent flag.
 		if flags.Host != "" {
 			cfg.Host = normalizeHost(flags.Host)
 		}
@@ -128,9 +128,7 @@ The host must be specified with the --host flag or the DATABRICKS_HOST environme
 			cfg.Profile = profile
 		}
 
-		// Same fallback as every other command: --profile flag, then
-		// DATABRICKS_CONFIG_PROFILE (loaded into cfg.Profile above), then
-		// DEFAULT. The name must be non-empty: SaveToProfile matches sections
+		// The profile name must be non-empty: SaveToProfile matches sections
 		// by host instead of by name when cfg.Profile is empty.
 		if cfg.Profile == "" {
 			cfg.Profile = "DEFAULT"

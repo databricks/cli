@@ -13,9 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// newTestSyncCommand returns the bundle sync command attached to a root
-// command so that the root persistent flags (--output, --profile) resolve
-// like in production.
+// newTestSyncCommand attaches the sync command to a root command so the root persistent flags resolve.
 func newTestSyncCommand(t *testing.T) *cobra.Command {
 	syncCmd := newSyncCommand()
 	root.New(t.Context()).AddCommand(syncCmd)
@@ -48,7 +46,6 @@ func TestBundleSyncOutputHandlerOnlyWhenOutputSet(t *testing.T) {
 
 	f := syncFlags{}
 
-	// Without --output, bundle sync stays silent: no output handler.
 	cmd := newTestSyncCommand(t)
 	cmd.SetContext(t.Context())
 	require.NoError(t, cmd.ParseFlags(nil))
@@ -56,7 +53,6 @@ func TestBundleSyncOutputHandlerOnlyWhenOutputSet(t *testing.T) {
 	require.NoError(t, err)
 	assert.Nil(t, opts.OutputHandler)
 
-	// With -o json, an output handler is installed.
 	cmd = newTestSyncCommand(t)
 	cmd.SetContext(t.Context())
 	require.NoError(t, cmd.ParseFlags([]string{"-o", "json"}))
