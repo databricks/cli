@@ -54,6 +54,22 @@ func (m *uploadStateForYamlSync) Apply(ctx context.Context, b *bundle.Bundle) di
 		return nil
 	}
 
+	// convertState reuses direct-engine code (SecretScopeFixups, CalculatePlan, Apply)
+	// that reports failures via logdiag on the context. This mutator is best-effort and
+	// must not fail a deploy that already succeeded, so collect those diagnostics in an
+	// isolated scope and downgrade them to warnings.
+	ctx = logdiag.IsolatedContext(ctx)
+	logdiag.SetCollect(ctx, true)
+	defer func() {
+		for _, d := range logdiag.FlushCollected(ctx) {
+			msg := d.Summary
+			if d.Detail != "" {
+				msg += ": " + d.Detail
+			}
+			log.Warnf(ctx, "Config snapshot: %s", msg)
+		}
+	}()
+
 	_, snapshotPath := b.StateFilenameConfigSnapshot(ctx)
 
 	created, err := m.convertState(ctx, b, snapshotPath)
@@ -200,6 +216,12 @@ func (m *uploadStateForYamlSync) convertState(ctx context.Context, b *bundle.Bun
 	deploymentBundle.Apply(ctx, b.WorkspaceClient(ctx), plan, direct.MigrateMode(true))
 	if _, err := deploymentBundle.StateDB.Finalize(ctx); err != nil {
 		return false, err
+	}
+
+	// Apply reports failures via logdiag instead of returning an error. Don't
+	// upload a snapshot that is missing entries for the failed resources.
+	if logdiag.HasError(ctx) {
+		return false, errors.New("state conversion failed")
 	}
 
 	return true, nil
