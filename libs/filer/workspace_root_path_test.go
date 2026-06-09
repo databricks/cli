@@ -51,7 +51,6 @@ func testRootPath(t *testing.T, uncleanRoot string) {
 	assert.NoError(t, err)
 	assert.Equal(t, cleanRoot, remotePath)
 
-	// Escaping the root and re-entering it is allowed.
 	// All roots in this test end in the path element "path".
 	remotePath, err = rp.Join("../path/x")
 	assert.NoError(t, err)

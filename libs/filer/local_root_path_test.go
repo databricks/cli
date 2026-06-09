@@ -52,7 +52,6 @@ func testUnixLocalRootPath(t *testing.T, uncleanRoot string) {
 	assert.NoError(t, err)
 	assert.Equal(t, cleanRoot, remotePath)
 
-	// Escaping the root and re-entering it is allowed.
 	// All roots in this test end in the path element "path".
 	remotePath, err = rp.Join("../path/x")
 	assert.NoError(t, err)
@@ -145,7 +144,6 @@ func testWindowsLocalRootPath(t *testing.T, uncleanRoot string) {
 	_, err = rp.Join(`a\..\..`)
 	assert.ErrorContains(t, err, `relative path escapes root`)
 
-	// Escaping the root and re-entering it is allowed.
 	// All roots in this test end in the path element "path".
 	remotePath, err = rp.Join(`..\path\x`)
 	assert.NoError(t, err)
@@ -174,8 +172,7 @@ func TestWindowsLocalRootPath(t *testing.T) {
 }
 
 func TestLocalRootPathEmptyRoot(t *testing.T) {
-	// An empty root is the unrooted local filer used by cmd/fs;
-	// it allows any path, including relative paths outside the CWD.
+	// An empty root is the unrooted local filer used by cmd/fs.
 	rp := NewLocalRootPath("")
 
 	p, err := rp.Join("a/b")

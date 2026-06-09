@@ -25,12 +25,10 @@ func (rp *localRootPath) Join(name string) (string, error) {
 		return absPath, nil
 	}
 
-	// Don't allow escaping the specified root using relative paths.
 	// Joining exactly the root must stay allowed: calls like ReadDir(".") resolve to it.
 	// Any other path must extend the root past a separator boundary; a plain prefix
 	// check would also accept siblings like "/root-evil" for root "/root".
-	// The suffix guard covers roots that already end in a separator after
-	// cleaning ("/" or a Windows drive root like `C:\`).
+	// Cleaned roots like "/" or `C:\` already end in a separator.
 	root := rp.rootPath
 	if !strings.HasSuffix(root, string(filepath.Separator)) {
 		root += string(filepath.Separator)

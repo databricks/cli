@@ -29,8 +29,7 @@ func (p *WorkspaceRootPath) Join(name string) (string, error) {
 	// Joining exactly the root must stay allowed: calls like ReadDir(".") resolve to it.
 	// Any other path must extend the root past a separator boundary; a plain prefix
 	// check would also accept siblings like "/root-evil" for root "/root".
-	// The suffix guard covers filers rooted at "/" (see cmd/fs), where the cleaned
-	// root already ends in a separator.
+	// Cleaned roots like "/" (see cmd/fs) already end in a separator.
 	root := p.rootPath
 	if !strings.HasSuffix(root, "/") {
 		root += "/"
