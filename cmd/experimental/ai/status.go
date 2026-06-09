@@ -23,6 +23,7 @@ type statusData struct {
 	AttemptNumber   int     `json:"attempt_number"`
 	ExperimentName  *string `json:"experiment_name"`
 	DashboardURL    string  `json:"dashboard_url"`
+	MLflowURL       *string `json:"mlflow_url"`
 
 	// Duration is the human-readable form of DurationSeconds, e.g. "12m 3s".
 	Duration string `json:"-"`
@@ -46,6 +47,9 @@ Experiment:   {{.Data.ExperimentName}}
 {{- end}}
 {{- if .Data.Accelerators}}
 Accelerators: {{.Data.Accelerators}}
+{{- end}}
+{{- if .Data.MLflowURL}}
+MLflow:       {{.Data.MLflowURL}}
 {{- end}}
 Dashboard:    {{.Data.DashboardURL}}
 `
@@ -80,7 +84,9 @@ func newStatusCommand() *cobra.Command {
 			return fmt.Errorf("failed to get status for run %d: %w", runID, err)
 		}
 
-		return renderEnvelope(ctx, buildStatusData(run))
+		data := buildStatusData(run)
+		data.MLflowURL = mlflowURL(ctx, w, run)
+		return renderEnvelope(ctx, data)
 	}
 
 	return cmd
