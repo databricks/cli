@@ -26,8 +26,13 @@ const (
 	itemFunctionCallOutput = "function_call_output"
 )
 
-// itemStatusCompleted is the item status carried by fully populated items.
-const itemStatusCompleted = "completed"
+// Item status constants. An in_progress item can carry partial content that
+// its later .done event completes; an empty status is treated as complete
+// because some items (e.g. function_call .added events) omit the field.
+const (
+	itemStatusCompleted  = "completed"
+	itemStatusInProgress = "in_progress"
+)
 
 // UI type metadata constants.
 const (
@@ -51,6 +56,24 @@ const (
 	toolAskUserQuestions    = "ask_user_questions"
 )
 
+// sseAdapter tracks per-stream state: parsed SQL results, which item IDs have
+// already been handled (.added and .done can both arrive for one item), and
+// visualizations waiting for their result data.
+type sseAdapter struct {
+	queryData  map[string]*agentstream.TableData // statement_id -> parsed table
+	processed  map[string]bool                   // item ID -> already handled
+	pendingViz []pendingViz                      // viz specs seen before their data
+}
+
+// pendingViz is a visualization whose QUERY_EXECUTION data has not arrived
+// yet, keyed by the statement IDs it joins on.
+type pendingViz struct {
+	spec   *agentstream.VizSpec
+	sqlID  string
+	stmtID string
+	raw    string
+}
+
 // NewAdaptSSE creates a stateful adapter that tracks SQL query results
 // and emits EventViz events when visualizations are encountered.
 //
@@ -59,27 +82,30 @@ const (
 // silently is how a metadata type change once made this command print
 // nothing and exit 0.
 func NewAdaptSSE() agentstream.AdapterFunc {
-	queryData := make(map[string]*agentstream.TableData) // statement_id -> parsed table
-	processed := make(map[string]bool)                   // item ID -> already handled
+	a := &sseAdapter{
+		queryData: make(map[string]*agentstream.TableData),
+		processed: make(map[string]bool),
+	}
+	return a.adapt
+}
 
-	return func(data string) []agentstream.StreamEvent {
-		b := []byte(data)
+func (a *sseAdapter) adapt(data string) []agentstream.StreamEvent {
+	b := []byte(data)
 
-		var envelope SSEEventEnvelope
-		if err := json.Unmarshal(b, &envelope); err != nil {
-			return unparsed(data)
-		}
+	var envelope SSEEventEnvelope
+	if err := json.Unmarshal(b, &envelope); err != nil {
+		return unparsed(data)
+	}
 
-		switch envelope.Type {
-		case eventError:
-			return adaptError(b, data)
-		case eventResponseDone, eventResponseComplete:
-			return adaptResponseDone(b, data)
-		case eventOutputItemAdded, eventOutputItemDone:
-			return adaptOutputItemStateful(b, data, queryData, processed)
-		default:
-			return nil
-		}
+	switch envelope.Type {
+	case eventError:
+		return adaptError(b, data)
+	case eventResponseDone, eventResponseComplete:
+		return adaptResponseDone(b, data)
+	case eventOutputItemAdded, eventOutputItemDone:
+		return a.adaptOutputItem(b, data)
+	default:
+		return nil
 	}
 }
 
@@ -145,6 +171,12 @@ func adaptOutputItemValue(item OutputItem, raw string) []agentstream.StreamEvent
 // but two carry user-facing output that would otherwise be lost: the final
 // answer (output_final_response) and clarification prompts (ask_user_questions).
 func adaptFunctionCall(item OutputItem, raw string) []agentstream.StreamEvent {
+	// An in_progress item can carry partial arguments that its .done event
+	// completes; emitting it would mark the item processed and dedupe away
+	// the complete version.
+	if item.Status == itemStatusInProgress {
+		return nil
+	}
 	switch item.Name {
 	case toolOutputFinalResponse:
 		text := finalResponseText(item.Arguments)
@@ -245,8 +277,8 @@ type itemTypeEnvelope struct {
 	} `json:"item"`
 }
 
-// adaptOutputItemStateful handles output items with query result tracking.
-func adaptOutputItemStateful(b []byte, raw string, queryData map[string]*agentstream.TableData, processed map[string]bool) []agentstream.StreamEvent {
+// adaptOutputItem handles output items with query result tracking.
+func (a *sseAdapter) adaptOutputItem(b []byte, raw string) []agentstream.StreamEvent {
 	// First pass: detect item type without parsing metadata.
 	var typeCheck itemTypeEnvelope
 	if err := json.Unmarshal(b, &typeCheck); err != nil {
@@ -256,20 +288,20 @@ func adaptOutputItemStateful(b []byte, raw string, queryData map[string]*agentst
 	switch typeCheck.Item.Type {
 	case itemFunctionCallOutput:
 		// Parse with funcCallOutputEvent which handles non-string metadata.
-		return adaptFuncCallOutput(b, raw, queryData, processed)
+		return a.adaptFuncCallOutput(b, raw)
 	default:
 		var event SSEOutputItemEvent
 		if err := json.Unmarshal(b, &event); err != nil {
 			return unparsed(raw)
 		}
 		if event.Item.ID != "" {
-			if processed[event.Item.ID] {
+			if a.processed[event.Item.ID] {
 				return nil
 			}
 		}
 		events := adaptOutputItemValue(event.Item, raw)
 		if len(events) > 0 && event.Item.ID != "" {
-			processed[event.Item.ID] = true
+			a.processed[event.Item.ID] = true
 		}
 		return events
 	}
@@ -277,7 +309,7 @@ func adaptOutputItemStateful(b []byte, raw string, queryData map[string]*agentst
 
 // adaptFuncCallOutput processes function_call_output items.
 // It stores SQL query results and emits EventViz for visualizations.
-func adaptFuncCallOutput(b []byte, raw string, queryData map[string]*agentstream.TableData, processed map[string]bool) []agentstream.StreamEvent {
+func (a *sseAdapter) adaptFuncCallOutput(b []byte, raw string) []agentstream.StreamEvent {
 	var event funcCallOutputEvent
 	if err := json.Unmarshal(b, &event); err != nil {
 		return unparsed(raw)
@@ -288,23 +320,23 @@ func adaptFuncCallOutput(b []byte, raw string, queryData map[string]*agentstream
 		return nil
 	}
 
-	if item.ID != "" {
-		if processed[item.ID] {
-			return nil
-		}
+	if item.ID != "" && a.processed[item.ID] {
+		return nil
 	}
 
 	meta := item.Metadata
 
-	// SQL query result: store the preview rows so a later viz can join to them.
+	// SQL query result: store the preview rows so a viz can join to them.
 	if meta.UIType == uiTypeQueryExec && meta.StatementID != "" {
-		if td := tableDataFromResult(meta.ResultData); td != nil {
-			queryData[meta.StatementID] = td
-			if item.ID != "" {
-				processed[item.ID] = true
-			}
+		td := tableDataFromResult(meta.ResultData)
+		if td == nil {
+			return nil
 		}
-		return nil
+		a.queryData[meta.StatementID] = td
+		if item.ID != "" {
+			a.processed[item.ID] = true
+		}
+		return a.flushPendingViz(meta.StatementID)
 	}
 
 	// Visualization: build a VizEvent from the viz_definition spec + stored data.
@@ -314,33 +346,60 @@ func adaptFuncCallOutput(b []byte, raw string, queryData map[string]*agentstream
 			return nil
 		}
 
-		// Look up query data by sql_id (which matches the SQL output's statement_id).
-		var data *agentstream.TableData
-		if meta.SQLID != "" {
-			data = queryData[meta.SQLID]
-		}
-		if data == nil && meta.StatementID != "" {
-			data = queryData[meta.StatementID]
-		}
-		if data == nil {
-			return nil
-		}
-
 		if item.ID != "" {
-			processed[item.ID] = true
+			a.processed[item.ID] = true
 		}
 
-		return []agentstream.StreamEvent{{
-			Kind: agentstream.EventViz,
-			Viz: &agentstream.VizEvent{
-				Spec: spec,
-				Data: data,
-			},
-			Raw: raw,
-		}}
+		// Look up query data by sql_id (which matches the SQL output's statement_id).
+		if data := a.lookupQueryData(meta.SQLID, meta.StatementID); data != nil {
+			return []agentstream.StreamEvent{vizEvent(spec, data, raw)}
+		}
+
+		// Items normally complete in causal order (the query before the viz
+		// built from it), but a viz observed first is buffered rather than
+		// silently lost.
+		a.pendingViz = append(a.pendingViz, pendingViz{spec: spec, sqlID: meta.SQLID, stmtID: meta.StatementID, raw: raw})
+		return nil
 	}
 
 	return nil
+}
+
+// lookupQueryData resolves the result table a viz joins to. sql_id is the
+// primary key; statement_id appears on some payload variants.
+func (a *sseAdapter) lookupQueryData(sqlID, stmtID string) *agentstream.TableData {
+	if sqlID != "" {
+		if td := a.queryData[sqlID]; td != nil {
+			return td
+		}
+	}
+	if stmtID != "" {
+		return a.queryData[stmtID]
+	}
+	return nil
+}
+
+// flushPendingViz emits buffered visualizations whose data just arrived.
+func (a *sseAdapter) flushPendingViz(stmtID string) []agentstream.StreamEvent {
+	var events []agentstream.StreamEvent
+	var remaining []pendingViz
+	for _, p := range a.pendingViz {
+		if p.sqlID == stmtID || p.stmtID == stmtID {
+			events = append(events, vizEvent(p.spec, a.queryData[stmtID], p.raw))
+			continue
+		}
+		remaining = append(remaining, p)
+	}
+	a.pendingViz = remaining
+	return events
+}
+
+func vizEvent(spec *agentstream.VizSpec, data *agentstream.TableData, raw string) agentstream.StreamEvent {
+	return agentstream.StreamEvent{
+		Kind: agentstream.EventViz,
+		Viz:  &agentstream.VizEvent{Spec: spec, Data: data},
+		Raw:  raw,
+	}
 }
 
 // tableDataFromResult converts QUERY_EXECUTION result_data (columns plus
@@ -444,6 +503,13 @@ func encodingFields(e *heliosEncoding) []string {
 
 func adaptMessage(item OutputItem, raw string) []agentstream.StreamEvent {
 	if item.Role != roleAssistant {
+		return nil
+	}
+
+	// An in_progress message can carry partial text that its .done event
+	// completes; emitting it would mark the item processed and dedupe away
+	// the complete version.
+	if item.Status == itemStatusInProgress {
 		return nil
 	}
 

@@ -208,6 +208,21 @@ func TestRenderText_FinalResponseDuplicateSuppressed(t *testing.T) {
 	assert.Equal(t, 1, strings.Count(stdout.String(), "The answer is 42."))
 }
 
+func TestRenderText_VizOnlyMessageIsNotAnAnswer(t *testing.T) {
+	// A message consisting solely of a viz reference renders no visible text.
+	// If the chart never materializes either, the stream produced nothing and
+	// must fail rather than exit 0.
+	adapt := testAdapter(map[string][]StreamEvent{
+		"message": {{Kind: EventText, Text: "![Chart](#viz_1)"}},
+		"done":    {{Kind: EventDone, Status: "completed"}},
+	})
+	input := fakeSSE("message", "done")
+	var stdout, stderr bytes.Buffer
+	err := RenderText(testCtx(t), strings.NewReader(input), &stdout, &stderr, adapt, RenderOptions{})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "without an answer")
+}
+
 func TestRenderText_NoAnswerFails(t *testing.T) {
 	adapt := testAdapter(map[string][]StreamEvent{
 		"thinking": {{Kind: EventThinking, Text: "Thinking..."}},

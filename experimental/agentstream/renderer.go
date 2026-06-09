@@ -96,9 +96,10 @@ func RenderText(ctx context.Context, r io.Reader, stdout, stderr io.Writer, adap
 				updateStatus(se.Text)
 			case EventText:
 				stopStatus()
-				renderMarkdown(stdout, se.Text)
-				rendered.WriteString(se.Text)
-				rendered.WriteString("\n")
+				if c := renderMarkdown(stdout, se.Text); c != "" {
+					rendered.WriteString(c)
+					rendered.WriteString("\n")
+				}
 			case EventFinalResponse:
 				// Buffer the tool-delivered answer; render it after the stream
 				// only if no assistant message already showed the answer.
@@ -129,9 +130,10 @@ func RenderText(ctx context.Context, r io.Reader, stdout, stderr io.Writer, adap
 	// Render the tool-delivered answer unless an assistant message already
 	// contained it. Intermediate messages ("Let me check the table first.")
 	// must not suppress the actual answer, so this checks content, not just
-	// whether any text was rendered.
+	// whether any text was rendered. Both sides are compared post-cleanup so
+	// a viz reference in one of them cannot defeat the dedupe.
 	answered := rendered.Len() > 0
-	if final := strings.TrimSpace(finalResponse); final != "" && !strings.Contains(rendered.String(), final) {
+	if final := strings.TrimSpace(cleanMarkdown(finalResponse)); final != "" && !strings.Contains(rendered.String(), final) {
 		renderMarkdown(stdout, finalResponse)
 		answered = true
 	}
@@ -229,8 +231,10 @@ loop:
 	}
 
 	// Mirror the text renderer: append the tool-delivered answer unless the
-	// message text already contains it.
-	if final := strings.TrimSpace(finalResponse); final != "" && !strings.Contains(result.Text, final) {
+	// message text already contains it. The comparison is post-cleanup so a
+	// viz reference in one of them cannot defeat the dedupe; the JSON itself
+	// keeps the raw markdown.
+	if final := strings.TrimSpace(cleanMarkdown(finalResponse)); final != "" && !strings.Contains(cleanMarkdown(result.Text), final) {
 		if result.Text != "" {
 			result.Text += "\n\n"
 		}

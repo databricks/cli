@@ -158,11 +158,12 @@ func renderBarChart(w io.Writer, spec *VizSpec, data *TableData, series []dataSe
 	// Cap label width to prevent squishing the bars.
 	maxLabel = min(maxLabel, maxLabelRunes)
 
-	// Find max value across all series.
+	// Bars scale by absolute value so negative aggregates remain visible;
+	// the signed number beside each bar carries the direction.
 	var maxVal float64
 	for _, s := range series {
 		for _, v := range s.Values {
-			maxVal = math.Max(maxVal, v)
+			maxVal = math.Max(maxVal, math.Abs(v))
 		}
 	}
 	if maxVal == 0 {
@@ -210,10 +211,7 @@ func renderBarChart(w io.Writer, spec *VizSpec, data *TableData, series []dataSe
 
 			// Bar with sub-character precision.
 			color := st.series[si%len(st.series)]
-			exact := v / maxVal * float64(barWidth)
-			if exact < 0 {
-				exact = 0
-			}
+			exact := math.Abs(v) / maxVal * float64(barWidth)
 			full := int(exact)
 			frac := exact - float64(full)
 			partial := int(frac * 8)

@@ -220,6 +220,49 @@ func TestAdaptSSE_QueryExecutionCanArriveAfterIncompleteOutput(t *testing.T) {
 	assert.Equal(t, []string{"Alpha", "100"}, events[0].Viz.Data.Rows[0])
 }
 
+func TestNewAdaptSSE_VizBeforeQueryData(t *testing.T) {
+	adapt := NewAdaptSSE()
+
+	// The viz arrives before the query data it joins to: it must be buffered
+	// and emitted when the data shows up, not silently lost.
+	viz := `{"type":"response.output_item.done","item":{"type":"function_call_output","id":"o2","call_id":"c2","status":"completed","metadata":{"ui_type":"VIZ","sql_id":"stmt1","embed_id":"v1","viz_definition":"{\"renderSpec\":{\"widgetType\":\"bar\",\"frame\":{\"title\":\"T\"},\"encodings\":{\"x\":{\"fieldName\":\"name\"},\"y\":{\"fieldName\":\"total\"}}}}"}}}`
+	assert.Empty(t, adapt(viz))
+
+	qe := `{"type":"response.output_item.done","item":{"type":"function_call_output","id":"o1","call_id":"c1","status":"completed","metadata":{"ui_type":"QUERY_EXECUTION","statement_id":"stmt1","result_data":{"columns":[{"name":"name"},{"name":"total"}],"preview_rows":[["Alpha","100"]]}}}}`
+	events := adapt(qe)
+	require.Len(t, events, 1)
+	assert.Equal(t, agentstream.EventViz, events[0].Kind)
+	require.NotNil(t, events[0].Viz.Data)
+	assert.Equal(t, []string{"Alpha", "100"}, events[0].Viz.Data.Rows[0])
+}
+
+func TestNewAdaptSSE_InProgressMessageNotDedupedPrematurely(t *testing.T) {
+	adapt := NewAdaptSSE()
+
+	// A partial in_progress message must not be emitted (and must not mark
+	// the item processed), or the complete .done version would be deduped.
+	added := `{"type":"response.output_item.added","output_index":0,"item":{"type":"message","id":"m9","role":"assistant","status":"in_progress","content":[{"type":"output_text","text":"Partial an","annotations":[]}]}}`
+	assert.Empty(t, adapt(added))
+
+	done := `{"type":"response.output_item.done","output_index":0,"item":{"type":"message","id":"m9","role":"assistant","status":"completed","content":[{"type":"output_text","text":"Partial answer completed.","annotations":[]}]}}`
+	events := adapt(done)
+	require.Len(t, events, 1)
+	assert.Equal(t, "Partial answer completed.", events[0].Text)
+}
+
+func TestNewAdaptSSE_InProgressFunctionCallNotDedupedPrematurely(t *testing.T) {
+	adapt := NewAdaptSSE()
+
+	added := `{"type":"response.output_item.added","output_index":0,"item":{"type":"function_call","id":"f9","call_id":"c9","status":"in_progress","name":"execute_sql","arguments":"{\"sql\":\"SELECT"}}`
+	assert.Empty(t, adapt(added))
+
+	done := `{"type":"response.output_item.done","output_index":0,"item":{"type":"function_call","id":"f9","call_id":"c9","status":"completed","name":"execute_sql","arguments":"{\"sql\":\"SELECT 1\",\"title\":\"One\"}"}}`
+	events := adapt(done)
+	require.Len(t, events, 1)
+	assert.Equal(t, agentstream.EventToolCall, events[0].Kind)
+	assert.Contains(t, events[0].ToolCall.Arguments, "SELECT 1")
+}
+
 func TestAdaptSSE_VizWithoutDefinitionIgnored(t *testing.T) {
 	adapt := NewAdaptSSE()
 	viz := `{"type":"response.output_item.done","item":{"type":"function_call_output","id":"o3","call_id":"c3","status":"completed","metadata":{"ui_type":"VIZ","embed_id":"v2"}}}`

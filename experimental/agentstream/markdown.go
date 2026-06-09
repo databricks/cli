@@ -17,9 +17,8 @@ var vizEmbedBlockRe = regexp.MustCompile(`(?s)<!-- begin-embedded:viz_\w+ -->.*?
 // vizImageRe matches standalone ![title](#viz_xxx) image references.
 var vizImageRe = regexp.MustCompile(`!\[[^\]]*\]\(#viz_\w+\)\n?`)
 
-// renderMarkdown strips Genie embedded blocks and viz image references before
-// printing the remaining markdown as plain text.
-func renderMarkdown(w io.Writer, text string) {
+// cleanMarkdown strips Genie embedded blocks and viz image references.
+func cleanMarkdown(text string) string {
 	// Remove viz embedded blocks entirely (rendered as terminal charts).
 	cleaned := vizEmbedBlockRe.ReplaceAllString(text, "")
 
@@ -31,7 +30,17 @@ func renderMarkdown(w io.Writer, text string) {
 
 	// Removed viz blocks can leave a pile of trailing newlines behind;
 	// Fprintln supplies the one that should remain.
-	cleaned = strings.TrimRight(cleaned, "\n")
+	return strings.TrimRight(cleaned, "\n")
+}
 
+// renderMarkdown prints cleaned markdown as plain text and returns what was
+// printed. A message can consist solely of viz references and produce no
+// visible output; callers must not count that as an answer.
+func renderMarkdown(w io.Writer, text string) string {
+	cleaned := cleanMarkdown(text)
+	if strings.TrimSpace(cleaned) == "" {
+		return ""
+	}
 	fmt.Fprintln(w, cleaned)
+	return cleaned
 }

@@ -54,6 +54,18 @@ func TestRenderChart_UnparseableRowsDropped(t *testing.T) {
 	assert.NotContains(t, out, "Beta", "a row that cannot be plotted must not show as a zero bar")
 }
 
+func TestRenderChart_NegativeValues(t *testing.T) {
+	var buf bytes.Buffer
+	ok := RenderChart(&buf, barViz([][]string{{"Alpha", "-100"}, {"Beta", "-640"}}), 80, false)
+	require.True(t, ok)
+
+	out := buf.String()
+	// Bars scale by absolute value; the signed numbers carry direction.
+	assert.Contains(t, out, "█")
+	assert.Contains(t, out, "-100")
+	assert.Contains(t, out, "-640")
+}
+
 func TestRenderChart_NothingPlottable(t *testing.T) {
 	var buf bytes.Buffer
 	assert.False(t, RenderChart(&buf, barViz([][]string{{"Alpha", "N/A"}}), 80, false))
