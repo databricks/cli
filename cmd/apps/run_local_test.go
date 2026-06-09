@@ -16,7 +16,6 @@ import (
 )
 
 func TestSetupProxyPortInUse(t *testing.T) {
-	// Occupy a port so that the proxy fails to bind to it.
 	ln, err := net.Listen("tcp", "localhost:0")
 	require.NoError(t, err)
 	defer ln.Close()
@@ -46,8 +45,7 @@ func TestKillAppProcess(t *testing.T) {
 
 	killAppProcess(appCmd)
 
-	// A non-nil ProcessState proves the process was reaped; a non-success exit
-	// proves it was killed while still running rather than finishing on its own.
+	// A non-nil ProcessState proves the process was reaped; a non-success exit proves it was killed.
 	require.NotNil(t, appCmd.ProcessState)
 	require.False(t, appCmd.ProcessState.Success())
 }

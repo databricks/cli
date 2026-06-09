@@ -34,8 +34,6 @@ func New(ctx context.Context, targetURL string) (*Proxy, error) {
 }
 
 // Listen binds the proxy to the given address (host:port, e.g. localhost:8080).
-// It is separate from Serve so callers can fail fast on bind errors (e.g. the
-// port is already taken) before serving in the background.
 func (p *Proxy) Listen(addr string) (net.Listener, error) {
 	return net.Listen("tcp", addr)
 }
