@@ -7,6 +7,7 @@
 
 ### CLI
 * Added the `databricks quickstart` command, a short introduction to the CLI that prints a human-friendly guide interactively and an agent-oriented version when run non-interactively ([#5464](https://github.com/databricks/cli/pull/5464)).
+* Improved error messages when workspace commands are run against a Databricks account console host ([#5506](https://github.com/databricks/cli/pull/5506)).
 
 ### Bundles
 * Set the default `data_security_mode` to `DATA_SECURITY_MODE_AUTO` in bundle templates ([#5452](https://github.com/databricks/cli/pull/5452)).
