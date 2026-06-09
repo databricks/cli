@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/databricks/databricks-sdk-go/listing"
 	sdkbundle "github.com/databricks/databricks-sdk-go/service/bundle"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -19,12 +20,14 @@ type fakeBundleClient struct {
 	versions  []sdkbundle.Version
 }
 
-func (c *fakeBundleClient) ListResourcesAll(context.Context, sdkbundle.ListResourcesRequest) ([]sdkbundle.Resource, error) {
-	return c.resources, nil
+func (c *fakeBundleClient) ListResources(context.Context, sdkbundle.ListResourcesRequest) listing.Iterator[sdkbundle.Resource] {
+	it := listing.SliceIterator[sdkbundle.Resource](c.resources)
+	return &it
 }
 
-func (c *fakeBundleClient) ListVersionsAll(context.Context, sdkbundle.ListVersionsRequest) ([]sdkbundle.Version, error) {
-	return c.versions, nil
+func (c *fakeBundleClient) ListVersions(context.Context, sdkbundle.ListVersionsRequest) listing.Iterator[sdkbundle.Version] {
+	it := listing.SliceIterator[sdkbundle.Version](c.versions)
+	return &it
 }
 
 func raw(s string) *json.RawMessage {
@@ -93,14 +96,16 @@ func TestOpenWithDMS(t *testing.T) {
 
 	t.Run("nothing deployed yet: empty lineage never consults DMS", func(t *testing.T) {
 		path := writeStateFile(t, "", nil)
-		// A client that would panic if called proves DMS is skipped when there is
-		// no lineage to look up.
-		client := &fakeBundleClient{versions: []sdkbundle.Version{succeeded()}}
+		// The client reports a successful version and resources; if Open consulted
+		// DMS despite the missing lineage, the resource below would appear in state.
+		client := &fakeBundleClient{resources: dmsResources, versions: []sdkbundle.Version{succeeded()}}
 
 		var db DeploymentState
 		require.NoError(t, db.Open(t.Context(), path, WithRecovery(true), WithWrite(false), client))
 
 		assert.Empty(t, db.Data.Lineage)
+		_, fromDMS := db.GetResourceEntry("resources.jobs.foo")
+		assert.False(t, fromDMS)
 	})
 
 	t.Run("nil client: file-based state only", func(t *testing.T) {

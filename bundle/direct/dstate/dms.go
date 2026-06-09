@@ -43,19 +43,22 @@ func (db *DeploymentState) overlayDMSState(ctx context.Context, client sdkbundle
 // did not complete successfully, DMS state is absent or partial and Open keeps
 // the local file's resources instead.
 func deploymentHasSuccessfulVersion(ctx context.Context, client sdkbundle.BundleInterface, deploymentID string) (bool, error) {
-	versions, err := client.ListVersionsAll(ctx, sdkbundle.ListVersionsRequest{
+	// Versions are listed newest-first and fetched page by page, and we stop at
+	// the first successful one, so a deployment with a long version history does
+	// not require reading the whole list (typically just the first page).
+	it := client.ListVersions(ctx, sdkbundle.ListVersionsRequest{
 		Parent: "deployments/" + deploymentID,
 	})
-	if err != nil {
-		// A deployment that was never recorded to DMS is not an error here: it just
-		// means DMS is not (yet) the source of truth.
-		if errors.Is(err, apierr.ErrNotFound) {
-			return false, nil
+	for it.HasNext(ctx) {
+		v, err := it.Next(ctx)
+		if err != nil {
+			// A deployment that was never recorded to DMS is not an error here: it just
+			// means DMS is not (yet) the source of truth.
+			if errors.Is(err, apierr.ErrNotFound) {
+				return false, nil
+			}
+			return false, fmt.Errorf("listing versions from deployment metadata service: %w", err)
 		}
-		return false, fmt.Errorf("listing versions from deployment metadata service: %w", err)
-	}
-
-	for _, v := range versions {
 		if v.Status == sdkbundle.VersionStatusVersionStatusCompleted &&
 			v.CompletionReason == sdkbundle.VersionCompleteVersionCompleteSuccess {
 			return true, nil
@@ -67,15 +70,17 @@ func deploymentHasSuccessfulVersion(ctx context.Context, client sdkbundle.Bundle
 // fetchDeploymentResources lists every resource recorded for the deployment in
 // DMS and maps them into state entries keyed by the fully-qualified resource key.
 func fetchDeploymentResources(ctx context.Context, client sdkbundle.BundleInterface, deploymentID string) (map[string]ResourceEntry, error) {
-	resources, err := client.ListResourcesAll(ctx, sdkbundle.ListResourcesRequest{
+	it := client.ListResources(ctx, sdkbundle.ListResourcesRequest{
 		Parent: "deployments/" + deploymentID,
 	})
-	if err != nil {
-		return nil, fmt.Errorf("listing resources from deployment metadata service: %w", err)
-	}
 
-	out := make(map[string]ResourceEntry, len(resources))
-	for _, res := range resources {
+	out := make(map[string]ResourceEntry)
+	for it.HasNext(ctx) {
+		res, err := it.Next(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("listing resources from deployment metadata service: %w", err)
+		}
+
 		// DMS reports resource keys without the "resources." prefix (e.g.
 		// "jobs.foo"), but the state DB keys are fully qualified
 		// ("resources.jobs.foo"), so prepend it here.
