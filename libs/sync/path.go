@@ -24,7 +24,8 @@ func repoPathForPath(me *iam.User, remotePath string) string {
 
 // EnsureRemotePathIsUsable checks if the specified path is nested under
 // expected base paths and if it is a directory or repository.
-func EnsureRemotePathIsUsable(ctx context.Context, wsc *databricks.WorkspaceClient, remotePath string, me *iam.User) error {
+// If dryRun is set, a missing remote directory is not created.
+func EnsureRemotePathIsUsable(ctx context.Context, wsc *databricks.WorkspaceClient, remotePath string, me *iam.User, dryRun bool) error {
 	var err error
 
 	// TODO: we should cache CurrentUser.Me at the SDK level
@@ -53,6 +54,13 @@ func EnsureRemotePathIsUsable(ctx context.Context, wsc *databricks.WorkspaceClie
 			if err != nil && apierr.IsMissing(err) {
 				return fmt.Errorf("%s does not exist; please create it first", repoPath)
 			}
+		}
+
+		// A dry run must not modify the workspace, so skip creating the
+		// missing directory. There is nothing left to validate about a
+		// directory that doesn't exist yet.
+		if dryRun {
+			return nil
 		}
 
 		// The workspace path doesn't exist. Create it and try again.
