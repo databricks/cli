@@ -160,10 +160,8 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			remoteState, err := retryOnTransient(ctx, func() (any, error) {
 				return adapter.DoRead(ctx, id)
 			})
-			// If the resource is already gone remotely, keep the Delete entry:
-			// Delete() tolerates missing resources, and applying the entry removes
-			// it from the state. Dropping the entry here would leave the stale
-			// state entry behind forever.
+			// If the resource is already gone remotely, keep the Delete entry: Delete()
+			// tolerates missing resources and applying the entry removes it from the state.
 			if err != nil && !isResourceGone(err) {
 				log.Warnf(ctx, "reading %s id=%q: %s", resourceKey, id, err)
 				// This is not an error during deletion, so don't return false here

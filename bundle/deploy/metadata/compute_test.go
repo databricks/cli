@@ -149,8 +149,7 @@ func TestComputeMetadataMutator(t *testing.T) {
 }
 
 func TestComputeMetadataMutatorStateOnlyResources(t *testing.T) {
-	// Resources that exist in state but not in config (e.g. deleted remotely and
-	// removed from config) have no location. They must be skipped, not error.
+	// State-only resources (in state but not in config) have no location and must be skipped, not error.
 	b := &bundle.Bundle{
 		BundleRootPath: "/tmp/some/root",
 		Config: config.Root{

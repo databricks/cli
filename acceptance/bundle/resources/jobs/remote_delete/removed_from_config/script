@@ -5,9 +5,7 @@ trace $CLI jobs delete $job_id
 trace $CLI pipelines delete $pipeline_id
 
 title "Remove resources from config, plan and deploy"
-# The engines diverge here: direct plans a delete for the stale state entries and
-# removes them from state; terraform drops the gone resources from the plan but
-# keeps them in its state, so the summary below still lists them.
+# Engines diverge: direct plans deletes for the stale state entries; terraform keeps them in state, so its summary still lists them.
 cp empty.yml databricks.yml
 trace $CLI bundle plan &> out.plan_removed.$DATABRICKS_BUNDLE_ENGINE.txt
 trace $CLI bundle deploy --auto-approve &> out.deploy_removed.$DATABRICKS_BUNDLE_ENGINE.txt
