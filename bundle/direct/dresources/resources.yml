@@ -608,3 +608,6 @@ resources:
         reason: immutable
       - field: direct_access_index_spec
         reason: immutable
+    backend_defaults:
+      # The Vector Search API assigns index_subtype when the config omits it
+      - field: index_subtype
