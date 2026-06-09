@@ -7,8 +7,7 @@ import (
 
 func TestAcquireTeaProgramWaitsForRelease(t *testing.T) {
 	c := &cmdIO{}
-	// acquireTeaProgram only stores the pointer, so nil is enough to exercise
-	// the queueing without running a real tea.Program.
+	// acquireTeaProgram only stores the pointer, so a nil program suffices.
 	c.acquireTeaProgram(nil)
 
 	acquired := make(chan struct{})
@@ -17,16 +16,14 @@ func TestAcquireTeaProgramWaitsForRelease(t *testing.T) {
 		close(acquired)
 	}()
 
-	// The second acquire must queue behind the active program.
 	select {
 	case <-acquired:
 		t.Fatal("second acquireTeaProgram returned while the first program was still active")
 	case <-time.After(50 * time.Millisecond):
 	}
 
-	// Release on a separate goroutine: the original implementation deadlocked
-	// here because the waiter held teaMu while blocked on teaDone, which
-	// releaseTeaProgram needs to close it.
+	// Release on a goroutine so a regressed deadlock fails the timeout below
+	// instead of hanging the test.
 	go c.releaseTeaProgram()
 
 	select {

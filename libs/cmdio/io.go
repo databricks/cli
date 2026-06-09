@@ -156,11 +156,9 @@ func (c *cmdIO) acquireTeaProgram(p *tea.Program) {
 	defer c.teaMu.Unlock()
 
 	// Wait for existing program to finish
-	//
-	// The channel receive must happen with teaMu released: releaseTeaProgram
-	// locks teaMu to close teaDone, so waiting while holding the lock would
-	// deadlock both goroutines. Re-check in a loop because another acquirer
-	// may register a new program before this one reacquires the lock.
+	// Receive with teaMu released: releaseTeaProgram locks teaMu to close
+	// teaDone, so waiting while holding it would deadlock. Loop because another
+	// acquirer may register a new program before the lock is reacquired.
 	for c.teaDone != nil {
 		done := c.teaDone
 		c.teaMu.Unlock()
