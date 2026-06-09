@@ -53,18 +53,15 @@ func TestExecuteLargeStderrOutputDoesNotDeadlock(t *testing.T) {
 		Config: config.Root{
 			Experimental: &config.Experimental{
 				Scripts: map[config.ScriptHook]config.Command{
-					// Write well over the ~64KiB pipe buffer to stderr before
-					// touching stdout. With sequential draining (stdout to EOF
-					// first) the script blocks on the stderr write and never
-					// closes stdout, deadlocking the mutator.
+					// Overflows the ~64KiB stderr pipe buffer before stdout
+					// closes, which deadlocked the old sequential draining.
 					config.ScriptPreInit: "seq 100000 | tr -d '\\n' >&2; echo stdout-after-stderr",
 				},
 			},
 		},
 	}
 
-	// Bound the test so a reintroduced deadlock fails fast (the context kills
-	// the script) instead of hanging until the go test timeout.
+	// A reintroduced deadlock fails fast: the context timeout kills the script.
 	ctx, cancel := context.WithTimeout(t.Context(), time.Minute)
 	defer cancel()
 
@@ -75,7 +72,6 @@ func TestExecuteLargeStderrOutputDoesNotDeadlock(t *testing.T) {
 	output := stderr.String()
 	assert.Contains(t, output, "99999100000")
 	assert.Contains(t, output, "stdout-after-stderr")
-	// stderr is spooled and logged only after stdout reaches EOF, so the
-	// historical stdout-then-stderr output order is preserved.
+	// The script writes stderr first, but spooling preserves the stdout-then-stderr order.
 	assert.Less(t, strings.Index(output, "stdout-after-stderr"), strings.Index(output, "99999100000"))
 }

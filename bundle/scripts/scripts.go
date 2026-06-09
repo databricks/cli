@@ -51,12 +51,9 @@ func (m *script) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 
 	cmdio.LogString(ctx, fmt.Sprintf("Executing '%s' script", m.scriptHook))
 
-	// Spool stderr to memory while stdout is being streamed. Reading the two
-	// pipes sequentially (stdout to EOF, then stderr) deadlocks once the
-	// script writes more than the OS pipe buffer (~64KiB) to stderr while
-	// stdout is still open: the script blocks on the stderr write and never
-	// closes stdout. Spooling keeps stderr drained while preserving the
-	// stdout-then-stderr output order.
+	// Reading the pipes sequentially deadlocks once the script fills the ~64KiB
+	// stderr pipe buffer while stdout is still open, so drain stderr concurrently.
+	// Spooling it to memory preserves the stdout-then-stderr output order.
 	var stderr bytes.Buffer
 	stderrDone := make(chan struct{})
 	go func() {
@@ -76,8 +73,7 @@ func (m *script) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	return nil
 }
 
-// logOutput logs output line by line, including a final line without a
-// trailing newline.
+// logOutput logs output line by line, including a final line without a trailing newline.
 func logOutput(ctx context.Context, out io.Reader) {
 	reader := bufio.NewReader(out)
 	for {
