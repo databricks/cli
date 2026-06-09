@@ -2,7 +2,11 @@ package versioncheck
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io/fs"
+	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/databricks/cli/internal/build"
@@ -32,6 +36,19 @@ const (
 
 	// disableEnv is an explicit opt-out for the passive notice.
 	disableEnv = "DATABRICKS_CLI_DISABLE_UPDATE_CHECK"
+
+	// cacheDirEnv and cacheEnabledEnv mirror libs/cache's env knobs. We read
+	// them directly to place the single-flight lock alongside the cache and to
+	// skip the check entirely when caching is turned off.
+	cacheDirEnv     = "DATABRICKS_CACHE_DIR"
+	cacheEnabledEnv = "DATABRICKS_CACHE_ENABLED"
+
+	// refreshLockName is the single-flight sentinel: across many concurrent CLI
+	// processes only the one that creates it fetches, so a fleet starting at
+	// once sends at most one request to GitHub per machine. lockStaleAfter lets
+	// a later process reclaim it if the holder crashed mid-fetch.
+	refreshLockName = "databricks-cli-update-check.lock"
+	lockStaleAfter  = time.Minute
 )
 
 // StartBackgroundRefresh fetches the latest released version in the background
@@ -58,11 +75,59 @@ func StartBackgroundRefresh(ctx context.Context, cmd *cobra.Command) {
 }
 
 // refreshLatest fetches and caches the latest released version, but only when
-// the cached value is older than cacheTTL (or absent).
+// the cached value is older than cacheTTL (or absent), and only one process at
+// a time per machine performs the fetch.
 func refreshLatest(ctx context.Context) error {
 	c := cache.NewCache(ctx, cacheComponent, cacheTTL, nil)
+
+	// Common path: a fresh entry means no fetch and no lock churn.
+	if _, fresh := cache.Get[string](ctx, c, latestFingerprint); fresh {
+		return nil
+	}
+
+	// Single-flight across processes so a fleet of CLIs doesn't stampede GitHub.
+	release, ok := tryAcquireRefreshLock(ctx)
+	if !ok {
+		return nil
+	}
+	defer release()
+
+	// GetOrCompute re-checks freshness under the lock, so a process that lost
+	// the race reads the just-written value instead of fetching again.
 	_, err := cache.GetOrCompute(ctx, c, latestFingerprint, fetchLatestVersion)
 	return err
+}
+
+// tryAcquireRefreshLock claims a best-effort, machine-wide single-flight lock
+// via an O_EXCL sentinel file. It returns (release, true) when the caller may
+// fetch, or (nil, false) when another process holds a fresh lock or the lock
+// can't be created. A lock older than lockStaleAfter is treated as abandoned
+// (the holder crashed) and stolen. This is best-effort coordination to prevent
+// a thundering herd, not a correctness-critical lock; a dedicated flock library
+// would avoid the staleness heuristic but isn't a dependency here.
+func tryAcquireRefreshLock(ctx context.Context) (func(), bool) {
+	dir := env.Get(ctx, cacheDirEnv)
+	if dir == "" {
+		dir = os.TempDir()
+	}
+	lockPath := filepath.Join(dir, refreshLockName)
+
+	for range 2 {
+		f, err := os.OpenFile(lockPath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600)
+		if err == nil {
+			_ = f.Close()
+			return func() { _ = os.Remove(lockPath) }, true
+		}
+		if !errors.Is(err, fs.ErrExist) {
+			return nil, false
+		}
+		info, statErr := os.Stat(lockPath)
+		if statErr != nil || time.Since(info.ModTime()) <= lockStaleAfter {
+			return nil, false
+		}
+		_ = os.Remove(lockPath) // stale; steal it and retry once
+	}
+	return nil, false
 }
 
 // Notice returns a one-line "new version available" message to print after a
@@ -125,6 +190,11 @@ func suppressed(ctx context.Context, cmd *cobra.Command) bool {
 		return true
 	}
 	if disabled, ok := env.GetBool(ctx, disableEnv); ok && disabled {
+		return true
+	}
+	// The notice relies on the file cache; if it's disabled there is nothing to
+	// store or read, so don't fetch at all.
+	if enabled, ok := env.GetBool(ctx, cacheEnabledEnv); ok && !enabled {
 		return true
 	}
 	// Honor the common CI convention even when a pseudo-TTY is allocated.

@@ -75,17 +75,19 @@ func TestSuppressed(t *testing.T) {
 		buildVersion string
 		ci           string
 		disable      string
+		cacheEnabled string
 		interactive  bool
 		cmd          *cobra.Command
 		want         bool
 	}{
-		{"interactive release build", "0.240.0", "false", "false", true, regularCmd(""), false},
-		{"development build", "0.0.0-dev+abc", "false", "false", true, regularCmd(""), true},
-		{"opt-out env", "0.240.0", "false", "true", true, regularCmd(""), true},
-		{"CI env", "0.240.0", "true", "false", true, regularCmd(""), true},
-		{"non-interactive", "0.240.0", "false", "false", false, regularCmd(""), true},
-		{"json output", "0.240.0", "false", "false", true, regularCmd("json"), true},
-		{"exempt command", "0.240.0", "false", "false", true, &cobra.Command{Use: "version"}, true},
+		{"interactive release build", "0.240.0", "false", "false", "", true, regularCmd(""), false},
+		{"development build", "0.0.0-dev+abc", "false", "false", "", true, regularCmd(""), true},
+		{"opt-out env", "0.240.0", "false", "true", "", true, regularCmd(""), true},
+		{"CI env", "0.240.0", "true", "false", "", true, regularCmd(""), true},
+		{"cache disabled", "0.240.0", "false", "false", "false", true, regularCmd(""), true},
+		{"non-interactive", "0.240.0", "false", "false", "", false, regularCmd(""), true},
+		{"json output", "0.240.0", "false", "false", "", true, regularCmd("json"), true},
+		{"exempt command", "0.240.0", "false", "false", "", true, &cobra.Command{Use: "version"}, true},
 	}
 
 	for _, tt := range tests {
@@ -93,6 +95,9 @@ func TestSuppressed(t *testing.T) {
 			build.SetBuildVersion(tt.buildVersion)
 			t.Setenv("CI", tt.ci)
 			t.Setenv(disableEnv, tt.disable)
+			if tt.cacheEnabled != "" {
+				t.Setenv(cacheEnabledEnv, tt.cacheEnabled)
+			}
 
 			ctx := interactiveContext(t)
 			if !tt.interactive {
@@ -102,6 +107,25 @@ func TestSuppressed(t *testing.T) {
 			assert.Equal(t, tt.want, suppressed(ctx, tt.cmd))
 		})
 	}
+}
+
+func TestTryAcquireRefreshLock(t *testing.T) {
+	// Isolate the lock to this test's temp dir.
+	t.Setenv(cacheDirEnv, t.TempDir())
+	ctx := t.Context()
+
+	release, ok := tryAcquireRefreshLock(ctx)
+	require.True(t, ok)
+
+	// A second caller is locked out while the first holds the lock.
+	_, ok2 := tryAcquireRefreshLock(ctx)
+	assert.False(t, ok2)
+
+	// After release, the lock can be acquired again.
+	release()
+	release2, ok3 := tryAcquireRefreshLock(ctx)
+	require.True(t, ok3)
+	release2()
 }
 
 func TestNotice(t *testing.T) {
