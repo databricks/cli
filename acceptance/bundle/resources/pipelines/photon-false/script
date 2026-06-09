@@ -1,2 +1,0 @@
-trace $CLI bundle deploy
-print_requests.py //api/2.0/pipelines > out.requests.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1
