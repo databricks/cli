@@ -55,8 +55,7 @@ func (m *prependWorkspacePrefix) Apply(ctx context.Context, b *bundle.Bundle) di
 					}
 				}
 
-				// Use the visited value's locations, not the root's, so later
-				// diagnostics still point at the original line in the config.
+				// Use pv's locations, not the root v's, so diagnostics point at the original config line.
 				return dyn.NewValue("/Workspace"+path, pv.Locations()), nil
 			})
 			if err != nil {
