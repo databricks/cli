@@ -230,8 +230,7 @@ func TestJobRunnerRunNoWaitGetRunFails(t *testing.T) {
 		JobId: 123,
 	}).Return(&jobs.WaitGetRunJobTerminatedOrSkipped[jobs.RunNowResponse]{RunId: 456}, nil)
 
-	// The SDK returns (nil, err) on failure; Run must surface the error
-	// instead of dereferencing the nil run details.
+	// Run must surface the error instead of dereferencing the nil run details.
 	jobApi.EXPECT().GetRun(mock.Anything, jobs.GetRunRequest{
 		RunId: 456,
 	}).Return(nil, errors.New("transient error"))
