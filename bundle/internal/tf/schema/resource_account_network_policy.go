@@ -37,6 +37,146 @@ type ResourceAccountNetworkPolicyEgress struct {
 	NetworkAccess *ResourceAccountNetworkPolicyEgressNetworkAccess `json:"network_access,omitempty"`
 }
 
+type ResourceAccountNetworkPolicyIngressCrossWorkspaceAccessAllowRulesAuthenticationIdentities struct {
+	PrincipalId   int    `json:"principal_id,omitempty"`
+	PrincipalType string `json:"principal_type,omitempty"`
+}
+
+type ResourceAccountNetworkPolicyIngressCrossWorkspaceAccessAllowRulesAuthentication struct {
+	Identities   []ResourceAccountNetworkPolicyIngressCrossWorkspaceAccessAllowRulesAuthenticationIdentities `json:"identities,omitempty"`
+	IdentityType string                                                                                      `json:"identity_type,omitempty"`
+}
+
+type ResourceAccountNetworkPolicyIngressCrossWorkspaceAccessAllowRulesDestinationAccountApi struct {
+	ScopeQualifier string   `json:"scope_qualifier,omitempty"`
+	Scopes         []string `json:"scopes,omitempty"`
+}
+
+type ResourceAccountNetworkPolicyIngressCrossWorkspaceAccessAllowRulesDestinationAccountDatabricksOne struct {
+	AllDestinations bool `json:"all_destinations,omitempty"`
+}
+
+type ResourceAccountNetworkPolicyIngressCrossWorkspaceAccessAllowRulesDestinationAccountUi struct {
+	AllDestinations bool `json:"all_destinations,omitempty"`
+}
+
+type ResourceAccountNetworkPolicyIngressCrossWorkspaceAccessAllowRulesDestinationAppsRuntime struct {
+	AllDestinations bool `json:"all_destinations,omitempty"`
+}
+
+type ResourceAccountNetworkPolicyIngressCrossWorkspaceAccessAllowRulesDestinationLakebaseRuntime struct {
+	AllDestinations bool `json:"all_destinations,omitempty"`
+}
+
+type ResourceAccountNetworkPolicyIngressCrossWorkspaceAccessAllowRulesDestinationWorkspaceApi struct {
+	ScopeQualifier string   `json:"scope_qualifier,omitempty"`
+	Scopes         []string `json:"scopes,omitempty"`
+}
+
+type ResourceAccountNetworkPolicyIngressCrossWorkspaceAccessAllowRulesDestinationWorkspaceUi struct {
+	AllDestinations bool `json:"all_destinations,omitempty"`
+}
+
+type ResourceAccountNetworkPolicyIngressCrossWorkspaceAccessAllowRulesDestination struct {
+	AccountApi           *ResourceAccountNetworkPolicyIngressCrossWorkspaceAccessAllowRulesDestinationAccountApi           `json:"account_api,omitempty"`
+	AccountDatabricksOne *ResourceAccountNetworkPolicyIngressCrossWorkspaceAccessAllowRulesDestinationAccountDatabricksOne `json:"account_databricks_one,omitempty"`
+	AccountUi            *ResourceAccountNetworkPolicyIngressCrossWorkspaceAccessAllowRulesDestinationAccountUi            `json:"account_ui,omitempty"`
+	AllDestinations      bool                                                                                              `json:"all_destinations,omitempty"`
+	AppsRuntime          *ResourceAccountNetworkPolicyIngressCrossWorkspaceAccessAllowRulesDestinationAppsRuntime          `json:"apps_runtime,omitempty"`
+	LakebaseRuntime      *ResourceAccountNetworkPolicyIngressCrossWorkspaceAccessAllowRulesDestinationLakebaseRuntime      `json:"lakebase_runtime,omitempty"`
+	WorkspaceApi         *ResourceAccountNetworkPolicyIngressCrossWorkspaceAccessAllowRulesDestinationWorkspaceApi         `json:"workspace_api,omitempty"`
+	WorkspaceUi          *ResourceAccountNetworkPolicyIngressCrossWorkspaceAccessAllowRulesDestinationWorkspaceUi          `json:"workspace_ui,omitempty"`
+}
+
+type ResourceAccountNetworkPolicyIngressCrossWorkspaceAccessAllowRulesOriginSelectedWorkspaces struct {
+	WorkspaceIds []int `json:"workspace_ids,omitempty"`
+}
+
+type ResourceAccountNetworkPolicyIngressCrossWorkspaceAccessAllowRulesOrigin struct {
+	AllSourceWorkspaces bool                                                                                       `json:"all_source_workspaces,omitempty"`
+	SelectedWorkspaces  *ResourceAccountNetworkPolicyIngressCrossWorkspaceAccessAllowRulesOriginSelectedWorkspaces `json:"selected_workspaces,omitempty"`
+}
+
+type ResourceAccountNetworkPolicyIngressCrossWorkspaceAccessAllowRules struct {
+	Authentication *ResourceAccountNetworkPolicyIngressCrossWorkspaceAccessAllowRulesAuthentication `json:"authentication,omitempty"`
+	Destination    *ResourceAccountNetworkPolicyIngressCrossWorkspaceAccessAllowRulesDestination    `json:"destination,omitempty"`
+	Label          string                                                                           `json:"label,omitempty"`
+	Origin         *ResourceAccountNetworkPolicyIngressCrossWorkspaceAccessAllowRulesOrigin         `json:"origin,omitempty"`
+}
+
+type ResourceAccountNetworkPolicyIngressCrossWorkspaceAccessDenyRulesAuthenticationIdentities struct {
+	PrincipalId   int    `json:"principal_id,omitempty"`
+	PrincipalType string `json:"principal_type,omitempty"`
+}
+
+type ResourceAccountNetworkPolicyIngressCrossWorkspaceAccessDenyRulesAuthentication struct {
+	Identities   []ResourceAccountNetworkPolicyIngressCrossWorkspaceAccessDenyRulesAuthenticationIdentities `json:"identities,omitempty"`
+	IdentityType string                                                                                     `json:"identity_type,omitempty"`
+}
+
+type ResourceAccountNetworkPolicyIngressCrossWorkspaceAccessDenyRulesDestinationAccountApi struct {
+	ScopeQualifier string   `json:"scope_qualifier,omitempty"`
+	Scopes         []string `json:"scopes,omitempty"`
+}
+
+type ResourceAccountNetworkPolicyIngressCrossWorkspaceAccessDenyRulesDestinationAccountDatabricksOne struct {
+	AllDestinations bool `json:"all_destinations,omitempty"`
+}
+
+type ResourceAccountNetworkPolicyIngressCrossWorkspaceAccessDenyRulesDestinationAccountUi struct {
+	AllDestinations bool `json:"all_destinations,omitempty"`
+}
+
+type ResourceAccountNetworkPolicyIngressCrossWorkspaceAccessDenyRulesDestinationAppsRuntime struct {
+	AllDestinations bool `json:"all_destinations,omitempty"`
+}
+
+type ResourceAccountNetworkPolicyIngressCrossWorkspaceAccessDenyRulesDestinationLakebaseRuntime struct {
+	AllDestinations bool `json:"all_destinations,omitempty"`
+}
+
+type ResourceAccountNetworkPolicyIngressCrossWorkspaceAccessDenyRulesDestinationWorkspaceApi struct {
+	ScopeQualifier string   `json:"scope_qualifier,omitempty"`
+	Scopes         []string `json:"scopes,omitempty"`
+}
+
+type ResourceAccountNetworkPolicyIngressCrossWorkspaceAccessDenyRulesDestinationWorkspaceUi struct {
+	AllDestinations bool `json:"all_destinations,omitempty"`
+}
+
+type ResourceAccountNetworkPolicyIngressCrossWorkspaceAccessDenyRulesDestination struct {
+	AccountApi           *ResourceAccountNetworkPolicyIngressCrossWorkspaceAccessDenyRulesDestinationAccountApi           `json:"account_api,omitempty"`
+	AccountDatabricksOne *ResourceAccountNetworkPolicyIngressCrossWorkspaceAccessDenyRulesDestinationAccountDatabricksOne `json:"account_databricks_one,omitempty"`
+	AccountUi            *ResourceAccountNetworkPolicyIngressCrossWorkspaceAccessDenyRulesDestinationAccountUi            `json:"account_ui,omitempty"`
+	AllDestinations      bool                                                                                             `json:"all_destinations,omitempty"`
+	AppsRuntime          *ResourceAccountNetworkPolicyIngressCrossWorkspaceAccessDenyRulesDestinationAppsRuntime          `json:"apps_runtime,omitempty"`
+	LakebaseRuntime      *ResourceAccountNetworkPolicyIngressCrossWorkspaceAccessDenyRulesDestinationLakebaseRuntime      `json:"lakebase_runtime,omitempty"`
+	WorkspaceApi         *ResourceAccountNetworkPolicyIngressCrossWorkspaceAccessDenyRulesDestinationWorkspaceApi         `json:"workspace_api,omitempty"`
+	WorkspaceUi          *ResourceAccountNetworkPolicyIngressCrossWorkspaceAccessDenyRulesDestinationWorkspaceUi          `json:"workspace_ui,omitempty"`
+}
+
+type ResourceAccountNetworkPolicyIngressCrossWorkspaceAccessDenyRulesOriginSelectedWorkspaces struct {
+	WorkspaceIds []int `json:"workspace_ids,omitempty"`
+}
+
+type ResourceAccountNetworkPolicyIngressCrossWorkspaceAccessDenyRulesOrigin struct {
+	AllSourceWorkspaces bool                                                                                      `json:"all_source_workspaces,omitempty"`
+	SelectedWorkspaces  *ResourceAccountNetworkPolicyIngressCrossWorkspaceAccessDenyRulesOriginSelectedWorkspaces `json:"selected_workspaces,omitempty"`
+}
+
+type ResourceAccountNetworkPolicyIngressCrossWorkspaceAccessDenyRules struct {
+	Authentication *ResourceAccountNetworkPolicyIngressCrossWorkspaceAccessDenyRulesAuthentication `json:"authentication,omitempty"`
+	Destination    *ResourceAccountNetworkPolicyIngressCrossWorkspaceAccessDenyRulesDestination    `json:"destination,omitempty"`
+	Label          string                                                                          `json:"label,omitempty"`
+	Origin         *ResourceAccountNetworkPolicyIngressCrossWorkspaceAccessDenyRulesOrigin         `json:"origin,omitempty"`
+}
+
+type ResourceAccountNetworkPolicyIngressCrossWorkspaceAccess struct {
+	AllowRules      []ResourceAccountNetworkPolicyIngressCrossWorkspaceAccessAllowRules `json:"allow_rules,omitempty"`
+	DenyRules       []ResourceAccountNetworkPolicyIngressCrossWorkspaceAccessDenyRules  `json:"deny_rules,omitempty"`
+	RestrictionMode string                                                              `json:"restriction_mode"`
+}
+
 type ResourceAccountNetworkPolicyIngressPrivateAccessAllowRulesAuthenticationIdentities struct {
 	PrincipalId   int    `json:"principal_id,omitempty"`
 	PrincipalType string `json:"principal_type,omitempty"`
@@ -332,8 +472,149 @@ type ResourceAccountNetworkPolicyIngressPublicAccess struct {
 }
 
 type ResourceAccountNetworkPolicyIngress struct {
-	PrivateAccess *ResourceAccountNetworkPolicyIngressPrivateAccess `json:"private_access,omitempty"`
-	PublicAccess  *ResourceAccountNetworkPolicyIngressPublicAccess  `json:"public_access,omitempty"`
+	CrossWorkspaceAccess *ResourceAccountNetworkPolicyIngressCrossWorkspaceAccess `json:"cross_workspace_access,omitempty"`
+	PrivateAccess        *ResourceAccountNetworkPolicyIngressPrivateAccess        `json:"private_access,omitempty"`
+	PublicAccess         *ResourceAccountNetworkPolicyIngressPublicAccess         `json:"public_access,omitempty"`
+}
+
+type ResourceAccountNetworkPolicyIngressDryRunCrossWorkspaceAccessAllowRulesAuthenticationIdentities struct {
+	PrincipalId   int    `json:"principal_id,omitempty"`
+	PrincipalType string `json:"principal_type,omitempty"`
+}
+
+type ResourceAccountNetworkPolicyIngressDryRunCrossWorkspaceAccessAllowRulesAuthentication struct {
+	Identities   []ResourceAccountNetworkPolicyIngressDryRunCrossWorkspaceAccessAllowRulesAuthenticationIdentities `json:"identities,omitempty"`
+	IdentityType string                                                                                            `json:"identity_type,omitempty"`
+}
+
+type ResourceAccountNetworkPolicyIngressDryRunCrossWorkspaceAccessAllowRulesDestinationAccountApi struct {
+	ScopeQualifier string   `json:"scope_qualifier,omitempty"`
+	Scopes         []string `json:"scopes,omitempty"`
+}
+
+type ResourceAccountNetworkPolicyIngressDryRunCrossWorkspaceAccessAllowRulesDestinationAccountDatabricksOne struct {
+	AllDestinations bool `json:"all_destinations,omitempty"`
+}
+
+type ResourceAccountNetworkPolicyIngressDryRunCrossWorkspaceAccessAllowRulesDestinationAccountUi struct {
+	AllDestinations bool `json:"all_destinations,omitempty"`
+}
+
+type ResourceAccountNetworkPolicyIngressDryRunCrossWorkspaceAccessAllowRulesDestinationAppsRuntime struct {
+	AllDestinations bool `json:"all_destinations,omitempty"`
+}
+
+type ResourceAccountNetworkPolicyIngressDryRunCrossWorkspaceAccessAllowRulesDestinationLakebaseRuntime struct {
+	AllDestinations bool `json:"all_destinations,omitempty"`
+}
+
+type ResourceAccountNetworkPolicyIngressDryRunCrossWorkspaceAccessAllowRulesDestinationWorkspaceApi struct {
+	ScopeQualifier string   `json:"scope_qualifier,omitempty"`
+	Scopes         []string `json:"scopes,omitempty"`
+}
+
+type ResourceAccountNetworkPolicyIngressDryRunCrossWorkspaceAccessAllowRulesDestinationWorkspaceUi struct {
+	AllDestinations bool `json:"all_destinations,omitempty"`
+}
+
+type ResourceAccountNetworkPolicyIngressDryRunCrossWorkspaceAccessAllowRulesDestination struct {
+	AccountApi           *ResourceAccountNetworkPolicyIngressDryRunCrossWorkspaceAccessAllowRulesDestinationAccountApi           `json:"account_api,omitempty"`
+	AccountDatabricksOne *ResourceAccountNetworkPolicyIngressDryRunCrossWorkspaceAccessAllowRulesDestinationAccountDatabricksOne `json:"account_databricks_one,omitempty"`
+	AccountUi            *ResourceAccountNetworkPolicyIngressDryRunCrossWorkspaceAccessAllowRulesDestinationAccountUi            `json:"account_ui,omitempty"`
+	AllDestinations      bool                                                                                                    `json:"all_destinations,omitempty"`
+	AppsRuntime          *ResourceAccountNetworkPolicyIngressDryRunCrossWorkspaceAccessAllowRulesDestinationAppsRuntime          `json:"apps_runtime,omitempty"`
+	LakebaseRuntime      *ResourceAccountNetworkPolicyIngressDryRunCrossWorkspaceAccessAllowRulesDestinationLakebaseRuntime      `json:"lakebase_runtime,omitempty"`
+	WorkspaceApi         *ResourceAccountNetworkPolicyIngressDryRunCrossWorkspaceAccessAllowRulesDestinationWorkspaceApi         `json:"workspace_api,omitempty"`
+	WorkspaceUi          *ResourceAccountNetworkPolicyIngressDryRunCrossWorkspaceAccessAllowRulesDestinationWorkspaceUi          `json:"workspace_ui,omitempty"`
+}
+
+type ResourceAccountNetworkPolicyIngressDryRunCrossWorkspaceAccessAllowRulesOriginSelectedWorkspaces struct {
+	WorkspaceIds []int `json:"workspace_ids,omitempty"`
+}
+
+type ResourceAccountNetworkPolicyIngressDryRunCrossWorkspaceAccessAllowRulesOrigin struct {
+	AllSourceWorkspaces bool                                                                                             `json:"all_source_workspaces,omitempty"`
+	SelectedWorkspaces  *ResourceAccountNetworkPolicyIngressDryRunCrossWorkspaceAccessAllowRulesOriginSelectedWorkspaces `json:"selected_workspaces,omitempty"`
+}
+
+type ResourceAccountNetworkPolicyIngressDryRunCrossWorkspaceAccessAllowRules struct {
+	Authentication *ResourceAccountNetworkPolicyIngressDryRunCrossWorkspaceAccessAllowRulesAuthentication `json:"authentication,omitempty"`
+	Destination    *ResourceAccountNetworkPolicyIngressDryRunCrossWorkspaceAccessAllowRulesDestination    `json:"destination,omitempty"`
+	Label          string                                                                                 `json:"label,omitempty"`
+	Origin         *ResourceAccountNetworkPolicyIngressDryRunCrossWorkspaceAccessAllowRulesOrigin         `json:"origin,omitempty"`
+}
+
+type ResourceAccountNetworkPolicyIngressDryRunCrossWorkspaceAccessDenyRulesAuthenticationIdentities struct {
+	PrincipalId   int    `json:"principal_id,omitempty"`
+	PrincipalType string `json:"principal_type,omitempty"`
+}
+
+type ResourceAccountNetworkPolicyIngressDryRunCrossWorkspaceAccessDenyRulesAuthentication struct {
+	Identities   []ResourceAccountNetworkPolicyIngressDryRunCrossWorkspaceAccessDenyRulesAuthenticationIdentities `json:"identities,omitempty"`
+	IdentityType string                                                                                           `json:"identity_type,omitempty"`
+}
+
+type ResourceAccountNetworkPolicyIngressDryRunCrossWorkspaceAccessDenyRulesDestinationAccountApi struct {
+	ScopeQualifier string   `json:"scope_qualifier,omitempty"`
+	Scopes         []string `json:"scopes,omitempty"`
+}
+
+type ResourceAccountNetworkPolicyIngressDryRunCrossWorkspaceAccessDenyRulesDestinationAccountDatabricksOne struct {
+	AllDestinations bool `json:"all_destinations,omitempty"`
+}
+
+type ResourceAccountNetworkPolicyIngressDryRunCrossWorkspaceAccessDenyRulesDestinationAccountUi struct {
+	AllDestinations bool `json:"all_destinations,omitempty"`
+}
+
+type ResourceAccountNetworkPolicyIngressDryRunCrossWorkspaceAccessDenyRulesDestinationAppsRuntime struct {
+	AllDestinations bool `json:"all_destinations,omitempty"`
+}
+
+type ResourceAccountNetworkPolicyIngressDryRunCrossWorkspaceAccessDenyRulesDestinationLakebaseRuntime struct {
+	AllDestinations bool `json:"all_destinations,omitempty"`
+}
+
+type ResourceAccountNetworkPolicyIngressDryRunCrossWorkspaceAccessDenyRulesDestinationWorkspaceApi struct {
+	ScopeQualifier string   `json:"scope_qualifier,omitempty"`
+	Scopes         []string `json:"scopes,omitempty"`
+}
+
+type ResourceAccountNetworkPolicyIngressDryRunCrossWorkspaceAccessDenyRulesDestinationWorkspaceUi struct {
+	AllDestinations bool `json:"all_destinations,omitempty"`
+}
+
+type ResourceAccountNetworkPolicyIngressDryRunCrossWorkspaceAccessDenyRulesDestination struct {
+	AccountApi           *ResourceAccountNetworkPolicyIngressDryRunCrossWorkspaceAccessDenyRulesDestinationAccountApi           `json:"account_api,omitempty"`
+	AccountDatabricksOne *ResourceAccountNetworkPolicyIngressDryRunCrossWorkspaceAccessDenyRulesDestinationAccountDatabricksOne `json:"account_databricks_one,omitempty"`
+	AccountUi            *ResourceAccountNetworkPolicyIngressDryRunCrossWorkspaceAccessDenyRulesDestinationAccountUi            `json:"account_ui,omitempty"`
+	AllDestinations      bool                                                                                                   `json:"all_destinations,omitempty"`
+	AppsRuntime          *ResourceAccountNetworkPolicyIngressDryRunCrossWorkspaceAccessDenyRulesDestinationAppsRuntime          `json:"apps_runtime,omitempty"`
+	LakebaseRuntime      *ResourceAccountNetworkPolicyIngressDryRunCrossWorkspaceAccessDenyRulesDestinationLakebaseRuntime      `json:"lakebase_runtime,omitempty"`
+	WorkspaceApi         *ResourceAccountNetworkPolicyIngressDryRunCrossWorkspaceAccessDenyRulesDestinationWorkspaceApi         `json:"workspace_api,omitempty"`
+	WorkspaceUi          *ResourceAccountNetworkPolicyIngressDryRunCrossWorkspaceAccessDenyRulesDestinationWorkspaceUi          `json:"workspace_ui,omitempty"`
+}
+
+type ResourceAccountNetworkPolicyIngressDryRunCrossWorkspaceAccessDenyRulesOriginSelectedWorkspaces struct {
+	WorkspaceIds []int `json:"workspace_ids,omitempty"`
+}
+
+type ResourceAccountNetworkPolicyIngressDryRunCrossWorkspaceAccessDenyRulesOrigin struct {
+	AllSourceWorkspaces bool                                                                                            `json:"all_source_workspaces,omitempty"`
+	SelectedWorkspaces  *ResourceAccountNetworkPolicyIngressDryRunCrossWorkspaceAccessDenyRulesOriginSelectedWorkspaces `json:"selected_workspaces,omitempty"`
+}
+
+type ResourceAccountNetworkPolicyIngressDryRunCrossWorkspaceAccessDenyRules struct {
+	Authentication *ResourceAccountNetworkPolicyIngressDryRunCrossWorkspaceAccessDenyRulesAuthentication `json:"authentication,omitempty"`
+	Destination    *ResourceAccountNetworkPolicyIngressDryRunCrossWorkspaceAccessDenyRulesDestination    `json:"destination,omitempty"`
+	Label          string                                                                                `json:"label,omitempty"`
+	Origin         *ResourceAccountNetworkPolicyIngressDryRunCrossWorkspaceAccessDenyRulesOrigin         `json:"origin,omitempty"`
+}
+
+type ResourceAccountNetworkPolicyIngressDryRunCrossWorkspaceAccess struct {
+	AllowRules      []ResourceAccountNetworkPolicyIngressDryRunCrossWorkspaceAccessAllowRules `json:"allow_rules,omitempty"`
+	DenyRules       []ResourceAccountNetworkPolicyIngressDryRunCrossWorkspaceAccessDenyRules  `json:"deny_rules,omitempty"`
+	RestrictionMode string                                                                    `json:"restriction_mode"`
 }
 
 type ResourceAccountNetworkPolicyIngressDryRunPrivateAccessAllowRulesAuthenticationIdentities struct {
@@ -631,8 +912,9 @@ type ResourceAccountNetworkPolicyIngressDryRunPublicAccess struct {
 }
 
 type ResourceAccountNetworkPolicyIngressDryRun struct {
-	PrivateAccess *ResourceAccountNetworkPolicyIngressDryRunPrivateAccess `json:"private_access,omitempty"`
-	PublicAccess  *ResourceAccountNetworkPolicyIngressDryRunPublicAccess  `json:"public_access,omitempty"`
+	CrossWorkspaceAccess *ResourceAccountNetworkPolicyIngressDryRunCrossWorkspaceAccess `json:"cross_workspace_access,omitempty"`
+	PrivateAccess        *ResourceAccountNetworkPolicyIngressDryRunPrivateAccess        `json:"private_access,omitempty"`
+	PublicAccess         *ResourceAccountNetworkPolicyIngressDryRunPublicAccess         `json:"public_access,omitempty"`
 }
 
 type ResourceAccountNetworkPolicy struct {
