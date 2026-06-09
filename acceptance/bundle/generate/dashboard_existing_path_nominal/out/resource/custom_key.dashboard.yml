@@ -1,0 +1,6 @@
+resources:
+  dashboards:
+    custom_key:
+      display_name: "This is a test dashboard"
+      warehouse_id: w4r3h0us3
+      file_path: ../dashboard/custom_key.lvdash.json

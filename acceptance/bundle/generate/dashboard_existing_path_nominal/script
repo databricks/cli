@@ -1,2 +1,5 @@
 # Test generating dashboard from existing path
 trace $CLI bundle generate dashboard --existing-path /path/to/dashboard --dashboard-dir out/dashboard --resource-dir out/resource
+
+# Test that --key overrides the key derived from the display name
+trace $CLI bundle generate dashboard --existing-path /path/to/dashboard --key custom_key --dashboard-dir out/dashboard --resource-dir out/resource
