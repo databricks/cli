@@ -65,10 +65,9 @@ func stripFrontmatter(s string) string {
 		return strings.TrimRight(s, "\n")
 	}
 	rest := s[len(fence):]
-	end := strings.Index(rest, "\n"+fence)
-	if end == -1 {
+	_, body, found := strings.Cut(rest, "\n"+fence)
+	if !found {
 		return strings.TrimRight(s, "\n")
 	}
-	body := rest[end+len("\n"+fence):]
 	return strings.TrimRight(strings.TrimLeft(body, "\n"), "\n")
 }
