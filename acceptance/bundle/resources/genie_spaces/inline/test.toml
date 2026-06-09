@@ -1,4 +1,7 @@
 Local = true
+# Local-only: the inline serialized_space references tables (main.sales.orders)
+# that do not exist on a real workspace, so the backend rejects the create (403).
+Cloud = false
 RecordRequests = false
 
 Ignore = [

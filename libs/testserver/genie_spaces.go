@@ -20,6 +20,37 @@ func generateGenieSpaceId() (string, error) {
 	return hex.EncodeToString(randomBytes), nil
 }
 
+// canonicalizeGenieSerializedSpace mimics the backend's schema migration: a
+// serialized_space authored at version 1 is upgraded to version 2 (gaining an
+// empty data_sources object) when written. Observed on aws-prod-ucws (2026-06):
+// a create with {"version":1} reads back from GET as
+// {"version":2,"data_sources":{}}. The local config keeps version 1, so the
+// remote-vs-local serialized_space differs permanently; the resource relies on
+// ignore_remote_changes (etag_based) to avoid spurious drift. Reproducing the
+// migration here lets that handling be exercised against the mock server.
+func canonicalizeGenieSerializedSpace(serialized string) string {
+	if serialized == "" {
+		return serialized
+	}
+	var m map[string]any
+	if err := json.Unmarshal([]byte(serialized), &m); err != nil {
+		// Not a JSON object we recognize; store verbatim.
+		return serialized
+	}
+	if v, ok := m["version"].(float64); !ok || v != 1 {
+		return serialized
+	}
+	m["version"] = 2
+	if _, ok := m["data_sources"]; !ok {
+		m["data_sources"] = map[string]any{}
+	}
+	b, err := json.Marshal(m)
+	if err != nil {
+		return serialized
+	}
+	return string(b)
+}
+
 func (s *FakeWorkspace) GenieSpaceCreate(req Request) Response {
 	defer s.LockUnlock()()
 
@@ -61,7 +92,7 @@ func (s *FakeWorkspace) GenieSpaceCreate(req Request) Response {
 		Description:     createReq.Description,
 		ParentPath:      createReq.ParentPath,
 		WarehouseId:     createReq.WarehouseId,
-		SerializedSpace: createReq.SerializedSpace,
+		SerializedSpace: canonicalizeGenieSerializedSpace(createReq.SerializedSpace),
 		// Mirror libs/testserver/dashboards.go: initialize etag to a numeric
 		// string so each subsequent update can bump it monotonically.
 		Etag: "1",
@@ -159,7 +190,7 @@ func (s *FakeWorkspace) GenieSpaceUpdate(req Request) Response {
 		genieSpace.ParentPath = parentPath
 	}
 	if updateReq.SerializedSpace != "" {
-		genieSpace.SerializedSpace = updateReq.SerializedSpace
+		genieSpace.SerializedSpace = canonicalizeGenieSerializedSpace(updateReq.SerializedSpace)
 	}
 
 	// The backend bumps the etag only when serialized_space changes; updates to

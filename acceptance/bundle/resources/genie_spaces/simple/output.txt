@@ -9,10 +9,11 @@ Deployment complete!
 {
   "title": "Sales Analytics Genie",
   "description": "AI assistant for sales data analysis",
-  "warehouse_id": "test-warehouse-id"
+  "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
 }
 
->>> [CLI] bundle plan -o json
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

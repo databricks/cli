@@ -1,0 +1,78 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Permissions are set on the live space
+>>> [CLI] api get /api/2.0/permissions/genie/[GENIE_SPACE_ID]
+{
+  "object_type": "genie-space",
+  "access_control_list": [
+    {
+      "all_permissions": [
+        {
+          "inherited": false,
+          "permission_level": "CAN_MANAGE"
+        }
+      ],
+      "display_name": "[USERNAME]",
+      "user_name": "[USERNAME]"
+    },
+    {
+      "all_permissions": [
+        {
+          "inherited": false,
+          "permission_level": "CAN_READ"
+        }
+      ],
+      "group_name": "data-team"
+    }
+  ]
+}
+
+=== Trash the space out-of-band
+>>> [CLI] genie trash-space [GENIE_SPACE_ID]
+
+=== Permissions API still returns the ACLs for the trashed space (no 404)
+>>> [CLI] api get /api/2.0/permissions/genie/[GENIE_SPACE_ID]
+{
+  "object_type": "genie-space",
+  "access_control_list": [
+    {
+      "all_permissions": [
+        {
+          "inherited": false,
+          "permission_level": "CAN_MANAGE"
+        }
+      ],
+      "display_name": "[USERNAME]",
+      "user_name": "[USERNAME]"
+    },
+    {
+      "all_permissions": [
+        {
+          "inherited": false,
+          "permission_level": "CAN_READ"
+        }
+      ],
+      "group_name": "data-team"
+    }
+  ]
+}
+
+=== Plan recreates the gone space
+>>> [CLI] bundle plan
+create genie_spaces.foo
+update genie_spaces.foo.permissions
+
+Plan: 1 to add, 1 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Deleting files...
+Destroy complete!

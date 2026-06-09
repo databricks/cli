@@ -1,2 +1,8 @@
 # Genie spaces are only deployed via the direct deployment engine.
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+
+# Genie space lifecycle tests also run against a real workspace. They use a
+# minimal serialized_space ({"version": 1}) the backend accepts, plus a real
+# warehouse. Tests that can't run on cloud override this with Cloud = false.
+Cloud = true
+RequiresWarehouse = true

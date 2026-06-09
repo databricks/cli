@@ -1,0 +1,3 @@
+# Asserts the permission API's behavior on a trashed space via `api get` output,
+# not recorded request payloads, so request recording is off.
+RecordRequests = false

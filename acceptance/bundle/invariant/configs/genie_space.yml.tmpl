@@ -6,9 +6,13 @@ resources:
     foo:
       warehouse_id: $TEST_DEFAULT_WAREHOUSE_ID
       title: test-genie-space-$UNIQUE_NAME
-      # Inline (structured) serialized_space is marshalled to a JSON string by
+      # Structured (inline) serialized_space is marshalled to a JSON string by
       # ConfigureGenieSpaceSerializedSpace; this config doubles as a regression
-      # guard that the normalization produces a drift-free deploy.
+      # guard that the normalization produces a drift-free deploy. Kept minimal
+      # ({version: 1}) so the real backend accepts it on cloud: it rejects
+      # unknown fields such as display_name with INVALID_PARAMETER_VALUE.
       serialized_space:
         version: 1
-        display_name: test-genie-space-$UNIQUE_NAME
+      permissions:
+        - level: CAN_READ
+          group_name: users

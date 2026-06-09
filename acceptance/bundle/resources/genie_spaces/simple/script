@@ -13,5 +13,8 @@ echo "$GENIE_SPACE_ID:GENIE_SPACE_ID" >> ACC_REPLS
 
 trace $CLI genie get-space $GENIE_SPACE_ID | jq '{title, description, warehouse_id}'
 
-# Verify that there is no drift right after deploy.
-trace $CLI bundle plan -o json > out.plan.json
+# Verify that there is no drift right after deploy. Text plan (not -o json) keeps
+# output identical between the mock and a real workspace: on cloud the backend
+# migrates the {"version":1} serialized_space to version 2 and the etag differs,
+# but the resource action stays "skip" so the rendered plan is the same.
+trace $CLI bundle plan
