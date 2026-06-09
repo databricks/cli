@@ -17,11 +17,13 @@ type functions struct{}
 
 func (f *functions) GetTasks(b *bundle.Bundle) []TaskWithJobKey {
 	var tasks []TaskWithJobKey
-	for k := range b.Config.Resources.Jobs["test"].Tasks {
-		tasks = append(tasks, TaskWithJobKey{
-			JobKey: "test",
-			Task:   &b.Config.Resources.Jobs["test"].Tasks[k],
-		})
+	for k, job := range b.Config.Resources.Jobs {
+		for i := range job.Tasks {
+			tasks = append(tasks, TaskWithJobKey{
+				JobKey: k,
+				Task:   &job.Tasks[i],
+			})
+		}
 	}
 
 	return tasks
@@ -85,7 +87,7 @@ func TestGenerateTrampoline(t *testing.T) {
 
 	dir, err := b.InternalDir(ctx)
 	require.NoError(t, err)
-	filename := filepath.Join(dir, "notebook_test_to_trampoline.py")
+	filename := filepath.Join(dir, "notebook_4_test_to_trampoline.py")
 
 	bytes, err := os.ReadFile(filename)
 	require.NoError(t, err)
@@ -93,6 +95,68 @@ func TestGenerateTrampoline(t *testing.T) {
 	require.Equal(t, "Hello from Trampoline", string(bytes))
 
 	task := b.Config.Resources.Jobs["test"].Tasks[0]
-	require.Equal(t, "/Workspace/files/my_bundle/.databricks/bundle/development/.internal/notebook_test_to_trampoline", task.NotebookTask.NotebookPath)
+	require.Equal(t, "/Workspace/files/my_bundle/.databricks/bundle/development/.internal/notebook_4_test_to_trampoline", task.NotebookTask.NotebookPath)
 	require.Nil(t, task.PythonWheelTask)
+}
+
+func TestGenerateTrampolineWithCollidingKeys(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	newJob := func(taskKey string) *resources.Job {
+		return &resources.Job{
+			JobSettings: jobs.JobSettings{
+				Tasks: []jobs.Task{
+					{
+						TaskKey: taskKey,
+						PythonWheelTask: &jobs.PythonWheelTask{
+							PackageName: "test",
+							EntryPoint:  "run",
+						},
+					},
+				},
+			},
+		}
+	}
+
+	b := &bundle.Bundle{
+		BundleRootPath: filepath.Join(tmpDir, "parent", "my_bundle"),
+		SyncRootPath:   filepath.Join(tmpDir, "parent"),
+		Config: config.Root{
+			Workspace: config.Workspace{
+				FilePath: "/Workspace/files",
+			},
+			Bundle: config.Bundle{
+				Target: "development",
+			},
+			Resources: config.Resources{
+				// Without the length prefix both pairs would produce "notebook_a_b_c"
+				// and the second wrapper would overwrite the first.
+				Jobs: map[string]*resources.Job{
+					"a_b": newJob("c"),
+					"a":   newJob("b_c"),
+				},
+			},
+		},
+	}
+	ctx := t.Context()
+
+	funcs := functions{}
+	trampoline := NewTrampoline("test_trampoline", &funcs, "Hello from {{.MyName}}")
+	diags := bundle.Apply(ctx, b, trampoline)
+	require.NoError(t, diags.Error())
+
+	dir, err := b.InternalDir(ctx)
+	require.NoError(t, err)
+
+	for _, name := range []string{"notebook_3_a_b_c", "notebook_1_a_b_c"} {
+		_, err := os.Stat(filepath.Join(dir, name+".py"))
+		require.NoError(t, err)
+	}
+
+	require.Equal(t,
+		"/Workspace/files/my_bundle/.databricks/bundle/development/.internal/notebook_3_a_b_c",
+		b.Config.Resources.Jobs["a_b"].Tasks[0].NotebookTask.NotebookPath)
+	require.Equal(t,
+		"/Workspace/files/my_bundle/.databricks/bundle/development/.internal/notebook_1_a_b_c",
+		b.Config.Resources.Jobs["a"].Tasks[0].NotebookTask.NotebookPath)
 }
