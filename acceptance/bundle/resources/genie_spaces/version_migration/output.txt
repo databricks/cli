@@ -20,6 +20,10 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 The following resources will be deleted:
   delete resources.genie_spaces.foo
 
+This action will result in the deletion of the following Genie spaces.
+The conversation history attached to them is permanently lost:
+  delete resources.genie_spaces.foo
+
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/genie-version-migration-[UNIQUE_NAME]/default
 
 Deleting files...
