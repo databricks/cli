@@ -125,11 +125,6 @@ github.com/databricks/cli/bundle/config/resources.App:
     "description": |-
       Git repository configuration for app deployments. When specified, deployments can
       reference code from this repository by providing only the git reference (branch, tag, or commit).
-  "git_source":
-    "description": |-
-      Complete git source specification including repository location and reference.
-    "x-databricks-preview": |-
-      PRIVATE
   "id":
     "description": |-
       The unique identifier of the app.
@@ -163,9 +158,6 @@ github.com/databricks/cli/bundle/config/resources.App:
   "service_principal_name":
     "x-databricks-field-behaviors_output_only": |-
       true
-  "source_code_path":
-    "x-databricks-preview": |-
-      PRIVATE
   "space":
     "description": |-
       Name of the space this app belongs to.
@@ -1510,8 +1502,6 @@ github.com/databricks/databricks-sdk-go/service/apps.ComputeSize:
         MEDIUM
       - |-
         LARGE
-      - |-
-        LIQUID
 github.com/databricks/databricks-sdk-go/service/apps.ComputeState:
   "_":
     "enum":
@@ -1925,44 +1915,6 @@ github.com/databricks/databricks-sdk-go/service/catalog.Privilege:
         EXECUTE_CLEAN_ROOM_TASK
       - |-
         EXTERNAL_USE_SCHEMA
-      - |-
-        VIEW_OBJECT
-      - |-
-        MANAGE_GRANTS
-      - |-
-        INSERT
-      - |-
-        UPDATE
-      - |-
-        DELETE
-      - |-
-        VIEW_ADMIN_METADATA
-      - |-
-        VIEW_METADATA
-      - |-
-        USE_VOLUME
-      - |-
-        READ_METADATA
-      - |-
-        MANAGE_ACCESS
-      - |-
-        MANAGE_ACCESS_CONTROL
-      - |-
-        CREATE_SERVICE
-      - |-
-        CREATE_FEATURE
-      - |-
-        READ_FEATURE
-      - |-
-        CREATE_STREAM
-      - |-
-        READ_STREAM
-      - |-
-        CREATE_MEMORY_STORE
-      - |-
-        READ_MEMORY_STORE
-      - |-
-        WRITE_MEMORY_STORE
 github.com/databricks/databricks-sdk-go/service/catalog.PrivilegeAssignment:
   "principal":
     "description": |-
@@ -2600,8 +2552,6 @@ github.com/databricks/databricks-sdk-go/service/compute.HardwareAcceleratorType:
         GPU_1xA10
       - |-
         GPU_8xH100
-      - |-
-        GPU_1xH100
 github.com/databricks/databricks-sdk-go/service/compute.InitScriptInfo:
   "_":
     "description": |-
@@ -2858,8 +2808,6 @@ github.com/databricks/databricks-sdk-go/service/database.DatabaseInstanceState:
         UPDATING
       - |-
         FAILING_OVER
-      - |-
-        UPGRADING
 github.com/databricks/databricks-sdk-go/service/database.DeltaTableSyncInfo:
   "delta_commit_timestamp":
     "description": |-
@@ -3207,8 +3155,6 @@ github.com/databricks/databricks-sdk-go/service/iam.PermissionLevel:
         CAN_MONITOR_ONLY
       - |-
         CAN_CREATE_APP
-      - |-
-        UNSPECIFIED
 github.com/databricks/databricks-sdk-go/service/jobs.AlertTask:
   "alert_id":
     "description": |-
@@ -4719,8 +4665,6 @@ github.com/databricks/databricks-sdk-go/service/pipelines.FileIngestionOptionsFi
         AVRO
       - |-
         ORC
-      - |-
-        FILE
 github.com/databricks/databricks-sdk-go/service/pipelines.FileIngestionOptionsSchemaEvolutionMode:
   "_":
     "description": |-
@@ -4790,10 +4734,6 @@ github.com/databricks/databricks-sdk-go/service/pipelines.GoogleDriveOptionsGoog
         FILE_METADATA
       - |-
         PERMISSION
-      - |-
-        FILE_PERMISSION
-      - |-
-        GROUP_MEMBERSHIP
 github.com/databricks/databricks-sdk-go/service/pipelines.IngestionConfig:
   "report":
     "description": |-
@@ -4960,10 +4900,6 @@ github.com/databricks/databricks-sdk-go/service/pipelines.IngestionSourceType:
       - |-
         POSTGRESQL
       - |-
-        REDSHIFT
-      - |-
-        SQLDW
-      - |-
         SQLSERVER
       - |-
         SALESFORCE
@@ -4996,165 +4932,7 @@ github.com/databricks/databricks-sdk-go/service/pipelines.IngestionSourceType:
       - |-
         META_MARKETING
       - |-
-        GOOGLE_ADS
-      - |-
-        TIKTOK_ADS
-      - |-
-        SALESFORCE_MARKETING_CLOUD
-      - |-
-        HUBSPOT
-      - |-
-        WORKDAY_HCM
-      - |-
-        GUIDEWIRE
-      - |-
         ZENDESK
-      - |-
-        COMMUNITY
-      - |-
-        SLACK_AUDIT_LOGS
-      - |-
-        KAFKA
-      - |-
-        CROWDSTRIKE_EVENT_STREAM
-      - |-
-        WORKDAY_ACTIVITY_LOGGING
-      - |-
-        AKAMAI_WAF
-      - |-
-        VEEVA
-      - |-
-        VEEVA_VAULT
-      - |-
-        M365_AUDIT_LOGS
-      - |-
-        OKTA_SYSTEM_LOGS
-      - |-
-        ONE_PASSWORD_EVENT_LOGS
-      - |-
-        PROOFPOINT_SIEM
-      - |-
-        WIZ_AUDIT_LOGS
-      - |-
-        GITHUB
-      - |-
-        OUTLOOK
-      - |-
-        SMARTSHEET
-      - |-
-        MICROSOFT_TEAMS
-      - |-
-        ADOBE_CAMPAIGNS
-      - |-
-        LINKEDIN_ADS
-      - |-
-        X_ADS
-      - |-
-        BING_ADS
-      - |-
-        GOOGLE_SEARCH_CONSOLE
-      - |-
-        PINTEREST_ADS
-      - |-
-        REDDIT_ADS
-      - |-
-        PENDO
-      - |-
-        API_SOURCE
-      - |-
-        SLACK_ACCESS_AND_INTEGRATION_LOGS
-      - |-
-        ORACLE_FUSION_CLOUD
-      - |-
-        RABBITMQ
-      - |-
-        GOOGLE_ANALYTICS
-      - |-
-        AMPLITUDE
-      - |-
-        NOTION
-      - |-
-        ADP_WORKFORCE_NOW
-      - |-
-        SAS
-      - |-
-        GONG
-      - |-
-        SALESLOFT
-      - |-
-        GOOGLE_WORKSPACE
-      - |-
-        SHOPIFY
-      - |-
-        ORACLE_ELOQUA
-      - |-
-        EPIC_CLARITY
-      - |-
-        LINEAR
-      - |-
-        APPLE_APP_STORE
-      - |-
-        SPLUNK
-      - |-
-        GITLAB
-      - |-
-        ZOOM_LOGS
-      - |-
-        MONDAY_COM
-      - |-
-        AIRTABLE
-      - |-
-        MICROSOFT_ENTRA_ID
-      - |-
-        PAGERDUTY
-      - |-
-        APPFIGURES
-      - |-
-        ADOBE_COMMERCE
-      - |-
-        QUICKBOOKS
-      - |-
-        SQUARE
-      - |-
-        ZOHO_BOOKS
-      - |-
-        SNAPCHAT_ADS
-      - |-
-        GENESYS
-      - |-
-        SAP_SUCCESSFACTORS
-      - |-
-        YOUTUBE_ANALYTICS
-      - |-
-        CERIDIAN_DAYFORCE
-      - |-
-        FRESHSERVICE
-      - |-
-        SENDGRID
-      - |-
-        AZURE_MONITOR_LOGS
-      - |-
-        ATLASSIAN_ORGANIZATION
-      - |-
-        HIBOB
-      - |-
-        APPLE_SEARCH_ADS
-      - |-
-        AWIN
-      - |-
-        DELIGHTED
-      - |-
-        FRONT
-      - |-
-        GURU
-      - |-
-        PARTNERSTACK
-      - |-
-        MARKETO
-      - |-
-        AHA
-      - |-
-        NETSKOPE_LOGS
       - |-
         FOREIGN_CATALOG
 github.com/databricks/databricks-sdk-go/service/pipelines.JiraConnectorOptions:
@@ -5673,10 +5451,6 @@ github.com/databricks/databricks-sdk-go/service/pipelines.SharepointOptionsShare
         PERMISSION
       - |-
         LIST
-      - |-
-        FILE_PERMISSION
-      - |-
-        GROUP_MEMBERSHIP
 github.com/databricks/databricks-sdk-go/service/pipelines.SmartsheetOptions:
   "_":
     "description": |-
@@ -5878,10 +5652,6 @@ github.com/databricks/databricks-sdk-go/service/pipelines.TransformerFormat:
         STRING
       - |-
         JSON
-      - |-
-        AVRO
-      - |-
-        PROTOBUF
 github.com/databricks/databricks-sdk-go/service/pipelines.ZendeskSupportOptions:
   "_":
     "description": |-
@@ -6777,8 +6547,6 @@ github.com/databricks/databricks-sdk-go/service/sql.CreateWarehouseRequestWareho
         CLASSIC
       - |-
         PRO
-      - |-
-        REYDEN
 github.com/databricks/databricks-sdk-go/service/sql.CronSchedule:
   "pause_status":
     "description": |-
@@ -6914,8 +6682,6 @@ github.com/databricks/databricks-sdk-go/service/vectorsearch.EndpointType:
         STORAGE_OPTIMIZED
       - |-
         STANDARD
-      - |-
-        STANDARD_ON_ORION
 github.com/databricks/databricks-sdk-go/service/vectorsearch.IndexSubtype:
   "_":
     "description": |-
