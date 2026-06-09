@@ -74,8 +74,6 @@ func TestRenderingTable(t *testing.T) {
 }
 
 func TestRunningCommandWhenUpdateCheckFails(t *testing.T) {
-	// Emulates an exhausted unauthenticated GitHub API quota: the update
-	// check only prints an upgrade hint and must not block the command.
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 	}))

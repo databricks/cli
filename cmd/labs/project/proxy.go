@@ -38,8 +38,7 @@ func (cp *proxy) register(parent *cobra.Command) {
 }
 
 func (cp *proxy) runE(cmd *cobra.Command, _ []string) error {
-	// The update check only prints an upgrade hint, so a failure (e.g. the
-	// unauthenticated GitHub API rate limit) must not block the command.
+	// The update check only prints an upgrade hint, so a failure must not block the command.
 	if err := cp.checkUpdates(cmd); err != nil {
 		log.Debugf(cmd.Context(), "Failed to check for newer release of %s: %s", cp.Project.Name, err)
 	}

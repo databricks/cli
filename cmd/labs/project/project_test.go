@@ -31,8 +31,7 @@ func TestCheckUpdatesWithEmptyReleaseList(t *testing.T) {
 	prj := &Project{Name: "blueprint", rootDir: rootDir}
 	require.NoError(t, prj.EnsureFoldersExist())
 
-	// A repository without releases caches an empty list; the far-future
-	// refresh timestamp keeps the cache valid so no network call is made.
+	// The far-future refreshed_at keeps the cache valid so no network call is made.
 	cache := []byte(`{"refreshed_at": "2033-01-01T00:00:00Z", "data": []}`)
 	require.NoError(t, os.WriteFile(filepath.Join(prj.CacheDir(), "databrickslabs-blueprint-releases.json"), cache, ownerRW))
 	version := []byte(`{"version": "v0.3.15", "date": "2023-10-24T15:04:05+01:00"}`)
