@@ -20,6 +20,7 @@ func TestNoWorkspacePrefixUsed(t *testing.T) {
 				ArtifactPath: "/Workspace/Users/test/artifacts",
 				FilePath:     "/Workspace/Users/test/files",
 				StatePath:    "/Workspace/Users/test/state",
+				ResourcePath: "/Workspace/Users/test/resources",
 			},
 
 			Resources: config.Resources{
@@ -52,6 +53,25 @@ func TestNoWorkspacePrefixUsed(t *testing.T) {
 										},
 									},
 								},
+								{
+									NotebookTask: &jobs.NotebookTask{
+										NotebookPath: "/Workspace/${workspace.resource_path}/notebook3",
+									},
+									Libraries: []compute.Library{
+										{
+											Jar: "/Workspace${workspace.resource_path}/jar3.jar",
+										},
+									},
+								},
+								{
+									SparkPythonTask: &jobs.SparkPythonTask{
+										PythonFile: "${workspace.file_path}/file2.py",
+										Parameters: []string{
+											"--input=/Workspace/${workspace.file_path}/in.txt --output=/Workspace/${workspace.file_path}/out.txt",
+											"--cp=/Workspace/${workspace.root_path}/lib.jar:/Workspace${workspace.artifact_path}/dep.jar",
+										},
+									},
+								},
 							},
 						},
 					},
@@ -61,12 +81,17 @@ func TestNoWorkspacePrefixUsed(t *testing.T) {
 	}
 
 	diags := bundle.Apply(t.Context(), b, RewriteWorkspacePrefix())
-	require.Len(t, diags, 3)
+	require.Len(t, diags, 8)
 
 	expectedErrors := map[string]bool{
-		`substring "/Workspace/${workspace.root_path}" found in "/Workspace/${workspace.root_path}/file1.py". Please update this to "${workspace.root_path}/file1.py".`:             true,
-		`substring "/Workspace${workspace.file_path}" found in "/Workspace${workspace.file_path}/notebook1". Please update this to "${workspace.file_path}/notebook1".`:             true,
-		`substring "/Workspace/${workspace.artifact_path}" found in "/Workspace/${workspace.artifact_path}/jar1.jar". Please update this to "${workspace.artifact_path}/jar1.jar".`: true,
+		`substring "/Workspace/${workspace.root_path}" found in "/Workspace/${workspace.root_path}/file1.py". Please update this to "${workspace.root_path}/file1.py".`:                                                                                                        true,
+		`substring "/Workspace${workspace.file_path}" found in "/Workspace${workspace.file_path}/notebook1". Please update this to "${workspace.file_path}/notebook1".`:                                                                                                        true,
+		`substring "/Workspace/${workspace.artifact_path}" found in "/Workspace/${workspace.artifact_path}/jar1.jar". Please update this to "${workspace.artifact_path}/jar1.jar".`:                                                                                            true,
+		`substring "/Workspace/${workspace.resource_path}" found in "/Workspace/${workspace.resource_path}/notebook3". Please update this to "${workspace.resource_path}/notebook3".`:                                                                                          true,
+		`substring "/Workspace${workspace.resource_path}" found in "/Workspace${workspace.resource_path}/jar3.jar". Please update this to "${workspace.resource_path}/jar3.jar".`:                                                                                              true,
+		`substring "/Workspace/${workspace.file_path}" found in "--input=/Workspace/${workspace.file_path}/in.txt --output=/Workspace/${workspace.file_path}/out.txt". Please update this to "--input=${workspace.file_path}/in.txt --output=${workspace.file_path}/out.txt".`: true,
+		`substring "/Workspace/${workspace.root_path}" found in "--cp=/Workspace/${workspace.root_path}/lib.jar:/Workspace${workspace.artifact_path}/dep.jar". Please update this to "--cp=${workspace.root_path}/lib.jar:/Workspace${workspace.artifact_path}/dep.jar".`:      true,
+		`substring "/Workspace${workspace.artifact_path}" found in "--cp=/Workspace/${workspace.root_path}/lib.jar:/Workspace${workspace.artifact_path}/dep.jar". Please update this to "--cp=${workspace.root_path}/lib.jar:${workspace.artifact_path}/dep.jar".`:             true,
 	}
 
 	for _, d := range diags {
@@ -80,4 +105,9 @@ func TestNoWorkspacePrefixUsed(t *testing.T) {
 	require.Equal(t, "${workspace.artifact_path}/jar1.jar", b.Config.Resources.Jobs["test_job"].JobSettings.Tasks[1].Libraries[0].Jar)
 	require.Equal(t, "${workspace.file_path}/notebook2", b.Config.Resources.Jobs["test_job"].Tasks[2].NotebookTask.NotebookPath)
 	require.Equal(t, "${workspace.artifact_path}/jar2.jar", b.Config.Resources.Jobs["test_job"].JobSettings.Tasks[2].Libraries[0].Jar)
+	require.Equal(t, "${workspace.resource_path}/notebook3", b.Config.Resources.Jobs["test_job"].Tasks[3].NotebookTask.NotebookPath)
+	require.Equal(t, "${workspace.resource_path}/jar3.jar", b.Config.Resources.Jobs["test_job"].JobSettings.Tasks[3].Libraries[0].Jar)
+	require.Equal(t, "${workspace.file_path}/file2.py", b.Config.Resources.Jobs["test_job"].Tasks[4].SparkPythonTask.PythonFile)
+	require.Equal(t, "--input=${workspace.file_path}/in.txt --output=${workspace.file_path}/out.txt", b.Config.Resources.Jobs["test_job"].Tasks[4].SparkPythonTask.Parameters[0])
+	require.Equal(t, "--cp=${workspace.root_path}/lib.jar:${workspace.artifact_path}/dep.jar", b.Config.Resources.Jobs["test_job"].Tasks[4].SparkPythonTask.Parameters[1])
 }
