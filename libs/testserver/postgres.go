@@ -941,7 +941,10 @@ func (s *FakeWorkspace) PostgresRoleList(parent string) Response {
 	}
 }
 
-// PostgresRoleUpdate updates a postgres role.
+// PostgresRoleUpdate updates a postgres role. The update_mask query parameter
+// selects which spec fields to apply; the request body always carries the full
+// desired spec. An empty update_mask updates all fields, matching the API
+// ("if unspecified, all fields will be updated when possible").
 func (s *FakeWorkspace) PostgresRoleUpdate(req Request, name string) Response {
 	defer s.LockUnlock()()
 
@@ -966,7 +969,11 @@ func (s *FakeWorkspace) PostgresRoleUpdate(req Request, name string) Response {
 		if role.Status != nil {
 			roleID = role.Status.RoleId
 		}
-		role.Status = roleStatusFromSpec(updateRole.Spec)
+		var paths []string
+		if mask := req.URL.Query().Get("update_mask"); mask != "" {
+			paths = strings.Split(mask, ",")
+		}
+		role.Status = applyRoleSpecMask(role.Status, roleStatusFromSpec(updateRole.Spec), paths)
 		role.Status.RoleId = roleID
 	}
 
@@ -976,6 +983,38 @@ func (s *FakeWorkspace) PostgresRoleUpdate(req Request, name string) Response {
 	return Response{
 		Body: s.createOperationLocked(role.Name, role),
 	}
+}
+
+// applyRoleSpecMask returns the role status after applying the fields named in
+// paths (the update_mask) from desired onto existing. Paths are relative to the
+// Role and "spec."-prefixed (e.g. "spec.attributes.createdb"); the bare path
+// "spec" updates the whole subtree. An empty paths slice updates everything.
+//
+// Because the request body always carries the full desired spec, a nested path is
+// reduced to its top-level spec field — applying the whole field is equivalent.
+func applyRoleSpecMask(existing, desired *postgres.RoleRoleStatus, paths []string) *postgres.RoleRoleStatus {
+	if len(paths) == 0 || existing == nil {
+		return desired
+	}
+	result := *existing
+	for _, p := range paths {
+		field, _, _ := strings.Cut(strings.TrimPrefix(p, "spec."), ".")
+		switch field {
+		case "spec":
+			result = *desired
+		case "postgres_role":
+			result.PostgresRole = desired.PostgresRole
+		case "auth_method":
+			result.AuthMethod = desired.AuthMethod
+		case "identity_type":
+			result.IdentityType = desired.IdentityType
+		case "membership_roles":
+			result.MembershipRoles = desired.MembershipRoles
+		case "attributes":
+			result.Attributes = desired.Attributes
+		}
+	}
+	return &result
 }
 
 // PostgresRoleDelete deletes a postgres role.

@@ -366,6 +366,49 @@ func TestPostgresRoleCRUD(t *testing.T) {
 	deleteRoleResp.Body.Close()
 }
 
+func TestPostgresRoleUpdateMaskPreservesUnmaskedFields(t *testing.T) {
+	server := testserver.New(t)
+	testserver.AddDefaultHandlers(server)
+
+	client := &http.Client{}
+	baseURL := server.URL
+
+	do := func(method, url, body string) *http.Response {
+		req, err := http.NewRequest(method, baseURL+url, strings.NewReader(body))
+		require.NoError(t, err)
+		req.Header.Set("Authorization", "Bearer test-token")
+		req.Header.Set("Content-Type", "application/json")
+		resp, err := client.Do(req)
+		require.NoError(t, err)
+		return resp
+	}
+
+	do(http.MethodPost, "/api/2.0/postgres/projects?project_id=mask-project", "").Body.Close()
+	do(http.MethodPost, "/api/2.0/postgres/projects/mask-project/branches?branch_id=main", "").Body.Close()
+
+	createBody := `{"spec":{"postgres_role":"app_role","attributes":{"createdb":false}}}`
+	createResp := do(http.MethodPost, "/api/2.0/postgres/projects/mask-project/branches/main/roles?role_id=approle", createBody)
+	require.Equal(t, 200, createResp.StatusCode)
+	createResp.Body.Close()
+
+	// Update only spec.attributes.createdb. The body also carries a different
+	// postgres_role, which must be ignored because it is not named in update_mask.
+	patchBody := `{"spec":{"postgres_role":"renamed","attributes":{"createdb":true}}}`
+	patchResp := do(http.MethodPatch, "/api/2.0/postgres/projects/mask-project/branches/main/roles/approle?update_mask=spec.attributes.createdb", patchBody)
+	assert.Equal(t, 200, patchResp.StatusCode)
+	patchResp.Body.Close()
+
+	getResp := do(http.MethodGet, "/api/2.0/postgres/projects/mask-project/branches/main/roles/approle", "")
+	var role postgres.Role
+	require.NoError(t, json.NewDecoder(getResp.Body).Decode(&role))
+	getResp.Body.Close()
+
+	require.NotNil(t, role.Status)
+	require.NotNil(t, role.Status.Attributes)
+	assert.True(t, role.Status.Attributes.Createdb, "masked field should be updated")
+	assert.Equal(t, "app_role", role.Status.PostgresRole, "field absent from update_mask should be preserved")
+}
+
 func TestPostgresRoleNotFoundWhenBranchNotExists(t *testing.T) {
 	server := testserver.New(t)
 	testserver.AddDefaultHandlers(server)
