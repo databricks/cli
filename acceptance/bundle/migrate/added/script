@@ -1,0 +1,26 @@
+export DATABRICKS_BUNDLE_ENGINE=terraform
+
+# Deploy with terraform (only job_a; job_b is commented out)
+trace $CLI bundle deploy
+
+# Uncomment job_b (add it to config without deploying)
+update_file.py databricks.yml "#job_b" "job_b"
+
+# Should fail at plan check: job_b is "1 to add"
+trace musterr $CLI bundle deployment migrate
+
+# Should succeed: job_b skipped, will be created on next deploy
+trace $CLI bundle deployment migrate --noplancheck
+
+# After migration: plan shows job_b as "to add"
+trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle plan | contains.py "1 to add"
+
+# Deploy creates job_b; verify via recorded requests
+rm out.requests.txt
+trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy
+trace print_requests.py //jobs/create
+
+# No further actions planned
+trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle plan | contains.py "2 unchanged"
+
+rm out.requests.txt

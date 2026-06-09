@@ -2,8 +2,33 @@
 
 package schema
 
+type ResourceFeatureEngineeringKafkaConfigAuthConfigMtlsConfigKeyPasswordRef struct {
+	Key   string `json:"key"`
+	Scope string `json:"scope"`
+}
+
+type ResourceFeatureEngineeringKafkaConfigAuthConfigMtlsConfigKeystorePasswordRef struct {
+	Key   string `json:"key"`
+	Scope string `json:"scope"`
+}
+
+type ResourceFeatureEngineeringKafkaConfigAuthConfigMtlsConfigTruststorePasswordRef struct {
+	Key   string `json:"key"`
+	Scope string `json:"scope"`
+}
+
+type ResourceFeatureEngineeringKafkaConfigAuthConfigMtlsConfig struct {
+	DisableHostnameVerification bool                                                                            `json:"disable_hostname_verification,omitempty"`
+	KeyPasswordRef              *ResourceFeatureEngineeringKafkaConfigAuthConfigMtlsConfigKeyPasswordRef        `json:"key_password_ref,omitempty"`
+	KeystoreLocation            string                                                                          `json:"keystore_location"`
+	KeystorePasswordRef         *ResourceFeatureEngineeringKafkaConfigAuthConfigMtlsConfigKeystorePasswordRef   `json:"keystore_password_ref,omitempty"`
+	TruststoreLocation          string                                                                          `json:"truststore_location"`
+	TruststorePasswordRef       *ResourceFeatureEngineeringKafkaConfigAuthConfigMtlsConfigTruststorePasswordRef `json:"truststore_password_ref,omitempty"`
+}
+
 type ResourceFeatureEngineeringKafkaConfigAuthConfig struct {
-	UcServiceCredentialName string `json:"uc_service_credential_name,omitempty"`
+	MtlsConfig              *ResourceFeatureEngineeringKafkaConfigAuthConfigMtlsConfig `json:"mtls_config,omitempty"`
+	UcServiceCredentialName string                                                     `json:"uc_service_credential_name,omitempty"`
 }
 
 type ResourceFeatureEngineeringKafkaConfigBackfillSourceDeltaTableSource struct {
