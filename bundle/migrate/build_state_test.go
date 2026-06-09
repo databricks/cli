@@ -33,8 +33,6 @@ func rootFromYAML(t *testing.T, yaml string) config.Root {
 	return root
 }
 
-// runBuildStateFromTF is a helper that runs BuildStateFromTF, finalizes the
-// state, then reloads it so callers can inspect ResourceEntry (State + DependsOn).
 func runBuildStateFromTF(
 	t *testing.T,
 	yaml string,
@@ -59,7 +57,6 @@ func runBuildStateFromTF(
 	_, err = db.Finalize(t.Context())
 	require.NoError(t, err)
 
-	// Reload from disk to access the full ResourceEntry (State JSON + DependsOn).
 	raw, err := os.ReadFile(statePath)
 	require.NoError(t, err)
 	var data dstate.Database
@@ -67,54 +64,54 @@ func runBuildStateFromTF(
 	return data.State
 }
 
-func TestBuildStateFromTF_BasicJob(t *testing.T) {
-	bundleYAML := `
+func TestBuildStateFromTF(t *testing.T) {
+	tests := []struct {
+		name      string
+		yaml      string
+		tfAttrs   migrate.TFStateAttrs
+		tfIDs     terraform.ExportedResourcesMap
+		wantKey   string         // primary key to assert on
+		absentKey string         // key that must NOT be in state
+		wantID    string         // expected entry.ID
+		wantState map[string]any // expected fields in the state JSON
+		wantDeps  []deployplan.DependsOnEntry
+	}{
+		{
+			name: "basic job stored with ID",
+			yaml: `
 resources:
   jobs:
     my_job:
       name: "hello"
-`
-	tfAttrs := migrate.TFStateAttrs{
-		"databricks_job": {
-			"my_job": json.RawMessage(`{"id": "123", "name": "hello"}`),
+`,
+			tfAttrs: migrate.TFStateAttrs{
+				"databricks_job": {"my_job": json.RawMessage(`{"id": "123", "name": "hello"}`)},
+			},
+			tfIDs:   terraform.ExportedResourcesMap{"resources.jobs.my_job": {ID: "123"}},
+			wantKey: "resources.jobs.my_job",
+			wantID:  "123",
 		},
-	}
-	tfIDs := terraform.ExportedResourcesMap{
-		"resources.jobs.my_job": {ID: "123"},
-	}
-
-	state := runBuildStateFromTF(t, bundleYAML, tfAttrs, tfIDs)
-	entry, ok := state["resources.jobs.my_job"]
-	require.True(t, ok)
-	assert.Equal(t, "123", entry.ID)
-	assert.Empty(t, entry.DependsOn)
-}
-
-func TestBuildStateFromTF_ResourceNotInTFState_Skipped(t *testing.T) {
-	bundleYAML := `
+		{
+			name: "resource not in TF state is skipped",
+			yaml: `
 resources:
   jobs:
     new_job:
       name: "new"
     existing_job:
       name: "existing"
-`
-	tfAttrs := migrate.TFStateAttrs{
-		"databricks_job": {
-			"existing_job": json.RawMessage(`{"id": "456", "name": "existing"}`),
+`,
+			tfAttrs: migrate.TFStateAttrs{
+				"databricks_job": {"existing_job": json.RawMessage(`{"id": "456", "name": "existing"}`)},
+			},
+			tfIDs:     terraform.ExportedResourcesMap{"resources.jobs.existing_job": {ID: "456"}},
+			wantKey:   "resources.jobs.existing_job",
+			absentKey: "resources.jobs.new_job",
+			wantID:    "456",
 		},
-	}
-	tfIDs := terraform.ExportedResourcesMap{
-		"resources.jobs.existing_job": {ID: "456"},
-	}
-
-	state := runBuildStateFromTF(t, bundleYAML, tfAttrs, tfIDs)
-	assert.Contains(t, state, "resources.jobs.existing_job")
-	assert.NotContains(t, state, "resources.jobs.new_job")
-}
-
-func TestBuildStateFromTF_DependsOnComputedFromRefs(t *testing.T) {
-	bundleYAML := `
+		{
+			name: "cross-resource ref: depends_on computed, field resolved",
+			yaml: `
 resources:
   pipelines:
     src:
@@ -122,42 +119,25 @@ resources:
   jobs:
     dst:
       name: "${resources.pipelines.src.name}"
-`
-	tfAttrs := migrate.TFStateAttrs{
-		"databricks_pipeline": {
-			"src": json.RawMessage(`{"id": "p1", "name": "source-pipeline"}`),
+`,
+			tfAttrs: migrate.TFStateAttrs{
+				"databricks_pipeline": {"src": json.RawMessage(`{"id": "p1", "name": "source-pipeline"}`)},
+				"databricks_job":      {"dst": json.RawMessage(`{"id": "j1", "name": "source-pipeline"}`)},
+			},
+			tfIDs: terraform.ExportedResourcesMap{
+				"resources.pipelines.src": {ID: "p1"},
+				"resources.jobs.dst":      {ID: "j1"},
+			},
+			wantKey:   "resources.jobs.dst",
+			wantID:    "j1",
+			wantState: map[string]any{"name": "source-pipeline"},
+			wantDeps: []deployplan.DependsOnEntry{
+				{Node: "resources.pipelines.src", Label: "${resources.pipelines.src.name}"},
+			},
 		},
-		"databricks_job": {
-			"dst": json.RawMessage(`{"id": "j1", "name": "source-pipeline"}`),
-		},
-	}
-	tfIDs := terraform.ExportedResourcesMap{
-		"resources.pipelines.src": {ID: "p1"},
-		"resources.jobs.dst":      {ID: "j1"},
-	}
-
-	state := runBuildStateFromTF(t, bundleYAML, tfAttrs, tfIDs)
-	entry, ok := state["resources.jobs.dst"]
-	require.True(t, ok)
-
-	// depends_on must point back to the referenced pipeline
-	require.Len(t, entry.DependsOn, 1)
-	assert.Equal(t, deployplan.DependsOnEntry{
-		Node:  "resources.pipelines.src",
-		Label: "${resources.pipelines.src.name}",
-	}, entry.DependsOn[0])
-
-	// resolved field value
-	var jobState map[string]any
-	require.NoError(t, json.Unmarshal(entry.State, &jobState))
-	assert.Equal(t, "source-pipeline", jobState["name"])
-}
-
-func TestBuildStateFromTF_NumericFieldReference(t *testing.T) {
-	// dst_job.max_concurrent_runs references src_job's int field.
-	// Verifies that the resolved value is stored as a number (not a string)
-	// and that depends_on is recorded.
-	bundleYAML := `
+		{
+			name: "numeric field reference stored as number not string",
+			yaml: `
 resources:
   jobs:
     src_job:
@@ -166,55 +146,71 @@ resources:
     dst_job:
       name: "dest"
       max_concurrent_runs: "${resources.jobs.src_job.max_concurrent_runs}"
-`
-	tfAttrs := migrate.TFStateAttrs{
-		"databricks_job": {
-			"src_job": json.RawMessage(`{"id": "111", "name": "source", "max_concurrent_runs": 4}`),
-			"dst_job": json.RawMessage(`{"id": "222", "name": "dest",   "max_concurrent_runs": 4}`),
+`,
+			tfAttrs: migrate.TFStateAttrs{
+				"databricks_job": {
+					"src_job": json.RawMessage(`{"id": "111", "name": "source", "max_concurrent_runs": 4}`),
+					"dst_job": json.RawMessage(`{"id": "222", "name": "dest",   "max_concurrent_runs": 4}`),
+				},
+			},
+			tfIDs: terraform.ExportedResourcesMap{
+				"resources.jobs.src_job": {ID: "111"},
+				"resources.jobs.dst_job": {ID: "222"},
+			},
+			wantKey:   "resources.jobs.dst_job",
+			wantID:    "222",
+			wantState: map[string]any{"max_concurrent_runs": float64(4)}, // JSON numbers decode as float64
+			wantDeps:  []deployplan.DependsOnEntry{{Node: "resources.jobs.src_job"}},
 		},
-	}
-	tfIDs := terraform.ExportedResourcesMap{
-		"resources.jobs.src_job": {ID: "111"},
-		"resources.jobs.dst_job": {ID: "222"},
-	}
-
-	state := runBuildStateFromTF(t, bundleYAML, tfAttrs, tfIDs)
-
-	entry, ok := state["resources.jobs.dst_job"]
-	require.True(t, ok)
-
-	// depends_on must point to src_job
-	require.Len(t, entry.DependsOn, 1)
-	assert.Equal(t, "resources.jobs.src_job", entry.DependsOn[0].Node)
-
-	// max_concurrent_runs must be stored as a number, not a string
-	var jobState map[string]any
-	require.NoError(t, json.Unmarshal(entry.State, &jobState))
-	assert.EqualValues(t, 4, jobState["max_concurrent_runs"])
-}
-
-func TestBuildStateFromTF_EtagStoredForDashboard(t *testing.T) {
-	// Etag is a top-level attribute in the TF dashboard state JSON; no separate map needed.
-	bundleYAML := `
+		{
+			name: "dashboard etag stored from TF attributes",
+			yaml: `
 resources:
   dashboards:
     my_dash:
       display_name: "My Dashboard"
-`
-	tfAttrs := migrate.TFStateAttrs{
-		"databricks_dashboard": {
-			"my_dash": json.RawMessage(`{"id": "d1", "display_name": "My Dashboard", "etag": "etag-abc123"}`),
+`,
+			tfAttrs: migrate.TFStateAttrs{
+				"databricks_dashboard": {
+					"my_dash": json.RawMessage(`{"id": "d1", "display_name": "My Dashboard", "etag": "etag-abc123"}`),
+				},
+			},
+			tfIDs:     terraform.ExportedResourcesMap{"resources.dashboards.my_dash": {ID: "d1"}},
+			wantKey:   "resources.dashboards.my_dash",
+			wantID:    "d1",
+			wantState: map[string]any{"etag": "etag-abc123"},
 		},
 	}
-	tfIDs := terraform.ExportedResourcesMap{
-		"resources.dashboards.my_dash": {ID: "d1"},
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			state := runBuildStateFromTF(t, tc.yaml, tc.tfAttrs, tc.tfIDs)
+
+			if tc.absentKey != "" {
+				assert.NotContains(t, state, tc.absentKey)
+			}
+
+			entry, ok := state[tc.wantKey]
+			require.True(t, ok, "key %q not in state", tc.wantKey)
+			assert.Equal(t, tc.wantID, entry.ID)
+
+			if len(tc.wantState) > 0 {
+				var got map[string]any
+				require.NoError(t, json.Unmarshal(entry.State, &got))
+				for k, v := range tc.wantState {
+					assert.Equal(t, v, got[k], "state[%q]", k)
+				}
+			}
+
+			if tc.wantDeps != nil {
+				require.Len(t, entry.DependsOn, len(tc.wantDeps))
+				for i, want := range tc.wantDeps {
+					assert.Equal(t, want.Node, entry.DependsOn[i].Node)
+					if want.Label != "" {
+						assert.Equal(t, want.Label, entry.DependsOn[i].Label)
+					}
+				}
+			}
+		})
 	}
-
-	state := runBuildStateFromTF(t, bundleYAML, tfAttrs, tfIDs)
-	entry, ok := state["resources.dashboards.my_dash"]
-	require.True(t, ok)
-
-	var dashState map[string]any
-	require.NoError(t, json.Unmarshal(entry.State, &dashState))
-	assert.Equal(t, "etag-abc123", dashState["etag"])
 }
