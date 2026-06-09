@@ -15,22 +15,22 @@ import (
 	"time"
 
 	"github.com/databricks/cli/libs/auth"
+	"github.com/databricks/cli/libs/auth/storage"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m"
-	"github.com/databricks/databricks-sdk-go/credentials/u2m/cache"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
 )
 
-// newTestTokenCache returns an in-memory token cache for tests so that
+// newTestStore returns an in-memory token cache for tests so that
 // discoveryLogin and other login helpers don't touch ~/.databricks/token-cache.json.
-func newTestTokenCache() cache.TokenCache {
-	return &inMemoryTokenCache{Tokens: map[string]*oauth2.Token{}}
+func newTestStore() storage.Store {
+	return &inMemoryStore{Tokens: map[string]*oauth2.Token{}}
 }
 
 // logBuffer is a thread-safe bytes.Buffer for capturing log output in tests.
@@ -765,7 +765,7 @@ func TestDiscoveryLogin_IntrospectionFailureStillSavesProfile(t *testing.T) {
 		timeout:     time.Second,
 		scopes:      "all-apis, ,sql,",
 		browserFunc: func(string) error { return nil },
-		tokenCache:  newTestTokenCache(),
+		tokenStore:  newTestStore(),
 	})
 	require.NoError(t, err)
 
@@ -820,7 +820,7 @@ func TestDiscoveryLogin_AccountIDMismatchWarning(t *testing.T) {
 		timeout:         time.Second,
 		existingProfile: existingProfile,
 		browserFunc:     func(string) error { return nil },
-		tokenCache:      newTestTokenCache(),
+		tokenStore:      newTestStore(),
 	})
 	require.NoError(t, err)
 
@@ -875,7 +875,7 @@ func TestDiscoveryLogin_NoWarningWhenAccountIDsMatch(t *testing.T) {
 		timeout:         time.Second,
 		existingProfile: existingProfile,
 		browserFunc:     func(string) error { return nil },
-		tokenCache:      newTestTokenCache(),
+		tokenStore:      newTestStore(),
 	})
 	require.NoError(t, err)
 
@@ -901,7 +901,7 @@ func TestDiscoveryLogin_EmptyDiscoveredHostReturnsError(t *testing.T) {
 		profileName: "DISCOVERY",
 		timeout:     time.Second,
 		browserFunc: func(string) error { return nil },
-		tokenCache:  newTestTokenCache(),
+		tokenStore:  newTestStore(),
 	})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "no workspace host was discovered")
@@ -940,7 +940,7 @@ func TestDiscoveryLogin_ReloginPreservesExistingProfileScopes(t *testing.T) {
 		timeout:         time.Second,
 		existingProfile: existingProfile,
 		browserFunc:     func(string) error { return nil },
-		tokenCache:      newTestTokenCache(),
+		tokenStore:      newTestStore(),
 	})
 	require.NoError(t, err)
 
@@ -985,7 +985,7 @@ func TestDiscoveryLogin_ExplicitScopesOverrideExistingProfile(t *testing.T) {
 		scopes:          "all-apis",
 		existingProfile: existingProfile,
 		browserFunc:     func(string) error { return nil },
-		tokenCache:      newTestTokenCache(),
+		tokenStore:      newTestStore(),
 	})
 	require.NoError(t, err)
 
@@ -1031,7 +1031,7 @@ func TestDiscoveryLogin_SPOGHostPopulatesAccountIDFromDiscovery(t *testing.T) {
 		profileName: "DISCOVERY",
 		timeout:     time.Second,
 		browserFunc: func(string) error { return nil },
-		tokenCache:  newTestTokenCache(),
+		tokenStore:  newTestStore(),
 	})
 	require.NoError(t, err)
 
@@ -1072,7 +1072,7 @@ func TestDiscoveryLogin_IntrospectionFallsBackWhenDiscoveryFails(t *testing.T) {
 		profileName: "DISCOVERY",
 		timeout:     time.Second,
 		browserFunc: func(string) error { return nil },
-		tokenCache:  newTestTokenCache(),
+		tokenStore:  newTestStore(),
 	})
 	require.NoError(t, err)
 
@@ -1127,7 +1127,7 @@ auth_type = databricks-cli
 		timeout:         time.Second,
 		existingProfile: existingProfile,
 		browserFunc:     func(string) error { return nil },
-		tokenCache:      newTestTokenCache(),
+		tokenStore:      newTestStore(),
 	})
 	require.NoError(t, err)
 
@@ -1188,7 +1188,7 @@ auth_type = databricks-cli
 		timeout:         time.Second,
 		existingProfile: existingProfile,
 		browserFunc:     func(string) error { return nil },
-		tokenCache:      newTestTokenCache(),
+		tokenStore:      newTestStore(),
 	})
 	require.NoError(t, err)
 
@@ -1226,7 +1226,7 @@ func TestDiscoveryLogin_OverridesHostFromEnv(t *testing.T) {
 		profileName: "DISCOVERY",
 		timeout:     time.Second,
 		browserFunc: func(string) error { return nil },
-		tokenCache:  newTestTokenCache(),
+		tokenStore:  newTestStore(),
 	})
 	require.NoError(t, err)
 

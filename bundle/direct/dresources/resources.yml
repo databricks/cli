@@ -376,6 +376,10 @@ resources:
     ignore_remote_changes:
       - field: space # This field is not yet supported by Update APIs but exposed in the API spec. TODO: fix when update APIs supports it.
         reason: managed
+      - field: compute_min_instances # This field does not work correctly in update_mask but exposed in the API spec. TODO: add back when update APIs correctly support it
+        reason: managed
+      - field: compute_max_instances # This field does not work correctly in update_mask but exposed in the API spec. TODO: add back when update APIs correctly support it
+        reason: managed
 
   secret_scopes:
     backend_defaults:
@@ -476,6 +480,14 @@ resources:
         reason: output_only
 
     backend_defaults:
+      # lifecycle.started is derived from remote warehouse state in RemapState, so the
+      # remote side always has a value. When the user omits lifecycle from config,
+      # both old and new are nil and backend_defaults correctly skips the remote value.
+      # When the user explicitly sets lifecycle.started, old/new are non-nil and normal
+      # drift detection applies (e.g. detecting out-of-band stop).
+      - field: lifecycle
+      - field: lifecycle.started
+
       # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/sql/resource_sql_endpoint.go#L69
       # m["enable_serverless_compute"].Computed = true
       - field: enable_serverless_compute
@@ -485,6 +497,12 @@ resources:
       # project_id is immutable (part of hierarchical name, not in API spec)
       - field: project_id
         reason: immutable
+    ignore_remote_changes:
+      # purge_on_delete is a delete-time query parameter; not returned by GET.
+      # When the user changes it locally we still want the new value to land
+      # in state so the next destroy honors it.
+      - field: purge_on_delete
+        reason: input_only
 
   postgres_branches:
     recreate_on_changes:
@@ -590,3 +608,6 @@ resources:
         reason: immutable
       - field: direct_access_index_spec
         reason: immutable
+    backend_defaults:
+      # The Vector Search API assigns index_subtype when the config omits it
+      - field: index_subtype

@@ -20,8 +20,8 @@ Deployment complete!
 === Use a fake browser that just prints the URL it would have opened
 === open after deployment
 >>> [CLI] bundle open foo
-Opening browser at [DATABRICKS_URL]/jobs/[NUMID]?o=[NUMID]
-[DATABRICKS_URL]/jobs/[NUMID]?o=[NUMID]
+Opening browser at [DATABRICKS_URL]/jobs/[NUMID]?w=[NUMID]
+[DATABRICKS_URL]/jobs/[NUMID]?w=[NUMID]
 
 === test auto-completion handler
 >>> [CLI] __complete bundle open ,

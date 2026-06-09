@@ -4,9 +4,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"regexp"
+	"strings"
 
 	"github.com/databricks/databricks-sdk-go/service/vectorsearch"
 )
+
+// indexNamePart matches each catalog.schema.table component the real backend
+// accepts: only alphanumerics and underscores.
+var indexNamePart = regexp.MustCompile(`^[A-Za-z0-9_]+$`)
 
 // fakeVectorSearchIndex captures the endpoint's UUID at index creation time.
 // On the real backend an index is bound to a specific endpoint instance, not
@@ -31,6 +37,16 @@ func (s *FakeWorkspace) VectorSearchIndexCreate(req Request) Response {
 		}
 	}
 
+	if !isValidIndexName(createReq.Name) {
+		return Response{
+			StatusCode: http.StatusBadRequest,
+			Body: map[string]string{
+				"error_code": "INVALID_PARAMETER_VALUE",
+				"message":    "Invalid index name. Must specify the full index name <catalog>.<schema>.<table>. Only alphanumerics and underscores are allowed.",
+			},
+		}
+	}
+
 	if _, exists := s.VectorSearchIndexes[createReq.Name]; exists {
 		return Response{
 			StatusCode: http.StatusConflict,
@@ -48,11 +64,18 @@ func (s *FakeWorkspace) VectorSearchIndexCreate(req Request) Response {
 		}
 	}
 
+	// The backend assigns index_subtype when the request omits it (HYBRID by default)
+	indexSubtype := createReq.IndexSubtype
+	if indexSubtype == "" {
+		indexSubtype = vectorsearch.IndexSubtypeHybrid
+	}
+
 	index := fakeVectorSearchIndex{
 		VectorIndex: vectorsearch.VectorIndex{
 			Creator:               s.CurrentUser().UserName,
 			EndpointName:          createReq.EndpointName,
 			IndexType:             createReq.IndexType,
+			IndexSubtype:          indexSubtype,
 			Name:                  createReq.Name,
 			PrimaryKey:            createReq.PrimaryKey,
 			DeltaSyncIndexSpec:    remapDeltaSyncSpec(createReq.DeltaSyncIndexSpec),
@@ -69,6 +92,22 @@ func (s *FakeWorkspace) VectorSearchIndexCreate(req Request) Response {
 	return Response{
 		Body: index,
 	}
+}
+
+// isValidIndexName checks that name is in catalog.schema.table form with
+// only alphanumerics and underscores per UC, mirroring the backend's
+// validation rejection at create time.
+func isValidIndexName(name string) bool {
+	parts := strings.Split(name, ".")
+	if len(parts) != 3 {
+		return false
+	}
+	for _, p := range parts {
+		if !indexNamePart.MatchString(p) {
+			return false
+		}
+	}
+	return true
 }
 
 // remapDeltaSyncSpec converts a request spec to a response spec.

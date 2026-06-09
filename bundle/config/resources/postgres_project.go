@@ -16,6 +16,18 @@ type PostgresProjectConfig struct {
 	// ProjectId is the user-specified ID for the project (becomes part of the hierarchical name).
 	// This is specified during creation and becomes part of Name: "projects/{project_id}"
 	ProjectId string `json:"project_id"`
+
+	// PurgeOnDelete, when true, hard-deletes the project on destroy (Purge=true on
+	// DeleteProject). When false or unset, the backend performs a soft delete that
+	// can be undone within the project's retention window. Input-only: not
+	// returned by the GET API.
+	PurgeOnDelete bool `json:"purge_on_delete,omitempty"`
+
+	// ForceSendFields shadows the embedded ProjectSpec.ForceSendFields so the
+	// SDK's marshal package tracks zero-value top-level fields (project_id,
+	// purge_on_delete) here instead of polluting ProjectSpec.ForceSendFields
+	// with names that don't exist in that struct.
+	ForceSendFields []string `json:"-" url:"-"`
 }
 
 func (c *PostgresProjectConfig) UnmarshalJSON(b []byte) error {

@@ -1,10 +1,3 @@
-// Package storage selects and constructs the CLI's U2M token storage backend.
-//
-// Two modes are supported. Secure writes to the OS-native keyring under the
-// profile cache key only; it is the resolver default. Plaintext writes to
-// ~/.databricks/token-cache.json with host-key dual-write for older Go SDK
-// versions (v0.61-v0.103); it is the opt-in fallback for environments where
-// the OS keyring is not available.
 package storage
 
 import (

@@ -617,7 +617,7 @@ func newListFailoverGroups() *cobra.Command {
 	// branches, so the method-call path is always reached.
 	var listFailoverGroupsLimit int
 
-	cmd.Flags().IntVar(&listFailoverGroupsReq.PageSize, "page-size", listFailoverGroupsReq.PageSize, `Maximum number of failover groups to return per page.`)
+	cmd.Flags().IntVar(&listFailoverGroupsReq.PageSize, "page-size", listFailoverGroupsReq.PageSize, `Maximum number of failover groups to return per page: - when set to a value greater than 0, the page length is the minimum of this value and a server configured value; - when set to 0 or unset, the page length is set to a server configured value (recommended); - when set to a value less than 0, an invalid parameter error is returned.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listFailoverGroupsLimit, "limit", 0, `Maximum number of results to return.`)
@@ -692,7 +692,7 @@ func newListStableUrls() *cobra.Command {
 	// branches, so the method-call path is always reached.
 	var listStableUrlsLimit int
 
-	cmd.Flags().IntVar(&listStableUrlsReq.PageSize, "page-size", listStableUrlsReq.PageSize, `Maximum number of stable URLs to return per page.`)
+	cmd.Flags().IntVar(&listStableUrlsReq.PageSize, "page-size", listStableUrlsReq.PageSize, `Maximum number of stable URLs to return per page: - when set to a value greater than 0, the page length is the minimum of this value and a server configured value; - when set to 0 or unset, the page length is set to a server configured value (recommended); - when set to a value less than 0, an invalid parameter error is returned.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listStableUrlsLimit, "limit", 0, `Maximum number of results to return.`)

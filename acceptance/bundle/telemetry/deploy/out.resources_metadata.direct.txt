@@ -1,0 +1,19 @@
+{
+  "state_engine": "direct",
+  "resources": [
+    {
+      "resource_type": "jobs",
+      "count": 3,
+      "state_size_max_bytes": 256,
+      "state_size_mean_bytes": 254,
+      "state_size_median_bytes": 254
+    },
+    {
+      "resource_type": "pipelines",
+      "count": 2,
+      "state_size_max_bytes": 205,
+      "state_size_mean_bytes": 205,
+      "state_size_median_bytes": 205
+    }
+  ]
+}

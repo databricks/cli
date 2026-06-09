@@ -83,6 +83,10 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, ta
 	if targetEngine.IsDirect() {
 		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(ctx), plan, direct.MigrateMode(false))
 		state, err = b.DeploymentBundle.StateDB.Finalize(ctx)
+		// Capture the finalized state for deploy telemetry. It carries each
+		// resource's state-size in bytes (from the WAL replay Finalize just
+		// did), so telemetry needs no extra read or parse of the state file.
+		b.Metrics.ResourceState = state
 	} else {
 		bundle.ApplyContext(ctx, b, terraform.Apply())
 		state, err = terraform.ParseResourcesState(ctx, b)
@@ -212,8 +216,14 @@ func RunPlan(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) *d
 			logdiag.LogError(ctx, err)
 			return nil
 		}
+		if len(b.Select) > 0 {
+			plan.FilterToSelected(b.Select)
+		}
 		return plan
 	}
+
+	// b.Select is rejected for the terraform engine in ProcessBundleRet, so it is
+	// never set here.
 
 	bundle.ApplySeqContext(ctx, b,
 		terraform.Interpolate(),

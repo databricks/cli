@@ -98,6 +98,8 @@ func newCreate() *cobra.Command {
 	// TODO: complex arg: active_deployment
 	// TODO: complex arg: app_status
 	cmd.Flags().StringVar(&createReq.App.BudgetPolicyId, "budget-policy-id", createReq.App.BudgetPolicyId, ``)
+	cmd.Flags().IntVar(&createReq.App.ComputeMaxInstances, "compute-max-instances", createReq.App.ComputeMaxInstances, `Maximum number of app instances.`)
+	cmd.Flags().IntVar(&createReq.App.ComputeMinInstances, "compute-min-instances", createReq.App.ComputeMinInstances, `Minimum number of app instances.`)
 	cmd.Flags().Var(&createReq.App.ComputeSize, "compute-size", `Supported values: [LARGE, MEDIUM]`)
 	// TODO: complex arg: compute_status
 	cmd.Flags().StringVar(&createReq.App.Description, "description", createReq.App.Description, `The description of the app.`)
@@ -1691,6 +1693,8 @@ func newUpdate() *cobra.Command {
 	// TODO: complex arg: active_deployment
 	// TODO: complex arg: app_status
 	cmd.Flags().StringVar(&updateReq.App.BudgetPolicyId, "budget-policy-id", updateReq.App.BudgetPolicyId, ``)
+	cmd.Flags().IntVar(&updateReq.App.ComputeMaxInstances, "compute-max-instances", updateReq.App.ComputeMaxInstances, `Maximum number of app instances.`)
+	cmd.Flags().IntVar(&updateReq.App.ComputeMinInstances, "compute-min-instances", updateReq.App.ComputeMinInstances, `Minimum number of app instances.`)
 	cmd.Flags().Var(&updateReq.App.ComputeSize, "compute-size", `Supported values: [LARGE, MEDIUM]`)
 	// TODO: complex arg: compute_status
 	cmd.Flags().StringVar(&updateReq.App.Description, "description", updateReq.App.Description, `The description of the app.`)

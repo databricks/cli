@@ -1,5 +1,5 @@
 RecordRequests = true
-IncludeRequestHeaders = ["Authorization", "User-Agent", "X-Databricks-Org-Id"]
+IncludeRequestHeaders = ["Authorization", "User-Agent", "X-Databricks-Workspace-Id"]
 
 # Normalize OS-dependent and CI-only User-Agent segments so the recorded
 # requests are stable across local macOS/Linux runs and GitHub Actions.

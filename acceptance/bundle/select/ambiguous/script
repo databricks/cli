@@ -1,0 +1,2 @@
+trace musterr $CLI bundle plan --select thing
+trace musterr $CLI bundle deploy --select thing

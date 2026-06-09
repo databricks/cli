@@ -26,8 +26,11 @@ import (
 	"github.com/databricks/cli/experimental/ssh/internal/vscode"
 	sshWorkspace "github.com/databricks/cli/experimental/ssh/internal/workspace"
 	"github.com/databricks/cli/internal/build"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/telemetry"
+	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/compute"
@@ -264,6 +267,13 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 		}
 	}
 
+	isReconnect := opts.ServerMetadata != ""
+	var serverStartTimeMs int64
+	isSuccess := false
+	defer func() {
+		logSshTunnelEvent(ctx, opts, isSuccess, isReconnect, serverStartTimeMs)
+	}()
+
 	// Only check cluster state for dedicated clusters
 	if !opts.IsServerlessMode() {
 		cmdio.LogString(ctx, "Checking cluster state...")
@@ -310,6 +320,7 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 		if err != nil {
 			return fmt.Errorf("failed to upload ssh-tunnel binaries: %w", err)
 		}
+		serverStartTime := time.Now()
 		userName, serverPort, clusterID, err = ensureSSHServerIsRunning(ctx, client, version, secretScopeName, opts)
 		if err != nil {
 			if opts.IsServerlessMode() && opts.Accelerator == "" && errors.Is(err, errServerMetadata) {
@@ -318,6 +329,7 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 			}
 			return fmt.Errorf("failed to ensure that ssh server is running: %w", err)
 		}
+		serverStartTimeMs = time.Since(serverStartTime).Milliseconds()
 	} else {
 		// Metadata format: "<user_name>,<port>,<cluster_id>"
 		metadata := strings.Split(opts.ServerMetadata, ",")
@@ -353,6 +365,8 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 	if !opts.ProxyMode {
 		cmdio.LogString(ctx, "Connected!")
 	}
+
+	isSuccess = true
 
 	if opts.ProxyMode {
 		return runSSHProxy(ctx, client, serverPort, clusterID, opts)
@@ -438,11 +452,11 @@ func getServerMetadata(ctx context.Context, client *databricks.WorkspaceClient, 
 		return 0, "", "", errors.Join(errServerMetadata, errors.New("cluster ID not available in metadata"))
 	}
 
-	workspaceID, err := client.CurrentWorkspaceID(ctx)
+	workspaceID, err := auth.ResolveWorkspaceID(ctx, client)
 	if err != nil {
 		return 0, "", "", err
 	}
-	metadataURL := fmt.Sprintf("%s/driver-proxy-api/o/%d/%s/%d/metadata", client.Config.Host, workspaceID, effectiveClusterID, wsMetadata.Port)
+	metadataURL := fmt.Sprintf("%s/driver-proxy-api/o/%s/%s/%d/metadata", client.Config.Host, workspaceID, effectiveClusterID, wsMetadata.Port)
 	log.Debugf(ctx, "Metadata URL: %s", metadataURL)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, metadataURL, nil)
 	if err != nil {
@@ -475,16 +489,19 @@ func getServerMetadata(ctx context.Context, client *databricks.WorkspaceClient, 
 	return wsMetadata.Port, string(bodyBytes), effectiveClusterID, nil
 }
 
-func submitSSHTunnelJob(ctx context.Context, client *databricks.WorkspaceClient, version, secretScopeName string, opts ClientOptions) error {
+// submitSSHTunnelJob submits the bootstrap job and waits for the SSH server task to start.
+// It returns the job run ID (when known) so callers can fetch and surface the run's error
+// details if the server never comes up.
+func submitSSHTunnelJob(ctx context.Context, client *databricks.WorkspaceClient, version, secretScopeName string, opts ClientOptions) (int64, error) {
 	sessionID := opts.SessionIdentifier()
 	contentDir, err := sshWorkspace.GetWorkspaceContentDir(ctx, client, version, sessionID)
 	if err != nil {
-		return fmt.Errorf("failed to get workspace content directory: %w", err)
+		return 0, fmt.Errorf("failed to get workspace content directory: %w", err)
 	}
 
 	err = client.Workspace.MkdirsByPath(ctx, contentDir) //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
 	if err != nil {
-		return fmt.Errorf("failed to create directory in the remote workspace: %w", err)
+		return 0, fmt.Errorf("failed to create directory in the remote workspace: %w", err)
 	}
 
 	sshTunnelJobName := "ssh-server-bootstrap-" + sessionID
@@ -500,7 +517,7 @@ func submitSSHTunnelJob(ctx context.Context, client *databricks.WorkspaceClient,
 		Overwrite: true,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to create ssh-tunnel notebook: %w", err)
+		return 0, fmt.Errorf("failed to create ssh-tunnel notebook: %w", err)
 	}
 
 	baseParams := map[string]string{
@@ -555,12 +572,13 @@ func submitSSHTunnelJob(ctx context.Context, client *databricks.WorkspaceClient,
 
 	waiter, err := client.Jobs.Submit(ctx, submitRequest)
 	if err != nil {
-		return fmt.Errorf("failed to submit job: %w", err)
+		return 0, fmt.Errorf("failed to submit job: %w", err)
 	}
 
 	cmdio.LogString(ctx, fmt.Sprintf("Job submitted successfully with run ID: %d", waiter.RunId))
 
-	return waitForJobToStart(ctx, client, waiter.RunId, opts.TaskStartupTimeout)
+	// Return the run ID even on error so callers can fetch the run's failure details.
+	return waiter.RunId, waitForJobToStart(ctx, client, waiter.RunId, opts.TaskStartupTimeout)
 }
 
 func spawnSSHClient(ctx context.Context, userName, privateKeyPath string, serverPort int, clusterID string, opts ClientOptions) error {
@@ -596,7 +614,18 @@ func spawnSSHClient(ctx context.Context, userName, privateKeyPath string, server
 	sshCmd.Stdout = os.Stdout
 	sshCmd.Stderr = os.Stderr
 
-	return sshCmd.Run()
+	err = sshCmd.Run()
+	// ssh reserves exit code 255 for its own connection-level failures (a remote command's exit
+	// code is passed through as-is, 0-254). The most common cause here is the cluster's container
+	// image missing an OpenSSH server, so the server can't launch sshd once we connect — the
+	// connection then drops right after "Connected!". Surface an actionable hint rather than
+	// leaving the user with ssh's opaque "Connection closed" message.
+	if exitErr, ok := errors.AsType[*exec.ExitError](err); ok && exitErr.ExitCode() == 255 {
+		cmdio.LogString(ctx, cmdio.Yellow(ctx, "The SSH connection closed unexpectedly. If it dropped right after connecting, "+
+			"the cluster's container image is likely missing an OpenSSH server: ensure 'openssh-server' "+
+			"is installed (it provides /usr/sbin/sshd), then check the SSH server job run logs."))
+	}
+	return err
 }
 
 func runSSHProxy(ctx context.Context, client *databricks.WorkspaceClient, serverPort int, clusterID string, opts ClientOptions) error {
@@ -677,9 +706,10 @@ func waitForJobToStart(ctx context.Context, client *databricks.WorkspaceClient, 
 			return sshTask, nil
 		}
 
-		// Check for terminal failure states
+		// Check for terminal failure states. Surface the run's actual error (e.g. a notebook
+		// traceback or "Could not reach driver") instead of a generic message.
 		if currentState == jobs.RunLifecycleStateV2StateTerminated {
-			return nil, retries.Halt(errors.New("task terminated before reaching running state"))
+			return nil, retries.Halt(fmt.Errorf("ssh server bootstrap job failed:\n%s", describeRunFailure(ctx, client, runID)))
 		}
 
 		// Continue polling for other states
@@ -687,6 +717,94 @@ func waitForJobToStart(ctx context.Context, client *databricks.WorkspaceClient, 
 	})
 
 	return err
+}
+
+// maxRunFailureTraceBytes bounds how much of a failed run's error trace we print to the
+// terminal; the full output is always available via the run page URL.
+const maxRunFailureTraceBytes = 2000
+
+// describeRunFailure fetches a failed bootstrap run's error details and formats them for the
+// terminal. It is best-effort: any API error is folded into the returned text rather than
+// propagated, so callers can always embed the result in their own error.
+func describeRunFailure(ctx context.Context, client *databricks.WorkspaceClient, runID int64) string {
+	if runID == 0 {
+		return "  (no job run ID available)"
+	}
+
+	run, err := client.Jobs.GetRun(ctx, jobs.GetRunRequest{RunId: runID})
+	if err != nil {
+		return fmt.Sprintf("  could not fetch job run %d: %v", runID, err)
+	}
+
+	var b strings.Builder
+
+	// Locate the SSH server task to read its termination reason and per-task run output.
+	var sshTask *jobs.RunTask
+	for i := range run.Tasks {
+		if run.Tasks[i].TaskKey == sshServerTaskKey {
+			sshTask = &run.Tasks[i]
+			break
+		}
+	}
+
+	if sshTask != nil && sshTask.Status != nil && sshTask.Status.TerminationDetails != nil {
+		if msg := strings.TrimSpace(sshTask.Status.TerminationDetails.Message); msg != "" {
+			fmt.Fprintf(&b, "  %s\n", msg)
+		}
+	}
+
+	// The notebook error/traceback carries the real cause (e.g. a Python exception).
+	outputRunID := runID
+	if sshTask != nil && sshTask.RunId != 0 {
+		outputRunID = sshTask.RunId
+	}
+	if output, err := client.Jobs.GetRunOutput(ctx, jobs.GetRunOutputRequest{RunId: outputRunID}); err == nil && output != nil {
+		if e := strings.TrimSpace(output.Error); e != "" {
+			fmt.Fprintf(&b, "  %s\n", e)
+		}
+		if trace := strings.TrimSpace(output.ErrorTrace); trace != "" {
+			fmt.Fprintf(&b, "%s\n", truncateTail(trace, maxRunFailureTraceBytes))
+		}
+	}
+
+	if run.RunPageUrl != "" {
+		fmt.Fprintf(&b, "  See the full job logs: %s", run.RunPageUrl)
+	}
+
+	if b.Len() == 0 {
+		return fmt.Sprintf("  job run %d failed; see run details in the workspace", runID)
+	}
+	return strings.TrimRight(b.String(), "\n")
+}
+
+// runFailureIfTerminated reports whether the bootstrap run has reached a terminal state (so the
+// SSH server will never come up), returning a formatted failure description when it has.
+func runFailureIfTerminated(ctx context.Context, client *databricks.WorkspaceClient, runID int64) (string, bool) {
+	if runID == 0 {
+		return "", false
+	}
+	run, err := client.Jobs.GetRun(ctx, jobs.GetRunRequest{RunId: runID})
+	if err != nil {
+		return "", false
+	}
+	for i := range run.Tasks {
+		if run.Tasks[i].TaskKey != sshServerTaskKey {
+			continue
+		}
+		if run.Tasks[i].Status != nil && run.Tasks[i].Status.State == jobs.RunLifecycleStateV2StateTerminated {
+			return describeRunFailure(ctx, client, runID), true
+		}
+		return "", false
+	}
+	return "", false
+}
+
+// truncateTail returns the last maxBytes of s, marking the cut when truncated.
+func truncateTail(s string, maxBytes int) string {
+	if len(s) <= maxBytes {
+		return s
+	}
+	return "  ...\n" + s[len(s)-maxBytes:]
 }
 
 func ensureSSHServerIsRunning(ctx context.Context, client *databricks.WorkspaceClient, version, secretScopeName string, opts ClientOptions) (string, int, string, error) {
@@ -698,7 +816,7 @@ func ensureSSHServerIsRunning(ctx context.Context, client *databricks.WorkspaceC
 	if errors.Is(err, errServerMetadata) {
 		cmdio.LogString(ctx, "Starting SSH server...")
 
-		err := submitSSHTunnelJob(ctx, client, version, secretScopeName, opts)
+		runID, err := submitSSHTunnelJob(ctx, client, version, secretScopeName, opts)
 		if err != nil {
 			return "", 0, "", fmt.Errorf("failed to submit and start ssh server job: %w", err)
 		}
@@ -715,10 +833,17 @@ func ensureSSHServerIsRunning(ctx context.Context, client *databricks.WorkspaceC
 			if err == nil {
 				cmdio.LogString(ctx, "Health check successful, starting ssh WebSocket connection...")
 				break
-			} else if retries < maxRetries-1 {
+			}
+			// The metadata never appears if the bootstrap job dies after reaching RUNNING.
+			// Surface the job's actual error instead of waiting out the full timeout with a
+			// generic "metadata.json doesn't exist" message.
+			if failure, terminated := runFailureIfTerminated(ctx, client, runID); terminated {
+				return "", 0, "", fmt.Errorf("ssh server bootstrap job failed:\n%s", failure)
+			}
+			if retries < maxRetries-1 {
 				time.Sleep(2 * time.Second)
 			} else {
-				return "", 0, "", fmt.Errorf("failed to start the ssh server: %w", err)
+				return "", 0, "", fmt.Errorf("failed to start the ssh server: %w\n%s", err, describeRunFailure(ctx, client, runID))
 			}
 		}
 	} else if err != nil {
@@ -726,4 +851,34 @@ func ensureSSHServerIsRunning(ctx context.Context, client *databricks.WorkspaceC
 	}
 
 	return userName, serverPort, effectiveClusterID, nil
+}
+
+func logSshTunnelEvent(ctx context.Context, opts ClientOptions, isSuccess, isReconnect bool, serverStartTimeMs int64) {
+	computeType := protos.SshTunnelComputeTypeDedicated
+	if opts.IsServerlessMode() {
+		computeType = protos.SshTunnelComputeTypeServerless
+	}
+
+	var clientMode protos.SshTunnelClientMode
+	switch {
+	case opts.ProxyMode:
+		clientMode = protos.SshTunnelClientModeProxy
+	case opts.IDE != "":
+		clientMode = protos.SshTunnelClientModeIDE
+	default:
+		clientMode = protos.SshTunnelClientModeSSH
+	}
+
+	telemetry.Log(ctx, protos.DatabricksCliLog{
+		SshTunnelEvent: &protos.SshTunnelEvent{
+			ComputeType:       computeType,
+			AcceleratorType:   opts.Accelerator,
+			IdeType:           opts.IDE,
+			ClientMode:        clientMode,
+			IsReconnect:       isReconnect,
+			AutoStartCluster:  opts.AutoStartCluster,
+			ServerStartTimeMs: serverStartTimeMs,
+			IsSuccess:         isSuccess,
+		},
+	})
 }

@@ -53,6 +53,7 @@ tasks:
       # committed). Run `./task generate` explicitly when codegen inputs change.
       - task: generate-refschema
       - task: generate-schema
+      - task: generate-schema-map
       - task: generate-schema-docs
       - task: generate-validation
       - task: generate-docs
@@ -706,13 +707,17 @@ tasks:
   # can be invoked standalone.
 
   generate:
-    desc: Run all generators (genkit, refschema, schema, docs, validation, direct, pydabs)
+    desc: Run all generators (genkit, tf-schema, refschema, schema, docs, validation, direct, pydabs)
     cmds:
       # Runs first: regenerates CLI command stubs from the OpenAPI spec at
       # .codegen/_openapi_sha. SDK version bumps (go.mod/go.sum) are a manual
       # step outside this task; TestConsistentDatabricksSdkVersion (run inside
       # generate-genkit) asserts the two stay in sync.
       - task: generate-genkit
+      # Requires Terraform provider access (set TF_CLI_CONFIG_FILE to a
+      # filesystem mirror, or rely on the public registry). Only re-runs when
+      # bundle/internal/tf/codegen/schema/version.go changes.
+      - task: generate-tf-schema
       # Refreshes acceptance/bundle/refschema/out.fields.txt, which feeds
       # generate-direct-apitypes and generate-direct-resources below.
       - task: generate-refschema
@@ -745,14 +750,22 @@ tasks:
         sh: echo "${UNIVERSE_DIR:-$HOME/universe}"
     cmds:
       - |
-        echo "Checking out universe at SHA: $(cat .codegen/_openapi_sha)"
-        cd {{.UNIVERSE_DIR}}
-        if ! git cat-file -e $(cat {{.ROOT_DIR}}/.codegen/_openapi_sha) 2>/dev/null; then
-          git fetch --filter=blob:none origin master
+        if [ -z "$UNIVERSE_SKIP_CHECKOUT" ]; then
+          if ! git -C {{.UNIVERSE_DIR}} diff --quiet || ! git -C {{.UNIVERSE_DIR}} diff --cached --quiet; then
+            echo "Error: universe repo at {{.UNIVERSE_DIR}} has uncommitted changes; commit or stash them, or set UNIVERSE_SKIP_CHECKOUT=1 to skip checkout"
+            exit 1
+          fi
+          echo "Checking out universe at SHA: $(cat .codegen/_openapi_sha)"
+          cd {{.UNIVERSE_DIR}}
+          if ! git cat-file -e $(cat {{.ROOT_DIR}}/.codegen/_openapi_sha) 2>/dev/null; then
+            git fetch --filter=blob:none origin master
+          fi
+          git checkout $(cat {{.ROOT_DIR}}/.codegen/_openapi_sha)
+        else
+          echo "UNIVERSE_SKIP_CHECKOUT set; using current {{.UNIVERSE_DIR}} HEAD"
         fi
-        git checkout $(cat {{.ROOT_DIR}}/.codegen/_openapi_sha)
       - echo "Building genkit..."
-      - cd {{.UNIVERSE_DIR}} && bazel build //openapi/genkit
+      - cd {{.UNIVERSE_DIR}} && ./tools/bazel build //openapi/genkit
       - echo "Generating CLI code..."
       - "{{.UNIVERSE_DIR}}/bazel-bin/openapi/genkit/genkit_/genkit update-sdk"
       - "cat .gitattributes.manual .gitattributes > .gitattributes.tmp && mv .gitattributes.tmp .gitattributes"
@@ -786,7 +799,7 @@ tasks:
     generates:
       - acceptance/bundle/refschema/out.fields.txt
     cmds:
-      - go test ./acceptance -run TestAccept/bundle/refschema -update &> /dev/null
+      - go test ./acceptance -run TestAccept/bundle/refschema -update
 
   generate-schema:
     desc: Generate bundle JSON schema
@@ -846,9 +859,40 @@ tasks:
     cmds:
       - "sh -c 'go run ./bundle/internal/validation/. && gofmt -w -s ./bundle/internal/validation/generated'"
 
+  generate-schema-map:
+    desc: Regenerate bundle/terraform_dabs_map/generated.go
+    sources:
+      - "**/*.go"
+      - exclude: bundle/terraform_dabs_map/generated.go
+      - go.mod
+      - go.sum
+      - "{{.EMBED_SOURCES}}"
+    generates:
+      - bundle/terraform_dabs_map/generated.go
+    cmds:
+      - go test ./bundle/terraform_dabs_map -run TestGenerateSchemaMap -update -v
+
+  generate-tf-schema:
+    desc: Regenerate bundle/internal/tf/schema from the Databricks Terraform provider
+    dir: bundle/internal/tf/codegen
+    sources:
+      - schema/version.go
+      - templates/**
+      - "**/*.go"
+      - exclude: "**/*_test.go"
+    generates:
+      - ../schema/*.go
+    cmds:
+      - go run .
+
   generate-direct:
     desc: Generate direct engine config (apitypes + resources)
-    deps: ['generate-direct-apitypes', 'generate-direct-resources']
+    # Depend only on generate-direct-resources; it already pulls in
+    # generate-direct-apitypes transitively. Listing both as parallel deps
+    # races: resources reads apitypes.generated.yml while the apitypes step's
+    # `>` redirect is truncating it, silently dropping every resource whose
+    # type comes from that file. Keep this chain linear.
+    deps: ['generate-direct-resources']
 
   generate-direct-apitypes:
     desc: Generate direct engine API types YAML
@@ -874,7 +918,7 @@ tasks:
     generates:
       - bundle/direct/dresources/resources.generated.yml
     cmds:
-      - "sh -c 'python3 bundle/direct/tools/generate_resources.py .codegen/openapi.json bundle/direct/dresources/apitypes.generated.yml bundle/direct/dresources/apitypes.yml acceptance/bundle/refschema/out.fields.txt > bundle/direct/dresources/resources.generated.yml'"
+      - "sh -c 'uv run --script bundle/direct/tools/generate_resources.py .codegen/openapi.json bundle/direct/dresources/apitypes.generated.yml bundle/direct/dresources/apitypes.yml acceptance/bundle/refschema/out.fields.txt > bundle/direct/dresources/resources.generated.yml'"
 
   generate-openapi-json:
     desc: Download OpenAPI spec (triggered by _openapi_sha change)
