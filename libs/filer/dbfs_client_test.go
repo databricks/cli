@@ -35,8 +35,6 @@ func dbfsReadWithGetStatusResponse(t *testing.T, response any) error {
 }
 
 func TestDbfsClientReadDirectory(t *testing.T) {
-	// The SDK's Open reports reading a directory with a client-side error that
-	// carries no sentinel, so the filer re-stats the path to map it to notAFile.
 	err := dbfsReadWithGetStatusResponse(t, files.FileInfo{
 		Path:  "/test/file",
 		IsDir: true,

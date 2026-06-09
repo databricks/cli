@@ -40,10 +40,8 @@ func isViteReady(port int) bool {
 	return true
 }
 
-// isAppNotFound reports whether err is the Apps API's 404 for an app that was
-// never created or has been deleted ("App with name X does not exist or is
-// deleted."). The API reports both cases with HTTP 404, so we match the
-// status-based sentinel instead of the error message wording.
+// isAppNotFound reports whether err is the Apps API's 404, which covers both a
+// never-created and a deleted app.
 func isAppNotFound(err error) bool {
 	return errors.Is(err, apierr.ErrNotFound)
 }

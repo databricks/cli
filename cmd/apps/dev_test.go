@@ -48,14 +48,12 @@ func TestIsViteReady(t *testing.T) {
 }
 
 func TestIsAppNotFound(t *testing.T) {
-	// Error shape returned by the Apps API for a missing or deleted app.
 	notFound := &apierr.APIError{
 		StatusCode: 404,
 		ErrorCode:  "NOT_FOUND",
 		Message:    "App with name test-app does not exist or is deleted.",
 	}
 	assert.True(t, isAppNotFound(notFound))
-	// GetAppDomain wraps the SDK error; the sentinel must match through the chain.
 	assert.True(t, isAppNotFound(fmt.Errorf("failed to get app: %w", notFound)))
 
 	forbidden := &apierr.APIError{
