@@ -3,6 +3,7 @@ package lakebox
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -45,7 +46,13 @@ func TestWriteManagedConfigCreatesWithRightPerms(t *testing.T) {
 
 	info, err := os.Stat(path)
 	require.NoError(t, err)
-	assert.Equal(t, os.FileMode(0o600), info.Mode().Perm(), "SSH config files must be 0600")
+
+	// Windows does not honor Unix permission bits; os.Stat reports 0o666
+	// regardless of what was passed to os.WriteFile (matches the carve-out
+	// in state_test.go).
+	if runtime.GOOS != "windows" {
+		assert.Equal(t, os.FileMode(0o600), info.Mode().Perm(), "SSH config files must be 0600")
+	}
 }
 
 func TestWriteManagedConfigIdempotentDoesNotRewriteFile(t *testing.T) {
