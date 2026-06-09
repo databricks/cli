@@ -1,4 +1,3 @@
-# The dropped-field warning is specific to the terraform engine; the direct
-# engine deploys fields the Terraform provider schema does not know about.
+# The dropped-field warning is terraform-only; the direct engine deploys these fields.
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform"]
 RecordRequests = false

@@ -293,9 +293,8 @@ func TestConvertJobApplyPolicyDefaultValues(t *testing.T) {
 }
 
 func TestConvertJobFieldUnknownToTerraformSchema(t *testing.T) {
-	// autotermination_minutes is part of the SDK job schema but not part of
-	// the pinned Terraform provider schema for job clusters. If a provider
-	// bump adds it, this test fails and needs a different such field.
+	// autotermination_minutes is in the SDK job schema but not in the pinned
+	// Terraform provider schema; if a provider bump adds it, pick another such field.
 	src := resources.Job{
 		JobSettings: jobs.JobSettings{
 			Name: "my job",

@@ -208,12 +208,9 @@ func convertJobResource(ctx context.Context, vin dyn.Value) (dyn.Value, error) {
 	}
 
 	// Normalize the output value to the target schema.
-	// The value was already normalized to the SDK job schema above, so any
-	// diagnostic here means the field is unknown to the pinned Terraform
-	// provider schema and is dropped from the deployment (the direct engine
-	// deploys such fields). Surface these as warnings so the drop is not
-	// silent. Normalize only emits warning severity for value issues, so
-	// this cannot fail the deploy.
+	// A diagnostic here means the field is unknown to the pinned Terraform provider
+	// schema and is dropped from the deployment; warn so the drop is not silent.
+	// Normalize only emits warning severity, so this cannot fail the deploy.
 	vout, diags = convert.Normalize(schema.ResourceJob{}, vout)
 	for _, d := range diags {
 		logdiag.LogDiag(ctx, d)
