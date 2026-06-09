@@ -75,13 +75,8 @@ func (p *annotationParser) findRef(typ reflect.Type) (cliJSONSchema, bool) {
 		k := fmt.Sprintf("%s.%s", pkgName, ctyp.Name())
 
 		// Skip if the type is not in the spec.
-		_, ok := p.ref[k]
-		if !ok {
-			k = mapIncorrectTypNames(k)
-			_, ok = p.ref[k]
-			if !ok {
-				continue
-			}
+		if _, ok := p.ref[k]; !ok {
+			continue
 		}
 
 		// Return the first Go SDK type found in the spec.
@@ -89,23 +84,6 @@ func (p *annotationParser) findRef(typ reflect.Type) (cliJSONSchema, bool) {
 	}
 
 	return cliJSONSchema{}, false
-}
-
-// Fix inconsistent type names between the Go SDK and the spec.
-// E.g. "serving.PaLmConfig" in the Go SDK is "serving.PaLMConfig" in the spec.
-func mapIncorrectTypNames(ref string) string {
-	switch ref {
-	case "serving.PaLmConfig":
-		return "serving.PaLMConfig"
-	case "serving.OpenAiConfig":
-		return "serving.OpenAIConfig"
-	case "serving.GoogleCloudVertexAiConfig":
-		return "serving.GoogleCloudVertexAIConfig"
-	case "serving.Ai21LabsConfig":
-		return "serving.AI21LabsConfig"
-	default:
-		return ref
-	}
 }
 
 // previewFromLaunchStage maps a launch stage to the preview marker the bundle
