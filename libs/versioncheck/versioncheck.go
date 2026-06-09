@@ -142,6 +142,7 @@ func fetchLatestVersion(ctx context.Context) (string, error) {
 	// API version. https://docs.github.com/en/rest/using-the-rest-api
 	req.Header.Set("User-Agent", "databricks-cli/"+build.GetInfo().Version)
 	req.Header.Set("Accept", "application/vnd.github+json")
+	req.Header.Set("X-GitHub-Api-Version", "2022-11-28")
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
