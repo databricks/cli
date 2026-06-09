@@ -1,7 +1,7 @@
 envsubst < databricks.yml.tmpl > databricks.yml
+mkdir -p app
 
 cleanup() {
-
     $CLI bundle destroy --auto-approve > /dev/null 2>&1 || true
     $CLI apps delete app-$UNIQUE_NAME > /dev/null 2>&1 || true
     rm out.requests.txt
