@@ -52,6 +52,12 @@ func testUnixLocalRootPath(t *testing.T, uncleanRoot string) {
 	assert.NoError(t, err)
 	assert.Equal(t, cleanRoot, remotePath)
 
+	// Escaping the root and re-entering it is allowed.
+	// All roots in this test end in the path element "path".
+	remotePath, err = rp.Join("../path/x")
+	assert.NoError(t, err)
+	assert.Equal(t, cleanRoot+"/x", remotePath)
+
 	_, err = rp.Join("..")
 	assert.ErrorContains(t, err, `relative path escapes root: ..`)
 
@@ -78,6 +84,16 @@ func testUnixLocalRootPath(t *testing.T, uncleanRoot string) {
 
 	_, err = rp.Join("../..")
 	assert.ErrorContains(t, err, `relative path escapes root: ../..`)
+
+	// Siblings that share the root as a string prefix must be rejected.
+	_, err = rp.Join("../path-evil")
+	assert.ErrorContains(t, err, `relative path escapes root: ../path-evil`)
+
+	_, err = rp.Join("../path-evil/x")
+	assert.ErrorContains(t, err, `relative path escapes root: ../path-evil/x`)
+
+	_, err = rp.Join("../pathx")
+	assert.ErrorContains(t, err, `relative path escapes root: ../pathx`)
 }
 
 func TestUnixLocalRootPath(t *testing.T) {
@@ -128,6 +144,22 @@ func testWindowsLocalRootPath(t *testing.T, uncleanRoot string) {
 
 	_, err = rp.Join(`a\..\..`)
 	assert.ErrorContains(t, err, `relative path escapes root`)
+
+	// Escaping the root and re-entering it is allowed.
+	// All roots in this test end in the path element "path".
+	remotePath, err = rp.Join(`..\path\x`)
+	assert.NoError(t, err)
+	assert.Equal(t, cleanRoot+`\x`, remotePath)
+
+	// Siblings that share the root as a string prefix must be rejected.
+	_, err = rp.Join(`..\path-evil`)
+	assert.ErrorContains(t, err, `relative path escapes root`)
+
+	_, err = rp.Join(`..\path-evil\x`)
+	assert.ErrorContains(t, err, `relative path escapes root`)
+
+	_, err = rp.Join(`..\pathx`)
+	assert.ErrorContains(t, err, `relative path escapes root`)
 }
 
 func TestWindowsLocalRootPath(t *testing.T) {
@@ -139,4 +171,18 @@ func TestWindowsLocalRootPath(t *testing.T) {
 	testWindowsLocalRootPath(t, `c:\some\root\path\`)
 	testWindowsLocalRootPath(t, `c:\some\root\path\.`)
 	testWindowsLocalRootPath(t, `C:\some\root\..\path\`)
+}
+
+func TestLocalRootPathEmptyRoot(t *testing.T) {
+	// An empty root is the unrooted local filer used by cmd/fs;
+	// it allows any path, including relative paths outside the CWD.
+	rp := NewLocalRootPath("")
+
+	p, err := rp.Join("a/b")
+	assert.NoError(t, err)
+	assert.Equal(t, filepath.Clean("a/b"), p)
+
+	p, err = rp.Join("../a")
+	assert.NoError(t, err)
+	assert.Equal(t, filepath.Clean("../a"), p)
 }
