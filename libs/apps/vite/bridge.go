@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/databricks/cli/libs/cmdio"
@@ -75,10 +76,11 @@ type prioritizedMessage struct {
 }
 
 type Bridge struct {
-	ctx                context.Context
-	w                  *databricks.WorkspaceClient
-	appName            string
-	tunnelConn         *websocket.Conn
+	ctx     context.Context
+	w       *databricks.WorkspaceClient
+	appName string
+	// Atomic because reconnects swap the connection while the writer goroutine reads it.
+	tunnelConn         atomic.Pointer[websocket.Conn]
 	hmrConn            *websocket.Conn
 	tunnelID           string
 	tunnelWriteChan    chan prioritizedMessage
@@ -86,6 +88,7 @@ type Bridge struct {
 	stop               func()
 	httpClient         *http.Client
 	connectionRequests chan *BridgeMessage
+	stdinLines         chan string // Lines read by the persistent stdin reader, consumed by connection prompts
 	port               int
 	keepaliveDone      chan struct{} // Signals keepalive goroutine to stop on reconnect
 	keepaliveMu        sync.Mutex    // Protects keepaliveDone
@@ -116,6 +119,7 @@ func NewBridge(ctx context.Context, w *databricks.WorkspaceClient, appName strin
 		stopChan:           make(chan struct{}),
 		tunnelWriteChan:    make(chan prioritizedMessage, 100), // Buffered channel for async writes
 		connectionRequests: make(chan *BridgeMessage, 10),
+		stdinLines:         make(chan string),
 		port:               port,
 		autoApprove:        autoApprove,
 	}
@@ -123,9 +127,9 @@ func NewBridge(ctx context.Context, w *databricks.WorkspaceClient, appName strin
 	b.stop = sync.OnceFunc(func() {
 		close(b.stopChan)
 
-		if b.tunnelConn != nil {
-			_ = b.tunnelConn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
-			b.tunnelConn.Close()
+		if conn := b.tunnelConn.Load(); conn != nil {
+			_ = conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
+			conn.Close()
 		}
 
 		if b.hmrConn != nil {
@@ -219,7 +223,7 @@ func (vb *Bridge) connectToTunnel(appDomain *url.URL) error {
 		return nil
 	})
 
-	vb.tunnelConn = conn
+	vb.setTunnelConn(conn)
 
 	// Start keepalive ping goroutine (stop existing one first if any)
 	vb.keepaliveMu.Lock()
@@ -233,6 +237,14 @@ func (vb *Bridge) connectToTunnel(appDomain *url.URL) error {
 	go vb.tunnelKeepalive(keepaliveDone)
 
 	return nil
+}
+
+// setTunnelConn atomically installs a new tunnel connection and closes the
+// previous one so a reconnect doesn't leak the old connection.
+func (vb *Bridge) setTunnelConn(conn *websocket.Conn) {
+	if old := vb.tunnelConn.Swap(conn); old != nil {
+		old.Close()
+	}
 }
 
 // ConnectToTunnelWithRetry attempts to connect to the tunnel with exponential backoff.
@@ -346,7 +358,8 @@ func (vb *Bridge) tunnelWriter(ctx context.Context) error {
 		case <-vb.stopChan:
 			return nil
 		case msg := <-vb.tunnelWriteChan:
-			if err := vb.tunnelConn.WriteMessage(msg.messageType, msg.data); err != nil {
+			// Load per message so writes follow a reconnect to the new connection.
+			if err := vb.tunnelConn.Load().WriteMessage(msg.messageType, msg.data); err != nil {
 				log.Errorf(vb.ctx, "[vite_bridge] Failed to write message: %v", err)
 				return fmt.Errorf("failed to write to tunnel: %w", err)
 			}
@@ -364,7 +377,7 @@ func (vb *Bridge) handleTunnelMessages(ctx context.Context) error {
 		default:
 		}
 
-		_, message, err := vb.tunnelConn.ReadMessage()
+		_, message, err := vb.tunnelConn.Load().ReadMessage()
 		if err != nil {
 			if websocket.IsCloseError(err, websocket.CloseNormalClosure, websocket.CloseGoingAway, websocket.CloseNoStatusReceived, websocket.CloseAbnormalClosure) {
 				cmdio.LogString(vb.ctx, "🔄 Tunnel closed, reconnecting...")
@@ -408,8 +421,16 @@ func (vb *Bridge) handleMessage(msg *BridgeMessage) error {
 		return nil
 
 	case "connection:request":
-		vb.connectionRequests <- msg
-		return nil
+		// The consumer can be blocked on a stdin prompt (or gone after stop), so a
+		// bare send here could stall the tunnel reader and hang shutdown.
+		select {
+		case vb.connectionRequests <- msg:
+			return nil
+		case <-vb.stopChan:
+			return nil
+		case <-time.After(wsWriteTimeout):
+			return errors.New("connection request queue full, dropping request")
+		}
 
 	case "fetch":
 		go func(fetchMsg BridgeMessage) {
@@ -446,6 +467,27 @@ func (vb *Bridge) handleMessage(msg *BridgeMessage) error {
 	}
 }
 
+// readStdinLines forwards lines from r to stdinLines until read error or stop.
+// A single persistent reader (rather than one goroutine per prompt) ensures a
+// prompt that times out doesn't leak a goroutine that then swallows the user's
+// answer to the next prompt. The channel is closed on read error so pending and
+// future prompts fail instead of waiting for input that will never come.
+func (vb *Bridge) readStdinLines(r io.Reader) {
+	reader := bufio.NewReader(r)
+	for {
+		line, err := reader.ReadString('\n')
+		if err != nil {
+			close(vb.stdinLines)
+			return
+		}
+		select {
+		case vb.stdinLines <- line:
+		case <-vb.stopChan:
+			return
+		}
+	}
+}
+
 func (vb *Bridge) handleConnectionRequest(msg *BridgeMessage) error {
 	cmdio.LogString(vb.ctx, "")
 	cmdio.LogString(vb.ctx, "🔔 Connection Request")
@@ -458,25 +500,15 @@ func (vb *Bridge) handleConnectionRequest(msg *BridgeMessage) error {
 	} else {
 		cmdio.LogString(vb.ctx, "   Approve this connection? (y/n)")
 
-		// Read from stdin with timeout to prevent indefinite blocking
-		inputChan := make(chan string, 1)
-		errChan := make(chan error, 1)
-
-		go func() {
-			reader := bufio.NewReader(os.Stdin)
-			input, err := reader.ReadString('\n')
-			if err != nil {
-				errChan <- err
-				return
-			}
-			inputChan <- input
-		}()
-
 		select {
-		case input := <-inputChan:
+		case input, ok := <-vb.stdinLines:
+			if !ok {
+				return errors.New("failed to read user input: stdin closed")
+			}
 			approved = strings.ToLower(strings.TrimSpace(input)) == "y"
-		case err := <-errChan:
-			return fmt.Errorf("failed to read user input: %w", err)
+		case <-vb.stopChan:
+			// Shutting down; no point answering the request.
+			return nil
 		case <-time.After(BridgeConnTimeout):
 			// Default to denying after timeout
 			cmdio.LogString(vb.ctx, "⏱️  Timeout waiting for response, denying connection")
@@ -907,7 +939,7 @@ func (vb *Bridge) Start() error {
 	readyChan := make(chan error, 1)
 	go func() {
 		for vb.tunnelID == "" {
-			_, message, err := vb.tunnelConn.ReadMessage()
+			_, message, err := vb.tunnelConn.Load().ReadMessage()
 			if err != nil {
 				readyChan <- err
 				return
@@ -952,6 +984,11 @@ func (vb *Bridge) Start() error {
 		}
 		return nil
 	})
+
+	// Single persistent stdin reader for connection prompts; see readStdinLines.
+	if !vb.autoApprove {
+		go vb.readStdinLines(os.Stdin)
+	}
 
 	// Connection request handler - not in errgroup to avoid blocking other handlers
 	go func() {
