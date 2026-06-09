@@ -157,13 +157,14 @@ Stack Trace:
 		fmt.Fprintf(cmd.ErrOrStderr(), "Error: %s\n", err.Error())
 	}
 
-	// Log exit status and error
-	// We only log if logger initialization succeeded and is stored in command
-	// context
+	// On success, advise the user if a newer CLI release is available.
 	if err == nil {
 		printUpgradeNotice(cmd.Context(), cmd)
 	}
 
+	// Log exit status and error
+	// We only log if logger initialization succeeded and is stored in command
+	// context
 	if logger, ok := log.FromContext(cmd.Context()); ok {
 		if err == nil {
 			logger.Info("completed execution",
