@@ -51,6 +51,7 @@ type TFState struct {
 	Attrs TFStateAttrs
 	// IDs maps bundle resource key → {ID, ETag} (same as terraform.ParseResourcesState).
 	IDs terraform.ExportedResourcesMap
+
 	// Lineage and Serial are the top-level state metadata used to seed the direct state.
 	Lineage string
 	Serial  int
@@ -67,23 +68,49 @@ func ParseTFStateFull(ctx context.Context, path string) (*TFState, error) {
 		return nil, err
 	}
 
-	var meta struct {
-		Lineage string `json:"lineage"`
-		Serial  int    `json:"serial"`
-	}
-	if err := json.Unmarshal(raw, &meta); err != nil {
+	// Parse once: lineage/serial live at the top level alongside the resources array,
+	// so a single unmarshal captures everything needed for both attrs and IDs.
+	var parsed rawTFState
+	if err := json.Unmarshal(raw, &parsed); err != nil {
 		return nil, err
 	}
 
-	attrs, err := parseTFStateAttrsFromBytes(raw)
-	if err != nil {
-		return nil, err
-	}
+	attrs := parseTFStateAttrsFromRaw(&parsed)
+
 	ids, err := terraform.ParseResourcesStateFromBytes(ctx, raw)
 	if err != nil {
 		return nil, err
 	}
-	return &TFState{Attrs: attrs, IDs: ids, Lineage: meta.Lineage, Serial: meta.Serial}, nil
+	return &TFState{Attrs: attrs, IDs: ids, Lineage: parsed.Lineage, Serial: parsed.Serial}, nil
+}
+
+// rawTFState is the on-disk terraform state format; it captures everything we need in one parse.
+type rawTFState struct {
+	Version   int    `json:"version"`
+	Lineage   string `json:"lineage"`
+	Serial    int    `json:"serial"`
+	Resources []struct {
+		Type      string              `json:"type"`
+		Name      string              `json:"name"`
+		Mode      tfjson.ResourceMode `json:"mode"`
+		Instances []struct {
+			Attributes json.RawMessage `json:"attributes"`
+		} `json:"instances"`
+	} `json:"resources"`
+}
+
+func parseTFStateAttrsFromRaw(s *rawTFState) TFStateAttrs {
+	result := make(TFStateAttrs)
+	for _, r := range s.Resources {
+		if r.Mode != tfjson.ManagedResourceMode || len(r.Instances) == 0 {
+			continue
+		}
+		if result[r.Type] == nil {
+			result[r.Type] = make(map[string]json.RawMessage)
+		}
+		result[r.Type][r.Name] = r.Instances[0].Attributes
+	}
+	return result
 }
 
 // ParseTFStateAttrs parses the terraform state file returning full attribute JSON per resource.
@@ -98,31 +125,11 @@ func ParseTFStateAttrs(path string) (TFStateAttrs, error) {
 }
 
 func parseTFStateAttrsFromBytes(raw []byte) (TFStateAttrs, error) {
-	var state struct {
-		Version   int `json:"version"`
-		Resources []struct {
-			Type      string              `json:"type"`
-			Name      string              `json:"name"`
-			Mode      tfjson.ResourceMode `json:"mode"`
-			Instances []struct {
-				Attributes json.RawMessage `json:"attributes"`
-			} `json:"instances"`
-		} `json:"resources"`
-	}
-	if err := json.Unmarshal(raw, &state); err != nil {
+	var s rawTFState
+	if err := json.Unmarshal(raw, &s); err != nil {
 		return nil, err
 	}
-	result := make(TFStateAttrs)
-	for _, r := range state.Resources {
-		if r.Mode != tfjson.ManagedResourceMode || len(r.Instances) == 0 {
-			continue
-		}
-		if result[r.Type] == nil {
-			result[r.Type] = make(map[string]json.RawMessage)
-		}
-		result[r.Type][r.Name] = r.Instances[0].Attributes
-	}
-	return result, nil
+	return parseTFStateAttrsFromRaw(&s), nil
 }
 
 // LookupTFField looks up a field from TF state attributes for a bundle resource.
