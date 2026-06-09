@@ -11,6 +11,15 @@ Ignore = [
 # Setting this environment variable prevents that conversion on windows.
 MSYS_NO_PATHCONV = "1"
 
+# Etag is a long integer; can be negative on cloud. Replace for cloud compatibility.
+[[Repls]]
+Old = "\"[-0-9]{8,}\""
+New = "[ETAG]"
+
+[[Repls]]
+Old = "\"[0-9]{8,}\""
+New = "[ETAG]"
+
 [[Repls]]
 Old = "[0-9a-z]{16,}"
 New = "[ALPHANUMID]"

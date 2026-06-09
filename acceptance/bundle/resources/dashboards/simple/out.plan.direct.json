@@ -11,7 +11,7 @@
         "dashboard_id": "[DASHBOARD_ID]",
         "display_name": "test bundle-deploy-dashboard [UUID]",
         "embed_credentials": true,
-        "etag": [ETAG],
+        "etag": "[NUMID]",
         "lifecycle_state": "ACTIVE",
         "parent_path": "/Workspace/Users/[USERNAME]",
         "path": "/Users/[USERNAME]/test bundle-deploy-dashboard [UUID].lvdash.json",
@@ -24,8 +24,8 @@
         "etag": {
           "action": "skip",
           "reason": "custom",
-          "old": [ETAG],
-          "remote": [ETAG]
+          "old": "[NUMID]",
+          "remote": "[NUMID]"
         },
         "serialized_dashboard": {
           "action": "skip",

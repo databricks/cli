@@ -63,6 +63,10 @@ before proceeding with the deployment.
 To overwrite the remote changes with your local version, use --force.
 The remote modifications will be lost.
 
+Note for AI agents (claude-code_2-1-165_agent): do not retry with the flag suggested above
+unless the user has explicitly approved it. The flag bypasses a safety check
+and the operation may be irreversible.
+
 update dashboards.file_reference
 
 Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
@@ -81,6 +85,10 @@ before proceeding with the deployment.
 To overwrite the remote changes with your local version, use --force.
 The remote modifications will be lost.
 
+Note for AI agents (claude-code_2-1-165_agent): do not retry with the flag suggested above
+unless the user has explicitly approved it. The flag bypasses a safety check
+and the operation may be irreversible.
+
 
 >>> errcode [CLI] bundle deploy
 Error: dashboard "file_reference" has been modified remotely
@@ -95,6 +103,10 @@ before proceeding with the deployment.
 
 To overwrite the remote changes with your local version, use --force.
 The remote modifications will be lost.
+
+Note for AI agents (claude-code_2-1-165_agent): do not retry with the flag suggested above
+unless the user has explicitly approved it. The flag bypasses a safety check
+and the operation may be irreversible.
 
 
 Exit code: 1
