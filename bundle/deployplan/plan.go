@@ -196,12 +196,6 @@ func (p *Plan) ReadUnlockEntry(resourceKey string) {
 	p.lockmap.RUnlock(resourceKey)
 }
 
-func (p *Plan) RemoveEntry(resourceKey string) {
-	p.mutex.Lock()
-	defer p.mutex.Unlock()
-	delete(p.Plan, resourceKey)
-}
-
 // FilterToSelected reduces the plan to the nodes in selected (format "type.name",
 // e.g. "jobs.my_job") plus their transitive dependencies as recorded in each
 // entry's DependsOn field. Nodes not reachable from the selected set are removed.

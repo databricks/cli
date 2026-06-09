@@ -1,0 +1,18 @@
+trace $CLI bundle deploy
+job_id=`$CLI bundle summary -o json | jq -r .resources.jobs.foo.id`
+pipeline_id=`$CLI bundle summary -o json | jq -r .resources.pipelines.bar.id`
+trace $CLI jobs delete $job_id
+trace $CLI pipelines delete $pipeline_id
+
+title "Remove resources from config, plan and deploy"
+# The engines diverge here: direct plans a delete for the stale state entries and
+# removes them from state; terraform drops the gone resources from the plan but
+# keeps them in its state, so the summary below still lists them.
+cp empty.yml databricks.yml
+trace $CLI bundle plan &> out.plan_removed.$DATABRICKS_BUNDLE_ENGINE.txt
+trace $CLI bundle deploy --auto-approve &> out.deploy_removed.$DATABRICKS_BUNDLE_ENGINE.txt
+
+title "Plan and deploy again, then summary"
+trace $CLI bundle plan
+trace $CLI bundle deploy
+trace $CLI bundle summary &> out.summary.$DATABRICKS_BUNDLE_ENGINE.txt
