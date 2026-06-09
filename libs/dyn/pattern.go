@@ -117,12 +117,9 @@ func (e expectedSequenceError) Error() string {
 	return fmt.Sprintf("expected a sequence at %q, found %s", e.p, e.v.Kind())
 }
 
-// isNoMatchError reports whether err indicates that a pattern suffix didn't
-// match the value it visited: a missing key or index, or a nil or
-// non-collection value where the pattern expects a map or sequence.
-// Wildcard components skip such elements instead of aborting the visit, so one
-// element that doesn't match (e.g. a job with an empty "tasks:" block) doesn't
-// fail the transform for all of its valid siblings.
+// isNoMatchError reports whether err means the pattern suffix didn't match the
+// visited value. Wildcard components skip such elements (e.g. a job with an
+// empty "tasks:" block) instead of failing the visit for all valid siblings.
 func isNoMatchError(err error) bool {
 	if IsNoSuchKeyError(err) || IsIndexOutOfBoundsError(err) || IsCannotTraverseNilError(err) {
 		return true
