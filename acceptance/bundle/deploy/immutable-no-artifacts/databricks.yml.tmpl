@@ -1,0 +1,16 @@
+bundle:
+  name: test-bundle-immutable-no-artifacts-$UNIQUE_NAME
+  deployment:
+    immutable_folder: true
+
+resources:
+  jobs:
+    my_job:
+      name: my job
+      tasks:
+        - task_key: spark_python_task
+          spark_python_task:
+            python_file: ./src/main.py
+        - task_key: notebook_task
+          notebook_task:
+            notebook_path: ./src/notebook.py
