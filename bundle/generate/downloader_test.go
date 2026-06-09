@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -259,6 +260,50 @@ func TestDownloader_MarkTasksForDownload_NoNotebooks(t *testing.T) {
 	err := downloader.MarkTasksForDownload(ctx, tasks)
 	require.NoError(t, err)
 	assert.Empty(t, downloader.files)
+}
+
+func TestDownloader_FlushToDisk(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+
+	contents := map[string]string{
+		"/Users/user/project/notebook": "# Databricks notebook source\nprint(1)",
+		"/Users/user/project/utils.py": "def helper(): pass",
+	}
+	w := newTestWorkspaceClient(t, func(rw http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/2.0/workspace/export" {
+			t.Fatalf("unexpected request path: %s", r.URL.Path)
+		}
+		content, ok := contents[r.URL.Query().Get("path")]
+		if !ok {
+			t.Fatalf("unexpected export path: %s", r.URL.Query().Get("path"))
+		}
+		_, err := rw.Write([]byte(content))
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
+
+	sourceDir := t.TempDir()
+	downloader := NewDownloader(w, sourceDir, "config")
+	downloader.files[filepath.Join(sourceDir, "notebook.py")] = exportFile{
+		path:   "/Users/user/project/notebook",
+		format: workspace.ExportFormatSource,
+	}
+	downloader.files[filepath.Join(sourceDir, "utils.py")] = exportFile{
+		path:   "/Users/user/project/utils.py",
+		format: workspace.ExportFormatSource,
+	}
+
+	err := downloader.FlushToDisk(ctx, false)
+	require.NoError(t, err)
+
+	data, err := os.ReadFile(filepath.Join(sourceDir, "notebook.py"))
+	require.NoError(t, err)
+	assert.Equal(t, contents["/Users/user/project/notebook"], string(data))
+
+	data, err = os.ReadFile(filepath.Join(sourceDir, "utils.py"))
+	require.NoError(t, err)
+	assert.Equal(t, contents["/Users/user/project/utils.py"], string(data))
 }
 
 func TestDownloader_CleanupOldFiles(t *testing.T) {

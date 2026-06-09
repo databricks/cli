@@ -321,9 +321,14 @@ func (n *Downloader) FlushToDisk(ctx context.Context, force bool) error {
 			if err != nil {
 				return err
 			}
-			defer file.Close()
 
 			_, err = io.Copy(file, reader)
+			// Close flushes buffered writes; if it fails the file may be truncated,
+			// so check it before reporting success.
+			cerr := file.Close()
+			if err == nil {
+				err = cerr
+			}
 			if err != nil {
 				return err
 			}
