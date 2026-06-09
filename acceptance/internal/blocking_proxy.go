@@ -99,8 +99,7 @@ func handleBlockedConnection(t *testing.T, conn net.Conn) {
 	}
 
 	body := fmt.Sprintf("internet access is blocked in local tests: %s %s\n", method, host)
-	conn.Write([]byte(fmt.Sprintf( //nolint:errcheck
+	fmt.Fprintf(conn,
 		"HTTP/1.1 400 Bad Request\r\nContent-Type: text/plain\r\nContent-Length: %d\r\nConnection: close\r\n\r\n%s",
-		len(body), body,
-	)))
+		len(body), body)
 }

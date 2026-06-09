@@ -1,5 +1,5 @@
-Error: git clone failed: git clone https://invalid-domain-123.databricks.invalid/hello/world /var/folders/5y/9kkdnjw91p11vsqwk0cvmk200000gp/T/world-123456 --no-tags --depth=1: exit status 128. Cloning into '(redacted)'...
-fatal: unable to access 'https://invalid-domain-123.databricks.invalid/hello/world/': CONNECT tunnel failed, response 400
+Error: git clone failed: git clone https://invalid-domain-123.databricks.invalid/hello/world (redacted) --no-tags --depth=1: exit status 128. Cloning into '(redacted)'...
+fatal: unable to access 'https://invalid-domain-123.databricks.invalid/hello/world/': (redacted)
 
 
 Exit code: 1
