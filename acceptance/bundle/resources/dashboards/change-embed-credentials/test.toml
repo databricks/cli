@@ -1,0 +1,8 @@
+# Etag is a long integer in the Terraform PATCH body; can be negative on cloud.
+[[Repls]]
+Old = "\"[-0-9]{8,}\""
+New = "[ETAG]"
+
+[[Repls]]
+Old = "\"[0-9]{8,}\""
+New = "[ETAG]"
