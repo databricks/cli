@@ -15,6 +15,7 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
+	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/postgres"
 )
 
@@ -36,6 +37,16 @@ type PostgresRoleState struct {
 
 	// Parent is "projects/{project_id}/branches/{branch_id}".
 	Parent string `json:"parent"`
+}
+
+// Custom marshaler needed because embedded RoleRoleSpec has its own
+// MarshalJSON which would otherwise take over and ignore the additional fields.
+func (s *PostgresRoleState) UnmarshalJSON(b []byte) error {
+	return marshal.Unmarshal(b, s)
+}
+
+func (s PostgresRoleState) MarshalJSON() ([]byte, error) {
+	return marshal.Marshal(s)
 }
 
 func (*ResourcePostgresRole) New(client *databricks.WorkspaceClient) *ResourcePostgresRole {
