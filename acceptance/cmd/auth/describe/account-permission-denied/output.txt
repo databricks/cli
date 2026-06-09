@@ -1,0 +1,19 @@
+
+=== Permission denied still proves the credentials are valid
+
+>>> [CLI] auth describe --profile acct-nonadmin
+Host: [DATABRICKS_URL]
+Account ID: acct-456
+Authenticated with: pat
+-----
+Current configuration:
+  ✓ host: [DATABRICKS_URL] (from DATABRICKS_HOST environment variable)
+  ✓ account_id: acct-456 (from [TEST_TMP_DIR]/home/.databrickscfg config file)
+  ✓ workspace_id: none (from [TEST_TMP_DIR]/home/.databrickscfg config file)
+  ✓ token: ******** (from DATABRICKS_TOKEN environment variable)
+  ✓ profile: acct-nonadmin (from --profile flag)
+  ✓ databricks_cli_path: [CLI]
+  ✓ auth_type: pat
+  ✓ rate_limit: [NUMID] (from DATABRICKS_RATE_LIMIT environment variable)
+  ✓ cloud: AWS
+  ✓ discovery_url: [DATABRICKS_URL]/oidc/.well-known/oauth-authorization-server

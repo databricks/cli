@@ -7,7 +7,7 @@
 
 ### CLI
 * Added the `databricks quickstart` command, a short introduction to the CLI that prints a human-friendly guide interactively and an agent-oriented version when run non-interactively ([#5464](https://github.com/databricks/cli/pull/5464)).
-* `databricks auth describe` now verifies credentials against both the workspace and account endpoints before reporting a failure, fixing false "Unable to authenticate" errors for account console profiles ([#5479](https://github.com/databricks/cli/issues/5479)).
+* `databricks auth describe` now verifies credentials against both the workspace and account endpoints and treats permission-denied responses as proof of successful authentication, fixing false "Unable to authenticate" errors for account console profiles ([#5479](https://github.com/databricks/cli/issues/5479)).
 
 ### Bundles
 * Set the default `data_security_mode` to `DATA_SECURITY_MODE_AUTO` in bundle templates ([#5452](https://github.com/databricks/cli/pull/5452)).

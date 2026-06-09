@@ -1,0 +1,21 @@
+sethome "./home"
+
+# An account profile for a non-admin user: the account verification call is
+# admin-only and returns 403, and the account console cannot serve the
+# workspace verification call either. A 403 still proves the credentials
+# work, so describe must report success.
+#
+# workspace_id = none (the legacy account-only sentinel) forces the account
+# client path; with no workspace_id at all, the testserver's built-in
+# /.well-known/databricks-config handler would backfill one and route this
+# profile to a workspace client, unlike a real account console host.
+cat > "./home/.databrickscfg" <<EOF
+[acct-nonadmin]
+host         = $DATABRICKS_HOST
+token        = $DATABRICKS_TOKEN
+account_id   = acct-456
+workspace_id = none
+EOF
+
+title "Permission denied still proves the credentials are valid\n"
+trace $CLI auth describe --profile acct-nonadmin
