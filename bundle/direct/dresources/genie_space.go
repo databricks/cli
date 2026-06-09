@@ -71,7 +71,7 @@ func (r *ResourceGenieSpace) DoRead(ctx context.Context, id string) (*resources.
 		ForceSendFields:        nil,
 	})
 	if err != nil {
-		return nil, genieSpaceGoneError(err)
+		return nil, err
 	}
 	return responseToGenieSpaceConfig(space, space.SerializedSpace), nil
 }
@@ -139,18 +139,6 @@ func isMissingGenieParentPathError(err error) bool {
 		apiErr.ErrorCode == "INVALID_PARAMETER_VALUE" &&
 		strings.Contains(apiErr.Message, "Tree node with path") &&
 		strings.Contains(apiErr.Message, "does not exist")
-}
-
-// genieSpaceGoneError maps the Genie API's "space does not exist" response to
-// the framework's gone sentinel (apierr.ErrResourceDoesNotExist). The Genie API
-// returns 403 (not 404) for a missing space, so without this translation
-// isResourceGone would treat a remotely-deleted space as a hard permission
-// error instead of recreating it (on read) or tolerating it (on delete).
-func genieSpaceGoneError(err error) error {
-	if errors.Is(err, apierr.ErrPermissionDenied) {
-		return errors.Join(err, apierr.ErrResourceDoesNotExist)
-	}
-	return err
 }
 
 func (r *ResourceGenieSpace) DoCreate(ctx context.Context, config *resources.GenieSpaceConfig) (string, *resources.GenieSpaceConfig, error) {
@@ -297,9 +285,7 @@ func hasUpdate(entry *PlanEntry, path *structpath.PathNode) bool {
 }
 
 func (r *ResourceGenieSpace) DoDelete(ctx context.Context, id string, _ *resources.GenieSpaceConfig) error {
-	// TrashSpace returns 403 when the space is already gone; map that to the
-	// gone sentinel so deletion is idempotent.
-	return genieSpaceGoneError(r.client.Genie.TrashSpace(ctx, dashboards.GenieTrashSpaceRequest{
+	return r.client.Genie.TrashSpace(ctx, dashboards.GenieTrashSpaceRequest{
 		SpaceId: id,
-	}))
+	})
 }

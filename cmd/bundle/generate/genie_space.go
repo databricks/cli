@@ -68,8 +68,7 @@ func (g *genieSpace) resolveFromID(ctx context.Context, b *bundle.Bundle) string
 		SpaceId: g.existingID,
 	})
 	if err != nil {
-		// The Genie API returns 403 (not 404) when a space does not exist.
-		if apierr.IsMissing(err) || errors.Is(err, apierr.ErrPermissionDenied) {
+		if apierr.IsMissing(err) {
 			logdiag.LogError(ctx, fmt.Errorf("genie space with ID %s not found", g.existingID))
 			return ""
 		}

@@ -1,7 +1,6 @@
 package dresources
 
 import (
-	"errors"
 	"testing"
 
 	"github.com/databricks/cli/bundle/config/resources"
@@ -260,52 +259,4 @@ func TestGenieSpaceOverrideChangeDescEtag(t *testing.T) {
 		require.NoError(t, r.OverrideChangeDesc(t.Context(), titlePath, change, nil))
 		assert.Equal(t, deployplan.Update, change.Action)
 	})
-}
-
-func TestGenieSpaceGoneErrorMapsForbidden(t *testing.T) {
-	// The Genie API returns 403 (not 404) for a missing space; it must surface
-	// as the framework's gone sentinel so a deleted space is recreated (read)
-	// or tolerated (delete).
-	forbidden := &apierr.APIError{StatusCode: 403, Message: "dataRoom is not user-facing"}
-	assert.ErrorIs(t, genieSpaceGoneError(forbidden), apierr.ErrResourceDoesNotExist)
-
-	// Unrelated errors pass through unchanged.
-	other := errors.New("boom")
-	assert.Equal(t, other, genieSpaceGoneError(other))
-
-	// A nil error stays nil.
-	assert.NoError(t, genieSpaceGoneError(nil))
-}
-
-func TestGenieSpaceDoReadTreatsForbiddenAsGone(t *testing.T) {
-	ctx := t.Context()
-	m := mocks.NewMockWorkspaceClient(t)
-	r := (&ResourceGenieSpace{}).New(m.WorkspaceClient)
-
-	m.GetMockGenieAPI().EXPECT().
-		GetSpace(ctx, dashboards.GenieGetSpaceRequest{
-			SpaceId:                "space-id",
-			IncludeSerializedSpace: true,
-		}).
-		Return(nil, &apierr.APIError{StatusCode: 403, Message: "dataRoom is not user-facing"}).
-		Once()
-
-	_, err := r.DoRead(ctx, "space-id")
-	require.Error(t, err)
-	assert.ErrorIs(t, err, apierr.ErrResourceDoesNotExist)
-}
-
-func TestGenieSpaceDoDeleteToleratesForbidden(t *testing.T) {
-	ctx := t.Context()
-	m := mocks.NewMockWorkspaceClient(t)
-	r := (&ResourceGenieSpace{}).New(m.WorkspaceClient)
-
-	m.GetMockGenieAPI().EXPECT().
-		TrashSpace(ctx, dashboards.GenieTrashSpaceRequest{SpaceId: "space-id"}).
-		Return(&apierr.APIError{StatusCode: 403, Message: "dataRoom is not user-facing"}).
-		Once()
-
-	err := r.DoDelete(ctx, "space-id", nil)
-	require.Error(t, err)
-	assert.ErrorIs(t, err, apierr.ErrResourceDoesNotExist)
 }
