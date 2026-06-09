@@ -32,9 +32,9 @@ const (
 	// escape hatch); it is not a documented, user-facing setting.
 	gitHubAPIURLEnv = "DATABRICKS_CLI_GITHUB_API_URL"
 
-	// fetchTimeout bounds the release lookup so a hung connection never blocks
-	// the user's command indefinitely.
-	fetchTimeout = 10 * time.Second
+	// fetchTimeout bounds the release lookup. The explicit `version --check`
+	// waits on it, so keep it short: a quick "couldn't reach GitHub" beats a hang.
+	fetchTimeout = 2 * time.Second
 )
 
 // Upgrade commands per install method, matching the documented install flows:
@@ -60,12 +60,15 @@ const (
 
 // Result is the outcome of an update check.
 type Result struct {
-	CurrentVersion   string        `json:"current_version"`
-	LatestVersion    string        `json:"latest_version,omitempty"`
-	UpdateAvailable  bool          `json:"update_available"`
-	DevelopmentBuild bool          `json:"development_build,omitempty"`
-	InstallMethod    InstallMethod `json:"install_method,omitempty"`
-	UpgradeCommand   string        `json:"upgrade_command,omitempty"`
+	CurrentVersion   string `json:"current_version"`
+	LatestVersion    string `json:"latest_version,omitempty"`
+	UpdateAvailable  bool   `json:"update_available"`
+	DevelopmentBuild bool   `json:"development_build,omitempty"`
+	// CheckFailed is set when the latest version couldn't be fetched (offline,
+	// timeout, rate-limited). The command reports this gently instead of erroring.
+	CheckFailed    bool          `json:"check_failed,omitempty"`
+	InstallMethod  InstallMethod `json:"install_method,omitempty"`
+	UpgradeCommand string        `json:"upgrade_command,omitempty"`
 }
 
 // Check fetches the latest released version and compares it with the running
@@ -88,7 +91,13 @@ func Check(ctx context.Context) (*Result, error) {
 	defer cancel()
 	latest, err := fetchLatestVersion(ctx)
 	if err != nil {
-		return nil, err
+		// Fail gently: a failed lookup shouldn't fail the command. The caller
+		// renders a "couldn't reach GitHub" message instead.
+		log.Debugf(ctx, "version check: %v", err)
+		return &Result{
+			CurrentVersion: info.Version,
+			CheckFailed:    true,
+		}, nil
 	}
 
 	return &Result{

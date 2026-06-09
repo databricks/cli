@@ -17,6 +17,8 @@ import (
 const updateCheckTemplate = `Databricks CLI v{{.CurrentVersion}}
 {{if .DevelopmentBuild -}}
 This is a development build; skipping the update check.
+{{- else if .CheckFailed -}}
+Could not reach GitHub to check for a newer version. See https://github.com/databricks/cli/releases for the latest release.
 {{- else if .UpdateAvailable -}}
 {{yellow "A new version is available"}}: {{.LatestVersion}} (you have {{.CurrentVersion}}).
 {{if .UpgradeCommand -}}
