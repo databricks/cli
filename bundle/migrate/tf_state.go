@@ -121,10 +121,6 @@ func ParseTFStateAttrs(path string) (TFStateAttrs, error) {
 	if err != nil {
 		return nil, err
 	}
-	return parseTFStateAttrsFromBytes(raw)
-}
-
-func parseTFStateAttrsFromBytes(raw []byte) (TFStateAttrs, error) {
 	var s rawTFState
 	if err := json.Unmarshal(raw, &s); err != nil {
 		return nil, err
