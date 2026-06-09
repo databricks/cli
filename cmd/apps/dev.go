@@ -12,7 +12,6 @@ import (
 	"os/exec"
 	"os/signal"
 	"strconv"
-	"strings"
 	"syscall"
 	"time"
 
@@ -22,6 +21,7 @@ import (
 	"github.com/databricks/cli/libs/apps/vite"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/spf13/cobra"
 )
 
@@ -38,6 +38,14 @@ func isViteReady(port int) bool {
 	}
 	conn.Close()
 	return true
+}
+
+// isAppNotFound reports whether err is the Apps API's 404 for an app that was
+// never created or has been deleted ("App with name X does not exist or is
+// deleted."). The API reports both cases with HTTP 404, so we match the
+// status-based sentinel instead of the error message wording.
+func isAppNotFound(err error) bool {
+	return errors.Is(err, apierr.ErrNotFound)
 }
 
 // detectAppNameFromBundle tries to extract the app name from a databricks.yml bundle config.
@@ -184,7 +192,7 @@ Examples:
 				return domainErr
 			})
 			if err != nil {
-				if strings.Contains(err.Error(), "does not exist") || strings.Contains(err.Error(), "is deleted") {
+				if isAppNotFound(err) {
 					return fmt.Errorf("application '%s' has not been deployed yet. Run `databricks apps deploy` to deploy and then try again", appName)
 				}
 				return fmt.Errorf("failed to get app domain: %w", err)

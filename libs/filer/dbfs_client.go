@@ -148,13 +148,15 @@ func (w *DbfsClient) Read(ctx context.Context, name string) (io.ReadCloser, erro
 
 	handle, err := w.workspaceClient.Dbfs.Open(ctx, absPath, files.FileModeRead)
 	if err != nil {
-		// Return error if file is a directory
-		if strings.Contains(err.Error(), "cannot open directory for reading") {
-			return nil, notAFile{absPath}
-		}
-
 		aerr, ok := errors.AsType[*apierr.APIError](err)
 		if !ok {
+			// The SDK's Open stats the path and fails with a client-side error
+			// (not an *apierr.APIError, no sentinel) when it is a directory.
+			// Re-stat to detect that case instead of matching the SDK's error
+			// message text.
+			if info, serr := w.workspaceClient.Dbfs.GetStatusByPath(ctx, absPath); serr == nil && info.IsDir {
+				return nil, notAFile{absPath}
+			}
 			return nil, err
 		}
 
