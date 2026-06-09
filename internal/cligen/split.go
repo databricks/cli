@@ -3,8 +3,7 @@ package main
 import "unicode"
 
 // This file holds the name-splitting engine ported from genkit's
-// codegen/code/named.go. The casing helpers in names.go all build on splitASCII;
-// it lives here to match split_test.go, which pins its non-obvious behavior.
+// codegen/code/named.go. The casing helpers in names.go all build on splitASCII.
 
 func searchNearest(name string, cond func(rune) bool, forward bool, i int) bool {
 	incr := 1
