@@ -16,6 +16,10 @@ func TestNameCasings(t *testing.T) {
 		{"IpAccessLists", "ip-access-lists", "ip_access_lists", "IpAccessLists", "ipAccessLists", "IP_ACCESS_LISTS", "Ip Access Lists"},
 		{"IamV2", "iam-v2", "iam_v2", "IamV2", "iamV2", "IAM_V2", "Iam V2"},
 		{"create_run", "create-run", "create_run", "CreateRun", "createRun", "CREATE_RUN", "Create Run"},
+		// Empty and "_" hit the special-cased early returns in camelName/snakeName;
+		// note kebab/title/pascal do not special-case them, so they differ.
+		{"", "", "", "", "", "", ""},
+		{"_", "", "_", "", "_", "_", ""},
 	}
 	for _, c := range cases {
 		if got := kebabName(c.name); got != c.kebab {

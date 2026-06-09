@@ -21,6 +21,10 @@ func TestSplitASCII(t *testing.T) {
 		{"_", nil},
 		{"__", nil},
 
+		// '$' is dropped entirely, joining its neighbors.
+		{"foo$bar", []string{"foobar"}},
+		{"$foo", []string{"foo"}},
+
 		// Single words, any casing, lowercased output.
 		{"a", []string{"a"}},
 		{"A", []string{"a"}},
