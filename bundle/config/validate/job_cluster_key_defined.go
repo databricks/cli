@@ -31,23 +31,37 @@ func (v *jobClusterKeyDefined) Apply(ctx context.Context, b *bundle.Bundle) diag
 		}
 
 		for index, task := range job.Tasks {
-			if task.JobClusterKey != "" {
-				if _, ok := jobClusterKeys[task.JobClusterKey]; !ok {
-					path := fmt.Sprintf("resources.jobs.%s.tasks[%d].job_cluster_key", k, index)
+			diags = diags.Extend(checkJobClusterKey(b, jobClusterKeys, task.JobClusterKey,
+				fmt.Sprintf("resources.jobs.%s.tasks[%d].job_cluster_key", k, index)))
 
-					diags = diags.Append(diag.Diagnostic{
-						Severity: diag.Warning,
-						Summary:  fmt.Sprintf("job_cluster_key %s is not defined", task.JobClusterKey),
-						// Show only the location where the job_cluster_key is defined.
-						// Other associated locations are not relevant since they are
-						// overridden during merging.
-						Locations: b.Config.GetLocations(path),
-						Paths:     []dyn.Path{dyn.MustPathFromString(path)},
-					})
-				}
+			// The task wrapped by a for_each_task can reference a job cluster as well.
+			// The Jobs API rejects nested for_each_task, so one level is sufficient.
+			if task.ForEachTask != nil {
+				diags = diags.Extend(checkJobClusterKey(b, jobClusterKeys, task.ForEachTask.Task.JobClusterKey,
+					fmt.Sprintf("resources.jobs.%s.tasks[%d].for_each_task.task.job_cluster_key", k, index)))
 			}
 		}
 	}
 
 	return diags
+}
+
+// checkJobClusterKey warns if jobClusterKey is set but not defined in the job's job_clusters.
+func checkJobClusterKey(b *bundle.Bundle, jobClusterKeys map[string]bool, jobClusterKey, path string) diag.Diagnostics {
+	if jobClusterKey == "" {
+		return nil
+	}
+	if _, ok := jobClusterKeys[jobClusterKey]; ok {
+		return nil
+	}
+
+	return diag.Diagnostics{{
+		Severity: diag.Warning,
+		Summary:  fmt.Sprintf("job_cluster_key %s is not defined", jobClusterKey),
+		// Show only the location where the job_cluster_key is defined.
+		// Other associated locations are not relevant since they are
+		// overridden during merging.
+		Locations: b.Config.GetLocations(path),
+		Paths:     []dyn.Path{dyn.MustPathFromString(path)},
+	}}
 }
