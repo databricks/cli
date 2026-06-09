@@ -129,8 +129,6 @@ func TestGenerateTrampolineWithCollidingKeys(t *testing.T) {
 				Target: "development",
 			},
 			Resources: config.Resources{
-				// Without the length prefix both pairs would produce "notebook_a_b_c"
-				// and the second wrapper would overwrite the first.
 				Jobs: map[string]*resources.Job{
 					"a_b": newJob("c"),
 					"a":   newJob("b_c"),
