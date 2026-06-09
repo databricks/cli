@@ -29,11 +29,30 @@ type statusData struct {
 	Duration string `json:"-"`
 	// Accelerators describes the run's GPUs, e.g. "8x H100".
 	Accelerators string `json:"-"`
+	// Sweep replaces the single-run view for foreach runs. Text-only; JSON omits it.
+	Sweep *sweepInfo `json:"-"`
 }
 
 // statusTemplate is the text-mode layout. It reads from the JSON envelope, so
 // every field is reached through ".Data". Optional rows are hidden when empty.
-const statusTemplate = `Run ID:       {{.Data.RunID}}
+const statusTemplate = `{{- if .Data.Sweep -}}
+Sweep Run ID: {{.Data.RunID}}
+Status:       {{.Data.Status}}
+Total:        {{.Data.Sweep.Total}}
+Completed:    {{.Data.Sweep.Completed}}
+Succeeded:    {{.Data.Sweep.Succeeded}}
+Failed:       {{.Data.Sweep.Failed}}
+Active:       {{.Data.Sweep.Active}}
+{{- if .Data.Sweep.Tasks}}
+
+Sweep Tasks:
+{{printf "  %-24s %-14s %-12s %s" "TASK" "RUN ID" "STATUS" "EXPERIMENT"}}
+{{- range .Data.Sweep.Tasks}}
+{{printf "  %-24s %-14s %-12s %s" .TaskKey .RunID .Status .Experiment}}
+{{- end}}
+{{- end}}
+{{- else -}}
+Run ID:       {{.Data.RunID}}
 Status:       {{.Data.Status}}
 {{- if .Data.StartedAt}}
 Submitted:    {{.Data.StartedAt}}
@@ -52,6 +71,7 @@ Accelerators: {{.Data.Accelerators}}
 MLflow:       {{.Data.MLflowURL}}
 {{- end}}
 Dashboard:    {{.Data.DashboardURL}}
+{{- end}}
 `
 
 func newStatusCommand() *cobra.Command {
@@ -86,6 +106,9 @@ func newStatusCommand() *cobra.Command {
 
 		data := buildStatusData(run)
 		data.MLflowURL = mlflowURL(ctx, w, run)
+		if task := findForEachTask(run); task != nil {
+			data.Sweep = buildSweepInfo(ctx, w, task)
+		}
 		return renderEnvelope(ctx, data)
 	}
 
