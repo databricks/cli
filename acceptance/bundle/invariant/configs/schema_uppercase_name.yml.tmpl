@@ -1,0 +1,17 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+# Reproduce: UC API normalizes identifier names to lowercase, causing
+# false drift on the second deploy when the config uses mixed-case names.
+resources:
+  schemas:
+    foo:
+      catalog_name: main
+      name: MySCHEMA-$UNIQUE_NAME
+
+  volumes:
+    bar:
+      catalog_name: main
+      schema_name: MySCHEMA-$UNIQUE_NAME
+      name: my-vol-$UNIQUE_NAME
+      volume_type: MANAGED
