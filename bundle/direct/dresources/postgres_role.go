@@ -51,26 +51,26 @@ func (*ResourcePostgresRole) PrepareState(input *resources.PostgresRole) *Postgr
 }
 
 func (*ResourcePostgresRole) RemapState(remote *postgres.Role) *PostgresRoleState {
-	var roleID string
-	if remote.Status != nil {
-		roleID = remote.Status.RoleId
-	}
-	return &PostgresRoleState{
-		RoleId: roleID,
+	state := &PostgresRoleState{
 		Parent: remote.Parent,
-
-		// The read API does not return the spec, only the status.
-		// This means we cannot detect remote drift for spec fields.
-		// Use an empty struct (not nil) so field-level diffing works correctly.
-		RoleRoleSpec: postgres.RoleRoleSpec{
-			Attributes:      nil,
-			AuthMethod:      "",
-			IdentityType:    "",
-			MembershipRoles: nil,
-			PostgresRole:    "",
-			ForceSendFields: nil,
-		},
 	}
+
+	// GET returns the role configuration under Status, not Spec (Spec is nil on
+	// read), so map the status fields back onto our flattened state to reflect the
+	// live role. The spec fields remain ignore_remote_changes in resources.yml, so
+	// this produces an accurate state snapshot rather than spurious drift.
+	if remote.Status != nil {
+		state.RoleId = remote.Status.RoleId
+		state.RoleRoleSpec = postgres.RoleRoleSpec{
+			Attributes:      remote.Status.Attributes,
+			AuthMethod:      remote.Status.AuthMethod,
+			IdentityType:    remote.Status.IdentityType,
+			MembershipRoles: remote.Status.MembershipRoles,
+			PostgresRole:    remote.Status.PostgresRole,
+		}
+	}
+
+	return state
 }
 
 func (r *ResourcePostgresRole) DoRead(ctx context.Context, id string) (*postgres.Role, error) {

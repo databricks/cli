@@ -32,19 +32,31 @@
     "update_time": "[TIMESTAMP]"
   },
   "changes": {
-    "attributes": {
-      "action": "update",
-      "old": {
-        "createdb": false
-      },
-      "new": {
-        "createdb": true
-      }
+    "attributes.bypassrls": {
+      "action": "skip",
+      "reason": "empty",
+      "remote": false
     },
     "attributes.createdb": {
       "action": "update",
       "old": false,
-      "new": true
+      "new": true,
+      "remote": false
+    },
+    "attributes.createrole": {
+      "action": "skip",
+      "reason": "empty",
+      "remote": false
+    },
+    "auth_method": {
+      "action": "skip",
+      "reason": "spec:input_only",
+      "remote": "PG_PASSWORD_SCRAM_SHA_256"
+    },
+    "identity_type": {
+      "action": "skip",
+      "reason": "spec:input_only",
+      "remote": "IDENTITY_TYPE_UNSPECIFIED"
     },
     "parent": {
       "action": "skip",
@@ -52,12 +64,6 @@
       "old": "",
       "new": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
       "remote": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main"
-    },
-    "postgres_role": {
-      "action": "skip",
-      "reason": "spec:input_only",
-      "old": "app_role",
-      "new": "app_role"
     },
     "role_id": {
       "action": "skip",
