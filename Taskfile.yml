@@ -753,11 +753,13 @@ tasks:
       - task: ws
 
   # Refreshes .codegen/cli.json from the OpenAPI spec at .codegen/_openapi_sha.
-  # This is the only step that needs a universe checkout: genkit's clijson
-  # producer maps the OpenAPI spec into the cli.json spec. Run it when the
-  # spec SHA is bumped; `task generate` then consumes the committed cli.json.
-  # SDK version bumps (go.mod/go.sum) are a manual `go get` step beforehand;
-  # TestConsistentDatabricksSdkVersion asserts the two stay in sync.
+  # cli.json is a genkit SDK target like any other (mode cli_v1 in .codegen.json):
+  # the cli_v1 producer is decoupled from the spec, so genkit is built from the
+  # universe checkout's HEAD (the current producer), while the spec itself is
+  # fetched by SHA. Run it when the spec SHA is bumped; `task generate` then
+  # consumes the committed cli.json. SDK version bumps (go.mod/go.sum) are a
+  # manual `go get` step beforehand; TestConsistentDatabricksSdkVersion asserts
+  # the two stay in sync.
   generate-cli-json:
     desc: Produce .codegen/cli.json from the OpenAPI spec via genkit (requires universe repo)
     sources:
@@ -770,28 +772,23 @@ tasks:
       UNIVERSE_DIR:
         sh: echo "${UNIVERSE_DIR:-$HOME/universe}"
     cmds:
-      - |
-        if [ -z "$UNIVERSE_SKIP_CHECKOUT" ]; then
-          if ! git -C {{.UNIVERSE_DIR}} diff --quiet || ! git -C {{.UNIVERSE_DIR}} diff --cached --quiet; then
-            echo "Error: universe repo at {{.UNIVERSE_DIR}} has uncommitted changes; commit or stash them, or set UNIVERSE_SKIP_CHECKOUT=1 to skip checkout"
-            exit 1
-          fi
-          echo "Checking out universe at SHA: $(cat .codegen/_openapi_sha)"
-          cd {{.UNIVERSE_DIR}}
-          if ! git cat-file -e $(cat {{.ROOT_DIR}}/.codegen/_openapi_sha) 2>/dev/null; then
-            git fetch --filter=blob:none origin master
-          fi
-          git checkout $(cat {{.ROOT_DIR}}/.codegen/_openapi_sha)
-        else
-          echo "UNIVERSE_SKIP_CHECKOUT set; using current {{.UNIVERSE_DIR}} HEAD"
-        fi
-      - echo "Building genkit cliv1 producer..."
-      - cd {{.UNIVERSE_DIR}} && ./tools/bazel build //openapi/genkit/codegen/cliv1/cmd
-      - echo "Downloading OpenAPI spec..."
-      - 'wget -O /tmp/cli-openapi.json "https://openapi.dev.databricks.com/$(cat .codegen/_openapi_sha)/specs/all-internal.json"'
-      - echo "Producing cli.json..."
-      - '{{.UNIVERSE_DIR}}/bazel-bin/openapi/genkit/codegen/cliv1/cmd/cmd_/cmd --spec /tmp/cli-openapi.json --out .codegen/cli.json --sha "$(cat .codegen/_openapi_sha)"'
+      - echo "Building genkit..."
+      - cd {{.UNIVERSE_DIR}} && ./tools/bazel build //openapi/genkit
+      - echo "Generating cli.json..."
+      - '{{.UNIVERSE_DIR}}/bazel-bin/openapi/genkit/genkit_/genkit update-sdk --dir {{.ROOT_DIR}}'
+      - git checkout -- .gitattributes
       - go test -timeout 240s -run TestConsistentDatabricksSdkVersion github.com/databricks/cli/internal/build
+      - rm .github/workflows/next-changelog.yml
+      - mv tagging.py internal/genkit/tagging.py
+      - mv tagging.py.lock internal/genkit/tagging.py.lock
+      - |
+        if [ "$(uname)" = "Darwin" ]; then
+          sed -i '' 's|tagging.py|internal/genkit/tagging.py|g' .github/workflows/tagging.yml
+        else
+          sed -i 's|tagging.py|internal/genkit/tagging.py|g' .github/workflows/tagging.yml
+        fi
+      - "{{.GO_TOOL}} yamlfmt .github/workflows/tagging.yml"
+      - task: ws
 
   # Refreshes out.fields.txt, which records the field paths / types emitted by
   # `bundle debug refschema` (see cmd/bundle/debug/refschema.go). It reflects

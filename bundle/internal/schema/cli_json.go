@@ -11,7 +11,7 @@ type cliJSONField struct {
 	Description string   `json:"description,omitempty"`
 	Enum        []any    `json:"enum,omitempty"`
 	Deprecated  bool     `json:"deprecated,omitempty"`
-	Preview     string   `json:"preview,omitempty"`
+	LaunchStage string   `json:"launch_stage,omitempty"`
 	Ref         string   `json:"ref,omitempty"`
 	Behaviors   []string `json:"behaviors,omitempty"`
 }
@@ -21,7 +21,7 @@ type cliJSONSchema struct {
 	Description string                  `json:"description,omitempty"`
 	Enum        []any                   `json:"enum,omitempty"`
 	Deprecated  bool                    `json:"deprecated,omitempty"`
-	Preview     string                  `json:"preview,omitempty"`
+	LaunchStage string                  `json:"launch_stage,omitempty"`
 	Fields      map[string]cliJSONField `json:"fields,omitempty"`
 }
 

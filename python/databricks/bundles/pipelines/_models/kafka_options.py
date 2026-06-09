@@ -34,6 +34,8 @@ class KafkaOptions:
 
     key_transformer: VariableOrOptional[Transformer] = None
     """
+    :meta private: [EXPERIMENTAL]
+    
     (Optional) Transformer for the message key.
     If not specified, the key is left as raw bytes.
     """
@@ -47,24 +49,32 @@ class KafkaOptions:
 
     starting_offset: VariableOrOptional[str] = None
     """
+    :meta private: [EXPERIMENTAL]
+    
     (Optional) Where to begin reading when no checkpoint exists.
     Valid values: "latest" and "earliest". Defaults to "latest".
     """
 
     topic_pattern: VariableOrOptional[str] = None
     """
+    :meta private: [EXPERIMENTAL]
+    
     Java regex pattern to subscribe to matching topics.
     Only one of topics or topic_pattern must be specified.
     """
 
     topics: VariableOrList[str] = field(default_factory=list)
     """
+    :meta private: [EXPERIMENTAL]
+    
     Topics to subscribe to.
     Only one of topics or topic_pattern must be specified.
     """
 
     value_transformer: VariableOrOptional[Transformer] = None
     """
+    :meta private: [EXPERIMENTAL]
+    
     (Optional) Transformer for the message value.
     If not specified, the value is left as raw bytes.
     """
@@ -91,6 +101,8 @@ class KafkaOptionsDict(TypedDict, total=False):
 
     key_transformer: VariableOrOptional[TransformerParam]
     """
+    :meta private: [EXPERIMENTAL]
+    
     (Optional) Transformer for the message key.
     If not specified, the key is left as raw bytes.
     """
@@ -104,24 +116,32 @@ class KafkaOptionsDict(TypedDict, total=False):
 
     starting_offset: VariableOrOptional[str]
     """
+    :meta private: [EXPERIMENTAL]
+    
     (Optional) Where to begin reading when no checkpoint exists.
     Valid values: "latest" and "earliest". Defaults to "latest".
     """
 
     topic_pattern: VariableOrOptional[str]
     """
+    :meta private: [EXPERIMENTAL]
+    
     Java regex pattern to subscribe to matching topics.
     Only one of topics or topic_pattern must be specified.
     """
 
     topics: VariableOrList[str]
     """
+    :meta private: [EXPERIMENTAL]
+    
     Topics to subscribe to.
     Only one of topics or topic_pattern must be specified.
     """
 
     value_transformer: VariableOrOptional[TransformerParam]
     """
+    :meta private: [EXPERIMENTAL]
+    
     (Optional) Transformer for the message value.
     If not specified, the value is left as raw bytes.
     """

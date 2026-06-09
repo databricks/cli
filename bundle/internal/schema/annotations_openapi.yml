@@ -1711,6 +1711,8 @@ github.com/databricks/databricks-sdk-go/service/catalog.MonitorDataClassificatio
   "enabled":
     "description": |-
       Whether to enable data classification.
+    "x-databricks-preview": |-
+      PRIVATE
 github.com/databricks/databricks-sdk-go/service/catalog.MonitorDestination:
   "email_addresses":
     "description": |-
@@ -2589,6 +2591,21 @@ github.com/databricks/databricks-sdk-go/service/compute.InitScriptInfo:
     "description": |-
       destination needs to be provided, e.g.
       `{ "workspace": { "destination": "/cluster-init-scripts/setup-datadog.sh" } }`
+github.com/databricks/databricks-sdk-go/service/compute.Kind:
+  "_":
+    "description": |-
+      The kind of compute described by this compute specification.
+
+      Depending on `kind`, different validations and default values will be applied.
+
+      Clusters with `kind = CLASSIC_PREVIEW` support the following fields, whereas clusters with no specified `kind` do not.
+      * [is_single_node](/api/workspace/clusters/create#is_single_node)
+      * [use_ml_runtime](/api/workspace/clusters/create#use_ml_runtime)
+
+      By using the [simple form](https://docs.databricks.com/compute/simple-form.html), your clusters are automatically using `kind = CLASSIC_PREVIEW`.
+    "enum":
+      - |-
+        CLASSIC_PREVIEW
 github.com/databricks/databricks-sdk-go/service/compute.Library:
   "cran":
     "description": |-
@@ -3214,12 +3231,18 @@ github.com/databricks/databricks-sdk-go/service/jobs.ComputeConfig:
   "gpu_node_pool_id":
     "description": |-
       IDof the GPU pool to use.
+    "x-databricks-preview": |-
+      PRIVATE
   "gpu_type":
     "description": |-
       GPU type.
+    "x-databricks-preview": |-
+      PRIVATE
   "num_gpus":
     "description": |-
       Number of GPUs.
+    "x-databricks-preview": |-
+      PRIVATE
 github.com/databricks/databricks-sdk-go/service/jobs.Condition:
   "_":
     "enum":
@@ -3308,16 +3331,24 @@ github.com/databricks/databricks-sdk-go/service/jobs.DbtCloudTask:
   "connection_resource_name":
     "description": |-
       The resource name of the UC connection that authenticates the dbt Cloud for this task
+    "x-databricks-preview": |-
+      PRIVATE
   "dbt_cloud_job_id":
     "description": |-
       Id of the dbt Cloud job to be triggered
+    "x-databricks-preview": |-
+      PRIVATE
 github.com/databricks/databricks-sdk-go/service/jobs.DbtPlatformTask:
   "connection_resource_name":
     "description": |-
       The resource name of the UC connection that authenticates the dbt platform for this task
+    "x-databricks-preview": |-
+      PRIVATE
   "dbt_platform_job_id":
     "description": |-
       Id of the dbt platform job to be triggered. Specified as a string for maximum compatibility with clients.
+    "x-databricks-preview": |-
+      PRIVATE
 github.com/databricks/databricks-sdk-go/service/jobs.DbtTask:
   "catalog":
     "description": |-
@@ -3382,30 +3413,46 @@ github.com/databricks/databricks-sdk-go/service/jobs.GenAiComputeTask:
   "command":
     "description": |-
       Command launcher to run the actual script, e.g. bash, python etc.
-  "compute": {}
+    "x-databricks-preview": |-
+      PRIVATE
+  "compute":
+    "x-databricks-preview": |-
+      PRIVATE
   "dl_runtime_image":
     "description": |-
       Runtime image
+    "x-databricks-preview": |-
+      PRIVATE
   "mlflow_experiment_name":
     "description": |-
       Optional string containing the name of the MLflow experiment to log the run to. If name is not
       found, backend will create the mlflow experiment using the name.
+    "x-databricks-preview": |-
+      PRIVATE
   "source":
     "description": |-
       Optional location type of the training script. When set to `WORKSPACE`, the script will be retrieved from the local Databricks workspace. When set to `GIT`, the script will be retrieved from a Git repository
       defined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.
       * `WORKSPACE`: Script is located in Databricks workspace.
       * `GIT`: Script is located in cloud Git provider.
+    "x-databricks-preview": |-
+      PRIVATE
   "training_script_path":
     "description": |-
       The training script file path to be executed. Cloud file URIs (such as dbfs:/, s3:/, adls:/, gcs:/) and workspace paths are supported. For python files stored in the Databricks workspace, the path must be absolute and begin with `/`. For files stored in a remote repository, the path must be relative. This field is required.
+    "x-databricks-preview": |-
+      PRIVATE
   "yaml_parameters":
     "description": |-
       Optional string containing model parameters passed to the training script in yaml format.
       If present, then the content in yaml_parameters_file_path will be ignored.
+    "x-databricks-preview": |-
+      PRIVATE
   "yaml_parameters_file_path":
     "description": |-
       Optional path to a YAML file containing model parameters passed to the training script.
+    "x-databricks-preview": |-
+      PRIVATE
 github.com/databricks/databricks-sdk-go/service/jobs.GitProvider:
   "_":
     "enum":
@@ -3607,12 +3654,18 @@ github.com/databricks/databricks-sdk-go/service/jobs.JobSource:
       Possible values are:
       * `NOT_SYNCED`: The job is not yet synced with the remote job specification. Import the remote job specification from UI to make the job fully synced.
       * `DISCONNECTED`: The job is temporary disconnected from the remote job specification and is allowed for live edit. Import the remote job specification again from UI to make the job fully synced.
+    "x-databricks-preview": |-
+      PRIVATE
   "import_from_git_branch":
     "description": |-
       Name of the branch which the job is imported from.
+    "x-databricks-preview": |-
+      PRIVATE
   "job_config_path":
     "description": |-
       Path of the job YAML file that contains the job specification.
+    "x-databricks-preview": |-
+      PRIVATE
 github.com/databricks/databricks-sdk-go/service/jobs.JobSourceDirtyState:
   "_":
     "description": |-
@@ -3680,22 +3733,32 @@ github.com/databricks/databricks-sdk-go/service/jobs.ModelTriggerConfiguration:
   "aliases":
     "description": |-
       Aliases of the model versions to monitor. Can only be used in conjunction with condition MODEL_ALIAS_SET.
+    "x-databricks-preview": |-
+      PRIVATE
   "condition":
     "description": |-
       The condition based on which to trigger a job run.
+    "x-databricks-preview": |-
+      PRIVATE
   "min_time_between_triggers_seconds":
     "description": |-
       If set, the trigger starts a run only after the specified amount of time has passed since
       the last time the trigger fired. The minimum allowed value is 60 seconds.
+    "x-databricks-preview": |-
+      PRIVATE
   "securable_name":
     "description": |-
       Name of the securable to monitor ("mycatalog.myschema.mymodel" in the case of model-level triggers,
       "mycatalog.myschema" in the case of schema-level triggers) or empty in the case of metastore-level triggers.
+    "x-databricks-preview": |-
+      PRIVATE
   "wait_after_last_change_seconds":
     "description": |-
       If set, the trigger starts a run only after no model updates have occurred for the specified time
       and can be used to wait for a series of model updates before triggering a run. The
       minimum allowed value is 60 seconds.
+    "x-databricks-preview": |-
+      PRIVATE
 github.com/databricks/databricks-sdk-go/service/jobs.ModelTriggerConfigurationCondition:
   "_":
     "enum":
@@ -3860,13 +3923,21 @@ github.com/databricks/databricks-sdk-go/service/jobs.PythonOperatorTask:
     "description": |-
       Fully qualified name of the main class or function.
       For example, `my_project.my_function` or `my_project.MyOperator`.
+    "x-databricks-preview": |-
+      PRIVATE
   "parameters":
     "description": |-
       An ordered list of task parameters.
       TODO(JOBS-30885): Add limits for parameters.
+    "x-databricks-preview": |-
+      PRIVATE
 github.com/databricks/databricks-sdk-go/service/jobs.PythonOperatorTaskParameter:
-  "name": {}
-  "value": {}
+  "name":
+    "x-databricks-preview": |-
+      PRIVATE
+  "value":
+    "x-databricks-preview": |-
+      PRIVATE
 github.com/databricks/databricks-sdk-go/service/jobs.PythonWheelTask:
   "entry_point":
     "description": |-
@@ -4610,42 +4681,70 @@ github.com/databricks/databricks-sdk-go/service/pipelines.FileFilter:
       Include files with modification times occurring after the specified time.
       Timestamp format: YYYY-MM-DDTHH:mm:ss (e.g. 2020-06-01T13:00:00)
       Based on https://spark.apache.org/docs/latest/sql-data-sources-generic-options.html#modification-time-path-filters
+    "x-databricks-preview": |-
+      PRIVATE
   "modified_before":
     "description": |-
       Include files with modification times occurring before the specified time.
       Timestamp format: YYYY-MM-DDTHH:mm:ss (e.g. 2020-06-01T13:00:00)
       Based on https://spark.apache.org/docs/latest/sql-data-sources-generic-options.html#modification-time-path-filters
+    "x-databricks-preview": |-
+      PRIVATE
   "path_filter":
     "description": |-
       Include files with file names matching the pattern
       Based on https://spark.apache.org/docs/latest/sql-data-sources-generic-options.html#path-glob-filter
+    "x-databricks-preview": |-
+      PRIVATE
 github.com/databricks/databricks-sdk-go/service/pipelines.FileIngestionOptions:
-  "corrupt_record_column": {}
+  "corrupt_record_column":
+    "x-databricks-preview": |-
+      PRIVATE
   "file_filters":
     "description": |-
       Generic options
+    "x-databricks-preview": |-
+      PRIVATE
   "format":
     "description": |-
       required for TableSpec
+    "x-databricks-preview": |-
+      PRIVATE
   "format_options":
     "description": |-
       Format-specific options
       Based on https://docs.databricks.com/aws/en/ingestion/cloud-object-storage/auto-loader/options#file-format-options
-  "ignore_corrupt_files": {}
-  "infer_column_types": {}
+    "x-databricks-preview": |-
+      PRIVATE
+  "ignore_corrupt_files":
+    "x-databricks-preview": |-
+      PRIVATE
+  "infer_column_types":
+    "x-databricks-preview": |-
+      PRIVATE
   "reader_case_sensitive":
     "description": |-
       Column name case sensitivity
       https://docs.databricks.com/aws/en/ingestion/cloud-object-storage/auto-loader/schema#change-case-sensitive-behavior
-  "rescued_data_column": {}
+    "x-databricks-preview": |-
+      PRIVATE
+  "rescued_data_column":
+    "x-databricks-preview": |-
+      PRIVATE
   "schema_evolution_mode":
     "description": |-
       Based on https://docs.databricks.com/aws/en/ingestion/cloud-object-storage/auto-loader/schema#how-does-auto-loader-schema-evolution-work
+    "x-databricks-preview": |-
+      PRIVATE
   "schema_hints":
     "description": |-
       Override inferred schema of specific columns
       Based on https://docs.databricks.com/aws/en/ingestion/cloud-object-storage/auto-loader/schema#override-schema-inference-with-schema-hints
-  "single_variant_column": {}
+    "x-databricks-preview": |-
+      PRIVATE
+  "single_variant_column":
+    "x-databricks-preview": |-
+      PRIVATE
 github.com/databricks/databricks-sdk-go/service/pipelines.FileIngestionOptionsFileFormat:
   "_":
     "enum":
@@ -4699,6 +4798,8 @@ github.com/databricks/databricks-sdk-go/service/pipelines.GoogleAdsConfig:
       of customer accounts during source selection.
       If the same field is also set in the object-level GoogleAdsOptions (connector_options),
       the object-level value takes precedence over this top-level config.
+    "x-databricks-preview": |-
+      PRIVATE
 github.com/databricks/databricks-sdk-go/service/pipelines.GoogleAdsOptions:
   "_":
     "description": |-
@@ -4709,22 +4810,34 @@ github.com/databricks/databricks-sdk-go/service/pipelines.GoogleAdsOptions:
     "description": |-
       (Optional) Number of days to look back for report tables to capture late-arriving data.
       If not specified, defaults to 30 days.
+    "x-databricks-preview": |-
+      PRIVATE
   "manager_account_id":
     "description": |-
       (Optional at this level) Manager Account ID (also called MCC Account ID) used to list
       and access customer accounts under this manager account.
       Overrides GoogleAdsConfig.manager_account_id from source_configurations when set.
+    "x-databricks-preview": |-
+      PRIVATE
   "sync_start_date":
     "description": |-
       (Optional) Start date for the initial sync of report tables in YYYY-MM-DD format.
       This determines the earliest date from which to sync historical data.
       If not specified, defaults to 2 years of historical data.
+    "x-databricks-preview": |-
+      PRIVATE
 github.com/databricks/databricks-sdk-go/service/pipelines.GoogleDriveOptions:
-  "entity_type": {}
-  "file_ingestion_options": {}
+  "entity_type":
+    "x-databricks-preview": |-
+      PRIVATE
+  "file_ingestion_options":
+    "x-databricks-preview": |-
+      PRIVATE
   "url":
     "description": |-
       Google Drive URL.
+    "x-databricks-preview": |-
+      PRIVATE
 github.com/databricks/databricks-sdk-go/service/pipelines.GoogleDriveOptionsGoogleDriveEntityType:
   "_":
     "enum":
@@ -4750,9 +4863,13 @@ github.com/databricks/databricks-sdk-go/service/pipelines.IngestionGatewayPipeli
       [Deprecated, use connection_name instead] Immutable. The Unity Catalog connection that this gateway pipeline uses to communicate with the source.
     "deprecation_message": |-
       This field is deprecated
+    "x-databricks-preview": |-
+      PRIVATE
   "connection_name":
     "description": |-
       Immutable. The Unity Catalog connection that this gateway pipeline uses to communicate with the source.
+    "x-databricks-preview": |-
+      PRIVATE
   "connection_parameters":
     "description": |-
       Optional, Internal. Parameters required to establish an initial connection with the source.
@@ -4761,14 +4878,20 @@ github.com/databricks/databricks-sdk-go/service/pipelines.IngestionGatewayPipeli
   "gateway_storage_catalog":
     "description": |-
       Required, Immutable. The name of the catalog for the gateway pipeline's storage location.
+    "x-databricks-preview": |-
+      PRIVATE
   "gateway_storage_name":
     "description": |-
       Optional. The Unity Catalog-compatible name for the gateway storage location.
       This is the destination to use for the data that is extracted by the gateway.
       Spark Declarative Pipelines system will automatically create the storage location under the catalog and schema.
+    "x-databricks-preview": |-
+      PRIVATE
   "gateway_storage_schema":
     "description": |-
       Required, Immutable. The name of the schema for the gateway pipelines's storage location.
+    "x-databricks-preview": |-
+      PRIVATE
 github.com/databricks/databricks-sdk-go/service/pipelines.IngestionPipelineDefinition:
   "connection_name":
     "description": |-
@@ -4866,6 +4989,8 @@ github.com/databricks/databricks-sdk-go/service/pipelines.IngestionPipelineDefin
       controlled by the `parameters` field.
     "deprecation_message": |-
       This field is deprecated
+    "x-databricks-preview": |-
+      PRIVATE
   "parameters":
     "description": |-
       Parameters for the Workday report. Each key represents the parameter name (e.g., "start_date", "end_date"),
@@ -4875,16 +5000,22 @@ github.com/databricks/databricks-sdk-go/service/pipelines.IngestionPipelineDefin
       "start_date": "{ coalesce(current_offset(), date(\"2025-02-01\")) }",
       "end_date": "{ current_date() - INTERVAL 1 DAY }"
       }
+    "x-databricks-preview": |-
+      PRIVATE
   "report_parameters":
     "description": |-
       (Optional) Additional custom parameters for Workday Report
       This field is deprecated and should not be used. Use `parameters` instead.
     "deprecation_message": |-
       This field is deprecated
+    "x-databricks-preview": |-
+      PRIVATE
 github.com/databricks/databricks-sdk-go/service/pipelines.IngestionPipelineDefinitionWorkdayReportParametersQueryKeyValue:
   "key":
     "description": |-
       Key for the report parameter, can be a column name or other metadata
+    "x-databricks-preview": |-
+      PRIVATE
   "value":
     "description": |-
       Value for the report parameter.
@@ -4892,6 +5023,8 @@ github.com/databricks/databricks-sdk-go/service/pipelines.IngestionPipelineDefin
       1. coalesce(current_offset(), date("YYYY-MM-DD")) -> if current_offset() is null, then the passed date, else current_offset()
       2. current_date()
       3. date_sub(current_date(), x) -> subtract x (some non-negative integer) days from current date
+    "x-databricks-preview": |-
+      PRIVATE
 github.com/databricks/databricks-sdk-go/service/pipelines.IngestionSourceType:
   "_":
     "enum":
@@ -4946,18 +5079,28 @@ github.com/databricks/databricks-sdk-go/service/pipelines.JsonTransformerOptions
   "as_variant":
     "description": |-
       Parse the entire value as a single Variant column.
+    "x-databricks-preview": |-
+      PRIVATE
   "schema":
     "description": |-
       Inline schema string for JSON parsing (Spark DDL format).
+    "x-databricks-preview": |-
+      PRIVATE
   "schema_evolution_mode":
     "description": |-
       (Optional) Schema evolution mode for schema inference.
+    "x-databricks-preview": |-
+      PRIVATE
   "schema_file_path":
     "description": |-
       Path to a schema file (.ddl).
+    "x-databricks-preview": |-
+      PRIVATE
   "schema_hints":
     "description": |-
       (Optional) Schema hints as a comma-separated string of "column_name type" pairs.
+    "x-databricks-preview": |-
+      PRIVATE
 github.com/databricks/databricks-sdk-go/service/pipelines.KafkaOptions:
   "client_config":
     "description": |-
@@ -4970,6 +5113,8 @@ github.com/databricks/databricks-sdk-go/service/pipelines.KafkaOptions:
     "description": |-
       (Optional) Transformer for the message key.
       If not specified, the key is left as raw bytes.
+    "x-databricks-preview": |-
+      PRIVATE
   "max_offsets_per_trigger":
     "description": |-
       Internal option to control the maximum number of offsets to process per trigger.
@@ -4979,18 +5124,26 @@ github.com/databricks/databricks-sdk-go/service/pipelines.KafkaOptions:
     "description": |-
       (Optional) Where to begin reading when no checkpoint exists.
       Valid values: "latest" and "earliest". Defaults to "latest".
+    "x-databricks-preview": |-
+      PRIVATE
   "topic_pattern":
     "description": |-
       Java regex pattern to subscribe to matching topics.
       Only one of topics or topic_pattern must be specified.
+    "x-databricks-preview": |-
+      PRIVATE
   "topics":
     "description": |-
       Topics to subscribe to.
       Only one of topics or topic_pattern must be specified.
+    "x-databricks-preview": |-
+      PRIVATE
   "value_transformer":
     "description": |-
       (Optional) Transformer for the message value.
       If not specified, the value is left as raw bytes.
+    "x-databricks-preview": |-
+      PRIVATE
 github.com/databricks/databricks-sdk-go/service/pipelines.ManualTrigger: {}
 github.com/databricks/databricks-sdk-go/service/pipelines.MetaMarketingOptions:
   "_":
@@ -5084,33 +5237,45 @@ github.com/databricks/databricks-sdk-go/service/pipelines.OutlookOptions:
     "description": |-
       (Optional) Controls which attachments to ingest.
       If not specified, defaults to ALL.
+    "x-databricks-preview": |-
+      PRIVATE
   "body_format":
     "description": |-
       (Optional) Defines how the body_content column is populated.
       TEXT_HTML: Preserves full formatting, links, and styling.
       TEXT_PLAIN: Converts body to plain text. Recommended for AI/RAG pipelines to reduce token usage and noise.
+    "x-databricks-preview": |-
+      PRIVATE
   "folder_filter":
     "description": |-
       Deprecated. Use include_folders instead.
     "deprecation_message": |-
       This field is deprecated
+    "x-databricks-preview": |-
+      PRIVATE
   "include_folders":
     "description": |-
       (Optional) Filter mail folders to include in the sync.
       If not specified, all folders will be synced.
       Examples: Inbox, Sent Items, Custom_Folder
       Filter semantics: OR between different folders.
+    "x-databricks-preview": |-
+      PRIVATE
   "include_mailboxes":
     "description": |-
       (Optional) List of mailboxes to sync (e.g. mailbox email addresses or identifiers).
       If not specified, all accessible mailboxes are ingested.
       Filter semantics: OR between different mailboxes.
+    "x-databricks-preview": |-
+      PRIVATE
   "include_senders":
     "description": |-
       (Optional) Filter emails by sender address. Uses exact email match.
       Examples: user@vendor.com, alerts@system.io, noreply@company.com
       If not specified, emails from all senders will be synced.
       Filter semantics: OR between different senders.
+    "x-databricks-preview": |-
+      PRIVATE
   "include_subjects":
     "description": |-
       (Optional) Filter emails by subject line. Values ending with "*" use prefix match (subject starts with
@@ -5118,22 +5283,30 @@ github.com/databricks/databricks-sdk-go/service/pipelines.OutlookOptions:
       Examples: "Invoice" (substring), "Re:*" (prefix), "Support Ticket", "URGENT*"
       If not specified, emails with all subjects will be synced.
       Filter semantics: OR between different subjects.
+    "x-databricks-preview": |-
+      PRIVATE
   "sender_filter":
     "description": |-
       Deprecated. Use include_senders instead.
     "deprecation_message": |-
       This field is deprecated
+    "x-databricks-preview": |-
+      PRIVATE
   "start_date":
     "description": |-
       (Optional) Start date for the initial sync in YYYY-MM-DD format.
       Format: YYYY-MM-DD (e.g., 2024-01-01)
       This determines the earliest date from which to sync historical data.
       If not specified, complete history is ingested.
+    "x-databricks-preview": |-
+      PRIVATE
   "subject_filter":
     "description": |-
       Deprecated. Use include_subjects instead.
     "deprecation_message": |-
       This field is deprecated
+    "x-databricks-preview": |-
+      PRIVATE
 github.com/databricks/databricks-sdk-go/service/pipelines.PathPattern:
   "include":
     "description": |-
@@ -5390,14 +5563,20 @@ github.com/databricks/databricks-sdk-go/service/pipelines.RestartWindow:
     "description": |-
       Days of week in which the restart is allowed to happen (within a five-hour window starting at start_hour).
       If not specified all days of the week will be used.
+    "x-databricks-preview": |-
+      PRIVATE
   "start_hour":
     "description": |-
       An integer between 0 and 23 denoting the start hour for the restart window in the 24-hour day.
       Continuous pipeline restart is triggered only within a five-hour window starting at this hour.
+    "x-databricks-preview": |-
+      PRIVATE
   "time_zone_id":
     "description": |-
       Time zone id of restart window. See https://docs.databricks.com/sql/language-manual/sql-ref-syntax-aux-conf-mgmt-set-timezone.html for details.
       If not specified, UTC will be used.
+    "x-databricks-preview": |-
+      PRIVATE
 github.com/databricks/databricks-sdk-go/service/pipelines.RunAs:
   "_":
     "description": |-
@@ -5434,12 +5613,18 @@ github.com/databricks/databricks-sdk-go/service/pipelines.SharepointOptions:
     "description": |-
       (Optional) The type of SharePoint entity to ingest.
       If not specified, defaults to FILE.
+    "x-databricks-preview": |-
+      PRIVATE
   "file_ingestion_options":
     "description": |-
       (Optional) File ingestion options for processing files.
+    "x-databricks-preview": |-
+      PRIVATE
   "url":
     "description": |-
       Required. The SharePoint URL.
+    "x-databricks-preview": |-
+      PRIVATE
 github.com/databricks/databricks-sdk-go/service/pipelines.SharepointOptionsSharepointEntityType:
   "_":
     "enum":
@@ -5462,6 +5647,8 @@ github.com/databricks/databricks-sdk-go/service/pipelines.SmartsheetOptions:
       When false, all columns land as STRING. Use false for sheets with irregular data or columns
       that frequently violate their own declared type.
       If not specified, defaults to true.
+    "x-databricks-preview": |-
+      PRIVATE
 github.com/databricks/databricks-sdk-go/service/pipelines.SourceCatalogConfig:
   "_":
     "description": |-
@@ -5577,36 +5764,50 @@ github.com/databricks/databricks-sdk-go/service/pipelines.TikTokAdsOptions:
     "description": |-
       (Optional) Data level for the report.
       If not specified, defaults to AUCTION_CAMPAIGN.
+    "x-databricks-preview": |-
+      PRIVATE
   "dimensions":
     "description": |-
       (Optional) Dimensions to include in the report.
       Examples: "campaign_id", "adgroup_id", "ad_id", "stat_time_day", "stat_time_hour"
       If not specified, defaults to campaign_id.
+    "x-databricks-preview": |-
+      PRIVATE
   "lookback_window_days":
     "description": |-
       (Optional) Number of days to look back for report tables during incremental sync
       to capture late-arriving conversions and attribution data.
       If not specified, defaults to 7 days.
+    "x-databricks-preview": |-
+      PRIVATE
   "metrics":
     "description": |-
       (Optional) Metrics to include in the report.
       Examples: "spend", "impressions", "clicks", "conversion", "cpc"
       If not specified, defaults to basic metrics (spend, impressions, clicks, etc.)
+    "x-databricks-preview": |-
+      PRIVATE
   "query_lifetime":
     "description": |-
       (Optional) Whether to request lifetime metrics (all-time aggregated data).
       When true, the report returns all-time data.
       If not specified, defaults to false.
+    "x-databricks-preview": |-
+      PRIVATE
   "report_type":
     "description": |-
       (Optional) Report type for the TikTok Ads API.
       If not specified, defaults to BASIC.
+    "x-databricks-preview": |-
+      PRIVATE
   "sync_start_date":
     "description": |-
       (Optional) Start date for the initial sync of report tables in YYYY-MM-DD format.
       This determines the earliest date from which to sync historical data.
       If not specified, defaults to 1 year of historical data for daily reports
       and 30 days for hourly reports.
+    "x-databricks-preview": |-
+      PRIVATE
 github.com/databricks/databricks-sdk-go/service/pipelines.TikTokAdsOptionsTikTokDataLevel:
   "_":
     "description": |-
@@ -5644,7 +5845,11 @@ github.com/databricks/databricks-sdk-go/service/pipelines.Transformer:
   "format":
     "description": |-
       Required: the wire format of the data.
-  "json_options": {}
+    "x-databricks-preview": |-
+      PRIVATE
+  "json_options":
+    "x-databricks-preview": |-
+      PRIVATE
 github.com/databricks/databricks-sdk-go/service/pipelines.TransformerFormat:
   "_":
     "enum":
@@ -5660,6 +5865,8 @@ github.com/databricks/databricks-sdk-go/service/pipelines.ZendeskSupportOptions:
     "description": |-
       (Optional) Start date in YYYY-MM-DD format for the initial sync.
       This determines the earliest date from which to sync historical data.
+    "x-databricks-preview": |-
+      PRIVATE
 github.com/databricks/databricks-sdk-go/service/postgres.EndpointGroupSpec:
   "enable_readable_secondaries":
     "description": |-

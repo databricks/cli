@@ -108,6 +108,18 @@ func mapIncorrectTypNames(ref string) string {
 	}
 }
 
+// previewFromLaunchStage maps a launch stage to the preview marker the bundle
+// uses to hide a field or type from completions. cli.json no longer carries a
+// separate preview flag — launch_stage is the single source of truth — so a
+// private-preview stage is the only one that should not be suggested. Every
+// other stage (GA, public preview, ...) yields an empty marker.
+func previewFromLaunchStage(launchStage string) string {
+	if launchStage == "PRIVATE_PREVIEW" {
+		return "PRIVATE"
+	}
+	return ""
+}
+
 func isOutputOnly(behaviors []string) *bool {
 	if !slices.Contains(behaviors, "OUTPUT_ONLY") {
 		return nil
@@ -147,10 +159,7 @@ func (p *annotationParser) extractAnnotations(typ reflect.Type, outputPath, over
 			basePath := getPath(typ)
 			pkg := map[string]annotation.Descriptor{}
 			annotations[basePath] = pkg
-			preview := ref.Preview
-			if preview == "PUBLIC" {
-				preview = ""
-			}
+			preview := previewFromLaunchStage(ref.LaunchStage)
 			if ref.Description != "" || ref.Enum != nil || ref.Deprecated || preview != "" {
 				pkg[RootTypeKey] = annotation.Descriptor{
 					Description:        ref.Description,
@@ -162,10 +171,7 @@ func (p *annotationParser) extractAnnotations(typ reflect.Type, outputPath, over
 
 			for k := range s.Properties {
 				if refProp, ok := ref.Fields[k]; ok {
-					preview = refProp.Preview
-					if preview == "PUBLIC" {
-						preview = ""
-					}
+					preview = previewFromLaunchStage(refProp.LaunchStage)
 
 					description := refProp.Description
 

@@ -18,7 +18,6 @@ const cliJSONPath = "../../.codegen/cli.json"
 // enough of it to assert structural invariants (keys + field refs).
 type fullDoc struct {
 	Metadata struct {
-		OpenAPISha       string `json:"openapi_sha"`
 		GeneratorVersion string `json:"generator_version"`
 	} `json:"metadata"`
 	Schemas  map[string]schemaDoc `json:"schemas"`
@@ -53,8 +52,14 @@ func TestCliJSONIsInterpretable(t *testing.T) {
 	if doc.Metadata.GeneratorVersion != "cliv1" {
 		t.Errorf("metadata.generator_version = %q, want %q", doc.Metadata.GeneratorVersion, "cliv1")
 	}
-	if !shaRE.MatchString(doc.Metadata.OpenAPISha) {
-		t.Errorf("metadata.openapi_sha = %q, want a 40-char sha", doc.Metadata.OpenAPISha)
+	// The spec SHA is not carried in cli.json metadata; genkit writes it to the
+	// sibling _openapi_sha file, the same convention every other SDK target uses.
+	shaBytes, err := os.ReadFile("../../.codegen/_openapi_sha")
+	if err != nil {
+		t.Fatalf("read _openapi_sha: %v", err)
+	}
+	if sha := strings.TrimSpace(string(shaBytes)); !shaRE.MatchString(sha) {
+		t.Errorf("_openapi_sha = %q, want a 40-char sha", sha)
 	}
 
 	// --- schemas block: non-empty, and every field ref points at a known schema ---
