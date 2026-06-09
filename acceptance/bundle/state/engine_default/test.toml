@@ -2,6 +2,7 @@ RecordRequests = true
 IncludeRequestHeaders = ["User-Agent"]
 Ignore = [".databricks"]
 
-# Leave the engine unset so the test exercises the default engine. Empty list
-# overrides the inherited matrix and runs the test once instead of per-engine.
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = []
+# Run once (not per-engine); the script unsets DATABRICKS_BUNDLE_ENGINE to
+# exercise the default. "direct" (rather than []) keeps the test in the
+# engine-filtered CI runs.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
