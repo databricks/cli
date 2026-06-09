@@ -80,6 +80,16 @@ func TestRenderChart_YFieldMissingFromColumns(t *testing.T) {
 	assert.Empty(t, buf.String())
 }
 
+func TestRenderChart_XFieldMissingFromColumns(t *testing.T) {
+	// A spec/column mismatch must not leave a title-only chart behind: the
+	// caller relies on the false return to print a placeholder instead.
+	viz := barViz([][]string{{"Alpha", "100"}})
+	viz.Spec.XField = "missing"
+	var buf bytes.Buffer
+	assert.False(t, RenderChart(&buf, viz, 80, false))
+	assert.Empty(t, buf.String())
+}
+
 func TestRenderChart_SparseRowsDoesNotPanic(t *testing.T) {
 	viz := barViz([][]string{
 		{"Alpha", "10"},

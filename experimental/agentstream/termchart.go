@@ -141,12 +141,11 @@ func filterPlottableRows(spec *VizSpec, data *TableData) *TableData {
 	return &TableData{Columns: data.Columns, Rows: rows}
 }
 
-// renderBarChart draws horizontal bars.
+// renderBarChart draws horizontal bars. The caller guarantees series is
+// non-empty, which extractSeries only produces when XField exists, so xIdx
+// is never negative here.
 func renderBarChart(w io.Writer, spec *VizSpec, data *TableData, series []dataSeries, width int, st chartStyle) {
 	xIdx := columnIndex(data.Columns, spec.XField)
-	if xIdx < 0 {
-		return
-	}
 
 	// Collect labels. Measure and truncate in runes: byte-based slicing can
 	// split a multi-byte character, and fmt pads %*s by rune count.
@@ -241,12 +240,11 @@ func renderBarChart(w io.Writer, spec *VizSpec, data *TableData, series []dataSe
 	}
 }
 
-// renderLineChart draws line (or area) charts using braille characters.
+// renderLineChart draws line (or area) charts using braille characters. The
+// caller guarantees series is non-empty, which extractSeries only produces
+// when XField exists, so xIdx is never negative here.
 func renderLineChart(w io.Writer, spec *VizSpec, data *TableData, series []dataSeries, width int, fill bool, st chartStyle) {
 	xIdx := columnIndex(data.Columns, spec.XField)
-	if xIdx < 0 {
-		return
-	}
 
 	// Chart dimensions. Cap width at 70 chars so charts stay
 	// compact on wide terminals.
