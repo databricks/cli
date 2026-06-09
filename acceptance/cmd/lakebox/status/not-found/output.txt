@@ -1,3 +1,0 @@
-Error: no lakebox named "no-such-box" — `databricks lakebox list` shows available IDs
-
-Exit code: 1

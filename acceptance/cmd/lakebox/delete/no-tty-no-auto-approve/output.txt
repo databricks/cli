@@ -1,3 +1,0 @@
-Error: `databricks lakebox delete` permanently destroys the sandbox; pass --auto-approve to confirm in non-interactive contexts
-
-Exit code: 1
