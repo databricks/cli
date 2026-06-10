@@ -13,7 +13,6 @@
 * `databricks auth profiles --skip-validate` no longer makes any network calls; the host metadata fetch is skipped along with validation ([#5530](https://github.com/databricks/cli/pull/5530)).
 
 
-
 ### Bundles
 * Set the default `data_security_mode` to `DATA_SECURITY_MODE_AUTO` in bundle templates ([#5452](https://github.com/databricks/cli/pull/5452)).
 * Mark vector search index index_subtype as backend_default to prevent drift after deployment ([#5454](https://github.com/databricks/cli/pull/5454)).
