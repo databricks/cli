@@ -1,0 +1,13 @@
+trace cat space.geniespace.json
+
+title "deploy initial genie space"
+trace $CLI bundle deploy
+genie_space_id=$($CLI bundle summary --output json | jq -r '.resources.genie_spaces.test_genie_space.id')
+
+title "update the genie space"
+trace $CLI genie update-space $genie_space_id --serialized-space '{"a":"b"}'
+
+title "update the genie space file using bundle generate"
+trace $CLI bundle generate genie-space --resource test_genie_space --force
+
+trace cat space.geniespace.json

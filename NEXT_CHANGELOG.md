@@ -18,6 +18,7 @@
 * Set the default `data_security_mode` to `DATA_SECURITY_MODE_AUTO` in bundle templates ([#5452](https://github.com/databricks/cli/pull/5452)).
 * Mark vector search index index_subtype as backend_default to prevent drift after deployment ([#5454](https://github.com/databricks/cli/pull/5454)).
 * `bundle deployment migrate`: handle resources added to or removed from `databricks.yml` since the last Terraform deploy ([#5463](https://github.com/databricks/cli/pull/5463)).
+* Add the `genie_spaces` bundle resource for managing Databricks Genie spaces as code, plus `bundle generate genie-space` to import an existing space. Direct deployment engine only ([#5282](https://github.com/databricks/cli/pull/5282)).
 
 ### Dependency updates
 
