@@ -29,15 +29,8 @@ func TestCommandsDontUseUnderscoreInName(t *testing.T) {
 }
 
 func TestImportDoesNotSetCliPathEnv(t *testing.T) {
-	// Exporting DATABRICKS_CLI_PATH is done in main, not in a package init,
-	// so that importing CLI packages (e.g. from test binaries or generators)
-	// does not mutate the process environment.
-	//
-	// This test lives in the main package because this is where
-	// all commands are imported.
-	//
 	// Test binaries run by their absolute path, which is exactly the condition
-	// under which main exports the variable; an import-time export would
+	// under which main exports DATABRICKS_CLI_PATH; an import-time export would
 	// therefore have set it to this test binary's path by now.
 	require.NotEqual(t, filepath.Base(os.Args[0]), os.Args[0])
 	assert.NotEqual(t, os.Args[0], os.Getenv("DATABRICKS_CLI_PATH"))
