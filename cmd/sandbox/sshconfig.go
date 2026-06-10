@@ -16,12 +16,6 @@ import (
 )
 
 const (
-	// sshConfigAlias is the SSH-config Host that all sandbox sandboxes
-	// route through. Shared with the workspace UI's "First time setup?"
-	// disclosure, so IDE Remote-SSH deep links resolve identically
-	// whether the user set up via the CLI or pasted the UI snippet.
-	sshConfigAlias = "sandbox-gw"
-
 	// sshIncludeFileName is the sandbox-managed file referenced by the
 	// user's ~/.ssh/config. The file is fully owned: we rewrite it on
 	// every `sandbox register`, so manual edits to it will not survive.
@@ -89,26 +83,29 @@ func writeSSHConfig(ctx context.Context, keyPath, gatewayHost, gatewayPort strin
 }
 
 // buildSSHConfigBlock renders the Host stanza we write to the
-// sandbox-managed include file. The -o flags here mirror buildSSHArgs
-// in ssh.go so connections that resolve through this alias (IDE
-// Remote-SSH, raw `ssh <id>@sandbox-gw`) behave identically to
-// `databricks sandbox ssh`.
+// sandbox-managed include file. Mirrors the snippet the workspace UI's
+// "First time setup?" disclosure recommends — the Host key is the
+// literal gateway hostname (so editor Remote-SSH deep links like
+// `ssh-remote+<id>@<gateway>` resolve directly), and only the two
+// directives that meaningfully differ from SSH defaults are set:
 //
-// No User directive is set, so the per-sandbox identifier travels in
-// the destination (`ssh <sandbox-id>@sandbox-gw`); a single alias
-// serves every sandbox on this profile's workspace.
+//   - Port (the gateway listens on 2222, not 22)
+//   - IdentityFile + IdentitiesOnly (pin our key so ssh doesn't offer
+//     every key in ~/.ssh/ and trip the gateway's rejection cascade)
+//
+// Notably we do NOT set StrictHostKeyChecking, UserKnownHostsFile, or
+// LogLevel — those defaults work fine for IDE / raw-ssh use and
+// matching the user's expectations beats the cosmetic suppression the
+// CLI's own `sandbox ssh` does via argv. No User directive either —
+// the per-sandbox identifier travels in the destination
+// (`ssh <sandbox-id>@<gateway>`).
 func buildSSHConfigBlock(keyPath, gatewayHost, gatewayPort string) string {
-	return fmt.Sprintf(`# Managed by `+"`databricks sandbox register`"+`.
-# Manual edits will be overwritten on the next run.
+	return fmt.Sprintf(`# Managed by `+"`databricks sandbox register`"+`. Manual edits will be overwritten.
 Host %s
-    HostName %s
     Port %s
     IdentityFile %s
     IdentitiesOnly yes
-    StrictHostKeyChecking no
-    UserKnownHostsFile /dev/null
-    LogLevel ERROR
-`, sshConfigAlias, gatewayHost, gatewayPort, keyPath)
+`, gatewayHost, gatewayPort, keyPath)
 }
 
 // writeManagedConfig writes content to path atomically with 0600
@@ -186,7 +183,17 @@ func hasOurMarkedBlock(text string) bool {
 // maybeWriteSSHConfig writes the sandbox-managed SSH config, prompting
 // for consent the first time on this machine. Re-runs silently refresh
 // the managed file. Non-interactive contexts skip the write entirely.
-func maybeWriteSSHConfig(ctx context.Context, keyPath, workspaceHost string) error {
+// The gateway host is the workspace-scoped one returned by the server
+// on the registerKey response — no heuristic, no probe call.
+func maybeWriteSSHConfig(ctx context.Context, keyPath, gatewayHost string) error {
+	if gatewayHost == "" {
+		// Server didn't stamp a gateway on the response. Old server
+		// without the gateway_host field, or genuinely no gateway
+		// available. Skip rather than guess.
+		cmdio.LogString(ctx, "  "+cmdio.Faint(ctx, "skipped SSH config update — server did not return a gateway host"))
+		return nil
+	}
+
 	already, err := sshConfigAlreadyManaged(ctx)
 	if err != nil {
 		return err
@@ -197,12 +204,12 @@ func maybeWriteSSHConfig(ctx context.Context, keyPath, workspaceHost string) err
 			return err
 		}
 		if !cmdio.IsPromptSupported(ctx) {
-			cmdio.LogString(ctx, "  "+cmdio.Faint(ctx, "skipped SSH config update (non-interactive); re-run `databricks sandbox register` from a terminal to add the `"+sshConfigAlias+"` alias"))
+			cmdio.LogString(ctx, "  "+cmdio.Faint(ctx, "skipped SSH config update (non-interactive); re-run `databricks sandbox register` from a terminal to add the `Host "+gatewayHost+"` block"))
 			return nil
 		}
 		question := fmt.Sprintf(
-			"Add a `Host %s` alias to %s? This lets editor Remote-SSH (VS Code / Cursor) and `ssh <id>@%s` connect without further setup.",
-			sshConfigAlias, mainPath, sshConfigAlias,
+			"Add a `Host %s` block to %s? This lets editor Remote-SSH (VS Code / Cursor) and `ssh <id>@%s` connect without further setup.",
+			gatewayHost, mainPath, gatewayHost,
 		)
 		confirmed, err := cmdio.AskYesOrNo(ctx, question)
 		if err != nil {
@@ -214,8 +221,7 @@ func maybeWriteSSHConfig(ctx context.Context, keyPath, workspaceHost string) err
 		}
 	}
 
-	gateway := resolveGatewayHost(workspaceHost)
-	managedPath, _, err := writeSSHConfig(ctx, keyPath, gateway, defaultGatewayPort)
+	managedPath, _, err := writeSSHConfig(ctx, keyPath, gatewayHost, defaultGatewayPort)
 	if err != nil {
 		return err
 	}

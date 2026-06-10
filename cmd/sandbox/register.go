@@ -49,6 +49,11 @@ Examples:
 				return err
 			}
 
+			profile := w.Config.Profile
+			if profile == "" {
+				profile = w.Config.Host
+			}
+
 			keyPath, generated, err := ensureSandboxKey(ctx)
 			if err != nil {
 				return fmt.Errorf("failed to ensure sandbox SSH key: %w", err)
@@ -75,16 +80,27 @@ Examples:
 
 			s := spin(ctx, "Registering key…")
 			defer s.Close()
-			if err := api.registerKey(ctx, string(pubKeyData), name); err != nil {
+			registered, err := api.registerKey(ctx, string(pubKeyData), name)
+			if err != nil {
 				s.fail("Failed to register key")
 				return fmt.Errorf("failed to register key: %w", err)
 			}
 			s.ok("SSH key registered")
 
-			// Write the shared `sandbox-gw` ~/.ssh/config alias so editor
-			// Remote-SSH and plain `ssh <id>@sandbox-gw` both work without
-			// the user pasting any config block (see maybeWriteSSHConfig).
-			if err := maybeWriteSSHConfig(ctx, keyPath, w.Config.Host); err != nil {
+			// Cache the workspace's gateway host so any subsequent
+			// command (ssh, status, ...) sees it before its own first
+			// API call.
+			if registered.GatewayHost != "" {
+				_ = setGatewayHost(ctx, profile, registered.GatewayHost)
+			}
+
+			// Write the `Host <gateway>` block to ~/.ssh/config so
+			// editor Remote-SSH ("Open in VS Code/Cursor") deep links
+			// and plain `ssh <id>@<gateway>` both work without the
+			// user pasting any config block. The gateway host comes
+			// straight from the registerKey response — no probe call
+			// needed, no heuristic.
+			if err := maybeWriteSSHConfig(ctx, keyPath, registered.GatewayHost); err != nil {
 				warn(ctx, fmt.Sprintf("Registered key, but failed to update ~/.ssh/config: %v", err))
 			}
 
