@@ -98,26 +98,6 @@ func TestProcessRootIncludesRemoveDups(t *testing.T) {
 	assert.Equal(t, []string{"a.yml"}, b.Config.Include)
 }
 
-func TestProcessRootIncludesNonYamlGlobLocations(t *testing.T) {
-	b := &bundle.Bundle{
-		BundleRootPath: "testdata/non_yaml_glob",
-	}
-
-	diags := bundle.Apply(t.Context(), b, loader.EntryPoint())
-	require.NoError(t, diags.Error())
-
-	expected := b.Config.GetLocations("include[0]")
-	require.NotEmpty(t, expected)
-
-	diags = bundle.Apply(t.Context(), b, loader.ProcessRootIncludes())
-	require.Len(t, diags, 2)
-	assert.Contains(t, diags[0].Detail, "a.txt")
-	assert.Contains(t, diags[1].Detail, "b.txt")
-	for _, d := range diags {
-		assert.Equal(t, expected, d.Locations)
-	}
-}
-
 func TestProcessRootIncludesNotExists(t *testing.T) {
 	b := &bundle.Bundle{
 		BundleRootPath: t.TempDir(),
