@@ -12,8 +12,6 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class DataStagingOptions:
     """
-    :meta private: [EXPERIMENTAL]
-
     Location of staged data storage
     """
 

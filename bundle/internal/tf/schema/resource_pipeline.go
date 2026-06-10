@@ -133,8 +133,10 @@ type ResourcePipelineCluster struct {
 }
 
 type ResourcePipelineDeployment struct {
+	DeploymentId     string `json:"deployment_id,omitempty"`
 	Kind             string `json:"kind"`
 	MetadataFilePath string `json:"metadata_file_path,omitempty"`
+	VersionId        string `json:"version_id,omitempty"`
 }
 
 type ResourcePipelineEnvironment struct {
@@ -261,6 +263,42 @@ type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsJiraOptions
 	IncludeJiraSpaces []string `json:"include_jira_spaces,omitempty"`
 }
 
+type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsKafkaOptionsKeyTransformerJsonOptions struct {
+	AsVariant           bool   `json:"as_variant,omitempty"`
+	Schema              string `json:"schema,omitempty"`
+	SchemaEvolutionMode string `json:"schema_evolution_mode,omitempty"`
+	SchemaFilePath      string `json:"schema_file_path,omitempty"`
+	SchemaHints         string `json:"schema_hints,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsKafkaOptionsKeyTransformer struct {
+	Format      string                                                                                                 `json:"format,omitempty"`
+	JsonOptions *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsKafkaOptionsKeyTransformerJsonOptions `json:"json_options,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsKafkaOptionsValueTransformerJsonOptions struct {
+	AsVariant           bool   `json:"as_variant,omitempty"`
+	Schema              string `json:"schema,omitempty"`
+	SchemaEvolutionMode string `json:"schema_evolution_mode,omitempty"`
+	SchemaFilePath      string `json:"schema_file_path,omitempty"`
+	SchemaHints         string `json:"schema_hints,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsKafkaOptionsValueTransformer struct {
+	Format      string                                                                                                   `json:"format,omitempty"`
+	JsonOptions *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsKafkaOptionsValueTransformerJsonOptions `json:"json_options,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsKafkaOptions struct {
+	ClientConfig         map[string]string                                                                             `json:"client_config,omitempty"`
+	MaxOffsetsPerTrigger int                                                                                           `json:"max_offsets_per_trigger,omitempty"`
+	StartingOffset       string                                                                                        `json:"starting_offset,omitempty"`
+	TopicPattern         string                                                                                        `json:"topic_pattern,omitempty"`
+	Topics               []string                                                                                      `json:"topics,omitempty"`
+	KeyTransformer       *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsKafkaOptionsKeyTransformer   `json:"key_transformer,omitempty"`
+	ValueTransformer     *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsKafkaOptionsValueTransformer `json:"value_transformer,omitempty"`
+}
+
 type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsMetaAdsOptions struct {
 	ActionAttributionWindows     []string `json:"action_attribution_windows,omitempty"`
 	ActionBreakdowns             []string `json:"action_breakdowns,omitempty"`
@@ -334,6 +372,7 @@ type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptions struct {
 	GdriveOptions         *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsGdriveOptions         `json:"gdrive_options,omitempty"`
 	GoogleAdsOptions      *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsGoogleAdsOptions      `json:"google_ads_options,omitempty"`
 	JiraOptions           *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsJiraOptions           `json:"jira_options,omitempty"`
+	KafkaOptions          *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsKafkaOptions          `json:"kafka_options,omitempty"`
 	MetaAdsOptions        *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsMetaAdsOptions        `json:"meta_ads_options,omitempty"`
 	OutlookOptions        *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsOutlookOptions        `json:"outlook_options,omitempty"`
 	SharepointOptions     *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsSharepointOptions     `json:"sharepoint_options,omitempty"`
@@ -426,6 +465,42 @@ type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsJiraOptions 
 	IncludeJiraSpaces []string `json:"include_jira_spaces,omitempty"`
 }
 
+type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsKafkaOptionsKeyTransformerJsonOptions struct {
+	AsVariant           bool   `json:"as_variant,omitempty"`
+	Schema              string `json:"schema,omitempty"`
+	SchemaEvolutionMode string `json:"schema_evolution_mode,omitempty"`
+	SchemaFilePath      string `json:"schema_file_path,omitempty"`
+	SchemaHints         string `json:"schema_hints,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsKafkaOptionsKeyTransformer struct {
+	Format      string                                                                                                `json:"format,omitempty"`
+	JsonOptions *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsKafkaOptionsKeyTransformerJsonOptions `json:"json_options,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsKafkaOptionsValueTransformerJsonOptions struct {
+	AsVariant           bool   `json:"as_variant,omitempty"`
+	Schema              string `json:"schema,omitempty"`
+	SchemaEvolutionMode string `json:"schema_evolution_mode,omitempty"`
+	SchemaFilePath      string `json:"schema_file_path,omitempty"`
+	SchemaHints         string `json:"schema_hints,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsKafkaOptionsValueTransformer struct {
+	Format      string                                                                                                  `json:"format,omitempty"`
+	JsonOptions *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsKafkaOptionsValueTransformerJsonOptions `json:"json_options,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsKafkaOptions struct {
+	ClientConfig         map[string]string                                                                            `json:"client_config,omitempty"`
+	MaxOffsetsPerTrigger int                                                                                          `json:"max_offsets_per_trigger,omitempty"`
+	StartingOffset       string                                                                                       `json:"starting_offset,omitempty"`
+	TopicPattern         string                                                                                       `json:"topic_pattern,omitempty"`
+	Topics               []string                                                                                     `json:"topics,omitempty"`
+	KeyTransformer       *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsKafkaOptionsKeyTransformer   `json:"key_transformer,omitempty"`
+	ValueTransformer     *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsKafkaOptionsValueTransformer `json:"value_transformer,omitempty"`
+}
+
 type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsMetaAdsOptions struct {
 	ActionAttributionWindows     []string `json:"action_attribution_windows,omitempty"`
 	ActionBreakdowns             []string `json:"action_breakdowns,omitempty"`
@@ -499,6 +574,7 @@ type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptions struct {
 	GdriveOptions         *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsGdriveOptions         `json:"gdrive_options,omitempty"`
 	GoogleAdsOptions      *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsGoogleAdsOptions      `json:"google_ads_options,omitempty"`
 	JiraOptions           *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsJiraOptions           `json:"jira_options,omitempty"`
+	KafkaOptions          *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsKafkaOptions          `json:"kafka_options,omitempty"`
 	MetaAdsOptions        *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsMetaAdsOptions        `json:"meta_ads_options,omitempty"`
 	OutlookOptions        *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsOutlookOptions        `json:"outlook_options,omitempty"`
 	SharepointOptions     *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsSharepointOptions     `json:"sharepoint_options,omitempty"`
