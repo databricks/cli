@@ -1,0 +1,21 @@
+Local = true
+Cloud = false
+
+# No bundle deploy, so no engine matrix.
+[EnvMatrix]
+DATABRICKS_BUNDLE_ENGINE = []
+
+# Stub the SDK's reachability HEAD probe for determinism.
+[[Server]]
+Pattern = "HEAD /"
+Response.Body = ''
+
+# Make the connectivity probe fail so version's error path runs: it should
+# still print the local version, report the workspace as unreachable, and exit
+# non-zero.
+[[Server]]
+Pattern = "GET /api/2.0/preview/scim/v2/Me"
+Response.StatusCode = 403
+Response.Body = '''
+{"error_code": "PERMISSION_DENIED", "message": "Invalid access token."}
+'''
