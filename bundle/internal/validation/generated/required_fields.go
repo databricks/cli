@@ -64,6 +64,8 @@ var RequiredFields = map[string][]string{
 
 	"resources.external_locations.*": {"credential_name", "name", "url"},
 
+	"resources.genie_spaces.*.permissions[*]": {"level"},
+
 	"resources.jobs.*.deployment":                                                                                  {"kind"},
 	"resources.jobs.*.environments[*]":                                                                             {"environment_key"},
 	"resources.jobs.*.git_source":                                                                                  {"git_provider", "git_url"},
@@ -247,6 +249,8 @@ var RequiredFields = map[string][]string{
 
 	"resources.vector_search_endpoints.*":                {"endpoint_type", "name"},
 	"resources.vector_search_endpoints.*.permissions[*]": {"level"},
+
+	"resources.vector_search_indexes.*": {"endpoint_name", "index_type", "name", "primary_key"},
 
 	"resources.volumes.*": {"catalog_name", "name", "schema_name", "volume_type"},
 

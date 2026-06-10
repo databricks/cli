@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/notebook"
@@ -162,7 +163,7 @@ func (n *Downloader) markNotebookForDownload(ctx context.Context, notebookPath *
 		ctx,
 		http.MethodGet,
 		"/api/2.0/workspace/get-status",
-		nil,
+		auth.WorkspaceIDHeaders(n.w.Config),
 		nil,
 		map[string]string{
 			"path":               *notebookPath,

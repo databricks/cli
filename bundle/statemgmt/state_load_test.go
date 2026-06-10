@@ -39,6 +39,7 @@ func TestStateToBundleEmptyLocalResources(t *testing.T) {
 		"resources.volumes.test_volume":                                 {ID: "1"},
 		"resources.clusters.test_cluster":                               {ID: "1"},
 		"resources.dashboards.test_dashboard":                           {ID: "1"},
+		"resources.genie_spaces.test_genie_space":                       {ID: "1"},
 		"resources.apps.test_app":                                       {ID: "app1"},
 		"resources.secret_scopes.test_secret_scope":                     {ID: "secret_scope1"},
 		"resources.sql_warehouses.test_sql_warehouse":                   {ID: "1"},
@@ -52,6 +53,7 @@ func TestStateToBundleEmptyLocalResources(t *testing.T) {
 		"resources.postgres_catalogs.test_postgres_catalog":             {ID: "catalogs/test_catalog"},
 		"resources.postgres_synced_tables.test_postgres_synced_table":   {ID: "synced_tables/main.public.test_synced_table"},
 		"resources.vector_search_endpoints.test_vector_search_endpoint": {ID: "vs-endpoint-1"},
+		"resources.vector_search_indexes.test_vector_search_index":      {ID: "vs-index-1"},
 	}
 	err := StateToBundle(t.Context(), state, &config)
 	assert.NoError(t, err)
@@ -95,6 +97,9 @@ func TestStateToBundleEmptyLocalResources(t *testing.T) {
 	assert.Equal(t, "1", config.Resources.Dashboards["test_dashboard"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Dashboards["test_dashboard"].ModifiedStatus)
 
+	assert.Equal(t, "1", config.Resources.GenieSpaces["test_genie_space"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.GenieSpaces["test_genie_space"].ModifiedStatus)
+
 	assert.Equal(t, "app1", config.Resources.Apps["test_app"].ID)
 	assert.Empty(t, config.Resources.Apps["test_app"].Name)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Apps["test_app"].ModifiedStatus)
@@ -125,6 +130,9 @@ func TestStateToBundleEmptyLocalResources(t *testing.T) {
 
 	assert.Equal(t, "vs-endpoint-1", config.Resources.VectorSearchEndpoints["test_vector_search_endpoint"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.VectorSearchEndpoints["test_vector_search_endpoint"].ModifiedStatus)
+
+	assert.Equal(t, "vs-index-1", config.Resources.VectorSearchIndexes["test_vector_search_index"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.VectorSearchIndexes["test_vector_search_index"].ModifiedStatus)
 
 	AssertFullResourceCoverage(t, &config)
 }
@@ -224,6 +232,13 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 					},
 				},
 			},
+			GenieSpaces: map[string]*resources.GenieSpace{
+				"test_genie_space": {
+					GenieSpaceConfig: resources.GenieSpaceConfig{
+						Title: "test_genie_space",
+					},
+				},
+			},
 			Apps: map[string]*resources.App{
 				"test_app": {
 					App: apps.App{
@@ -318,6 +333,13 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 					},
 				},
 			},
+			VectorSearchIndexes: map[string]*resources.VectorSearchIndex{
+				"test_vector_search_index": {
+					CreateVectorIndexRequest: vectorsearch.CreateVectorIndexRequest{
+						Name: "test_vector_search_index",
+					},
+				},
+			},
 		},
 	}
 
@@ -363,6 +385,9 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 	assert.Empty(t, config.Resources.Dashboards["test_dashboard"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Dashboards["test_dashboard"].ModifiedStatus)
 
+	assert.Empty(t, config.Resources.GenieSpaces["test_genie_space"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.GenieSpaces["test_genie_space"].ModifiedStatus)
+
 	assert.Empty(t, config.Resources.Apps["test_app"].Name)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Apps["test_app"].ModifiedStatus)
 
@@ -398,6 +423,9 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 
 	assert.Empty(t, config.Resources.VectorSearchEndpoints["test_vector_search_endpoint"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.VectorSearchEndpoints["test_vector_search_endpoint"].ModifiedStatus)
+
+	assert.Empty(t, config.Resources.VectorSearchIndexes["test_vector_search_index"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.VectorSearchIndexes["test_vector_search_index"].ModifiedStatus)
 
 	AssertFullResourceCoverage(t, &config)
 }
@@ -554,6 +582,18 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 				"test_dashboard_new": {
 					DashboardConfig: resources.DashboardConfig{
 						DisplayName: "test_dashboard_new",
+					},
+				},
+			},
+			GenieSpaces: map[string]*resources.GenieSpace{
+				"test_genie_space": {
+					GenieSpaceConfig: resources.GenieSpaceConfig{
+						Title: "test_genie_space",
+					},
+				},
+				"test_genie_space_new": {
+					GenieSpaceConfig: resources.GenieSpaceConfig{
+						Title: "test_genie_space_new",
 					},
 				},
 			},
@@ -714,6 +754,18 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 					},
 				},
 			},
+			VectorSearchIndexes: map[string]*resources.VectorSearchIndex{
+				"test_vector_search_index": {
+					CreateVectorIndexRequest: vectorsearch.CreateVectorIndexRequest{
+						Name: "test_vector_search_index",
+					},
+				},
+				"test_vector_search_index_new": {
+					CreateVectorIndexRequest: vectorsearch.CreateVectorIndexRequest{
+						Name: "test_vector_search_index_new",
+					},
+				},
+			},
 		},
 	}
 	state := ExportedResourcesMap{
@@ -741,6 +793,8 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 		"resources.clusters.test_cluster_old":                               {ID: "2"},
 		"resources.dashboards.test_dashboard":                               {ID: "1"},
 		"resources.dashboards.test_dashboard_old":                           {ID: "2"},
+		"resources.genie_spaces.test_genie_space":                           {ID: "1"},
+		"resources.genie_spaces.test_genie_space_old":                       {ID: "2"},
 		"resources.apps.test_app":                                           {ID: "test_app"},
 		"resources.apps.test_app_old":                                       {ID: "test_app_old"},
 		"resources.secret_scopes.test_secret_scope":                         {ID: "test_secret_scope"},
@@ -761,6 +815,8 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 		"resources.postgres_catalogs.test_postgres_catalog_old":             {ID: "catalogs/test_catalog_old"},
 		"resources.vector_search_endpoints.test_vector_search_endpoint":     {ID: "vs-endpoint-1"},
 		"resources.vector_search_endpoints.test_vector_search_endpoint_old": {ID: "vs-endpoint-old"},
+		"resources.vector_search_indexes.test_vector_search_index":          {ID: "vs-index-1"},
+		"resources.vector_search_indexes.test_vector_search_index_old":      {ID: "vs-index-old"},
 	}
 	err := StateToBundle(t.Context(), state, &config)
 	assert.NoError(t, err)
@@ -849,6 +905,13 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 	assert.Empty(t, config.Resources.Dashboards["test_dashboard_new"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Dashboards["test_dashboard_new"].ModifiedStatus)
 
+	assert.Equal(t, "1", config.Resources.GenieSpaces["test_genie_space"].ID)
+	assert.Empty(t, config.Resources.GenieSpaces["test_genie_space"].ModifiedStatus)
+	assert.Equal(t, "2", config.Resources.GenieSpaces["test_genie_space_old"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.GenieSpaces["test_genie_space_old"].ModifiedStatus)
+	assert.Empty(t, config.Resources.GenieSpaces["test_genie_space_new"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.GenieSpaces["test_genie_space_new"].ModifiedStatus)
+
 	assert.Equal(t, "test_app", config.Resources.Apps["test_app"].Name)
 	assert.Empty(t, config.Resources.Apps["test_app"].ModifiedStatus)
 	assert.Equal(t, "test_app_old", config.Resources.Apps["test_app_old"].ID)
@@ -920,6 +983,13 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.VectorSearchEndpoints["test_vector_search_endpoint_old"].ModifiedStatus)
 	assert.Empty(t, config.Resources.VectorSearchEndpoints["test_vector_search_endpoint_new"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.VectorSearchEndpoints["test_vector_search_endpoint_new"].ModifiedStatus)
+
+	assert.Equal(t, "vs-index-1", config.Resources.VectorSearchIndexes["test_vector_search_index"].ID)
+	assert.Empty(t, config.Resources.VectorSearchIndexes["test_vector_search_index"].ModifiedStatus)
+	assert.Equal(t, "vs-index-old", config.Resources.VectorSearchIndexes["test_vector_search_index_old"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.VectorSearchIndexes["test_vector_search_index_old"].ModifiedStatus)
+	assert.Empty(t, config.Resources.VectorSearchIndexes["test_vector_search_index_new"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.VectorSearchIndexes["test_vector_search_index_new"].ModifiedStatus)
 
 	AssertFullResourceCoverage(t, &config)
 }

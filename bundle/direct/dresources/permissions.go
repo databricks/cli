@@ -18,6 +18,7 @@ var permissionResourceToObjectType = map[string]string{
 	"apps":                    "/apps/",
 	"clusters":                "/clusters/",
 	"dashboards":              "/dashboards/",
+	"genie_spaces":            "/genie/",
 	"database_instances":      "/database-instances/",
 	"postgres_projects":       "/database-projects/",
 	"jobs":                    "/jobs/",
@@ -219,7 +220,8 @@ func (r *ResourcePermissions) DoCreate(ctx context.Context, newState *Permission
 	// should we remember the default here?
 	_, err := r.DoUpdate(ctx, newState.ObjectID, newState, nil)
 	if err != nil {
-		return "", nil, err
+		// Permissions Set is idempotent (PUT), so retrying on transient errors is safe.
+		return "", nil, retrySafe(err)
 	}
 
 	return newState.ObjectID, nil, nil

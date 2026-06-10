@@ -309,6 +309,20 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.DashboardUnpublish(req)
 	})
 
+	// Genie Spaces:
+	server.Handle("GET", "/api/2.0/genie/spaces/{space_id}", func(req Request) any {
+		return req.Workspace.GenieSpaceGet(req)
+	})
+	server.Handle("POST", "/api/2.0/genie/spaces", func(req Request) any {
+		return req.Workspace.GenieSpaceCreate(req)
+	})
+	server.Handle("PATCH", "/api/2.0/genie/spaces/{space_id}", func(req Request) any {
+		return req.Workspace.GenieSpaceUpdate(req)
+	})
+	server.Handle("DELETE", "/api/2.0/genie/spaces/{space_id}", func(req Request) any {
+		return req.Workspace.GenieSpaceTrash(req)
+	})
+
 	// Pipelines:
 
 	server.Handle("GET", "/api/2.0/pipelines/{pipeline_id}", func(req Request) any {
@@ -555,9 +569,28 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.SqlWarehousesUpsert(req, req.Vars["warehouse_id"])
 	})
 
+	server.Handle("POST", "/api/2.0/sql/warehouses/{warehouse_id}/start", func(req Request) any {
+		return req.Workspace.SqlWarehousesStart(req, req.Vars["warehouse_id"])
+	})
+
+	server.Handle("POST", "/api/2.0/sql/warehouses/{warehouse_id}/stop", func(req Request) any {
+		return req.Workspace.SqlWarehousesStop(req, req.Vars["warehouse_id"])
+	})
+
 	server.Handle("DELETE", "/api/2.0/sql/warehouses/{warehouse_id}", func(req Request) any {
 		return MapDelete(req.Workspace, req.Workspace.SqlWarehouses, req.Vars["warehouse_id"])
 	})
+
+	// SQL Statement Execution lifecycle. Tests program these by registering
+	// matchers via Server.HandleSQL / HandleSQLPattern (see statements.go).
+	// They live here, not in New, so they act as overridable defaults: a test
+	// that needs raw control over a SQL endpoint (malformed body, transport
+	// error, custom status) can register its own handler for the same pattern
+	// before calling AddDefaultHandlers, or stub it via test.toml in acceptance.
+	server.Handle("POST", "/api/2.0/sql/statements", server.sqlExecuteStatement)
+	server.Handle("GET", "/api/2.0/sql/statements/{statement_id}", server.sqlGetStatement)
+	server.Handle("GET", "/api/2.0/sql/statements/{statement_id}/result/chunks/{chunk_index}", server.sqlGetStatementResultChunk)
+	server.Handle("POST", "/api/2.0/sql/statements/{statement_id}/cancel", server.sqlCancelStatement)
 
 	server.Handle("GET", "/api/2.0/preview/sql/data_sources", func(req Request) any {
 		return req.Workspace.SqlDataSourcesList(req)
@@ -826,6 +859,24 @@ func AddDefaultHandlers(server *Server) {
 
 	server.Handle("PATCH", "/api/2.0/vector-search/endpoints/{endpoint_name}/budget-policy", func(req Request) any {
 		return req.Workspace.VectorSearchEndpointUpdateBudgetPolicy(req, req.Vars["endpoint_name"])
+	})
+
+	// Vector Search Indexes:
+
+	server.Handle("POST", "/api/2.0/vector-search/indexes", func(req Request) any {
+		return req.Workspace.VectorSearchIndexCreate(req)
+	})
+
+	server.Handle("GET", "/api/2.0/vector-search/indexes", func(req Request) any {
+		return MapList(req.Workspace, req.Workspace.VectorSearchIndexes, "vector_indexes")
+	})
+
+	server.Handle("GET", "/api/2.0/vector-search/indexes/{index_name}", func(req Request) any {
+		return MapGet(req.Workspace, req.Workspace.VectorSearchIndexes, req.Vars["index_name"])
+	})
+
+	server.Handle("DELETE", "/api/2.0/vector-search/indexes/{index_name}", func(req Request) any {
+		return MapDelete(req.Workspace, req.Workspace.VectorSearchIndexes, req.Vars["index_name"])
 	})
 
 	// Generic permissions endpoints

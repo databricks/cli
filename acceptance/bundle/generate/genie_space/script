@@ -1,0 +1,8 @@
+trace $CLI workspace mkdirs /Workspace/test-$UNIQUE_NAME
+
+# create a genie space to import
+envsubst < genie_space.json.tmpl > genie_space.json
+genie_space_id=$($CLI genie create-space --json @genie_space.json | jq -r '.space_id')
+rm genie_space.json
+
+trace $CLI bundle generate genie-space --existing-id $genie_space_id --genie-space-dir out/genie_space --resource-dir out/resource

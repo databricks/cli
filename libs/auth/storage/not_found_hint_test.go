@@ -35,24 +35,24 @@ type boomCache struct{ err error }
 func (c boomCache) Store(string, *oauth2.Token) error    { return nil }
 func (c boomCache) Lookup(string) (*oauth2.Token, error) { return nil, c.err }
 
-func writeLegacyCache(t *testing.T, path string, hasEntries bool) {
+func writeLegacyStore(t *testing.T, path string, hasEntries bool) {
 	t.Helper()
 	require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o700))
-	tokens := map[string]*oauth2.Token{}
+	tokens := map[string]*fileEntry{}
 	if hasEntries {
-		tokens["my-profile"] = &oauth2.Token{AccessToken: "abc"}
+		tokens["my-profile"] = &fileEntry{Token: &oauth2.Token{AccessToken: "abc"}}
 	}
-	body, err := json.Marshal(tokenCacheFile{Version: tokenCacheVersion, Tokens: tokens})
+	body, err := json.Marshal(tokenStoreFile{Version: tokenStoreVersion, Tokens: tokens})
 	require.NoError(t, err)
 	require.NoError(t, os.WriteFile(path, body, 0o600))
 }
 
 func TestNotFoundHintCache_SecureWithLegacyEntries_UsesUpgradeMessage(t *testing.T) {
 	tmp := t.TempDir()
-	legacyPath := filepath.Join(tmp, tokenCacheFilePath)
-	writeLegacyCache(t, legacyPath, true)
+	legacyPath := filepath.Join(tmp, tokenStoreFilePath)
+	writeLegacyStore(t, legacyPath, true)
 
-	c := &notFoundHintCache{inner: missingCache{}, mode: StorageModeSecure, legacyCachePath: legacyPath}
+	c := &notFoundHintCache{inner: missingCache{}, mode: StorageModeSecure, legacyStorePath: legacyPath}
 	_, err := c.Lookup("anything")
 	require.Error(t, err)
 	assert.ErrorIs(t, err, cache.ErrNotFound)
@@ -63,10 +63,10 @@ func TestNotFoundHintCache_SecureWithLegacyEntries_UsesUpgradeMessage(t *testing
 
 func TestNotFoundHintCache_SecureWithEmptyLegacyFile_UsesGenericMessage(t *testing.T) {
 	tmp := t.TempDir()
-	legacyPath := filepath.Join(tmp, tokenCacheFilePath)
-	writeLegacyCache(t, legacyPath, false)
+	legacyPath := filepath.Join(tmp, tokenStoreFilePath)
+	writeLegacyStore(t, legacyPath, false)
 
-	c := &notFoundHintCache{inner: missingCache{}, mode: StorageModeSecure, legacyCachePath: legacyPath}
+	c := &notFoundHintCache{inner: missingCache{}, mode: StorageModeSecure, legacyStorePath: legacyPath}
 	_, err := c.Lookup("anything")
 	require.Error(t, err)
 	assert.ErrorIs(t, err, cache.ErrNotFound)
@@ -75,7 +75,7 @@ func TestNotFoundHintCache_SecureWithEmptyLegacyFile_UsesGenericMessage(t *testi
 }
 
 func TestNotFoundHintCache_SecureNoLegacyFile_UsesGenericMessage(t *testing.T) {
-	c := &notFoundHintCache{inner: missingCache{}, mode: StorageModeSecure, legacyCachePath: filepath.Join(t.TempDir(), "missing.json")}
+	c := &notFoundHintCache{inner: missingCache{}, mode: StorageModeSecure, legacyStorePath: filepath.Join(t.TempDir(), "missing.json")}
 	_, err := c.Lookup("anything")
 	require.Error(t, err)
 	assert.ErrorIs(t, err, cache.ErrNotFound)
@@ -84,12 +84,12 @@ func TestNotFoundHintCache_SecureNoLegacyFile_UsesGenericMessage(t *testing.T) {
 
 func TestNotFoundHintCache_Plaintext_AlwaysGenericMessage(t *testing.T) {
 	tmp := t.TempDir()
-	legacyPath := filepath.Join(tmp, tokenCacheFilePath)
-	writeLegacyCache(t, legacyPath, true)
+	legacyPath := filepath.Join(tmp, tokenStoreFilePath)
+	writeLegacyStore(t, legacyPath, true)
 
 	// Even with a populated legacy file present, plaintext mode reads from
 	// that same file, so the upgrade copy would be misleading.
-	c := &notFoundHintCache{inner: missingCache{}, mode: StorageModePlaintext, legacyCachePath: legacyPath}
+	c := &notFoundHintCache{inner: missingCache{}, mode: StorageModePlaintext, legacyStorePath: legacyPath}
 	_, err := c.Lookup("anything")
 	require.Error(t, err)
 	assert.ErrorIs(t, err, cache.ErrNotFound)
@@ -99,7 +99,7 @@ func TestNotFoundHintCache_Plaintext_AlwaysGenericMessage(t *testing.T) {
 
 func TestNotFoundHintCache_NonErrNotFound_PassesThrough(t *testing.T) {
 	boom := errors.New("backend blew up")
-	c := &notFoundHintCache{inner: boomCache{err: boom}, mode: StorageModeSecure, legacyCachePath: ""}
+	c := &notFoundHintCache{inner: boomCache{err: boom}, mode: StorageModeSecure, legacyStorePath: ""}
 	_, err := c.Lookup("anything")
 	require.Error(t, err)
 	assert.ErrorIs(t, err, boom)
@@ -108,14 +108,14 @@ func TestNotFoundHintCache_NonErrNotFound_PassesThrough(t *testing.T) {
 
 func TestNotFoundHintCache_SuccessfulLookupUnchanged(t *testing.T) {
 	tok := &oauth2.Token{AccessToken: "abc"}
-	c := &notFoundHintCache{inner: foundCache{tok: tok}, mode: StorageModeSecure, legacyCachePath: ""}
+	c := &notFoundHintCache{inner: foundCache{tok: tok}, mode: StorageModeSecure, legacyStorePath: ""}
 	got, err := c.Lookup("anything")
 	require.NoError(t, err)
 	assert.Equal(t, tok, got)
 }
 
 func TestNotFoundHintCache_StoreIsDelegated(t *testing.T) {
-	c := &notFoundHintCache{inner: missingCache{}, mode: StorageModeSecure, legacyCachePath: ""}
+	c := &notFoundHintCache{inner: missingCache{}, mode: StorageModeSecure, legacyStorePath: ""}
 	require.NoError(t, c.Store("k", &oauth2.Token{AccessToken: "abc"}))
 }
 
@@ -149,32 +149,32 @@ func TestHintForNotFound(t *testing.T) {
 	})
 }
 
-func TestLegacyCacheHasTokens(t *testing.T) {
+func TestLegacyStoreHasTokens(t *testing.T) {
 	tmp := t.TempDir()
 
 	t.Run("empty path returns false", func(t *testing.T) {
-		assert.False(t, legacyCacheHasTokens(""))
+		assert.False(t, legacyStoreHasTokens(""))
 	})
 
 	t.Run("missing file returns false", func(t *testing.T) {
-		assert.False(t, legacyCacheHasTokens(filepath.Join(tmp, "missing.json")))
+		assert.False(t, legacyStoreHasTokens(filepath.Join(tmp, "missing.json")))
 	})
 
 	t.Run("garbage file returns false", func(t *testing.T) {
 		p := filepath.Join(tmp, "garbage.json")
 		require.NoError(t, os.WriteFile(p, []byte("not json"), 0o600))
-		assert.False(t, legacyCacheHasTokens(p))
+		assert.False(t, legacyStoreHasTokens(p))
 	})
 
 	t.Run("empty token map returns false", func(t *testing.T) {
 		p := filepath.Join(tmp, "empty.json")
-		writeLegacyCache(t, p, false)
-		assert.False(t, legacyCacheHasTokens(p))
+		writeLegacyStore(t, p, false)
+		assert.False(t, legacyStoreHasTokens(p))
 	})
 
 	t.Run("populated token map returns true", func(t *testing.T) {
 		p := filepath.Join(tmp, "populated.json")
-		writeLegacyCache(t, p, true)
-		assert.True(t, legacyCacheHasTokens(p))
+		writeLegacyStore(t, p, true)
+		assert.True(t, legacyStoreHasTokens(p))
 	})
 }

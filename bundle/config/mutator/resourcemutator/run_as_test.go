@@ -41,6 +41,7 @@ func allResourceTypes(t *testing.T) []string {
 		"database_instances",
 		"experiments",
 		"external_locations",
+		"genie_spaces",
 		"jobs",
 		"model_serving_endpoints",
 		"models",
@@ -57,6 +58,7 @@ func allResourceTypes(t *testing.T) []string {
 		"sql_warehouses",
 		"synced_database_tables",
 		"vector_search_endpoints",
+		"vector_search_indexes",
 		"volumes",
 	},
 		resourceTypes,
@@ -182,10 +184,12 @@ var allowList = []string{
 	"postgres_synced_tables",
 	"registered_models",
 	"experiments",
+	"genie_spaces",
 	"schemas",
 	"secret_scopes",
 	"sql_warehouses",
 	"vector_search_endpoints",
+	"vector_search_indexes",
 	"volumes",
 }
 

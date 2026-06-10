@@ -254,11 +254,37 @@ var testConfig map[string]any = map[string]any{
 		},
 	},
 
+	"genie_spaces": &resources.GenieSpace{
+		GenieSpaceConfig: resources.GenieSpaceConfig{
+			Title:           "my-genie-space",
+			WarehouseId:     "test-warehouse-id",
+			ParentPath:      "/Workspace/Users/user@example.com",
+			SerializedSpace: "{}",
+		},
+	},
+
 	"vector_search_endpoints": &resources.VectorSearchEndpoint{
 		CreateEndpoint: vectorsearch.CreateEndpoint{
 			Name:         "my-endpoint",
 			EndpointType: vectorsearch.EndpointTypeStandard,
 		},
+	},
+
+	"vector_search_indexes": &resources.VectorSearchIndex{
+		CreateVectorIndexRequest: vectorsearch.CreateVectorIndexRequest{
+			Name:         "main.default.my_index",
+			EndpointName: "my-index-endpoint",
+			PrimaryKey:   "id",
+			IndexType:    vectorsearch.VectorIndexTypeDeltaSync,
+			DeltaSyncIndexSpec: &vectorsearch.DeltaSyncVectorIndexSpecRequest{
+				SourceTable:  "main.default.source_table",
+				PipelineType: vectorsearch.PipelineTypeTriggered,
+			},
+		},
+		Grants: []catalog.PrivilegeAssignment{{
+			Principal:  "user@example.com",
+			Privileges: []catalog.Privilege{catalog.PrivilegeSelect},
+		}},
 	},
 }
 
@@ -279,6 +305,18 @@ var testDeps = map[string]prepareWorkspace{
 				DatabaseInstanceName: "mydbinstance1",
 			},
 		}, err
+	},
+
+	"vector_search_indexes": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		_, err := client.VectorSearchEndpoints.CreateEndpoint(ctx, vectorsearch.CreateEndpoint{
+			Name:         "my-index-endpoint",
+			EndpointType: vectorsearch.EndpointTypeStandard,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		return testConfig["vector_search_indexes"], nil
 	},
 
 	"jobs.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
@@ -466,6 +504,25 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
+	"genie_spaces.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		resp, err := client.Genie.CreateSpace(ctx, dashboards.GenieCreateSpaceRequest{
+			Title:           "genie-space-permissions",
+			WarehouseId:     "test-warehouse-id",
+			SerializedSpace: "{}",
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		return &PermissionsState{
+			ObjectID: "/genie/" + resp.SpaceId,
+			EmbeddedSlice: []StatePermission{{
+				Level:    "CAN_MANAGE",
+				UserName: "user@example.com",
+			}},
+		}, nil
+	},
+
 	"model_serving_endpoints.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
 		waiter, err := client.ServingEndpoints.Create(ctx, serving.CreateServingEndpoint{
 			Name: "endpoint-permissions",
@@ -592,6 +649,17 @@ var testDeps = map[string]prepareWorkspace{
 			FullName:      "modelid",
 			EmbeddedSlice: []catalog.PrivilegeAssignment{{
 				Privileges: []catalog.Privilege{catalog.PrivilegeCreateView},
+				Principal:  "user@example.com",
+			}},
+		}, nil
+	},
+
+	"vector_search_indexes.grants": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		return &GrantsState{
+			SecurableType: "table",
+			FullName:      "main.default.my_index",
+			EmbeddedSlice: []catalog.PrivilegeAssignment{{
+				Privileges: []catalog.Privilege{catalog.PrivilegeSelect},
 				Principal:  "user@example.com",
 			}},
 		}, nil
@@ -861,6 +929,9 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	}))
 
 	err = adapter.DoDelete(ctx, createdID, newState)
+	require.NoError(t, err)
+
+	err = adapter.WaitAfterDelete(ctx, createdID)
 	require.NoError(t, err)
 
 	p, err := structpath.ParsePath("name")

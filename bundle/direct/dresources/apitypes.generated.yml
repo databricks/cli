@@ -18,6 +18,8 @@ experiments: ml.CreateExperiment
 
 external_locations: catalog.CreateExternalLocation
 
+genie_spaces: dashboards.GenieSpace
+
 jobs: jobs.JobSettings
 
 model_serving_endpoints: serving.CreateServingEndpoint
@@ -49,5 +51,7 @@ sql_warehouses: sql.EditWarehouseRequest
 synced_database_tables: database.SyncedDatabaseTable
 
 vector_search_endpoints: vectorsearch.CreateEndpoint
+
+vector_search_indexes: vectorsearch.CreateVectorIndexRequest
 
 volumes: catalog.CreateVolumeRequestContent

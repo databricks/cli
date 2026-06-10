@@ -123,15 +123,26 @@ func TestBundleResourcePluralNamesResolveInWorkspaceURLs(t *testing.T) {
 	withURLs := []string{
 		"alerts",
 		"apps",
+		"catalogs",
 		"clusters",
 		"dashboards",
+		"database_catalogs",
+		"database_instances",
 		"experiments",
 		"jobs",
 		"models",
 		"model_serving_endpoints",
 		"pipelines",
+		"postgres_catalogs",
+		"postgres_synced_tables",
+		"quality_monitors",
 		"registered_models",
+		"schemas",
 		"sql_warehouses",
+		"synced_database_tables",
+		"vector_search_endpoints",
+		"vector_search_indexes",
+		"volumes",
 	}
 
 	supported := SupportedResources()
@@ -189,6 +200,9 @@ func TestResourcesBindSupport(t *testing.T) {
 		},
 		Dashboards: map[string]*resources.Dashboard{
 			"my_dashboard": {},
+		},
+		GenieSpaces: map[string]*resources.GenieSpace{
+			"my_genie_space": {},
 		},
 		Volumes: map[string]*resources.Volume{
 			"my_volume": {
@@ -291,6 +305,16 @@ func TestResourcesBindSupport(t *testing.T) {
 				},
 			},
 		},
+		VectorSearchIndexes: map[string]*resources.VectorSearchIndex{
+			"my_vector_search_index": {
+				CreateVectorIndexRequest: vectorsearch.CreateVectorIndexRequest{
+					Name:         "my_vector_search_index",
+					EndpointName: "my_vector_search_endpoint",
+					PrimaryKey:   "id",
+					IndexType:    vectorsearch.VectorIndexTypeDeltaSync,
+				},
+			},
+		},
 	}
 	unbindableResources := map[string]bool{
 		"model": true,
@@ -307,6 +331,7 @@ func TestResourcesBindSupport(t *testing.T) {
 	m.GetMockSchemasAPI().EXPECT().GetByFullName(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockClustersAPI().EXPECT().GetByClusterId(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockLakeviewAPI().EXPECT().Get(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockGenieAPI().EXPECT().GetSpace(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockVolumesAPI().EXPECT().Read(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockAppsAPI().EXPECT().GetByName(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockAlertsV2API().EXPECT().GetAlertById(mock.Anything, mock.Anything).Return(nil, nil)
@@ -325,6 +350,7 @@ func TestResourcesBindSupport(t *testing.T) {
 	m.GetMockPostgresAPI().EXPECT().GetCatalog(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockPostgresAPI().EXPECT().GetSyncedTable(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockVectorSearchEndpointsAPI().EXPECT().GetEndpoint(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockVectorSearchIndexesAPI().EXPECT().GetIndexByIndexName(mock.Anything, mock.Anything).Return(nil, nil)
 
 	allResources := supportedResources.AllResources()
 	for _, group := range allResources {

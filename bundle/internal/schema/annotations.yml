@@ -75,6 +75,9 @@ github.com/databricks/cli/bundle/config.Experimental:
   "python_wheel_wrapper":
     "description": |-
       Whether to use a Python wheel wrapper.
+  "record_deployment_history":
+    "description": |-
+      Whether to record deployment history using the deployment metadata service (DMS), which tracks what changed across deployments.
   "scripts":
     "description": |-
       The commands to run.
@@ -192,6 +195,9 @@ github.com/databricks/cli/bundle/config.Resources:
   "external_locations":
     "description": |-
       PLACEHOLDER
+  "genie_spaces":
+    "description": |-
+      PLACEHOLDER
   "jobs":
     "description": |-
       The job definitions for the bundle, where each key is the name of the job.
@@ -256,6 +262,9 @@ github.com/databricks/cli/bundle/config.Resources:
     "description": |-
       PLACEHOLDER
   "vector_search_endpoints":
+    "description": |-
+      PLACEHOLDER
+  "vector_search_indexes":
     "description": |-
       PLACEHOLDER
   "volumes":
@@ -532,6 +541,12 @@ github.com/databricks/cli/bundle/config/resources.Alert:
     "description": |-
       PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.App:
+  "compute_max_instances":
+    "description": |-
+      PLACEHOLDER
+  "compute_min_instances":
+    "description": |-
+      PLACEHOLDER
   "git_source":
     "description": |-
       Git source configuration for app deployments. Specifies which git reference (branch, tag, or commit)
@@ -656,6 +671,37 @@ github.com/databricks/cli/bundle/config/resources.ExternalLocation:
   "url":
     "description": |-
       PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.GenieSpace:
+  "description":
+    "description": |-
+      Description of the Genie space shown alongside the title in the Databricks UI.
+  "etag":
+    "description": |-
+      PLACEHOLDER
+  "file_path":
+    "description": |-
+      Local path to a `.geniespace.json` file holding the serialized Genie space definition. The contents are inlined into `serialized_space` at deploy time. Mutually exclusive with an inline `serialized_space`.
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
+  "parent_path":
+    "description": |-
+      Workspace folder under which to create the Genie space. Immutable: changing this field recreates the resource.
+  "permissions":
+    "description": |-
+      PLACEHOLDER
+  "serialized_space":
+    "description": |-
+      Serialized Genie space body. May be provided inline as a JSON string (or YAML that will be marshalled to JSON) or referenced via `file_path`. To round-trip an existing space into a bundle, use `databricks bundle generate genie-space`.
+  "space_id":
+    "description": |-
+      PLACEHOLDER
+  "title":
+    "description": |-
+      Title of the Genie space shown in the Databricks UI.
+  "warehouse_id":
+    "description": |-
+      ID of the SQL warehouse used to run queries for this Genie space.
 github.com/databricks/cli/bundle/config/resources.JobPermission:
   "group_name":
     "description": |-
@@ -737,6 +783,10 @@ github.com/databricks/cli/bundle/config/resources.Permission:
   "user_name":
     "description": |-
       The name of the user that has the permission set in level.
+github.com/databricks/cli/bundle/config/resources.Pipeline:
+  "parameters":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.PipelinePermission:
   "group_name":
     "description": |-
@@ -913,6 +963,9 @@ github.com/databricks/cli/bundle/config/resources.PostgresProject:
   "project_id":
     "description": |-
       PLACEHOLDER
+  "purge_on_delete":
+    "description": |-
+      PLACEHOLDER
   "spec":
     "description": |-
       PLACEHOLDER
@@ -1046,6 +1099,34 @@ github.com/databricks/cli/bundle/config/resources.VectorSearchEndpoint:
     "description": |-
       PLACEHOLDER
   "usage_policy_id":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.VectorSearchIndex:
+  "delta_sync_index_spec":
+    "description": |-
+      PLACEHOLDER
+  "direct_access_index_spec":
+    "description": |-
+      PLACEHOLDER
+  "endpoint_name":
+    "description": |-
+      PLACEHOLDER
+  "grants":
+    "description": |-
+      PLACEHOLDER
+  "index_subtype":
+    "description": |-
+      PLACEHOLDER
+  "index_type":
+    "description": |-
+      PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
+  "name":
+    "description": |-
+      PLACEHOLDER
+  "primary_key":
     "description": |-
       PLACEHOLDER
 github.com/databricks/cli/bundle/config/variable.Lookup:

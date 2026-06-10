@@ -77,6 +77,16 @@ github.com/databricks/cli/bundle/config/resources.App:
     "x-databricks-field-behaviors_output_only": |-
       true
   "budget_policy_id": {}
+  "compute_max_instances":
+    "description": |-
+      Maximum number of app instances. Must be set together with `compute_min_instances`.
+    "x-databricks-preview": |-
+      PRIVATE
+  "compute_min_instances":
+    "description": |-
+      Minimum number of app instances. Must be set together with `compute_max_instances`.
+    "x-databricks-preview": |-
+      PRIVATE
   "compute_size": {}
   "compute_status":
     "x-databricks-field-behaviors_output_only": |-
@@ -831,6 +841,10 @@ github.com/databricks/cli/bundle/config/resources.Pipeline:
   "notifications":
     "description": |-
       List of notification settings for this pipeline.
+  "parameters":
+    "description": |-
+      Key/value map of default parameters to use for pipeline execution.
+      Maximum total size: 10k characters (JSON format)
   "photon":
     "description": |-
       Whether Photon is enabled for this pipeline.
@@ -1156,6 +1170,30 @@ github.com/databricks/cli/bundle/config/resources.VectorSearchEndpoint:
       The usage policy id to be applied once we've migrated to usage policies
     "x-databricks-preview": |-
       PRIVATE
+github.com/databricks/cli/bundle/config/resources.VectorSearchIndex:
+  "delta_sync_index_spec":
+    "description": |-
+      Specification for Delta Sync Index. Required if `index_type` is `DELTA_SYNC`.
+  "direct_access_index_spec":
+    "description": |-
+      Specification for Direct Vector Access Index. Required if `index_type` is `DIRECT_ACCESS`.
+  "endpoint_name":
+    "description": |-
+      Name of the endpoint to be used for serving the index
+  "index_subtype":
+    "description": |-
+      The subtype of the index. Use `HYBRID` or `FULL_TEXT`. `VECTOR` is not supported.
+  "index_type":
+    "description": |-
+      There are 2 types of AI Search indexes:
+      - `DELTA_SYNC`: An index that automatically syncs with a source Delta Table, automatically and incrementally updating the index as the underlying data in the Delta Table changes.
+      - `DIRECT_ACCESS`: An index that supports direct read and write of vectors and metadata through our REST and SDK APIs. With this model, the user manages index updates.
+  "name":
+    "description": |-
+      Name of the index
+  "primary_key":
+    "description": |-
+      Primary key of the index
 github.com/databricks/cli/bundle/config/resources.Volume:
   "catalog_name":
     "description": |-
@@ -1915,6 +1953,16 @@ github.com/databricks/databricks-sdk-go/service/catalog.Privilege:
         CREATE_FEATURE
       - |-
         READ_FEATURE
+      - |-
+        CREATE_STREAM
+      - |-
+        READ_STREAM
+      - |-
+        CREATE_MEMORY_STORE
+      - |-
+        READ_MEMORY_STORE
+      - |-
+        WRITE_MEMORY_STORE
 github.com/databricks/databricks-sdk-go/service/catalog.PrivilegeAssignment:
   "principal":
     "description": |-
@@ -3481,6 +3529,13 @@ github.com/databricks/databricks-sdk-go/service/jobs.JobCluster:
     "description": |-
       If new_cluster, a description of a cluster that is created for each task.
 github.com/databricks/databricks-sdk-go/service/jobs.JobDeployment:
+  "deployment_id":
+    "description": |-
+      ID of the deployment that manages this job. Only set when `kind` is
+      `BUNDLE`. Used to look up deployment metadata from the Deployment
+      Metadata service.
+    "x-databricks-preview": |-
+      PRIVATE
   "kind":
     "description": |-
       The kind of deployment that manages the job.
@@ -3490,6 +3545,13 @@ github.com/databricks/databricks-sdk-go/service/jobs.JobDeployment:
   "metadata_file_path":
     "description": |-
       Path of the file that contains deployment metadata.
+  "version_id":
+    "description": |-
+      ID of the version of the deployment that produced this job. Only set
+      when `kind` is `BUNDLE`. Identifies a specific snapshot of the deployment
+      in the Deployment Metadata service.
+    "x-databricks-preview": |-
+      PRIVATE
 github.com/databricks/databricks-sdk-go/service/jobs.JobDeploymentKind:
   "_":
     "description": |-
@@ -3785,6 +3847,10 @@ github.com/databricks/databricks-sdk-go/service/jobs.PipelineTask:
   "full_refresh_selection":
     "description": |-
       A list of tables to update with fullRefresh.
+  "parameters":
+    "description": |-
+      Key/value-map of parameters passed to the pipeline execution.
+      Limited to 10k characters in total.
   "pipeline_id":
     "description": |-
       The full name of the pipeline task to execute.
@@ -4777,16 +4843,12 @@ github.com/databricks/databricks-sdk-go/service/pipelines.IngestionPipelineDefin
   "connector_type":
     "description": |-
       (Optional) Connector Type for sources. Ex: CDC, Query Based.
-    "x-databricks-preview": |-
-      PRIVATE
   "data_staging_options":
     "description": |-
       (Optional) Location of staged data storage. This is required for migration from Cdc Managed Ingestion Pipeline
       with Gateway pipeline to Combined Cdc Managed Ingestion Pipeline.
       If not specified, the volume for staged data will be created in catalog and schema/target specified in the
       top level pipeline definition.
-    "x-databricks-preview": |-
-      PRIVATE
   "full_refresh_window":
     "description": |-
       (Optional) A window that specifies a set of time ranges for snapshot queries in CDC.
@@ -5425,12 +5487,26 @@ github.com/databricks/databricks-sdk-go/service/pipelines.PipelineClusterAutosca
       - |-
         LEGACY
 github.com/databricks/databricks-sdk-go/service/pipelines.PipelineDeployment:
+  "deployment_id":
+    "description": |-
+      ID of the deployment that manages this pipeline. Only set when `kind` is
+      `BUNDLE`. Used to look up deployment metadata from the Deployment
+      Metadata service.
+    "x-databricks-preview": |-
+      PRIVATE
   "kind":
     "description": |-
       The deployment method that manages the pipeline.
   "metadata_file_path":
     "description": |-
       The path to the file containing metadata about the deployment.
+  "version_id":
+    "description": |-
+      ID of the version of the deployment that produced this pipeline. Only
+      set when `kind` is `BUNDLE`. Identifies a specific snapshot of the
+      deployment in the Deployment Metadata service.
+    "x-databricks-preview": |-
+      PRIVATE
 github.com/databricks/databricks-sdk-go/service/pipelines.PipelineLibrary:
   "file":
     "description": |-
@@ -6771,6 +6847,64 @@ github.com/databricks/databricks-sdk-go/service/sql.WarehousePermissionLevel:
         CAN_MONITOR
       - |-
         CAN_VIEW
+github.com/databricks/databricks-sdk-go/service/vectorsearch.DeltaSyncVectorIndexSpecRequest:
+  "columns_to_index":
+    "description": |-
+      [Optional] Alias for columns_to_sync. Select the columns to include in the vector index.
+      If you leave this field blank, all columns from the source table are included.
+      The primary key column and embedding source column or embedding vector column are always included.
+      Only one of columns_to_sync or columns_to_index may be specified.
+  "columns_to_sync":
+    "description": |-
+      [Optional] Select the columns to sync with the vector index. If you leave this field blank, all columns
+      from the source table are synced with the index. The primary key column and embedding source column or
+      embedding vector column are always synced.
+  "embedding_source_columns":
+    "description": |-
+      The columns that contain the embedding source.
+  "embedding_vector_columns":
+    "description": |-
+      The columns that contain the embedding vectors.
+  "embedding_writeback_table":
+    "description": |-
+      [Optional] Name of the Delta table to sync the vector index contents and computed embeddings to.
+  "pipeline_type":
+    "description": |-
+      Pipeline execution mode.
+      - `TRIGGERED`: If the pipeline uses the triggered execution mode, the system stops processing after successfully refreshing the source table in the pipeline once, ensuring the table is updated based on the data available when the update started.
+      - `CONTINUOUS`: If the pipeline uses continuous execution, the pipeline processes new data as it arrives in the source table to keep vector index fresh.
+  "source_table":
+    "description": |-
+      The name of the source table.
+github.com/databricks/databricks-sdk-go/service/vectorsearch.DirectAccessVectorIndexSpec:
+  "embedding_source_columns":
+    "description": |-
+      The columns that contain the embedding source. The format should be array[double].
+  "embedding_vector_columns":
+    "description": |-
+      The columns that contain the embedding vectors. The format should be array[double].
+  "schema_json":
+    "description": |-
+      The schema of the index in JSON format.
+      Supported types are `integer`, `long`, `float`, `double`, `boolean`, `string`, `date`, `timestamp`.
+      Supported types for vector column: `array<float>`, `array<double>`,`.
+github.com/databricks/databricks-sdk-go/service/vectorsearch.EmbeddingSourceColumn:
+  "embedding_model_endpoint_name":
+    "description": |-
+      Name of the embedding model endpoint, used by default for both ingestion and querying.
+  "model_endpoint_name_for_query":
+    "description": |-
+      Name of the embedding model endpoint which, if specified, is used for querying (not ingestion).
+  "name":
+    "description": |-
+      Name of the column
+github.com/databricks/databricks-sdk-go/service/vectorsearch.EmbeddingVectorColumn:
+  "embedding_dimension":
+    "description": |-
+      Dimension of the embedding vector
+  "name":
+    "description": |-
+      Name of the column
 github.com/databricks/databricks-sdk-go/service/vectorsearch.EndpointType:
   "_":
     "description": |-
@@ -6782,6 +6916,42 @@ github.com/databricks/databricks-sdk-go/service/vectorsearch.EndpointType:
         STANDARD
       - |-
         STANDARD_ON_ORION
+github.com/databricks/databricks-sdk-go/service/vectorsearch.IndexSubtype:
+  "_":
+    "description": |-
+      The subtype of the AI Search index, determining the indexing and retrieval strategy.
+      - `VECTOR`: Not supported. Use `HYBRID` instead.
+      - `FULL_TEXT`: An index that uses full-text search without vector embeddings.
+      - `HYBRID`: An index that uses vector embeddings for similarity search and hybrid search.
+    "enum":
+      - |-
+        VECTOR
+      - |-
+        FULL_TEXT
+      - |-
+        HYBRID
+github.com/databricks/databricks-sdk-go/service/vectorsearch.PipelineType:
+  "_":
+    "description": |-
+      Pipeline execution mode.
+      - `TRIGGERED`: If the pipeline uses the triggered execution mode, the system stops processing after successfully refreshing the source table in the pipeline once, ensuring the table is updated based on the data available when the update started.
+      - `CONTINUOUS`: If the pipeline uses continuous execution, the pipeline processes new data as it arrives in the source table to keep vector index fresh.
+    "enum":
+      - |-
+        TRIGGERED
+      - |-
+        CONTINUOUS
+github.com/databricks/databricks-sdk-go/service/vectorsearch.VectorIndexType:
+  "_":
+    "description": |-
+      There are 2 types of AI Search indexes:
+      - `DELTA_SYNC`: An index that automatically syncs with a source Delta Table, automatically and incrementally updating the index as the underlying data in the Delta Table changes.
+      - `DIRECT_ACCESS`: An index that supports direct read and write of vectors and metadata through our REST and SDK APIs. With this model, the user manages index updates.
+    "enum":
+      - |-
+        DELTA_SYNC
+      - |-
+        DIRECT_ACCESS
 github.com/databricks/databricks-sdk-go/service/workspace.AzureKeyVaultSecretScopeMetadata:
   "_":
     "description": |-

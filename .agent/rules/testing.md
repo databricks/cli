@@ -1,5 +1,9 @@
 ---
 description: Rules for the testing strategy of this repo
+paths:
+  - "**/*_test.go"
+  - "acceptance/**"
+  - "integration/**"
 ---
 
 # Rules for the testing strategy of this repo
@@ -131,6 +135,12 @@ Available on `PATH` during test execution (from `acceptance/bin/`):
 - `edit_resource.py TYPE ID < script.py`: fetch resource by ID, execute Python on it (resource in `r`), then update it. TYPE is `jobs` or `pipelines`.
 - `gron.py`: flatten JSON into greppable discrete assignments (simpler than `jq` for searching JSON).
 - `jq` is also available for JSON processing.
+
+**RULE: Prefer `gron.py | grep <field>` over inline `jq` paths for single-value lookups.** The gron output prints the JSON path inline, so the test log explains itself.
+
+**RULE: Don't pass `--keep` to `print_requests.py` if a later `print_requests.py` call follows.** The buffer accumulates, so the second call double-prints the earlier requests.
+
+**RULE: Route noisy or non-deterministic command output to `LOG.<name>` instead of `output.txt` or `/dev/null`.** `LOG.*` files are visible under `go test -v` but excluded from the diff — see `acceptance/selftest/log/`. Use `&> LOG.<name>` to capture both streams (then `contains.py` to assert invariants like `'!panic' '!internal error'`), or `2>>LOG.<name>` for cleanup-step stderr you'd otherwise drop to `/dev/null`.
 
 ### Update workflow
 

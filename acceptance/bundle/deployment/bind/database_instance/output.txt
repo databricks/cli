@@ -14,7 +14,7 @@ Resources:
   Database instances:
     database_instance1:
       Name: test-instance-02
-      URL:  [DATABRICKS_URL]/compute/database-instances/test-instance-02?o=[NUMID]
+      URL:  [DATABRICKS_URL]/compute/database-instances/test-instance-02?w=[NUMID]
 
 >>> [CLI] bundle deployment unbind database_instance1
 Updating deployment state...

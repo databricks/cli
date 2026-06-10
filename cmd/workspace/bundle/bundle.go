@@ -351,6 +351,7 @@ func newCreateVersion() *cobra.Command {
 
 	cmd.Flags().Var(&createVersionJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	cmd.Flags().Var(&createVersionReq.Version.DeploymentMode, "deployment-mode", `Bundle target deployment mode (development or production), captured at the time of this version. Supported values: [DEPLOYMENT_MODE_DEVELOPMENT, DEPLOYMENT_MODE_PRODUCTION]`)
 	cmd.Flags().StringVar(&createVersionReq.Version.DisplayName, "display-name", createVersionReq.Version.DisplayName, `Display name for the deployment, captured at the time of this version.`)
 	cmd.Flags().StringVar(&createVersionReq.Version.TargetName, "target-name", createVersionReq.Version.TargetName, `Target name of the deployment, captured at the time of this version.`)
 

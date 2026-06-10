@@ -2,6 +2,7 @@ package apps
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"io"
 	"io/fs"
@@ -18,6 +19,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.yaml.in/yaml/v3"
 )
 
 func TestIsTextFile(t *testing.T) {
@@ -1147,4 +1149,311 @@ func TestRunCreate_NameDotAndOutputDirAreMutuallyExclusive(t *testing.T) {
 	})
 	require.Error(t, err)
 	assert.ErrorIs(t, err, prompt.ErrNameDotWithOutputDir)
+}
+
+func TestRunCreate_SkipInstallRejectsRun(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	for _, runMode := range []string{"dev", "dev-remote"} {
+		t.Run(runMode, func(t *testing.T) {
+			err := runCreate(ctx, createOptions{
+				name:         "my-app",
+				nameProvided: true,
+				skipInstall:  true,
+				run:          runMode,
+			})
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), "--skip-install cannot be combined with --run")
+		})
+	}
+}
+
+func TestInitCmd_SkipInstallFlagRegistered(t *testing.T) {
+	cmd := newInitCmd()
+	flag := cmd.Flags().Lookup("skip-install")
+	require.NotNil(t, flag)
+	assert.Equal(t, "false", flag.DefValue)
+}
+
+func TestPrependInstall(t *testing.T) {
+	tests := []struct {
+		name      string
+		install   string
+		nextSteps string
+		want      string
+	}{
+		{"both set", "npm ci", "npm run dev", "npm ci && npm run dev"},
+		{"empty install", "", "npm run dev", "npm run dev"},
+		{"empty next steps", "npm ci", "", "npm ci"},
+		{"both empty", "", "", ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, prependInstall(tt.install, tt.nextSteps))
+		})
+	}
+}
+
+func TestShouldSkipPluginSelection(t *testing.T) {
+	tests := []struct {
+		name     string
+		setup    func(dir string)
+		expected bool
+	}{
+		{
+			name: "pre-rendered: manifest + databricks.yml + no project_name dir",
+			setup: func(dir string) {
+				require.NoError(t, os.WriteFile(filepath.Join(dir, manifest.ManifestFileName), []byte(`{"plugins":{}}`), 0o644))
+				require.NoError(t, os.WriteFile(filepath.Join(dir, bundleConfigFile), []byte("bundle:\n  name: myapp\n"), 0o644))
+			},
+			expected: true,
+		},
+		{
+			name: "full appkit template: manifest + no databricks.yml",
+			setup: func(dir string) {
+				require.NoError(t, os.WriteFile(filepath.Join(dir, manifest.ManifestFileName), []byte(`{"plugins":{}}`), 0o644))
+				require.NoError(t, os.WriteFile(filepath.Join(dir, "databricks.yml.tmpl"), []byte("bundle:\n  name: {{.projectName}}\n"), 0o644))
+			},
+			expected: false,
+		},
+		{
+			name: "manifest present, project_name dir present",
+			setup: func(dir string) {
+				require.NoError(t, os.WriteFile(filepath.Join(dir, manifest.ManifestFileName), []byte(`{"plugins":{}}`), 0o644))
+				require.NoError(t, os.WriteFile(filepath.Join(dir, bundleConfigFile), []byte("bundle:\n  name: myapp\n"), 0o644))
+				require.NoError(t, os.MkdirAll(filepath.Join(dir, "{{.project_name}}"), 0o755))
+			},
+			expected: false,
+		},
+		{
+			name: "no manifest",
+			setup: func(dir string) {
+				require.NoError(t, os.WriteFile(filepath.Join(dir, "README.md"), []byte("hello"), 0o644))
+			},
+			expected: false,
+		},
+		{
+			name:     "unreadable directory",
+			setup:    func(_ string) {},
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dir := t.TempDir()
+			if tt.name == "unreadable directory" {
+				dir = filepath.Join(dir, "nonexistent")
+			} else {
+				tt.setup(dir)
+			}
+			assert.Equal(t, tt.expected, shouldSkipPluginSelection(t.Context(), dir))
+		})
+	}
+}
+
+func TestReplaceProjectName(t *testing.T) {
+	tests := []struct {
+		name           string
+		yml            string
+		pkgJSON        string // empty means no package.json
+		newName        string
+		wantBundleName string
+		wantAppName    string
+		wantPkgName    string
+		wantErr        bool
+	}{
+		{
+			name:           "bundle and app name replaced",
+			yml:            "bundle:\n  name: old-app\nresources:\n  apps:\n    old-app:\n      name: \"old-app\"\n",
+			newName:        "new-app",
+			wantBundleName: "new-app",
+			wantAppName:    "new-app",
+		},
+		{
+			name:           "bundle name only, no resources",
+			yml:            "bundle:\n  name: old-app\n",
+			newName:        "new-app",
+			wantBundleName: "new-app",
+		},
+		{
+			name:    "no bundle.name, only app name",
+			yml:     "resources:\n  apps:\n    myapp:\n      name: \"myapp\"\n",
+			newName: "new-app",
+			wantErr: true,
+		},
+		{
+			name:           "package.json round-trip",
+			yml:            "bundle:\n  name: old-app\n",
+			pkgJSON:        `{"name":"old-app","version":"1.0.0"}`,
+			newName:        "new-app",
+			wantBundleName: "new-app",
+			wantPkgName:    "new-app",
+		},
+		{
+			name:           "no package.json",
+			yml:            "bundle:\n  name: old-app\n",
+			newName:        "new-app",
+			wantBundleName: "new-app",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dir := t.TempDir()
+
+			require.NoError(t, os.WriteFile(filepath.Join(dir, bundleConfigFile), []byte(tt.yml), 0o644))
+
+			if tt.pkgJSON != "" {
+				require.NoError(t, os.WriteFile(filepath.Join(dir, "package.json"), []byte(tt.pkgJSON), 0o644))
+			}
+
+			err := replaceProjectName(dir, tt.newName)
+			if tt.wantErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+
+			// Verify databricks.yml via yaml.Node to avoid format sensitivity.
+			ymlData, err := os.ReadFile(filepath.Join(dir, bundleConfigFile))
+			require.NoError(t, err)
+
+			var doc yaml.Node
+			require.NoError(t, yaml.Unmarshal(ymlData, &doc))
+
+			if tt.wantBundleName != "" {
+				bundleName := yamlMapLookup(yamlMapLookup(doc.Content[0], "bundle"), "name")
+				require.NotNil(t, bundleName, "bundle.name not found in output")
+				assert.Equal(t, tt.wantBundleName, bundleName.Value)
+			}
+
+			if tt.wantAppName != "" {
+				appsNode := yamlMapLookup(yamlMapLookup(doc.Content[0], "resources"), "apps")
+				require.NotNil(t, appsNode)
+				require.True(t, appsNode.Kind == yaml.MappingNode && len(appsNode.Content) >= 2)
+				appName := yamlMapLookup(appsNode.Content[1], "name")
+				require.NotNil(t, appName, "resources.apps.*.name not found in output")
+				assert.Equal(t, tt.wantAppName, appName.Value)
+			}
+
+			if tt.wantPkgName != "" {
+				pkgData, err := os.ReadFile(filepath.Join(dir, "package.json"))
+				require.NoError(t, err)
+				var pkg map[string]any
+				require.NoError(t, json.Unmarshal(pkgData, &pkg))
+				assert.Equal(t, tt.wantPkgName, pkg["name"])
+			}
+		})
+	}
+}
+
+func TestReplaceProjectNameNoDatabricksYml(t *testing.T) {
+	dir := t.TempDir()
+	err := replaceProjectName(dir, "new-app")
+	require.Error(t, err)
+}
+
+func TestReplaceProjectNameMalformedYAML(t *testing.T) {
+	dir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, bundleConfigFile), []byte("{{invalid yaml"), 0o644))
+	err := replaceProjectName(dir, "new-app")
+	assert.ErrorContains(t, err, "parse")
+}
+
+func TestReplaceProjectNameMalformedPackageJSON(t *testing.T) {
+	dir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, bundleConfigFile), []byte("bundle:\n  name: old\n"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "package.json"), []byte("{invalid json}"), 0o644))
+	err := replaceProjectName(dir, "new-app")
+	assert.ErrorContains(t, err, "parse package.json")
+}
+
+func TestReplaceProjectNameSymlinkRefused(t *testing.T) {
+	dir := t.TempDir()
+
+	// Create a real file and a symlink to it named databricks.yml.
+	realFile := filepath.Join(dir, "real.yml")
+	require.NoError(t, os.WriteFile(realFile, []byte("bundle:\n  name: old\n"), 0o644))
+	require.NoError(t, os.Symlink(realFile, filepath.Join(dir, bundleConfigFile)))
+
+	err := replaceProjectName(dir, "new-app")
+	assert.ErrorContains(t, err, "symlink")
+}
+
+func TestSetYAMLValue(t *testing.T) {
+	input := "top:\n  nested:\n    leaf: old\n"
+	var doc yaml.Node
+	require.NoError(t, yaml.Unmarshal([]byte(input), &doc))
+
+	require.NoError(t, setYAMLValue(&doc, []string{"top", "nested", "leaf"}, "new"))
+
+	val := yamlMapLookup(yamlMapLookup(yamlMapLookup(doc.Content[0], "top"), "nested"), "leaf")
+	require.NotNil(t, val)
+	assert.Equal(t, "new", val.Value)
+}
+
+func TestSetYAMLValueMissingKey(t *testing.T) {
+	input := "top:\n  nested:\n    leaf: old\n"
+	var doc yaml.Node
+	require.NoError(t, yaml.Unmarshal([]byte(input), &doc))
+
+	err := setYAMLValue(&doc, []string{"top", "nonexistent", "leaf"}, "new")
+	assert.Error(t, err)
+
+	val := yamlMapLookup(yamlMapLookup(yamlMapLookup(doc.Content[0], "top"), "nested"), "leaf")
+	require.NotNil(t, val)
+	assert.Equal(t, "old", val.Value)
+}
+
+func TestSetYAMLValueNonScalarLeaf(t *testing.T) {
+	input := "bundle:\n  name:\n    nested: value\n"
+	var doc yaml.Node
+	require.NoError(t, yaml.Unmarshal([]byte(input), &doc))
+
+	err := setYAMLValue(&doc, []string{"bundle", "name"}, "new-name")
+	assert.ErrorContains(t, err, "expected scalar")
+}
+
+func TestYamlMapLookup(t *testing.T) {
+	input := "a: 1\nb: 2\n"
+	var doc yaml.Node
+	require.NoError(t, yaml.Unmarshal([]byte(input), &doc))
+
+	root := doc.Content[0]
+	assert.NotNil(t, yamlMapLookup(root, "a"))
+	assert.Equal(t, "1", yamlMapLookup(root, "a").Value)
+	assert.Nil(t, yamlMapLookup(root, "missing"))
+	assert.Nil(t, yamlMapLookup(nil, "a"))
+}
+
+func TestSetFirstAppName(t *testing.T) {
+	input := "resources:\n  apps:\n    myapp:\n      name: \"old-name\"\n      description: keep\n"
+	var doc yaml.Node
+	require.NoError(t, yaml.Unmarshal([]byte(input), &doc))
+
+	require.NoError(t, setFirstAppName(&doc, "new-name"))
+
+	appsNode := yamlMapLookup(yamlMapLookup(doc.Content[0], "resources"), "apps")
+	require.NotNil(t, appsNode)
+	appName := yamlMapLookup(appsNode.Content[1], "name")
+	require.NotNil(t, appName)
+	assert.Equal(t, "new-name", appName.Value)
+
+	// Verify description is untouched.
+	desc := yamlMapLookup(appsNode.Content[1], "description")
+	require.NotNil(t, desc)
+	assert.Equal(t, "keep", desc.Value)
+}
+
+func TestSetFirstAppNameNoResources(t *testing.T) {
+	input := "bundle:\n  name: myapp\n"
+	var doc yaml.Node
+	require.NoError(t, yaml.Unmarshal([]byte(input), &doc))
+
+	// No error when resources.apps is absent.
+	require.NoError(t, setFirstAppName(&doc, "new-name"))
+
+	bundleName := yamlMapLookup(yamlMapLookup(doc.Content[0], "bundle"), "name")
+	require.NotNil(t, bundleName)
+	assert.Equal(t, "myapp", bundleName.Value)
 }

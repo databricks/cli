@@ -141,6 +141,7 @@ type FakeWorkspace struct {
 	Volumes               map[string]catalog.VolumeInfo
 	Dashboards            map[string]fakeDashboard
 	PublishedDashboards   map[string]dashboards.PublishedDashboard
+	GenieSpaces           map[string]dashboards.GenieSpace
 	SqlWarehouses         map[string]sql.GetWarehouseResponse
 	Alerts                map[string]sql.AlertV2
 	Experiments           map[string]ml.GetExperimentResponse
@@ -152,6 +153,7 @@ type FakeWorkspace struct {
 	RegisteredModels      map[string]catalog.RegisteredModelInfo
 	ServingEndpoints      map[string]serving.ServingEndpointDetailed
 	VectorSearchEndpoints map[string]vectorsearch.EndpointInfo
+	VectorSearchIndexes   map[string]fakeVectorSearchIndex
 
 	SecretScopes map[string]workspace.SecretScope
 	Secrets      map[string]map[string]string // scope -> key -> value
@@ -287,6 +289,7 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		Volumes:             map[string]catalog.VolumeInfo{},
 		Dashboards:          map[string]fakeDashboard{},
 		PublishedDashboards: map[string]dashboards.PublishedDashboard{},
+		GenieSpaces:         map[string]dashboards.GenieSpace{},
 		SqlWarehouses: map[string]sql.GetWarehouseResponse{
 			TestDefaultWarehouseId: {
 				Id:    TestDefaultWarehouseId,
@@ -296,6 +299,7 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		},
 		ServingEndpoints:          map[string]serving.ServingEndpointDetailed{},
 		VectorSearchEndpoints:     map[string]vectorsearch.EndpointInfo{},
+		VectorSearchIndexes:       map[string]fakeVectorSearchIndex{},
 		Repos:                     map[string]workspace.RepoInfo{},
 		SecretScopes:              map[string]workspace.SecretScope{},
 		Secrets:                   map[string]map[string]string{},

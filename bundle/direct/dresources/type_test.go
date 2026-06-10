@@ -49,6 +49,9 @@ var knownMissingInRemoteType = map[string][]string{
 	"postgres_endpoints": {
 		"replace_existing",
 	},
+	"postgres_projects": {
+		"purge_on_delete",
+	},
 	"vector_search_endpoints": {
 		"target_qps",
 		"usage_policy_id",
@@ -76,7 +79,13 @@ var knownMissingInStateType = map[string][]string{
 	"clusters": {
 		"lifecycle.prevent_destroy",
 	},
+	"sql_warehouses": {
+		"lifecycle.prevent_destroy",
+	},
 	"dashboards": {
+		"file_path",
+	},
+	"genie_spaces": {
 		"file_path",
 	},
 	"secret_scopes": {

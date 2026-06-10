@@ -6,7 +6,5 @@ local.cache.attempt true
 local.cache.miss true
 presets_name_prefix_is_set false
 python_wheel_wrapper_is_set false
-resref_jobs.tags.* true
-resreferr_jobs.task true
 run_as_set false
 skip_artifact_cleanup false

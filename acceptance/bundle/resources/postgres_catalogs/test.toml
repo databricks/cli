@@ -14,8 +14,8 @@ Ignore = [
 ]
 
 [[Repls]]
-# Clean up ?o=<num> suffix after URL since not all workspaces have that
-Old = '\?o=\[(NUMID|ALPHANUMID)\]'
+# Clean up ?[ow]=<num> suffix after URL since not all workspaces have that
+Old = '\?[ow]=\[(NUMID|ALPHANUMID)\]'
 New = ''
 Order = 1000
 
