@@ -1289,7 +1289,7 @@ func TestDiscoveryLogin_SkipWorkspaceAddsAccountTargetOption(t *testing.T) {
 		profileName: "DISCOVERY",
 		timeout:     time.Second,
 		browserFunc: func(string) error { return nil },
-		tokenCache:  newTestTokenCache(),
+		tokenStore:  newTestStore(),
 	}))
 
 	// With --skip-workspace: expect exactly one extra option.
@@ -1300,10 +1300,10 @@ func TestDiscoveryLogin_SkipWorkspaceAddsAccountTargetOption(t *testing.T) {
 		timeout:       time.Second,
 		skipWorkspace: true,
 		browserFunc:   func(string) error { return nil },
-		tokenCache:    newTestTokenCache(),
+		tokenStore:    newTestStore(),
 	}))
 
-	assert.Equal(t, len(baselineDC.persistentAuthOpts)+1, len(skipDC.persistentAuthOpts),
+	assert.Len(t, skipDC.persistentAuthOpts, len(baselineDC.persistentAuthOpts)+1,
 		"--skip-workspace should add exactly one extra PersistentAuthOption (WithDiscoveryAccountTarget)")
 }
 
