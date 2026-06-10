@@ -79,16 +79,26 @@ func patSPOGNoWorkspaceIDError(profileName string) error {
 // client so account-only profiles still describe cleanly.
 type ErrAccountOnlyProfile struct {
 	profileName string
+	// host is the profile's canonical host name (config.CanonicalHostName);
+	// IsClassicAccountHost only matches the canonical form.
+	host string
 }
 
 func (e ErrAccountOnlyProfile) Error() string {
+	// A classic account console host serves no workspace APIs at all, so the
+	// generic "set workspace_id" advice below can never make workspace
+	// commands work there; following it is how broken profiles get created
+	// (https://github.com/databricks/cli/issues/5479).
+	if auth.IsClassicAccountHost(e.host) {
+		return fmt.Sprintf("profile %q points to a Databricks account console host (%s), which serves only account-level APIs; this command requires a workspace. Run `databricks auth login --host https://<workspace-url>` to create a workspace profile, or use `databricks account ...` commands with this profile", e.profileName, e.host)
+	}
 	return fmt.Sprintf("profile %q has no workspace_id set (account-only); this command requires a workspace. Edit the profile to set workspace_id to a real ID, or pass --profile with a workspace-scoped profile", e.profileName)
 }
 
 // accountOnlyProfileError describes why a workspace command can't run against
 // a profile that has an account_id but no workspace_id.
-func accountOnlyProfileError(profileName string) error {
-	return ErrAccountOnlyProfile{profileName: profileName}
+func accountOnlyProfileError(cfg *config.Config) error {
+	return ErrAccountOnlyProfile{profileName: cfg.Profile, host: cfg.CanonicalHostName()}
 }
 
 func profileFlagValue(cmd *cobra.Command) (string, bool) {
@@ -245,7 +255,7 @@ func workspaceClientOrPrompt(ctx context.Context, cfg *config.Config, allowPromp
 		// can recognize ErrAccountOnlyProfile and fall through to the account
 		// client; the PAT-on-SPOG check below handles the remaining cases
 		// (env-var-only configs and profiles without account_id resolved).
-		return nil, accountOnlyProfileError(cfg.Profile)
+		return nil, accountOnlyProfileError(cfg)
 	}
 	if err == nil && isPATOnSPOGWithoutWorkspaceID(cfg) {
 		// PATs are workspace-scoped. On a SPOG host without workspace_id the

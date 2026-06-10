@@ -1,0 +1,3 @@
+Error: no sandbox named "no-such-box" — `databricks sandbox list` shows available IDs
+
+Exit code: 1

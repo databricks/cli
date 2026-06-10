@@ -175,6 +175,12 @@ resources:
       - field: effective_file_event_queue
         reason: spec:output_only
 
+  genie_spaces:
+
+    ignore_remote_changes:
+      - field: etag
+        reason: spec:output_only
+
   # jobs: no api field behaviors
 
   # model_serving_endpoints: no api field behaviors

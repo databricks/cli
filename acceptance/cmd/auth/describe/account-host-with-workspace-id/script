@@ -1,0 +1,15 @@
+sethome "./home"
+
+# Older logins wrote account console profiles with both account_id and
+# workspace_id, which resolves to a workspace client even though the host only
+# serves account APIs (https://github.com/databricks/cli/issues/5479).
+cat > "./home/.databrickscfg" <<EOF
+[acct-with-ws]
+host         = $DATABRICKS_HOST
+token        = $DATABRICKS_TOKEN
+account_id   = acct-123
+workspace_id = 900800700600
+EOF
+
+title "Describe falls back to the account endpoint when the workspace check fails\n"
+trace $CLI auth describe --profile acct-with-ws
