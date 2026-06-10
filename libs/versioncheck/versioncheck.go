@@ -32,8 +32,8 @@ const (
 	// escape hatch); it is not a documented, user-facing setting.
 	gitHubAPIURLEnv = "DATABRICKS_CLI_GITHUB_API_URL"
 
-	// fetchTimeout bounds the release lookup. The `version` command waits on
-	// it, so keep it short: a quick "couldn't reach GitHub" beats a hang.
+	// fetchTimeout bounds the release lookup. The explicit `version --check`
+	// waits on it, so keep it short: a quick "couldn't reach GitHub" beats a hang.
 	fetchTimeout = 2 * time.Second
 )
 

@@ -6,13 +6,12 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/versioncheck"
 	"github.com/spf13/cobra"
 )
 
-// updateCheckTemplate renders the version command's text output, including the
-// outcome of the update check.
+// updateCheckTemplate renders an update check in text mode. JSON output is
+// rendered directly from the versioncheck.Result struct by cmdio.
 const updateCheckTemplate = `Databricks CLI v{{.CurrentVersion}}
 {{if .DevelopmentBuild -}}
 This is a development build; skipping the update check.
@@ -35,18 +34,21 @@ func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "version",
 		Args:  root.NoArgs,
-		Short: "Show the CLI version and check whether a newer version is available",
+		Short: "Retrieve information about the current version of this CLI",
+		Annotations: map[string]string{
+			"template": "Databricks CLI v{{.Version}}\n",
+		},
 	}
+
+	var check bool
+	cmd.Flags().BoolVar(&check, "check", false, "Check whether a newer version of the CLI is available")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		// JSON output keeps the build-info shape scripts already parse and
-		// stays offline. The update check applies to the human-facing text
-		// mode only; the --version flag (handled by cobra) stays lightweight.
-		if root.OutputType(cmd) == flags.OutputJSON {
-			return cmdio.Render(ctx, build.GetInfo())
+		if check {
+			return cmdio.RenderWithTemplate(ctx, versioncheck.Check(ctx), "", updateCheckTemplate)
 		}
-		return cmdio.RenderWithTemplate(ctx, versioncheck.Check(ctx), "", updateCheckTemplate)
+		return cmdio.Render(ctx, build.GetInfo())
 	}
 
 	return cmd
