@@ -76,6 +76,7 @@ Use the Postgres API to create and manage Lakebase Autoscaling Postgres
 	cmd.AddCommand(newListEndpoints())
 	cmd.AddCommand(newListProjects())
 	cmd.AddCommand(newListRoles())
+	cmd.AddCommand(newUndeleteBranch())
 	cmd.AddCommand(newUndeleteProject())
 	cmd.AddCommand(newUpdateBranch())
 	cmd.AddCommand(newUpdateDatabase())
@@ -374,8 +375,10 @@ func newCreateDatabase() *cobra.Command {
 	// TODO: complex arg: status
 
 	cmd.Use = "create-database PARENT"
-	cmd.Short = `Create a Database.`
-	cmd.Long = `Create a Database.
+	cmd.Short = `*Beta* Create a Database.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Create a Database.
 
   Create a Database.
 
@@ -391,12 +394,9 @@ func newCreateDatabase() *cobra.Command {
     PARENT: The Branch where this Database will be created. Format:
       projects/{project_id}/branches/{branch_id}`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -1006,6 +1006,8 @@ func newDeleteBranch() *cobra.Command {
 	cmd.Flags().BoolVar(&deleteBranchSkipWait, "no-wait", deleteBranchSkipWait, `do not wait to reach DONE state`)
 	cmd.Flags().DurationVar(&deleteBranchTimeout, "timeout", 0, `maximum amount of time to reach DONE state`)
 
+	cmd.Flags().BoolVar(&deleteBranchReq.Purge, "purge", deleteBranchReq.Purge, `If true, permanently delete the branch; if false, soft delete.`)
+
 	cmd.Use = "delete-branch NAME"
 	cmd.Short = `*Beta* Delete a Branch.`
 	cmd.Long = `This command is in Beta and may change without notice.
@@ -1214,8 +1216,10 @@ func newDeleteDatabase() *cobra.Command {
 	cmd.Flags().DurationVar(&deleteDatabaseTimeout, "timeout", 0, `maximum amount of time to reach DONE state`)
 
 	cmd.Use = "delete-database NAME"
-	cmd.Short = `Delete a Database.`
-	cmd.Long = `Delete a Database.
+	cmd.Short = `*Beta* Delete a Database.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Delete a Database.
 
   This is a long-running operation. By default, the command waits for the
   operation to complete. Use --no-wait to return immediately with the raw
@@ -1226,12 +1230,9 @@ func newDeleteDatabase() *cobra.Command {
     NAME: The resource name of the postgres database. Format:
       projects/{project_id}/branches/{branch_id}/databases/{database_id}`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -1743,9 +1744,8 @@ func newGenerateDatabaseCredential() *cobra.Command {
 Generate OAuth credentials for a Postgres database.
 
   Arguments:
-    ENDPOINT: This field is not yet supported. The endpoint for which this credential
-      will be generated. Format:
-      projects/{project_id}/branches/{branch_id}/endpoints/{endpoint_id}`
+    ENDPOINT: The endpoint resource name for which this credential will be generated.
+      Format: projects/{project_id}/branches/{branch_id}/endpoints/{endpoint_id}`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
@@ -1942,19 +1942,18 @@ func newGetDatabase() *cobra.Command {
 	var getDatabaseReq postgres.GetDatabaseRequest
 
 	cmd.Use = "get-database NAME"
-	cmd.Short = `Get a Database.`
-	cmd.Long = `Get a Database.
+	cmd.Short = `*Beta* Get a Database.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Get a Database.
 
   Arguments:
     NAME: The name of the Database to retrieve. Format:
       projects/{project_id}/branches/{branch_id}/databases/{database_id}`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -2319,6 +2318,7 @@ func newListBranches() *cobra.Command {
 	var listBranchesLimit int
 
 	cmd.Flags().IntVar(&listBranchesReq.PageSize, "page-size", listBranchesReq.PageSize, `Upper bound for items returned.`)
+	cmd.Flags().BoolVar(&listBranchesReq.ShowDeleted, "show-deleted", listBranchesReq.ShowDeleted, `Whether to include soft-deleted branches in the response.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listBranchesLimit, "limit", 0, `Maximum number of results to return.`)
@@ -2406,8 +2406,10 @@ func newListDatabases() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-databases PARENT"
-	cmd.Short = `List postgres databases in a branch.`
-	cmd.Long = `List postgres databases in a branch.
+	cmd.Short = `*Beta* List postgres databases in a branch.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+List postgres databases in a branch.
 
   List Databases.
 
@@ -2415,12 +2417,9 @@ func newListDatabases() *cobra.Command {
     PARENT: The Branch that owns this collection of databases. Format:
       projects/{project_id}/branches/{branch_id}`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -2687,6 +2686,111 @@ List Postgres Roles for a Branch.
 	return cmd
 }
 
+// start undelete-branch command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var undeleteBranchOverrides []func(
+	*cobra.Command,
+	*postgres.UndeleteBranchRequest,
+)
+
+func newUndeleteBranch() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var undeleteBranchReq postgres.UndeleteBranchRequest
+
+	var undeleteBranchSkipWait bool
+	var undeleteBranchTimeout time.Duration
+
+	cmd.Flags().BoolVar(&undeleteBranchSkipWait, "no-wait", undeleteBranchSkipWait, `do not wait to reach DONE state`)
+	cmd.Flags().DurationVar(&undeleteBranchTimeout, "timeout", 0, `maximum amount of time to reach DONE state`)
+
+	cmd.Use = "undelete-branch NAME"
+	cmd.Short = `Undelete a Branch.`
+	cmd.Long = `Undelete a Branch.
+
+  Undeletes the specified database branch.
+
+  This is a long-running operation. By default, the command waits for the
+  operation to complete. Use --no-wait to return immediately with the raw
+  operation details. The operation's 'name' field can then be used to poll for
+  completion using the get-operation command.
+
+  Arguments:
+    NAME: The full resource path of the branch to undelete. Format:
+      projects/{project_id}/branches/{branch_id}`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		undeleteBranchReq.Name = args[0]
+
+		// Determine which mode to execute based on flags.
+		switch {
+		case undeleteBranchSkipWait:
+			wait, err := w.Postgres.UndeleteBranch(ctx, undeleteBranchReq)
+			if err != nil {
+				return err
+			}
+
+			// Return operation immediately without waiting.
+			operation, err := w.Postgres.GetOperation(ctx, postgres.GetOperationRequest{
+				Name: wait.Name(),
+			})
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, operation)
+
+		default:
+			wait, err := w.Postgres.UndeleteBranch(ctx, undeleteBranchReq)
+			if err != nil {
+				return err
+			}
+
+			// Show spinner while waiting for completion.
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("Waiting for undelete-branch to complete...")
+
+			// Wait for completion.
+			opts := api.WithTimeout(undeleteBranchTimeout)
+
+			err = wait.Wait(ctx, opts)
+			if err != nil {
+				return err
+			}
+			sp.Close()
+			return nil
+		}
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range undeleteBranchOverrides {
+		fn(cmd, &undeleteBranchReq)
+	}
+
+	return cmd
+}
+
 // start undelete-project command
 
 // Slice with functions to override default command behavior.
@@ -2708,8 +2812,10 @@ func newUndeleteProject() *cobra.Command {
 	cmd.Flags().DurationVar(&undeleteProjectTimeout, "timeout", 0, `maximum amount of time to reach DONE state`)
 
 	cmd.Use = "undelete-project NAME"
-	cmd.Short = `Undelete a Project.`
-	cmd.Long = `Undelete a Project.
+	cmd.Short = `*Beta* Undelete a Project.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Undelete a Project.
 
   Undeletes a soft-deleted project.
 
@@ -2722,12 +2828,9 @@ func newUndeleteProject() *cobra.Command {
     NAME: The full resource path of the project to undelete. Format:
       projects/{project_id}`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -2951,8 +3054,10 @@ func newUpdateDatabase() *cobra.Command {
 	// TODO: complex arg: status
 
 	cmd.Use = "update-database NAME UPDATE_MASK"
-	cmd.Short = `Update a Database.`
-	cmd.Long = `Update a Database.
+	cmd.Short = `*Beta* Update a Database.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Update a Database.
 
   This is a long-running operation. By default, the command waits for the
   operation to complete. Use --no-wait to return immediately with the raw
@@ -2965,12 +3070,9 @@ func newUpdateDatabase() *cobra.Command {
     UPDATE_MASK: The list of fields to update. If unspecified, all fields will be updated
       when possible.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)

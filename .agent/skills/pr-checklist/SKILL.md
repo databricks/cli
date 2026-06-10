@@ -16,14 +16,15 @@ Before submitting a PR, run these commands to match what CI checks. CI uses the 
 # 3. Tests (CI runs with both deployment engines)
 ./task test
 
-# 4. If you changed bundle config structs or schema-related code:
+# 4. If you changed bundle config structs, schema, or direct-engine resource code:
 ./task generate-schema
+./task generate-direct
 
 # 5. If you changed files in python/:
 ./task pydabs-codegen pydabs-test pydabs-lint pydabs-docs
 
-# 6. If you changed experimental/aitools or experimental/ssh:
-./task test-exp-aitools   # only if aitools code changed
+# 6. If you changed cmd/aitools/, libs/aitools/, experimental/aitools/, or experimental/ssh/:
+./task test-exp-aitools   # only if aitools code changed (top-level or experimental)
 ./task test-exp-ssh       # only if ssh code changed
 ```
 
@@ -45,6 +46,8 @@ After the commands above pass, scrub the diff before pushing. The quick version:
 ## PR description
 
 Follow `.github/PULL_REQUEST_TEMPLATE.md` exactly. Use its section headings (`## Changes`, `## Why`, `## Tests`) in the same order, and fill each one in. Do not invent new sections (`## Summary`, `## Test plan`, etc.), do not drop sections, and do not leave the HTML comment placeholders in the final body — replace them with real content. If a section genuinely does not apply (e.g. a docs-only change has no test steps), say so explicitly under that heading rather than removing it.
+
+**RULE: Be concise in the PR summary.** Overly verbose descriptions tend to be ignored by reviewers. Let the diff speak for itself and only describe at a high level what you have implemented/what components were touched.
 
 When using `gh pr create`, read `.github/PULL_REQUEST_TEMPLATE.md` first and base `--body` on it.
 

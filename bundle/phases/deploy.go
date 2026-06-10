@@ -20,6 +20,7 @@ import (
 	"github.com/databricks/cli/bundle/permissions"
 	"github.com/databricks/cli/bundle/scripts"
 	"github.com/databricks/cli/bundle/statemgmt"
+	"github.com/databricks/cli/libs/agent"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
@@ -35,6 +36,8 @@ var deployApprovalGroups = []approvalGroup{
 	{group: "synced_database_tables", message: deleteOrRecreateSyncedDatabaseTableMessage},
 	{group: "postgres_projects", message: deleteOrRecreatePostgresProjectMessage},
 	{group: "postgres_branches", message: deleteOrRecreatePostgresBranchMessage},
+	{group: "vector_search_indexes", message: deleteOrRecreateVectorSearchIndexMessage},
+	{group: "genie_spaces", message: deleteOrRecreateGenieSpaceMessage},
 }
 
 func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) (bool, error) {
@@ -56,7 +59,9 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.P
 	}
 
 	if !cmdio.IsPromptSupported(ctx) {
-		return false, errors.New("the deployment requires destructive actions, but current console does not support prompting. Please specify --auto-approve if you would like to skip prompts and proceed")
+		return false, errors.New("the deployment requires destructive actions, but the current console does not support prompting.\n" +
+			DataLossWarning + "\n" +
+			"To proceed, use --auto-approve after reviewing the plan above." + agent.AgentNotice())
 	}
 
 	cmdio.LogString(ctx, "")
@@ -68,17 +73,27 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, ta
 	// mutators need informed consent if they are potentially destructive.
 	cmdio.LogString(ctx, "Deploying resources...")
 
+	// Apply resources and capture post-apply state.
+	// For direct: Finalize flushes the WAL to disk and returns the state;
+	// called even if Apply failed so partial progress is saved.
+	// For terraform: ParseResourcesState reads the file written by terraform.Apply.
+	var (
+		state statemgmt.ExportedResourcesMap
+		err   error
+	)
 	if targetEngine.IsDirect() {
 		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(ctx), plan, direct.MigrateMode(false))
-		// Finalize state: write to disk even if deploy failed, so partial progress is saved.
-		// Skip for empty plans to avoid creating a state file when nothing was deployed.
-		if len(plan.Plan) > 0 {
-			if err := b.DeploymentBundle.StateDB.Finalize(); err != nil {
-				logdiag.LogError(ctx, err)
-			}
-		}
+		state, err = b.DeploymentBundle.StateDB.Finalize(ctx)
+		// Capture the finalized state for deploy telemetry. It carries each
+		// resource's state-size in bytes (from the WAL replay Finalize just
+		// did), so telemetry needs no extra read or parse of the state file.
+		b.Metrics.ResourceState = state
 	} else {
 		bundle.ApplyContext(ctx, b, terraform.Apply())
+		state, err = terraform.ParseResourcesState(ctx, b)
+	}
+	if err != nil {
+		logdiag.LogError(ctx, err)
 	}
 
 	// Even if deployment failed, there might be updates in states that we need to upload
@@ -88,7 +103,7 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, ta
 	}
 
 	bundle.ApplySeqContext(ctx, b,
-		statemgmt.Load(targetEngine),
+		statemgmt.Load(state),
 		metadata.Compute(),
 		metadata.Upload(),
 		statemgmt.UploadStateForYamlSync(targetEngine),
@@ -149,15 +164,27 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		return
 	}
 
-	if plan != nil {
+	planFromFile := plan != nil
+	if plan == nil {
+		// State is already open for read by process.go (for direct engine)
+		plan = RunPlan(ctx, b, engine)
+	}
+
+	if engine.IsDirect() {
+		// Upgrade from read (opened by process.go) to write mode
+		if err := b.DeploymentBundle.StateDB.UpgradeToWrite(); err != nil {
+			logdiag.LogError(ctx, err)
+			return
+		}
+	}
+
+	if planFromFile {
 		// Initialize DeploymentBundle for applying the loaded plan
 		err := b.DeploymentBundle.InitForApply(ctx, b.WorkspaceClient(ctx), plan)
 		if err != nil {
 			logdiag.LogError(ctx, err)
 			return
 		}
-	} else {
-		plan = RunPlan(ctx, b, engine)
 	}
 
 	if logdiag.HasError(ctx) {
@@ -190,8 +217,14 @@ func RunPlan(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) *d
 			logdiag.LogError(ctx, err)
 			return nil
 		}
+		if len(b.Select) > 0 {
+			plan.FilterToSelected(b.Select)
+		}
 		return plan
 	}
+
+	// b.Select is rejected for the terraform engine in ProcessBundleRet, so it is
+	// never set here.
 
 	bundle.ApplySeqContext(ctx, b,
 		terraform.Interpolate(),

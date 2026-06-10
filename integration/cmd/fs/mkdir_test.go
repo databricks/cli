@@ -24,8 +24,8 @@ func TestFsMkdir(t *testing.T) {
 
 			// create directory "a"
 			stdout, stderr := testcli.RequireSuccessfulRun(t, ctx, "fs", "mkdir", path.Join(tmpDir, "a"))
-			assert.Equal(t, "", stderr.String())
-			assert.Equal(t, "", stdout.String())
+			assert.Empty(t, stderr.String())
+			assert.Empty(t, stdout.String())
 
 			// assert directory "a" is created
 			info, err := f.Stat(t.Context(), "a")
@@ -48,8 +48,8 @@ func TestFsMkdirCreatesIntermediateDirectories(t *testing.T) {
 
 			// create directory "a/b/c"
 			stdout, stderr := testcli.RequireSuccessfulRun(t, ctx, "fs", "mkdir", path.Join(tmpDir, "a", "b", "c"))
-			assert.Equal(t, "", stderr.String())
-			assert.Equal(t, "", stdout.String())
+			assert.Empty(t, stderr.String())
+			assert.Empty(t, stdout.String())
 
 			// assert directory "a" is created
 			infoA, err := f.Stat(t.Context(), "a")
@@ -88,8 +88,8 @@ func TestFsMkdirWhenDirectoryAlreadyExists(t *testing.T) {
 
 			// assert run is successful without any errors
 			stdout, stderr := testcli.RequireSuccessfulRun(t, ctx, "fs", "mkdir", path.Join(tmpDir, "a"))
-			assert.Equal(t, "", stderr.String())
-			assert.Equal(t, "", stdout.String())
+			assert.Empty(t, stderr.String())
+			assert.Empty(t, stdout.String())
 		})
 	}
 }

@@ -202,14 +202,27 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	// pick up the host's agent. Setting these to "" via test.toml is not
 	// enough: the SDK (since v0.132.0) treats empty values as a truthy
 	// signal because os.LookupEnv reports them as present.
+	// Keep this list in sync with listKnownAgents() in
+	// github.com/databricks/databricks-sdk-go/useragent/agent.go
+	// plus the AGENT and AI_AGENT generic fallbacks.
 	for _, v := range []string{
+		"AGENT",
+		"AI_AGENT",
+		"AMP_CURRENT_THREAD_ID",
 		"ANTIGRAVITY_AGENT",
+		"AUGMENT_AGENT",
 		"CLAUDECODE",
 		"CLINE_ACTIVE",
 		"CODEX_CI",
+		"COPILOT_CLI",
 		"CURSOR_AGENT",
 		"GEMINI_CLI",
+		"GOOSE_TERMINAL",
+		"KIRO",
+		"OPENCLAW_SHELL",
 		"OPENCODE",
+		"VSCODE_AGENT",
+		"WINDSURF_AGENT",
 	} {
 		os.Unsetenv(v) //nolint:usetesting // t.Setenv cannot unset
 	}
@@ -899,24 +912,42 @@ func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirN
 		valueNew = repls.Replace(valueNew)
 	}
 
+	// In update mode, regenerating the reference files is the goal: each branch below
+	// writes or removes the reference and returns without failing the test. Genuine
+	// problems still fail — read errors (via tryReading above), write errors (via
+	// require/testutil), and the both-missing case above.
+
 	// The test did not produce an expected output file.
 	if okRef && !okNew {
-		t.Errorf("Missing output file: %s", relPath)
 		if testdiff.OverwriteMode {
+			// The test no longer produces this output; drop the stale reference.
 			t.Logf("Removing output file: %s", relPath)
 			require.NoError(t, os.Remove(pathRef))
+			return
 		}
+		t.Errorf("Missing output file: %s", relPath)
 		return
 	}
 
 	// The test produced an unexpected output file.
 	if !okRef && okNew {
+		if testdiff.OverwriteMode {
+			t.Logf("Writing output file: %s", relPath)
+			testutil.WriteFile(t, pathRef, valueNew)
+			return
+		}
 		t.Errorf("Unexpected output file: %s\npathRef: %s\npathNew: %s", relPath, pathRef, pathNew)
 		if shouldShowDiff(pathNew, valueNew) {
 			testdiff.AssertEqualTexts(t, pathRef, pathNew, valueRef, valueNew)
 		}
-		if testdiff.OverwriteMode {
-			t.Logf("Writing output file: %s", relPath)
+		return
+	}
+
+	// In update mode, overwrite on any difference rather than calling
+	// AssertEqualTexts, which would mark the test failed.
+	if testdiff.OverwriteMode {
+		if valueRef != valueNew {
+			t.Logf("Overwriting existing output file: %s", relPath)
 			testutil.WriteFile(t, pathRef, valueNew)
 		}
 		return
@@ -924,10 +955,6 @@ func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirN
 
 	// Compare the reference and new values.
 	equal := testdiff.AssertEqualTexts(t, pathRef, pathNew, valueRef, valueNew)
-	if !equal && testdiff.OverwriteMode {
-		t.Logf("Overwriting existing output file: %s", relPath)
-		testutil.WriteFile(t, pathRef, valueNew)
-	}
 
 	if VerboseTest && !equal && printedRepls != nil && !*printedRepls {
 		*printedRepls = true

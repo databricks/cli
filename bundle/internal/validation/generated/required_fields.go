@@ -64,6 +64,8 @@ var RequiredFields = map[string][]string{
 
 	"resources.external_locations.*": {"credential_name", "name", "url"},
 
+	"resources.genie_spaces.*.permissions[*]": {"level"},
+
 	"resources.jobs.*.deployment":                                                                                  {"kind"},
 	"resources.jobs.*.environments[*]":                                                                             {"environment_key"},
 	"resources.jobs.*.git_source":                                                                                  {"git_provider", "git_url"},
@@ -219,11 +221,15 @@ var RequiredFields = map[string][]string{
 
 	"resources.postgres_branches.*": {"branch_id", "parent"},
 
+	"resources.postgres_catalogs.*": {"postgres_database", "catalog_id"},
+
 	"resources.postgres_endpoints.*":       {"endpoint_type", "endpoint_id", "parent"},
 	"resources.postgres_endpoints.*.group": {"max", "min"},
 
 	"resources.postgres_projects.*":                {"project_id"},
 	"resources.postgres_projects.*.permissions[*]": {"level"},
+
+	"resources.postgres_synced_tables.*": {"synced_table_id"},
 
 	"resources.quality_monitors.*":                   {"assets_dir", "output_schema_name", "table_name"},
 	"resources.quality_monitors.*.custom_metrics[*]": {"definition", "input_columns", "name", "output_data_type", "type"},
@@ -243,6 +249,8 @@ var RequiredFields = map[string][]string{
 
 	"resources.vector_search_endpoints.*":                {"endpoint_type", "name"},
 	"resources.vector_search_endpoints.*.permissions[*]": {"level"},
+
+	"resources.vector_search_indexes.*": {"endpoint_name", "index_type", "name", "primary_key"},
 
 	"resources.volumes.*": {"catalog_name", "name", "schema_name", "volume_type"},
 

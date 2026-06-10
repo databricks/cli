@@ -1,6 +1,6 @@
 # NEXT CHANGELOG
 
-## Release v0.300.0
+## Release v1.4.0
 
 ### Notable Changes
 
@@ -9,3 +9,5 @@
 ### Bundles
 
 ### Dependency updates
+
+### API Changes

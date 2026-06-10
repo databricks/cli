@@ -150,11 +150,11 @@ func (r *ResourceModelServingEndpoint) waitForEndpointReady(ctx context.Context,
 	}, nil
 }
 
-func (r *ResourceModelServingEndpoint) WaitAfterCreate(ctx context.Context, config *serving.CreateServingEndpoint) (*ModelServingEndpointRemote, error) {
+func (r *ResourceModelServingEndpoint) WaitAfterCreate(ctx context.Context, id string, config *serving.CreateServingEndpoint) (*ModelServingEndpointRemote, error) {
 	return r.waitForEndpointReady(ctx, config.Name)
 }
 
-func (r *ResourceModelServingEndpoint) WaitAfterUpdate(ctx context.Context, config *serving.CreateServingEndpoint) (*ModelServingEndpointRemote, error) {
+func (r *ResourceModelServingEndpoint) WaitAfterUpdate(ctx context.Context, id string, config *serving.CreateServingEndpoint) (*ModelServingEndpointRemote, error) {
 	return r.waitForEndpointReady(ctx, config.Name)
 }
 
@@ -327,6 +327,6 @@ func (r *ResourceModelServingEndpoint) DoUpdate(ctx context.Context, id string, 
 	return nil, nil
 }
 
-func (r *ResourceModelServingEndpoint) DoDelete(ctx context.Context, id string) error {
+func (r *ResourceModelServingEndpoint) DoDelete(ctx context.Context, id string, _ *serving.CreateServingEndpoint) error {
 	return r.client.ServingEndpoints.DeleteByName(ctx, id)
 }

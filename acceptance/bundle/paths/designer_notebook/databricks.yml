@@ -1,0 +1,14 @@
+bundle:
+  name: designer_paths
+
+resources:
+  jobs:
+    designer_job:
+      name: designer_job
+      tasks:
+        - task_key: designer_task
+          notebook_task:
+            notebook_path: ./src/test.designer.ipynb
+        - task_key: regular_task
+          notebook_task:
+            notebook_path: ./src/regular.ipynb

@@ -1,0 +1,13 @@
+The following resources will be deleted:
+  delete resources.postgres_projects.hard_delete
+  delete resources.postgres_projects.soft_delete
+
+This action will result in the deletion of the following Lakebase projects along with
+all their branches, databases, and endpoints. All data stored in them will be permanently lost:
+  delete resources.postgres_projects.hard_delete
+  delete resources.postgres_projects.soft_delete
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-purge-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!

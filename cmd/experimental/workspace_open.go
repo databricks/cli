@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/browser"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
@@ -15,8 +16,8 @@ import (
 	"github.com/databricks/cli/libs/workspaceurls"
 )
 
-var currentWorkspaceID = func(ctx context.Context) (int64, error) {
-	return cmdctx.WorkspaceClient(ctx).CurrentWorkspaceID(ctx)
+var resolveWorkspaceID = func(ctx context.Context) (string, error) {
+	return auth.ResolveWorkspaceID(ctx, cmdctx.WorkspaceClient(ctx))
 }
 
 var openWorkspaceURL = browser.Open
@@ -49,7 +50,7 @@ Examples:
 			resourceType := args[0]
 			id := args[1]
 
-			workspaceID, err := currentWorkspaceID(ctx)
+			workspaceID, err := resolveWorkspaceID(ctx)
 			if err != nil {
 				log.Warnf(ctx, "Could not determine workspace ID: %v", err)
 			}

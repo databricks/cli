@@ -287,8 +287,10 @@ Create a Tool.
 
   Creates a Tool under a Supervisor Agent. Specify one of "genie_space",
   "knowledge_assistant", "uc_function", "uc_connection", "app", "volume",
-  "lakeview_dashboard", "uc_table", "vector_search_index", "catalog", "schema",
-  "supervisor_agent", "web_search" in the request body.
+  "dashboard", "table", "vector_search_index", "catalog", "schema",
+  "supervisor_agent", "web_search", "skill" in the request body. The legacy
+  values "lakeview_dashboard" and "uc_table" are also accepted and remain
+  equivalent to "dashboard" and "table" respectively.
 
   Arguments:
     PARENT: Parent resource where this tool will be created. Format:
@@ -296,9 +298,11 @@ Create a Tool.
     TOOL_ID: The ID to use for the tool, which will become the final component of the
       tool's resource name.
     TOOL_TYPE: Tool type. Must be one of: "genie_space", "knowledge_assistant",
-      "uc_function", "uc_connection", "app", "volume", "lakeview_dashboard",
-      "serving_endpoint", "uc_table", "vector_search_index", "catalog",
-      "schema", "supervisor_agent", "web_search".`
+      "uc_function", "uc_connection", "uc_mcp", "app", "volume", "dashboard",
+      "serving_endpoint", "table", "vector_search_index", "catalog", "schema",
+      "supervisor_agent", "web_search", "skill". The legacy values
+      "lakeview_dashboard" and "uc_table" are also accepted and remain
+      equivalent to "dashboard" and "table" respectively.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
@@ -1484,9 +1488,11 @@ Update a Tool.
       supervisor-agents/{supervisor_agent_id}/tools/{tool_id}
     UPDATE_MASK: Field mask for fields to be updated.
     TOOL_TYPE: Tool type. Must be one of: "genie_space", "knowledge_assistant",
-      "uc_function", "uc_connection", "app", "volume", "lakeview_dashboard",
-      "serving_endpoint", "uc_table", "vector_search_index", "catalog",
-      "schema", "supervisor_agent", "web_search".`
+      "uc_function", "uc_connection", "uc_mcp", "app", "volume", "dashboard",
+      "serving_endpoint", "table", "vector_search_index", "catalog", "schema",
+      "supervisor_agent", "web_search", "skill". The legacy values
+      "lakeview_dashboard" and "uc_table" are also accepted and remain
+      equivalent to "dashboard" and "table" respectively.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"

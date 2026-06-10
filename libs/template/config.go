@@ -300,7 +300,7 @@ func (c *config) promptForValues(r *renderer) error {
 			if err == nil {
 				break
 			}
-			if !errors.As(err, &retriableError{}) {
+			if _, ok := errors.AsType[retriableError](err); !ok {
 				return err
 			}
 		}

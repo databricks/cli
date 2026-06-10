@@ -6,6 +6,7 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/spf13/cobra"
 )
 
@@ -46,10 +47,16 @@ This API allows retrieving information about currently authenticated user or
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var meOverrides []func(
 	*cobra.Command,
+	*iam.MeRequest,
 )
 
 func newMe() *cobra.Command {
 	cmd := &cobra.Command{}
+
+	var meReq iam.MeRequest
+
+	cmd.Flags().StringVar(&meReq.Attributes, "attributes", meReq.Attributes, `Comma-separated list of attributes to return in response.`)
+	cmd.Flags().StringVar(&meReq.ExcludedAttributes, "excluded-attributes", meReq.ExcludedAttributes, `Comma-separated list of attributes to exclude in response.`)
 
 	cmd.Use = "me"
 	cmd.Short = `*Public Preview* Get current user info.`
@@ -63,11 +70,17 @@ Get current user info.
 	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
 	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(0)
+		return check(cmd, args)
+	}
+
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
-		response, err := w.CurrentUser.Me(ctx)
+
+		response, err := w.CurrentUser.Me(ctx, meReq)
 		if err != nil {
 			return err
 		}
@@ -81,7 +94,7 @@ Get current user info.
 
 	// Apply optional overrides to this command.
 	for _, fn := range meOverrides {
-		fn(cmd)
+		fn(cmd, &meReq)
 	}
 
 	return cmd

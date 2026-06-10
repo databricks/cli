@@ -1,0 +1,7 @@
+Badness = "zero-value bool fields (photon, serverless, continuous, development) are not sent in the terraform deployment"
+Local = true
+Cloud = false
+RecordRequests = true
+
+[EnvMatrix]
+  DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]

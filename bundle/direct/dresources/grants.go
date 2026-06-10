@@ -13,11 +13,12 @@ import (
 )
 
 var grantResourceToSecurableType = map[string]string{
-	"catalogs":           "catalog",
-	"schemas":            "schema",
-	"external_locations": "external_location",
-	"volumes":            "volume",
-	"registered_models":  "function",
+	"catalogs":              "catalog",
+	"schemas":               "schema",
+	"external_locations":    "external_location",
+	"volumes":               "volume",
+	"registered_models":     "function",
+	"vector_search_indexes": "table",
 }
 
 type GrantsState struct {
@@ -109,7 +110,8 @@ func (r *ResourceGrants) DoRead(ctx context.Context, id string) (*GrantsState, e
 func (r *ResourceGrants) DoCreate(ctx context.Context, state *GrantsState) (string, *GrantsState, error) {
 	_, err := r.DoUpdate(ctx, "", state, nil)
 	if err != nil {
-		return "", nil, err
+		// Grants Update is idempotent (additive PATCH), so retrying on transient errors is safe.
+		return "", nil, retrySafe(err)
 	}
 
 	return state.SecurableType + "/" + state.FullName, nil, nil
@@ -128,7 +130,7 @@ func (r *ResourceGrants) DoUpdate(ctx context.Context, _ string, state *GrantsSt
 	return nil, err
 }
 
-func (r *ResourceGrants) DoDelete(ctx context.Context, id string) error {
+func (r *ResourceGrants) DoDelete(ctx context.Context, id string, _ *GrantsState) error {
 	// Similar to permissions, we do nothing there.
 	// We could delete all grants there, but it would be confusing to explain wrt permissions.
 	return nil

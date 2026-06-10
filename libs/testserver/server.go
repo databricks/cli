@@ -17,6 +17,7 @@ import (
 	"sync"
 
 	"github.com/databricks/cli/internal/testutil"
+	"github.com/databricks/cli/libs/testserver/testsql"
 )
 
 const testPidKey = "test-pid"
@@ -46,6 +47,11 @@ type Server struct {
 	fakeOidc       *FakeOidc
 	mu             sync.Mutex
 
+	kills  *killRules
+	faults *FaultRules
+
+	sqlHandler *testsql.Handler
+
 	RequestCallback  func(request *Request)
 	ResponseCallback func(request *Request, response *EncodedResponse)
 }
@@ -58,6 +64,7 @@ type Request struct {
 	Vars      map[string]string
 	Workspace *FakeWorkspace
 	Context   context.Context
+	Token     string
 }
 
 type Response struct {
@@ -200,7 +207,20 @@ func getHeaders(value []byte) http.Header {
 
 func New(t testutil.TestingT) *Server {
 	router := NewRouter()
-	server := httptest.NewServer(router)
+	kills := newKillRules()
+	faults := NewFaultRules()
+
+	// Wrap the router so kill rules fire for ALL requests, including those with
+	// no registered handler that would otherwise bypass serve() entirely.
+	killMiddleware := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		token := getToken(r)
+		if kills.check(t, r.Method, r.URL.Path, token, r.Header) {
+			return
+		}
+		router.ServeHTTP(w, r)
+	})
+
+	server := httptest.NewServer(killMiddleware)
 	t.Cleanup(server.Close)
 
 	s := &Server{
@@ -209,6 +229,9 @@ func New(t testutil.TestingT) *Server {
 		t:              t,
 		fakeWorkspaces: map[string]*FakeWorkspace{},
 		fakeOidc:       &FakeOidc{url: server.URL},
+		kills:          kills,
+		faults:         faults,
+		sqlHandler:     testsql.New(),
 	}
 	router.Dispatch = s.serve
 
@@ -258,6 +281,10 @@ Response.Body = '<response body here>'
 	})
 	router.NotFound = notFoundFunc
 
+	// Register test-only endpoints for setting up kill and fault rules from scripts.
+	s.Handle("POST", "/__testserver/kill", killEndpointHandler(s.kills))
+	s.Handle("POST", "/__testserver/fault", faultEndpointHandler(s.faults))
+
 	// Register a default handler for the SDK's host metadata discovery endpoint.
 	// The SDK resolves this during config initialization (as of v0.126.0) to
 	// determine workspace/account IDs, cloud, and OIDC endpoints. Without this
@@ -289,12 +316,15 @@ func (s *Server) getWorkspaceForToken(token string) *FakeWorkspace {
 }
 
 func (s *Server) serve(w http.ResponseWriter, r *http.Request, handler HandlerFunc, vars map[string]string) {
+	token := getToken(r)
+
 	// Each test uses unique DATABRICKS_TOKEN, we simulate each token having
 	// it's own fake fakeWorkspace to avoid interference between tests.
-	fakeWorkspace := s.getWorkspaceForToken(getToken(r))
+	fakeWorkspace := s.getWorkspaceForToken(token)
 
 	request := NewRequest(s.t, r, fakeWorkspace)
 	request.Vars = vars
+	request.Token = token
 
 	if s.RequestCallback != nil {
 		s.RequestCallback(&request)
@@ -302,7 +332,13 @@ func (s *Server) serve(w http.ResponseWriter, r *http.Request, handler HandlerFu
 
 	var resp EncodedResponse
 
-	if bytes.Contains(request.Body, []byte("INJECT_ERROR")) {
+	if rule := s.faults.Check(r.Method, r.URL.Path, token); rule != nil {
+		resp = EncodedResponse{
+			StatusCode: rule.StatusCode,
+			Body:       []byte(rule.Body),
+			Headers:    getJsonHeaders(),
+		}
+	} else if bytes.Contains(request.Body, []byte("INJECT_ERROR")) {
 		resp = EncodedResponse{
 			StatusCode: 500,
 			Body:       []byte("INJECTED"),
@@ -346,7 +382,7 @@ func isNil(i any) bool {
 	}
 	v := reflect.ValueOf(i)
 	switch v.Kind() {
-	case reflect.Chan, reflect.Func, reflect.Map, reflect.Ptr, reflect.Interface, reflect.Slice:
+	case reflect.Chan, reflect.Func, reflect.Map, reflect.Pointer, reflect.Interface, reflect.Slice:
 		return v.IsNil()
 	default:
 		return false

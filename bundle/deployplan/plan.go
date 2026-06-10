@@ -100,7 +100,6 @@ type ChangeDesc struct {
 const (
 	ReasonBackendDefault   = "backend_default"
 	ReasonAlias            = "alias"
-	ReasonURLNormalization = "url_normalization"
 	ReasonRemoteAlreadySet = "remote_already_set"
 	ReasonEmpty            = "empty"
 	ReasonCustom           = "custom"
@@ -129,6 +128,21 @@ func (c *Changes) HasChange(fieldPath *structpath.PathNode) bool {
 		}
 	}
 
+	return false
+}
+
+// HasChangeExcept checks if there are any changes for fields with the given prefixes.
+func (c *Changes) HasChangeExcept(prefixes ...string) bool {
+	if c == nil {
+		return false
+	}
+	for field := range *c {
+		if !slices.Contains(prefixes, field) {
+			if (*c)[field].Action != Skip {
+				return true
+			}
+		}
+	}
 	return false
 }
 
@@ -185,6 +199,42 @@ func (p *Plan) RemoveEntry(resourceKey string) {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
 	delete(p.Plan, resourceKey)
+}
+
+// FilterToSelected reduces the plan to the nodes in selected (format "type.name",
+// e.g. "jobs.my_job") plus their transitive dependencies as recorded in each
+// entry's DependsOn field. Nodes not reachable from the selected set are removed.
+func (p *Plan) FilterToSelected(selected []string) {
+	// Convert "type.name" → "resources.type.name" (plan key format).
+	queue := make([]string, 0, len(selected))
+	reachable := make(map[string]struct{}, len(selected))
+	for _, s := range selected {
+		key := "resources." + s
+		if _, ok := p.Plan[key]; ok {
+			reachable[key] = struct{}{}
+			queue = append(queue, key)
+		}
+	}
+
+	// BFS following DependsOn edges to include transitive dependencies.
+	for len(queue) > 0 {
+		key := queue[0]
+		queue = queue[1:]
+		for _, dep := range p.Plan[key].DependsOn {
+			if _, seen := reachable[dep.Node]; !seen {
+				if _, ok := p.Plan[dep.Node]; ok {
+					reachable[dep.Node] = struct{}{}
+					queue = append(queue, dep.Node)
+				}
+			}
+		}
+	}
+
+	for key := range p.Plan {
+		if _, ok := reachable[key]; !ok {
+			delete(p.Plan, key)
+		}
+	}
 }
 
 type lockmap struct {

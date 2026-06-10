@@ -17,8 +17,8 @@ import (
 
 	"github.com/charmbracelet/huh"
 	"github.com/databricks/cli/cmd/root"
-	"github.com/databricks/cli/experimental/aitools/lib/agents"
-	"github.com/databricks/cli/experimental/aitools/lib/installer"
+	"github.com/databricks/cli/libs/aitools/agents"
+	"github.com/databricks/cli/libs/aitools/installer"
 	"github.com/databricks/cli/libs/apps/generator"
 	"github.com/databricks/cli/libs/apps/initializer"
 	"github.com/databricks/cli/libs/apps/manifest"
@@ -31,6 +31,7 @@ import (
 	"github.com/databricks/cli/libs/log"
 	ignore "github.com/sabhiram/go-gitignore"
 	"github.com/spf13/cobra"
+	"go.yaml.in/yaml/v3"
 )
 
 const (
@@ -40,6 +41,18 @@ const (
 	appkitDefaultBranch  = "main"
 	appkitTemplateTagPfx = "template-v"
 	defaultProfile       = "DEFAULT"
+
+	// projectNamePlaceholder is the Go template variable used in template
+	// directory names to stand in for the user-provided project name.
+	projectNamePlaceholder = "{{.project_name}}"
+
+	// bundleConfigFile is the standard bundle configuration filename.
+	bundleConfigFile = "databricks.yml"
+
+	// agenticModeEnvVar controls the agentic app creation flow where resources
+	// are not provided upfront. When set to "true", --set requirement and
+	// resource validation are skipped.
+	agenticModeEnvVar = "DATABRICKS_APPS_AGENTIC_MODE"
 )
 
 // normalizeVersion converts a version string to the template tag format "template-vX.X.X".
@@ -78,12 +91,12 @@ func newInitCmd() *cobra.Command {
 		run          string
 		setValues    []string
 		autoApprove  bool
+		skipInstall  bool
 	)
 
 	cmd := &cobra.Command{
-		Use:    "init",
-		Short:  "Initialize a new AppKit application from a template",
-		Hidden: true,
+		Use:   "init",
+		Short: "Initialize a new AppKit application from a template",
 		Long: `Initialize a new AppKit application from a template.
 
 When run without arguments, uses the default AppKit template and an interactive prompt
@@ -163,6 +176,7 @@ Environment variables:
 				pluginsChanged: cmd.Flags().Changed("features") || cmd.Flags().Changed("plugins"),
 				setValues:      setValues,
 				autoApprove:    autoApprove,
+				skipInstall:    skipInstall,
 			})
 		},
 	}
@@ -182,6 +196,7 @@ Environment variables:
 	cmd.Flags().BoolVar(&deploy, "deploy", false, "Deploy the app after creation")
 	cmd.Flags().StringVar(&run, "run", "", "Run the app after creation (none, dev, dev-remote)")
 	cmd.Flags().BoolVar(&autoApprove, "auto-approve", false, "Skip confirmation prompts for optional resources. Optional resources are only configured when their values are provided via --set.")
+	cmd.Flags().BoolVar(&skipInstall, "skip-install", false, "Skip installing project dependencies (e.g. npm install / uv sync). Cannot be combined with --run.")
 
 	return cmd
 }
@@ -203,6 +218,7 @@ type createOptions struct {
 	pluginsChanged bool     // true if --plugins flag was explicitly set
 	setValues      []string // --set plugin.resourceKey.field=value pairs
 	autoApprove    bool
+	skipInstall    bool
 }
 
 // parseSetValues parses --set key=value pairs into the resourceValues map.
@@ -638,6 +654,167 @@ func commitInPlace() (string, error) {
 	return appName, nil
 }
 
+// shouldSkipPluginSelection returns true when the template is a pre-rendered
+// appkit template: it has a plugin manifest, no {{.project_name}} subdirectory,
+// and a plain databricks.yml file. The full appkit template only has
+// databricks.yml.tmpl (no plain databricks.yml), so it is not matched here.
+func shouldSkipPluginSelection(ctx context.Context, templateDir string) bool {
+	if !manifest.HasManifest(templateDir) {
+		return false
+	}
+	// Pre-rendered templates ship a plain databricks.yml as a static reference.
+	// The full appkit template only has databricks.yml.tmpl.
+	if _, err := os.Stat(filepath.Join(templateDir, bundleConfigFile)); err != nil {
+		return false
+	}
+	entries, err := os.ReadDir(templateDir)
+	if err != nil {
+		log.Debugf(ctx, "Could not read template directory %s: %v", templateDir, err)
+		return false
+	}
+	for _, e := range entries {
+		if e.IsDir() && strings.Contains(e.Name(), projectNamePlaceholder) {
+			return false
+		}
+	}
+	return true
+}
+
+// replaceProjectName updates the project name in key files after copying a
+// pre-rendered template.  It sets bundle.name and the first
+// resources.apps.*.name in databricks.yml, and the name field in
+// package.json.
+func replaceProjectName(destDir, newName string) error {
+	// Update package.json name field via JSON round-trip.
+	pkgPath := filepath.Join(destDir, "package.json")
+	data, err := os.ReadFile(pkgPath)
+	if err != nil && !errors.Is(err, fs.ErrNotExist) {
+		return fmt.Errorf("read package.json: %w", err)
+	}
+	if err == nil {
+		var pkg map[string]any
+		if err := json.Unmarshal(data, &pkg); err != nil {
+			return fmt.Errorf("parse package.json: %w", err)
+		}
+		pkg["name"] = newName
+		out, err := json.MarshalIndent(pkg, "", "  ")
+		if err != nil {
+			return fmt.Errorf("encode package.json: %w", err)
+		}
+		// Preserve trailing newline convention.
+		out = append(out, '\n')
+		if err := safeWriteFile(pkgPath, out); err != nil {
+			return err
+		}
+	}
+
+	// Update databricks.yml using yaml.Node to preserve comments and formatting.
+	ymlPath := filepath.Join(destDir, bundleConfigFile)
+	data, err = os.ReadFile(ymlPath)
+	if err != nil {
+		return fmt.Errorf("read %s: %w", bundleConfigFile, err)
+	}
+
+	var doc yaml.Node
+	if err := yaml.Unmarshal(data, &doc); err != nil {
+		return fmt.Errorf("parse %s: %w", bundleConfigFile, err)
+	}
+
+	if err := setYAMLValue(&doc, []string{"bundle", "name"}, newName); err != nil {
+		return fmt.Errorf("set bundle.name in %s: %w", bundleConfigFile, err)
+	}
+	if err := setFirstAppName(&doc, newName); err != nil {
+		return fmt.Errorf("set app name in %s: %w", bundleConfigFile, err)
+	}
+
+	var buf bytes.Buffer
+	enc := yaml.NewEncoder(&buf)
+	enc.SetIndent(2)
+	if err := enc.Encode(&doc); err != nil {
+		return fmt.Errorf("encode %s: %w", bundleConfigFile, err)
+	}
+	if err := enc.Close(); err != nil {
+		return fmt.Errorf("encode %s: %w", bundleConfigFile, err)
+	}
+
+	return safeWriteFile(ymlPath, buf.Bytes())
+}
+
+// safeWriteFile writes data to a file while preserving the original file mode
+// and refusing to follow symlinks.
+func safeWriteFile(path string, data []byte) error {
+	info, err := os.Lstat(path)
+	if err != nil {
+		return fmt.Errorf("stat %s: %w", filepath.Base(path), err)
+	}
+	if info.Mode()&os.ModeSymlink != 0 {
+		return fmt.Errorf("refusing to write through symlink: %s", filepath.Base(path))
+	}
+	return os.WriteFile(path, data, info.Mode().Perm())
+}
+
+// setYAMLValue walks a yaml.Node tree following the given key path and
+// replaces the leaf scalar value. Returns an error if the key path is not
+// found or the target node is not a scalar.
+func setYAMLValue(node *yaml.Node, keys []string, value string) error {
+	if node.Kind == yaml.DocumentNode && len(node.Content) > 0 {
+		return setYAMLValue(node.Content[0], keys, value)
+	}
+	if node.Kind != yaml.MappingNode || len(keys) == 0 {
+		return fmt.Errorf("key path %v not found", keys)
+	}
+	for i := 0; i < len(node.Content)-1; i += 2 {
+		if node.Content[i].Value == keys[0] {
+			if len(keys) == 1 {
+				leaf := node.Content[i+1]
+				if leaf.Kind != yaml.ScalarNode {
+					return fmt.Errorf("expected scalar at %q, got kind %d", keys[0], leaf.Kind)
+				}
+				leaf.Value = value
+				// Clear any explicit style so the encoder picks the
+				// simplest representation for the new value.
+				leaf.Style = 0
+				return nil
+			}
+			return setYAMLValue(node.Content[i+1], keys[1:], value)
+		}
+	}
+	return fmt.Errorf("key %q not found", keys[0])
+}
+
+// setFirstAppName sets the name field of the first app entry under
+// resources.apps in a yaml.Node tree. Returns nil if resources.apps
+// is not present (not all templates have it).
+func setFirstAppName(node *yaml.Node, name string) error {
+	if node.Kind == yaml.DocumentNode && len(node.Content) > 0 {
+		return setFirstAppName(node.Content[0], name)
+	}
+	if node.Kind != yaml.MappingNode {
+		return nil
+	}
+	// Find resources → apps → first entry → name.
+	appsNode := yamlMapLookup(yamlMapLookup(node, "resources"), "apps")
+	if appsNode == nil || appsNode.Kind != yaml.MappingNode || len(appsNode.Content) < 2 {
+		// No resources.apps section — not an error, some templates lack it.
+		return nil
+	}
+	// First app entry is at Content[1] (Content[0] is the key).
+	return setYAMLValue(appsNode.Content[1], []string{"name"}, name)
+}
+
+// yamlMapLookup returns the value node for a key in a mapping node, or nil.
+func yamlMapLookup(node *yaml.Node, key string) *yaml.Node {
+	if node == nil || node.Kind != yaml.MappingNode {
+		return nil
+	}
+	for i := 0; i < len(node.Content)-1; i += 2 {
+		if node.Content[i].Value == key {
+			return node.Content[i+1]
+		}
+	}
+	return nil
+}
+
 // findProjectSrcDir locates the actual source directory inside a template.
 // Templates may nest their content inside a {{.project_name}} directory.
 func findProjectSrcDir(templateDir string) string {
@@ -646,7 +823,7 @@ func findProjectSrcDir(templateDir string) string {
 		return templateDir
 	}
 	for _, e := range entries {
-		if e.IsDir() && strings.Contains(e.Name(), "{{.project_name}}") {
+		if e.IsDir() && strings.Contains(e.Name(), projectNamePlaceholder) {
 			return filepath.Join(templateDir, e.Name())
 		}
 	}
@@ -797,6 +974,13 @@ func awaitBackgroundNpmInstall(ctx context.Context, ch <-chan error) error {
 }
 
 func runCreate(ctx context.Context, opts createOptions) error {
+	// --skip-install leaves the project without installed dependencies, so
+	// downstream `--run dev` / `--run dev-remote` would immediately fail.
+	// Reject the combination up front rather than after the scaffold runs.
+	if opts.skipInstall && opts.run != "" && opts.run != "none" {
+		return errors.New("--skip-install cannot be combined with --run (dev/dev-remote require dependencies to be installed)")
+	}
+
 	var selectedPlugins []string
 	var resourceValues map[string]string
 	var shouldDeploy bool
@@ -982,10 +1166,28 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		}
 	}
 
+	// Check whether plugin selection should be skipped (pre-baked plugins
+	// in a pre-rendered template with a manifest but no {{.project_name}} dir).
+	skipPluginSelection := shouldSkipPluginSelection(ctx, templateDir)
+	if skipPluginSelection {
+		log.Debugf(ctx, "Skipping plugin selection for pre-rendered template at %s", templateDir)
+	}
+
+	// Agentic mode: resources are not provided upfront, skip --set
+	// requirement and validation.
+	agenticMode := env.Get(ctx, agenticModeEnvVar) == "true"
+	if agenticMode {
+		cmdio.LogString(ctx, "Note: agentic mode active — resource validation skipped.")
+	}
+
 	// Start npm install in the background so it runs while the user answers prompts.
 	// This is a Node.js-only optimisation — non-Node templates skip this.
+	// Honour --skip-install by not kicking off the background install at all.
 	srcProjectDir := findProjectSrcDir(templateDir)
-	npmInstallCh := startBackgroundNpmInstall(ctx, srcProjectDir, destDir, opts.name)
+	var npmInstallCh <-chan error
+	if !opts.skipInstall {
+		npmInstallCh = startBackgroundNpmInstall(ctx, srcProjectDir, destDir, opts.name)
+	}
 
 	// Step 3: Load manifest from template (optional — templates without it skip plugin/resource logic)
 	var m *manifest.Manifest
@@ -1011,7 +1213,17 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	// Skip deploy/run prompts if in flags mode or if deploy/run flags were explicitly set
 	skipDeployRunPrompt := flagsMode || opts.deployChanged || opts.runChanged
 
-	if isInteractive && !opts.pluginsChanged && !flagsMode {
+	if skipPluginSelection {
+		// Pre-rendered templates already have their plugins configured in code.
+		// Skip plugin/resource prompting entirely — just use mandatory plugins.
+		if isInteractive && !skipDeployRunPrompt {
+			var err error
+			shouldDeploy, runMode, err = prompt.PromptForDeployAndRun(ctx)
+			if err != nil {
+				return err
+			}
+		}
+	} else if isInteractive && !opts.pluginsChanged && !flagsMode {
 		// Interactive mode without --plugins flag: prompt for plugins, dependencies, description
 		config, err := promptForPluginsAndDeps(ctx, m, selectedPlugins, skipDeployRunPrompt, opts.autoApprove)
 		if err != nil {
@@ -1069,8 +1281,26 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	// Always include mandatory plugins regardless of user selection or flags.
 	selectedPlugins = appendUnique(selectedPlugins, m.GetMandatoryPluginNames()...)
 
+	// Warn when --features adds plugins that the pre-rendered template
+	// cannot inject (its server.ts and app.yaml are already finalised).
+	if skipPluginSelection && opts.pluginsChanged {
+		mandatoryNames := m.GetMandatoryPluginNames()
+		mandatory := make(map[string]bool, len(mandatoryNames))
+		for _, n := range mandatoryNames {
+			mandatory[n] = true
+		}
+		for _, p := range opts.plugins {
+			if !mandatory[p] {
+				log.Warnf(ctx, "Adding feature %q to a pre-rendered template is not currently supported.\n"+
+					"To add it manually, register the plugin in server/server.ts and run `npx @databricks/appkit plugin sync --write`.\n"+
+					"To use all features dynamically, run `databricks apps init` without --template.", p)
+			}
+		}
+	}
+
 	// In flags/non-interactive mode, resolve derived values and validate resources.
-	if flagsMode || !isInteractive {
+	// Agentic mode skips validation — resources are filled in later.
+	if !agenticMode && (flagsMode || !isInteractive) {
 		resources := m.CollectResources(selectedPlugins)
 
 		// Resolve derived values for resources that support it.
@@ -1215,6 +1445,14 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	}
 	projectCreated = true // From here on, cleanup on failure
 
+	// For pre-rendered templates, update package.json name (not a .tmpl file)
+	// and serve as a safety net for the agentic flow.
+	if skipPluginSelection {
+		if err := replaceProjectName(destDir, opts.name); err != nil {
+			return fmt.Errorf("update project name: %w", err)
+		}
+	}
+
 	// Get absolute path
 	absOutputDir, err := filepath.Abs(destDir)
 	if err != nil {
@@ -1224,17 +1462,23 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	// Initialize project based on type (Node.js, Python, etc.).
 	// For Node.js, if the background install succeeded node_modules exists
 	// and the initializer skips the redundant install step.
+	// With --skip-install we bypass Initialize entirely and instead prepend
+	// the install command to NextSteps so the user knows to install first.
 	var nextStepsCmd string
 	projectInitializer := initializer.GetProjectInitializer(absOutputDir)
 	if projectInitializer != nil {
-		result := projectInitializer.Initialize(ctx, absOutputDir)
-		if !result.Success {
-			if result.Error != nil {
-				return fmt.Errorf("%s: %w", result.Message, result.Error)
+		if opts.skipInstall {
+			nextStepsCmd = prependInstall(projectInitializer.InstallCommand(), projectInitializer.NextSteps())
+		} else {
+			result := projectInitializer.Initialize(ctx, absOutputDir)
+			if !result.Success {
+				if result.Error != nil {
+					return fmt.Errorf("%s: %w", result.Message, result.Error)
+				}
+				return errors.New(result.Message)
 			}
-			return errors.New(result.Message)
+			nextStepsCmd = projectInitializer.NextSteps()
 		}
-		nextStepsCmd = projectInitializer.NextSteps()
 	}
 
 	// Validate dev-remote is only supported for appkit projects
@@ -1269,7 +1513,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	// In flags mode, only print a hint — never prompt interactively.
 	if flagsMode {
 		if !agents.HasDatabricksSkillsInstalled(ctx) {
-			cmdio.LogString(ctx, "Tip: coding agents detected without Databricks skills. Run 'databricks experimental aitools skills install' to install them.")
+			cmdio.LogString(ctx, "Tip: coding agents detected without Databricks skills. Run 'databricks aitools install' to install them.")
 		}
 	} else if err := agents.RecommendSkillsInstall(ctx, installer.InstallAllSkills); err != nil {
 		log.Warnf(ctx, "Skills recommendation failed: %v", err)
@@ -1356,6 +1600,18 @@ func runPostCreateDev(ctx context.Context, mode prompt.RunMode, projectInit init
 	}
 }
 
+// prependInstall composes the install command and the project's NextSteps
+// suggestion into a single shell snippet, dropping either side if empty.
+func prependInstall(installCmd, nextStepsCmd string) string {
+	if installCmd == "" {
+		return nextStepsCmd
+	}
+	if nextStepsCmd == "" {
+		return installCmd
+	}
+	return installCmd + " && " + nextStepsCmd
+}
+
 // appendUnique appends values to a slice, skipping duplicates.
 func appendUnique(base []string, values ...string) []string {
 	seen := make(map[string]bool, len(base))
@@ -1414,7 +1670,7 @@ func copyTemplate(ctx context.Context, src, dest string, vars templateVars) (int
 		return 0, err
 	}
 	for _, e := range entries {
-		if e.IsDir() && strings.Contains(e.Name(), "{{.project_name}}") {
+		if e.IsDir() && strings.Contains(e.Name(), projectNamePlaceholder) {
 			srcProjectDir = filepath.Join(src, e.Name())
 			break
 		}
@@ -1496,7 +1752,9 @@ func copyTemplate(ctx context.Context, src, dest string, vars templateVars) (int
 			return err
 		}
 
-		// Handle .tmpl extension - strip it
+		// Handle .tmpl extension — strip it. When a template ships both
+		// foo and foo.tmpl, filepath.Walk's lexical order processes foo first
+		// and foo.tmpl second, so the rendered .tmpl overwrites the static file.
 		relPath = strings.TrimSuffix(relPath, ".tmpl")
 
 		// Apply file renames (e.g., _gitignore -> .gitignore)

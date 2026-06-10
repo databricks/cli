@@ -53,6 +53,7 @@ tasks:
       # committed). Run `./task generate` explicitly when codegen inputs change.
       - task: generate-refschema
       - task: generate-schema
+      - task: generate-schema-map
       - task: generate-schema-docs
       - task: generate-validation
       - task: generate-docs
@@ -84,22 +85,23 @@ tasks:
 
   # `golangci-lint run` typechecks, so it stops at go.mod boundaries. We have
   # one task per Go module; `lint-go` composes them to cover the whole repo.
-  # Children run in parallel — each uses its own TMPDIR (set inline on the
-  # golangci-lint command below) to avoid the shared /tmp lock that serializes
-  # concurrent golangci-lint invocations. This matters in two scenarios:
-  #   1. siblings of `lint-go` running in parallel on subprojects here, and
-  #   2. `lint-go` invocations in sibling worktrees running at the same time.
-  # The TMPDIR must live under the repo but NOT equal {{.ROOT_DIR}} itself
-  # (the Go toolchain refuses a go.mod inside os.TempDir, which would break
-  # golangci-lint's typechecker).
+  #
+  # Flags on every invocation:
+  #   --allow-parallel-runners — by default golangci-lint takes a system-wide
+  #     lock and refuses to start if another copy is already running. This
+  #     flag opts out so parallel runs (e.g. `lint-go`'s three sub-lints, or
+  #     two worktrees linting at once) don't block each other.
+  #   -j=4 — cap analyzer concurrency; higher values use more CPU without
+  #     reducing wall time on this codebase.
+  #
+  # Cross-worktree concurrency relies on content-addressable cache keys added
+  # in golangci-lint v2.12.0; keep the binary at v2.12.0+ in tools/go.mod.
   lint-go:
     desc: Lint Go files across all modules (root, tools, codegen)
     deps: ['lint-go-root', 'lint-go-tools', 'lint-go-codegen']
 
   lint-go-root:
     desc: Lint Go files in the root module
-    vars:
-      TMPDIR: '{{.ROOT_DIR}}/.tmp/golangci-lint-root'
     sources: &ROOT_LINT_SOURCES
       - "**/*.go"
       - exclude: tools/**
@@ -109,48 +111,36 @@ tasks:
       - go.sum
       - "{{.EMBED_SOURCES}}"
     cmds:
-      - cmd: mkdir -p "{{.TMPDIR}}"
-        silent: true
-      - TMPDIR="{{.TMPDIR}}" {{.GO_TOOL}} golangci-lint run ./...
+      - "{{.GO_TOOL}} golangci-lint run --allow-parallel-runners -j=4 ./..."
 
   lint-go-tools:
     desc: Lint Go files in tools/ module
     dir: tools
-    vars:
-      TMPDIR: '{{.ROOT_DIR}}/.tmp/golangci-lint-tools'
     sources:
       - "**/*.go"
       - '{{.ROOT_DIR}}/.golangci.yaml'
       - go.mod
       - go.sum
     cmds:
-      - cmd: mkdir -p "{{.TMPDIR}}"
-        silent: true
       # gocritic is disabled because root's ruleguard rules path is cwd-relative
       # and cannot be resolved from this nested module.
-      - TMPDIR="{{.TMPDIR}}" {{.GO_TOOL}} golangci-lint run --disable gocritic ./...
+      - "{{.GO_TOOL}} golangci-lint run --allow-parallel-runners -j=4 --disable gocritic ./..."
 
   lint-go-codegen:
     desc: Lint Go files in bundle/internal/tf/codegen module
     dir: bundle/internal/tf/codegen
-    vars:
-      TMPDIR: '{{.ROOT_DIR}}/.tmp/golangci-lint-codegen'
     sources:
       - "**/*.go"
       - '{{.ROOT_DIR}}/.golangci.yaml'
       - go.mod
       - go.sum
     cmds:
-      - cmd: mkdir -p "{{.TMPDIR}}"
-        silent: true
       # gocritic is disabled because root's ruleguard rules path is cwd-relative
       # and cannot be resolved from this nested module.
-      - TMPDIR="{{.TMPDIR}}" {{.GO_TOOL}} golangci-lint run --disable gocritic ./...
+      - "{{.GO_TOOL}} golangci-lint run --allow-parallel-runners -j=4 --disable gocritic ./..."
 
   lint-q-go-root:
     desc: Lint changed Go files in root module (diff vs main, with --fix). Does not check tools/ or bundle/internal/tf/codegen — use `lint` for full coverage.
-    vars:
-      TMPDIR: '{{.ROOT_DIR}}/.tmp/golangci-lint-root'
     sources:
       - "**/*.go"
       - exclude: tools/**
@@ -162,9 +152,7 @@ tasks:
       - "{{.EMBED_SOURCES}}"
       - "**/testdata/**"
     cmds:
-      - cmd: mkdir -p "{{.TMPDIR}}"
-        silent: true
-      - TMPDIR="{{.TMPDIR}}" ./tools/lintdiff.py {{.GO_TOOL}} golangci-lint run --fix
+      - "./tools/lintdiff.py {{.GO_TOOL}} golangci-lint run --allow-parallel-runners -j=4 --fix"
 
   # --- Formatting ---
 
@@ -609,24 +597,27 @@ tasks:
   # generic `test` target (the catch-all) instead.
 
   test-exp-aitools:
-    desc: Run experimental aitools unit and acceptance tests
+    desc: Run aitools (top-level + experimental) unit and acceptance tests
     sources:
+      - cmd/aitools/**
+      - libs/aitools/**
       - experimental/aitools/**
       - acceptance/apps/**
+      - acceptance/experimental/aitools/**
       - "{{.EMBED_SOURCES}}"
     cmds:
       - |
         {{.GO_TOOL}} gotestsum \
           --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
           --no-summary=skipped \
-          --packages ./experimental/aitools/... \
+          --packages "./cmd/aitools/... ./libs/aitools/... ./experimental/aitools/..." \
           -- -timeout=${LOCAL_TIMEOUT:-30m}
       - |
         {{.GO_TOOL}} gotestsum \
           --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
           --no-summary=skipped \
           --packages ./acceptance/... \
-          -- -timeout=${LOCAL_TIMEOUT:-30m} -run "TestAccept/apps"
+          -- -timeout=${LOCAL_TIMEOUT:-30m} -run "TestAccept/(apps|experimental/aitools)"
 
   test-exp-ssh:
     desc: Run experimental SSH unit and acceptance tests
@@ -666,6 +657,25 @@ tasks:
           --no-summary=skipped \
           --packages ./acceptance/... \
           -- -timeout=${LOCAL_TIMEOUT:-30m} -run "TestAccept/pipelines"
+
+  test-sandbox:
+    desc: Run sandbox unit and acceptance tests
+    sources:
+      - cmd/sandbox/**
+      - acceptance/cmd/sandbox/**
+    cmds:
+      - |
+        {{.GO_TOOL}} gotestsum \
+          --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
+          --no-summary=skipped \
+          --packages ./cmd/sandbox/... \
+          -- -timeout=${LOCAL_TIMEOUT:-30m}
+      - |
+        {{.GO_TOOL}} gotestsum \
+          --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
+          --no-summary=skipped \
+          --packages ./acceptance/... \
+          -- -timeout=${LOCAL_TIMEOUT:-30m} -run "TestAccept/cmd/sandbox"
 
   # --- Integration tests ---
 
@@ -716,13 +726,17 @@ tasks:
   # can be invoked standalone.
 
   generate:
-    desc: Run all generators (genkit, refschema, schema, docs, validation, direct, pydabs)
+    desc: Run all generators (genkit, tf-schema, refschema, schema, docs, validation, direct, pydabs)
     cmds:
       # Runs first: regenerates CLI command stubs from the OpenAPI spec at
       # .codegen/_openapi_sha. SDK version bumps (go.mod/go.sum) are a manual
       # step outside this task; TestConsistentDatabricksSdkVersion (run inside
       # generate-genkit) asserts the two stay in sync.
       - task: generate-genkit
+      # Requires Terraform provider access (set TF_CLI_CONFIG_FILE to a
+      # filesystem mirror, or rely on the public registry). Only re-runs when
+      # bundle/internal/tf/codegen/schema/version.go changes.
+      - task: generate-tf-schema
       # Refreshes acceptance/bundle/refschema/out.fields.txt, which feeds
       # generate-direct-apitypes and generate-direct-resources below.
       - task: generate-refschema
@@ -755,14 +769,22 @@ tasks:
         sh: echo "${UNIVERSE_DIR:-$HOME/universe}"
     cmds:
       - |
-        echo "Checking out universe at SHA: $(cat .codegen/_openapi_sha)"
-        cd {{.UNIVERSE_DIR}}
-        if ! git cat-file -e $(cat {{.ROOT_DIR}}/.codegen/_openapi_sha) 2>/dev/null; then
-          git fetch --filter=blob:none origin master
+        if [ -z "$UNIVERSE_SKIP_CHECKOUT" ]; then
+          if ! git -C {{.UNIVERSE_DIR}} diff --quiet || ! git -C {{.UNIVERSE_DIR}} diff --cached --quiet; then
+            echo "Error: universe repo at {{.UNIVERSE_DIR}} has uncommitted changes; commit or stash them, or set UNIVERSE_SKIP_CHECKOUT=1 to skip checkout"
+            exit 1
+          fi
+          echo "Checking out universe at SHA: $(cat .codegen/_openapi_sha)"
+          cd {{.UNIVERSE_DIR}}
+          if ! git cat-file -e $(cat {{.ROOT_DIR}}/.codegen/_openapi_sha) 2>/dev/null; then
+            git fetch --filter=blob:none origin master
+          fi
+          git checkout $(cat {{.ROOT_DIR}}/.codegen/_openapi_sha)
+        else
+          echo "UNIVERSE_SKIP_CHECKOUT set; using current {{.UNIVERSE_DIR}} HEAD"
         fi
-        git checkout $(cat {{.ROOT_DIR}}/.codegen/_openapi_sha)
       - echo "Building genkit..."
-      - cd {{.UNIVERSE_DIR}} && bazel build //openapi/genkit
+      - cd {{.UNIVERSE_DIR}} && ./tools/bazel build //openapi/genkit
       - echo "Generating CLI code..."
       - "{{.UNIVERSE_DIR}}/bazel-bin/openapi/genkit/genkit_/genkit update-sdk"
       - "cat .gitattributes.manual .gitattributes > .gitattributes.tmp && mv .gitattributes.tmp .gitattributes"
@@ -796,7 +818,7 @@ tasks:
     generates:
       - acceptance/bundle/refschema/out.fields.txt
     cmds:
-      - go test ./acceptance -run TestAccept/bundle/refschema -update &> /dev/null
+      - go test ./acceptance -run TestAccept/bundle/refschema -update
 
   generate-schema:
     desc: Generate bundle JSON schema
@@ -856,9 +878,40 @@ tasks:
     cmds:
       - "sh -c 'go run ./bundle/internal/validation/. && gofmt -w -s ./bundle/internal/validation/generated'"
 
+  generate-schema-map:
+    desc: Regenerate bundle/terraform_dabs_map/generated.go
+    sources:
+      - "**/*.go"
+      - exclude: bundle/terraform_dabs_map/generated.go
+      - go.mod
+      - go.sum
+      - "{{.EMBED_SOURCES}}"
+    generates:
+      - bundle/terraform_dabs_map/generated.go
+    cmds:
+      - go test ./bundle/terraform_dabs_map -run TestGenerateSchemaMap -update -v
+
+  generate-tf-schema:
+    desc: Regenerate bundle/internal/tf/schema from the Databricks Terraform provider
+    dir: bundle/internal/tf/codegen
+    sources:
+      - schema/version.go
+      - templates/**
+      - "**/*.go"
+      - exclude: "**/*_test.go"
+    generates:
+      - ../schema/*.go
+    cmds:
+      - go run .
+
   generate-direct:
     desc: Generate direct engine config (apitypes + resources)
-    deps: ['generate-direct-apitypes', 'generate-direct-resources']
+    # Depend only on generate-direct-resources; it already pulls in
+    # generate-direct-apitypes transitively. Listing both as parallel deps
+    # races: resources reads apitypes.generated.yml while the apitypes step's
+    # `>` redirect is truncating it, silently dropping every resource whose
+    # type comes from that file. Keep this chain linear.
+    deps: ['generate-direct-resources']
 
   generate-direct-apitypes:
     desc: Generate direct engine API types YAML
@@ -884,7 +937,7 @@ tasks:
     generates:
       - bundle/direct/dresources/resources.generated.yml
     cmds:
-      - "sh -c 'python3 bundle/direct/tools/generate_resources.py .codegen/openapi.json bundle/direct/dresources/apitypes.generated.yml bundle/direct/dresources/apitypes.yml acceptance/bundle/refschema/out.fields.txt > bundle/direct/dresources/resources.generated.yml'"
+      - "sh -c 'uv run --script bundle/direct/tools/generate_resources.py .codegen/openapi.json bundle/direct/dresources/apitypes.generated.yml bundle/direct/dresources/apitypes.yml acceptance/bundle/refschema/out.fields.txt > bundle/direct/dresources/resources.generated.yml'"
 
   generate-openapi-json:
     desc: Download OpenAPI spec (triggered by _openapi_sha change)

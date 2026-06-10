@@ -7,6 +7,7 @@ import (
 	"io/fs"
 	"os"
 	"strings"
+	"sync"
 
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
@@ -36,6 +37,44 @@ func GetConfiguredDefaultProfile(ctx context.Context, configFilePath string) (st
 		return "", nil
 	}
 	return GetConfiguredDefaultProfileFrom(configFile), nil
+}
+
+// ResolveDefaultProfile returns the default profile from the config file
+// pointed to by DATABRICKS_CONFIG_FILE (or ~/.databrickscfg when unset):
+// [__settings__].default_profile, else [DEFAULT] if it has a host key,
+// else "". Returns "" with no error when the file is missing or parsing
+// fails (a warning is logged on parse error).
+//
+// Callers must respect their own higher-priority sources (an explicit
+// --profile flag or DATABRICKS_CONFIG_PROFILE env var) before consulting
+// this helper. default_profile and [DEFAULT] are CLI-level fallbacks; the
+// SDK loader silently falls back to [DEFAULT] but leaves cfg.Profile empty,
+// which breaks the per-profile OAuth cache key. Pinning the name here keeps
+// cfg.Profile in sync with what the SDK would read.
+//
+// Single-profile fallback (using "the only profile in the file" as the
+// default) is intentionally NOT applied: that is a prompt-seeding convenience
+// (see GetDefaultProfile), not an auth rule, and it would silently route a
+// single account-only profile through the workspace-client path.
+func ResolveDefaultProfile(ctx context.Context) string {
+	configFilePath := env.Get(ctx, "DATABRICKS_CONFIG_FILE")
+	configFile, err := loadConfigFile(ctx, configFilePath)
+	if err != nil {
+		log.Warnf(ctx, "Failed to load default profile: %v", err)
+		return ""
+	}
+	if configFile == nil {
+		return ""
+	}
+	if profile := GetConfiguredDefaultProfileFrom(configFile); profile != "" {
+		log.Debugf(ctx, "profile %q resolved from [__settings__].default_profile", profile)
+		return profile
+	}
+	if section := configFile.Section(ini.DefaultSection); section.HasKey("host") {
+		log.Debugf(ctx, "profile %q resolved from the [DEFAULT] section", ini.DefaultSection)
+		return ini.DefaultSection
+	}
+	return ""
 }
 
 // GetConfiguredDefaultProfileFrom returns the explicit default profile from
@@ -319,7 +358,16 @@ func AuthCredentialKeys() []string {
 	return keys
 }
 
+// We document databrickscfg files with a [DEFAULT] header and wish to keep it that way.
+// This, however, does mean we emit a [DEFAULT] section even if it's empty.
+// ini.DefaultHeader is process-global, so it is enabled on first write instead of
+// at import time to keep this package free of import side effects.
+var enableDefaultHeader = sync.OnceFunc(func() {
+	ini.DefaultHeader = true
+})
+
 func writeConfigFile(ctx context.Context, configFile *config.File) error {
+	enableDefaultHeader()
 	section := configFile.Section(ini.DefaultSection)
 	if len(section.Keys()) == 0 && section.Comment == "" {
 		section.Comment = defaultComment
@@ -460,10 +508,4 @@ func ValidateConfigAndProfileHost(cfg *config.Config, profile string) error {
 	}
 
 	return nil
-}
-
-func init() {
-	// We document databrickscfg files with a [DEFAULT] header and wish to keep it that way.
-	// This, however, does mean we emit a [DEFAULT] section even if it's empty.
-	ini.DefaultHeader = true
 }

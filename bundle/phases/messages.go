@@ -36,7 +36,20 @@ all their branches, databases, and endpoints. All data stored in them will be pe
 	deleteOrRecreatePostgresBranchMessage = `
 This action will result in the deletion or recreation of the following Lakebase branches.
 All data stored in them will be permanently lost:`
+
+	deleteOrRecreateVectorSearchIndexMessage = `
+This action will result in the deletion or recreation of the following Vector Search indexes.
+Recreating a Delta Sync index re-runs the full embedding pipeline; recreating a Direct Access
+index drops all upserted vectors. Both can be expensive to rebuild:`
+
+	deleteOrRecreateGenieSpaceMessage = `
+This action will result in the deletion or recreation of the following Genie spaces.
+The conversation history attached to a deleted space is permanently lost:`
 )
+
+// DataLossWarning is the warning shown when a non-interactive command is about
+// to delete data-bearing resources.
+const DataLossWarning = "Deleting data assets such as schemas, pipelines, or volumes may cause permanent data loss and should be carefully reviewed."
 
 // Messages for bundle destroy.
 const (
@@ -61,4 +74,11 @@ all their branches, databases, and endpoints. All data stored in them will be pe
 
 	deletePostgresBranchMessage = `This action will result in the deletion of the following Lakebase branches.
 All data stored in them will be permanently lost:`
+
+	deleteVectorSearchIndexMessage = `This action will result in the deletion of the following Vector Search indexes.
+For Delta Sync indexes, the source Delta Table is preserved but the embedding pipeline is removed.
+For Direct Access indexes, all upserted vectors are permanently lost:`
+
+	deleteGenieSpaceMessage = `This action will result in the deletion of the following Genie spaces.
+The conversation history attached to them is permanently lost:`
 )

@@ -25,6 +25,7 @@ type Resources struct {
 	ExternalLocations     map[string]*resources.ExternalLocation     `json:"external_locations,omitempty"`
 	Clusters              map[string]*resources.Cluster              `json:"clusters,omitempty"`
 	Dashboards            map[string]*resources.Dashboard            `json:"dashboards,omitempty"`
+	GenieSpaces           map[string]*resources.GenieSpace           `json:"genie_spaces,omitempty"`
 	Apps                  map[string]*resources.App                  `json:"apps,omitempty"`
 	SecretScopes          map[string]*resources.SecretScope          `json:"secret_scopes,omitempty"`
 	Alerts                map[string]*resources.Alert                `json:"alerts,omitempty"`
@@ -35,7 +36,10 @@ type Resources struct {
 	PostgresProjects      map[string]*resources.PostgresProject      `json:"postgres_projects,omitempty"`
 	PostgresBranches      map[string]*resources.PostgresBranch       `json:"postgres_branches,omitempty"`
 	PostgresEndpoints     map[string]*resources.PostgresEndpoint     `json:"postgres_endpoints,omitempty"`
+	PostgresCatalogs      map[string]*resources.PostgresCatalog      `json:"postgres_catalogs,omitempty"`
+	PostgresSyncedTables  map[string]*resources.PostgresSyncedTable  `json:"postgres_synced_tables,omitempty"`
 	VectorSearchEndpoints map[string]*resources.VectorSearchEndpoint `json:"vector_search_endpoints,omitempty"`
+	VectorSearchIndexes   map[string]*resources.VectorSearchIndex    `json:"vector_search_indexes,omitempty"`
 }
 
 type ConfigResource interface {
@@ -101,6 +105,7 @@ func (r *Resources) AllResources() []ResourceGroup {
 		collectResourceMap(descriptions["external_locations"], r.ExternalLocations),
 		collectResourceMap(descriptions["clusters"], r.Clusters),
 		collectResourceMap(descriptions["dashboards"], r.Dashboards),
+		collectResourceMap(descriptions["genie_spaces"], r.GenieSpaces),
 		collectResourceMap(descriptions["volumes"], r.Volumes),
 		collectResourceMap(descriptions["apps"], r.Apps),
 		collectResourceMap(descriptions["alerts"], r.Alerts),
@@ -112,7 +117,10 @@ func (r *Resources) AllResources() []ResourceGroup {
 		collectResourceMap(descriptions["postgres_projects"], r.PostgresProjects),
 		collectResourceMap(descriptions["postgres_branches"], r.PostgresBranches),
 		collectResourceMap(descriptions["postgres_endpoints"], r.PostgresEndpoints),
+		collectResourceMap(descriptions["postgres_catalogs"], r.PostgresCatalogs),
+		collectResourceMap(descriptions["postgres_synced_tables"], r.PostgresSyncedTables),
 		collectResourceMap(descriptions["vector_search_endpoints"], r.VectorSearchEndpoints),
+		collectResourceMap(descriptions["vector_search_indexes"], r.VectorSearchIndexes),
 	}
 }
 
@@ -156,6 +164,7 @@ func SupportedResources() map[string]resources.ResourceDescription {
 		"external_locations":      (&resources.ExternalLocation{}).ResourceDescription(),
 		"clusters":                (&resources.Cluster{}).ResourceDescription(),
 		"dashboards":              (&resources.Dashboard{}).ResourceDescription(),
+		"genie_spaces":            (&resources.GenieSpace{}).ResourceDescription(),
 		"volumes":                 (&resources.Volume{}).ResourceDescription(),
 		"apps":                    (&resources.App{}).ResourceDescription(),
 		"secret_scopes":           (&resources.SecretScope{}).ResourceDescription(),
@@ -167,6 +176,9 @@ func SupportedResources() map[string]resources.ResourceDescription {
 		"postgres_projects":       (&resources.PostgresProject{}).ResourceDescription(),
 		"postgres_branches":       (&resources.PostgresBranch{}).ResourceDescription(),
 		"postgres_endpoints":      (&resources.PostgresEndpoint{}).ResourceDescription(),
+		"postgres_catalogs":       (&resources.PostgresCatalog{}).ResourceDescription(),
+		"postgres_synced_tables":  (&resources.PostgresSyncedTable{}).ResourceDescription(),
 		"vector_search_endpoints": (&resources.VectorSearchEndpoint{}).ResourceDescription(),
+		"vector_search_indexes":   (&resources.VectorSearchIndex{}).ResourceDescription(),
 	}
 }

@@ -27,6 +27,11 @@ resources:
   apps:
 
     ignore_remote_changes:
+      - field: git_source
+        reason: spec:input_only
+      - field: source_code_path
+        reason: spec:input_only
+
       - field: active_deployment
         reason: spec:output_only
       - field: app_status
@@ -170,6 +175,12 @@ resources:
       - field: effective_file_event_queue
         reason: spec:output_only
 
+  genie_spaces:
+
+    ignore_remote_changes:
+      - field: etag
+        reason: spec:output_only
+
   # jobs: no api field behaviors
 
   # model_serving_endpoints: no api field behaviors
@@ -206,6 +217,20 @@ resources:
       - field: source_branch_time
         reason: spec:input_only
       - field: ttl
+        reason: spec:input_only
+
+  postgres_catalogs:
+
+    recreate_on_changes:
+      - field: postgres_database
+        reason: spec:immutable
+
+    ignore_remote_changes:
+      - field: branch
+        reason: spec:input_only
+      - field: create_database_if_missing
+        reason: spec:input_only
+      - field: postgres_database
         reason: spec:input_only
 
   postgres_endpoints:
@@ -256,6 +281,28 @@ resources:
       - field: pg_version
         reason: spec:input_only
 
+  postgres_synced_tables:
+
+    ignore_remote_changes:
+      - field: branch
+        reason: spec:input_only
+      - field: create_database_objects_if_missing
+        reason: spec:input_only
+      - field: existing_pipeline_id
+        reason: spec:input_only
+      - field: new_pipeline_spec
+        reason: spec:input_only
+      - field: postgres_database
+        reason: spec:input_only
+      - field: primary_key_columns
+        reason: spec:input_only
+      - field: scheduling_policy
+        reason: spec:input_only
+      - field: source_table_full_name
+        reason: spec:input_only
+      - field: timeseries_key
+        reason: spec:input_only
+
   # quality_monitors: no api field behaviors
 
   # registered_models: no api field behaviors
@@ -290,5 +337,7 @@ resources:
         reason: spec:output_only
 
   # vector_search_endpoints: no api field behaviors
+
+  # vector_search_indexes: no api field behaviors
 
   # volumes: no api field behaviors

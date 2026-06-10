@@ -16,6 +16,8 @@ import (
 	"time"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/deploy/terraform"
+	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/bundle/generate"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/bundle/resources"
@@ -77,7 +79,7 @@ func (d *dashboard) resolveID(ctx context.Context, b *bundle.Bundle) string {
 		return d.resolveFromID(ctx, b)
 	}
 
-	logdiag.LogError(ctx, errors.New("expected one of --dashboard-path, --dashboard-id"))
+	logdiag.LogError(ctx, errors.New("expected one of --existing-path, --existing-id"))
 	return ""
 }
 
@@ -273,7 +275,11 @@ func waitForChanges(ctx context.Context, w *databricks.WorkspaceClient, dashboar
 			break
 		}
 
-		time.Sleep(1 * time.Second)
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.After(1 * time.Second):
+		}
 	}
 }
 
@@ -389,16 +395,25 @@ func (d *dashboard) runForResource(ctx context.Context, b *bundle.Bundle) {
 		return
 	}
 
+	var state statemgmt.ExportedResourcesMap
 	if stateDesc.Engine.IsDirect() {
 		_, localPath := b.StateFilenameDirect(ctx)
-		if err := b.DeploymentBundle.StateDB.Open(localPath); err != nil {
+		if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(true), dstate.WithWrite(false)); err != nil {
+			logdiag.LogError(ctx, err)
+			return
+		}
+		state = b.DeploymentBundle.ExportState(ctx)
+	} else {
+		var err error
+		state, err = terraform.ParseResourcesState(ctx, b)
+		if err != nil {
 			logdiag.LogError(ctx, err)
 			return
 		}
 	}
 
 	bundle.ApplySeqContext(ctx, b,
-		statemgmt.Load(stateDesc.Engine),
+		statemgmt.Load(state),
 	)
 	if logdiag.HasError(ctx) {
 		return

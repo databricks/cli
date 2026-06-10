@@ -21,6 +21,10 @@
 /libs/apps/                 team:eng-apps-devex
 /acceptance/apps/           team:eng-apps-devex
 
+# Sandbox
+/cmd/sandbox/               @pietern @akshaysingla-db @shuochen0311
+/acceptance/cmd/sandbox/    @pietern @akshaysingla-db @shuochen0311
+
 # Auth
 /cmd/auth/                  team:platform
 /libs/auth/                 team:platform
@@ -58,6 +62,10 @@
 
 # Internal
 /internal/                  team:platform
+
+# AI tools
+/cmd/aitools/               team:eng-apps-devex team:platform @lennartkats-db
+/libs/aitools/              team:eng-apps-devex team:platform @lennartkats-db
 
 # CLI compatibility manifest
 /internal/build/cli-compat.json  team:eng-apps-devex team:platform

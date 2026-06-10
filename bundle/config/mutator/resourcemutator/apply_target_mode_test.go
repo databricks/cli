@@ -154,6 +154,13 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 						},
 					},
 				},
+				GenieSpaces: map[string]*resources.GenieSpace{
+					"geniespace1": {
+						GenieSpaceConfig: resources.GenieSpaceConfig{
+							Title: "geniespace1",
+						},
+					},
+				},
 				Apps: map[string]*resources.App{
 					"app1": {
 						App: apps.App{
@@ -247,11 +254,35 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 						},
 					},
 				},
+				PostgresCatalogs: map[string]*resources.PostgresCatalog{
+					"postgres_catalog1": {
+						PostgresCatalogConfig: resources.PostgresCatalogConfig{
+							CatalogId: "postgres_catalog_1",
+						},
+					},
+				},
+				PostgresSyncedTables: map[string]*resources.PostgresSyncedTable{
+					"postgres_synced_table1": {
+						PostgresSyncedTableConfig: resources.PostgresSyncedTableConfig{
+							SyncedTableId: "catalog.schema.table1",
+						},
+					},
+				},
 				VectorSearchEndpoints: map[string]*resources.VectorSearchEndpoint{
 					"vs_endpoint1": {
 						CreateEndpoint: vectorsearch.CreateEndpoint{
 							Name:         "vs_endpoint1",
 							EndpointType: vectorsearch.EndpointTypeStandard,
+						},
+					},
+				},
+				VectorSearchIndexes: map[string]*resources.VectorSearchIndex{
+					"vs_index1": {
+						CreateVectorIndexRequest: vectorsearch.CreateVectorIndexRequest{
+							Name:         "main.default.vs_index1",
+							EndpointName: "vs_endpoint1",
+							PrimaryKey:   "id",
+							IndexType:    vectorsearch.VectorIndexTypeDeltaSync,
 						},
 					},
 				},
@@ -306,6 +337,9 @@ func TestProcessTargetModeDevelopment(t *testing.T) {
 	// Vector search endpoint 1: name is the primary key, so it must not be prefixed.
 	assert.Equal(t, "vs_endpoint1", b.Config.Resources.VectorSearchEndpoints["vs_endpoint1"].Name)
 
+	// Vector search index 1: name is the primary key, so it must not be prefixed.
+	assert.Equal(t, "main.default.vs_index1", b.Config.Resources.VectorSearchIndexes["vs_index1"].Name)
+
 	// Registered model 1
 	assert.Equal(t, "dev_lennart_registeredmodel1", b.Config.Resources.RegisteredModels["registeredmodel1"].Name)
 
@@ -322,6 +356,9 @@ func TestProcessTargetModeDevelopment(t *testing.T) {
 
 	// Dashboards
 	assert.Equal(t, "[dev lennart] dashboard1", b.Config.Resources.Dashboards["dashboard1"].DisplayName)
+
+	// Genie Spaces
+	assert.Equal(t, "[dev lennart] geniespace1", b.Config.Resources.GenieSpaces["geniespace1"].Title)
 
 	// Alert 1: has schedule without pause status set - should be paused
 	assert.Equal(t, "[dev lennart] alert1", b.Config.Resources.Alerts["alert1"].DisplayName)
@@ -427,6 +464,7 @@ func TestAppropriateResourcesAreRenamed(t *testing.T) {
 		reflect.TypeFor[*resources.ExternalLocation](),
 		reflect.TypeFor[*resources.Volume](),
 		reflect.TypeFor[*resources.VectorSearchEndpoint](),
+		reflect.TypeFor[*resources.VectorSearchIndex](),
 	}
 
 	// Resources whose Name is server-generated or otherwise not a user-facing
@@ -441,6 +479,8 @@ func TestAppropriateResourcesAreRenamed(t *testing.T) {
 		"PostgresProjects",
 		"PostgresBranches",
 		"PostgresEndpoints",
+		"PostgresCatalogs",
+		"PostgresSyncedTables",
 	}
 
 	diags := bundle.ApplySeq(t.Context(), b, ApplyTargetMode(), ApplyPresets())

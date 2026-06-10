@@ -39,6 +39,7 @@ func TestStateToBundleEmptyLocalResources(t *testing.T) {
 		"resources.volumes.test_volume":                                 {ID: "1"},
 		"resources.clusters.test_cluster":                               {ID: "1"},
 		"resources.dashboards.test_dashboard":                           {ID: "1"},
+		"resources.genie_spaces.test_genie_space":                       {ID: "1"},
 		"resources.apps.test_app":                                       {ID: "app1"},
 		"resources.secret_scopes.test_secret_scope":                     {ID: "secret_scope1"},
 		"resources.sql_warehouses.test_sql_warehouse":                   {ID: "1"},
@@ -49,7 +50,10 @@ func TestStateToBundleEmptyLocalResources(t *testing.T) {
 		"resources.postgres_projects.test_postgres_project":             {ID: "projects/test-project"},
 		"resources.postgres_branches.test_postgres_branch":              {ID: "projects/test-project/branches/main"},
 		"resources.postgres_endpoints.test_postgres_endpoint":           {ID: "projects/test-project/branches/main/endpoints/primary"},
+		"resources.postgres_catalogs.test_postgres_catalog":             {ID: "catalogs/test_catalog"},
+		"resources.postgres_synced_tables.test_postgres_synced_table":   {ID: "synced_tables/main.public.test_synced_table"},
 		"resources.vector_search_endpoints.test_vector_search_endpoint": {ID: "vs-endpoint-1"},
+		"resources.vector_search_indexes.test_vector_search_index":      {ID: "vs-index-1"},
 	}
 	err := StateToBundle(t.Context(), state, &config)
 	assert.NoError(t, err)
@@ -93,8 +97,11 @@ func TestStateToBundleEmptyLocalResources(t *testing.T) {
 	assert.Equal(t, "1", config.Resources.Dashboards["test_dashboard"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Dashboards["test_dashboard"].ModifiedStatus)
 
+	assert.Equal(t, "1", config.Resources.GenieSpaces["test_genie_space"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.GenieSpaces["test_genie_space"].ModifiedStatus)
+
 	assert.Equal(t, "app1", config.Resources.Apps["test_app"].ID)
-	assert.Equal(t, "", config.Resources.Apps["test_app"].Name)
+	assert.Empty(t, config.Resources.Apps["test_app"].Name)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Apps["test_app"].ModifiedStatus)
 
 	assert.Equal(t, "secret_scope1", config.Resources.SecretScopes["test_secret_scope"].ID)
@@ -118,8 +125,14 @@ func TestStateToBundleEmptyLocalResources(t *testing.T) {
 	assert.Equal(t, "projects/test-project/branches/main/endpoints/primary", config.Resources.PostgresEndpoints["test_postgres_endpoint"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.PostgresEndpoints["test_postgres_endpoint"].ModifiedStatus)
 
+	assert.Equal(t, "catalogs/test_catalog", config.Resources.PostgresCatalogs["test_postgres_catalog"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.PostgresCatalogs["test_postgres_catalog"].ModifiedStatus)
+
 	assert.Equal(t, "vs-endpoint-1", config.Resources.VectorSearchEndpoints["test_vector_search_endpoint"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.VectorSearchEndpoints["test_vector_search_endpoint"].ModifiedStatus)
+
+	assert.Equal(t, "vs-index-1", config.Resources.VectorSearchIndexes["test_vector_search_index"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.VectorSearchIndexes["test_vector_search_index"].ModifiedStatus)
 
 	AssertFullResourceCoverage(t, &config)
 }
@@ -219,6 +232,13 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 					},
 				},
 			},
+			GenieSpaces: map[string]*resources.GenieSpace{
+				"test_genie_space": {
+					GenieSpaceConfig: resources.GenieSpaceConfig{
+						Title: "test_genie_space",
+					},
+				},
+			},
 			Apps: map[string]*resources.App{
 				"test_app": {
 					App: apps.App{
@@ -292,10 +312,31 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 					},
 				},
 			},
+			PostgresCatalogs: map[string]*resources.PostgresCatalog{
+				"test_postgres_catalog": {
+					PostgresCatalogConfig: resources.PostgresCatalogConfig{
+						CatalogId: "test_catalog",
+					},
+				},
+			},
+			PostgresSyncedTables: map[string]*resources.PostgresSyncedTable{
+				"test_postgres_synced_table": {
+					PostgresSyncedTableConfig: resources.PostgresSyncedTableConfig{
+						SyncedTableId: "main.public.test_synced_table",
+					},
+				},
+			},
 			VectorSearchEndpoints: map[string]*resources.VectorSearchEndpoint{
 				"test_vector_search_endpoint": {
 					CreateEndpoint: vectorsearch.CreateEndpoint{
 						Name: "test_vector_search_endpoint",
+					},
+				},
+			},
+			VectorSearchIndexes: map[string]*resources.VectorSearchIndex{
+				"test_vector_search_index": {
+					CreateVectorIndexRequest: vectorsearch.CreateVectorIndexRequest{
+						Name: "test_vector_search_index",
 					},
 				},
 			},
@@ -305,77 +346,86 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 	err := StateToBundle(t.Context(), nil, &config)
 	assert.NoError(t, err)
 
-	assert.Equal(t, "", config.Resources.Jobs["test_job"].ID)
+	assert.Empty(t, config.Resources.Jobs["test_job"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Jobs["test_job"].ModifiedStatus)
 
-	assert.Equal(t, "", config.Resources.Pipelines["test_pipeline"].ID)
+	assert.Empty(t, config.Resources.Pipelines["test_pipeline"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Pipelines["test_pipeline"].ModifiedStatus)
 
-	assert.Equal(t, "", config.Resources.Models["test_mlflow_model"].ID)
+	assert.Empty(t, config.Resources.Models["test_mlflow_model"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Models["test_mlflow_model"].ModifiedStatus)
 
-	assert.Equal(t, "", config.Resources.Experiments["test_mlflow_experiment"].ID)
+	assert.Empty(t, config.Resources.Experiments["test_mlflow_experiment"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Experiments["test_mlflow_experiment"].ModifiedStatus)
 
-	assert.Equal(t, "", config.Resources.ModelServingEndpoints["test_model_serving"].ID)
+	assert.Empty(t, config.Resources.ModelServingEndpoints["test_model_serving"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.ModelServingEndpoints["test_model_serving"].ModifiedStatus)
 
-	assert.Equal(t, "", config.Resources.RegisteredModels["test_registered_model"].ID)
+	assert.Empty(t, config.Resources.RegisteredModels["test_registered_model"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.RegisteredModels["test_registered_model"].ModifiedStatus)
 
-	assert.Equal(t, "", config.Resources.QualityMonitors["test_monitor"].ID)
+	assert.Empty(t, config.Resources.QualityMonitors["test_monitor"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.QualityMonitors["test_monitor"].ModifiedStatus)
 
-	assert.Equal(t, "", config.Resources.Catalogs["test_catalog"].ID)
+	assert.Empty(t, config.Resources.Catalogs["test_catalog"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Catalogs["test_catalog"].ModifiedStatus)
 
-	assert.Equal(t, "", config.Resources.Schemas["test_schema"].ID)
+	assert.Empty(t, config.Resources.Schemas["test_schema"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Schemas["test_schema"].ModifiedStatus)
 
-	assert.Equal(t, "", config.Resources.ExternalLocations["test_external_location"].ID)
+	assert.Empty(t, config.Resources.ExternalLocations["test_external_location"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.ExternalLocations["test_external_location"].ModifiedStatus)
 
-	assert.Equal(t, "", config.Resources.Volumes["test_volume"].ID)
+	assert.Empty(t, config.Resources.Volumes["test_volume"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Volumes["test_volume"].ModifiedStatus)
 
-	assert.Equal(t, "", config.Resources.Clusters["test_cluster"].ID)
+	assert.Empty(t, config.Resources.Clusters["test_cluster"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Clusters["test_cluster"].ModifiedStatus)
 
-	assert.Equal(t, "", config.Resources.Dashboards["test_dashboard"].ID)
+	assert.Empty(t, config.Resources.Dashboards["test_dashboard"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Dashboards["test_dashboard"].ModifiedStatus)
 
-	assert.Equal(t, "", config.Resources.Apps["test_app"].Name)
+	assert.Empty(t, config.Resources.GenieSpaces["test_genie_space"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.GenieSpaces["test_genie_space"].ModifiedStatus)
+
+	assert.Empty(t, config.Resources.Apps["test_app"].Name)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Apps["test_app"].ModifiedStatus)
 
-	assert.Equal(t, "", config.Resources.SecretScopes["test_secret_scope"].ID)
+	assert.Empty(t, config.Resources.SecretScopes["test_secret_scope"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.SecretScopes["test_secret_scope"].ModifiedStatus)
 
-	assert.Equal(t, "", config.Resources.SqlWarehouses["test_sql_warehouse"].ID)
+	assert.Empty(t, config.Resources.SqlWarehouses["test_sql_warehouse"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.SqlWarehouses["test_sql_warehouse"].ModifiedStatus)
 
-	assert.Equal(t, "", config.Resources.DatabaseInstances["test_database_instance"].ID)
+	assert.Empty(t, config.Resources.DatabaseInstances["test_database_instance"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.DatabaseInstances["test_database_instance"].ModifiedStatus)
 
-	assert.Equal(t, "", config.Resources.DatabaseCatalogs["test_database_catalog"].ID)
+	assert.Empty(t, config.Resources.DatabaseCatalogs["test_database_catalog"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.DatabaseCatalogs["test_database_catalog"].ModifiedStatus)
 
-	assert.Equal(t, "", config.Resources.SyncedDatabaseTables["test_synced_database_table"].ID)
+	assert.Empty(t, config.Resources.SyncedDatabaseTables["test_synced_database_table"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.SyncedDatabaseTables["test_synced_database_table"].ModifiedStatus)
 
-	assert.Equal(t, "", config.Resources.Alerts["test_alert"].ID)
+	assert.Empty(t, config.Resources.Alerts["test_alert"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Alerts["test_alert"].ModifiedStatus)
 
-	assert.Equal(t, "", config.Resources.PostgresProjects["test_postgres_project"].ID)
+	assert.Empty(t, config.Resources.PostgresProjects["test_postgres_project"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.PostgresProjects["test_postgres_project"].ModifiedStatus)
 
-	assert.Equal(t, "", config.Resources.PostgresBranches["test_postgres_branch"].ID)
+	assert.Empty(t, config.Resources.PostgresBranches["test_postgres_branch"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.PostgresBranches["test_postgres_branch"].ModifiedStatus)
 
-	assert.Equal(t, "", config.Resources.PostgresEndpoints["test_postgres_endpoint"].ID)
+	assert.Empty(t, config.Resources.PostgresEndpoints["test_postgres_endpoint"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.PostgresEndpoints["test_postgres_endpoint"].ModifiedStatus)
 
-	assert.Equal(t, "", config.Resources.VectorSearchEndpoints["test_vector_search_endpoint"].ID)
+	assert.Empty(t, config.Resources.PostgresCatalogs["test_postgres_catalog"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.PostgresCatalogs["test_postgres_catalog"].ModifiedStatus)
+
+	assert.Empty(t, config.Resources.VectorSearchEndpoints["test_vector_search_endpoint"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.VectorSearchEndpoints["test_vector_search_endpoint"].ModifiedStatus)
+
+	assert.Empty(t, config.Resources.VectorSearchIndexes["test_vector_search_index"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.VectorSearchIndexes["test_vector_search_index"].ModifiedStatus)
 
 	AssertFullResourceCoverage(t, &config)
 }
@@ -535,6 +585,18 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 					},
 				},
 			},
+			GenieSpaces: map[string]*resources.GenieSpace{
+				"test_genie_space": {
+					GenieSpaceConfig: resources.GenieSpaceConfig{
+						Title: "test_genie_space",
+					},
+				},
+				"test_genie_space_new": {
+					GenieSpaceConfig: resources.GenieSpaceConfig{
+						Title: "test_genie_space_new",
+					},
+				},
+			},
 			Apps: map[string]*resources.App{
 				"test_app": {
 					App: apps.App{
@@ -661,6 +723,25 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 					},
 				},
 			},
+			PostgresCatalogs: map[string]*resources.PostgresCatalog{
+				"test_postgres_catalog": {
+					PostgresCatalogConfig: resources.PostgresCatalogConfig{
+						CatalogId: "test_catalog",
+					},
+				},
+				"test_postgres_catalog_new": {
+					PostgresCatalogConfig: resources.PostgresCatalogConfig{
+						CatalogId: "test_catalog_new",
+					},
+				},
+			},
+			PostgresSyncedTables: map[string]*resources.PostgresSyncedTable{
+				"test_postgres_synced_table": {
+					PostgresSyncedTableConfig: resources.PostgresSyncedTableConfig{
+						SyncedTableId: "main.public.test_synced_table",
+					},
+				},
+			},
 			VectorSearchEndpoints: map[string]*resources.VectorSearchEndpoint{
 				"test_vector_search_endpoint": {
 					CreateEndpoint: vectorsearch.CreateEndpoint{
@@ -670,6 +751,18 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 				"test_vector_search_endpoint_new": {
 					CreateEndpoint: vectorsearch.CreateEndpoint{
 						Name: "test_vector_search_endpoint_new",
+					},
+				},
+			},
+			VectorSearchIndexes: map[string]*resources.VectorSearchIndex{
+				"test_vector_search_index": {
+					CreateVectorIndexRequest: vectorsearch.CreateVectorIndexRequest{
+						Name: "test_vector_search_index",
+					},
+				},
+				"test_vector_search_index_new": {
+					CreateVectorIndexRequest: vectorsearch.CreateVectorIndexRequest{
+						Name: "test_vector_search_index_new",
 					},
 				},
 			},
@@ -700,6 +793,8 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 		"resources.clusters.test_cluster_old":                               {ID: "2"},
 		"resources.dashboards.test_dashboard":                               {ID: "1"},
 		"resources.dashboards.test_dashboard_old":                           {ID: "2"},
+		"resources.genie_spaces.test_genie_space":                           {ID: "1"},
+		"resources.genie_spaces.test_genie_space_old":                       {ID: "2"},
 		"resources.apps.test_app":                                           {ID: "test_app"},
 		"resources.apps.test_app_old":                                       {ID: "test_app_old"},
 		"resources.secret_scopes.test_secret_scope":                         {ID: "test_secret_scope"},
@@ -716,160 +811,185 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 		"resources.postgres_branches.test_postgres_branch_old":              {ID: "projects/test-project/branches/old"},
 		"resources.postgres_endpoints.test_postgres_endpoint":               {ID: "projects/test-project/branches/main/endpoints/primary"},
 		"resources.postgres_endpoints.test_postgres_endpoint_old":           {ID: "projects/test-project/branches/main/endpoints/old"},
+		"resources.postgres_catalogs.test_postgres_catalog":                 {ID: "catalogs/test_catalog"},
+		"resources.postgres_catalogs.test_postgres_catalog_old":             {ID: "catalogs/test_catalog_old"},
 		"resources.vector_search_endpoints.test_vector_search_endpoint":     {ID: "vs-endpoint-1"},
 		"resources.vector_search_endpoints.test_vector_search_endpoint_old": {ID: "vs-endpoint-old"},
+		"resources.vector_search_indexes.test_vector_search_index":          {ID: "vs-index-1"},
+		"resources.vector_search_indexes.test_vector_search_index_old":      {ID: "vs-index-old"},
 	}
 	err := StateToBundle(t.Context(), state, &config)
 	assert.NoError(t, err)
 
 	assert.Equal(t, "1", config.Resources.Jobs["test_job"].ID)
-	assert.Equal(t, "", config.Resources.Jobs["test_job"].ModifiedStatus)
+	assert.Empty(t, config.Resources.Jobs["test_job"].ModifiedStatus)
 	assert.Equal(t, "2", config.Resources.Jobs["test_job_old"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Jobs["test_job_old"].ModifiedStatus)
-	assert.Equal(t, "", config.Resources.Jobs["test_job_new"].ID)
+	assert.Empty(t, config.Resources.Jobs["test_job_new"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Jobs["test_job_new"].ModifiedStatus)
 
 	assert.Equal(t, "1", config.Resources.Pipelines["test_pipeline"].ID)
-	assert.Equal(t, "", config.Resources.Pipelines["test_pipeline"].ModifiedStatus)
+	assert.Empty(t, config.Resources.Pipelines["test_pipeline"].ModifiedStatus)
 	assert.Equal(t, "2", config.Resources.Pipelines["test_pipeline_old"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Pipelines["test_pipeline_old"].ModifiedStatus)
-	assert.Equal(t, "", config.Resources.Pipelines["test_pipeline_new"].ID)
+	assert.Empty(t, config.Resources.Pipelines["test_pipeline_new"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Pipelines["test_pipeline_new"].ModifiedStatus)
 
 	assert.Equal(t, "1", config.Resources.Models["test_mlflow_model"].ID)
-	assert.Equal(t, "", config.Resources.Models["test_mlflow_model"].ModifiedStatus)
+	assert.Empty(t, config.Resources.Models["test_mlflow_model"].ModifiedStatus)
 	assert.Equal(t, "2", config.Resources.Models["test_mlflow_model_old"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Models["test_mlflow_model_old"].ModifiedStatus)
-	assert.Equal(t, "", config.Resources.Models["test_mlflow_model_new"].ID)
+	assert.Empty(t, config.Resources.Models["test_mlflow_model_new"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Models["test_mlflow_model_new"].ModifiedStatus)
 
 	assert.Equal(t, "1", config.Resources.RegisteredModels["test_registered_model"].ID)
-	assert.Equal(t, "", config.Resources.RegisteredModels["test_registered_model"].ModifiedStatus)
+	assert.Empty(t, config.Resources.RegisteredModels["test_registered_model"].ModifiedStatus)
 	assert.Equal(t, "2", config.Resources.RegisteredModels["test_registered_model_old"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.RegisteredModels["test_registered_model_old"].ModifiedStatus)
-	assert.Equal(t, "", config.Resources.RegisteredModels["test_registered_model_new"].ID)
+	assert.Empty(t, config.Resources.RegisteredModels["test_registered_model_new"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.RegisteredModels["test_registered_model_new"].ModifiedStatus)
 
 	assert.Equal(t, "1", config.Resources.Experiments["test_mlflow_experiment"].ID)
-	assert.Equal(t, "", config.Resources.Experiments["test_mlflow_experiment"].ModifiedStatus)
+	assert.Empty(t, config.Resources.Experiments["test_mlflow_experiment"].ModifiedStatus)
 	assert.Equal(t, "2", config.Resources.Experiments["test_mlflow_experiment_old"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Experiments["test_mlflow_experiment_old"].ModifiedStatus)
-	assert.Equal(t, "", config.Resources.Experiments["test_mlflow_experiment_new"].ID)
+	assert.Empty(t, config.Resources.Experiments["test_mlflow_experiment_new"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Experiments["test_mlflow_experiment_new"].ModifiedStatus)
 
 	assert.Equal(t, "1", config.Resources.ModelServingEndpoints["test_model_serving"].ID)
-	assert.Equal(t, "", config.Resources.ModelServingEndpoints["test_model_serving"].ModifiedStatus)
+	assert.Empty(t, config.Resources.ModelServingEndpoints["test_model_serving"].ModifiedStatus)
 	assert.Equal(t, "2", config.Resources.ModelServingEndpoints["test_model_serving_old"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.ModelServingEndpoints["test_model_serving_old"].ModifiedStatus)
-	assert.Equal(t, "", config.Resources.ModelServingEndpoints["test_model_serving_new"].ID)
+	assert.Empty(t, config.Resources.ModelServingEndpoints["test_model_serving_new"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.ModelServingEndpoints["test_model_serving_new"].ModifiedStatus)
 
 	assert.Equal(t, "test_monitor", config.Resources.QualityMonitors["test_monitor"].ID)
-	assert.Equal(t, "", config.Resources.QualityMonitors["test_monitor"].ModifiedStatus)
+	assert.Empty(t, config.Resources.QualityMonitors["test_monitor"].ModifiedStatus)
 	assert.Equal(t, "test_monitor_old", config.Resources.QualityMonitors["test_monitor_old"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.QualityMonitors["test_monitor_old"].ModifiedStatus)
-	assert.Equal(t, "", config.Resources.QualityMonitors["test_monitor_new"].ID)
+	assert.Empty(t, config.Resources.QualityMonitors["test_monitor_new"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.QualityMonitors["test_monitor_new"].ModifiedStatus)
 
 	assert.Equal(t, "1", config.Resources.Catalogs["test_catalog"].ID)
-	assert.Equal(t, "", config.Resources.Catalogs["test_catalog"].ModifiedStatus)
+	assert.Empty(t, config.Resources.Catalogs["test_catalog"].ModifiedStatus)
 	assert.Equal(t, "2", config.Resources.Catalogs["test_catalog_old"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Catalogs["test_catalog_old"].ModifiedStatus)
-	assert.Equal(t, "", config.Resources.Catalogs["test_catalog_new"].ID)
+	assert.Empty(t, config.Resources.Catalogs["test_catalog_new"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Catalogs["test_catalog_new"].ModifiedStatus)
 
 	assert.Equal(t, "1", config.Resources.Schemas["test_schema"].ID)
-	assert.Equal(t, "", config.Resources.Schemas["test_schema"].ModifiedStatus)
+	assert.Empty(t, config.Resources.Schemas["test_schema"].ModifiedStatus)
 	assert.Equal(t, "2", config.Resources.Schemas["test_schema_old"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Schemas["test_schema_old"].ModifiedStatus)
-	assert.Equal(t, "", config.Resources.Schemas["test_schema_new"].ID)
+	assert.Empty(t, config.Resources.Schemas["test_schema_new"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Schemas["test_schema_new"].ModifiedStatus)
 
 	assert.Equal(t, "1", config.Resources.Volumes["test_volume"].ID)
-	assert.Equal(t, "", config.Resources.Volumes["test_volume"].ModifiedStatus)
+	assert.Empty(t, config.Resources.Volumes["test_volume"].ModifiedStatus)
 	assert.Equal(t, "2", config.Resources.Volumes["test_volume_old"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Volumes["test_volume_old"].ModifiedStatus)
-	assert.Equal(t, "", config.Resources.Volumes["test_volume_new"].ID)
+	assert.Empty(t, config.Resources.Volumes["test_volume_new"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Volumes["test_volume_new"].ModifiedStatus)
 
 	assert.Equal(t, "1", config.Resources.Clusters["test_cluster"].ID)
-	assert.Equal(t, "", config.Resources.Clusters["test_cluster"].ModifiedStatus)
+	assert.Empty(t, config.Resources.Clusters["test_cluster"].ModifiedStatus)
 	assert.Equal(t, "2", config.Resources.Clusters["test_cluster_old"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Clusters["test_cluster_old"].ModifiedStatus)
-	assert.Equal(t, "", config.Resources.Clusters["test_cluster_new"].ID)
+	assert.Empty(t, config.Resources.Clusters["test_cluster_new"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Clusters["test_cluster_new"].ModifiedStatus)
 
 	assert.Equal(t, "1", config.Resources.Dashboards["test_dashboard"].ID)
-	assert.Equal(t, "", config.Resources.Dashboards["test_dashboard"].ModifiedStatus)
+	assert.Empty(t, config.Resources.Dashboards["test_dashboard"].ModifiedStatus)
 	assert.Equal(t, "2", config.Resources.Dashboards["test_dashboard_old"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Dashboards["test_dashboard_old"].ModifiedStatus)
-	assert.Equal(t, "", config.Resources.Dashboards["test_dashboard_new"].ID)
+	assert.Empty(t, config.Resources.Dashboards["test_dashboard_new"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Dashboards["test_dashboard_new"].ModifiedStatus)
 
+	assert.Equal(t, "1", config.Resources.GenieSpaces["test_genie_space"].ID)
+	assert.Empty(t, config.Resources.GenieSpaces["test_genie_space"].ModifiedStatus)
+	assert.Equal(t, "2", config.Resources.GenieSpaces["test_genie_space_old"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.GenieSpaces["test_genie_space_old"].ModifiedStatus)
+	assert.Empty(t, config.Resources.GenieSpaces["test_genie_space_new"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.GenieSpaces["test_genie_space_new"].ModifiedStatus)
+
 	assert.Equal(t, "test_app", config.Resources.Apps["test_app"].Name)
-	assert.Equal(t, "", config.Resources.Apps["test_app"].ModifiedStatus)
+	assert.Empty(t, config.Resources.Apps["test_app"].ModifiedStatus)
 	assert.Equal(t, "test_app_old", config.Resources.Apps["test_app_old"].ID)
-	assert.Equal(t, "", config.Resources.Apps["test_app_old"].Name)
+	assert.Empty(t, config.Resources.Apps["test_app_old"].Name)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Apps["test_app_old"].ModifiedStatus)
 	assert.Equal(t, "test_app_new", config.Resources.Apps["test_app_new"].Name)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Apps["test_app_new"].ModifiedStatus)
 
 	assert.Equal(t, "test_secret_scope", config.Resources.SecretScopes["test_secret_scope"].Name)
-	assert.Equal(t, "", config.Resources.SecretScopes["test_secret_scope"].ModifiedStatus)
+	assert.Empty(t, config.Resources.SecretScopes["test_secret_scope"].ModifiedStatus)
 	assert.Equal(t, "test_secret_scope_old", config.Resources.SecretScopes["test_secret_scope_old"].ID)
-	assert.Equal(t, "", config.Resources.SecretScopes["test_secret_scope_old"].Name)
+	assert.Empty(t, config.Resources.SecretScopes["test_secret_scope_old"].Name)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.SecretScopes["test_secret_scope_old"].ModifiedStatus)
 	assert.Equal(t, "test_secret_scope_new", config.Resources.SecretScopes["test_secret_scope_new"].Name)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.SecretScopes["test_secret_scope_new"].ModifiedStatus)
 
 	assert.Equal(t, "1", config.Resources.SqlWarehouses["test_sql_warehouse"].ID)
-	assert.Equal(t, "", config.Resources.SqlWarehouses["test_sql_warehouse"].ModifiedStatus)
+	assert.Empty(t, config.Resources.SqlWarehouses["test_sql_warehouse"].ModifiedStatus)
 	assert.Equal(t, "2", config.Resources.SqlWarehouses["test_sql_warehouse_old"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.SqlWarehouses["test_sql_warehouse_old"].ModifiedStatus)
-	assert.Equal(t, "", config.Resources.SqlWarehouses["test_sql_warehouse_new"].ID)
+	assert.Empty(t, config.Resources.SqlWarehouses["test_sql_warehouse_new"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.SqlWarehouses["test_sql_warehouse_new"].ModifiedStatus)
 
 	assert.Equal(t, "1", config.Resources.DatabaseInstances["test_database_instance"].ID)
-	assert.Equal(t, "", config.Resources.DatabaseInstances["test_database_instance"].ModifiedStatus)
+	assert.Empty(t, config.Resources.DatabaseInstances["test_database_instance"].ModifiedStatus)
 	assert.Equal(t, "2", config.Resources.DatabaseInstances["test_database_instance_old"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.DatabaseInstances["test_database_instance_old"].ModifiedStatus)
-	assert.Equal(t, "", config.Resources.DatabaseInstances["test_database_instance_new"].ID)
+	assert.Empty(t, config.Resources.DatabaseInstances["test_database_instance_new"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.DatabaseInstances["test_database_instance_new"].ModifiedStatus)
 
 	assert.Equal(t, "1", config.Resources.Alerts["test_alert"].ID)
-	assert.Equal(t, "", config.Resources.Alerts["test_alert"].ModifiedStatus)
+	assert.Empty(t, config.Resources.Alerts["test_alert"].ModifiedStatus)
 	assert.Equal(t, "2", config.Resources.Alerts["test_alert_old"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Alerts["test_alert_old"].ModifiedStatus)
-	assert.Equal(t, "", config.Resources.Alerts["test_alert_new"].ID)
+	assert.Empty(t, config.Resources.Alerts["test_alert_new"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Alerts["test_alert_new"].ModifiedStatus)
 
 	assert.Equal(t, "projects/test-project", config.Resources.PostgresProjects["test_postgres_project"].ID)
-	assert.Equal(t, "", config.Resources.PostgresProjects["test_postgres_project"].ModifiedStatus)
+	assert.Empty(t, config.Resources.PostgresProjects["test_postgres_project"].ModifiedStatus)
 	assert.Equal(t, "projects/test-project-old", config.Resources.PostgresProjects["test_postgres_project_old"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.PostgresProjects["test_postgres_project_old"].ModifiedStatus)
-	assert.Equal(t, "", config.Resources.PostgresProjects["test_postgres_project_new"].ID)
+	assert.Empty(t, config.Resources.PostgresProjects["test_postgres_project_new"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.PostgresProjects["test_postgres_project_new"].ModifiedStatus)
 
 	assert.Equal(t, "projects/test-project/branches/main", config.Resources.PostgresBranches["test_postgres_branch"].ID)
-	assert.Equal(t, "", config.Resources.PostgresBranches["test_postgres_branch"].ModifiedStatus)
+	assert.Empty(t, config.Resources.PostgresBranches["test_postgres_branch"].ModifiedStatus)
 	assert.Equal(t, "projects/test-project/branches/old", config.Resources.PostgresBranches["test_postgres_branch_old"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.PostgresBranches["test_postgres_branch_old"].ModifiedStatus)
-	assert.Equal(t, "", config.Resources.PostgresBranches["test_postgres_branch_new"].ID)
+	assert.Empty(t, config.Resources.PostgresBranches["test_postgres_branch_new"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.PostgresBranches["test_postgres_branch_new"].ModifiedStatus)
 
 	assert.Equal(t, "projects/test-project/branches/main/endpoints/primary", config.Resources.PostgresEndpoints["test_postgres_endpoint"].ID)
-	assert.Equal(t, "", config.Resources.PostgresEndpoints["test_postgres_endpoint"].ModifiedStatus)
+	assert.Empty(t, config.Resources.PostgresEndpoints["test_postgres_endpoint"].ModifiedStatus)
 	assert.Equal(t, "projects/test-project/branches/main/endpoints/old", config.Resources.PostgresEndpoints["test_postgres_endpoint_old"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.PostgresEndpoints["test_postgres_endpoint_old"].ModifiedStatus)
-	assert.Equal(t, "", config.Resources.PostgresEndpoints["test_postgres_endpoint_new"].ID)
+	assert.Empty(t, config.Resources.PostgresEndpoints["test_postgres_endpoint_new"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.PostgresEndpoints["test_postgres_endpoint_new"].ModifiedStatus)
 
+	assert.Equal(t, "catalogs/test_catalog", config.Resources.PostgresCatalogs["test_postgres_catalog"].ID)
+	assert.Empty(t, config.Resources.PostgresCatalogs["test_postgres_catalog"].ModifiedStatus)
+	assert.Equal(t, "catalogs/test_catalog_old", config.Resources.PostgresCatalogs["test_postgres_catalog_old"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.PostgresCatalogs["test_postgres_catalog_old"].ModifiedStatus)
+	assert.Empty(t, config.Resources.PostgresCatalogs["test_postgres_catalog_new"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.PostgresCatalogs["test_postgres_catalog_new"].ModifiedStatus)
+
 	assert.Equal(t, "vs-endpoint-1", config.Resources.VectorSearchEndpoints["test_vector_search_endpoint"].ID)
-	assert.Equal(t, "", config.Resources.VectorSearchEndpoints["test_vector_search_endpoint"].ModifiedStatus)
+	assert.Empty(t, config.Resources.VectorSearchEndpoints["test_vector_search_endpoint"].ModifiedStatus)
 	assert.Equal(t, "vs-endpoint-old", config.Resources.VectorSearchEndpoints["test_vector_search_endpoint_old"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.VectorSearchEndpoints["test_vector_search_endpoint_old"].ModifiedStatus)
-	assert.Equal(t, "", config.Resources.VectorSearchEndpoints["test_vector_search_endpoint_new"].ID)
+	assert.Empty(t, config.Resources.VectorSearchEndpoints["test_vector_search_endpoint_new"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.VectorSearchEndpoints["test_vector_search_endpoint_new"].ModifiedStatus)
+
+	assert.Equal(t, "vs-index-1", config.Resources.VectorSearchIndexes["test_vector_search_index"].ID)
+	assert.Empty(t, config.Resources.VectorSearchIndexes["test_vector_search_index"].ModifiedStatus)
+	assert.Equal(t, "vs-index-old", config.Resources.VectorSearchIndexes["test_vector_search_index_old"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.VectorSearchIndexes["test_vector_search_index_old"].ModifiedStatus)
+	assert.Empty(t, config.Resources.VectorSearchIndexes["test_vector_search_index_new"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.VectorSearchIndexes["test_vector_search_index_new"].ModifiedStatus)
 
 	AssertFullResourceCoverage(t, &config)
 }
