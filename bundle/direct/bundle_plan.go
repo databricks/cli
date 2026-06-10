@@ -480,8 +480,8 @@ func matchesBackendDefaultRule(path *structpath.PathNode, remote any, rule dreso
 // We only skip the parent map if every remote entry matches a configured
 // backend-default child rule; any unmanaged key must still surface as drift.
 func matchesBackendDefaultMap(cfg *dresources.ResourceLifecycleConfig, path *structpath.PathNode, remote any) bool {
-	rv := reflect.ValueOf(remote)
-	if !rv.IsValid() || rv.Kind() != reflect.Map || rv.IsNil() || rv.Type().Key().Kind() != reflect.String || rv.Len() == 0 {
+	rv, ok := asNonEmptyStringMap(remote)
+	if !ok {
 		return false
 	}
 
@@ -503,6 +503,16 @@ func matchesBackendDefaultMap(cfg *dresources.ResourceLifecycleConfig, path *str
 	}
 
 	return true
+}
+
+// asNonEmptyStringMap returns remote as a reflected map value when it is a
+// non-nil, non-empty map with string keys; ok is false otherwise.
+func asNonEmptyStringMap(remote any) (reflect.Value, bool) {
+	rv := reflect.ValueOf(remote)
+	if !rv.IsValid() || rv.Kind() != reflect.Map || rv.IsNil() || rv.Type().Key().Kind() != reflect.String || rv.Len() == 0 {
+		return reflect.Value{}, false
+	}
+	return rv, true
 }
 
 // matchesAllowedValue checks if the remote value matches one of the allowed JSON values.
