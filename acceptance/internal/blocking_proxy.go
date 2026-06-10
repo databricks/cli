@@ -6,37 +6,61 @@ import (
 	"net"
 	"net/http"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
 )
 
-// StartBlockingProxy starts a per-test HTTP proxy server that returns
-// "400 Bad Request" to every request. For real external hosts it calls
-// t.Errorf so the test fails immediately with a clear message; for RFC 2606
-// reserved TLDs (.test, .example, .invalid) it only calls t.Logf because
-// those are intentional unreachable fixtures used in negative test cases.
-//
-// The proxy returns an HTTP-level error (not a TCP reset) so that the SDK
-// does not treat the failure as a retriable IO error ("connection refused"
-// triggers a 5-minute retry loop in the SDK's httpclient).
-//
-// Returns the proxy URL to use for HTTPS_PROXY.
-func StartBlockingProxy(t *testing.T) string {
+// SetupSharedProxy lazily starts a single process-wide blocking proxy and
+// registers t as the error target for the duration of t. Returns the proxy URL.
+func SetupSharedProxy(t *testing.T) string {
+	url := sharedProxyURL()
+	sharedProxyT.Store(t)
+	t.Cleanup(func() { sharedProxyT.CompareAndSwap(t, nil) })
+	return url
+}
+
+// sharedProxyURL starts a single listener on first call and returns its URL.
+var sharedProxyURL = sync.OnceValue(func() string {
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
-		t.Fatalf("blocking proxy: listen: %v", err)
+		panic("blocking proxy: listen: " + err.Error())
 	}
-	t.Cleanup(func() { ln.Close() })
-
+	const hint = "; re-run with -debugsandbox to see which test caused this"
 	go func() {
 		for {
 			conn, err := ln.Accept()
 			if err != nil {
 				return
 			}
-			go handleBlockedConnection(t, conn)
+			go handleBlockedConnection(sharedProxyT.Load(), conn, hint)
 		}
 	}()
+	return "http://" + ln.Addr().String()
+})
 
+var sharedProxyT atomic.Pointer[testing.T]
+
+// StartBlockingProxy starts a per-test HTTP proxy server. Used with -debugsandbox.
+//
+// The proxy returns HTTP 400 (not a TCP reset) so that the SDK does not treat
+// the failure as retriable ("connection refused" triggers a 5-minute retry loop
+// in the SDK's httpclient). Returns the proxy URL for HTTPS_PROXY.
+func StartBlockingProxy(t *testing.T) string {
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("blocking proxy: listen: %v", err)
+	}
+	t.Cleanup(func() { ln.Close() })
+	go func() {
+		for {
+			conn, err := ln.Accept()
+			if err != nil {
+				return
+			}
+			go handleBlockedConnection(t, conn, "")
+		}
+	}()
 	return "http://" + ln.Addr().String()
 }
 
@@ -46,7 +70,11 @@ func StartBlockingProxy(t *testing.T) string {
 // test via t.Errorf.
 var rfc2606Reserved = []string{".test", ".example", ".invalid", ".localhost"}
 
-func handleBlockedConnection(t *testing.T, conn net.Conn) {
+// handleBlockedConnection handles an incoming proxy connection by returning
+// HTTP 400 Bad Request. When t is non-nil and the target is a real external
+// host, t.Errorf is called to fail the test. hint is appended to the error
+// message when non-empty (used by the shared proxy to suggest -debugsandbox).
+func handleBlockedConnection(t *testing.T, conn net.Conn, hint string) {
 	defer conn.Close()
 
 	req, err := http.ReadRequest(bufio.NewReader(conn))
@@ -91,11 +119,13 @@ func handleBlockedConnection(t *testing.T, conn net.Conn) {
 		}
 	}
 
-	if isLoopback || isReserved {
-		// Expected unreachable fixture or local test server — log only, don't fail.
-		t.Logf("blocking proxy: blocked loopback/reserved host: %s", detail)
-	} else {
-		t.Errorf("internet access blocked by proxy: %s", detail)
+	if t != nil {
+		if isLoopback || isReserved {
+			// Expected unreachable fixture or local test server — log only, don't fail.
+			t.Logf("blocking proxy: blocked loopback/reserved host: %s", detail)
+		} else {
+			t.Errorf("internet access blocked by proxy: %s%s", detail, hint)
+		}
 	}
 
 	body := fmt.Sprintf("internet access is blocked in local tests: %s %s\n", method, host)
