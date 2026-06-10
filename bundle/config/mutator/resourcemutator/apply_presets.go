@@ -186,6 +186,9 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 	// Quality monitors presets: Schedule
 	if t.TriggerPauseStatus == config.Paused {
 		for _, q := range r.QualityMonitors {
+			if q == nil {
+				continue
+			}
 			// Remove all schedules from monitors, since they don't support pausing/unpausing.
 			// Quality monitors might support the "pause" property in the future, so at the
 			// CLI level we do respect that property if it is set to "unpaused."
