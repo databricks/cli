@@ -7,12 +7,13 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 )
 
+// BaseVarDef matches a single dot-separated path segment in ${...} references.
+// Keep in sync with _base_var_def in python/databricks/bundles/core/_transform.py.
+// Behavioral parity is enforced by testdata/reference_vectors.json.
+const BaseVarDef = `\p{L}+([-_]*[\p{L}\p{N}]+)*`
+
 var (
-	// !!! Should be in sync with _variable_regex in Python code.
-	// !!!
-	// !!! See python/databricks/bundles/core/_transform.py
-	baseVarDef = `[a-zA-Z]+([-_]*[a-zA-Z0-9]+)*`
-	re         = regexp.MustCompile(fmt.Sprintf(`\$\{(%s(\.%s(\[[0-9]+\])*)*(\[[0-9]+\])*)\}`, baseVarDef, baseVarDef))
+	re = regexp.MustCompile(fmt.Sprintf(`\$\{(%s(\.%s(\[[0-9]+\])*)*(\[[0-9]+\])*)\}`, BaseVarDef, BaseVarDef))
 )
 
 // Ref represents a variable reference.

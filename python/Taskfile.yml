@@ -16,6 +16,7 @@ tasks:
     desc: Run pydabs tests
     sources:
       - "**/*.py"
+      - ../libs/dyn/dynvar/testdata/reference_vectors.json
       - pyproject.toml
       - uv.lock
       - README.md

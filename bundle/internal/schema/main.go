@@ -12,12 +12,16 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/config/variable"
+	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/jsonschema"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
+// interpolationPattern builds a JSON Schema regex for ${prefix.path...} references.
+// Path segments use [dynvar.BaseVarDef]; unlike the runtime matcher in ref.go, this
+// requires a fixed prefix (var, resources, ...) and at least one ".segment" after it.
 func interpolationPattern(s string) string {
-	return fmt.Sprintf(`\$\{(%s(\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\[[0-9]+\])*)+)\}`, s)
+	return fmt.Sprintf(`\$\{(%s(\.%s(\[[0-9]+\])*)+)\}`, s, dynvar.BaseVarDef)
 }
 
 func addInterpolationPatterns(typ reflect.Type, s jsonschema.Schema) jsonschema.Schema {
