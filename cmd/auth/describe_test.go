@@ -554,56 +554,6 @@ func TestGetAccountAuthStatusBothChecksFailReportsFirstError(t *testing.T) {
 	assert.ErrorIs(t, status.Error, listErr)
 }
 
-func TestGetAccountAuthStatusPermissionDeniedIsSuccess(t *testing.T) {
-	server := describeVerifyServer(t, "test-acct", http.StatusBadRequest, http.StatusNotFound)
-	cfg := &config.Config{}
-	cmd := newDescribeAccountCmd(t, cfg, &apierr.APIError{StatusCode: http.StatusForbidden, Message: "This API is disabled for users without account admin status"})
-
-	status, err := getAuthStatus(cmd, []string{}, false, resolveCfg(t, cfg, map[string]string{
-		"host":       server.URL,
-		"token":      "test-token",
-		"auth_type":  "pat",
-		"account_id": "test-acct",
-	}, true))
-	require.NoError(t, err)
-	require.Equal(t, "success", status.Status)
-	assert.Equal(t, "test-acct", status.AccountID)
-	assert.Empty(t, status.Username)
-}
-
-func TestGetWorkspaceAuthStatusFallbackPermissionDeniedIsSuccess(t *testing.T) {
-	server := describeVerifyServer(t, "test-acct", http.StatusNotFound, http.StatusForbidden)
-	cfg := &config.Config{}
-	cmd := newDescribeWorkspaceCmd(t, cfg, &apierr.APIError{StatusCode: http.StatusBadRequest, Message: "Unable to load OAuth Config"})
-
-	status, err := getAuthStatus(cmd, []string{}, false, resolveCfg(t, cfg, map[string]string{
-		"host":       server.URL,
-		"token":      "test-token",
-		"auth_type":  "pat",
-		"account_id": "test-acct",
-	}, false))
-	require.NoError(t, err)
-	require.Equal(t, "success", status.Status)
-	assert.Empty(t, status.Username)
-	assert.Empty(t, status.AccountID)
-}
-
-func TestGetWorkspaceAuthStatusPermissionDeniedIsSuccess(t *testing.T) {
-	t.Setenv("DATABRICKS_ACCOUNT_ID", "")
-	cfg := &config.Config{}
-	cmd := newDescribeWorkspaceCmd(t, cfg, &apierr.APIError{StatusCode: http.StatusForbidden, Message: "permission denied"})
-
-	status, err := getAuthStatus(cmd, []string{}, false, resolveCfg(t, cfg, map[string]string{
-		"host":      "https://test.test",
-		"token":     "test-token",
-		"auth_type": "pat",
-	}, false))
-	require.NoError(t, err)
-	require.Equal(t, "success", status.Status)
-	assert.Empty(t, status.Username)
-	assert.Empty(t, status.AccountID)
-}
-
 func TestGetWorkspaceAuthStatus_NonU2M_OmitsTokenStorage(t *testing.T) {
 	ctx := t.Context()
 	m := mocks.NewMockWorkspaceClient(t)

@@ -3,9 +3,7 @@ package auth
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"net/http"
 	"path/filepath"
 
 	"github.com/databricks/cli/cmd/root"
@@ -17,7 +15,6 @@ import (
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/spf13/cobra"
@@ -145,9 +142,6 @@ func getAuthStatus(cmd *cobra.Command, args []string, showSensitive bool, fn try
 		if meErr == nil {
 			return successAuthStatus(ctx, cmd, a.Config, showSensitive, me.UserName, ""), nil
 		}
-		if anyPermissionDenied(err, meErr) {
-			return successAuthStatus(ctx, cmd, a.Config, showSensitive, "", a.Config.AccountID), nil
-		}
 		return errorAuthStatus(ctx, cmd, cfg, showSensitive, err), nil
 	}
 
@@ -163,31 +157,12 @@ func getAuthStatus(cmd *cobra.Command, args []string, showSensitive bool, fn try
 	// https://github.com/databricks/cli/issues/5479). Verify against the
 	// account endpoint before reporting failure. Account clients require an
 	// account ID, so skip the second check when none is configured.
-	var listErr error
 	if w.Config.AccountID != "" {
-		listErr = verifyAccountAuth(ctx, w.Config)
-		if listErr == nil {
+		if listErr := verifyAccountAuth(ctx, w.Config); listErr == nil {
 			return successAuthStatus(ctx, cmd, w.Config, showSensitive, w.Config.Username, w.Config.AccountID), nil
 		}
 	}
-	if anyPermissionDenied(err, listErr) {
-		return successAuthStatus(ctx, cmd, w.Config, showSensitive, "", ""), nil
-	}
 	return errorAuthStatus(ctx, cmd, cfg, showSensitive, err), nil
-}
-
-// anyPermissionDenied reports whether any of errs is an HTTP 403 API error.
-// A 403 means the server authenticated the caller and refused the operation
-// (invalid credentials produce a 401), so for describe's purpose it proves
-// the credentials work. Non-admin users hit this on account hosts because
-// Workspaces.List requires account admin. Nil errors are ignored.
-func anyPermissionDenied(errs ...error) bool {
-	for _, err := range errs {
-		if apiErr, ok := errors.AsType[*apierr.APIError](err); ok && apiErr.StatusCode == http.StatusForbidden {
-			return true
-		}
-	}
-	return false
 }
 
 // verifyWorkspaceAuth checks whether cfg's credentials are accepted by the
