@@ -1,6 +1,0 @@
-Cloud = true
-RequiresUnityCatalog = true
-
-Ignore = [
-    ".databricks",
-]

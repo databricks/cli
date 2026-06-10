@@ -62,6 +62,7 @@ EnvMatrix.INPUT_CONFIG = [
     "vector_search_index.yml.tmpl",
     "volume.yml.tmpl",
     "volume_external.yml.tmpl",
+    "volume_uppercase_name.yml.tmpl",
 ]
 
 [EnvMatrixExclude]
