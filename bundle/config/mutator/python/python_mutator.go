@@ -316,8 +316,7 @@ func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 	return mutateDiags
 }
 
-// createCacheDir returns the directory for input/output files of the Python
-// subprocess, and a cleanup function to call once they are no longer needed.
+// createCacheDir returns the directory for input/output files of the Python subprocess, and a cleanup function.
 func createCacheDir(ctx context.Context) (string, func(), error) {
 	// b.LocalStateDir doesn't work because target isn't yet selected
 
@@ -340,8 +339,7 @@ func createCacheDir(ctx context.Context) (string, func(), error) {
 		return "", nil, err
 	}
 
-	// input.json contains the full serialized bundle configuration;
-	// don't leave it behind in the system temp dir
+	// input.json contains the full serialized bundle configuration; don't leave it behind in the system temp dir
 	return cacheDir, func() { _ = os.RemoveAll(cacheDir) }, nil
 }
 
