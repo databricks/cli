@@ -14,6 +14,7 @@ if [ "$DATABRICKS_BUNDLE_ENGINE" = "direct" ]; then
         >> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt
 
     echo "=== Redeploy without changes - should be a no-op" >> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt
-    errcode $CLI bundle deploy &>> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt
+    # &>> requires bash 4+; macOS CI runs the stock bash 3.2, so use >> ... 2>&1.
+    errcode $CLI bundle deploy >> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1
     print_requests.py //unity-catalog >> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt
 fi
