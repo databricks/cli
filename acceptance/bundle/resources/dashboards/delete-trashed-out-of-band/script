@@ -25,5 +25,7 @@ trace $CLI bundle plan
 
 trace $CLI bundle plan -o json > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 
-# Run destroy - should succeed even though dashboard is already trashed
-trace $CLI bundle destroy --auto-approve
+# Run destroy - should succeed even though dashboard is already trashed.
+# The direct engine keeps the delete entry for the trashed dashboard to clean up
+# its state entry, so the destroy output diverges per engine.
+trace $CLI bundle destroy --auto-approve &> out.destroy.$DATABRICKS_BUNDLE_ENGINE.txt

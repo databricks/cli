@@ -1,0 +1,6 @@
+
+>>> [CLI] bundle destroy --auto-approve
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/delete-trashed-out-of-band-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!
