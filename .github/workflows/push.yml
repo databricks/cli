@@ -318,6 +318,58 @@ jobs:
         run: |
           go tool -modfile=tools/task/go.mod task test-pipelines
 
+  test-sandbox:
+    needs:
+      - cleanups
+      - testmask
+
+    # Only run if the target is in the list of targets from testmask
+    if: ${{ contains(fromJSON(needs.testmask.outputs.targets), 'test-sandbox') }}
+    name: "task test-sandbox (${{matrix.os.name}})"
+    runs-on: ${{ matrix.os.runner }}
+
+    defaults:
+      run:
+        shell: bash
+
+    permissions:
+      id-token: write
+      contents: read
+
+    env:
+      TASK_CONCURRENCY: ${{ matrix.os.name == 'windows' && '1' || '' }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - name: linux
+            runner:
+              group: databricks-protected-runner-group-large
+              labels: linux-ubuntu-latest-large
+
+          - name: windows
+            runner:
+              group: databricks-protected-runner-group-large
+              labels: windows-server-latest-large
+
+          - name: macos
+            runner:
+              labels: macos-latest
+
+    steps:
+      - name: Checkout repository and submodules
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup build environment
+        uses: ./.github/actions/setup-build-environment
+        with:
+          cache-key: test-sandbox
+
+      - name: Run tests
+        run: |
+          go tool -modfile=tools/task/go.mod task test-sandbox
+
   # This job groups the result of all the above test jobs.
   # It is a required check, so it blocks auto-merge and the merge queue.
   #
@@ -333,6 +385,7 @@ jobs:
       - test-exp-aitools
       - test-exp-ssh
       - test-pipelines
+      - test-sandbox
 
     if: ${{ always() }}
     name: test-result
