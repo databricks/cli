@@ -102,9 +102,7 @@ func (m *importResource) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 		return diag.FromErr(err)
 	}
 
-	// A failed Close can mean the state file was not fully written; report it
-	// instead of succeeding with a truncated state file. The deferred Close
-	// above remains for error paths and is a no-op after this one.
+	// A failed Close can mean a truncated state file; the deferred Close above covers error paths.
 	err = f.Close()
 	if err != nil {
 		return diag.FromErr(err)
