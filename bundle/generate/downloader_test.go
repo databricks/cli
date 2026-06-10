@@ -1,12 +1,17 @@
 package generate
 
 import (
+	"bytes"
 	"encoding/json"
+	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
+	"testing/iotest"
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go"
@@ -304,6 +309,57 @@ func TestDownloader_FlushToDisk(t *testing.T) {
 	data, err = os.ReadFile(filepath.Join(sourceDir, "utils.py"))
 	require.NoError(t, err)
 	assert.Equal(t, contents["/Users/user/project/utils.py"], string(data))
+}
+
+type fakeWriteCloser struct {
+	bytes.Buffer
+	closeErr error
+}
+
+func (f *fakeWriteCloser) Close() error { return f.closeErr }
+
+func TestWriteAndClose(t *testing.T) {
+	closeErr := errors.New("close failed")
+	readErr := errors.New("read failed")
+
+	tests := []struct {
+		name     string
+		src      io.Reader
+		closeErr error
+		wantErr  error
+		wantData string
+	}{
+		{
+			name:     "success",
+			src:      strings.NewReader("data"),
+			wantData: "data",
+		},
+		{
+			name:     "close error is returned",
+			src:      strings.NewReader("data"),
+			closeErr: closeErr,
+			wantErr:  closeErr,
+			wantData: "data",
+		},
+		{
+			name:     "copy error takes precedence over close error",
+			src:      iotest.ErrReader(readErr),
+			closeErr: closeErr,
+			wantErr:  readErr,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dst := &fakeWriteCloser{closeErr: tt.closeErr}
+			err := writeAndClose(dst, tt.src)
+			if tt.wantErr == nil {
+				assert.NoError(t, err)
+			} else {
+				assert.ErrorIs(t, err, tt.wantErr)
+			}
+			assert.Equal(t, tt.wantData, dst.String())
+		})
+	}
 }
 
 func TestDownloader_CleanupOldFiles(t *testing.T) {
