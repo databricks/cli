@@ -314,9 +314,9 @@ resources:
     normalize_case:
       # UC lowercases identifier names; remote returns "myschema" for config "MySchema".
       - field: name
-        reason: uc_identifier
+        reason: uc_case
       - field: catalog_name
-        reason: uc_identifier
+        reason: uc_case
     normalize_slash:
       - field: storage_root
         reason: uc_strips_trailing_slash
@@ -354,11 +354,11 @@ resources:
       # UC lowercases identifier names. name is in update_id_on_changes, so a
       # case-only diff would otherwise trigger a spurious rename (DoUpdateWithID).
       - field: catalog_name
-        reason: uc_identifier
+        reason: uc_case
       - field: schema_name
-        reason: uc_identifier
+        reason: uc_case
       - field: name
-        reason: uc_identifier
+        reason: uc_case
     normalize_slash:
       # UC strips trailing slashes on create; matches the Terraform provider's suppressLocationDiff.
       # https://github.com/databricks/terraform-provider-databricks/blob/v1.65.1/catalog/resource_volume.go#L25
