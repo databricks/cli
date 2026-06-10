@@ -454,15 +454,21 @@ func shouldSkipBackendDefault(cfg *dresources.ResourceLifecycleConfig, path *str
 	if cfg == nil || ch.Old != nil || ch.New != nil || ch.Remote == nil {
 		return "", false
 	}
-	for _, rule := range cfg.BackendDefaults {
-		if matchesBackendDefaultRule(path, ch.Remote, rule) {
-			return deployplan.ReasonBackendDefault, true
-		}
-	}
-	if matchesBackendDefaultMap(cfg, path, ch.Remote) {
+	if matchesAnyBackendDefault(cfg, path, ch.Remote) || matchesBackendDefaultMap(cfg, path, ch.Remote) {
 		return deployplan.ReasonBackendDefault, true
 	}
 	return "", false
+}
+
+// matchesAnyBackendDefault reports whether the change at path matches any of the
+// resource's configured backend-default rules.
+func matchesAnyBackendDefault(cfg *dresources.ResourceLifecycleConfig, path *structpath.PathNode, remote any) bool {
+	for _, rule := range cfg.BackendDefaults {
+		if matchesBackendDefaultRule(path, remote, rule) {
+			return true
+		}
+	}
+	return false
 }
 
 func matchesBackendDefaultRule(path *structpath.PathNode, remote any, rule dresources.BackendDefaultRule) bool {
@@ -488,16 +494,7 @@ func matchesBackendDefaultMap(cfg *dresources.ResourceLifecycleConfig, path *str
 	iter := rv.MapRange()
 	for iter.Next() {
 		childPath := structpath.NewBracketString(path, iter.Key().String())
-		childRemote := iter.Value().Interface()
-
-		matched := false
-		for _, rule := range cfg.BackendDefaults {
-			if matchesBackendDefaultRule(childPath, childRemote, rule) {
-				matched = true
-				break
-			}
-		}
-		if !matched {
+		if !matchesAnyBackendDefault(cfg, childPath, iter.Value().Interface()) {
 			return false
 		}
 	}
