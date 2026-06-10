@@ -51,27 +51,3 @@
     "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/oauth/files"
   }
 }
-{
-  "headers": {
-    "Authorization": [
-      "Bearer oauth-token"
-    ]
-  },
-  "method": "POST",
-  "path": "/api/2.0/workspace/mkdirs",
-  "body": {
-    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/oauth/files"
-  }
-}
-{
-  "headers": {
-    "Authorization": [
-      "Bearer oauth-token"
-    ]
-  },
-  "method": "GET",
-  "path": "/api/2.0/workspace/get-status",
-  "q": {
-    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/oauth/files"
-  }
-}

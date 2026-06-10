@@ -7,6 +7,7 @@ import (
 	"github.com/databricks/cli/bundle/deploy/files"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/sync"
 )
 
 func FilesToSync() bundle.ReadOnlyMutator {
@@ -26,12 +27,21 @@ func (v *filesToSync) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnost
 		return nil
 	}
 
-	sync, err := files.GetSync(ctx, b)
+	opts, err := files.GetSyncOptions(ctx, b)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	fl, err := sync.GetFileList(ctx)
+	// Validation must not mutate the workspace; a dry-run sync skips creating
+	// a missing remote file path.
+	opts.DryRun = true
+
+	s, err := sync.New(ctx, *opts)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	fl, err := s.GetFileList(ctx)
 	if err != nil {
 		return diag.FromErr(err)
 	}

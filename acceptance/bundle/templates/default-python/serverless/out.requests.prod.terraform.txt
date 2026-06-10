@@ -53,6 +53,13 @@
   "method": "POST",
   "path": "/api/2.0/workspace/mkdirs",
   "body": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/prod/files"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace/mkdirs",
+  "body": {
     "path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/prod/files/.vscode"
   }
 }

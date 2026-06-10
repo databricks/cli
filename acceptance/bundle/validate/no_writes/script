@@ -1,0 +1,5 @@
+# Validate must not mutate the workspace: no write requests, e.g. mkdirs for
+# a missing remote file path. print_requests.py prints all non-GET requests.
+trace $CLI bundle validate
+
+trace print_requests.py --sort //api/
