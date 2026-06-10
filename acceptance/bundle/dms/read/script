@@ -10,13 +10,13 @@ delete_id=$($CLI pipelines create -o json --json '{"name":"delete-me"}' | jq -r 
 
 # DMS owns the state only once a version has completed successfully, so record one
 # for the deployment before seeding its resources.
-$CLI api post "/api/2.0/bundle/deployments/synthetic-dep/versions?version_id=1" --json '{"version_type":"VERSION_TYPE_DEPLOY"}' > /dev/null
-$CLI api post "/api/2.0/bundle/deployments/synthetic-dep/versions/1/complete" --json '{"completion_reason":"VERSION_COMPLETE_SUCCESS"}' > /dev/null
+MSYS_NO_PATHCONV=1 $CLI api post "/api/2.0/bundle/deployments/synthetic-dep/versions?version_id=1" --json '{"version_type":"VERSION_TYPE_DEPLOY"}' > /dev/null
+MSYS_NO_PATHCONV=1 $CLI api post "/api/2.0/bundle/deployments/synthetic-dep/versions/1/complete" --json '{"completion_reason":"VERSION_COMPLETE_SUCCESS"}' > /dev/null
 
-$CLI api post "/api/2.0/bundle/deployments/synthetic-dep/versions/1/operations" --json "{\"resource_key\":\"pipelines.update_me\",\"resource_id\":\"$update_id\",\"action_type\":\"OPERATION_ACTION_TYPE_CREATE\",\"status\":\"OPERATION_STATUS_SUCCEEDED\",\"state\":{\"name\":\"update-me-old\"}}" > /dev/null
-$CLI api post "/api/2.0/bundle/deployments/synthetic-dep/versions/1/operations" --json "{\"resource_key\":\"pipelines.delete_me\",\"resource_id\":\"$delete_id\",\"action_type\":\"OPERATION_ACTION_TYPE_CREATE\",\"status\":\"OPERATION_STATUS_SUCCEEDED\",\"state\":{\"name\":\"delete-me\"}}" > /dev/null
+MSYS_NO_PATHCONV=1 $CLI api post "/api/2.0/bundle/deployments/synthetic-dep/versions/1/operations" --json "{\"resource_key\":\"pipelines.update_me\",\"resource_id\":\"$update_id\",\"action_type\":\"OPERATION_ACTION_TYPE_CREATE\",\"status\":\"OPERATION_STATUS_SUCCEEDED\",\"state\":{\"name\":\"update-me-old\"}}" > /dev/null
+MSYS_NO_PATHCONV=1 $CLI api post "/api/2.0/bundle/deployments/synthetic-dep/versions/1/operations" --json "{\"resource_key\":\"pipelines.delete_me\",\"resource_id\":\"$delete_id\",\"action_type\":\"OPERATION_ACTION_TYPE_CREATE\",\"status\":\"OPERATION_STATUS_SUCCEEDED\",\"state\":{\"name\":\"delete-me\"}}" > /dev/null
 
-$CLI api post "/api/2.0/workspace-files/import-file/Workspace/Users/$CURRENT_USER_NAME/.bundle/dms-read/default/state/resources.json?overwrite=true" --json '{"state_version":2,"lineage":"synthetic-dep","serial":1,"state":{}}' > /dev/null
+MSYS_NO_PATHCONV=1 $CLI api post "/api/2.0/workspace-files/import-file/Workspace/Users/$CURRENT_USER_NAME/.bundle/dms-read/default/state/resources.json?overwrite=true" --json '{"state_version":2,"lineage":"synthetic-dep","serial":1,"state":{}}' > /dev/null
 
 title "bundle summary reflects resources read from DMS (update_me resolves its id; create_me is not deployed)"
 trace $CLI bundle summary
