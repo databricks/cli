@@ -1,0 +1,11 @@
+
+=== version runs the update check
+
+>>> [CLI] version
+Databricks CLI v[DEV_VERSION]
+This is a development build; skipping the update check.
+
+=== version --output json keeps the build-info shape and skips the check
+
+>>> [CLI] version --output json
+"[DEV_VERSION]"

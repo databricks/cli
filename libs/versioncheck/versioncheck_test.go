@@ -7,7 +7,6 @@ import (
 
 	"github.com/databricks/cli/internal/build"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestDetectInstallMethod(t *testing.T) {
@@ -83,8 +82,7 @@ func TestCheck(t *testing.T) {
 		srv := newReleaseServer(t, http.StatusOK, "v0.245.0")
 		t.Setenv(gitHubAPIURLEnv, srv.URL)
 
-		result, err := Check(t.Context())
-		require.NoError(t, err)
+		result := Check(t.Context())
 		assert.Equal(t, "0.240.0", result.CurrentVersion)
 		assert.Equal(t, "0.245.0", result.LatestVersion)
 		assert.True(t, result.UpdateAvailable)
@@ -96,8 +94,7 @@ func TestCheck(t *testing.T) {
 		srv := newReleaseServer(t, http.StatusOK, "v0.245.0")
 		t.Setenv(gitHubAPIURLEnv, srv.URL)
 
-		result, err := Check(t.Context())
-		require.NoError(t, err)
+		result := Check(t.Context())
 		assert.False(t, result.UpdateAvailable)
 		assert.Equal(t, "0.245.0", result.LatestVersion)
 	})
@@ -105,8 +102,7 @@ func TestCheck(t *testing.T) {
 	t.Run("development build skips the network call", func(t *testing.T) {
 		build.SetBuildVersion("0.0.0-dev+abc123")
 		// No server env set: a network call here would fail, proving we skip it.
-		result, err := Check(t.Context())
-		require.NoError(t, err)
+		result := Check(t.Context())
 		assert.True(t, result.DevelopmentBuild)
 		assert.False(t, result.UpdateAvailable)
 		assert.Empty(t, result.LatestVersion)
@@ -117,8 +113,7 @@ func TestCheck(t *testing.T) {
 		srv := newReleaseServer(t, http.StatusInternalServerError, "")
 		t.Setenv(gitHubAPIURLEnv, srv.URL)
 
-		result, err := Check(t.Context())
-		require.NoError(t, err)
+		result := Check(t.Context())
 		assert.True(t, result.CheckFailed)
 		assert.False(t, result.UpdateAvailable)
 		assert.Empty(t, result.LatestVersion)
@@ -132,8 +127,7 @@ func TestCheck(t *testing.T) {
 		srv.Close()
 		t.Setenv(gitHubAPIURLEnv, url)
 
-		result, err := Check(t.Context())
-		require.NoError(t, err)
+		result := Check(t.Context())
 		assert.True(t, result.CheckFailed)
 	})
 }

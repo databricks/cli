@@ -1,0 +1,7 @@
+# The acceptance binary is a development build, so the check short-circuits
+# without contacting GitHub. This exercises command wiring and output rendering.
+title "version runs the update check\n"
+trace $CLI version
+
+title "version --output json keeps the build-info shape and skips the check\n"
+trace $CLI version --output json | jq .Version

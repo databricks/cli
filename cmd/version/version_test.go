@@ -25,7 +25,7 @@ func TestUpdateCheckTemplate(t *testing.T) {
 				UpgradeCommand:  "brew upgrade databricks",
 			},
 			want: `Databricks CLI v0.240.0
-A new version is available: 0.245.0 (you have 0.240.0).
+A new version is available: 0.245.0
 To upgrade, run:
   brew upgrade databricks
 `,
@@ -39,7 +39,7 @@ To upgrade, run:
 				InstallMethod:   versioncheck.InstallUnknown,
 			},
 			want: `Databricks CLI v0.240.0
-A new version is available: 0.245.0 (you have 0.240.0).
+A new version is available: 0.245.0
 Download the latest release: https://github.com/databricks/cli/releases
 `,
 		},
