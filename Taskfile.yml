@@ -658,6 +658,25 @@ tasks:
           --packages ./acceptance/... \
           -- -timeout=${LOCAL_TIMEOUT:-30m} -run "TestAccept/pipelines"
 
+  test-sandbox:
+    desc: Run sandbox unit and acceptance tests
+    sources:
+      - cmd/sandbox/**
+      - acceptance/cmd/sandbox/**
+    cmds:
+      - |
+        {{.GO_TOOL}} gotestsum \
+          --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
+          --no-summary=skipped \
+          --packages ./cmd/sandbox/... \
+          -- -timeout=${LOCAL_TIMEOUT:-30m}
+      - |
+        {{.GO_TOOL}} gotestsum \
+          --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
+          --no-summary=skipped \
+          --packages ./acceptance/... \
+          -- -timeout=${LOCAL_TIMEOUT:-30m} -run "TestAccept/cmd/sandbox"
+
   # --- Integration tests ---
 
   integration:
