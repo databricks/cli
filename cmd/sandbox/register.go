@@ -59,11 +59,14 @@ Examples:
 				return fmt.Errorf("failed to ensure sandbox SSH key: %w", err)
 			}
 
+			// Always print paths with forward slashes so acceptance
+			// goldens are stable across Linux/macOS/Windows.
+			displayKeyPath := filepath.ToSlash(keyPath)
 			stderr := cmd.ErrOrStderr()
 			if generated {
-				ok(ctx, "Generated SSH key at "+cmdio.Faint(ctx, keyPath))
+				ok(ctx, "Generated SSH key at "+cmdio.Faint(ctx, displayKeyPath))
 			} else {
-				field(ctx, stderr, "key", keyPath)
+				field(ctx, stderr, "key", displayKeyPath)
 			}
 
 			pubKeyData, err := os.ReadFile(keyPath + ".pub")

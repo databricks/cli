@@ -17,24 +17,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const (
-	defaultGatewayHost        = "uw2.dbrx.dev"
-	stagingDefaultGatewayHost = "ue1.s.dbrx.dev"
-	defaultGatewayPort        = "2222"
-)
-
-// resolveGatewayHost picks the SSH gateway hostname based on the workspace host.
-// Staging workspaces (*.staging.cloud.databricks.com etc.) route through
-// ue1.s.dbrx.dev; everything else uses uw2.dbrx.dev.
-func resolveGatewayHost(workspaceHost string) string {
-	if strings.Contains(workspaceHost, ".staging.") {
-		return stagingDefaultGatewayHost
-	}
-	return defaultGatewayHost
-}
+const defaultGatewayPort = "2222"
 
 func newSSHCommand() *cobra.Command {
-	var gatewayHost string
 	var gatewayPort string
 
 	cmd := &cobra.Command{
@@ -167,17 +152,17 @@ Examples:
 				}
 			}
 
-			// Resolution precedence: --gateway flag → fresh API response →
-			// cached value for this profile → workspace-host heuristic.
-			host := gatewayHost
-			if host == "" {
-				host = sandboxGatewayHost
-			}
+			// Resolution precedence: fresh API response → cached value
+			// for this profile. The server stamps the workspace's
+			// gateway on every Sandbox / SshKey response, so the cache
+			// is populated after the first call against the workspace
+			// (sandbox register / list / create / etc.).
+			host := sandboxGatewayHost
 			if host == "" {
 				host = getGatewayHost(ctx, profile)
 			}
 			if host == "" {
-				host = resolveGatewayHost(w.Config.Host)
+				return errors.New("could not resolve the sandbox SSH gateway — run `databricks sandbox register` first")
 			}
 
 			// Persist whatever the server just told us, so the next invocation
@@ -195,7 +180,6 @@ Examples:
 		},
 	}
 
-	cmd.Flags().StringVar(&gatewayHost, "gateway", "", "Sandbox gateway hostname (auto-detected from profile if empty)")
 	cmd.Flags().StringVar(&gatewayPort, "port", defaultGatewayPort, "Sandbox gateway SSH port")
 
 	return cmd
