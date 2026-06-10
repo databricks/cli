@@ -1,12 +1,17 @@
 package sandbox
 
 import (
+	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
 	"testing"
 
+	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/flags"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -141,6 +146,28 @@ func TestEnsureMainIncludesManagedPreservesUserConfigBelow(t *testing.T) {
 	require.GreaterOrEqual(t, beginIdx, 0)
 	require.GreaterOrEqual(t, userIdx, 0)
 	assert.Less(t, beginIdx, userIdx, "managed block must precede the user's existing config")
+}
+
+// An empty gatewayHost must short-circuit before any disk I/O so the
+// "server forgot to stamp gateway_host" case can't accidentally create
+// a malformed Host block (e.g. `Host \n`). Pins the order of the two
+// checks at the top of maybeWriteSSHConfig — a future refactor that
+// swaps them would silently write garbage.
+func TestMaybeWriteSSHConfigSkipsOnEmptyGateway(t *testing.T) {
+	home := t.TempDir()
+	ctx := env.WithUserHomeDir(t.Context(), home)
+	ctx = cmdio.InContext(ctx, cmdio.NewIO(ctx, flags.OutputText,
+		io.NopCloser(strings.NewReader("")), io.Discard, io.Discard, "", ""))
+
+	require.NoError(t, maybeWriteSSHConfig(ctx, filepath.Join(home, ".ssh", "sandbox_ed25519"), ""))
+
+	// No managed file should have been created.
+	_, err := os.Stat(filepath.Join(home, ".ssh", sshIncludeFileName))
+	assert.ErrorIs(t, err, fs.ErrNotExist, "managed include file must not be created when gateway is empty")
+
+	// And ~/.ssh/config must not have been touched either.
+	_, err = os.Stat(filepath.Join(home, ".ssh", "config"))
+	assert.ErrorIs(t, err, fs.ErrNotExist, "main ssh config must not be created when gateway is empty")
 }
 
 func TestHasOurMarkedBlock(t *testing.T) {
