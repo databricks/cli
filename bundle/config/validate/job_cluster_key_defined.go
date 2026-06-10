@@ -34,7 +34,6 @@ func (v *jobClusterKeyDefined) Apply(ctx context.Context, b *bundle.Bundle) diag
 			diags = diags.Extend(checkJobClusterKey(b, jobClusterKeys, task.JobClusterKey,
 				fmt.Sprintf("resources.jobs.%s.tasks[%d].job_cluster_key", k, index)))
 
-			// The task wrapped by a for_each_task can reference a job cluster as well.
 			// The Jobs API rejects nested for_each_task, so one level is sufficient.
 			if task.ForEachTask != nil {
 				diags = diags.Extend(checkJobClusterKey(b, jobClusterKeys, task.ForEachTask.Task.JobClusterKey,
