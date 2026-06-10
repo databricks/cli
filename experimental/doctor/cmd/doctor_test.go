@@ -249,11 +249,14 @@ func TestCheckAuth(t *testing.T) {
 
 func TestResolveConfig(t *testing.T) {
 	tests := []struct {
-		name     string
-		env      map[string]string
-		ctxEnv   map[string]string
-		wantHost string
-		wantTok  string
+		name            string
+		env             map[string]string
+		ctxEnv          map[string]string
+		configFile      string
+		wantHost        string
+		wantTok         string
+		wantProfile     string
+		wantWorkspaceID string
 	}{
 		{
 			name: "process env vars",
@@ -273,11 +276,44 @@ func TestResolveConfig(t *testing.T) {
 			wantHost: "https://ctx-env.example.com",
 			wantTok:  "ctx-token",
 		},
+		{
+			name: "host query params are normalized",
+			env: map[string]string{
+				"DATABRICKS_HOST":  "https://spog.databricks.test?o=123456",
+				"DATABRICKS_TOKEN": "env-token",
+			},
+			wantHost:        "https://spog.databricks.test",
+			wantTok:         "env-token",
+			wantWorkspaceID: "123456",
+		},
+		{
+			name: "default profile from settings section",
+			configFile: "[__settings__]\ndefault_profile = staging\n\n" +
+				"[staging]\nhost = https://staging.databricks.test\ntoken = staging-token\n",
+			wantHost:    "https://staging.databricks.test",
+			wantTok:     "staging-token",
+			wantProfile: "staging",
+		},
+		{
+			name: "env profile wins over default profile",
+			configFile: "[__settings__]\ndefault_profile = staging\n\n" +
+				"[staging]\nhost = https://staging.databricks.test\ntoken = staging-token\n\n" +
+				"[prod]\nhost = https://prod.databricks.test\ntoken = prod-token\n",
+			env:         map[string]string{"DATABRICKS_CONFIG_PROFILE": "prod"},
+			wantHost:    "https://prod.databricks.test",
+			wantTok:     "prod-token",
+			wantProfile: "prod",
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			clearConfigEnv(t)
+			if tt.configFile != "" {
+				path := filepath.Join(t.TempDir(), ".databrickscfg")
+				require.NoError(t, os.WriteFile(path, []byte(tt.configFile), 0o600))
+				t.Setenv("DATABRICKS_CONFIG_FILE", path)
+			}
 			for k, v := range tt.env {
 				t.Setenv(k, v)
 			}
@@ -290,6 +326,8 @@ func TestResolveConfig(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, tt.wantHost, cfg.Host)
 			assert.Equal(t, tt.wantTok, cfg.Token)
+			assert.Equal(t, tt.wantProfile, cfg.Profile)
+			assert.Equal(t, tt.wantWorkspaceID, cfg.WorkspaceID)
 		})
 	}
 }

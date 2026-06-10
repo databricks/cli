@@ -60,8 +60,7 @@ func toolchainErrorLabel(err error) string {
 	if errors.Is(err, exec.ErrNotFound) {
 		return "not found"
 	}
-	var exitErr *exec.ExitError
-	if errors.As(err, &exitErr) {
+	if exitErr, ok := errors.AsType[*exec.ExitError](err); ok {
 		return fmt.Sprintf("exited %d", exitErr.ExitCode())
 	}
 	return "error: " + err.Error()

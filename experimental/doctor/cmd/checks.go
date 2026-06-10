@@ -12,11 +12,13 @@ import (
 
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/auth"
+	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 )
 
 const (
@@ -117,6 +119,13 @@ func checkCurrentProfile(ctx context.Context, profileName string, fromFlag bool,
 	}
 }
 
+// resolveConfig builds and resolves the SDK config with the same pre-resolution
+// steps as the real CLI auth path (cmd/root/auth.go MustWorkspaceClient /
+// MustAccountClient): the --profile flag takes precedence, DATABRICKS_HOST
+// query parameters are normalized, and the [__settings__].default_profile
+// setting applies when no profile was specified. This keeps doctor's verdict
+// consistent with what other CLI commands actually do. The context-aware env
+// loader is added so context-scoped env vars (libs/env) are honored in tests.
 func resolveConfig(ctx context.Context, profileName string, fromFlag bool) (*config.Config, error) {
 	cfg := &config.Config{
 		Loaders: []config.Loader{
@@ -127,6 +136,14 @@ func resolveConfig(ctx context.Context, profileName string, fromFlag bool) (*con
 	}
 	if fromFlag {
 		cfg.Profile = profileName
+	}
+	auth.NormalizeDatabricksConfigFromEnv(ctx, cfg)
+	// Same precedence as cmd/root resolveDefaultProfile: the --profile flag and
+	// DATABRICKS_CONFIG_PROFILE both win over the configured default profile.
+	if cfg.Profile == "" && env.Get(ctx, "DATABRICKS_CONFIG_PROFILE") == "" {
+		if resolved := databrickscfg.ResolveDefaultProfile(ctx); resolved != "" {
+			cfg.Profile = resolved
+		}
 	}
 	return cfg, cfg.EnsureResolved()
 }
@@ -190,7 +207,7 @@ func checkIdentity(ctx context.Context, authCfg *config.Config) CheckResult {
 		return fail("Identity", "Cannot create workspace client", err)
 	}
 
-	me, err := w.CurrentUser.Me(ctx)
+	me, err := w.CurrentUser.Me(ctx, iam.MeRequest{})
 	if err != nil {
 		return fail("Identity", "Cannot fetch current user", err)
 	}
@@ -254,12 +271,20 @@ func checkNetworkWithHost(ctx context.Context, host string, client *http.Client)
 	return pass("Network", host+" is reachable")
 }
 
+// configuredNetworkHTTPClient returns a plain HTTP client for the reachability
+// probe. The SDK's full ApiClient is deliberately not used here: its auth
+// visitor and HTTP status error mapping would make the network check fail on
+// authentication problems, which checkAuth already reports separately.
 func configuredNetworkHTTPClient(cfg *config.Config) *http.Client {
 	return &http.Client{
 		Transport: configuredNetworkHTTPTransport(cfg),
 	}
 }
 
+// configuredNetworkHTTPTransport mirrors the SDK's transport selection
+// (httpclient.ClientConfig.httpTransport): cfg.HTTPTransport when set,
+// otherwise a default transport honoring insecure_skip_verify. This way the
+// probe sees the same proxy and TLS behavior as real SDK calls.
 func configuredNetworkHTTPTransport(cfg *config.Config) http.RoundTripper {
 	if cfg.HTTPTransport != nil {
 		return cfg.HTTPTransport
