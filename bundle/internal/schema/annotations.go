@@ -139,6 +139,25 @@ func assignAnnotation(s *jsonschema.Schema, a annotation.Descriptor) {
 		s.Preview = a.Preview
 	}
 
+	// Surface the launch stage as the raw x-databricks-launch-stage field (and,
+	// below, as a human-readable prefix on the description). cli.json makes
+	// launch_stage the single source of truth: x-databricks-preview above is
+	// derivable from it (PRIVATE iff PRIVATE_PREVIEW) and is kept only for
+	// backwards compatibility, so PRIVATE_PREVIEW must hide the field here too.
+	//
+	// OPEN QUESTION (confirm with the team before finalizing this PR): is
+	// either x-databricks-preview or x-databricks-launch-stage consumed by
+	// anything downstream of the published schema? If x-databricks-preview is
+	// unused we can stop emitting it; if the raw x-databricks-launch-stage isn't
+	// wanted in the published schema, drop s.LaunchStage and keep only the
+	// description prefix below.
+	if a.LaunchStage != "" {
+		s.LaunchStage = a.LaunchStage
+		if a.LaunchStage == "PRIVATE_PREVIEW" {
+			s.DoNotSuggest = true
+		}
+	}
+
 	if a.OutputOnly != nil && *a.OutputOnly {
 		s.FieldBehaviors = []string{"OUTPUT_ONLY"}
 	}
@@ -146,6 +165,83 @@ func assignAnnotation(s *jsonschema.Schema, a annotation.Descriptor) {
 	s.MarkdownDescription = convertLinksToAbsoluteUrl(a.MarkdownDescription)
 	s.Title = a.Title
 	s.Enum = a.Enum
+	s.EnumDescriptions = buildEnumDescriptions(a.Enum, a.EnumLaunchStages, a.EnumDescriptions)
+
+	// Surface launch stage in hover tooltips. Editors generally only render the
+	// standard description field, so we tag it directly rather than rely on
+	// consumers reading x-databricks-launch-stage.
+	if tag := annotation.PreviewTag(a.LaunchStage); tag != "" {
+		s.Description = prefixWithPreviewTag(s.Description, tag)
+	}
+}
+
+// buildEnumDescriptions produces the parallel enumDescriptions array VSCode
+// renders next to each enum value. Each entry combines the short launch-stage
+// label and the per-value description text. Returns nil when every entry would
+// be empty so the field is omitted from the schema. The enum slice is the same
+// one assigned to s.Enum, so the arrays stay index-aligned.
+func buildEnumDescriptions(enum []any, launchStages, descriptions map[string]string) []string {
+	if len(enum) == 0 || (len(launchStages) == 0 && len(descriptions) == 0) {
+		return nil
+	}
+	result := make([]string, len(enum))
+	hasContent := false
+	for i, v := range enum {
+		key, ok := v.(string)
+		if !ok {
+			continue
+		}
+		result[i] = enumDescriptionLabel(launchStages[key], descriptions[key])
+		if result[i] != "" {
+			hasContent = true
+		}
+	}
+	if !hasContent {
+		return nil
+	}
+	return result
+}
+
+// enumDescriptionLabel formats a single enumDescriptions entry. The launch
+// stage is wrapped in brackets so it visually separates from the description
+// in VSCode's autocomplete dropdown; an empty stage leaves the description
+// alone, and a missing description leaves just the bracketed stage.
+func enumDescriptionLabel(launchStage, description string) string {
+	short := previewTagShort(launchStage)
+	switch {
+	case short != "" && description != "":
+		return short + " " + description
+	case short != "":
+		return short
+	}
+	return description
+}
+
+// previewTagShort is the compact counterpart to previewTag, used for per-enum-
+// value labels where vertical space in the dropdown is tighter.
+func previewTagShort(launchStage string) string {
+	switch launchStage {
+	case "PRIVATE_PREVIEW":
+		return "[PrPr]"
+	case "PUBLIC_BETA":
+		return "[Beta]"
+	case "PUBLIC_PREVIEW":
+		return "[PuPr]"
+	}
+	return ""
+}
+
+// prefixWithPreviewTag prepends the launch-stage tag to a description while
+// guarding against double-tagging — if the description already starts with
+// the tag, it is returned unchanged.
+func prefixWithPreviewTag(description, tag string) string {
+	if description == "" {
+		return tag
+	}
+	if strings.HasPrefix(description, tag) {
+		return description
+	}
+	return tag + " " + description
 }
 
 func saveYamlWithStyle(outputPath string, annotations annotation.File) error {

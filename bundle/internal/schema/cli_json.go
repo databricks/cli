@@ -17,12 +17,18 @@ type cliJSONField struct {
 }
 
 // cliJSONSchema is the shape of a single schema in .codegen/cli.json.
+//
+// EnumLaunchStages and EnumDescriptions only ever appear on enum schemas (a
+// field that uses an enum carries a `ref` to one), so they are not part of
+// cliJSONField.
 type cliJSONSchema struct {
-	Description string                  `json:"description,omitempty"`
-	Enum        []any                   `json:"enum,omitempty"`
-	Deprecated  bool                    `json:"deprecated,omitempty"`
-	LaunchStage string                  `json:"launch_stage,omitempty"`
-	Fields      map[string]cliJSONField `json:"fields,omitempty"`
+	Description      string                  `json:"description,omitempty"`
+	Enum             []any                   `json:"enum,omitempty"`
+	Deprecated       bool                    `json:"deprecated,omitempty"`
+	LaunchStage      string                  `json:"launch_stage,omitempty"`
+	EnumLaunchStages map[string]string       `json:"enum_launch_stages,omitempty"`
+	EnumDescriptions map[string]string       `json:"enum_descriptions,omitempty"`
+	Fields           map[string]cliJSONField `json:"fields,omitempty"`
 }
 
 // cliJSONSpec is the top-level shape of .codegen/cli.json that we care about.

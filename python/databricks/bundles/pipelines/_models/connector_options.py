@@ -61,69 +61,75 @@ class ConnectorOptions:
 
     confluence_options: VariableOrOptional[ConfluenceConnectorOptions] = None
     """
-    Confluence specific options for ingestion
+    [Public Preview] Confluence specific options for ingestion
     """
 
     gdrive_options: VariableOrOptional[GoogleDriveOptions] = None
     """
     :meta private: [EXPERIMENTAL]
+    
+    [Private Preview]
     """
 
     google_ads_options: VariableOrOptional[GoogleAdsOptions] = None
     """
     :meta private: [EXPERIMENTAL]
     
-    Google Ads specific options for ingestion (object-level).
+    [Private Preview] Google Ads specific options for ingestion (object-level).
     When set, these values override the corresponding fields in GoogleAdsConfig
     (source_configurations).
     """
 
     jira_options: VariableOrOptional[JiraConnectorOptions] = None
     """
-    Jira specific options for ingestion
+    [Beta] Jira specific options for ingestion
     """
 
     kafka_options: VariableOrOptional[KafkaOptions] = None
     """
     :meta private: [EXPERIMENTAL]
+    
+    [Private Preview]
     """
 
     meta_ads_options: VariableOrOptional[MetaMarketingOptions] = None
     """
-    Meta Marketing (Meta Ads) specific options for ingestion
+    [Beta] Meta Marketing (Meta Ads) specific options for ingestion
     """
 
     outlook_options: VariableOrOptional[OutlookOptions] = None
     """
     :meta private: [EXPERIMENTAL]
     
-    Outlook specific options for ingestion
+    [Private Preview] Outlook specific options for ingestion
     """
 
     sharepoint_options: VariableOrOptional[SharepointOptions] = None
     """
     :meta private: [EXPERIMENTAL]
+    
+    [Private Preview]
     """
 
     smartsheet_options: VariableOrOptional[SmartsheetOptions] = None
     """
     :meta private: [EXPERIMENTAL]
     
-    Smartsheet specific options for ingestion
+    [Private Preview] Smartsheet specific options for ingestion
     """
 
     tiktok_ads_options: VariableOrOptional[TikTokAdsOptions] = None
     """
     :meta private: [EXPERIMENTAL]
     
-    TikTok Ads specific options for ingestion
+    [Private Preview] TikTok Ads specific options for ingestion
     """
 
     zendesk_support_options: VariableOrOptional[ZendeskSupportOptions] = None
     """
     :meta private: [EXPERIMENTAL]
     
-    Zendesk Support specific options for ingestion
+    [Private Preview] Zendesk Support specific options for ingestion
     """
 
     @classmethod
@@ -139,69 +145,75 @@ class ConnectorOptionsDict(TypedDict, total=False):
 
     confluence_options: VariableOrOptional[ConfluenceConnectorOptionsParam]
     """
-    Confluence specific options for ingestion
+    [Public Preview] Confluence specific options for ingestion
     """
 
     gdrive_options: VariableOrOptional[GoogleDriveOptionsParam]
     """
     :meta private: [EXPERIMENTAL]
+    
+    [Private Preview]
     """
 
     google_ads_options: VariableOrOptional[GoogleAdsOptionsParam]
     """
     :meta private: [EXPERIMENTAL]
     
-    Google Ads specific options for ingestion (object-level).
+    [Private Preview] Google Ads specific options for ingestion (object-level).
     When set, these values override the corresponding fields in GoogleAdsConfig
     (source_configurations).
     """
 
     jira_options: VariableOrOptional[JiraConnectorOptionsParam]
     """
-    Jira specific options for ingestion
+    [Beta] Jira specific options for ingestion
     """
 
     kafka_options: VariableOrOptional[KafkaOptionsParam]
     """
     :meta private: [EXPERIMENTAL]
+    
+    [Private Preview]
     """
 
     meta_ads_options: VariableOrOptional[MetaMarketingOptionsParam]
     """
-    Meta Marketing (Meta Ads) specific options for ingestion
+    [Beta] Meta Marketing (Meta Ads) specific options for ingestion
     """
 
     outlook_options: VariableOrOptional[OutlookOptionsParam]
     """
     :meta private: [EXPERIMENTAL]
     
-    Outlook specific options for ingestion
+    [Private Preview] Outlook specific options for ingestion
     """
 
     sharepoint_options: VariableOrOptional[SharepointOptionsParam]
     """
     :meta private: [EXPERIMENTAL]
+    
+    [Private Preview]
     """
 
     smartsheet_options: VariableOrOptional[SmartsheetOptionsParam]
     """
     :meta private: [EXPERIMENTAL]
     
-    Smartsheet specific options for ingestion
+    [Private Preview] Smartsheet specific options for ingestion
     """
 
     tiktok_ads_options: VariableOrOptional[TikTokAdsOptionsParam]
     """
     :meta private: [EXPERIMENTAL]
     
-    TikTok Ads specific options for ingestion
+    [Private Preview] TikTok Ads specific options for ingestion
     """
 
     zendesk_support_options: VariableOrOptional[ZendeskSupportOptionsParam]
     """
     :meta private: [EXPERIMENTAL]
     
-    Zendesk Support specific options for ingestion
+    [Private Preview] Zendesk Support specific options for ingestion
     """
 
 

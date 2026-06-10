@@ -143,8 +143,22 @@ func assignAnnotation(s *jsonschema.Schema, a annotation.Descriptor) {
 		s.DoNotSuggest = true
 		s.Preview = a.Preview
 	}
+	if a.LaunchStage != "" {
+		s.LaunchStage = a.LaunchStage
+		if a.LaunchStage == "PRIVATE_PREVIEW" {
+			s.DoNotSuggest = true
+		}
+	}
 	if a.OutputOnly != nil && *a.OutputOnly {
 		s.DoNotSuggest = true
+	}
+
+	if tag := annotation.PreviewTag(a.LaunchStage); tag != "" {
+		if s.Description != "" {
+			s.Description = tag + " " + s.Description
+		} else {
+			s.Description = tag
+		}
 	}
 }
 

@@ -98,6 +98,49 @@ func previewFromLaunchStage(launchStage string) string {
 	return ""
 }
 
+// normalizeLaunchStage drops the GA stage so it isn't persisted in the
+// annotation file. GA is the implicit default for any field that isn't in a
+// preview, so storing it would add a stage to thousands of entries for no
+// benefit. cli.json is already filtered at min-stage=PRIVATE_PREVIEW upstream,
+// so the only other values are the preview stages, which we keep verbatim.
+func normalizeLaunchStage(launchStage string) string {
+	if launchStage == "GA" {
+		return ""
+	}
+	return launchStage
+}
+
+// notableEnumLaunchStages keeps only the enum values whose launch stage is
+// worth surfacing (i.e. not GA), so the annotation file isn't polluted with a
+// stage for every value of a GA enum. Returns nil when nothing remains.
+func notableEnumLaunchStages(stages map[string]string) map[string]string {
+	result := map[string]string{}
+	for value, stage := range stages {
+		if ls := normalizeLaunchStage(stage); ls != "" {
+			result[value] = ls
+		}
+	}
+	if len(result) == 0 {
+		return nil
+	}
+	return result
+}
+
+// nonEmptyEnumDescriptions drops blank per-value descriptions so the annotation
+// file stays clean. Returns nil when nothing remains.
+func nonEmptyEnumDescriptions(descriptions map[string]string) map[string]string {
+	result := map[string]string{}
+	for value, desc := range descriptions {
+		if desc != "" {
+			result[value] = desc
+		}
+	}
+	if len(result) == 0 {
+		return nil
+	}
+	return result
+}
+
 func isOutputOnly(behaviors []string) *bool {
 	if !slices.Contains(behaviors, "OUTPUT_ONLY") {
 		return nil
@@ -138,18 +181,25 @@ func (p *annotationParser) extractAnnotations(typ reflect.Type, outputPath, over
 			pkg := map[string]annotation.Descriptor{}
 			annotations[basePath] = pkg
 			preview := previewFromLaunchStage(ref.LaunchStage)
-			if ref.Description != "" || ref.Enum != nil || ref.Deprecated || preview != "" {
+			launchStage := normalizeLaunchStage(ref.LaunchStage)
+			enumLaunchStages := notableEnumLaunchStages(ref.EnumLaunchStages)
+			enumDescriptions := nonEmptyEnumDescriptions(ref.EnumDescriptions)
+			if ref.Description != "" || ref.Enum != nil || ref.Deprecated || preview != "" || launchStage != "" || enumLaunchStages != nil || enumDescriptions != nil {
 				pkg[RootTypeKey] = annotation.Descriptor{
 					Description:        ref.Description,
 					Enum:               ref.Enum,
 					DeprecationMessage: deprecationMessageFor(ref.Deprecated),
 					Preview:            preview,
+					LaunchStage:        launchStage,
+					EnumLaunchStages:   enumLaunchStages,
+					EnumDescriptions:   enumDescriptions,
 				}
 			}
 
 			for k := range s.Properties {
 				if refProp, ok := ref.Fields[k]; ok {
 					preview = previewFromLaunchStage(refProp.LaunchStage)
+					launchStage = normalizeLaunchStage(refProp.LaunchStage)
 
 					description := refProp.Description
 
@@ -166,6 +216,7 @@ func (p *annotationParser) extractAnnotations(typ reflect.Type, outputPath, over
 						Description:        description,
 						Enum:               refProp.Enum,
 						Preview:            preview,
+						LaunchStage:        launchStage,
 						DeprecationMessage: deprecationMessageFor(refProp.Deprecated),
 						OutputOnly:         isOutputOnly(refProp.Behaviors),
 					}
