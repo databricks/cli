@@ -139,7 +139,7 @@ func TestIsExemptCommand(t *testing.T) {
 		want bool
 	}{
 		{"version", &cobra.Command{Use: "version"}, true},
-		{"version check subcommand", withParent("version", "check"), true},
+		{"completion subcommand", withParent("completion", "zsh"), true},
 		{"completion", &cobra.Command{Use: "completion"}, true},
 		{"help", &cobra.Command{Use: "help"}, true},
 		{"shell completion request", &cobra.Command{Use: cobra.ShellCompRequestCmd}, true},
