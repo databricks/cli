@@ -1,4 +1,4 @@
-package genie
+package geniecmd
 
 import (
 	"context"
@@ -6,8 +6,8 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
-	"github.com/databricks/cli/experimental/agentstream"
-	genielib "github.com/databricks/cli/experimental/genie"
+	"github.com/databricks/cli/experimental/genie"
+	"github.com/databricks/cli/experimental/genie/agentstream"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
@@ -45,9 +45,9 @@ Examples:
 			}
 
 			w := cmdctx.WorkspaceClient(ctx)
-			req := genielib.BuildRequest(args[0], warehouseID)
+			req := genie.BuildRequest(args[0], warehouseID)
 
-			body, err := genielib.PostStream(ctx, w.Config, req)
+			body, err := genie.PostStream(ctx, w.Config, req)
 			if err != nil {
 				return err
 			}
@@ -57,13 +57,13 @@ Examples:
 			case raw:
 				err = agentstream.RenderDebug(body, cmd.OutOrStdout())
 			case outputType == flags.OutputJSON:
-				err = agentstream.RenderJSON(body, cmd.OutOrStdout(), cmd.ErrOrStderr(), genielib.NewAdaptSSE())
+				err = agentstream.RenderJSON(body, cmd.OutOrStdout(), cmd.ErrOrStderr(), genie.NewAdaptSSE())
 			default:
 				opts := agentstream.RenderOptions{
 					ShowSQL: includeSQL,
 					Color:   cmdio.SupportsColor(ctx, cmd.OutOrStdout()),
 				}
-				err = agentstream.RenderText(ctx, body, cmd.OutOrStdout(), cmd.ErrOrStderr(), genielib.NewAdaptSSE(), opts)
+				err = agentstream.RenderText(ctx, body, cmd.OutOrStdout(), cmd.ErrOrStderr(), genie.NewAdaptSSE(), opts)
 			}
 
 			// The SDK's inactivity timeout cancels the body's read context, so
@@ -71,7 +71,7 @@ Examples:
 			// own context is still alive. Translate it; "context canceled" is
 			// not actionable.
 			if err != nil && errors.Is(err, context.Canceled) && ctx.Err() == nil {
-				return fmt.Errorf("the response stream stalled (no data received for %d minutes): %w", genielib.StreamingTimeoutSeconds/60, err)
+				return fmt.Errorf("the response stream stalled (no data received for %d minutes): %w", genie.StreamingTimeoutSeconds/60, err)
 			}
 			return err
 		},

@@ -3,7 +3,7 @@ package genie
 import (
 	"testing"
 
-	"github.com/databricks/cli/experimental/agentstream"
+	"github.com/databricks/cli/experimental/genie/agentstream"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

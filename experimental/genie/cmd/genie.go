@@ -1,4 +1,4 @@
-package genie
+package geniecmd
 
 import "github.com/spf13/cobra"
 
