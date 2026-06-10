@@ -156,8 +156,14 @@ func (c *cmdIO) acquireTeaProgram(p *tea.Program) {
 	defer c.teaMu.Unlock()
 
 	// Wait for existing program to finish
-	if c.teaDone != nil {
-		<-c.teaDone
+	// Receive with teaMu released: releaseTeaProgram locks teaMu to close
+	// teaDone, so waiting while holding it would deadlock. Loop because another
+	// acquirer may register a new program before the lock is reacquired.
+	for c.teaDone != nil {
+		done := c.teaDone
+		c.teaMu.Unlock()
+		<-done
+		c.teaMu.Lock()
 	}
 
 	// Register new program

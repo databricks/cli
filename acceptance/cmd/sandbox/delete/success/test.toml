@@ -1,0 +1,13 @@
+[[Server]]
+Pattern = "GET /api/2.0/lakebox/sandboxes/happy-panda-1234"
+Response.Body = '''
+{
+  "sandboxId": "happy-panda-1234",
+  "status": "Stopped",
+  "name": "my-project"
+}
+'''
+
+[[Server]]
+Pattern = "DELETE /api/2.0/lakebox/sandboxes/happy-panda-1234"
+Response.Body = '{}'
