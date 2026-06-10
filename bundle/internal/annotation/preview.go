@@ -15,3 +15,17 @@ func PreviewTag(launchStage string) string {
 	}
 	return ""
 }
+
+// PreviewTagShort is the compact counterpart to PreviewTag, used for per-enum-
+// value labels where vertical space in the dropdown is tighter.
+func PreviewTagShort(launchStage string) string {
+	switch launchStage {
+	case "PRIVATE_PREVIEW":
+		return "[PrPr]"
+	case "PUBLIC_BETA":
+		return "[Beta]"
+	case "PUBLIC_PREVIEW":
+		return "[PuPr]"
+	}
+	return ""
+}

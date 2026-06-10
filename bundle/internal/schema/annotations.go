@@ -207,7 +207,7 @@ func buildEnumDescriptions(enum []any, launchStages, descriptions map[string]str
 // in VSCode's autocomplete dropdown; an empty stage leaves the description
 // alone, and a missing description leaves just the bracketed stage.
 func enumDescriptionLabel(launchStage, description string) string {
-	short := previewTagShort(launchStage)
+	short := annotation.PreviewTagShort(launchStage)
 	switch {
 	case short != "" && description != "":
 		return short + " " + description
@@ -215,20 +215,6 @@ func enumDescriptionLabel(launchStage, description string) string {
 		return short
 	}
 	return description
-}
-
-// previewTagShort is the compact counterpart to previewTag, used for per-enum-
-// value labels where vertical space in the dropdown is tighter.
-func previewTagShort(launchStage string) string {
-	switch launchStage {
-	case "PRIVATE_PREVIEW":
-		return "[PrPr]"
-	case "PUBLIC_BETA":
-		return "[Beta]"
-	case "PUBLIC_PREVIEW":
-		return "[PuPr]"
-	}
-	return ""
 }
 
 // prefixWithPreviewTag prepends the launch-stage tag to a description while
