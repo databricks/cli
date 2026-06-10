@@ -1,6 +1,4 @@
-# The YAML-sync state upload only runs for the terraform engine
-# (it converts terraform state to the direct format), so there is
-# no direct-engine variant of this test.
+# The YAML-sync state upload only runs for the terraform engine; no direct-engine variant.
 [Env]
 DATABRICKS_BUNDLE_ENABLE_EXPERIMENTAL_YAML_SYNC = "true"
 

@@ -54,10 +54,8 @@ func (m *uploadStateForYamlSync) Apply(ctx context.Context, b *bundle.Bundle) di
 		return nil
 	}
 
-	// convertState reuses direct-engine code (SecretScopeFixups, CalculatePlan, Apply)
-	// that reports failures via logdiag on the context. This mutator is best-effort and
-	// must not fail a deploy that already succeeded, so collect those diagnostics in an
-	// isolated scope and downgrade them to warnings.
+	// convertState reuses direct-engine code that reports failures via logdiag,
+	// and this mutator must not fail a deploy that already succeeded.
 	ctx = logdiag.IsolatedContext(ctx)
 	logdiag.SetCollect(ctx, true)
 	defer func() {

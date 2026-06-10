@@ -51,10 +51,8 @@ func InitContext(ctx context.Context) context.Context {
 	return IsolatedContext(ctx)
 }
 
-// IsolatedContext returns a child context with a fresh diagnostics state that
-// shadows the parent's. Diagnostics logged through the returned context do not
-// affect the parent's counters or output. Use it for best-effort operations
-// that reuse code reporting through logdiag but must not fail the command.
+// IsolatedContext returns a child context with a fresh diagnostics state;
+// diagnostics logged through it do not affect the parent's.
 func IsolatedContext(ctx context.Context) context.Context {
 	val := LogDiagData{
 		TargetSeverity: 255,

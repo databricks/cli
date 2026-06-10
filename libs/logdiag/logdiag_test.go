@@ -19,7 +19,6 @@ func TestIsolatedContext(t *testing.T) {
 	assert.True(t, logdiag.HasError(isolated))
 	assert.Len(t, logdiag.FlushCollected(isolated), 1)
 
-	// Diagnostics logged through the isolated scope must not leak to the parent.
 	assert.False(t, logdiag.HasError(ctx))
 	assert.Empty(t, logdiag.FlushCollected(ctx))
 }
