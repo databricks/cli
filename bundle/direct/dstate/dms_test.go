@@ -18,6 +18,9 @@ type fakeBundleClient struct {
 	sdkbundle.BundleInterface
 	resources []sdkbundle.Resource
 	versions  []sdkbundle.Version
+
+	// When set, ListVersions returns this iterator instead of one over versions.
+	versionsIt listing.Iterator[sdkbundle.Version]
 }
 
 func (c *fakeBundleClient) ListResources(context.Context, sdkbundle.ListResourcesRequest) listing.Iterator[sdkbundle.Resource] {
@@ -26,6 +29,9 @@ func (c *fakeBundleClient) ListResources(context.Context, sdkbundle.ListResource
 }
 
 func (c *fakeBundleClient) ListVersions(context.Context, sdkbundle.ListVersionsRequest) listing.Iterator[sdkbundle.Version] {
+	if c.versionsIt != nil {
+		return c.versionsIt
+	}
 	it := listing.SliceIterator[sdkbundle.Version](c.versions)
 	return &it
 }
@@ -148,6 +154,31 @@ func TestDeploymentHasSuccessfulVersion(t *testing.T) {
 			assert.Equal(t, tc.want, got)
 		})
 	}
+}
+
+// TestDeploymentHasSuccessfulVersionStopsAtFirstSuccess pins the pagination
+// contract: versions are listed newest-first and the scan must stop at the
+// first success, so deployments with long version histories don't fetch the
+// whole list.
+func TestDeploymentHasSuccessfulVersionStopsAtFirstSuccess(t *testing.T) {
+	it := listing.SliceIterator[sdkbundle.Version]([]sdkbundle.Version{succeeded(), {Status: sdkbundle.VersionStatusVersionStatusInProgress}})
+	counting := &countingIterator{Iterator: &it}
+
+	got, err := deploymentHasSuccessfulVersion(t.Context(), &fakeBundleClient{versionsIt: counting}, "dep-1")
+	require.NoError(t, err)
+	assert.True(t, got)
+	assert.Equal(t, 1, counting.nexts)
+}
+
+// countingIterator counts Next calls to observe how far a scan consumed it.
+type countingIterator struct {
+	listing.Iterator[sdkbundle.Version]
+	nexts int
+}
+
+func (c *countingIterator) Next(ctx context.Context) (sdkbundle.Version, error) {
+	c.nexts++
+	return c.Iterator.Next(ctx)
 }
 
 // TestFetchDeploymentResources covers mapping DMS resources to state entries.

@@ -12,7 +12,11 @@ import (
 
 // overlayDMSState replaces the file-derived resource state with the state
 // recorded in the deployment metadata service, when DMS owns this deployment.
-// The caller holds db.mu and has already populated db.Data from the file.
+// Once DMS is authoritative its resource set is trusted even when empty (a
+// successful deploy with no resources); the file's resources are only used when
+// DMS has no successful version, or when the user opts out of recording
+// deployment history. The caller holds db.mu and has already populated db.Data
+// from the file.
 func (db *DeploymentState) overlayDMSState(ctx context.Context, client sdkbundle.BundleInterface) error {
 	authoritative, err := deploymentHasSuccessfulVersion(ctx, client, db.Data.Lineage)
 	if err != nil {
