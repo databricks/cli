@@ -333,7 +333,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	const sharedProxyHint = "; re-run with -debugsandbox to see which test caused this"
 	sandboxProxyURL := ""
 	if cloudEnv == "" && !DebugSandbox {
-		sandboxProxyURL = internal.StartBlockingProxy(t, sharedProxyHint)
+		sandboxProxyURL = internal.StartRejectingProxy(t, sharedProxyHint)
 	}
 
 	setReplsForTestEnvVars(t, &repls)
@@ -771,7 +771,7 @@ func runTest(t *testing.T,
 		if DebugSandbox {
 			// Per-test proxy: errors are attributed to this subtest's t, making
 			// it immediately clear which test caused the internet access.
-			proxyURL = internal.StartBlockingProxy(t, "")
+			proxyURL = internal.StartRejectingProxy(t, "")
 		}
 		// Only block HTTPS: the local test server is plain HTTP (http://127.0.0.1:PORT)
 		// so HTTP_PROXY would intercept its traffic. All real external calls use HTTPS.

@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-// StartBlockingProxy starts an HTTP proxy server bound to a loopback port and
+// StartRejectingProxy starts an HTTP proxy server bound to a loopback port and
 // returns its URL for use as HTTPS_PROXY. Every proxied request receives a
 // 400 Bad Request response so the client gets a clear HTTP error instead of a
 // TCP reset (a reset would trigger the SDK's 5-minute retry loop).
@@ -21,7 +21,7 @@ import (
 // hint is appended to the t.Errorf message for real hosts. Pass a non-empty
 // hint when using a shared proxy to tell the user how to get per-test
 // attribution (e.g. "re-run with -debugsandbox").
-func StartBlockingProxy(t *testing.T, hint string) string {
+func StartRejectingProxy(t *testing.T, hint string) string {
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		t.Fatalf("blocking proxy: listen: %v", err)
