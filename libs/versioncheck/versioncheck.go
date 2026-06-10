@@ -32,8 +32,8 @@ const (
 	// escape hatch); it is not a documented, user-facing setting.
 	gitHubAPIURLEnv = "DATABRICKS_CLI_GITHUB_API_URL"
 
-	// fetchTimeout bounds the release lookup. The explicit `version --check`
-	// waits on it, so keep it short: a quick "couldn't reach GitHub" beats a hang.
+	// fetchTimeout bounds the release lookup. The `version` command waits on
+	// it, so keep it short: a quick "couldn't reach GitHub" beats a hang.
 	fetchTimeout = 2 * time.Second
 )
 
@@ -72,17 +72,18 @@ type Result struct {
 }
 
 // Check fetches the latest released version and compares it with the running
-// build, reporting how to upgrade based on the detected install method.
+// build, reporting how to upgrade based on the detected install method. It
+// never fails: lookup errors are reported via Result.CheckFailed.
 //
 // Development and snapshot builds have no meaningful released version to
 // compare against, so they short-circuit without a network call.
-func Check(ctx context.Context) (*Result, error) {
+func Check(ctx context.Context) *Result {
 	info := build.GetInfo()
 	if isDevelopmentBuild(info) {
 		return &Result{
 			CurrentVersion:   info.Version,
 			DevelopmentBuild: true,
-		}, nil
+		}
 	}
 
 	method, command := DetectInstallMethod(ctx)
@@ -97,7 +98,7 @@ func Check(ctx context.Context) (*Result, error) {
 		return &Result{
 			CurrentVersion: info.Version,
 			CheckFailed:    true,
-		}, nil
+		}
 	}
 
 	return &Result{
@@ -106,7 +107,7 @@ func Check(ctx context.Context) (*Result, error) {
 		UpdateAvailable: isNewer(info.Version, latest),
 		InstallMethod:   method,
 		UpgradeCommand:  command,
-	}, nil
+	}
 }
 
 // isDevelopmentBuild reports whether the binary was not built from a tagged

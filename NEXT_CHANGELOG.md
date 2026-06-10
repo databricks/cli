@@ -7,7 +7,7 @@
 
 ### CLI
 * Added the `databricks quickstart` command, a short introduction to the CLI that prints a human-friendly guide interactively and an agent-oriented version when run non-interactively ([#5464](https://github.com/databricks/cli/pull/5464)).
-* Add `databricks version --check` (and a `databricks version check` subcommand) to report whether a newer CLI version is available and print the upgrade command for the detected install method ([#5469](https://github.com/databricks/cli/pull/5469)).
+* The `databricks version` command now reports whether a newer CLI version is available and prints the upgrade command for the detected install method. The `--version` flag and `databricks version --output json` are unchanged ([#5469](https://github.com/databricks/cli/pull/5469)).
 * Show a once-per-day notice after a command when a newer CLI release is available, with a link to the release and the upgrade command for the detected install method. Suppressed for non-interactive/CI runs, JSON output, the Databricks Runtime, and development builds, and can be disabled with `DATABRICKS_CLI_DISABLE_UPDATE_CHECK` ([#5470](https://github.com/databricks/cli/pull/5470)).
 
 ### Bundles
