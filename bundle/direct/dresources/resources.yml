@@ -16,7 +16,20 @@
 resources:
 
   jobs:
+    # version_id is set to the current DMS deployment version on every deploy, so
+    # it changes constantly. Ignoring it as a local and remote change keeps that
+    # churn from driving an update or showing as drift on its own; when the job is
+    # updated for any other reason, DoUpdate sends the full config via Reset, so
+    # the current version_id is still recorded. deployment_id is intentionally
+    # left out: it is stable across versions, so a change to it is worth showing.
+    ignore_local_changes:
+      - field: deployment.version_id
+        reason: managed by the deployment metadata service
+
     ignore_remote_changes:
+      - field: deployment.version_id
+        reason: managed by the deployment metadata service
+
       # Same as clusters.{aws,azure,gcp}_attributes — see clusters/resource_cluster.go#L361-L363
       # s.SchemaPath("aws_attributes").SetSuppressDiff()
       # s.SchemaPath("azure_attributes").SetSuppressDiff()
@@ -118,7 +131,11 @@ resources:
       - field: ingestion_definition.ingest_from_uc_foreign_catalog
         reason: immutable
 
+    # See jobs above: version_id is set on every deploy, so it is ignored as a
+    # local/remote change. deployment_id is left out so a change to it still shows.
     ignore_remote_changes:
+      - field: deployment.version_id
+        reason: managed by the deployment metadata service
       # "id" is handled in a special way before any fields changed
       # However, it is also part of RemotePipeline via CreatePipeline.
       # Thus it shows up as a remote change since we don't set on the object.
@@ -128,6 +145,8 @@ resources:
         reason: input_only
 
     ignore_local_changes:
+      - field: deployment.version_id
+        reason: managed by the deployment metadata service
       # "id" is output-only, providing it in config would be a mistake
       - field: id
         reason: "!drop"
