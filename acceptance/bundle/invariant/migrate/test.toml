@@ -26,3 +26,7 @@ EnvMatrixExclude.no_sql_warehouse = ["INPUT_CONFIG=sql_warehouse.yml.tmpl"]
 # The 1000-task scale case is covered by no_drift. Running it here adds ~1.5 min
 # per variant (deploy + migrate + plan at 1000 tasks) without incremental coverage.
 EnvMatrixExclude.no_pydabs_1000_tasks = ["INPUT_CONFIG=job_pydabs_1000_tasks.yml.tmpl"]
+
+# migrate deploys via Terraform first, and the TF provider rejects an uppercase
+# volume schema_name ("inconsistent final plan"). Covered by no_drift on direct.
+EnvMatrixExclude.no_volume_uppercase = ["INPUT_CONFIG=volume_uppercase_name.yml.tmpl"]

@@ -1,0 +1,27 @@
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Error: terraform apply: exit status 1
+
+Error: Provider produced inconsistent final plan
+
+When expanding the plan for databricks_volume.vol1 to include new values
+learned so far during apply, provider
+"registry.terraform.io/databricks/databricks" produced an invalid new value
+for .schema_name: was cty.StringVal("MySCHEMA"), but now
+cty.StringVal("myschema").
+
+This is a bug in the provider, which should be reported in the provider's own
+issue tracker.
+
+
+Updating deployment state...
+
+Exit code: 1
+{
+  "method": "POST",
+  "path": "/api/2.1/unity-catalog/schemas",
+  "body": {
+    "catalog_name": "main",
+    "name": "MySCHEMA"
+  }
+}
