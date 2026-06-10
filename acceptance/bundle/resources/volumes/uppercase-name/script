@@ -8,6 +8,11 @@ if [ "$DATABRICKS_BUNDLE_ENGINE" = "direct" ]; then
         | jq '{schema_id: .resources.schemas.schema1.id, volume_id: .resources.volumes.vol1.id}' \
         >> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt
 
+    echo "=== Plan on no-op redeploy: mixed-case names are skipped, not recreated" >> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt
+    $CLI bundle plan -o json \
+        | jq '.plan | to_entries | map({resource: .key, changes: (.value.changes // {} | map_values({action, reason}))})' \
+        >> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt
+
     echo "=== Redeploy without changes - should be a no-op" >> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt
     errcode $CLI bundle deploy &>> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt
     print_requests.py //unity-catalog >> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt

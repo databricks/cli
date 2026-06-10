@@ -25,6 +25,35 @@ Deployment complete!
   "schema_id": "main.myschema",
   "volume_id": "main.myschema.myvolume"
 }
+=== Plan on no-op redeploy: mixed-case names are skipped, not recreated
+[
+  {
+    "resource": "resources.schemas.schema1",
+    "changes": {
+      "name": {
+        "action": "skip",
+        "reason": "uc_case"
+      }
+    }
+  },
+  {
+    "resource": "resources.volumes.vol1",
+    "changes": {
+      "name": {
+        "action": "skip",
+        "reason": "uc_case"
+      },
+      "schema_name": {
+        "action": "skip",
+        "reason": "uc_case"
+      },
+      "storage_location": {
+        "action": "skip",
+        "reason": "backend_default"
+      }
+    }
+  }
+]
 === Redeploy without changes - should be a no-op
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Deploying resources...

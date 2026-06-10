@@ -454,11 +454,11 @@ func shouldSkipNormalized(cfg *dresources.ResourceLifecycleConfig, path *structp
 	if !newOk || !remoteOk {
 		return "", false
 	}
-	if _, ok := findMatchingRule(path, cfg.NormalizeCase); ok && strings.EqualFold(newStr, remoteStr) {
-		return deployplan.ReasonUCNormalization, true
+	if reason, ok := findMatchingRule(path, cfg.NormalizeCase); ok && strings.EqualFold(newStr, remoteStr) {
+		return reason, true
 	}
-	if _, ok := findMatchingRule(path, cfg.NormalizeSlash); ok && strings.TrimRight(newStr, "/") == strings.TrimRight(remoteStr, "/") {
-		return deployplan.ReasonURLNormalization, true
+	if reason, ok := findMatchingRule(path, cfg.NormalizeSlash); ok && strings.TrimRight(newStr, "/") == strings.TrimRight(remoteStr, "/") {
+		return reason, true
 	}
 	return "", false
 }
