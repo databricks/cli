@@ -101,6 +101,7 @@ const (
 	ReasonBackendDefault   = "backend_default"
 	ReasonAlias            = "alias"
 	ReasonURLNormalization = "url_normalization"
+	ReasonUCNormalization  = "uc_normalization"
 	ReasonRemoteAlreadySet = "remote_already_set"
 	ReasonEmpty            = "empty"
 	ReasonCustom           = "custom"

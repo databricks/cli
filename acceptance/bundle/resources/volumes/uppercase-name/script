@@ -1,0 +1,14 @@
+echo "*" > .gitignore
+errcode $CLI bundle deploy &> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt
+print_requests.py //unity-catalog >> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt
+
+if [ "$DATABRICKS_BUNDLE_ENGINE" = "direct" ]; then
+    echo "=== Bundle summary shows lowercase IDs after UC normalizes names" >> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt
+    $CLI bundle summary -o json \
+        | jq '{schema_id: .resources.schemas.schema1.id, volume_id: .resources.volumes.vol1.id}' \
+        >> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt
+
+    echo "=== Redeploy without changes - should be a no-op" >> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt
+    errcode $CLI bundle deploy &>> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt
+    print_requests.py //unity-catalog >> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt
+fi
