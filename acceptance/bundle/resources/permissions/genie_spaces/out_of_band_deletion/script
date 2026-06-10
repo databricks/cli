@@ -1,0 +1,23 @@
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+trace $CLI bundle deploy
+SID=$($CLI bundle summary --output json | jq -r '.resources.genie_spaces.foo.id')
+echo "$SID:GENIE_SPACE_ID" >> ACC_REPLS
+
+title "Permissions are set on the live space"
+trace $CLI api get /api/2.0/permissions/genie/$SID | jq '{object_type, access_control_list}'
+
+title "Trash the space out-of-band"
+trace $CLI genie trash-space $SID
+
+# Backend quirk: the genie permissions endpoint keeps returning the ACLs for a
+# trashed space; it does not 404 the way a cascade-deleted resource would. This
+# guards how permissions linger on a deleted genie space.
+title "Permissions API still returns the ACLs for the trashed space (no 404)"
+trace $CLI api get /api/2.0/permissions/genie/$SID | jq '{object_type, access_control_list}'
+
+title "Plan recreates the gone space"
+trace $CLI bundle plan

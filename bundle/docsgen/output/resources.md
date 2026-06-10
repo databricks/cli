@@ -3078,6 +3078,118 @@ The privileges assigned to the principal.
 :::
   
   
+## genie_spaces
+  
+**`Type: Map`**
+  
+
+  
+```yaml
+genie_spaces:
+  <genie_space-name>:
+    <genie_space-field-name>: <genie_space-field-value>
+```
+  
+  
+:::list-table
+  
+- - Key
+  - Type
+  - Description
+  
+- - `description`
+  - String
+  - Description of the Genie space shown alongside the title in the Databricks UI.
+  
+- - `etag`
+  - String
+  - 
+  
+- - `file_path`
+  - String
+  - Local path to a `.geniespace.json` file holding the serialized Genie space definition. The contents are inlined into `serialized_space` at deploy time. Mutually exclusive with an inline `serialized_space`.
+  
+- - `lifecycle`
+  - Map
+  - See [\_](#genie_spacesnamelifecycle).
+  
+- - `parent_path`
+  - String
+  - Workspace folder under which to create the Genie space. Immutable: changing this field recreates the resource.
+  
+- - `permissions`
+  - Sequence
+  - See [\_](#genie_spacesnamepermissions).
+  
+- - `serialized_space`
+  - Any
+  - Serialized Genie space body. May be provided inline as a JSON string (or YAML that will be marshalled to JSON) or referenced via `file_path`. To round-trip an existing space into a bundle, use `databricks bundle generate genie-space`.
+  
+- - `title`
+  - String
+  - Title of the Genie space shown in the Databricks UI.
+  
+- - `warehouse_id`
+  - String
+  - ID of the SQL warehouse used to run queries for this Genie space.
+  
+:::
+  
+  
+### genie_spaces._name_.lifecycle
+  
+**`Type: Map`**
+  
+
+  
+  
+  
+:::list-table
+  
+- - Key
+  - Type
+  - Description
+  
+- - `prevent_destroy`
+  - Boolean
+  - Lifecycle setting to prevent the resource from being destroyed.
+  
+:::
+  
+  
+### genie_spaces._name_.permissions
+  
+**`Type: Sequence`**
+  
+
+  
+  
+  
+:::list-table
+  
+- - Key
+  - Type
+  - Description
+  
+- - `group_name`
+  - String
+  - The name of the group that has the permission set in level.
+  
+- - `level`
+  - String
+  - The allowed permission for user, group, service principal defined for this permission.
+  
+- - `service_principal_name`
+  - String
+  - The name of the service principal that has the permission set in level.
+  
+- - `user_name`
+  - String
+  - The name of the user that has the permission set in level.
+  
+:::
+  
+  
 ## jobs
   
 **`Type: Map`**
