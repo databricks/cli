@@ -1,0 +1,29 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-genie-space-test-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] genie get-space [GENIE_SPACE_ID]
+{
+  "title": "Sales Analytics Genie",
+  "description": "AI assistant for sales data analysis",
+  "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
+}
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.genie_spaces.sales_analytics
+
+This action will result in the deletion of the following Genie spaces.
+The conversation history attached to them is permanently lost:
+  delete resources.genie_spaces.sales_analytics
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-genie-space-test-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!
