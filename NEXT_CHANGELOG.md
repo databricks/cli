@@ -7,7 +7,8 @@
 
 ### CLI
 * Added the `databricks quickstart` command, a short introduction to the CLI that prints a human-friendly guide interactively and an agent-oriented version when run non-interactively ([#5464](https://github.com/databricks/cli/pull/5464)).
-* `databricks auth login` no longer prompts for workspace selection when logging in to an account console host (`https://accounts.*`). Pass `--workspace-id` explicitly to store a workspace ID on such a profile ([#5504](https://github.com/databricks/cli/pull/5504)).
+* `databricks auth profiles --skip-validate` no longer makes any network calls; the host metadata fetch is skipped along with validation ([#5530](https://github.com/databricks/cli/pull/5530)).
+
 
 ### Bundles
 * Set the default `data_security_mode` to `DATA_SECURITY_MODE_AUTO` in bundle templates ([#5452](https://github.com/databricks/cli/pull/5452)).
