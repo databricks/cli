@@ -14,29 +14,37 @@ import (
 func TestBuildSSHConfigBlockShape(t *testing.T) {
 	block := buildSSHConfigBlock("/home/u/.ssh/sandbox_ed25519", "uw2.dbrx.dev", "2222")
 
-	// Header marker so users know not to hand-edit, and the alias name
-	// that the UI's "First time setup?" disclosure documents.
+	// The Host key is the literal gateway hostname (so UI editor deep
+	// links like `ssh-remote+<id>@<gateway>` resolve directly), and we
+	// only set the two directives that meaningfully differ from SSH
+	// defaults: Port (the gateway is on 2222) and IdentityFile +
+	// IdentitiesOnly (pin our key, suppress the offer cascade).
 	assert.Contains(t, block, "# Managed by")
-	assert.Contains(t, block, "Host "+sshConfigAlias+"\n")
-	assert.Contains(t, block, "HostName uw2.dbrx.dev")
+	assert.Contains(t, block, "Host uw2.dbrx.dev\n")
 	assert.Contains(t, block, "Port 2222")
 	assert.Contains(t, block, "IdentityFile /home/u/.ssh/sandbox_ed25519")
+	assert.Contains(t, block, "IdentitiesOnly yes")
 
-	// Mirrors buildSSHArgs in ssh.go so connections through this alias
-	// behave identically to `databricks sandbox ssh`. If those change,
-	// this list should change too.
-	for _, expect := range []string{
-		"IdentitiesOnly yes",
-		"StrictHostKeyChecking no",
-		"UserKnownHostsFile /dev/null",
-		"LogLevel ERROR",
-	} {
-		assert.Contains(t, block, expect, "missing required SSH option %q", expect)
-	}
+	// No HostName — Host already IS the real host, so HostName would
+	// be a redundant self-reference.
+	assert.NotContains(t, block, "HostName ", "HostName must not be set when Host already equals the hostname")
 
 	// No User directive — the sandbox id travels in the destination
-	// (`ssh <id>@sandbox-gw`), so one alias serves every sandbox.
+	// (`ssh <id>@<gateway>`).
 	assert.NotContains(t, block, "\n    User ", "User directive must not be set")
+
+	// Per the design (mirrors the workspace UI's "First time setup?"
+	// snippet), we deliberately do NOT set StrictHostKeyChecking,
+	// UserKnownHostsFile, or LogLevel — IDE Remote-SSH should behave
+	// like a normal `ssh <host>` invocation (TOFU host keys, default
+	// log level).
+	for _, forbidden := range []string{
+		"StrictHostKeyChecking",
+		"UserKnownHostsFile",
+		"LogLevel",
+	} {
+		assert.NotContains(t, block, forbidden, "must not set %q — SSH defaults are correct", forbidden)
+	}
 }
 
 func TestWriteManagedConfigCreatesWithRightPerms(t *testing.T) {

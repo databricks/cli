@@ -311,16 +311,28 @@ func (a *sandboxAPI) start(ctx context.Context, id string) (*sandboxEntry, error
 
 // registerKey calls POST /api/2.0/lakebox/ssh-keys. An empty `name` is
 // omitted so the server records "unset" rather than an explicit empty string.
-func (a *sandboxAPI) registerKey(ctx context.Context, publicKey, name string) error {
-	return a.c.Do(ctx, http.MethodPost, sandboxKeysAPIPath, a.headers(), nil, registerKeyRequest{PublicKey: publicKey, Name: name}, nil)
+// Returns the registered key, which carries the workspace's `GatewayHost` —
+// this is how `register` learns the gateway without a probe `list` /
+// `create` call.
+func (a *sandboxAPI) registerKey(ctx context.Context, publicKey, name string) (*sshKeyEntry, error) {
+	var resp sshKeyEntry
+	err := a.c.Do(ctx, http.MethodPost, sandboxKeysAPIPath, a.headers(), nil, registerKeyRequest{PublicKey: publicKey, Name: name}, &resp)
+	if err != nil {
+		return nil, err
+	}
+	return &resp, nil
 }
 
-// sshKeyEntry is a single item in the ssh-key list response.
+// sshKeyEntry is a single item in the ssh-key list response. GatewayHost
+// is per-workspace (not per-key) — the server stamps the same value on
+// every response so callers can learn the SSH gateway without provisioning
+// a sandbox first.
 type sshKeyEntry struct {
 	KeyHash     string `json:"keyHash"`
 	Name        string `json:"name,omitempty"`
 	CreateTime  string `json:"createTime,omitempty"`
 	LastUseTime string `json:"lastUseTime,omitempty"`
+	GatewayHost string `json:"gatewayHost,omitempty"`
 }
 
 // listKeysResponse is the JSON body returned by GET /api/2.0/lakebox/ssh-keys.

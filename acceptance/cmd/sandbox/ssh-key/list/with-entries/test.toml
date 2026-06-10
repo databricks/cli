@@ -7,12 +7,14 @@ Response.Body = '''
       "keyHash": "98b3b2bce82049769b4ba03990460d09",
       "name": "laptop",
       "createTime": "2026-05-29T17:18:00Z",
-      "lastUseTime": "2026-05-29T17:19:00Z"
+      "lastUseTime": "2026-05-29T17:19:00Z",
+      "gatewayHost": "uw2.dbrx.dev"
     },
     {
       "keyHash": "9e0fc7c899aeee6a462e3153aeae8f30",
       "createTime": "2026-05-12T21:31:00Z",
-      "lastUseTime": "2026-05-29T17:13:00Z"
+      "lastUseTime": "2026-05-29T17:13:00Z",
+      "gatewayHost": "uw2.dbrx.dev"
     }
   ]
 }
