@@ -41,12 +41,12 @@ var sharedProxyURL = sync.OnceValue(func() string {
 
 var sharedProxyT atomic.Pointer[testing.T]
 
-// StartBlockingProxy starts a per-test HTTP proxy server. Used with -debugsandbox.
+// StartRejectingProxy starts a per-test HTTP proxy server. Used with -debugsandbox.
 //
 // The proxy returns HTTP 400 (not a TCP reset) so that the SDK does not treat
 // the failure as retriable ("connection refused" triggers a 5-minute retry loop
 // in the SDK's httpclient). Returns the proxy URL for HTTPS_PROXY.
-func StartBlockingProxy(t *testing.T) string {
+func StartRejectingProxy(t *testing.T) string {
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		t.Fatalf("blocking proxy: listen: %v", err)
