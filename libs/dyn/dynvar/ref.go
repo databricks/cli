@@ -12,9 +12,7 @@ import (
 // Behavioral parity is enforced by testdata/reference_vectors.json.
 const BaseVarDef = `\p{L}+([-_]*[\p{L}\p{N}]+)*`
 
-var (
-	re = regexp.MustCompile(fmt.Sprintf(`\$\{(%s(\.%s(\[[0-9]+\])*)*(\[[0-9]+\])*)\}`, BaseVarDef, BaseVarDef))
-)
+var re = regexp.MustCompile(fmt.Sprintf(`\$\{(%s(\.%s(\[[0-9]+\])*)*(\[[0-9]+\])*)\}`, BaseVarDef, BaseVarDef))
 
 // Ref represents a variable reference.
 // It is a string [dyn.Value] contained in a larger [dyn.Value].
