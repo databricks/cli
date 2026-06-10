@@ -16,18 +16,12 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
 )
 
-var pathSerializedSpace = structpath.MustParsePath("serialized_space")
-
 // ResourceGenieSpace mirrors the dashboard resource pattern (see dashboard.go),
 // with these intentional divergences:
 //   - No Published wrapper: Genie spaces have no publish lifecycle, so
 //     PrepareState returns the config directly.
 //   - RemapState filters fewer fields: Genie has no LifecycleState / CreateTime /
 //     Path / UpdateTime output-only fields to scrub.
-//   - DoUpdate omits serialized_space when unchanged: serialized_space is in
-//     ignore_remote_changes (see resources.yml), so a UI edit produces no plan
-//     entry. Sending the local body anyway would clobber the UI edit on every
-//     unrelated update.
 //   - DoUpdate omits the etag (dashboard sends it as an If-Match guard): the
 //     backend bumps the etag when it migrates serialized_space to a newer
 //     schema version, so sending a stale etag would 409 the update after a
@@ -183,25 +177,18 @@ func (r *ResourceGenieSpace) DoCreate(ctx context.Context, config *resources.Gen
 	return createResp.SpaceId, responseToGenieSpaceConfig(createResp, serializedSpace), nil
 }
 
-func (r *ResourceGenieSpace) DoUpdate(ctx context.Context, id string, config *resources.GenieSpaceConfig, entry *PlanEntry) (*resources.GenieSpaceConfig, error) {
+func (r *ResourceGenieSpace) DoUpdate(ctx context.Context, id string, config *resources.GenieSpaceConfig, _ *PlanEntry) (*resources.GenieSpaceConfig, error) {
 	serializedSpace, err := prepareGenieSpaceRequest(config)
 	if err != nil {
 		return nil, err
 	}
 
-	// serialized_space is in ignore_remote_changes (we cannot diff structured
-	// local YAML against remote JSON), so a UI edit produces no plan entry.
-	// If we still sent the unchanged local body on every update, the next
-	// update triggered by another field would clobber the UI edit. Only
-	// send it when the user actually changed it locally.
-	var excludeForceSend []string
-	sentSerialized := true
-	if !hasUpdate(entry, pathSerializedSpace) {
-		serializedSpace = ""
-		sentSerialized = false
-		excludeForceSend = append(excludeForceSend, "SerializedSpace")
-	}
-
+	// Always send serialized_space so the deploy converges the space to the
+	// bundle config (the bundle is the source of truth, mirroring dashboards).
+	// We cannot use the etag as an If-Match guard: the backend bumps it when it
+	// migrates serialized_space to a newer schema version, so a stale etag would
+	// 409 a legitimate update after a migration. Etag is therefore left empty;
+	// out-of-band drift is surfaced on read via OverrideChangeDesc instead.
 	updateResp, err := r.client.Genie.UpdateSpace(ctx, dashboards.GenieUpdateSpaceRequest{
 		SpaceId:         id,
 		Description:     config.Description,
@@ -209,39 +196,19 @@ func (r *ResourceGenieSpace) DoUpdate(ctx context.Context, id string, config *re
 		WarehouseId:     config.WarehouseId,
 		ParentPath:      config.ParentPath,
 		SerializedSpace: serializedSpace,
-		// Intentionally empty: we do not send an If-Match guard. The backend
-		// bumps the etag when it migrates serialized_space to a newer schema
-		// version, so sending the last-observed etag would fail the update with
-		// 409 after such a migration. Drift is still detected on read via
-		// OverrideChangeDesc, which compares the stored and remote etags.
-		Etag: "",
+		Etag:            "",
 
-		ForceSendFields: utils.FilterFields[dashboards.GenieUpdateSpaceRequest](config.ForceSendFields, excludeForceSend...),
+		ForceSendFields: utils.FilterFields[dashboards.GenieUpdateSpaceRequest](config.ForceSendFields),
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	// Persist the new etag in state (see DoCreate for the rationale).
+	// Persist the new etag in state (see DoCreate for the rationale). Record the
+	// body we sent, mirroring DoCreate, so config-side and state-side match.
 	config.Etag = updateResp.Etag
 
-	// Decide what to record as the new state's serialized_space.
-	//   - If we sent a new body, use it.
-	//   - If we omitted it (UI-edit protection above) but the API echoed back
-	//     a value, record that — it's the most up-to-date view we have.
-	//   - If neither side carries a value, keep whatever was already in state.
-	//     Otherwise RemapState would blank the field on every unrelated update.
-	respSerialized := serializedSpace
-	if !sentSerialized {
-		respSerialized = updateResp.SerializedSpace
-		if respSerialized == "" {
-			if prior, ok := config.SerializedSpace.(string); ok {
-				respSerialized = prior
-			}
-		}
-	}
-
-	return responseToGenieSpaceConfig(updateResp, respSerialized), nil
+	return responseToGenieSpaceConfig(updateResp, serializedSpace), nil
 }
 
 // OverrideChangeDesc handles the etag field. The user never sets it directly;
@@ -260,28 +227,6 @@ func (r *ResourceGenieSpace) OverrideChangeDesc(_ context.Context, path *structp
 		}
 	}
 	return nil
-}
-
-// hasUpdate reports whether entry has an Update-action change at the given path.
-// HasChange alone matches Skip-action changes too, which we cannot use to drive
-// request shaping for fields covered by ignore_remote_changes.
-func hasUpdate(entry *PlanEntry, path *structpath.PathNode) bool {
-	if entry == nil {
-		return false
-	}
-	for s, change := range entry.Changes {
-		if change.Action != deployplan.Update {
-			continue
-		}
-		node, err := structpath.ParsePath(s)
-		if err != nil {
-			continue
-		}
-		if node.HasPrefix(path) {
-			return true
-		}
-	}
-	return false
 }
 
 func (r *ResourceGenieSpace) DoDelete(ctx context.Context, id string, _ *resources.GenieSpaceConfig) error {

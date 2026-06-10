@@ -106,69 +106,6 @@ func TestGenieSpaceDoCreateRetriesWhenParentPathLooksMissing(t *testing.T) {
 	assert.Equal(t, "test genie space", state.Title)
 }
 
-func TestGenieSpaceDoUpdateOmitsSerializedSpaceWhenUnchanged(t *testing.T) {
-	ctx := t.Context()
-	m := mocks.NewMockWorkspaceClient(t)
-	r := (&ResourceGenieSpace{}).New(m.WorkspaceClient)
-
-	// Plan entry indicates only title changed; serialized_space is absent.
-	entry := &deployplan.PlanEntry{
-		Changes: deployplan.Changes{
-			"title": {Action: deployplan.Update, Old: "old", New: "new"},
-		},
-	}
-
-	m.GetMockGenieAPI().EXPECT().
-		UpdateSpace(ctx, dashboards.GenieUpdateSpaceRequest{
-			SpaceId: "space-id",
-			Title:   "new",
-		}).
-		Return(&dashboards.GenieSpace{
-			SpaceId:         "space-id",
-			Title:           "new",
-			SerializedSpace: "{\"remote\":\"edit\"}",
-		}, nil).
-		Once()
-
-	state, err := r.DoUpdate(ctx, "space-id", &resources.GenieSpaceConfig{
-		Title:           "new",
-		SerializedSpace: "{\"local\":\"stale\"}",
-	}, entry)
-	require.NoError(t, err)
-	require.NotNil(t, state)
-	assert.Equal(t, "{\"remote\":\"edit\"}", state.SerializedSpace)
-}
-
-func TestGenieSpaceDoUpdateSendsSerializedSpaceWhenChanged(t *testing.T) {
-	ctx := t.Context()
-	m := mocks.NewMockWorkspaceClient(t)
-	r := (&ResourceGenieSpace{}).New(m.WorkspaceClient)
-
-	entry := &deployplan.PlanEntry{
-		Changes: deployplan.Changes{
-			"serialized_space": {Action: deployplan.Update, Old: "{}", New: "{\"v\":1}"},
-		},
-	}
-
-	m.GetMockGenieAPI().EXPECT().
-		UpdateSpace(ctx, dashboards.GenieUpdateSpaceRequest{
-			SpaceId:         "space-id",
-			SerializedSpace: "{\"v\":1}",
-		}).
-		Return(&dashboards.GenieSpace{
-			SpaceId:         "space-id",
-			SerializedSpace: "{\"v\":1}",
-		}, nil).
-		Once()
-
-	state, err := r.DoUpdate(ctx, "space-id", &resources.GenieSpaceConfig{
-		SerializedSpace: "{\"v\":1}",
-	}, entry)
-	require.NoError(t, err)
-	require.NotNil(t, state)
-	assert.Equal(t, "{\"v\":1}", state.SerializedSpace)
-}
-
 func TestGenieSpaceDoUpdateRoundTripsEtag(t *testing.T) {
 	ctx := t.Context()
 	m := mocks.NewMockWorkspaceClient(t)
@@ -204,12 +141,13 @@ func TestGenieSpaceDoUpdateRoundTripsEtag(t *testing.T) {
 	assert.Equal(t, "etag-8", state.Etag)
 }
 
-func TestGenieSpaceDoUpdateKeepsPriorSerializedSpaceWhenBothEmpty(t *testing.T) {
+func TestGenieSpaceDoUpdateAlwaysSendsSerializedSpace(t *testing.T) {
 	ctx := t.Context()
 	m := mocks.NewMockWorkspaceClient(t)
 	r := (&ResourceGenieSpace{}).New(m.WorkspaceClient)
 
-	// Only title changed; serialized_space should be omitted from the request.
+	// Even though the plan entry only marks an unrelated field changed, the body
+	// is sent so the deploy converges the space to the bundle config.
 	entry := &deployplan.PlanEntry{
 		Changes: deployplan.Changes{
 			"title": {Action: deployplan.Update, Old: "old", New: "new"},
@@ -218,23 +156,24 @@ func TestGenieSpaceDoUpdateKeepsPriorSerializedSpaceWhenBothEmpty(t *testing.T) 
 
 	m.GetMockGenieAPI().EXPECT().
 		UpdateSpace(ctx, dashboards.GenieUpdateSpaceRequest{
-			SpaceId: "space-id",
-			Title:   "new",
+			SpaceId:         "space-id",
+			Title:           "new",
+			SerializedSpace: "{\"converge\":\"me\"}",
 		}).
 		Return(&dashboards.GenieSpace{
-			SpaceId: "space-id",
-			Title:   "new",
-			// API also omits serialized_space; we should keep the prior local value.
+			SpaceId:         "space-id",
+			Title:           "new",
+			SerializedSpace: "{\"converge\":\"me\"}",
 		}, nil).
 		Once()
 
 	state, err := r.DoUpdate(ctx, "space-id", &resources.GenieSpaceConfig{
 		Title:           "new",
-		SerializedSpace: "{\"keep\":\"me\"}",
+		SerializedSpace: "{\"converge\":\"me\"}",
 	}, entry)
 	require.NoError(t, err)
 	require.NotNil(t, state)
-	assert.Equal(t, "{\"keep\":\"me\"}", state.SerializedSpace)
+	assert.Equal(t, "{\"converge\":\"me\"}", state.SerializedSpace)
 }
 
 func TestGenieSpaceOverrideChangeDescEtag(t *testing.T) {
