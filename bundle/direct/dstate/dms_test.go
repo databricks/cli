@@ -19,8 +19,9 @@ type fakeBundleClient struct {
 	resources []sdkbundle.Resource
 	versions  []sdkbundle.Version
 
-	// When set, ListVersions returns this iterator instead of one over versions.
-	versionsIt listing.Iterator[sdkbundle.Version]
+	// Number of versions consumed from ListVersions iterators, to observe how
+	// far a scan read into the (paginated) list.
+	versionNexts int
 }
 
 func (c *fakeBundleClient) ListResources(context.Context, sdkbundle.ListResourcesRequest) listing.Iterator[sdkbundle.Resource] {
@@ -29,11 +30,19 @@ func (c *fakeBundleClient) ListResources(context.Context, sdkbundle.ListResource
 }
 
 func (c *fakeBundleClient) ListVersions(context.Context, sdkbundle.ListVersionsRequest) listing.Iterator[sdkbundle.Version] {
-	if c.versionsIt != nil {
-		return c.versionsIt
-	}
 	it := listing.SliceIterator[sdkbundle.Version](c.versions)
-	return &it
+	return &countingIterator{Iterator: &it, nexts: &c.versionNexts}
+}
+
+// countingIterator counts Next calls on behalf of fakeBundleClient.
+type countingIterator struct {
+	listing.Iterator[sdkbundle.Version]
+	nexts *int
+}
+
+func (c *countingIterator) Next(ctx context.Context) (sdkbundle.Version, error) {
+	*c.nexts++
+	return c.Iterator.Next(ctx)
 }
 
 func raw(s string) *json.RawMessage {
@@ -41,12 +50,11 @@ func raw(s string) *json.RawMessage {
 	return &msg
 }
 
-func succeeded() sdkbundle.Version {
-	return sdkbundle.Version{
-		Status:           sdkbundle.VersionStatusVersionStatusCompleted,
-		CompletionReason: sdkbundle.VersionCompleteVersionCompleteSuccess,
-	}
+func completed(reason sdkbundle.VersionComplete) sdkbundle.Version {
+	return sdkbundle.Version{Status: sdkbundle.VersionStatusVersionStatusCompleted, CompletionReason: reason}
 }
+
+var succeeded = completed(sdkbundle.VersionCompleteVersionCompleteSuccess)
 
 // writeStateFile writes a resources.json with the given lineage and resources,
 // standing in for a prior local (direct) deployment, and returns its path.
@@ -71,114 +79,87 @@ func TestOpenWithDMS(t *testing.T) {
 		{ResourceKey: "jobs.foo", ResourceId: "job-1", State: raw(`{"name":"foo"}`)},
 	}
 
-	t.Run("DMS owns the deployment: resources come from DMS, identity from the file", func(t *testing.T) {
-		path := writeStateFile(t, "dep-1", fileState)
-		client := &fakeBundleClient{resources: dmsResources, versions: []sdkbundle.Version{succeeded()}}
-
-		var db DeploymentState
-		require.NoError(t, db.Open(t.Context(), path, WithRecovery(true), WithWrite(false), client))
-
-		assert.Equal(t, "dep-1", db.Data.Lineage)
-		_, fromFile := db.GetResourceEntry("resources.jobs.from_file")
-		assert.False(t, fromFile)
-		entry, ok := db.GetResourceEntry("resources.jobs.foo")
-		require.True(t, ok)
-		assert.Equal(t, "job-1", entry.ID)
-		assert.Equal(t, "job-1", db.GetResourceID("resources.jobs.foo"))
-	})
-
-	t.Run("no successful version yet: fall back to the direct file-based state", func(t *testing.T) {
-		path := writeStateFile(t, "dep-1", fileState)
-		client := &fakeBundleClient{resources: dmsResources, versions: nil}
-
-		var db DeploymentState
-		require.NoError(t, db.Open(t.Context(), path, WithRecovery(true), WithWrite(false), client))
-
-		assert.Equal(t, "dep-1", db.Data.Lineage)
-		assert.Equal(t, "file-1", db.GetResourceID("resources.jobs.from_file"))
-		_, fromDMS := db.GetResourceEntry("resources.jobs.foo")
-		assert.False(t, fromDMS)
-	})
-
-	t.Run("nothing deployed yet: empty lineage never consults DMS", func(t *testing.T) {
-		path := writeStateFile(t, "", nil)
-		// The client reports a successful version and resources; if Open consulted
-		// DMS despite the missing lineage, the resource below would appear in state.
-		client := &fakeBundleClient{resources: dmsResources, versions: []sdkbundle.Version{succeeded()}}
-
-		var db DeploymentState
-		require.NoError(t, db.Open(t.Context(), path, WithRecovery(true), WithWrite(false), client))
-
-		assert.Empty(t, db.Data.Lineage)
-		_, fromDMS := db.GetResourceEntry("resources.jobs.foo")
-		assert.False(t, fromDMS)
-	})
-
-	t.Run("nil client: file-based state only", func(t *testing.T) {
-		path := writeStateFile(t, "dep-1", fileState)
-
-		var db DeploymentState
-		require.NoError(t, db.Open(t.Context(), path, WithRecovery(true), WithWrite(false), nil))
-
-		assert.Equal(t, "file-1", db.GetResourceID("resources.jobs.from_file"))
-	})
-}
-
-// TestDeploymentHasSuccessfulVersion is the gate that decides whether DMS owns a
-// deployment's state. DMS is authoritative only once a version has completed
-// successfully; otherwise (no versions, or only failed/in-progress ones) the
-// caller falls back to the local file.
-func TestDeploymentHasSuccessfulVersion(t *testing.T) {
-	completed := func(reason sdkbundle.VersionComplete) sdkbundle.Version {
-		return sdkbundle.Version{Status: sdkbundle.VersionStatusVersionStatusCompleted, CompletionReason: reason}
-	}
 	tests := []struct {
-		name     string
-		versions []sdkbundle.Version
-		want     bool
+		name    string
+		lineage string
+		client  sdkbundle.BundleInterface
+		want    map[string]string // expected resource key -> ID after Open
 	}{
-		{"no versions", nil, false},
-		{"in progress", []sdkbundle.Version{{Status: sdkbundle.VersionStatusVersionStatusInProgress}}, false},
-		{"failed", []sdkbundle.Version{completed(sdkbundle.VersionCompleteVersionCompleteFailure)}, false},
-		{"succeeded", []sdkbundle.Version{completed(sdkbundle.VersionCompleteVersionCompleteSuccess)}, true},
 		{
-			"failed then succeeded",
-			[]sdkbundle.Version{completed(sdkbundle.VersionCompleteVersionCompleteFailure), completed(sdkbundle.VersionCompleteVersionCompleteSuccess)},
-			true,
+			name:    "DMS owns the deployment: resources come from DMS, identity from the file",
+			lineage: "dep-1",
+			client:  &fakeBundleClient{resources: dmsResources, versions: []sdkbundle.Version{succeeded}},
+			want:    map[string]string{"resources.jobs.foo": "job-1"},
+		},
+		{
+			name:    "no successful version yet: fall back to the direct file-based state",
+			lineage: "dep-1",
+			client:  &fakeBundleClient{resources: dmsResources},
+			want:    map[string]string{"resources.jobs.from_file": "file-1"},
+		},
+		{
+			// The client reports a successful version and resources; if Open consulted
+			// DMS despite the missing lineage, jobs.foo would appear in state.
+			name:    "no lineage in the file (nothing deployed yet): never consult DMS",
+			lineage: "",
+			client:  &fakeBundleClient{resources: dmsResources, versions: []sdkbundle.Version{succeeded}},
+			want:    map[string]string{"resources.jobs.from_file": "file-1"},
+		},
+		{
+			name:    "nil client (record_deployment_history off): file-based state only",
+			lineage: "dep-1",
+			client:  nil,
+			want:    map[string]string{"resources.jobs.from_file": "file-1"},
 		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			got, err := deploymentHasSuccessfulVersion(t.Context(), &fakeBundleClient{versions: tc.versions}, "dep-1")
-			require.NoError(t, err)
-			assert.Equal(t, tc.want, got)
+			path := writeStateFile(t, tc.lineage, fileState)
+			var db DeploymentState
+			require.NoError(t, db.Open(t.Context(), path, WithRecovery(true), WithWrite(false), tc.client))
+
+			assert.Equal(t, tc.lineage, db.Data.Lineage)
+			ids := make(map[string]string)
+			for key := range db.Data.State {
+				// GetResourceID reads the stateIDs cache, so this also checks it was
+				// rebuilt in sync with the overlaid state.
+				ids[key] = db.GetResourceID(key)
+			}
+			assert.Equal(t, tc.want, ids)
 		})
 	}
 }
 
-// TestDeploymentHasSuccessfulVersionStopsAtFirstSuccess pins the pagination
-// contract: versions are listed newest-first and the scan must stop at the
-// first success, so deployments with long version histories don't fetch the
-// whole list.
-func TestDeploymentHasSuccessfulVersionStopsAtFirstSuccess(t *testing.T) {
-	it := listing.SliceIterator[sdkbundle.Version]([]sdkbundle.Version{succeeded(), {Status: sdkbundle.VersionStatusVersionStatusInProgress}})
-	counting := &countingIterator{Iterator: &it}
-
-	got, err := deploymentHasSuccessfulVersion(t.Context(), &fakeBundleClient{versionsIt: counting}, "dep-1")
-	require.NoError(t, err)
-	assert.True(t, got)
-	assert.Equal(t, 1, counting.nexts)
-}
-
-// countingIterator counts Next calls to observe how far a scan consumed it.
-type countingIterator struct {
-	listing.Iterator[sdkbundle.Version]
-	nexts int
-}
-
-func (c *countingIterator) Next(ctx context.Context) (sdkbundle.Version, error) {
-	c.nexts++
-	return c.Iterator.Next(ctx)
+// TestDeploymentHasSuccessfulVersion is the gate that decides whether DMS owns
+// a deployment's state: only once a version has completed successfully.
+// wantNexts pins the pagination contract: versions are listed newest-first and
+// the scan stops at the first success, so deployments with long version
+// histories don't fetch the whole list.
+func TestDeploymentHasSuccessfulVersion(t *testing.T) {
+	failed := completed(sdkbundle.VersionCompleteVersionCompleteFailure)
+	inProgress := sdkbundle.Version{Status: sdkbundle.VersionStatusVersionStatusInProgress}
+	tests := []struct {
+		name      string
+		versions  []sdkbundle.Version
+		want      bool
+		wantNexts int
+	}{
+		{"no versions", nil, false, 0},
+		{"in progress", []sdkbundle.Version{inProgress}, false, 1},
+		{"failed", []sdkbundle.Version{failed}, false, 1},
+		{"succeeded", []sdkbundle.Version{succeeded}, true, 1},
+		{"failed then succeeded", []sdkbundle.Version{failed, succeeded}, true, 2},
+		{"stops at first success", []sdkbundle.Version{succeeded, inProgress}, true, 1},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			client := &fakeBundleClient{versions: tc.versions}
+			got, err := deploymentHasSuccessfulVersion(t.Context(), client, "dep-1")
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, got)
+			assert.Equal(t, tc.wantNexts, client.versionNexts)
+		})
+	}
 }
 
 // TestFetchDeploymentResources covers mapping DMS resources to state entries.
