@@ -1,8 +1,8 @@
   ✓ Generated SSH key at [TEST_TMP_DIR]/.ssh/sandbox_ed25519
   ✓ SSH key registered
-  skipped SSH config update (non-interactive); re-run `databricks sandbox register` from a terminal to add the `Host us-west-2.service-direct.dev.databricks.com` block
+  skipped SSH config update (non-interactive); re-run `databricks sandbox register` from a terminal to add the sandbox gateway block(s)
 
-  Run databricks sandbox ssh to connect.
+  Run databricks sandbox create to provision your first sandbox.
 
 {
   "[DATABRICKS_URL]": "us-west-2.service-direct.dev.databricks.com"
