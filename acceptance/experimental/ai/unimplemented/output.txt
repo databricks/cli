@@ -1,0 +1,36 @@
+
+=== run
+>>> [CLI] experimental ai run
+Error: `ai run` is not implemented yet
+
+Exit code: 1
+
+=== status
+>>> [CLI] experimental ai status 123
+Error: `ai status` is not implemented yet
+
+Exit code: 1
+
+=== list
+>>> [CLI] experimental ai list
+Error: `ai list` is not implemented yet
+
+Exit code: 1
+
+=== logs
+>>> [CLI] experimental ai logs 123
+Error: `ai logs` is not implemented yet
+
+Exit code: 1
+
+=== cancel
+>>> [CLI] experimental ai cancel 123
+Error: `ai cancel` is not implemented yet
+
+Exit code: 1
+
+=== register-image
+>>> [CLI] experimental ai register-image my-image:latest
+Error: `ai register-image` is not implemented yet
+
+Exit code: 1
