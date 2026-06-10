@@ -3,6 +3,7 @@ package phases
 import (
 	"context"
 	"errors"
+	"slices"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/artifacts"
@@ -41,6 +42,10 @@ var deployApprovalGroups = []approvalGroup{
 
 func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) (bool, error) {
 	actions := plan.GetActions()
+
+	// Deletes of resources that are already gone remotely only clean up the state,
+	// so they don't count as destructive actions and need no approval.
+	actions = slices.DeleteFunc(actions, func(a deployplan.Action) bool { return a.Gone })
 
 	err := checkForPreventDestroy(b, actions)
 	if err != nil {

@@ -7,6 +7,8 @@ trace $CLI pipelines delete $pipeline_id
 title "Remove resources from config, plan and deploy"
 # Engines diverge: direct plans deletes for the stale state entries; terraform keeps them in state, so its summary still lists them.
 cp empty.yml databricks.yml
+# Drain requests recorded so far; only requests made after the config removal matter below.
+print_requests.py --get // &> LOG.requests_setup
 trace $CLI bundle plan &> out.plan_removed.$DATABRICKS_BUNDLE_ENGINE.txt
 trace $CLI bundle deploy --auto-approve &> out.deploy_removed.$DATABRICKS_BUNDLE_ENGINE.txt
 
@@ -14,3 +16,6 @@ title "Plan and deploy again, then summary"
 trace $CLI bundle plan
 trace $CLI bundle deploy
 trace $CLI bundle summary &> out.summary.$DATABRICKS_BUNDLE_ENGINE.txt
+
+title "No delete API calls for resources that are already gone remotely"
+trace print_requests.py //jobs/delete //pipelines/

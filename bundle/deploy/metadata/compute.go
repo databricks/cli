@@ -48,7 +48,9 @@ func (m *compute) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 		// root
 		l := b.Config.GetLocation("resources.jobs." + name)
 		if l.File == "" {
-			// b.Config.Resources.Jobs may include a job that only exists in state but not in config
+			// Skip resources that exist only in the deployment state: statemgmt.Load,
+			// which runs before this mutator, injects them into the config without a
+			// file location.
 			continue
 		}
 
@@ -73,7 +75,9 @@ func (m *compute) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 		// root
 		l := b.Config.GetLocation("resources.pipelines." + name)
 		if l.File == "" {
-			// b.Config.Resources.Pipelines may include a pipeline that only exists in state but not in config
+			// Skip resources that exist only in the deployment state: statemgmt.Load,
+			// which runs before this mutator, injects them into the config without a
+			// file location.
 			continue
 		}
 
@@ -96,7 +100,9 @@ func (m *compute) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 		// root
 		l := b.Config.GetLocation("resources.dashboards." + name)
 		if l.File == "" {
-			// b.Config.Resources.Dashboards may include a dashboard that only exists in state but not in config
+			// Skip resources that exist only in the deployment state: statemgmt.Load,
+			// which runs before this mutator, injects them into the config without a
+			// file location.
 			continue
 		}
 

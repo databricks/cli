@@ -19,3 +19,6 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/defaul
 Deploying resources...
 Updating deployment state...
 Deployment complete!
+
+=== No delete API calls for resources that are already gone remotely
+>>> print_requests.py //jobs/delete //pipelines/
