@@ -1,0 +1,15 @@
+
+=== version (text)
+>>> [CLI] experimental ai version
+Databricks AI runtime CLI v[DEV_VERSION]
+Host: [DATABRICKS_URL]
+User: user@example.com
+
+=== version (json)
+>>> [CLI] experimental ai version -o json
+{
+  "cli_version": "[DEV_VERSION]",
+  "connectivity": "ok",
+  "host": "[DATABRICKS_URL]",
+  "user": "user@example.com"
+}

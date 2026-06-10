@@ -1,0 +1,5 @@
+title "version (text)"
+trace $CLI experimental ai version
+
+title "version (json)"
+trace $CLI experimental ai version -o json

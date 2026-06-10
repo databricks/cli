@@ -54,10 +54,12 @@ expired credentials) the command reports the failure and exits non-zero.`,
 			Connectivity: "ok",
 		}
 
-		// Proof-of-life probe: resolve the profile, authenticate, and make one authenticated round-trip. We resolve the client inside RunE
-		// so the local version still prints when the workspace is unreachable.
+		// Probe inside RunE (not PreRunE) so the local version still prints when
+		// the workspace is unreachable.
 		probeErr := root.MustWorkspaceClient(cmd, args)
 		if probeErr == nil {
+			// MustWorkspaceClient stores the client on the command's context.
+			ctx = cmd.Context()
 			w := cmdctx.WorkspaceClient(ctx)
 			me, err := w.CurrentUser.Me(ctx, iam.MeRequest{})
 			if err != nil {
