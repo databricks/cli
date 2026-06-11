@@ -3,18 +3,26 @@ sethome "./home"
 # Create profiles including one with workspace_id
 cat > "./home/.databrickscfg" <<EOF
 [workspace-profile]
-host = https://test.cloud.databricks.com
+host = https://workspace.cloud.databricks.test
 
 [account-profile]
-host = https://accounts.cloud.databricks.com
+host = https://accounts.cloud.databricks.test
 account_id = test-account-123
 
 [unified-profile]
-host = https://unified.databricks.com
+host = https://unified.databricks.test
 account_id = unified-account-456
 workspace_id = 987654321
 experimental_is_unified_host = true
 EOF
 
 title "Profiles with workspace_id (JSON output)\n"
-$CLI auth profiles --skip-validate --output json
+# auth profiles loads profiles concurrently so hostmetadata warnings appear in
+# non-deterministic order; sort them for a stable golden file.
+$CLI auth profiles --skip-validate --output json 2>&1 | python3 -c "
+import sys
+lines = sys.stdin.readlines()
+meta = sorted(l for l in lines if '[hostmetadata]' in l)
+rest = [l for l in lines if '[hostmetadata]' not in l]
+sys.stdout.writelines(meta + rest)
+"
