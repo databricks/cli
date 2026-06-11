@@ -124,6 +124,15 @@ func InContext(ctx context.Context, io *cmdIO) context.Context {
 	return context.WithValue(ctx, cmdIOKey, io)
 }
 
+// HasIO reports whether a cmdIO is set on this context. Commands can assume it
+// is (the root command's PersistentPreRunE installs it), but code that can run
+// before or without that hook (e.g. cobra resolves --help and bare invocations
+// before running hooks) must check first to avoid the panic in fromContext.
+func HasIO(ctx context.Context) bool {
+	_, ok := ctx.Value(cmdIOKey).(*cmdIO)
+	return ok
+}
+
 func fromContext(ctx context.Context) *cmdIO {
 	io, ok := ctx.Value(cmdIOKey).(*cmdIO)
 	if !ok {
