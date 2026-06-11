@@ -2,7 +2,7 @@ echo "*" > .gitignore
 envsubst < databricks.yml.tmpl > databricks.yml
 
 cleanup() {
-    $CLI bundle destroy --auto-approve
+    $CLI bundle destroy --auto-approve &> LOG.destroy
     rm -f out.requests.txt
 }
 trap cleanup EXIT

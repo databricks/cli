@@ -7,8 +7,8 @@ Error: Provider produced inconsistent final plan
 When expanding the plan for databricks_volume.vol1 to include new values
 learned so far during apply, provider
 "registry.terraform.io/databricks/databricks" produced an invalid new value
-for .schema_name: was cty.StringVal("MySCHEMA_[UNIQUE_NAME]"), but now
-cty.StringVal("myschema_[UNIQUE_NAME]").
+for .schema_name: was cty.StringVal("MySCHEMA_[UNIQUE_NAME]"),
+but now cty.StringVal("myschema_[UNIQUE_NAME]").
 
 This is a bug in the provider, which should be reported in the provider's own
 issue tracker.
