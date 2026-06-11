@@ -1,0 +1,5 @@
+create pipelines.bar
+create pipelines.baz
+create pipelines.foo
+
+Plan: 3 to add, 0 to change, 0 to delete, 0 unchanged

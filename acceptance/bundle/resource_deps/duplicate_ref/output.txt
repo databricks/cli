@@ -1,0 +1,33 @@
+
+>>> [CLI] bundle validate -o json
+{
+  "pipelines": {
+    "bar": {
+      "channel": "CURRENT",
+      "deployment": {
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+      },
+      "edition": "ADVANCED",
+      "name": "pbar ${resources.pipelines.foo.name} ${resources.pipelines.foo.name}"
+    },
+    "baz": {
+      "channel": "CURRENT",
+      "deployment": {
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+      },
+      "edition": "ADVANCED",
+      "name": "pbaz ${resources.pipelines.foo.id} ${resources.pipelines.foo.id}"
+    },
+    "foo": {
+      "channel": "CURRENT",
+      "deployment": {
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+      },
+      "edition": "ADVANCED",
+      "name": "pfoo"
+    }
+  }
+}
