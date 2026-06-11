@@ -151,6 +151,14 @@ func (f *fetcher) loadRemoteProjectDefinition(cmd *cobra.Command, version string
 	var err error
 	if !offlineInstall {
 		raw, err = github.ReadFileFromRef(ctx, "databrickslabs", f.name, version, "labs.yml")
+		// Most repositories in the databrickslabs org don't ship a labs.yml manifest
+		// (e.g. libraries published to package indexes), so a missing file means the
+		// project isn't installable through the CLI, not that the download failed.
+		if errors.Is(err, github.ErrNotFound) {
+			return nil, fmt.Errorf("databrickslabs/%s@%s does not provide labs.yml (%w); "+
+				"this project cannot be installed with the Databricks CLI, "+
+				"see https://github.com/databrickslabs/%s for instructions", f.name, version, err, f.name)
+		}
 		if err != nil {
 			return nil, fmt.Errorf("read labs.yml from GitHub: %w", err)
 		}
