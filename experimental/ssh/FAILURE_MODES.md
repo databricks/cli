@@ -82,7 +82,10 @@ job state.
 
 **With the error-handling improvements** the client aborts after a handshake timeout (no SSH
 banner from the server) with an actionable hint to install `openssh-server`, and exits
-promptly instead of hanging.
+promptly instead of hanging. The server also keeps its recent warning/error log lines in
+memory and serves them at `/logs` (next to `/metadata`); when `ssh` exits with a
+connection-level failure (code 255), the client fetches that endpoint and prints the server's
+actual errors in the terminal — the job keeps running throughout.
 
 **Fix.** Install `openssh-server` in the image (`apt-get install -y openssh-server`).
 
