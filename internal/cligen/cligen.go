@@ -92,7 +92,9 @@ func Generate(jsonPath, targetDir string) ([]string, error) {
 		return nil, fmt.Errorf("%s: missing \"commands\" block", jsonPath)
 	}
 	batch := fromContract(doc.Commands)
-	batch.Resolve()
+	if err := batch.Resolve(); err != nil {
+		return nil, fmt.Errorf("%s: %w", jsonPath, err)
+	}
 
 	var filenames []string
 

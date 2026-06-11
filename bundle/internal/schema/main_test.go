@@ -42,7 +42,7 @@ func copyFile(src, dst string) error {
 
 // Checks whether descriptions are added for new config fields in the annotations.yml file
 // If this test fails either manually add descriptions to the `annotations.yml` or do the following:
-//  1. for fields described outside of CLI package, refresh .codegen/cli.json (`./task generate-cli-json`) and the annotation files (`./task generate-annotations`)
+//  1. for fields described outside of CLI package, refresh .codegen/cli.json (`./task generate-clijson`) and the annotation files (`./task generate-annotations`)
 //  2. run `./task generate-schema` from the repository root to add placeholder descriptions
 //  2. replace all "PLACEHOLDER" values with the actual descriptions if possible
 //  3. run `./task generate-schema` again to regenerate the schema with acutal descriptions
