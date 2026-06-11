@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/dynvar"
+	"github.com/databricks/cli/libs/interpolation"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/structs/structpath"
 )
@@ -500,50 +501,36 @@ func parseTemplateSegments(template string, resolved dyn.Value) []templateSegmen
 	}
 
 	var segments []templateSegment
-	cursor := 0
 
-	for _, m := range ref.Matches {
-		fullMatch := m[0]
-
-		idx := strings.Index(template[cursor:], fullMatch)
-		if idx < 0 {
-			return nil
-		}
-
-		if idx > 0 {
+	for _, tok := range ref.Tokens {
+		switch tok.Kind {
+		case interpolation.TokenLiteral:
 			segments = append(segments, templateSegment{
-				raw: template[cursor : cursor+idx],
+				raw: tok.Value,
+			})
+		case interpolation.TokenRef:
+			fullMatch := "${" + tok.Value + "}"
+			resolvedPath, ok := resolveReferencePath(fullMatch)
+			if !ok {
+				return nil
+			}
+
+			resolvedV, err := dyn.GetByPath(resolved, resolvedPath)
+			if err != nil {
+				return nil
+			}
+
+			resolvedStr, ok := resolvedV.AsString()
+			if !ok {
+				return nil
+			}
+
+			segments = append(segments, templateSegment{
+				raw:           fullMatch,
+				isVariable:    true,
+				resolvedValue: resolvedStr,
 			})
 		}
-
-		resolvedPath, ok := resolveReferencePath(fullMatch)
-		if !ok {
-			return nil
-		}
-
-		resolvedV, err := dyn.GetByPath(resolved, resolvedPath)
-		if err != nil {
-			return nil
-		}
-
-		resolvedStr, ok := resolvedV.AsString()
-		if !ok {
-			return nil
-		}
-
-		segments = append(segments, templateSegment{
-			raw:           fullMatch,
-			isVariable:    true,
-			resolvedValue: resolvedStr,
-		})
-
-		cursor += idx + len(fullMatch)
-	}
-
-	if cursor < len(template) {
-		segments = append(segments, templateSegment{
-			raw: template[cursor:],
-		})
 	}
 
 	return segments

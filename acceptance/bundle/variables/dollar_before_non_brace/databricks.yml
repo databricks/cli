@@ -1,0 +1,6 @@
+bundle:
+  name: '$foo is not a reference'
+
+variables:
+  a:
+    default: hello

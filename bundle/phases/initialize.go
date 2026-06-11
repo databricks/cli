@@ -95,6 +95,10 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// searches for strings with variable references in them.
 		mutator.RewriteWorkspacePrefix(),
 
+		// Walks the config tree and emits warnings for malformed variable references
+		// (e.g. "${foo.bar-}") before variable resolution occurs.
+		mutator.WarnMalformedReferences(),
+
 		// Collect telemetry on $${} and \${} escape patterns before variable resolution.
 		mutator.CollectEscapeTelemetry(),
 

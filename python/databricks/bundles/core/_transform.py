@@ -272,9 +272,14 @@ def _unwrap_variable(tpe: type) -> Optional[type]:
     return None
 
 
-# Regex for string corresponding to variables.
+# Regex for detecting pure variable references (entire string is a single ${...}).
 #
-# The source of truth is regex in libs/dyn/dynvar/ref.go
+# This regex must stay in sync with the Go parser in libs/interpolation/parse.go.
+# The Go parser is the source of truth for interpolation; this regex only needs
+# to recognize pure references so PyDABs can wrap them as Variable objects.
+#
+# Cross-language tests in libs/interpolation/testdata/variable_references.json
+# verify that this regex and the Go parser agree.
 #
 # Example:
 #   - "${a.b}"
