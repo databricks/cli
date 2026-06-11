@@ -1,19 +1,27 @@
 
-=== Unicode job names resolve in resources referencesName: test-bundle
+=== Unicode job names resolve in resources references
+>>> [CLI] bundle validate
+Name: test-bundle
 Target: default
 Workspace:
   User: [USERNAME]
   Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
 Validation OK!
+
+>>> [CLI] bundle plan
 create jobs.foo
 create jobs.变量
 
 Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
+
+>>> [CLI] bundle summary
 Name: test-bundle
 Target: default
 Workspace:
