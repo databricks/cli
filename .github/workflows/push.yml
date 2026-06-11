@@ -426,7 +426,7 @@ jobs:
       - name: Download Go modules
         run: go mod download
 
-      - name: Verify that generated code is up to date
+      - name: Verify that generated files are up to date
         run: |
           go tool -modfile=tools/task/go.mod task --force generate-check
           # pydabs-codegen's `uv run` rewrites uv.lock with the JFrog pypi proxy
@@ -438,7 +438,7 @@ jobs:
           # files (e.g. a newly generated command) too, not just modifications.
           git add --intent-to-add .
           if ! git diff --exit-code; then
-            echo "Generated code is not up to date. Please run './task generate-check' and commit the changes."
+            echo "Generated files are not up to date. Please run './task generate-check' and commit the changes."
             exit 1
           fi
 
