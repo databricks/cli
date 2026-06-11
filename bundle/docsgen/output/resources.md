@@ -548,6 +548,10 @@ apps:
   - Map
   - Git repository configuration for app deployments. When specified, deployments can reference code from this repository by providing only the git reference (branch, tag, or commit). See [\_](#appsnamegit_repository).
   
+- - `git_source`
+  - Map
+  - Git source configuration for app deployments. Specifies which git reference (branch, tag, or commit) to use when deploying the app. Used in conjunction with git_repository to deploy code directly from git. The source_code_path within git_source specifies the relative path to the app code within the repository. See [\_](#appsnamegit_source).
+  
 - - `lifecycle`
   - Map
   - Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed. See [\_](#appsnamelifecycle).
@@ -563,6 +567,10 @@ apps:
 - - `resources`
   - Sequence
   - Resources for the app. See [\_](#appsnameresources).
+  
+- - `source_code_path`
+  - String
+  - 
   
 - - `telemetry_export_destinations`
   - Sequence
@@ -655,6 +663,41 @@ reference code from this repository by providing only the git reference (branch,
 - - `url`
   - String
   - URL of the Git repository.
+  
+:::
+  
+  
+### apps._name_.git_source
+  
+**`Type: Map`**
+  
+Git source configuration for app deployments. Specifies which git reference (branch, tag, or commit)
+to use when deploying the app. Used in conjunction with git_repository to deploy code directly from git.
+The source_code_path within git_source specifies the relative path to the app code within the repository.
+  
+  
+  
+:::list-table
+  
+- - Key
+  - Type
+  - Description
+  
+- - `branch`
+  - String
+  - Git branch to checkout.
+  
+- - `commit`
+  - String
+  - Git commit SHA to checkout.
+  
+- - `source_code_path`
+  - String
+  - Relative path to the app source code within the Git repository. If not specified, the root of the repository is used.
+  
+- - `tag`
+  - String
+  - Git tag to checkout.
   
 :::
   
@@ -1376,7 +1419,7 @@ clusters:
   
 - - `kind`
   - String
-  - 
+  - The kind of compute described by this compute specification.  Depending on `kind`, different validations and default values will be applied.  Clusters with `kind = CLASSIC_PREVIEW` support the following fields, whereas clusters with no specified `kind` do not. * [is_single_node](/api/workspace/clusters/create#is_single_node) * [use_ml_runtime](/api/workspace/clusters/create#use_ml_runtime)  By using the [simple form](https://docs.databricks.com/compute/simple-form.html), your clusters are automatically using `kind = CLASSIC_PREVIEW`.
   
 - - `lifecycle`
   - Map
@@ -3747,7 +3790,7 @@ If new_cluster, a description of a cluster that is created for each task.
   
 - - `kind`
   - String
-  - 
+  - The kind of compute described by this compute specification.  Depending on `kind`, different validations and default values will be applied.  Clusters with `kind = CLASSIC_PREVIEW` support the following fields, whereas clusters with no specified `kind` do not. * [is_single_node](/api/workspace/clusters/create#is_single_node) * [use_ml_runtime](/api/workspace/clusters/create#use_ml_runtime)  By using the [simple form](https://docs.databricks.com/compute/simple-form.html), your clusters are automatically using `kind = CLASSIC_PREVIEW`.
   
 - - `node_type_id`
   - String
@@ -5442,7 +5485,7 @@ If new_cluster, a description of a new cluster that is created for each run.
   
 - - `kind`
   - String
-  - 
+  - The kind of compute described by this compute specification.  Depending on `kind`, different validations and default values will be applied.  Clusters with `kind = CLASSIC_PREVIEW` support the following fields, whereas clusters with no specified `kind` do not. * [is_single_node](/api/workspace/clusters/create#is_single_node) * [use_ml_runtime](/api/workspace/clusters/create#use_ml_runtime)  By using the [simple form](https://docs.databricks.com/compute/simple-form.html), your clusters are automatically using `kind = CLASSIC_PREVIEW`.
   
 - - `node_type_id`
   - String
