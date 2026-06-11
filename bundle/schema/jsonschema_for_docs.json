@@ -4464,8 +4464,8 @@
                 "SEV_SNP"
               ],
               "enumDescriptions": [
-                "[PrPr]",
-                "[PrPr]"
+                "[Private Preview]",
+                "[Private Preview]"
               ]
             },
             "compute.DataSecurityMode": {
@@ -5029,12 +5029,12 @@
                 "FAILING_OVER"
               ],
               "enumDescriptions": [
-                "[PuPr]",
-                "[PuPr]",
-                "[PuPr]",
-                "[PuPr]",
-                "[PuPr]",
-                "[PuPr]"
+                "[Public Preview]",
+                "[Public Preview]",
+                "[Public Preview]",
+                "[Public Preview]",
+                "[Public Preview]",
+                "[Public Preview]"
               ]
             },
             "database.DeltaTableSyncInfo": {
@@ -5077,12 +5077,12 @@
                 "DEGRADED"
               ],
               "enumDescriptions": [
-                "[PuPr]",
-                "[PuPr]",
-                "[PuPr]",
-                "[PuPr]",
-                "[PuPr]",
-                "[PuPr]"
+                "[Public Preview]",
+                "[Public Preview]",
+                "[Public Preview]",
+                "[Public Preview]",
+                "[Public Preview]",
+                "[Public Preview]"
               ]
             },
             "database.ProvisioningPhase": {
@@ -5093,9 +5093,9 @@
                 "PROVISIONING_PHASE_INDEX_SORT"
               ],
               "enumDescriptions": [
-                "[PuPr]",
-                "[PuPr]",
-                "[PuPr]"
+                "[Public Preview]",
+                "[Public Preview]",
+                "[Public Preview]"
               ]
             },
             "database.SyncedTableContinuousUpdateStatus": {
@@ -5130,9 +5130,9 @@
                 "SNAPSHOT"
               ],
               "enumDescriptions": [
-                "[PuPr]",
-                "[PuPr]",
-                "[PuPr]"
+                "[Public Preview]",
+                "[Public Preview]",
+                "[Public Preview]"
               ]
             },
             "database.SyncedTableSpec": {
@@ -5201,17 +5201,17 @@
                 "SYNCED_TABLE_ONLINE_UPDATING_PIPELINE_RESOURCES"
               ],
               "enumDescriptions": [
-                "[PuPr]",
-                "[PuPr]",
-                "[PuPr]",
-                "[PuPr]",
-                "[PuPr]",
-                "[PuPr]",
-                "[PuPr]",
-                "[PuPr]",
-                "[PuPr]",
-                "[PuPr]",
-                "[PuPr]"
+                "[Public Preview]",
+                "[Public Preview]",
+                "[Public Preview]",
+                "[Public Preview]",
+                "[Public Preview]",
+                "[Public Preview]",
+                "[Public Preview]",
+                "[Public Preview]",
+                "[Public Preview]",
+                "[Public Preview]",
+                "[Public Preview]"
               ]
             },
             "database.SyncedTableStatus": {
@@ -5294,8 +5294,8 @@
                 "",
                 "",
                 "",
-                "[PrPr]",
-                "[PrPr]"
+                "[Private Preview]",
+                "[Private Preview]"
               ]
             },
             "jobs.AlertTask": {
@@ -5354,8 +5354,8 @@
                 "PAT"
               ],
               "enumDescriptions": [
-                "[PuPr]",
-                "[PuPr]"
+                "[Public Preview]",
+                "[Public Preview]"
               ]
             },
             "jobs.CleanRoomsNotebookTask": {
@@ -6081,8 +6081,8 @@
                 "DISCONNECTED"
               ],
               "enumDescriptions": [
-                "[PrPr] The job is not yet synced with the remote job specification. Import the remote job specification from UI to make the job fully synced.",
-                "[PrPr] The job is temporary disconnected from the remote job specification and is allowed for live edit. Import the remote job specification again from UI to make the job fully synced."
+                "[Private Preview] The job is not yet synced with the remote job specification. Import the remote job specification from UI to make the job fully synced.",
+                "[Private Preview] The job is temporary disconnected from the remote job specification and is allowed for live edit. Import the remote job specification again from UI to make the job fully synced."
               ]
             },
             "jobs.JobsHealthMetric": {
@@ -6202,9 +6202,9 @@
                 "MODEL_ALIAS_SET"
               ],
               "enumDescriptions": [
-                "[PrPr]",
-                "[PrPr]",
-                "[PrPr]"
+                "[Private Preview]",
+                "[Private Preview]",
+                "[Private Preview]"
               ]
             },
             "jobs.NotebookTask": {
@@ -6904,9 +6904,9 @@
                 "DUAL"
               ],
               "enumDescriptions": [
-                "[PuPr]",
-                "[PuPr]",
-                "[PuPr]"
+                "[Public Preview]",
+                "[Public Preview]",
+                "[Public Preview]"
               ]
             },
             "jobs.Subscription": {
@@ -7619,13 +7619,13 @@
                 "SUNDAY"
               ],
               "enumDescriptions": [
-                "[PuPr]",
-                "[PuPr]",
-                "[PuPr]",
-                "[PuPr]",
-                "[PuPr]",
-                "[PuPr]",
-                "[PuPr]"
+                "[Public Preview]",
+                "[Public Preview]",
+                "[Public Preview]",
+                "[Public Preview]",
+                "[Public Preview]",
+                "[Public Preview]",
+                "[Public Preview]"
               ]
             },
             "pipelines.DeploymentKind": {
@@ -7794,14 +7794,14 @@
                 "ORC"
               ],
               "enumDescriptions": [
-                "[PrPr]",
-                "[PrPr]",
-                "[PrPr]",
-                "[PrPr]",
-                "[PrPr]",
-                "[PrPr]",
-                "[PrPr]",
-                "[PrPr]"
+                "[Private Preview]",
+                "[Private Preview]",
+                "[Private Preview]",
+                "[Private Preview]",
+                "[Private Preview]",
+                "[Private Preview]",
+                "[Private Preview]",
+                "[Private Preview]"
               ]
             },
             "pipelines.FileIngestionOptionsSchemaEvolutionMode": {
@@ -7815,11 +7815,11 @@
                 "NONE"
               ],
               "enumDescriptions": [
-                "[PrPr]",
-                "[PrPr]",
-                "[PrPr]",
-                "[PrPr]",
-                "[PrPr]"
+                "[Private Preview]",
+                "[Private Preview]",
+                "[Private Preview]",
+                "[Private Preview]",
+                "[Private Preview]"
               ]
             },
             "pipelines.FileLibrary": {
@@ -7935,9 +7935,9 @@
                 "PERMISSION"
               ],
               "enumDescriptions": [
-                "[PrPr]",
-                "[PrPr]",
-                "[PrPr]"
+                "[Private Preview]",
+                "[Private Preview]",
+                "[Private Preview]"
               ]
             },
             "pipelines.IngestionConfig": {
@@ -8199,26 +8199,26 @@
                 "FOREIGN_CATALOG"
               ],
               "enumDescriptions": [
-                "[PuPr]",
-                "[PuPr]",
-                "[PuPr]",
-                "[PuPr]",
-                "[PuPr]",
-                "[PuPr]",
-                "[PuPr]",
-                "[PuPr]",
-                "[PuPr]",
-                "[PuPr]",
-                "[PuPr]",
-                "[PuPr]",
-                "[PuPr]",
-                "[PuPr]",
-                "[PrPr]",
+                "[Public Preview]",
+                "[Public Preview]",
+                "[Public Preview]",
+                "[Public Preview]",
+                "[Public Preview]",
+                "[Public Preview]",
+                "[Public Preview]",
+                "[Public Preview]",
+                "[Public Preview]",
+                "[Public Preview]",
+                "[Public Preview]",
+                "[Public Preview]",
+                "[Public Preview]",
+                "[Public Preview]",
+                "[Private Preview]",
                 "[Beta]",
-                "[PuPr]",
+                "[Public Preview]",
                 "[Beta]",
-                "[PrPr]",
-                "[PrPr]"
+                "[Private Preview]",
+                "[Private Preview]"
               ]
             },
             "pipelines.JiraConnectorOptions": {
@@ -8466,10 +8466,10 @@
                 "NONE"
               ],
               "enumDescriptions": [
-                "[PrPr]",
-                "[PrPr]",
-                "[PrPr]",
-                "[PrPr]"
+                "[Private Preview]",
+                "[Private Preview]",
+                "[Private Preview]",
+                "[Private Preview]"
               ]
             },
             "pipelines.OutlookBodyFormat": {
@@ -8480,8 +8480,8 @@
                 "TEXT_PLAIN"
               ],
               "enumDescriptions": [
-                "[PrPr]",
-                "[PrPr]"
+                "[Private Preview]",
+                "[Private Preview]"
               ]
             },
             "pipelines.OutlookOptions": {
@@ -9057,10 +9057,10 @@
                 "LIST"
               ],
               "enumDescriptions": [
-                "[PrPr]",
-                "[PrPr]",
-                "[PrPr]",
-                "[PrPr]"
+                "[Private Preview]",
+                "[Private Preview]",
+                "[Private Preview]",
+                "[Private Preview]"
               ]
             },
             "pipelines.SmartsheetOptions": {
@@ -9255,9 +9255,9 @@
                 "APPEND_ONLY"
               ],
               "enumDescriptions": [
-                "[PuPr]",
-                "[PuPr]",
-                "[PuPr]"
+                "[Public Preview]",
+                "[Public Preview]",
+                "[Public Preview]"
               ]
             },
             "pipelines.TikTokAdsOptions": {
@@ -9333,10 +9333,10 @@
                 "AUCTION_AD"
               ],
               "enumDescriptions": [
-                "[PrPr]",
-                "[PrPr]",
-                "[PrPr]",
-                "[PrPr]"
+                "[Private Preview]",
+                "[Private Preview]",
+                "[Private Preview]",
+                "[Private Preview]"
               ]
             },
             "pipelines.TikTokAdsOptionsTikTokReportType": {
@@ -9351,12 +9351,12 @@
                 "GMV_MAX"
               ],
               "enumDescriptions": [
-                "[PrPr]",
-                "[PrPr]",
-                "[PrPr]",
-                "[PrPr]",
-                "[PrPr]",
-                "[PrPr]"
+                "[Private Preview]",
+                "[Private Preview]",
+                "[Private Preview]",
+                "[Private Preview]",
+                "[Private Preview]",
+                "[Private Preview]"
               ]
             },
             "pipelines.Transformer": {
@@ -9389,8 +9389,8 @@
                 "JSON"
               ],
               "enumDescriptions": [
-                "[PrPr]",
-                "[PrPr]"
+                "[Private Preview]",
+                "[Private Preview]"
               ]
             },
             "pipelines.ZendeskSupportOptions": {
@@ -9656,9 +9656,9 @@
                 "MASK"
               ],
               "enumDescriptions": [
-                "[PuPr]",
-                "[PuPr]",
-                "[PuPr]"
+                "[Public Preview]",
+                "[Public Preview]",
+                "[Public Preview]"
               ]
             },
             "serving.AiGatewayGuardrails": {
@@ -9748,10 +9748,10 @@
                 "service_principal"
               ],
               "enumDescriptions": [
-                "[PuPr]",
-                "[PuPr]",
-                "[PuPr]",
-                "[PuPr]"
+                "[Public Preview]",
+                "[Public Preview]",
+                "[Public Preview]",
+                "[Public Preview]"
               ]
             },
             "serving.AiGatewayRateLimitRenewalPeriod": {
@@ -9760,7 +9760,7 @@
                 "minute"
               ],
               "enumDescriptions": [
-                "[PuPr]"
+                "[Public Preview]"
               ]
             },
             "serving.AiGatewayUsageTrackingConfig": {
@@ -9828,10 +9828,10 @@
                 "amazon"
               ],
               "enumDescriptions": [
-                "[PuPr]",
-                "[PuPr]",
-                "[PuPr]",
-                "[PuPr]"
+                "[Public Preview]",
+                "[Public Preview]",
+                "[Public Preview]",
+                "[Public Preview]"
               ]
             },
             "serving.AnthropicConfig": {
@@ -10135,15 +10135,15 @@
                 "custom"
               ],
               "enumDescriptions": [
-                "[PuPr]",
-                "[PuPr]",
-                "[PuPr]",
-                "[PuPr]",
-                "[PuPr]",
-                "[PuPr]",
-                "[PuPr]",
-                "[PuPr]",
-                "[PuPr]"
+                "[Public Preview]",
+                "[Public Preview]",
+                "[Public Preview]",
+                "[Public Preview]",
+                "[Public Preview]",
+                "[Public Preview]",
+                "[Public Preview]",
+                "[Public Preview]",
+                "[Public Preview]"
               ]
             },
             "serving.FallbackConfig": {
@@ -10300,8 +10300,8 @@
                 "endpoint"
               ],
               "enumDescriptions": [
-                "[PuPr]",
-                "[PuPr]"
+                "[Public Preview]",
+                "[Public Preview]"
               ]
             },
             "serving.RateLimitRenewalPeriod": {
@@ -10310,7 +10310,7 @@
                 "minute"
               ],
               "enumDescriptions": [
-                "[PuPr]"
+                "[Public Preview]"
               ]
             },
             "serving.Route": {
@@ -10574,14 +10574,14 @@
                 "STDDEV"
               ],
               "enumDescriptions": [
-                "[PuPr]",
-                "[PuPr]",
-                "[PuPr]",
-                "[PuPr]",
-                "[PuPr]",
-                "[PuPr]",
-                "[PuPr]",
-                "[PuPr]"
+                "[Public Preview]",
+                "[Public Preview]",
+                "[Public Preview]",
+                "[Public Preview]",
+                "[Public Preview]",
+                "[Public Preview]",
+                "[Public Preview]",
+                "[Public Preview]"
               ]
             },
             "sql.AlertEvaluationState": {
@@ -10594,10 +10594,10 @@
                 "ERROR"
               ],
               "enumDescriptions": [
-                "[PuPr]",
-                "[PuPr]",
-                "[PuPr]",
-                "[PuPr]"
+                "[Public Preview]",
+                "[Public Preview]",
+                "[Public Preview]",
+                "[Public Preview]"
               ]
             },
             "sql.AlertLifecycleState": {
@@ -10607,8 +10607,8 @@
                 "DELETED"
               ],
               "enumDescriptions": [
-                "[PuPr]",
-                "[PuPr]"
+                "[Public Preview]",
+                "[Public Preview]"
               ]
             },
             "sql.AlertV2Evaluation": {
@@ -10817,14 +10817,14 @@
                 "IS_NOT_NULL"
               ],
               "enumDescriptions": [
-                "[PuPr]",
-                "[PuPr]",
-                "[PuPr]",
-                "[PuPr]",
-                "[PuPr]",
-                "[PuPr]",
-                "[PuPr]",
-                "[PuPr]"
+                "[Public Preview]",
+                "[Public Preview]",
+                "[Public Preview]",
+                "[Public Preview]",
+                "[Public Preview]",
+                "[Public Preview]",
+                "[Public Preview]",
+                "[Public Preview]"
               ]
             },
             "sql.CreateWarehouseRequestWarehouseType": {
@@ -10894,8 +10894,8 @@
                 "PAUSED"
               ],
               "enumDescriptions": [
-                "[PuPr]",
-                "[PuPr]"
+                "[Public Preview]",
+                "[Public Preview]"
               ]
             },
             "sql.SpotInstancePolicy": {
@@ -11011,7 +11011,7 @@
                 "STANDARD"
               ],
               "enumDescriptions": [
-                "[PuPr]",
+                "[Public Preview]",
                 ""
               ]
             },

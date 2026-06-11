@@ -92,7 +92,7 @@ func TestAssignAnnotationLaunchStage(t *testing.T) {
 			},
 		})
 		assert.Equal(t, "Type of endpoint.", s.Description)
-		assert.Equal(t, []string{"[PuPr]", ""}, s.EnumDescriptions)
+		assert.Equal(t, []string{"[Public Preview]", ""}, s.EnumDescriptions)
 	})
 }
 
@@ -128,12 +128,12 @@ func TestBuildEnumDescriptions(t *testing.T) {
 			},
 		)
 		assert.Equal(t, []string{
-			"[PuPr] Storage-optimized endpoint.",
+			"[Public Preview] Storage-optimized endpoint.",
 			"Standard endpoint.",
 		}, got)
 	})
 
-	t.Run("launch stage only emits bracketed short label", func(t *testing.T) {
+	t.Run("launch stage only emits bracketed label", func(t *testing.T) {
 		got := buildEnumDescriptions(enum,
 			map[string]string{"STORAGE_OPTIMIZED": "PUBLIC_BETA"},
 			nil,
@@ -163,6 +163,6 @@ func TestBuildEnumDescriptions(t *testing.T) {
 			map[string]string{"A": "PUBLIC_PREVIEW", "B": "PUBLIC_BETA"},
 			nil,
 		)
-		assert.Equal(t, []string{"[PuPr]", "", "[Beta]"}, got)
+		assert.Equal(t, []string{"[Public Preview]", "", "[Beta]"}, got)
 	})
 }

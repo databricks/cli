@@ -176,9 +176,9 @@ func assignAnnotation(s *jsonschema.Schema, a annotation.Descriptor) {
 }
 
 // buildEnumDescriptions produces the parallel enumDescriptions array VSCode
-// renders next to each enum value. Each entry combines the short launch-stage
-// label and the per-value description text. Returns nil when every entry would
-// be empty so the field is omitted from the schema. The enum slice is the same
+// renders next to each enum value. Each entry combines the launch-stage tag
+// and the per-value description text. Returns nil when every entry would be
+// empty so the field is omitted from the schema. The enum slice is the same
 // one assigned to s.Enum, so the arrays stay index-aligned.
 func buildEnumDescriptions(enum []any, launchStages, descriptions map[string]string) []string {
 	if len(enum) == 0 || (len(launchStages) == 0 && len(descriptions) == 0) {
@@ -191,7 +191,7 @@ func buildEnumDescriptions(enum []any, launchStages, descriptions map[string]str
 		if !ok {
 			continue
 		}
-		result[i] = enumDescriptionLabel(launchStages[key], descriptions[key])
+		result[i] = prefixWithPreviewTag(descriptions[key], annotation.PreviewTag(launchStages[key]))
 		if result[i] != "" {
 			hasContent = true
 		}
@@ -202,24 +202,10 @@ func buildEnumDescriptions(enum []any, launchStages, descriptions map[string]str
 	return result
 }
 
-// enumDescriptionLabel formats a single enumDescriptions entry. The launch
-// stage is wrapped in brackets so it visually separates from the description
-// in VSCode's autocomplete dropdown; an empty stage leaves the description
-// alone, and a missing description leaves just the bracketed stage.
-func enumDescriptionLabel(launchStage, description string) string {
-	short := annotation.PreviewTagShort(launchStage)
-	switch {
-	case short != "" && description != "":
-		return short + " " + description
-	case short != "":
-		return short
-	}
-	return description
-}
-
 // prefixWithPreviewTag prepends the launch-stage tag to a description while
 // guarding against double-tagging — if the description already starts with
-// the tag, it is returned unchanged.
+// the tag, it is returned unchanged. An empty tag (GA) also takes the
+// HasPrefix path, returning the description as-is.
 func prefixWithPreviewTag(description, tag string) string {
 	if description == "" {
 		return tag

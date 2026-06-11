@@ -4901,8 +4901,8 @@
                     "SEV_SNP"
                   ],
                   "enumDescriptions": [
-                    "[PrPr]",
-                    "[PrPr]"
+                    "[Private Preview]",
+                    "[Private Preview]"
                   ]
                 },
                 {
@@ -5631,12 +5631,12 @@
                     "FAILING_OVER"
                   ],
                   "enumDescriptions": [
-                    "[PuPr]",
-                    "[PuPr]",
-                    "[PuPr]",
-                    "[PuPr]",
-                    "[PuPr]",
-                    "[PuPr]"
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]"
                   ]
                 },
                 {
@@ -5700,12 +5700,12 @@
                     "DEGRADED"
                   ],
                   "enumDescriptions": [
-                    "[PuPr]",
-                    "[PuPr]",
-                    "[PuPr]",
-                    "[PuPr]",
-                    "[PuPr]",
-                    "[PuPr]"
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]"
                   ]
                 },
                 {
@@ -5724,9 +5724,9 @@
                     "PROVISIONING_PHASE_INDEX_SORT"
                   ],
                   "enumDescriptions": [
-                    "[PuPr]",
-                    "[PuPr]",
-                    "[PuPr]"
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]"
                   ]
                 },
                 {
@@ -5809,9 +5809,9 @@
                     "SNAPSHOT"
                   ],
                   "enumDescriptions": [
-                    "[PuPr]",
-                    "[PuPr]",
-                    "[PuPr]"
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]"
                   ]
                 },
                 {
@@ -5889,17 +5889,17 @@
                     "SYNCED_TABLE_ONLINE_UPDATING_PIPELINE_RESOURCES"
                   ],
                   "enumDescriptions": [
-                    "[PuPr]",
-                    "[PuPr]",
-                    "[PuPr]",
-                    "[PuPr]",
-                    "[PuPr]",
-                    "[PuPr]",
-                    "[PuPr]",
-                    "[PuPr]",
-                    "[PuPr]",
-                    "[PuPr]",
-                    "[PuPr]"
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]"
                   ]
                 },
                 {
@@ -6002,8 +6002,8 @@
                     "",
                     "",
                     "",
-                    "[PrPr]",
-                    "[PrPr]"
+                    "[Private Preview]",
+                    "[Private Preview]"
                   ]
                 },
                 {
@@ -6080,8 +6080,8 @@
                     "PAT"
                   ],
                   "enumDescriptions": [
-                    "[PuPr]",
-                    "[PuPr]"
+                    "[Public Preview]",
+                    "[Public Preview]"
                   ]
                 },
                 {
@@ -6979,8 +6979,8 @@
                     "DISCONNECTED"
                   ],
                   "enumDescriptions": [
-                    "[PrPr] The job is not yet synced with the remote job specification. Import the remote job specification from UI to make the job fully synced.",
-                    "[PrPr] The job is temporary disconnected from the remote job specification and is allowed for live edit. Import the remote job specification again from UI to make the job fully synced."
+                    "[Private Preview] The job is not yet synced with the remote job specification. Import the remote job specification from UI to make the job fully synced.",
+                    "[Private Preview] The job is temporary disconnected from the remote job specification and is allowed for live edit. Import the remote job specification again from UI to make the job fully synced."
                   ]
                 },
                 {
@@ -7139,9 +7139,9 @@
                     "MODEL_ALIAS_SET"
                   ],
                   "enumDescriptions": [
-                    "[PrPr]",
-                    "[PrPr]",
-                    "[PrPr]"
+                    "[Private Preview]",
+                    "[Private Preview]",
+                    "[Private Preview]"
                   ]
                 },
                 {
@@ -7987,9 +7987,9 @@
                     "DUAL"
                   ],
                   "enumDescriptions": [
-                    "[PuPr]",
-                    "[PuPr]",
-                    "[PuPr]"
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]"
                   ]
                 },
                 {
@@ -8792,13 +8792,13 @@
                     "SUNDAY"
                   ],
                   "enumDescriptions": [
-                    "[PuPr]",
-                    "[PuPr]",
-                    "[PuPr]",
-                    "[PuPr]",
-                    "[PuPr]",
-                    "[PuPr]",
-                    "[PuPr]"
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]"
                   ]
                 },
                 {
@@ -8990,14 +8990,14 @@
                     "ORC"
                   ],
                   "enumDescriptions": [
-                    "[PrPr]",
-                    "[PrPr]",
-                    "[PrPr]",
-                    "[PrPr]",
-                    "[PrPr]",
-                    "[PrPr]",
-                    "[PrPr]",
-                    "[PrPr]"
+                    "[Private Preview]",
+                    "[Private Preview]",
+                    "[Private Preview]",
+                    "[Private Preview]",
+                    "[Private Preview]",
+                    "[Private Preview]",
+                    "[Private Preview]",
+                    "[Private Preview]"
                   ]
                 },
                 {
@@ -9019,11 +9019,11 @@
                     "NONE"
                   ],
                   "enumDescriptions": [
-                    "[PrPr]",
-                    "[PrPr]",
-                    "[PrPr]",
-                    "[PrPr]",
-                    "[PrPr]"
+                    "[Private Preview]",
+                    "[Private Preview]",
+                    "[Private Preview]",
+                    "[Private Preview]",
+                    "[Private Preview]"
                   ]
                 },
                 {
@@ -9177,9 +9177,9 @@
                     "PERMISSION"
                   ],
                   "enumDescriptions": [
-                    "[PrPr]",
-                    "[PrPr]",
-                    "[PrPr]"
+                    "[Private Preview]",
+                    "[Private Preview]",
+                    "[Private Preview]"
                   ]
                 },
                 {
@@ -9470,26 +9470,26 @@
                     "FOREIGN_CATALOG"
                   ],
                   "enumDescriptions": [
-                    "[PuPr]",
-                    "[PuPr]",
-                    "[PuPr]",
-                    "[PuPr]",
-                    "[PuPr]",
-                    "[PuPr]",
-                    "[PuPr]",
-                    "[PuPr]",
-                    "[PuPr]",
-                    "[PuPr]",
-                    "[PuPr]",
-                    "[PuPr]",
-                    "[PuPr]",
-                    "[PuPr]",
-                    "[PrPr]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Private Preview]",
                     "[Beta]",
-                    "[PuPr]",
+                    "[Public Preview]",
                     "[Beta]",
-                    "[PrPr]",
-                    "[PrPr]"
+                    "[Private Preview]",
+                    "[Private Preview]"
                   ]
                 },
                 {
@@ -9782,10 +9782,10 @@
                     "NONE"
                   ],
                   "enumDescriptions": [
-                    "[PrPr]",
-                    "[PrPr]",
-                    "[PrPr]",
-                    "[PrPr]"
+                    "[Private Preview]",
+                    "[Private Preview]",
+                    "[Private Preview]",
+                    "[Private Preview]"
                   ]
                 },
                 {
@@ -9804,8 +9804,8 @@
                     "TEXT_PLAIN"
                   ],
                   "enumDescriptions": [
-                    "[PrPr]",
-                    "[PrPr]"
+                    "[Private Preview]",
+                    "[Private Preview]"
                   ]
                 },
                 {
@@ -10456,10 +10456,10 @@
                     "LIST"
                   ],
                   "enumDescriptions": [
-                    "[PrPr]",
-                    "[PrPr]",
-                    "[PrPr]",
-                    "[PrPr]"
+                    "[Private Preview]",
+                    "[Private Preview]",
+                    "[Private Preview]",
+                    "[Private Preview]"
                   ]
                 },
                 {
@@ -10679,9 +10679,9 @@
                     "APPEND_ONLY"
                   ],
                   "enumDescriptions": [
-                    "[PuPr]",
-                    "[PuPr]",
-                    "[PuPr]"
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]"
                   ]
                 },
                 {
@@ -10766,10 +10766,10 @@
                     "AUCTION_AD"
                   ],
                   "enumDescriptions": [
-                    "[PrPr]",
-                    "[PrPr]",
-                    "[PrPr]",
-                    "[PrPr]"
+                    "[Private Preview]",
+                    "[Private Preview]",
+                    "[Private Preview]",
+                    "[Private Preview]"
                   ]
                 },
                 {
@@ -10792,12 +10792,12 @@
                     "GMV_MAX"
                   ],
                   "enumDescriptions": [
-                    "[PrPr]",
-                    "[PrPr]",
-                    "[PrPr]",
-                    "[PrPr]",
-                    "[PrPr]",
-                    "[PrPr]"
+                    "[Private Preview]",
+                    "[Private Preview]",
+                    "[Private Preview]",
+                    "[Private Preview]",
+                    "[Private Preview]",
+                    "[Private Preview]"
                   ]
                 },
                 {
@@ -10844,8 +10844,8 @@
                     "JSON"
                   ],
                   "enumDescriptions": [
-                    "[PrPr]",
-                    "[PrPr]"
+                    "[Private Preview]",
+                    "[Private Preview]"
                   ]
                 },
                 {
@@ -11188,9 +11188,9 @@
                     "MASK"
                   ],
                   "enumDescriptions": [
-                    "[PuPr]",
-                    "[PuPr]",
-                    "[PuPr]"
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]"
                   ]
                 },
                 {
@@ -11301,10 +11301,10 @@
                     "service_principal"
                   ],
                   "enumDescriptions": [
-                    "[PuPr]",
-                    "[PuPr]",
-                    "[PuPr]",
-                    "[PuPr]"
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]"
                   ]
                 },
                 {
@@ -11321,7 +11321,7 @@
                     "minute"
                   ],
                   "enumDescriptions": [
-                    "[PuPr]"
+                    "[Public Preview]"
                   ]
                 },
                 {
@@ -11405,10 +11405,10 @@
                     "amazon"
                   ],
                   "enumDescriptions": [
-                    "[PuPr]",
-                    "[PuPr]",
-                    "[PuPr]",
-                    "[PuPr]"
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]"
                   ]
                 },
                 {
@@ -11768,15 +11768,15 @@
                     "custom"
                   ],
                   "enumDescriptions": [
-                    "[PuPr]",
-                    "[PuPr]",
-                    "[PuPr]",
-                    "[PuPr]",
-                    "[PuPr]",
-                    "[PuPr]",
-                    "[PuPr]",
-                    "[PuPr]",
-                    "[PuPr]"
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]"
                   ]
                 },
                 {
@@ -11960,8 +11960,8 @@
                     "endpoint"
                   ],
                   "enumDescriptions": [
-                    "[PuPr]",
-                    "[PuPr]"
+                    "[Public Preview]",
+                    "[Public Preview]"
                   ]
                 },
                 {
@@ -11978,7 +11978,7 @@
                     "minute"
                   ],
                   "enumDescriptions": [
-                    "[PuPr]"
+                    "[Public Preview]"
                   ]
                 },
                 {
@@ -12273,14 +12273,14 @@
                     "STDDEV"
                   ],
                   "enumDescriptions": [
-                    "[PuPr]",
-                    "[PuPr]",
-                    "[PuPr]",
-                    "[PuPr]",
-                    "[PuPr]",
-                    "[PuPr]",
-                    "[PuPr]",
-                    "[PuPr]"
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]"
                   ]
                 },
                 {
@@ -12301,10 +12301,10 @@
                     "ERROR"
                   ],
                   "enumDescriptions": [
-                    "[PuPr]",
-                    "[PuPr]",
-                    "[PuPr]",
-                    "[PuPr]"
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]"
                   ]
                 },
                 {
@@ -12322,8 +12322,8 @@
                     "DELETED"
                   ],
                   "enumDescriptions": [
-                    "[PuPr]",
-                    "[PuPr]"
+                    "[Public Preview]",
+                    "[Public Preview]"
                   ]
                 },
                 {
@@ -12590,14 +12590,14 @@
                     "IS_NOT_NULL"
                   ],
                   "enumDescriptions": [
-                    "[PuPr]",
-                    "[PuPr]",
-                    "[PuPr]",
-                    "[PuPr]",
-                    "[PuPr]",
-                    "[PuPr]",
-                    "[PuPr]",
-                    "[PuPr]"
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]",
+                    "[Public Preview]"
                   ]
                 },
                 {
@@ -12701,8 +12701,8 @@
                     "PAUSED"
                   ],
                   "enumDescriptions": [
-                    "[PuPr]",
-                    "[PuPr]"
+                    "[Public Preview]",
+                    "[Public Preview]"
                   ]
                 },
                 {
@@ -12859,7 +12859,7 @@
                     "STANDARD"
                   ],
                   "enumDescriptions": [
-                    "[PuPr]",
+                    "[Public Preview]",
                     ""
                   ]
                 },
