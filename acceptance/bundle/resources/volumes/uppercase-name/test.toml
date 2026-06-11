@@ -3,6 +3,7 @@ RequiresUnityCatalog = true
 
 Ignore = [
     ".databricks",
+    "databricks.yml",
 ]
 
 # TF provider fails with "inconsistent final plan" when schema_name contains

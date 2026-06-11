@@ -47,10 +47,11 @@ tasks:
       - task: test-update
 
   all:
-    desc: Run regeneration (except for genkit), all checks, lints and test updates
+    desc: Run regeneration (except cligen and tf-schema), all checks, lints and test updates
     cmds:
-      # Skips generate-genkit (expensive, requires universe checkout, outputs are
-      # committed). Run `./task generate` explicitly when codegen inputs change.
+      # Skips generate-cligen and generate-tf-schema (outputs are committed;
+      # tf-schema needs provider access). Run `./task generate` explicitly when
+      # codegen inputs change.
       - task: generate-refschema
       - task: generate-schema
       - task: generate-schema-map
@@ -726,13 +727,12 @@ tasks:
   # can be invoked standalone.
 
   generate:
-    desc: Run all generators (genkit, tf-schema, refschema, schema, docs, validation, direct, pydabs)
+    desc: Run all generators (cligen, tf-schema, refschema, schema, docs, validation, direct, pydabs)
     cmds:
-      # Runs first: regenerates CLI command stubs from the OpenAPI spec at
-      # .codegen/_openapi_sha. SDK version bumps (go.mod/go.sum) are a manual
-      # step outside this task; TestConsistentDatabricksSdkVersion (run inside
-      # generate-genkit) asserts the two stay in sync.
-      - task: generate-genkit
+      # Runs first: regenerates CLI command stubs from the checked-in
+      # .codegen/cli.json (no universe checkout needed). Refreshing cli.json
+      # itself from the OpenAPI spec is the separate `generate-clijson` task.
+      - task: generate-cligen
       # Requires Terraform provider access (set TF_CLI_CONFIG_FILE to a
       # filesystem mirror, or rely on the public registry). Only re-runs when
       # bundle/internal/tf/codegen/schema/version.go changes.
@@ -747,47 +747,89 @@ tasks:
       - task: generate-direct
       - task: pydabs-codegen
 
-  # Drives genkit from a universe checkout. Genkit writes CLI command files into
-  # cmd/workspace and cmd/account, refreshes .gitattributes and
-  # .codegen/_openapi_sha, and emits .github/workflows/tagging.yml +
-  # tagging.py (+ lock) in the repo root plus a next-changelog workflow we
-  # don't keep. Genkit does NOT modify go.mod/go.sum — SDK bumps are a manual
-  # `go get` step before running this task. The cmds below then post-process
-  # genkit's output: assert the SDK version matches the OpenAPI SHA, drop the
-  # next-changelog workflow, relocate tagging.py under internal/genkit/ and
-  # rewrite the tagging.yml workflow to match, then yamlfmt + whitespace fix
-  # so the tree is clean.
-  generate-genkit:
-    desc: Run genkit to generate CLI commands and tagging workflow (requires universe repo)
+  # Subset of `generate` that reproduces byte-for-byte on a clean checkout. The
+  # validate-generated-is-up-to-date CI job runs this followed by
+  # `git diff --exit-code` to catch committed artifacts drifting from their
+  # generators. It omits the generators in `generate` whose output isn't
+  # reproducible per-PR:
+  #   - generate-tf-schema downloads the Terraform provider, which no CI runner
+  #     sets up; its output only changes when schema/version.go changes.
+  #   - generate-schema-docs stamps x-since-version from `git tag`, so it churns
+  #     after every release; jsonschema_for_docs.json is published separately to
+  #     the docgen branch by .github/workflows/update-schema-docs.yml.
+  #   - generate-docs stamps the current date (time.Now in bundle/docsgen/main.go),
+  #     so reference.md/resources.md diff on any day they weren't last generated.
+  # Keep this list in sync with `generate` when adding or removing generators.
+  generate-check:
+    desc: Run the reproducible generators (CI drift subset of `generate`)
+    cmds:
+      - task: generate-cligen
+      - task: generate-refschema
+      - task: generate-schema
+      - task: generate-validation
+      - task: generate-direct
+      - task: pydabs-codegen
+
+  # Regenerates the CLI command stubs (cmd/workspace/**, cmd/account/**) and
+  # .gitattributes from the checked-in .codegen/cli.json. No universe checkout,
+  # no spec download, no network: cli.json is the self-describing spec
+  # produced upstream by `generate-clijson`. internal/cligen renders
+  # the same templates genkit's cli_v0 generator uses, then formats with
+  # goimports + gofmt. The final `ws` strips trailing whitespace (e.g. the
+  # comment-banner blank lines) so the result matches byte-for-byte, exactly as
+  # the old generate-genkit task did.
+  generate-cligen:
+    desc: Regenerate CLI command stubs from .codegen/cli.json
     sources:
-      - .codegen/_openapi_sha
+      - .codegen/cli.json
       - .gitattributes.manual
-      - go.mod
-      - go.sum
+      - internal/cligen/**/*.go
+      - internal/cligen/templates/*.tmpl
+    generates:
+      - cmd/workspace/**/*.go
+      - cmd/account/**/*.go
+      - .gitattributes
+    cmds:
+      - go run ./internal/cligen --input .codegen/cli.json --output .
+      - task: ws
+
+  # Refreshes .codegen/cli.json from the OpenAPI spec at .codegen/_openapi_sha.
+  # cli.json is a genkit SDK target like any other (mode cli_v1 in .codegen.json):
+  # the cli_v1 producer is decoupled from the spec, so genkit is built from the
+  # universe checkout's HEAD (the current producer), while the spec itself is
+  # fetched by SHA. Run it when the spec SHA is bumped; `task generate` then
+  # consumes the committed cli.json. SDK version bumps (go.mod/go.sum) are a
+  # manual `go get` step beforehand; TestConsistentDatabricksSdkVersion asserts
+  # the two stay in sync.
+  #
+  # No `sources:`/`generates:`: the producer is built from the universe
+  # checkout's HEAD, which no source fingerprint can capture, so a checksum
+  # cache would report "up to date" after pulling a newer producer.
+  generate-clijson:
+    desc: Produce .codegen/cli.json from the OpenAPI spec via genkit (requires universe repo with the cli_v1 producer)
     vars:
       UNIVERSE_DIR:
         sh: echo "${UNIVERSE_DIR:-$HOME/universe}"
     cmds:
+      # Building from a dirty universe tree would produce a cli.json that no
+      # universe commit can reproduce. Set UNIVERSE_ALLOW_DIRTY=1 to build from
+      # uncommitted producer changes deliberately (e.g. while iterating on the
+      # producer itself).
       - |
-        if [ -z "$UNIVERSE_SKIP_CHECKOUT" ]; then
+        if [ -z "$UNIVERSE_ALLOW_DIRTY" ]; then
           if ! git -C {{.UNIVERSE_DIR}} diff --quiet || ! git -C {{.UNIVERSE_DIR}} diff --cached --quiet; then
-            echo "Error: universe repo at {{.UNIVERSE_DIR}} has uncommitted changes; commit or stash them, or set UNIVERSE_SKIP_CHECKOUT=1 to skip checkout"
+            echo "Error: universe repo at {{.UNIVERSE_DIR}} has uncommitted changes; commit or stash them, or set UNIVERSE_ALLOW_DIRTY=1 to build the producer from the dirty tree"
             exit 1
           fi
-          echo "Checking out universe at SHA: $(cat .codegen/_openapi_sha)"
-          cd {{.UNIVERSE_DIR}}
-          if ! git cat-file -e $(cat {{.ROOT_DIR}}/.codegen/_openapi_sha) 2>/dev/null; then
-            git fetch --filter=blob:none origin master
-          fi
-          git checkout $(cat {{.ROOT_DIR}}/.codegen/_openapi_sha)
-        else
-          echo "UNIVERSE_SKIP_CHECKOUT set; using current {{.UNIVERSE_DIR}} HEAD"
         fi
-      - echo "Building genkit..."
+      - echo "Building genkit at universe HEAD $(git -C {{.UNIVERSE_DIR}} rev-parse --short HEAD)..."
       - cd {{.UNIVERSE_DIR}} && ./tools/bazel build //openapi/genkit
       - echo "Generating CLI code..."
-      - "{{.UNIVERSE_DIR}}/bazel-bin/openapi/genkit/genkit_/genkit update-sdk"
-      - "cat .gitattributes.manual .gitattributes > .gitattributes.tmp && mv .gitattributes.tmp .gitattributes"
+      - '{{.UNIVERSE_DIR}}/bazel-bin/openapi/genkit/genkit_/genkit update-sdk --dir {{.ROOT_DIR}}'
+      # genkit also writes .gitattributes, but that file is owned by
+      # generate-cligen (which derives it from .gitattributes.manual plus the
+      # rendered file list), so discard genkit's copy.
+      - git checkout -- .gitattributes
       - go test -timeout 240s -run TestConsistentDatabricksSdkVersion github.com/databricks/cli/internal/build
       - rm .github/workflows/next-changelog.yml
       - mv tagging.py internal/genkit/tagging.py
@@ -820,8 +862,32 @@ tasks:
     cmds:
       - go test ./acceptance -run TestAccept/bundle/refschema -update
 
+  # Regenerates the OpenAPI annotation files (annotations_openapi*.yml) from the
+  # checked-in .codegen/cli.json. This is the step that propagates a cli.json
+  # change into the schema/docs artifacts: generate-schema, generate-schema-docs
+  # and generate-docs all depend on it, so editing cli.json and running
+  # `task generate` percolates into jsonschema.json, the docs and pydabs.
+  generate-annotations:
+    desc: Regenerate annotation files from .codegen/cli.json
+    # Dep of generate-schema, generate-schema-docs and generate-docs; `run: once`
+    # plus the fingerprint keep `task generate` from re-running it per parent.
+    run: once
+    sources:
+      - .codegen/cli.json
+      - bundle/internal/schema/**/*.go
+      - bundle/internal/schema/annotations*.yml
+      - go.mod
+      - go.sum
+    generates:
+      - bundle/internal/schema/annotations_openapi.yml
+      - bundle/internal/schema/annotations.yml
+      - bundle/schema/jsonschema.json
+    cmds:
+      - "DATABRICKS_CLI_JSON=.codegen/cli.json go run ./bundle/internal/schema ./bundle/internal/schema ./bundle/schema/jsonschema.json"
+
   generate-schema:
     desc: Generate bundle JSON schema
+    deps: ['generate-annotations']
     sources: &SCHEMA_SOURCES
       - "**/*.go"
       - bundle/internal/schema/annotations*.yml
@@ -837,6 +903,7 @@ tasks:
 
   generate-schema-docs:
     desc: Generate bundle JSON schema for documentation
+    deps: ['generate-annotations']
     sources: *SCHEMA_SOURCES
     generates:
       - bundle/schema/jsonschema_for_docs.json
@@ -851,6 +918,7 @@ tasks:
 
   generate-docs:
     desc: Generate bundle documentation
+    deps: ['generate-annotations']
     sources:
       - "**/*.go"
       - bundle/docsgen/templates/**
@@ -915,38 +983,28 @@ tasks:
 
   generate-direct-apitypes:
     desc: Generate direct engine API types YAML
-    deps: ['generate-openapi-json']
     sources:
       - bundle/direct/tools/generate_apitypes.py
-      - .codegen/openapi.json
+      - .codegen/cli.json
       - acceptance/bundle/refschema/out.fields.txt
     generates:
       - bundle/direct/dresources/apitypes.generated.yml
     cmds:
-      - "sh -c 'python3 bundle/direct/tools/generate_apitypes.py .codegen/openapi.json acceptance/bundle/refschema/out.fields.txt > bundle/direct/dresources/apitypes.generated.yml'"
+      - "sh -c 'python3 bundle/direct/tools/generate_apitypes.py .codegen/cli.json acceptance/bundle/refschema/out.fields.txt > bundle/direct/dresources/apitypes.generated.yml'"
 
   generate-direct-resources:
     desc: Generate direct engine resources YAML
     deps: ['generate-direct-apitypes']
     sources:
       - bundle/direct/tools/generate_resources.py
-      - .codegen/openapi.json
+      - .codegen/cli.json
       - bundle/direct/dresources/apitypes.generated.yml
       - bundle/direct/dresources/apitypes.yml
       - acceptance/bundle/refschema/out.fields.txt
     generates:
       - bundle/direct/dresources/resources.generated.yml
     cmds:
-      - "sh -c 'uv run --script bundle/direct/tools/generate_resources.py .codegen/openapi.json bundle/direct/dresources/apitypes.generated.yml bundle/direct/dresources/apitypes.yml acceptance/bundle/refschema/out.fields.txt > bundle/direct/dresources/resources.generated.yml'"
-
-  generate-openapi-json:
-    desc: Download OpenAPI spec (triggered by _openapi_sha change)
-    sources:
-      - .codegen/_openapi_sha
-    generates:
-      - .codegen/openapi.json
-    cmds:
-      - "wget -O .codegen/openapi.json.tmp \"https://openapi.dev.databricks.com/$(cat .codegen/_openapi_sha)/specs/all-internal.json\" && mv .codegen/openapi.json.tmp .codegen/openapi.json"
+      - "sh -c 'uv run --script bundle/direct/tools/generate_resources.py .codegen/cli.json bundle/direct/dresources/apitypes.generated.yml bundle/direct/dresources/apitypes.yml acceptance/bundle/refschema/out.fields.txt > bundle/direct/dresources/resources.generated.yml'"
 
   # pydabs-* tasks are defined in python/Taskfile.yml (included above).
 

@@ -27,12 +27,16 @@ class TikTokAdsOptions:
 
     data_level: VariableOrOptional[TikTokAdsOptionsTikTokDataLevel] = None
     """
+    :meta private: [EXPERIMENTAL]
+    
     (Optional) Data level for the report.
     If not specified, defaults to AUCTION_CAMPAIGN.
     """
 
     dimensions: VariableOrList[str] = field(default_factory=list)
     """
+    :meta private: [EXPERIMENTAL]
+    
     (Optional) Dimensions to include in the report.
     Examples: "campaign_id", "adgroup_id", "ad_id", "stat_time_day", "stat_time_hour"
     If not specified, defaults to campaign_id.
@@ -40,6 +44,8 @@ class TikTokAdsOptions:
 
     lookback_window_days: VariableOrOptional[int] = None
     """
+    :meta private: [EXPERIMENTAL]
+    
     (Optional) Number of days to look back for report tables during incremental sync
     to capture late-arriving conversions and attribution data.
     If not specified, defaults to 7 days.
@@ -47,6 +53,8 @@ class TikTokAdsOptions:
 
     metrics: VariableOrList[str] = field(default_factory=list)
     """
+    :meta private: [EXPERIMENTAL]
+    
     (Optional) Metrics to include in the report.
     Examples: "spend", "impressions", "clicks", "conversion", "cpc"
     If not specified, defaults to basic metrics (spend, impressions, clicks, etc.)
@@ -54,6 +62,8 @@ class TikTokAdsOptions:
 
     query_lifetime: VariableOrOptional[bool] = None
     """
+    :meta private: [EXPERIMENTAL]
+    
     (Optional) Whether to request lifetime metrics (all-time aggregated data).
     When true, the report returns all-time data.
     If not specified, defaults to false.
@@ -61,12 +71,16 @@ class TikTokAdsOptions:
 
     report_type: VariableOrOptional[TikTokAdsOptionsTikTokReportType] = None
     """
+    :meta private: [EXPERIMENTAL]
+    
     (Optional) Report type for the TikTok Ads API.
     If not specified, defaults to BASIC.
     """
 
     sync_start_date: VariableOrOptional[str] = None
     """
+    :meta private: [EXPERIMENTAL]
+    
     (Optional) Start date for the initial sync of report tables in YYYY-MM-DD format.
     This determines the earliest date from which to sync historical data.
     If not specified, defaults to 1 year of historical data for daily reports
@@ -86,12 +100,16 @@ class TikTokAdsOptionsDict(TypedDict, total=False):
 
     data_level: VariableOrOptional[TikTokAdsOptionsTikTokDataLevelParam]
     """
+    :meta private: [EXPERIMENTAL]
+    
     (Optional) Data level for the report.
     If not specified, defaults to AUCTION_CAMPAIGN.
     """
 
     dimensions: VariableOrList[str]
     """
+    :meta private: [EXPERIMENTAL]
+    
     (Optional) Dimensions to include in the report.
     Examples: "campaign_id", "adgroup_id", "ad_id", "stat_time_day", "stat_time_hour"
     If not specified, defaults to campaign_id.
@@ -99,6 +117,8 @@ class TikTokAdsOptionsDict(TypedDict, total=False):
 
     lookback_window_days: VariableOrOptional[int]
     """
+    :meta private: [EXPERIMENTAL]
+    
     (Optional) Number of days to look back for report tables during incremental sync
     to capture late-arriving conversions and attribution data.
     If not specified, defaults to 7 days.
@@ -106,6 +126,8 @@ class TikTokAdsOptionsDict(TypedDict, total=False):
 
     metrics: VariableOrList[str]
     """
+    :meta private: [EXPERIMENTAL]
+    
     (Optional) Metrics to include in the report.
     Examples: "spend", "impressions", "clicks", "conversion", "cpc"
     If not specified, defaults to basic metrics (spend, impressions, clicks, etc.)
@@ -113,6 +135,8 @@ class TikTokAdsOptionsDict(TypedDict, total=False):
 
     query_lifetime: VariableOrOptional[bool]
     """
+    :meta private: [EXPERIMENTAL]
+    
     (Optional) Whether to request lifetime metrics (all-time aggregated data).
     When true, the report returns all-time data.
     If not specified, defaults to false.
@@ -120,12 +144,16 @@ class TikTokAdsOptionsDict(TypedDict, total=False):
 
     report_type: VariableOrOptional[TikTokAdsOptionsTikTokReportTypeParam]
     """
+    :meta private: [EXPERIMENTAL]
+    
     (Optional) Report type for the TikTok Ads API.
     If not specified, defaults to BASIC.
     """
 
     sync_start_date: VariableOrOptional[str]
     """
+    :meta private: [EXPERIMENTAL]
+    
     (Optional) Start date for the initial sync of report tables in YYYY-MM-DD format.
     This determines the earliest date from which to sync historical data.
     If not specified, defaults to 1 year of historical data for daily reports
