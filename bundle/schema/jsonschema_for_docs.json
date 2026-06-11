@@ -747,31 +747,46 @@
                 "type": "object",
                 "properties": {
                   "description": {
-                    "$ref": "#/$defs/string"
+                    "description": "Description of the Genie space shown alongside the title in the Databricks UI.",
+                    "$ref": "#/$defs/string",
+                    "x-since-version": "v1.3.0"
+                  },
+                  "etag": {
+                    "$ref": "#/$defs/string",
+                    "x-since-version": "v1.3.0"
                   },
                   "file_path": {
-                    "$ref": "#/$defs/string"
+                    "description": "Local path to a `.geniespace.json` file holding the serialized Genie space definition. The contents are inlined into `serialized_space` at deploy time. Mutually exclusive with an inline `serialized_space`.",
+                    "$ref": "#/$defs/string",
+                    "x-since-version": "v1.3.0"
                   },
                   "lifecycle": {
-                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
+                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle",
+                    "x-since-version": "v1.3.0"
                   },
                   "parent_path": {
-                    "$ref": "#/$defs/string"
+                    "description": "Workspace folder under which to create the Genie space. Immutable: changing this field recreates the resource.",
+                    "$ref": "#/$defs/string",
+                    "x-since-version": "v1.3.0"
                   },
                   "permissions": {
-                    "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission"
+                    "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission",
+                    "x-since-version": "v1.3.0"
                   },
                   "serialized_space": {
-                    "$ref": "#/$defs/interface"
-                  },
-                  "space_id": {
-                    "$ref": "#/$defs/string"
+                    "description": "Serialized Genie space body. May be provided inline as a JSON string (or YAML that will be marshalled to JSON) or referenced via `file_path`. To round-trip an existing space into a bundle, use `databricks bundle generate genie-space`.",
+                    "$ref": "#/$defs/interface",
+                    "x-since-version": "v1.3.0"
                   },
                   "title": {
-                    "$ref": "#/$defs/string"
+                    "description": "Title of the Genie space shown in the Databricks UI.",
+                    "$ref": "#/$defs/string",
+                    "x-since-version": "v1.3.0"
                   },
                   "warehouse_id": {
-                    "$ref": "#/$defs/string"
+                    "description": "ID of the SQL warehouse used to run queries for this Genie space.",
+                    "$ref": "#/$defs/string",
+                    "x-since-version": "v1.3.0"
                   }
                 },
                 "additionalProperties": false
@@ -2657,7 +2672,8 @@
                   "x-since-version": "v0.289.0"
                 },
                 "genie_spaces": {
-                  "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.GenieSpace"
+                  "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.GenieSpace",
+                  "x-since-version": "v1.3.0"
                 },
                 "jobs": {
                   "description": "The job definitions for the bundle, where each key is the name of the job.",
