@@ -759,10 +759,14 @@ func describeRunFailure(ctx context.Context, client *databricks.WorkspaceClient,
 		outputRunID = sshTask.RunId
 	}
 	if output, err := client.Jobs.GetRunOutput(ctx, jobs.GetRunOutputRequest{RunId: outputRunID}); err == nil && output != nil {
-		if e := strings.TrimSpace(output.Error); e != "" {
-			fmt.Fprintf(&b, "  %s\n", e)
+		e := strings.TrimSpace(output.Error)
+		trace := strings.TrimSpace(output.ErrorTrace)
+		// Notebook tracebacks end with the same message as Error; skip Error then so the
+		// server-log tail the bootstrap embeds in the message isn't printed twice.
+		if e != "" && !strings.Contains(trace, e) {
+			fmt.Fprintf(&b, "  %s\n", truncateTail(e, maxRunFailureTraceBytes))
 		}
-		if trace := strings.TrimSpace(output.ErrorTrace); trace != "" {
+		if trace != "" {
 			fmt.Fprintf(&b, "%s\n", truncateTail(trace, maxRunFailureTraceBytes))
 		}
 	}
