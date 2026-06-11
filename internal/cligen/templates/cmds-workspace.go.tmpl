@@ -1,0 +1,36 @@
+// Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+
+package workspace
+
+{{ $excludes :=
+	list
+		"command-execution"
+		"statement-execution"
+		"dbfs"
+		"dbsql-permissions"
+		"account-access-control-proxy"
+		"files"
+}}
+
+import (
+	"github.com/databricks/cli/cmd/root"
+    {{range .Services}}{{if and (not .IsAccounts) (not .HasParent) (not .IsDataPlane)}}{{if not (in $excludes .KebabName) }}
+	{{.SnakeName}} "github.com/databricks/cli/cmd/workspace/{{.KebabName}}"{{end}}{{end}}{{end}}
+
+	groups "github.com/databricks/cli/cmd/workspace/groups"
+	service_principals "github.com/databricks/cli/cmd/workspace/service-principals"
+	users "github.com/databricks/cli/cmd/workspace/users"
+)
+
+func All() []*cobra.Command {
+	var out []*cobra.Command
+
+	{{range .Services}}{{if and (not .IsAccounts) (not .HasParent) (not .IsDataPlane)}}{{if not (in $excludes .KebabName) -}}
+	out = append(out, {{.SnakeName}}.New())
+	{{end}}{{end}}{{end}}
+    out = append(out, groups.New())
+    out = append(out, service_principals.New())
+    out = append(out, users.New())
+
+	return out
+}

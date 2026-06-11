@@ -203,15 +203,24 @@ func generateSchema(workdir, outputFile string, docsMode bool) {
 	annotationsOpenApiPath := filepath.Join(workdir, "annotations_openapi.yml")
 	annotationsOpenApiOverridesPath := filepath.Join(workdir, "annotations_openapi_overrides.yml")
 
-	// Input file, the databricks openapi spec.
-	inputFile := os.Getenv("DATABRICKS_OPENAPI_SPEC") //nolint:forbidigo // main() entry point, no ctx
-	if inputFile != "" {
-		p, err := newParser(inputFile)
+	// The .codegen/cli.json spec is the source for the generated annotation
+	// files. Its schema graph carries the descriptions, enums and field
+	// behaviors the CLI reflects onto its config types. When unset, the
+	// committed annotation files are used as-is.
+	cliJSONFile := os.Getenv("DATABRICKS_CLI_JSON") //nolint:forbidigo // main() entry point, no ctx
+
+	var p *annotationParser
+	if cliJSONFile != "" {
+		schemas, err := parseCliJSON(cliJSONFile)
 		if err != nil {
 			log.Fatal(err)
 		}
-		fmt.Printf("Writing OpenAPI annotations to %s\n", annotationsOpenApiPath)
-		err = p.extractAnnotations(reflect.TypeFor[config.Root](), annotationsOpenApiPath, annotationsOpenApiOverridesPath)
+		p = newParser(schemas)
+	}
+
+	if p != nil {
+		fmt.Printf("Writing annotations to %s\n", annotationsOpenApiPath)
+		err := p.extractAnnotations(reflect.TypeFor[config.Root](), annotationsOpenApiPath, annotationsOpenApiOverridesPath)
 		if err != nil {
 			log.Fatal(err)
 		}

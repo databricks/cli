@@ -177,6 +177,7 @@ Additional Commands:
   configure                              Configure authentication
   help                                   Help about any command
   labs                                   Manage Databricks Labs installations
+  quickstart                             Print an introduction to the Databricks CLI
   version                                Retrieve information about the current version of this CLI
 
 Flags:
