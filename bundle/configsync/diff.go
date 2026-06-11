@@ -205,7 +205,9 @@ func ensureSnapshotAvailable(ctx context.Context, b *bundle.Bundle, engine engin
 	r, err := f.Read(ctx, remotePathSnapshot)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
-			return fmt.Errorf("resources state snapshot not found remotely at %s", remotePathSnapshot)
+			// Wrap the sentinel so callers can classify this failure
+			// (telemetry reports it as STATE_NOT_FOUND).
+			return fmt.Errorf("resources state snapshot not found remotely at %s: %w", remotePathSnapshot, ErrStateSnapshotNotFound)
 		}
 		return fmt.Errorf("reading remote snapshot: %w", err)
 	}

@@ -1,0 +1,11 @@
+
+>>> errcode [CLI] bundle config-remote-sync
+Error: failed to detect changes: state snapshot not available: resources state snapshot not found remotely at resources-config-sync-snapshot.json: state snapshot not found
+
+Exit code: 1
+
+>>> cat out.requests.txt
+{
+  "engine": "terraform",
+  "error_category": "STATE_NOT_FOUND"
+}

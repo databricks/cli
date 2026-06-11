@@ -12,8 +12,10 @@ import (
 	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/spf13/cobra"
 )
 
@@ -46,6 +48,18 @@ Examples:
 			return errors.New("config-remote-sync command is not supported on Windows")
 		}
 
+		stats := configsync.Stats{Save: save}
+
+		// Emit telemetry on every exit path, including failures inside
+		// ProcessBundleRet before PostStateFunc runs. Skip when no auth config
+		// was resolved: without it the upload at the end of the command
+		// lifecycle has no workspace to send to.
+		defer func() {
+			if cmdctx.HasConfigUsed(cmd.Context()) {
+				stats.LogTelemetry(cmd.Context())
+			}
+		}()
+
 		_, _, err := utils.ProcessBundleRet(cmd, utils.ProcessOptions{
 			ReadState:  true,
 			Build:      true,
@@ -54,29 +68,41 @@ Examples:
 				b.SkipLocalFileValidation = true
 			},
 			PostStateFunc: func(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc) error {
+				stats.Engine = stateDesc.Engine
+
 				changes, err := configsync.DetectChanges(ctx, b, stateDesc.Engine)
 				if err != nil {
+					stats.ErrorCategory = protos.BundleConfigRemoteSyncErrorCategoryDetectChangesFailed
+					if errors.Is(err, configsync.ErrStateSnapshotNotFound) {
+						stats.ErrorCategory = protos.BundleConfigRemoteSyncErrorCategoryStateNotFound
+					}
 					return fmt.Errorf("failed to detect changes: %w", err)
 				}
+				stats.CollectChangeStats(changes)
 
 				fieldChanges, err := configsync.ResolveChanges(ctx, b, changes)
 				if err != nil {
+					stats.ErrorCategory = protos.BundleConfigRemoteSyncErrorCategoryResolveFailed
 					return fmt.Errorf("failed to resolve field changes: %w", err)
 				}
 
-				if err := configsync.RestoreVariableReferences(ctx, b, fieldChanges); err != nil {
+				if err := configsync.RestoreVariableReferences(ctx, b, fieldChanges, &stats.Restore); err != nil {
 					log.Warnf(ctx, "variable restoration skipped: %v", err)
 				}
 
 				files, err := configsync.ApplyChangesToYAML(ctx, b, fieldChanges)
 				if err != nil {
+					stats.ErrorCategory = protos.BundleConfigRemoteSyncErrorCategoryYamlApplyFailed
 					return fmt.Errorf("failed to generate YAML files: %w", err)
 				}
+				stats.FilesChangedCount = int64(len(files))
 
 				if save {
 					if err := configsync.SaveFiles(ctx, b, files); err != nil {
+						stats.ErrorCategory = protos.BundleConfigRemoteSyncErrorCategorySaveFailed
 						return fmt.Errorf("failed to save files: %w", err)
 					}
+					stats.FilesWrittenCount = int64(len(files))
 				}
 
 				var result []byte
@@ -87,6 +113,7 @@ Examples:
 					}
 					result, err = json.MarshalIndent(diffOutput, "", "  ")
 					if err != nil {
+						stats.ErrorCategory = protos.BundleConfigRemoteSyncErrorCategoryOutputFailed
 						return fmt.Errorf("failed to marshal output: %w", err)
 					}
 				} else if root.OutputType(cmd) == flags.OutputText {
@@ -99,6 +126,9 @@ Examples:
 				return nil
 			},
 		})
+		if err != nil && stats.ErrorCategory == "" {
+			stats.ErrorCategory = protos.BundleConfigRemoteSyncErrorCategoryBundleLoadFailed
+		}
 		return err
 	}
 

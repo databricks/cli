@@ -1,0 +1,4 @@
+# The telemetry event includes the engine name, so outputs diverge between
+# engines; pin to direct (the default for new bundles).
+[EnvMatrix]
+  DATABRICKS_BUNDLE_ENGINE = ["direct"]

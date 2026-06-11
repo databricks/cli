@@ -1,0 +1,4 @@
+# Running without a prior deploy only fails with STATE_NOT_FOUND on the
+# terraform engine (the snapshot pull path); pin the matrix accordingly.
+[EnvMatrix]
+  DATABRICKS_BUNDLE_ENGINE = ["terraform"]
