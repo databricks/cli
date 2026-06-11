@@ -186,11 +186,6 @@ Examples:
 				_ = setGatewayHost(ctx, profile, sandboxGatewayHost)
 			}
 
-			// Don't print "Connected" here — ssh hasn't completed the
-			// handshake yet, so any success message would race ssh's
-			// own error output on the failure path.
-			s := spin(ctx, "Connecting to "+cmdio.Bold(ctx, sandboxID)+"…")
-			defer s.Close()
 			return execSSHDirect(sandboxID, host, gatewayPort, keyPath, extraArgs)
 		},
 	}
