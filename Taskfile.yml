@@ -757,8 +757,6 @@ tasks:
   #   - generate-schema-docs stamps x-since-version from `git tag`, so it churns
   #     after every release; jsonschema_for_docs.json is published separately to
   #     the docgen branch by .github/workflows/update-schema-docs.yml.
-  #   - generate-docs stamps the current date (time.Now in bundle/docsgen/main.go),
-  #     so reference.md/resources.md diff on any day they weren't last generated.
   # Keep this list in sync with `generate` when adding or removing generators.
   generate-check:
     desc: Run the reproducible generators (CI drift subset of `generate`)
@@ -767,6 +765,7 @@ tasks:
       - task: generate-refschema
       - task: generate-schema
       - task: generate-validation
+      - task: generate-docs
       - task: generate-direct
       - task: pydabs-codegen
 
