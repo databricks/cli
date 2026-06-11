@@ -171,11 +171,13 @@ Examples:
 				_ = setGatewayHost(ctx, profile, sandboxGatewayHost)
 			}
 
-			// Don't print "Connected" here — ssh hasn't completed the
-			// handshake yet, so any success message would race ssh's
-			// own error output on the failure path.
-			s := spin(ctx, "Connecting to "+cmdio.Bold(ctx, sandboxID)+"…")
-			defer s.Close()
+			// No "Connecting…" spinner here. execSSHDirect replaces
+			// the CLI process via execv, so a deferred Close() would
+			// never run — and Bubble Tea hides the terminal cursor at
+			// init and only restores it on clean shutdown, leaving the
+			// cursor invisible for the entire ssh session and after it
+			// exits. The spinner couldn't animate during the handshake
+			// anyway (the CLI process is gone by then).
 			return execSSHDirect(sandboxID, host, gatewayPort, keyPath, extraArgs)
 		},
 	}
