@@ -429,6 +429,11 @@ jobs:
       - name: Verify that generated code is up to date
         run: |
           go tool -modfile=tools/task/go.mod task --force generate-check
+          # pydabs-codegen's `uv run` rewrites uv.lock with the JFrog pypi proxy
+          # URLs that setup-jfrog configures (and drops some size fields), whereas
+          # the committed locks use pypi.org. That churn is environment noise, not
+          # codegen drift, so discard it before diffing.
+          git checkout -- python/uv.lock python/codegen/uv.lock
           # Register untracked files with intent-to-add so `git diff` reports new
           # files (e.g. a newly generated command) too, not just modifications.
           git add --intent-to-add .
