@@ -55,7 +55,7 @@ If an agent (you) authored or substantially helped author the PR, disclose it on
 
 ## Changelog entry
 
-Add a `NEXT_CHANGELOG.md` entry when your change is user-visible. CI generates the real `CHANGELOG.md` from `NEXT_CHANGELOG.md` at release time, so never hand-edit `CHANGELOG.md` directly.
+Add a changelog fragment under `.nextchanges/` when your change is user-visible. Each PR adds its own file, so entries never conflict between PRs. CI collates the fragments and generates the real `CHANGELOG.md` at release time, so never hand-edit `CHANGELOG.md` or `NEXT_CHANGELOG.md` directly.
 
 **When to add an entry:**
 - New or changed CLI command, flag, or subcommand behavior
@@ -69,7 +69,7 @@ Add a `NEXT_CHANGELOG.md` entry when your change is user-visible. CI generates t
 - Auto-generated output changes without a corresponding user-facing change
 
 **How to add:**
-- Pick the right section (`CLI`, `Bundles`, `Dependency updates`) under the current `## Release vX.Y.Z` header.
-- One or two sentences, user-facing language, no Jira links.
-- Reference the PR number once it's open: after `gh pr create`, edit the entry to append ` (#NNNN)` or similar matching nearby entries.
-- Match the voice and tense of the existing entries in the file.
+- Create `.nextchanges/<section>/<name>.md`, picking the section folder that fits: `cli`, `bundles`, `dependency-updates`, `notable-changes`, or `api-changes`. `<name>` is arbitrary (a feature name or your PR number) — just keep it unique. You can create it straight from the GitHub UI.
+- Write one or two sentences in user-facing language, no Jira links. The leading `* ` is optional. Match the voice and tense of existing changelog entries.
+- A PR link is optional: write `(#NNNN)` in the text and it's expanded to a full link automatically.
+- See `.nextchanges/README.md` for details.

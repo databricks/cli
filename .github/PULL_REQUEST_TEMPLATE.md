@@ -9,4 +9,5 @@ For example, were there any decisions behind the change that are not reflected i
 <!-- How have you tested the changes? -->
 
 <!-- If your PR needs to be included in the release notes for next release,
-add a separate entry in NEXT_CHANGELOG.md as part of your PR. -->
+add a changelog fragment: create .nextchanges/<section>/<name>.md with a
+one-line description (e.g. .nextchanges/cli/quickstart.md). See .nextchanges/README.md. -->
