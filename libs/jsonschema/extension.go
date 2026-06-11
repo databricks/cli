@@ -48,11 +48,6 @@ type Extension struct {
 	// from the generated Sphinx documentation.
 	Preview string `json:"x-databricks-preview,omitempty"`
 
-	// LaunchStage indicates the field's launch stage from cli.json
-	// (PRIVATE_PREVIEW, PUBLIC_BETA, PUBLIC_PREVIEW, GA). It is the richer
-	// counterpart to Preview, which only distinguishes private vs. public.
-	LaunchStage string `json:"x-databricks-launch-stage,omitempty"`
-
 	// EnumDescriptions is the parallel-array form emitted alongside Enum. VSCode
 	// renders these next to each enum value in autocomplete dropdowns. Each entry
 	// combines the per-value launch-stage label and textual description sourced

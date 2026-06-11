@@ -59,7 +59,6 @@ func TestAssignAnnotationLaunchStage(t *testing.T) {
 			LaunchStage: "PUBLIC_PREVIEW",
 		})
 		assert.Equal(t, "[Public Preview] Target QPS for the endpoint.", s.Description)
-		assert.Equal(t, "PUBLIC_PREVIEW", s.LaunchStage)
 		assert.False(t, s.DoNotSuggest)
 	})
 
@@ -74,8 +73,11 @@ func TestAssignAnnotationLaunchStage(t *testing.T) {
 
 	t.Run("private preview also hides from autocomplete", func(t *testing.T) {
 		s := &jsonschema.Schema{}
+		// The parser pairs Preview "PRIVATE" with stage PRIVATE_PREVIEW; hiding
+		// rides on Preview, the prefix on the stage.
 		assignAnnotation(s, annotation.Descriptor{
 			Description: "Internal field.",
+			Preview:     "PRIVATE",
 			LaunchStage: "PRIVATE_PREVIEW",
 		})
 		assert.Equal(t, "[Private Preview] Internal field.", s.Description)

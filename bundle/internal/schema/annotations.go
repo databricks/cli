@@ -134,28 +134,16 @@ func assignAnnotation(s *jsonschema.Schema, a annotation.Descriptor) {
 		s.DeprecationMessage = a.DeprecationMessage
 	}
 
+	// The raw launch stage is intentionally not emitted into the published
+	// schema — nothing consumes it there. It surfaces only as the description
+	// prefix below and the per-value enumDescriptions labels.
+	// x-databricks-preview does stay: the parser derives it from launch_stage
+	// (PRIVATE iff PRIVATE_PREVIEW), and pydabs reads it from jsonschema.json
+	// to mark fields experimental, so this branch also covers hiding
+	// private-preview fields.
 	if a.Preview == "PRIVATE" {
 		s.DoNotSuggest = true
 		s.Preview = a.Preview
-	}
-
-	// Surface the launch stage as the raw x-databricks-launch-stage field (and,
-	// below, as a human-readable prefix on the description). cli.json makes
-	// launch_stage the single source of truth: x-databricks-preview above is
-	// derivable from it (PRIVATE iff PRIVATE_PREVIEW) and is kept only for
-	// backwards compatibility, so PRIVATE_PREVIEW must hide the field here too.
-	//
-	// OPEN QUESTION (confirm with the team before finalizing this PR): is
-	// either x-databricks-preview or x-databricks-launch-stage consumed by
-	// anything downstream of the published schema? If x-databricks-preview is
-	// unused we can stop emitting it; if the raw x-databricks-launch-stage isn't
-	// wanted in the published schema, drop s.LaunchStage and keep only the
-	// description prefix below.
-	if a.LaunchStage != "" {
-		s.LaunchStage = a.LaunchStage
-		if a.LaunchStage == "PRIVATE_PREVIEW" {
-			s.DoNotSuggest = true
-		}
 	}
 
 	if a.OutputOnly != nil && *a.OutputOnly {
@@ -167,9 +155,8 @@ func assignAnnotation(s *jsonschema.Schema, a annotation.Descriptor) {
 	s.Enum = a.Enum
 	s.EnumDescriptions = buildEnumDescriptions(a.Enum, a.EnumLaunchStages, a.EnumDescriptions)
 
-	// Surface launch stage in hover tooltips. Editors generally only render the
-	// standard description field, so we tag it directly rather than rely on
-	// consumers reading x-databricks-launch-stage.
+	// Surface launch stage in hover tooltips. Editors only render the standard
+	// description field, so the tag is baked into the text.
 	if tag := annotation.PreviewTag(a.LaunchStage); tag != "" {
 		s.Description = prefixWithPreviewTag(s.Description, tag)
 	}

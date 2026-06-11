@@ -24,25 +24,21 @@
                   "custom_description": {
                     "description": "[Public Preview]",
                     "$ref": "#/$defs/string",
-                    "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                     "x-since-version": "v0.279.0"
                   },
                   "custom_summary": {
                     "description": "[Public Preview]",
                     "$ref": "#/$defs/string",
-                    "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                     "x-since-version": "v0.279.0"
                   },
                   "display_name": {
                     "description": "[Public Preview]",
                     "$ref": "#/$defs/string",
-                    "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                     "x-since-version": "v0.279.0"
                   },
                   "evaluation": {
                     "description": "[Public Preview]",
                     "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertV2Evaluation",
-                    "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                     "x-since-version": "v0.279.0"
                   },
                   "file_path": {
@@ -56,7 +52,6 @@
                   "parent_path": {
                     "description": "[Public Preview]",
                     "$ref": "#/$defs/string",
-                    "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                     "x-since-version": "v0.279.0"
                   },
                   "permissions": {
@@ -66,19 +61,16 @@
                   "query_text": {
                     "description": "[Public Preview]",
                     "$ref": "#/$defs/string",
-                    "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                     "x-since-version": "v0.279.0"
                   },
                   "run_as": {
                     "description": "[Public Preview]",
                     "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertV2RunAs",
-                    "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                     "x-since-version": "v0.279.0"
                   },
                   "run_as_user_name": {
                     "description": "[Public Preview]",
                     "$ref": "#/$defs/string",
-                    "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                     "deprecationMessage": "This field is deprecated",
                     "x-since-version": "v0.279.0",
                     "deprecated": true
@@ -86,13 +78,11 @@
                   "schedule": {
                     "description": "[Public Preview]",
                     "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.CronSchedule",
-                    "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                     "x-since-version": "v0.279.0"
                   },
                   "warehouse_id": {
                     "description": "[Public Preview]",
                     "$ref": "#/$defs/string",
-                    "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                     "x-since-version": "v0.279.0"
                   }
                 },
@@ -111,14 +101,12 @@
                   "budget_policy_id": {
                     "description": "[Public Preview]",
                     "$ref": "#/$defs/string",
-                    "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                     "x-since-version": "v0.243.0"
                   },
                   "compute_max_instances": {
                     "description": "[Private Preview]",
                     "$ref": "#/$defs/int",
                     "x-databricks-preview": "PRIVATE",
-                    "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                     "doNotSuggest": true,
                     "x-since-version": "v1.2.0"
                   },
@@ -126,7 +114,6 @@
                     "description": "[Private Preview]",
                     "$ref": "#/$defs/int",
                     "x-databricks-preview": "PRIVATE",
-                    "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                     "doNotSuggest": true,
                     "x-since-version": "v1.2.0"
                   },
@@ -180,26 +167,22 @@
                     "description": "[Private Preview] Name of the space this app belongs to.",
                     "$ref": "#/$defs/string",
                     "x-databricks-preview": "PRIVATE",
-                    "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                     "doNotSuggest": true,
                     "x-since-version": "v0.290.0"
                   },
                   "telemetry_export_destinations": {
                     "description": "[Public Preview]",
                     "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/apps.TelemetryExportDestination",
-                    "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                     "x-since-version": "v0.294.0"
                   },
                   "usage_policy_id": {
                     "description": "[Public Preview]",
                     "$ref": "#/$defs/string",
-                    "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                     "x-since-version": "v0.283.0"
                   },
                   "user_api_scopes": {
                     "description": "[Public Preview]",
                     "$ref": "#/$defs/slice/string",
-                    "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                     "x-since-version": "v0.246.0"
                   }
                 },
@@ -619,19 +602,16 @@
                   "create_database_if_not_exists": {
                     "description": "[Public Preview]",
                     "$ref": "#/$defs/bool",
-                    "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                     "x-since-version": "v0.265.0"
                   },
                   "database_instance_name": {
                     "description": "[Public Preview] The name of the DatabaseInstance housing the database.",
                     "$ref": "#/$defs/string",
-                    "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                     "x-since-version": "v0.265.0"
                   },
                   "database_name": {
                     "description": "[Public Preview] The name of the database (in a instance) associated with the catalog.",
                     "$ref": "#/$defs/string",
-                    "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                     "x-since-version": "v0.265.0"
                   },
                   "lifecycle": {
@@ -642,7 +622,6 @@
                   "name": {
                     "description": "[Public Preview] The name of the catalog in UC.",
                     "$ref": "#/$defs/string",
-                    "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                     "x-since-version": "v0.265.0"
                   }
                 },
@@ -660,25 +639,21 @@
                   "capacity": {
                     "description": "[Public Preview] The sku of the instance. Valid values are \"CU_1\", \"CU_2\", \"CU_4\", \"CU_8\".",
                     "$ref": "#/$defs/string",
-                    "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                     "x-since-version": "v0.265.0"
                   },
                   "custom_tags": {
                     "description": "[Beta] Custom tags associated with the instance. This field is only included on create and update responses.",
                     "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/database.CustomTag",
-                    "x-databricks-launch-stage": "PUBLIC_BETA",
                     "x-since-version": "v0.273.0"
                   },
                   "enable_pg_native_login": {
                     "description": "[Public Preview] Whether to enable PG native password login on the instance. Defaults to false.",
                     "$ref": "#/$defs/bool",
-                    "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                     "x-since-version": "v0.267.0"
                   },
                   "enable_readable_secondaries": {
                     "description": "[Public Preview] Whether to enable secondaries to serve read-only traffic. Defaults to false.",
                     "$ref": "#/$defs/bool",
-                    "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                     "x-since-version": "v0.265.0"
                   },
                   "lifecycle": {
@@ -689,19 +664,16 @@
                   "name": {
                     "description": "[Public Preview] The name of the instance. This is the unique identifier for the instance.",
                     "$ref": "#/$defs/string",
-                    "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                     "x-since-version": "v0.265.0"
                   },
                   "node_count": {
                     "description": "[Public Preview] The number of nodes in the instance, composed of 1 primary and 0 or more secondaries. Defaults to\n1 primary and 0 secondaries. This field is input only, see effective_node_count for the output.",
                     "$ref": "#/$defs/int",
-                    "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                     "x-since-version": "v0.265.0"
                   },
                   "parent_instance_ref": {
                     "description": "[Public Preview] The ref of the parent instance. This is only available if the instance is\nchild instance.\nInput: For specifying the parent instance to create a child instance. Optional.\nOutput: Only populated if provided as input to create a child instance.",
                     "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.DatabaseInstanceRef",
-                    "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                     "x-since-version": "v0.265.0"
                   },
                   "permissions": {
@@ -711,19 +683,16 @@
                   "retention_window_in_days": {
                     "description": "[Public Preview] The retention window for the instance. This is the time window in days\nfor which the historical data is retained. The default value is 7 days.\nValid values are 2 to 35 days.",
                     "$ref": "#/$defs/int",
-                    "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                     "x-since-version": "v0.265.0"
                   },
                   "stopped": {
                     "description": "[Public Preview] Whether to stop the instance. An input only param, see effective_stopped for the output.",
                     "$ref": "#/$defs/bool",
-                    "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                     "x-since-version": "v0.265.0"
                   },
                   "usage_policy_id": {
                     "description": "[Beta] The desired usage policy to associate with the instance.",
                     "$ref": "#/$defs/string",
-                    "x-databricks-launch-stage": "PUBLIC_BETA",
                     "x-since-version": "v0.273.0"
                   }
                 },
@@ -845,7 +814,6 @@
                   "budget_policy_id": {
                     "description": "[Public Preview] The id of the user specified budget policy to use for this job.\nIf not specified, a default budget policy may be applied when creating or modifying the job.\nSee `effective_budget_policy_id` for the budget policy used by this workload.",
                     "$ref": "#/$defs/string",
-                    "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                     "x-since-version": "v0.231.0"
                   },
                   "continuous": {
@@ -954,7 +922,6 @@
                     "description": "[Private Preview] The id of the user specified usage policy to use for this job.\nIf not specified, a default usage policy may be applied when creating or modifying the job.\nSee `effective_usage_policy_id` for the usage policy used by this workload.",
                     "$ref": "#/$defs/string",
                     "x-databricks-preview": "PRIVATE",
-                    "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                     "doNotSuggest": true,
                     "x-since-version": "v0.265.0"
                   },
@@ -1267,7 +1234,6 @@
                   "budget_policy_id": {
                     "description": "[Public Preview] Budget policy of this pipeline.",
                     "$ref": "#/$defs/string",
-                    "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                     "x-since-version": "v0.230.0"
                   },
                   "catalog": {
@@ -1308,7 +1274,6 @@
                   "environment": {
                     "description": "[Public Preview] Environment specification for this pipeline used to install dependencies.",
                     "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.PipelinesEnvironment",
-                    "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                     "x-since-version": "v0.257.0"
                   },
                   "event_log": {
@@ -1325,7 +1290,6 @@
                     "description": "[Private Preview] The definition of a gateway pipeline to support change data capture.",
                     "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.IngestionGatewayPipelineDefinition",
                     "x-databricks-preview": "PRIVATE",
-                    "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                     "doNotSuggest": true,
                     "x-since-version": "v0.229.0"
                   },
@@ -1337,7 +1301,6 @@
                   "ingestion_definition": {
                     "description": "[Public Preview] The configuration for a managed ingestion pipeline. These settings cannot be used with the 'libraries', 'schema', 'target', or 'catalog' settings.",
                     "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.IngestionPipelineDefinition",
-                    "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                     "x-since-version": "v0.229.0"
                   },
                   "libraries": {
@@ -1363,7 +1326,6 @@
                   "parameters": {
                     "description": "[Beta]",
                     "$ref": "#/$defs/map/string",
-                    "x-databricks-launch-stage": "PUBLIC_BETA",
                     "x-since-version": "v1.2.0"
                   },
                   "permissions": {
@@ -1379,14 +1341,12 @@
                     "description": "[Private Preview] Restart window of this pipeline.",
                     "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.RestartWindow",
                     "x-databricks-preview": "PRIVATE",
-                    "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                     "doNotSuggest": true,
                     "x-since-version": "v0.234.0"
                   },
                   "root_path": {
                     "description": "[Public Preview] Root path for this pipeline.\nThis is used as the root directory when editing the pipeline in the Databricks user interface and it is\nadded to sys.path when executing Python sources during pipeline execution.",
                     "$ref": "#/$defs/string",
-                    "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                     "x-since-version": "v0.253.0"
                   },
                   "run_as": {
@@ -1431,7 +1391,6 @@
                     "description": "[Private Preview] Usage policy of this pipeline.",
                     "$ref": "#/$defs/string",
                     "x-databricks-preview": "PRIVATE",
-                    "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                     "doNotSuggest": true,
                     "x-since-version": "v0.276.0"
                   }
@@ -1739,7 +1698,6 @@
                     "description": "[Private Preview] [Create:OPT Update:OPT] Data classification related config.",
                     "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.MonitorDataClassificationConfig",
                     "x-databricks-preview": "PRIVATE",
-                    "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                     "doNotSuggest": true,
                     "x-since-version": "v0.229.0"
                   },
@@ -2114,7 +2072,6 @@
                   "database_instance_name": {
                     "description": "[Public Preview]",
                     "$ref": "#/$defs/string",
-                    "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                     "x-since-version": "v0.266.0"
                   },
                   "lifecycle": {
@@ -2124,19 +2081,16 @@
                   "logical_database_name": {
                     "description": "[Public Preview]",
                     "$ref": "#/$defs/string",
-                    "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                     "x-since-version": "v0.266.0"
                   },
                   "name": {
                     "description": "[Public Preview]",
                     "$ref": "#/$defs/string",
-                    "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                     "x-since-version": "v0.266.0"
                   },
                   "spec": {
                     "description": "[Public Preview]",
                     "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.SyncedTableSpec",
-                    "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                     "x-since-version": "v0.266.0"
                   }
                 },
@@ -2151,7 +2105,6 @@
                   "budget_policy_id": {
                     "description": "[Public Preview]",
                     "$ref": "#/$defs/string",
-                    "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                     "x-since-version": "v0.298.0"
                   },
                   "endpoint_type": {
@@ -2173,14 +2126,12 @@
                   "target_qps": {
                     "description": "[Public Preview]",
                     "$ref": "#/$defs/int64",
-                    "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                     "x-since-version": "v0.299.2"
                   },
                   "usage_policy_id": {
                     "description": "[Private Preview]",
                     "$ref": "#/$defs/string",
                     "x-databricks-preview": "PRIVATE",
-                    "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                     "doNotSuggest": true,
                     "x-since-version": "v0.298.0"
                   }
@@ -2213,7 +2164,6 @@
                   "index_subtype": {
                     "description": "[Beta]",
                     "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/vectorsearch.IndexSubtype",
-                    "x-databricks-launch-stage": "PUBLIC_BETA",
                     "x-since-version": "v1.1.0"
                   },
                   "index_type": {
@@ -3806,7 +3756,6 @@
                   "description": "[Private Preview] Whether to enable data classification.",
                   "$ref": "#/$defs/bool",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.229.0"
                 }
@@ -3939,7 +3888,6 @@
                   "description": "[Private Preview] Destinations to send notifications on new classification tag detected.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.MonitorDestination",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.229.0"
                 }
@@ -4579,7 +4527,6 @@
                 "java_dependencies": {
                   "description": "[Public Preview]",
                   "$ref": "#/$defs/slice/string",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.271.0"
                 }
               },
@@ -4602,7 +4549,6 @@
                   "description": "[Private Preview] The confidential computing technology for this cluster's instances.\nCurrently only SEV_SNP is supported, and only on N2D instance types.\nWhen not set, no confidential computing is applied.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.ConfidentialComputeType",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.299.2"
                 },
@@ -4981,13 +4927,11 @@
                 "key": {
                   "description": "[Public Preview] The key of the custom tag.",
                   "$ref": "#/$defs/string",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.273.0"
                 },
                 "value": {
                   "description": "[Public Preview] The value of the custom tag.",
                   "$ref": "#/$defs/string",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.273.0"
                 }
               },
@@ -5000,19 +4944,16 @@
                 "branch_time": {
                   "description": "[Public Preview] Branch time of the ref database instance.\nFor a parent ref instance, this is the point in time on the parent instance from which the\ninstance was created.\nFor a child ref instance, this is the point in time on the instance from which the child\ninstance was created.\nInput: For specifying the point in time to create a child instance. Optional.\nOutput: Only populated if provided as input to create a child instance.",
                   "$ref": "#/$defs/string",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.265.0"
                 },
                 "lsn": {
                   "description": "[Public Preview] User-specified WAL LSN of the ref database instance.\n\nInput: For specifying the WAL LSN to create a child instance. Optional.\nOutput: Only populated if provided as input to create a child instance.",
                   "$ref": "#/$defs/string",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.265.0"
                 },
                 "name": {
                   "description": "[Public Preview] Name of the ref database instance.",
                   "$ref": "#/$defs/string",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.265.0"
                 }
               },
@@ -5048,19 +4989,16 @@
                 "budget_policy_id": {
                   "description": "[Beta] Budget policy to set on the newly created pipeline.",
                   "$ref": "#/$defs/string",
-                  "x-databricks-launch-stage": "PUBLIC_BETA",
                   "x-since-version": "v0.279.0"
                 },
                 "storage_catalog": {
                   "description": "[Public Preview] This field needs to be specified if the destination catalog is a managed postgres catalog.\n\nUC catalog for the pipeline to store intermediate files (checkpoints, event logs etc).\nThis needs to be a standard catalog where the user has permissions to create Delta tables.",
                   "$ref": "#/$defs/string",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.266.0"
                 },
                 "storage_schema": {
                   "description": "[Public Preview] This field needs to be specified if the destination catalog is a managed postgres catalog.\n\nUC schema for the pipeline to store intermediate files (checkpoints, event logs etc).\nThis needs to be in the standard catalog where the user has permissions to create Delta tables.",
                   "$ref": "#/$defs/string",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.266.0"
                 }
               },
@@ -5142,43 +5080,36 @@
                 "create_database_objects_if_missing": {
                   "description": "[Public Preview] If true, the synced table's logical database and schema resources in PG\nwill be created if they do not already exist.",
                   "$ref": "#/$defs/bool",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.266.0"
                 },
                 "existing_pipeline_id": {
                   "description": "[Public Preview] At most one of existing_pipeline_id and new_pipeline_spec should be defined.\n\nIf existing_pipeline_id is defined, the synced table will be bin packed into the existing pipeline\nreferenced. This avoids creating a new pipeline and allows sharing existing compute.\nIn this case, the scheduling_policy of this synced table must match the scheduling policy of the existing pipeline.",
                   "$ref": "#/$defs/string",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.266.0"
                 },
                 "new_pipeline_spec": {
                   "description": "[Public Preview] At most one of existing_pipeline_id and new_pipeline_spec should be defined.\n\nIf new_pipeline_spec is defined, a new pipeline is created for this synced table. The location pointed to is used\nto store intermediate files (checkpoints, event logs etc). The caller must have write permissions to create Delta\ntables in the specified catalog and schema. Again, note this requires write permissions, whereas the source table\nonly requires read permissions.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.NewPipelineSpec",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.266.0"
                 },
                 "primary_key_columns": {
                   "description": "[Public Preview] Primary Key columns to be used for data insert/update in the destination.",
                   "$ref": "#/$defs/slice/string",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.266.0"
                 },
                 "scheduling_policy": {
                   "description": "[Public Preview] Scheduling policy of the underlying pipeline.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.SyncedTableSchedulingPolicy",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.266.0"
                 },
                 "source_table_full_name": {
                   "description": "[Public Preview] Three-part (catalog, schema, table) name of the source Delta table.",
                   "$ref": "#/$defs/string",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.266.0"
                 },
                 "timeseries_key": {
                   "description": "[Public Preview] Time series key to deduplicate (tie-break) rows with the same primary key.",
                   "$ref": "#/$defs/string",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.266.0"
                 }
               },
@@ -5221,25 +5152,21 @@
                 "continuous_update_status": {
                   "description": "[Public Preview] Detailed status of a synced table. Shown if the synced table is in the SYNCED_CONTINUOUS_UPDATE\nor the SYNCED_UPDATING_PIPELINE_RESOURCES state.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.SyncedTableContinuousUpdateStatus",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.266.0"
                 },
                 "failed_status": {
                   "description": "[Public Preview] Detailed status of a synced table. Shown if the synced table is in the OFFLINE_FAILED or the\nSYNCED_PIPELINE_FAILED state.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.SyncedTableFailedStatus",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.266.0"
                 },
                 "provisioning_status": {
                   "description": "[Public Preview] Detailed status of a synced table. Shown if the synced table is in the\nPROVISIONING_PIPELINE_RESOURCES or the PROVISIONING_INITIAL_SNAPSHOT state.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.SyncedTableProvisioningStatus",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.266.0"
                 },
                 "triggered_update_status": {
                   "description": "[Public Preview] Detailed status of a synced table. Shown if the synced table is in the SYNCED_TRIGGERED_UPDATE\nor the SYNCED_NO_PENDING_UPDATE state.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.SyncedTableTriggeredUpdateStatus",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.266.0"
                 }
               },
@@ -5304,25 +5231,21 @@
                 "alert_id": {
                   "description": "[Public Preview] The alert_id is the canonical identifier of the alert.",
                   "$ref": "#/$defs/string",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.296.0"
                 },
                 "subscribers": {
                   "description": "[Public Preview] The subscribers receive alert evaluation result notifications after the alert task is completed.\nThe number of subscriptions is limited to 100.",
                   "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/jobs.AlertTaskSubscriber",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.296.0"
                 },
                 "warehouse_id": {
                   "description": "[Public Preview] The warehouse_id identifies the warehouse settings used by the alert task.",
                   "$ref": "#/$defs/string",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.296.0"
                 },
                 "workspace_path": {
                   "description": "[Public Preview] The workspace_path is the path to the alert file in the workspace. The path:\n* must start with \"/Workspace\"\n* must be a normalized path.\nUser has to select only one of alert_id or workspace_path to identify the alert.",
                   "$ref": "#/$defs/string",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.296.0"
                 }
               },
@@ -5335,13 +5258,11 @@
                 "destination_id": {
                   "description": "[Public Preview]",
                   "$ref": "#/$defs/string",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.296.0"
                 },
                 "user_name": {
                   "description": "[Public Preview] A valid workspace email address.",
                   "$ref": "#/$defs/string",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.296.0"
                 }
               },
@@ -5395,7 +5316,6 @@
                 "hardware_accelerator": {
                   "description": "[Beta] Hardware accelerator configuration for Serverless GPU workloads.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.HardwareAcceleratorType",
-                  "x-databricks-launch-stage": "PUBLIC_BETA",
                   "x-since-version": "v0.288.0"
                 }
               },
@@ -5408,7 +5328,6 @@
                   "description": "[Private Preview] IDof the GPU pool to use.",
                   "$ref": "#/$defs/string",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.243.0"
                 },
@@ -5416,7 +5335,6 @@
                   "description": "[Private Preview] GPU type.",
                   "$ref": "#/$defs/string",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.243.0"
                 },
@@ -5424,7 +5342,6 @@
                   "description": "[Private Preview] Number of GPUs.",
                   "$ref": "#/$defs/int",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.243.0"
                 }
@@ -5532,7 +5449,6 @@
                   "description": "[Private Preview] Dashboard task parameters. Used to apply dashboard filter values during dashboard task execution. Parameter values get applied to any dashboard filters that have a matching URL identifier as the parameter key.\nThe parameter value format is dependent on the filter type:\n- For text and single-select filters, provide a single value (e.g. `\"value\"`)\n- For date and datetime filters, provide the value in ISO 8601 format (e.g. `\"2000-01-01T00:00:00\"`)\n- For multi-select filters, provide a JSON array of values (e.g. `\"[\\\"value1\\\",\\\"value2\\\"]\"`)\n- For range and date range filters, provide a JSON object with `start` and `end` (e.g. `\"{\\\"start\\\":\\\"1\\\",\\\"end\\\":\\\"10\\\"}\"`)",
                   "$ref": "#/$defs/map/string",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.289.0"
                 },
@@ -5556,7 +5472,6 @@
                   "description": "[Private Preview] The resource name of the UC connection that authenticates the dbt Cloud for this task",
                   "$ref": "#/$defs/string",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.256.0"
                 },
@@ -5564,7 +5479,6 @@
                   "description": "[Private Preview] Id of the dbt Cloud job to be triggered",
                   "$ref": "#/$defs/int64",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.256.0"
                 }
@@ -5578,7 +5492,6 @@
                   "description": "[Private Preview] The resource name of the UC connection that authenticates the dbt platform for this task",
                   "$ref": "#/$defs/string",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.257.0"
                 },
@@ -5586,7 +5499,6 @@
                   "description": "[Private Preview] Id of the dbt platform job to be triggered. Specified as a string for maximum compatibility with clients.",
                   "$ref": "#/$defs/string",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.257.0"
                 }
@@ -5700,7 +5612,6 @@
                   "description": "[Private Preview] Command launcher to run the actual script, e.g. bash, python etc.",
                   "$ref": "#/$defs/string",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.243.0"
                 },
@@ -5708,7 +5619,6 @@
                   "description": "[Private Preview]",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.ComputeConfig",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.243.0"
                 },
@@ -5716,7 +5626,6 @@
                   "description": "[Private Preview] Runtime image",
                   "$ref": "#/$defs/string",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.243.0"
                 },
@@ -5724,7 +5633,6 @@
                   "description": "[Private Preview] Optional string containing the name of the MLflow experiment to log the run to. If name is not\nfound, backend will create the mlflow experiment using the name.",
                   "$ref": "#/$defs/string",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.243.0"
                 },
@@ -5732,7 +5640,6 @@
                   "description": "[Private Preview] Optional location type of the training script. When set to `WORKSPACE`, the script will be retrieved from the local Databricks workspace. When set to `GIT`, the script will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n* `WORKSPACE`: Script is located in Databricks workspace.\n* `GIT`: Script is located in cloud Git provider.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.Source",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.243.0"
                 },
@@ -5740,7 +5647,6 @@
                   "description": "[Private Preview] The training script file path to be executed. Cloud file URIs (such as dbfs:/, s3:/, adls:/, gcs:/) and workspace paths are supported. For python files stored in the Databricks workspace, the path must be absolute and begin with `/`. For files stored in a remote repository, the path must be relative. This field is required.",
                   "$ref": "#/$defs/string",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.243.0"
                 },
@@ -5748,7 +5654,6 @@
                   "description": "[Private Preview] Optional string containing model parameters passed to the training script in yaml format.\nIf present, then the content in yaml_parameters_file_path will be ignored.",
                   "$ref": "#/$defs/string",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.243.0"
                 },
@@ -5756,7 +5661,6 @@
                   "description": "[Private Preview] Optional path to a YAML file containing model parameters passed to the training script.",
                   "$ref": "#/$defs/string",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.243.0"
                 }
@@ -5858,7 +5762,6 @@
                   "description": "[Private Preview] ID of the deployment that manages this job. Only set when `kind` is\n`BUNDLE`. Used to look up deployment metadata from the Deployment\nMetadata service.",
                   "$ref": "#/$defs/string",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v1.2.0"
                 },
@@ -5876,7 +5779,6 @@
                   "description": "[Private Preview] ID of the version of the deployment that produced this job. Only set\nwhen `kind` is `BUNDLE`. Identifies a specific snapshot of the deployment\nin the Deployment Metadata service.",
                   "$ref": "#/$defs/string",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v1.2.0"
                 }
@@ -5938,7 +5840,6 @@
                 "on_streaming_backlog_exceeded": {
                   "description": "[Public Preview] A list of email addresses to notify when any streaming backlog thresholds are exceeded for any stream.\nStreaming backlog thresholds can be set in the `health` field using the following metrics: `STREAMING_BACKLOG_BYTES`, `STREAMING_BACKLOG_RECORDS`, `STREAMING_BACKLOG_SECONDS`, or `STREAMING_BACKLOG_FILES`.\nAlerting is based on the 10-minute average of these metrics. If the issue persists, notifications are resent every 30 minutes.",
                   "$ref": "#/$defs/slice/string",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.229.0"
                 },
                 "on_success": {
@@ -6021,7 +5922,6 @@
                   "description": "[Private Preview] Group name of an account group assigned to the workspace. Setting this field requires being a member of the group.",
                   "$ref": "#/$defs/string",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.283.0"
                 },
@@ -6046,7 +5946,6 @@
                   "description": "[Private Preview] Dirty state indicates the job is not fully synced with the job specification in the remote repository.\n\nPossible values are:\n* `NOT_SYNCED`: The job is not yet synced with the remote job specification. Import the remote job specification from UI to make the job fully synced.\n* `DISCONNECTED`: The job is temporary disconnected from the remote job specification and is allowed for live edit. Import the remote job specification again from UI to make the job fully synced.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.JobSourceDirtyState",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.229.0"
                 },
@@ -6054,7 +5953,6 @@
                   "description": "[Private Preview] Name of the branch which the job is imported from.",
                   "$ref": "#/$defs/string",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.229.0"
                 },
@@ -6062,7 +5960,6 @@
                   "description": "[Private Preview] Path of the job YAML file that contains the job specification.",
                   "$ref": "#/$defs/string",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.229.0"
                 }
@@ -6152,7 +6049,6 @@
                   "description": "[Private Preview] Aliases of the model versions to monitor. Can only be used in conjunction with condition MODEL_ALIAS_SET.",
                   "$ref": "#/$defs/slice/string",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.279.0"
                 },
@@ -6160,7 +6056,6 @@
                   "description": "[Private Preview] The condition based on which to trigger a job run.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.ModelTriggerConfigurationCondition",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.279.0"
                 },
@@ -6168,7 +6063,6 @@
                   "description": "[Private Preview] If set, the trigger starts a run only after the specified amount of time has passed since\nthe last time the trigger fired. The minimum allowed value is 60 seconds.",
                   "$ref": "#/$defs/int",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.279.0"
                 },
@@ -6176,7 +6070,6 @@
                   "description": "[Private Preview] Name of the securable to monitor (\"mycatalog.myschema.mymodel\" in the case of model-level triggers,\n\"mycatalog.myschema\" in the case of schema-level triggers) or empty in the case of metastore-level triggers.",
                   "$ref": "#/$defs/string",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.279.0"
                 },
@@ -6184,7 +6077,6 @@
                   "description": "[Private Preview] If set, the trigger starts a run only after no model updates have occurred for the specified time\nand can be used to wait for a series of model updates before triggering a run. The\nminimum allowed value is 60 seconds.",
                   "$ref": "#/$defs/int",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.279.0"
                 }
@@ -6290,25 +6182,21 @@
                 "full_refresh_selection": {
                   "description": "[Beta] A list of tables to update with fullRefresh.",
                   "$ref": "#/$defs/slice/string",
-                  "x-databricks-launch-stage": "PUBLIC_BETA",
                   "x-since-version": "v1.1.0"
                 },
                 "refresh_flow_selection": {
                   "description": "[Beta] Flow names to selectively refresh. These are unioned with other selective refresh\noptions (refresh_selection, full_refresh_selection) to determine the final set of flows to refresh.",
                   "$ref": "#/$defs/slice/string",
-                  "x-databricks-launch-stage": "PUBLIC_BETA",
                   "x-since-version": "v1.1.0"
                 },
                 "refresh_selection": {
                   "description": "[Beta] A list of tables to update without fullRefresh.",
                   "$ref": "#/$defs/slice/string",
-                  "x-databricks-launch-stage": "PUBLIC_BETA",
                   "x-since-version": "v1.1.0"
                 },
                 "reset_checkpoint_selection": {
                   "description": "[Beta] A list of streaming flows to reset checkpoints without clearing data.",
                   "$ref": "#/$defs/slice/string",
-                  "x-databricks-launch-stage": "PUBLIC_BETA",
                   "x-since-version": "v1.1.0"
                 }
               },
@@ -6325,13 +6213,11 @@
                 "full_refresh_selection": {
                   "description": "[Beta] A list of tables to update with fullRefresh.",
                   "$ref": "#/$defs/slice/string",
-                  "x-databricks-launch-stage": "PUBLIC_BETA",
                   "x-since-version": "v1.1.0"
                 },
                 "parameters": {
                   "description": "[Beta] Key/value-map of parameters passed to the pipeline execution.\nLimited to 10k characters in total.",
                   "$ref": "#/$defs/map/string",
-                  "x-databricks-launch-stage": "PUBLIC_BETA",
                   "x-since-version": "v1.2.0"
                 },
                 "pipeline_id": {
@@ -6342,19 +6228,16 @@
                 "refresh_flow_selection": {
                   "description": "[Beta] Flow names to selectively refresh. These are unioned with other selective refresh\noptions (refresh_selection, full_refresh_selection) to determine the final set of flows to refresh.",
                   "$ref": "#/$defs/slice/string",
-                  "x-databricks-launch-stage": "PUBLIC_BETA",
                   "x-since-version": "v1.1.0"
                 },
                 "refresh_selection": {
                   "description": "[Beta] A list of tables to update without fullRefresh.",
                   "$ref": "#/$defs/slice/string",
-                  "x-databricks-launch-stage": "PUBLIC_BETA",
                   "x-since-version": "v1.1.0"
                 },
                 "reset_checkpoint_selection": {
                   "description": "[Beta] A list of streaming flows to reset checkpoints without clearing data.",
                   "$ref": "#/$defs/slice/string",
-                  "x-databricks-launch-stage": "PUBLIC_BETA",
                   "x-since-version": "v1.1.0"
                 }
               },
@@ -6369,31 +6252,26 @@
                 "authentication_method": {
                   "description": "[Public Preview] How the published Power BI model authenticates to Databricks",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.AuthenticationMethod",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.248.0"
                 },
                 "model_name": {
                   "description": "[Public Preview] The name of the Power BI model",
                   "$ref": "#/$defs/string",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.248.0"
                 },
                 "overwrite_existing": {
                   "description": "[Public Preview] Whether to overwrite existing Power BI models",
                   "$ref": "#/$defs/bool",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.248.0"
                 },
                 "storage_mode": {
                   "description": "[Public Preview] The default storage mode of the Power BI model",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.StorageMode",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.248.0"
                 },
                 "workspace_name": {
                   "description": "[Public Preview] The name of the Power BI workspace of the model",
                   "$ref": "#/$defs/string",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.248.0"
                 }
               },
@@ -6405,25 +6283,21 @@
                 "catalog": {
                   "description": "[Public Preview] The catalog name in Databricks",
                   "$ref": "#/$defs/string",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.248.0"
                 },
                 "name": {
                   "description": "[Public Preview] The table name in Databricks",
                   "$ref": "#/$defs/string",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.248.0"
                 },
                 "schema": {
                   "description": "[Public Preview] The schema name in Databricks",
                   "$ref": "#/$defs/string",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.248.0"
                 },
                 "storage_mode": {
                   "description": "[Public Preview] The Power BI storage mode of the table",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.StorageMode",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.248.0"
                 }
               },
@@ -6435,31 +6309,26 @@
                 "connection_resource_name": {
                   "description": "[Public Preview] The resource name of the UC connection to authenticate from Databricks to Power BI",
                   "$ref": "#/$defs/string",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.248.0"
                 },
                 "power_bi_model": {
                   "description": "[Public Preview] The semantic model to update",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.PowerBiModel",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.248.0"
                 },
                 "refresh_after_update": {
                   "description": "[Public Preview] Whether the model should be refreshed after the update",
                   "$ref": "#/$defs/bool",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.248.0"
                 },
                 "tables": {
                   "description": "[Public Preview] The tables to be exported to Power BI",
                   "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/jobs.PowerBiTable",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.248.0"
                 },
                 "warehouse_id": {
                   "description": "[Public Preview] The SQL warehouse ID to use as the Power BI data source",
                   "$ref": "#/$defs/string",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.248.0"
                 }
               },
@@ -6472,7 +6341,6 @@
                   "description": "[Private Preview] Fully qualified name of the main class or function.\nFor example, `my_project.my_function` or `my_project.MyOperator`.",
                   "$ref": "#/$defs/string",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v1.1.0"
                 },
@@ -6480,7 +6348,6 @@
                   "description": "[Private Preview] An ordered list of task parameters.\nTODO(JOBS-30885): Add limits for parameters.",
                   "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/jobs.PythonOperatorTaskParameter",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v1.1.0"
                 }
@@ -6494,7 +6361,6 @@
                   "description": "[Private Preview]",
                   "$ref": "#/$defs/string",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v1.1.0"
                 },
@@ -6502,7 +6368,6 @@
                   "description": "[Private Preview]",
                   "$ref": "#/$defs/string",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v1.1.0"
                 }
@@ -6580,7 +6445,6 @@
                   "description": "[Private Preview] An array of commands to execute for jobs with the dbt task, for example `\"dbt_commands\": [\"dbt deps\", \"dbt seed\", \"dbt deps\", \"dbt seed\", \"dbt run\"]`\n\n⚠ **Deprecation note** Use [job parameters](https://docs.databricks.com/jobs/job-parameters.html#job-parameter-pushdown) to pass information down to tasks.",
                   "$ref": "#/$defs/slice/string",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "deprecationMessage": "This field is deprecated",
                   "doNotSuggest": true,
                   "x-since-version": "v0.229.0",
@@ -6590,7 +6454,6 @@
                   "description": "[Private Preview] A list of parameters for jobs with Spark JAR tasks, for example `\"jar_params\": [\"john doe\", \"35\"]`.\nThe parameters are used to invoke the main function of the main class specified in the Spark JAR task.\nIf not specified upon `run-now`, it defaults to an empty list.\njar_params cannot be specified in conjunction with notebook_params.\nThe JSON representation of this field (for example `{\"jar_params\":[\"john doe\",\"35\"]}`) cannot exceed 10,000 bytes.\n\n⚠ **Deprecation note** Use [job parameters](https://docs.databricks.com/jobs/job-parameters.html#job-parameter-pushdown) to pass information down to tasks.",
                   "$ref": "#/$defs/slice/string",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "deprecationMessage": "This field is deprecated",
                   "doNotSuggest": true,
                   "x-since-version": "v0.229.0",
@@ -6610,7 +6473,6 @@
                   "description": "[Private Preview] A map from keys to values for jobs with notebook task, for example `\"notebook_params\": {\"name\": \"john doe\", \"age\": \"35\"}`.\nThe map is passed to the notebook and is accessible through the [dbutils.widgets.get](https://docs.databricks.com/dev-tools/databricks-utils.html) function.\n\nIf not specified upon `run-now`, the triggered run uses the job’s base parameters.\n\nnotebook_params cannot be specified in conjunction with jar_params.\n\n⚠ **Deprecation note** Use [job parameters](https://docs.databricks.com/jobs/job-parameters.html#job-parameter-pushdown) to pass information down to tasks.\n\nThe JSON representation of this field (for example `{\"notebook_params\":{\"name\":\"john doe\",\"age\":\"35\"}}`) cannot exceed 10,000 bytes.",
                   "$ref": "#/$defs/map/string",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "deprecationMessage": "This field is deprecated",
                   "doNotSuggest": true,
                   "x-since-version": "v0.229.0",
@@ -6625,7 +6487,6 @@
                   "description": "[Private Preview]",
                   "$ref": "#/$defs/map/string",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "deprecationMessage": "This field is deprecated",
                   "doNotSuggest": true,
                   "x-since-version": "v0.229.0",
@@ -6635,7 +6496,6 @@
                   "description": "[Private Preview] A list of parameters for jobs with Python tasks, for example `\"python_params\": [\"john doe\", \"35\"]`.\nThe parameters are passed to Python file as command-line parameters. If specified upon `run-now`, it would overwrite\nthe parameters specified in job setting. The JSON representation of this field (for example `{\"python_params\":[\"john doe\",\"35\"]}`)\ncannot exceed 10,000 bytes.\n\n⚠ **Deprecation note** Use [job parameters](https://docs.databricks.com/jobs/job-parameters.html#job-parameter-pushdown) to pass information down to tasks.\n\nImportant\n\nThese parameters accept only Latin characters (ASCII character set). Using non-ASCII characters returns an error.\nExamples of invalid, non-ASCII characters are Chinese, Japanese kanjis, and emojis.",
                   "$ref": "#/$defs/slice/string",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "deprecationMessage": "This field is deprecated",
                   "doNotSuggest": true,
                   "x-since-version": "v0.229.0",
@@ -6645,7 +6505,6 @@
                   "description": "[Private Preview] A list of parameters for jobs with spark submit task, for example `\"spark_submit_params\": [\"--class\", \"org.apache.spark.examples.SparkPi\"]`.\nThe parameters are passed to spark-submit script as command-line parameters. If specified upon `run-now`, it would overwrite the\nparameters specified in job setting. The JSON representation of this field (for example `{\"python_params\":[\"john doe\",\"35\"]}`)\ncannot exceed 10,000 bytes.\n\n⚠ **Deprecation note** Use [job parameters](https://docs.databricks.com/jobs/job-parameters.html#job-parameter-pushdown) to pass information down to tasks.\n\nImportant\n\nThese parameters accept only Latin characters (ASCII character set). Using non-ASCII characters returns an error.\nExamples of invalid, non-ASCII characters are Chinese, Japanese kanjis, and emojis.",
                   "$ref": "#/$defs/slice/string",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "deprecationMessage": "This field is deprecated",
                   "doNotSuggest": true,
                   "x-since-version": "v0.229.0",
@@ -6655,7 +6514,6 @@
                   "description": "[Private Preview] A map from keys to values for jobs with SQL task, for example `\"sql_params\": {\"name\": \"john doe\", \"age\": \"35\"}`. The SQL alert task does not support custom parameters.\n\n⚠ **Deprecation note** Use [job parameters](https://docs.databricks.com/jobs/job-parameters.html#job-parameter-pushdown) to pass information down to tasks.",
                   "$ref": "#/$defs/map/string",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "deprecationMessage": "This field is deprecated",
                   "doNotSuggest": true,
                   "x-since-version": "v0.229.0",
@@ -6978,7 +6836,6 @@
                 "alert_task": {
                   "description": "[Public Preview] The task evaluates a Databricks alert and sends notifications to subscribers\nwhen the `alert_task` field is present.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.AlertTask",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.296.0"
                 },
                 "clean_rooms_notebook_task": {
@@ -6989,7 +6846,6 @@
                 "compute": {
                   "description": "[Beta] Task level compute configuration.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.Compute",
-                  "x-databricks-launch-stage": "PUBLIC_BETA",
                   "x-since-version": "v0.288.0"
                 },
                 "condition_task": {
@@ -7006,7 +6862,6 @@
                   "description": "[Private Preview] Task type for dbt cloud, deprecated in favor of the new name dbt_platform_task",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.DbtCloudTask",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "deprecationMessage": "This field is deprecated",
                   "doNotSuggest": true,
                   "x-since-version": "v0.256.0",
@@ -7016,7 +6871,6 @@
                   "description": "[Private Preview]",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.DbtPlatformTask",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.257.0"
                 },
@@ -7069,7 +6923,6 @@
                   "description": "[Private Preview]",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.GenAiComputeTask",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.243.0"
                 },
@@ -7120,14 +6973,12 @@
                 "power_bi_task": {
                   "description": "[Public Preview] The task triggers a Power BI semantic model update when the `power_bi_task` field is present.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.PowerBiTask",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.248.0"
                 },
                 "python_operator_task": {
                   "description": "[Private Preview] The task runs a Python operator task.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.PythonOperatorTask",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v1.1.0"
                 },
@@ -7241,7 +7092,6 @@
                 "on_streaming_backlog_exceeded": {
                   "description": "[Public Preview] A list of email addresses to notify when any streaming backlog thresholds are exceeded for any stream.\nStreaming backlog thresholds can be set in the `health` field using the following metrics: `STREAMING_BACKLOG_BYTES`, `STREAMING_BACKLOG_RECORDS`, `STREAMING_BACKLOG_SECONDS`, or `STREAMING_BACKLOG_FILES`.\nAlerting is based on the 10-minute average of these metrics. If the issue persists, notifications are resent every 30 minutes.",
                   "$ref": "#/$defs/slice/string",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.229.0"
                 },
                 "on_success": {
@@ -7293,7 +7143,6 @@
                   "description": "[Private Preview]",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.ModelTriggerConfiguration",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.279.0"
                 },
@@ -7348,7 +7197,6 @@
                 "on_streaming_backlog_exceeded": {
                   "description": "[Public Preview] An optional list of system notification IDs to call when any streaming backlog thresholds are exceeded for any stream.\nStreaming backlog thresholds can be set in the `health` field using the following metrics: `STREAMING_BACKLOG_BYTES`, `STREAMING_BACKLOG_RECORDS`, `STREAMING_BACKLOG_SECONDS`, or `STREAMING_BACKLOG_FILES`.\nAlerting is based on the 10-minute average of these metrics. If the issue persists, notifications are resent every 30 minutes.\nA maximum of 3 destinations can be specified for the `on_streaming_backlog_exceeded` property.",
                   "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/jobs.Webhook",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.229.0"
                 },
                 "on_success": {
@@ -7420,13 +7268,11 @@
                 "enabled": {
                   "description": "[Public Preview] (Required, Mutable) Whether to enable auto full refresh or not.",
                   "$ref": "#/$defs/bool",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.285.0"
                 },
                 "min_interval_hours": {
                   "description": "[Public Preview] (Optional, Mutable) Specify the minimum interval in hours between the timestamp\nat which a table was last full refreshed and the current timestamp for triggering auto full\nIf unspecified and autoFullRefresh is enabled then by default min_interval_hours is 24 hours.",
                   "$ref": "#/$defs/int",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.285.0"
                 }
               },
@@ -7442,7 +7288,6 @@
                 "include_confluence_spaces": {
                   "description": "[Public Preview] (Optional) Spaces to filter Confluence data on",
                   "$ref": "#/$defs/slice/string",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.299.2"
                 }
               },
@@ -7455,7 +7300,6 @@
                   "description": "[Private Preview] Source catalog for initial connection.\nThis is necessary for schema exploration in some database systems like Oracle, and optional but nice-to-have\nin some other database systems like Postgres.\nFor Oracle databases, this maps to a service name.",
                   "$ref": "#/$defs/string",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.279.0"
                 }
@@ -7469,14 +7313,12 @@
                 "confluence_options": {
                   "description": "[Public Preview] Confluence specific options for ingestion",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.ConfluenceConnectorOptions",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.299.2"
                 },
                 "gdrive_options": {
                   "description": "[Private Preview]",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.GoogleDriveOptions",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.298.0"
                 },
@@ -7484,35 +7326,30 @@
                   "description": "[Private Preview] Google Ads specific options for ingestion (object-level).\nWhen set, these values override the corresponding fields in GoogleAdsConfig\n(source_configurations).",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.GoogleAdsOptions",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.298.0"
                 },
                 "jira_options": {
                   "description": "[Beta] Jira specific options for ingestion",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.JiraConnectorOptions",
-                  "x-databricks-launch-stage": "PUBLIC_BETA",
                   "x-since-version": "v0.299.2"
                 },
                 "kafka_options": {
                   "description": "[Private Preview]",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.KafkaOptions",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v1.1.0"
                 },
                 "meta_ads_options": {
                   "description": "[Beta] Meta Marketing (Meta Ads) specific options for ingestion",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.MetaMarketingOptions",
-                  "x-databricks-launch-stage": "PUBLIC_BETA",
                   "x-since-version": "v0.299.2"
                 },
                 "outlook_options": {
                   "description": "[Private Preview] Outlook specific options for ingestion",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.OutlookOptions",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.299.2"
                 },
@@ -7520,7 +7357,6 @@
                   "description": "[Private Preview]",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.SharepointOptions",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.298.0"
                 },
@@ -7528,7 +7364,6 @@
                   "description": "[Private Preview] Smartsheet specific options for ingestion",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.SmartsheetOptions",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.299.2"
                 },
@@ -7536,7 +7371,6 @@
                   "description": "[Private Preview] TikTok Ads specific options for ingestion",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.TikTokAdsOptions",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.298.0"
                 },
@@ -7544,7 +7378,6 @@
                   "description": "[Private Preview] Zendesk Support specific options for ingestion",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.ZendeskSupportOptions",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.299.2"
                 }
@@ -7584,19 +7417,16 @@
                 "catalog_name": {
                   "description": "[Beta] (Required, Immutable) The name of the catalog for the connector's staging storage location.",
                   "$ref": "#/$defs/string",
-                  "x-databricks-launch-stage": "PUBLIC_BETA",
                   "x-since-version": "v0.296.0"
                 },
                 "schema_name": {
                   "description": "[Beta] (Required, Immutable) The name of the schema for the connector's staging storage location.",
                   "$ref": "#/$defs/string",
-                  "x-databricks-launch-stage": "PUBLIC_BETA",
                   "x-since-version": "v0.296.0"
                 },
                 "volume_name": {
                   "description": "[Beta] (Optional) The Unity Catalog-compatible name for the storage location.\nThis is the volume to use for the data that is extracted by the connector.\nSpark Declarative Pipelines system will automatically create the volume under the catalog and schema.\nFor Combined Cdc Managed Ingestion pipelines default name for the volume would be :\n__databricks_ingestion_gateway_staging_data-$pipelineId",
                   "$ref": "#/$defs/string",
-                  "x-databricks-launch-stage": "PUBLIC_BETA",
                   "x-since-version": "v0.296.0"
                 }
               },
@@ -7664,7 +7494,6 @@
                   "description": "[Private Preview] Include files with modification times occurring after the specified time.\nTimestamp format: YYYY-MM-DDTHH:mm:ss (e.g. 2020-06-01T13:00:00)\nBased on https://spark.apache.org/docs/latest/sql-data-sources-generic-options.html#modification-time-path-filters",
                   "$ref": "#/$defs/string",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.298.0"
                 },
@@ -7672,7 +7501,6 @@
                   "description": "[Private Preview] Include files with modification times occurring before the specified time.\nTimestamp format: YYYY-MM-DDTHH:mm:ss (e.g. 2020-06-01T13:00:00)\nBased on https://spark.apache.org/docs/latest/sql-data-sources-generic-options.html#modification-time-path-filters",
                   "$ref": "#/$defs/string",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.298.0"
                 },
@@ -7680,7 +7508,6 @@
                   "description": "[Private Preview] Include files with file names matching the pattern\nBased on https://spark.apache.org/docs/latest/sql-data-sources-generic-options.html#path-glob-filter",
                   "$ref": "#/$defs/string",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.298.0"
                 }
@@ -7694,7 +7521,6 @@
                   "description": "[Private Preview]",
                   "$ref": "#/$defs/string",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.298.0"
                 },
@@ -7702,7 +7528,6 @@
                   "description": "[Private Preview] Generic options",
                   "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/pipelines.FileFilter",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.298.0"
                 },
@@ -7710,7 +7535,6 @@
                   "description": "[Private Preview] required for TableSpec",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.FileIngestionOptionsFileFormat",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.298.0"
                 },
@@ -7718,7 +7542,6 @@
                   "description": "[Private Preview] Format-specific options\nBased on https://docs.databricks.com/aws/en/ingestion/cloud-object-storage/auto-loader/options#file-format-options",
                   "$ref": "#/$defs/map/string",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.298.0"
                 },
@@ -7726,7 +7549,6 @@
                   "description": "[Private Preview]",
                   "$ref": "#/$defs/bool",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.298.0"
                 },
@@ -7734,7 +7556,6 @@
                   "description": "[Private Preview]",
                   "$ref": "#/$defs/bool",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.298.0"
                 },
@@ -7742,7 +7563,6 @@
                   "description": "[Private Preview] Column name case sensitivity\nhttps://docs.databricks.com/aws/en/ingestion/cloud-object-storage/auto-loader/schema#change-case-sensitive-behavior",
                   "$ref": "#/$defs/bool",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.298.0"
                 },
@@ -7750,7 +7570,6 @@
                   "description": "[Private Preview]",
                   "$ref": "#/$defs/string",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.298.0"
                 },
@@ -7758,7 +7577,6 @@
                   "description": "[Private Preview] Based on https://docs.databricks.com/aws/en/ingestion/cloud-object-storage/auto-loader/schema#how-does-auto-loader-schema-evolution-work",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.FileIngestionOptionsSchemaEvolutionMode",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.298.0"
                 },
@@ -7766,7 +7584,6 @@
                   "description": "[Private Preview] Override inferred schema of specific columns\nBased on https://docs.databricks.com/aws/en/ingestion/cloud-object-storage/auto-loader/schema#override-schema-inference-with-schema-hints",
                   "$ref": "#/$defs/string",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.298.0"
                 },
@@ -7774,7 +7591,6 @@
                   "description": "[Private Preview]",
                   "$ref": "#/$defs/string",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.298.0"
                 }
@@ -7856,7 +7672,6 @@
                   "description": "[Private Preview] (Required) Manager Account ID (also called MCC Account ID) used to list and access\ncustomer accounts under this manager account. This is required for fetching the list\nof customer accounts during source selection.\nIf the same field is also set in the object-level GoogleAdsOptions (connector_options),\nthe object-level value takes precedence over this top-level config.",
                   "$ref": "#/$defs/string",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.299.2"
                 }
@@ -7871,7 +7686,6 @@
                   "description": "[Private Preview] (Optional) Number of days to look back for report tables to capture late-arriving data.\nIf not specified, defaults to 30 days.",
                   "$ref": "#/$defs/int",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.298.0"
                 },
@@ -7879,7 +7693,6 @@
                   "description": "[Private Preview] (Optional at this level) Manager Account ID (also called MCC Account ID) used to list\nand access customer accounts under this manager account.\nOverrides GoogleAdsConfig.manager_account_id from source_configurations when set.",
                   "$ref": "#/$defs/string",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.298.0"
                 },
@@ -7887,7 +7700,6 @@
                   "description": "[Private Preview] (Optional) Start date for the initial sync of report tables in YYYY-MM-DD format.\nThis determines the earliest date from which to sync historical data.\nIf not specified, defaults to 2 years of historical data.",
                   "$ref": "#/$defs/string",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.298.0"
                 }
@@ -7904,7 +7716,6 @@
                   "description": "[Private Preview]",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.GoogleDriveOptionsGoogleDriveEntityType",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.298.0"
                 },
@@ -7912,7 +7723,6 @@
                   "description": "[Private Preview]",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.FileIngestionOptions",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.298.0"
                 },
@@ -7920,7 +7730,6 @@
                   "description": "[Private Preview] Google Drive URL.",
                   "$ref": "#/$defs/string",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.298.0"
                 }
@@ -7946,19 +7755,16 @@
                 "report": {
                   "description": "[Public Preview] Select a specific source report.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.ReportSpec",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.231.0"
                 },
                 "schema": {
                   "description": "[Public Preview] Select all tables from a specific source schema.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.SchemaSpec",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.229.0"
                 },
                 "table": {
                   "description": "[Public Preview] Select a specific source table.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.TableSpec",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.229.0"
                 }
               },
@@ -7971,7 +7777,6 @@
                   "description": "[Private Preview] [Deprecated, use connection_name instead] Immutable. The Unity Catalog connection that this gateway pipeline uses to communicate with the source.",
                   "$ref": "#/$defs/string",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "deprecationMessage": "This field is deprecated",
                   "doNotSuggest": true,
                   "x-since-version": "v0.229.0",
@@ -7981,7 +7786,6 @@
                   "description": "[Private Preview] Immutable. The Unity Catalog connection that this gateway pipeline uses to communicate with the source.",
                   "$ref": "#/$defs/string",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.234.0"
                 },
@@ -7989,7 +7793,6 @@
                   "description": "[Private Preview] Optional, Internal. Parameters required to establish an initial connection with the source.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.ConnectionParameters",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.279.0"
                 },
@@ -7997,7 +7800,6 @@
                   "description": "[Private Preview] Required, Immutable. The name of the catalog for the gateway pipeline's storage location.",
                   "$ref": "#/$defs/string",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.229.0"
                 },
@@ -8005,7 +7807,6 @@
                   "description": "[Private Preview] Optional. The Unity Catalog-compatible name for the gateway storage location.\nThis is the destination to use for the data that is extracted by the gateway.\nSpark Declarative Pipelines system will automatically create the storage location under the catalog and schema.",
                   "$ref": "#/$defs/string",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.229.0"
                 },
@@ -8013,7 +7814,6 @@
                   "description": "[Private Preview] Required, Immutable. The name of the schema for the gateway pipelines's storage location.",
                   "$ref": "#/$defs/string",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.229.0"
                 }
@@ -8031,63 +7831,53 @@
                 "connection_name": {
                   "description": "[Public Preview] The Unity Catalog connection that this ingestion pipeline uses to communicate with the source. This is used with\nboth connectors for applications like Salesforce, Workday, and so on, and also database connectors like Oracle,\n(connector_type = QUERY_BASED OR connector_type = CDC).\nIf connection name corresponds to database connectors like Oracle, and connector_type is not provided then\nconnector_type defaults to QUERY_BASED. If connector_type is passed as CDC we use Combined Cdc Managed Ingestion\npipeline.\nUnder certain conditions, this can be replaced with ingestion_gateway_id to change the connector to Cdc Managed\nIngestion Pipeline with Gateway pipeline.",
                   "$ref": "#/$defs/string",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.229.0"
                 },
                 "connector_type": {
                   "description": "[Beta] (Optional) Connector Type for sources. Ex: CDC, Query Based.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.ConnectorType",
-                  "x-databricks-launch-stage": "PUBLIC_BETA",
                   "x-since-version": "v0.296.0"
                 },
                 "data_staging_options": {
                   "description": "[Beta] (Optional) Location of staged data storage. This is required for migration from Cdc Managed Ingestion Pipeline\nwith Gateway pipeline to Combined Cdc Managed Ingestion Pipeline.\nIf not specified, the volume for staged data will be created in catalog and schema/target specified in the\ntop level pipeline definition.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.DataStagingOptions",
-                  "x-databricks-launch-stage": "PUBLIC_BETA",
                   "x-since-version": "v0.296.0"
                 },
                 "full_refresh_window": {
                   "description": "[Public Preview] (Optional) A window that specifies a set of time ranges for snapshot queries in CDC.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.OperationTimeWindow",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.285.0"
                 },
                 "ingest_from_uc_foreign_catalog": {
                   "description": "[Public Preview] Immutable. If set to true, the pipeline will ingest tables from the\nUC foreign catalogs directly without the need to specify a UC connection or ingestion gateway.\nThe `source_catalog` fields in objects of IngestionConfig are interpreted as\nthe UC foreign catalogs to ingest from.",
                   "$ref": "#/$defs/bool",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.279.0"
                 },
                 "ingestion_gateway_id": {
                   "description": "[Public Preview] Identifier for the gateway that is used by this ingestion pipeline to communicate with the source database.\nThis is used with CDC connectors to databases like SQL Server using a gateway pipeline (connector_type = CDC).\nUnder certain conditions, this can be replaced with connection_name to change the connector to Combined Cdc\nManaged Ingestion Pipeline.",
                   "$ref": "#/$defs/string",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.229.0"
                 },
                 "netsuite_jar_path": {
                   "description": "[Private Preview]",
                   "$ref": "#/$defs/string",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.271.0"
                 },
                 "objects": {
                   "description": "[Public Preview] Required. Settings specifying tables to replicate and the destination for the replicated tables.",
                   "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/pipelines.IngestionConfig",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.229.0"
                 },
                 "source_configurations": {
                   "description": "[Public Preview] Top-level source configurations",
                   "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/pipelines.SourceConfig",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.267.0"
                 },
                 "table_configuration": {
                   "description": "[Public Preview] Configuration settings to control the ingestion of tables. These settings are applied to all tables in the pipeline.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.TableSpecificConfig",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.229.0"
                 }
               },
@@ -8100,19 +7890,16 @@
                 "cursor_columns": {
                   "description": "[Public Preview] The names of the monotonically increasing columns in the source table that are used to enable\nthe table to be read and ingested incrementally through structured streaming.\nThe columns are allowed to have repeated values but have to be non-decreasing.\nIf the source data is merged into the destination (e.g., using SCD Type 1 or Type 2), these\ncolumns will implicitly define the `sequence_by` behavior. You can still explicitly set\n`sequence_by` to override this default.",
                   "$ref": "#/$defs/slice/string",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.264.0"
                 },
                 "deletion_condition": {
                   "description": "[Public Preview] Specifies a SQL WHERE condition that specifies that the source row has been deleted.\nThis is sometimes referred to as \"soft-deletes\".\nFor example: \"Operation = 'DELETE'\" or \"is_deleted = true\".\nThis field is orthogonal to `hard_deletion_sync_interval_in_seconds`,\none for soft-deletes and the other for hard-deletes.\nSee also the hard_deletion_sync_min_interval_in_seconds field for\nhandling of \"hard deletes\" where the source rows are physically removed from the table.",
                   "$ref": "#/$defs/string",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.264.0"
                 },
                 "hard_deletion_sync_min_interval_in_seconds": {
                   "description": "[Beta] Specifies the minimum interval (in seconds) between snapshots on primary keys\nfor detecting and synchronizing hard deletions—i.e., rows that have been\nphysically removed from the source table.\nThis interval acts as a lower bound. If ingestion runs less frequently than\nthis value, hard deletion synchronization will align with the actual ingestion\nfrequency instead of happening more often.\nIf not set, hard deletion synchronization via snapshots is disabled.\nThis field is mutable and can be updated without triggering a full snapshot.",
                   "$ref": "#/$defs/int64",
-                  "x-databricks-launch-stage": "PUBLIC_BETA",
                   "x-since-version": "v0.264.0"
                 }
               },
@@ -8125,7 +7912,6 @@
                   "description": "[Private Preview] (Optional) Marks the report as incremental.\nThis field is deprecated and should not be used. Use `parameters` instead. The incremental behavior is now\ncontrolled by the `parameters` field.",
                   "$ref": "#/$defs/bool",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "deprecationMessage": "This field is deprecated",
                   "doNotSuggest": true,
                   "x-since-version": "v0.271.0",
@@ -8135,7 +7921,6 @@
                   "description": "[Private Preview] Parameters for the Workday report. Each key represents the parameter name (e.g., \"start_date\", \"end_date\"),\nand the corresponding value is a SQL-like expression used to compute the parameter value at runtime.\nExample:\n{\n\"start_date\": \"{ coalesce(current_offset(), date(\\\"2025-02-01\\\")) }\",\n\"end_date\": \"{ current_date() - INTERVAL 1 DAY }\"\n}",
                   "$ref": "#/$defs/map/string",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.271.0"
                 },
@@ -8143,7 +7928,6 @@
                   "description": "[Private Preview] (Optional) Additional custom parameters for Workday Report\nThis field is deprecated and should not be used. Use `parameters` instead.",
                   "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/pipelines.IngestionPipelineDefinitionWorkdayReportParametersQueryKeyValue",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "deprecationMessage": "This field is deprecated",
                   "doNotSuggest": true,
                   "x-since-version": "v0.271.0",
@@ -8159,7 +7943,6 @@
                   "description": "[Private Preview] Key for the report parameter, can be a column name or other metadata",
                   "$ref": "#/$defs/string",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.271.0"
                 },
@@ -8167,7 +7950,6 @@
                   "description": "[Private Preview] Value for the report parameter.\nPossible values it can take are these sql functions:\n1. coalesce(current_offset(), date(\"YYYY-MM-DD\")) -\u003e if current_offset() is null, then the passed date, else current_offset()\n2. current_date()\n3. date_sub(current_date(), x) -\u003e subtract x (some non-negative integer) days from current date",
                   "$ref": "#/$defs/string",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.271.0"
                 }
@@ -8228,7 +8010,6 @@
                 "include_jira_spaces": {
                   "description": "[Beta] (Optional) Projects to filter Jira data on",
                   "$ref": "#/$defs/slice/string",
-                  "x-databricks-launch-stage": "PUBLIC_BETA",
                   "x-since-version": "v0.299.2"
                 }
               },
@@ -8241,7 +8022,6 @@
                   "description": "[Private Preview] Parse the entire value as a single Variant column.",
                   "$ref": "#/$defs/bool",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v1.1.0"
                 },
@@ -8249,7 +8029,6 @@
                   "description": "[Private Preview] Inline schema string for JSON parsing (Spark DDL format).",
                   "$ref": "#/$defs/string",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v1.1.0"
                 },
@@ -8257,7 +8036,6 @@
                   "description": "[Private Preview] (Optional) Schema evolution mode for schema inference.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.FileIngestionOptionsSchemaEvolutionMode",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v1.1.0"
                 },
@@ -8265,7 +8043,6 @@
                   "description": "[Private Preview] Path to a schema file (.ddl).",
                   "$ref": "#/$defs/string",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v1.1.0"
                 },
@@ -8273,7 +8050,6 @@
                   "description": "[Private Preview] (Optional) Schema hints as a comma-separated string of \"column_name type\" pairs.",
                   "$ref": "#/$defs/string",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v1.1.0"
                 }
@@ -8287,7 +8063,6 @@
                   "description": "[Private Preview] Undocumented backdoor mechanism for overriding parameters\nto pass to the Kafka client.\nThis is not supported and may break at any time.",
                   "$ref": "#/$defs/map/string",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v1.1.0"
                 },
@@ -8295,7 +8070,6 @@
                   "description": "[Private Preview] (Optional) Transformer for the message key.\nIf not specified, the key is left as raw bytes.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.Transformer",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v1.1.0"
                 },
@@ -8303,7 +8077,6 @@
                   "description": "[Private Preview] Internal option to control the maximum number of offsets to process per trigger.",
                   "$ref": "#/$defs/int64",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v1.1.0"
                 },
@@ -8311,7 +8084,6 @@
                   "description": "[Private Preview] (Optional) Where to begin reading when no checkpoint exists.\nValid values: \"latest\" and \"earliest\". Defaults to \"latest\".",
                   "$ref": "#/$defs/string",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v1.1.0"
                 },
@@ -8319,7 +8091,6 @@
                   "description": "[Private Preview] Java regex pattern to subscribe to matching topics.\nOnly one of topics or topic_pattern must be specified.",
                   "$ref": "#/$defs/string",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v1.1.0"
                 },
@@ -8327,7 +8098,6 @@
                   "description": "[Private Preview] Topics to subscribe to.\nOnly one of topics or topic_pattern must be specified.",
                   "$ref": "#/$defs/slice/string",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v1.1.0"
                 },
@@ -8335,7 +8105,6 @@
                   "description": "[Private Preview] (Optional) Transformer for the message value.\nIf not specified, the value is left as raw bytes.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.Transformer",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v1.1.0"
                 }
@@ -8353,49 +8122,41 @@
                 "action_attribution_windows": {
                   "description": "[Beta] (Optional) Action attribution windows for insights reporting (e.g. \"28d_click\", \"1d_view\")",
                   "$ref": "#/$defs/slice/string",
-                  "x-databricks-launch-stage": "PUBLIC_BETA",
                   "x-since-version": "v0.299.2"
                 },
                 "action_breakdowns": {
                   "description": "[Beta] (Optional) Action breakdowns to configure for data aggregation",
                   "$ref": "#/$defs/slice/string",
-                  "x-databricks-launch-stage": "PUBLIC_BETA",
                   "x-since-version": "v0.299.2"
                 },
                 "action_report_time": {
                   "description": "[Beta] (Optional) Timing used to report action statistics (impression, conversion, mixed, or lifetime)",
                   "$ref": "#/$defs/string",
-                  "x-databricks-launch-stage": "PUBLIC_BETA",
                   "x-since-version": "v0.299.2"
                 },
                 "breakdowns": {
                   "description": "[Beta] (Optional) Breakdowns to configure for data aggregation",
                   "$ref": "#/$defs/slice/string",
-                  "x-databricks-launch-stage": "PUBLIC_BETA",
                   "x-since-version": "v0.299.2"
                 },
                 "custom_insights_lookback_window": {
                   "description": "[Beta] (Optional) Window in days to revisit data during sync to capture\nupdated conversion data from the API.",
                   "$ref": "#/$defs/int",
-                  "x-databricks-launch-stage": "PUBLIC_BETA",
                   "x-since-version": "v0.299.2"
                 },
                 "level": {
                   "description": "[Beta] (Optional) Granularity of data to pull (account, ad, adset, campaign)",
                   "$ref": "#/$defs/string",
-                  "x-databricks-launch-stage": "PUBLIC_BETA",
                   "x-since-version": "v0.299.2"
                 },
                 "start_date": {
                   "description": "[Beta] (Optional) Start date in yyyy-MM-dd format (e.g. 2025-01-15). Data added\nafter this date will be ingested",
                   "$ref": "#/$defs/string",
-                  "x-databricks-launch-stage": "PUBLIC_BETA",
                   "x-since-version": "v0.299.2"
                 },
                 "time_increment": {
                   "description": "[Beta] (Optional) Value in string by which to aggregate statistics (can take all_days, monthly or number of days)",
                   "$ref": "#/$defs/string",
-                  "x-databricks-launch-stage": "PUBLIC_BETA",
                   "x-since-version": "v0.299.2"
                 }
               },
@@ -8435,19 +8196,16 @@
                 "days_of_week": {
                   "description": "[Public Preview] Days of week in which the window is allowed to happen\nIf not specified all days of the week will be used.",
                   "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/pipelines.DayOfWeek",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.285.0"
                 },
                 "start_hour": {
                   "description": "[Public Preview] An integer between 0 and 23 denoting the start hour for the window in the 24-hour day.",
                   "$ref": "#/$defs/int",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.285.0"
                 },
                 "time_zone_id": {
                   "description": "[Public Preview] Time zone id of window. See https://docs.databricks.com/sql/language-manual/sql-ref-syntax-aux-conf-mgmt-set-timezone.html for details.\nIf not specified, UTC will be used.",
                   "$ref": "#/$defs/string",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.285.0"
                 }
               },
@@ -8492,7 +8250,6 @@
                   "description": "[Private Preview] (Optional) Controls which attachments to ingest.\nIf not specified, defaults to ALL.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.OutlookAttachmentMode",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.299.2"
                 },
@@ -8500,7 +8257,6 @@
                   "description": "[Private Preview] (Optional) Defines how the body_content column is populated.\nTEXT_HTML: Preserves full formatting, links, and styling.\nTEXT_PLAIN: Converts body to plain text. Recommended for AI/RAG pipelines to reduce token usage and noise.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.OutlookBodyFormat",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.299.2"
                 },
@@ -8508,7 +8264,6 @@
                   "description": "[Private Preview] Deprecated. Use include_folders instead.",
                   "$ref": "#/$defs/slice/string",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "deprecationMessage": "This field is deprecated",
                   "doNotSuggest": true,
                   "x-since-version": "v0.299.2",
@@ -8518,7 +8273,6 @@
                   "description": "[Private Preview] (Optional) Filter mail folders to include in the sync.\nIf not specified, all folders will be synced.\nExamples: Inbox, Sent Items, Custom_Folder\nFilter semantics: OR between different folders.",
                   "$ref": "#/$defs/slice/string",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.299.2"
                 },
@@ -8526,7 +8280,6 @@
                   "description": "[Private Preview] (Optional) List of mailboxes to sync (e.g. mailbox email addresses or identifiers).\nIf not specified, all accessible mailboxes are ingested.\nFilter semantics: OR between different mailboxes.",
                   "$ref": "#/$defs/slice/string",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.299.2"
                 },
@@ -8534,7 +8287,6 @@
                   "description": "[Private Preview] (Optional) Filter emails by sender address. Uses exact email match.\nExamples: user@vendor.com, alerts@system.io, noreply@company.com\nIf not specified, emails from all senders will be synced.\nFilter semantics: OR between different senders.",
                   "$ref": "#/$defs/slice/string",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.299.2"
                 },
@@ -8542,7 +8294,6 @@
                   "description": "[Private Preview] (Optional) Filter emails by subject line. Values ending with \"*\" use prefix match (subject starts with\nthe part before \"*\"); otherwise substring match (subject contains the value).\nExamples: \"Invoice\" (substring), \"Re:*\" (prefix), \"Support Ticket\", \"URGENT*\"\nIf not specified, emails with all subjects will be synced.\nFilter semantics: OR between different subjects.",
                   "$ref": "#/$defs/slice/string",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.299.2"
                 },
@@ -8550,7 +8301,6 @@
                   "description": "[Private Preview] Deprecated. Use include_senders instead.",
                   "$ref": "#/$defs/slice/string",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "deprecationMessage": "This field is deprecated",
                   "doNotSuggest": true,
                   "x-since-version": "v0.299.2",
@@ -8560,7 +8310,6 @@
                   "description": "[Private Preview] (Optional) Start date for the initial sync in YYYY-MM-DD format.\nFormat: YYYY-MM-DD (e.g., 2024-01-01)\nThis determines the earliest date from which to sync historical data.\nIf not specified, complete history is ingested.",
                   "$ref": "#/$defs/string",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.299.2"
                 },
@@ -8568,7 +8317,6 @@
                   "description": "[Private Preview] Deprecated. Use include_subjects instead.",
                   "$ref": "#/$defs/slice/string",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "deprecationMessage": "This field is deprecated",
                   "doNotSuggest": true,
                   "x-since-version": "v0.299.2",
@@ -8583,7 +8331,6 @@
                 "include": {
                   "description": "[Public Preview] The source code to include for pipelines",
                   "$ref": "#/$defs/string",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.252.0"
                 }
               },
@@ -8730,7 +8477,6 @@
                   "description": "[Private Preview] ID of the deployment that manages this pipeline. Only set when `kind` is\n`BUNDLE`. Used to look up deployment metadata from the Deployment\nMetadata service.",
                   "$ref": "#/$defs/string",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v1.2.0"
                 },
@@ -8748,7 +8494,6 @@
                   "description": "[Private Preview] ID of the version of the deployment that produced this pipeline. Only\nset when `kind` is `BUNDLE`. Identifies a specific snapshot of the\ndeployment in the Deployment Metadata service.",
                   "$ref": "#/$defs/string",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v1.2.0"
                 }
@@ -8769,14 +8514,12 @@
                 "glob": {
                   "description": "[Public Preview] The unified field to include source codes.\nEach entry can be a notebook path, a file path, or a folder path that ends `/**`.\nThis field cannot be used together with `notebook` or `file`.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.PathPattern",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.252.0"
                 },
                 "jar": {
                   "description": "[Private Preview] URI of the jar to be installed. Currently only DBFS is supported.",
                   "$ref": "#/$defs/string",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.229.0"
                 },
@@ -8784,7 +8527,6 @@
                   "description": "[Private Preview] Specification of a maven library to be installed.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.MavenLibrary",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.229.0"
                 },
@@ -8834,14 +8576,12 @@
                 "dependencies": {
                   "description": "[Public Preview] List of pip dependencies, as supported by the version of pip in this environment.\nEach dependency is a pip requirement file line https://pip.pypa.io/en/stable/reference/requirements-file-format/\nAllowed dependency could be \u003crequirement specifier\u003e, \u003carchive url/path\u003e, \u003clocal project path\u003e(WSFS or Volumes in Databricks), \u003cvcs project url\u003e",
                   "$ref": "#/$defs/slice/string",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.257.0"
                 },
                 "environment_version": {
                   "description": "[Private Preview] The environment version of the serverless Python environment used to execute\ncustomer Python code. Each environment version includes a specific Python\nversion and a curated set of pre-installed libraries with defined versions,\nproviding a stable and reproducible execution environment.\n\nDatabricks supports a three-year lifecycle for each environment version.\nFor available versions and their included packages, see\nhttps://docs.databricks.com/aws/en/release-notes/serverless/environment-version/\n\nThe value should be a string representing the environment version number, for example: `\"4\"`.",
                   "$ref": "#/$defs/string",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.294.0"
                 }
@@ -8855,7 +8595,6 @@
                 "slot_config": {
                   "description": "[Public Preview] Optional. The Postgres slot configuration to use for logical replication",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.PostgresSlotConfig",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.267.0"
                 }
               },
@@ -8868,13 +8607,11 @@
                 "publication_name": {
                   "description": "[Public Preview] The name of the publication to use for the Postgres source",
                   "$ref": "#/$defs/string",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.267.0"
                 },
                 "slot_name": {
                   "description": "[Public Preview] The name of the logical replication slot to use for the Postgres source",
                   "$ref": "#/$defs/string",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.267.0"
                 }
               },
@@ -8886,31 +8623,26 @@
                 "destination_catalog": {
                   "description": "[Public Preview] Required. Destination catalog to store table.",
                   "$ref": "#/$defs/string",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.231.0"
                 },
                 "destination_schema": {
                   "description": "[Public Preview] Required. Destination schema to store table.",
                   "$ref": "#/$defs/string",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.231.0"
                 },
                 "destination_table": {
                   "description": "[Public Preview] Required. Destination table name. The pipeline fails if a table with that name already exists.",
                   "$ref": "#/$defs/string",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.231.0"
                 },
                 "source_url": {
                   "description": "[Public Preview] Required. Report URL in the source system.",
                   "$ref": "#/$defs/string",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.231.0"
                 },
                 "table_configuration": {
                   "description": "[Public Preview] Configuration settings to control the ingestion of tables. These settings override the table_configuration defined in the IngestionPipelineDefinition object.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.TableSpecificConfig",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.231.0"
                 }
               },
@@ -8928,7 +8660,6 @@
                   "description": "[Private Preview] Days of week in which the restart is allowed to happen (within a five-hour window starting at start_hour).\nIf not specified all days of the week will be used.",
                   "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/pipelines.DayOfWeek",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.234.0"
                 },
@@ -8936,7 +8667,6 @@
                   "description": "[Private Preview] An integer between 0 and 23 denoting the start hour for the restart window in the 24-hour day.\nContinuous pipeline restart is triggered only within a five-hour window starting at this hour.",
                   "$ref": "#/$defs/int",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.234.0"
                 },
@@ -8944,7 +8674,6 @@
                   "description": "[Private Preview] Time zone id of restart window. See https://docs.databricks.com/sql/language-manual/sql-ref-syntax-aux-conf-mgmt-set-timezone.html for details.\nIf not specified, UTC will be used.",
                   "$ref": "#/$defs/string",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.234.0"
                 }
@@ -8977,37 +8706,31 @@
                 "connector_options": {
                   "description": "[Public Preview] (Optional) Source Specific Connector Options",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.ConnectorOptions",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.298.0"
                 },
                 "destination_catalog": {
                   "description": "[Public Preview] Required. Destination catalog to store tables.",
                   "$ref": "#/$defs/string",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.229.0"
                 },
                 "destination_schema": {
                   "description": "[Public Preview] Required. Destination schema to store tables in. Tables with the same name as the source tables are created in this destination schema. The pipeline fails If a table with the same name already exists.",
                   "$ref": "#/$defs/string",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.229.0"
                 },
                 "source_catalog": {
                   "description": "[Public Preview] The source catalog name. Might be optional depending on the type of source.",
                   "$ref": "#/$defs/string",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.229.0"
                 },
                 "source_schema": {
                   "description": "[Public Preview] Required. Schema name in the source database.",
                   "$ref": "#/$defs/string",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.229.0"
                 },
                 "table_configuration": {
                   "description": "[Public Preview] Configuration settings to control the ingestion of tables. These settings are applied to all tables in this schema and override the table_configuration defined in the IngestionPipelineDefinition object.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.TableSpecificConfig",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.229.0"
                 }
               },
@@ -9025,7 +8748,6 @@
                   "description": "[Private Preview] (Optional) The type of SharePoint entity to ingest.\nIf not specified, defaults to FILE.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.SharepointOptionsSharepointEntityType",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.298.0"
                 },
@@ -9033,7 +8755,6 @@
                   "description": "[Private Preview] (Optional) File ingestion options for processing files.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.FileIngestionOptions",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.298.0"
                 },
@@ -9041,7 +8762,6 @@
                   "description": "[Private Preview] Required. The SharePoint URL.",
                   "$ref": "#/$defs/string",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.298.0"
                 }
@@ -9071,7 +8791,6 @@
                   "description": "[Private Preview] (Optional) When true, maps each column to its Smartsheet-declared type (Text/Number/Date/\nCheckbox/etc.). Cells that do not conform to the declared type are set to NULL.\nWhen false, all columns land as STRING. Use false for sheets with irregular data or columns\nthat frequently violate their own declared type.\nIf not specified, defaults to true.",
                   "$ref": "#/$defs/bool",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.299.2"
                 }
@@ -9085,13 +8804,11 @@
                 "postgres": {
                   "description": "[Public Preview] Postgres-specific catalog-level configuration parameters",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.PostgresCatalogConfig",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.267.0"
                 },
                 "source_catalog": {
                   "description": "[Public Preview] Source catalog name",
                   "$ref": "#/$defs/string",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.267.0"
                 }
               },
@@ -9103,14 +8820,12 @@
                 "catalog": {
                   "description": "[Public Preview] Catalog-level source configuration parameters",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.SourceCatalogConfig",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.267.0"
                 },
                 "google_ads_config": {
                   "description": "[Private Preview]",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.GoogleAdsConfig",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.299.2"
                 }
@@ -9123,49 +8838,41 @@
                 "connector_options": {
                   "description": "[Public Preview] (Optional) Source Specific Connector Options",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.ConnectorOptions",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.298.0"
                 },
                 "destination_catalog": {
                   "description": "[Public Preview] Required. Destination catalog to store table.",
                   "$ref": "#/$defs/string",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.229.0"
                 },
                 "destination_schema": {
                   "description": "[Public Preview] Required. Destination schema to store table.",
                   "$ref": "#/$defs/string",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.229.0"
                 },
                 "destination_table": {
                   "description": "[Public Preview] Optional. Destination table name. The pipeline fails if a table with that name already exists. If not set, the source table name is used.",
                   "$ref": "#/$defs/string",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.229.0"
                 },
                 "source_catalog": {
                   "description": "[Public Preview] Source catalog name. Might be optional depending on the type of source.",
                   "$ref": "#/$defs/string",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.229.0"
                 },
                 "source_schema": {
                   "description": "[Public Preview] Schema name in the source database. Might be optional depending on the type of source.",
                   "$ref": "#/$defs/string",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.229.0"
                 },
                 "source_table": {
                   "description": "[Public Preview] Required. Table name in the source database.",
                   "$ref": "#/$defs/string",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.229.0"
                 },
                 "table_configuration": {
                   "description": "[Public Preview] Configuration settings to control the ingestion of tables. These settings override the table_configuration defined in the IngestionPipelineDefinition object and the SchemaSpec.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.TableSpecificConfig",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.229.0"
                 }
               },
@@ -9182,64 +8889,54 @@
                 "auto_full_refresh_policy": {
                   "description": "[Public Preview] (Optional, Mutable) Policy for auto full refresh, if enabled pipeline will automatically try\nto fix issues by doing a full refresh on the table in the retry run. auto_full_refresh_policy\nin table configuration will override the above level auto_full_refresh_policy.\nFor example,\n{\n\"auto_full_refresh_policy\": {\n\"enabled\": true,\n\"min_interval_hours\": 23,\n}\n}\nIf unspecified, auto full refresh is disabled.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.AutoFullRefreshPolicy",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.285.0"
                 },
                 "exclude_columns": {
                   "description": "[Public Preview] A list of column names to be excluded for the ingestion.\nWhen not specified, include_columns fully controls what columns to be ingested.\nWhen specified, all other columns including future ones will be automatically included for ingestion.\nThis field in mutually exclusive with `include_columns`.",
                   "$ref": "#/$defs/slice/string",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.251.0"
                 },
                 "include_columns": {
                   "description": "[Public Preview] A list of column names to be included for the ingestion.\nWhen not specified, all columns except ones in exclude_columns will be included. Future\ncolumns will be automatically included.\nWhen specified, all other future columns will be automatically excluded from ingestion.\nThis field in mutually exclusive with `exclude_columns`.",
                   "$ref": "#/$defs/slice/string",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.251.0"
                 },
                 "primary_keys": {
                   "description": "[Public Preview] The primary key of the table used to apply changes.",
                   "$ref": "#/$defs/slice/string",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.229.0"
                 },
                 "query_based_connector_config": {
                   "description": "[Public Preview] Configurations that are only applicable for query-based ingestion connectors.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfig",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.264.0"
                 },
                 "row_filter": {
                   "description": "[Public Preview] (Optional, Immutable) The row filter condition to be applied to the table.\nIt must not contain the WHERE keyword, only the actual filter condition.\nIt must be in DBSQL format.",
                   "$ref": "#/$defs/string",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.283.0"
                 },
                 "salesforce_include_formula_fields": {
                   "description": "[Private Preview] If true, formula fields defined in the table are included in the ingestion. This setting is only valid for the Salesforce connector",
                   "$ref": "#/$defs/bool",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.229.0"
                 },
                 "scd_type": {
                   "description": "[Public Preview] The SCD type to use to ingest the table.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.TableSpecificConfigScdType",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.229.0"
                 },
                 "sequence_by": {
                   "description": "[Public Preview] The column names specifying the logical order of events in the source data. Spark Declarative Pipelines uses this sequencing to handle change events that arrive out of order.",
                   "$ref": "#/$defs/slice/string",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.231.0"
                 },
                 "workday_report_parameters": {
                   "description": "[Private Preview]",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.IngestionPipelineDefinitionWorkdayReportParameters",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.271.0"
                 }
@@ -9268,7 +8965,6 @@
                   "description": "[Private Preview] (Optional) Data level for the report.\nIf not specified, defaults to AUCTION_CAMPAIGN.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.TikTokAdsOptionsTikTokDataLevel",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.298.0"
                 },
@@ -9276,7 +8972,6 @@
                   "description": "[Private Preview] (Optional) Dimensions to include in the report.\nExamples: \"campaign_id\", \"adgroup_id\", \"ad_id\", \"stat_time_day\", \"stat_time_hour\"\nIf not specified, defaults to campaign_id.",
                   "$ref": "#/$defs/slice/string",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.298.0"
                 },
@@ -9284,7 +8979,6 @@
                   "description": "[Private Preview] (Optional) Number of days to look back for report tables during incremental sync\nto capture late-arriving conversions and attribution data.\nIf not specified, defaults to 7 days.",
                   "$ref": "#/$defs/int",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.298.0"
                 },
@@ -9292,7 +8986,6 @@
                   "description": "[Private Preview] (Optional) Metrics to include in the report.\nExamples: \"spend\", \"impressions\", \"clicks\", \"conversion\", \"cpc\"\nIf not specified, defaults to basic metrics (spend, impressions, clicks, etc.)",
                   "$ref": "#/$defs/slice/string",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.298.0"
                 },
@@ -9300,7 +8993,6 @@
                   "description": "[Private Preview] (Optional) Whether to request lifetime metrics (all-time aggregated data).\nWhen true, the report returns all-time data.\nIf not specified, defaults to false.",
                   "$ref": "#/$defs/bool",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.298.0"
                 },
@@ -9308,7 +9000,6 @@
                   "description": "[Private Preview] (Optional) Report type for the TikTok Ads API.\nIf not specified, defaults to BASIC.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.TikTokAdsOptionsTikTokReportType",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.298.0"
                 },
@@ -9316,7 +9007,6 @@
                   "description": "[Private Preview] (Optional) Start date for the initial sync of report tables in YYYY-MM-DD format.\nThis determines the earliest date from which to sync historical data.\nIf not specified, defaults to 1 year of historical data for daily reports\nand 30 days for hourly reports.",
                   "$ref": "#/$defs/string",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.298.0"
                 }
@@ -9367,7 +9057,6 @@
                   "description": "[Private Preview] Required: the wire format of the data.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.TransformerFormat",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v1.1.0"
                 },
@@ -9375,7 +9064,6 @@
                   "description": "[Private Preview]",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.JsonTransformerOptions",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v1.1.0"
                 }
@@ -9401,7 +9089,6 @@
                   "description": "[Private Preview] (Optional) Start date in YYYY-MM-DD format for the initial sync.\nThis determines the earliest date from which to sync historical data.",
                   "$ref": "#/$defs/string",
                   "x-databricks-preview": "PRIVATE",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.299.2"
                 }
@@ -9414,19 +9101,16 @@
                 "enable_readable_secondaries": {
                   "description": "[Beta] Whether to allow read-only connections to read-write endpoints. Only relevant for read-write endpoints where\nsize.max \u003e 1.",
                   "$ref": "#/$defs/bool",
-                  "x-databricks-launch-stage": "PUBLIC_BETA",
                   "x-since-version": "v0.290.0"
                 },
                 "max": {
                   "description": "[Beta] The maximum number of computes in the endpoint group. Currently, this must be equal to min. Set to 1 for single\ncompute endpoints, to disable HA. To manually suspend all computes in an endpoint group, set disabled to\ntrue on the EndpointSpec.",
                   "$ref": "#/$defs/int",
-                  "x-databricks-launch-stage": "PUBLIC_BETA",
                   "x-since-version": "v0.290.0"
                 },
                 "min": {
                   "description": "[Beta] The minimum number of computes in the endpoint group. Currently, this must be equal to max. This must be greater\nthan or equal to 1.",
                   "$ref": "#/$defs/int",
-                  "x-databricks-launch-stage": "PUBLIC_BETA",
                   "x-since-version": "v0.290.0"
                 }
               },
@@ -9443,7 +9127,6 @@
                 "pg_settings": {
                   "description": "[Beta] A raw representation of Postgres settings.",
                   "$ref": "#/$defs/map/string",
-                  "x-databricks-launch-stage": "PUBLIC_BETA",
                   "x-since-version": "v0.287.0"
                 }
               },
@@ -9467,19 +9150,16 @@
                 "budget_policy_id": {
                   "description": "[Beta] Budget policy to set on the newly created pipeline.",
                   "$ref": "#/$defs/string",
-                  "x-databricks-launch-stage": "PUBLIC_BETA",
                   "x-since-version": "v1.0.0"
                 },
                 "storage_catalog": {
                   "description": "[Beta] UC catalog for the pipeline to store intermediate files (checkpoints, event logs etc).\nThis needs to be a standard catalog where the user has permissions to create Delta tables.",
                   "$ref": "#/$defs/string",
-                  "x-databricks-launch-stage": "PUBLIC_BETA",
                   "x-since-version": "v1.0.0"
                 },
                 "storage_schema": {
                   "description": "[Beta] UC schema for the pipeline to store intermediate files (checkpoints, event logs etc).\nThis needs to be in the standard catalog where the user has permissions to create Delta tables.",
                   "$ref": "#/$defs/string",
-                  "x-databricks-launch-stage": "PUBLIC_BETA",
                   "x-since-version": "v1.0.0"
                 }
               },
@@ -9491,13 +9171,11 @@
                 "key": {
                   "description": "[Beta] The key of the custom tag.",
                   "$ref": "#/$defs/string",
-                  "x-databricks-launch-stage": "PUBLIC_BETA",
                   "x-since-version": "v0.290.0"
                 },
                 "value": {
                   "description": "[Beta] The value of the custom tag.",
                   "$ref": "#/$defs/string",
-                  "x-databricks-launch-stage": "PUBLIC_BETA",
                   "x-since-version": "v0.290.0"
                 }
               },
@@ -9510,31 +9188,26 @@
                 "autoscaling_limit_max_cu": {
                   "description": "[Beta] The maximum number of Compute Units. Minimum value is 0.5.",
                   "$ref": "#/$defs/float64",
-                  "x-databricks-launch-stage": "PUBLIC_BETA",
                   "x-since-version": "v0.287.0"
                 },
                 "autoscaling_limit_min_cu": {
                   "description": "[Beta] The minimum number of Compute Units. Minimum value is 0.5.",
                   "$ref": "#/$defs/float64",
-                  "x-databricks-launch-stage": "PUBLIC_BETA",
                   "x-since-version": "v0.287.0"
                 },
                 "no_suspension": {
                   "description": "[Beta] When set to true, explicitly disables automatic suspension (never suspend).\nShould be set to true when provided.\nMutually exclusive with `suspend_timeout_duration`. When updating, use `spec.project_default_settings.suspension` in the update_mask.",
                   "$ref": "#/$defs/bool",
-                  "x-databricks-launch-stage": "PUBLIC_BETA",
                   "x-since-version": "v0.287.0"
                 },
                 "pg_settings": {
                   "description": "[Beta] A raw representation of Postgres settings.",
                   "$ref": "#/$defs/map/string",
-                  "x-databricks-launch-stage": "PUBLIC_BETA",
                   "x-since-version": "v0.287.0"
                 },
                 "suspend_timeout_duration": {
                   "description": "[Beta] Duration of inactivity after which the compute endpoint is automatically suspended.\nIf specified should be between 60s and 604800s (1 minute to 1 week).\nMutually exclusive with `no_suspension`. When updating, use `spec.project_default_settings.suspension` in the update_mask.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/duration.Duration",
-                  "x-databricks-launch-stage": "PUBLIC_BETA",
                   "x-since-version": "v0.287.0"
                 }
               },
@@ -9581,7 +9254,6 @@
                 "guardrails": {
                   "description": "[Public Preview] Configuration for AI Guardrails to prevent unwanted data and unsafe data in requests and responses.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.AiGatewayGuardrails",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.230.0"
                 },
                 "inference_table_config": {
@@ -9608,7 +9280,6 @@
                 "invalid_keywords": {
                   "description": "[Public Preview] List of invalid keywords.\nAI guardrail uses keyword or string matching to decide if the keyword exists in the request or response content.",
                   "$ref": "#/$defs/slice/string",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "deprecationMessage": "This field is deprecated",
                   "x-since-version": "v0.230.0",
                   "deprecated": true
@@ -9616,19 +9287,16 @@
                 "pii": {
                   "description": "[Public Preview] Configuration for guardrail PII filter.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.AiGatewayGuardrailPiiBehavior",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.230.0"
                 },
                 "safety": {
                   "description": "[Public Preview] Indicates whether the safety filter is enabled.",
                   "$ref": "#/$defs/bool",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.230.0"
                 },
                 "valid_topics": {
                   "description": "[Public Preview] The list of allowed topics.\nGiven a chat request, this guardrail flags the request if its topic is not in the allowed topics.",
                   "$ref": "#/$defs/slice/string",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "deprecationMessage": "This field is deprecated",
                   "x-since-version": "v0.230.0",
                   "deprecated": true
@@ -9642,7 +9310,6 @@
                 "behavior": {
                   "description": "[Public Preview] Configuration for input guardrail filters.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.AiGatewayGuardrailPiiBehaviorBehavior",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.230.0"
                 }
               },
@@ -9667,13 +9334,11 @@
                 "input": {
                   "description": "[Public Preview] Configuration for input guardrail filters.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.AiGatewayGuardrailParameters",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.230.0"
                 },
                 "output": {
                   "description": "[Public Preview] Configuration for output guardrail filters.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.AiGatewayGuardrailParameters",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.230.0"
                 }
               },
@@ -10342,7 +10007,6 @@
                 "burst_scaling_enabled": {
                   "description": "[Public Preview] Whether burst scaling is enabled. When enabled (default), the endpoint can automatically\nscale up beyond provisioned capacity to handle traffic spikes. When disabled, the endpoint\nmaintains fixed capacity at provisioned_model_units.",
                   "$ref": "#/$defs/bool",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.288.0"
                 },
                 "entity_name": {
@@ -10367,7 +10031,6 @@
                 "instance_profile_arn": {
                   "description": "[Public Preview] ARN of the instance profile that the served entity uses to access AWS resources.",
                   "$ref": "#/$defs/string",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.229.0"
                 },
                 "max_provisioned_concurrency": {
@@ -10398,7 +10061,6 @@
                 "provisioned_model_units": {
                   "description": "[Public Preview] The number of model units provisioned.",
                   "$ref": "#/$defs/int64",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.252.0"
                 },
                 "scale_to_zero_enabled": {
@@ -10425,7 +10087,6 @@
                 "burst_scaling_enabled": {
                   "description": "[Public Preview] Whether burst scaling is enabled. When enabled (default), the endpoint can automatically\nscale up beyond provisioned capacity to handle traffic spikes. When disabled, the endpoint\nmaintains fixed capacity at provisioned_model_units.",
                   "$ref": "#/$defs/bool",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.288.0"
                 },
                 "environment_vars": {
@@ -10436,7 +10097,6 @@
                 "instance_profile_arn": {
                   "description": "[Public Preview] ARN of the instance profile that the served entity uses to access AWS resources.",
                   "$ref": "#/$defs/string",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.229.0"
                 },
                 "max_provisioned_concurrency": {
@@ -10475,7 +10135,6 @@
                 "provisioned_model_units": {
                   "description": "[Public Preview] The number of model units provisioned.",
                   "$ref": "#/$defs/int64",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.252.0"
                 },
                 "scale_to_zero_enabled": {
@@ -10617,31 +10276,26 @@
                 "comparison_operator": {
                   "description": "[Public Preview] Operator used for comparison in alert evaluation.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.ComparisonOperator",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.279.0"
                 },
                 "empty_result_state": {
                   "description": "[Public Preview] Alert state if result is empty. Please avoid setting this field to be `UNKNOWN` because `UNKNOWN` state is planned to be deprecated.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertEvaluationState",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.279.0"
                 },
                 "notification": {
                   "description": "[Public Preview] User or Notification Destination to notify when alert is triggered.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertV2Notification",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.279.0"
                 },
                 "source": {
                   "description": "[Public Preview] Source column from result to use to evaluate alert",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertV2OperandColumn",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.279.0"
                 },
                 "threshold": {
                   "description": "[Public Preview] Threshold to user for alert evaluation, can be a column or a value.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertV2Operand",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.279.0"
                 }
               },
@@ -10657,19 +10311,16 @@
                 "notify_on_ok": {
                   "description": "[Public Preview] Whether to notify alert subscribers when alert returns back to normal.",
                   "$ref": "#/$defs/bool",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.279.0"
                 },
                 "retrigger_seconds": {
                   "description": "[Public Preview] Number of seconds an alert waits after being triggered before it is allowed to send another notification.\nIf set to 0 or omitted, the alert will not send any further notifications after the first trigger\nSetting this value to 1 allows the alert to send a notification on every evaluation where the condition is met, effectively making it always retrigger for notification purposes.",
                   "$ref": "#/$defs/int",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.279.0"
                 },
                 "subscriptions": {
                   "description": "[Public Preview]",
                   "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/sql.AlertV2Subscription",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.279.0"
                 }
               },
@@ -10681,13 +10332,11 @@
                 "column": {
                   "description": "[Public Preview]",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertV2OperandColumn",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.279.0"
                 },
                 "value": {
                   "description": "[Public Preview]",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertV2OperandValue",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.279.0"
                 }
               },
@@ -10699,19 +10348,16 @@
                 "aggregation": {
                   "description": "[Public Preview]",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.Aggregation",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.279.0"
                 },
                 "display": {
                   "description": "[Public Preview]",
                   "$ref": "#/$defs/string",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.279.0"
                 },
                 "name": {
                   "description": "[Public Preview]",
                   "$ref": "#/$defs/string",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.279.0"
                 }
               },
@@ -10726,19 +10372,16 @@
                 "bool_value": {
                   "description": "[Public Preview]",
                   "$ref": "#/$defs/bool",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.279.0"
                 },
                 "double_value": {
                   "description": "[Public Preview]",
                   "$ref": "#/$defs/float64",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.279.0"
                 },
                 "string_value": {
                   "description": "[Public Preview]",
                   "$ref": "#/$defs/string",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.279.0"
                 }
               },
@@ -10750,13 +10393,11 @@
                 "service_principal_name": {
                   "description": "[Public Preview] Application ID of an active service principal. Setting this field requires the `servicePrincipal/user` role.",
                   "$ref": "#/$defs/string",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.279.0"
                 },
                 "user_name": {
                   "description": "[Public Preview] The email of an active workspace user. Can only set this field to their own email.",
                   "$ref": "#/$defs/string",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.279.0"
                 }
               },
@@ -10768,13 +10409,11 @@
                 "destination_id": {
                   "description": "[Public Preview]",
                   "$ref": "#/$defs/string",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.279.0"
                 },
                 "user_email": {
                   "description": "[Public Preview]",
                   "$ref": "#/$defs/string",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.279.0"
                 }
               },
@@ -10841,19 +10480,16 @@
                 "pause_status": {
                   "description": "[Public Preview] Indicate whether this schedule is paused or not.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.SchedulePauseStatus",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.279.0"
                 },
                 "quartz_cron_schedule": {
                   "description": "[Public Preview] A cron expression using quartz syntax that specifies the schedule for this pipeline.\nShould use the quartz format described here: http://www.quartz-scheduler.org/documentation/quartz-2.1.7/tutorials/tutorial-lesson-06.html",
                   "$ref": "#/$defs/string",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.279.0"
                 },
                 "timezone_id": {
                   "description": "[Public Preview] A Java timezone id. The schedule will be resolved using this timezone.\nThis will be combined with the quartz_cron_schedule to determine the schedule.\nSee https://docs.databricks.com/sql/language-manual/sql-ref-syntax-aux-conf-mgmt-set-timezone.html for details.",
                   "$ref": "#/$defs/string",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.279.0"
                 }
               },
