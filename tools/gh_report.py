@@ -39,6 +39,77 @@ def run(cmd, shell=False):
     return subprocess.run(cmd, check=True, shell=False)
 
 
+# The check-run API rejects output.text over 65535 characters, and the update-check
+# action in eng-dev-ecosystem passes the report to `gh` as a single argument, which
+# fails exec() above 128KB. Keep the markdown report safely under both limits.
+MAX_MARKDOWN_SIZE = 60_000
+
+
+def find_tables(lines):
+    """Return (start, end) line ranges of consecutive markdown table lines.
+
+    >>> find_tables(["intro", "| a |", "| - |", "| 1 |", "", "| b |"])
+    [(1, 4), (5, 6)]
+    """
+    tables = []
+    start = None
+    for i, line in enumerate(lines + [""]):
+        if line.startswith("|"):
+            if start is None:
+                start = i
+        elif start is not None:
+            tables.append((start, i))
+            start = None
+    return tables
+
+
+def trim_tables(text, limit=MAX_MARKDOWN_SIZE):
+    r"""Drop rows from the end of the largest markdown table until the report fits in limit bytes.
+
+    Reports under the limit are returned unchanged:
+
+    >>> trim_tables("| a |\n| b |", limit=100)
+    '| a |\n| b |'
+
+    Oversized reports lose trailing table rows and gain a note about it:
+
+    >>> rows = [f"| row {i:02d} |" for i in range(1, 21)]
+    >>> report = "\n".join(["intro"] + rows + ["outro"])
+    >>> len(report.encode())
+    231
+    >>> print(trim_tables(report, limit=180))
+    intro
+    | row 01 |
+    | row 02 |
+    | row 03 |
+    | row 04 |
+    | row 05 |
+    | row 06 |
+    outro
+    (14 table rows omitted to keep the report under 180 bytes)
+    """
+    size = len(text.encode())
+    if size <= limit:
+        return text
+    lines = text.split("\n")
+    budget = limit - 100  # reserve room for the omission note
+    omitted = 0
+    while size > budget:
+        # Keep at least header, separator and one data row per table.
+        tables = [(s, e) for (s, e) in find_tables(lines) if e - s > 3]
+        if not tables:
+            break
+        start, end = max(tables, key=lambda t: t[1] - t[0])
+        while end - start > 3 and size > budget:
+            end -= 1
+            size -= len(lines[end].encode()) + 1
+            del lines[end]
+            omitted += 1
+    if omitted:
+        lines.append(f"({omitted} table rows omitted to keep the report under {limit} bytes)")
+    return "\n".join(lines)
+
+
 def run_text(cmd, print_command=False):
     if print_command:
         sys.stderr.write("+ " + " ".join(cmd) + "\n")
@@ -218,7 +289,10 @@ def main():
     if args.omit_repl:
         cmd.append("--omit-repl")
     cmd.append(f"{target_dir}")
-    run(cmd, shell=True)
+    if args.markdown:
+        print(trim_tables(run_text(cmd, print_command=True)))
+    else:
+        run(cmd, shell=True)
 
 
 if __name__ == "__main__":
