@@ -12,6 +12,7 @@ unset MSYS_NO_PATHCONV
 trace $CLI bundle deploy
 replace_ids.py
 DASHBOARD_ID=$($CLI bundle summary --output json | jq -r '.resources.dashboards.dashboard1.id')
+add_repl.py "$($CLI lakeview get $DASHBOARD_ID | jq -r '.etag')" ETAG
 trace $CLI lakeview get $DASHBOARD_ID | jq '{display_name, etag}'
 trace $CLI lakeview get-published $DASHBOARD_ID | jq '{display_name}'
 rm out.requests.txt

@@ -21,7 +21,7 @@
         "dashboard_id": "[DASHBOARD_ID]",
         "display_name": "test-dashboard-[UNIQUE_NAME]",
         "embed_credentials": false,
-        "etag": [ETAG],
+        "etag": "[ETAG_2]",
         "lifecycle_state": "ACTIVE",
         "parent_path": "/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/resources",
         "path": "/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/resources/test-dashboard-[UNIQUE_NAME].lvdash.json",
@@ -33,8 +33,8 @@
       "changes": {
         "etag": {
           "action": "update",
-          "old": [ETAG],
-          "remote": [ETAG]
+          "old": "[ETAG]",
+          "remote": "[ETAG_2]"
         },
         "serialized_dashboard": {
           "action": "skip",
