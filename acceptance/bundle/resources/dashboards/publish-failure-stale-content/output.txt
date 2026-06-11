@@ -33,7 +33,7 @@ Exit code: 1
 >>> [CLI] lakeview get [DASHBOARD1_ID]
 {
   "display_name": "my dashboard renamed",
-  "etag": "[ETAG]"
+  "etag": "[ETAG_2]"
 }
 
 >>> [CLI] lakeview get-published [DASHBOARD1_ID]
@@ -62,23 +62,19 @@ Exit code: 1
 }
 
 >>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-publish-failure-stale-content/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Error: dashboard "dashboard1" has been modified remotely
+  at resources.dashboards.dashboard1
+  in databricks.yml:7:7
 
->>> [CLI] lakeview get [DASHBOARD1_ID]
-{
-  "display_name": "my dashboard renamed",
-  "etag": "[ETAG]"
-}
+This dashboard has been modified remotely since the last bundle deployment.
+These modifications are untracked and will be overwritten on deploy.
 
->>> [CLI] lakeview get-published [DASHBOARD1_ID]
-{
-  "display_name": "my dashboard"
-}
+Make sure that the local dashboard definition matches what you intend to deploy
+before proceeding with the deployment.
 
->>> print_requests.py //lakeview/dashboards
+To overwrite the remote changes with your local version, use --force.
+The remote modifications will be lost.
+
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
@@ -88,3 +84,5 @@ All files and directories at the following location will be deleted: /Workspace/
 
 Deleting files...
 Destroy complete!
+
+Exit code: 1

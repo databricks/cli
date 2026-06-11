@@ -24,7 +24,9 @@ fault.py "POST /api/2.0/lakeview/dashboards/*" 400 0 1
 update_file.py databricks.yml "my dashboard" "my dashboard renamed"
 
 # Deploy: Update (PATCH) succeeds but publish fails.
+# SaveStateWith records published=false in state.
 errcode trace $CLI bundle deploy
+add_repl.py "$($CLI lakeview get $DASHBOARD_ID | jq -r '.etag')" ETAG
 trace $CLI lakeview get $DASHBOARD_ID | jq '{display_name, etag}'
 trace $CLI lakeview get-published $DASHBOARD_ID | jq '{display_name}'
 trace print_requests.py //lakeview/dashboards
