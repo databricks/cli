@@ -753,6 +753,12 @@ func runTest(t *testing.T,
 	uniqueCacheDir := filepath.Join(t.TempDir(), ".cache")
 	cmd.Env = append(cmd.Env, "DATABRICKS_CACHE_DIR="+uniqueCacheDir)
 
+	// Disable the passive update notice explicitly. It is already suppressed
+	// implicitly (dev builds, non-TTY stderr, CI), but tests that run released
+	// binaries (e.g. -useversion) must never reach GitHub or print the notice
+	// into compared output. Tests can override this via [Env] in test.toml.
+	cmd.Env = append(cmd.Env, "DATABRICKS_CLI_DISABLE_UPDATE_CHECK=true")
+
 	for _, kv := range testEnv {
 		key, value, _ := strings.Cut(kv, "=")
 		// Only add replacement by default if value is part of EnvMatrix with more than 1 option and length is 4 or more chars
