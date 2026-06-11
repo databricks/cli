@@ -369,6 +369,12 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 		} else if reason, ok := shouldSkip(generatedCfg, path, ch); ok {
 			ch.Action = deployplan.Skip
 			ch.Reason = reason
+		} else if reason, ok := shouldSkipIDField(cfg, path, ch); ok {
+			ch.Action = deployplan.Skip
+			ch.Reason = reason
+		} else if reason, ok := shouldSkipIDField(generatedCfg, path, ch); ok {
+			ch.Action = deployplan.Skip
+			ch.Reason = reason
 		} else if reason, ok := shouldSkipBackendDefault(cfg, path, ch); ok {
 			ch.Action = deployplan.Skip
 			ch.Reason = reason
@@ -440,6 +446,28 @@ func shouldSkip(cfg *dresources.ResourceLifecycleConfig, path *structpath.PathNo
 	return "", false
 }
 
+// shouldSkipIDField skips remote-only diffs on fields that compose the resource's
+// name-based ID. The resource was just fetched by that ID, so a differing remote
+// value can only be backend normalization (e.g. UC lowercasing) — a real
+// out-of-band rename would 404 and is handled as resource-gone. Local changes
+// fall through to Recreate (named_id_fields) or UpdateWithID
+// (update_id_on_local_changes) in shouldUpdateOrRecreate.
+func shouldSkipIDField(cfg *dresources.ResourceLifecycleConfig, path *structpath.PathNode, ch *deployplan.ChangeDesc) (string, bool) {
+	if cfg == nil {
+		return "", false
+	}
+	if !structdiff.IsEqual(ch.Old, ch.New) {
+		return "", false
+	}
+	if reason, ok := findMatchingRule(path, cfg.NamedIDFields); ok {
+		return reason, true
+	}
+	if reason, ok := findMatchingRule(path, cfg.UpdateIDOnLocalChanges); ok {
+		return reason, true
+	}
+	return "", false
+}
+
 // shouldSkipNormalized skips a change that is a false diff caused by UC API
 // normalization: the API lowercases identifier names (normalize_case) and strips
 // trailing slashes from storage URLs (normalize_slash). The direct engine saves
@@ -470,7 +498,11 @@ func shouldUpdateOrRecreate(cfg *dresources.ResourceLifecycleConfig, path *struc
 	if reason, ok := findMatchingRule(path, cfg.RecreateOnChanges); ok {
 		return deployplan.Recreate, reason
 	}
-	if reason, ok := findMatchingRule(path, cfg.UpdateIDOnChanges); ok {
+	// Local changes only: remote-only diffs on these were already skipped by shouldSkipIDField.
+	if reason, ok := findMatchingRule(path, cfg.NamedIDFields); ok {
+		return deployplan.Recreate, reason
+	}
+	if reason, ok := findMatchingRule(path, cfg.UpdateIDOnLocalChanges); ok {
 		return deployplan.UpdateWithID, reason
 	}
 	return deployplan.Undefined, ""

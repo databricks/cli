@@ -346,12 +346,12 @@ func (a *Adapter) validate() error {
 
 	// Validate resourceConfig consistency with DoUpdateWithID
 	if a.overrideChangeDesc == nil {
-		hasUpdateWithIDTrigger := a.resourceConfig != nil && len(a.resourceConfig.UpdateIDOnChanges) > 0
+		hasUpdateWithIDTrigger := a.resourceConfig != nil && len(a.resourceConfig.UpdateIDOnLocalChanges) > 0
 		if hasUpdateWithIDTrigger && a.doUpdateWithID == nil {
-			return errors.New("resourceConfig has update_id_on_changes but DoUpdateWithID is not implemented")
+			return errors.New("resourceConfig has update_id_on_local_changes but DoUpdateWithID is not implemented")
 		}
 		if a.doUpdateWithID != nil && !hasUpdateWithIDTrigger {
-			return errors.New("DoUpdateWithID is implemented but resourceConfig lacks update_id_on_changes")
+			return errors.New("DoUpdateWithID is implemented but resourceConfig lacks update_id_on_local_changes")
 		}
 	}
 
@@ -380,6 +380,13 @@ func (a *Adapter) GeneratedResourceConfig() *ResourceLifecycleConfig {
 
 func (a *Adapter) IsFieldInRecreateOnChanges(path *structpath.PathNode) bool {
 	for _, p := range a.resourceConfig.RecreateOnChanges {
+		if path.HasPatternPrefix(p.Field) {
+			return true
+		}
+	}
+	// NamedIDFields also trigger recreate on local changes, so they give the same
+	// guarantee to callers: if the action keeps the ID, the field is unchanged.
+	for _, p := range a.resourceConfig.NamedIDFields {
 		if path.HasPatternPrefix(p.Field) {
 			return true
 		}
