@@ -14,5 +14,17 @@ echo "$GENIE_SPACE_ID:GENIE_SPACE_ID" >> ACC_REPLS
 # instead of failing.
 trace $CLI genie trash-space $GENIE_SPACE_ID
 
+# On a real workspace trashing propagates asynchronously: GET keeps returning
+# the space as live for tens of seconds before flipping to 404 ("Space ... has
+# been trashed"). Poll until the deletion is visible so the plan below
+# deterministically sees the space as gone. The local mock trashes
+# synchronously, so the first probe already fails and the loop exits at once.
+for _ in {1..60}; do
+    if ! $CLI genie get-space $GENIE_SPACE_ID >> LOG.trash_poll 2>&1; then
+        break
+    fi
+    sleep 2
+done
+
 title "Plan after remote deletion should recreate the space"
 trace $CLI bundle plan

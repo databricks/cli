@@ -48,6 +48,7 @@ var (
 	WorkspaceTmpDir bool
 	OnlyOutTestToml bool
 	Subset          bool
+	DebugSandbox    bool
 )
 
 // In order to debug CLI running under acceptance test, search for TestInprocessMode and update
@@ -80,6 +81,7 @@ func init() {
 	flag.BoolVar(&WorkspaceTmpDir, "workspace-tmp-dir", false, "Run tests on the workspace file system (For DBR testing).")
 	flag.BoolVar(&OnlyOutTestToml, "only-out-test-toml", false, "Only regenerate out.test.toml files without running tests")
 	flag.BoolVar(&Subset, "subset", false, "Select a subset of EnvMatrix variants that cover all output files. Auto-enabled on -update (unless -run specifies a variant with '=').")
+	flag.BoolVar(&DebugSandbox, "debugsandbox", false, "Use a per-test blocking proxy instead of a shared one; shows exactly which test caused unexpected internet access (slower)")
 }
 
 const (
@@ -328,6 +330,12 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 		}
 	}
 
+	const sharedProxyHint = "; re-run with -debugsandbox to see which test caused this"
+	sandboxProxyURL := ""
+	if cloudEnv == "" && !DebugSandbox {
+		sandboxProxyURL = internal.StartRejectingProxy(t, sharedProxyHint)
+	}
+
 	setReplsForTestEnvVars(t, &repls)
 
 	if cloudEnv != "" && UseVersion == "" {
@@ -455,7 +463,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 			// If the matrix expands to a single empty envset, run the test directly
 			// without creating a subtest (avoids the "#00" dummy subtest name).
 			if len(expanded) == 1 && len(expanded[0]) == 0 {
-				runTest(t, dir, 0, coverDir, repls.Clone(), config, nil, envFilters)
+				runTest(t, dir, 0, coverDir, repls.Clone(), config, nil, envFilters, sandboxProxyURL)
 			} else {
 				for ind, envset := range expanded {
 					envname := strings.Join(envset, "/")
@@ -463,7 +471,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 						if runParallel {
 							t.Parallel()
 						}
-						runTest(t, dir, ind, coverDir, repls.Clone(), config, envset, envFilters)
+						runTest(t, dir, ind, coverDir, repls.Clone(), config, envset, envFilters, sandboxProxyURL)
 					})
 				}
 			}
@@ -609,6 +617,7 @@ func runTest(t *testing.T,
 	config internal.TestConfig,
 	customEnv []string,
 	envFilters []string,
+	sharedProxyURL string,
 ) {
 	// Check env filters early, before creating any resources like directories on the file system.
 	// Creating / deleting too many directories causes this error on the workspace FUSE mount:
@@ -763,6 +772,26 @@ func runTest(t *testing.T,
 	cmd.Env = append(cmd.Env, "TESTDIR="+absDir)
 	cmd.Env = append(cmd.Env, "CLOUD_ENV="+cloudEnv)
 	cmd.Env = append(cmd.Env, "CURRENT_USER_NAME="+user.UserName)
+	if !isRunningOnCloud {
+		proxyURL := sharedProxyURL
+		if DebugSandbox {
+			// Per-test proxy: errors are attributed to this subtest's t, making
+			// it immediately clear which test caused the internet access.
+			proxyURL = internal.StartRejectingProxy(t, "")
+		}
+		// Only block HTTPS: the local test server is plain HTTP (http://127.0.0.1:PORT)
+		// so HTTP_PROXY would intercept its traffic. All real external calls use HTTPS.
+		cmd.Env = append(cmd.Env, "HTTPS_PROXY="+proxyURL)
+		// Python's urllib does not automatically bypass the proxy for loopback
+		// addresses the way Go does, so the test-server helper scripts
+		// (kill_after.py, callserver.py, …) would route their requests through
+		// the blocking proxy. NO_PROXY exempts them.
+		cmd.Env = append(cmd.Env, "NO_PROXY=127.0.0.1,localhost")
+		// Terraform phones home to checkpoint-api.hashicorp.com on every run to
+		// check for updates. Disable it so these CONNECT requests don't reach the
+		// blocking proxy and fail every terraform-engine test.
+		cmd.Env = append(cmd.Env, "CHECKPOINT_DISABLE=1")
+	}
 	cmd.Dir = tmpDir
 
 	outputPath := filepath.Join(tmpDir, "output.txt")
