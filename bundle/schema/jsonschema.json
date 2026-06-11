@@ -145,10 +145,14 @@
                         "$ref": "#/$defs/string"
                       },
                       "compute_max_instances": {
-                        "$ref": "#/$defs/int"
+                        "$ref": "#/$defs/int",
+                        "x-databricks-preview": "PRIVATE",
+                        "doNotSuggest": true
                       },
                       "compute_min_instances": {
-                        "$ref": "#/$defs/int"
+                        "$ref": "#/$defs/int",
+                        "x-databricks-preview": "PRIVATE",
+                        "doNotSuggest": true
                       },
                       "compute_size": {
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.ComputeSize"
@@ -753,6 +757,53 @@
                       "name",
                       "url"
                     ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "resources.GenieSpace": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "description": {
+                        "description": "Description of the Genie space shown alongside the title in the Databricks UI.",
+                        "$ref": "#/$defs/string"
+                      },
+                      "etag": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "file_path": {
+                        "description": "Local path to a `.geniespace.json` file holding the serialized Genie space definition. The contents are inlined into `serialized_space` at deploy time. Mutually exclusive with an inline `serialized_space`.",
+                        "$ref": "#/$defs/string"
+                      },
+                      "lifecycle": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
+                      },
+                      "parent_path": {
+                        "description": "Workspace folder under which to create the Genie space. Immutable: changing this field recreates the resource.",
+                        "$ref": "#/$defs/string"
+                      },
+                      "permissions": {
+                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission"
+                      },
+                      "serialized_space": {
+                        "description": "Serialized Genie space body. May be provided inline as a JSON string (or YAML that will be marshalled to JSON) or referenced via `file_path`. To round-trip an existing space into a bundle, use `databricks bundle generate genie-space`.",
+                        "$ref": "#/$defs/interface"
+                      },
+                      "title": {
+                        "description": "Title of the Genie space shown in the Databricks UI.",
+                        "$ref": "#/$defs/string"
+                      },
+                      "warehouse_id": {
+                        "description": "ID of the SQL warehouse used to run queries for this Genie space.",
+                        "$ref": "#/$defs/string"
+                      }
+                    },
+                    "additionalProperties": false
                   },
                   {
                     "type": "string",
@@ -2655,6 +2706,9 @@
                     "external_locations": {
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.ExternalLocation"
                     },
+                    "genie_spaces": {
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.GenieSpace"
+                    },
                     "jobs": {
                       "description": "The job definitions for the bundle, where each key is the name of the job.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Job",
@@ -4284,7 +4338,12 @@
                     "MANAGE_ACCESS_CONTROL",
                     "CREATE_SERVICE",
                     "CREATE_FEATURE",
-                    "READ_FEATURE"
+                    "READ_FEATURE",
+                    "CREATE_STREAM",
+                    "READ_STREAM",
+                    "CREATE_MEMORY_STORE",
+                    "READ_MEMORY_STORE",
+                    "WRITE_MEMORY_STORE"
                   ]
                 },
                 {
@@ -6420,7 +6479,10 @@
                   "type": "object",
                   "properties": {
                     "deployment_id": {
-                      "$ref": "#/$defs/string"
+                      "description": "ID of the deployment that manages this job. Only set when `kind` is\n`BUNDLE`. Used to look up deployment metadata from the Deployment\nMetadata service.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-preview": "PRIVATE",
+                      "doNotSuggest": true
                     },
                     "kind": {
                       "description": "The kind of deployment that manages the job.\n\n* `BUNDLE`: The job is managed by Databricks Asset Bundle.\n* `SYSTEM_MANAGED`: The job is managed by Databricks and is read-only.",
@@ -6431,7 +6493,10 @@
                       "$ref": "#/$defs/string"
                     },
                     "version_id": {
-                      "$ref": "#/$defs/string"
+                      "description": "ID of the version of the deployment that produced this job. Only set\nwhen `kind` is `BUNDLE`. Identifies a specific snapshot of the deployment\nin the Deployment Metadata service.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-preview": "PRIVATE",
+                      "doNotSuggest": true
                     }
                   },
                   "additionalProperties": false,
@@ -6971,6 +7036,7 @@
                       "$ref": "#/$defs/slice/string"
                     },
                     "parameters": {
+                      "description": "Key/value-map of parameters passed to the pipeline execution.\nLimited to 10k characters in total.",
                       "$ref": "#/$defs/map/string"
                     },
                     "pipeline_id": {
@@ -8740,15 +8806,11 @@
                     },
                     "connector_type": {
                       "description": "(Optional) Connector Type for sources. Ex: CDC, Query Based.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.ConnectorType",
-                      "x-databricks-preview": "PRIVATE",
-                      "doNotSuggest": true
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.ConnectorType"
                     },
                     "data_staging_options": {
                       "description": "(Optional) Location of staged data storage. This is required for migration from Cdc Managed Ingestion Pipeline\nwith Gateway pipeline to Combined Cdc Managed Ingestion Pipeline.\nIf not specified, the volume for staged data will be created in catalog and schema/target specified in the\ntop level pipeline definition.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.DataStagingOptions",
-                      "x-databricks-preview": "PRIVATE",
-                      "doNotSuggest": true
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.DataStagingOptions"
                     },
                     "full_refresh_window": {
                       "description": "(Optional) A window that specifies a set of time ranges for snapshot queries in CDC.",
@@ -9464,7 +9526,10 @@
                   "type": "object",
                   "properties": {
                     "deployment_id": {
-                      "$ref": "#/$defs/string"
+                      "description": "ID of the deployment that manages this pipeline. Only set when `kind` is\n`BUNDLE`. Used to look up deployment metadata from the Deployment\nMetadata service.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-preview": "PRIVATE",
+                      "doNotSuggest": true
                     },
                     "kind": {
                       "description": "The deployment method that manages the pipeline.",
@@ -9475,7 +9540,10 @@
                       "$ref": "#/$defs/string"
                     },
                     "version_id": {
-                      "$ref": "#/$defs/string"
+                      "description": "ID of the version of the deployment that produced this pipeline. Only\nset when `kind` is `BUNDLE`. Identifies a specific snapshot of the\ndeployment in the Deployment Metadata service.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-preview": "PRIVATE",
+                      "doNotSuggest": true
                     }
                   },
                   "additionalProperties": false,
@@ -11865,6 +11933,7 @@
                   "type": "object",
                   "properties": {
                     "columns_to_index": {
+                      "description": "[Optional] Alias for columns_to_sync. Select the columns to include in the vector index.\nIf you leave this field blank, all columns from the source table are included.\nThe primary key column and embedding source column or embedding vector column are always included.\nOnly one of columns_to_sync or columns_to_index may be specified.",
                       "$ref": "#/$defs/slice/string"
                     },
                     "columns_to_sync": {
@@ -11978,13 +12047,53 @@
               ]
             },
             "vectorsearch.IndexSubtype": {
-              "type": "string"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "The subtype of the AI Search index, determining the indexing and retrieval strategy.\n- `VECTOR`: Not supported. Use `HYBRID` instead.\n- `FULL_TEXT`: An index that uses full-text search without vector embeddings.\n- `HYBRID`: An index that uses vector embeddings for similarity search and hybrid search.",
+                  "enum": [
+                    "VECTOR",
+                    "FULL_TEXT",
+                    "HYBRID"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
             },
             "vectorsearch.PipelineType": {
-              "type": "string"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Pipeline execution mode.\n- `TRIGGERED`: If the pipeline uses the triggered execution mode, the system stops processing after successfully refreshing the source table in the pipeline once, ensuring the table is updated based on the data available when the update started.\n- `CONTINUOUS`: If the pipeline uses continuous execution, the pipeline processes new data as it arrives in the source table to keep vector index fresh.",
+                  "enum": [
+                    "TRIGGERED",
+                    "CONTINUOUS"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
             },
             "vectorsearch.VectorIndexType": {
-              "type": "string"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "There are 2 types of AI Search indexes:\n- `DELTA_SYNC`: An index that automatically syncs with a source Delta Table, automatically and incrementally updating the index as the underlying data in the Delta Table changes.\n- `DIRECT_ACCESS`: An index that supports direct read and write of vectors and metadata through our REST and SDK APIs. With this model, the user manages index updates.",
+                  "enum": [
+                    "DELTA_SYNC",
+                    "DIRECT_ACCESS"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
             },
             "workspace.AzureKeyVaultSecretScopeMetadata": {
               "oneOf": [
@@ -12198,6 +12307,20 @@
                       "type": "object",
                       "additionalProperties": {
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.ExternalLocation"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
+                "resources.GenieSpace": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.GenieSpace"
                       }
                     },
                     {

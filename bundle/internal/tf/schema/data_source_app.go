@@ -189,6 +189,8 @@ type DataSourceAppApp struct {
 	ActiveDeployment            *DataSourceAppAppActiveDeployment             `json:"active_deployment,omitempty"`
 	AppStatus                   *DataSourceAppAppAppStatus                    `json:"app_status,omitempty"`
 	BudgetPolicyId              string                                        `json:"budget_policy_id,omitempty"`
+	ComputeMaxInstances         int                                           `json:"compute_max_instances,omitempty"`
+	ComputeMinInstances         int                                           `json:"compute_min_instances,omitempty"`
 	ComputeSize                 string                                        `json:"compute_size,omitempty"`
 	ComputeStatus               *DataSourceAppAppComputeStatus                `json:"compute_status,omitempty"`
 	CreateTime                  string                                        `json:"create_time,omitempty"`

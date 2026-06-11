@@ -120,11 +120,18 @@ The host must be specified with the --host flag or the DATABRICKS_HOST environme
 		}
 
 		// Populate configuration from flags (if set).
+		// The profile flag is the root persistent flag.
 		if flags.Host != "" {
 			cfg.Host = normalizeHost(flags.Host)
 		}
-		if flags.Profile != "" {
-			cfg.Profile = flags.Profile
+		if profile := cmd.Flag("profile").Value.String(); profile != "" {
+			cfg.Profile = profile
+		}
+
+		// The profile name must be non-empty: SaveToProfile matches sections
+		// by host instead of by name when cfg.Profile is empty.
+		if cfg.Profile == "" {
+			cfg.Profile = "DEFAULT"
 		}
 
 		// Normalize and verify that the host is valid (if set).
