@@ -40,9 +40,20 @@ func TestDynPathToStructPath(t *testing.T) {
 	}
 }
 
-func TestShouldSkipBackendDefault_SchemaManagedPropertiesOnly(t *testing.T) {
-	cfg := dresources.GetResourceConfig("schemas")
-	require.NotNil(t, cfg)
+func TestShouldSkipBackendDefault_ManagedPropertiesOnly(t *testing.T) {
+	// Rules mirror the schemas backend_defaults in resources.yml, but the test is
+	// deliberately self-contained so that edits to resources.yml don't break it.
+	// The real wiring is covered by acceptance/bundle/resources/schemas/drift.
+	rowTracking, err := structpath.ParsePattern("properties['unity.catalog.managed.delta.defaults.delta.enableRowTracking']")
+	require.NoError(t, err)
+	catalogManaged, err := structpath.ParsePattern("properties['unity.catalog.managed.iceberg.defaults.delta.feature.catalogManaged']")
+	require.NoError(t, err)
+	cfg := &dresources.ResourceLifecycleConfig{
+		BackendDefaults: []dresources.BackendDefaultRule{
+			{Field: rowTracking},
+			{Field: catalogManaged},
+		},
+	}
 
 	tests := []struct {
 		name     string
