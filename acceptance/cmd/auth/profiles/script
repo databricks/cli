@@ -17,12 +17,4 @@ experimental_is_unified_host = true
 EOF
 
 title "Profiles with workspace_id (JSON output)\n"
-# auth profiles loads profiles concurrently so hostmetadata warnings appear in
-# non-deterministic order; sort them for a stable golden file.
-$CLI auth profiles --skip-validate --output json 2>&1 | python3 -c "
-import sys
-lines = sys.stdin.readlines()
-meta = sorted(l for l in lines if '[hostmetadata]' in l)
-rest = [l for l in lines if '[hostmetadata]' not in l]
-sys.stdout.writelines(meta + rest)
-"
+$CLI auth profiles --skip-validate --output json
