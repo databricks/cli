@@ -14,7 +14,7 @@ const (
 	ExtensionScala   string = ".scala"
 	ExtensionSql     string = ".sql"
 	ExtensionJupyter string = ".ipynb"
-	// Designer and flow files keep their full compound suffix on workspace import.
+	// Designer and Flow files keep their full compound suffix on workspace import.
 	ExtensionDesigner string = ".designer.ipynb"
 	ExtensionFlow     string = ".flow.ipynb"
 )
