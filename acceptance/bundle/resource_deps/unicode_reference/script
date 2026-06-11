@@ -1,0 +1,2 @@
+title "Unicode job names resolve in resources references"
+$CLI bundle validate
