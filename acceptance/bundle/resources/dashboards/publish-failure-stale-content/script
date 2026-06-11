@@ -1,0 +1,42 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+unset MSYS_NO_PATHCONV
+
+# First deploy: dashboard is created and published successfully.
+trace $CLI bundle deploy
+replace_ids.py
+DASHBOARD_ID=$($CLI bundle summary --output json | jq -r '.resources.dashboards.dashboard1.id')
+trace $CLI lakeview get $DASHBOARD_ID | jq '{display_name, etag}'
+trace $CLI lakeview get-published $DASHBOARD_ID | jq '{display_name}'
+rm out.requests.txt
+
+# Inject a single publish failure for the update below.
+fault.py "POST /api/2.0/lakeview/dashboards/*" 400 0 1
+
+# Rename the dashboard to trigger an Update.
+update_file.py databricks.yml "my dashboard" "my dashboard renamed"
+
+# Deploy: Update (PATCH) succeeds but publish fails.
+errcode trace $CLI bundle deploy
+trace $CLI lakeview get $DASHBOARD_ID | jq '{display_name, etag}'
+trace $CLI lakeview get-published $DASHBOARD_ID | jq '{display_name}'
+trace print_requests.py //lakeview/dashboards
+
+# Bug: the next deploy should republish "my dashboard renamed" but it skips the
+# publish entirely.  The previously-published version ("my dashboard") is still
+# visible via GetPublished, so remote.published=true matches desired.published=true
+# and the planner marks the field skip(remote_already_set) — even though the
+# published content is now stale.  "Deployment complete!" is printed but no
+# POST /published is issued.
+trace $CLI bundle deploy
+trace $CLI lakeview get $DASHBOARD_ID | jq '{display_name, etag}'
+trace $CLI lakeview get-published $DASHBOARD_ID | jq '{display_name}'
+
+# No PATCH and no POST /published — the stale published version is never updated.
+trace print_requests.py //lakeview/dashboards
