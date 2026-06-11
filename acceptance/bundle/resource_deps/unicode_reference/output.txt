@@ -6,3 +6,24 @@ Workspace:
   Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
 Validation OK!
+create jobs.foo
+create jobs.变量
+
+Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+Resources:
+  Jobs:
+    foo:
+      Name: ${resources.jobs.变量.id}
+      URL:  [DATABRICKS_URL]/jobs/[NUMID]?w=[NUMID]
+    变量:
+      Name: hello
+      URL:  [DATABRICKS_URL]/jobs/[NUMID]?w=[NUMID]
