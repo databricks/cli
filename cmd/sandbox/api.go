@@ -2,6 +2,7 @@ package sandbox
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -41,6 +42,14 @@ const (
 // of an unsupported type for this API."
 const orgIDHeader = "X-Databricks-Org-Id"
 
+// sandboxAPITimeout bounds every sandbox HTTP request. The long-running
+// flows (cold start, etc.) are made of many short calls polled in a
+// loop, so this caps the *individual* call — not the overall flow. The
+// cap exists so that in regions where the manager isn't deployed the
+// CLI surfaces a clear error instead of hanging indefinitely behind the
+// gateway's silent drop.
+const sandboxAPITimeout = 10 * time.Second
+
 // maxNameBytes mirrors the server-side `Sandbox.name` cap. The server
 // measures bytes (not runes), so emoji hit the limit faster than expected;
 // mirroring it client-side lets us fail fast with the observed byte count.
@@ -56,7 +65,8 @@ func validateName(name string) error {
 
 // sandboxAPI wraps the SDK ApiClient with workspace-id-aware request headers.
 type sandboxAPI struct {
-	c *client.DatabricksClient
+	c       *client.DatabricksClient
+	timeout time.Duration
 }
 
 // sandboxCreateBody is the inner `Sandbox` message in the create payload.
@@ -180,7 +190,7 @@ func newSandboxAPI(w *databricks.WorkspaceClient) (*sandboxAPI, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create sandbox API client: %w", err)
 	}
-	return &sandboxAPI{c: c}, nil
+	return &sandboxAPI{c: c, timeout: sandboxAPITimeout}, nil
 }
 
 // headers attaches the workspace routing identifier so multi-workspace
@@ -195,13 +205,27 @@ func (a *sandboxAPI) headers() map[string]string {
 	return map[string]string{orgIDHeader: wsID}
 }
 
+// do issues a single sandbox API request bounded by sandboxAPITimeout and
+// translates a context-deadline timeout into a user-facing message that
+// hints at the most likely cause: the region not having sandbox enabled.
+// Every sandbox API method must call through this wrapper rather than
+// a.c.Do directly so the timeout and the translation stay uniform.
+func (a *sandboxAPI) do(ctx context.Context, method, path string, request, response any) error {
+	ctx, cancel := context.WithTimeout(ctx, a.timeout)
+	defer cancel()
+	err := a.c.Do(ctx, method, path, a.headers(), nil, request, response)
+	if errors.Is(err, context.DeadlineExceeded) {
+		return fmt.Errorf("sandbox API timed out after %s — this region may not have sandbox enabled, or the manager is unreachable", a.timeout)
+	}
+	return err
+}
+
 // create calls POST /api/2.0/lakebox/sandboxes. An empty `name` is omitted
 // so the server treats it as "unset" rather than "explicit empty string".
 func (a *sandboxAPI) create(ctx context.Context, name string) (*createResponse, error) {
 	body := createRequest{Sandbox: sandboxCreateBody{Name: name}}
 	var resp createResponse
-	err := a.c.Do(ctx, http.MethodPost, sandboxAPIPath, a.headers(), nil, body, &resp)
-	if err != nil {
+	if err := a.do(ctx, http.MethodPost, sandboxAPIPath, body, &resp); err != nil {
 		return nil, err
 	}
 	return &resp, nil
@@ -239,8 +263,7 @@ func (a *sandboxAPI) listPage(ctx context.Context, pageToken string) (*listRespo
 		query["page_token"] = pageToken
 	}
 	var resp listResponse
-	err := a.c.Do(ctx, http.MethodGet, sandboxAPIPath, a.headers(), nil, query, &resp)
-	if err != nil {
+	if err := a.do(ctx, http.MethodGet, sandboxAPIPath, query, &resp); err != nil {
 		return nil, err
 	}
 	return &resp, nil
@@ -249,8 +272,7 @@ func (a *sandboxAPI) listPage(ctx context.Context, pageToken string) (*listRespo
 // get calls GET /api/2.0/lakebox/sandboxes/{id}.
 func (a *sandboxAPI) get(ctx context.Context, id string) (*sandboxEntry, error) {
 	var resp sandboxEntry
-	err := a.c.Do(ctx, http.MethodGet, sandboxPath(id), a.headers(), nil, nil, &resp)
-	if err != nil {
+	if err := a.do(ctx, http.MethodGet, sandboxPath(id), nil, &resp); err != nil {
 		return nil, err
 	}
 	return &resp, nil
@@ -273,8 +295,7 @@ func (a *sandboxAPI) update(ctx context.Context, id string, name *string, idleTi
 		NoAutostop:  noAutostop,
 	}
 	var resp sandboxEntry
-	err := a.c.Do(ctx, http.MethodPatch, sandboxPath(id), a.headers(), nil, body, &resp)
-	if err != nil {
+	if err := a.do(ctx, http.MethodPatch, sandboxPath(id), body, &resp); err != nil {
 		return nil, err
 	}
 	return &resp, nil
@@ -282,7 +303,7 @@ func (a *sandboxAPI) update(ctx context.Context, id string, name *string, idleTi
 
 // delete calls DELETE /api/2.0/lakebox/sandboxes/{id}.
 func (a *sandboxAPI) delete(ctx context.Context, id string) error {
-	return a.c.Do(ctx, http.MethodDelete, sandboxPath(id), a.headers(), nil, nil, nil)
+	return a.do(ctx, http.MethodDelete, sandboxPath(id), nil, nil)
 }
 
 // stop calls POST /api/2.0/lakebox/sandboxes/{id}/stop and returns the
@@ -290,8 +311,7 @@ func (a *sandboxAPI) delete(ctx context.Context, id string) error {
 func (a *sandboxAPI) stop(ctx context.Context, id string) (*sandboxEntry, error) {
 	body := map[string]string{"sandbox_id": id}
 	var resp sandboxEntry
-	err := a.c.Do(ctx, http.MethodPost, sandboxPath(id)+"/stop", a.headers(), nil, body, &resp)
-	if err != nil {
+	if err := a.do(ctx, http.MethodPost, sandboxPath(id)+"/stop", body, &resp); err != nil {
 		return nil, err
 	}
 	return &resp, nil
@@ -302,8 +322,7 @@ func (a *sandboxAPI) stop(ctx context.Context, id string) (*sandboxEntry, error)
 func (a *sandboxAPI) start(ctx context.Context, id string) (*sandboxEntry, error) {
 	body := map[string]string{"sandbox_id": id}
 	var resp sandboxEntry
-	err := a.c.Do(ctx, http.MethodPost, sandboxPath(id)+"/start", a.headers(), nil, body, &resp)
-	if err != nil {
+	if err := a.do(ctx, http.MethodPost, sandboxPath(id)+"/start", body, &resp); err != nil {
 		return nil, err
 	}
 	return &resp, nil
@@ -316,8 +335,7 @@ func (a *sandboxAPI) start(ctx context.Context, id string) (*sandboxEntry, error
 // `create` call.
 func (a *sandboxAPI) registerKey(ctx context.Context, publicKey, name string) (*sshKeyEntry, error) {
 	var resp sshKeyEntry
-	err := a.c.Do(ctx, http.MethodPost, sandboxKeysAPIPath, a.headers(), nil, registerKeyRequest{PublicKey: publicKey, Name: name}, &resp)
-	if err != nil {
+	if err := a.do(ctx, http.MethodPost, sandboxKeysAPIPath, registerKeyRequest{PublicKey: publicKey, Name: name}, &resp); err != nil {
 		return nil, err
 	}
 	return &resp, nil
@@ -345,8 +363,7 @@ type listKeysResponse struct {
 // listKeys calls GET /api/2.0/lakebox/ssh-keys.
 func (a *sandboxAPI) listKeys(ctx context.Context) ([]sshKeyEntry, error) {
 	var resp listKeysResponse
-	err := a.c.Do(ctx, http.MethodGet, sandboxKeysAPIPath, a.headers(), nil, nil, &resp)
-	if err != nil {
+	if err := a.do(ctx, http.MethodGet, sandboxKeysAPIPath, nil, &resp); err != nil {
 		return nil, err
 	}
 	return resp.SshKeys, nil
@@ -354,5 +371,5 @@ func (a *sandboxAPI) listKeys(ctx context.Context) ([]sshKeyEntry, error) {
 
 // deleteKey calls DELETE /api/2.0/lakebox/ssh-keys/{key_hash}.
 func (a *sandboxAPI) deleteKey(ctx context.Context, keyHash string) error {
-	return a.c.Do(ctx, http.MethodDelete, sandboxKeysAPIPath+"/"+url.PathEscape(keyHash), a.headers(), nil, nil, nil)
+	return a.do(ctx, http.MethodDelete, sandboxKeysAPIPath+"/"+url.PathEscape(keyHash), nil, nil)
 }

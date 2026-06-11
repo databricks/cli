@@ -15,6 +15,10 @@ func TestBuildSSHArgsBaseFlags(t *testing.T) {
 	assert.Contains(t, got, "/keys/id")
 	assert.Contains(t, got, "-p")
 	assert.Contains(t, got, "2222")
+	// ConnectTimeout bounds the handshake — a region without the
+	// sandbox manager deployed would otherwise hang in ssh's default
+	// ~75s connect timeout.
+	assert.Contains(t, got, "ConnectTimeout=10")
 }
 
 func TestBuildSSHArgsQuoting(t *testing.T) {
