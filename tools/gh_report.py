@@ -292,10 +292,10 @@ def main():
     if args.omit_repl:
         cmd.append("--omit-repl")
     cmd.append(f"{target_dir}")
+    report = run_text(cmd, print_command=True)
     if args.markdown and not args.notrim:
-        print(trim_tables(run_text(cmd, print_command=True)))
-    else:
-        run(cmd, shell=True)
+        report = trim_tables(report)
+    print(report)
 
 
 if __name__ == "__main__":
