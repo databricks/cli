@@ -16,7 +16,7 @@ func TestGetResourceConfig(t *testing.T) {
 	assert.Empty(t, GetResourceConfig("nonexistent").RecreateOnChanges)
 }
 
-// categoryRules projects ResourceLifecycleConfig's five categories onto a
+// categoryRules projects ResourceLifecycleConfig's categories onto a
 // uniform [name, []FieldRule] shape so the redundancy check can iterate them.
 func categoryRules(c ResourceLifecycleConfig) []struct {
 	name  string
@@ -33,7 +33,8 @@ func categoryRules(c ResourceLifecycleConfig) []struct {
 		{"ignore_remote_changes", c.IgnoreRemoteChanges},
 		{"ignore_local_changes", c.IgnoreLocalChanges},
 		{"recreate_on_changes", c.RecreateOnChanges},
-		{"update_id_on_changes", c.UpdateIDOnChanges},
+		{"named_id_fields", c.NamedIDFields},
+		{"update_id_on_local_changes", c.UpdateIDOnLocalChanges},
 		{"backend_defaults", backendAsFieldRules},
 	}
 }
