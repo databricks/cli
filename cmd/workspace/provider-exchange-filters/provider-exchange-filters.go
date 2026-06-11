@@ -19,12 +19,18 @@ var cmdOverrides []func(*cobra.Command)
 
 func New() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "provider-exchange-filters",
-		Short:   `Marketplace exchanges filters curate which groups can access an exchange.`,
-		Long:    `Marketplace exchanges filters curate which groups can access an exchange.`,
+		Use:   "provider-exchange-filters",
+		Short: `*Public Preview* Marketplace exchanges filters curate which groups can access an exchange.`,
+		Long: `This command is in Public Preview and may change without notice.
+
+Marketplace exchanges filters curate which groups can access an exchange.`,
 		GroupID: "marketplace",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -58,12 +64,16 @@ func newCreate() *cobra.Command {
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "create"
-	cmd.Short = `Create a new exchange filter.`
-	cmd.Long = `Create a new exchange filter.
+	cmd.Short = `*Public Preview* Create a new exchange filter.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Create a new exchange filter.
 
   Add an exchange filter.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -89,6 +99,7 @@ func newCreate() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -119,12 +130,16 @@ func newDelete() *cobra.Command {
 	var deleteReq marketplace.DeleteExchangeFilterRequest
 
 	cmd.Use = "delete ID"
-	cmd.Short = `Delete an exchange filter.`
-	cmd.Long = `Delete an exchange filter.
+	cmd.Short = `*Public Preview* Delete an exchange filter.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Delete an exchange filter.
 
   Delete an exchange filter`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -182,17 +197,31 @@ func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listReq marketplace.ListExchangeFiltersRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listLimit int
 
 	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, ``)
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, ``)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list EXCHANGE_ID"
-	cmd.Short = `List exchange filters.`
-	cmd.Long = `List exchange filters.
+	cmd.Short = `*Public Preview* List exchange filters.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+List exchange filters.
 
   List exchange filter`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -207,6 +236,13 @@ func newList() *cobra.Command {
 		listReq.ExchangeId = args[0]
 
 		response := w.ProviderExchangeFilters.List(ctx, listReq)
+		if listLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
+		}
+		if listLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -240,12 +276,16 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "update ID"
-	cmd.Short = `Update exchange filter.`
-	cmd.Long = `Update exchange filter.
+	cmd.Short = `*Public Preview* Update exchange filter.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Update exchange filter.
 
   Update an exchange filter.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -277,6 +317,7 @@ func newUpdate() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 

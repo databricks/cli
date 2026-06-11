@@ -58,11 +58,12 @@ type ResourcePipelineClusterClusterLogConf struct {
 }
 
 type ResourcePipelineClusterGcpAttributes struct {
-	Availability         string `json:"availability,omitempty"`
-	FirstOnDemand        int    `json:"first_on_demand,omitempty"`
-	GoogleServiceAccount string `json:"google_service_account,omitempty"`
-	LocalSsdCount        int    `json:"local_ssd_count,omitempty"`
-	ZoneId               string `json:"zone_id,omitempty"`
+	Availability            string `json:"availability,omitempty"`
+	ConfidentialComputeType string `json:"confidential_compute_type,omitempty"`
+	FirstOnDemand           int    `json:"first_on_demand,omitempty"`
+	GoogleServiceAccount    string `json:"google_service_account,omitempty"`
+	LocalSsdCount           int    `json:"local_ssd_count,omitempty"`
+	ZoneId                  string `json:"zone_id,omitempty"`
 }
 
 type ResourcePipelineClusterInitScriptsAbfss struct {
@@ -132,8 +133,10 @@ type ResourcePipelineCluster struct {
 }
 
 type ResourcePipelineDeployment struct {
+	DeploymentId     string `json:"deployment_id,omitempty"`
 	Kind             string `json:"kind"`
 	MetadataFilePath string `json:"metadata_file_path,omitempty"`
+	VersionId        string `json:"version_id,omitempty"`
 }
 
 type ResourcePipelineEnvironment struct {
@@ -163,6 +166,12 @@ type ResourcePipelineGatewayDefinition struct {
 	GatewayStorageName    string                                                 `json:"gateway_storage_name,omitempty"`
 	GatewayStorageSchema  string                                                 `json:"gateway_storage_schema"`
 	ConnectionParameters  *ResourcePipelineGatewayDefinitionConnectionParameters `json:"connection_parameters,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionDataStagingOptions struct {
+	CatalogName string `json:"catalog_name"`
+	SchemaName  string `json:"schema_name"`
+	VolumeName  string `json:"volume_name,omitempty"`
 }
 
 type ResourcePipelineIngestionDefinitionFullRefreshWindow struct {
@@ -214,6 +223,164 @@ type ResourcePipelineIngestionDefinitionObjectsReport struct {
 	TableConfiguration *ResourcePipelineIngestionDefinitionObjectsReportTableConfiguration `json:"table_configuration,omitempty"`
 }
 
+type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsConfluenceOptions struct {
+	IncludeConfluenceSpaces []string `json:"include_confluence_spaces,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsGdriveOptionsFileIngestionOptionsFileFilters struct {
+	ModifiedAfter  string `json:"modified_after,omitempty"`
+	ModifiedBefore string `json:"modified_before,omitempty"`
+	PathFilter     string `json:"path_filter,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsGdriveOptionsFileIngestionOptions struct {
+	CorruptRecordColumn string                                                                                                         `json:"corrupt_record_column,omitempty"`
+	Format              string                                                                                                         `json:"format,omitempty"`
+	FormatOptions       map[string]string                                                                                              `json:"format_options,omitempty"`
+	IgnoreCorruptFiles  bool                                                                                                           `json:"ignore_corrupt_files,omitempty"`
+	InferColumnTypes    bool                                                                                                           `json:"infer_column_types,omitempty"`
+	ReaderCaseSensitive bool                                                                                                           `json:"reader_case_sensitive,omitempty"`
+	RescuedDataColumn   string                                                                                                         `json:"rescued_data_column,omitempty"`
+	SchemaEvolutionMode string                                                                                                         `json:"schema_evolution_mode,omitempty"`
+	SchemaHints         string                                                                                                         `json:"schema_hints,omitempty"`
+	SingleVariantColumn string                                                                                                         `json:"single_variant_column,omitempty"`
+	FileFilters         []ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsGdriveOptionsFileIngestionOptionsFileFilters `json:"file_filters,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsGdriveOptions struct {
+	EntityType           string                                                                                             `json:"entity_type,omitempty"`
+	Url                  string                                                                                             `json:"url,omitempty"`
+	FileIngestionOptions *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsGdriveOptionsFileIngestionOptions `json:"file_ingestion_options,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsGoogleAdsOptions struct {
+	LookbackWindowDays int    `json:"lookback_window_days,omitempty"`
+	ManagerAccountId   string `json:"manager_account_id"`
+	SyncStartDate      string `json:"sync_start_date,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsJiraOptions struct {
+	IncludeJiraSpaces []string `json:"include_jira_spaces,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsKafkaOptionsKeyTransformerJsonOptions struct {
+	AsVariant           bool   `json:"as_variant,omitempty"`
+	Schema              string `json:"schema,omitempty"`
+	SchemaEvolutionMode string `json:"schema_evolution_mode,omitempty"`
+	SchemaFilePath      string `json:"schema_file_path,omitempty"`
+	SchemaHints         string `json:"schema_hints,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsKafkaOptionsKeyTransformer struct {
+	Format      string                                                                                                 `json:"format,omitempty"`
+	JsonOptions *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsKafkaOptionsKeyTransformerJsonOptions `json:"json_options,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsKafkaOptionsValueTransformerJsonOptions struct {
+	AsVariant           bool   `json:"as_variant,omitempty"`
+	Schema              string `json:"schema,omitempty"`
+	SchemaEvolutionMode string `json:"schema_evolution_mode,omitempty"`
+	SchemaFilePath      string `json:"schema_file_path,omitempty"`
+	SchemaHints         string `json:"schema_hints,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsKafkaOptionsValueTransformer struct {
+	Format      string                                                                                                   `json:"format,omitempty"`
+	JsonOptions *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsKafkaOptionsValueTransformerJsonOptions `json:"json_options,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsKafkaOptions struct {
+	ClientConfig         map[string]string                                                                             `json:"client_config,omitempty"`
+	MaxOffsetsPerTrigger int                                                                                           `json:"max_offsets_per_trigger,omitempty"`
+	StartingOffset       string                                                                                        `json:"starting_offset,omitempty"`
+	TopicPattern         string                                                                                        `json:"topic_pattern,omitempty"`
+	Topics               []string                                                                                      `json:"topics,omitempty"`
+	KeyTransformer       *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsKafkaOptionsKeyTransformer   `json:"key_transformer,omitempty"`
+	ValueTransformer     *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsKafkaOptionsValueTransformer `json:"value_transformer,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsMetaAdsOptions struct {
+	ActionAttributionWindows     []string `json:"action_attribution_windows,omitempty"`
+	ActionBreakdowns             []string `json:"action_breakdowns,omitempty"`
+	ActionReportTime             string   `json:"action_report_time,omitempty"`
+	Breakdowns                   []string `json:"breakdowns,omitempty"`
+	CustomInsightsLookbackWindow int      `json:"custom_insights_lookback_window,omitempty"`
+	Level                        string   `json:"level,omitempty"`
+	StartDate                    string   `json:"start_date,omitempty"`
+	TimeIncrement                string   `json:"time_increment,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsOutlookOptions struct {
+	AttachmentMode   string   `json:"attachment_mode,omitempty"`
+	BodyFormat       string   `json:"body_format,omitempty"`
+	FolderFilter     []string `json:"folder_filter,omitempty"`
+	IncludeFolders   []string `json:"include_folders,omitempty"`
+	IncludeMailboxes []string `json:"include_mailboxes,omitempty"`
+	IncludeSenders   []string `json:"include_senders,omitempty"`
+	IncludeSubjects  []string `json:"include_subjects,omitempty"`
+	SenderFilter     []string `json:"sender_filter,omitempty"`
+	StartDate        string   `json:"start_date,omitempty"`
+	SubjectFilter    []string `json:"subject_filter,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsSharepointOptionsFileIngestionOptionsFileFilters struct {
+	ModifiedAfter  string `json:"modified_after,omitempty"`
+	ModifiedBefore string `json:"modified_before,omitempty"`
+	PathFilter     string `json:"path_filter,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsSharepointOptionsFileIngestionOptions struct {
+	CorruptRecordColumn string                                                                                                             `json:"corrupt_record_column,omitempty"`
+	Format              string                                                                                                             `json:"format,omitempty"`
+	FormatOptions       map[string]string                                                                                                  `json:"format_options,omitempty"`
+	IgnoreCorruptFiles  bool                                                                                                               `json:"ignore_corrupt_files,omitempty"`
+	InferColumnTypes    bool                                                                                                               `json:"infer_column_types,omitempty"`
+	ReaderCaseSensitive bool                                                                                                               `json:"reader_case_sensitive,omitempty"`
+	RescuedDataColumn   string                                                                                                             `json:"rescued_data_column,omitempty"`
+	SchemaEvolutionMode string                                                                                                             `json:"schema_evolution_mode,omitempty"`
+	SchemaHints         string                                                                                                             `json:"schema_hints,omitempty"`
+	SingleVariantColumn string                                                                                                             `json:"single_variant_column,omitempty"`
+	FileFilters         []ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsSharepointOptionsFileIngestionOptionsFileFilters `json:"file_filters,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsSharepointOptions struct {
+	EntityType           string                                                                                                 `json:"entity_type,omitempty"`
+	Url                  string                                                                                                 `json:"url,omitempty"`
+	FileIngestionOptions *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsSharepointOptionsFileIngestionOptions `json:"file_ingestion_options,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsSmartsheetOptions struct {
+	EnforceSchema bool `json:"enforce_schema,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsTiktokAdsOptions struct {
+	DataLevel          string   `json:"data_level,omitempty"`
+	Dimensions         []string `json:"dimensions,omitempty"`
+	LookbackWindowDays int      `json:"lookback_window_days,omitempty"`
+	Metrics            []string `json:"metrics,omitempty"`
+	QueryLifetime      bool     `json:"query_lifetime,omitempty"`
+	ReportType         string   `json:"report_type,omitempty"`
+	SyncStartDate      string   `json:"sync_start_date,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsZendeskSupportOptions struct {
+	StartDate string `json:"start_date,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptions struct {
+	ConfluenceOptions     *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsConfluenceOptions     `json:"confluence_options,omitempty"`
+	GdriveOptions         *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsGdriveOptions         `json:"gdrive_options,omitempty"`
+	GoogleAdsOptions      *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsGoogleAdsOptions      `json:"google_ads_options,omitempty"`
+	JiraOptions           *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsJiraOptions           `json:"jira_options,omitempty"`
+	KafkaOptions          *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsKafkaOptions          `json:"kafka_options,omitempty"`
+	MetaAdsOptions        *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsMetaAdsOptions        `json:"meta_ads_options,omitempty"`
+	OutlookOptions        *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsOutlookOptions        `json:"outlook_options,omitempty"`
+	SharepointOptions     *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsSharepointOptions     `json:"sharepoint_options,omitempty"`
+	SmartsheetOptions     *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsSmartsheetOptions     `json:"smartsheet_options,omitempty"`
+	TiktokAdsOptions      *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsTiktokAdsOptions      `json:"tiktok_ads_options,omitempty"`
+	ZendeskSupportOptions *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsZendeskSupportOptions `json:"zendesk_support_options,omitempty"`
+}
+
 type ResourcePipelineIngestionDefinitionObjectsSchemaTableConfigurationAutoFullRefreshPolicy struct {
 	Enabled          bool `json:"enabled"`
 	MinIntervalHours int  `json:"min_interval_hours,omitempty"`
@@ -254,7 +421,166 @@ type ResourcePipelineIngestionDefinitionObjectsSchema struct {
 	DestinationSchema  string                                                              `json:"destination_schema"`
 	SourceCatalog      string                                                              `json:"source_catalog,omitempty"`
 	SourceSchema       string                                                              `json:"source_schema"`
+	ConnectorOptions   *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptions   `json:"connector_options,omitempty"`
 	TableConfiguration *ResourcePipelineIngestionDefinitionObjectsSchemaTableConfiguration `json:"table_configuration,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsConfluenceOptions struct {
+	IncludeConfluenceSpaces []string `json:"include_confluence_spaces,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsGdriveOptionsFileIngestionOptionsFileFilters struct {
+	ModifiedAfter  string `json:"modified_after,omitempty"`
+	ModifiedBefore string `json:"modified_before,omitempty"`
+	PathFilter     string `json:"path_filter,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsGdriveOptionsFileIngestionOptions struct {
+	CorruptRecordColumn string                                                                                                        `json:"corrupt_record_column,omitempty"`
+	Format              string                                                                                                        `json:"format,omitempty"`
+	FormatOptions       map[string]string                                                                                             `json:"format_options,omitempty"`
+	IgnoreCorruptFiles  bool                                                                                                          `json:"ignore_corrupt_files,omitempty"`
+	InferColumnTypes    bool                                                                                                          `json:"infer_column_types,omitempty"`
+	ReaderCaseSensitive bool                                                                                                          `json:"reader_case_sensitive,omitempty"`
+	RescuedDataColumn   string                                                                                                        `json:"rescued_data_column,omitempty"`
+	SchemaEvolutionMode string                                                                                                        `json:"schema_evolution_mode,omitempty"`
+	SchemaHints         string                                                                                                        `json:"schema_hints,omitempty"`
+	SingleVariantColumn string                                                                                                        `json:"single_variant_column,omitempty"`
+	FileFilters         []ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsGdriveOptionsFileIngestionOptionsFileFilters `json:"file_filters,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsGdriveOptions struct {
+	EntityType           string                                                                                            `json:"entity_type,omitempty"`
+	Url                  string                                                                                            `json:"url,omitempty"`
+	FileIngestionOptions *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsGdriveOptionsFileIngestionOptions `json:"file_ingestion_options,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsGoogleAdsOptions struct {
+	LookbackWindowDays int    `json:"lookback_window_days,omitempty"`
+	ManagerAccountId   string `json:"manager_account_id"`
+	SyncStartDate      string `json:"sync_start_date,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsJiraOptions struct {
+	IncludeJiraSpaces []string `json:"include_jira_spaces,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsKafkaOptionsKeyTransformerJsonOptions struct {
+	AsVariant           bool   `json:"as_variant,omitempty"`
+	Schema              string `json:"schema,omitempty"`
+	SchemaEvolutionMode string `json:"schema_evolution_mode,omitempty"`
+	SchemaFilePath      string `json:"schema_file_path,omitempty"`
+	SchemaHints         string `json:"schema_hints,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsKafkaOptionsKeyTransformer struct {
+	Format      string                                                                                                `json:"format,omitempty"`
+	JsonOptions *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsKafkaOptionsKeyTransformerJsonOptions `json:"json_options,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsKafkaOptionsValueTransformerJsonOptions struct {
+	AsVariant           bool   `json:"as_variant,omitempty"`
+	Schema              string `json:"schema,omitempty"`
+	SchemaEvolutionMode string `json:"schema_evolution_mode,omitempty"`
+	SchemaFilePath      string `json:"schema_file_path,omitempty"`
+	SchemaHints         string `json:"schema_hints,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsKafkaOptionsValueTransformer struct {
+	Format      string                                                                                                  `json:"format,omitempty"`
+	JsonOptions *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsKafkaOptionsValueTransformerJsonOptions `json:"json_options,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsKafkaOptions struct {
+	ClientConfig         map[string]string                                                                            `json:"client_config,omitempty"`
+	MaxOffsetsPerTrigger int                                                                                          `json:"max_offsets_per_trigger,omitempty"`
+	StartingOffset       string                                                                                       `json:"starting_offset,omitempty"`
+	TopicPattern         string                                                                                       `json:"topic_pattern,omitempty"`
+	Topics               []string                                                                                     `json:"topics,omitempty"`
+	KeyTransformer       *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsKafkaOptionsKeyTransformer   `json:"key_transformer,omitempty"`
+	ValueTransformer     *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsKafkaOptionsValueTransformer `json:"value_transformer,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsMetaAdsOptions struct {
+	ActionAttributionWindows     []string `json:"action_attribution_windows,omitempty"`
+	ActionBreakdowns             []string `json:"action_breakdowns,omitempty"`
+	ActionReportTime             string   `json:"action_report_time,omitempty"`
+	Breakdowns                   []string `json:"breakdowns,omitempty"`
+	CustomInsightsLookbackWindow int      `json:"custom_insights_lookback_window,omitempty"`
+	Level                        string   `json:"level,omitempty"`
+	StartDate                    string   `json:"start_date,omitempty"`
+	TimeIncrement                string   `json:"time_increment,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsOutlookOptions struct {
+	AttachmentMode   string   `json:"attachment_mode,omitempty"`
+	BodyFormat       string   `json:"body_format,omitempty"`
+	FolderFilter     []string `json:"folder_filter,omitempty"`
+	IncludeFolders   []string `json:"include_folders,omitempty"`
+	IncludeMailboxes []string `json:"include_mailboxes,omitempty"`
+	IncludeSenders   []string `json:"include_senders,omitempty"`
+	IncludeSubjects  []string `json:"include_subjects,omitempty"`
+	SenderFilter     []string `json:"sender_filter,omitempty"`
+	StartDate        string   `json:"start_date,omitempty"`
+	SubjectFilter    []string `json:"subject_filter,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsSharepointOptionsFileIngestionOptionsFileFilters struct {
+	ModifiedAfter  string `json:"modified_after,omitempty"`
+	ModifiedBefore string `json:"modified_before,omitempty"`
+	PathFilter     string `json:"path_filter,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsSharepointOptionsFileIngestionOptions struct {
+	CorruptRecordColumn string                                                                                                            `json:"corrupt_record_column,omitempty"`
+	Format              string                                                                                                            `json:"format,omitempty"`
+	FormatOptions       map[string]string                                                                                                 `json:"format_options,omitempty"`
+	IgnoreCorruptFiles  bool                                                                                                              `json:"ignore_corrupt_files,omitempty"`
+	InferColumnTypes    bool                                                                                                              `json:"infer_column_types,omitempty"`
+	ReaderCaseSensitive bool                                                                                                              `json:"reader_case_sensitive,omitempty"`
+	RescuedDataColumn   string                                                                                                            `json:"rescued_data_column,omitempty"`
+	SchemaEvolutionMode string                                                                                                            `json:"schema_evolution_mode,omitempty"`
+	SchemaHints         string                                                                                                            `json:"schema_hints,omitempty"`
+	SingleVariantColumn string                                                                                                            `json:"single_variant_column,omitempty"`
+	FileFilters         []ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsSharepointOptionsFileIngestionOptionsFileFilters `json:"file_filters,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsSharepointOptions struct {
+	EntityType           string                                                                                                `json:"entity_type,omitempty"`
+	Url                  string                                                                                                `json:"url,omitempty"`
+	FileIngestionOptions *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsSharepointOptionsFileIngestionOptions `json:"file_ingestion_options,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsSmartsheetOptions struct {
+	EnforceSchema bool `json:"enforce_schema,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsTiktokAdsOptions struct {
+	DataLevel          string   `json:"data_level,omitempty"`
+	Dimensions         []string `json:"dimensions,omitempty"`
+	LookbackWindowDays int      `json:"lookback_window_days,omitempty"`
+	Metrics            []string `json:"metrics,omitempty"`
+	QueryLifetime      bool     `json:"query_lifetime,omitempty"`
+	ReportType         string   `json:"report_type,omitempty"`
+	SyncStartDate      string   `json:"sync_start_date,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsZendeskSupportOptions struct {
+	StartDate string `json:"start_date,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptions struct {
+	ConfluenceOptions     *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsConfluenceOptions     `json:"confluence_options,omitempty"`
+	GdriveOptions         *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsGdriveOptions         `json:"gdrive_options,omitempty"`
+	GoogleAdsOptions      *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsGoogleAdsOptions      `json:"google_ads_options,omitempty"`
+	JiraOptions           *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsJiraOptions           `json:"jira_options,omitempty"`
+	KafkaOptions          *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsKafkaOptions          `json:"kafka_options,omitempty"`
+	MetaAdsOptions        *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsMetaAdsOptions        `json:"meta_ads_options,omitempty"`
+	OutlookOptions        *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsOutlookOptions        `json:"outlook_options,omitempty"`
+	SharepointOptions     *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsSharepointOptions     `json:"sharepoint_options,omitempty"`
+	SmartsheetOptions     *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsSmartsheetOptions     `json:"smartsheet_options,omitempty"`
+	TiktokAdsOptions      *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsTiktokAdsOptions      `json:"tiktok_ads_options,omitempty"`
+	ZendeskSupportOptions *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsZendeskSupportOptions `json:"zendesk_support_options,omitempty"`
 }
 
 type ResourcePipelineIngestionDefinitionObjectsTableTableConfigurationAutoFullRefreshPolicy struct {
@@ -299,6 +625,7 @@ type ResourcePipelineIngestionDefinitionObjectsTable struct {
 	SourceCatalog      string                                                             `json:"source_catalog,omitempty"`
 	SourceSchema       string                                                             `json:"source_schema,omitempty"`
 	SourceTable        string                                                             `json:"source_table"`
+	ConnectorOptions   *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptions   `json:"connector_options,omitempty"`
 	TableConfiguration *ResourcePipelineIngestionDefinitionObjectsTableTableConfiguration `json:"table_configuration,omitempty"`
 }
 
@@ -322,8 +649,13 @@ type ResourcePipelineIngestionDefinitionSourceConfigurationsCatalog struct {
 	Postgres      *ResourcePipelineIngestionDefinitionSourceConfigurationsCatalogPostgres `json:"postgres,omitempty"`
 }
 
+type ResourcePipelineIngestionDefinitionSourceConfigurationsGoogleAdsConfig struct {
+	ManagerAccountId string `json:"manager_account_id,omitempty"`
+}
+
 type ResourcePipelineIngestionDefinitionSourceConfigurations struct {
-	Catalog *ResourcePipelineIngestionDefinitionSourceConfigurationsCatalog `json:"catalog,omitempty"`
+	Catalog         *ResourcePipelineIngestionDefinitionSourceConfigurationsCatalog         `json:"catalog,omitempty"`
+	GoogleAdsConfig *ResourcePipelineIngestionDefinitionSourceConfigurationsGoogleAdsConfig `json:"google_ads_config,omitempty"`
 }
 
 type ResourcePipelineIngestionDefinitionTableConfigurationAutoFullRefreshPolicy struct {
@@ -363,10 +695,12 @@ type ResourcePipelineIngestionDefinitionTableConfiguration struct {
 
 type ResourcePipelineIngestionDefinition struct {
 	ConnectionName             string                                                    `json:"connection_name,omitempty"`
+	ConnectorType              string                                                    `json:"connector_type,omitempty"`
 	IngestFromUcForeignCatalog bool                                                      `json:"ingest_from_uc_foreign_catalog,omitempty"`
 	IngestionGatewayId         string                                                    `json:"ingestion_gateway_id,omitempty"`
 	NetsuiteJarPath            string                                                    `json:"netsuite_jar_path,omitempty"`
 	SourceType                 string                                                    `json:"source_type,omitempty"`
+	DataStagingOptions         *ResourcePipelineIngestionDefinitionDataStagingOptions    `json:"data_staging_options,omitempty"`
 	FullRefreshWindow          *ResourcePipelineIngestionDefinitionFullRefreshWindow     `json:"full_refresh_window,omitempty"`
 	Objects                    []ResourcePipelineIngestionDefinitionObjects              `json:"objects,omitempty"`
 	SourceConfigurations       []ResourcePipelineIngestionDefinitionSourceConfigurations `json:"source_configurations,omitempty"`
@@ -412,7 +746,7 @@ type ResourcePipelineNotification struct {
 }
 
 type ResourcePipelineProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type ResourcePipelineRestartWindow struct {

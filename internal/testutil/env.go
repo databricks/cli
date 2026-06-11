@@ -27,6 +27,9 @@ func CleanupEnvironment(t TestingT) {
 	if runtime.GOOS == "windows" {
 		t.Setenv("USERPROFILE", pwd)
 	}
+	// Isolate the CLI cache (host metadata, user cache) so tests don't leak
+	// cache files into HOME (which CleanupEnvironment rebinds to pwd).
+	t.Setenv("DATABRICKS_CACHE_DIR", t.TempDir())
 }
 
 // NullEnvironment sets up an empty environment with absolutely no environment variables set.

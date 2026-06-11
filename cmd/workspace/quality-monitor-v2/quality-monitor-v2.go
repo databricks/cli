@@ -20,13 +20,19 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "quality-monitor-v2",
-		Short: `Deprecated: Please use the Data Quality Monitoring API instead (REST: /api/data-quality/v1/monitors).`,
-		Long: `Deprecated: Please use the Data Quality Monitoring API instead (REST:
+		Short: `*Beta* Deprecated: Please use the Data Quality Monitoring API instead (REST: /api/data-quality/v1/monitors).`,
+		Long: `This command is in Beta and may change without notice.
+
+Deprecated: Please use the Data Quality Monitoring API instead (REST:
   /api/data-quality/v1/monitors). Manage data quality of UC objects (currently
   support schema).`,
 		GroupID: "qualitymonitor",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	// Add methods
 	cmd.AddCommand(newCreateQualityMonitor())
@@ -65,8 +71,10 @@ func newCreateQualityMonitor() *cobra.Command {
 	// TODO: array: validity_check_configurations
 
 	cmd.Use = "create-quality-monitor OBJECT_TYPE OBJECT_ID"
-	cmd.Short = `Create a quality monitor.`
-	cmd.Long = `Create a quality monitor.
+	cmd.Short = `*Beta* Create a quality monitor.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Create a quality monitor.
 
   Deprecated: Use Data Quality Monitoring API instead
   (/api/data-quality/v1/monitors). Create a quality monitor on UC object.
@@ -76,12 +84,14 @@ func newCreateQualityMonitor() *cobra.Command {
     OBJECT_ID: The uuid of the request object. For example, schema id.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'object_type', 'object_id' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'object_type', 'object_id' in your JSON input")
 			}
 			return nil
 		}
@@ -117,6 +127,7 @@ func newCreateQualityMonitor() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -147,8 +158,10 @@ func newDeleteQualityMonitor() *cobra.Command {
 	var deleteQualityMonitorReq qualitymonitorv2.DeleteQualityMonitorRequest
 
 	cmd.Use = "delete-quality-monitor OBJECT_TYPE OBJECT_ID"
-	cmd.Short = `Delete a quality monitor.`
-	cmd.Long = `Delete a quality monitor.
+	cmd.Short = `*Beta* Delete a quality monitor.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Delete a quality monitor.
 
   Deprecated: Use Data Quality Monitoring API instead
   (/api/data-quality/v1/monitors). Delete a quality monitor on UC object.
@@ -158,6 +171,8 @@ func newDeleteQualityMonitor() *cobra.Command {
     OBJECT_ID: The uuid of the request object. For example, schema id.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -206,8 +221,10 @@ func newGetQualityMonitor() *cobra.Command {
 	var getQualityMonitorReq qualitymonitorv2.GetQualityMonitorRequest
 
 	cmd.Use = "get-quality-monitor OBJECT_TYPE OBJECT_ID"
-	cmd.Short = `Read a quality monitor.`
-	cmd.Long = `Read a quality monitor.
+	cmd.Short = `*Beta* Read a quality monitor.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Read a quality monitor.
 
   Deprecated: Use Data Quality Monitoring API instead
   (/api/data-quality/v1/monitors). Read a quality monitor on UC object.
@@ -217,6 +234,8 @@ func newGetQualityMonitor() *cobra.Command {
     OBJECT_ID: The uuid of the request object. For example, schema id.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -235,6 +254,7 @@ func newGetQualityMonitor() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -263,18 +283,32 @@ func newListQualityMonitor() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listQualityMonitorReq qualitymonitorv2.ListQualityMonitorRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listQualityMonitorLimit int
 
 	cmd.Flags().IntVar(&listQualityMonitorReq.PageSize, "page-size", listQualityMonitorReq.PageSize, ``)
-	cmd.Flags().StringVar(&listQualityMonitorReq.PageToken, "page-token", listQualityMonitorReq.PageToken, ``)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listQualityMonitorLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listQualityMonitorReq.PageToken, "page-token", listQualityMonitorReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-quality-monitor"
-	cmd.Short = `List quality monitors.`
-	cmd.Long = `List quality monitors.
+	cmd.Short = `*Beta* List quality monitors.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+List quality monitors.
 
   Deprecated: Use Data Quality Monitoring API instead
   (/api/data-quality/v1/monitors). (Unimplemented) List quality monitors.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -287,6 +321,13 @@ func newListQualityMonitor() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.QualityMonitorV2.ListQualityMonitor(ctx, listQualityMonitorReq)
+		if listQualityMonitorLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listQualityMonitorLimit)
+		}
+		if listQualityMonitorLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listQualityMonitorLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -324,8 +365,10 @@ func newUpdateQualityMonitor() *cobra.Command {
 	// TODO: array: validity_check_configurations
 
 	cmd.Use = "update-quality-monitor OBJECT_TYPE OBJECT_ID OBJECT_TYPE OBJECT_ID"
-	cmd.Short = `Update a quality monitor.`
-	cmd.Long = `Update a quality monitor.
+	cmd.Short = `*Beta* Update a quality monitor.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Update a quality monitor.
 
   Deprecated: Use Data Quality Monitoring API instead
   (/api/data-quality/v1/monitors). (Unimplemented) Update a quality monitor on
@@ -338,6 +381,8 @@ func newUpdateQualityMonitor() *cobra.Command {
     OBJECT_ID: The uuid of the request object. For example, schema id.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
@@ -381,6 +426,7 @@ func newUpdateQualityMonitor() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 

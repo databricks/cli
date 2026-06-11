@@ -8,6 +8,17 @@ func New() *cobra.Command {
 		Short: "Test terminal UI components (spinners, prompts, etc.)",
 	}
 
-	cmd.AddCommand(newSpinner())
+	cmd.AddCommand(
+		newAskCmd(),
+		newAskYesOrNoCmd(),
+		newColorsCmd(),
+		newPromptCmd(),
+		newRunSelectCmd(),
+		newSecretCmd(),
+		newSelectCmd(),
+		newSelectOrderedCmd(),
+		newSpinnerCmd(),
+	)
+
 	return cmd
 }

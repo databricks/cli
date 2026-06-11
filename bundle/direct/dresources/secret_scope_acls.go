@@ -115,7 +115,7 @@ func (r *ResourceSecretScopeAcls) DoUpdate(ctx context.Context, id string, state
 }
 
 // Removing ACLs is a no-op, to match the behavior for permissions and grants.
-func (r *ResourceSecretScopeAcls) DoDelete(ctx context.Context, id string) error {
+func (r *ResourceSecretScopeAcls) DoDelete(ctx context.Context, id string, _ *SecretScopeAclsState) error {
 	return nil
 }
 

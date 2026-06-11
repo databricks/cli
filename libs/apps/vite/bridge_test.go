@@ -152,7 +152,7 @@ func TestBridgeHandleMessage(t *testing.T) {
 
 	w := &databricks.WorkspaceClient{}
 
-	vb := NewBridge(ctx, w, "test-app", 5173)
+	vb := NewBridge(ctx, w, "test-app", 5173, false)
 
 	tests := []struct {
 		name        string
@@ -238,7 +238,7 @@ func TestBridgeHandleFileReadRequest(t *testing.T) {
 		defer resp.Body.Close()
 		defer conn.Close()
 
-		vb := NewBridge(ctx, w, "test-app", 5173)
+		vb := NewBridge(ctx, w, "test-app", 5173, false)
 		vb.tunnelConn = conn
 
 		go func() { _ = vb.tunnelWriter(ctx) }()
@@ -295,7 +295,7 @@ func TestBridgeHandleFileReadRequest(t *testing.T) {
 		defer resp.Body.Close()
 		defer conn.Close()
 
-		vb := NewBridge(ctx, w, "test-app", 5173)
+		vb := NewBridge(ctx, w, "test-app", 5173, false)
 		vb.tunnelConn = conn
 
 		go func() { _ = vb.tunnelWriter(ctx) }()
@@ -326,7 +326,7 @@ func TestBridgeStop(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
 	w := &databricks.WorkspaceClient{}
 
-	vb := NewBridge(ctx, w, "test-app", 5173)
+	vb := NewBridge(ctx, w, "test-app", 5173, false)
 
 	// Call Stop multiple times to ensure it's idempotent
 	vb.Stop()
@@ -347,7 +347,7 @@ func TestNewBridge(t *testing.T) {
 	w := &databricks.WorkspaceClient{}
 	appName := "test-app"
 
-	vb := NewBridge(ctx, w, appName, 5173)
+	vb := NewBridge(ctx, w, appName, 5173, false)
 
 	assert.NotNil(t, vb)
 	assert.Equal(t, appName, vb.appName)
@@ -355,4 +355,66 @@ func TestNewBridge(t *testing.T) {
 	assert.NotNil(t, vb.stopChan)
 	assert.NotNil(t, vb.connectionRequests)
 	assert.Equal(t, 10, cap(vb.connectionRequests))
+	assert.False(t, vb.autoApprove)
+}
+
+func TestNewBridge_AutoApprove(t *testing.T) {
+	ctx := t.Context()
+	w := &databricks.WorkspaceClient{}
+
+	vb := NewBridge(ctx, w, "test-app", 5173, true)
+
+	assert.NotNil(t, vb)
+	assert.True(t, vb.autoApprove)
+}
+
+func TestBridgeHandleConnectionRequest_AutoApproveSkipsStdin(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	w := &databricks.WorkspaceClient{}
+
+	var received []byte
+	upgrader := websocket.Upgrader{}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		conn, err := upgrader.Upgrade(w, r, nil)
+		if err != nil {
+			t.Errorf("failed to upgrade: %v", err)
+			return
+		}
+		defer conn.Close()
+
+		_, message, err := conn.ReadMessage()
+		if err != nil {
+			t.Errorf("failed to read message: %v", err)
+			return
+		}
+		received = message
+	}))
+	defer server.Close()
+
+	wsURL := "ws" + server.URL[4:]
+	conn, resp, err := websocket.DefaultDialer.Dial(wsURL, nil)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+	defer conn.Close()
+
+	vb := NewBridge(ctx, w, "test-app", 5173, true)
+	vb.tunnelConn = conn
+
+	go func() { _ = vb.tunnelWriter(ctx) }()
+
+	msg := &BridgeMessage{
+		Type:      "connection:request",
+		Viewer:    "alice@example.com",
+		RequestID: "req-auto",
+	}
+
+	require.NoError(t, vb.handleConnectionRequest(msg))
+
+	time.Sleep(100 * time.Millisecond)
+
+	var response BridgeMessage
+	require.NoError(t, json.Unmarshal(received, &response))
+	assert.Equal(t, "connection:response", response.Type)
+	assert.Equal(t, "req-auto", response.RequestID)
+	assert.True(t, response.Approved)
 }

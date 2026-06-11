@@ -35,21 +35,23 @@ func New() *cobra.Command {
   temporary path credentials API, a metastore admin needs to enable the
   external_access_enabled flag (off by default) at the metastore level. A user
   needs to be granted the EXTERNAL USE LOCATION permission by external location
-  owner. For requests on existing external tables, user also needs to be granted
-  the EXTERNAL USE SCHEMA permission at the schema level by catalog admin.
+  owner. For requests on existing external tables and external volumes, user
+  also needs to be granted the EXTERNAL USE SCHEMA permission at the schema
+  level by catalog owner.
 
   Note that EXTERNAL USE SCHEMA is a schema level permission that can only be
-  granted by catalog admin explicitly and is not included in schema ownership or
+  granted by catalog owner explicitly and is not included in schema ownership or
   ALL PRIVILEGES on the schema for security reasons. Similarly, EXTERNAL USE
   LOCATION is an external location level permission that can only be granted by
   external location owner explicitly and is not included in external location
-  ownership or ALL PRIVILEGES on the external location for security reasons.
-
-  This API only supports temporary path credentials for external locations and
-  external tables, and volumes will be supported in the future.`,
+  ownership or ALL PRIVILEGES on the external location for security reasons.`,
 		GroupID: "catalog",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	// Add methods
 	cmd.AddCommand(newGenerateTemporaryPathCredentials())
@@ -102,12 +104,14 @@ func newGenerateTemporaryPathCredentials() *cobra.Command {
       Supported values: [PATH_CREATE_TABLE, PATH_READ, PATH_READ_WRITE]`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'url', 'operation' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'url', 'operation' in your JSON input")
 			}
 			return nil
 		}
@@ -147,6 +151,7 @@ func newGenerateTemporaryPathCredentials() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 

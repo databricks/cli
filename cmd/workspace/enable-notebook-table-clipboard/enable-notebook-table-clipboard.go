@@ -20,11 +20,17 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "enable-notebook-table-clipboard",
-		Short: `Controls whether users can copy tabular data to the clipboard via the UI.`,
-		Long: `Controls whether users can copy tabular data to the clipboard via the UI. By
+		Short: `*Public Preview* Controls whether users can copy tabular data to the clipboard via the UI.`,
+		Long: `This command is in Public Preview and may change without notice.
+
+Controls whether users can copy tabular data to the clipboard via the UI. By
   default, this setting is enabled.`,
 		RunE: root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	// Add methods
 	cmd.AddCommand(newGetEnableNotebookTableClipboard())
@@ -50,12 +56,16 @@ func newGetEnableNotebookTableClipboard() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	cmd.Use = "get-enable-notebook-table-clipboard"
-	cmd.Short = `Get the Results Table Clipboard features setting.`
-	cmd.Long = `Get the Results Table Clipboard features setting.
+	cmd.Short = `*Public Preview* Get the Results Table Clipboard features setting.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Get the Results Table Clipboard features setting.
 
   Gets the Results Table Clipboard features setting.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -65,6 +75,7 @@ func newGetEnableNotebookTableClipboard() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -98,14 +109,18 @@ func newPatchEnableNotebookTableClipboard() *cobra.Command {
 	cmd.Flags().Var(&patchEnableNotebookTableClipboardJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "patch-enable-notebook-table-clipboard"
-	cmd.Short = `Update the Results Table Clipboard features setting.`
-	cmd.Long = `Update the Results Table Clipboard features setting.
+	cmd.Short = `*Public Preview* Update the Results Table Clipboard features setting.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Update the Results Table Clipboard features setting.
 
   Updates the Results Table Clipboard features setting. The model follows
   eventual consistency, which means the get after the update operation might
   receive stale values for some time.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -131,6 +146,7 @@ func newPatchEnableNotebookTableClipboard() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 

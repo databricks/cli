@@ -12,10 +12,6 @@
   "path": "/api/2.0/preview/scim/v2/Me"
 }
 {
-  "method": "GET",
-  "path": "/.well-known/databricks-config"
-}
-{
   "method": "POST",
   "path": "/api/2.0/workspace/mkdirs",
   "body": {
@@ -27,10 +23,6 @@
 >>> [CLI] workspace import /Users/[USERNAME]/[UNIQUE_NAME]/hello.txt --format AUTO --file ./hello.txt
 
 >>> print_requests
-{
-  "method": "GET",
-  "path": "/.well-known/databricks-config"
-}
 {
   "method": "POST",
   "path": "/api/2.0/workspace/import",
@@ -51,10 +43,6 @@
 >>> print_requests
 {
   "method": "GET",
-  "path": "/.well-known/databricks-config"
-}
-{
-  "method": "GET",
   "path": "/api/2.0/workspace/list",
   "q": {
     "path": "/Users/[USERNAME]/[UNIQUE_NAME]"
@@ -69,10 +57,6 @@
 }
 
 >>> print_requests
-{
-  "method": "GET",
-  "path": "/.well-known/databricks-config"
-}
 {
   "method": "GET",
   "path": "/api/2.0/workspace/get-status",
@@ -90,10 +74,6 @@ hello, world
 >>> print_requests
 {
   "method": "GET",
-  "path": "/.well-known/databricks-config"
-}
-{
-  "method": "GET",
   "path": "/api/2.0/workspace/export",
   "q": {
     "format": "AUTO",
@@ -105,10 +85,6 @@ hello, world
 >>> [CLI] workspace delete /Users/[USERNAME]/[UNIQUE_NAME]/hello.txt
 
 >>> print_requests
-{
-  "method": "GET",
-  "path": "/.well-known/databricks-config"
-}
 {
   "method": "POST",
   "path": "/api/2.0/workspace/delete",
@@ -124,10 +100,6 @@ Error: Path (/Users/[USERNAME]/[UNIQUE_NAME]/hello.txt) doesn't exist.
 Exit code: 1
 
 >>> print_requests
-{
-  "method": "GET",
-  "path": "/.well-known/databricks-config"
-}
 {
   "method": "GET",
   "path": "/api/2.0/workspace/get-status",
@@ -146,18 +118,10 @@ ID  Type  Language  Path
 >>> print_requests
 {
   "method": "GET",
-  "path": "/.well-known/databricks-config"
-}
-{
-  "method": "GET",
   "path": "/api/2.0/workspace/list",
   "q": {
     "path": "/Users/[USERNAME]/[UNIQUE_NAME]"
   }
-}
-{
-  "method": "GET",
-  "path": "/.well-known/databricks-config"
 }
 {
   "method": "POST",
@@ -174,10 +138,6 @@ Error: Path (/Users/[USERNAME]/[UNIQUE_NAME]) doesn't exist.
 Exit code: 1
 
 >>> print_requests
-{
-  "method": "GET",
-  "path": "/.well-known/databricks-config"
-}
 {
   "method": "GET",
   "path": "/api/2.0/workspace/list",

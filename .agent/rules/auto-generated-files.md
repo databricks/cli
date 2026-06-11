@@ -50,49 +50,54 @@ paths:
 
 ## Identification
 
-The files matching this rule glob pattern are most likely generated artifacts. Auto-generated files generally have a comment (if the file type allows for comments) at or near the top of the file indicating that they are generated, or their file name/path may indicate they are generated. You may also consult Makefile as starting point to determine if a file is auto-generated.
+Files matching this rule's glob pattern are most likely generated artifacts. Auto-generated files generally have a comment (when the file type allows it) at or near the top indicating they are generated, or their name or path signals it. You may also consult the Makefile as a starting point to determine if a file is auto-generated.
 
 ## Rules
 
-DO NOT "MANUALLY" EDIT THESE FILES!
+**RULE: Do not manually edit auto-generated files.**
 
-If a change is needed in any matched file:
-1. Find the source logic/template/annotation that drives the file.
-2. Run the appropriate generator/update command.
-3. Commit both the source change (if any) and regenerated outputs.
+**RULE: To change a generated file, edit the source and regenerate.**
+
+1. Find the source logic, template, or annotation that drives the file.
+2. Run the appropriate generator or update command.
+3. Commit both the source change (if any) and the regenerated outputs.
 
 ### Core generation commands
 
+- Everything, in one shot:
+  - `./task generate` — aggregator that runs all generators below
 - OpenAPI SDK/CLI command stubs and related generated artifacts:
-  - `make generate`
-  - Includes generated `cmd/account/**`, `cmd/workspace/**`, `.gitattributes`, `internal/genkit/tagging.py`, and direct engine refresh.
+  - `./task generate-cligen` — regenerates `cmd/account/**`, `cmd/workspace/**` and `.gitattributes` from the checked-in `.codegen/cli.json`.
+  - `./task generate-clijson` — refreshes `.codegen/cli.json` from the OpenAPI spec via genkit (requires universe repo); also updates `internal/genkit/tagging.py`.
 - Direct engine generated YAML:
-  - `make generate-direct` (or `make generate-direct-apitypes`, `make generate-direct-resources`)
+  - `./task generate-direct` (or `./task generate-direct-apitypes`, `./task generate-direct-resources`)
 - Bundle schemas:
-  - `make schema`
-  - `make schema-for-docs`
+  - `./task generate-schema`
+  - `./task generate-schema-docs`
   - This can also refresh `bundle/internal/schema/annotations_openapi.yml` when OpenAPI annotation extraction is enabled.
 - Bundle docs:
-  - `make docs`
+  - `./task generate-docs`
 - Validation generated code:
-  - `make generate-validation`
+  - `./task generate-validation`
 - Mock files:
   - `go run github.com/vektra/mockery/v2@b9df18e0f7b94f0bc11af3f379c8a9aea1e1e8da`
 - Python bundle codegen:
-  - `make -C python codegen`
+  - `./task pydabs-codegen`
 
 ### Acceptance and test generated outputs
 
-Acceptance outputs are generated and should not be hand-edited (except rare, intentional mass replacement when explicitly justified by repo guidance).
+**RULE: Do not hand-edit acceptance outputs.** Exception: rare, intentional mass replacement when explicitly justified by repo guidance.
 
-- Preferred regeneration:
-  - `make test-update`
-  - `make test-update-templates` (templates only)
-  - `make generate-out-test-toml` (only `out.test.toml`)
-- Typical generated files include:
-  - `acceptance/**/out*`
-  - `acceptance/**/output.txt`
-  - `acceptance/**/output.*.txt`
-  - `acceptance/**/output/**` (materialized template output trees)
+Regeneration commands:
 
-When touching acceptance sources (`databricks.yml`, scripts, templates, or test config), regenerate outputs instead of editing generated files directly.
+- `./task test-update`
+- `./task test-update-templates` (templates only)
+
+Typical generated files:
+
+- `acceptance/**/out*`
+- `acceptance/**/output.txt`
+- `acceptance/**/output.*.txt`
+- `acceptance/**/output/**` (materialized template output trees)
+
+**RULE: When touching acceptance sources, regenerate outputs instead of editing generated files.** Sources include `databricks.yml`, scripts, templates, and test config.

@@ -1,0 +1,73 @@
+{
+  "config": {
+    "protocol_version": "v1.0.0",
+    "scanner_name": "govulncheck",
+    "scan_level": "module"
+  }
+}
+{
+  "SBOM": {
+    "go_version": "go1.26.3",
+    "roots": ["github.com/databricks/cli"]
+  }
+}
+{
+  "osv": {
+    "id": "GO-2026-5016",
+    "aliases": ["CVE-2026-39827", "GHSA-xxxx-xxxx-xxxx"]
+  }
+}
+{
+  "osv": {
+    "id": "GO-2026-5026",
+    "aliases": ["CVE-2026-39821"]
+  }
+}
+{
+  "osv": {
+    "id": "GO-2026-5021",
+    "aliases": ["GHSA-yyyy-yyyy-yyyy"]
+  }
+}
+{
+  "finding": {
+    "osv": "GO-2026-5016",
+    "fixed_version": "v0.52.0",
+    "trace": [{ "module": "golang.org/x/crypto", "version": "v0.51.0" }]
+  }
+}
+{
+  "finding": {
+    "osv": "GO-2026-5016",
+    "fixed_version": "v0.52.0",
+    "trace": [{ "module": "golang.org/x/crypto", "version": "v0.51.0" }]
+  }
+}
+{
+  "finding": {
+    "osv": "GO-2026-5021",
+    "fixed_version": "v0.51.0",
+    "trace": [{ "module": "golang.org/x/crypto", "version": "v0.51.0" }]
+  }
+}
+{
+  "finding": {
+    "osv": "GO-2026-5026",
+    "fixed_version": "v0.55.0",
+    "trace": [{ "module": "golang.org/x/net", "version": "v0.53.0" }]
+  }
+}
+{
+  "finding": {
+    "osv": "GO-2026-5026",
+    "fixed_version": "v0.55.0",
+    "trace": [{ "module": "golang.org/x/net", "version": "v0.53.0" }]
+  }
+}
+{
+  "finding": {
+    "osv": "GO-2026-5039",
+    "fixed_version": "go1.26.4",
+    "trace": [{ "module": "stdlib", "version": "go1.26.3" }]
+  }
+}

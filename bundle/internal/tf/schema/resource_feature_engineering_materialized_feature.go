@@ -2,6 +2,10 @@
 
 package schema
 
+type ResourceFeatureEngineeringMaterializedFeatureCronScheduleTrigger struct {
+	CronExpression string `json:"cron_expression,omitempty"`
+}
+
 type ResourceFeatureEngineeringMaterializedFeatureOfflineStoreConfig struct {
 	CatalogName     string `json:"catalog_name"`
 	SchemaName      string `json:"schema_name"`
@@ -16,17 +20,28 @@ type ResourceFeatureEngineeringMaterializedFeatureOnlineStoreConfig struct {
 }
 
 type ResourceFeatureEngineeringMaterializedFeatureProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
+}
+
+type ResourceFeatureEngineeringMaterializedFeatureStreamingMode struct {
+	Mode string `json:"mode,omitempty"`
+}
+
+type ResourceFeatureEngineeringMaterializedFeatureTableTrigger struct {
 }
 
 type ResourceFeatureEngineeringMaterializedFeature struct {
-	CronSchedule            string                                                           `json:"cron_schedule,omitempty"`
-	FeatureName             string                                                           `json:"feature_name"`
-	LastMaterializationTime string                                                           `json:"last_materialization_time,omitempty"`
-	MaterializedFeatureId   string                                                           `json:"materialized_feature_id,omitempty"`
-	OfflineStoreConfig      *ResourceFeatureEngineeringMaterializedFeatureOfflineStoreConfig `json:"offline_store_config,omitempty"`
-	OnlineStoreConfig       *ResourceFeatureEngineeringMaterializedFeatureOnlineStoreConfig  `json:"online_store_config,omitempty"`
-	PipelineScheduleState   string                                                           `json:"pipeline_schedule_state,omitempty"`
-	ProviderConfig          *ResourceFeatureEngineeringMaterializedFeatureProviderConfig     `json:"provider_config,omitempty"`
-	TableName               string                                                           `json:"table_name,omitempty"`
+	CronSchedule            string                                                            `json:"cron_schedule,omitempty"`
+	CronScheduleTrigger     *ResourceFeatureEngineeringMaterializedFeatureCronScheduleTrigger `json:"cron_schedule_trigger,omitempty"`
+	FeatureName             string                                                            `json:"feature_name"`
+	IsOnline                bool                                                              `json:"is_online,omitempty"`
+	LastMaterializationTime string                                                            `json:"last_materialization_time,omitempty"`
+	MaterializedFeatureId   string                                                            `json:"materialized_feature_id,omitempty"`
+	OfflineStoreConfig      *ResourceFeatureEngineeringMaterializedFeatureOfflineStoreConfig  `json:"offline_store_config,omitempty"`
+	OnlineStoreConfig       *ResourceFeatureEngineeringMaterializedFeatureOnlineStoreConfig   `json:"online_store_config,omitempty"`
+	PipelineScheduleState   string                                                            `json:"pipeline_schedule_state,omitempty"`
+	ProviderConfig          *ResourceFeatureEngineeringMaterializedFeatureProviderConfig      `json:"provider_config,omitempty"`
+	StreamingMode           *ResourceFeatureEngineeringMaterializedFeatureStreamingMode       `json:"streaming_mode,omitempty"`
+	TableName               string                                                            `json:"table_name,omitempty"`
+	TableTrigger            *ResourceFeatureEngineeringMaterializedFeatureTableTrigger        `json:"table_trigger,omitempty"`
 }

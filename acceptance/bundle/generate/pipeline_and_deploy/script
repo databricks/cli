@@ -1,0 +1,44 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+title "Upload files to workspace"
+trace $CLI workspace import "/Workspace/Users/${CURRENT_USER_NAME}/notebook.py" --file notebook.py --format AUTO --overwrite
+trace $CLI workspace import "/Workspace/Users/${CURRENT_USER_NAME}/test.py" --file test.py --format AUTO --overwrite
+
+title "Create a pipeline that references the files"
+PIPELINE_ID=$($CLI pipelines create --json '{
+  "name": "test-pipeline-'${UNIQUE_NAME}'",
+  "libraries": [
+    {
+      "notebook": {
+        "path": "/Workspace/Users/'${CURRENT_USER_NAME}'/notebook"
+      }
+    },
+    {
+      "file": {
+        "path": "/Workspace/Users/'${CURRENT_USER_NAME}'/test.py"
+      }
+    }
+  ]
+}' | jq -r '.pipeline_id')
+echo "Created pipeline"
+env -u MSYS_NO_PATHCONV add_repl.py "$PIPELINE_ID" PIPELINE_ID
+
+cleanup() {
+    title "Cleanup: delete the original pipeline and files"
+    trace errcode $CLI pipelines delete "$PIPELINE_ID"
+    trace errcode $CLI workspace delete "/Workspace/Users/${CURRENT_USER_NAME}/notebook"
+    trace errcode $CLI workspace delete "/Workspace/Users/${CURRENT_USER_NAME}/test.py"
+}
+trap cleanup EXIT
+
+title "Generate bundle config from the pipeline"
+$CLI bundle generate pipeline --existing-pipeline-id "$PIPELINE_ID" --key out --config-dir resources --source-dir src --force 2>&1 | sort
+
+title "Verify generated yaml has expected fields"
+cat resources/out.pipeline.yml | env -u MSYS_NO_PATHCONV contains.py "libraries:" "- notebook:" "path: ../src/notebook.py" "- file:" "path: ../src/test.py" > /dev/null
+
+title "Deploy the generated bundle"
+trace $CLI bundle deploy
+
+title "Destroy the deployed bundle"
+trace $CLI bundle destroy --auto-approve

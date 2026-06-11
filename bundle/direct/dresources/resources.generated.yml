@@ -59,6 +59,8 @@ resources:
         reason: spec:output_only
       - field: service_principal_name
         reason: spec:output_only
+      - field: thumbnail_url
+        reason: spec:output_only
       - field: update_time
         reason: spec:output_only
       - field: updater
@@ -165,11 +167,13 @@ resources:
     ignore_remote_changes:
       - field: effective_enable_file_events
         reason: spec:output_only
-      - field: file_event_queue.managed_aqs.managed_resource_id
+      - field: effective_file_event_queue
         reason: spec:output_only
-      - field: file_event_queue.managed_pubsub.managed_resource_id
-        reason: spec:output_only
-      - field: file_event_queue.managed_sqs.managed_resource_id
+
+  genie_spaces:
+
+    ignore_remote_changes:
+      - field: etag
         reason: spec:output_only
 
   # jobs: no api field behaviors
@@ -210,6 +214,20 @@ resources:
       - field: ttl
         reason: spec:input_only
 
+  postgres_catalogs:
+
+    recreate_on_changes:
+      - field: postgres_database
+        reason: spec:immutable
+
+    ignore_remote_changes:
+      - field: branch
+        reason: spec:input_only
+      - field: create_database_if_missing
+        reason: spec:input_only
+      - field: postgres_database
+        reason: spec:input_only
+
   postgres_endpoints:
 
     recreate_on_changes:
@@ -245,6 +263,8 @@ resources:
         reason: spec:input_only
       - field: custom_tags
         reason: spec:input_only
+      - field: default_branch
+        reason: spec:input_only
       - field: default_endpoint_settings
         reason: spec:input_only
       - field: display_name
@@ -254,6 +274,28 @@ resources:
       - field: history_retention_duration
         reason: spec:input_only
       - field: pg_version
+        reason: spec:input_only
+
+  postgres_synced_tables:
+
+    ignore_remote_changes:
+      - field: branch
+        reason: spec:input_only
+      - field: create_database_objects_if_missing
+        reason: spec:input_only
+      - field: existing_pipeline_id
+        reason: spec:input_only
+      - field: new_pipeline_spec
+        reason: spec:input_only
+      - field: postgres_database
+        reason: spec:input_only
+      - field: primary_key_columns
+        reason: spec:input_only
+      - field: scheduling_policy
+        reason: spec:input_only
+      - field: source_table_full_name
+        reason: spec:input_only
+      - field: timeseries_key
         reason: spec:input_only
 
   # quality_monitors: no api field behaviors
@@ -288,5 +330,9 @@ resources:
         reason: spec:output_only
       - field: unity_catalog_provisioning_state
         reason: spec:output_only
+
+  # vector_search_endpoints: no api field behaviors
+
+  # vector_search_indexes: no api field behaviors
 
   # volumes: no api field behaviors

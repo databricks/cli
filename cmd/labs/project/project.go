@@ -11,11 +11,11 @@ import (
 	"time"
 
 	"github.com/databricks/cli/cmd/labs/github"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/python"
 	"github.com/databricks/databricks-sdk-go/logger"
-	"github.com/fatih/color"
 	"go.yaml.in/yaml/v3"
 
 	"github.com/spf13/cobra"
@@ -308,6 +308,10 @@ func (p *Project) checkUpdates(cmd *cobra.Command) error {
 	if err != nil {
 		return err
 	}
+	// Repositories without releases (and the offline fallback) yield no versions; nothing to advise on.
+	if len(versions) == 0 {
+		return nil
+	}
 	installed, err := p.InstalledVersion(ctx)
 	if err != nil {
 		return err
@@ -318,7 +322,7 @@ func (p *Project) checkUpdates(cmd *cobra.Command) error {
 	}
 	ago := time.Since(latest.PublishedAt)
 	msg := "[UPGRADE ADVISED] Newer %s version was released %s ago. Please run `databricks labs upgrade %s` to upgrade: %s -> %s"
-	cmd.PrintErrln(color.YellowString(msg, p.Name, p.timeAgo(ago), p.Name, installed.Version, latest.Version))
+	cmd.PrintErrln(cmdio.Yellow(ctx, fmt.Sprintf(msg, p.Name, p.timeAgo(ago), p.Name, installed.Version, latest.Version)))
 	return nil
 }
 

@@ -308,7 +308,7 @@ func TestPathAndPatternNode(t *testing.T) {
 
 				gotStringKey, isStringKey := tt.pathNode.StringKey()
 				if tt.StringKey == nil {
-					assert.Equal(t, "", gotStringKey)
+					assert.Empty(t, gotStringKey)
 					assert.False(t, isStringKey)
 				} else {
 					expected := tt.StringKey.(string)
@@ -319,8 +319,8 @@ func TestPathAndPatternNode(t *testing.T) {
 				// KeyValue
 				gotKey, gotValue, isKeyValue := tt.pathNode.KeyValue()
 				if tt.KeyValue == nil {
-					assert.Equal(t, "", gotKey)
-					assert.Equal(t, "", gotValue)
+					assert.Empty(t, gotKey)
+					assert.Empty(t, gotValue)
 					assert.False(t, isKeyValue)
 				} else {
 					assert.Equal(t, tt.KeyValue[0], gotKey)

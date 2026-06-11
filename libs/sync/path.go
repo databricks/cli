@@ -24,13 +24,14 @@ func repoPathForPath(me *iam.User, remotePath string) string {
 
 // EnsureRemotePathIsUsable checks if the specified path is nested under
 // expected base paths and if it is a directory or repository.
-func EnsureRemotePathIsUsable(ctx context.Context, wsc *databricks.WorkspaceClient, remotePath string, me *iam.User) error {
+// If dryRun is set, a missing remote directory is not created.
+func EnsureRemotePathIsUsable(ctx context.Context, wsc *databricks.WorkspaceClient, remotePath string, me *iam.User, dryRun bool) error {
 	var err error
 
 	// TODO: we should cache CurrentUser.Me at the SDK level
 	//      for now we let clients pass in any existing user they might already have
 	if me == nil {
-		me, err = wsc.CurrentUser.Me(ctx)
+		me, err = wsc.CurrentUser.Me(ctx, iam.MeRequest{})
 		if err != nil {
 			return err
 		}
@@ -39,7 +40,7 @@ func EnsureRemotePathIsUsable(ctx context.Context, wsc *databricks.WorkspaceClie
 	// Ensure that the remote path exists.
 	// If it is a repo, it has to exist.
 	// If it is a workspace path, it may not exist.
-	info, err := wsc.Workspace.GetStatusByPath(ctx, remotePath)
+	info, err := wsc.Workspace.GetStatusByPath(ctx, remotePath) //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
 	if err != nil {
 		// We only deal with 404s below.
 		if !apierr.IsMissing(err) {
@@ -49,18 +50,23 @@ func EnsureRemotePathIsUsable(ctx context.Context, wsc *databricks.WorkspaceClie
 		// If the path is nested under a repo, the repo has to exist.
 		if strings.HasPrefix(remotePath, "/Repos/") {
 			repoPath := repoPathForPath(me, remotePath)
-			_, err = wsc.Workspace.GetStatusByPath(ctx, repoPath)
+			_, err = wsc.Workspace.GetStatusByPath(ctx, repoPath) //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
 			if err != nil && apierr.IsMissing(err) {
 				return fmt.Errorf("%s does not exist; please create it first", repoPath)
 			}
 		}
 
+		// A dry run must not create the missing directory; nothing left to validate.
+		if dryRun {
+			return nil
+		}
+
 		// The workspace path doesn't exist. Create it and try again.
-		err = wsc.Workspace.MkdirsByPath(ctx, remotePath)
+		err = wsc.Workspace.MkdirsByPath(ctx, remotePath) //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
 		if err != nil {
 			return fmt.Errorf("unable to create directory at %s: %w", remotePath, err)
 		}
-		info, err = wsc.Workspace.GetStatusByPath(ctx, remotePath)
+		info, err = wsc.Workspace.GetStatusByPath(ctx, remotePath) //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
 		if err != nil {
 			return err
 		}

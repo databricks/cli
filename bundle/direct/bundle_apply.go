@@ -6,7 +6,9 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/bundle/terraform_dabs_map"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structpath"
@@ -25,7 +27,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 		return
 	}
 
-	b.StateDB.AssertOpened()
+	b.StateDB.AssertOpenedForWrite()
 	b.RemoteStateCache.Clear()
 
 	g, err := makeGraph(plan)
@@ -81,8 +83,18 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 
 		if action == deployplan.Delete {
 			if migrateMode {
-				logdiag.LogError(ctx, fmt.Errorf("%s: Unexpected delete action during migration", errorPrefix))
-				return false
+				// Resource is in terraform state but not in config. Preserve its ID in
+				// direct state so the next direct deploy will plan and execute deletion.
+				id := b.StateDB.GetResourceID(resourceKey)
+				if id == "" {
+					logdiag.LogError(ctx, fmt.Errorf("%s: internal error: no ID in state", errorPrefix))
+					return false
+				}
+				if err = b.StateDB.SaveState(resourceKey, id, json.RawMessage("{}"), entry.DependsOn); err != nil {
+					logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
+					return false
+				}
+				return true
 			}
 			err = d.Destroy(ctx, &b.StateDB)
 			if err != nil {
@@ -155,6 +167,13 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 
 func (b *DeploymentBundle) LookupReferencePostDeploy(ctx context.Context, path *structpath.PathNode) (any, error) {
 	targetResourceKey, fieldPath := splitResourcePath(path)
+	targetGroup := config.GetResourceTypeFromKey(targetResourceKey)
+
+	// Translate Terraform-style field paths to DABs naming before lookup.
+	fieldPath, err := terraform_dabs_map.TerraformPathToDABs(targetGroup, fieldPath)
+	if err != nil {
+		return nil, err
+	}
 	fieldPathS := fieldPath.String()
 
 	targetEntry, err := b.Plan.ReadLockEntry(targetResourceKey)

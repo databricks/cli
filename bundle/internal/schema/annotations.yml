@@ -75,6 +75,9 @@ github.com/databricks/cli/bundle/config.Experimental:
   "python_wheel_wrapper":
     "description": |-
       Whether to use a Python wheel wrapper.
+  "record_deployment_history":
+    "description": |-
+      Whether to record deployment history using the deployment metadata service (DMS), which tracks what changed across deployments.
   "scripts":
     "description": |-
       The commands to run.
@@ -192,6 +195,9 @@ github.com/databricks/cli/bundle/config.Resources:
   "external_locations":
     "description": |-
       PLACEHOLDER
+  "genie_spaces":
+    "description": |-
+      PLACEHOLDER
   "jobs":
     "description": |-
       The job definitions for the bundle, where each key is the name of the job.
@@ -215,12 +221,18 @@ github.com/databricks/cli/bundle/config.Resources:
   "postgres_branches":
     "description": |-
       PLACEHOLDER
+  "postgres_catalogs":
+    "description": |-
+      The Postgres catalog definitions for the bundle, where each key is the name of the catalog. Each entry binds a Unity Catalog catalog to a Postgres database on a Lakebase Autoscaling branch.
   "postgres_endpoints":
     "description": |-
       PLACEHOLDER
   "postgres_projects":
     "description": |-
       PLACEHOLDER
+  "postgres_synced_tables":
+    "description": |-
+      The Postgres synced table definitions for the bundle, where each key is the name of the synced table. Each entry continuously replicates a Unity Catalog Delta source table into a Postgres table on a Lakebase Autoscaling instance.
   "quality_monitors":
     "description": |-
       The quality monitor definitions for the bundle, where each key is the name of the quality monitor.
@@ -247,6 +259,12 @@ github.com/databricks/cli/bundle/config.Resources:
     "markdown_description": |-
       The SQL warehouse definitions for the bundle, where each key is the name of the warehouse. See [\_](/dev-tools/bundles/resources.md#sql_warehouses).
   "synced_database_tables":
+    "description": |-
+      PLACEHOLDER
+  "vector_search_endpoints":
+    "description": |-
+      PLACEHOLDER
+  "vector_search_indexes":
     "description": |-
       PLACEHOLDER
   "volumes":
@@ -327,9 +345,9 @@ github.com/databricks/cli/bundle/config.Root:
       ```
   "run_as":
     "description": |-
-      The identity to use when running Declarative Automation Bundles workflows.
+      The identity to use when running Declarative Automation Bundles resources.
     "markdown_description": |-
-      The identity to use when running Declarative Automation Bundles workflows. See [\_](/dev-tools/bundles/run-as.md).
+      The identity to use when running Declarative Automation Bundles resources. See [\_](/dev-tools/bundles/run-as.md).
   "scripts":
     "description": |-
       PLACEHOLDER
@@ -420,7 +438,7 @@ github.com/databricks/cli/bundle/config.Workspace:
       The Databricks account ID.
   "artifact_path":
     "description": |-
-      The artifact path to use within the workspace for both deployments and workflow runs
+      The artifact path to use within the workspace for both deployments and job runs
   "auth_type":
     "description": |-
       The authentication type.
@@ -447,10 +465,10 @@ github.com/databricks/cli/bundle/config.Workspace:
       The client ID for the workspace
   "experimental_is_unified_host":
     "description": |-
-      Experimental feature flag to indicate if the host is a unified host
+      Deprecated: no-op. Unified hosts are now detected automatically from /.well-known/databricks-config. Retained for schema compatibility with existing databricks.yml files.
   "file_path":
     "description": |-
-      The file path to use within the workspace for both deployments and workflow runs
+      The file path to use within the workspace for both deployments and job runs
   "google_service_account":
     "description": |-
       The Google service account name
@@ -523,11 +541,20 @@ github.com/databricks/cli/bundle/config/resources.Alert:
     "description": |-
       PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.App:
+  "compute_max_instances":
+    "description": |-
+      PLACEHOLDER
+  "compute_min_instances":
+    "description": |-
+      PLACEHOLDER
   "git_source":
     "description": |-
       Git source configuration for app deployments. Specifies which git reference (branch, tag, or commit)
       to use when deploying the app. Used in conjunction with git_repository to deploy code directly from git.
       The source_code_path within git_source specifies the relative path to the app code within the repository.
+  "thumbnail_url":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.AppConfig:
   "command":
     "description": |-
@@ -644,6 +671,37 @@ github.com/databricks/cli/bundle/config/resources.ExternalLocation:
   "url":
     "description": |-
       PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.GenieSpace:
+  "description":
+    "description": |-
+      Description of the Genie space shown alongside the title in the Databricks UI.
+  "etag":
+    "description": |-
+      PLACEHOLDER
+  "file_path":
+    "description": |-
+      Local path to a `.geniespace.json` file holding the serialized Genie space definition. The contents are inlined into `serialized_space` at deploy time. Mutually exclusive with an inline `serialized_space`.
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
+  "parent_path":
+    "description": |-
+      Workspace folder under which to create the Genie space. Immutable: changing this field recreates the resource.
+  "permissions":
+    "description": |-
+      PLACEHOLDER
+  "serialized_space":
+    "description": |-
+      Serialized Genie space body. May be provided inline as a JSON string (or YAML that will be marshalled to JSON) or referenced via `file_path`. To round-trip an existing space into a bundle, use `databricks bundle generate genie-space`.
+  "space_id":
+    "description": |-
+      PLACEHOLDER
+  "title":
+    "description": |-
+      Title of the Genie space shown in the Databricks UI.
+  "warehouse_id":
+    "description": |-
+      ID of the SQL warehouse used to run queries for this Genie space.
 github.com/databricks/cli/bundle/config/resources.JobPermission:
   "group_name":
     "description": |-
@@ -725,6 +783,10 @@ github.com/databricks/cli/bundle/config/resources.Permission:
   "user_name":
     "description": |-
       The name of the user that has the permission set in level.
+github.com/databricks/cli/bundle/config/resources.Pipeline:
+  "parameters":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.PipelinePermission:
   "group_name":
     "description": |-
@@ -763,6 +825,9 @@ github.com/databricks/cli/bundle/config/resources.PostgresBranch:
   "parent":
     "description": |-
       PLACEHOLDER
+  "replace_existing":
+    "description": |-
+      PLACEHOLDER
   "source_branch":
     "description": |-
       PLACEHOLDER
@@ -785,6 +850,22 @@ github.com/databricks/cli/bundle/config/resources.PostgresBranch:
     "description": |-
       PLACEHOLDER
   "update_time":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.PostgresCatalog:
+  "branch":
+    "description": |-
+      PLACEHOLDER
+  "catalog_id":
+    "description": |-
+      PLACEHOLDER
+  "create_database_if_missing":
+    "description": |-
+      PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
+  "postgres_database":
     "description": |-
       PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.PostgresEndpoint:
@@ -821,6 +902,9 @@ github.com/databricks/cli/bundle/config/resources.PostgresEndpoint:
   "parent":
     "description": |-
       PLACEHOLDER
+  "replace_existing":
+    "description": |-
+      PLACEHOLDER
   "settings":
     "description": |-
       PLACEHOLDER
@@ -847,6 +931,9 @@ github.com/databricks/cli/bundle/config/resources.PostgresProject:
     "description": |-
       PLACEHOLDER
   "custom_tags":
+    "description": |-
+      PLACEHOLDER
+  "default_branch":
     "description": |-
       PLACEHOLDER
   "default_endpoint_settings":
@@ -876,6 +963,9 @@ github.com/databricks/cli/bundle/config/resources.PostgresProject:
   "project_id":
     "description": |-
       PLACEHOLDER
+  "purge_on_delete":
+    "description": |-
+      PLACEHOLDER
   "spec":
     "description": |-
       PLACEHOLDER
@@ -886,6 +976,40 @@ github.com/databricks/cli/bundle/config/resources.PostgresProject:
     "description": |-
       PLACEHOLDER
   "update_time":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.PostgresSyncedTable:
+  "branch":
+    "description": |-
+      PLACEHOLDER
+  "create_database_objects_if_missing":
+    "description": |-
+      PLACEHOLDER
+  "existing_pipeline_id":
+    "description": |-
+      PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
+  "new_pipeline_spec":
+    "description": |-
+      PLACEHOLDER
+  "postgres_database":
+    "description": |-
+      PLACEHOLDER
+  "primary_key_columns":
+    "description": |-
+      PLACEHOLDER
+  "scheduling_policy":
+    "description": |-
+      PLACEHOLDER
+  "source_table_full_name":
+    "description": |-
+      PLACEHOLDER
+  "synced_table_id":
+    "description": |-
+      PLACEHOLDER
+  "timeseries_key":
     "description": |-
       PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.SecretScope:
@@ -953,6 +1077,56 @@ github.com/databricks/cli/bundle/config/resources.SyncedDatabaseTable:
     "description": |-
       PLACEHOLDER
   "unity_catalog_provisioning_state":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.VectorSearchEndpoint:
+  "budget_policy_id":
+    "description": |-
+      PLACEHOLDER
+  "endpoint_type":
+    "description": |-
+      PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
+  "name":
+    "description": |-
+      PLACEHOLDER
+  "permissions":
+    "description": |-
+      PLACEHOLDER
+  "target_qps":
+    "description": |-
+      PLACEHOLDER
+  "usage_policy_id":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.VectorSearchIndex:
+  "delta_sync_index_spec":
+    "description": |-
+      PLACEHOLDER
+  "direct_access_index_spec":
+    "description": |-
+      PLACEHOLDER
+  "endpoint_name":
+    "description": |-
+      PLACEHOLDER
+  "grants":
+    "description": |-
+      PLACEHOLDER
+  "index_subtype":
+    "description": |-
+      PLACEHOLDER
+  "index_type":
+    "description": |-
+      PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
+  "name":
+    "description": |-
+      PLACEHOLDER
+  "primary_key":
     "description": |-
       PLACEHOLDER
 github.com/databricks/cli/bundle/config/variable.Lookup:

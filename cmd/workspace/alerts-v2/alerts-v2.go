@@ -19,12 +19,18 @@ var cmdOverrides []func(*cobra.Command)
 
 func New() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "alerts-v2",
-		Short:   `New version of SQL Alerts.`,
-		Long:    `New version of SQL Alerts`,
+		Use:   "alerts-v2",
+		Short: `*Public Preview* New version of SQL Alerts.`,
+		Long: `This command is in Public Preview and may change without notice.
+
+New version of SQL Alerts`,
 		GroupID: "sql",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	// Add methods
 	cmd.AddCommand(newCreateAlert())
@@ -67,8 +73,10 @@ func newCreateAlert() *cobra.Command {
 	cmd.Flags().StringVar(&createAlertReq.Alert.RunAsUserName, "run-as-user-name", createAlertReq.Alert.RunAsUserName, `The run as username or application ID of service principal.`)
 
 	cmd.Use = "create-alert DISPLAY_NAME QUERY_TEXT WAREHOUSE_ID EVALUATION SCHEDULE"
-	cmd.Short = `Create an alert.`
-	cmd.Long = `Create an alert.
+	cmd.Short = `*Public Preview* Create an alert.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Create an alert.
 
   Create Alert
 
@@ -80,12 +88,14 @@ func newCreateAlert() *cobra.Command {
     SCHEDULE: `
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'display_name', 'query_text', 'warehouse_id', 'evaluation', 'schedule' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'display_name', 'query_text', 'warehouse_id', 'evaluation', 'schedule' in your JSON input")
 			}
 			return nil
 		}
@@ -138,6 +148,7 @@ func newCreateAlert() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -168,12 +179,16 @@ func newGetAlert() *cobra.Command {
 	var getAlertReq sql.GetAlertV2Request
 
 	cmd.Use = "get-alert ID"
-	cmd.Short = `Get an alert.`
-	cmd.Long = `Get an alert.
+	cmd.Short = `*Public Preview* Get an alert.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Get an alert.
 
   Gets an alert.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -203,6 +218,7 @@ func newGetAlert() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -231,17 +247,31 @@ func newListAlerts() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listAlertsReq sql.ListAlertsV2Request
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listAlertsLimit int
 
 	cmd.Flags().IntVar(&listAlertsReq.PageSize, "page-size", listAlertsReq.PageSize, ``)
-	cmd.Flags().StringVar(&listAlertsReq.PageToken, "page-token", listAlertsReq.PageToken, ``)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listAlertsLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listAlertsReq.PageToken, "page-token", listAlertsReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-alerts"
-	cmd.Short = `List alerts.`
-	cmd.Long = `List alerts.
+	cmd.Short = `*Public Preview* List alerts.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+List alerts.
 
   Gets a list of alerts accessible to the user, ordered by creation time.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -254,6 +284,13 @@ func newListAlerts() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.AlertsV2.ListAlerts(ctx, listAlertsReq)
+		if listAlertsLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listAlertsLimit)
+		}
+		if listAlertsLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listAlertsLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -286,14 +323,18 @@ func newTrashAlert() *cobra.Command {
 	cmd.Flags().BoolVar(&trashAlertReq.Purge, "purge", trashAlertReq.Purge, `Whether to permanently delete the alert.`)
 
 	cmd.Use = "trash-alert ID"
-	cmd.Short = `Delete an alert (legacy TrashAlert).`
-	cmd.Long = `Delete an alert (legacy TrashAlert).
+	cmd.Short = `*Public Preview* Delete an alert (legacy TrashAlert).`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Delete an alert (legacy TrashAlert).
 
   Moves an alert to the trash. Trashed alerts immediately disappear from list
   views, and can no longer trigger. You can restore a trashed alert through the
   UI. A trashed alert is permanently deleted after 30 days.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -364,8 +405,10 @@ func newUpdateAlert() *cobra.Command {
 	cmd.Flags().StringVar(&updateAlertReq.Alert.RunAsUserName, "run-as-user-name", updateAlertReq.Alert.RunAsUserName, `The run as username or application ID of service principal.`)
 
 	cmd.Use = "update-alert ID UPDATE_MASK DISPLAY_NAME QUERY_TEXT WAREHOUSE_ID EVALUATION SCHEDULE"
-	cmd.Short = `Update an alert.`
-	cmd.Long = `Update an alert.
+	cmd.Short = `*Public Preview* Update an alert.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Update an alert.
 
   Update alert
 
@@ -389,6 +432,8 @@ func newUpdateAlert() *cobra.Command {
     SCHEDULE: `
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
@@ -449,6 +494,7 @@ func newUpdateAlert() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 

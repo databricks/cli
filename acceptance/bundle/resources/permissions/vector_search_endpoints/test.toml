@@ -1,0 +1,2 @@
+Env.RESOURCE = "vector_search_endpoints" # for ../_script
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

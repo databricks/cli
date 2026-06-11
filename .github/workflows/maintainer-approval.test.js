@@ -515,4 +515,47 @@ describe("maintainer-approval", () => {
     assert.ok(body.includes("approved by `@jefferycheng1`"));
     assert.ok(body.includes("needs approval"));
   });
+
+  it("lists individual files when fewer than 4 in a group", async () => {
+    const github = makeGithub({
+      reviews: [],
+      files: [
+        { filename: "cmd/pipelines/foo.go" },
+        { filename: "bundle/config.go" },
+        { filename: "bundle/deploy.go" },
+      ],
+    });
+    const core = makeCore();
+    const context = makeContext();
+
+    await runModule({ github, context, core });
+
+    assert.equal(github._comments.length, 1);
+    const body = github._comments[0].body;
+    assert.ok(body.includes("Files:"), "should list individual files");
+    assert.ok(body.includes("`bundle/config.go`"));
+    assert.ok(body.includes("`bundle/deploy.go`"));
+  });
+
+  it("shows file count instead of listing when 4 or more files in a group", async () => {
+    const github = makeGithub({
+      reviews: [],
+      files: [
+        { filename: "cmd/pipelines/foo.go" },
+        { filename: "bundle/a.go" },
+        { filename: "bundle/b.go" },
+        { filename: "bundle/c.go" },
+        { filename: "bundle/d.go" },
+      ],
+    });
+    const core = makeCore();
+    const context = makeContext();
+
+    await runModule({ github, context, core });
+
+    assert.equal(github._comments.length, 1);
+    const body = github._comments[0].body;
+    assert.ok(body.includes("4 files changed"), "should show count for bundle group");
+    assert.ok(!body.includes("`bundle/a.go`"), "should not list individual bundle files");
+  });
 });

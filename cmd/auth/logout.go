@@ -22,12 +22,12 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/libs/auth"
+	"github.com/databricks/cli/libs/auth/storage"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/databricks-sdk-go/config"
-	"github.com/databricks/databricks-sdk-go/credentials/u2m/cache"
 	"github.com/spf13/cobra"
 )
 
@@ -118,23 +118,25 @@ to specify it explicitly.
 			if err != nil {
 				return err
 			}
-			selected, err := profile.SelectProfile(ctx, profile.SelectConfig{
-				Label:             "Select a profile to log out of",
-				Profiles:          allProfiles,
-				StartInSearchMode: len(allProfiles) > 5,
-				ActiveTemplate:    `▸ {{.PaddedName | bold}}{{if .AccountID}} (account: {{.AccountID}}){{else}} ({{.Host}}){{end}}`,
-				InactiveTemplate:  `  {{.PaddedName}}{{if .AccountID}} (account: {{.AccountID | faint}}){{else}} ({{.Host | faint}}){{end}}`,
-				SelectedTemplate:  `{{ "Selected profile" | faint }}: {{ .Name | bold }}`,
+			currentDefault, _ := databrickscfg.GetDefaultProfile(ctx, env.Get(ctx, "DATABRICKS_CONFIG_FILE"))
+			result, selected, err := pickAuthProfile(ctx, allProfiles, profilePickerOptions{
+				Label:        "Select a profile to log out of",
+				SelectedNoun: "Selected profile",
+				Default:      currentDefault,
 			})
 			if err != nil {
 				return err
 			}
+			// Without IncludeExtras, the picker only returns profile selections.
+			if result != profilePickerProfile {
+				return fmt.Errorf("unexpected picker result: %v", result)
+			}
 			profileName = selected
 		}
 
-		tokenCache, err := cache.NewFileTokenCache()
+		tokenStore, _, err := storage.ResolveStore(ctx, "")
 		if err != nil {
-			return fmt.Errorf("failed to open token cache, please check if the file version is up-to-date and that the file is not corrupted: %w", err)
+			return fmt.Errorf("failed to open token cache: %w", err)
 		}
 
 		return runLogout(ctx, logoutArgs{
@@ -142,7 +144,7 @@ to specify it explicitly.
 			autoApprove:    autoApprove,
 			deleteProfile:  deleteProfile,
 			profiler:       profiler,
-			tokenCache:     tokenCache,
+			tokenStore:     tokenStore,
 			configFilePath: env.Get(ctx, "DATABRICKS_CONFIG_FILE"),
 		})
 	}
@@ -155,7 +157,7 @@ type logoutArgs struct {
 	autoApprove    bool
 	deleteProfile  bool
 	profiler       profile.Profiler
-	tokenCache     cache.TokenCache
+	tokenStore     storage.Store
 	configFilePath string
 }
 
@@ -204,7 +206,7 @@ func runLogout(ctx context.Context, args logoutArgs) error {
 	// Otherwise, we could be deleting profiles that were created by other means (e.g. manually).
 	isCreatedByLogin := matchedProfile.AuthType == "databricks-cli"
 	if isCreatedByLogin {
-		err = clearTokenCache(ctx, *matchedProfile, args.profiler, args.tokenCache)
+		err = clearTokenStore(ctx, *matchedProfile, args.profiler, args.tokenStore)
 		if err != nil {
 			return fmt.Errorf("failed to clear token cache: %w", err)
 		}
@@ -260,15 +262,15 @@ func getMatchingProfile(ctx context.Context, profileName string, profiler profil
 	return &profiles[0], nil
 }
 
-// clearTokenCache removes cached OAuth tokens for the given profile from the
+// clearTokenStore removes cached OAuth tokens for the given profile from the
 // token cache. It removes:
 //  1. The entry keyed by the profile name.
 //  2. The entry keyed by the host-based cache key, but only if no other
 //     remaining profile references the same key. For account and unified
 //     profiles, the cache key includes the OIDC path
 //     (host/oidc/accounts/<account_id>).
-func clearTokenCache(ctx context.Context, p profile.Profile, profiler profile.Profiler, tokenCache cache.TokenCache) error {
-	if err := tokenCache.Store(p.Name, nil); err != nil {
+func clearTokenStore(ctx context.Context, p profile.Profile, profiler profile.Profiler, tokenStore storage.Store) error {
+	if err := tokenStore.Delete(p.Name); err != nil {
 		return fmt.Errorf("failed to delete profile-keyed token for profile %q: %w", p.Name, err)
 	}
 
@@ -288,7 +290,7 @@ func clearTokenCache(ctx context.Context, p profile.Profile, profiler profile.Pr
 	}
 
 	if len(otherProfiles) == 0 {
-		if err := tokenCache.Store(hostCacheKey, nil); err != nil {
+		if err := tokenStore.Delete(hostCacheKey); err != nil {
 			return fmt.Errorf("failed to delete host-keyed token for %q: %w", hostCacheKey, err)
 		}
 	}
@@ -302,13 +304,12 @@ func hostCacheKeyAndMatchFn(p profile.Profile) (string, profile.ProfileMatchFunc
 	// Use ToOAuthArgument to derive the host-based cache key via the same
 	// routing logic the SDK used when the token was written during login.
 	// This includes a .well-known/databricks-config call that distinguishes
-	// classic workspace hosts from SPOG hosts — a distinction that cannot
+	// classic workspace hosts from SPOG hosts, a distinction that cannot
 	// be made from the profile fields alone.
 	arg, err := (auth.AuthArguments{
-		Host:          p.Host,
-		AccountID:     p.AccountID,
-		WorkspaceID:   p.WorkspaceID,
-		IsUnifiedHost: p.IsUnifiedHost,
+		Host:        p.Host,
+		AccountID:   p.AccountID,
+		WorkspaceID: p.WorkspaceID,
 		// Profile is deliberately empty so GetCacheKey returns the host-based
 		// key rather than the profile name.
 		// DiscoveryURL is left empty to force a fresh .well-known resolution

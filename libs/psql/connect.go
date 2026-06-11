@@ -98,10 +98,7 @@ func connectWithRetry(ctx context.Context, args, env []string, retryConfig Retry
 			case <-time.After(delay):
 			}
 
-			delay = time.Duration(float64(delay) * retryConfig.BackoffFactor)
-			if delay > retryConfig.MaxDelay {
-				delay = retryConfig.MaxDelay
-			}
+			delay = min(time.Duration(float64(delay)*retryConfig.BackoffFactor), retryConfig.MaxDelay)
 		}
 
 		if attempt > 0 {
@@ -150,8 +147,7 @@ func attemptConnection(ctx context.Context, args, env []string) error {
 
 	err = cmd.Wait()
 	if err != nil {
-		var exitError *exec.ExitError
-		if errors.As(err, &exitError) {
+		if exitError, ok := errors.AsType[*exec.ExitError](err); ok {
 			// psql returns exit code 2 for fatal errors
 			if exitError.ExitCode() == 2 {
 				connErr := fmt.Errorf("connection failed: psql exited with code %d", exitError.ExitCode())

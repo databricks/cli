@@ -3,6 +3,8 @@
 package settings_v2
 
 import (
+	"fmt"
+
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
@@ -17,12 +19,18 @@ var cmdOverrides []func(*cobra.Command)
 
 func New() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "settings-v2",
-		Short:   `APIs to manage account level settings.`,
-		Long:    `APIs to manage account level settings`,
+		Use:   "settings-v2",
+		Short: `*Public Preview* APIs to manage account level settings.`,
+		Long: `This command is in Public Preview and may change without notice.
+
+APIs to manage account level settings`,
 		GroupID: "settings",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	// Add methods
 	cmd.AddCommand(newGetPublicAccountSetting())
@@ -55,14 +63,18 @@ func newGetPublicAccountSetting() *cobra.Command {
 	var getPublicAccountSettingReq settingsv2.GetPublicAccountSettingRequest
 
 	cmd.Use = "get-public-account-setting NAME"
-	cmd.Short = `Get an account setting.`
-	cmd.Long = `Get an account setting.
+	cmd.Short = `*Public Preview* Get an account setting.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Get an account setting.
 
   Get a setting value at account level. See
   :method:settingsv2/listaccountsettingsmetadata for list of setting available
   via public APIs at account level.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -80,6 +92,7 @@ func newGetPublicAccountSetting() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -110,8 +123,10 @@ func newGetPublicAccountUserPreference() *cobra.Command {
 	var getPublicAccountUserPreferenceReq settingsv2.GetPublicAccountUserPreferenceRequest
 
 	cmd.Use = "get-public-account-user-preference USER_ID NAME"
-	cmd.Short = `Get a user preference.`
-	cmd.Long = `Get a user preference.
+	cmd.Short = `*Beta* Get a user preference.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Get a user preference.
 
   Get a user preference for a specific user. User preferences are personal
   settings that allow individual customization without affecting other users.
@@ -122,10 +137,9 @@ func newGetPublicAccountUserPreference() *cobra.Command {
     USER_ID: User ID of the user whose setting is being retrieved.
     NAME: User Setting name.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -144,6 +158,7 @@ func newGetPublicAccountUserPreference() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -172,19 +187,33 @@ func newListAccountSettingsMetadata() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listAccountSettingsMetadataReq settingsv2.ListAccountSettingsMetadataRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listAccountSettingsMetadataLimit int
 
 	cmd.Flags().IntVar(&listAccountSettingsMetadataReq.PageSize, "page-size", listAccountSettingsMetadataReq.PageSize, `The maximum number of settings to return.`)
-	cmd.Flags().StringVar(&listAccountSettingsMetadataReq.PageToken, "page-token", listAccountSettingsMetadataReq.PageToken, `A page token, received from a previous ListAccountSettingsMetadataRequest call.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listAccountSettingsMetadataLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listAccountSettingsMetadataReq.PageToken, "page-token", listAccountSettingsMetadataReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-account-settings-metadata"
-	cmd.Short = `List valid setting keys and their metadata.`
-	cmd.Long = `List valid setting keys and their metadata.
+	cmd.Short = `*Public Preview* List valid setting keys and their metadata.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+List valid setting keys and their metadata.
 
   List valid setting keys and metadata. These settings are available to be
   referenced via GET :method:settingsv2/getpublicaccountsetting and PATCH
   :method:settingsv2/patchpublicaccountsetting APIs`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -197,6 +226,13 @@ func newListAccountSettingsMetadata() *cobra.Command {
 		a := cmdctx.AccountClient(ctx)
 
 		response := a.SettingsV2.ListAccountSettingsMetadata(ctx, listAccountSettingsMetadataReq)
+		if listAccountSettingsMetadataLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listAccountSettingsMetadataLimit)
+		}
+		if listAccountSettingsMetadataLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listAccountSettingsMetadataLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -225,13 +261,25 @@ func newListAccountUserPreferencesMetadata() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listAccountUserPreferencesMetadataReq settingsv2.ListAccountUserPreferencesMetadataRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listAccountUserPreferencesMetadataLimit int
 
 	cmd.Flags().IntVar(&listAccountUserPreferencesMetadataReq.PageSize, "page-size", listAccountUserPreferencesMetadataReq.PageSize, `The maximum number of settings to return.`)
-	cmd.Flags().StringVar(&listAccountUserPreferencesMetadataReq.PageToken, "page-token", listAccountUserPreferencesMetadataReq.PageToken, `A page token, received from a previous ListAccountUserPreferencesMetadataRequest call.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listAccountUserPreferencesMetadataLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listAccountUserPreferencesMetadataReq.PageToken, "page-token", listAccountUserPreferencesMetadataReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-account-user-preferences-metadata USER_ID"
-	cmd.Short = `List user preferences and their metadata.`
-	cmd.Long = `List user preferences and their metadata.
+	cmd.Short = `*Beta* List user preferences and their metadata.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+List user preferences and their metadata.
 
   List valid user preferences and their metadata for a specific user. User
   preferences are personal settings that allow individual customization without
@@ -242,10 +290,9 @@ func newListAccountUserPreferencesMetadata() *cobra.Command {
   Arguments:
     USER_ID: User ID of the user whose settings metadata is being retrieved.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -260,6 +307,13 @@ func newListAccountUserPreferencesMetadata() *cobra.Command {
 		listAccountUserPreferencesMetadataReq.UserId = args[0]
 
 		response := a.SettingsV2.ListAccountUserPreferencesMetadata(ctx, listAccountUserPreferencesMetadataReq)
+		if listAccountUserPreferencesMetadataLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listAccountUserPreferencesMetadataLimit)
+		}
+		if listAccountUserPreferencesMetadataLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listAccountUserPreferencesMetadataLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -295,25 +349,33 @@ func newPatchPublicAccountSetting() *cobra.Command {
 
 	// TODO: complex arg: aibi_dashboard_embedding_access_policy
 	// TODO: complex arg: aibi_dashboard_embedding_approved_domains
+	// TODO: complex arg: allowed_apps_user_api_scopes
 	// TODO: complex arg: automatic_cluster_update_workspace
 	// TODO: complex arg: boolean_val
+	// TODO: complex arg: collaboration_platform_connectivity
 	// TODO: complex arg: effective_aibi_dashboard_embedding_access_policy
 	// TODO: complex arg: effective_aibi_dashboard_embedding_approved_domains
+	// TODO: complex arg: effective_allowed_apps_user_api_scopes
 	// TODO: complex arg: effective_automatic_cluster_update_workspace
 	// TODO: complex arg: effective_boolean_val
+	// TODO: complex arg: effective_collaboration_platform_connectivity
 	// TODO: complex arg: effective_integer_val
+	// TODO: complex arg: effective_operational_email_custom_recipient
 	// TODO: complex arg: effective_personal_compute
 	// TODO: complex arg: effective_restrict_workspace_admins
 	// TODO: complex arg: effective_string_val
 	// TODO: complex arg: integer_val
 	cmd.Flags().StringVar(&patchPublicAccountSettingReq.Setting.Name, "name", patchPublicAccountSettingReq.Setting.Name, `Name of the setting.`)
+	// TODO: complex arg: operational_email_custom_recipient
 	// TODO: complex arg: personal_compute
 	// TODO: complex arg: restrict_workspace_admins
 	// TODO: complex arg: string_val
 
 	cmd.Use = "patch-public-account-setting NAME"
-	cmd.Short = `Update an account setting.`
-	cmd.Long = `Update an account setting.
+	cmd.Short = `*Public Preview* Update an account setting.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Update an account setting.
 
   Patch a setting value at account level. See
   :method:settingsv2/listaccountsettingsmetadata for list of setting available
@@ -324,6 +386,8 @@ func newPatchPublicAccountSetting() *cobra.Command {
   Note: Page refresh is required for changes to take effect in UI.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -353,6 +417,7 @@ func newPatchPublicAccountSetting() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -394,8 +459,10 @@ func newPatchPublicAccountUserPreference() *cobra.Command {
 	cmd.Flags().StringVar(&patchPublicAccountUserPreferenceReq.Setting.UserId, "user-id", patchPublicAccountUserPreferenceReq.Setting.UserId, `User ID of the user.`)
 
 	cmd.Use = "patch-public-account-user-preference USER_ID NAME"
-	cmd.Short = `Update a user preference.`
-	cmd.Long = `Update a user preference.
+	cmd.Short = `*Beta* Update a user preference.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Update a user preference.
 
   Update a user preference for a specific user. User preferences are personal
   settings that allow individual customization without affecting other users.
@@ -408,10 +475,9 @@ func newPatchPublicAccountUserPreference() *cobra.Command {
     USER_ID: User ID of the user whose setting is being updated.
     NAME: `
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -442,6 +508,7 @@ func newPatchPublicAccountUserPreference() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 

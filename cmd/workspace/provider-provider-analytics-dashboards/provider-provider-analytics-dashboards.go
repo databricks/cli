@@ -17,12 +17,18 @@ var cmdOverrides []func(*cobra.Command)
 
 func New() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "provider-provider-analytics-dashboards",
-		Short:   `Manage templated analytics solution for providers.`,
-		Long:    `Manage templated analytics solution for providers.`,
+		Use:   "provider-provider-analytics-dashboards",
+		Short: `*Public Preview* Manage templated analytics solution for providers.`,
+		Long: `This command is in Public Preview and may change without notice.
+
+Manage templated analytics solution for providers.`,
 		GroupID: "marketplace",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	// Add methods
 	cmd.AddCommand(newCreate())
@@ -50,13 +56,17 @@ func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	cmd.Use = "create"
-	cmd.Short = `Create provider analytics dashboard.`
-	cmd.Long = `Create provider analytics dashboard.
+	cmd.Short = `*Public Preview* Create provider analytics dashboard.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Create provider analytics dashboard.
 
   Create provider analytics dashboard. Returns Marketplace specific id. Not to
   be confused with the Lakeview dashboard id.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -66,6 +76,7 @@ func newCreate() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -93,10 +104,14 @@ func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	cmd.Use = "get"
-	cmd.Short = `Get provider analytics dashboard.`
-	cmd.Long = `Get provider analytics dashboard.`
+	cmd.Short = `*Public Preview* Get provider analytics dashboard.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Get provider analytics dashboard.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -106,6 +121,7 @@ func newGet() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -133,10 +149,14 @@ func newGetLatestVersion() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	cmd.Use = "get-latest-version"
-	cmd.Short = `Get latest version of provider analytics dashboard.`
-	cmd.Long = `Get latest version of provider analytics dashboard.`
+	cmd.Short = `*Public Preview* Get latest version of provider analytics dashboard.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Get latest version of provider analytics dashboard.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -146,6 +166,7 @@ func newGetLatestVersion() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -181,13 +202,17 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().Int64Var(&updateReq.Version, "version", updateReq.Version, `this is the version of the dashboard template we want to update our user to current expectation is that it should be equal to latest version of the dashboard template.`)
 
 	cmd.Use = "update ID"
-	cmd.Short = `Update provider analytics dashboard.`
-	cmd.Long = `Update provider analytics dashboard.
+	cmd.Short = `*Public Preview* Update provider analytics dashboard.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Update provider analytics dashboard.
 
   Arguments:
     ID: id is immutable property and can't be updated.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -217,6 +242,7 @@ func newUpdate() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 

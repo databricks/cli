@@ -2,6 +2,7 @@ package auth
 
 import (
 	"encoding/json"
+	"maps"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -40,38 +41,28 @@ host = https://accounts.cloud.databricks.com
 account_id = abc123
 auth_type  = databricks-cli
 
-[my-unified]
-host = https://unified.cloud.databricks.com
-account_id = def456
-experimental_is_unified_host = true
-auth_type  = databricks-cli
-
 [my-m2m]
 host = https://my-m2m.cloud.databricks.com
 token = dev-token
 `
 
 var logoutTestTokensCacheConfig = map[string]*oauth2.Token{
-	"my-workspace":               {AccessToken: "shared-workspace-token"},
-	"shared-workspace":           {AccessToken: "shared-workspace-token"},
-	"my-unique-workspace":        {AccessToken: "my-unique-workspace-token"},
-	"my-workspace-stale-account": {AccessToken: "stale-account-token"},
-	"my-account":                 {AccessToken: "my-account-token"},
-	"my-unified":                 {AccessToken: "my-unified-token"},
+	"my-workspace":                                               {AccessToken: "shared-workspace-token"},
+	"shared-workspace":                                           {AccessToken: "shared-workspace-token"},
+	"my-unique-workspace":                                        {AccessToken: "my-unique-workspace-token"},
+	"my-workspace-stale-account":                                 {AccessToken: "stale-account-token"},
+	"my-account":                                                 {AccessToken: "my-account-token"},
 	"https://my-workspace.cloud.databricks.com":                  {AccessToken: "shared-workspace-host-token"},
 	"https://my-unique-workspace.cloud.databricks.com":           {AccessToken: "unique-workspace-host-token"},
 	"https://stale-account.cloud.databricks.com":                 {AccessToken: "stale-account-host-token"},
 	"https://accounts.cloud.databricks.com/oidc/accounts/abc123": {AccessToken: "account-host-token"},
-	"https://unified.cloud.databricks.com/oidc/accounts/def456":  {AccessToken: "unified-host-token"},
 	"my-m2m":                              {AccessToken: "m2m-service-token"},
 	"https://my-m2m.cloud.databricks.com": {AccessToken: "m2m-host-token"},
 }
 
 func copyTokens(src map[string]*oauth2.Token) map[string]*oauth2.Token {
 	dst := make(map[string]*oauth2.Token, len(src))
-	for k, v := range src {
-		dst[k] = v
-	}
+	maps.Copy(dst, src)
 	return dst
 }
 
@@ -122,13 +113,6 @@ func TestLogout(t *testing.T) {
 			autoApprove:  true,
 		},
 		{
-			name:         "existing unified profile",
-			profileName:  "my-unified",
-			hostBasedKey: "https://unified.cloud.databricks.com/oidc/accounts/def456",
-			isSharedKey:  false,
-			autoApprove:  true,
-		},
-		{
 			name:        "existing workspace profile without auto-approve in non-interactive mode",
 			profileName: "my-workspace",
 			autoApprove: false,
@@ -165,14 +149,6 @@ func TestLogout(t *testing.T) {
 			deleteProfile: true,
 		},
 		{
-			name:          "delete unified profile",
-			profileName:   "my-unified",
-			hostBasedKey:  "https://unified.cloud.databricks.com/oidc/accounts/def456",
-			isSharedKey:   false,
-			autoApprove:   true,
-			deleteProfile: true,
-		},
-		{
 			name:          "do not delete m2m profile tokens",
 			profileName:   "my-m2m",
 			hostBasedKey:  "https://my-m2m.cloud.databricks.com",
@@ -188,7 +164,7 @@ func TestLogout(t *testing.T) {
 			configPath := writeTempConfig(t, logoutTestConfig)
 			t.Setenv("DATABRICKS_CONFIG_FILE", configPath)
 
-			tokenCache := &inMemoryTokenCache{
+			tokenStore := &inMemoryStore{
 				Tokens: copyTokens(logoutTestTokensCacheConfig),
 			}
 
@@ -197,7 +173,7 @@ func TestLogout(t *testing.T) {
 				autoApprove:    tc.autoApprove,
 				deleteProfile:  tc.deleteProfile,
 				profiler:       profile.DefaultProfiler,
-				tokenCache:     tokenCache,
+				tokenStore:     tokenStore,
 				configFilePath: configPath,
 			})
 
@@ -218,14 +194,14 @@ func TestLogout(t *testing.T) {
 			// Verify token cache state.
 			if tc.isNonU2M {
 				// Non-U2M profiles should not touch the token cache at all.
-				assert.NotNil(t, tokenCache.Tokens[tc.profileName], "expected token %q to be preserved for non-U2M profile", tc.profileName)
-				assert.NotNil(t, tokenCache.Tokens[tc.hostBasedKey], "expected token %q to be preserved for non-U2M profile", tc.hostBasedKey)
+				assert.NotNil(t, tokenStore.Tokens[tc.profileName], "expected token %q to be preserved for non-U2M profile", tc.profileName)
+				assert.NotNil(t, tokenStore.Tokens[tc.hostBasedKey], "expected token %q to be preserved for non-U2M profile", tc.hostBasedKey)
 			} else {
-				assert.Nil(t, tokenCache.Tokens[tc.profileName], "expected token %q to be removed", tc.profileName)
+				assert.Nil(t, tokenStore.Tokens[tc.profileName], "expected token %q to be removed", tc.profileName)
 				if tc.isSharedKey {
-					assert.NotNil(t, tokenCache.Tokens[tc.hostBasedKey], "expected token %q to be preserved", tc.hostBasedKey)
+					assert.NotNil(t, tokenStore.Tokens[tc.hostBasedKey], "expected token %q to be preserved", tc.hostBasedKey)
 				} else {
-					assert.Nil(t, tokenCache.Tokens[tc.hostBasedKey], "expected token %q to be removed", tc.hostBasedKey)
+					assert.Nil(t, tokenStore.Tokens[tc.hostBasedKey], "expected token %q to be removed", tc.hostBasedKey)
 				}
 			}
 		})
@@ -237,7 +213,7 @@ func TestLogoutNoTokens(t *testing.T) {
 	configPath := writeTempConfig(t, logoutTestConfig)
 	t.Setenv("DATABRICKS_CONFIG_FILE", configPath)
 
-	tokenCache := &inMemoryTokenCache{
+	tokenStore := &inMemoryStore{
 		Tokens: map[string]*oauth2.Token{},
 	}
 
@@ -245,7 +221,7 @@ func TestLogoutNoTokens(t *testing.T) {
 		profileName:    "my-workspace",
 		autoApprove:    true,
 		profiler:       profile.DefaultProfiler,
-		tokenCache:     tokenCache,
+		tokenStore:     tokenStore,
 		configFilePath: configPath,
 	})
 	require.NoError(t, err)
@@ -261,7 +237,7 @@ func TestLogoutNoTokensWithDelete(t *testing.T) {
 	configPath := writeTempConfig(t, logoutTestConfig)
 	t.Setenv("DATABRICKS_CONFIG_FILE", configPath)
 
-	tokenCache := &inMemoryTokenCache{
+	tokenStore := &inMemoryStore{
 		Tokens: map[string]*oauth2.Token{},
 	}
 
@@ -270,7 +246,7 @@ func TestLogoutNoTokensWithDelete(t *testing.T) {
 		autoApprove:    true,
 		deleteProfile:  true,
 		profiler:       profile.DefaultProfiler,
-		tokenCache:     tokenCache,
+		tokenStore:     tokenStore,
 		configFilePath: configPath,
 	})
 	require.NoError(t, err)
@@ -326,7 +302,7 @@ default_profile = my-workspace
 			configPath := writeTempConfig(t, configWithDefault)
 			t.Setenv("DATABRICKS_CONFIG_FILE", configPath)
 
-			tokenCache := &inMemoryTokenCache{
+			tokenStore := &inMemoryStore{
 				Tokens: copyTokens(logoutTestTokensCacheConfig),
 			}
 
@@ -335,7 +311,7 @@ default_profile = my-workspace
 				autoApprove:    true,
 				deleteProfile:  true,
 				profiler:       profile.DefaultProfiler,
-				tokenCache:     tokenCache,
+				tokenStore:     tokenStore,
 				configFilePath: configPath,
 			})
 			require.NoError(t, err)
@@ -384,7 +360,7 @@ auth_type = databricks-cli
 	t.Setenv("DATABRICKS_CONFIG_FILE", configPath)
 
 	hostKey := spogServer.URL + "/oidc/accounts/spog-acct"
-	tokenCache := &inMemoryTokenCache{
+	tokenStore := &inMemoryStore{
 		Tokens: map[string]*oauth2.Token{
 			"spog-profile": {AccessToken: "spog-profile-token"},
 			hostKey:        {AccessToken: "spog-host-token"},
@@ -395,13 +371,13 @@ auth_type = databricks-cli
 		profileName:    "spog-profile",
 		autoApprove:    true,
 		profiler:       profile.DefaultProfiler,
-		tokenCache:     tokenCache,
+		tokenStore:     tokenStore,
 		configFilePath: configPath,
 	})
 	require.NoError(t, err)
 
-	assert.Nil(t, tokenCache.Tokens["spog-profile"])
-	assert.Nil(t, tokenCache.Tokens[hostKey])
+	assert.Nil(t, tokenStore.Tokens["spog-profile"])
+	assert.Nil(t, tokenStore.Tokens[hostKey])
 }
 
 func TestHostCacheKeyAndMatchFn(t *testing.T) {
@@ -439,16 +415,6 @@ func TestHostCacheKeyAndMatchFn(t *testing.T) {
 				AccountID: "abc123",
 			},
 			wantKey: "https://accounts.cloud.databricks.com/oidc/accounts/abc123",
-		},
-		{
-			name: "unified host with flag",
-			profile: profile.Profile{
-				Name:          "unified",
-				Host:          wsServer.URL,
-				AccountID:     "def456",
-				IsUnifiedHost: true,
-			},
-			wantKey: wsServer.URL + "/oidc/accounts/def456",
 		},
 		{
 			name: "SPOG profile routes to account key via discovery",

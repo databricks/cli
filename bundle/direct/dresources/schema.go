@@ -69,7 +69,7 @@ func (r *ResourceSchema) DoUpdate(ctx context.Context, id string, config *catalo
 	return response, nil
 }
 
-func (r *ResourceSchema) DoDelete(ctx context.Context, id string) error {
+func (r *ResourceSchema) DoDelete(ctx context.Context, id string, _ *catalog.CreateSchema) error {
 	return r.client.Schemas.Delete(ctx, catalog.DeleteSchemaRequest{
 		FullName:        id,
 		Force:           true,

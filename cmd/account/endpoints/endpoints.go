@@ -19,12 +19,18 @@ var cmdOverrides []func(*cobra.Command)
 
 func New() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "endpoints",
-		Short:   `These APIs manage endpoint configurations for this account.`,
-		Long:    `These APIs manage endpoint configurations for this account.`,
+		Use:   "endpoints",
+		Short: `*Public Preview* These APIs manage endpoint configurations for this account.`,
+		Long: `This command is in Public Preview and may change without notice.
+
+These APIs manage endpoint configurations for this account.`,
 		GroupID: "provisioning",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	// Add methods
 	cmd.AddCommand(newCreateEndpoint())
@@ -61,8 +67,10 @@ func newCreateEndpoint() *cobra.Command {
 	// TODO: complex arg: azure_private_endpoint_info
 
 	cmd.Use = "create-endpoint PARENT DISPLAY_NAME REGION"
-	cmd.Short = `Create a network endpoint.`
-	cmd.Long = `Create a network endpoint.
+	cmd.Short = `*Public Preview* Create a network endpoint.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Create a network endpoint.
 
   Creates a new network connectivity endpoint that enables private connectivity
   between your network resources and Databricks services.
@@ -83,6 +91,8 @@ func newCreateEndpoint() *cobra.Command {
     REGION: The cloud provider region where this endpoint is located.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
@@ -125,6 +135,7 @@ func newCreateEndpoint() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -155,14 +166,18 @@ func newDeleteEndpoint() *cobra.Command {
 	var deleteEndpointReq networking.DeleteEndpointRequest
 
 	cmd.Use = "delete-endpoint NAME"
-	cmd.Short = `Delete a network endpoint.`
-	cmd.Long = `Delete a network endpoint.
+	cmd.Short = `*Public Preview* Delete a network endpoint.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Delete a network endpoint.
 
   Deletes a network endpoint. This will remove the endpoint configuration from
   Databricks. Depending on the endpoint type and use case, you may also need to
   delete corresponding network resources in your cloud provider account.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -210,12 +225,16 @@ func newGetEndpoint() *cobra.Command {
 	var getEndpointReq networking.GetEndpointRequest
 
 	cmd.Use = "get-endpoint NAME"
-	cmd.Short = `Get a network endpoint.`
-	cmd.Long = `Get a network endpoint.
+	cmd.Short = `*Public Preview* Get a network endpoint.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Get a network endpoint.
 
   Gets details of a specific network endpoint.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -233,6 +252,7 @@ func newGetEndpoint() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -261,13 +281,25 @@ func newListEndpoints() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listEndpointsReq networking.ListEndpointsRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listEndpointsLimit int
 
 	cmd.Flags().IntVar(&listEndpointsReq.PageSize, "page-size", listEndpointsReq.PageSize, ``)
-	cmd.Flags().StringVar(&listEndpointsReq.PageToken, "page-token", listEndpointsReq.PageToken, ``)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listEndpointsLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listEndpointsReq.PageToken, "page-token", listEndpointsReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-endpoints PARENT"
-	cmd.Short = `List network endpoints.`
-	cmd.Long = `List network endpoints.
+	cmd.Short = `*Public Preview* List network endpoints.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+List network endpoints.
 
   Lists all network connectivity endpoints for the account.
 
@@ -276,6 +308,8 @@ func newListEndpoints() *cobra.Command {
       accounts/{account_id}.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -290,6 +324,13 @@ func newListEndpoints() *cobra.Command {
 		listEndpointsReq.Parent = args[0]
 
 		response := a.Endpoints.ListEndpoints(ctx, listEndpointsReq)
+		if listEndpointsLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listEndpointsLimit)
+		}
+		if listEndpointsLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listEndpointsLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 

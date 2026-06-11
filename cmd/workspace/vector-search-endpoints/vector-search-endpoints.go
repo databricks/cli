@@ -21,21 +21,29 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "vector-search-endpoints",
-		Short:   `**Endpoint**: Represents the compute resources to host vector search indexes.`,
-		Long:    `**Endpoint**: Represents the compute resources to host vector search indexes.`,
+		Short:   `**Endpoint**: Represents the compute resources to host AI Search indexes.`,
+		Long:    `**Endpoint**: Represents the compute resources to host AI Search indexes.`,
 		GroupID: "vectorsearch",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	// Add methods
 	cmd.AddCommand(newCreateEndpoint())
 	cmd.AddCommand(newDeleteEndpoint())
 	cmd.AddCommand(newGetEndpoint())
+	cmd.AddCommand(newGetPermissionLevels())
+	cmd.AddCommand(newGetPermissions())
 	cmd.AddCommand(newListEndpoints())
 	cmd.AddCommand(newPatchEndpoint())
 	cmd.AddCommand(newRetrieveUserVisibleMetrics())
+	cmd.AddCommand(newSetPermissions())
 	cmd.AddCommand(newUpdateEndpointBudgetPolicy())
 	cmd.AddCommand(newUpdateEndpointCustomTags())
+	cmd.AddCommand(newUpdatePermissions())
 
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
@@ -69,7 +77,8 @@ func newCreateEndpoint() *cobra.Command {
 	cmd.Flags().Var(&createEndpointJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createEndpointReq.BudgetPolicyId, "budget-policy-id", createEndpointReq.BudgetPolicyId, `The budget policy id to be applied.`)
-	cmd.Flags().Int64Var(&createEndpointReq.MinQps, "min-qps", createEndpointReq.MinQps, `Min QPS for the endpoint.`)
+	cmd.Flags().Int64Var(&createEndpointReq.TargetQps, "target-qps", createEndpointReq.TargetQps, `Target QPS for the endpoint.`)
+	cmd.Flags().StringVar(&createEndpointReq.UsagePolicyId, "usage-policy-id", createEndpointReq.UsagePolicyId, `The usage policy id to be applied once we've migrated to usage policies.`)
 
 	cmd.Use = "create-endpoint NAME ENDPOINT_TYPE"
 	cmd.Short = `Create an endpoint.`
@@ -78,17 +87,19 @@ func newCreateEndpoint() *cobra.Command {
   Create a new endpoint.
 
   Arguments:
-    NAME: Name of the vector search endpoint
+    NAME: Name of the AI Search endpoint
     ENDPOINT_TYPE: Type of endpoint
-      Supported values: [STANDARD]`
+      Supported values: [STANDARD, STORAGE_OPTIMIZED]`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name', 'endpoint_type' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'name', 'endpoint_type' in your JSON input")
 			}
 			return nil
 		}
@@ -180,12 +191,14 @@ func newDeleteEndpoint() *cobra.Command {
 	cmd.Short = `Delete an endpoint.`
 	cmd.Long = `Delete an endpoint.
 
-  Delete a vector search endpoint.
+  Delete an AI Search endpoint.
 
   Arguments:
-    ENDPOINT_NAME: Name of the vector search endpoint`
+    ENDPOINT_NAME: Name of the AI Search endpoint`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -236,12 +249,14 @@ func newGetEndpoint() *cobra.Command {
 	cmd.Short = `Get an endpoint.`
 	cmd.Long = `Get an endpoint.
 
-  Get details for a single vector search endpoint.
+  Get details for a single AI Search endpoint.
 
   Arguments:
     ENDPOINT_NAME: Name of the endpoint`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -259,6 +274,7 @@ func newGetEndpoint() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -269,6 +285,125 @@ func newGetEndpoint() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range getEndpointOverrides {
 		fn(cmd, &getEndpointReq)
+	}
+
+	return cmd
+}
+
+// start get-permission-levels command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getPermissionLevelsOverrides []func(
+	*cobra.Command,
+	*vectorsearch.GetVectorSearchEndpointPermissionLevelsRequest,
+)
+
+func newGetPermissionLevels() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getPermissionLevelsReq vectorsearch.GetVectorSearchEndpointPermissionLevelsRequest
+
+	cmd.Use = "get-permission-levels ENDPOINT_ID"
+	cmd.Short = `Get vector search endpoint permission levels.`
+	cmd.Long = `Get vector search endpoint permission levels.
+
+  Gets the permission levels that a user can have on an object.
+
+  Arguments:
+    ENDPOINT_ID: The vector search endpoint for which to get or manage permissions.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		getPermissionLevelsReq.EndpointId = args[0]
+
+		response, err := w.VectorSearchEndpoints.GetPermissionLevels(ctx, getPermissionLevelsReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getPermissionLevelsOverrides {
+		fn(cmd, &getPermissionLevelsReq)
+	}
+
+	return cmd
+}
+
+// start get-permissions command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getPermissionsOverrides []func(
+	*cobra.Command,
+	*vectorsearch.GetVectorSearchEndpointPermissionsRequest,
+)
+
+func newGetPermissions() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getPermissionsReq vectorsearch.GetVectorSearchEndpointPermissionsRequest
+
+	cmd.Use = "get-permissions ENDPOINT_ID"
+	cmd.Short = `Get vector search endpoint permissions.`
+	cmd.Long = `Get vector search endpoint permissions.
+
+  Gets the permissions of a vector search endpoint. Vector search endpoints can
+  inherit permissions from their root object.
+
+  Arguments:
+    ENDPOINT_ID: The vector search endpoint for which to get or manage permissions.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		getPermissionsReq.EndpointId = args[0]
+
+		response, err := w.VectorSearchEndpoints.GetPermissions(ctx, getPermissionsReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getPermissionsOverrides {
+		fn(cmd, &getPermissionsReq)
 	}
 
 	return cmd
@@ -287,16 +422,27 @@ func newListEndpoints() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listEndpointsReq vectorsearch.ListEndpointsRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listEndpointsLimit int
 
-	cmd.Flags().StringVar(&listEndpointsReq.PageToken, "page-token", listEndpointsReq.PageToken, `Token for pagination.`)
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listEndpointsLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listEndpointsReq.PageToken, "page-token", listEndpointsReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-endpoints"
 	cmd.Short = `List all endpoints.`
 	cmd.Long = `List all endpoints.
 
-  List all vector search endpoints in the workspace.`
+  List all AI Search endpoints in the workspace.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -309,6 +455,13 @@ func newListEndpoints() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.VectorSearchEndpoints.ListEndpoints(ctx, listEndpointsReq)
+		if listEndpointsLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listEndpointsLimit)
+		}
+		if listEndpointsLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listEndpointsLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -341,18 +494,22 @@ func newPatchEndpoint() *cobra.Command {
 
 	cmd.Flags().Var(&patchEndpointJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().Int64Var(&patchEndpointReq.MinQps, "min-qps", patchEndpointReq.MinQps, `Min QPS for the endpoint.`)
+	cmd.Flags().Int64Var(&patchEndpointReq.TargetQps, "target-qps", patchEndpointReq.TargetQps, `Target QPS for the endpoint.`)
 
 	cmd.Use = "patch-endpoint ENDPOINT_NAME"
-	cmd.Short = `Update an endpoint.`
-	cmd.Long = `Update an endpoint.
+	cmd.Short = `*Public Preview* Update an endpoint.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Update an endpoint.
 
   Update an endpoint
 
   Arguments:
-    ENDPOINT_NAME: Name of the vector search endpoint`
+    ENDPOINT_NAME: Name of the AI Search endpoint`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -382,6 +539,7 @@ func newPatchEndpoint() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -427,9 +585,11 @@ func newRetrieveUserVisibleMetrics() *cobra.Command {
   Retrieve user-visible metrics for an endpoint
 
   Arguments:
-    NAME: Vector search endpoint name`
+    NAME: AI Search endpoint name`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -459,6 +619,7 @@ func newRetrieveUserVisibleMetrics() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -469,6 +630,84 @@ func newRetrieveUserVisibleMetrics() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range retrieveUserVisibleMetricsOverrides {
 		fn(cmd, &retrieveUserVisibleMetricsReq)
+	}
+
+	return cmd
+}
+
+// start set-permissions command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var setPermissionsOverrides []func(
+	*cobra.Command,
+	*vectorsearch.VectorSearchEndpointPermissionsRequest,
+)
+
+func newSetPermissions() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var setPermissionsReq vectorsearch.VectorSearchEndpointPermissionsRequest
+	var setPermissionsJson flags.JsonFlag
+
+	cmd.Flags().Var(&setPermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	// TODO: array: access_control_list
+
+	cmd.Use = "set-permissions ENDPOINT_ID"
+	cmd.Short = `Set vector search endpoint permissions.`
+	cmd.Long = `Set vector search endpoint permissions.
+
+  Sets permissions on an object, replacing existing permissions if they exist.
+  Deletes all direct permissions if none are specified. Objects can inherit
+  permissions from their root object.
+
+  Arguments:
+    ENDPOINT_ID: The vector search endpoint for which to get or manage permissions.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := setPermissionsJson.Unmarshal(&setPermissionsReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnostics(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		setPermissionsReq.EndpointId = args[0]
+
+		response, err := w.VectorSearchEndpoints.SetPermissions(ctx, setPermissionsReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range setPermissionsOverrides {
+		fn(cmd, &setPermissionsReq)
 	}
 
 	return cmd
@@ -492,16 +731,20 @@ func newUpdateEndpointBudgetPolicy() *cobra.Command {
 	cmd.Flags().Var(&updateEndpointBudgetPolicyJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "update-endpoint-budget-policy ENDPOINT_NAME BUDGET_POLICY_ID"
-	cmd.Short = `Update the budget policy of an endpoint.`
-	cmd.Long = `Update the budget policy of an endpoint.
+	cmd.Short = `*Public Preview* Update the budget policy of an endpoint.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Update the budget policy of an endpoint.
 
   Update the budget policy of an endpoint
 
   Arguments:
-    ENDPOINT_NAME: Name of the vector search endpoint
+    ENDPOINT_NAME: Name of the AI Search endpoint
     BUDGET_POLICY_ID: The budget policy id to be applied`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
@@ -541,6 +784,7 @@ func newUpdateEndpointBudgetPolicy() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -578,12 +822,14 @@ func newUpdateEndpointCustomTags() *cobra.Command {
 	cmd.Long = `Update the custom tags of an endpoint.
 
   Arguments:
-    ENDPOINT_NAME: Name of the vector search endpoint`
+    ENDPOINT_NAME: Name of the AI Search endpoint`
 
 	// This command is being previewed; hide from help output.
 	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -615,6 +861,7 @@ func newUpdateEndpointCustomTags() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -625,6 +872,83 @@ func newUpdateEndpointCustomTags() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range updateEndpointCustomTagsOverrides {
 		fn(cmd, &updateEndpointCustomTagsReq)
+	}
+
+	return cmd
+}
+
+// start update-permissions command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updatePermissionsOverrides []func(
+	*cobra.Command,
+	*vectorsearch.VectorSearchEndpointPermissionsRequest,
+)
+
+func newUpdatePermissions() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var updatePermissionsReq vectorsearch.VectorSearchEndpointPermissionsRequest
+	var updatePermissionsJson flags.JsonFlag
+
+	cmd.Flags().Var(&updatePermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	// TODO: array: access_control_list
+
+	cmd.Use = "update-permissions ENDPOINT_ID"
+	cmd.Short = `Update vector search endpoint permissions.`
+	cmd.Long = `Update vector search endpoint permissions.
+
+  Updates the permissions on a vector search endpoint. Vector search endpoints
+  can inherit permissions from their root object.
+
+  Arguments:
+    ENDPOINT_ID: The vector search endpoint for which to get or manage permissions.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := updatePermissionsJson.Unmarshal(&updatePermissionsReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnostics(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		updatePermissionsReq.EndpointId = args[0]
+
+		response, err := w.VectorSearchEndpoints.UpdatePermissions(ctx, updatePermissionsReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updatePermissionsOverrides {
+		fn(cmd, &updatePermissionsReq)
 	}
 
 	return cmd

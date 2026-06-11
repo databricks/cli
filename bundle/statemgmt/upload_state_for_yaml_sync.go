@@ -76,7 +76,7 @@ func (m *uploadStateForYamlSync) Apply(ctx context.Context, b *bundle.Bundle) di
 }
 
 func uploadState(ctx context.Context, b *bundle.Bundle) error {
-	f, err := deploy.StateFiler(b)
+	f, err := deploy.StateFiler(ctx, b)
 	if err != nil {
 		return fmt.Errorf("failed to get state filer: %w", err)
 	}
@@ -141,12 +141,8 @@ func (m *uploadStateForYamlSync) convertState(ctx context.Context, b *bundle.Bun
 	migratedDB := dstate.NewDatabase(tfState.Lineage, tfState.Serial+1)
 	migratedDB.State = state
 
-	deploymentBundle := &direct.DeploymentBundle{
-		StateDB: dstate.DeploymentState{
-			Path: snapshotPath,
-			Data: migratedDB,
-		},
-	}
+	deploymentBundle := &direct.DeploymentBundle{}
+	deploymentBundle.StateDB.OpenWithData(snapshotPath, migratedDB)
 
 	// Apply SecretScopeFixups so the config matches what the direct engine expects.
 	// This adds MANAGE ACL for the current user to all secret scopes, ensuring
@@ -173,7 +169,7 @@ func (m *uploadStateForYamlSync) convertState(ctx context.Context, b *bundle.Bun
 		return false, fmt.Errorf("failed to create uninterpolated config: %w", err)
 	}
 
-	plan, err := deploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(), &uninterpolatedConfig)
+	plan, err := deploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(ctx), &uninterpolatedConfig)
 	if err != nil {
 		return false, err
 	}
@@ -197,8 +193,12 @@ func (m *uploadStateForYamlSync) convertState(ctx context.Context, b *bundle.Bun
 		}
 	}
 
-	deploymentBundle.Apply(ctx, b.WorkspaceClient(), plan, direct.MigrateMode(true))
-	if err := deploymentBundle.StateDB.Finalize(); err != nil {
+	if err := deploymentBundle.StateDB.UpgradeToWrite(); err != nil {
+		return false, fmt.Errorf("upgrading state for apply: %w", err)
+	}
+
+	deploymentBundle.Apply(ctx, b.WorkspaceClient(ctx), plan, direct.MigrateMode(true))
+	if _, err := deploymentBundle.StateDB.Finalize(ctx); err != nil {
 		return false, err
 	}
 

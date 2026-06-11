@@ -30,6 +30,10 @@ func New() *cobra.Command {
 		RunE:    root.ReportUnknownSubcommand,
 	}
 
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
+
 	// Add methods
 	cmd.AddCommand(newCreate())
 	cmd.AddCommand(newDelete())
@@ -84,16 +88,17 @@ func newCreate() *cobra.Command {
   Arguments:
     ENTITY_NAME: The fully qualified name of the entity to which the tag is assigned
     TAG_KEY: The key of the tag
-    ENTITY_TYPE: The type of the entity to which the tag is assigned. Allowed values are:
-      catalogs, schemas, tables, columns, volumes.`
+    ENTITY_TYPE: The type of the entity to which the tag is assigned.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'entity_name', 'tag_key', 'entity_type' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'entity_name', 'tag_key', 'entity_type' in your JSON input")
 			}
 			return nil
 		}
@@ -132,6 +137,7 @@ func newCreate() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -178,12 +184,13 @@ func newDelete() *cobra.Command {
   [Manage tag policy permissions]: https://docs.databricks.com/aws/en/admin/tag-policies/manage-permissions
 
   Arguments:
-    ENTITY_TYPE: The type of the entity to which the tag is assigned. Allowed values are:
-      catalogs, schemas, tables, columns, volumes.
+    ENTITY_TYPE: The type of the entity to which the tag is assigned.
     ENTITY_NAME: The fully qualified name of the entity to which the tag is assigned
     TAG_KEY: Required. The key of the tag to delete`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(3)
@@ -239,12 +246,13 @@ func newGet() *cobra.Command {
   Gets a tag assignment for an Unity Catalog entity by tag key.
 
   Arguments:
-    ENTITY_TYPE: The type of the entity to which the tag is assigned. Allowed values are:
-      catalogs, schemas, tables, columns, volumes.
+    ENTITY_TYPE: The type of the entity to which the tag is assigned.
     ENTITY_NAME: The fully qualified name of the entity to which the tag is assigned
     TAG_KEY: Required. The key of the tag`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(3)
@@ -264,6 +272,7 @@ func newGet() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -292,9 +301,19 @@ func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listReq catalog.ListEntityTagAssignmentsRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listLimit int
 
 	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Optional.`)
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Optional.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list ENTITY_TYPE ENTITY_NAME"
 	cmd.Short = `List entity tag assignments.`
@@ -308,11 +327,12 @@ func newList() *cobra.Command {
   end of results has been reached.
 
   Arguments:
-    ENTITY_TYPE: The type of the entity to which the tag is assigned. Allowed values are:
-      catalogs, schemas, tables, columns, volumes.
+    ENTITY_TYPE: The type of the entity to which the tag is assigned.
     ENTITY_NAME: The fully qualified name of the entity to which the tag is assigned`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -328,6 +348,13 @@ func newList() *cobra.Command {
 		listReq.EntityName = args[1]
 
 		response := w.EntityTagAssignments.List(ctx, listReq)
+		if listLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
+		}
+		if listLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -380,8 +407,7 @@ func newUpdate() *cobra.Command {
   [Manage tag policy permissions]: https://docs.databricks.com/aws/en/admin/tag-policies/manage-permissions
 
   Arguments:
-    ENTITY_TYPE: The type of the entity to which the tag is assigned. Allowed values are:
-      catalogs, schemas, tables, columns, volumes.
+    ENTITY_TYPE: The type of the entity to which the tag is assigned.
     ENTITY_NAME: The fully qualified name of the entity to which the tag is assigned
     TAG_KEY: The key of the tag
     UPDATE_MASK: The field mask must be a single string, with multiple fields separated by
@@ -397,6 +423,8 @@ func newUpdate() *cobra.Command {
       future.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(4)
@@ -429,6 +457,7 @@ func newUpdate() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 

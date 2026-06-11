@@ -15,6 +15,7 @@ import (
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/bundle/direct/dstate"
+	"github.com/databricks/cli/bundle/terraform_dabs_map"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/log"
@@ -37,24 +38,19 @@ func (b *DeploymentBundle) init(client *databricks.WorkspaceClient) error {
 	return err
 }
 
-// ValidatePlanAgainstState validates that a plan's lineage and serial match the current state.
-// This should be called early in the deployment process, before any file operations.
+// ValidatePlanAgainstState validates that a plan's lineage and serial match the given state.
 // If the plan has no lineage (first deployment), validation is skipped.
 func ValidatePlanAgainstState(stateDB *dstate.DeploymentState, plan *deployplan.Plan) error {
-	// If plan has no lineage, this is a first deployment before any state exists
-	// No validation needed
 	if plan.Lineage == "" {
 		return nil
 	}
 
-	stateDB.AssertOpened()
+	stateDB.AssertOpenedForReadOrWrite()
 
-	// Validate that the plan's lineage matches the current state's lineage
 	if plan.Lineage != stateDB.Data.Lineage {
 		return fmt.Errorf("plan lineage %q does not match state lineage %q; the state may have been modified by another process", plan.Lineage, stateDB.Data.Lineage)
 	}
 
-	// Validate that the plan's serial matches the current state's serial
 	if plan.Serial != stateDB.Data.Serial {
 		return fmt.Errorf("plan serial %d does not match state serial %d; the state has been modified since the plan was created. Please run 'bundle plan' again", plan.Serial, stateDB.Data.Serial)
 	}
@@ -63,9 +59,9 @@ func ValidatePlanAgainstState(stateDB *dstate.DeploymentState, plan *deployplan.
 }
 
 // InitForApply initializes the DeploymentBundle for applying a pre-computed plan.
-// This is used when --plan is specified to skip the planning phase.
+// StateDB must already be open for write before calling this function.
 func (b *DeploymentBundle) InitForApply(ctx context.Context, client *databricks.WorkspaceClient, plan *deployplan.Plan) error {
-	b.StateDB.AssertOpened()
+	b.StateDB.AssertOpenedForWrite()
 
 	err := b.init(client)
 	if err != nil {
@@ -97,8 +93,10 @@ func (b *DeploymentBundle) InitForApply(ctx context.Context, client *databricks.
 	return nil
 }
 
+// CalculatePlan computes the deployment plan by comparing local config against remote state.
+// StateDB must already be open for read before calling this function.
 func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root) (*deployplan.Plan, error) {
-	b.StateDB.AssertOpened()
+	b.StateDB.AssertOpenedForRead()
 
 	err := b.init(client)
 	if err != nil {
@@ -125,6 +123,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 	// We're processing resources in DAG order because we're resolving references (that can be resolved at plan stage).
 	g.Run(defaultParallelism, func(resourceKey string, failedDependency *string) bool {
 		errorPrefix := "cannot plan " + resourceKey
+		ctx := log.WithPrefix(ctx, "planning "+resourceKey)
 
 		entry, err := plan.WriteLockEntry(resourceKey)
 		if err != nil {
@@ -158,7 +157,9 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 				return false
 			}
 
-			remoteState, err := adapter.DoRead(ctx, id)
+			remoteState, err := retryOnTransient(ctx, func() (any, error) {
+				return adapter.DoRead(ctx, id)
+			})
 			if err != nil {
 				if isResourceGone(err) {
 					// no such resource
@@ -181,14 +182,13 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		}
 
 		dbentry, hasEntry := b.StateDB.GetResourceEntry(resourceKey)
-		if !hasEntry {
+		// Tolerate empty-ID entries from older partial-recreate failures
+		// (apply.Recreate now deletes state on the way through, but pre-fix
+		// state files may still carry a malformed entry). Treat as missing
+		// and let the resource be re-created on this plan.
+		if !hasEntry || dbentry.ID == "" {
 			entry.Action = deployplan.Create
 			return true
-		}
-
-		if dbentry.ID == "" {
-			logdiag.LogError(ctx, fmt.Errorf("%s: invalid state: empty id", errorPrefix))
-			return false
 		}
 
 		savedState, err := parseState(adapter.StateType(), dbentry.State)
@@ -214,7 +214,9 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			return false
 		}
 
-		remoteState, err := adapter.DoRead(ctx, dbentry.ID)
+		remoteState, err := retryOnTransient(ctx, func() (any, error) {
+			return adapter.DoRead(ctx, dbentry.ID)
+		})
 		if err != nil {
 			if isResourceGone(err) {
 				remoteState = nil
@@ -322,8 +324,8 @@ func prepareChanges(ctx context.Context, adapter *dresources.Adapter, localDiff,
 			// we have difference for remoteState but not difference for localState
 			// from remoteDiff we can find out remote value (ch.Old) and new config value (ch.New) but we don't know oldState value
 			oldStateVal, err := structaccess.Get(oldState, ch.Path)
-			var notFound *structaccess.NotFoundError
-			if err != nil && !errors.As(err, &notFound) {
+			_, isNotFound := errors.AsType[*structaccess.NotFoundError](err)
+			if err != nil && !isNotFound {
 				log.Debugf(ctx, "Constructing diff: accessing %q on %T: %s", ch.Path, oldState, err)
 			}
 			m[ch.Path.String()] = &deployplan.ChangeDesc{
@@ -371,6 +373,12 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 			ch.Action = deployplan.Skip
 			ch.Reason = reason
 		} else if reason, ok := shouldSkipBackendDefault(generatedCfg, path, ch); ok {
+			ch.Action = deployplan.Skip
+			ch.Reason = reason
+		} else if reason, ok := shouldSkipNormalized(cfg, path, ch); ok {
+			ch.Action = deployplan.Skip
+			ch.Reason = reason
+		} else if reason, ok := shouldSkipNormalized(generatedCfg, path, ch); ok {
 			ch.Action = deployplan.Skip
 			ch.Reason = reason
 		} else if action, reason := shouldUpdateOrRecreate(cfg, path); action != deployplan.Undefined {
@@ -427,6 +435,29 @@ func shouldSkip(cfg *dresources.ResourceLifecycleConfig, path *structpath.PathNo
 		return reason, true
 	}
 	if reason, ok := findMatchingRule(path, cfg.IgnoreRemoteChanges); ok && structdiff.IsEqual(ch.Old, ch.New) {
+		return reason, true
+	}
+	return "", false
+}
+
+// shouldSkipNormalized skips a change that is a false diff caused by UC API
+// normalization: the API lowercases identifier names (normalize_case) and strips
+// trailing slashes from storage URLs (normalize_slash). The direct engine saves
+// local config to state, so without this the next plan sees the original value
+// against the normalized remote value and triggers a spurious recreate/update.
+func shouldSkipNormalized(cfg *dresources.ResourceLifecycleConfig, path *structpath.PathNode, ch *deployplan.ChangeDesc) (string, bool) {
+	if cfg == nil {
+		return "", false
+	}
+	newStr, newOk := ch.New.(string)
+	remoteStr, remoteOk := ch.Remote.(string)
+	if !newOk || !remoteOk {
+		return "", false
+	}
+	if reason, ok := findMatchingRule(path, cfg.NormalizeCase); ok && strings.EqualFold(newStr, remoteStr) {
+		return reason, true
+	}
+	if reason, ok := findMatchingRule(path, cfg.NormalizeSlash); ok && strings.TrimRight(newStr, "/") == strings.TrimRight(remoteStr, "/") {
 		return reason, true
 	}
 	return "", false
@@ -517,7 +548,7 @@ func isEmpty(rv reflect.Value) bool {
 		return rv.Len() == 0
 	}
 
-	// Certain structs come up set even if fully empty and and not set by client, e.g. email_notifications and webhook_notifications
+	// Certain structs come up set even if fully empty and not set by client, e.g. email_notifications and webhook_notifications
 	if isEmptyStruct(rv) {
 		return true
 	}
@@ -526,7 +557,7 @@ func isEmpty(rv reflect.Value) bool {
 }
 
 func isEmptyStruct(rv reflect.Value) bool {
-	if rv.Kind() == reflect.Ptr {
+	if rv.Kind() == reflect.Pointer {
 		if rv.IsNil() {
 			return false
 		}
@@ -569,6 +600,15 @@ func splitResourcePath(path *structpath.PathNode) (string, *structpath.PathNode)
 
 func (b *DeploymentBundle) LookupReferencePreDeploy(ctx context.Context, path *structpath.PathNode) (any, error) {
 	targetResourceKey, fieldPath := splitResourcePath(path)
+	targetGroup := config.GetResourceTypeFromKey(targetResourceKey)
+
+	// Translate Terraform-style field paths to DABs naming (e.g. "task" → "tasks",
+	// "git_source.branch" → "git_source.git_branch"). No-op for already-DABs paths.
+	// Returns an error for paths that are Terraform-only with no DABs equivalent.
+	fieldPath, err := terraform_dabs_map.TerraformPathToDABs(targetGroup, fieldPath)
+	if err != nil {
+		return nil, err
+	}
 	fieldPathS := fieldPath.String()
 
 	targetEntry, err := b.Plan.ReadLockEntry(targetResourceKey)
@@ -616,7 +656,6 @@ func (b *DeploymentBundle) LookupReferencePreDeploy(ctx context.Context, path *s
 
 	localConfig := sv.Value
 
-	targetGroup := config.GetResourceTypeFromKey(targetResourceKey)
 	adapter := b.Adapters[targetGroup]
 	if adapter == nil {
 		return nil, fmt.Errorf("internal error: %s: unknown resource type %q", targetResourceKey, targetGroup)

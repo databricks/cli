@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"sync/atomic"
 	"testing"
 
 	"github.com/databricks/cli/libs/databrickscfg"
@@ -46,6 +47,35 @@ func TestProfiles(t *testing.T) {
 	assert.Equal(t, "https://abc.cloud.databricks.com", profile.Host)
 	assert.Equal(t, "aws", profile.Cloud)
 	assert.Equal(t, "pat", profile.AuthType)
+}
+
+// TestProfileLoadSkipValidateMakesNoRequests guards the --skip-validate
+// contract: EnsureResolved would otherwise fetch /.well-known/databricks-config
+// for every profile, so the handler counts every request it receives.
+func TestProfileLoadSkipValidateMakesNoRequests(t *testing.T) {
+	var requests atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests.Add(1)
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	t.Cleanup(server.Close)
+
+	dir := t.TempDir()
+	configFile := filepath.Join(dir, ".databrickscfg")
+	t.Setenv("HOME", dir)
+	if runtime.GOOS == "windows" {
+		t.Setenv("USERPROFILE", dir)
+	}
+
+	content := "[offline-profile]\nhost = " + server.URL + "\ntoken = test-token\n"
+	require.NoError(t, os.WriteFile(configFile, []byte(content), 0o600))
+
+	p := &profileMetadata{Name: "offline-profile", Host: server.URL}
+	p.Load(t.Context(), configFile, true)
+
+	assert.Zero(t, requests.Load(), "expected no network calls with skipValidate")
+	assert.Equal(t, server.URL, p.Host)
+	assert.False(t, p.Valid)
 }
 
 func TestProfilesDefaultMarker(t *testing.T) {
@@ -201,45 +231,6 @@ func TestProfileLoadSPOGConfigType(t *testing.T) {
 	}
 }
 
-func TestProfileLoadUnifiedHostFallback(t *testing.T) {
-	// When Experimental_IsUnifiedHost is set but .well-known is unreachable,
-	// ConfigType() returns InvalidConfig. The fallback should reclassify as
-	// AccountConfig so the profile is still validated.
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		switch r.URL.Path {
-		case "/.well-known/databricks-config":
-			w.WriteHeader(http.StatusNotFound)
-		case "/api/2.0/accounts/unified-acct/workspaces":
-			_ = json.NewEncoder(w).Encode([]map[string]any{})
-		default:
-			w.WriteHeader(http.StatusNotFound)
-		}
-	}))
-	t.Cleanup(server.Close)
-
-	dir := t.TempDir()
-	configFile := filepath.Join(dir, ".databrickscfg")
-	t.Setenv("HOME", dir)
-	if runtime.GOOS == "windows" {
-		t.Setenv("USERPROFILE", dir)
-	}
-
-	content := "[unified-profile]\nhost = " + server.URL + "\ntoken = test-token\naccount_id = unified-acct\nexperimental_is_unified_host = true\n"
-	require.NoError(t, os.WriteFile(configFile, []byte(content), 0o600))
-
-	p := &profileMetadata{
-		Name:      "unified-profile",
-		Host:      server.URL,
-		AccountID: "unified-acct",
-	}
-	p.Load(t.Context(), configFile, false)
-
-	assert.True(t, p.Valid, "unified host profile should be valid via fallback")
-	assert.NotEmpty(t, p.Host)
-	assert.NotEmpty(t, p.AuthType)
-}
-
 func TestClassicAccountsHostConfigType(t *testing.T) {
 	// Classic accounts.* hosts can't be tested through Load() because httptest
 	// generates 127.0.0.1 URLs. Verify directly that ConfigType() classifies
@@ -256,7 +247,7 @@ func TestClassicAccountsHostConfigType(t *testing.T) {
 }
 
 func TestProfileLoadNoDiscoveryStaysWorkspace(t *testing.T) {
-	// When .well-known returns 404 and Experimental_IsUnifiedHost is false,
+	// When .well-known returns 404 and the unified-host fallback is false,
 	// the SPOG override should NOT trigger even if account_id is set. The
 	// profile should stay WorkspaceConfig and validate via CurrentUser.Me.
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

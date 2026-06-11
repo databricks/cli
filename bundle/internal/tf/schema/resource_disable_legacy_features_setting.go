@@ -7,7 +7,7 @@ type ResourceDisableLegacyFeaturesSettingDisableLegacyFeatures struct {
 }
 
 type ResourceDisableLegacyFeaturesSettingProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type ResourceDisableLegacyFeaturesSetting struct {

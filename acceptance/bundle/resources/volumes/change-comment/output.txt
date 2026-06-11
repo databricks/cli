@@ -35,23 +35,23 @@ Deployment complete!
 
 === Summary should now show id and url
 "main.myschema.myvolume"
-"[DATABRICKS_URL]/explore/data/volumes/main/myschema/myvolume?o=[NUMID]"
+"[DATABRICKS_URL]/explore/data/volumes/main/myschema/myvolume?w=[NUMID]"
 
 === Verify deployment
 >>> [CLI] volumes read main.myschema.myvolume
 {
-  "catalog_name":"main",
-  "comment":"COMMENT1",
-  "created_at":[UNIX_TIME_MILLIS][0],
-  "created_by":"[USERNAME]",
-  "full_name":"main.myschema.myvolume",
-  "name":"myvolume",
-  "owner":"[USERNAME]",
-  "schema_name":"myschema",
-  "storage_location":"s3://[METASTORE_NAME]/metastore/[UUID]/volumes/[UUID]",
-  "updated_at":[UNIX_TIME_MILLIS][0],
-  "volume_id":"[UUID]",
-  "volume_type":"MANAGED"
+  "catalog_name": "main",
+  "comment": "COMMENT1",
+  "created_at": [UNIX_TIME_MILLIS][0],
+  "created_by": "[USERNAME]",
+  "full_name": "main.myschema.myvolume",
+  "name": "myvolume",
+  "owner": "[USERNAME]",
+  "schema_name": "myschema",
+  "storage_location": "s3://[METASTORE_NAME]/metastore/[UUID]/volumes/[UUID]",
+  "updated_at": [UNIX_TIME_MILLIS][0],
+  "volume_id": "[UUID]",
+  "volume_type": "MANAGED"
 }
 
 === Update comment
@@ -64,7 +64,7 @@ Deployment complete!
   "id": "main.myschema.myvolume",
   "name": "myvolume",
   "schema_name": "myschema",
-  "url": "[DATABRICKS_URL]/explore/data/volumes/main/myschema/myvolume?o=[NUMID]",
+  "url": "[DATABRICKS_URL]/explore/data/volumes/main/myschema/myvolume?w=[NUMID]",
   "volume_type": "MANAGED"
 }
 

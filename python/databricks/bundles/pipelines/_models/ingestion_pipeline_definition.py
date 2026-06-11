@@ -51,15 +51,11 @@ class IngestionPipelineDefinition:
 
     connector_type: VariableOrOptional[ConnectorType] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
     (Optional) Connector Type for sources. Ex: CDC, Query Based.
     """
 
     data_staging_options: VariableOrOptional[DataStagingOptions] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
     (Optional) Location of staged data storage. This is required for migration from Cdc Managed Ingestion Pipeline
     with Gateway pipeline to Combined Cdc Managed Ingestion Pipeline.
     If not specified, the volume for staged data will be created in catalog and schema/target specified in the
@@ -73,8 +69,6 @@ class IngestionPipelineDefinition:
 
     ingest_from_uc_foreign_catalog: VariableOrOptional[bool] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
     Immutable. If set to true, the pipeline will ingest tables from the
     UC foreign catalogs directly without the need to specify a UC connection or ingestion gateway.
     The `source_catalog` fields in objects of IngestionConfig are interpreted as
@@ -134,15 +128,11 @@ class IngestionPipelineDefinitionDict(TypedDict, total=False):
 
     connector_type: VariableOrOptional[ConnectorTypeParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
     (Optional) Connector Type for sources. Ex: CDC, Query Based.
     """
 
     data_staging_options: VariableOrOptional[DataStagingOptionsParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
     (Optional) Location of staged data storage. This is required for migration from Cdc Managed Ingestion Pipeline
     with Gateway pipeline to Combined Cdc Managed Ingestion Pipeline.
     If not specified, the volume for staged data will be created in catalog and schema/target specified in the
@@ -156,8 +146,6 @@ class IngestionPipelineDefinitionDict(TypedDict, total=False):
 
     ingest_from_uc_foreign_catalog: VariableOrOptional[bool]
     """
-    :meta private: [EXPERIMENTAL]
-    
     Immutable. If set to true, the pipeline will ingest tables from the
     UC foreign catalogs directly without the need to specify a UC connection or ingestion gateway.
     The `source_catalog` fields in objects of IngestionConfig are interpreted as

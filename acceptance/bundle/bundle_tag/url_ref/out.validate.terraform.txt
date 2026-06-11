@@ -1,0 +1,45 @@
+Warning: "resources.jobs.foo.url": Terraform-only field; this reference will not work with the direct engine
+  in databricks.yml:11:12
+
+Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Found 1 warning
+Warning: "resources.jobs.foo.url": Terraform-only field; this reference will not work with the direct engine
+  in databricks.yml:11:12
+
+{
+  "jobs": {
+    "bar": {
+      "deployment": {
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+      },
+      "edit_mode": "UI_LOCKED",
+      "format": "MULTI_TASK",
+      "max_concurrent_runs": 1,
+      "name": "Untitled",
+      "queue": {
+        "enabled": true
+      },
+      "url": "${resources.jobs.foo.url}"
+    },
+    "foo": {
+      "deployment": {
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+      },
+      "edit_mode": "UI_LOCKED",
+      "format": "MULTI_TASK",
+      "max_concurrent_runs": 1,
+      "name": "Untitled",
+      "queue": {
+        "enabled": true
+      },
+      "url": "my_job_url"
+    }
+  }
+}

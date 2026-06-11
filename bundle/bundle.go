@@ -18,6 +18,7 @@ import (
 	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/bundle/metadata"
+	"github.com/databricks/cli/bundle/statemgmt/resourcestate"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cache"
 	"github.com/databricks/cli/libs/fileset"
@@ -55,6 +56,12 @@ type Metrics struct {
 	PythonUpdatedResourcesCount int64
 	ExecutionTimes              []protos.IntMapEntry
 	LocalCacheMeasurementsMs    []protos.IntMapEntry // Local cache measurements stored as milliseconds
+
+	// ResourceState is the direct engine's per-resource deployment state
+	// captured right after the deploy. It carries each resource's state-size in
+	// bytes so deploy telemetry can be derived without re-reading or re-parsing
+	// the state file. Nil for terraform deploys.
+	ResourceState resourcestate.ExportedResourcesMap
 }
 
 // SetBoolValue sets the value of a boolean metric.
@@ -145,6 +152,10 @@ type Bundle struct {
 	// files
 	AutoApprove bool
 
+	// Select contains resource selectors passed via --select flag.
+	// When non-empty, only the specified resources are included in deployment.
+	Select []string
+
 	// SkipLocalFileValidation makes path translation tolerant of missing local files.
 	// When set, TranslatePaths computes workspace paths without verifying files exist.
 	// Used by config-remote-sync: a user may modify resource paths remotely (e.g.,
@@ -221,9 +232,9 @@ func TryLoad(ctx context.Context) *Bundle {
 	return b
 }
 
-func (b *Bundle) initClientOnce() {
+func (b *Bundle) initClientOnce(ctx context.Context) {
 	b.getClient = sync.OnceValues(func() (*databricks.WorkspaceClient, error) {
-		w, err := b.Config.Workspace.Client()
+		w, err := b.Config.Workspace.Client(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("cannot resolve bundle auth configuration: %w", err)
 		}
@@ -231,15 +242,15 @@ func (b *Bundle) initClientOnce() {
 	})
 }
 
-func (b *Bundle) WorkspaceClientE() (*databricks.WorkspaceClient, error) {
+func (b *Bundle) WorkspaceClientE(ctx context.Context) (*databricks.WorkspaceClient, error) {
 	if b.getClient == nil {
-		b.initClientOnce()
+		b.initClientOnce(ctx)
 	}
 	return b.getClient()
 }
 
-func (b *Bundle) WorkspaceClient() *databricks.WorkspaceClient {
-	client, err := b.WorkspaceClientE()
+func (b *Bundle) WorkspaceClient(ctx context.Context) *databricks.WorkspaceClient {
+	client, err := b.WorkspaceClientE(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -257,8 +268,8 @@ func (b *Bundle) SetWorkpaceClient(w *databricks.WorkspaceClient) {
 
 // ClearWorkspaceClient resets the workspace client cache, allowing
 // WorkspaceClientE() to attempt client creation again on the next call.
-func (b *Bundle) ClearWorkspaceClient() {
-	b.initClientOnce()
+func (b *Bundle) ClearWorkspaceClient(ctx context.Context) {
+	b.initClientOnce(ctx)
 }
 
 // LocalStateDir returns directory to use for temporary files for this bundle without creating
@@ -346,8 +357,8 @@ func (b *Bundle) GetSyncIncludePatterns(ctx context.Context) ([]string, error) {
 //
 // This map can be used to configure authentication for tools that
 // we call into from this bundle context.
-func (b *Bundle) AuthEnv() (map[string]string, error) {
-	w, err := b.WorkspaceClientE()
+func (b *Bundle) AuthEnv(ctx context.Context) (map[string]string, error) {
+	w, err := b.WorkspaceClientE(ctx)
 	if err != nil {
 		return nil, err
 	}

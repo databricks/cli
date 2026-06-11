@@ -51,6 +51,16 @@ func (i *InitializerPythonPip) NextSteps() string {
 	return "source .venv/bin/activate && python app.py"
 }
 
+func (i *InitializerPythonPip) InstallCommand() string {
+	// Create the venv and install via the full pip path so the suggestion
+	// composes with NextSteps (which activates the venv) without
+	// activating twice.
+	if runtime.GOOS == "windows" {
+		return "python -m venv .venv && .venv\\Scripts\\pip install -r requirements.txt"
+	}
+	return "python3 -m venv .venv && .venv/bin/pip install -r requirements.txt"
+}
+
 func (i *InitializerPythonPip) RunDev(ctx context.Context, workDir string) error {
 	cmd := detectPythonCommand(workDir)
 	cmdStr := strings.Join(cmd, " ")
@@ -98,7 +108,7 @@ func (i *InitializerPythonPip) createVenv(ctx context.Context, workDir string) e
 		pythonCmd = "python"
 		if _, err := exec.LookPath(pythonCmd); err != nil {
 			cmdio.LogString(ctx, "⚠ Python not found. Please install Python and create a virtual environment manually.")
-			return nil
+			return nil //nolint:nilerr // python not found is a non-critical warning
 		}
 	}
 

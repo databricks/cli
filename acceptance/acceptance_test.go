@@ -48,6 +48,7 @@ var (
 	WorkspaceTmpDir bool
 	OnlyOutTestToml bool
 	Subset          bool
+	DebugSandbox    bool
 )
 
 // In order to debug CLI running under acceptance test, search for TestInprocessMode and update
@@ -80,6 +81,7 @@ func init() {
 	flag.BoolVar(&WorkspaceTmpDir, "workspace-tmp-dir", false, "Run tests on the workspace file system (For DBR testing).")
 	flag.BoolVar(&OnlyOutTestToml, "only-out-test-toml", false, "Only regenerate out.test.toml files without running tests")
 	flag.BoolVar(&Subset, "subset", false, "Select a subset of EnvMatrix variants that cover all output files. Auto-enabled on -update (unless -run specifies a variant with '=').")
+	flag.BoolVar(&DebugSandbox, "debugsandbox", false, "Use a per-test blocking proxy instead of a shared one; shows exactly which test caused unexpected internet access (slower)")
 }
 
 const (
@@ -198,6 +200,35 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	// Consistent behavior of locale-dependent tools, such as 'sort'
 	t.Setenv("LC_ALL", "C")
 
+	// Unset AI-agent detection env vars so the SDK's user-agent does not
+	// pick up the host's agent. Setting these to "" via test.toml is not
+	// enough: the SDK (since v0.132.0) treats empty values as a truthy
+	// signal because os.LookupEnv reports them as present.
+	// Keep this list in sync with listKnownAgents() in
+	// github.com/databricks/databricks-sdk-go/useragent/agent.go
+	// plus the AGENT and AI_AGENT generic fallbacks.
+	for _, v := range []string{
+		"AGENT",
+		"AI_AGENT",
+		"AMP_CURRENT_THREAD_ID",
+		"ANTIGRAVITY_AGENT",
+		"AUGMENT_AGENT",
+		"CLAUDECODE",
+		"CLINE_ACTIVE",
+		"CODEX_CI",
+		"COPILOT_CLI",
+		"CURSOR_AGENT",
+		"GEMINI_CLI",
+		"GOOSE_TERMINAL",
+		"KIRO",
+		"OPENCLAW_SHELL",
+		"OPENCODE",
+		"VSCODE_AGENT",
+		"WINDSURF_AGENT",
+	} {
+		os.Unsetenv(v) //nolint:usetesting // t.Setenv cannot unset
+	}
+
 	buildDir := getBuildDir(t, cwd, runtime.GOOS, runtime.GOARCH)
 
 	// Set up terraform for tests. Skip on DBR - tests with RunsOnDbr only use direct deployment.
@@ -237,7 +268,11 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 		execPath = filepath.Join(cwd, "bin", "callserver.py")
 	} else {
 		if UseVersion != "" {
-			execPath = DownloadCLI(t, buildDir, UseVersion)
+			version := UseVersion
+			if version == "latest" {
+				version = resolveLatestVersion(t, buildDir)
+			}
+			execPath = DownloadCLI(t, buildDir, version)
 		} else {
 			execPath = BuildCLI(t, buildDir, coverDir, runtime.GOOS, runtime.GOARCH)
 		}
@@ -275,8 +310,9 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	t.Setenv("UV_CACHE_DIR", uvCache)
 
 	// UV_CACHE_DIR only applies to packages but not Python installations.
-	// UV_PYTHON_INSTALL_DIR ensures we cache Python downloads as well
-	uvInstall := filepath.Join(uvCache, "python_installs")
+	// UV_PYTHON_INSTALL_DIR points to the actual managed Python directory so
+	// uv finds pre-installed versions without falling back to system PATH search.
+	uvInstall := getUVPythonInstallDir(t)
 	t.Setenv("UV_PYTHON_INSTALL_DIR", uvInstall)
 
 	cloudEnv := os.Getenv("CLOUD_ENV")
@@ -292,6 +328,12 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 		if os.Getenv("TEST_INSTANCE_POOL_ID") == "" {
 			t.Setenv("TEST_INSTANCE_POOL_ID", testserver.TestDefaultInstancePoolId)
 		}
+	}
+
+	const sharedProxyHint = "; re-run with -debugsandbox to see which test caused this"
+	sandboxProxyURL := ""
+	if cloudEnv == "" && !DebugSandbox {
+		sandboxProxyURL = internal.StartRejectingProxy(t, sharedProxyHint)
 	}
 
 	setReplsForTestEnvVars(t, &repls)
@@ -367,9 +409,11 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 
 			// Generate materialized config for this test.
 			// We do this before skipping the test, so the configs are generated for all tests.
-			materializedConfig, err := internal.GenerateMaterializedConfig(config)
-			require.NoError(t, err)
-			testutil.WriteFile(t, filepath.Join(dir, internal.MaterializedConfigFile), materializedConfig)
+			materializedConfig := internal.GenerateMaterializedConfig(&config)
+			outPath := filepath.Join(dir, internal.MaterializedConfigFile)
+			if existing, _ := os.ReadFile(outPath); string(existing) != materializedConfig {
+				testutil.WriteFile(t, outPath, materializedConfig)
+			}
 
 			// If only regenerating out.test.toml, skip the actual test execution
 			if OnlyOutTestToml {
@@ -419,7 +463,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 			// If the matrix expands to a single empty envset, run the test directly
 			// without creating a subtest (avoids the "#00" dummy subtest name).
 			if len(expanded) == 1 && len(expanded[0]) == 0 {
-				runTest(t, dir, 0, coverDir, repls.Clone(), config, nil, envFilters)
+				runTest(t, dir, 0, coverDir, repls.Clone(), config, nil, envFilters, sandboxProxyURL)
 			} else {
 				for ind, envset := range expanded {
 					envname := strings.Join(envset, "/")
@@ -427,7 +471,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 						if runParallel {
 							t.Parallel()
 						}
-						runTest(t, dir, ind, coverDir, repls.Clone(), config, envset, envFilters)
+						runTest(t, dir, ind, coverDir, repls.Clone(), config, envset, envFilters, sandboxProxyURL)
 					})
 				}
 			}
@@ -512,10 +556,6 @@ func getSkipReason(config *internal.TestConfig, configPath string) string {
 		return "Disabled because RunsOnDbr is not set in " + configPath
 	}
 
-	if isTruePtr(config.Slow) && testing.Short() {
-		return "Disabled via Slow setting in " + configPath
-	}
-
 	isEnabled, isPresent := config.GOOS[runtime.GOOS]
 	if isPresent && !isEnabled {
 		return fmt.Sprintf("Disabled via GOOS.%s setting in %s", runtime.GOOS, configPath)
@@ -577,6 +617,7 @@ func runTest(t *testing.T,
 	config internal.TestConfig,
 	customEnv []string,
 	envFilters []string,
+	sharedProxyURL string,
 ) {
 	// Check env filters early, before creating any resources like directories on the file system.
 	// Creating / deleting too many directories causes this error on the workspace FUSE mount:
@@ -609,7 +650,7 @@ func runTest(t *testing.T,
 	if KeepTmp {
 		tempDirBase := filepath.Join(os.TempDir(), "acceptance")
 		_ = os.Mkdir(tempDirBase, 0o755)
-		tmpDir, err = os.MkdirTemp(tempDirBase, "")
+		tmpDir, err = os.MkdirTemp(tempDirBase, "") //nolint:usetesting // KeepTmp: dir must persist after test for debugging
 		require.NoError(t, err)
 		t.Logf("Created directory: %s", tmpDir)
 	} else if WorkspaceTmpDir {
@@ -712,6 +753,12 @@ func runTest(t *testing.T,
 	uniqueCacheDir := filepath.Join(t.TempDir(), ".cache")
 	cmd.Env = append(cmd.Env, "DATABRICKS_CACHE_DIR="+uniqueCacheDir)
 
+	// Disable the passive update notice explicitly. It is already suppressed
+	// implicitly (dev builds, non-TTY stderr, CI), but tests that run released
+	// binaries (e.g. -useversion) must never reach GitHub or print the notice
+	// into compared output. Tests can override this via [Env] in test.toml.
+	cmd.Env = append(cmd.Env, "DATABRICKS_CLI_DISABLE_UPDATE_CHECK=true")
+
 	for _, kv := range testEnv {
 		key, value, _ := strings.Cut(kv, "=")
 		// Only add replacement by default if value is part of EnvMatrix with more than 1 option and length is 4 or more chars
@@ -725,6 +772,26 @@ func runTest(t *testing.T,
 	cmd.Env = append(cmd.Env, "TESTDIR="+absDir)
 	cmd.Env = append(cmd.Env, "CLOUD_ENV="+cloudEnv)
 	cmd.Env = append(cmd.Env, "CURRENT_USER_NAME="+user.UserName)
+	if !isRunningOnCloud {
+		proxyURL := sharedProxyURL
+		if DebugSandbox {
+			// Per-test proxy: errors are attributed to this subtest's t, making
+			// it immediately clear which test caused the internet access.
+			proxyURL = internal.StartRejectingProxy(t, "")
+		}
+		// Only block HTTPS: the local test server is plain HTTP (http://127.0.0.1:PORT)
+		// so HTTP_PROXY would intercept its traffic. All real external calls use HTTPS.
+		cmd.Env = append(cmd.Env, "HTTPS_PROXY="+proxyURL)
+		// Python's urllib does not automatically bypass the proxy for loopback
+		// addresses the way Go does, so the test-server helper scripts
+		// (kill_after.py, callserver.py, …) would route their requests through
+		// the blocking proxy. NO_PROXY exempts them.
+		cmd.Env = append(cmd.Env, "NO_PROXY=127.0.0.1,localhost")
+		// Terraform phones home to checkpoint-api.hashicorp.com on every run to
+		// check for updates. Disable it so these CONNECT requests don't reach the
+		// blocking proxy and fail every terraform-engine test.
+		cmd.Env = append(cmd.Env, "CHECKPOINT_DISABLE=1")
+	}
 	cmd.Dir = tmpDir
 
 	outputPath := filepath.Join(tmpDir, "output.txt")
@@ -880,24 +947,42 @@ func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirN
 		valueNew = repls.Replace(valueNew)
 	}
 
+	// In update mode, regenerating the reference files is the goal: each branch below
+	// writes or removes the reference and returns without failing the test. Genuine
+	// problems still fail — read errors (via tryReading above), write errors (via
+	// require/testutil), and the both-missing case above.
+
 	// The test did not produce an expected output file.
 	if okRef && !okNew {
-		t.Errorf("Missing output file: %s", relPath)
 		if testdiff.OverwriteMode {
+			// The test no longer produces this output; drop the stale reference.
 			t.Logf("Removing output file: %s", relPath)
 			require.NoError(t, os.Remove(pathRef))
+			return
 		}
+		t.Errorf("Missing output file: %s", relPath)
 		return
 	}
 
 	// The test produced an unexpected output file.
 	if !okRef && okNew {
+		if testdiff.OverwriteMode {
+			t.Logf("Writing output file: %s", relPath)
+			testutil.WriteFile(t, pathRef, valueNew)
+			return
+		}
 		t.Errorf("Unexpected output file: %s\npathRef: %s\npathNew: %s", relPath, pathRef, pathNew)
 		if shouldShowDiff(pathNew, valueNew) {
 			testdiff.AssertEqualTexts(t, pathRef, pathNew, valueRef, valueNew)
 		}
-		if testdiff.OverwriteMode {
-			t.Logf("Writing output file: %s", relPath)
+		return
+	}
+
+	// In update mode, overwrite on any difference rather than calling
+	// AssertEqualTexts, which would mark the test failed.
+	if testdiff.OverwriteMode {
+		if valueRef != valueNew {
+			t.Logf("Overwriting existing output file: %s", relPath)
 			testutil.WriteFile(t, pathRef, valueNew)
 		}
 		return
@@ -905,10 +990,6 @@ func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirN
 
 	// Compare the reference and new values.
 	equal := testdiff.AssertEqualTexts(t, pathRef, pathNew, valueRef, valueNew)
-	if !equal && testdiff.OverwriteMode {
-		t.Logf("Overwriting existing output file: %s", relPath)
-		testutil.WriteFile(t, pathRef, valueNew)
-	}
 
 	if VerboseTest && !equal && printedRepls != nil && !*printedRepls {
 		*printedRepls = true
@@ -1050,6 +1131,35 @@ func CreateReleaseArtifact(t *testing.T, cwd, releasesDir, coverDir, osName, arc
 	require.NoError(t, err)
 
 	t.Logf("Created %s %s release: %s", osName, arch, zipPath)
+}
+
+// resolveLatestVersion returns the latest released CLI version (e.g. "0.293.0"),
+// using a file-based cache in buildDir valid for 1 hour.
+func resolveLatestVersion(t *testing.T, buildDir string) string {
+	cachePath := filepath.Join(buildDir, "latest_version.txt")
+	if info, err := os.Stat(cachePath); err == nil && time.Since(info.ModTime()) < time.Hour {
+		data, err := os.ReadFile(cachePath)
+		require.NoError(t, err)
+		if version := strings.TrimSpace(string(data)); version != "" {
+			return version
+		}
+	}
+
+	const url = "https://api.github.com/repos/databricks/cli/releases/latest"
+	resp, err := http.Get(url)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+	require.Equal(t, http.StatusOK, resp.StatusCode, "failed to fetch %s: %s", url, resp.Status)
+
+	var release struct {
+		TagName string `json:"tag_name"`
+	}
+	require.NoError(t, json.NewDecoder(resp.Body).Decode(&release))
+	version := strings.TrimPrefix(release.TagName, "v")
+	require.NotEmpty(t, version, "empty tag_name in GitHub latest release response")
+
+	require.NoError(t, os.WriteFile(cachePath, []byte(version), 0o644))
+	return version
 }
 
 // DownloadCLI downloads a released CLI binary archive for the given version,
@@ -1272,6 +1382,20 @@ func getUVDefaultCacheDir(t *testing.T) string {
 	}
 }
 
+// getUVPythonInstallDir returns the directory where uv stores managed Python installations.
+// Must be called before HOME is overridden in tests, so that uv resolves the real install path.
+func getUVPythonInstallDir(t *testing.T) string {
+	cmd := exec.Command("uv", "python", "dir")
+	out, err := cmd.Output()
+	if err != nil {
+		t.Logf("uv python dir failed: %v; falling back to cache-based path", err)
+		cacheDir, err2 := os.UserCacheDir()
+		require.NoError(t, err2)
+		return filepath.Join(cacheDir, "uv", "python_installs")
+	}
+	return strings.TrimSpace(string(out))
+}
+
 func RunCommand(t *testing.T, args []string, dir string, env []string) {
 	start := time.Now()
 	cmd := exec.Command(args[0], args[1:]...)
@@ -1462,11 +1586,7 @@ func prepareWheelBuildDirectory(t *testing.T, dir string) string {
 }
 
 func BuildYamlfmt(t *testing.T) {
-	// Using make here instead of "go build" directly cause it's faster when it's already built
-	args := []string{
-		"make", "-s", "tools/yamlfmt" + exeSuffix,
-	}
-	RunCommand(t, args, "..", []string{})
+	RunCommand(t, []string{"go", "tool", "-modfile=tools/task/go.mod", "task", "build-yamlfmt"}, "..", []string{})
 }
 
 // setupTerraform installs terraform and configures environment variables for tests.
@@ -1491,8 +1611,8 @@ func loadUserReplacements(t *testing.T, repls *testdiff.ReplacementsContext, tmp
 		return
 	}
 	require.NoError(t, err)
-	lines := strings.Split(string(b), "\n")
-	for _, line := range lines {
+	lines := strings.SplitSeq(string(b), "\n")
+	for line := range lines {
 		line = strings.TrimSpace(line)
 		if len(line) == 0 {
 			continue

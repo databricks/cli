@@ -108,7 +108,7 @@ func (r *ResourceVolume) DoUpdateWithID(ctx context.Context, id string, config *
 	return response.FullName, response, nil
 }
 
-func (r *ResourceVolume) DoDelete(ctx context.Context, id string) error {
+func (r *ResourceVolume) DoDelete(ctx context.Context, id string, _ *catalog.CreateVolumeRequestContent) error {
 	return r.client.Volumes.DeleteByName(ctx, id)
 }
 

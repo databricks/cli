@@ -3,6 +3,8 @@
 package consumer_fulfillments
 
 import (
+	"fmt"
+
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
@@ -16,12 +18,18 @@ var cmdOverrides []func(*cobra.Command)
 
 func New() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "consumer-fulfillments",
-		Short:   `Fulfillments are entities that allow consumers to preview installations.`,
-		Long:    `Fulfillments are entities that allow consumers to preview installations.`,
+		Use:   "consumer-fulfillments",
+		Short: `*Public Preview* Fulfillments are entities that allow consumers to preview installations.`,
+		Long: `This command is in Public Preview and may change without notice.
+
+Fulfillments are entities that allow consumers to preview installations.`,
 		GroupID: "marketplace",
 		RunE:    root.ReportUnknownSubcommand,
 	}
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	// Add methods
 	cmd.AddCommand(newGet())
@@ -48,17 +56,31 @@ func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var getReq marketplace.GetListingContentMetadataRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var getLimit int
 
 	cmd.Flags().IntVar(&getReq.PageSize, "page-size", getReq.PageSize, ``)
-	cmd.Flags().StringVar(&getReq.PageToken, "page-token", getReq.PageToken, ``)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&getLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&getReq.PageToken, "page-token", getReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "get LISTING_ID"
-	cmd.Short = `Get listing content metadata.`
-	cmd.Long = `Get listing content metadata.
+	cmd.Short = `*Public Preview* Get listing content metadata.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+Get listing content metadata.
 
   Get a high level preview of the metadata of listing installable content.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -73,6 +95,13 @@ func newGet() *cobra.Command {
 		getReq.ListingId = args[0]
 
 		response := w.ConsumerFulfillments.Get(ctx, getReq)
+		if getLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", getLimit)
+		}
+		if getLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, getLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -101,13 +130,25 @@ func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listReq marketplace.ListFulfillmentsRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listLimit int
 
 	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, ``)
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, ``)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list LISTING_ID"
-	cmd.Short = `List all listing fulfillments.`
-	cmd.Long = `List all listing fulfillments.
+	cmd.Short = `*Public Preview* List all listing fulfillments.`
+	cmd.Long = `This command is in Public Preview and may change without notice.
+
+List all listing fulfillments.
 
   Get all listings fulfillments associated with a listing. A _fulfillment_ is a
   potential installation. Standard installations contain metadata about the
@@ -116,6 +157,8 @@ func newList() *cobra.Command {
   repo, as well as the Delta Sharing recipient type.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Public Preview"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -130,6 +173,13 @@ func newList() *cobra.Command {
 		listReq.ListingId = args[0]
 
 		response := w.ConsumerFulfillments.List(ctx, listReq)
+		if listLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
+		}
+		if listLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 

@@ -7,6 +7,7 @@ import (
 	"io/fs"
 	"maps"
 	"slices"
+	"strings"
 
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
@@ -176,7 +177,7 @@ func (c *config) skipPrompt(p jsonschema.Property, r *renderer) (bool, error) {
 	// Validate the partial config against skip_prompt_if schema
 	validationErr := p.Schema.SkipPromptIf.ValidateInstance(c.values)
 	if validationErr != nil {
-		return false, nil
+		return false, nil //nolint:nilerr // validation failure means skip condition not met
 	}
 
 	if p.Schema.Default == nil {
@@ -213,10 +214,24 @@ func (c *config) promptOnce(property *jsonschema.Schema, name, defaultVal, descr
 		if err != nil {
 			return err
 		}
-		userInput, err = cmdio.AskSelect(c.ctx, description, options)
+		// RunSelect's Label is single-line, so render any preceding lines
+		// of the description separately.
+		label := description
+		if i := strings.LastIndex(description, "\n"); i != -1 {
+			cmdio.LogString(c.ctx, description[:i])
+			label = description[i+1:]
+		}
+		idx, err := cmdio.RunSelect(c.ctx, cmdio.SelectOptions{
+			Label:         label,
+			Items:         options,
+			HideHelp:      true,
+			LabelTemplate: "{{.}}: ",
+			Selected:      label + ": {{.}}",
+		})
 		if err != nil {
 			return err
 		}
+		userInput = options[idx]
 	} else {
 		var err error
 		userInput, err = cmdio.Ask(c.ctx, description, defaultVal)
@@ -285,7 +300,7 @@ func (c *config) promptForValues(r *renderer) error {
 			if err == nil {
 				break
 			}
-			if !errors.As(err, &retriableError{}) {
+			if _, ok := errors.AsType[retriableError](err); !ok {
 				return err
 			}
 		}

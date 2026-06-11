@@ -91,7 +91,7 @@ func (r *Runner) SendText(text string) {
 	}
 	_, err := r.stdinW.Write([]byte(text + "\n"))
 	if err != nil {
-		panic("Failed to to write to t.stdinW")
+		panic("Failed to write to t.stdinW")
 	}
 }
 

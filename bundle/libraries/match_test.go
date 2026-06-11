@@ -29,7 +29,7 @@ func TestValidateEnvironments(t *testing.T) {
 										Dependencies: []string{
 											"./wheel.whl",
 											"simplejson",
-											"/Workspace/Users/foo@bar.com/artifacts/test.whl",
+											"/Workspace/Users/foo@bar.test/artifacts/test.whl",
 										},
 									},
 								},
@@ -61,7 +61,7 @@ func TestValidateEnvironmentsNoFile(t *testing.T) {
 										Dependencies: []string{
 											"./wheel.whl",
 											"simplejson",
-											"/Workspace/Users/foo@bar.com/artifacts/test.whl",
+											"/Workspace/Users/foo@bar.test/artifacts/test.whl",
 										},
 									},
 								},
@@ -96,7 +96,7 @@ func TestValidateTaskLibraries(t *testing.T) {
 											Whl: "./wheel.whl",
 										},
 										{
-											Whl: "/Workspace/Users/foo@bar.com/artifacts/test.whl",
+											Whl: "/Workspace/Users/foo@bar.test/artifacts/test.whl",
 										},
 									},
 								},
@@ -129,7 +129,7 @@ func TestValidateTaskLibrariesNoFile(t *testing.T) {
 											Whl: "./wheel.whl",
 										},
 										{
-											Whl: "/Workspace/Users/foo@bar.com/artifacts/test.whl",
+											Whl: "/Workspace/Users/foo@bar.test/artifacts/test.whl",
 										},
 									},
 								},

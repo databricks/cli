@@ -1,0 +1,14 @@
+json.plan_version = 2;
+json.cli_version = "[DEV_VERSION]";
+json.plan.resources.secret_scopes.my_scope.action = "create";
+json.plan.resources.secret_scopes.my_scope.new_state.value.scope = "test-scope-[UNIQUE_NAME]-1";
+json.plan.resources.secret_scopes.my_scope.new_state.value.scope_backend_type = "DATABRICKS";
+json.plan.resources.secret_scopes.my_scope.permissions.depends_on[0].node = "resources.secret_scopes.my_scope";
+json.plan.resources.secret_scopes.my_scope.permissions.depends_on[0].label = "${resources.secret_scopes.my_scope.name}";
+json.plan.resources.secret_scopes.my_scope.permissions.action = "create";
+json.plan.resources.secret_scopes.my_scope.permissions.new_state.value.scope_name = "";
+json.plan.resources.secret_scopes.my_scope.permissions.new_state.value.acls[0].permission = "MANAGE";
+json.plan.resources.secret_scopes.my_scope.permissions.new_state.value.acls[0].principal = "[USERNAME]";
+json.plan.resources.secret_scopes.my_scope.permissions.new_state.value.acls[1].permission = "WRITE";
+json.plan.resources.secret_scopes.my_scope.permissions.new_state.value.acls[1].principal = "deco-test-user@databricks.com";
+json.plan.resources.secret_scopes.my_scope.permissions.new_state.vars.scope_name = "${resources.secret_scopes.my_scope.name}";

@@ -1,0 +1,22 @@
+bundle:
+  name: drift-vs-index-orphaned-endpoint-$UNIQUE_NAME
+
+sync:
+  paths: []
+
+resources:
+  vector_search_endpoints:
+    vs_endpoint:
+      name: vs-endpoint-$UNIQUE_NAME
+      endpoint_type: STANDARD
+  vector_search_indexes:
+    my_index:
+      name: main.default.vs_index_$UNIQUE_NAME
+      endpoint_name: ${resources.vector_search_endpoints.vs_endpoint.name}
+      primary_key: id
+      index_type: DIRECT_ACCESS
+      direct_access_index_spec:
+        schema_json: '{"id":"integer","vector":"array<float>"}'
+        embedding_vector_columns:
+          - name: vector
+            embedding_dimension: 768

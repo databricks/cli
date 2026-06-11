@@ -117,7 +117,7 @@ func main() {
 }
 
 func downloadConfig(ctx context.Context) (string, error) {
-	req, err := http.NewRequestWithContext(ctx, "GET", repoConfigURL, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, repoConfigURL, nil)
 	if err != nil {
 		return "", err
 	}
@@ -127,7 +127,7 @@ func downloadConfig(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("HTTP %d: %s", resp.StatusCode, resp.Status)
@@ -155,7 +155,7 @@ func checkFailures(config *Config, jsonFile string, originalExitCode int) int {
 		fmt.Printf("testrunner: failed to open JSON file %s: %v\n", jsonFile, err)
 		return originalExitCode
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	scanner := bufio.NewScanner(file)
 	unexpectedFailures := map[string]bool{}
@@ -202,10 +202,9 @@ func checkFailures(config *Config, jsonFile string, originalExitCode int) int {
 
 	if len(unexpectedFailures) == 0 {
 		return 0
-	} else {
-		fmt.Printf("testrunner: %d test failures were not expected\n", len(unexpectedFailures))
-		return originalExitCode
 	}
+	fmt.Printf("testrunner: %d test failures were not expected\n", len(unexpectedFailures))
+	return originalExitCode
 }
 
 // CI Config Format
@@ -330,9 +329,8 @@ func (r ConfigRule) matches(packageName, testName string) bool {
 	// Check test pattern
 	if r.TestPrefix {
 		return matchesPathPrefix(testName, r.TestPattern) || matchesPathPrefix(r.TestPattern, testName)
-	} else {
-		return testName == r.TestPattern || matchesPathPrefix(r.TestPattern, testName)
 	}
+	return testName == r.TestPattern || matchesPathPrefix(r.TestPattern, testName)
 }
 
 // matchesPathPrefix returns true if s matches pattern or starts with pattern + "/"
