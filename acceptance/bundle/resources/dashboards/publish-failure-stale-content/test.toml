@@ -1,0 +1,10 @@
+Cloud = true
+Local = true
+RecordRequests = true
+
+[EnvMatrix]
+DATABRICKS_BUNDLE_ENGINE = ["direct"]
+
+[[Repls]]
+Old = '\?[ow]=\d+'
+New = "?[WSPARAM]=[NUMID]"
