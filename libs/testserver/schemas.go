@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"dario.cat/mergo"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
@@ -29,6 +30,8 @@ func (s *FakeWorkspace) SchemasCreate(req Request) Response {
 		}
 	}
 
+	// UC normalizes schema names to lowercase.
+	schema.Name = strings.ToLower(schema.Name)
 	schema.FullName = schema.CatalogName + "." + schema.Name
 	schema.ForceSendFields = []string{"BrowseOnly"}
 	schema.CatalogType = "MANAGED_CATALOG"

@@ -311,12 +311,24 @@ resources:
         reason: immutable
       - field: storage_root
         reason: immutable
+<<<<<<< janniklasrose/schema-backend-defaults
     backend_defaults:
       # UC auto-populates these system-managed keys after create.
       # Without this, every subsequent plan produces an Update whose payload is empty,
       # and UC rejects it with "UpdateSchema Nothing to update".
       - field: properties['unity.catalog.managed.delta.defaults.delta.enableRowTracking']
       - field: properties['unity.catalog.managed.iceberg.defaults.delta.feature.catalogManaged']
+=======
+    normalize_case:
+      # UC lowercases identifier names; remote returns "myschema" for config "MySchema".
+      - field: name
+        reason: uc_case
+      - field: catalog_name
+        reason: uc_case
+    normalize_slash:
+      - field: storage_root
+        reason: uc_strips_trailing_slash
+>>>>>>> main
 
   external_locations:
     recreate_on_changes:
@@ -347,6 +359,20 @@ resources:
     update_id_on_changes:
       - field: name
         reason: id_changes
+    normalize_case:
+      # UC lowercases identifier names. name is in update_id_on_changes, so a
+      # case-only diff would otherwise trigger a spurious rename (DoUpdateWithID).
+      - field: catalog_name
+        reason: uc_case
+      - field: schema_name
+        reason: uc_case
+      - field: name
+        reason: uc_case
+    normalize_slash:
+      # UC strips trailing slashes on create; matches the Terraform provider's suppressLocationDiff.
+      # https://github.com/databricks/terraform-provider-databricks/blob/v1.65.1/catalog/resource_volume.go#L25
+      - field: storage_location
+        reason: uc_strips_trailing_slash
     backend_defaults:
       # storage_location is Computed; backend generates it for managed volumes.
       - field: storage_location
@@ -364,6 +390,13 @@ resources:
         reason: input_only
       - field: dataset_schema
         reason: input_only
+
+  genie_spaces:
+    ignore_remote_changes:
+      # serialized_space locally (structured YAML) and remotely (JSON string) will differ
+      # textually, so we cannot meaningfully compare them for drift.
+      - field: serialized_space
+        reason: etag_based
 
   apps:
     recreate_on_changes:

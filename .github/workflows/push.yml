@@ -318,6 +318,58 @@ jobs:
         run: |
           go tool -modfile=tools/task/go.mod task test-pipelines
 
+  test-sandbox:
+    needs:
+      - cleanups
+      - testmask
+
+    # Only run if the target is in the list of targets from testmask
+    if: ${{ contains(fromJSON(needs.testmask.outputs.targets), 'test-sandbox') }}
+    name: "task test-sandbox (${{matrix.os.name}})"
+    runs-on: ${{ matrix.os.runner }}
+
+    defaults:
+      run:
+        shell: bash
+
+    permissions:
+      id-token: write
+      contents: read
+
+    env:
+      TASK_CONCURRENCY: ${{ matrix.os.name == 'windows' && '1' || '' }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - name: linux
+            runner:
+              group: databricks-protected-runner-group-large
+              labels: linux-ubuntu-latest-large
+
+          - name: windows
+            runner:
+              group: databricks-protected-runner-group-large
+              labels: windows-server-latest-large
+
+          - name: macos
+            runner:
+              labels: macos-latest
+
+    steps:
+      - name: Checkout repository and submodules
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup build environment
+        uses: ./.github/actions/setup-build-environment
+        with:
+          cache-key: test-sandbox
+
+      - name: Run tests
+        run: |
+          go tool -modfile=tools/task/go.mod task test-sandbox
+
   # This job groups the result of all the above test jobs.
   # It is a required check, so it blocks auto-merge and the merge queue.
   #
@@ -333,6 +385,7 @@ jobs:
       - test-exp-aitools
       - test-exp-ssh
       - test-pipelines
+      - test-sandbox
 
     if: ${{ always() }}
     name: test-result
@@ -346,62 +399,46 @@ jobs:
           fi
           echo "All tests passed ✅"
 
-  validate-generated-is-up-to-date:
+  validate-generated:
     needs: cleanups
     runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-
-      - name: Setup Go
-        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
-        with:
-          go-version-file: go.mod
-          # Use different schema from regular job, to avoid overwriting the same key
-          cache-dependency-path: |
-            go.sum
-            bundle/internal/schema/*.*
-
-      - name: Verify that the schema is up to date
-        run: |
-          if ! ( go tool -modfile=tools/task/go.mod task --force generate-schema && git diff --exit-code ); then
-            echo "The schema is not up to date. Please run './task generate-schema' and commit the changes."
-            exit 1
-          fi
-
-      - name: Verify that the generated enum and required fields are up to date
-        run: |
-          if ! ( go tool -modfile=tools/task/go.mod task --force generate-validation && git diff --exit-code ); then
-            echo "The generated enum and required fields are not up to date. Please run './task generate-validation' and commit the changes."
-            exit 1
-          fi
-
-  validate-python-codegen:
-    needs: cleanups
-    runs-on: ubuntu-latest
+    # Required by setup-jfrog (GOPROXY exchange) inside setup-build-environment.
+    permissions:
+      id-token: write
+      contents: read
 
     steps:
-      - name: Checkout
+      - name: Checkout repository and submodules
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - name: Setup Go
-        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
+      # Dedicated cache-key so this job's Go cache doesn't evict the primary
+      # test caches from the 10 GB GHA quota.
+      - name: Setup build environment
+        uses: ./.github/actions/setup-build-environment
         with:
-          go-version-file: go.mod
+          cache-key: validate-generated
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
-        with:
-          version: "0.6.5"
+      # generate-cligen formats the regenerated stubs with goimports, which adds
+      # imports it can only resolve from the module cache (e.g. cobra in
+      # cmd/workspace/cmd.go). Seed it first: on a cold cache goimports silently
+      # omits the import and the regenerated tree fails to build.
+      - name: Download Go modules
+        run: go mod download
 
-      - name: Verify that python/codegen is up to date
-        run: |-
-          go tool -modfile=tools/task/go.mod task pydabs-codegen
-
-          if ! ( git diff --exit-code ); then
-            echo "Generated Python code is not up-to-date. Please run './task pydabs-codegen' and commit the changes."
-
+      - name: Verify that generated files are up to date
+        run: |
+          go tool -modfile=tools/task/go.mod task --force generate-check
+          # pydabs-codegen's `uv run` rewrites uv.lock with the JFrog pypi proxy
+          # URLs that setup-jfrog configures (and drops some size fields), whereas
+          # the committed locks use pypi.org. That churn is environment noise, not
+          # codegen drift, so discard it before diffing.
+          git checkout -- python/uv.lock python/codegen/uv.lock
+          # Register untracked files with intent-to-add so `git diff` reports new
+          # files (e.g. a newly generated command) too, not just modifications.
+          git add --intent-to-add .
+          if ! git diff --exit-code; then
+            echo "Generated files are not up to date. Please run './task generate-check' and commit the changes."
             exit 1
           fi
 

@@ -1,0 +1,14 @@
+{
+  "default_parent_path": {
+    "title": "default-parent-path",
+    "parent_path": "/Workspace/foo/bar"
+  },
+  "empty_string": {
+    "title": "empty-string",
+    "parent_path": "/Workspace"
+  },
+  "non_empty_string": {
+    "title": "non-empty-string",
+    "parent_path": "/Workspace/already-set"
+  }
+}
