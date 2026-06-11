@@ -1,15 +1,15 @@
 bundle:
-  name: test-bundle
+  name: test-bundle-$UNIQUE_NAME
 
 resources:
   schemas:
     schema1:
       catalog_name: main
-      name: MySCHEMA
+      name: MySCHEMA_$UNIQUE_NAME
 
   volumes:
     vol1:
       catalog_name: main
-      schema_name: MySCHEMA
+      schema_name: MySCHEMA_$UNIQUE_NAME
       name: MyVOLUME
       volume_type: MANAGED
