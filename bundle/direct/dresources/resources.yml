@@ -311,6 +311,15 @@ resources:
         reason: immutable
       - field: storage_root
         reason: immutable
+    normalize_case:
+      # UC lowercases identifier names; remote returns "myschema" for config "MySchema".
+      - field: name
+        reason: uc_case
+      - field: catalog_name
+        reason: uc_case
+    normalize_slash:
+      - field: storage_root
+        reason: uc_strips_trailing_slash
 
   external_locations:
     recreate_on_changes:
@@ -341,6 +350,20 @@ resources:
     update_id_on_changes:
       - field: name
         reason: id_changes
+    normalize_case:
+      # UC lowercases identifier names. name is in update_id_on_changes, so a
+      # case-only diff would otherwise trigger a spurious rename (DoUpdateWithID).
+      - field: catalog_name
+        reason: uc_case
+      - field: schema_name
+        reason: uc_case
+      - field: name
+        reason: uc_case
+    normalize_slash:
+      # UC strips trailing slashes on create; matches the Terraform provider's suppressLocationDiff.
+      # https://github.com/databricks/terraform-provider-databricks/blob/v1.65.1/catalog/resource_volume.go#L25
+      - field: storage_location
+        reason: uc_strips_trailing_slash
     backend_defaults:
       # storage_location is Computed; backend generates it for managed volumes.
       - field: storage_location
