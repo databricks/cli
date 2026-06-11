@@ -237,7 +237,6 @@ tool (
 	github.com/golangci/golangci-lint/v2/cmd/golangci-lint
 	github.com/google/yamlfmt/cmd/yamlfmt
 	golang.org/x/tools/cmd/deadcode
-	golang.org/x/tools/cmd/goimports
 	golang.org/x/vuln/cmd/govulncheck
 	gotest.tools/gotestsum
 )
