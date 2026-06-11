@@ -242,6 +242,9 @@ def main():
     parser.add_argument("--output", help="Show output for failing tests", action="store_true")
     parser.add_argument("--markdown", help="Output in GitHub-flavored markdown format", action="store_true")
     parser.add_argument(
+        "--notrim", help=f"Do not trim markdown report to {MAX_MARKDOWN_SIZE} bytes", action="store_true"
+    )
+    parser.add_argument(
         "--omit-repl",
         help="Omit lines starting with 'REPL' and containing 'Available replacements:'",
         action="store_true",
@@ -289,7 +292,7 @@ def main():
     if args.omit_repl:
         cmd.append("--omit-repl")
     cmd.append(f"{target_dir}")
-    if args.markdown:
+    if args.markdown and not args.notrim:
         print(trim_tables(run_text(cmd, print_command=True)))
     else:
         run(cmd, shell=True)
