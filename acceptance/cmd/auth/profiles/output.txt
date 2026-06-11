@@ -4,14 +4,14 @@
   "profiles": [
     {
       "name": "workspace-profile",
-      "host": "https://test.cloud.databricks.com",
+      "host": "https://workspace.cloud.databricks.test",
       "cloud": "aws",
       "auth_type": "",
       "valid": false
     },
     {
       "name": "account-profile",
-      "host": "https://accounts.cloud.databricks.com",
+      "host": "https://accounts.cloud.databricks.test",
       "account_id": "test-account-123",
       "cloud": "aws",
       "auth_type": "",
@@ -19,7 +19,7 @@
     },
     {
       "name": "unified-profile",
-      "host": "https://unified.databricks.com",
+      "host": "https://unified.databricks.test",
       "account_id": "unified-account-456",
       "workspace_id": "[NUMID]",
       "cloud": "aws",
