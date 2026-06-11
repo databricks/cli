@@ -76,9 +76,5 @@ func renderToFile(data any, t *template.Template, templateName, fileName string)
 	if err := os.MkdirAll(filepath.Dir(fileName), 0o755); err != nil {
 		return err
 	}
-	// 0644 intentionally deviates from genkit's 0755: generated .go files are
-	// not executables. os.WriteFile doesn't chmod existing files, so in-place
-	// regeneration leaves the committed (mostly 0755) modes untouched; only
-	// newly added files get the new mode.
 	return os.WriteFile(fileName, []byte(sb.String()), 0o644)
 }
