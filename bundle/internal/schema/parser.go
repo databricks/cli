@@ -10,13 +10,14 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle/internal/annotation"
+	"github.com/databricks/cli/internal/clijson"
 	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/dyn/yamlloader"
 	"github.com/databricks/cli/libs/jsonschema"
 )
 
 type annotationParser struct {
-	ref map[string]cliJSONSchema
+	ref map[string]*clijson.SchemaJSON
 }
 
 const RootTypeKey = "_"
@@ -35,7 +36,7 @@ func deprecationMessageFor(deprecated bool) string {
 	return ""
 }
 
-func newParser(schemas map[string]cliJSONSchema) *annotationParser {
+func newParser(schemas map[string]*clijson.SchemaJSON) *annotationParser {
 	return &annotationParser{ref: schemas}
 }
 
@@ -45,7 +46,7 @@ func newParser(schemas map[string]cliJSONSchema) *annotationParser {
 //
 // If the above conditions are met, the function returns the schema
 // corresponding to the Databricks Go SDK type from the spec.
-func (p *annotationParser) findRef(typ reflect.Type) (cliJSONSchema, bool) {
+func (p *annotationParser) findRef(typ reflect.Type) (*clijson.SchemaJSON, bool) {
 	typs := []reflect.Type{typ}
 
 	// Check for embedded Databricks Go SDK types.
@@ -83,7 +84,7 @@ func (p *annotationParser) findRef(typ reflect.Type) (cliJSONSchema, bool) {
 		return p.ref[k], true
 	}
 
-	return cliJSONSchema{}, false
+	return nil, false
 }
 
 // previewFromLaunchStage maps a launch stage to the preview marker the bundle
@@ -96,6 +97,19 @@ func previewFromLaunchStage(launchStage string) string {
 		return "PRIVATE"
 	}
 	return ""
+}
+
+// enumValues converts the contract's []string enum into the []any the
+// annotation descriptor carries (its Enum field predates the typed contract).
+func enumValues(vals []string) []any {
+	if len(vals) == 0 {
+		return nil
+	}
+	out := make([]any, len(vals))
+	for i, v := range vals {
+		out[i] = v
+	}
+	return out
 }
 
 func isOutputOnly(behaviors []string) *bool {
@@ -137,19 +151,18 @@ func (p *annotationParser) extractAnnotations(typ reflect.Type, outputPath, over
 			basePath := getPath(typ)
 			pkg := map[string]annotation.Descriptor{}
 			annotations[basePath] = pkg
-			preview := previewFromLaunchStage(ref.LaunchStage)
-			if ref.Description != "" || ref.Enum != nil || ref.Deprecated || preview != "" {
+			// The contract carries no schema-level launch stage, so a type is
+			// never itself marked private-preview — only its fields are (below).
+			if ref.Description != "" || ref.Enum != nil {
 				pkg[RootTypeKey] = annotation.Descriptor{
-					Description:        ref.Description,
-					Enum:               ref.Enum,
-					DeprecationMessage: deprecationMessageFor(ref.Deprecated),
-					Preview:            preview,
+					Description: ref.Description,
+					Enum:        enumValues(ref.Enum),
 				}
 			}
 
 			for k := range s.Properties {
 				if refProp, ok := ref.Fields[k]; ok {
-					preview = previewFromLaunchStage(refProp.LaunchStage)
+					preview := previewFromLaunchStage(refProp.LaunchStage)
 
 					description := refProp.Description
 
@@ -164,7 +177,6 @@ func (p *annotationParser) extractAnnotations(typ reflect.Type, outputPath, over
 
 					pkg[k] = annotation.Descriptor{
 						Description:        description,
-						Enum:               refProp.Enum,
 						Preview:            preview,
 						DeprecationMessage: deprecationMessageFor(refProp.Deprecated),
 						OutputOnly:         isOutputOnly(refProp.Behaviors),
