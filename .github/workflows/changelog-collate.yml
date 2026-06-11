@@ -1,0 +1,52 @@
+name: changelog-collate
+
+# Release-prep step: fold all .nextchanges/ fragments into NEXT_CHANGELOG.md and
+# open a single PR. Run this (and merge the PR) before dispatching the `tagging`
+# workflow so the release picks up every entry. Between releases, fragments
+# accumulate under .nextchanges/ without ever touching NEXT_CHANGELOG.md, so
+# contributor PRs don't conflict.
+on:
+  workflow_dispatch:
+
+# Ensure two dispatches don't race on the PR branch.
+concurrency:
+  group: changelog-collate
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  collate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          version: "0.8.9"
+
+      - name: Collate fragments into NEXT_CHANGELOG.md
+        run: uv run --script tools/collate_changelog.py
+
+      - name: Expand PR references to links
+        run: uv run --script tools/update_github_links.py NEXT_CHANGELOG.md
+
+      - name: Determine release version
+        id: version
+        run: echo "version=$(grep -m1 '## Release v' NEXT_CHANGELOG.md | sed 's/^## Release //')" >> "$GITHUB_OUTPUT"
+
+      - name: Create pull request
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
+        with:
+          # A fixed branch means a re-run updates the existing open PR in place
+          # rather than opening a new one.
+          branch: auto/collate-changelog
+          commit-message: "Collate changelog fragments for ${{ steps.version.outputs.version }}"
+          title: "Collate changelog fragments for ${{ steps.version.outputs.version }}"
+          body: |-
+            Folds every `.nextchanges/` fragment into the matching section of `NEXT_CHANGELOG.md` and removes the fragment files.
+
+            Merge this before dispatching the `tagging` workflow so the release picks up every entry. No fragments means no diff and no PR.
