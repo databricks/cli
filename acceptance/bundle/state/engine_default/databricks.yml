@@ -1,0 +1,8 @@
+bundle:
+  name: test-engine-default
+
+resources:
+  schemas:
+    foo:
+      catalog_name: bar
+      name: foo

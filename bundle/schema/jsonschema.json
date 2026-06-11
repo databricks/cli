@@ -760,6 +760,53 @@
                   }
                 ]
               },
+              "resources.GenieSpace": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "description": {
+                        "description": "Description of the Genie space shown alongside the title in the Databricks UI.",
+                        "$ref": "#/$defs/string"
+                      },
+                      "etag": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "file_path": {
+                        "description": "Local path to a `.geniespace.json` file holding the serialized Genie space definition. The contents are inlined into `serialized_space` at deploy time. Mutually exclusive with an inline `serialized_space`.",
+                        "$ref": "#/$defs/string"
+                      },
+                      "lifecycle": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
+                      },
+                      "parent_path": {
+                        "description": "Workspace folder under which to create the Genie space. Immutable: changing this field recreates the resource.",
+                        "$ref": "#/$defs/string"
+                      },
+                      "permissions": {
+                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission"
+                      },
+                      "serialized_space": {
+                        "description": "Serialized Genie space body. May be provided inline as a JSON string (or YAML that will be marshalled to JSON) or referenced via `file_path`. To round-trip an existing space into a bundle, use `databricks bundle generate genie-space`.",
+                        "$ref": "#/$defs/interface"
+                      },
+                      "title": {
+                        "description": "Title of the Genie space shown in the Databricks UI.",
+                        "$ref": "#/$defs/string"
+                      },
+                      "warehouse_id": {
+                        "description": "ID of the SQL warehouse used to run queries for this Genie space.",
+                        "$ref": "#/$defs/string"
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
               "resources.Job": {
                 "oneOf": [
                   {
@@ -2654,6 +2701,9 @@
                     },
                     "external_locations": {
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.ExternalLocation"
+                    },
+                    "genie_spaces": {
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.GenieSpace"
                     },
                     "jobs": {
                       "description": "The job definitions for the bundle, where each key is the name of the job.",
@@ -12333,6 +12383,20 @@
                       "type": "object",
                       "additionalProperties": {
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.ExternalLocation"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
+                "resources.GenieSpace": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.GenieSpace"
                       }
                     },
                     {
