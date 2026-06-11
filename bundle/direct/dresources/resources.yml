@@ -311,14 +311,6 @@ resources:
         reason: immutable
       - field: storage_root
         reason: immutable
-<<<<<<< janniklasrose/schema-backend-defaults
-    backend_defaults:
-      # UC auto-populates these system-managed keys after create.
-      # Without this, every subsequent plan produces an Update whose payload is empty,
-      # and UC rejects it with "UpdateSchema Nothing to update".
-      - field: properties['unity.catalog.managed.delta.defaults.delta.enableRowTracking']
-      - field: properties['unity.catalog.managed.iceberg.defaults.delta.feature.catalogManaged']
-=======
     normalize_case:
       # UC lowercases identifier names; remote returns "myschema" for config "MySchema".
       - field: name
@@ -328,7 +320,12 @@ resources:
     normalize_slash:
       - field: storage_root
         reason: uc_strips_trailing_slash
->>>>>>> main
+    backend_defaults:
+      # UC auto-populates these system-managed keys after create.
+      # Without this, every subsequent plan produces an Update whose payload is empty,
+      # and UC rejects it with "UpdateSchema Nothing to update".
+      - field: properties['unity.catalog.managed.delta.defaults.delta.enableRowTracking']
+      - field: properties['unity.catalog.managed.iceberg.defaults.delta.feature.catalogManaged']
 
   external_locations:
     recreate_on_changes:
