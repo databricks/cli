@@ -1,14 +1,19 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"slices"
+)
 
 // This file defines the CLI-side view of the "commands" block of the cli.json
 // spec. The structs mirror, field-for-field, the dot-paths that
 // the cliv0 templates (templates/*.tmpl, copied verbatim from genkit) access.
 //
 // Design rules that keep output byte-for-byte identical to genkit:
-//   - Casings (Kebab/Pascal/Snake/Camel/Constant/Title) are PRE-RESOLVED by the
-//     producer using genkit's own name functions and stored as plain strings.
+//   - Casings (Kebab/Pascal/Snake/Camel/Constant/Title) are derived at render
+//     time from the single stored `name` via the ported genkit name functions
+//     (names.go); only leaf references (PascalRef, FieldRef, NamedIdMapJSON,
+//     LROMethodRef) carry pre-resolved casing strings.
 //   - Comment-derived text (Summary, Comment, CliComment, HasComment) is NOT
 //     stored. It is derived here from the raw Description with the same pure
 //     helpers genkit uses (see comment.go), so it cannot drift.
@@ -292,6 +297,12 @@ type LROMethodRef struct {
 }
 
 // EntityRef backs .LongRunningOperation.ResponseType.IsEmptyResponse.
+//
+// The producer computes IsEmptyResponse as "google.protobuf.Empty OR legacy
+// named-but-fieldless response", while genkit's LRO branch checked only the
+// former. No current LRO response is a legacy empty message (regeneration is
+// byte-identical), but an LRO that gains one would render its empty-response
+// branch where genkit would not.
 type EntityRef struct {
 	IsEmptyResponse bool `json:"is_empty_response,omitempty"`
 }
@@ -300,31 +311,45 @@ type EntityRef struct {
 // index, wires ParentService/Subservices pointers, and restores the pointer
 // identity between each method's RequestBodyField and its AllFields entry (the
 // service.go.tmpl `eq . $method.RequestBodyField` check relies on identity).
-func (c *CommandsBlock) Resolve() {
+// Any unresolved reference is an error: silently dropping a subservice or
+// keeping the decoded duplicate RequestBodyField pointer would render wrong
+// output (missing subcommands, request-body flags generated as plain flags)
+// without failing generation.
+func (c *CommandsBlock) Resolve() error {
 	c.byID = make(map[string]*ServiceJSON, len(c.Services))
 	for _, s := range c.Services {
+		if _, ok := c.byID[s.ID]; ok {
+			return fmt.Errorf("duplicate service id %q", s.ID)
+		}
 		c.byID[s.ID] = s
 	}
 	for _, s := range c.Services {
 		if s.ParentServiceID != "" {
 			s.ParentService = c.byID[s.ParentServiceID]
+			if s.ParentService == nil {
+				return fmt.Errorf("service %s: unknown parent service id %q", s.Name, s.ParentServiceID)
+			}
 		}
 		s.Subservices = s.Subservices[:0]
 		for _, id := range s.SubserviceIDs {
-			if sub := c.byID[id]; sub != nil {
-				s.Subservices = append(s.Subservices, sub)
+			sub := c.byID[id]
+			if sub == nil {
+				return fmt.Errorf("service %s: unknown subservice id %q", s.Name, id)
 			}
+			s.Subservices = append(s.Subservices, sub)
 		}
 		for _, m := range s.Methods {
 			if m.RequestBodyField == nil {
 				continue
 			}
-			for _, f := range m.AllFields {
-				if f.Name == m.RequestBodyField.Name {
-					m.RequestBodyField = f
-					break
-				}
+			i := slices.IndexFunc(m.AllFields, func(f *FieldJSON) bool {
+				return f.Name == m.RequestBodyField.Name
+			})
+			if i < 0 {
+				return fmt.Errorf("service %s, method %s: request body field %q has no all_fields entry", s.Name, m.Name, m.RequestBodyField.Name)
 			}
+			m.RequestBodyField = m.AllFields[i]
 		}
 	}
+	return nil
 }

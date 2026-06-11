@@ -1,0 +1,9 @@
+bundle:
+  name: genie space update inplace
+
+resources:
+  genie_spaces:
+    test_genie_space:
+      title: "test genie space"
+      warehouse_id: "my-warehouse-1234"
+      file_path: ./space.geniespace.json

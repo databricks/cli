@@ -95,6 +95,12 @@ func (fc *fileCache) cleanupExpiredFiles(ctx context.Context) {
 	}
 }
 
+// BaseDir returns the root directory of the file cache: DATABRICKS_CACHE_DIR
+// when set, otherwise the user cache dir. It does not create the directory.
+func BaseDir(ctx context.Context) (string, error) {
+	return getCacheBaseDir(ctx)
+}
+
 func getCacheBaseDir(ctx context.Context) (string, error) {
 	// Check if user has configured a custom cache directory
 	if customCacheDir := env.Get(ctx, "DATABRICKS_CACHE_DIR"); customCacheDir != "" {

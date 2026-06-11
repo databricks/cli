@@ -185,6 +185,13 @@ func new{{.PascalName}}() *cobra.Command {
 	{{- $hasFieldMask := $request.HasFieldMask -}}
 	{{range .AllFields -}}
 		{{- if not .Required -}}
+			{{- /* clusters/events special case: cli.json models its pagination as
+			       token-only (page_token), while genkit's cli_v0 modeled it as
+			       offset/limit. To keep the rendered flags byte-identical, page_token
+			       is left to regular (visible) flag generation here and the legacy
+			       offset/limit fields are skipped instead; the "Hidden pagination
+			       flags" block below has the matching special case. Keyed on the
+			       method path, so it stops applying if that path ever changes. */ -}}
 			{{- if and $method.Pagination (or
 				(and (and $method.Pagination.Token $method.Pagination.Token.PollField) (eq .Name $method.Pagination.Token.PollField.Name) (not (eq $method.Path "/api/2.1/clusters/events")))
 				(and $method.Pagination.Offset (eq .Name $method.Pagination.Offset.Name))
@@ -220,6 +227,9 @@ func new{{.PascalName}}() *cobra.Command {
 	cmd.Flags().IntVar(&{{.CamelName}}Limit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
+	{{- /* clusters/events: render the legacy offset field as the hidden flag,
+	       matching cli_v0's offset/limit pagination model; see the note in the
+	       flag-skip block above. */ -}}
 	{{- if eq .Path "/api/2.1/clusters/events" }}
 	{{- $method := . }}
 	{{- range .AllFields }}{{ if eq .Name "offset" }}

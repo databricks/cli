@@ -81,9 +81,22 @@ func TestCliJSONIsInterpretable(t *testing.T) {
 		t.Fatal("commands block is nil")
 	}
 	cmds := doc.Commands
-	cmds.Resolve()
+	if err := cmds.Resolve(); err != nil {
+		t.Fatalf("resolve commands: %v", err)
+	}
 	if len(cmds.Services) == 0 {
 		t.Fatal("commands has no services")
+	}
+
+	// Two services rendering to the same path would silently overwrite each
+	// other's file (Generate writes them in order, last wins).
+	filenames := map[string]string{}
+	for _, s := range cmds.Services {
+		fn := serviceFilename(s)
+		if prev, ok := filenames[fn]; ok {
+			t.Errorf("services %s and %s both render to %s", prev, s.Name, fn)
+		}
+		filenames[fn] = s.Name
 	}
 
 	for _, s := range cmds.Services {

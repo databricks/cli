@@ -47,10 +47,11 @@ tasks:
       - task: test-update
 
   all:
-    desc: Run regeneration (except for genkit), all checks, lints and test updates
+    desc: Run regeneration (except cligen and tf-schema), all checks, lints and test updates
     cmds:
-      # Skips generate-genkit (expensive, requires universe checkout, outputs are
-      # committed). Run `./task generate` explicitly when codegen inputs change.
+      # Skips generate-cligen and generate-tf-schema (outputs are committed;
+      # tf-schema needs provider access). Run `./task generate` explicitly when
+      # codegen inputs change.
       - task: generate-refschema
       - task: generate-schema
       - task: generate-schema-map
@@ -658,6 +659,25 @@ tasks:
           --packages ./acceptance/... \
           -- -timeout=${LOCAL_TIMEOUT:-30m} -run "TestAccept/pipelines"
 
+  test-sandbox:
+    desc: Run sandbox unit and acceptance tests
+    sources:
+      - cmd/sandbox/**
+      - acceptance/cmd/sandbox/**
+    cmds:
+      - |
+        {{.GO_TOOL}} gotestsum \
+          --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
+          --no-summary=skipped \
+          --packages ./cmd/sandbox/... \
+          -- -timeout=${LOCAL_TIMEOUT:-30m}
+      - |
+        {{.GO_TOOL}} gotestsum \
+          --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
+          --no-summary=skipped \
+          --packages ./acceptance/... \
+          -- -timeout=${LOCAL_TIMEOUT:-30m} -run "TestAccept/cmd/sandbox"
+
   # --- Integration tests ---
 
   integration:
@@ -707,11 +727,11 @@ tasks:
   # can be invoked standalone.
 
   generate:
-    desc: Run all generators (genkit, tf-schema, refschema, schema, docs, validation, direct, pydabs)
+    desc: Run all generators (cligen, tf-schema, refschema, schema, docs, validation, direct, pydabs)
     cmds:
       # Runs first: regenerates CLI command stubs from the checked-in
       # .codegen/cli.json (no universe checkout needed). Refreshing cli.json
-      # itself from the OpenAPI spec is the separate `generate-cli-json` task.
+      # itself from the OpenAPI spec is the separate `generate-clijson` task.
       - task: generate-cligen
       # Requires Terraform provider access (set TF_CLI_CONFIG_FILE to a
       # filesystem mirror, or rely on the public registry). Only re-runs when
@@ -727,10 +747,32 @@ tasks:
       - task: generate-direct
       - task: pydabs-codegen
 
+  # Subset of `generate` that reproduces byte-for-byte on a clean checkout. The
+  # validate-generated-is-up-to-date CI job runs this followed by
+  # `git diff --exit-code` to catch committed artifacts drifting from their
+  # generators. It omits the generators in `generate` whose output isn't
+  # reproducible per-PR:
+  #   - generate-tf-schema downloads the Terraform provider, which no CI runner
+  #     sets up; its output only changes when schema/version.go changes.
+  #   - generate-schema-docs stamps x-since-version from `git tag`, so it churns
+  #     after every release; jsonschema_for_docs.json is published separately to
+  #     the docgen branch by .github/workflows/update-schema-docs.yml.
+  # Keep this list in sync with `generate` when adding or removing generators.
+  generate-check:
+    desc: Run the reproducible generators (CI drift subset of `generate`)
+    cmds:
+      - task: generate-cligen
+      - task: generate-refschema
+      - task: generate-schema
+      - task: generate-validation
+      - task: generate-docs
+      - task: generate-direct
+      - task: pydabs-codegen
+
   # Regenerates the CLI command stubs (cmd/workspace/**, cmd/account/**) and
   # .gitattributes from the checked-in .codegen/cli.json. No universe checkout,
   # no spec download, no network: cli.json is the self-describing spec
-  # produced upstream by `generate-cli-json`. internal/cligen renders
+  # produced upstream by `generate-clijson`. internal/cligen renders
   # the same templates genkit's cli_v0 generator uses, then formats with
   # goimports + gofmt. The final `ws` strips trailing whitespace (e.g. the
   # comment-banner blank lines) so the result matches byte-for-byte, exactly as
@@ -758,22 +800,34 @@ tasks:
   # consumes the committed cli.json. SDK version bumps (go.mod/go.sum) are a
   # manual `go get` step beforehand; TestConsistentDatabricksSdkVersion asserts
   # the two stay in sync.
-  generate-cli-json:
-    desc: Produce .codegen/cli.json from the OpenAPI spec via genkit (requires universe repo)
-    sources:
-      - .codegen/_openapi_sha
-      - go.mod
-      - go.sum
-    generates:
-      - .codegen/cli.json
+  #
+  # No `sources:`/`generates:`: the producer is built from the universe
+  # checkout's HEAD, which no source fingerprint can capture, so a checksum
+  # cache would report "up to date" after pulling a newer producer.
+  generate-clijson:
+    desc: Produce .codegen/cli.json from the OpenAPI spec via genkit (requires universe repo with the cli_v1 producer)
     vars:
       UNIVERSE_DIR:
         sh: echo "${UNIVERSE_DIR:-$HOME/universe}"
     cmds:
-      - echo "Building genkit..."
+      # Building from a dirty universe tree would produce a cli.json that no
+      # universe commit can reproduce. Set UNIVERSE_ALLOW_DIRTY=1 to build from
+      # uncommitted producer changes deliberately (e.g. while iterating on the
+      # producer itself).
+      - |
+        if [ -z "$UNIVERSE_ALLOW_DIRTY" ]; then
+          if ! git -C {{.UNIVERSE_DIR}} diff --quiet || ! git -C {{.UNIVERSE_DIR}} diff --cached --quiet; then
+            echo "Error: universe repo at {{.UNIVERSE_DIR}} has uncommitted changes; commit or stash them, or set UNIVERSE_ALLOW_DIRTY=1 to build the producer from the dirty tree"
+            exit 1
+          fi
+        fi
+      - echo "Building genkit at universe HEAD $(git -C {{.UNIVERSE_DIR}} rev-parse --short HEAD)..."
       - cd {{.UNIVERSE_DIR}} && ./tools/bazel build //openapi/genkit
       - echo "Generating CLI code..."
       - '{{.UNIVERSE_DIR}}/bazel-bin/openapi/genkit/genkit_/genkit update-sdk --dir {{.ROOT_DIR}}'
+      # genkit also writes .gitattributes, but that file is owned by
+      # generate-cligen (which derives it from .gitattributes.manual plus the
+      # rendered file list), so discard genkit's copy.
       - git checkout -- .gitattributes
       - go test -timeout 240s -run TestConsistentDatabricksSdkVersion github.com/databricks/cli/internal/build
       - rm .github/workflows/next-changelog.yml
@@ -814,6 +868,19 @@ tasks:
   # `task generate` percolates into jsonschema.json, the docs and pydabs.
   generate-annotations:
     desc: Regenerate annotation files from .codegen/cli.json
+    # Dep of generate-schema, generate-schema-docs and generate-docs; `run: once`
+    # plus the fingerprint keep `task generate` from re-running it per parent.
+    run: once
+    sources:
+      - .codegen/cli.json
+      - bundle/internal/schema/**/*.go
+      - bundle/internal/schema/annotations*.yml
+      - go.mod
+      - go.sum
+    generates:
+      - bundle/internal/schema/annotations_openapi.yml
+      - bundle/internal/schema/annotations.yml
+      - bundle/schema/jsonschema.json
     cmds:
       - "DATABRICKS_CLI_JSON=.codegen/cli.json go run ./bundle/internal/schema ./bundle/internal/schema ./bundle/schema/jsonschema.json"
 

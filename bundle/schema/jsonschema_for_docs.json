@@ -791,6 +791,54 @@
                   "url"
                 ]
               },
+              "resources.GenieSpace": {
+                "type": "object",
+                "properties": {
+                  "description": {
+                    "description": "Description of the Genie space shown alongside the title in the Databricks UI.",
+                    "$ref": "#/$defs/string",
+                    "x-since-version": "v1.3.0"
+                  },
+                  "etag": {
+                    "$ref": "#/$defs/string",
+                    "x-since-version": "v1.3.0"
+                  },
+                  "file_path": {
+                    "description": "Local path to a `.geniespace.json` file holding the serialized Genie space definition. The contents are inlined into `serialized_space` at deploy time. Mutually exclusive with an inline `serialized_space`.",
+                    "$ref": "#/$defs/string",
+                    "x-since-version": "v1.3.0"
+                  },
+                  "lifecycle": {
+                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle",
+                    "x-since-version": "v1.3.0"
+                  },
+                  "parent_path": {
+                    "description": "Workspace folder under which to create the Genie space. Immutable: changing this field recreates the resource.",
+                    "$ref": "#/$defs/string",
+                    "x-since-version": "v1.3.0"
+                  },
+                  "permissions": {
+                    "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission",
+                    "x-since-version": "v1.3.0"
+                  },
+                  "serialized_space": {
+                    "description": "Serialized Genie space body. May be provided inline as a JSON string (or YAML that will be marshalled to JSON) or referenced via `file_path`. To round-trip an existing space into a bundle, use `databricks bundle generate genie-space`.",
+                    "$ref": "#/$defs/interface",
+                    "x-since-version": "v1.3.0"
+                  },
+                  "title": {
+                    "description": "Title of the Genie space shown in the Databricks UI.",
+                    "$ref": "#/$defs/string",
+                    "x-since-version": "v1.3.0"
+                  },
+                  "warehouse_id": {
+                    "description": "ID of the SQL warehouse used to run queries for this Genie space.",
+                    "$ref": "#/$defs/string",
+                    "x-since-version": "v1.3.0"
+                  }
+                },
+                "additionalProperties": false
+              },
               "resources.Job": {
                 "type": "object",
                 "properties": {
@@ -2698,6 +2746,10 @@
                 "external_locations": {
                   "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.ExternalLocation",
                   "x-since-version": "v0.289.0"
+                },
+                "genie_spaces": {
+                  "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.GenieSpace",
+                  "x-since-version": "v1.3.0"
                 },
                 "jobs": {
                   "description": "The job definitions for the bundle, where each key is the name of the job.",
@@ -4668,7 +4720,6 @@
               "type": "string",
               "description": "The kind of compute described by this compute specification.\n\nDepending on `kind`, different validations and default values will be applied.\n\nClusters with `kind = CLASSIC_PREVIEW` support the following fields, whereas clusters with no specified `kind` do not.\n* [is_single_node](/api/workspace/clusters/create#is_single_node)\n* [use_ml_runtime](/api/workspace/clusters/create#use_ml_runtime)\n\nBy using the [simple form](https://docs.databricks.com/compute/simple-form.html), your clusters are automatically using `kind = CLASSIC_PREVIEW`.",
               "enum": [
-                "CLASSIC_PREVIEW",
                 "CLASSIC_PREVIEW"
               ]
             },
@@ -11094,6 +11145,12 @@
                   "type": "object",
                   "additionalProperties": {
                     "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.ExternalLocation"
+                  }
+                },
+                "resources.GenieSpace": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.GenieSpace"
                   }
                 },
                 "resources.Job": {

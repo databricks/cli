@@ -10,13 +10,14 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle/internal/annotation"
+	"github.com/databricks/cli/internal/clijson"
 	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/dyn/yamlloader"
 	"github.com/databricks/cli/libs/jsonschema"
 )
 
 type annotationParser struct {
-	ref map[string]cliJSONSchema
+	ref map[string]*clijson.SchemaJSON
 }
 
 const RootTypeKey = "_"
@@ -35,7 +36,7 @@ func deprecationMessageFor(deprecated bool) string {
 	return ""
 }
 
-func newParser(schemas map[string]cliJSONSchema) *annotationParser {
+func newParser(schemas map[string]*clijson.SchemaJSON) *annotationParser {
 	return &annotationParser{ref: schemas}
 }
 
@@ -45,7 +46,7 @@ func newParser(schemas map[string]cliJSONSchema) *annotationParser {
 //
 // If the above conditions are met, the function returns the schema
 // corresponding to the Databricks Go SDK type from the spec.
-func (p *annotationParser) findRef(typ reflect.Type) (cliJSONSchema, bool) {
+func (p *annotationParser) findRef(typ reflect.Type) (*clijson.SchemaJSON, bool) {
 	typs := []reflect.Type{typ}
 
 	// Check for embedded Databricks Go SDK types.
@@ -83,7 +84,7 @@ func (p *annotationParser) findRef(typ reflect.Type) (cliJSONSchema, bool) {
 		return p.ref[k], true
 	}
 
-	return cliJSONSchema{}, false
+	return nil, false
 }
 
 // previewFromLaunchStage maps a launch stage to the preview marker the bundle
@@ -141,6 +142,19 @@ func nonEmptyEnumDescriptions(descriptions map[string]string) map[string]string 
 	return result
 }
 
+// enumValues converts the contract's []string enum into the []any the
+// annotation descriptor carries (its Enum field predates the typed contract).
+func enumValues(vals []string) []any {
+	if len(vals) == 0 {
+		return nil
+	}
+	out := make([]any, len(vals))
+	for i, v := range vals {
+		out[i] = v
+	}
+	return out
+}
+
 func isOutputOnly(behaviors []string) *bool {
 	if !slices.Contains(behaviors, "OUTPUT_ONLY") {
 		return nil
@@ -180,26 +194,24 @@ func (p *annotationParser) extractAnnotations(typ reflect.Type, outputPath, over
 			basePath := getPath(typ)
 			pkg := map[string]annotation.Descriptor{}
 			annotations[basePath] = pkg
-			preview := previewFromLaunchStage(ref.LaunchStage)
-			launchStage := normalizeLaunchStage(ref.LaunchStage)
+			// The contract carries no schema-level launch stage, so a type is
+			// never itself marked private-preview — only its fields are (below).
+			// Enum schemas do carry per-value launch stages and descriptions.
 			enumLaunchStages := notableEnumLaunchStages(ref.EnumLaunchStages)
 			enumDescriptions := nonEmptyEnumDescriptions(ref.EnumDescriptions)
-			if ref.Description != "" || ref.Enum != nil || ref.Deprecated || preview != "" || launchStage != "" || enumLaunchStages != nil || enumDescriptions != nil {
+			if ref.Description != "" || ref.Enum != nil || enumLaunchStages != nil || enumDescriptions != nil {
 				pkg[RootTypeKey] = annotation.Descriptor{
-					Description:        ref.Description,
-					Enum:               ref.Enum,
-					DeprecationMessage: deprecationMessageFor(ref.Deprecated),
-					Preview:            preview,
-					LaunchStage:        launchStage,
-					EnumLaunchStages:   enumLaunchStages,
-					EnumDescriptions:   enumDescriptions,
+					Description:      ref.Description,
+					Enum:             enumValues(ref.Enum),
+					EnumLaunchStages: enumLaunchStages,
+					EnumDescriptions: enumDescriptions,
 				}
 			}
 
 			for k := range s.Properties {
 				if refProp, ok := ref.Fields[k]; ok {
-					preview = previewFromLaunchStage(refProp.LaunchStage)
-					launchStage = normalizeLaunchStage(refProp.LaunchStage)
+					preview := previewFromLaunchStage(refProp.LaunchStage)
+					launchStage := normalizeLaunchStage(refProp.LaunchStage)
 
 					description := refProp.Description
 
@@ -214,7 +226,6 @@ func (p *annotationParser) extractAnnotations(typ reflect.Type, outputPath, over
 
 					pkg[k] = annotation.Descriptor{
 						Description:        description,
-						Enum:               refProp.Enum,
 						Preview:            preview,
 						LaunchStage:        launchStage,
 						DeprecationMessage: deprecationMessageFor(refProp.Deprecated),

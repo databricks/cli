@@ -8,20 +8,24 @@ import (
 // This file ports genkit's pure name-casing functions (codegen/code/named.go)
 // so the CLI can derive kebab/snake/pascal/camel/constant/title casings from a
 // single stored `name`, instead of the producer denormalizing every variant
-// into cli.json. The port must match genkit byte-for-byte; names_test.go
-// asserts that against a cli.json that still carries the stored casings.
+// into cli.json. The port must match genkit byte-for-byte; names_test.go pins
+// samples that were validated against genkit's output before the stored
+// casings were dropped from cli.json.
 
 // title mirrors strings.Title for the ASCII words splitASCII emits: it
-// uppercases each letter that follows a non-letter (or the start). Implemented
-// directly to avoid the deprecated strings.Title and stay lint-clean.
+// uppercases each letter that begins a word. Like strings.Title's isSeparator,
+// digits are not separators, so a letter following a digit stays lowercase
+// ("ai21labs" -> "Ai21labs", matching the SDK's serving.Ai21labsApiKey).
+// Implemented directly to avoid the deprecated strings.Title and stay
+// lint-clean.
 func title(s string) string {
 	out := []rune(s)
-	prevIsLetter := false
+	prevIsSeparator := true
 	for i, r := range out {
-		if !prevIsLetter && unicode.IsLetter(r) {
+		if prevIsSeparator && unicode.IsLetter(r) {
 			out[i] = unicode.ToUpper(r)
 		}
-		prevIsLetter = unicode.IsLetter(r)
+		prevIsSeparator = !unicode.IsLetter(r) && !unicode.IsDigit(r)
 	}
 	return string(out)
 }

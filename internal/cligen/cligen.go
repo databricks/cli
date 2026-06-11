@@ -8,7 +8,6 @@
 package main
 
 import (
-	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -18,6 +17,8 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+
+	"github.com/databricks/cli/internal/clijson"
 )
 
 func main() {
@@ -80,27 +81,20 @@ func format(dir string, files []string) error {
 	return nil
 }
 
-// cliJSON is the subset of the cli.json contract that command generation needs.
-type cliJSON struct {
-	Commands *CommandsBlock `json:"commands"`
-}
-
 // Generate reads the cli.json spec at jsonPath and writes the command stubs
 // under targetDir. It returns the list of files written (relative to targetDir).
 func Generate(jsonPath, targetDir string) ([]string, error) {
-	raw, err := os.ReadFile(jsonPath)
+	doc, err := clijson.Parse(jsonPath)
 	if err != nil {
 		return nil, err
-	}
-	var doc cliJSON
-	if err := json.Unmarshal(raw, &doc); err != nil {
-		return nil, fmt.Errorf("parse %s: %w", jsonPath, err)
 	}
 	if doc.Commands == nil {
 		return nil, fmt.Errorf("%s: missing \"commands\" block", jsonPath)
 	}
-	batch := doc.Commands
-	batch.Resolve()
+	batch := fromContract(doc.Commands)
+	if err := batch.Resolve(); err != nil {
+		return nil, fmt.Errorf("%s: %w", jsonPath, err)
+	}
 
 	var filenames []string
 
