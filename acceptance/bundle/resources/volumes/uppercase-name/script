@@ -1,4 +1,12 @@
 echo "*" > .gitignore
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    $CLI bundle destroy --auto-approve &> LOG.destroy
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
 errcode $CLI bundle deploy &> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt
 print_requests.py //unity-catalog >> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt
 
