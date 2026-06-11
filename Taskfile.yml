@@ -747,6 +747,29 @@ tasks:
       - task: generate-direct
       - task: pydabs-codegen
 
+  # Subset of `generate` that reproduces byte-for-byte on a clean checkout. The
+  # validate-generated-is-up-to-date CI job runs this followed by
+  # `git diff --exit-code` to catch committed artifacts drifting from their
+  # generators. It omits the generators in `generate` whose output isn't
+  # reproducible per-PR:
+  #   - generate-tf-schema downloads the Terraform provider, which no CI runner
+  #     sets up; its output only changes when schema/version.go changes.
+  #   - generate-schema-docs stamps x-since-version from `git tag`, so it churns
+  #     after every release; jsonschema_for_docs.json is published separately to
+  #     the docgen branch by .github/workflows/update-schema-docs.yml.
+  #   - generate-docs stamps the current date (time.Now in bundle/docsgen/main.go),
+  #     so reference.md/resources.md diff on any day they weren't last generated.
+  # Keep this list in sync with `generate` when adding or removing generators.
+  generate-check:
+    desc: Run the reproducible generators (CI drift subset of `generate`)
+    cmds:
+      - task: generate-cligen
+      - task: generate-refschema
+      - task: generate-schema
+      - task: generate-validation
+      - task: generate-direct
+      - task: pydabs-codegen
+
   # Regenerates the CLI command stubs (cmd/workspace/**, cmd/account/**) and
   # .gitattributes from the checked-in .codegen/cli.json. No universe checkout,
   # no spec download, no network: cli.json is the self-describing spec
