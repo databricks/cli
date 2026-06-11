@@ -14,17 +14,15 @@ const (
 	ExtensionScala   string = ".scala"
 	ExtensionSql     string = ".sql"
 	ExtensionJupyter string = ".ipynb"
-	// ExtensionDesigner is the compound suffix for Lakeflow Designer files.
-	// Unlike other notebook types, designer files keep this full suffix when
-	// imported into the workspace.
+	// Designer and flow files keep their full compound suffix on workspace import.
 	ExtensionDesigner string = ".designer.ipynb"
+	ExtensionFlow     string = ".flow.ipynb"
 )
 
 // StripExtension returns the workspace path for a local notebook file.
-// Designer files keep their full ".designer.ipynb" suffix in the workspace;
-// other notebook types lose their extension on import.
+// Designer and flow files keep their compound suffix; other types lose their extension.
 func StripExtension(name string) string {
-	if strings.HasSuffix(name, ExtensionDesigner) {
+	if strings.HasSuffix(name, ExtensionDesigner) || strings.HasSuffix(name, ExtensionFlow) {
 		return name
 	}
 	return strings.TrimSuffix(name, path.Ext(name))

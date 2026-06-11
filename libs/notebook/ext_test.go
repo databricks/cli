@@ -22,6 +22,10 @@ func TestStripExtension(t *testing.T) {
 		{"foo.designer.ipynb", "foo.designer.ipynb"},
 		{"a/b/c.designer.ipynb", "a/b/c.designer.ipynb"},
 
+		// Flow files keep their full ".flow.ipynb" suffix.
+		{"foo.flow.ipynb", "foo.flow.ipynb"},
+		{"a/b/c.flow.ipynb", "a/b/c.flow.ipynb"},
+
 		// Files without a known extension are passed through path.Ext;
 		// the last-segment extension is removed.
 		{"foo", "foo"},

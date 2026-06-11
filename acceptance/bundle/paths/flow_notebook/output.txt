@@ -1,0 +1,10 @@
+[
+  {
+    "task_key": "flow_task",
+    "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/flow_paths/default/files/src/test.flow.ipynb"
+  },
+  {
+    "task_key": "regular_task",
+    "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/flow_paths/default/files/src/regular"
+  }
+]

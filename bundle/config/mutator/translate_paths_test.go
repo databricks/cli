@@ -1240,3 +1240,95 @@ func TestTranslatePathsDesignerNotebookSkipLocalFileValidation(t *testing.T) {
 		"/bundle/src/regular",
 		b.Config.Resources.Jobs["job"].Tasks[1].NotebookTask.NotebookPath)
 }
+
+// TestTranslatePathsFlowNotebook verifies .flow.ipynb suffix is preserved.
+func TestTranslatePathsFlowNotebook(t *testing.T) {
+	dir := t.TempDir()
+	touchDesignerFile(t, filepath.Join(dir, "src", "test.flow.ipynb"))
+	touchNotebookFile(t, filepath.Join(dir, "src", "regular.py"))
+
+	b := &bundle.Bundle{
+		SyncRootPath:   dir,
+		BundleRootPath: dir,
+		SyncRoot:       vfs.MustNew(dir),
+		Config: config.Root{
+			Workspace: config.Workspace{
+				FilePath: "/bundle",
+			},
+			Resources: config.Resources{
+				Jobs: map[string]*resources.Job{
+					"job": {
+						JobSettings: jobs.JobSettings{
+							Tasks: []jobs.Task{
+								{
+									NotebookTask: &jobs.NotebookTask{
+										NotebookPath: "./src/test.flow.ipynb",
+									},
+								},
+								{
+									NotebookTask: &jobs.NotebookTask{
+										NotebookPath: "./src/regular.py",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	bundletest.SetLocation(b, ".", []dyn.Location{{File: filepath.Join(dir, "databricks.yml")}})
+
+	diags := bundle.ApplySeq(t.Context(), b, mutator.NormalizePaths(), mutator.TranslatePaths())
+	require.NoError(t, diags.Error())
+
+	assert.Equal(t, "/bundle/src/test.flow.ipynb", b.Config.Resources.Jobs["job"].Tasks[0].NotebookTask.NotebookPath)
+	assert.Equal(t, "/bundle/src/regular", b.Config.Resources.Jobs["job"].Tasks[1].NotebookTask.NotebookPath)
+}
+
+// TestTranslatePathsFlowNotebookSkipLocalFileValidation verifies .flow.ipynb
+// suffix is preserved when SkipLocalFileValidation is set.
+func TestTranslatePathsFlowNotebookSkipLocalFileValidation(t *testing.T) {
+	dir := t.TempDir()
+
+	b := &bundle.Bundle{
+		SyncRootPath:            dir,
+		BundleRootPath:          dir,
+		SyncRoot:                vfs.MustNew(dir),
+		SkipLocalFileValidation: true,
+		Config: config.Root{
+			Workspace: config.Workspace{
+				FilePath: "/bundle",
+			},
+			Resources: config.Resources{
+				Jobs: map[string]*resources.Job{
+					"job": {
+						JobSettings: jobs.JobSettings{
+							Tasks: []jobs.Task{
+								{
+									NotebookTask: &jobs.NotebookTask{
+										NotebookPath: "./src/test.flow.ipynb",
+									},
+								},
+								{
+									NotebookTask: &jobs.NotebookTask{
+										NotebookPath: "./src/regular.ipynb",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	bundletest.SetLocation(b, ".", []dyn.Location{{File: filepath.Join(dir, "databricks.yml")}})
+
+	diags := bundle.ApplySeq(t.Context(), b, mutator.NormalizePaths(), mutator.TranslatePaths())
+	require.NoError(t, diags.Error())
+
+	assert.Equal(t, "/bundle/src/test.flow.ipynb", b.Config.Resources.Jobs["job"].Tasks[0].NotebookTask.NotebookPath)
+	assert.Equal(t, "/bundle/src/regular", b.Config.Resources.Jobs["job"].Tasks[1].NotebookTask.NotebookPath)
+}
