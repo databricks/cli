@@ -788,7 +788,18 @@ tasks:
       UNIVERSE_DIR:
         sh: echo "${UNIVERSE_DIR:-$HOME/universe}"
     cmds:
-      - echo "Building genkit..."
+      # Building from a dirty universe tree would produce a cli.json that no
+      # universe commit can reproduce. Set UNIVERSE_ALLOW_DIRTY=1 to build from
+      # uncommitted producer changes deliberately (e.g. while iterating on the
+      # producer itself).
+      - |
+        if [ -z "$UNIVERSE_ALLOW_DIRTY" ]; then
+          if ! git -C {{.UNIVERSE_DIR}} diff --quiet || ! git -C {{.UNIVERSE_DIR}} diff --cached --quiet; then
+            echo "Error: universe repo at {{.UNIVERSE_DIR}} has uncommitted changes; commit or stash them, or set UNIVERSE_ALLOW_DIRTY=1 to build the producer from the dirty tree"
+            exit 1
+          fi
+        fi
+      - echo "Building genkit at universe HEAD $(git -C {{.UNIVERSE_DIR}} rev-parse --short HEAD)..."
       - cd {{.UNIVERSE_DIR}} && ./tools/bazel build //openapi/genkit
       - echo "Generating CLI code..."
       - '{{.UNIVERSE_DIR}}/bazel-bin/openapi/genkit/genkit_/genkit update-sdk --dir {{.ROOT_DIR}}'
