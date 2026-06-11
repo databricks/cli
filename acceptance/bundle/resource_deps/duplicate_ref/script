@@ -1,5 +1,5 @@
 trace $CLI bundle validate -o json | jq .resources
-errcode $CLI bundle plan &> out.plan.$DATABRICKS_BUNDLE_ENGINE.txt
-errcode $CLI bundle deploy &> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt
-jq -s '[.[] | select(.path=="/api/2.0/pipelines" and .method=="POST") | .body.name] | sort' out.requests.txt > out.created.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle plan
+trace $CLI bundle deploy
+trace jq -s '[.[] | select(.path=="/api/2.0/pipelines" and .method=="POST") | .body.name] | sort' out.requests.txt
 rm out.requests.txt

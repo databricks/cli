@@ -1,6 +1,0 @@
-Error: cannot plan resources.pipelines.bar: cannot update name with value of "${resources.pipelines.foo.name}": reference not found
-
-Error: planning failed
-
-
-Exit code: 1
