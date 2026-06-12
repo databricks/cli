@@ -1,0 +1,18 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+trace $CLI bundle deploy
+GENIE_SPACE_ID=$($CLI bundle summary --output json | jq -r '.resources.genie_spaces.sales_analytics.id')
+
+# Capture the genie space ID as a replacement.
+echo "$GENIE_SPACE_ID:GENIE_SPACE_ID" >> ACC_REPLS
+
+# Plan after deploy must be drift-free aside from input_only fields.
+# Without normalization the inline serialized_space leaves a map in the
+# config struct while state holds a string, and structdiff reports false
+# drift on every plan.
+trace $CLI bundle plan -o json > out.plan.json

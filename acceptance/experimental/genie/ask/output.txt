@@ -1,0 +1,62 @@
+
+=== ask renders the final answer and a chart
+>>> [CLI] experimental genie ask What are total sales by franchise?
+Alpha leads with 1,250 total sales.
+
+  Total by Franchise
+  ──────────────────
+
+  Alpha ██████████████████████████████████████████████████ 1,250
+   Beta █████████████████████████▌   640
+
+
+=== ask with --include-sql also shows the executed SQL
+>>> [CLI] experimental genie ask What are total sales by franchise? --include-sql
+
+SQL executed (Total by Franchise):
+  SELECT franchise, SUM(total) AS total FROM sales GROUP BY franchise
+Alpha leads with 1,250 total sales.
+
+  Total by Franchise
+  ──────────────────
+
+  Alpha ██████████████████████████████████████████████████ 1,250
+   Beta █████████████████████████▌   640
+
+
+=== ask with --output json emits structured output
+>>> [CLI] experimental genie ask What are total sales by franchise? --output json
+{
+  "status": "completed",
+  "text": "Alpha leads with 1,250 total sales.\n\n![Total by Franchise](#viz_1)",
+  "tool_calls": [
+    {
+      "name": "execute_sql",
+      "sql": "SELECT franchise, SUM(total) AS total FROM sales GROUP BY franchise",
+      "title": "Total by Franchise",
+      "arguments": "{\"sql\":\"SELECT franchise, SUM(total) AS total FROM sales GROUP BY franchise\",\"title\":\"Total by Franchise\"}"
+    }
+  ]
+}
+
+=== ask with --raw dumps raw SSE events
+>>> [CLI] experimental genie ask What are total sales by franchise? --raw
+{"type":"response.output_item.added","output_index":0,"item":{"type":"reasoning","id":"r1","status":"in_progress"}}
+{"type":"response.output_item.added","output_index":1,"item":{"type":"message","id":"t1","role":"assistant","status":"completed","content":[{"type":"output_text","text":"Looking at the sales data...","annotations":[]}],"metadata":{"ui_type":"THOUGHT","source_internal_ids":["m1"]}}}
+{"type":"response.output_item.added","output_index":2,"item":{"type":"function_call","id":"f1","call_id":"c1","name":"execute_sql","arguments":""}}
+{"type":"response.output_item.done","output_index":2,"item":{"type":"function_call","id":"f1","call_id":"c1","status":"completed","name":"execute_sql","arguments":"{\"sql\":\"SELECT franchise, SUM(total) AS total FROM sales GROUP BY franchise\",\"title\":\"Total by Franchise\"}"}}
+{"type":"response.output_item.done","output_index":3,"item":{"type":"function_call_output","id":"o1","call_id":"c1","status":"completed","metadata":{"ui_type":"QUERY_EXECUTION","statement_id":"stmt1","result_data":{"columns":[{"name":"franchise"},{"name":"total"}],"preview_rows":[["Alpha",1250],["Beta",640]]}}}}
+{"type":"response.output_item.done","output_index":4,"item":{"type":"function_call_output","id":"o2","call_id":"c2","status":"completed","metadata":{"ui_type":"VIZ","sql_id":"stmt1","embed_id":"viz_1","viz_definition":"{\"renderSpec\":{\"widgetType\":\"bar\",\"frame\":{\"title\":\"Total by Franchise\"},\"encodings\":{\"x\":{\"fieldName\":\"franchise\"},\"y\":{\"fieldName\":\"total\"}}}}"}}}
+{"type":"response.output_item.added","output_index":5,"item":{"type":"message","id":"m1","role":"assistant","status":"completed","content":[{"type":"output_text","text":"Alpha leads with 1,250 total sales.\n\n![Total by Franchise](#viz_1)","annotations":[]}],"metadata":{"ui_type":"FINAL_RESPONSE","source_internal_ids":["x1"]}}}
+{"type":"response.completed","response":{"id":"resp_1","status":"completed","conversation_id":"conv_1"}}
+
+=== incompatible flags are rejected
+>>> [CLI] experimental genie ask q --raw --output json
+Error: --raw cannot be used with --output json
+
+Exit code: 1
+
+>>> [CLI] experimental genie ask q --raw --include-sql
+Error: --include-sql cannot be used with --raw
+
+Exit code: 1

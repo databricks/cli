@@ -59,6 +59,14 @@ type ResourceLifecycleConfig struct {
 	// UpdateIDOnChanges: field patterns that trigger UpdateWithID when changed.
 	UpdateIDOnChanges []FieldRule `yaml:"update_id_on_changes,omitempty"`
 
+	// NormalizeCase: string field patterns the UC API lowercases on write.
+	// A change is skipped when local and remote differ only by case.
+	NormalizeCase []FieldRule `yaml:"normalize_case,omitempty"`
+
+	// NormalizeSlash: string field patterns the UC API strips trailing slashes from.
+	// A change is skipped when local and remote differ only by trailing slashes.
+	NormalizeSlash []FieldRule `yaml:"normalize_slash,omitempty"`
+
 	// BackendDefaults: fields where the backend may set defaults.
 	// When old and new are nil but remote is set, and the remote value matches allowed values (if specified), the change is skipped.
 	BackendDefaults []BackendDefaultRule `yaml:"backend_defaults,omitempty"`
@@ -80,6 +88,8 @@ var empty = ResourceLifecycleConfig{
 	IgnoreLocalChanges:  nil,
 	RecreateOnChanges:   nil,
 	UpdateIDOnChanges:   nil,
+	NormalizeCase:       nil,
+	NormalizeSlash:      nil,
 	BackendDefaults:     nil,
 }
 

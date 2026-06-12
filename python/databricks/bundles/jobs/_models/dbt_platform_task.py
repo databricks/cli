@@ -17,11 +17,15 @@ class DbtPlatformTask:
 
     connection_resource_name: VariableOrOptional[str] = None
     """
+    :meta private: [EXPERIMENTAL]
+    
     The resource name of the UC connection that authenticates the dbt platform for this task
     """
 
     dbt_platform_job_id: VariableOrOptional[str] = None
     """
+    :meta private: [EXPERIMENTAL]
+    
     Id of the dbt platform job to be triggered. Specified as a string for maximum compatibility with clients.
     """
 
@@ -38,11 +42,15 @@ class DbtPlatformTaskDict(TypedDict, total=False):
 
     connection_resource_name: VariableOrOptional[str]
     """
+    :meta private: [EXPERIMENTAL]
+    
     The resource name of the UC connection that authenticates the dbt platform for this task
     """
 
     dbt_platform_job_id: VariableOrOptional[str]
     """
+    :meta private: [EXPERIMENTAL]
+    
     Id of the dbt platform job to be triggered. Specified as a string for maximum compatibility with clients.
     """
 
