@@ -26,6 +26,7 @@ type annotationHandler struct {
 // Adds annotations to the JSON schema reading from the annotation files.
 // More details https://json-schema.org/understanding-json-schema/reference/annotations
 func newAnnotationHandler(extracted, fromFile annotation.File) (*annotationHandler, error) {
+	dropShadowingPlaceholders(fromFile, extracted)
 	merged, err := mergeAnnotationFiles(extracted, fromFile)
 	if err != nil {
 		return nil, err
@@ -35,6 +36,48 @@ func newAnnotationHandler(extracted, fromFile annotation.File) (*annotationHandl
 		fileAnnotations:    fromFile,
 		missingAnnotations: annotation.File{},
 	}, nil
+}
+
+// dropShadowingPlaceholders removes PLACEHOLDER descriptions from fromFile for
+// fields that cli.json documents. A PLACEHOLDER marks a field with no
+// documentation anywhere, so once upstream gains a description the marker is
+// stale and would otherwise shadow it in the merge, leaving the schema with no
+// description at all. fromFile is mutated in place: the sync step then rewrites
+// the annotations file without the stale markers. Entries that carry other
+// hand-authored fields (e.g. deprecation_message) lose only the placeholder.
+func dropShadowingPlaceholders(fromFile, extracted annotation.File) {
+	for typePath, props := range fromFile {
+		for key, d := range props {
+			if d.Description != annotation.Placeholder {
+				continue
+			}
+			if extracted[typePath][key].Description == "" {
+				// Genuinely undocumented: keep the TODO marker.
+				continue
+			}
+			d.Description = ""
+			if isEmptyDescriptor(d) {
+				delete(props, key)
+			} else {
+				props[key] = d
+			}
+		}
+		if len(props) == 0 {
+			delete(fromFile, typePath)
+		}
+	}
+}
+
+func isEmptyDescriptor(d annotation.Descriptor) bool {
+	return d.Description == "" &&
+		d.MarkdownDescription == "" &&
+		d.Title == "" &&
+		d.Default == nil &&
+		d.Enum == nil &&
+		d.MarkdownExamples == "" &&
+		d.DeprecationMessage == "" &&
+		d.Preview == "" &&
+		d.OutputOnly == nil
 }
 
 // mergeAnnotationFiles merges later layers over earlier ones with the same
