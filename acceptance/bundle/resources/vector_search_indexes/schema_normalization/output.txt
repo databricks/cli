@@ -6,7 +6,7 @@ Updating deployment state...
 Deployment complete!
 
 >>> [CLI] vector-search-indexes get-index main.default.vs_index_[UNIQUE_NAME]
-{"count":"long","id":"integer","label":"string","score":"float","small":"short","tags":"array<integer>","tiny":"byte","vector":"array<float>"}
+{"count":"bigint","id":"int","label":"string","score":"float","small":"smallint","tags":"array<int>","tiny":"tinyint","vector":"array<float>"}
 
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged

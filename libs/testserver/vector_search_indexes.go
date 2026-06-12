@@ -71,9 +71,10 @@ func (s *FakeWorkspace) VectorSearchIndexCreate(req Request) Response {
 		indexSubtype = vectorsearch.IndexSubtypeHybrid
 	}
 
-	// The backend canonicalizes the column type aliases in schema_json on create
-	// (e.g. "int" -> "integer") and returns the normalized form on read. Mirror
-	// that here so the create -> get round-trip matches the real API.
+	// The backend rewrites schema_json on create: user-facing type names are
+	// stored as Spark type names (e.g. "integer" -> "int") and the columns are
+	// returned in sorted key order rather than the user's original order.
+	// Mirror that here so the create -> get round-trip matches the real API.
 	if createReq.DirectAccessIndexSpec != nil {
 		createReq.DirectAccessIndexSpec.SchemaJson = normalizeSchemaJSON(createReq.DirectAccessIndexSpec.SchemaJson)
 	}
@@ -118,9 +119,11 @@ func isValidIndexName(name string) bool {
 	return true
 }
 
-// normalizeSchemaJSON rewrites the column types in a schema_json document to
-// the backend's canonical spelling. Returns the input unchanged when it isn't
-// the expected {"column":"type"} JSON object.
+// normalizeSchemaJSON rewrites a schema_json document the way the backend
+// stores it: user-facing column type names are folded to Spark type names and
+// the columns are re-serialized in sorted key order (encoding/json sorts map
+// keys, matching the backend). Returns the input unchanged when it isn't the
+// expected {"column":"type"} JSON object.
 func normalizeSchemaJSON(schemaJSON string) string {
 	if schemaJSON == "" {
 		return schemaJSON
@@ -143,10 +146,11 @@ func normalizeSchemaJSON(schemaJSON string) string {
 	return strings.TrimRight(buf.String(), "\n")
 }
 
-// normalizeColumnType folds the SQL type aliases the Vector Search backend
-// accepts to the canonical form it stores and returns, recursing into array
-// element types. Mirrors brickindex-common/src/utils/ColumnSpec.scala
-// (the columnType field); types not listed there pass through unchanged.
+// normalizeColumnType maps the user-facing column type names the Vector
+// Search API accepts ("integer", "long", "short", "byte") to the Spark type
+// names Unity Catalog stores and GET returns, recursing into array element
+// types. Types whose user-facing and Spark spellings coincide ("float",
+// "string", ...) pass through unchanged.
 func normalizeColumnType(columnType string) string {
 	if inner, ok := strings.CutPrefix(columnType, "array<"); ok {
 		if elem, ok := strings.CutSuffix(inner, ">"); ok {
@@ -154,14 +158,14 @@ func normalizeColumnType(columnType string) string {
 		}
 	}
 	switch columnType {
-	case "int":
-		return "integer"
-	case "bigint":
-		return "long"
-	case "smallint":
-		return "short"
-	case "tinyint":
-		return "byte"
+	case "integer":
+		return "int"
+	case "long":
+		return "bigint"
+	case "short":
+		return "smallint"
+	case "byte":
+		return "tinyint"
 	default:
 		return columnType
 	}

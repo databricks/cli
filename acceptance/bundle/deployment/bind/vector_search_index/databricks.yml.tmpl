@@ -12,7 +12,11 @@ resources:
       primary_key: id
       index_type: DIRECT_ACCESS
       direct_access_index_spec:
-        schema_json: '{"id":"integer","vector":"array<float>"}'
+        # Spark type spelling ("int", not "integer"): the backend stores and
+        # returns Spark type names, and bind seeds state from the remote, so
+        # any other spelling would read as a local schema edit after bind and
+        # plan a recreate of the adopted index.
+        schema_json: '{"id":"int","vector":"array<float>"}'
         embedding_vector_columns:
           - name: vector
             embedding_dimension: 768

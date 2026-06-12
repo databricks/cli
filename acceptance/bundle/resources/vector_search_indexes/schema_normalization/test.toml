@@ -1,5 +1,5 @@
-# The test server returns schema_json column types in the backend's canonical
-# form (int -> integer, ...), which differs from the spelling a live workspace
-# returns, so the recorded output only matches locally. The point of this test
-# is the alias round-trip, which the test server reproduces hermetically.
+# The test pins the exact schema_json string get-index returns. The test
+# server's rewrite (user-facing -> Spark type names, sorted keys) matches the
+# real backend's behavior, but the byte-for-byte JSON serialization of a live
+# workspace isn't guaranteed to match, so the recorded output is local-only.
 Cloud = false
