@@ -1,9 +1,13 @@
 package testserver
 
 import (
+	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
+	"mime"
+	"mime/multipart"
 	"net/http"
 	"path"
 	"strings"
@@ -79,6 +83,11 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.WorkspaceGetStatus(path)
 	})
 
+	server.Handle("GET", "/api/2.0/workspace/list", func(req Request) any {
+		path := req.URL.Query().Get("path")
+		return req.Workspace.WorkspaceList(path)
+	})
+
 	server.Handle("POST", "/api/2.0/workspace/mkdirs", func(req Request) any {
 		var request workspace.Mkdirs
 		if err := json.Unmarshal(req.Body, &request); err != nil {
@@ -116,6 +125,72 @@ func AddDefaultHandlers(server *Server) {
 	})
 
 	server.Handle("POST", "/api/2.0/workspace/import", func(req Request) any {
+		// /workspace/import accepts both a JSON body (matching workspace.Import) and a
+		// multipart form body. The multipart variant is what databricks-sdk-go's
+		// Workspace.Upload uses; the JSON variant is kept for back-compat with anything
+		// that still hits Workspace.Import directly.
+		contentType := req.Headers.Get("Content-Type")
+		mediaType, params, _ := mime.ParseMediaType(contentType)
+		if strings.HasPrefix(mediaType, "multipart/") {
+			mr := multipart.NewReader(bytes.NewReader(req.Body), params["boundary"])
+			var (
+				filePath  string
+				content   []byte
+				format    string
+				overwrite bool
+			)
+			for {
+				part, err := mr.NextPart()
+				if err == io.EOF {
+					break
+				}
+				if err != nil {
+					return Response{
+						Body:       fmt.Sprintf("internal error: %s", err),
+						StatusCode: http.StatusInternalServerError,
+					}
+				}
+				data, err := io.ReadAll(part)
+				if err != nil {
+					return Response{
+						Body:       fmt.Sprintf("internal error: %s", err),
+						StatusCode: http.StatusInternalServerError,
+					}
+				}
+				switch part.FormName() {
+				case "path":
+					filePath = string(data)
+				case "content":
+					content = data
+				case "format":
+					format = string(data)
+				case "overwrite":
+					overwrite = string(data) == "true"
+				}
+			}
+
+			if format != "" && format != string(workspace.ImportFormatAuto) {
+				return Response{
+					Body:       "internal error: The test server only supports auto format.",
+					StatusCode: http.StatusInternalServerError,
+				}
+			}
+
+			// Translate any 409 from the shared fake into the 400 + errorCode
+			// RESOURCE_ALREADY_EXISTS shape returned by the real /workspace/import endpoint.
+			resp := req.Workspace.WorkspaceFilesImportFile(filePath, content, overwrite)
+			if resp.StatusCode == http.StatusConflict {
+				return Response{
+					StatusCode: http.StatusBadRequest,
+					Body: map[string]string{
+						"error_code": "RESOURCE_ALREADY_EXISTS",
+						"message":    fmt.Sprintf("Path (%s) already exists.", filePath),
+					},
+				}
+			}
+			return resp
+		}
+
 		var request workspace.Import
 		err := json.Unmarshal(req.Body, &request)
 		if err != nil {

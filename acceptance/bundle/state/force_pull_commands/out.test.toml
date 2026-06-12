@@ -1,3 +1,5 @@
 Local = true
 Cloud = false
+GOOS.linux = false
+GOOS.windows = false
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
