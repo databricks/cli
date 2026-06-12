@@ -1,5 +1,1 @@
-# The test pins the exact schema_json string get-index returns. The test
-# server's rewrite (user-facing -> Spark type names, sorted keys) matches the
-# real backend's behavior, but the byte-for-byte JSON serialization of a live
-# workspace isn't guaranteed to match, so the recorded output is local-only.
 Cloud = false
