@@ -2,9 +2,10 @@
 // cmd/account/**) from the cli.json spec produced by genkit.
 //
 // It is the CLI-owned replacement for running genkit's cli_v0 generator against
-// a universe checkout: it renders the same templates (templates/*.tmpl, copied
-// verbatim) against a model decoded from cli.json's "commands" block. It has no
-// dependency on genkit or any upstream spec at run time.
+// a universe checkout: it renders templates derived from genkit's cli_v0
+// templates (templates/*.tmpl) against a model decoded from cli.json's
+// "commands" block, then formats the output in-process. It has no dependency on
+// genkit or any upstream spec at run time.
 package main
 
 import (
@@ -13,7 +14,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -29,9 +29,6 @@ func main() {
 	files, err := Generate(*input, *output)
 	if err != nil {
 		log.Fatalf("cligen: %v", err)
-	}
-	if err := format(*output, files); err != nil {
-		log.Fatalf("cligen: format: %v", err)
 	}
 	if err := writeGitAttributes(*output, files); err != nil {
 		log.Fatalf("cligen: .gitattributes: %v", err)
@@ -58,27 +55,6 @@ func writeGitAttributes(dir string, files []string) error {
 		sb.WriteString(" linguist-generated=true\n")
 	}
 	return os.WriteFile(filepath.Join(dir, ".gitattributes"), []byte(sb.String()), 0o644)
-}
-
-// format applies the same formatter genkit's cli_v0 generator used to produce
-// the committed command files: goimports (prunes the conditionally-unused
-// imports the template always emits, e.g. "time") followed by gofmt.
-func format(dir string, files []string) error {
-	abs := make([]string, len(files))
-	for i, f := range files {
-		abs[i] = filepath.Join(dir, f)
-	}
-	// Run goimports from the pinned tools module (tools/go.mod) instead of
-	// @latest, so generation is deterministic and works offline.
-	modfile := filepath.Join(dir, "tools", "go.mod")
-	goimports := append([]string{"tool", "-modfile=" + modfile, "goimports", "-w"}, abs...)
-	if out, err := exec.Command("go", goimports...).CombinedOutput(); err != nil {
-		return fmt.Errorf("goimports: %v\n%s", err, out)
-	}
-	if out, err := exec.Command("gofmt", append([]string{"-w"}, abs...)...).CombinedOutput(); err != nil {
-		return fmt.Errorf("gofmt: %v\n%s", err, out)
-	}
-	return nil
 }
 
 // Generate reads the cli.json spec at jsonPath and writes the command stubs
