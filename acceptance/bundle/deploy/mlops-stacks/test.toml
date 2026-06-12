@@ -1,5 +1,5 @@
 Cloud=true
-Local=true
+Local=false
 
 Badness = "the newly initialized bundle from the 'mlops-stacks' template contains two validation warnings in the configuration"
 

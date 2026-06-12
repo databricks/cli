@@ -25,28 +25,38 @@ class ModelTriggerConfiguration:
 
     condition: VariableOr[ModelTriggerConfigurationCondition]
     """
+    :meta private: [EXPERIMENTAL]
+    
     The condition based on which to trigger a job run.
     """
 
     aliases: VariableOrList[str] = field(default_factory=list)
     """
+    :meta private: [EXPERIMENTAL]
+    
     Aliases of the model versions to monitor. Can only be used in conjunction with condition MODEL_ALIAS_SET.
     """
 
     min_time_between_triggers_seconds: VariableOrOptional[int] = None
     """
+    :meta private: [EXPERIMENTAL]
+    
     If set, the trigger starts a run only after the specified amount of time has passed since
     the last time the trigger fired. The minimum allowed value is 60 seconds.
     """
 
     securable_name: VariableOrOptional[str] = None
     """
+    :meta private: [EXPERIMENTAL]
+    
     Name of the securable to monitor ("mycatalog.myschema.mymodel" in the case of model-level triggers,
     "mycatalog.myschema" in the case of schema-level triggers) or empty in the case of metastore-level triggers.
     """
 
     wait_after_last_change_seconds: VariableOrOptional[int] = None
     """
+    :meta private: [EXPERIMENTAL]
+    
     If set, the trigger starts a run only after no model updates have occurred for the specified time
     and can be used to wait for a series of model updates before triggering a run. The
     minimum allowed value is 60 seconds.
@@ -65,28 +75,38 @@ class ModelTriggerConfigurationDict(TypedDict, total=False):
 
     condition: VariableOr[ModelTriggerConfigurationConditionParam]
     """
+    :meta private: [EXPERIMENTAL]
+    
     The condition based on which to trigger a job run.
     """
 
     aliases: VariableOrList[str]
     """
+    :meta private: [EXPERIMENTAL]
+    
     Aliases of the model versions to monitor. Can only be used in conjunction with condition MODEL_ALIAS_SET.
     """
 
     min_time_between_triggers_seconds: VariableOrOptional[int]
     """
+    :meta private: [EXPERIMENTAL]
+    
     If set, the trigger starts a run only after the specified amount of time has passed since
     the last time the trigger fired. The minimum allowed value is 60 seconds.
     """
 
     securable_name: VariableOrOptional[str]
     """
+    :meta private: [EXPERIMENTAL]
+    
     Name of the securable to monitor ("mycatalog.myschema.mymodel" in the case of model-level triggers,
     "mycatalog.myschema" in the case of schema-level triggers) or empty in the case of metastore-level triggers.
     """
 
     wait_after_last_change_seconds: VariableOrOptional[int]
     """
+    :meta private: [EXPERIMENTAL]
+    
     If set, the trigger starts a run only after no model updates have occurred for the specified time
     and can be used to wait for a series of model updates before triggering a run. The
     minimum allowed value is 60 seconds.

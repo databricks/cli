@@ -17,6 +17,8 @@ class FileFilter:
 
     modified_after: VariableOrOptional[str] = None
     """
+    :meta private: [EXPERIMENTAL]
+    
     Include files with modification times occurring after the specified time.
     Timestamp format: YYYY-MM-DDTHH:mm:ss (e.g. 2020-06-01T13:00:00)
     Based on https://spark.apache.org/docs/latest/sql-data-sources-generic-options.html#modification-time-path-filters
@@ -24,6 +26,8 @@ class FileFilter:
 
     modified_before: VariableOrOptional[str] = None
     """
+    :meta private: [EXPERIMENTAL]
+    
     Include files with modification times occurring before the specified time.
     Timestamp format: YYYY-MM-DDTHH:mm:ss (e.g. 2020-06-01T13:00:00)
     Based on https://spark.apache.org/docs/latest/sql-data-sources-generic-options.html#modification-time-path-filters
@@ -31,6 +35,8 @@ class FileFilter:
 
     path_filter: VariableOrOptional[str] = None
     """
+    :meta private: [EXPERIMENTAL]
+    
     Include files with file names matching the pattern
     Based on https://spark.apache.org/docs/latest/sql-data-sources-generic-options.html#path-glob-filter
     """
@@ -48,6 +54,8 @@ class FileFilterDict(TypedDict, total=False):
 
     modified_after: VariableOrOptional[str]
     """
+    :meta private: [EXPERIMENTAL]
+    
     Include files with modification times occurring after the specified time.
     Timestamp format: YYYY-MM-DDTHH:mm:ss (e.g. 2020-06-01T13:00:00)
     Based on https://spark.apache.org/docs/latest/sql-data-sources-generic-options.html#modification-time-path-filters
@@ -55,6 +63,8 @@ class FileFilterDict(TypedDict, total=False):
 
     modified_before: VariableOrOptional[str]
     """
+    :meta private: [EXPERIMENTAL]
+    
     Include files with modification times occurring before the specified time.
     Timestamp format: YYYY-MM-DDTHH:mm:ss (e.g. 2020-06-01T13:00:00)
     Based on https://spark.apache.org/docs/latest/sql-data-sources-generic-options.html#modification-time-path-filters
@@ -62,6 +72,8 @@ class FileFilterDict(TypedDict, total=False):
 
     path_filter: VariableOrOptional[str]
     """
+    :meta private: [EXPERIMENTAL]
+    
     Include files with file names matching the pattern
     Based on https://spark.apache.org/docs/latest/sql-data-sources-generic-options.html#path-glob-filter
     """
