@@ -24,11 +24,19 @@ class GoogleDriveOptions:
     """
 
     entity_type: VariableOrOptional[GoogleDriveOptionsGoogleDriveEntityType] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    """
 
     file_ingestion_options: VariableOrOptional[FileIngestionOptions] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    """
 
     url: VariableOrOptional[str] = None
     """
+    :meta private: [EXPERIMENTAL]
+    
     Google Drive URL.
     """
 
@@ -44,11 +52,19 @@ class GoogleDriveOptionsDict(TypedDict, total=False):
     """"""
 
     entity_type: VariableOrOptional[GoogleDriveOptionsGoogleDriveEntityTypeParam]
+    """
+    :meta private: [EXPERIMENTAL]
+    """
 
     file_ingestion_options: VariableOrOptional[FileIngestionOptionsParam]
+    """
+    :meta private: [EXPERIMENTAL]
+    """
 
     url: VariableOrOptional[str]
     """
+    :meta private: [EXPERIMENTAL]
+    
     Google Drive URL.
     """
 

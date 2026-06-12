@@ -12,12 +12,16 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/config/variable"
+	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/jsonschema"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
+// interpolationPattern builds a JSON Schema regex for ${prefix.path...} references.
+// Path segments use [dynvar.BaseVarDef]; unlike the runtime matcher in ref.go, this
+// requires a fixed prefix (var, resources, ...) and at least one ".segment" after it.
 func interpolationPattern(s string) string {
-	return fmt.Sprintf(`\$\{(%s(\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\[[0-9]+\])*)+)\}`, s)
+	return fmt.Sprintf(`\$\{(%s(\.%s(\[[0-9]+\])*)+)\}`, s, dynvar.BaseVarDef)
 }
 
 func addInterpolationPatterns(typ reflect.Type, s jsonschema.Schema) jsonschema.Schema {
@@ -203,15 +207,24 @@ func generateSchema(workdir, outputFile string, docsMode bool) {
 	annotationsOpenApiPath := filepath.Join(workdir, "annotations_openapi.yml")
 	annotationsOpenApiOverridesPath := filepath.Join(workdir, "annotations_openapi_overrides.yml")
 
-	// Input file, the databricks openapi spec.
-	inputFile := os.Getenv("DATABRICKS_OPENAPI_SPEC") //nolint:forbidigo // main() entry point, no ctx
-	if inputFile != "" {
-		p, err := newParser(inputFile)
+	// The .codegen/cli.json spec is the source for the generated annotation
+	// files. Its schema graph carries the descriptions, enums and field
+	// behaviors the CLI reflects onto its config types. When unset, the
+	// committed annotation files are used as-is.
+	cliJSONFile := os.Getenv("DATABRICKS_CLI_JSON") //nolint:forbidigo // main() entry point, no ctx
+
+	var p *annotationParser
+	if cliJSONFile != "" {
+		schemas, err := parseCliJSON(cliJSONFile)
 		if err != nil {
 			log.Fatal(err)
 		}
-		fmt.Printf("Writing OpenAPI annotations to %s\n", annotationsOpenApiPath)
-		err = p.extractAnnotations(reflect.TypeFor[config.Root](), annotationsOpenApiPath, annotationsOpenApiOverridesPath)
+		p = newParser(schemas)
+	}
+
+	if p != nil {
+		fmt.Printf("Writing annotations to %s\n", annotationsOpenApiPath)
+		err := p.extractAnnotations(reflect.TypeFor[config.Root](), annotationsOpenApiPath, annotationsOpenApiOverridesPath)
 		if err != nil {
 			log.Fatal(err)
 		}
