@@ -89,7 +89,7 @@ func (d *annotationHandler) syncWithMissingAnnotations(outputPath string) error 
 	for k := range d.missingAnnotations {
 		if !isCliPath(k) {
 			delete(d.missingAnnotations, k)
-			fmt.Printf("Missing annotations for `%s` that are not in CLI package, try to fetch latest OpenAPI spec and regenerate annotations\n", k)
+			fmt.Printf("Missing annotations for `%s` that are not in CLI package, try to refresh .codegen/cli.json and regenerate annotations\n", k)
 		}
 	}
 

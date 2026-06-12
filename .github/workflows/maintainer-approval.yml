@@ -8,9 +8,9 @@ on:
   merge_group:
     types: [checks_requested]
 
-concurrency:
-  group: pr-approval-${{ github.event.pull_request.number || github.event.merge_group.head_sha }}
-  cancel-in-progress: true
+# No concurrency group: a run cancelled by concurrency leaves a stuck failing
+# check, since each run posts its own check-run and a later passing run does not
+# clear it. The check is cheap and idempotent, so let every run finish instead.
 
 defaults:
   run:

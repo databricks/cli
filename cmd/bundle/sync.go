@@ -20,7 +20,6 @@ type syncFlags struct {
 	interval time.Duration
 	full     bool
 	watch    bool
-	output   flags.Output
 	dryRun   bool
 }
 
@@ -30,9 +29,11 @@ func (f *syncFlags) syncOptionsFromBundle(cmd *cobra.Command, b *bundle.Bundle) 
 		return nil, fmt.Errorf("cannot get sync options: %w", err)
 	}
 
-	if f.output != "" {
+	// The root --output flag always has a value (defaults to text), so gate on
+	// it being explicitly set to keep bundle sync silent by default.
+	if cmd.Flag("output").Changed {
 		var outputFunc func(context.Context, <-chan sync.Event, io.Writer)
-		switch f.output {
+		switch root.OutputType(cmd) {
 		case flags.OutputText:
 			outputFunc = sync.TextOutput
 		case flags.OutputJSON:
@@ -72,7 +73,6 @@ Use 'databricks bundle deploy' for full resource deployment.`,
 	cmd.Flags().DurationVar(&f.interval, "interval", 1*time.Second, "file system polling interval (for --watch)")
 	cmd.Flags().BoolVar(&f.full, "full", false, "perform full synchronization (default is incremental)")
 	cmd.Flags().BoolVar(&f.watch, "watch", false, "watch local file system for changes")
-	cmd.Flags().Var(&f.output, "output", "type of the output format")
 	cmd.Flags().BoolVar(&f.dryRun, "dry-run", false, "simulate sync execution without making actual changes")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {

@@ -5,7 +5,7 @@ cat > "./home/.databrickscfg" <<'EOF'
 [DEFAULT]
 
 [dev]
-host = https://accounts.cloud.databricks.com
+host = https://accounts.cloud.databricks.test
 account_id = account-id
 auth_type  = databricks-cli
 EOF
@@ -19,7 +19,7 @@ cat > "./home/.databricks/token-cache.json" <<'EOF'
       "access_token": "dev-cached-token",
       "token_type": "Bearer"
     },
-    "https://accounts.cloud.databricks.com/oidc/accounts/account-id": {
+    "https://accounts.cloud.databricks.test/oidc/accounts/account-id": {
       "access_token": "dev-host-token",
       "token_type": "Bearer"
     }
