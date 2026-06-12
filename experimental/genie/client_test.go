@@ -119,4 +119,24 @@ func TestPostStream_HTTPError(t *testing.T) {
 	_, err := PostStream(t.Context(), cfg, BuildRequest("q", ""))
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "backend exploded")
+	assert.Contains(t, err.Error(), "update the Databricks CLI to the latest version")
+}
+
+func TestPostStream_InternalErrorEmptyMessage(t *testing.T) {
+	// Wire shape observed live for a request body the backend cannot
+	// interpret: 500 INTERNAL_ERROR with an empty message. Without the wrap
+	// the user sees a blank "Error: ".
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprint(w, `{"error_code":"INTERNAL_ERROR","message":""}`)
+	}))
+	defer srv.Close()
+
+	cfg := &config.Config{Host: srv.URL, Token: "dummy"}
+	_, err := PostStream(t.Context(), cfg, BuildRequest("q", ""))
+	require.Error(t, err)
+	assert.ErrorIs(t, err, apierr.ErrInternalError)
+	assert.Contains(t, err.Error(), "could not process the request (500 with no details)")
+	assert.Contains(t, err.Error(), "update the Databricks CLI to the latest version")
 }
