@@ -6,6 +6,7 @@
       "catalog_name": "mycatalog",
       "name": "barname",
       "schema_name": "myschema",
+      "volume_path": "/Volumes/mycatalog/myschema/barname",
       "volume_type": "MANAGED"
     },
     "foo": {
