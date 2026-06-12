@@ -1,6 +1,6 @@
 
 >>> [CLI] bundle init default-minimal --config-file ./input.json --output-dir output
-Welcome to the minimal Databricks Asset Bundle template!
+Welcome to the minimal Declarative Automation Bundles template!
 
 This template creates a minimal project structure without sample code, ideal for advanced users.
 (For getting started with Python or SQL code, use the default-python or default-sql templates instead.)

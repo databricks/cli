@@ -1,7 +1,7 @@
 {{$with_classic := (ne .serverless "yes") -}}
 {{$with_python := (eq .include_python "yes") -}}
 {{$with_pydabs := (eq .enable_pydabs "yes") -}}
-# This is a Databricks asset bundle definition for {{.project_name}}.
+# This is a Declarative Automation Bundles definition for {{.project_name}}.
 # See https://docs.databricks.com/dev-tools/bundles/index.html for documentation.
 bundle:
   name: {{.project_name}}
