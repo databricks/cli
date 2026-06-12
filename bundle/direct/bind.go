@@ -132,10 +132,11 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 			dependsOn = entry.DependsOn
 		}
 
-		// Copy etag from remote state for dashboards.
-		// Dashboards store "etag" in state which is not provided by user but comes from remote.
-		// If we don't store "etag" in state, we won't detect remote drift correctly.
-		if strings.Contains(resourceKey, ".dashboards.") && entry != nil && entry.RemoteState != nil {
+		// Copy etag from remote state for resources that use etag-based drift
+		// detection (dashboards and genie spaces). The etag is not provided by the
+		// user; it comes from remote. If we don't store it in state, we won't
+		// detect remote drift correctly and the next plan shows a bogus update.
+		if (strings.Contains(resourceKey, ".dashboards.") || strings.Contains(resourceKey, ".genie_spaces.")) && entry != nil && entry.RemoteState != nil {
 			etag, err := structaccess.Get(entry.RemoteState, structpath.NewStringKey(nil, "etag"))
 			if err == nil && etag != nil {
 				if etagStr, ok := etag.(string); ok && etagStr != "" {

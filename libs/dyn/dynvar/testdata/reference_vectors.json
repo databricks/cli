@@ -1,0 +1,318 @@
+{
+  "comment": "Shared contract for ${...} reference parsing. Consumed by libs/dyn/dynvar and python/databricks/bundles/core/_transform.py tests.",
+  "vectors": [
+    {
+      "id": "ascii-simple",
+      "input": "${hello_world.world_world}",
+      "match": true,
+      "references": ["hello_world.world_world"],
+      "pure": true,
+      "path": "hello_world.world_world"
+    },
+    {
+      "id": "ascii-hyphen-separators",
+      "input": "${helloworld.world-world}",
+      "match": true,
+      "references": ["helloworld.world-world"],
+      "pure": true,
+      "path": "helloworld.world-world"
+    },
+    {
+      "id": "ascii-hyphen-in-segment",
+      "input": "${hello-world.world-world}",
+      "match": true,
+      "references": ["hello-world.world-world"],
+      "pure": true,
+      "path": "hello-world.world-world"
+    },
+    {
+      "id": "ascii-underscore-separators",
+      "input": "${hello_world.world__world}",
+      "match": true,
+      "references": ["hello_world.world__world"],
+      "pure": true,
+      "path": "hello_world.world__world"
+    },
+    {
+      "id": "ascii-double-hyphen",
+      "input": "${hello_world.world--world}",
+      "match": true,
+      "references": ["hello_world.world--world"],
+      "pure": true,
+      "path": "hello_world.world--world"
+    },
+    {
+      "id": "ascii-mixed-separators-1",
+      "input": "${hello_world.world-_world}",
+      "match": true,
+      "references": ["hello_world.world-_world"],
+      "pure": true,
+      "path": "hello_world.world-_world"
+    },
+    {
+      "id": "ascii-mixed-separators-2",
+      "input": "${hello_world.world_-world}",
+      "match": true,
+      "references": ["hello_world.world_-world"],
+      "pure": true,
+      "path": "hello_world.world_-world"
+    },
+    {
+      "id": "unicode-accent-segment",
+      "input": "${café.bar}",
+      "match": true,
+      "references": ["café.bar"],
+      "pure": true,
+      "path": "café.bar"
+    },
+    {
+      "id": "unicode-accent-trailing-segment",
+      "input": "${hello.café}",
+      "match": true,
+      "references": ["hello.café"],
+      "pure": true,
+      "path": "hello.café"
+    },
+    {
+      "id": "unicode-cjk",
+      "input": "${变量.世界}",
+      "match": true,
+      "references": ["变量.世界"],
+      "pure": true,
+      "path": "变量.世界"
+    },
+    {
+      "id": "unicode-cjk-numeral-letter",
+      "input": "${变量.九世界}",
+      "match": true,
+      "references": ["变量.九世界"],
+      "pure": true,
+      "path": "变量.九世界"
+    },
+    {
+      "id": "unicode-arabic",
+      "input": "${العربية.key}",
+      "match": true,
+      "references": ["العربية.key"],
+      "pure": true,
+      "path": "العربية.key"
+    },
+    {
+      "id": "unicode-multi-ref",
+      "input": "${变量.世界} ${café.bar}",
+      "match": true,
+      "references": ["变量.世界", "café.bar"],
+      "pure": false
+    },
+    {
+      "id": "unicode-var-reference",
+      "input": "${var.变量}",
+      "match": true,
+      "references": ["var.变量"],
+      "pure": true,
+      "path": "var.变量"
+    },
+    {
+      "id": "unicode-resource-reference",
+      "input": "${resources.jobs.工作.name}",
+      "match": true,
+      "references": ["resources.jobs.工作.name"],
+      "pure": true,
+      "path": "resources.jobs.工作.name"
+    },
+    {
+      "id": "indexed-path",
+      "input": "${foo.bar.baz[0]}",
+      "match": true,
+      "references": ["foo.bar.baz[0]"],
+      "pure": true,
+      "path": "foo.bar.baz[0]"
+    },
+    {
+      "id": "nested-indexed-path",
+      "input": "${foo.bar.baz[0][1].qux}",
+      "match": true,
+      "references": ["foo.bar.baz[0][1].qux"],
+      "pure": true,
+      "path": "foo.bar.baz[0][1].qux"
+    },
+    {
+      "id": "indexed-unicode-path",
+      "input": "${变量.世界[0]}",
+      "match": true,
+      "references": ["变量.世界[0]"],
+      "pure": true,
+      "path": "变量.世界[0]"
+    },
+    {
+      "id": "python-simple-variable",
+      "input": "${var.my_var}",
+      "match": true,
+      "references": ["var.my_var"],
+      "pure": true,
+      "path": "var.my_var"
+    },
+    {
+      "id": "python-indexed-variable",
+      "input": "${var.my_var[0].foo}",
+      "match": true,
+      "references": ["var.my_var[0].foo"],
+      "pure": true,
+      "path": "var.my_var[0].foo"
+    },
+    {
+      "id": "segment-trailing-hyphen",
+      "input": "${hello_world-.world_world}",
+      "match": false
+    },
+    {
+      "id": "segment-trailing-underscore",
+      "input": "${hello_world-_.world_world}",
+      "match": false
+    },
+    {
+      "id": "second-segment-trailing-hyphen",
+      "input": "${helloworld.world-world-}",
+      "match": false
+    },
+    {
+      "id": "first-segment-trailing-hyphen",
+      "input": "${helloworld-.world-world}",
+      "match": false
+    },
+    {
+      "id": "second-segment-leading-hyphen",
+      "input": "${helloworld.-world-world}",
+      "match": false
+    },
+    {
+      "id": "leading-and-trailing-hyphen",
+      "input": "${-hello-world.-world-world-}",
+      "match": false
+    },
+    {
+      "id": "invalid-separator-sequence",
+      "input": "${_-_._-_.id}",
+      "match": false
+    },
+    {
+      "id": "leading-digit-ascii",
+      "input": "${0helloworld.world-world}",
+      "match": false
+    },
+    {
+      "id": "leading-digit-second-segment",
+      "input": "${helloworld.9world-world}",
+      "match": false
+    },
+    {
+      "id": "leading-digit-unicode",
+      "input": "${0café.bar}",
+      "match": false
+    },
+    {
+      "id": "leading-digit-cjk",
+      "input": "${变量.9世界}",
+      "match": false
+    },
+    {
+      "id": "leading-hyphen-cjk",
+      "input": "${变量.-世界}",
+      "match": false
+    },
+    {
+      "id": "trailing-hyphen-accent",
+      "input": "${café-}",
+      "match": false
+    },
+    {
+      "id": "nfd-decomposed-accent",
+      "comment": "NFD e + combining acute; not equivalent to NFC café",
+      "input": "${cafe\u0301.bar}",
+      "match": false
+    },
+    {
+      "id": "emoji-in-segment",
+      "input": "${foo.🌍}",
+      "match": false
+    },
+    {
+      "id": "emoji-leading-segment",
+      "input": "${🌍.bar}",
+      "match": false
+    },
+    {
+      "id": "symbol-in-segment",
+      "input": "${foo.bar$}",
+      "match": false
+    },
+    {
+      "id": "zero-width-space",
+      "input": "${foo.bar\u200b}",
+      "match": false
+    },
+    {
+      "id": "fullwidth-digit",
+      "input": "${变量.９世界}",
+      "match": false
+    },
+    {
+      "id": "empty-string",
+      "input": "",
+      "match": false,
+      "pure": false
+    },
+    {
+      "id": "suffix-after-reference",
+      "input": "${foo.bar} suffix",
+      "match": true,
+      "references": ["foo.bar"],
+      "pure": false,
+      "path_ok": false
+    },
+    {
+      "id": "prefix-before-reference",
+      "input": "prefix ${foo.bar}",
+      "match": true,
+      "references": ["foo.bar"],
+      "pure": false,
+      "path_ok": false
+    },
+    {
+      "id": "adjacent-references",
+      "input": "${foo.one}${foo.two}",
+      "match": true,
+      "references": ["foo.one", "foo.two"],
+      "pure": false,
+      "path_ok": false
+    },
+    {
+      "id": "multiple-variables-not-pure",
+      "input": "${var.my_var} ${var.my_var}",
+      "match": true,
+      "references": ["var.my_var", "var.my_var"],
+      "pure": false,
+      "path_ok": false
+    },
+    {
+      "id": "unclosed-reference",
+      "input": "${foo.bar",
+      "match": false
+    },
+    {
+      "id": "stray-closing-brace",
+      "input": "foo.bar}",
+      "match": false
+    },
+    {
+      "id": "bare-path",
+      "input": "foo.bar",
+      "match": false
+    },
+    {
+      "id": "wrong-braces",
+      "input": "{foo.bar}",
+      "match": false
+    }
+  ]
+}
