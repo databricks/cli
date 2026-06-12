@@ -11,18 +11,9 @@ class SharepointOptionsSharepointEntityType(Enum):
     FILE_METADATA = "FILE_METADATA"
     PERMISSION = "PERMISSION"
     LIST = "LIST"
-    FILE_PERMISSION = "FILE_PERMISSION"
-    GROUP_MEMBERSHIP = "GROUP_MEMBERSHIP"
 
 
 SharepointOptionsSharepointEntityTypeParam = (
-    Literal[
-        "FILE",
-        "FILE_METADATA",
-        "PERMISSION",
-        "LIST",
-        "FILE_PERMISSION",
-        "GROUP_MEMBERSHIP",
-    ]
+    Literal["FILE", "FILE_METADATA", "PERMISSION", "LIST"]
     | SharepointOptionsSharepointEntityType
 )
