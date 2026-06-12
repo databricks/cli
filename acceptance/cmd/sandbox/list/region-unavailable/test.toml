@@ -1,6 +1,5 @@
-# Workspaces in regions without the sandbox service answer every lakebox
-# request with a gateway-level 503. The CLI retries it max503Attempts times,
-# then reports the hedged region/availability message.
+# A persistent 503 is retried max503Attempts times, then reported as a
+# user-facing unavailability error.
 [[Server]]
 Pattern = "GET /api/2.0/lakebox/sandboxes"
 Response.StatusCode = 503

@@ -40,16 +40,14 @@ const (
 	sandboxKeysAPIPath = sandboxAPIRoot + "/ssh-keys"
 )
 
-// max503Attempts caps attempts when the server keeps answering 503: regions
-// without the sandbox service 503 forever, and the SDK's default 5-minute
-// retry budget would hang the command. A couple of retries still absorbs
-// transient blips.
+// max503Attempts caps attempts when the server keeps answering 503; the
+// SDK's default budget would otherwise retry for up to 5 minutes.
 const max503Attempts = 3
 
 type attempt503CounterKey struct{}
 
-// arm503Budget attaches a fresh 503 attempt counter to the request context.
-// Retries of one request run sequentially, so a plain *int suffices.
+// arm503Budget attaches the request's 503 attempt counter; retries of one
+// request run sequentially, so a plain *int suffices.
 func arm503Budget(ctx context.Context) context.Context {
 	return context.WithValue(ctx, attempt503CounterKey{}, new(int))
 }
@@ -65,9 +63,8 @@ func allow503Retry(ctx context.Context) bool {
 	return *n < max503Attempts
 }
 
-// translateError rewrites a 503 — after max503Attempts it usually means the
-// sandbox service is not deployed in this region. The gateway 503 body adds
-// nothing for the user, so it is dropped rather than wrapped.
+// translateError replaces a 503 with a user-facing message; the gateway
+// body adds nothing, so it is dropped rather than wrapped.
 func translateError(err error) error {
 	if apiErr, ok := errors.AsType[*apierr.APIError](err); ok && apiErr.StatusCode == http.StatusServiceUnavailable {
 		return errors.New("the Databricks Sandbox feature is not available in your region, or the service is temporarily unavailable")
@@ -220,9 +217,8 @@ func newSandboxAPI(w *databricks.WorkspaceClient) (*sandboxAPI, error) {
 		return nil, fmt.Errorf("failed to create sandbox API client: %w", err)
 	}
 	defaultRetriable := clientCfg.ErrorRetriable
-	// Cap 503 retries by count, not deadline: the final 503 halts the retry
-	// loop with the APIError itself, so translateError always sees the real
-	// status code instead of a racy context.DeadlineExceeded.
+	// Cap 503 retries by count, not deadline, so the final 503 surfaces as
+	// the APIError rather than a racy context.DeadlineExceeded.
 	clientCfg.ErrorRetriable = func(ctx context.Context, err error) bool {
 		if apiErr, ok := errors.AsType[*apierr.APIError](err); ok && apiErr.StatusCode == http.StatusServiceUnavailable {
 			return allow503Retry(ctx)
