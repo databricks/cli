@@ -1,0 +1,3 @@
+# No --auto-approve and no TTY → must fail fast pointing at the flag,
+# not hang on a read from a closed stdin.
+errcode $CLI sandbox delete happy-panda-1234

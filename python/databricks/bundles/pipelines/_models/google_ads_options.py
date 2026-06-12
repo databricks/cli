@@ -21,6 +21,8 @@ class GoogleAdsOptions:
 
     manager_account_id: VariableOr[str]
     """
+    :meta private: [EXPERIMENTAL]
+    
     (Optional at this level) Manager Account ID (also called MCC Account ID) used to list
     and access customer accounts under this manager account.
     Overrides GoogleAdsConfig.manager_account_id from source_configurations when set.
@@ -28,12 +30,16 @@ class GoogleAdsOptions:
 
     lookback_window_days: VariableOrOptional[int] = None
     """
+    :meta private: [EXPERIMENTAL]
+    
     (Optional) Number of days to look back for report tables to capture late-arriving data.
     If not specified, defaults to 30 days.
     """
 
     sync_start_date: VariableOrOptional[str] = None
     """
+    :meta private: [EXPERIMENTAL]
+    
     (Optional) Start date for the initial sync of report tables in YYYY-MM-DD format.
     This determines the earliest date from which to sync historical data.
     If not specified, defaults to 2 years of historical data.
@@ -52,6 +58,8 @@ class GoogleAdsOptionsDict(TypedDict, total=False):
 
     manager_account_id: VariableOr[str]
     """
+    :meta private: [EXPERIMENTAL]
+    
     (Optional at this level) Manager Account ID (also called MCC Account ID) used to list
     and access customer accounts under this manager account.
     Overrides GoogleAdsConfig.manager_account_id from source_configurations when set.
@@ -59,12 +67,16 @@ class GoogleAdsOptionsDict(TypedDict, total=False):
 
     lookback_window_days: VariableOrOptional[int]
     """
+    :meta private: [EXPERIMENTAL]
+    
     (Optional) Number of days to look back for report tables to capture late-arriving data.
     If not specified, defaults to 30 days.
     """
 
     sync_start_date: VariableOrOptional[str]
     """
+    :meta private: [EXPERIMENTAL]
+    
     (Optional) Start date for the initial sync of report tables in YYYY-MM-DD format.
     This determines the earliest date from which to sync historical data.
     If not specified, defaults to 2 years of historical data.
