@@ -1,0 +1,4 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+trace $CLI bundle validate -o json | jq .resources
+trace $CLI bundle plan
+trace print_requests.py --get //unity
