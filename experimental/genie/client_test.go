@@ -88,6 +88,25 @@ func TestPostStream_EndpointGone(t *testing.T) {
 	assert.Contains(t, err.Error(), "update the Databricks CLI to the latest version")
 }
 
+func TestPostStream_ResourceNotFound(t *testing.T) {
+	// A 404 RESOURCE_DOES_NOT_EXIST refers to a resource the request named
+	// (the warehouse), not the route: it must keep the backend's message and
+	// not claim the endpoint moved.
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		fmt.Fprint(w, `{"error_code":"RESOURCE_DOES_NOT_EXIST","message":"Warehouse wh-missing does not exist"}`)
+	}))
+	defer srv.Close()
+
+	cfg := &config.Config{Host: srv.URL, Token: "dummy"}
+	_, err := PostStream(t.Context(), cfg, BuildRequest("q", "wh-missing"))
+	require.Error(t, err)
+	assert.ErrorIs(t, err, apierr.ErrResourceDoesNotExist)
+	assert.Contains(t, err.Error(), "Warehouse wh-missing does not exist")
+	assert.NotContains(t, err.Error(), "update the Databricks CLI")
+}
+
 func TestPostStream_HTTPError(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")

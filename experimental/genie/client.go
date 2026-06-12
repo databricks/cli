@@ -59,11 +59,14 @@ func PostStream(ctx context.Context, cfg *config.Config, req GenieRequest) (io.R
 		"Accept":       "text/event-stream",
 	}
 	err = api.Do(ctx, "POST", genieResponsesPath, headers, nil, req, &body)
-	// The route is fixed and carries no resource IDs, so a 404 means the
-	// endpoint itself is gone, not a missing resource. The backend route is
-	// undocumented and can move or be disabled between Databricks releases
-	// (a removed route returns 404 ENDPOINT_NOT_FOUND, "No API found for ...").
-	if errors.Is(err, apierr.ErrNotFound) {
+	// The route is fixed and carries no resource IDs, so a 404 normally means
+	// the endpoint itself is gone: the backend route is undocumented and can
+	// move or be disabled between Databricks releases (a removed route returns
+	// 404 ENDPOINT_NOT_FOUND, "No API found for ...", which the SDK maps to
+	// plain ErrNotFound). A 404 RESOURCE_DOES_NOT_EXIST is excluded: it refers
+	// to something the request named (e.g. the warehouse) and must keep the
+	// backend's own message instead of blaming the endpoint.
+	if errors.Is(err, apierr.ErrNotFound) && !errors.Is(err, apierr.ErrResourceDoesNotExist) {
 		return nil, fmt.Errorf("the Genie API is not available on this workspace: %w; the endpoint may have moved since this CLI release: %s", err, agentstream.UpdateCLIAdvice)
 	}
 	if err != nil {
