@@ -1,209 +1,122 @@
 package configsync
 
 import (
-	"reflect"
+	"slices"
 	"strings"
+
+	"github.com/databricks/cli/bundle/direct/dresources"
+	"github.com/databricks/cli/libs/structs/structpath"
 )
 
-type (
-	skipAlways           struct{}
-	skipIfZeroOrNil      struct{}
-	skipIfEmptyOrDefault struct {
-		defaults map[string]any
-	}
-)
+// shouldSkipForSync reports whether a remote change at path should be excluded
+// from config sync, based on the resource lifecycle metadata (resources.yml and
+// resources.generated.yml in bundle/direct/dresources).
+//
+// The metadata is matched directly instead of relying on the plan's per-field
+// actions: the plan answers "what will deploy do", which is not the same as
+// "does this field belong in configuration". For example, the plan re-promotes
+// dashboard etag drift to Update via ResourceDashboard.OverrideChangeDesc (for
+// modified-remotely detection), yet etag must never be written to YAML.
+//
+// Fields under ignore_remote_changes never belong in configuration (output-only,
+// etag-based, input-only), so they are skipped regardless of value. Fields under
+// backend_defaults are skipped only when absent from the config (hasConfigValue
+// is false) and the remote value matches the rule.
+func shouldSkipForSync(resourceType string, path *structpath.PathNode, value any, hasConfigValue bool) bool {
+	cfg := dresources.GetResourceConfig(resourceType)
+	generatedCfg := dresources.GetGeneratedResourceConfig(resourceType)
 
-var (
-	alwaysSkip              = skipAlways{}
-	zeroOrNil               = skipIfZeroOrNil{}
-	emptyEmailNotifications = skipIfEmptyOrDefault{defaults: map[string]any{"no_alert_for_skipped_runs": false}}
-)
-
-// serverSideDefaults contains all hardcoded server-side defaults.
-// This is a temporary solution until the bundle plan issue is resolved.
-// Fields mapped to alwaysSkip are always considered defaults regardless of value.
-// Other fields are compared using reflect.DeepEqual.
-var serverSideDefaults = map[string]any{
-	// Job-level fields
-	"resources.jobs.*.timeout_seconds":       zeroOrNil,
-	"resources.jobs.*.email_notifications":   emptyEmailNotifications,
-	"resources.jobs.*.webhook_notifications": map[string]any{},
-	"resources.jobs.*.edit_mode":             alwaysSkip, // set by CLI
-	"resources.jobs.*.performance_target":    "PERFORMANCE_OPTIMIZED",
-
-	// Task-level fields
-	"resources.jobs.*.tasks[*].run_if":                     "ALL_SUCCESS",
-	"resources.jobs.*.tasks[*].disabled":                   false,
-	"resources.jobs.*.tasks[*].timeout_seconds":            zeroOrNil,
-	"resources.jobs.*.tasks[*].notebook_task.source":       "WORKSPACE",
-	"resources.jobs.*.tasks[*].email_notifications":        emptyEmailNotifications,
-	"resources.jobs.*.tasks[*].webhook_notifications":      map[string]any{},
-	"resources.jobs.*.tasks[*].pipeline_task.full_refresh": false,
-
-	"resources.jobs.*.tasks[*].for_each_task.task.run_if":                "ALL_SUCCESS",
-	"resources.jobs.*.tasks[*].for_each_task.task.disabled":              false,
-	"resources.jobs.*.tasks[*].for_each_task.task.timeout_seconds":       zeroOrNil,
-	"resources.jobs.*.tasks[*].for_each_task.task.notebook_task.source":  "WORKSPACE",
-	"resources.jobs.*.tasks[*].for_each_task.task.email_notifications":   emptyEmailNotifications,
-	"resources.jobs.*.tasks[*].for_each_task.task.webhook_notifications": map[string]any{},
-
-	// Cluster fields (tasks)
-	"resources.jobs.*.tasks[*].new_cluster.aws_attributes":      alwaysSkip,
-	"resources.jobs.*.tasks[*].new_cluster.azure_attributes":    alwaysSkip,
-	"resources.jobs.*.tasks[*].new_cluster.gcp_attributes":      alwaysSkip,
-	"resources.jobs.*.tasks[*].new_cluster.data_security_mode":  "SINGLE_USER", // TODO this field is computed on some workspaces in integration tests, check why and if we can skip it
-	"resources.jobs.*.tasks[*].new_cluster.enable_elastic_disk": alwaysSkip,    // deprecated field
-	"resources.jobs.*.tasks[*].new_cluster.single_user_name":    alwaysSkip,
-
-	// Cluster fields (job_clusters)
-	"resources.jobs.*.job_clusters[*].new_cluster.aws_attributes":      alwaysSkip,
-	"resources.jobs.*.job_clusters[*].new_cluster.azure_attributes":    alwaysSkip,
-	"resources.jobs.*.job_clusters[*].new_cluster.gcp_attributes":      alwaysSkip,
-	"resources.jobs.*.job_clusters[*].new_cluster.data_security_mode":  "SINGLE_USER", // TODO this field is computed on some workspaces in integration tests, check why and if we can skip it
-	"resources.jobs.*.job_clusters[*].new_cluster.enable_elastic_disk": alwaysSkip,    // deprecated field
-	"resources.jobs.*.job_clusters[*].new_cluster.single_user_name":    alwaysSkip,
-
-	// Standalone cluster fields
-	"resources.clusters.*.aws_attributes":      alwaysSkip,
-	"resources.clusters.*.azure_attributes":    alwaysSkip,
-	"resources.clusters.*.gcp_attributes":      alwaysSkip,
-	"resources.clusters.*.data_security_mode":  "SINGLE_USER",
-	"resources.clusters.*.driver_node_type_id": alwaysSkip,
-	"resources.clusters.*.enable_elastic_disk": alwaysSkip,
-	"resources.clusters.*.single_user_name":    alwaysSkip,
-
-	// Experiment fields
-	"resources.experiments.*.artifact_location": alwaysSkip,
-
-	// Registered model fields
-	"resources.registered_models.*.full_name":        alwaysSkip,
-	"resources.registered_models.*.metastore_id":     alwaysSkip,
-	"resources.registered_models.*.owner":            alwaysSkip,
-	"resources.registered_models.*.storage_location": alwaysSkip,
-
-	// Volume fields
-	"resources.volumes.*.storage_location": alwaysSkip,
-
-	// SQL warehouse fields
-	"resources.sql_warehouses.*.creator_name":     alwaysSkip,
-	"resources.sql_warehouses.*.min_num_clusters": int64(1),
-	"resources.sql_warehouses.*.warehouse_type":   "CLASSIC",
-
-	// Terraform defaults
-	"resources.jobs.*.run_as": alwaysSkip,
-
-	// Pipeline fields
-	"resources.pipelines.*.storage":    alwaysSkip,
-	"resources.pipelines.*.continuous": false,
-
-	// Dashboard fields
-	// etag is output-only and never present in config. The plan re-promotes etag
-	// drift to Update via ResourceDashboard.OverrideChangeDesc (needed for deploy's
-	// modified-remotely detection), so configsync cannot rely on the plan's Skip
-	// action and must exclude the field explicitly.
-	"resources.dashboards.*.etag": alwaysSkip,
-}
-
-// shouldSkipField checks if a field should be skipped in change detection.
-// When hasConfigValue is true (field is set in config or saved state), only
-// "always skip" fields are skipped. Backend defaults are only skipped when the
-// field is not in config/state, matching the behavior of shouldSkipBackendDefault
-// in the direct deployment engine.
-func shouldSkipField(path string, value any, hasConfigValue bool) bool {
-	for pattern, expected := range serverSideDefaults {
-		if matchPattern(pattern, path) {
-			if _, ok := expected.(skipAlways); ok {
-				return true
-			}
-			if hasConfigValue {
-				return false
-			}
-			if _, ok := expected.(skipIfZeroOrNil); ok {
-				return value == nil || value == int64(0)
-			}
-			if marker, ok := expected.(skipIfEmptyOrDefault); ok {
-				m, ok := value.(map[string]any)
-				if !ok {
-					return false
-				}
-				if len(m) == 0 {
-					return true
-				}
-				return reflect.DeepEqual(m, marker.defaults)
-			}
-			return reflect.DeepEqual(value, expected)
-		}
-	}
-	return false
-}
-
-func matchPattern(pattern, path string) bool {
-	patternParts := strings.Split(pattern, ".")
-	pathParts := strings.Split(path, ".")
-	return matchParts(patternParts, pathParts)
-}
-
-func matchParts(patternParts, pathParts []string) bool {
-	if len(patternParts) == 0 && len(pathParts) == 0 {
+	if _, ok := dresources.FindMatchingRule(path, cfg.IgnoreRemoteChanges); ok {
 		return true
 	}
-	if len(patternParts) == 0 || len(pathParts) == 0 {
+	if _, ok := dresources.FindMatchingRule(path, generatedCfg.IgnoreRemoteChanges); ok {
+		return true
+	}
+
+	if hasConfigValue {
 		return false
 	}
 
-	patternPart := patternParts[0]
-	pathPart := pathParts[0]
+	return cfg.MatchesBackendDefault(path, value) || generatedCfg.MatchesBackendDefault(path, value)
+}
 
-	if patternPart == "*" {
-		return matchParts(patternParts[1:], pathParts[1:])
-	}
+// fieldsIgnoredForSync defines fields set by the CLI that cannot be specified
+// in databricks.yml and should be excluded from config-remote-sync results.
+// These are sync-specific rules: the deploy plan has different drift semantics
+// for them, so they do not belong in resources.yml.
+var fieldsIgnoredForSync = map[string][]*structpath.PatternNode{
+	"jobs": {
+		structpath.MustParsePattern("edit_mode"),
+	},
+}
 
-	if strings.Contains(patternPart, "[*]") {
-		prefix := strings.Split(patternPart, "[*]")[0]
+// fieldsKeptForSync lists fields that nested entity filtering (filterEntityDefaults)
+// must keep even though they match a backend_defaults rule. The rules are asymmetric
+// between plan and sync: for the plan, node_type_id is computed — policy-backed
+// clusters materialize the policy-resolved value remotely while config legitimately
+// omits it, so leaf-level drift must be skipped. For sync, a remotely added cluster's
+// explicit node_type_id is required configuration: stripping it would make the synced
+// YAML undeployable (cluster creation fails with 400 "Unknown node type id" unless a
+// pool or policy provides the node type).
+//
+// Keeping it unconditionally cannot produce a node_type_id/instance_pool_id conflict:
+// the Jobs API rejects requests carrying both ("The field 'node_type_id' cannot be
+// supplied when an instance pool ID is provided") and jobs/get does not materialize
+// node_type_id for pool-backed clusters, so a remote cluster never has both fields.
+var fieldsKeptForSync = map[string][]*structpath.PatternNode{
+	"jobs": {
+		structpath.MustParsePattern("tasks[*].new_cluster.node_type_id"),
+		structpath.MustParsePattern("job_clusters[*].new_cluster.node_type_id"),
+	},
+}
 
-		if strings.HasPrefix(pathPart, prefix) && strings.Contains(pathPart, "[") {
-			return matchParts(patternParts[1:], pathParts[1:])
-		}
-		return false
-	}
+// isKeptForSync reports whether a field of a remotely added entity must survive
+// filterEntityDefaults even though it matches the lifecycle metadata.
+func isKeptForSync(resourceType string, path *structpath.PathNode) bool {
+	return slices.ContainsFunc(fieldsKeptForSync[resourceType], path.HasPatternPrefix)
+}
 
-	if patternPart == pathPart {
-		return matchParts(patternParts[1:], pathParts[1:])
-	}
+func isIgnoredForSync(resourceType string, path *structpath.PathNode) bool {
+	return slices.ContainsFunc(fieldsIgnoredForSync[resourceType], path.HasPatternPrefix)
+}
 
-	return false
+type resetRule struct {
+	field *structpath.PatternNode
+	value any
 }
 
 // resetValues contains all values that should be used to reset CLI-defaulted fields.
 // If CLI-defaulted field is changed on remote and should be disabled (e.g. queueing disabled -> remote field is nil)
 // we can't define it in the config as "null" because CLI default will be applied again.
-var resetValues = map[string]any{
-	"resources.jobs.*.queue": map[string]any{
-		"enabled": false,
+var resetValues = map[string][]resetRule{
+	"jobs": {
+		{field: structpath.MustParsePattern("queue"), value: map[string]any{"enabled": false}},
 	},
 }
 
-func resetValueIfNeeded(path string, value any) any {
-	for pattern, expected := range resetValues {
-		if matchPattern(pattern, path) {
-			return expected
+func resetValueIfNeeded(resourceType string, path *structpath.PathNode, value any) any {
+	for _, rule := range resetValues[resourceType] {
+		// Exact match, not prefix: a change at a subfield (e.g. queue.enabled)
+		// must keep its own value; only a change of the whole field is reset.
+		if path.Len() == rule.field.Len() && path.HasPatternPrefix(rule.field) {
+			return rule.value
 		}
 	}
 	return value
 }
 
-// prefixedNameFields lists resource name field patterns where the name prefix
+// prefixedNameFields lists resource name fields where the name prefix
 // (e.g. "[dev user] ") is applied during deployment and should be stripped
 // when syncing remote changes back to config.
-var prefixedNameFields = []string{
-	"resources.jobs.*.name",
-	"resources.pipelines.*.name",
-	"resources.dashboards.*.display_name",
+var prefixedNameFields = map[string][]*structpath.PatternNode{
+	"jobs":       {structpath.MustParsePattern("name")},
+	"pipelines":  {structpath.MustParsePattern("name")},
+	"dashboards": {structpath.MustParsePattern("display_name")},
 }
 
 // stripNamePrefix strips the configured name prefix from name field values
 // so that the raw (unprefixed) name is written back to the config YAML.
-func stripNamePrefix(path string, value any, prefix string) any {
+func stripNamePrefix(resourceType string, path *structpath.PathNode, value any, prefix string) any {
 	if prefix == "" {
 		return value
 	}
@@ -213,10 +126,8 @@ func stripNamePrefix(path string, value any, prefix string) any {
 		return value
 	}
 
-	for _, pattern := range prefixedNameFields {
-		if matchPattern(pattern, path) {
-			return strings.TrimPrefix(s, prefix)
-		}
+	if slices.ContainsFunc(prefixedNameFields[resourceType], path.HasPatternPrefix) {
+		return strings.TrimPrefix(s, prefix)
 	}
 
 	return value

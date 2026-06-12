@@ -2,7 +2,6 @@ package direct
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"maps"
@@ -418,23 +417,14 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 	return nil
 }
 
-func findMatchingRule(path *structpath.PathNode, rules []dresources.FieldRule) (string, bool) {
-	for _, r := range rules {
-		if path.HasPatternPrefix(r.Field) {
-			return r.Reason, true
-		}
-	}
-	return "", false
-}
-
 func shouldSkip(cfg *dresources.ResourceLifecycleConfig, path *structpath.PathNode, ch *deployplan.ChangeDesc) (string, bool) {
 	if cfg == nil {
 		return "", false
 	}
-	if reason, ok := findMatchingRule(path, cfg.IgnoreLocalChanges); ok && !structdiff.IsEqual(ch.Old, ch.New) {
+	if reason, ok := dresources.FindMatchingRule(path, cfg.IgnoreLocalChanges); ok && !structdiff.IsEqual(ch.Old, ch.New) {
 		return reason, true
 	}
-	if reason, ok := findMatchingRule(path, cfg.IgnoreRemoteChanges); ok && structdiff.IsEqual(ch.Old, ch.New) {
+	if reason, ok := dresources.FindMatchingRule(path, cfg.IgnoreRemoteChanges); ok && structdiff.IsEqual(ch.Old, ch.New) {
 		return reason, true
 	}
 	return "", false
@@ -454,10 +444,10 @@ func shouldSkipNormalized(cfg *dresources.ResourceLifecycleConfig, path *structp
 	if !newOk || !remoteOk {
 		return "", false
 	}
-	if reason, ok := findMatchingRule(path, cfg.NormalizeCase); ok && strings.EqualFold(newStr, remoteStr) {
+	if reason, ok := dresources.FindMatchingRule(path, cfg.NormalizeCase); ok && strings.EqualFold(newStr, remoteStr) {
 		return reason, true
 	}
-	if reason, ok := findMatchingRule(path, cfg.NormalizeSlash); ok && strings.TrimRight(newStr, "/") == strings.TrimRight(remoteStr, "/") {
+	if reason, ok := dresources.FindMatchingRule(path, cfg.NormalizeSlash); ok && strings.TrimRight(newStr, "/") == strings.TrimRight(remoteStr, "/") {
 		return reason, true
 	}
 	return "", false
@@ -467,10 +457,10 @@ func shouldUpdateOrRecreate(cfg *dresources.ResourceLifecycleConfig, path *struc
 	if cfg == nil {
 		return deployplan.Undefined, ""
 	}
-	if reason, ok := findMatchingRule(path, cfg.RecreateOnChanges); ok {
+	if reason, ok := dresources.FindMatchingRule(path, cfg.RecreateOnChanges); ok {
 		return deployplan.Recreate, reason
 	}
-	if reason, ok := findMatchingRule(path, cfg.UpdateIDOnChanges); ok {
+	if reason, ok := dresources.FindMatchingRule(path, cfg.UpdateIDOnChanges); ok {
 		return deployplan.UpdateWithID, reason
 	}
 	return deployplan.Undefined, ""
@@ -480,37 +470,13 @@ func shouldUpdateOrRecreate(cfg *dresources.ResourceLifecycleConfig, path *struc
 // is a known backend default. Applies when old and new are nil but remote is set.
 // If the rule has allowed values, the remote value must match one of them.
 func shouldSkipBackendDefault(cfg *dresources.ResourceLifecycleConfig, path *structpath.PathNode, ch *deployplan.ChangeDesc) (string, bool) {
-	if cfg == nil || ch.Old != nil || ch.New != nil || ch.Remote == nil {
+	if ch.Old != nil || ch.New != nil {
 		return "", false
 	}
-	for _, rule := range cfg.BackendDefaults {
-		if !path.HasPatternPrefix(rule.Field) {
-			continue
-		}
-		if len(rule.Values) == 0 {
-			return deployplan.ReasonBackendDefault, true
-		}
-		if matchesAllowedValue(ch.Remote, rule.Values) {
-			return deployplan.ReasonBackendDefault, true
-		}
+	if cfg.MatchesBackendDefault(path, ch.Remote) {
+		return deployplan.ReasonBackendDefault, true
 	}
 	return "", false
-}
-
-// matchesAllowedValue checks if the remote value matches one of the allowed JSON values.
-// Each json.RawMessage is unmarshaled into the same type as remote for comparison.
-func matchesAllowedValue(remote any, values []json.RawMessage) bool {
-	remoteType := reflect.TypeOf(remote)
-	for _, raw := range values {
-		candidate := reflect.New(remoteType).Interface()
-		if err := json.Unmarshal(raw, candidate); err != nil {
-			continue
-		}
-		if structdiff.IsEqual(remote, reflect.ValueOf(candidate).Elem().Interface()) {
-			return true
-		}
-	}
-	return false
 }
 
 func allEmpty(values ...any) bool {

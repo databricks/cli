@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/deploy"
 	"github.com/databricks/cli/bundle/deployplan"
@@ -18,6 +19,7 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/structs/structpath"
 )
 
 type OperationType string
@@ -48,44 +50,68 @@ func normalizeValue(v any) (any, error) {
 	return dynValue.AsAny(), nil
 }
 
-func filterEntityDefaults(basePath string, value any) any {
-	if value == nil {
-		return nil
-	}
-
-	if arr, ok := value.([]any); ok {
-		result := make([]any, 0, len(arr))
-		for i, elem := range arr {
-			elementPath := fmt.Sprintf("%s[%d]", basePath, i)
-			result = append(result, filterEntityDefaults(elementPath, elem))
+// filterEntityDefaults removes server-side default fields from an entity that
+// is added remotely as a whole (e.g. a new task object). Each nested field is
+// matched against the same lifecycle metadata as top-level changes. Maps that
+// become empty after filtering are pruned to nil at the top level and in map
+// fields, but kept as {} inside arrays: pruning an element would change the
+// array arity. Element identity keys like task_key normally prevent full
+// pruning there anyway.
+func filterEntityDefaults(resourceType string, basePath *structpath.PathNode, value any) any {
+	switch v := value.(type) {
+	case map[string]any:
+		filtered := filterEntityMap(resourceType, basePath, v)
+		if len(filtered) == 0 {
+			return nil
+		}
+		return filtered
+	case []any:
+		result := make([]any, 0, len(v))
+		for i, elem := range v {
+			elementPath := structpath.NewIndex(basePath, i)
+			if m, ok := elem.(map[string]any); ok {
+				result = append(result, filterEntityMap(resourceType, elementPath, m))
+			} else {
+				result = append(result, filterEntityDefaults(resourceType, elementPath, elem))
+			}
 		}
 		return result
-	}
-
-	m, ok := value.(map[string]any)
-	if !ok {
+	default:
 		return value
 	}
+}
 
+// filterEntityMap drops map fields matched by the lifecycle metadata and prunes
+// nested map fields that become empty after filtering. The result may itself be
+// empty; pruning it is the caller's decision (see filterEntityDefaults).
+func filterEntityMap(resourceType string, basePath *structpath.PathNode, m map[string]any) map[string]any {
 	result := make(map[string]any)
 	for key, val := range m {
-		fieldPath := basePath + "." + key
+		fieldPath := structpath.NewStringKey(basePath, key)
 
-		if shouldSkipField(fieldPath, val, false) {
+		if shouldSkipForSync(resourceType, fieldPath, val, false) && !isKeptForSync(resourceType, fieldPath) {
 			continue
 		}
 
 		if nestedMap, ok := val.(map[string]any); ok {
-			result[key] = filterEntityDefaults(fieldPath, nestedMap)
-		} else {
-			result[key] = val
+			filtered := filterEntityMap(resourceType, fieldPath, nestedMap)
+			if len(filtered) > 0 {
+				result[key] = filtered
+			}
+			continue
 		}
+		result[key] = val
 	}
-
 	return result
 }
 
-func convertChangeDesc(path string, cd *deployplan.ChangeDesc) (*ConfigChangeDesc, error) {
+func convertChangeDesc(resourceType string, path *structpath.PathNode, cd *deployplan.ChangeDesc) (*ConfigChangeDesc, error) {
+	if isIgnoredForSync(resourceType, path) {
+		return &ConfigChangeDesc{
+			Operation: OperationSkip,
+		}, nil
+	}
+
 	// Use cd.New (current config) to decide whether the field exists "on the config side".
 	// cd.Old (saved state) must not be considered: when the user has already synced a rename
 	// locally (cd.New == nil for the old key) but state still holds the prior key, including
@@ -97,14 +123,14 @@ func convertChangeDesc(path string, cd *deployplan.ChangeDesc) (*ConfigChangeDes
 		return nil, fmt.Errorf("failed to normalize remote value: %w", err)
 	}
 
-	if shouldSkipField(path, normalizedValue, hasConfigValue) {
+	if shouldSkipForSync(resourceType, path, normalizedValue, hasConfigValue) {
 		return &ConfigChangeDesc{
 			Operation: OperationSkip,
 		}, nil
 	}
 
-	normalizedValue = filterEntityDefaults(path, normalizedValue)
-	normalizedValue = resetValueIfNeeded(path, normalizedValue)
+	normalizedValue = filterEntityDefaults(resourceType, path, normalizedValue)
+	normalizedValue = resetValueIfNeeded(resourceType, path, normalizedValue)
 
 	var op OperationType
 	if normalizedValue == nil && hasConfigValue {
@@ -152,6 +178,7 @@ func DetectChanges(ctx context.Context, b *bundle.Bundle, engine engine.EngineTy
 
 	for resourceKey, entry := range plan.Plan {
 		resourceChanges := make(ResourceChanges)
+		resourceType := config.GetResourceTypeFromKey(resourceKey)
 
 		if entry.Changes != nil {
 			for path, changeDesc := range entry.Changes {
@@ -159,15 +186,19 @@ func DetectChanges(ctx context.Context, b *bundle.Bundle, engine engine.EngineTy
 					continue
 				}
 
-				fullPath := resourceKey + "." + path
-				change, err := convertChangeDesc(fullPath, changeDesc)
+				fieldPath, err := structpath.ParsePath(path)
+				if err != nil {
+					return nil, fmt.Errorf("failed to parse path %s: %w", path, err)
+				}
+
+				change, err := convertChangeDesc(resourceType, fieldPath, changeDesc)
 				if err != nil {
 					return nil, fmt.Errorf("failed to compute config change for path %s: %w", path, err)
 				}
 				if change.Operation == OperationSkip {
 					continue
 				}
-				change.Value = stripNamePrefix(fullPath, change.Value, b.Config.Presets.NamePrefix)
+				change.Value = stripNamePrefix(resourceType, fieldPath, change.Value, b.Config.Presets.NamePrefix)
 				resourceChanges[path] = change
 			}
 		}

@@ -17,7 +17,7 @@
 
 Each field with special plan/deploy behavior must be declared in `resources.yml`. Choose the right category:
 
- - **`backend_defaults`**: The backend may fill in a value when the user doesn't specify one. Suppresses the diff when the user's config is nil/empty but remote has a value. Optionally restrict to specific allowed remote values via `values:`. Use for fields the API fills in as defaults (e.g., `format`, `run_if`, `node_type_id`). Link to TF provider suppression comment in the same format as existing entries.
+ - **`backend_defaults`**: The backend may fill in a value when the user doesn't specify one. Suppresses the diff when the user's config is nil/empty but remote has a value. Optionally restrict to specific allowed remote values via `values:`. Use for fields the API fills in as defaults (e.g., `format`, `run_if`, `driver_node_type_id`). Link to TF provider suppression comment in the same format as existing entries.
  - **`ignore_remote_changes`**: Ignore changes the remote makes to this field. Use for fields the backend manages (e.g., cloud-provider attributes like `aws_attributes`, `gcp_attributes`) or fields not returned by the update endpoint. Reason codes:
    - `output_only` — the field is computed by the backend; the user never sets it
    - `input_only` — accepted on create/update but not returned by GET (e.g., write-only tokens, flags)
