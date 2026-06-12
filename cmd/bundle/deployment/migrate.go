@@ -251,8 +251,20 @@ To start using direct engine, set "engine: direct" under bundle in your databric
 		}
 
 		for _, entry := range plan.Plan {
-			// Force all actions to be "update" so that deploym below goes through every resource
-			entry.Action = deployplan.Update
+			switch entry.Action {
+			case deployplan.Create:
+				// Resource is in config but not in terraform state; skip it during migration.
+				// It will be created on the first direct deploy.
+				entry.Action = deployplan.Skip
+			case deployplan.Delete:
+				// Resource is in terraform state but not in config. Keep as Delete so the
+				// apply migrate path can preserve its ID in direct state, allowing the next
+				// direct deploy to remove it.
+			default:
+				// Force existing resources to Update so migration reads their remote state
+				// and writes a full config snapshot.
+				entry.Action = deployplan.Update
+			}
 		}
 
 		// We need to copy ETag into new state.
