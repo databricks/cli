@@ -1,0 +1,6 @@
+# Below the 60s lower bound — client-side validation rejects before
+# any API call, so no [[Server]] stub needed.
+errcode $CLI sandbox config happy-panda-1234 --idle-timeout 30s
+
+# Above the 24h upper bound.
+errcode $CLI sandbox config happy-panda-1234 --idle-timeout 48h
