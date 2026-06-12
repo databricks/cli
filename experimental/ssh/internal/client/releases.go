@@ -71,7 +71,7 @@ func uploadReleases(ctx context.Context, workspaceFiler filer.Filer, getRelease 
 					"The connection was closed before the upload finished. "+
 					"This is usually caused by a network intermediary (corporate egress proxy, VPN, or firewall/WAF) "+
 					"enforcing a request-body size limit on POSTs to *.cloud.databricks.com. "+
-					"Try running this command from a network without such restrictions.",
+					"Try running this command from a network without such restrictions",
 					remoteArchivePath, err)
 			}
 			return fmt.Errorf("failed to upload file %s to workspace: %w", remoteArchivePath, err)
@@ -88,8 +88,7 @@ func uploadReleases(ctx context.Context, workspaceFiler filer.Filer, getRelease 
 // catches cases where a transport layer re-formats the http2 error before it
 // reaches us, losing the typed value but preserving the message shape.
 func isStreamResetError(err error) bool {
-	var se http2.StreamError
-	if errors.As(err, &se) {
+	if _, ok := errors.AsType[http2.StreamError](err); ok {
 		return true
 	}
 	msg := err.Error()
