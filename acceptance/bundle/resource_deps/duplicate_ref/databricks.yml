@@ -1,0 +1,14 @@
+bundle:
+  name: test-bundle
+
+# The same reference appearing more than once within a single field:
+# - bar: input field reference (resolvable at plan time)
+# - baz: id reference (resolved after foo is created)
+resources:
+  pipelines:
+    foo:
+      name: pfoo
+    bar:
+      name: pbar ${resources.pipelines.foo.name} ${resources.pipelines.foo.name}
+    baz:
+      name: pbaz ${resources.pipelines.foo.id} ${resources.pipelines.foo.id}
