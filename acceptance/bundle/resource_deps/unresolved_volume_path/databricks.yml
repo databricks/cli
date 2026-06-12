@@ -1,0 +1,28 @@
+bundle:
+  name: test-bundle
+
+# volume_path is computed locally during initialize and is only available when
+# catalog_name, schema_name, and name all resolve to concrete values. Here
+# bar.name comes from baz.storage_location, a remote field that is only known
+# after deploy, so bar.volume_path cannot be computed. A reference to it
+# (foo.comment) therefore resolves to an empty string rather than erroring.
+#
+# Only `validate` is exercised: this behavior is decided in the initialize phase
+# and is identical for both engines. A volume whose name is not known until
+# deploy cannot be planned by Terraform anyway (name is a required argument), so
+# plan/deploy would fail for reasons unrelated to volume_path.
+resources:
+  volumes:
+    baz:
+      catalog_name: mycatalog
+      schema_name: myschema
+      name: bazname
+    bar:
+      catalog_name: mycatalog
+      schema_name: myschema
+      name: ${resources.volumes.baz.storage_location}
+    foo:
+      catalog_name: mycatalog
+      schema_name: myschema
+      name: fooname
+      comment: ${resources.volumes.bar.volume_path}
