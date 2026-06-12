@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/spf13/cobra"
 )
@@ -44,7 +45,7 @@ func completeRemotePath(
 	wsc *databricks.WorkspaceClient,
 	toComplete string,
 ) ([]string, cobra.ShellCompDirective) {
-	me, err := wsc.CurrentUser.Me(ctx)
+	me, err := wsc.CurrentUser.Me(ctx, iam.MeRequest{})
 	if err != nil {
 		return nil, cobra.ShellCompDirectiveError
 	}

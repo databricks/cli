@@ -22,6 +22,7 @@ func (p Permission) String() string {
 	return PermissionT[iam.PermissionLevel](p).String()
 }
 
+// If the SDK exposes a resource's permission level, add it here.
 type (
 	AppPermission                  PermissionT[apps.AppPermissionLevel]
 	ClusterPermission              PermissionT[compute.ClusterPermissionLevel]

@@ -10,19 +10,11 @@
   }
 }
 {
-  "method": "GET",
-  "path": "/.well-known/databricks-config"
-}
-{
   "method": "POST",
   "path": "/api/2.0/workspace/mkdirs",
   "body": {
     "path": "/not-a-repo"
   }
-}
-{
-  "method": "GET",
-  "path": "/.well-known/databricks-config"
 }
 {
   "method": "GET",

@@ -21,8 +21,10 @@
             "dbt_task": [],
             "deployment": [
               {
+                "deployment_id": "",
                 "kind": "BUNDLE",
-                "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/state/metadata.json"
+                "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/state/metadata.json",
+                "version_id": ""
               }
             ],
             "description": null,
@@ -63,7 +65,7 @@
                     "cluster_mount_info": [],
                     "cluster_name": "",
                     "custom_tags": null,
-                    "data_security_mode": "SINGLE_USER",
+                    "data_security_mode": "DATA_SECURITY_MODE_AUTO",
                     "docker_image": [],
                     "driver_instance_pool_id": "",
                     "driver_node_type_flexibility": [],
@@ -116,7 +118,11 @@
             ],
             "performance_target": null,
             "pipeline_task": [],
-            "provider_config": [],
+            "provider_config": [
+              {
+                "workspace_id": "[NUMID]"
+              }
+            ],
             "python_wheel_task": [],
             "queue": [
               {
@@ -195,6 +201,7 @@
                 "notification_settings": [],
                 "pipeline_task": [],
                 "power_bi_task": [],
+                "python_operator_task": [],
                 "python_wheel_task": [],
                 "retry_on_timeout": false,
                 "run_if": "ALL_SUCCESS",
@@ -260,6 +267,7 @@
                 "notification_settings": [],
                 "pipeline_task": [],
                 "power_bi_task": [],
+                "python_operator_task": [],
                 "python_wheel_task": [
                   {
                     "entry_point": "main",
@@ -327,10 +335,16 @@
                 "pipeline_task": [
                   {
                     "full_refresh": false,
-                    "pipeline_id": "[UUID]"
+                    "full_refresh_selection": null,
+                    "parameters": null,
+                    "pipeline_id": "[UUID]",
+                    "refresh_flow_selection": null,
+                    "refresh_selection": null,
+                    "reset_checkpoint_selection": null
                   }
                 ],
                 "power_bi_task": [],
+                "python_operator_task": [],
                 "python_wheel_task": [],
                 "retry_on_timeout": false,
                 "run_if": "ALL_SUCCESS",
@@ -401,8 +415,10 @@
             "creator_user_name": "[USERNAME]",
             "deployment": [
               {
+                "deployment_id": "",
                 "kind": "BUNDLE",
-                "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/state/metadata.json"
+                "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/state/metadata.json",
+                "version_id": ""
               }
             ],
             "development": true,
@@ -441,7 +457,11 @@
             "name": "[dev [USERNAME]] my_default_python_etl",
             "notification": [],
             "photon": false,
-            "provider_config": [],
+            "provider_config": [
+              {
+                "workspace_id": "[NUMID]"
+              }
+            ],
             "restart_window": [],
             "root_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/files/src/my_default_python_etl",
             "run_as": [],

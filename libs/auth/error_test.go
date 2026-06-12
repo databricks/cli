@@ -2,6 +2,7 @@ package auth
 
 import (
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/databricks/databricks-sdk-go/apierr"
@@ -228,20 +229,20 @@ func TestEnrichAuthError(t *testing.T) {
 				"\n  - Consider setting up a profile: databricks auth login --profile <name>",
 		},
 		{
-			name: "401 with unified host and no profile",
+			name: "401 with unified host (resolved DiscoveryURL) and no profile",
 			cfg: &config.Config{
-				Host:                       "https://unified.cloud.databricks.com",
-				AccountID:                  "acc-123",
-				WorkspaceID:                "ws-456",
-				AuthType:                   AuthTypeDatabricksCli,
-				Experimental_IsUnifiedHost: true,
+				Host:         "https://unified.cloud.databricks.com",
+				AccountID:    "acc-123",
+				WorkspaceID:  "ws-456",
+				AuthType:     AuthTypeDatabricksCli,
+				DiscoveryURL: "https://unified.cloud.databricks.com/oidc/accounts/acc-123/.well-known/oauth-authorization-server",
 			},
 			statusCode: 401,
 			wantMsg: "test error message\n" +
 				"\nHost:      https://unified.cloud.databricks.com" +
 				"\nAuth type: OAuth (databricks-cli)" +
 				"\n\nNext steps:" +
-				"\n  - Re-authenticate: databricks auth login --host https://unified.cloud.databricks.com --account-id acc-123 --experimental-is-unified-host" +
+				"\n  - Re-authenticate: databricks auth login --host https://unified.cloud.databricks.com --account-id acc-123" +
 				"\n  - Check your identity: databricks auth describe" +
 				"\n  - Consider setting up a profile: databricks auth login --profile <name>",
 		},
@@ -259,4 +260,68 @@ func TestEnrichAuthError(t *testing.T) {
 			assert.Equal(t, tt.wantMsg, result.Error())
 		})
 	}
+}
+
+func TestAppendAccountHostHint(t *testing.T) {
+	tests := []struct {
+		name string
+		cfg  *config.Config
+		want string
+	}{
+		{
+			name: "account console host with profile",
+			cfg:  &config.Config{Host: "https://accounts.test", Profile: "acc"},
+			want: "base error\n\n" +
+				"Note: profile \"acc\" points to a Databricks account console host (https://accounts.test), which serves only account-level APIs.\n" +
+				"Workspace commands need a workspace host: run `databricks auth login --host https://<workspace-url>`, or use `databricks account ...` commands with this profile",
+		},
+		{
+			name: "account console host without profile",
+			cfg:  &config.Config{Host: "https://accounts.test"},
+			want: "base error\n\n" +
+				"Note: this configuration points to a Databricks account console host (https://accounts.test), which serves only account-level APIs.\n" +
+				"Workspace commands need a workspace host: run `databricks auth login --host https://<workspace-url>`, or use `databricks account ...` commands",
+		},
+		{
+			name: "workspace host is left unchanged",
+			cfg:  &config.Config{Host: "https://adb-123.test", Profile: "ws"},
+			want: "base error",
+		},
+		{
+			name: "empty host is left unchanged",
+			cfg:  &config.Config{},
+			want: "base error",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := AppendAccountHostHint(tt.cfg, errors.New("base error"))
+			assert.Equal(t, tt.want, result.Error())
+		})
+	}
+}
+
+func TestAppendAccountHostHintPreservesErrorChain(t *testing.T) {
+	cfg := &config.Config{Host: "https://accounts.test", Profile: "acc"}
+	original := &apierr.APIError{StatusCode: 400, Message: "Unable to load OAuth Config"}
+
+	result := AppendAccountHostHint(cfg, original)
+
+	var unwrapped *apierr.APIError
+	require.ErrorAs(t, result, &unwrapped)
+	assert.Equal(t, 400, unwrapped.StatusCode)
+}
+
+func TestAppendAccountHostHintComposesWithEnrichAuthError(t *testing.T) {
+	cfg := &config.Config{Host: "https://accounts.test", Profile: "acc", AuthType: AuthTypePat}
+	original := &apierr.APIError{StatusCode: 403, Message: "permission denied"}
+
+	// Same composition order as cmd/root.Execute: enrichment first, hint last.
+	result := AppendAccountHostHint(cfg, EnrichAuthError(t.Context(), cfg, original))
+
+	msg := result.Error()
+	assert.Contains(t, msg, "permission denied")
+	assert.Contains(t, msg, "Next steps:")
+	assert.Contains(t, msg, "Note: profile \"acc\" points to a Databricks account console host")
+	assert.Less(t, strings.Index(msg, "Next steps:"), strings.Index(msg, "Note:"))
 }

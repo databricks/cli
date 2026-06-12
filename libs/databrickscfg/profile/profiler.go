@@ -11,9 +11,9 @@ type ProfileMatchFunction func(Profile) bool
 
 func MatchWorkspaceProfiles(p Profile) bool {
 	// Workspace profile: has workspace_id (covers both classic and SPOG profiles),
-	// or is a regular workspace host (no account_id and not a legacy unified-host profile).
+	// or is a regular workspace host (no account_id).
 	// workspace_id = "none" is a sentinel for "skip workspace", so it does NOT count.
-	return (p.WorkspaceID != "" && p.WorkspaceID != auth.WorkspaceIDNone) || (p.AccountID == "" && !p.IsUnifiedHost)
+	return (p.WorkspaceID != "" && p.WorkspaceID != auth.WorkspaceIDNone) || p.AccountID == ""
 }
 
 func MatchAccountProfiles(p Profile) bool {

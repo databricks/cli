@@ -16,7 +16,7 @@ func TestNormalizeString(t *testing.T) {
 			expected: "test",
 		},
 		{
-			input:    "test test",
+			input:    "test test", //nolint:dupword
 			expected: "test_test",
 		},
 		{

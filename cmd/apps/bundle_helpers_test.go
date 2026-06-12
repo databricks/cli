@@ -2,6 +2,8 @@ package apps
 
 import (
 	"errors"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/databricks/databricks-sdk-go/service/apps"
@@ -105,6 +107,112 @@ func TestFormatAppStatusMessage(t *testing.T) {
 	})
 }
 
+func TestInferAppNameHint(t *testing.T) {
+	t.Run("returns empty when no app config exists", func(t *testing.T) {
+		t.Chdir(t.TempDir())
+
+		assert.Empty(t, inferAppNameHint())
+	})
+
+	t.Run("returns dir name when app.yml exists", func(t *testing.T) {
+		dir := t.TempDir()
+		t.Chdir(dir)
+		err := os.WriteFile(filepath.Join(dir, "app.yml"), []byte("command: [\"python\"]"), 0o644)
+		assert.NoError(t, err)
+
+		assert.Equal(t, filepath.Base(dir), inferAppNameHint())
+	})
+
+	t.Run("returns dir name when app.yaml exists", func(t *testing.T) {
+		dir := t.TempDir()
+		t.Chdir(dir)
+		err := os.WriteFile(filepath.Join(dir, "app.yaml"), []byte("command: [\"python\"]"), 0o644)
+		assert.NoError(t, err)
+
+		assert.Equal(t, filepath.Base(dir), inferAppNameHint())
+	})
+
+	t.Run("returns empty when cwd has been deleted", func(t *testing.T) {
+		dir := t.TempDir()
+		t.Chdir(dir)
+		os.Remove(dir)
+
+		assert.Empty(t, inferAppNameHint())
+	})
+}
+
+func TestMissingAppNameError(t *testing.T) {
+	t.Run("includes APP_NAME and usage info", func(t *testing.T) {
+		t.Chdir(t.TempDir())
+
+		err := missingAppNameError(nil)
+		assert.Contains(t, err.Error(), "APP_NAME")
+		assert.Contains(t, err.Error(), "databricks.yml")
+		assert.NotContains(t, err.Error(), "Did you mean")
+	})
+
+	t.Run("includes hint when app.yml exists", func(t *testing.T) {
+		dir := t.TempDir()
+		t.Chdir(dir)
+		writeErr := os.WriteFile(filepath.Join(dir, "app.yml"), []byte("command: [\"python\"]"), 0o644)
+		assert.NoError(t, writeErr)
+
+		err := missingAppNameError(nil)
+		assert.Contains(t, err.Error(), "Did you mean")
+		assert.Contains(t, err.Error(), filepath.Base(dir))
+	})
+
+	t.Run("gracefully handles deleted cwd", func(t *testing.T) {
+		dir := t.TempDir()
+		t.Chdir(dir)
+		os.Remove(dir)
+
+		err := missingAppNameError(nil)
+		assert.Contains(t, err.Error(), "APP_NAME")
+		assert.NotContains(t, err.Error(), "Did you mean")
+	})
+
+	t.Run("renders usage and hint from cmd path per verb", func(t *testing.T) {
+		dir := t.TempDir()
+		t.Chdir(dir)
+		writeErr := os.WriteFile(filepath.Join(dir, "app.yml"), []byte("command: [\"python\"]"), 0o644)
+		assert.NoError(t, writeErr)
+
+		for _, tc := range []struct {
+			verb string
+			use  string
+			arg  string
+		}{
+			{"deploy", "deploy [APP_NAME]", "APP_NAME"},
+			{"start", "start [NAME]", "NAME"},
+			{"stop", "stop [NAME]", "NAME"},
+			{"delete", "delete [NAME]", "NAME"},
+		} {
+			t.Run(tc.verb, func(t *testing.T) {
+				root := &cobra.Command{Use: "databricks"}
+				apps := &cobra.Command{Use: "apps"}
+				sub := &cobra.Command{Use: tc.use}
+				root.AddCommand(apps)
+				apps.AddCommand(sub)
+
+				err := missingAppNameError(sub)
+				assert.Contains(t, err.Error(), "missing required argument: "+tc.arg)
+				assert.Contains(t, err.Error(), "Usage: databricks apps "+tc.verb+" "+tc.arg)
+				assert.Contains(t, err.Error(), "databricks apps "+tc.verb+" "+filepath.Base(dir))
+			})
+		}
+	})
+
+	t.Run("ignores non-regular app.yml entries", func(t *testing.T) {
+		dir := t.TempDir()
+		t.Chdir(dir)
+		assert.NoError(t, os.Mkdir(filepath.Join(dir, "app.yml"), 0o755))
+
+		err := missingAppNameError(nil)
+		assert.NotContains(t, err.Error(), "Did you mean")
+	})
+}
+
 func TestMakeArgsOptionalWithBundle(t *testing.T) {
 	t.Run("updates command usage", func(t *testing.T) {
 		cmd := &cobra.Command{}
@@ -116,6 +224,17 @@ func TestMakeArgsOptionalWithBundle(t *testing.T) {
 		cmd := &cobra.Command{}
 		makeArgsOptionalWithBundle(cmd, "test [NAME]")
 		assert.NotNil(t, cmd.Args)
+	})
+
+	t.Run("returns missing app name error when no bundle config exists", func(t *testing.T) {
+		t.Chdir(t.TempDir())
+
+		cmd := &cobra.Command{}
+		makeArgsOptionalWithBundle(cmd, "test [NAME]")
+
+		err := cmd.Args(cmd, nil)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "missing required argument: NAME")
 	})
 }
 

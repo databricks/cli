@@ -108,5 +108,9 @@ func Groups() []cobra.Group {
 			ID:    "environments",
 			Title: "Environments",
 		},
+		{
+			ID:    "bundle",
+			Title: "Bundle",
+		},
 	}
 }

@@ -181,7 +181,10 @@ For more information, see: https://docs.databricks.com/aws/en/oltp/
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
 
-		instances, projects := listAllDatabases(ctx, w)
+		instances, projects, err := listAllDatabases(ctx, w)
+		if err != nil {
+			return nil, cobra.ShellCompDirectiveError
+		}
 
 		var names []string
 		for _, inst := range instances {
@@ -237,8 +240,10 @@ func parseResourcePath(input string) (project, branch, endpoint string, err erro
 }
 
 // listAllDatabases fetches all database instances and projects in parallel.
-// Errors are silently ignored; callers should check for empty results.
-func listAllDatabases(ctx context.Context, w *databricks.WorkspaceClient) ([]database.DatabaseInstance, []postgres.Project) {
+// A single failing call is tolerated because a workspace may have only one of
+// the two products enabled; an error is returned only when both calls fail,
+// so that e.g. an auth failure is not reported as an empty workspace.
+func listAllDatabases(ctx context.Context, w *databricks.WorkspaceClient) ([]database.DatabaseInstance, []postgres.Project, error) {
 	type result[T any] struct {
 		value []T
 		err   error
@@ -260,6 +265,10 @@ func listAllDatabases(ctx context.Context, w *databricks.WorkspaceClient) ([]dat
 	instResult := <-instancesCh
 	projResult := <-projectsCh
 
+	if instResult.err != nil && projResult.err != nil {
+		return nil, nil, errors.Join(instResult.err, projResult.err)
+	}
+
 	var instances []database.DatabaseInstance
 	var projects []postgres.Project
 	if instResult.err == nil {
@@ -269,7 +278,7 @@ func listAllDatabases(ctx context.Context, w *databricks.WorkspaceClient) ([]dat
 		projects = projResult.value
 	}
 
-	return instances, projects
+	return instances, projects, nil
 }
 
 // showSelectionAndConnect shows a combined dropdown of Lakebase databases.
@@ -278,8 +287,11 @@ func showSelectionAndConnect(ctx context.Context, retryConfig libpsql.RetryConfi
 
 	sp := cmdio.NewSpinner(ctx)
 	sp.Update("Loading Lakebase databases...")
-	instances, projects := listAllDatabases(ctx, w)
+	instances, projects, err := listAllDatabases(ctx, w)
 	sp.Close()
+	if err != nil {
+		return fmt.Errorf("failed to list Lakebase databases: %w", err)
+	}
 
 	if len(instances) == 0 && len(projects) == 0 {
 		return errors.New("no Lakebase databases found in workspace")
@@ -309,12 +321,12 @@ func showSelectionAndConnect(ctx context.Context, retryConfig libpsql.RetryConfi
 		return err
 	}
 
-	if strings.HasPrefix(selected, "provisioned:") {
-		instanceName := strings.TrimPrefix(selected, "provisioned:")
+	if after, ok := strings.CutPrefix(selected, "provisioned:"); ok {
+		instanceName := after
 		return connectProvisioned(ctx, instanceName, retryConfig, extraArgs)
 	}
-	if strings.HasPrefix(selected, "autoscaling:") {
-		projectName := strings.TrimPrefix(selected, "autoscaling:")
+	if after, ok := strings.CutPrefix(selected, "autoscaling:"); ok {
+		projectName := after
 		projectID := extractIDFromName(projectName, "projects")
 		return connectAutoscaling(ctx, projectID, "", "", retryConfig, extraArgs)
 	}

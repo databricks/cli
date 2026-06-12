@@ -46,9 +46,13 @@
         "cluster_name": "test-cluster-[UNIQUE_NAME]",
         "driver_node_type_id": "[NODE_TYPE_ID]",
         "enable_elastic_disk": false,
+        "lifecycle": {
+          "started": false
+        },
         "node_type_id": "[NODE_TYPE_ID]",
         "num_workers": 2,
-        "spark_version": "13.3.x-snapshot-scala2.12"
+        "spark_version": "13.3.x-snapshot-scala2.12",
+        "state": "TERMINATED"
       },
       "changes": {
         "autoscale": {
@@ -75,6 +79,13 @@
           "action": "skip",
           "reason": "empty",
           "remote": false
+        },
+        "lifecycle": {
+          "action": "skip",
+          "reason": "backend_default",
+          "remote": {
+            "started": false
+          }
         },
         "num_workers": {
           "action": "update",
@@ -152,6 +163,13 @@
           "action": "skip",
           "reason": "empty",
           "remote": false
+        },
+        "lifecycle": {
+          "action": "skip",
+          "reason": "backend_default",
+          "remote": {
+            "started": false
+          }
         }
       }
     }
@@ -191,6 +209,9 @@
         "cluster_name": "test-cluster-[UNIQUE_NAME]",
         "driver_node_type_id": "[NODE_TYPE_ID]",
         "enable_elastic_disk": false,
+        "lifecycle": {
+          "started": true
+        },
         "node_type_id": "[NODE_TYPE_ID]",
         "spark_version": "13.3.x-snapshot-scala2.12",
         "state": "RUNNING"
@@ -227,6 +248,13 @@
           "action": "skip",
           "reason": "empty",
           "remote": false
+        },
+        "lifecycle": {
+          "action": "skip",
+          "reason": "backend_default",
+          "remote": {
+            "started": true
+          }
         }
       }
     }
@@ -263,6 +291,9 @@
         "cluster_name": "test-cluster-[UNIQUE_NAME]",
         "driver_node_type_id": "[NODE_TYPE_ID]",
         "enable_elastic_disk": false,
+        "lifecycle": {
+          "started": true
+        },
         "node_type_id": "[NODE_TYPE_ID]",
         "spark_version": "13.3.x-snapshot-scala2.12",
         "state": "RUNNING"
@@ -297,6 +328,13 @@
           "action": "skip",
           "reason": "empty",
           "remote": false
+        },
+        "lifecycle": {
+          "action": "skip",
+          "reason": "backend_default",
+          "remote": {
+            "started": true
+          }
         },
         "num_workers": {
           "action": "resize",

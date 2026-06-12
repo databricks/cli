@@ -64,6 +64,7 @@ func getPagedBytes(ctx context.Context, method, url string, body io.Reader) (*pa
 	if err != nil {
 		return nil, err
 	}
+	defer res.Body.Close()
 	if res.StatusCode == http.StatusNotFound {
 		return nil, ErrNotFound
 	}
@@ -71,7 +72,6 @@ func getPagedBytes(ctx context.Context, method, url string, body io.Reader) (*pa
 		return nil, fmt.Errorf("github request failed: %s", res.Status)
 	}
 	nextLink := parseNextLink(res.Header.Get("link"))
-	defer res.Body.Close()
 	bodyBytes, err := io.ReadAll(res.Body)
 	if err != nil {
 		return nil, err
@@ -90,8 +90,8 @@ func parseNextLink(linkHeader string) string {
 	//   https://docs.github.com/en/rest/using-the-rest-api/using-pagination-in-the-rest-api?apiVersion=2022-11-28#using-link-headers
 	// An example link header to handle:
 	//   link: <https://api.github.com/repositories/1300192/issues?page=2>; rel="prev", <https://api.github.com/repositories/1300192/issues?page=4>; rel="next", <https://api.github.com/repositories/1300192/issues?page=515>; rel="last", <https://api.github.com/repositories/1300192/issues?page=1>; rel="first"
-	links := strings.Split(linkHeader, ",")
-	for _, link := range links {
+	links := strings.SplitSeq(linkHeader, ",")
+	for link := range links {
 		parts := strings.Split(strings.TrimSpace(link), ";")
 		if len(parts) != 2 {
 			continue

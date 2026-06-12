@@ -6,6 +6,9 @@
   "headers": {
     "Authorization": [
       "Bearer [DATABRICKS_TOKEN]"
+    ],
+    "X-Databricks-Workspace-Id": [
+      "[NUMID]"
     ]
   },
   "method": "POST",

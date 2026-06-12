@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/http"
 	"net/http/httptest"
 	"os/exec"
 	"sync"
@@ -105,26 +106,25 @@ func TestMultipleClients(t *testing.T) {
 	defer client2.Cleanup()
 
 	messageCount := 10
-	expectedClientOutput1 := ""
-	expectedClientOutput2 := ""
+	var expectedClientOutput1, expectedClientOutput2 []byte
 	for i := range messageCount {
 		message := fmt.Appendf(nil, "client 1 message %d\n", i)
 		_, err := client1.InputWriter.Write(message)
 		require.NoError(t, err)
 		err = client1.Output.AssertWrite(message)
 		require.NoError(t, err)
-		expectedClientOutput1 += string(message)
+		expectedClientOutput1 = append(expectedClientOutput1, message...)
 
 		message = fmt.Appendf(nil, "client 2 message %d\n", i)
 		_, err = client2.InputWriter.Write(message)
 		require.NoError(t, err)
 		err = client2.Output.AssertWrite(message)
 		require.NoError(t, err)
-		expectedClientOutput2 += string(message)
+		expectedClientOutput2 = append(expectedClientOutput2, message...)
 	}
 
-	assert.Equal(t, expectedClientOutput1, client1.Output.String())
-	assert.Equal(t, expectedClientOutput2, client2.Output.String())
+	assert.Equal(t, string(expectedClientOutput1), client1.Output.String())
+	assert.Equal(t, string(expectedClientOutput2), client2.Output.String())
 }
 
 func TestMaxClients(t *testing.T) {
@@ -168,7 +168,7 @@ func TestHandover(t *testing.T) {
 	client := createTestClient(t, server.URL, requestHandoverTick, nil)
 	defer client.Cleanup()
 
-	expectedOutput := ""
+	var expectedOutput []byte
 
 	wg := sync.WaitGroup{}
 	wg.Go(func() {
@@ -181,7 +181,7 @@ func TestHandover(t *testing.T) {
 			if err != nil {
 				t.Errorf("failed to write message %d: %v", i, err)
 			}
-			expectedOutput += string(message)
+			expectedOutput = append(expectedOutput, message...)
 		}
 	})
 
@@ -191,7 +191,7 @@ func TestHandover(t *testing.T) {
 	wg.Wait()
 
 	// client.Output is created by appending incoming messages as they arrive, so we are also test correct order here
-	assert.Equal(t, expectedOutput, client.Output.String())
+	assert.Equal(t, string(expectedOutput), client.Output.String())
 }
 
 // Tests handovers in quick succession with few messages in between.
@@ -207,7 +207,7 @@ func TestQuickHandover(t *testing.T) {
 	client := createTestClient(t, server.URL, requestHandoverTick, nil)
 	defer client.Cleanup()
 
-	expectedOutput := ""
+	var expectedOutput []byte
 
 	wg := sync.WaitGroup{}
 	wg.Go(func() {
@@ -220,7 +220,7 @@ func TestQuickHandover(t *testing.T) {
 			if err != nil {
 				t.Errorf("failed to write message %d: %v", i, err)
 			}
-			expectedOutput += string(message)
+			expectedOutput = append(expectedOutput, message...)
 		}
 	})
 
@@ -229,5 +229,87 @@ func TestQuickHandover(t *testing.T) {
 
 	wg.Wait()
 
-	assert.Equal(t, expectedOutput, client.Output.String())
+	assert.Equal(t, string(expectedOutput), client.Output.String())
+}
+
+// TestClientExitsWhenServerCommandFails reproduces the missing-sshd case: the server accepts the
+// websocket but can't launch its command, so it closes the connection immediately. The client
+// proxy must exit promptly instead of hanging on the handover goroutine (which would leave the
+// ssh client waiting until its ConnectTimeout).
+func TestClientExitsWhenServerCommandFails(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	connections := NewConnectionsManager(2, time.Hour)
+	server := httptest.NewServer(NewProxyServer(ctx, connections, func(ctx context.Context) *exec.Cmd {
+		// A binary that does not exist: serverCmd.Start() fails, mirroring a missing /usr/sbin/sshd.
+		return exec.CommandContext(ctx, "databricks-ssh-nonexistent-binary")
+	}))
+	defer server.Close()
+
+	wsURL := "ws" + server.URL[4:]
+	createConn := func(ctx context.Context, connID string) (*websocket.Conn, error) {
+		conn, _, err := websocket.DefaultDialer.Dial(fmt.Sprintf("%s?id=%s", wsURL, connID), nil) // nolint:bodyclose
+		return conn, err
+	}
+	// Source is never closed by the test; only the server-side close must drive the client to exit.
+	src, _ := io.Pipe()
+	requestHandoverTick := func() <-chan time.Time { return time.After(time.Hour) }
+
+	done := make(chan error, 1)
+	go func() {
+		done <- RunClientProxy(ctx, src, io.Discard, requestHandoverTick, createConn)
+	}()
+
+	select {
+	case <-done:
+		// Returned promptly after the server closed the connection — no hang.
+	case <-time.After(10 * time.Second):
+		t.Fatal("RunClientProxy hung after the server closed the connection")
+	}
+}
+
+// TestClientTimesOutWhenServerSendsNothing reproduces the harder missing-sshd case: the server
+// accepts the websocket but holds it open without ever sending the SSH banner (the real server
+// does this after failing to launch sshd). The client must abort on the handshake timeout rather
+// than block forever on its read loops.
+func TestClientTimesOutWhenServerSendsNothing(t *testing.T) {
+	original := clientHandshakeTimeout
+	clientHandshakeTimeout = 300 * time.Millisecond
+	defer func() { clientHandshakeTimeout = original }()
+
+	ctx := cmdio.MockDiscard(t.Context())
+	upgrader := websocket.Upgrader{}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		conn, err := upgrader.Upgrade(w, r, nil)
+		if err != nil {
+			return
+		}
+		defer conn.Close()
+		// Hold the connection open, sending nothing, until the client goes away.
+		for {
+			if _, _, err := conn.ReadMessage(); err != nil {
+				return
+			}
+		}
+	}))
+	defer server.Close()
+
+	wsURL := "ws" + server.URL[4:]
+	createConn := func(ctx context.Context, connID string) (*websocket.Conn, error) {
+		conn, _, err := websocket.DefaultDialer.Dial(fmt.Sprintf("%s?id=%s", wsURL, connID), nil) // nolint:bodyclose
+		return conn, err
+	}
+	src, _ := io.Pipe()
+	requestHandoverTick := func() <-chan time.Time { return time.After(time.Hour) }
+
+	done := make(chan error, 1)
+	go func() {
+		done <- RunClientProxy(ctx, src, io.Discard, requestHandoverTick, createConn)
+	}()
+
+	select {
+	case err := <-done:
+		require.ErrorIs(t, err, errHandshakeTimeout)
+	case <-time.After(10 * time.Second):
+		t.Fatal("RunClientProxy did not abort on the handshake timeout")
+	}
 }

@@ -18,6 +18,7 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/spf13/cobra"
 )
 
@@ -28,7 +29,7 @@ const SHUTDOWN_TIMEOUT = 15 * time.Second
 func setupWorkspaceAndConfig(cmd *cobra.Command, entryPoint string, appPort int) (*runlocal.Config, *runlocal.AppSpec, error) {
 	ctx := cmd.Context()
 	w := cmdctx.WorkspaceClient(ctx)
-	workspaceID, err := w.CurrentWorkspaceID(ctx)
+	workspaceID, err := auth.ResolveWorkspaceID(ctx, w)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -116,7 +117,7 @@ func setupProxy(ctx context.Context, cmd *cobra.Command, config *runlocal.Config
 		return err
 	}
 
-	me, err := w.CurrentUser.Me(ctx)
+	me, err := w.CurrentUser.Me(ctx, iam.MeRequest{})
 	if err != nil {
 		return err
 	}
@@ -191,7 +192,7 @@ func newRunLocal() *cobra.Command {
 
 	  This command starts an app locally.`
 
-	cmd.Flags().IntVar(&port, "port", 8001, "Port on which to run the app app proxy")
+	cmd.Flags().IntVar(&port, "port", 8001, "Port on which to run the app proxy")
 	cmd.Flags().IntVar(&appPort, "app-port", runlocal.DEFAULT_PORT, "Port on which to run the app")
 	cmd.Flags().BoolVar(&debug, "debug", false, "Enable debug mode")
 	cmd.Flags().BoolVar(&prepareEnvironment, "prepare-environment", false, "Prepares the environment for running the app. Requires 'uv' to be installed.")

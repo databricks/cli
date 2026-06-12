@@ -12,14 +12,18 @@
 /acceptance/pipelines/      @jefferycheng1 @kanterov @lennartkats-db
 
 # Labs
-/cmd/labs/                  @alexott @nfx
-/acceptance/labs/           @alexott @nfx
+/cmd/labs/                  @alexott @asnare
+/acceptance/labs/           @alexott @asnare
 
 # Apps
 /cmd/apps/                  team:eng-apps-devex
 /cmd/workspace/apps/        team:eng-apps-devex
 /libs/apps/                 team:eng-apps-devex
 /acceptance/apps/           team:eng-apps-devex
+
+# Sandbox
+/cmd/sandbox/               team:eng-sandbox
+/acceptance/cmd/sandbox/    team:eng-sandbox
 
 # Auth
 /cmd/auth/                  team:platform
@@ -58,6 +62,14 @@
 
 # Internal
 /internal/                  team:platform
+
+# AI tools
+/cmd/aitools/               team:eng-apps-devex team:platform @lennartkats-db
+/libs/aitools/              team:eng-apps-devex team:platform @lennartkats-db
+
+# CLI compatibility manifest
+/internal/build/cli-compat.json  team:eng-apps-devex team:platform
+/libs/clicompat/                 team:eng-apps-devex team:platform
 
 # Experimental
 /experimental/aitools/      team:eng-apps-devex @lennartkats-db

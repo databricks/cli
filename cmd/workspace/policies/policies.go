@@ -33,6 +33,10 @@ func New() *cobra.Command {
 		RunE:    root.ReportUnknownSubcommand,
 	}
 
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
+
 	// Add methods
 	cmd.AddCommand(newCreatePolicy())
 	cmd.AddCommand(newDeletePolicy())
@@ -129,6 +133,8 @@ func newCreatePolicy() *cobra.Command {
       Supported values: [POLICY_TYPE_COLUMN_MASK, POLICY_TYPE_ROW_FILTER]`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
@@ -228,6 +234,8 @@ func newDeletePolicy() *cobra.Command {
     NAME: Required. The name of the policy to delete`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(3)
@@ -289,6 +297,8 @@ func newGetPolicy() *cobra.Command {
     NAME: Required. The name of the policy to retrieve.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(3)
@@ -369,6 +379,8 @@ func newListPolicies() *cobra.Command {
     ON_SECURABLE_FULLNAME: Required. The fully qualified name of securable to list policies for.`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -491,6 +503,8 @@ func newUpdatePolicy() *cobra.Command {
       Supported values: [POLICY_TYPE_COLUMN_MASK, POLICY_TYPE_ROW_FILTER]`
 
 	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {

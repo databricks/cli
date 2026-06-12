@@ -101,7 +101,7 @@ func hasIncompatibleWheelTasks(ctx context.Context, b *bundle.Bundle) diag.Diagn
 				}
 				version = cluster.SparkVersion
 			} else {
-				version, err = getSparkVersionForCluster(ctx, b.WorkspaceClient(), task.ExistingClusterId)
+				version, err = getSparkVersionForCluster(ctx, b.WorkspaceClient(ctx), task.ExistingClusterId)
 				// If there's error getting spark version for cluster, do not mark it as incompatible
 				if err != nil {
 					log.Warnf(ctx, "unable to get spark version for cluster %s, err: %s", task.ExistingClusterId, err.Error())

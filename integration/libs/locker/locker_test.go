@@ -62,7 +62,7 @@ func TestLock(t *testing.T) {
 			assert.ErrorContains(t, lockerErrs[i], "Use --force-lock to override")
 		}
 	}
-	assert.Equal(t, 1, countActive, "Exactly one locker should successfull acquire the lock")
+	assert.Equal(t, 1, countActive, "Exactly one locker should successfully acquire the lock")
 
 	// test remote lock matches active lock
 	remoteLocker, err := locker.GetActiveLockState(ctx)

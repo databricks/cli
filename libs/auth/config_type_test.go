@@ -7,6 +7,23 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestHasUnifiedHostSignal(t *testing.T) {
+	cases := []struct {
+		name         string
+		discoveryURL string
+		want         bool
+	}{
+		{name: "no signal", want: false},
+		{name: "account-scoped OIDC", discoveryURL: "https://spog.databricks.com/oidc/accounts/acct-123/.well-known/oauth-authorization-server", want: true},
+		{name: "workspace-scoped OIDC", discoveryURL: "https://workspace.databricks.com/oidc/.well-known/oauth-authorization-server", want: false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, HasUnifiedHostSignal(tc.discoveryURL))
+		})
+	}
+}
+
 func TestResolveConfigType(t *testing.T) {
 	cases := []struct {
 		name string
@@ -60,26 +77,7 @@ func TestResolveConfigType(t *testing.T) {
 			want: config.WorkspaceConfig,
 		},
 		{
-			name: "IsUnifiedHost fallback without discovery routes to AccountConfig",
-			cfg: &config.Config{
-				Host:                       "https://spog.databricks.com",
-				AccountID:                  "acct-123",
-				Experimental_IsUnifiedHost: true,
-			},
-			want: config.AccountConfig,
-		},
-		{
-			name: "IsUnifiedHost fallback with workspace routes to WorkspaceConfig",
-			cfg: &config.Config{
-				Host:                       "https://spog.databricks.com",
-				AccountID:                  "acct-123",
-				WorkspaceID:                "ws-456",
-				Experimental_IsUnifiedHost: true,
-			},
-			want: config.WorkspaceConfig,
-		},
-		{
-			name: "no discovery and no IsUnifiedHost stays WorkspaceConfig",
+			name: "no discovery stays WorkspaceConfig",
 			cfg: &config.Config{
 				Host:      "https://workspace.databricks.com",
 				AccountID: "acct-123",

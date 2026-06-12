@@ -457,7 +457,7 @@ func TestCheckAndUpdateSettings_CreatesBackup(t *testing.T) {
 		_ = tst.Stdin.Flush()
 	}()
 
-	err = CheckAndUpdateSettings(ctx, "cursor", "my-host")
+	err = CheckAndUpdateSettings(ctx, "cursor", "my-host", false)
 	require.NoError(t, err)
 
 	originalBakContent, err := os.ReadFile(settingsPath + fileutil.SuffixOriginalBak)
@@ -473,7 +473,7 @@ func TestCheckAndUpdateSettings_CreatesBackup(t *testing.T) {
 		_ = tst.Stdin.Flush()
 	}()
 
-	err = CheckAndUpdateSettings(ctx, "cursor", "my-host-2")
+	err = CheckAndUpdateSettings(ctx, "cursor", "my-host-2", false)
 	require.NoError(t, err)
 
 	latestBakContent, err := os.ReadFile(settingsPath + fileutil.SuffixLatestBak)
@@ -484,6 +484,52 @@ func TestCheckAndUpdateSettings_CreatesBackup(t *testing.T) {
 	originalBakContent2, err := os.ReadFile(settingsPath + fileutil.SuffixOriginalBak)
 	require.NoError(t, err)
 	assert.Equal(t, originalContent, originalBakContent2)
+}
+
+func TestCheckAndUpdateSettings_AutoApproveWithoutPromptSupport(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("path setup differs on windows")
+	}
+
+	tmpDir := t.TempDir()
+	t.Setenv("HOME", tmpDir)
+
+	// Default test context has PromptSupported=false; --auto-approve must still apply updates.
+	ctx, _ := cmdio.NewTestContextWithStdout(t.Context())
+
+	settingsPath, err := getDefaultSettingsPath(ctx, "cursor")
+	require.NoError(t, err)
+	require.NoError(t, os.MkdirAll(filepath.Dir(settingsPath), 0o755))
+	require.NoError(t, os.WriteFile(settingsPath, []byte(`{}`), 0o600))
+
+	err = CheckAndUpdateSettings(ctx, "cursor", "my-host", true)
+	require.NoError(t, err)
+
+	updated, err := os.ReadFile(settingsPath)
+	require.NoError(t, err)
+	assert.Contains(t, string(updated), "my-host")
+	assert.Contains(t, string(updated), "29500-29505")
+}
+
+func TestCheckAndUpdateSettings_AutoApproveCreatesMissingFile(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("path setup differs on windows")
+	}
+
+	tmpDir := t.TempDir()
+	t.Setenv("HOME", tmpDir)
+
+	ctx, _ := cmdio.NewTestContextWithStdout(t.Context())
+
+	settingsPath, err := getDefaultSettingsPath(ctx, "cursor")
+	require.NoError(t, err)
+
+	err = CheckAndUpdateSettings(ctx, "cursor", "my-host", true)
+	require.NoError(t, err)
+
+	created, err := os.ReadFile(settingsPath)
+	require.NoError(t, err)
+	assert.Contains(t, string(created), "my-host")
 }
 
 func TestSaveSettings_Formatting(t *testing.T) {

@@ -6,10 +6,10 @@ Usage:
   databricks account [command]
 
 Identity and Access Management
-  access-control                      These APIs manage access rules on resources in an account.
+  access-control                      *Public Preview* These APIs manage access rules on resources in an account.
   groups                              Groups simplify identity management, making it easier to assign access to Databricks account, data, and other securable objects.
   groups-v2                           Groups simplify identity management, making it easier to assign access to Databricks account, data, and other securable objects.
-  iam-v2                              These APIs are used to manage identities and the workspace access of these identities in <Databricks>.
+  iam-v2                              *Beta* These APIs are used to manage identities and the workspace access of these identities in <Databricks>.
   service-principals                  Identities for use with jobs, automated tools, and systems such as scripts, apps, and CI/CD platforms.
   service-principals-v2               Identities for use with jobs, automated tools, and systems such as scripts, apps, and CI/CD platforms.
   users                               User identities recognized by Databricks and represented by email addresses.
@@ -26,13 +26,13 @@ Settings
   network-connectivity                These APIs provide configurations for the network connectivity of your workspaces for serverless compute resources.
   network-policies                    These APIs manage network policies for this account.
   settings                            Accounts Settings API allows users to manage settings at the account level.
-  settings-v2                         APIs to manage account level settings.
+  settings-v2                         *Public Preview* APIs to manage account level settings.
   workspace-network-configuration     These APIs allow configuration of network settings for Databricks workspaces by selecting which network policy to associate with the workspace.
 
 Provisioning
   credentials                         These APIs manage credential configurations for this workspace.
   encryption-keys                     These APIs manage encryption key configurations for this workspace (optional).
-  endpoints                           These APIs manage endpoint configurations for this account.
+  endpoints                           *Public Preview* These APIs manage endpoint configurations for this account.
   networks                            These APIs manage network configurations for customer-managed VPCs (optional).
   private-access                      These APIs manage private access settings for this account.
   storage                             These APIs manage storage configurations for this workspace.
@@ -41,10 +41,10 @@ Provisioning
 
 Billing
   billable-usage                      This API allows you to download billable usage logs for the specified account and date range.
-  budget-policy                       A service serves REST API about Budget policies.
-  budgets                             These APIs manage budget configurations for this account.
+  budget-policy                       *Public Preview* A service serves REST API about Budget policies.
+  budgets                             *Public Preview* These APIs manage budget configurations for this account.
   log-delivery                        These APIs manage log delivery configurations for this account.
-  usage-dashboards                    These APIs manage usage dashboards for this account.
+  usage-dashboards                    *Public Preview* These APIs manage usage dashboards for this account.
 
 OAuth
   custom-app-integration              These APIs enable administrators to manage custom OAuth app integrations, which is required for adding/using Custom OAuth App Integration like Tableau Cloud for Databricks in AWS cloud.

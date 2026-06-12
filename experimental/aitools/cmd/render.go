@@ -9,7 +9,6 @@ import (
 	"text/tabwriter"
 
 	"github.com/databricks/cli/libs/tableview"
-	"github.com/databricks/databricks-sdk-go/service/sql"
 )
 
 const (
@@ -17,16 +16,15 @@ const (
 	maxColumnWidth = 40
 )
 
-// extractColumns returns column names from the query result manifest.
-func extractColumns(manifest *sql.ResultManifest) []string {
-	if manifest == nil || manifest.Schema == nil {
-		return nil
+// renderBatchJSON writes batch results as a JSON array. The array preserves
+// input order and includes one object per submitted statement.
+func renderBatchJSON(w io.Writer, results []batchResult) error {
+	output, err := json.MarshalIndent(results, "", "  ")
+	if err != nil {
+		return fmt.Errorf("marshal batch results: %w", err)
 	}
-	columns := make([]string, len(manifest.Schema.Columns))
-	for i, col := range manifest.Schema.Columns {
-		columns[i] = col.Name
-	}
-	return columns
+	fmt.Fprintf(w, "%s\n", output)
+	return nil
 }
 
 // renderJSON writes query results as a parseable JSON array to stdout.

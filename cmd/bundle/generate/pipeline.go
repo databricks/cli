@@ -73,7 +73,7 @@ like catalogs, schemas, and compute configurations per target.`,
 			return root.ErrAlreadyPrinted
 		}
 
-		w := b.WorkspaceClient()
+		w := b.WorkspaceClient(ctx)
 		pipeline, err := w.Pipelines.Get(ctx, pipelines.GetPipelineRequest{PipelineId: pipelineId})
 		if err != nil {
 			return err

@@ -53,7 +53,7 @@ func checkFolderPermission(ctx context.Context, b *bundle.Bundle, folderPath str
 		return nil
 	}
 
-	w := b.WorkspaceClient().Workspace
+	w := b.WorkspaceClient(ctx).Workspace
 	obj, err := getClosestExistingObject(ctx, w, folderPath)
 	if err != nil {
 		return diag.FromErr(err)

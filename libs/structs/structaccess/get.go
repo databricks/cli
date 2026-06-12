@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"slices"
 
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structtag"
@@ -65,6 +66,11 @@ func getValue(v any, path *structpath.PathNode) (reflect.Value, error) {
 			}
 			kind := cur.Kind()
 			if kind != reflect.Slice && kind != reflect.Array {
+				// Terraform represents single-block fields as lists and uses [0] to access them.
+				// Treat [0] on a struct as a no-op so TF-style paths work against DABs structs.
+				if idx == 0 && kind == reflect.Struct {
+					continue
+				}
 				return reflect.Value{}, fmt.Errorf("%s: cannot index %s", node.String(), kind)
 			}
 			if idx < 0 || idx >= cur.Len() {
@@ -350,12 +356,7 @@ func getEmbeddedStructForReading(fieldValue reflect.Value) reflect.Value {
 
 // containsString checks if a slice contains a specific string
 func containsString(slice []string, str string) bool {
-	for _, s := range slice {
-		if s == str {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(slice, str)
 }
 
 // isEmptyForOmitEmpty returns true if the value should be omitted by JSON omitempty.

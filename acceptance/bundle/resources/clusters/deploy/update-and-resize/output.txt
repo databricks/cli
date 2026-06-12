@@ -20,21 +20,6 @@ Updating deployment state...
 Deployment complete!
 
 >>> jq select(.method == "POST" and (.path | contains("/clusters/edit"))) | del(.body.aws_attributes, .body.driver_node_type_id, .body.data_security_mode, .body.enable_elastic_disk) out.requests.txt
-{
-  "method": "POST",
-  "path": "/api/2.1/clusters/edit",
-  "body": {
-    "autotermination_minutes": 60,
-    "cluster_id": "[CLUSTER_ID]",
-    "cluster_name": "test-cluster-[UNIQUE_NAME]",
-    "node_type_id": "[NODE_TYPE_ID]",
-    "num_workers": 3,
-    "spark_conf": {
-      "spark.executor.memory": "2g"
-    },
-    "spark_version": "13.3.x-snapshot-scala2.12"
-  }
-}
 
 === Cluster should have new num_workers
 {
@@ -44,22 +29,21 @@ Deployment complete!
 
 === Starting the cluster
 {
-  "autotermination_minutes":60,
+  "autotermination_minutes": 60,
   "aws_attributes": {
-    "availability":"SPOT_WITH_FALLBACK",
-    "zone_id":"us-east-1c"
+    "availability": "SPOT_WITH_FALLBACK",
+    "zone_id": "us-east-1c"
   },
-  "cluster_id":"[CLUSTER_ID]",
-  "cluster_name":"test-cluster-[UNIQUE_NAME]",
-  "driver_node_type_id":"[NODE_TYPE_ID]",
-  "enable_elastic_disk":false,
-  "node_type_id":"[NODE_TYPE_ID]",
-  "num_workers":3,
+  "cluster_id": "[CLUSTER_ID]",
+  "cluster_name": "test-cluster-[UNIQUE_NAME]",
+  "enable_elastic_disk": false,
+  "instance_pool_id": "[TEST_INSTANCE_POOL_ID]",
+  "num_workers": 3,
   "spark_conf": {
-    "spark.executor.memory":"2g"
+    "spark.executor.memory": "2g"
   },
-  "spark_version":"13.3.x-snapshot-scala2.12",
-  "state":"RUNNING"
+  "spark_version": "13.3.x-snapshot-scala2.12",
+  "state": "RUNNING"
 }
 
 === Changing num_workers should call resize API on running cluster
@@ -102,7 +86,7 @@ Deployment complete!
     "autotermination_minutes": 60,
     "cluster_id": "[CLUSTER_ID]",
     "cluster_name": "test-cluster-[UNIQUE_NAME]",
-    "node_type_id": "[NODE_TYPE_ID]",
+    "instance_pool_id": "[TEST_INSTANCE_POOL_ID]",
     "num_workers": 5,
     "spark_conf": {
       "spark.executor.memory": "4g"

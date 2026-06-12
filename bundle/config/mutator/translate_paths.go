@@ -196,8 +196,7 @@ func (t *translateContext) rewritePath(
 
 func (t *translateContext) translateNotebookPath(ctx context.Context, literal, localFullPath, localRelPath string) (string, error) {
 	if t.skipLocalFileValidation {
-		localRelPathNoExt := strings.TrimSuffix(localRelPath, path.Ext(localRelPath))
-		return path.Join(t.remoteRoot, localRelPathNoExt), nil
+		return path.Join(t.remoteRoot, notebook.StripExtension(localRelPath)), nil
 	}
 
 	nb, _, err := notebook.DetectWithFS(t.b.SyncRoot, localRelPath)
@@ -229,9 +228,9 @@ to contain one of the following file extensions: [%s]`, literal, strings.Join(no
 		return "", ErrIsNotNotebook{localFullPath}
 	}
 
-	// Upon import, notebooks are stripped of their extension.
-	localRelPathNoExt := strings.TrimSuffix(localRelPath, path.Ext(localRelPath))
-	return path.Join(t.remoteRoot, localRelPathNoExt), nil
+	// Upon import, notebooks are stripped of their extension. Designer files
+	// keep their full ".designer.ipynb" suffix.
+	return path.Join(t.remoteRoot, notebook.StripExtension(localRelPath)), nil
 }
 
 func (t *translateContext) translateFilePath(ctx context.Context, literal, localFullPath, localRelPath string) (string, error) {
@@ -303,10 +302,10 @@ func (t *translateContext) translateLocalRelativeWithPrefixPath(ctx context.Cont
 func (t *translateContext) rewriteValue(ctx context.Context, p dyn.Path, v dyn.Value, dir string, opts translateOptions) (dyn.Value, error) {
 	out, err := t.rewritePath(ctx, dir, v.MustString(), opts)
 	if err != nil {
-		if target := (&ErrIsNotebook{}); errors.As(err, target) {
+		if target, ok := errors.AsType[ErrIsNotebook](err); ok {
 			return dyn.InvalidValue, fmt.Errorf(`expected a file for "%s" but got a notebook: %w`, p, target)
 		}
-		if target := (&ErrIsNotNotebook{}); errors.As(err, target) {
+		if target, ok := errors.AsType[ErrIsNotNotebook](err); ok {
 			return dyn.InvalidValue, fmt.Errorf(`expected a notebook for "%s" but got a file: %w`, p, target)
 		}
 		return dyn.InvalidValue, err
@@ -369,6 +368,7 @@ func (m *translatePathsDashboards) Apply(ctx context.Context, b *bundle.Bundle) 
 
 	return applyTranslations(ctx, b, t, []func(context.Context, dyn.Value) (dyn.Value, error){
 		t.applyDashboardTranslations,
+		t.applyGenieSpaceTranslations,
 	})
 }
 

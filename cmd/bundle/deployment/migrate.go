@@ -58,9 +58,8 @@ func runPlanCheck(cmd *cobra.Command, extraArgs []string, extraArgsStr string) e
 	fmt.Fprint(cmd.OutOrStdout(), output)
 
 	if err != nil {
-		var exitErr *exec.ExitError
 		msg := ""
-		if errors.As(err, &exitErr) {
+		if exitErr, ok := errors.AsType[*exec.ExitError](err); ok {
 			msg = fmt.Sprintf("exit code %d", exitErr.ExitCode())
 		} else {
 			msg = err.Error()
@@ -227,12 +226,8 @@ To start using direct engine, set "engine: direct" under bundle in your databric
 		migratedDB := dstate.NewDatabase(stateDesc.Lineage, stateDesc.Serial+1)
 		migratedDB.State = state
 
-		deploymentBundle := &direct.DeploymentBundle{
-			StateDB: dstate.DeploymentState{
-				Path: tempStatePath,
-				Data: migratedDB,
-			},
-		}
+		deploymentBundle := &direct.DeploymentBundle{}
+		deploymentBundle.StateDB.OpenWithData(tempStatePath, migratedDB)
 
 		tempStatePathAutoRemove := true
 
@@ -250,14 +245,26 @@ To start using direct engine, set "engine: direct" under bundle in your databric
 			return root.ErrAlreadyPrinted
 		}
 
-		plan, err := deploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(), &b.Config)
+		plan, err := deploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(ctx), &b.Config)
 		if err != nil {
 			return err
 		}
 
 		for _, entry := range plan.Plan {
-			// Force all actions to be "update" so that deploym below goes through every resource
-			entry.Action = deployplan.Update
+			switch entry.Action {
+			case deployplan.Create:
+				// Resource is in config but not in terraform state; skip it during migration.
+				// It will be created on the first direct deploy.
+				entry.Action = deployplan.Skip
+			case deployplan.Delete:
+				// Resource is in terraform state but not in config. Keep as Delete so the
+				// apply migrate path can preserve its ID in direct state, allowing the next
+				// direct deploy to remove it.
+			default:
+				// Force existing resources to Update so migration reads their remote state
+				// and writes a full config snapshot.
+				entry.Action = deployplan.Update
+			}
 		}
 
 		// We need to copy ETag into new state.
@@ -281,8 +288,12 @@ To start using direct engine, set "engine: direct" under bundle in your databric
 			}
 		}
 
-		deploymentBundle.Apply(ctx, b.WorkspaceClient(), plan, direct.MigrateMode(true))
-		if err := deploymentBundle.StateDB.Finalize(); err != nil {
+		if err := deploymentBundle.StateDB.UpgradeToWrite(); err != nil {
+			return fmt.Errorf("upgrading state for apply: %w", err)
+		}
+
+		deploymentBundle.Apply(ctx, b.WorkspaceClient(ctx), plan, direct.MigrateMode(true))
+		if _, err := deploymentBundle.StateDB.Finalize(ctx); err != nil {
 			logdiag.LogError(ctx, err)
 		}
 		if logdiag.HasError(ctx) {
@@ -310,7 +321,7 @@ Validate the migration by running "databricks bundle plan%s", there should be no
 The state file is not synchronized to the workspace yet. To do that and finalize the migration, run "bundle deploy%s".
 
 To undo the migration, remove %s and rename %s to %s
-`, len(deploymentBundle.StateDB.Data.State), localPath, extraArgsStr, extraArgsStr, localPath, localTerraformBackupPath, localTerraformPath))
+`, len(state), localPath, extraArgsStr, extraArgsStr, localPath, localTerraformBackupPath, localTerraformPath))
 		return nil
 	}
 

@@ -16,6 +16,8 @@ import (
 	"time"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/deploy/terraform"
+	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/bundle/generate"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/bundle/resources"
@@ -77,12 +79,12 @@ func (d *dashboard) resolveID(ctx context.Context, b *bundle.Bundle) string {
 		return d.resolveFromID(ctx, b)
 	}
 
-	logdiag.LogError(ctx, errors.New("expected one of --dashboard-path, --dashboard-id"))
+	logdiag.LogError(ctx, errors.New("expected one of --existing-path, --existing-id"))
 	return ""
 }
 
 func (d *dashboard) resolveFromPath(ctx context.Context, b *bundle.Bundle) string {
-	w := b.WorkspaceClient()
+	w := b.WorkspaceClient(ctx)
 	obj, err := w.Workspace.GetStatusByPath(ctx, d.existingPath) //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
 	if err != nil {
 		if apierr.IsMissing(err) {
@@ -129,7 +131,7 @@ func (d *dashboard) resolveFromPath(ctx context.Context, b *bundle.Bundle) strin
 }
 
 func (d *dashboard) resolveFromID(ctx context.Context, b *bundle.Bundle) string {
-	w := b.WorkspaceClient()
+	w := b.WorkspaceClient(ctx)
 	obj, err := w.Lakeview.GetByDashboardId(ctx, d.existingID)
 	if err != nil {
 		if apierr.IsMissing(err) {
@@ -273,7 +275,11 @@ func waitForChanges(ctx context.Context, w *databricks.WorkspaceClient, dashboar
 			break
 		}
 
-		time.Sleep(1 * time.Second)
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.After(1 * time.Second):
+		}
 	}
 }
 
@@ -295,7 +301,7 @@ func (d *dashboard) updateDashboardForResource(ctx context.Context, b *bundle.Bu
 	// Overwrite the dashboard at the path referenced from the resource.
 	dashboardPath := resource.FilePath
 
-	w := b.WorkspaceClient()
+	w := b.WorkspaceClient(ctx)
 
 	// Start polling the underlying dashboard for changes.
 	var etag string
@@ -331,7 +337,7 @@ func (d *dashboard) updateDashboardForResource(ctx context.Context, b *bundle.Bu
 }
 
 func (d *dashboard) generateForExisting(ctx context.Context, b *bundle.Bundle, dashboardID string) {
-	w := b.WorkspaceClient()
+	w := b.WorkspaceClient(ctx)
 	dashboard, err := w.Lakeview.GetByDashboardId(ctx, dashboardID)
 	if err != nil {
 		logdiag.LogError(ctx, err)
@@ -389,16 +395,25 @@ func (d *dashboard) runForResource(ctx context.Context, b *bundle.Bundle) {
 		return
 	}
 
+	var state statemgmt.ExportedResourcesMap
 	if stateDesc.Engine.IsDirect() {
 		_, localPath := b.StateFilenameDirect(ctx)
-		if err := b.DeploymentBundle.StateDB.Open(localPath); err != nil {
+		if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(true), dstate.WithWrite(false)); err != nil {
+			logdiag.LogError(ctx, err)
+			return
+		}
+		state = b.DeploymentBundle.ExportState(ctx)
+	} else {
+		var err error
+		state, err = terraform.ParseResourcesState(ctx, b)
+		if err != nil {
 			logdiag.LogError(ctx, err)
 			return
 		}
 	}
 
 	bundle.ApplySeqContext(ctx, b,
-		statemgmt.Load(stateDesc.Engine),
+		statemgmt.Load(state),
 	)
 	if logdiag.HasError(ctx) {
 		return

@@ -15,17 +15,55 @@ runs:
     - name: Setup JFrog
       uses: ./.github/actions/setup-jfrog
 
-    - name: Create cache identifier
-      run: echo "${{ inputs.cache-key }}" > cache.txt
-      shell: bash
-
-    - name: Setup Go
+    - id: setup-go
+      name: Setup Go
       uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
       with:
         go-version-file: go.mod
-        cache-dependency-path: |
-          go.sum
-          cache.txt
+        # Disable setup-go's built-in cache; the steps below manage the
+        # cache so that only push-to-main runs save it. PR / merge_group /
+        # schedule saves are scoped to refs no other run can read, and
+        # they evict main's caches from the 10 GB GHA cache quota via LRU.
+        #
+        # See: https://docs.github.com/en/actions/reference/workflows-and-actions/dependency-caching
+        cache: false
+
+    - name: Resolve Go cache paths
+      id: go-paths
+      shell: bash
+      run: |
+        echo "build=$(go env GOCACHE)" >> "$GITHUB_OUTPUT"
+        echo "mod=$(go env GOMODCACHE)" >> "$GITHUB_OUTPUT"
+
+    # On runs against main (push + the scheduled wipe-and-repopulate
+    # cron added in #2092): restore now, save at job end via the
+    # unified action's post-step (which fires at the calling job's
+    # end, even when invoked from a composite).
+    - name: Restore and save Go cache (main)
+      if: github.ref == 'refs/heads/main'
+      uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+      with:
+        path: |
+          ${{ steps.go-paths.outputs.mod }}
+          ${{ steps.go-paths.outputs.build }}
+        key: setup-go-${{ inputs.cache-key }}-${{ runner.os }}-go${{ steps.setup-go.outputs.go-version }}-${{ hashFiles('go.sum') }}
+        restore-keys: |
+          setup-go-${{ inputs.cache-key }}-${{ runner.os }}-go${{ steps.setup-go.outputs.go-version }}-
+
+    # On every other ref (PR / merge_group): restore only. Prefix
+    # fallback via restore-keys means runs whose go.sum differs from
+    # main still restore main's most recent cache and rebuild only
+    # the delta.
+    - name: Restore Go cache (non-main)
+      if: github.ref != 'refs/heads/main'
+      uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+      with:
+        path: |
+          ${{ steps.go-paths.outputs.mod }}
+          ${{ steps.go-paths.outputs.build }}
+        key: setup-go-${{ inputs.cache-key }}-${{ runner.os }}-go${{ steps.setup-go.outputs.go-version }}-${{ hashFiles('go.sum') }}
+        restore-keys: |
+          setup-go-${{ inputs.cache-key }}-${{ runner.os }}-go${{ steps.setup-go.outputs.go-version }}-
 
     - name: Setup Python
       uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
@@ -33,16 +71,16 @@ runs:
         python-version: '3.13'
 
     - name: Install uv
-      uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
+      uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
       with:
         version: "0.8.9"
 
     - name: Install Python versions for tests
-      run: make install-pythons
+      run: go tool -modfile=tools/task/go.mod task install-pythons
       shell: bash
 
     - name: Install ruff (Python linter and formatter)
-      uses: astral-sh/ruff-action@4919ec5cf1f49eff0871dbcea0da843445b837e6 # v3.6.1
+      uses: astral-sh/ruff-action@0ce1b0bf8b818ef400413f810f8a11cdbda0034b # v4.0.0
       with:
         version: "0.9.1"
         args: "--version"

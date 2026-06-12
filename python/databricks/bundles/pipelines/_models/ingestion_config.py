@@ -6,10 +6,7 @@ from databricks.bundles.core._transform_to_json import _transform_to_json_value
 from databricks.bundles.core._variable import VariableOrOptional
 from databricks.bundles.pipelines._models.report_spec import ReportSpec, ReportSpecParam
 from databricks.bundles.pipelines._models.schema_spec import SchemaSpec, SchemaSpecParam
-from databricks.bundles.pipelines._models.table_spec import (
-    TableSpec,
-    TableSpecParam,
-)
+from databricks.bundles.pipelines._models.table_spec import TableSpec, TableSpecParam
 
 if TYPE_CHECKING:
     from typing_extensions import Self

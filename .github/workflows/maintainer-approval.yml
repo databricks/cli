@@ -8,9 +8,9 @@ on:
   merge_group:
     types: [checks_requested]
 
-concurrency:
-  group: pr-approval-${{ github.event.pull_request.number || github.event.merge_group.head_sha }}
-  cancel-in-progress: true
+# No concurrency group: a run cancelled by concurrency leaves a stuck failing
+# check, since each run posts its own check-run and a later passing run does not
+# clear it. The check is cheap and idempotent, so let every run finish instead.
 
 defaults:
   run:
@@ -29,7 +29,7 @@ jobs:
       checks: write
     steps:
       - name: Auto-approve for merge queue
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           script: |
             await github.rest.checks.create({
@@ -62,7 +62,7 @@ jobs:
           persist-credentials: false
           fetch-depth: 0
       - name: Check approval and suggest reviewers
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           retries: 3
           script: |-

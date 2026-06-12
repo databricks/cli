@@ -16,6 +16,7 @@ import (
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/spf13/cobra"
 	"gopkg.in/ini.v1"
 )
@@ -41,6 +42,15 @@ func (c *profileMetadata) Load(ctx context.Context, configFilePath string, skipV
 		ConfigFile:        configFilePath,
 		Profile:           c.Name,
 		DatabricksCliPath: env.Get(ctx, "DATABRICKS_CLI_PATH"),
+	}
+	if skipValidate {
+		// EnsureResolved fetches <host>/.well-known/databricks-config to enrich
+		// the config, so without this stub a skip-validate listing still makes
+		// one network call per profile (and warns when offline). Resolve from
+		// the config file alone; cloud detection falls back to the host pattern.
+		cfg.HostMetadataResolver = func(context.Context, string) (*config.HostMetadata, error) {
+			return nil, nil
+		}
 	}
 	_ = cfg.EnsureResolved()
 	if cfg.IsAws() {
@@ -80,7 +90,7 @@ func (c *profileMetadata) Load(ctx context.Context, configFilePath string, skipV
 		if err != nil {
 			return
 		}
-		_, err = w.CurrentUser.Me(ctx)
+		_, err = w.CurrentUser.Me(ctx, iam.MeRequest{})
 		c.Host = cfg.Host
 		c.AuthType = cfg.AuthType
 		if err != nil {

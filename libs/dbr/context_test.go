@@ -14,7 +14,7 @@ func TestContext_DetectRuntimePanics(t *testing.T) {
 
 	// Expect a panic if the detection is run twice.
 	assert.Panics(t, func() {
-		ctx = DetectRuntime(ctx)
+		ctx = DetectRuntime(ctx) //nolint:fatcontext // test verifies this panics on second call
 	})
 }
 
@@ -70,6 +70,13 @@ func TestContext_RuntimeVersion(t *testing.T) {
 	assert.NotPanics(t, func() {
 		RuntimeVersion(ctx)
 	})
+}
+
+func TestContext_HasDetection(t *testing.T) {
+	ctx := t.Context()
+	assert.False(t, HasDetection(ctx))
+	assert.True(t, HasDetection(DetectRuntime(ctx)))
+	assert.True(t, HasDetection(MockRuntime(ctx, Environment{})))
 }
 
 func TestContext_RunsOnRuntimeWithMock(t *testing.T) {
@@ -143,7 +150,7 @@ func TestParseVersion_Empty(t *testing.T) {
 	assert.Equal(t, ClusterTypeUnknown, v.Type)
 	assert.Equal(t, 0, v.Major)
 	assert.Equal(t, 0, v.Minor)
-	assert.Equal(t, "", v.Raw)
+	assert.Empty(t, v.Raw)
 }
 
 func TestClusterType_String(t *testing.T) {
@@ -160,7 +167,7 @@ func TestVersion_String(t *testing.T) {
 	assert.Equal(t, "client.4.9", v.String())
 
 	v = ParseVersion("")
-	assert.Equal(t, "", v.String())
+	assert.Empty(t, v.String())
 }
 
 func TestContext_RuntimeVersionParsed(t *testing.T) {

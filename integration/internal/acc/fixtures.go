@@ -8,13 +8,14 @@ import (
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/files"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/stretchr/testify/require"
 )
 
 func TemporaryWorkspaceDir(t *WorkspaceT, name ...string) string {
 	ctx := t.ctx
-	me, err := t.W.CurrentUser.Me(ctx)
+	me, err := t.W.CurrentUser.Me(ctx, iam.MeRequest{})
 	require.NoError(t, err)
 
 	// Prefix the name with "integration-test-" to make it easier to identify.
@@ -69,7 +70,7 @@ func TemporaryDbfsDir(t *WorkspaceT, name ...string) string {
 
 func TemporaryRepo(t *WorkspaceT, url string) string {
 	ctx := t.ctx
-	me, err := t.W.CurrentUser.Me(ctx)
+	me, err := t.W.CurrentUser.Me(ctx, iam.MeRequest{})
 	require.NoError(t, err)
 
 	// Prefix the path with "integration-test-" to make it easier to identify.

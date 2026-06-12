@@ -69,7 +69,7 @@ func TestPipelineRunnerRestart(t *testing.T) {
 
 	m := mocks.NewMockWorkspaceClient(t)
 	m.WorkspaceClient.Config = &sdk_config.Config{
-		Host: "https://test.com",
+		Host: "https://test.test",
 	}
 	b.SetWorkpaceClient(m.WorkspaceClient)
 

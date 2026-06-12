@@ -44,10 +44,10 @@ func (out *JobOutput) String() (string, error) {
 		}
 		taskString, err := v.Output.String()
 		if err != nil {
-			return "", nil
+			return "", nil //nolint:nilerr // skip tasks with unparseable output
 		}
 		result.WriteString("=======\n")
-		result.WriteString(fmt.Sprintf("Task %s:\n", v.TaskKey))
+		fmt.Fprintf(&result, "Task %s:\n", v.TaskKey)
 		result.WriteString(taskString + "\n")
 	}
 	return result.String(), nil

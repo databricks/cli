@@ -1,0 +1,7 @@
+bundle:
+  name: invalid-unicode-ref
+
+resources:
+  jobs:
+    foo:
+      max_concurrent_runs: ${var.🌍}

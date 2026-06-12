@@ -20,7 +20,7 @@ func TestStructInfoPlain(t *testing.T) {
 		Qux string `json:"-"`
 	}
 
-	si := getStructInfo(reflect.TypeOf(Tmp{}))
+	si := getStructInfo(reflect.TypeFor[Tmp]())
 	assert.Len(t, si.Fields, 2)
 	assert.Equal(t, []int{0}, si.Fields["foo"])
 	assert.Equal(t, []int{1}, si.Fields["bar"])
@@ -40,7 +40,7 @@ func TestStructInfoAnonymousByValue(t *testing.T) {
 		Foo
 	}
 
-	si := getStructInfo(reflect.TypeOf(Tmp{}))
+	si := getStructInfo(reflect.TypeFor[Tmp]())
 	assert.Len(t, si.Fields, 2)
 	assert.Equal(t, []int{0, 0}, si.Fields["foo"])
 	assert.Equal(t, []int{0, 1, 0}, si.Fields["bar"])
@@ -63,7 +63,7 @@ func TestStructInfoAnonymousByValuePrecedence(t *testing.T) {
 		Bar
 	}
 
-	si := getStructInfo(reflect.TypeOf(Tmp{}))
+	si := getStructInfo(reflect.TypeFor[Tmp]())
 	assert.Len(t, si.Fields, 2)
 	assert.Equal(t, []int{0, 0}, si.Fields["foo"])
 	assert.Equal(t, []int{1, 0}, si.Fields["bar"])
@@ -83,7 +83,7 @@ func TestStructInfoAnonymousByPointer(t *testing.T) {
 		*Foo
 	}
 
-	si := getStructInfo(reflect.TypeOf(Tmp{}))
+	si := getStructInfo(reflect.TypeFor[Tmp]())
 	assert.Len(t, si.Fields, 2)
 	assert.Equal(t, []int{0, 0}, si.Fields["foo"])
 	assert.Equal(t, []int{0, 1, 0}, si.Fields["bar"])
@@ -100,7 +100,7 @@ func TestStructInfoFieldValues(t *testing.T) {
 		Bar: "bar",
 	}
 
-	si := getStructInfo(reflect.TypeOf(Tmp{}))
+	si := getStructInfo(reflect.TypeFor[Tmp]())
 	fv := si.FieldValues(reflect.ValueOf(src))
 	assert.Len(t, fv, 2)
 	assert.Equal(t, "foo", fv[0].Key)
@@ -132,7 +132,7 @@ func TestStructInfoFieldValuesAnonymousByValue(t *testing.T) {
 		},
 	}
 
-	si := getStructInfo(reflect.TypeOf(Tmp{}))
+	si := getStructInfo(reflect.TypeFor[Tmp]())
 	fv := si.FieldValues(reflect.ValueOf(src))
 	assert.Len(t, fv, 2)
 	assert.Equal(t, "foo", fv[0].Key)
@@ -164,7 +164,7 @@ func TestStructInfoFieldValuesAnonymousByPointer(t *testing.T) {
 			},
 		}
 
-		si := getStructInfo(reflect.TypeOf(Tmp{}))
+		si := getStructInfo(reflect.TypeFor[Tmp]())
 		fv := si.FieldValues(reflect.ValueOf(src))
 		assert.Len(t, fv, 2)
 		assert.Equal(t, "foo", fv[0].Key)
@@ -180,7 +180,7 @@ func TestStructInfoFieldValuesAnonymousByPointer(t *testing.T) {
 			},
 		}
 
-		si := getStructInfo(reflect.TypeOf(Tmp{}))
+		si := getStructInfo(reflect.TypeFor[Tmp]())
 		fv := si.FieldValues(reflect.ValueOf(src))
 		assert.Len(t, fv, 1)
 		assert.Equal(t, "foo", fv[0].Key)
@@ -192,7 +192,7 @@ func TestStructInfoFieldValuesAnonymousByPointer(t *testing.T) {
 			Foo: nil,
 		}
 
-		si := getStructInfo(reflect.TypeOf(Tmp{}))
+		si := getStructInfo(reflect.TypeFor[Tmp]())
 		fv := si.FieldValues(reflect.ValueOf(src))
 		assert.Empty(t, fv)
 	})
@@ -203,7 +203,7 @@ func TestStructInfoValueFieldAbsent(t *testing.T) {
 		Foo string `json:"foo"`
 	}
 
-	si := getStructInfo(reflect.TypeOf(Tmp{}))
+	si := getStructInfo(reflect.TypeFor[Tmp]())
 	assert.Nil(t, si.ValueField)
 }
 
@@ -212,7 +212,7 @@ func TestStructInfoValueFieldPresent(t *testing.T) {
 		Foo dyn.Value
 	}
 
-	si := getStructInfo(reflect.TypeOf(Tmp{}))
+	si := getStructInfo(reflect.TypeFor[Tmp]())
 	assert.NotNil(t, si.ValueField)
 }
 
@@ -223,6 +223,6 @@ func TestStructInfoValueFieldMultiple(t *testing.T) {
 	}
 
 	assert.Panics(t, func() {
-		getStructInfo(reflect.TypeOf(Tmp{}))
+		getStructInfo(reflect.TypeFor[Tmp]())
 	})
 }

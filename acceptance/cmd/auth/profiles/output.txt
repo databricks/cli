@@ -1,31 +1,30 @@
 
 === Profiles with workspace_id (JSON output)
-Warn: Failed to resolve host metadata: fetching host metadata from "https://test.cloud.databricks.com/.well-known/databricks-config": Get "https://test.cloud.databricks.com/.well-known/databricks-config": dial tcp: lookup test.cloud.databricks.com: no such host. Falling back to user config.
 {
   "profiles": [
     {
-      "name":"workspace-profile",
-      "host":"https://test.cloud.databricks.com",
-      "cloud":"aws",
-      "auth_type":"",
-      "valid":false
+      "name": "workspace-profile",
+      "host": "https://workspace.cloud.databricks.test",
+      "cloud": "aws",
+      "auth_type": "",
+      "valid": false
     },
     {
-      "name":"account-profile",
-      "host":"https://accounts.cloud.databricks.com",
-      "account_id":"test-account-123",
-      "cloud":"aws",
-      "auth_type":"",
-      "valid":false
+      "name": "account-profile",
+      "host": "https://accounts.cloud.databricks.test",
+      "account_id": "test-account-123",
+      "cloud": "aws",
+      "auth_type": "",
+      "valid": false
     },
     {
-      "name":"unified-profile",
-      "host":"https://unified.databricks.com",
-      "account_id":"unified-account-456",
-      "workspace_id":"[NUMID]",
-      "cloud":"aws",
-      "auth_type":"",
-      "valid":false
+      "name": "unified-profile",
+      "host": "https://unified.databricks.test",
+      "account_id": "unified-account-456",
+      "workspace_id": "[NUMID]",
+      "cloud": "aws",
+      "auth_type": "",
+      "valid": false
     }
   ]
 }

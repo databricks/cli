@@ -1,0 +1,3 @@
+# Genie spaces are only supported by the direct deployment engine; under
+# terraform the direct-only validation error would diverge the output.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
