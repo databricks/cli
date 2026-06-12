@@ -21,22 +21,23 @@ class IngestionGatewayPipelineDefinition:
 
     connection_name: VariableOr[str]
     """
+    :meta private: [EXPERIMENTAL]
+    
     Immutable. The Unity Catalog connection that this gateway pipeline uses to communicate with the source.
     """
 
     gateway_storage_catalog: VariableOr[str]
     """
+    :meta private: [EXPERIMENTAL]
+    
     Required, Immutable. The name of the catalog for the gateway pipeline's storage location.
     """
 
     gateway_storage_schema: VariableOr[str]
     """
+    :meta private: [EXPERIMENTAL]
+    
     Required, Immutable. The name of the schema for the gateway pipelines's storage location.
-    """
-
-    connection_id: VariableOrOptional[str] = None
-    """
-    [DEPRECATED] [Deprecated, use connection_name instead] Immutable. The Unity Catalog connection that this gateway pipeline uses to communicate with the source.
     """
 
     connection_parameters: VariableOrOptional[ConnectionParameters] = None
@@ -48,6 +49,8 @@ class IngestionGatewayPipelineDefinition:
 
     gateway_storage_name: VariableOrOptional[str] = None
     """
+    :meta private: [EXPERIMENTAL]
+    
     Optional. The Unity Catalog-compatible name for the gateway storage location.
     This is the destination to use for the data that is extracted by the gateway.
     Spark Declarative Pipelines system will automatically create the storage location under the catalog and schema.
@@ -66,22 +69,23 @@ class IngestionGatewayPipelineDefinitionDict(TypedDict, total=False):
 
     connection_name: VariableOr[str]
     """
+    :meta private: [EXPERIMENTAL]
+    
     Immutable. The Unity Catalog connection that this gateway pipeline uses to communicate with the source.
     """
 
     gateway_storage_catalog: VariableOr[str]
     """
+    :meta private: [EXPERIMENTAL]
+    
     Required, Immutable. The name of the catalog for the gateway pipeline's storage location.
     """
 
     gateway_storage_schema: VariableOr[str]
     """
+    :meta private: [EXPERIMENTAL]
+    
     Required, Immutable. The name of the schema for the gateway pipelines's storage location.
-    """
-
-    connection_id: VariableOrOptional[str]
-    """
-    [DEPRECATED] [Deprecated, use connection_name instead] Immutable. The Unity Catalog connection that this gateway pipeline uses to communicate with the source.
     """
 
     connection_parameters: VariableOrOptional[ConnectionParametersParam]
@@ -93,6 +97,8 @@ class IngestionGatewayPipelineDefinitionDict(TypedDict, total=False):
 
     gateway_storage_name: VariableOrOptional[str]
     """
+    :meta private: [EXPERIMENTAL]
+    
     Optional. The Unity Catalog-compatible name for the gateway storage location.
     This is the destination to use for the data that is extracted by the gateway.
     Spark Declarative Pipelines system will automatically create the storage location under the catalog and schema.
