@@ -14,7 +14,7 @@ import (
 func TestStubCommandsReturnNotImplemented(t *testing.T) {
 	stubs := map[string]*cobra.Command{
 		"run":            newRunCommand(),
-		"status":         newStatusCommand(),
+		"get":            newGetCommand(),
 		"list":           newListCommand(),
 		"logs":           newLogsCommand(),
 		"cancel":         newCancelCommand(),

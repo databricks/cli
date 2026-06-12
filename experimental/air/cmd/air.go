@@ -21,7 +21,7 @@ experimental and may change in future versions.`,
 	}
 
 	cmd.AddCommand(newRunCommand())
-	cmd.AddCommand(newStatusCommand())
+	cmd.AddCommand(newGetCommand())
 	cmd.AddCommand(newListCommand())
 	cmd.AddCommand(newLogsCommand())
 	cmd.AddCommand(newCancelCommand())

@@ -5,9 +5,9 @@ Error: `air run` is not implemented yet
 
 Exit code: 1
 
-=== status
->>> [CLI] experimental air status 123
-Error: `air status` is not implemented yet
+=== get
+>>> [CLI] experimental air get 123
+Error: `air get` is not implemented yet
 
 Exit code: 1
 
