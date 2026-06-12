@@ -567,6 +567,15 @@ func TestParseErrors(t *testing.T) {
 	}
 }
 
+func TestMustParsePattern(t *testing.T) {
+	pattern := MustParsePattern("tasks[*].run_if")
+	assert.Equal(t, "tasks[*].run_if", pattern.String())
+
+	assert.Panics(t, func() {
+		MustParsePattern("tasks[")
+	})
+}
+
 func TestNewIndexPanic(t *testing.T) {
 	defer func() {
 		if r := recover(); r != nil {
