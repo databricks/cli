@@ -217,8 +217,6 @@ func newSandboxAPI(w *databricks.WorkspaceClient) (*sandboxAPI, error) {
 		return nil, fmt.Errorf("failed to create sandbox API client: %w", err)
 	}
 	defaultRetriable := clientCfg.ErrorRetriable
-	// Cap 503 retries by count, not deadline, so the final 503 surfaces as
-	// the APIError rather than a racy context.DeadlineExceeded.
 	clientCfg.ErrorRetriable = func(ctx context.Context, err error) bool {
 		if apiErr, ok := errors.AsType[*apierr.APIError](err); ok && apiErr.StatusCode == http.StatusServiceUnavailable {
 			return allow503Retry(ctx)
