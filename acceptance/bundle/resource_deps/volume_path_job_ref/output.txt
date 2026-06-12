@@ -1,0 +1,39 @@
+
+>>> [CLI] bundle validate -o json
+{
+  "process": {
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/testbundle-[UNIQUE_NAME]/default/state/metadata.json"
+    },
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "process-[UNIQUE_NAME]",
+    "parameters": [
+      {
+        "default": "/Volumes/main/myschema-[UNIQUE_NAME]/data-[UNIQUE_NAME]",
+        "name": "data_path"
+      }
+    ],
+    "queue": {
+      "enabled": true
+    }
+  }
+}
+{
+  "data": {
+    "catalog_name": "main",
+    "name": "data-[UNIQUE_NAME]",
+    "schema_name": "${resources.schemas.my.name}",
+    "volume_path": "/Volumes/main/myschema-[UNIQUE_NAME]/data-[UNIQUE_NAME]",
+    "volume_type": "MANAGED"
+  }
+}
+
+>>> [CLI] bundle plan
+create jobs.process
+create schemas.my
+create volumes.data
+
+Plan: 3 to add, 0 to change, 0 to delete, 0 unchanged
