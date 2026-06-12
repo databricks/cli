@@ -257,6 +257,72 @@ func TestWorkspaceFilesClientWriteErrorMapping(t *testing.T) {
 	}
 }
 
+// writeWithImportError exercises Write through a real HTTP roundtrip so the
+// SDK parses AIP-193 error details from the response body (the errorDetails
+// field on apierr.APIError is unexported and only populated during response
+// parsing, so it cannot be set on a directly constructed APIError).
+func writeWithImportError(t *testing.T, body map[string]any) error {
+	t.Helper()
+
+	server := testserver.New(t)
+	server.Handle("POST", "/api/2.0/workspace/import", func(req testserver.Request) any {
+		return testserver.Response{
+			StatusCode: http.StatusBadRequest,
+			Body:       body,
+		}
+	})
+	testserver.AddDefaultHandlers(server)
+
+	client, err := databricks.NewWorkspaceClient(&databricks.Config{
+		Host:  server.URL,
+		Token: "testtoken",
+	})
+	require.NoError(t, err)
+
+	f, err := NewWorkspaceFilesClient(client, "/dir")
+	require.NoError(t, err)
+
+	err = f.Write(t.Context(), "file.txt", strings.NewReader("data"), OverwriteIfExists)
+	require.Error(t, err)
+	return err
+}
+
+func TestWorkspaceFilesClientWriteTypeMismatchReason(t *testing.T) {
+	// The message is deliberately one the fallback string match does not
+	// recognize, to prove the branch fires on the structured reason alone.
+	err := writeWithImportError(t, map[string]any{
+		"error_code": "INVALID_PARAMETER_VALUE",
+		"message":    "some future wording for the same condition",
+		"details": []map[string]any{
+			{
+				"@type":    "type.googleapis.com/google.rpc.ErrorInfo",
+				"reason":   workspaceObjectTypeMismatchReason,
+				"domain":   "workspace.databricks.com",
+				"metadata": map[string]string{"existing_type": "NOTEBOOK"},
+			},
+		},
+	})
+	var target fileAlreadyExistsError
+	assert.ErrorAs(t, err, &target)
+}
+
+func TestWorkspaceFilesClientWriteUnrelatedReasonPassesThrough(t *testing.T) {
+	err := writeWithImportError(t, map[string]any{
+		"error_code": "INVALID_PARAMETER_VALUE",
+		"message":    "some other validation failure",
+		"details": []map[string]any{
+			{
+				"@type":  "type.googleapis.com/google.rpc.ErrorInfo",
+				"reason": "SOME_OTHER_REASON",
+				"domain": "workspace.databricks.com",
+			},
+		},
+	})
+	var aerr *apierr.APIError
+	require.ErrorAs(t, err, &aerr)
+	assert.Equal(t, http.StatusBadRequest, aerr.StatusCode)
+}
+
 func TestWorkspaceFilesClientWriteCreatesParentDirectories(t *testing.T) {
 	mw := mocks.NewMockWorkspaceClient(t)
 	workspaceApi := mw.GetMockWorkspaceAPI()

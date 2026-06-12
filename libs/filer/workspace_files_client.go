@@ -22,6 +22,11 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
+// workspaceObjectTypeMismatchReason is the AIP-193 ErrorInfo reason attached
+// by /workspace/import when overwrite=true targets a path whose existing
+// object's node type differs from the upload (FILE vs NOTEBOOK).
+const workspaceObjectTypeMismatchReason = "WORKSPACE_OBJECT_TYPE_MISMATCH"
+
 // Type that implements fs.DirEntry for WSFS.
 type wsfsDirEntry struct {
 	wsfsFileInfo
@@ -242,8 +247,20 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 		return fileAlreadyExistsError{absPath}
 	}
 	if errors.Is(err, apierr.ErrInvalidParameterValue) {
-		if aerr, ok := errors.AsType[*apierr.APIError](err); ok && (strings.Contains(aerr.Message, "type mismatch") || strings.Contains(aerr.Message, "node type")) {
-			return fileAlreadyExistsError{absPath}
+		if aerr, ok := errors.AsType[*apierr.APIError](err); ok {
+			// WCS attaches AIP-193 ErrorInfo with a stable reason to import
+			// path collisions (universe PR #2019174, WP-6031), so prefer
+			// branching on it over parsing the message.
+			if info := aerr.ErrorDetails().ErrorInfo; info != nil && info.Reason == workspaceObjectTypeMismatchReason {
+				return fileAlreadyExistsError{absPath}
+			}
+			// Fallback for workspaces where the ErrorInfo change has not
+			// rolled out: as of 2026-06-12 aws-prod-ucws still returns these
+			// errors without details, so match the two observed messages.
+			// Remove once the rollout is confirmed everywhere.
+			if strings.Contains(aerr.Message, "type mismatch") || strings.Contains(aerr.Message, "node type") {
+				return fileAlreadyExistsError{absPath}
+			}
 		}
 	}
 

@@ -177,14 +177,23 @@ func AddDefaultHandlers(server *Server) {
 			}
 
 			// Translate any 409 from the shared fake into the 400 + errorCode
-			// RESOURCE_ALREADY_EXISTS shape returned by the real /workspace/import endpoint.
+			// RESOURCE_ALREADY_EXISTS shape returned by the real /workspace/import
+			// endpoint, including the AIP-193 ErrorInfo detail it attaches to path
+			// collisions (universe PR #2019174, WP-6031).
 			resp := req.Workspace.WorkspaceFilesImportFile(filePath, content, overwrite)
 			if resp.StatusCode == http.StatusConflict {
 				return Response{
 					StatusCode: http.StatusBadRequest,
-					Body: map[string]string{
+					Body: map[string]any{
 						"error_code": "RESOURCE_ALREADY_EXISTS",
 						"message":    fmt.Sprintf("Path (%s) already exists.", filePath),
+						"details": []map[string]any{
+							{
+								"@type":  "type.googleapis.com/google.rpc.ErrorInfo",
+								"reason": "RESOURCE_ALREADY_EXISTS",
+								"domain": "workspace.databricks.com",
+							},
+						},
 					},
 				}
 			}
