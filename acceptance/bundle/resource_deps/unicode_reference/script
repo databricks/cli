@@ -1,0 +1,5 @@
+title "Unicode job names resolve in resources references"
+trace $CLI bundle validate
+trace $CLI bundle plan
+trace $CLI bundle deploy
+trace $CLI bundle summary

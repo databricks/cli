@@ -1,8 +1,7 @@
 package annotation
 
 // PreviewTag returns the human-readable launch-stage prefix to prepend to a
-// field's or enum value's description. It is the single source of truth shared
-// by the schema and docs generators. cli.json is filtered at
+// field's or enum value's description. cli.json is filtered at
 // min-stage=PRIVATE_PREVIEW upstream, so DEVELOPMENT never reaches here and GA
 // yields no tag.
 func PreviewTag(launchStage string) string {
