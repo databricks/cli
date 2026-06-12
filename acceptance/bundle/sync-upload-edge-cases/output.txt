@@ -15,7 +15,7 @@ Uploaded sqlNb.sql
 Uploaded with spaces.txt
 
 === workspace state after sync — assert object_type and language for each upload
->>> [CLI] workspace list -o json /Workspace/Users/[USERNAME]/.bundle/upload-edge-cases/default/files
+>>> MSYS_NO_PATHCONV=1 [CLI] workspace list -o json /Workspace/Users/[USERNAME]/.bundle/upload-edge-cases/default/files
 {
   "name": ".gitignore",
   "object_type": "FILE",

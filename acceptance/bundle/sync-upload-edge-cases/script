@@ -63,7 +63,10 @@ trace $CLI bundle sync --output text 2>&1 | sort
 
 title "workspace state after sync — assert object_type and language for each upload"
 remote_files=$($CLI bundle summary -o json 2>/dev/null | jq -r .workspace.file_path)
-trace $CLI workspace list -o json "$remote_files" |
+# MSYS_NO_PATHCONV stops Git Bash on Windows from rewriting the leading-slash
+# workspace path into a C:/Program Files/... filesystem path before it
+# reaches the CLI.
+trace MSYS_NO_PATHCONV=1 $CLI workspace list -o json "$remote_files" |
   jq 'sort_by(.path) | .[] | {name: (.path | sub(".*/"; "")), object_type, language}'
 
 title "uploaded paths from each multipart POST /workspace/import (sorted)"

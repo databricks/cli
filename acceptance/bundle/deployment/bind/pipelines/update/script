@@ -15,4 +15,3 @@ trace $CLI bundle plan
 rm -f out.requests.txt
 trace $CLI bundle deploy --auto-approve
 trace print_requests.py '^//workspace/import' '^//workspace/delete' '^//telemetry-ext' > out.deploy.requests.$DATABRICKS_BUNDLE_ENGINE.json
-
