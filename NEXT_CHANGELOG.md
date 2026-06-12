@@ -11,6 +11,7 @@
 * Remove API enum values and types that are still in development from the `databricks-bundles` Python package; these were never accepted by the backend ([#5484](https://github.com/databricks/cli/pull/5484)).
 * direct: Fix resolving a resource reference that is used more than once within the same field ([#5558](https://github.com/databricks/cli/pull/5558)).
 * Bundle variable references now accept Unicode letters in path segments (e.g. `${var.变量}`). ([#5532](https://github.com/databricks/cli/pull/5532))
+* Ignore backend_default values for unity catalog schema properties ([#5195](https://github.com/databricks/cli/pull/5195)).
 
 ### Dependency updates
 
