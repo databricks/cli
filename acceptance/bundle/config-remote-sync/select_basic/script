@@ -1,0 +1,48 @@
+#!/bin/bash
+
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+  trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+$CLI bundle deploy
+job_one_id="$(read_id.py job_one)"
+job_two_id="$(read_id.py job_two)"
+
+title "Modify both jobs remotely"
+edit_resource.py jobs $job_one_id <<EOF
+r["max_concurrent_runs"] = 5
+EOF
+
+edit_resource.py jobs $job_two_id <<EOF
+r["max_concurrent_runs"] = 10
+EOF
+
+title "Sync only job_one, selected by its type and deployed resource id"
+echo
+cp databricks.yml databricks.yml.backup
+$CLI bundle config-remote-sync --select "jobs:$job_one_id" --save
+
+title "Only job_one is updated; job_two is left untouched"
+echo
+trace diff.py databricks.yml.backup databricks.yml
+rm databricks.yml.backup
+
+title "Selecting job_one again is idempotent"
+echo
+$CLI bundle config-remote-sync --select "jobs:$job_one_id"
+
+title "Unfiltered sync still detects the job_two drift (no lost updates)"
+echo
+$CLI bundle config-remote-sync
+
+title "An unknown resource id is rejected"
+errcode trace $CLI bundle config-remote-sync --select jobs:no-such-id-123
+
+title "A selector without a type is rejected"
+errcode trace $CLI bundle config-remote-sync --select no-such-id-123
+
+title "An id that exists under a different type is rejected (no cross-type collision)"
+errcode trace $CLI bundle config-remote-sync --select "pipelines:$job_one_id"

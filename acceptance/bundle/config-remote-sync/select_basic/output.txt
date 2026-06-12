@@ -1,0 +1,66 @@
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Modify both jobs remotely
+=== Sync only job_one, selected by its type and deployed resource id
+Detected changes in 1 resource(s):
+
+Resource: resources.jobs.job_one
+  max_concurrent_runs: replace
+
+
+
+=== Only job_one is updated; job_two is left untouched
+
+>>> diff.py databricks.yml.backup databricks.yml
+--- databricks.yml.backup
++++ databricks.yml
+@@ -5,5 +5,5 @@
+   jobs:
+     job_one:
+-      max_concurrent_runs: 1
++      max_concurrent_runs: 5
+       tasks:
+         - task_key: main
+
+=== Selecting job_one again is idempotent
+No changes detected.
+
+
+=== Unfiltered sync still detects the job_two drift (no lost updates)
+Detected changes in 1 resource(s):
+
+Resource: resources.jobs.job_two
+  max_concurrent_runs: replace
+
+
+
+=== An unknown resource id is rejected
+>>> [CLI] bundle config-remote-sync --select jobs:no-such-id-123
+Error: no deployed jobs resource with id no-such-id-123
+
+Exit code: 1
+
+=== A selector without a type is rejected
+>>> [CLI] bundle config-remote-sync --select no-such-id-123
+Error: invalid --select value "no-such-id-123", expected <type>:<id> (e.g. jobs:[NUMID])
+
+Exit code: 1
+
+=== An id that exists under a different type is rejected (no cross-type collision)
+>>> [CLI] bundle config-remote-sync --select pipelines:[JOB_ONE_ID]
+Error: no deployed pipelines resource with id [JOB_ONE_ID]
+
+Exit code: 1
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.job_one
+  delete resources.jobs.job_two
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!
