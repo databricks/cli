@@ -11,6 +11,9 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/flags"
+	{{ if .HasInputOnlyPaths -}}
+	"github.com/databricks/cli/libs/inputonly"
+	{{ end -}}
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/databricks-sdk-go/experimental/api"
 	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
@@ -545,6 +548,12 @@ func new{{.PascalName}}() *cobra.Command {
 			{{ if $method.IsResponseByteStream -}}
 			defer response.{{$method.ResponseBodyField.PascalName}}.Close()
 			return cmdio.Render{{ if $method.Pagination}}Iterator{{end}}(ctx, response.{{$method.ResponseBodyField.PascalName}})
+			{{- else if $method.InputOnlyPaths }}
+			masked, err := inputonly.Strip(response, []string{ {{- range $i, $p := $method.InputOnlyPaths}}{{if $i}}, {{end}}"{{$p}}"{{end -}} })
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, masked)
 			{{- else }}
 			return cmdio.Render{{ if $method.Pagination}}Iterator{{end}}(ctx, response)
 			{{- end -}}
