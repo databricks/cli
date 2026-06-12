@@ -275,7 +275,11 @@ func waitForChanges(ctx context.Context, w *databricks.WorkspaceClient, dashboar
 			break
 		}
 
-		time.Sleep(1 * time.Second)
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.After(1 * time.Second):
+		}
 	}
 }
 

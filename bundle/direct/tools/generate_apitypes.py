@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Find candidate types from openapi.json that match resource shapes in out.fields.txt and save them (apitypes.generated.yml).
+Find candidate types from cli.json that match resource shapes in out.fields.txt and save them (apitypes.generated.yml).
 
 The types are found based on top level field overlap between bundle schema and API type.
 
@@ -40,20 +40,20 @@ def get_schema_fields(schemas):
     """Get top-level field names for each schema type."""
     schema_fields = {}
     for name, schema in schemas.items():
-        props = schema.get("properties", {})
+        props = schema.get("fields", {})
         if props:
             schema_fields[name] = set(props.keys())
     return schema_fields
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Generate apitypes.yml from OpenAPI schema")
-    parser.add_argument("apischema", type=Path, help="Path to OpenAPI schema JSON file")
+    parser = argparse.ArgumentParser(description="Generate apitypes.yml from the cli.json schema block")
+    parser.add_argument("apischema", type=Path, help="Path to cli.json schema block")
     parser.add_argument("out_fields", type=Path, help="Path to out.fields.txt file")
     args = parser.parse_args()
 
     resource_fields = parse_out_fields(args.out_fields)
-    schemas = json.loads(args.apischema.read_text()).get("components", {}).get("schemas", {})
+    schemas = json.loads(args.apischema.read_text())["schemas"]
     schema_fields = get_schema_fields(schemas)
 
     field_counts = Counter()
