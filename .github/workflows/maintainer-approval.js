@@ -97,7 +97,7 @@ async function checkPerPathApproval(files, rulesWithTeams, approverLogins, githu
 // --- Git history & scoring helpers ---
 
 const MENTION_REVIEWERS = false;
-const OWNERS_LINK = "[OWNERS](.github/OWNERS)";
+const OWNERS_LINK = "[OWNERS](/databricks/cli/blob/main/.github/OWNERS)";
 const MARKER = "<!-- MAINTAINER_APPROVAL -->";
 const STATUS_CONTEXT = "maintainer-approval";
 
