@@ -22,6 +22,13 @@ import (
 // be named "fields" simply appear inside it like any other field.
 const fieldsKey = "fields"
 
+// typeDocKey holds the documentation for the type a field's value resolves to
+// (for map and sequence fields: each entry). It is applied to the type's
+// shared $defs entry, so it shows up at every occurrence of the type; this is
+// also where enum values live. Config fields named "type" do not clash: they
+// appear inside "fields" like any other field.
+const typeDocKey = "type"
+
 const annotationsFileHeader = `# This file contains the documentation the CLI owns for the bundle
 # configuration JSON schema: docs for fields that do not exist in the upstream
 # API spec (.codegen/cli.json), and overrides of upstream docs. Documentation
@@ -30,11 +37,12 @@ const annotationsFileHeader = `# This file contains the documentation the CLI ow
 #
 # The structure mirrors the bundle configuration tree:
 #   - A node documents one field: its inline keys (description,
-#     markdown_description, ...) apply to the field itself, and "fields" holds
-#     the nodes of the type the field resolves to (map and sequence levels are
-#     unwrapped implicitly).
-#   - "_" inside "fields" documents the resolved type itself; for enum types
-#     it carries the enum values.
+#     markdown_description, ...) apply to the field itself.
+#   - "type" documents the type the field's value resolves to — for map and
+#     sequence fields, each entry. These docs are shared by every occurrence
+#     of the type; enum values also live here.
+#   - "fields" holds the nodes of that type's fields (map and sequence levels
+#     are unwrapped implicitly).
 #   - Each type is expanded exactly once, at its first occurrence; fields of
 #     types that occur again later (for example everything under "targets")
 #     are documented at that first occurrence.
@@ -83,7 +91,7 @@ type fileLoader struct {
 	unknown []string
 }
 
-// block loads one type's block: "_" plus field nodes.
+// block loads one type's block of field nodes.
 func (l *fileLoader) block(v dyn.Value, typeKey, where string) error {
 	if v.Kind() == dyn.KindNil {
 		return nil
@@ -100,13 +108,10 @@ func (l *fileLoader) block(v dyn.Value, typeKey, where string) error {
 			child = key
 		}
 
-		edge := fieldEdge{name: key}
-		if key != RootTypeKey {
-			edge, ok = l.graph.edge(typeKey, key)
-			if !ok {
-				l.unknown = append(l.unknown, child)
-				continue
-			}
+		edge, ok := l.graph.edge(typeKey, key)
+		if !ok {
+			l.unknown = append(l.unknown, child)
+			continue
 		}
 		err := l.node(pair.Value, typeKey, edge, child)
 		if err != nil {
@@ -116,8 +121,8 @@ func (l *fileLoader) block(v dyn.Value, typeKey, where string) error {
 	return nil
 }
 
-// node loads one field's node: inline descriptor keys plus an optional
-// "fields" block for the type the field resolves to.
+// node loads one field's node: inline descriptor keys, plus the optional
+// "type" docs and "fields" block for the type the field resolves to.
 func (l *fileLoader) node(v dyn.Value, typeKey string, edge fieldEdge, where string) error {
 	if v.Kind() == dyn.KindNil {
 		return nil
@@ -133,6 +138,14 @@ func (l *fileLoader) node(v dyn.Value, typeKey string, edge fieldEdge, where str
 		switch {
 		case key == fieldsKey && edge.typ != "":
 			err := l.block(pair.Value, edge.typ, where+"."+fieldsKey)
+			if err != nil {
+				return err
+			}
+		case key == typeDocKey && edge.typ != "":
+			// Type docs are stored under the type's RootTypeKey entry. The
+			// synthetic edge has no element type, so nested "type" or
+			// "fields" keys inside the docs are flagged as unknown.
+			err := l.node(pair.Value, edge.typ, fieldEdge{name: RootTypeKey}, where+"."+typeDocKey)
 			if err != nil {
 				return err
 			}
@@ -221,22 +234,11 @@ func (s *fileSaver) assignCanonical(typeKey string) {
 	}
 }
 
-// block renders one type's block: "_" first, then field nodes alphabetically.
+// block renders one type's block of field nodes, emitted alphabetically.
 // Lines in the value locations encode the output order for the YAML saver.
 func (s *fileSaver) block(typeKey string) (map[string]dyn.Value, error) {
 	out := map[string]dyn.Value{}
 	line := 0
-
-	if d, ok := s.take(typeKey, RootTypeKey); ok {
-		v, err := descriptorValue(d, line)
-		if err != nil {
-			return nil, err
-		}
-		if v.Kind() != dyn.KindNil {
-			out[RootTypeKey] = v
-			line++
-		}
-	}
 
 	edges := slices.Clone(s.graph.fields[typeKey])
 	slices.SortFunc(edges, func(a, b fieldEdge) int {
@@ -277,20 +279,30 @@ func (s *fileSaver) node(typeKey string, edge fieldEdge) (map[string]dyn.Value, 
 	}
 
 	if s.expandAt[edgeKey{typeKey, edge.name}] {
+		// High line numbers sort the type docs and the fields block after
+		// the inline descriptor keys.
+		if d, ok := s.take(edge.typ, RootTypeKey); ok {
+			v, err := descriptorValue(d, 9999)
+			if err != nil {
+				return nil, err
+			}
+			if v.Kind() != dyn.KindNil {
+				out[typeDocKey] = v
+			}
+		}
 		child, err := s.block(edge.typ)
 		if err != nil {
 			return nil, err
 		}
 		if len(child) > 0 {
-			// A high line number sorts the block after the descriptor keys.
 			out[fieldsKey] = dyn.NewValue(child, []dyn.Location{{Line: 10000}})
 		}
 	}
 	return out, nil
 }
 
-// descriptorValue converts a descriptor for a "_" entry, ordering its keys
-// like the inline descriptors and placing it at the given line in its block.
+// descriptorValue converts a type docs descriptor, ordering its keys like the
+// inline descriptors and placing it at the given line in its node.
 func descriptorValue(d annotation.Descriptor, line int) (dyn.Value, error) {
 	v, err := convert.FromTyped(d, dyn.NilValue)
 	if err != nil || v.Kind() == dyn.KindNil {
