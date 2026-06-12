@@ -772,11 +772,10 @@ tasks:
   # Regenerates the CLI command stubs (cmd/workspace/**, cmd/account/**) and
   # .gitattributes from the checked-in .codegen/cli.json. No universe checkout,
   # no spec download, no network: cli.json is the self-describing spec
-  # produced upstream by `generate-clijson`. internal/cligen renders
-  # the same templates genkit's cli_v0 generator uses, then formats with
-  # goimports + gofmt. The final `ws` strips trailing whitespace (e.g. the
-  # comment-banner blank lines) so the result matches byte-for-byte, exactly as
-  # the old generate-genkit task did.
+  # produced upstream by `generate-clijson`. internal/cligen renders the
+  # templates derived from genkit's cli_v0 generator and formats the output
+  # in-process (whitespace normalization, unused-import pruning, gofmt), so
+  # the result matches the committed files byte-for-byte.
   generate-cligen:
     desc: Regenerate CLI command stubs from .codegen/cli.json
     sources:
@@ -790,7 +789,6 @@ tasks:
       - .gitattributes
     cmds:
       - go run ./internal/cligen --input .codegen/cli.json --output .
-      - task: ws
 
   # Refreshes .codegen/cli.json from the OpenAPI spec at .codegen/_openapi_sha.
   # cli.json is a genkit SDK target like any other (mode cli_v1 in .codegen.json):

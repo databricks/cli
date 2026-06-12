@@ -22,8 +22,8 @@
 /acceptance/apps/           team:eng-apps-devex
 
 # Sandbox
-/cmd/sandbox/               @pietern @akshaysingla-db @shuochen0311
-/acceptance/cmd/sandbox/    @pietern @akshaysingla-db @shuochen0311
+/cmd/sandbox/               team:eng-sandbox
+/acceptance/cmd/sandbox/    team:eng-sandbox
 
 # Auth
 /cmd/auth/                  team:platform
