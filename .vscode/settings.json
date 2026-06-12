@@ -27,8 +27,6 @@
         "./bundle/schema/jsonschema.json": [
             "databricks.yml",
             "databricks.yaml",
-            "bundle.yml",
-            "bundle.yaml",
         ]
     }
 }
