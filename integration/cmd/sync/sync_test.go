@@ -493,12 +493,12 @@ func TestSyncEnsureRemotePathIsUsableIfRepoDoesntExist(t *testing.T) {
 
 	// Hypothetical repo path doesn't exist.
 	nonExistingRepoPath := fmt.Sprintf("/Repos/%s/%s", me.UserName, testutil.RandomName("doesnt-exist-"))
-	err = sync.EnsureRemotePathIsUsable(ctx, wsc, nonExistingRepoPath, nil)
+	err = sync.EnsureRemotePathIsUsable(ctx, wsc, nonExistingRepoPath, nil, false)
 	assert.ErrorContains(t, err, " does not exist; please create it first")
 
 	// Paths nested under a hypothetical repo path should yield the same error.
 	nestedPath := path.Join(nonExistingRepoPath, "nested/directory")
-	err = sync.EnsureRemotePathIsUsable(ctx, wsc, nestedPath, nil)
+	err = sync.EnsureRemotePathIsUsable(ctx, wsc, nestedPath, nil, false)
 	assert.ErrorContains(t, err, " does not exist; please create it first")
 }
 
@@ -509,12 +509,12 @@ func TestSyncEnsureRemotePathIsUsableIfRepoExists(t *testing.T) {
 	_, remoteRepoPath := setupRepo(t, wsc, ctx)
 
 	// Repo itself is usable.
-	err := sync.EnsureRemotePathIsUsable(ctx, wsc, remoteRepoPath, nil)
+	err := sync.EnsureRemotePathIsUsable(ctx, wsc, remoteRepoPath, nil, false)
 	assert.NoError(t, err)
 
 	// Path nested under repo path is usable.
 	nestedPath := path.Join(remoteRepoPath, "nested/directory")
-	err = sync.EnsureRemotePathIsUsable(ctx, wsc, nestedPath, nil)
+	err = sync.EnsureRemotePathIsUsable(ctx, wsc, nestedPath, nil, false)
 	assert.NoError(t, err)
 
 	// Verify that the directory has been created.
@@ -531,7 +531,7 @@ func TestSyncEnsureRemotePathIsUsableInWorkspace(t *testing.T) {
 	require.NoError(t, err)
 
 	remotePath := fmt.Sprintf("/Users/%s/%s", me.UserName, testutil.RandomName("ensure-path-exists-test-"))
-	err = sync.EnsureRemotePathIsUsable(ctx, wsc, remotePath, me)
+	err = sync.EnsureRemotePathIsUsable(ctx, wsc, remotePath, me, false)
 	assert.NoError(t, err)
 
 	// Clean up directory after test.

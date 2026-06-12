@@ -13,7 +13,7 @@ Deployment complete!
   "body": {
     "autotermination_minutes": 60,
     "cluster_name": "[UNIQUE_NAME]",
-    "node_type_id": "[NODE_TYPE_ID]",
+    "instance_pool_id": "[TEST_INSTANCE_POOL_ID]",
     "num_workers": 1,
     "spark_version": "15.4.x-scala2.12"
   }

@@ -1,0 +1,8 @@
+bundle:
+  name: nfd-unicode-ref
+
+resources:
+  jobs:
+    foo:
+      # café in NFD (e + U+0301 combining acute); not accepted by \p{L} segment matching.
+      max_concurrent_runs: ${var.café}

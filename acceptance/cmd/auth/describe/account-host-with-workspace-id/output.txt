@@ -1,0 +1,19 @@
+
+=== Describe falls back to the account endpoint when the workspace check fails
+
+>>> [CLI] auth describe --profile acct-with-ws
+Host: [DATABRICKS_URL]
+Account ID: acct-123
+Authenticated with: pat
+-----
+Current configuration:
+  ✓ host: [DATABRICKS_URL] (from DATABRICKS_HOST environment variable)
+  ✓ account_id: acct-123 (from [TEST_TMP_DIR]/home/.databrickscfg config file)
+  ✓ workspace_id: [NUMID] (from [TEST_TMP_DIR]/home/.databrickscfg config file)
+  ✓ token: ******** (from DATABRICKS_TOKEN environment variable)
+  ✓ profile: acct-with-ws (from --profile flag)
+  ✓ databricks_cli_path: [CLI]
+  ✓ auth_type: pat
+  ✓ rate_limit: [NUMID] (from DATABRICKS_RATE_LIMIT environment variable)
+  ✓ cloud: AWS
+  ✓ discovery_url: [DATABRICKS_URL]/oidc/.well-known/oauth-authorization-server
