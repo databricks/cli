@@ -105,6 +105,27 @@ func TestResolveVolumePathReferencesOnlyResources_MissingTarget(t *testing.T) {
 	require.ErrorContains(t, diags.Error(), "reference does not exist: ${resources.volumes.missing.volume_path}")
 }
 
+func TestResolveVolumePathReferencesOnlyResources_UnsetTargetResolvesToEmpty(t *testing.T) {
+	// When the target volume exists but its volume_path was never computed (for
+	// example because its name is only known at deploy), the field is normalized
+	// to an empty string, so the reference resolves to "" rather than erroring.
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Resources: config.Resources{
+				Volumes: map[string]*resources.Volume{
+					"foo": {},
+					"ref": {},
+				},
+			},
+		},
+	}
+	b.Config.Resources.Volumes["ref"].Comment = "${resources.volumes.foo.volume_path}"
+
+	diags := bundle.Apply(t.Context(), b, ResolveVolumePathReferencesOnlyResources())
+	require.NoError(t, diags.Error())
+	require.Empty(t, b.Config.Resources.Volumes["ref"].Comment)
+}
+
 func TestIsVolumePathReferencePath(t *testing.T) {
 	require.True(t, isVolumePathReferencePath(dyn.MustPathFromString("resources.volumes.foo.volume_path")))
 	require.False(t, isVolumePathReferencePath(dyn.MustPathFromString("resources.volumes.foo.name")))

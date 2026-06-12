@@ -1,0 +1,27 @@
+
+>>> [CLI] bundle validate -o json
+{
+  "volumes": {
+    "bar": {
+      "catalog_name": "mycatalog",
+      "name": "${resources.volumes.baz.storage_location}",
+      "schema_name": "myschema",
+      "volume_type": "MANAGED"
+    },
+    "baz": {
+      "catalog_name": "mycatalog",
+      "name": "bazname",
+      "schema_name": "myschema",
+      "volume_path": "/Volumes/mycatalog/myschema/bazname",
+      "volume_type": "MANAGED"
+    },
+    "foo": {
+      "catalog_name": "mycatalog",
+      "comment": "",
+      "name": "fooname",
+      "schema_name": "myschema",
+      "volume_path": "/Volumes/mycatalog/myschema/fooname",
+      "volume_type": "MANAGED"
+    }
+  }
+}

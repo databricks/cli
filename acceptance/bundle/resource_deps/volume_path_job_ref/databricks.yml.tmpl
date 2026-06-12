@@ -1,0 +1,25 @@
+bundle:
+  name: testbundle-${UNIQUE_NAME}
+
+# A job parameter references a bundle-managed volume's computed volume_path.
+# This is the motivating use case from databricks/cli#4233: other resources can
+# refer to ${resources.volumes.<key>.volume_path} instead of hardcoding the UC
+# path.
+resources:
+  schemas:
+    my:
+      catalog_name: main
+      name: myschema-${UNIQUE_NAME}
+
+  volumes:
+    data:
+      catalog_name: main
+      schema_name: myschema-${UNIQUE_NAME}
+      name: data-${UNIQUE_NAME}
+
+  jobs:
+    process:
+      name: process-${UNIQUE_NAME}
+      parameters:
+        - name: data_path
+          default: ${resources.volumes.data.volume_path}
