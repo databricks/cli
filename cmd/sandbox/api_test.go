@@ -1,9 +1,11 @@
 package sandbox
 
 import (
+	"net/http"
 	"strings"
 	"testing"
 
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -19,6 +21,20 @@ func TestValidateNameRejectsOversize(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "257 bytes")
 	assert.Contains(t, err.Error(), "256")
+}
+
+func TestTranslateErrorRewrites503(t *testing.T) {
+	orig := &apierr.APIError{StatusCode: http.StatusServiceUnavailable, Message: "Service Unavailable"}
+	err := translateError(orig)
+	require.Error(t, err)
+	assert.Equal(t, "the Databricks Sandboxes feature is not available in your region", err.Error())
+}
+
+func TestTranslateErrorPassesThroughOthers(t *testing.T) {
+	require.NoError(t, translateError(nil))
+
+	notFound := &apierr.APIError{StatusCode: http.StatusNotFound, Message: "Sandbox not found"}
+	assert.Equal(t, error(notFound), translateError(notFound))
 }
 
 func TestValidateNameCountsBytesNotRunes(t *testing.T) {
