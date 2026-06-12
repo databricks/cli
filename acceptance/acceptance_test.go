@@ -609,6 +609,29 @@ func getSkipReason(config *internal.TestConfig, configPath string) string {
 	return ""
 }
 
+// ciRunID matches a plausible numeric GitHub Actions run id.
+var ciRunID = regexp.MustCompile(`^[0-9]{1,16}$`)
+
+// ciUniqueName embeds a CI run id into the random unique name: "ci-<runID>-<random suffix>".
+// The result has the same length as the input random name. This matters because some
+// resource names built from $UNIQUE_NAME are at their length limit already (for example,
+// "app-$UNIQUE_NAME" is exactly 30 characters, the maximum length of an app name).
+// The character set also stays compatible with all uses: lowercase alphanumerics plus "-",
+// which existing tests already use adjacent to $UNIQUE_NAME in every resource type.
+// Returns the random name unchanged when runID is absent, malformed, or too long to leave
+// enough random characters for collision avoidance between tests in the same run.
+func ciUniqueName(runID, random string) string {
+	if !ciRunID.MatchString(runID) {
+		return random
+	}
+	prefix := "ci-" + runID + "-"
+	randLen := len(random) - len(prefix)
+	if randLen < 8 {
+		return random
+	}
+	return prefix + random[:randLen]
+}
+
 func runTest(t *testing.T,
 	dir string,
 	variant int,
@@ -643,6 +666,11 @@ func runTest(t *testing.T,
 
 	id := uuid.New()
 	uniqueName := strings.ToLower(strings.Trim(base32.StdEncoding.EncodeToString(id[:]), "="))
+	if isRunningOnCloud {
+		// In CI runs against real workspaces, embed the workflow run id into the name so
+		// that leaked resources can be attributed to a repo/CI run and swept by prefix.
+		uniqueName = ciUniqueName(os.Getenv("GITHUB_RUN_ID"), uniqueName)
+	}
 	repls.Set(uniqueName, "[UNIQUE_NAME]")
 
 	var tmpDir string
