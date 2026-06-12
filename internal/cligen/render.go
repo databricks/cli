@@ -65,16 +65,39 @@ func parseTemplate(name, path string) *template.Template {
 	return template.Must(t.ParseFS(templates, path))
 }
 
-// renderToFile renders the named template with data to fileName. It mirrors
-// genkit's render.RenderToFile: a skipThisFile panic surfaces as an error that
-// callers match with errors.Is(err, ErrSkipThisFile).
+// renderToFile renders the named template with data, normalizes whitespace,
+// formats the result (formatSource), and writes it to fileName. A skipThisFile
+// panic during rendering surfaces as an error that callers match with
+// errors.Is(err, ErrSkipThisFile). Whitespace is normalized before formatting so
+// that indentation-only template lines become empty lines, which gofmt treats as
+// import group separators; gofmt introduces no trailing whitespace of its own
+// (raw string contents are already clean).
 func renderToFile(data any, t *template.Template, templateName, fileName string) error {
 	sb := strings.Builder{}
 	if err := t.ExecuteTemplate(&sb, templateName, data); err != nil {
 		return err
 	}
+	src, err := formatSource([]byte(stripTrailingWhitespace(sb.String())))
+	if err != nil {
+		return err
+	}
 	if err := os.MkdirAll(filepath.Dir(fileName), 0o755); err != nil {
 		return err
 	}
-	return os.WriteFile(fileName, []byte(sb.String()), 0o644)
+	return os.WriteFile(fileName, src, 0o644)
+}
+
+// stripTrailingWhitespace removes trailing whitespace from every line and
+// normalizes the file to end in exactly one newline. The committed command
+// files are whitespace-normalized (tools/validate_whitespace.py); genkit relied
+// on a separate `task ws` pass for this, cligen produces clean output directly.
+// Note this also normalizes inside raw string literals (help text), where the
+// templates and genkit's comment wrapping leave trailing spaces and
+// whitespace-only paragraph breaks.
+func stripTrailingWhitespace(s string) string {
+	lines := strings.Split(s, "\n")
+	for i, line := range lines {
+		lines[i] = strings.TrimRight(line, " \t")
+	}
+	return strings.TrimRight(strings.Join(lines, "\n"), "\n") + "\n"
 }
