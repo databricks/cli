@@ -549,6 +549,57 @@ func TestWorkspaceClientOrPromptRejectsAccountOnlyProfile(t *testing.T) {
 	}
 }
 
+func TestErrAccountOnlyProfileMessage(t *testing.T) {
+	tests := []struct {
+		name string
+		err  ErrAccountOnlyProfile
+		want string
+	}{
+		{
+			name: "account console host",
+			err:  ErrAccountOnlyProfile{profileName: "acc", host: "https://accounts.test"},
+			want: "profile \"acc\" points to a Databricks account console host (https://accounts.test), which serves only account-level APIs; " +
+				"this command requires a workspace. Run `databricks auth login --host https://<workspace-url>` to create a workspace profile, " +
+				"or use `databricks account ...` commands with this profile",
+		},
+		{
+			// On non-account-console hosts (SPOG/unified) workspace APIs are
+			// served, so setting workspace_id is still the right fix.
+			name: "other host keeps workspace_id advice",
+			err:  ErrAccountOnlyProfile{profileName: "spog", host: "https://unified.test"},
+			want: "profile \"spog\" has no workspace_id set (account-only); this command requires a workspace. " +
+				"Edit the profile to set workspace_id to a real ID, or pass --profile with a workspace-scoped profile",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, tt.err.Error())
+		})
+	}
+}
+
+func TestWorkspaceClientOrPromptAccountOnlyProfileOnAccountConsoleHost(t *testing.T) {
+	testutil.CleanupEnvironment(t)
+	t.Setenv("PATH", "")
+
+	cfg := &config.Config{
+		Host:          "https://accounts.test/",
+		AccountID:     "abc-123",
+		Token:         "foobar",
+		Profile:       "acc",
+		HTTPTransport: noNetworkTransport,
+	}
+
+	w, err := workspaceClientOrPrompt(t.Context(), cfg, false)
+	assert.Nil(t, w)
+	require.Error(t, err)
+	var accountOnly ErrAccountOnlyProfile
+	require.ErrorAs(t, err, &accountOnly)
+	assert.Contains(t, err.Error(), "account console host (https://accounts.test)")
+	assert.Contains(t, err.Error(), "databricks auth login --host")
+	assert.NotContains(t, err.Error(), "set workspace_id to a real ID")
+}
+
 func TestWorkspaceClientOrPromptRejectsPATOnSPOGWithoutWorkspaceID(t *testing.T) {
 	testutil.CleanupEnvironment(t)
 	t.Setenv("PATH", "")

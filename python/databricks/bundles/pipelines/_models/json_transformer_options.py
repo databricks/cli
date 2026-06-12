@@ -21,11 +21,15 @@ class JsonTransformerOptions:
 
     as_variant: VariableOrOptional[bool] = None
     """
+    :meta private: [EXPERIMENTAL]
+    
     Parse the entire value as a single Variant column.
     """
 
     schema: VariableOrOptional[str] = None
     """
+    :meta private: [EXPERIMENTAL]
+    
     Inline schema string for JSON parsing (Spark DDL format).
     """
 
@@ -33,16 +37,22 @@ class JsonTransformerOptions:
         FileIngestionOptionsSchemaEvolutionMode
     ] = None
     """
+    :meta private: [EXPERIMENTAL]
+    
     (Optional) Schema evolution mode for schema inference.
     """
 
     schema_file_path: VariableOrOptional[str] = None
     """
+    :meta private: [EXPERIMENTAL]
+    
     Path to a schema file (.ddl).
     """
 
     schema_hints: VariableOrOptional[str] = None
     """
+    :meta private: [EXPERIMENTAL]
+    
     (Optional) Schema hints as a comma-separated string of "column_name type" pairs.
     """
 
@@ -59,11 +69,15 @@ class JsonTransformerOptionsDict(TypedDict, total=False):
 
     as_variant: VariableOrOptional[bool]
     """
+    :meta private: [EXPERIMENTAL]
+    
     Parse the entire value as a single Variant column.
     """
 
     schema: VariableOrOptional[str]
     """
+    :meta private: [EXPERIMENTAL]
+    
     Inline schema string for JSON parsing (Spark DDL format).
     """
 
@@ -71,16 +85,22 @@ class JsonTransformerOptionsDict(TypedDict, total=False):
         FileIngestionOptionsSchemaEvolutionModeParam
     ]
     """
+    :meta private: [EXPERIMENTAL]
+    
     (Optional) Schema evolution mode for schema inference.
     """
 
     schema_file_path: VariableOrOptional[str]
     """
+    :meta private: [EXPERIMENTAL]
+    
     Path to a schema file (.ddl).
     """
 
     schema_hints: VariableOrOptional[str]
     """
+    :meta private: [EXPERIMENTAL]
+    
     (Optional) Schema hints as a comma-separated string of "column_name type" pairs.
     """
 
