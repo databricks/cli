@@ -21,6 +21,8 @@ class PythonOperatorTask:
 
     main: VariableOrOptional[str] = None
     """
+    :meta private: [EXPERIMENTAL]
+    
     Fully qualified name of the main class or function.
     For example, `my_project.my_function` or `my_project.MyOperator`.
     """
@@ -29,6 +31,8 @@ class PythonOperatorTask:
         default_factory=list
     )
     """
+    :meta private: [EXPERIMENTAL]
+    
     An ordered list of task parameters.
     TODO(JOBS-30885): Add limits for parameters.
     """
@@ -46,12 +50,16 @@ class PythonOperatorTaskDict(TypedDict, total=False):
 
     main: VariableOrOptional[str]
     """
+    :meta private: [EXPERIMENTAL]
+    
     Fully qualified name of the main class or function.
     For example, `my_project.my_function` or `my_project.MyOperator`.
     """
 
     parameters: VariableOrList[PythonOperatorTaskParameterParam]
     """
+    :meta private: [EXPERIMENTAL]
+    
     An ordered list of task parameters.
     TODO(JOBS-30885): Add limits for parameters.
     """

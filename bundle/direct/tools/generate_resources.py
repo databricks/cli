@@ -5,7 +5,7 @@
 # ]
 # ///
 """
-Generate resources.generated.yml from OpenAPI schema field behaviors.
+Generate resources.generated.yml from cli.json field behaviors.
 """
 
 import argparse
@@ -62,18 +62,16 @@ def get_field_behaviors(schemas, type_name):
         if depth > 4:
             return {}
         results = {}
-        for name, prop in schema.get("properties", {}).items():
+        for name, prop in schema.get("fields", {}).items():
             path = f"{prefix}.{name}" if prefix else name
-            behaviors = list(prop.get("x-databricks-field-behaviors", []))
-            if prop.get("x-databricks-immutable") and "IMMUTABLE" not in behaviors:
-                behaviors.append("IMMUTABLE")
+            behaviors = list(prop.get("behaviors", []))
             for b in inherited:
                 if b not in behaviors:
                     behaviors.append(b)
             if behaviors:
                 results[path] = behaviors
-            if "$ref" in prop:
-                ref = prop["$ref"].split("/")[-1]
+            if "ref" in prop:
+                ref = prop["ref"]
                 if ref in schemas and ref not in visited:
                     visited.add(ref)
                     propagate = [b for b in behaviors if b in ("INPUT_ONLY", "OUTPUT_ONLY")]
@@ -89,10 +87,10 @@ def find_inherited_behaviors(schemas, type_name):
     """Find INPUT_ONLY/OUTPUT_ONLY behaviors from containers that reference type_name."""
     inherited = []
     for container_schema in schemas.values():
-        for field_prop in container_schema.get("properties", {}).values():
-            if field_prop.get("$ref", "").split("/")[-1] != type_name:
+        for field_prop in container_schema.get("fields", {}).values():
+            if field_prop.get("ref", "") != type_name:
                 continue
-            behaviors = field_prop.get("x-databricks-field-behaviors", [])
+            behaviors = field_prop.get("behaviors", [])
             if "INPUT_ONLY" in behaviors and "INPUT_ONLY" not in inherited:
                 inherited.append("INPUT_ONLY")
             if "OUTPUT_ONLY" in behaviors and "OUTPUT_ONLY" not in inherited:
@@ -171,8 +169,8 @@ resources:"""
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Generate resources YAML from OpenAPI schema")
-    parser.add_argument("apischema", type=Path, help="Path to OpenAPI schema JSON file")
+    parser = argparse.ArgumentParser(description="Generate resources YAML from the cli.json schema block")
+    parser.add_argument("apischema", type=Path, help="Path to cli.json schema block")
     parser.add_argument("apitypes", type=Path, help="Path to apitypes.generated.yml file")
     parser.add_argument("apitypes_override", type=Path, help="Path to apitypes.yml override file")
     parser.add_argument("out_fields", type=Path, help="Path to out.fields.txt file")
@@ -180,7 +178,7 @@ def main():
 
     resource_types = parse_apitypes(args.apitypes, args.apitypes_override)
     state_fields = parse_out_fields(args.out_fields)
-    schemas = json.loads(args.apischema.read_text()).get("components", {}).get("schemas", {})
+    schemas = json.loads(args.apischema.read_text())["schemas"]
 
     resource_behaviors = {}
     for resource, type_name in sorted(resource_types.items()):
