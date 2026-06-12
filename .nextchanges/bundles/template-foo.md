@@ -1,1 +1,0 @@
-- Added `foo` support to bundle templates.
