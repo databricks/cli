@@ -794,14 +794,10 @@ func runTest(t *testing.T,
 	}
 	cmd.Dir = tmpDir
 
-	// On cloud runs, guarantee that bundles deployed by the script are destroyed
-	// even if the script fails, times out or exits before reaching its own
-	// "bundle destroy" step. Otherwise real resources (jobs, pipelines, SQL
-	// warehouses, ...) leak in the shared test workspaces; leaked warehouses
-	// have previously exhausted cloud quota and broke CI.
-	// Register before starting the script so it also covers timeouts and
-	// mid-test failures. Cleanup runs after output comparison and only logs
-	// via t.Logf, so it never affects expected output files.
+	// On cloud runs, destroy any bundles the script deployed but did not get to
+	// destroy itself (failure, timeout, early exit), so resources do not leak
+	// into the shared test workspaces. Registered before the script starts so
+	// it also covers timeouts.
 	if isRunningOnCloud {
 		scriptEnv := slices.Clone(cmd.Env)
 		t.Cleanup(func() {
@@ -881,16 +877,9 @@ func runTest(t *testing.T,
 
 // destroyDeployedBundles is a best-effort safety net for cloud runs: it finds
 // every bundle state directory created under tmpDir (<bundle_root>/.databricks/bundle/<target>)
-// and runs "bundle destroy" for it.
-//
-// Test scripts remain responsible for destroying the bundles they deploy; this
-// only matters when a script does not get there (failure, timeout, early exit).
-// Notes:
-//   - If the script succeeded with the bundle at the test root, the shared
-//     script.cleanup already removed .databricks, so nothing is found here.
-//   - If the bundle was already destroyed but its state directory remains,
-//     "bundle destroy" exits 0 with "No active deployment found to destroy!".
-//   - Failures are logged but never fail the test.
+// and runs "bundle destroy" for it. On the happy path there is nothing to do:
+// the shared script.cleanup removes .databricks, and destroying an
+// already-destroyed bundle exits 0.
 func destroyDeployedBundles(t *testing.T, tmpDir string, env []string) {
 	cliPath := os.Getenv("CLI")
 	if cliPath == "" {
@@ -906,7 +895,8 @@ func destroyDeployedBundles(t *testing.T, tmpDir string, env []string) {
 }
 
 func destroyBundle(t *testing.T, cliPath, bundleRoot, target string, env []string) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+	// t.Context() is already canceled when cleanups run; derive from it without cancellation.
+	ctx, cancel := context.WithTimeout(context.WithoutCancel(t.Context()), 10*time.Minute)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, cliPath, "bundle", "destroy", "--auto-approve", "--target", target)
 	cmd.Dir = bundleRoot
@@ -924,7 +914,10 @@ func destroyBundle(t *testing.T, cliPath, bundleRoot, target string, env []strin
 func findBundleStateDirs(t *testing.T, tmpDir string) map[string][]string {
 	result := make(map[string][]string)
 	err := filepath.WalkDir(tmpDir, func(path string, d fs.DirEntry, err error) error {
-		if err != nil || !d.IsDir() {
+		if err != nil {
+			return nil //nolint:nilerr // best-effort scan, skip unreadable entries
+		}
+		if !d.IsDir() {
 			return nil
 		}
 		name := d.Name()
@@ -1102,8 +1095,7 @@ func shouldShowDiff(pathNew, valueNew string) bool {
 }
 
 // Returns combined script.prepare (root) + script.prepare (parent) + ... + script + ... + script.cleanup (parent) + ...
-// Note, cleanups are not executed if main script fails; that's not a huge issue for local files, since it runs in a temp dir.
-// For cloud resources deployed via bundles, destroyDeployedBundles acts as a safety net on cloud runs.
+// Note, cleanups are not executed if main script fails; that's not a huge issue, since it runs it temp dir.
 func readMergedScriptContents(t *testing.T, dir string) string {
 	scriptContents := testutil.ReadFile(t, filepath.Join(dir, EntryPointScript))
 
