@@ -662,10 +662,8 @@ func runTest(t *testing.T,
 
 	id := uuid.New()
 	uniqueName := strings.ToLower(strings.Trim(base32.StdEncoding.EncodeToString(id[:]), "="))
-	if isRunningOnCloud {
-		// Embed the CI run id so leaked resources can be attributed to a run and swept by prefix.
-		uniqueName = ciUniqueName(os.Getenv("GITHUB_RUN_ID"), uniqueName)
-	}
+	// Embed the CI run id, when present, so leaked resources can be attributed to a run and swept by prefix.
+	uniqueName = ciUniqueName(os.Getenv("GITHUB_RUN_ID"), uniqueName)
 	repls.Set(uniqueName, "[UNIQUE_NAME]")
 
 	var tmpDir string
