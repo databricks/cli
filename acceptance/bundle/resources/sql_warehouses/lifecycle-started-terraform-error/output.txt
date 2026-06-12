@@ -2,7 +2,7 @@
 === bundle plan fails with lifecycle.started on terraform engine
 >>> errcode [CLI] bundle plan
 Error: lifecycle.started is only supported in direct deployment mode
-  in databricks.yml:17:18
+  in databricks.yml:14:18
 
 
 Exit code: 1
@@ -10,7 +10,7 @@ Exit code: 1
 === bundle deploy fails with lifecycle.started on terraform engine
 >>> errcode [CLI] bundle deploy
 Error: lifecycle.started is only supported in direct deployment mode
-  in databricks.yml:17:18
+  in databricks.yml:14:18
 
 
 Exit code: 1

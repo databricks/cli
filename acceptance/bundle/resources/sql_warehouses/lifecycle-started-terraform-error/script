@@ -1,8 +1,5 @@
 envsubst < databricks.yml.tmpl > databricks.yml
 
-# The plan/deploy commands below are expected to fail before any resource is
-# created. Always destroy on exit so that a regression in that error path can
-# never leak a running warehouse into the shared cloud workspace.
 cleanup() {
     trace $CLI bundle destroy --auto-approve
 }

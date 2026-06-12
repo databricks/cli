@@ -8,9 +8,6 @@ resources:
   sql_warehouses:
     mywarehouse:
       name: my-warehouse-$UNIQUE_NAME
-      # Smallest size and shortest auto-stop: this test only verifies the
-      # error path, so if a warehouse is ever created by mistake it should
-      # be as cheap and short-lived as possible.
       cluster_size: "2X-Small"
       auto_stop_mins: 10
       lifecycle:
