@@ -11,12 +11,10 @@
 // This package is consumed by the generated CLI command code in cmd/account/**
 // and cmd/workspace/**: cligen reads the schemas in .codegen/cli.json, walks
 // the response type, and emits a Strip call before the existing cmdio.Render.
-// Keeping the logic out of libs/cmdio matches @pietern's guidance — cmdio
-// stays a generic rendering pipeline, and the filtering policy lives where the
-// metadata (cli.json) does.
 package inputonly
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -27,12 +25,19 @@ import (
 // generic representation, the listed paths are deleted, and the masked value
 // is returned for the caller to marshal in its preferred format.
 //
-// Paths use dotted notation (e.g. "stable_url.initial_workspace_id"). Arrays
-// and dynamically-keyed maps (e.g. proto map<string, V>) are traversed
-// transparently: a single path applies to every element of an array, and to
-// every value of a map when no literal key matches the next path component.
-// List responses and map-valued fields therefore share the same path
-// expression as singletons.
+// Paths use dotted notation (e.g. "stable_url.initial_workspace_id") and are
+// matched literally at every segment. Arrays are traversed transparently: a
+// path is applied to every element of any []any encountered along the way.
+// Maps are not — see deletePath for the reasoning.
+//
+// Numbers are decoded via json.Number rather than float64 so values above
+// 2^53 (e.g. SDK fields typed int64 like spark_context_id) re-marshal
+// verbatim instead of silently losing precision.
+//
+// Side note: encoding/json marshals struct fields in declaration order but
+// map[string]any keys alphabetically. Filtered responses therefore render
+// with sorted JSON keys, while unfiltered ones keep SDK-struct order.
+// Acceptance fixtures and downstream consumers should be tolerant of that.
 func Strip(v any, paths []string) (any, error) {
 	if len(paths) == 0 {
 		return v, nil
@@ -41,8 +46,10 @@ func Strip(v any, paths []string) (any, error) {
 	if err != nil {
 		return nil, fmt.Errorf("inputonly: marshal: %w", err)
 	}
+	dec := json.NewDecoder(bytes.NewReader(b))
+	dec.UseNumber()
 	var out any
-	if err := json.Unmarshal(b, &out); err != nil {
+	if err := dec.Decode(&out); err != nil {
 		return nil, fmt.Errorf("inputonly: unmarshal: %w", err)
 	}
 	for _, p := range paths {
@@ -51,40 +58,42 @@ func Strip(v any, paths []string) (any, error) {
 	return out, nil
 }
 
-// deletePath walks v according to keys and removes the leaf key from any
-// object it lands on.
+// deletePath walks v according to keys and removes the leaf key from the
+// object it lands on. Each segment is matched literally; if no literal match
+// exists at a given level the path simply does not apply, and we return.
 //
-// Both arrays and dynamically-keyed maps are traversed transparently:
+// Arrays are traversed transparently. After json.Unmarshal a JSON array is
+// always []any, type-distinguishable from map[string]any, so descending into
+// every element with the same key list is unambiguous.
 //
-//   - When v is a []any, every element is visited with the same key list.
-//   - When v is a map[string]any but the next key is not a literal match,
-//     every value is visited with the same key list — this handles proto
-//     map<string, V> fields, whose JSON keys are user-provided strings and
-//     whose values carry the field name from the path.
-//
-// Both struct fields and proto map<string, V> surface as map[string]any after
-// json.Unmarshal, so a single corner case remains: if a map's user-provided
-// key happens to equal an inner field name, the literal match wins and that
-// entry is removed instead of the field inside each value. cligen emits paths
-// from the schema, so this only fires for real-world key collisions and
-// matches the expected behavior for any path the schema actually targets.
+// Maps are not traversed transparently, even though proto map<string, V>
+// surfaces as map[string]any just like a struct does. Falling back to
+// match-anywhere when the literal misses turns an anchored path into a
+// match-anywhere expression: e.g. path "name" against
+// {"id":"123","details":{"name":"x"}} would strip "details.name" instead of
+// no-oping. Since INPUT_ONLY fields are always omitted by the server, the
+// literal miss is the normal case and the fallback would fire on every
+// Strip call; the failure mode is silent over-stripping. cligen emits
+// paths anchored to specific schema locations and does not currently emit
+// paths that descend through proto maps (cli.json carries one ref slot,
+// populated for singleton message fields only). If that contract grows
+// map value refs later, the path language should grow an explicit map
+// marker (e.g. "*") rather than reintroducing implicit fallback.
 func deletePath(v any, keys []string) {
 	if len(keys) == 0 {
 		return
 	}
 	switch t := v.(type) {
 	case map[string]any:
-		if child, ok := t[keys[0]]; ok {
-			if len(keys) == 1 {
-				delete(t, keys[0])
-			} else {
-				deletePath(child, keys[1:])
-			}
+		child, ok := t[keys[0]]
+		if !ok {
 			return
 		}
-		for _, child := range t {
-			deletePath(child, keys)
+		if len(keys) == 1 {
+			delete(t, keys[0])
+			return
 		}
+		deletePath(child, keys[1:])
 	case []any:
 		for _, el := range t {
 			deletePath(el, keys)
