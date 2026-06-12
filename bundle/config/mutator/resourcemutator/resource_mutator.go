@@ -112,11 +112,12 @@ func applyInitializeMutators(ctx context.Context, b *bundle.Bundle) {
 		if p == nil || p.IngestionDefinition != nil {
 			continue
 		}
-		bundle.SetDefault(ctx, b, "resources.pipelines."+name+".edition", "ADVANCED")
+		pattern := dyn.NewPattern(dyn.Key("resources"), dyn.Key("pipelines"), dyn.Key(name))
+		bundle.ApplyContext(ctx, b, bundle.SetDefaultMutator(pattern, "edition", "ADVANCED"))
 		if logdiag.HasError(ctx) {
 			return
 		}
-		bundle.SetDefault(ctx, b, "resources.pipelines."+name+".channel", "CURRENT")
+		bundle.ApplyContext(ctx, b, bundle.SetDefaultMutator(pattern, "channel", "CURRENT"))
 		if logdiag.HasError(ctx) {
 			return
 		}

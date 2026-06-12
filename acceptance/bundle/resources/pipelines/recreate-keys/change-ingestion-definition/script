@@ -9,18 +9,21 @@ trace $CLI bundle deploy
 
 ppid1=`read_id.py my`
 
+# Requests from the create and recreate phases are recorded per engine: DABs
+# omits edition/channel for ingestion pipelines, but the terraform provider
+# injects them on its own (fix: terraform-provider-databricks#5783).
 print_requests() {
-    jq --sort-keys 'select(.method != "GET" and (.path | contains("/pipelines")))' < out.requests.txt > out.requests.$DATABRICKS_BUNDLE_ENGINE.json
+    jq --sort-keys 'select(.method != "GET" and (.path | contains("/pipelines")))' < out.requests.txt > "$1"
     rm -f out.requests.txt
 }
 
-print_requests
+print_requests out.requests.create.$DATABRICKS_BUNDLE_ENGINE.json
 
 trace update_file.py databricks.yml $CONFIG_UPDATE
 trace $CLI bundle plan  # should show 'recreate'
 $CLI bundle plan -o json > out.plan_recreate.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy --auto-approve
-print_requests
+print_requests out.requests.recreate.$DATABRICKS_BUNDLE_ENGINE.json
 
 title "Fetch pipeline ID and verify remote state"
 
@@ -33,6 +36,6 @@ trace musterr $CLI pipelines get $ppid1
 title "Destroy the pipeline and verify that it's removed from the state and from remote"
 trace $CLI bundle destroy --auto-approve
 
-print_requests
+print_requests out.requests.destroy.json
 trace musterr $CLI pipelines get $ppid2
 rm -f out.requests.txt
