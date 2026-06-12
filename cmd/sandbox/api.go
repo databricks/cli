@@ -70,7 +70,7 @@ func allow503Retry(ctx context.Context) bool {
 // nothing for the user, so it is dropped rather than wrapped.
 func translateError(err error) error {
 	if apiErr, ok := errors.AsType[*apierr.APIError](err); ok && apiErr.StatusCode == http.StatusServiceUnavailable {
-		return errors.New("the Databricks Sandboxes feature is not available in your region, or the service is temporarily unavailable")
+		return errors.New("the Databricks Sandbox feature is not available in your region, or the service is temporarily unavailable")
 	}
 	return err
 }
