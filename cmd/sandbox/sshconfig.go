@@ -59,7 +59,7 @@ func sshConfigAlreadyManaged(ctx context.Context) (bool, error) {
 // writeSSHConfig writes the sandbox-managed SSH config block to a
 // managed file and, if not already present, adds an Include directive
 // to the user's ~/.ssh/config pointing at that file.
-func writeSSHConfig(ctx context.Context, keyPath, gatewayHost, gatewayPort string) (string, string, error) {
+func writeSSHConfig(ctx context.Context, keyPath string, gatewayHosts []string, gatewayPort string) (string, string, error) {
 	home, err := env.UserHomeDir(ctx)
 	if err != nil {
 		return "", "", err
@@ -72,7 +72,7 @@ func writeSSHConfig(ctx context.Context, keyPath, gatewayHost, gatewayPort strin
 	managedPath := filepath.Join(sshDir, sshIncludeFileName)
 	mainPath := filepath.Join(sshDir, "config")
 
-	block := buildSSHConfigBlock(keyPath, gatewayHost, gatewayPort)
+	block := buildSSHConfigBlock(keyPath, gatewayHosts, gatewayPort)
 	if err := writeManagedConfig(managedPath, block); err != nil {
 		return managedPath, mainPath, err
 	}
@@ -82,12 +82,12 @@ func writeSSHConfig(ctx context.Context, keyPath, gatewayHost, gatewayPort strin
 	return managedPath, mainPath, nil
 }
 
-// buildSSHConfigBlock renders the Host stanza we write to the
-// sandbox-managed include file. Mirrors the snippet the workspace UI's
-// "First time setup?" disclosure recommends — the Host key is the
-// literal gateway hostname (so editor Remote-SSH deep links like
-// `ssh-remote+<id>@<gateway>` resolve directly), and only the two
-// directives that meaningfully differ from SSH defaults are set:
+// buildSSHConfigBlock renders one Host stanza per gateway. Mirrors the
+// snippet the workspace UI's "First time setup?" disclosure recommends
+// — the Host key is the literal gateway hostname (so editor Remote-SSH
+// deep links like `ssh-remote+<id>@<gateway>` resolve directly), and
+// only the two directives that meaningfully differ from SSH defaults
+// are set:
 //
 //   - Port (the gateway listens on 2222, not 22)
 //   - IdentityFile + IdentitiesOnly (pin our key so ssh doesn't offer
@@ -99,13 +99,18 @@ func writeSSHConfig(ctx context.Context, keyPath, gatewayHost, gatewayPort strin
 // CLI's own `sandbox ssh` does via argv. No User directive either —
 // the per-sandbox identifier travels in the destination
 // (`ssh <sandbox-id>@<gateway>`).
-func buildSSHConfigBlock(keyPath, gatewayHost, gatewayPort string) string {
-	return fmt.Sprintf(`# Managed by `+"`databricks sandbox register`"+`. Manual edits will be overwritten.
-Host %s
-    Port %s
-    IdentityFile %s
-    IdentitiesOnly yes
-`, gatewayHost, gatewayPort, keyPath)
+//
+// One stanza per gateway means a user with profiles in multiple
+// regions doesn't lose IDE Remote-SSH for the earlier workspaces when
+// they `register` against a new one. Callers pass `gatewayHosts` from
+// state.allGatewayHosts.
+func buildSSHConfigBlock(keyPath string, gatewayHosts []string, gatewayPort string) string {
+	var b strings.Builder
+	b.WriteString("# Managed by `databricks sandbox register`. Manual edits will be overwritten.\n")
+	for _, gw := range gatewayHosts {
+		fmt.Fprintf(&b, "Host %s\n    Port %s\n    IdentityFile %s\n    IdentitiesOnly yes\n", gw, gatewayPort, keyPath)
+	}
+	return b.String()
 }
 
 // writeManagedConfig writes content to path atomically with 0600
@@ -183,14 +188,20 @@ func hasOurMarkedBlock(text string) bool {
 // maybeWriteSSHConfig writes the sandbox-managed SSH config, prompting
 // for consent the first time on this machine. Re-runs silently refresh
 // the managed file. Non-interactive contexts skip the write entirely.
-// The gateway host is the workspace-scoped one returned by the server
-// on the registerKey response — no heuristic, no probe call.
-func maybeWriteSSHConfig(ctx context.Context, keyPath, gatewayHost string) error {
-	if gatewayHost == "" {
-		// Server didn't stamp a gateway on the response. Old server
-		// without the gateway_host field, or genuinely no gateway
-		// available. Skip rather than guess.
-		cmdio.LogString(ctx, "  "+cmdio.Faint(ctx, "skipped SSH config update — server did not return a gateway host"))
+//
+// Reads the gateway-host set from state (populated by every API call
+// that touches a Sandbox or SshKey response, including the register
+// call the caller just made), so users with multiple workspaces in
+// different regions accumulate one Host stanza per unique gateway
+// instead of losing the earlier ones.
+func maybeWriteSSHConfig(ctx context.Context, keyPath string) error {
+	gateways := allGatewayHosts(ctx)
+	if len(gateways) == 0 {
+		// No gateway has been cached yet — register's API call must
+		// not have stamped one, or state is empty. Skip rather than
+		// guess; the next API call that returns a Sandbox/SshKey
+		// will populate the cache and a future register will write.
+		cmdio.LogString(ctx, "  "+cmdio.Faint(ctx, "skipped SSH config update — no sandbox gateway is known yet"))
 		return nil
 	}
 
@@ -204,12 +215,12 @@ func maybeWriteSSHConfig(ctx context.Context, keyPath, gatewayHost string) error
 			return err
 		}
 		if !cmdio.IsPromptSupported(ctx) {
-			cmdio.LogString(ctx, "  "+cmdio.Faint(ctx, "skipped SSH config update (non-interactive); re-run `databricks sandbox register` from a terminal to add the `Host "+gatewayHost+"` block"))
+			cmdio.LogString(ctx, "  "+cmdio.Faint(ctx, "skipped SSH config update (non-interactive); re-run `databricks sandbox register` from a terminal to add the sandbox gateway block(s)"))
 			return nil
 		}
 		question := fmt.Sprintf(
-			"Add a `Host %s` block to %s? This lets editor Remote-SSH (VS Code / Cursor) and `ssh <id>@%s` connect without further setup.",
-			gatewayHost, mainPath, gatewayHost,
+			"Add a sandbox `Host` block to %s? This lets editor Remote-SSH (VS Code / Cursor) and `ssh <id>@<gateway>` connect without further setup.",
+			mainPath,
 		)
 		confirmed, err := cmdio.AskYesOrNo(ctx, question)
 		if err != nil {
@@ -221,7 +232,7 @@ func maybeWriteSSHConfig(ctx context.Context, keyPath, gatewayHost string) error
 		}
 	}
 
-	managedPath, _, err := writeSSHConfig(ctx, keyPath, gatewayHost, defaultGatewayPort)
+	managedPath, _, err := writeSSHConfig(ctx, keyPath, gateways, defaultGatewayPort)
 	if err != nil {
 		return err
 	}
