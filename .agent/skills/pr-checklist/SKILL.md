@@ -47,6 +47,8 @@ After the commands above pass, scrub the diff before pushing. The quick version:
 
 Follow `.github/PULL_REQUEST_TEMPLATE.md` exactly. Use its section headings (`## Changes`, `## Why`, `## Tests`) in the same order, and fill each one in. Do not invent new sections (`## Summary`, `## Test plan`, etc.), do not drop sections, and do not leave the HTML comment placeholders in the final body — replace them with real content. If a section genuinely does not apply (e.g. a docs-only change has no test steps), say so explicitly under that heading rather than removing it.
 
+**RULE: Be concise in the PR summary.** Overly verbose descriptions tend to be ignored by reviewers. Let the diff speak for itself and only describe at a high level what you have implemented/what components were touched.
+
 When using `gh pr create`, read `.github/PULL_REQUEST_TEMPLATE.md` first and base `--body` on it.
 
 If an agent (you) authored or substantially helped author the PR, disclose it on the last line of the body, e.g. `_This PR was written by Claude Code._` or `_PR description drafted with Claude Code._`. Be honest about the level of involvement — "written by" vs. "drafted with" vs. "reviewed by" — and keep it to a single italicized line so it doesn't crowd the template sections.

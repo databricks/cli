@@ -21,6 +21,10 @@
 /libs/apps/                 team:eng-apps-devex
 /acceptance/apps/           team:eng-apps-devex
 
+# Sandbox
+/cmd/sandbox/               team:eng-sandbox
+/acceptance/cmd/sandbox/    team:eng-sandbox
+
 # Auth
 /cmd/auth/                  team:platform
 /libs/auth/                 team:platform

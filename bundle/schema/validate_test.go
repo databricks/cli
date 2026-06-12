@@ -178,20 +178,22 @@ func TestSchemaValidateFailCases(t *testing.T) {
 	// and the Google library discards per-branch errors on oneOf failure, so
 	// we can only assert on the schema path, not the specific failure reason.
 	tests := map[string]string{
-		"basic.yml":                           "config.Bundle",
-		"deprecated_job_field_format.yml":     "config.Resources",
-		"hidden_job_field_deployment.yml":     "config.Resources",
-		"hidden_job_field_edit_mode.yml":      "config.Target",
-		"incorrect_volume_type.yml":           "config.Resources",
-		"invalid_enum_value_in_job.yml":       "config.Resources",
-		"invalid_enum_value_in_model.yml":     "config.Resources",
-		"invalid_reference_in_job.yml":        "config.Resources",
-		"invalid_reference_in_model.yml":      "config.Resources",
-		"readonly_job_field_git_snapshot.yml": "config.Resources",
-		"readonly_job_field_job_source.yml":   "config.Resources",
-		"required_field_missing_in_job.yml":   "config.Resources",
-		"unknown_field_in_job.yml":            "config.Resources",
-		"unknown_field_in_model.yml":          "config.Resources",
+		"basic.yml":                              "config.Bundle",
+		"deprecated_job_field_format.yml":        "config.Resources",
+		"hidden_job_field_deployment.yml":        "config.Resources",
+		"hidden_job_field_edit_mode.yml":         "config.Target",
+		"incorrect_volume_type.yml":              "config.Resources",
+		"invalid_enum_value_in_job.yml":          "config.Resources",
+		"invalid_enum_value_in_model.yml":        "config.Resources",
+		"invalid_reference_in_job.yml":           "config.Resources",
+		"invalid_reference_in_model.yml":         "config.Resources",
+		"invalid_unicode_variable_reference.yml": "config.Resources",
+		"nfd_unicode_variable_reference.yml":     "config.Resources",
+		"readonly_job_field_git_snapshot.yml":    "config.Resources",
+		"readonly_job_field_job_source.yml":      "config.Resources",
+		"required_field_missing_in_job.yml":      "config.Resources",
+		"unknown_field_in_job.yml":               "config.Resources",
+		"unknown_field_in_model.yml":             "config.Resources",
 	}
 
 	files, err := filepath.Glob("../internal/schema/testdata/fail/*.yml")

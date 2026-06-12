@@ -377,6 +377,12 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 		} else if reason, ok := shouldSkipBackendDefault(generatedCfg, path, ch); ok {
 			ch.Action = deployplan.Skip
 			ch.Reason = reason
+		} else if reason, ok := shouldSkipNormalized(cfg, path, ch); ok {
+			ch.Action = deployplan.Skip
+			ch.Reason = reason
+		} else if reason, ok := shouldSkipNormalized(generatedCfg, path, ch); ok {
+			ch.Action = deployplan.Skip
+			ch.Reason = reason
 		} else if action, reason := shouldUpdateOrRecreate(cfg, path); action != deployplan.Undefined {
 			ch.Action = action
 			ch.Reason = reason
@@ -431,6 +437,29 @@ func shouldSkip(cfg *dresources.ResourceLifecycleConfig, path *structpath.PathNo
 		return reason, true
 	}
 	if reason, ok := findMatchingRule(path, cfg.IgnoreRemoteChanges); ok && structdiff.IsEqual(ch.Old, ch.New) {
+		return reason, true
+	}
+	return "", false
+}
+
+// shouldSkipNormalized skips a change that is a false diff caused by UC API
+// normalization: the API lowercases identifier names (normalize_case) and strips
+// trailing slashes from storage URLs (normalize_slash). The direct engine saves
+// local config to state, so without this the next plan sees the original value
+// against the normalized remote value and triggers a spurious recreate/update.
+func shouldSkipNormalized(cfg *dresources.ResourceLifecycleConfig, path *structpath.PathNode, ch *deployplan.ChangeDesc) (string, bool) {
+	if cfg == nil {
+		return "", false
+	}
+	newStr, newOk := ch.New.(string)
+	remoteStr, remoteOk := ch.Remote.(string)
+	if !newOk || !remoteOk {
+		return "", false
+	}
+	if reason, ok := findMatchingRule(path, cfg.NormalizeCase); ok && strings.EqualFold(newStr, remoteStr) {
+		return reason, true
+	}
+	if reason, ok := findMatchingRule(path, cfg.NormalizeSlash); ok && strings.TrimRight(newStr, "/") == strings.TrimRight(remoteStr, "/") {
 		return reason, true
 	}
 	return "", false
@@ -703,7 +732,17 @@ func (b *DeploymentBundle) resolveReferences(ctx context.Context, resourceKey st
 			return false
 		}
 
+		// References() returns one entry per occurrence, but ResolveRef substitutes
+		// every occurrence in one call and then drops the entry from sv.Refs.
+		// Process each distinct reference once so that a reference appearing more
+		// than once in the same field does not fail with "reference not found".
+		seen := make(map[string]bool)
 		for _, pathString := range refs.References() {
+			if seen[pathString] {
+				continue
+			}
+			seen[pathString] = true
+
 			ref := "${" + pathString + "}"
 			targetPath, err := structpath.ParsePath(pathString)
 			if err != nil {

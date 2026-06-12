@@ -14,11 +14,11 @@ Flags:
       --include strings       patterns to include in sync (can be specified multiple times)
       --include-from string   file containing patterns to include to sync (one pattern per line)
       --interval duration     file system polling interval (for --watch) (default 1s)
-      --output type           type of output format (default text)
       --watch                 watch local file system for changes
 
 Global Flags:
       --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
   -p, --profile string   ~/.databrickscfg profile
   -t, --target string    bundle target to use (if applicable)
 
