@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/experimental/genie/agentstream"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -65,6 +66,26 @@ func TestPostStream(t *testing.T) {
 	ev, err := agentstream.NewSSEReader(body).Next()
 	require.NoError(t, err)
 	assert.JSONEq(t, `{"type":"response.completed"}`, ev.Data)
+}
+
+func TestPostStream_EndpointGone(t *testing.T) {
+	// Wire shape a live workspace gateway returns for a route that does not
+	// exist. The genie route is undocumented and can disappear between
+	// releases; the error must point at a CLI update instead of leaking a
+	// bare "No API found".
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		fmt.Fprint(w, `{"error_code":"ENDPOINT_NOT_FOUND","message":"No API found for 'POST /data-rooms/tools/onechat/responses'"}`)
+	}))
+	defer srv.Close()
+
+	cfg := &config.Config{Host: srv.URL, Token: "dummy"}
+	_, err := PostStream(t.Context(), cfg, BuildRequest("q", ""))
+	require.Error(t, err)
+	assert.ErrorIs(t, err, apierr.ErrNotFound)
+	assert.Contains(t, err.Error(), "No API found")
+	assert.Contains(t, err.Error(), "update the Databricks CLI to the latest version")
 }
 
 func TestPostStream_HTTPError(t *testing.T) {

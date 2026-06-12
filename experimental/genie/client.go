@@ -2,8 +2,12 @@ package genie
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"io"
 
+	"github.com/databricks/cli/experimental/genie/agentstream"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/config"
 )
@@ -55,6 +59,13 @@ func PostStream(ctx context.Context, cfg *config.Config, req GenieRequest) (io.R
 		"Accept":       "text/event-stream",
 	}
 	err = api.Do(ctx, "POST", genieResponsesPath, headers, nil, req, &body)
+	// The route is fixed and carries no resource IDs, so a 404 means the
+	// endpoint itself is gone, not a missing resource. The backend route is
+	// undocumented and can move or be disabled between Databricks releases
+	// (a removed route returns 404 ENDPOINT_NOT_FOUND, "No API found for ...").
+	if errors.Is(err, apierr.ErrNotFound) {
+		return nil, fmt.Errorf("the Genie API is not available on this workspace: %w; the endpoint may have moved since this CLI release: %s", err, agentstream.UpdateCLIAdvice)
+	}
 	if err != nil {
 		return nil, err
 	}
