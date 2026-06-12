@@ -34,7 +34,7 @@ Deployment complete!
    }
   },
   "resources.jobs.my_job.permissions": {
-   "__id__": "/jobs/123",
+   "__id__": "/jobs/[NUMID]",
    "state": {
     "object_id": "/jobs/[NUMID]",
     "__embed__": [

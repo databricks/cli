@@ -1,0 +1,19 @@
+bundle:
+  name: genie-serialized-space-$UNIQUE_NAME
+
+resources:
+  genie_spaces:
+    from_file:
+      title: "From File"
+      warehouse_id: "test-warehouse-id"
+      parent_path: /Users/$CURRENT_USER_NAME
+      file_path: "space.geniespace.json"
+    from_inline:
+      title: "From Inline"
+      warehouse_id: "test-warehouse-id"
+      parent_path: /Users/$CURRENT_USER_NAME
+      serialized_space:
+        version: 1
+        data_sources:
+          tables:
+            - identifier: "main.sales.orders"

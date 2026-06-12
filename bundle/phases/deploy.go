@@ -37,6 +37,7 @@ var deployApprovalGroups = []approvalGroup{
 	{group: "postgres_projects", message: deleteOrRecreatePostgresProjectMessage},
 	{group: "postgres_branches", message: deleteOrRecreatePostgresBranchMessage},
 	{group: "vector_search_indexes", message: deleteOrRecreateVectorSearchIndexMessage},
+	{group: "genie_spaces", message: deleteOrRecreateGenieSpaceMessage},
 }
 
 func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) (bool, error) {
@@ -83,6 +84,10 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, ta
 	if targetEngine.IsDirect() {
 		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(ctx), plan, direct.MigrateMode(false))
 		state, err = b.DeploymentBundle.StateDB.Finalize(ctx)
+		// Capture the finalized state for deploy telemetry. It carries each
+		// resource's state-size in bytes (from the WAL replay Finalize just
+		// did), so telemetry needs no extra read or parse of the state file.
+		b.Metrics.ResourceState = state
 	} else {
 		bundle.ApplyContext(ctx, b, terraform.Apply())
 		state, err = terraform.ParseResourcesState(ctx, b)

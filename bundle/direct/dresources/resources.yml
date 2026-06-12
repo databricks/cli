@@ -311,6 +311,15 @@ resources:
         reason: immutable
       - field: storage_root
         reason: immutable
+    normalize_case:
+      # UC lowercases identifier names; remote returns "myschema" for config "MySchema".
+      - field: name
+        reason: uc_case
+      - field: catalog_name
+        reason: uc_case
+    normalize_slash:
+      - field: storage_root
+        reason: uc_strips_trailing_slash
 
   external_locations:
     recreate_on_changes:
@@ -341,6 +350,20 @@ resources:
     update_id_on_changes:
       - field: name
         reason: id_changes
+    normalize_case:
+      # UC lowercases identifier names. name is in update_id_on_changes, so a
+      # case-only diff would otherwise trigger a spurious rename (DoUpdateWithID).
+      - field: catalog_name
+        reason: uc_case
+      - field: schema_name
+        reason: uc_case
+      - field: name
+        reason: uc_case
+    normalize_slash:
+      # UC strips trailing slashes on create; matches the Terraform provider's suppressLocationDiff.
+      # https://github.com/databricks/terraform-provider-databricks/blob/v1.65.1/catalog/resource_volume.go#L25
+      - field: storage_location
+        reason: uc_strips_trailing_slash
     backend_defaults:
       # storage_location is Computed; backend generates it for managed volumes.
       - field: storage_location
@@ -358,6 +381,13 @@ resources:
         reason: input_only
       - field: dataset_schema
         reason: input_only
+
+  genie_spaces:
+    ignore_remote_changes:
+      # serialized_space locally (structured YAML) and remotely (JSON string) will differ
+      # textually, so we cannot meaningfully compare them for drift.
+      - field: serialized_space
+        reason: etag_based
 
   apps:
     recreate_on_changes:
@@ -430,6 +460,10 @@ resources:
       - field: object_id
         reason: id_changes
   experiments.permissions:
+    update_id_on_changes:
+      - field: object_id
+        reason: id_changes
+  genie_spaces.permissions:
     update_id_on_changes:
       - field: object_id
         reason: id_changes
@@ -666,3 +700,16 @@ resources:
         reason: immutable
       - field: direct_access_index_spec
         reason: immutable
+    ignore_remote_changes:
+      # The backend rewrites schema_json on create: user-facing type names
+      # ("integer", "long", "short", "byte") are stored in Unity Catalog as
+      # Spark type names ("int", "bigint", "smallint", "tinyint") and the
+      # columns come back in sorted key order, so GET never echoes the user's
+      # literal input. Without this rule the rewrite reads as a change to the
+      # immutable direct_access_index_spec and plans a destructive recreate
+      # that drops all upserted vectors.
+      - field: direct_access_index_spec.schema_json
+        reason: normalized_by_backend
+    backend_defaults:
+      # The Vector Search API assigns index_subtype when the config omits it
+      - field: index_subtype

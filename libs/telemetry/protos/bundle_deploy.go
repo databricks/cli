@@ -32,6 +32,9 @@ type BundleDeployEvent struct {
 	ResourceClusterIDs   []string `json:"resource_cluster_ids,omitempty"`
 	ResourceDashboardIDs []string `json:"resource_dashboard_ids,omitempty"`
 
+	// Per-resource-type metadata (counts and state-size statistics).
+	ResourcesMetadata *BundleResourcesMetadata `json:"resources_metadata,omitempty"`
+
 	Experimental *BundleDeployExperimental `json:"experimental,omitempty"`
 }
 
@@ -86,6 +89,40 @@ type BundleDeployExperimental struct {
 
 	// Local cache measurements in milliseconds (compute duration, potential savings, etc.)
 	LocalCacheMeasurementsMs []IntMapEntry `json:"local_cache_measurements_ms,omitempty"`
+}
+
+// BundleResourcesMetadata mirrors the universe proto. Per-resource-type
+// state-size metadata for one bundle deployment.
+//
+// Only direct deploys are measured: the direct engine persists each resource's
+// state as a JSON blob in resources.json, so sizes are read off directly as
+// len(state) — no serialization happens at telemetry time. Terraform stores
+// state in a different shape and is not collected (the field is absent there).
+type BundleResourcesMetadata struct {
+	// Always "direct"; terraform deploys do not populate this message.
+	StateEngine string `json:"state_engine,omitempty"`
+
+	// Size in bytes of the direct engine's resources.json state file on disk.
+	StateFileSizeBytes int64 `json:"state_file_size_bytes,omitempty"`
+
+	// One entry per resource type present in the deployment state.
+	Resources []ResourceMetadata `json:"resources,omitempty"`
+}
+
+// ResourceMetadata holds metadata about resources of a single type within one
+// bundle deployment.
+type ResourceMetadata struct {
+	// Resource type name: "jobs", "pipelines", "schemas", ...
+	ResourceType string `json:"resource_type,omitempty"`
+
+	// Number of resources of this type tracked in the deployment state.
+	Count int64 `json:"count,omitempty"`
+
+	// State-size statistics across resources of this type, each measured as
+	// len(state) of the JSON blob stored in resources.json.
+	StateSizeMaxBytes    int64 `json:"state_size_max_bytes,omitempty"`
+	StateSizeMeanBytes   int64 `json:"state_size_mean_bytes,omitempty"`
+	StateSizeMedianBytes int64 `json:"state_size_median_bytes,omitempty"`
 }
 
 type BoolMapEntry struct {

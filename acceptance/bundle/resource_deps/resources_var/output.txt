@@ -44,8 +44,5 @@ local.cache.attempt true
 local.cache.hit true
 presets_name_prefix_is_set true
 python_wheel_wrapper_is_set false
-resref_volumes.catalog_name true
-resref_volumes.name true
-resref_volumes.schema_name true
 run_as_set false
 skip_artifact_cleanup false

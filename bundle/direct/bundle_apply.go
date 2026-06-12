@@ -83,8 +83,18 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 
 		if action == deployplan.Delete {
 			if migrateMode {
-				logdiag.LogError(ctx, fmt.Errorf("%s: Unexpected delete action during migration", errorPrefix))
-				return false
+				// Resource is in terraform state but not in config. Preserve its ID in
+				// direct state so the next direct deploy will plan and execute deletion.
+				id := b.StateDB.GetResourceID(resourceKey)
+				if id == "" {
+					logdiag.LogError(ctx, fmt.Errorf("%s: internal error: no ID in state", errorPrefix))
+					return false
+				}
+				if err = b.StateDB.SaveState(resourceKey, id, json.RawMessage("{}"), entry.DependsOn); err != nil {
+					logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
+					return false
+				}
+				return true
 			}
 			err = d.Destroy(ctx, &b.StateDB)
 			if err != nil {

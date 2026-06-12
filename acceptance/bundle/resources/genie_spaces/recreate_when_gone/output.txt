@@ -1,0 +1,20 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/recreate-gone-genie-space-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] genie trash-space [GENIE_SPACE_ID]
+
+=== Plan after remote deletion should recreate the space
+>>> [CLI] bundle plan
+create genie_spaces.sales_analytics
+
+Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle destroy --auto-approve
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/recreate-gone-genie-space-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!

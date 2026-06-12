@@ -34,6 +34,10 @@ class PipelineTask:
     """
 
     parameters: VariableOrDict[str] = field(default_factory=dict)
+    """
+    Key/value-map of parameters passed to the pipeline execution.
+    Limited to 10k characters in total.
+    """
 
     refresh_flow_selection: VariableOrList[str] = field(default_factory=list)
     """
@@ -78,6 +82,10 @@ class PipelineTaskDict(TypedDict, total=False):
     """
 
     parameters: VariableOrDict[str]
+    """
+    Key/value-map of parameters passed to the pipeline execution.
+    Limited to 10k characters in total.
+    """
 
     refresh_flow_selection: VariableOrList[str]
     """
