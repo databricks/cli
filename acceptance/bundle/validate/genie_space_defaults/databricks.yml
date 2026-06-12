@@ -1,0 +1,30 @@
+bundle:
+  name: test-bundle
+
+workspace:
+  resource_path: /foo/bar
+
+resources:
+  genie_spaces:
+    empty_string:
+      warehouse_id: "my-warehouse-1234"
+      title: "empty-string"
+      serialized_space: "{}"
+
+      # unchanged
+      parent_path: ""
+
+    non_empty_string:
+      warehouse_id: "my-warehouse-1234"
+      title: "non-empty-string"
+      serialized_space: "{}"
+
+      # unchanged
+      parent_path: "already-set"
+
+    default_parent_path:
+      warehouse_id: "my-warehouse-1234"
+      title: "default-parent-path"
+      serialized_space: "{}"
+
+      # parent_path set to default

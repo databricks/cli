@@ -20,6 +20,9 @@ func (s *FakeWorkspace) VolumesCreate(req Request) Response {
 		}
 	}
 
+	// UC normalizes schema and volume names to lowercase.
+	volume.SchemaName = strings.ToLower(volume.SchemaName)
+	volume.Name = strings.ToLower(volume.Name)
 	volume.FullName = volume.CatalogName + "." + volume.SchemaName + "." + volume.Name
 
 	if volume.StorageLocation != "" && volume.VolumeType != catalog.VolumeTypeExternal {
