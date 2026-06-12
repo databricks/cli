@@ -1,0 +1,18 @@
+// Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+
+package workspace
+
+import (
+	"github.com/spf13/cobra"
+)
+
+func Groups() []cobra.Group {
+	return []cobra.Group{
+{{- range .WorkspaceDocsGroups}}
+		{
+			ID:    "{{.Key}}",
+			Title: "{{.DisplayName}}",
+		},
+{{- end}}
+	}
+}

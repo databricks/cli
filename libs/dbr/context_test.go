@@ -72,6 +72,13 @@ func TestContext_RuntimeVersion(t *testing.T) {
 	})
 }
 
+func TestContext_HasDetection(t *testing.T) {
+	ctx := t.Context()
+	assert.False(t, HasDetection(ctx))
+	assert.True(t, HasDetection(DetectRuntime(ctx)))
+	assert.True(t, HasDetection(MockRuntime(ctx, Environment{})))
+}
+
 func TestContext_RunsOnRuntimeWithMock(t *testing.T) {
 	ctx := t.Context()
 	assert.True(t, RunsOnRuntime(MockRuntime(ctx, Environment{IsDbr: true, Version: "15.4"})))

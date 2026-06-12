@@ -1,0 +1,11 @@
+# Isolate the sandbox state file (~/.databricks/sandbox.json) per test
+# by pointing the home directory at this test's unique TEST_TMP_DIR.
+# Without this, parallel sandbox tests race each other writing to the
+# shared home's state file and one read sees the other's half-written
+# content. Use sethome rather than a plain HOME export: the CLI resolves
+# the home via os.UserHomeDir(), which reads USERPROFILE on Windows and
+# ignores HOME, so exporting only HOME leaves Windows unisolated.
+# Auth is unaffected: the test framework passes DATABRICKS_HOST /
+# DATABRICKS_TOKEN explicitly via env, so the CLI doesn't fall back to
+# ~/.databrickscfg.
+sethome "$TEST_TMP_DIR"
