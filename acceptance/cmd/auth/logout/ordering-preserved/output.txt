@@ -17,7 +17,7 @@ auth_type = databricks-cli
 
 ; Third workspace — gamma
 [gamma]
-host = https://accounts.cloud.databricks.com
+host = https://accounts.cloud.databricks.test
 account_id = account-id
 auth_type  = databricks-cli
 
@@ -41,12 +41,13 @@ auth_type = databricks-cli
 
 ; Third workspace — gamma
 [gamma]
-host       = https://accounts.cloud.databricks.com
+host       = https://accounts.cloud.databricks.test
 account_id = account-id
 auth_type  = databricks-cli
 
 === Delete last profile (gamma)
 >>> [CLI] auth logout --profile gamma --auto-approve --delete
+Warn: [hostmetadata] failed to fetch host metadata for https://accounts.cloud.databricks.test, will skip for 1m0s
 Logged out of and deleted profile "gamma".
 
 === Config after deleting gamma

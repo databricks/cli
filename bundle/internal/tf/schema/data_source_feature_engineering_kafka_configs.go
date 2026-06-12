@@ -2,8 +2,33 @@
 
 package schema
 
+type DataSourceFeatureEngineeringKafkaConfigsKafkaConfigsAuthConfigMtlsConfigKeyPasswordRef struct {
+	Key   string `json:"key"`
+	Scope string `json:"scope"`
+}
+
+type DataSourceFeatureEngineeringKafkaConfigsKafkaConfigsAuthConfigMtlsConfigKeystorePasswordRef struct {
+	Key   string `json:"key"`
+	Scope string `json:"scope"`
+}
+
+type DataSourceFeatureEngineeringKafkaConfigsKafkaConfigsAuthConfigMtlsConfigTruststorePasswordRef struct {
+	Key   string `json:"key"`
+	Scope string `json:"scope"`
+}
+
+type DataSourceFeatureEngineeringKafkaConfigsKafkaConfigsAuthConfigMtlsConfig struct {
+	DisableHostnameVerification bool                                                                                           `json:"disable_hostname_verification,omitempty"`
+	KeyPasswordRef              *DataSourceFeatureEngineeringKafkaConfigsKafkaConfigsAuthConfigMtlsConfigKeyPasswordRef        `json:"key_password_ref,omitempty"`
+	KeystoreLocation            string                                                                                         `json:"keystore_location"`
+	KeystorePasswordRef         *DataSourceFeatureEngineeringKafkaConfigsKafkaConfigsAuthConfigMtlsConfigKeystorePasswordRef   `json:"keystore_password_ref,omitempty"`
+	TruststoreLocation          string                                                                                         `json:"truststore_location"`
+	TruststorePasswordRef       *DataSourceFeatureEngineeringKafkaConfigsKafkaConfigsAuthConfigMtlsConfigTruststorePasswordRef `json:"truststore_password_ref,omitempty"`
+}
+
 type DataSourceFeatureEngineeringKafkaConfigsKafkaConfigsAuthConfig struct {
-	UcServiceCredentialName string `json:"uc_service_credential_name,omitempty"`
+	MtlsConfig              *DataSourceFeatureEngineeringKafkaConfigsKafkaConfigsAuthConfigMtlsConfig `json:"mtls_config,omitempty"`
+	UcServiceCredentialName string                                                                    `json:"uc_service_credential_name,omitempty"`
 }
 
 type DataSourceFeatureEngineeringKafkaConfigsKafkaConfigsBackfillSourceDeltaTableSource struct {

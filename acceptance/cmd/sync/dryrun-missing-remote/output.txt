@@ -1,0 +1,27 @@
+
+>>> [CLI] sync . /Users/[USERNAME]/missing-dir-[UNIQUE_NAME] --dry-run
+Warn: Running in dry-run mode. No actual changes will be made.
+Initial Sync Complete
+Uploaded .gitignore
+Uploaded hello.py
+
+>>> print_requests.py --sort //api/
+
+>>> [CLI] sync . /Users/[USERNAME]/missing-dir-[UNIQUE_NAME]
+Initial Sync Complete
+Uploaded .gitignore
+Uploaded hello.py
+
+>>> print_requests.py --sort //api/
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Users/[USERNAME]/missing-dir-[UNIQUE_NAME]/.gitignore"
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Users/[USERNAME]/missing-dir-[UNIQUE_NAME]/hello.py"
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace/mkdirs"
+}
