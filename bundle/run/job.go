@@ -157,8 +157,11 @@ func (r *jobRunner) Run(ctx context.Context, opts *Options) (output.RunOutput, e
 		details, err := w.Jobs.GetRun(ctx, jobs.GetRunRequest{
 			RunId: waiter.RunId,
 		})
+		if err != nil {
+			return nil, err
+		}
 		cmdio.Log(ctx, progress.NewJobRunUrlEvent(details.RunPageUrl))
-		return nil, err
+		return nil, nil
 	}
 
 	run, err := waiter.OnProgress(monitor.onProgress).GetWithTimeout(jobRunTimeout)

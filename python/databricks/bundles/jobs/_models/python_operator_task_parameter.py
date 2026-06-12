@@ -16,8 +16,14 @@ class PythonOperatorTaskParameter:
     """
 
     name: VariableOrOptional[str] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    """
 
     value: VariableOrOptional[str] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    """
 
     @classmethod
     def from_dict(cls, value: "PythonOperatorTaskParameterDict") -> "Self":
@@ -31,8 +37,14 @@ class PythonOperatorTaskParameterDict(TypedDict, total=False):
     """"""
 
     name: VariableOrOptional[str]
+    """
+    :meta private: [EXPERIMENTAL]
+    """
 
     value: VariableOrOptional[str]
+    """
+    :meta private: [EXPERIMENTAL]
+    """
 
 
 PythonOperatorTaskParameterParam = (

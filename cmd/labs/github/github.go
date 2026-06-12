@@ -64,6 +64,7 @@ func getPagedBytes(ctx context.Context, method, url string, body io.Reader) (*pa
 	if err != nil {
 		return nil, err
 	}
+	defer res.Body.Close()
 	if res.StatusCode == http.StatusNotFound {
 		return nil, ErrNotFound
 	}
@@ -71,7 +72,6 @@ func getPagedBytes(ctx context.Context, method, url string, body io.Reader) (*pa
 		return nil, fmt.Errorf("github request failed: %s", res.Status)
 	}
 	nextLink := parseNextLink(res.Header.Get("link"))
-	defer res.Body.Close()
 	bodyBytes, err := io.ReadAll(res.Body)
 	if err != nil {
 		return nil, err

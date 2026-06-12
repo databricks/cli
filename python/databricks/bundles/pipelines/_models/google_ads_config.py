@@ -17,6 +17,8 @@ class GoogleAdsConfig:
 
     manager_account_id: VariableOrOptional[str] = None
     """
+    :meta private: [EXPERIMENTAL]
+    
     (Required) Manager Account ID (also called MCC Account ID) used to list and access
     customer accounts under this manager account. This is required for fetching the list
     of customer accounts during source selection.
@@ -37,6 +39,8 @@ class GoogleAdsConfigDict(TypedDict, total=False):
 
     manager_account_id: VariableOrOptional[str]
     """
+    :meta private: [EXPERIMENTAL]
+    
     (Required) Manager Account ID (also called MCC Account ID) used to list and access
     customer accounts under this manager account. This is required for fetching the list
     of customer accounts during source selection.
