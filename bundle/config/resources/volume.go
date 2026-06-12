@@ -2,7 +2,9 @@ package resources
 
 import (
 	"context"
+	"fmt"
 	"net/url"
+	"strings"
 
 	"github.com/databricks/databricks-sdk-go/apierr"
 
@@ -16,6 +18,9 @@ import (
 type Volume struct {
 	BaseResource
 	catalog.CreateVolumeRequestContent
+
+	// VolumePath is /Volumes/{catalog}/{schema}/{name}. Populated during initialize; not user-configurable.
+	VolumePath string `json:"volume_path,omitempty" bundle:"readonly"`
 
 	// List of grants to apply on this volume.
 	Grants []catalog.PrivilegeAssignment `json:"grants,omitempty"`
@@ -68,4 +73,20 @@ func (v *Volume) GetURL() string {
 
 func (v *Volume) GetName() string {
 	return v.Name
+}
+
+// ComputeVolumePath returns the Unity Catalog volume path when catalog, schema, and name are set and resolved.
+func (v *Volume) ComputeVolumePath() string {
+	if v.CatalogName == "" || v.SchemaName == "" || v.Name == "" {
+		return ""
+	}
+	// Bail out if any component still contains a "${...}" reference. We check for the
+	// literal "${" rather than a well-formed reference so malformed references (which
+	// would otherwise leak verbatim into the path) are also rejected.
+	if strings.Contains(v.CatalogName, "${") ||
+		strings.Contains(v.SchemaName, "${") ||
+		strings.Contains(v.Name, "${") {
+		return ""
+	}
+	return fmt.Sprintf("/Volumes/%s/%s/%s", v.CatalogName, v.SchemaName, v.Name)
 }

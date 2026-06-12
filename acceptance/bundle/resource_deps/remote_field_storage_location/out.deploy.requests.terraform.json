@@ -1,14 +1,18 @@
 {
+  "method": "GET",
+  "path": "/api/2.1/unity-catalog/schemas/main.myschema-[UNIQUE_NAME]"
+}
+{
+  "method": "GET",
+  "path": "/api/2.1/unity-catalog/volumes/main.myschema-[UNIQUE_NAME].volumebar-[UNIQUE_NAME]"
+}
+{
   "method": "POST",
   "path": "/api/2.1/unity-catalog/schemas",
   "body": {
     "catalog_name": "main",
     "name": "myschema-[UNIQUE_NAME]"
   }
-}
-{
-  "method": "GET",
-  "path": "/api/2.1/unity-catalog/schemas/main.myschema-[UNIQUE_NAME]"
 }
 {
   "method": "POST",
@@ -19,8 +23,4 @@
     "schema_name": "myschema-[UNIQUE_NAME]",
     "volume_type": "MANAGED"
   }
-}
-{
-  "method": "GET",
-  "path": "/api/2.1/unity-catalog/volumes/main.myschema-[UNIQUE_NAME].volumebar-[UNIQUE_NAME]"
 }

@@ -17,12 +17,14 @@
         "catalog_name": "my_catalog",
         "name": "My Volume (updated)",
         "schema_name": "my_schema",
+        "volume_path": "/Volumes/my_catalog/my_schema/My Volume (updated)",
         "volume_type": "MANAGED"
       },
       "my_volume_2": {
         "catalog_name": "my_catalog_2",
         "name": "My Volume (2) (updated)",
         "schema_name": "my_schema_2",
+        "volume_path": "/Volumes/my_catalog_2/my_schema_2/My Volume (2) (updated)",
         "volume_type": "MANAGED"
       }
     }
