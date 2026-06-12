@@ -42,8 +42,8 @@ See https://docs.databricks.com/en/dev-tools/bundles/templates.html for more inf
 	cmd.Flags().StringVar(&configFile, "config-file", "", "JSON file containing key value pairs of input parameters required for template initialization.")
 	cmd.Flags().StringVar(&templateDir, "template-dir", "", "Directory path within a Git repository containing the template.")
 	cmd.Flags().StringVar(&outputDir, "output-dir", "", "Directory to write the initialized template to.")
-	cmd.Flags().StringVar(&branch, "tag", "", "Git tag to use for template initialization")
-	cmd.Flags().StringVar(&tag, "branch", "", "Git branch to use for template initialization")
+	cmd.Flags().StringVar(&tag, "tag", "", "Git tag to use for template initialization")
+	cmd.Flags().StringVar(&branch, "branch", "", "Git branch to use for template initialization")
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
