@@ -10,14 +10,14 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/cli/bundle/internal/annotation"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/merge"
 	"github.com/databricks/cli/libs/dyn/yamlloader"
-	"github.com/databricks/cli/libs/jsonschema"
 	"github.com/stretchr/testify/assert"
-	"go.yaml.in/yaml/v3"
+	"github.com/stretchr/testify/require"
 )
+
+const cliJSONPath = "../../../.codegen/cli.json"
 
 func copyFile(src, dst string) error {
 	in, err := os.Open(src)
@@ -41,35 +41,27 @@ func copyFile(src, dst string) error {
 }
 
 // Checks whether descriptions are added for new config fields in the annotations.yml file
-// If this test fails either manually add descriptions to the `annotations.yml` or do the following:
-//  1. for fields described outside of CLI package, refresh .codegen/cli.json (`./task generate-clijson`) and the annotation files (`./task generate-annotations`)
-//  2. run `./task generate-schema` from the repository root to add placeholder descriptions
+// If this test fails:
+//  1. run `./task generate-schema` from the repository root to add placeholder descriptions
 //  2. replace all "PLACEHOLDER" values with the actual descriptions if possible
-//  3. run `./task generate-schema` again to regenerate the schema with acutal descriptions
+//  3. run `./task generate-schema` again to regenerate the schema with actual descriptions
 func TestRequiredAnnotationsForNewFields(t *testing.T) {
 	workdir := t.TempDir()
 	annotationsPath := path.Join(workdir, "annotations.yml")
-	annotationsOpenApiPath := path.Join(workdir, "annotations_openapi.yml")
-	annotationsOpenApiOverridesPath := path.Join(workdir, "annotations_openapi_overrides.yml")
 
-	// Copy existing annotation files from the same folder as this test
 	err := copyFile("annotations.yml", annotationsPath)
-	assert.NoError(t, err)
-	err = copyFile("annotations_openapi.yml", annotationsOpenApiPath)
-	assert.NoError(t, err)
-	err = copyFile("annotations_openapi_overrides.yml", annotationsOpenApiOverridesPath)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
-	generateSchema(workdir, path.Join(t.TempDir(), "schema.json"), false)
+	generateSchema(workdir, path.Join(t.TempDir(), "schema.json"), cliJSONPath, false)
 
 	originalFile, err := os.ReadFile("annotations.yml")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	currentFile, err := os.ReadFile(annotationsPath)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	original, err := yamlloader.LoadYAML("", bytes.NewBuffer(originalFile))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	current, err := yamlloader.LoadYAML("", bytes.NewBuffer(currentFile))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Collect added paths.
 	var updatedFieldPaths []string
@@ -83,68 +75,13 @@ func TestRequiredAnnotationsForNewFields(t *testing.T) {
 	assert.Empty(t, updatedFieldPaths, "Missing JSON-schema descriptions for new config fields in bundle/internal/schema/annotations.yml:\n%s", strings.Join(updatedFieldPaths, "\n"))
 }
 
-// Checks whether types in annotation files are still present in Config type
+// Checks that the annotations file only contains entries that match the
+// current bundle configuration structure.
 func TestNoDetachedAnnotations(t *testing.T) {
-	files := []string{
-		"annotations.yml",
-		"annotations_openapi.yml",
-		"annotations_openapi_overrides.yml",
-	}
+	g, err := newTypeGraph(reflect.TypeFor[config.Root]())
+	require.NoError(t, err)
 
-	types := map[string]bool{}
-	for _, file := range files {
-		annotations, err := getAnnotations(file)
-		assert.NoError(t, err)
-		for k := range annotations {
-			types[k] = false
-		}
-	}
-
-	_, err := jsonschema.FromType(reflect.TypeFor[config.Root](), []func(reflect.Type, jsonschema.Schema) jsonschema.Schema{
-		func(typ reflect.Type, s jsonschema.Schema) jsonschema.Schema {
-			delete(types, getPath(typ))
-			return s
-		},
-	})
-	assert.NoError(t, err)
-
-	for typ := range types {
-		t.Errorf("Type `%s` in annotations file is not found in `root.Config` type", typ)
-	}
-	assert.Empty(t, types, "Detached annotations found, regenerate schema and check for package path changes")
-}
-
-func getAnnotations(path string) (annotation.File, error) {
-	b, err := os.ReadFile(path)
-	if err != nil {
-		return nil, err
-	}
-
-	var data annotation.File
-	err = yaml.Unmarshal(b, &data)
-	return data, err
-}
-
-//deadcode:allow disabled pending annotation system overhaul; preserved intentionally
-func DisabledTestNoDuplicatedAnnotations(t *testing.T) {
-	// Check for duplicated annotations in annotation files
-	files := []string{
-		"annotations_openapi_overrides.yml",
-		"annotations.yml",
-	}
-
-	annotations := map[string]string{}
-	for _, file := range files {
-		annotationsFile, err := getAnnotations(file)
-		assert.NoError(t, err)
-		for typ, props := range annotationsFile {
-			for prop := range props {
-				key := typ + "_" + prop
-				if prevFile, ok := annotations[key]; ok {
-					t.Errorf("Annotation `%s` is duplicated in %s and %s", key, prevFile, file)
-				}
-				annotations[key] = file
-			}
-		}
-	}
+	_, unknown, err := loadAnnotationsFile("annotations.yml", g)
+	require.NoError(t, err)
+	assert.Empty(t, unknown, "Detached annotations found; run `./task generate-schema` to drop them")
 }

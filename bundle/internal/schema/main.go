@@ -185,52 +185,53 @@ func removeOutputOnlyFields(typ reflect.Type, s jsonschema.Schema) jsonschema.Sc
 }
 
 func main() {
-	if len(os.Args) < 3 {
-		fmt.Println("Usage: go run main.go <work-dir> <output-file> [--docs]")
+	if len(os.Args) < 4 {
+		fmt.Println("Usage: go run main.go <work-dir> <output-file> <cli-json> [--docs]")
 		os.Exit(1)
 	}
 
-	// Directory with annotation files
+	// Directory with the annotations file
 	workdir := os.Args[1]
 	// Output file, where the generated JSON schema will be written to.
 	outputFile := os.Args[2]
+	// The .codegen/cli.json spec. Its schema graph carries the descriptions,
+	// enums and field behaviors the CLI reflects onto its config types.
+	cliJSONFile := os.Args[3]
 
 	// When --docs is passed, skip interpolation patterns and add sinceVersion annotations.
 	// This generates a schema optimized for documentation.
-	docsMode := len(os.Args) >= 4 && os.Args[3] == "--docs"
+	docsMode := len(os.Args) >= 5 && os.Args[4] == "--docs"
 
-	generateSchema(workdir, outputFile, docsMode)
+	generateSchema(workdir, outputFile, cliJSONFile, docsMode)
 }
 
-func generateSchema(workdir, outputFile string, docsMode bool) {
+func generateSchema(workdir, outputFile, cliJSONFile string, docsMode bool) {
 	annotationsPath := filepath.Join(workdir, "annotations.yml")
-	annotationsOpenApiPath := filepath.Join(workdir, "annotations_openapi.yml")
-	annotationsOpenApiOverridesPath := filepath.Join(workdir, "annotations_openapi_overrides.yml")
 
-	// The .codegen/cli.json spec is the source for the generated annotation
-	// files. Its schema graph carries the descriptions, enums and field
-	// behaviors the CLI reflects onto its config types. When unset, the
-	// committed annotation files are used as-is.
-	cliJSONFile := os.Getenv("DATABRICKS_CLI_JSON") //nolint:forbidigo // main() entry point, no ctx
-
-	var p *annotationParser
-	if cliJSONFile != "" {
-		schemas, err := parseCliJSON(cliJSONFile)
-		if err != nil {
-			log.Fatal(err)
-		}
-		p = newParser(schemas)
+	schemas, err := parseCliJSON(cliJSONFile)
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	if p != nil {
-		fmt.Printf("Writing annotations to %s\n", annotationsOpenApiPath)
-		err := p.extractAnnotations(reflect.TypeFor[config.Root](), annotationsOpenApiPath, annotationsOpenApiOverridesPath)
-		if err != nil {
-			log.Fatal(err)
-		}
+	extracted, err := newParser(schemas).extractAnnotations(reflect.TypeFor[config.Root]())
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	a, err := newAnnotationHandler([]string{annotationsOpenApiPath, annotationsOpenApiOverridesPath, annotationsPath})
+	graph, err := newTypeGraph(reflect.TypeFor[config.Root]())
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fromFile, unknown, err := loadAnnotationsFile(annotationsPath, graph)
+	if err != nil {
+		log.Fatal(err)
+	}
+	for _, k := range unknown {
+		fmt.Printf("Dropping annotation at `%s`: no such field in the bundle configuration\n", k)
+	}
+
+	a, err := newAnnotationHandler(extracted, fromFile)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -262,7 +263,7 @@ func generateSchema(workdir, outputFile string, docsMode bool) {
 	}
 
 	// Overwrite the input annotation file, adding missing annotations
-	err = a.syncWithMissingAnnotations(annotationsPath)
+	err = a.syncWithMissingAnnotations(annotationsPath, graph)
 	if err != nil {
 		log.Fatal(err)
 	}

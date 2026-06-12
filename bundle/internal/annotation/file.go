@@ -1,44 +1,11 @@
 package annotation
 
-import (
-	"bytes"
-	"os"
-
-	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/convert"
-	"github.com/databricks/cli/libs/dyn/merge"
-	"github.com/databricks/cli/libs/dyn/yamlloader"
-)
-
-// Parsed file with annotations, expected format:
+// File is the in-memory representation of the annotations, keyed by Go type
+// path and field name, e.g.:
 // github.com/databricks/cli/bundle/config.Bundle:
 //
 //	cluster_id:
 //	   description: "Description"
+//
+// The key "_" holds the annotation for the type itself.
 type File map[string]map[string]Descriptor
-
-func LoadAndMerge(sources []string) (File, error) {
-	prev := dyn.NilValue
-	for _, path := range sources {
-		b, err := os.ReadFile(path)
-		if err != nil {
-			return nil, err
-		}
-		generated, err := yamlloader.LoadYAML(path, bytes.NewBuffer(b))
-		if err != nil {
-			return nil, err
-		}
-		prev, err = merge.Merge(prev, generated)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	var data File
-
-	err := convert.ToTyped(&data, prev)
-	if err != nil {
-		return nil, err
-	}
-	return data, nil
-}
