@@ -1,0 +1,7 @@
+Badness = "Reproduces the Postgres role inheritance conflict by unbinding a deployed role (so it exists on the branch but is untracked, like an inherited role on a child branch) and redeploying. On real Lakebase a child branch inherits the parent's roles at creation, so a bundle that declares an inherited role fails on create — verified on dogfood 2026-06-10, where the API returns HTTP 400 'role with that name already exists'. Two testserver fidelity gaps make this local-only and staged via unbind: PostgresBranchCreate does not copy parent roles, and duplicate create returns 409 ALREADY_EXISTS instead of 400 BAD_REQUEST. The supported way to manage a pre-existing/inherited role is `bundle deployment bind`."
+
+# Output captures the testserver's 409, which diverges from the real API's 400.
+Cloud = false
+
+# Deploy error wording differs between engines; the conflict itself is engine-agnostic.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
