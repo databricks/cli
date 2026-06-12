@@ -1,0 +1,49 @@
+#!/bin/bash
+
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+  trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+$CLI bundle deploy
+job_id="$(read_id.py my_job)"
+
+title "Modify job remotely"
+echo
+edit_resource.py jobs $job_id <<EOF
+# --- Add operations (sibling-based restoration) ---
+# "us-west-1" matches sibling \${var.region} (root default, resolvable in
+# every target) -> restored.
+r["parameters"].append({"name": "data_region", "default": "us-west-1"})
+# "dev_schema" matches sibling \${var.etl_schema} (assigned in every target)
+# -> restored.
+r["parameters"].append({"name": "schema_copy", "default": "dev_schema"})
+# "dev_data" matches sibling \${var.dev_catalog}, which is only assigned in
+# the dev target: restoring it into the shared resources section would break
+# every other target -> stays hardcoded.
+r["parameters"].append({"name": "catalog_copy", "default": "dev_data"})
+
+# --- Replace fallback (re-targeting to another variable) ---
+# "region" was \${var.region}; the new value uniquely matches dev-only
+# \${var.dev_catalog} -> the shared definition keeps the hardcoded value.
+for p in r["parameters"]:
+    if p["name"] == "region":
+        p["default"] = "dev_data"
+
+# --- Replace inside the current target's override section ---
+# costcenter is defined under targets.dev; dev-only variables are allowed
+# there, so the unique match \${var.dev_catalog} is restored.
+r["tags"]["costcenter"] = "dev_data"
+EOF
+
+title "Detect and save changes"
+echo
+cp databricks.yml databricks.yml.backup
+$CLI bundle config-remote-sync --save
+
+title "Configuration changes"
+echo
+trace diff.py databricks.yml.backup databricks.yml
+rm databricks.yml.backup

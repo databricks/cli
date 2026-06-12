@@ -51,8 +51,14 @@ var varPrefix = dyn.NewPath(dyn.Key("var"))
 // view where ${var.X} and ${resources.X.Y.id} references are still literal
 // strings — enabling correct sibling lookup even for sequences split across
 // files via target overrides.
+//
+// Restoration steps that introduce a reference at a position that didn't
+// previously hold one (the Replace fallback and sibling-based Add restoration)
+// are additionally gated by crossTargetGuard: a ${var.X} reference is only
+// introduced when X is resolvable in every target, or when the write
+// destination is the current target's override section.
 func RestoreVariableReferences(ctx context.Context, b *bundle.Bundle, fieldChanges []FieldChange) error {
-	preResolved := loadPreResolvedConfig(ctx, b)
+	preResolved, guard := loadPreResolvedConfig(ctx, b)
 	if !preResolved.IsValid() {
 		return errors.New("pre-resolved config unavailable; variable-backed fields will be hardcoded")
 	}
@@ -87,6 +93,7 @@ func RestoreVariableReferences(ctx context.Context, b *bundle.Bundle, fieldChang
 
 	for i := range fieldChanges {
 		fc := &fieldChanges[i]
+		allow := guard.allowFor(fc.FieldCandidates)
 
 		var newValue any
 		switch fc.Change.Operation {
@@ -95,13 +102,13 @@ func RestoreVariableReferences(ctx context.Context, b *bundle.Bundle, fieldChang
 			if !ok {
 				continue
 			}
-			newValue = restoreOriginalRefs(fc.Change.Value, fieldValue, resolved)
+			newValue = restoreOriginalRefs(fc.Change.Value, fieldValue, resolved, allow)
 		case OperationAdd:
 			siblings, ok := sequenceSiblings(preResolved, fc.FieldCandidates)
 			if !ok {
 				continue
 			}
-			newValue = restoreFromSiblings(fc.Change.Value, siblings, resolved)
+			newValue = restoreFromSiblings(fc.Change.Value, siblings, resolved, allow)
 		case OperationUnknown, OperationRemove, OperationSkip:
 			continue
 		}
@@ -119,18 +126,152 @@ func RestoreVariableReferences(ctx context.Context, b *bundle.Bundle, fieldChang
 // variable resolution. The resulting dyn.Value is fully merged across files
 // and targets, yet retains ${...} references as literal strings. Returns
 // InvalidValue if loading fails (restoration is then skipped).
-func loadPreResolvedConfig(ctx context.Context, b *bundle.Bundle) dyn.Value {
+//
+// The cross-target guard is built just before target selection: that is the
+// only point where the full targets.*.variables map is still available
+// (SelectTarget merges the chosen target into the root and removes the
+// targets section).
+func loadPreResolvedConfig(ctx context.Context, b *bundle.Bundle) (dyn.Value, *crossTargetGuard) {
 	fresh := &bundle.Bundle{
 		BundleRootPath: b.BundleRootPath,
 		BundleRoot:     b.BundleRoot,
 	}
 	mutator.DefaultMutators(ctx, fresh)
+	guard := newCrossTargetGuard(&fresh.Config)
 	if target := b.Config.Bundle.Target; target != "" {
 		if _, ok := fresh.Config.Targets[target]; ok {
 			bundle.ApplyContext(ctx, fresh, mutator.SelectTarget(target))
 		}
 	}
-	return fresh.Config.Value()
+	return fresh.Config.Value(), guard
+}
+
+// crossTargetGuard decides whether restoration may introduce a ${var.X}
+// reference at a position that didn't previously hold one. Restoration runs
+// with a single target selected, so the resolved variables include values that
+// may only exist for that target (targets.<t>.variables assignments,
+// BUNDLE_VAR_* environment variables, variable-overrides.json). Writing such a
+// reference into a shared part of the configuration breaks the other targets:
+// a variable without a root default that some target doesn't assign makes that
+// target fail to load. The guard only admits variables that are resolvable in
+// every target — unless the write destination is the current target's override
+// section, which other targets never read.
+type crossTargetGuard struct {
+	// targetsRoot is the merged configuration before target selection, with
+	// the targets.* subtree still present. Used to classify write destinations.
+	targetsRoot dyn.Value
+
+	// multiTarget is false when the bundle has at most one target; restoration
+	// can't create cross-target breakage then and all variables are allowed.
+	multiTarget bool
+
+	// safe holds the variables that are resolvable in every target: a default
+	// or lookup in the root variables block, or an assignment in every
+	// target's variables block.
+	safe map[string]bool
+}
+
+// newCrossTargetGuard captures variable declarations from a config that has
+// not had a target selected yet.
+func newCrossTargetGuard(cfg *config.Root) *crossTargetGuard {
+	g := &crossTargetGuard{
+		targetsRoot: cfg.Value(),
+		multiTarget: len(cfg.Targets) > 1,
+		safe:        map[string]bool{},
+	}
+	// The nil checks below guard direct construction in unit tests; in the
+	// production path InitializeVariables and the loader produce non-nil
+	// entries.
+	for name, v := range cfg.Variables {
+		if v != nil && (v.HasDefault() || v.Lookup != nil) {
+			g.safe[name] = true
+			continue
+		}
+		assignedEverywhere := len(cfg.Targets) > 0
+		for _, target := range cfg.Targets {
+			if target == nil {
+				assignedEverywhere = false
+				break
+			}
+			tv := target.Variables[name]
+			if tv == nil || (tv.Default == nil && tv.Lookup == nil) {
+				assignedEverywhere = false
+				break
+			}
+		}
+		g.safe[name] = assignedEverywhere
+	}
+	return g
+}
+
+// allowFor returns the variable admission predicate for a field change with
+// the given path candidates (plain path first, targets.<t>.-prefixed second;
+// see ResolveChanges).
+func (g *crossTargetGuard) allowFor(candidates []string) func(string) bool {
+	if !g.multiTarget || g.destinationInTarget(candidates) {
+		return allowAllVariables
+	}
+	return func(name string) bool { return g.safe[name] }
+}
+
+func allowAllVariables(string) bool { return true }
+
+// destinationInTarget reports whether the change can only be written inside
+// the current target's override section. applyChange tries the plain path
+// first, so the destination is the target section only when the plain path
+// does not exist in the pre-target-selection configuration while the
+// targets.<t>.-prefixed path does. Classification failures fall back to false,
+// which applies the stricter shared-destination rule.
+//
+// Known limitation: candidates carry file-local numeric indexes (see
+// yamlFileIndex), so for a sequence element defined only in the target
+// override section the plain path may collide with a different element of the
+// shared sequence and classify as shared. That errs in the safe direction:
+// the value stays hardcoded instead of becoming a target-only reference.
+func (g *crossTargetGuard) destinationInTarget(candidates []string) bool {
+	if len(candidates) < 2 {
+		return false
+	}
+	return !patternExists(g.targetsRoot, candidates[0]) && patternExists(g.targetsRoot, candidates[1])
+}
+
+// patternExists reports whether the (possibly [*]-terminated) path pattern
+// resolves in root. For new-element Adds the trailing [*] is dropped so the
+// check applies to the parent sequence.
+func patternExists(root dyn.Value, pattern string) bool {
+	node, err := structpath.ParsePattern(pattern)
+	if err != nil {
+		return false
+	}
+	if node.BracketStar() {
+		node = node.Parent()
+	}
+	p, err := dyn.NewPathFromString(node.String())
+	if err != nil {
+		return false
+	}
+	_, err = dyn.GetByPath(root, p)
+	return err == nil
+}
+
+// varRefsAllowed reports whether every ${var.X} reference in s names a
+// variable admitted by allow. References outside the var namespace
+// (${bundle.X}, ${workspace.X}, ${resources.X.Y.id}) are exempt.
+func varRefsAllowed(s string, allow func(string) bool) bool {
+	ref, ok := dynvar.NewRef(dyn.V(s))
+	if !ok {
+		return true
+	}
+	for _, key := range ref.References() {
+		p, err := dyn.NewPathFromString(key)
+		if err != nil || !p.HasPrefix(varPrefix) || len(p) < 2 {
+			continue
+		}
+		if !allow(p[1].Key()) {
+			return false
+		}
+	}
+	return true
 }
 
 // resourceIDLookup returns a function that resolves resource keys to their
@@ -231,7 +372,11 @@ func resolveReferencePath(refStr string) (dyn.Path, bool) {
 // new value, falls back to a global lookup: if the new value uniquely matches
 // a different variable, that variable is used instead. The field's prior use
 // of a variable is the false-positive guard.
-func restoreOriginalRefs(value any, preResolved, resolved dyn.Value) any {
+//
+// Only the fallback consults allow: the other two steps re-emit a reference
+// that already exists at this exact position, which can't introduce a
+// cross-target leak.
+func restoreOriginalRefs(value any, preResolved, resolved dyn.Value, allow func(string) bool) any {
 	switch v := value.(type) {
 	case string, bool, int64:
 		if ref, ok := matchOriginalRef(value, preResolved, resolved); ok {
@@ -243,7 +388,7 @@ func restoreOriginalRefs(value any, preResolved, resolved dyn.Value) any {
 			}
 		}
 		if isPureVarRef(preResolved) {
-			if ref, ok := matchAnyVariable(value, resolved); ok {
+			if ref, ok := matchAnyVariable(value, resolved); ok && varRefsAllowed(ref, allow) {
 				return ref
 			}
 		}
@@ -258,7 +403,7 @@ func restoreOriginalRefs(value any, preResolved, resolved dyn.Value) any {
 					childPre = p.Value
 				}
 			}
-			v[key] = restoreOriginalRefs(val, childPre, resolved)
+			v[key] = restoreOriginalRefs(val, childPre, resolved, allow)
 		}
 		return v
 
@@ -269,7 +414,7 @@ func restoreOriginalRefs(value any, preResolved, resolved dyn.Value) any {
 			if i < len(preSeq) {
 				childPre = preSeq[i]
 			}
-			v[i] = restoreOriginalRefs(val, childPre, resolved)
+			v[i] = restoreOriginalRefs(val, childPre, resolved, allow)
 		}
 		return v
 
@@ -283,11 +428,15 @@ func restoreOriginalRefs(value any, preResolved, resolved dyn.Value) any {
 // relative path: if exactly one unique pure variable reference across siblings
 // resolves to the leaf value, that reference is substituted. Multiple
 // different matching references are treated as ambiguous and skipped.
-func restoreFromSiblings(value any, siblings []dyn.Value, resolved dyn.Value) any {
-	return restoreFromSiblingsAt(value, siblings, resolved, dyn.EmptyPath)
+//
+// Every restored reference is checked against allow: sibling references come
+// from other positions (possibly other files or the target override section),
+// so substituting one always introduces a reference at a new position.
+func restoreFromSiblings(value any, siblings []dyn.Value, resolved dyn.Value, allow func(string) bool) any {
+	return restoreFromSiblingsAt(value, siblings, resolved, dyn.EmptyPath, allow)
 }
 
-func restoreFromSiblingsAt(value any, siblings []dyn.Value, resolved dyn.Value, relPath dyn.Path) any {
+func restoreFromSiblingsAt(value any, siblings []dyn.Value, resolved dyn.Value, relPath dyn.Path, allow func(string) bool) any {
 	switch v := value.(type) {
 	case string, bool, int64:
 		refs := map[string]struct{}{}
@@ -323,22 +472,27 @@ func restoreFromSiblingsAt(value any, siblings []dyn.Value, resolved dyn.Value, 
 				}
 			}
 		}
+		// The allow check runs after unique-match selection so that variables
+		// rejected by the guard still count toward ambiguity rather than
+		// promoting another candidate.
 		if len(refs) == 1 {
 			for ref := range refs {
-				return ref
+				if varRefsAllowed(ref, allow) {
+					return ref
+				}
 			}
 		}
 		return value
 
 	case map[string]any:
 		for key, val := range v {
-			v[key] = restoreFromSiblingsAt(val, siblings, resolved, relPath.Append(dyn.Key(key)))
+			v[key] = restoreFromSiblingsAt(val, siblings, resolved, relPath.Append(dyn.Key(key)), allow)
 		}
 		return v
 
 	case []any:
 		for i, val := range v {
-			v[i] = restoreFromSiblingsAt(val, siblings, resolved, relPath.Append(dyn.Index(i)))
+			v[i] = restoreFromSiblingsAt(val, siblings, resolved, relPath.Append(dyn.Index(i)), allow)
 		}
 		return v
 
