@@ -1,12 +1,14 @@
 package server
 
 import (
+	"bufio"
 	"context"
 	"errors"
 	"fmt"
 	"io/fs"
 	"os"
 	"os/exec"
+	"os/user"
 	"path"
 	"path/filepath"
 	"strings"
@@ -16,6 +18,70 @@ import (
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 )
+
+const bashPath = "/bin/bash"
+
+// ensureBashLoginShell attempts to set bash as the login shell for the current user
+// by editing /etc/passwd directly. This ensures interactive SSH sessions use bash
+// instead of sh without depending on external tools like usermod.
+func ensureBashLoginShell(ctx context.Context) {
+	if _, err := os.Stat(bashPath); err != nil {
+		log.Warnf(ctx, "bash not found at %s, keeping default login shell", bashPath)
+		return
+	}
+
+	currentUser, err := user.Current()
+	if err != nil {
+		log.Warnf(ctx, "Failed to get current user for shell setup: %v", err)
+		return
+	}
+
+	err = setLoginShellInPasswd(currentUser.Username, bashPath)
+	if err != nil {
+		log.Warnf(ctx, "Failed to set bash as login shell for user %s: %v", currentUser.Username, err)
+	} else {
+		log.Infof(ctx, "Set login shell to %s for user %s", bashPath, currentUser.Username)
+	}
+}
+
+// setLoginShellInPasswd updates the login shell for the given user in /etc/passwd.
+// Each line in /etc/passwd has 7 colon-delimited fields; the last field is the login shell.
+func setLoginShellInPasswd(username, shell string) error {
+	const passwdPath = "/etc/passwd"
+
+	data, err := os.ReadFile(passwdPath)
+	if err != nil {
+		return fmt.Errorf("failed to read %s: %w", passwdPath, err)
+	}
+
+	prefix := username + ":"
+	var result []string
+	found := false
+
+	scanner := bufio.NewScanner(strings.NewReader(string(data)))
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.HasPrefix(line, prefix) {
+			fields := strings.Split(line, ":")
+			if len(fields) == 7 {
+				if fields[6] == shell {
+					// Already set to the desired shell.
+					return nil
+				}
+				fields[6] = shell
+				line = strings.Join(fields, ":")
+				found = true
+			}
+		}
+		result = append(result, line)
+	}
+
+	if !found {
+		return fmt.Errorf("user %s not found in %s", username, passwdPath)
+	}
+
+	return os.WriteFile(passwdPath, []byte(strings.Join(result, "\n")+"\n"), 0o644)
+}
 
 func prepareSSHDConfig(ctx context.Context, client *databricks.WorkspaceClient, opts ServerOptions) (string, error) {
 	clientPublicKey, err := keys.GetSecret(ctx, client, opts.SecretScopeName, opts.AuthorizedKeySecretName)
