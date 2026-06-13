@@ -20,12 +20,12 @@ Plan: 1 to add, 0 to change, 0 to delete, 2 unchanged
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/inherited-role-conflict-[UNIQUE_NAME]/default/files...
 Deploying resources...
-Error: cannot create resources.postgres_roles.my_role: role with such id already exists (409 ALREADY_EXISTS)
+Error: cannot create resources.postgres_roles.my_role: role with that name already exists (400 BAD_REQUEST)
 
 Endpoint: POST [DATABRICKS_URL]/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles?role_id=test-role
-HTTP Status: 409 Conflict
-API error_code: ALREADY_EXISTS
-API message: role with such id already exists
+HTTP Status: 400 Bad Request
+API error_code: BAD_REQUEST
+API message: role with that name already exists
 
 Updating deployment state...
 

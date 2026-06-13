@@ -432,3 +432,34 @@ func TestPostgresRoleNotFoundWhenBranchNotExists(t *testing.T) {
 	assert.Equal(t, 404, createRoleResp.StatusCode)
 	createRoleResp.Body.Close()
 }
+
+func TestPostgresRoleCreateDuplicateReturns400(t *testing.T) {
+	server := testserver.New(t)
+	testserver.AddDefaultHandlers(server)
+
+	client := &http.Client{}
+	baseURL := server.URL
+
+	do := func(method, url, body string) *http.Response {
+		req, err := http.NewRequest(method, baseURL+url, strings.NewReader(body))
+		require.NoError(t, err)
+		req.Header.Set("Authorization", "Bearer test-token")
+		req.Header.Set("Content-Type", "application/json")
+		resp, err := client.Do(req)
+		require.NoError(t, err)
+		return resp
+	}
+
+	do(http.MethodPost, "/api/2.0/postgres/projects?project_id=dup-role-project", "").Body.Close()
+	do(http.MethodPost, "/api/2.0/postgres/projects/dup-role-project/branches?branch_id=main", "").Body.Close()
+
+	createBody := `{"spec":{"postgres_role":"app_role"}}`
+	first := do(http.MethodPost, "/api/2.0/postgres/projects/dup-role-project/branches/main/roles?role_id=approle", createBody)
+	require.Equal(t, 200, first.StatusCode)
+	first.Body.Close()
+
+	// Creating the same role again fails the way the real API does: 400, not 409.
+	second := do(http.MethodPost, "/api/2.0/postgres/projects/dup-role-project/branches/main/roles?role_id=approle", createBody)
+	assert.Equal(t, 400, second.StatusCode)
+	second.Body.Close()
+}

@@ -867,7 +867,10 @@ func (s *FakeWorkspace) PostgresRoleCreate(req Request, parent, roleID string) R
 	name := fmt.Sprintf("%s/roles/%s", parent, roleID)
 
 	if _, exists := s.PostgresRoles[name]; exists {
-		return postgresErrorResponse(409, "ALREADY_EXISTS", "role with such id already exists")
+		// The real Lakebase API returns 400 BAD_REQUEST (not 409) for a duplicate
+		// role, with this message (verified on dogfood 2026-06-10). Match it so the
+		// conflict a bundle hits on an inherited/pre-existing role looks the same.
+		return postgresErrorResponse(400, "BAD_REQUEST", "role with that name already exists")
 	}
 
 	now := nowTime()
