@@ -1,5 +1,10 @@
 envsubst < databricks.yml.tmpl > databricks.yml
 
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
 title "bundle plan fails with lifecycle.started on terraform engine"
 trace errcode $CLI bundle plan
 
