@@ -4,7 +4,6 @@ import (
 	"container/list"
 	"fmt"
 	"reflect"
-	"slices"
 	"strings"
 
 	"github.com/databricks/cli/libs/jsonschema"
@@ -49,16 +48,14 @@ func newTypeGraph(root reflect.Type) (*typeGraph, error) {
 
 			var edges []fieldEdge
 			if typ.Kind() == reflect.Struct {
-				for _, name := range structFieldNames(typ) {
-					prop, ok := s.Properties[name]
-					if !ok {
-						ferr = fmt.Errorf("field order for %s diverged from the generated schema: %s not in schema", refPath, name)
-						return s
-					}
-					edges = append(edges, fieldEdge{name: name, typ: resolveEdgeType(prop)})
+				for _, name := range structFieldOrder(typ, s.Properties) {
+					edges = append(edges, fieldEdge{name: name, typ: resolveEdgeType(s.Properties[name])})
 				}
+				// structFieldOrder only orders names the schema emitted, so a
+				// mismatch means its struct walk failed to reach a property —
+				// i.e. it diverged from the generator's own field handling.
 				if len(edges) != len(s.Properties) {
-					ferr = fmt.Errorf("field order for %s diverged from the generated schema: %d fields, %d properties", refPath, len(edges), len(s.Properties))
+					ferr = fmt.Errorf("type graph for %s reached %d of %d schema properties", refPath, len(edges), len(s.Properties))
 					return s
 				}
 			}
@@ -83,11 +80,12 @@ func (g *typeGraph) edge(typeKey, name string) (fieldEdge, bool) {
 	return fieldEdge{}, false
 }
 
-// structFieldNames returns the JSON property names of typ in struct
-// declaration order, flattening embedded structs breadth-first with the same
-// tag rules as jsonschema.FromType. newTypeGraph checks the result against the
-// properties FromType actually emitted, so the two cannot silently diverge.
-func structFieldNames(typ reflect.Type) []string {
+// structFieldOrder returns the names in props ordered by where each field is
+// declared in typ, flattening embedded structs breadth-first like
+// jsonschema.FromType. Membership in props is authoritative — it already
+// reflects every skip rule the generator applies — so reflection here only
+// recovers the declaration order the schema's property map loses.
+func structFieldOrder(typ reflect.Type, props map[string]*jsonschema.Schema) []string {
 	var names []string
 	seen := map[string]bool{}
 	bfsQueue := list.New()
@@ -111,13 +109,11 @@ func structFieldNames(typ reflect.Type) []string {
 			continue
 		}
 
-		bundleTags := strings.Split(field.Tag.Get("bundle"), ",")
-		if slices.Contains(bundleTags, "readonly") || slices.Contains(bundleTags, "internal") {
+		name := strings.Split(field.Tag.Get("json"), ",")[0]
+		if seen[name] {
 			continue
 		}
-
-		name := strings.Split(field.Tag.Get("json"), ",")[0]
-		if name == "" || name == "-" || !field.IsExported() || seen[name] {
+		if _, ok := props[name]; !ok {
 			continue
 		}
 		seen[name] = true
