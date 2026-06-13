@@ -63,6 +63,21 @@ var descriptorKeys = func() map[string]bool {
 	return keys
 }()
 
+// descriptorKeyOrder is the leading key order for a serialized descriptor,
+// matching the formatting of the previous annotation files. Remaining keys
+// follow alphabetically.
+var descriptorKeyOrder = []string{"description", "markdown_description", "title", "default", "enum"}
+
+// descriptorToMap serializes d into dst with its keys ordered. It returns the
+// nil value (writing nothing) when d carries no content.
+func descriptorToMap(d annotation.Descriptor, dst map[string]dyn.Value) (dyn.Value, error) {
+	v, err := convert.FromTyped(d, dyn.NilValue)
+	if err != nil || v.Kind() == dyn.KindNil {
+		return dyn.NilValue, err
+	}
+	return yamlsaver.ConvertToMapValue(d, yamlsaver.NewOrder(descriptorKeyOrder), []string{}, dst)
+}
+
 // loadAnnotationsFile reads the tree-format annotations file and flattens it
 // into per-type annotations. Tree positions that do not resolve to a type or
 // field in the config (stale entries, typos) are returned in unknown; they
@@ -262,19 +277,11 @@ func (s *fileSaver) block(typeKey string) (map[string]dyn.Value, error) {
 func (s *fileSaver) node(typeKey string, edge fieldEdge) (map[string]dyn.Value, error) {
 	out := map[string]dyn.Value{}
 
+	// The inline descriptor keys are written directly into the node, sharing
+	// it with the "type" and "fields" keys added below.
 	if d, ok := s.take(typeKey, edge.name); ok {
-		v, err := convert.FromTyped(d, dyn.NilValue)
-		if err != nil {
+		if _, err := descriptorToMap(d, out); err != nil {
 			return nil, err
-		}
-		if v.Kind() != dyn.KindNil {
-			// Order the descriptor keys with description first, like the
-			// previous annotation files.
-			order := yamlsaver.NewOrder([]string{"description", "markdown_description", "title", "default", "enum"})
-			_, err = yamlsaver.ConvertToMapValue(d, order, []string{}, out)
-			if err != nil {
-				return nil, err
-			}
 		}
 	}
 
@@ -282,12 +289,12 @@ func (s *fileSaver) node(typeKey string, edge fieldEdge) (map[string]dyn.Value, 
 		// High line numbers sort the type docs and the fields block after
 		// the inline descriptor keys.
 		if d, ok := s.take(edge.typ, RootTypeKey); ok {
-			v, err := descriptorValue(d, 9999)
+			v, err := descriptorToMap(d, map[string]dyn.Value{})
 			if err != nil {
 				return nil, err
 			}
 			if v.Kind() != dyn.KindNil {
-				out[typeDocKey] = v
+				out[typeDocKey] = v.WithLocations([]dyn.Location{{Line: 9999}})
 			}
 		}
 		child, err := s.block(edge.typ)
@@ -299,21 +306,6 @@ func (s *fileSaver) node(typeKey string, edge fieldEdge) (map[string]dyn.Value, 
 		}
 	}
 	return out, nil
-}
-
-// descriptorValue converts a type docs descriptor, ordering its keys like the
-// inline descriptors and placing it at the given line in its node.
-func descriptorValue(d annotation.Descriptor, line int) (dyn.Value, error) {
-	v, err := convert.FromTyped(d, dyn.NilValue)
-	if err != nil || v.Kind() == dyn.KindNil {
-		return dyn.NilValue, err
-	}
-	order := yamlsaver.NewOrder([]string{"description", "markdown_description", "title", "default", "enum"})
-	v, err = yamlsaver.ConvertToMapValue(d, order, []string{}, map[string]dyn.Value{})
-	if err != nil {
-		return dyn.NilValue, err
-	}
-	return v.WithLocations([]dyn.Location{{Line: line}}), nil
 }
 
 // take returns the descriptor for the given type and field and marks it

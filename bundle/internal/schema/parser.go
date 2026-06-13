@@ -16,6 +16,11 @@ type annotationParser struct {
 	ref map[string]*clijson.SchemaJSON
 }
 
+// RootTypeKey is the key under which a type's own descriptor is stored in an
+// annotation.File, alongside its fields' descriptors. "_" is used because it
+// cannot collide with a real field name (config has fields named "type",
+// "fields", "description"). In the annotations file these docs are spelled
+// "type"; this is only the in-memory key.
 const RootTypeKey = "_"
 
 // deprecationMessage is the message emitted for any field or type that the spec
