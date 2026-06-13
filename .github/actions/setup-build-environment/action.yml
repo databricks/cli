@@ -5,6 +5,10 @@ inputs:
   cache-key:
     description: 'Cache key identifier for Go cache'
     required: true
+  save-cache:
+    description: 'Whether this job may save the Go cache (only effective on main). Set to false on jobs that share a cache-key across many matrix instances so only one designated job writes the key.'
+    required: false
+    default: 'true'
 
 runs:
   using: 'composite'
@@ -38,9 +42,12 @@ runs:
     # On runs against main (push + the scheduled wipe-and-repopulate
     # cron added in #2092): restore now, save at job end via the
     # unified action's post-step (which fires at the calling job's
-    # end, even when invoked from a composite).
+    # end, even when invoked from a composite). Gated on save-cache so
+    # that when many matrix instances share one cache-key, only the
+    # designated job writes it (concurrent same-key saves all fail but
+    # the first, so the extra writers just waste time).
     - name: Restore and save Go cache (main)
-      if: github.ref == 'refs/heads/main'
+      if: github.ref == 'refs/heads/main' && inputs.save-cache == 'true'
       uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
       with:
         path: |
@@ -50,12 +57,12 @@ runs:
         restore-keys: |
           setup-go-${{ inputs.cache-key }}-${{ runner.os }}-go${{ steps.setup-go.outputs.go-version }}-
 
-    # On every other ref (PR / merge_group): restore only. Prefix
-    # fallback via restore-keys means runs whose go.sum differs from
-    # main still restore main's most recent cache and rebuild only
-    # the delta.
+    # On every other ref (PR / merge_group) or when this job is not the
+    # designated cache writer: restore only. Prefix fallback via
+    # restore-keys means runs whose go.sum differs from main still
+    # restore main's most recent cache and rebuild only the delta.
     - name: Restore Go cache (non-main)
-      if: github.ref != 'refs/heads/main'
+      if: github.ref != 'refs/heads/main' || inputs.save-cache != 'true'
       uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
       with:
         path: |
