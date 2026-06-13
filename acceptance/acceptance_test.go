@@ -1630,17 +1630,14 @@ func loadUserReplacements(t *testing.T, repls *testdiff.ReplacementsContext, tmp
 
 type pathFilter struct {
 	// contains substrings from the variants other than current.
-	// E.g. if EnvVaryOutput is DATABRICKS_BUNDLE_ENGINE and current test running DATABRICKS_BUNDLE_ENGINE="terraform" then
-	// notSelected contains ".direct." meaning if filename contains that (e.g. out.deploy.direct.txt) then we ignore it here.
+	// E.g. current test running DATABRICKS_BUNDLE_ENGINE="terraform" means
+	// notSelected contains ".direct." so files like out.deploy.direct.txt are ignored.
 	notSelected []string
 }
 
-// preparePathFilter builds filter based on EnvVaryOutput and current variant env.
+// preparePathFilter builds filter based on DATABRICKS_BUNDLE_ENGINE and current variant env.
 func preparePathFilter(config internal.TestConfig, customEnv []string) pathFilter {
-	if config.EnvVaryOutput == nil {
-		return pathFilter{}
-	}
-	key := *config.EnvVaryOutput
+	const key = "DATABRICKS_BUNDLE_ENGINE"
 	vals := config.EnvMatrix[key]
 	if len(vals) <= 1 {
 		return pathFilter{}
