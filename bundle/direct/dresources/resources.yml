@@ -47,6 +47,11 @@ resources:
 
       # Same as clusters.node_type_id — see clusters/resource_cluster.go#L333
       # s.SchemaPath("node_type_id").SetComputed()
+      # Config legitimately omits node_type_id when a cluster policy fixes it: jobs/get
+      # then returns the policy-resolved value in the stored settings (with or without
+      # apply_policy_default_values), so the drift must be skipped.
+      # config-remote-sync keeps these fields for remotely added clusters via
+      # fieldsKeptForSync in bundle/configsync/defaults.go.
       - field: tasks[*].new_cluster.node_type_id
       - field: job_clusters[*].new_cluster.node_type_id
 
@@ -79,6 +84,41 @@ resources:
       # s.SchemaPath("run_as").SetComputed()
       - field: run_as
 
+      # The backend returns PERFORMANCE_OPTIMIZED for all jobs when the field
+      # is not set, not only for serverless jobs.
+      - field: performance_target
+        values: ["PERFORMANCE_OPTIMIZED"]
+
+      # The backend returns timeout_seconds: 0 for tasks when not set. The plan
+      # already skips this via the all-empty check; the rule is needed so that
+      # config-remote-sync does not write timeout_seconds: 0 into YAML for
+      # tasks added remotely.
+      - field: tasks[*].timeout_seconds
+        values: [0]
+      - field: tasks[*].for_each_task.task.timeout_seconds
+        values: [0]
+
+      # The backend returns disabled: false for tasks when not set. Same as
+      # timeout_seconds above: inert for the plan, needed by config-remote-sync.
+      - field: tasks[*].disabled
+        values: [false]
+      - field: tasks[*].for_each_task.task.disabled
+        values: [false]
+
+      # When notifications are not configured, the backend returns
+      # email_notifications populated with the deprecated
+      # no_alert_for_skipped_runs: false field. Inert for the plan: the
+      # all-empty check in addPerFieldActions runs before backend defaults
+      # and already skips zero values. Needed so config-remote-sync drops the
+      # leaf (and then prunes the empty email_notifications map) instead of
+      # writing it into YAML.
+      - field: email_notifications.no_alert_for_skipped_runs
+        values: [false]
+      - field: tasks[*].email_notifications.no_alert_for_skipped_runs
+        values: [false]
+      - field: tasks[*].for_each_task.task.email_notifications.no_alert_for_skipped_runs
+        values: [false]
+
       # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/jobs/resource_job.go#L521-L524
       # s.SchemaPath("task", "notebook_task", "source").SetSuppressDiff()
       # s.SchemaPath("task", "spark_python_task", "source").SetSuppressDiff()
@@ -96,6 +136,12 @@ resources:
       # Same as clusters.data_security_mode: backend sets this when not specified
       - field: tasks[*].new_cluster.data_security_mode
       - field: job_clusters[*].new_cluster.data_security_mode
+
+      # Same as clusters.single_user_name: backend sets it when the effective
+      # data security mode is single-user.
+      # See https://github.com/databricks/cli/issues/4418
+      - field: tasks[*].new_cluster.single_user_name
+      - field: job_clusters[*].new_cluster.single_user_name
 
   pipelines:
     recreate_on_changes:
@@ -137,10 +183,6 @@ resources:
       # s.SchemaPath("storage").SetCustomSuppressDiff(suppressStorageDiff)
       # Backend generates storage path like dbfs:/pipelines/<id> when not set by user.
       - field: storage
-
-      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/pipelines/resource_pipeline.go#L218
-      # s.SchemaPath("cluster", "node_type_id").SetComputed()
-      - field: clusters[*].node_type_id
 
       # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/pipelines/resource_pipeline.go#L219
       # s.SchemaPath("cluster", "driver_node_type_id").SetComputed()
@@ -375,6 +417,14 @@ resources:
       - field: serialized_dashboard
         reason: etag_based
 
+      # "etag" is output-only and never present in the config. This rule does not
+      # change deploy behavior: ResourceDashboard.OverrideChangeDesc runs after the
+      # metadata chain and re-promotes etag drift to Update so that out-of-band
+      # modifications are detected during deploy. config-remote-sync matches this
+      # rule directly (not the plan action) to keep etag out of YAML.
+      - field: etag
+        reason: output_only
+
       # "dataset_catalog" and "dataset_schema" are write-only fields that are not returned by the server.
       # They will always differ between local config (which has values) and remote state (which has empty strings).
       - field: dataset_catalog
@@ -464,6 +514,9 @@ resources:
 
       # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/clusters/resource_cluster.go#L333
       # s.SchemaPath("node_type_id").SetComputed()
+      # Config legitimately omits node_type_id when instance_pool_id is set (the API
+      # rejects specifying both) or a cluster policy fixes it; clusters/get reports the
+      # actual node type at the top level, so the drift must be skipped.
       - field: node_type_id
 
       # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/clusters/resource_cluster.go#L334
@@ -477,6 +530,12 @@ resources:
       # Terraform currently does not do this, but it is a field with backend default.
       # See https://github.com/databricks/cli/issues/4418
       - field: single_user_name
+
+      # Some backends compute alternate node types for standalone clusters when
+      # flexibility is not specified in the config (observed on AWS staging
+      # workspaces).
+      - field: driver_node_type_flexibility
+      - field: worker_node_type_flexibility
 
     # We have custom handler for this in cluster.go
     # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/clusters/resource_cluster.go#L109-L118
