@@ -1,0 +1,3 @@
+Error: failed to list sandboxes: the Databricks Sandbox feature is not available in your region, or the service is temporarily unavailable
+
+Exit code: 1
