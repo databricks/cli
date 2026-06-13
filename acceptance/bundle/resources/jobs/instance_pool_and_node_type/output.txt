@@ -4,9 +4,9 @@
   {
     "new_cluster": {
       "data_security_mode": "USER_ISOLATION",
-      "instance_pool_id": "$TEST_INSTANCE_POOL_ID",
+      "instance_pool_id": "my-instance-pool",
       "num_workers": 1,
-      "spark_version": "$DEFAULT_SPARK_VERSION"
+      "spark_version": "15.4.x-scala2.12"
     },
     "python_wheel_task": {
       "entry_point": "run",
@@ -25,9 +25,9 @@
   {
     "new_cluster": {
       "data_security_mode": "USER_ISOLATION",
-      "instance_pool_id": "$TEST_INSTANCE_POOL_ID",
+      "instance_pool_id": "my-instance-pool",
       "num_workers": 1,
-      "spark_version": "$DEFAULT_SPARK_VERSION"
+      "spark_version": "15.4.x-scala2.12"
     },
     "python_wheel_task": {
       "entry_point": "run",
@@ -52,9 +52,9 @@ Deployment complete!
   {
     "new_cluster": {
       "data_security_mode": "USER_ISOLATION",
-      "instance_pool_id": "$TEST_INSTANCE_POOL_ID",
+      "instance_pool_id": "my-instance-pool",
       "num_workers": 1,
-      "spark_version": "$DEFAULT_SPARK_VERSION"
+      "spark_version": "15.4.x-scala2.12"
     },
     "python_wheel_task": {
       "entry_point": "run",
