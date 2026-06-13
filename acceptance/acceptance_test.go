@@ -794,6 +794,17 @@ func runTest(t *testing.T,
 	}
 	cmd.Dir = tmpDir
 
+	// On cloud runs, destroy any bundles the script deployed but did not get to
+	// destroy itself (failure, timeout, early exit), so resources do not leak
+	// into the shared test workspaces. Registered before the script starts so
+	// it also covers timeouts.
+	if isRunningOnCloud {
+		scriptEnv := slices.Clone(cmd.Env)
+		t.Cleanup(func() {
+			destroyDeployedBundles(t, tmpDir, scriptEnv)
+		})
+	}
+
 	outputPath := filepath.Join(tmpDir, "output.txt")
 	out, err := os.Create(outputPath)
 	require.NoError(t, err)
@@ -862,6 +873,74 @@ func runTest(t *testing.T,
 	if len(unexpected) > 0 {
 		t.Error("Test produced unexpected files:\n" + strings.Join(unexpected, "\n"))
 	}
+}
+
+// destroyDeployedBundles is a best-effort safety net for cloud runs: it finds
+// every bundle state directory created under tmpDir (<bundle_root>/.databricks/bundle/<target>)
+// and runs "bundle destroy" for it. On the happy path there is nothing to do:
+// the shared script.cleanup removes .databricks, and destroying an
+// already-destroyed bundle exits 0.
+func destroyDeployedBundles(t *testing.T, tmpDir string, env []string) {
+	cliPath := os.Getenv("CLI")
+	if cliPath == "" {
+		t.Log("Cleanup: CLI env var is not set, cannot destroy deployed bundles")
+		return
+	}
+
+	for bundleRoot, targets := range findBundleStateDirs(t, tmpDir) {
+		for _, target := range targets {
+			destroyBundle(t, cliPath, bundleRoot, target, env)
+		}
+	}
+}
+
+func destroyBundle(t *testing.T, cliPath, bundleRoot, target string, env []string) {
+	// t.Context() is already canceled when cleanups run; derive from it without cancellation.
+	ctx, cancel := context.WithTimeout(context.WithoutCancel(t.Context()), 10*time.Minute)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, cliPath, "bundle", "destroy", "--auto-approve", "--target", target)
+	cmd.Dir = bundleRoot
+	cmd.Env = env
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Logf("Cleanup: 'bundle destroy --auto-approve --target %s' in %s failed, resources may have leaked: %s\n%s", target, bundleRoot, err, out)
+	} else {
+		t.Logf("Cleanup: destroyed bundle in %s (target %s)", bundleRoot, target)
+	}
+}
+
+// findBundleStateDirs returns a map from bundle root directory to target names
+// for every .databricks/bundle/<target> directory found under tmpDir.
+func findBundleStateDirs(t *testing.T, tmpDir string) map[string][]string {
+	result := make(map[string][]string)
+	err := filepath.WalkDir(tmpDir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return nil //nolint:nilerr // best-effort scan, skip unreadable entries
+		}
+		if !d.IsDir() {
+			return nil
+		}
+		name := d.Name()
+		// Bundles are never deployed from inside virtual environments.
+		if name == ".venv" || name == "site-packages" {
+			return filepath.SkipDir
+		}
+		if name != ".databricks" {
+			return nil
+		}
+		entries, _ := os.ReadDir(filepath.Join(path, "bundle"))
+		for _, e := range entries {
+			if e.IsDir() {
+				bundleRoot := filepath.Dir(path)
+				result[bundleRoot] = append(result[bundleRoot], e.Name())
+			}
+		}
+		return filepath.SkipDir
+	})
+	if err != nil {
+		t.Logf("Cleanup: error scanning %s for deployed bundles: %s", tmpDir, err)
+	}
+	return result
 }
 
 // checkEnvFilters skips the test if any env filter doesn't match testEnv.
