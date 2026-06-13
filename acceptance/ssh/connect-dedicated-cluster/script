@@ -1,0 +1,1 @@
+$CLI ssh connect --cluster=$TEST_DEFAULT_CLUSTER_ID --user-known-hosts-file=known_hosts --releases-dir=$CLI_RELEASES_DIR -- "echo 'Connection successful'"
