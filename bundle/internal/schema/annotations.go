@@ -68,27 +68,14 @@ func (d *annotationHandler) addAnnotations(typ reflect.Type, s jsonschema.Schema
 		return s
 	}
 
-	annotations := d.parsedAnnotations[refPath]
-	if annotations == nil {
-		annotations = map[string]annotation.Descriptor{}
-	}
-
-	rootTypeAnnotation, ok := annotations[RootTypeKey]
-	if ok {
-		assignAnnotation(&s, rootTypeAnnotation)
-	}
+	ta := d.parsedAnnotations[refPath]
+	assignAnnotation(&s, ta.Self)
 
 	for k, v := range s.Properties {
-		item := annotations[k]
+		item := ta.Fields[k]
 		if item.Description == "" {
 			item.Description = annotation.Placeholder
-
-			emptyAnnotations := d.missingAnnotations[refPath]
-			if emptyAnnotations == nil {
-				emptyAnnotations = map[string]annotation.Descriptor{}
-				d.missingAnnotations[refPath] = emptyAnnotations
-			}
-			emptyAnnotations[k] = annotation.Descriptor{Description: annotation.Placeholder}
+			d.missingAnnotations.SetField(refPath, k, annotation.Descriptor{Description: annotation.Placeholder})
 		}
 		assignAnnotation(v, item)
 	}

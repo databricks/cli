@@ -78,6 +78,12 @@ func descriptorToMap(d annotation.Descriptor, dst map[string]dyn.Value) (dyn.Val
 	return yamlsaver.ConvertToMapValue(d, yamlsaver.NewOrder(descriptorKeyOrder), []string{}, dst)
 }
 
+// descriptorEmpty reports whether d carries no documentation.
+func descriptorEmpty(d annotation.Descriptor) bool {
+	v, err := convert.FromTyped(d, dyn.NilValue)
+	return err == nil && v.Kind() == dyn.KindNil
+}
+
 // loadAnnotationsFile reads the tree-format annotations file and flattens it
 // into per-type annotations. Tree positions that do not resolve to a type or
 // field in the config (stale entries, typos) are returned in unknown; they
@@ -136,8 +142,9 @@ func (l *fileLoader) block(v dyn.Value, typeKey, where string) error {
 	return nil
 }
 
-// node loads one field's node: inline descriptor keys, plus the optional
-// "type" docs and "fields" block for the type the field resolves to.
+// node loads one field's node: the inline descriptor for the field, the
+// "type" docs for the type it resolves to, and the "fields" block of that
+// type's fields.
 func (l *fileLoader) node(v dyn.Value, typeKey string, edge fieldEdge, where string) error {
 	if v.Kind() == dyn.KindNil {
 		return nil
@@ -157,12 +164,12 @@ func (l *fileLoader) node(v dyn.Value, typeKey string, edge fieldEdge, where str
 				return err
 			}
 		case key == typeDocKey && edge.typ != "":
-			// Type docs are stored under the type's RootTypeKey entry. The
-			// synthetic edge has no element type, so nested "type" or
-			// "fields" keys inside the docs are flagged as unknown.
-			err := l.node(pair.Value, edge.typ, fieldEdge{name: RootTypeKey}, where+"."+typeDocKey)
+			d, ok, err := l.descriptor(pair.Value, where+"."+typeDocKey)
 			if err != nil {
 				return err
+			}
+			if ok {
+				l.data.SetSelf(edge.typ, d)
 			}
 		case descriptorKeys[key]:
 			desc.SetLoc(key, nil, pair.Value)
@@ -171,19 +178,48 @@ func (l *fileLoader) node(v dyn.Value, typeKey string, edge fieldEdge, where str
 		}
 	}
 
-	if desc.Len() == 0 {
-		return nil
+	if desc.Len() > 0 {
+		d, err := toDescriptor(desc, where)
+		if err != nil {
+			return err
+		}
+		l.data.SetField(typeKey, edge.name, d)
 	}
+	return nil
+}
+
+// descriptor parses a mapping of descriptor keys (the value of a "type" key).
+// Non-descriptor keys are flagged as unknown. The second return is false when
+// the mapping carries no descriptor keys.
+func (l *fileLoader) descriptor(v dyn.Value, where string) (annotation.Descriptor, bool, error) {
+	m, ok := v.AsMap()
+	if !ok {
+		return annotation.Descriptor{}, false, fmt.Errorf("%s: expected a mapping, got %s", where, v.Kind())
+	}
+	desc := dyn.NewMapping()
+	for _, pair := range m.Pairs() {
+		key := pair.Key.MustString()
+		if descriptorKeys[key] {
+			desc.SetLoc(key, nil, pair.Value)
+		} else {
+			l.unknown = append(l.unknown, where+"."+key)
+		}
+	}
+	if desc.Len() == 0 {
+		return annotation.Descriptor{}, false, nil
+	}
+	d, err := toDescriptor(desc, where)
+	return d, err == nil, err
+}
+
+// toDescriptor converts a mapping of descriptor keys to a typed descriptor.
+func toDescriptor(desc dyn.Mapping, where string) (annotation.Descriptor, error) {
 	var d annotation.Descriptor
 	err := convert.ToTyped(&d, dyn.V(desc))
 	if err != nil {
-		return fmt.Errorf("%s: %w", where, err)
+		return annotation.Descriptor{}, fmt.Errorf("%s: %w", where, err)
 	}
-	if l.data[typeKey] == nil {
-		l.data[typeKey] = map[string]annotation.Descriptor{}
-	}
-	l.data[typeKey][edge.name] = d
-	return nil
+	return d, nil
 }
 
 // saveAnnotationsFile writes data to path in the canonical tree layout: a
@@ -193,11 +229,12 @@ func (l *fileLoader) node(v dyn.Value, typeKey string, edge fieldEdge, where str
 // exist) are returned as detached and are not written.
 func saveAnnotationsFile(path string, data annotation.File, g *typeGraph) ([]string, error) {
 	s := &fileSaver{
-		graph:    g,
-		data:     data,
-		visited:  map[string]bool{g.root: true},
-		expandAt: map[edgeKey]bool{},
-		consumed: map[edgeKey]bool{},
+		graph:        g,
+		data:         data,
+		visited:      map[string]bool{g.root: true},
+		expandAt:     map[edgeKey]bool{},
+		consumed:     map[edgeKey]bool{},
+		selfConsumed: map[string]bool{},
 	}
 	s.assignCanonical(g.root)
 
@@ -229,11 +266,12 @@ type edgeKey struct {
 }
 
 type fileSaver struct {
-	graph    *typeGraph
-	data     annotation.File
-	visited  map[string]bool
-	expandAt map[edgeKey]bool
-	consumed map[edgeKey]bool
+	graph        *typeGraph
+	data         annotation.File
+	visited      map[string]bool
+	expandAt     map[edgeKey]bool
+	consumed     map[edgeKey]bool
+	selfConsumed map[string]bool
 }
 
 // assignCanonical walks the type graph depth-first in struct declaration
@@ -272,31 +310,33 @@ func (s *fileSaver) block(typeKey string) (map[string]dyn.Value, error) {
 	return out, nil
 }
 
-// node renders one field's node: the inline descriptor plus, at the field's
-// canonical position, the "fields" block of the type it resolves to.
+// node renders one field's node: the inline field descriptor plus, at the
+// field's canonical position, the resolved type's "type" docs and the
+// "fields" block of its fields.
 func (s *fileSaver) node(typeKey string, edge fieldEdge) (map[string]dyn.Value, error) {
 	out := map[string]dyn.Value{}
 
 	// The inline descriptor keys are written directly into the node, sharing
 	// it with the "type" and "fields" keys added below.
-	if d, ok := s.take(typeKey, edge.name); ok {
+	if d, ok := s.takeField(typeKey, edge.name); ok {
 		if _, err := descriptorToMap(d, out); err != nil {
 			return nil, err
 		}
 	}
 
 	if s.expandAt[edgeKey{typeKey, edge.name}] {
-		// High line numbers sort the type docs and the fields block after
-		// the inline descriptor keys.
-		if d, ok := s.take(edge.typ, RootTypeKey); ok {
-			v, err := descriptorToMap(d, map[string]dyn.Value{})
-			if err != nil {
-				return nil, err
-			}
-			if v.Kind() != dyn.KindNil {
-				out[typeDocKey] = v.WithLocations([]dyn.Location{{Line: 9999}})
-			}
+		// Expanding a type accounts for its self docs, whether or not it has
+		// any. High line numbers sort the type docs and the fields block
+		// after the inline descriptor keys.
+		s.selfConsumed[edge.typ] = true
+		v, err := descriptorToMap(s.data[edge.typ].Self, map[string]dyn.Value{})
+		if err != nil {
+			return nil, err
 		}
+		if v.Kind() != dyn.KindNil {
+			out[typeDocKey] = v.WithLocations([]dyn.Location{{Line: 9999}})
+		}
+
 		child, err := s.block(edge.typ)
 		if err != nil {
 			return nil, err
@@ -308,21 +348,25 @@ func (s *fileSaver) node(typeKey string, edge fieldEdge) (map[string]dyn.Value, 
 	return out, nil
 }
 
-// take returns the descriptor for the given type and field and marks it
-// consumed for the detached-entry report.
-func (s *fileSaver) take(typeKey, name string) (annotation.Descriptor, bool) {
-	d, ok := s.data[typeKey][name]
+// takeField returns the descriptor for a field and marks it consumed for the
+// detached-entry report.
+func (s *fileSaver) takeField(typeKey, name string) (annotation.Descriptor, bool) {
+	d, ok := s.data[typeKey].Fields[name]
 	if ok {
 		s.consumed[edgeKey{typeKey, name}] = true
 	}
 	return d, ok
 }
 
-// detached returns the data entries no tree position consumed, sorted.
+// detached returns the data entries no tree position consumed, sorted. These
+// are fields or types that no longer exist in the config.
 func (s *fileSaver) detached() []string {
 	var out []string
-	for typeKey, fields := range s.data {
-		for name := range fields {
+	for typeKey, ta := range s.data {
+		if !s.selfConsumed[typeKey] && !descriptorEmpty(ta.Self) {
+			out = append(out, typeKey+": (type)")
+		}
+		for name := range ta.Fields {
 			if !s.consumed[edgeKey{typeKey, name}] {
 				out = append(out, typeKey+": "+name)
 			}

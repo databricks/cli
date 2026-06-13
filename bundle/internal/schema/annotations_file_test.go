@@ -17,19 +17,25 @@ func TestAnnotationsFileRoundTrip(t *testing.T) {
 
 	data := annotation.File{
 		getPath(reflect.TypeFor[tgRoot]()): {
-			"first":   {Description: "First field."},
-			"by_name": {Description: "Map field.", MarkdownDescription: "Map field. See [_](/foo.md)."},
+			Fields: map[string]annotation.Descriptor{
+				"first":   {Description: "First field."},
+				"by_name": {Description: "Map field.", MarkdownDescription: "Map field. See [_](/foo.md)."},
+			},
 		},
 		getPath(reflect.TypeFor[tgNested]()): {
-			"_":           {Description: "A nested type."},
-			"description": {Description: annotation.Placeholder},
-			"again":       {Description: "Recursive field."},
+			Self: annotation.Descriptor{Description: "A nested type."},
+			Fields: map[string]annotation.Descriptor{
+				"description": {Description: annotation.Placeholder},
+				"again":       {Description: "Recursive field."},
+			},
 		},
 		getPath(reflect.TypeFor[tgMode]()): {
-			"_": {Enum: []any{"a", "b"}},
+			Self: annotation.Descriptor{Enum: []any{"a", "b"}},
 		},
 		getPath(reflect.TypeFor[tgItem]()): {
-			"inner": {Description: "Inner docs."},
+			Fields: map[string]annotation.Descriptor{
+				"inner": {Description: "Inner docs."},
+			},
 		},
 	}
 
@@ -131,7 +137,7 @@ plain:
 	}, unknown)
 
 	// The valid entry is still loaded.
-	assert.Equal(t, "Valid entry.", data[getPath(reflect.TypeFor[tgRoot]())]["first"].Description)
+	assert.Equal(t, "Valid entry.", data[getPath(reflect.TypeFor[tgRoot]())].Fields["first"].Description)
 }
 
 func TestAnnotationsFileDetachedEntries(t *testing.T) {
@@ -140,10 +146,15 @@ func TestAnnotationsFileDetachedEntries(t *testing.T) {
 
 	data := annotation.File{
 		getPath(reflect.TypeFor[tgRoot]()): {
-			"no_such_field": {Description: "Stale."},
+			Fields: map[string]annotation.Descriptor{
+				"no_such_field": {Description: "Stale."},
+			},
 		},
 		"github.com/databricks/cli/no/such.Type": {
-			"field": {Description: "Stale."},
+			Self: annotation.Descriptor{Description: "Stale type."},
+			Fields: map[string]annotation.Descriptor{
+				"field": {Description: "Stale."},
+			},
 		},
 	}
 
@@ -152,6 +163,7 @@ func TestAnnotationsFileDetachedEntries(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, []string{
 		"github.com/databricks/cli/bundle/internal/schema.tgRoot: no_such_field",
+		"github.com/databricks/cli/no/such.Type: (type)",
 		"github.com/databricks/cli/no/such.Type: field",
 	}, detached)
 }

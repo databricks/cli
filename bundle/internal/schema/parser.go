@@ -16,13 +16,6 @@ type annotationParser struct {
 	ref map[string]*clijson.SchemaJSON
 }
 
-// RootTypeKey is the key under which a type's own descriptor is stored in an
-// annotation.File, alongside its fields' descriptors. "_" is used because it
-// cannot collide with a real field name (config has fields named "type",
-// "fields", "description"). In the annotations file these docs are spelled
-// "type"; this is only the in-memory key.
-const RootTypeKey = "_"
-
 // deprecationMessage is the message emitted for any field or type that the spec
 // marks as deprecated. The spec (.codegen/cli.json) carries only a deprecated
 // flag, not a message, so we synthesize a fixed one here.
@@ -133,15 +126,13 @@ func (p *annotationParser) extractAnnotations(typ reflect.Type) (annotation.File
 			}
 
 			basePath := getPath(typ)
-			pkg := map[string]annotation.Descriptor{}
-			annotations[basePath] = pkg
 			// The contract carries no schema-level launch stage, so a type is
 			// never itself marked private-preview — only its fields are (below).
 			if ref.Description != "" || ref.Enum != nil {
-				pkg[RootTypeKey] = annotation.Descriptor{
+				annotations.SetSelf(basePath, annotation.Descriptor{
 					Description: ref.Description,
 					Enum:        enumValues(ref.Enum),
-				}
+				})
 			}
 
 			for k := range s.Properties {
@@ -159,12 +150,12 @@ func (p *annotationParser) extractAnnotations(typ reflect.Type) (annotation.File
 						}
 					}
 
-					pkg[k] = annotation.Descriptor{
+					annotations.SetField(basePath, k, annotation.Descriptor{
 						Description:        description,
 						Preview:            preview,
 						DeprecationMessage: deprecationMessageFor(refProp.Deprecated),
 						OutputOnly:         isOutputOnly(refProp.Behaviors),
-					}
+					})
 				}
 			}
 			return s
