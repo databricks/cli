@@ -206,9 +206,20 @@ func (v Value) eq(w Value) bool {
 
 	switch v.k {
 	case KindMap:
-		// Compare pointers to the underlying map.
+		// Comparing &v.v to &w.v is always false (value receivers), so compare the Mapping's backing storage.
+		vm := v.v.(Mapping)
+		wm := w.v.(Mapping)
+		lv := vm.Len()
+		lw := wm.Len()
+		if lv == 0 && lw == 0 {
+			return true
+		}
+		if lv != lw {
+			return false
+		}
+		// Compare pointers to the underlying pairs slice.
 		// This is safe because we don't allow maps to be mutated.
-		return &v.v == &w.v
+		return &vm.pairs[0] == &wm.pairs[0]
 	case KindSequence:
 		vs := v.v.([]Value)
 		ws := w.v.([]Value)
