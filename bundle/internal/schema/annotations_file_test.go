@@ -49,7 +49,7 @@ func TestAnnotationsFileRoundTrip(t *testing.T) {
 
 	// Keys are emitted alphabetically; tgNested expands under `first` (its
 	// canonical position in declaration order), so `by_name`, which resolves
-	// to the same type, carries no `type` or `fields` keys. `plain` has no
+	// to the same type, carries no `$type` or `$fields` keys. `plain` has no
 	// content and is omitted entirely.
 	expected := annotationsFileHeader + `by_name:
   "description": |-
@@ -59,10 +59,10 @@ func TestAnnotationsFileRoundTrip(t *testing.T) {
 first:
   "description": |-
     First field.
-  "type":
+  "$type":
     "description": |-
       A nested type.
-  "fields":
+  "$fields":
     "again":
       "description": |-
         Recursive field.
@@ -70,12 +70,12 @@ first:
       "description": |-
         PLACEHOLDER
 items:
-  "fields":
+  "$fields":
     "inner":
       "description": |-
         Inner docs.
 mode:
-  "type":
+  "$type":
     "enum":
       - |-
         a
@@ -108,19 +108,19 @@ func TestAnnotationsFileUnknownEntries(t *testing.T) {
     Valid entry.
   bogus_key: |-
     Not a descriptor key.
-  fields:
-    "_":
-      description: |-
-        The old type docs spelling is not a field.
+  type:
+    description: |-
+      Unprefixed "type" is not the structural key, so it is unknown here.
+  $fields:
     no_such_field:
       description: |-
         Field does not exist.
 plain:
-  fields:
+  $fields:
     nested:
       description: |-
         Primitive fields have no nested fields.
-  type:
+  $type:
     description: |-
       Primitive fields have no type docs.
 `), 0o644)
@@ -130,10 +130,10 @@ plain:
 	require.NoError(t, err)
 	assert.Equal(t, []string{
 		"first.bogus_key",
-		"first.fields._",
-		"first.fields.no_such_field",
-		"plain.fields",
-		"plain.type",
+		"first.type",
+		"first.$fields.no_such_field",
+		"plain.$fields",
+		"plain.$type",
 	}, unknown)
 
 	// The valid entry is still loaded.

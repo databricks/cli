@@ -17,17 +17,29 @@ import (
 	"github.com/databricks/cli/libs/dyn/yamlsaver"
 )
 
-// fieldsKey nests a type's block inside the node of a field that resolves to
-// it. It cannot clash with descriptor keys, and config fields that happen to
-// be named "fields" simply appear inside it like any other field.
-const fieldsKey = "fields"
-
+// fieldsKey nests a type's block of field nodes inside the node of a field
+// that resolves to it.
+//
 // typeDocKey holds the documentation for the type a field's value resolves to
 // (for map and sequence fields: each entry). It is applied to the type's
 // shared $defs entry, so it shows up at every occurrence of the type; this is
-// also where enum values live. Config fields named "type" do not clash: they
-// appear inside "fields" like any other field.
-const typeDocKey = "type"
+// also where enum values live.
+//
+// Both are "$"-prefixed so they cannot be mistaken for — or collide with — a
+// config field of the same name (e.g. artifacts.*.type), which always appears
+// as a bare key inside "$fields".
+const (
+	fieldsKey  = "$fields"
+	typeDocKey = "$type"
+)
+
+// lineTypeDoc and lineFields sort the "$type" and "$fields" keys after a
+// node's inline descriptor keys, which the saver orders with small line
+// numbers (see descriptorKeyOrder).
+const (
+	lineTypeDoc = 9999
+	lineFields  = 10000
+)
 
 const annotationsFileHeader = `# This file contains the documentation the CLI owns for the bundle
 # configuration JSON schema: docs for fields that do not exist in the upstream
@@ -35,13 +47,14 @@ const annotationsFileHeader = `# This file contains the documentation the CLI ow
 # for everything else is inherited from cli.json at generation time and must
 # not be duplicated here.
 #
-# The structure mirrors the bundle configuration tree:
+# The structure mirrors the bundle configuration tree. The "$type" and
+# "$fields" keys are structural; every other key is a config field name.
 #   - A node documents one field: its inline keys (description,
 #     markdown_description, ...) apply to the field itself.
-#   - "type" documents the type the field's value resolves to — for map and
+#   - "$type" documents the type the field's value resolves to — for map and
 #     sequence fields, each entry. These docs are shared by every occurrence
 #     of the type; enum values also live here.
-#   - "fields" holds the nodes of that type's fields (map and sequence levels
+#   - "$fields" holds the nodes of that type's fields (map and sequence levels
 #     are unwrapped implicitly).
 #   - Each type is expanded exactly once, at its first occurrence; fields of
 #     types that occur again later (for example everything under "targets")
@@ -143,7 +156,7 @@ func (l *fileLoader) block(v dyn.Value, typeKey, where string) error {
 }
 
 // node loads one field's node: the inline descriptor for the field, the
-// "type" docs for the type it resolves to, and the "fields" block of that
+// "$type" docs for the type it resolves to, and the "$fields" block of that
 // type's fields.
 func (l *fileLoader) node(v dyn.Value, typeKey string, edge fieldEdge, where string) error {
 	if v.Kind() == dyn.KindNil {
@@ -188,7 +201,7 @@ func (l *fileLoader) node(v dyn.Value, typeKey string, edge fieldEdge, where str
 	return nil
 }
 
-// descriptor parses a mapping of descriptor keys (the value of a "type" key).
+// descriptor parses a mapping of descriptor keys (the value of a "$type" key).
 // Non-descriptor keys are flagged as unknown. The second return is false when
 // the mapping carries no descriptor keys.
 func (l *fileLoader) descriptor(v dyn.Value, where string) (annotation.Descriptor, bool, error) {
@@ -311,13 +324,13 @@ func (s *fileSaver) block(typeKey string) (map[string]dyn.Value, error) {
 }
 
 // node renders one field's node: the inline field descriptor plus, at the
-// field's canonical position, the resolved type's "type" docs and the
+// field's canonical position, the resolved type's "$type" docs and the
 // "fields" block of its fields.
 func (s *fileSaver) node(typeKey string, edge fieldEdge) (map[string]dyn.Value, error) {
 	out := map[string]dyn.Value{}
 
 	// The inline descriptor keys are written directly into the node, sharing
-	// it with the "type" and "fields" keys added below.
+	// it with the "$type" and "$fields" keys added below.
 	if d, ok := s.takeField(typeKey, edge.name); ok {
 		if _, err := descriptorToMap(d, out); err != nil {
 			return nil, err
@@ -325,16 +338,12 @@ func (s *fileSaver) node(typeKey string, edge fieldEdge) (map[string]dyn.Value, 
 	}
 
 	if s.expandAt[edgeKey{typeKey, edge.name}] {
-		// Expanding a type accounts for its self docs, whether or not it has
-		// any. High line numbers sort the type docs and the fields block
-		// after the inline descriptor keys.
-		s.selfConsumed[edge.typ] = true
-		v, err := descriptorToMap(s.data[edge.typ].Self, map[string]dyn.Value{})
+		v, err := descriptorToMap(s.takeSelf(edge.typ), map[string]dyn.Value{})
 		if err != nil {
 			return nil, err
 		}
 		if v.Kind() != dyn.KindNil {
-			out[typeDocKey] = v.WithLocations([]dyn.Location{{Line: 9999}})
+			out[typeDocKey] = v.WithLocations([]dyn.Location{{Line: lineTypeDoc}})
 		}
 
 		child, err := s.block(edge.typ)
@@ -342,7 +351,7 @@ func (s *fileSaver) node(typeKey string, edge fieldEdge) (map[string]dyn.Value, 
 			return nil, err
 		}
 		if len(child) > 0 {
-			out[fieldsKey] = dyn.NewValue(child, []dyn.Location{{Line: 10000}})
+			out[fieldsKey] = dyn.NewValue(child, []dyn.Location{{Line: lineFields}})
 		}
 	}
 	return out, nil
@@ -356,6 +365,13 @@ func (s *fileSaver) takeField(typeKey, name string) (annotation.Descriptor, bool
 		s.consumed[edgeKey{typeKey, name}] = true
 	}
 	return d, ok
+}
+
+// takeSelf returns a type's own descriptor and marks it accounted for, whether
+// or not it carries any docs (expanding the type is what consumes it).
+func (s *fileSaver) takeSelf(typeKey string) annotation.Descriptor {
+	s.selfConsumed[typeKey] = true
+	return s.data[typeKey].Self
 }
 
 // detached returns the data entries no tree position consumed, sorted. These

@@ -4,13 +4,14 @@
 # for everything else is inherited from cli.json at generation time and must
 # not be duplicated here.
 #
-# The structure mirrors the bundle configuration tree:
+# The structure mirrors the bundle configuration tree. The "$type" and
+# "$fields" keys are structural; every other key is a config field name.
 #   - A node documents one field: its inline keys (description,
 #     markdown_description, ...) apply to the field itself.
-#   - "type" documents the type the field's value resolves to — for map and
+#   - "$type" documents the type the field's value resolves to — for map and
 #     sequence fields, each entry. These docs are shared by every occurrence
 #     of the type; enum values also live here.
-#   - "fields" holds the nodes of that type's fields (map and sequence levels
+#   - "$fields" holds the nodes of that type's fields (map and sequence levels
 #     are unwrapped implicitly).
 #   - Each type is expanded exactly once, at its first occurrence; fields of
 #     types that occur again later (for example everything under "targets")
@@ -35,7 +36,7 @@ artifacts:
         build: poetry build
         path: .
     ```
-  "fields":
+  "$fields":
     "build":
       "description": |-
         An optional set of build commands to run locally before deployment.
@@ -48,7 +49,7 @@ artifacts:
     "files":
       "description": |-
         The relative or absolute path to the built artifact files.
-      "fields":
+      "$fields":
         "source":
           "description": |-
             Required. The artifact source file.
@@ -65,7 +66,7 @@ bundle:
     The bundle attributes when deploying to this target.
   "markdown_description": |-
     The bundle attributes when deploying to this target,
-  "fields":
+  "$fields":
     "cluster_id":
       "description": |-
         The ID of a cluster to use to run the bundle.
@@ -84,14 +85,14 @@ bundle:
         The definition of the bundle deployment
       "markdown_description": |-
         The definition of the bundle deployment. For supported attributes see [\_](/dev-tools/bundles/deployment-modes.md).
-      "fields":
+      "$fields":
         "fail_on_active_runs":
           "description": |-
             Whether to fail on active runs. If this is set to true a deployment that is running can be interrupted.
         "lock":
           "description": |-
             The deployment lock attributes.
-          "fields":
+          "$fields":
             "enabled":
               "description": |-
                 Whether this lock is enabled.
@@ -101,7 +102,7 @@ bundle:
     "engine":
       "description": |-
         The deployment engine to use. Valid values are `terraform` and `direct`. Takes priority over `DATABRICKS_BUNDLE_ENGINE` environment variable. Default is "terraform".
-      "type":
+      "$type":
         "enum":
           - |-
             terraform
@@ -112,7 +113,7 @@ bundle:
         The Git version control details that are associated with your bundle.
       "markdown_description": |-
         The Git version control details that are associated with your bundle. For supported attributes see [\_](/dev-tools/bundles/settings.md#git).
-      "fields":
+      "$fields":
         "branch":
           "description": |-
             The Git branch name.
@@ -137,20 +138,20 @@ environments:
 experimental:
   "description": |-
     Defines attributes for experimental features.
-  "fields":
+  "$fields":
     "pydabs":
       "description": |-
         The PyDABs configuration.
       "deprecation_message": |-
         Deprecated: please use python instead
-      "fields":
+      "$fields":
         "enabled":
           "description": |-
             Whether or not PyDABs (Private Preview) is enabled
     "python":
       "description": |-
         Configures loading of Python code defined with 'databricks-bundles' package.
-      "fields":
+      "$fields":
         "mutators":
           "description": |-
             Mutators contains a list of fully qualified function paths to mutator functions.
@@ -229,11 +230,11 @@ resources:
         <resource-name>:
           <resource-field-name>: <resource-field-value>
     ```
-  "fields":
+  "$fields":
     "alerts":
       "description": |-
         PLACEHOLDER
-      "fields":
+      "$fields":
         "create_time":
           "description": |-
             PLACEHOLDER
@@ -252,13 +253,13 @@ resources:
         "evaluation":
           "description": |-
             PLACEHOLDER
-          "fields":
+          "$fields":
             "notification":
-              "fields":
+              "$fields":
                 "subscriptions":
                   "description": |-
                     PLACEHOLDER
-                  "fields":
+                  "$fields":
                     "destination_id":
                       "description": |-
                         PLACEHOLDER
@@ -266,7 +267,7 @@ resources:
                       "description": |-
                         PLACEHOLDER
             "source":
-              "fields":
+              "$fields":
                 "aggregation":
                   "description": |-
                     PLACEHOLDER
@@ -277,14 +278,14 @@ resources:
                   "description": |-
                     PLACEHOLDER
             "threshold":
-              "fields":
+              "$fields":
                 "column":
                   "description": |-
                     PLACEHOLDER
                 "value":
                   "description": |-
                     PLACEHOLDER
-                  "fields":
+                  "$fields":
                     "bool_value":
                       "description": |-
                         PLACEHOLDER
@@ -338,9 +339,9 @@ resources:
         The app resource defines a Databricks app.
       "markdown_description": |-
         The app resource defines a [Databricks app](/api/workspace/apps/create). For information about Databricks Apps, see [\_](/dev-tools/databricks-apps/index.md).
-      "fields":
+      "$fields":
         "active_deployment":
-          "fields":
+          "$fields":
             "create_time":
               "description": |-
                 PLACEHOLDER
@@ -350,7 +351,7 @@ resources:
             "deployment_artifacts":
               "description": |-
                 PLACEHOLDER
-              "fields":
+              "$fields":
                 "source_code_path":
                   "description": |-
                     PLACEHOLDER
@@ -366,7 +367,7 @@ resources:
             "status":
               "description": |-
                 PLACEHOLDER
-              "fields":
+              "$fields":
                 "message":
                   "description": |-
                     PLACEHOLDER
@@ -379,7 +380,7 @@ resources:
         "app_status":
           "description": |-
             PLACEHOLDER
-          "fields":
+          "$fields":
             "message":
               "description": |-
                 PLACEHOLDER
@@ -401,21 +402,21 @@ resources:
         "compute_status":
           "description": |-
             PLACEHOLDER
-          "fields":
+          "$fields":
             "message":
               "description": |-
                 PLACEHOLDER
         "config":
           "description": |-
             PLACEHOLDER
-          "fields":
+          "$fields":
             "command":
               "description": |-
                 PLACEHOLDER
             "env":
               "description": |-
                 PLACEHOLDER
-              "fields":
+              "$fields":
                 "name":
                   "description": |-
                     PLACEHOLDER
@@ -448,7 +449,7 @@ resources:
         "permissions":
           "description": |-
             PLACEHOLDER
-          "fields":
+          "$fields":
             "group_name":
               "description": |-
                 PLACEHOLDER
@@ -462,11 +463,11 @@ resources:
               "description": |-
                 PLACEHOLDER
         "resources":
-          "fields":
+          "$fields":
             "app":
               "description": |-
                 PLACEHOLDER
-              "fields":
+              "$fields":
                 "name":
                   "description": |-
                     PLACEHOLDER
@@ -476,7 +477,7 @@ resources:
             "database":
               "description": |-
                 PLACEHOLDER
-              "fields":
+              "$fields":
                 "database_name":
                   "description": |-
                     PLACEHOLDER
@@ -489,7 +490,7 @@ resources:
             "experiment":
               "description": |-
                 PLACEHOLDER
-              "fields":
+              "$fields":
                 "experiment_id":
                   "description": |-
                     PLACEHOLDER
@@ -499,7 +500,7 @@ resources:
             "genie_space":
               "description": |-
                 PLACEHOLDER
-              "fields":
+              "$fields":
                 "name":
                   "description": |-
                     PLACEHOLDER
@@ -512,7 +513,7 @@ resources:
             "job":
               "description": |-
                 PLACEHOLDER
-              "fields":
+              "$fields":
                 "id":
                   "description": |-
                     PLACEHOLDER
@@ -522,7 +523,7 @@ resources:
             "postgres":
               "description": |-
                 PLACEHOLDER
-              "fields":
+              "$fields":
                 "branch":
                   "description": |-
                     PLACEHOLDER
@@ -535,7 +536,7 @@ resources:
             "secret":
               "description": |-
                 PLACEHOLDER
-              "fields":
+              "$fields":
                 "key":
                   "description": |-
                     PLACEHOLDER
@@ -548,7 +549,7 @@ resources:
             "serving_endpoint":
               "description": |-
                 PLACEHOLDER
-              "fields":
+              "$fields":
                 "name":
                   "description": |-
                     PLACEHOLDER
@@ -558,7 +559,7 @@ resources:
             "sql_warehouse":
               "description": |-
                 PLACEHOLDER
-              "fields":
+              "$fields":
                 "id":
                   "description": |-
                     PLACEHOLDER
@@ -568,7 +569,7 @@ resources:
             "uc_securable":
               "description": |-
                 PLACEHOLDER
-              "fields":
+              "$fields":
                 "permission":
                   "description": |-
                     PLACEHOLDER
@@ -605,7 +606,7 @@ resources:
     "catalogs":
       "description": |-
         PLACEHOLDER
-      "fields":
+      "$fields":
         "comment":
           "description": |-
             PLACEHOLDER
@@ -619,9 +620,9 @@ resources:
           "description": |-
             PLACEHOLDER
         "managed_encryption_settings":
-          "fields":
+          "$fields":
             "azure_encryption_settings":
-              "fields":
+              "$fields":
                 "azure_cmk_access_connector_id":
                   "description": |-
                     PLACEHOLDER
@@ -654,7 +655,7 @@ resources:
         The cluster definitions for the bundle, where each key is the name of a cluster.
       "markdown_description": |-
         The cluster definitions for the bundle, where each key is the name of a cluster. See [\_](/dev-tools/bundles/resources.md#clusters).
-      "type":
+      "$type":
         "markdown_description": |-
           The cluster resource defines an [all-purpose cluster](/api/workspace/clusters/create).
         "markdown_examples": |-
@@ -683,7 +684,7 @@ resources:
                     notebook_task:
                       notebook_path: "./src/my_notebook.py"
           ```
-      "fields":
+      "$fields":
         "data_security_mode":
           "description": |-
             PLACEHOLDER
@@ -696,7 +697,7 @@ resources:
         "lifecycle":
           "description": |-
             Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
-          "fields":
+          "$fields":
             "prevent_destroy":
               "description": |-
                 Lifecycle setting to prevent the resource from being destroyed.
@@ -706,7 +707,7 @@ resources:
         "permissions":
           "description": |-
             PLACEHOLDER
-          "fields":
+          "$fields":
             "group_name":
               "description": |-
                 PLACEHOLDER
@@ -730,7 +731,7 @@ resources:
         The dashboard definitions for the bundle, where each key is the name of the dashboard.
       "markdown_description": |-
         The dashboard definitions for the bundle, where each key is the name of the dashboard. See [\_](/dev-tools/bundles/resources.md#dashboards).
-      "type":
+      "$type":
         "markdown_description": |-
           The dashboard resource allows you to manage [AI/BI dashboards](/api/workspace/lakeview/create) in a bundle. For information about AI/BI dashboards, see [_](/dashboards/index.md).
         "markdown_examples": |-
@@ -747,7 +748,7 @@ resources:
           If you use the UI to modify the dashboard, modifications made through the UI are not applied to the dashboard JSON file in the local bundle unless you explicitly update it using `bundle generate`. You can use the `--watch` option to continuously poll and retrieve changes to the dashboard. See [_](/dev-tools/cli/bundle-commands.md#generate).
 
           In addition, if you attempt to deploy a bundle that contains a dashboard JSON file that is different than the one in the remote workspace, an error will occur. To force the deploy and overwrite the dashboard in the remote workspace with the local one, use the `--force` option. See [_](/dev-tools/cli/bundle-commands.md#deploy).
-      "fields":
+      "$fields":
         "create_time":
           "description": |-
             The timestamp of when the dashboard was created.
@@ -793,7 +794,7 @@ resources:
         "permissions":
           "description": |-
             PLACEHOLDER
-          "fields":
+          "$fields":
             "group_name":
               "description": |-
                 The name of the group that has the permission set in level.
@@ -824,7 +825,7 @@ resources:
     "database_catalogs":
       "description": |-
         PLACEHOLDER
-      "fields":
+      "$fields":
         "create_database_if_not_exists":
           "description": |-
             PLACEHOLDER
@@ -837,7 +838,7 @@ resources:
     "database_instances":
       "description": |-
         PLACEHOLDER
-      "fields":
+      "$fields":
         "effective_capacity":
           "description": |-
             PLACEHOLDER
@@ -852,7 +853,7 @@ resources:
         The experiment definitions for the bundle, where each key is the name of the experiment.
       "markdown_description": |-
         The experiment definitions for the bundle, where each key is the name of the experiment. See [\_](/dev-tools/bundles/resources.md#experiments).
-      "type":
+      "$type":
         "markdown_description": |-
           The experiment resource allows you to define [MLflow experiments](/api/workspace/experiments/createexperiment) in a bundle. For information about MLflow experiments, see [_](/mlflow/experiments.md).
         "markdown_examples": |-
@@ -868,14 +869,14 @@ resources:
                     group_name: users
                 description: MLflow experiment used to track runs
           ```
-      "fields":
+      "$fields":
         "lifecycle":
           "description": |-
             Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
         "permissions":
           "description": |-
             PLACEHOLDER
-          "fields":
+          "$fields":
             "group_name":
               "description": |-
                 PLACEHOLDER
@@ -891,7 +892,7 @@ resources:
     "external_locations":
       "description": |-
         PLACEHOLDER
-      "fields":
+      "$fields":
         "comment":
           "description": |-
             PLACEHOLDER
@@ -899,11 +900,11 @@ resources:
           "description": |-
             PLACEHOLDER
         "effective_file_event_queue":
-          "fields":
+          "$fields":
             "managed_aqs":
               "description": |-
                 PLACEHOLDER
-              "fields":
+              "$fields":
                 "managed_resource_id":
                   "description": |-
                     PLACEHOLDER
@@ -919,7 +920,7 @@ resources:
             "managed_pubsub":
               "description": |-
                 PLACEHOLDER
-              "fields":
+              "$fields":
                 "managed_resource_id":
                   "description": |-
                     PLACEHOLDER
@@ -929,7 +930,7 @@ resources:
             "managed_sqs":
               "description": |-
                 PLACEHOLDER
-              "fields":
+              "$fields":
                 "managed_resource_id":
                   "description": |-
                     PLACEHOLDER
@@ -951,15 +952,15 @@ resources:
         "encryption_details":
           "description": |-
             PLACEHOLDER
-          "fields":
+          "$fields":
             "sse_encryption_details":
               "description": |-
                 PLACEHOLDER
-              "fields":
+              "$fields":
                 "algorithm":
                   "description": |-
                     PLACEHOLDER
-                  "type":
+                  "$type":
                     "description": |-
                       SSE algorithm to use for encrypting S3 objects
                     "enum":
@@ -997,7 +998,7 @@ resources:
     "genie_spaces":
       "description": |-
         PLACEHOLDER
-      "fields":
+      "$fields":
         "description":
           "description": |-
             Description of the Genie space shown alongside the title in the Databricks UI.
@@ -1030,7 +1031,7 @@ resources:
         The job definitions for the bundle, where each key is the name of the job.
       "markdown_description": |-
         The job definitions for the bundle, where each key is the name of the job. See [\_](/dev-tools/bundles/resources.md#jobs).
-      "type":
+      "$type":
         "markdown_description": |-
           The job resource allows you to define [jobs and their corresponding tasks](/api/workspace/jobs/create) in your bundle. For information about jobs, see [_](/jobs/index.md). For a tutorial that uses a Declarative Automation Bundles template to create a job, see [_](/dev-tools/bundles/jobs-tutorial.md).
         "markdown_examples": |-
@@ -1048,13 +1049,13 @@ resources:
           ```
 
           For information about defining job tasks and overriding job settings, see [_](/dev-tools/bundles/job-task-types.md), [_](/dev-tools/bundles/job-task-override.md), and [_](/dev-tools/bundles/cluster-override.md).
-      "fields":
+      "$fields":
         "environments":
-          "fields":
+          "$fields":
             "spec":
               "description": |-
                 PLACEHOLDER
-              "fields":
+              "$fields":
                 "dependencies":
                   "description": |-
                     List of pip dependencies, as supported by the version of pip in this environment.
@@ -1062,7 +1063,7 @@ resources:
                   "description": |-
                     PLACEHOLDER
         "git_source":
-          "fields":
+          "$fields":
             "git_snapshot":
               "description": |-
                 PLACEHOLDER
@@ -1072,11 +1073,11 @@ resources:
         "health":
           "description": |-
             PLACEHOLDER
-          "fields":
+          "$fields":
             "rules":
               "description": |-
                 PLACEHOLDER
-              "fields":
+              "$fields":
                 "metric":
                   "description": |-
                     PLACEHOLDER
@@ -1084,11 +1085,11 @@ resources:
                   "description": |-
                     PLACEHOLDER
         "job_clusters":
-          "fields":
+          "$fields":
             "new_cluster":
-              "fields":
+              "$fields":
                 "aws_attributes":
-                  "fields":
+                  "$fields":
                     "availability":
                       "description": |-
                         PLACEHOLDER
@@ -1096,12 +1097,12 @@ resources:
                       "description": |-
                         PLACEHOLDER
                 "azure_attributes":
-                  "fields":
+                  "$fields":
                     "availability":
                       "description": |-
                         PLACEHOLDER
                     "log_analytics_info":
-                      "fields":
+                      "$fields":
                         "log_analytics_primary_key":
                           "description": |-
                             The primary key for the Azure Log Analytics agent configuration
@@ -1114,17 +1115,17 @@ resources:
                 "docker_image":
                   "description": |-
                     PLACEHOLDER
-                  "fields":
+                  "$fields":
                     "basic_auth":
                       "description": |-
                         PLACEHOLDER
                 "gcp_attributes":
-                  "fields":
+                  "$fields":
                     "availability":
                       "description": |-
                         PLACEHOLDER
                 "init_scripts":
-                  "fields":
+                  "$fields":
                     "abfss":
                       "description": |-
                         Contains the Azure Data Lake Storage destination path
@@ -1140,14 +1141,14 @@ resources:
         "lifecycle":
           "description": |-
             Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
-          "fields":
+          "$fields":
             "prevent_destroy":
               "description": |-
                 Lifecycle setting to prevent the resource from being destroyed.
         "permissions":
           "description": |-
             PLACEHOLDER
-          "fields":
+          "$fields":
             "group_name":
               "description": |-
                 PLACEHOLDER
@@ -1163,7 +1164,7 @@ resources:
         "run_as":
           "description": |-
             PLACEHOLDER
-          "fields":
+          "$fields":
             "service_principal_name":
               "description": |-
                 The application ID of an active service principal. Setting this field requires the `servicePrincipal/user` role.
@@ -1171,27 +1172,27 @@ resources:
               "description": |-
                 The email of an active workspace user. Non-admin users can only set this field to their own email.
         "tasks":
-          "fields":
+          "$fields":
             "alert_task":
-              "fields":
+              "$fields":
                 "subscribers":
-                  "fields":
+                  "$fields":
                     "destination_id":
                       "description": |-
                         PLACEHOLDER
             "dashboard_task":
-              "fields":
+              "$fields":
                 "dashboard_id":
                   "description": |-
                     PLACEHOLDER
                 "subscription":
                   "description": |-
                     PLACEHOLDER
-                  "fields":
+                  "$fields":
                     "subscribers":
                       "description": |-
                         PLACEHOLDER
-                      "fields":
+                      "$fields":
                         "destination_id":
                           "description": |-
                             PLACEHOLDER
@@ -1204,7 +1205,7 @@ resources:
             "gen_ai_compute_task":
               "description": |-
                 PLACEHOLDER
-              "fields":
+              "$fields":
                 "compute":
                   "description": |-
                     PLACEHOLDER
@@ -1212,9 +1213,9 @@ resources:
               "description": |-
                 PLACEHOLDER
             "python_operator_task":
-              "fields":
+              "$fields":
                 "parameters":
-                  "fields":
+                  "$fields":
                     "name":
                       "description": |-
                         PLACEHOLDER
@@ -1222,19 +1223,19 @@ resources:
                       "description": |-
                         PLACEHOLDER
             "run_job_task":
-              "fields":
+              "$fields":
                 "python_named_params":
                   "description": |-
                     PLACEHOLDER
             "webhook_notifications":
-              "fields":
+              "$fields":
                 "on_duration_warning_threshold_exceeded":
-                  "fields":
+                  "$fields":
                     "id":
                       "description": |-
                         PLACEHOLDER
         "trigger":
-          "fields":
+          "$fields":
             "model":
               "description": |-
                 PLACEHOLDER
@@ -1246,7 +1247,7 @@ resources:
         The model serving endpoint definitions for the bundle, where each key is the name of the model serving endpoint.
       "markdown_description": |-
         The model serving endpoint definitions for the bundle, where each key is the name of the model serving endpoint. See [\_](/dev-tools/bundles/resources.md#model_serving_endpoints).
-      "type":
+      "$type":
         "markdown_description": |-
           The model_serving_endpoint resource allows you to define [model serving endpoints](/api/workspace/servingendpoints/create). See [_](/machine-learning/model-serving/manage-serving-endpoints.md).
         "markdown_examples": |-
@@ -1271,16 +1272,16 @@ resources:
                 - key: "team"
                   value: "data science"
           ```
-      "fields":
+      "$fields":
         "config":
-          "fields":
+          "$fields":
             "served_entities":
-              "fields":
+              "$fields":
                 "entity_version":
                   "description": |-
                     PLACEHOLDER
             "served_models":
-              "fields":
+              "$fields":
                 "model_name":
                   "description": |-
                     PLACEHOLDER
@@ -1288,9 +1289,9 @@ resources:
                   "description": |-
                     PLACEHOLDER
             "traffic_config":
-              "fields":
+              "$fields":
                 "routes":
-                  "fields":
+                  "$fields":
                     "served_entity_name":
                       "description": |-
                         PLACEHOLDER
@@ -1303,7 +1304,7 @@ resources:
         "permissions":
           "description": |-
             PLACEHOLDER
-          "fields":
+          "$fields":
             "group_name":
               "description": |-
                 PLACEHOLDER
@@ -1321,17 +1322,17 @@ resources:
         The model definitions for the bundle, where each key is the name of the model.
       "markdown_description": |-
         The model definitions for the bundle, where each key is the name of the model. See [\_](/dev-tools/bundles/resources.md#models).
-      "type":
+      "$type":
         "markdown_description": |-
           The model resource allows you to define [legacy models](/api/workspace/modelregistry/createmodel) in bundles. Databricks recommends you use Unity Catalog [registered models](#registered-model) instead.
-      "fields":
+      "$fields":
         "lifecycle":
           "description": |-
             Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
         "permissions":
           "description": |-
             PLACEHOLDER
-          "fields":
+          "$fields":
             "group_name":
               "description": |-
                 PLACEHOLDER
@@ -1349,7 +1350,7 @@ resources:
         The pipeline definitions for the bundle, where each key is the name of the pipeline.
       "markdown_description": |-
         The pipeline definitions for the bundle, where each key is the name of the pipeline. See [\_](/dev-tools/bundles/resources.md#pipelines).
-      "type":
+      "$type":
         "markdown_description": |-
           This resource allows you to create [pipelines](/api/workspace/pipelines/create). For information about pipelines, see [_](/dlt/index.md). For a tutorial that uses the Declarative Automation Bundles template to create a pipeline, see [_](/dev-tools/bundles/pipelines-tutorial.md).
         "markdown_examples": |-
@@ -1372,39 +1373,39 @@ resources:
                   - notebook:
                       path: ./pipeline.py
           ```
-      "fields":
+      "$fields":
         "dry_run":
           "description": |-
             PLACEHOLDER
         "ingestion_definition":
-          "fields":
+          "$fields":
             "netsuite_jar_path":
               "description": |-
                 PLACEHOLDER
             "objects":
-              "fields":
+              "$fields":
                 "report":
-                  "fields":
+                  "$fields":
                     "table_configuration":
-                      "fields":
+                      "$fields":
                         "workday_report_parameters":
                           "description": |-
                             PLACEHOLDER
                 "schema":
-                  "fields":
+                  "$fields":
                     "connector_options":
-                      "fields":
+                      "$fields":
                         "gdrive_options":
                           "description": |-
                             PLACEHOLDER
-                          "fields":
+                          "$fields":
                             "entity_type":
                               "description": |-
                                 PLACEHOLDER
                             "file_ingestion_options":
                               "description": |-
                                 PLACEHOLDER
-                              "fields":
+                              "$fields":
                                 "corrupt_record_column":
                                   "description": |-
                                     PLACEHOLDER
@@ -1423,9 +1424,9 @@ resources:
                         "kafka_options":
                           "description": |-
                             PLACEHOLDER
-                          "fields":
+                          "$fields":
                             "key_transformer":
-                              "fields":
+                              "$fields":
                                 "json_options":
                                   "description": |-
                                     PLACEHOLDER
@@ -1433,12 +1434,12 @@ resources:
                           "description": |-
                             PLACEHOLDER
             "source_configurations":
-              "fields":
+              "$fields":
                 "google_ads_config":
                   "description": |-
                     PLACEHOLDER
         "libraries":
-          "fields":
+          "$fields":
             "whl":
               "deprecation_message": |-
                 This field is deprecated
@@ -1451,7 +1452,7 @@ resources:
         "permissions":
           "description": |-
             PLACEHOLDER
-          "fields":
+          "$fields":
             "group_name":
               "description": |-
                 PLACEHOLDER
@@ -1470,11 +1471,11 @@ resources:
         "trigger":
           "deprecation_message": |-
             Use continuous instead
-          "fields":
+          "$fields":
             "cron":
               "description": |-
                 PLACEHOLDER
-              "fields":
+              "$fields":
                 "quartz_cron_schedule":
                   "description": |-
                     PLACEHOLDER
@@ -1487,7 +1488,7 @@ resources:
     "postgres_branches":
       "description": |-
         PLACEHOLDER
-      "fields":
+      "$fields":
         "branch_id":
           "description": |-
             PLACEHOLDER
@@ -1524,7 +1525,7 @@ resources:
     "postgres_catalogs":
       "description": |-
         The Postgres catalog definitions for the bundle, where each key is the name of the catalog. Each entry binds a Unity Catalog catalog to a Postgres database on a Lakebase Autoscaling branch.
-      "fields":
+      "$fields":
         "branch":
           "description": |-
             PLACEHOLDER
@@ -1543,7 +1544,7 @@ resources:
     "postgres_endpoints":
       "description": |-
         PLACEHOLDER
-      "fields":
+      "$fields":
         "autoscaling_limit_max_cu":
           "description": |-
             PLACEHOLDER
@@ -1583,7 +1584,7 @@ resources:
     "postgres_projects":
       "description": |-
         PLACEHOLDER
-      "fields":
+      "$fields":
         "budget_policy_id":
           "description": |-
             PLACEHOLDER
@@ -1623,7 +1624,7 @@ resources:
     "postgres_synced_tables":
       "description": |-
         The Postgres synced table definitions for the bundle, where each key is the name of the synced table. Each entry continuously replicates a Unity Catalog Delta source table into a Postgres table on a Lakebase Autoscaling instance.
-      "fields":
+      "$fields":
         "branch":
           "description": |-
             PLACEHOLDER
@@ -1662,7 +1663,7 @@ resources:
         The quality monitor definitions for the bundle, where each key is the name of the quality monitor.
       "markdown_description": |-
         The quality monitor definitions for the bundle, where each key is the name of the quality monitor. See [\_](/dev-tools/bundles/resources.md#quality_monitors).
-      "type":
+      "$type":
         "markdown_description": |-
           The quality_monitor resource allows you to define a Unity Catalog [table monitor](/api/workspace/qualitymonitors/create). For information about monitors, see [_](/machine-learning/model-serving/monitor-diagnose-endpoints.md).
         "markdown_examples": |-
@@ -1686,11 +1687,11 @@ resources:
                   quartz_cron_expression: 0 0 8 * * ? # Run Every day at 8am
                   timezone_id: UTC
           ```
-      "fields":
+      "$fields":
         "inference_log":
           "description": |-
             PLACEHOLDER
-          "fields":
+          "$fields":
             "granularities":
               "description": |-
                 Granularities for aggregating data into time windows based on their timestamp. Valid values are 5 minutes, 30 minutes, 1 hour, 1 day, n weeks, 1 month, or 1 year.
@@ -1701,7 +1702,7 @@ resources:
           "description": |-
             PLACEHOLDER
         "time_series":
-          "fields":
+          "$fields":
             "granularities":
               "description": |-
                 Granularities for aggregating data into time windows based on their timestamp. Valid values are 5 minutes, 30 minutes, 1 hour, 1 day, n weeks, 1 month, or 1 year.
@@ -1710,7 +1711,7 @@ resources:
         The registered model definitions for the bundle, where each key is the name of the Unity Catalog registered model.
       "markdown_description": |-
         The registered model definitions for the bundle, where each key is the name of the Unity Catalog registered model. See [\_](/dev-tools/bundles/resources.md#registered_models)
-      "type":
+      "$type":
         "markdown_description": |-
           The registered model resource allows you to define models in Unity Catalog. For information about Unity Catalog [registered models](/api/workspace/registeredmodels/create), see [_](/machine-learning/manage-model-lifecycle/index.md).
         "markdown_examples": |-
@@ -1729,11 +1730,11 @@ resources:
                         - EXECUTE
                       principal: account users
           ```
-      "fields":
+      "$fields":
         "aliases":
           "description": |-
             PLACEHOLDER
-          "fields":
+          "$fields":
             "catalog_name":
               "description": |-
                 PLACEHOLDER
@@ -1781,7 +1782,7 @@ resources:
         The schema definitions for the bundle, where each key is the name of the schema.
       "markdown_description": |-
         The schema definitions for the bundle, where each key is the name of the schema. See [\_](/dev-tools/bundles/resources.md#schemas).
-      "type":
+      "$type":
         "markdown_description": |-
           The schema resource type allows you to define Unity Catalog [schemas](/api/workspace/schemas/create) for tables and other assets in your jobs and pipelines created as part of a bundle. A schema, different from other resource types, has the following limitations:
 
@@ -1827,7 +1828,7 @@ resources:
                       - CAN_READ
                 catalog_name: main
             ```
-      "fields":
+      "$fields":
         "grants":
           "description": |-
             PLACEHOLDER
@@ -1842,7 +1843,7 @@ resources:
         The secret scope definitions for the bundle, where each key is the name of the secret scope.
       "markdown_description": |-
         The secret scope definitions for the bundle, where each key is the name of the secret scope. See [\_](/dev-tools/bundles/resources.md#secret_scopes).
-      "fields":
+      "$fields":
         "backend_type":
           "description": |-
             The backend type the scope will be created with. If not specified, will default to `DATABRICKS`
@@ -1858,14 +1859,14 @@ resources:
         "permissions":
           "description": |-
             The permissions to apply to the secret scope. Permissions are managed via secret scope ACLs.
-          "fields":
+          "$fields":
             "group_name":
               "description": |-
                 The name of the group that has the permission set in level. This field translates to a `principal` field in secret scope ACL.
             "level":
               "description": |-
                 The allowed permission for user, group, service principal defined for this permission.
-              "type":
+              "$type":
                 "enum":
                   - |-
                     READ
@@ -1884,9 +1885,9 @@ resources:
         The SQL warehouse definitions for the bundle, where each key is the name of the warehouse.
       "markdown_description": |-
         The SQL warehouse definitions for the bundle, where each key is the name of the warehouse. See [\_](/dev-tools/bundles/resources.md#sql_warehouses).
-      "fields":
+      "$fields":
         "channel":
-          "fields":
+          "$fields":
             "dbsql_version":
               "description": |-
                 PLACEHOLDER
@@ -1904,7 +1905,7 @@ resources:
         "permissions":
           "description": |-
             PLACEHOLDER
-          "fields":
+          "$fields":
             "group_name":
               "description": |-
                 PLACEHOLDER
@@ -1921,11 +1922,11 @@ resources:
           "description": |-
             PLACEHOLDER
         "tags":
-          "fields":
+          "$fields":
             "custom_tags":
               "description": |-
                 PLACEHOLDER
-              "fields":
+              "$fields":
                 "key":
                   "description": |-
                     PLACEHOLDER
@@ -1938,13 +1939,13 @@ resources:
     "synced_database_tables":
       "description": |-
         PLACEHOLDER
-      "fields":
+      "$fields":
         "data_synchronization_status":
           "description": |-
             PLACEHOLDER
-          "fields":
+          "$fields":
             "last_sync":
-              "fields":
+              "$fields":
                 "delta_table_sync_info":
                   "description": |-
                     PLACEHOLDER
@@ -1975,7 +1976,7 @@ resources:
     "vector_search_endpoints":
       "description": |-
         PLACEHOLDER
-      "fields":
+      "$fields":
         "budget_policy_id":
           "description": |-
             PLACEHOLDER
@@ -2000,18 +2001,18 @@ resources:
     "vector_search_indexes":
       "description": |-
         PLACEHOLDER
-      "fields":
+      "$fields":
         "delta_sync_index_spec":
           "description": |-
             PLACEHOLDER
-          "fields":
+          "$fields":
             "columns_to_sync":
               "description": |-
                 PLACEHOLDER
             "embedding_source_columns":
               "description": |-
                 PLACEHOLDER
-              "fields":
+              "$fields":
                 "embedding_model_endpoint_name":
                   "description": |-
                     PLACEHOLDER
@@ -2024,7 +2025,7 @@ resources:
             "embedding_vector_columns":
               "description": |-
                 PLACEHOLDER
-              "fields":
+              "$fields":
                 "embedding_dimension":
                   "description": |-
                     PLACEHOLDER
@@ -2043,7 +2044,7 @@ resources:
         "direct_access_index_spec":
           "description": |-
             PLACEHOLDER
-          "fields":
+          "$fields":
             "embedding_source_columns":
               "description": |-
                 PLACEHOLDER
@@ -2079,7 +2080,7 @@ resources:
         The volume definitions for the bundle, where each key is the name of the volume.
       "markdown_description": |-
         The volume definitions for the bundle, where each key is the name of the volume. See [\_](/dev-tools/bundles/resources.md#volumes).
-      "type":
+      "$type":
         "markdown_description": |-
           The volume resource type allows you to define and create Unity Catalog [volumes](/api/workspace/volumes/create) as part of a bundle. When deploying a bundle with a volume defined, note that:
 
@@ -2099,7 +2100,7 @@ resources:
           ```
 
           For an example bundle that runs a job that writes to a file in Unity Catalog volume, see the [bundle-examples GitHub repository](https://github.com/databricks/bundle-examples/tree/main/knowledge_base/write_from_job_to_volume).
-      "fields":
+      "$fields":
         "grants":
           "description": |-
             PLACEHOLDER
@@ -2117,7 +2118,7 @@ run_as:
 scripts:
   "description": |-
     PLACEHOLDER
-  "fields":
+  "$fields":
     "content":
       "description": |-
         PLACEHOLDER
@@ -2131,7 +2132,7 @@ targets:
     Defines deployment targets for the bundle.
   "markdown_description": |-
     Defines deployment targets for the bundle. See [\_](/dev-tools/bundles/settings.md#targets)
-  "fields":
+  "$fields":
     "artifacts":
       "description": |-
         The artifacts to include in the target deployment.
@@ -2163,7 +2164,7 @@ targets:
     "presets":
       "description": |-
         The deployment presets for the target.
-      "fields":
+      "$fields":
         "artifacts_dynamic_version":
           "description": |-
             Whether to enable dynamic_version on all artifacts.
@@ -2196,7 +2197,7 @@ targets:
     "sync":
       "description": |-
         The local paths to sync to the target workspace when a bundle is run or deployed.
-      "fields":
+      "$fields":
         "exclude":
           "description": |-
             A list of files or folders to exclude from the bundle.
@@ -2209,7 +2210,7 @@ targets:
     "variables":
       "description": |-
         The custom variable definitions for the target.
-      "fields":
+      "$fields":
         "default":
           "description": |-
             The default value for the variable.
@@ -2228,12 +2229,12 @@ targets:
 variables:
   "description": |-
     A Map that defines the custom variables for the bundle, where each key is the name of the variable, and the value is a Map that defines the variable.
-  "type":
+  "$type":
     "description": |-
       Defines a custom variable for the bundle.
     "markdown_description": |-
       Defines a custom variable for the bundle. See [\_](/dev-tools/bundles/settings.md#variables).
-  "fields":
+  "$fields":
     "default":
       "description": |-
         The default value for the variable.
@@ -2245,7 +2246,7 @@ variables:
         The name of the alert, cluster_policy, cluster, dashboard, instance_pool, job, metastore, pipeline, query, service_principal, or warehouse object for which to retrieve an ID.
       "markdown_description": |-
         The name of the `alert`, `cluster_policy`, `cluster`, `dashboard`, `instance_pool`, `job`, `metastore`, `pipeline`, `query`, `service_principal`, or `warehouse` object for which to retrieve an ID.
-      "fields":
+      "$fields":
         "alert":
           "description": |-
             The name of the alert for which to retrieve an ID.
@@ -2290,7 +2291,7 @@ workspace:
     Defines the Databricks workspace for the bundle.
   "markdown_description": |-
     Defines the Databricks workspace for the bundle. See [\_](/dev-tools/bundles/settings.md#workspace).
-  "fields":
+  "$fields":
     "account_id":
       "description": |-
         The Databricks account ID.
