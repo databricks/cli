@@ -12,6 +12,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/config/variable"
+	"github.com/databricks/cli/internal/clijson"
 	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/jsonschema"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -208,12 +209,18 @@ func main() {
 func generateSchema(workdir, outputFile, cliJSONFile string, docsMode bool) {
 	annotationsPath := filepath.Join(workdir, "annotations.yml")
 
-	schemas, err := parseCliJSON(cliJSONFile)
+	// The cli.json schema graph is keyed by SDK type name (e.g.
+	// "jobs.JobSettings"); the annotation parser matches Go SDK types against
+	// those keys directly.
+	doc, err := clijson.Parse(cliJSONFile)
 	if err != nil {
 		log.Fatal(err)
 	}
+	if len(doc.Schemas) == 0 {
+		log.Fatalf("no schemas found in %s", cliJSONFile)
+	}
 
-	extracted, err := newParser(schemas).extractAnnotations(reflect.TypeFor[config.Root]())
+	extracted, err := newParser(doc.Schemas).extractAnnotations(reflect.TypeFor[config.Root]())
 	if err != nil {
 		log.Fatal(err)
 	}
