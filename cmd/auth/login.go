@@ -269,6 +269,7 @@ a new profile is created.
 				profileName:     profileName,
 				timeout:         loginTimeout,
 				scopes:          scopes,
+				skipWorkspace:   skipWorkspace,
 				existingProfile: existingProfile,
 				browserFunc:     getBrowserFunc(cmd),
 				tokenStore:      tokenStore,
@@ -635,6 +636,7 @@ type discoveryLoginInputs struct {
 	profileName     string
 	timeout         time.Duration
 	scopes          string
+	skipWorkspace   bool
 	existingProfile *profile.Profile
 	browserFunc     func(string) error
 	tokenStore      storage.Store
@@ -663,6 +665,12 @@ func discoveryLogin(ctx context.Context, in discoveryLoginInputs) error {
 	}
 	if len(scopesList) > 0 {
 		opts = append(opts, u2m.WithScopes(scopesList))
+	}
+	// --skip-workspace lands the user on the account selector at
+	// login.databricks.com instead of the workspace selector, which is a
+	// wasted step for account-only logins.
+	if in.skipWorkspace {
+		opts = append(opts, u2m.WithDiscoveryAccountTarget())
 	}
 	discoveryHost := env.Get(ctx, discoveryHostEnvVar)
 	if discoveryHost != "" {
