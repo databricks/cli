@@ -19,6 +19,13 @@ import (
 
 const defaultGatewayPort = "2222"
 
+// sshConnectTimeoutSecs caps the TCP+SSH handshake. Once the channel is
+// up the timeout no longer applies, so a long-lived interactive session
+// is not affected; only an unreachable gateway (region not enabled,
+// firewall, etc.) is bounded, which would otherwise hang behind ssh's
+// default ~75s connect timeout.
+const sshConnectTimeoutSecs = 10
+
 func newSSHCommand() *cobra.Command {
 	var gatewayPort string
 
@@ -289,6 +296,7 @@ func buildSSHArgs(sandboxID, host, port, keyPath string, extraArgs []string) []s
 		"-o", "StrictHostKeyChecking=no",
 		"-o", "UserKnownHostsFile=/dev/null",
 		"-o", "LogLevel=ERROR",
+		"-o", fmt.Sprintf("ConnectTimeout=%d", sshConnectTimeoutSecs),
 		fmt.Sprintf("%s@%s", sandboxID, host),
 	}
 	if len(extraArgs) == 1 {
