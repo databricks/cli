@@ -1,0 +1,18 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+trace $CLI bundle deploy
+
+# The backend (and the test server) rewrite the schema on create, so
+# get-index returns Spark type names and sorted keys, not the config literal.
+index_name="main.default.vs_index_${UNIQUE_NAME}"
+trace $CLI vector-search-indexes get-index "${index_name}" | jq -r '.direct_access_index_spec.schema_json'
+
+# Re-plan must be a no-op: remote changes to schema_json are ignored
+# (ignore_remote_changes), so the immutable spec does not plan a recreate.
+trace $CLI bundle plan
