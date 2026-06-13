@@ -73,9 +73,13 @@ func LoadPlanFromFile(path string) (*Plan, error) {
 }
 
 type PlanEntry struct {
-	ID          string                   `json:"id,omitempty"`
-	DependsOn   []DependsOnEntry         `json:"depends_on,omitempty"`
-	Action      ActionType               `json:"action,omitempty"`
+	ID        string           `json:"id,omitempty"`
+	DependsOn []DependsOnEntry `json:"depends_on,omitempty"`
+	Action    ActionType       `json:"action,omitempty"`
+	// Gone is set on Delete entries when planning confirmed the resource no longer
+	// exists remotely. Applying such an entry only removes it from the state, without
+	// calling the delete API, and approval prompts do not list it as a deletion.
+	Gone        bool                     `json:"gone,omitempty"`
 	NewState    *structvar.StructVarJSON `json:"new_state,omitempty"`
 	RemoteState any                      `json:"remote_state,omitempty"`
 	Changes     Changes                  `json:"changes,omitempty"`
@@ -152,6 +156,7 @@ func (p *Plan) GetActions() []Action {
 		actions = append(actions, Action{
 			ResourceKey: key,
 			ActionType:  entry.Action,
+			Gone:        entry.Gone,
 		})
 	}
 
@@ -193,12 +198,6 @@ func (p *Plan) ReadUnlockEntry(resourceKey string) {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
 	p.lockmap.RUnlock(resourceKey)
-}
-
-func (p *Plan) RemoveEntry(resourceKey string) {
-	p.mutex.Lock()
-	defer p.mutex.Unlock()
-	delete(p.Plan, resourceKey)
 }
 
 // FilterToSelected reduces the plan to the nodes in selected (format "type.name",

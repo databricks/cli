@@ -1,0 +1,16 @@
+
+>>> [CLI] bundle summary
+Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+Resources:
+  Jobs:
+    foo:
+      Name: 
+      URL:  [DATABRICKS_URL]/jobs/[NUMID]?w=[NUMID]
+  Pipelines:
+    bar:
+      Name: 
+      URL:  [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]

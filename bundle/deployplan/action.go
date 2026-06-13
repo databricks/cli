@@ -9,6 +9,9 @@ type Action struct {
 	// Full resource key, e.g. "resources.jobs.foo" or "resources.jobs.foo.permissions"
 	ResourceKey string
 	ActionType  ActionType
+	// Gone mirrors PlanEntry.Gone: the delete is a state-only cleanup because the
+	// resource no longer exists remotely.
+	Gone bool
 }
 
 func (a Action) String() string {

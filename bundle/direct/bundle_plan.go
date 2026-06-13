@@ -162,8 +162,10 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			})
 			if err != nil {
 				if isResourceGone(err) {
-					// no such resource
-					plan.RemoveEntry(resourceKey)
+					// The resource is already deleted remotely. Keep the Delete entry so
+					// that applying it removes the stale state entry, but mark it Gone so
+					// apply skips the delete call and prompts don't list it as a deletion.
+					entry.Gone = true
 				} else {
 					log.Warnf(ctx, "reading %s id=%q: %s", resourceKey, id, err)
 					// This is not an error during deletion, so don't return false here
