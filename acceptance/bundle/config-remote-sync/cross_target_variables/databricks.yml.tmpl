@@ -1,0 +1,55 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+variables:
+  # Root default: resolvable in every target, so sync may introduce
+  # references to it anywhere.
+  region:
+    default: us-west-1
+  # No root default, but assigned in every target: also resolvable everywhere.
+  etl_schema:
+    description: Schema name, assigned in every target
+  # No root default and only assigned in dev: other targets cannot resolve it,
+  # so sync must not introduce ${var.dev_catalog} outside the dev section.
+  dev_catalog:
+    description: Catalog name, assigned only in the dev target
+  # Same shape as dev_catalog; referenced from the dev override section where
+  # dev-only variables are allowed.
+  dev_label:
+    description: Cost center tag, assigned only in the dev target
+
+resources:
+  jobs:
+    my_job:
+      name: test-job-$UNIQUE_NAME
+      parameters:
+        - name: region
+          default: ${var.region}
+        - name: schema
+          default: ${var.etl_schema}
+        - name: catalog
+          default: ${var.dev_catalog}
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/notebook
+          new_cluster:
+            spark_version: $DEFAULT_SPARK_VERSION
+            node_type_id: $NODE_TYPE_ID
+            num_workers: 1
+
+targets:
+  dev:
+    default: true
+    variables:
+      etl_schema: dev_schema
+      dev_catalog: dev_data
+      dev_label: dev-team
+    resources:
+      jobs:
+        my_job:
+          tags:
+            costcenter: ${var.dev_label}
+  prod:
+    variables:
+      etl_schema: prod_schema

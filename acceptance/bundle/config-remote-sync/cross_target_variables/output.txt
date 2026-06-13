@@ -1,0 +1,57 @@
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/dev/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Modify job remotely
+
+=== Detect and save changes
+Detected changes in 1 resource(s):
+
+Resource: resources.jobs.my_job
+  parameters[name='catalog_copy']: add
+  parameters[name='data_region']: add
+  parameters[name='region'].default: replace
+  parameters[name='schema_copy']: add
+  tags['costcenter']: replace
+
+
+
+=== Configuration changes
+
+>>> diff.py databricks.yml.backup databricks.yml
+--- databricks.yml.backup
++++ databricks.yml
+@@ -25,9 +25,15 @@
+       parameters:
+         - name: region
+-          default: ${var.region}
++          default: dev_data
+         - name: schema
+           default: ${var.etl_schema}
+         - name: catalog
+           default: ${var.dev_catalog}
++        - default: dev_data
++          name: catalog_copy
++        - default: ${var.region}
++          name: data_region
++        - default: ${var.etl_schema}
++          name: schema_copy
+       tasks:
+         - task_key: main
+@@ -50,5 +56,5 @@
+         my_job:
+           tags:
+-            costcenter: ${var.dev_label}
++            costcenter: ${var.dev_catalog}
+   prod:
+     variables:
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.my_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/dev
+
+Deleting files...
+Destroy complete!
