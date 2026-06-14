@@ -91,6 +91,43 @@ Exit code: 1
 
 >>> print_requests.py //lakeview/dashboards
 
+>>> [CLI] bundle deploy --force
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-publish-failure-stale-content/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] lakeview get [DASHBOARD1_ID]
+{
+  "display_name": "my dashboard renamed",
+  "etag": "[ETAG_3]"
+}
+
+>>> [CLI] lakeview get-published [DASHBOARD1_ID]
+{
+  "display_name": "my dashboard renamed"
+}
+
+>>> print_requests.py //lakeview/dashboards
+{
+  "method": "PATCH",
+  "path": "/api/2.0/lakeview/dashboards/[DASHBOARD1_ID]",
+  "body": {
+    "display_name": "my dashboard renamed",
+    "parent_path": "/Workspace/Users/[USERNAME]/.bundle/update-publish-failure-stale-content/default/resources",
+    "serialized_dashboard": "{\"pages\":[{\"name\":\"test-page\",\"displayName\":\"Test Dashboard\"}]}\n",
+    "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/lakeview/dashboards/[DASHBOARD1_ID]/published",
+  "body": {
+    "embed_credentials": false,
+    "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
+  }
+}
+
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.dashboards.dashboard1
