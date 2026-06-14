@@ -384,9 +384,9 @@ func (a *Adapter) IsFieldInRecreateOnChanges(path *structpath.PathNode) bool {
 			return true
 		}
 	}
-	// NamedIDFields also trigger recreate on local changes, so they give the same
+	// ProvidedIDFields also trigger recreate on local changes, so they give the same
 	// guarantee to callers: if the action keeps the ID, the field is unchanged.
-	for _, p := range a.resourceConfig.NamedIDFields {
+	for _, p := range a.resourceConfig.ProvidedIDFields {
 		if path.HasPatternPrefix(p.Field) {
 			return true
 		}

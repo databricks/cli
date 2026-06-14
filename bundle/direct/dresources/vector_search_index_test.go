@@ -24,8 +24,8 @@ func TestVectorSearchIndexAllSDKFieldsAreClassified(t *testing.T) {
 	for _, field := range config.RecreateOnChanges {
 		classified[field.Field.String()] = true
 	}
-	// named_id_fields also recreate on local changes, so they are classified.
-	for _, field := range config.NamedIDFields {
+	// provided_id_fields also recreate on local changes, so they are classified.
+	for _, field := range config.ProvidedIDFields {
 		classified[field.Field.String()] = true
 	}
 	for _, field := range config.IgnoreRemoteChanges {
@@ -42,7 +42,7 @@ func TestVectorSearchIndexAllSDKFieldsAreClassified(t *testing.T) {
 		assert.Truef(t, classified[jsonTag],
 			"field %q is not declared in resources.yml under vector_search_indexes; "+
 				"vector_search_indexes has no update API, so every SDK field must be in "+
-				"recreate_on_changes, named_id_fields or ignore_remote_changes",
+				"recreate_on_changes, provided_id_fields or ignore_remote_changes",
 			jsonTag,
 		)
 	}

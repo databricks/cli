@@ -3,11 +3,11 @@
 #
 # Available options:
 #   recreate_on_changes: fields that trigger delete + create
-#   named_id_fields: fields composing the name-based ID the resource is fetched by.
+#   provided_id_fields: fields composing the name-based ID the resource is fetched by.
 #     Local changes trigger delete + create. Remote-only differences are skipped:
 #     a successful get-by-ID means a differing remote value can only be backend
 #     normalization; a real out-of-band rename would 404 (handled as resource-gone).
-#   update_id_on_changes: like named_id_fields, but a local change triggers
+#   update_id_on_changes: like provided_id_fields, but a local change triggers
 #     UpdateWithID (rename; the ID changes) instead of delete + create. Remote-only
 #     differences are skipped the same way (only local changes act).
 #   ignore_remote_changes: fields where remote changes are ignored
@@ -182,7 +182,7 @@ resources:
       - field: event_log.schema
 
   models:
-    named_id_fields:
+    provided_id_fields:
       # Recreate matches current behavior of Terraform. It is possible to rename without recreate
       # but that would require dynamic select of the method during update since
       # the ml.RenameModel needs to be called instead of ml.UpdateModel.
@@ -220,7 +220,7 @@ resources:
 
   # TF implementation: https://github.com/databricks/terraform-provider-databricks/blob/6c106e8e7052bb2726148d66309fd460ed444236/mlflow/resource_mlflow_experiment.go#L22
   model_serving_endpoints:
-    named_id_fields:
+    provided_id_fields:
       - field: name
         reason: id_field
     recreate_on_changes:
@@ -281,7 +281,7 @@ resources:
         reason: output_only
       - field: updated_by
         reason: output_only
-    named_id_fields:
+    provided_id_fields:
       # The name can technically be updated without recreate. We recreate for now though
       # to match TF implementation.
       - field: name
@@ -303,7 +303,7 @@ resources:
       - field: metastore_id
 
   quality_monitors:
-    named_id_fields:
+    provided_id_fields:
       - field: table_name
         reason: id_field
     recreate_on_changes:
@@ -332,7 +332,7 @@ resources:
         reason: id_changes
 
   schemas:
-    named_id_fields:
+    provided_id_fields:
       - field: name
         reason: id_field
       - field: catalog_name
@@ -373,7 +373,7 @@ resources:
         reason: input_only
 
   volumes:
-    named_id_fields:
+    provided_id_fields:
       - field: catalog_name
         reason: id_field
       - field: schema_name
@@ -426,22 +426,22 @@ resources:
         reason: etag_based
 
   database_instances:
-    named_id_fields:
+    provided_id_fields:
       - field: name
         reason: id_field
 
   database_catalogs:
-    named_id_fields:
+    provided_id_fields:
       - field: name
         reason: id_field
 
   synced_database_tables:
-    named_id_fields:
+    provided_id_fields:
       - field: name
         reason: id_field
 
   apps:
-    named_id_fields:
+    provided_id_fields:
       - field: name
         reason: id_field
     backend_defaults:
@@ -467,7 +467,7 @@ resources:
       # The Secrets API defaults scope_backend_type to DATABRICKS when not specified.
       - field: scope_backend_type
         values: ["DATABRICKS"]
-    named_id_fields:
+    provided_id_fields:
       - field: scope
         reason: id_field
     recreate_on_changes:
@@ -575,7 +575,7 @@ resources:
       - field: enable_serverless_compute
 
   postgres_projects:
-    named_id_fields:
+    provided_id_fields:
       # project_id is immutable (part of hierarchical name, not in API spec)
       - field: project_id
         reason: id_field
@@ -587,7 +587,7 @@ resources:
         reason: input_only
 
   postgres_branches:
-    named_id_fields:
+    provided_id_fields:
       # parent and branch_id are immutable (part of hierarchical name, not in API spec)
       - field: parent
         reason: id_field
@@ -603,7 +603,7 @@ resources:
         reason: "input_only; cannot be updated after create"
 
   postgres_endpoints:
-    named_id_fields:
+    provided_id_fields:
       # parent and endpoint_id are immutable (part of hierarchical name, not in API spec)
       - field: parent
         reason: id_field
@@ -619,7 +619,7 @@ resources:
         reason: "input_only; cannot be updated after create"
 
   postgres_catalogs:
-    named_id_fields:
+    provided_id_fields:
       # catalog_id is part of the hierarchical name and immutable.
       - field: catalog_id
         reason: id_field
@@ -641,7 +641,7 @@ resources:
     # drift for the same fields because the GET API does not echo back the
     # spec. Together they make no-op deploys idempotent while a real config
     # edit still triggers a recreate. Same pattern as secret_scopes.
-    named_id_fields:
+    provided_id_fields:
       - field: synced_table_id
         reason: id_field
     recreate_on_changes:
@@ -684,7 +684,7 @@ resources:
         reason: immutable
 
   vector_search_endpoints:
-    named_id_fields:
+    provided_id_fields:
       # The endpoint API has no rename; the endpoint is fetched by name.
       - field: name
         reason: id_field
@@ -698,7 +698,7 @@ resources:
         reason: effective_vs_requested
 
   vector_search_indexes:
-    named_id_fields:
+    provided_id_fields:
       - field: name
         reason: id_field
     recreate_on_changes:

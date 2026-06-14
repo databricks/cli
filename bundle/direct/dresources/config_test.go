@@ -33,7 +33,7 @@ func categoryRules(c ResourceLifecycleConfig) []struct {
 		{"ignore_remote_changes", c.IgnoreRemoteChanges},
 		{"ignore_local_changes", c.IgnoreLocalChanges},
 		{"recreate_on_changes", c.RecreateOnChanges},
-		{"named_id_fields", c.NamedIDFields},
+		{"provided_id_fields", c.ProvidedIDFields},
 		{"update_id_on_changes", c.UpdateIDOnChanges},
 		{"backend_defaults", backendAsFieldRules},
 	}
