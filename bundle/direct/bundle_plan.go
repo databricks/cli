@@ -450,7 +450,7 @@ func shouldSkip(cfg *dresources.ResourceLifecycleConfig, path *structpath.PathNo
 // name-based ID. The resource was just fetched by that ID, so a differing remote
 // value can only be backend normalization (e.g. UC lowercasing) — a real
 // out-of-band rename would 404 and is handled as resource-gone. Local changes
-// fall through to Recreate (named_id_fields) or UpdateWithID
+// fall through to Recreate (provided_id_fields) or UpdateWithID
 // (update_id_on_changes) in shouldUpdateOrRecreate.
 func shouldSkipIDField(cfg *dresources.ResourceLifecycleConfig, path *structpath.PathNode, ch *deployplan.ChangeDesc) (string, bool) {
 	if cfg == nil {
@@ -459,7 +459,7 @@ func shouldSkipIDField(cfg *dresources.ResourceLifecycleConfig, path *structpath
 	if !structdiff.IsEqual(ch.Old, ch.New) {
 		return "", false
 	}
-	if reason, ok := findMatchingRule(path, cfg.NamedIDFields); ok {
+	if reason, ok := findMatchingRule(path, cfg.ProvidedIDFields); ok {
 		return reason, true
 	}
 	if reason, ok := findMatchingRule(path, cfg.UpdateIDOnChanges); ok {
@@ -499,7 +499,7 @@ func shouldUpdateOrRecreate(cfg *dresources.ResourceLifecycleConfig, path *struc
 		return deployplan.Recreate, reason
 	}
 	// Local changes only: remote-only diffs on these were already skipped by shouldSkipIDField.
-	if reason, ok := findMatchingRule(path, cfg.NamedIDFields); ok {
+	if reason, ok := findMatchingRule(path, cfg.ProvidedIDFields); ok {
 		return deployplan.Recreate, reason
 	}
 	if reason, ok := findMatchingRule(path, cfg.UpdateIDOnChanges); ok {
