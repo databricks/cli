@@ -1,30 +1,29 @@
-# Two consecutive deploys whose plan stage fails must not block the next, healthy
-# deploy. Previously a failed plan still opened the WAL for write (UpgradeToWrite)
-# and returned without finalizing, leaving a header-only WAL. After two such
-# failures the WAL serial drifted two ahead of the committed serial and every
-# subsequent command failed WAL recovery until the WAL was deleted by hand.
+# A failed plan must not leave a write-ahead log behind, so repeated planning
+# failures never block a later, healthy deploy. Previously a failed plan still
+# opened the WAL for write (UpgradeToWrite) and returned without finalizing,
+# leaving a header-only WAL; after two failures the WAL serial drifted two ahead
+# of the committed serial and every later command failed WAL recovery until the
+# WAL was deleted by hand.
 #
-# The failure is injected with a non-retried 403 on the resource-refresh GET that
-# planning issues for the already-deployed job. (A 5xx would be retried with
-# backoff and is too slow for a test.)
+# A first deploy creates the job normally. An injected fault then makes the next
+# two deploys fail while planning (planning refreshes the existing job via
+# jobs/get). The final deploy, with the fault expired, must recover and succeed.
+# A non-retried 403 is used so the failure is immediate; a 5xx would be retried
+# with backoff.
 
-# A real job on the server plus committed state pointing at it makes the plan
-# stage issue a refresh GET we can fault.
-export JOB=$($CLI jobs create --json '{"name":"test-job"}' | jq -r '.job_id')
-echo "$JOB:JOB_ID" >> ACC_REPLS
-mkdir -p .databricks/bundle/default
-envsubst < resources.json.tmpl > .databricks/bundle/default/resources.json
+title "Deploy 1 (normal: creates the job and the committed state)"
+trace $CLI bundle deploy
 
-# Fault the refresh GET for the first two deploys; the third proceeds normally.
+# Fail the plan-stage refresh GET for the next two deploys only.
 fault.py "GET /api/2.2/jobs/get" 403 0 2
 
-title "Deploy 1 (planning fails)"
-trace errcode $CLI bundle deploy --force-lock
+title "Deploy 2 (planning fails, must not leave a WAL)"
+trace errcode $CLI bundle deploy
 trace assert_not_exists.py .databricks/bundle/default/resources.json.wal
 
-title "Deploy 2 (planning fails again)"
-trace errcode $CLI bundle deploy --force-lock
+title "Deploy 3 (planning fails again, must not leave a WAL)"
+trace errcode $CLI bundle deploy
 trace assert_not_exists.py .databricks/bundle/default/resources.json.wal
 
-title "Deploy 3 (succeeds, not blocked by a leftover WAL)"
-trace errcode $CLI bundle deploy --force-lock
+title "Deploy 4 (fault expired: recovers and succeeds)"
+trace $CLI bundle deploy

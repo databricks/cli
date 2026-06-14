@@ -1,10 +1,17 @@
 
-=== Deploy 1 (planning fails)
->>> errcode [CLI] bundle deploy --force-lock
+=== Deploy 1 (normal: creates the job and the committed state)
+>>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/wal-two-failed-deploys/default/files...
-Error: cannot plan resources.jobs.test_job: reading id="[JOB_ID]": Fault injected by test. (403 INJECTED)
+Deploying resources...
+Updating deployment state...
+Deployment complete!
 
-Endpoint: GET [DATABRICKS_URL]/api/2.2/jobs/get?job_id=[JOB_ID]
+=== Deploy 2 (planning fails, must not leave a WAL)
+>>> errcode [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/wal-two-failed-deploys/default/files...
+Error: cannot plan resources.jobs.test_job: reading id="[NUMID]": Fault injected by test. (403 INJECTED)
+
+Endpoint: GET [DATABRICKS_URL]/api/2.2/jobs/get?job_id=[NUMID]
 HTTP Status: 403 Forbidden
 API error_code: INJECTED
 API message: Fault injected by test.
@@ -16,12 +23,12 @@ Exit code: 1
 
 >>> assert_not_exists.py .databricks/bundle/default/resources.json.wal
 
-=== Deploy 2 (planning fails again)
->>> errcode [CLI] bundle deploy --force-lock
+=== Deploy 3 (planning fails again, must not leave a WAL)
+>>> errcode [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/wal-two-failed-deploys/default/files...
-Error: cannot plan resources.jobs.test_job: reading id="[JOB_ID]": Fault injected by test. (403 INJECTED)
+Error: cannot plan resources.jobs.test_job: reading id="[NUMID]": Fault injected by test. (403 INJECTED)
 
-Endpoint: GET [DATABRICKS_URL]/api/2.2/jobs/get?job_id=[JOB_ID]
+Endpoint: GET [DATABRICKS_URL]/api/2.2/jobs/get?job_id=[NUMID]
 HTTP Status: 403 Forbidden
 API error_code: INJECTED
 API message: Fault injected by test.
@@ -33,8 +40,8 @@ Exit code: 1
 
 >>> assert_not_exists.py .databricks/bundle/default/resources.json.wal
 
-=== Deploy 3 (succeeds, not blocked by a leftover WAL)
->>> errcode [CLI] bundle deploy --force-lock
+=== Deploy 4 (fault expired: recovers and succeeds)
+>>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/wal-two-failed-deploys/default/files...
 Deploying resources...
 Updating deployment state...
