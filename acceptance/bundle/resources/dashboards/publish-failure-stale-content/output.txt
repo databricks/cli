@@ -8,7 +8,7 @@ Deployment complete!
 >>> [CLI] lakeview get [DASHBOARD1_ID]
 {
   "display_name": "my dashboard",
-  "etag": "[ETAG]"
+  "etag": "[ETAG_1]"
 }
 
 >>> [CLI] lakeview get-published [DASHBOARD1_ID]
