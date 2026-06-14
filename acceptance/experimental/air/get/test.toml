@@ -1,0 +1,40 @@
+# This command does not deploy a bundle, so no engine matrix is needed.
+[EnvMatrix]
+DATABRICKS_BUNDLE_ENGINE = []
+
+# The SDK occasionally probes host reachability with a HEAD request; stub it so
+# the test is deterministic.
+[[Server]]
+Pattern = "HEAD /"
+Response.Body = ''
+
+# A single GenAI-compute run with an experiment, GPUs, and a creator.
+[[Server]]
+Pattern = "GET /api/2.2/jobs/runs/get"
+Response.Body = '''
+{
+  "run_id": 123,
+  "run_page_url": "https://my-workspace.cloud.databricks.test/jobs/runs/123",
+  "creator_user_name": "user@example.com",
+  "start_time": 1700000000000,
+  "end_time": 1700000012000,
+  "state": {"life_cycle_state": "TERMINATED", "result_state": "SUCCESS"},
+  "tasks": [
+    {
+      "task_key": "train",
+      "attempt_number": 0,
+      "gen_ai_compute_task": {
+        "mlflow_experiment_name": "/Users/user@example.com/my-exp",
+        "compute": {"gpu_type": "GPU_8xH100", "num_gpus": 8}
+      }
+    }
+  ]
+}
+'''
+
+# MLflow identifiers for the deep-link (runs/get-output is not modeled by the typed SDK).
+[[Server]]
+Pattern = "GET /api/2.2/jobs/runs/get-output"
+Response.Body = '''
+{"gen_ai_compute_output": {"run_info": {"mlflow_experiment_id": "exp1", "mlflow_run_id": "run1"}}}
+'''

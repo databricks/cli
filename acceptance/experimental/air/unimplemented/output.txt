@@ -5,12 +5,6 @@ Error: `air run` is not implemented yet
 
 Exit code: 1
 
-=== get
->>> [CLI] experimental air get 123
-Error: `air get` is not implemented yet
-
-Exit code: 1
-
 === list
 >>> [CLI] experimental air list
 Error: `air list` is not implemented yet
