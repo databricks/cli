@@ -12,7 +12,7 @@ unset MSYS_NO_PATHCONV
 trace $CLI bundle deploy
 replace_ids.py
 DASHBOARD_ID=$($CLI bundle summary --output json | jq -r '.resources.dashboards.dashboard1.id')
-add_repl.py "$($CLI lakeview get $DASHBOARD_ID | jq -r '.etag')" ETAG
+add_repl.py "$($CLI lakeview get $DASHBOARD_ID | jq -r '.etag')" ETAG_1
 trace $CLI lakeview get $DASHBOARD_ID | jq '{display_name, etag}'
 trace $CLI lakeview get-published $DASHBOARD_ID | jq '{display_name}'
 rm out.requests.txt
@@ -26,7 +26,7 @@ update_file.py databricks.yml "my dashboard" "my dashboard renamed"
 # Deploy: PATCH succeeds (bumping the remote etag) but publish fails.
 # SaveState is only called on success, so state retains the pre-PATCH etag.
 errcode trace $CLI bundle deploy
-add_repl.py "$($CLI lakeview get $DASHBOARD_ID | jq -r '.etag')" ETAG
+add_repl.py "$($CLI lakeview get $DASHBOARD_ID | jq -r '.etag')" ETAG_2
 trace $CLI lakeview get $DASHBOARD_ID | jq '{display_name, etag}'
 trace $CLI lakeview get-published $DASHBOARD_ID | jq '{display_name}'
 trace print_requests.py //lakeview/dashboards
