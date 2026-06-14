@@ -451,7 +451,7 @@ func shouldSkip(cfg *dresources.ResourceLifecycleConfig, path *structpath.PathNo
 // value can only be backend normalization (e.g. UC lowercasing) — a real
 // out-of-band rename would 404 and is handled as resource-gone. Local changes
 // fall through to Recreate (named_id_fields) or UpdateWithID
-// (update_id_on_local_changes) in shouldUpdateOrRecreate.
+// (update_id_on_changes) in shouldUpdateOrRecreate.
 func shouldSkipIDField(cfg *dresources.ResourceLifecycleConfig, path *structpath.PathNode, ch *deployplan.ChangeDesc) (string, bool) {
 	if cfg == nil {
 		return "", false
@@ -462,7 +462,7 @@ func shouldSkipIDField(cfg *dresources.ResourceLifecycleConfig, path *structpath
 	if reason, ok := findMatchingRule(path, cfg.NamedIDFields); ok {
 		return reason, true
 	}
-	if reason, ok := findMatchingRule(path, cfg.UpdateIDOnLocalChanges); ok {
+	if reason, ok := findMatchingRule(path, cfg.UpdateIDOnChanges); ok {
 		return reason, true
 	}
 	return "", false
@@ -502,7 +502,7 @@ func shouldUpdateOrRecreate(cfg *dresources.ResourceLifecycleConfig, path *struc
 	if reason, ok := findMatchingRule(path, cfg.NamedIDFields); ok {
 		return deployplan.Recreate, reason
 	}
-	if reason, ok := findMatchingRule(path, cfg.UpdateIDOnLocalChanges); ok {
+	if reason, ok := findMatchingRule(path, cfg.UpdateIDOnChanges); ok {
 		return deployplan.UpdateWithID, reason
 	}
 	return deployplan.Undefined, ""

@@ -7,8 +7,9 @@
 #     Local changes trigger delete + create. Remote-only differences are skipped:
 #     a successful get-by-ID means a differing remote value can only be backend
 #     normalization; a real out-of-band rename would 404 (handled as resource-gone).
-#   update_id_on_local_changes: like named_id_fields, but a local change triggers
-#     UpdateWithID (rename; the ID changes) instead of delete + create
+#   update_id_on_changes: like named_id_fields, but a local change triggers
+#     UpdateWithID (rename; the ID changes) instead of delete + create. Remote-only
+#     differences are skipped the same way (only local changes act).
 #   ignore_remote_changes: fields where remote changes are ignored
 #   ignore_local_changes: fields where local changes are ignored (can't be updated via API)
 #   backend_defaults: fields where the backend may set defaults (skipped when old/new are nil but remote is set)
@@ -307,7 +308,7 @@ resources:
         reason: immutable
       - field: share_name
         reason: immutable
-    update_id_on_local_changes:
+    update_id_on_changes:
       - field: name
         reason: id_changes
 
@@ -338,7 +339,7 @@ resources:
         reason: immutable
       - field: file_event_queue
         reason: immutable
-    update_id_on_local_changes:
+    update_id_on_changes:
       - field: name
         reason: id_changes
     ignore_remote_changes:
@@ -357,11 +358,11 @@ resources:
         reason: immutable
       - field: volume_type
         reason: immutable
-    update_id_on_local_changes:
+    update_id_on_changes:
       - field: name
         reason: id_changes
     normalize_case:
-      # UC lowercases identifier names. name is in update_id_on_local_changes, so a
+      # UC lowercases identifier names. name is in update_id_on_changes, so a
       # local case-only edit would otherwise trigger a spurious rename (DoUpdateWithID).
       - field: catalog_name
         reason: uc_case
@@ -454,7 +455,7 @@ resources:
 
   # Permissions for secret scopes use ResourceSecretScopeAcls.
   secret_scopes.permissions:
-    update_id_on_local_changes:
+    update_id_on_changes:
       # When scope name changes, we need UpdateWithID trigger. This is necessary so that subsequent
       # DoRead operations use the correct ID and we do not end up with a persistent drift.
       - field: scope_name
