@@ -1,0 +1,30 @@
+# Two consecutive deploys whose plan stage fails must not block the next, healthy
+# deploy. Previously a failed plan still opened the WAL for write (UpgradeToWrite)
+# and returned without finalizing, leaving a header-only WAL. After two such
+# failures the WAL serial drifted two ahead of the committed serial and every
+# subsequent command failed WAL recovery until the WAL was deleted by hand.
+#
+# The failure is injected with a non-retried 403 on the resource-refresh GET that
+# planning issues for the already-deployed job. (A 5xx would be retried with
+# backoff and is too slow for a test.)
+
+# A real job on the server plus committed state pointing at it makes the plan
+# stage issue a refresh GET we can fault.
+export JOB=$($CLI jobs create --json '{"name":"test-job"}' | jq -r '.job_id')
+echo "$JOB:JOB_ID" >> ACC_REPLS
+mkdir -p .databricks/bundle/default
+envsubst < resources.json.tmpl > .databricks/bundle/default/resources.json
+
+# Fault the refresh GET for the first two deploys; the third proceeds normally.
+fault.py "GET /api/2.2/jobs/get" 403 0 2
+
+title "Deploy 1 (planning fails)"
+trace errcode $CLI bundle deploy --force-lock
+trace assert_not_exists.py .databricks/bundle/default/resources.json.wal
+
+title "Deploy 2 (planning fails again)"
+trace errcode $CLI bundle deploy --force-lock
+trace assert_not_exists.py .databricks/bundle/default/resources.json.wal
+
+title "Deploy 3 (succeeds, not blocked by a leftover WAL)"
+trace errcode $CLI bundle deploy --force-lock

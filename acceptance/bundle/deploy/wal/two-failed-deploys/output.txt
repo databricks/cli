@@ -1,0 +1,41 @@
+
+=== Deploy 1 (planning fails)
+>>> errcode [CLI] bundle deploy --force-lock
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/wal-two-failed-deploys/default/files...
+Error: cannot plan resources.jobs.test_job: reading id="[JOB_ID]": Fault injected by test. (403 INJECTED)
+
+Endpoint: GET [DATABRICKS_URL]/api/2.2/jobs/get?job_id=[JOB_ID]
+HTTP Status: 403 Forbidden
+API error_code: INJECTED
+API message: Fault injected by test.
+
+Error: planning failed
+
+
+Exit code: 1
+
+>>> assert_not_exists.py .databricks/bundle/default/resources.json.wal
+
+=== Deploy 2 (planning fails again)
+>>> errcode [CLI] bundle deploy --force-lock
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/wal-two-failed-deploys/default/files...
+Error: cannot plan resources.jobs.test_job: reading id="[JOB_ID]": Fault injected by test. (403 INJECTED)
+
+Endpoint: GET [DATABRICKS_URL]/api/2.2/jobs/get?job_id=[JOB_ID]
+HTTP Status: 403 Forbidden
+API error_code: INJECTED
+API message: Fault injected by test.
+
+Error: planning failed
+
+
+Exit code: 1
+
+>>> assert_not_exists.py .databricks/bundle/default/resources.json.wal
+
+=== Deploy 3 (succeeds, not blocked by a leftover WAL)
+>>> errcode [CLI] bundle deploy --force-lock
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/wal-two-failed-deploys/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!

@@ -170,6 +170,13 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		plan = RunPlan(ctx, b, engine)
 	}
 
+	// Stop before opening the WAL for write if planning failed. UpgradeToWrite
+	// writes a WAL header that only deployCore's Finalize commits or discards;
+	// returning past it without finalizing leaves a header-only WAL behind.
+	if logdiag.HasError(ctx) {
+		return
+	}
+
 	if engine.IsDirect() {
 		// Upgrade from read (opened by process.go) to write mode
 		if err := b.DeploymentBundle.StateDB.UpgradeToWrite(); err != nil {
@@ -185,10 +192,6 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 			logdiag.LogError(ctx, err)
 			return
 		}
-	}
-
-	if logdiag.HasError(ctx) {
-		return
 	}
 
 	haveApproval, err := approvalForDeploy(ctx, b, plan)

@@ -286,6 +286,7 @@ func (db *DeploymentState) mergeWalIntoState(ctx context.Context) (bool, error) 
 	scanner.Buffer(make([]byte, 0, initialBufferSize), maxWalEntrySize)
 	lineNumber := 0
 	var corruptedLines [][]byte
+	var newSerial int
 
 	for scanner.Scan() {
 		lineNumber++
@@ -309,7 +310,7 @@ func (db *DeploymentState) mergeWalIntoState(ctx context.Context) (bool, error) 
 			if header.Serial > expectedSerial {
 				return false, fmt.Errorf("WAL serial (%d) is ahead of expected (%d), state may be corrupted", header.Serial, expectedSerial)
 			}
-			db.Data.Serial = expectedSerial
+			newSerial = header.Serial
 		} else {
 			var entry WALEntry
 			if err := json.Unmarshal(line, &entry); err != nil {
@@ -344,7 +345,19 @@ func (db *DeploymentState) mergeWalIntoState(ctx context.Context) (bool, error) 
 		}
 	}
 
-	return lineNumber > 1, nil
+	hasEntries := lineNumber > 1
+
+	// Only advance the serial when the WAL carried entries, because the caller
+	// (replayWAL) persists the new state file only in that case. A header-only
+	// WAL is a deploy that started but committed nothing; advancing the serial
+	// for it leaves the in-memory serial ahead of the persisted one, so the
+	// next deploy writes its WAL header at serial+2 and recovery rejects it as
+	// "ahead of expected". See acceptance/bundle/deploy/wal/two-crashed-deploys.
+	if hasEntries {
+		db.Data.Serial = newSerial
+	}
+
+	return hasEntries, nil
 }
 
 // Finalize replays the WAL (if open for write), captures the resulting state, and resets.
