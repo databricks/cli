@@ -23,21 +23,18 @@ fault.py "POST /api/2.0/lakeview/dashboards/*" 400 0 1
 # Rename the dashboard to trigger an Update.
 update_file.py databricks.yml "my dashboard" "my dashboard renamed"
 
-# Deploy: Update (PATCH) succeeds but publish fails.
-# SaveStateWith records published=false in state.
+# Deploy: PATCH succeeds (bumping the remote etag) but publish fails.
+# SaveState is only called on success, so state retains the pre-PATCH etag.
 errcode trace $CLI bundle deploy
 add_repl.py "$($CLI lakeview get $DASHBOARD_ID | jq -r '.etag')" ETAG
 trace $CLI lakeview get $DASHBOARD_ID | jq '{display_name, etag}'
 trace $CLI lakeview get-published $DASHBOARD_ID | jq '{display_name}'
 trace print_requests.py //lakeview/dashboards
 
-# Bug: the next deploy should republish "my dashboard renamed" but it skips the
-# publish entirely.  The previously-published version ("my dashboard") is still
-# visible via GetPublished, so remote.published=true matches desired.published=true
-# and the planner marks the field skip(remote_already_set) — even though the
-# published content is now stale.  "Deployment complete!" is printed but no
-# POST /published is issued.
-trace $CLI bundle deploy
+# Bug: re-running deploy fails with "modified remotely" because the stored etag
+# (pre-PATCH) no longer matches the remote etag (bumped by the PATCH above).
+# No API writes are attempted — the stale published content is stuck.
+errcode trace $CLI bundle deploy
 trace $CLI lakeview get $DASHBOARD_ID | jq '{display_name, etag}'
 trace $CLI lakeview get-published $DASHBOARD_ID | jq '{display_name}'
 
