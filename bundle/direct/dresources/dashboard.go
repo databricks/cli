@@ -315,7 +315,7 @@ func (r *ResourceDashboard) DoCreate(ctx context.Context, engine *StateSaver, co
 	return createResp.DashboardId, responseToState(createResp, publishResp, dashboard.SerializedDashboard, config.Published), nil
 }
 
-func (r *ResourceDashboard) DoUpdate(ctx context.Context, engine *StateSaver, id string, config *DashboardState, _ *PlanEntry) (*DashboardState, error) {
+func (r *ResourceDashboard) DoUpdate(ctx context.Context, _ *StateSaver, id string, config *DashboardState, _ *PlanEntry) (*DashboardState, error) {
 	dashboard, err := prepareDashboardRequest(config)
 	if err != nil {
 		return nil, err
@@ -335,12 +335,14 @@ func (r *ResourceDashboard) DoUpdate(ctx context.Context, engine *StateSaver, id
 		return nil, err
 	}
 
-	// Persist the new etag with Published=false before publishing. Update() bumps the
-	// etag on the server; if a subsequent publish fails, saving here keeps the etag in
-	// sync (a stale etag would make the next Update fail with a conflict) and records
-	// published=false so the planner re-publishes on the next deploy.
+	// Persist the etag in state.
+	// Note: we intentionally do NOT save state here with Published=false before
+	// publishing. If we did, and publish fails, the next plan would see
+	// remote.Published=true == desired=true and skip (remote_already_set), making
+	// the stale published content permanently unrecoverable, even with --force.
+	// By not saving, state retains the pre-update etag; the next plan detects the
+	// etag mismatch as "modified remotely" and blocks — recoverable with --force.
 	config.Etag = updateResp.Etag
-	SaveStateWith(ctx, engine, id, config, &config.Published, false)
 
 	var publishResp *dashboards.PublishedDashboard
 	// Note, today config.Published is always true (we do not have this field in input config).

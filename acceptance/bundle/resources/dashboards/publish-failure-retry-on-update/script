@@ -28,6 +28,8 @@ errcode trace $CLI bundle deploy
 # (POST /api/2.0/lakeview/dashboards): the existing dashboard was updated in place.
 print_requests.py //lakeview/dashboards
 
-# Plan shows published old=false: state was saved with published=false (and the bumped
-# etag) before the failed publish, so the next deploy knows publishing is still pending.
+# Plan shows "modified remotely": state still holds the pre-PATCH etag; the PATCH bumped
+# the remote etag, so the next plan sees an etag mismatch and blocks with a warning.
+# The published field is not shown as a pending change (null) because the "modified
+# remotely" guard takes precedence.
 trace $CLI bundle plan -o json | jq '.plan["resources.dashboards.dashboard1"].changes.published'
