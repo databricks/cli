@@ -15,8 +15,7 @@ DASHBOARD_ID=$($CLI bundle summary --output json | jq -r '.resources.dashboards.
 add_repl.py "$($CLI lakeview get $DASHBOARD_ID | jq -r '.etag')" ETAG_1
 trace $CLI lakeview get $DASHBOARD_ID | jq '{display_name, etag}'
 trace $CLI lakeview get-published $DASHBOARD_ID | jq '{display_name}'
-$CLI bundle plan -o json > out.plan.1.json
-json_in_json_normalize.py out.plan.1.json
+trace $CLI bundle plan -o json | gron.py | grep -E "etag|published"
 rm out.requests.txt
 
 # Inject a single publish failure for the update below.
@@ -31,8 +30,7 @@ errcode trace $CLI bundle deploy
 add_repl.py "$($CLI lakeview get $DASHBOARD_ID | jq -r '.etag')" ETAG_2
 trace $CLI lakeview get $DASHBOARD_ID | jq '{display_name, etag}'
 trace $CLI lakeview get-published $DASHBOARD_ID | jq '{display_name}'
-errcode $CLI bundle plan -o json > out.plan.2.json
-json_in_json_normalize.py out.plan.2.json
+trace $CLI bundle plan -o json | gron.py | grep -E "etag|published"
 trace print_requests.py //lakeview/dashboards
 
 # Bug: re-running deploy fails with "modified remotely" because the stored etag
