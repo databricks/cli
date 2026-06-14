@@ -27,27 +27,25 @@ update_file.py databricks.yml "my dashboard" "my dashboard renamed"
 # Deploy: PATCH succeeds (bumping the remote etag) but publish fails.
 # SaveState is only called on success, so state retains the pre-PATCH etag.
 errcode trace $CLI bundle deploy
+trace print_requests.py //lakeview/dashboards
 add_repl.py "$($CLI lakeview get $DASHBOARD_ID | jq -r '.etag')" ETAG_2
 trace $CLI lakeview get $DASHBOARD_ID | jq '{display_name, etag}'
 trace $CLI lakeview get-published $DASHBOARD_ID | jq '{display_name}'
 trace $CLI bundle plan -o json | gron.py | grep -E "etag|published"
-trace print_requests.py //lakeview/dashboards
 
 # Bug: re-running deploy fails with "modified remotely" because the stored etag
 # (pre-PATCH) no longer matches the remote etag (bumped by the PATCH above).
 # No API writes are attempted — the stale published content is stuck.
 errcode trace $CLI bundle deploy
+trace print_requests.py //lakeview/dashboards
 trace $CLI lakeview get $DASHBOARD_ID | jq '{display_name, etag}'
 trace $CLI lakeview get-published $DASHBOARD_ID | jq '{display_name}'
-
-# No PATCH and no POST /published — the stale published version is never updated.
-trace print_requests.py //lakeview/dashboards
 
 # --force bypasses the etag check and forces a full re-deploy (PATCH + POST /published),
 # which fixes the stale published content.
 trace $CLI bundle deploy --force
+trace print_requests.py //lakeview/dashboards
 add_repl.py "$($CLI lakeview get $DASHBOARD_ID | jq -r '.etag')" ETAG_3
 trace $CLI lakeview get $DASHBOARD_ID | jq '{display_name, etag}'
 trace $CLI lakeview get-published $DASHBOARD_ID | jq '{display_name}'
-
-trace print_requests.py //lakeview/dashboards
+trace $CLI bundle plan

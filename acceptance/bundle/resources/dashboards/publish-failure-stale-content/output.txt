@@ -39,6 +39,26 @@ Updating deployment state...
 
 Exit code: 1
 
+>>> print_requests.py //lakeview/dashboards
+{
+  "method": "PATCH",
+  "path": "/api/2.0/lakeview/dashboards/[DASHBOARD1_ID]",
+  "body": {
+    "display_name": "my dashboard renamed",
+    "parent_path": "/Workspace/Users/[USERNAME]/.bundle/update-publish-failure-stale-content/default/resources",
+    "serialized_dashboard": "{\"pages\":[{\"name\":\"test-page\",\"displayName\":\"Test Dashboard\"}]}\n",
+    "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/lakeview/dashboards/[DASHBOARD1_ID]/published",
+  "body": {
+    "embed_credentials": false,
+    "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
+  }
+}
+
 >>> [CLI] lakeview get [DASHBOARD1_ID]
 {
   "display_name": "my dashboard renamed",
@@ -72,26 +92,6 @@ json.plan.resources.dashboards.dashboard1.changes.etag.old = "[ETAG_1]";
 json.plan.resources.dashboards.dashboard1.changes.etag.remote = "[ETAG_2]";
 json.plan.resources.dashboards.dashboard1.changes.serialized_dashboard.reason = "etag_based";
 
->>> print_requests.py //lakeview/dashboards
-{
-  "method": "PATCH",
-  "path": "/api/2.0/lakeview/dashboards/[DASHBOARD1_ID]",
-  "body": {
-    "display_name": "my dashboard renamed",
-    "parent_path": "/Workspace/Users/[USERNAME]/.bundle/update-publish-failure-stale-content/default/resources",
-    "serialized_dashboard": "{\"pages\":[{\"name\":\"test-page\",\"displayName\":\"Test Dashboard\"}]}\n",
-    "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
-  }
-}
-{
-  "method": "POST",
-  "path": "/api/2.0/lakeview/dashboards/[DASHBOARD1_ID]/published",
-  "body": {
-    "embed_credentials": false,
-    "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
-  }
-}
-
 >>> [CLI] bundle deploy
 Error: dashboard "dashboard1" has been modified remotely
   at resources.dashboards.dashboard1
@@ -109,6 +109,8 @@ The remote modifications will be lost.
 
 Exit code: 1
 
+>>> print_requests.py //lakeview/dashboards
+
 >>> [CLI] lakeview get [DASHBOARD1_ID]
 {
   "display_name": "my dashboard renamed",
@@ -120,24 +122,11 @@ Exit code: 1
   "display_name": "my dashboard"
 }
 
->>> print_requests.py //lakeview/dashboards
-
 >>> [CLI] bundle deploy --force
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-publish-failure-stale-content/default/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
-
->>> [CLI] lakeview get [DASHBOARD1_ID]
-{
-  "display_name": "my dashboard renamed",
-  "etag": "[ETAG_3]"
-}
-
->>> [CLI] lakeview get-published [DASHBOARD1_ID]
-{
-  "display_name": "my dashboard renamed"
-}
 
 >>> print_requests.py //lakeview/dashboards
 {
@@ -158,6 +147,20 @@ Deployment complete!
     "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
   }
 }
+
+>>> [CLI] lakeview get [DASHBOARD1_ID]
+{
+  "display_name": "my dashboard renamed",
+  "etag": "[ETAG_3]"
+}
+
+>>> [CLI] lakeview get-published [DASHBOARD1_ID]
+{
+  "display_name": "my dashboard renamed"
+}
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
