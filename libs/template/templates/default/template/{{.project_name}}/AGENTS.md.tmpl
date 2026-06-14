@@ -1,7 +1,7 @@
 {{- /*
      * Template for the AGENTS.md / CLAUDE.md files created in new projects.
      *
-     * Goal for this file is to point agents to the core Databricks skill for guidance.
+     * Goal for this file is to point agents to the Databricks agent skills for guidance.
      * A secondary goal is to offer a placeholder to users to extend with their own instructions.
      * It is a non-goal to inline all instructions.
      *
@@ -10,18 +10,16 @@
 
 This project uses Declarative Automation Bundles (DABs) for deployment. Add project-specific instructions below.
 
-## For AI Agents: MANDATORY First Action
+## For AI Agents: Use the Databricks Agent Skills
 
-**BEFORE any other action, read the `databricks` skill (`databricks/SKILL.md`).**
+**BEFORE any other action, read the core `databricks` skill.**
 
-The skill provides:
-- CLI installation and authentication guidance
-- Profile selection rules
-- Data discovery commands
-- Bundle deployment workflow
-- Links to product-specific skills (apps, jobs, pipelines)
+It covers CLI installation and authentication, profile selection, data
+discovery, and the bundle deployment workflow. For specific resource types,
+use the product skills it links to, such as `databricks-jobs`,
+`databricks-pipelines`, and `databricks-apps`.
 
-If the skill is not available, the user needs to install Databricks agent skills:
+If these skills are not available, install them for your coding agent:
 
 ```bash
 databricks aitools install

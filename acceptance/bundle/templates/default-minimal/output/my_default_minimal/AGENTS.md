@@ -2,18 +2,16 @@
 
 This project uses Declarative Automation Bundles (DABs) for deployment. Add project-specific instructions below.
 
-## For AI Agents: MANDATORY First Action
+## For AI Agents: Use the Databricks Agent Skills
 
-**BEFORE any other action, read the `databricks` skill (`databricks/SKILL.md`).**
+**BEFORE any other action, read the core `databricks` skill.**
 
-The skill provides:
-- CLI installation and authentication guidance
-- Profile selection rules
-- Data discovery commands
-- Bundle deployment workflow
-- Links to product-specific skills (apps, jobs, pipelines)
+It covers CLI installation and authentication, profile selection, data
+discovery, and the bundle deployment workflow. For specific resource types,
+use the product skills it links to, such as `databricks-jobs`,
+`databricks-pipelines`, and `databricks-apps`.
 
-If the skill is not available, the user needs to install Databricks agent skills:
+If these skills are not available, install them for your coding agent:
 
 ```bash
 databricks aitools install
