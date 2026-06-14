@@ -52,7 +52,7 @@ func (r *ResourceMlflowModel) DoRead(ctx context.Context, id string) (*MlflowMod
 	}, nil
 }
 
-func (r *ResourceMlflowModel) DoCreate(ctx context.Context, config *ml.CreateModelRequest) (string, *MlflowModelRemote, error) {
+func (r *ResourceMlflowModel) DoCreate(ctx context.Context, _ *StateSaver, config *ml.CreateModelRequest) (string, *MlflowModelRemote, error) {
 	response, err := r.client.ModelRegistry.CreateModel(ctx, *config)
 	if err != nil {
 		return "", nil, err
@@ -62,7 +62,7 @@ func (r *ResourceMlflowModel) DoCreate(ctx context.Context, config *ml.CreateMod
 	return response.RegisteredModel.Name, nil, nil
 }
 
-func (r *ResourceMlflowModel) DoUpdate(ctx context.Context, id string, config *ml.CreateModelRequest, entry *PlanEntry) (*MlflowModelRemote, error) {
+func (r *ResourceMlflowModel) DoUpdate(ctx context.Context, _ *StateSaver, id string, config *ml.CreateModelRequest, entry *PlanEntry) (*MlflowModelRemote, error) {
 	updateRequest := ml.UpdateModelRequest{
 		Name:            id,
 		Description:     config.Description,

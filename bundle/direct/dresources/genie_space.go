@@ -135,7 +135,7 @@ func isMissingGenieParentPathError(err error) bool {
 		strings.Contains(apiErr.Message, "does not exist")
 }
 
-func (r *ResourceGenieSpace) DoCreate(ctx context.Context, config *resources.GenieSpaceConfig) (string, *resources.GenieSpaceConfig, error) {
+func (r *ResourceGenieSpace) DoCreate(ctx context.Context, _ *StateSaver, config *resources.GenieSpaceConfig) (string, *resources.GenieSpaceConfig, error) {
 	serializedSpace, err := prepareGenieSpaceRequest(config)
 	if err != nil {
 		return "", nil, err
@@ -177,7 +177,7 @@ func (r *ResourceGenieSpace) DoCreate(ctx context.Context, config *resources.Gen
 	return createResp.SpaceId, responseToGenieSpaceConfig(createResp, serializedSpace), nil
 }
 
-func (r *ResourceGenieSpace) DoUpdate(ctx context.Context, id string, config *resources.GenieSpaceConfig, _ *PlanEntry) (*resources.GenieSpaceConfig, error) {
+func (r *ResourceGenieSpace) DoUpdate(ctx context.Context, _ *StateSaver, id string, config *resources.GenieSpaceConfig, _ *PlanEntry) (*resources.GenieSpaceConfig, error) {
 	serializedSpace, err := prepareGenieSpaceRequest(config)
 	if err != nil {
 		return nil, err

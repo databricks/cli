@@ -24,7 +24,7 @@ func (r *ResourceDatabaseCatalog) DoRead(ctx context.Context, id string) (*datab
 	return r.client.Database.GetDatabaseCatalogByName(ctx, id)
 }
 
-func (r *ResourceDatabaseCatalog) DoCreate(ctx context.Context, config *database.DatabaseCatalog) (string, *database.DatabaseCatalog, error) {
+func (r *ResourceDatabaseCatalog) DoCreate(ctx context.Context, _ *StateSaver, config *database.DatabaseCatalog) (string, *database.DatabaseCatalog, error) {
 	result, err := r.client.Database.CreateDatabaseCatalog(ctx, database.CreateDatabaseCatalogRequest{
 		Catalog: *config,
 	})
@@ -34,7 +34,7 @@ func (r *ResourceDatabaseCatalog) DoCreate(ctx context.Context, config *database
 	return result.Name, nil, nil
 }
 
-func (r *ResourceDatabaseCatalog) DoUpdate(ctx context.Context, id string, config *database.DatabaseCatalog, _ *PlanEntry) (*database.DatabaseCatalog, error) {
+func (r *ResourceDatabaseCatalog) DoUpdate(ctx context.Context, _ *StateSaver, id string, config *database.DatabaseCatalog, _ *PlanEntry) (*database.DatabaseCatalog, error) {
 	request := database.UpdateDatabaseCatalogRequest{
 		DatabaseCatalog: *config,
 		Name:            id,

@@ -855,7 +855,8 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	require.Error(t, err)
 	// TODO: if errors.Is(err, databricks.ErrResourceDoesNotExist) {... }
 
-	createdID, remoteStateFromCreate, err := adapter.DoCreate(ctx, newState)
+	nopEngine := NewNopStateSaver(adapter.StateType())
+	createdID, remoteStateFromCreate, err := adapter.DoCreate(ctx, nopEngine, newState)
 	require.NoError(t, err, "DoCreate failed state=%v", newState)
 	require.NotEmpty(t, createdID, "ID returned from DoCreate was empty")
 
@@ -877,30 +878,26 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 			"unexpected differences between remappedState and remappedRemoteStateFromCreate")
 	}
 
-	remoteStateFromWaitCreate, err := adapter.WaitAfterCreate(ctx, createdID, newState)
-	require.NoError(t, err)
-	if remoteStateFromWaitCreate != nil {
-		require.Equal(t, remote, remoteStateFromWaitCreate)
-	}
-
 	if adapter.HasDoUpdate() {
-		remoteStateFromUpdate, err := adapter.DoUpdate(ctx, createdID, newState, &deployplan.PlanEntry{})
+		remoteStateFromUpdate, err := adapter.DoUpdate(ctx, nopEngine, createdID, newState, &deployplan.PlanEntry{})
 		require.NoError(t, err, "DoUpdate failed")
 		if remoteStateFromUpdate != nil {
 			remappedStateFromUpdate, err := adapter.RemapState(remoteStateFromUpdate)
 			require.NoError(t, err)
-			ignoreFilter.requireEqual(t, remappedState, remappedStateFromUpdate,
+			// Compare DoUpdate's result against a fresh DoRead: server-generated
+			// fields (e.g. etag) may change on any write, so DoUpdate's return
+			// value must match what DoRead returns right after.
+			remotePostUpdate, err := adapter.DoRead(ctx, createdID)
+			require.NoError(t, err)
+			remappedPostUpdate, err := adapter.RemapState(remotePostUpdate)
+			require.NoError(t, err)
+			ignoreFilter.requireEqual(t, remappedPostUpdate, remappedStateFromUpdate,
 				"unexpected differences between remappedState and remappedStateFromUpdate")
+			// DoUpdate may mutate newState in place (e.g. etag), so update remappedState
+			// to match the post-update server state for the field checks below.
+			remappedState = remappedStateFromUpdate
 		}
 
-		remoteStateFromWaitUpdate, err := adapter.WaitAfterUpdate(ctx, createdID, newState)
-		require.NoError(t, err)
-		if remoteStateFromWaitUpdate != nil {
-			remappedStateFromWaitUpdate, err := adapter.RemapState(remoteStateFromWaitUpdate)
-			require.NoError(t, err)
-			ignoreFilter.requireEqual(t, remappedState, remappedStateFromWaitUpdate,
-				"unexpected differences between remappedState and remappedStateFromWaitUpdate")
-		}
 	}
 
 	require.NoError(t, structwalk.Walk(newState, func(path *structpath.PathNode, val any, field *reflect.StructField) {
@@ -945,6 +942,11 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	deleteIsNoop := strings.HasSuffix(group, "permissions") || strings.HasSuffix(group, "grants")
 
 	remoteAfterDelete, err := adapter.DoRead(ctx, createdID)
+	// Some resources delete asynchronously (e.g. apps transition through a
+	// DELETING state). Read once more to let that pending state clear.
+	if err == nil && remoteAfterDelete != nil && !deleteIsNoop {
+		remoteAfterDelete, err = adapter.DoRead(ctx, createdID)
+	}
 	if deleteIsNoop {
 		require.NoError(t, err)
 	} else {

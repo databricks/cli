@@ -106,7 +106,7 @@ func (r *ResourcePostgresProject) DoRead(ctx context.Context, id string) (*Postg
 	return makePostgresProjectRemote(project), nil
 }
 
-func (r *ResourcePostgresProject) DoCreate(ctx context.Context, config *PostgresProjectState) (string, *PostgresProjectRemote, error) {
+func (r *ResourcePostgresProject) DoCreate(ctx context.Context, _ *StateSaver, config *PostgresProjectState) (string, *PostgresProjectRemote, error) {
 	waiter, err := r.client.Postgres.CreateProject(ctx, postgres.CreateProjectRequest{
 		ProjectId: config.ProjectId,
 		Project: postgres.Project{
@@ -127,6 +127,11 @@ func (r *ResourcePostgresProject) DoCreate(ctx context.Context, config *Postgres
 	if err != nil {
 		return "", nil, err
 	}
+	// TODO: save state before the wait to prevent orphaning on interruption.
+	// waiter.Name() returns the LRO operation name (e.g. .../operations/UUID),
+	// not the real resource name. We need the resource name to save a valid state
+	// entry; options: (1) derive it from input (Parent + resource-type + Id),
+	// (2) call waiter.Metadata() if it exposes the resource name early.
 
 	// Wait for the project to be ready (long-running operation)
 	result, err := waiter.Wait(ctx)
@@ -138,7 +143,7 @@ func (r *ResourcePostgresProject) DoCreate(ctx context.Context, config *Postgres
 	return remote.Name, remote, nil
 }
 
-func (r *ResourcePostgresProject) DoUpdate(ctx context.Context, id string, config *PostgresProjectState, entry *PlanEntry) (*PostgresProjectRemote, error) {
+func (r *ResourcePostgresProject) DoUpdate(ctx context.Context, _ *StateSaver, id string, config *PostgresProjectState, entry *PlanEntry) (*PostgresProjectRemote, error) {
 	// Build the mask from the plan's change list and prefix with "spec." (the
 	// API expects paths relative to Project). The API rejects mask entries
 	// that aren't also populated in the request body, and a wildcard "*"

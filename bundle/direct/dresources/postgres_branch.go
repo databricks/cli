@@ -102,7 +102,7 @@ func (r *ResourcePostgresBranch) DoRead(ctx context.Context, id string) (*Postgr
 	return makePostgresBranchRemote(branch), nil
 }
 
-func (r *ResourcePostgresBranch) DoCreate(ctx context.Context, config *PostgresBranchState) (string, *PostgresBranchRemote, error) {
+func (r *ResourcePostgresBranch) DoCreate(ctx context.Context, _ *StateSaver, config *PostgresBranchState) (string, *PostgresBranchRemote, error) {
 	waiter, err := r.client.Postgres.CreateBranch(ctx, postgres.CreateBranchRequest{
 		BranchId: config.BranchId,
 		Parent:   config.Parent,
@@ -124,6 +124,11 @@ func (r *ResourcePostgresBranch) DoCreate(ctx context.Context, config *PostgresB
 	if err != nil {
 		return "", nil, err
 	}
+	// TODO: save state before the wait to prevent orphaning on interruption.
+	// waiter.Name() returns the LRO operation name (e.g. .../operations/UUID),
+	// not the real resource name. We need the resource name to save a valid state
+	// entry; options: (1) derive it from input (Parent + resource-type + Id),
+	// (2) call waiter.Metadata() if it exposes the resource name early.
 
 	// Wait for the branch to be ready (long-running operation)
 	result, err := waiter.Wait(ctx)
@@ -135,7 +140,7 @@ func (r *ResourcePostgresBranch) DoCreate(ctx context.Context, config *PostgresB
 	return remote.Name, remote, nil
 }
 
-func (r *ResourcePostgresBranch) DoUpdate(ctx context.Context, id string, config *PostgresBranchState, entry *PlanEntry) (*PostgresBranchRemote, error) {
+func (r *ResourcePostgresBranch) DoUpdate(ctx context.Context, _ *StateSaver, id string, config *PostgresBranchState, entry *PlanEntry) (*PostgresBranchRemote, error) {
 	// Build update mask from fields that have action="update" in the changes map.
 	// This excludes immutable fields and fields that haven't changed.
 	// Prefix with "spec." because the API expects paths relative to the Branch object,

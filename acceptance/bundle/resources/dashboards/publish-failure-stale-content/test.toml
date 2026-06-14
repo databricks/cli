@@ -1,0 +1,15 @@
+Cloud = false
+Local = true
+RecordRequests = true
+
+Ignore = [
+    ".databricks",
+    "databricks.yml",
+]
+
+[EnvMatrix]
+DATABRICKS_BUNDLE_ENGINE = ["direct"]
+
+[[Repls]]
+Old = '\?[ow]=\d+'
+New = "?[WSPARAM]=[NUMID]"

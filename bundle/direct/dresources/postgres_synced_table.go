@@ -91,7 +91,7 @@ func (r *ResourcePostgresSyncedTable) DoRead(ctx context.Context, id string) (*P
 	return makePostgresSyncedTableRemote(syncedTable), nil
 }
 
-func (r *ResourcePostgresSyncedTable) DoCreate(ctx context.Context, config *PostgresSyncedTableState) (string, *PostgresSyncedTableRemote, error) {
+func (r *ResourcePostgresSyncedTable) DoCreate(ctx context.Context, _ *StateSaver, config *PostgresSyncedTableState) (string, *PostgresSyncedTableRemote, error) {
 	waiter, err := r.client.Postgres.CreateSyncedTable(ctx, postgres.CreateSyncedTableRequest{
 		SyncedTableId: config.SyncedTableId,
 		SyncedTable: postgres.SyncedTable{
@@ -108,6 +108,11 @@ func (r *ResourcePostgresSyncedTable) DoCreate(ctx context.Context, config *Post
 	if err != nil {
 		return "", nil, err
 	}
+	// TODO: save state before the wait to prevent orphaning on interruption.
+	// waiter.Name() returns the LRO operation name (e.g. .../operations/UUID),
+	// not the real resource name. We need the resource name to save a valid state
+	// entry; options: (1) derive it from input (Parent + resource-type + Id),
+	// (2) call waiter.Metadata() if it exposes the resource name early.
 
 	result, err := waiter.Wait(ctx)
 	if err != nil {

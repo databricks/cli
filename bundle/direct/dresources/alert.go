@@ -37,7 +37,7 @@ func (r *ResourceAlert) DoRead(ctx context.Context, id string) (*sql.AlertV2, er
 }
 
 // DoCreate creates the alert and returns its id.
-func (r *ResourceAlert) DoCreate(ctx context.Context, config *sql.AlertV2) (string, *sql.AlertV2, error) {
+func (r *ResourceAlert) DoCreate(ctx context.Context, _ *StateSaver, config *sql.AlertV2) (string, *sql.AlertV2, error) {
 	request := sql.CreateAlertV2Request{
 		Alert: *config,
 	}
@@ -49,7 +49,7 @@ func (r *ResourceAlert) DoCreate(ctx context.Context, config *sql.AlertV2) (stri
 }
 
 // DoUpdate updates the alert in place.
-func (r *ResourceAlert) DoUpdate(ctx context.Context, id string, config *sql.AlertV2, _ *PlanEntry) (*sql.AlertV2, error) {
+func (r *ResourceAlert) DoUpdate(ctx context.Context, _ *StateSaver, id string, config *sql.AlertV2, _ *PlanEntry) (*sql.AlertV2, error) {
 	request := sql.UpdateAlertV2Request{
 		Id:         id,
 		Alert:      *config,

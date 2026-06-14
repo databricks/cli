@@ -10,7 +10,6 @@ import (
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
@@ -264,7 +263,7 @@ func responseToState(createOrUpdateResp *dashboards.Dashboard, publishResp *dash
 	}
 }
 
-func (r *ResourceDashboard) DoCreate(ctx context.Context, config *DashboardState) (string, *DashboardState, error) {
+func (r *ResourceDashboard) DoCreate(ctx context.Context, engine *StateSaver, config *DashboardState) (string, *DashboardState, error) {
 	dashboard, err := prepareDashboardRequest(config)
 	if err != nil {
 		return "", nil, err
@@ -299,29 +298,23 @@ func (r *ResourceDashboard) DoCreate(ctx context.Context, config *DashboardState
 
 	// Persist the etag in state.
 	config.Etag = createResp.Etag
+	// Save with Published=false: draft exists, publish not yet done. Ensures the
+	// planner sees a real diff (false→true) if publish is interrupted.
+	SaveStateWith(ctx, engine, createResp.DashboardId, config, &config.Published, false)
 
 	var publishResp *dashboards.PublishedDashboard
 	// Note, today config.Published is always true (we do not have this field in input config).
 	if config.Published {
 		publishResp, err = r.publishDashboard(ctx, createResp.DashboardId, config)
 		if err != nil {
-			// If the publish fails, we should delete the dashboard to avoid leaving it in a bad state.
-			deleteErr := r.client.Lakeview.Trash(ctx, dashboards.TrashDashboardRequest{
-				DashboardId: createResp.DashboardId,
-			})
-			if deleteErr != nil {
-				log.Warnf(ctx, "failed to delete draft dashboard %s after publish failed: %v", createResp.DashboardId, deleteErr)
-				return "", nil, deleteErr
-			}
 			return "", nil, err
-			// QQQ: instead, we could store partial state with published=false
 		}
 	}
 
 	return createResp.DashboardId, responseToState(createResp, publishResp, dashboard.SerializedDashboard, config.Published), nil
 }
 
-func (r *ResourceDashboard) DoUpdate(ctx context.Context, id string, config *DashboardState, _ *PlanEntry) (*DashboardState, error) {
+func (r *ResourceDashboard) DoUpdate(ctx context.Context, _ *StateSaver, id string, config *DashboardState, _ *PlanEntry) (*DashboardState, error) {
 	dashboard, err := prepareDashboardRequest(config)
 	if err != nil {
 		return nil, err
@@ -342,6 +335,12 @@ func (r *ResourceDashboard) DoUpdate(ctx context.Context, id string, config *Das
 	}
 
 	// Persist the etag in state.
+	// Note: we intentionally do NOT save state here with Published=false before
+	// publishing. If we did, and publish fails, the next plan would see
+	// remote.Published=true == desired=true and skip (remote_already_set), making
+	// the stale published content permanently unrecoverable, even with --force.
+	// By not saving, state retains the pre-update etag; the next plan detects the
+	// etag mismatch as "modified remotely" and blocks — recoverable with --force.
 	config.Etag = updateResp.Etag
 
 	var publishResp *dashboards.PublishedDashboard
@@ -349,7 +348,6 @@ func (r *ResourceDashboard) DoUpdate(ctx context.Context, id string, config *Das
 	if config.Published {
 		publishResp, err = r.publishDashboard(ctx, id, config)
 		if err != nil {
-			// TODO: store partial state with published=false?
 			return nil, err
 		}
 	}

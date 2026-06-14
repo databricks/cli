@@ -1,0 +1,13 @@
+Cloud = false
+Local = true
+RecordRequests = true
+
+# Only run with the direct engine: the test verifies direct engine's SaveState
+# behavior (draft persists on publish failure and is re-published on retry).
+[EnvMatrix]
+DATABRICKS_BUNDLE_ENGINE = ["direct"]
+
+# Dashboard published URLs use ?o= (local testserver) or ?w= (cloud) for the workspace/org ID.
+[[Repls]]
+Old = '\?[ow]=\d+'
+New = "?[WSPARAM]=[NUMID]"
