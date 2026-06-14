@@ -50,7 +50,7 @@ func TestGpuDisplayName(t *testing.T) {
 	assert.Equal(t, "H100", gpuDisplayName("GPU_1xH100"))
 	// Unknown identifiers pass through unchanged.
 	assert.Equal(t, "b200", gpuDisplayName("b200"))
-	assert.Equal(t, "", gpuDisplayName(""))
+	assert.Empty(t, gpuDisplayName(""))
 }
 
 func TestRunStatusPrefersResultState(t *testing.T) {
@@ -117,12 +117,12 @@ func TestExperimentName(t *testing.T) {
 }
 
 func TestAccelerators(t *testing.T) {
-	assert.Equal(t, "", accelerators(&jobs.Run{}))
-	assert.Equal(t, "", accelerators(&jobs.Run{Tasks: []jobs.RunTask{{}}}))
-	assert.Equal(t, "", accelerators(&jobs.Run{Tasks: []jobs.RunTask{{
+	assert.Empty(t, accelerators(&jobs.Run{}))
+	assert.Empty(t, accelerators(&jobs.Run{Tasks: []jobs.RunTask{{}}}))
+	assert.Empty(t, accelerators(&jobs.Run{Tasks: []jobs.RunTask{{
 		GenAiComputeTask: &jobs.GenAiComputeTask{},
 	}}}))
-	assert.Equal(t, "", accelerators(&jobs.Run{Tasks: []jobs.RunTask{{
+	assert.Empty(t, accelerators(&jobs.Run{Tasks: []jobs.RunTask{{
 		GenAiComputeTask: &jobs.GenAiComputeTask{Compute: &jobs.ComputeConfig{NumGpus: 0}},
 	}}}))
 	assert.Equal(t, "8x H100", accelerators(&jobs.Run{Tasks: []jobs.RunTask{{

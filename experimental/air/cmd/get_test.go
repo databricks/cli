@@ -93,8 +93,8 @@ func TestPrintConfigYAML(t *testing.T) {
 
 func TestYAMLConfigPath(t *testing.T) {
 	// No tasks, or a task without GenAiComputeTask, yields no path.
-	assert.Equal(t, "", yamlConfigPath(&jobs.Run{}))
-	assert.Equal(t, "", yamlConfigPath(&jobs.Run{Tasks: []jobs.RunTask{{}}}))
+	assert.Empty(t, yamlConfigPath(&jobs.Run{}))
+	assert.Empty(t, yamlConfigPath(&jobs.Run{Tasks: []jobs.RunTask{{}}}))
 
 	run := &jobs.Run{Tasks: []jobs.RunTask{{
 		GenAiComputeTask: &jobs.GenAiComputeTask{YamlParametersFilePath: "/Workspace/cfg.yaml"},
