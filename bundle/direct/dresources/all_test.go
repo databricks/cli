@@ -1042,8 +1042,8 @@ func validateResourceConfig(t *testing.T, stateType reflect.Type, cfg *ResourceL
 	for _, p := range cfg.NamedIDFields {
 		assert.NoError(t, structaccess.ValidatePattern(stateType, p.Field), "NamedIDFields: %s", p.Field)
 	}
-	for _, p := range cfg.UpdateIDOnLocalChanges {
-		assert.NoError(t, structaccess.ValidatePattern(stateType, p.Field), "UpdateIDOnLocalChanges: %s", p.Field)
+	for _, p := range cfg.UpdateIDOnChanges {
+		assert.NoError(t, structaccess.ValidatePattern(stateType, p.Field), "UpdateIDOnChanges: %s", p.Field)
 	}
 	for _, p := range cfg.IgnoreRemoteChanges {
 		assert.NoError(t, structaccess.ValidatePattern(stateType, p.Field), "IgnoreRemoteChanges: %s", p.Field)

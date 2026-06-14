@@ -64,10 +64,13 @@ type ResourceLifecycleConfig struct {
 	// resource-gone.
 	NamedIDFields []FieldRule `yaml:"named_id_fields,omitempty"`
 
-	// UpdateIDOnLocalChanges: field patterns that trigger UpdateWithID when changed
-	// locally. Like NamedIDFields, these compose the name-based ID, so remote-only
-	// differences are skipped rather than treated as a rename.
-	UpdateIDOnLocalChanges []FieldRule `yaml:"update_id_on_local_changes,omitempty"`
+	// UpdateIDOnChanges: field patterns that, when changed locally, trigger
+	// UpdateWithID (a rename; the ID changes). Despite the historical name this only
+	// governs local changes: like NamedIDFields these compose the name-based ID, so a
+	// remote-only difference is skipped (see shouldSkipIDField) rather than treated as
+	// a rename — a successful get-by-ID means the remote value can only be backend
+	// normalization, and a real out-of-band rename would 404.
+	UpdateIDOnChanges []FieldRule `yaml:"update_id_on_changes,omitempty"`
 
 	// NormalizeCase: string field patterns the UC API lowercases on write.
 	// A change is skipped when local and remote differ only by case.
@@ -94,14 +97,14 @@ var resourcesYAML []byte
 var resourcesGeneratedYAML []byte
 
 var empty = ResourceLifecycleConfig{
-	IgnoreRemoteChanges:    nil,
-	IgnoreLocalChanges:     nil,
-	RecreateOnChanges:      nil,
-	NamedIDFields:          nil,
-	UpdateIDOnLocalChanges: nil,
-	NormalizeCase:          nil,
-	NormalizeSlash:         nil,
-	BackendDefaults:        nil,
+	IgnoreRemoteChanges: nil,
+	IgnoreLocalChanges:  nil,
+	RecreateOnChanges:   nil,
+	NamedIDFields:       nil,
+	UpdateIDOnChanges:   nil,
+	NormalizeCase:       nil,
+	NormalizeSlash:      nil,
+	BackendDefaults:     nil,
 }
 
 func mustParseConfig(data []byte) func() *Config {
