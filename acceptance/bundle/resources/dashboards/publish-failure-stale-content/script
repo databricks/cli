@@ -40,3 +40,12 @@ trace $CLI lakeview get-published $DASHBOARD_ID | jq '{display_name}'
 
 # No PATCH and no POST /published — the stale published version is never updated.
 trace print_requests.py //lakeview/dashboards
+
+# --force bypasses the etag check and forces a full re-deploy (PATCH + POST /published),
+# which fixes the stale published content.
+trace $CLI bundle deploy --force
+add_repl.py "$($CLI lakeview get $DASHBOARD_ID | jq -r '.etag')" ETAG_3
+trace $CLI lakeview get $DASHBOARD_ID | jq '{display_name, etag}'
+trace $CLI lakeview get-published $DASHBOARD_ID | jq '{display_name}'
+
+trace print_requests.py //lakeview/dashboards
