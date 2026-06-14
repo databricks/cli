@@ -38,13 +38,20 @@ Exit code: 1
 }
 
 >>> [CLI] bundle plan -o json
-{
-  "action": "skip",
-  "reason": "remote_already_set",
-  "old": false,
-  "new": true,
-  "remote": true
-}
+Warning: dashboard "dashboard1" has been modified remotely
+  at resources.dashboards.dashboard1
+  in databricks.yml:7:7
+
+This dashboard has been modified remotely since the last bundle deployment.
+These modifications are untracked and will be overwritten on deploy.
+
+Make sure that the local dashboard definition matches what you intend to deploy
+before proceeding with the deployment.
+
+To overwrite the remote changes with your local version, use --force.
+The remote modifications will be lost.
+
+null
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
