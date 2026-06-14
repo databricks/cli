@@ -33,7 +33,7 @@
       "changes": {
         "etag": {
           "action": "update",
-          "old": "[ETAG]",
+          "old": "[ETAG_1]",
           "remote": "[ETAG_2]"
         },
         "serialized_dashboard": {
