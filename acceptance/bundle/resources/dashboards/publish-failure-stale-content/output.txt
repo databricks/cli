@@ -76,6 +76,21 @@ To overwrite the remote changes with your local version, use --force.
 The remote modifications will be lost.
 
 
+Exit code: 1
+
+>>> [CLI] lakeview get [DASHBOARD1_ID]
+{
+  "display_name": "my dashboard renamed",
+  "etag": "[ETAG_2]"
+}
+
+>>> [CLI] lakeview get-published [DASHBOARD1_ID]
+{
+  "display_name": "my dashboard"
+}
+
+>>> print_requests.py //lakeview/dashboards
+
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.dashboards.dashboard1
@@ -84,5 +99,3 @@ All files and directories at the following location will be deleted: /Workspace/
 
 Deleting files...
 Destroy complete!
-
-Exit code: 1
