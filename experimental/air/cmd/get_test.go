@@ -17,11 +17,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// renderGet renders the status template against the JSON envelope, exactly as
+// renderGet renders the get template against the JSON envelope, exactly as
 // the command does, so the test covers the real template branches.
 func renderGet(t *testing.T, data getData) string {
 	t.Helper()
-	tmpl, err := template.New("status").Parse(getTemplate)
+	tmpl, err := template.New("get").Parse(getTemplate)
 	require.NoError(t, err)
 	var buf bytes.Buffer
 	require.NoError(t, tmpl.Execute(&buf, envelope{V: envelopeVersion, Data: data}))
@@ -180,7 +180,7 @@ func TestGetTemplateAllFields(t *testing.T) {
 	}
 }
 
-func TestBuildStatusData(t *testing.T) {
+func TestBuildGetData(t *testing.T) {
 	run := &jobs.Run{
 		RunId:           123,
 		RunPageUrl:      "https://example.test/run/123",
