@@ -66,6 +66,22 @@ func (p WorkspacePathPermissions) Compare(perms []resources.Permission) diag.Dia
 	return diags
 }
 
+// HasUndeclaredWriters reports whether any principal with write access to the
+// workspace folder (CAN_EDIT or higher — the access needed to deploy the bundle) is
+// not declared in perms with at least that level. In practice CAN_MANAGE is the only
+// declarable level that grants write access, so such principals must be declared with
+// CAN_MANAGE. Read-only folder access does not need to be declared.
+func (p WorkspacePathPermissions) HasUndeclaredWriters(perms []resources.Permission) bool {
+	var writers []resources.Permission
+	for _, wp := range p.Permissions {
+		if resources.GetLevelScore(string(wp.Level)) >= resources.GetLevelScore(CAN_EDIT) {
+			writers = append(writers, wp)
+		}
+	}
+	ok, _ := containsAll(writers, perms)
+	return !ok
+}
+
 // samePrincipal checks if two permissions refer to the same user/group/service principal.
 func samePrincipal(a, b resources.Permission) bool {
 	return a.UserName == b.UserName &&
