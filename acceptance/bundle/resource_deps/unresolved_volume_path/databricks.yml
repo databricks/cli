@@ -1,23 +1,17 @@
 bundle:
   name: test-bundle
 
-# volume_path is computed locally during the initialize phase. It is a CLI-only
-# field, not part of the volume's API state. When a component (catalog_name,
-# schema_name, or name) is still an unresolved ${...} reference, that reference is
-# embedded into volume_path instead of being dropped, so it can be resolved later
-# during plan or deploy like any other reference.
+# volume_path is a CLI-only computed field (not API state). When a component
+# (catalog_name, schema_name, name) is an unresolved ${...} reference, it stays
+# embedded in volume_path so it resolves later at plan/deploy.
 #
-# bar.name is ${resources.volumes.baz.id}, a remote value only known after baz is
-# created. bar.volume_path is therefore computed at initialize as
-# /Volumes/mycatalog/myschema/${resources.volumes.baz.id}, with the reference left
-# intact. foo.comment = ${resources.volumes.bar.volume_path} picks up that string
-# during initialize, and its embedded baz.id reference resolves at deploy, so foo
-# is created with the fully resolved path (see the deploy requests below).
+# Chain under test: bar.name is a remote value (baz.id), so bar.volume_path is
+# computed at initialize with that reference intact; foo.comment picks up that
+# string and resolves at deploy to the fully-resolved path.
 #
-# Both validate and deploy are exercised. (baz.id is used rather than
-# baz.storage_location only because the resolved value becomes bar's name, and the
-# testserver cannot route a volume name that contains the slashes of a
-# storage_location URL.)
+# baz.id is used instead of baz.storage_location because the resolved value
+# becomes bar's name, and the testserver can't route a name containing the
+# slashes of a storage_location URL.
 resources:
   volumes:
     baz:
