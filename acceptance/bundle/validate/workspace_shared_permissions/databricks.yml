@@ -1,0 +1,16 @@
+bundle:
+  name: test-bundle
+
+targets:
+  # state_path defaults to a directory under root_path, so only the root path
+  # warning fires.
+  one_warning:
+    workspace:
+      root_path: /Workspace/Shared/test-bundle/one
+
+  # state_path is a separate folder under /Workspace/Shared (not nested under
+  # root_path), so both the root path and state path warnings fire.
+  two_warnings:
+    workspace:
+      root_path: /Workspace/Shared/test-bundle/two
+      state_path: /Workspace/Shared/test-bundle-state
