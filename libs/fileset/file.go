@@ -67,6 +67,12 @@ func (f File) Modified() (ts time.Time) {
 	return info.ModTime()
 }
 
+// Open returns a reader for the file contents. The caller is responsible
+// for closing it.
+func (f File) Open() (fs.File, error) {
+	return f.root.Open(f.Relative)
+}
+
 func (f *File) IsNotebook() (bool, error) {
 	if f.fileType != Unknown {
 		return f.fileType == Notebook, nil
