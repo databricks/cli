@@ -2,7 +2,6 @@ package root
 
 import (
 	"errors"
-	"fmt"
 	"testing"
 
 	"github.com/spf13/cobra"
@@ -20,28 +19,7 @@ func parseUnknownFlag(cmd *cobra.Command, args []string) error {
 	return cmd.Execute()
 }
 
-func TestLevenshteinDistance(t *testing.T) {
-	tests := []struct {
-		a, b string
-		want int
-	}{
-		{"", "", 0},
-		{"abc", "abc", 0},
-		{"", "abc", 3},
-		{"abc", "", 3},
-		{"kitten", "sitting", 3},
-		{"output", "outpu", 1},   // deletion
-		{"output", "ouptut", 2},  // transposition = 2 edits
-		{"output", "outpux", 1},  // substitution
-		{"output", "outputx", 1}, // insertion
-	}
-
-	for _, tt := range tests {
-		t.Run(fmt.Sprintf("%s_%s", tt.a, tt.b), func(t *testing.T) {
-			assert.Equal(t, tt.want, levenshteinDistance(tt.a, tt.b))
-		})
-	}
-}
+// Levenshtein tests are in libs/textutil/levenshtein_test.go.
 
 func TestSuggestFlagFromError_LongFlagCloseMatch(t *testing.T) {
 	cmd := &cobra.Command{Use: "test"}
