@@ -159,6 +159,11 @@ func TestResourcesBindSupport(t *testing.T) {
 				JobSettings: jobs.JobSettings{},
 			},
 		},
+		JobRuns: map[string]*resources.JobRun{
+			"my_job_run": {
+				RunNow: jobs.RunNow{},
+			},
+		},
 		Pipelines: map[string]*resources.Pipeline{
 			"my_pipeline": {
 				CreatePipeline: pipelines.CreatePipeline{},
@@ -336,6 +341,7 @@ func TestResourcesBindSupport(t *testing.T) {
 	ctx := t.Context()
 	m := mocks.NewMockWorkspaceClient(t)
 	m.GetMockJobsAPI().EXPECT().Get(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockJobsAPI().EXPECT().GetRun(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockPipelinesAPI().EXPECT().Get(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockExperimentsAPI().EXPECT().GetExperiment(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockRegisteredModelsAPI().EXPECT().Get(mock.Anything, mock.Anything).Return(nil, nil)

@@ -319,6 +319,30 @@ var testDeps = map[string]prepareWorkspace{
 		return testConfig["vector_search_indexes"], nil
 	},
 
+	"job_runs": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		// A run can only be triggered against an existing job, so create one first.
+		resp, err := client.Jobs.Create(ctx, jobs.CreateJob{
+			Name: "job-for-run",
+			Tasks: []jobs.Task{
+				{
+					TaskKey: "t",
+					NotebookTask: &jobs.NotebookTask{
+						NotebookPath: "/Workspace/Users/user@example.com/notebook",
+					},
+				},
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		return &resources.JobRun{
+			RunNow: jobs.RunNow{
+				JobId: resp.JobId,
+			},
+		}, nil
+	},
+
 	"jobs.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
 		resp, err := client.Jobs.Create(ctx, jobs.CreateJob{
 			Name: "job-permissions",
@@ -1025,7 +1049,9 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 		require.NoError(t, err)
 	}
 
-	deleteIsNoop := strings.HasSuffix(group, "permissions") || strings.HasSuffix(group, "grants")
+	// job_runs has a no-op DoDelete (a triggered run cannot be "undeployed"), so
+	// the run remains readable after delete, like permissions and grants.
+	deleteIsNoop := strings.HasSuffix(group, "permissions") || strings.HasSuffix(group, "grants") || group == "job_runs"
 
 	remoteAfterDelete, err := adapter.DoRead(ctx, createdID)
 	if deleteIsNoop {
