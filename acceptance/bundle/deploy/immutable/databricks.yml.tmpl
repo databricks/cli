@@ -1,0 +1,33 @@
+bundle:
+  name: test-bundle-immutable-$UNIQUE_NAME
+  deployment:
+    immutable_folder: true
+
+artifacts:
+  python_artifact:
+    type: whl
+    build: uv build --wheel
+
+resources:
+  jobs:
+    my_job:
+      name: my job
+      tasks:
+        - task_key: spark_python_task
+          spark_python_task:
+            python_file: ./src/main.py
+          environment_key: env
+        - task_key: notebook_task
+          notebook_task:
+            notebook_path: ./src/notebook.py
+        - task_key: python_wheel_task
+          python_wheel_task:
+            package_name: immutable
+            entry_point: main
+          environment_key: env
+      environments:
+        - environment_key: env
+          spec:
+            environment_version: "4"
+            dependencies:
+              - ./dist/*.whl

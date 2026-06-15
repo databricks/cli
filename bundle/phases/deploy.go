@@ -8,10 +8,12 @@ import (
 	"github.com/databricks/cli/bundle/artifacts"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/engine"
+	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/deploy"
 	"github.com/databricks/cli/bundle/deploy/files"
 	"github.com/databricks/cli/bundle/deploy/lock"
 	"github.com/databricks/cli/bundle/deploy/metadata"
+	"github.com/databricks/cli/bundle/deploy/snapshot"
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct"
@@ -146,13 +148,38 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalDeploy))
 	}()
 
-	uploadLibraries(ctx, b, libs)
+	if b.Config.Bundle.Deployment.ImmutableFolder {
+		// Upload all source files and built artifacts as a single immutable snapshot.
+		// The API assigns a content-addressed path, so workspace.snapshot_path (and
+		// derived workspace.file_path / workspace.artifact_path) are only known after
+		// upload. Resolve variable references in resources and set library remote paths
+		// once the actual paths are available.
+		bundle.ApplySeqContext(ctx, b,
+			snapshot.Upload(),
+			mutator.ResolveVariableReferencesOnlyResources(),
+		)
+		if !logdiag.HasError(ctx) {
+			_, libDiags := libraries.ReplaceWithRemotePath(ctx, b)
+			for _, d := range libDiags {
+				logdiag.LogDiag(ctx, d)
+			}
+		}
+	} else {
+		uploadLibraries(ctx, b, libs)
+	}
+
 	if logdiag.HasError(ctx) {
 		return
 	}
 
+	if !b.Config.Bundle.Deployment.ImmutableFolder {
+		bundle.ApplySeqContext(ctx, b, files.Upload(outputHandler))
+		if logdiag.HasError(ctx) {
+			return
+		}
+	}
+
 	bundle.ApplySeqContext(ctx, b,
-		files.Upload(outputHandler),
 		deploy.StateUpdate(),
 		deploy.StatePush(),
 		permissions.ApplyWorkspaceRootPermissions(),

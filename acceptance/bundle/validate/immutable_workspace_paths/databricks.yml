@@ -1,0 +1,22 @@
+bundle:
+  name: my-bundle
+  deployment:
+    immutable_folder: true
+
+sync:
+  exclude:
+    # Test framework files that are not part of the bundle source.
+    - "repls.json"
+    - "user_repls.json"
+    - "script"
+    - "*.toml"
+
+resources:
+  jobs:
+    my_job:
+      name: my job
+      tasks:
+        - task_key: my_task
+          existing_cluster_id: "0101-120000-aaaaaaaa"
+          spark_python_task:
+            python_file: ./src/main.py

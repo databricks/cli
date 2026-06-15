@@ -1,0 +1,16 @@
+Local = false
+Cloud = true
+
+Ignore = [
+    "databricks.yml",
+    ".databricks",
+    ".venv",
+    "script",
+    "*.pyc",
+]
+
+# Normalize the content-addressed snapshot hash so it doesn't need to be
+# hardcoded in output.txt and the test stays stable across file changes.
+[[Repls]]
+Old = '[0-9a-f]{64}'
+New = '[SNAPSHOT_HASH]'

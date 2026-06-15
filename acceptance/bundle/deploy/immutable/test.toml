@@ -1,0 +1,10 @@
+Local = false
+Cloud = true
+
+Ignore = [
+    "databricks.yml",
+    ".databricks",
+    ".venv",
+    "script",
+    "*.pyc",
+]
