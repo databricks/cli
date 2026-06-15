@@ -129,24 +129,34 @@ func uploadLibraries(ctx context.Context, b *bundle.Bundle, libs map[string][]li
 func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHandler, engine engine.EngineType, libs map[string][]libraries.LocationToUpdate, plan *deployplan.Plan) {
 	log.Info(ctx, "Phase: deploy")
 
-	// Core mutators that CRUD resources and modify deployment state. These
-	// mutators need informed consent if they are potentially destructive.
-	bundle.ApplySeqContext(ctx, b,
-		scripts.Execute(config.ScriptPreDeploy),
-		lock.Acquire(),
-	)
-
+	bundle.ApplyContext(ctx, b, scripts.Execute(config.ScriptPreDeploy))
 	if logdiag.HasError(ctx) {
-		// lock is not acquired here
 		return
 	}
 
-	// lock is acquired here
+	dl := lock.NewDeploymentLock(ctx, b, lock.GoalDeploy)
+	if err := dl.Acquire(ctx); err != nil {
+		logdiag.LogError(ctx, err)
+		return
+	}
 	defer func() {
-		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalDeploy))
+		status := lock.DeploymentSuccess
+		if logdiag.HasError(ctx) {
+			status = lock.DeploymentFailure
+		}
+		if err := dl.Release(ctx, status); err != nil {
+			log.Warnf(ctx, "Failed to release deployment lock: %v", err)
+		}
 	}()
 
 	uploadLibraries(ctx, b, libs)
+	if logdiag.HasError(ctx) {
+		return
+	}
+
+	// Stamp the DMS deployment_id/version_id onto resources now that the lock is
+	// held and the version is known, so they are part of the config the plan diffs.
+	bundle.ApplyContext(ctx, b, metadata.AnnotateDeploymentVersion())
 	if logdiag.HasError(ctx) {
 		return
 	}

@@ -194,13 +194,21 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			return b, stateDesc, root.ErrAlreadyPrinted
 		}
 
-		// Open direct engine state once for all subsequent operations (ExportState, CalculatePlan, Apply, etc.)
+		// Open direct engine state once for all subsequent operations (ExportState, CalculatePlan, Apply, etc.).
+		// When DMS is active, load state from the server instead of the local state file.
 		needDirectState := stateDesc.Engine.IsDirect() && (opts.InitIDs || opts.ErrorOnEmptyState || opts.Deploy || opts.ReadPlanPath != "" || opts.PreDeployChecks || opts.PostStateFunc != nil)
 		if needDirectState {
-			_, localPath := b.StateFilenameDirect(ctx)
-			if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(true), dstate.WithWrite(false)); err != nil {
-				logdiag.LogError(ctx, err)
-				return b, stateDesc, root.ErrAlreadyPrinted
+			if b.DeploymentID != "" {
+				if err := statemgmt.LoadStateFromDMS(ctx, b); err != nil {
+					logdiag.LogError(ctx, err)
+					return b, stateDesc, root.ErrAlreadyPrinted
+				}
+			} else {
+				_, localPath := b.StateFilenameDirect(ctx)
+				if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(true), dstate.WithWrite(false)); err != nil {
+					logdiag.LogError(ctx, err)
+					return b, stateDesc, root.ErrAlreadyPrinted
+				}
 			}
 		}
 
@@ -242,6 +250,10 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			logdiag.LogError(ctx, errors.New("--plan is only supported with direct engine (set bundle.engine to \"direct\" or DATABRICKS_BUNDLE_ENGINE=direct)"))
 			return b, stateDesc, root.ErrAlreadyPrinted
 		}
+		if b.DeploymentID != "" {
+			logdiag.LogError(ctx, errors.New("--plan is not supported with the deployment metadata service"))
+			return b, stateDesc, root.ErrAlreadyPrinted
+		}
 		opts.Build = false
 		opts.PreDeployChecks = false
 
@@ -256,12 +268,15 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			log.Warnf(ctx, "Plan was created with CLI version %s but current version is %s", plan.CLIVersion, currentVersion)
 		}
 
-		// Validate that the plan's lineage and serial match the current state
-		// This must happen before any file operations
-		err = direct.ValidatePlanAgainstState(&b.DeploymentBundle.StateDB, plan)
-		if err != nil {
-			logdiag.LogError(ctx, err)
-			return b, stateDesc, root.ErrAlreadyPrinted
+		// Validate that the plan's lineage and serial match the current state.
+		// When DMS is active, the server validates version ordering during lock
+		// acquisition, so local state checks are unnecessary.
+		if b.DeploymentID == "" {
+			err = direct.ValidatePlanAgainstState(&b.DeploymentBundle.StateDB, plan)
+			if err != nil {
+				logdiag.LogError(ctx, err)
+				return b, stateDesc, root.ErrAlreadyPrinted
+			}
 		}
 	} else if opts.Deploy {
 		opts.Build = true

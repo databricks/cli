@@ -1,0 +1,11 @@
+bundle:
+  name: dms-release-lock-error
+
+targets:
+  fail-complete:
+    default: true
+
+resources:
+  jobs:
+    test_job:
+      name: test-job

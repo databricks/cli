@@ -2,6 +2,7 @@ package direct
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"sync"
@@ -37,6 +38,19 @@ type DeploymentUnit struct {
 	DependsOn []deployplan.DependsOnEntry
 }
 
+// OperationReporter is called after each resource operation (success or failure)
+// to report it to the deployment metadata service. The state parameter contains
+// the resource's post-operation state (nil for deletes or failures). Returns an
+// error if reporting fails; callers must treat this as a deployment failure.
+type OperationReporter func(
+	ctx context.Context,
+	resourceKey string,
+	resourceID string,
+	action deployplan.ActionType,
+	operationErr error,
+	state json.RawMessage,
+) error
+
 // DeploymentBundle holds everything needed to deploy a bundle
 type DeploymentBundle struct {
 	StateDB          dstate.DeploymentState
@@ -44,6 +58,10 @@ type DeploymentBundle struct {
 	Plan             *deployplan.Plan
 	RemoteStateCache sync.Map
 	StateCache       structvar.Cache
+
+	// OperationReporter, when set, is called inline after each successful
+	// resource Create/Update/Delete to report the operation to the metadata service.
+	OperationReporter OperationReporter
 }
 
 // SetRemoteState updates the remote state with type validation and marks as fresh.
