@@ -198,6 +198,9 @@ github.com/databricks/cli/bundle/config.Resources:
   "genie_spaces":
     "description": |-
       PLACEHOLDER
+  "job_runs":
+    "description": |-
+      The job run definitions for the bundle, where each key is the name of the job run.
   "jobs":
     "description": |-
       The job definitions for the bundle, where each key is the name of the job.
