@@ -130,7 +130,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 					logdiag.LogError(ctx, fmt.Errorf("state entry not found for %q", resourceKey))
 					return false
 				}
-				err = b.StateDB.SaveState(resourceKey, id, sv.Value, entry.DependsOn)
+				err = d.saveState(&b.StateDB, id, sv.Value)
 			} else {
 				// TODO: redo calcDiff to downgrade planned action if possible (?)
 				err = d.Deploy(ctx, &b.StateDB, sv.Value, action, entry)

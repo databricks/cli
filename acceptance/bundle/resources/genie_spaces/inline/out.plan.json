@@ -24,9 +24,9 @@
         "serialized_space": {
           "action": "skip",
           "reason": "etag_based",
-          "old": "{\"config\":{\"sample_questions\":[{\"id\":\"sq-001\",\"question\":[\"What is the total revenue?\"]}]},\"data_sources\":{\"tables\":[{\"column_configs\":[{\"column_name\":\"amount\",\"get_example_values\":true}],\"identifier\":\"main.sales.orders\"}]},\"version\":1}",
-          "new": "{\"config\":{\"sample_questions\":[{\"id\":\"sq-001\",\"question\":[\"What is the total revenue?\"]}]},\"data_sources\":{\"tables\":[{\"column_configs\":[{\"column_name\":\"amount\",\"get_example_values\":true}],\"identifier\":\"main.sales.orders\"}]},\"version\":1}",
-          "remote": "{\"config\":{\"sample_questions\":[{\"id\":\"sq-001\",\"question\":[\"What is the total revenue?\"]}]},\"data_sources\":{\"tables\":[{\"column_configs\":[{\"column_name\":\"amount\",\"get_example_values\":true}],\"identifier\":\"main.sales.orders\"}]},\"version\":2}"
+          "old": "sha256:ea4b505f061a2b65db49891ea5cab6ac875350aa7a8afed4778860a50d8f4db5",
+          "new": "sha256:ea4b505f061a2b65db49891ea5cab6ac875350aa7a8afed4778860a50d8f4db5",
+          "remote": "sha256:8df899b73697f19d25ed51f3a97ddce65f97d61cd7fc3b402aef349eb2fe93e8"
         }
       }
     }

@@ -145,13 +145,22 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 			}
 		}
 
+		adapter, err := b.getAdapterForKey(resourceKey)
+		if err != nil {
+			return nil, err
+		}
+		compacted, err := adapter.CompactState(sv.Value)
+		if err != nil {
+			return nil, fmt.Errorf("compacting state: %w", err)
+		}
+
 		err = b.StateDB.Open(ctx, tmpStatePath, dstate.WithRecovery(true), dstate.WithWrite(true))
 		if err != nil {
 			os.Remove(tmpStatePath)
 			return nil, err
 		}
 
-		err = b.StateDB.SaveState(resourceKey, resourceID, sv.Value, dependsOn)
+		err = b.StateDB.SaveState(resourceKey, resourceID, compacted, dependsOn)
 		if err != nil {
 			os.Remove(tmpStatePath)
 			return nil, err

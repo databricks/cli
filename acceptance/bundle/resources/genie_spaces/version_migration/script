@@ -18,9 +18,12 @@ trace $CLI bundle plan
 # The mismatch the etag masks: the local config stays version 1 while the remote
 # (and the etag guarding it) is version 2. The serialized_space change is
 # recorded but skipped via the etag_based rule.
+#
+# serialized_space is stored in state as a content hash (it is never compared
+# against the remote value), so the plan reports old/new/remote as hashes, not
+# the full content. We assert that local and remote differ and that the change is
+# skipped, rather than parsing version numbers out of the content.
 title "serialized_space: local version 1, remote version 2, skipped (etag_based)"
 $CLI bundle plan -o json \
   | jq '.plan["resources.genie_spaces.foo"].changes.serialized_space
-        | {action, reason,
-           local_version: (.new | fromjson | .version),
-           remote_version: (.remote | fromjson | .version)}'
+        | {action, reason, local_remote_differ: (.new != .remote)}'
