@@ -176,6 +176,8 @@ resources:
       - field: etag
         reason: spec:output_only
 
+  # job_runs: no api field behaviors
+
   # jobs: no api field behaviors
 
   # model_serving_endpoints: no api field behaviors

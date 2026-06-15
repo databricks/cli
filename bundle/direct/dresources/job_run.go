@@ -55,12 +55,19 @@ func (r *ResourceJobRun) DoRead(ctx context.Context, id string) (*JobRunRemote, 
 		return nil, err
 	}
 	run, err := r.client.Jobs.GetRun(ctx, jobs.GetRunRequest{
-		RunId: runID,
+		RunId:                 runID,
+		IncludeHistory:        false,
+		IncludeResolvedValues: false,
+		PageToken:             "",
+		ForceSendFields:       nil,
 	})
 	if err != nil {
 		return nil, err
 	}
-	return &JobRunRemote{RunId: run.RunId}, nil
+	// GetRun does not echo back the RunNow request, so the embedded RunNow is
+	// left zero here; the remote identity lives in RunId.
+	var emptyRunNow jobs.RunNow
+	return &JobRunRemote{RunNow: emptyRunNow, RunId: run.RunId}, nil
 }
 
 func (r *ResourceJobRun) DoCreate(ctx context.Context, config *jobs.RunNow) (string, *JobRunRemote, error) {
