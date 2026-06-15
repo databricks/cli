@@ -378,14 +378,15 @@ func (a *Adapter) GeneratedResourceConfig() *ResourceLifecycleConfig {
 	return a.generatedResourceConfig
 }
 
-func (a *Adapter) IsFieldInRecreateOnChanges(path *structpath.PathNode) bool {
+// FieldTriggersRecreate reports whether a local change to the field forces a
+// delete + create. Both recreate_on_changes and provided_id_fields do this, so a
+// caller that knows the ID is preserved can conclude the field is unchanged.
+func (a *Adapter) FieldTriggersRecreate(path *structpath.PathNode) bool {
 	for _, p := range a.resourceConfig.RecreateOnChanges {
 		if path.HasPatternPrefix(p.Field) {
 			return true
 		}
 	}
-	// ProvidedIDFields also trigger recreate on local changes, so they give the same
-	// guarantee to callers: if the action keeps the ID, the field is unchanged.
 	for _, p := range a.resourceConfig.ProvidedIDFields {
 		if path.HasPatternPrefix(p.Field) {
 			return true
