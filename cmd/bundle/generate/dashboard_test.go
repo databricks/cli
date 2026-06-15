@@ -1,6 +1,7 @@
 package generate
 
 import (
+	"io"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -46,4 +47,21 @@ func TestDashboard_ErrorOnLegacyDashboard(t *testing.T) {
 	diags := logdiag.FlushCollected(ctx)
 	require.Len(t, diags, 1)
 	assert.Equal(t, "dashboard \"legacy dashboard\" is a legacy dashboard", diags[0].Summary)
+}
+
+func TestDashboard_LookupFlagsAreMutuallyExclusive(t *testing.T) {
+	tests := [][]string{
+		{"--existing-path", "/path/to/dashboard", "--existing-id", "f00dcafe"},
+		{"--existing-path", "/path/to/dashboard", "--resource", "test_dashboard"},
+		{"--existing-id", "f00dcafe", "--resource", "test_dashboard"},
+	}
+
+	for _, args := range tests {
+		cmd := NewGenerateDashboardCommand()
+		cmd.SetArgs(args)
+		cmd.SetOut(io.Discard)
+		cmd.SetErr(io.Discard)
+		err := cmd.Execute()
+		assert.ErrorContains(t, err, "none of the others can be")
+	}
 }

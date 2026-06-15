@@ -344,7 +344,11 @@ func (d *dashboard) generateForExisting(ctx context.Context, b *bundle.Bundle, d
 		return
 	}
 
-	key := textutil.NormalizeString(dashboard.DisplayName)
+	// The "key" flag is a persistent flag on the parent "generate" command.
+	key := d.cmd.Flag("key").Value.String()
+	if key == "" {
+		key = textutil.NormalizeString(dashboard.DisplayName)
+	}
 	err = d.saveConfiguration(ctx, b, dashboard, key)
 	if err != nil {
 		logdiag.LogError(ctx, err)
@@ -542,6 +546,11 @@ bundle files automatically, useful during active dashboard development.`,
 
 	// Exactly one of the lookup flags must be provided.
 	cmd.MarkFlagsOneRequired(
+		"existing-path",
+		"existing-id",
+		"resource",
+	)
+	cmd.MarkFlagsMutuallyExclusive(
 		"existing-path",
 		"existing-id",
 		"resource",
