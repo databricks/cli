@@ -17,6 +17,7 @@ import (
 	"github.com/databricks/cli/bundle/statemgmt/resourcestate"
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/log"
+	sdkbundle "github.com/databricks/databricks-sdk-go/service/bundle"
 	"github.com/google/uuid"
 )
 
@@ -156,7 +157,14 @@ type (
 	WithWrite bool
 )
 
-func (db *DeploymentState) Open(ctx context.Context, path string, withRecovery WithRecovery, withWrite WithWrite) error {
+// Open reads the deployment state from disk (and recovers the WAL when
+// withRecovery is set). When dmsClient is non-nil, the deployment metadata
+// service is the source of truth for resource state: if DMS holds a
+// successfully completed version for this deployment's lineage, the resources
+// read from the file are replaced with the ones recorded in DMS. The local
+// identity (lineage and serial) always comes from the file, since that is what
+// the write path increments. A nil dmsClient keeps the behavior file-only.
+func (db *DeploymentState) Open(ctx context.Context, path string, withRecovery WithRecovery, withWrite WithWrite, dmsClient sdkbundle.BundleInterface) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
@@ -202,6 +210,12 @@ func (db *DeploymentState) Open(ctx context.Context, path string, withRecovery W
 
 	if err := migrateState(&db.Data); err != nil {
 		return fmt.Errorf("migrating state %s: %w", path, err)
+	}
+
+	if dmsClient != nil && db.Data.Lineage != "" {
+		if err := db.overlayDMSState(ctx, dmsClient); err != nil {
+			return err
+		}
 	}
 
 	if withWrite {
