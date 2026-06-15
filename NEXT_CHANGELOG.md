@@ -14,8 +14,8 @@
 * Bundle variable references now accept Unicode letters in path segments (e.g. `${var.变量}`). ([#5532](https://github.com/databricks/cli/pull/5532))
 * Ignore remote changes for vector search direct_access_index_spec.schema_json to prevent drift when the backend normalizes the schema ([#5481](https://github.com/databricks/cli/pull/5481)).
 * Remove hidden, never-functional `--existing-dashboard-id`, `--existing-dashboard-path`, `--existing-alert-id`, and `--existing-genie-space-id` alias flags from `bundle generate`; use the documented `--existing-id` / `--existing-path` flags instead ([#5591](https://github.com/databricks/cli/pull/5591)).
-* engine/direct: Fix WAL corruption after two consecutive failed deploys ([#5557](https://github.com/databricks/cli/issues/5557)).
-* engine/direct: Don't open the deployment state WAL when a deploy's plan fails ([#5557](https://github.com/databricks/cli/issues/5557)).
+* engine/direct: Fix WAL corruption after two consecutive failed deploys ([#5606](https://github.com/databricks/cli/pull/5606)).
+* engine/direct: Don't open the deployment state WAL when a deploy's plan fails ([#5607](https://github.com/databricks/cli/pull/5607)).
 
 ### Dependency updates
 
