@@ -1,5 +1,5 @@
 bundle:
-  name: wal-two-failed-deploys
+  name: test-bundle
 
 resources:
   jobs:
