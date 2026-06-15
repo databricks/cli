@@ -1,0 +1,36 @@
+
+=== run
+>>> [CLI] experimental air run
+Error: `air run` is not implemented yet
+
+Exit code: 1
+
+=== get
+>>> [CLI] experimental air get 123
+Error: `air get` is not implemented yet
+
+Exit code: 1
+
+=== list
+>>> [CLI] experimental air list
+Error: `air list` is not implemented yet
+
+Exit code: 1
+
+=== logs
+>>> [CLI] experimental air logs 123
+Error: `air logs` is not implemented yet
+
+Exit code: 1
+
+=== cancel
+>>> [CLI] experimental air cancel 123
+Error: `air cancel` is not implemented yet
+
+Exit code: 1
+
+=== register-image
+>>> [CLI] experimental air register-image my-image:latest
+Error: `air register-image` is not implemented yet
+
+Exit code: 1
