@@ -34,7 +34,7 @@ class GcpAttributes:
     """
     :meta private: [EXPERIMENTAL]
     
-    The confidential computing technology for this cluster's instances.
+    [Private Preview] The confidential computing technology for this cluster's instances.
     Currently only SEV_SNP is supported, and only on N2D instance types.
     When not set, no confidential computing is applied.
     """
@@ -105,7 +105,7 @@ class GcpAttributesDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    The confidential computing technology for this cluster's instances.
+    [Private Preview] The confidential computing technology for this cluster's instances.
     Currently only SEV_SNP is supported, and only on N2D instance types.
     When not set, no confidential computing is applied.
     """
