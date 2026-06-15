@@ -1,0 +1,16 @@
+
+>>> errcode [CLI] bundle plan -o json
+{
+  "cli_version": "[DEV_VERSION]",
+  "plan": {
+    "resources.jobs.process": {
+      "action": "create"
+    },
+    "resources.schemas.my": {
+      "action": "create"
+    },
+    "resources.volumes.data": {
+      "action": "create"
+    }
+  }
+}

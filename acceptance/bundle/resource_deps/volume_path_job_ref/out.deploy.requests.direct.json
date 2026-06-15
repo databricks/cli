@@ -1,7 +1,7 @@
-
->>> [CLI] bundle validate -o json
 {
-  "process": {
+  "method": "POST",
+  "path": "/api/2.2/jobs/create",
+  "body": {
     "deployment": {
       "kind": "BUNDLE",
       "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/testbundle-[UNIQUE_NAME]/default/state/metadata.json"
@@ -21,14 +21,3 @@
     }
   }
 }
-{
-  "data": {
-    "catalog_name": "main",
-    "name": "data-[UNIQUE_NAME]",
-    "schema_name": "${resources.schemas.my.name}",
-    "volume_path": "/Volumes/main/myschema-[UNIQUE_NAME]/data-[UNIQUE_NAME]",
-    "volume_type": "MANAGED"
-  }
-}
-
->>> print_requests.py //jobs
