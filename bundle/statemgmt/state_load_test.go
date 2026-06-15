@@ -27,6 +27,7 @@ func TestStateToBundleEmptyLocalResources(t *testing.T) {
 
 	state := ExportedResourcesMap{
 		"resources.jobs.test_job":                                       {ID: "1"},
+		"resources.job_runs.test_job_run":                               {ID: "1"},
 		"resources.pipelines.test_pipeline":                             {ID: "1"},
 		"resources.models.test_mlflow_model":                            {ID: "1"},
 		"resources.experiments.test_mlflow_experiment":                  {ID: "1"},
@@ -60,6 +61,9 @@ func TestStateToBundleEmptyLocalResources(t *testing.T) {
 
 	assert.Equal(t, "1", config.Resources.Jobs["test_job"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Jobs["test_job"].ModifiedStatus)
+
+	assert.Equal(t, "1", config.Resources.JobRuns["test_job_run"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.JobRuns["test_job_run"].ModifiedStatus)
 
 	assert.Equal(t, "1", config.Resources.Pipelines["test_pipeline"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Pipelines["test_pipeline"].ModifiedStatus)
@@ -144,6 +148,13 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 				"test_job": {
 					JobSettings: jobs.JobSettings{
 						Name: "test_job",
+					},
+				},
+			},
+			JobRuns: map[string]*resources.JobRun{
+				"test_job_run": {
+					RunNow: jobs.RunNow{
+						JobId: 1234,
 					},
 				},
 			},
@@ -349,6 +360,9 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 	assert.Empty(t, config.Resources.Jobs["test_job"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Jobs["test_job"].ModifiedStatus)
 
+	assert.Empty(t, config.Resources.JobRuns["test_job_run"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.JobRuns["test_job_run"].ModifiedStatus)
+
 	assert.Empty(t, config.Resources.Pipelines["test_pipeline"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Pipelines["test_pipeline"].ModifiedStatus)
 
@@ -442,6 +456,18 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 				"test_job_new": {
 					JobSettings: jobs.JobSettings{
 						Name: "test_job_new",
+					},
+				},
+			},
+			JobRuns: map[string]*resources.JobRun{
+				"test_job_run": {
+					RunNow: jobs.RunNow{
+						JobId: 1234,
+					},
+				},
+				"test_job_run_new": {
+					RunNow: jobs.RunNow{
+						JobId: 5678,
 					},
 				},
 			},
@@ -771,6 +797,8 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 	state := ExportedResourcesMap{
 		"resources.jobs.test_job":                                           {ID: "1"},
 		"resources.jobs.test_job_old":                                       {ID: "2"},
+		"resources.job_runs.test_job_run":                                   {ID: "1"},
+		"resources.job_runs.test_job_run_old":                               {ID: "2"},
 		"resources.pipelines.test_pipeline":                                 {ID: "1"},
 		"resources.pipelines.test_pipeline_old":                             {ID: "2"},
 		"resources.models.test_mlflow_model":                                {ID: "1"},
@@ -827,6 +855,13 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Jobs["test_job_old"].ModifiedStatus)
 	assert.Empty(t, config.Resources.Jobs["test_job_new"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Jobs["test_job_new"].ModifiedStatus)
+
+	assert.Equal(t, "1", config.Resources.JobRuns["test_job_run"].ID)
+	assert.Empty(t, config.Resources.JobRuns["test_job_run"].ModifiedStatus)
+	assert.Equal(t, "2", config.Resources.JobRuns["test_job_run_old"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.JobRuns["test_job_run_old"].ModifiedStatus)
+	assert.Empty(t, config.Resources.JobRuns["test_job_run_new"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.JobRuns["test_job_run_new"].ModifiedStatus)
 
 	assert.Equal(t, "1", config.Resources.Pipelines["test_pipeline"].ID)
 	assert.Empty(t, config.Resources.Pipelines["test_pipeline"].ModifiedStatus)

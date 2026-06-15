@@ -12,6 +12,7 @@ import (
 // Resources defines Databricks resources associated with the bundle.
 type Resources struct {
 	Jobs      map[string]*resources.Job      `json:"jobs,omitempty"`
+	JobRuns   map[string]*resources.JobRun   `json:"job_runs,omitempty"`
 	Pipelines map[string]*resources.Pipeline `json:"pipelines,omitempty"`
 
 	Models                map[string]*resources.MlflowModel          `json:"models,omitempty"`
@@ -94,6 +95,7 @@ func (r *Resources) AllResources() []ResourceGroup {
 	descriptions := SupportedResources()
 	return []ResourceGroup{
 		collectResourceMap(descriptions["jobs"], r.Jobs),
+		collectResourceMap(descriptions["job_runs"], r.JobRuns),
 		collectResourceMap(descriptions["pipelines"], r.Pipelines),
 		collectResourceMap(descriptions["models"], r.Models),
 		collectResourceMap(descriptions["experiments"], r.Experiments),
@@ -153,6 +155,7 @@ func (r *Resources) FindResourceByConfigKey(key string) (ConfigResource, error) 
 func SupportedResources() map[string]resources.ResourceDescription {
 	return map[string]resources.ResourceDescription{
 		"jobs":                    (&resources.Job{}).ResourceDescription(),
+		"job_runs":                (&resources.JobRun{}).ResourceDescription(),
 		"pipelines":               (&resources.Pipeline{}).ResourceDescription(),
 		"models":                  (&resources.MlflowModel{}).ResourceDescription(),
 		"experiments":             (&resources.MlflowExperiment{}).ResourceDescription(),

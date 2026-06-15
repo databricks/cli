@@ -42,6 +42,7 @@ func allResourceTypes(t *testing.T) []string {
 		"experiments",
 		"external_locations",
 		"genie_spaces",
+		"job_runs",
 		"jobs",
 		"model_serving_endpoints",
 		"models",

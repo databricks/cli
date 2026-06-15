@@ -31,6 +31,7 @@ var unsupportedResources = []string{
 	"postgres_catalogs",
 	"postgres_synced_tables",
 	"vector_search_indexes",
+	"job_runs",
 }
 
 func TestApplyBundlePermissions(t *testing.T) {

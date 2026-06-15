@@ -257,6 +257,13 @@ github.com/databricks/cli/bundle/config/resources.Job:
   "run_as":
     "description": |-
       PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.JobRun:
+  "lifecycle":
+    "description": |-
+      Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+  "python_named_params":
+    "description": |-
+      A map from keys to values for jobs with Python wheel tasks, for example `"python_named_params": {"name": "task", "data": "dbfs:/path/to/data.json"}`.
 github.com/databricks/cli/bundle/config/resources.MlflowExperiment:
   "_":
     "markdown_description": |-

@@ -125,6 +125,9 @@ func TestBundleResourcePluralNamesResolveInWorkspaceURLs(t *testing.T) {
 	// Resources that intentionally have no workspace URL.
 	noURL := map[string]bool{
 		"external_locations": true,
+		// A job run has no stable workspace URL yet; surfacing one is deferred
+		// to a later milestone (see JobRun.InitializeURL).
+		"job_runs":           true,
 		"postgres_branches":  true,
 		"postgres_endpoints": true,
 		"postgres_projects":  true,
@@ -155,6 +158,11 @@ func TestResourcesBindSupport(t *testing.T) {
 		Jobs: map[string]*resources.Job{
 			"my_job": {
 				JobSettings: jobs.JobSettings{},
+			},
+		},
+		JobRuns: map[string]*resources.JobRun{
+			"my_job_run": {
+				RunNow: jobs.RunNow{},
 			},
 		},
 		Pipelines: map[string]*resources.Pipeline{
@@ -315,6 +323,7 @@ func TestResourcesBindSupport(t *testing.T) {
 	ctx := t.Context()
 	m := mocks.NewMockWorkspaceClient(t)
 	m.GetMockJobsAPI().EXPECT().Get(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockJobsAPI().EXPECT().GetRun(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockPipelinesAPI().EXPECT().Get(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockExperimentsAPI().EXPECT().GetExperiment(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockRegisteredModelsAPI().EXPECT().Get(mock.Anything, mock.Anything).Return(nil, nil)
