@@ -27,6 +27,11 @@ const defaultChartWidth = 80
 // artifacts behind when the spinner erases it.
 const maxStatusRunes = 100
 
+// UpdateCLIAdvice tells the user how to recover when the undocumented API
+// behind an experimental command has changed or moved: a newer CLI built
+// against the current wire format is the only user-side fix.
+const UpdateCLIAdvice = "update the Databricks CLI to the latest version (run 'databricks version --check')"
+
 // RenderDebug prints every raw SSE data line to w as-is.
 func RenderDebug(r io.Reader, w io.Writer) error {
 	reader := NewSSEReader(r)
@@ -156,7 +161,7 @@ func RenderText(ctx context.Context, r io.Reader, stdout, stderr io.Writer, adap
 
 	warnUnparsed(stderr, unparsed)
 	if !answered {
-		return fmt.Errorf("the stream ended without an answer (received %d events); re-run with --raw to inspect the raw stream", events)
+		return noAnswerError(events)
 	}
 	if !sawDone {
 		fmt.Fprintln(stderr, "Warning: the stream ended without a completion event; the answer may be incomplete.")
@@ -244,7 +249,7 @@ loop:
 	if apiErr == nil {
 		if result.Text == "" && len(result.ToolCalls) == 0 {
 			result.Status = statusError
-			apiErr = fmt.Errorf("the stream ended without an answer (received %d events); re-run with --raw to inspect the raw stream", events)
+			apiErr = noAnswerError(events)
 		} else if result.Status == statusIncomplete {
 			// Keep status "incomplete": an answer was produced, the server
 			// just never confirmed completion.
@@ -279,12 +284,19 @@ func apiError(se StreamEvent) error {
 	return fmt.Errorf("API error: %s: %s", se.ErrorCode, se.Text)
 }
 
+// noAnswerError reports a stream that ended without any user-visible answer.
+// Short of a server bug, this means the wire format drifted away from what
+// this build understands, so the message leads with the CLI update advice.
+func noAnswerError(events int) error {
+	return fmt.Errorf("the stream ended without an answer (received %d events); the API may have changed: %s, or re-run with --raw to inspect the raw stream", events, UpdateCLIAdvice)
+}
+
 // warnUnparsed reports events the adapter recognized but could not decode.
 // These are dropped from rendering, and a wire format drift that drops
 // everything must be visible rather than an empty success.
 func warnUnparsed(stderr io.Writer, unparsed int) {
 	if unparsed > 0 {
-		fmt.Fprintf(stderr, "Warning: %d stream event(s) could not be parsed and were ignored; re-run with --raw to inspect the raw stream.\n", unparsed)
+		fmt.Fprintf(stderr, "Warning: %d stream event(s) could not be parsed and were ignored; the API may have changed: %s, or re-run with --raw to inspect the raw stream.\n", unparsed, UpdateCLIAdvice)
 	}
 }
 
