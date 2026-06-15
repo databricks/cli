@@ -15,11 +15,16 @@ type WorkspacePathPermissions struct {
 	Permissions []resources.Permission
 }
 
-func ObjectAclToResourcePermissions(path string, acl []workspace.WorkspaceObjectAccessControlResponse) *WorkspacePathPermissions {
+func ObjectAclToResourcePermissions(path string, acl []workspace.WorkspaceObjectAccessControlResponse, currentUser string) *WorkspacePathPermissions {
 	var permissions []resources.Permission
 	for _, a := range acl {
 		// Skip the admin group because it's added to all resources by default.
 		if a.GroupName == "admins" {
+			continue
+		}
+
+		// Skip the deploying identity because Databricks automatically grants it CAN_MANAGE.
+		if currentUser != "" && (a.UserName == currentUser || a.ServicePrincipalName == currentUser) {
 			continue
 		}
 

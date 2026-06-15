@@ -120,7 +120,7 @@ func TestWorkspacePathPermissionsCompare(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		wp := ObjectAclToResourcePermissions("path", tc.acl)
+		wp := ObjectAclToResourcePermissions("path", tc.acl, "")
 		diags := wp.Compare(tc.perms)
 		require.Equal(t, tc.expected, diags)
 	}
@@ -191,9 +191,71 @@ func TestWorkspacePathPermissionsCompareWithHierarchy(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			wp := ObjectAclToResourcePermissions("path", tc.acl)
+			wp := ObjectAclToResourcePermissions("path", tc.acl, "")
 			diags := wp.Compare(tc.perms)
 			require.Equal(t, tc.expected, diags)
+		})
+	}
+}
+
+func TestObjectAclToResourcePermissionsSkipsCurrentUser(t *testing.T) {
+	testCases := []struct {
+		name        string
+		currentUser string
+		acl         []workspace.WorkspaceObjectAccessControlResponse
+		expectLen   int
+	}{
+		{
+			name:        "skip deploying user by UserName",
+			currentUser: "deployer@bar.com",
+			acl: []workspace.WorkspaceObjectAccessControlResponse{
+				{
+					UserName: "deployer@bar.com",
+					AllPermissions: []workspace.WorkspaceObjectPermission{
+						{PermissionLevel: "CAN_MANAGE"},
+					},
+				},
+			},
+			expectLen: 0,
+		},
+		{
+			name:        "skip deploying service principal by ServicePrincipalName",
+			currentUser: "26c33bca-uuid",
+			acl: []workspace.WorkspaceObjectAccessControlResponse{
+				{
+					ServicePrincipalName: "26c33bca-uuid",
+					AllPermissions: []workspace.WorkspaceObjectPermission{
+						{PermissionLevel: "CAN_MANAGE"},
+					},
+				},
+			},
+			expectLen: 0,
+		},
+		{
+			name:        "other users are not skipped",
+			currentUser: "deployer@bar.com",
+			acl: []workspace.WorkspaceObjectAccessControlResponse{
+				{
+					UserName: "deployer@bar.com",
+					AllPermissions: []workspace.WorkspaceObjectPermission{
+						{PermissionLevel: "CAN_MANAGE"},
+					},
+				},
+				{
+					UserName: "other@bar.com",
+					AllPermissions: []workspace.WorkspaceObjectPermission{
+						{PermissionLevel: "CAN_MANAGE"},
+					},
+				},
+			},
+			expectLen: 1,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			wp := ObjectAclToResourcePermissions("path", tc.acl, tc.currentUser)
+			require.Len(t, wp.Permissions, tc.expectLen)
 		})
 	}
 }
@@ -210,7 +272,7 @@ func TestWorkspacePathPermissionsDeduplication(t *testing.T) {
 		},
 	}
 
-	wp := ObjectAclToResourcePermissions("path", acl)
+	wp := ObjectAclToResourcePermissions("path", acl, "")
 
 	// Should only have one permission entry with the highest level
 	require.Len(t, wp.Permissions, 1)
