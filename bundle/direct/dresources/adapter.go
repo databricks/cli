@@ -51,6 +51,13 @@ type IResource interface {
 	// [Optional] OverrideChangeDesc can implement custom logic to update a given ChangeDesc; it is run last after built-in classifiers and field triggers.
 	OverrideChangeDesc(ctx context.Context, path *structpath.PathNode, changedesc *ChangeDesc, remoteState any) error
 
+	// [Optional] CompactState returns a copy of state with large, equality-only fields
+	// (e.g. dashboards' serialized_dashboard) replaced by content hashes before the state
+	// is persisted and diffed. Must be idempotent. Only valid for fields that are
+	// ignore_remote_changes and never read back from state.
+	// Example: func (r *ResourceDashboard) CompactState(state *DashboardState) (*DashboardState, error)
+	CompactState(state any) (any, error)
+
 	// DoCreate creates a new resource from the newState. Returns id of the resource and optionally remote state.
 	// If remote state is available as part of the operation, return it; otherwise return nil.
 	// Example: func (r *ResourceVolume) DoCreate(ctx context.Context, newState *catalog.CreateVolumeRequestContent) (string, *catalog.VolumeInfo, error)
@@ -102,6 +109,7 @@ type Adapter struct {
 	waitAfterUpdate    *calladapt.BoundCaller
 	waitAfterDelete    *calladapt.BoundCaller
 	overrideChangeDesc *calladapt.BoundCaller
+	compactState       *calladapt.BoundCaller
 	doResize           *calladapt.BoundCaller
 
 	resourceConfig          *ResourceLifecycleConfig
@@ -135,6 +143,7 @@ func NewAdapter(typedNil any, resourceType string, client *databricks.WorkspaceC
 		waitAfterUpdate:         nil,
 		waitAfterDelete:         nil,
 		overrideChangeDesc:      nil,
+		compactState:            nil,
 		resourceConfig:          GetResourceConfig(resourceType),
 		generatedResourceConfig: GetGeneratedResourceConfig(resourceType),
 		keyedSlices:             nil,
@@ -222,6 +231,11 @@ func (a *Adapter) initMethods(resource any) error {
 	}
 
 	a.overrideChangeDesc, err = calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), "OverrideChangeDesc")
+	if err != nil {
+		return err
+	}
+
+	a.compactState, err = calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), "CompactState")
 	if err != nil {
 		return err
 	}
@@ -337,6 +351,13 @@ func (a *Adapter) validate() error {
 			return fmt.Errorf("WaitAfterUpdate must return (remoteType, error), got %d return values", len(a.waitAfterUpdate.OutTypes))
 		}
 		validations = append(validations, "WaitAfterUpdate remoteState return", a.waitAfterUpdate.OutTypes[0], remoteType)
+	}
+
+	if a.compactState != nil {
+		validations = append(validations,
+			"CompactState input", a.compactState.InTypes[0], stateType,
+			"CompactState return", a.compactState.OutTypes[0], stateType,
+		)
 	}
 
 	err = validateTypes(validations...)
@@ -554,6 +575,22 @@ func (a *Adapter) OverrideChangeDesc(ctx context.Context, path *structpath.PathN
 // If the resource doesn't implement KeyedSlices, returns nil.
 func (a *Adapter) KeyedSlices() map[string]any {
 	return a.keyedSlices
+}
+
+// CompactState returns a copy of state with large, equality-only fields replaced by
+// content hashes for compact storage, or state unchanged if the resource does not
+// implement CompactState. It is applied both before persisting state and to every
+// value entering the state diff, so stored and compared values share one form.
+func (a *Adapter) CompactState(state any) (any, error) {
+	if a.compactState == nil {
+		return state, nil
+	}
+
+	outs, err := a.compactState.Call(state)
+	if err != nil {
+		return nil, err
+	}
+	return outs[0], nil
 }
 
 // prepareCallRequired prepares a call and ensures the method is found.

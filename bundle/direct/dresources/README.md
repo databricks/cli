@@ -47,6 +47,17 @@ If the API may return a slice's elements in a different order between calls (e.g
 The state struct is serialized to JSON and persisted between deploys. Backward incompatible changes will result in a drift, which depending
 on field behaviour might result in recreate. See dstate/migrate.go on how to handle state migration.
 
+## CompactState: storing large fields as content hashes
+
+Implement the optional `CompactState(state *T) (*T, error)` method when a field holds large content that is only ever compared for equality and never read back from state. It returns a copy of the state with such fields replaced by a content hash (use `hashStateValue`), and the framework applies it both before persisting state and to every value entering the diff, so stored and compared values share one form.
+
+A field qualifies only if **all** of the following hold:
+ - it is declared `ignore_remote_changes` (so it is never meaningfully compared against the remote value — typically `etag_based` drift detection),
+ - it is not read back from state by any code path (e.g. not consumed raw by `OverrideChangeDesc` or by state export), and
+ - it can be large (a small field gains nothing — the hash placeholder is ~70 bytes).
+
+`dashboards.serialized_dashboard` and `genie_spaces.serialized_space` use this: both inline a file's contents into state, both detect drift via `etag`, and both always send the full contents to the API from the plan's `new_state`. As a result the plan reports such fields as hashes (`sha256:...`) rather than full content. No state version bump is needed: legacy full-content state is hashed on read for comparison and rewritten compactly on the next save. Add a test asserting the field is `ignore_remote_changes` to guard the invariant.
+
 ## OverrideChangeDesc
 
 Use `OverrideChangeDesc` only as a last resort when `resources.yml` settings cannot express the needed logic. Skipping an action with `change.Action = deployplan.Skip` in `OverrideChangeDesc` creates a silent no-op: the plan shows no change even if the user's config differs from remote. Document the skip reason clearly in both the comment and `change.Reason`.

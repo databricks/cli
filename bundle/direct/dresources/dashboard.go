@@ -106,6 +106,22 @@ func (r *ResourceDashboard) RemapState(state *DashboardState) *DashboardState {
 	}
 }
 
+// CompactState replaces the inlined serialized_dashboard contents with a content
+// hash before the state is persisted. The full contents are never needed back from
+// state: remote drift is detected via etag (serialized_dashboard is ignore_remote_changes,
+// see resources.yml), and a deploy always sends the contents from the plan's new_state,
+// never from saved state. Hashing keeps resources.json small for dashboards whose
+// serialized form can be several megabytes.
+func (r *ResourceDashboard) CompactState(state *DashboardState) (*DashboardState, error) {
+	hashed, err := hashStateValue(state.SerializedDashboard)
+	if err != nil {
+		return nil, err
+	}
+	compacted := *state
+	compacted.SerializedDashboard = hashed
+	return &compacted, nil
+}
+
 func (r *ResourceDashboard) DoRead(ctx context.Context, id string) (*DashboardState, error) {
 	var dashboard *dashboards.Dashboard
 	var publishedDashboard *dashboards.PublishedDashboard

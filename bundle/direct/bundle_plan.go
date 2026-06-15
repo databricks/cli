@@ -197,6 +197,15 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			return false
 		}
 
+		// Compact every value that enters the diff so they share one comparison form.
+		// For saved state this also hashes legacy full-content entries on the fly; the
+		// on-disk entry is rewritten compactly on the next save (lazy migration).
+		savedState, err = adapter.CompactState(savedState)
+		if err != nil {
+			logdiag.LogError(ctx, fmt.Errorf("%s: compacting saved state: %w", errorPrefix, err))
+			return false
+		}
+
 		// Note, currently we're diffing static structs, not dynamic value.
 		// This means for fields that contain references like ${resources.group.foo.id} we do one of the following:
 		// for strings: comparing unresolved string like "${resoures.group.foo.id}" with actual object id. As long as IDs do not have ${...} format we're good.
@@ -208,7 +217,15 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			logdiag.LogError(ctx, fmt.Errorf("%s: internal error: no state cache entry found for %q", errorPrefix, resourceKey))
 			return false
 		}
-		localDiff, err := structdiff.GetStructDiff(savedState, sv.Value, adapter.KeyedSlices())
+
+		// Compact a copy for comparison only; sv.Value keeps the full contents, which
+		// the deploy sends to the API.
+		localState, err := adapter.CompactState(sv.Value)
+		if err != nil {
+			logdiag.LogError(ctx, fmt.Errorf("%s: compacting local state: %w", errorPrefix, err))
+			return false
+		}
+		localDiff, err := structdiff.GetStructDiff(savedState, localState, adapter.KeyedSlices())
 		if err != nil {
 			logdiag.LogError(ctx, fmt.Errorf("%s: diffing local state: %w", errorPrefix, err))
 			return false
@@ -241,7 +258,13 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 				return false
 			}
 
-			remoteDiff, err = structdiff.GetStructDiff(remoteStateComparable, sv.Value, adapter.KeyedSlices())
+			remoteStateComparable, err = adapter.CompactState(remoteStateComparable)
+			if err != nil {
+				logdiag.LogError(ctx, fmt.Errorf("%s: compacting remote state id=%q: %w", errorPrefix, dbentry.ID, err))
+				return false
+			}
+
+			remoteDiff, err = structdiff.GetStructDiff(remoteStateComparable, localState, adapter.KeyedSlices())
 			if err != nil {
 				logdiag.LogError(ctx, fmt.Errorf("%s: diffing remote state: %w", errorPrefix, err))
 				return false

@@ -30,9 +30,9 @@
         "serialized_dashboard": {
           "action": "skip",
           "reason": "etag_based",
-          "old": "{ }\n",
-          "new": "{ }\n",
-          "remote": "{}\n"
+          "old": "sha256:cf207804e[NUMID]becbb5703765c4978cd7a8466dbdd[NUMID]e571ad09",
+          "new": "sha256:cf207804e[NUMID]becbb5703765c4978cd7a8466dbdd[NUMID]e571ad09",
+          "remote": "sha256:bb511d1e2723214ac1c3710d[NUMID]d57e31b0145d33d427d9628b209be38"
         }
       }
     }

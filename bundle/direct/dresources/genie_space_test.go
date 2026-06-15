@@ -1,6 +1,7 @@
 package dresources
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/databricks/cli/bundle/config/resources"
@@ -198,4 +199,41 @@ func TestGenieSpaceOverrideChangeDescEtag(t *testing.T) {
 		require.NoError(t, r.OverrideChangeDesc(t.Context(), titlePath, change, nil))
 		assert.Equal(t, deployplan.Update, change.Action)
 	})
+}
+
+func TestGenieSpaceCompactState(t *testing.T) {
+	r := &ResourceGenieSpace{}
+	state := &resources.GenieSpaceConfig{
+		Title:           "test-space",
+		Etag:            "etag-7",
+		SerializedSpace: `{"datasets":[{"name":"d1"}]}`,
+	}
+
+	compacted, err := r.CompactState(state)
+	require.NoError(t, err)
+
+	require.IsType(t, "", compacted.SerializedSpace)
+	assert.True(t, strings.HasPrefix(compacted.SerializedSpace.(string), stateHashPrefix))
+	assert.Equal(t, "test-space", compacted.Title)
+	assert.Equal(t, "etag-7", compacted.Etag)
+
+	// The original state is not mutated.
+	assert.Equal(t, `{"datasets":[{"name":"d1"}]}`, state.SerializedSpace)
+}
+
+// TestGenieSpaceSerializedSpaceIsIgnoreRemoteChanges guards the SHA-only invariant:
+// serialized_space is stored as a content hash, so it must never be compared against
+// the remote value, i.e. it must be declared ignore_remote_changes.
+func TestGenieSpaceSerializedSpaceIsIgnoreRemoteChanges(t *testing.T) {
+	cfg := GetResourceConfig("genie_spaces")
+	path := structpath.NewStringKey(nil, "serialized_space")
+
+	found := false
+	for _, rule := range cfg.IgnoreRemoteChanges {
+		if path.HasPatternPrefix(rule.Field) {
+			found = true
+			break
+		}
+	}
+	assert.True(t, found, "serialized_space must be ignore_remote_changes for SHA-only state to be correct")
 }
