@@ -7,6 +7,8 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle/config/engine"
+	"github.com/databricks/cli/bundle/direct/dresources"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
 )
@@ -31,12 +33,13 @@ type Stats struct {
 	// "resources.jobs.foo".
 	PerResourceType map[string]*protos.BundleConfigRemoteSyncResourceChanges
 
+	RecreateForcingChanges int64
+	OverwrittenLocalEdits  int64
+
 	FilesChangedCount int64
 	FilesWrittenCount int64
 
 	Restore RestoreStats
-
-	RawValuesWithVarSyntax int64
 
 	ErrorMessage  string
 	ErrorCategory protos.BundleConfigRemoteSyncErrorCategory
@@ -57,15 +60,16 @@ func (s *Stats) CollectChangeStats(changes Changes) {
 		s.PerResourceType = make(map[string]*protos.BundleConfigRemoteSyncResourceChanges)
 	}
 	for resourceKey, resourceChanges := range changes {
-		perType := s.PerResourceType[resourceTypeFromKey(resourceKey)]
+		resourceType := resourceTypeFromKey(resourceKey)
+		perType := s.PerResourceType[resourceType]
 		if perType == nil {
-			perType = &protos.BundleConfigRemoteSyncResourceChanges{ResourceType: resourceTypeFromKey(resourceKey)}
-			s.PerResourceType[perType.ResourceType] = perType
+			perType = &protos.BundleConfigRemoteSyncResourceChanges{ResourceType: resourceType}
+			s.PerResourceType[resourceType] = perType
 		}
 		// Only Add/Replace/Remove reach this function: DetectChanges filters
 		// out Skip operations and convertChangeDesc never produces Unknown,
 		// so the totals always equal the per-operation breakdown.
-		for _, change := range resourceChanges {
+		for fieldPath, change := range resourceChanges {
 			s.ChangesTotal++
 			perType.ChangesCount++
 			switch change.Operation {
@@ -80,9 +84,37 @@ func (s *Stats) CollectChangeStats(changes Changes) {
 				perType.RemoveCount++
 			case OperationUnknown, OperationSkip:
 			}
-			s.RawValuesWithVarSyntax += countVarSyntax(change.Value)
+			if isRecreateForcing(resourceType, fieldPath) {
+				s.RecreateForcingChanges++
+			}
+			if change.LocalEdit {
+				s.OverwrittenLocalEdits++
+			}
 		}
 	}
+}
+
+// isRecreateForcing reports whether a change to fieldPath on resourceType lands
+// on an immutable field (recreate_on_changes), meaning the next deploy will
+// delete+recreate the resource. It consults both the hand-written and the
+// spec-generated lifecycle configs, matching bundle plan behavior.
+func isRecreateForcing(resourceType, fieldPath string) bool {
+	node, err := structpath.ParsePath(fieldPath)
+	if err != nil {
+		return false
+	}
+	for _, cfg := range []*dresources.Config{dresources.MustLoadConfig(), dresources.MustLoadGeneratedConfig()} {
+		rc, ok := cfg.Resources[resourceType]
+		if !ok {
+			continue
+		}
+		for _, rule := range rc.RecreateOnChanges {
+			if node.HasPatternPrefix(rule.Field) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // resourceTypeFromKey extracts the resource type from a change key like
@@ -94,28 +126,6 @@ func resourceTypeFromKey(resourceKey string) string {
 		return "unknown"
 	}
 	return parts[1]
-}
-
-// countVarSyntax counts string leaves containing the literal "${" sequence.
-// Such values are written to YAML verbatim and are subject to interpolation
-// on the next deploy, so they measure exposure to escaping issues.
-func countVarSyntax(value any) int64 {
-	var n int64
-	switch v := value.(type) {
-	case string:
-		if strings.Contains(v, "${") {
-			n++
-		}
-	case map[string]any:
-		for _, val := range v {
-			n += countVarSyntax(val)
-		}
-	case []any:
-		for _, val := range v {
-			n += countVarSyntax(val)
-		}
-	}
-	return n
 }
 
 // LogTelemetry emits the BundleConfigRemoteSyncEvent for this run.
@@ -136,12 +146,13 @@ func (s *Stats) LogTelemetry(ctx context.Context) {
 			AddCount:               s.AddCount,
 			ReplaceCount:           s.ReplaceCount,
 			RemoveCount:            s.RemoveCount,
+			RecreateForcingChanges: s.RecreateForcingChanges,
+			OverwrittenLocalEdits:  s.OverwrittenLocalEdits,
 			ResourceChanges:        resourceChanges,
 			FilesChangedCount:      s.FilesChangedCount,
 			FilesWrittenCount:      s.FilesWrittenCount,
 			RefsRetargeted:         s.Restore.Retargeted,
 			RefsFromSiblings:       s.Restore.FromSiblings,
-			RawValuesWithVarSyntax: s.RawValuesWithVarSyntax,
 			ErrorMessage:           s.ErrorMessage,
 			ErrorCategory:          s.ErrorCategory,
 		},

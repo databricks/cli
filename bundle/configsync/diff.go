@@ -18,6 +18,7 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/structs/structdiff"
 )
 
 type OperationType string
@@ -33,6 +34,12 @@ const (
 type ConfigChangeDesc struct {
 	Operation OperationType `json:"operation"`
 	Value     any           `json:"value,omitempty"` // Normalized remote value (nil for remove operations)
+
+	// LocalEdit reports that the local config value for this field differs from
+	// the last-deployed state, so applying this change overwrites a not-yet-
+	// deployed local edit. Telemetry-only; direct engine only (the terraform
+	// sync snapshot has no per-field base). Not part of the command output.
+	LocalEdit bool `json:"-"`
 }
 
 type ResourceChanges map[string]*ConfigChangeDesc
@@ -166,6 +173,14 @@ func DetectChanges(ctx context.Context, b *bundle.Bundle, engine engine.EngineTy
 				}
 				if change.Operation == OperationSkip {
 					continue
+				}
+				// On the direct engine the state snapshot holds real per-field
+				// values, so New != Old means the local config diverged from the
+				// last deploy and this change overwrites that pending edit. The
+				// terraform sync snapshot stores empty per-resource state, so this
+				// comparison is meaningless there and is skipped.
+				if engine.IsDirect() && !structdiff.IsEqual(changeDesc.Old, changeDesc.New) {
+					change.LocalEdit = true
 				}
 				change.Value = stripNamePrefix(fullPath, change.Value, b.Config.Presets.NamePrefix)
 				resourceChanges[path] = change

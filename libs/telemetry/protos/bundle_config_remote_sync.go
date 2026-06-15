@@ -36,6 +36,16 @@ type BundleConfigRemoteSyncEvent struct {
 	ReplaceCount int64 `json:"replace_count,omitempty"`
 	RemoveCount  int64 `json:"remove_count,omitempty"`
 
+	// Number of detected changes on fields the resource lifecycle metadata
+	// marks recreate_on_changes (immutable): syncing these into config means the
+	// next deploy will delete+recreate the resource (a data-loss risk).
+	RecreateForcingChanges int64 `json:"recreate_forcing_changes,omitempty"`
+
+	// Number of detected changes that overwrite a not-yet-deployed local config
+	// edit (the local value differs from the last-deployed state). Direct engine
+	// only; the terraform sync snapshot has no per-field base to compare against.
+	OverwrittenLocalEdits int64 `json:"overwritten_local_edits,omitempty"`
+
 	// One entry per resource type that has at least one detected change.
 	ResourceChanges []BundleConfigRemoteSyncResourceChanges `json:"resource_changes,omitempty"`
 
@@ -49,10 +59,6 @@ type BundleConfigRemoteSyncEvent struct {
 	// the cross-target "reference does not exist" failures).
 	RefsRetargeted   int64 `json:"refs_retargeted,omitempty"`
 	RefsFromSiblings int64 `json:"refs_from_siblings,omitempty"`
-
-	// Number of detected remote string values that contain the literal
-	// character sequence "${". The values themselves are not logged.
-	RawValuesWithVarSyntax int64 `json:"raw_values_with_var_syntax,omitempty"`
 
 	// Scrubbed, truncated summary of the failure when the command exits with an
 	// error. Privileged free-text (DATA_LABEL_USER_COMMANDS_RESPONSE, LPP-5543);
