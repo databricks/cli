@@ -93,7 +93,7 @@ func (*ResourceApp) RemapState(remote *AppRemote) *AppState {
 	}
 }
 
-func (r *ResourceApp) DoRead(ctx context.Context, id string) (*AppRemote, error) {
+func (r *ResourceApp) DoRead(ctx context.Context, id string, _ *AppState) (*AppRemote, error) {
 	app, err := r.client.Apps.GetByName(ctx, id)
 	if err != nil {
 		return nil, err

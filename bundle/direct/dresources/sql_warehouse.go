@@ -94,7 +94,7 @@ func (*ResourceSqlWarehouse) RemapState(warehouse *SqlWarehouseRemote) *SqlWareh
 }
 
 // DoRead reads the warehouse by id.
-func (r *ResourceSqlWarehouse) DoRead(ctx context.Context, id string) (*SqlWarehouseRemote, error) {
+func (r *ResourceSqlWarehouse) DoRead(ctx context.Context, id string, _ *SqlWarehouseState) (*SqlWarehouseRemote, error) {
 	warehouse, err := r.client.Warehouses.GetById(ctx, id)
 	if err != nil {
 		return nil, err

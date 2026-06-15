@@ -51,7 +51,7 @@ func (*ResourceSecretScope) RemapState(remote *workspace.SecretScope) *SecretSco
 // DoRead fetches the secret scope by name. Since the Secrets API does not provide
 // a "get by name" endpoint (see https://docs.databricks.com/api/workspace/secrets),
 // we must list all scopes and filter by name to check if the scope still exists.
-func (r *ResourceSecretScope) DoRead(ctx context.Context, id string) (*workspace.SecretScope, error) {
+func (r *ResourceSecretScope) DoRead(ctx context.Context, id string, _ *SecretScopeConfig) (*workspace.SecretScope, error) {
 	scopes, err := r.client.Secrets.ListScopesAll(ctx)
 	if err != nil {
 		return nil, err

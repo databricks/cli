@@ -103,7 +103,7 @@ func makePostgresEndpointRemote(endpoint *postgres.Endpoint) *PostgresEndpointRe
 	}
 }
 
-func (r *ResourcePostgresEndpoint) DoRead(ctx context.Context, id string) (*PostgresEndpointRemote, error) {
+func (r *ResourcePostgresEndpoint) DoRead(ctx context.Context, id string, _ *PostgresEndpointState) (*PostgresEndpointRemote, error) {
 	endpoint, err := r.client.Postgres.GetEndpoint(ctx, postgres.GetEndpointRequest{Name: id})
 	if err != nil {
 		return nil, err

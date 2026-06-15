@@ -39,8 +39,12 @@ type IResource interface {
 	RemapState(input any) any
 
 	// DoRead reads and returns remote state from the backend. The return type defines schema for remote field resolution.
-	// Example: func (r *ResourceJob) DoRead(ctx context.Context, id string) (*jobs.Job, error)
-	DoRead(ctx context.Context, id string) (remoteState any, e error)
+	// newState is the resource's planned state for the current deploy with all references resolved;
+	// resources may use it to read against an identifier computed from the new config (e.g. the
+	// permissions resource derives object_id from the parent's freshly-resolved id) instead of the
+	// possibly-stale id stored in deployment state.
+	// Example: func (r *ResourceJob) DoRead(ctx context.Context, id string, newState *jobs.JobSettings) (*jobs.Job, error)
+	DoRead(ctx context.Context, id string, newState any) (remoteState any, e error)
 
 	// DoDelete deletes the resource. The state argument is the last-persisted
 	// state for the resource; resources that don't need it should accept it as
@@ -279,6 +283,7 @@ func (a *Adapter) validate() error {
 	validations := []any{
 		"PrepareState return", a.prepareState.OutTypes[0], stateType,
 		"DoCreate newState", a.doCreate.InTypes[1], stateType,
+		"DoRead newState", a.doRefresh.InTypes[2], stateType,
 		"DoDelete state", a.doDelete.InTypes[2], stateType,
 	}
 
@@ -407,8 +412,8 @@ func (a *Adapter) RemapState(remoteState any) (any, error) {
 	return outs[0], nil
 }
 
-func (a *Adapter) DoRead(ctx context.Context, id string) (any, error) {
-	outs, err := a.doRefresh.Call(ctx, id)
+func (a *Adapter) DoRead(ctx context.Context, id string, newState any) (any, error) {
+	outs, err := a.doRefresh.Call(ctx, id, newState)
 	if err != nil {
 		return nil, err
 	}

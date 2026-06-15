@@ -106,6 +106,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 
 		// We don't keep NewState around for 'skip' nodes
 
+		var newState any
 		if action != deployplan.Skip {
 			if !b.resolveReferences(ctx, resourceKey, entry, errorPrefix, false) {
 				return false
@@ -122,6 +123,8 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 				logdiag.LogError(ctx, fmt.Errorf("%s: unresolved references: %s", errorPrefix, jsonDump(sv.Refs)))
 				return false
 			}
+
+			newState = sv.Value
 
 			if migrateMode {
 				// In migration mode we're reading resources in DAG order so that we have fully resolved config snapshots stored
@@ -153,7 +156,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 				return false
 			}
 
-			err = d.refreshRemoteState(ctx, id)
+			err = d.refreshRemoteState(ctx, id, newState)
 			if err != nil {
 				logdiag.LogError(ctx, fmt.Errorf("%s: failed to read remote state: %w", errorPrefix, err))
 				return false

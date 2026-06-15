@@ -1,0 +1,61 @@
+
+=== Initial deployment
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/drift-mse-recreated-same-name-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] serving-endpoints get mse-endpoint-[UNIQUE_NAME]
+{
+  "name": "mse-endpoint-[UNIQUE_NAME]",
+  "creator": "[USERNAME]"
+}
+
+=== Delete and recreate remotely with the same name
+>>> [CLI] serving-endpoints delete mse-endpoint-[UNIQUE_NAME]
+
+>>> [CLI] serving-endpoints create mse-endpoint-[UNIQUE_NAME] --no-wait
+{
+  "name": "mse-endpoint-[UNIQUE_NAME]",
+  "creator": "[USERNAME]"
+}
+
+>>> [CLI] serving-endpoints get mse-endpoint-[UNIQUE_NAME]
+{
+  "name": "mse-endpoint-[UNIQUE_NAME]",
+  "creator": "[USERNAME]"
+}
+Original endpoint id: [ORIGINAL_ENDPOINT_ID]
+Remote recreated endpoint id: [REMOTE_RECREATED_ENDPOINT_ID]
+
+=== Plan after out-of-band recreate
+>>> [CLI] bundle plan
+update model_serving_endpoints.my_endpoint.permissions
+
+Plan: 0 to add, 1 to change, 0 to delete, 1 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/drift-mse-recreated-same-name-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] serving-endpoints get mse-endpoint-[UNIQUE_NAME]
+{
+  "name": "mse-endpoint-[UNIQUE_NAME]",
+  "creator": "[USERNAME]"
+}
+
+=== Verify no permanent drift after deploy
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.model_serving_endpoints.my_endpoint
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/drift-mse-recreated-same-name-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!

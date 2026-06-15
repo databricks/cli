@@ -94,7 +94,7 @@ func makePostgresBranchRemote(branch *postgres.Branch) *PostgresBranchRemote {
 	}
 }
 
-func (r *ResourcePostgresBranch) DoRead(ctx context.Context, id string) (*PostgresBranchRemote, error) {
+func (r *ResourcePostgresBranch) DoRead(ctx context.Context, id string, _ *PostgresBranchState) (*PostgresBranchRemote, error) {
 	branch, err := r.client.Postgres.GetBranch(ctx, postgres.GetBranchRequest{Name: id})
 	if err != nil {
 		return nil, err

@@ -98,7 +98,7 @@ func makePostgresProjectRemote(project *postgres.Project) *PostgresProjectRemote
 	}
 }
 
-func (r *ResourcePostgresProject) DoRead(ctx context.Context, id string) (*PostgresProjectRemote, error) {
+func (r *ResourcePostgresProject) DoRead(ctx context.Context, id string, _ *PostgresProjectState) (*PostgresProjectRemote, error) {
 	project, err := r.client.Postgres.GetProject(ctx, postgres.GetProjectRequest{Name: id})
 	if err != nil {
 		return nil, err

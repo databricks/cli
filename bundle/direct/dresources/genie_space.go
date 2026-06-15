@@ -58,7 +58,7 @@ func (r *ResourceGenieSpace) RemapState(remote *resources.GenieSpaceConfig) *res
 	}
 }
 
-func (r *ResourceGenieSpace) DoRead(ctx context.Context, id string) (*resources.GenieSpaceConfig, error) {
+func (r *ResourceGenieSpace) DoRead(ctx context.Context, id string, _ *resources.GenieSpaceConfig) (*resources.GenieSpaceConfig, error) {
 	space, err := r.client.Genie.GetSpace(ctx, dashboards.GenieGetSpaceRequest{
 		SpaceId:                id,
 		IncludeSerializedSpace: true, // otherwise etag isn't returned

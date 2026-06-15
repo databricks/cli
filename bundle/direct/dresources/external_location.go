@@ -40,7 +40,7 @@ func (*ResourceExternalLocation) RemapState(info *catalog.ExternalLocationInfo) 
 	}
 }
 
-func (r *ResourceExternalLocation) DoRead(ctx context.Context, id string) (*catalog.ExternalLocationInfo, error) {
+func (r *ResourceExternalLocation) DoRead(ctx context.Context, id string, _ *catalog.CreateExternalLocation) (*catalog.ExternalLocationInfo, error) {
 	return r.client.ExternalLocations.GetByName(ctx, id)
 }
 

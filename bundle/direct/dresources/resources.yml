@@ -434,6 +434,68 @@ resources:
       - field: scope_name
         reason: id_changes
 
+  # Permissions for the resources below use ResourcePermissions, with the deployment state ID
+  # equal to PermissionsState.ObjectID. When the parent resource is recreated remotely with a
+  # different identifier, ObjectID changes, so we trigger UpdateWithID to persist the new ID
+  # in state and avoid permanent drift on V1 permissions APIs (which still return ACL data
+  # for the old parent due to eventual consistency).
+  alerts.permissions:
+    update_id_on_changes:
+      - field: object_id
+        reason: id_changes
+  apps.permissions:
+    update_id_on_changes:
+      - field: object_id
+        reason: id_changes
+  clusters.permissions:
+    update_id_on_changes:
+      - field: object_id
+        reason: id_changes
+  dashboards.permissions:
+    update_id_on_changes:
+      - field: object_id
+        reason: id_changes
+  database_instances.permissions:
+    update_id_on_changes:
+      - field: object_id
+        reason: id_changes
+  experiments.permissions:
+    update_id_on_changes:
+      - field: object_id
+        reason: id_changes
+  genie_spaces.permissions:
+    update_id_on_changes:
+      - field: object_id
+        reason: id_changes
+  jobs.permissions:
+    update_id_on_changes:
+      - field: object_id
+        reason: id_changes
+  model_serving_endpoints.permissions:
+    update_id_on_changes:
+      - field: object_id
+        reason: id_changes
+  models.permissions:
+    update_id_on_changes:
+      - field: object_id
+        reason: id_changes
+  pipelines.permissions:
+    update_id_on_changes:
+      - field: object_id
+        reason: id_changes
+  postgres_projects.permissions:
+    update_id_on_changes:
+      - field: object_id
+        reason: id_changes
+  sql_warehouses.permissions:
+    update_id_on_changes:
+      - field: object_id
+        reason: id_changes
+  vector_search_endpoints.permissions:
+    update_id_on_changes:
+      - field: object_id
+        reason: id_changes
+
   clusters:
     ignore_remote_changes:
       # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/clusters/resource_cluster.go#L361-L363

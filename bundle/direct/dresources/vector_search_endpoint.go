@@ -57,7 +57,7 @@ func (*ResourceVectorSearchEndpoint) RemapState(remote *VectorSearchEndpointRemo
 	}
 }
 
-func (r *ResourceVectorSearchEndpoint) DoRead(ctx context.Context, id string) (*VectorSearchEndpointRemote, error) {
+func (r *ResourceVectorSearchEndpoint) DoRead(ctx context.Context, id string, _ *vectorsearch.CreateEndpoint) (*VectorSearchEndpointRemote, error) {
 	info, err := r.client.VectorSearchEndpoints.GetEndpointByEndpointName(ctx, id)
 	if err != nil {
 		return nil, err

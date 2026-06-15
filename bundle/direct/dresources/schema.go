@@ -33,7 +33,7 @@ func (*ResourceSchema) RemapState(info *catalog.SchemaInfo) *catalog.CreateSchem
 	}
 }
 
-func (r *ResourceSchema) DoRead(ctx context.Context, id string) (*catalog.SchemaInfo, error) {
+func (r *ResourceSchema) DoRead(ctx context.Context, id string, _ *catalog.CreateSchema) (*catalog.SchemaInfo, error) {
 	return r.client.Schemas.GetByFullName(ctx, id)
 }
 

@@ -73,7 +73,7 @@ func (*ResourceSecretScopeAcls) KeyedSlices() map[string]any {
 	}
 }
 
-func (r *ResourceSecretScopeAcls) DoRead(ctx context.Context, id string) (*SecretScopeAclsState, error) {
+func (r *ResourceSecretScopeAcls) DoRead(ctx context.Context, id string, _ *SecretScopeAclsState) (*SecretScopeAclsState, error) {
 	// id is the scope name
 	currentAcls, err := r.client.Secrets.ListAclsAll(ctx, workspace.ListAclsRequest{
 		Scope: id,

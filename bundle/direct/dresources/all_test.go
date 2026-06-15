@@ -849,8 +849,11 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 
 	ctx := t.Context()
 
-	// initial DoRead() cannot find the resource
-	remote, err := adapter.DoRead(ctx, "1234")
+	// initial DoRead() cannot find the resource. Pass nil newState so resources that
+	// use newState (e.g. permissions) fall back to the id-based path and surface the
+	// expected "not found" error rather than reading against the test fixture's
+	// already-created parent.
+	remote, err := adapter.DoRead(ctx, "1234", nil)
 	require.Nil(t, remote)
 	require.Error(t, err)
 	// TODO: if errors.Is(err, databricks.ErrResourceDoesNotExist) {... }
@@ -859,7 +862,7 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	require.NoError(t, err, "DoCreate failed state=%v", newState)
 	require.NotEmpty(t, createdID, "ID returned from DoCreate was empty")
 
-	remote, err = adapter.DoRead(ctx, createdID)
+	remote, err = adapter.DoRead(ctx, createdID, newState)
 	require.NoError(t, err)
 	require.NotNil(t, remote)
 
@@ -944,7 +947,7 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 
 	deleteIsNoop := strings.HasSuffix(group, "permissions") || strings.HasSuffix(group, "grants")
 
-	remoteAfterDelete, err := adapter.DoRead(ctx, createdID)
+	remoteAfterDelete, err := adapter.DoRead(ctx, createdID, newState)
 	if deleteIsNoop {
 		require.NoError(t, err)
 	} else {

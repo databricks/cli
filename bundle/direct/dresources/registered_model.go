@@ -46,7 +46,7 @@ func (*ResourceRegisteredModel) RemapState(model *catalog.RegisteredModelInfo) *
 	}
 }
 
-func (r *ResourceRegisteredModel) DoRead(ctx context.Context, id string) (*catalog.RegisteredModelInfo, error) {
+func (r *ResourceRegisteredModel) DoRead(ctx context.Context, id string, _ *catalog.CreateRegisteredModelRequest) (*catalog.RegisteredModelInfo, error) {
 	return r.client.RegisteredModels.Get(ctx, catalog.GetRegisteredModelRequest{
 		FullName:        id,
 		IncludeAliases:  false,

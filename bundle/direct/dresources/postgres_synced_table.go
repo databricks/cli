@@ -83,7 +83,7 @@ func makePostgresSyncedTableRemote(syncedTable *postgres.SyncedTable) *PostgresS
 	}
 }
 
-func (r *ResourcePostgresSyncedTable) DoRead(ctx context.Context, id string) (*PostgresSyncedTableRemote, error) {
+func (r *ResourcePostgresSyncedTable) DoRead(ctx context.Context, id string, _ *PostgresSyncedTableState) (*PostgresSyncedTableRemote, error) {
 	syncedTable, err := r.client.Postgres.GetSyncedTable(ctx, postgres.GetSyncedTableRequest{Name: id})
 	if err != nil {
 		return nil, err

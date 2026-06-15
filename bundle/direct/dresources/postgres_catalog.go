@@ -83,7 +83,7 @@ func makePostgresCatalogRemote(catalog *postgres.Catalog) *PostgresCatalogRemote
 	}
 }
 
-func (r *ResourcePostgresCatalog) DoRead(ctx context.Context, id string) (*PostgresCatalogRemote, error) {
+func (r *ResourcePostgresCatalog) DoRead(ctx context.Context, id string, _ *PostgresCatalogState) (*PostgresCatalogRemote, error) {
 	catalog, err := r.client.Postgres.GetCatalog(ctx, postgres.GetCatalogRequest{Name: id})
 	if err != nil {
 		return nil, err

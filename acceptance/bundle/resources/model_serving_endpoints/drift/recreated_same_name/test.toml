@@ -1,0 +1,8 @@
+Badness = "After deleting and recreating a model serving endpoint remotely with the same name but a different endpoint_id, bundle plan shows an update on permissions (instead of create as in V2) because the V1 permissions API does not delete ACLs immediately when the parent is gone. UpdateWithID persists the new object_id in deployment state so subsequent plans do not show permanent drift."
+
+Local = true
+Cloud = true
+RequiresUnityCatalog = true
+RecordRequests = false
+
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
