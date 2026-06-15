@@ -44,7 +44,7 @@ github.com/databricks/cli/bundle/config.Bundle:
       The definition of the bundle deployment. For supported attributes see [\_](/dev-tools/bundles/deployment-modes.md).
   "engine":
     "description": |-
-      The deployment engine to use. Valid values are `terraform` and `direct`. Takes priority over `DATABRICKS_BUNDLE_ENGINE` environment variable. Default is "terraform".
+      The deployment engine to use. Valid values are `terraform`, `direct`, and `direct_with_history`. Takes priority over `DATABRICKS_BUNDLE_ENGINE` environment variable. Default is "terraform".
   "git":
     "description": |-
       The Git version control details that are associated with your bundle.
@@ -63,6 +63,9 @@ github.com/databricks/cli/bundle/config.Deployment:
   "lock":
     "description": |-
       The deployment lock attributes.
+  "managed_state":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config.Experimental:
   "pydabs":
     "description": |-
@@ -497,6 +500,8 @@ github.com/databricks/cli/bundle/config/engine.EngineType:
         terraform
       - |-
         direct
+      - |-
+        direct_with_history
 github.com/databricks/cli/bundle/config/resources.Alert:
   "create_time":
     "description": |-

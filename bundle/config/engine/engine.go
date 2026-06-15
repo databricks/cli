@@ -12,9 +12,10 @@ const EnvVar = "DATABRICKS_BUNDLE_ENGINE"
 type EngineType string
 
 const (
-	EngineDirect    EngineType = "direct"
-	EngineTerraform EngineType = "terraform"
-	EngineNotSet    EngineType = ""
+	EngineDirect           EngineType = "direct"
+	EngineDirectWithHistory EngineType = "direct_with_history"
+	EngineTerraform        EngineType = "terraform"
+	EngineNotSet           EngineType = ""
 )
 
 // Default is used for new bundles if user has not set the value
@@ -29,6 +30,8 @@ func Parse(engine string) (EngineType, bool) {
 		return EngineTerraform, true
 	case "direct":
 		return EngineDirect, true
+	case "direct_with_history":
+		return EngineDirectWithHistory, true
 	default:
 		return EngineNotSet, false
 	}
@@ -39,7 +42,7 @@ func FromEnv(ctx context.Context) (EngineType, error) {
 	value := env.Get(ctx, EnvVar)
 	engine, ok := Parse(value)
 	if !ok {
-		return EngineNotSet, fmt.Errorf("unexpected setting for %s=%#v (expected 'terraform' or 'direct')", EnvVar, value)
+		return EngineNotSet, fmt.Errorf("unexpected setting for %s=%#v (expected 'terraform', 'direct', or 'direct_with_history')", EnvVar, value)
 	}
 	return engine, nil
 }
@@ -58,6 +61,13 @@ func (e EngineType) ThisOrDefault() EngineType {
 	return e
 }
 
+// IsDirect reports whether the engine is a direct engine (with or without history).
 func (e EngineType) IsDirect() bool {
-	return e.ThisOrDefault() == EngineDirect
+	t := e.ThisOrDefault()
+	return t == EngineDirect || t == EngineDirectWithHistory
+}
+
+// IsDirectWithHistory reports whether the engine is direct with deployment history enabled.
+func (e EngineType) IsDirectWithHistory() bool {
+	return e.ThisOrDefault() == EngineDirectWithHistory
 }
