@@ -72,10 +72,6 @@ type ResourceLifecycleConfig struct {
 	// normalization, and a real out-of-band rename would 404.
 	UpdateIDOnChanges []FieldRule `yaml:"update_id_on_changes,omitempty"`
 
-	// NormalizeCase: string field patterns the UC API lowercases on write.
-	// A change is skipped when local and remote differ only by case.
-	NormalizeCase []FieldRule `yaml:"normalize_case,omitempty"`
-
 	// NormalizeSlash: string field patterns the UC API strips trailing slashes from.
 	// A change is skipped when local and remote differ only by trailing slashes.
 	NormalizeSlash []FieldRule `yaml:"normalize_slash,omitempty"`
@@ -102,7 +98,6 @@ var empty = ResourceLifecycleConfig{
 	RecreateOnChanges:   nil,
 	ProvidedIDFields:    nil,
 	UpdateIDOnChanges:   nil,
-	NormalizeCase:       nil,
 	NormalizeSlash:      nil,
 	BackendDefaults:     nil,
 }

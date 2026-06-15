@@ -469,10 +469,10 @@ func shouldSkipIDField(cfg *dresources.ResourceLifecycleConfig, path *structpath
 }
 
 // shouldSkipNormalized skips a change that is a false diff caused by UC API
-// normalization: the API lowercases identifier names (normalize_case) and strips
-// trailing slashes from storage URLs (normalize_slash). The direct engine saves
-// local config to state, so without this the next plan sees the original value
-// against the normalized remote value and triggers a spurious recreate/update.
+// normalization: the API strips trailing slashes from storage URLs
+// (normalize_slash). The direct engine saves local config to state, so without
+// this the next plan sees the original value against the normalized remote value
+// and triggers a spurious recreate/update.
 func shouldSkipNormalized(cfg *dresources.ResourceLifecycleConfig, path *structpath.PathNode, ch *deployplan.ChangeDesc) (string, bool) {
 	if cfg == nil {
 		return "", false
@@ -481,9 +481,6 @@ func shouldSkipNormalized(cfg *dresources.ResourceLifecycleConfig, path *structp
 	remoteStr, remoteOk := ch.Remote.(string)
 	if !newOk || !remoteOk {
 		return "", false
-	}
-	if reason, ok := findMatchingRule(path, cfg.NormalizeCase); ok && strings.EqualFold(newStr, remoteStr) {
-		return reason, true
 	}
 	if reason, ok := findMatchingRule(path, cfg.NormalizeSlash); ok && strings.TrimRight(newStr, "/") == strings.TrimRight(remoteStr, "/") {
 		return reason, true
