@@ -449,6 +449,10 @@ func (db *DeploymentState) AssertOpenedForWrite() {
 
 // ExportStateFromData extracts resource IDs and ETags from a database snapshot.
 func ExportStateFromData(data Database) resourcestate.ExportedResourcesMap {
+	// Compressing each resource's state to measure its compressed size is the
+	// one non-trivial cost here, so compute those sizes in parallel up front.
+	compressedSizes := compressStateSizes(data)
+
 	result := make(resourcestate.ExportedResourcesMap)
 	for key, entry := range data.State {
 		var etag string
@@ -469,9 +473,10 @@ func ExportStateFromData(data Database) resourcestate.ExportedResourcesMap {
 		}
 
 		result[key] = resourcestate.ResourceState{
-			ID:             entry.ID,
-			ETag:           etag,
-			StateSizeBytes: len(entry.State),
+			ID:                       entry.ID,
+			ETag:                     etag,
+			StateSizeBytes:           len(entry.State),
+			StateCompressedSizeBytes: compressedSizes[key],
 		}
 	}
 	return result
