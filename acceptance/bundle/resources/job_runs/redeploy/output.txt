@@ -1,0 +1,54 @@
+
+=== initial deploy triggers the first run
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-redeploy/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> read_id.py my_job
+[MY_JOB_ID]
+
+>>> print_requests.py //jobs/run-now
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/run-now",
+  "body": {
+    "job_id": [MY_JOB_ID],
+    "job_parameters": {
+      "env": "dev"
+    }
+  }
+}
+
+=== change the run configuration and redeploy
+>>> update_file.py databricks.yml env: dev env: prod
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-redeploy/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== the config change triggered a second, different run
+>>> print_requests.py //jobs/run-now
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/run-now",
+  "body": {
+    "job_id": [MY_JOB_ID],
+    "job_parameters": {
+      "env": "prod"
+    }
+  }
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.job_runs.my_run
+  delete resources.jobs.my_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/job-runs-redeploy/default
+
+Deleting files...
+Destroy complete!
