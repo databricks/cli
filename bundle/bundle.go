@@ -148,6 +148,13 @@ type Bundle struct {
 	// (direct only) deployment implementation and state
 	DeploymentBundle direct.DeploymentBundle
 
+	// DeploymentID identifies the DMS-side deployment record for this bundle.
+	// Populated from the workspace managed_service.json during state pull when
+	// DATABRICKS_BUNDLE_MANAGED_STATE is set, and by the lock package after
+	// CreateDeployment. Empty when the deployment metadata service is not in
+	// use, or when DMS is enabled but no prior deployment exists.
+	DeploymentID string
+
 	// if true, we skip approval checks for deploy, destroy resources and delete
 	// files
 	AutoApprove bool

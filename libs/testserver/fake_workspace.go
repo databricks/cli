@@ -187,6 +187,10 @@ type FakeWorkspace struct {
 	// clusterVenvs caches Python venvs per existing cluster ID,
 	// matching cloud behavior where libraries are cached on running clusters.
 	clusterVenvs map[string]*clusterEnv
+
+	// deploymentMetadata is the in-memory bundle deployment metadata service
+	// state. Accessed via the DeploymentMetadata* methods.
+	deploymentMetadata *deploymentMetadata
 }
 
 func (s *FakeWorkspace) LockUnlock() func() {
@@ -318,6 +322,7 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		postgresImplicitBranches:  map[string]bool{},
 		postgresImplicitEndpoints: map[string]bool{},
 		clusterVenvs:              map[string]*clusterEnv{},
+		deploymentMetadata:        newDeploymentMetadata(),
 		Alerts:                    map[string]sql.AlertV2{},
 		Experiments:               map[string]ml.GetExperimentResponse{},
 		ModelRegistryModels:       map[string]ml.Model{},

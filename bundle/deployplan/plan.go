@@ -16,11 +16,15 @@ import (
 const currentPlanVersion = 2
 
 type Plan struct {
-	PlanVersion int                   `json:"plan_version,omitempty"`
-	CLIVersion  string                `json:"cli_version,omitempty"`
-	Lineage     string                `json:"lineage,omitempty"`
-	Serial      int                   `json:"serial,omitempty"`
-	Plan        map[string]*PlanEntry `json:"plan,omitzero"`
+	PlanVersion int    `json:"plan_version,omitempty"`
+	CLIVersion  string `json:"cli_version,omitempty"`
+	// Lineage and Serial uniquely identify a file-state snapshot the plan
+	// was computed against. Under the deployment metadata service (DMS)
+	// these are unused — server-side versioning replaces them with the
+	// deployment_id + version_id pair carried by the lock.
+	Lineage string                `json:"lineage,omitempty"`
+	Serial  int                   `json:"serial,omitempty"`
+	Plan    map[string]*PlanEntry `json:"plan,omitzero"`
 
 	mutex   sync.Mutex `json:"-"`
 	lockmap lockmap    `json:"-"`

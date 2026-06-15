@@ -15,6 +15,7 @@ import (
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/bundle/direct/dstate"
+	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/cmd/root"
@@ -197,10 +198,21 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		// Open direct engine state once for all subsequent operations (ExportState, CalculatePlan, Apply, etc.)
 		needDirectState := stateDesc.Engine.IsDirect() && (opts.InitIDs || opts.ErrorOnEmptyState || opts.Deploy || opts.ReadPlanPath != "" || opts.PreDeployChecks || opts.PostStateFunc != nil)
 		if needDirectState {
-			_, localPath := b.StateFilenameDirect(ctx)
-			if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(true), dstate.WithWrite(false)); err != nil {
-				logdiag.LogError(ctx, err)
-				return b, stateDesc, root.ErrAlreadyPrinted
+			if env.IsManagedState(ctx) {
+				// Under DMS the StateDB is populated from the server, not from
+				// the local file. b.DeploymentID may be empty here (no prior
+				// deployment); LoadStateFromDMS handles that by initialising
+				// an empty in-memory DB.
+				if err := statemgmt.LoadStateFromDMS(ctx, b); err != nil {
+					logdiag.LogError(ctx, err)
+					return b, stateDesc, root.ErrAlreadyPrinted
+				}
+			} else {
+				_, localPath := b.StateFilenameDirect(ctx)
+				if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(true), dstate.WithWrite(false)); err != nil {
+					logdiag.LogError(ctx, err)
+					return b, stateDesc, root.ErrAlreadyPrinted
+				}
 			}
 		}
 
@@ -240,6 +252,16 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 	if opts.ReadPlanPath != "" {
 		if !stateDesc.Engine.IsDirect() {
 			logdiag.LogError(ctx, errors.New("--plan is only supported with direct engine (set bundle.engine to \"direct\" or DATABRICKS_BUNDLE_ENGINE=direct)"))
+			return b, stateDesc, root.ErrAlreadyPrinted
+		}
+		if env.IsManagedState(ctx) {
+			// --plan persists a serial/lineage snapshot from the local state
+			// DB and validates it on apply. Under DMS the server is the
+			// single source of truth and acquires its own version-based lock
+			// on CreateVersion, so the local snapshot is meaningless. Reject
+			// the flag explicitly rather than silently accept it and risk an
+			// inconsistent deploy.
+			logdiag.LogError(ctx, errors.New("--plan is not supported with the deployment metadata service"))
 			return b, stateDesc, root.ErrAlreadyPrinted
 		}
 		opts.Build = false

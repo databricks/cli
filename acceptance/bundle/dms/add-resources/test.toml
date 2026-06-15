@@ -1,0 +1,6 @@
+Ignore = [".databricks"]
+
+# Exercise DMS-side operation reporting across two deploys:
+#  - first deploy creates job_a and reports one CREATE operation,
+#  - second deploy adds job_b without retouching job_a,
+#  - subsequent plan reads from DMS and sees both jobs already deployed.

@@ -1,0 +1,8 @@
+# Deploy with the deployment metadata service enabled.
+# The target name "fail-complete" instructs the fake DMS server to fail the
+# CompleteVersion call so the CLI exercises the "lock release failed" branch.
+trace $CLI bundle deploy
+
+# Print the DMS requests to verify the lock release was attempted.
+trace print_requests.py --get //bundle ^//workspace-files ^//import-file
+print_requests.py --get > /dev/null 2>&1 || true
