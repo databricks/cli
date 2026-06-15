@@ -21,7 +21,7 @@ func TestComputeVolumePath(t *testing.T) {
 	require.Equal(t, "/Volumes/main/myschema/myvol", v.ComputeVolumePath())
 }
 
-func TestComputeVolumePath_UnresolvedReference(t *testing.T) {
+func TestComputeVolumePath_PureReferenceEmbedded(t *testing.T) {
 	v := &Volume{
 		CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{
 			CatalogName: "main",
@@ -29,6 +29,19 @@ func TestComputeVolumePath_UnresolvedReference(t *testing.T) {
 			Name:        "myvol",
 		},
 	}
+	// A pure reference is embedded verbatim so it can be resolved later (plan/deploy).
+	require.Equal(t, "/Volumes/main/${resources.schemas.my.name}/myvol", v.ComputeVolumePath())
+}
+
+func TestComputeVolumePath_MalformedReference(t *testing.T) {
+	v := &Volume{
+		CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{
+			CatalogName: "main",
+			SchemaName:  "${resources.schemas.my.bad..syntax}",
+			Name:        "myvol",
+		},
+	}
+	// A malformed reference must not leak into the path.
 	require.Empty(t, v.ComputeVolumePath())
 }
 

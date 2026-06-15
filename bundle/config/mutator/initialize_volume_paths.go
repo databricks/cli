@@ -20,9 +20,11 @@ type initializeVolumePaths struct{}
 // references locally to compute the path, but we do not write the resolved values back: the
 // original references are preserved so validate and plan keep showing them.
 //
-// The path is only set when catalog, schema, and name resolve to concrete values (no remaining
-// ${...} references). This enables ${resources.volumes.<key>.volume_path} interpolation during
-// initialize.
+// A component that cannot be resolved locally (for example a remote field only known at plan or
+// deploy time) is left as a ${...} reference and embedded into volume_path. The embedded
+// reference is then carried through ${resources.volumes.<key>.volume_path} interpolation and
+// resolved later by the engine during plan or deploy, the same way any other resource reference
+// is. This enables ${resources.volumes.<key>.volume_path} interpolation during initialize.
 func InitializeVolumePaths() bundle.Mutator {
 	return &initializeVolumePaths{}
 }
