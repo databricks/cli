@@ -522,6 +522,62 @@ resources:
       # m["enable_serverless_compute"].Computed = true
       - field: enable_serverless_compute
 
+  database_instances:
+    recreate_on_changes:
+      # name is the instance identifier (PATCH /api/2.0/database/instances/{name})
+      # and the Database API has no rename endpoint, so changing it requires
+      # delete + create. The OpenAPI spec only marks parent_instance_ref as
+      # IMMUTABLE (handled by autogen in resources.generated.yml); name needs an
+      # explicit entry here.
+      - field: name
+        reason: immutable
+
+  database_catalogs:
+    # The Database API has no UpdateDatabaseCatalog endpoint (the generated SDK
+    # method is a stub that returns 501 NOT_IMPLEMENTED), so this resource
+    # implements no DoUpdate and every settable field must recreate. The
+    # complementary ignore_remote_changes block in resources.generated.yml
+    # handles the read side (create_database_if_not_exists is input-only, uid is
+    # output-only) so no-op deploys stay idempotent.
+    recreate_on_changes:
+      - field: name
+        reason: immutable
+      - field: database_instance_name
+        reason: immutable
+      - field: database_name
+        reason: immutable
+      - field: create_database_if_not_exists
+        reason: immutable
+
+  synced_database_tables:
+    # The Database API has no UpdateSyncedDatabaseTable endpoint (the generated
+    # SDK method is a stub that returns 501 NOT_IMPLEMENTED), so this resource
+    # implements no DoUpdate and every settable field must recreate. The
+    # complementary ignore_remote_changes block in resources.generated.yml
+    # handles the read side (input-only and output-only fields) so no-op deploys
+    # stay idempotent. Same pattern as postgres_synced_tables.
+    recreate_on_changes:
+      - field: name
+        reason: immutable
+      - field: database_instance_name
+        reason: immutable
+      - field: logical_database_name
+        reason: immutable
+      - field: spec.source_table_full_name
+        reason: immutable
+      - field: spec.primary_key_columns
+        reason: immutable
+      - field: spec.timeseries_key
+        reason: immutable
+      - field: spec.scheduling_policy
+        reason: immutable
+      - field: spec.create_database_objects_if_missing
+        reason: immutable
+      - field: spec.new_pipeline_spec
+        reason: immutable
+      - field: spec.existing_pipeline_id
+        reason: immutable
+
   postgres_projects:
     recreate_on_changes:
       # project_id is immutable (part of hierarchical name, not in API spec)
