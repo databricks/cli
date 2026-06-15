@@ -83,6 +83,11 @@ var descriptorKeyOrder = []string{"description", "markdown_description", "title"
 
 // descriptorToMap serializes d into dst with its keys ordered. It returns the
 // nil value (writing nothing) when d carries no content.
+//
+// The empty check relies on the dyn.NilValue reference: with a nil reference,
+// FromTyped omits zero-valued fields, so an all-zero descriptor collapses to
+// KindNil rather than an empty map. Do not pass a map reference here, or empty
+// descriptors would start serializing as "{}".
 func descriptorToMap(d annotation.Descriptor, dst map[string]dyn.Value) (dyn.Value, error) {
 	v, err := convert.FromTyped(d, dyn.NilValue)
 	if err != nil || v.Kind() == dyn.KindNil {
@@ -91,7 +96,8 @@ func descriptorToMap(d annotation.Descriptor, dst map[string]dyn.Value) (dyn.Val
 	return yamlsaver.ConvertToMapValue(d, yamlsaver.NewOrder(descriptorKeyOrder), []string{}, dst)
 }
 
-// descriptorEmpty reports whether d carries no documentation.
+// descriptorEmpty reports whether d carries no documentation. See
+// descriptorToMap for why the nil reference is what makes this work.
 func descriptorEmpty(d annotation.Descriptor) bool {
 	v, err := convert.FromTyped(d, dyn.NilValue)
 	return err == nil && v.Kind() == dyn.KindNil

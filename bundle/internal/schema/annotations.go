@@ -96,7 +96,7 @@ func (d *annotationHandler) syncWithMissingAnnotations(outputPath string, g *typ
 		return err
 	}
 	for _, k := range detached {
-		fmt.Printf("Dropping annotation for `%s`: no such field in the bundle configuration\n", k)
+		fmt.Printf("Dropping annotation for `%s`: no matching field in the bundle configuration\n", k)
 	}
 	return nil
 }

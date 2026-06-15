@@ -2,8 +2,10 @@ package main
 
 import (
 	"container/list"
+	"errors"
 	"fmt"
 	"reflect"
+	"slices"
 	"strings"
 
 	"github.com/databricks/cli/libs/jsonschema"
@@ -32,42 +34,47 @@ type fieldEdge struct {
 	typ  string
 }
 
-func newTypeGraph(root reflect.Type) (*typeGraph, error) {
+// newTypeGraph builds the graph for root. The transforms are the schema
+// generator's structural field-pruning transforms; they run before each type's
+// fields are recorded so the graph mirrors the fields the schema actually
+// emits (a field the generator deletes must not be documentable). Annotation-
+// dependent prunes like output-only removal are not replicated: those fields
+// carry upstream docs, so they never surface as undocumented placeholders.
+func newTypeGraph(root reflect.Type, transforms ...func(reflect.Type, jsonschema.Schema) jsonschema.Schema) (*typeGraph, error) {
 	g := &typeGraph{
 		root:   getPath(root),
 		fields: map[string][]fieldEdge{},
 	}
 
-	var ferr error
-	_, err := jsonschema.FromType(root, []func(reflect.Type, jsonschema.Schema) jsonschema.Schema{
-		func(typ reflect.Type, s jsonschema.Schema) jsonschema.Schema {
-			refPath := getPath(typ)
-			if !strings.HasPrefix(refPath, "github.com") {
-				return s
-			}
-
-			var edges []fieldEdge
-			if typ.Kind() == reflect.Struct {
-				for _, name := range structFieldOrder(typ, s.Properties) {
-					edges = append(edges, fieldEdge{name: name, typ: resolveEdgeType(s.Properties[name])})
-				}
-				// structFieldOrder only orders names the schema emitted, so a
-				// mismatch means its struct walk failed to reach a property —
-				// i.e. it diverged from the generator's own field handling.
-				if len(edges) != len(s.Properties) {
-					ferr = fmt.Errorf("type graph for %s reached %d of %d schema properties", refPath, len(edges), len(s.Properties))
-					return s
-				}
-			}
-
-			g.fields[refPath] = edges
+	var errs []error
+	capture := func(typ reflect.Type, s jsonschema.Schema) jsonschema.Schema {
+		refPath := getPath(typ)
+		if !strings.HasPrefix(refPath, "github.com") {
 			return s
-		},
-	})
+		}
+
+		var edges []fieldEdge
+		if typ.Kind() == reflect.Struct {
+			for _, name := range structFieldOrder(typ, s.Properties) {
+				edges = append(edges, fieldEdge{name: name, typ: resolveEdgeType(s.Properties[name])})
+			}
+			// structFieldOrder only orders names the schema emitted, so a
+			// mismatch means its struct walk failed to reach a property —
+			// i.e. it diverged from the generator's own field handling.
+			if len(edges) != len(s.Properties) {
+				errs = append(errs, fmt.Errorf("type graph for %s reached %d of %d schema properties", refPath, len(edges), len(s.Properties)))
+			}
+		}
+
+		g.fields[refPath] = edges
+		return s
+	}
+
+	_, err := jsonschema.FromType(root, append(slices.Clone(transforms), capture))
 	if err != nil {
 		return nil, err
 	}
-	return g, ferr
+	return g, errors.Join(errs...)
 }
 
 // edge returns the property of the given type with the given name.

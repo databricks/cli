@@ -206,6 +206,14 @@ func main() {
 	generateSchema(workdir, outputFile, cliJSONFile, docsMode)
 }
 
+// configTypeGraph builds the type graph for the bundle config root with the
+// schema generator's structural field prunes applied, so the annotations file
+// only documents fields the generated schema actually contains. Both the
+// generator and the detached-annotation test use it to stay in lockstep.
+func configTypeGraph() (*typeGraph, error) {
+	return newTypeGraph(reflect.TypeFor[config.Root](), removeJobsFields, removePipelineFields)
+}
+
 func generateSchema(workdir, outputFile, cliJSONFile string, docsMode bool) {
 	annotationsPath := filepath.Join(workdir, "annotations.yml")
 
@@ -225,7 +233,7 @@ func generateSchema(workdir, outputFile, cliJSONFile string, docsMode bool) {
 		log.Fatal(err)
 	}
 
-	graph, err := newTypeGraph(reflect.TypeFor[config.Root]())
+	graph, err := configTypeGraph()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -235,7 +243,7 @@ func generateSchema(workdir, outputFile, cliJSONFile string, docsMode bool) {
 		log.Fatal(err)
 	}
 	for _, k := range unknown {
-		fmt.Printf("Dropping annotation at `%s`: no such field in the bundle configuration\n", k)
+		fmt.Printf("Dropping annotation at `%s`: no matching field in the bundle configuration\n", k)
 	}
 
 	a, err := newAnnotationHandler(extracted, fromFile)

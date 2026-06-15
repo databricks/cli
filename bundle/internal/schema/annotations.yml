@@ -1064,9 +1064,6 @@ resources:
                     PLACEHOLDER
         "git_source":
           "$fields":
-            "git_snapshot":
-              "description": |-
-                PLACEHOLDER
             "sparse_checkout":
               "description": |-
                 PLACEHOLDER
@@ -1374,9 +1371,6 @@ resources:
                       path: ./pipeline.py
           ```
       "$fields":
-        "dry_run":
-          "description": |-
-            PLACEHOLDER
         "ingestion_definition":
           "$fields":
             "netsuite_jar_path":
