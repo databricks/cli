@@ -8,14 +8,6 @@ import (
 	"github.com/databricks/cli/libs/sync"
 )
 
-func GetSync(ctx context.Context, b *bundle.Bundle) (*sync.Sync, error) {
-	opts, err := GetSyncOptions(ctx, b)
-	if err != nil {
-		return nil, fmt.Errorf("cannot get sync options: %w", err)
-	}
-	return sync.New(ctx, *opts)
-}
-
 func GetSyncOptions(ctx context.Context, b *bundle.Bundle) (*sync.SyncOptions, error) {
 	cacheDir, err := b.LocalStateDir(ctx)
 	if err != nil {

@@ -15,13 +15,6 @@ create pipelines.mypipeline
 Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
 
 >>> print_requests.py ^//import-file/
-{
-  "method": "POST",
-  "path": "/api/2.0/workspace/mkdirs",
-  "body": {
-    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files"
-  }
-}
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
@@ -43,6 +36,13 @@ Deployment complete!
   "path": "/api/2.0/workspace/mkdirs",
   "body": {
     "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace/mkdirs",
+  "body": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files"
   }
 }
 {
