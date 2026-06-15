@@ -132,6 +132,12 @@ live notebook cell stdout / driver logs, not the Jobs run-output API. A failed r
 [Mode 2](#mode-2-container-cant-run-the-python-bootstrap) does populate the run's state message
 and error.
 
+When the `databricks ssh server` process itself exits non-zero (a third shape, distinct from
+the modes above: e.g. bad arguments or a startup crash), the bootstrap notebook tees the
+server's stdout/stderr and fails the run with the last ~2000 bytes of server logs embedded in
+the raised exception — `ssh connect` prints that tail via the failed-run path, so the cause is
+visible without opening the run page.
+
 ## Reproducing locally, without a workspace
 
 The proxy-layer behaviors have unit tests that don't need a cluster:
