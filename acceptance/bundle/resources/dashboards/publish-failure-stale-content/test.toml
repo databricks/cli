@@ -1,3 +1,4 @@
+Badness = "after publish failure, re-deploy fails with 'modified remotely' instead of republishing; --force is required as a workaround"
 Cloud = false
 Local = true
 RecordRequests = true
