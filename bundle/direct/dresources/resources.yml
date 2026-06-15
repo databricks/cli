@@ -116,6 +116,72 @@ resources:
       - field: tasks[*].new_cluster.data_security_mode
       - field: job_clusters[*].new_cluster.data_security_mode
 
+  job_runs:
+    # GetRun returns the run's execution metadata, never the RunNow request that
+    # triggered it. So on every plan the request fields look like remote drift.
+    # Ignore that drift (input_only): the request fields are write-only inputs.
+    ignore_remote_changes:
+      - field: dbt_commands
+        reason: input_only
+      - field: idempotency_token
+        reason: input_only
+      - field: jar_params
+        reason: input_only
+      - field: job_id
+        reason: input_only
+      - field: job_parameters
+        reason: input_only
+      - field: notebook_params
+        reason: input_only
+      - field: only
+        reason: input_only
+      - field: performance_target
+        reason: input_only
+      - field: pipeline_params
+        reason: input_only
+      - field: python_named_params
+        reason: input_only
+      - field: python_params
+        reason: input_only
+      - field: queue
+        reason: input_only
+      - field: spark_submit_params
+        reason: input_only
+      - field: sql_params
+        reason: input_only
+    # There is no API to modify a run in place, so any change to the request must
+    # re-trigger a fresh run. With no DoUpdate, recreate (no-op delete + RunNow)
+    # is the only path; every request field is marked immutable here.
+    recreate_on_changes:
+      - field: dbt_commands
+        reason: immutable
+      - field: idempotency_token
+        reason: immutable
+      - field: jar_params
+        reason: immutable
+      - field: job_id
+        reason: immutable
+      - field: job_parameters
+        reason: immutable
+      - field: notebook_params
+        reason: immutable
+      - field: only
+        reason: immutable
+      - field: performance_target
+        reason: immutable
+      - field: pipeline_params
+        reason: immutable
+      - field: python_named_params
+        reason: immutable
+      - field: python_params
+        reason: immutable
+      - field: queue
+        reason: immutable
+      - field: spark_submit_params
+        reason: immutable
+      - field: sql_params
+        reason: immutable
+
   pipelines:
     recreate_on_changes:
       - field: storage
