@@ -13,9 +13,9 @@ package workspace
 }}
 
 import (
-	"github.com/databricks/cli/cmd/root"
-    {{range .Services}}{{if and (not .IsAccounts) (not .HasParent) (not .IsDataPlane)}}{{if not (in $excludes .KebabName) }}
+	{{- range .Services}}{{if and (not .IsAccounts) (not .HasParent) (not .IsDataPlane)}}{{if not (in $excludes .KebabName) }}
 	{{.SnakeName}} "github.com/databricks/cli/cmd/workspace/{{.KebabName}}"{{end}}{{end}}{{end}}
+	"github.com/spf13/cobra"
 
 	groups "github.com/databricks/cli/cmd/workspace/groups"
 	service_principals "github.com/databricks/cli/cmd/workspace/service-principals"

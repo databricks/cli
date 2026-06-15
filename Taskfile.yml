@@ -57,7 +57,6 @@ tasks:
       - task: generate-schema-map
       - task: generate-schema-docs
       - task: generate-validation
-      - task: generate-docs
       - task: generate-direct
       - task: pydabs-codegen
       - task: pydabs-lint
@@ -743,18 +742,37 @@ tasks:
       - task: generate-schema
       - task: generate-schema-docs
       - task: generate-validation
-      - task: generate-docs
+      - task: generate-direct
+      - task: pydabs-codegen
+
+  # Subset of `generate` that reproduces byte-for-byte on a clean checkout. The
+  # validate-generated-is-up-to-date CI job runs this followed by
+  # `git diff --exit-code` to catch committed artifacts drifting from their
+  # generators. It omits the generators in `generate` whose output isn't
+  # reproducible per-PR:
+  #   - generate-tf-schema downloads the Terraform provider, which no CI runner
+  #     sets up; its output only changes when schema/version.go changes.
+  #   - generate-schema-docs stamps x-since-version from `git tag`, so it churns
+  #     after every release; jsonschema_for_docs.json is published separately to
+  #     the docgen branch by .github/workflows/update-schema-docs.yml.
+  # Keep this list in sync with `generate` when adding or removing generators.
+  generate-check:
+    desc: Run the reproducible generators (CI drift subset of `generate`)
+    cmds:
+      - task: generate-cligen
+      - task: generate-refschema
+      - task: generate-schema
+      - task: generate-validation
       - task: generate-direct
       - task: pydabs-codegen
 
   # Regenerates the CLI command stubs (cmd/workspace/**, cmd/account/**) and
   # .gitattributes from the checked-in .codegen/cli.json. No universe checkout,
   # no spec download, no network: cli.json is the self-describing spec
-  # produced upstream by `generate-clijson`. internal/cligen renders
-  # the same templates genkit's cli_v0 generator uses, then formats with
-  # goimports + gofmt. The final `ws` strips trailing whitespace (e.g. the
-  # comment-banner blank lines) so the result matches byte-for-byte, exactly as
-  # the old generate-genkit task did.
+  # produced upstream by `generate-clijson`. internal/cligen renders the
+  # templates derived from genkit's cli_v0 generator and formats the output
+  # in-process (whitespace normalization, unused-import pruning, gofmt), so
+  # the result matches the committed files byte-for-byte.
   generate-cligen:
     desc: Regenerate CLI command stubs from .codegen/cli.json
     sources:
@@ -768,7 +786,6 @@ tasks:
       - .gitattributes
     cmds:
       - go run ./internal/cligen --input .codegen/cli.json --output .
-      - task: ws
 
   # Refreshes .codegen/cli.json from the OpenAPI spec at .codegen/_openapi_sha.
   # cli.json is a genkit SDK target like any other (mode cli_v1 in .codegen.json):
@@ -841,12 +858,12 @@ tasks:
 
   # Regenerates the OpenAPI annotation files (annotations_openapi*.yml) from the
   # checked-in .codegen/cli.json. This is the step that propagates a cli.json
-  # change into the schema/docs artifacts: generate-schema, generate-schema-docs
-  # and generate-docs all depend on it, so editing cli.json and running
-  # `task generate` percolates into jsonschema.json, the docs and pydabs.
+  # change into the schema/docs artifacts: generate-schema and generate-schema-docs
+  # both depend on it, so editing cli.json and running `task generate`
+  # percolates into jsonschema.json, jsonschema_for_docs.json and pydabs.
   generate-annotations:
     desc: Regenerate annotation files from .codegen/cli.json
-    # Dep of generate-schema, generate-schema-docs and generate-docs; `run: once`
+    # Dep of generate-schema and generate-schema-docs; `run: once`
     # plus the fingerprint keep `task generate` from re-running it per parent.
     run: once
     sources:
@@ -892,23 +909,6 @@ tasks:
       # old tools/post-generate.sh.
       - git fetch origin 'refs/tags/v*:refs/tags/v*'
       - "go run ./bundle/internal/schema ./bundle/internal/schema ./bundle/schema/jsonschema_for_docs.json --docs"
-
-  generate-docs:
-    desc: Generate bundle documentation
-    deps: ['generate-annotations']
-    sources:
-      - "**/*.go"
-      - bundle/docsgen/templates/**
-      - bundle/internal/schema/annotations*.yml
-      - exclude: "**/*_test.go"
-      - go.mod
-      - go.sum
-      - "{{.EMBED_SOURCES}}"
-    generates:
-      - bundle/docsgen/output/reference.md
-      - bundle/docsgen/output/resources.md
-    cmds:
-      - "go run ./bundle/docsgen ./bundle/internal/schema ./bundle/docsgen"
 
   generate-validation:
     desc: Generate enum and required field validation code
