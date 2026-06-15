@@ -90,6 +90,12 @@ Connect to a dedicated cluster:
 		if connectionName == "" && clusterID == "" && !proxyMode {
 			connectionName = client.GenerateDefaultConnectionName(wsClient.Config.Host, accelerator)
 		}
+		// Serverless GPU compute can take much longer to provision than CPU compute,
+		// so allow extra time for the SSH server job to start.
+		startupTimeout := taskStartupTimeout
+		if accelerator != "" {
+			startupTimeout = gpuTaskStartupTimeout
+		}
 		opts := client.ClientOptions{
 			Profile:              wsClient.Config.Profile,
 			ClusterID:            clusterID,
@@ -103,7 +109,7 @@ Connect to a dedicated cluster:
 			HandoverTimeout:      handoverTimeout,
 			ReleasesDir:          releasesDir,
 			ServerTimeout:        max(serverTimeout, shutdownDelay),
-			TaskStartupTimeout:   taskStartupTimeout,
+			TaskStartupTimeout:   startupTimeout,
 			AutoStartCluster:     autoStartCluster,
 			ClientPublicKeyName:  clientPublicKeyName,
 			ClientPrivateKeyName: clientPrivateKeyName,
