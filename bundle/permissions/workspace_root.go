@@ -73,7 +73,7 @@ func setPermissions(ctx context.Context, w workspace.WorkspaceInterface, path st
 		return nil
 	}
 
-	obj, err := w.GetStatusByPath(ctx, path) //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
+	obj, err := w.GetStatusByPath(ctx, path)
 	if err != nil {
 		return err
 	}
