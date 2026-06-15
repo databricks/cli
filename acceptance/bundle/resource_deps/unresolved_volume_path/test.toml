@@ -1,2 +1,0 @@
-Badness = "foo.comment silently resolves to an empty string because bar.volume_path could not be computed; there is no error or warning pointing at the unresolved volume_path."
-RecordRequests = false

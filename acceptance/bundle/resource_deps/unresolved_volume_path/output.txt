@@ -4,8 +4,9 @@
   "volumes": {
     "bar": {
       "catalog_name": "mycatalog",
-      "name": "${resources.volumes.baz.storage_location}",
+      "name": "${resources.volumes.baz.id}",
       "schema_name": "myschema",
+      "volume_path": "/Volumes/mycatalog/myschema/${resources.volumes.baz.id}",
       "volume_type": "MANAGED"
     },
     "baz": {
@@ -17,7 +18,7 @@
     },
     "foo": {
       "catalog_name": "mycatalog",
-      "comment": "",
+      "comment": "/Volumes/mycatalog/myschema/${resources.volumes.baz.id}",
       "name": "fooname",
       "schema_name": "myschema",
       "volume_path": "/Volumes/mycatalog/myschema/fooname",
@@ -25,3 +26,10 @@
     }
   }
 }
+
+>>> [CLI] bundle plan
+create volumes.bar
+create volumes.baz
+create volumes.foo
+
+Plan: 3 to add, 0 to change, 0 to delete, 0 unchanged
