@@ -1,0 +1,2 @@
+# databricks.yml is rewritten in-place by the script (storage change).
+Ignore = [".databricks", "databricks.yml"]

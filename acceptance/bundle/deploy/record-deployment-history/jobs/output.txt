@@ -1,0 +1,94 @@
+
+=== create: records OPERATION_ACTION_TYPE_CREATE
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-rdh-jobs/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py //api/2.0/bundle
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/abcd/versions/0/operations",
+  "q": {
+    "resource_key": "resources.jobs.foo"
+  },
+  "body": {
+    "action_type": "OPERATION_ACTION_TYPE_CREATE",
+    "resource_id": "[NUMID]",
+    "resource_key": "resources.jobs.foo",
+    "state": {
+      "deployment": {
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-rdh-jobs/default/state/metadata.json"
+      },
+      "edit_mode": "UI_LOCKED",
+      "format": "MULTI_TASK",
+      "max_concurrent_runs": 1,
+      "name": "foo-job",
+      "queue": {
+        "enabled": true
+      }
+    },
+    "status": "OPERATION_STATUS_SUCCEEDED"
+  }
+}
+
+=== update: records OPERATION_ACTION_TYPE_UPDATE
+>>> update_file.py databricks.yml foo-job foo-job-renamed
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-rdh-jobs/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py //api/2.0/bundle
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/abcd/versions/0/operations",
+  "q": {
+    "resource_key": "resources.jobs.foo"
+  },
+  "body": {
+    "action_type": "OPERATION_ACTION_TYPE_UPDATE",
+    "resource_id": "[NUMID]",
+    "resource_key": "resources.jobs.foo",
+    "state": {
+      "deployment": {
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-rdh-jobs/default/state/metadata.json"
+      },
+      "edit_mode": "UI_LOCKED",
+      "format": "MULTI_TASK",
+      "max_concurrent_runs": 1,
+      "name": "foo-job-renamed",
+      "queue": {
+        "enabled": true
+      }
+    },
+    "status": "OPERATION_STATUS_SUCCEEDED"
+  }
+}
+
+=== delete: records OPERATION_ACTION_TYPE_DELETE (resource removed from config)
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-rdh-jobs/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py //api/2.0/bundle
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/abcd/versions/0/operations",
+  "q": {
+    "resource_key": "resources.jobs.foo"
+  },
+  "body": {
+    "action_type": "OPERATION_ACTION_TYPE_DELETE",
+    "resource_id": "[NUMID]",
+    "resource_key": "resources.jobs.foo",
+    "status": "OPERATION_STATUS_SUCCEEDED"
+  }
+}

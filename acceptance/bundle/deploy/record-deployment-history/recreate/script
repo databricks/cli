@@ -1,0 +1,8 @@
+title "create the pipeline"
+trace $CLI bundle deploy
+trace print_requests.py //api/2.0/bundle
+
+title "recreate: changing immutable 'storage' records OPERATION_ACTION_TYPE_RECREATE"
+trace update_file.py databricks.yml /tmp/storage-a /tmp/storage-b
+trace $CLI bundle deploy --auto-approve
+trace print_requests.py //api/2.0/bundle
