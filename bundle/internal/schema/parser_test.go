@@ -3,40 +3,59 @@ package main
 import (
 	"testing"
 
+	"github.com/databricks/cli/bundle/internal/annotation"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNormalizeLaunchStage(t *testing.T) {
 	tests := []struct {
 		input string
-		want  string
+		want  annotation.LaunchStage
 	}{
 		{"GA", ""},
 		{"", ""},
-		{"PUBLIC_PREVIEW", "PUBLIC_PREVIEW"},
-		{"PUBLIC_BETA", "PUBLIC_BETA"},
-		{"PRIVATE_PREVIEW", "PRIVATE_PREVIEW"},
+		{"PUBLIC_PREVIEW", annotation.LaunchStagePublicPreview},
+		{"PUBLIC_BETA", annotation.LaunchStagePublicBeta},
+		{"PRIVATE_PREVIEW", annotation.LaunchStagePrivatePreview},
 	}
 	for _, tc := range tests {
-		assert.Equal(t, tc.want, normalizeLaunchStage(tc.input))
+		got, err := normalizeLaunchStage(tc.input)
+		require.NoError(t, err)
+		assert.Equal(t, tc.want, got)
 	}
+}
+
+func TestNormalizeLaunchStageUnknown(t *testing.T) {
+	_, err := normalizeLaunchStage("SOMETHING_ELSE")
+	assert.Error(t, err)
 }
 
 func TestNotableEnumLaunchStages(t *testing.T) {
 	t.Run("drops GA, keeps preview values", func(t *testing.T) {
-		got := notableEnumLaunchStages(map[string]string{
+		got, err := notableEnumLaunchStages(map[string]string{
 			"STORAGE_OPTIMIZED": "PUBLIC_PREVIEW",
 			"STANDARD":          "GA",
 		})
-		assert.Equal(t, map[string]string{"STORAGE_OPTIMIZED": "PUBLIC_PREVIEW"}, got)
+		require.NoError(t, err)
+		assert.Equal(t, map[string]annotation.LaunchStage{"STORAGE_OPTIMIZED": annotation.LaunchStagePublicPreview}, got)
 	})
 
 	t.Run("returns nil when every value is GA", func(t *testing.T) {
-		assert.Nil(t, notableEnumLaunchStages(map[string]string{"STANDARD": "GA"}))
+		got, err := notableEnumLaunchStages(map[string]string{"STANDARD": "GA"})
+		require.NoError(t, err)
+		assert.Nil(t, got)
 	})
 
 	t.Run("returns nil for empty input", func(t *testing.T) {
-		assert.Nil(t, notableEnumLaunchStages(nil))
+		got, err := notableEnumLaunchStages(nil)
+		require.NoError(t, err)
+		assert.Nil(t, got)
+	})
+
+	t.Run("errors on unknown stage", func(t *testing.T) {
+		_, err := notableEnumLaunchStages(map[string]string{"X": "SOMETHING_ELSE"})
+		assert.Error(t, err)
 	})
 }
 

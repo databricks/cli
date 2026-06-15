@@ -134,16 +134,15 @@ func assignAnnotation(s *jsonschema.Schema, a annotation.Descriptor) {
 		s.DeprecationMessage = a.DeprecationMessage
 	}
 
-	// The raw launch stage is intentionally not emitted into the published
-	// schema — nothing consumes it there. It surfaces only as the description
-	// prefix below and the per-value enumDescriptions labels.
-	// x-databricks-preview does stay: the parser derives it from launch_stage
-	// (PRIVATE iff PRIVATE_PREVIEW), and pydabs reads it from jsonschema.json
-	// to mark fields experimental, so this branch also covers hiding
-	// private-preview fields.
-	if a.Preview == "PRIVATE" {
+	// Private-preview fields are hidden from completions and surfaced to
+	// downstream codegen via the launch stage: pydabs reads
+	// x-databricks-launch-stage from jsonschema.json to mark these fields
+	// experimental. Only the private-preview stage is emitted into the published
+	// schema — nothing consumes the others there; they surface only as the
+	// description prefix below and the per-value enumDescriptions labels.
+	if a.LaunchStage == annotation.LaunchStagePrivatePreview {
 		s.DoNotSuggest = true
-		s.Preview = a.Preview
+		s.LaunchStage = string(a.LaunchStage)
 	}
 
 	if a.OutputOnly != nil && *a.OutputOnly {
@@ -167,7 +166,7 @@ func assignAnnotation(s *jsonschema.Schema, a annotation.Descriptor) {
 // and the per-value description text. Returns nil when every entry would be
 // empty so the field is omitted from the schema. The enum slice is the same
 // one assigned to s.Enum, so the arrays stay index-aligned.
-func buildEnumDescriptions(enum []any, launchStages, descriptions map[string]string) []string {
+func buildEnumDescriptions(enum []any, launchStages map[string]annotation.LaunchStage, descriptions map[string]string) []string {
 	if len(enum) == 0 || (len(launchStages) == 0 && len(descriptions) == 0) {
 		return nil
 	}

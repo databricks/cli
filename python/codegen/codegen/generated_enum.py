@@ -35,7 +35,7 @@ def generate_enum(namespace: str, schema_name: str, schema: Schema) -> Generated
         package=package,
         values=values,
         description=schema.description,
-        experimental=schema.stage == Stage.PRIVATE,
+        experimental=schema.stage == Stage.PRIVATE_PREVIEW,
         deprecated=schema.deprecated or False,
     )
 

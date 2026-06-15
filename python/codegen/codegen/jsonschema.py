@@ -8,7 +8,10 @@ import codegen.packages as packages
 
 
 class Stage:
-    PRIVATE = "PRIVATE"
+    # Launch stage from jsonschema.json's x-databricks-launch-stage. The Go
+    # schema generator emits only the private-preview stage there; it marks a
+    # field experimental and excludes it from the generated documentation.
+    PRIVATE_PREVIEW = "PRIVATE_PREVIEW"
 
 
 @dataclass
@@ -101,7 +104,7 @@ def _parse_schema(schema: dict) -> Schema:
             ref=v["$ref"],
             description=v.get("description"),
             deprecated=_parse_bool(v.get("deprecated")),
-            stage=v.get("x-databricks-preview"),
+            stage=v.get("x-databricks-launch-stage"),
         )
 
         properties[k] = prop
@@ -118,7 +121,7 @@ def _parse_schema(schema: dict) -> Schema:
         required=schema.get("required", []),
         description=schema.get("description"),
         deprecated=_parse_bool(schema.get("deprecated")),
-        stage=schema.get("x-databricks-preview"),
+        stage=schema.get("x-databricks-launch-stage"),
     )
 
 
