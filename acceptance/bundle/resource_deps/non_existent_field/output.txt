@@ -13,6 +13,7 @@
       "catalog_name": "${resources.volumes.bar.non_existent}",
       "name": "myname",
       "schema_name": "${resources.volumes.bar.schema_name}",
+      "volume_path": "/Volumes/${resources.volumes.bar.non_existent}/myschema/myname",
       "volume_type": "MANAGED"
     }
   }

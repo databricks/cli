@@ -1,12 +1,12 @@
 envsubst < databricks.yml.tmpl > databricks.yml
 trace $CLI bundle validate -o json | jq '.resources.jobs, .resources.volumes'
 
-# (a) The job's data_path default references the volume's computed volume_path.
+# The job's data_path default references the volume's computed volume_path.
 # Record the JSON plan per engine to confirm the reference is resolved into the
 # planned new_state rather than left as ${resources...}.
 trace errcode $CLI bundle plan -o json &> out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 
-# (b) Deploy and inspect the create-job request: the parameter default sent to
+# Deploy and inspect the create-job request: the parameter default sent to
 # the Jobs API must be the interpolated volume_path.
 trace errcode $CLI bundle deploy &> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt
 trace print_requests.py //jobs > out.deploy.requests.$DATABRICKS_BUNDLE_ENGINE.json
