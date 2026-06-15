@@ -267,7 +267,9 @@ func generateSchema(workdir, outputFile string, docsMode bool) {
 		log.Fatal(err)
 	}
 
-	// In docs mode, add sinceVersion annotations by analyzing git history.
+	// In docs mode, add sinceVersion annotations. When DATABRICKS_SINCE_VERSIONS_FILE
+	// is set (by the update-schema-docs workflow) these come from the persisted,
+	// append-only state on docgen; otherwise they are computed from git history.
 	if docsMode {
 		sinceVersions, err := computeSinceVersions()
 		if err != nil {
