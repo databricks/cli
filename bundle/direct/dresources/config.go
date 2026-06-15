@@ -64,13 +64,12 @@ type ResourceLifecycleConfig struct {
 	// would 404 and is handled as resource-gone.
 	ProvidedIDFields []FieldRule `yaml:"provided_id_fields,omitempty"`
 
-	// UpdateIDOnChanges: field patterns that, when changed locally, trigger
-	// UpdateWithID (a rename; the ID changes). Despite the historical name this only
-	// governs local changes: like ProvidedIDFields these compose the name-based ID, so a
-	// remote-only difference is skipped (see classifyIDField) rather than treated as
-	// a rename — a successful get-by-ID means the remote value can only be backend
-	// normalization, and a real out-of-band rename would 404.
-	UpdateIDOnChanges []FieldRule `yaml:"update_id_on_changes,omitempty"`
+	// UpdatableIDFields: like ProvidedIDFields, these compose the resource's
+	// user-provided ID, but the backend supports renaming them in place. A local
+	// change triggers UpdateWithID (a rename; the ID changes) instead of delete +
+	// create. A remote-only difference is still skipped (see classifyIDField) — it
+	// can only be backend normalization, since we just fetched by this ID.
+	UpdatableIDFields []FieldRule `yaml:"updatable_id_fields,omitempty"`
 
 	// NormalizeSlash: string field patterns the UC API strips trailing slashes from.
 	// A change is skipped when local and remote differ only by trailing slashes.
@@ -97,7 +96,7 @@ var empty = ResourceLifecycleConfig{
 	IgnoreLocalChanges:  nil,
 	RecreateOnChanges:   nil,
 	ProvidedIDFields:    nil,
-	UpdateIDOnChanges:   nil,
+	UpdatableIDFields:   nil,
 	NormalizeSlash:      nil,
 	BackendDefaults:     nil,
 }

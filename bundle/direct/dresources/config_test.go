@@ -34,7 +34,7 @@ func categoryRules(c ResourceLifecycleConfig) []struct {
 		{"ignore_local_changes", c.IgnoreLocalChanges},
 		{"recreate_on_changes", c.RecreateOnChanges},
 		{"provided_id_fields", c.ProvidedIDFields},
-		{"update_id_on_changes", c.UpdateIDOnChanges},
+		{"updatable_id_fields", c.UpdatableIDFields},
 		{"backend_defaults", backendAsFieldRules},
 	}
 }
@@ -76,7 +76,7 @@ func TestResourcesYMLNoRedundantRules(t *testing.T) {
 
 // TestResourcesYMLActionCategoriesExclusive guards that a field is in at most one
 // of the action categories that decide a change's action. They are not
-// independent: classifyIDField (provided_id_fields, update_id_on_changes) runs
+// independent: classifyIDField (provided_id_fields, updatable_id_fields) runs
 // before recreate_on_changes in the ladder and short-circuits, so a field listed
 // in more than one would have all but the first entry silently dead — and the
 // categories disagree (e.g. provided_id_fields skips a remote-only diff that
@@ -90,7 +90,7 @@ func TestResourcesYMLActionCategoriesExclusive(t *testing.T) {
 		}{
 			{"recreate_on_changes", rc.RecreateOnChanges},
 			{"provided_id_fields", rc.ProvidedIDFields},
-			{"update_id_on_changes", rc.UpdateIDOnChanges},
+			{"updatable_id_fields", rc.UpdatableIDFields},
 		}
 		firstCat := map[string]string{}
 		for _, c := range actionCats {
