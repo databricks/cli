@@ -2,6 +2,7 @@ package resources
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/databricks/cli/bundle/config/resources"
 
@@ -97,4 +98,16 @@ func Lookup(b *bundle.Bundle, key string, filters ...Filter) (Reference, error) 
 	default:
 		panic("unreachable")
 	}
+}
+
+// LookupBySubstring returns all resources whose key contains the given substring.
+func LookupBySubstring(b *bundle.Bundle, substr string, filters ...Filter) []Reference {
+	keyOnly, _ := References(b, filters...)
+	var matches []Reference
+	for k, refs := range keyOnly {
+		if strings.Contains(k, substr) {
+			matches = append(matches, refs...)
+		}
+	}
+	return matches
 }
