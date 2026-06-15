@@ -56,7 +56,20 @@ type ResourceLifecycleConfig struct {
 	// RecreateOnChanges: field patterns that trigger delete + create when changed.
 	RecreateOnChanges []FieldRule `yaml:"recreate_on_changes,omitempty"`
 
-	// UpdateIDOnChanges: field patterns that trigger UpdateWithID when changed.
+	// ProvidedIDFields: field patterns that compose the resource's ID — a name the
+	// user provides (not a server-generated id), which DoRead fetches by. Local
+	// changes trigger delete + create. Remote-only differences are skipped: since the
+	// user supplies the value and we just fetched by it, a differing remote value can
+	// only be backend normalization (e.g. UC lowercasing) — a real out-of-band rename
+	// would 404 and is handled as resource-gone.
+	ProvidedIDFields []FieldRule `yaml:"provided_id_fields,omitempty"`
+
+	// UpdateIDOnChanges: field patterns that, when changed locally, trigger
+	// UpdateWithID (a rename; the ID changes). Despite the historical name this only
+	// governs local changes: like ProvidedIDFields these compose the name-based ID, so a
+	// remote-only difference is skipped (see shouldSkipIDField) rather than treated as
+	// a rename — a successful get-by-ID means the remote value can only be backend
+	// normalization, and a real out-of-band rename would 404.
 	UpdateIDOnChanges []FieldRule `yaml:"update_id_on_changes,omitempty"`
 
 	// NormalizeCase: string field patterns the UC API lowercases on write.
@@ -87,6 +100,7 @@ var empty = ResourceLifecycleConfig{
 	IgnoreRemoteChanges: nil,
 	IgnoreLocalChanges:  nil,
 	RecreateOnChanges:   nil,
+	ProvidedIDFields:    nil,
 	UpdateIDOnChanges:   nil,
 	NormalizeCase:       nil,
 	NormalizeSlash:      nil,
