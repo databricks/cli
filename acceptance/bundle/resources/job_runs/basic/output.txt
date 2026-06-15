@@ -1,0 +1,34 @@
+
+=== deploy triggers exactly one run
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-basic/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== exactly one run-now request was made
+>>> print_requests.py //jobs/run-now
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/run-now",
+  "body": {
+    "job_id": [MY_JOB_ID]
+  }
+}
+
+=== the triggered run id is stored in state
+>>> read_id.py my_run
+[MY_RUN_ID]
+
+>>> read_id.py my_job
+[MY_JOB_ID]
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.job_runs.my_run
+  delete resources.jobs.my_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/job-runs-basic/default
+
+Deleting files...
+Destroy complete!
