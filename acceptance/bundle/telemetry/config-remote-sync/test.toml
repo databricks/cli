@@ -1,4 +1,11 @@
-# The telemetry event includes the engine name, so outputs diverge between
-# engines; pin to direct (the default for new bundles).
+# config-remote-sync is not supported on Windows.
+[GOOS]
+windows = false
+
+# Pinned to the direct engine. The terraform path of config-remote-sync reads
+# the experimental yaml-sync state snapshot, which only the cloud test harness
+# supports (all terraform config-remote-sync coverage lives in the Cloud=true
+# acceptance/bundle/config-remote-sync tests). Direct is the default engine for
+# new bundles, and the telemetry is engine-agnostic above the state layer.
 [EnvMatrix]
   DATABRICKS_BUNDLE_ENGINE = ["direct"]
