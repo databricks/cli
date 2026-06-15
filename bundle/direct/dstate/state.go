@@ -352,7 +352,7 @@ func (db *DeploymentState) mergeWalIntoState(ctx context.Context) (bool, error) 
 	// WAL is a deploy that started but committed nothing; advancing the serial
 	// for it leaves the in-memory serial ahead of the persisted one, so the
 	// next deploy writes its WAL header at serial+2 and recovery rejects it as
-	// "ahead of expected". See acceptance/bundle/deploy/wal/two-crashed-deploys.
+	// "ahead of expected". See acceptance/bundle/deploy/wal/header-only-wal.
 	if hasEntries {
 		db.Data.Serial = newSerial
 	}
