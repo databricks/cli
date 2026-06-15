@@ -12,6 +12,13 @@ type ResourceState struct {
 	// direct engine (len of the JSON stored in resources.json) for deploy
 	// telemetry; left zero by the terraform path.
 	StateSizeBytes int
+
+	// Size in bytes of the resource's serialized state blob after zstd
+	// compression. Populated by the direct engine alongside StateSizeBytes for
+	// deploy telemetry; left zero by the terraform path. Used to gauge how much
+	// resource state shrinks under compression (the deployment metadata service
+	// stores state zstd-compressed).
+	StateCompressedSizeBytes int
 }
 
 // ExportedResourcesMap stores relevant attributes from terraform/direct state for all resources

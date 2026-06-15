@@ -18,7 +18,28 @@ import (
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/log"
 	"github.com/google/uuid"
+	"github.com/klauspost/compress/zstd"
 )
+
+// telemetryEncoder measures the zstd-compressed size of each resource's state
+// for deploy telemetry. zstd.Encoder.EncodeAll is safe for concurrent use.
+// NewWriter with default options does not error in practice; on the off chance
+// it does, telemetryEncoderErr makes compressedStateSize degrade to zero rather
+// than crash a deploy over a telemetry measurement.
+var telemetryEncoder, telemetryEncoderErr = zstd.NewWriter(nil)
+
+// compressedStateSize returns the zstd-compressed size in bytes of a resource's
+// serialized state. It is used purely for deploy telemetry, to gauge how much
+// resource state shrinks under compression (the deployment metadata service
+// stores resource state zstd-compressed). Returns 0 for empty state or if the
+// encoder is unavailable. The exact ratio is an approximation of the service's:
+// both use zstd at default settings but different implementations.
+func compressedStateSize(state []byte) int {
+	if len(state) == 0 || telemetryEncoderErr != nil {
+		return 0
+	}
+	return len(telemetryEncoder.EncodeAll(state, nil))
+}
 
 const (
 	currentStateVersion = 2
@@ -456,9 +477,10 @@ func ExportStateFromData(data Database) resourcestate.ExportedResourcesMap {
 		}
 
 		result[key] = resourcestate.ResourceState{
-			ID:             entry.ID,
-			ETag:           etag,
-			StateSizeBytes: len(entry.State),
+			ID:                       entry.ID,
+			ETag:                     etag,
+			StateSizeBytes:           len(entry.State),
+			StateCompressedSizeBytes: compressedStateSize(entry.State),
 		}
 	}
 	return result

@@ -20,3 +20,19 @@ New = '[OS]'
 [[Repls]]
 Old = '"local_cache_measurements_ms": \[[^\]]*\]'
 New = '"local_cache_measurements_ms": [...redacted...]'
+
+# zstd-compressed state sizes depend on the klauspost/compress version, so they
+# are not stable across dependency bumps (same reasoning that drops
+# state_file_size_bytes from the golden). Assert the fields are present and
+# numeric, not their exact value. The dstate unit test covers real compression.
+[[Repls]]
+Old = '"state_compressed_size_max_bytes": \d+'
+New = '"state_compressed_size_max_bytes": COMPRESSED_SIZE'
+
+[[Repls]]
+Old = '"state_compressed_size_mean_bytes": \d+'
+New = '"state_compressed_size_mean_bytes": COMPRESSED_SIZE'
+
+[[Repls]]
+Old = '"state_compressed_size_median_bytes": \d+'
+New = '"state_compressed_size_median_bytes": COMPRESSED_SIZE'

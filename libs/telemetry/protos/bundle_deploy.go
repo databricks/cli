@@ -123,6 +123,15 @@ type ResourceMetadata struct {
 	StateSizeMaxBytes    int64 `json:"state_size_max_bytes,omitempty"`
 	StateSizeMeanBytes   int64 `json:"state_size_mean_bytes,omitempty"`
 	StateSizeMedianBytes int64 `json:"state_size_median_bytes,omitempty"`
+
+	// zstd-compressed state-size statistics across resources of this type, each
+	// measured as the zstd-compressed length of the same per-resource state
+	// blob. The deployment metadata service stores resource state compressed,
+	// so these capture how much it shrinks under compression rather than just
+	// the raw sizes above.
+	StateCompressedSizeMaxBytes    int64 `json:"state_compressed_size_max_bytes,omitempty"`
+	StateCompressedSizeMeanBytes   int64 `json:"state_compressed_size_mean_bytes,omitempty"`
+	StateCompressedSizeMedianBytes int64 `json:"state_compressed_size_median_bytes,omitempty"`
 }
 
 type BoolMapEntry struct {

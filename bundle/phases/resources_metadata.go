@@ -21,7 +21,8 @@ const directEngine = "direct"
 // Only direct deploys are measured. b.Metrics.ResourceState is the direct
 // engine's finalized state, populated in deployCore from the WAL replay the
 // deploy already performs; each entry carries StateSizeBytes (len of the JSON
-// blob stored in resources.json). So no marshalling, file read, or JSON parsing
+// blob stored in resources.json) and StateCompressedSizeBytes (its zstd-compressed
+// length, computed during export). So no marshalling, file read, or JSON parsing
 // happens here — sizes are read straight off the in-memory map. The whole-file
 // size comes from a single os.Stat (no parse). Returns nil for terraform
 // deploys (ResourceState is nil) and when no resources are in state.
@@ -44,16 +45,18 @@ func collectResourcesMetadata(ctx context.Context, b *bundle.Bundle) *protos.Bun
 }
 
 // resourceMetadataFromState groups the deployment state by resource type and
-// computes per-type count and max/mean/median state size. Sizes are sorted per
-// type (needed for the median).
+// computes per-type count and max/mean/median state size, both raw and
+// zstd-compressed. Sizes are sorted per type (needed for the median).
 func resourceMetadataFromState(state resourcestate.ExportedResourcesMap) []protos.ResourceMetadata {
 	sizesByType := make(map[string][]int64)
+	compressedByType := make(map[string][]int64)
 	for key, rs := range state {
 		t := config.GetResourceTypeFromKey(key)
 		if t == "" {
 			continue
 		}
 		sizesByType[t] = append(sizesByType[t], int64(rs.StateSizeBytes))
+		compressedByType[t] = append(compressedByType[t], int64(rs.StateCompressedSizeBytes))
 	}
 
 	types := make([]string, 0, len(sizesByType))
@@ -66,12 +69,17 @@ func resourceMetadataFromState(state resourcestate.ExportedResourcesMap) []proto
 	for _, t := range types {
 		sizes := sizesByType[t]
 		slices.Sort(sizes)
+		compressed := compressedByType[t]
+		slices.Sort(compressed)
 		resources = append(resources, protos.ResourceMetadata{
-			ResourceType:         t,
-			Count:                int64(len(sizes)),
-			StateSizeMaxBytes:    statMax(sizes),
-			StateSizeMeanBytes:   statMean(sizes),
-			StateSizeMedianBytes: statMedian(sizes),
+			ResourceType:                   t,
+			Count:                          int64(len(sizes)),
+			StateSizeMaxBytes:              statMax(sizes),
+			StateSizeMeanBytes:             statMean(sizes),
+			StateSizeMedianBytes:           statMedian(sizes),
+			StateCompressedSizeMaxBytes:    statMax(compressed),
+			StateCompressedSizeMeanBytes:   statMean(compressed),
+			StateCompressedSizeMedianBytes: statMedian(compressed),
 		})
 	}
 	return resources
