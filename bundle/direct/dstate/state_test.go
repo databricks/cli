@@ -1,6 +1,7 @@
 package dstate
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
 	"testing"
@@ -13,6 +14,18 @@ func mustFinalize(t *testing.T, db *DeploymentState) {
 	t.Helper()
 	_, err := db.Finalize(t.Context())
 	require.NoError(t, err)
+}
+
+func TestCompressedStateSize(t *testing.T) {
+	// Empty state has no compressed size.
+	assert.Equal(t, 0, compressedStateSize(nil))
+	assert.Equal(t, 0, compressedStateSize([]byte{}))
+
+	// A highly compressible blob shrinks: positive size, smaller than raw.
+	blob := bytes.Repeat([]byte(`{"key":"value"}`), 1000)
+	got := compressedStateSize(blob)
+	assert.Positive(t, got)
+	assert.Less(t, got, len(blob))
 }
 
 func TestOpenSaveFinalizeRoundTrip(t *testing.T) {

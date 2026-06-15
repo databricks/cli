@@ -3,6 +3,7 @@ package dstate
 import (
 	"bufio"
 	"bytes"
+	"compress/flate"
 	"context"
 	"encoding/json"
 	"errors"
@@ -19,6 +20,36 @@ import (
 	"github.com/databricks/cli/libs/log"
 	"github.com/google/uuid"
 )
+
+// compressedStateSize returns the DEFLATE-compressed size in bytes of a
+// resource's serialized state. It is a rough proxy, used purely for deploy
+// telemetry, for what the state sizes look like on the server side (which
+// compresses with zstd): we deliberately use the standard library's
+// compress/flate rather than pull in a dedicated zstd dependency, keeping the
+// supply chain small while still getting useful signal on compressibility.
+// Returns 0 for empty state.
+//
+// This is cheap: it runs at state-export time over individually small resource
+// states (each well under the server's per-resource limit), not in a tight
+// loop, so even large bundles compress in a few milliseconds — negligible next
+// to the network I/O of a deploy. A background goroutine is not warranted.
+func compressedStateSize(state []byte) int {
+	if len(state) == 0 {
+		return 0
+	}
+	var buf bytes.Buffer
+	w, err := flate.NewWriter(&buf, flate.DefaultCompression)
+	if err != nil {
+		return 0
+	}
+	if _, err := w.Write(state); err != nil {
+		return 0
+	}
+	if err := w.Close(); err != nil {
+		return 0
+	}
+	return buf.Len()
+}
 
 const (
 	currentStateVersion = 2
@@ -456,9 +487,10 @@ func ExportStateFromData(data Database) resourcestate.ExportedResourcesMap {
 		}
 
 		result[key] = resourcestate.ResourceState{
-			ID:             entry.ID,
-			ETag:           etag,
-			StateSizeBytes: len(entry.State),
+			ID:                       entry.ID,
+			ETag:                     etag,
+			StateSizeBytes:           len(entry.State),
+			StateCompressedSizeBytes: compressedStateSize(entry.State),
 		}
 	}
 	return result
