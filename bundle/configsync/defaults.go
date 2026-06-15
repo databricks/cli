@@ -83,6 +83,7 @@ var serverSideDefaults = map[string]any{
 
 	// Volume fields
 	"resources.volumes.*.storage_location": alwaysSkip,
+	"resources.volumes.*.volume_path":      alwaysSkip,
 
 	// SQL warehouse fields
 	"resources.sql_warehouses.*.creator_name":     alwaysSkip,

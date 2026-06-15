@@ -2,10 +2,13 @@ package resources
 
 import (
 	"context"
+	"fmt"
 	"net/url"
+	"strings"
 
 	"github.com/databricks/databricks-sdk-go/apierr"
 
+	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go"
@@ -16,6 +19,9 @@ import (
 type Volume struct {
 	BaseResource
 	catalog.CreateVolumeRequestContent
+
+	// VolumePath is /Volumes/{catalog}/{schema}/{name}. Populated during initialize; not user-configurable.
+	VolumePath string `json:"volume_path,omitempty" bundle:"readonly"`
 
 	// List of grants to apply on this volume.
 	Grants []catalog.PrivilegeAssignment `json:"grants,omitempty"`
@@ -68,4 +74,23 @@ func (v *Volume) GetURL() string {
 
 func (v *Volume) GetName() string {
 	return v.Name
+}
+
+// ComputeVolumePath returns the Unity Catalog volume path /Volumes/{catalog}/{schema}/{name}.
+//
+// A component that is still a pure ${...} reference (for example a remote field only
+// known at plan or deploy time) is embedded verbatim, so the reference is carried into
+// the path and resolved later by the normal interpolation passes. A component that
+// contains "${" but is not a well-formed reference (malformed or partial) is rejected
+// to keep it from leaking into the path, in which case the empty string is returned.
+func (v *Volume) ComputeVolumePath() string {
+	for _, component := range []string{v.CatalogName, v.SchemaName, v.Name} {
+		if component == "" {
+			return ""
+		}
+		if strings.Contains(component, "${") && !dynvar.IsPureVariableReference(component) {
+			return ""
+		}
+	}
+	return fmt.Sprintf("/Volumes/%s/%s/%s", v.CatalogName, v.SchemaName, v.Name)
 }

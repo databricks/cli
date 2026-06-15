@@ -50,6 +50,7 @@ type resolveVariableReferences struct {
 	prefixes    []string
 	pattern     dyn.Pattern
 	lookupFn    func(dyn.Value, dyn.Path, *bundle.Bundle) (dyn.Value, error)
+	allowPathFn func(dyn.Path) bool
 	extraRounds int
 
 	// includeResources allows resolving variables in 'resources', otherwise, they are excluded.
@@ -91,6 +92,17 @@ func ResolveVariableReferencesInLookup() bundle.Mutator {
 		pattern:     dyn.NewPattern(dyn.Key("variables"), dyn.AnyKey(), dyn.Key("lookup")),
 		lookupFn:    lookupForVariables,
 		extraRounds: maxResolutionRounds - 1,
+	}
+}
+
+// ResolveVolumePathReferencesOnlyResources resolves only references to resources.volumes.*.volume_path.
+func ResolveVolumePathReferencesOnlyResources() bundle.Mutator {
+	return &resolveVariableReferences{
+		prefixes:         []string{"resources"},
+		lookupFn:         lookup,
+		allowPathFn:      isVolumePathReferencePath,
+		extraRounds:      maxResolutionRounds - 1,
+		includeResources: true,
 	}
 }
 
@@ -229,6 +241,9 @@ func (m *resolveVariableReferences) resolveOnce(b *bundle.Bundle, prefixes []dyn
 
 				// Perform resolution only if the path starts with one of the specified prefixes.
 				if slices.ContainsFunc(prefixes, path.HasPrefix) {
+					if m.allowPathFn != nil && !m.allowPathFn(path) {
+						return dyn.InvalidValue, dynvar.ErrSkipResolution
+					}
 					value, err := m.lookupFn(normalized, path, b)
 					hasUpdates = hasUpdates || (err == nil && value.IsValid())
 					return value, err
@@ -307,4 +322,14 @@ func getAllKeys(root dyn.Value) ([]string, error) {
 	}
 
 	return keys, nil
+}
+
+func isVolumePathReferencePath(path dyn.Path) bool {
+	if len(path) != 4 {
+		return false
+	}
+	return path[0].Key() == "resources" &&
+		path[1].Key() == "volumes" &&
+		path[2].Key() != "" &&
+		path[3].Key() == "volume_path"
 }

@@ -142,6 +142,13 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// After PythonMutator, mutators must not change bundle resources, or such changes are not
 		// going to be visible in Python code.
 
+		// Compute resources.volumes.*.volume_path and resolve references to it. This must run
+		// after PythonMutator: volume_path is a computed, read-only field that the PyDABs Volume
+		// model does not declare, so exposing it to Python would fail resource loading. Like the
+		// "deployment" metadata below, it is intentionally not visible to Python code.
+		mutator.InitializeVolumePaths(),
+		mutator.ResolveVolumePathReferencesOnlyResources(),
+
 		// Resolve --select selectors against the materialized resources: normalize
 		// each to its "type.name" form and validate it exists. Runs after all resource
 		// mutations so that dynamically added resources are visible. This does not
