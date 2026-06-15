@@ -1,0 +1,11 @@
+echo "*" > .gitignore
+
+title "Initial deployment"
+trace $CLI bundle deploy
+
+title "Plan is a no-op despite UC auto-populating managed properties"
+trace $CLI bundle plan | contains.py "Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged"
+
+title "Redeploy is a no-op (no UpdateSchema call)"
+trace $CLI bundle deploy
+trace print_requests.py //unity | gron.py | contains.py '!json.method = "PATCH"'
