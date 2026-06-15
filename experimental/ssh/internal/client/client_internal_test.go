@@ -110,7 +110,7 @@ func TestWaitForJobToStartSurfacesFailure(t *testing.T) {
 	api.EXPECT().GetRunOutput(mock.Anything, jobs.GetRunOutputRequest{RunId: 99}).Return(
 		&jobs.RunOutput{}, nil)
 
-	err := waitForJobToStart(ctx, m.WorkspaceClient, 1, 30*time.Second)
+	err := waitForJobToStart(ctx, m.WorkspaceClient, 1, ClientOptions{TaskStartupTimeout: 30 * time.Second})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "ssh server bootstrap job failed")
 	assert.Contains(t, err.Error(), "Could not reach driver of cluster 0605-x.")
