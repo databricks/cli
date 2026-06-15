@@ -11,7 +11,7 @@ func TestCollectChangeStats(t *testing.T) {
 	changes := Changes{
 		"resources.jobs.foo": {
 			"name":                   {Operation: OperationReplace, Value: "new name"},
-			"tasks[0].notebook_task": {Operation: OperationAdd, Value: map[string]any{"base_parameters": map[string]any{"p": "${workspace.file_path}/x"}}},
+			"tasks[0].notebook_task": {Operation: OperationAdd, Value: map[string]any{"base_parameters": map[string]any{"p": "x"}}},
 			"timeout_seconds":        {Operation: OperationRemove},
 		},
 		"resources.jobs.bar": {
@@ -20,16 +20,22 @@ func TestCollectChangeStats(t *testing.T) {
 		"resources.dashboards.dash": {
 			"etag": {Operation: OperationAdd, Value: "123456"},
 		},
+		// pipelines.storage is recreate_on_changes (immutable); also mark it as
+		// overwriting a local edit.
+		"resources.pipelines.pipe": {
+			"storage": {Operation: OperationReplace, Value: "s3://new", LocalEdit: true},
+		},
 	}
 
 	var stats Stats
 	stats.CollectChangeStats(changes)
 
-	assert.Equal(t, int64(5), stats.ChangesTotal)
+	assert.Equal(t, int64(6), stats.ChangesTotal)
 	assert.Equal(t, int64(2), stats.AddCount)
-	assert.Equal(t, int64(2), stats.ReplaceCount)
+	assert.Equal(t, int64(3), stats.ReplaceCount)
 	assert.Equal(t, int64(1), stats.RemoveCount)
-	assert.Equal(t, int64(1), stats.RawValuesWithVarSyntax)
+	assert.Equal(t, int64(1), stats.RecreateForcingChanges)
+	assert.Equal(t, int64(1), stats.OverwrittenLocalEdits)
 
 	jobs := stats.PerResourceType["jobs"]
 	assert.Equal(t, int64(4), jobs.ChangesCount)
@@ -42,21 +48,18 @@ func TestCollectChangeStats(t *testing.T) {
 	assert.Equal(t, int64(1), dashboards.AddCount)
 }
 
+func TestIsRecreateForcing(t *testing.T) {
+	assert.True(t, isRecreateForcing("pipelines", "storage"))
+	assert.False(t, isRecreateForcing("pipelines", "configuration"))
+	assert.False(t, isRecreateForcing("jobs", "name"))
+	assert.False(t, isRecreateForcing("unknown", "storage"))
+}
+
 func TestResourceTypeFromKey(t *testing.T) {
 	assert.Equal(t, "jobs", resourceTypeFromKey("resources.jobs.foo"))
 	assert.Equal(t, "dashboards", resourceTypeFromKey("resources.dashboards.a.b"))
 	assert.Equal(t, "unknown", resourceTypeFromKey("variables.foo"))
 	assert.Equal(t, "unknown", resourceTypeFromKey("resources"))
-}
-
-func TestCountVarSyntax(t *testing.T) {
-	assert.Equal(t, int64(0), countVarSyntax("plain"))
-	assert.Equal(t, int64(1), countVarSyntax("${var.x}"))
-	assert.Equal(t, int64(1), countVarSyntax("prefix ${ suffix"))
-	assert.Equal(t, int64(2), countVarSyntax(map[string]any{
-		"a": "${var.x}",
-		"b": []any{"${incomplete", "ok", int64(5)},
-	}))
 }
 
 func TestRestoreStatsCounters(t *testing.T) {
