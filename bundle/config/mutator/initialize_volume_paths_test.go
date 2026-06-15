@@ -60,7 +60,8 @@ func TestInitializeVolumePaths_UnresolvedReference(t *testing.T) {
 		Config: config.Root{
 			Resources: config.Resources{
 				Volumes: map[string]*resources.Volume{
-					// The referenced schema does not exist, so the path is left unset.
+					// The reference cannot be resolved locally, so it is embedded into
+					// the path verbatim to be resolved later during plan or deploy.
 					"foo": {
 						CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{
 							CatalogName: "main",
@@ -75,7 +76,9 @@ func TestInitializeVolumePaths_UnresolvedReference(t *testing.T) {
 
 	diags := bundle.Apply(t.Context(), b, InitializeVolumePaths())
 	require.NoError(t, diags.Error())
-	require.Empty(t, b.Config.Resources.Volumes["foo"].VolumePath)
+	require.Equal(t, "/Volumes/main/${resources.schemas.missing.name}/volfoo", b.Config.Resources.Volumes["foo"].VolumePath)
+	// The schema_name reference itself must be preserved, not rewritten.
+	require.Equal(t, "${resources.schemas.missing.name}", b.Config.Resources.Volumes["foo"].SchemaName)
 }
 
 func TestInitializeVolumePaths_MalformedReference(t *testing.T) {
