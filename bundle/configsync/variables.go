@@ -240,12 +240,10 @@ func restoreOriginalRefs(value any, preResolved, resolved dyn.Value, stats *Rest
 	switch v := value.(type) {
 	case string, bool, int64:
 		if ref, ok := matchOriginalRef(value, preResolved, resolved); ok {
-			stats.Kept++
 			return ref
 		}
 		if s, ok := value.(string); ok {
 			if restored, ok := restoreCompoundInterpolation(s, preResolved, resolved); ok {
-				stats.Compound++
 				return restored
 			}
 		}

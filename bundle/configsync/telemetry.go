@@ -38,13 +38,14 @@ type Stats struct {
 
 	RawValuesWithVarSyntax int64
 
+	ErrorMessage  string
 	ErrorCategory protos.BundleConfigRemoteSyncErrorCategory
 }
 
-// RestoreStats counts variable-reference restorations by mechanism.
+// RestoreStats counts the variable-reference restorations that can leak a
+// current-target-scoped reference into a shared file. The safe paths (kept /
+// compound-realigned) are not counted.
 type RestoreStats struct {
-	Kept         int64
-	Compound     int64
 	Retargeted   int64
 	FromSiblings int64
 }
@@ -138,11 +139,10 @@ func (s *Stats) LogTelemetry(ctx context.Context) {
 			ResourceChanges:        resourceChanges,
 			FilesChangedCount:      s.FilesChangedCount,
 			FilesWrittenCount:      s.FilesWrittenCount,
-			RefsKept:               s.Restore.Kept,
-			RefsCompound:           s.Restore.Compound,
 			RefsRetargeted:         s.Restore.Retargeted,
 			RefsFromSiblings:       s.Restore.FromSiblings,
 			RawValuesWithVarSyntax: s.RawValuesWithVarSyntax,
+			ErrorMessage:           s.ErrorMessage,
 			ErrorCategory:          s.ErrorCategory,
 		},
 	})

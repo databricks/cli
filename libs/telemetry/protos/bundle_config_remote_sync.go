@@ -4,7 +4,6 @@ type BundleConfigRemoteSyncErrorCategory string
 
 const (
 	BundleConfigRemoteSyncErrorCategoryUnspecified         BundleConfigRemoteSyncErrorCategory = "TYPE_UNSPECIFIED"
-	BundleConfigRemoteSyncErrorCategoryUnsupportedOS       BundleConfigRemoteSyncErrorCategory = "UNSUPPORTED_OS"
 	BundleConfigRemoteSyncErrorCategoryBundleLoadFailed    BundleConfigRemoteSyncErrorCategory = "BUNDLE_LOAD_FAILED"
 	BundleConfigRemoteSyncErrorCategoryStateNotFound       BundleConfigRemoteSyncErrorCategory = "STATE_NOT_FOUND"
 	BundleConfigRemoteSyncErrorCategoryDetectChangesFailed BundleConfigRemoteSyncErrorCategory = "DETECT_CHANGES_FAILED"
@@ -45,15 +44,20 @@ type BundleConfigRemoteSyncEvent struct {
 	FilesChangedCount int64 `json:"files_changed_count,omitempty"`
 	FilesWrittenCount int64 `json:"files_written_count,omitempty"`
 
-	// Variable-reference restoration statistics.
-	RefsKept         int64 `json:"refs_kept,omitempty"`
-	RefsCompound     int64 `json:"refs_compound,omitempty"`
+	// Variable-reference restoration counts for the two mechanisms that can
+	// write a current-target-scoped reference into a shared file (the source of
+	// the cross-target "reference does not exist" failures).
 	RefsRetargeted   int64 `json:"refs_retargeted,omitempty"`
 	RefsFromSiblings int64 `json:"refs_from_siblings,omitempty"`
 
 	// Number of detected remote string values that contain the literal
 	// character sequence "${". The values themselves are not logged.
 	RawValuesWithVarSyntax int64 `json:"raw_values_with_var_syntax,omitempty"`
+
+	// Scrubbed, truncated summary of the failure when the command exits with an
+	// error. Privileged free-text (DATA_LABEL_USER_COMMANDS_RESPONSE, LPP-5543);
+	// stays in-region and is stripped from centralized logfood. Unset on success.
+	ErrorMessage string `json:"error_message,omitempty"`
 
 	// Category of the failure when the command exits with an error.
 	// Unset on success.

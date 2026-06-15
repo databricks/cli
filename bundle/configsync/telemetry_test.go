@@ -67,11 +67,11 @@ func TestRestoreStatsCounters(t *testing.T) {
 		}),
 	})
 
-	// Original pure ref still matching: counted as kept.
+	// Original pure ref still matching: restored but not counted (safe path).
 	var kept RestoreStats
 	result := restoreOriginalRefs("us-east-1", dyn.V("${var.region}"), resolved, &kept)
 	assert.Equal(t, "${var.region}", result)
-	assert.Equal(t, RestoreStats{Kept: 1}, kept)
+	assert.Equal(t, RestoreStats{}, kept)
 
 	// Pure ref whose value changed to another variable's value: re-targeted.
 	var retargeted RestoreStats

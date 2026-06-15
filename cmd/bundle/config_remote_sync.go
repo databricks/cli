@@ -15,6 +15,7 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/spf13/cobra"
 )
@@ -126,8 +127,11 @@ Examples:
 				return nil
 			},
 		})
-		if err != nil && stats.ErrorCategory == "" {
-			stats.ErrorCategory = protos.BundleConfigRemoteSyncErrorCategoryBundleLoadFailed
+		if err != nil {
+			if stats.ErrorCategory == "" {
+				stats.ErrorCategory = protos.BundleConfigRemoteSyncErrorCategoryBundleLoadFailed
+			}
+			stats.ErrorMessage = telemetry.ScrubErrorMessage(err.Error())
 		}
 		return err
 	}
