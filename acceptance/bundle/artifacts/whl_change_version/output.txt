@@ -29,23 +29,23 @@ dist/my_test_code-0.1.0-py3-none-any.whl
 ]
 
 === Expecting 1 wheel to be uploaded
->>> jq .path out.requests.txt
-"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code-0.1.0-py3-none-any.whl"
-"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/.gitignore"
-"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/databricks.yml"
-"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/dist/my_test_code-0.1.0-py3-none-any.whl"
-"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/my_test_code/__init__.py"
-"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/my_test_code/__main__.py"
-"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/out.requests.txt"
-"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/output.txt"
-"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/repls.json"
-"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/script"
-"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/setup.py"
-"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/test.toml"
-"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock"
-"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json"
-"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
-"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/STATE_FILENAME"
+>>> jq -r .body.multipart_form.path | strings out.requests.txt
+/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code-0.1.0-py3-none-any.whl
+/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/.gitignore
+/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/databricks.yml
+/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/dist/my_test_code-0.1.0-py3-none-any.whl
+/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/my_test_code/__init__.py
+/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/my_test_code/__main__.py
+/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/out.requests.txt
+/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/output.txt
+/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/repls.json
+/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/script
+/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/setup.py
+/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/test.toml
+/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock
+/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json
+/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json
+/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/STATE_FILENAME
 
 >>> update_file.py my_test_code/__init__.py 0.1.0 0.2.0
 
@@ -66,16 +66,16 @@ dist/my_test_code-0.2.0-py3-none-any.whl
 json[0].libraries[0].whl = "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code-0.2.0-py3-none-any.whl";
 
 === Expecting 1 wheel to be uploaded
->>> jq .path out.requests.txt
-"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code-0.2.0-py3-none-any.whl"
-"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/dist/my_test_code-0.2.0-py3-none-any.whl"
-"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/my_test_code/__init__.py"
-"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/out.requests.txt"
-"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/output.txt"
-"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock"
-"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json"
-"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
-"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/STATE_FILENAME"
+>>> jq -r .body.multipart_form.path | strings out.requests.txt
+/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code-0.2.0-py3-none-any.whl
+/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/dist/my_test_code-0.2.0-py3-none-any.whl
+/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/my_test_code/__init__.py
+/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/out.requests.txt
+/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/output.txt
+/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock
+/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json
+/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json
+/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/STATE_FILENAME
 
 === Restore config to target old wheel
 >>> update_file.py databricks.yml ./dist/*.whl ./dist/my*0.1.0*.whl
@@ -98,14 +98,14 @@ dist/my_test_code-0.2.0-py3-none-any.whl
 json[0].libraries[0].whl = "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code-0.1.0-py3-none-any.whl";
 
 === Expecting 1 wheel to be uploaded
->>> jq .path out.requests.txt
-"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code-0.1.0-py3-none-any.whl"
-"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code-0.2.0-py3-none-any.whl"
-"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/databricks.yml"
-"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/dist/my_test_code-0.2.0-py3-none-any.whl"
-"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/out.requests.txt"
-"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/output.txt"
-"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock"
-"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json"
-"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
-"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/STATE_FILENAME"
+>>> jq -r .body.multipart_form.path | strings out.requests.txt
+/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code-0.1.0-py3-none-any.whl
+/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code-0.2.0-py3-none-any.whl
+/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/databricks.yml
+/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/dist/my_test_code-0.2.0-py3-none-any.whl
+/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/out.requests.txt
+/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/output.txt
+/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock
+/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json
+/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json
+/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/STATE_FILENAME
