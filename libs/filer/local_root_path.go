@@ -19,7 +19,21 @@ func NewLocalRootPath(root string) localRootPath {
 
 func (rp *localRootPath) Join(name string) (string, error) {
 	absPath := filepath.Join(rp.rootPath, name)
-	if !strings.HasPrefix(absPath, rp.rootPath) {
+
+	// An empty root carries no restriction (cmd/fs constructs unrooted local filers).
+	if rp.rootPath == "" {
+		return absPath, nil
+	}
+
+	// Joining exactly the root must stay allowed: calls like ReadDir(".") resolve to it.
+	// Any other path must extend the root past a separator boundary; a plain prefix
+	// check would also accept siblings like "/root-evil" for root "/root".
+	// Cleaned roots like "/" or `C:\` already end in a separator.
+	root := rp.rootPath
+	if !strings.HasSuffix(root, string(filepath.Separator)) {
+		root += string(filepath.Separator)
+	}
+	if absPath != rp.rootPath && !strings.HasPrefix(absPath, root) {
 		return "", fmt.Errorf("relative path escapes root: %s", name)
 	}
 	return absPath, nil

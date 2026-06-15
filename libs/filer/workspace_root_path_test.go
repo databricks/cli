@@ -51,6 +51,11 @@ func testRootPath(t *testing.T, uncleanRoot string) {
 	assert.NoError(t, err)
 	assert.Equal(t, cleanRoot, remotePath)
 
+	// All roots in this test end in the path element "path".
+	remotePath, err = rp.Join("../path/x")
+	assert.NoError(t, err)
+	assert.Equal(t, cleanRoot+"/x", remotePath)
+
 	_, err = rp.Join("..")
 	assert.ErrorContains(t, err, `relative path escapes root: ..`)
 
@@ -77,6 +82,16 @@ func testRootPath(t *testing.T, uncleanRoot string) {
 
 	_, err = rp.Join("../..")
 	assert.ErrorContains(t, err, `relative path escapes root: ../..`)
+
+	// Siblings that share the root as a string prefix must be rejected.
+	_, err = rp.Join("../path-evil")
+	assert.ErrorContains(t, err, `relative path escapes root: ../path-evil`)
+
+	_, err = rp.Join("../path-evil/x")
+	assert.ErrorContains(t, err, `relative path escapes root: ../path-evil/x`)
+
+	_, err = rp.Join("../pathx")
+	assert.ErrorContains(t, err, `relative path escapes root: ../pathx`)
 }
 
 func TestRootPathClean(t *testing.T) {
