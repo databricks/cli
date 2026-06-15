@@ -29,12 +29,14 @@ class Transformer:
     """
     :meta private: [EXPERIMENTAL]
     
-    Required: the wire format of the data.
+    [Private Preview] Required: the wire format of the data.
     """
 
     json_options: VariableOrOptional[JsonTransformerOptions] = None
     """
     :meta private: [EXPERIMENTAL]
+    
+    [Private Preview]
     """
 
     @classmethod
@@ -52,12 +54,14 @@ class TransformerDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    Required: the wire format of the data.
+    [Private Preview] Required: the wire format of the data.
     """
 
     json_options: VariableOrOptional[JsonTransformerOptionsParam]
     """
     :meta private: [EXPERIMENTAL]
+    
+    [Private Preview]
     """
 
 

@@ -5,9 +5,8 @@ package account
 {{$excludes := list}}
 
 import (
-	"github.com/databricks/cli/cmd/root"
 	"github.com/spf13/cobra"
-    {{range .Services}}{{if and .IsAccounts (not .HasParent) (not .IsDataPlane)}}{{if not (in $excludes .KebabName) }}
+	{{range .Services}}{{if and .IsAccounts (not .HasParent) (not .IsDataPlane)}}{{if not (in $excludes .KebabName) }}
 	{{.SnakeName}} "github.com/databricks/cli/cmd/account/{{(.TrimPrefix "account").KebabName}}"{{end}}{{end}}{{end}}
 
 	account_groups "github.com/databricks/cli/cmd/account/groups"

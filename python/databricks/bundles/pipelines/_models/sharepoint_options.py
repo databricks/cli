@@ -27,7 +27,7 @@ class SharepointOptions:
     """
     :meta private: [EXPERIMENTAL]
     
-    (Optional) The type of SharePoint entity to ingest.
+    [Private Preview] (Optional) The type of SharePoint entity to ingest.
     If not specified, defaults to FILE.
     """
 
@@ -35,14 +35,14 @@ class SharepointOptions:
     """
     :meta private: [EXPERIMENTAL]
     
-    (Optional) File ingestion options for processing files.
+    [Private Preview] (Optional) File ingestion options for processing files.
     """
 
     url: VariableOrOptional[str] = None
     """
     :meta private: [EXPERIMENTAL]
     
-    Required. The SharePoint URL.
+    [Private Preview] Required. The SharePoint URL.
     """
 
     @classmethod
@@ -60,7 +60,7 @@ class SharepointOptionsDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    (Optional) The type of SharePoint entity to ingest.
+    [Private Preview] (Optional) The type of SharePoint entity to ingest.
     If not specified, defaults to FILE.
     """
 
@@ -68,14 +68,14 @@ class SharepointOptionsDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    (Optional) File ingestion options for processing files.
+    [Private Preview] (Optional) File ingestion options for processing files.
     """
 
     url: VariableOrOptional[str]
     """
     :meta private: [EXPERIMENTAL]
     
-    Required. The SharePoint URL.
+    [Private Preview] Required. The SharePoint URL.
     """
 
 

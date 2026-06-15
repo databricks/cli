@@ -730,7 +730,17 @@ func (b *DeploymentBundle) resolveReferences(ctx context.Context, resourceKey st
 			return false
 		}
 
+		// References() returns one entry per occurrence, but ResolveRef substitutes
+		// every occurrence in one call and then drops the entry from sv.Refs.
+		// Process each distinct reference once so that a reference appearing more
+		// than once in the same field does not fail with "reference not found".
+		seen := make(map[string]bool)
 		for _, pathString := range refs.References() {
+			if seen[pathString] {
+				continue
+			}
+			seen[pathString] = true
+
 			ref := "${" + pathString + "}"
 			targetPath, err := structpath.ParsePath(pathString)
 			if err != nil {

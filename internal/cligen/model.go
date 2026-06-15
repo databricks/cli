@@ -6,8 +6,8 @@ import (
 )
 
 // This file defines the CLI-side view of the "commands" block of the cli.json
-// spec. The structs mirror, field-for-field, the dot-paths that
-// the cliv0 templates (templates/*.tmpl, copied verbatim from genkit) access.
+// spec. The structs mirror, field-for-field, the dot-paths that the templates
+// (templates/*.tmpl, derived from genkit's cliv0 templates) access.
 //
 // Design rules that keep output byte-for-byte identical to genkit:
 //   - Casings (Kebab/Pascal/Snake/Camel/Constant/Title) are derived at render

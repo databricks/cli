@@ -95,6 +95,13 @@ var serverSideDefaults = map[string]any{
 	// Pipeline fields
 	"resources.pipelines.*.storage":    alwaysSkip,
 	"resources.pipelines.*.continuous": false,
+
+	// Dashboard fields
+	// etag is output-only and never present in config. The plan re-promotes etag
+	// drift to Update via ResourceDashboard.OverrideChangeDesc (needed for deploy's
+	// modified-remotely detection), so configsync cannot rely on the plan's Skip
+	// action and must exclude the field explicitly.
+	"resources.dashboards.*.etag": alwaysSkip,
 }
 
 // shouldSkipField checks if a field should be skipped in change detection.

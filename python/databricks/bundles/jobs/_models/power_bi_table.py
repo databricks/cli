@@ -16,22 +16,22 @@ class PowerBiTable:
 
     catalog: VariableOrOptional[str] = None
     """
-    The catalog name in Databricks
+    [Public Preview] The catalog name in Databricks
     """
 
     name: VariableOrOptional[str] = None
     """
-    The table name in Databricks
+    [Public Preview] The table name in Databricks
     """
 
     schema: VariableOrOptional[str] = None
     """
-    The schema name in Databricks
+    [Public Preview] The schema name in Databricks
     """
 
     storage_mode: VariableOrOptional[StorageMode] = None
     """
-    The Power BI storage mode of the table
+    [Public Preview] The Power BI storage mode of the table
     """
 
     @classmethod
@@ -47,22 +47,22 @@ class PowerBiTableDict(TypedDict, total=False):
 
     catalog: VariableOrOptional[str]
     """
-    The catalog name in Databricks
+    [Public Preview] The catalog name in Databricks
     """
 
     name: VariableOrOptional[str]
     """
-    The table name in Databricks
+    [Public Preview] The table name in Databricks
     """
 
     schema: VariableOrOptional[str]
     """
-    The schema name in Databricks
+    [Public Preview] The schema name in Databricks
     """
 
     storage_mode: VariableOrOptional[StorageModeParam]
     """
-    The Power BI storage mode of the table
+    [Public Preview] The Power BI storage mode of the table
     """
 
 
