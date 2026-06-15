@@ -53,6 +53,7 @@ func (s *FakeWorkspace) SchemasCreate(req Request) Response {
 		// doesn't specify any properties. Required to cover backend-default drift.
 		schema.Properties = map[string]string{
 			"unity.catalog.managed.delta.defaults.delta.enableRowTracking": "true",
+			"unity.catalog.managed.iceberg.defaults.delta.feature.catalogManaged": "true",
 		}
 	}
 	s.Schemas[schema.FullName] = schema
