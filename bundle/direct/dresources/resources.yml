@@ -333,6 +333,7 @@ resources:
 
   schemas:
     provided_id_fields:
+      # UC lowercases identifier names; remote returns "myschema" for config "MySchema".
       - field: name
         reason: id_field
       - field: catalog_name
