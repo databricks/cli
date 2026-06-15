@@ -21,7 +21,7 @@
 * engine/direct: Don't open the deployment state WAL when a deploy's plan fails ([#5607](https://github.com/databricks/cli/pull/5607)).
 * Ignore unity catalog managed schema property defaults to avoid unnecessary drift ([#5195](https://github.com/databricks/cli/pull/5195)).
 * Add Postgres role as a bundle resource ([#5467](https://github.com/databricks/cli/pull/5467)).
-* direct: stop reacting to remote-only changes on name fields that form the resource ID; such differences can only be backend normalization and no longer trigger recreate or rename.
+* direct: Stop reacting to remote-only changes on the name fields that form a resource's ID (e.g. Unity Catalog lowercasing a schema or volume name); these can only be backend normalization, so they no longer trigger a spurious recreate or rename on redeploy ([#5599](https://github.com/databricks/cli/pull/5599)).
 
 ### Dependency updates
 
