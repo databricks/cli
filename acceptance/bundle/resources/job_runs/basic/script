@@ -1,0 +1,15 @@
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm out.requests.txt
+}
+trap cleanup EXIT
+
+title "deploy triggers exactly one run"
+trace $CLI bundle deploy
+
+title "exactly one run-now request was made"
+trace print_requests.py //jobs/run-now
+
+title "the triggered run id is stored in state"
+trace read_id.py my_run
+trace read_id.py my_job
