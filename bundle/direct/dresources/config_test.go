@@ -73,3 +73,35 @@ func TestResourcesYMLNoRedundantRules(t *testing.T) {
 		}
 	}
 }
+
+// TestResourcesYMLActionCategoriesExclusive guards that a field is in at most one
+// of the action categories that decide a change's action. They are not
+// independent: classifyIDField (provided_id_fields, update_id_on_changes) runs
+// before recreate_on_changes in the ladder and short-circuits, so a field listed
+// in more than one would have all but the first entry silently dead — and the
+// categories disagree (e.g. provided_id_fields skips a remote-only diff that
+// recreate_on_changes would recreate).
+func TestResourcesYMLActionCategoriesExclusive(t *testing.T) {
+	cfg := MustLoadConfig()
+	for resourceType, rc := range cfg.Resources {
+		actionCats := []struct {
+			name  string
+			rules []FieldRule
+		}{
+			{"recreate_on_changes", rc.RecreateOnChanges},
+			{"provided_id_fields", rc.ProvidedIDFields},
+			{"update_id_on_changes", rc.UpdateIDOnChanges},
+		}
+		firstCat := map[string]string{}
+		for _, c := range actionCats {
+			for _, r := range c.rules {
+				field := r.Field.String()
+				if prev, ok := firstCat[field]; ok {
+					t.Errorf("bundle/direct/dresources/resources.yml: %s lists %q in both %s and %s; a field's action belongs to exactly one category", resourceType, field, prev, c.name)
+				} else {
+					firstCat[field] = c.name
+				}
+			}
+		}
+	}
+}
