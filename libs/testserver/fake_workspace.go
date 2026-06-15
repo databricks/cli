@@ -19,6 +19,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/databricks/databricks-sdk-go/service/apps"
+	sdkbundle "github.com/databricks/databricks-sdk-go/service/bundle"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -177,6 +178,9 @@ type FakeWorkspace struct {
 	PostgresSyncedTables map[string]postgres.SyncedTable
 	PostgresOperations   map[string]postgres.Operation
 
+	// Deployment Metadata Service (DMS) deployment records, keyed by deployment ID.
+	Deployments map[string]*sdkbundle.Deployment
+
 	// Branches and endpoints that the server provisioned implicitly together
 	// with their parent (e.g. the production branch on a new project, or the
 	// primary endpoint on a new branch). The real backend rejects independent
@@ -315,6 +319,7 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		PostgresCatalogs:          map[string]postgres.Catalog{},
 		PostgresSyncedTables:      map[string]postgres.SyncedTable{},
 		PostgresOperations:        map[string]postgres.Operation{},
+		Deployments:               map[string]*sdkbundle.Deployment{},
 		postgresImplicitBranches:  map[string]bool{},
 		postgresImplicitEndpoints: map[string]bool{},
 		clusterVenvs:              map[string]*clusterEnv{},
