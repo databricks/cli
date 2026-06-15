@@ -67,7 +67,7 @@ type ResourceLifecycleConfig struct {
 	// UpdateIDOnChanges: field patterns that, when changed locally, trigger
 	// UpdateWithID (a rename; the ID changes). Despite the historical name this only
 	// governs local changes: like ProvidedIDFields these compose the name-based ID, so a
-	// remote-only difference is skipped (see shouldSkipIDField) rather than treated as
+	// remote-only difference is skipped (see classifyIDField) rather than treated as
 	// a rename — a successful get-by-ID means the remote value can only be backend
 	// normalization, and a real out-of-band rename would 404.
 	UpdateIDOnChanges []FieldRule `yaml:"update_id_on_changes,omitempty"`

@@ -369,11 +369,11 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 		} else if reason, ok := shouldSkip(generatedCfg, path, ch); ok {
 			ch.Action = deployplan.Skip
 			ch.Reason = reason
-		} else if reason, ok := shouldSkipIDField(cfg, path, ch); ok {
-			ch.Action = deployplan.Skip
+		} else if action, reason, ok := classifyIDField(cfg, path, ch); ok {
+			ch.Action = action
 			ch.Reason = reason
-		} else if reason, ok := shouldSkipIDField(generatedCfg, path, ch); ok {
-			ch.Action = deployplan.Skip
+		} else if action, reason, ok := classifyIDField(generatedCfg, path, ch); ok {
+			ch.Action = action
 			ch.Reason = reason
 		} else if reason, ok := shouldSkipBackendDefault(cfg, path, ch); ok {
 			ch.Action = deployplan.Skip
@@ -387,11 +387,11 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 		} else if reason, ok := shouldSkipNormalized(generatedCfg, path, ch); ok {
 			ch.Action = deployplan.Skip
 			ch.Reason = reason
-		} else if action, reason := shouldUpdateOrRecreate(cfg, path); action != deployplan.Undefined {
-			ch.Action = action
+		} else if reason, ok := findMatchingRule(path, cfg.RecreateOnChanges); ok {
+			ch.Action = deployplan.Recreate
 			ch.Reason = reason
-		} else if action, reason := shouldUpdateOrRecreate(generatedCfg, path); action != deployplan.Undefined {
-			ch.Action = action
+		} else if reason, ok := findMatchingRule(path, generatedCfg.RecreateOnChanges); ok {
+			ch.Action = deployplan.Recreate
 			ch.Reason = reason
 		} else {
 			ch.Action = deployplan.Update
@@ -446,26 +446,34 @@ func shouldSkip(cfg *dresources.ResourceLifecycleConfig, path *structpath.PathNo
 	return "", false
 }
 
-// shouldSkipIDField skips remote-only diffs on fields that compose the resource's
-// name-based ID. The resource was just fetched by that ID, so a differing remote
-// value can only be backend normalization (e.g. UC lowercasing) — a real
-// out-of-band rename would 404 and is handled as resource-gone. Local changes
-// fall through to Recreate (provided_id_fields) or UpdateWithID
-// (update_id_on_changes) in shouldUpdateOrRecreate.
-func shouldSkipIDField(cfg *dresources.ResourceLifecycleConfig, path *structpath.PathNode, ch *deployplan.ChangeDesc) (string, bool) {
+// classifyIDField decides the action for a field that composes the resource's
+// name-based ID, in one place so the remote-only-vs-local rule does not depend on
+// ordering elsewhere in the ladder. Returns ok=false if the path is not such a field.
+//
+//   - Remote-only difference (Old==New): the resource was just fetched by that ID,
+//     so a differing remote value can only be backend normalization (e.g. UC
+//     lowercasing) — a real out-of-band rename would 404 and is handled as
+//     resource-gone. Skip.
+//   - Local change: provided_id_fields recreate (delete + create); update_id_on_changes
+//     rename via UpdateWithID.
+func classifyIDField(cfg *dresources.ResourceLifecycleConfig, path *structpath.PathNode, ch *deployplan.ChangeDesc) (deployplan.ActionType, string, bool) {
 	if cfg == nil {
-		return "", false
+		return deployplan.Undefined, "", false
 	}
-	if !structdiff.IsEqual(ch.Old, ch.New) {
-		return "", false
-	}
+	localChange := !structdiff.IsEqual(ch.Old, ch.New)
 	if reason, ok := findMatchingRule(path, cfg.ProvidedIDFields); ok {
-		return reason, true
+		if localChange {
+			return deployplan.Recreate, reason, true
+		}
+		return deployplan.Skip, reason, true
 	}
 	if reason, ok := findMatchingRule(path, cfg.UpdateIDOnChanges); ok {
-		return reason, true
+		if localChange {
+			return deployplan.UpdateWithID, reason, true
+		}
+		return deployplan.Skip, reason, true
 	}
-	return "", false
+	return deployplan.Undefined, "", false
 }
 
 // shouldSkipNormalized skips a change that is a false diff caused by UC API
@@ -486,23 +494,6 @@ func shouldSkipNormalized(cfg *dresources.ResourceLifecycleConfig, path *structp
 		return reason, true
 	}
 	return "", false
-}
-
-func shouldUpdateOrRecreate(cfg *dresources.ResourceLifecycleConfig, path *structpath.PathNode) (deployplan.ActionType, string) {
-	if cfg == nil {
-		return deployplan.Undefined, ""
-	}
-	if reason, ok := findMatchingRule(path, cfg.RecreateOnChanges); ok {
-		return deployplan.Recreate, reason
-	}
-	// Local changes only: remote-only diffs on these were already skipped by shouldSkipIDField.
-	if reason, ok := findMatchingRule(path, cfg.ProvidedIDFields); ok {
-		return deployplan.Recreate, reason
-	}
-	if reason, ok := findMatchingRule(path, cfg.UpdateIDOnChanges); ok {
-		return deployplan.UpdateWithID, reason
-	}
-	return deployplan.Undefined, ""
 }
 
 // shouldSkipBackendDefault checks if a change should be skipped because the remote value
