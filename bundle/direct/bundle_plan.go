@@ -893,6 +893,25 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 
 		maps.Copy(refs, baseRefs)
 
+		// References are resolved against the resource's state type, not its input
+		// config (see the note above and dresources.TestInputSubset). A field that
+		// exists in input but not in state — most notably a bundle:"readonly" field
+		// such as volumes' computed volume_path — is dropped from state before
+		// deploy, so a reference it carries cannot be resolved into the state and
+		// must not be treated as a dependency here. Such references are still made
+		// available to other resources that read the field (for example
+		// ${resources.volumes.x.volume_path}) earlier during initialize.
+		stateType := adapter.StateType()
+		for fieldPath := range refs {
+			parsed, err := structpath.ParsePath(fieldPath)
+			if err != nil {
+				return nil, fmt.Errorf("%s: parsing reference path %q: %w", prefix, fieldPath, err)
+			}
+			if structaccess.ValidatePath(stateType, parsed) != nil {
+				delete(refs, fieldPath)
+			}
+		}
+
 		var dependsOn []deployplan.DependsOnEntry
 		for _, reference := range refs {
 			ref, ok := dynvar.NewRef(dyn.V(reference))
