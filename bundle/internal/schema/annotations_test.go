@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/bundle/internal/annotation"
+	"github.com/databricks/cli/internal/clijson"
 	"github.com/databricks/cli/libs/jsonschema"
 	"github.com/stretchr/testify/assert"
 )
@@ -60,6 +61,7 @@ func TestAssignAnnotationLaunchStage(t *testing.T) {
 		})
 		assert.Equal(t, "[Public Preview] Target QPS for the endpoint.", s.Description)
 		assert.False(t, s.DoNotSuggest)
+		assert.Empty(t, s.LaunchStage)
 	})
 
 	t.Run("public beta prefixes description", func(t *testing.T) {
@@ -73,15 +75,15 @@ func TestAssignAnnotationLaunchStage(t *testing.T) {
 
 	t.Run("private preview also hides from autocomplete", func(t *testing.T) {
 		s := &jsonschema.Schema{}
-		// The parser pairs Preview "PRIVATE" with stage PRIVATE_PREVIEW; hiding
-		// rides on Preview, the prefix on the stage.
+		// The private-preview stage both prefixes the description and hides the
+		// field; it is also emitted as x-databricks-launch-stage for pydabs.
 		assignAnnotation(s, annotation.Descriptor{
 			Description: "Internal field.",
-			Preview:     "PRIVATE",
 			LaunchStage: "PRIVATE_PREVIEW",
 		})
 		assert.Equal(t, "[Private Preview] Internal field.", s.Description)
 		assert.True(t, s.DoNotSuggest)
+		assert.Equal(t, "PRIVATE_PREVIEW", s.LaunchStage)
 	})
 
 	t.Run("per-enum-value launch stages do not leak into description", func(t *testing.T) {
@@ -89,7 +91,7 @@ func TestAssignAnnotationLaunchStage(t *testing.T) {
 		assignAnnotation(s, annotation.Descriptor{
 			Description: "Type of endpoint.",
 			Enum:        []any{"STORAGE_OPTIMIZED", "STANDARD"},
-			EnumLaunchStages: map[string]string{
+			EnumLaunchStages: map[string]clijson.LaunchStage{
 				"STORAGE_OPTIMIZED": "PUBLIC_PREVIEW",
 			},
 		})
@@ -123,7 +125,7 @@ func TestBuildEnumDescriptions(t *testing.T) {
 
 	t.Run("combines launch stage and description per value", func(t *testing.T) {
 		got := buildEnumDescriptions(enum,
-			map[string]string{"STORAGE_OPTIMIZED": "PUBLIC_PREVIEW"},
+			map[string]clijson.LaunchStage{"STORAGE_OPTIMIZED": "PUBLIC_PREVIEW"},
 			map[string]string{
 				"STORAGE_OPTIMIZED": "Storage-optimized endpoint.",
 				"STANDARD":          "Standard endpoint.",
@@ -137,7 +139,7 @@ func TestBuildEnumDescriptions(t *testing.T) {
 
 	t.Run("launch stage only emits bracketed label", func(t *testing.T) {
 		got := buildEnumDescriptions(enum,
-			map[string]string{"STORAGE_OPTIMIZED": "PUBLIC_BETA"},
+			map[string]clijson.LaunchStage{"STORAGE_OPTIMIZED": "PUBLIC_BETA"},
 			nil,
 		)
 		assert.Equal(t, []string{"[Beta]", ""}, got)
@@ -154,7 +156,7 @@ func TestBuildEnumDescriptions(t *testing.T) {
 	t.Run("returns nil when neither stage nor description has content", func(t *testing.T) {
 		assert.Nil(t, buildEnumDescriptions(enum, nil, nil))
 		assert.Nil(t, buildEnumDescriptions(enum,
-			map[string]string{"STORAGE_OPTIMIZED": "GA"},
+			map[string]clijson.LaunchStage{"STORAGE_OPTIMIZED": "GA"},
 			nil,
 		))
 	})
@@ -162,7 +164,7 @@ func TestBuildEnumDescriptions(t *testing.T) {
 	t.Run("non-string enum entries leave an empty slot", func(t *testing.T) {
 		got := buildEnumDescriptions(
 			[]any{"A", 42, "B"},
-			map[string]string{"A": "PUBLIC_PREVIEW", "B": "PUBLIC_BETA"},
+			map[string]clijson.LaunchStage{"A": "PUBLIC_PREVIEW", "B": "PUBLIC_BETA"},
 			nil,
 		)
 		assert.Equal(t, []string{"[Public Preview]", "", "[Beta]"}, got)
