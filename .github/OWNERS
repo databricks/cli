@@ -72,4 +72,6 @@
 /libs/clicompat/                 team:eng-apps-devex team:platform
 
 # Experimental
+/experimental/air/             team:ai-training
+/acceptance/experimental/air/  team:ai-training
 /experimental/aitools/      team:eng-apps-devex @lennartkats-db

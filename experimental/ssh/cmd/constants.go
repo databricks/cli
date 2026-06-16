@@ -9,12 +9,13 @@ const (
 	defaultHandoverTimeout    = 30 * time.Minute
 	defaultEnvironmentVersion = 4
 
-	serverTimeout        = 24 * time.Hour
-	taskStartupTimeout   = 10 * time.Minute
-	serverPortRange      = 100
-	serverConfigDir      = ".ssh-tunnel"
-	serverPrivateKeyName = "server-private-key"
-	serverPublicKeyName  = "server-public-key"
-	clientPrivateKeyName = "client-private-key"
-	clientPublicKeyName  = "client-public-key"
+	serverTimeout         = 24 * time.Hour
+	taskStartupTimeout    = 10 * time.Minute
+	gpuTaskStartupTimeout = 45 * time.Minute
+	serverPortRange       = 100
+	serverConfigDir       = ".ssh-tunnel"
+	serverPrivateKeyName  = "server-private-key"
+	serverPublicKeyName   = "server-public-key"
+	clientPrivateKeyName  = "client-private-key"
+	clientPublicKeyName   = "client-public-key"
 )
