@@ -70,7 +70,7 @@ func TestApplyWorkspaceRootPermissions(t *testing.T) {
 		},
 		WorkspaceObjectId:   "1234",
 		WorkspaceObjectType: "directories",
-	}).Return(nil, nil)
+	}).Return(&workspace.WorkspaceObjectPermissions{}, nil)
 
 	diags := bundle.ApplySeq(t.Context(), b, ValidateSharedRootPermissions(), ApplyWorkspaceRootPermissions())
 	require.Empty(t, diags)
@@ -143,7 +143,7 @@ func TestApplyWorkspaceRootPermissionsForAllPaths(t *testing.T) {
 		},
 		WorkspaceObjectId:   "1",
 		WorkspaceObjectType: "directories",
-	}).Return(nil, nil)
+	}).Return(&workspace.WorkspaceObjectPermissions{}, nil)
 
 	workspaceApi.EXPECT().SetPermissions(mock.Anything, workspace.WorkspaceObjectPermissionsRequest{
 		AccessControlList: []workspace.WorkspaceObjectAccessControlRequest{
@@ -153,7 +153,7 @@ func TestApplyWorkspaceRootPermissionsForAllPaths(t *testing.T) {
 		},
 		WorkspaceObjectId:   "2",
 		WorkspaceObjectType: "directories",
-	}).Return(nil, nil)
+	}).Return(&workspace.WorkspaceObjectPermissions{}, nil)
 
 	workspaceApi.EXPECT().SetPermissions(mock.Anything, workspace.WorkspaceObjectPermissionsRequest{
 		AccessControlList: []workspace.WorkspaceObjectAccessControlRequest{
@@ -163,7 +163,7 @@ func TestApplyWorkspaceRootPermissionsForAllPaths(t *testing.T) {
 		},
 		WorkspaceObjectId:   "3",
 		WorkspaceObjectType: "directories",
-	}).Return(nil, nil)
+	}).Return(&workspace.WorkspaceObjectPermissions{}, nil)
 
 	workspaceApi.EXPECT().SetPermissions(mock.Anything, workspace.WorkspaceObjectPermissionsRequest{
 		AccessControlList: []workspace.WorkspaceObjectAccessControlRequest{
@@ -173,7 +173,7 @@ func TestApplyWorkspaceRootPermissionsForAllPaths(t *testing.T) {
 		},
 		WorkspaceObjectId:   "4",
 		WorkspaceObjectType: "directories",
-	}).Return(nil, nil)
+	}).Return(&workspace.WorkspaceObjectPermissions{}, nil)
 
 	workspaceApi.EXPECT().SetPermissions(mock.Anything, workspace.WorkspaceObjectPermissionsRequest{
 		AccessControlList: []workspace.WorkspaceObjectAccessControlRequest{
@@ -183,7 +183,7 @@ func TestApplyWorkspaceRootPermissionsForAllPaths(t *testing.T) {
 		},
 		WorkspaceObjectId:   "5",
 		WorkspaceObjectType: "directories",
-	}).Return(nil, nil)
+	}).Return(&workspace.WorkspaceObjectPermissions{}, nil)
 
 	diags := bundle.Apply(t.Context(), b, ApplyWorkspaceRootPermissions())
 	require.NoError(t, diags.Error())

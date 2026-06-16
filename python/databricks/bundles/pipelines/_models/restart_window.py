@@ -24,7 +24,7 @@ class RestartWindow:
     """
     :meta private: [EXPERIMENTAL]
     
-    An integer between 0 and 23 denoting the start hour for the restart window in the 24-hour day.
+    [Private Preview] An integer between 0 and 23 denoting the start hour for the restart window in the 24-hour day.
     Continuous pipeline restart is triggered only within a five-hour window starting at this hour.
     """
 
@@ -32,7 +32,7 @@ class RestartWindow:
     """
     :meta private: [EXPERIMENTAL]
     
-    Days of week in which the restart is allowed to happen (within a five-hour window starting at start_hour).
+    [Private Preview] Days of week in which the restart is allowed to happen (within a five-hour window starting at start_hour).
     If not specified all days of the week will be used.
     """
 
@@ -40,7 +40,7 @@ class RestartWindow:
     """
     :meta private: [EXPERIMENTAL]
     
-    Time zone id of restart window. See https://docs.databricks.com/sql/language-manual/sql-ref-syntax-aux-conf-mgmt-set-timezone.html for details.
+    [Private Preview] Time zone id of restart window. See https://docs.databricks.com/sql/language-manual/sql-ref-syntax-aux-conf-mgmt-set-timezone.html for details.
     If not specified, UTC will be used.
     """
 
@@ -59,7 +59,7 @@ class RestartWindowDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    An integer between 0 and 23 denoting the start hour for the restart window in the 24-hour day.
+    [Private Preview] An integer between 0 and 23 denoting the start hour for the restart window in the 24-hour day.
     Continuous pipeline restart is triggered only within a five-hour window starting at this hour.
     """
 
@@ -67,7 +67,7 @@ class RestartWindowDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    Days of week in which the restart is allowed to happen (within a five-hour window starting at start_hour).
+    [Private Preview] Days of week in which the restart is allowed to happen (within a five-hour window starting at start_hour).
     If not specified all days of the week will be used.
     """
 
@@ -75,7 +75,7 @@ class RestartWindowDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    Time zone id of restart window. See https://docs.databricks.com/sql/language-manual/sql-ref-syntax-aux-conf-mgmt-set-timezone.html for details.
+    [Private Preview] Time zone id of restart window. See https://docs.databricks.com/sql/language-manual/sql-ref-syntax-aux-conf-mgmt-set-timezone.html for details.
     If not specified, UTC will be used.
     """
 

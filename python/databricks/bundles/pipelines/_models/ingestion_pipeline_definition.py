@@ -39,7 +39,7 @@ class IngestionPipelineDefinition:
 
     connection_name: VariableOrOptional[str] = None
     """
-    The Unity Catalog connection that this ingestion pipeline uses to communicate with the source. This is used with
+    [Public Preview] The Unity Catalog connection that this ingestion pipeline uses to communicate with the source. This is used with
     both connectors for applications like Salesforce, Workday, and so on, and also database connectors like Oracle,
     (connector_type = QUERY_BASED OR connector_type = CDC).
     If connection name corresponds to database connectors like Oracle, and connector_type is not provided then
@@ -51,12 +51,12 @@ class IngestionPipelineDefinition:
 
     connector_type: VariableOrOptional[ConnectorType] = None
     """
-    (Optional) Connector Type for sources. Ex: CDC, Query Based.
+    [Beta] (Optional) Connector Type for sources. Ex: CDC, Query Based.
     """
 
     data_staging_options: VariableOrOptional[DataStagingOptions] = None
     """
-    (Optional) Location of staged data storage. This is required for migration from Cdc Managed Ingestion Pipeline
+    [Beta] (Optional) Location of staged data storage. This is required for migration from Cdc Managed Ingestion Pipeline
     with Gateway pipeline to Combined Cdc Managed Ingestion Pipeline.
     If not specified, the volume for staged data will be created in catalog and schema/target specified in the
     top level pipeline definition.
@@ -64,12 +64,12 @@ class IngestionPipelineDefinition:
 
     full_refresh_window: VariableOrOptional[OperationTimeWindow] = None
     """
-    (Optional) A window that specifies a set of time ranges for snapshot queries in CDC.
+    [Public Preview] (Optional) A window that specifies a set of time ranges for snapshot queries in CDC.
     """
 
     ingest_from_uc_foreign_catalog: VariableOrOptional[bool] = None
     """
-    Immutable. If set to true, the pipeline will ingest tables from the
+    [Public Preview] Immutable. If set to true, the pipeline will ingest tables from the
     UC foreign catalogs directly without the need to specify a UC connection or ingestion gateway.
     The `source_catalog` fields in objects of IngestionConfig are interpreted as
     the UC foreign catalogs to ingest from.
@@ -77,7 +77,7 @@ class IngestionPipelineDefinition:
 
     ingestion_gateway_id: VariableOrOptional[str] = None
     """
-    Identifier for the gateway that is used by this ingestion pipeline to communicate with the source database.
+    [Public Preview] Identifier for the gateway that is used by this ingestion pipeline to communicate with the source database.
     This is used with CDC connectors to databases like SQL Server using a gateway pipeline (connector_type = CDC).
     Under certain conditions, this can be replaced with connection_name to change the connector to Combined Cdc
     Managed Ingestion Pipeline.
@@ -86,21 +86,23 @@ class IngestionPipelineDefinition:
     netsuite_jar_path: VariableOrOptional[str] = None
     """
     :meta private: [EXPERIMENTAL]
+    
+    [Private Preview]
     """
 
     objects: VariableOrList[IngestionConfig] = field(default_factory=list)
     """
-    Required. Settings specifying tables to replicate and the destination for the replicated tables.
+    [Public Preview] Required. Settings specifying tables to replicate and the destination for the replicated tables.
     """
 
     source_configurations: VariableOrList[SourceConfig] = field(default_factory=list)
     """
-    Top-level source configurations
+    [Public Preview] Top-level source configurations
     """
 
     table_configuration: VariableOrOptional[TableSpecificConfig] = None
     """
-    Configuration settings to control the ingestion of tables. These settings are applied to all tables in the pipeline.
+    [Public Preview] Configuration settings to control the ingestion of tables. These settings are applied to all tables in the pipeline.
     """
 
     @classmethod
@@ -116,7 +118,7 @@ class IngestionPipelineDefinitionDict(TypedDict, total=False):
 
     connection_name: VariableOrOptional[str]
     """
-    The Unity Catalog connection that this ingestion pipeline uses to communicate with the source. This is used with
+    [Public Preview] The Unity Catalog connection that this ingestion pipeline uses to communicate with the source. This is used with
     both connectors for applications like Salesforce, Workday, and so on, and also database connectors like Oracle,
     (connector_type = QUERY_BASED OR connector_type = CDC).
     If connection name corresponds to database connectors like Oracle, and connector_type is not provided then
@@ -128,12 +130,12 @@ class IngestionPipelineDefinitionDict(TypedDict, total=False):
 
     connector_type: VariableOrOptional[ConnectorTypeParam]
     """
-    (Optional) Connector Type for sources. Ex: CDC, Query Based.
+    [Beta] (Optional) Connector Type for sources. Ex: CDC, Query Based.
     """
 
     data_staging_options: VariableOrOptional[DataStagingOptionsParam]
     """
-    (Optional) Location of staged data storage. This is required for migration from Cdc Managed Ingestion Pipeline
+    [Beta] (Optional) Location of staged data storage. This is required for migration from Cdc Managed Ingestion Pipeline
     with Gateway pipeline to Combined Cdc Managed Ingestion Pipeline.
     If not specified, the volume for staged data will be created in catalog and schema/target specified in the
     top level pipeline definition.
@@ -141,12 +143,12 @@ class IngestionPipelineDefinitionDict(TypedDict, total=False):
 
     full_refresh_window: VariableOrOptional[OperationTimeWindowParam]
     """
-    (Optional) A window that specifies a set of time ranges for snapshot queries in CDC.
+    [Public Preview] (Optional) A window that specifies a set of time ranges for snapshot queries in CDC.
     """
 
     ingest_from_uc_foreign_catalog: VariableOrOptional[bool]
     """
-    Immutable. If set to true, the pipeline will ingest tables from the
+    [Public Preview] Immutable. If set to true, the pipeline will ingest tables from the
     UC foreign catalogs directly without the need to specify a UC connection or ingestion gateway.
     The `source_catalog` fields in objects of IngestionConfig are interpreted as
     the UC foreign catalogs to ingest from.
@@ -154,7 +156,7 @@ class IngestionPipelineDefinitionDict(TypedDict, total=False):
 
     ingestion_gateway_id: VariableOrOptional[str]
     """
-    Identifier for the gateway that is used by this ingestion pipeline to communicate with the source database.
+    [Public Preview] Identifier for the gateway that is used by this ingestion pipeline to communicate with the source database.
     This is used with CDC connectors to databases like SQL Server using a gateway pipeline (connector_type = CDC).
     Under certain conditions, this can be replaced with connection_name to change the connector to Combined Cdc
     Managed Ingestion Pipeline.
@@ -163,21 +165,23 @@ class IngestionPipelineDefinitionDict(TypedDict, total=False):
     netsuite_jar_path: VariableOrOptional[str]
     """
     :meta private: [EXPERIMENTAL]
+    
+    [Private Preview]
     """
 
     objects: VariableOrList[IngestionConfigParam]
     """
-    Required. Settings specifying tables to replicate and the destination for the replicated tables.
+    [Public Preview] Required. Settings specifying tables to replicate and the destination for the replicated tables.
     """
 
     source_configurations: VariableOrList[SourceConfigParam]
     """
-    Top-level source configurations
+    [Public Preview] Top-level source configurations
     """
 
     table_configuration: VariableOrOptional[TableSpecificConfigParam]
     """
-    Configuration settings to control the ingestion of tables. These settings are applied to all tables in the pipeline.
+    [Public Preview] Configuration settings to control the ingestion of tables. These settings are applied to all tables in the pipeline.
     """
 
 

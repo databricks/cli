@@ -1,0 +1,41 @@
+bundle:
+  name: test-bundle
+
+# The deploying user is tester@databricks.com. A workspace folder under
+# /Workspace/Users/<owner> grants <owner> CAN_MANAGE, which the deploy observes as
+# inherited access in the SetPermissions response.
+targets:
+  # No permissions section: the migration mirrors the state folder's ACLs onto the
+  # deployment, so access is preserved wherever the state lives.
+  no_permissions:
+    default: true
+
+  # The deploying user (the home owner of the state folder) is declared.
+  user_declared:
+    permissions:
+      - user_name: ${workspace.current_user.userName}
+        level: CAN_MANAGE
+
+  # The deploying user (the home owner, with inherited CAN_MANAGE) is the only
+  # undeclared writer, so the migration could preserve them by granting the deployer.
+  user_not_declared:
+    permissions:
+      - group_name: team
+        level: CAN_MANAGE
+
+  # A shared state folder is writable by all workspace users; that access is declared
+  # via group_name: users CAN_MANAGE.
+  shared_users_can_manage:
+    permissions:
+      - group_name: users
+        level: CAN_MANAGE
+    workspace:
+      state_path: /Workspace/Shared/test-bundle-state
+
+  # A shared state folder without group_name: users CAN_MANAGE declared.
+  shared_not_declared:
+    permissions:
+      - user_name: ${workspace.current_user.userName}
+        level: CAN_MANAGE
+    workspace:
+      state_path: /Workspace/Shared/test-bundle-state
