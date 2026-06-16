@@ -52,6 +52,7 @@ func TestStateToBundleEmptyLocalResources(t *testing.T) {
 		"resources.postgres_endpoints.test_postgres_endpoint":           {ID: "projects/test-project/branches/main/endpoints/primary"},
 		"resources.postgres_catalogs.test_postgres_catalog":             {ID: "catalogs/test_catalog"},
 		"resources.postgres_synced_tables.test_postgres_synced_table":   {ID: "synced_tables/main.public.test_synced_table"},
+		"resources.postgres_roles.test_postgres_role":                   {ID: "projects/test-project/branches/main/roles/test-role"},
 		"resources.vector_search_endpoints.test_vector_search_endpoint": {ID: "vs-endpoint-1"},
 		"resources.vector_search_indexes.test_vector_search_index":      {ID: "vs-index-1"},
 	}
@@ -127,6 +128,9 @@ func TestStateToBundleEmptyLocalResources(t *testing.T) {
 
 	assert.Equal(t, "catalogs/test_catalog", config.Resources.PostgresCatalogs["test_postgres_catalog"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.PostgresCatalogs["test_postgres_catalog"].ModifiedStatus)
+
+	assert.Equal(t, "projects/test-project/branches/main/roles/test-role", config.Resources.PostgresRoles["test_postgres_role"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.PostgresRoles["test_postgres_role"].ModifiedStatus)
 
 	assert.Equal(t, "vs-endpoint-1", config.Resources.VectorSearchEndpoints["test_vector_search_endpoint"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.VectorSearchEndpoints["test_vector_search_endpoint"].ModifiedStatus)
@@ -326,6 +330,14 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 					},
 				},
 			},
+			PostgresRoles: map[string]*resources.PostgresRole{
+				"test_postgres_role": {
+					PostgresRoleConfig: resources.PostgresRoleConfig{
+						RoleId: "test-role",
+						Parent: "projects/test-project/branches/main",
+					},
+				},
+			},
 			VectorSearchEndpoints: map[string]*resources.VectorSearchEndpoint{
 				"test_vector_search_endpoint": {
 					CreateEndpoint: vectorsearch.CreateEndpoint{
@@ -420,6 +432,9 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 
 	assert.Empty(t, config.Resources.PostgresCatalogs["test_postgres_catalog"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.PostgresCatalogs["test_postgres_catalog"].ModifiedStatus)
+
+	assert.Empty(t, config.Resources.PostgresRoles["test_postgres_role"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.PostgresRoles["test_postgres_role"].ModifiedStatus)
 
 	assert.Empty(t, config.Resources.VectorSearchEndpoints["test_vector_search_endpoint"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.VectorSearchEndpoints["test_vector_search_endpoint"].ModifiedStatus)
@@ -742,6 +757,20 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 					},
 				},
 			},
+			PostgresRoles: map[string]*resources.PostgresRole{
+				"test_postgres_role": {
+					PostgresRoleConfig: resources.PostgresRoleConfig{
+						RoleId: "primary",
+						Parent: "projects/test-project/branches/main",
+					},
+				},
+				"test_postgres_role_new": {
+					PostgresRoleConfig: resources.PostgresRoleConfig{
+						RoleId: "replica",
+						Parent: "projects/test-project-new/branches/dev",
+					},
+				},
+			},
 			VectorSearchEndpoints: map[string]*resources.VectorSearchEndpoint{
 				"test_vector_search_endpoint": {
 					CreateEndpoint: vectorsearch.CreateEndpoint{
@@ -813,6 +842,8 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 		"resources.postgres_endpoints.test_postgres_endpoint_old":           {ID: "projects/test-project/branches/main/endpoints/old"},
 		"resources.postgres_catalogs.test_postgres_catalog":                 {ID: "catalogs/test_catalog"},
 		"resources.postgres_catalogs.test_postgres_catalog_old":             {ID: "catalogs/test_catalog_old"},
+		"resources.postgres_roles.test_postgres_role":                       {ID: "projects/test-project/branches/main/roles/primary"},
+		"resources.postgres_roles.test_postgres_role_old":                   {ID: "projects/test-project/branches/main/roles/old"},
 		"resources.vector_search_endpoints.test_vector_search_endpoint":     {ID: "vs-endpoint-1"},
 		"resources.vector_search_endpoints.test_vector_search_endpoint_old": {ID: "vs-endpoint-old"},
 		"resources.vector_search_indexes.test_vector_search_index":          {ID: "vs-index-1"},
@@ -976,6 +1007,13 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.PostgresCatalogs["test_postgres_catalog_old"].ModifiedStatus)
 	assert.Empty(t, config.Resources.PostgresCatalogs["test_postgres_catalog_new"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.PostgresCatalogs["test_postgres_catalog_new"].ModifiedStatus)
+
+	assert.Equal(t, "projects/test-project/branches/main/roles/primary", config.Resources.PostgresRoles["test_postgres_role"].ID)
+	assert.Empty(t, config.Resources.PostgresRoles["test_postgres_role"].ModifiedStatus)
+	assert.Equal(t, "projects/test-project/branches/main/roles/old", config.Resources.PostgresRoles["test_postgres_role_old"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.PostgresRoles["test_postgres_role_old"].ModifiedStatus)
+	assert.Empty(t, config.Resources.PostgresRoles["test_postgres_role_new"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.PostgresRoles["test_postgres_role_new"].ModifiedStatus)
 
 	assert.Equal(t, "vs-endpoint-1", config.Resources.VectorSearchEndpoints["test_vector_search_endpoint"].ID)
 	assert.Empty(t, config.Resources.VectorSearchEndpoints["test_vector_search_endpoint"].ModifiedStatus)

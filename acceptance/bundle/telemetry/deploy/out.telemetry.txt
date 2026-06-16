@@ -71,6 +71,14 @@
               "value": false
             },
             {
+              "key": "state_path_is_shared",
+              "value": false
+            },
+            {
+              "key": "dms_compat_auto",
+              "value": true
+            },
+            {
               "key": "has_serverless_compute",
               "value": false
             },

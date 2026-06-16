@@ -1,0 +1,5 @@
+title "a drifted protocol with no renderable answer tells the user to update the CLI"
+errcode trace $CLI experimental genie ask "What are total sales by franchise?"
+
+title "json output also reports the drift"
+errcode trace $CLI experimental genie ask "What are total sales by franchise?" --output json
