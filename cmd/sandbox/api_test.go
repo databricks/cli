@@ -27,7 +27,7 @@ func TestTranslateErrorRewrites503(t *testing.T) {
 	orig := &apierr.APIError{StatusCode: http.StatusServiceUnavailable, Message: "Service Unavailable"}
 	err := translateError(orig)
 	require.Error(t, err)
-	assert.Equal(t, "the Databricks Sandbox feature is not available in your region, or the service is temporarily unavailable", err.Error())
+	assert.Equal(t, "the Databricks Sandbox feature is not available in your region. See "+sandboxDocsURL, err.Error())
 }
 
 func TestAllow503RetryConsumesBudget(t *testing.T) {

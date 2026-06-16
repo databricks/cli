@@ -63,11 +63,16 @@ func allow503Retry(ctx context.Context) bool {
 	return *n < max503Attempts
 }
 
+// sandboxDocsURL points users at the Sandbox documentation, including its
+// region availability. The cloud-neutral path redirects to the reader's
+// cloud-specific docs page.
+const sandboxDocsURL = "https://docs.databricks.com/compute/serverless/sandbox"
+
 // translateError replaces a 503 with a user-facing message; the gateway
 // body adds nothing, so it is dropped rather than wrapped.
 func translateError(err error) error {
 	if apiErr, ok := errors.AsType[*apierr.APIError](err); ok && apiErr.StatusCode == http.StatusServiceUnavailable {
-		return errors.New("the Databricks Sandbox feature is not available in your region, or the service is temporarily unavailable")
+		return fmt.Errorf("the Databricks Sandbox feature is not available in your region. See %s", sandboxDocsURL)
 	}
 	return err
 }
