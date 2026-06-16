@@ -7,10 +7,15 @@ from typing import Optional
 import codegen.packages as packages
 
 
-class Stage:
-    # Launch stage from jsonschema.json's x-databricks-launch-stage. The Go
-    # schema generator emits only the private-preview stage there; it marks a
-    # field experimental and excludes it from the generated documentation.
+class LaunchStage:
+    # Mirrors clijson.LaunchStage in the Go code. jsonschema.json only carries
+    # x-databricks-launch-stage for private-preview fields (the Go schema
+    # generator emits it only there, to mark them experimental and exclude them
+    # from the generated documentation), but the full set is mirrored here for
+    # completeness.
+    GA = "GA"
+    PUBLIC_PREVIEW = "PUBLIC_PREVIEW"
+    PUBLIC_BETA = "PUBLIC_BETA"
     PRIVATE_PREVIEW = "PRIVATE_PREVIEW"
 
 

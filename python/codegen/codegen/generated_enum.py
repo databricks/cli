@@ -5,7 +5,7 @@ from typing import Optional
 import codegen.packages as packages
 from codegen.code_builder import CodeBuilder
 from codegen.generated_dataclass import _append_description
-from codegen.jsonschema import Schema, Stage
+from codegen.jsonschema import LaunchStage, Schema
 
 
 @dataclass(kw_only=True)
@@ -35,7 +35,7 @@ def generate_enum(namespace: str, schema_name: str, schema: Schema) -> Generated
         package=package,
         values=values,
         description=schema.description,
-        experimental=schema.stage == Stage.PRIVATE_PREVIEW,
+        experimental=schema.stage == LaunchStage.PRIVATE_PREVIEW,
         deprecated=schema.deprecated or False,
     )
 

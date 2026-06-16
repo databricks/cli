@@ -65,7 +65,7 @@ def _transitively_mark_deprecated_and_private(
 
     for schema_name, schema in schemas.items():
         if schema_name not in not_private:
-            schema.stage = openapi.Stage.PRIVATE_PREVIEW
+            schema.stage = openapi.LaunchStage.PRIVATE_PREVIEW
 
         if schema_name not in not_deprecated:
             schema.deprecated = True
@@ -88,7 +88,10 @@ def _remove_deprecated_fields(
         if schema.type == openapi.SchemaType.OBJECT:
             new_properties = {}
             for field_name, field in schema.properties.items():
-                if field.deprecated and field.stage == openapi.Stage.PRIVATE_PREVIEW:
+                if (
+                    field.deprecated
+                    and field.stage == openapi.LaunchStage.PRIVATE_PREVIEW
+                ):
                     continue
 
                 new_properties[field_name] = field
@@ -256,7 +259,7 @@ def _collect_reachable_schemas(
 
                     if (
                         not include_private
-                        and field.stage == openapi.Stage.PRIVATE_PREVIEW
+                        and field.stage == openapi.LaunchStage.PRIVATE_PREVIEW
                     ):
                         continue
 
