@@ -21,7 +21,7 @@
         "dashboard_id": "[DASHBOARD1_ID]",
         "display_name": "test bundle-deploy-dashboard [UNIQUE_NAME]",
         "embed_credentials": false,
-        "etag": [ETAG],
+        "etag": "[ETAG]",
         "lifecycle_state": "ACTIVE",
         "parent_path": "/Workspace/Users/[USERNAME]/.bundle/unpublish-out-of-band-[UNIQUE_NAME]/default/resources",
         "path": "/Users/[USERNAME]/.bundle/unpublish-out-of-band-[UNIQUE_NAME]/default/resources/test bundle-deploy-dashboard [UNIQUE_NAME].lvdash.json",
@@ -34,8 +34,8 @@
         "etag": {
           "action": "skip",
           "reason": "custom",
-          "old": [ETAG],
-          "remote": [ETAG]
+          "old": "[ETAG]",
+          "remote": "[ETAG]"
         },
         "published": {
           "action": "update",
