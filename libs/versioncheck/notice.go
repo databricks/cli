@@ -63,6 +63,8 @@ const (
 // once per day) and stores it in the cache, so a later command can show the
 // notice without a blocking network call. It is a no-op when the notice would
 // be suppressed anyway. Safe to call on every invocation.
+//
+//deadcode:allow Passive update notice paused for 1.4.0: unwired from cmd/root while we settle how to target long-lived, outdated environments without nagging fresh installs. Re-enable by restoring the root command calls.
 func StartBackgroundRefresh(ctx context.Context, cmd *cobra.Command) {
 	if !notifyEnabled(ctx, cmd) {
 		return

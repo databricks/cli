@@ -47,6 +47,9 @@ class Environment:
     """
 
     java_dependencies: VariableOrList[str] = field(default_factory=list)
+    """
+    [Public Preview]
+    """
 
     @classmethod
     def from_dict(cls, value: "EnvironmentDict") -> "Self":
@@ -90,6 +93,9 @@ class EnvironmentDict(TypedDict, total=False):
     """
 
     java_dependencies: VariableOrList[str]
+    """
+    [Public Preview]
+    """
 
 
 EnvironmentParam = EnvironmentDict | Environment
