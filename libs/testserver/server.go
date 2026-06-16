@@ -338,7 +338,7 @@ func (s *Server) serve(w http.ResponseWriter, r *http.Request, handler HandlerFu
 			Body:       []byte(rule.Body),
 			Headers:    getJsonHeaders(),
 		}
-	} else if bytes.Contains(request.Body, []byte("INJECT_ERROR")) {
+	} else if bytes.Contains(request.Body, []byte("INJECT_ERROR")) || strings.Contains(r.URL.Path, "INJECT_ERROR") {
 		resp = EncodedResponse{
 			StatusCode: 500,
 			Body:       []byte("INJECTED"),
