@@ -110,7 +110,7 @@ class Task:
 
     alert_task: VariableOrOptional[AlertTask] = None
     """
-    The task evaluates a Databricks alert and sends notifications to subscribers
+    [Public Preview] The task evaluates a Databricks alert and sends notifications to subscribers
     when the `alert_task` field is present.
     """
 
@@ -122,7 +122,7 @@ class Task:
 
     compute: VariableOrOptional[Compute] = None
     """
-    Task level compute configuration.
+    [Beta] Task level compute configuration.
     """
 
     condition_task: VariableOrOptional[ConditionTask] = None
@@ -139,6 +139,8 @@ class Task:
     dbt_platform_task: VariableOrOptional[DbtPlatformTask] = None
     """
     :meta private: [EXPERIMENTAL]
+    
+    [Private Preview]
     """
 
     dbt_task: VariableOrOptional[DbtTask] = None
@@ -193,6 +195,8 @@ class Task:
     gen_ai_compute_task: VariableOrOptional[GenAiComputeTask] = None
     """
     :meta private: [EXPERIMENTAL]
+    
+    [Private Preview]
     """
 
     health: VariableOrOptional[JobsHealthRules] = None
@@ -240,14 +244,14 @@ class Task:
 
     power_bi_task: VariableOrOptional[PowerBiTask] = None
     """
-    The task triggers a Power BI semantic model update when the `power_bi_task` field is present.
+    [Public Preview] The task triggers a Power BI semantic model update when the `power_bi_task` field is present.
     """
 
     python_operator_task: VariableOrOptional[PythonOperatorTask] = None
     """
     :meta private: [EXPERIMENTAL]
     
-    The task runs a Python operator task.
+    [Private Preview] The task runs a Python operator task.
     """
 
     python_wheel_task: VariableOrOptional[PythonWheelTask] = None
@@ -328,7 +332,7 @@ class TaskDict(TypedDict, total=False):
 
     alert_task: VariableOrOptional[AlertTaskParam]
     """
-    The task evaluates a Databricks alert and sends notifications to subscribers
+    [Public Preview] The task evaluates a Databricks alert and sends notifications to subscribers
     when the `alert_task` field is present.
     """
 
@@ -340,7 +344,7 @@ class TaskDict(TypedDict, total=False):
 
     compute: VariableOrOptional[ComputeParam]
     """
-    Task level compute configuration.
+    [Beta] Task level compute configuration.
     """
 
     condition_task: VariableOrOptional[ConditionTaskParam]
@@ -357,6 +361,8 @@ class TaskDict(TypedDict, total=False):
     dbt_platform_task: VariableOrOptional[DbtPlatformTaskParam]
     """
     :meta private: [EXPERIMENTAL]
+    
+    [Private Preview]
     """
 
     dbt_task: VariableOrOptional[DbtTaskParam]
@@ -411,6 +417,8 @@ class TaskDict(TypedDict, total=False):
     gen_ai_compute_task: VariableOrOptional[GenAiComputeTaskParam]
     """
     :meta private: [EXPERIMENTAL]
+    
+    [Private Preview]
     """
 
     health: VariableOrOptional[JobsHealthRulesParam]
@@ -458,14 +466,14 @@ class TaskDict(TypedDict, total=False):
 
     power_bi_task: VariableOrOptional[PowerBiTaskParam]
     """
-    The task triggers a Power BI semantic model update when the `power_bi_task` field is present.
+    [Public Preview] The task triggers a Power BI semantic model update when the `power_bi_task` field is present.
     """
 
     python_operator_task: VariableOrOptional[PythonOperatorTaskParam]
     """
     :meta private: [EXPERIMENTAL]
     
-    The task runs a Python operator task.
+    [Private Preview] The task runs a Python operator task.
     """
 
     python_wheel_task: VariableOrOptional[PythonWheelTaskParam]
