@@ -10,12 +10,3 @@ RequiresWarehouse = true
 # C:/Program Files/Git/Users/$username/UNIQUE_NAME before passing it to the CLI
 # Setting this environment variable prevents that conversion on windows.
 MSYS_NO_PATHCONV = "1"
-
-# Etag can be both negative and positive.
-[[Repls]]
-Old = "\"[-0-9]{8,}\""
-New = "[ETAG]"
-
-[[Repls]]
-Old = "\"[0-9]{8,}\""
-New = "[ETAG]"

@@ -23,42 +23,42 @@ class TableSpec:
 
     destination_catalog: VariableOr[str]
     """
-    Required. Destination catalog to store table.
+    [Public Preview] Required. Destination catalog to store table.
     """
 
     destination_schema: VariableOr[str]
     """
-    Required. Destination schema to store table.
+    [Public Preview] Required. Destination schema to store table.
     """
 
     source_table: VariableOr[str]
     """
-    Required. Table name in the source database.
+    [Public Preview] Required. Table name in the source database.
     """
 
     connector_options: VariableOrOptional[ConnectorOptions] = None
     """
-    (Optional) Source Specific Connector Options
+    [Public Preview] (Optional) Source Specific Connector Options
     """
 
     destination_table: VariableOrOptional[str] = None
     """
-    Optional. Destination table name. The pipeline fails if a table with that name already exists. If not set, the source table name is used.
+    [Public Preview] Optional. Destination table name. The pipeline fails if a table with that name already exists. If not set, the source table name is used.
     """
 
     source_catalog: VariableOrOptional[str] = None
     """
-    Source catalog name. Might be optional depending on the type of source.
+    [Public Preview] Source catalog name. Might be optional depending on the type of source.
     """
 
     source_schema: VariableOrOptional[str] = None
     """
-    Schema name in the source database. Might be optional depending on the type of source.
+    [Public Preview] Schema name in the source database. Might be optional depending on the type of source.
     """
 
     table_configuration: VariableOrOptional[TableSpecificConfig] = None
     """
-    Configuration settings to control the ingestion of tables. These settings override the table_configuration defined in the IngestionPipelineDefinition object and the SchemaSpec.
+    [Public Preview] Configuration settings to control the ingestion of tables. These settings override the table_configuration defined in the IngestionPipelineDefinition object and the SchemaSpec.
     """
 
     @classmethod
@@ -74,42 +74,42 @@ class TableSpecDict(TypedDict, total=False):
 
     destination_catalog: VariableOr[str]
     """
-    Required. Destination catalog to store table.
+    [Public Preview] Required. Destination catalog to store table.
     """
 
     destination_schema: VariableOr[str]
     """
-    Required. Destination schema to store table.
+    [Public Preview] Required. Destination schema to store table.
     """
 
     source_table: VariableOr[str]
     """
-    Required. Table name in the source database.
+    [Public Preview] Required. Table name in the source database.
     """
 
     connector_options: VariableOrOptional[ConnectorOptionsParam]
     """
-    (Optional) Source Specific Connector Options
+    [Public Preview] (Optional) Source Specific Connector Options
     """
 
     destination_table: VariableOrOptional[str]
     """
-    Optional. Destination table name. The pipeline fails if a table with that name already exists. If not set, the source table name is used.
+    [Public Preview] Optional. Destination table name. The pipeline fails if a table with that name already exists. If not set, the source table name is used.
     """
 
     source_catalog: VariableOrOptional[str]
     """
-    Source catalog name. Might be optional depending on the type of source.
+    [Public Preview] Source catalog name. Might be optional depending on the type of source.
     """
 
     source_schema: VariableOrOptional[str]
     """
-    Schema name in the source database. Might be optional depending on the type of source.
+    [Public Preview] Schema name in the source database. Might be optional depending on the type of source.
     """
 
     table_configuration: VariableOrOptional[TableSpecificConfigParam]
     """
-    Configuration settings to control the ingestion of tables. These settings override the table_configuration defined in the IngestionPipelineDefinition object and the SchemaSpec.
+    [Public Preview] Configuration settings to control the ingestion of tables. These settings override the table_configuration defined in the IngestionPipelineDefinition object and the SchemaSpec.
     """
 
 

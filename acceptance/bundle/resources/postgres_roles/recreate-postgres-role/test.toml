@@ -1,0 +1,2 @@
+Badness = "Terraform provider treats spec.postgres_role as updateable and sends update_mask=spec instead of recreating; backend silently no-ops the change. Direct engine correctly recreates."
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
