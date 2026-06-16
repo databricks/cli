@@ -61,4 +61,20 @@ func TestMLflowURL(t *testing.T) {
 		// Returns before any HTTP call, so the host is never contacted.
 		assert.Nil(t, mlflowURL(ctx, newTestWorkspaceClient(t, "https://unused.invalid"), &jobs.Run{}))
 	})
+
+	t.Run("uses the latest attempt's task run", func(t *testing.T) {
+		// A retried run must link to the last task, not the stale first attempt.
+		var gotRunID string
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path == "/api/2.2/jobs/runs/get-output" {
+				gotRunID = r.URL.Query().Get("run_id")
+			}
+			_, _ = w.Write([]byte(`{}`))
+		}))
+		t.Cleanup(srv.Close)
+
+		retried := &jobs.Run{Tasks: []jobs.RunTask{{RunId: 99}, {RunId: 100}}}
+		mlflowURL(ctx, newTestWorkspaceClient(t, srv.URL), retried)
+		assert.Equal(t, "100", gotRunID)
+	})
 }

@@ -33,8 +33,10 @@ func mlflowURL(ctx context.Context, w *databricks.WorkspaceClient, run *jobs.Run
 	if len(run.Tasks) == 0 {
 		return nil
 	}
-	// The MLflow output is attached to the task run, not the parent job run.
-	taskRunID := run.Tasks[0].RunId
+	// The MLflow output is attached to the task run, not the parent job run. Use
+	// the last task (latest attempt) so a retried run links to its newest output,
+	// matching Python (jobs_api_client.py:68).
+	taskRunID := run.Tasks[len(run.Tasks)-1].RunId
 
 	apiClient, err := client.New(w.Config)
 	if err != nil {
