@@ -31,7 +31,7 @@ class TableSpecificConfig:
 
     auto_full_refresh_policy: VariableOrOptional[AutoFullRefreshPolicy] = None
     """
-    (Optional, Mutable) Policy for auto full refresh, if enabled pipeline will automatically try
+    [Public Preview] (Optional, Mutable) Policy for auto full refresh, if enabled pipeline will automatically try
     to fix issues by doing a full refresh on the table in the retry run. auto_full_refresh_policy
     in table configuration will override the above level auto_full_refresh_policy.
     For example,
@@ -46,7 +46,7 @@ class TableSpecificConfig:
 
     exclude_columns: VariableOrList[str] = field(default_factory=list)
     """
-    A list of column names to be excluded for the ingestion.
+    [Public Preview] A list of column names to be excluded for the ingestion.
     When not specified, include_columns fully controls what columns to be ingested.
     When specified, all other columns including future ones will be automatically included for ingestion.
     This field in mutually exclusive with `include_columns`.
@@ -54,7 +54,7 @@ class TableSpecificConfig:
 
     include_columns: VariableOrList[str] = field(default_factory=list)
     """
-    A list of column names to be included for the ingestion.
+    [Public Preview] A list of column names to be included for the ingestion.
     When not specified, all columns except ones in exclude_columns will be included. Future
     columns will be automatically included.
     When specified, all other future columns will be automatically excluded from ingestion.
@@ -63,19 +63,19 @@ class TableSpecificConfig:
 
     primary_keys: VariableOrList[str] = field(default_factory=list)
     """
-    The primary key of the table used to apply changes.
+    [Public Preview] The primary key of the table used to apply changes.
     """
 
     query_based_connector_config: VariableOrOptional[
         IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfig
     ] = None
     """
-    Configurations that are only applicable for query-based ingestion connectors.
+    [Public Preview] Configurations that are only applicable for query-based ingestion connectors.
     """
 
     row_filter: VariableOrOptional[str] = None
     """
-    (Optional, Immutable) The row filter condition to be applied to the table.
+    [Public Preview] (Optional, Immutable) The row filter condition to be applied to the table.
     It must not contain the WHERE keyword, only the actual filter condition.
     It must be in DBSQL format.
     """
@@ -84,17 +84,17 @@ class TableSpecificConfig:
     """
     :meta private: [EXPERIMENTAL]
     
-    If true, formula fields defined in the table are included in the ingestion. This setting is only valid for the Salesforce connector
+    [Private Preview] If true, formula fields defined in the table are included in the ingestion. This setting is only valid for the Salesforce connector
     """
 
     scd_type: VariableOrOptional[TableSpecificConfigScdType] = None
     """
-    The SCD type to use to ingest the table.
+    [Public Preview] The SCD type to use to ingest the table.
     """
 
     sequence_by: VariableOrList[str] = field(default_factory=list)
     """
-    The column names specifying the logical order of events in the source data. Spark Declarative Pipelines uses this sequencing to handle change events that arrive out of order.
+    [Public Preview] The column names specifying the logical order of events in the source data. Spark Declarative Pipelines uses this sequencing to handle change events that arrive out of order.
     """
 
     workday_report_parameters: VariableOrOptional[
@@ -102,6 +102,8 @@ class TableSpecificConfig:
     ] = None
     """
     :meta private: [EXPERIMENTAL]
+    
+    [Private Preview]
     """
 
     @classmethod
@@ -117,7 +119,7 @@ class TableSpecificConfigDict(TypedDict, total=False):
 
     auto_full_refresh_policy: VariableOrOptional[AutoFullRefreshPolicyParam]
     """
-    (Optional, Mutable) Policy for auto full refresh, if enabled pipeline will automatically try
+    [Public Preview] (Optional, Mutable) Policy for auto full refresh, if enabled pipeline will automatically try
     to fix issues by doing a full refresh on the table in the retry run. auto_full_refresh_policy
     in table configuration will override the above level auto_full_refresh_policy.
     For example,
@@ -132,7 +134,7 @@ class TableSpecificConfigDict(TypedDict, total=False):
 
     exclude_columns: VariableOrList[str]
     """
-    A list of column names to be excluded for the ingestion.
+    [Public Preview] A list of column names to be excluded for the ingestion.
     When not specified, include_columns fully controls what columns to be ingested.
     When specified, all other columns including future ones will be automatically included for ingestion.
     This field in mutually exclusive with `include_columns`.
@@ -140,7 +142,7 @@ class TableSpecificConfigDict(TypedDict, total=False):
 
     include_columns: VariableOrList[str]
     """
-    A list of column names to be included for the ingestion.
+    [Public Preview] A list of column names to be included for the ingestion.
     When not specified, all columns except ones in exclude_columns will be included. Future
     columns will be automatically included.
     When specified, all other future columns will be automatically excluded from ingestion.
@@ -149,19 +151,19 @@ class TableSpecificConfigDict(TypedDict, total=False):
 
     primary_keys: VariableOrList[str]
     """
-    The primary key of the table used to apply changes.
+    [Public Preview] The primary key of the table used to apply changes.
     """
 
     query_based_connector_config: VariableOrOptional[
         IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfigParam
     ]
     """
-    Configurations that are only applicable for query-based ingestion connectors.
+    [Public Preview] Configurations that are only applicable for query-based ingestion connectors.
     """
 
     row_filter: VariableOrOptional[str]
     """
-    (Optional, Immutable) The row filter condition to be applied to the table.
+    [Public Preview] (Optional, Immutable) The row filter condition to be applied to the table.
     It must not contain the WHERE keyword, only the actual filter condition.
     It must be in DBSQL format.
     """
@@ -170,17 +172,17 @@ class TableSpecificConfigDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    If true, formula fields defined in the table are included in the ingestion. This setting is only valid for the Salesforce connector
+    [Private Preview] If true, formula fields defined in the table are included in the ingestion. This setting is only valid for the Salesforce connector
     """
 
     scd_type: VariableOrOptional[TableSpecificConfigScdTypeParam]
     """
-    The SCD type to use to ingest the table.
+    [Public Preview] The SCD type to use to ingest the table.
     """
 
     sequence_by: VariableOrList[str]
     """
-    The column names specifying the logical order of events in the source data. Spark Declarative Pipelines uses this sequencing to handle change events that arrive out of order.
+    [Public Preview] The column names specifying the logical order of events in the source data. Spark Declarative Pipelines uses this sequencing to handle change events that arrive out of order.
     """
 
     workday_report_parameters: VariableOrOptional[
@@ -188,6 +190,8 @@ class TableSpecificConfigDict(TypedDict, total=False):
     ]
     """
     :meta private: [EXPERIMENTAL]
+    
+    [Private Preview]
     """
 
 
