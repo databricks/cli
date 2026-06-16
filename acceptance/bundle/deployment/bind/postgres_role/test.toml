@@ -1,0 +1,18 @@
+Local = true
+Cloud = false
+
+Ignore = [
+    ".databricks"
+]
+
+[[Server]]
+Pattern = "GET /api/2.0/postgres/projects/test-project/branches/main/roles/test-role"
+Response.Body = '''
+{
+  "name": "projects/test-project/branches/main/roles/test-role",
+  "parent": "projects/test-project/branches/main",
+  "status": {
+    "postgres_role": "app_role"
+  }
+}
+'''

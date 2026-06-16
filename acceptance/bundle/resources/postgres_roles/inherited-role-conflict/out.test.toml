@@ -1,0 +1,6 @@
+Local = true
+Cloud = false
+RequiresUnityCatalog = true
+CloudEnvs.azure = false
+CloudEnvs.gcp = false
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

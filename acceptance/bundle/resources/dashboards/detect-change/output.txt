@@ -30,7 +30,7 @@ Deployment complete!
 {
   "display_name": "test-dashboard-[UNIQUE_NAME]",
   "embed_credentials": false,
-  "etag": [ETAG],
+  "etag": "[ETAG_1]",
   "file_path": "dashboard.lvdash.json",
   "id": "[DASHBOARD_ID]",
   "parent_path": "/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/resources",

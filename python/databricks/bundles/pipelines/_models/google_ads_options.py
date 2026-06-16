@@ -23,7 +23,7 @@ class GoogleAdsOptions:
     """
     :meta private: [EXPERIMENTAL]
     
-    (Optional at this level) Manager Account ID (also called MCC Account ID) used to list
+    [Private Preview] (Optional at this level) Manager Account ID (also called MCC Account ID) used to list
     and access customer accounts under this manager account.
     Overrides GoogleAdsConfig.manager_account_id from source_configurations when set.
     """
@@ -32,7 +32,7 @@ class GoogleAdsOptions:
     """
     :meta private: [EXPERIMENTAL]
     
-    (Optional) Number of days to look back for report tables to capture late-arriving data.
+    [Private Preview] (Optional) Number of days to look back for report tables to capture late-arriving data.
     If not specified, defaults to 30 days.
     """
 
@@ -40,7 +40,7 @@ class GoogleAdsOptions:
     """
     :meta private: [EXPERIMENTAL]
     
-    (Optional) Start date for the initial sync of report tables in YYYY-MM-DD format.
+    [Private Preview] (Optional) Start date for the initial sync of report tables in YYYY-MM-DD format.
     This determines the earliest date from which to sync historical data.
     If not specified, defaults to 2 years of historical data.
     """
@@ -60,7 +60,7 @@ class GoogleAdsOptionsDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    (Optional at this level) Manager Account ID (also called MCC Account ID) used to list
+    [Private Preview] (Optional at this level) Manager Account ID (also called MCC Account ID) used to list
     and access customer accounts under this manager account.
     Overrides GoogleAdsConfig.manager_account_id from source_configurations when set.
     """
@@ -69,7 +69,7 @@ class GoogleAdsOptionsDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    (Optional) Number of days to look back for report tables to capture late-arriving data.
+    [Private Preview] (Optional) Number of days to look back for report tables to capture late-arriving data.
     If not specified, defaults to 30 days.
     """
 
@@ -77,7 +77,7 @@ class GoogleAdsOptionsDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    (Optional) Start date for the initial sync of report tables in YYYY-MM-DD format.
+    [Private Preview] (Optional) Start date for the initial sync of report tables in YYYY-MM-DD format.
     This determines the earliest date from which to sync historical data.
     If not specified, defaults to 2 years of historical data.
     """

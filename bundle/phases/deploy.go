@@ -170,6 +170,13 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		plan = RunPlan(ctx, b, engine)
 	}
 
+	// Stop before opening the WAL for write if planning failed. UpgradeToWrite
+	// writes a WAL header that only deployCore's Finalize commits or discards;
+	// returning past it without finalizing leaves a header-only WAL behind.
+	if logdiag.HasError(ctx) {
+		return
+	}
+
 	if engine.IsDirect() {
 		// Upgrade from read (opened by process.go) to write mode
 		if err := b.DeploymentBundle.StateDB.UpgradeToWrite(); err != nil {
@@ -187,6 +194,9 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		}
 	}
 
+	// InitForApply receives ctx and could log a diagnostic without returning an
+	// error, so re-check before deploying. (UpgradeToWrite above takes no ctx and
+	// thus cannot log, so the earlier check is enough to guard the WAL open.)
 	if logdiag.HasError(ctx) {
 		return
 	}
