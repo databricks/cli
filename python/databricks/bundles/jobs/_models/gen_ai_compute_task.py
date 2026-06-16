@@ -24,26 +24,28 @@ class GenAiComputeTask:
     """
     :meta private: [EXPERIMENTAL]
     
-    Runtime image
+    [Private Preview] Runtime image
     """
 
     command: VariableOrOptional[str] = None
     """
     :meta private: [EXPERIMENTAL]
     
-    Command launcher to run the actual script, e.g. bash, python etc.
+    [Private Preview] Command launcher to run the actual script, e.g. bash, python etc.
     """
 
     compute: VariableOrOptional[ComputeConfig] = None
     """
     :meta private: [EXPERIMENTAL]
+    
+    [Private Preview]
     """
 
     mlflow_experiment_name: VariableOrOptional[str] = None
     """
     :meta private: [EXPERIMENTAL]
     
-    Optional string containing the name of the MLflow experiment to log the run to. If name is not
+    [Private Preview] Optional string containing the name of the MLflow experiment to log the run to. If name is not
     found, backend will create the mlflow experiment using the name.
     """
 
@@ -51,7 +53,7 @@ class GenAiComputeTask:
     """
     :meta private: [EXPERIMENTAL]
     
-    Optional location type of the training script. When set to `WORKSPACE`, the script will be retrieved from the local Databricks workspace. When set to `GIT`, the script will be retrieved from a Git repository
+    [Private Preview] Optional location type of the training script. When set to `WORKSPACE`, the script will be retrieved from the local Databricks workspace. When set to `GIT`, the script will be retrieved from a Git repository
     defined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.
     * `WORKSPACE`: Script is located in Databricks workspace.
     * `GIT`: Script is located in cloud Git provider.
@@ -61,14 +63,14 @@ class GenAiComputeTask:
     """
     :meta private: [EXPERIMENTAL]
     
-    The training script file path to be executed. Cloud file URIs (such as dbfs:/, s3:/, adls:/, gcs:/) and workspace paths are supported. For python files stored in the Databricks workspace, the path must be absolute and begin with `/`. For files stored in a remote repository, the path must be relative. This field is required.
+    [Private Preview] The training script file path to be executed. Cloud file URIs (such as dbfs:/, s3:/, adls:/, gcs:/) and workspace paths are supported. For python files stored in the Databricks workspace, the path must be absolute and begin with `/`. For files stored in a remote repository, the path must be relative. This field is required.
     """
 
     yaml_parameters: VariableOrOptional[str] = None
     """
     :meta private: [EXPERIMENTAL]
     
-    Optional string containing model parameters passed to the training script in yaml format.
+    [Private Preview] Optional string containing model parameters passed to the training script in yaml format.
     If present, then the content in yaml_parameters_file_path will be ignored.
     """
 
@@ -76,7 +78,7 @@ class GenAiComputeTask:
     """
     :meta private: [EXPERIMENTAL]
     
-    Optional path to a YAML file containing model parameters passed to the training script.
+    [Private Preview] Optional path to a YAML file containing model parameters passed to the training script.
     """
 
     @classmethod
@@ -94,26 +96,28 @@ class GenAiComputeTaskDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    Runtime image
+    [Private Preview] Runtime image
     """
 
     command: VariableOrOptional[str]
     """
     :meta private: [EXPERIMENTAL]
     
-    Command launcher to run the actual script, e.g. bash, python etc.
+    [Private Preview] Command launcher to run the actual script, e.g. bash, python etc.
     """
 
     compute: VariableOrOptional[ComputeConfigParam]
     """
     :meta private: [EXPERIMENTAL]
+    
+    [Private Preview]
     """
 
     mlflow_experiment_name: VariableOrOptional[str]
     """
     :meta private: [EXPERIMENTAL]
     
-    Optional string containing the name of the MLflow experiment to log the run to. If name is not
+    [Private Preview] Optional string containing the name of the MLflow experiment to log the run to. If name is not
     found, backend will create the mlflow experiment using the name.
     """
 
@@ -121,7 +125,7 @@ class GenAiComputeTaskDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    Optional location type of the training script. When set to `WORKSPACE`, the script will be retrieved from the local Databricks workspace. When set to `GIT`, the script will be retrieved from a Git repository
+    [Private Preview] Optional location type of the training script. When set to `WORKSPACE`, the script will be retrieved from the local Databricks workspace. When set to `GIT`, the script will be retrieved from a Git repository
     defined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.
     * `WORKSPACE`: Script is located in Databricks workspace.
     * `GIT`: Script is located in cloud Git provider.
@@ -131,14 +135,14 @@ class GenAiComputeTaskDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    The training script file path to be executed. Cloud file URIs (such as dbfs:/, s3:/, adls:/, gcs:/) and workspace paths are supported. For python files stored in the Databricks workspace, the path must be absolute and begin with `/`. For files stored in a remote repository, the path must be relative. This field is required.
+    [Private Preview] The training script file path to be executed. Cloud file URIs (such as dbfs:/, s3:/, adls:/, gcs:/) and workspace paths are supported. For python files stored in the Databricks workspace, the path must be absolute and begin with `/`. For files stored in a remote repository, the path must be relative. This field is required.
     """
 
     yaml_parameters: VariableOrOptional[str]
     """
     :meta private: [EXPERIMENTAL]
     
-    Optional string containing model parameters passed to the training script in yaml format.
+    [Private Preview] Optional string containing model parameters passed to the training script in yaml format.
     If present, then the content in yaml_parameters_file_path will be ignored.
     """
 
@@ -146,7 +150,7 @@ class GenAiComputeTaskDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    Optional path to a YAML file containing model parameters passed to the training script.
+    [Private Preview] Optional path to a YAML file containing model parameters passed to the training script.
     """
 
 

@@ -38,7 +38,7 @@ class TaskEmailNotifications:
 
     on_streaming_backlog_exceeded: VariableOrList[str] = field(default_factory=list)
     """
-    A list of email addresses to notify when any streaming backlog thresholds are exceeded for any stream.
+    [Public Preview] A list of email addresses to notify when any streaming backlog thresholds are exceeded for any stream.
     Streaming backlog thresholds can be set in the `health` field using the following metrics: `STREAMING_BACKLOG_BYTES`, `STREAMING_BACKLOG_RECORDS`, `STREAMING_BACKLOG_SECONDS`, or `STREAMING_BACKLOG_FILES`.
     Alerting is based on the 10-minute average of these metrics. If the issue persists, notifications are resent every 30 minutes.
     """
@@ -82,7 +82,7 @@ class TaskEmailNotificationsDict(TypedDict, total=False):
 
     on_streaming_backlog_exceeded: VariableOrList[str]
     """
-    A list of email addresses to notify when any streaming backlog thresholds are exceeded for any stream.
+    [Public Preview] A list of email addresses to notify when any streaming backlog thresholds are exceeded for any stream.
     Streaming backlog thresholds can be set in the `health` field using the following metrics: `STREAMING_BACKLOG_BYTES`, `STREAMING_BACKLOG_RECORDS`, `STREAMING_BACKLOG_SECONDS`, or `STREAMING_BACKLOG_FILES`.
     Alerting is based on the 10-minute average of these metrics. If the issue persists, notifications are resent every 30 minutes.
     """

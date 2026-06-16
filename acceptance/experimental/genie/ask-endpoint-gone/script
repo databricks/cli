@@ -1,0 +1,2 @@
+title "a removed endpoint tells the user to update the CLI"
+errcode trace $CLI experimental genie ask "What are total sales by franchise?"

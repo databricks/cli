@@ -20,7 +20,7 @@
         "etag": {
           "action": "update",
           "reason": "custom",
-          "old": [ETAG]
+          "old": "[ETAG]"
         }
       }
     }

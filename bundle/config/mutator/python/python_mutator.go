@@ -238,10 +238,11 @@ func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 			return dyn.InvalidValue, fmt.Errorf("failed to get Python interpreter path: %w", err)
 		}
 
-		cacheDir, err := createCacheDir(ctx)
+		cacheDir, cleanup, err := createCacheDir(ctx)
 		if err != nil {
 			return dyn.InvalidValue, fmt.Errorf("failed to create cache dir: %w", err)
 		}
+		defer cleanup()
 
 		rightRoot, diags := m.runPythonMutator(ctx, leftRoot, runPythonMutatorOpts{
 			cacheDir:       cacheDir,
@@ -315,7 +316,8 @@ func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 	return mutateDiags
 }
 
-func createCacheDir(ctx context.Context) (string, error) {
+// createCacheDir returns the directory for input/output files of the Python subprocess, and a cleanup function.
+func createCacheDir(ctx context.Context) (string, func(), error) {
 	// b.LocalStateDir doesn't work because target isn't yet selected
 
 	// support the same env variable as in b.LocalStateDir
@@ -325,13 +327,20 @@ func createCacheDir(ctx context.Context) (string, error) {
 
 		err := os.MkdirAll(cacheDir, 0o700)
 		if err != nil {
-			return "", err
+			return "", nil, err
 		}
 
-		return cacheDir, nil
+		// the user picked this location explicitly, keep the files for inspection
+		return cacheDir, func() {}, nil
 	}
 
-	return os.MkdirTemp("", "-python")
+	cacheDir, err := os.MkdirTemp("", "-python")
+	if err != nil {
+		return "", nil, err
+	}
+
+	// input.json contains the full serialized bundle configuration; don't leave it behind in the system temp dir
+	return cacheDir, func() { _ = os.RemoveAll(cacheDir) }, nil
 }
 
 func (m *pythonMutator) runPythonMutator(ctx context.Context, root dyn.Value, opts runPythonMutatorOpts) (dyn.Value, diag.Diagnostics) {

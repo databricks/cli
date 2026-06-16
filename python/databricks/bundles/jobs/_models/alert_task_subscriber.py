@@ -17,10 +17,13 @@ class AlertTaskSubscriber:
     """
 
     destination_id: VariableOrOptional[str] = None
+    """
+    [Public Preview]
+    """
 
     user_name: VariableOrOptional[str] = None
     """
-    A valid workspace email address.
+    [Public Preview] A valid workspace email address.
     """
 
     @classmethod
@@ -35,10 +38,13 @@ class AlertTaskSubscriberDict(TypedDict, total=False):
     """"""
 
     destination_id: VariableOrOptional[str]
+    """
+    [Public Preview]
+    """
 
     user_name: VariableOrOptional[str]
     """
-    A valid workspace email address.
+    [Public Preview] A valid workspace email address.
     """
 
 
