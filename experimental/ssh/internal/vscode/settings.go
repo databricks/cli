@@ -88,7 +88,7 @@ func CheckAndUpdateSettings(ctx context.Context, ide, connectionName string, aut
 		return fmt.Errorf("failed to load settings: %w", err)
 	}
 
-	missing := validateSettings(settings, connectionName)
+	missing := validateSettings(settings, connectionName, ide)
 	if missing.isEmpty() {
 		log.Debugf(ctx, "IDE settings already correct for %s", connectionName)
 		return nil
@@ -191,8 +191,8 @@ func hasCorrectListenOnSocket(v hujson.Value) bool {
 	return ok && lit.Bool()
 }
 
-func getMissingExtensions(v hujson.Value) []string {
-	required := []string{pythonExtension, jupyterExtension, databricksExtension}
+func getMissingExtensions(v hujson.Value, ide string) []string {
+	required := getIDE(ide).DefaultExtensions
 	found := v.Find(jsonPtr(defaultExtensionsKey))
 	if found == nil {
 		return required
@@ -216,12 +216,12 @@ func getMissingExtensions(v hujson.Value) []string {
 	return missing
 }
 
-func validateSettings(v hujson.Value, connectionName string) *missingSettings {
+func validateSettings(v hujson.Value, connectionName, ide string) *missingSettings {
 	return &missingSettings{
 		portRange:      !hasCorrectPortRange(v, connectionName),
 		platform:       !hasCorrectPlatform(v, connectionName),
 		listenOnSocket: !hasCorrectListenOnSocket(v),
-		extensions:     getMissingExtensions(v),
+		extensions:     getMissingExtensions(v, ide),
 	}
 }
 
@@ -262,7 +262,7 @@ func handleMissingFile(ctx context.Context, ide, connectionName, settingsPath st
 		portRange:      true,
 		platform:       true,
 		listenOnSocket: true,
-		extensions:     []string{pythonExtension, jupyterExtension, databricksExtension},
+		extensions:     getIDE(ide).DefaultExtensions,
 	}
 	if !autoApprove {
 		shouldCreate, err := promptUserForUpdate(ctx, ide, connectionName, missing)
@@ -349,7 +349,7 @@ func GetManualInstructions(ide, connectionName string) string {
 		portRange:      true,
 		platform:       true,
 		listenOnSocket: true,
-		extensions:     []string{pythonExtension, jupyterExtension, databricksExtension},
+		extensions:     getIDE(ide).DefaultExtensions,
 	}
 	return fmt.Sprintf(
 		"To ensure the remote connection works as expected, manually add these settings to your %s settings.json:\n%s",

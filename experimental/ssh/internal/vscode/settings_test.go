@@ -205,14 +205,14 @@ func TestValidateSettings_Complete(t *testing.T) {
 		"remote.SSH.defaultExtensions": ["ms-python.python", "ms-toolsai.jupyter", "databricks.databricks"]
 	}`)
 
-	missing := validateSettings(v, "test-conn")
+	missing := validateSettings(v, "test-conn", VSCodeOption)
 	assert.True(t, missing.isEmpty())
 }
 
 func TestValidateSettings_Missing(t *testing.T) {
 	v := parseTestValue(t, `{}`)
 
-	missing := validateSettings(v, "test-conn")
+	missing := validateSettings(v, "test-conn", VSCodeOption)
 	assert.False(t, missing.isEmpty())
 	assert.True(t, missing.portRange)
 	assert.True(t, missing.platform)
@@ -226,7 +226,7 @@ func TestValidateSettings_IncorrectValues(t *testing.T) {
 		"remote.SSH.defaultExtensions": ["ms-python.python"]
 	}`)
 
-	missing := validateSettings(v, "test-conn")
+	missing := validateSettings(v, "test-conn", VSCodeOption)
 	assert.False(t, missing.isEmpty())
 	assert.True(t, missing.portRange)
 	assert.True(t, missing.platform)
@@ -241,7 +241,30 @@ func TestValidateSettings_DuplicateExtensionsNotReported(t *testing.T) {
 		"remote.SSH.defaultExtensions": ["ms-python.python", "ms-python.python", "ms-toolsai.jupyter", "databricks.databricks"]
 	}`)
 
-	missing := validateSettings(v, "test-conn")
+	missing := validateSettings(v, "test-conn", VSCodeOption)
+	assert.True(t, missing.isEmpty())
+}
+
+func TestValidateSettings_CursorExcludesRemappedExtensions(t *testing.T) {
+	// Cursor's marketplace remaps ms-python.python -> anysphere.python, which hangs
+	// the remote auto-install (DECO-27339). For Cursor we only seed the Databricks
+	// extension, so an empty settings file should report just that as missing.
+	v := parseTestValue(t, `{}`)
+
+	missing := validateSettings(v, "test-conn", CursorOption)
+	assert.Equal(t, []string{"databricks.databricks"}, missing.extensions)
+}
+
+func TestValidateSettings_CursorComplete(t *testing.T) {
+	// For Cursor, having only the Databricks extension seeded is sufficient.
+	v := parseTestValue(t, `{
+		"remote.SSH.serverPickPortsFromRange": {"test-conn": "29500-29505"},
+		"remote.SSH.remotePlatform": {"test-conn": "linux"},
+		"remote.SSH.remoteServerListenOnSocket": true,
+		"remote.SSH.defaultExtensions": ["databricks.databricks"]
+	}`)
+
+	missing := validateSettings(v, "test-conn", CursorOption)
 	assert.True(t, missing.isEmpty())
 }
 
@@ -253,7 +276,7 @@ func TestValidateSettings_MissingConnection(t *testing.T) {
 	}`)
 
 	// Validating for a different connection should show port and platform as missing
-	missing := validateSettings(v, "test-conn")
+	missing := validateSettings(v, "test-conn", VSCodeOption)
 	assert.False(t, missing.isEmpty())
 	assert.True(t, missing.portRange)
 	assert.True(t, missing.platform)
@@ -622,6 +645,9 @@ func TestGetManualInstructions_Cursor(t *testing.T) {
 	assert.Contains(t, instructions, "my-connection")
 	assert.Contains(t, instructions, "29500-29505")
 	assert.Contains(t, instructions, "linux")
-	assert.Contains(t, instructions, "ms-python.python")
-	assert.Contains(t, instructions, "ms-toolsai.jupyter")
+	assert.Contains(t, instructions, "databricks.databricks")
+	// Cursor remaps ms-python.python -> anysphere.python and hangs the remote
+	// auto-install (DECO-27339), so we must NOT seed these for Cursor.
+	assert.NotContains(t, instructions, "ms-python.python")
+	assert.NotContains(t, instructions, "ms-toolsai.jupyter")
 }
