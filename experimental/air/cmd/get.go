@@ -94,7 +94,15 @@ func newGetCommand() *cobra.Command {
 		},
 	}
 
-	cmd.PreRunE = root.MustWorkspaceClient
+	// Match Python: a client/auth failure is a JSON error envelope in -o json mode,
+	// not a bare error. ErrAlreadyPrinted passes through (it was handled upstream).
+	cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
+		err := root.MustWorkspaceClient(cmd, args)
+		if err == nil || errors.Is(err, root.ErrAlreadyPrinted) {
+			return err
+		}
+		return renderError(cmd.Context(), cmd, "INTERNAL_ERROR", "TRANSIENT", true, err)
+	}
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
@@ -102,19 +110,29 @@ func newGetCommand() *cobra.Command {
 
 		runID, err := strconv.ParseInt(args[0], 10, 64)
 		if err != nil || runID <= 0 {
-			return fmt.Errorf("invalid RUN_ID %q: must be a positive integer", args[0])
+			return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", true,
+				fmt.Errorf("invalid RUN_ID %q: must be a positive integer", args[0]))
 		}
 
 		run, err := w.Jobs.GetRun(ctx, jobs.GetRunRequest{RunId: runID})
 		if err != nil {
 			// The backend returns this when the run ID is unknown to the user.
 			if errors.Is(err, apierr.ErrResourceDoesNotExist) {
-				return fmt.Errorf("run %d not found: check the run ID and that it is a job run ID", runID)
+				return renderError(ctx, cmd, "NOT_FOUND", "NOT_FOUND", false,
+					fmt.Errorf("run %d not found: check the run ID and that it is a job run ID", runID))
 			}
-			return fmt.Errorf("failed to get status for run %d: %w", runID, err)
+			return renderError(ctx, cmd, "INTERNAL_ERROR", "TRANSIENT", true,
+				fmt.Errorf("failed to get status for run %d: %w", runID, err))
+		}
+
+		workspaceID, err := w.CurrentWorkspaceID(ctx)
+		if err != nil {
+			return renderError(ctx, cmd, "INTERNAL_ERROR", "TRANSIENT", true,
+				fmt.Errorf("failed to get workspace id for run %d: %w", runID, err))
 		}
 
 		data := buildGetData(run)
+		data.DashboardURL = dashboardURL(w.Config.Host, runID, workspaceID)
 		data.MLflowURL = mlflowURL(ctx, w, run)
 		if task := findForEachTask(run); task != nil {
 			data.Sweep = buildSweepInfo(ctx, w, task)
@@ -142,7 +160,6 @@ func buildGetData(run *jobs.Run) getData {
 		DurationSeconds: durationSeconds(run),
 		AttemptNumber:   latestAttemptNumber(run),
 		ExperimentName:  experimentName(run),
-		DashboardURL:    run.RunPageUrl,
 		Accelerators:    accelerators(run),
 		User:            run.CreatorUserName,
 	}

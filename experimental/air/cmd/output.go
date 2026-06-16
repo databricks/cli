@@ -4,7 +4,10 @@ import (
 	"context"
 	"time"
 
+	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/flags"
+	"github.com/spf13/cobra"
 )
 
 // envelopeVersion is the envelope's format-version marker. The Python `air` CLI
@@ -36,4 +39,44 @@ func renderEnvelope(ctx context.Context, data any) error {
 		TS:   time.Now().UTC().Format(time.RFC3339),
 		Data: data,
 	})
+}
+
+// jsonError is the error payload, matching the Python `air` CLI's shape (cli/json_output.py).
+type jsonError struct {
+	Code      string `json:"code"`
+	Kind      string `json:"kind"`
+	Message   string `json:"message"`
+	Retryable bool   `json:"retryable"`
+}
+
+// errorEnvelope is what a failed command prints in JSON mode:
+//
+//	{ "v": 1, "ts": "...", "error": { "code": ..., "kind": ..., "message": ..., "retryable": ... } }
+type errorEnvelope struct {
+	V     int       `json:"v"`
+	TS    string    `json:"ts"`
+	Error jsonError `json:"error"`
+}
+
+// renderError prints err as a JSON error envelope when output is JSON, returning
+// root.ErrAlreadyPrinted so the command exits non-zero without Cobra reprinting
+// it; in text mode it returns err unchanged. code/kind/retryable match the
+// Python CLI's call site.
+func renderError(ctx context.Context, cmd *cobra.Command, code, kind string, retryable bool, err error) error {
+	if root.OutputType(cmd) != flags.OutputJSON {
+		return err
+	}
+	if rerr := cmdio.Render(ctx, errorEnvelope{
+		V:  envelopeVersion,
+		TS: time.Now().UTC().Format(time.RFC3339),
+		Error: jsonError{
+			Code:      code,
+			Kind:      kind,
+			Message:   err.Error(),
+			Retryable: retryable,
+		},
+	}); rerr != nil {
+		return rerr
+	}
+	return root.ErrAlreadyPrinted
 }

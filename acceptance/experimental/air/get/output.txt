@@ -3,14 +3,14 @@
 >>> [CLI] experimental air get 123
 Run ID:       123
 Status:       SUCCESS
-Submitted:    [TIMESTAMP]
+Submitted:    [TIMESTAMP]+00:00
 Duration:     12s
 Retries:      0
 Experiment:   my-exp
 User:         user@example.com
 Accelerators: 8x H100
 MLflow:       [DATABRICKS_URL]/ml/experiments/exp1/runs/run1/artifacts/logs/node_0
-Dashboard:    https://my-workspace.cloud.databricks.test/jobs/runs/123
+Dashboard:    [DATABRICKS_URL]/jobs/runs/123?o=[NUMID]
 
 === get (json)
 >>> [CLI] experimental air get 123 -o json
@@ -20,11 +20,11 @@ Dashboard:    https://my-workspace.cloud.databricks.test/jobs/runs/123
   "data": {
     "run_id": "123",
     "status": "SUCCESS",
-    "started_at": "[TIMESTAMP]",
+    "started_at": "[TIMESTAMP]+00:00",
     "duration_seconds": 12,
     "attempt_number": 0,
     "experiment_name": "my-exp",
-    "dashboard_url": "https://my-workspace.cloud.databricks.test/jobs/runs/123",
+    "dashboard_url": "[DATABRICKS_URL]/jobs/runs/123?o=[NUMID]",
     "mlflow_url": "[DATABRICKS_URL]/ml/experiments/exp1/runs/run1/artifacts/logs/node_0"
   }
 }
@@ -32,5 +32,20 @@ Dashboard:    https://my-workspace.cloud.databricks.test/jobs/runs/123
 === invalid run id
 >>> [CLI] experimental air get notanumber
 Error: invalid RUN_ID "notanumber": must be a positive integer
+
+Exit code: 1
+
+=== invalid run id (json)
+>>> [CLI] experimental air get notanumber -o json
+{
+  "v": 1,
+  "ts": "[TIMESTAMP]",
+  "error": {
+    "code": "INVALID_ARGS",
+    "kind": "PERMANENT",
+    "message": "invalid RUN_ID \"notanumber\": must be a positive integer",
+    "retryable": true
+  }
+}
 
 Exit code: 1

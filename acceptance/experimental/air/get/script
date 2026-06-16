@@ -6,3 +6,6 @@ trace $CLI experimental air get 123 -o json
 
 title "invalid run id"
 errcode trace $CLI experimental air get notanumber
+
+title "invalid run id (json)"
+errcode trace $CLI experimental air get notanumber -o json

@@ -2,6 +2,7 @@ package aircmd
 
 import (
 	"fmt"
+	"math"
 	"strings"
 	"time"
 
@@ -35,56 +36,50 @@ func runStatus(state *jobs.RunState) string {
 	return "UNKNOWN"
 }
 
-// reportedTiming returns the run's start and end times (epoch milliseconds),
-// preferring the last task's window over the run-level times so a retried run
-// reports its latest attempt. Mirrors Python's _reported_attempt_timing
-// (cli_display.py:78-87).
-func reportedTiming(run *jobs.Run) (startMillis, endMillis int64) {
-	startMillis, endMillis = run.StartTime, run.EndTime
-	if n := len(run.Tasks); n > 0 {
-		last := run.Tasks[n-1]
-		if last.StartTime > 0 {
-			startMillis = last.StartTime
-		}
-		if last.EndTime > 0 {
-			endMillis = last.EndTime
-		}
-	}
-	return startMillis, endMillis
-}
-
-// startedAt converts the run's reported start time (epoch milliseconds) to an
-// RFC 3339 UTC string, or returns nil if the run has not started yet.
+// startedAt returns the run's start time as a Python-isoformat string ("+00:00",
+// not "Z"; microseconds only when non-zero, cli_entrypoint.py:1899), or nil if it
+// hasn't started.
 func startedAt(run *jobs.Run) *string {
-	startMillis, _ := reportedTiming(run)
-	if startMillis == 0 {
+	if run.StartTime == 0 {
 		return nil
 	}
-	s := time.UnixMilli(startMillis).UTC().Format(time.RFC3339)
+	t := time.UnixMilli(run.StartTime).UTC()
+	layout := "2006-01-02T15:04:05-07:00"
+	if t.Nanosecond() != 0 {
+		layout = "2006-01-02T15:04:05.000000-07:00"
+	}
+	s := t.Format(layout)
 	return &s
 }
 
-// durationSeconds returns how long the run has taken, in whole seconds, or nil
-// if it has not started. For a finished run this is the elapsed time of the
-// reported attempt; for a still-running run it is the time since it started.
+// durationSeconds returns how long the run has taken, in whole seconds, or nil if
+// it hasn't started. For a finished run this is end-start; for a running one it is
+// the time since it started. Both come from the run-level times, matching Python
+// (cli_entrypoint.py:1900-1903).
 func durationSeconds(run *jobs.Run) *int64 {
-	startMillis, endMillis := reportedTiming(run)
-	if startMillis == 0 {
+	if run.StartTime == 0 {
 		return nil
 	}
+	endMillis := run.EndTime
 	if endMillis == 0 {
 		// Still running: measure against the current time.
 		endMillis = time.Now().UnixMilli()
 	}
-	d := roundMillisToSeconds(endMillis - startMillis)
+	d := roundMillisToSeconds(endMillis - run.StartTime)
 	return &d
 }
 
-// roundMillisToSeconds converts milliseconds to whole seconds, rounding to the
-// nearest second to match Python's round() (cli_entrypoint.py:1934) rather than
-// truncating.
+// roundMillisToSeconds rounds milliseconds to whole seconds, half to even, to
+// match Python's round() (cli_entrypoint.py:1903).
 func roundMillisToSeconds(ms int64) int64 {
-	return (ms + 500) / 1000
+	return int64(math.RoundToEven(float64(ms) / 1000))
+}
+
+// dashboardURL builds {host}/jobs/runs/{id}?o={workspace_id}, matching Python
+// (cli_entrypoint.py:1911). The ?o= workspace id deep-links to the right
+// workspace on multi-workspace accounts.
+func dashboardURL(host string, runID, workspaceID int64) string {
+	return fmt.Sprintf("%s/jobs/runs/%d?o=%d", strings.TrimRight(host, "/"), runID, workspaceID)
 }
 
 // formatDuration turns a number of seconds into a compact human string such as

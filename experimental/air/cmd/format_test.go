@@ -68,47 +68,24 @@ func TestRunStatusPrefersResultState(t *testing.T) {
 	assert.Equal(t, "UNKNOWN", runStatus(nil))
 }
 
-func TestReportedTiming(t *testing.T) {
-	// No tasks: run-level times are used.
-	start, end := reportedTiming(&jobs.Run{StartTime: 100, EndTime: 200})
-	assert.Equal(t, int64(100), start)
-	assert.Equal(t, int64(200), end)
-
-	// The last task's window is preferred over the run-level window, so a
-	// retried run reports its most recent attempt.
-	start, end = reportedTiming(&jobs.Run{
-		StartTime: 100, EndTime: 200,
-		Tasks: []jobs.RunTask{
-			{StartTime: 100, EndTime: 150},
-			{StartTime: 300, EndTime: 450},
-		},
-	})
-	assert.Equal(t, int64(300), start)
-	assert.Equal(t, int64(450), end)
-
-	// A task missing a field falls back to the run-level value for that field.
-	start, end = reportedTiming(&jobs.Run{
-		StartTime: 100, EndTime: 200,
-		Tasks: []jobs.RunTask{{StartTime: 300}},
-	})
-	assert.Equal(t, int64(300), start)
-	assert.Equal(t, int64(200), end)
-}
-
 func TestStartedAt(t *testing.T) {
 	// Not started yet.
 	assert.Nil(t, startedAt(&jobs.Run{}))
-	// 1700000000000 ms == 2023-11-14T22:13:20Z.
+	// 1700000000000 ms == 2023-11-14T22:13:20+00:00 (Python isoformat, not "Z").
 	got := startedAt(&jobs.Run{StartTime: 1700000000000})
 	require.NotNil(t, got)
-	assert.Equal(t, "2023-11-14T22:13:20Z", *got)
-	// The last attempt's start time is reported. 1700000060000 ms == 22:14:20Z.
+	assert.Equal(t, "2023-11-14T22:13:20+00:00", *got)
+	// A sub-second start time carries microsecond precision.
+	got = startedAt(&jobs.Run{StartTime: 1700000000500})
+	require.NotNil(t, got)
+	assert.Equal(t, "2023-11-14T22:13:20.500000+00:00", *got)
+	// Task-level times are ignored; the run-level start is reported (matching Python).
 	got = startedAt(&jobs.Run{
 		StartTime: 1700000000000,
 		Tasks:     []jobs.RunTask{{StartTime: 1700000060000}},
 	})
 	require.NotNil(t, got)
-	assert.Equal(t, "2023-11-14T22:14:20Z", *got)
+	assert.Equal(t, "2023-11-14T22:13:20+00:00", *got)
 }
 
 func TestDurationSeconds(t *testing.T) {
@@ -126,18 +103,23 @@ func TestDurationSeconds(t *testing.T) {
 	require.NotNil(t, d)
 	assert.Equal(t, int64(12), *d)
 
-	// The last attempt's window drives the duration for a retried run.
+	// Task-level times are ignored; run-level end-start is used (matching Python).
 	d = durationSeconds(&jobs.Run{
 		StartTime: 1700000000000, EndTime: 1700000012000,
 		Tasks: []jobs.RunTask{{StartTime: 1700000000000, EndTime: 1700000005000}},
 	})
 	require.NotNil(t, d)
-	assert.Equal(t, int64(5), *d)
+	assert.Equal(t, int64(12), *d)
 
 	// Still running: measured against the current time, so positive.
 	d = durationSeconds(&jobs.Run{StartTime: 1700000000000})
 	require.NotNil(t, d)
 	assert.Positive(t, *d)
+}
+
+func TestDashboardURL(t *testing.T) {
+	// The ?o= workspace id and a trailing-slash-trimmed host, matching Python.
+	assert.Equal(t, "https://example.test/jobs/runs/123?o=42", dashboardURL("https://example.test/", 123, 42))
 }
 
 func TestLatestAttemptNumber(t *testing.T) {

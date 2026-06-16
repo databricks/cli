@@ -2,13 +2,16 @@ package aircmd
 
 import (
 	"bytes"
+	"encoding/json"
 	"io"
 	"strings"
 	"testing"
 	"text/template"
 
+	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -46,7 +49,7 @@ func TestGetTemplateSingleRun(t *testing.T) {
 func TestGetRunInvalidID(t *testing.T) {
 	m := mocks.NewMockWorkspaceClient(t)
 	ctx := cmdctx.SetWorkspaceClient(cmdio.MockDiscard(t.Context()), m.WorkspaceClient)
-	cmd := newGetCommand()
+	cmd := withOutput(newGetCommand(), flags.OutputText)
 	cmd.SetContext(ctx)
 
 	err := cmd.RunE(cmd, []string{"abc"})
@@ -59,12 +62,31 @@ func TestGetRunNotFound(t *testing.T) {
 	m.GetMockJobsAPI().EXPECT().GetRun(mock.Anything, jobs.GetRunRequest{RunId: 5}).Return(
 		nil, apierr.ErrResourceDoesNotExist)
 	ctx := cmdctx.SetWorkspaceClient(cmdio.MockDiscard(t.Context()), m.WorkspaceClient)
-	cmd := newGetCommand()
+	cmd := withOutput(newGetCommand(), flags.OutputText)
 	cmd.SetContext(ctx)
 
 	err := cmd.RunE(cmd, []string{"5"})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "run 5 not found")
+}
+
+func TestGetRunNotFoundJSON(t *testing.T) {
+	var buf bytes.Buffer
+	m := mocks.NewMockWorkspaceClient(t)
+	m.GetMockJobsAPI().EXPECT().GetRun(mock.Anything, jobs.GetRunRequest{RunId: 5}).Return(
+		nil, apierr.ErrResourceDoesNotExist)
+	ctx := cmdctx.SetWorkspaceClient(t.Context(), m.WorkspaceClient)
+	ctx = cmdio.InContext(ctx, cmdio.NewIO(ctx, flags.OutputJSON, nil, &buf, &buf, "", ""))
+	cmd := withOutput(newGetCommand(), flags.OutputJSON)
+	cmd.SetContext(ctx)
+
+	// In JSON mode the not-found error is a structured envelope, not a bare error.
+	err := cmd.RunE(cmd, []string{"5"})
+	require.ErrorIs(t, err, root.ErrAlreadyPrinted)
+
+	var got errorEnvelope
+	require.NoError(t, json.Unmarshal(buf.Bytes(), &got))
+	assert.Equal(t, jsonError{Code: "NOT_FOUND", Kind: "NOT_FOUND", Message: "run 5 not found: check the run ID and that it is a job run ID"}, got.Error)
 }
 
 func TestPrintConfigYAML(t *testing.T) {
@@ -191,7 +213,6 @@ func TestGetTemplateAllFields(t *testing.T) {
 func TestBuildGetData(t *testing.T) {
 	run := &jobs.Run{
 		RunId:           123,
-		RunPageUrl:      "https://example.test/run/123",
 		CreatorUserName: "me@example.com",
 		StartTime:       1700000000000,
 		EndTime:         1700000012000,
@@ -208,7 +229,6 @@ func TestBuildGetData(t *testing.T) {
 	assert.Equal(t, "123", d.RunID)
 	assert.Equal(t, "SUCCESS", d.Status)
 	assert.Equal(t, 1, d.AttemptNumber)
-	assert.Equal(t, "https://example.test/run/123", d.DashboardURL)
 	assert.Equal(t, "me@example.com", d.User)
 	assert.Equal(t, "8x H100", d.Accelerators)
 	assert.Equal(t, "12s", d.Duration)
