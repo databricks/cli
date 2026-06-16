@@ -64,7 +64,14 @@ func (*ResourcePostgresRole) RemapState(remote *postgres.Role) *PostgresRoleStat
 		// the spec, so mapping it back onto the spec produces drift that is often
 		// unresolvable. The spec fields are ignore_remote_changes in resources.yml;
 		// revisit once the backend echoes the spec intent back on GET.
-		RoleRoleSpec: postgres.RoleRoleSpec{},
+		RoleRoleSpec: postgres.RoleRoleSpec{
+			Attributes:      nil,
+			AuthMethod:      "",
+			IdentityType:    "",
+			MembershipRoles: nil,
+			PostgresRole:    "",
+			ForceSendFields: nil,
+		},
 	}
 }
 
