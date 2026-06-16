@@ -35,39 +35,56 @@ func runStatus(state *jobs.RunState) string {
 	return "UNKNOWN"
 }
 
-// startedAt converts the run's start time (epoch milliseconds) to an RFC 3339
-// UTC string, or returns nil if the run has not started yet.
+// reportedTiming returns the run's start and end times (epoch milliseconds),
+// preferring the last task's window over the run-level times so a retried run
+// reports its latest attempt. Mirrors Python's _reported_attempt_timing
+// (cli_display.py:78-87).
+func reportedTiming(run *jobs.Run) (startMillis, endMillis int64) {
+	startMillis, endMillis = run.StartTime, run.EndTime
+	if n := len(run.Tasks); n > 0 {
+		last := run.Tasks[n-1]
+		if last.StartTime > 0 {
+			startMillis = last.StartTime
+		}
+		if last.EndTime > 0 {
+			endMillis = last.EndTime
+		}
+	}
+	return startMillis, endMillis
+}
+
+// startedAt converts the run's reported start time (epoch milliseconds) to an
+// RFC 3339 UTC string, or returns nil if the run has not started yet.
 func startedAt(run *jobs.Run) *string {
-	if run.StartTime == 0 {
+	startMillis, _ := reportedTiming(run)
+	if startMillis == 0 {
 		return nil
 	}
-	s := time.UnixMilli(run.StartTime).UTC().Format(time.RFC3339)
+	s := time.UnixMilli(startMillis).UTC().Format(time.RFC3339)
 	return &s
 }
 
 // durationSeconds returns how long the run has taken, in whole seconds, or nil
-// if it has not started. For a finished run this is the elapsed time; for a
-// still-running run it is the time since it started.
+// if it has not started. For a finished run this is the elapsed time of the
+// reported attempt; for a still-running run it is the time since it started.
 func durationSeconds(run *jobs.Run) *int64 {
-	if run.StartTime == 0 {
+	startMillis, endMillis := reportedTiming(run)
+	if startMillis == 0 {
 		return nil
 	}
-
-	var endMillis int64
-	switch {
-	case run.RunDuration > 0:
-		// The backend already computed the duration for us.
-		d := run.RunDuration / 1000
-		return &d
-	case run.EndTime > 0:
-		endMillis = run.EndTime
-	default:
+	if endMillis == 0 {
 		// Still running: measure against the current time.
 		endMillis = time.Now().UnixMilli()
 	}
-
-	d := (endMillis - run.StartTime) / 1000
+	d := roundMillisToSeconds(endMillis - startMillis)
 	return &d
+}
+
+// roundMillisToSeconds converts milliseconds to whole seconds, rounding to the
+// nearest second to match Python's round() (cli_entrypoint.py:1934) rather than
+// truncating.
+func roundMillisToSeconds(ms int64) int64 {
+	return (ms + 500) / 1000
 }
 
 // formatDuration turns a number of seconds into a compact human string such as
