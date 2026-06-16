@@ -2977,33 +2977,23 @@ resources.postgres_projects.*.permissions[*].group_name	string	ALL
 resources.postgres_projects.*.permissions[*].level	iam.PermissionLevel	ALL
 resources.postgres_projects.*.permissions[*].service_principal_name	string	ALL
 resources.postgres_projects.*.permissions[*].user_name	string	ALL
-resources.postgres_roles.*.attributes	*postgres.RoleAttributes	INPUT	STATE
-resources.postgres_roles.*.attributes.bypassrls	bool	INPUT	STATE
-resources.postgres_roles.*.attributes.createdb	bool	INPUT	STATE
-resources.postgres_roles.*.attributes.createrole	bool	INPUT	STATE
-resources.postgres_roles.*.auth_method	postgres.RoleAuthMethod	INPUT	STATE
+resources.postgres_roles.*.attributes	*postgres.RoleAttributes	ALL
+resources.postgres_roles.*.attributes.bypassrls	bool	ALL
+resources.postgres_roles.*.attributes.createdb	bool	ALL
+resources.postgres_roles.*.attributes.createrole	bool	ALL
+resources.postgres_roles.*.auth_method	postgres.RoleAuthMethod	ALL
 resources.postgres_roles.*.create_time	*time.Time	REMOTE
 resources.postgres_roles.*.id	string	INPUT
-resources.postgres_roles.*.identity_type	postgres.RoleIdentityType	INPUT	STATE
+resources.postgres_roles.*.identity_type	postgres.RoleIdentityType	ALL
 resources.postgres_roles.*.lifecycle	resources.Lifecycle	INPUT
 resources.postgres_roles.*.lifecycle.prevent_destroy	bool	INPUT
-resources.postgres_roles.*.membership_roles	[]postgres.RoleMembershipRole	INPUT	STATE
-resources.postgres_roles.*.membership_roles[*]	postgres.RoleMembershipRole	INPUT	STATE
+resources.postgres_roles.*.membership_roles	[]postgres.RoleMembershipRole	ALL
+resources.postgres_roles.*.membership_roles[*]	postgres.RoleMembershipRole	ALL
 resources.postgres_roles.*.modified_status	string	INPUT
 resources.postgres_roles.*.name	string	REMOTE
 resources.postgres_roles.*.parent	string	ALL
-resources.postgres_roles.*.postgres_role	string	INPUT	STATE
-resources.postgres_roles.*.role_id	string	INPUT	STATE
-resources.postgres_roles.*.spec	*postgres.RoleRoleSpec	REMOTE
-resources.postgres_roles.*.spec.attributes	*postgres.RoleAttributes	REMOTE
-resources.postgres_roles.*.spec.attributes.bypassrls	bool	REMOTE
-resources.postgres_roles.*.spec.attributes.createdb	bool	REMOTE
-resources.postgres_roles.*.spec.attributes.createrole	bool	REMOTE
-resources.postgres_roles.*.spec.auth_method	postgres.RoleAuthMethod	REMOTE
-resources.postgres_roles.*.spec.identity_type	postgres.RoleIdentityType	REMOTE
-resources.postgres_roles.*.spec.membership_roles	[]postgres.RoleMembershipRole	REMOTE
-resources.postgres_roles.*.spec.membership_roles[*]	postgres.RoleMembershipRole	REMOTE
-resources.postgres_roles.*.spec.postgres_role	string	REMOTE
+resources.postgres_roles.*.postgres_role	string	ALL
+resources.postgres_roles.*.role_id	string	ALL
 resources.postgres_roles.*.status	*postgres.RoleRoleStatus	REMOTE
 resources.postgres_roles.*.status.attributes	*postgres.RoleAttributes	REMOTE
 resources.postgres_roles.*.status.attributes.bypassrls	bool	REMOTE
