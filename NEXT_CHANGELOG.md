@@ -19,6 +19,7 @@
 * engine/direct: Fix WAL corruption after two consecutive failed deploys ([#5606](https://github.com/databricks/cli/pull/5606)).
 * engine/direct: Don't open the deployment state WAL when a deploy's plan fails ([#5607](https://github.com/databricks/cli/pull/5607)).
 * Ignore unity catalog managed schema property defaults to avoid unnecessary drift ([#5195](https://github.com/databricks/cli/pull/5195)).
+* Add Postgres role as a bundle resource ([#5467](https://github.com/databricks/cli/pull/5467)).
 
 ### Dependency updates
 
