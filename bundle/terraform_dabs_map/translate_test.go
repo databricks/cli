@@ -11,11 +11,10 @@ import (
 
 func TestTerraformPathToDABs(t *testing.T) {
 	tests := []struct {
-		group       string
-		terrPath    string
-		dabsPath    string
-		noRoundtrip bool // if true, DABsPathToTerraform(dabsPath) != terrPath (non-invertible path)
-		expectErr   bool // if true, translation must return an error (Terraform-only field)
+		group     string
+		terrPath  string
+		dabsPath  string
+		expectErr bool // if true, translation must return an error (Terraform-only field)
 	}{
 		// Top-level renames - jobs
 		{
@@ -207,12 +206,10 @@ func TestTerraformPathToDABs(t *testing.T) {
 			require.NotNil(t, result)
 			assert.Equal(t, tt.dabsPath, result.String())
 
-			if !tt.noRoundtrip {
-				back, err := terraform_dabs_map.DABsPathToTerraform(tt.group, result)
-				require.NoError(t, err)
-				require.NotNil(t, back)
-				assert.Equal(t, tt.terrPath, back.String(), "roundtrip DABsPathToTerraform(TerraformPathToDABs(terrPath))")
-			}
+			back, err := terraform_dabs_map.DABsPathToTerraform(tt.group, result)
+			require.NoError(t, err)
+			require.NotNil(t, back)
+			assert.Equal(t, tt.terrPath, back.String(), "roundtrip DABsPathToTerraform(TerraformPathToDABs(terrPath))")
 		})
 	}
 }
