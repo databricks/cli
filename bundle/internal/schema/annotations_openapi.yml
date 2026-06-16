@@ -7041,6 +7041,69 @@ github.com/databricks/databricks-sdk-go/service/postgres.ProjectDefaultEndpointS
       Mutually exclusive with `no_suspension`. When updating, use `spec.project_default_settings.suspension` in the update_mask.
     "x-databricks-launch-stage": |-
       PUBLIC_BETA
+github.com/databricks/databricks-sdk-go/service/postgres.RoleAttributes:
+  "_":
+    "description": |-
+      Attributes that can be granted to a Postgres role. We are only implementing a subset for now, see xref:
+      https://www.postgresql.org/docs/16/sql-createrole.html
+      The values follow Postgres keyword naming e.g. CREATEDB, BYPASSRLS, etc. which is why they don't include typical
+      underscores between words.
+  "bypassrls":
+    "x-databricks-launch-stage": |-
+      PUBLIC_BETA
+  "createdb":
+    "x-databricks-launch-stage": |-
+      PUBLIC_BETA
+  "createrole":
+    "x-databricks-launch-stage": |-
+      PUBLIC_BETA
+github.com/databricks/databricks-sdk-go/service/postgres.RoleAuthMethod:
+  "_":
+    "description": |-
+      How the role is authenticated when connecting to Postgres.
+    "enum":
+      - |-
+        NO_LOGIN
+      - |-
+        PG_PASSWORD_SCRAM_SHA_256
+      - |-
+        LAKEBASE_OAUTH_V1
+    "x-databricks-enum-launch-stages":
+      "LAKEBASE_OAUTH_V1": |-
+        PUBLIC_BETA
+      "NO_LOGIN": |-
+        PUBLIC_BETA
+      "PG_PASSWORD_SCRAM_SHA_256": |-
+        PUBLIC_BETA
+github.com/databricks/databricks-sdk-go/service/postgres.RoleIdentityType:
+  "_":
+    "description": |-
+      The type of the Databricks managed identity that this Role represents.
+      Leave empty if you wish to create a regular Postgres role not associated with a Databricks identity.
+    "enum":
+      - |-
+        USER
+      - |-
+        SERVICE_PRINCIPAL
+      - |-
+        GROUP
+    "x-databricks-enum-launch-stages":
+      "GROUP": |-
+        PUBLIC_BETA
+      "SERVICE_PRINCIPAL": |-
+        PUBLIC_BETA
+      "USER": |-
+        PUBLIC_BETA
+github.com/databricks/databricks-sdk-go/service/postgres.RoleMembershipRole:
+  "_":
+    "description": |-
+      Roles that the DatabaseInstanceRole can be a member of.
+    "enum":
+      - |-
+        DATABRICKS_SUPERUSER
+    "x-databricks-enum-launch-stages":
+      "DATABRICKS_SUPERUSER": |-
+        PUBLIC_BETA
 github.com/databricks/databricks-sdk-go/service/postgres.SyncedTableSyncedTableSpecSyncedTableSchedulingPolicy:
   "_":
     "description": |-

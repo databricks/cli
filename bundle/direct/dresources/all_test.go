@@ -748,6 +748,42 @@ var testDeps = map[string]prepareWorkspace{
 			},
 		}, nil
 	},
+
+	"postgres_roles": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		// Create parent project first
+		_, err := client.Postgres.CreateProject(ctx, postgres.CreateProjectRequest{
+			ProjectId: "test-project-for-role",
+			Project: postgres.Project{
+				Spec: &postgres.ProjectSpec{
+					DisplayName: "Test Project for Role",
+					PgVersion:   16,
+				},
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		// Create parent branch
+		_, err = client.Postgres.CreateBranch(ctx, postgres.CreateBranchRequest{
+			Parent:   "projects/test-project-for-role",
+			BranchId: "test-branch-for-role",
+			Branch:   postgres.Branch{},
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		return &resources.PostgresRole{
+			PostgresRoleConfig: resources.PostgresRoleConfig{
+				Parent: "projects/test-project-for-role/branches/test-branch-for-role",
+				RoleId: "test-role",
+				RoleRoleSpec: postgres.RoleRoleSpec{
+					PostgresRole: "test_role",
+				},
+			},
+		}, nil
+	},
 }
 
 func TestAll(t *testing.T) {

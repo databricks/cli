@@ -230,6 +230,9 @@ github.com/databricks/cli/bundle/config.Resources:
   "postgres_projects":
     "description": |-
       PLACEHOLDER
+  "postgres_roles":
+    "description": |-
+      PLACEHOLDER
   "postgres_synced_tables":
     "description": |-
       The Postgres synced table definitions for the bundle, where each key is the name of the synced table. Each entry continuously replicates a Unity Catalog Delta source table into a Postgres table on a Lakebase Autoscaling instance.
@@ -978,6 +981,31 @@ github.com/databricks/cli/bundle/config/resources.PostgresProject:
   "update_time":
     "description": |-
       PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.PostgresRole:
+  "attributes":
+    "description": |-
+      The desired API-exposed Postgres role attributes to associate with the role.
+  "auth_method":
+    "description": |-
+      How the role is authenticated when connecting to Postgres. If left unspecified, a meaningful authentication method is derived from the identity_type.
+  "identity_type":
+    "description": |-
+      The type of the Databricks managed identity that this Role represents. Leave empty to create a regular Postgres role not associated with a Databricks identity.
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
+  "membership_roles":
+    "description": |-
+      Standard roles that this role is a member of.
+  "parent":
+    "description": |-
+      The branch where this role is created. Format projects/{project_id}/branches/{branch_id}.
+  "postgres_role":
+    "description": |-
+      The name of the Postgres role. Required when creating the role.
+  "role_id":
+    "description": |-
+      The user-specified role ID; becomes the final component of the role's resource name. Must be 4-63 characters, lowercase letters, numbers, and hyphens (RFC 1123).
 github.com/databricks/cli/bundle/config/resources.PostgresSyncedTable:
   "branch":
     "description": |-
