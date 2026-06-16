@@ -514,7 +514,10 @@ func matchesAnyBackendDefault(cfg *dresources.ResourceLifecycleConfig, path *str
 		if !path.HasPatternPrefix(rule.Field) {
 			continue
 		}
-		if len(rule.Values) == 0 || matchesAllowedValue(remote, rule.Values) {
+		if len(rule.Values) == 0 {
+			return true
+		}
+		if matchesAllowedValue(remote, rule.Values) {
 			return true
 		}
 	}
