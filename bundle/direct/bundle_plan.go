@@ -483,18 +483,45 @@ func shouldSkipBackendDefault(cfg *dresources.ResourceLifecycleConfig, path *str
 	if cfg == nil || ch.Old != nil || ch.New != nil || ch.Remote == nil {
 		return "", false
 	}
+	if matchesAnyBackendDefault(cfg, path, ch.Remote) {
+		return deployplan.ReasonBackendDefault, true
+	}
+
+	// Nil-vs-map case from structdiff: a remote-only map change is emitted at the
+	// parent path rather than per key. Only skip the parent map if every remote
+	// entry matches a configured backend-default child rule; any unmanaged key
+	// must still surface as drift. rv is always valid here (ch.Remote != nil
+	// above) and a nil map is excluded by Len() == 0.
+	rv := reflect.ValueOf(ch.Remote)
+	if rv.Kind() != reflect.Map || rv.Type().Key().Kind() != reflect.String || rv.Len() == 0 {
+		return "", false
+	}
+	iter := rv.MapRange()
+	for iter.Next() {
+		childPath := structpath.NewBracketString(path, iter.Key().String())
+		if !matchesAnyBackendDefault(cfg, childPath, iter.Value().Interface()) {
+			return "", false
+		}
+	}
+	return deployplan.ReasonBackendDefault, true
+}
+
+// matchesAnyBackendDefault reports whether the remote value at path matches any of
+// the resource's configured backend-default rules (and the rule's allowed values,
+// if specified).
+func matchesAnyBackendDefault(cfg *dresources.ResourceLifecycleConfig, path *structpath.PathNode, remote any) bool {
 	for _, rule := range cfg.BackendDefaults {
 		if !path.HasPatternPrefix(rule.Field) {
 			continue
 		}
 		if len(rule.Values) == 0 {
-			return deployplan.ReasonBackendDefault, true
+			return true
 		}
-		if matchesAllowedValue(ch.Remote, rule.Values) {
-			return deployplan.ReasonBackendDefault, true
+		if matchesAllowedValue(remote, rule.Values) {
+			return true
 		}
 	}
-	return "", false
+	return false
 }
 
 // matchesAllowedValue checks if the remote value matches one of the allowed JSON values.
