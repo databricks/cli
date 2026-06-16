@@ -25,6 +25,7 @@ type Resources struct {
 	ExternalLocations     map[string]*resources.ExternalLocation     `json:"external_locations,omitempty"`
 	Clusters              map[string]*resources.Cluster              `json:"clusters,omitempty"`
 	Dashboards            map[string]*resources.Dashboard            `json:"dashboards,omitempty"`
+	GenieSpaces           map[string]*resources.GenieSpace           `json:"genie_spaces,omitempty"`
 	Apps                  map[string]*resources.App                  `json:"apps,omitempty"`
 	SecretScopes          map[string]*resources.SecretScope          `json:"secret_scopes,omitempty"`
 	Alerts                map[string]*resources.Alert                `json:"alerts,omitempty"`
@@ -105,6 +106,7 @@ func (r *Resources) AllResources() []ResourceGroup {
 		collectResourceMap(descriptions["external_locations"], r.ExternalLocations),
 		collectResourceMap(descriptions["clusters"], r.Clusters),
 		collectResourceMap(descriptions["dashboards"], r.Dashboards),
+		collectResourceMap(descriptions["genie_spaces"], r.GenieSpaces),
 		collectResourceMap(descriptions["volumes"], r.Volumes),
 		collectResourceMap(descriptions["apps"], r.Apps),
 		collectResourceMap(descriptions["alerts"], r.Alerts),
@@ -164,6 +166,7 @@ func SupportedResources() map[string]resources.ResourceDescription {
 		"external_locations":      (&resources.ExternalLocation{}).ResourceDescription(),
 		"clusters":                (&resources.Cluster{}).ResourceDescription(),
 		"dashboards":              (&resources.Dashboard{}).ResourceDescription(),
+		"genie_spaces":            (&resources.GenieSpace{}).ResourceDescription(),
 		"volumes":                 (&resources.Volume{}).ResourceDescription(),
 		"apps":                    (&resources.App{}).ResourceDescription(),
 		"secret_scopes":           (&resources.SecretScope{}).ResourceDescription(),

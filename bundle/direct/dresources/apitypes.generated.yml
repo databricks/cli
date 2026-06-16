@@ -18,6 +18,8 @@ experiments: ml.CreateExperiment
 
 external_locations: catalog.CreateExternalLocation
 
+genie_spaces: dashboards.GenieUpdateSpaceRequest
+
 jobs: jobs.JobSettings
 
 model_serving_endpoints: serving.CreateServingEndpoint

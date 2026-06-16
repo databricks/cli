@@ -7,6 +7,7 @@ import (
 	"io/fs"
 	"os"
 	"strings"
+	"sync"
 
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
@@ -357,7 +358,16 @@ func AuthCredentialKeys() []string {
 	return keys
 }
 
+// We document databrickscfg files with a [DEFAULT] header and wish to keep it that way.
+// This, however, does mean we emit a [DEFAULT] section even if it's empty.
+// ini.DefaultHeader is process-global, so it is enabled on first write instead of
+// at import time to keep this package free of import side effects.
+var enableDefaultHeader = sync.OnceFunc(func() {
+	ini.DefaultHeader = true
+})
+
 func writeConfigFile(ctx context.Context, configFile *config.File) error {
+	enableDefaultHeader()
 	section := configFile.Section(ini.DefaultSection)
 	if len(section.Keys()) == 0 && section.Comment == "" {
 		section.Comment = defaultComment
@@ -498,10 +508,4 @@ func ValidateConfigAndProfileHost(cfg *config.Config, profile string) error {
 	}
 
 	return nil
-}
-
-func init() {
-	// We document databrickscfg files with a [DEFAULT] header and wish to keep it that way.
-	// This, however, does mean we emit a [DEFAULT] section even if it's empty.
-	ini.DefaultHeader = true
 }

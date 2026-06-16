@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"os"
 	"path"
@@ -11,49 +10,43 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle/internal/annotation"
+	"github.com/databricks/cli/internal/clijson"
 	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/dyn/yamlloader"
 	"github.com/databricks/cli/libs/jsonschema"
 )
 
-type Components struct {
-	Schemas map[string]jsonschema.Schema `json:"schemas,omitempty"`
-}
-
-type Specification struct {
-	Components Components `json:"components"`
-}
-
-type openapiParser struct {
-	ref map[string]jsonschema.Schema
+type annotationParser struct {
+	ref map[string]*clijson.SchemaJSON
 }
 
 const RootTypeKey = "_"
 
-func newParser(path string) (*openapiParser, error) {
-	b, err := os.ReadFile(path)
-	if err != nil {
-		return nil, err
-	}
+// deprecationMessage is the message emitted for any field or type that the spec
+// marks as deprecated. The spec (.codegen/cli.json) carries only a deprecated
+// flag, not a message, so we synthesize a fixed one here.
+const deprecationMessage = "This field is deprecated"
 
-	spec := Specification{}
-	err = json.Unmarshal(b, &spec)
-	if err != nil {
-		return nil, err
+// deprecationMessageFor returns the deprecation message for a deprecated field
+// or type, or an empty string when it is not deprecated.
+func deprecationMessageFor(deprecated bool) string {
+	if deprecated {
+		return deprecationMessage
 	}
+	return ""
+}
 
-	p := &openapiParser{}
-	p.ref = spec.Components.Schemas
-	return p, nil
+func newParser(schemas map[string]*clijson.SchemaJSON) *annotationParser {
+	return &annotationParser{ref: schemas}
 }
 
 // This function checks if the input type:
 // 1. Is a Databricks Go SDK type.
 // 2. Has a Databricks Go SDK type embedded in it.
 //
-// If the above conditions are met, the function returns the JSON schema
-// corresponding to the Databricks Go SDK type from the OpenAPI spec.
-func (p *openapiParser) findRef(typ reflect.Type) (jsonschema.Schema, bool) {
+// If the above conditions are met, the function returns the schema
+// corresponding to the Databricks Go SDK type from the spec.
+func (p *annotationParser) findRef(typ reflect.Type) (*clijson.SchemaJSON, bool) {
 	typs := []reflect.Type{typ}
 
 	// Check for embedded Databricks Go SDK types.
@@ -82,50 +75,96 @@ func (p *openapiParser) findRef(typ reflect.Type) (jsonschema.Schema, bool) {
 		pkgName := path.Base(ctyp.PkgPath())
 		k := fmt.Sprintf("%s.%s", pkgName, ctyp.Name())
 
-		// Skip if the type is not in the openapi spec.
-		_, ok := p.ref[k]
-		if !ok {
-			k = mapIncorrectTypNames(k)
-			_, ok = p.ref[k]
-			if !ok {
-				continue
-			}
+		// Skip if the type is not in the spec.
+		if _, ok := p.ref[k]; !ok {
+			continue
 		}
 
-		// Return the first Go SDK type found in the openapi spec.
+		// Return the first Go SDK type found in the spec.
 		return p.ref[k], true
 	}
 
-	return jsonschema.Schema{}, false
+	return nil, false
 }
 
-// Fix inconsistent type names between the Go SDK and the OpenAPI spec.
-// E.g. "serving.PaLmConfig" in the Go SDK is "serving.PaLMConfig" in the OpenAPI spec.
-func mapIncorrectTypNames(ref string) string {
-	switch ref {
-	case "serving.PaLmConfig":
-		return "serving.PaLMConfig"
-	case "serving.OpenAiConfig":
-		return "serving.OpenAIConfig"
-	case "serving.GoogleCloudVertexAiConfig":
-		return "serving.GoogleCloudVertexAIConfig"
-	case "serving.Ai21LabsConfig":
-		return "serving.AI21LabsConfig"
-	default:
-		return ref
+// previewFromLaunchStage maps a launch stage to the preview marker the bundle
+// uses to hide a field or type from completions. cli.json no longer carries a
+// separate preview flag — launch_stage is the single source of truth — so a
+// private-preview stage is the only one that should not be suggested. Every
+// other stage (GA, public preview, ...) yields an empty marker.
+func previewFromLaunchStage(launchStage string) string {
+	if launchStage == "PRIVATE_PREVIEW" {
+		return "PRIVATE"
 	}
+	return ""
 }
 
-func isOutputOnly(s jsonschema.Schema) *bool {
-	if s.FieldBehaviors == nil || !slices.Contains(s.FieldBehaviors, "OUTPUT_ONLY") {
+// normalizeLaunchStage drops the GA stage so it isn't persisted in the
+// annotation file. GA is the implicit default for any field that isn't in a
+// preview, so storing it would add a stage to thousands of entries for no
+// benefit. cli.json is already filtered at min-stage=PRIVATE_PREVIEW upstream,
+// so the only other values are the preview stages, which we keep verbatim.
+func normalizeLaunchStage(launchStage string) string {
+	if launchStage == "GA" {
+		return ""
+	}
+	return launchStage
+}
+
+// notableEnumLaunchStages keeps only the enum values whose launch stage is
+// worth surfacing (i.e. not GA), so the annotation file isn't polluted with a
+// stage for every value of a GA enum. Returns nil when nothing remains.
+func notableEnumLaunchStages(stages map[string]string) map[string]string {
+	result := map[string]string{}
+	for value, stage := range stages {
+		if ls := normalizeLaunchStage(stage); ls != "" {
+			result[value] = ls
+		}
+	}
+	if len(result) == 0 {
+		return nil
+	}
+	return result
+}
+
+// nonEmptyEnumDescriptions drops blank per-value descriptions so the annotation
+// file stays clean. Returns nil when nothing remains.
+func nonEmptyEnumDescriptions(descriptions map[string]string) map[string]string {
+	result := map[string]string{}
+	for value, desc := range descriptions {
+		if desc != "" {
+			result[value] = desc
+		}
+	}
+	if len(result) == 0 {
+		return nil
+	}
+	return result
+}
+
+// enumValues converts the contract's []string enum into the []any the
+// annotation descriptor carries (its Enum field predates the typed contract).
+func enumValues(vals []string) []any {
+	if len(vals) == 0 {
+		return nil
+	}
+	out := make([]any, len(vals))
+	for i, v := range vals {
+		out[i] = v
+	}
+	return out
+}
+
+func isOutputOnly(behaviors []string) *bool {
+	if !slices.Contains(behaviors, "OUTPUT_ONLY") {
 		return nil
 	}
 	res := true
 	return &res
 }
 
-// Use the OpenAPI spec to load descriptions for the given type.
-func (p *openapiParser) extractAnnotations(typ reflect.Type, outputPath, overridesPath string) error {
+// Use the spec to load descriptions for the given type.
+func (p *annotationParser) extractAnnotations(typ reflect.Type, outputPath, overridesPath string) error {
 	annotations := annotation.File{}
 	overrides := annotation.File{}
 
@@ -155,55 +194,42 @@ func (p *openapiParser) extractAnnotations(typ reflect.Type, outputPath, overrid
 			basePath := getPath(typ)
 			pkg := map[string]annotation.Descriptor{}
 			annotations[basePath] = pkg
-			preview := ref.Preview
-			if preview == "PUBLIC" {
-				preview = ""
-			}
-			outputOnly := isOutputOnly(ref)
-			if ref.Description != "" || ref.Enum != nil || ref.Deprecated || ref.DeprecationMessage != "" || preview != "" || outputOnly != nil {
-				if ref.Deprecated && ref.DeprecationMessage == "" {
-					ref.DeprecationMessage = "This field is deprecated"
-				}
-
+			// The contract carries no schema-level launch stage, so a type is
+			// never itself marked private-preview — only its fields are (below).
+			// Enum schemas do carry per-value launch stages and descriptions.
+			enumLaunchStages := notableEnumLaunchStages(ref.EnumLaunchStages)
+			enumDescriptions := nonEmptyEnumDescriptions(ref.EnumDescriptions)
+			if ref.Description != "" || ref.Enum != nil || enumLaunchStages != nil || enumDescriptions != nil {
 				pkg[RootTypeKey] = annotation.Descriptor{
-					Description:        ref.Description,
-					Enum:               ref.Enum,
-					DeprecationMessage: ref.DeprecationMessage,
-					Preview:            preview,
-					OutputOnly:         outputOnly,
+					Description:      ref.Description,
+					Enum:             enumValues(ref.Enum),
+					EnumLaunchStages: enumLaunchStages,
+					EnumDescriptions: enumDescriptions,
 				}
 			}
 
 			for k := range s.Properties {
-				if refProp, ok := ref.Properties[k]; ok {
-					preview = refProp.Preview
-					if preview == "PUBLIC" {
-						preview = ""
-					}
-
-					if refProp.Deprecated && refProp.DeprecationMessage == "" {
-						refProp.DeprecationMessage = "This field is deprecated"
-					}
+				if refProp, ok := ref.Fields[k]; ok {
+					preview := previewFromLaunchStage(refProp.LaunchStage)
+					launchStage := normalizeLaunchStage(refProp.LaunchStage)
 
 					description := refProp.Description
 
 					// If the field doesn't have a description, try to find the referenced type
 					// and use its description. This handles cases where the field references
 					// a type that has a description but the field itself doesn't.
-					if description == "" && refProp.Reference != nil {
-						refPath := *refProp.Reference
-						refTypeName := strings.TrimPrefix(refPath, "#/components/schemas/")
-						if refType, ok := p.ref[refTypeName]; ok {
+					if description == "" && refProp.Ref != "" {
+						if refType, ok := p.ref[refProp.Ref]; ok {
 							description = refType.Description
 						}
 					}
 
 					pkg[k] = annotation.Descriptor{
 						Description:        description,
-						Enum:               refProp.Enum,
 						Preview:            preview,
-						DeprecationMessage: refProp.DeprecationMessage,
-						OutputOnly:         isOutputOnly(*refProp),
+						LaunchStage:        launchStage,
+						DeprecationMessage: deprecationMessageFor(refProp.Deprecated),
+						OutputOnly:         isOutputOnly(refProp.Behaviors),
 					}
 					if description == "" {
 						addEmptyOverride(k, basePath, overrides)

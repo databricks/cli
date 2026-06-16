@@ -96,6 +96,9 @@ var knownMissingInStateType = map[string][]string{
 	"dashboards": {
 		"file_path",
 	},
+	"genie_spaces": {
+		"file_path",
+	},
 	"secret_scopes": {
 		"backend_type",
 		"keyvault_metadata",

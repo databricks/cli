@@ -545,6 +545,13 @@ github.com/databricks/cli/bundle/config/resources.VectorSearchEndpoint:
   "permissions":
     "description": |-
       PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.VectorSearchIndex:
+  "grants":
+    "description": |-
+      PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.Volume:
   "_":
     "markdown_description": |-
@@ -882,11 +889,6 @@ github.com/databricks/databricks-sdk-go/service/compute.InitScriptInfo:
   "abfss":
     "description": |-
       Contains the Azure Data Lake Storage destination path
-github.com/databricks/databricks-sdk-go/service/compute.Kind:
-  "_":
-    "enum":
-      - |-
-        CLASSIC_PREVIEW
 github.com/databricks/databricks-sdk-go/service/compute.LogAnalyticsInfo:
   "log_analytics_primary_key":
     "description": |-
@@ -1043,6 +1045,16 @@ github.com/databricks/databricks-sdk-go/service/pipelines.TableSpecificConfig:
       PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/pipelines.Transformer:
   "json_options":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/postgres.RoleAttributes:
+  "bypassrls":
+    "description": |-
+      PLACEHOLDER
+  "createdb":
+    "description": |-
+      PLACEHOLDER
+  "createrole":
     "description": |-
       PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/serving.Route:

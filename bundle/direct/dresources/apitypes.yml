@@ -4,6 +4,13 @@
 # Set a value to null to remove a type:
 # jobs: null
 
+# The field-overlap heuristic ties GenieSpace and GenieUpdateSpaceRequest and
+# breaks the tie toward GenieUpdateSpaceRequest because GenieSpace carries one
+# extra field (space_id). Pin GenieSpace: its etag is OUTPUT_ONLY (server-managed),
+# so we ignore remote changes to it, whereas on GenieUpdateSpaceRequest etag is a
+# caller-supplied optimistic-concurrency token and that behavior is lost.
+genie_spaces: dashboards.GenieSpace
+
 postgres_branches: postgres.BranchSpec
 
 postgres_endpoints: postgres.EndpointSpec

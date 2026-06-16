@@ -18,8 +18,10 @@ type ResourceJobDbtTask struct {
 }
 
 type ResourceJobDeployment struct {
+	DeploymentId     string `json:"deployment_id,omitempty"`
 	Kind             string `json:"kind"`
 	MetadataFilePath string `json:"metadata_file_path,omitempty"`
+	VersionId        string `json:"version_id,omitempty"`
 }
 
 type ResourceJobEmailNotifications struct {
@@ -1089,8 +1091,13 @@ type ResourceJobTaskForEachTaskTaskNotificationSettings struct {
 }
 
 type ResourceJobTaskForEachTaskTaskPipelineTask struct {
-	FullRefresh bool   `json:"full_refresh,omitempty"`
-	PipelineId  string `json:"pipeline_id"`
+	FullRefresh              bool              `json:"full_refresh,omitempty"`
+	FullRefreshSelection     []string          `json:"full_refresh_selection,omitempty"`
+	Parameters               map[string]string `json:"parameters,omitempty"`
+	PipelineId               string            `json:"pipeline_id"`
+	RefreshFlowSelection     []string          `json:"refresh_flow_selection,omitempty"`
+	RefreshSelection         []string          `json:"refresh_selection,omitempty"`
+	ResetCheckpointSelection []string          `json:"reset_checkpoint_selection,omitempty"`
 }
 
 type ResourceJobTaskForEachTaskTaskPowerBiTaskPowerBiModel struct {
@@ -1116,6 +1123,16 @@ type ResourceJobTaskForEachTaskTaskPowerBiTask struct {
 	Tables                 []ResourceJobTaskForEachTaskTaskPowerBiTaskTables      `json:"tables,omitempty"`
 }
 
+type ResourceJobTaskForEachTaskTaskPythonOperatorTaskParameters struct {
+	Name  string `json:"name,omitempty"`
+	Value string `json:"value,omitempty"`
+}
+
+type ResourceJobTaskForEachTaskTaskPythonOperatorTask struct {
+	Main       string                                                       `json:"main,omitempty"`
+	Parameters []ResourceJobTaskForEachTaskTaskPythonOperatorTaskParameters `json:"parameters,omitempty"`
+}
+
 type ResourceJobTaskForEachTaskTaskPythonWheelTask struct {
 	EntryPoint      string            `json:"entry_point,omitempty"`
 	NamedParameters map[string]string `json:"named_parameters,omitempty"`
@@ -1124,7 +1141,11 @@ type ResourceJobTaskForEachTaskTaskPythonWheelTask struct {
 }
 
 type ResourceJobTaskForEachTaskTaskRunJobTaskPipelineParams struct {
-	FullRefresh bool `json:"full_refresh,omitempty"`
+	FullRefresh              bool     `json:"full_refresh,omitempty"`
+	FullRefreshSelection     []string `json:"full_refresh_selection,omitempty"`
+	RefreshFlowSelection     []string `json:"refresh_flow_selection,omitempty"`
+	RefreshSelection         []string `json:"refresh_selection,omitempty"`
+	ResetCheckpointSelection []string `json:"reset_checkpoint_selection,omitempty"`
 }
 
 type ResourceJobTaskForEachTaskTaskRunJobTask struct {
@@ -1257,6 +1278,7 @@ type ResourceJobTaskForEachTaskTask struct {
 	NotificationSettings    *ResourceJobTaskForEachTaskTaskNotificationSettings   `json:"notification_settings,omitempty"`
 	PipelineTask            *ResourceJobTaskForEachTaskTaskPipelineTask           `json:"pipeline_task,omitempty"`
 	PowerBiTask             *ResourceJobTaskForEachTaskTaskPowerBiTask            `json:"power_bi_task,omitempty"`
+	PythonOperatorTask      *ResourceJobTaskForEachTaskTaskPythonOperatorTask     `json:"python_operator_task,omitempty"`
 	PythonWheelTask         *ResourceJobTaskForEachTaskTaskPythonWheelTask        `json:"python_wheel_task,omitempty"`
 	RunJobTask              *ResourceJobTaskForEachTaskTaskRunJobTask             `json:"run_job_task,omitempty"`
 	SparkJarTask            *ResourceJobTaskForEachTaskTaskSparkJarTask           `json:"spark_jar_task,omitempty"`
@@ -1568,8 +1590,13 @@ type ResourceJobTaskNotificationSettings struct {
 }
 
 type ResourceJobTaskPipelineTask struct {
-	FullRefresh bool   `json:"full_refresh,omitempty"`
-	PipelineId  string `json:"pipeline_id"`
+	FullRefresh              bool              `json:"full_refresh,omitempty"`
+	FullRefreshSelection     []string          `json:"full_refresh_selection,omitempty"`
+	Parameters               map[string]string `json:"parameters,omitempty"`
+	PipelineId               string            `json:"pipeline_id"`
+	RefreshFlowSelection     []string          `json:"refresh_flow_selection,omitempty"`
+	RefreshSelection         []string          `json:"refresh_selection,omitempty"`
+	ResetCheckpointSelection []string          `json:"reset_checkpoint_selection,omitempty"`
 }
 
 type ResourceJobTaskPowerBiTaskPowerBiModel struct {
@@ -1595,6 +1622,16 @@ type ResourceJobTaskPowerBiTask struct {
 	Tables                 []ResourceJobTaskPowerBiTaskTables      `json:"tables,omitempty"`
 }
 
+type ResourceJobTaskPythonOperatorTaskParameters struct {
+	Name  string `json:"name,omitempty"`
+	Value string `json:"value,omitempty"`
+}
+
+type ResourceJobTaskPythonOperatorTask struct {
+	Main       string                                        `json:"main,omitempty"`
+	Parameters []ResourceJobTaskPythonOperatorTaskParameters `json:"parameters,omitempty"`
+}
+
 type ResourceJobTaskPythonWheelTask struct {
 	EntryPoint      string            `json:"entry_point,omitempty"`
 	NamedParameters map[string]string `json:"named_parameters,omitempty"`
@@ -1603,7 +1640,11 @@ type ResourceJobTaskPythonWheelTask struct {
 }
 
 type ResourceJobTaskRunJobTaskPipelineParams struct {
-	FullRefresh bool `json:"full_refresh,omitempty"`
+	FullRefresh              bool     `json:"full_refresh,omitempty"`
+	FullRefreshSelection     []string `json:"full_refresh_selection,omitempty"`
+	RefreshFlowSelection     []string `json:"refresh_flow_selection,omitempty"`
+	RefreshSelection         []string `json:"refresh_selection,omitempty"`
+	ResetCheckpointSelection []string `json:"reset_checkpoint_selection,omitempty"`
 }
 
 type ResourceJobTaskRunJobTask struct {
@@ -1737,6 +1778,7 @@ type ResourceJobTask struct {
 	NotificationSettings    *ResourceJobTaskNotificationSettings   `json:"notification_settings,omitempty"`
 	PipelineTask            *ResourceJobTaskPipelineTask           `json:"pipeline_task,omitempty"`
 	PowerBiTask             *ResourceJobTaskPowerBiTask            `json:"power_bi_task,omitempty"`
+	PythonOperatorTask      *ResourceJobTaskPythonOperatorTask     `json:"python_operator_task,omitempty"`
 	PythonWheelTask         *ResourceJobTaskPythonWheelTask        `json:"python_wheel_task,omitempty"`
 	RunJobTask              *ResourceJobTaskRunJobTask             `json:"run_job_task,omitempty"`
 	SparkJarTask            *ResourceJobTaskSparkJarTask           `json:"spark_jar_task,omitempty"`

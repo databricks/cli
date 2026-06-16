@@ -16,6 +16,7 @@ var resourceURLPatterns = map[string]string{
 	"database_catalogs":       "explore/data/%s",
 	"database_instances":      "compute/database-instances/%s",
 	"experiments":             "ml/experiments/%s",
+	"genie_spaces":            "genie/rooms/%s",
 	"jobs":                    "jobs/%s",
 	"models":                  "ml/models/%s",
 	"model_serving_endpoints": "ml/endpoints/%s",

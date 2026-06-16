@@ -27,14 +27,16 @@ class KafkaOptions:
     """
     :meta private: [EXPERIMENTAL]
     
-    Undocumented backdoor mechanism for overriding parameters
+    [Private Preview] Undocumented backdoor mechanism for overriding parameters
     to pass to the Kafka client.
     This is not supported and may break at any time.
     """
 
     key_transformer: VariableOrOptional[Transformer] = None
     """
-    (Optional) Transformer for the message key.
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] (Optional) Transformer for the message key.
     If not specified, the key is left as raw bytes.
     """
 
@@ -42,30 +44,38 @@ class KafkaOptions:
     """
     :meta private: [EXPERIMENTAL]
     
-    Internal option to control the maximum number of offsets to process per trigger.
+    [Private Preview] Internal option to control the maximum number of offsets to process per trigger.
     """
 
     starting_offset: VariableOrOptional[str] = None
     """
-    (Optional) Where to begin reading when no checkpoint exists.
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] (Optional) Where to begin reading when no checkpoint exists.
     Valid values: "latest" and "earliest". Defaults to "latest".
     """
 
     topic_pattern: VariableOrOptional[str] = None
     """
-    Java regex pattern to subscribe to matching topics.
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Java regex pattern to subscribe to matching topics.
     Only one of topics or topic_pattern must be specified.
     """
 
     topics: VariableOrList[str] = field(default_factory=list)
     """
-    Topics to subscribe to.
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Topics to subscribe to.
     Only one of topics or topic_pattern must be specified.
     """
 
     value_transformer: VariableOrOptional[Transformer] = None
     """
-    (Optional) Transformer for the message value.
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] (Optional) Transformer for the message value.
     If not specified, the value is left as raw bytes.
     """
 
@@ -84,14 +94,16 @@ class KafkaOptionsDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    Undocumented backdoor mechanism for overriding parameters
+    [Private Preview] Undocumented backdoor mechanism for overriding parameters
     to pass to the Kafka client.
     This is not supported and may break at any time.
     """
 
     key_transformer: VariableOrOptional[TransformerParam]
     """
-    (Optional) Transformer for the message key.
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] (Optional) Transformer for the message key.
     If not specified, the key is left as raw bytes.
     """
 
@@ -99,30 +111,38 @@ class KafkaOptionsDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    Internal option to control the maximum number of offsets to process per trigger.
+    [Private Preview] Internal option to control the maximum number of offsets to process per trigger.
     """
 
     starting_offset: VariableOrOptional[str]
     """
-    (Optional) Where to begin reading when no checkpoint exists.
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] (Optional) Where to begin reading when no checkpoint exists.
     Valid values: "latest" and "earliest". Defaults to "latest".
     """
 
     topic_pattern: VariableOrOptional[str]
     """
-    Java regex pattern to subscribe to matching topics.
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Java regex pattern to subscribe to matching topics.
     Only one of topics or topic_pattern must be specified.
     """
 
     topics: VariableOrList[str]
     """
-    Topics to subscribe to.
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Topics to subscribe to.
     Only one of topics or topic_pattern must be specified.
     """
 
     value_transformer: VariableOrOptional[TransformerParam]
     """
-    (Optional) Transformer for the message value.
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] (Optional) Transformer for the message value.
     If not specified, the value is left as raw bytes.
     """
 

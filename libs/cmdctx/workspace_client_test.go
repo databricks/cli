@@ -36,3 +36,16 @@ func TestCommandWorkspaceClient(t *testing.T) {
 		cmdctx.SetWorkspaceClient(ctx, client)
 	})
 }
+
+func TestHasWorkspaceClient(t *testing.T) {
+	ctx := t.Context()
+	assert.False(t, cmdctx.HasWorkspaceClient(ctx))
+
+	client := &databricks.WorkspaceClient{
+		Config: &config.Config{
+			Host: "https://test.test",
+		},
+	}
+	ctx = cmdctx.SetWorkspaceClient(ctx, client)
+	assert.True(t, cmdctx.HasWorkspaceClient(ctx))
+}
