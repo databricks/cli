@@ -23,27 +23,27 @@ class PowerBiTask:
 
     connection_resource_name: VariableOrOptional[str] = None
     """
-    The resource name of the UC connection to authenticate from Databricks to Power BI
+    [Public Preview] The resource name of the UC connection to authenticate from Databricks to Power BI
     """
 
     power_bi_model: VariableOrOptional[PowerBiModel] = None
     """
-    The semantic model to update
+    [Public Preview] The semantic model to update
     """
 
     refresh_after_update: VariableOrOptional[bool] = None
     """
-    Whether the model should be refreshed after the update
+    [Public Preview] Whether the model should be refreshed after the update
     """
 
     tables: VariableOrList[PowerBiTable] = field(default_factory=list)
     """
-    The tables to be exported to Power BI
+    [Public Preview] The tables to be exported to Power BI
     """
 
     warehouse_id: VariableOrOptional[str] = None
     """
-    The SQL warehouse ID to use as the Power BI data source
+    [Public Preview] The SQL warehouse ID to use as the Power BI data source
     """
 
     @classmethod
@@ -59,27 +59,27 @@ class PowerBiTaskDict(TypedDict, total=False):
 
     connection_resource_name: VariableOrOptional[str]
     """
-    The resource name of the UC connection to authenticate from Databricks to Power BI
+    [Public Preview] The resource name of the UC connection to authenticate from Databricks to Power BI
     """
 
     power_bi_model: VariableOrOptional[PowerBiModelParam]
     """
-    The semantic model to update
+    [Public Preview] The semantic model to update
     """
 
     refresh_after_update: VariableOrOptional[bool]
     """
-    Whether the model should be refreshed after the update
+    [Public Preview] Whether the model should be refreshed after the update
     """
 
     tables: VariableOrList[PowerBiTableParam]
     """
-    The tables to be exported to Power BI
+    [Public Preview] The tables to be exported to Power BI
     """
 
     warehouse_id: VariableOrOptional[str]
     """
-    The SQL warehouse ID to use as the Power BI data source
+    [Public Preview] The SQL warehouse ID to use as the Power BI data source
     """
 
 

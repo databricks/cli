@@ -99,6 +99,49 @@ func previewFromLaunchStage(launchStage string) string {
 	return ""
 }
 
+// normalizeLaunchStage drops the GA stage so it isn't persisted in the
+// annotation file. GA is the implicit default for any field that isn't in a
+// preview, so storing it would add a stage to thousands of entries for no
+// benefit. cli.json is already filtered at min-stage=PRIVATE_PREVIEW upstream,
+// so the only other values are the preview stages, which we keep verbatim.
+func normalizeLaunchStage(launchStage string) string {
+	if launchStage == "GA" {
+		return ""
+	}
+	return launchStage
+}
+
+// notableEnumLaunchStages keeps only the enum values whose launch stage is
+// worth surfacing (i.e. not GA), so the annotation file isn't polluted with a
+// stage for every value of a GA enum. Returns nil when nothing remains.
+func notableEnumLaunchStages(stages map[string]string) map[string]string {
+	result := map[string]string{}
+	for value, stage := range stages {
+		if ls := normalizeLaunchStage(stage); ls != "" {
+			result[value] = ls
+		}
+	}
+	if len(result) == 0 {
+		return nil
+	}
+	return result
+}
+
+// nonEmptyEnumDescriptions drops blank per-value descriptions so the annotation
+// file stays clean. Returns nil when nothing remains.
+func nonEmptyEnumDescriptions(descriptions map[string]string) map[string]string {
+	result := map[string]string{}
+	for value, desc := range descriptions {
+		if desc != "" {
+			result[value] = desc
+		}
+	}
+	if len(result) == 0 {
+		return nil
+	}
+	return result
+}
+
 // enumValues converts the contract's []string enum into the []any the
 // annotation descriptor carries (its Enum field predates the typed contract).
 func enumValues(vals []string) []any {
@@ -153,16 +196,22 @@ func (p *annotationParser) extractAnnotations(typ reflect.Type, outputPath, over
 			annotations[basePath] = pkg
 			// The contract carries no schema-level launch stage, so a type is
 			// never itself marked private-preview — only its fields are (below).
-			if ref.Description != "" || ref.Enum != nil {
+			// Enum schemas do carry per-value launch stages and descriptions.
+			enumLaunchStages := notableEnumLaunchStages(ref.EnumLaunchStages)
+			enumDescriptions := nonEmptyEnumDescriptions(ref.EnumDescriptions)
+			if ref.Description != "" || ref.Enum != nil || enumLaunchStages != nil || enumDescriptions != nil {
 				pkg[RootTypeKey] = annotation.Descriptor{
-					Description: ref.Description,
-					Enum:        enumValues(ref.Enum),
+					Description:      ref.Description,
+					Enum:             enumValues(ref.Enum),
+					EnumLaunchStages: enumLaunchStages,
+					EnumDescriptions: enumDescriptions,
 				}
 			}
 
 			for k := range s.Properties {
 				if refProp, ok := ref.Fields[k]; ok {
 					preview := previewFromLaunchStage(refProp.LaunchStage)
+					launchStage := normalizeLaunchStage(refProp.LaunchStage)
 
 					description := refProp.Description
 
@@ -178,6 +227,7 @@ func (p *annotationParser) extractAnnotations(typ reflect.Type, outputPath, over
 					pkg[k] = annotation.Descriptor{
 						Description:        description,
 						Preview:            preview,
+						LaunchStage:        launchStage,
 						DeprecationMessage: deprecationMessageFor(refProp.Deprecated),
 						OutputOnly:         isOutputOnly(refProp.Behaviors),
 					}

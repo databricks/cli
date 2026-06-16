@@ -1,0 +1,6 @@
+
+=== a 500 with no message points at a possible request format change
+>>> [CLI] experimental genie ask What are total sales by franchise?
+Error: the Genie backend could not process the request (500 with no details); if this keeps happening, the request format may have changed since this CLI release: update the Databricks CLI to the latest version (run 'databricks version --check')
+
+Exit code: 1
