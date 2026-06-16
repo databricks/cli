@@ -19,34 +19,23 @@ func TestListingWorks(t *testing.T) {
 	stdout, _, err := c.Run()
 	require.NoError(t, err)
 	require.Contains(t, stdout.String(), "ucx")
-	// blueprint is in the repositories cache fixture but not in the
-	// installable-repositories cache fixture, proving the latter is rendered.
+	// blueprint is in the repositories cache fixture but lacks the
+	// databricks-cli-installable topic, proving the topic filter is applied.
 	require.NotContains(t, stdout.String(), "blueprint")
 }
 
-func TestListingFiltersReposWithoutLabsYml(t *testing.T) {
+func TestListingFiltersReposWithoutTopic(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		switch r.URL.Path {
-		case "/users/databrickslabs/repos":
-			_, err := w.Write([]byte(`[
-				{"name": "ucx", "description": "Unity Catalog Migrations", "default_branch": "main"},
-				{"name": "brickster", "description": "R interface to Databricks", "default_branch": "main"}
-			]`))
-			assert.NoError(t, err)
-		case "/databrickslabs/ucx/main/labs.yml":
-			_, err := w.Write([]byte("name: ucx"))
-			assert.NoError(t, err)
-		case "/databrickslabs/brickster/main/labs.yml":
-			w.WriteHeader(http.StatusNotFound)
-		default:
-			t.Logf("Requested: %s", r.URL.Path)
-			t.FailNow()
-		}
+		assert.Equal(t, "/users/databrickslabs/repos", r.URL.Path)
+		_, err := w.Write([]byte(`[
+			{"name": "ucx", "description": "Unity Catalog Migrations", "topics": ["databricks-cli-installable"]},
+			{"name": "brickster", "description": "R interface to Databricks", "topics": []}
+		]`))
+		assert.NoError(t, err)
 	}))
 	defer server.Close()
 	ctx := t.Context()
 	ctx = github.WithApiOverride(ctx, server.URL)
-	ctx = github.WithUserContentOverride(ctx, server.URL)
 	ctx = env.WithUserHomeDir(ctx, t.TempDir())
 
 	c := testcli.NewRunner(t, ctx, "labs", "list")
