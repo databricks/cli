@@ -140,19 +140,27 @@ func TestTerraformPathToDABs(t *testing.T) {
 			dabsPath: "endpoint_type",
 		},
 
-		// TF-computed paths (status, timestamps) pass through unchanged but are not
-		// roundtrippable: DABsPathToTerraform would incorrectly prepend the spec wrapper.
+		// TF root-level paths (status, timestamps, IDs) pass through unchanged and
+		// round-trip correctly: DABsPathToTerraform recognises them as root fields.
 		{
-			group:       "postgres_projects",
-			terrPath:    "status.display_name",
-			dabsPath:    "status.display_name",
-			noRoundtrip: true,
+			group:    "postgres_projects",
+			terrPath: "status.display_name",
+			dabsPath: "status.display_name",
 		},
 		{
-			group:       "postgres_projects",
-			terrPath:    "create_time",
-			dabsPath:    "create_time",
-			noRoundtrip: true,
+			group:    "postgres_projects",
+			terrPath: "create_time",
+			dabsPath: "create_time",
+		},
+		{
+			group:    "postgres_projects",
+			terrPath: "project_id",
+			dabsPath: "project_id",
+		},
+		{
+			group:    "postgres_projects",
+			terrPath: "name",
+			dabsPath: "name",
 		},
 
 		// Terraform-only fields: must return an error

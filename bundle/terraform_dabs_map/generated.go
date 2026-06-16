@@ -637,3 +637,62 @@ var DABsToTerraformWrappers = map[string]string{
 	"postgres_roles":         "spec",
 	"postgres_synced_tables": "spec",
 }
+
+// DABsToTerraformRootFields maps DABs group name → first-level TF field names at the
+// resource root (not under any wrapper). For wrapper groups, a DABs path whose first
+// segment is in this set bypasses the wrapper prepend in DABsPathToTerraform.
+var DABsToTerraformRootFields = map[string]FieldSet{
+	"postgres_branches": {
+		"branch_id":        {},
+		"create_time":      {},
+		"name":             {},
+		"parent":           {},
+		"provider_config":  {},
+		"purge_on_delete":  {},
+		"replace_existing": {},
+		"status":           {},
+		"uid":              {},
+		"update_time":      {},
+	},
+	"postgres_catalogs": {
+		"catalog_id":      {},
+		"create_time":     {},
+		"name":            {},
+		"provider_config": {},
+		"status":          {},
+		"uid":             {},
+		"update_time":     {},
+	},
+	"postgres_endpoints": {
+		"create_time":      {},
+		"endpoint_id":      {},
+		"name":             {},
+		"parent":           {},
+		"provider_config":  {},
+		"replace_existing": {},
+		"status":           {},
+		"uid":              {},
+		"update_time":      {},
+	},
+	"postgres_projects": {
+		"create_time":           {},
+		"delete_time":           {},
+		"initial_endpoint_spec": {},
+		"name":                  {},
+		"project_id":            {},
+		"provider_config":       {},
+		"purge_on_delete":       {},
+		"purge_time":            {},
+		"status":                {},
+		"uid":                   {},
+		"update_time":           {},
+	},
+	"postgres_synced_tables": {
+		"create_time":     {},
+		"name":            {},
+		"provider_config": {},
+		"status":          {},
+		"synced_table_id": {},
+		"uid":             {},
+	},
+}
