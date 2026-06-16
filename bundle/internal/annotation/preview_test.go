@@ -4,19 +4,19 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/bundle/internal/annotation"
+	"github.com/databricks/cli/internal/clijson"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestPreviewTag(t *testing.T) {
 	tests := []struct {
-		launchStage annotation.LaunchStage
+		launchStage clijson.LaunchStage
 		want        string
 	}{
-		{annotation.LaunchStagePublicPreview, "[Public Preview]"},
-		{annotation.LaunchStagePublicBeta, "[Beta]"},
-		{annotation.LaunchStagePrivatePreview, "[Private Preview]"},
-		{annotation.LaunchStageGA, ""},
+		{clijson.LaunchStagePublicPreview, "[Public Preview]"},
+		{clijson.LaunchStagePublicBeta, "[Beta]"},
+		{clijson.LaunchStagePrivatePreview, "[Private Preview]"},
+		{clijson.LaunchStageGA, ""},
 		{"", ""},
 		{"SOMETHING_ELSE", ""},
 	}
@@ -25,42 +25,15 @@ func TestPreviewTag(t *testing.T) {
 	}
 }
 
-func TestParseLaunchStage(t *testing.T) {
-	tests := []struct {
-		raw     string
-		want    annotation.LaunchStage
-		wantErr bool
-	}{
-		{"", annotation.LaunchStageGA, false},
-		{"GA", annotation.LaunchStageGA, false},
-		{"PUBLIC_PREVIEW", annotation.LaunchStagePublicPreview, false},
-		{"PUBLIC_BETA", annotation.LaunchStagePublicBeta, false},
-		{"PRIVATE_PREVIEW", annotation.LaunchStagePrivatePreview, false},
-		{"SOMETHING_ELSE", "", true},
-	}
-	for _, tc := range tests {
-		got, err := annotation.ParseLaunchStage(tc.raw)
-		if tc.wantErr {
-			assert.Error(t, err, "ParseLaunchStage(%q)", tc.raw)
+// Every stage in the contract's closed set must have a tag entry, so a stage
+// added to clijson without a tag here is caught rather than rendering blank.
+// GA intentionally maps to the empty prefix; every other stage must be tagged.
+func TestPreviewTagCoversAllStages(t *testing.T) {
+	for _, stage := range clijson.LaunchStages {
+		if stage == clijson.LaunchStageGA {
+			assert.Empty(t, annotation.PreviewTag(stage))
 			continue
 		}
-		require.NoError(t, err, "ParseLaunchStage(%q)", tc.raw)
-		assert.Equal(t, tc.want, got)
-	}
-}
-
-// Every known launch stage must round-trip through ParseLaunchStage and have a
-// tag entry, so a constant added without a previewTags entry (or vice versa) is
-// caught here rather than rendering silently as GA.
-func TestKnownLaunchStagesAreParsable(t *testing.T) {
-	for _, stage := range []annotation.LaunchStage{
-		annotation.LaunchStageGA,
-		annotation.LaunchStagePublicPreview,
-		annotation.LaunchStagePublicBeta,
-		annotation.LaunchStagePrivatePreview,
-	} {
-		got, err := annotation.ParseLaunchStage(string(stage))
-		require.NoError(t, err, "stage %q", stage)
-		assert.Equal(t, stage, got)
+		assert.NotEmpty(t, annotation.PreviewTag(stage), "stage %q has no preview tag", stage)
 	}
 }

@@ -3,7 +3,7 @@ package main
 import (
 	"testing"
 
-	"github.com/databricks/cli/bundle/internal/annotation"
+	"github.com/databricks/cli/internal/clijson"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -11,13 +11,13 @@ import (
 func TestNormalizeLaunchStage(t *testing.T) {
 	tests := []struct {
 		input string
-		want  annotation.LaunchStage
+		want  clijson.LaunchStage
 	}{
 		{"GA", ""},
 		{"", ""},
-		{"PUBLIC_PREVIEW", annotation.LaunchStagePublicPreview},
-		{"PUBLIC_BETA", annotation.LaunchStagePublicBeta},
-		{"PRIVATE_PREVIEW", annotation.LaunchStagePrivatePreview},
+		{"PUBLIC_PREVIEW", clijson.LaunchStagePublicPreview},
+		{"PUBLIC_BETA", clijson.LaunchStagePublicBeta},
+		{"PRIVATE_PREVIEW", clijson.LaunchStagePrivatePreview},
 	}
 	for _, tc := range tests {
 		got, err := normalizeLaunchStage(tc.input)
@@ -38,7 +38,7 @@ func TestNotableEnumLaunchStages(t *testing.T) {
 			"STANDARD":          "GA",
 		})
 		require.NoError(t, err)
-		assert.Equal(t, map[string]annotation.LaunchStage{"STORAGE_OPTIMIZED": annotation.LaunchStagePublicPreview}, got)
+		assert.Equal(t, map[string]clijson.LaunchStage{"STORAGE_OPTIMIZED": clijson.LaunchStagePublicPreview}, got)
 	})
 
 	t.Run("returns nil when every value is GA", func(t *testing.T) {

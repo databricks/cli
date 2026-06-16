@@ -93,13 +93,13 @@ func (p *annotationParser) findRef(typ reflect.Type) (*clijson.SchemaJSON, bool)
 // field that isn't in a preview, so storing it would add a stage to thousands
 // of entries for no benefit. It errors on any stage the CLI doesn't recognize
 // so a stage introduced upstream fails codegen instead of silently rendering as
-// GA (see annotation.ParseLaunchStage).
-func normalizeLaunchStage(launchStage string) (annotation.LaunchStage, error) {
-	stage, err := annotation.ParseLaunchStage(launchStage)
+// GA (see clijson.ParseLaunchStage).
+func normalizeLaunchStage(launchStage string) (clijson.LaunchStage, error) {
+	stage, err := clijson.ParseLaunchStage(launchStage)
 	if err != nil {
 		return "", err
 	}
-	if stage == annotation.LaunchStageGA {
+	if stage == clijson.LaunchStageGA {
 		return "", nil
 	}
 	return stage, nil
@@ -108,8 +108,8 @@ func normalizeLaunchStage(launchStage string) (annotation.LaunchStage, error) {
 // notableEnumLaunchStages keeps only the enum values whose launch stage is
 // worth surfacing (i.e. not GA), so the annotation file isn't polluted with a
 // stage for every value of a GA enum. Returns nil when nothing remains.
-func notableEnumLaunchStages(stages map[string]string) (map[string]annotation.LaunchStage, error) {
-	result := map[string]annotation.LaunchStage{}
+func notableEnumLaunchStages(stages map[string]string) (map[string]clijson.LaunchStage, error) {
+	result := map[string]clijson.LaunchStage{}
 	for value, stage := range stages {
 		ls, err := normalizeLaunchStage(stage)
 		if err != nil {

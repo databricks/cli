@@ -13,6 +13,7 @@ import (
 	yaml3 "go.yaml.in/yaml/v3"
 
 	"github.com/databricks/cli/bundle/internal/annotation"
+	"github.com/databricks/cli/internal/clijson"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/dyn/merge"
@@ -140,7 +141,7 @@ func assignAnnotation(s *jsonschema.Schema, a annotation.Descriptor) {
 	// experimental. Only the private-preview stage is emitted into the published
 	// schema — nothing consumes the others there; they surface only as the
 	// description prefix below and the per-value enumDescriptions labels.
-	if a.LaunchStage == annotation.LaunchStagePrivatePreview {
+	if a.LaunchStage == clijson.LaunchStagePrivatePreview {
 		s.DoNotSuggest = true
 		s.LaunchStage = string(a.LaunchStage)
 	}
@@ -166,7 +167,7 @@ func assignAnnotation(s *jsonschema.Schema, a annotation.Descriptor) {
 // and the per-value description text. Returns nil when every entry would be
 // empty so the field is omitted from the schema. The enum slice is the same
 // one assigned to s.Enum, so the arrays stay index-aligned.
-func buildEnumDescriptions(enum []any, launchStages map[string]annotation.LaunchStage, descriptions map[string]string) []string {
+func buildEnumDescriptions(enum []any, launchStages map[string]clijson.LaunchStage, descriptions map[string]string) []string {
 	if len(enum) == 0 || (len(launchStages) == 0 && len(descriptions) == 0) {
 		return nil
 	}

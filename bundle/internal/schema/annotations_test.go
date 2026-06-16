@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/bundle/internal/annotation"
+	"github.com/databricks/cli/internal/clijson"
 	"github.com/databricks/cli/libs/jsonschema"
 	"github.com/stretchr/testify/assert"
 )
@@ -90,7 +91,7 @@ func TestAssignAnnotationLaunchStage(t *testing.T) {
 		assignAnnotation(s, annotation.Descriptor{
 			Description: "Type of endpoint.",
 			Enum:        []any{"STORAGE_OPTIMIZED", "STANDARD"},
-			EnumLaunchStages: map[string]annotation.LaunchStage{
+			EnumLaunchStages: map[string]clijson.LaunchStage{
 				"STORAGE_OPTIMIZED": "PUBLIC_PREVIEW",
 			},
 		})
@@ -124,7 +125,7 @@ func TestBuildEnumDescriptions(t *testing.T) {
 
 	t.Run("combines launch stage and description per value", func(t *testing.T) {
 		got := buildEnumDescriptions(enum,
-			map[string]annotation.LaunchStage{"STORAGE_OPTIMIZED": "PUBLIC_PREVIEW"},
+			map[string]clijson.LaunchStage{"STORAGE_OPTIMIZED": "PUBLIC_PREVIEW"},
 			map[string]string{
 				"STORAGE_OPTIMIZED": "Storage-optimized endpoint.",
 				"STANDARD":          "Standard endpoint.",
@@ -138,7 +139,7 @@ func TestBuildEnumDescriptions(t *testing.T) {
 
 	t.Run("launch stage only emits bracketed label", func(t *testing.T) {
 		got := buildEnumDescriptions(enum,
-			map[string]annotation.LaunchStage{"STORAGE_OPTIMIZED": "PUBLIC_BETA"},
+			map[string]clijson.LaunchStage{"STORAGE_OPTIMIZED": "PUBLIC_BETA"},
 			nil,
 		)
 		assert.Equal(t, []string{"[Beta]", ""}, got)
@@ -155,7 +156,7 @@ func TestBuildEnumDescriptions(t *testing.T) {
 	t.Run("returns nil when neither stage nor description has content", func(t *testing.T) {
 		assert.Nil(t, buildEnumDescriptions(enum, nil, nil))
 		assert.Nil(t, buildEnumDescriptions(enum,
-			map[string]annotation.LaunchStage{"STORAGE_OPTIMIZED": "GA"},
+			map[string]clijson.LaunchStage{"STORAGE_OPTIMIZED": "GA"},
 			nil,
 		))
 	})
@@ -163,7 +164,7 @@ func TestBuildEnumDescriptions(t *testing.T) {
 	t.Run("non-string enum entries leave an empty slot", func(t *testing.T) {
 		got := buildEnumDescriptions(
 			[]any{"A", 42, "B"},
-			map[string]annotation.LaunchStage{"A": "PUBLIC_PREVIEW", "B": "PUBLIC_BETA"},
+			map[string]clijson.LaunchStage{"A": "PUBLIC_PREVIEW", "B": "PUBLIC_BETA"},
 			nil,
 		)
 		assert.Equal(t, []string{"[Public Preview]", "", "[Beta]"}, got)
