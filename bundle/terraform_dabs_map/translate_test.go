@@ -208,6 +208,9 @@ func TestTerraformPathToDABs(t *testing.T) {
 
 			// Fixed-point: the DABs result is already in DABs format, so a second
 			// TerraformPathToDABs pass must leave it unchanged.
+			// DABsPathToTerraform does NOT have this property: spec fields like
+			// "display_name" map to "spec.display_name", and applying the function
+			// again would incorrectly prepend another "spec." prefix.
 			result2, err := terraform_dabs_map.TerraformPathToDABs(tt.group, result)
 			require.NoError(t, err)
 			require.NotNil(t, result2)
