@@ -375,6 +375,16 @@ func resolveDefaultProfile(ctx context.Context, cfg *config.Config) {
 	if cfg.Profile != "" || envlib.Get(ctx, "DATABRICKS_CONFIG_PROFILE") != "" {
 		return
 	}
+	// When a host is configured directly via the environment (e.g. DATABRICKS_HOST
+	// with DATABRICKS_TOKEN), authentication is already fully determined and the
+	// SDK ignores .databrickscfg entirely, but only while cfg.Profile is empty (see
+	// configFileLoader.Configure in databricks-sdk-go). Pinning a default profile
+	// here would defeat that skip and merge the profile's credentials with the
+	// environment config, producing a "more than one authorization method
+	// configured" error.
+	if envlib.Get(ctx, "DATABRICKS_HOST") != "" {
+		return
+	}
 	if resolved := databrickscfg.ResolveDefaultProfile(ctx); resolved != "" {
 		cfg.Profile = resolved
 	}
