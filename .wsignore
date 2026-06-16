@@ -18,12 +18,6 @@ python/docs/images/databricks-logo.svg
 # In order to prevent that difference, hello.txt does not have a trailing newline.
 acceptance/selftest/record_cloud/volume-io/hello.txt
 
-# Fixtures with exact byte sizes that feed the upload file-size histogram in the
-# deploy telemetry test. A trailing newline would change their size, so it is
-# deliberately omitted.
-acceptance/bundle/telemetry/deploy/src/big.txt
-acceptance/bundle/telemetry/deploy/src/medium.txt
-
 # bundle commands leave empty lines at the end; too many to list individually:
 acceptance/**/out*.txt
 
