@@ -10,6 +10,7 @@ import (
 	"slices"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/bundle/resources"
 	"github.com/databricks/cli/bundle/run"
@@ -165,7 +166,7 @@ Example usage:
 					if len(runArgs) > 0 {
 						return fmt.Errorf("additional arguments are not supported for scripts. Got: %v. We recommend using environment variables to pass runtime arguments to a script. For example: FOO=bar databricks bundle run my_script", runArgs)
 					}
-					return executeScript(b.Config.Scripts[key].Content, cmd, b)
+					return executeScript(b.Config.Scripts[key], cmd, b)
 				}
 
 				return nil
@@ -276,8 +277,14 @@ func scriptEnv(cmd *cobra.Command, b *bundle.Bundle) []string {
 	return out
 }
 
-func executeScript(content string, cmd *cobra.Command, b *bundle.Bundle) error {
-	return execv.Shell(content, b.BundleRootPath, scriptEnv(cmd, b))
+func executeScript(script config.Script, cmd *cobra.Command, b *bundle.Bundle) error {
+	env := scriptEnv(cmd, b)
+	// Append after auth/profile/target so script-declared values take precedence
+	// if they happen to collide.
+	for _, name := range slices.Sorted(maps.Keys(script.Env)) {
+		env = append(env, name+"="+script.Env[name])
+	}
+	return execv.Shell(script.Content, b.BundleRootPath, env)
 }
 
 func executeInline(cmd *cobra.Command, args []string, b *bundle.Bundle) error {

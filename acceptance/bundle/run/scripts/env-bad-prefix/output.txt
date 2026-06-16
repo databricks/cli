@@ -1,0 +1,16 @@
+
+>>> [CLI] bundle validate
+Error: ${resources.jobs.my_job.id} cannot be used in scripts.bad.env.JOB_ID; only ${bundle.*}, ${workspace.*}, and ${var.*} are resolved before scripts execute
+  at scripts.bad.env.JOB_ID
+  in databricks.yml:12:15
+
+Error: ${something.else} cannot be used in scripts.bad.env.UNKNOWN; only ${bundle.*}, ${workspace.*}, and ${var.*} are resolved before scripts execute
+  at scripts.bad.env.UNKNOWN
+  in databricks.yml:13:16
+
+Name: script-env-bad-prefix
+Target: default
+
+Found 2 errors
+
+Exit code: 1
