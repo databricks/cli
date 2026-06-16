@@ -8,6 +8,7 @@
 * Show a once-per-day notice after a command when a newer CLI release is available, with a link to the release and the upgrade command for the detected install method. Suppressed for non-interactive/CI runs, JSON output, the Databricks Runtime, and development builds, and can be disabled with `DATABRICKS_CLI_DISABLE_UPDATE_CHECK` ([#5470](https://github.com/databricks/cli/pull/5470)).
 * Improved error messages for `ssh connect`: when an SSH connection attempt fails, the client now fetches and prints the server's recent error logs ([#5555](https://github.com/databricks/cli/pull/5555)).
 * Increase the SSH server startup timeout from 10 to 45 minutes when a GPU accelerator is requested via `databricks ssh connect --accelerator` ([#5569](https://github.com/databricks/cli/pull/5569)).
+* Fix authentication falling back to the default profile in `.databrickscfg` when a host is already configured via the environment (e.g. `DATABRICKS_HOST` with `DATABRICKS_TOKEN`) ([#5616](https://github.com/databricks/cli/pull/5616)).
 
 
 ### Bundles
