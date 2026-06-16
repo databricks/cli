@@ -51,26 +51,21 @@ func (*ResourcePostgresRole) PrepareState(input *resources.PostgresRole) *Postgr
 }
 
 func (*ResourcePostgresRole) RemapState(remote *postgres.Role) *PostgresRoleState {
-	state := &PostgresRoleState{
-		Parent: remote.Parent,
-	}
-
-	// GET returns the role configuration under Status, not Spec (Spec is nil on
-	// read), so map the status fields back onto our flattened state to reflect the
-	// live role. The spec fields remain ignore_remote_changes in resources.yml, so
-	// this produces an accurate state snapshot rather than spurious drift.
+	var roleID string
 	if remote.Status != nil {
-		state.RoleId = remote.Status.RoleId
-		state.RoleRoleSpec = postgres.RoleRoleSpec{
-			Attributes:      remote.Status.Attributes,
-			AuthMethod:      remote.Status.AuthMethod,
-			IdentityType:    remote.Status.IdentityType,
-			MembershipRoles: remote.Status.MembershipRoles,
-			PostgresRole:    remote.Status.PostgresRole,
-		}
+		roleID = remote.Status.RoleId
 	}
+	return &PostgresRoleState{
+		RoleId: roleID,
+		Parent: remote.Parent,
 
-	return state
+		// Spec is left empty on purpose. GET returns the role config under Status,
+		// but Status rolls up server-side and parent-inherited defaults mixed with
+		// the spec, so mapping it back onto the spec produces drift that is often
+		// unresolvable. The spec fields are ignore_remote_changes in resources.yml;
+		// revisit once the backend echoes the spec intent back on GET.
+		RoleRoleSpec: postgres.RoleRoleSpec{},
+	}
 }
 
 func (r *ResourcePostgresRole) DoRead(ctx context.Context, id string) (*postgres.Role, error) {
