@@ -206,6 +206,13 @@ func TestTerraformPathToDABs(t *testing.T) {
 			require.NotNil(t, result)
 			assert.Equal(t, tt.dabsPath, result.String())
 
+			// Fixed-point: the DABs result is already in DABs format, so a second
+			// TerraformPathToDABs pass must leave it unchanged.
+			result2, err := terraform_dabs_map.TerraformPathToDABs(tt.group, result)
+			require.NoError(t, err)
+			require.NotNil(t, result2)
+			assert.Equal(t, result.String(), result2.String(), "TerraformPathToDABs(TerraformPathToDABs(terrPath)) == TerraformPathToDABs(terrPath)")
+
 			back, err := terraform_dabs_map.DABsPathToTerraform(tt.group, result)
 			require.NoError(t, err)
 			require.NotNil(t, back)
