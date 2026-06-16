@@ -25,7 +25,7 @@ func newRegisterImageCommand() *cobra.Command {
 
 	cmd.Flags().StringVar(&scope, "scope", "", "Databricks secret scope holding registry credentials")
 	cmd.Flags().StringVar(&key, "key", "", "Databricks secret key holding registry credentials")
-	cmd.Flags().BoolVar(&interactiveAuth, "interactive-authenticate", false, "Prompt for registry credentials and store them as a secret")
+	cmd.Flags().BoolVarP(&interactiveAuth, "interactive-authenticate", "i", false, "Prompt for registry credentials and store them as a secret")
 	cmd.Flags().StringVar(&tagPolicy, "tag-policy", "auto", "Image resolution policy: auto or latest")
 	cmd.Flags().IntVar(&timeoutMinutes, "timeout-minutes", 60, "Timeout to wait for the image to become available")
 

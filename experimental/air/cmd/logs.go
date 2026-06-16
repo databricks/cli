@@ -15,7 +15,7 @@ func newLogsCommand() *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:   "logs RUN_ID",
+		Use:   "logs JOB_RUN_ID",
 		Args:  root.ExactArgs(1),
 		Short: "Stream or fetch logs for a run",
 		Long:  `Stream logs from an active run, or fetch logs from a completed run.`,
@@ -29,6 +29,8 @@ func newLogsCommand() *cobra.Command {
 	cmd.Flags().IntVar(&retry, "retry", -1, "View logs from a specific retry attempt; -1 means latest")
 	cmd.Flags().StringVar(&downloadTo, "download-to", "", "Download all logs to this directory instead of printing")
 	cmd.Flags().BoolVar(&review, "review", false, "Download logs from all nodes and filter for error signatures")
+	// Hidden in the Python `air` CLI (help=argparse.SUPPRESS); keep it internal here to match.
+	cmd.Flags().MarkHidden("review")
 
 	return cmd
 }

@@ -7,7 +7,7 @@ import (
 
 func newGetCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "get RUN_ID",
+		Use:   "get JOB_RUN_ID",
 		Args:  root.ExactArgs(1),
 		Short: "Show details for a run",
 		RunE: func(cmd *cobra.Command, args []string) error {
