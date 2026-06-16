@@ -988,13 +988,17 @@ func (s *FakeWorkspace) PostgresRoleUpdate(req Request, name string) Response {
 	}
 }
 
-// applyRoleSpecMask returns the role status after applying the fields named in
-// paths (the update_mask) from desired onto existing. Paths are relative to the
-// Role and "spec."-prefixed (e.g. "spec.attributes.createdb"); the bare path
-// "spec" updates the whole subtree. An empty paths slice updates everything.
+// applyRoleSpecMask applies the fields named in paths (the update_mask) from
+// desired onto existing. Paths are relative to the Role and "spec."-prefixed; the
+// bare path "spec" replaces the whole subtree, and an empty paths slice replaces
+// everything.
 //
-// Because the request body always carries the full desired spec, a nested path is
-// reduced to its top-level spec field — applying the whole field is equivalent.
+// A nested path such as "spec.attributes.createdb" is collapsed to its top-level
+// field ("attributes"), and that whole field is taken from desired. This is a
+// simplification: the real backend masks at the individual leaf (verified on
+// dogfood 2026-06-16 — update_mask=spec.attributes.createdb leaves the sibling
+// attributes untouched), but the direct engine always sends the full spec in the
+// request body, so the collapsed result is identical for the requests it makes.
 func applyRoleSpecMask(existing, desired *postgres.RoleRoleStatus, paths []string) *postgres.RoleRoleStatus {
 	if len(paths) == 0 || existing == nil {
 		return desired
