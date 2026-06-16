@@ -1631,6 +1631,55 @@
                   }
                 ]
               },
+              "resources.PostgresRole": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "attributes": {
+                        "description": "The desired API-exposed Postgres role attributes to associate with the role.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.RoleAttributes"
+                      },
+                      "auth_method": {
+                        "description": "How the role is authenticated when connecting to Postgres. If left unspecified, a meaningful authentication method is derived from the identity_type.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.RoleAuthMethod"
+                      },
+                      "identity_type": {
+                        "description": "The type of the Databricks managed identity that this Role represents. Leave empty to create a regular Postgres role not associated with a Databricks identity.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.RoleIdentityType"
+                      },
+                      "lifecycle": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
+                      },
+                      "membership_roles": {
+                        "description": "Standard roles that this role is a member of.",
+                        "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/postgres.RoleMembershipRole"
+                      },
+                      "parent": {
+                        "description": "The branch where this role is created. Format projects/{project_id}/branches/{branch_id}.",
+                        "$ref": "#/$defs/string"
+                      },
+                      "postgres_role": {
+                        "description": "The name of the Postgres role. Required when creating the role.",
+                        "$ref": "#/$defs/string"
+                      },
+                      "role_id": {
+                        "description": "The user-specified role ID; becomes the final component of the role's resource name. Must be 4-63 characters, lowercase letters, numbers, and hyphens (RFC 1123).",
+                        "$ref": "#/$defs/string"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                      "role_id",
+                      "parent"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
               "resources.PostgresSyncedTable": {
                 "oneOf": [
                   {
@@ -2763,6 +2812,9 @@
                     },
                     "postgres_projects": {
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.PostgresProject"
+                    },
+                    "postgres_roles": {
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.PostgresRole"
                     },
                     "postgres_synced_tables": {
                       "description": "The Postgres synced table definitions for the bundle, where each key is the name of the synced table. Each entry continuously replicates a Unity Catalog Delta source table into a Postgres table on a Lakebase Autoscaling instance.",
@@ -6598,12 +6650,6 @@
                 {
                   "type": "object",
                   "properties": {
-                    "deployment_id": {
-                      "description": "[Private Preview] ID of the deployment that manages this job. Only set when `kind` is\n`BUNDLE`. Used to look up deployment metadata from the Deployment\nMetadata service.",
-                      "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
-                    },
                     "kind": {
                       "description": "The kind of deployment that manages the job.\n\n* `BUNDLE`: The job is managed by Databricks Asset Bundle.\n* `SYSTEM_MANAGED`: The job is managed by Databricks and is read-only.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.JobDeploymentKind"
@@ -6611,12 +6657,6 @@
                     "metadata_file_path": {
                       "description": "Path of the file that contains deployment metadata.",
                       "$ref": "#/$defs/string"
-                    },
-                    "version_id": {
-                      "description": "[Private Preview] ID of the version of the deployment that produced this job. Only set\nwhen `kind` is `BUNDLE`. Identifies a specific snapshot of the deployment\nin the Deployment Metadata service.",
-                      "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
                     }
                   },
                   "additionalProperties": false,
@@ -9812,12 +9852,6 @@
                 {
                   "type": "object",
                   "properties": {
-                    "deployment_id": {
-                      "description": "[Private Preview] ID of the deployment that manages this pipeline. Only set when `kind` is\n`BUNDLE`. Used to look up deployment metadata from the Deployment\nMetadata service.",
-                      "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
-                    },
                     "kind": {
                       "description": "The deployment method that manages the pipeline.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.DeploymentKind"
@@ -9825,12 +9859,6 @@
                     "metadata_file_path": {
                       "description": "The path to the file containing metadata about the deployment.",
                       "$ref": "#/$defs/string"
-                    },
-                    "version_id": {
-                      "description": "[Private Preview] ID of the version of the deployment that produced this pipeline. Only\nset when `kind` is `BUNDLE`. Identifies a specific snapshot of the\ndeployment in the Deployment Metadata service.",
-                      "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                      "doNotSuggest": true
                     }
                   },
                   "additionalProperties": false,
@@ -10708,6 +10736,95 @@
                     }
                   },
                   "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "postgres.RoleAttributes": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Attributes that can be granted to a Postgres role. We are only implementing a subset for now, see xref:\nhttps://www.postgresql.org/docs/16/sql-createrole.html\nThe values follow Postgres keyword naming e.g. CREATEDB, BYPASSRLS, etc. which is why they don't include typical\nunderscores between words.",
+                  "properties": {
+                    "bypassrls": {
+                      "description": "[Beta]",
+                      "$ref": "#/$defs/bool"
+                    },
+                    "createdb": {
+                      "description": "[Beta]",
+                      "$ref": "#/$defs/bool"
+                    },
+                    "createrole": {
+                      "description": "[Beta]",
+                      "$ref": "#/$defs/bool"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "postgres.RoleAuthMethod": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "How the role is authenticated when connecting to Postgres.",
+                  "enum": [
+                    "NO_LOGIN",
+                    "PG_PASSWORD_SCRAM_SHA_256",
+                    "LAKEBASE_OAUTH_V1"
+                  ],
+                  "enumDescriptions": [
+                    "[Beta]",
+                    "[Beta]",
+                    "[Beta]"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "postgres.RoleIdentityType": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "The type of the Databricks managed identity that this Role represents.\nLeave empty if you wish to create a regular Postgres role not associated with a Databricks identity.",
+                  "enum": [
+                    "USER",
+                    "SERVICE_PRINCIPAL",
+                    "GROUP"
+                  ],
+                  "enumDescriptions": [
+                    "[Beta]",
+                    "[Beta]",
+                    "[Beta]"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "postgres.RoleMembershipRole": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Roles that the DatabaseInstanceRole can be a member of.",
+                  "enum": [
+                    "DATABRICKS_SUPERUSER"
+                  ],
+                  "enumDescriptions": [
+                    "[Beta]"
+                  ]
                 },
                 {
                   "type": "string",
@@ -12927,6 +13044,20 @@
                     }
                   ]
                 },
+                "resources.PostgresRole": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.PostgresRole"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
                 "resources.PostgresSyncedTable": {
                   "oneOf": [
                     {
@@ -13818,6 +13949,20 @@
                     "type": "array",
                     "items": {
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.ProjectCustomTag"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "postgres.RoleMembershipRole": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.RoleMembershipRole"
                     }
                   },
                   {

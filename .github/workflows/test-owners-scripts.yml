@@ -6,7 +6,9 @@ on:
       - '.github/scripts/**'
       - '.github/workflows/maintainer-approval.js'
       - '.github/workflows/maintainer-approval.test.js'
+      - '.github/workflows/test-owners-scripts.yml'
       - '.github/OWNERS'
+      - '.github/OWNERTEAMS'
 
 jobs:
   test:
@@ -15,11 +17,10 @@ jobs:
       labels: ubuntu-latest-deco
     timeout-minutes: 5
     steps:
+      # Full checkout (no sparse-checkout): `owners.js validate` verifies that
+      # every OWNERS path exists in the tree, so it needs the whole repo.
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          sparse-checkout: |
-            .github/scripts
-            .github/workflows
-            .github/OWNERS
       - name: Run OWNERS script tests
         run: node --test .github/scripts/owners.test.js .github/workflows/maintainer-approval.test.js
+      - name: Validate OWNERS and OWNERTEAMS
+        run: node .github/scripts/owners.js validate
