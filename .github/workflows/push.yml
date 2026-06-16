@@ -419,10 +419,6 @@ jobs:
         with:
           cache-key: validate-generated
 
-      # generate-cligen formats the regenerated stubs with goimports, which adds
-      # imports it can only resolve from the module cache (e.g. cobra in
-      # cmd/workspace/cmd.go). Seed it first: on a cold cache goimports silently
-      # omits the import and the regenerated tree fails to build.
       - name: Download Go modules
         run: go mod download
 

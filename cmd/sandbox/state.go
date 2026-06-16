@@ -8,6 +8,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"slices"
 
 	"github.com/databricks/cli/libs/env"
 )
@@ -74,7 +75,12 @@ func loadState(ctx context.Context) (*stateFile, error) {
 	return &state, nil
 }
 
-// saveState writes the sandbox state file atomically.
+// saveState writes the sandbox state file atomically via tmp + rename
+// so a concurrent reader (e.g. another CLI invocation racing this one)
+// never sees a half-written file. os.WriteFile is open-truncate-write,
+// which would expose readers to partial content; the acceptance suite
+// has the workaround documented in script.prepare, but production code
+// needs the real atomic write.
 func saveState(ctx context.Context, state *stateFile) error {
 	path, err := stateFilePath(ctx)
 	if err != nil {
@@ -89,7 +95,16 @@ func saveState(ctx context.Context, state *stateFile) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(path, data, 0o600)
+
+	tmp := path + ".tmp"
+	if err := os.WriteFile(tmp, data, 0o600); err != nil {
+		return fmt.Errorf("writing %s: %w", tmp, err)
+	}
+	if err := os.Rename(tmp, path); err != nil {
+		_ = os.Remove(tmp)
+		return fmt.Errorf("renaming %s to %s: %w", tmp, path, err)
+	}
+	return nil
 }
 
 func getDefault(ctx context.Context, profile string) string {
@@ -132,6 +147,31 @@ func getGatewayHost(ctx context.Context, profile string) string {
 		return ""
 	}
 	return state.GatewayHosts[profile]
+}
+
+// allGatewayHosts returns the deduplicated set of gateway hosts cached
+// across every profile, sorted for deterministic output. Used by the
+// SSH-config writer to emit one Host stanza per unique gateway so a
+// user with multiple workspaces in different regions doesn't lose
+// IDE Remote-SSH config for the earlier-registered ones when they
+// register against a new workspace.
+func allGatewayHosts(ctx context.Context) []string {
+	state, err := loadState(ctx)
+	if err != nil {
+		return nil
+	}
+	seen := make(map[string]struct{}, len(state.GatewayHosts))
+	for _, h := range state.GatewayHosts {
+		if h != "" {
+			seen[h] = struct{}{}
+		}
+	}
+	out := make([]string, 0, len(seen))
+	for h := range seen {
+		out = append(out, h)
+	}
+	slices.Sort(out)
+	return out
 }
 
 // setGatewayHost caches the SSH gateway hostname for `profile`. No-op when

@@ -17,17 +17,17 @@ class DataStagingOptions:
 
     catalog_name: VariableOr[str]
     """
-    (Required, Immutable) The name of the catalog for the connector's staging storage location.
+    [Beta] (Required, Immutable) The name of the catalog for the connector's staging storage location.
     """
 
     schema_name: VariableOr[str]
     """
-    (Required, Immutable) The name of the schema for the connector's staging storage location.
+    [Beta] (Required, Immutable) The name of the schema for the connector's staging storage location.
     """
 
     volume_name: VariableOrOptional[str] = None
     """
-    (Optional) The Unity Catalog-compatible name for the storage location.
+    [Beta] (Optional) The Unity Catalog-compatible name for the storage location.
     This is the volume to use for the data that is extracted by the connector.
     Spark Declarative Pipelines system will automatically create the volume under the catalog and schema.
     For Combined Cdc Managed Ingestion pipelines default name for the volume would be :
@@ -47,17 +47,17 @@ class DataStagingOptionsDict(TypedDict, total=False):
 
     catalog_name: VariableOr[str]
     """
-    (Required, Immutable) The name of the catalog for the connector's staging storage location.
+    [Beta] (Required, Immutable) The name of the catalog for the connector's staging storage location.
     """
 
     schema_name: VariableOr[str]
     """
-    (Required, Immutable) The name of the schema for the connector's staging storage location.
+    [Beta] (Required, Immutable) The name of the schema for the connector's staging storage location.
     """
 
     volume_name: VariableOrOptional[str]
     """
-    (Optional) The Unity Catalog-compatible name for the storage location.
+    [Beta] (Optional) The Unity Catalog-compatible name for the storage location.
     This is the volume to use for the data that is extracted by the connector.
     Spark Declarative Pipelines system will automatically create the volume under the catalog and schema.
     For Combined Cdc Managed Ingestion pipelines default name for the volume would be :
