@@ -11,9 +11,7 @@
       "attributes": {
         "createdb": false
       },
-      "parent": "${resources.postgres_branches.main.id}",
-      "postgres_role": "app_role",
-      "role_id": "test-role"
+      "postgres_role": "app_role"
     },
     "vars": {
       "parent": "${resources.postgres_branches.main.id}"

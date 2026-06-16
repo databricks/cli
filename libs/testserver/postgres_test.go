@@ -314,7 +314,7 @@ func TestPostgresDatabaseCRUD(t *testing.T) {
 
 	// Update database (rename via spec.postgres_database)
 	updateDbBody := `{"spec":{"postgres_database":"my_db_renamed"}}`
-	updateDbReq, _ := http.NewRequest(http.MethodPatch, baseURL+"/api/2.0/postgres/projects/database-test-project/branches/main/databases/my-db", strings.NewReader(updateDbBody))
+	updateDbReq, _ := http.NewRequest(http.MethodPatch, baseURL+"/api/2.0/postgres/projects/database-test-project/branches/main/databases/my-db?update_mask=spec.postgres_database", strings.NewReader(updateDbBody))
 	updateDbReq.Header.Set("Authorization", "Bearer test-token")
 	updateDbReq.Header.Set("Content-Type", "application/json")
 	updateDbResp, err := client.Do(updateDbReq)
@@ -365,6 +365,79 @@ func TestPostgresDatabaseNotFoundWhenBranchNotExists(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, 404, createDbResp.StatusCode)
 	createDbResp.Body.Close()
+}
+
+func TestPostgresDatabaseUpdateMaskPreservesUnmaskedFields(t *testing.T) {
+	server := testserver.New(t)
+	testserver.AddDefaultHandlers(server)
+
+	client := &http.Client{}
+	baseURL := server.URL
+
+	do := func(method, url, body string) *http.Response {
+		req, err := http.NewRequest(method, baseURL+url, strings.NewReader(body))
+		require.NoError(t, err)
+		req.Header.Set("Authorization", "Bearer test-token")
+		req.Header.Set("Content-Type", "application/json")
+		resp, err := client.Do(req)
+		require.NoError(t, err)
+		return resp
+	}
+
+	do(http.MethodPost, "/api/2.0/postgres/projects?project_id=mask-db-project", "").Body.Close()
+	do(http.MethodPost, "/api/2.0/postgres/projects/mask-db-project/branches?branch_id=main", "").Body.Close()
+
+	createBody := `{"spec":{"postgres_database":"app_db","role":"projects/mask-db-project/branches/main/roles/owner"}}`
+	createResp := do(http.MethodPost, "/api/2.0/postgres/projects/mask-db-project/branches/main/databases?database_id=appdb", createBody)
+	require.Equal(t, 200, createResp.StatusCode)
+	createResp.Body.Close()
+
+	// Update only spec.postgres_database. The body also carries a different role,
+	// which must be ignored because it is not named in update_mask.
+	patchBody := `{"spec":{"postgres_database":"renamed_db","role":"projects/mask-db-project/branches/main/roles/other"}}`
+	patchResp := do(http.MethodPatch, "/api/2.0/postgres/projects/mask-db-project/branches/main/databases/appdb?update_mask=spec.postgres_database", patchBody)
+	assert.Equal(t, 200, patchResp.StatusCode)
+	patchResp.Body.Close()
+
+	getResp := do(http.MethodGet, "/api/2.0/postgres/projects/mask-db-project/branches/main/databases/appdb", "")
+	var database postgres.Database
+	require.NoError(t, json.NewDecoder(getResp.Body).Decode(&database))
+	getResp.Body.Close()
+
+	require.NotNil(t, database.Status)
+	assert.Equal(t, "renamed_db", database.Status.PostgresDatabase, "masked field should be updated")
+	assert.Equal(t, "projects/mask-db-project/branches/main/roles/owner", database.Status.Role, "field absent from update_mask should be preserved")
+}
+
+func TestPostgresDatabaseCreateDuplicateReturns400(t *testing.T) {
+	server := testserver.New(t)
+	testserver.AddDefaultHandlers(server)
+
+	client := &http.Client{}
+	baseURL := server.URL
+
+	do := func(method, url, body string) *http.Response {
+		req, err := http.NewRequest(method, baseURL+url, strings.NewReader(body))
+		require.NoError(t, err)
+		req.Header.Set("Authorization", "Bearer test-token")
+		req.Header.Set("Content-Type", "application/json")
+		resp, err := client.Do(req)
+		require.NoError(t, err)
+		return resp
+	}
+
+	do(http.MethodPost, "/api/2.0/postgres/projects?project_id=dup-db-project", "").Body.Close()
+	do(http.MethodPost, "/api/2.0/postgres/projects/dup-db-project/branches?branch_id=main", "").Body.Close()
+
+	createBody := `{"spec":{"postgres_database":"app_db"}}`
+	first := do(http.MethodPost, "/api/2.0/postgres/projects/dup-db-project/branches/main/databases?database_id=appdb", createBody)
+	require.Equal(t, 200, first.StatusCode)
+	first.Body.Close()
+
+	// Creating the same database again fails the way the real API does: 400, not 409.
+	second := do(http.MethodPost, "/api/2.0/postgres/projects/dup-db-project/branches/main/databases?database_id=appdb", createBody)
+	assert.Equal(t, 400, second.StatusCode)
+	second.Body.Close()
 }
 
 func TestPostgresEndpointNotFoundWhenBranchNotExists(t *testing.T) {
@@ -482,6 +555,49 @@ func TestPostgresRoleCRUD(t *testing.T) {
 	deleteRoleResp.Body.Close()
 }
 
+func TestPostgresRoleUpdateMaskPreservesUnmaskedFields(t *testing.T) {
+	server := testserver.New(t)
+	testserver.AddDefaultHandlers(server)
+
+	client := &http.Client{}
+	baseURL := server.URL
+
+	do := func(method, url, body string) *http.Response {
+		req, err := http.NewRequest(method, baseURL+url, strings.NewReader(body))
+		require.NoError(t, err)
+		req.Header.Set("Authorization", "Bearer test-token")
+		req.Header.Set("Content-Type", "application/json")
+		resp, err := client.Do(req)
+		require.NoError(t, err)
+		return resp
+	}
+
+	do(http.MethodPost, "/api/2.0/postgres/projects?project_id=mask-project", "").Body.Close()
+	do(http.MethodPost, "/api/2.0/postgres/projects/mask-project/branches?branch_id=main", "").Body.Close()
+
+	createBody := `{"spec":{"postgres_role":"app_role","attributes":{"createdb":false}}}`
+	createResp := do(http.MethodPost, "/api/2.0/postgres/projects/mask-project/branches/main/roles?role_id=approle", createBody)
+	require.Equal(t, 200, createResp.StatusCode)
+	createResp.Body.Close()
+
+	// Update only spec.attributes.createdb. The body also carries a different
+	// postgres_role, which must be ignored because it is not named in update_mask.
+	patchBody := `{"spec":{"postgres_role":"renamed","attributes":{"createdb":true}}}`
+	patchResp := do(http.MethodPatch, "/api/2.0/postgres/projects/mask-project/branches/main/roles/approle?update_mask=spec.attributes.createdb", patchBody)
+	assert.Equal(t, 200, patchResp.StatusCode)
+	patchResp.Body.Close()
+
+	getResp := do(http.MethodGet, "/api/2.0/postgres/projects/mask-project/branches/main/roles/approle", "")
+	var role postgres.Role
+	require.NoError(t, json.NewDecoder(getResp.Body).Decode(&role))
+	getResp.Body.Close()
+
+	require.NotNil(t, role.Status)
+	require.NotNil(t, role.Status.Attributes)
+	assert.True(t, role.Status.Attributes.Createdb, "masked field should be updated")
+	assert.Equal(t, "app_role", role.Status.PostgresRole, "field absent from update_mask should be preserved")
+}
+
 func TestPostgresRoleNotFoundWhenBranchNotExists(t *testing.T) {
 	server := testserver.New(t)
 	testserver.AddDefaultHandlers(server)
@@ -504,4 +620,35 @@ func TestPostgresRoleNotFoundWhenBranchNotExists(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, 404, createRoleResp.StatusCode)
 	createRoleResp.Body.Close()
+}
+
+func TestPostgresRoleCreateDuplicateReturns400(t *testing.T) {
+	server := testserver.New(t)
+	testserver.AddDefaultHandlers(server)
+
+	client := &http.Client{}
+	baseURL := server.URL
+
+	do := func(method, url, body string) *http.Response {
+		req, err := http.NewRequest(method, baseURL+url, strings.NewReader(body))
+		require.NoError(t, err)
+		req.Header.Set("Authorization", "Bearer test-token")
+		req.Header.Set("Content-Type", "application/json")
+		resp, err := client.Do(req)
+		require.NoError(t, err)
+		return resp
+	}
+
+	do(http.MethodPost, "/api/2.0/postgres/projects?project_id=dup-role-project", "").Body.Close()
+	do(http.MethodPost, "/api/2.0/postgres/projects/dup-role-project/branches?branch_id=main", "").Body.Close()
+
+	createBody := `{"spec":{"postgres_role":"app_role"}}`
+	first := do(http.MethodPost, "/api/2.0/postgres/projects/dup-role-project/branches/main/roles?role_id=approle", createBody)
+	require.Equal(t, 200, first.StatusCode)
+	first.Body.Close()
+
+	// Creating the same role again fails the way the real API does: 400, not 409.
+	second := do(http.MethodPost, "/api/2.0/postgres/projects/dup-role-project/branches/main/roles?role_id=approle", createBody)
+	assert.Equal(t, 400, second.StatusCode)
+	second.Body.Close()
 }

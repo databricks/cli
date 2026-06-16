@@ -1,0 +1,23 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+   trace $CLI bundle destroy --auto-approve
+   rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+title "Deploy project, branch, and role"
+trace $CLI bundle deploy
+
+title "Unbind the role: it now exists on the branch but is untracked"
+# Stages the state a child branch lands in: the role exists (it would be
+# inherited from the parent) but the bundle does not own it. The testserver
+# does not model branch role inheritance, so we stage it via unbind.
+trace $CLI bundle deployment unbind my_role
+
+title "Bind the existing role to take explicit ownership of it"
+role_name="projects/test-pg-proj-${UNIQUE_NAME}/branches/main/roles/test-role"
+trace $CLI bundle deployment bind my_role "${role_name}" --auto-approve
+
+title "Re-deploy now succeeds: the role is managed, not re-created"
+trace $CLI bundle deploy

@@ -1,12 +1,3 @@
-// Postgres Role resource for the direct deployment engine.
-//
-// Terraform resource: databricks_postgres_role
-//
-//	https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/postgres_role
-//
-// REST API: Lakebase Postgres Roles
-//
-//	https://docs.databricks.com/api/workspace/postgres/createrole
 package dresources
 
 import (
@@ -15,6 +6,7 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
+	sdktime "github.com/databricks/databricks-sdk-go/common/types/time"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/postgres"
 )
@@ -39,13 +31,28 @@ type PostgresRoleState struct {
 	Parent string `json:"parent"`
 }
 
-// Custom marshaler needed because embedded RoleRoleSpec has its own
-// MarshalJSON which would otherwise take over and ignore the additional fields.
-func (s *PostgresRoleState) UnmarshalJSON(b []byte) error {
+// PostgresRoleRemote is the return type for DoRead. It embeds RoleRoleSpec so that
+// all paths in StateType are valid paths in RemoteType, enabling drift detection
+// for spec fields once the backend echoes spec on GET.
+type PostgresRoleRemote struct {
+	postgres.RoleRoleSpec
+
+	RoleId string `json:"role_id,omitempty"`
+	Parent string `json:"parent,omitempty"`
+
+	Name       string                   `json:"name,omitempty"`
+	Status     *postgres.RoleRoleStatus `json:"status,omitempty"`
+	CreateTime *sdktime.Time            `json:"create_time,omitempty"`
+	UpdateTime *sdktime.Time            `json:"update_time,omitempty"`
+}
+
+// Custom marshaler needed because embedded RoleRoleSpec has its own MarshalJSON
+// which would otherwise take over and ignore the additional fields.
+func (s *PostgresRoleRemote) UnmarshalJSON(b []byte) error {
 	return marshal.Unmarshal(b, s)
 }
 
-func (s PostgresRoleState) MarshalJSON() ([]byte, error) {
+func (s PostgresRoleRemote) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(s)
 }
 
@@ -61,34 +68,47 @@ func (*ResourcePostgresRole) PrepareState(input *resources.PostgresRole) *Postgr
 	}
 }
 
-func (*ResourcePostgresRole) RemapState(remote *postgres.Role) *PostgresRoleState {
-	var roleID string
-	if remote.Status != nil {
-		roleID = remote.Status.RoleId
-	}
+func (*ResourcePostgresRole) RemapState(remote *PostgresRoleRemote) *PostgresRoleState {
 	return &PostgresRoleState{
-		RoleId: roleID,
-		Parent: remote.Parent,
-
-		// The read API does not return the spec, only the status.
-		// This means we cannot detect remote drift for spec fields.
-		// Use an empty struct (not nil) so field-level diffing works correctly.
-		RoleRoleSpec: postgres.RoleRoleSpec{
-			Attributes:      nil,
-			AuthMethod:      "",
-			IdentityType:    "",
-			MembershipRoles: nil,
-			PostgresRole:    "",
-			ForceSendFields: nil,
-		},
+		RoleId:       remote.RoleId,
+		Parent:       remote.Parent,
+		RoleRoleSpec: remote.RoleRoleSpec,
 	}
 }
 
-func (r *ResourcePostgresRole) DoRead(ctx context.Context, id string) (*postgres.Role, error) {
-	return r.client.Postgres.GetRole(ctx, postgres.GetRoleRequest{Name: id})
+// makePostgresRoleRemote converts the SDK Role into the embedded remote shape.
+// GET does not echo spec today (only status is returned); the embedded spec fields
+// stay at their zero values, and resources.yml suppresses phantom drift via
+// ignore_remote_changes with reason spec:input_only.
+func makePostgresRoleRemote(role *postgres.Role) *PostgresRoleRemote {
+	var spec postgres.RoleRoleSpec
+	if role.Spec != nil {
+		spec = *role.Spec
+	}
+	var roleID string
+	if role.Status != nil {
+		roleID = role.Status.RoleId
+	}
+	return &PostgresRoleRemote{
+		RoleRoleSpec: spec,
+		RoleId:       roleID,
+		Parent:       role.Parent,
+		Name:         role.Name,
+		Status:       role.Status,
+		CreateTime:   role.CreateTime,
+		UpdateTime:   role.UpdateTime,
+	}
 }
 
-func (r *ResourcePostgresRole) DoCreate(ctx context.Context, config *PostgresRoleState) (string, *postgres.Role, error) {
+func (r *ResourcePostgresRole) DoRead(ctx context.Context, id string) (*PostgresRoleRemote, error) {
+	role, err := r.client.Postgres.GetRole(ctx, postgres.GetRoleRequest{Name: id})
+	if err != nil {
+		return nil, err
+	}
+	return makePostgresRoleRemote(role), nil
+}
+
+func (r *ResourcePostgresRole) DoCreate(ctx context.Context, config *PostgresRoleState) (string, *PostgresRoleRemote, error) {
 	waiter, err := r.client.Postgres.CreateRole(ctx, postgres.CreateRoleRequest{
 		RoleId: config.RoleId,
 		Parent: config.Parent,
@@ -114,14 +134,15 @@ func (r *ResourcePostgresRole) DoCreate(ctx context.Context, config *PostgresRol
 		return "", nil, err
 	}
 
-	return result.Name, result, nil
+	remote := makePostgresRoleRemote(result)
+	return remote.Name, remote, nil
 }
 
-func (r *ResourcePostgresRole) DoUpdate(ctx context.Context, id string, config *PostgresRoleState, entry *PlanEntry) (*postgres.Role, error) {
+func (r *ResourcePostgresRole) DoUpdate(ctx context.Context, id string, config *PostgresRoleState, entry *PlanEntry) (*PostgresRoleRemote, error) {
 	// Build update mask from fields that have action="update" in the changes map.
 	// Prefix with "spec." because the API expects paths relative to the Role
 	// object, not relative to our flattened state type.
-	fieldPaths := collectUpdatePathsWithPrefix(entry.Changes, "spec.")
+	fieldPaths := collectLeafUpdatePathsWithPrefix(entry.Changes, "spec.")
 
 	waiter, err := r.client.Postgres.UpdateRole(ctx, postgres.UpdateRoleRequest{
 		Name: id,
@@ -144,7 +165,11 @@ func (r *ResourcePostgresRole) DoUpdate(ctx context.Context, id string, config *
 		return nil, err
 	}
 
-	return waiter.Wait(ctx)
+	result, err := waiter.Wait(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return makePostgresRoleRemote(result), nil
 }
 
 func (r *ResourcePostgresRole) DoDelete(ctx context.Context, id string, _ *PostgresRoleState) error {

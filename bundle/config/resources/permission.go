@@ -32,6 +32,12 @@ func (p PermissionT[L]) String() string {
 	return "level: " + string(p.Level)
 }
 
+// CAN_EDIT is the workspace folder ACL level marking write access. It is not a valid
+// bundle permission level (those are CAN_MANAGE / CAN_VIEW / CAN_RUN, defined in the
+// permissions package), but permission checks rank against it via GetLevelScore, so it
+// is named here next to the level ordering it keys into.
+const CAN_EDIT = "CAN_EDIT"
+
 // PermissionOrder defines the hierarchy of permission levels.
 // Higher numbers mean more permissive access.
 // Based on https://docs.databricks.com/aws/en/security/auth/access-control

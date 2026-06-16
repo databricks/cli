@@ -131,7 +131,7 @@ func (r *ResourcePostgresDatabase) DoUpdate(ctx context.Context, id string, conf
 	// This excludes immutable fields and fields that haven't changed.
 	// Prefix with "spec." because the API expects paths relative to the Database object,
 	// not relative to our flattened state type.
-	fieldPaths := collectUpdatePathsWithPrefix(entry.Changes, "spec.")
+	fieldPaths := collectLeafUpdatePathsWithPrefix(entry.Changes, "spec.")
 
 	waiter, err := r.client.Postgres.UpdateDatabase(ctx, postgres.UpdateDatabaseRequest{
 		Database: postgres.Database{

@@ -126,8 +126,10 @@ func TestBundleResourcePluralNamesResolveInWorkspaceURLs(t *testing.T) {
 	noURL := map[string]bool{
 		"external_locations": true,
 		"postgres_branches":  true,
+		"postgres_databases": true,
 		"postgres_endpoints": true,
 		"postgres_projects":  true,
+		"postgres_roles":     true,
 		"secret_scopes":      true,
 	}
 

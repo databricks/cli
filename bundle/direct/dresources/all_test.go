@@ -784,6 +784,7 @@ var testDeps = map[string]prepareWorkspace{
 			},
 		}, nil
 	},
+
 	"postgres_roles": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
 		// Create parent project first
 		_, err := client.Postgres.CreateProject(ctx, postgres.CreateProjectRequest{
