@@ -16,7 +16,20 @@
 resources:
 
   jobs:
+    # version_id is set to the current DMS deployment version on every deploy, so
+    # it changes constantly. Ignoring it as a local and remote change keeps that
+    # churn from driving an update or showing as drift on its own; when the job is
+    # updated for any other reason, DoUpdate sends the full config via Reset, so
+    # the current version_id is still recorded. deployment_id is intentionally
+    # left out: it is stable across versions, so a change to it is worth showing.
+    ignore_local_changes:
+      - field: deployment.version_id
+        reason: managed by the deployment metadata service
+
     ignore_remote_changes:
+      - field: deployment.version_id
+        reason: managed by the deployment metadata service
+
       # Same as clusters.{aws,azure,gcp}_attributes — see clusters/resource_cluster.go#L361-L363
       # s.SchemaPath("aws_attributes").SetSuppressDiff()
       # s.SchemaPath("azure_attributes").SetSuppressDiff()
@@ -118,7 +131,11 @@ resources:
       - field: ingestion_definition.ingest_from_uc_foreign_catalog
         reason: immutable
 
+    # See jobs above: version_id is set on every deploy, so it is ignored as a
+    # local/remote change. deployment_id is left out so a change to it still shows.
     ignore_remote_changes:
+      - field: deployment.version_id
+        reason: managed by the deployment metadata service
       # "id" is handled in a special way before any fields changed
       # However, it is also part of RemotePipeline via CreatePipeline.
       # Thus it shows up as a remote change since we don't set on the object.
@@ -128,6 +145,8 @@ resources:
         reason: input_only
 
     ignore_local_changes:
+      - field: deployment.version_id
+        reason: managed by the deployment metadata service
       # "id" is output-only, providing it in config would be a mistake
       - field: id
         reason: "!drop"
@@ -320,6 +339,12 @@ resources:
     normalize_slash:
       - field: storage_root
         reason: uc_strips_trailing_slash
+    backend_defaults:
+      # UC auto-populates these system-managed keys after create.
+      # Without this, every subsequent plan produces an Update whose payload is empty,
+      # and UC rejects it with "UpdateSchema Nothing to update".
+      - field: properties['unity.catalog.managed.delta.defaults.delta.enableRowTracking']
+      - field: properties['unity.catalog.managed.iceberg.defaults.delta.feature.catalogManaged']
 
   external_locations:
     recreate_on_changes:
@@ -608,6 +633,25 @@ resources:
       - field: new_pipeline_spec
         reason: immutable
       - field: existing_pipeline_id
+        reason: immutable
+
+  postgres_roles:
+    recreate_on_changes:
+      # parent and role_id are immutable (together they form the hierarchical name).
+      - field: parent
+        reason: immutable
+      - field: role_id
+        reason: immutable
+      # The PATCH update_mask only accepts spec.attributes and spec.membership_roles;
+      # the backend rejects spec.postgres_role, spec.auth_method, and spec.identity_type
+      # with 400 INVALID_PARAMETER_VALUE "Unknown field path in update_mask". These spec
+      # fields are not marked immutable in the OpenAPI definition yet, so the generator
+      # doesn't catch them — declare the constraint manually until upstream is fixed.
+      - field: postgres_role
+        reason: immutable
+      - field: auth_method
+        reason: immutable
+      - field: identity_type
         reason: immutable
 
   vector_search_endpoints:

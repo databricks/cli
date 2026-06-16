@@ -18,17 +18,17 @@ class IngestionConfig:
 
     report: VariableOrOptional[ReportSpec] = None
     """
-    Select a specific source report.
+    [Public Preview] Select a specific source report.
     """
 
     schema: VariableOrOptional[SchemaSpec] = None
     """
-    Select all tables from a specific source schema.
+    [Public Preview] Select all tables from a specific source schema.
     """
 
     table: VariableOrOptional[TableSpec] = None
     """
-    Select a specific source table.
+    [Public Preview] Select a specific source table.
     """
 
     @classmethod
@@ -44,17 +44,17 @@ class IngestionConfigDict(TypedDict, total=False):
 
     report: VariableOrOptional[ReportSpecParam]
     """
-    Select a specific source report.
+    [Public Preview] Select a specific source report.
     """
 
     schema: VariableOrOptional[SchemaSpecParam]
     """
-    Select all tables from a specific source schema.
+    [Public Preview] Select all tables from a specific source schema.
     """
 
     table: VariableOrOptional[TableSpecParam]
     """
-    Select a specific source table.
+    [Public Preview] Select a specific source table.
     """
 
 
