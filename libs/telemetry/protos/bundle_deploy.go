@@ -89,6 +89,21 @@ type BundleDeployExperimental struct {
 
 	// Local cache measurements in milliseconds (compute duration, potential savings, etc.)
 	LocalCacheMeasurementsMs []IntMapEntry `json:"local_cache_measurements_ms,omitempty"`
+
+	// Whether workspace.state_path grants broader access than the top-level
+	// permissions section declares. True when state_path is under /Workspace/Shared
+	// (all workspace users can read/write) but the permissions section does not
+	// grant group_name: users CAN_MANAGE.
+	StatePathScopeExceedsPermissions bool `json:"state_path_scope_exceeds_permissions,omitempty"`
+
+	// Whether workspace.state_path is under /Workspace/Shared, making deployment
+	// state readable and writable by all workspace users.
+	StatePathIsShared bool `json:"state_path_is_shared,omitempty"`
+
+	// Whether workspace.state_path is not nested under workspace.root_path,
+	// meaning it may carry a different (potentially broader) permission scope
+	// than the rest of the bundle.
+	StatePathOutsideRootPath bool `json:"state_path_outside_root_path,omitempty"`
 }
 
 // BundleResourcesMetadata mirrors the universe proto. Per-resource-type
