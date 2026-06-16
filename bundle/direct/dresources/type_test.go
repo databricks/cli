@@ -52,21 +52,6 @@ var knownMissingInRemoteType = map[string][]string{
 	"postgres_projects": {
 		"purge_on_delete",
 	},
-	// Unlike the other postgres resources, whose DoRead returns a custom *Remote
-	// type that embeds the spec, roles' DoRead returns the raw postgres.Role, which
-	// nests these under .Spec/.Status instead of exposing them at the top level.
-	// That is deliberate: roles does not synthesize a spec from status (see
-	// RemapState) to avoid the drift that mapping rolled-up status defaults causes.
-	"postgres_roles": {
-		"attributes",
-		"auth_method",
-		"identity_type",
-		"membership_roles",
-		"postgres_role",
-		// role_id is the leaf id derived from the hierarchical name; the remote
-		// Role only exposes the full Name.
-		"role_id",
-	},
 	"vector_search_endpoints": {
 		"target_qps",
 		"usage_policy_id",
