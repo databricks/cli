@@ -21,6 +21,10 @@
 /libs/apps/                 team:eng-apps-devex
 /acceptance/apps/           team:eng-apps-devex
 
+# Sandbox
+/cmd/sandbox/               team:eng-sandbox
+/acceptance/cmd/sandbox/    team:eng-sandbox
+
 # Auth
 /cmd/auth/                  team:platform
 /libs/auth/                 team:platform
@@ -68,4 +72,6 @@
 /libs/clicompat/                 team:eng-apps-devex team:platform
 
 # Experimental
+/experimental/air/             team:ai-training
+/acceptance/experimental/air/  team:ai-training
 /experimental/aitools/      team:eng-apps-devex @lennartkats-db

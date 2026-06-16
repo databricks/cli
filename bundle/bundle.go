@@ -18,6 +18,7 @@ import (
 	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/bundle/metadata"
+	"github.com/databricks/cli/bundle/statemgmt/resourcestate"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cache"
 	"github.com/databricks/cli/libs/fileset"
@@ -55,6 +56,12 @@ type Metrics struct {
 	PythonUpdatedResourcesCount int64
 	ExecutionTimes              []protos.IntMapEntry
 	LocalCacheMeasurementsMs    []protos.IntMapEntry // Local cache measurements stored as milliseconds
+
+	// ResourceState is the direct engine's per-resource deployment state
+	// captured right after the deploy. It carries each resource's state-size in
+	// bytes so deploy telemetry can be derived without re-reading or re-parsing
+	// the state file. Nil for terraform deploys.
+	ResourceState resourcestate.ExportedResourcesMap
 }
 
 // SetBoolValue sets the value of a boolean metric.

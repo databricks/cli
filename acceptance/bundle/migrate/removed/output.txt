@@ -1,0 +1,51 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-removed-test/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> musterr [CLI] bundle deployment migrate
+Note: Migration should be done after a full deploy. Running plan now to verify that deployment was done:
+delete jobs.job_b
+
+Plan: 0 to add, 0 to change, 1 to delete, 1 unchanged
+Error: 'databricks bundle plan' shows actions planned, aborting migration. Please run 'databricks bundle deploy' first to ensure your bundle is up to date, If actions persist after deploy, skip plan check with --noplancheck option
+
+>>> [CLI] bundle deployment migrate --noplancheck
+Success! Migrated 2 resources to direct engine state file: [TEST_TMP_DIR]/.databricks/bundle/default/resources.json
+
+Validate the migration by running "databricks bundle plan", there should be no actions planned.
+
+The state file is not synchronized to the workspace yet. To do that and finalize the migration, run "bundle deploy".
+
+To undo the migration, remove [TEST_TMP_DIR]/.databricks/bundle/default/resources.json and rename [TEST_TMP_DIR]/.databricks/bundle/default/terraform/terraform.tfstate.backup to [TEST_TMP_DIR]/.databricks/bundle/default/terraform/terraform.tfstate
+
+
+>>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle plan
+delete jobs.job_b
+
+Plan: 0 to add, 0 to change, 1 to delete, 1 unchanged
+
+>>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-removed-test/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py //jobs/delete
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+    ]
+  },
+  "method": "POST",
+  "path": "/api/2.2/jobs/delete",
+  "body": {
+    "job_id": [NUMID]
+  }
+}
+
+>>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged

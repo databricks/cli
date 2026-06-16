@@ -254,6 +254,15 @@ var testConfig map[string]any = map[string]any{
 		},
 	},
 
+	"genie_spaces": &resources.GenieSpace{
+		GenieSpaceConfig: resources.GenieSpaceConfig{
+			Title:           "my-genie-space",
+			WarehouseId:     "test-warehouse-id",
+			ParentPath:      "/Workspace/Users/user@example.com",
+			SerializedSpace: "{}",
+		},
+	},
+
 	"vector_search_endpoints": &resources.VectorSearchEndpoint{
 		CreateEndpoint: vectorsearch.CreateEndpoint{
 			Name:         "my-endpoint",
@@ -488,6 +497,25 @@ var testDeps = map[string]prepareWorkspace{
 
 		return &PermissionsState{
 			ObjectID: "/dashboards/" + resp.DashboardId,
+			EmbeddedSlice: []StatePermission{{
+				Level:    "CAN_MANAGE",
+				UserName: "user@example.com",
+			}},
+		}, nil
+	},
+
+	"genie_spaces.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		resp, err := client.Genie.CreateSpace(ctx, dashboards.GenieCreateSpaceRequest{
+			Title:           "genie-space-permissions",
+			WarehouseId:     "test-warehouse-id",
+			SerializedSpace: "{}",
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		return &PermissionsState{
+			ObjectID: "/genie/" + resp.SpaceId,
 			EmbeddedSlice: []StatePermission{{
 				Level:    "CAN_MANAGE",
 				UserName: "user@example.com",
@@ -932,8 +960,18 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 		if remoteStateFromUpdate != nil {
 			remappedStateFromUpdate, err := adapter.RemapState(remoteStateFromUpdate)
 			require.NoError(t, err)
-			ignoreFilter.requireEqual(t, remappedState, remappedStateFromUpdate,
+			// Compare DoUpdate's result against a fresh DoRead: server-generated
+			// fields (e.g. etag) may change on any write, so DoUpdate's return
+			// value must match what DoRead returns right after.
+			remotePostUpdate, err := adapter.DoRead(ctx, createdID)
+			require.NoError(t, err)
+			remappedPostUpdate, err := adapter.RemapState(remotePostUpdate)
+			require.NoError(t, err)
+			ignoreFilter.requireEqual(t, remappedPostUpdate, remappedStateFromUpdate,
 				"unexpected differences between remappedState and remappedStateFromUpdate")
+			// DoUpdate may mutate newState in place (e.g. etag), so update remappedState
+			// to match the post-update server state for the field checks below.
+			remappedState = remappedStateFromUpdate
 		}
 
 		remoteStateFromWaitUpdate, err := adapter.WaitAfterUpdate(ctx, createdID, newState)
