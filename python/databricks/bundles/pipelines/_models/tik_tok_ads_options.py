@@ -29,7 +29,7 @@ class TikTokAdsOptions:
     """
     :meta private: [EXPERIMENTAL]
     
-    (Optional) Data level for the report.
+    [Private Preview] (Optional) Data level for the report.
     If not specified, defaults to AUCTION_CAMPAIGN.
     """
 
@@ -37,7 +37,7 @@ class TikTokAdsOptions:
     """
     :meta private: [EXPERIMENTAL]
     
-    (Optional) Dimensions to include in the report.
+    [Private Preview] (Optional) Dimensions to include in the report.
     Examples: "campaign_id", "adgroup_id", "ad_id", "stat_time_day", "stat_time_hour"
     If not specified, defaults to campaign_id.
     """
@@ -46,7 +46,7 @@ class TikTokAdsOptions:
     """
     :meta private: [EXPERIMENTAL]
     
-    (Optional) Number of days to look back for report tables during incremental sync
+    [Private Preview] (Optional) Number of days to look back for report tables during incremental sync
     to capture late-arriving conversions and attribution data.
     If not specified, defaults to 7 days.
     """
@@ -55,7 +55,7 @@ class TikTokAdsOptions:
     """
     :meta private: [EXPERIMENTAL]
     
-    (Optional) Metrics to include in the report.
+    [Private Preview] (Optional) Metrics to include in the report.
     Examples: "spend", "impressions", "clicks", "conversion", "cpc"
     If not specified, defaults to basic metrics (spend, impressions, clicks, etc.)
     """
@@ -64,7 +64,7 @@ class TikTokAdsOptions:
     """
     :meta private: [EXPERIMENTAL]
     
-    (Optional) Whether to request lifetime metrics (all-time aggregated data).
+    [Private Preview] (Optional) Whether to request lifetime metrics (all-time aggregated data).
     When true, the report returns all-time data.
     If not specified, defaults to false.
     """
@@ -73,7 +73,7 @@ class TikTokAdsOptions:
     """
     :meta private: [EXPERIMENTAL]
     
-    (Optional) Report type for the TikTok Ads API.
+    [Private Preview] (Optional) Report type for the TikTok Ads API.
     If not specified, defaults to BASIC.
     """
 
@@ -81,7 +81,7 @@ class TikTokAdsOptions:
     """
     :meta private: [EXPERIMENTAL]
     
-    (Optional) Start date for the initial sync of report tables in YYYY-MM-DD format.
+    [Private Preview] (Optional) Start date for the initial sync of report tables in YYYY-MM-DD format.
     This determines the earliest date from which to sync historical data.
     If not specified, defaults to 1 year of historical data for daily reports
     and 30 days for hourly reports.
@@ -102,7 +102,7 @@ class TikTokAdsOptionsDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    (Optional) Data level for the report.
+    [Private Preview] (Optional) Data level for the report.
     If not specified, defaults to AUCTION_CAMPAIGN.
     """
 
@@ -110,7 +110,7 @@ class TikTokAdsOptionsDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    (Optional) Dimensions to include in the report.
+    [Private Preview] (Optional) Dimensions to include in the report.
     Examples: "campaign_id", "adgroup_id", "ad_id", "stat_time_day", "stat_time_hour"
     If not specified, defaults to campaign_id.
     """
@@ -119,7 +119,7 @@ class TikTokAdsOptionsDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    (Optional) Number of days to look back for report tables during incremental sync
+    [Private Preview] (Optional) Number of days to look back for report tables during incremental sync
     to capture late-arriving conversions and attribution data.
     If not specified, defaults to 7 days.
     """
@@ -128,7 +128,7 @@ class TikTokAdsOptionsDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    (Optional) Metrics to include in the report.
+    [Private Preview] (Optional) Metrics to include in the report.
     Examples: "spend", "impressions", "clicks", "conversion", "cpc"
     If not specified, defaults to basic metrics (spend, impressions, clicks, etc.)
     """
@@ -137,7 +137,7 @@ class TikTokAdsOptionsDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    (Optional) Whether to request lifetime metrics (all-time aggregated data).
+    [Private Preview] (Optional) Whether to request lifetime metrics (all-time aggregated data).
     When true, the report returns all-time data.
     If not specified, defaults to false.
     """
@@ -146,7 +146,7 @@ class TikTokAdsOptionsDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    (Optional) Report type for the TikTok Ads API.
+    [Private Preview] (Optional) Report type for the TikTok Ads API.
     If not specified, defaults to BASIC.
     """
 
@@ -154,7 +154,7 @@ class TikTokAdsOptionsDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    (Optional) Start date for the initial sync of report tables in YYYY-MM-DD format.
+    [Private Preview] (Optional) Start date for the initial sync of report tables in YYYY-MM-DD format.
     This determines the earliest date from which to sync historical data.
     If not specified, defaults to 1 year of historical data for daily reports
     and 30 days for hourly reports.

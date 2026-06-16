@@ -1,0 +1,8 @@
+bundle:
+  name: test-bundle
+
+resources:
+  schemas:
+    schema1:
+      name: schema_managed_defaults
+      catalog_name: main

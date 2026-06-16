@@ -23,6 +23,7 @@ package terraform_dabs_map
 // postgres_catalogs / databricks_postgres_catalog: 1 unwraps
 // postgres_endpoints / databricks_postgres_endpoint: 1 unwraps
 // postgres_projects / databricks_postgres_project: 1 unwraps
+// postgres_roles / databricks_postgres_role: 1 unwraps
 // postgres_synced_tables / databricks_postgres_synced_table: 1 unwraps
 // schemas / databricks_schema: 1 tf-only
 // secret_scopes / databricks_secret_scope: 1 tf-only
@@ -67,6 +68,9 @@ var TerraformToDABsFieldMap = map[string]RenameTree{
 		"spec": {Unwrap: true},
 	},
 	"postgres_projects": {
+		"spec": {Unwrap: true},
+	},
+	"postgres_roles": {
 		"spec": {Unwrap: true},
 	},
 	"postgres_synced_tables": {
@@ -602,5 +606,6 @@ var DABsToTerraformWrappers = map[string]string{
 	"postgres_catalogs":      "spec",
 	"postgres_endpoints":     "spec",
 	"postgres_projects":      "spec",
+	"postgres_roles":         "spec",
 	"postgres_synced_tables": "spec",
 }

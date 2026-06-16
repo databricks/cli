@@ -17,44 +17,44 @@ class MetaMarketingOptions:
 
     action_attribution_windows: VariableOrList[str] = field(default_factory=list)
     """
-    (Optional) Action attribution windows for insights reporting (e.g. "28d_click", "1d_view")
+    [Beta] (Optional) Action attribution windows for insights reporting (e.g. "28d_click", "1d_view")
     """
 
     action_breakdowns: VariableOrList[str] = field(default_factory=list)
     """
-    (Optional) Action breakdowns to configure for data aggregation
+    [Beta] (Optional) Action breakdowns to configure for data aggregation
     """
 
     action_report_time: VariableOrOptional[str] = None
     """
-    (Optional) Timing used to report action statistics (impression, conversion, mixed, or lifetime)
+    [Beta] (Optional) Timing used to report action statistics (impression, conversion, mixed, or lifetime)
     """
 
     breakdowns: VariableOrList[str] = field(default_factory=list)
     """
-    (Optional) Breakdowns to configure for data aggregation
+    [Beta] (Optional) Breakdowns to configure for data aggregation
     """
 
     custom_insights_lookback_window: VariableOrOptional[int] = None
     """
-    (Optional) Window in days to revisit data during sync to capture
+    [Beta] (Optional) Window in days to revisit data during sync to capture
     updated conversion data from the API.
     """
 
     level: VariableOrOptional[str] = None
     """
-    (Optional) Granularity of data to pull (account, ad, adset, campaign)
+    [Beta] (Optional) Granularity of data to pull (account, ad, adset, campaign)
     """
 
     start_date: VariableOrOptional[str] = None
     """
-    (Optional) Start date in yyyy-MM-dd format (e.g. 2025-01-15). Data added
+    [Beta] (Optional) Start date in yyyy-MM-dd format (e.g. 2025-01-15). Data added
     after this date will be ingested
     """
 
     time_increment: VariableOrOptional[str] = None
     """
-    (Optional) Value in string by which to aggregate statistics (can take all_days, monthly or number of days)
+    [Beta] (Optional) Value in string by which to aggregate statistics (can take all_days, monthly or number of days)
     """
 
     @classmethod
@@ -70,44 +70,44 @@ class MetaMarketingOptionsDict(TypedDict, total=False):
 
     action_attribution_windows: VariableOrList[str]
     """
-    (Optional) Action attribution windows for insights reporting (e.g. "28d_click", "1d_view")
+    [Beta] (Optional) Action attribution windows for insights reporting (e.g. "28d_click", "1d_view")
     """
 
     action_breakdowns: VariableOrList[str]
     """
-    (Optional) Action breakdowns to configure for data aggregation
+    [Beta] (Optional) Action breakdowns to configure for data aggregation
     """
 
     action_report_time: VariableOrOptional[str]
     """
-    (Optional) Timing used to report action statistics (impression, conversion, mixed, or lifetime)
+    [Beta] (Optional) Timing used to report action statistics (impression, conversion, mixed, or lifetime)
     """
 
     breakdowns: VariableOrList[str]
     """
-    (Optional) Breakdowns to configure for data aggregation
+    [Beta] (Optional) Breakdowns to configure for data aggregation
     """
 
     custom_insights_lookback_window: VariableOrOptional[int]
     """
-    (Optional) Window in days to revisit data during sync to capture
+    [Beta] (Optional) Window in days to revisit data during sync to capture
     updated conversion data from the API.
     """
 
     level: VariableOrOptional[str]
     """
-    (Optional) Granularity of data to pull (account, ad, adset, campaign)
+    [Beta] (Optional) Granularity of data to pull (account, ad, adset, campaign)
     """
 
     start_date: VariableOrOptional[str]
     """
-    (Optional) Start date in yyyy-MM-dd format (e.g. 2025-01-15). Data added
+    [Beta] (Optional) Start date in yyyy-MM-dd format (e.g. 2025-01-15). Data added
     after this date will be ingested
     """
 
     time_increment: VariableOrOptional[str]
     """
-    (Optional) Value in string by which to aggregate statistics (can take all_days, monthly or number of days)
+    [Beta] (Optional) Value in string by which to aggregate statistics (can take all_days, monthly or number of days)
     """
 
 
