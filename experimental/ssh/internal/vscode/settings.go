@@ -37,10 +37,13 @@ type missingSettings struct {
 	platform       bool
 	listenOnSocket bool
 	extensions     []string
+	// extensionsToRemove are entries currently present in defaultExtensions that
+	// are incompatible with this IDE and should be stripped.
+	extensionsToRemove []string
 }
 
 func (m *missingSettings) isEmpty() bool {
-	return !m.portRange && !m.platform && !m.listenOnSocket && len(m.extensions) == 0
+	return !m.portRange && !m.platform && !m.listenOnSocket && len(m.extensions) == 0 && len(m.extensionsToRemove) == 0
 }
 
 // Builds a JSON Pointer (RFC 6901) from path segments to be used in hujson.Value.Find.
@@ -216,12 +219,45 @@ func getMissingExtensions(v hujson.Value, ide string) []string {
 	return missing
 }
 
+// getStaleExtensions returns the IDE's incompatible extensions that are
+// currently present in defaultExtensions and should be removed. This heals
+// settings written by older CLI builds (e.g. ms-python.python under Cursor,
+// which hangs the remote auto-install — see DECO-27339).
+func getStaleExtensions(v hujson.Value, ide string) []string {
+	incompatible := getIDE(ide).IncompatibleExtensions
+	if len(incompatible) == 0 {
+		return nil
+	}
+	found := v.Find(jsonPtr(defaultExtensionsKey))
+	if found == nil {
+		return nil
+	}
+	arr, ok := found.Value.(*hujson.Array)
+	if !ok {
+		return nil
+	}
+	existingSet := make(map[string]bool, len(arr.Elements))
+	for _, el := range arr.Elements {
+		if lit, ok := el.Value.(hujson.Literal); ok {
+			existingSet[lit.String()] = true
+		}
+	}
+	var stale []string
+	for _, ext := range incompatible {
+		if existingSet[ext] {
+			stale = append(stale, ext)
+		}
+	}
+	return stale
+}
+
 func validateSettings(v hujson.Value, connectionName, ide string) *missingSettings {
 	return &missingSettings{
-		portRange:      !hasCorrectPortRange(v, connectionName),
-		platform:       !hasCorrectPlatform(v, connectionName),
-		listenOnSocket: !hasCorrectListenOnSocket(v),
-		extensions:     getMissingExtensions(v, ide),
+		portRange:          !hasCorrectPortRange(v, connectionName),
+		platform:           !hasCorrectPlatform(v, connectionName),
+		listenOnSocket:     !hasCorrectListenOnSocket(v),
+		extensions:         getMissingExtensions(v, ide),
+		extensionsToRemove: getStaleExtensions(v, ide),
 	}
 }
 
@@ -242,6 +278,13 @@ func settingsMessage(connectionName string, missing *missingSettings) string {
 			quoted[i] = fmt.Sprintf("\"%s\"", ext)
 		}
 		lines = append(lines, fmt.Sprintf("    \"%s\": [%s] // Global setting", defaultExtensionsKey, strings.Join(quoted, ", ")))
+	}
+	if len(missing.extensionsToRemove) > 0 {
+		quoted := make([]string, len(missing.extensionsToRemove))
+		for i, ext := range missing.extensionsToRemove {
+			quoted[i] = fmt.Sprintf("\"%s\"", ext)
+		}
+		lines = append(lines, fmt.Sprintf("    // remove from \"%s\": [%s] (incompatible with this IDE)", defaultExtensionsKey, strings.Join(quoted, ", ")))
 	}
 	return "  {\n" + strings.Join(lines, ",\n") + "\n  }"
 }
@@ -306,6 +349,34 @@ func subKeyOp(v *hujson.Value, key, subKey, value string) patchOp {
 	return patchOp{"add", jsonPtr(key, subKey), value}
 }
 
+// existingExtensions returns the current defaultExtensions array values with any
+// entry in remove stripped out, preserving order.
+func existingExtensions(v *hujson.Value, remove []string) []string {
+	removeSet := make(map[string]bool, len(remove))
+	for _, ext := range remove {
+		removeSet[ext] = true
+	}
+	found := v.Find(jsonPtr(defaultExtensionsKey))
+	if found == nil {
+		return nil
+	}
+	arr, ok := found.Value.(*hujson.Array)
+	if !ok {
+		return nil
+	}
+	var kept []string
+	for _, el := range arr.Elements {
+		lit, ok := el.Value.(hujson.Literal)
+		if !ok {
+			continue
+		}
+		if s := lit.String(); !removeSet[s] {
+			kept = append(kept, s)
+		}
+	}
+	return kept
+}
+
 func updateSettings(v *hujson.Value, connectionName string, missing *missingSettings) error {
 	var ops []patchOp
 	if missing.portRange {
@@ -317,11 +388,19 @@ func updateSettings(v *hujson.Value, connectionName string, missing *missingSett
 	if missing.listenOnSocket {
 		ops = append(ops, patchOp{"add", jsonPtr(listenOnSocketKey), true})
 	}
-	if len(missing.extensions) > 0 {
+	if len(missing.extensions) > 0 || len(missing.extensionsToRemove) > 0 {
 		parent := jsonPtr(defaultExtensionsKey)
-		if v.Find(parent) == nil {
+		switch {
+		case v.Find(parent) == nil:
+			// No array yet — create it with the required extensions.
 			ops = append(ops, patchOp{"add", parent, missing.extensions})
-		} else {
+		case len(missing.extensionsToRemove) > 0:
+			// Rebuild the array so incompatible entries are stripped. Replacing
+			// the whole array (rather than index-based removes) avoids shifting
+			// indices when dropping multiple elements.
+			desired := append(existingExtensions(v, missing.extensionsToRemove), missing.extensions...)
+			ops = append(ops, patchOp{"add", parent, desired})
+		default:
 			for _, ext := range missing.extensions {
 				ops = append(ops, patchOp{"add", parent + "/-", ext})
 			}

@@ -419,6 +419,72 @@ func TestUpdateSettings_MergeExtensions(t *testing.T) {
 	assert.Contains(t, exts, "ms-toolsai.jupyter")
 }
 
+func TestValidateSettings_CursorStripsIncompatibleExtensions(t *testing.T) {
+	// A user who ran an older CLI build still has the remapped extensions in their
+	// Cursor settings; validateSettings must flag them for removal (DECO-27339).
+	v := parseTestValue(t, `{
+		"remote.SSH.serverPickPortsFromRange": {"test-conn": "29500-29505"},
+		"remote.SSH.remotePlatform": {"test-conn": "linux"},
+		"remote.SSH.remoteServerListenOnSocket": true,
+		"remote.SSH.defaultExtensions": ["ms-python.python", "ms-toolsai.jupyter", "databricks.databricks"]
+	}`)
+
+	missing := validateSettings(v, "test-conn", CursorOption)
+	assert.False(t, missing.isEmpty())
+	assert.Empty(t, missing.extensions) // databricks.databricks already present
+	assert.ElementsMatch(t, []string{"ms-python.python", "ms-toolsai.jupyter"}, missing.extensionsToRemove)
+}
+
+func TestValidateSettings_VSCodeKeepsAllExtensions(t *testing.T) {
+	// VS Code handles these extensions fine, so nothing should be stripped.
+	v := parseTestValue(t, `{
+		"remote.SSH.serverPickPortsFromRange": {"test-conn": "29500-29505"},
+		"remote.SSH.remotePlatform": {"test-conn": "linux"},
+		"remote.SSH.remoteServerListenOnSocket": true,
+		"remote.SSH.defaultExtensions": ["ms-python.python", "ms-toolsai.jupyter", "databricks.databricks"]
+	}`)
+
+	missing := validateSettings(v, "test-conn", VSCodeOption)
+	assert.True(t, missing.isEmpty())
+	assert.Empty(t, missing.extensionsToRemove)
+}
+
+func TestUpdateSettings_StripIncompatibleExtensions(t *testing.T) {
+	v := parseTestValue(t, `{
+		"remote.SSH.defaultExtensions": ["ms-python.python", "ms-toolsai.jupyter", "databricks.databricks", "other.extension"]
+	}`)
+
+	missing := &missingSettings{
+		extensionsToRemove: []string{"ms-python.python", "ms-toolsai.jupyter"},
+	}
+
+	err := updateSettings(&v, "test-conn", missing)
+	require.NoError(t, err)
+
+	exts := findStringSlice(t, v, jsonPtr(defaultExtensionsKey))
+	assert.ElementsMatch(t, []string{"databricks.databricks", "other.extension"}, exts)
+	assert.NotContains(t, exts, "ms-python.python")
+	assert.NotContains(t, exts, "ms-toolsai.jupyter")
+}
+
+func TestUpdateSettings_StripAndAddExtensions(t *testing.T) {
+	// Strip the remapped entries and add the missing required one in one update.
+	v := parseTestValue(t, `{
+		"remote.SSH.defaultExtensions": ["ms-python.python", "ms-toolsai.jupyter"]
+	}`)
+
+	missing := &missingSettings{
+		extensions:         []string{"databricks.databricks"},
+		extensionsToRemove: []string{"ms-python.python", "ms-toolsai.jupyter"},
+	}
+
+	err := updateSettings(&v, "test-conn", missing)
+	require.NoError(t, err)
+
+	exts := findStringSlice(t, v, jsonPtr(defaultExtensionsKey))
+	assert.Equal(t, []string{"databricks.databricks"}, exts)
+}
+
 func TestUpdateSettings_PartialUpdate(t *testing.T) {
 	v := parseTestValue(t, `{
 		"remote.SSH.serverPickPortsFromRange": {"test-conn": "29500-29505"},

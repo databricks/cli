@@ -30,6 +30,10 @@ type ideDescriptor struct {
 	// DefaultExtensions are seeded into the remote IDE's
 	// "remote.SSH.defaultExtensions" setting so they auto-install on the remote.
 	DefaultExtensions []string
+	// IncompatibleExtensions are removed from "remote.SSH.defaultExtensions" if
+	// present. Used to heal settings written by older CLI builds that seeded
+	// extensions which hang this IDE's remote auto-install.
+	IncompatibleExtensions []string
 	// LaunchArgs are extra flags passed to the IDE command before "--remote"
 	// when opening the remote window.
 	LaunchArgs []string
@@ -64,6 +68,10 @@ var cursorIDE = ideDescriptor{
 	// stack anyway, so we only seed the Databricks extension here and let the user
 	// (or that extension) pull in Python/Jupyter as needed. See DECO-27339.
 	DefaultExtensions: []string{databricksExtension},
+	// Heal settings written by older CLI builds: these are the extensions that
+	// trigger the Cursor remap hang, so strip them from defaultExtensions if a
+	// prior `ssh connect --ide cursor` left them behind. See DECO-27339.
+	IncompatibleExtensions: []string{pythonExtension, jupyterExtension},
 	// Cursor 3.x defaults new windows to the "Agents Window", which swallows the
 	// "--remote" request and never opens the remote editor. --classic forces a
 	// classic editor window so the remote workspace actually opens. See DECO-27339.
