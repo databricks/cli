@@ -780,6 +780,7 @@ var testDeps = map[string]prepareWorkspace{
 				DatabaseId: "test-database",
 				DatabaseDatabaseSpec: postgres.DatabaseDatabaseSpec{
 					PostgresDatabase: "app_db",
+					Role:             "projects/test-project-for-database/branches/test-branch-for-database/roles/owner",
 				},
 			},
 		}, nil

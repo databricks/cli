@@ -738,6 +738,13 @@ func (s *FakeWorkspace) PostgresDatabaseCreate(req Request, parent, databaseID s
 		}
 	}
 
+	// The real Lakebase API requires the owning role on create and rejects an empty
+	// one with this exact error (verified on e2-dogfood 2026-06-16). The fake does
+	// not synthesize a default, matching that behavior.
+	if database.Spec == nil || database.Spec.Role == "" {
+		return postgresErrorResponse(400, "INVALID_PARAMETER_VALUE", "Field 'spec.role' cannot be empty")
+	}
+
 	name := fmt.Sprintf("%s/databases/%s", parent, databaseID)
 
 	if _, exists := s.PostgresDatabases[name]; exists {
@@ -755,15 +762,9 @@ func (s *FakeWorkspace) PostgresDatabaseCreate(req Request, parent, databaseID s
 
 	// Mirror spec onto status; the real API only echoes Status on GET.
 	status := &postgres.DatabaseDatabaseStatus{
-		DatabaseId: databaseID,
-	}
-	if database.Spec != nil {
-		status.PostgresDatabase = database.Spec.PostgresDatabase
-		status.Role = database.Spec.Role
-	}
-	// When no role is provided, the real API assigns the project-owner role.
-	if status.Role == "" {
-		status.Role = parent + "/roles/" + TestUser.UserName
+		DatabaseId:       databaseID,
+		PostgresDatabase: database.Spec.PostgresDatabase,
+		Role:             database.Spec.Role,
 	}
 	database.Status = status
 	database.Spec = nil

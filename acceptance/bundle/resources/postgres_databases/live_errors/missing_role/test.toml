@@ -1,8 +1,0 @@
-# Stub the database create endpoint to reject empty `role`, matching the live
-# API behavior observed on 2026-05-19 dogfood2:
-#   400 Bad Request: Field 'spec.role' cannot be empty
-# The default testserver auto-fills role when empty, so we override here.
-[[Server]]
-Pattern = "POST /api/2.0/postgres/projects/{project_id}/branches/{branch_id}/databases"
-Response.StatusCode = 400
-Response.Body = '''{"error_code": "INVALID_PARAMETER_VALUE", "message": "Field 'spec.role' cannot be empty"}'''

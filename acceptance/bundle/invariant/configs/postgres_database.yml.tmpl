@@ -13,8 +13,15 @@ resources:
       branch_id: test-branch-$UNIQUE_NAME
       no_expiry: true
 
+  postgres_roles:
+    owner:
+      parent: ${resources.postgres_branches.branch.name}
+      role_id: test-role-$UNIQUE_NAME
+      postgres_role: app_role
+
   postgres_databases:
     foo:
       parent: ${resources.postgres_branches.branch.name}
       database_id: test-database-$UNIQUE_NAME
       postgres_database: app_db
+      role: ${resources.postgres_roles.owner.name}

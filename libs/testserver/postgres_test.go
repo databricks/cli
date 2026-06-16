@@ -275,7 +275,7 @@ func TestPostgresDatabaseCRUD(t *testing.T) {
 	createBranchResp.Body.Close()
 
 	// Create database
-	createDbBody := `{"spec":{"postgres_database":"my_db"}}`
+	createDbBody := `{"spec":{"postgres_database":"my_db","role":"projects/database-test-project/branches/main/roles/owner"}}`
 	createDbReq, _ := http.NewRequest(http.MethodPost, baseURL+"/api/2.0/postgres/projects/database-test-project/branches/main/databases?database_id=my-db", strings.NewReader(createDbBody))
 	createDbReq.Header.Set("Authorization", "Bearer test-token")
 	createDbReq.Header.Set("Content-Type", "application/json")
@@ -429,7 +429,7 @@ func TestPostgresDatabaseCreateDuplicateReturns400(t *testing.T) {
 	do(http.MethodPost, "/api/2.0/postgres/projects?project_id=dup-db-project", "").Body.Close()
 	do(http.MethodPost, "/api/2.0/postgres/projects/dup-db-project/branches?branch_id=main", "").Body.Close()
 
-	createBody := `{"spec":{"postgres_database":"app_db"}}`
+	createBody := `{"spec":{"postgres_database":"app_db","role":"projects/dup-db-project/branches/main/roles/owner"}}`
 	first := do(http.MethodPost, "/api/2.0/postgres/projects/dup-db-project/branches/main/databases?database_id=appdb", createBody)
 	require.Equal(t, 200, first.StatusCode)
 	first.Body.Close()
