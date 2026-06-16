@@ -67,13 +67,10 @@ func TestComputeConfigValidate(t *testing.T) {
 		{"single node", computeConfig{NumAccelerators: 8, AcceleratorType: "GPU_8xH100"}, ""},
 		{"multiple nodes", computeConfig{NumAccelerators: 16, AcceleratorType: "GPU_8xH100"}, ""},
 		{"single-gpu partitions", computeConfig{NumAccelerators: 3, AcceleratorType: "GPU_1xH100"}, ""},
-		{"with node pool", computeConfig{NumAccelerators: 1, AcceleratorType: "GPU_1xA10", NodePoolID: "pool-123"}, ""},
-		{"with pool name", computeConfig{NumAccelerators: 1, AcceleratorType: "GPU_1xA10", PoolName: "my-pool"}, ""},
 		{"unknown type", computeConfig{NumAccelerators: 8, AcceleratorType: "b200"}, "accelerator_type"},
 		{"legacy type rejected", computeConfig{NumAccelerators: 8, AcceleratorType: "h100_80gb"}, "accelerator_type"},
 		{"non-positive count", computeConfig{NumAccelerators: 0, AcceleratorType: "GPU_1xH100"}, "must be positive"},
 		{"count not a multiple", computeConfig{NumAccelerators: 4, AcceleratorType: "GPU_8xH100"}, "multiple of 8"},
-		{"both pool fields", computeConfig{NumAccelerators: 1, AcceleratorType: "GPU_1xA10", NodePoolID: "p", PoolName: "n"}, "both"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

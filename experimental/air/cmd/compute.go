@@ -1,7 +1,6 @@
 package aircmd
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 )
@@ -57,8 +56,6 @@ func gpusPerNode(g gpuType) (int, error) {
 type computeConfig struct {
 	NumAccelerators int    `yaml:"num_accelerators"`
 	AcceleratorType string `yaml:"accelerator_type"`
-	NodePoolID      string `yaml:"node_pool_id"`
-	PoolName        string `yaml:"pool_name"`
 }
 
 // validate checks the compute block against the backend's constraints.
@@ -78,10 +75,6 @@ func (c computeConfig) validate() error {
 	}
 	if c.NumAccelerators%perNode != 0 {
 		return fmt.Errorf("compute.num_accelerators for %s must be a multiple of %d, got %d", c.AcceleratorType, perNode, c.NumAccelerators)
-	}
-
-	if c.NodePoolID != "" && c.PoolName != "" {
-		return errors.New("compute: cannot specify both node_pool_id and pool_name")
 	}
 
 	return nil
