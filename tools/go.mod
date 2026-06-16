@@ -7,7 +7,7 @@ toolchain go1.26.4
 require github.com/stretchr/testify v1.11.1
 
 require (
-	golang.org/x/mod v0.35.0
+	golang.org/x/mod v0.36.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -237,7 +237,6 @@ tool (
 	github.com/golangci/golangci-lint/v2/cmd/golangci-lint
 	github.com/google/yamlfmt/cmd/yamlfmt
 	golang.org/x/tools/cmd/deadcode
-	golang.org/x/tools/cmd/goimports
 	golang.org/x/vuln/cmd/govulncheck
 	gotest.tools/gotestsum
 )

@@ -62,6 +62,37 @@ func TestDescribeRunFailureTruncatesLongTrace(t *testing.T) {
 	assert.NotContains(t, out, strings.Repeat("x", maxRunFailureTraceBytes+1))
 }
 
+func TestDescribeRunFailureDeduplicatesErrorInTrace(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	m := mocks.NewMockWorkspaceClient(t)
+	api := m.GetMockJobsAPI()
+	errMsg := "SSH server exited with code 1. Last server logs:\nLOG_MARKER"
+	api.EXPECT().GetRun(mock.Anything, jobs.GetRunRequest{RunId: 1}).Return(
+		terminatedRun(1, 99, "", "https://example.test/run/1"), nil)
+	api.EXPECT().GetRunOutput(mock.Anything, jobs.GetRunOutputRequest{RunId: 99}).Return(
+		&jobs.RunOutput{Error: errMsg, ErrorTrace: "Traceback (most recent call last):\n  boom\nRuntimeError: " + errMsg}, nil)
+
+	out := describeRunFailure(ctx, m.WorkspaceClient, 1)
+	assert.Contains(t, out, "Traceback (most recent call last):")
+	assert.Equal(t, 1, strings.Count(out, "LOG_MARKER"))
+}
+
+func TestDescribeRunFailureTruncatesLongError(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	m := mocks.NewMockWorkspaceClient(t)
+	api := m.GetMockJobsAPI()
+	longError := strings.Repeat("x", maxRunFailureTraceBytes+500) + "TAIL_MARKER"
+	api.EXPECT().GetRun(mock.Anything, jobs.GetRunRequest{RunId: 1}).Return(
+		terminatedRun(1, 99, "", "https://example.test/run/1"), nil)
+	api.EXPECT().GetRunOutput(mock.Anything, jobs.GetRunOutputRequest{RunId: 99}).Return(
+		&jobs.RunOutput{Error: longError}, nil)
+
+	out := describeRunFailure(ctx, m.WorkspaceClient, 1)
+	assert.Contains(t, out, "...")
+	assert.Contains(t, out, "TAIL_MARKER")
+	assert.NotContains(t, out, strings.Repeat("x", maxRunFailureTraceBytes+1))
+}
+
 func TestDescribeRunFailureNoRunID(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
 	m := mocks.NewMockWorkspaceClient(t)

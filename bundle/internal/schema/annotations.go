@@ -13,6 +13,7 @@ import (
 	yaml3 "go.yaml.in/yaml/v3"
 
 	"github.com/databricks/cli/bundle/internal/annotation"
+	"github.com/databricks/cli/internal/clijson"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/dyn/merge"
@@ -134,9 +135,15 @@ func assignAnnotation(s *jsonschema.Schema, a annotation.Descriptor) {
 		s.DeprecationMessage = a.DeprecationMessage
 	}
 
-	if a.Preview == "PRIVATE" {
+	// Private-preview fields are hidden from completions and surfaced to
+	// downstream codegen via the launch stage: pydabs reads
+	// x-databricks-launch-stage from jsonschema.json to mark these fields
+	// experimental. Only the private-preview stage is emitted into the published
+	// schema — nothing consumes the others there; they surface only as the
+	// description prefix below and the per-value enumDescriptions labels.
+	if a.LaunchStage == clijson.LaunchStagePrivatePreview {
 		s.DoNotSuggest = true
-		s.Preview = a.Preview
+		s.LaunchStage = string(a.LaunchStage)
 	}
 
 	if a.OutputOnly != nil && *a.OutputOnly {
@@ -146,6 +153,54 @@ func assignAnnotation(s *jsonschema.Schema, a annotation.Descriptor) {
 	s.MarkdownDescription = convertLinksToAbsoluteUrl(a.MarkdownDescription)
 	s.Title = a.Title
 	s.Enum = a.Enum
+	s.EnumDescriptions = buildEnumDescriptions(a.Enum, a.EnumLaunchStages, a.EnumDescriptions)
+
+	// Surface launch stage in hover tooltips. Editors only render the standard
+	// description field, so the tag is baked into the text.
+	if tag := annotation.PreviewTag(a.LaunchStage); tag != "" {
+		s.Description = prefixWithPreviewTag(s.Description, tag)
+	}
+}
+
+// buildEnumDescriptions produces the parallel enumDescriptions array VSCode
+// renders next to each enum value. Each entry combines the launch-stage tag
+// and the per-value description text. Returns nil when every entry would be
+// empty so the field is omitted from the schema. The enum slice is the same
+// one assigned to s.Enum, so the arrays stay index-aligned.
+func buildEnumDescriptions(enum []any, launchStages map[string]clijson.LaunchStage, descriptions map[string]string) []string {
+	if len(enum) == 0 || (len(launchStages) == 0 && len(descriptions) == 0) {
+		return nil
+	}
+	result := make([]string, len(enum))
+	hasContent := false
+	for i, v := range enum {
+		key, ok := v.(string)
+		if !ok {
+			continue
+		}
+		result[i] = prefixWithPreviewTag(descriptions[key], annotation.PreviewTag(launchStages[key]))
+		if result[i] != "" {
+			hasContent = true
+		}
+	}
+	if !hasContent {
+		return nil
+	}
+	return result
+}
+
+// prefixWithPreviewTag prepends the launch-stage tag to a description while
+// guarding against double-tagging — if the description already starts with
+// the tag, it is returned unchanged. An empty tag (GA) also takes the
+// HasPrefix path, returning the description as-is.
+func prefixWithPreviewTag(description, tag string) string {
+	if description == "" {
+		return tag
+	}
+	if strings.HasPrefix(description, tag) {
+		return description
+	}
+	return tag + " " + description
 }
 
 func saveYamlWithStyle(outputPath string, annotations annotation.File) error {
