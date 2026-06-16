@@ -1,12 +1,3 @@
-// Postgres Role resource for the direct deployment engine.
-//
-// Terraform resource: databricks_postgres_role
-//
-//	https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/postgres_role
-//
-// REST API: Lakebase Postgres Roles
-//
-//	https://docs.databricks.com/api/workspace/postgres/createrole
 package dresources
 
 import (
