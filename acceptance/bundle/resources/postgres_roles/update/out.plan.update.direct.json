@@ -1,0 +1,71 @@
+{
+  "depends_on": [
+    {
+      "node": "resources.postgres_branches.main",
+      "label": "${resources.postgres_branches.main.id}"
+    }
+  ],
+  "action": "update",
+  "new_state": {
+    "value": {
+      "attributes": {
+        "createdb": true
+      },
+      "postgres_role": "app_role"
+    }
+  },
+  "remote_state": {
+    "create_time": "[TIMESTAMP]",
+    "name": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/test-role",
+    "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
+    "role_id": "test-role",
+    "status": {
+      "attributes": {
+        "bypassrls": false,
+        "createdb": false,
+        "createrole": false
+      },
+      "auth_method": "PG_PASSWORD_SCRAM_SHA_256",
+      "identity_type": "IDENTITY_TYPE_UNSPECIFIED",
+      "postgres_role": "app_role",
+      "role_id": "test-role"
+    },
+    "update_time": "[TIMESTAMP]"
+  },
+  "changes": {
+    "attributes": {
+      "action": "update",
+      "old": {
+        "createdb": false
+      },
+      "new": {
+        "createdb": true
+      }
+    },
+    "attributes.createdb": {
+      "action": "update",
+      "old": false,
+      "new": true
+    },
+    "parent": {
+      "action": "skip",
+      "reason": "remote_already_set",
+      "old": "",
+      "new": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
+      "remote": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main"
+    },
+    "postgres_role": {
+      "action": "skip",
+      "reason": "spec:input_only",
+      "old": "app_role",
+      "new": "app_role"
+    },
+    "role_id": {
+      "action": "skip",
+      "reason": "remote_already_set",
+      "old": "",
+      "new": "test-role",
+      "remote": "test-role"
+    }
+  }
+}

@@ -12,6 +12,12 @@ import (
 
 const testMetastoreName = "deco-uc-prod-isolated-aws-us-east-1"
 
+// schemaNameManagedDefaults is the schema name the backend-default drift test uses
+// to opt into UC's managed-property simulation. Scoping the injection to this name
+// keeps unrelated schema tests free of the property, which terraform would otherwise
+// report as drift on redeploy.
+const schemaNameManagedDefaults = "schema_managed_defaults"
+
 func (s *FakeWorkspace) SchemasCreate(req Request) Response {
 	defer s.LockUnlock()()
 
@@ -42,6 +48,14 @@ func (s *FakeWorkspace) SchemasCreate(req Request) Response {
 	schema.MetastoreId = TestMetastore.MetastoreId
 	schema.Owner = s.CurrentUser().UserName
 	schema.SchemaId = nextUUID()
+	if schema.Properties == nil && schema.Name == schemaNameManagedDefaults {
+		// Mirror UC behavior: managed system defaults are populated when the user
+		// doesn't specify any properties. Required to cover backend-default drift.
+		schema.Properties = map[string]string{
+			"unity.catalog.managed.delta.defaults.delta.enableRowTracking":        "true",
+			"unity.catalog.managed.iceberg.defaults.delta.feature.catalogManaged": "true",
+		}
+	}
 	s.Schemas[schema.FullName] = schema
 
 	return Response{

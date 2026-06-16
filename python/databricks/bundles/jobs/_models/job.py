@@ -73,7 +73,7 @@ class Job(Resource):
 
     budget_policy_id: VariableOrOptional[str] = None
     """
-    The id of the user specified budget policy to use for this job.
+    [Public Preview] The id of the user specified budget policy to use for this job.
     If not specified, a default budget policy may be applied when creating or modifying the job.
     See `effective_budget_policy_id` for the budget policy used by this workload.
     """
@@ -195,7 +195,7 @@ class Job(Resource):
     """
     :meta private: [EXPERIMENTAL]
     
-    The id of the user specified usage policy to use for this job.
+    [Private Preview] The id of the user specified usage policy to use for this job.
     If not specified, a default usage policy may be applied when creating or modifying the job.
     See `effective_usage_policy_id` for the usage policy used by this workload.
     """
@@ -218,7 +218,7 @@ class JobDict(TypedDict, total=False):
 
     budget_policy_id: VariableOrOptional[str]
     """
-    The id of the user specified budget policy to use for this job.
+    [Public Preview] The id of the user specified budget policy to use for this job.
     If not specified, a default budget policy may be applied when creating or modifying the job.
     See `effective_budget_policy_id` for the budget policy used by this workload.
     """
@@ -340,7 +340,7 @@ class JobDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    The id of the user specified usage policy to use for this job.
+    [Private Preview] The id of the user specified usage policy to use for this job.
     If not specified, a default usage policy may be applied when creating or modifying the job.
     See `effective_usage_policy_id` for the usage policy used by this workload.
     """
