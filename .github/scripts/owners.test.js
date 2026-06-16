@@ -8,9 +8,12 @@ const {
   parseOwnerTeams,
   ownersMatch,
   parseOwnersFile,
+  parseOwnersRules,
+  parseTeamPageUrls,
   findOwners,
   getMaintainers,
   getOwnershipGroups,
+  validateOwners,
 } = require("./owners");
 
 // --- ownersMatch ---
@@ -346,5 +349,169 @@ describe("getOwnershipGroups", () => {
     assert.equal(groups.size, 2);
     assert.ok(groups.has("/cmd/pipelines/"));
     assert.ok(groups.has("*"));
+  });
+});
+
+// --- parseOwnersRules ---
+
+describe("parseOwnersRules", () => {
+  let tmpDir;
+  let ownersPath;
+
+  before(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "owners-raw-"));
+    ownersPath = path.join(tmpDir, "OWNERS");
+  });
+
+  after(() => {
+    fs.rmSync(tmpDir, { recursive: true });
+  });
+
+  it("keeps team aliases and @users un-expanded", () => {
+    fs.writeFileSync(ownersPath, "/cmd/auth/ team:platform @carol\n* @alice\n");
+    const rules = parseOwnersRules(ownersPath);
+    assert.equal(rules.length, 2);
+    assert.deepEqual(rules[0], {
+      pattern: "/cmd/auth/",
+      tokens: ["team:platform", "@carol"],
+    });
+    assert.deepEqual(rules[1], { pattern: "*", tokens: ["@alice"] });
+  });
+});
+
+// --- parseTeamPageUrls ---
+
+describe("parseTeamPageUrls", () => {
+  let tmpDir;
+  let teamsPath;
+
+  before(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "team-urls-"));
+    teamsPath = path.join(tmpDir, "OWNERTEAMS");
+  });
+
+  after(() => {
+    fs.rmSync(tmpDir, { recursive: true });
+  });
+
+  it("collects team-page URLs from header comments", () => {
+    fs.writeFileSync(
+      teamsPath,
+      [
+        "# GitHub team pages:",
+        "#   platform:  https://github.com/orgs/databricks/teams/cli-platform",
+        "#   bundle:    https://github.com/orgs/databricks/teams/cli-maintainers",
+        "team:platform @alice",
+      ].join("\n")
+    );
+    const pages = parseTeamPageUrls(teamsPath);
+    assert.equal(pages.size, 2);
+    assert.ok(pages.has("team:platform"));
+    assert.ok(pages.has("team:bundle"));
+  });
+
+  it("ignores header lines that are not team-page URLs", () => {
+    fs.writeFileSync(
+      teamsPath,
+      [
+        '# Use "team:<name>" in OWNERS to reference a team.',
+        "# Format: team:<name> @member1",
+        "team:platform @alice",
+      ].join("\n")
+    );
+    assert.equal(parseTeamPageUrls(teamsPath).size, 0);
+  });
+});
+
+// --- validateOwners ---
+
+describe("validateOwners", () => {
+  let tmpDir;
+  let ownersPath;
+  let teamsPath;
+  const allExist = () => true;
+
+  before(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "owners-validate-"));
+    ownersPath = path.join(tmpDir, "OWNERS");
+    teamsPath = path.join(tmpDir, "OWNERTEAMS");
+  });
+
+  after(() => {
+    fs.rmSync(tmpDir, { recursive: true });
+  });
+
+  function write(owners, teams) {
+    fs.writeFileSync(ownersPath, owners);
+    fs.writeFileSync(teamsPath, teams);
+  }
+
+  it("passes a consistent OWNERS/OWNERTEAMS pair", () => {
+    write(
+      "* @alice\n/cmd/auth/ team:platform\n",
+      "#   platform: https://github.com/orgs/databricks/teams/cli-platform\nteam:platform @bob @carol\n"
+    );
+    const { errors, warnings } = validateOwners(ownersPath, teamsPath, {
+      fileExists: allExist,
+    });
+    assert.deepEqual(errors, []);
+    assert.deepEqual(warnings, []);
+  });
+
+  it("errors on a team alias not defined in OWNERTEAMS", () => {
+    write("* @alice\n/cmd/auth/ team:platfrom\n", "team:platform @bob\n");
+    const { errors } = validateOwners(ownersPath, teamsPath, {
+      fileExists: allExist,
+    });
+    assert.equal(errors.length, 1);
+    assert.match(errors[0], /undefined team "team:platfrom"/);
+  });
+
+  it("does not also report zero owners when a team is undefined", () => {
+    write("/cmd/auth/ team:nope\n", "team:platform @bob\n");
+    const { errors } = validateOwners(ownersPath, teamsPath, {
+      fileExists: allExist,
+    });
+    assert.equal(errors.length, 1);
+    assert.match(errors[0], /undefined team/);
+  });
+
+  it("errors when a rule resolves to zero owners (org team missing @)", () => {
+    write("/cmd/auth/ databricks/eng-apps-devex\n", "team:platform @bob\n");
+    const { errors } = validateOwners(ownersPath, teamsPath, {
+      fileExists: allExist,
+    });
+    assert.equal(errors.length, 1);
+    assert.match(errors[0], /zero owners/);
+  });
+
+  it("errors when a rule maps a path that does not exist", () => {
+    write(
+      "* @alice\n/acceptance/ghost/ team:platform\n",
+      "#   platform: https://github.com/orgs/databricks/teams/cli-platform\nteam:platform @bob\n"
+    );
+    const { errors } = validateOwners(ownersPath, teamsPath, {
+      fileExists: (p) => !p.includes("ghost"),
+    });
+    assert.equal(errors.length, 1);
+    assert.match(errors[0], /does not exist/);
+  });
+
+  it("does not path-check the * catch-all rule", () => {
+    write("* @alice\n", "team:platform @bob\n");
+    const { errors } = validateOwners(ownersPath, teamsPath, {
+      fileExists: () => false,
+    });
+    assert.deepEqual(errors, []);
+  });
+
+  it("warns (does not error) when a defined team has no team-page URL", () => {
+    write("* @alice\n/cmd/auth/ team:newteam\n", "team:newteam @bob\n");
+    const { errors, warnings } = validateOwners(ownersPath, teamsPath, {
+      fileExists: allExist,
+    });
+    assert.deepEqual(errors, []);
+    assert.equal(warnings.length, 1);
+    assert.match(warnings[0], /team-page URL/);
   });
 });
