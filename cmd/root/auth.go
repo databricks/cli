@@ -371,26 +371,24 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 
 // resolveDefaultProfile applies the [__settings__].default_profile setting
 // when no profile is specified via --profile flag or DATABRICKS_CONFIG_PROFILE.
+//
+// It does nothing when a host is configured directly via the environment
+// (DATABRICKS_HOST). Authentication is then fully determined by the environment,
+// and the SDK already ignores .databrickscfg in that case, but only while
+// cfg.Profile is empty (see configFileLoader.Configure in databricks-sdk-go).
+// Pinning a default profile would defeat that skip and merge the profile's
+// credentials with the environment config, failing with "more than one
+// authorization method configured".
 func resolveDefaultProfile(ctx context.Context, cfg *config.Config) {
 	if cfg.Profile != "" || envlib.Get(ctx, "DATABRICKS_CONFIG_PROFILE") != "" {
 		return
 	}
-	resolved := databrickscfg.ResolveDefaultProfile(ctx)
-	if resolved == "" {
+	if envlib.Get(ctx, "DATABRICKS_HOST") != "" {
 		return
 	}
-	// When DATABRICKS_HOST points at a different workspace than the default
-	// profile, the profile is for another host. Pinning it would defeat the SDK's
-	// config-file skip-guard (which ignores .databrickscfg while cfg.Profile is
-	// empty and a host is configured; see configFileLoader.Configure in
-	// databricks-sdk-go) and merge the profile's credentials with the environment
-	// config, failing with "more than one authorization method configured". Let
-	// the environment host win in that case.
-	if envHost := envlib.Get(ctx, "DATABRICKS_HOST"); envHost != "" &&
-		!databrickscfg.SameHost(envHost, databrickscfg.ProfileHost(ctx, resolved)) {
-		return
+	if resolved := databrickscfg.ResolveDefaultProfile(ctx); resolved != "" {
+		cfg.Profile = resolved
 	}
-	cfg.Profile = resolved
 }
 
 func AskForWorkspaceProfile(ctx context.Context) (string, error) {

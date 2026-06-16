@@ -1,5 +1,5 @@
 
-=== Describe without --profile (should use default)
+=== Describe without --profile (DATABRICKS_HOST takes precedence over default_profile)
 
 >>> [CLI] auth describe
 Host: [DATABRICKS_URL]
@@ -10,7 +10,7 @@ Current configuration:
   ✓ host: [DATABRICKS_URL] (from DATABRICKS_HOST environment variable)
   ✓ workspace_id: [NUMID]
   ✓ token: ******** (from DATABRICKS_TOKEN environment variable)
-  ✓ profile: my-workspace
+  ✓ profile: default
   ✓ databricks_cli_path: [CLI]
   ✓ auth_type: pat
   ✓ rate_limit: [NUMID] (from DATABRICKS_RATE_LIMIT environment variable)

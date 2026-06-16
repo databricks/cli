@@ -77,18 +77,6 @@ func ResolveDefaultProfile(ctx context.Context) string {
 	return ""
 }
 
-// ProfileHost returns the host configured for profileName in the config file
-// pointed to by DATABRICKS_CONFIG_FILE (or ~/.databrickscfg when unset).
-// Returns "" when the file is missing, the profile is absent, or it has no
-// host key.
-func ProfileHost(ctx context.Context, profileName string) string {
-	configFile, err := loadConfigFile(ctx, env.Get(ctx, "DATABRICKS_CONFIG_FILE"))
-	if err != nil || configFile == nil {
-		return ""
-	}
-	return configFile.Section(profileName).Key("host").String()
-}
-
 // GetConfiguredDefaultProfileFrom returns the explicit default profile from
 // [__settings__].default_profile, or "" when it is not set or when the value
 // is the reserved __settings__ section name itself.

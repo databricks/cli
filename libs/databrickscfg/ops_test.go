@@ -397,21 +397,6 @@ func TestResolveDefaultProfile_ParseError(t *testing.T) {
 	assert.Empty(t, ResolveDefaultProfile(ctx))
 }
 
-func TestProfileHost(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "databrickscfg")
-	require.NoError(t, os.WriteFile(path, []byte("[my-workspace]\nhost = https://abc\ntoken = t\n\n[no-host]\naccount_id = 1234\n"), 0o600))
-	ctx := env.Set(t.Context(), "DATABRICKS_CONFIG_FILE", path)
-
-	assert.Equal(t, "https://abc", ProfileHost(ctx, "my-workspace"))
-	assert.Empty(t, ProfileHost(ctx, "no-host"))
-	assert.Empty(t, ProfileHost(ctx, "missing"))
-}
-
-func TestProfileHost_FileMissing(t *testing.T) {
-	ctx := env.Set(t.Context(), "DATABRICKS_CONFIG_FILE", filepath.Join(t.TempDir(), "does-not-exist"))
-	assert.Empty(t, ProfileHost(ctx, "my-workspace"))
-}
-
 func TestSetDefaultProfile(t *testing.T) {
 	testCases := []struct {
 		name    string
