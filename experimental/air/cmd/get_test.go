@@ -68,7 +68,7 @@ func TestGetRunNotFound(t *testing.T) {
 }
 
 func TestPrintConfigYAML(t *testing.T) {
-	t.Run("downloads and prints", func(t *testing.T) {
+	t.Run("downloads and prints to stdout", func(t *testing.T) {
 		ctx := cmdio.MockDiscard(t.Context())
 		m := mocks.NewMockWorkspaceClient(t)
 		// The mock asserts Download is called with the resolved path.
@@ -76,18 +76,26 @@ func TestPrintConfigYAML(t *testing.T) {
 			Download(mock.Anything, "/Workspace/cfg.yaml").
 			Return(io.NopCloser(strings.NewReader("epochs: 3\n")), nil)
 
-		printConfigYAML(ctx, m.WorkspaceClient, "/Workspace/cfg.yaml")
+		// The config is data output and must land on stdout (the out writer),
+		// matching the Python `air get` behavior.
+		var out bytes.Buffer
+		printConfigYAML(ctx, &out, m.WorkspaceClient, "/Workspace/cfg.yaml")
+		assert.Contains(t, out.String(), "Training Configuration:")
+		assert.Contains(t, out.String(), "epochs: 3")
 	})
 
-	t.Run("download failure is non-fatal", func(t *testing.T) {
+	t.Run("download failure is non-fatal and writes nothing", func(t *testing.T) {
 		ctx := cmdio.MockDiscard(t.Context())
 		m := mocks.NewMockWorkspaceClient(t)
 		m.GetMockWorkspaceAPI().EXPECT().
 			Download(mock.Anything, "/Workspace/missing.yaml").
 			Return(nil, apierr.ErrResourceDoesNotExist)
 
-		// Must not panic: a failed config fetch is best-effort.
-		printConfigYAML(ctx, m.WorkspaceClient, "/Workspace/missing.yaml")
+		// Must not panic and must not write to stdout: a failed config fetch is
+		// best-effort, surfaced only as a stderr warning.
+		var out bytes.Buffer
+		printConfigYAML(ctx, &out, m.WorkspaceClient, "/Workspace/missing.yaml")
+		assert.Empty(t, out.String())
 	})
 }
 

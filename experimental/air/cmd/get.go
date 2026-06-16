@@ -9,7 +9,6 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
-	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
@@ -125,7 +124,7 @@ func newGetCommand() *cobra.Command {
 		// `air get`. JSON output omits it, matching `air get --json`.
 		if root.OutputType(cmd) == flags.OutputText {
 			if path := yamlConfigPath(run); path != "" {
-				printConfigYAML(ctx, w, path)
+				printConfigYAML(ctx, cmd.OutOrStdout(), w, path)
 			}
 		}
 		return renderEnvelope(ctx, data)
@@ -165,9 +164,10 @@ func yamlConfigPath(run *jobs.Run) string {
 	return task.YamlParametersFilePath
 }
 
-// printConfigYAML downloads the run's training-config YAML and prints it. It is
-// best-effort: a failure is surfaced as a warning but does not fail status.
-func printConfigYAML(ctx context.Context, w *databricks.WorkspaceClient, path string) {
+// printConfigYAML downloads the run's training-config YAML and writes it to out
+// (stdout), mirroring the Python `air get`. It is best-effort: a download or read
+// failure is surfaced as a warning on stderr but does not fail the command.
+func printConfigYAML(ctx context.Context, out io.Writer, w *databricks.WorkspaceClient, path string) {
 	r, err := w.Workspace.Download(ctx, path)
 	if err != nil {
 		log.Warnf(ctx, "air get: could not download training config %s: %v", path, err)
@@ -181,7 +181,7 @@ func printConfigYAML(ctx context.Context, w *databricks.WorkspaceClient, path st
 		return
 	}
 
-	cmdio.LogString(ctx, "Training Configuration:")
-	cmdio.LogString(ctx, string(content))
-	cmdio.LogString(ctx, "")
+	fmt.Fprintln(out, "Training Configuration:")
+	fmt.Fprintln(out, string(content))
+	fmt.Fprintln(out)
 }
