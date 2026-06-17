@@ -113,21 +113,6 @@ func parseTFStateAttrsFromRaw(s *rawTFState) TFStateAttrs {
 	return result
 }
 
-// ParseTFStateAttrs parses the terraform state file returning full attribute JSON per resource.
-//
-//deadcode:allow retained as standalone API for callers that only need attributes.
-func ParseTFStateAttrs(path string) (TFStateAttrs, error) {
-	raw, err := os.ReadFile(path)
-	if err != nil {
-		return nil, err
-	}
-	var s rawTFState
-	if err := json.Unmarshal(raw, &s); err != nil {
-		return nil, err
-	}
-	return parseTFStateAttrsFromRaw(&s), nil
-}
-
 // LookupTFField looks up a field from TF state attributes for a bundle resource.
 // group is the DABs group (e.g. "pipelines"), name is the resource name.
 // fieldPath is the path to the field (may be in DABs or TF naming; both handled by DABsPathToTerraform).
@@ -164,16 +149,11 @@ func LookupTFField(state TFStateAttrs, group, name string, fieldPath *structpath
 		return value, nil
 	}
 
-	// Apply state-only field aliases for fields whose DABs name differs from TF state name.
+	// Apply state-only field aliases for single-segment fields whose DABs name differs from TF state name.
 	if aliases, ok := tfStateFieldAliases[group]; ok {
-		// Replace the first path segment if it matches a known alias.
 		if head, ok := fieldPath.StringKey(); ok {
 			if tfName, ok := aliases[head]; ok {
 				aliasPath := structpath.NewStringKey(nil, tfName)
-				if rest := fieldPath.SkipPrefix(1); rest != nil {
-					_ = rest // navigate through the alias root
-				}
-				// Translate aliased path with full DABsToTerraform for the renamed field.
 				if aliasFieldPath, e := terraform_dabs_map.DABsPathToTerraform(group, aliasPath); e == nil {
 					if v, e := navigateTFState(attrs, aliasFieldPath); e == nil {
 						return v, nil
