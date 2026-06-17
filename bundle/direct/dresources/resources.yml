@@ -589,12 +589,12 @@ resources:
         reason: "input_only; cannot be updated after create"
 
   postgres_databases:
-    recreate_on_changes:
+    provided_id_fields:
       # parent and database_id are immutable (part of hierarchical name, not in API spec)
       - field: parent
-        reason: immutable
+        reason: id_field
       - field: database_id
-        reason: immutable
+        reason: id_field
 
   postgres_endpoints:
     provided_id_fields:
