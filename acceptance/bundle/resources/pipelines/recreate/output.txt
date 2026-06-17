@@ -26,7 +26,7 @@ Deployment complete!
       }
     ],
     "name": "test-pipeline-[UNIQUE_NAME]",
-    "target": "test_schema_[UNIQUE_NAME]"
+    "target": "test-schema-[UNIQUE_NAME]"
   }
 }
 
