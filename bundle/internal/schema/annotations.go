@@ -69,18 +69,12 @@ func dropShadowingPlaceholders(fromFile, extracted annotation.File) {
 	}
 }
 
+// isEmptyDescriptor reports whether d carries no annotation data. It runs after
+// a stale placeholder is cleared, to decide whether the whole entry can be
+// dropped. Comparing against the zero value stays correct as new Descriptor
+// fields are added.
 func isEmptyDescriptor(d annotation.Descriptor) bool {
-	return d.Description == "" &&
-		d.MarkdownDescription == "" &&
-		d.Title == "" &&
-		d.Default == nil &&
-		d.Enum == nil &&
-		d.MarkdownExamples == "" &&
-		d.DeprecationMessage == "" &&
-		d.LaunchStage == "" &&
-		d.EnumLaunchStages == nil &&
-		d.EnumDescriptions == nil &&
-		d.OutputOnly == nil
+	return reflect.DeepEqual(d, annotation.Descriptor{})
 }
 
 // mergeAnnotationFiles merges later layers over earlier ones with the same
