@@ -1,0 +1,20 @@
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm out.requests.txt
+}
+trap cleanup EXIT
+
+title "initial deploy triggers the first run"
+trace $CLI bundle deploy
+trace print_requests.py //jobs/run-now
+
+title "change the job notebook_path and redeploy"
+trace update_file.py databricks.yml "notebook_path: /Workspace/test" "notebook_path: /Workspace/other"
+trace $CLI bundle deploy
+trace $CLI bundle plan
+
+title "the job was updated with the new notebook_path"
+trace print_requests.py --keep //jobs/reset
+
+title "but the run config did not change, so no new run was triggered"
+trace print_requests.py //jobs/run-now

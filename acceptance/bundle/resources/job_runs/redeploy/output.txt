@@ -6,6 +6,25 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+
+>>> [CLI] bundle summary
+Name: job-runs-redeploy
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/job-runs-redeploy/default
+Resources:
+  Job Runs:
+    my_run:
+      Name: 
+      URL:  (not deployed)
+  Jobs:
+    my_job:
+      Name: my-job
+      URL:  [DATABRICKS_URL]/jobs/[MY_JOB_ID]?w=[NUMID]
+
 >>> read_id.py my_job
 [MY_JOB_ID]
 
@@ -29,6 +48,25 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-redeploy/
 Deploying resources...
 Updating deployment state...
 Deployment complete!
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+
+>>> [CLI] bundle summary
+Name: job-runs-redeploy
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/job-runs-redeploy/default
+Resources:
+  Job Runs:
+    my_run:
+      Name: 
+      URL:  (not deployed)
+  Jobs:
+    my_job:
+      Name: my-job
+      URL:  [DATABRICKS_URL]/jobs/[MY_JOB_ID]?w=[NUMID]
 
 === the config change triggered a second, different run
 >>> print_requests.py //jobs/run-now
