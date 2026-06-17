@@ -1,0 +1,33 @@
+bundle:
+  name: bad-database-id-$UNIQUE_NAME
+
+sync:
+  paths: []
+
+resources:
+  postgres_projects:
+    my_project:
+      project_id: test-pg-proj-$UNIQUE_NAME
+      display_name: "Bad database_id error test"
+      pg_version: 16
+      history_retention_duration: "604800s"
+
+  postgres_branches:
+    main:
+      parent: ${resources.postgres_projects.my_project.id}
+      branch_id: main
+      no_expiry: true
+
+  postgres_roles:
+    owner:
+      parent: ${resources.postgres_branches.main.id}
+      role_id: app-owner
+      postgres_role: app_owner
+
+  postgres_databases:
+    my_database:
+      parent: ${resources.postgres_branches.main.id}
+      # database_id must be lowercase + DNS-safe; this violates RFC 1123.
+      database_id: Invalid_DB_ID
+      postgres_database: app_db
+      role: ${resources.postgres_roles.owner.id}

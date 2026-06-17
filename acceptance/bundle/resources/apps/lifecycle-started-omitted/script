@@ -7,8 +7,7 @@ cleanup() {
 trap cleanup EXIT
 
 print_app_requests() {
-    jq --sort-keys 'select(.method != "GET" and (.path | contains("/apps")))' < out.requests.txt
-    rm out.requests.txt
+    print_requests.py //apps
 }
 
 title "(started omitted) -> deploy: app created with no_compute=true, no start/stop requests"

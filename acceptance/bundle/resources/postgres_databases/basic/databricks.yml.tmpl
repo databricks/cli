@@ -1,0 +1,35 @@
+bundle:
+  name: deploy-postgres-database-$UNIQUE_NAME
+
+sync:
+  paths: []
+
+resources:
+  postgres_projects:
+    my_project:
+      project_id: test-pg-proj-$UNIQUE_NAME
+      display_name: "Test Project for Database"
+      pg_version: 16
+      history_retention_duration: "604800s"
+
+  postgres_branches:
+    main:
+      parent: ${resources.postgres_projects.my_project.id}
+      branch_id: main
+      no_expiry: true
+
+  postgres_roles:
+    owner:
+      parent: ${resources.postgres_branches.main.id}
+      role_id: app-owner
+      postgres_role: app_owner
+
+  postgres_databases:
+    my_database:
+      parent: ${resources.postgres_branches.main.id}
+      database_id: my-database
+      postgres_database: app_db
+      # The live API requires `role`. Declare an explicit role so the bundle is
+      # portable across users (the auto-created project-owner role's id is
+      # derived from the creator's identity).
+      role: ${resources.postgres_roles.owner.id}

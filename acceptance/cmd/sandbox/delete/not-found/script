@@ -1,1 +1,1 @@
-errcode $CLI sandbox delete no-such-box --auto-approve
+musterr $CLI sandbox delete no-such-box --auto-approve

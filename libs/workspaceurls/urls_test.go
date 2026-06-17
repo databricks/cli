@@ -31,6 +31,10 @@ func TestNormalizeDotSeparatedID(t *testing.T) {
 	}
 }
 
+func TestJobRunPath(t *testing.T) {
+	assert.Equal(t, "jobs/123/runs/456", JobRunPath("123", "456"))
+}
+
 func TestResourceTypes(t *testing.T) {
 	types := ResourceTypes()
 	assert.NotEmpty(t, types)

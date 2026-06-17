@@ -749,6 +749,43 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
+	"postgres_databases": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		// Create parent project first
+		_, err := client.Postgres.CreateProject(ctx, postgres.CreateProjectRequest{
+			ProjectId: "test-project-for-database",
+			Project: postgres.Project{
+				Spec: &postgres.ProjectSpec{
+					DisplayName: "Test Project for Database",
+					PgVersion:   16,
+				},
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		// Create parent branch
+		_, err = client.Postgres.CreateBranch(ctx, postgres.CreateBranchRequest{
+			Parent:   "projects/test-project-for-database",
+			BranchId: "test-branch-for-database",
+			Branch:   postgres.Branch{},
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		return &resources.PostgresDatabase{
+			PostgresDatabaseConfig: resources.PostgresDatabaseConfig{
+				Parent:     "projects/test-project-for-database/branches/test-branch-for-database",
+				DatabaseId: "test-database",
+				DatabaseDatabaseSpec: postgres.DatabaseDatabaseSpec{
+					PostgresDatabase: "app_db",
+					Role:             "projects/test-project-for-database/branches/test-branch-for-database/roles/owner",
+				},
+			},
+		}, nil
+	},
+
 	"postgres_roles": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
 		// Create parent project first
 		_, err := client.Postgres.CreateProject(ctx, postgres.CreateProjectRequest{
@@ -1050,6 +1087,82 @@ func validateResourceConfig(t *testing.T, stateType reflect.Type, cfg *ResourceL
 	}
 	for _, p := range cfg.BackendDefaults {
 		assert.NoError(t, structaccess.ValidatePattern(stateType, p.Field), "BackendDefaults: %s", p.Field)
+	}
+}
+
+// TestNoUpdateResourcesCoverAllFields ensures that resources which do not
+// implement DoUpdate classify every settable field. Without DoUpdate the
+// planner rejects any "update" action ("resource does not support update
+// action but plan produced update"), so a field a user can change must be
+// declared recreate_on_changes (or ignore_local_changes) to recreate instead.
+// A provided_id_field also recreates on change (classifyIDField), so it counts
+// as covered too. An output-only field is fine under ignore_remote_changes
+// because the user never sets it, so it can never produce a user-driven change.
+//
+// The check walks the state type and fails on any uncovered scalar leaf. This
+// keeps the recreate_on_changes lists exhaustive as the SDK adds fields.
+func TestNoUpdateResourcesCoverAllFields(t *testing.T) {
+	for resourceType, resource := range SupportedResources {
+		adapter, err := NewAdapter(resource, resourceType, nil)
+		require.NoError(t, err)
+		if adapter.HasDoUpdate() {
+			continue
+		}
+		if adapter.HasOverrideChangeDesc() {
+			// OverrideChangeDesc classifies changes programmatically (e.g.
+			// vector_search_indexes handles endpoint_uuid there), which this
+			// static walk can't see into.
+			continue
+		}
+
+		// A user change is only neutralized by recreate_on_changes,
+		// provided_id_fields, or ignore_local_changes; output-only fields are
+		// covered by ignore_remote_changes since the user never sets them.
+		covered := map[string]bool{}
+		for _, cfg := range []*ResourceLifecycleConfig{adapter.ResourceConfig(), adapter.GeneratedResourceConfig()} {
+			if cfg == nil {
+				continue
+			}
+			for _, r := range cfg.RecreateOnChanges {
+				covered[r.Field.String()] = true
+			}
+			for _, r := range cfg.ProvidedIDFields {
+				covered[r.Field.String()] = true
+			}
+			for _, r := range cfg.IgnoreLocalChanges {
+				covered[r.Field.String()] = true
+			}
+			for _, r := range cfg.IgnoreRemoteChanges {
+				if strings.HasSuffix(r.Reason, "output_only") {
+					covered[r.Field.String()] = true
+				}
+			}
+		}
+
+		t.Run(resourceType, func(t *testing.T) {
+			err := structwalk.WalkType(adapter.StateType(), func(path *structpath.PatternNode, typ reflect.Type, _ *reflect.StructField) bool {
+				if path.IsRoot() {
+					return true
+				}
+				if covered[path.String()] {
+					// This field (or its enclosing object) is classified; the
+					// whole subtree is covered, so stop descending.
+					return false
+				}
+				for typ.Kind() == reflect.Pointer {
+					typ = typ.Elem()
+				}
+				switch typ.Kind() {
+				case reflect.Struct, reflect.Slice, reflect.Array, reflect.Map:
+					// Intermediate node: descend and check its children.
+					return true
+				default:
+					t.Errorf("field %q is not classified; a change to it would plan an unsupported update. Add it to recreate_on_changes.", path)
+					return false
+				}
+			})
+			require.NoError(t, err)
+		})
 	}
 }
 

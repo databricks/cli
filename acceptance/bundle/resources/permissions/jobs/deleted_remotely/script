@@ -1,6 +1,5 @@
 print_requests() {
-    jq 'select(.path | contains("/jobs/")) | select(.method != "GET")' < out.requests.txt
-    rm out.requests.txt
+    print_requests.py //jobs/
 }
 
 trace $CLI bundle plan -o json > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
