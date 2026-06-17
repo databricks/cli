@@ -21,7 +21,7 @@
 * engine/direct: Don't open the deployment state WAL when a deploy's plan fails ([#5607](https://github.com/databricks/cli/pull/5607)).
 * Ignore unity catalog managed schema property defaults to avoid unnecessary drift ([#5195](https://github.com/databricks/cli/pull/5195)).
 * Set the default `data_security_mode` to `DATA_SECURITY_MODE_AUTO` in bundle templates ([#5452](https://github.com/databricks/cli/pull/5452)).
-* Add `postgres_roles` and `postgres_databases` resources to create Postgres roles and databases on a Lakebase branch ([#5467](https://github.com/databricks/cli/pull/5467)).
+* Add `postgres_roles` and `postgres_databases` resources to create Postgres roles and databases on a Lakebase branch ([#5467](https://github.com/databricks/cli/pull/5467), [#5627](https://github.com/databricks/cli/pull/5627)).
 * direct: Stop spurious recreate/rename on redeploy when the backend normalizes a resource's name-based ID (e.g. Unity Catalog lowercasing a schema or volume name) ([#5599](https://github.com/databricks/cli/pull/5599)).
 
 ### Dependency updates
