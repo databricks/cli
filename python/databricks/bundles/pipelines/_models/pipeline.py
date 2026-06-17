@@ -67,7 +67,7 @@ class Pipeline(Resource):
 
     budget_policy_id: VariableOrOptional[str] = None
     """
-    Budget policy of this pipeline.
+    [Public Preview] Budget policy of this pipeline.
     """
 
     catalog: VariableOrOptional[str] = None
@@ -107,7 +107,7 @@ class Pipeline(Resource):
 
     environment: VariableOrOptional[PipelinesEnvironment] = None
     """
-    Environment specification for this pipeline used to install dependencies.
+    [Public Preview] Environment specification for this pipeline used to install dependencies.
     """
 
     event_log: VariableOrOptional[EventLogSpec] = None
@@ -124,7 +124,7 @@ class Pipeline(Resource):
     """
     :meta private: [EXPERIMENTAL]
     
-    The definition of a gateway pipeline to support change data capture.
+    [Private Preview] The definition of a gateway pipeline to support change data capture.
     """
 
     id: VariableOrOptional[str] = None
@@ -134,7 +134,7 @@ class Pipeline(Resource):
 
     ingestion_definition: VariableOrOptional[IngestionPipelineDefinition] = None
     """
-    The configuration for a managed ingestion pipeline. These settings cannot be used with the 'libraries', 'schema', 'target', or 'catalog' settings.
+    [Public Preview] The configuration for a managed ingestion pipeline. These settings cannot be used with the 'libraries', 'schema', 'target', or 'catalog' settings.
     """
 
     libraries: VariableOrList[PipelineLibrary] = field(default_factory=list)
@@ -158,6 +158,9 @@ class Pipeline(Resource):
     """
 
     parameters: VariableOrDict[str] = field(default_factory=dict)
+    """
+    [Beta]
+    """
 
     permissions: VariableOrList[PipelinePermission] = field(default_factory=list)
 
@@ -170,12 +173,12 @@ class Pipeline(Resource):
     """
     :meta private: [EXPERIMENTAL]
     
-    Restart window of this pipeline.
+    [Private Preview] Restart window of this pipeline.
     """
 
     root_path: VariableOrOptional[str] = None
     """
-    Root path for this pipeline.
+    [Public Preview] Root path for this pipeline.
     This is used as the root directory when editing the pipeline in the Databricks user interface and it is
     added to sys.path when executing Python sources during pipeline execution.
     """
@@ -213,7 +216,7 @@ class Pipeline(Resource):
     """
     :meta private: [EXPERIMENTAL]
     
-    Usage policy of this pipeline.
+    [Private Preview] Usage policy of this pipeline.
     """
 
     @classmethod
@@ -234,7 +237,7 @@ class PipelineDict(TypedDict, total=False):
 
     budget_policy_id: VariableOrOptional[str]
     """
-    Budget policy of this pipeline.
+    [Public Preview] Budget policy of this pipeline.
     """
 
     catalog: VariableOrOptional[str]
@@ -274,7 +277,7 @@ class PipelineDict(TypedDict, total=False):
 
     environment: VariableOrOptional[PipelinesEnvironmentParam]
     """
-    Environment specification for this pipeline used to install dependencies.
+    [Public Preview] Environment specification for this pipeline used to install dependencies.
     """
 
     event_log: VariableOrOptional[EventLogSpecParam]
@@ -291,7 +294,7 @@ class PipelineDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    The definition of a gateway pipeline to support change data capture.
+    [Private Preview] The definition of a gateway pipeline to support change data capture.
     """
 
     id: VariableOrOptional[str]
@@ -301,7 +304,7 @@ class PipelineDict(TypedDict, total=False):
 
     ingestion_definition: VariableOrOptional[IngestionPipelineDefinitionParam]
     """
-    The configuration for a managed ingestion pipeline. These settings cannot be used with the 'libraries', 'schema', 'target', or 'catalog' settings.
+    [Public Preview] The configuration for a managed ingestion pipeline. These settings cannot be used with the 'libraries', 'schema', 'target', or 'catalog' settings.
     """
 
     libraries: VariableOrList[PipelineLibraryParam]
@@ -325,6 +328,9 @@ class PipelineDict(TypedDict, total=False):
     """
 
     parameters: VariableOrDict[str]
+    """
+    [Beta]
+    """
 
     permissions: VariableOrList[PipelinePermissionParam]
 
@@ -337,12 +343,12 @@ class PipelineDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    Restart window of this pipeline.
+    [Private Preview] Restart window of this pipeline.
     """
 
     root_path: VariableOrOptional[str]
     """
-    Root path for this pipeline.
+    [Public Preview] Root path for this pipeline.
     This is used as the root directory when editing the pipeline in the Databricks user interface and it is
     added to sys.path when executing Python sources during pipeline execution.
     """
@@ -380,7 +386,7 @@ class PipelineDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    Usage policy of this pipeline.
+    [Private Preview] Usage policy of this pipeline.
     """
 
 

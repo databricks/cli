@@ -17,10 +17,29 @@ import (
 	"github.com/databricks/cli/libs/dyn/yamlsaver"
 )
 
-// fieldsKey nests a type's block inside the node of a field that resolves to
-// it. It cannot clash with descriptor keys, and config fields that happen to
-// be named "fields" simply appear inside it like any other field.
-const fieldsKey = "fields"
+// fieldsKey nests a type's block of field nodes inside the node of a field
+// that resolves to it.
+//
+// typeDocKey holds the documentation for the type a field's value resolves to
+// (for map and sequence fields: each entry). It is applied to the type's
+// shared $defs entry, so it shows up at every occurrence of the type; this is
+// also where enum values live.
+//
+// Both are "$"-prefixed so they cannot be mistaken for — or collide with — a
+// config field of the same name (e.g. artifacts.*.type), which always appears
+// as a bare key inside "$fields".
+const (
+	fieldsKey  = "$fields"
+	typeDocKey = "$type"
+)
+
+// lineTypeDoc and lineFields sort the "$type" and "$fields" keys after a
+// node's inline descriptor keys, which the saver orders with small line
+// numbers (see descriptorKeyOrder).
+const (
+	lineTypeDoc = 9999
+	lineFields  = 10000
+)
 
 const annotationsFileHeader = `# This file contains the documentation the CLI owns for the bundle
 # configuration JSON schema: docs for fields that do not exist in the upstream
@@ -28,13 +47,15 @@ const annotationsFileHeader = `# This file contains the documentation the CLI ow
 # for everything else is inherited from cli.json at generation time and must
 # not be duplicated here.
 #
-# The structure mirrors the bundle configuration tree:
+# The structure mirrors the bundle configuration tree. The "$type" and
+# "$fields" keys are structural; every other key is a config field name.
 #   - A node documents one field: its inline keys (description,
-#     markdown_description, ...) apply to the field itself, and "fields" holds
-#     the nodes of the type the field resolves to (map and sequence levels are
-#     unwrapped implicitly).
-#   - "_" inside "fields" documents the resolved type itself; for enum types
-#     it carries the enum values.
+#     markdown_description, ...) apply to the field itself.
+#   - "$type" documents the type the field's value resolves to — for map and
+#     sequence fields, each entry. These docs are shared by every occurrence
+#     of the type; enum values also live here.
+#   - "$fields" holds the nodes of that type's fields (map and sequence levels
+#     are unwrapped implicitly).
 #   - Each type is expanded exactly once, at its first occurrence; fields of
 #     types that occur again later (for example everything under "targets")
 #     are documented at that first occurrence.
@@ -54,6 +75,33 @@ var descriptorKeys = func() map[string]bool {
 	}
 	return keys
 }()
+
+// descriptorKeyOrder is the leading key order for a serialized descriptor,
+// matching the formatting of the previous annotation files. Remaining keys
+// follow alphabetically.
+var descriptorKeyOrder = []string{"description", "markdown_description", "title", "default", "enum"}
+
+// descriptorToMap serializes d into dst with its keys ordered. It returns the
+// nil value (writing nothing) when d carries no content.
+//
+// The empty check relies on the dyn.NilValue reference: with a nil reference,
+// FromTyped omits zero-valued fields, so an all-zero descriptor collapses to
+// KindNil rather than an empty map. Do not pass a map reference here, or empty
+// descriptors would start serializing as "{}".
+func descriptorToMap(d annotation.Descriptor, dst map[string]dyn.Value) (dyn.Value, error) {
+	v, err := convert.FromTyped(d, dyn.NilValue)
+	if err != nil || v.Kind() == dyn.KindNil {
+		return dyn.NilValue, err
+	}
+	return yamlsaver.ConvertToMapValue(d, yamlsaver.NewOrder(descriptorKeyOrder), []string{}, dst)
+}
+
+// descriptorEmpty reports whether d carries no documentation. See
+// descriptorToMap for why the nil reference is what makes this work.
+func descriptorEmpty(d annotation.Descriptor) bool {
+	v, err := convert.FromTyped(d, dyn.NilValue)
+	return err == nil && v.Kind() == dyn.KindNil
+}
 
 // loadAnnotationsFile reads the tree-format annotations file and flattens it
 // into per-type annotations. Tree positions that do not resolve to a type or
@@ -83,7 +131,7 @@ type fileLoader struct {
 	unknown []string
 }
 
-// block loads one type's block: "_" plus field nodes.
+// block loads one type's block of field nodes.
 func (l *fileLoader) block(v dyn.Value, typeKey, where string) error {
 	if v.Kind() == dyn.KindNil {
 		return nil
@@ -100,13 +148,10 @@ func (l *fileLoader) block(v dyn.Value, typeKey, where string) error {
 			child = key
 		}
 
-		edge := fieldEdge{name: key}
-		if key != RootTypeKey {
-			edge, ok = l.graph.edge(typeKey, key)
-			if !ok {
-				l.unknown = append(l.unknown, child)
-				continue
-			}
+		edge, ok := l.graph.edge(typeKey, key)
+		if !ok {
+			l.unknown = append(l.unknown, child)
+			continue
 		}
 		err := l.node(pair.Value, typeKey, edge, child)
 		if err != nil {
@@ -116,8 +161,9 @@ func (l *fileLoader) block(v dyn.Value, typeKey, where string) error {
 	return nil
 }
 
-// node loads one field's node: inline descriptor keys plus an optional
-// "fields" block for the type the field resolves to.
+// node loads one field's node: the inline descriptor for the field, the
+// "$type" docs for the type it resolves to, and the "$fields" block of that
+// type's fields.
 func (l *fileLoader) node(v dyn.Value, typeKey string, edge fieldEdge, where string) error {
 	if v.Kind() == dyn.KindNil {
 		return nil
@@ -136,6 +182,14 @@ func (l *fileLoader) node(v dyn.Value, typeKey string, edge fieldEdge, where str
 			if err != nil {
 				return err
 			}
+		case key == typeDocKey && edge.typ != "":
+			d, ok, err := l.descriptor(pair.Value, where+"."+typeDocKey)
+			if err != nil {
+				return err
+			}
+			if ok {
+				l.data.SetSelf(edge.typ, d)
+			}
 		case descriptorKeys[key]:
 			desc.SetLoc(key, nil, pair.Value)
 		default:
@@ -143,19 +197,48 @@ func (l *fileLoader) node(v dyn.Value, typeKey string, edge fieldEdge, where str
 		}
 	}
 
-	if desc.Len() == 0 {
-		return nil
+	if desc.Len() > 0 {
+		d, err := toDescriptor(desc, where)
+		if err != nil {
+			return err
+		}
+		l.data.SetField(typeKey, edge.name, d)
 	}
+	return nil
+}
+
+// descriptor parses a mapping of descriptor keys (the value of a "$type" key).
+// Non-descriptor keys are flagged as unknown. The second return is false when
+// the mapping carries no descriptor keys.
+func (l *fileLoader) descriptor(v dyn.Value, where string) (annotation.Descriptor, bool, error) {
+	m, ok := v.AsMap()
+	if !ok {
+		return annotation.Descriptor{}, false, fmt.Errorf("%s: expected a mapping, got %s", where, v.Kind())
+	}
+	desc := dyn.NewMapping()
+	for _, pair := range m.Pairs() {
+		key := pair.Key.MustString()
+		if descriptorKeys[key] {
+			desc.SetLoc(key, nil, pair.Value)
+		} else {
+			l.unknown = append(l.unknown, where+"."+key)
+		}
+	}
+	if desc.Len() == 0 {
+		return annotation.Descriptor{}, false, nil
+	}
+	d, err := toDescriptor(desc, where)
+	return d, err == nil, err
+}
+
+// toDescriptor converts a mapping of descriptor keys to a typed descriptor.
+func toDescriptor(desc dyn.Mapping, where string) (annotation.Descriptor, error) {
 	var d annotation.Descriptor
 	err := convert.ToTyped(&d, dyn.V(desc))
 	if err != nil {
-		return fmt.Errorf("%s: %w", where, err)
+		return annotation.Descriptor{}, fmt.Errorf("%s: %w", where, err)
 	}
-	if l.data[typeKey] == nil {
-		l.data[typeKey] = map[string]annotation.Descriptor{}
-	}
-	l.data[typeKey][edge.name] = d
-	return nil
+	return d, nil
 }
 
 // saveAnnotationsFile writes data to path in the canonical tree layout: a
@@ -165,11 +248,12 @@ func (l *fileLoader) node(v dyn.Value, typeKey string, edge fieldEdge, where str
 // exist) are returned as detached and are not written.
 func saveAnnotationsFile(path string, data annotation.File, g *typeGraph) ([]string, error) {
 	s := &fileSaver{
-		graph:    g,
-		data:     data,
-		visited:  map[string]bool{g.root: true},
-		expandAt: map[edgeKey]bool{},
-		consumed: map[edgeKey]bool{},
+		graph:        g,
+		data:         data,
+		visited:      map[string]bool{g.root: true},
+		expandAt:     map[edgeKey]bool{},
+		consumed:     map[edgeKey]bool{},
+		selfConsumed: map[string]bool{},
 	}
 	s.assignCanonical(g.root)
 
@@ -201,11 +285,12 @@ type edgeKey struct {
 }
 
 type fileSaver struct {
-	graph    *typeGraph
-	data     annotation.File
-	visited  map[string]bool
-	expandAt map[edgeKey]bool
-	consumed map[edgeKey]bool
+	graph        *typeGraph
+	data         annotation.File
+	visited      map[string]bool
+	expandAt     map[edgeKey]bool
+	consumed     map[edgeKey]bool
+	selfConsumed map[string]bool
 }
 
 // assignCanonical walks the type graph depth-first in struct declaration
@@ -221,22 +306,11 @@ func (s *fileSaver) assignCanonical(typeKey string) {
 	}
 }
 
-// block renders one type's block: "_" first, then field nodes alphabetically.
+// block renders one type's block of field nodes, emitted alphabetically.
 // Lines in the value locations encode the output order for the YAML saver.
 func (s *fileSaver) block(typeKey string) (map[string]dyn.Value, error) {
 	out := map[string]dyn.Value{}
 	line := 0
-
-	if d, ok := s.take(typeKey, RootTypeKey); ok {
-		v, err := descriptorValue(d, line)
-		if err != nil {
-			return nil, err
-		}
-		if v.Kind() != dyn.KindNil {
-			out[RootTypeKey] = v
-			line++
-		}
-	}
 
 	edges := slices.Clone(s.graph.fields[typeKey])
 	slices.SortFunc(edges, func(a, b fieldEdge) int {
@@ -255,70 +329,66 @@ func (s *fileSaver) block(typeKey string) (map[string]dyn.Value, error) {
 	return out, nil
 }
 
-// node renders one field's node: the inline descriptor plus, at the field's
-// canonical position, the "fields" block of the type it resolves to.
+// node renders one field's node: the inline field descriptor plus, at the
+// field's canonical position, the resolved type's "$type" docs and the
+// "fields" block of its fields.
 func (s *fileSaver) node(typeKey string, edge fieldEdge) (map[string]dyn.Value, error) {
 	out := map[string]dyn.Value{}
 
-	if d, ok := s.take(typeKey, edge.name); ok {
-		v, err := convert.FromTyped(d, dyn.NilValue)
-		if err != nil {
+	// The inline descriptor keys are written directly into the node, sharing
+	// it with the "$type" and "$fields" keys added below.
+	if d, ok := s.takeField(typeKey, edge.name); ok {
+		if _, err := descriptorToMap(d, out); err != nil {
 			return nil, err
-		}
-		if v.Kind() != dyn.KindNil {
-			// Order the descriptor keys with description first, like the
-			// previous annotation files.
-			order := yamlsaver.NewOrder([]string{"description", "markdown_description", "title", "default", "enum"})
-			_, err = yamlsaver.ConvertToMapValue(d, order, []string{}, out)
-			if err != nil {
-				return nil, err
-			}
 		}
 	}
 
 	if s.expandAt[edgeKey{typeKey, edge.name}] {
+		v, err := descriptorToMap(s.takeSelf(edge.typ), map[string]dyn.Value{})
+		if err != nil {
+			return nil, err
+		}
+		if v.Kind() != dyn.KindNil {
+			out[typeDocKey] = v.WithLocations([]dyn.Location{{Line: lineTypeDoc}})
+		}
+
 		child, err := s.block(edge.typ)
 		if err != nil {
 			return nil, err
 		}
 		if len(child) > 0 {
-			// A high line number sorts the block after the descriptor keys.
-			out[fieldsKey] = dyn.NewValue(child, []dyn.Location{{Line: 10000}})
+			out[fieldsKey] = dyn.NewValue(child, []dyn.Location{{Line: lineFields}})
 		}
 	}
 	return out, nil
 }
 
-// descriptorValue converts a descriptor for a "_" entry, ordering its keys
-// like the inline descriptors and placing it at the given line in its block.
-func descriptorValue(d annotation.Descriptor, line int) (dyn.Value, error) {
-	v, err := convert.FromTyped(d, dyn.NilValue)
-	if err != nil || v.Kind() == dyn.KindNil {
-		return dyn.NilValue, err
-	}
-	order := yamlsaver.NewOrder([]string{"description", "markdown_description", "title", "default", "enum"})
-	v, err = yamlsaver.ConvertToMapValue(d, order, []string{}, map[string]dyn.Value{})
-	if err != nil {
-		return dyn.NilValue, err
-	}
-	return v.WithLocations([]dyn.Location{{Line: line}}), nil
-}
-
-// take returns the descriptor for the given type and field and marks it
-// consumed for the detached-entry report.
-func (s *fileSaver) take(typeKey, name string) (annotation.Descriptor, bool) {
-	d, ok := s.data[typeKey][name]
+// takeField returns the descriptor for a field and marks it consumed for the
+// detached-entry report.
+func (s *fileSaver) takeField(typeKey, name string) (annotation.Descriptor, bool) {
+	d, ok := s.data[typeKey].Fields[name]
 	if ok {
 		s.consumed[edgeKey{typeKey, name}] = true
 	}
 	return d, ok
 }
 
-// detached returns the data entries no tree position consumed, sorted.
+// takeSelf returns a type's own descriptor and marks it accounted for, whether
+// or not it carries any docs (expanding the type is what consumes it).
+func (s *fileSaver) takeSelf(typeKey string) annotation.Descriptor {
+	s.selfConsumed[typeKey] = true
+	return s.data[typeKey].Self
+}
+
+// detached returns the data entries no tree position consumed, sorted. These
+// are fields or types that no longer exist in the config.
 func (s *fileSaver) detached() []string {
 	var out []string
-	for typeKey, fields := range s.data {
-		for name := range fields {
+	for typeKey, ta := range s.data {
+		if !s.selfConsumed[typeKey] && !descriptorEmpty(ta.Self) {
+			out = append(out, typeKey+": (type)")
+		}
+		for name := range ta.Fields {
 			if !s.consumed[edgeKey{typeKey, name}] {
 				out = append(out, typeKey+": "+name)
 			}

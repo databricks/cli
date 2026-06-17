@@ -17,19 +17,25 @@ func TestAnnotationsFileRoundTrip(t *testing.T) {
 
 	data := annotation.File{
 		getPath(reflect.TypeFor[tgRoot]()): {
-			"first":   {Description: "First field."},
-			"by_name": {Description: "Map field.", MarkdownDescription: "Map field. See [_](/foo.md)."},
+			Fields: map[string]annotation.Descriptor{
+				"first":   {Description: "First field."},
+				"by_name": {Description: "Map field.", MarkdownDescription: "Map field. See [_](/foo.md)."},
+			},
 		},
 		getPath(reflect.TypeFor[tgNested]()): {
-			"_":           {Description: "A nested type."},
-			"description": {Description: annotation.Placeholder},
-			"again":       {Description: "Recursive field."},
+			Self: annotation.Descriptor{Description: "A nested type."},
+			Fields: map[string]annotation.Descriptor{
+				"description": {Description: annotation.Placeholder},
+				"again":       {Description: "Recursive field."},
+			},
 		},
 		getPath(reflect.TypeFor[tgMode]()): {
-			"_": {Enum: []any{"a", "b"}},
+			Self: annotation.Descriptor{Enum: []any{"a", "b"}},
 		},
 		getPath(reflect.TypeFor[tgItem]()): {
-			"inner": {Description: "Inner docs."},
+			Fields: map[string]annotation.Descriptor{
+				"inner": {Description: "Inner docs."},
+			},
 		},
 	}
 
@@ -43,8 +49,8 @@ func TestAnnotationsFileRoundTrip(t *testing.T) {
 
 	// Keys are emitted alphabetically; tgNested expands under `first` (its
 	// canonical position in declaration order), so `by_name`, which resolves
-	// to the same type, carries no `fields` block. `plain` has no content and
-	// is omitted entirely.
+	// to the same type, carries no `$type` or `$fields` keys. `plain` has no
+	// content and is omitted entirely.
 	expected := annotationsFileHeader + `by_name:
   "description": |-
     Map field.
@@ -53,10 +59,10 @@ func TestAnnotationsFileRoundTrip(t *testing.T) {
 first:
   "description": |-
     First field.
-  "fields":
-    "_":
-      "description": |-
-        A nested type.
+  "$type":
+    "description": |-
+      A nested type.
+  "$fields":
     "again":
       "description": |-
         Recursive field.
@@ -64,18 +70,17 @@ first:
       "description": |-
         PLACEHOLDER
 items:
-  "fields":
+  "$fields":
     "inner":
       "description": |-
         Inner docs.
 mode:
-  "fields":
-    "_":
-      "enum":
-        - |-
-          a
-        - |-
-          b
+  "$type":
+    "enum":
+      - |-
+        a
+      - |-
+        b
 `
 	assert.Equal(t, expected, string(b))
 
@@ -103,15 +108,21 @@ func TestAnnotationsFileUnknownEntries(t *testing.T) {
     Valid entry.
   bogus_key: |-
     Not a descriptor key.
-  fields:
+  type:
+    description: |-
+      Unprefixed "type" is not the structural key, so it is unknown here.
+  $fields:
     no_such_field:
       description: |-
         Field does not exist.
 plain:
-  fields:
+  $fields:
     nested:
       description: |-
         Primitive fields have no nested fields.
+  $type:
+    description: |-
+      Primitive fields have no type docs.
 `), 0o644)
 	require.NoError(t, err)
 
@@ -119,12 +130,14 @@ plain:
 	require.NoError(t, err)
 	assert.Equal(t, []string{
 		"first.bogus_key",
-		"first.fields.no_such_field",
-		"plain.fields",
+		"first.type",
+		"first.$fields.no_such_field",
+		"plain.$fields",
+		"plain.$type",
 	}, unknown)
 
 	// The valid entry is still loaded.
-	assert.Equal(t, "Valid entry.", data[getPath(reflect.TypeFor[tgRoot]())]["first"].Description)
+	assert.Equal(t, "Valid entry.", data[getPath(reflect.TypeFor[tgRoot]())].Fields["first"].Description)
 }
 
 func TestAnnotationsFileDetachedEntries(t *testing.T) {
@@ -133,10 +146,15 @@ func TestAnnotationsFileDetachedEntries(t *testing.T) {
 
 	data := annotation.File{
 		getPath(reflect.TypeFor[tgRoot]()): {
-			"no_such_field": {Description: "Stale."},
+			Fields: map[string]annotation.Descriptor{
+				"no_such_field": {Description: "Stale."},
+			},
 		},
 		"github.com/databricks/cli/no/such.Type": {
-			"field": {Description: "Stale."},
+			Self: annotation.Descriptor{Description: "Stale type."},
+			Fields: map[string]annotation.Descriptor{
+				"field": {Description: "Stale."},
+			},
 		},
 	}
 
@@ -145,6 +163,7 @@ func TestAnnotationsFileDetachedEntries(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, []string{
 		"github.com/databricks/cli/bundle/internal/schema.tgRoot: no_such_field",
+		"github.com/databricks/cli/no/such.Type: (type)",
 		"github.com/databricks/cli/no/such.Type: field",
 	}, detached)
 }

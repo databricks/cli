@@ -374,7 +374,7 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 		return runIDE(ctx, client, userName, keyPath, serverPort, clusterID, opts)
 	} else {
 		log.Infof(ctx, "Additional SSH arguments: %v", opts.AdditionalArgs)
-		return spawnSSHClient(ctx, userName, keyPath, serverPort, clusterID, opts)
+		return spawnSSHClient(ctx, client, userName, keyPath, serverPort, clusterID, opts)
 	}
 }
 
@@ -452,22 +452,11 @@ func getServerMetadata(ctx context.Context, client *databricks.WorkspaceClient, 
 		return 0, "", "", errors.Join(errServerMetadata, errors.New("cluster ID not available in metadata"))
 	}
 
-	workspaceID, err := auth.ResolveWorkspaceID(ctx, client)
+	req, err := newDriverProxyRequest(ctx, client, effectiveClusterID, wsMetadata.Port, "metadata", liteswap)
 	if err != nil {
 		return 0, "", "", err
 	}
-	metadataURL := fmt.Sprintf("%s/driver-proxy-api/o/%s/%s/%d/metadata", client.Config.Host, workspaceID, effectiveClusterID, wsMetadata.Port)
-	log.Debugf(ctx, "Metadata URL: %s", metadataURL)
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, metadataURL, nil)
-	if err != nil {
-		return 0, "", "", err
-	}
-	if liteswap != "" {
-		req.Header.Set("x-databricks-traffic-id", "testenv://liteswap/"+liteswap)
-	}
-	if err := client.Config.Authenticate(req); err != nil {
-		return 0, "", "", err
-	}
+	log.Debugf(ctx, "Metadata URL: %s", req.URL)
 	httpClient := &http.Client{Transport: client.Config.HTTPTransport}
 	resp, err := httpClient.Do(req)
 	if err != nil {
@@ -489,6 +478,55 @@ func getServerMetadata(ctx context.Context, client *databricks.WorkspaceClient, 
 	return wsMetadata.Port, string(bodyBytes), effectiveClusterID, nil
 }
 
+// newDriverProxyRequest builds an authenticated GET request to one of the SSH server's
+// HTTP endpoints behind the workspace driver proxy.
+func newDriverProxyRequest(ctx context.Context, client *databricks.WorkspaceClient, clusterID string, port int, endpoint, liteswap string) (*http.Request, error) {
+	workspaceID, err := auth.ResolveWorkspaceID(ctx, client)
+	if err != nil {
+		return nil, err
+	}
+	url := fmt.Sprintf("%s/driver-proxy-api/o/%s/%s/%d/%s", client.Config.Host, workspaceID, clusterID, port, endpoint)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+	if liteswap != "" {
+		req.Header.Set("x-databricks-traffic-id", "testenv://liteswap/"+liteswap)
+	}
+	if err := client.Config.Authenticate(req); err != nil {
+		return nil, err
+	}
+	return req, nil
+}
+
+// fetchServerErrorLogs fetches recent warning/error log lines from the running SSH
+// server's /logs endpoint. It is best-effort: any failure (including older server
+// versions that don't serve /logs) yields an empty string.
+func fetchServerErrorLogs(ctx context.Context, client *databricks.WorkspaceClient, clusterID string, serverPort int, liteswap string) string {
+	req, err := newDriverProxyRequest(ctx, client, clusterID, serverPort, "logs", liteswap)
+	if err != nil {
+		log.Debugf(ctx, "Failed to build server logs request: %v", err)
+		return ""
+	}
+	httpClient := &http.Client{Transport: client.Config.HTTPTransport}
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		log.Debugf(ctx, "Failed to fetch server logs: %v", err)
+		return ""
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		log.Debugf(ctx, "Server logs endpoint returned status %d", resp.StatusCode)
+		return ""
+	}
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Debugf(ctx, "Failed to read server logs response: %v", err)
+		return ""
+	}
+	return strings.TrimSpace(string(body))
+}
+
 // submitSSHTunnelJob submits the bootstrap job and waits for the SSH server task to start.
 // It returns the job run ID (when known) so callers can fetch and surface the run's error
 // details if the server never comes up.
@@ -499,7 +537,7 @@ func submitSSHTunnelJob(ctx context.Context, client *databricks.WorkspaceClient,
 		return 0, fmt.Errorf("failed to get workspace content directory: %w", err)
 	}
 
-	err = client.Workspace.MkdirsByPath(ctx, contentDir) //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
+	err = client.Workspace.MkdirsByPath(ctx, contentDir)
 	if err != nil {
 		return 0, fmt.Errorf("failed to create directory in the remote workspace: %w", err)
 	}
@@ -581,7 +619,7 @@ func submitSSHTunnelJob(ctx context.Context, client *databricks.WorkspaceClient,
 	return waiter.RunId, waitForJobToStart(ctx, client, waiter.RunId, opts.TaskStartupTimeout)
 }
 
-func spawnSSHClient(ctx context.Context, userName, privateKeyPath string, serverPort int, clusterID string, opts ClientOptions) error {
+func spawnSSHClient(ctx context.Context, client *databricks.WorkspaceClient, userName, privateKeyPath string, serverPort int, clusterID string, opts ClientOptions) error {
 	// Create a copy with metadata for the ProxyCommand
 	optsWithMetadata := opts
 	optsWithMetadata.ServerMetadata = FormatMetadata(userName, serverPort, clusterID)
@@ -616,14 +654,19 @@ func spawnSSHClient(ctx context.Context, userName, privateKeyPath string, server
 
 	err = sshCmd.Run()
 	// ssh reserves exit code 255 for its own connection-level failures (a remote command's exit
-	// code is passed through as-is, 0-254). The most common cause here is the cluster's container
-	// image missing an OpenSSH server, so the server can't launch sshd once we connect — the
-	// connection then drops right after "Connected!". Surface an actionable hint rather than
-	// leaving the user with ssh's opaque "Connection closed" message.
+	// code is passed through as-is, 0-254). The server keeps running after a failed connection
+	// attempt, so its error (e.g. sshd missing from the container image) is only visible in its
+	// own logs — fetch them from the /logs endpoint and show them instead of leaving the user
+	// with ssh's opaque "Connection closed" message.
 	if exitErr, ok := errors.AsType[*exec.ExitError](err); ok && exitErr.ExitCode() == 255 {
-		cmdio.LogString(ctx, cmdio.Yellow(ctx, "The SSH connection closed unexpectedly. If it dropped right after connecting, "+
-			"the cluster's container image is likely missing an OpenSSH server: ensure 'openssh-server' "+
-			"is installed (it provides /usr/sbin/sshd), then check the SSH server job run logs."))
+		if logs := fetchServerErrorLogs(ctx, client, clusterID, serverPort, opts.Liteswap); logs != "" {
+			cmdio.LogString(ctx, cmdio.Yellow(ctx, "The SSH connection closed unexpectedly. Recent SSH server errors:"))
+			cmdio.LogString(ctx, truncateTail(logs, maxRunFailureTraceBytes))
+		} else {
+			cmdio.LogString(ctx, cmdio.Yellow(ctx, "The SSH connection closed unexpectedly. If it dropped right after connecting, "+
+				"the cluster's container image is likely missing an OpenSSH server: ensure 'openssh-server' "+
+				"is installed (it provides /usr/sbin/sshd), then check the SSH server job run logs."))
+		}
 	}
 	return err
 }
@@ -759,10 +802,14 @@ func describeRunFailure(ctx context.Context, client *databricks.WorkspaceClient,
 		outputRunID = sshTask.RunId
 	}
 	if output, err := client.Jobs.GetRunOutput(ctx, jobs.GetRunOutputRequest{RunId: outputRunID}); err == nil && output != nil {
-		if e := strings.TrimSpace(output.Error); e != "" {
-			fmt.Fprintf(&b, "  %s\n", e)
+		e := strings.TrimSpace(output.Error)
+		trace := strings.TrimSpace(output.ErrorTrace)
+		// Notebook tracebacks end with the same message as Error; skip Error then so the
+		// server-log tail the bootstrap embeds in the message isn't printed twice.
+		if e != "" && !strings.Contains(trace, e) {
+			fmt.Fprintf(&b, "  %s\n", truncateTail(e, maxRunFailureTraceBytes))
 		}
-		if trace := strings.TrimSpace(output.ErrorTrace); trace != "" {
+		if trace != "" {
 			fmt.Fprintf(&b, "%s\n", truncateTail(trace, maxRunFailureTraceBytes))
 		}
 	}

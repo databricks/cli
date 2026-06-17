@@ -5,11 +5,9 @@ import (
 	"io"
 	"os"
 	"path"
-	"reflect"
 	"strings"
 	"testing"
 
-	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/merge"
 	"github.com/databricks/cli/libs/dyn/yamlloader"
@@ -91,7 +89,7 @@ func TestRequiredAnnotationsForNewFields(t *testing.T) {
 // Checks that the annotations file only contains entries that match the
 // current bundle configuration structure.
 func TestNoDetachedAnnotations(t *testing.T) {
-	g, err := newTypeGraph(reflect.TypeFor[config.Root]())
+	g, err := configTypeGraph()
 	require.NoError(t, err)
 
 	_, unknown, err := loadAnnotationsFile("annotations.yml", g)

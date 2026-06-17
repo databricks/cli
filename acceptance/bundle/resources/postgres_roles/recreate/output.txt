@@ -1,0 +1,165 @@
+
+>>> cat databricks.yml
+bundle:
+  name: deploy-postgres-role-recreate-[UNIQUE_NAME]
+
+sync:
+  paths: []
+
+resources:
+  postgres_projects:
+    my_project:
+      project_id: test-pg-proj-[UNIQUE_NAME]
+      display_name: "Test Project for Role"
+      pg_version: 16
+      history_retention_duration: "604800s"
+
+  postgres_branches:
+    main:
+      parent: ${resources.postgres_projects.my_project.id}
+      branch_id: main
+      no_expiry: true
+
+  postgres_roles:
+    my_role:
+      parent: ${resources.postgres_branches.main.id}
+      role_id: test-role-[UNIQUE_NAME]
+      postgres_role: app_role
+
+>>> [CLI] bundle plan
+create postgres_branches.main
+create postgres_projects.my_project
+create postgres_roles.my_role
+
+Plan: 3 to add, 0 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-role-recreate-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests
+{
+  "body": {
+    "spec": {
+      "display_name": "Test Project for Role",
+      "history_retention_duration": "604800s",
+      "pg_version": 16
+    }
+  },
+  "method": "POST",
+  "path": "/api/2.0/postgres/projects",
+  "q": {
+    "project_id": "test-pg-proj-[UNIQUE_NAME]"
+  }
+}
+      "no_expiry": true
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches",
+    "branch_id": "main"
+      "postgres_role": "app_role"
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles",
+    "role_id": "test-role-[UNIQUE_NAME]"
+
+>>> cat databricks.yml
+bundle:
+  name: deploy-postgres-role-recreate-[UNIQUE_NAME]
+
+sync:
+  paths: []
+
+resources:
+  postgres_projects:
+    my_project:
+      project_id: test-pg-proj-[UNIQUE_NAME]
+      display_name: "Test Project for Role"
+      pg_version: 16
+      history_retention_duration: "604800s"
+
+  postgres_branches:
+    main:
+      parent: ${resources.postgres_projects.my_project.id}
+      branch_id: main
+      no_expiry: true
+
+  postgres_roles:
+    my_role:
+      parent: ${resources.postgres_branches.main.id}
+      role_id: test-role-[UNIQUE_NAME]-v2
+      postgres_role: app_role
+
+>>> [CLI] bundle plan
+recreate postgres_roles.my_role
+
+Plan: 1 to add, 0 to change, 1 to delete, 2 unchanged
+
+>>> [CLI] bundle deploy --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-role-recreate-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests
+{
+  "method": "DELETE",
+  "path": "/api/2.0/postgres/[MY_ROLE_ID]"
+}
+  "body": {
+    "spec": {
+      "postgres_role": "app_role"
+    }
+  },
+  "method": "POST",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles",
+  "q": {
+    "role_id": "test-role-[UNIQUE_NAME]-v2"
+  }
+
+=== Fetch role and verify it exists after recreation
+>>> [CLI] postgres get-role [MY_ROLE_ID]-v2
+{
+  "name": "[MY_ROLE_ID]-v2",
+  "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
+  "status": {
+    "attributes": {
+      "bypassrls": false,
+      "createdb": false,
+      "createrole": false
+    },
+    "auth_method": "PG_PASSWORD_SCRAM_SHA_256",
+    "identity_type": "IDENTITY_TYPE_UNSPECIFIED",
+    "postgres_role": "app_role",
+    "role_id": "test-role-[UNIQUE_NAME]-v2"
+  }
+}
+
+=== Destroy and verify cleanup
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.postgres_branches.main
+  delete resources.postgres_projects.my_project
+  delete resources.postgres_roles.my_role
+
+This action will result in the deletion of the following Lakebase projects along with
+all their branches, databases, and endpoints. All data stored in them will be permanently lost:
+  delete resources.postgres_projects.my_project
+
+This action will result in the deletion of the following Lakebase branches.
+All data stored in them will be permanently lost:
+  delete resources.postgres_branches.main
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-role-recreate-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!
+
+>>> print_requests
+{
+  "method": "DELETE",
+  "path": "/api/2.0/postgres/[MY_ROLE_ID]-v2"
+}
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main"
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]"
+
+>>> [CLI] bundle destroy --auto-approve
+No active deployment found to destroy!

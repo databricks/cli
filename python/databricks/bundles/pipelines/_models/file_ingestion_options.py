@@ -31,51 +31,59 @@ class FileIngestionOptions:
     corrupt_record_column: VariableOrOptional[str] = None
     """
     :meta private: [EXPERIMENTAL]
+    
+    [Private Preview]
     """
 
     file_filters: VariableOrList[FileFilter] = field(default_factory=list)
     """
     :meta private: [EXPERIMENTAL]
     
-    Generic options
+    [Private Preview] Generic options
     """
 
     format: VariableOrOptional[FileIngestionOptionsFileFormat] = None
     """
     :meta private: [EXPERIMENTAL]
     
-    required for TableSpec
+    [Private Preview] required for TableSpec
     """
 
     format_options: VariableOrDict[str] = field(default_factory=dict)
     """
     :meta private: [EXPERIMENTAL]
     
-    Format-specific options
+    [Private Preview] Format-specific options
     Based on https://docs.databricks.com/aws/en/ingestion/cloud-object-storage/auto-loader/options#file-format-options
     """
 
     ignore_corrupt_files: VariableOrOptional[bool] = None
     """
     :meta private: [EXPERIMENTAL]
+    
+    [Private Preview]
     """
 
     infer_column_types: VariableOrOptional[bool] = None
     """
     :meta private: [EXPERIMENTAL]
+    
+    [Private Preview]
     """
 
     reader_case_sensitive: VariableOrOptional[bool] = None
     """
     :meta private: [EXPERIMENTAL]
     
-    Column name case sensitivity
+    [Private Preview] Column name case sensitivity
     https://docs.databricks.com/aws/en/ingestion/cloud-object-storage/auto-loader/schema#change-case-sensitive-behavior
     """
 
     rescued_data_column: VariableOrOptional[str] = None
     """
     :meta private: [EXPERIMENTAL]
+    
+    [Private Preview]
     """
 
     schema_evolution_mode: VariableOrOptional[
@@ -84,20 +92,22 @@ class FileIngestionOptions:
     """
     :meta private: [EXPERIMENTAL]
     
-    Based on https://docs.databricks.com/aws/en/ingestion/cloud-object-storage/auto-loader/schema#how-does-auto-loader-schema-evolution-work
+    [Private Preview] Based on https://docs.databricks.com/aws/en/ingestion/cloud-object-storage/auto-loader/schema#how-does-auto-loader-schema-evolution-work
     """
 
     schema_hints: VariableOrOptional[str] = None
     """
     :meta private: [EXPERIMENTAL]
     
-    Override inferred schema of specific columns
+    [Private Preview] Override inferred schema of specific columns
     Based on https://docs.databricks.com/aws/en/ingestion/cloud-object-storage/auto-loader/schema#override-schema-inference-with-schema-hints
     """
 
     single_variant_column: VariableOrOptional[str] = None
     """
     :meta private: [EXPERIMENTAL]
+    
+    [Private Preview]
     """
 
     @classmethod
@@ -114,51 +124,59 @@ class FileIngestionOptionsDict(TypedDict, total=False):
     corrupt_record_column: VariableOrOptional[str]
     """
     :meta private: [EXPERIMENTAL]
+    
+    [Private Preview]
     """
 
     file_filters: VariableOrList[FileFilterParam]
     """
     :meta private: [EXPERIMENTAL]
     
-    Generic options
+    [Private Preview] Generic options
     """
 
     format: VariableOrOptional[FileIngestionOptionsFileFormatParam]
     """
     :meta private: [EXPERIMENTAL]
     
-    required for TableSpec
+    [Private Preview] required for TableSpec
     """
 
     format_options: VariableOrDict[str]
     """
     :meta private: [EXPERIMENTAL]
     
-    Format-specific options
+    [Private Preview] Format-specific options
     Based on https://docs.databricks.com/aws/en/ingestion/cloud-object-storage/auto-loader/options#file-format-options
     """
 
     ignore_corrupt_files: VariableOrOptional[bool]
     """
     :meta private: [EXPERIMENTAL]
+    
+    [Private Preview]
     """
 
     infer_column_types: VariableOrOptional[bool]
     """
     :meta private: [EXPERIMENTAL]
+    
+    [Private Preview]
     """
 
     reader_case_sensitive: VariableOrOptional[bool]
     """
     :meta private: [EXPERIMENTAL]
     
-    Column name case sensitivity
+    [Private Preview] Column name case sensitivity
     https://docs.databricks.com/aws/en/ingestion/cloud-object-storage/auto-loader/schema#change-case-sensitive-behavior
     """
 
     rescued_data_column: VariableOrOptional[str]
     """
     :meta private: [EXPERIMENTAL]
+    
+    [Private Preview]
     """
 
     schema_evolution_mode: VariableOrOptional[
@@ -167,20 +185,22 @@ class FileIngestionOptionsDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    Based on https://docs.databricks.com/aws/en/ingestion/cloud-object-storage/auto-loader/schema#how-does-auto-loader-schema-evolution-work
+    [Private Preview] Based on https://docs.databricks.com/aws/en/ingestion/cloud-object-storage/auto-loader/schema#how-does-auto-loader-schema-evolution-work
     """
 
     schema_hints: VariableOrOptional[str]
     """
     :meta private: [EXPERIMENTAL]
     
-    Override inferred schema of specific columns
+    [Private Preview] Override inferred schema of specific columns
     Based on https://docs.databricks.com/aws/en/ingestion/cloud-object-storage/auto-loader/schema#override-schema-inference-with-schema-hints
     """
 
     single_variant_column: VariableOrOptional[str]
     """
     :meta private: [EXPERIMENTAL]
+    
+    [Private Preview]
     """
 
 

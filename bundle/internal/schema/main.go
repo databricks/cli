@@ -12,9 +12,11 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/config/variable"
+	"github.com/databricks/cli/internal/clijson"
 	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/jsonschema"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/databricks-sdk-go/service/pipelines"
 )
 
 // interpolationPattern builds a JSON Schema regex for ${prefix.path...} references.
@@ -132,6 +134,25 @@ func removePipelineFields(typ reflect.Type, s jsonschema.Schema) jsonschema.Sche
 	return s
 }
 
+// removeDeploymentFields strips deployment_id and version_id from the job and
+// pipeline deployment blocks. The CLI sets these to track the bundle
+// deployment in the Deployment Metadata Service; they are not user-configurable,
+// so they must not appear in the JSON schema or the generated annotation files.
+// The parent "deployment" block is already removed from the Job and Pipeline
+// schemas (see removeJobsFields / removePipelineFields); this removes the fields
+// from the JobDeployment / PipelineDeployment type definitions themselves.
+func removeDeploymentFields(typ reflect.Type, s jsonschema.Schema) jsonschema.Schema {
+	switch typ {
+	case reflect.TypeFor[jobs.JobDeployment](), reflect.TypeFor[pipelines.PipelineDeployment]():
+		delete(s.Properties, "deployment_id")
+		delete(s.Properties, "version_id")
+	default:
+		// Do nothing
+	}
+
+	return s
+}
+
 // While volume_type is required in the volume create API, DABs automatically sets
 // it's value to "MANAGED" if it's not provided. Thus, we make it optional
 // in the bundle schema.
@@ -205,20 +226,34 @@ func main() {
 	generateSchema(workdir, outputFile, cliJSONFile, docsMode)
 }
 
+// configTypeGraph builds the type graph for the bundle config root with the
+// schema generator's structural field prunes applied, so the annotations file
+// only documents fields the generated schema actually contains. Both the
+// generator and the detached-annotation test use it to stay in lockstep.
+func configTypeGraph() (*typeGraph, error) {
+	return newTypeGraph(reflect.TypeFor[config.Root](), removeJobsFields, removePipelineFields)
+}
+
 func generateSchema(workdir, outputFile, cliJSONFile string, docsMode bool) {
 	annotationsPath := filepath.Join(workdir, "annotations.yml")
 
-	schemas, err := parseCliJSON(cliJSONFile)
+	// The cli.json schema graph is keyed by SDK type name (e.g.
+	// "jobs.JobSettings"); the annotation parser matches Go SDK types against
+	// those keys directly.
+	doc, err := clijson.Parse(cliJSONFile)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if len(doc.Schemas) == 0 {
+		log.Fatalf("no schemas found in %s", cliJSONFile)
+	}
+
+	extracted, err := newParser(doc.Schemas).extractAnnotations(reflect.TypeFor[config.Root]())
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	extracted, err := newParser(schemas).extractAnnotations(reflect.TypeFor[config.Root]())
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	graph, err := newTypeGraph(reflect.TypeFor[config.Root]())
+	graph, err := configTypeGraph()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -228,7 +263,7 @@ func generateSchema(workdir, outputFile, cliJSONFile string, docsMode bool) {
 		log.Fatal(err)
 	}
 	for _, k := range unknown {
-		fmt.Printf("Dropping annotation at `%s`: no such field in the bundle configuration\n", k)
+		fmt.Printf("Dropping annotation at `%s`: no matching field in the bundle configuration\n", k)
 	}
 
 	a, err := newAnnotationHandler(extracted, fromFile)
@@ -239,6 +274,7 @@ func generateSchema(workdir, outputFile, cliJSONFile string, docsMode bool) {
 	transforms := []func(reflect.Type, jsonschema.Schema) jsonschema.Schema{
 		removeJobsFields,
 		removePipelineFields,
+		removeDeploymentFields,
 		makeVolumeTypeOptional,
 		a.addAnnotations,
 		removeOutputOnlyFields,
