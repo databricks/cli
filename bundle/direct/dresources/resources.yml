@@ -420,11 +420,49 @@ resources:
     provided_id_fields:
       - field: name
         reason: id_field
+    # The Database API has no UpdateDatabaseCatalog endpoint (the generated SDK
+    # method is a stub that returns 501 NOT_IMPLEMENTED), so this resource
+    # implements no DoUpdate and every settable field must recreate. The
+    # complementary ignore_remote_changes block in resources.generated.yml
+    # handles the read side (create_database_if_not_exists is input-only, uid is
+    # output-only) so no-op deploys stay idempotent.
+    recreate_on_changes:
+      - field: database_instance_name
+        reason: immutable
+      - field: database_name
+        reason: immutable
+      - field: create_database_if_not_exists
+        reason: immutable
 
   synced_database_tables:
     provided_id_fields:
       - field: name
         reason: id_field
+    # The Database API has no UpdateSyncedDatabaseTable endpoint (the generated
+    # SDK method is a stub that returns 501 NOT_IMPLEMENTED), so this resource
+    # implements no DoUpdate and every settable field must recreate. The
+    # complementary ignore_remote_changes block in resources.generated.yml
+    # handles the read side (input-only and output-only fields) so no-op deploys
+    # stay idempotent. Same pattern as postgres_synced_tables.
+    recreate_on_changes:
+      - field: database_instance_name
+        reason: immutable
+      - field: logical_database_name
+        reason: immutable
+      - field: spec.source_table_full_name
+        reason: immutable
+      - field: spec.primary_key_columns
+        reason: immutable
+      - field: spec.timeseries_key
+        reason: immutable
+      - field: spec.scheduling_policy
+        reason: immutable
+      - field: spec.create_database_objects_if_missing
+        reason: immutable
+      - field: spec.new_pipeline_spec
+        reason: immutable
+      - field: spec.existing_pipeline_id
+        reason: immutable
 
   apps:
     provided_id_fields:
