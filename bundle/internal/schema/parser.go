@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"os"
 	"path"
@@ -87,44 +88,41 @@ func (p *annotationParser) findRef(typ reflect.Type) (*clijson.SchemaJSON, bool)
 	return nil, false
 }
 
-// previewFromLaunchStage maps a launch stage to the preview marker the bundle
-// uses to hide a field or type from completions. cli.json no longer carries a
-// separate preview flag — launch_stage is the single source of truth — so a
-// private-preview stage is the only one that should not be suggested. Every
-// other stage (GA, public preview, ...) yields an empty marker.
-func previewFromLaunchStage(launchStage string) string {
-	if launchStage == "PRIVATE_PREVIEW" {
-		return "PRIVATE"
+// normalizeLaunchStage validates the contract's launch stage and drops GA so it
+// isn't persisted in the annotation file. GA is the implicit default for any
+// field that isn't in a preview, so storing it would add a stage to thousands
+// of entries for no benefit. It errors on any stage the CLI doesn't recognize
+// so a stage introduced upstream fails codegen instead of silently rendering as
+// GA (see clijson.ParseLaunchStage).
+func normalizeLaunchStage(launchStage string) (clijson.LaunchStage, error) {
+	stage, err := clijson.ParseLaunchStage(launchStage)
+	if err != nil {
+		return "", err
 	}
-	return ""
-}
-
-// normalizeLaunchStage drops the GA stage so it isn't persisted in the
-// annotation file. GA is the implicit default for any field that isn't in a
-// preview, so storing it would add a stage to thousands of entries for no
-// benefit. cli.json is already filtered at min-stage=PRIVATE_PREVIEW upstream,
-// so the only other values are the preview stages, which we keep verbatim.
-func normalizeLaunchStage(launchStage string) string {
-	if launchStage == "GA" {
-		return ""
+	if stage == clijson.LaunchStageGA {
+		return "", nil
 	}
-	return launchStage
+	return stage, nil
 }
 
 // notableEnumLaunchStages keeps only the enum values whose launch stage is
 // worth surfacing (i.e. not GA), so the annotation file isn't polluted with a
 // stage for every value of a GA enum. Returns nil when nothing remains.
-func notableEnumLaunchStages(stages map[string]string) map[string]string {
-	result := map[string]string{}
+func notableEnumLaunchStages(stages map[string]string) (map[string]clijson.LaunchStage, error) {
+	result := map[string]clijson.LaunchStage{}
 	for value, stage := range stages {
-		if ls := normalizeLaunchStage(stage); ls != "" {
+		ls, err := normalizeLaunchStage(stage)
+		if err != nil {
+			return nil, err
+		}
+		if ls != "" {
 			result[value] = ls
 		}
 	}
 	if len(result) == 0 {
-		return nil
+		return nil, nil
 	}
-	return result
+	return result, nil
 }
 
 // nonEmptyEnumDescriptions drops blank per-value descriptions so the annotation
@@ -184,6 +182,9 @@ func (p *annotationParser) extractAnnotations(typ reflect.Type, outputPath, over
 		overrides = annotation.File{}
 	}
 
+	// Launch-stage validation happens inside the transform callback below, which
+	// cannot return an error, so failures accumulate here and are returned after.
+	var stageErr error
 	_, err = jsonschema.FromType(typ, []func(reflect.Type, jsonschema.Schema) jsonschema.Schema{
 		func(typ reflect.Type, s jsonschema.Schema) jsonschema.Schema {
 			ref, ok := p.findRef(typ)
@@ -197,7 +198,10 @@ func (p *annotationParser) extractAnnotations(typ reflect.Type, outputPath, over
 			// The contract carries no schema-level launch stage, so a type is
 			// never itself marked private-preview — only its fields are (below).
 			// Enum schemas do carry per-value launch stages and descriptions.
-			enumLaunchStages := notableEnumLaunchStages(ref.EnumLaunchStages)
+			enumLaunchStages, enumErr := notableEnumLaunchStages(ref.EnumLaunchStages)
+			if enumErr != nil {
+				stageErr = errors.Join(stageErr, fmt.Errorf("%s: %w", basePath, enumErr))
+			}
 			enumDescriptions := nonEmptyEnumDescriptions(ref.EnumDescriptions)
 			if ref.Description != "" || ref.Enum != nil || enumLaunchStages != nil || enumDescriptions != nil {
 				pkg[RootTypeKey] = annotation.Descriptor{
@@ -210,8 +214,10 @@ func (p *annotationParser) extractAnnotations(typ reflect.Type, outputPath, over
 
 			for k := range s.Properties {
 				if refProp, ok := ref.Fields[k]; ok {
-					preview := previewFromLaunchStage(refProp.LaunchStage)
-					launchStage := normalizeLaunchStage(refProp.LaunchStage)
+					launchStage, fieldErr := normalizeLaunchStage(refProp.LaunchStage)
+					if fieldErr != nil {
+						stageErr = errors.Join(stageErr, fmt.Errorf("%s.%s: %w", basePath, k, fieldErr))
+					}
 
 					description := refProp.Description
 
@@ -226,7 +232,6 @@ func (p *annotationParser) extractAnnotations(typ reflect.Type, outputPath, over
 
 					pkg[k] = annotation.Descriptor{
 						Description:        description,
-						Preview:            preview,
 						LaunchStage:        launchStage,
 						DeprecationMessage: deprecationMessageFor(refProp.Deprecated),
 						OutputOnly:         isOutputOnly(refProp.Behaviors),
@@ -243,6 +248,9 @@ func (p *annotationParser) extractAnnotations(typ reflect.Type, outputPath, over
 	})
 	if err != nil {
 		return err
+	}
+	if stageErr != nil {
+		return stageErr
 	}
 
 	err = saveYamlWithStyle(overridesPath, overrides)

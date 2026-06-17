@@ -58,7 +58,7 @@
       "changes": {
         "name": {
           "action": "recreate",
-          "reason": "immutable",
+          "reason": "id_field",
           "old": "[ORIGINAL_ENDPOINT_ID]",
           "new": "[NEW_ENDPOINT_ID]",
           "remote": "[ORIGINAL_ENDPOINT_ID]"

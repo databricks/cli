@@ -41,12 +41,14 @@ type Extension struct {
 	// from a different directory (e.g., "../default").
 	TemplateDir string `json:"template_dir,omitempty"`
 
-	// Preview indicates launch stage (e.g. PREVIEW).
+	// LaunchStage is the field's release stage from the cli.json contract.
 	//
-	// This field indicates whether the associated field is part of a private preview feature.
-	// Currently, it is used exclusively by Python code generation to exclude certain fields
-	// from the generated Sphinx documentation.
-	Preview string `json:"x-databricks-preview,omitempty"`
+	// It is emitted only for private-preview fields. Python code generation reads
+	// it to exclude those fields from the generated Sphinx documentation. Other
+	// stages are not emitted here because nothing consumes them in the published
+	// schema (the stage already surfaces as a description prefix and as the
+	// per-value enumDescriptions labels).
+	LaunchStage string `json:"x-databricks-launch-stage,omitempty"`
 
 	// EnumDescriptions is the parallel-array form emitted alongside Enum. VSCode
 	// renders these next to each enum value in autocomplete dropdowns. Each entry
