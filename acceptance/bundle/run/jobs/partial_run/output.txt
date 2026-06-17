@@ -6,7 +6,7 @@ Updating deployment state...
 Deployment complete!
 
 >>> [CLI] bundle run my_job --only task_1
-Run URL: [DATABRICKS_URL]/?o=[NUMID]#job/[NUMID]/run/[NUMID]
+Run URL: [DATABRICKS_URL]/jobs/[NUMID]/runs/[NUMID]?o=[NUMID]
 
 [TIMESTAMP] "my_job" RUNNING
 [TIMESTAMP] "my_job" TERMINATED SUCCESS
@@ -33,7 +33,7 @@ Hello from notebook2!
 }
 
 >>> [CLI] bundle run my_job --only task_1,task_2
-Run URL: [DATABRICKS_URL]/?o=[NUMID]#job/[NUMID]/run/[NUMID]
+Run URL: [DATABRICKS_URL]/jobs/[NUMID]/runs/[NUMID]?o=[NUMID]
 
 [TIMESTAMP] "my_job" RUNNING
 [TIMESTAMP] "my_job" TERMINATED SUCCESS
@@ -61,7 +61,7 @@ Hello from notebook2!
 }
 
 >>> [CLI] bundle run my_job
-Run URL: [DATABRICKS_URL]/?o=[NUMID]#job/[NUMID]/run/[NUMID]
+Run URL: [DATABRICKS_URL]/jobs/[NUMID]/runs/[NUMID]?o=[NUMID]
 
 [TIMESTAMP] "my_job" RUNNING
 [TIMESTAMP] "my_job" TERMINATED SUCCESS
@@ -91,7 +91,7 @@ Error: task "non_existent_task" not found in job "my_job"
 Error: task "non_existent_task" not found in job "my_job"
 
 >>> [CLI] bundle run my_job --only task1.table1,task2>,task3>table3
-Run URL: [DATABRICKS_URL]/?o=[NUMID]#job/[NUMID]/run/[NUMID]
+Run URL: [DATABRICKS_URL]/jobs/[NUMID]/runs/[NUMID]?o=[NUMID]
 
 [TIMESTAMP] "my_job" RUNNING
 [TIMESTAMP] "my_job" TERMINATED SUCCESS

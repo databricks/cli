@@ -10,7 +10,7 @@ Updating deployment state...
 Deployment complete!
 
 >>> [CLI] bundle run foo
-Run URL: [DATABRICKS_URL]/?o=[NUMID]#job/[NUMID]/run/[NUMID]
+Run URL: [DATABRICKS_URL]/jobs/[NUMID]/runs/[NUMID]?o=[NUMID]
 
 [TIMESTAMP] "foo" RUNNING
 [TIMESTAMP] "foo" TERMINATED SUCCESS
@@ -19,7 +19,7 @@ Run URL: [DATABRICKS_URL]/?o=[NUMID]#job/[NUMID]/run/[NUMID]
 >>> rm -fr .databricks
 
 >>> [CLI] bundle run foo
-Run URL: [DATABRICKS_URL]/?o=[NUMID]#job/[NUMID]/run/[NUMID]
+Run URL: [DATABRICKS_URL]/jobs/[NUMID]/runs/[NUMID]?o=[NUMID]
 
 [TIMESTAMP] "foo" RUNNING
 [TIMESTAMP] "foo" TERMINATED SUCCESS
