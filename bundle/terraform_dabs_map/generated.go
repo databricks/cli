@@ -687,6 +687,15 @@ var DABsToTerraformRootFields = map[string]FieldSet{
 		"uid":                   {},
 		"update_time":           {},
 	},
+	"postgres_roles": {
+		"create_time":     {},
+		"name":            {},
+		"parent":          {},
+		"provider_config": {},
+		"role_id":         {},
+		"status":          {},
+		"update_time":     {},
+	},
 	"postgres_synced_tables": {
 		"create_time":     {},
 		"name":            {},
