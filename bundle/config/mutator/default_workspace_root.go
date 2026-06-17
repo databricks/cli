@@ -19,7 +19,7 @@ func (m *defineDefaultWorkspaceRoot) Name() string {
 	return "DefineDefaultWorkspaceRoot"
 }
 
-func (m *defineDefaultWorkspaceRoot) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (m *defineDefaultWorkspaceRoot) Apply(ctx context.Context, b *bundle.Bundle) error {
 	if b.Config.Workspace.RootPath != "" {
 		return nil
 	}

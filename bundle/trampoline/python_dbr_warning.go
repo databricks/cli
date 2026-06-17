@@ -12,6 +12,7 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/databricks-sdk-go"
 	"golang.org/x/mod/semver"
 )
@@ -22,10 +23,13 @@ func WrapperWarning() bundle.Mutator {
 	return &wrapperWarning{}
 }
 
-func (m *wrapperWarning) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (m *wrapperWarning) Apply(ctx context.Context, b *bundle.Bundle) error {
 	if isPythonWheelWrapperOn(b) {
 		if config.IsExplicitlyEnabled(b.Config.Presets.SourceLinkedDeployment) {
-			return diag.Warningf("Python wheel notebook wrapper is not available when using source-linked deployment mode. You can disable this mode by setting 'presets.source_linked_deployment: false'")
+			logdiag.LogDiag(ctx, diag.Diagnostic{
+				Severity: diag.Warning,
+				Summary:  "Python wheel notebook wrapper is not available when using source-linked deployment mode. You can disable this mode by setting 'presets.source_linked_deployment: false'",
+			})
 		}
 		return nil
 	}
@@ -37,7 +41,7 @@ func (m *wrapperWarning) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 			Summary:  "Python wheel tasks require compute with DBR 13.3+ to include local libraries. Please change your cluster configuration or use the experimental 'python_wheel_wrapper' setting. See https://docs.databricks.com/dev-tools/bundles/python-wheel.html for more information.",
 		})
 	}
-	return diags
+	return diags.Error()
 }
 
 func isPythonWheelWrapperOn(b *bundle.Bundle) bool {

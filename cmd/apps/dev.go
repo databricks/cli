@@ -47,13 +47,15 @@ func detectAppNameFromBundle(cmd *cobra.Command) string {
 	ctx := cmd.Context()
 
 	// Try to configure bundle (returns nil if no bundle found)
-	b := root.TryConfigureBundle(cmd)
-	if b == nil {
+	b, err := root.TryConfigureBundle(cmd)
+	if err != nil || b == nil {
 		return ""
 	}
 
 	// Run initialization to resolve variables, apply prefixes, etc.
-	phases.Initialize(ctx, b)
+	if err := phases.Initialize(ctx, b); err != nil {
+		return ""
+	}
 
 	// Check for apps in the bundle
 	bundleApps := b.Config.Resources.Apps

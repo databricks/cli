@@ -10,7 +10,6 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/bundle/metrics"
-	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
@@ -75,20 +74,18 @@ func TransformWheelTask() bundle.Mutator {
 	return transformWheelTask{}
 }
 
-func (transformWheelTask) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (transformWheelTask) Apply(ctx context.Context, b *bundle.Bundle) error {
 	isEnabled := b.Config.Experimental != nil && b.Config.Experimental.PythonWheelWrapper
 	b.Metrics.AddBoolValue(metrics.ExperimentalPythonWheelWrapperIsSet, isEnabled)
 	if !isEnabled {
 		return nil
 	}
 
-	bundle.ApplyContext(ctx, b, NewTrampoline(
+	return bundle.ApplyContext(ctx, b, NewTrampoline(
 		"python_wheel",
 		&pythonTrampoline{},
 		NOTEBOOK_TEMPLATE,
 	))
-
-	return nil
 }
 
 type pythonTrampoline struct{}

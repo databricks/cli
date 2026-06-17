@@ -27,7 +27,7 @@ func (m *selectTarget) Name() string {
 	return fmt.Sprintf("SelectTarget(%s)", m.name)
 }
 
-func (m *selectTarget) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (m *selectTarget) Apply(_ context.Context, b *bundle.Bundle) error {
 	if b.Config.Targets == nil {
 		return diag.Errorf("no targets defined")
 	}
@@ -41,7 +41,7 @@ func (m *selectTarget) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnosti
 	// Merge specified target into root configuration structure.
 	err := b.Config.MergeTargetOverrides(m.name)
 	if err != nil {
-		return diag.FromErr(fmt.Errorf("failed to perform target override for target=%s: %w", m.name, err))
+		return fmt.Errorf("failed to perform target override for target=%s: %w", m.name, err)
 	}
 
 	// Store specified target in configuration for reference.

@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 )
 
@@ -24,9 +23,7 @@ func (c configureDashboardSerializedDashboard) Name() string {
 	return "ConfigureDashboardSerializedDashboard"
 }
 
-func (c configureDashboardSerializedDashboard) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
-	var diags diag.Diagnostics
-
+func (c configureDashboardSerializedDashboard) Apply(_ context.Context, b *bundle.Bundle) error {
 	pattern := dyn.NewPattern(
 		dyn.Key("resources"),
 		dyn.Key("dashboards"),
@@ -53,6 +50,5 @@ func (c configureDashboardSerializedDashboard) Apply(_ context.Context, b *bundl
 		})
 	})
 
-	diags = diags.Extend(diag.FromErr(err))
-	return diags
+	return err
 }

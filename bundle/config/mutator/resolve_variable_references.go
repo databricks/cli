@@ -15,6 +15,7 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/dyn/dynvar"
+	"github.com/databricks/cli/libs/logdiag"
 )
 
 /*
@@ -141,7 +142,7 @@ func (m *resolveVariableReferences) Validate(ctx context.Context, b *bundle.Bund
 	return nil
 }
 
-func (m *resolveVariableReferences) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (m *resolveVariableReferences) Apply(ctx context.Context, b *bundle.Bundle) error {
 	prefixes := make([]dyn.Path, len(m.prefixes))
 	for i, prefix := range m.prefixes {
 		prefixes[i] = dyn.MustPathFromString(prefix)
@@ -151,16 +152,12 @@ func (m *resolveVariableReferences) Apply(ctx context.Context, b *bundle.Bundle)
 	// We rewrite it here to make the resolution logic simpler.
 	varPath := dyn.NewPath(dyn.Key("var"))
 
-	var diags diag.Diagnostics
 	maxRounds := 1 + m.extraRounds
 
 	for round := range maxRounds {
-		hasUpdates, newDiags := m.resolveOnce(b, prefixes, varPath)
-
-		diags = diags.Extend(newDiags)
-
-		if diags.HasError() {
-			break
+		hasUpdates, err := m.resolveOnce(ctx, b, prefixes, varPath)
+		if err != nil {
+			return err
 		}
 
 		if !hasUpdates {
@@ -168,7 +165,7 @@ func (m *resolveVariableReferences) Apply(ctx context.Context, b *bundle.Bundle)
 		}
 
 		if round >= maxRounds-1 {
-			diags = diags.Append(diag.Diagnostic{
+			logdiag.LogDiag(ctx, diag.Diagnostic{
 				Severity: diag.Warning,
 				Summary:  fmt.Sprintf("Variables references are too deep, stopping resolution after %d rounds. Unresolved variables may remain.", round+1),
 				// Would be nice to include names of the variables there, but that would complicate things more
@@ -181,11 +178,10 @@ func (m *resolveVariableReferences) Apply(ctx context.Context, b *bundle.Bundle)
 		b.Metrics.SetBoolValue("artifacts_reference_used", true)
 	}
 
-	return diags
+	return nil
 }
 
-func (m *resolveVariableReferences) resolveOnce(b *bundle.Bundle, prefixes []dyn.Path, varPath dyn.Path) (bool, diag.Diagnostics) {
-	var diags diag.Diagnostics
+func (m *resolveVariableReferences) resolveOnce(ctx context.Context, b *bundle.Bundle, prefixes []dyn.Path, varPath dyn.Path) (bool, error) {
 	hasUpdates := false
 	err := m.selectivelyMutate(b, func(root dyn.Value) (dyn.Value, error) {
 		// Synthesize a copy of the root that has all fields that are present in the type
@@ -244,14 +240,19 @@ func (m *resolveVariableReferences) resolveOnce(b *bundle.Bundle, prefixes []dyn
 		// Normalize the result because variable resolution may have been applied to non-string fields.
 		// For example, a variable reference may have been resolved to a integer.
 		root, normaliseDiags := convert.Normalize(b.Config, root)
-		diags = diags.Extend(normaliseDiags)
+		for _, d := range normaliseDiags {
+			logdiag.LogDiag(ctx, d)
+		}
+		if err := normaliseDiags.Error(); err != nil {
+			return dyn.InvalidValue, err
+		}
 		return root, nil
 	})
 	if err != nil {
-		diags = diags.Extend(diag.FromErr(err))
+		return hasUpdates, err
 	}
 
-	return hasUpdates, diags
+	return hasUpdates, nil
 }
 
 // selectivelyMutate applies a function to a subset of the configuration

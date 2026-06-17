@@ -103,8 +103,8 @@ If there is only one pipeline in the project, KEY is optional and the pipeline w
 	}
 
 	cmd.ValidArgsFunction = func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		b := root.MustConfigureBundle(cmd)
-		if logdiag.HasError(cmd.Context()) {
+		b, err := root.MustConfigureBundle(cmd)
+		if err != nil {
 			return nil, cobra.ShellCompDirectiveError
 		}
 

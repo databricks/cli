@@ -56,19 +56,19 @@ func (s *StateDesc) HasRemoteTerraformState() bool {
 	return false
 }
 
-func localRead(ctx context.Context, fullPath string, engine engine.EngineType) *StateDesc {
+func localRead(ctx context.Context, fullPath string, engine engine.EngineType) (*StateDesc, error) {
 	content, err := os.ReadFile(fullPath)
 	if err != nil {
 		if !errors.Is(err, fs.ErrNotExist) {
-			logdiag.LogError(ctx, fmt.Errorf("reading %s: %w", filepath.ToSlash(fullPath), err))
+			return nil, fmt.Errorf("reading %s: %w", filepath.ToSlash(fullPath), err)
 		}
-		return nil
+		return nil, nil
 	}
 
 	state := &StateDesc{}
 	err = json.Unmarshal(content, state)
 	if err != nil {
-		logdiag.LogError(ctx, fmt.Errorf("parsing %s: %w", filepath.ToSlash(fullPath), err))
+		return nil, fmt.Errorf("parsing %s: %w", filepath.ToSlash(fullPath), err)
 	}
 
 	state.SourcePath = filepath.ToSlash(fullPath)
@@ -76,7 +76,7 @@ func localRead(ctx context.Context, fullPath string, engine engine.EngineType) *
 	state.IsLocal = true
 	// not populating .content, not needed for local
 
-	return state
+	return state, nil
 }
 
 func _filerRead(ctx context.Context, f filer.Filer, path string) (*StateDesc, error) {
@@ -106,20 +106,21 @@ func _filerRead(ctx context.Context, f filer.Filer, path string) (*StateDesc, er
 	return state, nil
 }
 
-func filerRead(ctx context.Context, f filer.Filer, path string, engine engine.EngineType) *StateDesc {
+func filerRead(ctx context.Context, f filer.Filer, path string, engine engine.EngineType) (*StateDesc, error) {
 	state, err := _filerRead(ctx, f, path)
 	if err != nil {
-		logdiag.LogError(ctx, fmt.Errorf("reading %s: %w", path, err))
-	} else if state != nil {
+		return nil, fmt.Errorf("reading %s: %w", path, err)
+	}
+	if state != nil {
 		log.Debugf(ctx, "read %s: %s", path, state.String())
 		state.Engine = engine
 	}
-	return state
+	return state, nil
 }
 
 // PullResourcesState determines correct state to use by reading all 4 states (terraform/direct, local/remote).
 // If state is present and the requested engine disagrees, a warning is issued and the state's engine is used.
-func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull, requiredEngine engine.EngineSetting) (context.Context, *StateDesc) {
+func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull, requiredEngine engine.EngineSetting) (context.Context, *StateDesc, error) {
 	var err error
 
 	// We read all 4 possible states: terraform/direct X local/remote and then use env var to validate that correct one is used.
@@ -127,10 +128,9 @@ func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull Always
 	_, localPathDirect := b.StateFilenameDirect(ctx)
 	_, localPathTerraform := b.StateFilenameTerraform(ctx)
 
-	states := readStates(ctx, b, alwaysPull)
-
-	if logdiag.HasError(ctx) {
-		return ctx, nil
+	states, err := readStates(ctx, b, alwaysPull)
+	if err != nil {
+		return ctx, nil, err
 	}
 
 	var winner *StateDesc
@@ -151,8 +151,7 @@ func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull Always
 
 	err = validateStates(states)
 	if err != nil {
-		logStatesError(ctx, err.Error(), states)
-		return ctx, winner
+		return ctx, winner, statesDiag(diag.Error, err.Error(), states)
 	}
 
 	if requiredEngine.Type != engine.EngineNotSet && requiredEngine.Type != winner.Engine {
@@ -171,12 +170,12 @@ func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull Always
 	ctx = useragent.InContext(ctx, "engine", string(winner.Engine))
 
 	if len(states) == 0 {
-		return ctx, winner
+		return ctx, winner, nil
 	}
 
 	if winner.IsLocal {
 		// local state is fresh, nothing to do
-		return ctx, winner
+		return ctx, winner, nil
 	}
 
 	if !winner.IsLocal {
@@ -191,53 +190,60 @@ func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull Always
 
 		err := os.MkdirAll(localStateDir, 0o700)
 		if err != nil {
-			logdiag.LogError(ctx, err)
-			return ctx, winner
+			return ctx, winner, err
 		}
 
 		// TODO: write + rename
 		err = os.WriteFile(localStatePath, winner.Content, 0o600)
 		if err != nil {
-			logdiag.LogError(ctx, err)
-			return ctx, winner
+			return ctx, winner, err
 		}
 	}
 
-	return ctx, winner
+	return ctx, winner, nil
 }
 
-func readStates(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull) []*StateDesc {
+func readStates(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull) ([]*StateDesc, error) {
 	var states []*StateDesc
 
 	remotePathDirect, localPathDirect := b.StateFilenameDirect(ctx)
 	remotePathTerraform, localPathTerraform := b.StateFilenameTerraform(ctx)
 
-	if logdiag.HasError(ctx) {
-		return nil
+	directLocalState, err := localRead(ctx, localPathDirect, engine.EngineDirect)
+	if err != nil {
+		return nil, err
 	}
-
-	directLocalState := localRead(ctx, localPathDirect, engine.EngineDirect)
-	terraformLocalState := localRead(ctx, localPathTerraform, engine.EngineTerraform)
+	terraformLocalState, err := localRead(ctx, localPathTerraform, engine.EngineTerraform)
+	if err != nil {
+		return nil, err
+	}
 
 	if (directLocalState == nil && terraformLocalState == nil) || alwaysPull {
 		f, err := deploy.StateFiler(ctx, b)
 		if err != nil {
-			logdiag.LogError(ctx, err)
-			return nil
+			return nil, err
 		}
 
 		var wg sync.WaitGroup
 		var directRemoteState, terraformRemoteState *StateDesc
+		var directRemoteErr, terraformRemoteErr error
 
 		wg.Go(func() {
-			directRemoteState = filerRead(ctx, f, remotePathDirect, engine.EngineDirect)
+			directRemoteState, directRemoteErr = filerRead(ctx, f, remotePathDirect, engine.EngineDirect)
 		})
 
 		wg.Go(func() {
-			terraformRemoteState = filerRead(ctx, f, remotePathTerraform, engine.EngineTerraform)
+			terraformRemoteState, terraformRemoteErr = filerRead(ctx, f, remotePathTerraform, engine.EngineTerraform)
 		})
 
 		wg.Wait()
+
+		if directRemoteErr != nil {
+			return nil, directRemoteErr
+		}
+		if terraformRemoteErr != nil {
+			return nil, terraformRemoteErr
+		}
 
 		// find highest serial across all state files
 		// sorting is stable, so initial setting represents preference (later is preferred):
@@ -250,7 +256,7 @@ func readStates(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull) []
 		return a.Serial - b.Serial
 	})
 
-	return states
+	return states, nil
 }
 
 func validateStates(states []*StateDesc) error {
@@ -286,22 +292,18 @@ func validateStates(states []*StateDesc) error {
 	return nil
 }
 
-func logStatesError(ctx context.Context, msg string, states []*StateDesc) {
-	logStatesDiag(ctx, diag.Error, msg, states)
-}
-
 func logStatesWarning(ctx context.Context, msg string, states []*StateDesc) {
-	logStatesDiag(ctx, diag.Warning, msg, states)
+	logdiag.LogDiag(ctx, statesDiag(diag.Warning, msg, states))
 }
 
-func logStatesDiag(ctx context.Context, severity diag.Severity, msg string, states []*StateDesc) {
+func statesDiag(severity diag.Severity, msg string, states []*StateDesc) diag.Diagnostic {
 	var stateStrs []string
 	for _, state := range states {
 		stateStrs = append(stateStrs, state.String())
 	}
-	logdiag.LogDiag(ctx, diag.Diagnostic{
+	return diag.Diagnostic{
 		Summary:  msg,
 		Severity: severity,
 		Detail:   "Available state files:\n- " + strings.Join(stateStrs, "\n- "),
-	})
+	}
 }

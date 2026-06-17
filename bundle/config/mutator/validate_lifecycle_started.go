@@ -24,12 +24,11 @@ func (m *validateLifecycleStarted) Name() string {
 	return "ValidateLifecycleStarted"
 }
 
-func (m *validateLifecycleStarted) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (m *validateLifecycleStarted) Apply(_ context.Context, b *bundle.Bundle) error {
 	if m.engine.IsDirect() {
 		return nil
 	}
 
-	var diags diag.Diagnostics
 	for _, group := range b.Config.Resources.AllResources() {
 		for key, resource := range group.Resources {
 			lws, ok := resource.GetLifecycle().(resources.LifecycleWithStarted)
@@ -37,12 +36,12 @@ func (m *validateLifecycleStarted) Apply(_ context.Context, b *bundle.Bundle) di
 				continue
 			}
 			path := "resources." + group.Description.PluralName + "." + key + ".lifecycle.started"
-			diags = diags.Append(diag.Diagnostic{
+			return diag.Diagnostic{
 				Severity:  diag.Error,
 				Summary:   "lifecycle.started is only supported in direct deployment mode",
 				Locations: b.Config.GetLocations(path),
-			})
+			}
 		}
 	}
-	return diags
+	return nil
 }

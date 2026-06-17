@@ -20,10 +20,10 @@ func (m *cleanUp) Name() string {
 	return "artifacts.CleanUp"
 }
 
-func (m *cleanUp) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	client, uploadPath, diags := libraries.GetFilerForLibrariesCleanup(ctx, b)
-	if diags.HasError() {
-		return diags
+func (m *cleanUp) Apply(ctx context.Context, b *bundle.Bundle) error {
+	client, uploadPath, err := libraries.GetFilerForLibrariesCleanup(ctx, b)
+	if err != nil {
+		return err
 	}
 
 	skipArtifactsCleanup := b.Config.Experimental != nil && b.Config.Experimental.SkipArtifactCleanup
@@ -38,7 +38,7 @@ func (m *cleanUp) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 		}
 	}
 
-	err := client.Mkdir(ctx, libraries.InternalDirName)
+	err = client.Mkdir(ctx, libraries.InternalDirName)
 	if err != nil {
 		return diag.Errorf("unable to create directory for %s: %v", uploadPath, err)
 	}

@@ -28,15 +28,14 @@ type importResource struct {
 }
 
 // Apply implements bundle.Mutator.
-func (m *importResource) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (m *importResource) Apply(ctx context.Context, b *bundle.Bundle) error {
 	dir, err := Dir(ctx, b)
 	if err != nil {
-		return diag.FromErr(err)
+		return err
 	}
 
-	diags := Initialize(ctx, b)
-	if diags.HasError() {
-		return diags
+	if err := Initialize(ctx, b); err != nil {
+		return err
 	}
 
 	tf := b.Terraform
@@ -78,7 +77,7 @@ func (m *importResource) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 
 		ans, err := cmdio.AskYesOrNo(ctx, "Confirm import changes? Changes will be remotely applied only after running 'bundle deploy'.")
 		if err != nil {
-			return diag.FromErr(err)
+			return err
 		}
 		if !ans {
 			return diag.Errorf("import aborted")
@@ -88,22 +87,22 @@ func (m *importResource) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 	// If user confirmed changes, move the state file from temp dir to state location
 	f, err := os.Create(filepath.Join(dir, relPath))
 	if err != nil {
-		return diag.FromErr(err)
+		return err
 	}
 	defer f.Close()
 
 	tmpF, err := os.Open(tmpState)
 	if err != nil {
-		return diag.FromErr(err)
+		return err
 	}
 	defer tmpF.Close()
 
 	_, err = io.Copy(f, tmpF)
 	if err != nil {
-		return diag.FromErr(err)
+		return err
 	}
 
-	return diags
+	return nil
 }
 
 // Name implements bundle.Mutator.

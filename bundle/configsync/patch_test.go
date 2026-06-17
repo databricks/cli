@@ -39,7 +39,7 @@ resources:
 	b, err := bundle.Load(ctx, tmpDir)
 	require.NoError(t, err)
 
-	mutator.DefaultMutators(ctx, b)
+	require.NoError(t, mutator.DefaultMutators(ctx, b))
 
 	changes := Changes{
 		"resources.jobs.test_job": ResourceChanges{

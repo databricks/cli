@@ -11,7 +11,7 @@ import (
 	"github.com/databricks/cli/libs/log"
 )
 
-func TryExtendTerraformPermissionError(ctx context.Context, b *bundle.Bundle, err error) diag.Diagnostics {
+func TryExtendTerraformPermissionError(ctx context.Context, b *bundle.Bundle, err error) error {
 	_, assistance := analyzeBundlePermissions(b)
 
 	// In a best-effort attempt to provide actionable error messages, we match
@@ -35,7 +35,7 @@ func TryExtendTerraformPermissionError(ctx context.Context, b *bundle.Bundle, er
 		resource = match[2]
 	}
 
-	return diag.Diagnostics{{
+	return diag.Diagnostic{
 		Summary: fmt.Sprintf("permission denied creating or updating %s.\n"+
 			"%s\n"+
 			"They can redeploy the project to apply the latest set of permissions.\n"+
@@ -43,5 +43,5 @@ func TryExtendTerraformPermissionError(ctx context.Context, b *bundle.Bundle, er
 			resource, assistance),
 		Severity: diag.Error,
 		ID:       diag.ResourcePermissionDenied,
-	}}
+	}
 }

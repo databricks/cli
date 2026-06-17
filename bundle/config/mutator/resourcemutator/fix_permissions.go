@@ -6,7 +6,6 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/iamutil"
 )
@@ -210,7 +209,7 @@ func createPermissionFromPrincipal(principal, level string) dyn.Value {
 	return dyn.V(permission)
 }
 
-func (m *fixPermissions) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (m *fixPermissions) Apply(ctx context.Context, b *bundle.Bundle) error {
 	currentUser := b.Config.Workspace.CurrentUser.UserName
 
 	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
@@ -223,5 +222,5 @@ func (m *fixPermissions) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 		), processPermissions(currentUser))
 	})
 
-	return diag.FromErr(err)
+	return err
 }

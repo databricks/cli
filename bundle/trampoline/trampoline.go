@@ -9,7 +9,6 @@ import (
 	"text/template"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
@@ -42,12 +41,12 @@ func (m *trampoline) Name() string {
 	return fmt.Sprintf("trampoline(%s)", m.name)
 }
 
-func (m *trampoline) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (m *trampoline) Apply(ctx context.Context, b *bundle.Bundle) error {
 	tasks := m.functions.GetTasks(b)
 	for _, task := range tasks {
 		err := m.generateNotebookWrapper(ctx, b, task)
 		if err != nil {
-			return diag.FromErr(err)
+			return err
 		}
 	}
 	return nil

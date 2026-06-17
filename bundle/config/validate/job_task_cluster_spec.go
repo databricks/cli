@@ -23,9 +23,7 @@ func (v *jobTaskClusterSpec) Name() string {
 	return "validate:job_task_cluster_spec"
 }
 
-func (v *jobTaskClusterSpec) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	diags := diag.Diagnostics{}
-
+func (v *jobTaskClusterSpec) Apply(ctx context.Context, b *bundle.Bundle) error {
 	jobsPath := dyn.NewPath(dyn.Key("resources"), dyn.Key("jobs"))
 
 	for resourceName, job := range b.Config.Resources.Jobs {
@@ -34,16 +32,16 @@ func (v *jobTaskClusterSpec) Apply(ctx context.Context, b *bundle.Bundle) diag.D
 		for taskIndex, task := range job.Tasks {
 			taskPath := resourcePath.Append(dyn.Key("tasks"), dyn.Index(taskIndex))
 
-			diags = diags.Extend(validateJobTask(b, task, taskPath))
+			if err := validateJobTask(b, task, taskPath); err != nil {
+				return err
+			}
 		}
 	}
 
-	return diags
+	return nil
 }
 
-func validateJobTask(b *bundle.Bundle, task jobs.Task, taskPath dyn.Path) diag.Diagnostics {
-	diags := diag.Diagnostics{}
-
+func validateJobTask(b *bundle.Bundle, task jobs.Task, taskPath dyn.Path) error {
 	var specified []string
 	var unspecified []string
 
@@ -74,7 +72,9 @@ func validateJobTask(b *bundle.Bundle, task jobs.Task, taskPath dyn.Path) diag.D
 	if task.ForEachTask != nil {
 		forEachTaskPath := taskPath.Append(dyn.Key("for_each_task"), dyn.Key("task"))
 
-		diags = diags.Extend(validateJobTask(b, task.ForEachTask.Task, forEachTaskPath))
+		if err := validateJobTask(b, task.ForEachTask.Task, forEachTaskPath); err != nil {
+			return err
+		}
 	}
 
 	if isComputeTask(task) && len(specified) == 0 {
@@ -88,17 +88,17 @@ func validateJobTask(b *bundle.Bundle, task jobs.Task, taskPath dyn.Path) diag.D
 				strings.Join(unspecified, ", "),
 			)
 
-			diags = diags.Append(diag.Diagnostic{
+			return diag.Diagnostic{
 				Severity:  diag.Error,
 				Summary:   "Missing required cluster or environment settings",
 				Detail:    detail,
 				Locations: b.Config.GetLocations(taskPath.String()),
 				Paths:     []dyn.Path{taskPath},
-			})
+			}
 		}
 	}
 
-	return diags
+	return nil
 }
 
 // isComputeTask returns true if the task runs on a cluster or serverless GC

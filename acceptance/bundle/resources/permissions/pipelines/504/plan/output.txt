@@ -26,6 +26,4 @@ HTTP Status: 504 Gateway Timeout
 API error_code: INJECTED
 API message: Fault injected by test.
 
-Error: planning failed
-
 3 {"method": "GET", "path": "/api/2.0/permissions/pipelines/[UUID]"}

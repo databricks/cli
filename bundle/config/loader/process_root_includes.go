@@ -36,7 +36,7 @@ func hasGlobCharacters(path string) (string, bool) {
 	return "", false
 }
 
-func (m *processRootIncludes) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (m *processRootIncludes) Apply(ctx context.Context, b *bundle.Bundle) error {
 	var out []bundle.Mutator
 
 	// Map with files we've already seen to avoid loading them twice.
@@ -49,7 +49,6 @@ func (m *processRootIncludes) Apply(ctx context.Context, b *bundle.Bundle) diag.
 	// Maintain list of files in order of files being loaded.
 	// This is stored in the bundle configuration for observability.
 	var files []string
-	var diags diag.Diagnostics
 
 	// We error on glob characters in the bundle root path since they are
 	// parsed by [filepath.Glob] as being glob patterns and thus can cause
@@ -60,13 +59,11 @@ func (m *processRootIncludes) Apply(ctx context.Context, b *bundle.Bundle) diag.
 	// 1. Change CWD to the bundle root path before calling [filepath.Glob]
 	// 2. Implement our own custom globbing function. We can use [filepath.Match] to do so.
 	if char, ok := hasGlobCharacters(b.BundleRootPath); ok {
-		diags = diags.Append(diag.Diagnostic{
+		return diag.Diagnostic{
 			Severity: diag.Error,
 			Summary:  "Bundle root path contains glob pattern characters",
 			Detail:   fmt.Sprintf("The path to the bundle root %s contains glob pattern character %q. Please remove the character from this path to use bundle commands.", b.BundleRootPath, char),
-		})
-
-		return diags
+		}
 	}
 
 	// For each glob, find all files to load.
@@ -81,7 +78,7 @@ func (m *processRootIncludes) Apply(ctx context.Context, b *bundle.Bundle) diag.
 		// Anchor includes to the bundle root path.
 		matches, err := filepath.Glob(filepath.Join(b.BundleRootPath, entry))
 		if err != nil {
-			return diag.FromErr(err)
+			return err
 		}
 
 		// If the entry is not a glob pattern and no matches found,
@@ -95,27 +92,22 @@ func (m *processRootIncludes) Apply(ctx context.Context, b *bundle.Bundle) diag.
 		for _, match := range matches {
 			rel, err := filepath.Rel(b.BundleRootPath, match)
 			if err != nil {
-				return diag.FromErr(err)
+				return err
 			}
 			if _, ok := seen[rel]; ok {
 				continue
 			}
 			seen[rel] = true
 			if filepath.Ext(rel) != ".yaml" && filepath.Ext(rel) != ".yml" && filepath.Ext(rel) != ".json" {
-				diags = diags.Append(diag.Diagnostic{
+				return diag.Diagnostic{
 					Severity: diag.Error,
 					Summary:  "Files in the 'include' configuration section must be YAML or JSON files.",
 					Detail:   fmt.Sprintf("The file %s in the 'include' configuration section is not a YAML or JSON file, and only such files are supported. To include files to sync, specify them in the 'sync.include' configuration section instead.", rel),
 					// The match's index within the glob is unrelated to the entry's position in the include list.
 					Locations: b.Config.GetLocations(fmt.Sprintf("include[%d]", entryIndex)),
-				})
-				continue
+				}
 			}
 			includes = append(includes, rel)
-		}
-
-		if len(diags) > 0 {
-			return diags
 		}
 
 		// Add matches to list of mutators to return.
@@ -133,6 +125,5 @@ func (m *processRootIncludes) Apply(ctx context.Context, b *bundle.Bundle) diag.
 	// to account for the root databricks.yaml file.
 	b.Metrics.ConfigurationFileCount = int64(len(files)) + 1
 
-	bundle.ApplySeqContext(ctx, b, out...)
-	return nil
+	return bundle.ApplySeqContext(ctx, b, out...)
 }

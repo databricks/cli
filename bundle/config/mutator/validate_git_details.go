@@ -18,7 +18,7 @@ func (m *validateGitDetails) Name() string {
 	return "ValidateGitDetails"
 }
 
-func (m *validateGitDetails) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (m *validateGitDetails) Apply(ctx context.Context, b *bundle.Bundle) error {
 	if b.Config.Bundle.Git.Branch == "" || b.Config.Bundle.Git.ActualBranch == "" {
 		return nil
 	}

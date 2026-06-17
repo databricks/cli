@@ -132,8 +132,11 @@ func TestValidateUniqueResourceIdentifiers(t *testing.T) {
 			require.NoError(t, err)
 
 			// The UniqueResourceKeys mutator is run as part of the Load phase.
-			phases.Load(ctx, b)
+			loadErr := phases.Load(ctx, b)
 			diags := logdiag.FlushCollected(ctx)
+			if loadErr != nil {
+				diags = append(diags, diag.DiagnosticFromError(loadErr))
+			}
 			assert.Equal(t, tc.diagnostics, diags)
 		})
 	}

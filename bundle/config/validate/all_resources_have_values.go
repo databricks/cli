@@ -21,8 +21,8 @@ func (m *allResourcesHaveValues) Name() string {
 	return "validate:AllResourcesHaveValues"
 }
 
-func (m *allResourcesHaveValues) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	diags := diag.Diagnostics{}
+func (m *allResourcesHaveValues) Apply(ctx context.Context, b *bundle.Bundle) error {
+	var diags diag.Diagnostics
 
 	_, err := dyn.MapByPattern(
 		b.Config.Value(),
@@ -39,7 +39,7 @@ func (m *allResourcesHaveValues) Apply(ctx context.Context, b *bundle.Bundle) di
 			// Name of the resource. Eg: "foo" in "jobs.foo".
 			rName := p[2].Key()
 
-			diags = append(diags, diag.Diagnostic{
+			diags = diags.Append(diag.Diagnostic{
 				Severity:  diag.Error,
 				Summary:   fmt.Sprintf("%s %s is not defined", rType, rName),
 				Locations: v.Locations(),
@@ -50,8 +50,8 @@ func (m *allResourcesHaveValues) Apply(ctx context.Context, b *bundle.Bundle) di
 		},
 	)
 	if err != nil {
-		diags = append(diags, diag.FromErr(err)...)
+		return err
 	}
 
-	return diags
+	return diags.Error()
 }

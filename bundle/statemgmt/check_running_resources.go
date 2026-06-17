@@ -9,7 +9,6 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/deploy/terraform"
-	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -34,7 +33,7 @@ func (l *checkRunningResources) Name() string {
 	return "check-running-resources"
 }
 
-func (l *checkRunningResources) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (l *checkRunningResources) Apply(ctx context.Context, b *bundle.Bundle) error {
 	if !b.Config.Bundle.Deployment.FailOnActiveRuns {
 		return nil
 	}
@@ -47,16 +46,12 @@ func (l *checkRunningResources) Apply(ctx context.Context, b *bundle.Bundle) dia
 	} else {
 		state, err = terraform.ParseResourcesState(ctx, b)
 		if err != nil {
-			return diag.FromErr(err)
+			return err
 		}
 	}
 
 	w := b.WorkspaceClient(ctx)
-	err = checkAnyResourceRunning(ctx, w, state)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-	return nil
+	return checkAnyResourceRunning(ctx, w, state)
 }
 
 func CheckRunningResource(engine engine.EngineType) bundle.Mutator {

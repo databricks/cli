@@ -6,7 +6,6 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/dbr"
-	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/vfs"
 )
@@ -21,7 +20,7 @@ func (m *configureWSFS) Name() string {
 	return "ConfigureWSFS"
 }
 
-func (m *configureWSFS) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (m *configureWSFS) Apply(ctx context.Context, b *bundle.Bundle) error {
 	root := b.SyncRoot.Native()
 
 	// The bundle root must be located in /Workspace/
@@ -54,7 +53,7 @@ func (m *configureWSFS) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 		return filer.NewReadOnlyWorkspaceFilesExtensionsClient(ctx, b.WorkspaceClient(ctx), path)
 	})
 	if err != nil {
-		return diag.FromErr(err)
+		return err
 	}
 
 	b.SyncRoot = p

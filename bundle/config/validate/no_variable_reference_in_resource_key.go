@@ -22,7 +22,7 @@ func (m *noVariableReferenceInResourceKey) Name() string {
 	return "validate:no_variable_reference_in_resource_key"
 }
 
-func (m *noVariableReferenceInResourceKey) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (m *noVariableReferenceInResourceKey) Apply(_ context.Context, b *bundle.Bundle) error {
 	var diags diag.Diagnostics
 
 	patterns := []dyn.Pattern{
@@ -37,7 +37,7 @@ func (m *noVariableReferenceInResourceKey) Apply(_ context.Context, b *bundle.Bu
 			func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
 				key := p[len(p)-1].Key()
 				if dynvar.ContainsVariableReference(key) {
-					diags = append(diags, diag.Diagnostic{
+					diags = diags.Append(diag.Diagnostic{
 						Severity:  diag.Error,
 						Summary:   fmt.Sprintf("resource key %q must not contain variable references", key),
 						Locations: v.Locations(),
@@ -48,9 +48,9 @@ func (m *noVariableReferenceInResourceKey) Apply(_ context.Context, b *bundle.Bu
 			},
 		)
 		if err != nil {
-			diags = append(diags, diag.FromErr(err)...)
+			return err
 		}
 	}
 
-	return diags
+	return diags.Error()
 }

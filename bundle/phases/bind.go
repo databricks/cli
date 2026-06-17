@@ -20,16 +20,18 @@ import (
 	"github.com/databricks/cli/libs/logdiag"
 )
 
-func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions, engine engine.EngineType) {
+func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions, engine engine.EngineType) (err error) {
 	log.Info(ctx, "Phase: bind")
 
-	bundle.ApplyContext(ctx, b, lock.Acquire())
-	if logdiag.HasError(ctx) {
-		return
+	if acquireErr := bundle.ApplyContext(ctx, b, lock.Acquire()); acquireErr != nil {
+		return acquireErr
 	}
 
 	defer func() {
-		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalBind))
+		err = logdiag.FlushError(ctx, err)
+		if releaseErr := bundle.ApplyContext(ctx, b, lock.Release(lock.GoalBind)); releaseErr != nil && err == nil {
+			err = logdiag.FlushError(ctx, releaseErr)
+		}
 	}()
 
 	if engine.IsDirect() {
@@ -42,10 +44,9 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions, en
 		resourceKey := fmt.Sprintf("resources.%s.%s", groupName, opts.ResourceKey)
 		_, statePath := b.StateFilenameDirect(ctx)
 
-		result, err := b.DeploymentBundle.Bind(ctx, b.WorkspaceClient(ctx), &b.Config, statePath, resourceKey, opts.ResourceId)
-		if err != nil {
-			logdiag.LogError(ctx, err)
-			return
+		result, bindErr := b.DeploymentBundle.Bind(ctx, b.WorkspaceClient(ctx), &b.Config, statePath, resourceKey, opts.ResourceId)
+		if bindErr != nil {
+			return bindErr
 		}
 
 		// If there are changes and auto-approve is not set, show plan and ask for confirmation
@@ -69,42 +70,36 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions, en
 
 			if !cmdio.IsPromptSupported(ctx) {
 				result.Cancel()
-				logdiag.LogError(ctx, fmt.Errorf("this bind operation requires user confirmation, but the current console does not support prompting.\nTo proceed, use --auto-approve after reviewing the plan above.%s", agent.AgentNotice()))
-				return
+				return fmt.Errorf("this bind operation requires user confirmation, but the current console does not support prompting.\nTo proceed, use --auto-approve after reviewing the plan above.%s", agent.AgentNotice())
 			}
 
-			ans, err := cmdio.AskYesOrNo(ctx, "Confirm import changes? Changes will be remotely applied only after running 'bundle deploy'.")
-			if err != nil {
+			ans, askErr := cmdio.AskYesOrNo(ctx, "Confirm import changes? Changes will be remotely applied only after running 'bundle deploy'.")
+			if askErr != nil {
 				result.Cancel()
-				logdiag.LogError(ctx, err)
-				return
+				return askErr
 			}
 			if !ans {
 				result.Cancel()
-				logdiag.LogError(ctx, errors.New("import aborted"))
-				return
+				return errors.New("import aborted")
 			}
 		}
 
 		// Finalize: rename temp state to final location
-		err = result.Finalize()
-		if err != nil {
-			logdiag.LogError(ctx, err)
-			return
+		if finalizeErr := result.Finalize(); finalizeErr != nil {
+			return finalizeErr
 		}
 	} else {
 		// Terraform engine: use terraform import
-		bundle.ApplySeqContext(ctx, b,
+		if seqErr := bundle.ApplySeqContext(ctx, b,
 			terraform.Interpolate(),
 			terraform.Write(),
 			terraform.Import(opts),
-		)
-		if logdiag.HasError(ctx) {
-			return
+		); seqErr != nil {
+			return seqErr
 		}
 	}
 
-	statemgmt.PushResourcesState(ctx, b, engine)
+	return statemgmt.PushResourcesState(ctx, b, engine)
 }
 
 func jsonDump(ctx context.Context, v any, field string) string {
@@ -116,16 +111,18 @@ func jsonDump(ctx context.Context, v any, field string) string {
 	return string(b)
 }
 
-func Unbind(ctx context.Context, b *bundle.Bundle, bundleType, tfResourceType, resourceKey string, engine engine.EngineType) {
+func Unbind(ctx context.Context, b *bundle.Bundle, bundleType, tfResourceType, resourceKey string, engine engine.EngineType) (err error) {
 	log.Info(ctx, "Phase: unbind")
 
-	bundle.ApplyContext(ctx, b, lock.Acquire())
-	if logdiag.HasError(ctx) {
-		return
+	if acquireErr := bundle.ApplyContext(ctx, b, lock.Acquire()); acquireErr != nil {
+		return acquireErr
 	}
 
 	defer func() {
-		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalUnbind))
+		err = logdiag.FlushError(ctx, err)
+		if releaseErr := bundle.ApplyContext(ctx, b, lock.Release(lock.GoalUnbind)); releaseErr != nil && err == nil {
+			err = logdiag.FlushError(ctx, releaseErr)
+		}
 	}()
 
 	if engine.IsDirect() {
@@ -135,21 +132,18 @@ func Unbind(ctx context.Context, b *bundle.Bundle, bundleType, tfResourceType, r
 		}
 		fullResourceKey := fmt.Sprintf("resources.%s.%s", groupName, resourceKey)
 		_, statePath := b.StateFilenameDirect(ctx)
-		err := b.DeploymentBundle.Unbind(ctx, statePath, fullResourceKey)
-		if err != nil {
-			logdiag.LogError(ctx, err)
-			return
+		if unbindErr := b.DeploymentBundle.Unbind(ctx, statePath, fullResourceKey); unbindErr != nil {
+			return unbindErr
 		}
 	} else {
-		bundle.ApplySeqContext(ctx, b,
+		if seqErr := bundle.ApplySeqContext(ctx, b,
 			terraform.Interpolate(),
 			terraform.Write(),
 			terraform.Unbind(bundleType, tfResourceType, resourceKey),
-		)
-		if logdiag.HasError(ctx) {
-			return
+		); seqErr != nil {
+			return seqErr
 		}
 	}
 
-	statemgmt.PushResourcesState(ctx, b, engine)
+	return statemgmt.PushResourcesState(ctx, b, engine)
 }

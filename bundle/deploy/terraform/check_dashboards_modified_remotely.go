@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/libs/agent"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/logdiag"
 )
 
 type dashboardState struct {
@@ -62,7 +63,7 @@ func (l *checkDashboardsModifiedRemotely) Name() string {
 	return "CheckDashboardsModifiedRemotely"
 }
 
-func (l *checkDashboardsModifiedRemotely) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (l *checkDashboardsModifiedRemotely) Apply(ctx context.Context, b *bundle.Bundle) error {
 	// This mutator is relevant only if the bundle includes dashboards.
 	if len(b.Config.Resources.Dashboards) == 0 {
 		return nil
@@ -75,10 +76,9 @@ func (l *checkDashboardsModifiedRemotely) Apply(ctx context.Context, b *bundle.B
 
 	dashboards, err := collectDashboardsFromState(ctx, b, l.engine.IsDirect())
 	if err != nil {
-		return diag.FromErr(err)
+		return err
 	}
 
-	var diags diag.Diagnostics
 	for _, dashboard := range dashboards {
 		// Skip dashboards that are not defined in the bundle.
 		// These will be destroyed upon deployment.
@@ -90,14 +90,13 @@ func (l *checkDashboardsModifiedRemotely) Apply(ctx context.Context, b *bundle.B
 		loc := b.Config.GetLocation(path.String())
 		actual, err := b.WorkspaceClient(ctx).Lakeview.GetByDashboardId(ctx, dashboard.ID)
 		if err != nil {
-			diags = diags.Append(diag.Diagnostic{
+			return diag.Diagnostic{
 				Severity:  diag.Error,
 				Summary:   fmt.Sprintf("failed to get dashboard %q", dashboard.Name),
 				Detail:    err.Error(),
 				Paths:     []dyn.Path{path},
 				Locations: []dyn.Location{loc},
-			})
-			continue
+			}
 		}
 
 		// If the ETag is the same, the dashboard has not been modified.
@@ -105,14 +104,8 @@ func (l *checkDashboardsModifiedRemotely) Apply(ctx context.Context, b *bundle.B
 			continue
 		}
 
-		// Downgrade this to a warning in plan mode.
-		severity := diag.Error
-		if l.isPlan {
-			severity = diag.Warning
-		}
-
-		diags = diags.Append(diag.Diagnostic{
-			Severity: severity,
+		d := diag.Diagnostic{
+			Severity: diag.Error,
 			Summary:  fmt.Sprintf("dashboard %q has been modified remotely", dashboard.Name),
 			Detail: "" +
 				"This dashboard has been modified remotely since the last bundle deployment.\n" +
@@ -125,10 +118,20 @@ func (l *checkDashboardsModifiedRemotely) Apply(ctx context.Context, b *bundle.B
 				"The remote modifications will be lost." + agent.AgentNotice(),
 			Paths:     []dyn.Path{path},
 			Locations: []dyn.Location{loc},
-		})
+		}
+
+		// Downgrade this to a warning in plan mode, emitting it immediately;
+		// in deploy mode it is a fatal error that aborts the pipeline.
+		if l.isPlan {
+			d.Severity = diag.Warning
+			logdiag.LogDiag(ctx, d)
+			continue
+		}
+
+		return d
 	}
 
-	return diags
+	return nil
 }
 
 func CheckDashboardsModifiedRemotely(isPlan bool, engine engine.EngineType) *checkDashboardsModifiedRemotely {

@@ -22,10 +22,10 @@ func (f *validateScripts) Name() string {
 	return "validate:scripts"
 }
 
-func (f *validateScripts) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	diags := diag.Diagnostics{}
-
+func (f *validateScripts) Apply(ctx context.Context, b *bundle.Bundle) error {
 	re := regexp.MustCompile(`\$\{.*\}`)
+
+	var diags diag.Diagnostics
 
 	// Sort the scripts to have a deterministic order for the
 	// generated diagnostics.
@@ -36,7 +36,7 @@ func (f *validateScripts) Apply(ctx context.Context, b *bundle.Bundle) diag.Diag
 		p := dyn.NewPath(dyn.Key("scripts"), dyn.Key(k), dyn.Key("content"))
 
 		if script.Content == "" {
-			diags = append(diags, diag.Diagnostic{
+			diags = diags.Append(diag.Diagnostic{
 				Severity: diag.Error,
 				Summary:  fmt.Sprintf("Script %s has no content", k),
 				Paths:    []dyn.Path{p},
@@ -46,13 +46,13 @@ func (f *validateScripts) Apply(ctx context.Context, b *bundle.Bundle) diag.Diag
 
 		v, err := dyn.GetByPath(b.Config.Value(), p)
 		if err != nil {
-			return diags.Extend(diag.FromErr(err))
+			return err
 		}
 
 		// Check for interpolation syntax
 		match := re.FindString(script.Content)
 		if match != "" {
-			diags = append(diags, diag.Diagnostic{
+			diags = diags.Append(diag.Diagnostic{
 				Severity: diag.Error,
 				Summary:  fmt.Sprintf("Found %s in script %s. Interpolation syntax ${...} is not allowed in scripts", match, k),
 				Detail: `We do not support the ${...} interpolation syntax in scripts because
@@ -64,5 +64,5 @@ environment variable.`,
 		}
 	}
 
-	return diags
+	return diags.Error()
 }

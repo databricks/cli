@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/logdiag"
 )
 
 type validateTargetMode struct{}
@@ -25,19 +26,30 @@ func (v validateTargetMode) Name() string {
 	return "ValidateTargetMode"
 }
 
-func (v validateTargetMode) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (v validateTargetMode) Apply(ctx context.Context, b *bundle.Bundle) error {
 	switch b.Config.Bundle.Mode {
 	case config.Development:
-		return validateDevelopmentMode(b)
+		return logNonErrorsAndReturnError(ctx, validateDevelopmentMode(b))
 	case config.Production:
 		isPrincipal := iamutil.IsServicePrincipal(b.Config.Workspace.CurrentUser.User)
-		return validateProductionMode(b, isPrincipal)
+		return logNonErrorsAndReturnError(ctx, validateProductionMode(b, isPrincipal))
 	case "":
 		// No action
 		return nil
 	default:
 		return diag.Errorf("unsupported value '%s' specified for 'mode': must be either 'development' or 'production'", b.Config.Bundle.Mode)
 	}
+}
+
+// logNonErrorsAndReturnError emits warnings and recommendations immediately and
+// returns the first error (if any) so the caller can abort the pipeline.
+func logNonErrorsAndReturnError(ctx context.Context, diags diag.Diagnostics) error {
+	for _, d := range diags {
+		if d.Severity != diag.Error {
+			logdiag.LogDiag(ctx, d)
+		}
+	}
+	return diags.Error()
 }
 
 func validateDevelopmentMode(b *bundle.Bundle) diag.Diagnostics {
@@ -63,10 +75,10 @@ func validateDevelopmentMode(b *bundle.Bundle) diag.Diagnostics {
 	if path := findNonUserPath(b); path != "" {
 		if path == "artifact_path" && strings.HasPrefix(b.Config.Workspace.ArtifactPath, "/Volumes") {
 			// For Volumes paths we recommend including the current username as a substring
-			diags = diags.Extend(diag.Errorf("%s should contain the current username or ${workspace.current_user.short_name} to ensure uniqueness when using 'mode: development'", path))
+			diags = diags.Append(diag.DiagnosticFromError(diag.Errorf("%s should contain the current username or ${workspace.current_user.short_name} to ensure uniqueness when using 'mode: development'", path)))
 		} else {
 			// For non-Volumes paths recommend simply putting things in the home folder
-			diags = diags.Extend(diag.Errorf("%s must start with '~/' or contain the current username to ensure uniqueness when using 'mode: development'", path))
+			diags = diags.Append(diag.DiagnosticFromError(diag.Errorf("%s must start with '~/' or contain the current username to ensure uniqueness when using 'mode: development'", path)))
 		}
 	}
 	if p.NamePrefix != "" && !namePrefixContainsUserIdentifier(p.NamePrefix, u) {
@@ -129,7 +141,7 @@ func validateProductionMode(b *bundle.Bundle, isPrincipalUsed bool) diag.Diagnos
 	r := b.Config.Resources
 	for i := range r.Pipelines {
 		if r.Pipelines[i].Development {
-			return diag.Errorf("target with 'mode: production' cannot include a pipeline with 'development: true'")
+			return diag.Diagnostics{diag.DiagnosticFromError(diag.Errorf("target with 'mode: production' cannot include a pipeline with 'development: true'"))}
 		}
 	}
 

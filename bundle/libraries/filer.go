@@ -18,7 +18,7 @@ const InternalDirName = ".internal"
 // Supported locations:
 // 1. WSFS
 // 2. UC volumes
-func GetFilerForLibraries(ctx context.Context, b *bundle.Bundle) (filer.Filer, string, diag.Diagnostics) {
+func GetFilerForLibraries(ctx context.Context, b *bundle.Bundle) (filer.Filer, string, error) {
 	artifactPath := b.Config.Workspace.ArtifactPath
 	if artifactPath == "" {
 		return nil, "", diag.Errorf("remote artifact path not configured")
@@ -36,7 +36,7 @@ func GetFilerForLibraries(ctx context.Context, b *bundle.Bundle) (filer.Filer, s
 	}
 }
 
-func GetFilerForLibrariesCleanup(ctx context.Context, b *bundle.Bundle) (filer.Filer, string, diag.Diagnostics) {
+func GetFilerForLibrariesCleanup(ctx context.Context, b *bundle.Bundle) (filer.Filer, string, error) {
 	artifactPath := b.Config.Workspace.ArtifactPath
 	if artifactPath == "" {
 		return nil, "", diag.Errorf("remote artifact path not configured")

@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 )
 
@@ -19,7 +18,7 @@ func (m *syncDefaultPath) Name() string {
 	return "SyncDefaultPath"
 }
 
-func (m *syncDefaultPath) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (m *syncDefaultPath) Apply(ctx context.Context, b *bundle.Bundle) error {
 	isset := false
 	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
 		pv, _ := dyn.Get(v, "sync.paths")
@@ -33,7 +32,7 @@ func (m *syncDefaultPath) Apply(ctx context.Context, b *bundle.Bundle) diag.Diag
 		return v, nil
 	})
 	if err != nil {
-		return diag.FromErr(err)
+		return err
 	}
 
 	// If the sync paths field is already set, do nothing.

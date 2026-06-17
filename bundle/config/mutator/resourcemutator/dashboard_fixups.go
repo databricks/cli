@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/libs/diag"
 )
 
 type dashboardFixups struct{}
@@ -28,7 +27,7 @@ func ensureWorkspacePrefix(parentPath string) string {
 	return path.Join("/Workspace", parentPath)
 }
 
-func (m *dashboardFixups) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (m *dashboardFixups) Apply(ctx context.Context, b *bundle.Bundle) error {
 	for _, dashboard := range b.Config.Resources.Dashboards {
 		if dashboard == nil {
 			continue

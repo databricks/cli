@@ -16,8 +16,6 @@ HTTP Status: 403 Forbidden
 API error_code: INJECTED
 API message: Fault injected by test.
 
-Error: planning failed
-
 
 Exit code: 1
 
@@ -32,8 +30,6 @@ Endpoint: GET [DATABRICKS_URL]/api/2.2/jobs/get?job_id=[NUMID]
 HTTP Status: 403 Forbidden
 API error_code: INJECTED
 API message: Fault injected by test.
-
-Error: planning failed
 
 
 Exit code: 1

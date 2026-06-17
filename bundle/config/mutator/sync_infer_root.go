@@ -53,9 +53,7 @@ func (m *syncInferRoot) computeRoot(path, root string) string {
 	return filepath.Clean(root)
 }
 
-func (m *syncInferRoot) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	var diags diag.Diagnostics
-
+func (m *syncInferRoot) Apply(ctx context.Context, b *bundle.Bundle) error {
 	// Use the bundle root path as the starting point for inferring the sync root path.
 	bundleRootPath := filepath.Clean(b.BundleRootPath)
 
@@ -78,7 +76,7 @@ func (m *syncInferRoot) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 	// Compute the relative path from the sync root to the bundle root.
 	rel, err := filepath.Rel(syncRootPath, bundleRootPath)
 	if err != nil {
-		return diag.FromErr(err)
+		return err
 	}
 
 	// If during computation of the sync root path we hit the root of the filesystem,
@@ -90,16 +88,12 @@ func (m *syncInferRoot) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 			continue
 		}
 
-		diags = append(diags, diag.Diagnostic{
+		return diag.Diagnostic{
 			Severity:  diag.Error,
 			Summary:   fmt.Sprintf("invalid sync path %q", path),
 			Locations: b.Config.GetLocations(fmt.Sprintf("sync.paths[%d]", i)),
 			Paths:     []dyn.Path{dyn.NewPath(dyn.Key("sync"), dyn.Key("paths"), dyn.Index(i))},
-		})
-	}
-
-	if diags.HasError() {
-		return diags
+		}
 	}
 
 	// Update all paths in the sync configuration to be relative to the sync root.

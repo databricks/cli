@@ -10,8 +10,8 @@ import (
 	"github.com/databricks/cli/bundle/scripts"
 )
 
-func DefaultMutators(ctx context.Context, b *bundle.Bundle) {
-	bundle.ApplySeqContext(ctx, b,
+func DefaultMutators(ctx context.Context, b *bundle.Bundle) error {
+	return bundle.ApplySeqContext(ctx, b,
 		loader.EntryPoint(),
 
 		// Execute preinit script before processing includes.

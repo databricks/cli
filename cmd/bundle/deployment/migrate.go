@@ -17,6 +17,7 @@ import (
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/shellquote"
@@ -158,9 +159,8 @@ To start using direct engine, set "engine: direct" under bundle in your databric
 		// Apply SecretScopeFixups so the config matches what the direct engine expects.
 		// This adds MANAGE ACL for the current user to all secret scopes, ensuring
 		// the migrated state and config agree on .permissions entries.
-		bundle.ApplyContext(ctx, b, resourcemutator.SecretScopeFixups(engine.EngineDirect))
-		if logdiag.HasError(ctx) {
-			return root.ErrAlreadyPrinted
+		if err := bundle.ApplyContext(ctx, b, resourcemutator.SecretScopeFixups(engine.EngineDirect)); err != nil {
+			return root.RenderAndReturnError(ctx, err)
 		}
 
 		adapters, err := dresources.InitAll(nil)
@@ -177,11 +177,7 @@ To start using direct engine, set "engine: direct" under bundle in your databric
 		}
 
 		if _, err := stateDB.Finalize(ctx); err != nil {
-			logdiag.LogError(ctx, err)
-		}
-		if logdiag.HasError(ctx) {
-			logdiag.LogError(ctx, errors.New("migration failed; ensure you have done full deploy before the migration"))
-			return root.ErrAlreadyPrinted
+			return root.RenderAndReturnError(ctx, errors.Join(err, errors.New("migration failed; ensure you have done full deploy before the migration")))
 		}
 
 		if err := os.Rename(tempStatePath, localPath); err != nil {
@@ -194,7 +190,7 @@ To start using direct engine, set "engine: direct" under bundle in your databric
 		err = os.Rename(localTerraformPath, localTerraformBackupPath)
 		if err != nil {
 			// not fatal, since we've increased serial
-			logdiag.LogError(ctx, err)
+			logdiag.LogDiag(ctx, diag.DiagnosticFromError(err))
 		}
 
 		cmdio.LogString(ctx, fmt.Sprintf(`Success! Migrated %d resources to direct engine state file: %s

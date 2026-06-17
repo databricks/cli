@@ -7,7 +7,6 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/libs/diag"
 )
 
 type captureUCDependencies struct{}
@@ -88,7 +87,7 @@ func resolveCatalog(b *bundle.Bundle, catalogName string) string {
 	return catalogName
 }
 
-func (m *captureUCDependencies) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (m *captureUCDependencies) Apply(ctx context.Context, b *bundle.Bundle) error {
 	// Resolve resources that depend on schemas before resolving schemas themselves.
 	// The schema resolution below modifies schema.CatalogName, and findSchema
 	// (used by resolveSchema) matches against the original schema.CatalogName value.

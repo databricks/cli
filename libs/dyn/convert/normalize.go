@@ -66,7 +66,10 @@ func (n normalizeOptions) normalizeType(typ reflect.Type, src dyn.Value, seen []
 		// Fall through to the error case.
 	}
 
-	return dyn.InvalidValue, diag.Errorf("unsupported type: %s", typ.Kind())
+	return dyn.InvalidValue, diag.Diagnostics{{
+		Severity: diag.Error,
+		Summary:  fmt.Sprintf("unsupported type: %s", typ.Kind()),
+	}}
 }
 
 func nullWarning(expected dyn.Kind, src dyn.Value, path dyn.Path) diag.Diagnostic {
@@ -450,7 +453,10 @@ func (n normalizeOptions) normalizeInterface(_ reflect.Type, src dyn.Value, path
 	case dyn.KindNil:
 		// Fall through
 	default:
-		return dyn.InvalidValue, diag.Errorf("unsupported kind: %s", src.Kind())
+		return dyn.InvalidValue, diag.Diagnostics{{
+			Severity: diag.Error,
+			Summary:  fmt.Sprintf("unsupported kind: %s", src.Kind()),
+		}}
 	}
 
 	return src, nil

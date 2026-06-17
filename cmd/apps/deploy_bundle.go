@@ -89,7 +89,10 @@ func BundleDeployOverrideWithWrapper(wrapError ErrorWrapper) func(*cobra.Command
 		originalRunE := deployCmd.RunE
 		deployCmd.RunE = func(cmd *cobra.Command, args []string) error {
 			if len(args) == 0 {
-				b := root.TryConfigureBundle(cmd)
+				b, err := root.TryConfigureBundle(cmd)
+				if err != nil {
+					return root.RenderAndReturnError(cmd.Context(), err)
+				}
 				if b != nil {
 					return runBundleDeploy(cmd, opts)
 				}

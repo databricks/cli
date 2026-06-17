@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/dynvar"
+	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/structs/structpath"
 )
 
@@ -30,7 +31,7 @@ func (m *tfOnlyReferences) Name() string {
 	return "validate:tf_only_references"
 }
 
-func (m *tfOnlyReferences) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (m *tfOnlyReferences) Apply(ctx context.Context, b *bundle.Bundle) error {
 	// Resolve effective engine: config takes precedence over env var.
 	effectiveEngine := b.Config.Bundle.Engine
 	if effectiveEngine == engine.EngineNotSet {
@@ -40,7 +41,8 @@ func (m *tfOnlyReferences) Apply(ctx context.Context, b *bundle.Bundle) diag.Dia
 	}
 	isDirect := effectiveEngine.IsDirect()
 
-	var diags diag.Diagnostics
+	var found bool
+	var firstErr error
 
 	// Walk the entire config looking for ${resources.*} references.
 	_ = dyn.WalkReadOnly(b.Config.Value(), func(_ dyn.Path, v dyn.Value) error {
@@ -53,17 +55,26 @@ func (m *tfOnlyReferences) Apply(ctx context.Context, b *bundle.Bundle) diag.Dia
 				continue
 			}
 			if d := checkTFOnlyReference(r, v.Location(), isDirect); d != nil {
-				diags = append(diags, *d)
+				found = true
+				// In Terraform mode these are warnings, emitted immediately.
+				// In direct mode they are errors; we return the first one.
+				if d.Severity == diag.Error {
+					if firstErr == nil {
+						firstErr = *d
+					}
+				} else {
+					logdiag.LogDiag(ctx, *d)
+				}
 			}
 		}
 		return nil
 	})
 
-	if len(diags) > 0 {
+	if found {
 		b.Metrics.AddBoolValue("has_tf_only_references", true)
 	}
 
-	return diags
+	return firstErr
 }
 
 // checkTFOnlyReference checks a single reference string like
@@ -73,7 +84,7 @@ func checkTFOnlyReference(ref string, loc dyn.Location, isDirect bool) *diag.Dia
 	p, err := dyn.NewPathFromString(ref)
 	// Need at least resources.<group>.<name>.<field>
 	if err != nil || len(p) < 4 || p[0].Key() != "resources" {
-		return nil
+		return nil //nolint:nilerr // an unparseable reference is simply not a TF-only reference
 	}
 
 	group := p[1].Key()
@@ -85,7 +96,7 @@ func checkTFOnlyReference(ref string, loc dyn.Location, isDirect bool) *diag.Dia
 	// Field path is everything after resources.<group>.<name>.
 	fieldNode, err := structpath.ParsePath(p[3:].String())
 	if err != nil {
-		return nil
+		return nil //nolint:nilerr // an unparseable field path is simply not a TF-only reference
 	}
 
 	if !tfOnlyFields.Contains(fieldNode) {

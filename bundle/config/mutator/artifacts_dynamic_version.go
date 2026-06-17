@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/libs/diag"
 )
 
 type artifactsUseDynamicVersion struct{}
@@ -18,7 +17,7 @@ func (m *artifactsUseDynamicVersion) Name() string {
 	return "ApplyArtifactsDynamicVersion"
 }
 
-func (m *artifactsUseDynamicVersion) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (m *artifactsUseDynamicVersion) Apply(ctx context.Context, b *bundle.Bundle) error {
 	if !b.Config.Presets.ArtifactsDynamicVersion {
 		return nil
 	}

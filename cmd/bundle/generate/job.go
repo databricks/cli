@@ -69,8 +69,11 @@ After generation, you can deploy this job to other targets using:
 		ctx := logdiag.InitContext(cmd.Context())
 		cmd.SetContext(ctx)
 
-		b := root.MustConfigureBundle(cmd)
-		if b == nil || logdiag.HasError(ctx) {
+		b, err := root.MustConfigureBundle(cmd)
+		if err != nil {
+			return root.RenderAndReturnError(ctx, err)
+		}
+		if b == nil {
 			return root.ErrAlreadyPrinted
 		}
 

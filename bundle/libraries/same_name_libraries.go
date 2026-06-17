@@ -2,7 +2,9 @@ package libraries
 
 import (
 	"context"
+	"maps"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
@@ -28,8 +30,7 @@ type libData struct {
 	otherPaths []string
 }
 
-func (c checkForSameNameLibraries) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	var diags diag.Diagnostics
+func (c checkForSameNameLibraries) Apply(ctx context.Context, b *bundle.Bundle) error {
 	libs := make(map[string]*libData)
 
 	err := b.Config.Mutate(func(rootConfig dyn.Value) (dyn.Value, error) {
@@ -76,26 +77,28 @@ func (c checkForSameNameLibraries) Apply(ctx context.Context, b *bundle.Bundle) 
 
 		return rootConfig, nil
 	})
+	if err != nil {
+		return err
+	}
 
 	// Iterate over all the libraries and check if there are any duplicates.
 	// Duplicates will have more than one location.
-	// If there are duplicates, add a diagnostic.
-	for lib, lv := range libs {
+	// If there are duplicates, return a diagnostic.
+	// Sort the keys for deterministic output when multiple duplicates exist.
+	for _, lib := range slices.Sorted(maps.Keys(libs)) {
+		lv := libs[lib]
 		if len(lv.locations) > 1 {
-			diags = append(diags, diag.Diagnostic{
+			return diag.Diagnostic{
 				Severity:  diag.Error,
 				Summary:   "Duplicate local library names: " + lib,
 				Detail:    "Local library names must be unique but found libraries with the same name: " + lv.fullPath + ", " + strings.Join(lv.otherPaths, ", "),
 				Locations: lv.locations,
 				Paths:     lv.paths,
-			})
+			}
 		}
 	}
-	if err != nil {
-		diags = diags.Extend(diag.FromErr(err))
-	}
 
-	return diags
+	return nil
 }
 
 func (c checkForSameNameLibraries) Name() string {

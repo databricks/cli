@@ -21,7 +21,7 @@ func TestTryExtendTerraformPermissionError1(t *testing.T) {
 		"\n"+
 		"	with databricks_pipeline.my_project_pipeline,\n"+
 		"	on bundle.tf.json line 39, in resource.databricks_pipeline.my_project_pipeline:\n"+
-		"	39:       }")).Error()
+		"	39:       }"))
 
 	expected := "EPERM2: permission denied creating or updating my_project_pipeline.\n" +
 		"For assistance, users or groups with appropriate permissions may include: alice@databricks.com.\n" +
@@ -43,7 +43,7 @@ func TestTryExtendTerraformPermissionError2(t *testing.T) {
 		"\n"+
 		"	with databricks_pipeline.my_project_pipeline,\n"+
 		"	on bundle.tf.json line 39, in resource.databricks_pipeline.my_project_pipeline:\n"+
-		"	39:       }")).Error()
+		"	39:       }"))
 
 	expected := "EPERM2: permission denied creating or updating my_project_pipeline.\n" +
 		"For assistance, users or groups with appropriate permissions may include: alice@databricks.com, bob@databricks.com.\n" +
@@ -63,7 +63,7 @@ func TestTryExtendTerraformPermissionError3(t *testing.T) {
 		"\n"+
 		"	with databricks_pipeline.my_project_pipeline,\n"+
 		"	on bundle.tf.json line 39, in resource.databricks_pipeline.my_project_pipeline:\n"+
-		"	39:       }")).Error()
+		"	39:       }"))
 
 	expected := "EPERM2: permission denied creating or updating my_project_pipeline.\n" +
 		"For assistance, contact the owners of this project.\n" +
@@ -86,7 +86,7 @@ func TestTryExtendTerraformPermissionErrorNotOwner(t *testing.T) {
 		"\n"+
 		"	with databricks_pipeline.my_project_pipeline,\n"+
 		"	on bundle.tf.json line 39, in resource.databricks_pipeline.my_project_pipeline:\n"+
-		"	39:       }")).Error()
+		"	39:       }"))
 
 	expected := "EPERM2: permission denied creating or updating my_project_pipeline.\n" +
 		"For assistance, users or groups with appropriate permissions may include: data_team@databricks.com.\n" +

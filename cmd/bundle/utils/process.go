@@ -19,7 +19,6 @@ import (
 	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/internal/build"
-	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
@@ -99,7 +98,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 	}
 
 	// Load bundle config and apply target
-	b = root.MustConfigureBundle(cmd)
+	b, cfgErr := root.MustConfigureBundle(cmd)
 
 	// Log deploy telemetry on all exit paths. This is a defer to ensure
 	// telemetry is logged even when the deploy command fails, for both
@@ -109,58 +108,61 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			if b == nil {
 				return
 			}
-			errMsg := logdiag.GetFirstErrorSummary(ctx)
-			if errMsg == "" && retErr != nil && !errors.Is(retErr, root.ErrAlreadyPrinted) {
+			var errMsg string
+			if retErr != nil {
 				errMsg = retErr.Error()
 			}
 			phases.LogDeployTelemetry(ctx, b, errMsg)
 		}()
 	}
 
-	if logdiag.HasError(ctx) {
-		return b, nil, root.ErrAlreadyPrinted
+	if cfgErr != nil {
+		return b, nil, root.RenderAndReturnError(ctx, cfgErr)
 	}
 
 	variables, err := cmd.Flags().GetStringSlice("var")
 	if err != nil {
-		logdiag.LogDiag(ctx, diag.FromErr(err)[0])
 		return b, nil, err
 	}
 
 	// Initialize variables by assigning them values passed as command line flags
-	configureVariables(cmd, b, variables)
+	if err := configureVariables(cmd, b, variables); err != nil {
+		return b, nil, root.RenderAndReturnError(ctx, err)
+	}
 
-	if b == nil || logdiag.HasError(ctx) {
+	if b == nil {
 		return b, nil, root.ErrAlreadyPrinted
 	}
 	ctx = cmd.Context()
 
 	if opts.InitFunc != nil {
-		bundle.ApplyFuncContext(ctx, b, func(context.Context, *bundle.Bundle) { opts.InitFunc(b) })
+		if err := bundle.ApplyFuncContext(ctx, b, func(context.Context, *bundle.Bundle) { opts.InitFunc(b) }); err != nil {
+			return b, nil, root.RenderAndReturnError(ctx, err)
+		}
 	}
 
+	var initErr error
 	if !opts.SkipInitialize {
 		t0 := time.Now()
-		phases.Initialize(ctx, b)
+		initErr = phases.Initialize(ctx, b)
 		b.Metrics.ExecutionTimes = append(b.Metrics.ExecutionTimes, protos.IntMapEntry{
 			Key:   "phases.Initialize",
 			Value: time.Since(t0).Milliseconds(),
 		})
-		// not checking error right away here, add locations first
+		// not returning the error right away here, add locations first
 	}
 
 	if b != nil {
 		// Include location information in the output if the flag is set.
 		if opts.IncludeLocations {
-			bundle.ApplyContext(ctx, b, mutator.PopulateLocations())
-			if logdiag.HasError(ctx) {
-				return b, nil, root.ErrAlreadyPrinted
+			if err := bundle.ApplyContext(ctx, b, mutator.PopulateLocations()); err != nil {
+				return b, nil, root.RenderAndReturnError(ctx, err)
 			}
 		}
 	}
 
-	if logdiag.HasError(ctx) {
-		return b, nil, root.ErrAlreadyPrinted
+	if initErr != nil {
+		return b, nil, root.RenderAndReturnError(ctx, initErr)
 	}
 
 	if opts.PostInitFunc != nil {
@@ -179,9 +181,10 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		}
 
 		// PullResourcesState depends on stateFiler which needs b.Config.Workspace.StatePath which is set in phases.Initialize
-		ctx, stateDesc = statemgmt.PullResourcesState(ctx, b, statemgmt.AlwaysPull(opts.AlwaysPull), requiredEngine)
-		if logdiag.HasError(ctx) {
-			return b, stateDesc, root.ErrAlreadyPrinted
+		var pullErr error
+		ctx, stateDesc, pullErr = statemgmt.PullResourcesState(ctx, b, statemgmt.AlwaysPull(opts.AlwaysPull), requiredEngine)
+		if pullErr != nil {
+			return b, stateDesc, root.RenderAndReturnError(ctx, pullErr)
 		}
 		cmd.SetContext(ctx)
 
@@ -190,8 +193,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		// The engine is only known for certain after the state is pulled, so reject it
 		// here rather than silently planning/deploying every resource on terraform.
 		if len(b.Select) > 0 && !stateDesc.Engine.IsDirect() {
-			logdiag.LogError(ctx, errors.New("--select is only supported with the direct engine. See https://docs.databricks.com/aws/en/dev-tools/bundles/direct"))
-			return b, stateDesc, root.ErrAlreadyPrinted
+			return b, stateDesc, root.RenderAndReturnError(ctx, errors.New("--select is only supported with the direct engine. See https://docs.databricks.com/aws/en/dev-tools/bundles/direct"))
 		}
 
 		// Open direct engine state once for all subsequent operations (ExportState, CalculatePlan, Apply, etc.)
@@ -199,8 +201,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		if needDirectState {
 			_, localPath := b.StateFilenameDirect(ctx)
 			if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(true), dstate.WithWrite(false)); err != nil {
-				logdiag.LogError(ctx, err)
-				return b, stateDesc, root.ErrAlreadyPrinted
+				return b, stateDesc, root.RenderAndReturnError(ctx, err)
 			}
 		}
 
@@ -217,8 +218,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 				var err error
 				state, err = terraform.ParseResourcesState(ctx, b)
 				if err != nil {
-					logdiag.LogError(ctx, err)
-					return b, stateDesc, root.ErrAlreadyPrinted
+					return b, stateDesc, root.RenderAndReturnError(ctx, err)
 				}
 			}
 			mutators := []bundle.Mutator{
@@ -228,9 +228,8 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			if opts.InitIDs {
 				mutators = append(mutators, mutator.InitializeURLs())
 			}
-			bundle.ApplySeqContext(ctx, b, mutators...)
-			if logdiag.HasError(ctx) {
-				return b, stateDesc, root.ErrAlreadyPrinted
+			if err := bundle.ApplySeqContext(ctx, b, mutators...); err != nil {
+				return b, stateDesc, root.RenderAndReturnError(ctx, err)
 			}
 		}
 	}
@@ -239,8 +238,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 
 	if opts.ReadPlanPath != "" {
 		if !stateDesc.Engine.IsDirect() {
-			logdiag.LogError(ctx, errors.New("--plan is only supported with direct engine (set bundle.engine to \"direct\" or DATABRICKS_BUNDLE_ENGINE=direct)"))
-			return b, stateDesc, root.ErrAlreadyPrinted
+			return b, stateDesc, root.RenderAndReturnError(ctx, errors.New("--plan is only supported with direct engine (set bundle.engine to \"direct\" or DATABRICKS_BUNDLE_ENGINE=direct)"))
 		}
 		opts.Build = false
 		opts.PreDeployChecks = false
@@ -248,8 +246,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		var err error
 		plan, err = deployplan.LoadPlanFromFile(opts.ReadPlanPath)
 		if err != nil {
-			logdiag.LogError(ctx, err)
-			return b, stateDesc, root.ErrAlreadyPrinted
+			return b, stateDesc, root.RenderAndReturnError(ctx, err)
 		}
 		currentVersion := build.GetInfo().Version
 		if plan.CLIVersion != currentVersion {
@@ -260,8 +257,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		// This must happen before any file operations
 		err = direct.ValidatePlanAgainstState(&b.DeploymentBundle.StateDB, plan)
 		if err != nil {
-			logdiag.LogError(ctx, err)
-			return b, stateDesc, root.ErrAlreadyPrinted
+			return b, stateDesc, root.RenderAndReturnError(ctx, err)
 		}
 	} else if opts.Deploy {
 		opts.Build = true
@@ -270,29 +266,27 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 
 	if opts.FastValidate {
 		t1 := time.Now()
-		bundle.ApplyContext(ctx, b, validate.FastValidate())
+		fastValidateErr := bundle.ApplyContext(ctx, b, validate.FastValidate())
 		b.Metrics.ExecutionTimes = append(b.Metrics.ExecutionTimes, protos.IntMapEntry{
 			Key:   "validate.FastValidate",
 			Value: time.Since(t1).Milliseconds(),
 		})
 
-		if logdiag.HasError(ctx) {
-			return b, stateDesc, root.ErrAlreadyPrinted
+		if fastValidateErr != nil {
+			return b, stateDesc, root.RenderAndReturnError(ctx, fastValidateErr)
 		}
 
 		// Pipeline CLI only validation.
 		if opts.IsPipelinesCLI {
-			rejectDefinitions(ctx, b)
-			if logdiag.HasError(ctx) {
-				return b, stateDesc, root.ErrAlreadyPrinted
+			if err := rejectDefinitions(ctx, b); err != nil {
+				return b, stateDesc, root.RenderAndReturnError(ctx, err)
 			}
 		}
 	}
 
 	if opts.Validate {
-		validate.Validate(ctx, b)
-		if logdiag.HasError(ctx) {
-			return b, stateDesc, root.ErrAlreadyPrinted
+		if err := validate.Validate(ctx, b); err != nil {
+			return b, stateDesc, root.RenderAndReturnError(ctx, err)
 		}
 	}
 
@@ -300,23 +294,22 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 
 	if opts.Build {
 		t2 := time.Now()
-		libs = phases.Build(ctx, b)
+		var buildErr error
+		libs, buildErr = phases.Build(ctx, b)
 		b.Metrics.ExecutionTimes = append(b.Metrics.ExecutionTimes, protos.IntMapEntry{
 			Key:   "phases.Build",
 			Value: time.Since(t2).Milliseconds(),
 		})
 
-		if logdiag.HasError(ctx) {
-			return b, stateDesc, root.ErrAlreadyPrinted
+		if buildErr != nil {
+			return b, stateDesc, root.RenderAndReturnError(ctx, buildErr)
 		}
 	}
 
 	if opts.PreDeployChecks {
 		downgradeWarningToError := !opts.Deploy
-		phases.PreDeployChecks(ctx, b, downgradeWarningToError, stateDesc.Engine)
-
-		if logdiag.HasError(ctx) {
-			return b, stateDesc, root.ErrAlreadyPrinted
+		if err := phases.PreDeployChecks(ctx, b, downgradeWarningToError, stateDesc.Engine); err != nil {
+			return b, stateDesc, root.RenderAndReturnError(ctx, err)
 		}
 	}
 
@@ -329,21 +322,19 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		}
 
 		t3 := time.Now()
-		phases.Deploy(ctx, b, outputHandler, stateDesc.Engine, libs, plan)
+		deployErr := phases.Deploy(ctx, b, outputHandler, stateDesc.Engine, libs, plan)
 		b.Metrics.ExecutionTimes = append(b.Metrics.ExecutionTimes, protos.IntMapEntry{
 			Key:   "phases.Deploy",
 			Value: time.Since(t3).Milliseconds(),
 		})
 
-		if logdiag.HasError(ctx) {
-			return b, stateDesc, root.ErrAlreadyPrinted
+		if deployErr != nil {
+			return b, stateDesc, root.RenderAndReturnError(ctx, deployErr)
 		}
 
 		if b != nil && stateDesc != nil && stateDesc.Engine.IsDirect() && stateDesc.HasRemoteTerraformState() {
-			statemgmt.BackupRemoteTerraformState(ctx, b)
-
-			if logdiag.HasError(ctx) {
-				return b, stateDesc, root.ErrAlreadyPrinted
+			if err := statemgmt.BackupRemoteTerraformState(ctx, b); err != nil {
+				return b, stateDesc, root.RenderAndReturnError(ctx, err)
 			}
 		}
 	}
@@ -383,7 +374,7 @@ func ResolveEngineSetting(ctx context.Context, b *bundle.Bundle) (engine.EngineS
 	return engine.EngineSetting{}, nil
 }
 
-func rejectDefinitions(ctx context.Context, b *bundle.Bundle) {
+func rejectDefinitions(ctx context.Context, b *bundle.Bundle) error {
 	if b.Config.Definitions != nil {
 		v := dyn.GetValue(b.Config.Value(), "definitions")
 		loc := v.Locations()
@@ -391,8 +382,9 @@ func rejectDefinitions(ctx context.Context, b *bundle.Bundle) {
 		if len(loc) > 0 {
 			filename = filepath.ToSlash(loc[0].File)
 		}
-		logdiag.LogError(ctx, errors.New(filename+` seems to be formatted for open-source Spark Declarative Pipelines.
+		return errors.New(filename + ` seems to be formatted for open-source Spark Declarative Pipelines.
 Pipelines CLI currently only supports Lakeflow Spark Declarative Pipelines development.
-To see an example of a supported pipelines template, create a new Pipelines CLI project with "pipelines init".`))
+To see an example of a supported pipelines template, create a new Pipelines CLI project with "pipelines init".`)
 	}
+	return nil
 }

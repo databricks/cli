@@ -14,7 +14,7 @@ import (
 //
 // Note that since the workspace API doesn't always distinguish between permission denied and path errors,
 // we must treat this as a "possible permission error". See acquire.go for more about this.
-func ReportPossiblePermissionDenied(ctx context.Context, b *bundle.Bundle, path string) diag.Diagnostics {
+func ReportPossiblePermissionDenied(ctx context.Context, b *bundle.Bundle, path string) error {
 	log.Errorf(ctx, "Failed to update, encountered possible permission error: %v", path)
 
 	me := b.Config.Workspace.CurrentUser.User
@@ -25,7 +25,7 @@ func ReportPossiblePermissionDenied(ctx context.Context, b *bundle.Bundle, path 
 	canManageBundle, assistance := analyzeBundlePermissions(b)
 
 	if !canManageBundle {
-		return diag.Diagnostics{{
+		return diag.Diagnostic{
 			Summary: fmt.Sprintf("unable to deploy to %s as %s.\n"+
 				"Please make sure the current user or one of their groups is listed under the permissions of this bundle.\n"+
 				"%s\n"+
@@ -34,13 +34,13 @@ func ReportPossiblePermissionDenied(ctx context.Context, b *bundle.Bundle, path 
 				path, userName, assistance),
 			Severity: diag.Error,
 			ID:       diag.PathPermissionDenied,
-		}}
+		}
 	}
 
 	// According databricks.yml, the current user has the right permissions.
 	// But we're still seeing permission errors. So someone else will need
 	// to redeploy the bundle with the right set of permissions.
-	return diag.Diagnostics{{
+	return diag.Diagnostic{
 		Summary: fmt.Sprintf("unable to deploy to %s as %s. Cannot apply local deployment permissions.\n"+
 			"%s\n"+
 			"They can redeploy the project to apply the latest set of permissions.\n"+
@@ -48,5 +48,5 @@ func ReportPossiblePermissionDenied(ctx context.Context, b *bundle.Bundle, path 
 			path, userName, assistance),
 		Severity: diag.Error,
 		ID:       diag.CannotChangePathPermissions,
-	}}
+	}
 }

@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/databricks/databricks-sdk-go/service/sql"
@@ -213,7 +214,7 @@ func setPipelineOwnersToRunAsIdentity(b *bundle.Bundle) {
 	}
 }
 
-func (m *setRunAs) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (m *setRunAs) Apply(ctx context.Context, b *bundle.Bundle) error {
 	// Track the use of the legacy run_as mode.
 	b.Metrics.AddBoolValue("experimental.use_legacy_run_as", b.Config.Experimental != nil && b.Config.Experimental.UseLegacyRunAs)
 
@@ -230,20 +231,18 @@ func (m *setRunAs) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
 	if b.Config.Experimental != nil && b.Config.Experimental.UseLegacyRunAs {
 		setPipelineOwnersToRunAsIdentity(b)
 		setRunAsForJobs(b)
-		return diag.Diagnostics{
-			{
-				Severity:  diag.Warning,
-				Summary:   "You are using the legacy mode of run_as. The support for this mode is experimental and might be removed in a future release of the CLI. In order to run the pipelines in your DABs project as the run_as user this mode changes the owners of the pipelines to the run_as identity, which requires the user deploying the bundle to be a workspace admin, and also a Metastore admin if the pipeline target is in UC.",
-				Paths:     []dyn.Path{dyn.MustPathFromString("experimental.use_legacy_run_as")},
-				Locations: b.Config.GetLocations("experimental.use_legacy_run_as"),
-			},
-		}
+		logdiag.LogDiag(ctx, diag.Diagnostic{
+			Severity:  diag.Warning,
+			Summary:   "You are using the legacy mode of run_as. The support for this mode is experimental and might be removed in a future release of the CLI. In order to run the pipelines in your DABs project as the run_as user this mode changes the owners of the pipelines to the run_as identity, which requires the user deploying the bundle to be a workspace admin, and also a Metastore admin if the pipeline target is in UC.",
+			Paths:     []dyn.Path{dyn.MustPathFromString("experimental.use_legacy_run_as")},
+			Locations: b.Config.GetLocations("experimental.use_legacy_run_as"),
+		})
+		return nil
 	}
 
 	// Assert the run_as configuration is valid in the context of the bundle
-	diags := validateRunAs(b)
-	if diags.HasError() {
-		return diags
+	if err := validateRunAs(b).Error(); err != nil {
+		return err
 	}
 
 	setRunAsForJobs(b)

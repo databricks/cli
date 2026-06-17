@@ -72,9 +72,9 @@ func isGlobPattern(path string) bool {
 	return strings.ContainsAny(path, "*?[")
 }
 
-func expandLibraries(ctx context.Context, b *bundle.Bundle, p dyn.Path, v dyn.Value) (diag.Diagnostics, []dyn.Value) {
+func expandLibraries(ctx context.Context, b *bundle.Bundle, p dyn.Path, v dyn.Value) ([]dyn.Value, error) {
 	var output []dyn.Value
-	var diags diag.Diagnostics
+	var firstErr error
 
 	libs := v.MustSequence()
 	for i, lib := range libs {
@@ -89,7 +89,9 @@ func expandLibraries(ctx context.Context, b *bundle.Bundle, p dyn.Path, v dyn.Va
 
 		matches, err := findMatches(ctx, b, path)
 		if err != nil {
-			diags = diags.Append(matchError(lp, lib.Locations(), err.Error()))
+			if firstErr == nil {
+				firstErr = matchError(lp, lib.Locations(), err.Error())
+			}
 			continue
 		}
 
@@ -100,12 +102,12 @@ func expandLibraries(ctx context.Context, b *bundle.Bundle, p dyn.Path, v dyn.Va
 		}
 	}
 
-	return diags, output
+	return output, firstErr
 }
 
-func expandEnvironmentDeps(ctx context.Context, b *bundle.Bundle, p dyn.Path, v dyn.Value) (diag.Diagnostics, []dyn.Value) {
+func expandEnvironmentDeps(ctx context.Context, b *bundle.Bundle, p dyn.Path, v dyn.Value) ([]dyn.Value, error) {
 	var output []dyn.Value
-	var diags diag.Diagnostics
+	var firstErr error
 
 	deps := v.MustSequence()
 	for i, dep := range deps {
@@ -118,7 +120,9 @@ func expandEnvironmentDeps(ctx context.Context, b *bundle.Bundle, p dyn.Path, v 
 
 		matches, err := findMatches(ctx, b, path)
 		if err != nil {
-			diags = diags.Append(matchError(lp, dep.Locations(), err.Error()))
+			if firstErr == nil {
+				firstErr = matchError(lp, dep.Locations(), err.Error())
+			}
 			continue
 		}
 
@@ -127,12 +131,12 @@ func expandEnvironmentDeps(ctx context.Context, b *bundle.Bundle, p dyn.Path, v 
 		}
 	}
 
-	return diags, output
+	return output, firstErr
 }
 
 type expandPattern struct {
 	pattern dyn.Pattern
-	fn      func(ctx context.Context, b *bundle.Bundle, p dyn.Path, v dyn.Value) (diag.Diagnostics, []dyn.Value)
+	fn      func(ctx context.Context, b *bundle.Bundle, p dyn.Path, v dyn.Value) ([]dyn.Value, error)
 }
 
 var taskLibrariesPattern = dyn.NewPattern(
@@ -173,7 +177,7 @@ var pipelineEnvDepsPattern = dyn.NewPattern(
 	dyn.Key("dependencies"),
 )
 
-func (e *expand) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (e *expand) Apply(ctx context.Context, b *bundle.Bundle) error {
 	expanders := []expandPattern{
 		{
 			pattern: taskLibrariesPattern,
@@ -193,14 +197,16 @@ func (e *expand) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		},
 	}
 
-	var diags diag.Diagnostics
+	var firstErr error
 
 	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
 		var err error
 		for _, expander := range expanders {
 			v, err = dyn.MapByPattern(v, expander.pattern, func(p dyn.Path, lv dyn.Value) (dyn.Value, error) {
-				d, output := expander.fn(ctx, b, p, lv)
-				diags = diags.Extend(d)
+				output, e := expander.fn(ctx, b, p, lv)
+				if e != nil && firstErr == nil {
+					firstErr = e
+				}
 				return dyn.NewValue(output, lv.Locations()), nil
 			})
 			if err != nil {
@@ -210,11 +216,10 @@ func (e *expand) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 
 		return v, nil
 	})
-	if err != nil {
-		diags = diags.Extend(diag.FromErr(err))
+	if firstErr != nil {
+		return firstErr
 	}
-
-	return diags
+	return err
 }
 
 func (e *expand) Name() string {

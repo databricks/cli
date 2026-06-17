@@ -1,6 +1,7 @@
 package validate
 
 import (
+	"context"
 	"path/filepath"
 	"testing"
 
@@ -8,6 +9,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/vfs"
 	sdkconfig "github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
@@ -17,6 +19,22 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
+
+// applyFilesToSync runs the read-only mutator directly (without the typed<->dynamic
+// config sync that bundle.Apply performs) and returns the diagnostics it logged plus
+// the returned error. The sync round-trip would drop the typed-only CurrentUser field
+// the test sets, which would force an unexpected workspace API call.
+func applyFilesToSync(ctx context.Context, t *testing.T, b *bundle.Bundle) diag.Diagnostics {
+	t.Helper()
+	ctx = logdiag.InitContext(ctx)
+	logdiag.SetCollect(ctx, true)
+	err := FilesToSync().Apply(ctx, b)
+	diags := logdiag.FlushCollected(ctx)
+	if err != nil {
+		diags = append(diags, diag.DiagnosticFromError(err))
+	}
+	return diags
+}
 
 func TestFilesToSync_NoPaths(t *testing.T) {
 	b := &bundle.Bundle{
@@ -28,7 +46,7 @@ func TestFilesToSync_NoPaths(t *testing.T) {
 	}
 
 	ctx := t.Context()
-	diags := FilesToSync().Apply(ctx, b)
+	diags := applyFilesToSync(ctx, t, b)
 	assert.Empty(t, diags)
 }
 
@@ -83,7 +101,7 @@ func TestFilesToSync_EverythingIgnored(t *testing.T) {
 	testutil.WriteFile(t, filepath.Join(b.BundleRootPath, ".gitignore"), "*\n.*\n")
 
 	ctx := t.Context()
-	diags := FilesToSync().Apply(ctx, b)
+	diags := applyFilesToSync(ctx, t, b)
 	require.Len(t, diags, 1)
 	assert.Equal(t, diag.Warning, diags[0].Severity)
 	assert.Equal(t, "There are no files to sync, please check your .gitignore", diags[0].Summary)
@@ -96,7 +114,7 @@ func TestFilesToSync_EverythingExcluded(t *testing.T) {
 	b.Config.Sync.Exclude = []string{"*"}
 
 	ctx := t.Context()
-	diags := FilesToSync().Apply(ctx, b)
+	diags := applyFilesToSync(ctx, t, b)
 	require.Len(t, diags, 1)
 	assert.Equal(t, diag.Warning, diags[0].Severity)
 	assert.Equal(t, "There are no files to sync, please check your .gitignore and sync.exclude configuration", diags[0].Summary)

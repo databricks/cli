@@ -18,8 +18,7 @@ func (m *validateVolumePath) Name() string {
 	return "validate:volume-path"
 }
 
-func (m *validateVolumePath) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	var diags diag.Diagnostics
+func (m *validateVolumePath) Apply(ctx context.Context, b *bundle.Bundle) error {
 	// Define paths to check and their corresponding config field names
 	pathChecks := []struct {
 		path       string
@@ -34,22 +33,17 @@ func (m *validateVolumePath) Apply(ctx context.Context, b *bundle.Bundle) diag.D
 	// Check each path
 	for _, check := range pathChecks {
 		if check.path != "" && strings.HasPrefix(check.path, "/Volumes/") {
-			diags = diags.Append(diag.Diagnostic{
+			return diag.Diagnostic{
 				Severity:  diag.Error,
 				Summary:   fmt.Sprintf("%s %s starts with /Volumes. /Volumes can only be used with workspace.artifact_path.", check.configName, check.path),
 				Detail:    "For more information, see https://docs.databricks.com/aws/en/dev-tools/bundles/settings#workspace",
 				Locations: b.Config.GetLocations(check.configName),
 				Paths:     []dyn.Path{dyn.MustPathFromString(check.configName)},
-			})
-
-			// Return early for root path validation
-			if check.configName == "workspace.root_path" {
-				return diags
 			}
 		}
 	}
 
-	return diags
+	return nil
 }
 
 func ValidateVolumePath() bundle.ReadOnlyMutator {

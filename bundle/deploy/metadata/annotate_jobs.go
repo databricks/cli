@@ -8,7 +8,6 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/libs/dbr"
-	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
@@ -22,7 +21,7 @@ func (m *annotateJobs) Name() string {
 	return "metadata.AnnotateJobs"
 }
 
-func (m *annotateJobs) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (m *annotateJobs) Apply(ctx context.Context, b *bundle.Bundle) error {
 	for _, job := range b.Config.Resources.Jobs {
 		job.Deployment = &jobs.JobDeployment{
 			Kind:             jobs.JobDeploymentKindBundle,

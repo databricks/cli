@@ -18,8 +18,8 @@ import (
 
 // PreDeployChecks is common set of mutators between "bundle plan" and "bundle deploy".
 // Note, it is not run in "bundle migrate" so it must not modify the config
-func PreDeployChecks(ctx context.Context, b *bundle.Bundle, isPlan bool, engine engine.EngineType) {
-	bundle.ApplySeqContext(ctx, b,
+func PreDeployChecks(ctx context.Context, b *bundle.Bundle, isPlan bool, engine engine.EngineType) error {
+	return bundle.ApplySeqContext(ctx, b,
 		terraform.CheckDashboardsModifiedRemotely(isPlan, engine),
 		resourcemutator.SecretScopeFixups(engine),
 		deploy.StatePull(),

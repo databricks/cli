@@ -120,7 +120,7 @@ func collapsePermissions(scope *resources.SecretScope) error {
 	return nil
 }
 
-func (m *secretScopeFixups) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (m *secretScopeFixups) Apply(ctx context.Context, b *bundle.Bundle) error {
 	// Secret scopes by default have the current user as a MANAGE ACL. We need to add it to the client ACL list
 	// to prevent a phantom persistent diff.
 	// We do not need to do this in terraform because terraform naively always applies the config during ACL
@@ -142,14 +142,12 @@ func (m *secretScopeFixups) Apply(ctx context.Context, b *bundle.Bundle) diag.Di
 		addManageForCurrentUser(scope, currentUser)
 		err := collapsePermissions(scope)
 		if err != nil {
-			return diag.Diagnostics{
-				{
-					Severity:  diag.Error,
-					Summary:   "Failed to collapse permissions for secret scope",
-					Detail:    err.Error(),
-					Paths:     []dyn.Path{dyn.MustPathFromString("resources.secret_scopes." + key)},
-					Locations: []dyn.Location{b.Config.GetLocation("resources.secret_scopes." + key)},
-				},
+			return diag.Diagnostic{
+				Severity:  diag.Error,
+				Summary:   "Failed to collapse permissions for secret scope",
+				Detail:    err.Error(),
+				Paths:     []dyn.Path{dyn.MustPathFromString("resources.secret_scopes." + key)},
+				Locations: []dyn.Location{b.Config.GetLocation("resources.secret_scopes." + key)},
 			}
 		}
 	}

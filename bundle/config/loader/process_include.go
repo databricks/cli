@@ -11,16 +11,17 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/logdiag"
 )
 
-func validateFileFormat(configRoot dyn.Value, filePath string) diag.Diagnostics {
+func validateFileFormat(ctx context.Context, configRoot dyn.Value, filePath string) error {
 	for _, resourceDescription := range config.SupportedResources() {
 		singularName := resourceDescription.SingularName
 
 		for _, yamlExt := range []string{"yml", "yaml"} {
 			ext := fmt.Sprintf(".%s.%s", singularName, yamlExt)
 			if strings.HasSuffix(filePath, ext) {
-				return validateSingleResourceDefined(configRoot, ext, singularName)
+				return validateSingleResourceDefined(ctx, configRoot, ext, singularName)
 			}
 		}
 	}
@@ -28,7 +29,7 @@ func validateFileFormat(configRoot dyn.Value, filePath string) diag.Diagnostics 
 	return nil
 }
 
-func validateSingleResourceDefined(configRoot dyn.Value, ext, typ string) diag.Diagnostics {
+func validateSingleResourceDefined(ctx context.Context, configRoot dyn.Value, ext, typ string) error {
 	type resource struct {
 		path  dyn.Path
 		value dyn.Value
@@ -53,7 +54,7 @@ func validateSingleResourceDefined(configRoot dyn.Value, ext, typ string) diag.D
 			return v, nil
 		})
 	if err != nil {
-		return diag.FromErr(err)
+		return err
 	}
 
 	// Gather all resources defined in a target block.
@@ -70,7 +71,7 @@ func validateSingleResourceDefined(configRoot dyn.Value, ext, typ string) diag.D
 			return v, nil
 		})
 	if err != nil {
-		return diag.FromErr(err)
+		return err
 	}
 
 	typeMatch := true
@@ -121,15 +122,14 @@ func validateSingleResourceDefined(configRoot dyn.Value, ext, typ string) diag.D
 		return cmp.Compare(a.String(), b.String())
 	})
 
-	return diag.Diagnostics{
-		{
-			Severity:  diag.Recommendation,
-			Summary:   fmt.Sprintf("define a single %s in a file with the %s extension.", strings.ReplaceAll(typ, "_", " "), ext),
-			Detail:    detail.String(),
-			Locations: locations,
-			Paths:     paths,
-		},
-	}
+	logdiag.LogDiag(ctx, diag.Diagnostic{
+		Severity:  diag.Recommendation,
+		Summary:   fmt.Sprintf("define a single %s in a file with the %s extension.", strings.ReplaceAll(typ, "_", " "), ext),
+		Detail:    detail.String(),
+		Locations: locations,
+		Paths:     paths,
+	})
+	return nil
 }
 
 type processInclude struct {
@@ -149,20 +149,24 @@ func (m *processInclude) Name() string {
 	return fmt.Sprintf("ProcessInclude(%s)", m.relPath)
 }
 
-func (m *processInclude) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (m *processInclude) Apply(ctx context.Context, b *bundle.Bundle) error {
 	this, diags := config.Load(m.fullPath)
-	if diags.HasError() {
-		return diags
+	for _, d := range diags {
+		if d.Severity != diag.Error {
+			logdiag.LogDiag(ctx, d)
+		}
+	}
+	if err := diags.Error(); err != nil {
+		return err
 	}
 
 	// Add any diagnostics associated with the file format.
-	diags = append(diags, validateFileFormat(this.Value(), m.relPath)...)
-	if diags.HasError() {
-		return diags
+	if err := validateFileFormat(ctx, this.Value(), m.relPath); err != nil {
+		return err
 	}
 
 	if len(this.Include) > 0 {
-		diags = diags.Append(diag.Diagnostic{
+		logdiag.LogDiag(ctx, diag.Diagnostic{
 			Severity: diag.Warning,
 			Summary:  "Include section is defined outside root file",
 			Detail: `An include section is defined in a file that is not databricks.yml.
@@ -172,9 +176,5 @@ Only includes defined in databricks.yml are applied.`,
 		})
 	}
 
-	err := b.Config.Merge(this)
-	if err != nil {
-		diags = diags.Extend(diag.FromErr(err))
-	}
-	return diags
+	return b.Config.Merge(this)
 }

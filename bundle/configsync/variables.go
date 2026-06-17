@@ -127,10 +127,14 @@ func loadPreResolvedConfig(ctx context.Context, b *bundle.Bundle) dyn.Value {
 		BundleRootPath: b.BundleRootPath,
 		BundleRoot:     b.BundleRoot,
 	}
-	mutator.DefaultMutators(ctx, fresh)
+	if err := mutator.DefaultMutators(ctx, fresh); err != nil {
+		return dyn.InvalidValue
+	}
 	if target := b.Config.Bundle.Target; target != "" {
 		if _, ok := fresh.Config.Targets[target]; ok {
-			bundle.ApplyContext(ctx, fresh, mutator.SelectTarget(target))
+			if err := bundle.ApplyContext(ctx, fresh, mutator.SelectTarget(target)); err != nil {
+				return dyn.InvalidValue
+			}
 		}
 	}
 	return fresh.Config.Value()

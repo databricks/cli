@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 )
 
@@ -17,45 +18,42 @@ var resourceReferencePattern = regexp.MustCompile(`\$\{resources\.(\w+)\.([^.]+)
 
 type validate struct{}
 
-func (v *validate) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	var diags diag.Diagnostics
+func (v *validate) Apply(ctx context.Context, b *bundle.Bundle) error {
 	usedSourceCodePaths := make(map[string]string)
 
 	for key, app := range b.Config.Resources.Apps {
 		if app.SourceCodePath == "" && app.GitSource == nil {
-			diags = append(diags, diag.Diagnostic{
+			return diag.Diagnostic{
 				Severity:  diag.Error,
 				Summary:   "Missing app source code path or git source",
 				Detail:    fmt.Sprintf("app resource '%s' should have either source_code_path or git_source field", key),
 				Locations: b.Config.GetLocations("resources.apps." + key),
-			})
-			continue
+			}
 		}
 
 		if app.SourceCodePath != "" && app.GitSource != nil {
-			diags = append(diags, diag.Diagnostic{
+			return diag.Diagnostic{
 				Severity:  diag.Error,
 				Summary:   "Both source_code_path and git_source fields are set",
 				Detail:    fmt.Sprintf("app resource '%s' should have either source_code_path or git_source field, not both", key),
 				Locations: b.Config.GetLocations("resources.apps." + key),
-			})
-			continue
+			}
 		}
 
 		if _, ok := usedSourceCodePaths[app.SourceCodePath]; ok {
-			diags = append(diags, diag.Diagnostic{
+			return diag.Diagnostic{
 				Severity:  diag.Error,
 				Summary:   "Duplicate app source code path",
 				Detail:    fmt.Sprintf("app resource '%s' has the same source code path as app resource '%s', this will lead to the app configuration being overridden by each other", key, usedSourceCodePaths[app.SourceCodePath]),
 				Locations: b.Config.GetLocations(fmt.Sprintf("resources.apps.%s.source_code_path", key)),
-			})
+			}
 		}
 		usedSourceCodePaths[app.SourceCodePath] = key
 
-		diags = diags.Extend(warnForAppResourcePermissions(b, key, app))
+		warnForAppResourcePermissions(ctx, b, key, app)
 	}
 
-	return diags
+	return nil
 }
 
 // appResourceRef extracts resource references from an app resource entry.
@@ -130,9 +128,7 @@ func hasAppSPInPermissions(b *bundle.Bundle, resourcePath, appKey string) bool {
 // Without the SP in the permission list, the second deploy will overwrite the
 // app-granted permission on the resource.
 // See https://github.com/databricks/cli/issues/4309
-func warnForAppResourcePermissions(b *bundle.Bundle, appKey string, app *resources.App) diag.Diagnostics {
-	var diags diag.Diagnostics
-
+func warnForAppResourcePermissions(ctx context.Context, b *bundle.Bundle, appKey string, app *resources.App) {
 	for _, ar := range app.Resources {
 		ref, ok := appResourceRef(ar)
 		if !ok {
@@ -155,7 +151,7 @@ func warnForAppResourcePermissions(b *bundle.Bundle, appKey string, app *resourc
 		}
 
 		appPath := "resources.apps." + appKey
-		diags = append(diags, diag.Diagnostic{
+		logdiag.LogDiag(ctx, diag.Diagnostic{
 			Severity: diag.Warning,
 			Summary:  fmt.Sprintf("app %q references %s %q which has permissions set. To prevent permission override after deploying the app, please add the app service principal to the %s permissions", appKey, refType, resourceKey, refType),
 			Detail: fmt.Sprintf(
@@ -176,8 +172,6 @@ func warnForAppResourcePermissions(b *bundle.Bundle, appKey string, app *resourc
 			Locations: b.Config.GetLocations(appPath),
 		})
 	}
-
-	return diags
 }
 
 func (v *validate) Name() string {

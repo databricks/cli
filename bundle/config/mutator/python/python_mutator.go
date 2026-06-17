@@ -198,10 +198,10 @@ func applyBackwardsCompatibilityFixes(b *bundle.Bundle) error {
 	})
 }
 
-func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) error {
 	err := applyBackwardsCompatibilityFixes(b)
 	if err != nil {
-		return diag.FromErr(fmt.Errorf("failed to apply backwards compatibility fixes: %w", err))
+		return fmt.Errorf("failed to apply backwards compatibility fixes: %w", err)
 	}
 
 	opts, err := getOpts(b, m.phase)
@@ -224,13 +224,10 @@ func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 	// re-invokes `databricks auth token --host <host>`.
 	authEnv, err := b.AuthEnv(ctx)
 	if err != nil {
-		return diag.FromErr(err)
+		return err
 	}
 
-	// mutateDiags is used because Mutate returns 'error' instead of 'diag.Diagnostics'
-	var mutateDiags diag.Diagnostics
 	var result applyPythonOutputResult
-	mutateDiagsHasError := errors.New("unexpected error")
 
 	err = b.Config.Mutate(func(leftRoot dyn.Value) (dyn.Value, error) {
 		pythonPath, err := detectExecutable(ctx, opts.venvPath)
@@ -244,16 +241,15 @@ func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 		}
 		defer cleanup()
 
-		rightRoot, diags := m.runPythonMutator(ctx, leftRoot, runPythonMutatorOpts{
+		rightRoot, err := m.runPythonMutator(ctx, leftRoot, runPythonMutatorOpts{
 			cacheDir:       cacheDir,
 			bundleRootPath: b.BundleRootPath,
 			pythonPath:     pythonPath,
 			loadLocations:  opts.loadLocations,
 			authEnv:        authEnv,
 		})
-		mutateDiags = diags
-		if diags.HasError() {
-			return dyn.InvalidValue, mutateDiagsHasError
+		if err != nil {
+			return dyn.InvalidValue, err
 		}
 
 		newRoot, result0, err := applyPythonOutput(leftRoot, rightRoot)
@@ -293,27 +289,15 @@ func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 	b.Metrics.PythonUpdatedResourcesCount += int64(result.UpdatedResources.Size())
 	b.Metrics.PythonAddedResourcesCount += int64(result.AddedResources.Size())
 
-	if err == mutateDiagsHasError {
-		if !mutateDiags.HasError() {
-			panic("mutateDiags has no error, but error is expected")
-		}
-
-		return mutateDiags
-	} else {
-		mutateDiags = mutateDiags.Extend(diag.FromErr(err))
+	if err != nil {
+		return err
 	}
 
-	if mutateDiags.HasError() {
-		return mutateDiags
+	if err := resourcemutator.NormalizeAndInitializeResources(ctx, b, result.AddedResources); err != nil {
+		return err
 	}
 
-	resourcemutator.NormalizeAndInitializeResources(ctx, b, result.AddedResources)
-	if logdiag.HasError(ctx) {
-		return mutateDiags
-	}
-
-	resourcemutator.NormalizeResources(ctx, b, result.UpdatedResources)
-	return mutateDiags
+	return resourcemutator.NormalizeResources(ctx, b, result.UpdatedResources)
 }
 
 // createCacheDir returns the directory for input/output files of the Python subprocess, and a cleanup function.
@@ -343,7 +327,7 @@ func createCacheDir(ctx context.Context) (string, func(), error) {
 	return cacheDir, func() { _ = os.RemoveAll(cacheDir) }, nil
 }
 
-func (m *pythonMutator) runPythonMutator(ctx context.Context, root dyn.Value, opts runPythonMutatorOpts) (dyn.Value, diag.Diagnostics) {
+func (m *pythonMutator) runPythonMutator(ctx context.Context, root dyn.Value, opts runPythonMutatorOpts) (dyn.Value, error) {
 	inputPath := filepath.Join(opts.cacheDir, "input.json")
 	outputPath := filepath.Join(opts.cacheDir, "output.json")
 	diagnosticsPath := filepath.Join(opts.cacheDir, "diagnostics.json")
@@ -369,6 +353,14 @@ func (m *pythonMutator) runPythonMutator(ctx context.Context, root dyn.Value, op
 
 	if err := writeInputFile(inputPath, root); err != nil {
 		return dyn.InvalidValue, diag.Errorf("failed to write input file: %s", err)
+	}
+
+	logPythonWarnings := func(diags diag.Diagnostics) {
+		for _, d := range diags {
+			if d.Severity != diag.Error {
+				logdiag.LogDiag(ctx, d)
+			}
+		}
 	}
 
 	stderrBuf := bytes.Buffer{}
@@ -397,37 +389,44 @@ func (m *pythonMutator) runPythonMutator(ctx context.Context, root dyn.Value, op
 
 	// if diagnostics file exists, it gives the most descriptive errors
 	// if there is any error, we treat it as fatal error, and stop processing
-	if pythonDiagnostics.HasError() {
-		return dyn.InvalidValue, pythonDiagnostics
+	if err := pythonDiagnostics.Error(); err != nil {
+		logPythonWarnings(pythonDiagnostics)
+		return dyn.InvalidValue, err
 	}
 
 	// process can fail without reporting errors in diagnostics file or creating it, for instance,
 	// venv doesn't have 'databricks-bundles' library installed
 	if processErr != nil {
-		diagnostic := diag.Diagnostic{
+		logPythonWarnings(pythonDiagnostics)
+		return dyn.InvalidValue, diag.Diagnostic{
 			Severity: diag.Error,
 			Summary:  fmt.Sprintf("python mutator process failed: %q, use --debug to enable logging", processErr),
 			Detail:   explainProcessErr(ctx, stderrBuf.String()),
 		}
-
-		return dyn.InvalidValue, diag.Diagnostics{diagnostic}
 	}
 
 	// or we can fail to read diagnostics file, that should always be created
 	if pythonDiagnosticsErr != nil {
+		logPythonWarnings(pythonDiagnostics)
 		return dyn.InvalidValue, diag.Errorf("failed to load diagnostics: %s", pythonDiagnosticsErr)
 	}
 
 	locations, err := loadLocationsFile(opts.bundleRootPath, locationsPath)
 	if err != nil {
+		logPythonWarnings(pythonDiagnostics)
 		return dyn.InvalidValue, diag.Errorf("failed to load locations: %s", err)
 	}
 
-	output, outputDiags := loadOutputFile(opts.bundleRootPath, outputPath, locations)
-	pythonDiagnostics = pythonDiagnostics.Extend(outputDiags)
+	output, err := loadOutputFile(opts.bundleRootPath, outputPath, locations)
+	if err != nil {
+		logPythonWarnings(pythonDiagnostics)
+		return dyn.InvalidValue, err
+	}
 
-	// we pass through pythonDiagnostic because it contains warnings
-	return output, pythonDiagnostics
+	// pythonDiagnostics only contains warnings at this point; surface them.
+	logPythonWarnings(pythonDiagnostics)
+
+	return output, nil
 }
 
 const pythonInstallExplanation = `Ensure that 'databricks-bundles' is installed in Python environment:
@@ -481,10 +480,10 @@ func loadLocationsFile(bundleRoot, locationsPath string) (*pythonLocations, erro
 	return parsePythonLocations(bundleRoot, locationsFile)
 }
 
-func loadOutputFile(rootPath, outputPath string, locations *pythonLocations) (dyn.Value, diag.Diagnostics) {
+func loadOutputFile(rootPath, outputPath string, locations *pythonLocations) (dyn.Value, error) {
 	outputFile, err := os.Open(outputPath)
 	if err != nil {
-		return dyn.InvalidValue, diag.FromErr(fmt.Errorf("failed to open output file: %w", err))
+		return dyn.InvalidValue, fmt.Errorf("failed to open output file: %w", err)
 	}
 
 	defer outputFile.Close()
@@ -492,7 +491,7 @@ func loadOutputFile(rootPath, outputPath string, locations *pythonLocations) (dy
 	return loadOutput(rootPath, outputFile, locations)
 }
 
-func loadOutput(rootPath string, outputFile io.Reader, locations *pythonLocations) (dyn.Value, diag.Diagnostics) {
+func loadOutput(rootPath string, outputFile io.Reader, locations *pythonLocations) (dyn.Value, error) {
 	// we need absolute path because later parts of pipeline assume all paths are absolute
 	// and this file will be used as location to resolve relative paths.
 	//
@@ -503,41 +502,37 @@ func loadOutput(rootPath string, outputFile io.Reader, locations *pythonLocation
 	// for that, we pass virtualPath instead of outputPath as file location
 	virtualPath, err := filepath.Abs(filepath.Join(rootPath, generatedFileName))
 	if err != nil {
-		return dyn.InvalidValue, diag.FromErr(fmt.Errorf("failed to get absolute path: %w", err))
+		return dyn.InvalidValue, fmt.Errorf("failed to get absolute path: %w", err)
 	}
 
 	generated, err := yamlloader.LoadYAML(virtualPath, outputFile)
 	if err != nil {
-		return dyn.InvalidValue, diag.FromErr(fmt.Errorf("failed to parse output file: %w", err))
+		return dyn.InvalidValue, fmt.Errorf("failed to parse output file: %w", err)
 	}
 
 	// generated has dyn.Location as if it comes from generated YAML file
 	// earlier we loaded locations.json with source locations in Python code
 	generatedWithLocations, err := mergePythonLocations(generated, locations)
 	if err != nil {
-		return dyn.InvalidValue, diag.FromErr(fmt.Errorf("failed to update locations: %w", err))
+		return dyn.InvalidValue, fmt.Errorf("failed to update locations: %w", err)
 	}
 
 	return strictNormalize(config.Root{}, generatedWithLocations)
 }
 
-func strictNormalize(dst any, generated dyn.Value) (dyn.Value, diag.Diagnostics) {
+func strictNormalize(dst any, generated dyn.Value) (dyn.Value, error) {
 	normalized, diags := convert.Normalize(dst, generated)
 
 	// warnings shouldn't happen because output should be already normalized
-	// when it happens, it's a bug in the mutator, and should be treated as an error
-
-	strictDiags := diag.Diagnostics{}
-
-	for _, d := range diags {
-		if d.Severity == diag.Warning {
-			d.Severity = diag.Error
-		}
-
-		strictDiags = strictDiags.Append(d)
+	// when it happens, it's a bug in the mutator, and should be treated as an error.
+	// All normalization diagnostics are treated as errors, so return the first one.
+	if len(diags) > 0 {
+		d := diags[0]
+		d.Severity = diag.Error
+		return normalized, d
 	}
 
-	return normalized, strictDiags
+	return normalized, nil
 }
 
 // loadDiagnosticsFile loads diagnostics from a file.

@@ -71,7 +71,7 @@ type dashboard struct {
 	err io.Writer
 }
 
-func (d *dashboard) resolveID(ctx context.Context, b *bundle.Bundle) string {
+func (d *dashboard) resolveID(ctx context.Context, b *bundle.Bundle) (string, error) {
 	switch {
 	case d.existingPath != "":
 		return d.resolveFromPath(ctx, b)
@@ -79,22 +79,20 @@ func (d *dashboard) resolveID(ctx context.Context, b *bundle.Bundle) string {
 		return d.resolveFromID(ctx, b)
 	}
 
-	logdiag.LogError(ctx, errors.New("expected one of --existing-path, --existing-id"))
-	return ""
+	return "", errors.New("expected one of --existing-path, --existing-id")
 }
 
-func (d *dashboard) resolveFromPath(ctx context.Context, b *bundle.Bundle) string {
+func (d *dashboard) resolveFromPath(ctx context.Context, b *bundle.Bundle) (string, error) {
 	w := b.WorkspaceClient(ctx)
 	obj, err := w.Workspace.GetStatusByPath(ctx, d.existingPath)
 	if err != nil {
 		if apierr.IsMissing(err) {
-			logdiag.LogError(ctx, fmt.Errorf("dashboard %q not found", path.Base(d.existingPath)))
-			return ""
+			return "", fmt.Errorf("dashboard %q not found", path.Base(d.existingPath))
 		}
 
 		// Emit a more descriptive error message for legacy dashboards.
 		if errors.Is(err, apierr.ErrBadRequest) && strings.HasPrefix(err.Error(), "dbsqlDashboard ") {
-			logdiag.LogDiag(ctx, diag.Diagnostic{
+			return "", diag.Diagnostic{
 				Severity: diag.Error,
 				Summary:  fmt.Sprintf("dashboard %q is a legacy dashboard", path.Base(d.existingPath)),
 				Detail: "" +
@@ -102,47 +100,41 @@ func (d *dashboard) resolveFromPath(ctx context.Context, b *bundle.Bundle) strin
 					"\n" +
 					"Instructions on how to convert a legacy dashboard to an AI/BI dashboard\n" +
 					"can be found at: https://docs.databricks.com/en/dashboards/clone-legacy-to-aibi.html.",
-			})
-			return ""
+			}
 		}
 
-		logdiag.LogError(ctx, err)
-		return ""
+		return "", err
 	}
 
 	if obj.ObjectType != workspace.ObjectTypeDashboard {
 		found := strings.ToLower(obj.ObjectType.String())
-		logdiag.LogDiag(ctx, diag.Diagnostic{
+		return "", diag.Diagnostic{
 			Severity: diag.Error,
 			Summary:  "expected a dashboard, found a " + found,
-		})
-		return ""
+		}
 	}
 
 	if obj.ResourceId == "" {
-		logdiag.LogDiag(ctx, diag.Diagnostic{
+		return "", diag.Diagnostic{
 			Severity: diag.Error,
 			Summary:  "expected a non-empty dashboard resource ID",
-		})
-		return ""
+		}
 	}
 
-	return obj.ResourceId
+	return obj.ResourceId, nil
 }
 
-func (d *dashboard) resolveFromID(ctx context.Context, b *bundle.Bundle) string {
+func (d *dashboard) resolveFromID(ctx context.Context, b *bundle.Bundle) (string, error) {
 	w := b.WorkspaceClient(ctx)
 	obj, err := w.Lakeview.GetByDashboardId(ctx, d.existingID)
 	if err != nil {
 		if apierr.IsMissing(err) {
-			logdiag.LogError(ctx, fmt.Errorf("dashboard with ID %s not found", d.existingID))
-			return ""
+			return "", fmt.Errorf("dashboard with ID %s not found", d.existingID)
 		}
-		logdiag.LogError(ctx, err)
-		return ""
+		return "", err
 	}
 
-	return obj.DashboardId
+	return obj.DashboardId, nil
 }
 
 func remarshalJSON(data []byte) ([]byte, error) {
@@ -254,19 +246,17 @@ func (d *dashboard) saveConfiguration(ctx context.Context, b *bundle.Bundle, das
 	return nil
 }
 
-func waitForChanges(ctx context.Context, w *databricks.WorkspaceClient, dashboard *dashboards.Dashboard) {
+func waitForChanges(ctx context.Context, w *databricks.WorkspaceClient, dashboard *dashboards.Dashboard) error {
 	// Compute [time.Time] for the most recent update.
 	tref, err := time.Parse(time.RFC3339, dashboard.UpdateTime)
 	if err != nil {
-		logdiag.LogError(ctx, err)
-		return
+		return err
 	}
 
 	for {
 		obj, err := w.Workspace.GetStatusByPath(ctx, dashboard.Path)
 		if err != nil {
-			logdiag.LogError(ctx, err)
-			return
+			return err
 		}
 
 		// Compute [time.Time] from timestamp in millis since epoch.
@@ -277,22 +267,22 @@ func waitForChanges(ctx context.Context, w *databricks.WorkspaceClient, dashboar
 
 		select {
 		case <-ctx.Done():
-			return
+			return nil
 		case <-time.After(1 * time.Second):
 		}
 	}
+
+	return nil
 }
 
-func (d *dashboard) updateDashboardForResource(ctx context.Context, b *bundle.Bundle) {
+func (d *dashboard) updateDashboardForResource(ctx context.Context, b *bundle.Bundle) error {
 	resource, ok := b.Config.Resources.Dashboards[d.resource]
 	if !ok {
-		logdiag.LogError(ctx, fmt.Errorf("dashboard resource %q is not defined", d.resource))
-		return
+		return fmt.Errorf("dashboard resource %q is not defined", d.resource)
 	}
 
 	if resource.FilePath == "" {
-		logdiag.LogError(ctx, fmt.Errorf("dashboard resource %q has no file path defined", d.resource))
-		return
+		return fmt.Errorf("dashboard resource %q has no file path defined", d.resource)
 	}
 
 	// Resolve the dashboard ID from the resource.
@@ -308,21 +298,19 @@ func (d *dashboard) updateDashboardForResource(ctx context.Context, b *bundle.Bu
 	for {
 		dashboard, err := w.Lakeview.GetByDashboardId(ctx, dashboardID)
 		if err != nil {
-			logdiag.LogError(ctx, err)
-			return
+			return err
 		}
 
 		if etag != dashboard.Etag {
 			err = d.saveSerializedDashboard(ctx, b, dashboard, dashboardPath)
 			if err != nil {
-				logdiag.LogError(ctx, err)
-				return
+				return err
 			}
 		}
 
 		// Abort if we are not watching for changes.
 		if !d.watch {
-			return
+			return nil
 		}
 
 		// Update the etag for the next iteration.
@@ -332,35 +320,37 @@ func (d *dashboard) updateDashboardForResource(ctx context.Context, b *bundle.Bu
 		// This is much more efficient than polling the dashboard API because it
 		// includes the entire serialized dashboard whereas we're only interested
 		// in the last modified time of the dashboard here.
-		waitForChanges(ctx, w, dashboard)
+		if err := waitForChanges(ctx, w, dashboard); err != nil {
+			return err
+		}
 	}
 }
 
-func (d *dashboard) generateForExisting(ctx context.Context, b *bundle.Bundle, dashboardID string) {
+func (d *dashboard) generateForExisting(ctx context.Context, b *bundle.Bundle, dashboardID string) error {
 	w := b.WorkspaceClient(ctx)
 	dashboard, err := w.Lakeview.GetByDashboardId(ctx, dashboardID)
 	if err != nil {
-		logdiag.LogError(ctx, err)
-		return
+		return err
 	}
 
 	key := textutil.NormalizeString(dashboard.DisplayName)
 	err = d.saveConfiguration(ctx, b, dashboard, key)
 	if err != nil {
-		logdiag.LogError(ctx, err)
+		return err
 	}
 
 	if d.bind {
 		err = deployment.BindResource(d.cmd, key, dashboardID, true, false, true)
 		if err != nil {
-			logdiag.LogError(ctx, err)
-			return
+			return err
 		}
 		cmdio.LogString(ctx, fmt.Sprintf("Successfully bound dashboard with an id '%s'", dashboardID))
 	}
+
+	return nil
 }
 
-func (d *dashboard) initialize(ctx context.Context, b *bundle.Bundle) {
+func (d *dashboard) initialize(ctx context.Context, b *bundle.Bundle) error {
 	// Make the paths absolute if they aren't already.
 	if !filepath.IsAbs(d.resourceDir) {
 		d.resourceDir = filepath.Join(b.BundleRootPath, d.resourceDir)
@@ -372,88 +362,84 @@ func (d *dashboard) initialize(ctx context.Context, b *bundle.Bundle) {
 	// Make sure we know how the dashboard path is relative to the resource path.
 	rel, err := filepath.Rel(d.resourceDir, d.dashboardDir)
 	if err != nil {
-		logdiag.LogError(ctx, err)
-		return
+		return err
 	}
 
 	d.relativeDashboardDir = filepath.ToSlash(rel)
+	return nil
 }
 
-func (d *dashboard) runForResource(ctx context.Context, b *bundle.Bundle) {
-	phases.Initialize(ctx, b)
-	if logdiag.HasError(ctx) {
-		return
+func (d *dashboard) runForResource(ctx context.Context, b *bundle.Bundle) error {
+	if err := phases.Initialize(ctx, b); err != nil {
+		return err
 	}
 
 	requiredEngine, err := utils.ResolveEngineSetting(ctx, b)
 	if err != nil {
-		logdiag.LogError(ctx, err)
-		return
+		return err
 	}
-	ctx, stateDesc := statemgmt.PullResourcesState(ctx, b, statemgmt.AlwaysPull(true), requiredEngine)
-	if logdiag.HasError(ctx) {
-		return
+	ctx, stateDesc, err := statemgmt.PullResourcesState(ctx, b, statemgmt.AlwaysPull(true), requiredEngine)
+	if err != nil {
+		return err
 	}
 
 	var state statemgmt.ExportedResourcesMap
 	if stateDesc.Engine.IsDirect() {
 		_, localPath := b.StateFilenameDirect(ctx)
 		if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(true), dstate.WithWrite(false)); err != nil {
-			logdiag.LogError(ctx, err)
-			return
+			return err
 		}
 		state = b.DeploymentBundle.ExportState(ctx)
 	} else {
-		var err error
 		state, err = terraform.ParseResourcesState(ctx, b)
 		if err != nil {
-			logdiag.LogError(ctx, err)
-			return
+			return err
 		}
 	}
 
-	bundle.ApplySeqContext(ctx, b,
+	if err := bundle.ApplySeqContext(ctx, b,
 		statemgmt.Load(state),
-	)
-	if logdiag.HasError(ctx) {
-		return
+	); err != nil {
+		return err
 	}
 
-	d.updateDashboardForResource(ctx, b)
+	return d.updateDashboardForResource(ctx, b)
 }
 
-func (d *dashboard) runForExisting(ctx context.Context, b *bundle.Bundle) {
+func (d *dashboard) runForExisting(ctx context.Context, b *bundle.Bundle) error {
 	// Resolve the ID of the dashboard to generate configuration for.
-	dashboardID := d.resolveID(ctx, b)
-	if logdiag.HasError(ctx) {
-		return
+	dashboardID, err := d.resolveID(ctx, b)
+	if err != nil {
+		return err
 	}
 
-	d.generateForExisting(ctx, b, dashboardID)
+	return d.generateForExisting(ctx, b, dashboardID)
 }
 
 func (d *dashboard) RunE(cmd *cobra.Command, args []string) error {
 	ctx := logdiag.InitContext(cmd.Context())
 	cmd.SetContext(ctx)
 
-	b := root.MustConfigureBundle(cmd)
-	if b == nil || logdiag.HasError(ctx) {
+	b, err := root.MustConfigureBundle(cmd)
+	if err != nil {
+		return root.RenderAndReturnError(ctx, err)
+	}
+	if b == nil {
 		return root.ErrAlreadyPrinted
 	}
 
-	d.initialize(ctx, b)
-	if logdiag.HasError(ctx) {
-		return root.ErrAlreadyPrinted
+	if err := d.initialize(ctx, b); err != nil {
+		return root.RenderAndReturnError(ctx, err)
 	}
 
 	if d.resource != "" {
-		d.runForResource(ctx, b)
+		err = d.runForResource(ctx, b)
 	} else {
-		d.runForExisting(ctx, b)
+		err = d.runForExisting(ctx, b)
 	}
 
-	if logdiag.HasError(ctx) {
-		return root.ErrAlreadyPrinted
+	if err != nil {
+		return root.RenderAndReturnError(ctx, err)
 	}
 
 	return nil
@@ -466,8 +452,8 @@ func filterDashboards(ref resources.Reference) bool {
 
 // dashboardResourceCompletion executes to autocomplete the argument to the resource flag.
 func dashboardResourceCompletion(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-	b := root.MustConfigureBundle(cmd)
-	if logdiag.HasError(cmd.Context()) {
+	b, err := root.MustConfigureBundle(cmd)
+	if err != nil {
 		return nil, cobra.ShellCompDirectiveError
 	}
 

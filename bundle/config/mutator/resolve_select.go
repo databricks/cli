@@ -25,7 +25,7 @@ func (m *resolveSelect) Name() string {
 	return "ResolveSelect"
 }
 
-func (m *resolveSelect) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (m *resolveSelect) Apply(_ context.Context, b *bundle.Bundle) error {
 	if len(b.Select) == 0 {
 		return nil
 	}

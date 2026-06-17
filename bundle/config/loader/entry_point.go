@@ -6,6 +6,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/logdiag"
 )
 
 type entryPoint struct{}
@@ -19,18 +20,19 @@ func (m *entryPoint) Name() string {
 	return "EntryPoint"
 }
 
-func (m *entryPoint) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (m *entryPoint) Apply(ctx context.Context, b *bundle.Bundle) error {
 	path, err := config.FileNames.FindInPath(b.BundleRootPath)
 	if err != nil {
-		return diag.FromErr(err)
+		return err
 	}
 	this, diags := config.Load(path)
-	if diags.HasError() {
-		return diags
+	for _, d := range diags {
+		if d.Severity != diag.Error {
+			logdiag.LogDiag(ctx, d)
+		}
 	}
-	err = b.Config.Merge(this)
-	if err != nil {
-		diags = diags.Extend(diag.FromErr(err))
+	if err := diags.Error(); err != nil {
+		return err
 	}
-	return diags
+	return b.Config.Merge(this)
 }

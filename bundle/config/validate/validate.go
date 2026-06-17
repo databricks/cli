@@ -6,8 +6,8 @@ import (
 	"github.com/databricks/cli/bundle"
 )
 
-func Validate(ctx context.Context, b *bundle.Bundle) {
-	bundle.ApplyParallel(ctx, b,
+func Validate(ctx context.Context, b *bundle.Bundle) error {
+	return bundle.ApplyParallel(ctx, b,
 		FastValidate(),
 
 		// Slow mutators that require network or file i/o. These are only

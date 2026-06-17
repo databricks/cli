@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/dynvar"
+	"github.com/databricks/cli/libs/logdiag"
 )
 
 type noInterpolationInAuthConfig struct{}
@@ -21,7 +22,7 @@ func (f *noInterpolationInAuthConfig) Name() string {
 	return "validate:interpolation_in_auth_config"
 }
 
-func (f *noInterpolationInAuthConfig) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (f *noInterpolationInAuthConfig) Apply(ctx context.Context, b *bundle.Bundle) error {
 	authFields := []string{
 		// Generic attributes.
 		"host",
@@ -48,8 +49,6 @@ func (f *noInterpolationInAuthConfig) Apply(ctx context.Context, b *bundle.Bundl
 		"workspace_id",
 	}
 
-	diags := diag.Diagnostics{}
-
 	for _, fieldName := range authFields {
 		p := dyn.NewPath(dyn.Key("workspace"), dyn.Key(fieldName))
 		v, err := dyn.GetByPath(b.Config.Value(), p)
@@ -57,7 +56,7 @@ func (f *noInterpolationInAuthConfig) Apply(ctx context.Context, b *bundle.Bundl
 			continue
 		}
 		if err != nil {
-			return diag.FromErr(err)
+			return err
 		}
 
 		vv, ok := v.AsString()
@@ -72,7 +71,7 @@ func (f *noInterpolationInAuthConfig) Apply(ctx context.Context, b *bundle.Bundl
 				continue
 			}
 
-			diags = append(diags, diag.Diagnostic{
+			logdiag.LogDiag(ctx, diag.Diagnostic{
 				Severity: diag.Warning,
 				Summary:  "Variable interpolation is not supported for fields that configure authentication",
 				Detail: fmt.Sprintf(`Interpolation is not supported for the field %s. Please set
@@ -83,5 +82,5 @@ the %s environment variable if you wish to configure this field at runtime.`, p.
 		}
 	}
 
-	return diags
+	return nil
 }

@@ -6,7 +6,6 @@ import (
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/cli/libs/logdiag"
 	"github.com/spf13/cobra"
 )
 
@@ -35,16 +34,7 @@ Useful after deployment to see what was created and where to find it.`,
 		if err != nil {
 			return err
 		}
-		err = showSummary(cmd, b)
-		if err != nil {
-			return err
-		}
-
-		if logdiag.HasError(cmd.Context()) {
-			return root.ErrAlreadyPrinted
-		}
-
-		return nil
+		return showSummary(cmd, b)
 	}
 
 	return cmd

@@ -4,9 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/logdiag"
 )
 
 type setDefault struct {
@@ -27,8 +25,8 @@ func (m *setDefault) Name() string {
 	return fmt.Sprintf("SetDefaultMutator(%v, %v, %v)", m.pattern, m.key, m.value)
 }
 
-func (m *setDefault) Apply(ctx context.Context, b *Bundle) diag.Diagnostics {
-	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
+func (m *setDefault) Apply(ctx context.Context, b *Bundle) error {
+	return b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
 		return dyn.MapByPattern(v, m.pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
 			_, err := dyn.GetByPath(v, m.key)
 			switch {
@@ -39,26 +37,19 @@ func (m *setDefault) Apply(ctx context.Context, b *Bundle) diag.Diagnostics {
 			}
 		})
 	})
-	if err != nil {
-		return diag.FromErr(err)
-	}
-
-	return nil
 }
 
-func SetDefault(ctx context.Context, b *Bundle, pattern string, value any) {
+func SetDefault(ctx context.Context, b *Bundle, pattern string, value any) error {
 	pat, err := dyn.NewPatternFromString(pattern)
 	if err != nil {
-		logdiag.LogError(ctx, fmt.Errorf("internal error: invalid pattern: %s: %w", pattern, err))
-		return
+		return fmt.Errorf("internal error: invalid pattern: %s: %w", pattern, err)
 	}
 
 	pat, key := pat.SplitKey()
 	if pat == nil || key == "" {
-		logdiag.LogError(ctx, fmt.Errorf("internal error: invalid pattern: %s", pattern))
-		return
+		return fmt.Errorf("internal error: invalid pattern: %s", pattern)
 	}
 
 	m := SetDefaultMutator(pat, key, value)
-	ApplyContext(ctx, b, m)
+	return ApplyContext(ctx, b, m)
 }

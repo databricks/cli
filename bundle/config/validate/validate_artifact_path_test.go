@@ -48,7 +48,7 @@ func TestValidateArtifactPathWithVolumeInBundle(t *testing.T) {
 	})
 	b.SetWorkpaceClient(m.WorkspaceClient)
 
-	diags := ValidateArtifactPath().Apply(ctx, b)
+	diags := bundle.Apply(ctx, b, ValidateArtifactPath())
 	assert.Equal(t, diag.Diagnostics{{
 		Severity: diag.Error,
 		Summary:  "volume catalogN.schemaN.volumeN does not exist",
@@ -121,7 +121,7 @@ func TestValidateArtifactPath(t *testing.T) {
 		api.EXPECT().ReadByName(mock.Anything, "catalogN.schemaN.volumeN").Return(nil, tc.err)
 		b.SetWorkpaceClient(m.WorkspaceClient)
 
-		diags := ValidateArtifactPath().Apply(ctx, b)
+		diags := bundle.Apply(ctx, b, ValidateArtifactPath())
 		assertDiags(t, diags, tc.expectedSummary)
 	}
 }
@@ -165,7 +165,7 @@ func TestValidateArtifactPathWithInvalidPaths(t *testing.T) {
 
 		bundletest.SetLocation(b, "workspace.artifact_path", []dyn.Location{{File: "config.yml", Line: 1, Column: 2}})
 
-		diags := ValidateArtifactPath().Apply(t.Context(), b)
+		diags := bundle.Apply(t.Context(), b, ValidateArtifactPath())
 		require.Equal(t, diag.Diagnostics{{
 			Severity:  diag.Error,
 			Summary:   "expected UC volume path to be in the format /Volumes/<catalog>/<schema>/<volume>/..., got " + p,

@@ -12,7 +12,6 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/internal/build"
-	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
 	"github.com/google/uuid"
 )
@@ -23,10 +22,10 @@ func (s *stateUpdate) Name() string {
 	return "deploy:state-update"
 }
 
-func (s *stateUpdate) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (s *stateUpdate) Apply(ctx context.Context, b *bundle.Bundle) error {
 	state, err := load(ctx, b)
 	if err != nil {
-		return diag.FromErr(err)
+		return err
 	}
 
 	// Increment the state sequence.
@@ -42,7 +41,7 @@ func (s *stateUpdate) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnost
 	// Update the state with the current list of synced files.
 	fl, err := fromSlice(b.Files)
 	if err != nil {
-		return diag.FromErr(err)
+		return err
 	}
 	state.Files = fl
 
@@ -54,24 +53,24 @@ func (s *stateUpdate) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnost
 
 	statePath, err := getPathToStateFile(ctx, b)
 	if err != nil {
-		return diag.FromErr(err)
+		return err
 	}
 	// Write the state back to the file.
 	f, err := os.OpenFile(statePath, os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0o600)
 	if err != nil {
 		log.Infof(ctx, "Unable to open deployment state file: %s", err)
-		return diag.FromErr(err)
+		return err
 	}
 	defer f.Close()
 
 	data, err := json.Marshal(state)
 	if err != nil {
-		return diag.FromErr(err)
+		return err
 	}
 
 	_, err = io.Copy(f, bytes.NewReader(data))
 	if err != nil {
-		return diag.FromErr(err)
+		return err
 	}
 
 	return nil

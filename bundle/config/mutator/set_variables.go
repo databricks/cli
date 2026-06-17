@@ -94,41 +94,39 @@ func setVariable(ctx context.Context, v dyn.Value, variable *variable.Variable, 
 	return dyn.InvalidValue, fmt.Errorf(`no value assigned to required variable %s. Variables are usually assigned in databricks.yml, and they can be overridden using "--var", the %s environment variable, or %s`, name, bundleVarPrefix+name, getDefaultVariableFilePath("<target>"))
 }
 
-func readVariablesFromFile(b *bundle.Bundle) (dyn.Value, diag.Diagnostics) {
-	var diags diag.Diagnostics
-
+func readVariablesFromFile(b *bundle.Bundle) (dyn.Value, error) {
 	filePath := filepath.Join(b.BundleRootPath, getDefaultVariableFilePath(b.Config.Bundle.Target))
 	if _, err := os.Stat(filePath); err != nil {
-		return dyn.InvalidValue, nil
+		return dyn.InvalidValue, nil //nolint:nilerr // missing variable file is not an error
 	}
 
 	f, err := os.ReadFile(filePath)
 	if err != nil {
-		return dyn.InvalidValue, diag.FromErr(fmt.Errorf("failed to read variables file: %w", err))
+		return dyn.InvalidValue, fmt.Errorf("failed to read variables file: %w", err)
 	}
 
 	val, err := jsonloader.LoadJSON(f, filePath)
 	if err != nil {
-		return dyn.InvalidValue, diag.FromErr(fmt.Errorf("failed to parse variables file %s: %w", filePath, err))
+		return dyn.InvalidValue, fmt.Errorf("failed to parse variables file %s: %w", filePath, err)
 	}
 
 	if val.Kind() != dyn.KindMap {
-		return dyn.InvalidValue, diags.Append(diag.Diagnostic{
+		return dyn.InvalidValue, diag.Diagnostic{
 			Severity: diag.Error,
 			Summary:  fmt.Sprintf("failed to parse variables file %s: invalid format", filePath),
 			Detail:   "Variables file must be a JSON object with the following format:\n{\"var1\": \"value1\", \"var2\": \"value2\"}",
-		})
+		}
 	}
 
 	return val, nil
 }
 
-func (m *setVariables) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	defaults, diags := readVariablesFromFile(b)
-	if diags.HasError() {
-		return diags
+func (m *setVariables) Apply(ctx context.Context, b *bundle.Bundle) error {
+	defaults, err := readVariablesFromFile(b)
+	if err != nil {
+		return err
 	}
-	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
+	err = b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
 		return dyn.Map(v, "variables", dyn.Foreach(func(p dyn.Path, variable dyn.Value) (dyn.Value, error) {
 			name := p[1].Key()
 			v, ok := b.Config.Variables[name]
@@ -141,5 +139,5 @@ func (m *setVariables) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		}))
 	})
 
-	return diags.Extend(diag.FromErr(err))
+	return err
 }

@@ -22,9 +22,7 @@ func (c configureGenieSpaceSerializedSpace) Name() string {
 	return "ConfigureGenieSpaceSerializedSpace"
 }
 
-func (c configureGenieSpaceSerializedSpace) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
-	var diags diag.Diagnostics
-
+func (c configureGenieSpaceSerializedSpace) Apply(_ context.Context, b *bundle.Bundle) error {
 	pattern := dyn.NewPattern(
 		dyn.Key("resources"),
 		dyn.Key("genie_spaces"),
@@ -41,12 +39,11 @@ func (c configureGenieSpaceSerializedSpace) Apply(_ context.Context, b *bundle.B
 				// content. Accepting both is ambiguous, so reject it instead of
 				// silently picking one.
 				if ss.IsValid() && ss.Kind() != dyn.KindNil {
-					diags = diags.Append(diag.Diagnostic{
+					return dyn.InvalidValue, diag.Diagnostic{
 						Severity:  diag.Error,
 						Summary:   "both file_path and serialized_space are set; specify only one",
 						Locations: ss.Locations(),
-					})
-					return v, nil
+					}
 				}
 				contents, err := b.SyncRoot.ReadFile(filePath)
 				if err != nil {
@@ -72,16 +69,14 @@ func (c configureGenieSpaceSerializedSpace) Apply(_ context.Context, b *bundle.B
 				}
 				return dyn.Set(v, serializedSpaceFieldName, dyn.V(string(jsonBytes)))
 			default:
-				diags = diags.Append(diag.Diagnostic{
+				return dyn.InvalidValue, diag.Diagnostic{
 					Severity:  diag.Error,
 					Summary:   fmt.Sprintf("serialized_space must be a string, map, or sequence, got %s", ss.Kind()),
 					Locations: ss.Locations(),
-				})
-				return v, nil
+				}
 			}
 		})
 	})
 
-	diags = diags.Extend(diag.FromErr(err))
-	return diags
+	return err
 }

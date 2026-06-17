@@ -59,8 +59,12 @@ workspace:
 	ctx := logdiag.InitContext(cmd.Context())
 	logdiag.SetCollect(ctx, true)
 	cmd.SetContext(ctx)
-	_ = MustConfigureBundle(cmd)
-	return logdiag.FlushCollected(ctx)
+	_, cfgErr := MustConfigureBundle(cmd)
+	diags := logdiag.FlushCollected(ctx)
+	if cfgErr != nil {
+		diags = append(diags, diag.DiagnosticFromError(cfgErr))
+	}
+	return diags
 }
 
 // setupBundleNameOnly writes a databricks.yml that declares only the bundle
@@ -79,8 +83,12 @@ func setupBundleNameOnly(t *testing.T, cmd *cobra.Command) []diag.Diagnostic {
 	ctx := logdiag.InitContext(cmd.Context())
 	logdiag.SetCollect(ctx, true)
 	cmd.SetContext(ctx)
-	_ = MustConfigureBundle(cmd)
-	return logdiag.FlushCollected(ctx)
+	_, cfgErr := MustConfigureBundle(cmd)
+	diags := logdiag.FlushCollected(ctx)
+	if cfgErr != nil {
+		diags = append(diags, diag.DiagnosticFromError(cfgErr))
+	}
+	return diags
 }
 
 func setupWithProfile(t *testing.T, cmd *cobra.Command, profile string) []diag.Diagnostic {
@@ -99,8 +107,12 @@ workspace:
 	ctx := logdiag.InitContext(cmd.Context())
 	logdiag.SetCollect(ctx, true)
 	cmd.SetContext(ctx)
-	_ = MustConfigureBundle(cmd)
-	return logdiag.FlushCollected(ctx)
+	_, cfgErr := MustConfigureBundle(cmd)
+	diags := logdiag.FlushCollected(ctx)
+	if cfgErr != nil {
+		diags = append(diags, diag.DiagnosticFromError(cfgErr))
+	}
+	return diags
 }
 
 func TestBundleConfigureDefault(t *testing.T) {
@@ -315,8 +327,9 @@ func TestBundleConfigureWithDefaultProfile_BundleHostWins(t *testing.T) {
 	ctx := logdiag.InitContext(cmd.Context())
 	logdiag.SetCollect(ctx, true)
 	cmd.SetContext(ctx)
-	_ = MustConfigureBundle(cmd)
+	_, cfgErr := MustConfigureBundle(cmd)
 	diags := logdiag.FlushCollected(ctx)
+	require.NoError(t, cfgErr)
 	require.Empty(t, diags)
 	assert.Equal(t, "https://b.test", cmdctx.ConfigUsed(cmd.Context()).Host)
 	assert.Equal(t, "PROFILE-2", cmdctx.ConfigUsed(cmd.Context()).Profile)
@@ -369,7 +382,7 @@ workspace:
 		ctx := logdiag.InitContext(cmd.Context())
 		logdiag.SetCollect(ctx, true)
 		cmd.SetContext(ctx)
-		_ = MustConfigureBundle(cmd)
+		_, _ = MustConfigureBundle(cmd)
 	}()
 
 	// Verify the prompt fires by reading output from stderr.

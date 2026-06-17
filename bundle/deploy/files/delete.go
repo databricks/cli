@@ -9,7 +9,6 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/sync"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
@@ -20,7 +19,7 @@ func (m *delete) Name() string {
 	return "files.Delete"
 }
 
-func (m *delete) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (m *delete) Apply(ctx context.Context, b *bundle.Bundle) error {
 	cmdio.LogString(ctx, "Deleting files...")
 
 	err := b.WorkspaceClient(ctx).Workspace.Delete(ctx, workspace.Delete{
@@ -28,13 +27,13 @@ func (m *delete) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		Recursive: true,
 	})
 	if err != nil {
-		return diag.FromErr(err)
+		return err
 	}
 
 	// Clean up sync snapshot file
 	err = deleteSnapshotFile(ctx, b)
 	if err != nil {
-		return diag.FromErr(err)
+		return err
 	}
 	return nil
 }

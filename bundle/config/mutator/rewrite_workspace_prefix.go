@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/logdiag"
 )
 
 type rewriteWorkspacePrefix struct{}
@@ -22,8 +23,7 @@ func (m *rewriteWorkspacePrefix) Name() string {
 	return "RewriteWorkspacePrefix"
 }
 
-func (m *rewriteWorkspacePrefix) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	diags := diag.Diagnostics{}
+func (m *rewriteWorkspacePrefix) Apply(ctx context.Context, b *bundle.Bundle) error {
 	paths := map[string]string{
 		"/Workspace/${workspace.root_path}":     "${workspace.root_path}",
 		"/Workspace${workspace.root_path}":      "${workspace.root_path}",
@@ -47,7 +47,7 @@ func (m *rewriteWorkspacePrefix) Apply(ctx context.Context, b *bundle.Bundle) di
 			for path, replacePath := range paths {
 				if strings.Contains(vv, path) {
 					newPath := strings.Replace(vv, path, replacePath, 1)
-					diags = append(diags, diag.Diagnostic{
+					logdiag.LogDiag(ctx, diag.Diagnostic{
 						Severity:  diag.Warning,
 						Summary:   fmt.Sprintf("substring %q found in %q. Please update this to %q.", path, vv, newPath),
 						Detail:    "For more information, please refer to: https://docs.databricks.com/en/release-notes/dev-tools/bundles.html#workspace-paths",
@@ -64,8 +64,8 @@ func (m *rewriteWorkspacePrefix) Apply(ctx context.Context, b *bundle.Bundle) di
 		})
 	})
 	if err != nil {
-		return diag.FromErr(err)
+		return err
 	}
 
-	return diags
+	return nil
 }

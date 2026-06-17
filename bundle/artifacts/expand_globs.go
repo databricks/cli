@@ -39,7 +39,7 @@ func (e expandGlobs) Name() string {
 	return "expandGlobs"
 }
 
-func (e expandGlobs) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (e expandGlobs) Apply(ctx context.Context, b *bundle.Bundle) error {
 	// Base path for this mutator.
 	// This path is set with the list of expanded globs when done.
 	base := dyn.NewPath(
@@ -120,5 +120,5 @@ func (e expandGlobs) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnosti
 		diags = diags.Extend(diag.FromErr(err))
 	}
 
-	return diags
+	return diags.Error()
 }

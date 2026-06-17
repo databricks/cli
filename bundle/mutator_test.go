@@ -4,7 +4,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/stretchr/testify/assert"
 )
@@ -18,9 +17,9 @@ func (t *testMutator) Name() string {
 	return "test"
 }
 
-func (t *testMutator) Apply(ctx context.Context, b *Bundle) diag.Diagnostics {
+func (t *testMutator) Apply(ctx context.Context, b *Bundle) error {
 	t.applyCalled++
-	return ApplySeq(ctx, b, t.nestedMutators...)
+	return ApplySeqContext(ctx, b, t.nestedMutators...)
 }
 
 func TestMutator(t *testing.T) {

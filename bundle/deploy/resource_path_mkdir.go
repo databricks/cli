@@ -5,7 +5,6 @@ import (
 	"errors"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/databricks-sdk-go/apierr"
 )
 
@@ -19,7 +18,7 @@ func (m *resourcePathMkdir) Name() string {
 	return "deploy:resource_path_mkdir"
 }
 
-func (m *resourcePathMkdir) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (m *resourcePathMkdir) Apply(ctx context.Context, b *bundle.Bundle) error {
 	// Only dashboards and alerts need ${workspace.resource_path} to exist.
 	if len(b.Config.Resources.Alerts) == 0 && len(b.Config.Resources.Dashboards) == 0 {
 		return nil
@@ -32,5 +31,5 @@ func (m *resourcePathMkdir) Apply(ctx context.Context, b *bundle.Bundle) diag.Di
 	if aerr, ok := errors.AsType[*apierr.APIError](err); ok && aerr.ErrorCode == "RESOURCE_ALREADY_EXISTS" {
 		return nil
 	}
-	return diag.FromErr(err)
+	return err
 }

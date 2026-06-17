@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/logdiag"
 )
 
 type overrideCompute struct{}
@@ -38,17 +39,15 @@ func overrideJobCompute(j *resources.Job, compute string) {
 	}
 }
 
-func (m *overrideCompute) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	var diags diag.Diagnostics
-
+func (m *overrideCompute) Apply(ctx context.Context, b *bundle.Bundle) error {
 	if b.Config.Bundle.Mode == config.Production {
 		if b.Config.Bundle.ClusterId != "" {
 			// Overriding compute via a command-line flag for production works, but is not recommended.
-			diags = diags.Extend(diag.Diagnostics{{
+			logdiag.LogDiag(ctx, diag.Diagnostic{
 				Summary:  "Setting a cluster override for a target that uses 'mode: production' is not recommended",
 				Detail:   "It is recommended to always use the same compute for production target for consistency.",
 				Severity: diag.Warning,
-			}})
+			})
 		}
 	}
 	if v := env.Get(ctx, "DATABRICKS_CLUSTER_ID"); v != "" {
@@ -58,13 +57,17 @@ func (m *overrideCompute) Apply(ctx context.Context, b *bundle.Bundle) diag.Diag
 			cmdio.LogString(ctx, "Setting a cluster override because DATABRICKS_CLUSTER_ID is set. It is recommended to use --cluster-id instead, which works in any target mode.")
 		} else {
 			// We don't allow using DATABRICKS_CLUSTER_ID in any other mode, it's too error-prone.
-			return diag.Warningf("The DATABRICKS_CLUSTER_ID variable is set but is ignored since the current target does not use 'mode: development'")
+			logdiag.LogDiag(ctx, diag.Diagnostic{
+				Severity: diag.Warning,
+				Summary:  "The DATABRICKS_CLUSTER_ID variable is set but is ignored since the current target does not use 'mode: development'",
+			})
+			return nil
 		}
 		b.Config.Bundle.ClusterId = v
 	}
 
 	if b.Config.Bundle.ClusterId == "" {
-		return diags
+		return nil
 	}
 
 	r := b.Config.Resources
@@ -72,5 +75,5 @@ func (m *overrideCompute) Apply(ctx context.Context, b *bundle.Bundle) diag.Diag
 		overrideJobCompute(r.Jobs[i], b.Config.Bundle.ClusterId)
 	}
 
-	return diags
+	return nil
 }

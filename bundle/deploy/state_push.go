@@ -5,7 +5,6 @@ import (
 	"os"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/log"
 )
@@ -18,27 +17,27 @@ func (s *statePush) Name() string {
 	return "deploy:state-push"
 }
 
-func (s *statePush) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (s *statePush) Apply(ctx context.Context, b *bundle.Bundle) error {
 	f, err := s.filerFactory(ctx, b)
 	if err != nil {
-		return diag.FromErr(err)
+		return err
 	}
 
 	statePath, err := getPathToStateFile(ctx, b)
 	if err != nil {
-		return diag.FromErr(err)
+		return err
 	}
 
 	local, err := os.Open(statePath)
 	if err != nil {
-		return diag.FromErr(err)
+		return err
 	}
 	defer local.Close()
 
 	log.Infof(ctx, "Writing local deployment state file to remote state directory")
 	err = f.Write(ctx, DeploymentStateFileName, local, filer.CreateParentDirectories, filer.OverwriteIfExists)
 	if err != nil {
-		return diag.FromErr(err)
+		return err
 	}
 
 	return nil

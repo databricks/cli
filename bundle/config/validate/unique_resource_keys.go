@@ -3,6 +3,7 @@ package validate
 import (
 	"cmp"
 	"context"
+	"maps"
 	"slices"
 
 	"github.com/databricks/cli/bundle"
@@ -31,8 +32,8 @@ func (m *uniqueResourceKeys) Name() string {
 	return "validate:unique_resource_keys"
 }
 
-func (m *uniqueResourceKeys) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	diags := diag.Diagnostics{}
+func (m *uniqueResourceKeys) Apply(ctx context.Context, b *bundle.Bundle) error {
+	var diags diag.Diagnostics
 
 	type metadata struct {
 		locations []dyn.Location
@@ -70,7 +71,7 @@ func (m *uniqueResourceKeys) Apply(ctx context.Context, b *bundle.Bundle) diag.D
 			},
 		)
 		if err != nil {
-			return diag.FromErr(err)
+			return err
 		}
 	}
 
@@ -88,12 +89,14 @@ func (m *uniqueResourceKeys) Apply(ctx context.Context, b *bundle.Bundle) diag.D
 			},
 		)
 		if err != nil {
-			return diag.FromErr(err)
+			return err
 		}
 	}
 
-	// If duplicate keys are found, report an error.
-	for k, v := range resourceAndScriptMetadata {
+	// If duplicate keys are found, report an error. Iterate in sorted key order
+	// so the errors we return are deterministic.
+	for _, k := range slices.Sorted(maps.Keys(resourceAndScriptMetadata)) {
+		v := resourceAndScriptMetadata[k]
 		if len(v.locations) <= 1 {
 			continue
 		}
@@ -114,7 +117,7 @@ func (m *uniqueResourceKeys) Apply(ctx context.Context, b *bundle.Bundle) diag.D
 		})
 
 		// If there are multiple resources with the same key, report an error.
-		diags = append(diags, diag.Diagnostic{
+		diags = diags.Append(diag.Diagnostic{
 			Severity:  diag.Error,
 			Summary:   "multiple resources or scripts have been defined with the same key: " + k,
 			Locations: v.locations,
@@ -122,5 +125,5 @@ func (m *uniqueResourceKeys) Apply(ctx context.Context, b *bundle.Bundle) diag.D
 		})
 	}
 
-	return diags
+	return diags.Error()
 }
