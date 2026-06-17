@@ -1,0 +1,29 @@
+
+=== help
+>>> [CLI] experimental air --help
+Run and manage AI runtime training workloads on Databricks serverless GPU compute.
+
+This command set is the Go port of the standalone Python "air" CLI. It is
+experimental and may change in future versions.
+
+Usage:
+  databricks experimental air [command]
+
+Available Commands:
+  cancel         Cancel one or more runs
+  get            Show details for a run
+  list           List recent runs
+  logs           Stream or fetch logs for a run
+  register-image Mirror a Docker image into the workspace registry
+  run            Submit a training workload from a YAML config
+
+Flags:
+  -h, --help   help for air
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+Use "databricks experimental air [command] --help" for more information about a command.

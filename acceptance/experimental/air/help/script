@@ -1,0 +1,5 @@
+# Pin the command tree so any change to a subcommand or its short description
+# shows up as a diff here.
+
+title "help"
+trace $CLI experimental air --help
