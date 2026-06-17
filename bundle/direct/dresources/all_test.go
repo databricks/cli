@@ -749,6 +749,43 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
+	"postgres_databases": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		// Create parent project first
+		_, err := client.Postgres.CreateProject(ctx, postgres.CreateProjectRequest{
+			ProjectId: "test-project-for-database",
+			Project: postgres.Project{
+				Spec: &postgres.ProjectSpec{
+					DisplayName: "Test Project for Database",
+					PgVersion:   16,
+				},
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		// Create parent branch
+		_, err = client.Postgres.CreateBranch(ctx, postgres.CreateBranchRequest{
+			Parent:   "projects/test-project-for-database",
+			BranchId: "test-branch-for-database",
+			Branch:   postgres.Branch{},
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		return &resources.PostgresDatabase{
+			PostgresDatabaseConfig: resources.PostgresDatabaseConfig{
+				Parent:     "projects/test-project-for-database/branches/test-branch-for-database",
+				DatabaseId: "test-database",
+				DatabaseDatabaseSpec: postgres.DatabaseDatabaseSpec{
+					PostgresDatabase: "app_db",
+					Role:             "projects/test-project-for-database/branches/test-branch-for-database/roles/owner",
+				},
+			},
+		}, nil
+	},
+
 	"postgres_roles": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
 		// Create parent project first
 		_, err := client.Postgres.CreateProject(ctx, postgres.CreateProjectRequest{

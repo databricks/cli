@@ -1535,6 +1535,25 @@ resources:
         "postgres_database":
           "description": |-
             PLACEHOLDER
+    "postgres_databases":
+      "description": |-
+        PLACEHOLDER
+      "$fields":
+        "database_id":
+          "description": |-
+            PLACEHOLDER
+        "lifecycle":
+          "description": |-
+            PLACEHOLDER
+        "parent":
+          "description": |-
+            PLACEHOLDER
+        "postgres_database":
+          "description": |-
+            PLACEHOLDER
+        "role":
+          "description": |-
+            PLACEHOLDER
     "postgres_endpoints":
       "description": |-
         PLACEHOLDER

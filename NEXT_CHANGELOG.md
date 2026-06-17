@@ -21,7 +21,7 @@
 * engine/direct: Fix WAL corruption after two consecutive failed deploys ([#5606](https://github.com/databricks/cli/pull/5606)).
 * engine/direct: Don't open the deployment state WAL when a deploy's plan fails ([#5607](https://github.com/databricks/cli/pull/5607)).
 * Ignore unity catalog managed schema property defaults to avoid unnecessary drift ([#5195](https://github.com/databricks/cli/pull/5195)).
-* Add Postgres role as a bundle resource ([#5467](https://github.com/databricks/cli/pull/5467)).
+* Add `postgres_roles` and `postgres_databases` resources to create Postgres roles and databases on a Lakebase branch ([#5467](https://github.com/databricks/cli/pull/5467), [#5627](https://github.com/databricks/cli/pull/5627)).
 * direct: Stop spurious recreate/rename on redeploy when the backend normalizes a resource's name-based ID (e.g. Unity Catalog lowercasing a schema or volume name) ([#5599](https://github.com/databricks/cli/pull/5599)).
 * Fix the generated pipeline README to suggest `databricks bundle run <pipeline> --refresh <table>` for running a single transformation; the previously documented `--select` flag is not supported by `bundle run` ([#5252](https://github.com/databricks/cli/issues/5252)).
 
