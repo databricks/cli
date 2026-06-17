@@ -42,9 +42,12 @@ func mlflowURL(ctx context.Context, w *databricks.WorkspaceClient, run *jobs.Run
 		return nil
 	}
 
+	// Pass run_id through the request arg (the SDK serializes it to the query
+	// string for GET); passing it via queryParams instead leaves a nil body that
+	// this endpoint rejects with "expected a map".
 	var out getRunOutputResponse
 	err = apiClient.Do(ctx, http.MethodGet, "/api/2.2/jobs/runs/get-output",
-		nil, map[string]any{"run_id": taskRunID}, nil, &out)
+		nil, nil, map[string]any{"run_id": taskRunID}, &out)
 	if err != nil {
 		log.Debugf(ctx, "air get: could not fetch run output for MLflow link: %v", err)
 		return nil
