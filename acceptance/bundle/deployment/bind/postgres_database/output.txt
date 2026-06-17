@@ -13,7 +13,7 @@ Workspace:
 Resources:
   Postgres databases:
     database1:
-      Name: test-database
+      Name: 
       URL:  (not deployed)
 
 >>> [CLI] bundle deployment unbind database1
@@ -28,5 +28,5 @@ Workspace:
 Resources:
   Postgres databases:
     database1:
-      Name: test-database
+      Name: 
       URL:  (not deployed)

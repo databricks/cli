@@ -21,7 +21,7 @@ Resources:
       URL:  (not deployed)
   Postgres databases:
     my_database:
-      Name: my-database
+      Name: 
       URL:  (not deployed)
   Postgres projects:
     my_project:
@@ -62,7 +62,7 @@ Resources:
       URL:  (not deployed)
   Postgres databases:
     my_database:
-      Name: my-database
+      Name: 
       URL:  (not deployed)
   Postgres projects:
     my_project:

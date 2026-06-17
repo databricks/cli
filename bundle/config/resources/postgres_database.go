@@ -57,7 +57,8 @@ func (d *PostgresDatabase) ResourceDescription() ResourceDescription {
 }
 
 func (d *PostgresDatabase) GetName() string {
-	return d.DatabaseId
+	// Databases don't have a user-visible name field.
+	return ""
 }
 
 func (d *PostgresDatabase) GetURL() string {
