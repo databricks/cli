@@ -21,20 +21,26 @@ class GoogleAdsOptions:
 
     manager_account_id: VariableOr[str]
     """
-    (Optional at this level) Manager Account ID (also called MCC Account ID) used to list
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] (Optional at this level) Manager Account ID (also called MCC Account ID) used to list
     and access customer accounts under this manager account.
     Overrides GoogleAdsConfig.manager_account_id from source_configurations when set.
     """
 
     lookback_window_days: VariableOrOptional[int] = None
     """
-    (Optional) Number of days to look back for report tables to capture late-arriving data.
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] (Optional) Number of days to look back for report tables to capture late-arriving data.
     If not specified, defaults to 30 days.
     """
 
     sync_start_date: VariableOrOptional[str] = None
     """
-    (Optional) Start date for the initial sync of report tables in YYYY-MM-DD format.
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] (Optional) Start date for the initial sync of report tables in YYYY-MM-DD format.
     This determines the earliest date from which to sync historical data.
     If not specified, defaults to 2 years of historical data.
     """
@@ -52,20 +58,26 @@ class GoogleAdsOptionsDict(TypedDict, total=False):
 
     manager_account_id: VariableOr[str]
     """
-    (Optional at this level) Manager Account ID (also called MCC Account ID) used to list
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] (Optional at this level) Manager Account ID (also called MCC Account ID) used to list
     and access customer accounts under this manager account.
     Overrides GoogleAdsConfig.manager_account_id from source_configurations when set.
     """
 
     lookback_window_days: VariableOrOptional[int]
     """
-    (Optional) Number of days to look back for report tables to capture late-arriving data.
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] (Optional) Number of days to look back for report tables to capture late-arriving data.
     If not specified, defaults to 30 days.
     """
 
     sync_start_date: VariableOrOptional[str]
     """
-    (Optional) Start date for the initial sync of report tables in YYYY-MM-DD format.
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] (Optional) Start date for the initial sync of report tables in YYYY-MM-DD format.
     This determines the earliest date from which to sync historical data.
     If not specified, defaults to 2 years of historical data.
     """

@@ -254,6 +254,15 @@ var testConfig map[string]any = map[string]any{
 		},
 	},
 
+	"genie_spaces": &resources.GenieSpace{
+		GenieSpaceConfig: resources.GenieSpaceConfig{
+			Title:           "my-genie-space",
+			WarehouseId:     "test-warehouse-id",
+			ParentPath:      "/Workspace/Users/user@example.com",
+			SerializedSpace: "{}",
+		},
+	},
+
 	"vector_search_endpoints": &resources.VectorSearchEndpoint{
 		CreateEndpoint: vectorsearch.CreateEndpoint{
 			Name:         "my-endpoint",
@@ -470,7 +479,7 @@ var testDeps = map[string]prepareWorkspace{
 		parentPath := "/Workspace/Users/user@example.com"
 
 		// Create parent directory if it doesn't exist
-		err := client.Workspace.MkdirsByPath(ctx, parentPath) //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
+		err := client.Workspace.MkdirsByPath(ctx, parentPath)
 		if err != nil {
 			return nil, err
 		}
@@ -488,6 +497,25 @@ var testDeps = map[string]prepareWorkspace{
 
 		return &PermissionsState{
 			ObjectID: "/dashboards/" + resp.DashboardId,
+			EmbeddedSlice: []StatePermission{{
+				Level:    "CAN_MANAGE",
+				UserName: "user@example.com",
+			}},
+		}, nil
+	},
+
+	"genie_spaces.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		resp, err := client.Genie.CreateSpace(ctx, dashboards.GenieCreateSpaceRequest{
+			Title:           "genie-space-permissions",
+			WarehouseId:     "test-warehouse-id",
+			SerializedSpace: "{}",
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		return &PermissionsState{
+			ObjectID: "/genie/" + resp.SpaceId,
 			EmbeddedSlice: []StatePermission{{
 				Level:    "CAN_MANAGE",
 				UserName: "user@example.com",
@@ -720,6 +748,42 @@ var testDeps = map[string]prepareWorkspace{
 			},
 		}, nil
 	},
+
+	"postgres_roles": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		// Create parent project first
+		_, err := client.Postgres.CreateProject(ctx, postgres.CreateProjectRequest{
+			ProjectId: "test-project-for-role",
+			Project: postgres.Project{
+				Spec: &postgres.ProjectSpec{
+					DisplayName: "Test Project for Role",
+					PgVersion:   16,
+				},
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		// Create parent branch
+		_, err = client.Postgres.CreateBranch(ctx, postgres.CreateBranchRequest{
+			Parent:   "projects/test-project-for-role",
+			BranchId: "test-branch-for-role",
+			Branch:   postgres.Branch{},
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		return &resources.PostgresRole{
+			PostgresRoleConfig: resources.PostgresRoleConfig{
+				Parent: "projects/test-project-for-role/branches/test-branch-for-role",
+				RoleId: "test-role",
+				RoleRoleSpec: postgres.RoleRoleSpec{
+					PostgresRole: "test_role",
+				},
+			},
+		}, nil
+	},
 }
 
 func TestAll(t *testing.T) {
@@ -861,8 +925,18 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 		if remoteStateFromUpdate != nil {
 			remappedStateFromUpdate, err := adapter.RemapState(remoteStateFromUpdate)
 			require.NoError(t, err)
-			ignoreFilter.requireEqual(t, remappedState, remappedStateFromUpdate,
+			// Compare DoUpdate's result against a fresh DoRead: server-generated
+			// fields (e.g. etag) may change on any write, so DoUpdate's return
+			// value must match what DoRead returns right after.
+			remotePostUpdate, err := adapter.DoRead(ctx, createdID)
+			require.NoError(t, err)
+			remappedPostUpdate, err := adapter.RemapState(remotePostUpdate)
+			require.NoError(t, err)
+			ignoreFilter.requireEqual(t, remappedPostUpdate, remappedStateFromUpdate,
 				"unexpected differences between remappedState and remappedStateFromUpdate")
+			// DoUpdate may mutate newState in place (e.g. etag), so update remappedState
+			// to match the post-update server state for the field checks below.
+			remappedState = remappedStateFromUpdate
 		}
 
 		remoteStateFromWaitUpdate, err := adapter.WaitAfterUpdate(ctx, createdID, newState)
@@ -965,8 +1039,11 @@ func validateResourceConfig(t *testing.T, stateType reflect.Type, cfg *ResourceL
 	for _, p := range cfg.RecreateOnChanges {
 		assert.NoError(t, structaccess.ValidatePattern(stateType, p.Field), "RecreateOnChanges: %s", p.Field)
 	}
-	for _, p := range cfg.UpdateIDOnChanges {
-		assert.NoError(t, structaccess.ValidatePattern(stateType, p.Field), "UpdateIDOnChanges: %s", p.Field)
+	for _, p := range cfg.ProvidedIDFields {
+		assert.NoError(t, structaccess.ValidatePattern(stateType, p.Field), "ProvidedIDFields: %s", p.Field)
+	}
+	for _, p := range cfg.UpdatableIDFields {
+		assert.NoError(t, structaccess.ValidatePattern(stateType, p.Field), "UpdatableIDFields: %s", p.Field)
 	}
 	for _, p := range cfg.IgnoreRemoteChanges {
 		assert.NoError(t, structaccess.ValidatePattern(stateType, p.Field), "IgnoreRemoteChanges: %s", p.Field)

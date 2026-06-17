@@ -126,13 +126,13 @@ func (a *syncTest) waitForCompletionMarker() {
 func (a *syncTest) remoteDirContent(ctx context.Context, relativeDir string, expectedFiles []string) {
 	remoteDir := path.Join(a.remoteRoot, relativeDir)
 	a.c.Eventually(func() bool {
-		objects, err := a.w.Workspace.ListAll(ctx, workspace.ListWorkspaceRequest{ //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
+		objects, err := a.w.Workspace.ListAll(ctx, workspace.ListWorkspaceRequest{
 			Path: remoteDir,
 		})
 		require.NoError(a.t, err)
 		return len(objects) == len(expectedFiles)
 	}, 30*time.Second, 5*time.Second)
-	objects, err := a.w.Workspace.ListAll(ctx, workspace.ListWorkspaceRequest{ //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
+	objects, err := a.w.Workspace.ListAll(ctx, workspace.ListWorkspaceRequest{
 		Path: remoteDir,
 	})
 	require.NoError(a.t, err)
@@ -185,7 +185,7 @@ func (a *syncTest) objectType(ctx context.Context, relativePath, expected string
 	path := path.Join(a.remoteRoot, relativePath)
 
 	a.c.Eventually(func() bool {
-		metadata, err := a.w.Workspace.GetStatusByPath(ctx, path) //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
+		metadata, err := a.w.Workspace.GetStatusByPath(ctx, path)
 		if err != nil {
 			return false
 		}
@@ -197,7 +197,7 @@ func (a *syncTest) language(ctx context.Context, relativePath, expected string) 
 	path := path.Join(a.remoteRoot, relativePath)
 
 	a.c.Eventually(func() bool {
-		metadata, err := a.w.Workspace.GetStatusByPath(ctx, path) //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
+		metadata, err := a.w.Workspace.GetStatusByPath(ctx, path)
 		if err != nil {
 			return false
 		}
@@ -493,12 +493,12 @@ func TestSyncEnsureRemotePathIsUsableIfRepoDoesntExist(t *testing.T) {
 
 	// Hypothetical repo path doesn't exist.
 	nonExistingRepoPath := fmt.Sprintf("/Repos/%s/%s", me.UserName, testutil.RandomName("doesnt-exist-"))
-	err = sync.EnsureRemotePathIsUsable(ctx, wsc, nonExistingRepoPath, nil)
+	err = sync.EnsureRemotePathIsUsable(ctx, wsc, nonExistingRepoPath, nil, false)
 	assert.ErrorContains(t, err, " does not exist; please create it first")
 
 	// Paths nested under a hypothetical repo path should yield the same error.
 	nestedPath := path.Join(nonExistingRepoPath, "nested/directory")
-	err = sync.EnsureRemotePathIsUsable(ctx, wsc, nestedPath, nil)
+	err = sync.EnsureRemotePathIsUsable(ctx, wsc, nestedPath, nil, false)
 	assert.ErrorContains(t, err, " does not exist; please create it first")
 }
 
@@ -509,16 +509,16 @@ func TestSyncEnsureRemotePathIsUsableIfRepoExists(t *testing.T) {
 	_, remoteRepoPath := setupRepo(t, wsc, ctx)
 
 	// Repo itself is usable.
-	err := sync.EnsureRemotePathIsUsable(ctx, wsc, remoteRepoPath, nil)
+	err := sync.EnsureRemotePathIsUsable(ctx, wsc, remoteRepoPath, nil, false)
 	assert.NoError(t, err)
 
 	// Path nested under repo path is usable.
 	nestedPath := path.Join(remoteRepoPath, "nested/directory")
-	err = sync.EnsureRemotePathIsUsable(ctx, wsc, nestedPath, nil)
+	err = sync.EnsureRemotePathIsUsable(ctx, wsc, nestedPath, nil, false)
 	assert.NoError(t, err)
 
 	// Verify that the directory has been created.
-	info, err := wsc.Workspace.GetStatusByPath(ctx, nestedPath) //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
+	info, err := wsc.Workspace.GetStatusByPath(ctx, nestedPath)
 	require.NoError(t, err)
 	require.Equal(t, workspace.ObjectTypeDirectory, info.ObjectType)
 }
@@ -531,19 +531,19 @@ func TestSyncEnsureRemotePathIsUsableInWorkspace(t *testing.T) {
 	require.NoError(t, err)
 
 	remotePath := fmt.Sprintf("/Users/%s/%s", me.UserName, testutil.RandomName("ensure-path-exists-test-"))
-	err = sync.EnsureRemotePathIsUsable(ctx, wsc, remotePath, me)
+	err = sync.EnsureRemotePathIsUsable(ctx, wsc, remotePath, me, false)
 	assert.NoError(t, err)
 
 	// Clean up directory after test.
 	defer func() {
-		err := wsc.Workspace.Delete(ctx, workspace.Delete{ //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
+		err := wsc.Workspace.Delete(ctx, workspace.Delete{
 			Path: remotePath,
 		})
 		assert.NoError(t, err)
 	}()
 
 	// Verify that the directory has been created.
-	info, err := wsc.Workspace.GetStatusByPath(ctx, remotePath) //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
+	info, err := wsc.Workspace.GetStatusByPath(ctx, remotePath)
 	require.NoError(t, err)
 	require.Equal(t, workspace.ObjectTypeDirectory, info.ObjectType)
 }

@@ -1,6 +1,7 @@
 package run
 
 import (
+	"errors"
 	"testing"
 	"time"
 
@@ -201,6 +202,41 @@ func TestJobRunnerRestart(t *testing.T) {
 		_, err := runner.Restart(ctx, &Options{})
 		require.NoError(t, err)
 	}
+}
+
+func TestJobRunnerRunNoWaitGetRunFails(t *testing.T) {
+	job := &resources.Job{
+		BaseResource: resources.BaseResource{ID: "123"},
+	}
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Resources: config.Resources{
+				Jobs: map[string]*resources.Job{
+					"test_job": job,
+				},
+			},
+		},
+	}
+
+	runner := jobRunner{key: "test", bundle: b, job: job}
+
+	m := mocks.NewMockWorkspaceClient(t)
+	b.SetWorkpaceClient(m.WorkspaceClient)
+
+	ctx := cmdio.MockDiscard(t.Context())
+
+	jobApi := m.GetMockJobsAPI()
+	jobApi.EXPECT().RunNow(mock.Anything, jobs.RunNow{
+		JobId: 123,
+	}).Return(&jobs.WaitGetRunJobTerminatedOrSkipped[jobs.RunNowResponse]{RunId: 456}, nil)
+
+	// Run must surface the error instead of dereferencing the nil run details.
+	jobApi.EXPECT().GetRun(mock.Anything, jobs.GetRunRequest{
+		RunId: 456,
+	}).Return(nil, errors.New("transient error"))
+
+	_, err := runner.Run(ctx, &Options{NoWait: true})
+	require.ErrorContains(t, err, "transient error")
 }
 
 func TestJobRunnerRestartForContinuousUnpausedJobs(t *testing.T) {

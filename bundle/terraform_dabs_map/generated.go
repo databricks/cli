@@ -4,25 +4,26 @@ package terraform_dabs_map
 
 // alerts / databricks_alert_v2: 1 dabs-only
 // alerts / databricks_alert_v2: 3 tf-only
-// apps / databricks_app: 18 dabs-only
+// apps / databricks_app: 16 dabs-only
 // apps / databricks_app: 1 tf-only
 // clusters / databricks_cluster: 25 tf-only
 // dashboards / databricks_dashboard: 2 tf-only
 // database_instances / databricks_database_instance: 1 tf-only
 // experiments / databricks_mlflow_experiment: 1 tf-only
 // jobs / databricks_job: 11 renames
-// jobs / databricks_job: 39 dabs-only
+// jobs / databricks_job: 7 dabs-only
 // jobs / databricks_job: 257 tf-only
 // model_serving_endpoints / databricks_model_serving: 2 tf-only
 // models / databricks_mlflow_model: 1 tf-only
 // pipelines / databricks_pipeline: 3 renames
-// pipelines / databricks_pipeline: 53 dabs-only
+// pipelines / databricks_pipeline: 5 dabs-only
 // pipelines / databricks_pipeline: 2 tf-only
+// postgres_branches / databricks_postgres_branch: 1 tf-only
 // postgres_branches / databricks_postgres_branch: 1 unwraps
-// postgres_catalogs / databricks_postgres_catalog: 1 tf-only
 // postgres_catalogs / databricks_postgres_catalog: 1 unwraps
 // postgres_endpoints / databricks_postgres_endpoint: 1 unwraps
 // postgres_projects / databricks_postgres_project: 1 unwraps
+// postgres_roles / databricks_postgres_role: 1 unwraps
 // postgres_synced_tables / databricks_postgres_synced_table: 1 unwraps
 // schemas / databricks_schema: 1 tf-only
 // secret_scopes / databricks_secret_scope: 1 tf-only
@@ -69,6 +70,9 @@ var TerraformToDABsFieldMap = map[string]RenameTree{
 	"postgres_projects": {
 		"spec": {Unwrap: true},
 	},
+	"postgres_roles": {
+		"spec": {Unwrap: true},
+	},
 	"postgres_synced_tables": {
 		"spec": {Unwrap: true},
 	},
@@ -80,8 +84,6 @@ var DABsOnlyFields = map[string]FieldSet{
 		"file_path": {},
 	},
 	"apps": {
-		"compute_max_instances": {},
-		"compute_min_instances": {},
 		"config": {
 			"command": {}, // apps.*.config.command
 			"env": {
@@ -104,10 +106,6 @@ var DABsOnlyFields = map[string]FieldSet{
 		"source_code_path": {},
 	},
 	"jobs": {
-		"deployment": {
-			"deployment_id": {}, // jobs.*.deployment.deployment_id
-			"version_id":    {}, // jobs.*.deployment.version_id
-		},
 		"job_clusters": {
 			"new_cluster": {
 				"autotermination_minutes": {}, // jobs.*.job_clusters.new_cluster.autotermination_minutes
@@ -124,58 +122,10 @@ var DABsOnlyFields = map[string]FieldSet{
 					"new_cluster": {
 						"autotermination_minutes": {}, // jobs.*.tasks.for_each_task.task.new_cluster.autotermination_minutes
 					},
-					"pipeline_task": {
-						"full_refresh_selection": {}, // jobs.*.tasks.for_each_task.task.pipeline_task.full_refresh_selection
-						"parameters": {
-							"*": {}, // jobs.*.tasks.for_each_task.task.pipeline_task.parameters.*
-						},
-						"refresh_flow_selection":     {}, // jobs.*.tasks.for_each_task.task.pipeline_task.refresh_flow_selection
-						"refresh_selection":          {}, // jobs.*.tasks.for_each_task.task.pipeline_task.refresh_selection
-						"reset_checkpoint_selection": {}, // jobs.*.tasks.for_each_task.task.pipeline_task.reset_checkpoint_selection
-					},
-					"python_operator_task": {
-						"main": {}, // jobs.*.tasks.for_each_task.task.python_operator_task.main
-						"parameters": {
-							"name":  {}, // jobs.*.tasks.for_each_task.task.python_operator_task.parameters.name
-							"value": {}, // jobs.*.tasks.for_each_task.task.python_operator_task.parameters.value
-						},
-					},
-					"run_job_task": {
-						"pipeline_params": {
-							"full_refresh_selection":     {}, // jobs.*.tasks.for_each_task.task.run_job_task.pipeline_params.full_refresh_selection
-							"refresh_flow_selection":     {}, // jobs.*.tasks.for_each_task.task.run_job_task.pipeline_params.refresh_flow_selection
-							"refresh_selection":          {}, // jobs.*.tasks.for_each_task.task.run_job_task.pipeline_params.refresh_selection
-							"reset_checkpoint_selection": {}, // jobs.*.tasks.for_each_task.task.run_job_task.pipeline_params.reset_checkpoint_selection
-						},
-					},
 				},
 			},
 			"new_cluster": {
 				"autotermination_minutes": {}, // jobs.*.tasks.new_cluster.autotermination_minutes
-			},
-			"pipeline_task": {
-				"full_refresh_selection": {}, // jobs.*.tasks.pipeline_task.full_refresh_selection
-				"parameters": {
-					"*": {}, // jobs.*.tasks.pipeline_task.parameters.*
-				},
-				"refresh_flow_selection":     {}, // jobs.*.tasks.pipeline_task.refresh_flow_selection
-				"refresh_selection":          {}, // jobs.*.tasks.pipeline_task.refresh_selection
-				"reset_checkpoint_selection": {}, // jobs.*.tasks.pipeline_task.reset_checkpoint_selection
-			},
-			"python_operator_task": {
-				"main": {}, // jobs.*.tasks.python_operator_task.main
-				"parameters": {
-					"name":  {}, // jobs.*.tasks.python_operator_task.parameters.name
-					"value": {}, // jobs.*.tasks.python_operator_task.parameters.value
-				},
-			},
-			"run_job_task": {
-				"pipeline_params": {
-					"full_refresh_selection":     {}, // jobs.*.tasks.run_job_task.pipeline_params.full_refresh_selection
-					"refresh_flow_selection":     {}, // jobs.*.tasks.run_job_task.pipeline_params.refresh_flow_selection
-					"refresh_selection":          {}, // jobs.*.tasks.run_job_task.pipeline_params.refresh_selection
-					"reset_checkpoint_selection": {}, // jobs.*.tasks.run_job_task.pipeline_params.reset_checkpoint_selection
-				},
 			},
 		},
 	},
@@ -186,81 +136,7 @@ var DABsOnlyFields = map[string]FieldSet{
 				"use_preemptible_executors": {}, // pipelines.*.clusters.gcp_attributes.use_preemptible_executors
 			},
 		},
-		"deployment": {
-			"deployment_id": {}, // pipelines.*.deployment.deployment_id
-			"version_id":    {}, // pipelines.*.deployment.version_id
-		},
 		"dry_run": {},
-		"ingestion_definition": {
-			"objects": {
-				"schema": {
-					"connector_options": {
-						"kafka_options": {
-							"client_config": {
-								"*": {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.kafka_options.client_config.*
-							},
-							"key_transformer": {
-								"format": {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.kafka_options.key_transformer.format
-								"json_options": {
-									"as_variant":            {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.kafka_options.key_transformer.json_options.as_variant
-									"schema":                {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.kafka_options.key_transformer.json_options.schema
-									"schema_evolution_mode": {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.kafka_options.key_transformer.json_options.schema_evolution_mode
-									"schema_file_path":      {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.kafka_options.key_transformer.json_options.schema_file_path
-									"schema_hints":          {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.kafka_options.key_transformer.json_options.schema_hints
-								},
-							},
-							"max_offsets_per_trigger": {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.kafka_options.max_offsets_per_trigger
-							"starting_offset":         {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.kafka_options.starting_offset
-							"topic_pattern":           {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.kafka_options.topic_pattern
-							"topics":                  {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.kafka_options.topics
-							"value_transformer": {
-								"format": {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.kafka_options.value_transformer.format
-								"json_options": {
-									"as_variant":            {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.kafka_options.value_transformer.json_options.as_variant
-									"schema":                {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.kafka_options.value_transformer.json_options.schema
-									"schema_evolution_mode": {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.kafka_options.value_transformer.json_options.schema_evolution_mode
-									"schema_file_path":      {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.kafka_options.value_transformer.json_options.schema_file_path
-									"schema_hints":          {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.kafka_options.value_transformer.json_options.schema_hints
-								},
-							},
-						},
-					},
-				},
-				"table": {
-					"connector_options": {
-						"kafka_options": {
-							"client_config": {
-								"*": {}, // pipelines.*.ingestion_definition.objects.table.connector_options.kafka_options.client_config.*
-							},
-							"key_transformer": {
-								"format": {}, // pipelines.*.ingestion_definition.objects.table.connector_options.kafka_options.key_transformer.format
-								"json_options": {
-									"as_variant":            {}, // pipelines.*.ingestion_definition.objects.table.connector_options.kafka_options.key_transformer.json_options.as_variant
-									"schema":                {}, // pipelines.*.ingestion_definition.objects.table.connector_options.kafka_options.key_transformer.json_options.schema
-									"schema_evolution_mode": {}, // pipelines.*.ingestion_definition.objects.table.connector_options.kafka_options.key_transformer.json_options.schema_evolution_mode
-									"schema_file_path":      {}, // pipelines.*.ingestion_definition.objects.table.connector_options.kafka_options.key_transformer.json_options.schema_file_path
-									"schema_hints":          {}, // pipelines.*.ingestion_definition.objects.table.connector_options.kafka_options.key_transformer.json_options.schema_hints
-								},
-							},
-							"max_offsets_per_trigger": {}, // pipelines.*.ingestion_definition.objects.table.connector_options.kafka_options.max_offsets_per_trigger
-							"starting_offset":         {}, // pipelines.*.ingestion_definition.objects.table.connector_options.kafka_options.starting_offset
-							"topic_pattern":           {}, // pipelines.*.ingestion_definition.objects.table.connector_options.kafka_options.topic_pattern
-							"topics":                  {}, // pipelines.*.ingestion_definition.objects.table.connector_options.kafka_options.topics
-							"value_transformer": {
-								"format": {}, // pipelines.*.ingestion_definition.objects.table.connector_options.kafka_options.value_transformer.format
-								"json_options": {
-									"as_variant":            {}, // pipelines.*.ingestion_definition.objects.table.connector_options.kafka_options.value_transformer.json_options.as_variant
-									"schema":                {}, // pipelines.*.ingestion_definition.objects.table.connector_options.kafka_options.value_transformer.json_options.schema
-									"schema_evolution_mode": {}, // pipelines.*.ingestion_definition.objects.table.connector_options.kafka_options.value_transformer.json_options.schema_evolution_mode
-									"schema_file_path":      {}, // pipelines.*.ingestion_definition.objects.table.connector_options.kafka_options.value_transformer.json_options.schema_file_path
-									"schema_hints":          {}, // pipelines.*.ingestion_definition.objects.table.connector_options.kafka_options.value_transformer.json_options.schema_hints
-								},
-							},
-						},
-					},
-				},
-			},
-		},
 		"parameters": {
 			"*": {}, // pipelines.*.parameters.*
 		},
@@ -674,10 +550,8 @@ var TerraformOnlyFields = map[string]FieldSet{
 		"expected_last_modified": {},
 		"url":                    {},
 	},
-	"postgres_catalogs": {
-		"status": {
-			"catalog_id": {}, // databricks_postgres_catalog.*.status.catalog_id
-		},
+	"postgres_branches": {
+		"purge_on_delete": {},
 	},
 	"schemas": {
 		"force_destroy": {},
@@ -732,5 +606,6 @@ var DABsToTerraformWrappers = map[string]string{
 	"postgres_catalogs":      "spec",
 	"postgres_endpoints":     "spec",
 	"postgres_projects":      "spec",
+	"postgres_roles":         "spec",
 	"postgres_synced_tables": "spec",
 }

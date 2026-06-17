@@ -45,7 +45,8 @@ func TestNodeAppGetCommand(t *testing.T) {
 			config := &Config{}
 			spec := &AppSpec{config: config, Command: tt.command}
 			app := NewNodeApp(config, spec, &PackageJson{})
-			cmd, cmdEnv, err := app.GetCommand(t.Context(), tt.debug)
+			ctx := env.Set(t.Context(), "NODE_OPTIONS", "") // unset ambient NODE_OPTIONS to keep env clean
+			cmd, cmdEnv, err := app.GetCommand(ctx, tt.debug)
 			require.NoError(t, err)
 			assert.Equal(t, tt.wantCmd, cmd)
 			assert.Equal(t, tt.wantEnv, cmdEnv)
@@ -69,7 +70,8 @@ func TestNodeAppGetCommandDebugCustomPort(t *testing.T) {
 	config := &Config{DebugPort: "5555"}
 	spec := &AppSpec{config: config}
 	app := NewNodeApp(config, spec, &PackageJson{})
-	_, cmdEnv, err := app.GetCommand(t.Context(), true)
+	ctx := env.Set(t.Context(), "NODE_OPTIONS", "") // unset ambient NODE_OPTIONS to keep env clean
+	_, cmdEnv, err := app.GetCommand(ctx, true)
 	require.NoError(t, err)
 	assert.Equal(t, []string{"NODE_OPTIONS=--inspect=5555"}, cmdEnv)
 }

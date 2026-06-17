@@ -64,6 +64,8 @@ var RequiredFields = map[string][]string{
 
 	"resources.external_locations.*": {"credential_name", "name", "url"},
 
+	"resources.genie_spaces.*.permissions[*]": {"level"},
+
 	"resources.jobs.*.deployment":                                                                                  {"kind"},
 	"resources.jobs.*.environments[*]":                                                                             {"environment_key"},
 	"resources.jobs.*.git_source":                                                                                  {"git_provider", "git_url"},
@@ -226,6 +228,8 @@ var RequiredFields = map[string][]string{
 
 	"resources.postgres_projects.*":                {"project_id"},
 	"resources.postgres_projects.*.permissions[*]": {"level"},
+
+	"resources.postgres_roles.*": {"role_id", "parent"},
 
 	"resources.postgres_synced_tables.*": {"synced_table_id"},
 

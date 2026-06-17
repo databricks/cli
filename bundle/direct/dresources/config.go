@@ -56,8 +56,25 @@ type ResourceLifecycleConfig struct {
 	// RecreateOnChanges: field patterns that trigger delete + create when changed.
 	RecreateOnChanges []FieldRule `yaml:"recreate_on_changes,omitempty"`
 
-	// UpdateIDOnChanges: field patterns that trigger UpdateWithID when changed.
-	UpdateIDOnChanges []FieldRule `yaml:"update_id_on_changes,omitempty"`
+	// ProvidedIDFields: field patterns that compose the resource's ID — its name,
+	// as opposed to a server-generated id. DoRead fetches by the ID recorded in
+	// state (the value the backend returned, e.g. a lowercased full_name), not by
+	// these config fields directly. So a remote-only difference on them can only be
+	// the backend normalizing what we sent: the resource was found at its ID, and a
+	// real out-of-band rename would change the ID and 404 (handled as resource-gone).
+	// A local change recreates (delete + create).
+	ProvidedIDFields []FieldRule `yaml:"provided_id_fields,omitempty"`
+
+	// UpdatableIDFields: like ProvidedIDFields these compose the resource's
+	// name-based ID, but the backend supports renaming in place. A local change
+	// triggers UpdateWithID (a rename; the ID changes) instead of delete + create. A
+	// remote-only difference is still skipped (see classifyIDField) — DoRead found
+	// the resource by its recorded ID, so it can only be backend normalization.
+	UpdatableIDFields []FieldRule `yaml:"updatable_id_fields,omitempty"`
+
+	// NormalizeSlash: string field patterns the UC API strips trailing slashes from.
+	// A change is skipped when local and remote differ only by trailing slashes.
+	NormalizeSlash []FieldRule `yaml:"normalize_slash,omitempty"`
 
 	// BackendDefaults: fields where the backend may set defaults.
 	// When old and new are nil but remote is set, and the remote value matches allowed values (if specified), the change is skipped.
@@ -79,7 +96,9 @@ var empty = ResourceLifecycleConfig{
 	IgnoreRemoteChanges: nil,
 	IgnoreLocalChanges:  nil,
 	RecreateOnChanges:   nil,
-	UpdateIDOnChanges:   nil,
+	ProvidedIDFields:    nil,
+	UpdatableIDFields:   nil,
+	NormalizeSlash:      nil,
 	BackendDefaults:     nil,
 }
 

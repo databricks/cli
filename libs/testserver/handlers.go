@@ -309,6 +309,20 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.DashboardUnpublish(req)
 	})
 
+	// Genie Spaces:
+	server.Handle("GET", "/api/2.0/genie/spaces/{space_id}", func(req Request) any {
+		return req.Workspace.GenieSpaceGet(req)
+	})
+	server.Handle("POST", "/api/2.0/genie/spaces", func(req Request) any {
+		return req.Workspace.GenieSpaceCreate(req)
+	})
+	server.Handle("PATCH", "/api/2.0/genie/spaces/{space_id}", func(req Request) any {
+		return req.Workspace.GenieSpaceUpdate(req)
+	})
+	server.Handle("DELETE", "/api/2.0/genie/spaces/{space_id}", func(req Request) any {
+		return req.Workspace.GenieSpaceTrash(req)
+	})
+
 	// Pipelines:
 
 	server.Handle("GET", "/api/2.0/pipelines/{pipeline_id}", func(req Request) any {
@@ -898,6 +912,11 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.PostgresOperationGet(name)
 	})
 
+	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/roles/{role_id}/operations/{operation_id}", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/roles/" + req.Vars["role_id"] + "/operations/" + req.Vars["operation_id"]
+		return req.Workspace.PostgresOperationGet(name)
+	})
+
 	// Postgres Projects:
 	server.Handle("POST", "/api/2.0/postgres/projects", func(req Request) any {
 		projectID := req.URL.Query().Get("project_id")
@@ -1021,6 +1040,33 @@ func AddDefaultHandlers(server *Server) {
 
 	server.Handle("GET", "/api/2.0/postgres/operations/{operation_id}", func(req Request) any {
 		return req.Workspace.PostgresOperationGet("operations/" + req.Vars["operation_id"])
+	})
+
+	// Postgres Roles:
+	server.Handle("POST", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/roles", func(req Request) any {
+		parent := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"]
+		roleID := req.URL.Query().Get("role_id")
+		return req.Workspace.PostgresRoleCreate(req, parent, roleID)
+	})
+
+	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/roles", func(req Request) any {
+		parent := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"]
+		return req.Workspace.PostgresRoleList(parent)
+	})
+
+	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/roles/{role_id}", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/roles/" + req.Vars["role_id"]
+		return req.Workspace.PostgresRoleGet(name)
+	})
+
+	server.Handle("PATCH", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/roles/{role_id}", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/roles/" + req.Vars["role_id"]
+		return req.Workspace.PostgresRoleUpdate(req, name)
+	})
+
+	server.Handle("DELETE", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/roles/{role_id}", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/roles/" + req.Vars["role_id"]
+		return req.Workspace.PostgresRoleDelete(name)
 	})
 
 	// Catch-all handler for invalid postgres resource names.

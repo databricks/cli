@@ -549,6 +549,57 @@ func TestWorkspaceClientOrPromptRejectsAccountOnlyProfile(t *testing.T) {
 	}
 }
 
+func TestErrAccountOnlyProfileMessage(t *testing.T) {
+	tests := []struct {
+		name string
+		err  ErrAccountOnlyProfile
+		want string
+	}{
+		{
+			name: "account console host",
+			err:  ErrAccountOnlyProfile{profileName: "acc", host: "https://accounts.test"},
+			want: "profile \"acc\" points to a Databricks account console host (https://accounts.test), which serves only account-level APIs; " +
+				"this command requires a workspace. Run `databricks auth login --host https://<workspace-url>` to create a workspace profile, " +
+				"or use `databricks account ...` commands with this profile",
+		},
+		{
+			// On non-account-console hosts (SPOG/unified) workspace APIs are
+			// served, so setting workspace_id is still the right fix.
+			name: "other host keeps workspace_id advice",
+			err:  ErrAccountOnlyProfile{profileName: "spog", host: "https://unified.test"},
+			want: "profile \"spog\" has no workspace_id set (account-only); this command requires a workspace. " +
+				"Edit the profile to set workspace_id to a real ID, or pass --profile with a workspace-scoped profile",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, tt.err.Error())
+		})
+	}
+}
+
+func TestWorkspaceClientOrPromptAccountOnlyProfileOnAccountConsoleHost(t *testing.T) {
+	testutil.CleanupEnvironment(t)
+	t.Setenv("PATH", "")
+
+	cfg := &config.Config{
+		Host:          "https://accounts.test/",
+		AccountID:     "abc-123",
+		Token:         "foobar",
+		Profile:       "acc",
+		HTTPTransport: noNetworkTransport,
+	}
+
+	w, err := workspaceClientOrPrompt(t.Context(), cfg, false)
+	assert.Nil(t, w)
+	require.Error(t, err)
+	var accountOnly ErrAccountOnlyProfile
+	require.ErrorAs(t, err, &accountOnly)
+	assert.Contains(t, err.Error(), "account console host (https://accounts.test)")
+	assert.Contains(t, err.Error(), "databricks auth login --host")
+	assert.NotContains(t, err.Error(), "set workspace_id to a real ID")
+}
+
 func TestWorkspaceClientOrPromptRejectsPATOnSPOGWithoutWorkspaceID(t *testing.T) {
 	testutil.CleanupEnvironment(t)
 	t.Setenv("PATH", "")
@@ -710,4 +761,43 @@ token = named-token
 	// Pinned so the OAuth cache key matches what `databricks auth login` writes.
 	assert.Equal(t, "DEFAULT", w.Config.Profile)
 	assert.Equal(t, "https://default.cloud.databricks.com", w.Config.Host)
+}
+
+func TestMustWorkspaceClientEnvHostSkipsDefaultProfile(t *testing.T) {
+	testutil.CleanupEnvironment(t)
+
+	configFile := filepath.Join(t.TempDir(), ".databrickscfg")
+	// The default profile uses basic auth on the same host as the environment.
+	// If it were pinned and merged with the PAT from the environment, the SDK
+	// would fail validation with "more than one authorization method configured"
+	// (matching hosts do not make the auth methods compatible).
+	err := os.WriteFile(configFile, []byte(`
+[__settings__]
+default_profile = basic-profile
+
+[basic-profile]
+host = https://env.test
+username = user
+password = pass
+`), 0o600)
+	require.NoError(t, err)
+
+	t.Setenv("DATABRICKS_CONFIG_FILE", configFile)
+	t.Setenv("DATABRICKS_HOST", "https://env.test")
+	t.Setenv("DATABRICKS_TOKEN", "env-token")
+
+	ctx := cmdio.MockDiscard(t.Context())
+	ctx = SkipLoadBundle(ctx)
+	cmd := New(ctx)
+
+	err = MustWorkspaceClient(cmd, []string{})
+	require.NoError(t, err)
+
+	w := cmdctx.WorkspaceClient(cmd.Context())
+	require.NotNil(t, w)
+	// Host and token in the environment fully determine auth, so the default
+	// profile must not be pinned (see resolveDefaultProfile).
+	assert.Empty(t, w.Config.Profile)
+	assert.Equal(t, "https://env.test", w.Config.Host)
+	assert.Equal(t, "env-token", w.Config.Token)
 }

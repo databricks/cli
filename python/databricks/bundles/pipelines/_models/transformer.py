@@ -27,10 +27,17 @@ class Transformer:
 
     format: VariableOrOptional[TransformerFormat] = None
     """
-    Required: the wire format of the data.
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Required: the wire format of the data.
     """
 
     json_options: VariableOrOptional[JsonTransformerOptions] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview]
+    """
 
     @classmethod
     def from_dict(cls, value: "TransformerDict") -> "Self":
@@ -45,10 +52,17 @@ class TransformerDict(TypedDict, total=False):
 
     format: VariableOrOptional[TransformerFormatParam]
     """
-    Required: the wire format of the data.
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Required: the wire format of the data.
     """
 
     json_options: VariableOrOptional[JsonTransformerOptionsParam]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview]
+    """
 
 
 TransformerParam = TransformerDict | Transformer

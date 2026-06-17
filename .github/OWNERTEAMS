@@ -10,7 +10,10 @@
 #   bundle:          https://github.com/orgs/databricks/teams/cli-maintainers
 #   platform:        https://github.com/orgs/databricks/teams/cli-platform
 #   eng-apps-devex:  https://github.com/orgs/databricks/teams/eng-apps-devex
+#   eng-sandbox:     https://github.com/orgs/databricks/teams/eng-sandbox
 
 team:bundle     @andrewnester @anton-107 @denik @janniklasrose @pietern @shreyas-goenka
 team:platform   @simonfaltum @renaudhartert-db @hectorcast-db @parthban-db @tanmay-db @Divyansh-db @tejaskochar-db @mihaimitrea-db @chrisst @rauchy
 team:eng-apps-devex @fjakobs @Shridhad @atilafassina @keugenek @igrekun @pkosiec @MarioCadenas @pffigueiredo @ditadi @calvarjorge
+team:eng-sandbox @pietern @shuochen0311 @akshaysingla-db @anwell-db @samhuan-db
+team:ai-training @apeforest @bfontain @lu-wang-dl @panchalhp-db @vinchenzo-db @maggiewang-db @riddhibhagwat-db @ben-hansen-db @pardis-beikzadeh-db
