@@ -1,0 +1,20 @@
+{
+  "depends_on": [
+    {
+      "node": "resources.postgres_branches.main",
+      "label": "${resources.postgres_branches.main.id}"
+    }
+  ],
+  "action": "create",
+  "new_state": {
+    "value": {
+      "attributes": {
+        "createdb": false
+      },
+      "postgres_role": "app_role"
+    },
+    "vars": {
+      "parent": "${resources.postgres_branches.main.id}"
+    }
+  }
+}

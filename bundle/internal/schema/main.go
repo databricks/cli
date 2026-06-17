@@ -16,6 +16,7 @@ import (
 	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/jsonschema"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/databricks-sdk-go/service/pipelines"
 )
 
 // interpolationPattern builds a JSON Schema regex for ${prefix.path...} references.
@@ -126,6 +127,25 @@ func removePipelineFields(typ reflect.Type, s jsonschema.Schema) jsonschema.Sche
 		// and thus should not be exposed to the user. These are used to annotate
 		// pipelines that were created by DABs.
 		delete(s.Properties, "deployment")
+	default:
+		// Do nothing
+	}
+
+	return s
+}
+
+// removeDeploymentFields strips deployment_id and version_id from the job and
+// pipeline deployment blocks. The CLI sets these to track the bundle
+// deployment in the Deployment Metadata Service; they are not user-configurable,
+// so they must not appear in the JSON schema or the generated annotation files.
+// The parent "deployment" block is already removed from the Job and Pipeline
+// schemas (see removeJobsFields / removePipelineFields); this removes the fields
+// from the JobDeployment / PipelineDeployment type definitions themselves.
+func removeDeploymentFields(typ reflect.Type, s jsonschema.Schema) jsonschema.Schema {
+	switch typ {
+	case reflect.TypeFor[jobs.JobDeployment](), reflect.TypeFor[pipelines.PipelineDeployment]():
+		delete(s.Properties, "deployment_id")
+		delete(s.Properties, "version_id")
 	default:
 		// Do nothing
 	}
@@ -254,6 +274,7 @@ func generateSchema(workdir, outputFile, cliJSONFile string, docsMode bool) {
 	transforms := []func(reflect.Type, jsonschema.Schema) jsonschema.Schema{
 		removeJobsFields,
 		removePipelineFields,
+		removeDeploymentFields,
 		makeVolumeTypeOptional,
 		a.addAnnotations,
 		removeOutputOnlyFields,
