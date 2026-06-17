@@ -340,7 +340,7 @@ func TestRenderSummary(t *testing.T) {
 	}
 
 	writer := &bytes.Buffer{}
-	err := RenderSummary(ctx, writer, b)
+	err := RenderSummary(ctx, writer, b, "", "")
 	require.NoError(t, err)
 
 	expectedSummary := `Name: test-bundle

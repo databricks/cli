@@ -15,11 +15,20 @@ Target: default
 Workspace:
   User: [USERNAME]
   Path: /Workspace/Users/[USERNAME]/.bundle/plan-summary-test/default
+Deployment:
+  ID:      [UUID]
+  Version: 1
 Resources:
   Jobs:
     test_job:
       Name: test-job
       URL:  [DATABRICKS_URL]/jobs/[NUMID]?w=[NUMID]
+
+>>> [CLI] bundle summary -o json
+{
+  "deployment_id": "[UUID]",
+  "version_id": "1"
+}
 
 >>> print_requests.py --get //bundle ^//workspace-files ^//import-file
 {
@@ -102,4 +111,20 @@ Resources:
     "page_size": "1000"
   },
   "body": null
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/bundle/deployments/[UUID]"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/bundle/deployments/[UUID]/resources",
+  "q": {
+    "page_size": "1000"
+  },
+  "body": null
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/bundle/deployments/[UUID]"
 }

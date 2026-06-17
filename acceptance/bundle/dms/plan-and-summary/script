@@ -7,6 +7,9 @@ trace $CLI bundle plan
 # Summary should show the deployment ID and read state from DMS.
 trace $CLI bundle summary
 
+# Summary in JSON mode exposes the deployment metadata for programmatic use.
+trace $CLI bundle summary -o json | jq .deployment
+
 # Print metadata service requests from plan and summary.
 # Both should include ListResources calls.
 trace print_requests.py --get //bundle ^//workspace-files ^//import-file
