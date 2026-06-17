@@ -1,0 +1,17 @@
+bundle:
+  name: registered-model-cascade-recreate
+
+resources:
+  schemas:
+    parent_schema:
+      name: myschema
+      catalog_name: main
+      storage_root: dbfs:/parent_storage_root_v1
+      comment: parent schema
+
+  registered_models:
+    child_model:
+      name: mymodel
+      catalog_name: main
+      schema_name: ${resources.schemas.parent_schema.name}
+      comment: child model

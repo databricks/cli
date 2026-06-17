@@ -1,0 +1,9 @@
+echo "*" > .gitignore
+trace $CLI bundle deploy
+
+title "Change schema's storage_root to trigger schema recreate"
+trace update_file.py databricks.yml "dbfs:/parent_storage_root_v1" "dbfs:/parent_storage_root_v2"
+
+title "Plan should recreate BOTH the schema and its dependent registered_model, but currently only the schema is recreated"
+trace $CLI bundle plan
+trace $CLI bundle plan --output json

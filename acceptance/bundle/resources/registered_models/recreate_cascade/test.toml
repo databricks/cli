@@ -1,0 +1,6 @@
+Local = true
+Cloud = false
+RecordRequests = false
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+
+Badness = "Recreating a parent resource (schema) should propagate Recreate to dependents (registered_model) that reference it, but the planner does not. The dependent plans Skip while the parent is deleted underneath it. On a real workspace this either fails the parent delete (children still attached) or orphans the child. Tracked as a framework-level fix in bundle/direct/bundle_plan.go."
