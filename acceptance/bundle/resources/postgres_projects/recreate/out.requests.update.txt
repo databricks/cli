@@ -3,11 +3,6 @@
   "path": "/api/2.0/postgres/[MY_PROJECT_ID]"
 }
 {
-  "method": "POST",
-  "path": "/api/2.0/postgres/projects",
-  "q": {
-    "project_id": "test-pg-new-[UNIQUE_NAME]"
-  },
   "body": {
     "spec": {
       "default_endpoint_settings": {
@@ -19,5 +14,10 @@
       "history_retention_duration": "604800s",
       "pg_version": 16
     }
+  },
+  "method": "POST",
+  "path": "/api/2.0/postgres/projects",
+  "q": {
+    "project_id": "test-pg-new-[UNIQUE_NAME]"
   }
 }

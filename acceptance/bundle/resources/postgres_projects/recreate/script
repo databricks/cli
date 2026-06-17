@@ -23,7 +23,13 @@ project_id_1=`read_id.py my_project`
 
 print_requests() {
     local name=$1
-    print_requests.py //postgres > out.requests.${name}.txt
+    # Keep jq here, not print_requests.py: the bundle name contains "postgres",
+    # so the state-file paths under .bundle/deploy-postgres-recreate/ also match
+    # a bare "postgres" filter. jq's contains("/postgres") matches only the API
+    # paths, and unlike print_requests.py's //postgres arg it isn't subject to
+    # Git-Bash/MSYS slash mangling on Windows. Matches the sibling recreate tests.
+    jq --sort-keys 'select(.method != "GET" and (.path | contains("/postgres")))' < out.requests.txt > out.requests.${name}.txt
+    rm -f out.requests.txt
 }
 
 print_requests create
