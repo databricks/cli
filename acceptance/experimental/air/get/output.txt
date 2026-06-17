@@ -21,7 +21,7 @@ Accelerators: 8x H100
   "data": {
     "run_id": "123",
     "status": "SUCCESS",
-    "started_at": "[TIMESTAMP]+00:00",
+    "started_at": "[TIMESTAMP]",
     "duration_seconds": 12,
     "attempt_number": 0,
     "experiment_name": "my-exp",
