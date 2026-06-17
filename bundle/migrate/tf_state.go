@@ -1,6 +1,7 @@
 package migrate
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -143,8 +144,12 @@ func LookupTFField(state TFStateAttrs, group, name string, fieldPath *structpath
 	// fields are stored as single-element arrays [{"field": "value"}], not as plain objects.
 	// Navigating via map avoids the json.Unmarshal type mismatch between []T in JSON and
 	// struct-typed schema fields.
+	// UseNumber preserves large integers exactly; plain Unmarshal into interface{} uses
+	// float64 which loses precision for integers beyond 2^53.
 	var attrs map[string]any
-	if err := json.Unmarshal(attrsJSON, &attrs); err != nil {
+	dec := json.NewDecoder(bytes.NewReader(attrsJSON))
+	dec.UseNumber()
+	if err := dec.Decode(&attrs); err != nil {
 		return nil, fmt.Errorf("cannot parse TF state for %s.%s: %w", tfType, name, err)
 	}
 

@@ -65,15 +65,16 @@ func runBuildStateFromTF(
 
 func TestBuildStateFromTF(t *testing.T) {
 	tests := []struct {
-		name      string
-		yaml      string
-		tfAttrs   migrate.TFStateAttrs
-		tfIDs     map[string]string
-		wantKey   string         // primary key to assert on
-		absentKey string         // key that must NOT be in state
-		wantID    string         // expected entry.ID
-		wantState map[string]any // expected fields in the state JSON
-		wantDeps  []deployplan.DependsOnEntry
+		name         string
+		yaml         string
+		tfAttrs      migrate.TFStateAttrs
+		tfIDs        map[string]string
+		wantKey      string         // primary key to assert on
+		absentKey    string         // key that must NOT be in state
+		wantID       string         // expected entry.ID
+		wantState    map[string]any // expected fields in the state JSON (parsed via json.Unmarshal)
+		wantStateRaw string         // expected substring in raw state JSON bytes (use for large integers)
+		wantDeps     []deployplan.DependsOnEntry
 	}{
 		{
 			name: "basic job stored with ID",
@@ -158,8 +159,41 @@ resources:
 			},
 			wantKey:   "resources.jobs.dst_job",
 			wantID:    "222",
-			wantState: map[string]any{"max_concurrent_runs": float64(4)}, // JSON numbers decode as float64
+			wantState: map[string]any{"max_concurrent_runs": float64(4)},
 			wantDeps:  []deployplan.DependsOnEntry{{Node: "resources.jobs.src_job"}},
+		},
+		{
+			// 2^53+1 = 9007199254740993 cannot be represented exactly as float64.
+			// json.Unmarshal into map[string]any would produce 9007199254740992 (off by one).
+			// UseNumber preserves the original decimal string, so the value is exact.
+			name: "large integer run_job_task.job_id preserved exactly",
+			yaml: `
+resources:
+  jobs:
+    trigger_job:
+      name: "trigger"
+    watcher_job:
+      name: "watcher"
+      tasks:
+        - task_key: run_trigger
+          run_job_task:
+            job_id: "${resources.jobs.trigger_job.id}"
+`,
+			tfAttrs: migrate.TFStateAttrs{
+				"databricks_job": {
+					"trigger_job": json.RawMessage(`{"id": "9007199254740993", "name": "trigger", "max_concurrent_runs": 1}`),
+					"watcher_job": json.RawMessage(`{"id": "100", "name": "watcher", "task": [{"task_key": "run_trigger", "run_job_task": [{"job_id": 9007199254740993}]}]}`),
+				},
+			},
+			tfIDs: map[string]string{
+				"resources.jobs.trigger_job": "9007199254740993",
+				"resources.jobs.watcher_job": "100",
+			},
+			wantKey: "resources.jobs.watcher_job",
+			wantID:  "100",
+			// job_id must be stored as 9007199254740993, not 9007199254740992 (float64 truncation).
+			// Check raw bytes because json.Unmarshal would silently re-truncate when reading back.
+			wantStateRaw: `"job_id": 9007199254740993`,
 		},
 		{
 			name: "dashboard etag stored from TF attributes",
@@ -199,6 +233,10 @@ resources:
 				for k, v := range tc.wantState {
 					assert.Equal(t, v, got[k], "state[%q]", k)
 				}
+			}
+
+			if tc.wantStateRaw != "" {
+				assert.Contains(t, string(entry.State), tc.wantStateRaw, "raw state JSON")
 			}
 
 			if tc.wantDeps != nil {
