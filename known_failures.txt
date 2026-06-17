@@ -45,11 +45,14 @@ acceptance TestAccept/ssh/connection
 # Broken vector search test. Needs fixing -
 * TestAccept/bundle/resources/vector_search_endpoints/drift/recreated_same_name
 
+# Recreate deletes the index then recreates it under the same name, but the backend
+# returns 400 INVALID_PARAMETER_VALUE "index is currently pending deletion" even after
+# WaitAfterDelete has polled GetIndex to a 404. Tracking the backend behavior with the
+# Vector Search team.
+* TestAccept/bundle/resources/vector_search_indexes/recreate/embedding_dimension/
+
 # Broken vector search index tests (slow). Needs fixing -
 * TestAccept/bundle/invariant/no_drift/DATABRICKS_BUNDLE_ENGINE=direct/INPUT_CONFIG=vector_search_index.yml.tmpl
-* TestAccept/bundle/resources/vector_search_indexes/basic/
-* TestAccept/bundle/resources/vector_search_indexes/grants/select/
-* TestAccept/bundle/resources/vector_search_indexes/recreate/index_type/
 
 # Need to convert to acceptance tests; terraform registry is not accessible from CI.
 * TestSparkJarTaskDeployAndRunOnVolumes
