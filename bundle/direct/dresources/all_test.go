@@ -1058,8 +1058,9 @@ func validateResourceConfig(t *testing.T, stateType reflect.Type, cfg *ResourceL
 // planner rejects any "update" action ("resource does not support update
 // action but plan produced update"), so a field a user can change must be
 // declared recreate_on_changes (or ignore_local_changes) to recreate instead.
-// An output-only field is fine under ignore_remote_changes because the user
-// never sets it, so it can never produce a user-driven change.
+// A provided_id_field also recreates on change (classifyIDField), so it counts
+// as covered too. An output-only field is fine under ignore_remote_changes
+// because the user never sets it, so it can never produce a user-driven change.
 //
 // The check walks the state type and fails on any uncovered scalar leaf. This
 // keeps the recreate_on_changes lists exhaustive as the SDK adds fields.
@@ -1077,15 +1078,18 @@ func TestNoUpdateResourcesCoverAllFields(t *testing.T) {
 			continue
 		}
 
-		// A user change is only neutralized by recreate_on_changes or
-		// ignore_local_changes; output-only fields are covered by
-		// ignore_remote_changes since the user never sets them.
+		// A user change is only neutralized by recreate_on_changes,
+		// provided_id_fields, or ignore_local_changes; output-only fields are
+		// covered by ignore_remote_changes since the user never sets them.
 		covered := map[string]bool{}
 		for _, cfg := range []*ResourceLifecycleConfig{adapter.ResourceConfig(), adapter.GeneratedResourceConfig()} {
 			if cfg == nil {
 				continue
 			}
 			for _, r := range cfg.RecreateOnChanges {
+				covered[r.Field.String()] = true
+			}
+			for _, r := range cfg.ProvidedIDFields {
 				covered[r.Field.String()] = true
 			}
 			for _, r := range cfg.IgnoreLocalChanges {
