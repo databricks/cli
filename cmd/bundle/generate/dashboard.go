@@ -525,13 +525,6 @@ bundle files automatically, useful during active dashboard development.`,
 	cmd.Flags().StringVar(&d.existingID, "existing-id", "", `ID of the dashboard to generate configuration for`)
 	cmd.Flags().StringVar(&d.resource, "resource", "", `resource key of dashboard to watch for changes`)
 
-	// Alias lookup flags that include the resource type name.
-	// Included for symmetry with the other generate commands, but we prefer the shorter flags.
-	cmd.Flags().StringVar(&d.existingPath, "existing-dashboard-path", "", `workspace path of the dashboard to generate configuration for`)
-	cmd.Flags().StringVar(&d.existingID, "existing-dashboard-id", "", `ID of the dashboard to generate configuration for`)
-	cmd.Flags().MarkHidden("existing-dashboard-path")
-	cmd.Flags().MarkHidden("existing-dashboard-id")
-
 	// Output flags.
 	cmd.Flags().StringVarP(&d.resourceDir, "resource-dir", "d", "resources", `directory to write the configuration to`)
 	cmd.Flags().StringVarP(&d.dashboardDir, "dashboard-dir", "s", "src", `directory to write the dashboard representation to`)

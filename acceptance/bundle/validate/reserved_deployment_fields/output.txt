@@ -1,0 +1,27 @@
+
+>>> [CLI] bundle validate
+Error: deployment_id must not be set in bundle configuration; it is managed by Declarative Automation Bundles
+  at resources.jobs.my_job.deployment.deployment_id
+  in databricks.yml:10:24
+
+Error: version_id must not be set in bundle configuration; it is managed by Declarative Automation Bundles
+  at resources.jobs.my_job.deployment.version_id
+  in databricks.yml:11:21
+
+Error: deployment_id must not be set in bundle configuration; it is managed by Declarative Automation Bundles
+  at resources.pipelines.my_pipeline.deployment.deployment_id
+  in databricks.yml:17:24
+
+Error: version_id must not be set in bundle configuration; it is managed by Declarative Automation Bundles
+  at resources.pipelines.my_pipeline.deployment.version_id
+  in databricks.yml:18:21
+
+Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Found 4 errors
+
+Exit code: 1

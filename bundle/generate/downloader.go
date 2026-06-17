@@ -321,9 +321,8 @@ func (n *Downloader) FlushToDisk(ctx context.Context, force bool) error {
 			if err != nil {
 				return err
 			}
-			defer file.Close()
 
-			_, err = io.Copy(file, reader)
+			err = writeAndClose(file, reader)
 			if err != nil {
 				return err
 			}
@@ -334,6 +333,18 @@ func (n *Downloader) FlushToDisk(ctx context.Context, force bool) error {
 	}
 
 	return errs.Wait()
+}
+
+// writeAndClose copies src into dst and closes dst. A copy error takes
+// precedence; otherwise the Close error is returned because a failed Close
+// can mean buffered writes were lost and the file is truncated.
+func writeAndClose(dst io.WriteCloser, src io.Reader) error {
+	_, err := io.Copy(dst, src)
+	cerr := dst.Close()
+	if err == nil {
+		err = cerr
+	}
+	return err
 }
 
 func NewDownloader(w *databricks.WorkspaceClient, sourceDir, configDir string) *Downloader {

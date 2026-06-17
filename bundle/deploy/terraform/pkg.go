@@ -131,6 +131,7 @@ var GroupToTerraformName = map[string]string{
 	"postgres_endpoints":      "databricks_postgres_endpoint",
 	"postgres_catalogs":       "databricks_postgres_catalog",
 	"postgres_synced_tables":  "databricks_postgres_synced_table",
+	"postgres_roles":          "databricks_postgres_role",
 
 	// 3 level groups: resources.*.GROUP
 	"permissions": "databricks_permissions",

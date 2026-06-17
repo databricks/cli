@@ -48,6 +48,12 @@ func InitContext(ctx context.Context) context.Context {
 	if ok {
 		panic("internal error: must not call InitContext() twice")
 	}
+	return IsolatedContext(ctx)
+}
+
+// IsolatedContext returns a child context with a fresh diagnostics state;
+// diagnostics logged through it do not affect the parent's.
+func IsolatedContext(ctx context.Context) context.Context {
 	val := LogDiagData{
 		TargetSeverity: 255,
 		mu:             &sync.Mutex{},

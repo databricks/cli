@@ -23,7 +23,7 @@ func (f *folderPermissions) Apply(ctx context.Context, b *bundle.Bundle) diag.Di
 		return nil
 	}
 
-	bundlePaths := paths.CollectUniqueWorkspacePathPrefixes(b.Config.Workspace)
+	bundlePaths := paths.CollectUniqueWorkspacePathPrefixes(b.Config.Workspace).Paths
 
 	var diags diag.Diagnostics
 	g, ctx := errgroup.WithContext(ctx)
