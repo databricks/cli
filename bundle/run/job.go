@@ -14,6 +14,7 @@ import (
 	"github.com/databricks/cli/bundle/run/progress"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
@@ -96,8 +97,9 @@ func (m *jobRunMonitor) onProgress(info *jobs.Run) {
 
 	// First time we see this run.
 	if m.prevState == nil {
-		log.Infof(m.ctx, "Run available at %s", info.RunPageUrl)
-		cmdio.Log(m.ctx, progress.NewJobRunUrlEvent(info.RunPageUrl))
+		runURL := runPageURL(m.ctx, info.RunPageUrl)
+		log.Infof(m.ctx, "Run available at %s", runURL)
+		cmdio.Log(m.ctx, progress.NewJobRunUrlEvent(runURL))
 	}
 
 	// No state change: do not log.
@@ -120,6 +122,20 @@ func (m *jobRunMonitor) onProgress(info *jobs.Run) {
 	}
 	cmdio.Log(m.ctx, event)
 	log.Info(m.ctx, event.String())
+}
+
+// runPageURL converts the legacy run URL returned by the Jobs API into the
+// modern path form so that non-admin users permitted to view the run are not
+// redirected to the workspace homepage. See
+// https://github.com/databricks/cli/issues/5142. The conversion is cosmetic, so
+// the original URL is returned on the rare chance the format is unexpected.
+func runPageURL(ctx context.Context, raw string) string {
+	modern, err := workspaceurls.JobRunURL(raw)
+	if err != nil {
+		log.Debugf(ctx, "could not convert run URL to modern form: %v", err)
+		return raw
+	}
+	return modern
 }
 
 func (r *jobRunner) Run(ctx context.Context, opts *Options) (output.RunOutput, error) {
@@ -160,7 +176,7 @@ func (r *jobRunner) Run(ctx context.Context, opts *Options) (output.RunOutput, e
 		if err != nil {
 			return nil, err
 		}
-		cmdio.Log(ctx, progress.NewJobRunUrlEvent(details.RunPageUrl))
+		cmdio.Log(ctx, progress.NewJobRunUrlEvent(runPageURL(ctx, details.RunPageUrl)))
 		return nil, nil
 	}
 
