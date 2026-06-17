@@ -91,6 +91,12 @@ acceptance/cmd/fs/cp/file-to-dir/
 
 If the only reason for divergence is a server-side default that one engine sets and the other doesn't, set the field explicitly in `databricks.yml` so both engines produce identical output. Don't paper over it with per-engine files.
 
+**RULE: On Windows, Git Bash auto-converts a leading-`/` path argument (e.g. `/api/2.0/...`) into a Windows path, so `$CLI` sees the wrong path and the testserver 404s.** Set `MSYS_NO_PATHCONV = "1"` in the test directory's `test.toml` under `[Env]`. Quoting the argument in bash does NOT help — the conversion is done by the Windows binary's argument processing. Precedent: `acceptance/cmd/workspace/export-dir-*/test.toml`.
+
+**RULE: `EnvMatrix.<VAR> = []` removes that variable from the inherited matrix** (see `ExpandEnvMatrix` in `acceptance/internal/config.go`). The root `test.toml` matrixes `DATABRICKS_BUNDLE_ENGINE = [terraform, direct]`, so a non-bundle test opts out of both engine runs with `EnvMatrix.DATABRICKS_BUNDLE_ENGINE = []`. The `out.test.toml` snapshot of inherited values is generated and committed by design.
+
+**RULE: If a test's `out.test.toml` is still in the older `[EnvMatrix]` block format, a regen rewrites it to the inline form and the post-test `git diff --exit-code` check fails** ("out.test.toml files that are out of date"). Regenerate just those files with `go test ./acceptance -run "^TestAccept$" -only-out-test-toml`, then commit.
+
 ### Reference
 
 - Tests live in `acceptance/` with a nested directory structure.
