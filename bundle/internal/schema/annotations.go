@@ -27,7 +27,6 @@ type annotationHandler struct {
 // Adds annotations to the JSON schema reading from the annotation files.
 // More details https://json-schema.org/understanding-json-schema/reference/annotations
 func newAnnotationHandler(extracted, fromFile annotation.File) (*annotationHandler, error) {
-	dropShadowingPlaceholders(fromFile, extracted)
 	merged, err := mergeAnnotationFiles(extracted, fromFile)
 	if err != nil {
 		return nil, err

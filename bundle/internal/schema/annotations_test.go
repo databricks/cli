@@ -133,7 +133,7 @@ func TestDropShadowingPlaceholders(t *testing.T) {
 
 // A stale placeholder must not swallow the upstream description in the merged
 // view the schema is generated from.
-func TestNewAnnotationHandlerResolvesShadowedDescriptions(t *testing.T) {
+func TestStalePlaceholderDoesNotShadowMergedDescription(t *testing.T) {
 	extracted := annotation.File{
 		testTypePath: {Fields: map[string]annotation.Descriptor{"field": {Description: "upstream description"}}},
 	}
@@ -141,6 +141,7 @@ func TestNewAnnotationHandlerResolvesShadowedDescriptions(t *testing.T) {
 		testTypePath: {Fields: map[string]annotation.Descriptor{"field": {Description: annotation.Placeholder, DeprecationMessage: "deprecated"}}},
 	}
 
+	dropShadowingPlaceholders(fromFile, extracted)
 	h, err := newAnnotationHandler(extracted, fromFile)
 	require.NoError(t, err)
 
