@@ -200,6 +200,9 @@ class Task:
     """
 
     health: VariableOrOptional[JobsHealthRules] = None
+    """
+    An optional set of health rules that can be defined for this job.
+    """
 
     job_cluster_key: VariableOrOptional[str] = None
     """
@@ -422,6 +425,9 @@ class TaskDict(TypedDict, total=False):
     """
 
     health: VariableOrOptional[JobsHealthRulesParam]
+    """
+    An optional set of health rules that can be defined for this job.
+    """
 
     job_cluster_key: VariableOrOptional[str]
     """

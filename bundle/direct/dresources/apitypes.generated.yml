@@ -32,6 +32,8 @@ postgres_branches: postgres.BranchSpec
 
 postgres_catalogs: postgres.CatalogCatalogSpec
 
+postgres_databases: postgres.DatabaseDatabaseStatus
+
 postgres_endpoints: postgres.EndpointSpec
 
 postgres_projects: postgres.ProjectStatus

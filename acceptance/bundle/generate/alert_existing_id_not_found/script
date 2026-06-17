@@ -1,2 +1,2 @@
 # Test that bundle generate alert fails when the existing ID is not found
-trace errcode $CLI bundle generate alert --existing-id f00dcafe
+trace musterr $CLI bundle generate alert --existing-id f00dcafe

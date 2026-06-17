@@ -14,4 +14,4 @@ unset DATABRICKS_HOST
 unset DATABRICKS_TOKEN
 
 # No workspace-compatible profiles → original multi-profile error returned.
-errcode trace $CLI bundle validate
+musterr trace $CLI bundle validate

@@ -223,6 +223,8 @@ var RequiredFields = map[string][]string{
 
 	"resources.postgres_catalogs.*": {"postgres_database", "catalog_id"},
 
+	"resources.postgres_databases.*": {"database_id", "parent"},
+
 	"resources.postgres_endpoints.*":       {"endpoint_type", "endpoint_id", "parent"},
 	"resources.postgres_endpoints.*.group": {"max", "min"},
 

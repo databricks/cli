@@ -25,6 +25,29 @@ func createTestPipeline(t *testing.T, workspace *FakeWorkspace) string {
 	return createPipelineResponse.PipelineId
 }
 
+func TestPipelineCreate_RejectsDottedTargetSchemaName(t *testing.T) {
+	workspace := NewFakeWorkspace("http://test", "dbapi123")
+
+	response := workspace.PipelineCreate(Request{
+		Body: []byte(`{"name": "p", "catalog": "main", "target": "main.test_schema"}`),
+	})
+	assert.Equal(t, 400, response.StatusCode)
+
+	body, ok := response.Body.(map[string]string)
+	require.True(t, ok)
+	assert.Equal(t, "INVALID_PARAMETER_VALUE", body["error_code"])
+	assert.Contains(t, body["message"], `target_schema_name "main.test_schema"`)
+}
+
+func TestPipelineCreate_AllowsSingleSegmentTargetSchemaName(t *testing.T) {
+	workspace := NewFakeWorkspace("http://test", "dbapi123")
+
+	response := workspace.PipelineCreate(Request{
+		Body: []byte(`{"name": "p", "catalog": "main", "target": "test_schema"}`),
+	})
+	assert.Equal(t, 0, response.StatusCode)
+}
+
 func TestPipelineStartUpdate_HandlesNonExistentPipeline(t *testing.T) {
 	workspace := NewFakeWorkspace("http://test", "dbapi123")
 
