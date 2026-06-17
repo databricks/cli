@@ -10,12 +10,13 @@ import (
 // to Terraform naming conventions for the given resource group.
 //
 // It is the inverse of TerraformPathToDABs. For groups whose TF schema wraps config fields
-// under a structural prefix (e.g. "spec"), that prefix is prepended unless the path's first
-// segment is a root-level TF field (listed in DABsToTerraformRootFields). Each field name
-// segment is looked up in the DABsToTerraformRenameMap: when found the TF name is used and
-// the tree descends for the remainder of the path. Array indices pass through unchanged
-// without advancing the tree position. An unrecognised segment stops further renaming;
-// remaining segments are kept as-is. Returns nil when path is nil.
+// under a structural prefix (e.g. "spec"), that prefix is prepended when the path's first
+// segment is listed in DABsToTerraformWrapperFields. Root-level fields and unrecognised
+// segments pass through without the wrapper. Each field name segment is looked up in the
+// DABsToTerraformRenameMap: when found the TF name is used and the tree descends for the
+// remainder of the path. Array indices pass through unchanged without advancing the tree
+// position. An unrecognised segment stops further renaming; remaining segments are kept
+// as-is. Returns nil when path is nil.
 // Returns an error when path is a known DABs-only field with no Terraform equivalent.
 //
 // The path must be relative to the resource root (e.g. "tasks", not
@@ -29,14 +30,14 @@ func DABsPathToTerraform(group string, path *structpath.PathNode) (*structpath.P
 		return nil, fmt.Errorf("%s: %q is a DABs-only field with no Terraform equivalent", group, path)
 	}
 
-	// For groups with a TF wrapper, prepend it only when the first segment is not a
-	// root-level TF field. Root-level fields and pass-through unknowns bypass the wrapper.
+	// For groups with a TF wrapper, prepend it only when the first segment is a known
+	// spec field. Unknown paths (root-level outputs, unrecognised segments) pass through unchanged.
 	var result *structpath.PathNode
 	if wrapper, ok := DABsToTerraformWrappers[group]; ok {
 		segs := path.AsSlice()
 		if len(segs) > 0 {
 			if firstKey, ok := segs[0].StringKey(); ok {
-				if _, isRoot := DABsToTerraformRootFields[group][firstKey]; !isRoot {
+				if _, isWrapped := DABsToTerraformWrapperFields[group][firstKey]; isWrapped {
 					result = structpath.NewDotString(nil, wrapper)
 				}
 			}

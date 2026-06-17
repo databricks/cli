@@ -83,7 +83,7 @@ type groupResult struct {
 	dabsOnly        map[string]bool   // DABs clean paths with no Terraform equivalent
 	tfOnly          map[string]bool   // TF clean paths with no DABs equivalent
 	matchCount      int               // used for stats output only, not written to generated.go
-	tfRootFirstSegs map[string]bool   // first-level TF field names not under any wrapper (only set when unwraps is non-empty)
+	tfWrapperFirstSegs map[string]bool   // first-level DABs field names that go under the wrapper (only set when unwraps is non-empty)
 }
 
 func buildAll() ([]groupResult, error) {
@@ -249,18 +249,17 @@ func buildGroup(group string, adapter *dresources.Adapter) (groupResult, error) 
 		res.unwraps = append(res.unwraps, wrapper)
 	}
 
-	// Collect root-level TF field first segments for groups with wrappers.
-	// These are top-level TF field names NOT under any confirmed wrapper.
+	// Collect first-level DABs field names that go under the wrapper for groups with wrappers.
 	if len(res.unwraps) > 0 {
-		unwrapSet := make(map[string]bool)
-		for _, w := range res.unwraps {
-			unwrapSet[w] = true
-		}
-		res.tfRootFirstSegs = make(map[string]bool)
-		for tf := range tfFields {
-			head := topSegment(tf)
-			if !tfKnownFields[head] && !unwrapSet[head] {
-				res.tfRootFirstSegs[head] = true
+		res.tfWrapperFirstSegs = make(map[string]bool)
+		for _, wrapper := range res.unwraps {
+			prefix := wrapper + "."
+			for tf := range tfFields {
+				if matchedTF[tf] {
+					if after, ok := strings.CutPrefix(tf, prefix); ok {
+						res.tfWrapperFirstSegs[topSegment(after)] = true
+					}
+				}
 			}
 		}
 	}
@@ -482,16 +481,16 @@ func renderSource(results []groupResult) ([]byte, error) {
 	}
 	w("}\n\n")
 
-	w("// DABsToTerraformRootFields maps DABs group name → first-level TF field names at the\n")
-	w("// resource root (not under any wrapper). For wrapper groups, a DABs path whose first\n")
-	w("// segment is in this set bypasses the wrapper prepend in DABsPathToTerraform.\n")
-	w("var DABsToTerraformRootFields = map[string]FieldSet{\n")
+	w("// DABsToTerraformWrapperFields maps DABs group name → first-level DABs field names that\n")
+	w("// live under the TF wrapper. For wrapper groups, a DABs path is prefixed with the wrapper\n")
+	w("// in DABsPathToTerraform only when its first segment appears here.\n")
+	w("var DABsToTerraformWrapperFields = map[string]FieldSet{\n")
 	for _, r := range results {
-		if !r.hasTFType || len(r.tfRootFirstSegs) == 0 {
+		if !r.hasTFType || len(r.tfWrapperFirstSegs) == 0 {
 			continue
 		}
 		w("\t%q: {\n", r.group)
-		for _, key := range slices.Sorted(maps.Keys(r.tfRootFirstSegs)) {
+		for _, key := range slices.Sorted(maps.Keys(r.tfWrapperFirstSegs)) {
 			w("\t\t%q: {},\n", key)
 		}
 		w("\t},\n")
