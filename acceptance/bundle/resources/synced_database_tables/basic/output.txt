@@ -21,7 +21,7 @@ Resources:
   Synced database tables:
     my_synced_table:
       Name: ${resources.database_catalogs.my_catalog.name}.${resources.database_catalogs.my_catalog.database_name}.my_synced_table
-      URL:  [DATABRICKS_URL]/explore/data/$%7Bresources.database_catalogs.my_catalog.name%7D.$%7Bresources.database_catalogs.my_catalog.database_name%7D.my_synced_table
+      URL:  (not deployed)
 
 >>> [CLI] bundle validate
 Name: deploy-lakebase-synced-table-[UNIQUE_NAME]
