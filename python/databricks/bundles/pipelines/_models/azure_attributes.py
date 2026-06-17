@@ -24,6 +24,26 @@ class AzureAttributes:
     """
 
     availability: VariableOrOptional[AzureAvailability] = None
+    """
+    Availability type used for all subsequent nodes past the `first_on_demand` ones.
+    Note: If `first_on_demand` is zero, this availability
+    type will be used for the entire cluster.
+    """
+
+    capacity_reservation_group: VariableOrOptional[str] = None
+    """
+    [Public Preview] The Azure capacity reservation group resource ID to use for launching VMs.
+    When specified, VMs will be launched using the provided capacity reservation.
+    
+    Capacity reservations can only be specified when the workspace uses injected vnet (i.e. customer defined vnet not
+    managed by databricks). Ensure the databricks-login-prod Enterprise Application is granted the following four permissions:
+    1. Microsoft.Compute/capacityReservationGroups/read
+    2. Microsoft.Compute/capacityReservationGroups/deploy/action
+    3. Microsoft.Compute/capacityReservationGroups/capacityReservations/read
+    4. Microsoft.Compute/capacityReservationGroups/capacityReservations/deploy/action
+    
+    Format: `/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Compute/capacityReservationGroups/{capacityReservationGroupName}`
+    """
 
     first_on_demand: VariableOrOptional[int] = None
     """
@@ -61,6 +81,26 @@ class AzureAttributesDict(TypedDict, total=False):
     """"""
 
     availability: VariableOrOptional[AzureAvailabilityParam]
+    """
+    Availability type used for all subsequent nodes past the `first_on_demand` ones.
+    Note: If `first_on_demand` is zero, this availability
+    type will be used for the entire cluster.
+    """
+
+    capacity_reservation_group: VariableOrOptional[str]
+    """
+    [Public Preview] The Azure capacity reservation group resource ID to use for launching VMs.
+    When specified, VMs will be launched using the provided capacity reservation.
+    
+    Capacity reservations can only be specified when the workspace uses injected vnet (i.e. customer defined vnet not
+    managed by databricks). Ensure the databricks-login-prod Enterprise Application is granted the following four permissions:
+    1. Microsoft.Compute/capacityReservationGroups/read
+    2. Microsoft.Compute/capacityReservationGroups/deploy/action
+    3. Microsoft.Compute/capacityReservationGroups/capacityReservations/read
+    4. Microsoft.Compute/capacityReservationGroups/capacityReservations/deploy/action
+    
+    Format: `/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Compute/capacityReservationGroups/{capacityReservationGroupName}`
+    """
 
     first_on_demand: VariableOrOptional[int]
     """

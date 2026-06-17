@@ -1,44 +1,32 @@
 package annotation
 
-import (
-	"bytes"
-	"os"
+// TypeAnnotation holds the documentation for one Go type. Self documents the
+// type itself — it is applied to the type's JSON-schema $defs entry and is
+// where enum values live — and Fields documents each of the type's fields by
+// JSON name.
+type TypeAnnotation struct {
+	Self   Descriptor            `json:"type,omitempty"`
+	Fields map[string]Descriptor `json:"fields,omitempty"`
+}
 
-	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/convert"
-	"github.com/databricks/cli/libs/dyn/merge"
-	"github.com/databricks/cli/libs/dyn/yamlloader"
-)
+// File is the in-memory annotations, keyed by Go type path, e.g.
+// "github.com/databricks/cli/bundle/config.Bundle".
+type File map[string]TypeAnnotation
 
-// Parsed file with annotations, expected format:
-// github.com/databricks/cli/bundle/config.Bundle:
-//
-//	cluster_id:
-//	   description: "Description"
-type File map[string]map[string]Descriptor
-
-func LoadAndMerge(sources []string) (File, error) {
-	prev := dyn.NilValue
-	for _, path := range sources {
-		b, err := os.ReadFile(path)
-		if err != nil {
-			return nil, err
-		}
-		generated, err := yamlloader.LoadYAML(path, bytes.NewBuffer(b))
-		if err != nil {
-			return nil, err
-		}
-		prev, err = merge.Merge(prev, generated)
-		if err != nil {
-			return nil, err
-		}
+// SetField stores a descriptor for a field of typeKey, allocating the entry
+// and its field map as needed.
+func (f File) SetField(typeKey, name string, d Descriptor) {
+	ta := f[typeKey]
+	if ta.Fields == nil {
+		ta.Fields = map[string]Descriptor{}
 	}
+	ta.Fields[name] = d
+	f[typeKey] = ta
+}
 
-	var data File
-
-	err := convert.ToTyped(&data, prev)
-	if err != nil {
-		return nil, err
-	}
-	return data, nil
+// SetSelf stores the descriptor for the type itself.
+func (f File) SetSelf(typeKey string, d Descriptor) {
+	ta := f[typeKey]
+	ta.Self = d
+	f[typeKey] = ta
 }

@@ -1,0 +1,46 @@
+{
+  "depends_on": [
+    {
+      "node": "resources.postgres_branches.main",
+      "label": "${resources.postgres_branches.main.id}"
+    },
+    {
+      "node": "resources.postgres_roles.owner",
+      "label": "${resources.postgres_roles.owner.id}"
+    }
+  ],
+  "action": "update",
+  "new_state": {
+    "value": {
+      "database_id": "my-database",
+      "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
+      "postgres_database": "initial_db_name",
+      "role": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/app-owner"
+    }
+  },
+  "remote_state": {
+    "create_time": "[TIMESTAMP]",
+    "database_id": "my-database",
+    "name": "[MY_DATABASE_ID]",
+    "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
+    "status": {
+      "database_id": "my-database",
+      "postgres_database": "renamed_db_name",
+      "role": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/app-owner"
+    },
+    "update_time": "[TIMESTAMP]"
+  },
+  "changes": {
+    "postgres_database": {
+      "action": "update",
+      "old": "renamed_db_name",
+      "new": "initial_db_name"
+    },
+    "role": {
+      "action": "skip",
+      "reason": "spec:input_only",
+      "old": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/app-owner",
+      "new": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/app-owner"
+    }
+  }
+}

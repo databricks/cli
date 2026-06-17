@@ -800,8 +800,9 @@ func runTest(t *testing.T,
 			// it immediately clear which test caused the internet access.
 			proxyURL = internal.StartRejectingProxy(t, "")
 		}
-		// Only block HTTPS: the local test server is plain HTTP (http://127.0.0.1:PORT)
-		// so HTTP_PROXY would intercept its traffic. All real external calls use HTTPS.
+		// Block both HTTP and HTTPS external traffic. NO_PROXY below exempts the
+		// local test server (http://127.0.0.1:PORT) so its traffic is not intercepted.
+		cmd.Env = append(cmd.Env, "HTTP_PROXY="+proxyURL)
 		cmd.Env = append(cmd.Env, "HTTPS_PROXY="+proxyURL)
 		// Python's urllib does not automatically bypass the proxy for loopback
 		// addresses the way Go does, so the test-server helper scripts

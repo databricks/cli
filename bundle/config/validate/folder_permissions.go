@@ -23,7 +23,7 @@ func (f *folderPermissions) Apply(ctx context.Context, b *bundle.Bundle) diag.Di
 		return nil
 	}
 
-	bundlePaths := paths.CollectUniqueWorkspacePathPrefixes(b.Config.Workspace)
+	bundlePaths := paths.CollectUniqueWorkspacePathPrefixes(b.Config.Workspace).Paths
 
 	var diags diag.Diagnostics
 	g, ctx := errgroup.WithContext(ctx)
@@ -73,7 +73,7 @@ func checkFolderPermission(ctx context.Context, b *bundle.Bundle, folderPath str
 
 func getClosestExistingObject(ctx context.Context, w workspace.WorkspaceInterface, folderPath string) (*workspace.ObjectInfo, error) {
 	for {
-		obj, err := w.GetStatusByPath(ctx, folderPath) //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
+		obj, err := w.GetStatusByPath(ctx, folderPath)
 		if err == nil {
 			return obj, nil
 		}

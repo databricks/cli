@@ -42,13 +42,11 @@ Deployment complete!
 >>> print_requests.py //sql/warehouses
 {
   "method": "POST",
-  "path": "/api/2.0/sql/warehouses/[WAREHOUSE_ID]/stop",
-  "body": {}
+  "path": "/api/2.0/sql/warehouses/[WAREHOUSE_ID]/stop"
 }
 {
   "method": "POST",
-  "path": "/api/2.0/sql/warehouses/[WAREHOUSE_ID]/start",
-  "body": {}
+  "path": "/api/2.0/sql/warehouses/[WAREHOUSE_ID]/start"
 }
 
 >>> errcode [CLI] warehouses get [WAREHOUSE_ID]
@@ -69,8 +67,7 @@ Deployment complete!
 >>> print_requests.py //sql/warehouses
 {
   "method": "POST",
-  "path": "/api/2.0/sql/warehouses/[WAREHOUSE_ID]/stop",
-  "body": {}
+  "path": "/api/2.0/sql/warehouses/[WAREHOUSE_ID]/stop"
 }
 
 >>> errcode [CLI] warehouses get [WAREHOUSE_ID]
@@ -88,8 +85,7 @@ Deployment complete!
 >>> print_requests.py //sql/warehouses
 {
   "method": "POST",
-  "path": "/api/2.0/sql/warehouses/[WAREHOUSE_ID]/start",
-  "body": {}
+  "path": "/api/2.0/sql/warehouses/[WAREHOUSE_ID]/start"
 }
 
 >>> errcode [CLI] warehouses get [WAREHOUSE_ID]

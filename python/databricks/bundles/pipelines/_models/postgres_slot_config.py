@@ -17,12 +17,12 @@ class PostgresSlotConfig:
 
     publication_name: VariableOrOptional[str] = None
     """
-    The name of the publication to use for the Postgres source
+    [Public Preview] The name of the publication to use for the Postgres source
     """
 
     slot_name: VariableOrOptional[str] = None
     """
-    The name of the logical replication slot to use for the Postgres source
+    [Public Preview] The name of the logical replication slot to use for the Postgres source
     """
 
     @classmethod
@@ -38,12 +38,12 @@ class PostgresSlotConfigDict(TypedDict, total=False):
 
     publication_name: VariableOrOptional[str]
     """
-    The name of the publication to use for the Postgres source
+    [Public Preview] The name of the publication to use for the Postgres source
     """
 
     slot_name: VariableOrOptional[str]
     """
-    The name of the logical replication slot to use for the Postgres source
+    [Public Preview] The name of the logical replication slot to use for the Postgres source
     """
 
 

@@ -172,8 +172,10 @@ type FakeWorkspace struct {
 
 	PostgresProjects     map[string]postgres.Project
 	PostgresBranches     map[string]postgres.Branch
-	PostgresEndpoints    map[string]postgres.Endpoint
 	PostgresCatalogs     map[string]postgres.Catalog
+	PostgresDatabases    map[string]postgres.Database
+	PostgresEndpoints    map[string]postgres.Endpoint
+	PostgresRoles        map[string]postgres.Role
 	PostgresSyncedTables map[string]postgres.SyncedTable
 	PostgresOperations   map[string]postgres.Operation
 
@@ -311,8 +313,10 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		SyncedDatabaseTables:      map[string]database.SyncedDatabaseTable{},
 		PostgresProjects:          map[string]postgres.Project{},
 		PostgresBranches:          map[string]postgres.Branch{},
-		PostgresEndpoints:         map[string]postgres.Endpoint{},
 		PostgresCatalogs:          map[string]postgres.Catalog{},
+		PostgresDatabases:         map[string]postgres.Database{},
+		PostgresEndpoints:         map[string]postgres.Endpoint{},
+		PostgresRoles:             map[string]postgres.Role{},
 		PostgresSyncedTables:      map[string]postgres.SyncedTable{},
 		PostgresOperations:        map[string]postgres.Operation{},
 		postgresImplicitBranches:  map[string]bool{},

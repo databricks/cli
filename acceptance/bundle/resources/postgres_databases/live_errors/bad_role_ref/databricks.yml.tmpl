@@ -1,0 +1,28 @@
+bundle:
+  name: bad-role-ref-$UNIQUE_NAME
+
+sync:
+  paths: []
+
+resources:
+  postgres_projects:
+    my_project:
+      project_id: test-pg-proj-$UNIQUE_NAME
+      display_name: "Bad role-ref error test"
+      pg_version: 16
+      history_retention_duration: "604800s"
+
+  postgres_branches:
+    main:
+      parent: ${resources.postgres_projects.my_project.id}
+      branch_id: main
+      no_expiry: true
+
+  postgres_databases:
+    my_database:
+      parent: ${resources.postgres_branches.main.id}
+      database_id: my-database
+      postgres_database: app_db
+      # The referenced role is never declared anywhere; the live API
+      # rejects database creation with "role not found".
+      role: ${resources.postgres_branches.main.id}/roles/does-not-exist
