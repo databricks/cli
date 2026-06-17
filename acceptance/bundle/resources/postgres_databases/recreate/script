@@ -37,6 +37,10 @@ envsubst < databricks.yml.tmpl | sed "s/DATABASE_ID_PLACEHOLDER/test-database-${
 trace cat databricks.yml
 
 trace $CLI bundle plan
+
+title "Recreate requires approval: non-interactive deploy must abort, not silently delete the database"
+trace errcode $CLI bundle deploy
+
 trace $CLI bundle deploy --auto-approve
 
 trace print_requests

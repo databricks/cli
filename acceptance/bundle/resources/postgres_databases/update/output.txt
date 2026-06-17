@@ -159,6 +159,10 @@ This action will result in the deletion of the following Lakebase branches.
 All data stored in them will be permanently lost:
   delete resources.postgres_branches.main
 
+This action will result in the deletion of the following Lakebase databases.
+All data stored in them will be permanently lost:
+  delete resources.postgres_databases.my_database
+
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/update-postgres-database-[UNIQUE_NAME]/default
 
 Deleting files...

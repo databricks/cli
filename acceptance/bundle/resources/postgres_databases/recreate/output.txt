@@ -112,8 +112,26 @@ recreate postgres_databases.my_database
 
 Plan: 1 to add, 0 to change, 1 to delete, 3 unchanged
 
+=== Recreate requires approval: non-interactive deploy must abort, not silently delete the database
+>>> errcode [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-database-recreate-[UNIQUE_NAME]/default/files...
+
+This action will result in the deletion or recreation of the following Lakebase databases.
+All data stored in them will be permanently lost:
+  recreate resources.postgres_databases.my_database
+Error: the deployment requires destructive actions, but the current console does not support prompting.
+Deleting data assets such as schemas, pipelines, or volumes may cause permanent data loss and should be carefully reviewed.
+To proceed, use --auto-approve after reviewing the plan above.
+
+
+Exit code: 1
+
 >>> [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-database-recreate-[UNIQUE_NAME]/default/files...
+
+This action will result in the deletion or recreation of the following Lakebase databases.
+All data stored in them will be permanently lost:
+  recreate resources.postgres_databases.my_database
 Deploying resources...
 Updating deployment state...
 Deployment complete!
@@ -162,6 +180,10 @@ all their branches, databases, and endpoints. All data stored in them will be pe
 This action will result in the deletion of the following Lakebase branches.
 All data stored in them will be permanently lost:
   delete resources.postgres_branches.main
+
+This action will result in the deletion of the following Lakebase databases.
+All data stored in them will be permanently lost:
+  delete resources.postgres_databases.my_database
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-database-recreate-[UNIQUE_NAME]/default
 
