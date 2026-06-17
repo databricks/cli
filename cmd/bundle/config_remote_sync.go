@@ -79,7 +79,7 @@ Examples:
 					}
 					return fmt.Errorf("failed to detect changes: %w", err)
 				}
-				stats.CollectChangeStats(changes)
+				stats.CollectChangeStats(ctx, changes)
 
 				fieldChanges, err := configsync.ResolveChanges(ctx, b, changes)
 				if err != nil {

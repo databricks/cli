@@ -52,11 +52,9 @@ var varPrefix = dyn.NewPath(dyn.Key("var"))
 // strings — enabling correct sibling lookup even for sequences split across
 // files via target overrides.
 // Restoration counts by mechanism are accumulated into stats (used for
-// telemetry); pass nil when counters are not needed.
+// telemetry); pass nil when counters are not needed (the counter methods are
+// nil-safe).
 func RestoreVariableReferences(ctx context.Context, b *bundle.Bundle, fieldChanges []FieldChange, stats *RestoreStats) error {
-	if stats == nil {
-		stats = &RestoreStats{}
-	}
 	preResolved := loadPreResolvedConfig(ctx, b)
 	if !preResolved.IsValid() {
 		return errors.New("pre-resolved config unavailable; variable-backed fields will be hardcoded")
@@ -249,7 +247,7 @@ func restoreOriginalRefs(value any, preResolved, resolved dyn.Value, stats *Rest
 		}
 		if isPureVarRef(preResolved) {
 			if ref, ok := matchAnyVariable(value, resolved); ok {
-				stats.Retargeted++
+				stats.incRetargeted()
 				return ref
 			}
 		}
@@ -331,7 +329,7 @@ func restoreFromSiblingsAt(value any, siblings []dyn.Value, resolved dyn.Value, 
 		}
 		if len(refs) == 1 {
 			for ref := range refs {
-				stats.FromSiblings++
+				stats.incFromSiblings()
 				return ref
 			}
 		}

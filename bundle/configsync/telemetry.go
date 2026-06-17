@@ -8,10 +8,20 @@ import (
 
 	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/direct/dresources"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
 )
+
+// recoverTelemetry swallows any panic raised while collecting or emitting
+// telemetry. Telemetry is best-effort and must never fail the command, so every
+// telemetry entry point that runs in the command path defers this.
+func recoverTelemetry(ctx context.Context) {
+	if r := recover(); r != nil {
+		log.Debugf(ctx, "config-remote-sync telemetry panicked and was skipped: %v", r)
+	}
+}
 
 // ErrStateSnapshotNotFound indicates the deployed state snapshot required for
 // change detection does not exist (the bundle was likely never deployed).
@@ -53,9 +63,25 @@ type RestoreStats struct {
 	FromSiblings int64
 }
 
+// incRetargeted and incFromSiblings are nil-safe so that threading the pointer
+// through the deep restoration recursion (or passing nil when counters are not
+// needed) can never panic the command.
+func (s *RestoreStats) incRetargeted() {
+	if s != nil {
+		s.Retargeted++
+	}
+}
+
+func (s *RestoreStats) incFromSiblings() {
+	if s != nil {
+		s.FromSiblings++
+	}
+}
+
 // CollectChangeStats fills change counters from the raw (pre-restoration)
 // detected changes.
-func (s *Stats) CollectChangeStats(changes Changes) {
+func (s *Stats) CollectChangeStats(ctx context.Context, changes Changes) {
+	defer recoverTelemetry(ctx)
 	if s.PerResourceType == nil {
 		s.PerResourceType = make(map[string]*protos.BundleConfigRemoteSyncResourceChanges)
 	}
@@ -130,6 +156,7 @@ func resourceTypeFromKey(resourceKey string) string {
 
 // LogTelemetry emits the BundleConfigRemoteSyncEvent for this run.
 func (s *Stats) LogTelemetry(ctx context.Context) {
+	defer recoverTelemetry(ctx)
 	resourceChanges := make([]protos.BundleConfigRemoteSyncResourceChanges, 0, len(s.PerResourceType))
 	for _, perType := range s.PerResourceType {
 		resourceChanges = append(resourceChanges, *perType)

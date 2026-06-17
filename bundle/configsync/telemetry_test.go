@@ -28,7 +28,7 @@ func TestCollectChangeStats(t *testing.T) {
 	}
 
 	var stats Stats
-	stats.CollectChangeStats(changes)
+	stats.CollectChangeStats(t.Context(), changes)
 
 	assert.Equal(t, int64(6), stats.ChangesTotal)
 	assert.Equal(t, int64(2), stats.AddCount)
@@ -96,4 +96,13 @@ func TestRestoreStatsCounters(t *testing.T) {
 	result = restoreOriginalRefs("hardcoded", dyn.V("hardcoded"), resolved, &none)
 	assert.Equal(t, "hardcoded", result)
 	assert.Equal(t, RestoreStats{}, none)
+}
+
+func TestRestoreStatsCountersNilSafe(t *testing.T) {
+	// Telemetry must never panic the command: counting on a nil pointer is a no-op.
+	var s *RestoreStats
+	assert.NotPanics(t, func() {
+		s.incRetargeted()
+		s.incFromSiblings()
+	})
 }
