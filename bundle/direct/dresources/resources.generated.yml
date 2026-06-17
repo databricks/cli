@@ -301,6 +301,8 @@ resources:
   postgres_synced_tables:
 
     ignore_remote_changes:
+      - field: accelerated_sync
+        reason: spec:input_only
       - field: branch
         reason: spec:input_only
       - field: create_database_objects_if_missing
@@ -319,6 +321,8 @@ resources:
         reason: spec:input_only
       - field: timeseries_key
         reason: spec:input_only
+      - field: type_overrides
+        reason: spec:input_only
 
   # quality_monitors: no api field behaviors
 
@@ -336,6 +340,8 @@ resources:
       - field: database_instance_name
         reason: spec:input_only
       - field: logical_database_name
+        reason: spec:input_only
+      - field: spec.accelerated_sync
         reason: spec:input_only
       - field: spec.create_database_objects_if_missing
         reason: spec:input_only

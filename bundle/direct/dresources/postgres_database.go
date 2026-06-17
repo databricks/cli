@@ -103,6 +103,7 @@ func (r *ResourcePostgresDatabase) DoCreate(ctx context.Context, config *Postgre
 			Spec: &config.DatabaseDatabaseSpec,
 
 			// Output-only fields.
+			DatabaseId:      "",
 			CreateTime:      nil,
 			Name:            "",
 			Parent:          "",
@@ -138,6 +139,7 @@ func (r *ResourcePostgresDatabase) DoUpdate(ctx context.Context, id string, conf
 			Spec: &config.DatabaseDatabaseSpec,
 
 			// Output-only fields.
+			DatabaseId:      "",
 			CreateTime:      nil,
 			Name:            "",
 			Parent:          "",

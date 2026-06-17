@@ -34,6 +34,11 @@ class Catalog(Resource):
 
     connection_name: VariableOrOptional[str] = None
 
+    custom_max_retention_hours: VariableOrOptional[int] = None
+    """
+    [Public Preview] Custom maximum retention period in hours for the catalog
+    """
+
     grants: VariableOrList[PrivilegeAssignment] = field(default_factory=list)
 
     lifecycle: VariableOrOptional[Lifecycle] = None
@@ -69,6 +74,11 @@ class CatalogDict(TypedDict, total=False):
     comment: VariableOrOptional[str]
 
     connection_name: VariableOrOptional[str]
+
+    custom_max_retention_hours: VariableOrOptional[int]
+    """
+    [Public Preview] Custom maximum retention period in hours for the catalog
+    """
 
     grants: VariableOrList[PrivilegeAssignmentParam]
 

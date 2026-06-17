@@ -116,6 +116,7 @@ func (r *ResourcePostgresRole) DoCreate(ctx context.Context, config *PostgresRol
 			Spec: &config.RoleRoleSpec,
 
 			// Output-only fields.
+			RoleId:          "",
 			CreateTime:      nil,
 			Name:            "",
 			Parent:          "",
@@ -150,6 +151,7 @@ func (r *ResourcePostgresRole) DoUpdate(ctx context.Context, id string, config *
 			Spec: &config.RoleRoleSpec,
 
 			// Output-only fields.
+			RoleId:          "",
 			CreateTime:      nil,
 			Name:            "",
 			Parent:          "",

@@ -1676,6 +1676,9 @@ resources:
       "description": |-
         The Postgres synced table definitions for the bundle, where each key is the name of the synced table. Each entry continuously replicates a Unity Catalog Delta source table into a Postgres table on a Lakebase Autoscaling instance.
       "$fields":
+        "accelerated_sync":
+          "description": |-
+            PLACEHOLDER
         "branch":
           "description": |-
             PLACEHOLDER
@@ -1707,6 +1710,9 @@ resources:
           "description": |-
             PLACEHOLDER
         "timeseries_key":
+          "description": |-
+            PLACEHOLDER
+        "type_overrides":
           "description": |-
             PLACEHOLDER
     "quality_monitors":
