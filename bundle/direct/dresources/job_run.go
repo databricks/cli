@@ -106,12 +106,9 @@ func (r *ResourceJobRun) DoRead(ctx context.Context, id string) (*JobRunRemote, 
 	// request-only fields (idempotency_token, only, performance_target, queue) or
 	// the synthetic job_settings snapshot; those are handled via
 	// ignore_remote_changes in resources.yml.
-	state := JobRunState{
-		RunNow: jobs.RunNow{
-			JobId:         run.JobId,
-			JobParameters: jobParametersToMap(run.JobParameters),
-		},
-	}
+	var state JobRunState
+	state.JobId = run.JobId
+	state.JobParameters = jobParametersToMap(run.JobParameters)
 	if p := run.OverridingParameters; p != nil {
 		state.DbtCommands = p.DbtCommands
 		state.JarParams = p.JarParams
