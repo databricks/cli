@@ -1,12 +1,37 @@
 package aircmd
 
 import (
+	"io"
 	"testing"
 
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestOrNA(t *testing.T) {
+	assert.Equal(t, "x", orNA("x"))
+	assert.Equal(t, "N/A", orNA(""))
+}
+
+func TestSubmittedDisplay(t *testing.T) {
+	assert.Equal(t, "N/A", submittedDisplay(&jobs.Run{}))
+	// 1700000000000 ms == 2023-11-14 22:13:20 UTC.
+	assert.Equal(t, "2023-11-14 22:13 UTC", submittedDisplay(&jobs.Run{StartTime: 1700000000000}))
+}
+
+func TestOSC8Link(t *testing.T) {
+	assert.Equal(t, "\x1b]8;;https://h.test/x\x1b\\label\x1b]8;;\x1b\\", osc8Link("label", "https://h.test/x"))
+}
+
+func TestHyperlink(t *testing.T) {
+	// On a non-terminal (no color), the URL is dropped and only the label shows.
+	ctx := cmdio.MockDiscard(t.Context())
+	assert.Equal(t, "label", hyperlink(ctx, io.Discard, "label", "https://h.test/x"))
+	// An empty URL is always rendered as the bare label.
+	assert.Equal(t, "label", hyperlink(ctx, io.Discard, "label", ""))
+}
 
 func TestFormatDuration(t *testing.T) {
 	cases := []struct {
@@ -166,6 +191,25 @@ func TestExperimentName(t *testing.T) {
 	}}})
 	require.NotNil(t, got)
 	assert.Equal(t, "exp", *got)
+}
+
+func TestReformatYAMLForDisplay(t *testing.T) {
+	// A multi-line command stored as a quoted "\n"-escaped string is re-rendered
+	// as a `|` block literal, while key order is preserved.
+	in := "experiment_name: foo\ncommand: \"set -e\\npython train.py --epochs 3\\n\"\nmax_retries: 2\n"
+	want := "experiment_name: foo\ncommand: |\n  set -e\n  python train.py --epochs 3\nmax_retries: 2\n"
+	assert.Equal(t, want, reformatYAMLForDisplay([]byte(in)))
+
+	// A single-line command is left as a plain scalar.
+	assert.Equal(t, "command: bash train.sh\n", reformatYAMLForDisplay([]byte("command: bash train.sh\n")))
+
+	// A multi-line value with trailing whitespace can't be a block literal, so the
+	// encoder falls back to a quoted style rather than emitting invalid YAML.
+	got := reformatYAMLForDisplay([]byte("command: \"trailing space \\nsecond\"\n"))
+	assert.Equal(t, "command: \"trailing space \\nsecond\"\n", got)
+
+	// Unparseable content is returned unchanged.
+	assert.Equal(t, "\tnot: valid: yaml:", reformatYAMLForDisplay([]byte("\tnot: valid: yaml:")))
 }
 
 func TestAccelerators(t *testing.T) {

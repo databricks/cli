@@ -1,13 +1,82 @@
 package aircmd
 
 import (
+	"bytes"
+	"context"
 	"fmt"
+	"io"
 	"math"
 	"strings"
 	"time"
 
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"go.yaml.in/yaml/v3"
 )
+
+// na is the placeholder shown for an empty text-table cell, matching the Python CLI.
+const na = "N/A"
+
+// orNA returns s, or "N/A" when s is empty, for text-table cells.
+func orNA(s string) string {
+	if s == "" {
+		return na
+	}
+	return s
+}
+
+// osc8Link wraps label in an OSC 8 terminal hyperlink to url.
+// See https://gist.github.com/egmontkob/eb114294efbcd5adb1944c9f3cb5feda
+func osc8Link(label, url string) string {
+	return "\x1b]8;;" + url + "\x1b\\" + label + "\x1b]8;;\x1b\\"
+}
+
+// hyperlink renders label as a terminal hyperlink to url when out is a rich
+// terminal, otherwise it returns label unchanged. This mirrors the Python CLI's
+// Rich link markup, which drops the URL on non-terminals (so piped or captured
+// output stays plain text).
+func hyperlink(ctx context.Context, out io.Writer, label, url string) string {
+	if url == "" || !cmdio.SupportsColor(ctx, out) {
+		return label
+	}
+	return osc8Link(label, url)
+}
+
+// reformatYAMLForDisplay re-renders a training-config YAML so multi-line strings
+// (notably the `command:` field) appear as `|` block literals instead of the
+// quoted "\n"-escaped single line they are stored as, which is unreadable. It
+// mirrors Python's _reformat_yaml_for_display (cli_display.py); we skip the
+// Rich syntax-highlighted panel and only fix the whitespace. On any parse or
+// re-encode failure it returns the original content unchanged.
+func reformatYAMLForDisplay(content []byte) string {
+	var node yaml.Node
+	if err := yaml.Unmarshal(content, &node); err != nil {
+		return string(content)
+	}
+	forceLiteralBlockStrings(&node)
+
+	var buf bytes.Buffer
+	enc := yaml.NewEncoder(&buf)
+	enc.SetIndent(2)
+	if err := enc.Encode(&node); err != nil {
+		return string(content)
+	}
+	enc.Close()
+	return buf.String()
+}
+
+// forceLiteralBlockStrings walks a YAML node tree and marks every multi-line
+// string scalar for `|` block-literal rendering. The encoder automatically
+// falls back to a quoted style when a value can't be represented as a block
+// literal (e.g. lines with trailing whitespace), so no explicit guard is needed.
+func forceLiteralBlockStrings(node *yaml.Node) {
+	if node.Kind == yaml.ScalarNode && node.Tag == "!!str" && strings.Contains(node.Value, "\n") {
+		node.Style = yaml.LiteralStyle
+	}
+	for _, child := range node.Content {
+		forceLiteralBlockStrings(child)
+	}
+}
 
 // gpuDisplayNames maps the GPU identifiers returned by the backend to the short
 // names we show to users. Unknown identifiers are shown unchanged.
@@ -69,6 +138,18 @@ func startedAt(run *jobs.Run) *string {
 	}
 	s := t.Format(layout)
 	return &s
+}
+
+// submittedDisplay formats the run's start time for the text table as
+// "2006-01-02 15:04 UTC", or "N/A" if it hasn't started. Mirrors Python's
+// _format_timestamp (cli_display.py); we render in UTC for stable output rather
+// than the local zone Python uses.
+func submittedDisplay(run *jobs.Run) string {
+	startMillis, _ := reportedTiming(run)
+	if startMillis == 0 {
+		return na
+	}
+	return time.UnixMilli(startMillis).UTC().Format("2006-01-02 15:04 MST")
 }
 
 // durationSeconds returns how long the run has taken, in whole seconds, or nil

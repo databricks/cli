@@ -1,11 +1,11 @@
 title "get (text)"
-trace $CLI experimental air get 123
+trace $CLI experimental air get run 123
 
 title "get (json)"
-trace $CLI experimental air get 123 -o json
+trace $CLI experimental air get run 123 -o json
 
 title "invalid run id"
-errcode trace $CLI experimental air get notanumber
+errcode trace $CLI experimental air get run notanumber
 
 title "invalid run id (json)"
-errcode trace $CLI experimental air get notanumber -o json
+errcode trace $CLI experimental air get run notanumber -o json
