@@ -8268,7 +8268,7 @@
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.ForEachTask"
                     },
                     "gen_ai_compute_task": {
-                      "description": "[Private Preview]",
+                      "description": "[Private Preview] DEPRECATED — use `AiRuntimeTask` for all new BYOT multi-node GPU\nworkloads (see ai_runtime_task.proto). `AiRuntimeTask` is the only\nsupported BYOT task type for new workloads; this proto is retained only\nfor AIR CLI (fka SGCLI) pywheel backwards compatibility and will be\nremoved once the pywheel → databricks-cli migration completes (post-\nPuPr).",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.GenAiComputeTask",
                       "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                       "doNotSuggest": true

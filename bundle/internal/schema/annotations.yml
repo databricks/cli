@@ -892,8 +892,6 @@ resources:
               "description": |-
                 PLACEHOLDER
             "gen_ai_compute_task":
-              "description": |-
-                PLACEHOLDER
               "$fields":
                 "compute":
                   "description": |-
