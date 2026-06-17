@@ -9,7 +9,6 @@ import (
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/bundle/direct/dresources"
@@ -31,7 +30,7 @@ func BuildStateFromTF(
 	adapters map[string]*dresources.Adapter,
 	stateDB *dstate.DeploymentState,
 	tfAttrs TFStateAttrs,
-	tfIDs terraform.ExportedResourcesMap,
+	tfIDs map[string]string,
 ) error {
 	// Collect all resource nodes (same patterns as makePlan).
 	var nodes []string
@@ -55,7 +54,7 @@ func BuildStateFromTF(
 	}
 
 	for _, node := range nodes {
-		idEntry, ok := tfIDs[node]
+		id, ok := tfIDs[node]
 		if !ok {
 			// Resource is in config but not in TF state (new resource); skip.
 			continue
@@ -213,7 +212,7 @@ func BuildStateFromTF(
 			}
 		}
 
-		if err := stateDB.SaveState(node, idEntry.ID, sv.Value, dependsOn); err != nil {
+		if err := stateDB.SaveState(node, id, sv.Value, dependsOn); err != nil {
 			return fmt.Errorf("%s: SaveState: %w", node, err)
 		}
 	}

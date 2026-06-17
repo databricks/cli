@@ -49,8 +49,8 @@ func (a TFStateAttrs) ETagFor(group, name string) string {
 type TFState struct {
 	// Attrs maps (tfResourceType → resourceName → raw JSON attributes).
 	Attrs TFStateAttrs
-	// IDs maps bundle resource key → {ID, ETag} (same as terraform.ParseResourcesState).
-	IDs terraform.ExportedResourcesMap
+	// IDs maps bundle resource key → resource ID.
+	IDs map[string]string
 
 	// Lineage and Serial are the top-level state metadata used to seed the direct state.
 	Lineage string
@@ -77,9 +77,13 @@ func ParseTFStateFull(ctx context.Context, path string) (*TFState, error) {
 
 	attrs := parseTFStateAttrsFromRaw(&parsed)
 
-	ids, err := terraform.ParseResourcesStateFromBytes(ctx, raw)
+	exportedIDs, err := terraform.ParseResourcesStateFromBytes(ctx, raw)
 	if err != nil {
 		return nil, err
+	}
+	ids := make(map[string]string, len(exportedIDs))
+	for k, v := range exportedIDs {
+		ids[k] = v.ID
 	}
 	return &TFState{Attrs: attrs, IDs: ids, Lineage: parsed.Lineage, Serial: parsed.Serial}, nil
 }

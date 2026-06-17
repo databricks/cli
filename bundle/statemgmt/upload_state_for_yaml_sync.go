@@ -125,9 +125,9 @@ func (m *uploadStateForYamlSync) convertState(ctx context.Context, b *bundle.Bun
 	}
 
 	state := make(map[string]dstate.ResourceEntry)
-	for key, resourceEntry := range tfState.IDs {
+	for key, id := range tfState.IDs {
 		state[key] = dstate.ResourceEntry{
-			ID:    resourceEntry.ID,
+			ID:    id,
 			State: json.RawMessage("{}"),
 		}
 	}

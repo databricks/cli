@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/bundle/direct/dstate"
@@ -37,7 +36,7 @@ func runBuildStateFromTF(
 	t *testing.T,
 	yaml string,
 	tfAttrs migrate.TFStateAttrs,
-	tfIDs terraform.ExportedResourcesMap,
+	tfIDs map[string]string,
 ) map[string]dstate.ResourceEntry {
 	t.Helper()
 
@@ -69,7 +68,7 @@ func TestBuildStateFromTF(t *testing.T) {
 		name      string
 		yaml      string
 		tfAttrs   migrate.TFStateAttrs
-		tfIDs     terraform.ExportedResourcesMap
+		tfIDs     map[string]string
 		wantKey   string         // primary key to assert on
 		absentKey string         // key that must NOT be in state
 		wantID    string         // expected entry.ID
@@ -87,7 +86,7 @@ resources:
 			tfAttrs: migrate.TFStateAttrs{
 				"databricks_job": {"my_job": json.RawMessage(`{"id": "123", "name": "hello"}`)},
 			},
-			tfIDs:   terraform.ExportedResourcesMap{"resources.jobs.my_job": {ID: "123"}},
+			tfIDs:   map[string]string{"resources.jobs.my_job": "123"},
 			wantKey: "resources.jobs.my_job",
 			wantID:  "123",
 		},
@@ -104,7 +103,7 @@ resources:
 			tfAttrs: migrate.TFStateAttrs{
 				"databricks_job": {"existing_job": json.RawMessage(`{"id": "456", "name": "existing"}`)},
 			},
-			tfIDs:     terraform.ExportedResourcesMap{"resources.jobs.existing_job": {ID: "456"}},
+			tfIDs:     map[string]string{"resources.jobs.existing_job": "456"},
 			wantKey:   "resources.jobs.existing_job",
 			absentKey: "resources.jobs.new_job",
 			wantID:    "456",
@@ -124,9 +123,9 @@ resources:
 				"databricks_pipeline": {"src": json.RawMessage(`{"id": "p1", "name": "source-pipeline"}`)},
 				"databricks_job":      {"dst": json.RawMessage(`{"id": "j1", "name": "source-pipeline"}`)},
 			},
-			tfIDs: terraform.ExportedResourcesMap{
-				"resources.pipelines.src": {ID: "p1"},
-				"resources.jobs.dst":      {ID: "j1"},
+			tfIDs: map[string]string{
+				"resources.pipelines.src": "p1",
+				"resources.jobs.dst":      "j1",
 			},
 			wantKey:   "resources.jobs.dst",
 			wantID:    "j1",
@@ -153,9 +152,9 @@ resources:
 					"dst_job": json.RawMessage(`{"id": "222", "name": "dest",   "max_concurrent_runs": 4}`),
 				},
 			},
-			tfIDs: terraform.ExportedResourcesMap{
-				"resources.jobs.src_job": {ID: "111"},
-				"resources.jobs.dst_job": {ID: "222"},
+			tfIDs: map[string]string{
+				"resources.jobs.src_job": "111",
+				"resources.jobs.dst_job": "222",
 			},
 			wantKey:   "resources.jobs.dst_job",
 			wantID:    "222",
@@ -175,7 +174,7 @@ resources:
 					"my_dash": json.RawMessage(`{"id": "d1", "display_name": "My Dashboard", "etag": "etag-abc123"}`),
 				},
 			},
-			tfIDs:     terraform.ExportedResourcesMap{"resources.dashboards.my_dash": {ID: "d1"}},
+			tfIDs:     map[string]string{"resources.dashboards.my_dash": "d1"},
 			wantKey:   "resources.dashboards.my_dash",
 			wantID:    "d1",
 			wantState: map[string]any{"etag": "etag-abc123"},

@@ -118,8 +118,8 @@ To start using direct engine, set "engine: direct" under bundle in your databric
 			return fmt.Errorf("failed to parse terraform state: %w", err)
 		}
 
-		for key, resourceEntry := range tfState.IDs {
-			if resourceEntry.ID == "" {
+		for key, id := range tfState.IDs {
+			if id == "" {
 				return fmt.Errorf("failed to intepret terraform state for %s: missing ID", key)
 			}
 		}
@@ -134,9 +134,9 @@ To start using direct engine, set "engine: direct" under bundle in your databric
 		}
 
 		state := make(map[string]dstate.ResourceEntry)
-		for key, resourceEntry := range tfState.IDs {
+		for key, id := range tfState.IDs {
 			state[key] = dstate.ResourceEntry{
-				ID:    resourceEntry.ID,
+				ID:    id,
 				State: json.RawMessage("{}"),
 			}
 		}
