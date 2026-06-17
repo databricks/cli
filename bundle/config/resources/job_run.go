@@ -17,6 +17,14 @@ import (
 type JobRun struct {
 	BaseResource
 	jobs.RunNow
+
+	// JobSettings snapshots the settings of the job this run targets. RunNow only
+	// carries the job_id, which is stable across edits to the job, so without this
+	// the run has no way to notice that the job's definition changed. Set it to a
+	// whole-job reference (e.g. job_settings: ${resources.jobs.my_job}) and any
+	// change to the job re-triggers the run, since the snapshot is marked
+	// recreate_on_changes in resources.yml.
+	JobSettings *jobs.JobSettings `json:"job_settings,omitempty"`
 }
 
 func (r *JobRun) UnmarshalJSON(b []byte) error {

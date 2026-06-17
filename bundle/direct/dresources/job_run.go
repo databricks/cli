@@ -11,14 +11,33 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
-// JobRunRemote is the return type for DoRead. It embeds jobs.RunNow so that
-// every field of the state type (jobs.RunNow) is also a valid path in the
-// remote type, as required by the framework. GetRun does not echo back the
-// RunNow request, so the embedded RunNow is left zero on read; the actual
-// remote identity lives in RunId. Drift on the embedded request fields is
-// suppressed via ignore_remote_changes in resources.yml.
-type JobRunRemote struct {
+// JobRunState is what we persist for a triggered run: the RunNow request plus a
+// snapshot of the targeted job's settings. The snapshot is what lets a change to
+// the job re-trigger the run (RunNow only carries the stable job_id). A custom
+// marshaler is required because the embedded jobs.RunNow has its own MarshalJSON
+// which would otherwise take over and drop JobSettings.
+type JobRunState struct {
 	jobs.RunNow
+
+	JobSettings *jobs.JobSettings `json:"job_settings,omitempty"`
+}
+
+func (s *JobRunState) UnmarshalJSON(b []byte) error {
+	return marshal.Unmarshal(b, s)
+}
+
+func (s JobRunState) MarshalJSON() ([]byte, error) {
+	return marshal.Marshal(s)
+}
+
+// JobRunRemote is the return type for DoRead. It embeds JobRunState so that every
+// path in StateType is also a valid path in RemoteType (required by the
+// framework). DoRead fills the embedded state from the GetRun response, mapping
+// the run's job-level and overriding parameters back into the RunNow shape so the
+// framework can diff them against the desired config. RunId is the remote
+// identity, kept here for the detailed plan.
+type JobRunRemote struct {
+	JobRunState
 
 	RunId int64 `json:"run_id,omitempty"`
 }
@@ -41,12 +60,30 @@ func (*ResourceJobRun) New(client *databricks.WorkspaceClient) *ResourceJobRun {
 	}
 }
 
-func (*ResourceJobRun) PrepareState(input *resources.JobRun) *jobs.RunNow {
-	return &input.RunNow
+func (*ResourceJobRun) PrepareState(input *resources.JobRun) *JobRunState {
+	return &JobRunState{
+		RunNow:      input.RunNow,
+		JobSettings: input.JobSettings,
+	}
 }
 
-func (*ResourceJobRun) RemapState(remote *JobRunRemote) *jobs.RunNow {
-	return &remote.RunNow
+func (*ResourceJobRun) RemapState(remote *JobRunRemote) *JobRunState {
+	return &remote.JobRunState
+}
+
+// jobParametersToMap converts the run's job parameters (a list of name/value
+// pairs as returned by GetRun) into the name->value map shape used by RunNow.
+// It returns nil for an empty list so the diff matches a config that sets no
+// job parameters.
+func jobParametersToMap(params []jobs.JobParameter) map[string]string {
+	if len(params) == 0 {
+		return nil
+	}
+	m := make(map[string]string, len(params))
+	for _, p := range params {
+		m[p.Name] = p.Value
+	}
+	return m
 }
 
 func (r *ResourceJobRun) DoRead(ctx context.Context, id string) (*JobRunRemote, error) {
@@ -64,16 +101,36 @@ func (r *ResourceJobRun) DoRead(ctx context.Context, id string) (*JobRunRemote, 
 	if err != nil {
 		return nil, err
 	}
-	// GetRun does not echo back the RunNow request, so the embedded RunNow is
-	// left zero here; the remote identity lives in RunId.
-	var emptyRunNow jobs.RunNow
-	return &JobRunRemote{RunNow: emptyRunNow, RunId: run.RunId}, nil
+	// Map the run back into the RunNow shape so the framework can diff the run's
+	// actual parameters against the desired config. GetRun does not return the
+	// request-only fields (idempotency_token, only, performance_target, queue) or
+	// the synthetic job_settings snapshot; those are handled via
+	// ignore_remote_changes in resources.yml.
+	state := JobRunState{
+		RunNow: jobs.RunNow{
+			JobId:         run.JobId,
+			JobParameters: jobParametersToMap(run.JobParameters),
+		},
+	}
+	if p := run.OverridingParameters; p != nil {
+		state.DbtCommands = p.DbtCommands
+		state.JarParams = p.JarParams
+		state.NotebookParams = p.NotebookParams
+		state.PipelineParams = p.PipelineParams
+		state.PythonNamedParams = p.PythonNamedParams
+		state.PythonParams = p.PythonParams
+		state.SparkSubmitParams = p.SparkSubmitParams
+		state.SqlParams = p.SqlParams
+	}
+	return &JobRunRemote{JobRunState: state, RunId: run.RunId}, nil
 }
 
-func (r *ResourceJobRun) DoCreate(ctx context.Context, config *jobs.RunNow) (string, *JobRunRemote, error) {
+func (r *ResourceJobRun) DoCreate(ctx context.Context, config *JobRunState) (string, *JobRunRemote, error) {
+	// Only the RunNow request is sent to the backend; JobSettings is a local-only
+	// snapshot used to detect job changes, not part of the run-now payload.
 	// RunNow returns immediately with the new run id; waiting for completion is
 	// a later milestone.
-	wait, err := r.client.Jobs.RunNow(ctx, *config)
+	wait, err := r.client.Jobs.RunNow(ctx, config.RunNow)
 	if err != nil {
 		return "", nil, err
 	}
@@ -87,7 +144,7 @@ func (r *ResourceJobRun) DoCreate(ctx context.Context, config *jobs.RunNow) (str
 // DoDelete is a no-op: a triggered run cannot be "undeployed". On recreate the
 // framework calls this before DoCreate, so a no-op delete followed by RunNow
 // re-triggers the run, which is the intended behavior.
-func (r *ResourceJobRun) DoDelete(ctx context.Context, id string, _ *jobs.RunNow) error {
+func (r *ResourceJobRun) DoDelete(ctx context.Context, id string, _ *JobRunState) error {
 	return nil
 }
 

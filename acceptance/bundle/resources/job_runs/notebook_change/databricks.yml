@@ -15,3 +15,5 @@ resources:
       job_id: ${resources.jobs.my_job.id}
       job_parameters:
         env: dev
+      # Snapshot the whole job so any change to it (e.g. notebook_path) re-triggers the run.
+      job_settings: ${resources.jobs.my_job}

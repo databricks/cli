@@ -788,6 +788,19 @@ resources:
         "warehouse_id":
           "description": |-
             ID of the SQL warehouse used to run queries for this Genie space.
+    "job_runs":
+      "description": |-
+        PLACEHOLDER
+      "$fields":
+        "job_settings":
+          "description": |-
+            PLACEHOLDER
+        "lifecycle":
+          "description": |-
+            PLACEHOLDER
+        "python_named_params":
+          "description": |-
+            PLACEHOLDER
     "jobs":
       "description": |-
         The job definitions for the bundle, where each key is the name of the job.

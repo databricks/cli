@@ -324,16 +324,55 @@ func (s *FakeWorkspace) JobsRunNow(req Request) Response {
 	}
 
 	s.JobRuns[runId] = jobs.Run{
-		RunId:      runId,
-		JobId:      request.JobId,
-		State:      &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning},
-		RunPageUrl: fmt.Sprintf("%s/?o=900800700600#job/%d/run/%d", s.url, request.JobId, runId),
-		RunType:    jobs.RunTypeJobRun,
-		RunName:    runName,
-		Tasks:      tasks,
+		RunId:                runId,
+		JobId:                request.JobId,
+		State:                &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning},
+		RunPageUrl:           fmt.Sprintf("%s/?o=900800700600#job/%d/run/%d", s.url, request.JobId, runId),
+		RunType:              jobs.RunTypeJobRun,
+		RunName:              runName,
+		Tasks:                tasks,
+		JobParameters:        runJobParameters(request.JobParameters),
+		OverridingParameters: runOverridingParameters(request),
 	}
 
 	return Response{Body: jobs.RunNowResponse{RunId: runId}}
+}
+
+// runJobParameters mirrors how GetRun echoes job-level parameters: as a list of
+// name/value pairs. Sorted by name for deterministic output.
+func runJobParameters(params map[string]string) []jobs.JobParameter {
+	if len(params) == 0 {
+		return nil
+	}
+	result := make([]jobs.JobParameter, 0, len(params))
+	for name, value := range params {
+		result = append(result, jobs.JobParameter{Name: name, Value: value})
+	}
+	slices.SortFunc(result, func(a, b jobs.JobParameter) int {
+		return cmp.Compare(a.Name, b.Name)
+	})
+	return result
+}
+
+// runOverridingParameters mirrors how GetRun echoes the run's overriding
+// parameters. Returns nil when the request set none.
+func runOverridingParameters(request jobs.RunNow) *jobs.RunParameters {
+	p := jobs.RunParameters{
+		DbtCommands:       request.DbtCommands,
+		JarParams:         request.JarParams,
+		NotebookParams:    request.NotebookParams,
+		PipelineParams:    request.PipelineParams,
+		PythonNamedParams: request.PythonNamedParams,
+		PythonParams:      request.PythonParams,
+		SparkSubmitParams: request.SparkSubmitParams,
+		SqlParams:         request.SqlParams,
+	}
+	if len(p.DbtCommands) == 0 && len(p.JarParams) == 0 && len(p.NotebookParams) == 0 &&
+		p.PipelineParams == nil && len(p.PythonNamedParams) == 0 && len(p.PythonParams) == 0 &&
+		len(p.SparkSubmitParams) == 0 && len(p.SqlParams) == 0 {
+		return nil
+	}
+	return &p
 }
 
 // executePythonWheelTask runs a python wheel task locally using uv.

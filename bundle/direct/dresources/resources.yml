@@ -117,37 +117,22 @@ resources:
       - field: job_clusters[*].new_cluster.data_security_mode
 
   job_runs:
-    # GetRun returns the run's execution metadata, never the RunNow request that
-    # triggered it. So on every plan the request fields look like remote drift.
-    # Ignore that drift (input_only): the request fields are write-only inputs.
+    # GetRun echoes the run's job-level and overriding parameters, so DoRead maps
+    # those back (see RemapState) and the framework diffs them directly. Only the
+    # fields GetRun does NOT return are ignored here: the request-only inputs that
+    # never appear in the run, plus the synthetic job_settings snapshot.
     ignore_remote_changes:
-      - field: dbt_commands
-        reason: input_only
       - field: idempotency_token
         reason: input_only
-      - field: jar_params
-        reason: input_only
-      - field: job_id
-        reason: input_only
-      - field: job_parameters
-        reason: input_only
-      - field: notebook_params
+      # Local-only snapshot of the targeted job's settings; GetRun never returns
+      # it, so it always looks like remote drift unless ignored here.
+      - field: job_settings
         reason: input_only
       - field: only
         reason: input_only
       - field: performance_target
         reason: input_only
-      - field: pipeline_params
-        reason: input_only
-      - field: python_named_params
-        reason: input_only
-      - field: python_params
-        reason: input_only
       - field: queue
-        reason: input_only
-      - field: spark_submit_params
-        reason: input_only
-      - field: sql_params
         reason: input_only
     # There is no API to modify a run in place, so any change to the request must
     # re-trigger a fresh run. With no DoUpdate, recreate (no-op delete + RunNow)
@@ -162,6 +147,10 @@ resources:
       - field: job_id
         reason: immutable
       - field: job_parameters
+        reason: immutable
+      # A change to the targeted job's settings snapshot must re-trigger the run;
+      # prefix matching means any nested job field counts as a change.
+      - field: job_settings
         reason: immutable
       - field: notebook_params
         reason: immutable

@@ -61,8 +61,18 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
   }
 }
 
-=== but the run config did not change, so no new run was triggered
+=== the job change re-triggered the run via the job_settings snapshot
 >>> print_requests.py //jobs/run-now
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/run-now",
+  "body": {
+    "job_id": [NUMID],
+    "job_parameters": {
+      "env": "dev"
+    }
+  }
+}
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

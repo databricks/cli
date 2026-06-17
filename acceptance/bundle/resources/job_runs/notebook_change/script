@@ -16,5 +16,5 @@ trace $CLI bundle plan
 title "the job was updated with the new notebook_path"
 trace print_requests.py --keep //jobs/reset
 
-title "but the run config did not change, so no new run was triggered"
+title "the job change re-triggered the run via the job_settings snapshot"
 trace print_requests.py //jobs/run-now
