@@ -13,11 +13,11 @@ resources:
             path: ./nb.sql
       development: true
       catalog: main
-      target: ${resources.schemas.bar.id}
+      target: ${resources.schemas.bar.name}
 
   schemas:
     bar:
-      name: test-schema-$UNIQUE_NAME
+      name: test_schema_$UNIQUE_NAME
       catalog_name: main
       comment: This schema was created from DABs
 

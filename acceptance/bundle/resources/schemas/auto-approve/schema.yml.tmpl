@@ -1,7 +1,7 @@
 resources:
   schemas:
     bar:
-      name: test-schema-$UNIQUE_NAME
+      name: test_schema_$UNIQUE_NAME
       catalog_name: main
       comment: This schema was created from DABs
 
@@ -10,5 +10,5 @@ targets:
     resources:
       pipelines:
         foo:
-          target: ${resources.schemas.bar.id}
+          target: ${resources.schemas.bar.name}
           catalog: main

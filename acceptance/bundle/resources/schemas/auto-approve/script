@@ -2,7 +2,7 @@ envsubst < databricks.yml.tmpl > databricks.yml
 envsubst < schema.yml.tmpl > schema.yml
 
 CATALOG_NAME="main"
-SCHEMA_NAME="test-schema-${UNIQUE_NAME}"
+SCHEMA_NAME="test_schema_${UNIQUE_NAME}"
 VOLUME_NAME="test-volume-${UNIQUE_NAME}"
 
 cleanup() {

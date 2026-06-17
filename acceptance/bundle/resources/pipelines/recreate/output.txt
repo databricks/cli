@@ -26,14 +26,14 @@ Deployment complete!
       }
     ],
     "name": "test-pipeline-[UNIQUE_NAME]",
-    "target": "main.test-schema-[UNIQUE_NAME]"
+    "target": "test_schema_[UNIQUE_NAME]"
   }
 }
 
 === Switch from catalog to storage (triggers recreation)
 >>> update_file.py databricks.yml catalog: main storage: dbfs:/my-storage
 
->>> update_file.py databricks.yml target: ${resources.schemas.bar.id} #target: ${resources.schemas.bar.id}
+>>> update_file.py databricks.yml target: ${resources.schemas.bar.name} #target: ${resources.schemas.bar.name}
 
 >>> [CLI] bundle plan
 recreate pipelines.foo
