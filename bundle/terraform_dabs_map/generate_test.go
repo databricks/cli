@@ -75,14 +75,14 @@ var tfKnownSegments = map[string]bool{
 }
 
 type groupResult struct {
-	group           string
-	tfType          string
-	hasTFType       bool
-	renames         map[string]string // TF path → DABs path (renamed fields only)
-	unwraps         []string          // TF paths that are structural wrappers (Unwrap: true)
-	dabsOnly        map[string]bool   // DABs clean paths with no Terraform equivalent
-	tfOnly          map[string]bool   // TF clean paths with no DABs equivalent
-	matchCount      int               // used for stats output only, not written to generated.go
+	group              string
+	tfType             string
+	hasTFType          bool
+	renames            map[string]string // TF path → DABs path (renamed fields only)
+	unwraps            []string          // TF paths that are structural wrappers (Unwrap: true)
+	dabsOnly           map[string]bool   // DABs clean paths with no Terraform equivalent
+	tfOnly             map[string]bool   // TF clean paths with no DABs equivalent
+	matchCount         int               // used for stats output only, not written to generated.go
 	tfWrapperFirstSegs map[string]bool   // first-level DABs field names that go under the wrapper (only set when unwraps is non-empty)
 }
 
