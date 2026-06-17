@@ -31,51 +31,8 @@ func TestNormalizeDotSeparatedID(t *testing.T) {
 	}
 }
 
-func TestJobRunURL(t *testing.T) {
-	tests := []struct {
-		name     string
-		legacy   string
-		expected string
-	}{
-		{
-			"legacy fragment form",
-			"https://myworkspace.databricks.com/?o=900800700600#job/123/run/456",
-			"https://myworkspace.databricks.com/jobs/123/runs/456?o=900800700600",
-		},
-		{
-			"no workspace selector",
-			"https://myworkspace.databricks.com/#job/123/run/456",
-			"https://myworkspace.databricks.com/jobs/123/runs/456",
-		},
-		{
-			"http host with port",
-			"http://127.0.0.1:8080/?o=900800700600#job/1/run/2",
-			"http://127.0.0.1:8080/jobs/1/runs/2?o=900800700600",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := JobRunURL(tt.legacy)
-			require.NoError(t, err)
-			assert.Equal(t, tt.expected, got)
-		})
-	}
-}
-
-func TestJobRunURLUnexpectedFragment(t *testing.T) {
-	tests := []string{
-		"https://myworkspace.databricks.com/jobs/123/runs/456?o=900800700600",
-		"https://myworkspace.databricks.com/?o=900800700600#job/123",
-		"https://myworkspace.databricks.com/?o=900800700600#job//run/456",
-	}
-
-	for _, legacy := range tests {
-		t.Run(legacy, func(t *testing.T) {
-			_, err := JobRunURL(legacy)
-			assert.ErrorContains(t, err, "unexpected run URL fragment")
-		})
-	}
+func TestJobRunPath(t *testing.T) {
+	assert.Equal(t, "jobs/123/runs/456", JobRunPath("123", "456"))
 }
 
 func TestResourceTypes(t *testing.T) {

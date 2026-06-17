@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/databricks/cli/bundle"
@@ -124,18 +126,45 @@ func (m *jobRunMonitor) onProgress(info *jobs.Run) {
 	log.Info(m.ctx, event.String())
 }
 
-// runPageURL converts the legacy run URL returned by the Jobs API into the
-// modern path form so that non-admin users permitted to view the run are not
-// redirected to the workspace homepage. See
-// https://github.com/databricks/cli/issues/5142. The conversion is cosmetic, so
-// the original URL is returned on the rare chance the format is unexpected.
+// runPageURL converts the legacy run URL returned by the Jobs API
+//
+//	https://<host>/?o=<id>#job/<jobID>/run/<runID>
+//
+// into the modern path form
+//
+//	https://<host>/jobs/<jobID>/runs/<runID>?o=<id>
+//
+// so that non-admin users permitted to view the run are not redirected to the
+// workspace homepage. See https://github.com/databricks/cli/issues/5142. The
+// workspace selector query param (o) is preserved as-is. The conversion is
+// cosmetic, so the original URL is returned on the rare chance the format is
+// unexpected.
 func runPageURL(ctx context.Context, raw string) string {
-	modern, err := workspaceurls.JobRunURL(raw)
+	u, err := url.Parse(raw)
 	if err != nil {
-		log.Debugf(ctx, "could not convert run URL to modern form: %v", err)
+		log.Debugf(ctx, "could not parse run URL %q: %v", raw, err)
 		return raw
 	}
-	return modern
+
+	jobID, runID, ok := parseLegacyRunFragment(u.Fragment)
+	if !ok {
+		log.Debugf(ctx, "unexpected run URL fragment %q", u.Fragment)
+		return raw
+	}
+
+	u.Fragment = ""
+	u.Path = "/" + workspaceurls.JobRunPath(jobID, runID)
+	return u.String()
+}
+
+// parseLegacyRunFragment extracts the job and run IDs from a legacy run URL
+// fragment of the form "job/<jobID>/run/<runID>".
+func parseLegacyRunFragment(fragment string) (jobID, runID string, ok bool) {
+	parts := strings.Split(fragment, "/")
+	if len(parts) != 4 || parts[0] != "job" || parts[2] != "run" || parts[1] == "" || parts[3] == "" {
+		return "", "", false
+	}
+	return parts[1], parts[3], true
 }
 
 func (r *jobRunner) Run(ctx context.Context, opts *Options) (output.RunOutput, error) {

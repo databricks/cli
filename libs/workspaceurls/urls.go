@@ -67,44 +67,18 @@ func ResourceTypes() []string {
 	return names
 }
 
-// JobRunURL converts a legacy job-run URL of the form
+// JobRunPath returns the modern workspace path for a job run, of the form
 //
-//	https://<host>/?o=<id>#job/<jobID>/run/<runID>
+//	jobs/<jobID>/runs/<runID>
 //
-// into the modern path form
-//
-//	https://<host>/jobs/<jobID>/runs/<runID>?o=<id>
-//
-// The legacy fragment form relies on client-side redirection that only
-// resolves for workspace admins; non-admin users with CAN_VIEW are sent to the
-// workspace homepage instead. The modern path form resolves for any user
-// permitted to view the run. The workspace selector query param (o) is
-// preserved as-is from the original URL.
+// Callers join this onto a workspace base URL. It exists because the Jobs API
+// returns a legacy fragment URL (#job/<jobID>/run/<runID>) that relies on
+// client-side redirection that only resolves for workspace admins; non-admin
+// users with CAN_VIEW are sent to the workspace homepage instead. The modern
+// path form resolves for any user permitted to view the run.
 // See https://github.com/databricks/cli/issues/5142.
-func JobRunURL(legacy string) (string, error) {
-	u, err := url.Parse(legacy)
-	if err != nil {
-		return "", fmt.Errorf("parsing run URL %q: %w", legacy, err)
-	}
-
-	jobID, runID, ok := parseLegacyRunFragment(u.Fragment)
-	if !ok {
-		return "", fmt.Errorf("unexpected run URL fragment %q", u.Fragment)
-	}
-
-	u.Fragment = ""
-	u.Path = fmt.Sprintf("/jobs/%s/runs/%s", jobID, runID)
-	return u.String(), nil
-}
-
-// parseLegacyRunFragment extracts the job and run IDs from a legacy run URL
-// fragment of the form "job/<jobID>/run/<runID>".
-func parseLegacyRunFragment(fragment string) (jobID, runID string, ok bool) {
-	parts := strings.Split(fragment, "/")
-	if len(parts) != 4 || parts[0] != "job" || parts[2] != "run" || parts[1] == "" || parts[3] == "" {
-		return "", "", false
-	}
-	return parts[1], parts[3], true
+func JobRunPath(jobID, runID string) string {
+	return fmt.Sprintf("jobs/%s/runs/%s", jobID, runID)
 }
 
 // ResourceURL constructs a workspace URL for a named resource type and ID.
