@@ -9,6 +9,7 @@
 * Increase the SSH server startup timeout from 10 to 45 minutes when a GPU accelerator is requested via `databricks ssh connect --accelerator` ([#5569](https://github.com/databricks/cli/pull/5569)).
 * Fix authentication falling back to the default profile in `.databrickscfg` when a host is already configured via the environment (e.g. `DATABRICKS_HOST` with `DATABRICKS_TOKEN`) ([#5616](https://github.com/databricks/cli/pull/5616)).
 * ssh: fix opening remote environment in Cursor, which previously hung on default-extension install and never opened the editor ([#5619](https://github.com/databricks/cli/pull/5619)).
+* Improve the error shown when `databricks labs install` cannot find a project's `labs.yml`: the message now explains that either the requested version does not exist or the project is not installable with the CLI, and links to the repository ([#5559](https://github.com/databricks/cli/pull/5559)).
 
 
 ### Bundles

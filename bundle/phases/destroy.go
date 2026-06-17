@@ -22,7 +22,7 @@ import (
 
 func assertRootPathExists(ctx context.Context, b *bundle.Bundle) (bool, error) {
 	w := b.WorkspaceClient(ctx)
-	_, err := w.Workspace.GetStatusByPath(ctx, b.Config.Workspace.RootPath) //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
+	_, err := w.Workspace.GetStatusByPath(ctx, b.Config.Workspace.RootPath)
 
 	if aerr, ok := errors.AsType[*apierr.APIError](err); ok && aerr.StatusCode == http.StatusNotFound {
 		log.Infof(ctx, "Root path does not exist: %s", b.Config.Workspace.RootPath)
