@@ -2,7 +2,7 @@
 >>> errcode [CLI] secrets list-scopes
 Scope  Backend Type
 
->>> errcode [CLI] secrets unknown
+>>> musterr [CLI] secrets unknown
 Error: unknown command "unknown" for "databricks secrets"
 
 Usage:
@@ -33,5 +33,3 @@ Global Flags:
 
 Use "databricks secrets [command] --help" for more information about a command.
 
-
-Exit code: 1
