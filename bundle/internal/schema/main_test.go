@@ -61,16 +61,29 @@ func TestRequiredAnnotationsForNewFields(t *testing.T) {
 	current, err := yamlloader.LoadYAML("", bytes.NewBuffer(currentFile))
 	require.NoError(t, err)
 
-	// Collect added paths.
-	var updatedFieldPaths []string
+	// Regenerating from the committed file must be a no-op: no new placeholders
+	// (a new undocumented config field) and no deletes/updates (stale
+	// placeholders not yet pruned). VisitDelete/VisitUpdate must be set or
+	// Override panics on any change.
+	var addedFieldPaths []string
+	var changedFieldPaths []string
 	_, err = merge.Override(original, current, merge.OverrideVisitor{
 		VisitInsert: func(basePath dyn.Path, right dyn.Value) (dyn.Value, error) {
-			updatedFieldPaths = append(updatedFieldPaths, basePath.String())
+			addedFieldPaths = append(addedFieldPaths, basePath.String())
+			return right, nil
+		},
+		VisitDelete: func(basePath dyn.Path, left dyn.Value) error {
+			changedFieldPaths = append(changedFieldPaths, basePath.String())
+			return nil
+		},
+		VisitUpdate: func(basePath dyn.Path, left, right dyn.Value) (dyn.Value, error) {
+			changedFieldPaths = append(changedFieldPaths, basePath.String())
 			return right, nil
 		},
 	})
 	assert.NoError(t, err)
-	assert.Empty(t, updatedFieldPaths, "Missing JSON-schema descriptions for new config fields in bundle/internal/schema/annotations.yml:\n%s", strings.Join(updatedFieldPaths, "\n"))
+	assert.Empty(t, addedFieldPaths, "Missing JSON-schema descriptions for new config fields in bundle/internal/schema/annotations.yml:\n%s", strings.Join(addedFieldPaths, "\n"))
+	assert.Empty(t, changedFieldPaths, "annotations.yml is out of sync; run `./task generate-schema` and commit the result:\n%s", strings.Join(changedFieldPaths, "\n"))
 }
 
 // Checks that the annotations file only contains entries that match the
