@@ -36,14 +36,33 @@ func runStatus(state *jobs.RunState) string {
 	return "UNKNOWN"
 }
 
+// reportedTiming returns the run's start and end times (epoch milliseconds),
+// preferring the last task's window over the run-level times so a retried run
+// reports its latest attempt. Mirrors Python's _reported_attempt_timing
+// (cli_display.py:78-87).
+func reportedTiming(run *jobs.Run) (startMillis, endMillis int64) {
+	startMillis, endMillis = run.StartTime, run.EndTime
+	if n := len(run.Tasks); n > 0 {
+		last := run.Tasks[n-1]
+		if last.StartTime > 0 {
+			startMillis = last.StartTime
+		}
+		if last.EndTime > 0 {
+			endMillis = last.EndTime
+		}
+	}
+	return startMillis, endMillis
+}
+
 // startedAt returns the run's start time as a Python-isoformat string ("+00:00",
 // not "Z"; microseconds only when non-zero, cli_entrypoint.py:1899), or nil if it
 // hasn't started.
 func startedAt(run *jobs.Run) *string {
-	if run.StartTime == 0 {
+	startMillis, _ := reportedTiming(run)
+	if startMillis == 0 {
 		return nil
 	}
-	t := time.UnixMilli(run.StartTime).UTC()
+	t := time.UnixMilli(startMillis).UTC()
 	layout := "2006-01-02T15:04:05-07:00"
 	if t.Nanosecond() != 0 {
 		layout = "2006-01-02T15:04:05.000000-07:00"
@@ -52,20 +71,19 @@ func startedAt(run *jobs.Run) *string {
 	return &s
 }
 
-// durationSeconds returns how long the run has taken, in whole seconds, or nil if
-// it hasn't started. For a finished run this is end-start; for a running one it is
-// the time since it started. Both come from the run-level times, matching Python
-// (cli_entrypoint.py:1900-1903).
+// durationSeconds returns how long the run has taken, in whole seconds, or nil
+// if it has not started. For a finished run this is the elapsed time of the
+// reported attempt; for a still-running run it is the time since it started.
 func durationSeconds(run *jobs.Run) *int64 {
-	if run.StartTime == 0 {
+	startMillis, endMillis := reportedTiming(run)
+	if startMillis == 0 {
 		return nil
 	}
-	endMillis := run.EndTime
 	if endMillis == 0 {
 		// Still running: measure against the current time.
 		endMillis = time.Now().UnixMilli()
 	}
-	d := roundMillisToSeconds(endMillis - run.StartTime)
+	d := roundMillisToSeconds(endMillis - startMillis)
 	return &d
 }
 
