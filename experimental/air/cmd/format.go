@@ -1,12 +1,82 @@
 package aircmd
 
 import (
+	"bytes"
+	"context"
 	"fmt"
+	"io"
+	"math"
 	"strings"
 	"time"
 
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"go.yaml.in/yaml/v3"
 )
+
+// na is the placeholder shown for an empty text-table cell, matching the Python CLI.
+const na = "N/A"
+
+// orNA returns s, or "N/A" when s is empty, for text-table cells.
+func orNA(s string) string {
+	if s == "" {
+		return na
+	}
+	return s
+}
+
+// osc8Link wraps label in an OSC 8 terminal hyperlink to url.
+// See https://gist.github.com/egmontkob/eb114294efbcd5adb1944c9f3cb5feda
+func osc8Link(label, url string) string {
+	return "\x1b]8;;" + url + "\x1b\\" + label + "\x1b]8;;\x1b\\"
+}
+
+// hyperlink renders label as a terminal hyperlink to url when out is a rich
+// terminal, otherwise it returns label unchanged. This mirrors the Python CLI's
+// Rich link markup, which drops the URL on non-terminals (so piped or captured
+// output stays plain text).
+func hyperlink(ctx context.Context, out io.Writer, label, url string) string {
+	if url == "" || !cmdio.SupportsColor(ctx, out) {
+		return label
+	}
+	return osc8Link(label, url)
+}
+
+// reformatYAMLForDisplay re-renders a training-config YAML so multi-line strings
+// (notably the `command:` field) appear as `|` block literals instead of the
+// quoted "\n"-escaped single line they are stored as, which is unreadable. It
+// mirrors Python's _reformat_yaml_for_display (cli_display.py); we skip the
+// Rich syntax-highlighted panel and only fix the whitespace. On any parse or
+// re-encode failure it returns the original content unchanged.
+func reformatYAMLForDisplay(content []byte) string {
+	var node yaml.Node
+	if err := yaml.Unmarshal(content, &node); err != nil {
+		return string(content)
+	}
+	forceLiteralBlockStrings(&node)
+
+	var buf bytes.Buffer
+	enc := yaml.NewEncoder(&buf)
+	enc.SetIndent(2)
+	if err := enc.Encode(&node); err != nil {
+		return string(content)
+	}
+	enc.Close()
+	return buf.String()
+}
+
+// forceLiteralBlockStrings walks a YAML node tree and marks every multi-line
+// string scalar for `|` block-literal rendering. The encoder automatically
+// falls back to a quoted style when a value can't be represented as a block
+// literal (e.g. lines with trailing whitespace), so no explicit guard is needed.
+func forceLiteralBlockStrings(node *yaml.Node) {
+	if node.Kind == yaml.ScalarNode && node.Tag == "!!str" && strings.Contains(node.Value, "\n") {
+		node.Style = yaml.LiteralStyle
+	}
+	for _, child := range node.Content {
+		forceLiteralBlockStrings(child)
+	}
+}
 
 // gpuDisplayNames maps the GPU identifiers returned by the backend to the short
 // names we show to users. Unknown identifiers are shown unchanged.
@@ -35,39 +105,80 @@ func runStatus(state *jobs.RunState) string {
 	return "UNKNOWN"
 }
 
-// startedAt converts the run's start time (epoch milliseconds) to an RFC 3339
-// UTC string, or returns nil if the run has not started yet.
+// reportedTiming returns the run's start and end times (epoch milliseconds),
+// preferring the last task's window over the run-level times so a retried run
+// reports its latest attempt. Mirrors Python's _reported_attempt_timing
+// (cli_display.py:78-87).
+func reportedTiming(run *jobs.Run) (startMillis, endMillis int64) {
+	startMillis, endMillis = run.StartTime, run.EndTime
+	if n := len(run.Tasks); n > 0 {
+		last := run.Tasks[n-1]
+		if last.StartTime > 0 {
+			startMillis = last.StartTime
+		}
+		if last.EndTime > 0 {
+			endMillis = last.EndTime
+		}
+	}
+	return startMillis, endMillis
+}
+
+// startedAt returns the run's start time as a Python-isoformat string ("+00:00",
+// not "Z"; microseconds only when non-zero, cli_entrypoint.py:1899), or nil if it
+// hasn't started.
 func startedAt(run *jobs.Run) *string {
-	if run.StartTime == 0 {
+	startMillis, _ := reportedTiming(run)
+	if startMillis == 0 {
 		return nil
 	}
-	s := time.UnixMilli(run.StartTime).UTC().Format(time.RFC3339)
+	t := time.UnixMilli(startMillis).UTC()
+	layout := "2006-01-02T15:04:05-07:00"
+	if t.Nanosecond() != 0 {
+		layout = "2006-01-02T15:04:05.000000-07:00"
+	}
+	s := t.Format(layout)
 	return &s
 }
 
+// submittedDisplay formats the run's start time for the text table as
+// "2006-01-02 15:04 UTC", or "N/A" if it hasn't started. Mirrors Python's
+// _format_timestamp (cli_display.py); we render in UTC for stable output rather
+// than the local zone Python uses.
+func submittedDisplay(run *jobs.Run) string {
+	startMillis, _ := reportedTiming(run)
+	if startMillis == 0 {
+		return na
+	}
+	return time.UnixMilli(startMillis).UTC().Format("2006-01-02 15:04 MST")
+}
+
 // durationSeconds returns how long the run has taken, in whole seconds, or nil
-// if it has not started. For a finished run this is the elapsed time; for a
-// still-running run it is the time since it started.
+// if it has not started. For a finished run this is the elapsed time of the
+// reported attempt; for a still-running run it is the time since it started.
 func durationSeconds(run *jobs.Run) *int64 {
-	if run.StartTime == 0 {
+	startMillis, endMillis := reportedTiming(run)
+	if startMillis == 0 {
 		return nil
 	}
-
-	var endMillis int64
-	switch {
-	case run.RunDuration > 0:
-		// The backend already computed the duration for us.
-		d := run.RunDuration / 1000
-		return &d
-	case run.EndTime > 0:
-		endMillis = run.EndTime
-	default:
+	if endMillis == 0 {
 		// Still running: measure against the current time.
 		endMillis = time.Now().UnixMilli()
 	}
-
-	d := (endMillis - run.StartTime) / 1000
+	d := roundMillisToSeconds(endMillis - startMillis)
 	return &d
+}
+
+// roundMillisToSeconds rounds milliseconds to whole seconds, half to even, to
+// match Python's round() (cli_entrypoint.py:1903).
+func roundMillisToSeconds(ms int64) int64 {
+	return int64(math.RoundToEven(float64(ms) / 1000))
+}
+
+// dashboardURL builds {host}/jobs/runs/{id}?o={workspace_id}, matching Python
+// (cli_entrypoint.py:1911). The ?o= workspace id deep-links to the right
+// workspace on multi-workspace accounts.
+func dashboardURL(host string, runID, workspaceID int64) string {
+	return fmt.Sprintf("%s/jobs/runs/%d?o=%d", strings.TrimRight(host, "/"), runID, workspaceID)
 }
 
 // formatDuration turns a number of seconds into a compact human string such as

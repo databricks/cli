@@ -21,7 +21,7 @@ class ZendeskSupportOptions:
     """
     :meta private: [EXPERIMENTAL]
     
-    (Optional) Start date in YYYY-MM-DD format for the initial sync.
+    [Private Preview] (Optional) Start date in YYYY-MM-DD format for the initial sync.
     This determines the earliest date from which to sync historical data.
     """
 
@@ -40,7 +40,7 @@ class ZendeskSupportOptionsDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    (Optional) Start date in YYYY-MM-DD format for the initial sync.
+    [Private Preview] (Optional) Start date in YYYY-MM-DD format for the initial sync.
     This determines the earliest date from which to sync historical data.
     """
 

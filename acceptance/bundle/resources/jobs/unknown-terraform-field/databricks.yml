@@ -1,0 +1,17 @@
+bundle:
+  name: test-bundle
+
+resources:
+  jobs:
+    job:
+      name: test-job
+      tasks:
+        - task_key: test_task
+          new_cluster:
+            spark_version: 13.3.x-scala2.12
+            num_workers: 2
+            # In the SDK jobs schema, but not in the pinned Terraform provider schema.
+            autotermination_minutes: 60
+          python_wheel_task:
+            package_name: "whl"
+            entry_point: "run"

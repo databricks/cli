@@ -23,7 +23,7 @@ class PythonOperatorTask:
     """
     :meta private: [EXPERIMENTAL]
     
-    Fully qualified name of the main class or function.
+    [Private Preview] Fully qualified name of the main class or function.
     For example, `my_project.my_function` or `my_project.MyOperator`.
     """
 
@@ -33,7 +33,7 @@ class PythonOperatorTask:
     """
     :meta private: [EXPERIMENTAL]
     
-    An ordered list of task parameters.
+    [Private Preview] An ordered list of task parameters.
     TODO(JOBS-30885): Add limits for parameters.
     """
 
@@ -52,7 +52,7 @@ class PythonOperatorTaskDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    Fully qualified name of the main class or function.
+    [Private Preview] Fully qualified name of the main class or function.
     For example, `my_project.my_function` or `my_project.MyOperator`.
     """
 
@@ -60,7 +60,7 @@ class PythonOperatorTaskDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    An ordered list of task parameters.
+    [Private Preview] An ordered list of task parameters.
     TODO(JOBS-30885): Add limits for parameters.
     """
 

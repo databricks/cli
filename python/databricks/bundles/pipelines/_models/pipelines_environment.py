@@ -18,7 +18,7 @@ class PipelinesEnvironment:
 
     dependencies: VariableOrList[str] = field(default_factory=list)
     """
-    List of pip dependencies, as supported by the version of pip in this environment.
+    [Public Preview] List of pip dependencies, as supported by the version of pip in this environment.
     Each dependency is a pip requirement file line https://pip.pypa.io/en/stable/reference/requirements-file-format/
     Allowed dependency could be <requirement specifier>, <archive url/path>, <local project path>(WSFS or Volumes in Databricks), <vcs project url>
     """
@@ -27,7 +27,7 @@ class PipelinesEnvironment:
     """
     :meta private: [EXPERIMENTAL]
     
-    The environment version of the serverless Python environment used to execute
+    [Private Preview] The environment version of the serverless Python environment used to execute
     customer Python code. Each environment version includes a specific Python
     version and a curated set of pre-installed libraries with defined versions,
     providing a stable and reproducible execution environment.
@@ -52,7 +52,7 @@ class PipelinesEnvironmentDict(TypedDict, total=False):
 
     dependencies: VariableOrList[str]
     """
-    List of pip dependencies, as supported by the version of pip in this environment.
+    [Public Preview] List of pip dependencies, as supported by the version of pip in this environment.
     Each dependency is a pip requirement file line https://pip.pypa.io/en/stable/reference/requirements-file-format/
     Allowed dependency could be <requirement specifier>, <archive url/path>, <local project path>(WSFS or Volumes in Databricks), <vcs project url>
     """
@@ -61,7 +61,7 @@ class PipelinesEnvironmentDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    The environment version of the serverless Python environment used to execute
+    [Private Preview] The environment version of the serverless Python environment used to execute
     customer Python code. Each environment version includes a specific Python
     version and a curated set of pre-installed libraries with defined versions,
     providing a stable and reproducible execution environment.

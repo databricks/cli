@@ -38,3 +38,10 @@ Pattern = "GET /api/2.2/jobs/runs/get-output"
 Response.Body = '''
 {"gen_ai_compute_output": {"run_info": {"mlflow_experiment_id": "exp1", "mlflow_run_id": "run1"}}}
 '''
+
+# The MLflow Run cell shows the run's name, fetched from the MLflow REST API.
+[[Server]]
+Pattern = "GET /api/2.0/mlflow/runs/get"
+Response.Body = '''
+{"run": {"info": {"run_name": "my-run"}}}
+'''
