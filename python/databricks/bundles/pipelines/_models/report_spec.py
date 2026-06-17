@@ -19,27 +19,27 @@ class ReportSpec:
 
     destination_catalog: VariableOr[str]
     """
-    Required. Destination catalog to store table.
+    [Public Preview] Required. Destination catalog to store table.
     """
 
     destination_schema: VariableOr[str]
     """
-    Required. Destination schema to store table.
+    [Public Preview] Required. Destination schema to store table.
     """
 
     source_url: VariableOr[str]
     """
-    Required. Report URL in the source system.
+    [Public Preview] Required. Report URL in the source system.
     """
 
     destination_table: VariableOrOptional[str] = None
     """
-    Required. Destination table name. The pipeline fails if a table with that name already exists.
+    [Public Preview] Required. Destination table name. The pipeline fails if a table with that name already exists.
     """
 
     table_configuration: VariableOrOptional[TableSpecificConfig] = None
     """
-    Configuration settings to control the ingestion of tables. These settings override the table_configuration defined in the IngestionPipelineDefinition object.
+    [Public Preview] Configuration settings to control the ingestion of tables. These settings override the table_configuration defined in the IngestionPipelineDefinition object.
     """
 
     @classmethod
@@ -55,27 +55,27 @@ class ReportSpecDict(TypedDict, total=False):
 
     destination_catalog: VariableOr[str]
     """
-    Required. Destination catalog to store table.
+    [Public Preview] Required. Destination catalog to store table.
     """
 
     destination_schema: VariableOr[str]
     """
-    Required. Destination schema to store table.
+    [Public Preview] Required. Destination schema to store table.
     """
 
     source_url: VariableOr[str]
     """
-    Required. Report URL in the source system.
+    [Public Preview] Required. Report URL in the source system.
     """
 
     destination_table: VariableOrOptional[str]
     """
-    Required. Destination table name. The pipeline fails if a table with that name already exists.
+    [Public Preview] Required. Destination table name. The pipeline fails if a table with that name already exists.
     """
 
     table_configuration: VariableOrOptional[TableSpecificConfigParam]
     """
-    Configuration settings to control the ingestion of tables. These settings override the table_configuration defined in the IngestionPipelineDefinition object.
+    [Public Preview] Configuration settings to control the ingestion of tables. These settings override the table_configuration defined in the IngestionPipelineDefinition object.
     """
 
 

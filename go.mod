@@ -13,7 +13,7 @@ require (
 	github.com/charmbracelet/huh v1.0.0 // MIT
 	github.com/charmbracelet/lipgloss v1.1.0 // MIT
 	github.com/charmbracelet/x/ansi v0.11.7 // MIT
-	github.com/databricks/databricks-sdk-go v0.141.0 // Apache-2.0
+	github.com/databricks/databricks-sdk-go v0.147.0 // Apache-2.0
 	github.com/google/jsonschema-go v0.4.3 // MIT
 	github.com/google/uuid v1.6.0 // BSD-3-Clause
 	github.com/gorilla/websocket v1.5.3 // BSD-2-Clause
@@ -36,9 +36,10 @@ require (
 	go.yaml.in/yaml/v3 v3.0.4 // MIT AND Apache-2.0
 	golang.org/x/crypto v0.52.0 // BSD-3-Clause
 	golang.org/x/mod v0.36.0 // BSD-3-Clause
+	golang.org/x/net v0.55.0 // BSD-3-Clause
 	golang.org/x/oauth2 v0.36.0 // BSD-3-Clause
 	golang.org/x/sync v0.20.0 // BSD-3-Clause
-	golang.org/x/sys v0.45.0 // BSD-3-Clause
+	golang.org/x/sys v0.46.0 // BSD-3-Clause
 	golang.org/x/text v0.37.0 // BSD-3-Clause
 	gopkg.in/ini.v1 v1.67.2 // Apache-2.0
 )
@@ -97,7 +98,6 @@ require (
 	go.opentelemetry.io/otel/metric v1.43.0 // indirect
 	go.opentelemetry.io/otel/trace v1.43.0 // indirect
 	golang.org/x/exp v0.0.0-20240222234643-814bf88cf225 // indirect
-	golang.org/x/net v0.55.0 // indirect
 	golang.org/x/time v0.14.0 // indirect
 	google.golang.org/api v0.265.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260203192932-546029d2fa20 // indirect

@@ -228,6 +228,14 @@ resources:
       - field: postgres_database
         reason: spec:input_only
 
+  postgres_databases:
+
+    ignore_remote_changes:
+      - field: postgres_database
+        reason: spec:input_only
+      - field: role
+        reason: spec:input_only
+
   postgres_endpoints:
 
     recreate_on_changes:
@@ -276,9 +284,25 @@ resources:
       - field: pg_version
         reason: spec:input_only
 
+  postgres_roles:
+
+    ignore_remote_changes:
+      - field: attributes
+        reason: spec:input_only
+      - field: auth_method
+        reason: spec:input_only
+      - field: identity_type
+        reason: spec:input_only
+      - field: membership_roles
+        reason: spec:input_only
+      - field: postgres_role
+        reason: spec:input_only
+
   postgres_synced_tables:
 
     ignore_remote_changes:
+      - field: accelerated_sync
+        reason: spec:input_only
       - field: branch
         reason: spec:input_only
       - field: create_database_objects_if_missing
@@ -297,6 +321,8 @@ resources:
         reason: spec:input_only
       - field: timeseries_key
         reason: spec:input_only
+      - field: type_overrides
+        reason: spec:input_only
 
   # quality_monitors: no api field behaviors
 
@@ -314,6 +340,8 @@ resources:
       - field: database_instance_name
         reason: spec:input_only
       - field: logical_database_name
+        reason: spec:input_only
+      - field: spec.accelerated_sync
         reason: spec:input_only
       - field: spec.create_database_objects_if_missing
         reason: spec:input_only

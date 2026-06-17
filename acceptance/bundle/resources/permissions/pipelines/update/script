@@ -1,11 +1,9 @@
 print_requests() {
-    jq 'select(.path | contains("/pipeline")) | select(.method != "GET")' < out.requests.txt
-    rm out.requests.txt
+    print_requests.py //pipeline
 }
 
 print_sorted_requests() {
-    jq -c < out.requests.txt | sort | jq --sort-keys 'select(.path | contains("/pipeline")) | select(.method != "GET")'
-    rm out.requests.txt
+    print_requests.py //pipeline --sort
 }
 
 

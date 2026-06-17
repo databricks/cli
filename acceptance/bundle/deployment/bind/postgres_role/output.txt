@@ -1,0 +1,32 @@
+
+>>> [CLI] bundle deployment bind role1 projects/test-project/branches/main/roles/test-role --auto-approve
+Updating deployment state...
+Successfully bound postgres_role with an id 'projects/test-project/branches/main/roles/test-role'
+Run 'bundle deploy' to deploy changes to your workspace
+
+>>> [CLI] bundle summary
+Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+Resources:
+  Postgres roles:
+    role1:
+      Name: 
+      URL:  (not deployed)
+
+>>> [CLI] bundle deployment unbind role1
+Updating deployment state...
+
+>>> [CLI] bundle summary
+Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+Resources:
+  Postgres roles:
+    role1:
+      Name: 
+      URL:  (not deployed)

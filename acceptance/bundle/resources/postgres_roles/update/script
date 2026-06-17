@@ -1,0 +1,59 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+   trace $CLI bundle destroy --auto-approve
+   rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+print_requests() {
+    local name=$1
+    trace print_requests.py --keep --get '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.${name}.$DATABRICKS_BUNDLE_ENGINE.json
+    rm -f out.requests.txt
+}
+
+title "Initial deployment"
+trace $CLI bundle validate
+trace $CLI bundle plan
+trace $CLI bundle plan -o json | jq '.plan."resources.postgres_roles.my_role" // .' > out.plan.create.$DATABRICKS_BUNDLE_ENGINE.json
+rm -f out.requests.txt
+trace $CLI bundle deploy
+
+print_requests create
+
+project_name="projects/test-pg-proj-${UNIQUE_NAME}"
+branch_name="${project_name}/branches/main"
+role_name="${branch_name}/roles/test-role"
+trace $CLI postgres get-role "${role_name}" | jq 'del(.create_time, .update_time)'
+
+title "Verify no changes"
+trace $CLI bundle plan
+trace $CLI bundle plan -o json | jq '.plan."resources.postgres_roles.my_role" // .' > out.plan.no_change.$DATABRICKS_BUNDLE_ENGINE.json
+rm -f out.requests.txt
+trace $CLI bundle deploy
+
+print_requests no_change
+
+title "Toggle attributes.createdb and re-deploy"
+trace update_file.py databricks.yml "createdb: false" "createdb: true"
+trace cat databricks.yml
+
+trace $CLI bundle plan
+trace $CLI bundle plan -o json | jq '.plan."resources.postgres_roles.my_role" // .' > out.plan.update.$DATABRICKS_BUNDLE_ENGINE.json
+rm -f out.requests.txt
+trace $CLI bundle deploy
+
+print_requests update
+
+trace $CLI postgres get-role "${role_name}" | jq 'del(.create_time, .update_time)'
+
+title "Restore attributes.createdb to original value"
+trace update_file.py databricks.yml "createdb: true" "createdb: false"
+trace $CLI bundle plan
+trace $CLI bundle plan -o json | jq '.plan."resources.postgres_roles.my_role" // .' > out.plan.restore.$DATABRICKS_BUNDLE_ENGINE.json
+rm -f out.requests.txt
+trace $CLI bundle deploy
+
+print_requests restore
+
+trace $CLI postgres get-role "${role_name}" | jq 'del(.create_time, .update_time)'

@@ -13,6 +13,8 @@ genie_spaces: dashboards.GenieSpace
 
 postgres_branches: postgres.BranchSpec
 
+postgres_databases: postgres.DatabaseDatabaseSpec
+
 postgres_endpoints: postgres.EndpointSpec
 
 postgres_projects: postgres.ProjectSpec
@@ -20,3 +22,5 @@ postgres_projects: postgres.ProjectSpec
 postgres_catalogs: postgres.CatalogCatalogSpec
 
 postgres_synced_tables: postgres.SyncedTableSyncedTableSpec
+
+postgres_roles: postgres.RoleRoleSpec

@@ -1,0 +1,34 @@
+{
+  "pages": [
+    {
+      "displayName": "New Page",
+      "layout": [
+        {
+          "position": {
+            "height": 2,
+            "width": 6,
+            "x": 0,
+            "y": 0
+          },
+          "widget": {
+            "name": "82eb9107",
+            "textbox_spec": "# I'm a title"
+          }
+        },
+        {
+          "position": {
+            "height": 2,
+            "width": 6,
+            "x": 0,
+            "y": 2
+          },
+          "widget": {
+            "name": "ffa6de4f",
+            "textbox_spec": "Text"
+          }
+        }
+      ],
+      "name": "fdd21a3c"
+    }
+  ]
+}
