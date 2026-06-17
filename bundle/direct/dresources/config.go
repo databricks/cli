@@ -56,19 +56,20 @@ type ResourceLifecycleConfig struct {
 	// RecreateOnChanges: field patterns that trigger delete + create when changed.
 	RecreateOnChanges []FieldRule `yaml:"recreate_on_changes,omitempty"`
 
-	// ProvidedIDFields: field patterns that compose the resource's ID — a name the
-	// user provides (not a server-generated id), which DoRead fetches by. Local
-	// changes trigger delete + create. Remote-only differences are skipped: since the
-	// user supplies the value and we just fetched by it, a differing remote value can
-	// only be backend normalization (e.g. UC lowercasing) — a real out-of-band rename
-	// would 404 and is handled as resource-gone.
+	// ProvidedIDFields: field patterns that compose the resource's ID — its name,
+	// as opposed to a server-generated id. DoRead fetches by the ID recorded in
+	// state (the value the backend returned, e.g. a lowercased full_name), not by
+	// these config fields directly. So a remote-only difference on them can only be
+	// the backend normalizing what we sent: the resource was found at its ID, and a
+	// real out-of-band rename would change the ID and 404 (handled as resource-gone).
+	// A local change recreates (delete + create).
 	ProvidedIDFields []FieldRule `yaml:"provided_id_fields,omitempty"`
 
-	// UpdatableIDFields: like ProvidedIDFields, these compose the resource's
-	// user-provided ID, but the backend supports renaming them in place. A local
-	// change triggers UpdateWithID (a rename; the ID changes) instead of delete +
-	// create. A remote-only difference is still skipped (see classifyIDField) — it
-	// can only be backend normalization, since we just fetched by this ID.
+	// UpdatableIDFields: like ProvidedIDFields these compose the resource's
+	// name-based ID, but the backend supports renaming in place. A local change
+	// triggers UpdateWithID (a rename; the ID changes) instead of delete + create. A
+	// remote-only difference is still skipped (see classifyIDField) — DoRead found
+	// the resource by its recorded ID, so it can only be backend normalization.
 	UpdatableIDFields []FieldRule `yaml:"updatable_id_fields,omitempty"`
 
 	// NormalizeSlash: string field patterns the UC API strips trailing slashes from.
