@@ -23,6 +23,7 @@
 * Ignore unity catalog managed schema property defaults to avoid unnecessary drift ([#5195](https://github.com/databricks/cli/pull/5195)).
 * Add Postgres role as a bundle resource ([#5467](https://github.com/databricks/cli/pull/5467)).
 * direct: Stop spurious recreate/rename on redeploy when the backend normalizes a resource's name-based ID (e.g. Unity Catalog lowercasing a schema or volume name) ([#5599](https://github.com/databricks/cli/pull/5599)).
+* Fix the generated pipeline README to suggest `databricks bundle run <pipeline> --refresh <table>` for running a single transformation; the previously documented `--select` flag is not supported by `bundle run` ([#5252](https://github.com/databricks/cli/issues/5252)).
 
 ### Dependency updates
 
