@@ -35,6 +35,10 @@ func TestJobRunPath(t *testing.T) {
 	assert.Equal(t, "jobs/123/runs/456", JobRunPath("123", "456"))
 }
 
+func TestPipelineUpdatePath(t *testing.T) {
+	assert.Equal(t, "pipelines/abc-def/updates/upd-1", PipelineUpdatePath("abc-def", "upd-1"))
+}
+
 func TestResourceTypes(t *testing.T) {
 	types := ResourceTypes()
 	assert.NotEmpty(t, types)

@@ -1,6 +1,10 @@
 package progress
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/databricks/cli/libs/workspaceurls"
+)
 
 type PipelineUpdateUrlEvent struct {
 	Type       string `json:"type"`
@@ -14,7 +18,7 @@ func NewPipelineUpdateUrlEvent(host, updateId, pipelineId string) *PipelineUpdat
 		Type:       "pipeline_update_url",
 		UpdateId:   updateId,
 		PipelineId: pipelineId,
-		Url:        fmt.Sprintf("%s/#joblist/pipelines/%s/updates/%s", host, pipelineId, updateId),
+		Url:        fmt.Sprintf("%s/%s", host, workspaceurls.PipelineUpdatePath(pipelineId, updateId)),
 	}
 }
 

@@ -7,7 +7,7 @@ Deployment complete!
 
 === Running pipeline with --refresh flag and specific tables
 >>> [CLI] bundle run my_pipeline --refresh table1,table2
-Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
+Update URL: [DATABRICKS_URL]/pipelines/[UUID]/updates/[UUID]
 
 Update ID: [UUID]
 
@@ -25,7 +25,7 @@ Update ID: [UUID]
 
 === Running pipeline with --full-refresh-all flag
 >>> [CLI] bundle run my_pipeline --full-refresh-all
-Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
+Update URL: [DATABRICKS_URL]/pipelines/[UUID]/updates/[UUID]
 
 Update ID: [UUID]
 
@@ -40,7 +40,7 @@ Update ID: [UUID]
 
 === Running pipeline with --full-refresh flag and specific tables
 >>> [CLI] bundle run my_pipeline --full-refresh table1,table2
-Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
+Update URL: [DATABRICKS_URL]/pipelines/[UUID]/updates/[UUID]
 
 Update ID: [UUID]
 
@@ -58,7 +58,7 @@ Update ID: [UUID]
 
 === Running pipeline with --full-refresh flag and --refresh flag
 >>> [CLI] bundle run my_pipeline --full-refresh table1,table2 --refresh table3,table4
-Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
+Update URL: [DATABRICKS_URL]/pipelines/[UUID]/updates/[UUID]
 
 Update ID: [UUID]
 

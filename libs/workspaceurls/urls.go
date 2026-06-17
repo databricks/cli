@@ -81,6 +81,21 @@ func JobRunPath(jobID, runID string) string {
 	return fmt.Sprintf("jobs/%s/runs/%s", jobID, runID)
 }
 
+// PipelineUpdatePath returns the modern workspace path for a pipeline update, of
+// the form
+//
+//	pipelines/<pipelineID>/updates/<updateID>
+//
+// Callers join this onto a workspace base URL. The CLI historically emitted a
+// legacy hash-fragment URL (#joblist/pipelines/<id>/updates/<id>); this switches
+// to the modern path form for consistency with the rest of the package and with
+// the job run URL fix, where the legacy fragment form was found not to resolve
+// for non-admin users permitted to view the run.
+// See https://github.com/databricks/cli/issues/5142.
+func PipelineUpdatePath(pipelineID, updateID string) string {
+	return fmt.Sprintf("pipelines/%s/updates/%s", pipelineID, updateID)
+}
+
 // ResourceURL constructs a workspace URL for a named resource type and ID.
 func ResourceURL(baseURL url.URL, resourceType, id string) string {
 	resourceType = resolveAlias(resourceType)

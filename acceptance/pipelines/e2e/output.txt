@@ -29,7 +29,7 @@ Recommendation: This command runs the last deployed version of the code
 
 If you've made local changes, run 'databricks pipelines deploy' first to ensure they are included.
 
-Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
+Update URL: [DATABRICKS_URL]/pipelines/[UUID]/updates/[UUID]
 
 Update ID: [UUID]
 
@@ -80,7 +80,7 @@ Recommendation: This command runs the last deployed version of the code
 
 If you've made local changes, run 'databricks pipelines deploy' first to ensure they are included.
 
-Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
+Update URL: [DATABRICKS_URL]/pipelines/[UUID]/updates/[UUID]
 
 Update ID: [UUID]
 
