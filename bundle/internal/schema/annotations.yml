@@ -235,21 +235,6 @@ resources:
       "description": |-
         PLACEHOLDER
       "$fields":
-        "create_time":
-          "description": |-
-            PLACEHOLDER
-        "custom_description":
-          "description": |-
-            PLACEHOLDER
-        "custom_summary":
-          "description": |-
-            PLACEHOLDER
-        "display_name":
-          "description": |-
-            PLACEHOLDER
-        "effective_run_as":
-          "description": |-
-            PLACEHOLDER
         "evaluation":
           "description": |-
             PLACEHOLDER
@@ -268,9 +253,6 @@ resources:
                         PLACEHOLDER
             "source":
               "$fields":
-                "aggregation":
-                  "description": |-
-                    PLACEHOLDER
                 "display":
                   "description": |-
                     PLACEHOLDER
@@ -298,40 +280,13 @@ resources:
         "file_path":
           "description": |-
             PLACEHOLDER
-        "id":
-          "description": |-
-            PLACEHOLDER
         "lifecycle":
-          "description": |-
-            PLACEHOLDER
-        "lifecycle_state":
-          "description": |-
-            PLACEHOLDER
-        "owner_user_name":
-          "description": |-
-            PLACEHOLDER
-        "parent_path":
           "description": |-
             PLACEHOLDER
         "permissions":
           "description": |-
             PLACEHOLDER
-        "query_text":
-          "description": |-
-            PLACEHOLDER
-        "run_as":
-          "description": |-
-            PLACEHOLDER
-        "run_as_user_name":
-          "description": |-
-            PLACEHOLDER
         "schedule":
-          "description": |-
-            PLACEHOLDER
-        "update_time":
-          "description": |-
-            PLACEHOLDER
-        "warehouse_id":
           "description": |-
             PLACEHOLDER
     "apps":
@@ -340,60 +295,10 @@ resources:
       "markdown_description": |-
         The app resource defines a [Databricks app](/api/workspace/apps/create). For information about Databricks Apps, see [\_](/dev-tools/databricks-apps/index.md).
       "$fields":
-        "active_deployment":
-          "$fields":
-            "create_time":
-              "description": |-
-                PLACEHOLDER
-            "creator":
-              "description": |-
-                PLACEHOLDER
-            "deployment_artifacts":
-              "description": |-
-                PLACEHOLDER
-              "$fields":
-                "source_code_path":
-                  "description": |-
-                    PLACEHOLDER
-            "deployment_id":
-              "description": |-
-                PLACEHOLDER
-            "mode":
-              "description": |-
-                PLACEHOLDER
-            "source_code_path":
-              "description": |-
-                PLACEHOLDER
-            "status":
-              "description": |-
-                PLACEHOLDER
-              "$fields":
-                "message":
-                  "description": |-
-                    PLACEHOLDER
-                "state":
-                  "description": |-
-                    PLACEHOLDER
-            "update_time":
-              "description": |-
-                PLACEHOLDER
         "app_status":
           "description": |-
             PLACEHOLDER
-          "$fields":
-            "message":
-              "description": |-
-                PLACEHOLDER
-            "state":
-              "description": |-
-                PLACEHOLDER
         "budget_policy_id":
-          "description": |-
-            PLACEHOLDER
-        "compute_max_instances":
-          "description": |-
-            PLACEHOLDER
-        "compute_min_instances":
           "description": |-
             PLACEHOLDER
         "compute_size":
@@ -402,10 +307,6 @@ resources:
         "compute_status":
           "description": |-
             PLACEHOLDER
-          "$fields":
-            "message":
-              "description": |-
-                PLACEHOLDER
         "config":
           "description": |-
             PLACEHOLDER
@@ -513,13 +414,6 @@ resources:
             "job":
               "description": |-
                 PLACEHOLDER
-              "$fields":
-                "id":
-                  "description": |-
-                    PLACEHOLDER
-                "permission":
-                  "description": |-
-                    PLACEHOLDER
             "postgres":
               "description": |-
                 PLACEHOLDER
@@ -536,36 +430,12 @@ resources:
             "secret":
               "description": |-
                 PLACEHOLDER
-              "$fields":
-                "key":
-                  "description": |-
-                    PLACEHOLDER
-                "permission":
-                  "description": |-
-                    PLACEHOLDER
-                "scope":
-                  "description": |-
-                    PLACEHOLDER
             "serving_endpoint":
               "description": |-
                 PLACEHOLDER
-              "$fields":
-                "name":
-                  "description": |-
-                    PLACEHOLDER
-                "permission":
-                  "description": |-
-                    PLACEHOLDER
             "sql_warehouse":
               "description": |-
                 PLACEHOLDER
-              "$fields":
-                "id":
-                  "description": |-
-                    PLACEHOLDER
-                "permission":
-                  "description": |-
-                    PLACEHOLDER
             "uc_securable":
               "description": |-
                 PLACEHOLDER
@@ -594,9 +464,6 @@ resources:
         "telemetry_export_destinations":
           "description": |-
             PLACEHOLDER
-        "thumbnail_url":
-          "description": |-
-            PLACEHOLDER
         "usage_policy_id":
           "description": |-
             PLACEHOLDER
@@ -607,12 +474,6 @@ resources:
       "description": |-
         PLACEHOLDER
       "$fields":
-        "comment":
-          "description": |-
-            PLACEHOLDER
-        "connection_name":
-          "description": |-
-            PLACEHOLDER
         "grants":
           "description": |-
             PLACEHOLDER
@@ -632,24 +493,6 @@ resources:
                 "azure_tenant_id":
                   "description": |-
                     PLACEHOLDER
-        "name":
-          "description": |-
-            PLACEHOLDER
-        "options":
-          "description": |-
-            PLACEHOLDER
-        "properties":
-          "description": |-
-            PLACEHOLDER
-        "provider_name":
-          "description": |-
-            PLACEHOLDER
-        "share_name":
-          "description": |-
-            PLACEHOLDER
-        "storage_root":
-          "description": |-
-            PLACEHOLDER
     "clusters":
       "description": |-
         The cluster definitions for the bundle, where each key is the name of a cluster.
@@ -685,15 +528,6 @@ resources:
                       notebook_path: "./src/my_notebook.py"
           ```
       "$fields":
-        "data_security_mode":
-          "description": |-
-            PLACEHOLDER
-        "docker_image":
-          "description": |-
-            PLACEHOLDER
-        "kind":
-          "description": |-
-            PLACEHOLDER
         "lifecycle":
           "description": |-
             Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
@@ -720,12 +554,6 @@ resources:
             "user_name":
               "description": |-
                 PLACEHOLDER
-        "runtime_engine":
-          "description": |-
-            PLACEHOLDER
-        "workload_type":
-          "description": |-
-            PLACEHOLDER
     "dashboards":
       "description": |-
         The dashboard definitions for the bundle, where each key is the name of the dashboard.
@@ -839,9 +667,6 @@ resources:
       "description": |-
         PLACEHOLDER
       "$fields":
-        "effective_capacity":
-          "description": |-
-            PLACEHOLDER
         "lifecycle":
           "description": |-
             Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
@@ -893,50 +718,17 @@ resources:
       "description": |-
         PLACEHOLDER
       "$fields":
-        "comment":
-          "description": |-
-            PLACEHOLDER
-        "credential_name":
-          "description": |-
-            PLACEHOLDER
         "effective_file_event_queue":
           "$fields":
             "managed_aqs":
               "description": |-
                 PLACEHOLDER
-              "$fields":
-                "managed_resource_id":
-                  "description": |-
-                    PLACEHOLDER
-                "queue_url":
-                  "description": |-
-                    PLACEHOLDER
-                "resource_group":
-                  "description": |-
-                    PLACEHOLDER
-                "subscription_id":
-                  "description": |-
-                    PLACEHOLDER
             "managed_pubsub":
               "description": |-
                 PLACEHOLDER
-              "$fields":
-                "managed_resource_id":
-                  "description": |-
-                    PLACEHOLDER
-                "subscription_name":
-                  "description": |-
-                    PLACEHOLDER
             "managed_sqs":
               "description": |-
                 PLACEHOLDER
-              "$fields":
-                "managed_resource_id":
-                  "description": |-
-                    PLACEHOLDER
-                "queue_url":
-                  "description": |-
-                    PLACEHOLDER
             "provided_aqs":
               "description": |-
                 PLACEHOLDER
@@ -946,20 +738,11 @@ resources:
             "provided_sqs":
               "description": |-
                 PLACEHOLDER
-        "enable_file_events":
-          "description": |-
-            PLACEHOLDER
         "encryption_details":
-          "description": |-
-            PLACEHOLDER
           "$fields":
             "sse_encryption_details":
-              "description": |-
-                PLACEHOLDER
               "$fields":
                 "algorithm":
-                  "description": |-
-                    PLACEHOLDER
                   "$type":
                     "description": |-
                       SSE algorithm to use for encrypting S3 objects
@@ -968,31 +751,10 @@ resources:
                         AWS_SSE_KMS
                       - |-
                         AWS_SSE_S3
-                "aws_kms_key_arn":
-                  "description": |-
-                    PLACEHOLDER
-        "fallback":
-          "description": |-
-            PLACEHOLDER
-        "file_event_queue":
-          "description": |-
-            PLACEHOLDER
         "grants":
           "description": |-
             PLACEHOLDER
         "lifecycle":
-          "description": |-
-            PLACEHOLDER
-        "name":
-          "description": |-
-            PLACEHOLDER
-        "read_only":
-          "description": |-
-            PLACEHOLDER
-        "skip_validation":
-          "description": |-
-            PLACEHOLDER
-        "url":
           "description": |-
             PLACEHOLDER
     "genie_spaces":
@@ -1053,51 +815,26 @@ resources:
         "environments":
           "$fields":
             "spec":
-              "description": |-
-                PLACEHOLDER
               "$fields":
                 "dependencies":
                   "description": |-
                     List of pip dependencies, as supported by the version of pip in this environment.
-                "java_dependencies":
-                  "description": |-
-                    PLACEHOLDER
         "git_source":
           "$fields":
             "sparse_checkout":
               "description": |-
                 PLACEHOLDER
         "health":
-          "description": |-
-            PLACEHOLDER
           "$fields":
             "rules":
               "description": |-
                 PLACEHOLDER
-              "$fields":
-                "metric":
-                  "description": |-
-                    PLACEHOLDER
-                "op":
-                  "description": |-
-                    PLACEHOLDER
         "job_clusters":
           "$fields":
             "new_cluster":
               "$fields":
-                "aws_attributes":
-                  "$fields":
-                    "availability":
-                      "description": |-
-                        PLACEHOLDER
-                    "ebs_volume_type":
-                      "description": |-
-                        PLACEHOLDER
                 "azure_attributes":
                   "$fields":
-                    "availability":
-                      "description": |-
-                        PLACEHOLDER
                     "log_analytics_info":
                       "$fields":
                         "log_analytics_primary_key":
@@ -1106,35 +843,11 @@ resources:
                         "log_analytics_workspace_id":
                           "description": |-
                             The workspace ID for the Azure Log Analytics agent configuration
-                "data_security_mode":
-                  "description": |-
-                    PLACEHOLDER
-                "docker_image":
-                  "description": |-
-                    PLACEHOLDER
-                  "$fields":
-                    "basic_auth":
-                      "description": |-
-                        PLACEHOLDER
-                "gcp_attributes":
-                  "$fields":
-                    "availability":
-                      "description": |-
-                        PLACEHOLDER
                 "init_scripts":
                   "$fields":
                     "abfss":
                       "description": |-
                         Contains the Azure Data Lake Storage destination path
-                "kind":
-                  "description": |-
-                    PLACEHOLDER
-                "runtime_engine":
-                  "description": |-
-                    PLACEHOLDER
-                "workload_type":
-                  "description": |-
-                    PLACEHOLDER
         "lifecycle":
           "description": |-
             Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
@@ -1159,8 +872,6 @@ resources:
               "description": |-
                 PLACEHOLDER
         "run_as":
-          "description": |-
-            PLACEHOLDER
           "$fields":
             "service_principal_name":
               "description": |-
@@ -1177,25 +888,6 @@ resources:
                     "destination_id":
                       "description": |-
                         PLACEHOLDER
-            "dashboard_task":
-              "$fields":
-                "dashboard_id":
-                  "description": |-
-                    PLACEHOLDER
-                "subscription":
-                  "description": |-
-                    PLACEHOLDER
-                  "$fields":
-                    "subscribers":
-                      "description": |-
-                        PLACEHOLDER
-                      "$fields":
-                        "destination_id":
-                          "description": |-
-                            PLACEHOLDER
-                        "user_name":
-                          "description": |-
-                            PLACEHOLDER
             "dbt_platform_task":
               "description": |-
                 PLACEHOLDER
@@ -1206,9 +898,6 @@ resources:
                 "compute":
                   "description": |-
                     PLACEHOLDER
-            "health":
-              "description": |-
-                PLACEHOLDER
             "python_operator_task":
               "$fields":
                 "parameters":
@@ -1373,18 +1062,8 @@ resources:
       "$fields":
         "ingestion_definition":
           "$fields":
-            "netsuite_jar_path":
-              "description": |-
-                PLACEHOLDER
             "objects":
               "$fields":
-                "report":
-                  "$fields":
-                    "table_configuration":
-                      "$fields":
-                        "workday_report_parameters":
-                          "description": |-
-                            PLACEHOLDER
                 "schema":
                   "$fields":
                     "connector_options":
@@ -1440,9 +1119,6 @@ resources:
         "lifecycle":
           "description": |-
             Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
-        "parameters":
-          "description": |-
-            PLACEHOLDER
         "permissions":
           "description": |-
             PLACEHOLDER
@@ -1459,9 +1135,6 @@ resources:
             "user_name":
               "description": |-
                 PLACEHOLDER
-        "run_as":
-          "description": |-
-            PLACEHOLDER
         "trigger":
           "deprecation_message": |-
             Use continuous instead
@@ -1788,52 +1461,12 @@ resources:
                       principal: account users
           ```
       "$fields":
-        "aliases":
-          "description": |-
-            PLACEHOLDER
-          "$fields":
-            "catalog_name":
-              "description": |-
-                PLACEHOLDER
-            "id":
-              "description": |-
-                PLACEHOLDER
-            "model_name":
-              "description": |-
-                PLACEHOLDER
-            "schema_name":
-              "description": |-
-                PLACEHOLDER
-        "browse_only":
-          "description": |-
-            PLACEHOLDER
-        "created_at":
-          "description": |-
-            PLACEHOLDER
-        "created_by":
-          "description": |-
-            PLACEHOLDER
-        "full_name":
-          "description": |-
-            PLACEHOLDER
         "grants":
           "description": |-
             PLACEHOLDER
         "lifecycle":
           "description": |-
             Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
-        "metastore_id":
-          "description": |-
-            PLACEHOLDER
-        "owner":
-          "description": |-
-            PLACEHOLDER
-        "updated_at":
-          "description": |-
-            PLACEHOLDER
-        "updated_by":
-          "description": |-
-            PLACEHOLDER
     "schemas":
       "description": |-
         The schema definitions for the bundle, where each key is the name of the schema.
@@ -1892,9 +1525,6 @@ resources:
         "lifecycle":
           "description": |-
             Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
-        "properties":
-          "description": |-
-            PLACEHOLDER
     "secret_scopes":
       "description": |-
         The secret scope definitions for the bundle, where each key is the name of the secret scope.
@@ -1975,9 +1605,6 @@ resources:
             "user_name":
               "description": |-
                 PLACEHOLDER
-        "spot_instance_policy":
-          "description": |-
-            PLACEHOLDER
         "tags":
           "$fields":
             "custom_tags":
@@ -1990,146 +1617,38 @@ resources:
                 "value":
                   "description": |-
                     PLACEHOLDER
-        "warehouse_type":
-          "description": |-
-            PLACEHOLDER
     "synced_database_tables":
       "description": |-
         PLACEHOLDER
       "$fields":
         "data_synchronization_status":
-          "description": |-
-            PLACEHOLDER
           "$fields":
             "last_sync":
               "$fields":
                 "delta_table_sync_info":
                   "description": |-
                     PLACEHOLDER
-        "database_instance_name":
-          "description": |-
-            PLACEHOLDER
-        "effective_database_instance_name":
-          "description": |-
-            PLACEHOLDER
-        "effective_logical_database_name":
-          "description": |-
-            PLACEHOLDER
         "lifecycle":
-          "description": |-
-            PLACEHOLDER
-        "logical_database_name":
-          "description": |-
-            PLACEHOLDER
-        "name":
-          "description": |-
-            PLACEHOLDER
-        "spec":
-          "description": |-
-            PLACEHOLDER
-        "unity_catalog_provisioning_state":
           "description": |-
             PLACEHOLDER
     "vector_search_endpoints":
       "description": |-
         PLACEHOLDER
       "$fields":
-        "budget_policy_id":
-          "description": |-
-            PLACEHOLDER
-        "endpoint_type":
-          "description": |-
-            PLACEHOLDER
         "lifecycle":
           "description": |-
             PLACEHOLDER
-        "name":
-          "description": |-
-            PLACEHOLDER
         "permissions":
-          "description": |-
-            PLACEHOLDER
-        "target_qps":
-          "description": |-
-            PLACEHOLDER
-        "usage_policy_id":
           "description": |-
             PLACEHOLDER
     "vector_search_indexes":
       "description": |-
         PLACEHOLDER
       "$fields":
-        "delta_sync_index_spec":
-          "description": |-
-            PLACEHOLDER
-          "$fields":
-            "columns_to_sync":
-              "description": |-
-                PLACEHOLDER
-            "embedding_source_columns":
-              "description": |-
-                PLACEHOLDER
-              "$fields":
-                "embedding_model_endpoint_name":
-                  "description": |-
-                    PLACEHOLDER
-                "model_endpoint_name_for_query":
-                  "description": |-
-                    PLACEHOLDER
-                "name":
-                  "description": |-
-                    PLACEHOLDER
-            "embedding_vector_columns":
-              "description": |-
-                PLACEHOLDER
-              "$fields":
-                "embedding_dimension":
-                  "description": |-
-                    PLACEHOLDER
-                "name":
-                  "description": |-
-                    PLACEHOLDER
-            "embedding_writeback_table":
-              "description": |-
-                PLACEHOLDER
-            "pipeline_type":
-              "description": |-
-                PLACEHOLDER
-            "source_table":
-              "description": |-
-                PLACEHOLDER
-        "direct_access_index_spec":
-          "description": |-
-            PLACEHOLDER
-          "$fields":
-            "embedding_source_columns":
-              "description": |-
-                PLACEHOLDER
-            "embedding_vector_columns":
-              "description": |-
-                PLACEHOLDER
-            "schema_json":
-              "description": |-
-                PLACEHOLDER
-        "endpoint_name":
-          "description": |-
-            PLACEHOLDER
         "grants":
           "description": |-
             PLACEHOLDER
-        "index_subtype":
-          "description": |-
-            PLACEHOLDER
-        "index_type":
-          "description": |-
-            PLACEHOLDER
         "lifecycle":
-          "description": |-
-            PLACEHOLDER
-        "name":
-          "description": |-
-            PLACEHOLDER
-        "primary_key":
           "description": |-
             PLACEHOLDER
     "volumes":
@@ -2164,9 +1683,6 @@ resources:
         "lifecycle":
           "description": |-
             Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
-        "volume_type":
-          "description": |-
-            PLACEHOLDER
 run_as:
   "description": |-
     The identity to use when running Declarative Automation Bundles resources.

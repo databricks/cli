@@ -38,6 +38,44 @@ func newAnnotationHandler(extracted, fromFile annotation.File) (*annotationHandl
 	}, nil
 }
 
+// dropShadowingPlaceholders removes PLACEHOLDER descriptions from fromFile for
+// fields that cli.json documents. A PLACEHOLDER marks a field with no
+// documentation anywhere, so once upstream gains a description the marker is
+// stale and would otherwise shadow it in the merge, leaving the schema with no
+// description at all. fromFile is mutated in place: the sync step then rewrites
+// the annotations file without the stale markers. Entries that carry other
+// hand-authored fields (e.g. deprecation_message) lose only the placeholder.
+func dropShadowingPlaceholders(fromFile, extracted annotation.File) {
+	for typePath, ta := range fromFile {
+		for key, d := range ta.Fields {
+			if d.Description != annotation.Placeholder {
+				continue
+			}
+			if extracted[typePath].Fields[key].Description == "" {
+				// Genuinely undocumented: keep the TODO marker.
+				continue
+			}
+			d.Description = ""
+			if isEmptyDescriptor(d) {
+				delete(ta.Fields, key)
+			} else {
+				ta.Fields[key] = d
+			}
+		}
+		if len(ta.Fields) == 0 && isEmptyDescriptor(ta.Self) {
+			delete(fromFile, typePath)
+		}
+	}
+}
+
+// isEmptyDescriptor reports whether d carries no annotation data. It runs after
+// a stale placeholder is cleared, to decide whether the whole entry can be
+// dropped. Comparing against the zero value stays correct as new Descriptor
+// fields are added.
+func isEmptyDescriptor(d annotation.Descriptor) bool {
+	return reflect.DeepEqual(d, annotation.Descriptor{})
+}
+
 // mergeAnnotationFiles merges later layers over earlier ones with the same
 // semantics the on-disk annotation files used to be merged with: maps merge
 // recursively, scalars take the later value, sequences concatenate.

@@ -266,6 +266,12 @@ func generateSchema(workdir, outputFile, cliJSONFile string, docsMode bool) {
 		fmt.Printf("Dropping annotation at `%s`: no matching field in the bundle configuration\n", k)
 	}
 
+	// fromFile feeds both the merge in newAnnotationHandler and the
+	// annotations-file rewrite in syncWithMissingAnnotations, so drop stale
+	// placeholders first: a marker upstream now documents would otherwise
+	// shadow the real description.
+	dropShadowingPlaceholders(fromFile, extracted)
+
 	a, err := newAnnotationHandler(extracted, fromFile)
 	if err != nil {
 		log.Fatal(err)

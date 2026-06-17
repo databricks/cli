@@ -141,7 +141,7 @@ class TableSpecificConfig:
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview]
+    [Private Preview] (Optional) Additional custom parameters for Workday Report
     """
 
     @classmethod
@@ -263,7 +263,7 @@ class TableSpecificConfigDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview]
+    [Private Preview] (Optional) Additional custom parameters for Workday Report
     """
 
 

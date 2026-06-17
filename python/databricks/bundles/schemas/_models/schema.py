@@ -52,6 +52,9 @@ class Schema(Resource):
     """
 
     properties: VariableOrDict[str] = field(default_factory=dict)
+    """
+    A map of key-value properties attached to the securable.
+    """
 
     storage_root: VariableOrOptional[str] = None
     """
@@ -97,6 +100,9 @@ class SchemaDict(TypedDict, total=False):
     """
 
     properties: VariableOrDict[str]
+    """
+    A map of key-value properties attached to the securable.
+    """
 
     storage_root: VariableOrOptional[str]
     """
