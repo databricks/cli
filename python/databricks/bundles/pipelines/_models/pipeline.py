@@ -159,7 +159,8 @@ class Pipeline(Resource):
 
     parameters: VariableOrDict[str] = field(default_factory=dict)
     """
-    [Beta]
+    [Beta] Key/value map of default parameters to use for pipeline execution.
+    Maximum total size: 10k characters (JSON format)
     """
 
     permissions: VariableOrList[PipelinePermission] = field(default_factory=list)
@@ -184,6 +185,11 @@ class Pipeline(Resource):
     """
 
     run_as: VariableOrOptional[RunAs] = None
+    """
+    Write-only setting, available only in Create/Update calls. Specifies the user or service principal that the pipeline runs as. If not specified, the pipeline runs as the user who created the pipeline.
+    
+    Only `user_name` or `service_principal_name` can be specified. If both are specified, an error is thrown.
+    """
 
     schema: VariableOrOptional[str] = None
     """
@@ -329,7 +335,8 @@ class PipelineDict(TypedDict, total=False):
 
     parameters: VariableOrDict[str]
     """
-    [Beta]
+    [Beta] Key/value map of default parameters to use for pipeline execution.
+    Maximum total size: 10k characters (JSON format)
     """
 
     permissions: VariableOrList[PipelinePermissionParam]
@@ -354,6 +361,11 @@ class PipelineDict(TypedDict, total=False):
     """
 
     run_as: VariableOrOptional[RunAsParam]
+    """
+    Write-only setting, available only in Create/Update calls. Specifies the user or service principal that the pipeline runs as. If not specified, the pipeline runs as the user who created the pipeline.
+    
+    Only `user_name` or `service_principal_name` can be specified. If both are specified, an error is thrown.
+    """
 
     schema: VariableOrOptional[str]
     """
