@@ -479,7 +479,7 @@ var testDeps = map[string]prepareWorkspace{
 		parentPath := "/Workspace/Users/user@example.com"
 
 		// Create parent directory if it doesn't exist
-		err := client.Workspace.MkdirsByPath(ctx, parentPath) //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
+		err := client.Workspace.MkdirsByPath(ctx, parentPath)
 		if err != nil {
 			return nil, err
 		}
