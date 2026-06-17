@@ -114,7 +114,7 @@ func newGetRunCommand() *cobra.Command {
 
 		runID, err := strconv.ParseInt(args[0], 10, 64)
 		if err != nil || runID <= 0 {
-			return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", true,
+			return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false,
 				fmt.Errorf("invalid JOB_RUN_ID %q: must be a positive integer", args[0]))
 		}
 

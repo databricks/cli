@@ -45,7 +45,7 @@ Exit code: 1
     "code": "INVALID_ARGS",
     "kind": "PERMANENT",
     "message": "invalid JOB_RUN_ID \"notanumber\": must be a positive integer",
-    "retryable": true
+    "retryable": false
   }
 }
 
