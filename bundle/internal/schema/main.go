@@ -12,6 +12,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/config/variable"
+	"github.com/databricks/cli/internal/clijson"
 	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/jsonschema"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -205,52 +206,67 @@ func removeOutputOnlyFields(typ reflect.Type, s jsonschema.Schema) jsonschema.Sc
 }
 
 func main() {
-	if len(os.Args) < 3 {
-		fmt.Println("Usage: go run main.go <work-dir> <output-file> [--docs]")
+	if len(os.Args) < 4 {
+		fmt.Println("Usage: go run main.go <work-dir> <output-file> <cli-json> [--docs]")
 		os.Exit(1)
 	}
 
-	// Directory with annotation files
+	// Directory with the annotations file
 	workdir := os.Args[1]
 	// Output file, where the generated JSON schema will be written to.
 	outputFile := os.Args[2]
+	// The .codegen/cli.json spec. Its schema graph carries the descriptions,
+	// enums and field behaviors the CLI reflects onto its config types.
+	cliJSONFile := os.Args[3]
 
 	// When --docs is passed, skip interpolation patterns and add sinceVersion annotations.
 	// This generates a schema optimized for documentation.
-	docsMode := len(os.Args) >= 4 && os.Args[3] == "--docs"
+	docsMode := len(os.Args) >= 5 && os.Args[4] == "--docs"
 
-	generateSchema(workdir, outputFile, docsMode)
+	generateSchema(workdir, outputFile, cliJSONFile, docsMode)
 }
 
-func generateSchema(workdir, outputFile string, docsMode bool) {
+// configTypeGraph builds the type graph for the bundle config root with the
+// schema generator's structural field prunes applied, so the annotations file
+// only documents fields the generated schema actually contains. Both the
+// generator and the detached-annotation test use it to stay in lockstep.
+func configTypeGraph() (*typeGraph, error) {
+	return newTypeGraph(reflect.TypeFor[config.Root](), removeJobsFields, removePipelineFields)
+}
+
+func generateSchema(workdir, outputFile, cliJSONFile string, docsMode bool) {
 	annotationsPath := filepath.Join(workdir, "annotations.yml")
-	annotationsOpenApiPath := filepath.Join(workdir, "annotations_openapi.yml")
-	annotationsOpenApiOverridesPath := filepath.Join(workdir, "annotations_openapi_overrides.yml")
 
-	// The .codegen/cli.json spec is the source for the generated annotation
-	// files. Its schema graph carries the descriptions, enums and field
-	// behaviors the CLI reflects onto its config types. When unset, the
-	// committed annotation files are used as-is.
-	cliJSONFile := os.Getenv("DATABRICKS_CLI_JSON") //nolint:forbidigo // main() entry point, no ctx
-
-	var p *annotationParser
-	if cliJSONFile != "" {
-		schemas, err := parseCliJSON(cliJSONFile)
-		if err != nil {
-			log.Fatal(err)
-		}
-		p = newParser(schemas)
+	// The cli.json schema graph is keyed by SDK type name (e.g.
+	// "jobs.JobSettings"); the annotation parser matches Go SDK types against
+	// those keys directly.
+	doc, err := clijson.Parse(cliJSONFile)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if len(doc.Schemas) == 0 {
+		log.Fatalf("no schemas found in %s", cliJSONFile)
 	}
 
-	if p != nil {
-		fmt.Printf("Writing annotations to %s\n", annotationsOpenApiPath)
-		err := p.extractAnnotations(reflect.TypeFor[config.Root](), annotationsOpenApiPath, annotationsOpenApiOverridesPath)
-		if err != nil {
-			log.Fatal(err)
-		}
+	extracted, err := newParser(doc.Schemas).extractAnnotations(reflect.TypeFor[config.Root]())
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	a, err := newAnnotationHandler([]string{annotationsOpenApiPath, annotationsOpenApiOverridesPath, annotationsPath})
+	graph, err := configTypeGraph()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fromFile, unknown, err := loadAnnotationsFile(annotationsPath, graph)
+	if err != nil {
+		log.Fatal(err)
+	}
+	for _, k := range unknown {
+		fmt.Printf("Dropping annotation at `%s`: no matching field in the bundle configuration\n", k)
+	}
+
+	a, err := newAnnotationHandler(extracted, fromFile)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -283,7 +299,7 @@ func generateSchema(workdir, outputFile string, docsMode bool) {
 	}
 
 	// Overwrite the input annotation file, adding missing annotations
-	err = a.syncWithMissingAnnotations(annotationsPath)
+	err = a.syncWithMissingAnnotations(annotationsPath, graph)
 	if err != nil {
 		log.Fatal(err)
 	}
