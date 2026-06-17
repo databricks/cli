@@ -164,15 +164,6 @@ func LookupTFField(state TFStateAttrs, group, name string, fieldPath *structpath
 		return value, nil
 	}
 
-	// Some DABs fields are top-level in TF state but DABsPathToTerraform added a
-	// wrapper prefix (e.g. "spec" for postgres resources). When the wrapped path
-	// fails, retry with the original unwrapped path.
-	if _, hasWrapper := terraform_dabs_map.DABsToTerraformWrappers[group]; hasWrapper {
-		if v, e := navigateTFState(attrs, fieldPath); e == nil {
-			return v, nil
-		}
-	}
-
 	// Apply state-only field aliases for fields whose DABs name differs from TF state name.
 	if aliases, ok := tfStateFieldAliases[group]; ok {
 		// Replace the first path segment if it matches a known alias.
