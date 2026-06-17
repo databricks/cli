@@ -6,7 +6,7 @@ if TYPE_CHECKING:
 
 import codegen.packages as packages
 from codegen.code_builder import CodeBuilder
-from codegen.jsonschema import Property, Schema, Stage
+from codegen.jsonschema import LaunchStage, Property, Schema
 from codegen.packages import is_resource
 
 
@@ -161,7 +161,7 @@ def generate_field(
             default=None,
             default_factory="dict",
             create_func_default="None",
-            experimental=prop.stage == Stage.PRIVATE,
+            experimental=prop.stage == LaunchStage.PRIVATE_PREVIEW,
             deprecated=prop.deprecated or False,
         )
     elif field_type.name == "VariableOrList":
@@ -174,7 +174,7 @@ def generate_field(
             default=None,
             default_factory="list",
             create_func_default="None",
-            experimental=prop.stage == Stage.PRIVATE,
+            experimental=prop.stage == LaunchStage.PRIVATE_PREVIEW,
             deprecated=prop.deprecated or False,
         )
     elif is_required:
@@ -187,7 +187,7 @@ def generate_field(
             default=None,
             default_factory=None,
             create_func_default=None,
-            experimental=prop.stage == Stage.PRIVATE,
+            experimental=prop.stage == LaunchStage.PRIVATE_PREVIEW,
             deprecated=prop.deprecated or False,
         )
     else:
@@ -200,7 +200,7 @@ def generate_field(
             default="None",
             default_factory=None,
             create_func_default="None",
-            experimental=prop.stage == Stage.PRIVATE,
+            experimental=prop.stage == LaunchStage.PRIVATE_PREVIEW,
             deprecated=prop.deprecated or False,
         )
 
@@ -335,7 +335,7 @@ def generate_dataclass(
         description=schema.description,
         fields=fields,
         extends=extends,
-        experimental=schema.stage == Stage.PRIVATE,
+        experimental=schema.stage == LaunchStage.PRIVATE_PREVIEW,
         deprecated=schema.deprecated or False,
     )
 

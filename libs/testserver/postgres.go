@@ -3,6 +3,7 @@ package testserver
 import (
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 
@@ -714,6 +715,212 @@ func (s *FakeWorkspace) PostgresEndpointDelete(name string) Response {
 	}
 }
 
+// PostgresDatabaseCreate creates a new postgres database.
+func (s *FakeWorkspace) PostgresDatabaseCreate(req Request, parent, databaseID string) Response {
+	defer s.LockUnlock()()
+
+	if databaseID == "" {
+		return postgresErrorResponse(400, "INVALID_PARAMETER_VALUE", `Field 'database_id' is required, expected non-default value (not "")!`)
+	}
+
+	// Check if parent branch exists
+	if _, exists := s.PostgresBranches[parent]; !exists {
+		return postgresNotFoundResponse("branch")
+	}
+
+	var database postgres.Database
+	if len(req.Body) > 0 {
+		if err := json.Unmarshal(req.Body, &database); err != nil {
+			return Response{
+				StatusCode: 400,
+				Body:       fmt.Sprintf("cannot unmarshal request body: %v", err),
+			}
+		}
+	}
+
+	// The real Lakebase API requires the owning role on create and rejects an empty
+	// one with this exact error (verified on e2-dogfood 2026-06-16). The fake does
+	// not synthesize a default, matching that behavior.
+	if database.Spec == nil || database.Spec.Role == "" {
+		return postgresErrorResponse(400, "INVALID_PARAMETER_VALUE", "Field 'spec.role' cannot be empty")
+	}
+
+	name := fmt.Sprintf("%s/databases/%s", parent, databaseID)
+
+	if _, exists := s.PostgresDatabases[name]; exists {
+		// The real Lakebase API returns 400 BAD_REQUEST (not 409) for a duplicate
+		// create, the same as postgres_roles. Match it so the conflict a bundle hits
+		// on a pre-existing database looks the same.
+		return postgresErrorResponse(400, "BAD_REQUEST", "database with that name already exists")
+	}
+
+	now := nowTime()
+	database.Name = name
+	database.Parent = parent
+	database.CreateTime = now
+	database.UpdateTime = now
+
+	// Mirror spec onto status; the real API only echoes Status on GET.
+	status := &postgres.DatabaseDatabaseStatus{
+		DatabaseId:       databaseID,
+		PostgresDatabase: database.Spec.PostgresDatabase,
+		Role:             database.Spec.Role,
+	}
+	database.Status = status
+	database.Spec = nil
+
+	s.PostgresDatabases[name] = database
+
+	return Response{
+		Body: s.createOperationLocked(database.Name, database),
+	}
+}
+
+// PostgresDatabaseGet retrieves a postgres database by name.
+func (s *FakeWorkspace) PostgresDatabaseGet(name string) Response {
+	defer s.LockUnlock()()
+
+	// Extract project and branch names from database name
+	// Format: projects/{project}/branches/{branch}/databases/{database}
+	parts := strings.Split(name, "/branches/")
+	if len(parts) == 2 {
+		projectName := parts[0]
+		if _, exists := s.PostgresProjects[projectName]; !exists {
+			return postgresNotFoundResponse("project")
+		}
+		branchParts := strings.Split(parts[1], "/databases/")
+		if len(branchParts) == 2 {
+			branchName := projectName + "/branches/" + branchParts[0]
+			if _, exists := s.PostgresBranches[branchName]; !exists {
+				return postgresNotFoundResponse("branch")
+			}
+		}
+	}
+
+	database, exists := s.PostgresDatabases[name]
+	if !exists {
+		return postgresNotFoundResponse("database")
+	}
+
+	return Response{
+		Body: database,
+	}
+}
+
+// PostgresDatabaseList lists all postgres databases for a branch.
+func (s *FakeWorkspace) PostgresDatabaseList(parent string) Response {
+	defer s.LockUnlock()()
+
+	if _, exists := s.PostgresBranches[parent]; !exists {
+		return postgresNotFoundResponse("branch")
+	}
+
+	var databases []postgres.Database
+	prefix := parent + "/databases/"
+	for name, d := range s.PostgresDatabases {
+		if strings.HasPrefix(name, prefix) {
+			databases = append(databases, d)
+		}
+	}
+
+	return Response{
+		Body: postgres.ListDatabasesResponse{
+			Databases: databases,
+		},
+	}
+}
+
+// PostgresDatabaseUpdate updates a postgres database.
+func (s *FakeWorkspace) PostgresDatabaseUpdate(req Request, name string) Response {
+	defer s.LockUnlock()()
+
+	database, exists := s.PostgresDatabases[name]
+	if !exists {
+		return postgresNotFoundResponse("database")
+	}
+
+	var updateDatabase postgres.Database
+	if len(req.Body) > 0 {
+		if err := json.Unmarshal(req.Body, &updateDatabase); err != nil {
+			return Response{
+				StatusCode: 400,
+				Body:       fmt.Sprintf("cannot unmarshal request body: %v", err),
+			}
+		}
+	}
+
+	if updateDatabase.Spec != nil {
+		// Preserve database_id which is derived from the resource name.
+		databaseID := ""
+		if database.Status != nil {
+			databaseID = database.Status.DatabaseId
+		}
+		var paths []string
+		if mask := req.URL.Query().Get("update_mask"); mask != "" {
+			paths = strings.Split(mask, ",")
+		}
+		database.Status = applyDatabaseSpecMask(database.Status, databaseStatusFromSpec(updateDatabase.Spec), paths)
+		database.Status.DatabaseId = databaseID
+	}
+
+	database.UpdateTime = nowTime()
+	s.PostgresDatabases[name] = database
+
+	return Response{
+		Body: s.createOperationLocked(database.Name, database),
+	}
+}
+
+// databaseStatusFromSpec mirrors the real Postgres Database server's behavior of
+// echoing the spec onto Status while leaving Spec=nil on GET responses.
+func databaseStatusFromSpec(spec *postgres.DatabaseDatabaseSpec) *postgres.DatabaseDatabaseStatus {
+	status := &postgres.DatabaseDatabaseStatus{}
+	if spec == nil {
+		return status
+	}
+	status.PostgresDatabase = spec.PostgresDatabase
+	status.Role = spec.Role
+	return status
+}
+
+// applyDatabaseSpecMask applies the fields named in paths (the update_mask) from
+// desired onto existing. Paths are relative to the Database and "spec."-prefixed;
+// the bare path "spec" replaces the whole subtree, and an empty paths slice
+// replaces everything. Same shape as applyRoleSpecMask.
+func applyDatabaseSpecMask(existing, desired *postgres.DatabaseDatabaseStatus, paths []string) *postgres.DatabaseDatabaseStatus {
+	if len(paths) == 0 || existing == nil {
+		return desired
+	}
+	result := *existing
+	for _, p := range paths {
+		field, _, _ := strings.Cut(strings.TrimPrefix(p, "spec."), ".")
+		switch field {
+		case "spec":
+			result = *desired
+		case "postgres_database":
+			result.PostgresDatabase = desired.PostgresDatabase
+		case "role":
+			result.Role = desired.Role
+		}
+	}
+	return &result
+}
+
+// PostgresDatabaseDelete deletes a postgres database.
+func (s *FakeWorkspace) PostgresDatabaseDelete(name string) Response {
+	defer s.LockUnlock()()
+
+	if _, exists := s.PostgresDatabases[name]; !exists {
+		return postgresNotFoundResponse("database")
+	}
+
+	delete(s.PostgresDatabases, name)
+
+	return Response{
+		Body: s.createOperationLocked(name, nil),
+	}
+}
+
 // PostgresCatalogCreate creates a new postgres catalog.
 func (s *FakeWorkspace) PostgresCatalogCreate(req Request, catalogID string) Response {
 	defer s.LockUnlock()()
@@ -789,6 +996,255 @@ func (s *FakeWorkspace) PostgresCatalogDelete(name string) Response {
 	return Response{Body: s.createOperationLocked(name, nil)}
 }
 
+// roleIDPattern matches a valid postgres role_id per RFC 1123: lowercase letters,
+// numbers and hyphens; 4-63 chars; must start with a letter.
+var roleIDPattern = regexp.MustCompile(`^[a-z][a-z0-9-]{3,62}$`)
+
+// roleStatusFromSpec mirrors the real Postgres Role server's behavior of echoing
+// the spec onto Status (plus default-deriving fields the user did not specify)
+// while leaving Spec=nil on GET responses.
+func roleStatusFromSpec(spec *postgres.RoleRoleSpec) *postgres.RoleRoleStatus {
+	status := &postgres.RoleRoleStatus{}
+	if spec == nil {
+		return status
+	}
+	status.PostgresRole = spec.PostgresRole
+	status.MembershipRoles = spec.MembershipRoles
+	status.IdentityType = spec.IdentityType
+	if status.IdentityType == "" {
+		// Server returns IDENTITY_TYPE_UNSPECIFIED for plain Postgres roles.
+		status.IdentityType = "IDENTITY_TYPE_UNSPECIFIED"
+	}
+	status.AuthMethod = spec.AuthMethod
+	if status.AuthMethod == "" {
+		// Server derives auth_method from identity_type when the user omits it:
+		// see SDK comment on postgres.RoleRoleSpec.AuthMethod.
+		switch spec.IdentityType {
+		case postgres.RoleIdentityTypeGroup:
+			status.AuthMethod = postgres.RoleAuthMethodNoLogin
+		case postgres.RoleIdentityTypeUser, postgres.RoleIdentityTypeServicePrincipal:
+			status.AuthMethod = postgres.RoleAuthMethodLakebaseOauthV1
+		default:
+			status.AuthMethod = postgres.RoleAuthMethodPgPasswordScramSha256
+		}
+	}
+	// Real server always echoes an attributes block (all-false when unspecified).
+	attrs := &postgres.RoleAttributes{
+		ForceSendFields: []string{"Bypassrls", "Createdb", "Createrole"},
+	}
+	if spec.Attributes != nil {
+		attrs.Bypassrls = spec.Attributes.Bypassrls
+		attrs.Createdb = spec.Attributes.Createdb
+		attrs.Createrole = spec.Attributes.Createrole
+	}
+	status.Attributes = attrs
+	return status
+}
+
+// PostgresRoleCreate creates a new postgres role.
+func (s *FakeWorkspace) PostgresRoleCreate(req Request, parent, roleID string) Response {
+	defer s.LockUnlock()()
+
+	// Check if parent branch exists
+	if _, exists := s.PostgresBranches[parent]; !exists {
+		return postgresNotFoundResponse("branch")
+	}
+
+	// When role_id is empty the real API generates one; mirror that here so the
+	// CLI's "let the server pick" path is exercised by tests.
+	if roleID == "" {
+		roleID = "role-" + nextUUID()[:8]
+	}
+	if !roleIDPattern.MatchString(roleID) {
+		return postgresErrorResponse(400, "INVALID_PARAMETER_VALUE",
+			`Field 'role_id' must be 4-63 characters, start with a lowercase letter, and contain only lowercase letters, numbers and hyphens (RFC 1123).`)
+	}
+
+	var role postgres.Role
+	if len(req.Body) > 0 {
+		if err := json.Unmarshal(req.Body, &role); err != nil {
+			return Response{
+				StatusCode: 400,
+				Body:       fmt.Sprintf("cannot unmarshal request body: %v", err),
+			}
+		}
+	}
+
+	name := fmt.Sprintf("%s/roles/%s", parent, roleID)
+
+	if _, exists := s.PostgresRoles[name]; exists {
+		// The real Lakebase API returns 400 BAD_REQUEST (not 409) for a duplicate
+		// role, with this message (verified on dogfood 2026-06-10). Match it so the
+		// conflict a bundle hits on an inherited/pre-existing role looks the same.
+		return postgresErrorResponse(400, "BAD_REQUEST", "role with that name already exists")
+	}
+
+	now := nowTime()
+	role.Name = name
+	role.Parent = parent
+	role.CreateTime = now
+	role.UpdateTime = now
+
+	role.Status = roleStatusFromSpec(role.Spec)
+	role.Status.RoleId = roleID
+	role.Spec = nil
+
+	s.PostgresRoles[name] = role
+
+	return Response{
+		Body: s.createOperationLocked(role.Name, role),
+	}
+}
+
+// PostgresRoleGet retrieves a postgres role by name.
+func (s *FakeWorkspace) PostgresRoleGet(name string) Response {
+	defer s.LockUnlock()()
+
+	// Extract project and branch names from role name
+	// Format: projects/{project}/branches/{branch}/roles/{role}
+	parts := strings.Split(name, "/branches/")
+	if len(parts) == 2 {
+		projectName := parts[0]
+		if _, exists := s.PostgresProjects[projectName]; !exists {
+			return postgresNotFoundResponse("project")
+		}
+		branchParts := strings.Split(parts[1], "/roles/")
+		if len(branchParts) == 2 {
+			branchName := projectName + "/branches/" + branchParts[0]
+			if _, exists := s.PostgresBranches[branchName]; !exists {
+				return postgresNotFoundResponse("branch")
+			}
+		}
+	}
+
+	role, exists := s.PostgresRoles[name]
+	if !exists {
+		return postgresNotFoundResponse("role")
+	}
+
+	return Response{
+		Body: role,
+	}
+}
+
+// PostgresRoleList lists all postgres roles for a branch.
+func (s *FakeWorkspace) PostgresRoleList(parent string) Response {
+	defer s.LockUnlock()()
+
+	if _, exists := s.PostgresBranches[parent]; !exists {
+		return postgresNotFoundResponse("branch")
+	}
+
+	var roles []postgres.Role
+	prefix := parent + "/roles/"
+	for name, r := range s.PostgresRoles {
+		if strings.HasPrefix(name, prefix) {
+			roles = append(roles, r)
+		}
+	}
+
+	return Response{
+		Body: postgres.ListRolesResponse{
+			Roles: roles,
+		},
+	}
+}
+
+// PostgresRoleUpdate updates a postgres role. The update_mask query parameter
+// selects which spec fields to apply; the request body always carries the full
+// desired spec. An empty update_mask updates all fields, matching the API
+// ("if unspecified, all fields will be updated when possible").
+func (s *FakeWorkspace) PostgresRoleUpdate(req Request, name string) Response {
+	defer s.LockUnlock()()
+
+	role, exists := s.PostgresRoles[name]
+	if !exists {
+		return postgresNotFoundResponse("role")
+	}
+
+	var updateRole postgres.Role
+	if len(req.Body) > 0 {
+		if err := json.Unmarshal(req.Body, &updateRole); err != nil {
+			return Response{
+				StatusCode: 400,
+				Body:       fmt.Sprintf("cannot unmarshal request body: %v", err),
+			}
+		}
+	}
+
+	if updateRole.Spec != nil {
+		// Preserve role_id which is derived from the resource name.
+		roleID := ""
+		if role.Status != nil {
+			roleID = role.Status.RoleId
+		}
+		var paths []string
+		if mask := req.URL.Query().Get("update_mask"); mask != "" {
+			paths = strings.Split(mask, ",")
+		}
+		role.Status = applyRoleSpecMask(role.Status, roleStatusFromSpec(updateRole.Spec), paths)
+		role.Status.RoleId = roleID
+	}
+
+	role.UpdateTime = nowTime()
+	s.PostgresRoles[name] = role
+
+	return Response{
+		Body: s.createOperationLocked(role.Name, role),
+	}
+}
+
+// applyRoleSpecMask applies the fields named in paths (the update_mask) from
+// desired onto existing. Paths are relative to the Role and "spec."-prefixed; the
+// bare path "spec" replaces the whole subtree, and an empty paths slice replaces
+// everything.
+//
+// A nested path such as "spec.attributes.createdb" is collapsed to its top-level
+// field ("attributes"), and that whole field is taken from desired. This is a
+// simplification: the real backend masks at the individual leaf (verified on
+// dogfood 2026-06-16 — update_mask=spec.attributes.createdb leaves the sibling
+// attributes untouched), but the direct engine always sends the full spec in the
+// request body, so the collapsed result is identical for the requests it makes.
+func applyRoleSpecMask(existing, desired *postgres.RoleRoleStatus, paths []string) *postgres.RoleRoleStatus {
+	if len(paths) == 0 || existing == nil {
+		return desired
+	}
+	result := *existing
+	for _, p := range paths {
+		field, _, _ := strings.Cut(strings.TrimPrefix(p, "spec."), ".")
+		switch field {
+		case "spec":
+			result = *desired
+		case "postgres_role":
+			result.PostgresRole = desired.PostgresRole
+		case "auth_method":
+			result.AuthMethod = desired.AuthMethod
+		case "identity_type":
+			result.IdentityType = desired.IdentityType
+		case "membership_roles":
+			result.MembershipRoles = desired.MembershipRoles
+		case "attributes":
+			result.Attributes = desired.Attributes
+		}
+	}
+	return &result
+}
+
+// PostgresRoleDelete deletes a postgres role.
+func (s *FakeWorkspace) PostgresRoleDelete(name string) Response {
+	defer s.LockUnlock()()
+
+	if _, exists := s.PostgresRoles[name]; !exists {
+		return postgresNotFoundResponse("role")
+	}
+
+	delete(s.PostgresRoles, name)
+
+	return Response{
+		Body: s.createOperationLocked(name, nil),
+	}
+}
+
 // PostgresOperationGet retrieves a postgres operation by name.
 func (s *FakeWorkspace) PostgresOperationGet(name string) Response {
 	defer s.LockUnlock()()
@@ -808,7 +1264,9 @@ func (s *FakeWorkspace) createOperationLocked(resourceName string, response any)
 	operationID := nextUUID()
 	operationName := resourceName + "/operations/" + operationID
 
-	// Determine resource type from name for metadata @type
+	// Determine resource type from name for metadata @type.
+	// Check the more specific suffixes first since database/role/endpoint names
+	// also contain "/branches/".
 	resourceType := "Project"
 	switch {
 	case strings.HasPrefix(resourceName, "catalogs/"):
@@ -817,6 +1275,10 @@ func (s *FakeWorkspace) createOperationLocked(resourceName string, response any)
 		resourceType = "SyncedTable"
 	case strings.Contains(resourceName, "/endpoints/"):
 		resourceType = "Endpoint"
+	case strings.Contains(resourceName, "/databases/"):
+		resourceType = "Database"
+	case strings.Contains(resourceName, "/roles/"):
+		resourceType = "Role"
 	case strings.Contains(resourceName, "/branches/"):
 		resourceType = "Branch"
 	}

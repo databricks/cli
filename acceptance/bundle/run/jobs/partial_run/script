@@ -1,6 +1,5 @@
 print_requests() {
-    jq --sort-keys 'select(.path | contains("/jobs/run-now"))' < out.requests.txt
-    rm out.requests.txt
+    print_requests.py //jobs/run-now
 }
 
 trace $CLI bundle deploy

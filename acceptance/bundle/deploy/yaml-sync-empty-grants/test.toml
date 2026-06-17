@@ -1,0 +1,6 @@
+# The YAML-sync state upload only runs for the terraform engine; no direct-engine variant.
+[Env]
+DATABRICKS_BUNDLE_ENABLE_EXPERIMENTAL_YAML_SYNC = "true"
+
+[EnvMatrix]
+DATABRICKS_BUNDLE_ENGINE = ["terraform"]
