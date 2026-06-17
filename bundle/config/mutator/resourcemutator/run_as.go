@@ -126,6 +126,16 @@ func validateRunAs(b *bundle.Bundle) diag.Diagnostics {
 		))
 	}
 
+	// UC secrets do not support run_as in the API.
+	if len(b.Config.Resources.Secrets) > 0 {
+		diags = diags.Extend(reportRunAsNotSupported(
+			"secrets",
+			b.Config.GetLocation("resources.secrets"),
+			b.Config.Workspace.CurrentUser.UserName,
+			identity,
+		))
+	}
+
 	return diags
 }
 

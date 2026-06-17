@@ -59,6 +59,7 @@ func allResourceTypes(t *testing.T) []string {
 		"registered_models",
 		"schemas",
 		"secret_scopes",
+		"secrets",
 		"sql_warehouses",
 		"synced_database_tables",
 		"vector_search_endpoints",

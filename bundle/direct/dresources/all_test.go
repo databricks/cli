@@ -129,6 +129,14 @@ var testConfig map[string]any = map[string]any{
 		},
 	},
 
+	"secrets": &resources.Secret{
+		CatalogName: "main",
+		SchemaName:  "default",
+		Name:        "my_secret",
+		Value:       "my_secret_value",
+		Comment:     "Test secret",
+	},
+
 	"secret_scopes": &resources.SecretScope{
 		Name:        "my_secret_scope",
 		BackendType: workspace.ScopeBackendTypeAzureKeyvault,
@@ -704,6 +712,17 @@ var testDeps = map[string]prepareWorkspace{
 		return &GrantsState{
 			SecurableType: "table",
 			FullName:      "main.default.my_index",
+			EmbeddedSlice: []catalog.PrivilegeAssignment{{
+				Privileges: []catalog.Privilege{catalog.PrivilegeSelect},
+				Principal:  "user@example.com",
+			}},
+		}, nil
+	},
+
+	"secrets.grants": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		return &GrantsState{
+			SecurableType: "secret",
+			FullName:      "main.default.my_secret",
 			EmbeddedSlice: []catalog.PrivilegeAssignment{{
 				Privileges: []catalog.Privilege{catalog.PrivilegeSelect},
 				Principal:  "user@example.com",
