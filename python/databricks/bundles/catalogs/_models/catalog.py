@@ -43,6 +43,11 @@ class Catalog(Resource):
     The name of the connection to an external data source.
     """
 
+    custom_max_retention_hours: VariableOrOptional[int] = None
+    """
+    [Public Preview] Custom maximum retention period in hours for the catalog
+    """
+
     grants: VariableOrList[PrivilegeAssignment] = field(default_factory=list)
 
     lifecycle: VariableOrOptional[Lifecycle] = None
@@ -103,6 +108,11 @@ class CatalogDict(TypedDict, total=False):
     connection_name: VariableOrOptional[str]
     """
     The name of the connection to an external data source.
+    """
+
+    custom_max_retention_hours: VariableOrOptional[int]
+    """
+    [Public Preview] Custom maximum retention period in hours for the catalog
     """
 
     grants: VariableOrList[PrivilegeAssignmentParam]

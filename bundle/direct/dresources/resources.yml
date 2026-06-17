@@ -463,6 +463,10 @@ resources:
         reason: immutable
       - field: spec.existing_pipeline_id
         reason: immutable
+      - field: spec.accelerated_sync
+        reason: immutable
+      - field: spec.type_overrides
+        reason: immutable
 
   apps:
     provided_id_fields:
@@ -694,6 +698,10 @@ resources:
       - field: new_pipeline_spec
         reason: immutable
       - field: existing_pipeline_id
+        reason: immutable
+      - field: accelerated_sync
+        reason: immutable
+      - field: type_overrides
         reason: immutable
 
   postgres_roles:

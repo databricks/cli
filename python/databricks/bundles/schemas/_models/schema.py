@@ -39,6 +39,11 @@ class Schema(Resource):
     User-provided free-form text description.
     """
 
+    custom_max_retention_hours: VariableOrOptional[int] = None
+    """
+    [Public Preview] Custom maximum retention period in hours for the schema.
+    """
+
     grants: VariableOrList[PrivilegeAssignment] = field(default_factory=list)
 
     lifecycle: VariableOrOptional[Lifecycle] = None
@@ -80,6 +85,11 @@ class SchemaDict(TypedDict, total=False):
     comment: VariableOrOptional[str]
     """
     User-provided free-form text description.
+    """
+
+    custom_max_retention_hours: VariableOrOptional[int]
+    """
+    [Public Preview] Custom maximum retention period in hours for the schema.
     """
 
     grants: VariableOrList[PrivilegeAssignmentParam]

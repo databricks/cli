@@ -25,6 +25,7 @@ func (*ResourceCatalog) RemapState(info *catalog.CatalogInfo) *catalog.CreateCat
 	return &catalog.CreateCatalog{
 		Comment:                   info.Comment,
 		ConnectionName:            info.ConnectionName,
+		CustomMaxRetentionHours:   info.CustomMaxRetentionHours,
 		ManagedEncryptionSettings: info.ManagedEncryptionSettings,
 		Name:                      info.Name,
 		Options:                   info.Options,
@@ -52,6 +53,7 @@ func (r *ResourceCatalog) DoCreate(ctx context.Context, config *catalog.CreateCa
 func (r *ResourceCatalog) DoUpdate(ctx context.Context, id string, config *catalog.CreateCatalog, _ *PlanEntry) (*catalog.CatalogInfo, error) {
 	updateRequest := catalog.UpdateCatalog{
 		Comment:                      config.Comment,
+		CustomMaxRetentionHours:      config.CustomMaxRetentionHours,
 		EnablePredictiveOptimization: "", // Not supported by DABs
 		IsolationMode:                "", // Not supported by DABs
 		ManagedEncryptionSettings:    config.ManagedEncryptionSettings,
@@ -75,6 +77,7 @@ func (r *ResourceCatalog) DoUpdate(ctx context.Context, id string, config *catal
 func (r *ResourceCatalog) DoUpdateWithID(ctx context.Context, id string, config *catalog.CreateCatalog) (string, *catalog.CatalogInfo, error) {
 	updateRequest := catalog.UpdateCatalog{
 		Comment:                      config.Comment,
+		CustomMaxRetentionHours:      config.CustomMaxRetentionHours,
 		EnablePredictiveOptimization: "", // Not supported by DABs
 		IsolationMode:                "", // Not supported by DABs
 		ManagedEncryptionSettings:    config.ManagedEncryptionSettings,

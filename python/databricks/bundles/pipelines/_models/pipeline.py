@@ -201,6 +201,13 @@ class Pipeline(Resource):
     Whether serverless compute is enabled for this pipeline.
     """
 
+    serverless_compute_id: VariableOrOptional[str] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Serverless compute ID specified by the user for serverless pipelines.
+    """
+
     storage: VariableOrOptional[str] = None
     """
     DBFS root directory for storing checkpoints and tables.
@@ -375,6 +382,13 @@ class PipelineDict(TypedDict, total=False):
     serverless: VariableOrOptional[bool]
     """
     Whether serverless compute is enabled for this pipeline.
+    """
+
+    serverless_compute_id: VariableOrOptional[str]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Serverless compute ID specified by the user for serverless pipelines.
     """
 
     storage: VariableOrOptional[str]

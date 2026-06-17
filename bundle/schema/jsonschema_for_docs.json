@@ -264,6 +264,10 @@
                     "$ref": "#/$defs/string",
                     "x-since-version": "v0.287.0"
                   },
+                  "custom_max_retention_hours": {
+                    "description": "[Public Preview] Custom maximum retention period in hours for the catalog",
+                    "$ref": "#/$defs/int64"
+                  },
                   "grants": {
                     "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/catalog.PrivilegeAssignment",
                     "x-since-version": "v0.287.0"
@@ -623,7 +627,7 @@
                     "x-since-version": "v0.265.0"
                   },
                   "database_name": {
-                    "description": "[Public Preview] The name of the database (in a instance) associated with the catalog.",
+                    "description": "[Public Preview] The name of the database (in an instance) associated with the catalog.",
                     "$ref": "#/$defs/string",
                     "x-since-version": "v0.265.0"
                   },
@@ -1389,6 +1393,12 @@
                     "$ref": "#/$defs/bool",
                     "x-since-version": "v0.229.0"
                   },
+                  "serverless_compute_id": {
+                    "description": "[Private Preview] Serverless compute ID specified by the user for serverless pipelines.",
+                    "$ref": "#/$defs/string",
+                    "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                    "doNotSuggest": true
+                  },
                   "storage": {
                     "description": "DBFS root directory for storing checkpoints and tables.",
                     "$ref": "#/$defs/string",
@@ -1537,19 +1547,24 @@
                 "type": "object",
                 "properties": {
                   "database_id": {
-                    "$ref": "#/$defs/string"
+                    "$ref": "#/$defs/string",
+                    "x-since-version": "v1.4.0"
                   },
                   "lifecycle": {
-                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
+                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle",
+                    "x-since-version": "v1.4.0"
                   },
                   "parent": {
-                    "$ref": "#/$defs/string"
+                    "$ref": "#/$defs/string",
+                    "x-since-version": "v1.4.0"
                   },
                   "postgres_database": {
-                    "$ref": "#/$defs/string"
+                    "$ref": "#/$defs/string",
+                    "x-since-version": "v1.4.0"
                   },
                   "role": {
-                    "$ref": "#/$defs/string"
+                    "$ref": "#/$defs/string",
+                    "x-since-version": "v1.4.0"
                   }
                 },
                 "additionalProperties": false,
@@ -1679,34 +1694,42 @@
                 "properties": {
                   "attributes": {
                     "description": "The desired API-exposed Postgres role attributes to associate with the role.",
-                    "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.RoleAttributes"
+                    "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.RoleAttributes",
+                    "x-since-version": "v1.4.0"
                   },
                   "auth_method": {
                     "description": "How the role is authenticated when connecting to Postgres. If left unspecified, a meaningful authentication method is derived from the identity_type.",
-                    "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.RoleAuthMethod"
+                    "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.RoleAuthMethod",
+                    "x-since-version": "v1.4.0"
                   },
                   "identity_type": {
                     "description": "The type of the Databricks managed identity that this Role represents. Leave empty to create a regular Postgres role not associated with a Databricks identity.",
-                    "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.RoleIdentityType"
+                    "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.RoleIdentityType",
+                    "x-since-version": "v1.4.0"
                   },
                   "lifecycle": {
-                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
+                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle",
+                    "x-since-version": "v1.4.0"
                   },
                   "membership_roles": {
                     "description": "Standard roles that this role is a member of.",
-                    "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/postgres.RoleMembershipRole"
+                    "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/postgres.RoleMembershipRole",
+                    "x-since-version": "v1.4.0"
                   },
                   "parent": {
                     "description": "The branch where this role is created. Format projects/{project_id}/branches/{branch_id}.",
-                    "$ref": "#/$defs/string"
+                    "$ref": "#/$defs/string",
+                    "x-since-version": "v1.4.0"
                   },
                   "postgres_role": {
                     "description": "The name of the Postgres role. Required when creating the role.",
-                    "$ref": "#/$defs/string"
+                    "$ref": "#/$defs/string",
+                    "x-since-version": "v1.4.0"
                   },
                   "role_id": {
                     "description": "The user-specified role ID; becomes the final component of the role's resource name. Must be 4-63 characters, lowercase letters, numbers, and hyphens (RFC 1123).",
-                    "$ref": "#/$defs/string"
+                    "$ref": "#/$defs/string",
+                    "x-since-version": "v1.4.0"
                   }
                 },
                 "additionalProperties": false,
@@ -1718,6 +1741,9 @@
               "resources.PostgresSyncedTable": {
                 "type": "object",
                 "properties": {
+                  "accelerated_sync": {
+                    "$ref": "#/$defs/bool"
+                  },
                   "branch": {
                     "$ref": "#/$defs/string",
                     "x-since-version": "v1.0.0"
@@ -1761,6 +1787,9 @@
                   "timeseries_key": {
                     "$ref": "#/$defs/string",
                     "x-since-version": "v1.0.0"
+                  },
+                  "type_overrides": {
+                    "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/postgres.SyncedTableSyncedTableSpecTypeOverride"
                   }
                 },
                 "additionalProperties": false,
@@ -1959,6 +1988,10 @@
                     "$ref": "#/$defs/string",
                     "x-since-version": "v0.229.0"
                   },
+                  "custom_max_retention_hours": {
+                    "description": "[Public Preview] Custom maximum retention period in hours for the schema.",
+                    "$ref": "#/$defs/int64"
+                  },
                   "grants": {
                     "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/catalog.PrivilegeAssignment",
                     "x-since-version": "v0.229.0"
@@ -2077,7 +2110,7 @@
                     "x-since-version": "v0.260.0"
                   },
                   "cluster_size": {
-                    "description": "Size of the clusters allocated for this warehouse.\nIncreasing the size of a spark cluster allows you to run larger queries on\nit. If you want to increase the number of concurrent queries, please tune\nmax_num_clusters.\n\nSupported values:\n- 2X-Small\n- X-Small\n- Small\n- Medium\n- Large\n- X-Large\n- 2X-Large\n- 3X-Large\n- 4X-Large\n- 5X-Large",
+                    "description": "Size of the clusters allocated for this warehouse.\nIncreasing the size of a spark cluster allows you to run larger queries on\nit. If you want to increase the number of concurrent queries, please tune\nmax_num_clusters.\n\nSupported values:\n- 2X-Small\n- X-Small\n- Small\n- Medium\n- Large\n- X-Large\n- 2X-Large\n- 3X-Large\n- 4X-Large\n- 5X-Large\n- Auto",
                     "$ref": "#/$defs/string",
                     "x-since-version": "v0.260.0"
                   },
@@ -2848,7 +2881,8 @@
                   "x-since-version": "v1.0.0"
                 },
                 "postgres_databases": {
-                  "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.PostgresDatabase"
+                  "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.PostgresDatabase",
+                  "x-since-version": "v1.4.0"
                 },
                 "postgres_endpoints": {
                   "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.PostgresEndpoint",
@@ -2859,7 +2893,8 @@
                   "x-since-version": "v0.287.0"
                 },
                 "postgres_roles": {
-                  "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.PostgresRole"
+                  "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.PostgresRole",
+                  "x-since-version": "v1.4.0"
                 },
                 "postgres_synced_tables": {
                   "description": "The Postgres synced table definitions for the bundle, where each key is the name of the synced table. Each entry continuously replicates a Unity Catalog Delta source table into a Postgres table on a Lakebase Autoscaling instance.",
@@ -3690,7 +3725,7 @@
               "description": "A single telemetry export destination with its configuration and status.",
               "properties": {
                 "unity_catalog": {
-                  "description": "Unity Catalog Destinations for OTEL telemetry export.",
+                  "description": "[Public Preview] Unity Catalog Destinations for OTEL telemetry export.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.UnityCatalog",
                   "x-since-version": "v0.294.0"
                 }
@@ -3702,17 +3737,17 @@
               "description": "Unity Catalog Destinations for OTEL telemetry export.",
               "properties": {
                 "logs_table": {
-                  "description": "Unity Catalog table for OTEL logs.",
+                  "description": "[Public Preview] Unity Catalog table for OTEL logs.",
                   "$ref": "#/$defs/string",
                   "x-since-version": "v0.294.0"
                 },
                 "metrics_table": {
-                  "description": "Unity Catalog table for OTEL metrics.",
+                  "description": "[Public Preview] Unity Catalog table for OTEL metrics.",
                   "$ref": "#/$defs/string",
                   "x-since-version": "v0.294.0"
                 },
                 "traces_table": {
-                  "description": "Unity Catalog table for OTEL traces (spans).",
+                  "description": "[Public Preview] Unity Catalog table for OTEL traces (spans).",
                   "$ref": "#/$defs/string",
                   "x-since-version": "v0.294.0"
                 }
@@ -4304,6 +4339,10 @@
                   "description": "Availability type used for all subsequent nodes past the `first_on_demand` ones.\nNote: If `first_on_demand` is zero, this availability\ntype will be used for the entire cluster.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.AzureAvailability",
                   "x-since-version": "v0.229.0"
+                },
+                "capacity_reservation_group": {
+                  "description": "[Public Preview] The Azure capacity reservation group resource ID to use for launching VMs.\nWhen specified, VMs will be launched using the provided capacity reservation.\n\nCapacity reservations can only be specified when the workspace uses injected vnet (i.e. customer defined vnet not\nmanaged by databricks). Ensure the databricks-login-prod Enterprise Application is granted the following four permissions:\n1. Microsoft.Compute/capacityReservationGroups/read\n2. Microsoft.Compute/capacityReservationGroups/deploy/action\n3. Microsoft.Compute/capacityReservationGroups/capacityReservations/read\n4. Microsoft.Compute/capacityReservationGroups/capacityReservations/deploy/action\n\nFormat: `/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Compute/capacityReservationGroups/{capacityReservationGroupName}`",
+                  "$ref": "#/$defs/string"
                 },
                 "first_on_demand": {
                   "description": "The first `first_on_demand` nodes of the cluster will be placed on on-demand instances.\nThis value should be greater than 0, to make sure the cluster driver node is placed on an\non-demand instance. If this value is greater than or equal to the current cluster size, all\nnodes will be placed on on-demand instances. If this value is less than the current cluster\nsize, `first_on_demand` nodes will be placed on on-demand instances and the remainder will\nbe placed on `availability` instances. Note that this value does not affect\ncluster size and cannot currently be mutated over the lifetime of a cluster.",
@@ -5079,12 +5118,12 @@
               "type": "object",
               "properties": {
                 "key": {
-                  "description": "[Public Preview] The key of the custom tag.",
+                  "description": "[Beta] The key of the custom tag.",
                   "$ref": "#/$defs/string",
                   "x-since-version": "v0.273.0"
                 },
                 "value": {
-                  "description": "[Public Preview] The value of the custom tag.",
+                  "description": "[Beta] The value of the custom tag.",
                   "$ref": "#/$defs/string",
                   "x-since-version": "v0.273.0"
                 }
@@ -5231,6 +5270,12 @@
               "type": "object",
               "description": "Specification of a synced database table.",
               "properties": {
+                "accelerated_sync": {
+                  "description": "[Private Preview] When true, enables accelerated sync mode for the initial data load.\nThis significantly improves performance for large tables.\nRequires workspace-level enablement.",
+                  "$ref": "#/$defs/bool",
+                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                  "doNotSuggest": true
+                },
                 "create_database_objects_if_missing": {
                   "description": "[Public Preview] If true, the synced table's logical database and schema resources in PG\nwill be created if they do not already exist.",
                   "$ref": "#/$defs/bool",
@@ -5265,9 +5310,54 @@
                   "description": "[Public Preview] Time series key to deduplicate (tie-break) rows with the same primary key.",
                   "$ref": "#/$defs/string",
                   "x-since-version": "v0.266.0"
+                },
+                "type_overrides": {
+                  "description": "[Private Preview] Override the default Delta-\u003ePG type mapping for specific columns.\nA TypeOverride with PG_SPECIFIC_TYPE_UNSPECIFIED is rejected; a valid pg_type must be set.",
+                  "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/database.SyncedTableSpecTypeOverride",
+                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                  "doNotSuggest": true
                 }
               },
               "additionalProperties": false
+            },
+            "database.SyncedTableSpecPgSpecificType": {
+              "type": "string",
+              "description": "PostgreSQL-specific target types that can override the default Delta-to-PG mapping.",
+              "enum": [
+                "PG_SPECIFIC_TYPE_VECTOR"
+              ],
+              "enumDescriptions": [
+                "[Private Preview]"
+              ]
+            },
+            "database.SyncedTableSpecTypeOverride": {
+              "type": "object",
+              "description": "Overrides the default Delta-to-PostgreSQL type mapping for a single column.",
+              "properties": {
+                "column_name": {
+                  "description": "[Private Preview] Name of the source column whose target PostgreSQL type should be overridden.",
+                  "$ref": "#/$defs/string",
+                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                  "doNotSuggest": true
+                },
+                "pg_type": {
+                  "description": "[Private Preview] PostgreSQL-specific target type to use for the column.",
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.SyncedTableSpecPgSpecificType",
+                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                  "doNotSuggest": true
+                },
+                "size": {
+                  "description": "[Private Preview] Size parameter for the target type. Required when pg_type is PG_SPECIFIC_TYPE_VECTOR\n(specifies the vector dimension, e.g., 1024).",
+                  "$ref": "#/$defs/int",
+                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                  "doNotSuggest": true
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "column_name",
+                "pg_type"
+              ]
             },
             "database.SyncedTableState": {
               "type": "string",
@@ -5763,6 +5853,7 @@
             },
             "jobs.GenAiComputeTask": {
               "type": "object",
+              "description": "DEPRECATED — use `AiRuntimeTask` for all new BYOT multi-node GPU\nworkloads (see ai_runtime_task.proto). `AiRuntimeTask` is the only\nsupported BYOT task type for new workloads; this proto is retained only\nfor AIR CLI (fka SGCLI) pywheel backwards compatibility and will be\nremoved once the pywheel → databricks-cli migration completes (post-\nPuPr).",
               "properties": {
                 "command": {
                   "description": "[Private Preview] Command launcher to run the actual script, e.g. bash, python etc.",
@@ -7068,7 +7159,7 @@
                   "x-since-version": "v0.229.0"
                 },
                 "gen_ai_compute_task": {
-                  "description": "[Private Preview]",
+                  "description": "[Private Preview] DEPRECATED — use `AiRuntimeTask` for all new BYOT multi-node GPU\nworkloads (see ai_runtime_task.proto). `AiRuntimeTask` is the only\nsupported BYOT task type for new workloads; this proto is retained only\nfor AIR CLI (fka SGCLI) pywheel backwards compatibility and will be\nremoved once the pywheel → databricks-cli migration completes (post-\nPuPr).",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.GenAiComputeTask",
                   "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
@@ -8269,44 +8360,56 @@
               "description": "Meta Marketing (Meta Ads) specific options for ingestion",
               "properties": {
                 "action_attribution_windows": {
-                  "description": "[Beta] (Optional) Action attribution windows for insights reporting (e.g. \"28d_click\", \"1d_view\")",
+                  "description": "[Beta] (Optional, DEPRECATED — use custom_report_options.action_attribution_windows) Action attribution\nwindows for insights reporting (e.g. \"28d_click\", \"1d_view\")",
                   "$ref": "#/$defs/slice/string",
-                  "x-since-version": "v0.299.2"
+                  "deprecationMessage": "This field is deprecated",
+                  "x-since-version": "v0.299.2",
+                  "deprecated": true
                 },
                 "action_breakdowns": {
-                  "description": "[Beta] (Optional) Action breakdowns to configure for data aggregation",
+                  "description": "[Beta] (Optional, DEPRECATED — use custom_report_options.action_breakdowns) Action breakdowns",
                   "$ref": "#/$defs/slice/string",
-                  "x-since-version": "v0.299.2"
+                  "deprecationMessage": "This field is deprecated",
+                  "x-since-version": "v0.299.2",
+                  "deprecated": true
                 },
                 "action_report_time": {
-                  "description": "[Beta] (Optional) Timing used to report action statistics (impression, conversion, mixed, or lifetime)",
+                  "description": "[Beta] (Optional, DEPRECATED — use custom_report_options.action_report_time) Timing used to report\naction statistics (impression, conversion, mixed, or lifetime)",
                   "$ref": "#/$defs/string",
-                  "x-since-version": "v0.299.2"
+                  "deprecationMessage": "This field is deprecated",
+                  "x-since-version": "v0.299.2",
+                  "deprecated": true
                 },
                 "breakdowns": {
-                  "description": "[Beta] (Optional) Breakdowns to configure for data aggregation",
+                  "description": "[Beta] (Optional, DEPRECATED — use custom_report_options.breakdowns) Breakdowns to configure",
                   "$ref": "#/$defs/slice/string",
-                  "x-since-version": "v0.299.2"
+                  "deprecationMessage": "This field is deprecated",
+                  "x-since-version": "v0.299.2",
+                  "deprecated": true
                 },
                 "custom_insights_lookback_window": {
-                  "description": "[Beta] (Optional) Window in days to revisit data during sync to capture\nupdated conversion data from the API.",
+                  "description": "[Beta] (Optional) Window in days to revisit data during sync to capture\nupdated conversion data from the API, shared by prebuilt and custom reports.",
                   "$ref": "#/$defs/int",
                   "x-since-version": "v0.299.2"
                 },
                 "level": {
-                  "description": "[Beta] (Optional) Granularity of data to pull (account, ad, adset, campaign)",
+                  "description": "[Beta] (Optional, DEPRECATED — use custom_report_options.level) Granularity of data to pull\n(account, ad, adset, campaign)",
                   "$ref": "#/$defs/string",
-                  "x-since-version": "v0.299.2"
+                  "deprecationMessage": "This field is deprecated",
+                  "x-since-version": "v0.299.2",
+                  "deprecated": true
                 },
                 "start_date": {
-                  "description": "[Beta] (Optional) Start date in yyyy-MM-dd format (e.g. 2025-01-15). Data added\nafter this date will be ingested",
+                  "description": "[Beta] (Optional) Start date in yyyy-MM-dd format (e.g. 2025-01-15). Data added\nafter this date will be ingested, shared by prebuilt and custom reports.",
                   "$ref": "#/$defs/string",
                   "x-since-version": "v0.299.2"
                 },
                 "time_increment": {
-                  "description": "[Beta] (Optional) Value in string by which to aggregate statistics (can take all_days, monthly or number of days)",
+                  "description": "[Beta] (Optional, DEPRECATED — use custom_report_options.time_increment) Value in string by which to\naggregate statistics (can take all_days, monthly or number of days)",
                   "$ref": "#/$defs/string",
-                  "x-since-version": "v0.299.2"
+                  "deprecationMessage": "This field is deprecated",
+                  "x-since-version": "v0.299.2",
+                  "deprecated": true
                 }
               },
               "additionalProperties": false
@@ -9026,6 +9129,18 @@
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.AutoFullRefreshPolicy",
                   "x-since-version": "v0.285.0"
                 },
+                "clustering_columns": {
+                  "description": "[Private Preview] List of column names to use for clustering the destination table.\nWhen specified, the destination Delta table will be clustered by these columns.\nThis can improve query performance when filtering on these columns.\nNote: clustering_columns in table specific configuration will override the pipeline definition.\nNote: we can only provide enable_auto_clustering or clustering_columns,\nadded as separate fields as we cannot have repeated field in oneof.",
+                  "$ref": "#/$defs/slice/string",
+                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                  "doNotSuggest": true
+                },
+                "enable_auto_clustering": {
+                  "description": "[Private Preview] Whether to enable auto clustering on the destination table.\nWhen enabled, Delta will automatically optimize the data layout\nbased on the clustering columns for improved query performance.\nNote: enable_auto_clustering in table specific configuration will override the pipeline definition.\nNote: we can only provide enable_auto_clustering or clustering_columns,\nadded as separate fields as we cannot have repeated field in oneof.",
+                  "$ref": "#/$defs/bool",
+                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                  "doNotSuggest": true
+                },
                 "exclude_columns": {
                   "description": "[Public Preview] A list of column names to be excluded for the ingestion.\nWhen not specified, include_columns fully controls what columns to be ingested.\nWhen specified, all other columns including future ones will be automatically included for ingestion.\nThis field in mutually exclusive with `include_columns`.",
                   "$ref": "#/$defs/slice/string",
@@ -9068,6 +9183,12 @@
                   "$ref": "#/$defs/slice/string",
                   "x-since-version": "v0.231.0"
                 },
+                "table_properties": {
+                  "description": "[Private Preview] Table properties to set on the destination table.\nThese are key-value pairs that configure various Delta table behaviors or any user defined properties.\nExample: {\"delta.feature.variantType\": \"supported\", \"delta.enableTypeWidening\": \"true\"}\nNote: table_properties in table specific configuration will override the table_properties of the pipeline definition.",
+                  "$ref": "#/$defs/map/string",
+                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                  "doNotSuggest": true
+                },
                 "workday_report_parameters": {
                   "description": "[Private Preview] (Optional) Additional custom parameters for Workday Report",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.IngestionPipelineDefinitionWorkdayReportParameters",
@@ -9097,49 +9218,59 @@
               "description": "TikTok Ads specific options for ingestion",
               "properties": {
                 "data_level": {
-                  "description": "[Private Preview] (Optional) Data level for the report.\nIf not specified, defaults to AUCTION_CAMPAIGN.",
+                  "description": "[Private Preview] Deprecated. Use custom_report_options.data_level instead.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.TikTokAdsOptionsTikTokDataLevel",
                   "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                  "deprecationMessage": "This field is deprecated",
                   "doNotSuggest": true,
-                  "x-since-version": "v0.298.0"
+                  "x-since-version": "v0.298.0",
+                  "deprecated": true
                 },
                 "dimensions": {
-                  "description": "[Private Preview] (Optional) Dimensions to include in the report.\nExamples: \"campaign_id\", \"adgroup_id\", \"ad_id\", \"stat_time_day\", \"stat_time_hour\"\nIf not specified, defaults to campaign_id.",
+                  "description": "[Private Preview] Deprecated. Use custom_report_options.dimensions instead.",
                   "$ref": "#/$defs/slice/string",
                   "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                  "deprecationMessage": "This field is deprecated",
                   "doNotSuggest": true,
-                  "x-since-version": "v0.298.0"
+                  "x-since-version": "v0.298.0",
+                  "deprecated": true
                 },
                 "lookback_window_days": {
-                  "description": "[Private Preview] (Optional) Number of days to look back for report tables during incremental sync\nto capture late-arriving conversions and attribution data.\nIf not specified, defaults to 7 days.",
+                  "description": "[Private Preview] (Optional) Number of days to look back for report tables during incremental sync\nto capture late-arriving conversions and attribution data.",
                   "$ref": "#/$defs/int",
                   "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v0.298.0"
                 },
                 "metrics": {
-                  "description": "[Private Preview] (Optional) Metrics to include in the report.\nExamples: \"spend\", \"impressions\", \"clicks\", \"conversion\", \"cpc\"\nIf not specified, defaults to basic metrics (spend, impressions, clicks, etc.)",
+                  "description": "[Private Preview] Deprecated. Use custom_report_options.metrics instead.",
                   "$ref": "#/$defs/slice/string",
                   "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                  "deprecationMessage": "This field is deprecated",
                   "doNotSuggest": true,
-                  "x-since-version": "v0.298.0"
+                  "x-since-version": "v0.298.0",
+                  "deprecated": true
                 },
                 "query_lifetime": {
-                  "description": "[Private Preview] (Optional) Whether to request lifetime metrics (all-time aggregated data).\nWhen true, the report returns all-time data.\nIf not specified, defaults to false.",
+                  "description": "[Private Preview] Deprecated. Use custom_report_options.query_lifetime instead.",
                   "$ref": "#/$defs/bool",
                   "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                  "deprecationMessage": "This field is deprecated",
                   "doNotSuggest": true,
-                  "x-since-version": "v0.298.0"
+                  "x-since-version": "v0.298.0",
+                  "deprecated": true
                 },
                 "report_type": {
-                  "description": "[Private Preview] (Optional) Report type for the TikTok Ads API.\nIf not specified, defaults to BASIC.",
+                  "description": "[Private Preview] Deprecated. Use custom_report_options.report_type instead.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.TikTokAdsOptionsTikTokReportType",
                   "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                  "deprecationMessage": "This field is deprecated",
                   "doNotSuggest": true,
-                  "x-since-version": "v0.298.0"
+                  "x-since-version": "v0.298.0",
+                  "deprecated": true
                 },
                 "sync_start_date": {
-                  "description": "[Private Preview] (Optional) Start date for the initial sync of report tables in YYYY-MM-DD format.\nThis determines the earliest date from which to sync historical data.\nIf not specified, defaults to 1 year of historical data for daily reports\nand 30 days for hourly reports.",
+                  "description": "[Private Preview] (Optional) Start date for the initial sync of report tables in YYYY-MM-DD format.\nThis determines the earliest date from which to sync historical data.",
                   "$ref": "#/$defs/string",
                   "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
@@ -9354,15 +9485,18 @@
               "properties": {
                 "bypassrls": {
                   "description": "[Beta]",
-                  "$ref": "#/$defs/bool"
+                  "$ref": "#/$defs/bool",
+                  "x-since-version": "v1.4.0"
                 },
                 "createdb": {
                   "description": "[Beta]",
-                  "$ref": "#/$defs/bool"
+                  "$ref": "#/$defs/bool",
+                  "x-since-version": "v1.4.0"
                 },
                 "createrole": {
                   "description": "[Beta]",
-                  "$ref": "#/$defs/bool"
+                  "$ref": "#/$defs/bool",
+                  "x-since-version": "v1.4.0"
                 }
               },
               "additionalProperties": false
@@ -9405,6 +9539,16 @@
                 "[Beta]"
               ]
             },
+            "postgres.SyncedTableSyncedTableSpecPgSpecificType": {
+              "type": "string",
+              "description": "PostgreSQL-specific target types that can override the default Delta-to-PG mapping.",
+              "enum": [
+                "PG_SPECIFIC_TYPE_VECTOR"
+              ],
+              "enumDescriptions": [
+                "[Private Preview]"
+              ]
+            },
             "postgres.SyncedTableSyncedTableSpecSyncedTableSchedulingPolicy": {
               "type": "string",
               "description": "Scheduling policy of the synced table's underlying pipeline.",
@@ -9417,6 +9561,35 @@
                 "[Beta]",
                 "[Beta]",
                 "[Beta]"
+              ]
+            },
+            "postgres.SyncedTableSyncedTableSpecTypeOverride": {
+              "type": "object",
+              "description": "Overrides the default Delta-to-PostgreSQL type mapping for a single column.",
+              "properties": {
+                "column_name": {
+                  "description": "[Private Preview] Name of the source column whose target PostgreSQL type should be overridden.",
+                  "$ref": "#/$defs/string",
+                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                  "doNotSuggest": true
+                },
+                "pg_type": {
+                  "description": "[Private Preview] PostgreSQL-specific target type to use for the column.",
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.SyncedTableSyncedTableSpecPgSpecificType",
+                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                  "doNotSuggest": true
+                },
+                "size": {
+                  "description": "[Private Preview] Size parameter for the target type. Required when pg_type is PG_SPECIFIC_TYPE_VECTOR\n(specifies the vector dimension, e.g., 1024).",
+                  "$ref": "#/$defs/int",
+                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                  "doNotSuggest": true
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "column_name",
+                "pg_type"
               ]
             },
             "serving.Ai21LabsConfig": {
@@ -10354,7 +10527,7 @@
             },
             "serving.ServedModelInputWorkloadType": {
               "type": "string",
-              "description": "Please keep this in sync with with workload types in InferenceEndpointEntities.scala",
+              "description": "Please keep this in sync with workload types in InferenceEndpointEntities.scala.",
               "enum": [
                 "CPU",
                 "GPU_MEDIUM",
@@ -10383,7 +10556,7 @@
             },
             "serving.ServingModelWorkloadType": {
               "type": "string",
-              "description": "Please keep this in sync with with workload types in InferenceEndpointEntities.scala",
+              "description": "Please keep this in sync with workload types in InferenceEndpointEntities.scala.",
               "enum": [
                 "CPU",
                 "GPU_MEDIUM",
@@ -10728,7 +10901,7 @@
             },
             "sql.SpotInstancePolicy": {
               "type": "string",
-              "description": "EndpointSpotInstancePolicy configures whether the endpoint should use spot\ninstances.\n\nThe breakdown of how the EndpointSpotInstancePolicy converts to per cloud\nconfigurations is:\n\n+-------+--------------------------------------+--------------------------------+\n| Cloud |            COST_OPTIMIZED            |     RELIABILITY_OPTIMIZED |\n+-------+--------------------------------------+--------------------------------+\n| AWS   | On Demand Driver with Spot Executors | On Demand Driver and\nExecutors | | AZURE | On Demand Driver and Executors       | On Demand Driver\nand Executors |\n+-------+--------------------------------------+--------------------------------+\n\nWhile including \"spot\" in the enum name may limit the the future\nextensibility of this field because it limits this enum to denoting \"spot or\nnot\", this is the field that PM recommends after discussion with customers\nper SC-48783.",
+              "description": "EndpointSpotInstancePolicy configures whether the endpoint should use spot\ninstances.\n\nThe breakdown of how the EndpointSpotInstancePolicy converts to per cloud\nconfigurations is:\n\n+-------+--------------------------------------+--------------------------------+\n| Cloud |            COST_OPTIMIZED            |     RELIABILITY_OPTIMIZED |\n+-------+--------------------------------------+--------------------------------+\n| AWS   | On Demand Driver with Spot Executors | On Demand Driver and\nExecutors | | AZURE | On Demand Driver and Executors       | On Demand Driver\nand Executors |\n+-------+--------------------------------------+--------------------------------+",
               "enum": [
                 "POLICY_UNSPECIFIED",
                 "COST_OPTIMIZED",
@@ -10851,10 +11024,6 @@
               "enum": [
                 "STORAGE_OPTIMIZED",
                 "STANDARD"
-              ],
-              "enumDescriptions": [
-                "[Public Preview]",
-                ""
               ]
             },
             "vectorsearch.IndexSubtype": {
@@ -11318,6 +11487,12 @@
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.DatabaseInstanceRef"
                 }
               },
+              "database.SyncedTableSpecTypeOverride": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.SyncedTableSpecTypeOverride"
+                }
+              },
               "jobs.AlertTaskSubscriber": {
                 "type": "array",
                 "items": {
@@ -11460,6 +11635,12 @@
                 "type": "array",
                 "items": {
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.RoleMembershipRole"
+                }
+              },
+              "postgres.SyncedTableSyncedTableSpecTypeOverride": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.SyncedTableSyncedTableSpecTypeOverride"
                 }
               },
               "serving.AiGatewayRateLimit": {

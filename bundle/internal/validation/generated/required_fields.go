@@ -233,7 +233,8 @@ var RequiredFields = map[string][]string{
 
 	"resources.postgres_roles.*": {"role_id", "parent"},
 
-	"resources.postgres_synced_tables.*": {"synced_table_id"},
+	"resources.postgres_synced_tables.*":                   {"synced_table_id"},
+	"resources.postgres_synced_tables.*.type_overrides[*]": {"column_name", "pg_type"},
 
 	"resources.quality_monitors.*":                   {"assets_dir", "output_schema_name", "table_name"},
 	"resources.quality_monitors.*.custom_metrics[*]": {"definition", "input_columns", "name", "output_data_type", "type"},
@@ -249,7 +250,8 @@ var RequiredFields = map[string][]string{
 
 	"resources.sql_warehouses.*.permissions[*]": {"level"},
 
-	"resources.synced_database_tables.*": {"name"},
+	"resources.synced_database_tables.*":                        {"name"},
+	"resources.synced_database_tables.*.spec.type_overrides[*]": {"column_name", "pg_type"},
 
 	"resources.vector_search_endpoints.*":                {"endpoint_type", "name"},
 	"resources.vector_search_endpoints.*.permissions[*]": {"level"},
