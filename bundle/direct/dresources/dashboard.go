@@ -327,6 +327,10 @@ func (r *ResourceDashboard) DoUpdate(ctx context.Context, id string, config *Das
 		return nil, err
 	}
 
+	// The Lakeview PATCH API does not accept a /Workspace/ prefix in parent_path,
+	// unlike the POST (create) API which silently strips it.
+	dashboard.ParentPath = strings.TrimPrefix(dashboard.ParentPath, "/Workspace")
+
 	// TODO: if the only thing that changed was "published", we can skip Update()?
 
 	updateResp, err := r.client.Lakeview.Update(ctx, dashboards.UpdateDashboardRequest{

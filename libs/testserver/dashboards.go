@@ -166,6 +166,17 @@ func (s *FakeWorkspace) DashboardUpdate(req Request) Response {
 		}
 	}
 
+	// The Lakeview PATCH API does not accept a /Workspace/ prefix in parent_path
+	// (unlike the POST API which silently strips it).
+	if strings.HasPrefix(updateReq.ParentPath, "/Workspace/") {
+		return Response{
+			StatusCode: 404,
+			Body: map[string]string{
+				"message": fmt.Sprintf("Path (%s) doesn't exist.", updateReq.ParentPath),
+			},
+		}
+	}
+
 	// Bump etag on every write, matching cloud behavior.
 	prevEtag, err := strconv.Atoi(dashboard.Etag)
 	if err != nil {

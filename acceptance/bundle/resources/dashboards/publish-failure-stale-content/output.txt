@@ -45,7 +45,7 @@ Exit code: 1
   "path": "/api/2.0/lakeview/dashboards/[DASHBOARD1_ID]",
   "body": {
     "display_name": "my dashboard renamed",
-    "parent_path": "/Workspace/Users/[USERNAME]/.bundle/update-publish-failure-stale-content/default/resources",
+    "parent_path": "/Users/[USERNAME]/.bundle/update-publish-failure-stale-content/default/resources",
     "serialized_dashboard": "{\"pages\":[{\"name\":\"test-page\",\"displayName\":\"Test Dashboard\"}]}\n",
     "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
   }
@@ -134,7 +134,7 @@ Deployment complete!
   "path": "/api/2.0/lakeview/dashboards/[DASHBOARD1_ID]",
   "body": {
     "display_name": "my dashboard renamed",
-    "parent_path": "/Workspace/Users/[USERNAME]/.bundle/update-publish-failure-stale-content/default/resources",
+    "parent_path": "/Users/[USERNAME]/.bundle/update-publish-failure-stale-content/default/resources",
     "serialized_dashboard": "{\"pages\":[{\"name\":\"test-page\",\"displayName\":\"Test Dashboard\"}]}\n",
     "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
   }
