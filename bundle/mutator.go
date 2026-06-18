@@ -2,6 +2,7 @@ package bundle
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"reflect"
 	"time"
@@ -136,7 +137,10 @@ func Apply(ctx context.Context, b *Bundle, m Mutator) diag.Diagnostics {
 	logdiag.SetCollect(ctx, true)
 	err := ApplyContext(ctx, b, m)
 	diags := logdiag.FlushCollected(ctx)
-	if err != nil {
+	// A mutator that renders its own diagnostics returns the ErrAlreadyPrinted
+	// sentinel; those diagnostics are already in Collected, so only append errors
+	// that were returned directly (not yet rendered).
+	if err != nil && !errors.Is(err, logdiag.ErrAlreadyPrinted) {
 		diags = append(diags, diag.DiagnosticFromError(err))
 	}
 	return diags
@@ -154,7 +158,10 @@ func ApplySeq(ctx context.Context, b *Bundle, mutators ...Mutator) diag.Diagnost
 	logdiag.SetCollect(ctx, true)
 	err := ApplySeqContext(ctx, b, mutators...)
 	diags := logdiag.FlushCollected(ctx)
-	if err != nil {
+	// A mutator that renders its own diagnostics returns the ErrAlreadyPrinted
+	// sentinel; those diagnostics are already in Collected, so only append errors
+	// that were returned directly (not yet rendered).
+	if err != nil && !errors.Is(err, logdiag.ErrAlreadyPrinted) {
 		diags = append(diags, diag.DiagnosticFromError(err))
 	}
 	return diags

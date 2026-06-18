@@ -108,8 +108,11 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			if b == nil {
 				return
 			}
-			var errMsg string
-			if retErr != nil {
+			// Prefer the first logged error summary: when a mutator renders its
+			// errors and returns the opaque ErrAlreadyPrinted sentinel, retErr no
+			// longer carries the original message.
+			errMsg := logdiag.GetFirstErrorSummary(ctx)
+			if errMsg == "" && retErr != nil && !errors.Is(retErr, root.ErrAlreadyPrinted) {
 				errMsg = retErr.Error()
 			}
 			phases.LogDeployTelemetry(ctx, b, errMsg)

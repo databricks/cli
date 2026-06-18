@@ -50,6 +50,26 @@ func FlushError(ctx context.Context, err error) error {
 	return alreadyPrinted{err}
 }
 
+// Flush logs every diagnostic in ds (warnings, recommendations and errors) and
+// returns ErrAlreadyPrinted if any of them is an error, or nil otherwise.
+//
+// It is the convenience form of the "render diagnostics, then signal failure"
+// pattern used by mutators that report more than one error: accumulate them
+// into a diag.Diagnostics and `return logdiag.Flush(ctx, diags)`.
+func Flush(ctx context.Context, ds diag.Diagnostics) error {
+	hasError := false
+	for _, d := range ds {
+		LogDiag(ctx, d)
+		if d.Severity == diag.Error {
+			hasError = true
+		}
+	}
+	if hasError {
+		return ErrAlreadyPrinted
+	}
+	return nil
+}
+
 func flattenErrors(err error) []error {
 	if err == nil {
 		return nil

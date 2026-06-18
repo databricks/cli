@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/dynvar"
+	"github.com/databricks/cli/libs/logdiag"
 )
 
 type noVariableReferenceInResourceKey struct{}
@@ -22,7 +23,7 @@ func (m *noVariableReferenceInResourceKey) Name() string {
 	return "validate:no_variable_reference_in_resource_key"
 }
 
-func (m *noVariableReferenceInResourceKey) Apply(_ context.Context, b *bundle.Bundle) error {
+func (m *noVariableReferenceInResourceKey) Apply(ctx context.Context, b *bundle.Bundle) error {
 	var diags diag.Diagnostics
 
 	patterns := []dyn.Pattern{
@@ -52,5 +53,5 @@ func (m *noVariableReferenceInResourceKey) Apply(_ context.Context, b *bundle.Bu
 		}
 	}
 
-	return diags.Error()
+	return logdiag.Flush(ctx, diags)
 }

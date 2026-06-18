@@ -30,6 +30,11 @@ type LogDiagData struct {
 	// If Collect is true, diagnostics are appended to Collected. Use SetCollected() to set.
 	Collect   bool
 	Collected []diag.Diagnostic
+
+	// Summary of the first error diagnostic logged, if any. Used for deploy
+	// telemetry, where the returned error may be the opaque ErrAlreadyPrinted
+	// sentinel and no longer carries the original message.
+	FirstErrorSummary string
 }
 
 // IsSetup returns whether InitContext() was already called.
@@ -81,6 +86,16 @@ func NumWarnings(ctx context.Context) int {
 	return val.Warnings
 }
 
+// GetFirstErrorSummary returns the summary of the first error diagnostic logged,
+// or an empty string if no errors have been logged.
+func GetFirstErrorSummary(ctx context.Context) string {
+	val := read(ctx)
+	val.mu.Lock()
+	defer val.mu.Unlock()
+
+	return val.FirstErrorSummary
+}
+
 func SetSeverity(ctx context.Context, target diag.Severity) {
 	val := read(ctx)
 	val.mu.Lock()
@@ -123,6 +138,9 @@ func LogDiag(ctx context.Context, d diag.Diagnostic) {
 	switch d.Severity {
 	case diag.Error:
 		val.Errors += 1
+		if val.FirstErrorSummary == "" {
+			val.FirstErrorSummary = d.Summary
+		}
 	case diag.Warning:
 		val.Warnings += 1
 	case diag.Recommendation:

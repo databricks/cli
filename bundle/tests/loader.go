@@ -1,6 +1,7 @@
 package config_tests
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
@@ -41,7 +42,7 @@ func loadTargetWithDiags(t *testing.T, path, env string) (*bundle.Bundle, diag.D
 
 	loadErr := phases.LoadNamedTarget(ctx, b, env)
 	diags := logdiag.FlushCollected(ctx)
-	if loadErr != nil {
+	if loadErr != nil && !errors.Is(loadErr, logdiag.ErrAlreadyPrinted) {
 		diags = diags.Append(diag.DiagnosticFromError(loadErr))
 	}
 

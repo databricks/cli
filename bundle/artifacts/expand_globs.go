@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/patchwheel"
 )
 
@@ -117,8 +118,8 @@ func (e expandGlobs) Apply(ctx context.Context, b *bundle.Bundle) error {
 		return dyn.SetByPath(rootv, base, dyn.V(output))
 	})
 	if err != nil {
-		diags = diags.Extend(diag.FromErr(err))
+		return err
 	}
 
-	return diags.Error()
+	return logdiag.Flush(ctx, diags)
 }

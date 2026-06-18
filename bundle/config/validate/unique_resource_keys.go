@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/logdiag"
 )
 
 // This mutator validates that:
@@ -125,5 +126,5 @@ func (m *uniqueResourceKeys) Apply(ctx context.Context, b *bundle.Bundle) error 
 		})
 	}
 
-	return diags.Error()
+	return logdiag.Flush(ctx, diags)
 }

@@ -124,7 +124,7 @@ func errorForMissingFields(ctx context.Context, b *bundle.Bundle) error {
 		})
 	}
 
-	return diags.Error()
+	return logdiag.Flush(ctx, diags)
 }
 
 func (f *required) Apply(ctx context.Context, b *bundle.Bundle) error {

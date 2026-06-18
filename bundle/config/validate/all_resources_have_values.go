@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/logdiag"
 )
 
 func AllResourcesHaveValues() bundle.Mutator {
@@ -53,5 +54,5 @@ func (m *allResourcesHaveValues) Apply(ctx context.Context, b *bundle.Bundle) er
 		return err
 	}
 
-	return diags.Error()
+	return logdiag.Flush(ctx, diags)
 }

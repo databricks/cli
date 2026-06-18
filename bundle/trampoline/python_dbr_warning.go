@@ -35,13 +35,15 @@ func (m *wrapperWarning) Apply(ctx context.Context, b *bundle.Bundle) error {
 	}
 
 	diags := hasIncompatibleWheelTasks(ctx, b)
-	if len(diags) > 0 {
-		diags = append(diags, diag.Diagnostic{
-			Severity: diag.Error,
-			Summary:  "Python wheel tasks require compute with DBR 13.3+ to include local libraries. Please change your cluster configuration or use the experimental 'python_wheel_wrapper' setting. See https://docs.databricks.com/dev-tools/bundles/python-wheel.html for more information.",
-		})
+	if len(diags) == 0 {
+		return nil
 	}
-	return diags.Error()
+
+	diags = append(diags, diag.Diagnostic{
+		Severity: diag.Error,
+		Summary:  "Python wheel tasks require compute with DBR 13.3+ to include local libraries. Please change your cluster configuration or use the experimental 'python_wheel_wrapper' setting. See https://docs.databricks.com/dev-tools/bundles/python-wheel.html for more information.",
+	})
+	return logdiag.Flush(ctx, diags)
 }
 
 func isPythonWheelWrapperOn(b *bundle.Bundle) bool {
