@@ -125,6 +125,6 @@ func TestBundleZipDoNotStripNotebookExtensions(t *testing.T) {
 	require.NoError(t, err)
 
 	names := zipEntryNames(t, zipContent)
-	assert.True(t, slices.Contains(names, "files/src/my_notebook.ipynb"), "notebook should have extension stripped")
+	assert.True(t, slices.Contains(names, "files/src/my_notebook.ipynb"), "notebook should keep its extension")
 	assert.True(t, slices.Contains(names, "files/src/script.py"), "regular Python file should keep its extension")
 }

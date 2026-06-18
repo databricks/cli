@@ -8,8 +8,7 @@ import (
 	"github.com/databricks/cli/bundle/artifacts"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/engine"
-	"github.com/databricks/cli/bundle/config/mutator"
-	"github.com/databricks/cli/bundle/deploy"
+"github.com/databricks/cli/bundle/deploy"
 	"github.com/databricks/cli/bundle/deploy/files"
 	"github.com/databricks/cli/bundle/deploy/lock"
 	"github.com/databricks/cli/bundle/deploy/metadata"
@@ -22,7 +21,7 @@ import (
 	"github.com/databricks/cli/bundle/permissions"
 	"github.com/databricks/cli/bundle/scripts"
 	"github.com/databricks/cli/bundle/statemgmt"
-	"github.com/databricks/cli/libs/agent"
+"github.com/databricks/cli/libs/agent"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
@@ -145,13 +144,13 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 
 	if b.Config.Bundle.Deployment.ImmutableFolder {
 		// Upload all source files and built artifacts as a single immutable snapshot.
-		// The API assigns a content-addressed path, so workspace.snapshot_path (and
-		// derived workspace.file_path / workspace.artifact_path) are only known after
-		// upload. Resolve variable references in resources and set library remote paths
-		// once the actual paths are available.
+		// The API assigns a content-addressed workspace.file_path; snapshot.TranslateResourcePaths()
+		// then replaces the local absolute paths (written by translate_paths during validate)
+		// with the actual snapshot remote paths.
 		bundle.ApplySeqContext(ctx, b,
 			snapshot.Upload(),
-			mutator.ResolveVariableReferencesOnlyResources(),
+			snapshot.TranslateResourcePaths(),
+			snapshot.SaveState(),
 		)
 		if !logdiag.HasError(ctx) {
 			_, libDiags := libraries.ReplaceWithRemotePath(ctx, b)

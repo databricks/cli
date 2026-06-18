@@ -15,8 +15,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/fileset"
-	"github.com/databricks/cli/libs/git"
-	"github.com/databricks/cli/libs/set"
+	libsync "github.com/databricks/cli/libs/sync"
 )
 
 // zipEpoch is a fixed timestamp used for all zip entries to make the zip content-addressed
@@ -66,65 +65,18 @@ func SnapshotID(ctx context.Context, b *bundle.Bundle) (string, error) {
 	return IDFromContent(content), nil
 }
 
-// syncFiles returns the list of files to include in the snapshot zip using the
-// same git-aware include/exclude logic as files.Upload (libs/sync).
-func syncFiles(ctx context.Context, b *bundle.Bundle) ([]fileset.File, error) {
-	// Use git.NewFileSet so that .gitignore rules are respected, matching the
-	// behaviour of the normal files.Upload sync path.
-	// Avoid passing an empty/nil paths slice: git.NewFileSet forwards it to
-	// fileset.New whose variadic default ("." if no args) is bypassed when the
-	// caller explicitly passes a nil slice.  The SyncDefaultPath mutator always
-	// sets Sync.Paths to ["."] in the normal pipeline; we replicate that here
-	// so BundleZip works even when the bundle hasn't gone through the full pipeline.
-	var gitFS *git.FileSet
-	var err error
-	if len(b.Config.Sync.Paths) > 0 {
-		gitFS, err = git.NewFileSet(ctx, b.WorktreeRoot, b.SyncRoot, b.Config.Sync.Paths)
-	} else {
-		gitFS, err = git.NewFileSet(ctx, b.WorktreeRoot, b.SyncRoot)
-	}
-	if err != nil {
-		return nil, fmt.Errorf("build file set: %w", err)
-	}
-
-	all := set.NewSetF(func(f fileset.File) string {
-		return f.Relative
+func addSyncRootToZip(ctx context.Context, zw *zip.Writer, b *bundle.Bundle) error {
+	files, err := libsync.GetFileList(ctx, libsync.SyncOptions{
+		WorktreeRoot: b.WorktreeRoot,
+		LocalRoot:    b.SyncRoot,
+		Paths:        b.Config.Sync.Paths,
+		Include:      b.Config.Sync.Include,
+		Exclude:      b.Config.Sync.Exclude,
 	})
-
-	gitFiles, err := gitFS.Files()
 	if err != nil {
-		return nil, fmt.Errorf("list sync files: %w", err)
+		return err
 	}
-	all.Add(gitFiles...)
-
-	if len(b.Config.Sync.Include) > 0 {
-		includeFS, err := fileset.NewGlobSet(b.SyncRoot, b.Config.Sync.Include)
-		if err != nil {
-			return nil, fmt.Errorf("build include set: %w", err)
-		}
-		include, err := includeFS.Files()
-		if err != nil {
-			return nil, fmt.Errorf("list include files: %w", err)
-		}
-		all.Add(include...)
-	}
-
-	if len(b.Config.Sync.Exclude) > 0 {
-		excludeFS, err := fileset.NewGlobSet(b.SyncRoot, b.Config.Sync.Exclude)
-		if err != nil {
-			return nil, fmt.Errorf("build exclude set: %w", err)
-		}
-		exclude, err := excludeFS.Files()
-		if err != nil {
-			return nil, fmt.Errorf("list exclude files: %w", err)
-		}
-		for _, f := range exclude {
-			all.Remove(f)
-		}
-	}
-
-	files := all.Iter()
-	// Sort for a stable zip (same content → same hash regardless of map iteration order).
+	// Sort for a stable zip (same content → same hash regardless of iteration order).
 	slices.SortFunc(files, func(a, b fileset.File) int {
 		if a.Relative < b.Relative {
 			return -1
@@ -134,14 +86,6 @@ func syncFiles(ctx context.Context, b *bundle.Bundle) ([]fileset.File, error) {
 		}
 		return 0
 	})
-	return files, nil
-}
-
-func addSyncRootToZip(ctx context.Context, zw *zip.Writer, b *bundle.Bundle) error {
-	files, err := syncFiles(ctx, b)
-	if err != nil {
-		return err
-	}
 
 	for _, f := range files {
 		rc, err := b.SyncRoot.Open(f.Relative)

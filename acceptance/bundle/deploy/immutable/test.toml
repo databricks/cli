@@ -2,9 +2,15 @@ Local = false
 Cloud = true
 
 Ignore = [
+    "dist",
     "databricks.yml",
     ".databricks",
     ".venv",
     "script",
     "*.pyc",
 ]
+
+[[Repls]]
+# Replace snapshot hash with SNAPSHOT_HASH
+Old = "[0-9a-f]{64}"
+New = "[SNAPSHOT_HASH]"

@@ -10,7 +10,7 @@ import (
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/deploy/files"
 	"github.com/databricks/cli/bundle/deploy/lock"
-	deploymetadata "github.com/databricks/cli/bundle/deploy/metadata"
+	"github.com/databricks/cli/bundle/deploy/snapshot"
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct"
@@ -140,11 +140,11 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 		}
 
 		if b.Config.Bundle.Deployment.ImmutableFolder {
-			// For immutable bundles, resource paths contain ${workspace.snapshot_path}
-			// which was set during deploy by snapshot.Upload(). Load it from the stored
-			// metadata so it can be resolved before Terraform processes the config.
-			mutators = append([]bundle.Mutator{deploymetadata.Load()}, mutators...)
-			mutators = append(mutators, mutator.ResolveVariableReferencesOnlyResources())
+			// For immutable bundles, resource paths are local absolute paths after
+			// translate_paths. Restore workspace.file_path from the local state file
+			// and replace the local prefix with the snapshot remote path before
+			// Terraform processes the config.
+			mutators = append([]bundle.Mutator{snapshot.LoadState(), snapshot.TranslateResourcePaths()}, mutators...)
 		}
 
 		mutators = append(mutators,

@@ -319,18 +319,12 @@ func (t *translateContext) rewriteValue(ctx context.Context, p dyn.Path, v dyn.V
 	return dyn.NewValue(out, v.Locations()), nil
 }
 
-// snapshotFilesRoot is the remote root used for file/notebook path translation
-// in immutable bundles. References to this placeholder are resolved after
-// snapshot.Upload() sets workspace.snapshot_path to the API-assigned path.
-const snapshotFilesRoot = "${workspace.snapshot_path}/src/files"
-
 func applyTranslations(ctx context.Context, b *bundle.Bundle, t *translateContext, translations []func(context.Context, dyn.Value) (dyn.Value, error)) diag.Diagnostics {
 	switch {
 	case b.Config.Bundle.Deployment.ImmutableFolder:
-		// Use a placeholder root that is resolved after snapshot.Upload() sets
-		// workspace.snapshot_path. This defers path computation until the actual
-		// content-addressed path is known.
-		t.remoteRoot = snapshotFilesRoot
+		// Keep paths as local absolute paths during validate. snapshot.TranslateResourcePaths()
+		// replaces this local prefix with the actual snapshot path after upload.
+		t.remoteRoot = t.b.SyncRootPath
 	case config.IsExplicitlyEnabled(t.b.Config.Presets.SourceLinkedDeployment):
 		t.remoteRoot = t.b.SyncRootPath
 	default:

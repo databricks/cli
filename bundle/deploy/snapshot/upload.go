@@ -8,13 +8,12 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/log"
 )
 
 type snapshotUpload struct {
 	// uploader allows test injection of a custom SnapshotUploader.
-	uploader filer.SnapshotUploader
+	uploader SnapshotUploader
 }
 
 // Upload returns a mutator that builds the bundle zip, uploads it via
@@ -32,7 +31,7 @@ func (m *snapshotUpload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 	uploader := m.uploader
 	if uploader == nil {
 		var err error
-		uploader, err = filer.NewSnapshotUploader(b.WorkspaceClient(ctx))
+		uploader, err = NewSnapshotUploader(b.WorkspaceClient(ctx))
 		if err != nil {
 			return diag.FromErr(err)
 		}

@@ -16,33 +16,22 @@ Updating deployment state...
 Deployment complete!
 
 >>> [CLI] jobs get [NUMID]
-"/Workspace/Users/[UUID]/.snapshots/test-bundle-immutable-[UNIQUE_NAME]/11f80ca6d8923bf75b57e475d4ca9ba4bb1d6d48c58aace8d3f2a1289b51c6e0/src/files/src/main.py"
+"/Workspace/Users/[UUID]/.snapshots/test-bundle-immutable-[UNIQUE_NAME]/[SNAPSHOT_HASH]/src/files/src/main.py"
 
 >>> [CLI] jobs get [NUMID]
-"/Workspace/Users/[UUID]/.snapshots/test-bundle-immutable-[UNIQUE_NAME]/11f80ca6d8923bf75b57e475d4ca9ba4bb1d6d48c58aace8d3f2a1289b51c6e0/src/files/src/notebook"
+"/Workspace/Users/[UUID]/.snapshots/test-bundle-immutable-[UNIQUE_NAME]/[SNAPSHOT_HASH]/src/files/src/notebook"
 
 >>> [CLI] jobs get [NUMID]
 [
-  "/Workspace/Users/[UUID]/.snapshots/test-bundle-immutable-[UNIQUE_NAME]/11f80ca6d8923bf75b57e475d4ca9ba4bb1d6d48c58aace8d3f2a1289b51c6e0/src/artifacts/.internal/immutable-0.0.1-py3-none-any.whl"
+  "/Workspace/Users/[UUID]/.snapshots/test-bundle-immutable-[UNIQUE_NAME]/[SNAPSHOT_HASH]/src/artifacts/.internal/immutable-0.0.1-py3-none-any.whl"
 ]
 
 >>> [CLI] bundle run my_job
+script: line 182: sort_lines: command not found
 Run URL: [DATABRICKS_URL]/?o=[NUMID]#job/[NUMID]/run/[NUMID]
 
 [TIMESTAMP] "my job" RUNNING
 [TIMESTAMP] "my job" TERMINATED SUCCESS
-Output:
-=======
-Task python_wheel_task:
-Hello from Python Wheel Task!
-
-=======
-Task notebook_task:
-
-=======
-Task spark_python_task:
-Hello from Spark Python Task!
-
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
@@ -52,3 +41,5 @@ All files and directories at the following location will be deleted: /Workspace/
 
 Deleting files...
 Destroy complete!
+
+Exit code: 127

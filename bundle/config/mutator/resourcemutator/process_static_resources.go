@@ -39,17 +39,7 @@ func (p processStaticResources) Apply(ctx context.Context, b *bundle.Bundle) dia
 	// - variable can be used a prefix
 	// - path can be part of a complex variable value
 
-	// For immutable bundles, defer resolving ${workspace.snapshot_path} in resources.
-	// The actual snapshot path is only known after snapshot.Upload() returns the
-	// API-assigned path in the deploy phase.
-	var resourceResolver bundle.Mutator
-	if b.Config.Bundle.Deployment.ImmutableFolder {
-		resourceResolver = mutator.ResolveVariableReferencesOnlyResourcesExcluding(
-			"workspace.snapshot_path",
-		)
-	} else {
-		resourceResolver = mutator.ResolveVariableReferencesOnlyResources()
-	}
+	resourceResolver := mutator.ResolveVariableReferencesOnlyResources()
 
 	bundle.ApplySeqContext(
 		ctx,

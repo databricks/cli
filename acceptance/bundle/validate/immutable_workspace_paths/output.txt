@@ -2,7 +2,7 @@
 >>> [CLI] bundle validate -o json
 Warning: Pattern user_repls.json does not match any files
   at sync.exclude[1]
-  in databricks.yml:9:7
+  in databricks.yml:10:7
 
 {
   "workspace": {
@@ -22,7 +22,7 @@ Warning: Pattern user_repls.json does not match any files
     {
       "existing_cluster_id": "0101-120000-aaaaaaaa",
       "spark_python_task": {
-        "python_file": "${workspace.snapshot_path}/src/files/src/main.py"
+        "python_file": "[TEST_TMP_DIR]/src/main.py"
       },
       "task_key": "my_task"
     }

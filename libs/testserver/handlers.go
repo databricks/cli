@@ -1,9 +1,13 @@
 package testserver
 
 import (
+	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
+	"mime"
+	"mime/multipart"
 	"net/http"
 	"path"
 	"strings"
@@ -535,6 +539,45 @@ func AddDefaultHandlers(server *Server) {
 
 	server.Handle("DELETE", "/api/2.0/repos/{repo_id}", func(req Request) any {
 		return req.Workspace.ReposDelete(req)
+	})
+
+	server.Handle("POST", "/api/2.0/repos/snapshots", func(req Request) any {
+		contentType := req.Headers.Get("Content-Type")
+		mediaType, params, err := mime.ParseMediaType(contentType)
+		if err != nil || !strings.HasPrefix(mediaType, "multipart/") {
+			return Response{StatusCode: http.StatusBadRequest}
+		}
+
+		mr := multipart.NewReader(bytes.NewReader(req.Body), params["boundary"])
+		var bundleID, snapshotID string
+		for {
+			p, err := mr.NextPart()
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				return Response{StatusCode: http.StatusInternalServerError}
+			}
+			data, err := io.ReadAll(p)
+			if err != nil {
+				return Response{StatusCode: http.StatusInternalServerError}
+			}
+			switch p.FormName() {
+			case "bundle_id":
+				bundleID = string(data)
+			case "snapshot_id":
+				snapshotID = string(data)
+			}
+		}
+
+		// The real API uses the workspace user UUID (not email) in the snapshot path,
+		// matching service-principal identities used in cloud acceptance tests.
+		snapshotPath := fmt.Sprintf("/Workspace/Users/%s/.snapshots/%s/%s", TestUserSP.UserName, bundleID, snapshotID)
+		return map[string]any{
+			"snapshot": map[string]any{
+				"path": snapshotPath,
+			},
+		}
 	})
 
 	// SQL Warehouses:

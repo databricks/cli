@@ -297,7 +297,6 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 	}
 
 	var libs phases.LibLocationMap
-
 	if opts.Build {
 		t2 := time.Now()
 		libs = phases.Build(ctx, b)

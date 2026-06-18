@@ -1,4 +1,4 @@
-package filer
+package snapshot
 
 import (
 	"bytes"
@@ -10,7 +10,7 @@ import (
 	"net/textproto"
 
 	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/client"
+	databricksclient "github.com/databricks/databricks-sdk-go/client"
 )
 
 // SnapshotInfo holds the result of a successful snapshot upload.
@@ -30,7 +30,7 @@ type SnapshotUploader interface {
 
 // snapshotAPIClient implements SnapshotUploader against /api/2.0/repos/snapshots.
 type snapshotAPIClient struct {
-	apiClient apiClient
+	client *databricksclient.DatabricksClient
 }
 
 // snapshotUploadResponse mirrors the /api/2.0/repos/snapshots response body.
@@ -42,11 +42,11 @@ type snapshotUploadResponse struct {
 
 // NewSnapshotUploader creates a SnapshotUploader backed by /api/2.0/repos/snapshots.
 func NewSnapshotUploader(w *databricks.WorkspaceClient) (SnapshotUploader, error) {
-	apiClient, err := client.New(w.Config)
+	c, err := databricksclient.New(w.Config)
 	if err != nil {
 		return nil, err
 	}
-	return &snapshotAPIClient{apiClient: apiClient}, nil
+	return &snapshotAPIClient{client: c}, nil
 }
 
 // Upload uploads zipContent as an immutable snapshot identified by snapshotID.
@@ -94,7 +94,7 @@ func (c *snapshotAPIClient) Upload(ctx context.Context, bundleID, snapshotID, cu
 	}
 
 	var resp snapshotUploadResponse
-	err = c.apiClient.Do(ctx, http.MethodPost, "/api/2.0/repos/snapshots", headers, nil, body.Bytes(), &resp)
+	err = c.client.Do(ctx, http.MethodPost, "/api/2.0/repos/snapshots", headers, nil, body.Bytes(), &resp)
 	if err != nil {
 		return nil, fmt.Errorf("snapshot upload: %w", err)
 	}

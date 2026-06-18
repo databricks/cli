@@ -79,21 +79,6 @@ func ResolveVariableReferencesOnlyResources(prefixes ...string) bundle.Mutator {
 	}
 }
 
-// ResolveVariableReferencesOnlyResourcesExcluding resolves variable references in
-// resources while leaving references to the specified paths unresolved.
-// Used by ProcessStaticResources for immutable bundles so that ${workspace.snapshot_path}
-// is not resolved during Initialize; it is resolved in the Deploy phase after
-// snapshot.Upload() sets workspace.snapshot_path to the API-assigned path.
-func ResolveVariableReferencesOnlyResourcesExcluding(excludePaths ...string) bundle.Mutator {
-	return &resolveVariableReferences{
-		prefixes:         defaultPrefixes,
-		lookupFn:         lookup,
-		extraRounds:      maxResolutionRounds - 1,
-		pattern:          dyn.NewPattern(dyn.Key("resources")),
-		includeResources: true,
-		excludePaths:     excludePaths,
-	}
-}
 
 func ResolveVariableReferencesWithoutResources(prefixes ...string) bundle.Mutator {
 	if len(prefixes) == 0 {
