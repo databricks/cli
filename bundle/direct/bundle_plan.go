@@ -68,11 +68,16 @@ func (b *DeploymentBundle) InitForApply(ctx context.Context, client *databricks.
 		return err
 	}
 
-	// Eagerly parse all StructVarJSON entries to catch parsing errors early.
-	// When the plan is read from JSON, Value contains raw JSON bytes.
-	// We parse them into typed structs and cache them for later use.
+	// Eagerly parse plan entries loaded from JSON:
+	// - NewState.Value contains raw JSON bytes; parse into typed structs and cache.
+	// - RemoteState is decoded as map[string]interface{}; round-trip through the
+	//   adapter's StateType to recover the correct typed struct so that type
+	//   assertions in resource adapters (e.g. entry.RemoteState.(*GrantsState))
+	//   work identically whether the plan came from a file or from memory.
 	for resourceKey, entry := range plan.Plan {
-		if entry.NewState == nil || len(entry.NewState.Value) == 0 {
+		hasNewState := entry.NewState != nil && len(entry.NewState.Value) > 0
+		hasRemoteState := entry.RemoteState != nil
+		if !hasNewState && !hasRemoteState {
 			continue
 		}
 
@@ -81,40 +86,27 @@ func (b *DeploymentBundle) InitForApply(ctx context.Context, client *databricks.
 			return fmt.Errorf("converting plan entry %s: %w", resourceKey, err)
 		}
 
-		sv, err := entry.NewState.ToStructVar(adapter.StateType())
-		if err != nil {
-			return fmt.Errorf("loading plan entry %s: %w", resourceKey, err)
+		if hasNewState {
+			sv, err := entry.NewState.ToStructVar(adapter.StateType())
+			if err != nil {
+				return fmt.Errorf("loading plan entry %s: %w", resourceKey, err)
+			}
+			b.StateCache.Store(resourceKey, sv)
 		}
 
-		b.StateCache.Store(resourceKey, sv)
-	}
-
-	// Re-hydrate RemoteState from map[string]interface{} into typed structs.
-	// When loaded from JSON, any-typed fields decode as map[string]interface{};
-	// round-tripping through the adapter's StateType recovers the correct type.
-	for resourceKey, entry := range plan.Plan {
-		if entry.RemoteState == nil {
-			continue
+		if hasRemoteState {
+			data, err := json.Marshal(entry.RemoteState)
+			if err != nil {
+				return fmt.Errorf("re-serializing remote state for %s: %w", resourceKey, err)
+			}
+			// StateType() returns a pointer type (e.g. *GrantsState); Elem() gives
+			// the struct type so reflect.New produces a single pointer, not double.
+			typed := reflect.New(adapter.StateType().Elem()).Interface()
+			if err := json.Unmarshal(data, typed); err != nil {
+				return fmt.Errorf("loading remote state for %s: %w", resourceKey, err)
+			}
+			entry.RemoteState = typed
 		}
-
-		adapter, err := b.getAdapterForKey(resourceKey)
-		if err != nil {
-			return fmt.Errorf("loading remote state for %s: %w", resourceKey, err)
-		}
-
-		data, err := json.Marshal(entry.RemoteState)
-		if err != nil {
-			return fmt.Errorf("re-serializing remote state for %s: %w", resourceKey, err)
-		}
-
-		// StateType() returns a pointer type (e.g. *GrantsState); Elem() gives the
-		// struct type so reflect.New produces a single pointer, not a double pointer.
-		typed := reflect.New(adapter.StateType().Elem()).Interface()
-		if err := json.Unmarshal(data, typed); err != nil {
-			return fmt.Errorf("loading remote state for %s: %w", resourceKey, err)
-		}
-
-		entry.RemoteState = typed
 	}
 
 	b.Plan = plan
