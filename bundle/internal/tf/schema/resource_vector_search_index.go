@@ -47,6 +47,7 @@ type ResourceVectorSearchIndexProviderConfig struct {
 
 type ResourceVectorSearchIndex struct {
 	Creator               string                                          `json:"creator,omitempty"`
+	EndpointId            string                                          `json:"endpoint_id,omitempty"`
 	EndpointName          string                                          `json:"endpoint_name"`
 	Id                    string                                          `json:"id,omitempty"`
 	IndexSubtype          string                                          `json:"index_subtype,omitempty"`
