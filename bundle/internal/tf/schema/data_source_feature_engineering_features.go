@@ -171,10 +171,16 @@ type DataSourceFeatureEngineeringFeaturesFeaturesSourceRequestSource struct {
 	FlatSchema *DataSourceFeatureEngineeringFeaturesFeaturesSourceRequestSourceFlatSchema `json:"flat_schema,omitempty"`
 }
 
+type DataSourceFeatureEngineeringFeaturesFeaturesSourceStreamSource struct {
+	FilterCondition string `json:"filter_condition,omitempty"`
+	FullName        string `json:"full_name"`
+}
+
 type DataSourceFeatureEngineeringFeaturesFeaturesSource struct {
 	DeltaTableSource *DataSourceFeatureEngineeringFeaturesFeaturesSourceDeltaTableSource `json:"delta_table_source,omitempty"`
 	KafkaSource      *DataSourceFeatureEngineeringFeaturesFeaturesSourceKafkaSource      `json:"kafka_source,omitempty"`
 	RequestSource    *DataSourceFeatureEngineeringFeaturesFeaturesSourceRequestSource    `json:"request_source,omitempty"`
+	StreamSource     *DataSourceFeatureEngineeringFeaturesFeaturesSourceStreamSource     `json:"stream_source,omitempty"`
 }
 
 type DataSourceFeatureEngineeringFeaturesFeaturesTimeWindowContinuous struct {
