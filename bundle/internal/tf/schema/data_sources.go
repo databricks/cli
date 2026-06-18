@@ -9,6 +9,10 @@ type DataSources struct {
 	AccountNetworkPolicy                        map[string]any `json:"databricks_account_network_policy,omitempty"`
 	AccountSettingUserPreferenceV2              map[string]any `json:"databricks_account_setting_user_preference_v2,omitempty"`
 	AccountSettingV2                            map[string]any `json:"databricks_account_setting_v2,omitempty"`
+	AiSearchEndpoint                            map[string]any `json:"databricks_ai_search_endpoint,omitempty"`
+	AiSearchEndpoints                           map[string]any `json:"databricks_ai_search_endpoints,omitempty"`
+	AiSearchIndex                               map[string]any `json:"databricks_ai_search_index,omitempty"`
+	AiSearchIndexes                             map[string]any `json:"databricks_ai_search_indexes,omitempty"`
 	AlertV2                                     map[string]any `json:"databricks_alert_v2,omitempty"`
 	AlertsV2                                    map[string]any `json:"databricks_alerts_v2,omitempty"`
 	App                                         map[string]any `json:"databricks_app,omitempty"`
@@ -161,6 +165,10 @@ func NewDataSources() *DataSources {
 		AccountNetworkPolicy:            make(map[string]any),
 		AccountSettingUserPreferenceV2:  make(map[string]any),
 		AccountSettingV2:                make(map[string]any),
+		AiSearchEndpoint:                make(map[string]any),
+		AiSearchEndpoints:               make(map[string]any),
+		AiSearchIndex:                   make(map[string]any),
+		AiSearchIndexes:                 make(map[string]any),
 		AlertV2:                         make(map[string]any),
 		AlertsV2:                        make(map[string]any),
 		App:                             make(map[string]any),

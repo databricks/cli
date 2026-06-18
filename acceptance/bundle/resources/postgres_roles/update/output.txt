@@ -1,0 +1,179 @@
+
+=== Initial deployment
+>>> [CLI] bundle validate
+Name: update-postgres-role-[UNIQUE_NAME]
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/update-postgres-role-[UNIQUE_NAME]/default
+
+Validation OK!
+
+>>> [CLI] bundle plan
+create postgres_branches.main
+create postgres_projects.my_project
+create postgres_roles.my_role
+
+Plan: 3 to add, 0 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle plan -o json
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-postgres-role-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
+
+>>> [CLI] postgres get-role projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/test-role
+{
+  "name": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/test-role",
+  "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
+  "role_id": "test-role",
+  "status": {
+    "attributes": {
+      "bypassrls": false,
+      "createdb": false,
+      "createrole": false
+    },
+    "auth_method": "PG_PASSWORD_SCRAM_SHA_256",
+    "identity_type": "IDENTITY_TYPE_UNSPECIFIED",
+    "postgres_role": "app_role",
+    "role_id": "test-role"
+  }
+}
+
+=== Verify no changes
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 3 unchanged
+
+>>> [CLI] bundle plan -o json
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-postgres-role-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
+
+=== Toggle attributes.createdb and re-deploy
+>>> update_file.py databricks.yml createdb: false createdb: true
+
+>>> cat databricks.yml
+bundle:
+  name: update-postgres-role-[UNIQUE_NAME]
+
+sync:
+  paths: []
+
+resources:
+  postgres_projects:
+    my_project:
+      project_id: test-pg-proj-[UNIQUE_NAME]
+      display_name: "Test Project for Role Update"
+      pg_version: 16
+      history_retention_duration: 604800s
+
+  postgres_branches:
+    main:
+      parent: ${resources.postgres_projects.my_project.id}
+      branch_id: main
+      no_expiry: true
+
+  postgres_roles:
+    my_role:
+      parent: ${resources.postgres_branches.main.id}
+      role_id: test-role
+      postgres_role: app_role
+      attributes:
+        createdb: true
+
+>>> [CLI] bundle plan
+update postgres_roles.my_role
+
+Plan: 0 to add, 1 to change, 0 to delete, 2 unchanged
+
+>>> [CLI] bundle plan -o json
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-postgres-role-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
+
+>>> [CLI] postgres get-role projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/test-role
+{
+  "name": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/test-role",
+  "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
+  "role_id": "test-role",
+  "status": {
+    "attributes": {
+      "bypassrls": false,
+      "createdb": true,
+      "createrole": false
+    },
+    "auth_method": "PG_PASSWORD_SCRAM_SHA_256",
+    "identity_type": "IDENTITY_TYPE_UNSPECIFIED",
+    "postgres_role": "app_role",
+    "role_id": "test-role"
+  }
+}
+
+=== Restore attributes.createdb to original value
+>>> update_file.py databricks.yml createdb: true createdb: false
+
+>>> [CLI] bundle plan
+update postgres_roles.my_role
+
+Plan: 0 to add, 1 to change, 0 to delete, 2 unchanged
+
+>>> [CLI] bundle plan -o json
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-postgres-role-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
+
+>>> [CLI] postgres get-role projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/test-role
+{
+  "name": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/test-role",
+  "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
+  "role_id": "test-role",
+  "status": {
+    "attributes": {
+      "bypassrls": false,
+      "createdb": false,
+      "createrole": false
+    },
+    "auth_method": "PG_PASSWORD_SCRAM_SHA_256",
+    "identity_type": "IDENTITY_TYPE_UNSPECIFIED",
+    "postgres_role": "app_role",
+    "role_id": "test-role"
+  }
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.postgres_branches.main
+  delete resources.postgres_projects.my_project
+  delete resources.postgres_roles.my_role
+
+This action will result in the deletion of the following Lakebase projects along with
+all their branches, databases, and endpoints. All data stored in them will be permanently lost:
+  delete resources.postgres_projects.my_project
+
+This action will result in the deletion of the following Lakebase branches.
+All data stored in them will be permanently lost:
+  delete resources.postgres_branches.main
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/update-postgres-role-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!

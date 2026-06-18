@@ -8,9 +8,22 @@ trace cat out.requests.txt | jq 'select(has("path") and .path == "/telemetry-ext
 title "Assert that mutator execution times are being recorded"
 trace cat telemetry.json | jq ' .entry.databricks_cli_log.bundle_deploy_event.experimental.bundle_mutator_execution_time_ms | length > 0'
 
+# resources_metadata is only emitted for direct deploys (it is derived from the
+# direct engine's state), so it diverges across the DATABRICKS_BUNDLE_ENGINE
+# matrix. Capture it in a per-engine file (terraform produces "null") and omit
+# it from the engine-agnostic out.telemetry.txt below. Per-resource sizes are
+# deterministic for a fixed config and asserted exactly. state_file_size_bytes
+# is dropped from the golden because it is os.Stat of resources.json, whose
+# header embeds the CLI version string (0.0.0-dev+<sha> on linux/macos vs
+# 0.0.0-dev on windows) — it is still emitted in real telemetry.
+cat telemetry.json | jq '.entry.databricks_cli_log.bundle_deploy_event.resources_metadata | if . then del(.state_file_size_bytes) else . end' > out.resources_metadata.$DATABRICKS_BUNDLE_ENGINE.txt
+
 # bundle_mutator_execution_time_ms can have variable number of entries depending upon the runtime of the mutators. Thus we omit it from
 # being asserted here.
-cat telemetry.json | jq 'del(.entry.databricks_cli_log.bundle_deploy_event.experimental.bundle_mutator_execution_time_ms)' > out.telemetry.txt
+#
+# upload_file_count and upload_file_sizes are asserted here and kept deterministic by
+# the sync.paths restriction in databricks.yml (see the comment there).
+cat telemetry.json | jq 'del(.entry.databricks_cli_log.bundle_deploy_event.experimental.bundle_mutator_execution_time_ms, .entry.databricks_cli_log.bundle_deploy_event.resources_metadata)' > out.telemetry.txt
 
 cmd_exec_id=$(extract_command_exec_id.py)
 deployment_id=$(cat .databricks/bundle/default/deployment.json | jq -r .id)

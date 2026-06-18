@@ -1,0 +1,29 @@
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/bad-database-id-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Error: cannot create resources.postgres_databases.my_database: Field database_id must match pattern ^[a-z]([a-z0-9-]{0,61}[a-z0-9])?$, got 'Invalid_DB_ID'. (400 INVALID_PARAMETER_VALUE)
+
+Endpoint: POST [DATABRICKS_URL]/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main/databases?database_id=Invalid_DB_ID
+HTTP Status: 400 Bad Request
+API error_code: INVALID_PARAMETER_VALUE
+API message: Field database_id must match pattern ^[a-z]([a-z0-9-]{0,61}[a-z0-9])?$, got 'Invalid_DB_ID'.
+
+Updating deployment state...
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.postgres_branches.main
+  delete resources.postgres_projects.my_project
+  delete resources.postgres_roles.owner
+
+This action will result in the deletion of the following Lakebase projects along with
+all their branches, databases, and endpoints. All data stored in them will be permanently lost:
+  delete resources.postgres_projects.my_project
+
+This action will result in the deletion of the following Lakebase branches.
+All data stored in them will be permanently lost:
+  delete resources.postgres_branches.main
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/bad-database-id-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!

@@ -149,6 +149,7 @@ func (r *ResourcePostgresEndpoint) DoCreate(ctx context.Context, config *Postgre
 			Spec: &config.EndpointSpec,
 
 			// Output-only fields.
+			EndpointId:      "",
 			CreateTime:      nil,
 			Name:            "",
 			Parent:          "",
@@ -191,6 +192,7 @@ func (r *ResourcePostgresEndpoint) DoUpdate(ctx context.Context, id string, conf
 			Spec: &config.EndpointSpec,
 
 			// Output-only fields.
+			EndpointId:      "",
 			CreateTime:      nil,
 			Name:            "",
 			Parent:          "",

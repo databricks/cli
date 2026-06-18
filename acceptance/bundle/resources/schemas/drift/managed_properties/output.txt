@@ -1,0 +1,37 @@
+
+=== Initial deployment
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Plan is a no-op despite UC auto-populating managed properties
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+=== The remote-only properties map is skipped as a backend default (confirms the matched rule)
+>>> [CLI] bundle plan --output json
+{
+  "properties": {
+    "action": "skip",
+    "reason": "backend_default",
+    "remote": {
+      "unity.catalog.managed.delta.defaults.delta.enableRowTracking": "true",
+      "unity.catalog.managed.iceberg.defaults.delta.feature.catalogManaged": "true"
+    }
+  }
+}
+
+=== Redeploy is a no-op (no UpdateSchema call)
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py //unity
+json.method = "POST";
+json.path = "/api/2.1/unity-catalog/schemas";
+json.body.catalog_name = "main";
+json.body.name = "schema_managed_defaults";

@@ -1,0 +1,69 @@
+
+>>> [CLI] bundle deploy -t no_permissions
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/no_permissions/files...
+Deploying resources...
+Deployment complete!
+
+>>> print_telemetry_bool_values
+dms_compat_auto true
+state_path_is_shared false
+
+>>> [CLI] bundle deploy -t user_declared
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/user_declared/files...
+Deploying resources...
+Deployment complete!
+
+>>> print_telemetry_bool_values
+dms_compat_auto true
+state_path_is_shared false
+
+>>> [CLI] bundle deploy -t user_not_declared
+Recommendation: permissions section should explicitly include the current deployment identity '[USERNAME]' or one of its groups
+If it is not included, CAN_MANAGE permissions are only applied if the present identity is used to deploy.
+
+Consider using a adding a top-level permissions section such as the following:
+
+  permissions:
+    - user_name: [USERNAME]
+      level: CAN_MANAGE
+
+See https://docs.databricks.com/dev-tools/bundles/permissions.html to learn more about permission configuration.
+  in databricks.yml:23:7
+
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/user_not_declared/files...
+Deploying resources...
+Deployment complete!
+
+>>> print_telemetry_bool_values
+dms_compat_only_self_undeclared true
+state_path_is_shared false
+
+>>> [CLI] bundle deploy -t shared_users_can_manage
+Recommendation: permissions section should explicitly include the current deployment identity '[USERNAME]' or one of its groups
+If it is not included, CAN_MANAGE permissions are only applied if the present identity is used to deploy.
+
+Consider using a adding a top-level permissions section such as the following:
+
+  permissions:
+    - user_name: [USERNAME]
+      level: CAN_MANAGE
+
+See https://docs.databricks.com/dev-tools/bundles/permissions.html to learn more about permission configuration.
+  in databricks.yml:30:7
+
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/shared_users_can_manage/files...
+Deploying resources...
+Deployment complete!
+
+>>> print_telemetry_bool_values
+dms_compat_auto true
+state_path_is_shared true
+
+>>> [CLI] bundle deploy -t shared_not_declared
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/shared_not_declared/files...
+Deploying resources...
+Deployment complete!
+
+>>> print_telemetry_bool_values
+dms_compat_not true
+state_path_is_shared true

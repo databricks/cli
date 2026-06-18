@@ -158,6 +158,13 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// Validate that no dashboard etags are set. They are purely internal state and should not be set by the user.
 		validate.ValidateDashboardEtags(),
 
+		// Validate that no genie space etags are set. They are purely internal state and should not be set by the user.
+		validate.ValidateGenieSpaceEtags(),
+
+		// Validate that deployment_id / version_id are not set on jobs or pipelines.
+		// They are set by the CLI to track the bundle deployment and must not be set by the user.
+		validate.ValidateDeploymentFields(),
+
 		// Reads (dynamic): * (strings) (searches for ${resources.*} references)
 		// Warns (TF engine) or errors (direct engine) when a cross-resource reference
 		// points to a Terraform-only field with no DABs equivalent.

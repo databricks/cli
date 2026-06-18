@@ -110,6 +110,7 @@ func (r *ResourcePostgresBranch) DoCreate(ctx context.Context, config *PostgresB
 			Spec: &config.BranchSpec,
 
 			// Output-only fields.
+			BranchId:        "",
 			CreateTime:      nil,
 			Name:            "",
 			Parent:          "",
@@ -147,6 +148,7 @@ func (r *ResourcePostgresBranch) DoUpdate(ctx context.Context, id string, config
 			Spec: &config.BranchSpec,
 
 			// Output-only fields.
+			BranchId:        "",
 			CreateTime:      nil,
 			Name:            "",
 			Parent:          "",

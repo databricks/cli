@@ -286,6 +286,7 @@ func (db *DeploymentState) mergeWalIntoState(ctx context.Context) (bool, error) 
 	scanner.Buffer(make([]byte, 0, initialBufferSize), maxWalEntrySize)
 	lineNumber := 0
 	var corruptedLines [][]byte
+	var newSerial int
 
 	for scanner.Scan() {
 		lineNumber++
@@ -309,7 +310,7 @@ func (db *DeploymentState) mergeWalIntoState(ctx context.Context) (bool, error) 
 			if header.Serial > expectedSerial {
 				return false, fmt.Errorf("WAL serial (%d) is ahead of expected (%d), state may be corrupted", header.Serial, expectedSerial)
 			}
-			db.Data.Serial = expectedSerial
+			newSerial = header.Serial
 		} else {
 			var entry WALEntry
 			if err := json.Unmarshal(line, &entry); err != nil {
@@ -344,7 +345,19 @@ func (db *DeploymentState) mergeWalIntoState(ctx context.Context) (bool, error) 
 		}
 	}
 
-	return lineNumber > 1, nil
+	hasEntries := lineNumber > 1
+
+	// Only advance the serial when the WAL carried entries, because the caller
+	// (replayWAL) persists the new state file only in that case. A header-only
+	// WAL is a deploy that started but committed nothing; advancing the serial
+	// for it leaves the in-memory serial ahead of the persisted one, so the
+	// next deploy writes its WAL header at serial+2 and recovery rejects it as
+	// "ahead of expected". See acceptance/bundle/deploy/wal/header-only-wal.
+	if hasEntries {
+		db.Data.Serial = newSerial
+	}
+
+	return hasEntries, nil
 }
 
 // Finalize replays the WAL (if open for write), captures the resulting state, and resets.
@@ -439,9 +452,14 @@ func ExportStateFromData(data Database) resourcestate.ExportedResourcesMap {
 	result := make(resourcestate.ExportedResourcesMap)
 	for key, entry := range data.State {
 		var etag string
-		// Extract etag for dashboards.
-		// covered by test case: bundle/deploy/dashboard/detect-change
-		if strings.Contains(key, ".dashboards.") && len(entry.State) > 0 {
+		// Extract etag for resources that use it for drift detection
+		// (dashboards and genie_spaces). Both follow the same pattern of
+		// persisting the backend-returned etag in state and comparing it
+		// against the remote on the next plan via OverrideChangeDesc.
+		// covered by test cases:
+		//   - bundle/deploy/dashboard/detect-change
+		//   - bundle/resources/genie_spaces/simple
+		if (strings.Contains(key, ".dashboards.") || strings.Contains(key, ".genie_spaces.")) && len(entry.State) > 0 {
 			var holder struct {
 				Etag string `json:"etag"`
 			}
@@ -451,8 +469,9 @@ func ExportStateFromData(data Database) resourcestate.ExportedResourcesMap {
 		}
 
 		result[key] = resourcestate.ResourceState{
-			ID:   entry.ID,
-			ETag: etag,
+			ID:             entry.ID,
+			ETag:           etag,
+			StateSizeBytes: len(entry.State),
 		}
 	}
 	return result

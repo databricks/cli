@@ -371,6 +371,7 @@ func (m *translatePathsDashboards) Apply(ctx context.Context, b *bundle.Bundle) 
 
 	return applyTranslations(ctx, b, t, []func(context.Context, dyn.Value) (dyn.Value, error){
 		t.applyDashboardTranslations,
+		t.applyGenieSpaceTranslations,
 	})
 }
 

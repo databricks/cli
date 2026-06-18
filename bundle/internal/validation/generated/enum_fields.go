@@ -62,6 +62,8 @@ var EnumFields = map[string][]string{
 	"resources.external_locations.*.encryption_details.sse_encryption_details.algorithm": {"AWS_SSE_KMS", "AWS_SSE_S3"},
 	"resources.external_locations.*.grants[*].privileges[*]":                             {"ACCESS", "ALL_PRIVILEGES", "APPLY_TAG", "BROWSE", "CREATE", "CREATE_CATALOG", "CREATE_CLEAN_ROOM", "CREATE_CONNECTION", "CREATE_EXTERNAL_LOCATION", "CREATE_EXTERNAL_TABLE", "CREATE_EXTERNAL_VOLUME", "CREATE_FOREIGN_CATALOG", "CREATE_FOREIGN_SECURABLE", "CREATE_FUNCTION", "CREATE_MANAGED_STORAGE", "CREATE_MATERIALIZED_VIEW", "CREATE_MODEL", "CREATE_PROVIDER", "CREATE_RECIPIENT", "CREATE_SCHEMA", "CREATE_SERVICE_CREDENTIAL", "CREATE_SHARE", "CREATE_STORAGE_CREDENTIAL", "CREATE_TABLE", "CREATE_VIEW", "CREATE_VOLUME", "EXECUTE", "EXECUTE_CLEAN_ROOM_TASK", "EXTERNAL_USE_SCHEMA", "MANAGE", "MANAGE_ALLOWLIST", "MODIFY", "MODIFY_CLEAN_ROOM", "READ_FILES", "READ_PRIVATE_FILES", "READ_VOLUME", "REFRESH", "SELECT", "SET_SHARE_PERMISSION", "USAGE", "USE_CATALOG", "USE_CONNECTION", "USE_MARKETPLACE_ASSETS", "USE_PROVIDER", "USE_RECIPIENT", "USE_SCHEMA", "USE_SHARE", "WRITE_FILES", "WRITE_PRIVATE_FILES", "WRITE_VOLUME"},
 
+	"resources.genie_spaces.*.permissions[*].level": {"CAN_ATTACH_TO", "CAN_BIND", "CAN_CREATE", "CAN_CREATE_APP", "CAN_EDIT", "CAN_EDIT_METADATA", "CAN_MANAGE", "CAN_MANAGE_PRODUCTION_VERSIONS", "CAN_MANAGE_RUN", "CAN_MANAGE_STAGING_VERSIONS", "CAN_MONITOR", "CAN_MONITOR_ONLY", "CAN_QUERY", "CAN_READ", "CAN_RESTART", "CAN_RUN", "CAN_USE", "CAN_VIEW", "CAN_VIEW_METADATA", "IS_OWNER"},
+
 	"resources.jobs.*.continuous.pause_status":                                                          {"PAUSED", "UNPAUSED"},
 	"resources.jobs.*.continuous.task_retry_mode":                                                       {"NEVER", "ON_FAILURE"},
 	"resources.jobs.*.deployment.kind":                                                                  {"BUNDLE", "SYSTEM_MANAGED"},
@@ -192,7 +194,12 @@ var EnumFields = map[string][]string{
 
 	"resources.postgres_projects.*.permissions[*].level": {"CAN_ATTACH_TO", "CAN_BIND", "CAN_CREATE", "CAN_CREATE_APP", "CAN_EDIT", "CAN_EDIT_METADATA", "CAN_MANAGE", "CAN_MANAGE_PRODUCTION_VERSIONS", "CAN_MANAGE_RUN", "CAN_MANAGE_STAGING_VERSIONS", "CAN_MONITOR", "CAN_MONITOR_ONLY", "CAN_QUERY", "CAN_READ", "CAN_RESTART", "CAN_RUN", "CAN_USE", "CAN_VIEW", "CAN_VIEW_METADATA", "IS_OWNER"},
 
-	"resources.postgres_synced_tables.*.scheduling_policy": {"CONTINUOUS", "SNAPSHOT", "TRIGGERED"},
+	"resources.postgres_roles.*.auth_method":         {"LAKEBASE_OAUTH_V1", "NO_LOGIN", "PG_PASSWORD_SCRAM_SHA_256"},
+	"resources.postgres_roles.*.identity_type":       {"GROUP", "SERVICE_PRINCIPAL", "USER"},
+	"resources.postgres_roles.*.membership_roles[*]": {"DATABRICKS_SUPERUSER"},
+
+	"resources.postgres_synced_tables.*.scheduling_policy":         {"CONTINUOUS", "SNAPSHOT", "TRIGGERED"},
+	"resources.postgres_synced_tables.*.type_overrides[*].pg_type": {"PG_SPECIFIC_TYPE_VECTOR"},
 
 	"resources.quality_monitors.*.custom_metrics[*].type":     {"CUSTOM_METRIC_TYPE_AGGREGATE", "CUSTOM_METRIC_TYPE_DERIVED", "CUSTOM_METRIC_TYPE_DRIFT"},
 	"resources.quality_monitors.*.inference_log.problem_type": {"PROBLEM_TYPE_CLASSIFICATION", "PROBLEM_TYPE_REGRESSION"},
@@ -214,6 +221,7 @@ var EnumFields = map[string][]string{
 	"resources.synced_database_tables.*.data_synchronization_status.provisioning_status.initial_pipeline_sync_progress.provisioning_phase":      {"PROVISIONING_PHASE_INDEX_SCAN", "PROVISIONING_PHASE_INDEX_SORT", "PROVISIONING_PHASE_MAIN"},
 	"resources.synced_database_tables.*.data_synchronization_status.triggered_update_status.triggered_update_progress.provisioning_phase":       {"PROVISIONING_PHASE_INDEX_SCAN", "PROVISIONING_PHASE_INDEX_SORT", "PROVISIONING_PHASE_MAIN"},
 	"resources.synced_database_tables.*.spec.scheduling_policy":                                                                                 {"CONTINUOUS", "SNAPSHOT", "TRIGGERED"},
+	"resources.synced_database_tables.*.spec.type_overrides[*].pg_type":                                                                         {"PG_SPECIFIC_TYPE_VECTOR"},
 	"resources.synced_database_tables.*.unity_catalog_provisioning_state":                                                                       {"ACTIVE", "DEGRADED", "DELETING", "FAILED", "PROVISIONING", "UPDATING"},
 
 	"resources.vector_search_endpoints.*.endpoint_type":        {"STANDARD", "STORAGE_OPTIMIZED"},

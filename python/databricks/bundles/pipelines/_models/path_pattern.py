@@ -15,7 +15,7 @@ class PathPattern:
 
     include: VariableOrOptional[str] = None
     """
-    The source code to include for pipelines
+    [Public Preview] The source code to include for pipelines
     """
 
     @classmethod
@@ -31,7 +31,7 @@ class PathPatternDict(TypedDict, total=False):
 
     include: VariableOrOptional[str]
     """
-    The source code to include for pipelines
+    [Public Preview] The source code to include for pipelines
     """
 
 

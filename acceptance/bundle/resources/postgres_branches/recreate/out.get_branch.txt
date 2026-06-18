@@ -1,4 +1,5 @@
 {
+  "branch_id": "new-branch-[UNIQUE_NAME]",
   "name": "[MAIN_ID_2]",
   "parent": "projects/test-pg-proj-[UNIQUE_NAME]",
   "status": {

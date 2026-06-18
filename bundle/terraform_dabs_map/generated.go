@@ -6,24 +6,28 @@ package terraform_dabs_map
 // alerts / databricks_alert_v2: 3 tf-only
 // apps / databricks_app: 16 dabs-only
 // apps / databricks_app: 1 tf-only
+// clusters / databricks_cluster: 1 dabs-only
 // clusters / databricks_cluster: 25 tf-only
 // dashboards / databricks_dashboard: 2 tf-only
 // database_instances / databricks_database_instance: 1 tf-only
 // experiments / databricks_mlflow_experiment: 1 tf-only
 // jobs / databricks_job: 11 renames
-// jobs / databricks_job: 7 dabs-only
+// jobs / databricks_job: 10 dabs-only
 // jobs / databricks_job: 257 tf-only
 // model_serving_endpoints / databricks_model_serving: 2 tf-only
 // models / databricks_mlflow_model: 1 tf-only
 // pipelines / databricks_pipeline: 3 renames
-// pipelines / databricks_pipeline: 5 dabs-only
+// pipelines / databricks_pipeline: 7 dabs-only
 // pipelines / databricks_pipeline: 2 tf-only
 // postgres_branches / databricks_postgres_branch: 1 tf-only
 // postgres_branches / databricks_postgres_branch: 1 unwraps
 // postgres_catalogs / databricks_postgres_catalog: 1 unwraps
+// postgres_databases / databricks_postgres_database: 1 unwraps
 // postgres_endpoints / databricks_postgres_endpoint: 1 unwraps
 // postgres_projects / databricks_postgres_project: 1 unwraps
+// postgres_roles / databricks_postgres_role: 1 unwraps
 // postgres_synced_tables / databricks_postgres_synced_table: 1 unwraps
+// schemas / databricks_schema: 1 dabs-only
 // schemas / databricks_schema: 1 tf-only
 // secret_scopes / databricks_secret_scope: 1 tf-only
 // sql_warehouses / databricks_sql_endpoint: 2 tf-only
@@ -63,10 +67,16 @@ var TerraformToDABsFieldMap = map[string]RenameTree{
 	"postgres_catalogs": {
 		"spec": {Unwrap: true},
 	},
+	"postgres_databases": {
+		"spec": {Unwrap: true},
+	},
 	"postgres_endpoints": {
 		"spec": {Unwrap: true},
 	},
 	"postgres_projects": {
+		"spec": {Unwrap: true},
+	},
+	"postgres_roles": {
 		"spec": {Unwrap: true},
 	},
 	"postgres_synced_tables": {
@@ -101,10 +111,18 @@ var DABsOnlyFields = map[string]FieldSet{
 		},
 		"source_code_path": {},
 	},
+	"clusters": {
+		"azure_attributes": {
+			"capacity_reservation_group": {}, // clusters.*.azure_attributes.capacity_reservation_group
+		},
+	},
 	"jobs": {
 		"job_clusters": {
 			"new_cluster": {
 				"autotermination_minutes": {}, // jobs.*.job_clusters.new_cluster.autotermination_minutes
+				"azure_attributes": {
+					"capacity_reservation_group": {}, // jobs.*.job_clusters.new_cluster.azure_attributes.capacity_reservation_group
+				},
 			},
 		},
 		"tasks": {
@@ -117,16 +135,25 @@ var DABsOnlyFields = map[string]FieldSet{
 					},
 					"new_cluster": {
 						"autotermination_minutes": {}, // jobs.*.tasks.for_each_task.task.new_cluster.autotermination_minutes
+						"azure_attributes": {
+							"capacity_reservation_group": {}, // jobs.*.tasks.for_each_task.task.new_cluster.azure_attributes.capacity_reservation_group
+						},
 					},
 				},
 			},
 			"new_cluster": {
 				"autotermination_minutes": {}, // jobs.*.tasks.new_cluster.autotermination_minutes
+				"azure_attributes": {
+					"capacity_reservation_group": {}, // jobs.*.tasks.new_cluster.azure_attributes.capacity_reservation_group
+				},
 			},
 		},
 	},
 	"pipelines": {
 		"clusters": {
+			"azure_attributes": {
+				"capacity_reservation_group": {}, // pipelines.*.clusters.azure_attributes.capacity_reservation_group
+			},
 			"gcp_attributes": {
 				"boot_disk_size":            {}, // pipelines.*.clusters.gcp_attributes.boot_disk_size
 				"use_preemptible_executors": {}, // pipelines.*.clusters.gcp_attributes.use_preemptible_executors
@@ -136,6 +163,10 @@ var DABsOnlyFields = map[string]FieldSet{
 		"parameters": {
 			"*": {}, // pipelines.*.parameters.*
 		},
+		"serverless_compute_id": {},
+	},
+	"schemas": {
+		"custom_max_retention_hours": {},
 	},
 }
 
@@ -600,7 +631,9 @@ var DABsToTerraformRenameMap = map[string]RenameTree{
 var DABsToTerraformWrappers = map[string]string{
 	"postgres_branches":      "spec",
 	"postgres_catalogs":      "spec",
+	"postgres_databases":     "spec",
 	"postgres_endpoints":     "spec",
 	"postgres_projects":      "spec",
+	"postgres_roles":         "spec",
 	"postgres_synced_tables": "spec",
 }

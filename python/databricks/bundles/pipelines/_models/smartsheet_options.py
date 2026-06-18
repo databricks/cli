@@ -19,7 +19,9 @@ class SmartsheetOptions:
 
     enforce_schema: VariableOrOptional[bool] = None
     """
-    (Optional) When true, maps each column to its Smartsheet-declared type (Text/Number/Date/
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] (Optional) When true, maps each column to its Smartsheet-declared type (Text/Number/Date/
     Checkbox/etc.). Cells that do not conform to the declared type are set to NULL.
     When false, all columns land as STRING. Use false for sheets with irregular data or columns
     that frequently violate their own declared type.
@@ -39,7 +41,9 @@ class SmartsheetOptionsDict(TypedDict, total=False):
 
     enforce_schema: VariableOrOptional[bool]
     """
-    (Optional) When true, maps each column to its Smartsheet-declared type (Text/Number/Date/
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] (Optional) When true, maps each column to its Smartsheet-declared type (Text/Number/Date/
     Checkbox/etc.). Cells that do not conform to the declared type are set to NULL.
     When false, all columns land as STRING. Use false for sheets with irregular data or columns
     that frequently violate their own declared type.

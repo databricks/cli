@@ -1,0 +1,9 @@
+[[Server]]
+Pattern = "POST /api/2.0/lakebox/sandboxes/happy-panda-1234/stop"
+Response.Body = '''
+{
+  "sandboxId": "happy-panda-1234",
+  "status": "Stopped",
+  "name": "my-project"
+}
+'''

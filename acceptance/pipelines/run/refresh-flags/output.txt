@@ -23,14 +23,14 @@ Pipeline configurations for this update:
 
 >>> print_requests
 {
+  "method": "POST",
+  "path": "/api/2.0/pipelines/[UUID]/updates",
   "body": {
     "refresh_selection": [
       "table1",
       "table2"
     ]
-  },
-  "method": "POST",
-  "path": "/api/2.0/pipelines/[UUID]/updates"
+  }
 }
 
 === Running pipeline with --full-refresh-all flag
@@ -50,11 +50,11 @@ Pipeline configurations for this update:
 
 >>> print_requests
 {
+  "method": "POST",
+  "path": "/api/2.0/pipelines/[UUID]/updates",
   "body": {
     "full_refresh": true
-  },
-  "method": "POST",
-  "path": "/api/2.0/pipelines/[UUID]/updates"
+  }
 }
 
 === Running pipeline with --full-refresh flag and specific tables
@@ -74,14 +74,14 @@ Pipeline configurations for this update:
 
 >>> print_requests
 {
+  "method": "POST",
+  "path": "/api/2.0/pipelines/[UUID]/updates",
   "body": {
     "full_refresh_selection": [
       "table1",
       "table2"
     ]
-  },
-  "method": "POST",
-  "path": "/api/2.0/pipelines/[UUID]/updates"
+  }
 }
 
 === Running pipeline with --full-refresh flag and --refresh flag
@@ -101,6 +101,8 @@ Pipeline configurations for this update:
 
 >>> print_requests
 {
+  "method": "POST",
+  "path": "/api/2.0/pipelines/[UUID]/updates",
   "body": {
     "full_refresh_selection": [
       "table1",
@@ -110,7 +112,5 @@ Pipeline configurations for this update:
       "table3",
       "table4"
     ]
-  },
-  "method": "POST",
-  "path": "/api/2.0/pipelines/[UUID]/updates"
+  }
 }

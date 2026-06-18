@@ -1,0 +1,9 @@
+# config-remote-sync is not supported on Windows.
+[GOOS]
+windows = false
+
+# Pinned to the direct engine (see config-remote-sync/test.toml): telemetry is
+# engine-agnostic above the state layer, and recreate_forcing_changes is derived
+# from the resource lifecycle metadata, not from which engine read the state.
+[EnvMatrix]
+  DATABRICKS_BUNDLE_ENGINE = ["direct"]

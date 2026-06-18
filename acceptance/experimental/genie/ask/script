@@ -1,0 +1,15 @@
+title "ask renders the final answer and a chart"
+trace $CLI experimental genie ask "What are total sales by franchise?"
+
+title "ask with --include-sql also shows the executed SQL"
+trace $CLI experimental genie ask "What are total sales by franchise?" --include-sql
+
+title "ask with --output json emits structured output"
+trace $CLI experimental genie ask "What are total sales by franchise?" --output json
+
+title "ask with --raw dumps raw SSE events"
+trace $CLI experimental genie ask "What are total sales by franchise?" --raw
+
+title "incompatible flags are rejected"
+musterr trace $CLI experimental genie ask "q" --raw --output json
+musterr trace $CLI experimental genie ask "q" --raw --include-sql
