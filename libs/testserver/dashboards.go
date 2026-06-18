@@ -68,8 +68,7 @@ func transformSerializedDashboard(serializedDashboard, datasetCatalog, datasetSc
 		return serializedDashboard
 	}
 
-	// Pretty-print with 2-space indentation to match cloud's formatting.
-	updatedContent, err := json.MarshalIndent(dashboardContent, "", "  ")
+	updatedContent, err := json.Marshal(dashboardContent)
 	if err != nil {
 		return serializedDashboard
 	}
