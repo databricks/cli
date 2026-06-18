@@ -3,14 +3,14 @@
   "path": "/api/2.0/postgres/[MAIN_ID]"
 }
 {
-  "body": {
-    "spec": {
-      "no_expiry": true
-    }
-  },
   "method": "POST",
   "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches",
   "q": {
     "branch_id": "new-branch-[UNIQUE_NAME]"
+  },
+  "body": {
+    "spec": {
+      "no_expiry": true
+    }
   }
 }

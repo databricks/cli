@@ -21,13 +21,7 @@ trace $CLI bundle deploy
 
 branch_id_1=`read_id.py main`
 
-print_requests() {
-    local name=$1
-    jq --sort-keys 'select(.method != "GET" and (.path | contains("/postgres"))) | del(.body.parent, .body.project_id, .body.branch_id, .body.endpoint_id, .body.database_id, .body.role_id)' < out.requests.txt > out.requests.${name}.$DATABRICKS_BUNDLE_ENGINE.txt
-    rm -f out.requests.txt
-}
-
-print_requests create
+print_requests.py --del-body parent,project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.create.txt
 
 title "Change branch_id (should trigger recreation in direct, update in terraform)"
 sed "s/old-branch-${UNIQUE_NAME}/new-branch-${UNIQUE_NAME}/" databricks.yml > databricks.yml.new
@@ -39,7 +33,7 @@ trace cat databricks.yml
 $CLI bundle plan > out.plan.txt 2>&1
 trace $CLI bundle deploy --auto-approve
 
-print_requests update
+print_requests.py --del-body parent,project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.update.txt
 
 title "Fetch new branch ID"
 branch_id_2=`read_id.py main`
@@ -49,7 +43,7 @@ $CLI postgres get-branch $branch_id_2 | jq 'del(.create_time, .update_time, .sta
 title "Destroy and verify cleanup"
 trace $CLI bundle destroy --auto-approve
 
-print_requests destroy
+print_requests.py --del-body parent,project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.destroy.txt
 
 # Clean up any orphaned old branch (terraform doesn't delete it on recreation)
 $CLI postgres delete-branch $branch_id_1 2>/dev/null || true

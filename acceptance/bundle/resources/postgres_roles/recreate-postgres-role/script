@@ -16,15 +16,7 @@ trace cat databricks.yml
 trace $CLI bundle plan
 trace $CLI bundle deploy
 
-print_requests() {
-    # Filter postgres requests (excluding GET), remove parent (engine-dependent),
-    # then deduplicate consecutive retries.
-    jq --sort-keys 'select(.method != "GET" and (.path | contains("/postgres"))) | del(.body.parent, .body.project_id, .body.branch_id, .body.endpoint_id, .body.database_id, .body.role_id)' < out.requests.txt | \
-        awk '!seen[$0]++ {print}'
-    rm -f out.requests.txt
-}
-
-trace print_requests
+trace print_requests.py --unique --del-body parent,project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/'
 
 # Change postgres_role; the backend rejects this field in update_mask, so the
 # plan must show delete + create rather than an in-place PATCH.
@@ -35,7 +27,7 @@ trace cat databricks.yml
 trace $CLI bundle plan
 trace $CLI bundle deploy --auto-approve
 
-trace print_requests
+trace print_requests.py --unique --del-body parent,project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/'
 
 title "Fetch role and verify the new postgres_role value is live"
 
@@ -45,4 +37,4 @@ trace $CLI postgres get-role $role_name | jq 'del(.create_time, .update_time)'
 title "Destroy and verify cleanup"
 trace $CLI bundle destroy --auto-approve
 
-trace print_requests
+trace print_requests.py --unique --del-body parent,project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/'
