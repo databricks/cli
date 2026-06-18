@@ -1,1 +1,1 @@
-errcode $CLI sandbox default no-such-box
+musterr $CLI sandbox default no-such-box

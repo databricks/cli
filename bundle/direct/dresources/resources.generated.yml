@@ -228,6 +228,14 @@ resources:
       - field: postgres_database
         reason: spec:input_only
 
+  postgres_databases:
+
+    ignore_remote_changes:
+      - field: postgres_database
+        reason: spec:input_only
+      - field: role
+        reason: spec:input_only
+
   postgres_endpoints:
 
     recreate_on_changes:

@@ -1,7 +1,7 @@
 
 === get (text)
 >>> [CLI] experimental air get run 123
-Dashboard: [DATABRICKS_URL]/jobs/runs/123?o=[NUMID]
+Job Link: [DATABRICKS_URL]/jobs/runs/123?o=[NUMID]
 
 Run ID:       123
 Status:       SUCCESS
@@ -21,7 +21,7 @@ Accelerators: 8x H100
   "data": {
     "run_id": "123",
     "status": "SUCCESS",
-    "started_at": "[TIMESTAMP]+00:00",
+    "started_at": "[TIMESTAMP]",
     "duration_seconds": 12,
     "attempt_number": 0,
     "experiment_name": "my-exp",
@@ -45,7 +45,7 @@ Exit code: 1
     "code": "INVALID_ARGS",
     "kind": "PERMANENT",
     "message": "invalid JOB_RUN_ID \"notanumber\": must be a positive integer",
-    "retryable": true
+    "retryable": false
   }
 }
 

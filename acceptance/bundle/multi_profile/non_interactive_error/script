@@ -14,4 +14,4 @@ unset DATABRICKS_HOST
 unset DATABRICKS_TOKEN
 
 # Multiple workspace profiles, non-interactive → error with guidance.
-errcode trace $CLI bundle validate
+musterr trace $CLI bundle validate

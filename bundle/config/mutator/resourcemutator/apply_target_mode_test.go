@@ -261,10 +261,11 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 						},
 					},
 				},
-				PostgresSyncedTables: map[string]*resources.PostgresSyncedTable{
-					"postgres_synced_table1": {
-						PostgresSyncedTableConfig: resources.PostgresSyncedTableConfig{
-							SyncedTableId: "catalog.schema.table1",
+				PostgresDatabases: map[string]*resources.PostgresDatabase{
+					"postgres_database1": {
+						PostgresDatabaseConfig: resources.PostgresDatabaseConfig{
+							DatabaseId: "postgres-database-1",
+							Parent:     "projects/postgres-project-1/branches/postgres-branch-1",
 						},
 					},
 				},
@@ -276,6 +277,13 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 							RoleRoleSpec: postgres.RoleRoleSpec{
 								PostgresRole: "postgres_role_1",
 							},
+						},
+					},
+				},
+				PostgresSyncedTables: map[string]*resources.PostgresSyncedTable{
+					"postgres_synced_table1": {
+						PostgresSyncedTableConfig: resources.PostgresSyncedTableConfig{
+							SyncedTableId: "catalog.schema.table1",
 						},
 					},
 				},
@@ -491,6 +499,7 @@ func TestAppropriateResourcesAreRenamed(t *testing.T) {
 		"PostgresBranches",
 		"PostgresEndpoints",
 		"PostgresCatalogs",
+		"PostgresDatabases",
 		"PostgresSyncedTables",
 	}
 

@@ -1,10 +1,24 @@
-package phases
+package telemetry
 
 import (
 	"path"
 	"regexp"
 	"strings"
 )
+
+// Maximum length of an error message included in telemetry.
+const maxErrorMessageLength = 500
+
+// ScrubErrorMessage scrubs sensitive paths and PII from an error message and
+// truncates it to maxErrorMessageLength, producing a value safe to attach to a
+// telemetry event. The result is still treated as privileged data in-region.
+func ScrubErrorMessage(msg string) string {
+	msg = scrubForTelemetry(msg)
+	if len(msg) > maxErrorMessageLength {
+		msg = msg[:maxErrorMessageLength]
+	}
+	return msg
+}
 
 // Scrub sensitive information from error messages before sending to telemetry.
 // Inspired by VS Code's telemetry path scrubbing and Sentry's @userpath pattern.
