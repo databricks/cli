@@ -28,6 +28,11 @@ func (*workspaceRootPermissions) Name() string {
 
 // Apply implements bundle.Mutator.
 func (*workspaceRootPermissions) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+	// If the bundle is immutable, we don't need to apply any permissions to the workspace root.
+	if b.Config.Bundle.Deployment.ImmutableFolder {
+		return nil
+	}
+
 	stateFolderPermissions, err := giveAccessForWorkspaceRoot(ctx, b)
 	if err != nil {
 		return diag.FromErr(err)
