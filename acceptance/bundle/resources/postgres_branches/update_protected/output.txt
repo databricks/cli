@@ -27,6 +27,7 @@ Deployment complete!
 
 >>> [CLI] postgres get-branch [DEV_BRANCH_ID]
 {
+  "branch_id": "dev-branch",
   "name": "[DEV_BRANCH_ID]",
   "parent": "projects/test-pg-proj-[UNIQUE_NAME]",
   "status": {
@@ -102,6 +103,7 @@ Deployment complete!
 
 >>> [CLI] postgres get-branch [DEV_BRANCH_ID]
 {
+  "branch_id": "dev-branch",
   "name": "[DEV_BRANCH_ID]",
   "parent": "projects/test-pg-proj-[UNIQUE_NAME]",
   "status": {
@@ -137,6 +139,7 @@ Deployment complete!
 
 >>> [CLI] postgres get-branch [DEV_BRANCH_ID]
 {
+  "branch_id": "dev-branch",
   "name": "[DEV_BRANCH_ID]",
   "parent": "projects/test-pg-proj-[UNIQUE_NAME]",
   "status": {

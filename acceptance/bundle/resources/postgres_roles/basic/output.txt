@@ -38,6 +38,7 @@ Deployment complete!
 {
   "name": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/test-role",
   "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
+  "role_id": "test-role",
   "status": {
     "attributes": {
       "bypassrls": false,

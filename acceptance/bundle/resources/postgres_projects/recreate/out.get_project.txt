@@ -1,6 +1,7 @@
 {
   "create_time": "[TIMESTAMP]",
   "name": "[MY_PROJECT_ID_2]",
+  "project_id": "test-pg-new-[UNIQUE_NAME]",
   "status": {
     "branch_logical_size_limit_bytes": [NUMID],
     "default_branch": "[MY_PROJECT_ID_2]/branches/production",

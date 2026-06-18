@@ -17,6 +17,7 @@ Deployment complete!
 >>> [CLI] postgres get-project projects/test-pg-proj-hard-[UNIQUE_NAME]
 {
   "name": "projects/test-pg-proj-hard-[UNIQUE_NAME]",
+  "project_id": "test-pg-proj-hard-[UNIQUE_NAME]",
   "status": {
     "branch_logical_size_limit_bytes": [NUMID],
     "default_branch": "projects/test-pg-proj-hard-[UNIQUE_NAME]/branches/production",
@@ -39,6 +40,7 @@ Deployment complete!
 >>> [CLI] postgres get-project projects/test-pg-proj-soft-[UNIQUE_NAME]
 {
   "name": "projects/test-pg-proj-soft-[UNIQUE_NAME]",
+  "project_id": "test-pg-proj-soft-[UNIQUE_NAME]",
   "status": {
     "branch_logical_size_limit_bytes": [NUMID],
     "default_branch": "projects/test-pg-proj-soft-[UNIQUE_NAME]/branches/production",

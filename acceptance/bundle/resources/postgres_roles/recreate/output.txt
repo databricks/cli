@@ -120,6 +120,7 @@ Deployment complete!
 {
   "name": "[MY_ROLE_ID]-v2",
   "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
+  "role_id": "test-role-[UNIQUE_NAME]-v2",
   "status": {
     "attributes": {
       "bypassrls": false,

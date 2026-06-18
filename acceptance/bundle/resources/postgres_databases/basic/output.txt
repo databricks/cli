@@ -40,6 +40,7 @@ Deployment complete!
 
 >>> [CLI] postgres get-database projects/test-pg-proj-[UNIQUE_NAME]/branches/main/databases/my-database
 {
+  "database_id": "my-database",
   "name": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/databases/my-database",
   "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
   "status": {

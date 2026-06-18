@@ -32,6 +32,7 @@ Deployment complete!
 
 >>> [CLI] postgres get-branch projects/test-pg-proj-[UNIQUE_NAME]/branches/main
 {
+  "branch_id": "main",
   "name": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
   "parent": "projects/test-pg-proj-[UNIQUE_NAME]",
   "status": {

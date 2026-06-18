@@ -27,6 +27,7 @@ Deployment complete!
 >>> [CLI] postgres get-project [MY_PROJECT_ID]
 {
   "name": "[MY_PROJECT_ID]",
+  "project_id": "test-pg-proj-[UNIQUE_NAME]",
   "status": {
     "branch_logical_size_limit_bytes": [NUMID],
     "default_branch": "[MY_PROJECT_ID]/branches/production",
@@ -100,6 +101,7 @@ Deployment complete!
 >>> [CLI] postgres get-project [MY_PROJECT_ID]
 {
   "name": "[MY_PROJECT_ID]",
+  "project_id": "test-pg-proj-[UNIQUE_NAME]",
   "status": {
     "branch_logical_size_limit_bytes": [NUMID],
     "default_branch": "[MY_PROJECT_ID]/branches/production",
@@ -140,6 +142,7 @@ Deployment complete!
 >>> [CLI] postgres get-project [MY_PROJECT_ID]
 {
   "name": "[MY_PROJECT_ID]",
+  "project_id": "test-pg-proj-[UNIQUE_NAME]",
   "status": {
     "branch_logical_size_limit_bytes": [NUMID],
     "default_branch": "[MY_PROJECT_ID]/branches/production",
