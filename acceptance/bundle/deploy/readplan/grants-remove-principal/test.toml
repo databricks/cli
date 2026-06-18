@@ -1,3 +1,4 @@
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+EnvMatrix.READPLAN = ["", "1"]
 RecordRequests = true
 Ignore = ["tmp.plan.json"]
