@@ -656,6 +656,10 @@ var DABsToTerraformWrapperFields = map[string]FieldSet{
 		"create_database_if_missing": {},
 		"postgres_database":          {},
 	},
+	"postgres_databases": {
+		"postgres_database": {},
+		"role":              {},
+	},
 	"postgres_endpoints": {
 		"autoscaling_limit_max_cu": {},
 		"autoscaling_limit_min_cu": {},
@@ -684,6 +688,7 @@ var DABsToTerraformWrapperFields = map[string]FieldSet{
 		"postgres_role":    {},
 	},
 	"postgres_synced_tables": {
+		"accelerated_sync":                   {},
 		"branch":                             {},
 		"create_database_objects_if_missing": {},
 		"existing_pipeline_id":               {},
@@ -693,5 +698,6 @@ var DABsToTerraformWrapperFields = map[string]FieldSet{
 		"scheduling_policy":                  {},
 		"source_table_full_name":             {},
 		"timeseries_key":                     {},
+		"type_overrides":                     {},
 	},
 }
