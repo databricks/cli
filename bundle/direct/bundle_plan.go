@@ -89,6 +89,34 @@ func (b *DeploymentBundle) InitForApply(ctx context.Context, client *databricks.
 		b.StateCache.Store(resourceKey, sv)
 	}
 
+	// Re-hydrate RemoteState from map[string]interface{} into typed structs.
+	// When loaded from JSON, any-typed fields decode as map[string]interface{};
+	// round-tripping through the adapter's StateType recovers the correct type.
+	for resourceKey, entry := range plan.Plan {
+		if entry.RemoteState == nil {
+			continue
+		}
+
+		adapter, err := b.getAdapterForKey(resourceKey)
+		if err != nil {
+			return fmt.Errorf("loading remote state for %s: %w", resourceKey, err)
+		}
+
+		data, err := json.Marshal(entry.RemoteState)
+		if err != nil {
+			return fmt.Errorf("re-serializing remote state for %s: %w", resourceKey, err)
+		}
+
+		// StateType() returns a pointer type (e.g. *GrantsState); Elem() gives the
+		// struct type so reflect.New produces a single pointer, not a double pointer.
+		typed := reflect.New(adapter.StateType().Elem()).Interface()
+		if err := json.Unmarshal(data, typed); err != nil {
+			return fmt.Errorf("loading remote state for %s: %w", resourceKey, err)
+		}
+
+		entry.RemoteState = typed
+	}
+
 	b.Plan = plan
 	return nil
 }
