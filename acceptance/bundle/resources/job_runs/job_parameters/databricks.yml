@@ -1,0 +1,26 @@
+bundle:
+  name: job-runs-job-parameters
+
+resources:
+  jobs:
+    my_job:
+      name: my-job
+      parameters:
+        - name: env
+          default: dev
+        - name: region
+          default: us
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: /Workspace/test
+
+  job_runs:
+    my_run:
+      job_id: ${resources.jobs.my_job.id}
+      # Override only one of the job's two parameters. GetRun resolves the full
+      # parameter set (including the un-overridden `region` default), so without
+      # job_parameters in ignore_remote_changes this drift would recreate the run
+      # on every plan.
+      job_parameters:
+        env: prod

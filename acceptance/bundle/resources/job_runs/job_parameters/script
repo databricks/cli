@@ -1,0 +1,13 @@
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm out.requests.txt
+}
+trap cleanup EXIT
+
+title "deploy triggers the run with only the overridden parameter"
+trace $CLI bundle deploy
+trace print_requests.py //jobs/run-now
+
+title "plan is stable: the resolved job default does not look like drift"
+trace $CLI bundle plan
+trace $CLI bundle summary

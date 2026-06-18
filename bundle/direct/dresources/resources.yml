@@ -117,12 +117,20 @@ resources:
       - field: job_clusters[*].new_cluster.data_security_mode
 
   job_runs:
-    # GetRun echoes the run's job-level and overriding parameters, so DoRead maps
-    # those back (see RemapState) and the framework diffs them directly. Only the
-    # fields GetRun does NOT return are ignored here: the request-only inputs that
-    # never appear in the run, plus the synthetic job_settings snapshot.
+    # GetRun echoes the run's overriding parameters, so DoRead maps those back
+    # (see RemapState) and the framework diffs them directly. Ignored here are the
+    # fields GetRun does NOT return faithfully: the request-only inputs that never
+    # appear in the run, the synthetic job_settings snapshot, and job_parameters
+    # (GetRun resolves the job's full parameter set, including defaults the run
+    # never overrode, so a direct diff would look like perpetual remote drift).
     ignore_remote_changes:
       - field: idempotency_token
+        reason: input_only
+      # GetRun returns every parameter the job defines with its resolved value,
+      # not just the ones the run overrode, so a direct diff against the RunNow
+      # request would always show drift. A local change still re-triggers the run
+      # via recreate_on_changes below.
+      - field: job_parameters
         reason: input_only
       # Local-only snapshot of the targeted job's settings; GetRun never returns
       # it, so it always looks like remote drift unless ignored here.

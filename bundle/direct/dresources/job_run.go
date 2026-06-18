@@ -71,21 +71,6 @@ func (*ResourceJobRun) RemapState(remote *JobRunRemote) *JobRunState {
 	return &remote.JobRunState
 }
 
-// jobParametersToMap converts the run's job parameters (a list of name/value
-// pairs as returned by GetRun) into the name->value map shape used by RunNow.
-// It returns nil for an empty list so the diff matches a config that sets no
-// job parameters.
-func jobParametersToMap(params []jobs.JobParameter) map[string]string {
-	if len(params) == 0 {
-		return nil
-	}
-	m := make(map[string]string, len(params))
-	for _, p := range params {
-		m[p.Name] = p.Value
-	}
-	return m
-}
-
 func (r *ResourceJobRun) DoRead(ctx context.Context, id string) (*JobRunRemote, error) {
 	runID, err := parseRunID(id)
 	if err != nil {
@@ -101,14 +86,19 @@ func (r *ResourceJobRun) DoRead(ctx context.Context, id string) (*JobRunRemote, 
 	if err != nil {
 		return nil, err
 	}
-	// Map the run back into the RunNow shape so the framework can diff the run's
-	// actual parameters against the desired config. GetRun does not return the
-	// request-only fields (idempotency_token, only, performance_target, queue) or
-	// the synthetic job_settings snapshot; those are handled via
-	// ignore_remote_changes in resources.yml.
+	// Record the remote state as what we actually created: the fields GetRun
+	// echoes back faithfully, namely the run's job_id and the overriding
+	// parameters it was launched with. This is what the out-of-band diff compares
+	// against the state saved by DoCreate.
+	//
+	// We deliberately do NOT map run.JobParameters here: GetRun resolves it to the
+	// job's full parameter set (including defaults the run never overrode), which
+	// is not what we created. Mapping it would only feed a diff we then have to
+	// suppress, so job_parameters (along with the request-only fields and the
+	// synthetic job_settings snapshot, none of which GetRun returns) is handled
+	// via ignore_remote_changes in resources.yml.
 	var state JobRunState
 	state.JobId = run.JobId
-	state.JobParameters = jobParametersToMap(run.JobParameters)
 	if p := run.OverridingParameters; p != nil {
 		state.DbtCommands = p.DbtCommands
 		state.JarParams = p.JarParams

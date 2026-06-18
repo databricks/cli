@@ -331,22 +331,37 @@ func (s *FakeWorkspace) JobsRunNow(req Request) Response {
 		RunType:              jobs.RunTypeJobRun,
 		RunName:              runName,
 		Tasks:                tasks,
-		JobParameters:        runJobParameters(request.JobParameters),
+		JobParameters:        runJobParameters(job.Settings, request.JobParameters),
 		OverridingParameters: runOverridingParameters(request),
 	}
 
 	return Response{Body: jobs.RunNowResponse{RunId: runId}}
 }
 
-// runJobParameters mirrors how GetRun echoes job-level parameters: as a list of
-// name/value pairs. Sorted by name for deterministic output.
-func runJobParameters(params map[string]string) []jobs.JobParameter {
-	if len(params) == 0 {
+// runJobParameters mirrors how GetRun resolves job-level parameters: it returns
+// every parameter the job defines with its value, applying the run's overrides
+// on top of the job's defaults. This is the cloud behavior that lets a run
+// surface a job parameter it never explicitly overrode. Sorted by name for
+// deterministic output.
+func runJobParameters(settings *jobs.JobSettings, overrides map[string]string) []jobs.JobParameter {
+	resolved := map[string]jobs.JobParameter{}
+	if settings != nil {
+		for _, p := range settings.Parameters {
+			resolved[p.Name] = jobs.JobParameter{Name: p.Name, Default: p.Default, Value: p.Default}
+		}
+	}
+	for name, value := range overrides {
+		p := resolved[name]
+		p.Name = name
+		p.Value = value
+		resolved[name] = p
+	}
+	if len(resolved) == 0 {
 		return nil
 	}
-	result := make([]jobs.JobParameter, 0, len(params))
-	for name, value := range params {
-		result = append(result, jobs.JobParameter{Name: name, Value: value})
+	result := make([]jobs.JobParameter, 0, len(resolved))
+	for _, p := range resolved {
+		result = append(result, p)
 	}
 	slices.SortFunc(result, func(a, b jobs.JobParameter) int {
 		return cmp.Compare(a.Name, b.Name)
