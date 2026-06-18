@@ -192,6 +192,52 @@ func notebookStatusHandler(t *testing.T) http.HandlerFunc {
 	}
 }
 
+// designerStatusHandler mimics get-status for a Lakeflow Designer file: object
+// type DESIGNER_FILE and no export format reported.
+func designerStatusHandler(t *testing.T) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/2.0/workspace/get-status" {
+			t.Fatalf("unexpected request path: %s", r.URL.Path)
+		}
+		resp := workspaceStatus{
+			ObjectType: workspace.ObjectType("DESIGNER_FILE"),
+		}
+		w.Header().Set("Content-Type", "application/json")
+		require.NoError(t, json.NewEncoder(w).Encode(resp))
+	}
+}
+
+func TestDownloader_MarkTasksForDownload_DesignerNotebook(t *testing.T) {
+	ctx := t.Context()
+	w := newTestWorkspaceClient(t, designerStatusHandler(t))
+
+	dir := "base/dir"
+	sourceDir := filepath.Join(dir, "source")
+	configDir := filepath.Join(dir, "config")
+	downloader := NewDownloader(w, sourceDir, configDir)
+
+	tasks := []jobs.Task{
+		{
+			TaskKey: "designer_task",
+			NotebookTask: &jobs.NotebookTask{
+				NotebookPath: "/Users/user/project/My Pipeline.designer.ipynb",
+			},
+		},
+	}
+
+	err := downloader.MarkTasksForDownload(ctx, tasks)
+	require.NoError(t, err)
+
+	// The ".designer.ipynb" suffix must be preserved, not stripped to ".designer".
+	assert.Equal(t, "../source/My Pipeline.designer.ipynb", tasks[0].NotebookTask.NotebookPath)
+	require.Len(t, downloader.files, 1)
+	f := downloader.files[filepath.Join(sourceDir, "My Pipeline.designer.ipynb")]
+	assert.Equal(t, "/Users/user/project/My Pipeline.designer.ipynb", f.path)
+	// Designer files round-trip as Jupyter notebooks even though get-status
+	// reports no export format.
+	assert.Equal(t, workspace.ExportFormatJupyter, f.format)
+}
+
 func TestDownloader_MarkTasksForDownload_PreservesStructure(t *testing.T) {
 	w := newTestWorkspaceClient(t, notebookStatusHandler(t))
 
