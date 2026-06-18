@@ -15,7 +15,7 @@ package terraform_dabs_map
 // jobs / databricks_job: 10 dabs-only
 // jobs / databricks_job: 257 tf-only
 // model_serving_endpoints / databricks_model_serving: 2 tf-only
-// models / databricks_mlflow_model: 1 tf-only
+// models / databricks_mlflow_model: 1 renames
 // pipelines / databricks_pipeline: 3 renames
 // pipelines / databricks_pipeline: 7 dabs-only
 // pipelines / databricks_pipeline: 2 tf-only
@@ -55,6 +55,9 @@ var TerraformToDABsFieldMap = map[string]RenameTree{
 			}},
 			"library": {NewName: "libraries"},
 		}},
+	},
+	"models": {
+		"registered_model_id": {NewName: "model_id"},
 	},
 	"pipelines": {
 		"cluster":      {NewName: "clusters"},
@@ -570,9 +573,6 @@ var TerraformOnlyFields = map[string]FieldSet{
 		"endpoint_url":        {},
 		"serving_endpoint_id": {},
 	},
-	"models": {
-		"registered_model_id": {},
-	},
 	"pipelines": {
 		"expected_last_modified": {},
 		"url":                    {},
@@ -617,6 +617,9 @@ var DABsToTerraformRenameMap = map[string]RenameTree{
 			}},
 			"libraries": {NewName: "library"},
 		}},
+	},
+	"models": {
+		"model_id": {NewName: "registered_model_id"},
 	},
 	"pipelines": {
 		"clusters":      {NewName: "cluster"},

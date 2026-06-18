@@ -162,6 +162,14 @@ func TestTerraformPathToDABs(t *testing.T) {
 			dabsPath: "name",
 		},
 
+		// Manual rename: registered_model_id is a state-computed field whose DABs name
+		// (model_id) is lexically unrelated, so it is wired up via manualRenames in codegen.
+		{
+			group:    "models",
+			terrPath: "registered_model_id",
+			dabsPath: "model_id",
+		},
+
 		// Terraform-only fields: must return an error
 		{
 			group:     "jobs",

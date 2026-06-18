@@ -74,6 +74,15 @@ var tfKnownSegments = map[string]bool{
 	"provider_config": true, // Terraform provider metadata, not a DABs concept
 }
 
+// manualRenames maps DABs group → DABs field path → TF field path for renames the
+// heuristic matcher cannot derive. These are state-computed fields that live in the
+// RemoteType (not the config struct), whose DABs and TF names are semantically equivalent
+// but lexically unrelated, so neither exact nor stemmed matching can connect them.
+var manualRenames = map[string]map[string]string{
+	// models.model_id is the numeric model ID; TF names it registered_model_id.
+	"models": {"model_id": "registered_model_id"},
+}
+
 type groupResult struct {
 	group              string
 	tfType             string
@@ -262,6 +271,17 @@ func buildGroup(group string, adapter *dresources.Adapter) (groupResult, error) 
 				}
 			}
 		}
+	}
+
+	// Apply manual renames for fields the heuristic matcher cannot derive. These connect a
+	// state-computed DABs field to its differently-named TF counterpart; recording them as
+	// renames also marks the TF field matched so it does not surface as Terraform-only.
+	for dabsPath, tfPath := range manualRenames[group] {
+		if !tfFields[tfPath] {
+			return groupResult{}, fmt.Errorf("manual rename %s.%s: TF field %q not found", group, dabsPath, tfPath)
+		}
+		res.renames[tfPath] = dabsPath
+		matchedTF[tfPath] = true
 	}
 
 	// Step 4: remaining unmatched fields.
