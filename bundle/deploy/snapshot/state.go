@@ -2,6 +2,8 @@ package snapshot
 
 import (
 	"context"
+	"errors"
+	"io/fs"
 	"os"
 	"path"
 	"path/filepath"
@@ -38,10 +40,12 @@ func (s *saveState) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostic
 	if b.Config.Workspace.SnapshotPath == "" {
 		return nil
 	}
+
 	dir, err := b.LocalStateDir(ctx)
 	if err != nil {
 		return diag.FromErr(err)
 	}
+
 	p := filepath.Join(dir, snapshotPathStateFile)
 	return diag.FromErr(os.WriteFile(p, []byte(b.Config.Workspace.SnapshotPath), 0o600))
 }
@@ -49,14 +53,18 @@ func (s *saveState) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostic
 func (s *loadState) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	dir := b.GetLocalStateDir(ctx)
 	data, err := os.ReadFile(filepath.Join(dir, snapshotPathStateFile))
-	if os.IsNotExist(err) {
+
+	if errors.Is(err, fs.ErrNotExist) {
 		return nil
 	}
+
 	if err != nil {
 		return diag.FromErr(err)
 	}
+
 	snapshotPath := strings.TrimSpace(string(data))
 	b.Config.Workspace.SnapshotPath = snapshotPath
+
 	// Restore FilePath and ArtifactPath so that TranslateResourcePaths() can
 	// rewrite local absolute paths to snapshot paths during destroy.
 	b.Config.Workspace.FilePath = path.Join(snapshotPath, "src", "files")
