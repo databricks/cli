@@ -33,15 +33,13 @@ Deployment complete!
   }
 }
 
->>> [CLI] bundle plan -o json
-
 >>> print_requests.py --get //unity-catalog/permissions --sort
 {
   "method": "GET",
   "path": "/api/2.1/unity-catalog/permissions/schema/main.myschema"
 }
 
->>> [CLI] bundle deploy --plan out.plan.json
+>>> [CLI] bundle deploy --plan tmp.plan.json
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Deploying resources...
 Updating deployment state...
