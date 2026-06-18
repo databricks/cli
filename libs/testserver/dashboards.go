@@ -32,11 +32,18 @@ func transformSerializedDashboard(serializedDashboard, datasetCatalog, datasetSc
 		return serializedDashboard
 	}
 
+	// The real backend stores and returns the serialized dashboard verbatim,
+	// modulo the mutations applied below. Track whether any mutation actually
+	// happens so we can preserve the caller's original formatting (whitespace
+	// and key order) when it doesn't, matching cloud behavior.
+	mutated := false
+
 	// Add pageType to each page in the pages array (as of June 2025, this is an undocumented Lakeview API behaviour)
 	if pages, ok := dashboardContent["pages"].([]any); ok {
 		for _, page := range pages {
 			if pageMap, ok := page.(map[string]any); ok {
 				pageMap["pageType"] = "PAGE_TYPE_CANVAS"
+				mutated = true
 			}
 		}
 	}
@@ -47,15 +54,22 @@ func transformSerializedDashboard(serializedDashboard, datasetCatalog, datasetSc
 			if datasetMap, ok := dataset.(map[string]any); ok {
 				if datasetCatalog != "" {
 					datasetMap["catalog"] = datasetCatalog
+					mutated = true
 				}
 				if datasetSchema != "" {
 					datasetMap["schema"] = datasetSchema
+					mutated = true
 				}
 			}
 		}
 	}
 
-	updatedContent, err := json.Marshal(dashboardContent)
+	if !mutated {
+		return serializedDashboard
+	}
+
+	// Pretty-print with 2-space indentation to match cloud's formatting.
+	updatedContent, err := json.MarshalIndent(dashboardContent, "", "  ")
 	if err != nil {
 		return serializedDashboard
 	}
