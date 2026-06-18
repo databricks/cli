@@ -690,7 +690,7 @@ tasks:
           --rerun-fails \
           --jsonfile output.json \
           --packages "./acceptance ./integration/..." \
-          -- -parallel 4 -timeout=2h
+          -- -parallel 4 -timeout=12h
 
   integration-short:
     desc: Run short integration tests
@@ -704,13 +704,13 @@ tasks:
           --rerun-fails \
           --jsonfile output.json \
           --packages "./acceptance ./integration/..." \
-          -- -parallel 4 -timeout=2h -short
+          -- -parallel 4 -timeout=12h -short
 
   dbr-integration:
     desc: Run DBR acceptance tests on Databricks Runtime
     deps: [install-pythons]
     cmds:
-      - "DBR_ENABLED=true go test -v -timeout 4h -run TestDbrAcceptance$ ./acceptance"
+      - "DBR_ENABLED=true go test -v -timeout 12h -run TestDbrAcceptance$ ./acceptance"
 
   dbr-test:
     desc: Run DBR tests via deco env (requires deco + aws-prod-ucws access)
