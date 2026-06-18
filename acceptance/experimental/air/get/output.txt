@@ -1,0 +1,52 @@
+
+=== get (text)
+>>> [CLI] experimental air get run 123
+Job Link: [DATABRICKS_URL]/jobs/runs/123?o=[NUMID]
+
+Run ID:       123
+Status:       SUCCESS
+Submitted:    2023-11-14 22:13 UTC
+Retries:      0
+Duration:     12s
+Experiment:   my-exp
+MLflow Run:   my-run
+User:         user@example.com
+Accelerators: 8x H100
+
+=== get (json)
+>>> [CLI] experimental air get run 123 -o json
+{
+  "v": 1,
+  "ts": "[TIMESTAMP]",
+  "data": {
+    "run_id": "123",
+    "status": "SUCCESS",
+    "started_at": "[TIMESTAMP]",
+    "duration_seconds": 12,
+    "attempt_number": 0,
+    "experiment_name": "my-exp",
+    "dashboard_url": "[DATABRICKS_URL]/jobs/runs/123?o=[NUMID]",
+    "mlflow_url": "[DATABRICKS_URL]/ml/experiments/exp1/runs/run1/artifacts/logs/node_0"
+  }
+}
+
+=== invalid run id
+>>> [CLI] experimental air get run notanumber
+Error: invalid JOB_RUN_ID "notanumber": must be a positive integer
+
+Exit code: 1
+
+=== invalid run id (json)
+>>> [CLI] experimental air get run notanumber -o json
+{
+  "v": 1,
+  "ts": "[TIMESTAMP]",
+  "error": {
+    "code": "INVALID_ARGS",
+    "kind": "PERMANENT",
+    "message": "invalid JOB_RUN_ID \"notanumber\": must be a positive integer",
+    "retryable": false
+  }
+}
+
+Exit code: 1
