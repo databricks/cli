@@ -94,7 +94,20 @@ func AddDefaultHandlers(server *Server) {
 
 	server.Handle("GET", "/api/2.0/workspace/export", func(req Request) any {
 		path := req.URL.Query().Get("path")
-		return req.Workspace.WorkspaceExport(path)
+		data := req.Workspace.WorkspaceExport(path)
+
+		// The filer reads the raw object body via ?direct_download=true, while
+		// the SDK's Workspace.Export (used by `databricks workspace export`)
+		// requests JSON and expects the base64-encoded content field.
+		if req.URL.Query().Get("direct_download") == "true" {
+			return data
+		}
+
+		return Response{
+			Body: workspace.ExportResponse{
+				Content: base64.StdEncoding.EncodeToString(data),
+			},
+		}
 	})
 
 	server.Handle("POST", "/api/2.0/workspace/delete", func(req Request) any {
