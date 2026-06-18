@@ -729,8 +729,6 @@ resources:
       - field: name
         reason: id_field
     recreate_on_changes:
-      - field: name
-        reason: immutable
       - field: endpoint_type
         reason: immutable
     ignore_remote_changes:

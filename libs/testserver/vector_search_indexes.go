@@ -67,10 +67,11 @@ func (s *FakeWorkspace) VectorSearchIndexCreate(req Request) Response {
 		createReq.DirectAccessIndexSpec.SchemaJson = normalizeSchemaJSON(createReq.DirectAccessIndexSpec.SchemaJson)
 	}
 
-	// EndpointId is captured at index creation time. On the real backend an
-	// index is bound to a specific endpoint instance, not just the name:
-	// deleting and recreating an endpoint with the same name yields a
-	// different UUID. Storing it lets tests reason about that drift.
+	// EndpointId is frozen at creation: the index records the UUID of the
+	// endpoint instance it was bound to and never re-resolves it, so after the
+	// endpoint is deleted/recreated under the same name it still reports the old
+	// UUID. This mirrors the orphaned index on the real backend; the CLI detects
+	// the drift by looking up the live endpoint by name, not from this field.
 	index := vectorsearch.VectorIndex{
 		Creator:               s.CurrentUser().UserName,
 		EndpointId:            endpoint.Id,
