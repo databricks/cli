@@ -1,0 +1,15 @@
+bundle:
+  name: test-bundle
+
+resources:
+  schemas:
+    myschema:
+      name: myschema
+      catalog_name: main
+      grants:
+        - principal: ${workspace.current_user.userName}
+          privileges:
+            - USE_SCHEMA
+        - principal: extra@example.test
+          privileges:
+            - CREATE_TABLE

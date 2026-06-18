@@ -1,0 +1,20 @@
+bundle:
+  name: test-bundle
+
+# Test that large int64 values (> 2^53, not representable by float64 without loss)
+# are correctly saved to and read from the plan JSON.
+# job_id here is not a real job reference — it's a field that happens to be int64.
+resources:
+  jobs:
+    job:
+      name: test-job
+      tasks:
+        - task_key: max_int64
+          run_job_task:
+            job_id: 9223372036854775807
+        - task_key: max_int64_minus_1
+          run_job_task:
+            job_id: 9223372036854775806
+        - task_key: min_int64
+          run_job_task:
+            job_id: -9223372036854775808

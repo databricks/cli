@@ -2,6 +2,7 @@ package dresources
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"slices"
@@ -169,7 +170,21 @@ func removedGrantPrincipals(desiredAssignments []catalog.PrivilegeAssignment, en
 		return nil
 	}
 	remote, ok := entry.RemoteState.(*GrantsState)
-	if !ok || remote == nil {
+	if !ok {
+		// When the plan is loaded from a JSON file, RemoteState is decoded as
+		// map[string]interface{} rather than *GrantsState. Re-serialize and
+		// unmarshal into the typed struct to recover the principal list.
+		b, err := json.Marshal(entry.RemoteState)
+		if err != nil {
+			return nil
+		}
+		var gs GrantsState
+		if err := json.Unmarshal(b, &gs); err != nil {
+			return nil
+		}
+		remote = &gs
+	}
+	if remote == nil {
 		return nil
 	}
 

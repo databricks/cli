@@ -1,0 +1,24 @@
+cleanup() {
+    $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+# Deploy schema with two grant principals.
+trace $CLI bundle deploy
+trace print_requests.py //unity-catalog/permissions --sort
+
+# Remove extra@example.test from config.
+cp phase2.yml databricks.yml
+
+# Generate update plan: entry.RemoteState captures both principals as GrantsState.
+trace $CLI bundle plan -o json > out.plan.json
+trace print_requests.py --get //unity-catalog/permissions --sort
+
+# Deploy from the serialized plan.
+# Without the fix, entry.RemoteState.(*GrantsState) fails for JSON-loaded plan,
+# removedGrantPrincipals returns nil, and the revocation is silently skipped.
+trace $CLI bundle deploy --plan out.plan.json
+
+# Verify the PATCH call included a REMOVE for extra@example.test.
+trace print_requests.py //unity-catalog/permissions --sort | contains.py 'extra@example.test'
