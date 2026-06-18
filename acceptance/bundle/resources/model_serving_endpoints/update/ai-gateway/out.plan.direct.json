@@ -53,8 +53,11 @@
               }
             ]
           },
+          "creation_timestamp": [UNIX_TIME_MILLIS][0],
           "creator": "[USERNAME]",
+          "description": "",
           "id": "[UUID]",
+          "last_updated_timestamp": [UNIX_TIME_MILLIS][0],
           "name": "[ENDPOINT_ID]",
           "permission_level": "CAN_MANAGE",
           "route_optimized": false,
@@ -71,6 +74,11 @@
           "old": "first-inference-catalog",
           "new": "second-inference-catalog",
           "remote": "first-inference-catalog"
+        },
+        "description": {
+          "action": "skip",
+          "reason": "empty",
+          "remote": ""
         },
         "route_optimized": {
           "action": "skip",
