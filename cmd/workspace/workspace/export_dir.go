@@ -125,6 +125,13 @@ func (opts *exportDirOptions) callback(ctx context.Context, workspaceFiler filer
 		// create the file
 		f, err := os.Create(targetPath)
 		if err != nil {
+			// A workspace name can be illegal as a local filename (e.g. a ':'
+			// in "New Notebook 2026-05-04 13:54:24" on Windows). Skip those with
+			// a warning rather than aborting the whole export (#5171).
+			if isInvalidLocalNameError(err) {
+				cmdio.LogString(ctx, sourcePath+" (skipped; invalid name for local file system)")
+				return nil
+			}
 			return err
 		}
 		defer f.Close()

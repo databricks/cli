@@ -5,6 +5,7 @@
 ### Notable Changes
 
 ### CLI
+* `workspace export-dir` no longer aborts when a workspace object's name is not a legal local filename (e.g. a notebook named `New Notebook 2026-05-04 13:54:24` whose `:` is illegal on Windows). Such files are now skipped with a warning and the export completes ([#5171](https://github.com/databricks/cli/issues/5171)).
 
 ### Bundles
 * `bundle run` now prints the modern job run URL (`/jobs/<id>/runs/<id>`) so that non-admin users permitted to view the run are taken to the run instead of the workspace homepage.

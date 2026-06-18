@@ -1,4 +1,5 @@
 
 >>> [CLI] workspace export-dir /test-dir [TEST_TMP_DIR]/export
 Exporting files from /test-dir
-Error: open [TEST_TMP_DIR]\export\New Notebook [TIMESTAMP].py: The filename, directory name, or volume label syntax is incorrect.
+/test-dir/New Notebook [TIMESTAMP] (skipped; invalid name for local file system)
+Export complete
