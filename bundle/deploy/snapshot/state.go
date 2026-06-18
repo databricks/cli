@@ -13,8 +13,10 @@ import (
 
 const snapshotPathStateFile = "snapshot_path"
 
-type saveState struct{}
-type loadState struct{}
+type (
+	saveState struct{}
+	loadState struct{}
+)
 
 // SaveState writes the snapshot path to the local deployment state directory
 // so it can be recovered during destroy without reading metadata.json.

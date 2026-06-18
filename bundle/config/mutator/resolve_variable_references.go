@@ -79,7 +79,6 @@ func ResolveVariableReferencesOnlyResources(prefixes ...string) bundle.Mutator {
 	}
 }
 
-
 func ResolveVariableReferencesWithoutResources(prefixes ...string) bundle.Mutator {
 	if len(prefixes) == 0 {
 		prefixes = defaultPrefixes

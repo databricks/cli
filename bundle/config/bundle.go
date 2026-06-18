@@ -59,5 +59,4 @@ type Bundle struct {
 	// A stable generated UUID for the bundle. This is normally serialized by
 	// Databricks first party template when a user runs bundle init.
 	Uuid string `json:"uuid,omitempty"`
-
 }
