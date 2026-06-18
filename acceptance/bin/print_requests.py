@@ -187,8 +187,19 @@ def main():
         help="Collapse consecutive duplicate requests (like uniq), e.g. repeated GET polls",
     )
     parser.add_argument("--oneline", action="store_true", help="Print output with one request per line")
+    parser.add_argument(
+        "--del-body",
+        action="append",
+        default=[],
+        metavar="FIELDS",
+        help="Comma-separated body fields to delete from each request (repeatable). Use for "
+        "body fields that diverge between deployment engines, e.g. identity fields the "
+        "terraform provider serializes into the body but the direct engine sends as query params.",
+    )
     parser.add_argument("--fname", default="out.requests.txt")
     args = parser.parse_args()
+
+    del_body_fields = [field for group in args.del_body for field in group.split(",")]
 
     test_tmp_dir = os.environ.get("TEST_TMP_DIR")
     if test_tmp_dir:
@@ -207,6 +218,12 @@ def main():
 
     requests = read_json_many(data)
     filtered_requests = filter_requests(requests, args.path_filters, args.get, args.sort, args.unique)
+
+    for req in filtered_requests:
+        body = req.get("body")
+        if isinstance(body, dict):
+            for field in del_body_fields:
+                body.pop(field, None)
     if args.verbose:
         print(
             f"Read {len(data)} chars, {len(requests)} requests, {len(filtered_requests)} after filtering",

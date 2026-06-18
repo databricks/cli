@@ -23,7 +23,7 @@ branch_id_1=`read_id.py main`
 
 print_requests() {
     local name=$1
-    jq --sort-keys 'select(.method != "GET" and (.path | contains("/postgres")))' < out.requests.txt > out.requests.${name}.$DATABRICKS_BUNDLE_ENGINE.txt
+    jq --sort-keys 'select(.method != "GET" and (.path | contains("/postgres"))) | del(.body.parent, .body.project_id, .body.branch_id, .body.endpoint_id, .body.database_id, .body.role_id)' < out.requests.txt > out.requests.${name}.$DATABRICKS_BUNDLE_ENGINE.txt
     rm -f out.requests.txt
 }
 

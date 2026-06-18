@@ -28,7 +28,7 @@ print_requests() {
     # a bare "postgres" filter. jq's contains("/postgres") matches only the API
     # paths, and unlike print_requests.py's //postgres arg it isn't subject to
     # Git-Bash/MSYS slash mangling on Windows. Matches the sibling recreate tests.
-    jq --sort-keys 'select(.method != "GET" and (.path | contains("/postgres")))' < out.requests.txt > out.requests.${name}.txt
+    jq --sort-keys 'select(.method != "GET" and (.path | contains("/postgres"))) | del(.body.parent, .body.project_id, .body.branch_id, .body.endpoint_id, .body.database_id, .body.role_id)' < out.requests.txt > out.requests.${name}.txt
     rm -f out.requests.txt
 }
 

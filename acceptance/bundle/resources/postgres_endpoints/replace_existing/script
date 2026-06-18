@@ -17,7 +17,7 @@ trace $CLI bundle deploy
 # bundle's spec must be applied: 600s.
 trace $CLI postgres get-endpoint "projects/test-pg-proj-${UNIQUE_NAME}/branches/develop/endpoints/primary" | jq 'del(.create_time, .update_time)'
 
-trace print_requests.py --keep --get '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.deploy.$DATABRICKS_BUNDLE_ENGINE.json
+trace print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.deploy.$DATABRICKS_BUNDLE_ENGINE.json
 
 # bundle destroy: the backend rejects independent deletion of the primary
 # read-write endpoint with a MANAGED_BY_PARENT marker; both engines
@@ -27,4 +27,4 @@ trace print_requests.py --keep --get '//postgres' '^//workspace-files/' '^//work
 title "bundle destroy"
 $CLI bundle destroy --auto-approve > out.destroy.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1 || true
 
-trace print_requests.py --keep --get '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.destroy.$DATABRICKS_BUNDLE_ENGINE.json
+trace print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.destroy.$DATABRICKS_BUNDLE_ENGINE.json

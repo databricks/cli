@@ -4,7 +4,6 @@
 }
 {
   "body": {
-    "parent": "projects/test-pg-proj-[UNIQUE_NAME]",
     "spec": {
       "no_expiry": true
     }
