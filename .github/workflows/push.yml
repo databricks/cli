@@ -556,12 +556,15 @@ jobs:
             -f pull_request_number=${{ github.event.pull_request.number }} \
             -f commit_sha=${{ github.event.pull_request.head.sha }}
 
+      # Use the PR workflow (which runs in short mode) so commits to main do not
+      # trigger the slow CloudSlow integration tests. Those run only on the
+      # nightly schedule (and on workflow-file changes), not on every commit.
       - name: Trigger integration tests (push to main)
         if: ${{ github.event_name == 'push' }}
         env:
           GH_TOKEN: ${{ steps.generate-token.outputs.token }}
         run: |-
-          gh workflow run cli-isolated-nightly.yml -R ${{ secrets.ORG_NAME }}/${{ secrets.REPO_NAME }} \
+          gh workflow run cli-isolated-pr.yml -R ${{ secrets.ORG_NAME }}/${{ secrets.REPO_NAME }} \
             --ref main \
             -f commit_sha=${{ github.event.after }}
 
