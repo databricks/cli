@@ -1,0 +1,7 @@
+$CLI workspace import "/test-dir/New Notebook 2026-05-04 13:54:24.py" --file notebook.py --format AUTO --language PYTHON
+
+mkdir -p "$TEST_TMP_DIR/export"
+
+# On Windows the notebook name contains ':' which is illegal in a local filename,
+# so os.Create fails and the whole export aborts (databricks/cli#5171).
+musterr trace $CLI workspace export-dir /test-dir "$TEST_TMP_DIR/export"

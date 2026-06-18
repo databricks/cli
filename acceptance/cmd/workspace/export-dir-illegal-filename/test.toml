@@ -1,0 +1,28 @@
+Local = true
+Cloud = false
+
+# This reproduces databricks/cli#5171, which only manifests on Windows: a ':' in
+# the notebook name is a legal filename character on Linux/macOS but illegal on
+# Windows, so os.Create rejects the local target path there.
+[GOOS]
+darwin = false
+linux = false
+windows = true
+
+[Env]
+MSYS_NO_PATHCONV = "1"
+
+[[Server]]
+Pattern = "GET /api/2.0/workspace/list"
+Response.Body = '''
+{
+  "objects": [
+    {
+      "path": "/test-dir/New Notebook 2026-05-04 13:54:24",
+      "object_type": "NOTEBOOK",
+      "language": "PYTHON",
+      "object_id": 123
+    }
+  ]
+}
+'''
