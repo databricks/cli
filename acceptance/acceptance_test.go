@@ -665,6 +665,12 @@ func runTest(t *testing.T,
 	// Embed the CI run id, when present, so leaked resources can be attributed to a run and swept by prefix.
 	uniqueName = ciUniqueName(os.Getenv("GITHUB_RUN_ID"), uniqueName)
 	repls.Set(uniqueName, "[UNIQUE_NAME]")
+	// UNIQUE_NAME_SAFE replaces hyphens with underscores for contexts that require
+	// identifier-safe names (e.g. Python project_name, which rejects hyphens).
+	uniqueNameSafe := strings.ReplaceAll(uniqueName, "-", "_")
+	if uniqueNameSafe != uniqueName {
+		repls.Set(uniqueNameSafe, "[UNIQUE_NAME]")
+	}
 
 	var tmpDir string
 	var err error
@@ -738,6 +744,7 @@ func runTest(t *testing.T,
 	}
 	cmd.Env = append(cmd.Env, "DATABRICKS_RATE_LIMIT="+rateLimit)
 	cmd.Env = append(cmd.Env, "UNIQUE_NAME="+uniqueName)
+	cmd.Env = append(cmd.Env, "UNIQUE_NAME_SAFE="+uniqueNameSafe)
 	cmd.Env = append(cmd.Env, "TEST_TMP_DIR="+tmpDir)
 
 	// populate CLOUD_ENV_BASE
