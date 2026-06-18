@@ -9,18 +9,17 @@ trace $CLI bundle deploy
 trace print_requests.py //unity-catalog/permissions --sort
 
 # Remove extra@example.test from config.
-cp phase2.yml databricks.yml
+grep -v 'TO_REMOVE' databricks.yml > updated.yml && mv updated.yml databricks.yml
 
 # Generate update plan: entry.RemoteState captures both principals as GrantsState.
-$CLI bundle plan -o json > tmp.plan.json
-# Record only the grants entry — the schema entry is skip and not relevant here.
+trace $CLI bundle plan -o json > tmp.plan.json
 jq '.plan["resources.schemas.myschema.grants"]' tmp.plan.json > out.plan.grants.json
 trace print_requests.py --get //unity-catalog/permissions --sort
 
-# Deploy from the serialized plan.
+# Deploy from serialized plan (READPLAN=1) or without (READPLAN="").
 # Without the fix, entry.RemoteState.(*GrantsState) fails for JSON-loaded plan,
 # removedGrantPrincipals returns nil, and the revocation is silently skipped.
-trace $CLI bundle deploy --plan tmp.plan.json
+$CLI bundle deploy $(readplanarg tmp.plan.json)
 
 # Verify the PATCH call included a REMOVE for extra@example.test.
 trace print_requests.py //unity-catalog/permissions --sort | contains.py 'extra@example.test'
