@@ -2259,7 +2259,7 @@
                     "x-since-version": "v0.298.0"
                   },
                   "permissions": {
-                    "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission",
+                    "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.VectorSearchEndpointPermission",
                     "x-since-version": "v0.298.0"
                   },
                   "target_qps": {
@@ -2279,6 +2279,27 @@
                 "required": [
                   "endpoint_type",
                   "name"
+                ]
+              },
+              "resources.VectorSearchEndpointPermission": {
+                "type": "object",
+                "properties": {
+                  "group_name": {
+                    "$ref": "#/$defs/string"
+                  },
+                  "level": {
+                    "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/vectorsearch.VectorSearchEndpointPermissionLevel"
+                  },
+                  "service_principal_name": {
+                    "$ref": "#/$defs/string"
+                  },
+                  "user_name": {
+                    "$ref": "#/$defs/string"
+                  }
+                },
+                "additionalProperties": false,
+                "required": [
+                  "level"
                 ]
               },
               "resources.VectorSearchIndex": {
@@ -11064,6 +11085,15 @@
                 "An index that supports direct read and write of vectors and metadata through our REST and SDK APIs. With this model, the user manages index updates."
               ]
             },
+            "vectorsearch.VectorSearchEndpointPermissionLevel": {
+              "type": "string",
+              "description": "Permission level",
+              "enum": [
+                "CAN_CREATE",
+                "CAN_MANAGE",
+                "CAN_USE"
+              ]
+            },
             "workspace.AzureKeyVaultSecretScopeMetadata": {
               "type": "object",
               "description": "The metadata of the Azure KeyVault for a secret scope of type `AZURE_KEYVAULT`",
@@ -11408,6 +11438,12 @@
                   "type": "array",
                   "items": {
                     "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.SqlWarehousePermission"
+                  }
+                },
+                "resources.VectorSearchEndpointPermission": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.VectorSearchEndpointPermission"
                   }
                 }
               },

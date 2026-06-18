@@ -2315,7 +2315,7 @@
                   },
                   {
                     "type": "string",
-                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                    "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
                   }
                 ]
               },
@@ -13038,7 +13038,21 @@
               ]
             },
             "vectorsearch.VectorSearchEndpointPermissionLevel": {
-              "type": "string"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Permission level",
+                  "enum": [
+                    "CAN_CREATE",
+                    "CAN_MANAGE",
+                    "CAN_USE"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
             },
             "workspace.AzureKeyVaultSecretScopeMetadata": {
               "oneOf": [
@@ -13842,7 +13856,7 @@
                     },
                     {
                       "type": "string",
-                      "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                      "pattern": "\\$\\{(var(\\.\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
                     }
                   ]
                 }
