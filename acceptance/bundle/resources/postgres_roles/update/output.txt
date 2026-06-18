@@ -24,7 +24,7 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> print_requests.py --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
+>>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 
 >>> [CLI] postgres get-role projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/test-role
 {
@@ -56,7 +56,7 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> print_requests.py --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
+>>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 
 === Toggle attributes.createdb and re-deploy
 >>> update_file.py databricks.yml createdb: false createdb: true
@@ -103,7 +103,7 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> print_requests.py --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
+>>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 
 >>> [CLI] postgres get-role projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/test-role
 {
@@ -139,7 +139,7 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> print_requests.py --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
+>>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 
 >>> [CLI] postgres get-role projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/test-role
 {
