@@ -150,10 +150,10 @@ func newGetRunCommand() *cobra.Command {
 			out := cmd.OutOrStdout()
 			addTextLinks(ctx, out, w, &data, ids)
 
-			// Lead with the dashboard link (hyperlinked, falling back to the bare
+			// Lead with the job run link (hyperlinked, falling back to the bare
 			// URL off a terminal), then a gap before the training config and the
 			// status table, mirroring the Python CLI's header.
-			fmt.Fprintf(out, "Dashboard: %s\n\n", hyperlink(ctx, out, data.DashboardURL, data.DashboardURL))
+			fmt.Fprintf(out, "Job Link: %s\n\n", hyperlink(ctx, out, data.DashboardURL, data.DashboardURL))
 
 			// Text mode shows the training-config YAML before the status,
 			// mirroring `air get run`. JSON output omits it.

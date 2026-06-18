@@ -1,7 +1,7 @@
 
 === get (text)
 >>> [CLI] experimental air get run 123
-Dashboard: [DATABRICKS_URL]/jobs/runs/123?o=[NUMID]
+Job Link: [DATABRICKS_URL]/jobs/runs/123?o=[NUMID]
 
 Run ID:       123
 Status:       SUCCESS
