@@ -141,6 +141,7 @@ type FakeWorkspace struct {
 	Volumes               map[string]catalog.VolumeInfo
 	Dashboards            map[string]fakeDashboard
 	PublishedDashboards   map[string]dashboards.PublishedDashboard
+	GenieSpaces           map[string]dashboards.GenieSpace
 	SqlWarehouses         map[string]sql.GetWarehouseResponse
 	Alerts                map[string]sql.AlertV2
 	Experiments           map[string]ml.GetExperimentResponse
@@ -171,8 +172,10 @@ type FakeWorkspace struct {
 
 	PostgresProjects     map[string]postgres.Project
 	PostgresBranches     map[string]postgres.Branch
-	PostgresEndpoints    map[string]postgres.Endpoint
 	PostgresCatalogs     map[string]postgres.Catalog
+	PostgresDatabases    map[string]postgres.Database
+	PostgresEndpoints    map[string]postgres.Endpoint
+	PostgresRoles        map[string]postgres.Role
 	PostgresSyncedTables map[string]postgres.SyncedTable
 	PostgresOperations   map[string]postgres.Operation
 
@@ -288,6 +291,7 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		Volumes:             map[string]catalog.VolumeInfo{},
 		Dashboards:          map[string]fakeDashboard{},
 		PublishedDashboards: map[string]dashboards.PublishedDashboard{},
+		GenieSpaces:         map[string]dashboards.GenieSpace{},
 		SqlWarehouses: map[string]sql.GetWarehouseResponse{
 			TestDefaultWarehouseId: {
 				Id:    TestDefaultWarehouseId,
@@ -309,8 +313,10 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		SyncedDatabaseTables:      map[string]database.SyncedDatabaseTable{},
 		PostgresProjects:          map[string]postgres.Project{},
 		PostgresBranches:          map[string]postgres.Branch{},
-		PostgresEndpoints:         map[string]postgres.Endpoint{},
 		PostgresCatalogs:          map[string]postgres.Catalog{},
+		PostgresDatabases:         map[string]postgres.Database{},
+		PostgresEndpoints:         map[string]postgres.Endpoint{},
+		PostgresRoles:             map[string]postgres.Role{},
 		PostgresSyncedTables:      map[string]postgres.SyncedTable{},
 		PostgresOperations:        map[string]postgres.Operation{},
 		postgresImplicitBranches:  map[string]bool{},

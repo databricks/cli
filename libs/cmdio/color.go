@@ -3,7 +3,10 @@ package cmdio
 import (
 	"context"
 	"fmt"
+	"strings"
 	"text/template"
+
+	"github.com/charmbracelet/lipgloss"
 )
 
 // SGR (Select Graphic Rendition) escapes; see
@@ -44,6 +47,18 @@ func render(ctx context.Context, code, msg string) string {
 	return code + msg + ansiReset
 }
 
+// Bold renders msg with increased intensity (bold).
+func Bold(ctx context.Context, msg string) string { return render(ctx, ansiBold, msg) }
+
+// Faint renders msg with decreased intensity (faint, dim).
+func Faint(ctx context.Context, msg string) string { return render(ctx, ansiFaint, msg) }
+
+// Italic renders msg in italic.
+func Italic(ctx context.Context, msg string) string { return render(ctx, ansiItalic, msg) }
+
+// Underline renders msg underlined.
+func Underline(ctx context.Context, msg string) string { return render(ctx, ansiUnderline, msg) }
+
 // Red renders msg in red.
 func Red(ctx context.Context, msg string) string { return render(ctx, ansiRed, msg) }
 
@@ -55,6 +70,9 @@ func Yellow(ctx context.Context, msg string) string { return render(ctx, ansiYel
 
 // Blue renders msg in blue.
 func Blue(ctx context.Context, msg string) string { return render(ctx, ansiBlue, msg) }
+
+// Magenta renders msg in magenta.
+func Magenta(ctx context.Context, msg string) string { return render(ctx, ansiMagenta, msg) }
 
 // Cyan renders msg in cyan.
 func Cyan(ctx context.Context, msg string) string { return render(ctx, ansiCyan, msg) }
@@ -70,14 +88,16 @@ func HiBlue(ctx context.Context, msg string) string { return render(ctx, ansiHiB
 // helpers accept a format string + args.
 func RenderFuncMap(ctx context.Context) template.FuncMap {
 	return template.FuncMap{
-		"red":     templateColor(ctx, ansiRed),
-		"green":   templateColor(ctx, ansiGreen),
-		"blue":    templateColor(ctx, ansiBlue),
-		"yellow":  templateColor(ctx, ansiYellow),
-		"magenta": templateColor(ctx, ansiMagenta),
-		"cyan":    templateColor(ctx, ansiCyan),
-		"bold":    templateColor(ctx, ansiBold),
-		"italic":  templateColor(ctx, ansiItalic),
+		"red":       templateColor(ctx, ansiRed),
+		"green":     templateColor(ctx, ansiGreen),
+		"blue":      templateColor(ctx, ansiBlue),
+		"yellow":    templateColor(ctx, ansiYellow),
+		"magenta":   templateColor(ctx, ansiMagenta),
+		"cyan":      templateColor(ctx, ansiCyan),
+		"bold":      templateColor(ctx, ansiBold),
+		"faint":     templateColor(ctx, ansiFaint),
+		"italic":    templateColor(ctx, ansiItalic),
+		"underline": templateColor(ctx, ansiUnderline),
 	}
 }
 
@@ -89,4 +109,32 @@ func templateColor(ctx context.Context, code string) func(string, ...any) string
 		}
 		return render(ctx, code, msg)
 	}
+}
+
+// Width returns the visible cell width of s. ANSI color escapes (such as those
+// emitted by the helpers above) are ignored, and wide glyphs like CJK
+// characters and emoji are counted as two cells. Use this instead of len() or
+// utf8.RuneCountInString when aligning columns of rendered text.
+func Width(s string) int {
+	return lipgloss.Width(s)
+}
+
+// PadRight returns s padded with trailing spaces to a visible width of n (see
+// Width). Because it measures the rendered string, cells already wrapped by the
+// color helpers stay aligned. Strings at or beyond width n are returned as-is.
+func PadRight(s string, n int) string {
+	if pad := n - Width(s); pad > 0 {
+		return s + strings.Repeat(" ", pad)
+	}
+	return s
+}
+
+// PadLeft returns s padded with leading spaces to a visible width of n (see
+// Width), right-aligning the rendered content. Strings at or beyond width n are
+// returned as-is.
+func PadLeft(s string, n int) string {
+	if pad := n - Width(s); pad > 0 {
+		return strings.Repeat(" ", pad) + s
+	}
+	return s
 }

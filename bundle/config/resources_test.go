@@ -116,34 +116,39 @@ func TestSupportedResources(t *testing.T) {
 	}
 }
 
-// Bundle resources whose InitializeURL() resolves via workspaceurls. When a
-// pattern key or a bundle plural name drifts, ResourceURL returns "" and this
-// test fails loudly instead of silently producing empty URLs in bundle summary.
+// All bundle resources must have a workspace URL, except those listed in noURL.
+// When a pattern key or a bundle plural name drifts, ResourceURL returns "" and
+// this test fails loudly instead of silently producing empty URLs in bundle summary.
+// When adding a new resource, add a URL pattern in libs/workspaceurls or add the
+// plural name to noURL with a comment explaining why no URL exists.
 func TestBundleResourcePluralNamesResolveInWorkspaceURLs(t *testing.T) {
-	withURLs := []string{
-		"alerts",
-		"apps",
-		"clusters",
-		"dashboards",
-		"experiments",
-		"jobs",
-		"models",
-		"model_serving_endpoints",
-		"pipelines",
-		"registered_models",
-		"sql_warehouses",
+	// Resources that intentionally have no workspace URL.
+	noURL := map[string]bool{
+		"external_locations": true,
+		"postgres_branches":  true,
+		"postgres_databases": true,
+		"postgres_endpoints": true,
+		"postgres_projects":  true,
+		"postgres_roles":     true,
+		"secret_scopes":      true,
 	}
 
 	supported := SupportedResources()
-	for _, name := range withURLs {
+
+	// Catch stale noURL entries when a resource is removed from SupportedResources.
+	for name := range noURL {
 		_, ok := supported[name]
-		require.Truef(t, ok, "%q is not a bundle plural name, update SupportedResources or this test", name)
+		require.Truef(t, ok, "%q is in the noURL list but is not a supported bundle resource; remove it from noURL", name)
 	}
 
 	base := url.URL{Scheme: "https", Host: "example.com"}
-	for _, name := range withURLs {
+	for name := range supported {
 		got := workspaceurls.ResourceURL(base, name, "test-id")
-		assert.NotEmptyf(t, got, "workspaceurls.ResourceURL(%q) returned empty; pattern key renamed or alias missing", name)
+		if noURL[name] {
+			assert.Emptyf(t, got, "workspaceurls.ResourceURL(%q) returned non-empty; remove %q from noURL or remove its URL pattern", name, name)
+		} else {
+			assert.NotEmptyf(t, got, "workspaceurls.ResourceURL(%q) returned empty; add a URL pattern in libs/workspaceurls or add %q to noURL", name, name)
+		}
 	}
 }
 
@@ -189,6 +194,9 @@ func TestResourcesBindSupport(t *testing.T) {
 		},
 		Dashboards: map[string]*resources.Dashboard{
 			"my_dashboard": {},
+		},
+		GenieSpaces: map[string]*resources.GenieSpace{
+			"my_genie_space": {},
 		},
 		Volumes: map[string]*resources.Volume{
 			"my_volume": {
@@ -276,6 +284,25 @@ func TestResourcesBindSupport(t *testing.T) {
 				},
 			},
 		},
+		PostgresDatabases: map[string]*resources.PostgresDatabase{
+			"my_postgres_database": {
+				PostgresDatabaseConfig: resources.PostgresDatabaseConfig{
+					DatabaseId: "my-postgres-database",
+					Parent:     "projects/my-postgres-project/branches/my-postgres-branch",
+				},
+			},
+		},
+		PostgresRoles: map[string]*resources.PostgresRole{
+			"my_postgres_role": {
+				PostgresRoleConfig: resources.PostgresRoleConfig{
+					RoleId: "my-postgres-role",
+					Parent: "projects/my-postgres-project/branches/my-postgres-branch",
+					RoleRoleSpec: postgres.RoleRoleSpec{
+						PostgresRole: "my_postgres_role",
+					},
+				},
+			},
+		},
 		PostgresSyncedTables: map[string]*resources.PostgresSyncedTable{
 			"my_postgres_synced_table": {
 				PostgresSyncedTableConfig: resources.PostgresSyncedTableConfig{
@@ -317,6 +344,7 @@ func TestResourcesBindSupport(t *testing.T) {
 	m.GetMockSchemasAPI().EXPECT().GetByFullName(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockClustersAPI().EXPECT().GetByClusterId(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockLakeviewAPI().EXPECT().Get(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockGenieAPI().EXPECT().GetSpace(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockVolumesAPI().EXPECT().Read(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockAppsAPI().EXPECT().GetByName(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockAlertsV2API().EXPECT().GetAlertById(mock.Anything, mock.Anything).Return(nil, nil)
@@ -333,7 +361,10 @@ func TestResourcesBindSupport(t *testing.T) {
 	m.GetMockPostgresAPI().EXPECT().GetBranch(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockPostgresAPI().EXPECT().GetEndpoint(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockPostgresAPI().EXPECT().GetCatalog(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockPostgresAPI().EXPECT().GetDatabase(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockPostgresAPI().EXPECT().GetRole(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockPostgresAPI().EXPECT().GetSyncedTable(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockPostgresAPI().EXPECT().GetRole(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockVectorSearchEndpointsAPI().EXPECT().GetEndpoint(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockVectorSearchIndexesAPI().EXPECT().GetIndexByIndexName(mock.Anything, mock.Anything).Return(nil, nil)
 

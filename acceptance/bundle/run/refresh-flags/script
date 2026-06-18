@@ -1,6 +1,5 @@
 print_requests() {
-    jq --sort-keys 'select(.method != "GET" and (.path | contains("/pipelines")))' < out.requests.txt
-    rm out.requests.txt
+    print_requests.py //pipelines
 }
 
 trace $CLI bundle deploy

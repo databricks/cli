@@ -56,6 +56,25 @@ R4 POST
 >>> # Test positive + negative filters (AND logic)
 >>> test(test_requests, ["//api", "^/jobs"], False, False)
 R4 POST
+
+>>> # --unique collapses consecutive duplicate requests (like uniq), e.g. repeated GET polls
+>>> dup_requests = [
+...     {"method": "POST", "path": "/api/2.0/idx", "body": {"n": 1}},
+...     {"method": "GET", "path": "/api/2.0/idx"},
+...     {"method": "GET", "path": "/api/2.0/idx"},
+... ]
+>>> [x["method"] for x in filter_requests(dup_requests, ["//idx"], True, False, unique=True)]
+['POST', 'GET']
+
+>>> # Only consecutive duplicates collapse; a repeat after another request is kept
+>>> seq = [
+...     {"method": "GET", "path": "/api/2.0/idx"},
+...     {"method": "DELETE", "path": "/api/2.0/idx"},
+...     {"method": "GET", "path": "/api/2.0/idx"},
+...     {"method": "GET", "path": "/api/2.0/idx"},
+... ]
+>>> [x["method"] for x in filter_requests(seq, ["//idx"], True, False, unique=True)]
+['GET', 'DELETE', 'GET']
 """
 
 import os
@@ -104,7 +123,7 @@ result = read_json_many(test)
 assert result == [{"method": "GET"}, {"method": "POST"}], result
 
 
-def filter_requests(requests, path_filters, include_get, should_sort):
+def filter_requests(requests, path_filters, include_get, should_sort, unique=False):
     """Filter requests based on method and path filters."""
     positive_filters = []
     negative_filters = []
@@ -145,6 +164,13 @@ def filter_requests(requests, path_filters, include_get, should_sort):
     if should_sort:
         filtered_requests.sort(key=str)
 
+    if unique:
+        deduped = []
+        for req in filtered_requests:
+            if not deduped or deduped[-1] != req:
+                deduped.append(req)
+        filtered_requests = deduped
+
     return filtered_requests
 
 
@@ -155,6 +181,11 @@ def main():
     parser.add_argument("--get", action="store_true", help="Include GET requests (excluded by default)")
     parser.add_argument("--keep", action="store_true", help="Keep out.requests.json file after processing")
     parser.add_argument("--sort", action="store_true", help="Sort requests before output")
+    parser.add_argument(
+        "--unique",
+        action="store_true",
+        help="Collapse consecutive duplicate requests (like uniq), e.g. repeated GET polls",
+    )
     parser.add_argument("--oneline", action="store_true", help="Print output with one request per line")
     parser.add_argument("--fname", default="out.requests.txt")
     args = parser.parse_args()
@@ -166,7 +197,7 @@ def main():
         requests_file = Path(args.fname)
 
     if not requests_file.exists():
-        sys.exit(f"File {requests_file} not found")
+        sys.exit(f"File {requests_file.as_posix()} not found")
 
     with open(requests_file) as fobj:
         data = fobj.read()
@@ -175,7 +206,7 @@ def main():
         return
 
     requests = read_json_many(data)
-    filtered_requests = filter_requests(requests, args.path_filters, args.get, args.sort)
+    filtered_requests = filter_requests(requests, args.path_filters, args.get, args.sort, args.unique)
     if args.verbose:
         print(
             f"Read {len(data)} chars, {len(requests)} requests, {len(filtered_requests)} after filtering",

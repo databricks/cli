@@ -36,7 +36,9 @@ var deployApprovalGroups = []approvalGroup{
 	{group: "synced_database_tables", message: deleteOrRecreateSyncedDatabaseTableMessage},
 	{group: "postgres_projects", message: deleteOrRecreatePostgresProjectMessage},
 	{group: "postgres_branches", message: deleteOrRecreatePostgresBranchMessage},
+	{group: "postgres_databases", message: deleteOrRecreatePostgresDatabaseMessage},
 	{group: "vector_search_indexes", message: deleteOrRecreateVectorSearchIndexMessage},
+	{group: "genie_spaces", message: deleteOrRecreateGenieSpaceMessage},
 }
 
 func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) (bool, error) {
@@ -83,6 +85,10 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, ta
 	if targetEngine.IsDirect() {
 		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(ctx), plan, direct.MigrateMode(false))
 		state, err = b.DeploymentBundle.StateDB.Finalize(ctx)
+		// Capture the finalized state for deploy telemetry. It carries each
+		// resource's state-size in bytes (from the WAL replay Finalize just
+		// did), so telemetry needs no extra read or parse of the state file.
+		b.Metrics.ResourceState = state
 	} else {
 		bundle.ApplyContext(ctx, b, terraform.Apply())
 		state, err = terraform.ParseResourcesState(ctx, b)
@@ -165,6 +171,13 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		plan = RunPlan(ctx, b, engine)
 	}
 
+	// Stop before opening the WAL for write if planning failed. UpgradeToWrite
+	// writes a WAL header that only deployCore's Finalize commits or discards;
+	// returning past it without finalizing leaves a header-only WAL behind.
+	if logdiag.HasError(ctx) {
+		return
+	}
+
 	if engine.IsDirect() {
 		// Upgrade from read (opened by process.go) to write mode
 		if err := b.DeploymentBundle.StateDB.UpgradeToWrite(); err != nil {
@@ -182,6 +195,9 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		}
 	}
 
+	// InitForApply receives ctx and could log a diagnostic without returning an
+	// error, so re-check before deploying. (UpgradeToWrite above takes no ctx and
+	// thus cannot log, so the earlier check is enough to guard the WAL open.)
 	if logdiag.HasError(ctx) {
 		return
 	}
@@ -212,8 +228,14 @@ func RunPlan(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) *d
 			logdiag.LogError(ctx, err)
 			return nil
 		}
+		if len(b.Select) > 0 {
+			plan.FilterToSelected(b.Select)
+		}
 		return plan
 	}
+
+	// b.Select is rejected for the terraform engine in ProcessBundleRet, so it is
+	// never set here.
 
 	bundle.ApplySeqContext(ctx, b,
 		terraform.Interpolate(),

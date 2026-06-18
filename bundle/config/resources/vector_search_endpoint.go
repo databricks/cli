@@ -5,6 +5,7 @@ import (
 	"net/url"
 
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/marshal"
@@ -51,8 +52,7 @@ func (e *VectorSearchEndpoint) InitializeURL(baseURL url.URL) {
 	if e.Name == "" {
 		return
 	}
-	baseURL.Path = "compute/vector-search/" + e.Name
-	e.URL = baseURL.String()
+	e.URL = workspaceurls.ResourceURL(baseURL, "vector_search_endpoints", e.Name)
 }
 
 func (e *VectorSearchEndpoint) GetName() string {

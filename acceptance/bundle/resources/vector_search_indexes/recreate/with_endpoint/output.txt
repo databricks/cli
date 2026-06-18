@@ -63,23 +63,42 @@ Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged
       "remote_state": {
         "creator": "[USERNAME]",
         "direct_access_index_spec": {
-          "schema_json": "{\"columns\":[{\"name\":\"id\",\"type\":\"integer\"}]}"
+          "embedding_vector_columns": [
+            {
+              "embedding_dimension": 768,
+              "name": "vector"
+            }
+          ],
+          "schema_json": "{\"id\":\"int\",\"vector\":\"array\u003cfloat\u003e\"}"
         },
         "endpoint_name": "vs-endpoint-[UNIQUE_NAME]",
         "endpoint_uuid": "[UUID]",
+        "index_subtype": "HYBRID",
         "index_type": "DIRECT_ACCESS",
-        "name": "vs-index-[UNIQUE_NAME]",
+        "name": "main.default.vs_index_[UNIQUE_NAME]",
         "primary_key": "id",
         "status": {
           "ready": true
         }
       },
       "changes": {
+        "direct_access_index_spec.schema_json": {
+          "action": "skip",
+          "reason": "normalized_by_backend",
+          "old": "{\"id\":\"integer\",\"vector\":\"array\u003cfloat\u003e\"}",
+          "new": "{\"id\":\"integer\",\"vector\":\"array\u003cfloat\u003e\"}",
+          "remote": "{\"id\":\"int\",\"vector\":\"array\u003cfloat\u003e\"}"
+        },
         "endpoint_uuid": {
           "action": "skip",
           "reason": "state-only field",
           "old": "[UUID]",
           "remote": "[UUID]"
+        },
+        "index_subtype": {
+          "action": "skip",
+          "reason": "backend_default",
+          "remote": "HYBRID"
         }
       }
     }
@@ -98,9 +117,9 @@ Deployment complete!
   "endpoint_type": "STORAGE_OPTIMIZED"
 }
 
->>> [CLI] vector-search-indexes get-index vs-index-[UNIQUE_NAME]
+>>> [CLI] vector-search-indexes get-index main.default.vs_index_[UNIQUE_NAME]
 {
-  "name": "vs-index-[UNIQUE_NAME]",
+  "name": "main.default.vs_index_[UNIQUE_NAME]",
   "endpoint_name": "vs-endpoint-[UNIQUE_NAME]",
   "index_type": "DIRECT_ACCESS",
   "primary_key": "id"

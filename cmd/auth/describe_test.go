@@ -1,12 +1,18 @@
 package auth
 
 import (
+	"encoding/json"
 	"errors"
+	"net/http"
+	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/databricks/cli/libs/auth/storage"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/databrickscfg/profile"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/databricks/databricks-sdk-go/service/iam"
@@ -15,6 +21,67 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
+
+func newHostProfileCmd(t *testing.T) *cobra.Command {
+	t.Helper()
+	cmd := &cobra.Command{}
+	cmd.Flags().String("host", "", "")
+	cmd.Flags().String("profile", "", "")
+	cmd.SetContext(t.Context())
+	return cmd
+}
+
+func TestResolveProfileFromHostFlag(t *testing.T) {
+	cfgPath := filepath.Join(t.TempDir(), ".databrickscfg")
+	require.NoError(t, os.WriteFile(cfgPath, []byte(""), 0o600))
+	t.Setenv("DATABRICKS_CONFIG_FILE", cfgPath)
+
+	profiler := profile.InMemoryProfiler{
+		Profiles: profile.Profiles{
+			{Name: "dev", Host: "https://dev.cloud.databricks.com", AuthType: "databricks-cli"},
+		},
+	}
+
+	t.Run("no flags set is a no-op", func(t *testing.T) {
+		cmd := newHostProfileCmd(t)
+		require.NoError(t, resolveProfileFromHostFlag(cmd, profiler))
+		assert.Empty(t, cmd.Flag("profile").Value.String())
+	})
+
+	t.Run("--profile already set wins; --host is ignored", func(t *testing.T) {
+		cmd := newHostProfileCmd(t)
+		require.NoError(t, cmd.Flags().Set("host", "https://dev.cloud.databricks.com"))
+		require.NoError(t, cmd.Flags().Set("profile", "explicit"))
+		require.NoError(t, resolveProfileFromHostFlag(cmd, profiler))
+		assert.Equal(t, "explicit", cmd.Flag("profile").Value.String())
+	})
+
+	t.Run("--host with a single match wires --profile", func(t *testing.T) {
+		cmd := newHostProfileCmd(t)
+		require.NoError(t, cmd.Flags().Set("host", "https://dev.cloud.databricks.com"))
+		require.NoError(t, resolveProfileFromHostFlag(cmd, profiler))
+		assert.Equal(t, "dev", cmd.Flag("profile").Value.String())
+	})
+
+	t.Run("--host with no match surfaces a clear error", func(t *testing.T) {
+		cmd := newHostProfileCmd(t)
+		require.NoError(t, cmd.Flags().Set("host", "https://nope.cloud.databricks.com"))
+		err := resolveProfileFromHostFlag(cmd, profiler)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "no profile found matching host")
+		assert.Empty(t, cmd.Flag("profile").Value.String())
+	})
+
+	t.Run("DATABRICKS_CONFIG_PROFILE is left alone", func(t *testing.T) {
+		t.Setenv("DATABRICKS_CONFIG_PROFILE", "from-env")
+		cmd := newHostProfileCmd(t)
+		require.NoError(t, cmd.Flags().Set("host", "https://dev.cloud.databricks.com"))
+		require.NoError(t, resolveProfileFromHostFlag(cmd, profiler))
+		// We don't overwrite --profile when the user signalled an explicit
+		// choice via the env var.
+		assert.Empty(t, cmd.Flag("profile").Value.String())
+	})
+}
 
 func TestGetWorkspaceAuthStatus(t *testing.T) {
 	ctx := t.Context()
@@ -332,6 +399,166 @@ func TestGetWorkspaceAuthStatus_U2M_PopulatesTokenStorage(t *testing.T) {
 	assert.Equal(t, "secure", status.TokenStorage.Mode)
 	assert.Equal(t, secureLocation, status.TokenStorage.Location)
 	assert.Equal(t, "DATABRICKS_AUTH_STORAGE environment variable", status.TokenStorage.Source)
+}
+
+// describeVerifyServer simulates the host that describe's secondary
+// verification calls hit: CurrentUser.Me and account Workspaces.List.
+// Statuses other than 200 return an error body with that status code; a zero
+// status marks an endpoint that must not be called at all.
+func describeVerifyServer(t *testing.T, accountID string, meStatus, listStatus int) *httptest.Server {
+	t.Helper()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		respond := func(status int, okBody any) {
+			if status == 0 {
+				t.Errorf("unexpected request to %s", r.URL.Path)
+				status = http.StatusNotFound
+			}
+			w.Header().Set("Content-Type", "application/json")
+			if status != http.StatusOK {
+				w.WriteHeader(status)
+				okBody = map[string]any{"error_code": "TEST_ERROR", "message": "secondary check failed"}
+			}
+			require.NoError(t, json.NewEncoder(w).Encode(okBody))
+		}
+		switch r.URL.Path {
+		case "/api/2.0/preview/scim/v2/Me":
+			respond(meStatus, map[string]any{"userName": "fallback-user"})
+		case "/api/2.0/accounts/" + accountID + "/workspaces":
+			respond(listStatus, []map[string]any{})
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	t.Cleanup(server.Close)
+	return server
+}
+
+// newDescribeWorkspaceCmd wires a mocked workspace client whose Me call fails
+// with meErr, with cfg as its resolved configuration.
+func newDescribeWorkspaceCmd(t *testing.T, cfg *config.Config, meErr error) *cobra.Command {
+	t.Helper()
+	m := mocks.NewMockWorkspaceClient(t)
+	m.WorkspaceClient.Config = cfg
+	m.GetMockCurrentUserAPI().EXPECT().Me(mock.Anything, mock.Anything).Return(nil, meErr)
+	cmd := newHostProfileCmd(t)
+	cmd.SetContext(cmdctx.SetWorkspaceClient(t.Context(), m.WorkspaceClient))
+	t.Setenv("DATABRICKS_CONFIG_FILE", filepath.Join(t.TempDir(), ".databrickscfg"))
+	return cmd
+}
+
+// newDescribeAccountCmd wires a mocked account client whose Workspaces.List
+// call fails with listErr, with cfg as its resolved configuration.
+func newDescribeAccountCmd(t *testing.T, cfg *config.Config, listErr error) *cobra.Command {
+	t.Helper()
+	m := mocks.NewMockAccountClient(t)
+	m.AccountClient.Config = cfg
+	m.GetMockWorkspacesAPI().EXPECT().List(mock.Anything).Return(nil, listErr)
+	cmd := newHostProfileCmd(t)
+	cmd.SetContext(cmdctx.SetAccountClient(t.Context(), m.AccountClient))
+	t.Setenv("DATABRICKS_CONFIG_FILE", filepath.Join(t.TempDir(), ".databrickscfg"))
+	return cmd
+}
+
+// resolveCfg returns a tryAuth that resolves cfg from attrs and reports the
+// given client type, mirroring what root.MustAnyClient leaves behind.
+func resolveCfg(t *testing.T, cfg *config.Config, attrs map[string]string, isAccount bool) tryAuth {
+	t.Helper()
+	return func(cmd *cobra.Command, args []string) (*config.Config, bool, error) {
+		require.NoError(t, config.ConfigAttributes.ResolveFromStringMap(cfg, attrs))
+		return cfg, isAccount, nil
+	}
+}
+
+// TestGetAuthStatusVerificationFallback covers the fallback when the primary
+// verification call (mocked client) fails: describe tries the other endpoint
+// over HTTP against describeVerifyServer, and only when both fail does it
+// report the primary error. Error rows leave wantUsername/wantAccountID empty
+// because errorAuthStatus never sets them.
+func TestGetAuthStatusVerificationFallback(t *testing.T) {
+	tests := []struct {
+		name          string
+		isAccount     bool
+		primaryErr    *apierr.APIError
+		meStatus      int
+		listStatus    int
+		accountID     string
+		wantStatus    string
+		wantUsername  string
+		wantAccountID string
+	}{
+		{
+			name:          "workspace check fails, account check succeeds",
+			primaryErr:    &apierr.APIError{StatusCode: http.StatusBadRequest, Message: "Unable to load OAuth Config"},
+			meStatus:      http.StatusNotFound,
+			listStatus:    http.StatusOK,
+			accountID:     "test-acct",
+			wantStatus:    "success",
+			wantAccountID: "test-acct",
+		},
+		{
+			name:       "no second call without an account id",
+			primaryErr: &apierr.APIError{StatusCode: http.StatusBadRequest, Message: "Unable to load OAuth Config"},
+			wantStatus: "error",
+		},
+		{
+			name:         "account check fails, workspace check succeeds",
+			isAccount:    true,
+			primaryErr:   &apierr.APIError{StatusCode: http.StatusForbidden, Message: "This API is disabled for users without account admin status"},
+			meStatus:     http.StatusOK,
+			listStatus:   http.StatusNotFound,
+			accountID:    "test-acct",
+			wantStatus:   "success",
+			wantUsername: "fallback-user",
+		},
+		{
+			name:       "workspace branch, both checks fail",
+			primaryErr: &apierr.APIError{StatusCode: http.StatusBadRequest, Message: "Unable to load OAuth Config"},
+			meStatus:   http.StatusNotFound,
+			listStatus: http.StatusUnauthorized,
+			accountID:  "test-acct",
+			wantStatus: "error",
+		},
+		{
+			name:       "account branch, both checks fail",
+			isAccount:  true,
+			primaryErr: &apierr.APIError{StatusCode: http.StatusUnauthorized, Message: "credentials expired"},
+			meStatus:   http.StatusUnauthorized,
+			listStatus: http.StatusNotFound,
+			accountID:  "test-acct",
+			wantStatus: "error",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Setenv("DATABRICKS_ACCOUNT_ID", "")
+			server := describeVerifyServer(t, tc.accountID, tc.meStatus, tc.listStatus)
+			cfg := &config.Config{}
+			var cmd *cobra.Command
+			if tc.isAccount {
+				cmd = newDescribeAccountCmd(t, cfg, tc.primaryErr)
+			} else {
+				cmd = newDescribeWorkspaceCmd(t, cfg, tc.primaryErr)
+			}
+			attrs := map[string]string{
+				"host":      server.URL,
+				"token":     "test-token",
+				"auth_type": "pat",
+			}
+			if tc.accountID != "" {
+				attrs["account_id"] = tc.accountID
+			}
+
+			status, err := getAuthStatus(cmd, []string{}, false, resolveCfg(t, cfg, attrs, tc.isAccount))
+			require.NoError(t, err)
+			require.Equal(t, tc.wantStatus, status.Status)
+			assert.Equal(t, tc.wantUsername, status.Username)
+			assert.Equal(t, tc.wantAccountID, status.AccountID)
+			if tc.wantStatus == "error" {
+				assert.ErrorIs(t, status.Error, tc.primaryErr)
+			}
+		})
+	}
 }
 
 func TestGetWorkspaceAuthStatus_NonU2M_OmitsTokenStorage(t *testing.T) {

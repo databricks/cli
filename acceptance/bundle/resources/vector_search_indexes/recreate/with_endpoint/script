@@ -20,7 +20,7 @@ trace $CLI bundle deploy --auto-approve
 
 # Verify final state of both resources.
 endpoint_name="vs-endpoint-${UNIQUE_NAME}"
-index_name="vs-index-${UNIQUE_NAME}"
+index_name="main.default.vs_index_${UNIQUE_NAME}"
 trace $CLI vector-search-endpoints get-endpoint "${endpoint_name}" | jq '{name, endpoint_type}'
 trace $CLI vector-search-indexes get-index "${index_name}" | jq '{name, endpoint_name, index_type, primary_key}'
 

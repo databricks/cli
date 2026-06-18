@@ -4,10 +4,7 @@ from typing import TYPE_CHECKING, TypedDict
 from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
 from databricks.bundles.core._variable import VariableOrOptional
-from databricks.bundles.pipelines._models.report_spec import (
-    ReportSpec,
-    ReportSpecParam,
-)
+from databricks.bundles.pipelines._models.report_spec import ReportSpec, ReportSpecParam
 from databricks.bundles.pipelines._models.schema_spec import SchemaSpec, SchemaSpecParam
 from databricks.bundles.pipelines._models.table_spec import TableSpec, TableSpecParam
 
@@ -21,17 +18,17 @@ class IngestionConfig:
 
     report: VariableOrOptional[ReportSpec] = None
     """
-    Select a specific source report.
+    [Public Preview] Select a specific source report.
     """
 
     schema: VariableOrOptional[SchemaSpec] = None
     """
-    Select all tables from a specific source schema.
+    [Public Preview] Select all tables from a specific source schema.
     """
 
     table: VariableOrOptional[TableSpec] = None
     """
-    Select a specific source table.
+    [Public Preview] Select a specific source table.
     """
 
     @classmethod
@@ -47,17 +44,17 @@ class IngestionConfigDict(TypedDict, total=False):
 
     report: VariableOrOptional[ReportSpecParam]
     """
-    Select a specific source report.
+    [Public Preview] Select a specific source report.
     """
 
     schema: VariableOrOptional[SchemaSpecParam]
     """
-    Select all tables from a specific source schema.
+    [Public Preview] Select all tables from a specific source schema.
     """
 
     table: VariableOrOptional[TableSpecParam]
     """
-    Select a specific source table.
+    [Public Preview] Select a specific source table.
     """
 
 

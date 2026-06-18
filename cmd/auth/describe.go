@@ -10,9 +10,11 @@ import (
 	"github.com/databricks/cli/libs/auth/storage"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/spf13/cobra"
@@ -65,6 +67,9 @@ func newDescribeCommand() *cobra.Command {
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
+		if err := resolveProfileFromHostFlag(cmd, profile.DefaultProfiler); err != nil {
+			return err
+		}
 		var status *authStatus
 		var err error
 		status, err = getAuthStatus(cmd, args, showSensitive, func(cmd *cobra.Command, args []string) (*config.Config, bool, error) {
@@ -85,19 +90,40 @@ func newDescribeCommand() *cobra.Command {
 	return cmd
 }
 
+// resolveProfileFromHostFlag translates an explicit --host into a --profile
+// for `auth describe`. Without this, the downstream profile resolver ignores
+// --host and either falls back to [__settings__].default_profile (silently
+// describing a different host than the one the user named) or errors with the
+// SDK's default-credentials message even though a host-matching profile
+// exists. DATABRICKS_CONFIG_PROFILE is left alone — it's an explicit signal
+// the user already made.
+func resolveProfileFromHostFlag(cmd *cobra.Command, profiler profile.Profiler) error {
+	hostFlag := cmd.Flag("host")
+	profileFlag := cmd.Flag("profile")
+	if hostFlag == nil || profileFlag == nil {
+		return nil
+	}
+	if !hostFlag.Changed || profileFlag.Changed {
+		return nil
+	}
+	ctx := cmd.Context()
+	if env.Get(ctx, "DATABRICKS_CONFIG_PROFILE") != "" {
+		return nil
+	}
+	profileName, err := resolveHostToProfile(ctx, hostFlag.Value.String(), profiler)
+	if err != nil {
+		return err
+	}
+	return profileFlag.Value.Set(profileName)
+}
+
 type tryAuth func(cmd *cobra.Command, args []string) (*config.Config, bool, error)
 
 func getAuthStatus(cmd *cobra.Command, args []string, showSensitive bool, fn tryAuth) (*authStatus, error) {
 	cfg, isAccount, err := fn(cmd, args)
 	ctx := cmd.Context()
 	if err != nil {
-		details := getAuthDetails(cmd, cfg, showSensitive)
-		return &authStatus{ //nolint:nilerr // error is returned in the authStatus struct
-			Status:       "error",
-			Error:        err,
-			Details:      details,
-			TokenStorage: resolveTokenStorageInfo(ctx, details.AuthType),
-		}, nil
+		return errorAuthStatus(ctx, cmd, cfg, showSensitive, err), nil //nolint:nilerr // error is returned in the authStatus struct
 	}
 
 	if isAccount {
@@ -105,49 +131,88 @@ func getAuthStatus(cmd *cobra.Command, args []string, showSensitive bool, fn try
 
 		// Doing a simple API call to check if the auth is valid
 		_, err := a.Workspaces.List(ctx)
-		if err != nil {
-			details := getAuthDetails(cmd, cfg, showSensitive)
-			return &authStatus{ //nolint:nilerr // error is returned in the authStatus struct
-				Status:       "error",
-				Error:        err,
-				Details:      details,
-				TokenStorage: resolveTokenStorageInfo(ctx, details.AuthType),
-			}, nil
+		if err == nil {
+			return successAuthStatus(ctx, cmd, a.Config, showSensitive, a.Config.Username, a.Config.AccountID), nil
 		}
 
-		details := getAuthDetails(cmd, a.Config, showSensitive)
-		status := authStatus{
-			Status:       "success",
-			Details:      details,
-			AccountID:    a.Config.AccountID,
-			Username:     a.Config.Username,
-			TokenStorage: resolveTokenStorageInfo(ctx, details.AuthType),
+		// Workspaces.List can fail for reasons other than bad credentials
+		// (e.g. it requires account admin), so verify against the workspace
+		// endpoint with the same resolved config before reporting failure.
+		me, meErr := verifyWorkspaceAuth(ctx, a.Config)
+		if meErr == nil {
+			return successAuthStatus(ctx, cmd, a.Config, showSensitive, me.UserName, ""), nil
 		}
-
-		return &status, nil
+		return errorAuthStatus(ctx, cmd, cfg, showSensitive, err), nil
 	}
 
 	w := cmdctx.WorkspaceClient(ctx)
 	me, err := w.CurrentUser.Me(ctx, iam.MeRequest{})
-	if err != nil {
-		details := getAuthDetails(cmd, cfg, showSensitive)
-		return &authStatus{ //nolint:nilerr // error is returned in the authStatus struct
-			Status:       "error",
-			Error:        err,
-			Details:      details,
-			TokenStorage: resolveTokenStorageInfo(ctx, details.AuthType),
-		}, nil
+	if err == nil {
+		return successAuthStatus(ctx, cmd, w.Config, showSensitive, me.UserName, ""), nil
 	}
 
-	details := getAuthDetails(cmd, w.Config, showSensitive)
-	status := authStatus{
+	// Account console profiles that also carry a workspace_id resolve to a
+	// workspace client even though the host only serves account APIs, so the
+	// call above fails despite valid credentials (see
+	// https://github.com/databricks/cli/issues/5479). Verify against the
+	// account endpoint before reporting failure. Account clients require an
+	// account ID, so skip the second check when none is configured.
+	if w.Config.AccountID != "" {
+		if listErr := verifyAccountAuth(ctx, w.Config); listErr == nil {
+			return successAuthStatus(ctx, cmd, w.Config, showSensitive, w.Config.Username, w.Config.AccountID), nil
+		}
+	}
+	return errorAuthStatus(ctx, cmd, cfg, showSensitive, err), nil
+}
+
+// verifyWorkspaceAuth checks whether cfg's credentials are accepted by the
+// workspace endpoint. The client is built over the same resolved config
+// pointer (config.Config must not be copied by value), without any profile
+// prompting.
+func verifyWorkspaceAuth(ctx context.Context, cfg *config.Config) (*iam.User, error) {
+	w, err := databricks.NewWorkspaceClient((*databricks.Config)(cfg))
+	if err != nil {
+		return nil, err
+	}
+	return w.CurrentUser.Me(ctx, iam.MeRequest{})
+}
+
+// verifyAccountAuth checks whether cfg's credentials are accepted by the
+// account endpoint. cfg.AccountID must be non-empty. The client is built over
+// the same resolved config pointer (config.Config must not be copied by
+// value), without any profile prompting.
+func verifyAccountAuth(ctx context.Context, cfg *config.Config) error {
+	a, err := databricks.NewAccountClient((*databricks.Config)(cfg))
+	if err != nil {
+		return err
+	}
+	_, err = a.Workspaces.List(ctx)
+	return err
+}
+
+// successAuthStatus reports verified credentials, with details derived from cfg.
+func successAuthStatus(ctx context.Context, cmd *cobra.Command, cfg *config.Config, showSensitive bool, username, accountID string) *authStatus {
+	details := getAuthDetails(cmd, cfg, showSensitive)
+	return &authStatus{
 		Status:       "success",
 		Details:      details,
-		Username:     me.UserName,
+		Username:     username,
+		AccountID:    accountID,
 		TokenStorage: resolveTokenStorageInfo(ctx, details.AuthType),
 	}
+}
 
-	return &status, nil
+// errorAuthStatus reports a failed credential check. The error is carried in
+// the status rather than returned so describe still renders the resolved
+// configuration alongside the failure.
+func errorAuthStatus(ctx context.Context, cmd *cobra.Command, cfg *config.Config, showSensitive bool, err error) *authStatus {
+	details := getAuthDetails(cmd, cfg, showSensitive)
+	return &authStatus{
+		Status:       "error",
+		Error:        err,
+		Details:      details,
+		TokenStorage: resolveTokenStorageInfo(ctx, details.AuthType),
+	}
 }
 
 func render(ctx context.Context, cmd *cobra.Command, status *authStatus, template string) error {

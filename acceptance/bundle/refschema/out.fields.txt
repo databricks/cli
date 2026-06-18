@@ -86,8 +86,11 @@ resources.apps.*.active_deployment.status.state	apps.AppDeploymentState	ALL
 resources.apps.*.active_deployment.update_time	string	ALL
 resources.apps.*.app_status	*apps.ApplicationStatus	ALL
 resources.apps.*.app_status.message	string	ALL
+resources.apps.*.app_status.running_instances	int	ALL
 resources.apps.*.app_status.state	apps.ApplicationState	ALL
 resources.apps.*.budget_policy_id	string	ALL
+resources.apps.*.compute_max_instances	int	ALL
+resources.apps.*.compute_min_instances	int	ALL
 resources.apps.*.compute_size	apps.ComputeSize	ALL
 resources.apps.*.compute_status	*apps.ComputeStatus	ALL
 resources.apps.*.compute_status.active_instances	int	ALL
@@ -229,6 +232,7 @@ resources.catalogs.*.comment	string	ALL
 resources.catalogs.*.connection_name	string	ALL
 resources.catalogs.*.created_at	int64	REMOTE
 resources.catalogs.*.created_by	string	REMOTE
+resources.catalogs.*.custom_max_retention_hours	int64	ALL
 resources.catalogs.*.effective_predictive_optimization_flag	*catalog.EffectivePredictiveOptimizationFlag	REMOTE
 resources.catalogs.*.effective_predictive_optimization_flag.inherited_from_name	string	REMOTE
 resources.catalogs.*.effective_predictive_optimization_flag.inherited_from_type	catalog.EffectivePredictiveOptimizationFlagInheritedFromType	REMOTE
@@ -288,6 +292,7 @@ resources.clusters.*.aws_attributes.spot_bid_price_percent	int	ALL
 resources.clusters.*.aws_attributes.zone_id	string	ALL
 resources.clusters.*.azure_attributes	*compute.AzureAttributes	ALL
 resources.clusters.*.azure_attributes.availability	compute.AzureAvailability	ALL
+resources.clusters.*.azure_attributes.capacity_reservation_group	string	ALL
 resources.clusters.*.azure_attributes.first_on_demand	int	ALL
 resources.clusters.*.azure_attributes.log_analytics_info	*compute.LogAnalyticsInfo	ALL
 resources.clusters.*.azure_attributes.log_analytics_info.log_analytics_primary_key	string	ALL
@@ -426,6 +431,7 @@ resources.clusters.*.spec.aws_attributes.spot_bid_price_percent	int	REMOTE
 resources.clusters.*.spec.aws_attributes.zone_id	string	REMOTE
 resources.clusters.*.spec.azure_attributes	*compute.AzureAttributes	REMOTE
 resources.clusters.*.spec.azure_attributes.availability	compute.AzureAvailability	REMOTE
+resources.clusters.*.spec.azure_attributes.capacity_reservation_group	string	REMOTE
 resources.clusters.*.spec.azure_attributes.first_on_demand	int	REMOTE
 resources.clusters.*.spec.azure_attributes.log_analytics_info	*compute.LogAnalyticsInfo	REMOTE
 resources.clusters.*.spec.azure_attributes.log_analytics_info.log_analytics_primary_key	string	REMOTE
@@ -732,6 +738,24 @@ resources.external_locations.*.grants[*]	catalog.PrivilegeAssignment	ALL
 resources.external_locations.*.grants[*].principal	string	ALL
 resources.external_locations.*.grants[*].privileges	[]catalog.Privilege	ALL
 resources.external_locations.*.grants[*].privileges[*]	catalog.Privilege	ALL
+resources.genie_spaces.*.description	string	ALL
+resources.genie_spaces.*.etag	string	ALL
+resources.genie_spaces.*.file_path	string	INPUT
+resources.genie_spaces.*.id	string	INPUT
+resources.genie_spaces.*.lifecycle	resources.Lifecycle	INPUT
+resources.genie_spaces.*.lifecycle.prevent_destroy	bool	INPUT
+resources.genie_spaces.*.modified_status	string	INPUT
+resources.genie_spaces.*.parent_path	string	ALL
+resources.genie_spaces.*.serialized_space	any	ALL
+resources.genie_spaces.*.title	string	ALL
+resources.genie_spaces.*.url	string	INPUT
+resources.genie_spaces.*.warehouse_id	string	ALL
+resources.genie_spaces.*.permissions.object_id	string	ALL
+resources.genie_spaces.*.permissions[*]	dresources.StatePermission	ALL
+resources.genie_spaces.*.permissions[*].group_name	string	ALL
+resources.genie_spaces.*.permissions[*].level	iam.PermissionLevel	ALL
+resources.genie_spaces.*.permissions[*].service_principal_name	string	ALL
+resources.genie_spaces.*.permissions[*].user_name	string	ALL
 resources.jobs.*.budget_policy_id	string	ALL
 resources.jobs.*.continuous	*jobs.Continuous	ALL
 resources.jobs.*.continuous.pause_status	jobs.PauseStatus	ALL
@@ -739,8 +763,10 @@ resources.jobs.*.continuous.task_retry_mode	jobs.TaskRetryMode	ALL
 resources.jobs.*.created_time	int64	REMOTE
 resources.jobs.*.creator_user_name	string	REMOTE
 resources.jobs.*.deployment	*jobs.JobDeployment	ALL
+resources.jobs.*.deployment.deployment_id	string	ALL
 resources.jobs.*.deployment.kind	jobs.JobDeploymentKind	ALL
 resources.jobs.*.deployment.metadata_file_path	string	ALL
+resources.jobs.*.deployment.version_id	string	ALL
 resources.jobs.*.description	string	ALL
 resources.jobs.*.edit_mode	jobs.JobEditMode	ALL
 resources.jobs.*.effective_budget_policy_id	string	REMOTE
@@ -813,6 +839,7 @@ resources.jobs.*.job_clusters[*].new_cluster.aws_attributes.spot_bid_price_perce
 resources.jobs.*.job_clusters[*].new_cluster.aws_attributes.zone_id	string	ALL
 resources.jobs.*.job_clusters[*].new_cluster.azure_attributes	*compute.AzureAttributes	ALL
 resources.jobs.*.job_clusters[*].new_cluster.azure_attributes.availability	compute.AzureAvailability	ALL
+resources.jobs.*.job_clusters[*].new_cluster.azure_attributes.capacity_reservation_group	string	ALL
 resources.jobs.*.job_clusters[*].new_cluster.azure_attributes.first_on_demand	int	ALL
 resources.jobs.*.job_clusters[*].new_cluster.azure_attributes.log_analytics_info	*compute.LogAnalyticsInfo	ALL
 resources.jobs.*.job_clusters[*].new_cluster.azure_attributes.log_analytics_info.log_analytics_primary_key	string	ALL
@@ -1133,6 +1160,7 @@ resources.jobs.*.tasks[*].for_each_task.task.new_cluster.aws_attributes.spot_bid
 resources.jobs.*.tasks[*].for_each_task.task.new_cluster.aws_attributes.zone_id	string	ALL
 resources.jobs.*.tasks[*].for_each_task.task.new_cluster.azure_attributes	*compute.AzureAttributes	ALL
 resources.jobs.*.tasks[*].for_each_task.task.new_cluster.azure_attributes.availability	compute.AzureAvailability	ALL
+resources.jobs.*.tasks[*].for_each_task.task.new_cluster.azure_attributes.capacity_reservation_group	string	ALL
 resources.jobs.*.tasks[*].for_each_task.task.new_cluster.azure_attributes.first_on_demand	int	ALL
 resources.jobs.*.tasks[*].for_each_task.task.new_cluster.azure_attributes.log_analytics_info	*compute.LogAnalyticsInfo	ALL
 resources.jobs.*.tasks[*].for_each_task.task.new_cluster.azure_attributes.log_analytics_info.log_analytics_primary_key	string	ALL
@@ -1237,6 +1265,8 @@ resources.jobs.*.tasks[*].for_each_task.task.pipeline_task	*jobs.PipelineTask	AL
 resources.jobs.*.tasks[*].for_each_task.task.pipeline_task.full_refresh	bool	ALL
 resources.jobs.*.tasks[*].for_each_task.task.pipeline_task.full_refresh_selection	[]string	ALL
 resources.jobs.*.tasks[*].for_each_task.task.pipeline_task.full_refresh_selection[*]	string	ALL
+resources.jobs.*.tasks[*].for_each_task.task.pipeline_task.parameters	map[string]string	ALL
+resources.jobs.*.tasks[*].for_each_task.task.pipeline_task.parameters.*	string	ALL
 resources.jobs.*.tasks[*].for_each_task.task.pipeline_task.pipeline_id	string	ALL
 resources.jobs.*.tasks[*].for_each_task.task.pipeline_task.refresh_flow_selection	[]string	ALL
 resources.jobs.*.tasks[*].for_each_task.task.pipeline_task.refresh_flow_selection[*]	string	ALL
@@ -1416,6 +1446,7 @@ resources.jobs.*.tasks[*].new_cluster.aws_attributes.spot_bid_price_percent	int	
 resources.jobs.*.tasks[*].new_cluster.aws_attributes.zone_id	string	ALL
 resources.jobs.*.tasks[*].new_cluster.azure_attributes	*compute.AzureAttributes	ALL
 resources.jobs.*.tasks[*].new_cluster.azure_attributes.availability	compute.AzureAvailability	ALL
+resources.jobs.*.tasks[*].new_cluster.azure_attributes.capacity_reservation_group	string	ALL
 resources.jobs.*.tasks[*].new_cluster.azure_attributes.first_on_demand	int	ALL
 resources.jobs.*.tasks[*].new_cluster.azure_attributes.log_analytics_info	*compute.LogAnalyticsInfo	ALL
 resources.jobs.*.tasks[*].new_cluster.azure_attributes.log_analytics_info.log_analytics_primary_key	string	ALL
@@ -1520,6 +1551,8 @@ resources.jobs.*.tasks[*].pipeline_task	*jobs.PipelineTask	ALL
 resources.jobs.*.tasks[*].pipeline_task.full_refresh	bool	ALL
 resources.jobs.*.tasks[*].pipeline_task.full_refresh_selection	[]string	ALL
 resources.jobs.*.tasks[*].pipeline_task.full_refresh_selection[*]	string	ALL
+resources.jobs.*.tasks[*].pipeline_task.parameters	map[string]string	ALL
+resources.jobs.*.tasks[*].pipeline_task.parameters.*	string	ALL
 resources.jobs.*.tasks[*].pipeline_task.pipeline_id	string	ALL
 resources.jobs.*.tasks[*].pipeline_task.refresh_flow_selection	[]string	ALL
 resources.jobs.*.tasks[*].pipeline_task.refresh_flow_selection[*]	string	ALL
@@ -2232,6 +2265,7 @@ resources.pipelines.*.clusters[*].aws_attributes.spot_bid_price_percent	int	ALL
 resources.pipelines.*.clusters[*].aws_attributes.zone_id	string	ALL
 resources.pipelines.*.clusters[*].azure_attributes	*compute.AzureAttributes	ALL
 resources.pipelines.*.clusters[*].azure_attributes.availability	compute.AzureAvailability	ALL
+resources.pipelines.*.clusters[*].azure_attributes.capacity_reservation_group	string	ALL
 resources.pipelines.*.clusters[*].azure_attributes.first_on_demand	int	ALL
 resources.pipelines.*.clusters[*].azure_attributes.log_analytics_info	*compute.LogAnalyticsInfo	ALL
 resources.pipelines.*.clusters[*].azure_attributes.log_analytics_info.log_analytics_primary_key	string	ALL
@@ -2302,8 +2336,10 @@ resources.pipelines.*.configuration.*	string	ALL
 resources.pipelines.*.continuous	bool	ALL
 resources.pipelines.*.creator_user_name	string	REMOTE
 resources.pipelines.*.deployment	*pipelines.PipelineDeployment	ALL
+resources.pipelines.*.deployment.deployment_id	string	ALL
 resources.pipelines.*.deployment.kind	pipelines.DeploymentKind	ALL
 resources.pipelines.*.deployment.metadata_file_path	string	ALL
+resources.pipelines.*.deployment.version_id	string	ALL
 resources.pipelines.*.development	bool	ALL
 resources.pipelines.*.dry_run	bool	ALL
 resources.pipelines.*.edition	string	ALL
@@ -2358,6 +2394,9 @@ resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration
 resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration.auto_full_refresh_policy	*pipelines.AutoFullRefreshPolicy	ALL
 resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration.auto_full_refresh_policy.enabled	bool	ALL
 resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration.auto_full_refresh_policy.min_interval_hours	int	ALL
+resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration.clustering_columns	[]string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration.clustering_columns[*]	string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration.enable_auto_clustering	bool	ALL
 resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration.exclude_columns	[]string	ALL
 resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration.exclude_columns[*]	string	ALL
 resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration.include_columns	[]string	ALL
@@ -2374,6 +2413,8 @@ resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration
 resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration.scd_type	pipelines.TableSpecificConfigScdType	ALL
 resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration.sequence_by	[]string	ALL
 resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration.sequence_by[*]	string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration.table_properties	map[string]string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration.table_properties.*	string	ALL
 resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration.workday_report_parameters	*pipelines.IngestionPipelineDefinitionWorkdayReportParameters	ALL
 resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration.workday_report_parameters.incremental	bool	ALL
 resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration.workday_report_parameters.parameters	map[string]string	ALL
@@ -2510,6 +2551,9 @@ resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration
 resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration.auto_full_refresh_policy	*pipelines.AutoFullRefreshPolicy	ALL
 resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration.auto_full_refresh_policy.enabled	bool	ALL
 resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration.auto_full_refresh_policy.min_interval_hours	int	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration.clustering_columns	[]string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration.clustering_columns[*]	string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration.enable_auto_clustering	bool	ALL
 resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration.exclude_columns	[]string	ALL
 resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration.exclude_columns[*]	string	ALL
 resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration.include_columns	[]string	ALL
@@ -2526,6 +2570,8 @@ resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration
 resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration.scd_type	pipelines.TableSpecificConfigScdType	ALL
 resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration.sequence_by	[]string	ALL
 resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration.sequence_by[*]	string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration.table_properties	map[string]string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration.table_properties.*	string	ALL
 resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration.workday_report_parameters	*pipelines.IngestionPipelineDefinitionWorkdayReportParameters	ALL
 resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration.workday_report_parameters.incremental	bool	ALL
 resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration.workday_report_parameters.parameters	map[string]string	ALL
@@ -2664,6 +2710,9 @@ resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration	
 resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.auto_full_refresh_policy	*pipelines.AutoFullRefreshPolicy	ALL
 resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.auto_full_refresh_policy.enabled	bool	ALL
 resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.auto_full_refresh_policy.min_interval_hours	int	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.clustering_columns	[]string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.clustering_columns[*]	string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.enable_auto_clustering	bool	ALL
 resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.exclude_columns	[]string	ALL
 resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.exclude_columns[*]	string	ALL
 resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.include_columns	[]string	ALL
@@ -2680,6 +2729,8 @@ resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.
 resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.scd_type	pipelines.TableSpecificConfigScdType	ALL
 resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.sequence_by	[]string	ALL
 resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.sequence_by[*]	string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.table_properties	map[string]string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.table_properties.*	string	ALL
 resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.workday_report_parameters	*pipelines.IngestionPipelineDefinitionWorkdayReportParameters	ALL
 resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.workday_report_parameters.incremental	bool	ALL
 resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.workday_report_parameters.parameters	map[string]string	ALL
@@ -2703,6 +2754,9 @@ resources.pipelines.*.ingestion_definition.table_configuration	*pipelines.TableS
 resources.pipelines.*.ingestion_definition.table_configuration.auto_full_refresh_policy	*pipelines.AutoFullRefreshPolicy	ALL
 resources.pipelines.*.ingestion_definition.table_configuration.auto_full_refresh_policy.enabled	bool	ALL
 resources.pipelines.*.ingestion_definition.table_configuration.auto_full_refresh_policy.min_interval_hours	int	ALL
+resources.pipelines.*.ingestion_definition.table_configuration.clustering_columns	[]string	ALL
+resources.pipelines.*.ingestion_definition.table_configuration.clustering_columns[*]	string	ALL
+resources.pipelines.*.ingestion_definition.table_configuration.enable_auto_clustering	bool	ALL
 resources.pipelines.*.ingestion_definition.table_configuration.exclude_columns	[]string	ALL
 resources.pipelines.*.ingestion_definition.table_configuration.exclude_columns[*]	string	ALL
 resources.pipelines.*.ingestion_definition.table_configuration.include_columns	[]string	ALL
@@ -2719,6 +2773,8 @@ resources.pipelines.*.ingestion_definition.table_configuration.salesforce_includ
 resources.pipelines.*.ingestion_definition.table_configuration.scd_type	pipelines.TableSpecificConfigScdType	ALL
 resources.pipelines.*.ingestion_definition.table_configuration.sequence_by	[]string	ALL
 resources.pipelines.*.ingestion_definition.table_configuration.sequence_by[*]	string	ALL
+resources.pipelines.*.ingestion_definition.table_configuration.table_properties	map[string]string	ALL
+resources.pipelines.*.ingestion_definition.table_configuration.table_properties.*	string	ALL
 resources.pipelines.*.ingestion_definition.table_configuration.workday_report_parameters	*pipelines.IngestionPipelineDefinitionWorkdayReportParameters	ALL
 resources.pipelines.*.ingestion_definition.table_configuration.workday_report_parameters.incremental	bool	ALL
 resources.pipelines.*.ingestion_definition.table_configuration.workday_report_parameters.parameters	map[string]string	ALL
@@ -2758,6 +2814,8 @@ resources.pipelines.*.notifications[*].alerts	[]string	ALL
 resources.pipelines.*.notifications[*].alerts[*]	string	ALL
 resources.pipelines.*.notifications[*].email_recipients	[]string	ALL
 resources.pipelines.*.notifications[*].email_recipients[*]	string	ALL
+resources.pipelines.*.parameters	map[string]string	ALL
+resources.pipelines.*.parameters.*	string	ALL
 resources.pipelines.*.photon	bool	ALL
 resources.pipelines.*.pipeline_id	string	REMOTE
 resources.pipelines.*.restart_window	*pipelines.RestartWindow	ALL
@@ -2772,6 +2830,7 @@ resources.pipelines.*.run_as.user_name	string	ALL
 resources.pipelines.*.run_as_user_name	string	REMOTE
 resources.pipelines.*.schema	string	ALL
 resources.pipelines.*.serverless	bool	ALL
+resources.pipelines.*.serverless_compute_id	string	ALL
 resources.pipelines.*.state	pipelines.PipelineState	REMOTE
 resources.pipelines.*.storage	string	ALL
 resources.pipelines.*.tags	map[string]string	ALL
@@ -2835,12 +2894,27 @@ resources.postgres_catalogs.*.name	string	REMOTE
 resources.postgres_catalogs.*.postgres_database	string	ALL
 resources.postgres_catalogs.*.status	*postgres.CatalogCatalogStatus	REMOTE
 resources.postgres_catalogs.*.status.branch	string	REMOTE
-resources.postgres_catalogs.*.status.catalog_id	string	REMOTE
 resources.postgres_catalogs.*.status.postgres_database	string	REMOTE
 resources.postgres_catalogs.*.status.project	string	REMOTE
 resources.postgres_catalogs.*.uid	string	REMOTE
 resources.postgres_catalogs.*.update_time	*time.Time	REMOTE
 resources.postgres_catalogs.*.url	string	INPUT
+resources.postgres_databases.*.create_time	*time.Time	REMOTE
+resources.postgres_databases.*.database_id	string	ALL
+resources.postgres_databases.*.id	string	INPUT
+resources.postgres_databases.*.lifecycle	resources.Lifecycle	INPUT
+resources.postgres_databases.*.lifecycle.prevent_destroy	bool	INPUT
+resources.postgres_databases.*.modified_status	string	INPUT
+resources.postgres_databases.*.name	string	REMOTE
+resources.postgres_databases.*.parent	string	ALL
+resources.postgres_databases.*.postgres_database	string	ALL
+resources.postgres_databases.*.role	string	ALL
+resources.postgres_databases.*.status	*postgres.DatabaseDatabaseStatus	REMOTE
+resources.postgres_databases.*.status.database_id	string	REMOTE
+resources.postgres_databases.*.status.postgres_database	string	REMOTE
+resources.postgres_databases.*.status.role	string	REMOTE
+resources.postgres_databases.*.update_time	*time.Time	REMOTE
+resources.postgres_databases.*.url	string	INPUT
 resources.postgres_endpoints.*.autoscaling_limit_max_cu	float64	ALL
 resources.postgres_endpoints.*.autoscaling_limit_min_cu	float64	ALL
 resources.postgres_endpoints.*.create_time	*time.Time	REMOTE
@@ -2915,6 +2989,7 @@ resources.postgres_projects.*.modified_status	string	INPUT
 resources.postgres_projects.*.name	string	REMOTE
 resources.postgres_projects.*.pg_version	int	ALL
 resources.postgres_projects.*.project_id	string	ALL
+resources.postgres_projects.*.purge_on_delete	bool	INPUT	STATE
 resources.postgres_projects.*.purge_time	*time.Time	REMOTE
 resources.postgres_projects.*.status	*postgres.ProjectStatus	REMOTE
 resources.postgres_projects.*.status.branch_logical_size_limit_bytes	int64	REMOTE
@@ -2947,6 +3022,37 @@ resources.postgres_projects.*.permissions[*].group_name	string	ALL
 resources.postgres_projects.*.permissions[*].level	iam.PermissionLevel	ALL
 resources.postgres_projects.*.permissions[*].service_principal_name	string	ALL
 resources.postgres_projects.*.permissions[*].user_name	string	ALL
+resources.postgres_roles.*.attributes	*postgres.RoleAttributes	ALL
+resources.postgres_roles.*.attributes.bypassrls	bool	ALL
+resources.postgres_roles.*.attributes.createdb	bool	ALL
+resources.postgres_roles.*.attributes.createrole	bool	ALL
+resources.postgres_roles.*.auth_method	postgres.RoleAuthMethod	ALL
+resources.postgres_roles.*.create_time	*time.Time	REMOTE
+resources.postgres_roles.*.id	string	INPUT
+resources.postgres_roles.*.identity_type	postgres.RoleIdentityType	ALL
+resources.postgres_roles.*.lifecycle	resources.Lifecycle	INPUT
+resources.postgres_roles.*.lifecycle.prevent_destroy	bool	INPUT
+resources.postgres_roles.*.membership_roles	[]postgres.RoleMembershipRole	ALL
+resources.postgres_roles.*.membership_roles[*]	postgres.RoleMembershipRole	ALL
+resources.postgres_roles.*.modified_status	string	INPUT
+resources.postgres_roles.*.name	string	REMOTE
+resources.postgres_roles.*.parent	string	ALL
+resources.postgres_roles.*.postgres_role	string	ALL
+resources.postgres_roles.*.role_id	string	ALL
+resources.postgres_roles.*.status	*postgres.RoleRoleStatus	REMOTE
+resources.postgres_roles.*.status.attributes	*postgres.RoleAttributes	REMOTE
+resources.postgres_roles.*.status.attributes.bypassrls	bool	REMOTE
+resources.postgres_roles.*.status.attributes.createdb	bool	REMOTE
+resources.postgres_roles.*.status.attributes.createrole	bool	REMOTE
+resources.postgres_roles.*.status.auth_method	postgres.RoleAuthMethod	REMOTE
+resources.postgres_roles.*.status.identity_type	postgres.RoleIdentityType	REMOTE
+resources.postgres_roles.*.status.membership_roles	[]postgres.RoleMembershipRole	REMOTE
+resources.postgres_roles.*.status.membership_roles[*]	postgres.RoleMembershipRole	REMOTE
+resources.postgres_roles.*.status.postgres_role	string	REMOTE
+resources.postgres_roles.*.status.role_id	string	REMOTE
+resources.postgres_roles.*.update_time	*time.Time	REMOTE
+resources.postgres_roles.*.url	string	INPUT
+resources.postgres_synced_tables.*.accelerated_sync	bool	ALL
 resources.postgres_synced_tables.*.branch	string	ALL
 resources.postgres_synced_tables.*.create_database_objects_if_missing	bool	ALL
 resources.postgres_synced_tables.*.create_time	*time.Time	REMOTE
@@ -2988,6 +3094,11 @@ resources.postgres_synced_tables.*.status.provisioning_phase	postgres.Provisioni
 resources.postgres_synced_tables.*.status.unity_catalog_provisioning_state	postgres.ProvisioningInfoState	REMOTE
 resources.postgres_synced_tables.*.synced_table_id	string	ALL
 resources.postgres_synced_tables.*.timeseries_key	string	ALL
+resources.postgres_synced_tables.*.type_overrides	[]postgres.SyncedTableSyncedTableSpecTypeOverride	ALL
+resources.postgres_synced_tables.*.type_overrides[*]	postgres.SyncedTableSyncedTableSpecTypeOverride	ALL
+resources.postgres_synced_tables.*.type_overrides[*].column_name	string	ALL
+resources.postgres_synced_tables.*.type_overrides[*].pg_type	postgres.SyncedTableSyncedTableSpecPgSpecificType	ALL
+resources.postgres_synced_tables.*.type_overrides[*].size	int	ALL
 resources.postgres_synced_tables.*.uid	string	REMOTE
 resources.postgres_synced_tables.*.url	string	INPUT
 resources.quality_monitors.*.assets_dir	string	ALL
@@ -3082,6 +3193,7 @@ resources.schemas.*.catalog_type	catalog.CatalogType	REMOTE
 resources.schemas.*.comment	string	ALL
 resources.schemas.*.created_at	int64	REMOTE
 resources.schemas.*.created_by	string	REMOTE
+resources.schemas.*.custom_max_retention_hours	int64	ALL
 resources.schemas.*.effective_predictive_optimization_flag	*catalog.EffectivePredictiveOptimizationFlag	REMOTE
 resources.schemas.*.effective_predictive_optimization_flag.inherited_from_name	string	REMOTE
 resources.schemas.*.effective_predictive_optimization_flag.inherited_from_type	catalog.EffectivePredictiveOptimizationFlagInheritedFromType	REMOTE
@@ -3151,8 +3263,11 @@ resources.sql_warehouses.*.health.summary	string	REMOTE
 resources.sql_warehouses.*.id	string	INPUT	REMOTE
 resources.sql_warehouses.*.instance_profile_arn	string	ALL
 resources.sql_warehouses.*.jdbc_url	string	REMOTE
+resources.sql_warehouses.*.lifecycle	*dresources.StateLifecycle	REMOTE	STATE
+resources.sql_warehouses.*.lifecycle	*resources.LifecycleWithStarted	INPUT
 resources.sql_warehouses.*.lifecycle	resources.Lifecycle	INPUT
 resources.sql_warehouses.*.lifecycle.prevent_destroy	bool	INPUT
+resources.sql_warehouses.*.lifecycle.started	*bool	ALL
 resources.sql_warehouses.*.max_num_clusters	int	ALL
 resources.sql_warehouses.*.min_num_clusters	int	ALL
 resources.sql_warehouses.*.modified_status	string	INPUT
@@ -3231,6 +3346,7 @@ resources.synced_database_tables.*.logical_database_name	string	ALL
 resources.synced_database_tables.*.modified_status	string	INPUT
 resources.synced_database_tables.*.name	string	ALL
 resources.synced_database_tables.*.spec	*database.SyncedTableSpec	ALL
+resources.synced_database_tables.*.spec.accelerated_sync	bool	ALL
 resources.synced_database_tables.*.spec.create_database_objects_if_missing	bool	ALL
 resources.synced_database_tables.*.spec.existing_pipeline_id	string	ALL
 resources.synced_database_tables.*.spec.new_pipeline_spec	*database.NewPipelineSpec	ALL
@@ -3242,6 +3358,11 @@ resources.synced_database_tables.*.spec.primary_key_columns[*]	string	ALL
 resources.synced_database_tables.*.spec.scheduling_policy	database.SyncedTableSchedulingPolicy	ALL
 resources.synced_database_tables.*.spec.source_table_full_name	string	ALL
 resources.synced_database_tables.*.spec.timeseries_key	string	ALL
+resources.synced_database_tables.*.spec.type_overrides	[]database.SyncedTableSpecTypeOverride	ALL
+resources.synced_database_tables.*.spec.type_overrides[*]	database.SyncedTableSpecTypeOverride	ALL
+resources.synced_database_tables.*.spec.type_overrides[*].column_name	string	ALL
+resources.synced_database_tables.*.spec.type_overrides[*].pg_type	database.SyncedTableSpecPgSpecificType	ALL
+resources.synced_database_tables.*.spec.type_overrides[*].size	int	ALL
 resources.synced_database_tables.*.unity_catalog_provisioning_state	database.ProvisioningInfoState	ALL
 resources.synced_database_tables.*.url	string	INPUT
 resources.vector_search_endpoints.*.budget_policy_id	string	ALL
@@ -3308,6 +3429,7 @@ resources.vector_search_indexes.*.direct_access_index_spec.embedding_vector_colu
 resources.vector_search_indexes.*.direct_access_index_spec.embedding_vector_columns[*].embedding_dimension	int	ALL
 resources.vector_search_indexes.*.direct_access_index_spec.embedding_vector_columns[*].name	string	ALL
 resources.vector_search_indexes.*.direct_access_index_spec.schema_json	string	ALL
+resources.vector_search_indexes.*.endpoint_id	string	REMOTE
 resources.vector_search_indexes.*.endpoint_name	string	ALL
 resources.vector_search_indexes.*.endpoint_uuid	string	REMOTE	STATE
 resources.vector_search_indexes.*.id	string	INPUT

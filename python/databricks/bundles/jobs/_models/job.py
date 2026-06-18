@@ -73,7 +73,7 @@ class Job(Resource):
 
     budget_policy_id: VariableOrOptional[str] = None
     """
-    The id of the user specified budget policy to use for this job.
+    [Public Preview] The id of the user specified budget policy to use for this job.
     If not specified, a default budget policy may be applied when creating or modifying the job.
     See `effective_budget_policy_id` for the budget policy used by this workload.
     """
@@ -110,6 +110,9 @@ class Job(Resource):
     """
 
     health: VariableOrOptional[JobsHealthRules] = None
+    """
+    An optional set of health rules that can be defined for this job.
+    """
 
     job_clusters: VariableOrList[JobCluster] = field(default_factory=list)
     """
@@ -163,6 +166,11 @@ class Job(Resource):
     """
 
     run_as: VariableOrOptional[JobRunAs] = None
+    """
+    The user or service principal that the job runs as, if specified in the request.
+    This field indicates the explicit configuration of `run_as` for the job.
+    To find the value in all cases, explicit or implicit, use `run_as_user_name`.
+    """
 
     schedule: VariableOrOptional[CronSchedule] = None
     """
@@ -195,7 +203,7 @@ class Job(Resource):
     """
     :meta private: [EXPERIMENTAL]
     
-    The id of the user specified usage policy to use for this job.
+    [Private Preview] The id of the user specified usage policy to use for this job.
     If not specified, a default usage policy may be applied when creating or modifying the job.
     See `effective_usage_policy_id` for the usage policy used by this workload.
     """
@@ -218,7 +226,7 @@ class JobDict(TypedDict, total=False):
 
     budget_policy_id: VariableOrOptional[str]
     """
-    The id of the user specified budget policy to use for this job.
+    [Public Preview] The id of the user specified budget policy to use for this job.
     If not specified, a default budget policy may be applied when creating or modifying the job.
     See `effective_budget_policy_id` for the budget policy used by this workload.
     """
@@ -255,6 +263,9 @@ class JobDict(TypedDict, total=False):
     """
 
     health: VariableOrOptional[JobsHealthRulesParam]
+    """
+    An optional set of health rules that can be defined for this job.
+    """
 
     job_clusters: VariableOrList[JobClusterParam]
     """
@@ -308,6 +319,11 @@ class JobDict(TypedDict, total=False):
     """
 
     run_as: VariableOrOptional[JobRunAsParam]
+    """
+    The user or service principal that the job runs as, if specified in the request.
+    This field indicates the explicit configuration of `run_as` for the job.
+    To find the value in all cases, explicit or implicit, use `run_as_user_name`.
+    """
 
     schedule: VariableOrOptional[CronScheduleParam]
     """
@@ -340,7 +356,7 @@ class JobDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    The id of the user specified usage policy to use for this job.
+    [Private Preview] The id of the user specified usage policy to use for this job.
     If not specified, a default usage policy may be applied when creating or modifying the job.
     See `effective_usage_policy_id` for the usage policy used by this workload.
     """

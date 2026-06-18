@@ -22,7 +22,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/config/experimental/auth/authconv"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m"
-	"github.com/databricks/databricks-sdk-go/credentials/u2m/cache"
 	"github.com/spf13/cobra"
 	"golang.org/x/oauth2"
 )
@@ -118,9 +117,11 @@ use the flags directly to specify both.
 
 The host URL may include query parameters to set the workspace and account ID:
 
-  databricks auth login --host "https://<host>?o=<workspace_id>&account_id=<id>"
+  databricks auth login --host "https://<host>?w=<workspace_id>&account_id=<id>"
 
-Note: URLs containing "?" must be quoted to prevent shell interpretation.
+The workspace ID may be passed as ?w= (preferred), ?o= (legacy), or
+?workspace_id=. Note: URLs containing "?" must be quoted to prevent shell
+interpretation.
 
 If a profile with the given name already exists, it is updated. Otherwise
 a new profile is created.
@@ -179,7 +180,7 @@ a new profile is created.
 		// triggers the OS unlock prompt, which the user can answer during
 		// OAuth. Run after input validation so trivially-invalid commands
 		// fail without probing.
-		tokenCache, mode, err := storage.ResolveCacheForLogin(ctx, "")
+		tokenStore, mode, err := storage.ResolveStoreForLogin(ctx, "")
 		if err != nil {
 			return err
 		}
@@ -221,6 +222,23 @@ a new profile is created.
 			}
 		}
 
+		// If --skip-workspace is set and we already know the host, eagerly run
+		// URL-param extraction and host discovery so getProfileName can suggest
+		// ACCOUNT-<account-id> as the default name. Without this, AccountID is
+		// only populated by setHostAndAccountId further down, which runs after
+		// the profile-name prompt.
+		if skipWorkspace && profileName == "" && authArguments.Host != "" && authArguments.AccountID == "" {
+			params := auth.ExtractHostQueryParams(authArguments.Host)
+			authArguments.Host = params.Host
+			if authArguments.AccountID == "" {
+				authArguments.AccountID = params.AccountID
+			}
+			if authArguments.WorkspaceID == "" {
+				authArguments.WorkspaceID = params.WorkspaceID
+			}
+			runHostDiscovery(ctx, authArguments)
+		}
+
 		// If the user has not specified a profile name, prompt for one.
 		if profileName == "" {
 			var err error
@@ -253,7 +271,7 @@ a new profile is created.
 				scopes:          scopes,
 				existingProfile: existingProfile,
 				browserFunc:     getBrowserFunc(cmd),
-				tokenCache:      tokenCache,
+				tokenStore:      tokenStore,
 				mode:            mode,
 			})
 		}
@@ -283,7 +301,7 @@ a new profile is created.
 		persistentAuthOpts := []u2m.PersistentAuthOption{
 			u2m.WithOAuthArgument(oauthArgument),
 			u2m.WithBrowser(getBrowserFunc(cmd)),
-			u2m.WithTokenCache(storage.WrapForOAuthArgument(tokenCache, mode, oauthArgument)),
+			u2m.WithTokenCache(storage.WrapForOAuthArgument(ctx, tokenStore, mode, oauthArgument)),
 		}
 		if len(scopesList) > 0 {
 			persistentAuthOpts = append(persistentAuthOpts, u2m.WithScopes(scopesList))
@@ -311,27 +329,17 @@ a new profile is created.
 		// 2. Configuring cluster and serverless;
 		// 3. Saving the profile.
 
-		// If discovery gave us an account_id but we still have no workspace_id,
-		// prompt the user to select a workspace. This applies to any host where
-		// .well-known/databricks-config returned an account_id.
-		shouldPromptWorkspace := authArguments.AccountID != "" &&
-			authArguments.WorkspaceID == "" &&
-			!skipWorkspace
-
-		if skipWorkspace && authArguments.WorkspaceID == "" {
-			authArguments.WorkspaceID = auth.WorkspaceIDNone
-		}
-
-		if shouldPromptWorkspace {
+		if shouldPromptWorkspace(authArguments, existingProfile, skipWorkspace) {
 			wsID, wsErr := promptForWorkspaceSelection(ctx, authArguments, persistentAuth)
 			if wsErr != nil {
 				log.Warnf(ctx, "Workspace selection failed: %v", wsErr)
-			} else if wsID == "" {
-				// User selected "Skip" from the prompt.
-				authArguments.WorkspaceID = auth.WorkspaceIDNone
-			} else {
+			} else if wsID != "" {
 				authArguments.WorkspaceID = wsID
 			}
+			// If wsID is empty, the user picked "Skip" — leave WorkspaceID empty.
+			// SaveToProfile omits the workspace_id key entirely for account-level
+			// profiles; MatchAccountProfiles treats absent workspace_id the same
+			// as the legacy "none" sentinel.
 		}
 
 		var clusterID, serverlessComputeID string
@@ -398,6 +406,33 @@ a new profile is created.
 	}
 
 	return cmd
+}
+
+// shouldPromptWorkspace reports whether the login flow should ask the user to
+// pick a workspace. We prompt when we have an account_id but no workspace_id
+// and the user did not pass --skip-workspace, with two exceptions:
+//   - Classic account console hosts (accounts.*) serve only account-level
+//     APIs, so a selected workspace_id would be unusable against that host
+//     and only misleads later commands.
+//   - Re-login into an existing profile that's already account-only for the
+//     SAME account (account_id matches and workspace_id is absent or the
+//     legacy "none" sentinel) honors the user's prior "skip" choice instead
+//     of re-prompting on every login. We require the account_id to match so
+//     reusing a profile name against a different account still gets the
+//     workspace prompt.
+func shouldPromptWorkspace(authArguments *auth.AuthArguments, existingProfile *profile.Profile, skipWorkspace bool) bool {
+	if authArguments.AccountID == "" || authArguments.WorkspaceID != "" || skipWorkspace {
+		return false
+	}
+	if auth.IsClassicAccountHost((&config.Config{Host: authArguments.Host}).CanonicalHostName()) {
+		return false
+	}
+	if existingProfile != nil &&
+		existingProfile.AccountID == authArguments.AccountID &&
+		(existingProfile.WorkspaceID == "" || existingProfile.WorkspaceID == auth.WorkspaceIDNone) {
+		return false
+	}
+	return true
 }
 
 // Sets the host in the persistentAuth object based on the provided arguments and flags.
@@ -602,7 +637,7 @@ type discoveryLoginInputs struct {
 	scopes          string
 	existingProfile *profile.Profile
 	browserFunc     func(string) error
-	tokenCache      cache.TokenCache
+	tokenStore      storage.Store
 	mode            storage.StorageMode
 }
 
@@ -624,7 +659,7 @@ func discoveryLogin(ctx context.Context, in discoveryLoginInputs) error {
 		u2m.WithOAuthArgument(arg),
 		u2m.WithBrowser(in.browserFunc),
 		u2m.WithDiscoveryLogin(),
-		u2m.WithTokenCache(storage.WrapForOAuthArgument(in.tokenCache, in.mode, arg)),
+		u2m.WithTokenCache(storage.WrapForOAuthArgument(ctx, in.tokenStore, in.mode, arg)),
 	}
 	if len(scopesList) > 0 {
 		opts = append(opts, u2m.WithScopes(scopesList))

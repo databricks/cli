@@ -52,12 +52,15 @@ func TestFetchRepositoryInfoAPI_FromRepo(t *testing.T) {
 
 	ctx = dbr.MockRuntime(ctx, dbr.Environment{IsDbr: true, Version: "15.4"})
 
-	for _, inputPath := range []string{
-		path.Join(targetPath, "knowledge_base/dashboard_nyc_taxi"),
-		targetPath,
+	for _, tc := range []struct {
+		name  string
+		input string
+	}{
+		{"subdir", path.Join(targetPath, "knowledge_base/dashboard_nyc_taxi")},
+		{"root", targetPath},
 	} {
-		t.Run(inputPath, func(t *testing.T) {
-			info, err := git.FetchRepositoryInfo(ctx, inputPath, wt.W)
+		t.Run(tc.name, func(t *testing.T) {
+			info, err := git.FetchRepositoryInfo(ctx, tc.input, wt.W)
 			assert.NoError(t, err)
 			assertFullGitInfo(t, targetPath, info)
 		})
@@ -69,38 +72,26 @@ func TestFetchRepositoryInfoAPI_FromNonRepo(t *testing.T) {
 	rootPath := ensureWorkspacePrefix(acc.TemporaryWorkspaceDir(wt, "testing-nonrepo-"))
 
 	// Create directory inside this root path (this is cleaned up as part of the root path).
-	err := wt.W.Workspace.MkdirsByPath(ctx, path.Join(rootPath, "a/b/c")) //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
+	err := wt.W.Workspace.MkdirsByPath(ctx, path.Join(rootPath, "a/b/c"))
 	require.NoError(t, err)
 
 	ctx = dbr.MockRuntime(ctx, dbr.Environment{IsDbr: true, Version: "15.4"})
 
+	// A path outside a Repo has no git info; a non-existent path is treated the
+	// same way (no repository there), so all cases return empty info with no error.
 	tests := []struct {
+		name  string
 		input string
-		msg   string
 	}{
-		{
-			input: path.Join(rootPath, "a/b/c"),
-			msg:   "",
-		},
-		{
-			input: rootPath,
-			msg:   "",
-		},
-		{
-			input: path.Join(rootPath, "/non-existent"),
-			msg:   "doesn't exist",
-		},
+		{"subdir", path.Join(rootPath, "a/b/c")},
+		{"root", rootPath},
+		{"non-existent", path.Join(rootPath, "/non-existent")},
 	}
 
 	for _, test := range tests {
-		t.Run(test.input+" <==> "+test.msg, func(t *testing.T) {
+		t.Run(test.name, func(t *testing.T) {
 			info, err := git.FetchRepositoryInfo(ctx, test.input, wt.W)
-			if test.msg == "" {
-				assert.NoError(t, err)
-			} else {
-				assert.Error(t, err)
-				assert.ErrorContains(t, err, test.msg)
-			}
+			assert.NoError(t, err)
 			assertEmptyGitInfo(t, info)
 		})
 	}
@@ -111,12 +102,15 @@ func TestFetchRepositoryInfoDotGit_FromGitRepo(t *testing.T) {
 
 	repo := cloneRepoLocally(t, examplesRepoUrl)
 
-	for _, inputPath := range []string{
-		filepath.Join(repo, "knowledge_base/dashboard_nyc_taxi"),
-		repo,
+	for _, tc := range []struct {
+		name  string
+		input string
+	}{
+		{"subdir", filepath.Join(repo, "knowledge_base/dashboard_nyc_taxi")},
+		{"root", repo},
 	} {
-		t.Run(inputPath, func(t *testing.T) {
-			info, err := git.FetchRepositoryInfo(ctx, inputPath, wt.W)
+		t.Run(tc.name, func(t *testing.T) {
+			info, err := git.FetchRepositoryInfo(ctx, tc.input, wt.W)
 			assert.NoError(t, err)
 			assertFullGitInfo(t, repo, info)
 		})
@@ -140,16 +134,19 @@ func TestFetchRepositoryInfoDotGit_FromNonGitRepo(t *testing.T) {
 	root := filepath.Join(tempDir, "repo")
 	require.NoError(t, os.MkdirAll(filepath.Join(root, "a/b/c"), 0o700))
 
-	tests := []string{
-		filepath.Join(root, "a/b/c"),
-		root,
-		filepath.Join(root, "/non-existent"),
+	tests := []struct {
+		name  string
+		input string
+	}{
+		{"subdir", filepath.Join(root, "a/b/c")},
+		{"root", root},
+		{"non-existent", filepath.Join(root, "/non-existent")},
 	}
 
-	for _, input := range tests {
-		t.Run(input, func(t *testing.T) {
-			info, err := git.FetchRepositoryInfo(ctx, input, wt.W)
-			assert.ErrorIs(t, err, os.ErrNotExist)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			info, err := git.FetchRepositoryInfo(ctx, test.input, wt.W)
+			assert.NoError(t, err)
 			assertEmptyGitInfo(t, info)
 		})
 	}

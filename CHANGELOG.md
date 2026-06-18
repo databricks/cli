@@ -1,5 +1,87 @@
 # Version changelog
 
+## Release v1.4.0 (2026-06-17)
+
+### CLI
+* Improved error messages for `ssh connect`: when an SSH connection attempt fails, the client now fetches and prints the server's recent error logs ([#5555](https://github.com/databricks/cli/pull/5555)).
+* Increase the SSH server startup timeout from 10 to 45 minutes when a GPU accelerator is requested via `databricks ssh connect --accelerator` ([#5569](https://github.com/databricks/cli/pull/5569)).
+* Fix authentication falling back to the default profile in `.databrickscfg` when a host is already configured via the environment (e.g. `DATABRICKS_HOST` with `DATABRICKS_TOKEN`) ([#5616](https://github.com/databricks/cli/pull/5616)).
+* ssh: fix opening remote environment in Cursor, which previously hung on default-extension install and never opened the editor ([#5619](https://github.com/databricks/cli/pull/5619)).
+* Improve the error shown when `databricks labs install` cannot find a project's `labs.yml`: the message now explains that either the requested version does not exist or the project is not installable with the CLI, and links to the repository ([#5559](https://github.com/databricks/cli/pull/5559)).
+
+### Bundles
+* Remove API enum values and types that are still in development from the `databricks-bundles` Python package; these were never accepted by the backend ([#5484](https://github.com/databricks/cli/pull/5484)).
+* direct: Fix resolving a resource reference that is used more than once within the same field ([#5558](https://github.com/databricks/cli/pull/5558)).
+* Bundle variable references now accept Unicode letters in path segments (e.g. `${var.变量}`). ([#5532](https://github.com/databricks/cli/pull/5532))
+* Ignore remote changes for vector search direct_access_index_spec.schema_json to prevent drift when the backend normalizes the schema ([#5481](https://github.com/databricks/cli/pull/5481)).
+* Remove hidden, never-functional `--existing-dashboard-id`, `--existing-dashboard-path`, `--existing-alert-id`, and `--existing-genie-space-id` alias flags from `bundle generate`; use the documented `--existing-id` / `--existing-path` flags instead ([#5591](https://github.com/databricks/cli/pull/5591)).
+* engine/direct: Fix WAL corruption after two consecutive failed deploys ([#5606](https://github.com/databricks/cli/pull/5606)).
+* engine/direct: Don't open the deployment state WAL when a deploy's plan fails ([#5607](https://github.com/databricks/cli/pull/5607)).
+* Ignore unity catalog managed schema property defaults to avoid unnecessary drift ([#5195](https://github.com/databricks/cli/pull/5195)).
+* Add `postgres_roles` and `postgres_databases` resources to create Postgres roles and databases on a Lakebase branch ([#5467](https://github.com/databricks/cli/pull/5467), [#5627](https://github.com/databricks/cli/pull/5627)).
+* direct: Stop spurious recreate/rename on redeploy when the backend normalizes a resource's name-based ID (e.g. Unity Catalog lowercasing a schema or volume name) ([#5599](https://github.com/databricks/cli/pull/5599)).
+* Fix the generated pipeline README to suggest `databricks bundle run <pipeline> --refresh <table>` for running a single transformation; the previously documented `--select` flag is not supported by `bundle run` ([#5252](https://github.com/databricks/cli/issues/5252)).
+
+
+## Release v1.3.0 (2026-06-10)
+
+### Notable Changes
+* The `direct` deployment engine is now Generally Available and the default for new deployments. To opt out, set `engine: terraform` under `bundle` in your `databricks.yml` or set `DATABRICKS_BUNDLE_ENGINE=terraform`. Existing deployments keep their current engine; see https://docs.databricks.com/aws/en/dev-tools/bundles/direct to migrate.
+
+### CLI
+* Added the `databricks quickstart` command, a short introduction to the CLI that prints a human-friendly guide interactively and an agent-oriented version when run non-interactively ([#5464](https://github.com/databricks/cli/pull/5464)).
+* Add `databricks version --check` to report whether a newer CLI version is available and print the upgrade command for the detected install method ([#5469](https://github.com/databricks/cli/pull/5469)).
+* `databricks auth describe` now verifies credentials against both the workspace and account endpoints before reporting a failure, fixing false "Unable to authenticate" errors for account console profiles ([#5479](https://github.com/databricks/cli/issues/5479)).
+* `databricks auth login` no longer prompts for workspace selection when logging in to an account console host (`https://accounts.*`). Pass `--workspace-id` explicitly to store a workspace ID on such a profile ([#5504](https://github.com/databricks/cli/pull/5504)).
+* `databricks auth profiles --skip-validate` no longer makes any network calls; the host metadata fetch is skipped along with validation ([#5530](https://github.com/databricks/cli/pull/5530)).
+
+### Bundles
+* Set the default `data_security_mode` to `DATA_SECURITY_MODE_AUTO` in bundle templates ([#5452](https://github.com/databricks/cli/pull/5452)).
+* Mark vector search index index_subtype as backend_default to prevent drift after deployment ([#5454](https://github.com/databricks/cli/pull/5454)).
+* `bundle deployment migrate`: handle resources added to or removed from `databricks.yml` since the last Terraform deploy ([#5463](https://github.com/databricks/cli/pull/5463)).
+* Add the `genie_spaces` bundle resource for managing Databricks Genie spaces as code, plus `bundle generate genie-space` to import an existing space. Direct deployment engine only ([#5282](https://github.com/databricks/cli/pull/5282)).
+* Fix spurious recreate of schemas and volumes whose names use mixed case ([#5531](https://github.com/databricks/cli/pull/5531)).
+
+
+## Release v1.2.1 (2026-06-04)
+
+### Bundles
+* direct: Fix updating the apps after the Go SDK upgrade ([#5444](https://github.com/databricks/cli/pull/5444))
+
+
+## Release v1.2.0 (2026-06-04)
+
+### CLI
+* `experimental open` now opens every DABs resource type that has a workspace URL, picking up `catalogs`, `schemas`, `volumes`, `database_instances`, `database_catalogs`, `synced_database_tables`, `postgres_catalogs`, `postgres_synced_tables`, `quality_monitors`, `vector_search_endpoints`, and `vector_search_indexes` ([#5346](https://github.com/databricks/cli/pull/5346)).
+
+### Bundles
+* Retry transient HTTP 5xx and 408 errors in direct deployment engine ([#5349](https://github.com/databricks/cli/pull/5349), [#5364](https://github.com/databricks/cli/pull/5364)).
+* Preserve `.designer.ipynb` suffix when translating notebook task paths so Lakeflow Designer files referenced from a `notebook_task` resolve correctly in the workspace ([#5370](https://github.com/databricks/cli/pull/5370)).
+* Fix script output dropping last line without trailing newline ([#4995](https://github.com/databricks/cli/pull/4995)).
+* engine/direct: Add `--select` flag to `bundle plan` and `bundle deploy` to plan/deploy a subset of resources (e.g. `--select my_job` or `--select jobs.my_job`); resources referenced by the selection are included transitively ([#5413](https://github.com/databricks/cli/pull/5413)).
+* Support `purge_on_delete: true` on `postgres_projects` so bundles can hard-delete a Lakebase project on destroy (skipping the soft-delete retention window) ([#5414](https://github.com/databricks/cli/pull/5414)).
+* Support terraform references in direct engine ([#5392](https://github.com/databricks/cli/pull/5392))
+* Support lifecycle.started for SQL warehouses ([#5348](https://github.com/databricks/cli/pull/5348))
+
+### Dependency updates
+* Bump Go toolchain to 1.26.4 ([#5420](https://github.com/databricks/cli/pull/5420)).
+* Bump `github.com/databricks/databricks-sdk-go` from v0.136.0 to v0.141.0 ([#5361](https://github.com/databricks/cli/pull/5361))
+* Bump Terraform provider from v1.115.0 to v1.117.0 ([#5421](https://github.com/databricks/cli/pull/5421))
+
+
+## Release v1.1.0 (2026-05-27)
+
+### Bundles
+* The error reported when a direct-only resource (catalogs, external locations, vector search endpoints) is used with the terraform engine now also suggests setting `bundle.engine: direct` in `databricks.yml`, in addition to the `DATABRICKS_BUNDLE_ENGINE` environment variable ([#5295](https://github.com/databricks/cli/pull/5295)).
+
+* Added `vector_search_indexes` as a bundle resource (direct engine only). Supports UC grants and prompts for confirmation on recreate or delete since both are destructive ([#5123](https://github.com/databricks/cli/pull/5123)).
+
+### Dependency updates
+
+* Bump Go toolchain to 1.26.3 ([#5302](https://github.com/databricks/cli/pull/5302)).
+* Bump `github.com/databricks/databricks-sdk-go` from v0.132.0 to v0.136.0.
+
+
 ## Release v1.0.0 (2026-05-21)
 
 ### Notable Changes

@@ -7,7 +7,15 @@ import (
 	"github.com/databricks/cli/bundle/libraries"
 )
 
-func CollectUniqueWorkspacePathPrefixes(workspace config.Workspace) []string {
+// WorkspacePaths holds the unique workspace folders that bundle permissions are applied
+// to. A logical bundle path (artifact, file, state, resource) nested under another is
+// represented only by its enclosing folder, so permissions are applied once and the
+// nested paths inherit them.
+type WorkspacePaths struct {
+	Paths []string
+}
+
+func CollectUniqueWorkspacePathPrefixes(workspace config.Workspace) WorkspacePaths {
 	rootPath := workspace.RootPath
 	var paths []string
 	if !libraries.IsVolumesPath(rootPath) {
@@ -35,5 +43,20 @@ func CollectUniqueWorkspacePathPrefixes(workspace config.Workspace) []string {
 		paths = append(paths, p)
 	}
 
-	return paths
+	return WorkspacePaths{Paths: paths}
+}
+
+// Governing returns the path whose ACL governs the given path: the path itself when it
+// is one of the collected paths, or the enclosing path when it is nested under one (e.g.
+// the state path nested under the root path, which is deduplicated out of Paths).
+// Returns an empty string when no path governs it, e.g. a Volumes path that permissions
+// don't apply to. Paths are /Workspace-normalized by PrependWorkspacePrefix.
+func (w WorkspacePaths) Governing(path string) string {
+	for _, p := range w.Paths {
+		trimmed := strings.TrimSuffix(p, "/")
+		if path == trimmed || strings.HasPrefix(path, trimmed+"/") {
+			return p
+		}
+	}
+	return ""
 }

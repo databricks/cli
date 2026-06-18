@@ -23,10 +23,10 @@ Resources:
   Jobs:
     another_valid:
       Name: another-valid
-      URL:  [DATABRICKS_URL]/jobs/[NUMID]?o=[NUMID]
+      URL:  [DATABRICKS_URL]/jobs/[NUMID]?w=[NUMID]
     valid_job:
       Name: valid-job
-      URL:  [DATABRICKS_URL]/jobs/[NUMID]?o=[NUMID]
+      URL:  [DATABRICKS_URL]/jobs/[NUMID]?w=[NUMID]
 
 >>> cat .databricks/bundle/default/resources.json.wal.corrupted
 {"k":"resources.jobs.partial_write","v":{"__id__":"33","state":{"name":"partial-

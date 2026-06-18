@@ -21,12 +21,12 @@ Deployment complete!
 === bundle open without --force-pull: no remote state read
 
 >>> [CLI] bundle open foo
-Opening browser at [DATABRICKS_URL]/jobs/[NUMID]?o=[NUMID]
+Opening browser at [DATABRICKS_URL]/jobs/[NUMID]?w=[NUMID]
 
 === bundle open --force-pull: remote state read
 
 >>> [CLI] bundle open foo --force-pull
-Opening browser at [DATABRICKS_URL]/jobs/[NUMID]?o=[NUMID]
+Opening browser at [DATABRICKS_URL]/jobs/[NUMID]?w=[NUMID]
 {
   "method": "GET",
   "path": "/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/force-pull-commands/default/state/STATE_FILENAME"

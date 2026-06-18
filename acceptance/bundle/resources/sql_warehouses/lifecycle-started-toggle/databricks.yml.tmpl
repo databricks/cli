@@ -1,0 +1,13 @@
+bundle:
+  name: lifecycle-started-toggle-$UNIQUE_NAME
+
+workspace:
+  root_path: ~/.bundle/$UNIQUE_NAME
+
+resources:
+  sql_warehouses:
+    mywarehouse:
+      name: $UNIQUE_NAME
+      cluster_size: "Medium"
+      lifecycle:
+        started: false

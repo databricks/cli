@@ -12,13 +12,13 @@ Job configuration successfully saved to resources/out.job.yml
 === Verify generated yaml has expected fields
 === Deploy the generated bundle
 >>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/python_job_and_deploy/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/python_job_and_deploy-[UNIQUE_NAME]/default/files...
 Deploying resources...
 Deployment complete!
 
 === Destroy the deployed bundle
 >>> [CLI] bundle destroy --auto-approve
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/python_job_and_deploy/default
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/python_job_and_deploy-[UNIQUE_NAME]/default
 
 Deleting files...
 Destroy complete!
