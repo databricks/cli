@@ -154,6 +154,7 @@ Deployment complete!
 === Fetch database and verify it exists after recreation
 >>> [CLI] postgres get-database [MY_DATABASE_ID]-v2
 {
+  "database_id": "test-database-[UNIQUE_NAME]-v2",
   "name": "[MY_DATABASE_ID]-v2",
   "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
   "status": {

@@ -16,6 +16,7 @@ Deployment complete!
 
 >>> [CLI] postgres get-endpoint projects/test-pg-proj-[UNIQUE_NAME]/branches/develop/endpoints/primary
 {
+  "endpoint_id": "primary",
   "name": "projects/test-pg-proj-[UNIQUE_NAME]/branches/develop/endpoints/primary",
   "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/develop",
   "status": {

@@ -29,6 +29,7 @@ Deployment complete!
 
 >>> [CLI] postgres get-database [MY_DATABASE_ID]
 {
+  "database_id": "my-database",
   "name": "[MY_DATABASE_ID]",
   "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
   "status": {
@@ -106,6 +107,7 @@ Deployment complete!
 
 >>> [CLI] postgres get-database [MY_DATABASE_ID]
 {
+  "database_id": "my-database",
   "name": "[MY_DATABASE_ID]",
   "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
   "status": {
@@ -135,6 +137,7 @@ Deployment complete!
 
 >>> [CLI] postgres get-database [MY_DATABASE_ID]
 {
+  "database_id": "my-database",
   "name": "[MY_DATABASE_ID]",
   "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
   "status": {

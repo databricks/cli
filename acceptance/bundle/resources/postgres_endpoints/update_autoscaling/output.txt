@@ -28,6 +28,7 @@ Deployment complete!
 
 >>> [CLI] postgres get-endpoint [MY_ENDPOINT_ID]
 {
+  "endpoint_id": "my-endpoint",
   "name": "[MY_ENDPOINT_ID]",
   "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
   "status": {
@@ -116,6 +117,7 @@ Deployment complete!
 
 >>> [CLI] postgres get-endpoint [MY_ENDPOINT_ID]
 {
+  "endpoint_id": "my-endpoint",
   "name": "[MY_ENDPOINT_ID]",
   "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
   "status": {
@@ -160,6 +162,7 @@ Deployment complete!
 
 >>> [CLI] postgres get-endpoint [MY_ENDPOINT_ID]
 {
+  "endpoint_id": "my-endpoint",
   "name": "[MY_ENDPOINT_ID]",
   "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
   "status": {

@@ -36,6 +36,7 @@ Deployment complete!
 
 >>> [CLI] postgres get-endpoint projects/test-pg-proj-[UNIQUE_NAME]/branches/main/endpoints/custom
 {
+  "endpoint_id": "custom",
   "name": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/endpoints/custom",
   "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
   "status": {
