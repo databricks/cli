@@ -2,15 +2,15 @@
 """Sweep leaked acceptance-test resources by name prefix.
 
 Lists (and with --delete, deletes) warehouses, pipelines and jobs whose names
-start with the given prefix, e.g. the per-run prefix "ci-<GITHUB_RUN_ID>-" that
+start with the given prefix, e.g. the per-run prefix "ci<GITHUB_RUN_ID>x" that
 the acceptance harness embeds into $UNIQUE_NAME on CI cloud runs.
 
 Authentication is taken from the environment (DATABRICKS_HOST, DATABRICKS_TOKEN
 or any other auth supported by the databricks CLI).
 
 Usage:
-    tools/sweep_test_resources.py ci-15799017600-           # dry run: list only
-    tools/sweep_test_resources.py ci-15799017600- --delete  # delete matches
+    tools/sweep_test_resources.py ci15799017600x           # dry run: list only
+    tools/sweep_test_resources.py ci15799017600x --delete  # delete matches
 """
 
 import argparse
@@ -43,7 +43,7 @@ def sweep(kind, items, name_of, id_of, delete_args, prefix, delete):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("prefix", help="resource name prefix, e.g. ci-<GITHUB_RUN_ID>-")
+    parser.add_argument("prefix", help="resource name prefix, e.g. ci<GITHUB_RUN_ID>x")
     parser.add_argument("--delete", action="store_true", help="delete matches (default: list only)")
     args = parser.parse_args()
 

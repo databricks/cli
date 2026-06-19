@@ -611,16 +611,20 @@ func getSkipReason(config *internal.TestConfig, configPath string) string {
 
 var ciRunID = regexp.MustCompile(`^[0-9]{1,16}$`)
 
-// ciUniqueName embeds a CI run id into the random unique name as "ci-<runID>-<random>",
-// preserving the input length: names built from $UNIQUE_NAME can already be at a
-// resource name limit ("app-$UNIQUE_NAME" is exactly the 30-char app name maximum).
-// Returns random unchanged when runID is absent, malformed, or too long to leave
-// enough random characters.
+// ciUniqueName embeds a CI run id into the random unique name as "ci<runID>x<random>".
+// The result stays purely lowercase-alphanumeric like the base32 name it replaces, so it
+// remains valid everywhere $UNIQUE_NAME is used: app names (no hyphens would be fine but
+// underscores/uppercase are not), Python and Unity Catalog identifiers (no hyphens). No
+// punctuation separator works for all of them, so the run id (all digits) is delimited by
+// the letter "x", which also keeps the sweep prefix "ci<runID>x" collision-free between
+// runs whose ids share a prefix. Length is preserved ("app-$UNIQUE_NAME" is exactly the
+// 30-char app name maximum). Returns random unchanged when runID is absent, malformed, or
+// too long to leave at least 8 random characters.
 func ciUniqueName(runID, random string) string {
 	if !ciRunID.MatchString(runID) {
 		return random
 	}
-	prefix := "ci-" + runID + "-"
+	prefix := "ci" + runID + "x"
 	randLen := len(random) - len(prefix)
 	if randLen < 8 {
 		return random
@@ -665,12 +669,6 @@ func runTest(t *testing.T,
 	// Embed the CI run id, when present, so leaked resources can be attributed to a run and swept by prefix.
 	uniqueName = ciUniqueName(os.Getenv("GITHUB_RUN_ID"), uniqueName)
 	repls.Set(uniqueName, "[UNIQUE_NAME]")
-	// UNIQUE_NAME_SAFE replaces hyphens with underscores for contexts that require
-	// identifier-safe names (e.g. Python project_name, which rejects hyphens).
-	uniqueNameSafe := strings.ReplaceAll(uniqueName, "-", "_")
-	if uniqueNameSafe != uniqueName {
-		repls.Set(uniqueNameSafe, "[UNIQUE_NAME]")
-	}
 
 	var tmpDir string
 	var err error
@@ -744,7 +742,6 @@ func runTest(t *testing.T,
 	}
 	cmd.Env = append(cmd.Env, "DATABRICKS_RATE_LIMIT="+rateLimit)
 	cmd.Env = append(cmd.Env, "UNIQUE_NAME="+uniqueName)
-	cmd.Env = append(cmd.Env, "UNIQUE_NAME_SAFE="+uniqueNameSafe)
 	cmd.Env = append(cmd.Env, "TEST_TMP_DIR="+tmpDir)
 
 	// populate CLOUD_ENV_BASE
