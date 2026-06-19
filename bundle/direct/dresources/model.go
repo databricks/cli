@@ -34,6 +34,16 @@ func (s MlflowModelRemote) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(s)
 }
 
+// Custom marshalers needed because embedded ml.ModelDatabricks has its own MarshalJSON
+// that otherwise shadows the outer struct's fields (model_id gets dropped without this).
+func (r *MlflowModelRemote) UnmarshalJSON(b []byte) error {
+	return marshal.Unmarshal(b, r)
+}
+
+func (r MlflowModelRemote) MarshalJSON() ([]byte, error) {
+	return marshal.Marshal(r)
+}
+
 func (*ResourceMlflowModel) New(client *databricks.WorkspaceClient) *ResourceMlflowModel {
 	return &ResourceMlflowModel{client: client}
 }
