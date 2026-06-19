@@ -99,9 +99,9 @@ func (b *DeploymentBundle) InitForApply(ctx context.Context, client *databricks.
 			if err != nil {
 				return fmt.Errorf("re-serializing remote state for %s: %w", resourceKey, err)
 			}
-			// StateType() returns a pointer type (e.g. *GrantsState); Elem() gives
+			// RemoteType() returns a pointer type (e.g. *AppRemote); Elem() gives
 			// the struct type so reflect.New produces a single pointer, not double.
-			typed := reflect.New(adapter.StateType().Elem()).Interface()
+			typed := reflect.New(adapter.RemoteType().Elem()).Interface()
 			if err := json.Unmarshal(data, typed); err != nil {
 				return fmt.Errorf("loading remote state for %s: %w", resourceKey, err)
 			}
