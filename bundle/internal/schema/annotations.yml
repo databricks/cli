@@ -282,10 +282,24 @@ resources:
             PLACEHOLDER
         "lifecycle":
           "description": |-
-            PLACEHOLDER
+            Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
         "permissions":
           "description": |-
-            PLACEHOLDER
+            The permissions to apply to this resource.
+          "markdown_description": |-
+            A Sequence that defines the permissions to apply to this resource, where each item in the sequence is a permission for a specific entity.
+
+            See [\_](/dev-tools/bundles/settings.md#permissions) and [\_](/dev-tools/bundles/permissions.md).
+          "markdown_examples": |-
+            ```yaml
+            permissions:
+              - level: CAN_VIEW
+                group_name: test-group
+              - level: CAN_MANAGE
+                user_name: someone@example.com
+              - level: CAN_RUN
+                service_principal_name: 123456-abcdef
+            ```
         "schedule":
           "description": |-
             PLACEHOLDER
@@ -349,20 +363,34 @@ resources:
             PLACEHOLDER
         "permissions":
           "description": |-
-            PLACEHOLDER
+            The permissions to apply to this resource.
+          "markdown_description": |-
+            A Sequence that defines the permissions to apply to this resource, where each item in the sequence is a permission for a specific entity.
+
+            See [\_](/dev-tools/bundles/settings.md#permissions) and [\_](/dev-tools/bundles/permissions.md).
+          "markdown_examples": |-
+            ```yaml
+            permissions:
+              - level: CAN_VIEW
+                group_name: test-group
+              - level: CAN_MANAGE
+                user_name: someone@example.com
+              - level: CAN_RUN
+                service_principal_name: 123456-abcdef
+            ```
           "$fields":
             "group_name":
               "description": |-
-                PLACEHOLDER
+                The name of the group that has the permission set in level.
             "level":
               "description": |-
-                PLACEHOLDER
+                The allowed permission for user, group, service principal defined for this permission.
             "service_principal_name":
               "description": |-
-                PLACEHOLDER
+                The name of the service principal that has the permission set in level.
             "user_name":
               "description": |-
-                PLACEHOLDER
+                The name of the user that has the permission set in level.
         "resources":
           "$fields":
             "app":
@@ -476,10 +504,22 @@ resources:
       "$fields":
         "grants":
           "description": |-
-            PLACEHOLDER
+            The Unity Catalog privileges to grant to principals on this securable.
+          "markdown_description": |-
+            A Sequence that defines the Unity Catalog privilege grants for this securable, where each item grants a set of privileges to a principal.
+          "markdown_examples": |-
+            ```yaml
+            grants:
+              - principal: account users
+                privileges:
+                  - SELECT
+              - principal: data-engineers
+                privileges:
+                  - ALL_PRIVILEGES
+            ```
         "lifecycle":
           "description": |-
-            PLACEHOLDER
+            Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
         "managed_encryption_settings":
           "$fields":
             "azure_encryption_settings":
@@ -540,20 +580,34 @@ resources:
                 Lifecycle setting to deploy the resource in started mode. Only supported for apps, clusters, and sql_warehouses in direct deployment mode.
         "permissions":
           "description": |-
-            PLACEHOLDER
+            The permissions to apply to this resource.
+          "markdown_description": |-
+            A Sequence that defines the permissions to apply to this resource, where each item in the sequence is a permission for a specific entity.
+
+            See [\_](/dev-tools/bundles/settings.md#permissions) and [\_](/dev-tools/bundles/permissions.md).
+          "markdown_examples": |-
+            ```yaml
+            permissions:
+              - level: CAN_VIEW
+                group_name: test-group
+              - level: CAN_MANAGE
+                user_name: someone@example.com
+              - level: CAN_RUN
+                service_principal_name: 123456-abcdef
+            ```
           "$fields":
             "group_name":
               "description": |-
-                PLACEHOLDER
+                The name of the group that has the permission set in level.
             "level":
               "description": |-
-                PLACEHOLDER
+                The allowed permission for user, group, service principal defined for this permission.
             "service_principal_name":
               "description": |-
-                PLACEHOLDER
+                The name of the service principal that has the permission set in level.
             "user_name":
               "description": |-
-                PLACEHOLDER
+                The name of the user that has the permission set in level.
     "dashboards":
       "description": |-
         The dashboard definitions for the bundle, where each key is the name of the dashboard.
@@ -621,7 +675,21 @@ resources:
             This field is excluded in List Dashboards responses.
         "permissions":
           "description": |-
-            PLACEHOLDER
+            The permissions to apply to this resource.
+          "markdown_description": |-
+            A Sequence that defines the permissions to apply to this resource, where each item in the sequence is a permission for a specific entity.
+
+            See [\_](/dev-tools/bundles/settings.md#permissions) and [\_](/dev-tools/bundles/permissions.md).
+          "markdown_examples": |-
+            ```yaml
+            permissions:
+              - level: CAN_VIEW
+                group_name: test-group
+              - level: CAN_MANAGE
+                user_name: someone@example.com
+              - level: CAN_RUN
+                service_principal_name: 123456-abcdef
+            ```
           "$fields":
             "group_name":
               "description": |-
@@ -672,7 +740,21 @@ resources:
             Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
         "permissions":
           "description": |-
-            PLACEHOLDER
+            The permissions to apply to this resource.
+          "markdown_description": |-
+            A Sequence that defines the permissions to apply to this resource, where each item in the sequence is a permission for a specific entity.
+
+            See [\_](/dev-tools/bundles/settings.md#permissions) and [\_](/dev-tools/bundles/permissions.md).
+          "markdown_examples": |-
+            ```yaml
+            permissions:
+              - level: CAN_VIEW
+                group_name: test-group
+              - level: CAN_MANAGE
+                user_name: someone@example.com
+              - level: CAN_RUN
+                service_principal_name: 123456-abcdef
+            ```
     "experiments":
       "description": |-
         The experiment definitions for the bundle, where each key is the name of the experiment.
@@ -700,20 +782,34 @@ resources:
             Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
         "permissions":
           "description": |-
-            PLACEHOLDER
+            The permissions to apply to this resource.
+          "markdown_description": |-
+            A Sequence that defines the permissions to apply to this resource, where each item in the sequence is a permission for a specific entity.
+
+            See [\_](/dev-tools/bundles/settings.md#permissions) and [\_](/dev-tools/bundles/permissions.md).
+          "markdown_examples": |-
+            ```yaml
+            permissions:
+              - level: CAN_VIEW
+                group_name: test-group
+              - level: CAN_MANAGE
+                user_name: someone@example.com
+              - level: CAN_RUN
+                service_principal_name: 123456-abcdef
+            ```
           "$fields":
             "group_name":
               "description": |-
-                PLACEHOLDER
+                The name of the group that has the permission set in level.
             "level":
               "description": |-
-                PLACEHOLDER
+                The allowed permission for user, group, service principal defined for this permission.
             "service_principal_name":
               "description": |-
-                PLACEHOLDER
+                The name of the service principal that has the permission set in level.
             "user_name":
               "description": |-
-                PLACEHOLDER
+                The name of the user that has the permission set in level.
     "external_locations":
       "description": |-
         PLACEHOLDER
@@ -753,10 +849,22 @@ resources:
                         AWS_SSE_S3
         "grants":
           "description": |-
-            PLACEHOLDER
+            The Unity Catalog privileges to grant to principals on this securable.
+          "markdown_description": |-
+            A Sequence that defines the Unity Catalog privilege grants for this securable, where each item grants a set of privileges to a principal.
+          "markdown_examples": |-
+            ```yaml
+            grants:
+              - principal: account users
+                privileges:
+                  - SELECT
+              - principal: data-engineers
+                privileges:
+                  - ALL_PRIVILEGES
+            ```
         "lifecycle":
           "description": |-
-            PLACEHOLDER
+            Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
     "genie_spaces":
       "description": |-
         PLACEHOLDER
@@ -772,13 +880,27 @@ resources:
             Local path to a `.geniespace.json` file holding the serialized Genie space definition. The contents are inlined into `serialized_space` at deploy time. Mutually exclusive with an inline `serialized_space`.
         "lifecycle":
           "description": |-
-            PLACEHOLDER
+            Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
         "parent_path":
           "description": |-
             Workspace folder under which to create the Genie space. Immutable: changing this field recreates the resource.
         "permissions":
           "description": |-
-            PLACEHOLDER
+            The permissions to apply to this resource.
+          "markdown_description": |-
+            A Sequence that defines the permissions to apply to this resource, where each item in the sequence is a permission for a specific entity.
+
+            See [\_](/dev-tools/bundles/settings.md#permissions) and [\_](/dev-tools/bundles/permissions.md).
+          "markdown_examples": |-
+            ```yaml
+            permissions:
+              - level: CAN_VIEW
+                group_name: test-group
+              - level: CAN_MANAGE
+                user_name: someone@example.com
+              - level: CAN_RUN
+                service_principal_name: 123456-abcdef
+            ```
         "serialized_space":
           "description": |-
             Serialized Genie space body. May be provided inline as a JSON string (or YAML that will be marshalled to JSON) or referenced via `file_path`. To round-trip an existing space into a bundle, use `databricks bundle generate genie-space`.
@@ -857,20 +979,34 @@ resources:
                 Lifecycle setting to prevent the resource from being destroyed.
         "permissions":
           "description": |-
-            PLACEHOLDER
+            The permissions to apply to this resource.
+          "markdown_description": |-
+            A Sequence that defines the permissions to apply to this resource, where each item in the sequence is a permission for a specific entity.
+
+            See [\_](/dev-tools/bundles/settings.md#permissions) and [\_](/dev-tools/bundles/permissions.md).
+          "markdown_examples": |-
+            ```yaml
+            permissions:
+              - level: CAN_VIEW
+                group_name: test-group
+              - level: CAN_MANAGE
+                user_name: someone@example.com
+              - level: CAN_RUN
+                service_principal_name: 123456-abcdef
+            ```
           "$fields":
             "group_name":
               "description": |-
-                PLACEHOLDER
+                The name of the group that has the permission set in level.
             "level":
               "description": |-
-                PLACEHOLDER
+                The allowed permission for user, group, service principal defined for this permission.
             "service_principal_name":
               "description": |-
-                PLACEHOLDER
+                The name of the service principal that has the permission set in level.
             "user_name":
               "description": |-
-                PLACEHOLDER
+                The name of the user that has the permission set in level.
         "run_as":
           "$fields":
             "service_principal_name":
@@ -987,20 +1123,34 @@ resources:
             Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
         "permissions":
           "description": |-
-            PLACEHOLDER
+            The permissions to apply to this resource.
+          "markdown_description": |-
+            A Sequence that defines the permissions to apply to this resource, where each item in the sequence is a permission for a specific entity.
+
+            See [\_](/dev-tools/bundles/settings.md#permissions) and [\_](/dev-tools/bundles/permissions.md).
+          "markdown_examples": |-
+            ```yaml
+            permissions:
+              - level: CAN_VIEW
+                group_name: test-group
+              - level: CAN_MANAGE
+                user_name: someone@example.com
+              - level: CAN_RUN
+                service_principal_name: 123456-abcdef
+            ```
           "$fields":
             "group_name":
               "description": |-
-                PLACEHOLDER
+                The name of the group that has the permission set in level.
             "level":
               "description": |-
-                PLACEHOLDER
+                The allowed permission for user, group, service principal defined for this permission.
             "service_principal_name":
               "description": |-
-                PLACEHOLDER
+                The name of the service principal that has the permission set in level.
             "user_name":
               "description": |-
-                PLACEHOLDER
+                The name of the user that has the permission set in level.
     "models":
       "description": |-
         The model definitions for the bundle, where each key is the name of the model.
@@ -1015,20 +1165,34 @@ resources:
             Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
         "permissions":
           "description": |-
-            PLACEHOLDER
+            The permissions to apply to this resource.
+          "markdown_description": |-
+            A Sequence that defines the permissions to apply to this resource, where each item in the sequence is a permission for a specific entity.
+
+            See [\_](/dev-tools/bundles/settings.md#permissions) and [\_](/dev-tools/bundles/permissions.md).
+          "markdown_examples": |-
+            ```yaml
+            permissions:
+              - level: CAN_VIEW
+                group_name: test-group
+              - level: CAN_MANAGE
+                user_name: someone@example.com
+              - level: CAN_RUN
+                service_principal_name: 123456-abcdef
+            ```
           "$fields":
             "group_name":
               "description": |-
-                PLACEHOLDER
+                The name of the group that has the permission set in level.
             "level":
               "description": |-
-                PLACEHOLDER
+                The allowed permission for user, group, service principal defined for this permission.
             "service_principal_name":
               "description": |-
-                PLACEHOLDER
+                The name of the service principal that has the permission set in level.
             "user_name":
               "description": |-
-                PLACEHOLDER
+                The name of the user that has the permission set in level.
     "pipelines":
       "description": |-
         The pipeline definitions for the bundle, where each key is the name of the pipeline.
@@ -1119,20 +1283,34 @@ resources:
             Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
         "permissions":
           "description": |-
-            PLACEHOLDER
+            The permissions to apply to this resource.
+          "markdown_description": |-
+            A Sequence that defines the permissions to apply to this resource, where each item in the sequence is a permission for a specific entity.
+
+            See [\_](/dev-tools/bundles/settings.md#permissions) and [\_](/dev-tools/bundles/permissions.md).
+          "markdown_examples": |-
+            ```yaml
+            permissions:
+              - level: CAN_VIEW
+                group_name: test-group
+              - level: CAN_MANAGE
+                user_name: someone@example.com
+              - level: CAN_RUN
+                service_principal_name: 123456-abcdef
+            ```
           "$fields":
             "group_name":
               "description": |-
-                PLACEHOLDER
+                The name of the group that has the permission set in level.
             "level":
               "description": |-
-                PLACEHOLDER
+                The allowed permission for user, group, service principal defined for this permission.
             "service_principal_name":
               "description": |-
-                PLACEHOLDER
+                The name of the service principal that has the permission set in level.
             "user_name":
               "description": |-
-                PLACEHOLDER
+                The name of the user that has the permission set in level.
         "trigger":
           "deprecation_message": |-
             Use continuous instead
@@ -1165,7 +1343,7 @@ resources:
             PLACEHOLDER
         "lifecycle":
           "description": |-
-            PLACEHOLDER
+            Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
         "no_expiry":
           "description": |-
             PLACEHOLDER
@@ -1202,7 +1380,7 @@ resources:
             PLACEHOLDER
         "lifecycle":
           "description": |-
-            PLACEHOLDER
+            Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
         "postgres_database":
           "description": |-
             PLACEHOLDER
@@ -1215,7 +1393,7 @@ resources:
             PLACEHOLDER
         "lifecycle":
           "description": |-
-            PLACEHOLDER
+            Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
         "parent":
           "description": |-
             PLACEHOLDER
@@ -1249,7 +1427,7 @@ resources:
             PLACEHOLDER
         "lifecycle":
           "description": |-
-            PLACEHOLDER
+            Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
         "no_suspension":
           "description": |-
             PLACEHOLDER
@@ -1292,10 +1470,24 @@ resources:
             PLACEHOLDER
         "lifecycle":
           "description": |-
-            PLACEHOLDER
+            Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
         "permissions":
           "description": |-
-            PLACEHOLDER
+            The permissions to apply to this resource.
+          "markdown_description": |-
+            A Sequence that defines the permissions to apply to this resource, where each item in the sequence is a permission for a specific entity.
+
+            See [\_](/dev-tools/bundles/settings.md#permissions) and [\_](/dev-tools/bundles/permissions.md).
+          "markdown_examples": |-
+            ```yaml
+            permissions:
+              - level: CAN_VIEW
+                group_name: test-group
+              - level: CAN_MANAGE
+                user_name: someone@example.com
+              - level: CAN_RUN
+                service_principal_name: 123456-abcdef
+            ```
         "pg_version":
           "description": |-
             PLACEHOLDER
@@ -1330,7 +1522,7 @@ resources:
             The type of the Databricks managed identity that this Role represents. Leave empty to create a regular Postgres role not associated with a Databricks identity.
         "lifecycle":
           "description": |-
-            PLACEHOLDER
+            Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
         "membership_roles":
           "description": |-
             Standard roles that this role is a member of.
@@ -1361,7 +1553,7 @@ resources:
             PLACEHOLDER
         "lifecycle":
           "description": |-
-            PLACEHOLDER
+            Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
         "new_pipeline_spec":
           "description": |-
             PLACEHOLDER
@@ -1461,7 +1653,19 @@ resources:
       "$fields":
         "grants":
           "description": |-
-            PLACEHOLDER
+            The Unity Catalog privileges to grant to principals on this securable.
+          "markdown_description": |-
+            A Sequence that defines the Unity Catalog privilege grants for this securable, where each item grants a set of privileges to a principal.
+          "markdown_examples": |-
+            ```yaml
+            grants:
+              - principal: account users
+                privileges:
+                  - SELECT
+              - principal: data-engineers
+                privileges:
+                  - ALL_PRIVILEGES
+            ```
         "lifecycle":
           "description": |-
             Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
@@ -1519,7 +1723,19 @@ resources:
       "$fields":
         "grants":
           "description": |-
-            PLACEHOLDER
+            The Unity Catalog privileges to grant to principals on this securable.
+          "markdown_description": |-
+            A Sequence that defines the Unity Catalog privilege grants for this securable, where each item grants a set of privileges to a principal.
+          "markdown_examples": |-
+            ```yaml
+            grants:
+              - principal: account users
+                privileges:
+                  - SELECT
+              - principal: data-engineers
+                privileges:
+                  - ALL_PRIVILEGES
+            ```
         "lifecycle":
           "description": |-
             Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
@@ -1589,20 +1805,34 @@ resources:
             Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
         "permissions":
           "description": |-
-            PLACEHOLDER
+            The permissions to apply to this resource.
+          "markdown_description": |-
+            A Sequence that defines the permissions to apply to this resource, where each item in the sequence is a permission for a specific entity.
+
+            See [\_](/dev-tools/bundles/settings.md#permissions) and [\_](/dev-tools/bundles/permissions.md).
+          "markdown_examples": |-
+            ```yaml
+            permissions:
+              - level: CAN_VIEW
+                group_name: test-group
+              - level: CAN_MANAGE
+                user_name: someone@example.com
+              - level: CAN_RUN
+                service_principal_name: 123456-abcdef
+            ```
           "$fields":
             "group_name":
               "description": |-
-                PLACEHOLDER
+                The name of the group that has the permission set in level.
             "level":
               "description": |-
-                PLACEHOLDER
+                The allowed permission for user, group, service principal defined for this permission.
             "service_principal_name":
               "description": |-
-                PLACEHOLDER
+                The name of the service principal that has the permission set in level.
             "user_name":
               "description": |-
-                PLACEHOLDER
+                The name of the user that has the permission set in level.
         "tags":
           "$fields":
             "custom_tags":
@@ -1628,27 +1858,53 @@ resources:
                     PLACEHOLDER
         "lifecycle":
           "description": |-
-            PLACEHOLDER
+            Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
     "vector_search_endpoints":
       "description": |-
         PLACEHOLDER
       "$fields":
         "lifecycle":
           "description": |-
-            PLACEHOLDER
+            Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
         "permissions":
           "description": |-
-            PLACEHOLDER
+            The permissions to apply to this resource.
+          "markdown_description": |-
+            A Sequence that defines the permissions to apply to this resource, where each item in the sequence is a permission for a specific entity.
+
+            See [\_](/dev-tools/bundles/settings.md#permissions) and [\_](/dev-tools/bundles/permissions.md).
+          "markdown_examples": |-
+            ```yaml
+            permissions:
+              - level: CAN_VIEW
+                group_name: test-group
+              - level: CAN_MANAGE
+                user_name: someone@example.com
+              - level: CAN_RUN
+                service_principal_name: 123456-abcdef
+            ```
     "vector_search_indexes":
       "description": |-
         PLACEHOLDER
       "$fields":
         "grants":
           "description": |-
-            PLACEHOLDER
+            The Unity Catalog privileges to grant to principals on this securable.
+          "markdown_description": |-
+            A Sequence that defines the Unity Catalog privilege grants for this securable, where each item grants a set of privileges to a principal.
+          "markdown_examples": |-
+            ```yaml
+            grants:
+              - principal: account users
+                privileges:
+                  - SELECT
+              - principal: data-engineers
+                privileges:
+                  - ALL_PRIVILEGES
+            ```
         "lifecycle":
           "description": |-
-            PLACEHOLDER
+            Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
     "volumes":
       "description": |-
         The volume definitions for the bundle, where each key is the name of the volume.
@@ -1677,7 +1933,19 @@ resources:
       "$fields":
         "grants":
           "description": |-
-            PLACEHOLDER
+            The Unity Catalog privileges to grant to principals on this securable.
+          "markdown_description": |-
+            A Sequence that defines the Unity Catalog privilege grants for this securable, where each item grants a set of privileges to a principal.
+          "markdown_examples": |-
+            ```yaml
+            grants:
+              - principal: account users
+                privileges:
+                  - SELECT
+              - principal: data-engineers
+                privileges:
+                  - ALL_PRIVILEGES
+            ```
         "lifecycle":
           "description": |-
             Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.

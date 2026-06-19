@@ -99,6 +99,7 @@
                         "$ref": "#/$defs/string"
                       },
                       "lifecycle": {
+                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "parent_path": {
@@ -106,7 +107,9 @@
                         "$ref": "#/$defs/string"
                       },
                       "permissions": {
-                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission"
+                        "description": "The permissions to apply to this resource.",
+                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission",
+                        "markdownDescription": "A Sequence that defines the permissions to apply to this resource, where each item in the sequence is a permission for a specific entity.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
                       },
                       "query_text": {
                         "description": "[Public Preview] Text of the query to be run.",
@@ -194,7 +197,9 @@
                         "$ref": "#/$defs/string"
                       },
                       "permissions": {
-                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.AppPermission"
+                        "description": "The permissions to apply to this resource.",
+                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.AppPermission",
+                        "markdownDescription": "A Sequence that defines the permissions to apply to this resource, where each item in the sequence is a permission for a specific entity.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
                       },
                       "resources": {
                         "description": "Resources for the app.",
@@ -285,15 +290,19 @@
                     "type": "object",
                     "properties": {
                       "group_name": {
+                        "description": "The name of the group that has the permission set in level.",
                         "$ref": "#/$defs/string"
                       },
                       "level": {
+                        "description": "The allowed permission for user, group, service principal defined for this permission.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppPermissionLevel"
                       },
                       "service_principal_name": {
+                        "description": "The name of the service principal that has the permission set in level.",
                         "$ref": "#/$defs/string"
                       },
                       "user_name": {
+                        "description": "The name of the user that has the permission set in level.",
                         "$ref": "#/$defs/string"
                       }
                     },
@@ -326,9 +335,12 @@
                         "$ref": "#/$defs/int64"
                       },
                       "grants": {
-                        "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/catalog.PrivilegeAssignment"
+                        "description": "The Unity Catalog privileges to grant to principals on this securable.",
+                        "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/catalog.PrivilegeAssignment",
+                        "markdownDescription": "A Sequence that defines the Unity Catalog privilege grants for this securable, where each item grants a set of privileges to a principal."
                       },
                       "lifecycle": {
+                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "managed_encryption_settings": {
@@ -470,7 +482,9 @@
                         "$ref": "#/$defs/int"
                       },
                       "permissions": {
-                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.ClusterPermission"
+                        "description": "The permissions to apply to this resource.",
+                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.ClusterPermission",
+                        "markdownDescription": "A Sequence that defines the permissions to apply to this resource, where each item in the sequence is a permission for a specific entity.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
                       },
                       "policy_id": {
                         "description": "The ID of the cluster policy used to create the cluster if applicable.",
@@ -536,15 +550,19 @@
                     "type": "object",
                     "properties": {
                       "group_name": {
+                        "description": "The name of the group that has the permission set in level.",
                         "$ref": "#/$defs/string"
                       },
                       "level": {
+                        "description": "The allowed permission for user, group, service principal defined for this permission.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.ClusterPermissionLevel"
                       },
                       "service_principal_name": {
+                        "description": "The name of the service principal that has the permission set in level.",
                         "$ref": "#/$defs/string"
                       },
                       "user_name": {
+                        "description": "The name of the user that has the permission set in level.",
                         "$ref": "#/$defs/string"
                       }
                     },
@@ -611,7 +629,9 @@
                         "$ref": "#/$defs/string"
                       },
                       "permissions": {
-                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission"
+                        "description": "The permissions to apply to this resource.",
+                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission",
+                        "markdownDescription": "A Sequence that defines the permissions to apply to this resource, where each item in the sequence is a permission for a specific entity.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
                       },
                       "serialized_dashboard": {
                         "description": "The contents of the dashboard in serialized string form.\nThis field is excluded in List Dashboards responses.\nUse the [get dashboard API](https://docs.databricks.com/api/workspace/lakeview/get)\nto retrieve an example response, which includes the `serialized_dashboard` field.\nThis field provides the structure of the JSON string that represents the dashboard's\nlayout and components.",
@@ -713,7 +733,9 @@
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.DatabaseInstanceRef"
                       },
                       "permissions": {
-                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission"
+                        "description": "The permissions to apply to this resource.",
+                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission",
+                        "markdownDescription": "A Sequence that defines the permissions to apply to this resource, where each item in the sequence is a permission for a specific entity.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
                       },
                       "retention_window_in_days": {
                         "description": "[Public Preview] The retention window for the instance. This is the time window in days\nfor which the historical data is retained. The default value is 7 days.\nValid values are 2 to 35 days.",
@@ -769,9 +791,12 @@
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.FileEventQueue"
                       },
                       "grants": {
-                        "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/catalog.PrivilegeAssignment"
+                        "description": "The Unity Catalog privileges to grant to principals on this securable.",
+                        "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/catalog.PrivilegeAssignment",
+                        "markdownDescription": "A Sequence that defines the Unity Catalog privilege grants for this securable, where each item grants a set of privileges to a principal."
                       },
                       "lifecycle": {
+                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "name": {
@@ -821,6 +846,7 @@
                         "$ref": "#/$defs/string"
                       },
                       "lifecycle": {
+                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "parent_path": {
@@ -828,7 +854,9 @@
                         "$ref": "#/$defs/string"
                       },
                       "permissions": {
-                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission"
+                        "description": "The permissions to apply to this resource.",
+                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission",
+                        "markdownDescription": "A Sequence that defines the permissions to apply to this resource, where each item in the sequence is a permission for a specific entity.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
                       },
                       "serialized_space": {
                         "description": "Serialized Genie space body. May be provided inline as a JSON string (or YAML that will be marshalled to JSON) or referenced via `file_path`. To round-trip an existing space into a bundle, use `databricks bundle generate genie-space`.",
@@ -913,7 +941,9 @@
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.PerformanceTarget"
                       },
                       "permissions": {
-                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.JobPermission"
+                        "description": "The permissions to apply to this resource.",
+                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.JobPermission",
+                        "markdownDescription": "A Sequence that defines the permissions to apply to this resource, where each item in the sequence is a permission for a specific entity.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
                       },
                       "queue": {
                         "description": "The queue settings of the job.",
@@ -969,15 +999,19 @@
                     "type": "object",
                     "properties": {
                       "group_name": {
+                        "description": "The name of the group that has the permission set in level.",
                         "$ref": "#/$defs/string"
                       },
                       "level": {
+                        "description": "The allowed permission for user, group, service principal defined for this permission.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.JobPermissionLevel"
                       },
                       "service_principal_name": {
+                        "description": "The name of the service principal that has the permission set in level.",
                         "$ref": "#/$defs/string"
                       },
                       "user_name": {
+                        "description": "The name of the user that has the permission set in level.",
                         "$ref": "#/$defs/string"
                       }
                     },
@@ -1050,7 +1084,9 @@
                         "$ref": "#/$defs/string"
                       },
                       "permissions": {
-                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.MlflowExperimentPermission"
+                        "description": "The permissions to apply to this resource.",
+                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.MlflowExperimentPermission",
+                        "markdownDescription": "A Sequence that defines the permissions to apply to this resource, where each item in the sequence is a permission for a specific entity.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
                       },
                       "tags": {
                         "description": "A collection of tags to set on the experiment. Maximum tag size and number of tags per request\ndepends on the storage backend. All storage backends are guaranteed to support tag keys up\nto 250 bytes in size and tag values up to 5000 bytes in size. All storage backends are also\nguaranteed to support up to 20 tags per request.",
@@ -1075,15 +1111,19 @@
                     "type": "object",
                     "properties": {
                       "group_name": {
+                        "description": "The name of the group that has the permission set in level.",
                         "$ref": "#/$defs/string"
                       },
                       "level": {
+                        "description": "The allowed permission for user, group, service principal defined for this permission.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.ExperimentPermissionLevel"
                       },
                       "service_principal_name": {
+                        "description": "The name of the service principal that has the permission set in level.",
                         "$ref": "#/$defs/string"
                       },
                       "user_name": {
+                        "description": "The name of the user that has the permission set in level.",
                         "$ref": "#/$defs/string"
                       }
                     },
@@ -1116,7 +1156,9 @@
                         "$ref": "#/$defs/string"
                       },
                       "permissions": {
-                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.MlflowModelPermission"
+                        "description": "The permissions to apply to this resource.",
+                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.MlflowModelPermission",
+                        "markdownDescription": "A Sequence that defines the permissions to apply to this resource, where each item in the sequence is a permission for a specific entity.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
                       },
                       "tags": {
                         "description": "Additional metadata for registered model.",
@@ -1141,15 +1183,19 @@
                     "type": "object",
                     "properties": {
                       "group_name": {
+                        "description": "The name of the group that has the permission set in level.",
                         "$ref": "#/$defs/string"
                       },
                       "level": {
+                        "description": "The allowed permission for user, group, service principal defined for this permission.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.RegisteredModelPermissionLevel"
                       },
                       "service_principal_name": {
+                        "description": "The name of the service principal that has the permission set in level.",
                         "$ref": "#/$defs/string"
                       },
                       "user_name": {
+                        "description": "The name of the user that has the permission set in level.",
                         "$ref": "#/$defs/string"
                       }
                     },
@@ -1197,7 +1243,9 @@
                         "$ref": "#/$defs/string"
                       },
                       "permissions": {
-                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.ModelServingEndpointPermission"
+                        "description": "The permissions to apply to this resource.",
+                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.ModelServingEndpointPermission",
+                        "markdownDescription": "A Sequence that defines the permissions to apply to this resource, where each item in the sequence is a permission for a specific entity.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
                       },
                       "rate_limits": {
                         "description": "Rate limits to be applied to the serving endpoint. NOTE: this field is deprecated, please use AI Gateway to manage rate limits.",
@@ -1232,15 +1280,19 @@
                     "type": "object",
                     "properties": {
                       "group_name": {
+                        "description": "The name of the group that has the permission set in level.",
                         "$ref": "#/$defs/string"
                       },
                       "level": {
+                        "description": "The allowed permission for user, group, service principal defined for this permission.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.ServingEndpointPermissionLevel"
                       },
                       "service_principal_name": {
+                        "description": "The name of the service principal that has the permission set in level.",
                         "$ref": "#/$defs/string"
                       },
                       "user_name": {
+                        "description": "The name of the user that has the permission set in level.",
                         "$ref": "#/$defs/string"
                       }
                     },
@@ -1376,7 +1428,9 @@
                         "$ref": "#/$defs/map/string"
                       },
                       "permissions": {
-                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.PipelinePermission"
+                        "description": "The permissions to apply to this resource.",
+                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.PipelinePermission",
+                        "markdownDescription": "A Sequence that defines the permissions to apply to this resource, where each item in the sequence is a permission for a specific entity.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
                       },
                       "photon": {
                         "description": "Whether Photon is enabled for this pipeline.",
@@ -1452,15 +1506,19 @@
                     "type": "object",
                     "properties": {
                       "group_name": {
+                        "description": "The name of the group that has the permission set in level.",
                         "$ref": "#/$defs/string"
                       },
                       "level": {
+                        "description": "The allowed permission for user, group, service principal defined for this permission.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.PipelinePermissionLevel"
                       },
                       "service_principal_name": {
+                        "description": "The name of the service principal that has the permission set in level.",
                         "$ref": "#/$defs/string"
                       },
                       "user_name": {
+                        "description": "The name of the user that has the permission set in level.",
                         "$ref": "#/$defs/string"
                       }
                     },
@@ -1490,6 +1548,7 @@
                         "$ref": "#/$defs/bool"
                       },
                       "lifecycle": {
+                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "no_expiry": {
@@ -1541,6 +1600,7 @@
                         "$ref": "#/$defs/bool"
                       },
                       "lifecycle": {
+                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "postgres_database": {
@@ -1568,6 +1628,7 @@
                         "$ref": "#/$defs/string"
                       },
                       "lifecycle": {
+                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "parent": {
@@ -1616,6 +1677,7 @@
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.EndpointGroupSpec"
                       },
                       "lifecycle": {
+                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "no_suspension": {
@@ -1674,10 +1736,13 @@
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/duration.Duration"
                       },
                       "lifecycle": {
+                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "permissions": {
-                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission"
+                        "description": "The permissions to apply to this resource.",
+                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission",
+                        "markdownDescription": "A Sequence that defines the permissions to apply to this resource, where each item in the sequence is a permission for a specific entity.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
                       },
                       "pg_version": {
                         "$ref": "#/$defs/int"
@@ -1718,6 +1783,7 @@
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.RoleIdentityType"
                       },
                       "lifecycle": {
+                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "membership_roles": {
@@ -1767,6 +1833,7 @@
                         "$ref": "#/$defs/string"
                       },
                       "lifecycle": {
+                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "new_pipeline_spec": {
@@ -1923,7 +1990,9 @@
                         "$ref": "#/$defs/string"
                       },
                       "grants": {
-                        "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/catalog.PrivilegeAssignment"
+                        "description": "The Unity Catalog privileges to grant to principals on this securable.",
+                        "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/catalog.PrivilegeAssignment",
+                        "markdownDescription": "A Sequence that defines the Unity Catalog privilege grants for this securable, where each item grants a set of privileges to a principal."
                       },
                       "lifecycle": {
                         "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
@@ -1985,7 +2054,9 @@
                         "$ref": "#/$defs/int64"
                       },
                       "grants": {
-                        "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/catalog.PrivilegeAssignment"
+                        "description": "The Unity Catalog privileges to grant to principals on this securable.",
+                        "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/catalog.PrivilegeAssignment",
+                        "markdownDescription": "A Sequence that defines the Unity Catalog privilege grants for this securable, where each item grants a set of privileges to a principal."
                       },
                       "lifecycle": {
                         "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
@@ -2156,7 +2227,9 @@
                         "$ref": "#/$defs/string"
                       },
                       "permissions": {
-                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.SqlWarehousePermission"
+                        "description": "The permissions to apply to this resource.",
+                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.SqlWarehousePermission",
+                        "markdownDescription": "A Sequence that defines the permissions to apply to this resource, where each item in the sequence is a permission for a specific entity.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
                       },
                       "spot_instance_policy": {
                         "description": "Configurations whether the endpoint should use spot instances.",
@@ -2185,15 +2258,19 @@
                     "type": "object",
                     "properties": {
                       "group_name": {
+                        "description": "The name of the group that has the permission set in level.",
                         "$ref": "#/$defs/string"
                       },
                       "level": {
+                        "description": "The allowed permission for user, group, service principal defined for this permission.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.WarehousePermissionLevel"
                       },
                       "service_principal_name": {
+                        "description": "The name of the service principal that has the permission set in level.",
                         "$ref": "#/$defs/string"
                       },
                       "user_name": {
+                        "description": "The name of the user that has the permission set in level.",
                         "$ref": "#/$defs/string"
                       }
                     },
@@ -2218,6 +2295,7 @@
                         "$ref": "#/$defs/string"
                       },
                       "lifecycle": {
+                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "logical_database_name": {
@@ -2258,6 +2336,7 @@
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/vectorsearch.EndpointType"
                       },
                       "lifecycle": {
+                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "name": {
@@ -2265,7 +2344,9 @@
                         "$ref": "#/$defs/string"
                       },
                       "permissions": {
-                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission"
+                        "description": "The permissions to apply to this resource.",
+                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission",
+                        "markdownDescription": "A Sequence that defines the permissions to apply to this resource, where each item in the sequence is a permission for a specific entity.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
                       },
                       "target_qps": {
                         "description": "[Public Preview] Target QPS for the endpoint. Mutually exclusive with num_replicas.\nThe actual replica count is calculated at index creation/sync time based on this value.\nBest-effort target; the system does not guarantee this QPS will be achieved.",
@@ -2308,7 +2389,9 @@
                         "$ref": "#/$defs/string"
                       },
                       "grants": {
-                        "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/catalog.PrivilegeAssignment"
+                        "description": "The Unity Catalog privileges to grant to principals on this securable.",
+                        "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/catalog.PrivilegeAssignment",
+                        "markdownDescription": "A Sequence that defines the Unity Catalog privilege grants for this securable, where each item grants a set of privileges to a principal."
                       },
                       "index_subtype": {
                         "description": "[Beta] The subtype of the index. Use `HYBRID` or `FULL_TEXT`. `VECTOR` is not supported.",
@@ -2319,6 +2402,7 @@
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/vectorsearch.VectorIndexType"
                       },
                       "lifecycle": {
+                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "name": {
@@ -2358,7 +2442,9 @@
                         "$ref": "#/$defs/string"
                       },
                       "grants": {
-                        "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/catalog.PrivilegeAssignment"
+                        "description": "The Unity Catalog privileges to grant to principals on this securable.",
+                        "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/catalog.PrivilegeAssignment",
+                        "markdownDescription": "A Sequence that defines the Unity Catalog privilege grants for this securable, where each item grants a set of privileges to a principal."
                       },
                       "lifecycle": {
                         "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
