@@ -2,9 +2,10 @@ for target in \
 	no_permissions \
 	user_declared \
 	user_not_declared \
+	other_user_not_declared \
 	shared_users_can_manage \
 	shared_not_declared; do
 	trace $CLI bundle deploy -t "$target"
-	trace print_telemetry_bool_values | grep -E "state_path|dms_compat"
+	trace print_telemetry_bool_values | grep -E "state_path|permissions_section|dms_"
 	rm out.requests.txt
 done
