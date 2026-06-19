@@ -53,7 +53,6 @@ tasks:
       # committed). Run `./task generate` explicitly when codegen inputs change.
       - task: generate-refschema
       - task: generate-schema
-      - task: generate-schema-docs
       - task: generate-validation
       - task: generate-docs
       - task: generate-direct
@@ -717,7 +716,6 @@ tasks:
       # generate-direct-apitypes and generate-direct-resources below.
       - task: generate-refschema
       - task: generate-schema
-      - task: generate-schema-docs
       - task: generate-validation
       - task: generate-docs
       - task: generate-direct
@@ -810,20 +808,6 @@ tasks:
       - bundle/internal/schema/annotations.yml
     cmds:
       - "go run ./bundle/internal/schema ./bundle/internal/schema ./bundle/schema/jsonschema.json"
-
-  generate-schema-docs:
-    desc: Generate bundle JSON schema for documentation
-    sources: *SCHEMA_SOURCES
-    generates:
-      - bundle/schema/jsonschema_for_docs.json
-      - bundle/internal/schema/annotations.yml
-    cmds:
-      # since_version.go reads `git tag --list 'v*'` to compute sinceVersion
-      # annotations. Without tags (e.g. shallow clone), those annotations are
-      # silently dropped from the output. Restore the fetch that lived in the
-      # old tools/post-generate.sh.
-      - git fetch origin 'refs/tags/v*:refs/tags/v*'
-      - "go run ./bundle/internal/schema ./bundle/internal/schema ./bundle/schema/jsonschema_for_docs.json --docs"
 
   generate-docs:
     desc: Generate bundle documentation
