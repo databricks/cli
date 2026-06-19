@@ -1,0 +1,148 @@
+
+=== Deploy: a DMS deployment + version are recorded while the file lock is held
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-record/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== DMS API calls made during deploy (create deployment, create + complete version)
+>>> print_requests.py //api/2.0/bundle --keep
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments",
+  "q": {
+    "deployment_id": "[UUID]"
+  },
+  "body": {
+    "target_name": "default"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[UUID]/versions",
+  "q": {
+    "version_id": "0"
+  },
+  "body": {
+    "cli_version": "[DEV_VERSION]",
+    "target_name": "default",
+    "version_type": "VERSION_TYPE_DEPLOY"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[UUID]/versions/0/complete",
+  "body": {
+    "completion_reason": "VERSION_COMPLETE_SUCCESS"
+  }
+}
+
+=== The workspace-filesystem lock is applied alongside DMS (deploy.lock written)
+>>> print_requests.py //deploy.lock
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/dms-record/default/state/deploy.lock",
+  "q": {
+    "overwrite": "false"
+  },
+  "body": {
+    "ID": "[UUID]",
+    "AcquisitionTime": "[TIMESTAMP]",
+    "IsForced": false,
+    "User": "[USERNAME]"
+  }
+}
+
+=== Redeploy after deleting local cache (.databricks): the lineage is recovered from remote state, so the same deployment is reused and the version increments (no new CreateDeployment)
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-record/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py //api/2.0/bundle --keep
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[UUID]/versions",
+  "q": {
+    "version_id": "1"
+  },
+  "body": {
+    "cli_version": "[DEV_VERSION]",
+    "target_name": "default",
+    "version_type": "VERSION_TYPE_DEPLOY"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[UUID]/versions/1/complete",
+  "body": {
+    "completion_reason": "VERSION_COMPLETE_SUCCESS"
+  }
+}
+
+>>> print_requests.py //deploy.lock
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/dms-record/default/state/deploy.lock",
+  "q": {
+    "overwrite": "false"
+  },
+  "body": {
+    "ID": "[UUID]",
+    "AcquisitionTime": "[TIMESTAMP]",
+    "IsForced": false,
+    "User": "[USERNAME]"
+  }
+}
+
+=== Destroy: a DMS version is recorded while the file lock is held
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.foo
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/dms-record/default
+
+Deleting files...
+Destroy complete!
+
+>>> print_requests.py //api/2.0/bundle --keep
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[UUID]/versions",
+  "q": {
+    "version_id": "1"
+  },
+  "body": {
+    "cli_version": "[DEV_VERSION]",
+    "target_name": "default",
+    "version_type": "VERSION_TYPE_DESTROY"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[UUID]/versions/1/complete",
+  "body": {
+    "completion_reason": "VERSION_COMPLETE_SUCCESS"
+  }
+}
+{
+  "method": "DELETE",
+  "path": "/api/2.0/bundle/deployments/[UUID]"
+}
+
+>>> print_requests.py //deploy.lock
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/dms-record/default/state/deploy.lock",
+  "q": {
+    "overwrite": "false"
+  },
+  "body": {
+    "ID": "[UUID]",
+    "AcquisitionTime": "[TIMESTAMP]",
+    "IsForced": false,
+    "User": "[USERNAME]"
+  }
+}

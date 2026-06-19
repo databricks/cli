@@ -15,6 +15,7 @@ import (
 	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/dms"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/databricks-sdk-go/apierr"
@@ -127,6 +128,10 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 		return
 	}
 
+	// Set up DMS recording of this destroy as a version. CreateVersion and its
+	// matching CompleteVersion run only after the destroy is approved (below), so
+	// a cancelled destroy records nothing.
+	recorder := newDeploymentRecorder(ctx, b, engine, dms.VersionTypeDestroy)
 	defer func() {
 		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalDestroy))
 	}()
@@ -184,6 +189,19 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 				return
 			}
 		}
+		// Record the DMS version now that the destroy is approved (a cancelled
+		// destroy records nothing). The deployment lineage and the version's
+		// serial both come from the plan; CompleteVersion below finalizes this
+		// same version and deletes the deployment record on success.
+		if err := recorder.CreateVersion(ctx, plan.Lineage, plan.Serial); err != nil {
+			logdiag.LogError(ctx, err)
+			return
+		}
+		defer func() {
+			if err := recorder.CompleteVersion(ctx, plan.Lineage, plan.Serial, !logdiag.HasError(ctx)); err != nil {
+				logdiag.LogError(ctx, err)
+			}
+		}()
 		destroyCore(ctx, b, plan, engine)
 	} else {
 		cmdio.LogString(ctx, "Destroy cancelled!")

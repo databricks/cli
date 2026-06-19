@@ -22,6 +22,7 @@ import (
 	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/libs/agent"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/dms"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/sync"
@@ -142,7 +143,12 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		return
 	}
 
-	// lock is acquired here
+	// lock is acquired here.
+	//
+	// Set up DMS recording of this deployment as a version. CreateVersion and
+	// its matching CompleteVersion run only after the plan is approved (below),
+	// so a cancelled deploy records nothing.
+	recorder := newDeploymentRecorder(ctx, b, engine, dms.VersionTypeDeploy)
 	defer func() {
 		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalDeploy))
 	}()
@@ -208,6 +214,18 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		return
 	}
 	if haveApproval {
+		// Record the DMS version now that the plan is approved (a cancelled deploy
+		// records nothing). The deployment lineage and the version's serial both
+		// come from the plan; CompleteVersion below finalizes this same version.
+		if err := recorder.CreateVersion(ctx, plan.Lineage, plan.Serial); err != nil {
+			logdiag.LogError(ctx, err)
+			return
+		}
+		defer func() {
+			if err := recorder.CompleteVersion(ctx, plan.Lineage, plan.Serial, !logdiag.HasError(ctx)); err != nil {
+				logdiag.LogError(ctx, err)
+			}
+		}()
 		deployCore(ctx, b, plan, engine)
 	} else {
 		cmdio.LogString(ctx, "Deployment cancelled!")

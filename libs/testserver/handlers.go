@@ -235,6 +235,26 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.JobsCreate(req)
 	})
 
+	// Deployment Metadata Service (DMS) endpoints.
+	server.Handle("POST", "/api/2.0/bundle/deployments", func(req Request) any {
+		return req.Workspace.CreateDeployment(req)
+	})
+	server.Handle("GET", "/api/2.0/bundle/deployments/{deployment_id}", func(req Request) any {
+		return req.Workspace.GetDeployment(req.Vars["deployment_id"])
+	})
+	server.Handle("DELETE", "/api/2.0/bundle/deployments/{deployment_id}", func(req Request) any {
+		return req.Workspace.DeleteDeployment(req.Vars["deployment_id"])
+	})
+	server.Handle("POST", "/api/2.0/bundle/deployments/{deployment_id}/versions", func(req Request) any {
+		return req.Workspace.CreateVersion(req, req.Vars["deployment_id"])
+	})
+	server.Handle("POST", "/api/2.0/bundle/deployments/{deployment_id}/versions/{version_id}/complete", func(req Request) any {
+		return req.Workspace.CompleteVersion(req, req.Vars["deployment_id"], req.Vars["version_id"])
+	})
+	server.Handle("POST", "/api/2.0/bundle/deployments/{deployment_id}/versions/{version_id}/heartbeat", func(req Request) any {
+		return req.Workspace.Heartbeat()
+	})
+
 	server.Handle("POST", "/api/2.2/jobs/delete", func(req Request) any {
 		var request jobs.DeleteJob
 		if err := json.Unmarshal(req.Body, &request); err != nil {
