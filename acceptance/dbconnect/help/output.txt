@@ -1,0 +1,33 @@
+>>> $CLI dbconnect --help
+Set up a local Python environment matched to your Databricks compute
+
+Usage:
+  databricks dbconnect [command]
+
+Available Commands:
+  init        Create a fresh pyproject.toml and provision a matched .venv
+  sync        Merge managed dependencies into an existing pyproject.toml and re-provision
+
+Flags:
+  -h, --help   help for dbconnect
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+>>> $CLI dbconnect init --help
+Create a fresh pyproject.toml and provision a matched .venv
+
+Usage:
+  databricks dbconnect init [flags]
+
+Flags:
+  -h, --help   help for init
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
