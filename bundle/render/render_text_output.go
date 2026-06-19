@@ -45,6 +45,13 @@ const resourcesTemplate = `Resources:
 {{- end }}
 `
 
+const deploymentTemplate = `Deployment:
+  ID:      {{ .DeploymentId | bold }}
+{{- if .VersionId }}
+  Version: {{ .VersionId | bold }}
+{{- end }}
+`
+
 type ResourceGroup struct {
 	GroupName string
 	Resources []ResourceInfo
@@ -136,12 +143,18 @@ func RenderDiagnosticsSummary(ctx context.Context, out io.Writer, b *bundle.Bund
 	return nil
 }
 
-func RenderSummary(ctx context.Context, out io.Writer, b *bundle.Bundle) error {
+func RenderSummary(ctx context.Context, out io.Writer, b *bundle.Bundle, deploymentID, versionID string) error {
 	if b == nil {
 		return nil
 	}
 	if err := renderSummaryHeaderTemplate(ctx, out, b); err != nil {
 		return err
+	}
+
+	if deploymentID != "" {
+		if err := renderDeploymentTemplate(ctx, out, deploymentID, versionID); err != nil {
+			return fmt.Errorf("failed to render deployment template: %w", err)
+		}
 	}
 
 	var resourceGroups []ResourceGroup
@@ -169,6 +182,16 @@ func RenderSummary(ctx context.Context, out io.Writer, b *bundle.Bundle) error {
 	}
 
 	return nil
+}
+
+// renderDeploymentTemplate renders the bundle's deployment metadata service
+// identifiers (deployment_id and the current version_id).
+func renderDeploymentTemplate(ctx context.Context, out io.Writer, deploymentID, versionID string) error {
+	t := template.Must(template.New("deployment").Funcs(cmdio.RenderFuncMap(ctx)).Parse(deploymentTemplate))
+	return t.Execute(out, map[string]any{
+		"DeploymentId": deploymentID,
+		"VersionId":    versionID,
+	})
 }
 
 // Helper function to sort and render resource groups using the template
