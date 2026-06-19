@@ -26,6 +26,13 @@
           "reason": "custom",
           "old": "[ETAG]",
           "remote": "[ETAG]"
+        },
+        "serialized_dashboard": {
+          "action": "skip",
+          "reason": "etag_based",
+          "old": "{ }\n",
+          "new": "{ }\n",
+          "remote": "{}\n"
         }
       }
     }
