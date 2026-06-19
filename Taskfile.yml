@@ -12,8 +12,10 @@ vars:
   # a separate static `**/testdata/**` glob, not this script.
   # Limitation: git grep only scans tracked files; new //go:embed directives in
   # untracked files are missed until the file is staged or committed.
+  # Run via uv with a pinned interpreter floor so the helper works on hosts whose
+  # default python3 is older than the 3.11 this repo's scripts target.
   EMBED_SOURCES:
-    sh: 'python3 tools/list_embeds.py'
+    sh: 'uv run -p ">=3.11" --no-project python tools/list_embeds.py'
 
 # pydabs-* tasks live in python/Taskfile.yml so `task pydabs-foo` works when
 # run from python/. Flattened so they keep their `pydabs-` names at the root.
@@ -948,7 +950,7 @@ tasks:
     generates:
       - bundle/direct/dresources/apitypes.generated.yml
     cmds:
-      - "sh -c 'python3 bundle/direct/tools/generate_apitypes.py .codegen/cli.json acceptance/bundle/refschema/out.fields.txt > bundle/direct/dresources/apitypes.generated.yml'"
+      - "sh -c 'uv run -p \">=3.11\" --no-project python bundle/direct/tools/generate_apitypes.py .codegen/cli.json acceptance/bundle/refschema/out.fields.txt > bundle/direct/dresources/apitypes.generated.yml'"
 
   generate-direct-resources:
     desc: Generate direct engine resources YAML

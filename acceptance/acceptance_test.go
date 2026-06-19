@@ -229,6 +229,14 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 		os.Unsetenv(v) //nolint:usetesting // t.Setenv cannot unset
 	}
 
+	// Verify external tool prerequisites before doing any work, so a stale
+	// toolchain fails fast with an actionable message instead of producing
+	// confusing diffs deep into the run.
+	internal.RequireModernJq(t)
+	internal.RequireModernUv(t)
+	internal.RequireModernRuff(t)
+	internal.EnsureModernPython(t)
+
 	buildDir := getBuildDir(t, cwd, runtime.GOOS, runtime.GOARCH)
 
 	// Set up terraform for tests. Skip on DBR - tests with RunsOnDbr only use direct deployment.
@@ -758,6 +766,21 @@ func runTest(t *testing.T,
 	// binaries (e.g. -useversion) must never reach GitHub or print the notice
 	// into compared output. Tests can override this via [Env] in test.toml.
 	cmd.Env = append(cmd.Env, "DATABRICKS_CLI_DISABLE_UPDATE_CHECK=true")
+
+	// Neutralize Databricks-internal development-environment interference so
+	// acceptance tests behave the same as on CI (which has none of this). Two
+	// sources both reach the blocking proxy on every git invocation:
+	//
+	//  1. A command-timing shim that wraps git (ahead of the real binary on
+	//     PATH) and POSTs per-command metrics over the network.
+	//     COMMAND_TIMER_DISABLE=1 makes it pass through without the beacon.
+	//  2. A managed global git config installs a core.hooksPath whose hooks
+	//     (secret scanning, etc.) also beacon metrics. Ignoring the global and
+	//     system git config disables those hooks and keeps tests hermetic; tests
+	//     configure the repos they create via git-repo-init locally.
+	cmd.Env = append(cmd.Env, "COMMAND_TIMER_DISABLE=1")
+	cmd.Env = append(cmd.Env, "GIT_CONFIG_GLOBAL="+os.DevNull)
+	cmd.Env = append(cmd.Env, "GIT_CONFIG_SYSTEM="+os.DevNull)
 
 	for _, kv := range testEnv {
 		key, value, _ := strings.Cut(kv, "=")
