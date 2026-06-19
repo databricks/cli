@@ -121,7 +121,12 @@ func (r *ResourceJobRun) DoCreate(ctx context.Context, config *JobRunState) (str
 	if err != nil {
 		return "", nil, err
 	}
-	return strconv.FormatInt(wait.RunId, 10), nil, nil
+	// RunNow's response carries only the run id, so we reconstruct the remote
+	// state from the request we just sent (the faithful record of what we
+	// created) plus the new run id. This lets the framework compute the
+	// out-of-band diff against what DoRead later reads back.
+	remote := &JobRunRemote{JobRunState: *config, RunId: wait.RunId}
+	return strconv.FormatInt(wait.RunId, 10), remote, nil
 }
 
 // DoUpdate is intentionally not implemented: there is no API to modify a run in
