@@ -478,6 +478,32 @@ func DeleteProfile(ctx context.Context, profileName, configFilePath string) erro
 	return writeConfigFile(ctx, configFile)
 }
 
+// HostMismatchError reports that the host configured in the bundle does not
+// match the host of the profile selected for authentication. It carries the
+// normalized hosts and profile names so callers can render richer messages
+// (e.g. a diagnostic with source locations) without re-deriving them.
+type HostMismatchError struct {
+	// ConfiguredHost is the normalized host configured in the bundle.
+	ConfiguredHost string
+
+	// ProfileHost is the normalized host of the selected Profile.
+	ProfileHost string
+
+	// Profile is the name of the selected profile.
+	Profile string
+
+	// SuggestedProfile is the name of a profile whose host matches
+	// ConfiguredHost, or "" if no such profile exists.
+	SuggestedProfile string
+}
+
+func (e *HostMismatchError) Error() string {
+	if e.SuggestedProfile != "" {
+		return fmt.Sprintf("the host in the profile (%s) doesn’t match the host configured in the bundle (%s). The profile \"%s\" has host=\"%s\" that matches host in the bundle. To select it, pass \"-p %s\"", e.ProfileHost, e.ConfiguredHost, e.SuggestedProfile, e.ConfiguredHost, e.SuggestedProfile)
+	}
+	return fmt.Sprintf("the host in the profile (%s) doesn’t match the host configured in the bundle (%s)", e.ProfileHost, e.ConfiguredHost)
+}
+
 func ValidateConfigAndProfileHost(cfg *config.Config, profile string) error {
 	configFile, err := config.LoadFile(cfg.ConfigFile)
 	if err != nil {
@@ -495,16 +521,21 @@ func ValidateConfigAndProfileHost(cfg *config.Config, profile string) error {
 
 	hostFromProfile := normalizeHost(match.Key("host").Value())
 	if hostFromProfile != "" && host != "" && hostFromProfile != host {
+		mismatch := &HostMismatchError{
+			ConfiguredHost: host,
+			ProfileHost:    hostFromProfile,
+			Profile:        profile,
+		}
+
 		// Try to find if there's a profile which uses the same host as the bundle and suggest in error message
 		match, err = findMatchingProfile(configFile, func(s *ini.Section) bool {
 			return normalizeHost(s.Key("host").Value()) == host
 		})
 		if err == nil && match != nil {
-			profileName := match.Name()
-			return fmt.Errorf("the host in the profile (%s) doesn’t match the host configured in the bundle (%s). The profile \"%s\" has host=\"%s\" that matches host in the bundle. To select it, pass \"-p %s\"", hostFromProfile, host, profileName, host, profileName)
+			mismatch.SuggestedProfile = match.Name()
 		}
 
-		return fmt.Errorf("the host in the profile (%s) doesn’t match the host configured in the bundle (%s)", hostFromProfile, host)
+		return mismatch
 	}
 
 	return nil

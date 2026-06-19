@@ -13,6 +13,7 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
@@ -152,7 +153,13 @@ func TestBundleConfigureWithMismatchedProfile(t *testing.T) {
 	require.NoError(t, err)
 
 	diags := setupWithHost(t, cmd, "https://x.test")
-	assert.Equal(t, []diag.Diagnostic{{Summary: "cannot resolve bundle auth configuration: the host in the profile (https://a.test) doesn’t match the host configured in the bundle (https://x.test)"}}, diags)
+	assert.Equal(t, []diag.Diagnostic{{
+		Severity:  diag.Error,
+		Summary:   "workspace host does not match the selected profile",
+		Detail:    "The host configured in workspace.host (https://x.test) does not match the host of profile \"PROFILE-1\" (https://a.test) used for authentication.\n\nUpdate workspace.host or workspace.profile so they refer to the same workspace.",
+		Locations: []dyn.Location{{File: "databricks.yml", Line: 3, Column: 9}},
+		Paths:     []dyn.Path{dyn.MustPathFromString("workspace.host")},
+	}}, diags)
 }
 
 func TestBundleConfigureWithCorrectProfile(t *testing.T) {
@@ -175,7 +182,13 @@ func TestBundleConfigureWithMismatchedProfileEnvVariable(t *testing.T) {
 	cmd := emptyCommand(t)
 
 	diags := setupWithHost(t, cmd, "https://x.test")
-	assert.Equal(t, []diag.Diagnostic{{Summary: "cannot resolve bundle auth configuration: the host in the profile (https://a.test) doesn’t match the host configured in the bundle (https://x.test)"}}, diags)
+	assert.Equal(t, []diag.Diagnostic{{
+		Severity:  diag.Error,
+		Summary:   "workspace host does not match the selected profile",
+		Detail:    "The host configured in workspace.host (https://x.test) does not match the host of profile \"PROFILE-1\" (https://a.test) used for authentication.\n\nUpdate workspace.host or workspace.profile so they refer to the same workspace.",
+		Locations: []dyn.Location{{File: "databricks.yml", Line: 3, Column: 9}},
+		Paths:     []dyn.Path{dyn.MustPathFromString("workspace.host")},
+	}}, diags)
 }
 
 func TestBundleConfigureWithProfileFlagAndEnvVariable(t *testing.T) {

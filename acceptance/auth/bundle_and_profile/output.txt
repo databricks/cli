@@ -20,7 +20,14 @@ Exit code: 1
 
 === Inside the bundle, target and not matching profile
 >>> errcode [CLI] current-user me -t dev -p profile_name
-Error: cannot resolve bundle auth configuration: the host in the profile (https://non.existing.subdomain.databricks.test) doesn’t match the host configured in the bundle ([DATABRICKS_TARGET]). The profile "DEFAULT" has host="[DATABRICKS_TARGET]" that matches host in the bundle. To select it, pass "-p DEFAULT"
+Error: workspace host does not match the selected profile
+  at workspace.host
+  in databricks.yml:11:13
+     databricks.yml:5:9
+
+The host configured in workspace.host ([DATABRICKS_TARGET]) does not match the host of profile "profile_name" (https://non.existing.subdomain.databricks.test) used for authentication.
+
+Profile "DEFAULT" matches the bundle host. To use it, set workspace.profile to "DEFAULT" or pass -p DEFAULT on the command line.
 
 
 Exit code: 1
@@ -49,7 +56,14 @@ Validation OK!
 
 === Bundle commands load bundle configuration with -p flag, validation not OK (profile host don't match bundle host)
 >>> errcode [CLI] bundle validate -p profile_name
-Error: cannot resolve bundle auth configuration: the host in the profile (https://non.existing.subdomain.databricks.test) doesn’t match the host configured in the bundle ([DATABRICKS_TARGET]). The profile "DEFAULT" has host="[DATABRICKS_TARGET]" that matches host in the bundle. To select it, pass "-p DEFAULT"
+Error: workspace host does not match the selected profile
+  at workspace.host
+  in databricks.yml:11:13
+     databricks.yml:5:9
+
+The host configured in workspace.host ([DATABRICKS_TARGET]) does not match the host of profile "profile_name" (https://non.existing.subdomain.databricks.test) used for authentication.
+
+Profile "DEFAULT" matches the bundle host. To use it, set workspace.profile to "DEFAULT" or pass -p DEFAULT on the command line.
 
 Name: test-auth
 Target: dev
@@ -74,7 +88,14 @@ Validation OK!
 === Bundle commands load bundle configuration with -t and -p flag, validation not OK (profile host don't match bundle host)
 >>> errcode [CLI] bundle validate -t prod -p DEFAULT
 Warn: [hostmetadata] failed to fetch host metadata for https://bar.test, will skip for 1m0s
-Error: cannot resolve bundle auth configuration: the host in the profile ([DATABRICKS_TARGET]) doesn’t match the host configured in the bundle (https://bar.test)
+Error: workspace host does not match the selected profile
+  at workspace.host
+  in databricks.yml:14:13
+     databricks.yml:5:9
+
+The host configured in workspace.host (https://bar.test) does not match the host of profile "DEFAULT" ([DATABRICKS_TARGET]) used for authentication.
+
+Update workspace.host or workspace.profile so they refer to the same workspace.
 
 Name: test-auth
 Target: prod

@@ -37,6 +37,39 @@ func TestLoadOrCreate_Bad(t *testing.T) {
 	assert.Nil(t, file)
 }
 
+func TestValidateConfigAndProfileHost(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "databrickscfg")
+	contents := "[abc]\nhost = https://abc.test\ntoken = a\n\n[def]\nhost = https://def.test\ntoken = d\n"
+	require.NoError(t, os.WriteFile(path, []byte(contents), 0o600))
+
+	t.Run("match", func(t *testing.T) {
+		cfg := &config.Config{Host: "https://abc.test", ConfigFile: path}
+		assert.NoError(t, ValidateConfigAndProfileHost(cfg, "abc"))
+	})
+
+	t.Run("mismatch with suggested profile", func(t *testing.T) {
+		cfg := &config.Config{Host: "https://abc.test", ConfigFile: path}
+		err := ValidateConfigAndProfileHost(cfg, "def")
+
+		var mismatch *HostMismatchError
+		require.ErrorAs(t, err, &mismatch)
+		assert.Equal(t, "https://abc.test", mismatch.ConfiguredHost)
+		assert.Equal(t, "https://def.test", mismatch.ProfileHost)
+		assert.Equal(t, "def", mismatch.Profile)
+		assert.Equal(t, "abc", mismatch.SuggestedProfile)
+	})
+
+	t.Run("mismatch without suggested profile", func(t *testing.T) {
+		cfg := &config.Config{Host: "https://ghi.test", ConfigFile: path}
+		err := ValidateConfigAndProfileHost(cfg, "def")
+
+		var mismatch *HostMismatchError
+		require.ErrorAs(t, err, &mismatch)
+		assert.Empty(t, mismatch.SuggestedProfile)
+	})
+}
+
 func TestMatchOrCreateSection_Direct(t *testing.T) {
 	cfg := &config.Config{
 		Profile: "query",

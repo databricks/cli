@@ -15,6 +15,8 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
+	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/dyn"
 	envlib "github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/spf13/cobra"
@@ -152,6 +154,44 @@ func resolveProfileAmbiguity(cmd *cobra.Command, b *bundle.Bundle, originalErr e
 	})
 }
 
+// hostMismatchDiagnostic builds a located, multi-line diagnostic for a
+// host/profile mismatch. It points at workspace.host (and workspace.profile
+// when it is set in the configuration files) so the user can see where each
+// value comes from.
+func hostMismatchDiagnostic(b *bundle.Bundle, mismatch *databrickscfg.HostMismatchError) diag.Diagnostic {
+	detail := fmt.Sprintf(
+		"The host configured in workspace.host (%s) does not match the host of profile %q (%s) used for authentication.",
+		mismatch.ConfiguredHost, mismatch.Profile, mismatch.ProfileHost,
+	)
+	if mismatch.SuggestedProfile != "" {
+		detail += fmt.Sprintf(
+			"\n\nProfile %q matches the bundle host. To use it, set workspace.profile to %q or pass -p %s on the command line.",
+			mismatch.SuggestedProfile, mismatch.SuggestedProfile, mismatch.SuggestedProfile,
+		)
+	} else {
+		detail += "\n\nUpdate workspace.host or workspace.profile so they refer to the same workspace."
+	}
+
+	paths := []dyn.Path{dyn.MustPathFromString("workspace.host")}
+	locations := b.Config.GetLocations("workspace.host")
+
+	// workspace.profile may be set via a flag or environment variable, in which
+	// case it has no location in the configuration files. Only point at it when
+	// it is actually defined there.
+	if profileLocations := b.Config.GetLocations("workspace.profile"); len(profileLocations) > 0 {
+		paths = append(paths, dyn.MustPathFromString("workspace.profile"))
+		locations = append(locations, profileLocations...)
+	}
+
+	return diag.Diagnostic{
+		Severity:  diag.Error,
+		Summary:   "workspace host does not match the selected profile",
+		Detail:    detail,
+		Locations: locations,
+		Paths:     paths,
+	}
+}
+
 // configureBundle loads the bundle configuration and configures flag values, if any.
 func configureBundle(cmd *cobra.Command, b *bundle.Bundle) {
 	// Load bundle and select target.
@@ -176,6 +216,14 @@ func configureBundle(cmd *cobra.Command, b *bundle.Bundle) {
 	// is a fast operation. It does not perform network I/O or invoke processes (for example the Azure CLI).
 	client, err := b.WorkspaceClientE(ctx)
 	if err != nil {
+		// A host/profile mismatch is a configuration error we can point at
+		// directly in the bundle files, so render it as a located diagnostic
+		// instead of an opaque auth-resolution failure.
+		if mismatch, ok := errors.AsType[*databrickscfg.HostMismatchError](err); ok {
+			logdiag.LogDiag(ctx, hostMismatchDiagnostic(b, mismatch))
+			return
+		}
+
 		names, isMulti := databrickscfg.AsMultipleProfiles(err)
 		if !isMulti {
 			logdiag.LogError(ctx, err)
