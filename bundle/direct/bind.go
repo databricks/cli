@@ -147,10 +147,12 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 
 		adapter, err := b.getAdapterForKey(resourceKey)
 		if err != nil {
+			os.Remove(tmpStatePath)
 			return nil, err
 		}
 		compacted, err := adapter.CompactState(sv.Value)
 		if err != nil {
+			os.Remove(tmpStatePath)
 			return nil, fmt.Errorf("compacting state: %w", err)
 		}
 
