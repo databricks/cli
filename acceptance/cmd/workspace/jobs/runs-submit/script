@@ -1,0 +1,25 @@
+trace $CLI jobs submit --no-wait --json '{
+  "run_name": "ssh-tunnel",
+  "tasks": [
+    {
+      "task_key": "main",
+      "environment_key": "default",
+      "notebook_task": {
+        "notebook_path": "/Workspace/notebook"
+      }
+    }
+  ],
+  "environments": [
+    {
+      "environment_key": "default",
+      "spec": {
+        "base_environment": "workspace-base-environments/databricks_ai_v4",
+        "environment_version": "4"
+      }
+    }
+  ]
+}'
+
+# The test server records the submitted spec so tests can assert that
+# base_environment is present in the environments block.
+trace print_requests.py //jobs/runs/submit
