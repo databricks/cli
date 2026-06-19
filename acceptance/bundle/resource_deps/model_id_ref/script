@@ -1,9 +1,3 @@
-# Show the create requests with the model-id reference resolved in the job description.
-print_requests() {
-    jq --sort-keys 'select(.method != "GET" and (.path | contains("/jobs/create") or contains("/mlflow/registered-models/create"))) | {path, name: (.body.name // .body.new_settings.name), description: (.body.description // .body.new_settings.description)}' < out.requests.txt
-    rm out.requests.txt
-}
-
 title "the consumer job implicitly depends on the model"
 trace $CLI bundle plan
 
@@ -16,4 +10,4 @@ trace $CLI bundle deploy
 model_id=$($CLI model-registry get-model my-model | jq -r '.registered_model_databricks.id')
 add_repl.py "$model_id" MY_MODEL_ID
 
-trace print_requests
+trace print_requests.py //mlflow/registered-models/create //jobs/create --sort
