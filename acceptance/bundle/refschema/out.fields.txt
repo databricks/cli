@@ -844,6 +844,7 @@ resources.job_runs.*.job_settings.job_clusters[*].new_cluster.aws_attributes.spo
 resources.job_runs.*.job_settings.job_clusters[*].new_cluster.aws_attributes.zone_id	string	ALL
 resources.job_runs.*.job_settings.job_clusters[*].new_cluster.azure_attributes	*compute.AzureAttributes	ALL
 resources.job_runs.*.job_settings.job_clusters[*].new_cluster.azure_attributes.availability	compute.AzureAvailability	ALL
+resources.job_runs.*.job_settings.job_clusters[*].new_cluster.azure_attributes.capacity_reservation_group	string	ALL
 resources.job_runs.*.job_settings.job_clusters[*].new_cluster.azure_attributes.first_on_demand	int	ALL
 resources.job_runs.*.job_settings.job_clusters[*].new_cluster.azure_attributes.log_analytics_info	*compute.LogAnalyticsInfo	ALL
 resources.job_runs.*.job_settings.job_clusters[*].new_cluster.azure_attributes.log_analytics_info.log_analytics_primary_key	string	ALL
@@ -1159,6 +1160,7 @@ resources.job_runs.*.job_settings.tasks[*].for_each_task.task.new_cluster.aws_at
 resources.job_runs.*.job_settings.tasks[*].for_each_task.task.new_cluster.aws_attributes.zone_id	string	ALL
 resources.job_runs.*.job_settings.tasks[*].for_each_task.task.new_cluster.azure_attributes	*compute.AzureAttributes	ALL
 resources.job_runs.*.job_settings.tasks[*].for_each_task.task.new_cluster.azure_attributes.availability	compute.AzureAvailability	ALL
+resources.job_runs.*.job_settings.tasks[*].for_each_task.task.new_cluster.azure_attributes.capacity_reservation_group	string	ALL
 resources.job_runs.*.job_settings.tasks[*].for_each_task.task.new_cluster.azure_attributes.first_on_demand	int	ALL
 resources.job_runs.*.job_settings.tasks[*].for_each_task.task.new_cluster.azure_attributes.log_analytics_info	*compute.LogAnalyticsInfo	ALL
 resources.job_runs.*.job_settings.tasks[*].for_each_task.task.new_cluster.azure_attributes.log_analytics_info.log_analytics_primary_key	string	ALL
@@ -1444,6 +1446,7 @@ resources.job_runs.*.job_settings.tasks[*].new_cluster.aws_attributes.spot_bid_p
 resources.job_runs.*.job_settings.tasks[*].new_cluster.aws_attributes.zone_id	string	ALL
 resources.job_runs.*.job_settings.tasks[*].new_cluster.azure_attributes	*compute.AzureAttributes	ALL
 resources.job_runs.*.job_settings.tasks[*].new_cluster.azure_attributes.availability	compute.AzureAvailability	ALL
+resources.job_runs.*.job_settings.tasks[*].new_cluster.azure_attributes.capacity_reservation_group	string	ALL
 resources.job_runs.*.job_settings.tasks[*].new_cluster.azure_attributes.first_on_demand	int	ALL
 resources.job_runs.*.job_settings.tasks[*].new_cluster.azure_attributes.log_analytics_info	*compute.LogAnalyticsInfo	ALL
 resources.job_runs.*.job_settings.tasks[*].new_cluster.azure_attributes.log_analytics_info.log_analytics_primary_key	string	ALL
