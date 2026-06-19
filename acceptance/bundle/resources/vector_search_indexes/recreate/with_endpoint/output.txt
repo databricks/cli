@@ -71,6 +71,7 @@ Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged
           ],
           "schema_json": "{\"id\":\"int\",\"vector\":\"array\u003cfloat\u003e\"}"
         },
+        "endpoint_id": "[UUID]",
         "endpoint_name": "vs-endpoint-[UNIQUE_NAME]",
         "endpoint_uuid": "[UUID]",
         "index_subtype": "HYBRID",
