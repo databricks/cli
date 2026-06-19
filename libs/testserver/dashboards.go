@@ -65,6 +65,11 @@ func transformSerializedDashboard(serializedDashboard, datasetCatalog, datasetSc
 	}
 
 	if !mutated {
+		// Cloud terminates the stored dashboard with a trailing newline even
+		// when it otherwise preserves the caller's formatting verbatim.
+		if !strings.HasSuffix(serializedDashboard, "\n") {
+			return serializedDashboard + "\n"
+		}
 		return serializedDashboard
 	}
 
