@@ -64,22 +64,22 @@ func transformSerializedDashboard(serializedDashboard, datasetCatalog, datasetSc
 		}
 	}
 
-	if !mutated {
-		// Cloud terminates the stored dashboard with a trailing newline even
-		// when it otherwise preserves the caller's formatting verbatim.
-		if !strings.HasSuffix(serializedDashboard, "\n") {
-			return serializedDashboard + "\n"
+	// Without mutations cloud preserves the caller's formatting verbatim;
+	// otherwise it re-marshals the content.
+	result := serializedDashboard
+	if mutated {
+		updatedContent, err := json.Marshal(dashboardContent)
+		if err != nil {
+			return serializedDashboard
 		}
-		return serializedDashboard
+		result = string(updatedContent)
 	}
 
-	updatedContent, err := json.Marshal(dashboardContent)
-	if err != nil {
-		return serializedDashboard
+	// Cloud always terminates the stored dashboard with a single trailing newline.
+	if !strings.HasSuffix(result, "\n") {
+		result += "\n"
 	}
-
-	// Add a newline to the end of the serialized dashboard.
-	return string(updatedContent) + "\n"
+	return result
 }
 
 func (s *FakeWorkspace) DashboardCreate(req Request) Response {
