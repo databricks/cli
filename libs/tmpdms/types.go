@@ -145,10 +145,11 @@ type GitInfo struct {
 // version. It mirrors the WorkspaceInfo proto message in the deployment
 // metadata service and carries the same values the CLI writes to metadata.json.
 type WorkspaceInfo struct {
-	RootPath      string `json:"root_path,omitempty"`
-	FilePath      string `json:"file_path,omitempty"`
-	SourceLinked  bool   `json:"source_linked,omitempty"`
-	GitFolderPath string `json:"git_folder_path,omitempty"`
+	RootPath       string `json:"root_path,omitempty"`
+	FilePath       string `json:"file_path,omitempty"`
+	SourceLinked   bool   `json:"source_linked,omitempty"`
+	GitFolderPath  string `json:"git_folder_path,omitempty"`
+	BundleRootPath string `json:"bundle_root_path,omitempty"`
 }
 
 type Operation struct {

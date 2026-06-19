@@ -90,6 +90,7 @@ func TestWorkspaceInfo(t *testing.T) {
 	assert.Equal(t, "/Workspace/Users/me@databricks.com/.bundle/my-bundle/prod/files", info.FilePath)
 	assert.False(t, info.SourceLinked)
 	assert.Empty(t, info.GitFolderPath)
+	assert.Empty(t, info.BundleRootPath)
 }
 
 func TestWorkspaceInfoSourceLinked(t *testing.T) {
@@ -122,10 +123,11 @@ func TestWorkspaceInfoGitFolderPath(t *testing.T) {
 	}
 	gitFolderPath := "/Workspace/Users/me@databricks.com/git_folder"
 	b := &bundle.Bundle{
-		Config:       config.Root{},
 		WorktreeRoot: vfs.MustNew(gitFolderPath),
 	}
+	b.Config.Bundle.Git.BundleRootPath = "subdir/bundle"
 
 	info := workspaceInfo(b)
 	assert.Equal(t, gitFolderPath, info.GitFolderPath)
+	assert.Equal(t, "subdir/bundle", info.BundleRootPath)
 }

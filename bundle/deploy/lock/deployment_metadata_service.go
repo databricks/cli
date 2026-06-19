@@ -379,6 +379,10 @@ func workspaceInfo(b *bundle.Bundle) *tmpdms.WorkspaceInfo {
 	// folder; it stays empty for local deploys.
 	if b.WorktreeRoot != nil && strings.HasPrefix(b.WorktreeRoot.Native(), "/Workspace/") {
 		info.GitFolderPath = b.WorktreeRoot.Native()
+		// BundleRootPath defaults to "." (filepath.Rel returns "." when the
+		// bundle root equals the worktree root), so it is only meaningful for
+		// workspace Git-folder deploys and is recorded alongside git_folder_path.
+		info.BundleRootPath = b.Config.Bundle.Git.BundleRootPath
 	}
 	return info
 }
