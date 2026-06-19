@@ -32,7 +32,7 @@ Resources:
   Job Runs:
     my_run:
       Name: 
-      URL:  (not deployed)
+      URL:  [DATABRICKS_URL]/jobs/[NUMID]/runs/[NUMID]?w=[NUMID]
   Jobs:
     my_job:
       Name: my-job

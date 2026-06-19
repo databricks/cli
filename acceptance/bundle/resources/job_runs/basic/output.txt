@@ -56,7 +56,7 @@ Resources:
   Job Runs:
     my_run:
       Name: 
-      URL:  (not deployed)
+      URL:  [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID]?w=[NUMID]
   Jobs:
     my_job:
       Name: my-job

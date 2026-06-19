@@ -125,8 +125,9 @@ func TestBundleResourcePluralNamesResolveInWorkspaceURLs(t *testing.T) {
 	// Resources that intentionally have no workspace URL.
 	noURL := map[string]bool{
 		"external_locations": true,
-		// A job run has no stable workspace URL yet; surfacing one is deferred
-		// to a later milestone (see JobRun.InitializeURL).
+		// A job run does have a workspace URL, but it's addressed by two IDs
+		// (job + run) so it can't be expressed as a single-ID pattern here; it's
+		// built in JobRun.InitializeURL via workspaceurls.JobRunURL instead.
 		"job_runs":           true,
 		"postgres_branches":  true,
 		"postgres_databases": true,

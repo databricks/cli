@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -73,7 +74,13 @@ func (r *JobRun) GetURL() string {
 	return r.URL
 }
 
-// InitializeURL is a no-op for now: surfacing a stable run URL is deferred to a
-// later milestone.
-func (r *JobRun) InitializeURL(_ url.URL) {
+// InitializeURL sets the run's workspace URL once both IDs that address it are
+// known. Before deploy neither is populated: the run id is backfilled from
+// state and the job id may still be an unresolved ${resources.jobs.*.id}
+// reference, so we skip rather than emit a broken jobs/0 URL.
+func (r *JobRun) InitializeURL(baseURL url.URL) {
+	if r.ID == "" || r.JobId == 0 {
+		return
+	}
+	r.URL = workspaceurls.JobRunURL(baseURL, strconv.FormatInt(r.JobId, 10), r.ID)
 }

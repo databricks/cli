@@ -131,6 +131,16 @@ func StateToBundle(ctx context.Context, state ExportedResourcesMap, config *conf
 				if err != nil {
 					return dyn.InvalidValue, err
 				}
+
+				// A run's job_id in config is a ${resources.jobs.*.id} reference
+				// that is only resolved at deploy, so at read time it is 0.
+				// Restore the deployed value so the run URL can be built.
+				if groupName == "job_runs" && attrs.JobID != 0 {
+					v, err = dyn.SetByPath(v, dyn.Path{dyn.Key("resources"), dyn.Key(groupName), dyn.Key(resourceName), dyn.Key("job_id")}, dyn.V(attrs.JobID))
+					if err != nil {
+						return dyn.InvalidValue, err
+					}
+				}
 			}
 		}
 
