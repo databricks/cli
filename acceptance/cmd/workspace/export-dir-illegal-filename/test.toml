@@ -1,28 +1,15 @@
 Local = true
 Cloud = false
 
-# This reproduces databricks/cli#5171, which only manifests on Windows: a ':' in
-# the notebook name is a legal filename character on Linux/macOS but illegal on
-# Windows, so os.Create rejects the local target path there.
-[GOOS]
-darwin = false
-linux = false
-windows = true
+# This reproduces databricks/cli#5171. The notebook name contains a ':', which is
+# a legal filename character on Linux/macOS but illegal on Windows. The export is
+# therefore skipped with a warning on Windows and succeeds elsewhere, so the test
+# runs on every OS and captures the divergent output in out.<goos>.txt.
+
+# output.txt only holds an OS-independent header; the captured output lives in
+# out.<goos>.txt. The exported notebook lands under the temp dir on Linux/macOS;
+# it is not part of the comparison, only the captured output is.
+Ignore = ["export/"]
 
 [Env]
 MSYS_NO_PATHCONV = "1"
-
-[[Server]]
-Pattern = "GET /api/2.0/workspace/list"
-Response.Body = '''
-{
-  "objects": [
-    {
-      "path": "/test-dir/New Notebook 2026-05-04 13:54:24",
-      "object_type": "NOTEBOOK",
-      "language": "PYTHON",
-      "object_id": 123
-    }
-  ]
-}
-'''
