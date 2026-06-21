@@ -271,8 +271,9 @@ resources:
 
   registered_models:
     ignore_remote_changes:
-      # Output-only timestamp/user fields zeroed in RemapState but still show up
-      # via ForceSendFields. These should never participate in diffs.
+      # Output-only timestamp/user fields populated by the backend on read.
+      # The user never sets them, so remote-only differences are ignored here
+      # rather than zeroed in RemapState.
       - field: created_at
         reason: output_only
       - field: created_by
