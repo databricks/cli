@@ -16,6 +16,7 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/filer"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/notebook"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
@@ -126,13 +127,17 @@ func (opts *exportDirOptions) callback(ctx context.Context, workspaceFiler filer
 		f, err := os.Create(targetPath)
 		if err != nil {
 			// A workspace name can be illegal as a local filename (e.g. a ':'
-			// in "New Notebook 2026-05-04 13:54:24" on Windows). Skip those with
-			// a warning rather than aborting the whole export (#5171).
-			if isInvalidLocalNameError(err) {
-				cmdio.LogString(ctx, sourcePath+" (skipped; invalid name for local file system)")
-				return nil
+			// in "New Notebook 2026-05-04 13:54:24" on Windows). Rename it to a
+			// legal name with a warning rather than aborting the export (#5171).
+			if !isInvalidLocalNameError(err) {
+				return err
 			}
-			return err
+			targetPath = filepath.Join(filepath.Dir(targetPath), sanitizeLocalName(filepath.Base(targetPath)))
+			log.Warnf(ctx, "%s: name is not valid for the local file system, exporting as %q", sourcePath, filepath.Base(targetPath))
+			f, err = os.Create(targetPath)
+			if err != nil {
+				return err
+			}
 		}
 		defer f.Close()
 

@@ -4,6 +4,7 @@ package workspace
 
 import (
 	"errors"
+	"strings"
 	"syscall"
 )
 
@@ -18,4 +19,20 @@ const errorInvalidName = syscall.Errno(0x7b)
 // not be written because its name is not a legal filename on the local OS.
 func isInvalidLocalNameError(err error) bool {
 	return errors.Is(err, errorInvalidName)
+}
+
+// reservedNameChars are the characters that are illegal in a Windows filename.
+// https://learn.microsoft.com/en-us/windows/win32/fileio/naming-a-file
+const reservedNameChars = `<>:"/\|?*`
+
+// sanitizeLocalName replaces characters that are illegal in a Windows filename
+// (the reserved set plus ASCII control characters) with '_' so an object whose
+// name is invalid locally can still be written under a legal name.
+func sanitizeLocalName(name string) string {
+	return strings.Map(func(r rune) rune {
+		if r < 0x20 || strings.ContainsRune(reservedNameChars, r) {
+			return '_'
+		}
+		return r
+	}, name)
 }

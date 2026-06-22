@@ -54,3 +54,38 @@ func TestIsInvalidLocalNameError(t *testing.T) {
 		})
 	}
 }
+
+func TestSanitizeLocalName(t *testing.T) {
+	tests := []struct {
+		name string
+		in   string
+		want string
+	}{
+		{
+			name: "colons replaced",
+			in:   "New Notebook 2026-05-04 13:54:24.py",
+			want: "New Notebook 2026-05-04 13_54_24.py",
+		},
+		{
+			name: "all reserved characters replaced",
+			in:   `a<b>c:d"e|f?g*h`,
+			want: "a_b_c_d_e_f_g_h",
+		},
+		{
+			name: "control character replaced",
+			in:   "a\tb",
+			want: "a_b",
+		},
+		{
+			name: "legal name unchanged",
+			in:   "hello world.py",
+			want: "hello world.py",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, sanitizeLocalName(tt.in))
+		})
+	}
+}
