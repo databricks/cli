@@ -18,9 +18,9 @@ type ComputeClient interface {
 
 // TargetFlags holds the mutually-exclusive compute target flags from the CLI.
 type TargetFlags struct {
-	Cluster   string
+	Cluster    string
 	Serverless string
-	Job       string
+	Job        string
 }
 
 // BundleTarget is the three-state result of reading the bundle's configured
