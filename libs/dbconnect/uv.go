@@ -24,6 +24,12 @@ func newUvManager() *uvManager {
 	return &uvManager{}
 }
 
+// NewUvManager returns a PackageManager backed by the uv tool.
+// This is the exported constructor for use outside this package.
+func NewUvManager() PackageManager {
+	return newUvManager()
+}
+
 // Name returns "uv".
 func (m *uvManager) Name() string {
 	return "uv"
