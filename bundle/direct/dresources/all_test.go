@@ -936,6 +936,10 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	require.NoError(t, err)
 	require.NotNil(t, remote)
 
+	// RemoteType is included verbatim in the JSON plan's "remote_state" field,
+	// so it must survive a JSON round-trip without losing fields.
+	assertJSONRoundTrip(t, reflect.ValueOf(remote).Elem().Interface(), "RemoteType "+group)
+
 	remappedState, err := adapter.RemapState(remote)
 	require.NoError(t, err)
 	require.NotNil(t, remappedState)
