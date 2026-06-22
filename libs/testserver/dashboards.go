@@ -32,11 +32,7 @@ func transformSerializedDashboard(serializedDashboard, datasetCatalog, datasetSc
 		return serializedDashboard
 	}
 
-	// The real backend stores the serialized dashboard verbatim unless it
-	// modifies the content (the mutations below), in which case it re-serializes
-	// it. The one exception is an empty object, which it canonicalizes from
-	// "{ }" to "{}" (verified against cloud). Track whether we mutate so we can
-	// pick the right behavior.
+	// Track whether we modify the parsed content below.
 	mutated := false
 
 	// Add pageType to each page in the pages array (as of June 2025, this is an undocumented Lakeview API behaviour)
@@ -65,20 +61,17 @@ func transformSerializedDashboard(serializedDashboard, datasetCatalog, datasetSc
 		}
 	}
 
-	// Re-marshal when we mutated the parsed content; canonicalize an empty
-	// object to "{}"; otherwise preserve the caller's input verbatim.
-	var result string
-	switch {
-	case mutated:
+	// Cloud returns the serialized dashboard verbatim, except it re-serializes
+	// the content when it injects the fields above and canonicalizes an empty
+	// object to "{}" (both verified against cloud). Marshaling the parsed content
+	// covers both: a mutated object re-serializes and an empty object yields "{}".
+	result := serializedDashboard
+	if mutated || len(dashboardContent) == 0 {
 		updatedContent, err := json.Marshal(dashboardContent)
 		if err != nil {
 			return serializedDashboard
 		}
 		result = string(updatedContent)
-	case len(dashboardContent) == 0:
-		result = "{}"
-	default:
-		result = serializedDashboard
 	}
 
 	// Cloud always terminates the stored dashboard with a single trailing newline.
