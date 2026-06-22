@@ -22,10 +22,10 @@ func New() *cobra.Command {
 		Use:   "entity-tag-assignments",
 		Short: `Tags are attributes that include keys and optional values that you can use to organize and categorize entities in Unity Catalog.`,
 		Long: `Tags are attributes that include keys and optional values that you can use to
-  organize and categorize entities in Unity Catalog. Entity tagging is currently
-  supported on catalogs, schemas, tables (including views), columns, volumes.
-  With these APIs, users can create, update, delete, and list tag assignments
-  across Unity Catalog entities`,
+  organize and categorize entities in Unity Catalog. Entity tagging is supported
+  on catalogs, schemas, tables (including views), columns, and volumes. With
+  these APIs, you can create, update, delete, and list tag assignments across
+  Unity Catalog entities.`,
 		GroupID: "catalog",
 		RunE:    root.ReportUnknownSubcommand,
 	}

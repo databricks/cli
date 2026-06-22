@@ -3,7 +3,7 @@ package bundle
 import (
 	"strings"
 
-	workspacebundle "github.com/databricks/cli/cmd/workspace/bundle"
+	workspacebundle "github.com/databricks/cli/cmd/workspace/bundle-deployments"
 	"github.com/spf13/cobra"
 )
 

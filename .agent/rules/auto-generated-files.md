@@ -14,8 +14,6 @@ globs:
   - "internal/genkit/tagging.py"
   - "internal/mocks/**/*.go"
   - "bundle/direct/dresources/*.generated.yml"
-  - "bundle/docsgen/output/**/*.md"
-  - "bundle/internal/schema/annotations_openapi.yml"
   - "bundle/internal/validation/generated/*.go"
   - "bundle/schema/jsonschema.json"
   - "bundle/schema/jsonschema_for_docs.json"
@@ -36,8 +34,6 @@ paths:
   - "internal/genkit/tagging.py"
   - "internal/mocks/**/*.go"
   - "bundle/direct/dresources/*.generated.yml"
-  - "bundle/docsgen/output/**/*.md"
-  - "bundle/internal/schema/annotations_openapi.yml"
   - "bundle/internal/validation/generated/*.go"
   - "bundle/schema/jsonschema.json"
   - "bundle/schema/jsonschema_for_docs.json"
@@ -74,9 +70,7 @@ Files matching this rule's glob pattern are most likely generated artifacts. Aut
 - Bundle schemas:
   - `./task generate-schema`
   - `./task generate-schema-docs`
-  - This can also refresh `bundle/internal/schema/annotations_openapi.yml` when OpenAPI annotation extraction is enabled.
-- Bundle docs:
-  - `./task generate-docs`
+  - Both rewrite `bundle/internal/schema/annotations.yml` in place: upstream docs are sourced from `.codegen/cli.json` at generation time, and the file is synced with the config structure (placeholders added, stale entries dropped).
 - Validation generated code:
   - `./task generate-validation`
 - Mock files:

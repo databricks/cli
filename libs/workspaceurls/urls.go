@@ -67,6 +67,20 @@ func ResourceTypes() []string {
 	return names
 }
 
+// JobRunPath returns the modern workspace path for a job run, of the form
+//
+//	jobs/<jobID>/runs/<runID>
+//
+// Callers join this onto a workspace base URL. It exists because the Jobs API
+// returns a legacy fragment URL (#job/<jobID>/run/<runID>) that relies on
+// client-side redirection that only resolves for workspace admins; non-admin
+// users with CAN_VIEW are sent to the workspace homepage instead. The modern
+// path form resolves for any user permitted to view the run.
+// See https://github.com/databricks/cli/issues/5142.
+func JobRunPath(jobID, runID string) string {
+	return fmt.Sprintf("jobs/%s/runs/%s", jobID, runID)
+}
+
 // ResourceURL constructs a workspace URL for a named resource type and ID.
 func ResourceURL(baseURL url.URL, resourceType, id string) string {
 	resourceType = resolveAlias(resourceType)
