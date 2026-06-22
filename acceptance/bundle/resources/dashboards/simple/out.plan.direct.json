@@ -16,7 +16,7 @@
         "parent_path": "/Workspace/Users/[USERNAME]",
         "path": "/Users/[USERNAME]/test bundle-deploy-dashboard [UUID].lvdash.json",
         "published": true,
-        "serialized_dashboard": "{ }\n",
+        "serialized_dashboard": "{}\n",
         "update_time": "[TIMESTAMP]",
         "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
       },
@@ -26,6 +26,13 @@
           "reason": "custom",
           "old": "[ETAG]",
           "remote": "[ETAG]"
+        },
+        "serialized_dashboard": {
+          "action": "skip",
+          "reason": "etag_based",
+          "old": "{ }\n",
+          "new": "{ }\n",
+          "remote": "{}\n"
         }
       }
     }
