@@ -1633,38 +1633,18 @@ type pathFilter struct {
 	// contains substrings from the variants other than current.
 	// E.g. if EnvVaryOutput is DATABRICKS_BUNDLE_ENGINE and current test running DATABRICKS_BUNDLE_ENGINE="terraform" then
 	// notSelected contains ".direct." meaning if filename contains that (e.g. out.deploy.direct.txt) then we ignore it here.
-	// It also contains the infixes of every GOOS other than runtime.GOOS, so out.<goos>.txt files for other OSes are ignored.
 	notSelected []string
 }
 
-// osVariants are the GOOS values that can tag an output file (e.g.
-// out.windows.txt). Files tagged with an OS other than runtime.GOOS are skipped
-// during comparison, so a single test can capture per-OS output differences
-// (see cmd/workspace/export-dir-illegal-filename, databricks/cli#5171).
-var osVariants = []string{"darwin", "linux", "windows"}
-
-// preparePathFilter builds filter based on the current GOOS and EnvVaryOutput.
+// preparePathFilter builds filter based on EnvVaryOutput and current variant env.
 func preparePathFilter(config internal.TestConfig, customEnv []string) pathFilter {
-	var notSelected []string
-	for _, goos := range osVariants {
-		if goos != runtime.GOOS {
-			notSelected = append(notSelected, "."+goos+".")
-		}
-	}
-	notSelected = append(notSelected, envVaryNotSelected(config, customEnv)...)
-	return pathFilter{notSelected: notSelected}
-}
-
-// envVaryNotSelected returns the infixes of EnvVaryOutput variants other than
-// the one selected for the current test run.
-func envVaryNotSelected(config internal.TestConfig, customEnv []string) []string {
 	if config.EnvVaryOutput == nil {
-		return nil
+		return pathFilter{}
 	}
 	key := *config.EnvVaryOutput
 	vals := config.EnvMatrix[key]
 	if len(vals) <= 1 {
-		return nil
+		return pathFilter{}
 	}
 	selected := ""
 	for _, kv := range customEnv {
@@ -1675,7 +1655,7 @@ func envVaryNotSelected(config internal.TestConfig, customEnv []string) []string
 		}
 	}
 	if selected == "" {
-		return nil
+		return pathFilter{}
 	}
 	var others []string
 	for _, v := range vals {
@@ -1684,7 +1664,9 @@ func envVaryNotSelected(config internal.TestConfig, customEnv []string) []string
 		}
 		others = append(others, "."+v+".")
 	}
-	return others
+	return pathFilter{
+		notSelected: others,
+	}
 }
 
 // shouldSkip returns true if the given file belongs to a non-selected variant.

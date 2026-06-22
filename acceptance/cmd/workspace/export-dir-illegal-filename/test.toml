@@ -1,14 +1,13 @@
 Local = true
 Cloud = false
 
-# This reproduces databricks/cli#5171. The notebook name contains a ':', which is
-# a legal filename character on Linux/macOS but illegal on Windows. The export is
-# therefore skipped with a warning on Windows and succeeds elsewhere, so the test
-# runs on every OS and captures the divergent output in out.<goos>.txt.
+# This reproduces databricks/cli#5171. The behaviour is OS-specific (see _script),
+# so the actual test cases live in the posix/ and windows/ leaf directories, each
+# GOOS-gated with its own golden. This directory only holds the shared _script,
+# the notebook fixture, and the config they inherit.
 
-# output.txt only holds an OS-independent header; the captured output lives in
-# out.<goos>.txt. The exported notebook lands under the temp dir on Linux/macOS;
-# it is not part of the comparison, only the captured output is.
+# The exported notebook lands under $TEST_TMP_DIR/export and is not part of the
+# comparison; only the captured command output is.
 Ignore = ["export/"]
 
 [Env]

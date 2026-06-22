@@ -1,2 +1,0 @@
-
-=== export-dir output is OS-specific; see out.<goos>.txt

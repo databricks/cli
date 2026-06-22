@@ -1,0 +1,4 @@
+# The ':' in the notebook name is illegal as a local Windows filename, so
+# export-dir skips it with a warning. Linux/macOS are covered by ../posix.
+GOOS.linux = false
+GOOS.darwin = false

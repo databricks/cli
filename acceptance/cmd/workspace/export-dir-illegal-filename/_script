@@ -1,0 +1,9 @@
+# Shared by the posix/ and windows/ leaf tests, which differ only in their GOOS
+# gate and golden output. The notebook name contains ':', which is a legal local
+# filename character on Linux/macOS but illegal on Windows, so export-dir skips it
+# with a warning on Windows and exports it normally elsewhere (databricks/cli#5171).
+$CLI workspace import "/test-dir/New Notebook 2026-05-04 13:54:24.py" --file "$TESTDIR/../notebook.py" --format AUTO --language PYTHON
+
+mkdir -p "$TEST_TMP_DIR/export"
+
+trace $CLI workspace export-dir /test-dir "$TEST_TMP_DIR/export"
