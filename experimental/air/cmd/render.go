@@ -125,6 +125,19 @@ func renderRunText(ctx context.Context, out io.Writer, w *databricks.WorkspaceCl
 	// A single write: a blank line before the first box and after the last, and
 	// one between each box.
 	fmt.Fprintf(out, "\n%s\n\n", strings.Join(sections, "\n\n"))
+
+	// Bare-URL footer so the job run / MLflow links remain reachable when
+	// stdout is not a hyperlink-capable terminal (piped, redirected, NO_COLOR).
+	// In that case the OSC 8 hyperlinks on the Run ID / MLflow Run cells
+	// degrade to plain labels and the URLs would otherwise disappear from text
+	// output, breaking workflows like `air get run X > out.txt` or
+	// `NO_COLOR=1 air get run X` that the previous `Job Link:` line supported.
+	if view.dashboardURL != "" {
+		fmt.Fprintf(out, "Run URL:    %s\n", view.dashboardURL)
+	}
+	if view.mlflowURL != "" {
+		fmt.Fprintf(out, "MLflow URL: %s\n", view.mlflowURL)
+	}
 }
 
 // genAIComputeTask returns the run's first GenAI-compute task, or nil.
