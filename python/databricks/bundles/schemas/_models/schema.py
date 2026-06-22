@@ -39,6 +39,11 @@ class Schema(Resource):
     User-provided free-form text description.
     """
 
+    custom_max_retention_hours: VariableOrOptional[int] = None
+    """
+    [Public Preview] Custom maximum retention period in hours for the schema.
+    """
+
     grants: VariableOrList[PrivilegeAssignment] = field(default_factory=list)
 
     lifecycle: VariableOrOptional[Lifecycle] = None
@@ -47,6 +52,9 @@ class Schema(Resource):
     """
 
     properties: VariableOrDict[str] = field(default_factory=dict)
+    """
+    A map of key-value properties attached to the securable.
+    """
 
     storage_root: VariableOrOptional[str] = None
     """
@@ -79,6 +87,11 @@ class SchemaDict(TypedDict, total=False):
     User-provided free-form text description.
     """
 
+    custom_max_retention_hours: VariableOrOptional[int]
+    """
+    [Public Preview] Custom maximum retention period in hours for the schema.
+    """
+
     grants: VariableOrList[PrivilegeAssignmentParam]
 
     lifecycle: VariableOrOptional[LifecycleParam]
@@ -87,6 +100,9 @@ class SchemaDict(TypedDict, total=False):
     """
 
     properties: VariableOrDict[str]
+    """
+    A map of key-value properties attached to the securable.
+    """
 
     storage_root: VariableOrOptional[str]
     """

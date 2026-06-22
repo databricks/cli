@@ -24,7 +24,7 @@ Each field with special plan/deploy behavior must be declared in `resources.yml`
    - `managed` — managed by the cloud provider or platform, not by the user config
  - **`ignore_local_changes`**: Ignore changes the user makes to this field. Use for fields that cannot be updated via API — either they are immutable after creation or require a separate API that is not yet implemented. Must have a comment in resources.yml explaining why.
  - **`recreate_on_changes`**: Changing this field requires delete + create. Use for truly immutable fields (name, type, location). The reason should reference API docs or TF provider.
- - **`update_id_on_changes`**: Changing this field changes the resource's ID. Requires `DoUpdateWithID` to be implemented.
+ - **`updatable_id_fields`**: Changing this field changes the resource's ID. Requires `DoUpdateWithID` to be implemented.
 
 ## Update mask
 

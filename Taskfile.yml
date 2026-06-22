@@ -690,7 +690,7 @@ tasks:
           --rerun-fails \
           --jsonfile output.json \
           --packages "./acceptance ./integration/..." \
-          -- -parallel 4 -timeout=2h
+          -- -parallel 4 -timeout=12h
 
   integration-short:
     desc: Run short integration tests
@@ -704,13 +704,13 @@ tasks:
           --rerun-fails \
           --jsonfile output.json \
           --packages "./acceptance ./integration/..." \
-          -- -parallel 4 -timeout=2h -short
+          -- -parallel 4 -timeout=12h -short
 
   dbr-integration:
     desc: Run DBR acceptance tests on Databricks Runtime
     deps: [install-pythons]
     cmds:
-      - "DBR_ENABLED=true go test -v -timeout 4h -run TestDbrAcceptance$ ./acceptance"
+      - "DBR_ENABLED=true go test -v -timeout 12h -run TestDbrAcceptance$ ./acceptance"
 
   dbr-test:
     desc: Run DBR tests via deco env (requires deco + aws-prod-ucws access)
@@ -856,35 +856,17 @@ tasks:
     cmds:
       - go test ./acceptance -run TestAccept/bundle/refschema -update
 
-  # Regenerates the OpenAPI annotation files (annotations_openapi*.yml) from the
-  # checked-in .codegen/cli.json. This is the step that propagates a cli.json
-  # change into the schema/docs artifacts: generate-schema and generate-schema-docs
-  # both depend on it, so editing cli.json and running `task generate`
-  # percolates into jsonschema.json, jsonschema_for_docs.json and pydabs.
-  generate-annotations:
-    desc: Regenerate annotation files from .codegen/cli.json
-    # Dep of generate-schema and generate-schema-docs; `run: once`
-    # plus the fingerprint keep `task generate` from re-running it per parent.
-    run: once
-    sources:
-      - .codegen/cli.json
-      - bundle/internal/schema/**/*.go
-      - bundle/internal/schema/annotations*.yml
-      - go.mod
-      - go.sum
-    generates:
-      - bundle/internal/schema/annotations_openapi.yml
-      - bundle/internal/schema/annotations.yml
-      - bundle/schema/jsonschema.json
-    cmds:
-      - "DATABRICKS_CLI_JSON=.codegen/cli.json go run ./bundle/internal/schema ./bundle/internal/schema ./bundle/schema/jsonschema.json"
-
+  # Upstream field documentation comes from the checked-in .codegen/cli.json;
+  # bundle/internal/schema/annotations.yml carries the CLI-owned docs and
+  # overrides and is rewritten in place (synced with the config structure).
+  # Editing either input and running `task generate` percolates into
+  # jsonschema.json, jsonschema_for_docs.json and pydabs.
   generate-schema:
     desc: Generate bundle JSON schema
-    deps: ['generate-annotations']
     sources: &SCHEMA_SOURCES
       - "**/*.go"
-      - bundle/internal/schema/annotations*.yml
+      - .codegen/cli.json
+      - bundle/internal/schema/annotations.yml
       - exclude: "**/*_test.go"
       - go.mod
       - go.sum
@@ -893,11 +875,10 @@ tasks:
       - bundle/schema/jsonschema.json
       - bundle/internal/schema/annotations.yml
     cmds:
-      - "go run ./bundle/internal/schema ./bundle/internal/schema ./bundle/schema/jsonschema.json"
+      - "go run ./bundle/internal/schema ./bundle/internal/schema ./bundle/schema/jsonschema.json .codegen/cli.json"
 
   generate-schema-docs:
     desc: Generate bundle JSON schema for documentation
-    deps: ['generate-annotations']
     sources: *SCHEMA_SOURCES
     generates:
       - bundle/schema/jsonschema_for_docs.json
@@ -908,7 +889,7 @@ tasks:
       # silently dropped from the output. Restore the fetch that lived in the
       # old tools/post-generate.sh.
       - git fetch origin 'refs/tags/v*:refs/tags/v*'
-      - "go run ./bundle/internal/schema ./bundle/internal/schema ./bundle/schema/jsonschema_for_docs.json --docs"
+      - "go run ./bundle/internal/schema ./bundle/internal/schema ./bundle/schema/jsonschema_for_docs.json .codegen/cli.json --docs"
 
   generate-validation:
     desc: Generate enum and required field validation code

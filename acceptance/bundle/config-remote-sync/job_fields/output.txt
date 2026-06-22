@@ -86,6 +86,28 @@ Resource: resources.jobs.my_job
 
  targets:
 
+=== Telemetry
+
+>>> cat out.requests.txt
+{
+  "save": true,
+  "changes_total": 12,
+  "add_count": 6,
+  "replace_count": 4,
+  "remove_count": 2,
+  "resource_changes": [
+    {
+      "resource_type": "jobs",
+      "changes_count": 12,
+      "add_count": 6,
+      "replace_count": 4,
+      "remove_count": 2
+    }
+  ],
+  "files_changed_count": 1,
+  "files_written_count": 1
+}
+
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.jobs.my_job

@@ -1,0 +1,32 @@
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Modify the dashboard out of band to bump its remote etag
+{
+  "lifecycle_state": "ACTIVE"
+}
+
+=== Detect changes: etag drift must not be reported
+
+>>> [CLI] bundle config-remote-sync
+No changes detected.
+
+
+=== Save changes: config must not be modified
+
+>>> [CLI] bundle config-remote-sync --save
+No changes detected.
+
+
+>>> diff.py databricks.yml.backup databricks.yml
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.dashboards.my_dashboard
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!

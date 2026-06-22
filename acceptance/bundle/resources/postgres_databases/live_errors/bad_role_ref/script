@@ -1,0 +1,8 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+   trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+musterr $CLI bundle deploy 2>&1 | contains.py "role not found"
