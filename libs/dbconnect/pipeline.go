@@ -64,7 +64,7 @@ func (p *Pipeline) Run(ctx context.Context) (*Result, error) {
 	// Phase 2b: fill in the python version on the target info from the constraints.
 	pyMinor, err := PythonMinorFromRequires(c.RequiresPython)
 	if err != nil {
-		pe := NewError(ErrConstraintFetchFailed, err, "cannot determine python version from constraints")
+		pe := NewError(ErrValidationFailed, err, "failed to parse python version from constraints")
 		res.Error = pe
 		return res, pe
 	}
