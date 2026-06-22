@@ -6,11 +6,11 @@ import (
 	"strings"
 )
 
+var pythonVersionRe = regexp.MustCompile(`(\d+)\.(\d+)`)
+
 // EnvKeyForServerless returns the environment key for a serverless version.
 func EnvKeyForServerless(version string) string {
-	// Strip leading 'v' or 'V' and lowercase
-	normalized := strings.TrimPrefix(strings.TrimPrefix(version, "v"), "V")
-	normalized = strings.ToLower(normalized)
+	normalized := strings.TrimPrefix(strings.ToLower(version), "v")
 	return fmt.Sprintf("serverless/serverless-v%s", normalized)
 }
 
@@ -21,8 +21,7 @@ func EnvKeyForSparkVersion(sparkVersion string) string {
 
 // PythonMinorFromRequires parses a PEP 440 requires-python string and extracts MAJOR.MINOR.
 func PythonMinorFromRequires(requiresPython string) (string, error) {
-	re := regexp.MustCompile(`(\d+)\.(\d+)`)
-	match := re.FindStringSubmatch(requiresPython)
+	match := pythonVersionRe.FindStringSubmatch(requiresPython)
 	if match == nil {
 		return "", fmt.Errorf("cannot parse python version from %q", requiresPython)
 	}
