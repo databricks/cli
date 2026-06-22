@@ -55,7 +55,6 @@ tasks:
       - task: generate-refschema
       - task: generate-schema
       - task: generate-schema-map
-      - task: generate-schema-docs
       - task: generate-validation
       - task: generate-direct
       - task: pydabs-codegen
@@ -726,7 +725,7 @@ tasks:
   # can be invoked standalone.
 
   generate:
-    desc: Run all generators (cligen, tf-schema, refschema, schema, docs, validation, direct, pydabs)
+    desc: Run all generators (cligen, tf-schema, refschema, schema, validation, direct, pydabs)
     cmds:
       # Runs first: regenerates CLI command stubs from the checked-in
       # .codegen/cli.json (no universe checkout needed). Refreshing cli.json
@@ -740,7 +739,6 @@ tasks:
       # generate-direct-apitypes and generate-direct-resources below.
       - task: generate-refschema
       - task: generate-schema
-      - task: generate-schema-docs
       - task: generate-validation
       - task: generate-direct
       - task: pydabs-codegen
@@ -752,9 +750,9 @@ tasks:
   # reproducible per-PR:
   #   - generate-tf-schema downloads the Terraform provider, which no CI runner
   #     sets up; its output only changes when schema/version.go changes.
-  #   - generate-schema-docs stamps x-since-version from `git tag`, so it churns
-  #     after every release; jsonschema_for_docs.json is published separately to
-  #     the docgen branch by .github/workflows/update-schema-docs.yml.
+  # The docs schema (jsonschema_for_docs.json) is not generated here or on main
+  # at all — it is built and published to the docgen branch by
+  # .github/workflows/update-schema-docs.yml.
   # Keep this list in sync with `generate` when adding or removing generators.
   generate-check:
     desc: Run the reproducible generators (CI drift subset of `generate`)
@@ -860,7 +858,8 @@ tasks:
   # bundle/internal/schema/annotations.yml carries the CLI-owned docs and
   # overrides and is rewritten in place (synced with the config structure).
   # Editing either input and running `task generate` percolates into
-  # jsonschema.json, jsonschema_for_docs.json and pydabs.
+  # jsonschema.json and pydabs. (The docs schema is built only on release by
+  # .github/workflows/update-schema-docs.yml and published to the docgen branch.)
   generate-schema:
     desc: Generate bundle JSON schema
     sources: &SCHEMA_SOURCES
@@ -876,20 +875,6 @@ tasks:
       - bundle/internal/schema/annotations.yml
     cmds:
       - "go run ./bundle/internal/schema ./bundle/internal/schema ./bundle/schema/jsonschema.json .codegen/cli.json"
-
-  generate-schema-docs:
-    desc: Generate bundle JSON schema for documentation
-    sources: *SCHEMA_SOURCES
-    generates:
-      - bundle/schema/jsonschema_for_docs.json
-      - bundle/internal/schema/annotations.yml
-    cmds:
-      # since_version.go reads `git tag --list 'v*'` to compute sinceVersion
-      # annotations. Without tags (e.g. shallow clone), those annotations are
-      # silently dropped from the output. Restore the fetch that lived in the
-      # old tools/post-generate.sh.
-      - git fetch origin 'refs/tags/v*:refs/tags/v*'
-      - "go run ./bundle/internal/schema ./bundle/internal/schema ./bundle/schema/jsonschema_for_docs.json .codegen/cli.json --docs"
 
   generate-validation:
     desc: Generate enum and required field validation code
