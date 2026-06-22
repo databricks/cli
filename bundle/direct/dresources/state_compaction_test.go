@@ -5,9 +5,38 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// TestHashedInStateImpliesIgnoreRemoteChanges enforces the core invariant of the
+// hashed_in_state mechanism: a field stored as a content hash can only ever detect a
+// LOCAL change (saved-hash vs config-hash). Its hash never equals the full-content
+// remote value, so its remote diff is meaningless and must be discarded — i.e. the
+// field must also be ignore_remote_changes, otherwise every plan would report a
+// permanent spurious update for it. This holds for every resource, not just dashboards.
+func TestHashedInStateImpliesIgnoreRemoteChanges(t *testing.T) {
+	for _, cfg := range []*Config{MustLoadConfig(), MustLoadGeneratedConfig()} {
+		for resourceType, rc := range cfg.Resources {
+			for _, hashed := range rc.HashedInState {
+				path, err := structpath.ParsePath(hashed.Field.String())
+				require.NoError(t, err, "%s: invalid hashed_in_state field %q", resourceType, hashed.Field)
+
+				covered := false
+				for _, ignore := range rc.IgnoreRemoteChanges {
+					if path.HasPatternPrefix(ignore.Field) {
+						covered = true
+						break
+					}
+				}
+				assert.True(t, covered,
+					"%s: field %q is hashed_in_state but not ignore_remote_changes (a hashed field only detects local changes; its remote diff must be ignored)",
+					resourceType, hashed.Field)
+			}
+		}
+	}
+}
 
 func TestCompactStateNoDeclaredFields(t *testing.T) {
 	state := &DashboardState{DashboardConfig: resources.DashboardConfig{SerializedDashboard: `{"a":1}`}}

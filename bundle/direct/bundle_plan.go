@@ -271,12 +271,10 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 				return false
 			}
 
-			remoteStateComparable, err = dresources.CompactState(adapter.ResourceConfig(), remoteStateComparable)
-			if err != nil {
-				logdiag.LogError(ctx, fmt.Errorf("%s: compacting remote state id=%q: %w", errorPrefix, dbentry.ID, err))
-				return false
-			}
-
+			// remoteStateComparable is intentionally NOT compacted. Hashing only ever
+			// helps the local diff (saved vs config); a hashed_in_state field is always
+			// ignore_remote_changes, so its remote diff is discarded regardless. Leaving
+			// the remote value uncompacted keeps the real server value visible in the plan.
 			remoteDiff, err = structdiff.GetStructDiff(remoteStateComparable, localState, adapter.KeyedSlices())
 			if err != nil {
 				logdiag.LogError(ctx, fmt.Errorf("%s: diffing remote state: %w", errorPrefix, err))

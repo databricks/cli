@@ -30,9 +30,9 @@
         "serialized_dashboard": {
           "action": "skip",
           "reason": "etag_based",
-          "old": "sha256:[ALPHANUMID]",
-          "new": "sha256:[ALPHANUMID]",
-          "remote": "sha256:[ALPHANUMID]"
+          "old": "sha256:[HASH]",
+          "new": "sha256:[HASH]",
+          "remote": "{}\n"
         }
       }
     }
