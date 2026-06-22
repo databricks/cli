@@ -153,9 +153,9 @@ func OpenDeploymentState(ctx context.Context, b *bundle.Bundle, engine engine.En
 	return deployBundle, nil
 }
 
-// ChangesFromPlan converts a deploy plan into the map of remote-vs-config
-// changes. engine selects the LocalEdit comparison below.
-func ChangesFromPlan(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, engine engine.EngineType) (Changes, error) {
+// ExtractChanges extracts the map of remote-vs-config changes from a deploy
+// plan. engine selects the LocalEdit comparison below.
+func ExtractChanges(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, engine engine.EngineType) (Changes, error) {
 	changes := make(Changes)
 
 	for resourceKey, entry := range plan.Plan {
