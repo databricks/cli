@@ -184,17 +184,71 @@ func mergeToolUv(lines []string, deps []string) ([]string, bool) {
 		return out, true
 	}
 
-	// No managed block: drop any plain [tool.uv] table we may have written previously,
-	// then append a fresh managed block at EOF.
+	// No managed block: reconcile any plain [tool.uv] table, then append a fresh managed
+	// block at EOF. If the table is effectively ours (its only meaningful key is
+	// constraint-dependencies, from a pre-marker run), drop it whole. Otherwise the table
+	// holds user-authored keys, so we preserve it and strip only our constraint-dependencies.
 	if header, end, ok := tableBounds(lines, "[tool.uv]"); ok {
-		out := make([]string, 0, len(lines))
-		out = append(out, lines[:header]...)
-		out = append(out, lines[end:]...)
-		lines = out
+		if toolUvHasOnlyConstraintDeps(lines, header, end) {
+			out := make([]string, 0, len(lines))
+			out = append(out, lines[:header]...)
+			out = append(out, lines[end:]...)
+			lines = out
+		} else {
+			lines = removeConstraintDeps(lines, header, end)
+		}
 	}
 
 	lines = appendManagedBlock(lines, block)
 	return lines, true
+}
+
+// constraintDepsRe matches the start of a constraint-dependencies assignment within a
+// [tool.uv] table, capturing its leading whitespace.
+var constraintDepsRe = regexp.MustCompile(`^\s*constraint-dependencies\s*=`)
+
+// toolUvHasOnlyConstraintDeps reports whether the [tool.uv] table body spanning
+// (header, end) contains no meaningful key other than constraint-dependencies. Blank lines
+// and comment-only lines are ignored when deciding "only".
+func toolUvHasOnlyConstraintDeps(lines []string, header, end int) bool {
+	for i := header + 1; i < end; i++ {
+		trimmed := strings.TrimSpace(lines[i])
+		if trimmed == "" || strings.HasPrefix(trimmed, "#") {
+			continue
+		}
+		if !constraintDepsRe.MatchString(lines[i]) {
+			return false
+		}
+	}
+	return true
+}
+
+// removeConstraintDeps strips a constraint-dependencies key from the [tool.uv] table body
+// spanning (header, end), leaving the table header and all other user keys in place. It
+// handles both the single-line array form and the multi-line array form (the value spans
+// several lines until a line whose trimmed content is "]").
+func removeConstraintDeps(lines []string, header, end int) []string {
+	for i := header + 1; i < end; i++ {
+		if !constraintDepsRe.MatchString(lines[i]) {
+			continue
+		}
+		last := i
+		// Multi-line array form: extend through the closing "]" line. The single-line form
+		// already contains the closing bracket, so this loop does not advance.
+		if !strings.Contains(lines[i], "]") {
+			for j := i + 1; j < end; j++ {
+				last = j
+				if strings.TrimSpace(lines[j]) == "]" {
+					break
+				}
+			}
+		}
+		out := make([]string, 0, len(lines)-(last-i+1))
+		out = append(out, lines[:i]...)
+		out = append(out, lines[last+1:]...)
+		return out
+	}
+	return lines
 }
 
 // markerBounds returns the indices of the managed marker start and end lines, if present.
