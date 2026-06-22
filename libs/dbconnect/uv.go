@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/databricks/cli/libs/env"
@@ -75,6 +76,15 @@ func (m *uvManager) Provision(ctx context.Context, projectDir string) error {
 	return nil
 }
 
+// venvPython returns the path to the virtualenv's Python interpreter,
+// accounting for the Windows (Scripts/python.exe) vs Unix (bin/python) layout.
+func venvPython(projectDir string) string {
+	if runtime.GOOS == "windows" {
+		return filepath.Join(projectDir, ".venv", "Scripts", "python.exe")
+	}
+	return filepath.Join(projectDir, ".venv", "bin", "python")
+}
+
 // PostProvision seeds pip into the project's virtual environment.
 //
 // VS Code's ms-python.vscode-python-envs extension falls back to
@@ -84,8 +94,7 @@ func (m *uvManager) Provision(ctx context.Context, projectDir string) error {
 // VS Code integration works correctly regardless of how the environment was
 // activated.
 func (m *uvManager) PostProvision(ctx context.Context, projectDir string) error {
-	venvPython := filepath.Join(projectDir, ".venv", "bin", "python")
-	args := append([]string{m.bin}, m.pipSeedArgs(venvPython)...)
+	args := append([]string{m.bin}, m.pipSeedArgs(venvPython(projectDir))...)
 	_, err := process.Background(ctx, args, process.WithDir(projectDir))
 	if err != nil {
 		return NewError(ErrProvisionFailed, err, "uv pip seed failed")
@@ -97,6 +106,8 @@ func (m *uvManager) PostProvision(ctx context.Context, projectDir string) error 
 // version from the project's virtual environment.
 func (m *uvManager) Validate(ctx context.Context, projectDir string) (string, string, error) {
 	pyCode := `import sys, importlib.metadata; print(f"{sys.version_info.major}.{sys.version_info.minor}"); print(importlib.metadata.version("databricks-connect"))`
+	// --no-project runs the interpreter from the created .venv without re-resolving/syncing
+	// the project's declared dependencies, so validation observes exactly what was installed.
 	out, err := process.Background(ctx,
 		[]string{m.bin, "run", "--no-project", "python", "-c", pyCode},
 		process.WithDir(projectDir),
