@@ -22,17 +22,17 @@
                 "type": "object",
                 "properties": {
                   "custom_description": {
-                    "description": "[Public Preview]",
+                    "description": "[Public Preview] Custom description for the alert. support mustache template.",
                     "$ref": "#/$defs/string",
                     "x-since-version": "v0.279.0"
                   },
                   "custom_summary": {
-                    "description": "[Public Preview]",
+                    "description": "[Public Preview] Custom summary for the alert. support mustache template.",
                     "$ref": "#/$defs/string",
                     "x-since-version": "v0.279.0"
                   },
                   "display_name": {
-                    "description": "[Public Preview]",
+                    "description": "[Public Preview] The display name of the alert.",
                     "$ref": "#/$defs/string",
                     "x-since-version": "v0.279.0"
                   },
@@ -50,7 +50,7 @@
                     "x-since-version": "v0.279.0"
                   },
                   "parent_path": {
-                    "description": "[Public Preview]",
+                    "description": "[Public Preview] The workspace path of the folder containing the alert. Can only be set on create, and cannot be updated.",
                     "$ref": "#/$defs/string",
                     "x-since-version": "v0.279.0"
                   },
@@ -59,17 +59,17 @@
                     "x-since-version": "v0.279.0"
                   },
                   "query_text": {
-                    "description": "[Public Preview]",
+                    "description": "[Public Preview] Text of the query to be run.",
                     "$ref": "#/$defs/string",
                     "x-since-version": "v0.279.0"
                   },
                   "run_as": {
-                    "description": "[Public Preview]",
+                    "description": "[Public Preview] Specifies the identity that will be used to run the alert.\nThis field allows you to configure alerts to run as a specific user or service principal.\n- For user identity: Set `user_name` to the email of an active workspace user. Users can only set this to their own email.\n- For service principal: Set `service_principal_name` to the application ID. Requires the `servicePrincipal/user` role.\nIf not specified, the alert will run as the request user.",
                     "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertV2RunAs",
                     "x-since-version": "v0.279.0"
                   },
                   "run_as_user_name": {
-                    "description": "[Public Preview]",
+                    "description": "[Public Preview] The run as username or application ID of service principal.\nOn Create and Update, this field can be set to application ID of an active service principal. Setting this field requires the servicePrincipal/user role.\nDeprecated: Use `run_as` field instead. This field will be removed in a future release.",
                     "$ref": "#/$defs/string",
                     "deprecationMessage": "This field is deprecated",
                     "x-since-version": "v0.279.0",
@@ -81,7 +81,7 @@
                     "x-since-version": "v0.279.0"
                   },
                   "warehouse_id": {
-                    "description": "[Public Preview]",
+                    "description": "[Public Preview] ID of the SQL warehouse attached to the alert.",
                     "$ref": "#/$defs/string",
                     "x-since-version": "v0.279.0"
                   }
@@ -104,14 +104,14 @@
                     "x-since-version": "v0.243.0"
                   },
                   "compute_max_instances": {
-                    "description": "[Private Preview]",
+                    "description": "[Private Preview] Maximum number of app instances. Must be set together with `compute_min_instances`.",
                     "$ref": "#/$defs/int",
                     "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                     "doNotSuggest": true,
                     "x-since-version": "v1.2.0"
                   },
                   "compute_min_instances": {
-                    "description": "[Private Preview]",
+                    "description": "[Private Preview] Minimum number of app instances. Must be set together with `compute_max_instances`.",
                     "$ref": "#/$defs/int",
                     "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                     "doNotSuggest": true,
@@ -255,10 +255,12 @@
                 "type": "object",
                 "properties": {
                   "comment": {
+                    "description": "User-provided free-form text description.",
                     "$ref": "#/$defs/string",
                     "x-since-version": "v0.287.0"
                   },
                   "connection_name": {
+                    "description": "The name of the connection to an external data source.",
                     "$ref": "#/$defs/string",
                     "x-since-version": "v0.287.0"
                   },
@@ -276,26 +278,32 @@
                     "x-since-version": "v0.298.0"
                   },
                   "name": {
+                    "description": "Name of catalog.",
                     "$ref": "#/$defs/string",
                     "x-since-version": "v0.287.0"
                   },
                   "options": {
+                    "description": "A map of key-value properties attached to the securable.",
                     "$ref": "#/$defs/map/string",
                     "x-since-version": "v0.287.0"
                   },
                   "properties": {
+                    "description": "A map of key-value properties attached to the securable.",
                     "$ref": "#/$defs/map/string",
                     "x-since-version": "v0.287.0"
                   },
                   "provider_name": {
+                    "description": "The name of delta sharing provider.\n\nA Delta Sharing catalog is a catalog that is based on a Delta share on a remote sharing server.",
                     "$ref": "#/$defs/string",
                     "x-since-version": "v0.287.0"
                   },
                   "share_name": {
+                    "description": "The name of the share under the share provider.",
                     "$ref": "#/$defs/string",
                     "x-since-version": "v0.287.0"
                   },
                   "storage_root": {
+                    "description": "Storage root URL for managed tables within catalog.",
                     "$ref": "#/$defs/string",
                     "x-since-version": "v0.287.0"
                   }
@@ -350,10 +358,12 @@
                     "x-since-version": "v0.229.0"
                   },
                   "data_security_mode": {
+                    "description": "Data security mode decides what data governance model to use when accessing data\nfrom a cluster.\n\n* `DATA_SECURITY_MODE_AUTO`: Databricks will choose the most appropriate access mode depending on your compute configuration.\n* `DATA_SECURITY_MODE_STANDARD`: A secure cluster that can be shared by multiple users. Cluster users are fully isolated so that they cannot see each other’s data and credentials. Most data governance features are supported in this mode. But programming languages and cluster features might be limited.\n* `DATA_SECURITY_MODE_DEDICATED`: A secure cluster that can only be exclusively used by a single user specified in `single_user_name`. Most programming languages, cluster features and data governance features are available in this mode.\n\nThe following modes are legacy aliases for the above modes:\n\n* `USER_ISOLATION`: Legacy alias for `DATA_SECURITY_MODE_STANDARD`.\n* `SINGLE_USER`: Legacy alias for `DATA_SECURITY_MODE_DEDICATED`.\n\nThe following modes are deprecated starting with Databricks Runtime 15.0 and\nwill be removed for future Databricks Runtime versions:\n\n* `LEGACY_TABLE_ACL`: This mode is for users migrating from legacy Table ACL clusters.\n* `LEGACY_PASSTHROUGH`: This mode is for users migrating from legacy Passthrough on high concurrency clusters.\n* `LEGACY_SINGLE_USER`: This mode is for users migrating from legacy Passthrough on standard clusters.\n* `LEGACY_SINGLE_USER_STANDARD`: This mode provides a way that doesn’t have UC nor passthrough enabled.",
                     "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.DataSecurityMode",
                     "x-since-version": "v0.229.0"
                   },
                   "docker_image": {
+                    "description": "Custom docker image BYOC",
                     "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.DockerImage",
                     "x-since-version": "v0.229.0"
                   },
@@ -403,6 +413,7 @@
                     "x-since-version": "v0.237.0"
                   },
                   "kind": {
+                    "description": "The kind of compute described by this compute specification.\n\nDepending on `kind`, different validations and default values will be applied.\n\nClusters with `kind = CLASSIC_PREVIEW` support the following fields, whereas clusters with no specified `kind` do not.\n* [is_single_node](/api/workspace/clusters/create#is_single_node)\n* [use_ml_runtime](/api/workspace/clusters/create#use_ml_runtime)\n\nBy using the [simple form](https://docs.databricks.com/compute/simple-form.html), your clusters are automatically using `kind = CLASSIC_PREVIEW`.",
                     "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.Kind",
                     "x-since-version": "v0.237.0"
                   },
@@ -436,6 +447,7 @@
                     "x-since-version": "v0.257.0"
                   },
                   "runtime_engine": {
+                    "description": "Determines the cluster's runtime engine, either standard or Photon.\n\nThis field is not compatible with legacy `spark_version` values that contain `-photon-`.\nRemove `-photon-` from the `spark_version` and set `runtime_engine` to `PHOTON`.\n\nIf left unspecified, the runtime engine defaults to standard unless the spark_version\ncontains -photon-, in which case Photon will be used.",
                     "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.RuntimeEngine",
                     "x-since-version": "v0.229.0"
                   },
@@ -480,6 +492,7 @@
                     "x-since-version": "v0.285.0"
                   },
                   "workload_type": {
+                    "description": "Cluster Attributes showing for clusters workload types.",
                     "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.WorkloadType",
                     "x-since-version": "v0.229.0"
                   }
@@ -705,26 +718,32 @@
                 "type": "object",
                 "properties": {
                   "comment": {
+                    "description": "User-provided free-form text description.",
                     "$ref": "#/$defs/string",
                     "x-since-version": "v0.289.0"
                   },
                   "credential_name": {
+                    "description": "Name of the storage credential used with this location.",
                     "$ref": "#/$defs/string",
                     "x-since-version": "v0.289.0"
                   },
                   "enable_file_events": {
+                    "description": "Whether to enable file events on this external location. Default to `true`. Set to `false` to disable file events.\nThe actual applied value may differ due to server-side defaults; check `effective_enable_file_events` for the effective state.",
                     "$ref": "#/$defs/bool",
                     "x-since-version": "v0.289.0"
                   },
                   "encryption_details": {
+                    "description": "Encryption options that apply to clients connecting to cloud storage.",
                     "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.EncryptionDetails",
                     "x-since-version": "v0.289.0"
                   },
                   "fallback": {
+                    "description": "Indicates whether fallback mode is enabled for this external location. When fallback mode is enabled, the access to the location falls back to cluster credentials if UC credentials are not sufficient.",
                     "$ref": "#/$defs/bool",
                     "x-since-version": "v0.289.0"
                   },
                   "file_event_queue": {
+                    "description": "File event queue settings. If `enable_file_events` is not `false`, must be defined and have exactly one of the documented properties.",
                     "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.FileEventQueue",
                     "x-since-version": "v0.289.0"
                   },
@@ -737,18 +756,22 @@
                     "x-since-version": "v0.289.0"
                   },
                   "name": {
+                    "description": "Name of the external location.",
                     "$ref": "#/$defs/string",
                     "x-since-version": "v0.289.0"
                   },
                   "read_only": {
+                    "description": "Indicates whether the external location is read-only.",
                     "$ref": "#/$defs/bool",
                     "x-since-version": "v0.289.0"
                   },
                   "skip_validation": {
+                    "description": "Skips validation of the storage credential associated with the external location.",
                     "$ref": "#/$defs/bool",
                     "x-since-version": "v0.289.0"
                   },
                   "url": {
+                    "description": "Path URL of the external location.",
                     "$ref": "#/$defs/string",
                     "x-since-version": "v0.289.0"
                   }
@@ -842,6 +865,7 @@
                     "x-since-version": "v0.229.0"
                   },
                   "health": {
+                    "description": "An optional set of health rules that can be defined for this job.",
                     "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.JobsHealthRules",
                     "x-since-version": "v0.229.0"
                   },
@@ -890,6 +914,7 @@
                     "x-since-version": "v0.229.0"
                   },
                   "run_as": {
+                    "description": "The user or service principal that the job runs as, if specified in the request.\nThis field indicates the explicit configuration of `run_as` for the job.\nTo find the value in all cases, explicit or implicit, use `run_as_user_name`.",
                     "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.JobRunAs",
                     "x-since-version": "v0.229.0"
                   },
@@ -1324,7 +1349,7 @@
                     "x-since-version": "v0.229.0"
                   },
                   "parameters": {
-                    "description": "[Beta]",
+                    "description": "[Beta] Key/value map of default parameters to use for pipeline execution.\nMaximum total size: 10k characters (JSON format)",
                     "$ref": "#/$defs/map/string",
                     "x-since-version": "v1.2.0"
                   },
@@ -1350,6 +1375,7 @@
                     "x-since-version": "v0.253.0"
                   },
                   "run_as": {
+                    "description": "Write-only setting, available only in Create/Update calls. Specifies the user or service principal that the pipeline runs as. If not specified, the pipeline runs as the user who created the pipeline.\n\nOnly `user_name` or `service_principal_name` can be specified. If both are specified, an error is thrown.",
                     "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.RunAs",
                     "x-since-version": "v0.241.0"
                   },
@@ -1505,6 +1531,31 @@
                 "required": [
                   "catalog_id",
                   "postgres_database"
+                ]
+              },
+              "resources.PostgresDatabase": {
+                "type": "object",
+                "properties": {
+                  "database_id": {
+                    "$ref": "#/$defs/string"
+                  },
+                  "lifecycle": {
+                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
+                  },
+                  "parent": {
+                    "$ref": "#/$defs/string"
+                  },
+                  "postgres_database": {
+                    "$ref": "#/$defs/string"
+                  },
+                  "role": {
+                    "$ref": "#/$defs/string"
+                  }
+                },
+                "additionalProperties": false,
+                "required": [
+                  "database_id",
+                  "parent"
                 ]
               },
               "resources.PostgresEndpoint": {
@@ -1813,10 +1864,12 @@
                 "type": "object",
                 "properties": {
                   "aliases": {
+                    "description": "List of aliases associated with the registered model",
                     "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/catalog.RegisteredModelAlias",
                     "x-since-version": "v0.273.0"
                   },
                   "browse_only": {
+                    "description": "Indicates whether the principal is limited to retrieving metadata for the associated object through the BROWSE privilege when include_browse is enabled in the request.",
                     "$ref": "#/$defs/bool",
                     "x-since-version": "v0.273.0"
                   },
@@ -1831,14 +1884,17 @@
                     "x-since-version": "v0.229.0"
                   },
                   "created_at": {
+                    "description": "Creation timestamp of the registered model in milliseconds since the Unix epoch",
                     "$ref": "#/$defs/int64",
                     "x-since-version": "v0.273.0"
                   },
                   "created_by": {
+                    "description": "The identifier of the user who created the registered model",
                     "$ref": "#/$defs/string",
                     "x-since-version": "v0.273.0"
                   },
                   "full_name": {
+                    "description": "The three-level (fully qualified) name of the registered model",
                     "$ref": "#/$defs/string",
                     "x-since-version": "v0.273.0"
                   },
@@ -1852,6 +1908,7 @@
                     "x-since-version": "v0.268.0"
                   },
                   "metastore_id": {
+                    "description": "The unique identifier of the metastore",
                     "$ref": "#/$defs/string",
                     "x-since-version": "v0.273.0"
                   },
@@ -1861,6 +1918,7 @@
                     "x-since-version": "v0.229.0"
                   },
                   "owner": {
+                    "description": "The identifier of the user who owns the registered model",
                     "$ref": "#/$defs/string",
                     "x-since-version": "v0.273.0"
                   },
@@ -1875,10 +1933,12 @@
                     "x-since-version": "v0.229.0"
                   },
                   "updated_at": {
+                    "description": "Last-update timestamp of the registered model in milliseconds since the Unix epoch",
                     "$ref": "#/$defs/int64",
                     "x-since-version": "v0.273.0"
                   },
                   "updated_by": {
+                    "description": "The identifier of the user who updated the registered model last time",
                     "$ref": "#/$defs/string",
                     "x-since-version": "v0.273.0"
                   }
@@ -1914,6 +1974,7 @@
                     "x-since-version": "v0.229.0"
                   },
                   "properties": {
+                    "description": "A map of key-value properties attached to the securable.",
                     "$ref": "#/$defs/map/string",
                     "x-since-version": "v0.229.0"
                   },
@@ -2067,6 +2128,7 @@
                     "x-since-version": "v0.260.0"
                   },
                   "spot_instance_policy": {
+                    "description": "Configurations whether the endpoint should use spot instances.",
                     "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.SpotInstancePolicy",
                     "x-since-version": "v0.260.0"
                   },
@@ -2076,6 +2138,7 @@
                     "x-since-version": "v0.260.0"
                   },
                   "warehouse_type": {
+                    "description": "Warehouse type: `PRO` or `CLASSIC`. If you want to use serverless compute,\nyou must set to `PRO` and also set the field `enable_serverless_compute` to `true`.",
                     "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.CreateWarehouseRequestWarehouseType",
                     "x-since-version": "v0.260.0"
                   }
@@ -2111,7 +2174,7 @@
                 "type": "object",
                 "properties": {
                   "database_instance_name": {
-                    "description": "[Public Preview]",
+                    "description": "[Public Preview] Name of the target database instance. This is required when creating synced database tables in standard catalogs.\nThis is optional when creating synced database tables in registered catalogs. If this field is specified\nwhen creating synced database tables in registered catalogs, the database instance name MUST\nmatch that of the registered catalog (or the request will be rejected).",
                     "$ref": "#/$defs/string",
                     "x-since-version": "v0.266.0"
                   },
@@ -2120,17 +2183,17 @@
                     "x-since-version": "v0.268.0"
                   },
                   "logical_database_name": {
-                    "description": "[Public Preview]",
+                    "description": "[Public Preview] Target Postgres database object (logical database) name for this table.\n\nWhen creating a synced table in a registered Postgres catalog, the\ntarget Postgres database name is inferred to be that of the registered catalog.\nIf this field is specified in this scenario, the Postgres database name MUST\nmatch that of the registered catalog (or the request will be rejected).\n\nWhen creating a synced table in a standard catalog, this field is required.\nIn this scenario, specifying this field will allow targeting an arbitrary postgres database.\nNote that this has implications for the `create_database_objects_is_missing` field in `spec`.",
                     "$ref": "#/$defs/string",
                     "x-since-version": "v0.266.0"
                   },
                   "name": {
-                    "description": "[Public Preview]",
+                    "description": "[Public Preview] Full three-part (catalog, schema, table) name of the table.",
                     "$ref": "#/$defs/string",
                     "x-since-version": "v0.266.0"
                   },
                   "spec": {
-                    "description": "[Public Preview]",
+                    "description": "[Public Preview] Specification of a synced database table.",
                     "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.SyncedTableSpec",
                     "x-since-version": "v0.266.0"
                   }
@@ -2144,11 +2207,12 @@
                 "type": "object",
                 "properties": {
                   "budget_policy_id": {
-                    "description": "[Public Preview]",
+                    "description": "[Public Preview] The budget policy id to be applied",
                     "$ref": "#/$defs/string",
                     "x-since-version": "v0.298.0"
                   },
                   "endpoint_type": {
+                    "description": "Type of endpoint",
                     "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/vectorsearch.EndpointType",
                     "x-since-version": "v0.298.0"
                   },
@@ -2157,6 +2221,7 @@
                     "x-since-version": "v0.298.0"
                   },
                   "name": {
+                    "description": "Name of the AI Search endpoint",
                     "$ref": "#/$defs/string",
                     "x-since-version": "v0.298.0"
                   },
@@ -2165,12 +2230,12 @@
                     "x-since-version": "v0.298.0"
                   },
                   "target_qps": {
-                    "description": "[Public Preview]",
+                    "description": "[Public Preview] Target QPS for the endpoint. Mutually exclusive with num_replicas.\nThe actual replica count is calculated at index creation/sync time based on this value.\nBest-effort target; the system does not guarantee this QPS will be achieved.",
                     "$ref": "#/$defs/int64",
                     "x-since-version": "v0.299.2"
                   },
                   "usage_policy_id": {
-                    "description": "[Private Preview]",
+                    "description": "[Private Preview] The usage policy id to be applied once we've migrated to usage policies",
                     "$ref": "#/$defs/string",
                     "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                     "doNotSuggest": true,
@@ -2187,14 +2252,17 @@
                 "type": "object",
                 "properties": {
                   "delta_sync_index_spec": {
+                    "description": "Specification for Delta Sync Index. Required if `index_type` is `DELTA_SYNC`.",
                     "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/vectorsearch.DeltaSyncVectorIndexSpecRequest",
                     "x-since-version": "v1.1.0"
                   },
                   "direct_access_index_spec": {
+                    "description": "Specification for Direct Vector Access Index. Required if `index_type` is `DIRECT_ACCESS`.",
                     "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/vectorsearch.DirectAccessVectorIndexSpec",
                     "x-since-version": "v1.1.0"
                   },
                   "endpoint_name": {
+                    "description": "Name of the endpoint to be used for serving the index",
                     "$ref": "#/$defs/string",
                     "x-since-version": "v1.1.0"
                   },
@@ -2203,11 +2271,12 @@
                     "x-since-version": "v1.1.0"
                   },
                   "index_subtype": {
-                    "description": "[Beta]",
+                    "description": "[Beta] The subtype of the index. Use `HYBRID` or `FULL_TEXT`. `VECTOR` is not supported.",
                     "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/vectorsearch.IndexSubtype",
                     "x-since-version": "v1.1.0"
                   },
                   "index_type": {
+                    "description": "There are 2 types of AI Search indexes:\n- `DELTA_SYNC`: An index that automatically syncs with a source Delta Table, automatically and incrementally updating the index as the underlying data in the Delta Table changes.\n- `DIRECT_ACCESS`: An index that supports direct read and write of vectors and metadata through our REST and SDK APIs. With this model, the user manages index updates.",
                     "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/vectorsearch.VectorIndexType",
                     "x-since-version": "v1.1.0"
                   },
@@ -2216,10 +2285,12 @@
                     "x-since-version": "v1.1.0"
                   },
                   "name": {
+                    "description": "Name of the index",
                     "$ref": "#/$defs/string",
                     "x-since-version": "v1.1.0"
                   },
                   "primary_key": {
+                    "description": "Primary key of the index",
                     "$ref": "#/$defs/string",
                     "x-since-version": "v1.1.0"
                   }
@@ -2270,6 +2341,7 @@
                     "x-since-version": "v0.236.0"
                   },
                   "volume_type": {
+                    "description": "The type of the volume. An external volume is located in the specified external location.\nA managed volume is located in the default location which is specified by the parent schema, or the parent catalog, or the Metastore.\n[Learn more](https://docs.databricks.com/aws/en/volumes/managed-vs-external)",
                     "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.VolumeType",
                     "x-since-version": "v0.236.0"
                   }
@@ -2775,6 +2847,9 @@
                   "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.PostgresCatalog",
                   "x-since-version": "v1.0.0"
                 },
+                "postgres_databases": {
+                  "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.PostgresDatabase"
+                },
                 "postgres_endpoints": {
                   "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.PostgresEndpoint",
                   "x-since-version": "v0.287.0"
@@ -3086,6 +3161,7 @@
                   "x-since-version": "v0.283.0"
                 },
                 "deployment_id": {
+                  "description": "The unique id of the deployment.",
                   "$ref": "#/$defs/string",
                   "x-since-version": "v0.239.0"
                 },
@@ -3100,10 +3176,12 @@
                   "x-since-version": "v0.283.0"
                 },
                 "mode": {
+                  "description": "The mode of which the deployment will manage the source code.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppDeploymentMode",
                   "x-since-version": "v0.239.0"
                 },
                 "source_code_path": {
+                  "description": "The workspace file system path of the source code used to create the app deployment. This is different from\n`deployment_artifacts.source_code_path`, which is the path used by the deployed app. The former refers\nto the original source code location of the app in the workspace during deployment creation, whereas\nthe latter provides a system generated stable snapshotted source code path used by the deployment.",
                   "$ref": "#/$defs/string",
                   "x-since-version": "v0.239.0"
                 }
@@ -3114,6 +3192,7 @@
               "type": "object",
               "properties": {
                 "source_code_path": {
+                  "description": "The snapshotted workspace file system path of the source code loaded by the deployed app.",
                   "$ref": "#/$defs/string",
                   "x-since-version": "v0.239.0"
                 }
@@ -3318,10 +3397,12 @@
               "type": "object",
               "properties": {
                 "id": {
+                  "description": "Id of the job to grant permission on.",
                   "$ref": "#/$defs/string",
                   "x-since-version": "v0.239.0"
                 },
                 "permission": {
+                  "description": "Permissions to grant on the Job. Supported permissions are: \"CAN_MANAGE\", \"IS_OWNER\", \"CAN_MANAGE_RUN\", \"CAN_VIEW\".",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppResourceJobJobPermission",
                   "x-since-version": "v0.239.0"
                 }
@@ -3369,14 +3450,17 @@
               "type": "object",
               "properties": {
                 "key": {
+                  "description": "Key of the secret to grant permission on.",
                   "$ref": "#/$defs/string",
                   "x-since-version": "v0.239.0"
                 },
                 "permission": {
+                  "description": "Permission to grant on the secret scope. For secrets, only one permission is allowed. Permission must be one of: \"READ\", \"WRITE\", \"MANAGE\".",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppResourceSecretSecretPermission",
                   "x-since-version": "v0.239.0"
                 },
                 "scope": {
+                  "description": "Scope of the secret to grant permission on.",
                   "$ref": "#/$defs/string",
                   "x-since-version": "v0.239.0"
                 }
@@ -3401,10 +3485,12 @@
               "type": "object",
               "properties": {
                 "name": {
+                  "description": "Name of the serving endpoint to grant permission on.",
                   "$ref": "#/$defs/string",
                   "x-since-version": "v0.239.0"
                 },
                 "permission": {
+                  "description": "Permission to grant on the serving endpoint. Supported permissions are: \"CAN_MANAGE\", \"CAN_QUERY\", \"CAN_VIEW\".",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppResourceServingEndpointServingEndpointPermission",
                   "x-since-version": "v0.239.0"
                 }
@@ -3427,10 +3513,12 @@
               "type": "object",
               "properties": {
                 "id": {
+                  "description": "Id of the SQL warehouse to grant permission on.",
                   "$ref": "#/$defs/string",
                   "x-since-version": "v0.239.0"
                 },
                 "permission": {
+                  "description": "Permission to grant on the SQL warehouse. Supported permissions are: \"CAN_MANAGE\", \"CAN_USE\", \"IS_OWNER\".",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppResourceSqlWarehouseSqlWarehousePermission",
                   "x-since-version": "v0.239.0"
                 }
@@ -3640,6 +3728,7 @@
               "type": "object",
               "properties": {
                 "queue_url": {
+                  "description": "The AQS queue url in the format https://sqs.{region}.amazonaws.com/{account id}/{queue name}.\nOnly required for provided_sqs.",
                   "$ref": "#/$defs/string",
                   "x-since-version": "v0.289.0"
                 }
@@ -3671,14 +3760,17 @@
               "type": "object",
               "properties": {
                 "queue_url": {
+                  "description": "The AQS queue url in the format https://{storage account}.queue.core.windows.net/{queue name}\nOnly required for provided_aqs.",
                   "$ref": "#/$defs/string",
                   "x-since-version": "v0.289.0"
                 },
                 "resource_group": {
+                  "description": "Optional resource group for the queue, event grid subscription, and external location storage\naccount.\nOnly required for locations with a service principal storage credential",
                   "$ref": "#/$defs/string",
                   "x-since-version": "v0.289.0"
                 },
                 "subscription_id": {
+                  "description": "Optional subscription id for the queue, event grid subscription, and external location storage\naccount.\nRequired for locations with a service principal storage credential",
                   "$ref": "#/$defs/string",
                   "x-since-version": "v0.289.0"
                 }
@@ -3690,6 +3782,7 @@
               "description": "Encryption options that apply to clients connecting to cloud storage.",
               "properties": {
                 "sse_encryption_details": {
+                  "description": "Server-Side Encryption properties for clients communicating with AWS s3.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.SseEncryptionDetails",
                   "x-since-version": "v0.289.0"
                 }
@@ -3752,6 +3845,7 @@
               "type": "object",
               "properties": {
                 "subscription_name": {
+                  "description": "The Pub/Sub subscription name in the format projects/{project}/subscriptions/{subscription name}.\nOnly required for provided_pubsub.",
                   "$ref": "#/$defs/string",
                   "x-since-version": "v0.289.0"
                 }
@@ -4044,18 +4138,22 @@
                   "x-since-version": "v0.273.0"
                 },
                 "catalog_name": {
+                  "description": "The name of the catalog containing the model version",
                   "$ref": "#/$defs/string",
                   "x-since-version": "v0.273.0"
                 },
                 "id": {
+                  "description": "The unique identifier of the alias",
                   "$ref": "#/$defs/string",
                   "x-since-version": "v0.273.0"
                 },
                 "model_name": {
+                  "description": "The name of the parent registered model of the model version, relative to parent schema",
                   "$ref": "#/$defs/string",
                   "x-since-version": "v0.273.0"
                 },
                 "schema_name": {
+                  "description": "The name of the schema containing the model version, relative to parent catalog",
                   "$ref": "#/$defs/string",
                   "x-since-version": "v0.273.0"
                 },
@@ -4072,10 +4170,12 @@
               "description": "Server-Side Encryption properties for clients communicating with AWS s3.",
               "properties": {
                 "algorithm": {
+                  "description": "Sets the value of the 'x-amz-server-side-encryption' header in S3 request.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.SseEncryptionDetailsAlgorithm",
                   "x-since-version": "v0.289.0"
                 },
                 "aws_kms_key_arn": {
+                  "description": "Optional. The ARN of the SSE-KMS key used with the S3 location, when algorithm = \"SSE-KMS\".\nSets the value of the 'x-amz-server-side-encryption-aws-kms-key-id' header.",
                   "$ref": "#/$defs/string",
                   "x-since-version": "v0.289.0"
                 }
@@ -4135,6 +4235,7 @@
               "description": "Attributes set during cluster creation which are related to Amazon Web Services.",
               "properties": {
                 "availability": {
+                  "description": "Availability type used for all subsequent nodes past the `first_on_demand` ones.\n\nNote: If `first_on_demand` is zero, this availability type will be used for the entire cluster.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.AwsAvailability",
                   "x-since-version": "v0.229.0"
                 },
@@ -4159,6 +4260,7 @@
                   "x-since-version": "v0.229.0"
                 },
                 "ebs_volume_type": {
+                  "description": "The type of EBS volumes that will be launched with this cluster.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.EbsVolumeType",
                   "x-since-version": "v0.229.0"
                 },
@@ -4199,6 +4301,7 @@
               "description": "Attributes set during cluster creation which are related to Microsoft Azure.",
               "properties": {
                 "availability": {
+                  "description": "Availability type used for all subsequent nodes past the `first_on_demand` ones.\nNote: If `first_on_demand` is zero, this availability\ntype will be used for the entire cluster.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.AzureAvailability",
                   "x-since-version": "v0.229.0"
                 },
@@ -4321,10 +4424,12 @@
                   "x-since-version": "v0.229.0"
                 },
                 "data_security_mode": {
+                  "description": "Data security mode decides what data governance model to use when accessing data\nfrom a cluster.\n\n* `DATA_SECURITY_MODE_AUTO`: Databricks will choose the most appropriate access mode depending on your compute configuration.\n* `DATA_SECURITY_MODE_STANDARD`: A secure cluster that can be shared by multiple users. Cluster users are fully isolated so that they cannot see each other’s data and credentials. Most data governance features are supported in this mode. But programming languages and cluster features might be limited.\n* `DATA_SECURITY_MODE_DEDICATED`: A secure cluster that can only be exclusively used by a single user specified in `single_user_name`. Most programming languages, cluster features and data governance features are available in this mode.\n\nThe following modes are legacy aliases for the above modes:\n\n* `USER_ISOLATION`: Legacy alias for `DATA_SECURITY_MODE_STANDARD`.\n* `SINGLE_USER`: Legacy alias for `DATA_SECURITY_MODE_DEDICATED`.\n\nThe following modes are deprecated starting with Databricks Runtime 15.0 and\nwill be removed for future Databricks Runtime versions:\n\n* `LEGACY_TABLE_ACL`: This mode is for users migrating from legacy Table ACL clusters.\n* `LEGACY_PASSTHROUGH`: This mode is for users migrating from legacy Passthrough on high concurrency clusters.\n* `LEGACY_SINGLE_USER`: This mode is for users migrating from legacy Passthrough on standard clusters.\n* `LEGACY_SINGLE_USER_STANDARD`: This mode provides a way that doesn’t have UC nor passthrough enabled.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.DataSecurityMode",
                   "x-since-version": "v0.229.0"
                 },
                 "docker_image": {
+                  "description": "Custom docker image BYOC",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.DockerImage",
                   "x-since-version": "v0.229.0"
                 },
@@ -4374,6 +4479,7 @@
                   "x-since-version": "v0.237.0"
                 },
                 "kind": {
+                  "description": "The kind of compute described by this compute specification.\n\nDepending on `kind`, different validations and default values will be applied.\n\nClusters with `kind = CLASSIC_PREVIEW` support the following fields, whereas clusters with no specified `kind` do not.\n* [is_single_node](/api/workspace/clusters/create#is_single_node)\n* [use_ml_runtime](/api/workspace/clusters/create#use_ml_runtime)\n\nBy using the [simple form](https://docs.databricks.com/compute/simple-form.html), your clusters are automatically using `kind = CLASSIC_PREVIEW`.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.Kind",
                   "x-since-version": "v0.237.0"
                 },
@@ -4398,6 +4504,7 @@
                   "x-since-version": "v0.257.0"
                 },
                 "runtime_engine": {
+                  "description": "Determines the cluster's runtime engine, either standard or Photon.\n\nThis field is not compatible with legacy `spark_version` values that contain `-photon-`.\nRemove `-photon-` from the `spark_version` and set `runtime_engine` to `PHOTON`.\n\nIf left unspecified, the runtime engine defaults to standard unless the spark_version\ncontains -photon-, in which case Photon will be used.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.RuntimeEngine",
                   "x-since-version": "v0.229.0"
                 },
@@ -4442,6 +4549,7 @@
                   "x-since-version": "v0.285.0"
                 },
                 "workload_type": {
+                  "description": "Cluster Attributes showing for clusters workload types.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.WorkloadType",
                   "x-since-version": "v0.229.0"
                 }
@@ -4523,6 +4631,7 @@
               "type": "object",
               "properties": {
                 "basic_auth": {
+                  "description": "Basic auth with username and password",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.DockerBasicAuth",
                   "x-since-version": "v0.229.0"
                 },
@@ -4569,7 +4678,7 @@
                   "x-since-version": "v0.252.0"
                 },
                 "java_dependencies": {
-                  "description": "[Public Preview]",
+                  "description": "[Public Preview] List of java dependencies. Each dependency is a string representing a java library path. For example: `/Volumes/path/to/test.jar`.",
                   "$ref": "#/$defs/slice/string",
                   "x-since-version": "v0.271.0"
                 }
@@ -4581,6 +4690,7 @@
               "description": "Attributes set during cluster creation which are related to GCP.",
               "properties": {
                 "availability": {
+                  "description": "This field determines whether the spark executors will be scheduled to run on preemptible\nVMs, on-demand VMs, or preemptible VMs with a fallback to on-demand VMs if the former is unavailable.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.GcpAvailability",
                   "x-since-version": "v0.229.0"
                 },
@@ -5486,6 +5596,7 @@
               "description": "Configures the Lakeview Dashboard job task type.",
               "properties": {
                 "dashboard_id": {
+                  "description": "The identifier of the dashboard to refresh.",
                   "$ref": "#/$defs/string",
                   "x-since-version": "v0.248.0"
                 },
@@ -5497,6 +5608,7 @@
                   "x-since-version": "v0.289.0"
                 },
                 "subscription": {
+                  "description": "Optional: subscription configuration for sending the dashboard snapshot.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.Subscription",
                   "x-since-version": "v0.248.0"
                 },
@@ -5889,6 +6001,7 @@
                   "x-since-version": "v0.229.0"
                 },
                 "spec": {
+                  "description": "The environment entity used to preserve serverless environment side panel, jobs' environment for non-notebook task, and SDP's environment for classic and serverless pipelines.\nIn this minimal environment spec, only pip and java dependencies are supported.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.Environment",
                   "x-since-version": "v0.229.0"
                 }
@@ -6041,10 +6154,12 @@
               "type": "object",
               "properties": {
                 "metric": {
+                  "description": "Specifies the health metric that is being evaluated for a particular health rule.\n\n* `RUN_DURATION_SECONDS`: Expected total time for a run in seconds.\n* `STREAMING_BACKLOG_BYTES`: An estimate of the maximum bytes of data waiting to be consumed across all streams. This metric is in Public Preview.\n* `STREAMING_BACKLOG_RECORDS`: An estimate of the maximum offset lag across all streams. This metric is in Public Preview.\n* `STREAMING_BACKLOG_SECONDS`: An estimate of the maximum consumer delay across all streams. This metric is in Public Preview.\n* `STREAMING_BACKLOG_FILES`: An estimate of the maximum number of outstanding files across all streams. This metric is in Public Preview.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.JobsHealthMetric",
                   "x-since-version": "v0.229.0"
                 },
                 "op": {
+                  "description": "Specifies the operator used to compare the health metric value with the specified threshold.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.JobsHealthOperator",
                   "x-since-version": "v0.229.0"
                 },
@@ -6811,6 +6926,7 @@
                   "x-since-version": "v0.248.0"
                 },
                 "subscribers": {
+                  "description": "The list of subscribers to send the snapshot of the dashboard to.",
                   "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/jobs.SubscriptionSubscriber",
                   "x-since-version": "v0.248.0"
                 }
@@ -6821,10 +6937,12 @@
               "type": "object",
               "properties": {
                 "destination_id": {
+                  "description": "A snapshot of the dashboard will be sent to the destination when the `destination_id` field is present.",
                   "$ref": "#/$defs/string",
                   "x-since-version": "v0.248.0"
                 },
                 "user_name": {
+                  "description": "A snapshot of the dashboard will be sent to the user's email when the `user_name` field is present.",
                   "$ref": "#/$defs/string",
                   "x-since-version": "v0.248.0"
                 }
@@ -6957,6 +7075,7 @@
                   "x-since-version": "v0.243.0"
                 },
                 "health": {
+                  "description": "An optional set of health rules that can be defined for this job.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.JobsHealthRules",
                   "x-since-version": "v0.229.0"
                 },
@@ -7889,7 +8008,7 @@
                   "x-since-version": "v0.229.0"
                 },
                 "netsuite_jar_path": {
-                  "description": "[Private Preview]",
+                  "description": "[Private Preview] Netsuite only configuration. When the field is set for a netsuite connector,\nthe jar stored in the field will be validated and added to the classpath of\npipeline's cluster.",
                   "$ref": "#/$defs/string",
                   "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
@@ -8950,7 +9069,7 @@
                   "x-since-version": "v0.231.0"
                 },
                 "workday_report_parameters": {
-                  "description": "[Private Preview]",
+                  "description": "[Private Preview] (Optional) Additional custom parameters for Workday Report",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.IngestionPipelineDefinitionWorkdayReportParameters",
                   "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
@@ -10419,7 +10538,7 @@
               "type": "object",
               "properties": {
                 "aggregation": {
-                  "description": "[Public Preview]",
+                  "description": "[Public Preview] If not set, the behavior is equivalent to using `First row` in the UI.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.Aggregation",
                   "x-since-version": "v0.279.0"
                 },
@@ -10636,26 +10755,32 @@
                   "x-since-version": "v1.1.0"
                 },
                 "columns_to_sync": {
+                  "description": "[Optional] Select the columns to sync with the vector index. If you leave this field blank, all columns\nfrom the source table are synced with the index. The primary key column and embedding source column or\nembedding vector column are always synced.",
                   "$ref": "#/$defs/slice/string",
                   "x-since-version": "v1.1.0"
                 },
                 "embedding_source_columns": {
+                  "description": "The columns that contain the embedding source.",
                   "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/vectorsearch.EmbeddingSourceColumn",
                   "x-since-version": "v1.1.0"
                 },
                 "embedding_vector_columns": {
+                  "description": "The columns that contain the embedding vectors.",
                   "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/vectorsearch.EmbeddingVectorColumn",
                   "x-since-version": "v1.1.0"
                 },
                 "embedding_writeback_table": {
+                  "description": "[Optional] Name of the Delta table to sync the vector index contents and computed embeddings to.",
                   "$ref": "#/$defs/string",
                   "x-since-version": "v1.1.0"
                 },
                 "pipeline_type": {
+                  "description": "Pipeline execution mode.\n- `TRIGGERED`: If the pipeline uses the triggered execution mode, the system stops processing after successfully refreshing the source table in the pipeline once, ensuring the table is updated based on the data available when the update started.\n- `CONTINUOUS`: If the pipeline uses continuous execution, the pipeline processes new data as it arrives in the source table to keep vector index fresh.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/vectorsearch.PipelineType",
                   "x-since-version": "v1.1.0"
                 },
                 "source_table": {
+                  "description": "The name of the source table.",
                   "$ref": "#/$defs/string",
                   "x-since-version": "v1.1.0"
                 }
@@ -10666,14 +10791,17 @@
               "type": "object",
               "properties": {
                 "embedding_source_columns": {
+                  "description": "The columns that contain the embedding source. The format should be array[double].",
                   "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/vectorsearch.EmbeddingSourceColumn",
                   "x-since-version": "v1.1.0"
                 },
                 "embedding_vector_columns": {
+                  "description": "The columns that contain the embedding vectors. The format should be array[double].",
                   "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/vectorsearch.EmbeddingVectorColumn",
                   "x-since-version": "v1.1.0"
                 },
                 "schema_json": {
+                  "description": "The schema of the index in JSON format.\nSupported types are `integer`, `long`, `float`, `double`, `boolean`, `string`, `date`, `timestamp`.\nSupported types for vector column: `array\u003cfloat\u003e`, `array\u003cdouble\u003e`,`.",
                   "$ref": "#/$defs/string",
                   "x-since-version": "v1.1.0"
                 }
@@ -10684,14 +10812,17 @@
               "type": "object",
               "properties": {
                 "embedding_model_endpoint_name": {
+                  "description": "Name of the embedding model endpoint, used by default for both ingestion and querying.",
                   "$ref": "#/$defs/string",
                   "x-since-version": "v1.1.0"
                 },
                 "model_endpoint_name_for_query": {
+                  "description": "Name of the embedding model endpoint which, if specified, is used for querying (not ingestion).",
                   "$ref": "#/$defs/string",
                   "x-since-version": "v1.1.0"
                 },
                 "name": {
+                  "description": "Name of the column",
                   "$ref": "#/$defs/string",
                   "x-since-version": "v1.1.0"
                 }
@@ -10702,10 +10833,12 @@
               "type": "object",
               "properties": {
                 "embedding_dimension": {
+                  "description": "Dimension of the embedding vector",
                   "$ref": "#/$defs/int",
                   "x-since-version": "v1.1.0"
                 },
                 "name": {
+                  "description": "Name of the column",
                   "$ref": "#/$defs/string",
                   "x-since-version": "v1.1.0"
                 }
@@ -10902,6 +11035,12 @@
                   "type": "object",
                   "additionalProperties": {
                     "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.PostgresCatalog"
+                  }
+                },
+                "resources.PostgresDatabase": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.PostgresDatabase"
                   }
                 },
                 "resources.PostgresEndpoint": {

@@ -51,8 +51,9 @@ func TestStateToBundleEmptyLocalResources(t *testing.T) {
 		"resources.postgres_branches.test_postgres_branch":              {ID: "projects/test-project/branches/main"},
 		"resources.postgres_endpoints.test_postgres_endpoint":           {ID: "projects/test-project/branches/main/endpoints/primary"},
 		"resources.postgres_catalogs.test_postgres_catalog":             {ID: "catalogs/test_catalog"},
-		"resources.postgres_synced_tables.test_postgres_synced_table":   {ID: "synced_tables/main.public.test_synced_table"},
+		"resources.postgres_databases.test_postgres_database":           {ID: "projects/test-project/branches/main/databases/test-db"},
 		"resources.postgres_roles.test_postgres_role":                   {ID: "projects/test-project/branches/main/roles/test-role"},
+		"resources.postgres_synced_tables.test_postgres_synced_table":   {ID: "synced_tables/main.public.test_synced_table"},
 		"resources.vector_search_endpoints.test_vector_search_endpoint": {ID: "vs-endpoint-1"},
 		"resources.vector_search_indexes.test_vector_search_index":      {ID: "vs-index-1"},
 	}
@@ -129,8 +130,14 @@ func TestStateToBundleEmptyLocalResources(t *testing.T) {
 	assert.Equal(t, "catalogs/test_catalog", config.Resources.PostgresCatalogs["test_postgres_catalog"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.PostgresCatalogs["test_postgres_catalog"].ModifiedStatus)
 
+	assert.Equal(t, "projects/test-project/branches/main/databases/test-db", config.Resources.PostgresDatabases["test_postgres_database"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.PostgresDatabases["test_postgres_database"].ModifiedStatus)
+
 	assert.Equal(t, "projects/test-project/branches/main/roles/test-role", config.Resources.PostgresRoles["test_postgres_role"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.PostgresRoles["test_postgres_role"].ModifiedStatus)
+
+	assert.Equal(t, "synced_tables/main.public.test_synced_table", config.Resources.PostgresSyncedTables["test_postgres_synced_table"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.PostgresSyncedTables["test_postgres_synced_table"].ModifiedStatus)
 
 	assert.Equal(t, "vs-endpoint-1", config.Resources.VectorSearchEndpoints["test_vector_search_endpoint"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.VectorSearchEndpoints["test_vector_search_endpoint"].ModifiedStatus)
@@ -323,10 +330,11 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 					},
 				},
 			},
-			PostgresSyncedTables: map[string]*resources.PostgresSyncedTable{
-				"test_postgres_synced_table": {
-					PostgresSyncedTableConfig: resources.PostgresSyncedTableConfig{
-						SyncedTableId: "main.public.test_synced_table",
+			PostgresDatabases: map[string]*resources.PostgresDatabase{
+				"test_postgres_database": {
+					PostgresDatabaseConfig: resources.PostgresDatabaseConfig{
+						DatabaseId: "test-db",
+						Parent:     "projects/test-project/branches/main",
 					},
 				},
 			},
@@ -335,6 +343,13 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 					PostgresRoleConfig: resources.PostgresRoleConfig{
 						RoleId: "test-role",
 						Parent: "projects/test-project/branches/main",
+					},
+				},
+			},
+			PostgresSyncedTables: map[string]*resources.PostgresSyncedTable{
+				"test_postgres_synced_table": {
+					PostgresSyncedTableConfig: resources.PostgresSyncedTableConfig{
+						SyncedTableId: "main.public.test_synced_table",
 					},
 				},
 			},
@@ -433,8 +448,14 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 	assert.Empty(t, config.Resources.PostgresCatalogs["test_postgres_catalog"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.PostgresCatalogs["test_postgres_catalog"].ModifiedStatus)
 
+	assert.Empty(t, config.Resources.PostgresDatabases["test_postgres_database"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.PostgresDatabases["test_postgres_database"].ModifiedStatus)
+
 	assert.Empty(t, config.Resources.PostgresRoles["test_postgres_role"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.PostgresRoles["test_postgres_role"].ModifiedStatus)
+
+	assert.Empty(t, config.Resources.PostgresSyncedTables["test_postgres_synced_table"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.PostgresSyncedTables["test_postgres_synced_table"].ModifiedStatus)
 
 	assert.Empty(t, config.Resources.VectorSearchEndpoints["test_vector_search_endpoint"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.VectorSearchEndpoints["test_vector_search_endpoint"].ModifiedStatus)
@@ -750,10 +771,17 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 					},
 				},
 			},
-			PostgresSyncedTables: map[string]*resources.PostgresSyncedTable{
-				"test_postgres_synced_table": {
-					PostgresSyncedTableConfig: resources.PostgresSyncedTableConfig{
-						SyncedTableId: "main.public.test_synced_table",
+			PostgresDatabases: map[string]*resources.PostgresDatabase{
+				"test_postgres_database": {
+					PostgresDatabaseConfig: resources.PostgresDatabaseConfig{
+						DatabaseId: "test-db",
+						Parent:     "projects/test-project/branches/main",
+					},
+				},
+				"test_postgres_database_new": {
+					PostgresDatabaseConfig: resources.PostgresDatabaseConfig{
+						DatabaseId: "new-db",
+						Parent:     "projects/test-project-new/branches/dev",
 					},
 				},
 			},
@@ -768,6 +796,13 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 					PostgresRoleConfig: resources.PostgresRoleConfig{
 						RoleId: "replica",
 						Parent: "projects/test-project-new/branches/dev",
+					},
+				},
+			},
+			PostgresSyncedTables: map[string]*resources.PostgresSyncedTable{
+				"test_postgres_synced_table": {
+					PostgresSyncedTableConfig: resources.PostgresSyncedTableConfig{
+						SyncedTableId: "main.public.test_synced_table",
 					},
 				},
 			},
@@ -842,6 +877,8 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 		"resources.postgres_endpoints.test_postgres_endpoint_old":           {ID: "projects/test-project/branches/main/endpoints/old"},
 		"resources.postgres_catalogs.test_postgres_catalog":                 {ID: "catalogs/test_catalog"},
 		"resources.postgres_catalogs.test_postgres_catalog_old":             {ID: "catalogs/test_catalog_old"},
+		"resources.postgres_databases.test_postgres_database":               {ID: "projects/test-project/branches/main/databases/test-db"},
+		"resources.postgres_databases.test_postgres_database_old":           {ID: "projects/test-project/branches/main/databases/old-db"},
 		"resources.postgres_roles.test_postgres_role":                       {ID: "projects/test-project/branches/main/roles/primary"},
 		"resources.postgres_roles.test_postgres_role_old":                   {ID: "projects/test-project/branches/main/roles/old"},
 		"resources.vector_search_endpoints.test_vector_search_endpoint":     {ID: "vs-endpoint-1"},
@@ -1007,6 +1044,13 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.PostgresCatalogs["test_postgres_catalog_old"].ModifiedStatus)
 	assert.Empty(t, config.Resources.PostgresCatalogs["test_postgres_catalog_new"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.PostgresCatalogs["test_postgres_catalog_new"].ModifiedStatus)
+
+	assert.Equal(t, "projects/test-project/branches/main/databases/test-db", config.Resources.PostgresDatabases["test_postgres_database"].ID)
+	assert.Empty(t, config.Resources.PostgresDatabases["test_postgres_database"].ModifiedStatus)
+	assert.Equal(t, "projects/test-project/branches/main/databases/old-db", config.Resources.PostgresDatabases["test_postgres_database_old"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.PostgresDatabases["test_postgres_database_old"].ModifiedStatus)
+	assert.Empty(t, config.Resources.PostgresDatabases["test_postgres_database_new"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.PostgresDatabases["test_postgres_database_new"].ModifiedStatus)
 
 	assert.Equal(t, "projects/test-project/branches/main/roles/primary", config.Resources.PostgresRoles["test_postgres_role"].ID)
 	assert.Empty(t, config.Resources.PostgresRoles["test_postgres_role"].ModifiedStatus)

@@ -114,7 +114,7 @@ func newGetRunCommand() *cobra.Command {
 
 		runID, err := strconv.ParseInt(args[0], 10, 64)
 		if err != nil || runID <= 0 {
-			return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", true,
+			return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false,
 				fmt.Errorf("invalid JOB_RUN_ID %q: must be a positive integer", args[0]))
 		}
 
@@ -150,10 +150,10 @@ func newGetRunCommand() *cobra.Command {
 			out := cmd.OutOrStdout()
 			addTextLinks(ctx, out, w, &data, ids)
 
-			// Lead with the dashboard link (hyperlinked, falling back to the bare
+			// Lead with the job run link (hyperlinked, falling back to the bare
 			// URL off a terminal), then a gap before the training config and the
 			// status table, mirroring the Python CLI's header.
-			fmt.Fprintf(out, "Dashboard: %s\n\n", hyperlink(ctx, out, data.DashboardURL, data.DashboardURL))
+			fmt.Fprintf(out, "Job Link: %s\n\n", hyperlink(ctx, out, data.DashboardURL, data.DashboardURL))
 
 			// Text mode shows the training-config YAML before the status,
 			// mirroring `air get run`. JSON output omits it.

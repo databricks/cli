@@ -51,7 +51,10 @@ var varPrefix = dyn.NewPath(dyn.Key("var"))
 // view where ${var.X} and ${resources.X.Y.id} references are still literal
 // strings — enabling correct sibling lookup even for sequences split across
 // files via target overrides.
-func RestoreVariableReferences(ctx context.Context, b *bundle.Bundle, fieldChanges []FieldChange) error {
+// Restoration counts by mechanism are accumulated into stats (used for
+// telemetry); pass nil when counters are not needed (the counter methods are
+// nil-safe).
+func RestoreVariableReferences(ctx context.Context, b *bundle.Bundle, fieldChanges []FieldChange, stats *RestoreStats) error {
 	preResolved := loadPreResolvedConfig(ctx, b)
 	if !preResolved.IsValid() {
 		return errors.New("pre-resolved config unavailable; variable-backed fields will be hardcoded")
@@ -95,13 +98,13 @@ func RestoreVariableReferences(ctx context.Context, b *bundle.Bundle, fieldChang
 			if !ok {
 				continue
 			}
-			newValue = restoreOriginalRefs(fc.Change.Value, fieldValue, resolved)
+			newValue = restoreOriginalRefs(fc.Change.Value, fieldValue, resolved, stats)
 		case OperationAdd:
 			siblings, ok := sequenceSiblings(preResolved, fc.FieldCandidates)
 			if !ok {
 				continue
 			}
-			newValue = restoreFromSiblings(fc.Change.Value, siblings, resolved)
+			newValue = restoreFromSiblings(fc.Change.Value, siblings, resolved, stats)
 		case OperationUnknown, OperationRemove, OperationSkip:
 			continue
 		}
@@ -231,7 +234,7 @@ func resolveReferencePath(refStr string) (dyn.Path, bool) {
 // new value, falls back to a global lookup: if the new value uniquely matches
 // a different variable, that variable is used instead. The field's prior use
 // of a variable is the false-positive guard.
-func restoreOriginalRefs(value any, preResolved, resolved dyn.Value) any {
+func restoreOriginalRefs(value any, preResolved, resolved dyn.Value, stats *RestoreStats) any {
 	switch v := value.(type) {
 	case string, bool, int64:
 		if ref, ok := matchOriginalRef(value, preResolved, resolved); ok {
@@ -244,6 +247,7 @@ func restoreOriginalRefs(value any, preResolved, resolved dyn.Value) any {
 		}
 		if isPureVarRef(preResolved) {
 			if ref, ok := matchAnyVariable(value, resolved); ok {
+				stats.incRetargeted()
 				return ref
 			}
 		}
@@ -258,7 +262,7 @@ func restoreOriginalRefs(value any, preResolved, resolved dyn.Value) any {
 					childPre = p.Value
 				}
 			}
-			v[key] = restoreOriginalRefs(val, childPre, resolved)
+			v[key] = restoreOriginalRefs(val, childPre, resolved, stats)
 		}
 		return v
 
@@ -269,7 +273,7 @@ func restoreOriginalRefs(value any, preResolved, resolved dyn.Value) any {
 			if i < len(preSeq) {
 				childPre = preSeq[i]
 			}
-			v[i] = restoreOriginalRefs(val, childPre, resolved)
+			v[i] = restoreOriginalRefs(val, childPre, resolved, stats)
 		}
 		return v
 
@@ -283,11 +287,11 @@ func restoreOriginalRefs(value any, preResolved, resolved dyn.Value) any {
 // relative path: if exactly one unique pure variable reference across siblings
 // resolves to the leaf value, that reference is substituted. Multiple
 // different matching references are treated as ambiguous and skipped.
-func restoreFromSiblings(value any, siblings []dyn.Value, resolved dyn.Value) any {
-	return restoreFromSiblingsAt(value, siblings, resolved, dyn.EmptyPath)
+func restoreFromSiblings(value any, siblings []dyn.Value, resolved dyn.Value, stats *RestoreStats) any {
+	return restoreFromSiblingsAt(value, siblings, resolved, dyn.EmptyPath, stats)
 }
 
-func restoreFromSiblingsAt(value any, siblings []dyn.Value, resolved dyn.Value, relPath dyn.Path) any {
+func restoreFromSiblingsAt(value any, siblings []dyn.Value, resolved dyn.Value, relPath dyn.Path, stats *RestoreStats) any {
 	switch v := value.(type) {
 	case string, bool, int64:
 		refs := map[string]struct{}{}
@@ -325,6 +329,7 @@ func restoreFromSiblingsAt(value any, siblings []dyn.Value, resolved dyn.Value, 
 		}
 		if len(refs) == 1 {
 			for ref := range refs {
+				stats.incFromSiblings()
 				return ref
 			}
 		}
@@ -332,13 +337,13 @@ func restoreFromSiblingsAt(value any, siblings []dyn.Value, resolved dyn.Value, 
 
 	case map[string]any:
 		for key, val := range v {
-			v[key] = restoreFromSiblingsAt(val, siblings, resolved, relPath.Append(dyn.Key(key)))
+			v[key] = restoreFromSiblingsAt(val, siblings, resolved, relPath.Append(dyn.Key(key)), stats)
 		}
 		return v
 
 	case []any:
 		for i, val := range v {
-			v[i] = restoreFromSiblingsAt(val, siblings, resolved, relPath.Append(dyn.Index(i)))
+			v[i] = restoreFromSiblingsAt(val, siblings, resolved, relPath.Append(dyn.Index(i)), stats)
 		}
 		return v
 

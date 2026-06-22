@@ -7,6 +7,7 @@ import (
 	"github.com/databricks/cli/internal/clijson"
 	"github.com/databricks/cli/libs/jsonschema"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestConvertLinksToAbsoluteUrl(t *testing.T) {
@@ -50,6 +51,103 @@ func TestConvertLinksToAbsoluteUrl(t *testing.T) {
 			t.Errorf("For input '%s', expected '%s', but got '%s'", test.input, test.expected, result)
 		}
 	}
+}
+
+const testTypePath = "github.com/databricks/cli/bundle/config.Foo"
+
+func TestDropShadowingPlaceholders(t *testing.T) {
+	tests := []struct {
+		name      string
+		fromFile  annotation.File
+		extracted annotation.File
+		want      annotation.File
+	}{
+		{
+			name: "placeholder shadowing an upstream description is dropped",
+			fromFile: annotation.File{
+				testTypePath: {Fields: map[string]annotation.Descriptor{"field": {Description: annotation.Placeholder}}},
+			},
+			extracted: annotation.File{
+				testTypePath: {Fields: map[string]annotation.Descriptor{"field": {Description: "upstream description"}}},
+			},
+			want: annotation.File{},
+		},
+		{
+			name: "placeholder without upstream description is kept",
+			fromFile: annotation.File{
+				testTypePath: {Fields: map[string]annotation.Descriptor{"field": {Description: annotation.Placeholder}}},
+			},
+			extracted: annotation.File{},
+			want: annotation.File{
+				testTypePath: {Fields: map[string]annotation.Descriptor{"field": {Description: annotation.Placeholder}}},
+			},
+		},
+		{
+			name: "placeholder with other fields loses only the placeholder",
+			fromFile: annotation.File{
+				testTypePath: {Fields: map[string]annotation.Descriptor{"field": {Description: annotation.Placeholder, DeprecationMessage: "deprecated"}}},
+			},
+			extracted: annotation.File{
+				testTypePath: {Fields: map[string]annotation.Descriptor{"field": {Description: "upstream description"}}},
+			},
+			want: annotation.File{
+				testTypePath: {Fields: map[string]annotation.Descriptor{"field": {DeprecationMessage: "deprecated"}}},
+			},
+		},
+		{
+			name: "real description override is untouched",
+			fromFile: annotation.File{
+				testTypePath: {Fields: map[string]annotation.Descriptor{"field": {Description: "hand-written override"}}},
+			},
+			extracted: annotation.File{
+				testTypePath: {Fields: map[string]annotation.Descriptor{"field": {Description: "upstream description"}}},
+			},
+			want: annotation.File{
+				testTypePath: {Fields: map[string]annotation.Descriptor{"field": {Description: "hand-written override"}}},
+			},
+		},
+		{
+			name: "other fields of the same type are kept",
+			fromFile: annotation.File{
+				testTypePath: {Fields: map[string]annotation.Descriptor{
+					"stale": {Description: annotation.Placeholder},
+					"todo":  {Description: annotation.Placeholder},
+				}},
+			},
+			extracted: annotation.File{
+				testTypePath: {Fields: map[string]annotation.Descriptor{"stale": {Description: "upstream description"}}},
+			},
+			want: annotation.File{
+				testTypePath: {Fields: map[string]annotation.Descriptor{"todo": {Description: annotation.Placeholder}}},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			dropShadowingPlaceholders(test.fromFile, test.extracted)
+			assert.Equal(t, test.want, test.fromFile)
+		})
+	}
+}
+
+// A stale placeholder must not swallow the upstream description in the merged
+// view the schema is generated from.
+func TestStalePlaceholderDoesNotShadowMergedDescription(t *testing.T) {
+	extracted := annotation.File{
+		testTypePath: {Fields: map[string]annotation.Descriptor{"field": {Description: "upstream description"}}},
+	}
+	fromFile := annotation.File{
+		testTypePath: {Fields: map[string]annotation.Descriptor{"field": {Description: annotation.Placeholder, DeprecationMessage: "deprecated"}}},
+	}
+
+	dropShadowingPlaceholders(fromFile, extracted)
+	h, err := newAnnotationHandler(extracted, fromFile)
+	require.NoError(t, err)
+
+	merged := h.parsedAnnotations[testTypePath].Fields["field"]
+	assert.Equal(t, "upstream description", merged.Description)
+	assert.Equal(t, "deprecated", merged.DeprecationMessage)
 }
 
 func TestAssignAnnotationLaunchStage(t *testing.T) {
