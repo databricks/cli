@@ -96,6 +96,80 @@ func TestMergePreservesCRLF(t *testing.T) {
 	require.NoError(t, err)
 	assert.Contains(t, string(out), "\r\n")
 	assert.Contains(t, string(out), `requires-python = "==3.12.*"`)
+	// Merging the CRLF output again must be byte-identical (idempotent under \r\n).
+	twice, _, err := MergeManaged(out, testConstraints())
+	require.NoError(t, err)
+	assert.Equal(t, string(out), string(twice))
+}
+
+func TestMergePreservesUserToolUvKeys(t *testing.T) {
+	in := []byte(`[project]
+requires-python = ">=3.10"
+
+[dependency-groups]
+dev = ["databricks-connect~=16.0.0"]
+
+[tool.uv]
+package = true
+dev-dependencies = ["ruff"]
+`)
+	out, _, err := MergeManaged(in, testConstraints())
+	require.NoError(t, err)
+	s := string(out)
+	assert.Contains(t, s, "[tool.uv]")
+	assert.Contains(t, s, "package = true")
+	assert.Contains(t, s, `dev-dependencies = ["ruff"]`)
+	assert.Contains(t, s, managedMarkerStart)
+	assert.Contains(t, s, "pydantic~=2.10.6")
+	// The user's keys must live outside the managed marker block.
+	start := strings.Index(s, managedMarkerStart)
+	require.GreaterOrEqual(t, start, 0)
+	assert.NotContains(t, s[start:], "package = true")
+	assert.NotContains(t, s[start:], `dev-dependencies = ["ruff"]`)
+}
+
+func TestMergeStripsStaleConstraintDepsFromUserToolUv(t *testing.T) {
+	in := []byte(`[project]
+requires-python = ">=3.10"
+
+[dependency-groups]
+dev = ["databricks-connect~=16.0.0"]
+
+[tool.uv]
+package = true
+constraint-dependencies = ["old~=1.0"]
+`)
+	out, _, err := MergeManaged(in, testConstraints())
+	require.NoError(t, err)
+	s := string(out)
+	assert.Contains(t, s, "package = true")
+	// The stale constraint must be gone from the user table; the managed block has the new deps.
+	assert.NotContains(t, s, "old~=1.0")
+	assert.Contains(t, s, "pydantic~=2.10.6")
+	// Merge-twice is byte-identical.
+	twice, _, err := MergeManaged(out, testConstraints())
+	require.NoError(t, err)
+	assert.Equal(t, string(out), string(twice))
+}
+
+func TestMergeRemovesOwnedOnlyToolUv(t *testing.T) {
+	in := []byte(`[project]
+requires-python = ">=3.10"
+
+[dependency-groups]
+dev = ["databricks-connect~=16.0.0"]
+
+[tool.uv]
+constraint-dependencies = ["old~=1.0"]
+`)
+	out, _, err := MergeManaged(in, testConstraints())
+	require.NoError(t, err)
+	s := string(out)
+	assert.NotContains(t, s, "old~=1.0")
+	assert.Contains(t, s, "pydantic~=2.10.6")
+	// The plain table was removed and replaced by exactly one managed block.
+	assert.Equal(t, 1, countOccurrences(s, "[tool.uv]"))
+	assert.Equal(t, 1, countOccurrences(s, managedMarkerStart))
 }
 
 func TestMergeReplacesSingleLineDevArray(t *testing.T) {
