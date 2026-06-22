@@ -14,8 +14,14 @@ class SubscriptionSubscriber:
     """"""
 
     destination_id: VariableOrOptional[str] = None
+    """
+    A snapshot of the dashboard will be sent to the destination when the `destination_id` field is present.
+    """
 
     user_name: VariableOrOptional[str] = None
+    """
+    A snapshot of the dashboard will be sent to the user's email when the `user_name` field is present.
+    """
 
     @classmethod
     def from_dict(cls, value: "SubscriptionSubscriberDict") -> "Self":
@@ -29,8 +35,14 @@ class SubscriptionSubscriberDict(TypedDict, total=False):
     """"""
 
     destination_id: VariableOrOptional[str]
+    """
+    A snapshot of the dashboard will be sent to the destination when the `destination_id` field is present.
+    """
 
     user_name: VariableOrOptional[str]
+    """
+    A snapshot of the dashboard will be sent to the user's email when the `user_name` field is present.
+    """
 
 
 SubscriptionSubscriberParam = SubscriptionSubscriberDict | SubscriptionSubscriber

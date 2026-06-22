@@ -406,7 +406,10 @@ func newListWorkspaceAssignmentDetails() *cobra.Command {
 	cmd.Short = `List workspace assignment details for a workspace.`
 	cmd.Long = `List workspace assignment details for a workspace.
 
-  Lists workspace assignment details for a workspace.
+  Lists workspace assignment details for a workspace. For scalability, the
+  response omits the per-principal entitlement fields (entitlements and
+  effective_entitlements); call GetWorkspaceAssignmentDetail to read
+  entitlements for a single principal.
 
   Arguments:
     WORKSPACE_ID: Required. The workspace ID for which the workspace assignment details are

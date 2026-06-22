@@ -5,13 +5,14 @@ package workspace
 import (
 	access_control "github.com/databricks/cli/cmd/workspace/access-control"
 	agent_bricks "github.com/databricks/cli/cmd/workspace/agent-bricks"
+	ai_search "github.com/databricks/cli/cmd/workspace/ai-search"
 	alerts "github.com/databricks/cli/cmd/workspace/alerts"
 	alerts_legacy "github.com/databricks/cli/cmd/workspace/alerts-legacy"
 	alerts_v2 "github.com/databricks/cli/cmd/workspace/alerts-v2"
 	apps "github.com/databricks/cli/cmd/workspace/apps"
 	apps_settings "github.com/databricks/cli/cmd/workspace/apps-settings"
 	artifact_allowlists "github.com/databricks/cli/cmd/workspace/artifact-allowlists"
-	bundle "github.com/databricks/cli/cmd/workspace/bundle"
+	bundle_deployments "github.com/databricks/cli/cmd/workspace/bundle-deployments"
 	catalogs "github.com/databricks/cli/cmd/workspace/catalogs"
 	clean_room_asset_revisions "github.com/databricks/cli/cmd/workspace/clean-room-asset-revisions"
 	clean_room_assets "github.com/databricks/cli/cmd/workspace/clean-room-assets"
@@ -137,13 +138,14 @@ func All() []*cobra.Command {
 
 	out = append(out, access_control.New())
 	out = append(out, agent_bricks.New())
+	out = append(out, ai_search.New())
 	out = append(out, alerts.New())
 	out = append(out, alerts_legacy.New())
 	out = append(out, alerts_v2.New())
 	out = append(out, apps.New())
 	out = append(out, apps_settings.New())
 	out = append(out, artifact_allowlists.New())
-	out = append(out, bundle.New())
+	out = append(out, bundle_deployments.New())
 	out = append(out, catalogs.New())
 	out = append(out, clean_room_asset_revisions.New())
 	out = append(out, clean_room_assets.New())

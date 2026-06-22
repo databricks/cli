@@ -11,12 +11,18 @@ type (
 	skipIfEmptyOrDefault struct {
 		defaults map[string]any
 	}
+	// skipBackendDefault skips a field, regardless of its remote value, when it is
+	// absent from config. Used for fields the backend or a cluster policy may fill
+	// in: their remote-only value must not be synced into config. Fields the user
+	// does manage (present in config) still sync normally.
+	skipBackendDefault struct{}
 )
 
 var (
 	alwaysSkip              = skipAlways{}
 	zeroOrNil               = skipIfZeroOrNil{}
 	emptyEmailNotifications = skipIfEmptyOrDefault{defaults: map[string]any{"no_alert_for_skipped_runs": false}}
+	backendDefault          = skipBackendDefault{}
 )
 
 // serverSideDefaults contains all hardcoded server-side defaults.
@@ -54,6 +60,13 @@ var serverSideDefaults = map[string]any{
 	"resources.jobs.*.tasks[*].new_cluster.data_security_mode":  "SINGLE_USER", // TODO this field is computed on some workspaces in integration tests, check why and if we can skip it
 	"resources.jobs.*.tasks[*].new_cluster.enable_elastic_disk": alwaysSkip,    // deprecated field
 	"resources.jobs.*.tasks[*].new_cluster.single_user_name":    alwaysSkip,
+	// custom_tags and cluster_log_conf are commonly injected by cluster policies
+	// when the user omits them, so they exist only remotely. Syncing them back leaks
+	// one environment's policy values into (often shared) config and breaks deploys in
+	// other environments. TODO: move to backend_defaults in resources.yml once
+	// configsync filtering is migrated to the direct engine lifecycle metadata.
+	"resources.jobs.*.tasks[*].new_cluster.custom_tags":      backendDefault,
+	"resources.jobs.*.tasks[*].new_cluster.cluster_log_conf": backendDefault,
 
 	// Cluster fields (job_clusters)
 	"resources.jobs.*.job_clusters[*].new_cluster.aws_attributes":      alwaysSkip,
@@ -62,6 +75,8 @@ var serverSideDefaults = map[string]any{
 	"resources.jobs.*.job_clusters[*].new_cluster.data_security_mode":  "SINGLE_USER", // TODO this field is computed on some workspaces in integration tests, check why and if we can skip it
 	"resources.jobs.*.job_clusters[*].new_cluster.enable_elastic_disk": alwaysSkip,    // deprecated field
 	"resources.jobs.*.job_clusters[*].new_cluster.single_user_name":    alwaysSkip,
+	"resources.jobs.*.job_clusters[*].new_cluster.custom_tags":         backendDefault, // see tasks[*].new_cluster.custom_tags
+	"resources.jobs.*.job_clusters[*].new_cluster.cluster_log_conf":    backendDefault, // see tasks[*].new_cluster.cluster_log_conf
 
 	// Standalone cluster fields
 	"resources.clusters.*.aws_attributes":      alwaysSkip,
@@ -71,6 +86,8 @@ var serverSideDefaults = map[string]any{
 	"resources.clusters.*.driver_node_type_id": alwaysSkip,
 	"resources.clusters.*.enable_elastic_disk": alwaysSkip,
 	"resources.clusters.*.single_user_name":    alwaysSkip,
+	"resources.clusters.*.custom_tags":         backendDefault, // see jobs.*.tasks[*].new_cluster.custom_tags
+	"resources.clusters.*.cluster_log_conf":    backendDefault, // see jobs.*.tasks[*].new_cluster.cluster_log_conf
 
 	// Experiment fields
 	"resources.experiments.*.artifact_location": alwaysSkip,
@@ -117,6 +134,9 @@ func shouldSkipField(path string, value any, hasConfigValue bool) bool {
 			}
 			if hasConfigValue {
 				return false
+			}
+			if _, ok := expected.(skipBackendDefault); ok {
+				return true
 			}
 			if _, ok := expected.(skipIfZeroOrNil); ok {
 				return value == nil || value == int64(0)
