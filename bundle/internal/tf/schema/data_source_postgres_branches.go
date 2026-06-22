@@ -33,6 +33,7 @@ type DataSourcePostgresBranchesBranchesStatus struct {
 }
 
 type DataSourcePostgresBranchesBranches struct {
+	BranchId       string                                            `json:"branch_id,omitempty"`
 	CreateTime     string                                            `json:"create_time,omitempty"`
 	Name           string                                            `json:"name"`
 	Parent         string                                            `json:"parent,omitempty"`

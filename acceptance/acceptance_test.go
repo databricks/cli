@@ -609,6 +609,29 @@ func getSkipReason(config *internal.TestConfig, configPath string) string {
 	return ""
 }
 
+var ciRunID = regexp.MustCompile(`^[0-9]{1,16}$`)
+
+// ciUniqueName embeds a CI run id into the random unique name as "ci<runID>x<random>".
+// The result stays purely lowercase-alphanumeric like the base32 name it replaces, so it
+// remains valid everywhere $UNIQUE_NAME is used: app names (no hyphens would be fine but
+// underscores/uppercase are not), Python and Unity Catalog identifiers (no hyphens). No
+// punctuation separator works for all of them, so the run id (all digits) is delimited by
+// the letter "x", which also keeps the sweep prefix "ci<runID>x" collision-free between
+// runs whose ids share a prefix. Length is preserved ("app-$UNIQUE_NAME" is exactly the
+// 30-char app name maximum). Returns random unchanged when runID is absent, malformed, or
+// too long to leave at least 8 random characters.
+func ciUniqueName(runID, random string) string {
+	if !ciRunID.MatchString(runID) {
+		return random
+	}
+	prefix := "ci" + runID + "x"
+	randLen := len(random) - len(prefix)
+	if randLen < 8 {
+		return random
+	}
+	return prefix + random[:randLen]
+}
+
 func runTest(t *testing.T,
 	dir string,
 	variant int,
@@ -643,6 +666,8 @@ func runTest(t *testing.T,
 
 	id := uuid.New()
 	uniqueName := strings.ToLower(strings.Trim(base32.StdEncoding.EncodeToString(id[:]), "="))
+	// Embed the CI run id, when present, so leaked resources can be attributed to a run and swept by prefix.
+	uniqueName = ciUniqueName(os.Getenv("GITHUB_RUN_ID"), uniqueName)
 	repls.Set(uniqueName, "[UNIQUE_NAME]")
 
 	var tmpDir string

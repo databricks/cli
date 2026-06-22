@@ -93,6 +93,29 @@
           ],
           "bundle_mode": "TYPE_UNSPECIFIED",
           "workspace_artifact_path_type": "WORKSPACE_FILE_SYSTEM",
+          "upload_file_count": 4,
+          "upload_file_sizes": [
+            2,
+            0,
+            0,
+            1,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
           "local_cache_measurements_ms": [...redacted...]
         }
       }
