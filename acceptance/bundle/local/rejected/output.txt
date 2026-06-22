@@ -1,0 +1,12 @@
+
+>>> [CLI] bundle plan --local
+Error: --local is only supported with the direct engine. See https://docs.databricks.com/aws/en/dev-tools/bundles/direct
+
+
+Exit code: 1
+
+>>> [CLI] bundle deploy --local
+Error: --local is only supported with the direct engine. See https://docs.databricks.com/aws/en/dev-tools/bundles/direct
+
+
+Exit code: 1

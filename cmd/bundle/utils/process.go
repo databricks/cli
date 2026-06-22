@@ -15,6 +15,7 @@ import (
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/bundle/direct/dstate"
+	"github.com/databricks/cli/bundle/metrics"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/cmd/root"
@@ -192,6 +193,15 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		if len(b.Select) > 0 && !stateDesc.Engine.IsDirect() {
 			logdiag.LogError(ctx, errors.New("--select is only supported with the direct engine. See https://docs.databricks.com/aws/en/dev-tools/bundles/direct"))
 			return b, stateDesc, root.ErrAlreadyPrinted
+		}
+
+		// --local skips the per-resource remote read, which only the direct engine performs.
+		if b.Local {
+			if !stateDesc.Engine.IsDirect() {
+				logdiag.LogError(ctx, errors.New("--local is only supported with the direct engine. See https://docs.databricks.com/aws/en/dev-tools/bundles/direct"))
+				return b, stateDesc, root.ErrAlreadyPrinted
+			}
+			b.Metrics.SetBoolValue(metrics.LocalUsed, true)
 		}
 
 		// Open direct engine state once for all subsequent operations (ExportState, CalculatePlan, Apply, etc.)

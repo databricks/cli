@@ -156,6 +156,10 @@ type Bundle struct {
 	// When non-empty, only the specified resources are included in deployment.
 	Select []string
 
+	// Local, when set via the --local flag, plans and deploys using only the local
+	// state. The remote state of resources is neither fetched nor considered.
+	Local bool
+
 	// SkipLocalFileValidation makes path translation tolerant of missing local files.
 	// When set, TranslatePaths computes workspace paths without verifying files exist.
 	// Used by config-remote-sync: a user may modify resource paths remotely (e.g.,

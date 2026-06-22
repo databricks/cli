@@ -1,0 +1,33 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/local-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] bundle plan --local
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+
+=== Job reads during 'bundle plan --local':
+
+>>> print_requests.py --get //jobs/get
+
+>>> [CLI] bundle deploy --local
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/local-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Telemetry:
+local_used true
+
+=== Destroy
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.bar
+  delete resources.jobs.foo
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/local-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!

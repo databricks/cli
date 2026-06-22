@@ -1,0 +1,7 @@
+Local = true
+Cloud = true
+RecordRequests = true
+# --local skips the per-resource remote read, which only the direct engine performs.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+# databricks.yml is generated at runtime from the template.
+Ignore = [".databricks", ".gitignore", "databricks.yml"]

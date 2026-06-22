@@ -114,7 +114,7 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 		os.Remove(tmpStatePath)
 		return nil, err
 	}
-	plan, err := b.CalculatePlan(ctx, client, configRoot)
+	plan, err := b.CalculatePlan(ctx, client, configRoot, false)
 	if err != nil {
 		os.Remove(tmpStatePath)
 		return nil, err
@@ -170,7 +170,7 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 		os.Remove(tmpStatePath)
 		return nil, err
 	}
-	plan, err = b.CalculatePlan(ctx, client, configRoot)
+	plan, err = b.CalculatePlan(ctx, client, configRoot, false)
 	if _, ferr := b.StateDB.Finalize(ctx); ferr != nil {
 		log.Warnf(ctx, "failed to finalize state: %v", ferr)
 	}
