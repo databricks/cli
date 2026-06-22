@@ -22,7 +22,7 @@ import (
 
 func newConfigRemoteSyncCommand() *cobra.Command {
 	var save bool
-	var selectResources []string
+	var selectIDs []string
 
 	cmd := &cobra.Command{
 		Use:   "config-remote-sync",
@@ -42,12 +42,12 @@ Examples:
   databricks bundle config-remote-sync --save
 
   # Restrict the sync to a single resource by its type and deployed resource ID
-  databricks bundle config-remote-sync --select jobs:123456789 --save`,
+  databricks bundle config-remote-sync --select-ids jobs:123456789 --save`,
 		Hidden: true, // Used by DABs in the Workspace only
 	}
 
 	cmd.Flags().BoolVar(&save, "save", false, "Write updated config files to disk")
-	cmd.Flags().StringSliceVar(&selectResources, "select", nil, "Sync only the given resources, each as <type>:<id> (e.g. jobs:123456789). Can be repeated or comma-separated.")
+	cmd.Flags().StringSliceVar(&selectIDs, "select-ids", nil, "Sync only the given resources, each as <type>:<id> (e.g. jobs:123456789). Can be repeated or comma-separated.")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		if runtime.GOOS == "windows" {
@@ -94,13 +94,11 @@ Examples:
 				}
 				stats.CollectChangeStats(ctx, changes)
 
-				if len(selectResources) > 0 {
-					// --select takes <type>:<id> selectors (what the workspace UI knows),
-					// resolved to plan keys against the same state DetectChanges planned.
+				if len(selectIDs) > 0 {
 					// Filter after planning, never before: the plan must cover every
 					// resource so ${resources.*} references resolve; only the emitted
 					// changes are restricted to the selected resources.
-					selected, err := configsync.ResolveResourceSelectors(deployBundle, selectResources)
+					selected, err := configsync.ResolveResourceSelectors(&deployBundle.StateDB, selectIDs)
 					if err != nil {
 						return err
 					}

@@ -23,7 +23,7 @@ Resource: resources.jobs.job_c
 
 
 
-=== Save with repeated --select flags
+=== Save with repeated --select-ids flags
 Detected changes in 2 resource(s):
 
 Resource: resources.jobs.job_a

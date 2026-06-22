@@ -5,7 +5,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/databricks/cli/bundle/direct"
+	"github.com/databricks/cli/bundle/direct/dstate"
 )
 
 // ResolveResourceSelectors maps "<type>:<id>" selectors to their plan keys
@@ -25,14 +25,14 @@ import (
 // resources have an id, so a selector matching nothing is a caller mistake.
 // Duplicate selectors are deduplicated; the returned keys preserve the order in
 // which their selectors first appear.
-func ResolveResourceSelectors(deployBundle *direct.DeploymentBundle, selectors []string) ([]string, error) {
+func ResolveResourceSelectors(state *dstate.DeploymentState, selectors []string) ([]string, error) {
 	// Index deployed resources by "<type>:<id>". State keys have the form
 	// "resources.<type>.<name>"; indexing by the <type> component means a
 	// selector can only ever match a resource of that exact type, never an id
 	// that happens to collide across types.
 	byTypeID := make(map[string]string)
-	for key := range deployBundle.StateDB.Data.State {
-		id := deployBundle.StateDB.GetResourceID(key)
+	for key := range state.Data.State {
+		id := state.GetResourceID(key)
 		if id == "" {
 			continue
 		}
@@ -51,7 +51,7 @@ func ResolveResourceSelectors(deployBundle *direct.DeploymentBundle, selectors [
 	for _, selector := range selectors {
 		resourceType, id, ok := strings.Cut(selector, ":")
 		if !ok || resourceType == "" || id == "" {
-			return nil, fmt.Errorf("invalid --select value %q, expected <type>:<id> (e.g. jobs:123456789)", selector)
+			return nil, fmt.Errorf("invalid --select-ids value %q, expected <type>:<id> (e.g. jobs:123456789)", selector)
 		}
 		key, ok := byTypeID[selector]
 		if !ok {

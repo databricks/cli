@@ -38,19 +38,19 @@ Resource: resources.jobs.job_two
 
 
 === An unknown resource id is rejected
->>> [CLI] bundle config-remote-sync --select jobs:no-such-id-123
+>>> [CLI] bundle config-remote-sync --select-ids jobs:no-such-id-123
 Error: no deployed jobs resource with id no-such-id-123
 
 Exit code: 1
 
 === A selector without a type is rejected
->>> [CLI] bundle config-remote-sync --select no-such-id-123
-Error: invalid --select value "no-such-id-123", expected <type>:<id> (e.g. jobs:[NUMID])
+>>> [CLI] bundle config-remote-sync --select-ids no-such-id-123
+Error: invalid --select-ids value "no-such-id-123", expected <type>:<id> (e.g. jobs:[NUMID])
 
 Exit code: 1
 
 === An id that exists under a different type is rejected (no cross-type collision)
->>> [CLI] bundle config-remote-sync --select pipelines:[JOB_ONE_ID]
+>>> [CLI] bundle config-remote-sync --select-ids pipelines:[JOB_ONE_ID]
 Error: no deployed pipelines resource with id [JOB_ONE_ID]
 
 Exit code: 1

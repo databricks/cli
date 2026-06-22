@@ -23,7 +23,7 @@ EOF
 title "Sync only job_one, selected by its type and deployed resource id"
 echo
 cp databricks.yml databricks.yml.backup
-$CLI bundle config-remote-sync --select "jobs:$job_one_id" --save
+$CLI bundle config-remote-sync --select-ids "jobs:$job_one_id" --save
 
 title "Only job_one is updated; job_two is left untouched"
 echo
@@ -32,17 +32,17 @@ rm databricks.yml.backup
 
 title "Selecting job_one again is idempotent"
 echo
-$CLI bundle config-remote-sync --select "jobs:$job_one_id"
+$CLI bundle config-remote-sync --select-ids "jobs:$job_one_id"
 
 title "Unfiltered sync still detects the job_two drift (no lost updates)"
 echo
 $CLI bundle config-remote-sync
 
 title "An unknown resource id is rejected"
-errcode trace $CLI bundle config-remote-sync --select jobs:no-such-id-123
+errcode trace $CLI bundle config-remote-sync --select-ids jobs:no-such-id-123
 
 title "A selector without a type is rejected"
-errcode trace $CLI bundle config-remote-sync --select no-such-id-123
+errcode trace $CLI bundle config-remote-sync --select-ids no-such-id-123
 
 title "An id that exists under a different type is rejected (no cross-type collision)"
-errcode trace $CLI bundle config-remote-sync --select "pipelines:$job_one_id"
+errcode trace $CLI bundle config-remote-sync --select-ids "pipelines:$job_one_id"

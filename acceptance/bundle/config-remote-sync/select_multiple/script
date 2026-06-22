@@ -21,16 +21,16 @@ done
 
 title "Comma-separated selectors preview two of three resources"
 echo
-$CLI bundle config-remote-sync --select "jobs:$job_a_id,jobs:$job_b_id"
+$CLI bundle config-remote-sync --select-ids "jobs:$job_a_id,jobs:$job_b_id"
 
 title "Repeating the same selector dedupes silently"
 echo
-$CLI bundle config-remote-sync --select "jobs:$job_c_id,jobs:$job_c_id"
+$CLI bundle config-remote-sync --select-ids "jobs:$job_c_id,jobs:$job_c_id"
 
-title "Save with repeated --select flags"
+title "Save with repeated --select-ids flags"
 echo
 cp databricks.yml databricks.yml.backup
-$CLI bundle config-remote-sync --select "jobs:$job_a_id" --select "jobs:$job_b_id" --save
+$CLI bundle config-remote-sync --select-ids "jobs:$job_a_id" --select-ids "jobs:$job_b_id" --save
 
 title "job_a and job_b are updated, job_c is untouched"
 echo
