@@ -1,0 +1,20 @@
+# Regression test: the serialized plan must preserve postgres_role's role_id and
+# parent. Both live outside the embedded RoleRoleSpec, so without custom
+# (Un)MarshalJSON on the state they are dropped from the plan's new_state. The
+# committed out.plan.json below must show role_id and parent under new_state.value.
+# Deploying such a lossy plan would create the role with an empty role_id, the
+# server would generate its own, and the next plan would report phantom "recreate"
+# drift on the immutable role_id.
+
+trace $CLI bundle plan -o json > out.plan.json
+
+trace $CLI bundle deploy --plan out.plan.json
+
+# The create request must carry the configured role_id, not an empty one.
+trace print_requests.py //roles
+
+# A follow-up plan must show no drift.
+trace $CLI bundle plan
+
+trace $CLI bundle destroy --auto-approve
+rm out.requests.txt

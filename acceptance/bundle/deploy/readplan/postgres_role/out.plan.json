@@ -1,0 +1,53 @@
+{
+  "plan_version": 2,
+  "cli_version": "[DEV_VERSION]",
+  "plan": {
+    "resources.postgres_branches.branch": {
+      "depends_on": [
+        {
+          "node": "resources.postgres_projects.project",
+          "label": "${resources.postgres_projects.project.name}"
+        }
+      ],
+      "action": "create",
+      "new_state": {
+        "value": {
+          "branch_id": "test-branch",
+          "no_expiry": true,
+          "parent": "${resources.postgres_projects.project.name}"
+        },
+        "vars": {
+          "parent": "${resources.postgres_projects.project.name}"
+        }
+      }
+    },
+    "resources.postgres_projects.project": {
+      "action": "create",
+      "new_state": {
+        "value": {
+          "display_name": "Test Postgres Project",
+          "project_id": "test-pg-project"
+        }
+      }
+    },
+    "resources.postgres_roles.role": {
+      "depends_on": [
+        {
+          "node": "resources.postgres_branches.branch",
+          "label": "${resources.postgres_branches.branch.name}"
+        }
+      ],
+      "action": "create",
+      "new_state": {
+        "value": {
+          "parent": "${resources.postgres_branches.branch.name}",
+          "postgres_role": "app_role",
+          "role_id": "test-role"
+        },
+        "vars": {
+          "parent": "${resources.postgres_branches.branch.name}"
+        }
+      }
+    }
+  }
+}
