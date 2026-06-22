@@ -151,8 +151,11 @@ func recordPermissionMetrics(b *bundle.Bundle, stateFolderPerms *WorkspacePathPe
 	b.Metrics.SetBoolValue(metrics.StatePathIsShared, libraries.IsWorkspaceSharedPath(statePath))
 	b.Metrics.SetBoolValue(metrics.PermissionsSectionSet, len(b.Config.Permissions) > 0)
 
+	// userHomeOwner yields a non-empty owner whenever underUserHome is true, so these
+	// are exact complements: an unresolved deployer ("") never equals the owner and
+	// falls into the other-user bucket.
 	owner, underUserHome := userHomeOwner(statePath)
-	b.Metrics.SetBoolValue(metrics.StatePathInDeployerHome, underUserHome && deployer != "" && owner == deployer)
+	b.Metrics.SetBoolValue(metrics.StatePathInDeployerHome, underUserHome && owner == deployer)
 	b.Metrics.SetBoolValue(metrics.StatePathInOtherUserHome, underUserHome && owner != deployer)
 
 	// stateFolderPerms is nil when no permissions are declared, in which case there are
