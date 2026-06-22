@@ -1,38 +1,31 @@
 package internal
 
 import (
-	"fmt"
 	"os/exec"
 	"strings"
 	"testing"
+
+	"golang.org/x/mod/semver"
 )
 
-// RequireModernRuff fails the run if ruff is missing or older than 0.9.1, the
-// version pinned across the repo (python/pyproject.toml, Taskfile.yml). The
-// pydabs check-formatting acceptance test runs `ruff format` and its golden
-// output assumes that formatter behavior.
-func RequireModernRuff(t *testing.T) {
+// RequireRuff fails the run if ruff is missing from PATH or older than
+// minVersion (e.g. "0.9.1"). See the call site for why the minimum is what it is.
+func RequireRuff(t *testing.T, minVersion string) {
 	out, err := exec.Command("ruff", "--version").Output()
 	if err != nil {
-		t.Fatalf("ruff not found on PATH (acceptance tests require ruff >= 0.9.1): %v", err)
+		t.Fatalf("ruff not found on PATH (acceptance tests require ruff >= %s): %v", minVersion, err)
 	}
 	version := strings.TrimSpace(string(out))
-	if !ruffVersionOK(version) {
-		t.Fatalf("acceptance tests require ruff >= 0.9.1 (found %q); install a newer ruff", version)
+	if !ruffVersionOK(version, minVersion) {
+		t.Fatalf("acceptance tests require ruff >= %s (found %q); install a newer ruff", minVersion, version)
 	}
 }
 
-// ruffVersionOK reports whether `ruff --version` output (e.g. "ruff 0.9.1") is >= 0.9.1.
-func ruffVersionOK(version string) bool {
-	var major, minor, patch int
-	if _, err := fmt.Sscanf(version, "ruff %d.%d.%d", &major, &minor, &patch); err != nil {
+// ruffVersionOK reports whether `ruff --version` output (e.g. "ruff 0.9.1") is >= minVersion.
+func ruffVersionOK(versionOutput, minVersion string) bool {
+	fields := strings.Fields(versionOutput)
+	if len(fields) < 2 {
 		return false
 	}
-	if major != 0 {
-		return major > 0
-	}
-	if minor != 9 {
-		return minor > 9
-	}
-	return patch >= 1
+	return semver.Compare("v"+fields[1], "v"+minVersion) >= 0
 }

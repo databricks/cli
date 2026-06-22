@@ -1,32 +1,31 @@
 package internal
 
 import (
-	"fmt"
 	"os/exec"
 	"strings"
 	"testing"
+
+	"golang.org/x/mod/semver"
 )
 
-// RequireModernUv fails the run if uv is missing or older than 0.4. uv builds
-// the databricks-bundles wheel and provides the test interpreter via
-// `uv python find` (see EnsureModernPython), which landed in the 0.3 line; 0.4
-// is a small margin above that.
-func RequireModernUv(t *testing.T) {
+// RequireUV fails the run if uv is missing from PATH or older than minVersion
+// (e.g. "0.4"). See the call site for why the minimum is what it is.
+func RequireUV(t *testing.T, minVersion string) {
 	out, err := exec.Command("uv", "--version").Output()
 	if err != nil {
-		t.Fatalf("uv not found on PATH (acceptance tests require uv >= 0.4): %v", err)
+		t.Fatalf("uv not found on PATH (acceptance tests require uv >= %s): %v", minVersion, err)
 	}
 	version := strings.TrimSpace(string(out))
-	if !uvVersionOK(version) {
-		t.Fatalf("acceptance tests require uv >= 0.4 (found %q); install a newer uv", version)
+	if !uvVersionOK(version, minVersion) {
+		t.Fatalf("acceptance tests require uv >= %s (found %q); install a newer uv", minVersion, version)
 	}
 }
 
-// uvVersionOK reports whether `uv --version` output (e.g. "uv 0.11.22 (abc)") is >= 0.4.
-func uvVersionOK(version string) bool {
-	var major, minor int
-	if _, err := fmt.Sscanf(version, "uv %d.%d", &major, &minor); err != nil {
+// uvVersionOK reports whether `uv --version` output (e.g. "uv 0.11.22 (abc 2025-01-01)") is >= minVersion.
+func uvVersionOK(versionOutput, minVersion string) bool {
+	fields := strings.Fields(versionOutput)
+	if len(fields) < 2 {
 		return false
 	}
-	return major > 0 || minor >= 4
+	return semver.Compare("v"+fields[1], "v"+minVersion) >= 0
 }

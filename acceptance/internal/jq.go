@@ -1,32 +1,28 @@
 package internal
 
 import (
-	"fmt"
 	"os/exec"
 	"strings"
 	"testing"
+
+	"golang.org/x/mod/semver"
 )
 
-// RequireModernJq fails the run if jq is missing or older than 1.7. Acceptance
-// scripts use jq 1.7 features (the pick/1 builtin and the `.foo.[]` iteration
-// syntax); an older jq compiles them as errors and produces spurious diffs
-// across many tests rather than one clear failure.
-func RequireModernJq(t *testing.T) {
+// RequireJQ fails the run if jq is missing from PATH or older than minVersion
+// (e.g. "1.7"). See the call site for why the minimum is what it is.
+func RequireJQ(t *testing.T, minVersion string) {
 	out, err := exec.Command("jq", "--version").Output()
 	if err != nil {
-		t.Fatalf("jq not found on PATH (acceptance tests require jq >= 1.7): %v", err)
+		t.Fatalf("jq not found on PATH (acceptance tests require jq >= %s): %v", minVersion, err)
 	}
 	version := strings.TrimSpace(string(out))
-	if !jqVersionOK(version) {
-		t.Fatalf("acceptance tests require jq >= 1.7 (found %q); install a newer jq", version)
+	if !jqVersionOK(version, minVersion) {
+		t.Fatalf("acceptance tests require jq >= %s (found %q); install a newer jq", minVersion, version)
 	}
 }
 
-// jqVersionOK reports whether `jq --version` output (e.g. "jq-1.7.1") is >= 1.7.
-func jqVersionOK(version string) bool {
-	var major, minor int
-	if _, err := fmt.Sscanf(version, "jq-%d.%d", &major, &minor); err != nil {
-		return false
-	}
-	return major > 1 || (major == 1 && minor >= 7)
+// jqVersionOK reports whether `jq --version` output (e.g. "jq-1.7.1") is >= minVersion.
+func jqVersionOK(versionOutput, minVersion string) bool {
+	got := strings.TrimPrefix(versionOutput, "jq-")
+	return semver.Compare("v"+got, "v"+minVersion) >= 0
 }

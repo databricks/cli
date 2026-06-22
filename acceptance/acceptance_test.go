@@ -188,6 +188,22 @@ func hasRunFilter() bool {
 	return f != nil && strings.Contains(f.Value.String(), "=")
 }
 
+// requirePrerequisites verifies external tool prerequisites before doing any
+// work, so a stale toolchain fails fast with an actionable message instead of
+// producing confusing diffs deep into the run.
+func requirePrerequisites(t *testing.T) {
+	// Scripts use jq 1.7 features (the pick/1 builtin and the `.foo.[]` iteration syntax).
+	internal.RequireJQ(t, "1.7")
+	// uv builds the databricks-bundles wheel and provides the test interpreter
+	// via `uv python find`, which landed in the 0.3 line.
+	internal.RequireUV(t, "0.4")
+	// ruff 0.9.1 is pinned across the repo (python/pyproject.toml, Taskfile.yml);
+	// the check-formatting test's golden output assumes its formatter behavior.
+	internal.RequireRuff(t, "0.9.1")
+	// Acceptance scripts import the stdlib tomllib module, added in Python 3.11.
+	internal.EnsurePython(t, "3.11")
+}
+
 func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	if testdiff.OverwriteMode && !hasRunFilter() {
 		Subset = true
@@ -229,13 +245,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 		os.Unsetenv(v) //nolint:usetesting // t.Setenv cannot unset
 	}
 
-	// Verify external tool prerequisites before doing any work, so a stale
-	// toolchain fails fast with an actionable message instead of producing
-	// confusing diffs deep into the run.
-	internal.RequireModernJq(t)
-	internal.RequireModernUv(t)
-	internal.RequireModernRuff(t)
-	internal.EnsureModernPython(t)
+	requirePrerequisites(t)
 
 	buildDir := getBuildDir(t, cwd, runtime.GOOS, runtime.GOARCH)
 
