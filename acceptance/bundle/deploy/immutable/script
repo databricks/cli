@@ -14,5 +14,4 @@ trace $CLI jobs get $JOB_ID | jq '.settings.tasks' | jq '.[] | select(.spark_pyt
 trace $CLI jobs get $JOB_ID | jq '.settings.tasks' | jq '.[] | select(.notebook_task != null) | .notebook_task.notebook_path'
 trace $CLI jobs get $JOB_ID | jq '.settings.environments[0].spec.dependencies'
 
-# Sort output to make it stable
-trace $CLI bundle run my_job | sort_lines
+trace $CLI bundle run my_job

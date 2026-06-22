@@ -156,7 +156,6 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		bundle.ApplySeqContext(ctx, b,
 			snapshot.Upload(),
 			snapshot.TranslateResourcePaths(),
-			snapshot.SaveState(),
 		)
 		if !logdiag.HasError(ctx) {
 			_, libDiags := libraries.ReplaceWithRemotePath(ctx, b)

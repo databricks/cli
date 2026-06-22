@@ -26,6 +26,10 @@ type SnapshotInfo struct {
 // This interface exists so the implementation can later be replaced with a Go SDK call.
 type SnapshotUploader interface {
 	Upload(ctx context.Context, bundleID, snapshotID, currentUser string, zipContent []byte) (*SnapshotInfo, error)
+	// Delete removes all snapshots for a bundle. The server is responsible for
+	// cleaning up the content-addressed storage; the caller does not need to
+	// know individual snapshot paths.
+	Delete(ctx context.Context, bundleID string) error
 }
 
 // snapshotAPIClient implements SnapshotUploader against /api/2.0/repos/snapshots.
@@ -100,4 +104,9 @@ func (c *snapshotAPIClient) Upload(ctx context.Context, bundleID, snapshotID, cu
 	}
 
 	return &SnapshotInfo{Path: resp.Snapshot.Path}, nil
+}
+
+// Delete deletes all snapshots for the given bundleID via DELETE /api/2.0/repos/snapshots/{bundleID}.
+func (c *snapshotAPIClient) Delete(ctx context.Context, bundleID string) error {
+	return c.client.Do(ctx, http.MethodDelete, "/api/2.0/repos/snapshots/"+bundleID, nil, nil, nil, nil)
 }

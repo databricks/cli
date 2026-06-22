@@ -2,72 +2,88 @@ package snapshot
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"io/fs"
 	"os"
 	"path"
 	"path/filepath"
-	"strings"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/deploy"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/filer"
 )
 
-const snapshotPathStateFile = "snapshot_path"
+type loadState struct{}
 
-type (
-	saveState struct{}
-	loadState struct{}
-)
-
-// SaveState writes the snapshot path to the local deployment state directory
-// so it can be recovered during destroy without reading metadata.json.
-func SaveState() bundle.Mutator {
-	return &saveState{}
-}
-
-// LoadState reads the snapshot path from the local deployment state directory
-// and sets workspace.snapshot_path. Missing state is treated as a no-op so
-// destroy can proceed against bundles deployed before this feature was added.
+// LoadState reads workspace.snapshot_path from the local deployment.json and
+// sets the snapshot-derived workspace paths. Missing or empty state is treated
+// as a no-op so destroy can proceed against bundles deployed before this
+// feature was added.
 func LoadState() bundle.Mutator {
 	return &loadState{}
 }
 
-func (s *saveState) Name() string { return "snapshot.SaveState" }
 func (s *loadState) Name() string { return "snapshot.LoadState" }
 
-func (s *saveState) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	if b.Config.Workspace.SnapshotPath == "" {
-		return nil
+func (s *loadState) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+	localPath := filepath.Join(b.GetLocalStateDir(ctx), deploy.DeploymentStateFileName)
+	data, err := os.ReadFile(localPath)
+	if err != nil && !errors.Is(err, fs.ErrNotExist) {
+		return diag.FromErr(err)
 	}
 
-	dir, err := b.LocalStateDir(ctx)
+	if err == nil {
+		var state struct {
+			SnapshotPath string `json:"snapshot_path"`
+		}
+		if jsonErr := json.Unmarshal(data, &state); jsonErr != nil {
+			return diag.FromErr(jsonErr)
+		}
+		if state.SnapshotPath != "" {
+			applySnapshotPath(b, state.SnapshotPath)
+			return nil
+		}
+	}
+
+	// Local deployment.json is missing or was from a non-immutable deploy — fall
+	// back to the remote copy so destroy works on a fresh clone or a different machine.
+	return s.loadFromRemote(ctx, b)
+}
+
+func (s *loadState) loadFromRemote(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+	f, err := filer.NewWorkspaceFilesClient(b.WorkspaceClient(ctx), b.Config.Workspace.StatePath)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	p := filepath.Join(dir, snapshotPathStateFile)
-	return diag.FromErr(os.WriteFile(p, []byte(b.Config.Workspace.SnapshotPath), 0o600))
-}
-
-func (s *loadState) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	dir := b.GetLocalStateDir(ctx)
-	data, err := os.ReadFile(filepath.Join(dir, snapshotPathStateFile))
-
+	r, err := f.Read(ctx, deploy.DeploymentStateFileName)
 	if errors.Is(err, fs.ErrNotExist) {
 		return nil
 	}
-
 	if err != nil {
 		return diag.FromErr(err)
 	}
+	defer r.Close()
 
-	snapshotPath := strings.TrimSpace(string(data))
+	var state struct {
+		SnapshotPath string `json:"snapshot_path"`
+	}
+	if err := json.NewDecoder(r).Decode(&state); err != nil {
+		return diag.FromErr(err)
+	}
+
+	if state.SnapshotPath != "" {
+		applySnapshotPath(b, state.SnapshotPath)
+	}
+	return nil
+}
+
+func applySnapshotPath(b *bundle.Bundle, snapshotPath string) {
 	b.Config.Workspace.SnapshotPath = snapshotPath
-
 	// Restore FilePath and ArtifactPath so that TranslateResourcePaths() can
 	// rewrite local absolute paths to snapshot paths during destroy.
 	b.Config.Workspace.FilePath = path.Join(snapshotPath, "src", "files")
 	b.Config.Workspace.ArtifactPath = path.Join(snapshotPath, "src", "artifacts")
-	return nil
 }

@@ -103,6 +103,14 @@ func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, e
 
 	bundle.ApplyContext(ctx, b, files.Delete())
 
+	if logdiag.HasError(ctx) {
+		return
+	}
+
+	if b.Config.Bundle.Deployment.ImmutableFolder {
+		bundle.ApplyContext(ctx, b, snapshot.DeleteBundleSnapshots())
+	}
+
 	if !logdiag.HasError(ctx) {
 		cmdio.LogString(ctx, "Destroy complete!")
 	}
@@ -132,6 +140,16 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalDestroy))
 	}()
 
+	if b.Config.Bundle.Deployment.ImmutableFolder {
+		// Restore the snapshot path so that TranslateResourcePaths (for terraform, below)
+		// and DeleteBundleSnapshots (in destroyCore) know where the snapshot lives.
+		// Must run for both engines.
+		bundle.ApplyContext(ctx, b, snapshot.LoadState())
+		if logdiag.HasError(ctx) {
+			return
+		}
+	}
+
 	if !engine.IsDirect() {
 		mutators := []bundle.Mutator{
 			// We need to resolve artifact variable (how we do it in build phase)
@@ -142,11 +160,9 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 		}
 
 		if b.Config.Bundle.Deployment.ImmutableFolder {
-			// For immutable bundles, resource paths are local absolute paths after
-			// translate_paths. Restore workspace.file_path from the local state file
-			// and replace the local prefix with the snapshot remote path before
-			// Terraform processes the config.
-			mutators = append([]bundle.Mutator{snapshot.LoadState(), snapshot.TranslateResourcePaths()}, mutators...)
+			// Resource paths are local absolute paths after translate_paths. Replace the
+			// local prefix with the snapshot remote path before Terraform processes the config.
+			mutators = append([]bundle.Mutator{snapshot.TranslateResourcePaths()}, mutators...)
 		}
 
 		mutators = append(mutators,

@@ -46,6 +46,9 @@ func (s *stateUpdate) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnost
 	}
 	state.Files = fl
 
+	// Persist the snapshot path so destroy on a different machine can find it.
+	state.SnapshotPath = b.Config.Workspace.SnapshotPath
+
 	// Generate a UUID for the deployment, if one does not already exist
 	if state.ID == uuid.Nil {
 		state.ID = uuid.New()

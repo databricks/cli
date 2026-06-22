@@ -322,6 +322,16 @@ func (t *translateContext) rewriteValue(ctx context.Context, p dyn.Path, v dyn.V
 func applyTranslations(ctx context.Context, b *bundle.Bundle, t *translateContext, translations []func(context.Context, dyn.Value) (dyn.Value, error)) diag.Diagnostics {
 	switch {
 	case b.Config.Bundle.Deployment.ImmutableFolder:
+		// Reject an explicit workspace.file_path: immutable bundles control that path
+		// automatically (it is set to the content-addressed snapshot location after upload).
+		// A user-supplied value would be silently discarded, so we error early instead.
+		if loc := b.Config.GetLocation("workspace.file_path"); loc.File != "" {
+			return diag.Diagnostics{{
+				Severity:  diag.Error,
+				Summary:   "workspace.file_path cannot be configured when bundle.deployment.immutable_folder is true",
+				Locations: []dyn.Location{loc},
+			}}
+		}
 		// Keep paths as local absolute paths during validate. snapshot.TranslateResourcePaths()
 		// replaces this local prefix with the actual snapshot path after upload.
 		t.remoteRoot = t.b.SyncRootPath

@@ -91,7 +91,7 @@ bundle:
             Whether to fail on active runs. If this is set to true a deployment that is running can be interrupted.
         "immutable_folder":
           "description": |-
-            Whether to upload bundle files and artifacts as a single immutable snapshot. When true, all files are packaged into a zip and uploaded via the snapshot API, and workspace.file_path and workspace.artifact_path are set to the returned content-addressed path. The validate and plan commands make no mutative API calls when this is enabled.
+            Whether to deploy bundle files and artifacts as a single immutable snapshot. When true, all files are packaged into a content-addressed archive and workspace.file_path and workspace.artifact_path are set to the resulting location. The validate and plan commands make no mutative API calls when this is enabled.
         "lock":
           "description": |-
             The deployment lock attributes.

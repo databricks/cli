@@ -27,8 +27,7 @@ Deployment complete!
 ]
 
 >>> [CLI] bundle run my_job
-script: line 182: sort_lines: command not found
-Run URL: [DATABRICKS_URL]/?o=[NUMID]#job/[NUMID]/run/[NUMID]
+Run URL: [DATABRICKS_URL]/jobs/[NUMID]/runs/[NUMID]?o=[NUMID]
 
 [TIMESTAMP] "my job" RUNNING
 [TIMESTAMP] "my job" TERMINATED SUCCESS
@@ -41,5 +40,3 @@ All files and directories at the following location will be deleted: /Workspace/
 
 Deleting files...
 Destroy complete!
-
-Exit code: 127
