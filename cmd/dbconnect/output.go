@@ -2,6 +2,7 @@ package dbconnect
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"path/filepath"
 
@@ -16,13 +17,27 @@ import (
 // In JSON mode it renders the full structured result (even on error).
 // In text mode it prints phase headers and a summary, then returns the error.
 func renderResult(cmd *cobra.Command, ctx context.Context, res *libsdbconnect.Result, pipelineErr error) error {
+	// Guard against a nil result (e.g. pipeline failed before constructing one).
+	// Always emit a structured object in JSON mode so callers can rely on the schema.
+	if res == nil {
+		res = &libsdbconnect.Result{}
+		if pipelineErr != nil {
+			var pe *libsdbconnect.PipelineError
+			if errors.As(pipelineErr, &pe) {
+				res.Error = pe
+			} else {
+				res.Error = libsdbconnect.NewError(libsdbconnect.ErrProvisionFailed, pipelineErr, "%s", pipelineErr.Error())
+			}
+		}
+	}
+
 	if root.OutputType(cmd) == flags.OutputJSON {
 		return cmdio.Render(ctx, res)
 	}
 
 	// Text mode: print phase headers.
 	for i, phase := range res.Phases {
-		cmdio.LogString(ctx, fmt.Sprintf("=== Phase %d: %s ===", i, phase.Name))
+		cmdio.LogString(ctx, fmt.Sprintf("=== Phase %d: %s ===", i+1, phase.Name))
 		if phase.Detail != "" {
 			cmdio.LogString(ctx, fmt.Sprintf("    status=%s  %s", phase.Status, phase.Detail))
 		} else {

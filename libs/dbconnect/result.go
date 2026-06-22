@@ -33,9 +33,9 @@ const (
 
 // PipelineError represents an error during the dbconnect pipeline.
 type PipelineError struct {
-	Code ErrorCode
-	Msg  string
-	Err  error
+	Code ErrorCode `json:"code"`
+	Msg  string    `json:"message"`
+	Err  error     `json:"-"`
 }
 
 func (e *PipelineError) Error() string {
