@@ -225,3 +225,37 @@ func TestAccelerators(t *testing.T) {
 		GenAiComputeTask: &jobs.GenAiComputeTask{Compute: &jobs.ComputeConfig{NumGpus: 8, GpuType: "GPU_8xH100"}},
 	}}}))
 }
+
+func TestAcceleratorLabel(t *testing.T) {
+	assert.Empty(t, acceleratorLabel("GPU_8xH100", 0))
+	assert.Equal(t, "8x H100", acceleratorLabel("GPU_8xH100", 8))
+	assert.Equal(t, "1x A10", acceleratorLabel("GPU_1xA10", 1))
+	// The RPC may report a count without a recognized type.
+	assert.Equal(t, "8x", acceleratorLabel("", 8))
+}
+
+func TestTrainingWorkflowStatus(t *testing.T) {
+	cases := map[string]string{
+		"TRAINING_WORKFLOW_STATE_PENDING":               "PENDING",
+		"TRAINING_WORKFLOW_STATE_PENDING_SENT":          "PENDING",
+		"TRAINING_WORKFLOW_STATE_RUNNING":               "RUNNING",
+		"TRAINING_WORKFLOW_STATE_TERMINATION_REQUESTED": "TERMINATING",
+		"TRAINING_WORKFLOW_STATE_TERMINATION_SENT":      "TERMINATING",
+		"TRAINING_WORKFLOW_STATE_TERMINATED_COMPLETED":  "SUCCESS",
+		"TRAINING_WORKFLOW_STATE_TERMINATED_FAILED":     "FAILED",
+		"TRAINING_WORKFLOW_STATE_TERMINATED_STOPPED":    "CANCELED",
+		"TRAINING_WORKFLOW_STATE_UNSPECIFIED":           "UNKNOWN",
+		"":                                              "UNKNOWN",
+	}
+	for state, want := range cases {
+		assert.Equal(t, want, trainingWorkflowStatus(state), state)
+	}
+}
+
+func TestParseRPCTime(t *testing.T) {
+	assert.True(t, parseRPCTime("").IsZero())
+	assert.True(t, parseRPCTime("not-a-time").IsZero())
+	got := parseRPCTime("2026-06-05T18:46:55.876Z")
+	require.False(t, got.IsZero())
+	assert.Equal(t, "2026-06-05T18:46:55.876000+00:00", isoFormat(got))
+}

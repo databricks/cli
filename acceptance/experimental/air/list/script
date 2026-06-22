@@ -1,0 +1,5 @@
+title "list (text)"
+trace $CLI experimental air list
+
+title "list (json)"
+trace $CLI experimental air list -o json

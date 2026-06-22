@@ -3,7 +3,6 @@ package aircmd
 import (
 	"testing"
 
-	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -50,12 +49,7 @@ func TestParseListFilters(t *testing.T) {
 }
 
 func TestListFiltersMatches(t *testing.T) {
-	run := &jobs.Run{Tasks: []jobs.RunTask{{
-		GenAiComputeTask: &jobs.GenAiComputeTask{
-			MlflowExperimentName: "/Users/me@example.com/qwen-eval",
-			Compute:              &jobs.ComputeConfig{GpuType: "GPU_8xH100", NumGpus: 8},
-		},
-	}}}
+	wf := testWorkflow(1, "me@example.com", "GPU_8xH100", 8, "/Users/me@example.com/qwen-eval")
 
 	cases := []struct {
 		name string
@@ -74,32 +68,7 @@ func TestListFiltersMatches(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			assert.Equal(t, c.want, c.f.matches(run))
+			assert.Equal(t, c.want, c.f.matches(&wf))
 		})
 	}
-}
-
-func TestIsAirRun(t *testing.T) {
-	air := airBaseRun(1, "me@example.com", "GPU_1xH100", 1, "exp")
-	assert.True(t, isAirRun(&air))
-
-	sweep := sweepBaseRun(2, "me@example.com", "exp")
-	assert.True(t, isAirRun(&sweep))
-
-	assert.False(t, isAirRun(&jobs.BaseRun{}))
-	assert.False(t, isAirRun(&jobs.BaseRun{Tasks: []jobs.RunTask{{}}}))
-	// A GenAI task without a training script is not an AIR run.
-	assert.False(t, isAirRun(&jobs.BaseRun{Tasks: []jobs.RunTask{{
-		GenAiComputeTask: &jobs.GenAiComputeTask{MlflowExperimentName: "exp"},
-	}}}))
-}
-
-func TestTasksAreSweep(t *testing.T) {
-	sweep := sweepBaseRun(1, "me@example.com", "exp")
-	assert.True(t, tasksAreSweep(sweep.Tasks))
-
-	air := airBaseRun(2, "me@example.com", "GPU_1xH100", 1, "exp")
-	assert.False(t, tasksAreSweep(air.Tasks))
-
-	assert.False(t, tasksAreSweep(nil))
 }

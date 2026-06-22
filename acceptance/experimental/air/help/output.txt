@@ -12,7 +12,7 @@ Usage:
 Available Commands:
   cancel         Cancel one or more runs
   get            Show details for a specific resource
-  list           List recent runs
+  list           List your recent runs (active and completed) for the current profile
   logs           Stream or fetch logs for a run
   register-image Mirror a Docker image into the workspace registry
   run            Submit a training workload from a YAML config
@@ -27,3 +27,23 @@ Global Flags:
   -t, --target string    bundle target to use (if applicable)
 
 Use "databricks experimental air [command] --help" for more information about a command.
+
+=== list help
+>>> [CLI] experimental air list --help
+List your recent runs (active and completed) for the current profile
+
+Usage:
+  databricks experimental air list [flags]
+
+Flags:
+      --active               Show only active runs
+      --all-users            Show runs from all users
+      --filter stringArray   Filter runs, e.g. experiment=foo* (repeatable)
+  -h, --help                 help for list
+      --limit int            Maximum number of runs to show (default: all)
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)

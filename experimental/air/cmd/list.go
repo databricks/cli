@@ -10,22 +10,17 @@ import (
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/iam"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/spf13/cobra"
-	"golang.org/x/sync/errgroup"
 )
 
-// maxListScan bounds how many runs `air list` inspects while looking for AIR
-// runs that match the filters. The runs/list API returns runs of every kind for
-// every user, so a workspace with a large run history could otherwise make the
-// command page indefinitely. This mirrors the Python CLI's pagination cap.
-const maxListScan = 2000
+// maxListPages caps how many pages `air list runs` fetches (a safety bound);
+// listPageBatch is the per-request page size.
+const (
+	maxListPages  = 50
+	listPageBatch = 100
+)
 
-// mlflowFetchConcurrency bounds the parallel runs/get-output lookups used to
-// build MLflow links for the table.
-const mlflowFetchConcurrency = 8
-
-// listData is the payload printed by `air list`.
+// listData is the payload printed by `air list runs`.
 type listData struct {
 	Rows []listRow `json:"runs"`
 }
@@ -42,23 +37,17 @@ type listRow struct {
 	IsSweep   bool    `json:"is_sweep"`
 
 	// Experiment, Duration, MLflowURL and Accelerators are table-only columns,
-	// omitted from JSON to match `air list --json`.
+	// omitted from JSON to match `air list runs --json`.
 	Experiment   string `json:"-"`
 	Duration     string `json:"-"`
 	MLflowURL    string `json:"-"`
 	Accelerators string `json:"-"`
 }
 
-// listedRun pairs a rendered row with the run it came from, so MLflow links can
-// be fetched for the row after the run has been filtered in.
-type listedRun struct {
-	row listRow
-	run *jobs.Run
-}
-
 // listQuery holds the resolved inputs to listAirRuns.
 type listQuery struct {
 	activeOnly bool
+	allUsers   bool
 	userFilter string
 	filters    listFilters
 	limit      int
@@ -75,15 +64,12 @@ func newListCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "list",
 		Args:  root.NoArgs,
-		Short: "List recent runs",
-		Annotations: map[string]string{
-			"template": listTemplate,
-		},
+		Short: "List your recent runs (active and completed) for the current profile",
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
 
-	cmd.Flags().IntVar(&limit, "limit", 20, "Maximum number of runs to show")
+	cmd.Flags().IntVar(&limit, "limit", 0, "Maximum number of runs to show (default: all)")
 	cmd.Flags().BoolVar(&active, "active", false, "Show only active runs")
 	cmd.Flags().BoolVar(&allUsers, "all-users", false, "Show runs from all users")
 	cmd.Flags().StringArrayVar(&filters, "filter", nil, "Filter runs, e.g. experiment=foo* (repeatable)")
@@ -92,7 +78,8 @@ func newListCommand() *cobra.Command {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
 
-		if limit <= 0 {
+		// limit 0 (unset) means "all"; an explicit value must be positive.
+		if cmd.Flags().Changed("limit") && limit <= 0 {
 			return fmt.Errorf("invalid --limit %d: must be a positive integer", limit)
 		}
 
@@ -102,8 +89,8 @@ func newListCommand() *cobra.Command {
 		}
 
 		// An explicit user= filter wins; otherwise default to the current user
-		// unless --all-users is set. The runs/list API has no user field, so the
-		// creator is matched while scanning.
+		// unless --all-users is set. The resolved name is sent to the server as
+		// creator_name, which scopes the listing.
 		userFilter := f.User
 		if userFilter == "" && !allUsers {
 			me, err := w.CurrentUser.Me(ctx, iam.MeRequest{})
@@ -113,8 +100,9 @@ func newListCommand() *cobra.Command {
 			userFilter = me.UserName
 		}
 
-		entries, err := listAirRuns(ctx, w, listQuery{
+		rows, err := listAirRuns(ctx, w, listQuery{
 			activeOnly: active,
+			allUsers:   allUsers,
 			userFilter: userFilter,
 			filters:    f,
 			limit:      limit,
@@ -123,142 +111,60 @@ func newListCommand() *cobra.Command {
 			return err
 		}
 
-		// MLflow links appear only in the text table, so the extra lookups are
-		// skipped for JSON output (which omits them, matching `air list --json`).
-		if root.OutputType(cmd) == flags.OutputText {
-			setMLflowLinks(ctx, w, entries)
+		// JSON keeps the air envelope; text renders the table (interactive and
+		// navigable in a terminal, printed once when piped).
+		if root.OutputType(cmd) == flags.OutputJSON {
+			return renderEnvelope(ctx, listData{Rows: rows})
 		}
-
-		rows := make([]listRow, len(entries))
-		for i, e := range entries {
-			rows[i] = e.row
-		}
-		return renderEnvelope(ctx, listData{Rows: rows})
+		return renderListText(cmd, rows)
 	}
 
 	return cmd
 }
 
-// listAirRuns pages through runs/list, keeping the AIR runs that match the user
-// and filters, up to the requested limit. It stops once it has enough matches
-// or has scanned maxListScan runs, whichever comes first.
-func listAirRuns(ctx context.Context, w *databricks.WorkspaceClient, q listQuery) ([]listedRun, error) {
-	// Limit is intentionally left unset: it caps total runs returned by the API
-	// (of any kind, any user), not AIR matches, so the result is filtered and
-	// truncated client-side instead.
-	it := w.Jobs.ListRuns(ctx, jobs.ListRunsRequest{
-		ActiveOnly:  q.activeOnly,
-		ExpandTasks: true,
-		RunType:     jobs.RunTypeSubmitRun,
-	})
+// listAirRuns pages through ListTrainingWorkflows, applies the client-side
+// --filter keys, and accumulates matches up to q.limit (0 = all). It stops at the
+// limit, when the server runs out of pages, or at maxListPages.
+func listAirRuns(ctx context.Context, w *databricks.WorkspaceClient, q listQuery) ([]listRow, error) {
+	// Fetch in bounded batches and follow the page token, so "all" doesn't ask
+	// the server for an unbounded page.
+	pageSize := q.limit
+	if pageSize <= 0 || pageSize > listPageBatch {
+		pageSize = listPageBatch
+	}
+	query := map[string]any{
+		"active_only":       q.activeOnly,
+		"include_all_users": q.allUsers,
+		"page_size":         pageSize,
+	}
+	if q.userFilter != "" {
+		query["creator_name"] = q.userFilter
+	}
 
-	var entries []listedRun
-	scanned := 0
-	for it.HasNext(ctx) && scanned < maxListScan {
-		base, err := it.Next(ctx)
+	var rows []listRow
+	for range maxListPages {
+		resp, err := listTrainingWorkflows(ctx, w, query)
 		if err != nil {
-			return nil, fmt.Errorf("failed to list runs: %w", err)
-		}
-		scanned++
-
-		if !isAirRun(&base) {
-			continue
-		}
-		if q.userFilter != "" && base.CreatorUserName != q.userFilter {
-			continue
-		}
-		run := baseRunToRun(&base)
-		if !q.filters.matches(run) {
-			continue
+			return nil, err
 		}
 
-		entries = append(entries, listedRun{row: buildListRow(run), run: run})
-		if len(entries) >= q.limit {
-			break
-		}
-	}
-
-	if scanned >= maxListScan {
-		log.Warnf(ctx, "air list: stopped after scanning %d runs; results may be incomplete", maxListScan)
-	}
-
-	return entries, nil
-}
-
-// setMLflowLinks fills in each row's MLflow link in parallel. It is best-effort:
-// a row whose link can't be built keeps its placeholder, matching mlflowURL's
-// own non-fatal behavior.
-func setMLflowLinks(ctx context.Context, w *databricks.WorkspaceClient, entries []listedRun) {
-	var g errgroup.Group
-	g.SetLimit(mlflowFetchConcurrency)
-	for i := range entries {
-		g.Go(func() error {
-			if ids := mlflowIDs(ctx, w, entries[i].run); ids != nil {
-				entries[i].row.MLflowURL = mlflowLogsURL(w.Config.Host, ids)
+		for i := range resp.TrainingWorkflows {
+			wf := &resp.TrainingWorkflows[i]
+			if !q.filters.matches(wf) {
+				continue
 			}
-			return nil
-		})
-	}
-	// mlflowIDs never returns an error (it logs and yields nil), so Wait can't fail.
-	_ = g.Wait()
-}
+			rows = append(rows, buildListRow(wf, w.Config.Host))
+			if q.limit > 0 && len(rows) >= q.limit {
+				return rows, nil
+			}
+		}
 
-// baseRunToRun adapts a BaseRun (returned by runs/list) to a Run so the shared
-// format helpers, which take *jobs.Run, can be reused without change. Only the
-// fields those helpers read are copied.
-func baseRunToRun(b *jobs.BaseRun) *jobs.Run {
-	return &jobs.Run{
-		RunId:           b.RunId,
-		RunName:         b.RunName,
-		StartTime:       b.StartTime,
-		EndTime:         b.EndTime,
-		RunDuration:     b.RunDuration,
-		State:           b.State,
-		CreatorUserName: b.CreatorUserName,
-		RunPageUrl:      b.RunPageUrl,
-		Tasks:           b.Tasks,
+		if resp.NextPageToken == "" {
+			return rows, nil
+		}
+		query["page_token"] = resp.NextPageToken
 	}
-}
 
-// genAITask returns the GenAI compute task for a run task, unwrapping a foreach
-// sweep when present, or nil if the task isn't an AI runtime task.
-func genAITask(task jobs.RunTask) *jobs.GenAiComputeTask {
-	if task.GenAiComputeTask != nil {
-		return task.GenAiComputeTask
-	}
-	if task.ForEachTask != nil {
-		return task.ForEachTask.Task.GenAiComputeTask
-	}
-	return nil
-}
-
-// isAirRun reports whether a run is an AI runtime training workload. Such runs
-// carry a GenAI compute task with a training script, either directly or nested
-// inside a foreach sweep.
-func isAirRun(run *jobs.BaseRun) bool {
-	if len(run.Tasks) == 0 {
-		return false
-	}
-	t := genAITask(run.Tasks[0])
-	return t != nil && t.TrainingScriptPath != ""
-}
-
-// tasksAreSweep reports whether a run's first task fans out into iterations.
-func tasksAreSweep(tasks []jobs.RunTask) bool {
-	return len(tasks) > 0 && tasks[0].ForEachTask != nil
-}
-
-// runCompute returns the GPU type and count from a run's first GenAI task, or
-// ("", 0) when the run has no GPU compute attached. It reads the same field as
-// the accelerators helper, so the accelerator filter and the displayed
-// Accelerators column stay consistent.
-func runCompute(run *jobs.Run) (string, int) {
-	if len(run.Tasks) == 0 {
-		return "", 0
-	}
-	t := run.Tasks[0].GenAiComputeTask
-	if t == nil || t.Compute == nil {
-		return "", 0
-	}
-	return t.Compute.GpuType, t.Compute.NumGpus
+	log.Warnf(ctx, "air list: stopped after %d pages; results may be incomplete", maxListPages)
+	return rows, nil
 }

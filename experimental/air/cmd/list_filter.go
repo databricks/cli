@@ -5,8 +5,6 @@ import (
 	"path"
 	"strconv"
 	"strings"
-
-	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
 // supportedFilterKeys are the keys accepted by `air list --filter KEY=VALUE`.
@@ -52,15 +50,13 @@ func parseListFilters(raw []string) (listFilters, error) {
 	return f, nil
 }
 
-// matches reports whether a run satisfies the experiment, accelerator-type and
-// accelerator-count filters. The user filter is applied separately while
-// scanning, since it maps onto the run's creator rather than its tasks.
-func (f listFilters) matches(run *jobs.Run) bool {
+// matches reports whether a workflow satisfies the experiment, accelerator-type
+// and accelerator-count filters. These have no ListTrainingWorkflows equivalent,
+// so they are applied client-side to the response. The user filter is handled by
+// the server (via creator_name), so it is not re-checked here.
+func (f listFilters) matches(w *trainingWorkflow) bool {
 	if f.Experiment != "" {
-		name := ""
-		if e := experimentName(run); e != nil {
-			name = *e
-		}
+		name := stripExperimentUserPrefix(w.Status.Mlflow.Experiment)
 		matched, err := path.Match(strings.ToLower(f.Experiment), strings.ToLower(name))
 		if err != nil || !matched {
 			return false
@@ -68,14 +64,14 @@ func (f listFilters) matches(run *jobs.Run) bool {
 	}
 
 	if f.AcceleratorType != "" || f.NumAccelerators != nil {
-		gpuType, numGpus := runCompute(run)
+		compute := w.Spec.Compute
 		if f.AcceleratorType != "" {
-			display := strings.ToLower(gpuDisplayName(gpuType))
+			display := strings.ToLower(gpuDisplayName(compute.HardwareAcceleratorType))
 			if !strings.Contains(display, strings.ToLower(f.AcceleratorType)) {
 				return false
 			}
 		}
-		if f.NumAccelerators != nil && numGpus != *f.NumAccelerators {
+		if f.NumAccelerators != nil && compute.AcceleratorCount != *f.NumAccelerators {
 			return false
 		}
 	}
