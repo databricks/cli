@@ -1,0 +1,22 @@
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = []
+
+[Env]
+DATABRICKS_DBCONNECT_CONSTRAINT_SOURCE = "$DATABRICKS_HOST"
+
+[[Server]]
+Pattern = "GET /api/2.1/clusters/get"
+Response.Body = '''
+{
+  "cluster_id": "test-cluster-id",
+  "spark_version": "15.4.x-scala2.12"
+}
+'''
+
+[[Server]]
+Pattern = "GET /dbr/15.4.x-scala2.12/pyproject.toml"
+Response.StatusCode = 404
+Response.Body = '{"message": "Not found"}'
+
+[[Repls]]
+Old = 'uv uv \S+(?: \([^)]+\))?'
+New = 'uv [UV_VERSION]'

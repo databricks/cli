@@ -27,7 +27,11 @@ Usage:
   databricks dbconnect init [flags]
 
 Flags:
-  -h, --help   help for init
+      --check               compute the plan without writing files or provisioning
+      --cluster string      cluster ID to use as the compute target
+  -h, --help                help for init
+      --job string          job ID to use as the compute target
+      --serverless string   serverless version to use as the compute target (e.g. v4)
 
 Global Flags:
       --debug            enable debug logging
