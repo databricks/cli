@@ -40,10 +40,12 @@ func assertJSONRoundTrip(t *testing.T, v any, label string) {
 	require.Empty(t, changes, "%s lost fields in JSON round-trip\nbefore: %s\nafter:  %s", label, jsonDump(v), jsonDump(back))
 }
 
-// TestStateTypeRoundTrip verifies that every resource's StateType survives a
-// json.Marshal -> json.Unmarshal cycle without losing fields. The state file is
-// persisted and reloaded through exactly this path.
-func TestStateTypeRoundTrip(t *testing.T) {
+// TestRoundtripFixtureStateType verifies that every resource's StateType
+// survives a json.Marshal -> json.Unmarshal cycle without losing fields, using
+// the per-resource fixture in testConfig. The state file is persisted and
+// reloaded through exactly this path. Complements TestRoundtripAllFieldsStateType:
+// this exercises a realistic value, that one exercises every field.
+func TestRoundtripFixtureStateType(t *testing.T) {
 	_, client := setupTestServerClient(t)
 
 	for resourceType, resource := range SupportedResources {
@@ -66,26 +68,37 @@ func TestStateTypeRoundTrip(t *testing.T) {
 	}
 }
 
-// TestRoundtripRemoteType verifies that every resource's RemoteType survives a
-// json.Marshal -> json.Unmarshal cycle without losing fields. RemoteType is
-// emitted in the plan's "remote_state" field, so a wrapper that embeds an SDK
-// type with its own MarshalJSON must define its own or its extra fields vanish.
-//
-// Unlike the StateType check, we don't have a fixture per RemoteType, so we fill
-// every field with a non-zero value via reflection. That way a dropped field is
-// always non-zero before the round-trip and zero after, regardless of which
-// fields a realistic value would populate.
-func TestRoundtripRemoteType(t *testing.T) {
+// testRoundtripAllFields fills every field of the type returned by typeOf with a
+// non-zero value and asserts it survives a JSON round-trip. Filling all fields
+// makes a dropped field always observable (non-zero before, zero after),
+// independent of which fields a realistic value would populate. StateType and
+// RemoteType are validated as pointer-to-struct by the adapter, so typeOf always
+// returns a pointer here.
+func testRoundtripAllFields(t *testing.T, label string, typeOf func(*Adapter) reflect.Type) {
 	for resourceType, resource := range SupportedResources {
 		adapter, err := NewAdapter(resource, resourceType, nil)
 		require.NoError(t, err)
 
 		t.Run(resourceType, func(t *testing.T) {
-			remote := reflect.New(adapter.RemoteType().Elem())
-			fillNonZero(remote.Elem(), 0)
-			assertJSONRoundTrip(t, remote.Interface(), "RemoteType "+resourceType)
+			v := reflect.New(typeOf(adapter).Elem())
+			fillNonZero(v.Elem(), 0)
+			assertJSONRoundTrip(t, v.Interface(), label+" "+resourceType)
 		})
 	}
+}
+
+// TestRoundtripAllFieldsStateType verifies StateType survives a JSON round-trip
+// with every field populated. StateType is persisted to the state file.
+func TestRoundtripAllFieldsStateType(t *testing.T) {
+	testRoundtripAllFields(t, "StateType", (*Adapter).StateType)
+}
+
+// TestRoundtripAllFieldsRemoteType verifies RemoteType survives a JSON round-trip
+// with every field populated. RemoteType is emitted in the plan's "remote_state"
+// field, so a wrapper embedding an SDK type with its own MarshalJSON must define
+// its own or its extra fields vanish.
+func TestRoundtripAllFieldsRemoteType(t *testing.T) {
+	testRoundtripAllFields(t, "RemoteType", (*Adapter).RemoteType)
 }
 
 // fillNonZero recursively populates v with non-zero values so that every
