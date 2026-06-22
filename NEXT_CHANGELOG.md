@@ -5,6 +5,7 @@
 ### Notable Changes
 
 ### CLI
+* Add `databricks dbconnect init` and `databricks dbconnect sync` to provision a local Python environment (Python version, `databricks-connect` pin, and dependency constraints) matched to the selected Databricks compute target.
 
 ### Bundles
 * `bundle run` now prints the modern job run URL (`/jobs/<id>/runs/<id>`) so that non-admin users permitted to view the run are taken to the run instead of the workspace homepage.
