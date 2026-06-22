@@ -3,8 +3,10 @@ package aircmd
 import (
 	"errors"
 	"fmt"
+	"strconv"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/spf13/cobra"
@@ -55,10 +57,13 @@ The workload is described by a YAML config file (see --file).`,
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 
-		// --override is parsed and applied before validation; that pipeline is
-		// not ported yet, so reject it rather than silently ignore the flag.
+		// These flags' pipelines are not ported yet; reject rather than silently
+		// ignore them.
 		if len(overrides) > 0 {
 			return errors.New("--override is not yet supported")
+		}
+		if watch {
+			return errors.New("--watch is not yet supported")
 		}
 
 		cfg, err := loadRunConfig(file)
@@ -74,7 +79,19 @@ The workload is described by a YAML config file (see --file).`,
 			return renderEnvelope(ctx, runResult{Status: "DRY_RUN_OK", DryRun: true})
 		}
 
-		return notImplemented("run submission")
+		w := cmdctx.WorkspaceClient(ctx)
+		runID, dashboardURL, err := submitWorkload(ctx, w, cfg, file, idempotencyKey)
+		if err != nil {
+			return err
+		}
+
+		runIDStr := strconv.FormatInt(runID, 10)
+		if root.OutputType(cmd) == flags.OutputText {
+			cmdio.LogString(ctx, "Submitted run "+runIDStr)
+			cmdio.LogString(ctx, "View at: "+dashboardURL)
+			return nil
+		}
+		return renderEnvelope(ctx, runResult{Status: "SUBMITTED", RunID: runIDStr, DashboardURL: dashboardURL})
 	}
 
 	return cmd

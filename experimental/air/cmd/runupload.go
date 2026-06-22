@@ -3,10 +3,14 @@ package aircmd
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
+	"maps"
 	"os"
 	"path/filepath"
+	"slices"
+	"strings"
 
 	"github.com/databricks/cli/libs/filer"
 	"go.yaml.in/yaml/v3"
@@ -20,6 +24,8 @@ const (
 	commandScriptName   = "command.sh"
 	requirementsName    = "requirements.yaml"
 	hyperparametersName = "hyperparameters.yaml"
+	envVarsName         = "env_vars.json"
+	secretEnvVarsName   = "secret_env_vars.json"
 )
 
 // maxConfigYAMLBytes caps training_config.yaml. It is referenced by the Jobs
@@ -96,7 +102,57 @@ func buildArtifacts(cfg *runConfig, configPath string) ([]uploadItem, error) {
 		items = append(items, uploadItem{hyperparametersName, data})
 	}
 
+	// The ai_runtime_task proto carries no inline env vars or secrets; stage them
+	// as JSON files co-located with command.sh for the server-side launcher.
+	if len(cfg.EnvVariables) > 0 {
+		data, err := json.Marshal(envVarEntries(cfg.EnvVariables))
+		if err != nil {
+			return nil, fmt.Errorf("failed to serialize env_variables: %w", err)
+		}
+		items = append(items, uploadItem{envVarsName, data})
+	}
+	if len(cfg.Secrets) > 0 {
+		data, err := json.Marshal(secretEnvVarEntries(cfg.Secrets))
+		if err != nil {
+			return nil, fmt.Errorf("failed to serialize secrets: %w", err)
+		}
+		items = append(items, uploadItem{secretEnvVarsName, data})
+	}
+
 	return items, nil
+}
+
+// envVarEntry is one entry in env_vars.json.
+type envVarEntry struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
+}
+
+// secretEnvVarEntry is one entry in secret_env_vars.json. The YAML side is
+// {ENV_VAR: "scope/key"}; the launcher wants the split form.
+type secretEnvVarEntry struct {
+	Name        string `json:"name"`
+	SecretScope string `json:"secret_scope"`
+	SecretKey   string `json:"secret_key"`
+}
+
+// envVarEntries renders env_variables sorted by name for deterministic output.
+func envVarEntries(vars map[string]string) []envVarEntry {
+	out := make([]envVarEntry, 0, len(vars))
+	for _, name := range slices.Sorted(maps.Keys(vars)) {
+		out = append(out, envVarEntry{Name: name, Value: vars[name]})
+	}
+	return out
+}
+
+// secretEnvVarEntries renders secrets sorted by name for deterministic output.
+func secretEnvVarEntries(secrets map[string]string) []secretEnvVarEntry {
+	out := make([]secretEnvVarEntry, 0, len(secrets))
+	for _, name := range slices.Sorted(maps.Keys(secrets)) {
+		scope, key, _ := strings.Cut(secrets[name], "/")
+		out = append(out, secretEnvVarEntry{Name: name, SecretScope: scope, SecretKey: key})
+	}
+	return out
 }
 
 // uploadArtifacts writes each artifact into the launch directory, overwriting and

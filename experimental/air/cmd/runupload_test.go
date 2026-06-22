@@ -83,6 +83,26 @@ func TestBuildArtifacts_InlineRequirementsAndParameters(t *testing.T) {
 	assert.Contains(t, req, "- torch")
 }
 
+func TestBuildArtifacts_EnvVarsAndSecrets(t *testing.T) {
+	path := writeConfigFile(t, "run.yaml", "x: y\n")
+	cfg := &runConfig{
+		Command:      new("echo hi"),
+		EnvVariables: map[string]string{"WANDB": "demo"},
+		Secrets:      map[string]string{"HF_TOKEN": "myscope/hf"},
+	}
+
+	items, err := buildArtifacts(cfg, path)
+	require.NoError(t, err)
+	assert.Subset(t, itemNames(items), []string{envVarsName, secretEnvVarsName})
+
+	byName := map[string][]byte{}
+	for _, it := range items {
+		byName[it.name] = it.data
+	}
+	assert.JSONEq(t, `[{"name":"WANDB","value":"demo"}]`, string(byName[envVarsName]))
+	assert.JSONEq(t, `[{"name":"HF_TOKEN","secret_scope":"myscope","secret_key":"hf"}]`, string(byName[secretEnvVarsName]))
+}
+
 func TestBuildArtifacts_RequirementsFile(t *testing.T) {
 	dir := t.TempDir()
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "run.yaml"), []byte("x: y\n"), 0o600))

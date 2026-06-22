@@ -11,12 +11,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestMlflowExperimentName(t *testing.T) {
-	assert.Equal(t, "/Users/me@example.com/exp", mlflowExperimentName("exp", "", "me@example.com"))
-	assert.Equal(t, "/Workspace/shared/exp", mlflowExperimentName("exp", "/Workspace/shared", "me@example.com"))
-	assert.Equal(t, "/Workspace/shared/exp", mlflowExperimentName("exp", "/Workspace/shared/", "me@example.com"))
-}
-
 func TestCliLaunchDir(t *testing.T) {
 	dir := cliLaunchDir("/Workspace/Users/me@example.com", "my-exp", "")
 	assert.True(t, strings.HasPrefix(dir, "/Workspace/Users/me@example.com/.air/cli_launch/my-exp/my-exp_"), dir)

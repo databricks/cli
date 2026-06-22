@@ -50,15 +50,6 @@ func cliLaunchDir(base, experiment, run string) string {
 	return path.Join(base, ".air", "cli_launch", experiment, run+"_"+unique)
 }
 
-// mlflowExperimentName builds the full MLflow experiment path. A custom directory
-// is used as-is; otherwise it defaults under the user's home.
-func mlflowExperimentName(experiment, experimentDir, userEmail string) string {
-	if experimentDir != "" {
-		return strings.TrimRight(experimentDir, "/") + "/" + experiment
-	}
-	return "/Users/" + userEmail + "/" + experiment
-}
-
 // ensureExperimentDirectory creates experimentDir if it is missing, matching the
 // CLI's convention for its other artifact directories. Without this, a missing
 // parent surfaces only as a server-side INTERNAL_ERROR after the run is wasted.
