@@ -305,6 +305,23 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		return nil, errors.New("planning failed")
 	}
 
+	// In --local the main loop skips each resource's remote read, but reference
+	// resolution may still have fetched some targets on demand (remoteStateForRef
+	// stores them in RemoteStateCache). Surface those reads in the plan. This runs
+	// after the parallel walk so the write to entry.RemoteState is single-threaded:
+	// during the walk a target is fetched from a dependent's goroutine under the
+	// target's read lock, where writing its entry would race with sibling dependents.
+	if localOnly {
+		for key, entry := range plan.Plan {
+			if entry.RemoteState != nil {
+				continue
+			}
+			if remoteState, ok := b.RemoteStateCache.Load(key); ok {
+				entry.RemoteState = remoteState
+			}
+		}
+	}
+
 	for _, entry := range plan.Plan {
 		if entry.Action == deployplan.Skip {
 			entry.NewState = nil
