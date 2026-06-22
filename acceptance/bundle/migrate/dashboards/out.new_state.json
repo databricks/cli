@@ -12,7 +12,7 @@
     "etag": "[NUMID]",
     "parent_path": "/Workspace/Users/[USERNAME]",
     "published": true,
-    "serialized_dashboard": "sha256:9dc171d249749a592c717bb13f2d948d2f1fa5530b82ac308a3df0c48d347ef3",
+    "serialized_dashboard": "sha256:[ALPHANUMID]",
     "warehouse_id": "123456"
    }
   }

@@ -30,9 +30,9 @@
         "serialized_dashboard": {
           "action": "skip",
           "reason": "etag_based",
-          "old": "sha256:9dc171d249749a592c717bb13f2d948d2f1fa5530b82ac308a3df0c48d347ef3",
-          "new": "sha256:9dc171d249749a592c717bb13f2d948d2f1fa5530b82ac308a3df0c48d347ef3",
-          "remote": "sha256:aae99d4284b3390b1b35974f7bd4c03603cacd6a5a4a838ca563f652257ab6a7"
+          "old": "sha256:[ALPHANUMID]",
+          "new": "sha256:[ALPHANUMID]",
+          "remote": "sha256:[ALPHANUMID]"
         }
       }
     }

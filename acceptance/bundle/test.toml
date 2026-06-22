@@ -22,3 +22,12 @@ New = 'os/[OS]'
 [[Repls]]
 Old = ' cicd/github'
 New = ''
+
+# serialized_dashboard / serialized_space are persisted in direct-engine state as a
+# content hash. Collapse the 64-char digest to a single token, at a low Order so it
+# runs before the generic [NUMID] and [DASHBOARD_ID] rules that would otherwise split
+# the hex into pieces.
+[[Repls]]
+Old = 'sha256:[0-9a-f]{64}'
+New = 'sha256:[ALPHANUMID]'
+Order = -1

@@ -25,6 +25,6 @@ rm -f out.requests.txt
 # compared against the remote value, so the full content is not kept in state).
 # Assert both halves against the same deploy: state has the hash and not the inline
 # content; the create requests have the content and no hash.
-title "State stores the serialized_space content hash, not the content"
+title "State stores the serialized_space content hash, not the content:\n"
 print_state.py | gron.py | grep serialized_space | contains.py 'sha256:' '!main.sales.orders'
 contains.py '!sha256:' < out.create_requests.json > /dev/null

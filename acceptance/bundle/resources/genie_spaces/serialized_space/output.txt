@@ -5,8 +5,9 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
-=== State stores the serialized_space content hash, not the contentjson.state.resources.genie_spaces.from_file.state.serialized_space = "sha256:[NUMID]fd6bf4666354bd7e47234b226b1a6a9c72e2d56019fdd1bf8d3aa852";
-json.state.resources.genie_spaces.from_inline.state.serialized_space = "sha256:a98de2fbe715467b789896e79e[NUMID]c07e2cc764b3cd80bf39f517eceffb";
+=== State stores the serialized_space content hash, not the content:
+json.state.resources.genie_spaces.from_file.state.serialized_space = "sha256:[ALPHANUMID]";
+json.state.resources.genie_spaces.from_inline.state.serialized_space = "sha256:[ALPHANUMID]";
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

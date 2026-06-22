@@ -12,7 +12,7 @@
     "etag": [ETAG],
     "parent_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/resources",
     "published": true,
-    "serialized_dashboard": "sha256:[DASHBOARD_ID][DASHBOARD_ID]",
+    "serialized_dashboard": "sha256:[ALPHANUMID]",
     "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
    }
   }
