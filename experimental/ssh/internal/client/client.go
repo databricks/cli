@@ -230,9 +230,6 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 
 	if !opts.ProxyMode {
 		cmdio.LogString(ctx, fmt.Sprintf("Connecting to %s...", sessionID))
-		if opts.IsServerlessMode() && opts.Accelerator == "" {
-			cmdio.LogString(ctx, cmdio.Yellow(ctx, "WARNING: serverless compute without an accelerator is in private preview. If you are not enrolled, this command will likely time out with an error. Contact your Databricks account team to enroll."))
-		}
 	}
 
 	if opts.IDE != "" && !opts.ProxyMode {
@@ -323,10 +320,6 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 		serverStartTime := time.Now()
 		userName, serverPort, clusterID, err = ensureSSHServerIsRunning(ctx, client, version, secretScopeName, opts)
 		if err != nil {
-			if opts.IsServerlessMode() && opts.Accelerator == "" && errors.Is(err, errServerMetadata) {
-				return fmt.Errorf("failed to ensure that ssh server is running: %w\n\n"+
-					cmdio.Yellow(ctx, "This may be because serverless compute without an accelerator is in private preview.\nContact your Databricks account team to enroll."), err)
-			}
 			return fmt.Errorf("failed to ensure that ssh server is running: %w", err)
 		}
 		serverStartTimeMs = time.Since(serverStartTime).Milliseconds()
