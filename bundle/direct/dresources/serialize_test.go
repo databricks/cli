@@ -3,12 +3,30 @@ package dresources
 import (
 	"encoding/json"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/databricks/cli/libs/structs/structdiff"
 	"github.com/databricks/cli/libs/structs/structtag"
 	"github.com/stretchr/testify/require"
 )
+
+// formatChanges renders a diff as one "  path: old -> new" line per change, with
+// values JSON-encoded so nested fields stay readable in the failure message.
+func formatChanges(changes []structdiff.Change) string {
+	var b strings.Builder
+	for _, c := range changes {
+		old, _ := json.Marshal(c.Old)
+		updated, _ := json.Marshal(c.New)
+		b.WriteString("\n  ")
+		b.WriteString(c.Path.String())
+		b.WriteString(":\n    old = ")
+		b.Write(old)
+		b.WriteString("\n    new = ")
+		b.Write(updated)
+	}
+	return b.String()
+}
 
 // assertJSONRoundTrip marshals v to JSON, unmarshals it back into a fresh value
 // of the same type, and asserts the two are equal field-by-field.
@@ -37,7 +55,7 @@ func assertJSONRoundTrip(t *testing.T, v any, label string) {
 	// decoding yields) so they round-trip to the same concrete type.
 	changes, err := structdiff.GetStructDiff(v, back, nil)
 	require.NoError(t, err)
-	require.Empty(t, changes, "%s lost fields in JSON round-trip\nbefore: %s\nafter:  %s", label, jsonDump(v), jsonDump(back))
+	require.Empty(t, changes, "%s lost %d field(s) in JSON round-trip:%s", label, len(changes), formatChanges(changes))
 }
 
 // TestRoundtripFixtureStateType verifies that every resource's StateType
