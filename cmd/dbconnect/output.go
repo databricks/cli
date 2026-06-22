@@ -7,8 +7,8 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/flags"
 	libsdbconnect "github.com/databricks/cli/libs/dbconnect"
+	"github.com/databricks/cli/libs/flags"
 	"github.com/spf13/cobra"
 )
 
