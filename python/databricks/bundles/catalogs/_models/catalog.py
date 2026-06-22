@@ -49,8 +49,14 @@ class Catalog(Resource):
     """
 
     grants: VariableOrList[PrivilegeAssignment] = field(default_factory=list)
+    """
+    The Unity Catalog privileges to grant to principals on this securable.
+    """
 
     lifecycle: VariableOrOptional[Lifecycle] = None
+    """
+    Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+    """
 
     managed_encryption_settings: VariableOrOptional[EncryptionSettings] = None
     """
@@ -116,8 +122,14 @@ class CatalogDict(TypedDict, total=False):
     """
 
     grants: VariableOrList[PrivilegeAssignmentParam]
+    """
+    The Unity Catalog privileges to grant to principals on this securable.
+    """
 
     lifecycle: VariableOrOptional[LifecycleParam]
+    """
+    Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+    """
 
     managed_encryption_settings: VariableOrOptional[EncryptionSettingsParam]
     """

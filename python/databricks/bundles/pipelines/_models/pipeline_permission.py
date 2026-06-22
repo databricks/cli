@@ -18,12 +18,24 @@ class PipelinePermission:
     """"""
 
     level: VariableOr[PipelinePermissionLevel]
+    """
+    The allowed permission for user, group, service principal defined for this permission.
+    """
 
     group_name: VariableOrOptional[str] = None
+    """
+    The name of the group that has the permission set in level.
+    """
 
     service_principal_name: VariableOrOptional[str] = None
+    """
+    The name of the service principal that has the permission set in level.
+    """
 
     user_name: VariableOrOptional[str] = None
+    """
+    The name of the user that has the permission set in level.
+    """
 
     @classmethod
     def from_dict(cls, value: "PipelinePermissionDict") -> "Self":
@@ -37,12 +49,24 @@ class PipelinePermissionDict(TypedDict, total=False):
     """"""
 
     level: VariableOr[PipelinePermissionLevelParam]
+    """
+    The allowed permission for user, group, service principal defined for this permission.
+    """
 
     group_name: VariableOrOptional[str]
+    """
+    The name of the group that has the permission set in level.
+    """
 
     service_principal_name: VariableOrOptional[str]
+    """
+    The name of the service principal that has the permission set in level.
+    """
 
     user_name: VariableOrOptional[str]
+    """
+    The name of the user that has the permission set in level.
+    """
 
 
 PipelinePermissionParam = PipelinePermissionDict | PipelinePermission

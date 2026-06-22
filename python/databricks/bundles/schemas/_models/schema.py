@@ -45,6 +45,9 @@ class Schema(Resource):
     """
 
     grants: VariableOrList[PrivilegeAssignment] = field(default_factory=list)
+    """
+    The Unity Catalog privileges to grant to principals on this securable.
+    """
 
     lifecycle: VariableOrOptional[Lifecycle] = None
     """
@@ -93,6 +96,9 @@ class SchemaDict(TypedDict, total=False):
     """
 
     grants: VariableOrList[PrivilegeAssignmentParam]
+    """
+    The Unity Catalog privileges to grant to principals on this securable.
+    """
 
     lifecycle: VariableOrOptional[LifecycleParam]
     """

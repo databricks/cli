@@ -159,6 +159,9 @@ class Job(Resource):
     """
 
     permissions: VariableOrList[JobPermission] = field(default_factory=list)
+    """
+    The permissions to apply to this resource.
+    """
 
     queue: VariableOrOptional[QueueSettings] = None
     """
@@ -312,6 +315,9 @@ class JobDict(TypedDict, total=False):
     """
 
     permissions: VariableOrList[JobPermissionParam]
+    """
+    The permissions to apply to this resource.
+    """
 
     queue: VariableOrOptional[QueueSettingsParam]
     """

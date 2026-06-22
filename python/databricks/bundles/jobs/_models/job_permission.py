@@ -18,12 +18,24 @@ class JobPermission:
     """"""
 
     level: VariableOr[JobPermissionLevel]
+    """
+    The allowed permission for user, group, service principal defined for this permission.
+    """
 
     group_name: VariableOrOptional[str] = None
+    """
+    The name of the group that has the permission set in level.
+    """
 
     service_principal_name: VariableOrOptional[str] = None
+    """
+    The name of the service principal that has the permission set in level.
+    """
 
     user_name: VariableOrOptional[str] = None
+    """
+    The name of the user that has the permission set in level.
+    """
 
     @classmethod
     def from_dict(cls, value: "JobPermissionDict") -> "Self":
@@ -37,12 +49,24 @@ class JobPermissionDict(TypedDict, total=False):
     """"""
 
     level: VariableOr[JobPermissionLevelParam]
+    """
+    The allowed permission for user, group, service principal defined for this permission.
+    """
 
     group_name: VariableOrOptional[str]
+    """
+    The name of the group that has the permission set in level.
+    """
 
     service_principal_name: VariableOrOptional[str]
+    """
+    The name of the service principal that has the permission set in level.
+    """
 
     user_name: VariableOrOptional[str]
+    """
+    The name of the user that has the permission set in level.
+    """
 
 
 JobPermissionParam = JobPermissionDict | JobPermission

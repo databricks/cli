@@ -164,6 +164,9 @@ class Pipeline(Resource):
     """
 
     permissions: VariableOrList[PipelinePermission] = field(default_factory=list)
+    """
+    The permissions to apply to this resource.
+    """
 
     photon: VariableOrOptional[bool] = None
     """
@@ -347,6 +350,9 @@ class PipelineDict(TypedDict, total=False):
     """
 
     permissions: VariableOrList[PipelinePermissionParam]
+    """
+    The permissions to apply to this resource.
+    """
 
     photon: VariableOrOptional[bool]
     """
