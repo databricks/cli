@@ -1,7 +1,7 @@
 Local = true
 Cloud = true
 RecordRequests = false
-Ignore = [".databricks"]
+Ignore = [".databricks", "exported_alert.dbalert.json", "exported_normalized.json", "local_normalized.json"]
 
 # Alert tests timeout during bundle deploy (hang at file upload for 50+ minutes).
 # Use aggressive 5-minute timeout until the issue is resolved.

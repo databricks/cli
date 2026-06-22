@@ -1,20 +1,20 @@
 {
   "custom_summary": "My alert from file",
   "evaluation": {
-    "comparison_operator": "EQUAL",
-    "notification": {
-      "notify_on_ok": false,
-      "retrigger_seconds": 1
-    },
     "source": {
-      "aggregation": "MAX",
+      "name": "1",
       "display": "1",
-      "name": "1"
+      "aggregation": "MAX"
     },
+    "comparison_operator": "EQUAL",
     "threshold": {
       "value": {
-        "double_value": 2
+        "double_value": 2.0
       }
+    },
+    "notification": {
+      "retrigger_seconds": 1,
+      "notify_on_ok": false
     }
   },
   "schedule": {
