@@ -2,4 +2,5 @@
     status=ok  uv [UV_VERSION]
 === Phase 2: resolve ===
     status=failed  No compute target is selected. Select a cluster or serverless target, or pass --cluster/--serverless/--job
+For more detail, re-run with --debug, or --output json to share a structured report.
 Error: No compute target is selected. Select a cluster or serverless target, or pass --cluster/--serverless/--job

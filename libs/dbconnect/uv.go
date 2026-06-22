@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/process"
 )
 
@@ -56,6 +57,7 @@ func (m *uvManager) EnsureAvailable(ctx context.Context) (string, error) {
 			return "", err
 		}
 	}
+	log.Debugf(ctx, "uv: discovered binary at %s", bin)
 	m.bin = bin
 
 	// Use --version (not "version") to avoid project-scoped sub-command that requires pyproject.toml.
@@ -200,9 +202,16 @@ func pipConfIndexURL(ctx context.Context) string {
 // has no index-url entry.
 func (m *uvManager) resolveIndexURL(ctx context.Context) string {
 	if _, ok := env.Lookup(ctx, "UV_INDEX_URL"); ok {
+		log.Debugf(ctx, "uv: UV_INDEX_URL already set in environment, not overriding")
 		return ""
 	}
-	return pipConfIndexURL(ctx)
+	url := pipConfIndexURL(ctx)
+	if url != "" {
+		log.Debugf(ctx, "uv: using package index %s from pip.conf", url)
+	} else {
+		log.Debugf(ctx, "uv: no UV_INDEX_URL and no index-url in pip.conf; uv will use its default index (pypi.org)")
+	}
+	return url
 }
 
 // uvFailure builds a PipelineError from a failed uv invocation, appending uv's

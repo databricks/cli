@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/databricks/cli/libs/log"
 	"github.com/hexops/gotextdiff"
 	"github.com/hexops/gotextdiff/myers"
 	"github.com/hexops/gotextdiff/span"
@@ -29,6 +30,14 @@ type Pipeline struct {
 // Run executes all pipeline phases in order and returns a fully populated Result.
 // On a phase error, Result.Error is set and the same error is also returned.
 func (p *Pipeline) Run(ctx context.Context) (*Result, error) {
+	log.Debugf(ctx, "dbconnect: mode=%s project=%s cacheDir=%s constraintBaseURL=%s flags=%+v",
+		p.Mode,
+		filepath.ToSlash(p.ProjectDir),
+		filepath.ToSlash(p.CacheDir),
+		p.ConstraintBaseURL,
+		p.Flags,
+	)
+
 	res := &Result{
 		Mode:  p.Mode.String(),
 		Check: p.Check,
