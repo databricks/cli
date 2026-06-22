@@ -8,6 +8,7 @@ import (
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/structs/structaccess"
@@ -150,7 +151,7 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 			os.Remove(tmpStatePath)
 			return nil, err
 		}
-		compacted, err := adapter.CompactState(sv.Value)
+		compacted, err := dresources.CompactState(adapter.ResourceConfig(), sv.Value)
 		if err != nil {
 			os.Remove(tmpStatePath)
 			return nil, fmt.Errorf("compacting state: %w", err)

@@ -50,10 +50,10 @@ func (d *DeploymentUnit) Deploy(ctx context.Context, db *dstate.DeploymentState,
 	}
 }
 
-// saveState compacts the state (replacing large equality-only fields with content
-// hashes, see Adapter.CompactState) before persisting it.
+// saveState compacts the state (replacing fields declared hashed_in_state with content
+// hashes, see dresources.CompactState) before persisting it.
 func (d *DeploymentUnit) saveState(db *dstate.DeploymentState, id string, newState any) error {
-	compacted, err := d.Adapter.CompactState(newState)
+	compacted, err := dresources.CompactState(d.Adapter.ResourceConfig(), newState)
 	if err != nil {
 		return fmt.Errorf("compacting state: %w", err)
 	}

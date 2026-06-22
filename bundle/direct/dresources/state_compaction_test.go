@@ -4,9 +4,24 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestCompactStateNoDeclaredFields(t *testing.T) {
+	state := &DashboardState{DashboardConfig: resources.DashboardConfig{SerializedDashboard: `{"a":1}`}}
+
+	// A resource type with no hashed_in_state declaration returns the value untouched.
+	out, err := CompactState(GetResourceConfig("jobs"), state)
+	require.NoError(t, err)
+	assert.Same(t, state, out.(*DashboardState))
+
+	// A nil config is also a no-op.
+	out, err = CompactState(nil, state)
+	require.NoError(t, err)
+	assert.Same(t, state, out.(*DashboardState))
+}
 
 func TestHashStateValue(t *testing.T) {
 	stringHash, err := hashStateValue("hello")

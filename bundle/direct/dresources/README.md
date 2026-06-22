@@ -47,16 +47,16 @@ If the API may return a slice's elements in a different order between calls (e.g
 The state struct is serialized to JSON and persisted between deploys. Backward incompatible changes will result in a drift, which depending
 on field behaviour might result in recreate. See dstate/migrate.go on how to handle state migration.
 
-## CompactState: storing large fields as content hashes
+## hashed_in_state: storing large fields as content hashes
 
-Implement the optional `CompactState(state *T) (*T, error)` method when a field holds large content that is only ever compared for equality and never read back from state. It returns a copy of the state with such fields replaced by a content hash (use `hashStateValue`), and the framework applies it both before persisting state and to every value entering the diff, so stored and compared values share one form.
+Declare a field under `hashed_in_state` in `resources.yml` when it holds large content that is only ever compared for equality and never read back from state. The engine then persists only a `sha256:<hex>` content hash for that field (via `CompactState`, applied both before saving state and to every value entering the diff), so stored and compared values share one form. The full contents stay in the plan's `new_state` and are sent to the API on every deploy, so the deploy is unaffected.
 
 A field qualifies only if **all** of the following hold:
  - it is declared `ignore_remote_changes` (so it is never meaningfully compared against the remote value — typically `etag_based` drift detection),
  - it is not read back from state by any code path (e.g. not consumed raw by `OverrideChangeDesc` or by state export), and
  - it can be large (a small field gains nothing — the hash placeholder is ~70 bytes).
 
-`dashboards.serialized_dashboard` and `genie_spaces.serialized_space` use this: both inline a file's contents into state, both detect drift via `etag`, and both always send the full contents to the API from the plan's `new_state`. As a result the plan reports such fields as hashes (`sha256:...`) rather than full content. No state version bump is needed: legacy full-content state is hashed on read for comparison and rewritten compactly on the next save. Add a test asserting the field is `ignore_remote_changes` to guard the invariant.
+`dashboards.serialized_dashboard` uses this: it inlines a file's contents into config, detects drift via `etag`, and always sends the full contents to the API from the plan's `new_state`. As a result the plan reports the field as a hash (`sha256:...`) rather than full content. No state version bump is needed: legacy full-content state is hashed on read for comparison and rewritten compactly on the next save. Add a test asserting the field is declared both `hashed_in_state` and `ignore_remote_changes` to guard the invariant.
 
 ## OverrideChangeDesc
 

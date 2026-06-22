@@ -200,7 +200,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		// Compact every value that enters the diff so they share one comparison form.
 		// For saved state this also hashes legacy full-content entries on the fly; the
 		// on-disk entry is rewritten compactly on the next save (lazy migration).
-		savedState, err = adapter.CompactState(savedState)
+		savedState, err = dresources.CompactState(adapter.ResourceConfig(), savedState)
 		if err != nil {
 			logdiag.LogError(ctx, fmt.Errorf("%s: compacting saved state: %w", errorPrefix, err))
 			return false
@@ -220,7 +220,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 
 		// Compact a copy for comparison only; sv.Value keeps the full contents, which
 		// the deploy sends to the API.
-		localState, err := adapter.CompactState(sv.Value)
+		localState, err := dresources.CompactState(adapter.ResourceConfig(), sv.Value)
 		if err != nil {
 			logdiag.LogError(ctx, fmt.Errorf("%s: compacting local state: %w", errorPrefix, err))
 			return false
@@ -258,7 +258,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 				return false
 			}
 
-			remoteStateComparable, err = adapter.CompactState(remoteStateComparable)
+			remoteStateComparable, err = dresources.CompactState(adapter.ResourceConfig(), remoteStateComparable)
 			if err != nil {
 				logdiag.LogError(ctx, fmt.Errorf("%s: compacting remote state id=%q: %w", errorPrefix, dbentry.ID, err))
 				return false

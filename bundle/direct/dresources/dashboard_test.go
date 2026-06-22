@@ -27,7 +27,6 @@ func TestDashboardState_JSONSerialization_PublishedField(t *testing.T) {
 }
 
 func TestDashboardCompactState(t *testing.T) {
-	r := &ResourceDashboard{}
 	state := &DashboardState{
 		DashboardConfig: resources.DashboardConfig{
 			DisplayName:         "test-dashboard",
@@ -36,8 +35,9 @@ func TestDashboardCompactState(t *testing.T) {
 		},
 	}
 
-	compacted, err := r.CompactState(state)
+	out, err := CompactState(GetResourceConfig("dashboards"), state)
 	require.NoError(t, err)
+	compacted := out.(*DashboardState)
 
 	// serialized_dashboard is replaced by a content hash; other fields are preserved.
 	require.IsType(t, "", compacted.SerializedDashboard)
@@ -49,24 +49,27 @@ func TestDashboardCompactState(t *testing.T) {
 	assert.Equal(t, `{"pages":[{"name":"p1"}]}`, state.SerializedDashboard)
 
 	// Compacting is idempotent.
-	again, err := r.CompactState(compacted)
+	out2, err := CompactState(GetResourceConfig("dashboards"), compacted)
 	require.NoError(t, err)
-	assert.Equal(t, compacted.SerializedDashboard, again.SerializedDashboard)
+	assert.Equal(t, compacted.SerializedDashboard, out2.(*DashboardState).SerializedDashboard)
 }
 
-// TestDashboardSerializedDashboardIsIgnoreRemoteChanges guards the SHA-only invariant:
-// because serialized_dashboard is stored as a content hash, it must never be compared
-// against the (full-content) remote value, i.e. it must be declared ignore_remote_changes.
-func TestDashboardSerializedDashboardIsIgnoreRemoteChanges(t *testing.T) {
+// TestDashboardSerializedDashboardStateRules guards the SHA-only invariant. The field
+// must be declared hashed_in_state (so it is persisted as a hash) and, because the hash
+// can never equal the full-content remote value, it must also be ignore_remote_changes.
+func TestDashboardSerializedDashboardStateRules(t *testing.T) {
 	cfg := GetResourceConfig("dashboards")
 	path := structpath.NewStringKey(nil, "serialized_dashboard")
 
-	found := false
-	for _, rule := range cfg.IgnoreRemoteChanges {
-		if path.HasPatternPrefix(rule.Field) {
-			found = true
-			break
+	hasRule := func(rules []FieldRule) bool {
+		for _, rule := range rules {
+			if path.HasPatternPrefix(rule.Field) {
+				return true
+			}
 		}
+		return false
 	}
-	assert.True(t, found, "serialized_dashboard must be ignore_remote_changes for SHA-only state to be correct")
+
+	assert.True(t, hasRule(cfg.HashedInState), "serialized_dashboard must be declared hashed_in_state")
+	assert.True(t, hasRule(cfg.IgnoreRemoteChanges), "serialized_dashboard must be ignore_remote_changes for SHA-only state to be correct")
 }
