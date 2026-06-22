@@ -29,6 +29,9 @@ class Subscription:
     """
 
     subscribers: VariableOrList[SubscriptionSubscriber] = field(default_factory=list)
+    """
+    The list of subscribers to send the snapshot of the dashboard to.
+    """
 
     @classmethod
     def from_dict(cls, value: "SubscriptionDict") -> "Self":
@@ -53,6 +56,9 @@ class SubscriptionDict(TypedDict, total=False):
     """
 
     subscribers: VariableOrList[SubscriptionSubscriberParam]
+    """
+    The list of subscribers to send the snapshot of the dashboard to.
+    """
 
 
 SubscriptionParam = SubscriptionDict | Subscription

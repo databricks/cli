@@ -2,7 +2,7 @@
 # engine is known, so these errors are identical on both engines.
 
 # Unqualified name that matches no resource.
-errcode trace $CLI bundle plan --select no_such_resource
+musterr trace $CLI bundle plan --select no_such_resource
 
 # Qualified name whose resource does not exist.
-errcode trace $CLI bundle plan --select jobs.no_such_job
+musterr trace $CLI bundle plan --select jobs.no_such_job

@@ -19,6 +19,7 @@ type DataSourceSchemaSchemaInfo struct {
 	Comment                             string                                                         `json:"comment,omitempty"`
 	CreatedAt                           int                                                            `json:"created_at,omitempty"`
 	CreatedBy                           string                                                         `json:"created_by,omitempty"`
+	CustomMaxRetentionHours             int                                                            `json:"custom_max_retention_hours,omitempty"`
 	EnablePredictiveOptimization        string                                                         `json:"enable_predictive_optimization,omitempty"`
 	FullName                            string                                                         `json:"full_name,omitempty"`
 	MetastoreId                         string                                                         `json:"metastore_id,omitempty"`

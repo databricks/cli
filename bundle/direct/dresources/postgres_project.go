@@ -114,6 +114,7 @@ func (r *ResourcePostgresProject) DoCreate(ctx context.Context, config *Postgres
 			InitialEndpointSpec: nil,
 
 			// Output-only fields.
+			ProjectId:       "",
 			CreateTime:      nil,
 			DeleteTime:      nil,
 			Name:            "",
@@ -164,6 +165,7 @@ func (r *ResourcePostgresProject) DoUpdate(ctx context.Context, id string, confi
 			InitialEndpointSpec: nil,
 
 			// Output-only fields.
+			ProjectId:       "",
 			CreateTime:      nil,
 			DeleteTime:      nil,
 			Name:            "",
