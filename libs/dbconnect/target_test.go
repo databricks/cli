@@ -33,6 +33,7 @@ func TestResolveClusterFlag(t *testing.T) {
 	ti, err := ResolveTarget(t.Context(), TargetFlags{Cluster: "abc"}, c, BundleTarget{})
 	require.NoError(t, err)
 	assert.Equal(t, "cluster", ti.Kind)
+	assert.Equal(t, "15.4.x-scala2.12", ti.SparkVersion)
 	assert.Equal(t, "dbr/15.4.x-scala2.12", ti.EnvKey)
 	assert.Equal(t, "abc", ti.ClusterID)
 }

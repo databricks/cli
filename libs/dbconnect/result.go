@@ -23,7 +23,6 @@ type ErrorCode string
 
 const (
 	ErrNoTargetSelected      ErrorCode = "no_target_selected"
-	ErrClusterUnsupported    ErrorCode = "cluster_unsupported"
 	ErrConstraintFetchFailed ErrorCode = "constraint_fetch_failed"
 	ErrMergeFailed           ErrorCode = "merge_failed"
 	ErrProvisionFailed       ErrorCode = "provision_failed"
@@ -61,18 +60,11 @@ func NewError(code ErrorCode, err error, format string, args ...any) *PipelineEr
 
 // TargetInfo contains information about the target environment.
 type TargetInfo struct {
-	Kind          string        `json:"kind"`
-	ClusterID     string        `json:"cluster_id"`
-	SparkVersion  string        `json:"spark_version"`
-	EnvKey        string        `json:"env_key"`
-	PythonVersion string        `json:"python_version"`
-	Fallback      *FallbackInfo `json:"fallback,omitempty"`
-}
-
-// FallbackInfo contains fallback information.
-type FallbackInfo struct {
-	Requested string `json:"requested"`
-	Resolved  string `json:"resolved"`
+	Kind          string `json:"kind"`
+	ClusterID     string `json:"cluster_id"`
+	SparkVersion  string `json:"spark_version"`
+	EnvKey        string `json:"env_key"`
+	PythonVersion string `json:"python_version"`
 }
 
 // ConstraintInfo contains constraint information.

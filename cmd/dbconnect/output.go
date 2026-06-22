@@ -31,7 +31,16 @@ func renderResult(ctx context.Context, cmd *cobra.Command, res *libsdbconnect.Re
 	}
 
 	if root.OutputType(cmd) == flags.OutputJSON {
-		return cmdio.Render(ctx, res)
+		if err := cmdio.Render(ctx, res); err != nil {
+			return err
+		}
+		// The JSON object is the only thing written to stdout. On failure we still
+		// need a non-zero exit, but returning pipelineErr would make the root print
+		// "Error: ..." to stderr. ErrAlreadyPrinted exits non-zero without that.
+		if pipelineErr != nil {
+			return root.ErrAlreadyPrinted
+		}
+		return nil
 	}
 
 	// Text mode: print phase headers.

@@ -1,0 +1,20 @@
+{
+  "mode": "init",
+  "check": false,
+  "phases": [
+    {
+      "name": "preflight",
+      "status": "ok",
+      "detail": "uv [UV_VERSION]"
+    },
+    {
+      "name": "resolve",
+      "status": "failed",
+      "detail": "No compute target is selected. Select a cluster or serverless target, or pass --cluster/--serverless/--job"
+    }
+  ],
+  "error": {
+    "code": "no_target_selected",
+    "message": "No compute target is selected. Select a cluster or serverless target, or pass --cluster/--serverless/--job"
+  }
+}
