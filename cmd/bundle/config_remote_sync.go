@@ -80,14 +80,17 @@ Examples:
 				// selector resolution (avoids reading the terraform snapshot twice).
 				deployBundle, err := configsync.OpenDeploymentState(ctx, b, stateDesc.Engine)
 				if err != nil {
+					stats.ErrorCategory = protos.BundleConfigRemoteSyncErrorCategoryStateNotFound
+					return fmt.Errorf("deployment state not available: %w", err)
+				}
+
+				plan, err := deployBundle.CalculatePlan(ctx, b.WorkspaceClient(ctx), &b.Config)
+				if err != nil {
 					stats.ErrorCategory = protos.BundleConfigRemoteSyncErrorCategoryDetectChangesFailed
-					if errors.Is(err, configsync.ErrStateSnapshotNotFound) {
-						stats.ErrorCategory = protos.BundleConfigRemoteSyncErrorCategoryStateNotFound
-					}
 					return fmt.Errorf("failed to detect changes: %w", err)
 				}
 
-				changes, err := configsync.DetectChanges(ctx, b, deployBundle, stateDesc.Engine)
+				changes, err := configsync.ChangesFromPlan(ctx, b, plan, stateDesc.Engine)
 				if err != nil {
 					stats.ErrorCategory = protos.BundleConfigRemoteSyncErrorCategoryDetectChangesFailed
 					return fmt.Errorf("failed to detect changes: %w", err)

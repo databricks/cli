@@ -77,7 +77,7 @@ func ResolveResourceSelectors(state *dstate.DeploymentState, selectors []string)
 //
 // Only the selected resources' own nodes are kept: unlike deploy's plan
 // filtering, the selection is not expanded to transitive dependencies, because
-// dependencies matter only when planning (DetectChanges always plans the full
+// dependencies matter only when planning (the plan always covers the full
 // resource set so ${resources.*} references resolve), not when deciding which
 // resources' configuration may be rewritten.
 func FilterChanges(changes Changes, selected []string) Changes {

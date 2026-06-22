@@ -134,7 +134,7 @@ func convertChangeDesc(path string, cd *deployplan.ChangeDesc) (*ConfigChangeDes
 // reading. For the direct engine the caller (process.go) has already opened
 // b.DeploymentBundle; for the terraform engine the config snapshot is opened
 // here. Both yield read-mode state, so GetResourceID and Data.State are usable.
-// Open the state once per command and pass it to DetectChanges and
+// Open the state once per command and pass it to CalculatePlan and
 // ResolveResourceSelectors so the terraform snapshot is read only once.
 func OpenDeploymentState(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) (*direct.DeploymentBundle, error) {
 	if err := ensureSnapshotAvailable(ctx, b, engine); err != nil {
@@ -153,16 +153,10 @@ func OpenDeploymentState(ctx context.Context, b *bundle.Bundle, engine engine.En
 	return deployBundle, nil
 }
 
-// DetectChanges compares current remote state with the last deployed state
-// and returns a map of resource changes. deployBundle must already be open
-// (see OpenDeploymentState); engine selects the LocalEdit comparison below.
-func DetectChanges(ctx context.Context, b *bundle.Bundle, deployBundle *direct.DeploymentBundle, engine engine.EngineType) (Changes, error) {
+// ChangesFromPlan converts a deploy plan into the map of remote-vs-config
+// changes. engine selects the LocalEdit comparison below.
+func ChangesFromPlan(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, engine engine.EngineType) (Changes, error) {
 	changes := make(Changes)
-
-	plan, err := deployBundle.CalculatePlan(ctx, b.WorkspaceClient(ctx), &b.Config)
-	if err != nil {
-		return nil, fmt.Errorf("failed to calculate plan: %w", err)
-	}
 
 	for resourceKey, entry := range plan.Plan {
 		resourceChanges := make(ResourceChanges)
