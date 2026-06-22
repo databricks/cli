@@ -198,3 +198,76 @@ func TestPipelineResultPopulatesConstraintInfo(t *testing.T) {
 	assert.Equal(t, "databricks-connect~=17.2.0", res.Constraints.DatabricksConnect)
 	assert.Equal(t, 2, res.Constraints.ConstraintCount)
 }
+
+// newServerWithDBC returns a test server that serves a constraints TOML with the
+// given databricks-connect pin value in the dev dependency group.
+func newServerWithDBC(t *testing.T, dbcPin string) *httptest.Server {
+	t.Helper()
+	body := `[project]
+requires-python = "==3.12.*"
+
+[dependency-groups]
+dev = ["` + dbcPin + `"]
+
+[tool.uv]
+constraint-dependencies = []
+`
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(body))
+	}))
+}
+
+func TestPipelineValidateRejectsUnparseablePin(t *testing.T) {
+	dir := writeProject(t)
+	// Serve a TOML whose dev group has a malformed databricks-connect entry
+	// (no version digits after the package name).
+	srv := newServerWithDBC(t, "databricks-connect")
+	defer srv.Close()
+
+	p := &Pipeline{
+		Mode: ModeSync, ProjectDir: dir,
+		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
+		Flags:   TargetFlags{Serverless: "v4"},
+		Compute: stubCompute{}, PM: fakePM{py: "3.12", dbc: "17.2.0"},
+	}
+	res, err := p.Run(t.Context())
+	require.Error(t, err)
+	require.NotNil(t, res.Error)
+	assert.Equal(t, ErrValidationFailed, res.Error.Code)
+}
+
+func TestPipelineValidateRejectsUnparseableInstalledVersion(t *testing.T) {
+	dir := writeProject(t)
+	// sampleToml has databricks-connect~=17.2.0 as the pin; fakePM returns a
+	// bare integer "17" as the installed version — majorVersion("17") must now
+	// return "17" (not ""), so this actually passes. Use an empty installed
+	// version string to simulate an installed version that can't be parsed.
+	srv := newTestServer(t)
+	defer srv.Close()
+
+	p := &Pipeline{
+		Mode: ModeSync, ProjectDir: dir,
+		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
+		Flags:   TargetFlags{Serverless: "v4"},
+		Compute: stubCompute{}, PM: fakePM{py: "3.12", dbc: ""},
+	}
+	res, err := p.Run(t.Context())
+	require.Error(t, err)
+	require.NotNil(t, res.Error)
+	assert.Equal(t, ErrValidationFailed, res.Error.Code)
+}
+
+func TestMajorVersion(t *testing.T) {
+	cases := []struct {
+		input string
+		want  string
+	}{
+		{"17.2.0", "17"},
+		{"17", "17"},
+		{"", ""},
+		{"3.12", "3"},
+	}
+	for _, tc := range cases {
+		assert.Equal(t, tc.want, majorVersion(tc.input), "input=%q", tc.input)
+	}
+}
