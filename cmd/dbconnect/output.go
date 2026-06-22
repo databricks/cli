@@ -54,6 +54,7 @@ func renderResult(ctx context.Context, cmd *cobra.Command, res *libsdbconnect.Re
 	}
 
 	if pipelineErr != nil {
+		cmdio.LogString(ctx, "For more detail, re-run with --debug, or --output json to share a structured report.")
 		return pipelineErr
 	}
 

@@ -45,8 +45,10 @@ func FetchConstraints(ctx context.Context, baseURL, envKey, cacheDir string) (*C
 
 	data, fetchErr := fetchURL(ctx, url)
 	if fetchErr == nil {
-		// Write the cache copy; ignore errors so a read-only cacheDir is non-fatal.
-		_ = os.WriteFile(cachePath, data, 0o600)
+		// Write the cache copy; non-fatal so a read-only cacheDir doesn't break the command.
+		if err := os.WriteFile(cachePath, data, 0o600); err != nil {
+			log.Debugf(ctx, "failed to write constraint cache %s: %v", filepath.ToSlash(cachePath), err)
+		}
 		rp, dbc, deps, err := parseConstraints(data)
 		if err != nil {
 			return nil, fmt.Errorf("parse constraints for %s: %w", envKey, err)
