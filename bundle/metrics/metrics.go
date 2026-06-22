@@ -10,6 +10,7 @@ const (
 	ClusterLifecycleStarted             = "cluster_lifecycle_started"
 	SqlWarehouseLifecycleStarted        = "sql_warehouse_lifecycle_started"
 	SelectUsed                          = "select_used"
+	LocalUsed                           = "local_used"
 
 	// Outcome of the dry-run migration to the direct engine attempted after a
 	// successful terraform deploy WHEN THE USER DID NOT OPT IN. Only recorded

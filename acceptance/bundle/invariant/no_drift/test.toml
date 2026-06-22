@@ -1,1 +1,17 @@
 EnvMatrix.READPLAN = ["", "1"]
+
+# Run every config twice: once planning normally and once with --local, which plans
+# using only the local state. The no-drift invariant must hold either way: after a
+# deploy the local state saved by the engine must already match the config.
+EnvMatrix.LOCAL_DIFF = ["", "--local"]
+
+# The configs below show drift under --local and are excluded from that variant only.
+# They still run in the normal (LOCAL_DIFF="") variant.
+
+# dashboard, genie_space and vector_search_index persist a remote-sourced value in
+# state for drift detection (etag, endpoint_uuid) that the config never carries.
+# A normal plan reconciles it against the freshly-read remote; --local has no remote
+# to compare against, so the persisted value reads as drift. This is inherent to --local.
+EnvMatrixExclude.no_dashboard_local = ["LOCAL_DIFF=--local", "INPUT_CONFIG=dashboard.yml.tmpl"]
+EnvMatrixExclude.no_genie_space_local = ["LOCAL_DIFF=--local", "INPUT_CONFIG=genie_space.yml.tmpl"]
+EnvMatrixExclude.no_vector_search_index_local = ["LOCAL_DIFF=--local", "INPUT_CONFIG=vector_search_index.yml.tmpl"]

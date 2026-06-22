@@ -29,11 +29,14 @@ It is useful for previewing changes before running 'bundle deploy'.`,
 	var force bool
 	var clusterId string
 	var selectResources []string
+	var local bool
 	cmd.Flags().BoolVar(&force, "force", false, "Force-override Git branch validation.")
 	cmd.Flags().StringVar(&clusterId, "compute-id", "", "Override cluster in the deployment with the given compute ID.")
 	cmd.Flags().StringVarP(&clusterId, "cluster-id", "c", "", "Override cluster in the deployment with the given cluster ID.")
 	cmd.Flags().MarkDeprecated("compute-id", "use --cluster-id instead")
 	cmd.Flags().StringSliceVar(&selectResources, "select", nil, "Plan only the specified resource (e.g. 'my_job' or 'jobs.my_job'). Can be repeated or comma-separated.")
+	cmd.Flags().BoolVar(&local, "local", false, "Plan using only the local state, without fetching the remote state of resources.")
+	cmd.Flags().MarkHidden("local")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		opts := utils.ProcessOptions{
@@ -44,6 +47,7 @@ It is useful for previewing changes before running 'bundle deploy'.`,
 			InitFunc: func(b *bundle.Bundle) {
 				b.Config.Bundle.Force = force
 				b.Select = selectResources
+				b.Local = local
 
 				if cmd.Flag("compute-id").Changed {
 					b.Config.Bundle.ClusterId = clusterId
