@@ -5,5 +5,3 @@
 === Phase 3: fetch ===
     status=failed  fetch constraints for dbr/15.4.x-scala2.12: GET [DATABRICKS_URL]/dbr/15.4.x-scala2.12/pyproject.toml: unexpected status 404 Not Found
 Error: fetch constraints for dbr/15.4.x-scala2.12: GET [DATABRICKS_URL]/dbr/15.4.x-scala2.12/pyproject.toml: unexpected status 404 Not Found
-
-Exit code: 1
