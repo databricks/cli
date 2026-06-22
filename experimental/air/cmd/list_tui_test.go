@@ -62,6 +62,20 @@ func TestListModelWindowScrolls(t *testing.T) {
 	assert.Equal(t, 1, m.offset, "window scrolled to keep the cursor visible")
 }
 
+func TestListModelPageCap(t *testing.T) {
+	rows := make([]listRow, 50)
+	for i := range rows {
+		rows[i] = listRow{RunID: strconv.Itoa(i)}
+	}
+	r := lipgloss.NewRenderer(io.Discard)
+	r.SetColorProfile(termenv.Ascii)
+	m := newListModel(r, rows, false)
+
+	// A tall terminal still shows at most listPageRows per page.
+	next, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 100})
+	assert.Equal(t, listPageRows, next.(listModel).visibleCount())
+}
+
 func TestListModelPaging(t *testing.T) {
 	rows := make([]listRow, 10)
 	for i := range rows {

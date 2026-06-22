@@ -86,12 +86,17 @@ func newListModel(r *lipgloss.Renderer, rows []listRow, links bool) listModel {
 
 func (m listModel) Init() tea.Cmd { return nil }
 
-// visibleCount is how many rows fit, reserving lines for the header and hint.
+// listPageRows is the most rows shown per page.
+const listPageRows = 20
+
+// visibleCount is how many rows a page shows: at most listPageRows, and never
+// more than fits below the header and hint.
 func (m listModel) visibleCount() int {
-	if m.height <= 0 {
-		return len(m.rows)
+	n := min(listPageRows, len(m.rows))
+	if m.height > 0 {
+		n = min(n, m.height-3)
 	}
-	return max(1, min(len(m.rows), m.height-3))
+	return max(1, n)
 }
 
 func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
