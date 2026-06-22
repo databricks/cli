@@ -97,7 +97,7 @@ func runPipeline(cmd *cobra.Command, mode libsdbconnect.Mode) error {
 	}
 
 	res, pipelineErr := p.Run(ctx)
-	return renderResult(cmd, ctx, res, pipelineErr)
+	return renderResult(ctx, cmd, res, pipelineErr)
 }
 
 // resolveConstraintBaseURL returns the constraint base URL using ordered precedence:

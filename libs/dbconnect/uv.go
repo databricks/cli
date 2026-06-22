@@ -157,7 +157,7 @@ func discoverUv(ctx context.Context) (string, error) {
 		return p, nil
 	}
 
-	home, _ := os.UserHomeDir()
+	home, _ := env.UserHomeDir(ctx)
 
 	// XDG_BIN_HOME defaults to $HOME/.local/bin when unset.
 	xdgBinHome, _ := env.Lookup(ctx, "XDG_BIN_HOME")

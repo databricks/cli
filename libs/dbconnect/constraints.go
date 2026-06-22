@@ -38,7 +38,7 @@ func sanitizeEnvKey(envKey string) string {
 // and falls back to the cached copy on network or HTTP errors.
 //
 // Constraint files are hosted at:
-// https://github.com/databricks/databricks-dbconnect-constraints
+// https://github.com/pietern/databricks-environments
 func FetchConstraints(ctx context.Context, baseURL, envKey, cacheDir string) (*Constraints, error) {
 	url := baseURL + "/" + envKey + "/pyproject.toml"
 	cachePath := filepath.Join(cacheDir, sanitizeEnvKey(envKey)+".toml")
