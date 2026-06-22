@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/vectorsearch"
 )
 
@@ -21,6 +22,16 @@ var (
 type VectorSearchEndpointRemote struct {
 	vectorsearch.EndpointInfo
 	EndpointUuid string `json:"endpoint_uuid"`
+}
+
+// Custom marshalers needed because embedded vectorsearch.EndpointInfo has its own
+// MarshalJSON which would otherwise take over and ignore endpoint_uuid.
+func (s *VectorSearchEndpointRemote) UnmarshalJSON(b []byte) error {
+	return marshal.Unmarshal(b, s)
+}
+
+func (s VectorSearchEndpointRemote) MarshalJSON() ([]byte, error) {
+	return marshal.Marshal(s)
 }
 
 func newVectorSearchEndpointRemote(info *vectorsearch.EndpointInfo) *VectorSearchEndpointRemote {
