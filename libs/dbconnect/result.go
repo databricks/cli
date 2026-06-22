@@ -61,12 +61,12 @@ func NewError(code ErrorCode, err error, format string, args ...any) *PipelineEr
 
 // TargetInfo contains information about the target environment.
 type TargetInfo struct {
-	Kind              string         `json:"kind"`
-	ClusterID         string         `json:"cluster_id"`
-	SparkVersion      string         `json:"spark_version"`
-	EnvKey            string         `json:"env_key"`
-	PythonVersion     string         `json:"python_version"`
-	Fallback          *FallbackInfo  `json:"fallback,omitempty"`
+	Kind          string        `json:"kind"`
+	ClusterID     string        `json:"cluster_id"`
+	SparkVersion  string        `json:"spark_version"`
+	EnvKey        string        `json:"env_key"`
+	PythonVersion string        `json:"python_version"`
+	Fallback      *FallbackInfo `json:"fallback,omitempty"`
 }
 
 // FallbackInfo contains fallback information.
@@ -77,18 +77,18 @@ type FallbackInfo struct {
 
 // ConstraintInfo contains constraint information.
 type ConstraintInfo struct {
-	SourceURL              string `json:"source_url"`
-	FromCache              bool   `json:"from_cache"`
-	RequiresPython         string `json:"requires_python"`
-	DatabricksConnect      string `json:"databricks_connect"`
-	ConstraintCount        int    `json:"constraint_count"`
+	SourceURL         string `json:"source_url"`
+	FromCache         bool   `json:"from_cache"`
+	RequiresPython    string `json:"requires_python"`
+	DatabricksConnect string `json:"databricks_connect"`
+	ConstraintCount   int    `json:"constraint_count"`
 }
 
 // Plan contains the deployment plan.
 type Plan struct {
-	PyprojectPath string   `json:"pyproject_path"`
-	BackupPath    string   `json:"backup_path"`
-	Diff          string   `json:"diff"`
+	PyprojectPath  string   `json:"pyproject_path"`
+	BackupPath     string   `json:"backup_path"`
+	Diff           string   `json:"diff"`
 	ChangedRegions []string `json:"changed_regions"`
 }
 
@@ -101,20 +101,20 @@ type PhaseResult struct {
 
 // ResultDetail contains the final result details.
 type ResultDetail struct {
-	Status                  string `json:"status"`
-	VenvPath                string `json:"venv_path"`
-	PythonVersion           string `json:"python_version"`
+	Status                     string `json:"status"`
+	VenvPath                   string `json:"venv_path"`
+	PythonVersion              string `json:"python_version"`
 	DatabricksConnectInstalled string `json:"databricks_connect_installed"`
 }
 
 // Result contains the overall result of the dbconnect operation.
 type Result struct {
-	Mode       string            `json:"mode"`
-	Check      bool              `json:"check"`
-	Target     *TargetInfo       `json:"target,omitempty"`
-	Constraints *ConstraintInfo  `json:"constraints,omitempty"`
-	Plan       *Plan             `json:"plan,omitempty"`
-	Phases     []PhaseResult     `json:"phases,omitempty"`
-	Result     *ResultDetail     `json:"result,omitempty"`
-	Error      *PipelineError    `json:"error,omitempty"`
+	Mode        string          `json:"mode"`
+	Check       bool            `json:"check"`
+	Target      *TargetInfo     `json:"target,omitempty"`
+	Constraints *ConstraintInfo `json:"constraints,omitempty"`
+	Plan        *Plan           `json:"plan,omitempty"`
+	Phases      []PhaseResult   `json:"phases,omitempty"`
+	Result      *ResultDetail   `json:"result,omitempty"`
+	Error       *PipelineError  `json:"error,omitempty"`
 }
