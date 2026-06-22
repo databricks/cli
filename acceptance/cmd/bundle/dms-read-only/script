@@ -1,8 +1,0 @@
-trace $CLI bundle deployment list
-trace $CLI bundle deployment get deployments/abc
-trace $CLI bundle version list deployments/abc
-trace $CLI bundle version get deployments/abc/versions/v1
-trace $CLI bundle resource list deployments/abc
-trace $CLI bundle resource get deployments/abc/resources/my_job
-trace $CLI bundle operation list deployments/abc/versions/v1
-trace $CLI bundle operation get deployments/abc/versions/v1/operations/my_job
