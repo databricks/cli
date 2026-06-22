@@ -54,9 +54,11 @@ func TestDashboardCompactState(t *testing.T) {
 	assert.Equal(t, compacted.SerializedDashboard, out2.(*DashboardState).SerializedDashboard)
 }
 
-// TestDashboardSerializedDashboardStateRules guards the SHA-only invariant. The field
-// must be declared hashed_in_state (so it is persisted as a hash) and, because the hash
-// can never equal the full-content remote value, it must also be ignore_remote_changes.
+// TestDashboardSerializedDashboardStateRules documents that serialized_dashboard carries
+// two independent declarations: hashed_in_state (persist only its hash, since the blob is
+// large) and ignore_remote_changes (the server normalizes the content, so its remote hash
+// never matches the config hash — drift is detected via etag instead). The two are
+// orthogonal in general; serialized_dashboard just happens to need both.
 func TestDashboardSerializedDashboardStateRules(t *testing.T) {
 	cfg := GetResourceConfig("dashboards")
 	path := structpath.NewStringKey(nil, "serialized_dashboard")
@@ -71,5 +73,5 @@ func TestDashboardSerializedDashboardStateRules(t *testing.T) {
 	}
 
 	assert.True(t, hasRule(cfg.HashedInState), "serialized_dashboard must be declared hashed_in_state")
-	assert.True(t, hasRule(cfg.IgnoreRemoteChanges), "serialized_dashboard must be ignore_remote_changes for SHA-only state to be correct")
+	assert.True(t, hasRule(cfg.IgnoreRemoteChanges), "serialized_dashboard must be ignore_remote_changes (server normalizes the content)")
 }

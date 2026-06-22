@@ -41,7 +41,7 @@
           "reason": "etag_based",
           "old": "sha256:[HASH]",
           "new": "sha256:[HASH]",
-          "remote": "{}\n"
+          "remote": "sha256:[HASH]"
         }
       }
     }

@@ -48,7 +48,7 @@
           "reason": "etag_based",
           "old": "sha256:[HASH]",
           "new": "sha256:[HASH]",
-          "remote": "{\"pages\":[{\"displayName\":\"Test Dashboard\",\"name\":\"test-page\",\"pageType\":\"PAGE_TYPE_CANVAS\"}]}"
+          "remote": "sha256:[HASH]"
         }
       }
     }

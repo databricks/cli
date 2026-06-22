@@ -49,14 +49,13 @@ on field behaviour might result in recreate. See dstate/migrate.go on how to han
 
 ## hashed_in_state: storing large fields as content hashes
 
-Declare a field under `hashed_in_state` in `resources.yml` when it holds large content that is only ever compared for equality and never read back from state. The engine then persists only a `sha256:<hex>` content hash for that field (via `CompactState`, applied both before saving state and to every value entering the diff), so stored and compared values share one form. The full contents stay in the plan's `new_state` and are sent to the API on every deploy, so the deploy is unaffected.
+Declare a field under `hashed_in_state` in `resources.yml` when it holds large content that is only ever compared for equality and never read back from state. The engine then persists only a `sha256:<hex>` content hash for that field (via `CompactState`), and — crucially — hashes it on **every** value entering the diff: saved state, the local config, and the remapped remote. Once the saved value is a hash, all three sides must be hashes or the comparisons (`Old==New` for a local change, `Remote==New` for remote drift) would be hash-vs-content nonsense. The full contents stay only in the plan's `new_state` and are sent to the API on every deploy, so the deploy is unaffected.
 
-A field qualifies only if **all** of the following hold:
- - it is declared `ignore_remote_changes` (so it is never meaningfully compared against the remote value — typically `etag_based` drift detection),
- - it is not read back from state by any code path (e.g. not consumed raw by `OverrideChangeDesc` or by state export), and
- - it can be large (a small field gains nothing — the hash placeholder is ~70 bytes).
+A field qualifies if it is large (a small field gains nothing — the hash placeholder is ~70 bytes) and is never read back from state by any code path (e.g. not consumed raw by `OverrideChangeDesc` or by state export).
 
-`dashboards.serialized_dashboard` uses this: it inlines a file's contents into config, detects drift via `etag`, and always sends the full contents to the API from the plan's `new_state`. As a result the plan reports the field as a hash (`sha256:...`) rather than full content. No state version bump is needed: legacy full-content state is hashed on read for comparison and rewritten compactly on the next save. Add a test asserting the field is declared both `hashed_in_state` and `ignore_remote_changes` to guard the invariant.
+**`hashed_in_state` is orthogonal to `ignore_remote_changes`.** Because the remote side is hashed too, remote drift on a hashed field is detected as `hash != hash` — so a field can be `hashed_in_state` *without* being `ignore_remote_changes` (as long as the server echoes the value back unchanged). The two are declared independently.
+
+`dashboards.serialized_dashboard` happens to need both, for unrelated reasons: it is `hashed_in_state` because the inlined dashboard JSON is large, and it is *separately* `ignore_remote_changes` because the **server normalizes** it (adds `pageType`, reorders keys) so its remote hash never equals the config hash — drift is detected via `etag` instead. The plan therefore reports the field as a hash on all three sides. No state version bump is needed: legacy full-content state is hashed on read for comparison and rewritten compactly on the next save.
 
 ## OverrideChangeDesc
 

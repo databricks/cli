@@ -271,10 +271,20 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 				return false
 			}
 
-			// remoteStateComparable is intentionally NOT compacted. Hashing only ever
-			// helps the local diff (saved vs config); a hashed_in_state field is always
-			// ignore_remote_changes, so its remote diff is discarded regardless. Leaving
-			// the remote value uncompacted keeps the real server value visible in the plan.
+			// Compact the remapped remote on the same fields, so a hashed_in_state field
+			// is a hash on all three sides of the diff (saved, config, remote). Once the
+			// saved value is a hash, every comparison must be hash-vs-hash to be meaningful
+			// — including remote drift (Remote vs New). This is what keeps hashed_in_state
+			// orthogonal to ignore_remote_changes: remote drift is detected as hash != hash,
+			// so a field can be hashed without being ignore_remote_changes. serialized_dashboard
+			// is also ignore_remote_changes, but for an independent reason: the server
+			// normalizes it, so its remote hash never matches the config hash (see resources.yml).
+			remoteStateComparable, err = dresources.CompactState(adapter.ResourceConfig(), remoteStateComparable)
+			if err != nil {
+				logdiag.LogError(ctx, fmt.Errorf("%s: compacting remote state id=%q: %w", errorPrefix, dbentry.ID, err))
+				return false
+			}
+
 			remoteDiff, err = structdiff.GetStructDiff(remoteStateComparable, localState, adapter.KeyedSlices())
 			if err != nil {
 				logdiag.LogError(ctx, fmt.Errorf("%s: diffing remote state: %w", errorPrefix, err))
