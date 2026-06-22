@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/libs/structs/structdiff"
+	"github.com/databricks/cli/libs/structs/structtag"
 	"github.com/stretchr/testify/require"
 )
 
@@ -62,5 +63,80 @@ func TestStateTypeRoundTrip(t *testing.T) {
 
 			assertJSONRoundTrip(t, newState, "StateType "+resourceType)
 		})
+	}
+}
+
+// TestRoundtripRemoteType verifies that every resource's RemoteType survives a
+// json.Marshal -> json.Unmarshal cycle without losing fields. RemoteType is
+// emitted in the plan's "remote_state" field, so a wrapper that embeds an SDK
+// type with its own MarshalJSON must define its own or its extra fields vanish.
+//
+// Unlike the StateType check, we don't have a fixture per RemoteType, so we fill
+// every field with a non-zero value via reflection. That way a dropped field is
+// always non-zero before the round-trip and zero after, regardless of which
+// fields a realistic value would populate.
+func TestRoundtripRemoteType(t *testing.T) {
+	for resourceType, resource := range SupportedResources {
+		adapter, err := NewAdapter(resource, resourceType, nil)
+		require.NoError(t, err)
+
+		t.Run(resourceType, func(t *testing.T) {
+			remote := reflect.New(adapter.RemoteType().Elem())
+			fillNonZero(remote.Elem(), 0)
+			assertJSONRoundTrip(t, remote.Interface(), "RemoteType "+resourceType)
+		})
+	}
+}
+
+// fillNonZero recursively populates v with non-zero values so that every
+// serializable field is observable in a round-trip. It skips ForceSendFields
+// (json:"-") and bounds recursion depth to avoid runaway on self-referential
+// SDK types; bounding is safe because the fields at risk (a wrapper's own
+// fields alongside an embedded SDK type) sit at the top level.
+func fillNonZero(v reflect.Value, depth int) {
+	if depth > 6 {
+		return
+	}
+	switch v.Kind() {
+	case reflect.Bool:
+		v.SetBool(true)
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		v.SetInt(1)
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		v.SetUint(1)
+	case reflect.Float32, reflect.Float64:
+		v.SetFloat(1)
+	case reflect.String:
+		v.SetString("x")
+	case reflect.Pointer:
+		v.Set(reflect.New(v.Type().Elem()))
+		fillNonZero(v.Elem(), depth+1)
+	case reflect.Slice:
+		elem := reflect.New(v.Type().Elem()).Elem()
+		fillNonZero(elem, depth+1)
+		v.Set(reflect.Append(v, elem))
+	case reflect.Map:
+		v.Set(reflect.MakeMap(v.Type()))
+		val := reflect.New(v.Type().Elem()).Elem()
+		fillNonZero(val, depth+1)
+		v.SetMapIndex(reflect.ValueOf("k").Convert(v.Type().Key()), val)
+	case reflect.Interface:
+		// Free-form any fields decode to map[string]any from JSON.
+		v.Set(reflect.ValueOf(map[string]any{"k": "v"}))
+	case reflect.Struct:
+		t := v.Type()
+		for i := range t.NumField() {
+			sf := t.Field(i)
+			if !sf.IsExported() || sf.Name == "ForceSendFields" {
+				continue
+			}
+			if structtag.JSONTag(sf.Tag.Get("json")).Name() == "-" {
+				continue
+			}
+			fillNonZero(v.Field(i), depth+1)
+		}
+	default:
+		// Kinds that don't appear in SDK state/remote types (chan, func,
+		// complex, array, etc.) are left at their zero value.
 	}
 }
