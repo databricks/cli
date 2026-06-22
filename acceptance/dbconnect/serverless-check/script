@@ -1,0 +1,1 @@
+trace $CLI dbconnect init --serverless v4 --check

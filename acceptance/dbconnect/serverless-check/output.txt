@@ -1,0 +1,17 @@
+
+>>> [CLI] dbconnect init --serverless v4 --check
+=== Phase 1: preflight ===
+    status=ok  uv [UV_VERSION]
+=== Phase 2: resolve ===
+    status=ok  kind=serverless envKey=serverless/serverless-v4
+=== Phase 3: fetch ===
+    status=ok  source=[DATABRICKS_URL]/serverless/serverless-v4/pyproject.toml fromCache=false
+=== Phase 4: parse-python-version ===
+    status=ok  3.12
+=== Phase 5: plan ===
+    status=ok  changed=requires-python,databricks-connect,tool.uv.constraint-dependencies
+Plan: [TEST_TMP_DIR]/pyproject.toml
+  changed region: requires-python
+  changed region: databricks-connect
+  changed region: tool.uv.constraint-dependencies
+Check complete. No files were modified.

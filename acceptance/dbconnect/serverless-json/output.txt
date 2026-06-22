@@ -1,0 +1,57 @@
+
+>>> [CLI] dbconnect init --serverless v4 --check --output json
+{
+  "mode": "init",
+  "check": true,
+  "target": {
+    "kind": "serverless",
+    "cluster_id": "",
+    "spark_version": "",
+    "env_key": "serverless/serverless-v4",
+    "python_version": "3.12"
+  },
+  "constraints": {
+    "source_url": "[DATABRICKS_URL]/serverless/serverless-v4/pyproject.toml",
+    "from_cache": false,
+    "requires_python": "\u003e=3.12",
+    "databricks_connect": "databricks-connect~=17.2.0",
+    "constraint_count": 2
+  },
+  "plan": {
+    "pyproject_path": "[TEST_TMP_DIR]/pyproject.toml",
+    "backup_path": "[TEST_TMP_DIR]/pyproject.toml.bak",
+    "diff": "--- pyproject.toml\n+++ pyproject.toml\n@@ -1 +1,16 @@\n+[project]\n+name = \"001\"\n+requires-python = \"\u003e=3.12\"\n+\n+[dependency-groups]\n+dev = [\n+    \"databricks-connect~=17.2.0\",\n+]\n+\n+# managed by databricks dbconnect — do not edit\n+[tool.uv]\n+constraint-dependencies = [\n+    \"pyarrow\u003c19\",\n+    \"pandas\u003c3\",\n+]\n+# end managed by databricks dbconnect\n",
+    "changed_regions": [
+      "requires-python",
+      "databricks-connect",
+      "tool.uv.constraint-dependencies"
+    ]
+  },
+  "phases": [
+    {
+      "name": "preflight",
+      "status": "ok",
+      "detail": "uv [UV_VERSION]"
+    },
+    {
+      "name": "resolve",
+      "status": "ok",
+      "detail": "kind=serverless envKey=serverless/serverless-v4"
+    },
+    {
+      "name": "fetch",
+      "status": "ok",
+      "detail": "source=[DATABRICKS_URL]/serverless/serverless-v4/pyproject.toml fromCache=false"
+    },
+    {
+      "name": "parse-python-version",
+      "status": "ok",
+      "detail": "3.12"
+    },
+    {
+      "name": "plan",
+      "status": "ok",
+      "detail": "changed=requires-python,databricks-connect,tool.uv.constraint-dependencies"
+    }
+  ]
+}

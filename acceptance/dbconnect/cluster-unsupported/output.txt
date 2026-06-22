@@ -1,0 +1,9 @@
+=== Phase 1: preflight ===
+    status=ok  uv [UV_VERSION]
+=== Phase 2: resolve ===
+    status=ok  kind=cluster envKey=dbr/15.4.x-scala2.12
+=== Phase 3: fetch ===
+    status=failed  fetch constraints for dbr/15.4.x-scala2.12: GET [DATABRICKS_URL]/dbr/15.4.x-scala2.12/pyproject.toml: unexpected status 404 Not Found
+Error: fetch constraints for dbr/15.4.x-scala2.12: GET [DATABRICKS_URL]/dbr/15.4.x-scala2.12/pyproject.toml: unexpected status 404 Not Found
+
+Exit code: 1
