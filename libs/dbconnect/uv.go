@@ -55,7 +55,8 @@ func (m *uvManager) EnsureAvailable(ctx context.Context) (string, error) {
 	}
 	m.bin = bin
 
-	version, err := process.Background(ctx, []string{m.bin, "version"})
+	// Use --version (not "version") to avoid project-scoped sub-command that requires pyproject.toml.
+	version, err := process.Background(ctx, []string{m.bin, "--version"})
 	if err != nil {
 		return "", NewError(ErrProvisionFailed, err, "uv version check failed")
 	}

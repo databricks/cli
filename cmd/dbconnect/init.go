@@ -60,6 +60,9 @@ func runPipeline(cmd *cobra.Command, mode libsdbconnect.Mode) error {
 		Serverless: serverless,
 		Job:        job,
 	}
+	// ValidateTargetFlags is kept despite MarkFlagsMutuallyExclusive above:
+	// it also validates the library path (no Cobra equivalent) and guards
+	// non-Cobra call paths such as tests that invoke runPipeline directly.
 	if err := libsdbconnect.ValidateTargetFlags(targetFlags); err != nil {
 		return err
 	}
