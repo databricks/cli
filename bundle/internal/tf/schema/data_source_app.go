@@ -46,8 +46,9 @@ type DataSourceAppAppActiveDeployment struct {
 }
 
 type DataSourceAppAppAppStatus struct {
-	Message string `json:"message,omitempty"`
-	State   string `json:"state,omitempty"`
+	Message          string `json:"message,omitempty"`
+	RunningInstances int    `json:"running_instances,omitempty"`
+	State            string `json:"state,omitempty"`
 }
 
 type DataSourceAppAppComputeStatus struct {

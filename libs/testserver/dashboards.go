@@ -166,21 +166,19 @@ func (s *FakeWorkspace) DashboardUpdate(req Request) Response {
 		}
 	}
 
-	if updateReq.SerializedDashboard != dashboard.InputSerializedDashboard {
-		// Update etag.
-		prevEtag, err := strconv.Atoi(dashboard.Etag)
-		if err != nil {
-			return Response{
-				Body: map[string]string{
-					"message": "Invalid etag: " + dashboard.Etag,
-				},
-				StatusCode: 400,
-			}
+	// Bump etag on every write, matching cloud behavior.
+	prevEtag, err := strconv.Atoi(dashboard.Etag)
+	if err != nil {
+		return Response{
+			Body: map[string]string{
+				"message": "Invalid etag: " + dashboard.Etag,
+			},
+			StatusCode: 400,
 		}
-		nextEtag := prevEtag + 1
-		dashboard.Etag = strconv.Itoa(nextEtag)
+	}
+	dashboard.Etag = strconv.Itoa(prevEtag + 1)
 
-		// Update the input serialized dashboard.
+	if updateReq.SerializedDashboard != dashboard.InputSerializedDashboard {
 		dashboard.InputSerializedDashboard = updateReq.SerializedDashboard
 	}
 

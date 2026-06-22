@@ -4,8 +4,7 @@ rm out.requests.txt
 $CLI bundle plan -o json > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 
 print_requests() {
-    jq -c < out.requests.txt | jq 'select(.method != "GET" and (.path | contains("permissions")))'
-    rm out.requests.txt
+    print_requests.py //permissions
 }
 
 rm out.requests.txt

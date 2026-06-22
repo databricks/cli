@@ -3,6 +3,7 @@ package phases
 import (
 	"cmp"
 	"context"
+	"math"
 	"slices"
 
 	"github.com/databricks/cli/bundle"
@@ -34,16 +35,81 @@ func getExecutionTimes(b *bundle.Bundle) []protos.IntMapEntry {
 	return executionTimes
 }
 
-// Maximum length of the error message included in telemetry.
-const maxErrorMessageLength = 500
+// Exclusive upper bounds in bytes for the upload file-size histogram: entry i
+// counts files in [bounds[i-1], bounds[i]). The final bound is math.MaxInt64 so
+// every file maps to a bucket and the last entry is the >= 64 MiB tail.
+//
+// A power-of-2 ladder (each bound is 2x the previous) is used because file sizes
+// span many orders of magnitude; constant-ratio buckets keep useful resolution
+// across the whole range.
+//
+// The histogram is positional on the wire, so changing this list changes the
+// meaning of every entry. Treat the bounds as frozen once the metric has
+// adoption, and keep them in sync with the doc on
+// BundleDeployExperimental.UploadFileSizes.
+var uploadFileSizeBucketBounds = []int64{
+	256,           // 256 B
+	512,           // 512 B
+	1 << 10,       // 1 KiB
+	2 << 10,       // 2 KiB
+	4 << 10,       // 4 KiB
+	8 << 10,       // 8 KiB
+	16 << 10,      // 16 KiB
+	32 << 10,      // 32 KiB
+	64 << 10,      // 64 KiB
+	128 << 10,     // 128 KiB
+	256 << 10,     // 256 KiB
+	512 << 10,     // 512 KiB
+	1 << 20,       // 1 MiB
+	2 << 20,       // 2 MiB
+	4 << 20,       // 4 MiB
+	8 << 20,       // 8 MiB
+	16 << 20,      // 16 MiB
+	32 << 20,      // 32 MiB
+	64 << 20,      // 64 MiB
+	math.MaxInt64, // catch-all upper bound
+}
+
+// uploadFileSizeBucket returns the histogram bucket index for a file of the
+// given size in bytes. Bounds are exclusive upper bounds, so a size that equals
+// a bound belongs in the next bucket.
+func uploadFileSizeBucket(size int64) int {
+	i, found := slices.BinarySearch(uploadFileSizeBucketBounds, size)
+	if found {
+		i++
+	}
+	return i
+}
+
+// sizer is the subset of fileset.File that uploadFileSizeHistogram needs. Taking
+// an interface keeps the histogram unit-testable without constructing real files.
+type sizer interface {
+	Size() (int64, bool)
+}
+
+// uploadFileSizeHistogram counts the uploaded files into uploadFileSizeBucketBounds.
+// If any file's size cannot be determined the whole histogram is omitted (returns
+// nil) rather than emitting a partial, misleading distribution; upload_file_count
+// is reported independently. Also returns nil when no files were uploaded (e.g.
+// source-linked deployments).
+func uploadFileSizeHistogram(files []sizer) []int64 {
+	if len(files) == 0 {
+		return nil
+	}
+	hist := make([]int64, len(uploadFileSizeBucketBounds))
+	for _, f := range files {
+		size, ok := f.Size()
+		if !ok {
+			return nil
+		}
+		hist[uploadFileSizeBucket(size)]++
+	}
+	return hist
+}
 
 // LogDeployTelemetry logs a telemetry event for a bundle deploy command.
 func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
-	errMsg = scrubForTelemetry(errMsg)
-
-	if len(errMsg) > maxErrorMessageLength {
-		errMsg = errMsg[:maxErrorMessageLength]
-	}
+	errMsg = telemetry.ScrubErrorMessage(errMsg)
 
 	resourcesCount := int64(0)
 	_, err := dyn.MapByPattern(b.Config.Value(), dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey()), func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
@@ -177,6 +243,11 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 		experimentalConfig = &config.Experimental{}
 	}
 
+	uploadFileSizers := make([]sizer, len(b.Files))
+	for i, f := range b.Files {
+		uploadFileSizers[i] = f
+	}
+
 	telemetry.Log(ctx, protos.DatabricksCliLog{
 		BundleDeployEvent: &protos.BundleDeployEvent{
 			BundleUuid:   bundleUuid,
@@ -207,6 +278,8 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 			Experimental: &protos.BundleDeployExperimental{
 				BundleMode:                   mode,
 				ConfigurationFileCount:       b.Metrics.ConfigurationFileCount,
+				UploadFileCount:              int64(len(b.Files)),
+				UploadFileSizes:              uploadFileSizeHistogram(uploadFileSizers),
 				TargetCount:                  b.Metrics.TargetCount,
 				WorkspaceArtifactPathType:    artifactPathType,
 				BoolValues:                   b.Metrics.BoolValues,

@@ -8,6 +8,7 @@ resources:
   sql_warehouses:
     mywarehouse:
       name: $UNIQUE_NAME
-      cluster_size: "Medium"
+      cluster_size: "2X-Small"
+      auto_stop_mins: 10
       lifecycle:
         started: true

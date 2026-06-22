@@ -1,5 +1,5 @@
 
-=== Describe without --profile (should use default)
+=== Describe without --profile (DATABRICKS_HOST takes precedence over default_profile)
 
 >>> [CLI] auth describe
 Host: [DATABRICKS_URL]
@@ -10,6 +10,24 @@ Current configuration:
   ✓ host: [DATABRICKS_URL] (from DATABRICKS_HOST environment variable)
   ✓ workspace_id: [NUMID]
   ✓ token: ******** (from DATABRICKS_TOKEN environment variable)
+  ✓ profile: default
+  ✓ databricks_cli_path: [CLI]
+  ✓ auth_type: pat
+  ✓ rate_limit: [NUMID] (from DATABRICKS_RATE_LIMIT environment variable)
+  ✓ cloud: AWS
+  ✓ discovery_url: [DATABRICKS_URL]/oidc/.well-known/oauth-authorization-server
+
+=== Describe without --profile and without DATABRICKS_HOST (uses default_profile)
+
+>>> [CLI] auth describe
+Host: [DATABRICKS_URL]
+User: [USERNAME]
+Authenticated with: pat
+-----
+Current configuration:
+  ✓ host: [DATABRICKS_URL] (from [TEST_TMP_DIR]/home/.databrickscfg config file)
+  ✓ workspace_id: [NUMID]
+  ✓ token: ******** (from [TEST_TMP_DIR]/home/.databrickscfg config file)
   ✓ profile: my-workspace
   ✓ databricks_cli_path: [CLI]
   ✓ auth_type: pat

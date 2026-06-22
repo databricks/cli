@@ -1,0 +1,29 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+targets:
+  default:
+    mode: development
+
+resources:
+  jobs:
+    job1:
+      max_concurrent_runs: 1
+      job_clusters:
+        - job_cluster_key: shared
+          new_cluster:
+            spark_version: $DEFAULT_SPARK_VERSION
+            node_type_id: $NODE_TYPE_ID
+            num_workers: 1
+      tasks:
+        - task_key: shared_cluster_task
+          job_cluster_key: shared
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/notebook
+        - task_key: own_cluster_task
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/notebook
+          new_cluster:
+            spark_version: $DEFAULT_SPARK_VERSION
+            node_type_id: $NODE_TYPE_ID
+            num_workers: 1
