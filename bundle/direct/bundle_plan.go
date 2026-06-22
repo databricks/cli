@@ -197,9 +197,22 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			return false
 		}
 
-		// Compact every value that enters the diff so they share one comparison form.
-		// For saved state this also hashes legacy full-content entries on the fly; the
-		// on-disk entry is rewritten compactly on the next save (lazy migration).
+		// Replace the hashed_in_state fields with their "sha256:..." hash in the state we
+		// just read off disk, so the diff below compares like-for-like.
+		//
+		// We only ever keep a content hash for big fields like serialized_dashboard, never
+		// the full contents. The new config we diff against (localState, below) is hashed
+		// too, so the saved side has to be hashed as well or the two could never match. The
+		// state we read might still hold the full, un-hashed contents though: either it was
+		// written by an older CLI from before this change, or the field was only just added
+		// to hashed_in_state. Hashing it here, on read, lines the two sides up so an
+		// unchanged resource correctly shows "no change".
+		//
+		// This only changes the in-memory copy used for the diff. The on-disk entry keeps
+		// its full contents until the resource is next saved (which rewrites it as a hash),
+		// so no state_version bump or explicit migration is needed.
+		//
+		// See https://github.com/databricks/cli/pull/5609
 		savedState, err = dresources.CompactState(adapter.ResourceConfig(), savedState)
 		if err != nil {
 			logdiag.LogError(ctx, fmt.Errorf("%s: compacting saved state: %w", errorPrefix, err))
