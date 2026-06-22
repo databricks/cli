@@ -197,6 +197,28 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			return false
 		}
 
+		// Replace the hashed_in_state fields with their "sha256:..." hash in the state we
+		// just read off disk, so the diff below compares like-for-like.
+		//
+		// We only ever keep a content hash for big fields like serialized_dashboard, never
+		// the full contents. The new config we diff against (localState, below) is hashed
+		// too, so the saved side has to be hashed as well or the two could never match. The
+		// state we read might still hold the full, un-hashed contents though: either it was
+		// written by an older CLI from before this change, or the field was only just added
+		// to hashed_in_state. Hashing it here, on read, lines the two sides up so an
+		// unchanged resource correctly shows "no change".
+		//
+		// This only changes the in-memory copy used for the diff. The on-disk entry keeps
+		// its full contents until the resource is next saved (which rewrites it as a hash),
+		// so no state_version bump or explicit migration is needed.
+		//
+		// See https://github.com/databricks/cli/pull/5609
+		savedState, err = dresources.CompactState(adapter.ResourceConfig(), savedState)
+		if err != nil {
+			logdiag.LogError(ctx, fmt.Errorf("%s: compacting saved state: %w", errorPrefix, err))
+			return false
+		}
+
 		// Note, currently we're diffing static structs, not dynamic value.
 		// This means for fields that contain references like ${resources.group.foo.id} we do one of the following:
 		// for strings: comparing unresolved string like "${resoures.group.foo.id}" with actual object id. As long as IDs do not have ${...} format we're good.
@@ -208,7 +230,15 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			logdiag.LogError(ctx, fmt.Errorf("%s: internal error: no state cache entry found for %q", errorPrefix, resourceKey))
 			return false
 		}
-		localDiff, err := structdiff.GetStructDiff(savedState, sv.Value, adapter.KeyedSlices())
+
+		// Compact a copy for comparison only; sv.Value keeps the full contents, which
+		// the deploy sends to the API.
+		localState, err := dresources.CompactState(adapter.ResourceConfig(), sv.Value)
+		if err != nil {
+			logdiag.LogError(ctx, fmt.Errorf("%s: compacting local state: %w", errorPrefix, err))
+			return false
+		}
+		localDiff, err := structdiff.GetStructDiff(savedState, localState, adapter.KeyedSlices())
 		if err != nil {
 			logdiag.LogError(ctx, fmt.Errorf("%s: diffing local state: %w", errorPrefix, err))
 			return false
@@ -241,7 +271,21 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 				return false
 			}
 
-			remoteDiff, err = structdiff.GetStructDiff(remoteStateComparable, sv.Value, adapter.KeyedSlices())
+			// Compact the remapped remote on the same fields, so a hashed_in_state field
+			// is a hash on all three sides of the diff (saved, config, remote). Once the
+			// saved value is a hash, every comparison must be hash-vs-hash to be meaningful
+			// — including remote drift (Remote vs New). This is what keeps hashed_in_state
+			// orthogonal to ignore_remote_changes: remote drift is detected as hash != hash,
+			// so a field can be hashed without being ignore_remote_changes. serialized_dashboard
+			// is also ignore_remote_changes, but for an independent reason: the server
+			// normalizes it, so its remote hash never matches the config hash (see resources.yml).
+			remoteStateComparable, err = dresources.CompactState(adapter.ResourceConfig(), remoteStateComparable)
+			if err != nil {
+				logdiag.LogError(ctx, fmt.Errorf("%s: compacting remote state id=%q: %w", errorPrefix, dbentry.ID, err))
+				return false
+			}
+
+			remoteDiff, err = structdiff.GetStructDiff(remoteStateComparable, localState, adapter.KeyedSlices())
 			if err != nil {
 				logdiag.LogError(ctx, fmt.Errorf("%s: diffing remote state: %w", errorPrefix, err))
 				return false

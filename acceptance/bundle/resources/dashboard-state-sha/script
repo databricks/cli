@@ -1,0 +1,38 @@
+DASHBOARD_DISPLAY_NAME="dashboard-state-sha $(uuid)"
+if [ -z "$CLOUD_ENV" ]; then
+    export TEST_DEFAULT_WAREHOUSE_ID="warehouse-1234"
+    echo "warehouse-1234:TEST_DEFAULT_WAREHOUSE_ID" >> ACC_REPLS
+fi
+export DASHBOARD_DISPLAY_NAME
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+rm -f out.requests.txt
+
+# The direct-engine plan keeps the FULL serialized_dashboard in new_state (so it can be
+# deployed), and reports the diff against state as a content hash.
+trace $CLI bundle plan -o json > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
+
+# Deploy. With READPLAN=1 this applies the SAVED plan file instead of re-planning. The plan
+# and the persisted state keep only the hash, but the create API call must still send the
+# FULL serialized_dashboard. out.create.serialized.json is identical for READPLAN="" and
+# READPLAN=1, which proves the saved plan applies the real content rather than the hash.
+# Not traced: the deploy command line differs by READPLAN (--plan vs none).
+$CLI bundle deploy $(readplanarg out.plan_create.direct.json)
+
+DASHBOARD_ID=$($CLI bundle summary --output json | jq -r '.resources.dashboards.dashboard1.id')
+echo "$DASHBOARD_ID:DASHBOARD_ID" >> ACC_REPLS
+
+jq -s '[.[] | select(.method == "POST" and (.path | endswith("/api/2.0/lakeview/dashboards")) and .body.serialized_dashboard != null) | .body.serialized_dashboard]' out.requests.txt > out.create.serialized.json
+rm -f out.requests.txt
+
+# Persisted state holds ONLY the content hash, never the dashboard JSON.
+print_state.py | gron.py | grep serialized_dashboard > out.state.$DATABRICKS_BUNDLE_ENGINE.txt
+
+# Re-plan with no local change: the server normalizes serialized_dashboard, but it is
+# ignore_remote_changes (etag_based), so the resource is unchanged (no spurious update).
+trace $CLI bundle plan -o json > out.plan_skip.$DATABRICKS_BUNDLE_ENGINE.json

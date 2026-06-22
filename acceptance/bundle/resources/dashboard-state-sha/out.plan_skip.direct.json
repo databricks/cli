@@ -9,14 +9,14 @@
       "remote_state": {
         "create_time": "[TIMESTAMP]",
         "dashboard_id": "[DASHBOARD_ID]",
-        "display_name": "test bundle-deploy-dashboard [UUID]",
+        "display_name": "dashboard-state-sha [UUID]",
         "embed_credentials": true,
-        "etag": "[ETAG]",
+        "etag": [ETAG],
         "lifecycle_state": "ACTIVE",
         "parent_path": "/Workspace/Users/[USERNAME]",
-        "path": "/Users/[USERNAME]/test bundle-deploy-dashboard [UUID].lvdash.json",
+        "path": "/Users/[USERNAME]/dashboard-state-sha [UUID].lvdash.json",
         "published": true,
-        "serialized_dashboard": "{}\n",
+        "serialized_dashboard": "{\"pages\":[{\"displayName\":\"Sales Overview\",\"name\":\"main\",\"pageType\":\"PAGE_TYPE_CANVAS\"}]}\n",
         "update_time": "[TIMESTAMP]",
         "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
       },
@@ -24,8 +24,8 @@
         "etag": {
           "action": "skip",
           "reason": "custom",
-          "old": "[ETAG]",
-          "remote": "[ETAG]"
+          "old": [ETAG],
+          "remote": [ETAG]
         },
         "serialized_dashboard": {
           "action": "skip",

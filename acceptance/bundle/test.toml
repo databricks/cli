@@ -22,3 +22,12 @@ New = 'os/[OS]'
 [[Repls]]
 Old = ' cicd/github'
 New = ''
+
+# serialized_dashboard is persisted in direct-engine state as a content hash. Mask the
+# 64-char digest with a hash-specific token (not the generic [ALPHANUMID]) so the output
+# reads clearly as a sha256 hash, at a low Order so it runs before the generic [NUMID] /
+# [DASHBOARD_ID] rules that would otherwise split the hex into pieces.
+[[Repls]]
+Old = 'sha256:[0-9a-f]{64}'
+New = 'sha256:[HASH]'
+Order = -1
