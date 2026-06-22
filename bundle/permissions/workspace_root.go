@@ -231,6 +231,10 @@ func undeclaredWriterTypes(undeclared []resources.Permission, deployer string) (
 // userHomeOwner returns the owner of the user home folder containing path, i.e. <owner>
 // for a path under /Workspace/Users/<owner>. ok is false when path is not under a user
 // home folder.
+//
+// Paths are always /Workspace-prefixed here: PrependWorkspacePrefix runs in the
+// initialize phase (before this deploy-phase mutator) and rewrites a bare /Users/...
+// to /Workspace/Users/..., so the /Workspace/Users/ check below is sufficient.
 func userHomeOwner(path string) (owner string, ok bool) {
 	const prefix = "/Workspace/Users/"
 	if !strings.HasPrefix(path, prefix) {
