@@ -65,6 +65,7 @@ func (p *Pipeline) Run(ctx context.Context) (*Result, error) {
 	pyMinor, err := PythonMinorFromRequires(c.RequiresPython)
 	if err != nil {
 		pe := NewError(ErrValidationFailed, err, "failed to parse python version from constraints")
+		res.Phases = append(res.Phases, PhaseResult{Name: "parse-python-version", Status: "failed", Detail: pe.Error()})
 		res.Error = pe
 		return res, pe
 	}
