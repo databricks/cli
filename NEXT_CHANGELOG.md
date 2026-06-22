@@ -1,27 +1,17 @@
 # NEXT CHANGELOG
 
-## Release v1.4.0
+## Release v1.5.0
 
 ### Notable Changes
 
 ### CLI
-* Improved error messages for `ssh connect`: when an SSH connection attempt fails, the client now fetches and prints the server's recent error logs ([#5555](https://github.com/databricks/cli/pull/5555)).
-* Increase the SSH server startup timeout from 10 to 45 minutes when a GPU accelerator is requested via `databricks ssh connect --accelerator` ([#5569](https://github.com/databricks/cli/pull/5569)).
-* Fix authentication falling back to the default profile in `.databrickscfg` when a host is already configured via the environment (e.g. `DATABRICKS_HOST` with `DATABRICKS_TOKEN`) ([#5616](https://github.com/databricks/cli/pull/5616)).
-* ssh: fix opening remote environment in Cursor, which previously hung on default-extension install and never opened the editor ([#5619](https://github.com/databricks/cli/pull/5619)).
-
 
 ### Bundles
-* Remove API enum values and types that are still in development from the `databricks-bundles` Python package; these were never accepted by the backend ([#5484](https://github.com/databricks/cli/pull/5484)).
-* direct: Fix resolving a resource reference that is used more than once within the same field ([#5558](https://github.com/databricks/cli/pull/5558)).
-* Bundle variable references now accept Unicode letters in path segments (e.g. `${var.变量}`). ([#5532](https://github.com/databricks/cli/pull/5532))
-* Ignore remote changes for vector search direct_access_index_spec.schema_json to prevent drift when the backend normalizes the schema ([#5481](https://github.com/databricks/cli/pull/5481)).
-* Remove hidden, never-functional `--existing-dashboard-id`, `--existing-dashboard-path`, `--existing-alert-id`, and `--existing-genie-space-id` alias flags from `bundle generate`; use the documented `--existing-id` / `--existing-path` flags instead ([#5591](https://github.com/databricks/cli/pull/5591)).
-* engine/direct: Fix WAL corruption after two consecutive failed deploys ([#5606](https://github.com/databricks/cli/pull/5606)).
-* engine/direct: Don't open the deployment state WAL when a deploy's plan fails ([#5607](https://github.com/databricks/cli/pull/5607)).
-* Ignore unity catalog managed schema property defaults to avoid unnecessary drift ([#5195](https://github.com/databricks/cli/pull/5195)).
-* Add Postgres role as a bundle resource ([#5467](https://github.com/databricks/cli/pull/5467)).
+* `bundle run` now prints the modern job run URL (`/jobs/<id>/runs/<id>`) so that non-admin users permitted to view the run are taken to the run instead of the workspace homepage.
+* Fix missing field descriptions in the bundle JSON schema for fields whose upstream API docs arrived after the field was first annotated (e.g. `vector_search_endpoints.*.target_qps`); stale placeholder markers no longer hide them ([#5588](https://github.com/databricks/cli/pull/5588)).
 
 ### Dependency updates
+* Bump `github.com/databricks/databricks-sdk-go` from v0.141.0 to v0.147.0 ([#5636](https://github.com/databricks/cli/pull/5636)).
+* Bump Terraform provider from v1.117.0 to v1.118.0 ([#5637](https://github.com/databricks/cli/pull/5637)).
 
 ### API Changes

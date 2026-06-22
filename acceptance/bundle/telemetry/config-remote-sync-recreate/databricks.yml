@@ -1,0 +1,16 @@
+bundle:
+  name: config-remote-sync-recreate
+
+resources:
+  pipelines:
+    foo:
+      name: test pipeline
+      # ingestion_definition.connection_name is immutable (recreate_on_changes):
+      # a remote change to it means the next deploy would delete + recreate the
+      # pipeline. (storage, the other immutable pipeline field, is skipped by
+      # configsync because the backend auto-generates it, so it can't be used
+      # here.)
+      ingestion_definition:
+        connection_name: my_connection
+        objects:
+          - {}

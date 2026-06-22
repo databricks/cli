@@ -107,6 +107,7 @@ func (s *FakeWorkspace) PostgresProjectCreate(req Request, projectID string) Res
 
 	now := nowTime()
 	project.Name = name
+	project.ProjectId = projectID
 	project.Uid = nextUUID()
 	project.CreateTime = now
 	project.UpdateTime = now
@@ -311,6 +312,7 @@ func (s *FakeWorkspace) PostgresBranchCreate(req Request, parent, branchID strin
 	}
 
 	now := nowTime()
+	branch.BranchId = branchID
 	if exists {
 		// Preserve identifying / output-only fields; apply incoming spec to status.
 		branch.Name = existing.Name
@@ -527,6 +529,7 @@ func (s *FakeWorkspace) PostgresEndpointCreate(req Request, parent, endpointID s
 	}
 
 	now := nowTime()
+	endpoint.EndpointId = endpointID
 	if exists {
 		endpoint.Name = existing.Name
 		endpoint.Parent = existing.Parent
@@ -715,6 +718,213 @@ func (s *FakeWorkspace) PostgresEndpointDelete(name string) Response {
 	}
 }
 
+// PostgresDatabaseCreate creates a new postgres database.
+func (s *FakeWorkspace) PostgresDatabaseCreate(req Request, parent, databaseID string) Response {
+	defer s.LockUnlock()()
+
+	if databaseID == "" {
+		return postgresErrorResponse(400, "INVALID_PARAMETER_VALUE", `Field 'database_id' is required, expected non-default value (not "")!`)
+	}
+
+	// Check if parent branch exists
+	if _, exists := s.PostgresBranches[parent]; !exists {
+		return postgresNotFoundResponse("branch")
+	}
+
+	var database postgres.Database
+	if len(req.Body) > 0 {
+		if err := json.Unmarshal(req.Body, &database); err != nil {
+			return Response{
+				StatusCode: 400,
+				Body:       fmt.Sprintf("cannot unmarshal request body: %v", err),
+			}
+		}
+	}
+
+	// The real Lakebase API requires the owning role on create and rejects an empty
+	// one with this exact error (verified on e2-dogfood 2026-06-16). The fake does
+	// not synthesize a default, matching that behavior.
+	if database.Spec == nil || database.Spec.Role == "" {
+		return postgresErrorResponse(400, "INVALID_PARAMETER_VALUE", "Field 'spec.role' cannot be empty")
+	}
+
+	name := fmt.Sprintf("%s/databases/%s", parent, databaseID)
+
+	if _, exists := s.PostgresDatabases[name]; exists {
+		// The real Lakebase API returns 400 BAD_REQUEST (not 409) for a duplicate
+		// create, the same as postgres_roles. Match it so the conflict a bundle hits
+		// on a pre-existing database looks the same.
+		return postgresErrorResponse(400, "BAD_REQUEST", "database with that name already exists")
+	}
+
+	now := nowTime()
+	database.Name = name
+	database.DatabaseId = databaseID
+	database.Parent = parent
+	database.CreateTime = now
+	database.UpdateTime = now
+
+	// Mirror spec onto status; the real API only echoes Status on GET.
+	status := &postgres.DatabaseDatabaseStatus{
+		DatabaseId:       databaseID,
+		PostgresDatabase: database.Spec.PostgresDatabase,
+		Role:             database.Spec.Role,
+	}
+	database.Status = status
+	database.Spec = nil
+
+	s.PostgresDatabases[name] = database
+
+	return Response{
+		Body: s.createOperationLocked(database.Name, database),
+	}
+}
+
+// PostgresDatabaseGet retrieves a postgres database by name.
+func (s *FakeWorkspace) PostgresDatabaseGet(name string) Response {
+	defer s.LockUnlock()()
+
+	// Extract project and branch names from database name
+	// Format: projects/{project}/branches/{branch}/databases/{database}
+	parts := strings.Split(name, "/branches/")
+	if len(parts) == 2 {
+		projectName := parts[0]
+		if _, exists := s.PostgresProjects[projectName]; !exists {
+			return postgresNotFoundResponse("project")
+		}
+		branchParts := strings.Split(parts[1], "/databases/")
+		if len(branchParts) == 2 {
+			branchName := projectName + "/branches/" + branchParts[0]
+			if _, exists := s.PostgresBranches[branchName]; !exists {
+				return postgresNotFoundResponse("branch")
+			}
+		}
+	}
+
+	database, exists := s.PostgresDatabases[name]
+	if !exists {
+		return postgresNotFoundResponse("database")
+	}
+
+	return Response{
+		Body: database,
+	}
+}
+
+// PostgresDatabaseList lists all postgres databases for a branch.
+func (s *FakeWorkspace) PostgresDatabaseList(parent string) Response {
+	defer s.LockUnlock()()
+
+	if _, exists := s.PostgresBranches[parent]; !exists {
+		return postgresNotFoundResponse("branch")
+	}
+
+	var databases []postgres.Database
+	prefix := parent + "/databases/"
+	for name, d := range s.PostgresDatabases {
+		if strings.HasPrefix(name, prefix) {
+			databases = append(databases, d)
+		}
+	}
+
+	return Response{
+		Body: postgres.ListDatabasesResponse{
+			Databases: databases,
+		},
+	}
+}
+
+// PostgresDatabaseUpdate updates a postgres database.
+func (s *FakeWorkspace) PostgresDatabaseUpdate(req Request, name string) Response {
+	defer s.LockUnlock()()
+
+	database, exists := s.PostgresDatabases[name]
+	if !exists {
+		return postgresNotFoundResponse("database")
+	}
+
+	var updateDatabase postgres.Database
+	if len(req.Body) > 0 {
+		if err := json.Unmarshal(req.Body, &updateDatabase); err != nil {
+			return Response{
+				StatusCode: 400,
+				Body:       fmt.Sprintf("cannot unmarshal request body: %v", err),
+			}
+		}
+	}
+
+	if updateDatabase.Spec != nil {
+		// Preserve database_id which is derived from the resource name.
+		databaseID := ""
+		if database.Status != nil {
+			databaseID = database.Status.DatabaseId
+		}
+		var paths []string
+		if mask := req.URL.Query().Get("update_mask"); mask != "" {
+			paths = strings.Split(mask, ",")
+		}
+		database.Status = applyDatabaseSpecMask(database.Status, databaseStatusFromSpec(updateDatabase.Spec), paths)
+		database.Status.DatabaseId = databaseID
+	}
+
+	database.UpdateTime = nowTime()
+	s.PostgresDatabases[name] = database
+
+	return Response{
+		Body: s.createOperationLocked(database.Name, database),
+	}
+}
+
+// databaseStatusFromSpec mirrors the real Postgres Database server's behavior of
+// echoing the spec onto Status while leaving Spec=nil on GET responses.
+func databaseStatusFromSpec(spec *postgres.DatabaseDatabaseSpec) *postgres.DatabaseDatabaseStatus {
+	status := &postgres.DatabaseDatabaseStatus{}
+	if spec == nil {
+		return status
+	}
+	status.PostgresDatabase = spec.PostgresDatabase
+	status.Role = spec.Role
+	return status
+}
+
+// applyDatabaseSpecMask applies the fields named in paths (the update_mask) from
+// desired onto existing. Paths are relative to the Database and "spec."-prefixed;
+// the bare path "spec" replaces the whole subtree, and an empty paths slice
+// replaces everything. Same shape as applyRoleSpecMask.
+func applyDatabaseSpecMask(existing, desired *postgres.DatabaseDatabaseStatus, paths []string) *postgres.DatabaseDatabaseStatus {
+	if len(paths) == 0 || existing == nil {
+		return desired
+	}
+	result := *existing
+	for _, p := range paths {
+		field, _, _ := strings.Cut(strings.TrimPrefix(p, "spec."), ".")
+		switch field {
+		case "spec":
+			result = *desired
+		case "postgres_database":
+			result.PostgresDatabase = desired.PostgresDatabase
+		case "role":
+			result.Role = desired.Role
+		}
+	}
+	return &result
+}
+
+// PostgresDatabaseDelete deletes a postgres database.
+func (s *FakeWorkspace) PostgresDatabaseDelete(name string) Response {
+	defer s.LockUnlock()()
+
+	if _, exists := s.PostgresDatabases[name]; !exists {
+		return postgresNotFoundResponse("database")
+	}
+
+	delete(s.PostgresDatabases, name)
+
+	return Response{
+		Body: s.createOperationLocked(name, nil),
+	}
+}
+
 // PostgresCatalogCreate creates a new postgres catalog.
 func (s *FakeWorkspace) PostgresCatalogCreate(req Request, catalogID string) Response {
 	defer s.LockUnlock()()
@@ -743,6 +953,7 @@ func (s *FakeWorkspace) PostgresCatalogCreate(req Request, catalogID string) Res
 
 	now := nowTime()
 	catalog.Name = name
+	catalog.CatalogId = catalogID
 	catalog.Uid = nextUUID()
 	catalog.CreateTime = now
 	catalog.UpdateTime = now
@@ -875,6 +1086,7 @@ func (s *FakeWorkspace) PostgresRoleCreate(req Request, parent, roleID string) R
 
 	now := nowTime()
 	role.Name = name
+	role.RoleId = roleID
 	role.Parent = parent
 	role.CreateTime = now
 	role.UpdateTime = now
@@ -1059,8 +1271,8 @@ func (s *FakeWorkspace) createOperationLocked(resourceName string, response any)
 	operationName := resourceName + "/operations/" + operationID
 
 	// Determine resource type from name for metadata @type.
-	// Check the more specific suffixes first since role/endpoint names also
-	// contain "/branches/".
+	// Check the more specific suffixes first since database/role/endpoint names
+	// also contain "/branches/".
 	resourceType := "Project"
 	switch {
 	case strings.HasPrefix(resourceName, "catalogs/"):
@@ -1069,6 +1281,8 @@ func (s *FakeWorkspace) createOperationLocked(resourceName string, response any)
 		resourceType = "SyncedTable"
 	case strings.Contains(resourceName, "/endpoints/"):
 		resourceType = "Endpoint"
+	case strings.Contains(resourceName, "/databases/"):
+		resourceType = "Database"
 	case strings.Contains(resourceName, "/roles/"):
 		resourceType = "Role"
 	case strings.Contains(resourceName, "/branches/"):
@@ -1162,6 +1376,7 @@ func (s *FakeWorkspace) createDefaultBranchLocked(projectName string) {
 
 	defaultBranch := postgres.Branch{
 		Name:       branchName,
+		BranchId:   "production",
 		Parent:     projectName,
 		Uid:        branchUID,
 		CreateTime: now,
@@ -1210,6 +1425,7 @@ func (s *FakeWorkspace) createDefaultEndpointLocked(branchName string) {
 
 	s.PostgresEndpoints[endpointName] = postgres.Endpoint{
 		Name:       endpointName,
+		EndpointId: "primary",
 		Parent:     branchName,
 		Uid:        endpointUID,
 		CreateTime: now,

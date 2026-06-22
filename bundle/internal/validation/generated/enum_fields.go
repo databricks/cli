@@ -198,7 +198,8 @@ var EnumFields = map[string][]string{
 	"resources.postgres_roles.*.identity_type":       {"GROUP", "SERVICE_PRINCIPAL", "USER"},
 	"resources.postgres_roles.*.membership_roles[*]": {"DATABRICKS_SUPERUSER"},
 
-	"resources.postgres_synced_tables.*.scheduling_policy": {"CONTINUOUS", "SNAPSHOT", "TRIGGERED"},
+	"resources.postgres_synced_tables.*.scheduling_policy":         {"CONTINUOUS", "SNAPSHOT", "TRIGGERED"},
+	"resources.postgres_synced_tables.*.type_overrides[*].pg_type": {"PG_SPECIFIC_TYPE_VECTOR"},
 
 	"resources.quality_monitors.*.custom_metrics[*].type":     {"CUSTOM_METRIC_TYPE_AGGREGATE", "CUSTOM_METRIC_TYPE_DERIVED", "CUSTOM_METRIC_TYPE_DRIFT"},
 	"resources.quality_monitors.*.inference_log.problem_type": {"PROBLEM_TYPE_CLASSIFICATION", "PROBLEM_TYPE_REGRESSION"},
@@ -220,6 +221,7 @@ var EnumFields = map[string][]string{
 	"resources.synced_database_tables.*.data_synchronization_status.provisioning_status.initial_pipeline_sync_progress.provisioning_phase":      {"PROVISIONING_PHASE_INDEX_SCAN", "PROVISIONING_PHASE_INDEX_SORT", "PROVISIONING_PHASE_MAIN"},
 	"resources.synced_database_tables.*.data_synchronization_status.triggered_update_status.triggered_update_progress.provisioning_phase":       {"PROVISIONING_PHASE_INDEX_SCAN", "PROVISIONING_PHASE_INDEX_SORT", "PROVISIONING_PHASE_MAIN"},
 	"resources.synced_database_tables.*.spec.scheduling_policy":                                                                                 {"CONTINUOUS", "SNAPSHOT", "TRIGGERED"},
+	"resources.synced_database_tables.*.spec.type_overrides[*].pg_type":                                                                         {"PG_SPECIFIC_TYPE_VECTOR"},
 	"resources.synced_database_tables.*.unity_catalog_provisioning_state":                                                                       {"ACTIVE", "DEGRADED", "DELETING", "FAILED", "PROVISIONING", "UPDATING"},
 
 	"resources.vector_search_endpoints.*.endpoint_type":        {"STANDARD", "STORAGE_OPTIMIZED"},

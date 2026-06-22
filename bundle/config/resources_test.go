@@ -126,6 +126,7 @@ func TestBundleResourcePluralNamesResolveInWorkspaceURLs(t *testing.T) {
 	noURL := map[string]bool{
 		"external_locations": true,
 		"postgres_branches":  true,
+		"postgres_databases": true,
 		"postgres_endpoints": true,
 		"postgres_projects":  true,
 		"postgres_roles":     true,
@@ -283,10 +284,11 @@ func TestResourcesBindSupport(t *testing.T) {
 				},
 			},
 		},
-		PostgresSyncedTables: map[string]*resources.PostgresSyncedTable{
-			"my_postgres_synced_table": {
-				PostgresSyncedTableConfig: resources.PostgresSyncedTableConfig{
-					SyncedTableId: "catalog.schema.my_postgres_synced_table",
+		PostgresDatabases: map[string]*resources.PostgresDatabase{
+			"my_postgres_database": {
+				PostgresDatabaseConfig: resources.PostgresDatabaseConfig{
+					DatabaseId: "my-postgres-database",
+					Parent:     "projects/my-postgres-project/branches/my-postgres-branch",
 				},
 			},
 		},
@@ -298,6 +300,13 @@ func TestResourcesBindSupport(t *testing.T) {
 					RoleRoleSpec: postgres.RoleRoleSpec{
 						PostgresRole: "my_postgres_role",
 					},
+				},
+			},
+		},
+		PostgresSyncedTables: map[string]*resources.PostgresSyncedTable{
+			"my_postgres_synced_table": {
+				PostgresSyncedTableConfig: resources.PostgresSyncedTableConfig{
+					SyncedTableId: "catalog.schema.my_postgres_synced_table",
 				},
 			},
 		},
@@ -352,6 +361,8 @@ func TestResourcesBindSupport(t *testing.T) {
 	m.GetMockPostgresAPI().EXPECT().GetBranch(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockPostgresAPI().EXPECT().GetEndpoint(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockPostgresAPI().EXPECT().GetCatalog(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockPostgresAPI().EXPECT().GetDatabase(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockPostgresAPI().EXPECT().GetRole(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockPostgresAPI().EXPECT().GetSyncedTable(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockPostgresAPI().EXPECT().GetRole(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockVectorSearchEndpointsAPI().EXPECT().GetEndpoint(mock.Anything, mock.Anything).Return(nil, nil)

@@ -71,6 +71,7 @@ func newCreate() *cobra.Command {
 
 	cmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `User-provided free-form text description.`)
 	cmd.Flags().StringVar(&createReq.ConnectionName, "connection-name", createReq.ConnectionName, `The name of the connection to an external data source.`)
+	cmd.Flags().Int64Var(&createReq.CustomMaxRetentionHours, "custom-max-retention-hours", createReq.CustomMaxRetentionHours, `Custom maximum retention period in hours for the catalog.`)
 	// TODO: complex arg: managed_encryption_settings
 	// TODO: map via StringToStringVar: options
 	// TODO: map via StringToStringVar: properties
@@ -372,6 +373,7 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `User-provided free-form text description.`)
+	cmd.Flags().Int64Var(&updateReq.CustomMaxRetentionHours, "custom-max-retention-hours", updateReq.CustomMaxRetentionHours, `Custom maximum retention period in hours for the catalog.`)
 	cmd.Flags().Var(&updateReq.EnablePredictiveOptimization, "enable-predictive-optimization", `Whether predictive optimization should be enabled for this object and objects under it. Supported values: [DISABLE, ENABLE, INHERIT]`)
 	cmd.Flags().Var(&updateReq.IsolationMode, "isolation-mode", `Whether the current securable is accessible from all workspaces or a specific set of workspaces. Supported values: [ISOLATED, OPEN]`)
 	// TODO: complex arg: managed_encryption_settings

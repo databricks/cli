@@ -22,9 +22,9 @@ Update ID: [UUID]
   "path": "/api/2.0/pipelines/[UUID]/stop"
 }
 {
+  "method": "POST",
+  "path": "/api/2.0/pipelines/[UUID]/updates",
   "body": {
     "validate_only": true
-  },
-  "method": "POST",
-  "path": "/api/2.0/pipelines/[UUID]/updates"
+  }
 }
