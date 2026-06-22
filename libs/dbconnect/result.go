@@ -12,14 +12,10 @@ const (
 
 // String returns the string representation of the Mode.
 func (m Mode) String() string {
-	switch m {
-	case ModeInit:
+	if m == ModeInit {
 		return "init"
-	case ModeSync:
-		return "sync"
-	default:
-		return "unknown"
 	}
+	return "sync"
 }
 
 // ErrorCode represents a dbconnect error code.
@@ -42,7 +38,6 @@ type PipelineError struct {
 	Err  error
 }
 
-// Error returns the error message.
 func (e *PipelineError) Error() string {
 	if e.Err != nil {
 		return e.Msg + ": " + e.Err.Error()
@@ -50,12 +45,12 @@ func (e *PipelineError) Error() string {
 	return e.Msg
 }
 
-// Unwrap returns the wrapped error.
 func (e *PipelineError) Unwrap() error {
 	return e.Err
 }
 
-// NewError creates a new PipelineError with the given code and error.
+// NewError creates a new PipelineError. The message is formatted using fmt.Sprintf(format, args...),
+// and err may be nil.
 func NewError(code ErrorCode, err error, format string, args ...any) *PipelineError {
 	return &PipelineError{
 		Code: code,
