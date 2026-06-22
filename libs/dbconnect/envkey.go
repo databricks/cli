@@ -11,7 +11,7 @@ var pythonVersionRe = regexp.MustCompile(`(\d+)\.(\d+)`)
 // EnvKeyForServerless returns the environment key for a serverless version.
 func EnvKeyForServerless(version string) string {
 	normalized := strings.TrimPrefix(strings.ToLower(version), "v")
-	return fmt.Sprintf("serverless/serverless-v%s", normalized)
+	return "serverless/serverless-v" + normalized
 }
 
 // EnvKeyForSparkVersion returns the environment key for a Spark version.

@@ -168,7 +168,7 @@ var dbconnectTokenRe = regexp.MustCompile(`"databricks-connect[^"]*"`)
 // mergeToolUv rewrites the managed [tool.uv] constraint-dependencies block. If a
 // marker-bracketed block already exists, its contents are replaced in place. Otherwise any
 // plain [tool.uv] table is removed and a fresh marker-bracketed block is appended at EOF.
-func mergeToolUv(lines []string, deps []string) ([]string, bool) {
+func mergeToolUv(lines, deps []string) ([]string, bool) {
 	block := renderToolUvBlock(deps)
 
 	start, stop, found := markerBounds(lines)
@@ -242,20 +242,20 @@ func removeConstraintDeps(lines []string, header, end int) []string {
 		if !constraintDepsRe.MatchString(lines[i]) {
 			continue
 		}
-		last := i
 		// Multi-line array form: extend through the closing "]" line. The single-line form
 		// already contains the closing bracket, so this loop does not advance.
+		end2 := i + 1
 		if !strings.Contains(lines[i], "]") {
 			for j := i + 1; j < end; j++ {
-				last = j
+				end2 = j + 1
 				if strings.TrimSpace(lines[j]) == "]" {
 					break
 				}
 			}
 		}
-		out := make([]string, 0, len(lines)-(last-i+1))
+		out := make([]string, 0, len(lines)-(end2-i))
 		out = append(out, lines[:i]...)
-		out = append(out, lines[last+1:]...)
+		out = append(out, lines[end2:]...)
 		return out
 	}
 	return lines
@@ -302,7 +302,7 @@ func renderToolUvBlock(deps []string) []string {
 
 // appendManagedBlock appends block to lines, ensuring exactly one blank line separates it
 // from prior content and the file ends with a single trailing newline.
-func appendManagedBlock(lines []string, block []string) []string {
+func appendManagedBlock(lines, block []string) []string {
 	// strings.Split on a trailing "\n" leaves a final empty element; drop trailing empty
 	// lines so we control the spacing precisely.
 	for len(lines) > 0 && lines[len(lines)-1] == "" {
@@ -338,12 +338,12 @@ func equalLines(a, b []string) bool {
 func RenderFreshPyproject(projectName string, c Constraints) []byte {
 	var b strings.Builder
 	b.WriteString("[project]\n")
-	b.WriteString(fmt.Sprintf("name = %q\n", projectName))
-	b.WriteString(fmt.Sprintf("requires-python = %q\n", c.RequiresPython))
+	fmt.Fprintf(&b, "name = %q\n", projectName)
+	fmt.Fprintf(&b, "requires-python = %q\n", c.RequiresPython)
 	b.WriteString("\n")
 	b.WriteString("[dependency-groups]\n")
 	b.WriteString("dev = [\n")
-	b.WriteString(fmt.Sprintf("    %q,\n", c.DatabricksConnect))
+	fmt.Fprintf(&b, "    %q,\n", c.DatabricksConnect)
 	b.WriteString("]\n")
 	b.WriteString("\n")
 	for _, line := range renderToolUvBlock(c.ConstraintDeps) {

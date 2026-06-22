@@ -120,8 +120,8 @@ func (p *Pipeline) resolve(ctx context.Context, res *Result) (*TargetInfo, error
 		phase.Status = "failed"
 		phase.Detail = err.Error()
 		res.Phases = append(res.Phases, phase)
-		var pe *PipelineError
-		if !errors.As(err, &pe) {
+		pe, ok := errors.AsType[*PipelineError](err)
+		if !ok {
 			pe = NewError(ErrNoTargetSelected, err, "target resolution failed")
 		}
 		res.Error = pe
@@ -142,8 +142,8 @@ func (p *Pipeline) fetch(ctx context.Context, res *Result, target *TargetInfo) (
 		phase.Status = "failed"
 		phase.Detail = err.Error()
 		res.Phases = append(res.Phases, phase)
-		var pe *PipelineError
-		if !errors.As(err, &pe) {
+		pe, ok := errors.AsType[*PipelineError](err)
+		if !ok {
 			pe = NewError(ErrConstraintFetchFailed, err, "fetch constraints failed")
 		}
 		res.Error = pe
@@ -238,7 +238,7 @@ func (p *Pipeline) mergePlan(_ context.Context, res *Result, c *Constraints) (*P
 	}
 
 	phase.Status = "ok"
-	phase.Detail = fmt.Sprintf("changed=%s", strings.Join(changedRegions, ","))
+	phase.Detail = "changed=" + strings.Join(changedRegions, ",")
 	res.Phases = append(res.Phases, phase)
 	return plan, mergedBytes, nil
 }
@@ -437,12 +437,12 @@ func majorVersion(v string) string {
 	if v == "" {
 		return ""
 	}
-	dot := strings.Index(v, ".")
-	if dot < 0 {
+	before, _, ok := strings.Cut(v, ".")
+	if !ok {
 		// No dot — the whole string is the major component.
 		return v
 	}
-	return v[:dot]
+	return before
 }
 
 // copyFile copies src to dst, creating or overwriting dst.

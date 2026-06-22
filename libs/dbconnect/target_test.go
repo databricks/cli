@@ -16,6 +16,7 @@ type stubCompute struct {
 func (s stubCompute) GetClusterSparkVersion(_ context.Context, _ string) (string, error) {
 	return s.clusterVersion, s.clusterErr
 }
+
 func (s stubCompute) GetJobSparkVersion(_ context.Context, _ string) (string, bool, string, error) {
 	return "", false, "", nil
 }

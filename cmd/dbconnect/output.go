@@ -16,14 +16,13 @@ import (
 // renderResult renders the pipeline result to the command's output.
 // In JSON mode it renders the full structured result (even on error).
 // In text mode it prints phase headers and a summary, then returns the error.
-func renderResult(cmd *cobra.Command, ctx context.Context, res *libsdbconnect.Result, pipelineErr error) error {
+func renderResult(ctx context.Context, cmd *cobra.Command, res *libsdbconnect.Result, pipelineErr error) error {
 	// Guard against a nil result (e.g. pipeline failed before constructing one).
 	// Always emit a structured object in JSON mode so callers can rely on the schema.
 	if res == nil {
 		res = &libsdbconnect.Result{}
 		if pipelineErr != nil {
-			var pe *libsdbconnect.PipelineError
-			if errors.As(pipelineErr, &pe) {
+			if pe, ok := errors.AsType[*libsdbconnect.PipelineError](pipelineErr); ok {
 				res.Error = pe
 			} else {
 				res.Error = libsdbconnect.NewError(libsdbconnect.ErrProvisionFailed, pipelineErr, "%s", pipelineErr.Error())
@@ -41,7 +40,7 @@ func renderResult(cmd *cobra.Command, ctx context.Context, res *libsdbconnect.Re
 		if phase.Detail != "" {
 			cmdio.LogString(ctx, fmt.Sprintf("    status=%s  %s", phase.Status, phase.Detail))
 		} else {
-			cmdio.LogString(ctx, fmt.Sprintf("    status=%s", phase.Status))
+			cmdio.LogString(ctx, "    status="+phase.Status)
 		}
 	}
 
@@ -52,10 +51,10 @@ func renderResult(cmd *cobra.Command, ctx context.Context, res *libsdbconnect.Re
 	// Print a final success / check summary.
 	if res.Check {
 		if res.Plan != nil {
-			cmdio.LogString(ctx, fmt.Sprintf("Plan: %s", filepath.ToSlash(res.Plan.PyprojectPath)))
+			cmdio.LogString(ctx, "Plan: "+filepath.ToSlash(res.Plan.PyprojectPath))
 			if len(res.Plan.ChangedRegions) > 0 {
 				for _, region := range res.Plan.ChangedRegions {
-					cmdio.LogString(ctx, fmt.Sprintf("  changed region: %s", region))
+					cmdio.LogString(ctx, "  changed region: "+region)
 				}
 			}
 		}
