@@ -21,13 +21,7 @@ trace $CLI bundle deploy
 
 project_id_1=`read_id.py my_project`
 
-print_requests() {
-    local name=$1
-    jq --sort-keys 'select(.method != "GET" and (.path | contains("/postgres")))' < out.requests.txt > out.requests.${name}.txt
-    rm -f out.requests.txt
-}
-
-print_requests create
+print_requests.py --del-body parent,project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.create.txt
 
 title "Change project_id (should trigger recreation in direct, update in terraform)"
 sed "s/test-pg-old-${UNIQUE_NAME}/test-pg-new-${UNIQUE_NAME}/" databricks.yml > databricks.yml.new
@@ -39,7 +33,7 @@ trace cat databricks.yml
 $CLI bundle plan > out.plan.txt 2>&1
 trace $CLI bundle deploy --auto-approve
 
-print_requests update
+print_requests.py --del-body parent,project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.update.txt
 
 title "Fetch new project ID"
 project_id_2=`read_id.py my_project`
@@ -49,7 +43,7 @@ $CLI postgres get-project $project_id_2 > out.get_project.txt
 title "Destroy and verify cleanup"
 trace $CLI bundle destroy --auto-approve
 
-print_requests destroy
+print_requests.py --del-body parent,project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.destroy.txt
 
 # Clean up any orphaned old project (terraform doesn't delete it on recreation)
 $CLI postgres delete-project $project_id_1 2>/dev/null || true

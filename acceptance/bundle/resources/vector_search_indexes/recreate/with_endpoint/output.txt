@@ -69,7 +69,7 @@ Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged
               "name": "vector"
             }
           ],
-          "schema_json": "{\"id\":\"integer\",\"vector\":\"array\u003cfloat\u003e\"}"
+          "schema_json": "{\"id\":\"int\",\"vector\":\"array\u003cfloat\u003e\"}"
         },
         "endpoint_name": "vs-endpoint-[UNIQUE_NAME]",
         "endpoint_uuid": "[UUID]",
@@ -82,6 +82,13 @@ Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged
         }
       },
       "changes": {
+        "direct_access_index_spec.schema_json": {
+          "action": "skip",
+          "reason": "normalized_by_backend",
+          "old": "{\"id\":\"integer\",\"vector\":\"array\u003cfloat\u003e\"}",
+          "new": "{\"id\":\"integer\",\"vector\":\"array\u003cfloat\u003e\"}",
+          "remote": "{\"id\":\"int\",\"vector\":\"array\u003cfloat\u003e\"}"
+        },
         "endpoint_uuid": {
           "action": "skip",
           "reason": "state-only field",
