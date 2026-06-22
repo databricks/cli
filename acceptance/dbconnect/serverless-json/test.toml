@@ -17,5 +17,5 @@ constraint-dependencies = ["pyarrow<19", "pandas<3"]
 '''
 
 [[Repls]]
-Old = '"uv uv \S+(?: \([^)]+\))?"'
-New = '"uv [UV_VERSION]"'
+Old = 'uv uv \S+(?: \([^)]+\))?'
+New = 'uv [UV_VERSION]'
