@@ -19,12 +19,3 @@ jq -s '[.[] | select(.method == "POST" and .path == "/api/2.0/genie/spaces")
            parsed: (.body.serialized_space | fromjson)}]
        | sort_by(.title)' out.requests.txt > out.create_requests.json
 rm -f out.requests.txt
-
-# Invariant: the create requests above carry the full serialized_space, while the
-# persisted state stores only its sha256 content hash (serialized_space is never
-# compared against the remote value, so the full content is not kept in state).
-# Assert both halves against the same deploy: state has the hash and not the inline
-# content; the create requests have the content and no hash.
-title "State stores the serialized_space content hash, not the content:\n"
-print_state.py | gron.py | grep serialized_space | contains.py 'sha256:' '!main.sales.orders'
-contains.py '!sha256:' < out.create_requests.json > /dev/null

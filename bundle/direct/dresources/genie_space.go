@@ -58,21 +58,6 @@ func (r *ResourceGenieSpace) RemapState(remote *resources.GenieSpaceConfig) *res
 	}
 }
 
-// CompactState replaces the inlined serialized_space contents with a content hash
-// before the state is persisted. As with dashboards, the full contents are never
-// needed back from state: drift is detected via etag (serialized_space is
-// ignore_remote_changes, see resources.yml), and a deploy always sends the contents
-// from the plan's new_state, never from saved state.
-func (r *ResourceGenieSpace) CompactState(state *resources.GenieSpaceConfig) (*resources.GenieSpaceConfig, error) {
-	hashed, err := hashStateValue(state.SerializedSpace)
-	if err != nil {
-		return nil, err
-	}
-	compacted := *state
-	compacted.SerializedSpace = hashed
-	return &compacted, nil
-}
-
 func (r *ResourceGenieSpace) DoRead(ctx context.Context, id string) (*resources.GenieSpaceConfig, error) {
 	space, err := r.client.Genie.GetSpace(ctx, dashboards.GenieGetSpaceRequest{
 		SpaceId:                id,

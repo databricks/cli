@@ -5,10 +5,6 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
-=== State stores the serialized_space content hash, not the content:
-json.state.resources.genie_spaces.from_file.state.serialized_space = "sha256:[ALPHANUMID]";
-json.state.resources.genie_spaces.from_inline.state.serialized_space = "sha256:[ALPHANUMID]";
-
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.genie_spaces.from_file

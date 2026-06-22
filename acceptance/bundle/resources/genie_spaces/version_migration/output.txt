@@ -12,7 +12,8 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 === serialized_space: local version 1, remote version 2, skipped (etag_based){
   "action": "skip",
   "reason": "etag_based",
-  "local_remote_differ": true
+  "local_version": 1,
+  "remote_version": 2
 }
 
 >>> [CLI] bundle destroy --auto-approve

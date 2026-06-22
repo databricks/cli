@@ -24,9 +24,9 @@
         "serialized_space": {
           "action": "skip",
           "reason": "etag_based",
-          "old": "sha256:[ALPHANUMID]",
-          "new": "sha256:[ALPHANUMID]",
-          "remote": "sha256:[ALPHANUMID]"
+          "old": "{\"config\":{\"sample_questions\":[{\"id\":\"sq-001\",\"question\":[\"What is the total revenue?\"]}]},\"data_sources\":{\"tables\":[{\"column_configs\":[{\"column_name\":\"amount\",\"get_example_values\":true}],\"identifier\":\"main.sales.orders\"}]},\"version\":1}",
+          "new": "{\"config\":{\"sample_questions\":[{\"id\":\"sq-001\",\"question\":[\"What is the total revenue?\"]}]},\"data_sources\":{\"tables\":[{\"column_configs\":[{\"column_name\":\"amount\",\"get_example_values\":true}],\"identifier\":\"main.sales.orders\"}]},\"version\":1}",
+          "remote": "{\"config\":{\"sample_questions\":[{\"id\":\"sq-001\",\"question\":[\"What is the total revenue?\"]}]},\"data_sources\":{\"tables\":[{\"column_configs\":[{\"column_name\":\"amount\",\"get_example_values\":true}],\"identifier\":\"main.sales.orders\"}]},\"version\":2}"
         }
       }
     }
