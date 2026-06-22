@@ -10,7 +10,10 @@ trap cleanup EXIT
 
 trace $CLI bundle plan -o json > out.first-plan.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
-trace print_requests.py //serving-endpoints > out.first-requests.$DATABRICKS_BUNDLE_ENGINE.json
+# Sort access_control_list: the terraform engine stores it as a set whose order
+# depends on the (unmasked) principal value, so it differs between the local fake
+# SP and the real cloud SP. Sorting makes the recorded request stable across both.
+print_requests.py //serving-endpoints | gron.py --sort-arrays access_control_list > out.first-requests.$DATABRICKS_BUNDLE_ENGINE.txt
 
 echo "$ENDPOINT_NAME:ENDPOINT_NAME_1" >> ACC_REPLS
 
@@ -26,7 +29,7 @@ export ENDPOINT_NAME="test-endpoint-$UNIQUE_NAME-2"
 envsubst < databricks.yml.tmpl > databricks.yml
 trace $CLI bundle plan -o json > out.second-plan.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
-trace print_requests.py //serving-endpoints > out.second-requests.$DATABRICKS_BUNDLE_ENGINE.json
+print_requests.py //serving-endpoints | gron.py --sort-arrays access_control_list > out.second-requests.$DATABRICKS_BUNDLE_ENGINE.txt
 
 echo "$ENDPOINT_NAME:ENDPOINT_NAME_2" >> ACC_REPLS
 
