@@ -1,0 +1,30 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/config-remote-sync-recreate/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] bundle config-remote-sync
+Detected changes in 1 resource(s):
+
+Resource: resources.pipelines.foo
+  ingestion_definition.connection_name: replace
+
+
+
+>>> cat out.requests.txt
+{
+  "engine": "direct",
+  "changes_total": 1,
+  "replace_count": 1,
+  "recreate_forcing_changes": 1,
+  "resource_changes": [
+    {
+      "resource_type": "pipelines",
+      "changes_count": 1,
+      "replace_count": 1
+    }
+  ],
+  "files_changed_count": 1
+}

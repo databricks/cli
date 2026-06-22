@@ -346,12 +346,12 @@ func (a *Adapter) validate() error {
 
 	// Validate resourceConfig consistency with DoUpdateWithID
 	if a.overrideChangeDesc == nil {
-		hasUpdateWithIDTrigger := a.resourceConfig != nil && len(a.resourceConfig.UpdateIDOnChanges) > 0
+		hasUpdateWithIDTrigger := a.resourceConfig != nil && len(a.resourceConfig.UpdatableIDFields) > 0
 		if hasUpdateWithIDTrigger && a.doUpdateWithID == nil {
-			return errors.New("resourceConfig has update_id_on_changes but DoUpdateWithID is not implemented")
+			return errors.New("resourceConfig has updatable_id_fields but DoUpdateWithID is not implemented")
 		}
 		if a.doUpdateWithID != nil && !hasUpdateWithIDTrigger {
-			return errors.New("DoUpdateWithID is implemented but resourceConfig lacks update_id_on_changes")
+			return errors.New("DoUpdateWithID is implemented but resourceConfig lacks updatable_id_fields")
 		}
 	}
 
@@ -378,8 +378,16 @@ func (a *Adapter) GeneratedResourceConfig() *ResourceLifecycleConfig {
 	return a.generatedResourceConfig
 }
 
-func (a *Adapter) IsFieldInRecreateOnChanges(path *structpath.PathNode) bool {
+// FieldTriggersRecreate reports whether a local change to the field forces a
+// delete + create. Both recreate_on_changes and provided_id_fields do this, so a
+// caller that knows the ID is preserved can conclude the field is unchanged.
+func (a *Adapter) FieldTriggersRecreate(path *structpath.PathNode) bool {
 	for _, p := range a.resourceConfig.RecreateOnChanges {
+		if path.HasPatternPrefix(p.Field) {
+			return true
+		}
+	}
+	for _, p := range a.resourceConfig.ProvidedIDFields {
 		if path.HasPatternPrefix(p.Field) {
 			return true
 		}

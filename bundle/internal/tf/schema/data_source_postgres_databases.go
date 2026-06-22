@@ -19,6 +19,7 @@ type DataSourcePostgresDatabasesDatabasesStatus struct {
 
 type DataSourcePostgresDatabasesDatabases struct {
 	CreateTime     string                                              `json:"create_time,omitempty"`
+	DatabaseId     string                                              `json:"database_id,omitempty"`
 	Name           string                                              `json:"name"`
 	Parent         string                                              `json:"parent,omitempty"`
 	ProviderConfig *DataSourcePostgresDatabasesDatabasesProviderConfig `json:"provider_config,omitempty"`

@@ -1,11 +1,9 @@
 print_requests() {
-    jq 'select(.path | contains("/jobs/")) | select(.method != "GET")' < out.requests.txt
-    rm out.requests.txt
+    print_requests.py //jobs/
 }
 
 print_sorted_requests() {
-    jq -c < out.requests.txt | sort | jq --sort-keys 'select(.path | contains("/jobs/")) | select(.method != "GET")'
-    rm out.requests.txt
+    print_requests.py //jobs/ --sort
 }
 
 trace $CLI bundle plan

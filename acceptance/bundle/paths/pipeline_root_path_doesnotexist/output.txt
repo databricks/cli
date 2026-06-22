@@ -9,5 +9,3 @@ Workspace:
   Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
 Found 1 error
-
-Exit code: 1

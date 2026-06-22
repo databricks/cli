@@ -8,5 +8,3 @@ Workspace:
   Host: [DATABRICKS_URL]
 
 Found 1 error
-
-Exit code: 1

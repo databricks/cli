@@ -1,0 +1,9 @@
+bundle:
+  name: test-bundle
+
+resources:
+  postgres_databases:
+    database1:
+      parent: projects/test-project/branches/main
+      database_id: test-database
+      postgres_database: app_db

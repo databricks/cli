@@ -110,6 +110,9 @@ class Job(Resource):
     """
 
     health: VariableOrOptional[JobsHealthRules] = None
+    """
+    An optional set of health rules that can be defined for this job.
+    """
 
     job_clusters: VariableOrList[JobCluster] = field(default_factory=list)
     """
@@ -163,6 +166,11 @@ class Job(Resource):
     """
 
     run_as: VariableOrOptional[JobRunAs] = None
+    """
+    The user or service principal that the job runs as, if specified in the request.
+    This field indicates the explicit configuration of `run_as` for the job.
+    To find the value in all cases, explicit or implicit, use `run_as_user_name`.
+    """
 
     schedule: VariableOrOptional[CronSchedule] = None
     """
@@ -255,6 +263,9 @@ class JobDict(TypedDict, total=False):
     """
 
     health: VariableOrOptional[JobsHealthRulesParam]
+    """
+    An optional set of health rules that can be defined for this job.
+    """
 
     job_clusters: VariableOrList[JobClusterParam]
     """
@@ -308,6 +319,11 @@ class JobDict(TypedDict, total=False):
     """
 
     run_as: VariableOrOptional[JobRunAsParam]
+    """
+    The user or service principal that the job runs as, if specified in the request.
+    This field indicates the explicit configuration of `run_as` for the job.
+    To find the value in all cases, explicit or implicit, use `run_as_user_name`.
+    """
 
     schedule: VariableOrOptional[CronScheduleParam]
     """

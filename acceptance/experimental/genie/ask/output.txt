@@ -54,9 +54,5 @@ Alpha leads with 1,250 total sales.
 >>> [CLI] experimental genie ask q --raw --output json
 Error: --raw cannot be used with --output json
 
-Exit code: 1
-
 >>> [CLI] experimental genie ask q --raw --include-sql
 Error: --include-sql cannot be used with --raw
-
-Exit code: 1

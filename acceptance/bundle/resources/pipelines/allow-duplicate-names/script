@@ -17,6 +17,6 @@ export PIPELINE_ID
 trace $CLI bundle deploy
 
 print_requests() {
-    jq --sort-keys 'select(.method != "GET" and (.path | contains("/pipelines")))' < out.requests.txt
+    print_requests.py //pipelines
 }
 trace print_requests

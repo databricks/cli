@@ -1,3 +1,3 @@
-errcode trace $CLI bundle validate
+musterr trace $CLI bundle validate
 
-errcode trace $CLI bundle run foo
+musterr trace $CLI bundle run foo
