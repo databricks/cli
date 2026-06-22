@@ -371,16 +371,36 @@ func (p *Pipeline) validate(ctx context.Context, res *Result, expectedPyMinor, d
 
 	// Assert the installed databricks-connect major matches the pin's major.
 	// dbcPin is e.g. "databricks-connect~=17.2.0"; dbcVer is e.g. "17.2.0".
-	pinMajor := dbcMajorFromPin(dbcPin)
-	installedMajor := majorVersion(dbcVer)
-	if pinMajor != "" && installedMajor != "" && pinMajor != installedMajor {
-		pe := NewError(ErrValidationFailed, nil,
-			"databricks-connect major version mismatch: want %s.x, got %s", pinMajor, dbcVer)
-		phase.Status = "failed"
-		phase.Detail = pe.Error()
-		res.Phases = append(res.Phases, phase)
-		res.Error = pe
-		return pe
+	if dbcPin != "" {
+		pinMajor := dbcMajorFromPin(dbcPin)
+		if pinMajor == "" {
+			pe := NewError(ErrValidationFailed, nil,
+				"cannot determine databricks-connect major version from pin %q", dbcPin)
+			phase.Status = "failed"
+			phase.Detail = pe.Error()
+			res.Phases = append(res.Phases, phase)
+			res.Error = pe
+			return pe
+		}
+		installedMajor := majorVersion(dbcVer)
+		if installedMajor == "" {
+			pe := NewError(ErrValidationFailed, nil,
+				"cannot determine installed databricks-connect major version from %q", dbcVer)
+			phase.Status = "failed"
+			phase.Detail = pe.Error()
+			res.Phases = append(res.Phases, phase)
+			res.Error = pe
+			return pe
+		}
+		if pinMajor != installedMajor {
+			pe := NewError(ErrValidationFailed, nil,
+				"databricks-connect major version mismatch: want %s.x, got %s", pinMajor, dbcVer)
+			phase.Status = "failed"
+			phase.Detail = pe.Error()
+			res.Phases = append(res.Phases, phase)
+			res.Error = pe
+			return pe
+		}
 	}
 
 	phase.Status = "ok"
@@ -411,11 +431,16 @@ func dbcMajorFromPin(pin string) string {
 }
 
 // majorVersion returns the major portion of a version string (digits before the
-// first dot), e.g. "17" from "17.2.0". Returns "" if not parseable.
+// first dot), e.g. "17" from "17.2.0". A bare integer like "17" returns "17".
+// Returns "" for an empty string.
 func majorVersion(v string) string {
-	dot := strings.Index(v, ".")
-	if dot <= 0 {
+	if v == "" {
 		return ""
+	}
+	dot := strings.Index(v, ".")
+	if dot < 0 {
+		// No dot — the whole string is the major component.
+		return v
 	}
 	return v[:dot]
 }
