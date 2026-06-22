@@ -235,82 +235,14 @@ func configTypeGraph() (*typeGraph, error) {
 }
 
 func generateSchema(workdir, outputFile, cliJSONFile string, docsMode bool) {
-	annotationsPath := filepath.Join(workdir, "annotations.yml")
-
-	// The cli.json schema graph is keyed by SDK type name (e.g.
-	// "jobs.JobSettings"); the annotation parser matches Go SDK types against
-	// those keys directly.
-	doc, err := clijson.Parse(cliJSONFile)
-	if err != nil {
-		log.Fatal(err)
-	}
-	if len(doc.Schemas) == 0 {
-		log.Fatalf("no schemas found in %s", cliJSONFile)
-	}
-
-	extracted, err := newParser(doc.Schemas).extractAnnotations(reflect.TypeFor[config.Root]())
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	graph, err := configTypeGraph()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	fromFile, unknown, err := loadAnnotationsFile(annotationsPath, graph)
-	if err != nil {
-		log.Fatal(err)
-	}
-	for _, k := range unknown {
-		fmt.Printf("Dropping annotation at `%s`: no matching field in the bundle configuration\n", k)
-	}
-
-	// fromFile feeds both the merge in newAnnotationHandler and the
-	// annotations-file rewrite in syncWithMissingAnnotations, so drop stale
-	// placeholders first: a marker upstream now documents would otherwise
-	// shadow the real description.
-	dropShadowingPlaceholders(fromFile, extracted)
-
-	a, err := newAnnotationHandler(extracted, fromFile)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	transforms := []func(reflect.Type, jsonschema.Schema) jsonschema.Schema{
-		removeJobsFields,
-		removePipelineFields,
-		removeDeploymentFields,
-		makeVolumeTypeOptional,
-		a.addAnnotations,
-		removeOutputOnlyFields,
-	}
-	if !docsMode {
-		transforms = append(transforms, addInterpolationPatterns)
-	}
-
-	// Generate the JSON schema from the bundle Go struct.
-	s, err := jsonschema.FromType(reflect.TypeFor[config.Root](), transforms)
-
-	// AdditionalProperties is set to an empty schema to allow non-typed keys used as yaml-anchors
-	// Example:
-	// some_anchor: &some_anchor
-	//   file_path: /some/path/
-	// workspace:
-	//   <<: *some_anchor
-	s.AdditionalProperties = jsonschema.Schema{}
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// Overwrite the input annotation file, adding missing annotations
-	err = a.syncWithMissingAnnotations(annotationsPath, graph)
+	s, err := buildSchema(workdir, cliJSONFile, docsMode)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// In docs mode, add sinceVersion annotations by analyzing git history.
+	// This relies on git tags, so it lives in the generator rather than in
+	// buildSchema, which stays git-free and testable.
 	if docsMode {
 		sinceVersions, err := computeSinceVersions()
 		if err != nil {
@@ -330,4 +262,91 @@ func generateSchema(workdir, outputFile, cliJSONFile string, docsMode bool) {
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+// buildSchema generates the in-memory bundle JSON schema from the bundle Go
+// types and the cli.json spec, and rewrites the annotations file in workdir
+// (adding placeholders for new fields and dropping stale ones).
+//
+// When docsMode is true the interpolation-pattern transform is omitted, so the
+// published docs schema shows plain field types instead of the `${...}`
+// reference unions the runtime schema needs for autocomplete. sinceVersion
+// annotations require git history and are applied by the caller, not here, so
+// this stays pure and testable.
+func buildSchema(workdir, cliJSONFile string, docsMode bool) (jsonschema.Schema, error) {
+	annotationsPath := filepath.Join(workdir, "annotations.yml")
+
+	// The cli.json schema graph is keyed by SDK type name (e.g.
+	// "jobs.JobSettings"); the annotation parser matches Go SDK types against
+	// those keys directly.
+	doc, err := clijson.Parse(cliJSONFile)
+	if err != nil {
+		return jsonschema.Schema{}, err
+	}
+	if len(doc.Schemas) == 0 {
+		return jsonschema.Schema{}, fmt.Errorf("no schemas found in %s", cliJSONFile)
+	}
+
+	extracted, err := newParser(doc.Schemas).extractAnnotations(reflect.TypeFor[config.Root]())
+	if err != nil {
+		return jsonschema.Schema{}, err
+	}
+
+	graph, err := configTypeGraph()
+	if err != nil {
+		return jsonschema.Schema{}, err
+	}
+
+	fromFile, unknown, err := loadAnnotationsFile(annotationsPath, graph)
+	if err != nil {
+		return jsonschema.Schema{}, err
+	}
+	for _, k := range unknown {
+		fmt.Printf("Dropping annotation at `%s`: no matching field in the bundle configuration\n", k)
+	}
+
+	// fromFile feeds both the merge in newAnnotationHandler and the
+	// annotations-file rewrite in syncWithMissingAnnotations, so drop stale
+	// placeholders first: a marker upstream now documents would otherwise
+	// shadow the real description.
+	dropShadowingPlaceholders(fromFile, extracted)
+
+	a, err := newAnnotationHandler(extracted, fromFile)
+	if err != nil {
+		return jsonschema.Schema{}, err
+	}
+
+	transforms := []func(reflect.Type, jsonschema.Schema) jsonschema.Schema{
+		removeJobsFields,
+		removePipelineFields,
+		removeDeploymentFields,
+		makeVolumeTypeOptional,
+		a.addAnnotations,
+		removeOutputOnlyFields,
+	}
+	if !docsMode {
+		transforms = append(transforms, addInterpolationPatterns)
+	}
+
+	// Generate the JSON schema from the bundle Go struct.
+	s, err := jsonschema.FromType(reflect.TypeFor[config.Root](), transforms)
+	if err != nil {
+		return jsonschema.Schema{}, err
+	}
+
+	// AdditionalProperties is set to an empty schema to allow non-typed keys used as yaml-anchors
+	// Example:
+	// some_anchor: &some_anchor
+	//   file_path: /some/path/
+	// workspace:
+	//   <<: *some_anchor
+	s.AdditionalProperties = jsonschema.Schema{}
+
+	// Overwrite the input annotation file, adding missing annotations
+	err = a.syncWithMissingAnnotations(annotationsPath, graph)
+	if err != nil {
+		return jsonschema.Schema{}, err
+	}
+
+	return s, nil
 }
