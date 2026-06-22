@@ -32,20 +32,11 @@ func assertJSONRoundTrip(t *testing.T, v any, label string) {
 	// them populated in v but loses them in back, so structdiff flags it even
 	// though both marshal to the same (already-truncated) JSON. structdiff skips
 	// ForceSendFields and json:"-" fields, which are intentionally not serialized.
+	// Free-form any fields must be populated with []any/map[string]any (as JSON
+	// decoding yields) so they round-trip to the same concrete type.
 	changes, err := structdiff.GetStructDiff(v, back, nil)
 	require.NoError(t, err)
-
-	// A free-form any field (e.g. serialized_dashboard) decodes to a different
-	// Go concrete type than the fixture literal ([]any vs []map[string]any) while
-	// encoding to identical JSON. That's not field loss, so drop changes whose
-	// two sides are JSON-equal and keep only genuine differences.
-	var lost []structdiff.Change
-	for _, c := range changes {
-		if jsonDump(c.Old) != jsonDump(c.New) {
-			lost = append(lost, c)
-		}
-	}
-	require.Empty(t, lost, "%s lost fields in JSON round-trip\nbefore: %s\nafter:  %s", label, jsonDump(v), jsonDump(back))
+	require.Empty(t, changes, "%s lost fields in JSON round-trip\nbefore: %s\nafter:  %s", label, jsonDump(v), jsonDump(back))
 }
 
 // TestStateTypeRoundTrip verifies that every resource's StateType survives a

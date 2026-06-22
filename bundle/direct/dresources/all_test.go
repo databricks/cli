@@ -239,9 +239,12 @@ var testConfig map[string]any = map[string]any{
 			DisplayName: "my-dashboard",
 			ParentPath:  "/Workspace/Users/user@example.com",
 			WarehouseId: "test-warehouse-id",
+			// Use []any/map[string]any to mirror how this any-typed field is
+			// populated in production (JSON/dyn decoding); a typed []map[string]any
+			// can never come out of that path.
 			SerializedDashboard: map[string]any{
-				"pages": []map[string]any{
-					{
+				"pages": []any{
+					map[string]any{
 						"name":        "page1",
 						"displayName": "Page 1",
 						"pageType":    "PAGE_TYPE_CANVAS",
