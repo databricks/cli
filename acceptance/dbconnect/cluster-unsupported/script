@@ -1,1 +1,1 @@
-errcode $CLI dbconnect init --cluster test-cluster-id --check
+musterr $CLI dbconnect init --cluster test-cluster-id --check

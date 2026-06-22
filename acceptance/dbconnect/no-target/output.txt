@@ -3,5 +3,3 @@
 === Phase 2: resolve ===
     status=failed  No compute target is selected. Select a cluster or serverless target, or pass --cluster/--serverless/--job.
 Error: No compute target is selected. Select a cluster or serverless target, or pass --cluster/--serverless/--job.
-
-Exit code: 1

@@ -1,1 +1,1 @@
-errcode $CLI dbconnect init
+musterr $CLI dbconnect init
