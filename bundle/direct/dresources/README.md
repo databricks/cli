@@ -18,7 +18,7 @@
 Each field with special plan/deploy behavior must be declared in `resources.yml`. Choose the right category:
 
  - **`backend_defaults`**: The backend may fill in a value when the user doesn't specify one. Suppresses the diff when the user's config is nil/empty but remote has a value. Optionally restrict to specific allowed remote values via `values:`. Use for fields the API fills in as defaults (e.g., `format`, `run_if`, `node_type_id`). Link to TF provider suppression comment in the same format as existing entries.
- - **`ignore_remote_changes`**: Ignore changes the remote makes to this field. Use for fields the backend manages (e.g., cloud-provider attributes like `aws_attributes`, `gcp_attributes`) or fields not returned by the update endpoint. Reason codes:
+ - **`ignore_remote_changes`**: Ignore changes the remote makes to this field. Use for fields the backend manages (e.g., cloud-provider attributes like `aws_attributes`, `gcp_attributes`) or fields not returned by the update endpoint. Do not zero out such fields in `RemapState` to hide them from diff computation: carry the real remote value through and declare the field here instead, since zeroing discards information and duplicates the suppression logic. For `output_only` fields this rule is often already produced by `resources.generated.yml` from the OpenAPI annotation. Reason codes:
    - `output_only` — the field is computed by the backend; the user never sets it
    - `input_only` — accepted on create/update but not returned by GET (e.g., write-only tokens, flags)
    - `managed` — managed by the cloud provider or platform, not by the user config
