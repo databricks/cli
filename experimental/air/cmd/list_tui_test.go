@@ -2,6 +2,7 @@ package aircmd
 
 import (
 	"io"
+	"strconv"
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -59,6 +60,34 @@ func TestListModelWindowScrolls(t *testing.T) {
 	m = key(t, key(t, m, "j"), "j") // move to row index 2, past the window
 	assert.Equal(t, 2, m.cursor)
 	assert.Equal(t, 1, m.offset, "window scrolled to keep the cursor visible")
+}
+
+func TestListModelPaging(t *testing.T) {
+	rows := make([]listRow, 10)
+	for i := range rows {
+		rows[i] = listRow{RunID: strconv.Itoa(i)}
+	}
+	r := lipgloss.NewRenderer(io.Discard)
+	r.SetColorProfile(termenv.Ascii)
+	m := newListModel(r, rows, false)
+
+	// Height 7 leaves a 4-row window (header + hint reserved).
+	next, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 7})
+	m = next.(listModel)
+	require.Equal(t, 4, m.visibleCount())
+
+	page := func(k tea.KeyType) {
+		n, _ := m.Update(tea.KeyMsg{Type: k})
+		m = n.(listModel)
+	}
+	page(tea.KeyRight)
+	assert.Equal(t, 4, m.cursor)
+	page(tea.KeyEnd)
+	assert.Equal(t, 9, m.cursor)
+	page(tea.KeyLeft)
+	assert.Equal(t, 5, m.cursor)
+	page(tea.KeyHome)
+	assert.Equal(t, 0, m.cursor)
 }
 
 func TestListModelQuit(t *testing.T) {

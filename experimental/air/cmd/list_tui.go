@@ -113,6 +113,14 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.cursor < len(m.rows)-1 {
 				m.cursor++
 			}
+		case "right":
+			m.cursor = min(m.cursor+m.visibleCount(), len(m.rows)-1)
+		case "left":
+			m.cursor = max(m.cursor-m.visibleCount(), 0)
+		case "home", "g":
+			m.cursor = 0
+		case "end", "G":
+			m.cursor = len(m.rows) - 1
 		case "enter":
 			// Open the selected run's MLflow page in the browser.
 			if len(m.rows) > 0 {
@@ -154,7 +162,7 @@ func (m listModel) View() string {
 // list is windowed.
 func (m listModel) renderHint() string {
 	faint := m.styles.r.NewStyle().Foreground(colN7)
-	hint := "↑/↓ navigate · ↵ mlflow · q quit"
+	hint := "↑/↓ navigate · ←/→ page · ↵ mlflow · q quit"
 	if m.visibleCount() < len(m.rows) {
 		hint += fmt.Sprintf("  ·  row %d/%d", m.cursor+1, len(m.rows))
 	}
