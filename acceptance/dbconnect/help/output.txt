@@ -1,5 +1,8 @@
->>> $CLI dbconnect --help
-Set up a local Python environment matched to your Databricks compute
+Set up a local Python environment matched to your Databricks compute target.
+
+Derives the Python version, databricks-connect version, and dependency
+constraints from the selected compute (cluster, serverless, or job) so that
+local resolution matches the Databricks runtime.
 
 Usage:
   databricks dbconnect [command]
@@ -17,7 +20,7 @@ Global Flags:
   -p, --profile string   ~/.databrickscfg profile
   -t, --target string    bundle target to use (if applicable)
 
->>> $CLI dbconnect init --help
+Use "databricks dbconnect [command] --help" for more information about a command.
 Create a fresh pyproject.toml and provision a matched .venv
 
 Usage:
