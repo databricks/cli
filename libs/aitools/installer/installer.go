@@ -300,6 +300,7 @@ func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgent
 		noun = "skill"
 	}
 	cmdio.LogString(ctx, fmt.Sprintf("Installed %d %s.", len(targetSkills), noun))
+	warnLegacyAIDevKitArtifacts(ctx, scope)
 	return nil
 }
 

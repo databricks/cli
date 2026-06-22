@@ -54,7 +54,7 @@ func UninstallSkillsOpts(ctx context.Context, opts UninstallOptions) error {
 
 	if state == nil {
 		if scope == ScopeGlobal && hasLegacyInstall(ctx, baseDir) {
-			return errors.New("found skills from a previous install without state tracking; run 'databricks aitools install' first, then uninstall")
+			return errors.New("found legacy Databricks AI Dev Kit artifacts or skills from a previous install without state tracking; run 'databricks aitools install' first, then uninstall")
 		}
 		return errors.New("no skills installed")
 	}
