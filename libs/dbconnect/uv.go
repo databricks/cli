@@ -1,10 +1,13 @@
 package dbconnect
 
 import (
+	"bufio"
 	"context"
+	"errors"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strings"
 
@@ -58,7 +61,7 @@ func (m *uvManager) EnsureAvailable(ctx context.Context) (string, error) {
 	// Use --version (not "version") to avoid project-scoped sub-command that requires pyproject.toml.
 	version, err := process.Background(ctx, []string{m.bin, "--version"})
 	if err != nil {
-		return "", NewError(ErrProvisionFailed, err, "uv version check failed")
+		return "", uvFailure(ErrProvisionFailed, err, "uv version check")
 	}
 	return strings.TrimSpace(version), nil
 }
@@ -66,9 +69,15 @@ func (m *uvManager) EnsureAvailable(ctx context.Context) (string, error) {
 // EnsurePython installs the requested Python minor version via uv.
 func (m *uvManager) EnsurePython(ctx context.Context, minor string) error {
 	args := append([]string{m.bin}, m.pythonInstallArgs(minor)...)
-	_, err := process.Background(ctx, args)
+	indexURL := m.resolveIndexURL(ctx)
+	var err error
+	if indexURL != "" {
+		_, err = process.Background(ctx, args, process.WithEnv("UV_INDEX_URL", indexURL))
+	} else {
+		_, err = process.Background(ctx, args)
+	}
 	if err != nil {
-		return NewError(ErrProvisionFailed, err, "uv python install %s failed", minor)
+		return uvFailure(ErrProvisionFailed, err, "uv python install "+minor)
 	}
 	return nil
 }
@@ -76,9 +85,15 @@ func (m *uvManager) EnsurePython(ctx context.Context, minor string) error {
 // Provision runs `uv sync` inside projectDir to install project dependencies.
 func (m *uvManager) Provision(ctx context.Context, projectDir string) error {
 	args := append([]string{m.bin}, m.syncArgs()...)
-	_, err := process.Background(ctx, args, process.WithDir(projectDir))
+	indexURL := m.resolveIndexURL(ctx)
+	var err error
+	if indexURL != "" {
+		_, err = process.Background(ctx, args, process.WithDir(projectDir), process.WithEnv("UV_INDEX_URL", indexURL))
+	} else {
+		_, err = process.Background(ctx, args, process.WithDir(projectDir))
+	}
 	if err != nil {
-		return NewError(ErrProvisionFailed, err, "uv sync failed")
+		return uvFailure(ErrProvisionFailed, err, "uv sync")
 	}
 	return nil
 }
@@ -102,9 +117,15 @@ func venvPython(projectDir string) string {
 // activated.
 func (m *uvManager) PostProvision(ctx context.Context, projectDir string) error {
 	args := append([]string{m.bin}, m.pipSeedArgs(venvPython(projectDir))...)
-	_, err := process.Background(ctx, args, process.WithDir(projectDir))
+	indexURL := m.resolveIndexURL(ctx)
+	var err error
+	if indexURL != "" {
+		_, err = process.Background(ctx, args, process.WithDir(projectDir), process.WithEnv("UV_INDEX_URL", indexURL))
+	} else {
+		_, err = process.Background(ctx, args, process.WithDir(projectDir))
+	}
 	if err != nil {
-		return NewError(ErrProvisionFailed, err, "uv pip seed failed")
+		return uvFailure(ErrProvisionFailed, err, "uv pip seed")
 	}
 	return nil
 }
@@ -120,7 +141,7 @@ func (m *uvManager) Validate(ctx context.Context, projectDir string) (string, st
 		process.WithDir(projectDir),
 	)
 	if err != nil {
-		return "", "", NewError(ErrValidationFailed, err, "uv run python validation failed")
+		return "", "", uvFailure(ErrValidationFailed, err, "uv run python validation")
 	}
 	lines := strings.Split(strings.TrimSpace(out), "\n")
 	if len(lines) < 2 {
@@ -142,6 +163,57 @@ func (m *uvManager) pythonInstallArgs(minor string) []string {
 // pipSeedArgs returns the argument slice for seeding pip into the venv.
 func (m *uvManager) pipSeedArgs(venvPython string) []string {
 	return []string{"pip", "install", "pip", "--python", venvPython}
+}
+
+// pipIndexURLRe matches `index-url = <url>` lines in pip.conf.
+var pipIndexURLRe = regexp.MustCompile(`(?i)^\s*index-url\s*=\s*(\S+)`)
+
+// pipConfIndexURL reads ~/.config/pip/pip.conf and returns the index-url value.
+// uv ignores pip.conf; on Databricks-managed machines pypi.org is blocked and
+// the corporate PyPI proxy is declared via pip.conf. Bridging the value through
+// UV_INDEX_URL lets uv reach the proxy.
+// https://pip.pypa.io/en/stable/topics/configuration/
+func pipConfIndexURL(ctx context.Context) string {
+	home, err := env.UserHomeDir(ctx)
+	if err != nil || home == "" {
+		return ""
+	}
+	confPath := filepath.Join(home, ".config", "pip", "pip.conf")
+	f, err := os.Open(confPath)
+	if err != nil {
+		return ""
+	}
+	defer f.Close()
+
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		if m := pipIndexURLRe.FindStringSubmatch(scanner.Text()); m != nil {
+			return strings.TrimSpace(m[1])
+		}
+	}
+	return ""
+}
+
+// resolveIndexURL returns a UV_INDEX_URL value to inject, or "" when none is
+// needed. It returns "" when UV_INDEX_URL is already set in the context env
+// (so the caller's explicit value is never overridden) and also when pip.conf
+// has no index-url entry.
+func (m *uvManager) resolveIndexURL(ctx context.Context) string {
+	if _, ok := env.Lookup(ctx, "UV_INDEX_URL"); ok {
+		return ""
+	}
+	return pipConfIndexURL(ctx)
+}
+
+// uvFailure builds a PipelineError from a failed uv invocation, appending uv's
+// stderr to the message so callers can see the actual failure reason (e.g.
+// "Connection refused") rather than just the exit code.
+func uvFailure(code ErrorCode, err error, action string) *PipelineError {
+	msg := action + " failed"
+	if perr, ok := errors.AsType[*process.ProcessError](err); ok && strings.TrimSpace(perr.Stderr) != "" {
+		msg = msg + ": " + strings.TrimSpace(perr.Stderr)
+	}
+	return NewError(code, err, "%s", msg)
 }
 
 // discoverUv searches for the uv binary on PATH and in well-known install
