@@ -148,15 +148,19 @@ func recordPermissionMetrics(b *bundle.Bundle, stateFolderPerms *WorkspacePathPe
 	statePath := b.Config.Workspace.StatePath
 	deployer := deployingUserName(b)
 
-	b.Metrics.SetBoolValue(metrics.StatePathIsShared, libraries.IsWorkspaceSharedPath(statePath))
+	isShared := libraries.IsWorkspaceSharedPath(statePath)
+	owner, underUserHome := userHomeOwner(statePath)
+
+	b.Metrics.SetBoolValue(metrics.StatePathIsShared, isShared)
 	b.Metrics.SetBoolValue(metrics.PermissionsSectionSet, len(b.Config.Permissions) > 0)
 
-	// userHomeOwner yields a non-empty owner whenever underUserHome is true, so these
-	// are exact complements: an unresolved deployer ("") never equals the owner and
-	// falls into the other-user bucket.
-	owner, underUserHome := userHomeOwner(statePath)
+	// userHomeOwner yields a non-empty owner whenever underUserHome is true, so the two
+	// home flags are exact complements: an unresolved deployer ("") never equals the
+	// owner and falls into the other-user bucket. StatePathOther covers any /Workspace
+	// folder that is neither shared nor a user home.
 	b.Metrics.SetBoolValue(metrics.StatePathInDeployerHome, underUserHome && owner == deployer)
 	b.Metrics.SetBoolValue(metrics.StatePathInOtherUserHome, underUserHome && owner != deployer)
+	b.Metrics.SetBoolValue(metrics.StatePathOther, !isShared && !underUserHome)
 
 	// stateFolderPerms is nil when no permissions are declared, in which case there are
 	// no undeclared writers (the migration mirrors the folder's ACLs).

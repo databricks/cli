@@ -49,10 +49,12 @@ const (
 	// populations that both land on dms_compat_auto.
 	PermissionsSectionSet = "permissions_section_set"
 
-	// Where the deployment state folder lives. Mutually exclusive with each other and
-	// with StatePathIsShared; all false means some other /Workspace folder.
+	// Where the deployment state folder lives. Exactly one of StatePathIsShared,
+	// StatePathInDeployerHome, StatePathInOtherUserHome, and StatePathOther is true per
+	// deploy. StatePathOther is any other /Workspace folder (not a user home or shared).
 	StatePathInDeployerHome  = "state_path_in_deployer_home"
 	StatePathInOtherUserHome = "state_path_in_other_user_home"
+	StatePathOther           = "state_path_other"
 
 	// Which principal types have undeclared write access to the state folder — the
 	// access an auto-migration governed by the permissions section would drop. These can

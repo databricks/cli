@@ -3,6 +3,7 @@ for target in \
 	user_declared \
 	user_not_declared \
 	other_user_not_declared \
+	workspace_other \
 	shared_users_can_manage \
 	shared_not_declared; do
 	trace $CLI bundle deploy -t "$target"

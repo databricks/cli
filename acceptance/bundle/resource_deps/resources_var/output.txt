@@ -55,3 +55,4 @@ skip_artifact_cleanup false
 state_path_in_deployer_home true
 state_path_in_other_user_home false
 state_path_is_shared false
+state_path_other false

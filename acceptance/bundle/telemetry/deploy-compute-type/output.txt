@@ -58,6 +58,10 @@ Deployment complete!
     "value": false
   },
   {
+    "key": "state_path_other",
+    "value": false
+  },
+  {
     "key": "dms_undeclared_deploying_user",
     "value": false
   },
@@ -133,6 +137,10 @@ Deployment complete!
   },
   {
     "key": "state_path_in_other_user_home",
+    "value": false
+  },
+  {
+    "key": "state_path_other",
     "value": false
   },
   {
