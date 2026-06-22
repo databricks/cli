@@ -97,9 +97,11 @@ var Registry = []Agent{
 		ConfigDir:   homeSubdir(".config", "opencode"),
 	},
 	{
-		Name:        "copilot",
-		DisplayName: "GitHub Copilot",
-		ConfigDir:   homeSubdir(".copilot"),
+		Name:                 "copilot",
+		DisplayName:          "GitHub Copilot",
+		ConfigDir:            homeSubdir(".copilot"),
+		SupportsProjectScope: true,
+		ProjectConfigDir:     ".github",
 	},
 	{
 		Name:         "antigravity",

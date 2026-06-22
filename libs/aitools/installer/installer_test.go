@@ -892,7 +892,7 @@ func TestSupportsProjectScopeSetCorrectly(t *testing.T) {
 		"cursor":      true,
 		"codex":       false,
 		"opencode":    false,
-		"copilot":     false,
+		"copilot":     true,
 		"antigravity": false,
 	}
 
@@ -900,6 +900,24 @@ func TestSupportsProjectScopeSetCorrectly(t *testing.T) {
 		want, ok := expected[agent.Name]
 		require.True(t, ok, "missing expected entry for %s", agent.Name)
 		assert.Equal(t, want, agent.SupportsProjectScope, "SupportsProjectScope for %s", agent.Name)
+	}
+}
+
+func TestProjectScopeAgentDirectoriesSetCorrectly(t *testing.T) {
+	cwd := filepath.Join("tmp", "project")
+	expected := map[string]string{
+		"claude-code": filepath.Join(cwd, ".claude", "skills"),
+		"cursor":      filepath.Join(cwd, ".cursor", "skills"),
+		"copilot":     filepath.Join(cwd, ".github", "skills"),
+	}
+
+	for _, agent := range agents.Registry {
+		want, ok := expected[agent.Name]
+		if !ok {
+			continue
+		}
+		require.True(t, agent.SupportsProjectScope, "%s should support project scope", agent.Name)
+		assert.Equal(t, want, agent.ProjectSkillsDir(cwd), "project skills dir for %s", agent.Name)
 	}
 }
 
