@@ -147,7 +147,7 @@ func resourceIDLookup(ctx context.Context, b *bundle.Bundle) func(string) string
 	}
 	_, statePath := b.StateFilenameConfigSnapshot(ctx)
 	db := &dstate.DeploymentState{}
-	if err := db.Open(ctx, statePath, dstate.WithRecovery(false), dstate.WithWrite(false)); err != nil {
+	if err := db.Open(ctx, statePath, dstate.WithRecovery(false), dstate.WithWrite(false), nil); err != nil {
 		log.Debugf(ctx, "variable restoration: failed to open state DB at %s: %v", statePath, err)
 		return nil
 	}
