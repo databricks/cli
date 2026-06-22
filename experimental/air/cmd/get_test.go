@@ -29,10 +29,23 @@ func renderGet(t *testing.T, data getData) string {
 	return buf.String()
 }
 
+// TestGetCommandShape locks in that `get` takes the run id directly as
+// `air get JOB_RUN_ID` and has no `run` subcommand (it was collapsed back into
+// `get`). The acceptance test exercises the happy path end to end.
+func TestGetCommandShape(t *testing.T) {
+	cmd := newGetCommand()
+	assert.Equal(t, "get JOB_RUN_ID", cmd.Use)
+	assert.Empty(t, cmd.Commands(), "get must not register subcommands")
+	// ExactArgs(1): exactly one run id is required.
+	assert.NoError(t, cmd.Args(cmd, []string{"123"}))
+	assert.Error(t, cmd.Args(cmd, []string{}))
+	assert.Error(t, cmd.Args(cmd, []string{"1", "2"}))
+}
+
 func TestGetRunInvalidID(t *testing.T) {
 	m := mocks.NewMockWorkspaceClient(t)
 	ctx := cmdctx.SetWorkspaceClient(cmdio.MockDiscard(t.Context()), m.WorkspaceClient)
-	cmd := withOutput(newGetRunCommand(), flags.OutputText)
+	cmd := withOutput(newGetCommand(), flags.OutputText)
 	cmd.SetContext(ctx)
 
 	err := cmd.RunE(cmd, []string{"abc"})
@@ -45,7 +58,7 @@ func TestGetRunNotFound(t *testing.T) {
 	m.GetMockJobsAPI().EXPECT().GetRun(mock.Anything, jobs.GetRunRequest{RunId: 5}).Return(
 		nil, apierr.ErrResourceDoesNotExist)
 	ctx := cmdctx.SetWorkspaceClient(cmdio.MockDiscard(t.Context()), m.WorkspaceClient)
-	cmd := withOutput(newGetRunCommand(), flags.OutputText)
+	cmd := withOutput(newGetCommand(), flags.OutputText)
 	cmd.SetContext(ctx)
 
 	err := cmd.RunE(cmd, []string{"5"})
@@ -60,7 +73,7 @@ func TestGetRunNotFoundJSON(t *testing.T) {
 		nil, apierr.ErrResourceDoesNotExist)
 	ctx := cmdctx.SetWorkspaceClient(t.Context(), m.WorkspaceClient)
 	ctx = cmdio.InContext(ctx, cmdio.NewIO(ctx, flags.OutputJSON, nil, &buf, &buf, "", ""))
-	cmd := withOutput(newGetRunCommand(), flags.OutputJSON)
+	cmd := withOutput(newGetCommand(), flags.OutputJSON)
 	cmd.SetContext(ctx)
 
 	// In JSON mode the not-found error is a structured envelope, not a bare error.
