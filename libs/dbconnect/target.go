@@ -60,9 +60,10 @@ func ResolveTarget(ctx context.Context, f TargetFlags, c ComputeClient, bt Bundl
 			return nil, fmt.Errorf("resolving cluster %s: %w", f.Cluster, err)
 		}
 		return &TargetInfo{
-			Kind:      "cluster",
-			ClusterID: f.Cluster,
-			EnvKey:    EnvKeyForSparkVersion(v),
+			Kind:         "cluster",
+			ClusterID:    f.Cluster,
+			SparkVersion: v,
+			EnvKey:       EnvKeyForSparkVersion(v),
 		}, nil
 	}
 
@@ -92,15 +93,16 @@ func ResolveTarget(ctx context.Context, f TargetFlags, c ComputeClient, bt Bundl
 			}, nil
 		}
 		return &TargetInfo{
-			Kind:   "cluster",
-			EnvKey: EnvKeyForSparkVersion(version),
+			Kind:         "cluster",
+			SparkVersion: version,
+			EnvKey:       EnvKeyForSparkVersion(version),
 		}, nil
 	}
 
 	// Fall back to bundle target.
 	if !bt.Selected {
 		return nil, NewError(ErrNoTargetSelected, nil,
-			"No compute target is selected. Select a cluster or serverless target, or pass --cluster/--serverless/--job.")
+			"No compute target is selected. Select a cluster or serverless target, or pass --cluster/--serverless/--job")
 	}
 
 	if bt.Serverless {
@@ -118,9 +120,10 @@ func ResolveTarget(ctx context.Context, f TargetFlags, c ComputeClient, bt Bundl
 			return nil, fmt.Errorf("resolving bundle cluster %s: %w", bt.ClusterID, err)
 		}
 		return &TargetInfo{
-			Kind:      "cluster",
-			ClusterID: bt.ClusterID,
-			EnvKey:    EnvKeyForSparkVersion(v),
+			Kind:         "cluster",
+			ClusterID:    bt.ClusterID,
+			SparkVersion: v,
+			EnvKey:       EnvKeyForSparkVersion(v),
 		}, nil
 	}
 

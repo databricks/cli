@@ -1,5 +1,5 @@
 === Phase 1: preflight ===
     status=ok  uv [UV_VERSION]
 === Phase 2: resolve ===
-    status=failed  No compute target is selected. Select a cluster or serverless target, or pass --cluster/--serverless/--job.
-Error: No compute target is selected. Select a cluster or serverless target, or pass --cluster/--serverless/--job.
+    status=failed  No compute target is selected. Select a cluster or serverless target, or pass --cluster/--serverless/--job
+Error: No compute target is selected. Select a cluster or serverless target, or pass --cluster/--serverless/--job
