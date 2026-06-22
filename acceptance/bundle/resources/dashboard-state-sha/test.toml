@@ -1,0 +1,22 @@
+# Direct-engine hashed-state behaviour for dashboards. Kept outside dashboards/ so it can run
+# direct-only: terraform does not hash state, and the saved-plan path (deploy --plan, i.e.
+# READPLAN=1) is direct-only. RecordRequests is inherited from resources/test.toml.
+Local = true
+Cloud = true
+RequiresWarehouse = true
+
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+EnvMatrix.READPLAN = ["", "1"]
+
+[Env]
+# Prevent MSYS2 from rewriting /Users/... paths on Windows.
+MSYS_NO_PATHCONV = "1"
+
+# Etag can be both negative and positive.
+[[Repls]]
+Old = "\"[-0-9]{8,}\""
+New = "[ETAG]"
+
+[[Repls]]
+Old = "\"[0-9]{8,}\""
+New = "[ETAG]"

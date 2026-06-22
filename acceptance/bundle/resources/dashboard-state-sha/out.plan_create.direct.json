@@ -1,0 +1,19 @@
+{
+  "plan_version": 2,
+  "cli_version": "[DEV_VERSION]",
+  "plan": {
+    "resources.dashboards.dashboard1": {
+      "action": "create",
+      "new_state": {
+        "value": {
+          "display_name": "dashboard-state-sha [UUID]",
+          "embed_credentials": true,
+          "parent_path": "/Workspace/Users/[USERNAME]",
+          "published": true,
+          "serialized_dashboard": "{\"pages\":[{\"name\":\"main\",\"displayName\":\"Sales Overview\"}]}",
+          "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
+        }
+      }
+    }
+  }
+}
