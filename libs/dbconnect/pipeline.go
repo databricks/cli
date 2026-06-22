@@ -69,6 +69,7 @@ func (p *Pipeline) Run(ctx context.Context) (*Result, error) {
 		res.Error = pe
 		return res, pe
 	}
+	res.Phases = append(res.Phases, PhaseResult{Name: "parse-python-version", Status: "ok", Detail: pyMinor})
 	target.PythonVersion = pyMinor
 
 	// Phase 3: compute the merge plan (in-memory, no disk writes yet).
