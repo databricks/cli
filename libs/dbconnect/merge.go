@@ -219,6 +219,16 @@ func toolUvHasOnlyConstraintDeps(lines []string, header, end int) bool {
 		if !constraintDepsRe.MatchString(lines[i]) {
 			return false
 		}
+		// Multi-line array form: skip the continuation lines through the closing "]"
+		// so the whole managed key counts as ignorable (mirrors removeConstraintDeps).
+		// The single-line form already holds the "]" and does not advance i.
+		if !strings.Contains(lines[i], "]") {
+			for i++; i < end; i++ {
+				if strings.TrimSpace(lines[i]) == "]" {
+					break
+				}
+			}
+		}
 	}
 	return true
 }

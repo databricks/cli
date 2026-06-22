@@ -172,6 +172,33 @@ constraint-dependencies = ["old~=1.0"]
 	assert.Equal(t, 1, countOccurrences(s, managedMarkerStart))
 }
 
+func TestMergeRemovesOwnedOnlyMultiLineToolUv(t *testing.T) {
+	in := []byte(`[project]
+requires-python = ">=3.10"
+
+[dependency-groups]
+dev = ["databricks-connect~=16.0.0"]
+
+[tool.uv]
+constraint-dependencies = [
+    "old~=1.0",
+]
+`)
+	out, _, err := MergeManaged(in, testConstraints())
+	require.NoError(t, err)
+	s := string(out)
+	assert.NotContains(t, s, "old~=1.0")
+	assert.Contains(t, s, "pydantic~=2.10.6")
+	// The multi-line owned-only table was removed whole, leaving exactly one
+	// [tool.uv] (inside the managed block) and no stray empty header.
+	assert.Equal(t, 1, countOccurrences(s, "[tool.uv]"))
+	assert.Equal(t, 1, countOccurrences(s, managedMarkerStart))
+	// Merge-twice is byte-identical.
+	twice, _, err := MergeManaged(out, testConstraints())
+	require.NoError(t, err)
+	assert.Equal(t, string(out), string(twice))
+}
+
 func TestMergeReplacesSingleLineDevArray(t *testing.T) {
 	in := []byte(`[project]
 requires-python = ">=3.10"
