@@ -612,20 +612,32 @@ func submitSSHTunnelJob(ctx context.Context, client *databricks.WorkspaceClient,
 	return waiter.RunId, waitForJobToStart(ctx, client, waiter.RunId, opts.TaskStartupTimeout)
 }
 
+// shellSingleQuote wraps s in single quotes for safe inclusion in a shell
+// command, escaping any embedded single quotes.
+func shellSingleQuote(s string) string {
+	return "'" + strings.ReplaceAll(s, "'", `'\''`) + "'"
+}
+
 // buildRemoteShellArgs returns the ssh arguments that follow the hostname.
 //
 // For the interactive case (no remote command given), it forces PTY allocation
 // and launches a login bash, because the default login shell on Databricks
 // compute images is /bin/sh. If bash is unavailable it falls back to $SHELL or
-// /bin/sh so the connection never breaks.
+// /bin/sh so the connection never breaks. When wsHome is set, the shell first
+// changes into the user's workspace home folder; if that directory is missing
+// the cd is ignored and the shell still launches from $HOME.
 //
 // For the non-interactive case (e.g. `databricks ssh connect ... -- ls -la`),
 // the user's command is returned verbatim so behavior is unchanged.
-func buildRemoteShellArgs(opts ClientOptions) []string {
+func buildRemoteShellArgs(opts ClientOptions, wsHome string) []string {
 	if len(opts.AdditionalArgs) > 0 {
 		return opts.AdditionalArgs
 	}
-	return []string{"-t", `command -v bash >/dev/null 2>&1 && exec bash -l || exec "${SHELL:-/bin/sh}" -l`}
+	cmd := `command -v bash >/dev/null 2>&1 && exec bash -l || exec "${SHELL:-/bin/sh}" -l`
+	if wsHome != "" {
+		cmd = "cd " + shellSingleQuote(wsHome) + " 2>/dev/null; " + cmd
+	}
+	return []string{"-t", cmd}
 }
 
 func spawnSSHClient(ctx context.Context, client *databricks.WorkspaceClient, userName, privateKeyPath string, serverPort int, clusterID string, opts ClientOptions) error {
@@ -651,8 +663,20 @@ func spawnSSHClient(ctx context.Context, client *databricks.WorkspaceClient, use
 	if opts.UserKnownHostsFile != "" {
 		sshArgs = append(sshArgs, "-o", "UserKnownHostsFile="+opts.UserKnownHostsFile)
 	}
+	// For an interactive session, land the shell in the user's workspace home folder
+	// (/Workspace/Users/<email>) instead of the OS home. Only needed when no remote
+	// command is given; skip the lookup otherwise.
+	var wsHome string
+	if len(opts.AdditionalArgs) == 0 {
+		if currentUser, err := client.CurrentUser.Me(ctx, iam.MeRequest{}); err != nil {
+			log.Warnf(ctx, "Failed to resolve current user for workspace home directory: %v", err)
+		} else {
+			wsHome = "/Workspace/Users/" + currentUser.UserName
+		}
+	}
+
 	sshArgs = append(sshArgs, hostName)
-	sshArgs = append(sshArgs, buildRemoteShellArgs(opts)...)
+	sshArgs = append(sshArgs, buildRemoteShellArgs(opts, wsHome)...)
 
 	log.Debugf(ctx, "Launching SSH client: ssh %s", strings.Join(sshArgs, " "))
 	sshCmd := exec.CommandContext(ctx, "ssh", sshArgs...)
