@@ -612,6 +612,22 @@ func submitSSHTunnelJob(ctx context.Context, client *databricks.WorkspaceClient,
 	return waiter.RunId, waitForJobToStart(ctx, client, waiter.RunId, opts.TaskStartupTimeout)
 }
 
+// buildRemoteShellArgs returns the ssh arguments that follow the hostname.
+//
+// For the interactive case (no remote command given), it forces PTY allocation
+// and launches a login bash, because the default login shell on Databricks
+// compute images is /bin/sh. If bash is unavailable it falls back to $SHELL or
+// /bin/sh so the connection never breaks.
+//
+// For the non-interactive case (e.g. `databricks ssh connect ... -- ls -la`),
+// the user's command is returned verbatim so behavior is unchanged.
+func buildRemoteShellArgs(opts ClientOptions) []string {
+	if len(opts.AdditionalArgs) > 0 {
+		return opts.AdditionalArgs
+	}
+	return []string{"-t", `command -v bash >/dev/null 2>&1 && exec bash -l || exec "${SHELL:-/bin/sh}" -l`}
+}
+
 func spawnSSHClient(ctx context.Context, client *databricks.WorkspaceClient, userName, privateKeyPath string, serverPort int, clusterID string, opts ClientOptions) error {
 	// Create a copy with metadata for the ProxyCommand
 	optsWithMetadata := opts
@@ -636,7 +652,7 @@ func spawnSSHClient(ctx context.Context, client *databricks.WorkspaceClient, use
 		sshArgs = append(sshArgs, "-o", "UserKnownHostsFile="+opts.UserKnownHostsFile)
 	}
 	sshArgs = append(sshArgs, hostName)
-	sshArgs = append(sshArgs, opts.AdditionalArgs...)
+	sshArgs = append(sshArgs, buildRemoteShellArgs(opts)...)
 
 	log.Debugf(ctx, "Launching SSH client: ssh %s", strings.Join(sshArgs, " "))
 	sshCmd := exec.CommandContext(ctx, "ssh", sshArgs...)

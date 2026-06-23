@@ -198,6 +198,22 @@ func TestHostKeyChangedHint(t *testing.T) {
 	}
 }
 
+func TestBuildRemoteShellArgs(t *testing.T) {
+	t.Run("interactive launches login bash with PTY", func(t *testing.T) {
+		args := buildRemoteShellArgs(ClientOptions{})
+		require.Len(t, args, 2)
+		assert.Equal(t, "-t", args[0])
+		assert.Equal(t, `command -v bash >/dev/null 2>&1 && exec bash -l || exec "${SHELL:-/bin/sh}" -l`, args[1])
+	})
+
+	t.Run("non-interactive passes additional args verbatim", func(t *testing.T) {
+		additional := []string{"ls", "-la"}
+		args := buildRemoteShellArgs(ClientOptions{AdditionalArgs: additional})
+		assert.Equal(t, additional, args)
+		assert.NotContains(t, args, "-t")
+	})
+}
+
 func TestTailWriterRetainsTail(t *testing.T) {
 	t.Run("retains only the tail", func(t *testing.T) {
 		w := &tailWriter{maxBytes: 4}
