@@ -7,7 +7,7 @@
 ### CLI
 * `databricks ssh connect` now opens an interactive `bash` login shell by default instead of the compute image's default `/bin/sh`, falling back gracefully when `bash` is unavailable. Passing an explicit remote command (`-- <cmd>`) is unaffected ([#5687](https://github.com/databricks/cli/pull/5687)).
 
-* `databricks ssh connect` interactive sessions now start in the user's workspace home folder (`/Workspace/Users/<email>`) instead of the OS home directory, falling back to the OS home when that folder is unavailable.
+* `databricks ssh connect` interactive sessions now start in the user's workspace home folder (`/Workspace/Users/<email>`) instead of the OS home directory, falling back to the OS home when that folder is unavailable ([#5688](https://github.com/databricks/cli/pull/5688)).
 
 ### Bundles
 * `bundle run` now prints the modern job run URL (`/jobs/<id>/runs/<id>`) so that non-admin users permitted to view the run are taken to the run instead of the workspace homepage.
