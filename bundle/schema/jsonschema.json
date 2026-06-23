@@ -109,7 +109,7 @@
                       "permissions": {
                         "description": "The permissions to apply to this resource.",
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission",
-                        "markdownDescription": "A Sequence that defines the permissions to apply to this resource, where each item in the sequence is a permission for a specific entity.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
+                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
                       },
                       "query_text": {
                         "description": "[Public Preview] Text of the query to be run.",
@@ -199,7 +199,7 @@
                       "permissions": {
                         "description": "The permissions to apply to this resource.",
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.AppPermission",
-                        "markdownDescription": "A Sequence that defines the permissions to apply to this resource, where each item in the sequence is a permission for a specific entity.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
+                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
                       },
                       "resources": {
                         "description": "Resources for the app.",
@@ -290,19 +290,19 @@
                     "type": "object",
                     "properties": {
                       "group_name": {
-                        "description": "The name of the group that has the permission set in level.",
+                        "description": "The name of the group granted the permission level.",
                         "$ref": "#/$defs/string"
                       },
                       "level": {
-                        "description": "The allowed permission for user, group, service principal defined for this permission.",
+                        "description": "The permission level to apply. The allowed levels depend on the resource type.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppPermissionLevel"
                       },
                       "service_principal_name": {
-                        "description": "The name of the service principal that has the permission set in level.",
+                        "description": "The name of the service principal granted the permission level.",
                         "$ref": "#/$defs/string"
                       },
                       "user_name": {
-                        "description": "The name of the user that has the permission set in level.",
+                        "description": "The name of the user granted the permission level.",
                         "$ref": "#/$defs/string"
                       }
                     },
@@ -337,7 +337,7 @@
                       "grants": {
                         "description": "The Unity Catalog privileges to grant to principals on this securable.",
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/catalog.PrivilegeAssignment",
-                        "markdownDescription": "A Sequence that defines the Unity Catalog privilege grants for this securable, where each item grants a set of privileges to a principal."
+                        "markdownDescription": "A Sequence of Unity Catalog privilege grants on this securable, where each item grants a set of `privileges` to a `principal` (a user, group, or service principal).\n\nSee [link](https://docs.databricks.com/data-governance/unity-catalog/manage-privileges/index.html)."
                       },
                       "lifecycle": {
                         "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
@@ -484,7 +484,7 @@
                       "permissions": {
                         "description": "The permissions to apply to this resource.",
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.ClusterPermission",
-                        "markdownDescription": "A Sequence that defines the permissions to apply to this resource, where each item in the sequence is a permission for a specific entity.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
+                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
                       },
                       "policy_id": {
                         "description": "The ID of the cluster policy used to create the cluster if applicable.",
@@ -550,19 +550,19 @@
                     "type": "object",
                     "properties": {
                       "group_name": {
-                        "description": "The name of the group that has the permission set in level.",
+                        "description": "The name of the group granted the permission level.",
                         "$ref": "#/$defs/string"
                       },
                       "level": {
-                        "description": "The allowed permission for user, group, service principal defined for this permission.",
+                        "description": "The permission level to apply. The allowed levels depend on the resource type.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.ClusterPermissionLevel"
                       },
                       "service_principal_name": {
-                        "description": "The name of the service principal that has the permission set in level.",
+                        "description": "The name of the service principal granted the permission level.",
                         "$ref": "#/$defs/string"
                       },
                       "user_name": {
-                        "description": "The name of the user that has the permission set in level.",
+                        "description": "The name of the user granted the permission level.",
                         "$ref": "#/$defs/string"
                       }
                     },
@@ -631,7 +631,7 @@
                       "permissions": {
                         "description": "The permissions to apply to this resource.",
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission",
-                        "markdownDescription": "A Sequence that defines the permissions to apply to this resource, where each item in the sequence is a permission for a specific entity.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
+                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
                       },
                       "serialized_dashboard": {
                         "description": "The contents of the dashboard in serialized string form.\nThis field is excluded in List Dashboards responses.\nUse the [get dashboard API](https://docs.databricks.com/api/workspace/lakeview/get)\nto retrieve an example response, which includes the `serialized_dashboard` field.\nThis field provides the structure of the JSON string that represents the dashboard's\nlayout and components.",
@@ -735,7 +735,7 @@
                       "permissions": {
                         "description": "The permissions to apply to this resource.",
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission",
-                        "markdownDescription": "A Sequence that defines the permissions to apply to this resource, where each item in the sequence is a permission for a specific entity.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
+                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
                       },
                       "retention_window_in_days": {
                         "description": "[Public Preview] The retention window for the instance. This is the time window in days\nfor which the historical data is retained. The default value is 7 days.\nValid values are 2 to 35 days.",
@@ -793,7 +793,7 @@
                       "grants": {
                         "description": "The Unity Catalog privileges to grant to principals on this securable.",
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/catalog.PrivilegeAssignment",
-                        "markdownDescription": "A Sequence that defines the Unity Catalog privilege grants for this securable, where each item grants a set of privileges to a principal."
+                        "markdownDescription": "A Sequence of Unity Catalog privilege grants on this securable, where each item grants a set of `privileges` to a `principal` (a user, group, or service principal).\n\nSee [link](https://docs.databricks.com/data-governance/unity-catalog/manage-privileges/index.html)."
                       },
                       "lifecycle": {
                         "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
@@ -856,7 +856,7 @@
                       "permissions": {
                         "description": "The permissions to apply to this resource.",
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission",
-                        "markdownDescription": "A Sequence that defines the permissions to apply to this resource, where each item in the sequence is a permission for a specific entity.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
+                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
                       },
                       "serialized_space": {
                         "description": "Serialized Genie space body. May be provided inline as a JSON string (or YAML that will be marshalled to JSON) or referenced via `file_path`. To round-trip an existing space into a bundle, use `databricks bundle generate genie-space`.",
@@ -943,7 +943,7 @@
                       "permissions": {
                         "description": "The permissions to apply to this resource.",
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.JobPermission",
-                        "markdownDescription": "A Sequence that defines the permissions to apply to this resource, where each item in the sequence is a permission for a specific entity.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
+                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
                       },
                       "queue": {
                         "description": "The queue settings of the job.",
@@ -999,19 +999,19 @@
                     "type": "object",
                     "properties": {
                       "group_name": {
-                        "description": "The name of the group that has the permission set in level.",
+                        "description": "The name of the group granted the permission level.",
                         "$ref": "#/$defs/string"
                       },
                       "level": {
-                        "description": "The allowed permission for user, group, service principal defined for this permission.",
+                        "description": "The permission level to apply. The allowed levels depend on the resource type.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.JobPermissionLevel"
                       },
                       "service_principal_name": {
-                        "description": "The name of the service principal that has the permission set in level.",
+                        "description": "The name of the service principal granted the permission level.",
                         "$ref": "#/$defs/string"
                       },
                       "user_name": {
-                        "description": "The name of the user that has the permission set in level.",
+                        "description": "The name of the user granted the permission level.",
                         "$ref": "#/$defs/string"
                       }
                     },
@@ -1086,7 +1086,7 @@
                       "permissions": {
                         "description": "The permissions to apply to this resource.",
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.MlflowExperimentPermission",
-                        "markdownDescription": "A Sequence that defines the permissions to apply to this resource, where each item in the sequence is a permission for a specific entity.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
+                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
                       },
                       "tags": {
                         "description": "A collection of tags to set on the experiment. Maximum tag size and number of tags per request\ndepends on the storage backend. All storage backends are guaranteed to support tag keys up\nto 250 bytes in size and tag values up to 5000 bytes in size. All storage backends are also\nguaranteed to support up to 20 tags per request.",
@@ -1111,19 +1111,19 @@
                     "type": "object",
                     "properties": {
                       "group_name": {
-                        "description": "The name of the group that has the permission set in level.",
+                        "description": "The name of the group granted the permission level.",
                         "$ref": "#/$defs/string"
                       },
                       "level": {
-                        "description": "The allowed permission for user, group, service principal defined for this permission.",
+                        "description": "The permission level to apply. The allowed levels depend on the resource type.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.ExperimentPermissionLevel"
                       },
                       "service_principal_name": {
-                        "description": "The name of the service principal that has the permission set in level.",
+                        "description": "The name of the service principal granted the permission level.",
                         "$ref": "#/$defs/string"
                       },
                       "user_name": {
-                        "description": "The name of the user that has the permission set in level.",
+                        "description": "The name of the user granted the permission level.",
                         "$ref": "#/$defs/string"
                       }
                     },
@@ -1158,7 +1158,7 @@
                       "permissions": {
                         "description": "The permissions to apply to this resource.",
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.MlflowModelPermission",
-                        "markdownDescription": "A Sequence that defines the permissions to apply to this resource, where each item in the sequence is a permission for a specific entity.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
+                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
                       },
                       "tags": {
                         "description": "Additional metadata for registered model.",
@@ -1183,19 +1183,19 @@
                     "type": "object",
                     "properties": {
                       "group_name": {
-                        "description": "The name of the group that has the permission set in level.",
+                        "description": "The name of the group granted the permission level.",
                         "$ref": "#/$defs/string"
                       },
                       "level": {
-                        "description": "The allowed permission for user, group, service principal defined for this permission.",
+                        "description": "The permission level to apply. The allowed levels depend on the resource type.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.RegisteredModelPermissionLevel"
                       },
                       "service_principal_name": {
-                        "description": "The name of the service principal that has the permission set in level.",
+                        "description": "The name of the service principal granted the permission level.",
                         "$ref": "#/$defs/string"
                       },
                       "user_name": {
-                        "description": "The name of the user that has the permission set in level.",
+                        "description": "The name of the user granted the permission level.",
                         "$ref": "#/$defs/string"
                       }
                     },
@@ -1245,7 +1245,7 @@
                       "permissions": {
                         "description": "The permissions to apply to this resource.",
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.ModelServingEndpointPermission",
-                        "markdownDescription": "A Sequence that defines the permissions to apply to this resource, where each item in the sequence is a permission for a specific entity.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
+                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
                       },
                       "rate_limits": {
                         "description": "Rate limits to be applied to the serving endpoint. NOTE: this field is deprecated, please use AI Gateway to manage rate limits.",
@@ -1280,19 +1280,19 @@
                     "type": "object",
                     "properties": {
                       "group_name": {
-                        "description": "The name of the group that has the permission set in level.",
+                        "description": "The name of the group granted the permission level.",
                         "$ref": "#/$defs/string"
                       },
                       "level": {
-                        "description": "The allowed permission for user, group, service principal defined for this permission.",
+                        "description": "The permission level to apply. The allowed levels depend on the resource type.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.ServingEndpointPermissionLevel"
                       },
                       "service_principal_name": {
-                        "description": "The name of the service principal that has the permission set in level.",
+                        "description": "The name of the service principal granted the permission level.",
                         "$ref": "#/$defs/string"
                       },
                       "user_name": {
-                        "description": "The name of the user that has the permission set in level.",
+                        "description": "The name of the user granted the permission level.",
                         "$ref": "#/$defs/string"
                       }
                     },
@@ -1313,19 +1313,19 @@
                     "type": "object",
                     "properties": {
                       "group_name": {
-                        "description": "The name of the group that has the permission set in level.",
+                        "description": "The name of the group granted the permission level.",
                         "$ref": "#/$defs/string"
                       },
                       "level": {
-                        "description": "The allowed permission for user, group, service principal defined for this permission.",
+                        "description": "The permission level to apply. The allowed levels depend on the resource type.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/iam.PermissionLevel"
                       },
                       "service_principal_name": {
-                        "description": "The name of the service principal that has the permission set in level.",
+                        "description": "The name of the service principal granted the permission level.",
                         "$ref": "#/$defs/string"
                       },
                       "user_name": {
-                        "description": "The name of the user that has the permission set in level.",
+                        "description": "The name of the user granted the permission level.",
                         "$ref": "#/$defs/string"
                       }
                     },
@@ -1430,7 +1430,7 @@
                       "permissions": {
                         "description": "The permissions to apply to this resource.",
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.PipelinePermission",
-                        "markdownDescription": "A Sequence that defines the permissions to apply to this resource, where each item in the sequence is a permission for a specific entity.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
+                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
                       },
                       "photon": {
                         "description": "Whether Photon is enabled for this pipeline.",
@@ -1506,19 +1506,19 @@
                     "type": "object",
                     "properties": {
                       "group_name": {
-                        "description": "The name of the group that has the permission set in level.",
+                        "description": "The name of the group granted the permission level.",
                         "$ref": "#/$defs/string"
                       },
                       "level": {
-                        "description": "The allowed permission for user, group, service principal defined for this permission.",
+                        "description": "The permission level to apply. The allowed levels depend on the resource type.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.PipelinePermissionLevel"
                       },
                       "service_principal_name": {
-                        "description": "The name of the service principal that has the permission set in level.",
+                        "description": "The name of the service principal granted the permission level.",
                         "$ref": "#/$defs/string"
                       },
                       "user_name": {
-                        "description": "The name of the user that has the permission set in level.",
+                        "description": "The name of the user granted the permission level.",
                         "$ref": "#/$defs/string"
                       }
                     },
@@ -1742,7 +1742,7 @@
                       "permissions": {
                         "description": "The permissions to apply to this resource.",
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission",
-                        "markdownDescription": "A Sequence that defines the permissions to apply to this resource, where each item in the sequence is a permission for a specific entity.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
+                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
                       },
                       "pg_version": {
                         "$ref": "#/$defs/int"
@@ -1992,7 +1992,7 @@
                       "grants": {
                         "description": "The Unity Catalog privileges to grant to principals on this securable.",
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/catalog.PrivilegeAssignment",
-                        "markdownDescription": "A Sequence that defines the Unity Catalog privilege grants for this securable, where each item grants a set of privileges to a principal."
+                        "markdownDescription": "A Sequence of Unity Catalog privilege grants on this securable, where each item grants a set of `privileges` to a `principal` (a user, group, or service principal).\n\nSee [link](https://docs.databricks.com/data-governance/unity-catalog/manage-privileges/index.html)."
                       },
                       "lifecycle": {
                         "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
@@ -2056,7 +2056,7 @@
                       "grants": {
                         "description": "The Unity Catalog privileges to grant to principals on this securable.",
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/catalog.PrivilegeAssignment",
-                        "markdownDescription": "A Sequence that defines the Unity Catalog privilege grants for this securable, where each item grants a set of privileges to a principal."
+                        "markdownDescription": "A Sequence of Unity Catalog privilege grants on this securable, where each item grants a set of `privileges` to a `principal` (a user, group, or service principal).\n\nSee [link](https://docs.databricks.com/data-governance/unity-catalog/manage-privileges/index.html)."
                       },
                       "lifecycle": {
                         "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
@@ -2131,11 +2131,11 @@
                     "type": "object",
                     "properties": {
                       "group_name": {
-                        "description": "The name of the group that has the permission set in level. This field translates to a `principal` field in secret scope ACL.",
+                        "description": "The name of the group granted the permission level. This field translates to a `principal` field in secret scope ACL.",
                         "$ref": "#/$defs/string"
                       },
                       "level": {
-                        "description": "The allowed permission for user, group, service principal defined for this permission.",
+                        "description": "The permission level to apply. The allowed levels depend on the resource type.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.SecretScopePermissionLevel"
                       },
                       "service_principal_name": {
@@ -2143,7 +2143,7 @@
                         "$ref": "#/$defs/string"
                       },
                       "user_name": {
-                        "description": "The name of the user that has the permission set in level. This field translates to a `principal` field in secret scope ACL.",
+                        "description": "The name of the user granted the permission level. This field translates to a `principal` field in secret scope ACL.",
                         "$ref": "#/$defs/string"
                       }
                     },
@@ -2229,7 +2229,7 @@
                       "permissions": {
                         "description": "The permissions to apply to this resource.",
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.SqlWarehousePermission",
-                        "markdownDescription": "A Sequence that defines the permissions to apply to this resource, where each item in the sequence is a permission for a specific entity.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
+                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
                       },
                       "spot_instance_policy": {
                         "description": "Configurations whether the endpoint should use spot instances.",
@@ -2258,19 +2258,19 @@
                     "type": "object",
                     "properties": {
                       "group_name": {
-                        "description": "The name of the group that has the permission set in level.",
+                        "description": "The name of the group granted the permission level.",
                         "$ref": "#/$defs/string"
                       },
                       "level": {
-                        "description": "The allowed permission for user, group, service principal defined for this permission.",
+                        "description": "The permission level to apply. The allowed levels depend on the resource type.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.WarehousePermissionLevel"
                       },
                       "service_principal_name": {
-                        "description": "The name of the service principal that has the permission set in level.",
+                        "description": "The name of the service principal granted the permission level.",
                         "$ref": "#/$defs/string"
                       },
                       "user_name": {
-                        "description": "The name of the user that has the permission set in level.",
+                        "description": "The name of the user granted the permission level.",
                         "$ref": "#/$defs/string"
                       }
                     },
@@ -2346,7 +2346,7 @@
                       "permissions": {
                         "description": "The permissions to apply to this resource.",
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission",
-                        "markdownDescription": "A Sequence that defines the permissions to apply to this resource, where each item in the sequence is a permission for a specific entity.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
+                        "markdownDescription": "A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
                       },
                       "target_qps": {
                         "description": "[Public Preview] Target QPS for the endpoint. Mutually exclusive with num_replicas.\nThe actual replica count is calculated at index creation/sync time based on this value.\nBest-effort target; the system does not guarantee this QPS will be achieved.",
@@ -2391,7 +2391,7 @@
                       "grants": {
                         "description": "The Unity Catalog privileges to grant to principals on this securable.",
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/catalog.PrivilegeAssignment",
-                        "markdownDescription": "A Sequence that defines the Unity Catalog privilege grants for this securable, where each item grants a set of privileges to a principal."
+                        "markdownDescription": "A Sequence of Unity Catalog privilege grants on this securable, where each item grants a set of `privileges` to a `principal` (a user, group, or service principal).\n\nSee [link](https://docs.databricks.com/data-governance/unity-catalog/manage-privileges/index.html)."
                       },
                       "index_subtype": {
                         "description": "[Beta] The subtype of the index. Use `HYBRID` or `FULL_TEXT`. `VECTOR` is not supported.",
@@ -2444,7 +2444,7 @@
                       "grants": {
                         "description": "The Unity Catalog privileges to grant to principals on this securable.",
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/catalog.PrivilegeAssignment",
-                        "markdownDescription": "A Sequence that defines the Unity Catalog privilege grants for this securable, where each item grants a set of privileges to a principal."
+                        "markdownDescription": "A Sequence of Unity Catalog privilege grants on this securable, where each item grants a set of `privileges` to a `principal` (a user, group, or service principal).\n\nSee [link](https://docs.databricks.com/data-governance/unity-catalog/manage-privileges/index.html)."
                       },
                       "lifecycle": {
                         "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",

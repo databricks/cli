@@ -19,22 +19,22 @@ class JobPermission:
 
     level: VariableOr[JobPermissionLevel]
     """
-    The allowed permission for user, group, service principal defined for this permission.
+    The permission level to apply. The allowed levels depend on the resource type.
     """
 
     group_name: VariableOrOptional[str] = None
     """
-    The name of the group that has the permission set in level.
+    The name of the group granted the permission level.
     """
 
     service_principal_name: VariableOrOptional[str] = None
     """
-    The name of the service principal that has the permission set in level.
+    The name of the service principal granted the permission level.
     """
 
     user_name: VariableOrOptional[str] = None
     """
-    The name of the user that has the permission set in level.
+    The name of the user granted the permission level.
     """
 
     @classmethod
@@ -50,22 +50,22 @@ class JobPermissionDict(TypedDict, total=False):
 
     level: VariableOr[JobPermissionLevelParam]
     """
-    The allowed permission for user, group, service principal defined for this permission.
+    The permission level to apply. The allowed levels depend on the resource type.
     """
 
     group_name: VariableOrOptional[str]
     """
-    The name of the group that has the permission set in level.
+    The name of the group granted the permission level.
     """
 
     service_principal_name: VariableOrOptional[str]
     """
-    The name of the service principal that has the permission set in level.
+    The name of the service principal granted the permission level.
     """
 
     user_name: VariableOrOptional[str]
     """
-    The name of the user that has the permission set in level.
+    The name of the user granted the permission level.
     """
 
 

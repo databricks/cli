@@ -287,7 +287,7 @@ resources:
           "description": |-
             The permissions to apply to this resource.
           "markdown_description": |-
-            A Sequence that defines the permissions to apply to this resource, where each item in the sequence is a permission for a specific entity.
+            A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.
 
             See [\_](/dev-tools/bundles/settings.md#permissions) and [\_](/dev-tools/bundles/permissions.md).
           "markdown_examples": |-
@@ -365,7 +365,7 @@ resources:
           "description": |-
             The permissions to apply to this resource.
           "markdown_description": |-
-            A Sequence that defines the permissions to apply to this resource, where each item in the sequence is a permission for a specific entity.
+            A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.
 
             See [\_](/dev-tools/bundles/settings.md#permissions) and [\_](/dev-tools/bundles/permissions.md).
           "markdown_examples": |-
@@ -381,16 +381,16 @@ resources:
           "$fields":
             "group_name":
               "description": |-
-                The name of the group that has the permission set in level.
+                The name of the group granted the permission level.
             "level":
               "description": |-
-                The allowed permission for user, group, service principal defined for this permission.
+                The permission level to apply. The allowed levels depend on the resource type.
             "service_principal_name":
               "description": |-
-                The name of the service principal that has the permission set in level.
+                The name of the service principal granted the permission level.
             "user_name":
               "description": |-
-                The name of the user that has the permission set in level.
+                The name of the user granted the permission level.
         "resources":
           "$fields":
             "app":
@@ -506,7 +506,9 @@ resources:
           "description": |-
             The Unity Catalog privileges to grant to principals on this securable.
           "markdown_description": |-
-            A Sequence that defines the Unity Catalog privilege grants for this securable, where each item grants a set of privileges to a principal.
+            A Sequence of Unity Catalog privilege grants on this securable, where each item grants a set of `privileges` to a `principal` (a user, group, or service principal).
+
+            See [\_](/data-governance/unity-catalog/manage-privileges/index.md).
           "markdown_examples": |-
             ```yaml
             grants:
@@ -582,7 +584,7 @@ resources:
           "description": |-
             The permissions to apply to this resource.
           "markdown_description": |-
-            A Sequence that defines the permissions to apply to this resource, where each item in the sequence is a permission for a specific entity.
+            A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.
 
             See [\_](/dev-tools/bundles/settings.md#permissions) and [\_](/dev-tools/bundles/permissions.md).
           "markdown_examples": |-
@@ -598,16 +600,16 @@ resources:
           "$fields":
             "group_name":
               "description": |-
-                The name of the group that has the permission set in level.
+                The name of the group granted the permission level.
             "level":
               "description": |-
-                The allowed permission for user, group, service principal defined for this permission.
+                The permission level to apply. The allowed levels depend on the resource type.
             "service_principal_name":
               "description": |-
-                The name of the service principal that has the permission set in level.
+                The name of the service principal granted the permission level.
             "user_name":
               "description": |-
-                The name of the user that has the permission set in level.
+                The name of the user granted the permission level.
     "dashboards":
       "description": |-
         The dashboard definitions for the bundle, where each key is the name of the dashboard.
@@ -677,7 +679,7 @@ resources:
           "description": |-
             The permissions to apply to this resource.
           "markdown_description": |-
-            A Sequence that defines the permissions to apply to this resource, where each item in the sequence is a permission for a specific entity.
+            A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.
 
             See [\_](/dev-tools/bundles/settings.md#permissions) and [\_](/dev-tools/bundles/permissions.md).
           "markdown_examples": |-
@@ -693,16 +695,16 @@ resources:
           "$fields":
             "group_name":
               "description": |-
-                The name of the group that has the permission set in level.
+                The name of the group granted the permission level.
             "level":
               "description": |-
-                The allowed permission for user, group, service principal defined for this permission.
+                The permission level to apply. The allowed levels depend on the resource type.
             "service_principal_name":
               "description": |-
-                The name of the service principal that has the permission set in level.
+                The name of the service principal granted the permission level.
             "user_name":
               "description": |-
-                The name of the user that has the permission set in level.
+                The name of the user granted the permission level.
         "serialized_dashboard":
           "description": |-
             The contents of the dashboard in serialized string form.
@@ -742,7 +744,7 @@ resources:
           "description": |-
             The permissions to apply to this resource.
           "markdown_description": |-
-            A Sequence that defines the permissions to apply to this resource, where each item in the sequence is a permission for a specific entity.
+            A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.
 
             See [\_](/dev-tools/bundles/settings.md#permissions) and [\_](/dev-tools/bundles/permissions.md).
           "markdown_examples": |-
@@ -784,7 +786,7 @@ resources:
           "description": |-
             The permissions to apply to this resource.
           "markdown_description": |-
-            A Sequence that defines the permissions to apply to this resource, where each item in the sequence is a permission for a specific entity.
+            A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.
 
             See [\_](/dev-tools/bundles/settings.md#permissions) and [\_](/dev-tools/bundles/permissions.md).
           "markdown_examples": |-
@@ -800,16 +802,16 @@ resources:
           "$fields":
             "group_name":
               "description": |-
-                The name of the group that has the permission set in level.
+                The name of the group granted the permission level.
             "level":
               "description": |-
-                The allowed permission for user, group, service principal defined for this permission.
+                The permission level to apply. The allowed levels depend on the resource type.
             "service_principal_name":
               "description": |-
-                The name of the service principal that has the permission set in level.
+                The name of the service principal granted the permission level.
             "user_name":
               "description": |-
-                The name of the user that has the permission set in level.
+                The name of the user granted the permission level.
     "external_locations":
       "description": |-
         PLACEHOLDER
@@ -851,7 +853,9 @@ resources:
           "description": |-
             The Unity Catalog privileges to grant to principals on this securable.
           "markdown_description": |-
-            A Sequence that defines the Unity Catalog privilege grants for this securable, where each item grants a set of privileges to a principal.
+            A Sequence of Unity Catalog privilege grants on this securable, where each item grants a set of `privileges` to a `principal` (a user, group, or service principal).
+
+            See [\_](/data-governance/unity-catalog/manage-privileges/index.md).
           "markdown_examples": |-
             ```yaml
             grants:
@@ -888,7 +892,7 @@ resources:
           "description": |-
             The permissions to apply to this resource.
           "markdown_description": |-
-            A Sequence that defines the permissions to apply to this resource, where each item in the sequence is a permission for a specific entity.
+            A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.
 
             See [\_](/dev-tools/bundles/settings.md#permissions) and [\_](/dev-tools/bundles/permissions.md).
           "markdown_examples": |-
@@ -981,7 +985,7 @@ resources:
           "description": |-
             The permissions to apply to this resource.
           "markdown_description": |-
-            A Sequence that defines the permissions to apply to this resource, where each item in the sequence is a permission for a specific entity.
+            A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.
 
             See [\_](/dev-tools/bundles/settings.md#permissions) and [\_](/dev-tools/bundles/permissions.md).
           "markdown_examples": |-
@@ -997,16 +1001,16 @@ resources:
           "$fields":
             "group_name":
               "description": |-
-                The name of the group that has the permission set in level.
+                The name of the group granted the permission level.
             "level":
               "description": |-
-                The allowed permission for user, group, service principal defined for this permission.
+                The permission level to apply. The allowed levels depend on the resource type.
             "service_principal_name":
               "description": |-
-                The name of the service principal that has the permission set in level.
+                The name of the service principal granted the permission level.
             "user_name":
               "description": |-
-                The name of the user that has the permission set in level.
+                The name of the user granted the permission level.
         "run_as":
           "$fields":
             "service_principal_name":
@@ -1125,7 +1129,7 @@ resources:
           "description": |-
             The permissions to apply to this resource.
           "markdown_description": |-
-            A Sequence that defines the permissions to apply to this resource, where each item in the sequence is a permission for a specific entity.
+            A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.
 
             See [\_](/dev-tools/bundles/settings.md#permissions) and [\_](/dev-tools/bundles/permissions.md).
           "markdown_examples": |-
@@ -1141,16 +1145,16 @@ resources:
           "$fields":
             "group_name":
               "description": |-
-                The name of the group that has the permission set in level.
+                The name of the group granted the permission level.
             "level":
               "description": |-
-                The allowed permission for user, group, service principal defined for this permission.
+                The permission level to apply. The allowed levels depend on the resource type.
             "service_principal_name":
               "description": |-
-                The name of the service principal that has the permission set in level.
+                The name of the service principal granted the permission level.
             "user_name":
               "description": |-
-                The name of the user that has the permission set in level.
+                The name of the user granted the permission level.
     "models":
       "description": |-
         The model definitions for the bundle, where each key is the name of the model.
@@ -1167,7 +1171,7 @@ resources:
           "description": |-
             The permissions to apply to this resource.
           "markdown_description": |-
-            A Sequence that defines the permissions to apply to this resource, where each item in the sequence is a permission for a specific entity.
+            A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.
 
             See [\_](/dev-tools/bundles/settings.md#permissions) and [\_](/dev-tools/bundles/permissions.md).
           "markdown_examples": |-
@@ -1183,16 +1187,16 @@ resources:
           "$fields":
             "group_name":
               "description": |-
-                The name of the group that has the permission set in level.
+                The name of the group granted the permission level.
             "level":
               "description": |-
-                The allowed permission for user, group, service principal defined for this permission.
+                The permission level to apply. The allowed levels depend on the resource type.
             "service_principal_name":
               "description": |-
-                The name of the service principal that has the permission set in level.
+                The name of the service principal granted the permission level.
             "user_name":
               "description": |-
-                The name of the user that has the permission set in level.
+                The name of the user granted the permission level.
     "pipelines":
       "description": |-
         The pipeline definitions for the bundle, where each key is the name of the pipeline.
@@ -1285,7 +1289,7 @@ resources:
           "description": |-
             The permissions to apply to this resource.
           "markdown_description": |-
-            A Sequence that defines the permissions to apply to this resource, where each item in the sequence is a permission for a specific entity.
+            A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.
 
             See [\_](/dev-tools/bundles/settings.md#permissions) and [\_](/dev-tools/bundles/permissions.md).
           "markdown_examples": |-
@@ -1301,16 +1305,16 @@ resources:
           "$fields":
             "group_name":
               "description": |-
-                The name of the group that has the permission set in level.
+                The name of the group granted the permission level.
             "level":
               "description": |-
-                The allowed permission for user, group, service principal defined for this permission.
+                The permission level to apply. The allowed levels depend on the resource type.
             "service_principal_name":
               "description": |-
-                The name of the service principal that has the permission set in level.
+                The name of the service principal granted the permission level.
             "user_name":
               "description": |-
-                The name of the user that has the permission set in level.
+                The name of the user granted the permission level.
         "trigger":
           "deprecation_message": |-
             Use continuous instead
@@ -1475,7 +1479,7 @@ resources:
           "description": |-
             The permissions to apply to this resource.
           "markdown_description": |-
-            A Sequence that defines the permissions to apply to this resource, where each item in the sequence is a permission for a specific entity.
+            A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.
 
             See [\_](/dev-tools/bundles/settings.md#permissions) and [\_](/dev-tools/bundles/permissions.md).
           "markdown_examples": |-
@@ -1655,7 +1659,9 @@ resources:
           "description": |-
             The Unity Catalog privileges to grant to principals on this securable.
           "markdown_description": |-
-            A Sequence that defines the Unity Catalog privilege grants for this securable, where each item grants a set of privileges to a principal.
+            A Sequence of Unity Catalog privilege grants on this securable, where each item grants a set of `privileges` to a `principal` (a user, group, or service principal).
+
+            See [\_](/data-governance/unity-catalog/manage-privileges/index.md).
           "markdown_examples": |-
             ```yaml
             grants:
@@ -1725,7 +1731,9 @@ resources:
           "description": |-
             The Unity Catalog privileges to grant to principals on this securable.
           "markdown_description": |-
-            A Sequence that defines the Unity Catalog privilege grants for this securable, where each item grants a set of privileges to a principal.
+            A Sequence of Unity Catalog privilege grants on this securable, where each item grants a set of `privileges` to a `principal` (a user, group, or service principal).
+
+            See [\_](/data-governance/unity-catalog/manage-privileges/index.md).
           "markdown_examples": |-
             ```yaml
             grants:
@@ -1763,10 +1771,10 @@ resources:
           "$fields":
             "group_name":
               "description": |-
-                The name of the group that has the permission set in level. This field translates to a `principal` field in secret scope ACL.
+                The name of the group granted the permission level. This field translates to a `principal` field in secret scope ACL.
             "level":
               "description": |-
-                The allowed permission for user, group, service principal defined for this permission.
+                The permission level to apply. The allowed levels depend on the resource type.
               "$type":
                 "enum":
                   - |-
@@ -1780,7 +1788,7 @@ resources:
                 The application ID of an active service principal. This field translates to a `principal` field in secret scope ACL.
             "user_name":
               "description": |-
-                The name of the user that has the permission set in level. This field translates to a `principal` field in secret scope ACL.
+                The name of the user granted the permission level. This field translates to a `principal` field in secret scope ACL.
     "sql_warehouses":
       "description": |-
         The SQL warehouse definitions for the bundle, where each key is the name of the warehouse.
@@ -1807,7 +1815,7 @@ resources:
           "description": |-
             The permissions to apply to this resource.
           "markdown_description": |-
-            A Sequence that defines the permissions to apply to this resource, where each item in the sequence is a permission for a specific entity.
+            A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.
 
             See [\_](/dev-tools/bundles/settings.md#permissions) and [\_](/dev-tools/bundles/permissions.md).
           "markdown_examples": |-
@@ -1823,16 +1831,16 @@ resources:
           "$fields":
             "group_name":
               "description": |-
-                The name of the group that has the permission set in level.
+                The name of the group granted the permission level.
             "level":
               "description": |-
-                The allowed permission for user, group, service principal defined for this permission.
+                The permission level to apply. The allowed levels depend on the resource type.
             "service_principal_name":
               "description": |-
-                The name of the service principal that has the permission set in level.
+                The name of the service principal granted the permission level.
             "user_name":
               "description": |-
-                The name of the user that has the permission set in level.
+                The name of the user granted the permission level.
         "tags":
           "$fields":
             "custom_tags":
@@ -1870,7 +1878,7 @@ resources:
           "description": |-
             The permissions to apply to this resource.
           "markdown_description": |-
-            A Sequence that defines the permissions to apply to this resource, where each item in the sequence is a permission for a specific entity.
+            A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.
 
             See [\_](/dev-tools/bundles/settings.md#permissions) and [\_](/dev-tools/bundles/permissions.md).
           "markdown_examples": |-
@@ -1891,7 +1899,9 @@ resources:
           "description": |-
             The Unity Catalog privileges to grant to principals on this securable.
           "markdown_description": |-
-            A Sequence that defines the Unity Catalog privilege grants for this securable, where each item grants a set of privileges to a principal.
+            A Sequence of Unity Catalog privilege grants on this securable, where each item grants a set of `privileges` to a `principal` (a user, group, or service principal).
+
+            See [\_](/data-governance/unity-catalog/manage-privileges/index.md).
           "markdown_examples": |-
             ```yaml
             grants:
@@ -1935,7 +1945,9 @@ resources:
           "description": |-
             The Unity Catalog privileges to grant to principals on this securable.
           "markdown_description": |-
-            A Sequence that defines the Unity Catalog privilege grants for this securable, where each item grants a set of privileges to a principal.
+            A Sequence of Unity Catalog privilege grants on this securable, where each item grants a set of `privileges` to a `principal` (a user, group, or service principal).
+
+            See [\_](/data-governance/unity-catalog/manage-privileges/index.md).
           "markdown_examples": |-
             ```yaml
             grants:
