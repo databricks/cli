@@ -17,7 +17,7 @@
         "run_name": "qwen-train",
         "user": "[USERNAME]",
         "status": "SUCCESS",
-        "started_at": "[TIMESTAMP]+00:00",
+        "started_at": "[TIMESTAMP]",
         "is_sweep": false
       },
       {
@@ -25,7 +25,7 @@
         "run_name": "llama-train",
         "user": "[USERNAME]",
         "status": "FAILED",
-        "started_at": "[TIMESTAMP]+00:00",
+        "started_at": "[TIMESTAMP]",
         "is_sweep": false
       }
     ]
