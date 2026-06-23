@@ -50,6 +50,7 @@ func (*ResourceSecretScope) RemapState(remote *SecretScopeRemote) *SecretScopeCo
 			ScopeBackendType:       remote.ScopeBackendType,
 			BackendAzureKeyvault:   remote.BackendAzureKeyvault,
 			InitialManagePrincipal: "",
+			ForceSendFields:        nil,
 		},
 	}
 }
