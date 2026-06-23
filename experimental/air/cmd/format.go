@@ -132,13 +132,34 @@ func startedAt(run *jobs.Run) *string {
 	if startMillis == 0 {
 		return nil
 	}
-	t := time.UnixMilli(startMillis).UTC()
+	s := isoFormat(time.UnixMilli(startMillis))
+	return &s
+}
+
+// isoFormat renders a time as a Python-style isoformat string in UTC ("+00:00",
+// not "Z"; microseconds only when the sub-second part is non-zero), matching
+// cli_entrypoint.py:1899.
+func isoFormat(t time.Time) string {
+	t = t.UTC()
 	layout := "2006-01-02T15:04:05-07:00"
 	if t.Nanosecond() != 0 {
 		layout = "2006-01-02T15:04:05.000000-07:00"
 	}
-	s := t.Format(layout)
-	return &s
+	return t.Format(layout)
+}
+
+// parseRPCTime parses an RFC3339 timestamp returned by the AiWorkflow RPC (e.g.
+// "2026-06-05T18:46:55.876Z"), returning the zero time when the field is absent
+// or unparseable.
+func parseRPCTime(s string) time.Time {
+	if s == "" {
+		return time.Time{}
+	}
+	t, err := time.Parse(time.RFC3339, s)
+	if err != nil {
+		return time.Time{}
+	}
+	return t
 }
 
 // submittedDisplay formats the run's start time for the text table as
@@ -250,10 +271,44 @@ func accelerators(run *jobs.Run) string {
 		return ""
 	}
 	task := run.Tasks[0].GenAiComputeTask
-	if task == nil || task.Compute == nil || task.Compute.NumGpus == 0 {
+	if task == nil || task.Compute == nil {
 		return ""
 	}
-	return fmt.Sprintf("%dx %s", task.Compute.NumGpus, gpuDisplayName(task.Compute.GpuType))
+	return acceleratorLabel(task.Compute.GpuType, task.Compute.NumGpus)
+}
+
+// acceleratorLabel renders a GPU count and type as "8x H100", "" for none, or
+// the count alone ("8x") when the type is unrecognized.
+func acceleratorLabel(gpuType string, count int) string {
+	if count == 0 {
+		return ""
+	}
+	if name := gpuDisplayName(gpuType); name != "" {
+		return fmt.Sprintf("%dx %s", count, name)
+	}
+	return fmt.Sprintf("%dx", count)
+}
+
+// trainingWorkflowStatus maps a TrainingWorkflowState enum value to the status
+// word shown for a run, matching `air get run`. The server collapses Jobs
+// lifecycle/result into this enum, so lossy cases (e.g. TIMEDOUT) render as FAILED.
+func trainingWorkflowStatus(state string) string {
+	switch state {
+	case "TRAINING_WORKFLOW_STATE_PENDING", "TRAINING_WORKFLOW_STATE_PENDING_SENT":
+		return "PENDING"
+	case "TRAINING_WORKFLOW_STATE_RUNNING":
+		return "RUNNING"
+	case "TRAINING_WORKFLOW_STATE_TERMINATION_REQUESTED", "TRAINING_WORKFLOW_STATE_TERMINATION_SENT":
+		return "TERMINATING"
+	case "TRAINING_WORKFLOW_STATE_TERMINATED_COMPLETED":
+		return "SUCCESS"
+	case "TRAINING_WORKFLOW_STATE_TERMINATED_FAILED":
+		return "FAILED"
+	case "TRAINING_WORKFLOW_STATE_TERMINATED_STOPPED":
+		return "CANCELED"
+	default:
+		return "UNKNOWN"
+	}
 }
 
 // gpuDisplayName returns the friendly name for a GPU identifier, falling back to

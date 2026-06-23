@@ -1,0 +1,50 @@
+# This command does not deploy a bundle, so no engine matrix is needed.
+[EnvMatrix]
+DATABRICKS_BUNDLE_ENGINE = []
+
+# The SDK occasionally probes host reachability with a HEAD request; stub it so
+# the test is deterministic.
+[[Server]]
+Pattern = "HEAD /"
+Response.Body = ''
+
+# ListTrainingWorkflows: the server resolves AIR runs, creator scoping, and MLflow
+# IDs, so the CLI just maps the response. One completed run with resolved MLflow
+# IDs (so the MLflow column is a link) and one failed run without them (so it
+# falls back to "-").
+[[Server]]
+Pattern = "GET /api/2.0/ai-training/workflows"
+Response.Body = '''
+{
+  "training_workflows": [
+    {
+      "job_run_id": "334747067049496",
+      "metadata": {"creator_name": "tester@databricks.com"},
+      "spec": {"compute": {"hardware_accelerator_type": "GPU_8xH100", "accelerator_count": 8}},
+      "status": {
+        "state": "TRAINING_WORKFLOW_STATE_TERMINATED_COMPLETED",
+        "start_time": "2026-06-05T17:32:39.000Z",
+        "end_time": "2026-06-05T17:32:51.000Z",
+        "job": {"name": "qwen-train"},
+        "mlflow": {
+          "experiment": "/Users/tester@databricks.com/qwen-train",
+          "experiment_id": "exp1",
+          "run_id": "run1"
+        }
+      }
+    },
+    {
+      "job_run_id": "566001814929041",
+      "metadata": {"creator_name": "tester@databricks.com"},
+      "spec": {"compute": {"hardware_accelerator_type": "GPU_1xA10", "accelerator_count": 1}},
+      "status": {
+        "state": "TRAINING_WORKFLOW_STATE_TERMINATED_FAILED",
+        "start_time": "2026-06-05T18:43:24.000Z",
+        "end_time": "2026-06-05T18:46:55.000Z",
+        "job": {"name": "llama-train"},
+        "mlflow": {"experiment": "/Users/tester@databricks.com/llama-train"}
+      }
+    }
+  ]
+}
+'''
