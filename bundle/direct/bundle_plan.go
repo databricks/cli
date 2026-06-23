@@ -25,6 +25,7 @@ import (
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
 )
 
 var errDelayed = errors.New("must be resolved after apply")
@@ -161,7 +162,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 				return adapter.DoRead(ctx, id)
 			})
 			if err != nil {
-				if isResourceGone(err) {
+				if apierr.IsMissing(err) {
 					// no such resource
 					plan.RemoveEntry(resourceKey)
 				} else {
@@ -218,7 +219,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			return adapter.DoRead(ctx, dbentry.ID)
 		})
 		if err != nil {
-			if isResourceGone(err) {
+			if apierr.IsMissing(err) {
 				remoteState = nil
 			} else {
 				logdiag.LogError(ctx, fmt.Errorf("%s: reading id=%q: %w", errorPrefix, dbentry.ID, err))

@@ -73,9 +73,15 @@ func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, o
 
 	var token string
 	var testUser iam.User
+	engine := env.Get(t.Context(), "DATABRICKS_BUNDLE_ENGINE")
 	if isTruePtr(config.IsServicePrincipal) {
 		token = testserver.ServicePrincipalTokenPrefix + tokenSuffix
 		testUser = testserver.TestUserSP
+	} else if engine == "direct" {
+		// Use the eventual-consistency token so DashboardGet returns 404 on
+		// the first GET after a create, matching real cloud propagation delays.
+		token = testserver.EventualConsistencyTokenPrefix + tokenSuffix
+		testUser = testserver.TestUser
 	} else {
 		token = testserver.UserNameTokenPrefix + tokenSuffix
 		testUser = testserver.TestUser

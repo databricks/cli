@@ -358,6 +358,14 @@ func (r *ResourceDashboard) DoUpdate(ctx context.Context, id string, config *Das
 	return responseToState(updateResp, publishResp, dashboard.SerializedDashboard, config.Published), nil
 }
 
+func (r *ResourceDashboard) WaitAfterCreate(ctx context.Context, id string, _ *DashboardState) (*DashboardState, error) {
+	return r.DoRead(ctx, id)
+}
+
+func (r *ResourceDashboard) WaitAfterUpdate(ctx context.Context, id string, _ *DashboardState) (*DashboardState, error) {
+	return r.DoRead(ctx, id)
+}
+
 func (r *ResourceDashboard) DoDelete(ctx context.Context, id string, _ *DashboardState) error {
 	return r.client.Lakeview.Trash(ctx, dashboards.TrashDashboardRequest{
 		DashboardId: id,

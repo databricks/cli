@@ -76,6 +76,14 @@ func retryOnTransient[T any](ctx context.Context, fn func() (T, error)) (T, erro
 	return retryWith(ctx, func(err error) bool { return isTransient(ctx, err) }, fn)
 }
 
+// retryOnTransientOrMissing retries fn on transient errors and on 404 (resource not yet
+// visible due to eventual consistency after a recent create).
+func retryOnTransientOrMissing[T any](ctx context.Context, fn func() (T, error)) (T, error) {
+	return retryWith(ctx, func(err error) bool {
+		return isTransient(ctx, err) || apierr.IsMissing(err)
+	}, fn)
+}
+
 // retryOnTransientErr wraps retryOnTransient for functions that return only an error.
 func retryOnTransientErr(ctx context.Context, fn func() error) error {
 	_, err := retryOnTransient(ctx, func() (struct{}, error) {
