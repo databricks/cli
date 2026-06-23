@@ -6,6 +6,9 @@
 // checks for differences in the create payload between the terraform and direct
 // engines. Generators are seeded so that any divergence found by the fuzz driver
 // can be reproduced from the printed seed.
+//
+// Only jobs are covered for now. Extending the harness to other resource kinds
+// (pipelines, apps, ...) is tracked as follow-up work under DECO-25361.
 package fuzz
 
 import (
@@ -40,6 +43,9 @@ var (
 // the same seed always produces the same job. It deliberately favors fields whose
 // translation tends to differ between engines (tasks, clusters, schedules,
 // notifications, tags, zero-able scalars).
+//
+// TODO(DECO-25361): generalize the harness across resource kinds so pipelines,
+// apps, etc. get the same create-payload parity coverage as jobs.
 func GenerateJob(rng *rand.Rand) *resources.Job {
 	job := &resources.Job{}
 	job.Name = randName(rng, "job")
