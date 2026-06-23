@@ -3221,21 +3221,21 @@ resources.schemas.*.grants[*]	catalog.PrivilegeAssignment	ALL
 resources.schemas.*.grants[*].principal	string	ALL
 resources.schemas.*.grants[*].privileges	[]catalog.Privilege	ALL
 resources.schemas.*.grants[*].privileges[*]	catalog.Privilege	ALL
-resources.secret_scopes.*.backend_azure_keyvault	*workspace.AzureKeyVaultSecretScopeMetadata	REMOTE	STATE
-resources.secret_scopes.*.backend_azure_keyvault.dns_name	string	REMOTE	STATE
-resources.secret_scopes.*.backend_azure_keyvault.resource_id	string	REMOTE	STATE
-resources.secret_scopes.*.backend_type	workspace.ScopeBackendType	INPUT
+resources.secret_scopes.*.backend_azure_keyvault	*workspace.AzureKeyVaultSecretScopeMetadata	STATE
+resources.secret_scopes.*.backend_azure_keyvault.dns_name	string	STATE
+resources.secret_scopes.*.backend_azure_keyvault.resource_id	string	STATE
+resources.secret_scopes.*.backend_type	workspace.ScopeBackendType	INPUT	REMOTE
 resources.secret_scopes.*.id	string	INPUT
 resources.secret_scopes.*.initial_manage_principal	string	STATE
-resources.secret_scopes.*.keyvault_metadata	*workspace.AzureKeyVaultSecretScopeMetadata	INPUT
-resources.secret_scopes.*.keyvault_metadata.dns_name	string	INPUT
-resources.secret_scopes.*.keyvault_metadata.resource_id	string	INPUT
+resources.secret_scopes.*.keyvault_metadata	*workspace.AzureKeyVaultSecretScopeMetadata	INPUT	REMOTE
+resources.secret_scopes.*.keyvault_metadata.dns_name	string	INPUT	REMOTE
+resources.secret_scopes.*.keyvault_metadata.resource_id	string	INPUT	REMOTE
 resources.secret_scopes.*.lifecycle	resources.Lifecycle	INPUT
 resources.secret_scopes.*.lifecycle.prevent_destroy	bool	INPUT
 resources.secret_scopes.*.modified_status	string	INPUT
-resources.secret_scopes.*.name	string	INPUT
-resources.secret_scopes.*.scope	string	REMOTE	STATE
-resources.secret_scopes.*.scope_backend_type	workspace.ScopeBackendType	REMOTE	STATE
+resources.secret_scopes.*.name	string	INPUT	REMOTE
+resources.secret_scopes.*.scope	string	STATE
+resources.secret_scopes.*.scope_backend_type	workspace.ScopeBackendType	STATE
 resources.secret_scopes.*.url	string	INPUT
 resources.secret_scopes.*.permissions.acls	[]workspace.AclItem	ALL
 resources.secret_scopes.*.permissions.acls[*]	workspace.AclItem	ALL
