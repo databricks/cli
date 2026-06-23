@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/logdiag"
 )
 
 func ValidateDeploymentFields() bundle.ReadOnlyMutator {
@@ -20,7 +21,7 @@ func (v *validateDeploymentFields) Name() string {
 	return "validate:validate_deployment_fields"
 }
 
-func (v *validateDeploymentFields) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (v *validateDeploymentFields) Apply(ctx context.Context, b *bundle.Bundle) error {
 	var diags diag.Diagnostics
 
 	// deployment_id and version_id identify the bundle deployment and its version
@@ -57,5 +58,5 @@ func (v *validateDeploymentFields) Apply(_ context.Context, b *bundle.Bundle) di
 		return cmp.Compare(x.Paths[0].String(), y.Paths[0].String())
 	})
 
-	return diags
+	return logdiag.Flush(ctx, diags)
 }

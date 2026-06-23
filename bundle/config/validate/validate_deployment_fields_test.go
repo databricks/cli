@@ -53,7 +53,7 @@ func TestValidateDeploymentFieldsRejectsReservedFields(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			diags := ValidateDeploymentFields().Apply(t.Context(), tt.b)
+			diags := bundle.Apply(t.Context(), tt.b, ValidateDeploymentFields())
 			require.Len(t, diags, 1)
 			assert.Equal(t, diag.Error, diags[0].Severity)
 			assert.Equal(t, tt.want, diags[0].Summary)
@@ -75,6 +75,6 @@ func TestValidateDeploymentFieldsReportsAllOffenders(t *testing.T) {
 		},
 	}
 
-	diags := ValidateDeploymentFields().Apply(t.Context(), b)
+	diags := bundle.Apply(t.Context(), b, ValidateDeploymentFields())
 	require.Len(t, diags, 2)
 }
