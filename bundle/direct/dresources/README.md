@@ -47,6 +47,18 @@ If the API may return a slice's elements in a different order between calls (e.g
 The state struct is serialized to JSON and persisted between deploys. Backward incompatible changes will result in a drift, which depending
 on field behaviour might result in recreate. See dstate/migrate.go on how to handle state migration.
 
+## RemapState and missing remote fields
+
+Do not populate a field in `RemapState` by mapping it from a differently-named field in `RemoteType`. When a field is absent from `RemoteType` the engine automatically suppresses remote drift for it (reason: `missing_in_remote`), which means any value `RemapState` sets there is invisible to drift detection — real remote changes go undetected.
+
+The correct pattern is:
+
+1. Add the field to `RemoteType` (the struct returned by `DoRead`).
+2. Populate it in `DoRead` by mapping from whatever the API returns under the other name.
+3. Keep `RemapState` trivial (a direct struct copy or no-op).
+
+This makes the field present in `InputType`, `StateType`, and `RemoteType`, so it participates in normal drift detection and is no longer subject to the `missing_in_remote` suppression.
+
 ## OverrideChangeDesc
 
 Use `OverrideChangeDesc` only as a last resort when `resources.yml` settings cannot express the needed logic. Skipping an action with `change.Action = deployplan.Skip` in `OverrideChangeDesc` creates a silent no-op: the plan shows no change even if the user's config differs from remote. Document the skip reason clearly in both the comment and `change.Reason`.
