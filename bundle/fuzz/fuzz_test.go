@@ -28,7 +28,7 @@ func TestJobCreateParity(t *testing.T) {
 		seeds = n
 	}
 
-	for seed := int64(0); seed < int64(seeds); seed++ {
+	for seed := range int64(seeds) {
 		t.Run("seed="+strconv.FormatInt(seed, 10), func(t *testing.T) {
 			checkJobParity(t, seed)
 		})
@@ -40,7 +40,7 @@ func TestJobCreateParity(t *testing.T) {
 // so this is intended for ad-hoc deep runs, not the default `go test` path.
 func FuzzJobCreateParity(f *testing.F) {
 	RequireTerraform(f)
-	for seed := int64(0); seed < 5; seed++ {
+	for seed := range int64(5) {
 		f.Add(seed)
 	}
 	f.Fuzz(func(t *testing.T, seed int64) {
