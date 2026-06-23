@@ -49,4 +49,5 @@ EnvMatrix.INPUT_CONFIG = [
   "volume_external.yml.tmpl",
   "volume_uppercase_name.yml.tmpl"
 ]
+EnvMatrix.LOCAL_DIFF = ["", "--local"]
 EnvMatrix.READPLAN = ["", "1"]
