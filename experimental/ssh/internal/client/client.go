@@ -634,17 +634,44 @@ func shellSingleQuote(s string) string {
 	return "'" + strings.ReplaceAll(s, "'", `'\''`) + "'"
 }
 
-// claudeRemoteBootstrap installs Claude Code (+ uv + the env-aware ucode
-// launcher) if they aren't already present, then hands off to `ucode claude`.
-// ucode points Claude Code at the workspace's AI Gateway using the
-// DATABRICKS_HOST / DATABRICKS_TOKEN the server already injects into the
-// session env, so no auth or model wiring is needed here. Each `command -v`
-// guard makes the script idempotent, so reconnects skip installation.
-const claudeRemoteBootstrap = `export PATH="$HOME/.local/bin:$PATH"
+// claudeRemoteBootstrap returns the remote command for --ide claude: install
+// Claude Code (+ uv + the env-aware ucode launcher) if they aren't already
+// present, write an environment-context file, then launch Claude Code with that
+// context appended to its system prompt. ucode points Claude Code at the
+// workspace AI Gateway using the DATABRICKS_HOST / DATABRICKS_TOKEN the server
+// already injects into the session env, so no auth or model wiring is needed
+// here. Each `command -v` guard makes the script idempotent, so reconnects skip
+// installation.
+//
+// wsHome is the user's workspace home (/Workspace/Users/<email>) when it could
+// be resolved, else empty; it is woven into the context so the agent knows its
+// working directory.
+func claudeRemoteBootstrap(wsHome string) string {
+	cwd := "the user's Databricks workspace home directory"
+	if wsHome != "" {
+		cwd = wsHome
+	}
+	systemContext := fmt.Sprintf(`You are running inside a "databricks ssh connect" session on the driver node of a
+Databricks serverless cluster.
+- The "databricks" CLI is installed and already authenticated: DATABRICKS_HOST and
+  DATABRICKS_TOKEN are set in the environment, so "databricks ..." commands work with no
+  "databricks auth login". The same token governs Unity Catalog and serving-endpoint access.
+- This container is ephemeral; only paths under /Workspace persist across sessions. Your
+  working directory is %s.
+- DATABRICKS_TOKEN is a static session token that may expire during a long session; if
+  "databricks" calls start failing with auth errors, the session likely needs reconnecting.
+- You can run shell commands and use the "databricks" CLI to explore the workspace
+  (clusters, jobs, Unity Catalog, DBFS, etc.).`, cwd)
+
+	return fmt.Sprintf(`export PATH="$HOME/.local/bin:$PATH"
 command -v claude >/dev/null 2>&1 || curl -fsSL https://claude.ai/install.sh | bash
 command -v uv     >/dev/null 2>&1 || curl -LsSf https://astral.sh/uv/install.sh | sh
 command -v ucode  >/dev/null 2>&1 || uv tool install git+https://github.com/anton-107/ucode@remote-env-token-auth
-exec ucode claude`
+cat > "$HOME/.ucode-claude-context.md" <<'CTX'
+%s
+CTX
+exec ucode claude --append-system-prompt-file "$HOME/.ucode-claude-context.md"`, systemContext)
+}
 
 // buildRemoteShellArgs returns the ssh arguments that follow the hostname.
 //
@@ -664,7 +691,7 @@ func buildRemoteShellArgs(opts ClientOptions, wsHome string) []string {
 	}
 	cmd := `command -v bash >/dev/null 2>&1 && exec bash -l || exec "${SHELL:-/bin/sh}" -l`
 	if opts.IDE == claudeIDEOption {
-		cmd = claudeRemoteBootstrap
+		cmd = claudeRemoteBootstrap(wsHome)
 	}
 	if wsHome != "" {
 		cmd = "cd " + shellSingleQuote(wsHome) + " 2>/dev/null; " + cmd
