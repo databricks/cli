@@ -50,6 +50,12 @@ func parseListFilters(raw []string) (listFilters, error) {
 	return f, nil
 }
 
+// hasClientFilters reports whether any client-side filter (those applied in
+// matches) is set. The user filter is excluded — the server handles it.
+func (f listFilters) hasClientFilters() bool {
+	return f.Experiment != "" || f.AcceleratorType != "" || f.NumAccelerators != nil
+}
+
 // matches reports whether a workflow satisfies the experiment, accelerator-type
 // and accelerator-count filters. These have no ListTrainingWorkflows equivalent,
 // so they are applied client-side to the response. The user filter is handled by

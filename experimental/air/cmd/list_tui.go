@@ -25,9 +25,11 @@ func renderListText(cmd *cobra.Command, rows []listRow) error {
 		r.SetColorProfile(termenv.Ascii)
 	}
 
-	// Navigate only with a full TTY, at least one row, and no explicit --limit
-	// (which means "just print these N"). Everything else prints once.
+	// Navigate only with a full color TTY, at least one row, and no explicit
+	// --limit (which means "just print these N"). Everything else — piped,
+	// NO_COLOR, --limit, empty — prints once.
 	interactive := len(rows) > 0 &&
+		color &&
 		cmdio.IsPagerSupported(ctx) &&
 		!cmd.Flags().Changed("limit")
 

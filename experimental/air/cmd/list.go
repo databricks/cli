@@ -69,7 +69,7 @@ func newListCommand() *cobra.Command {
 
 	cmd.PreRunE = root.MustWorkspaceClient
 
-	cmd.Flags().IntVar(&limit, "limit", 0, "Maximum number of runs to show (default: all)")
+	cmd.Flags().IntVar(&limit, "limit", 20, "Maximum number of runs to show")
 	cmd.Flags().BoolVar(&active, "active", false, "Show only active runs")
 	cmd.Flags().BoolVar(&allUsers, "all-users", false, "Show runs from all users")
 	cmd.Flags().StringArrayVar(&filters, "filter", nil, "Filter runs, e.g. experiment=foo* (repeatable)")
@@ -78,8 +78,7 @@ func newListCommand() *cobra.Command {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
 
-		// limit 0 (unset) means "all"; an explicit value must be positive.
-		if cmd.Flags().Changed("limit") && limit <= 0 {
+		if limit <= 0 {
 			return fmt.Errorf("invalid --limit %d: must be a positive integer", limit)
 		}
 
@@ -127,9 +126,10 @@ func newListCommand() *cobra.Command {
 // limit, when the server runs out of pages, or at maxListPages.
 func listAirRuns(ctx context.Context, w *databricks.WorkspaceClient, q listQuery) ([]listRow, error) {
 	// Fetch in bounded batches and follow the page token, so "all" doesn't ask
-	// the server for an unbounded page.
+	// the server for an unbounded page. With client-side filters we fetch full
+	// batches, since most rows may be dropped before reaching the limit.
 	pageSize := q.limit
-	if pageSize <= 0 || pageSize > listPageBatch {
+	if pageSize <= 0 || pageSize > listPageBatch || q.filters.hasClientFilters() {
 		pageSize = listPageBatch
 	}
 	query := map[string]any{

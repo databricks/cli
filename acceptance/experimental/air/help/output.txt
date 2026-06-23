@@ -40,7 +40,7 @@ Flags:
       --all-users            Show runs from all users
       --filter stringArray   Filter runs, e.g. experiment=foo* (repeatable)
   -h, --help                 help for list
-      --limit int            Maximum number of runs to show (default: all)
+      --limit int            Maximum number of runs to show (default 20)
 
 Global Flags:
       --debug            enable debug logging
