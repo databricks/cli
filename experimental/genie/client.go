@@ -7,6 +7,7 @@ import (
 	"io"
 
 	"github.com/databricks/cli/experimental/genie/agentstream"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/config"
@@ -57,6 +58,13 @@ func PostStream(ctx context.Context, cfg *config.Config, req GenieRequest) (io.R
 	headers := map[string]string{
 		"Content-Type": "application/json",
 		"Accept":       "text/event-stream",
+	}
+	// This endpoint is workspace-scoped: without the org-id routing header the
+	// gateway rejects the request with "Credential was not sent or was of an
+	// unsupported type for this API" even when auth is otherwise valid.
+	// client.New populates cfg.WorkspaceID; WorkspaceIDNone means "none".
+	if orgID := cfg.WorkspaceID; orgID != "" && orgID != auth.WorkspaceIDNone {
+		headers["X-Databricks-Org-Id"] = orgID
 	}
 	err = api.Do(ctx, "POST", genieResponsesPath, headers, nil, req, &body)
 	// The route is fixed and carries no resource IDs, so a 404 normally means
