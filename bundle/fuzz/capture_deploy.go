@@ -114,8 +114,14 @@ func RequireTerraform(t testing.TB) {
 	execPath := filepath.Join(buildDir, "terraform")
 	cfgFile := filepath.Join(buildDir, ".terraformrc")
 
-	if _, err := os.Stat(execPath); err != nil {
-		t.Skipf("terraform not provisioned (%s); run: python3 acceptance/install_terraform.py --targetdir build", execPath)
+	// install_terraform.py provisions all three together; a partial build/ (e.g.
+	// the binary without the provider mirror or .terraformrc) would otherwise fail
+	// mid-deploy with a confusing error instead of skipping cleanly.
+	tfpluginsDir := filepath.Join(buildDir, "tfplugins")
+	for _, p := range []string{execPath, cfgFile, tfpluginsDir} {
+		if _, err := os.Stat(p); err != nil {
+			t.Skipf("terraform not fully provisioned (%s); run: python3 acceptance/install_terraform.py --targetdir build", p)
+		}
 	}
 
 	t.Setenv("DATABRICKS_TF_EXEC_PATH", execPath)
