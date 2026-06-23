@@ -681,7 +681,7 @@ func waitForJobToStart(ctx context.Context, client *databricks.WorkspaceClient, 
 		// misleading, so phrase the heads-up per accelerator with a generic fallback.
 		notice, ok := acceleratorProvisioningNotice[opts.Accelerator]
 		if !ok {
-			notice = fmt.Sprintf("Provisioning %s compute. This can take several minutes, longer when capacity is constrained.", opts.Accelerator)
+			notice = fmt.Sprintf("Provisioning %s compute. This can take several minutes and may take longer when capacity is constrained.", opts.Accelerator)
 		}
 		cmdio.LogString(ctx, notice)
 		waitingMessage = fmt.Sprintf("Provisioning %s compute...", opts.Accelerator)
