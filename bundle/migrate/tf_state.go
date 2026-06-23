@@ -14,15 +14,6 @@ import (
 	tfjson "github.com/hashicorp/terraform-json"
 )
 
-// tfStateFieldAliases maps DABs group → DABs field name → TF state field name for
-// cases where a DABs state-computed field has a different name in TF state.
-// These fields are not captured by DABsToTerraformRenameMap because they are
-// state-only (not part of the bundle config struct).
-var tfStateFieldAliases = map[string]map[string]string{
-	// models.model_id is the numeric model ID; TF stores it as registered_model_id.
-	"models": {"model_id": "registered_model_id"},
-}
-
 // TFStateAttrs maps (tfResourceType → resourceName → raw JSON attributes).
 type TFStateAttrs map[string]map[string]json.RawMessage
 
@@ -153,26 +144,7 @@ func LookupTFField(state TFStateAttrs, group, name string, fieldPath *structpath
 		return nil, fmt.Errorf("cannot parse TF state for %s.%s: %w", tfType, name, err)
 	}
 
-	value, err := navigateTFState(attrs, tfFieldPath)
-	if err == nil {
-		return value, nil
-	}
-
-	// Apply state-only field aliases for single-segment fields whose DABs name differs from TF state name.
-	if aliases, ok := tfStateFieldAliases[group]; ok {
-		if head, ok := fieldPath.StringKey(); ok {
-			if tfName, ok := aliases[head]; ok {
-				aliasPath := structpath.NewStringKey(nil, tfName)
-				if aliasFieldPath, e := terraform_dabs_map.DABsPathToTerraform(group, aliasPath); e == nil {
-					if v, e := navigateTFState(attrs, aliasFieldPath); e == nil {
-						return v, nil
-					}
-				}
-			}
-		}
-	}
-
-	return nil, err
+	return navigateTFState(attrs, tfFieldPath)
 }
 
 // navigateTFState walks the TF state map using the given path.
