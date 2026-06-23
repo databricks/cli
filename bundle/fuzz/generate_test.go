@@ -14,7 +14,7 @@ func TestGenerateJobIsDeterministic(t *testing.T) {
 }
 
 func TestGenerateJobIsWellFormed(t *testing.T) {
-	for seed := int64(0); seed < 200; seed++ {
+	for seed := range int64(200) {
 		job := GenerateJob(newRNG(seed))
 		require.NotEmptyf(t, job.Name, "seed %d: job must have a name", seed)
 		require.NotEmptyf(t, job.Tasks, "seed %d: job must have at least one task", seed)

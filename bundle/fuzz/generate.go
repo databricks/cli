@@ -11,6 +11,7 @@ package fuzz
 import (
 	"fmt"
 	"math/rand/v2"
+	"strconv"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go/service/compute"
@@ -241,7 +242,7 @@ func randClusterSpec(rng *rand.Rand) compute.ClusterSpec {
 	if chance(rng, 0.4) {
 		spec.SparkConf = map[string]string{
 			"spark.databricks.delta.preview.enabled": "true",
-			"spark.speculation":                      fmt.Sprintf("%t", chance(rng, 0.5)),
+			"spark.speculation":                      strconv.FormatBool(chance(rng, 0.5)),
 		}
 	}
 	if chance(rng, 0.3) {
