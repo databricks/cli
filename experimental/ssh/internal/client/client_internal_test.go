@@ -202,14 +202,20 @@ func TestBuildRemoteShellArgs(t *testing.T) {
 	const bashCmd = `command -v bash >/dev/null 2>&1 && exec bash -l || exec "${SHELL:-/bin/sh}" -l`
 
 	t.Run("interactive returns login bash command", func(t *testing.T) {
-		args := buildRemoteShellArgs(ClientOptions{})
+		args := buildRemoteShellArgs(ClientOptions{}, "")
 		require.Len(t, args, 1)
 		assert.Equal(t, bashCmd, args[0])
 	})
 
+	t.Run("interactive cds into workspace home when set", func(t *testing.T) {
+		args := buildRemoteShellArgs(ClientOptions{}, "/Workspace/Users/me@example.com")
+		require.Len(t, args, 1)
+		assert.Equal(t, `cd '/Workspace/Users/me@example.com' 2>/dev/null; `+bashCmd, args[0])
+	})
+
 	t.Run("non-interactive passes additional args verbatim", func(t *testing.T) {
 		additional := []string{"ls", "-la"}
-		args := buildRemoteShellArgs(ClientOptions{AdditionalArgs: additional})
+		args := buildRemoteShellArgs(ClientOptions{AdditionalArgs: additional}, "/Workspace/Users/me@example.com")
 		assert.Equal(t, additional, args)
 	})
 }
@@ -225,7 +231,7 @@ func TestBuildSSHArgsPTYPlacement(t *testing.T) {
 	}
 
 	t.Run("interactive forces a PTY before the destination", func(t *testing.T) {
-		args := buildSSHArgs("user", "/key", "proxy command", "myhost", ClientOptions{})
+		args := buildSSHArgs("user", "/key", "proxy command", "myhost", "/Workspace/Users/me@example.com", ClientOptions{})
 		ptyIdx := indexOf(args, "-t")
 		hostIdx := indexOf(args, "myhost")
 		require.NotEqual(t, -1, ptyIdx, "-t must be present for interactive sessions")
@@ -237,7 +243,7 @@ func TestBuildSSHArgsPTYPlacement(t *testing.T) {
 	})
 
 	t.Run("non-interactive does not force a PTY", func(t *testing.T) {
-		args := buildSSHArgs("user", "/key", "proxy command", "myhost", ClientOptions{AdditionalArgs: []string{"ls", "-la"}})
+		args := buildSSHArgs("user", "/key", "proxy command", "myhost", "", ClientOptions{AdditionalArgs: []string{"ls", "-la"}})
 		assert.Equal(t, -1, indexOf(args, "-t"), "no PTY for non-interactive passthrough")
 		hostIdx := indexOf(args, "myhost")
 		require.NotEqual(t, -1, hostIdx)
