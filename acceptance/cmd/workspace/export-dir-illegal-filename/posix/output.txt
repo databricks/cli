@@ -1,5 +1,5 @@
 
 >>> [CLI] workspace export-dir /test-dir [TEST_TMP_DIR]/export
 Exporting files from /test-dir
-/test-dir/New Notebook a:b -> [TEST_TMP_DIR]/export/New Notebook a:b.py
+/test-dir/New Notebook a:b:c -> [TEST_TMP_DIR]/export/New Notebook a:b:c.py
 Export complete
