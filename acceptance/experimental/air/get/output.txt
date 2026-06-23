@@ -31,6 +31,8 @@
 │                                                                │
 ╰────────────────────────────────────────────────────────────────╯
 
+Run URL:    [DATABRICKS_URL]/jobs/runs/123?o=[NUMID]
+MLflow URL: [DATABRICKS_URL]/ml/experiments/exp1/runs/run1
 
 === get (json)
 >>> [CLI] experimental air get run 123 -o json
