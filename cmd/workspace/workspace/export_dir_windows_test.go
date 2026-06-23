@@ -72,11 +72,6 @@ func TestSanitizeLocalName(t *testing.T) {
 			want: "a_b_c_d_e_f_g_h",
 		},
 		{
-			name: "control character replaced",
-			in:   "a\tb",
-			want: "a_b",
-		},
-		{
 			name: "legal name unchanged",
 			in:   "hello world.py",
 			want: "hello world.py",

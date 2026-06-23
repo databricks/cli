@@ -26,11 +26,11 @@ func isInvalidLocalNameError(err error) bool {
 const reservedNameChars = `<>:"/\|?*`
 
 // sanitizeLocalName replaces characters that are illegal in a Windows filename
-// (the reserved set plus ASCII control characters) with '_' so an object whose
-// name is invalid locally can still be written under a legal name.
+// with '_' so an object whose name is invalid locally can still be written under
+// a legal name.
 func sanitizeLocalName(name string) string {
 	return strings.Map(func(r rune) rune {
-		if r < 0x20 || strings.ContainsRune(reservedNameChars, r) {
+		if strings.ContainsRune(reservedNameChars, r) {
 			return '_'
 		}
 		return r

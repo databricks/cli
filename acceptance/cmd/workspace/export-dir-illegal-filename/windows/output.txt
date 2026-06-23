@@ -1,6 +1,6 @@
 
 >>> [CLI] workspace export-dir /test-dir [TEST_TMP_DIR]/export
 Exporting files from /test-dir
-Warn: /test-dir/New Notebook [TIMESTAMP]: name is not valid for the local file system, exporting as "New Notebook 2026-05-04 13_54_24.py"
-/test-dir/New Notebook [TIMESTAMP] -> [TEST_TMP_DIR]\export\New Notebook 2026-05-04 13_54_24.py
+Warn: /test-dir/New Notebook a:b: name is not valid for the local file system, exporting as "New Notebook a_b.py"
+/test-dir/New Notebook a:b -> [TEST_TMP_DIR]\export\New Notebook a_b.py
 Export complete

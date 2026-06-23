@@ -1,9 +1,10 @@
 # Shared by the posix/ and windows/ leaf tests, which differ only in their GOOS
 # gate and golden output. The notebook name contains ':', which is a legal local
 # filename character on Linux/macOS but illegal on Windows, so export-dir renames
-# it to a legal name with a warning on Windows and exports it normally elsewhere
-# (databricks/cli#5171).
-$CLI workspace import "/test-dir/New Notebook 2026-05-04 13:54:24.py" --file "$TESTDIR/../notebook.py" --format AUTO --language PYTHON
+# it to a legal name with a warning on Windows and exports it normally elsewhere.
+# The real #5171 trigger is the auto-generated "New Notebook <timestamp>" name;
+# we use a plain "a:b" here so the timestamp redaction doesn't obscure the golden.
+$CLI workspace import "/test-dir/New Notebook a:b.py" --file "$TESTDIR/../notebook.py" --format AUTO --language PYTHON
 
 mkdir -p "$TEST_TMP_DIR/export"
 
