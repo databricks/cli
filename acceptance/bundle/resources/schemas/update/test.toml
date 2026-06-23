@@ -1,13 +1,8 @@
-Ignore = [
-    ".databricks",
-]
-
 # Also run plan/deploy with --local (direct engine only; rejected on terraform).
 # Deploy issues the same mutating requests with or without --local — only the
 # remote reads (GETs, excluded from print_requests.py) differ — so the recorded
 # output is identical across variants. The " --local" token is stripped from the
-# command echo so the >>> lines match the non-local variant. Note: the JSON plan
-# (`bundle plan -o json`) keeps no --local: its remote_state would differ.
+# command echo so the >>> lines match the non-local variant.
 EnvMatrix.LOCAL = ["", "--local"]
 EnvMatrixExclude.no_local_on_terraform = ["LOCAL=--local", "DATABRICKS_BUNDLE_ENGINE=terraform"]
 EnvRepl.LOCAL = false
