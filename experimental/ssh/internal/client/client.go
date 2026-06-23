@@ -59,7 +59,7 @@ const (
 // exceed 30 min at P90), so the wording is tuned per type to set expectations
 // accurately. Types absent from this map fall back to a generic message.
 var acceleratorProvisioningNotice = map[string]string{
-	"GPU_1xA10":  "Provisioning GPU_1xA10 compute. This usually takes a few minutes, longer when capacity is constrained.",
+	"GPU_1xA10":  "Provisioning GPU_1xA10 compute. This usually takes a few minutes and may take longer when capacity is constrained.",
 	"GPU_8xH100": "Provisioning GPU_8xH100 compute. This typically takes around 10 minutes and can exceed 30 minutes when capacity is constrained.",
 }
 
