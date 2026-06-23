@@ -17,6 +17,33 @@ import (
 // TFStateAttrs maps (tfResourceType → resourceName → raw JSON attributes).
 type TFStateAttrs map[string]map[string]json.RawMessage
 
+// TFState holds everything parsed from a single terraform state file read.
+type TFState struct {
+	// Attrs maps (tfResourceType → resourceName → raw JSON attributes).
+	Attrs TFStateAttrs
+	// IDs maps bundle resource key → resource ID.
+	IDs map[string]string
+
+	// Lineage and Serial are the top-level state metadata used to seed the direct state.
+	Lineage string
+	Serial  int
+}
+
+// rawTFState is the on-disk terraform state format; it captures everything we need in one parse.
+type rawTFState struct {
+	Version   int    `json:"version"`
+	Lineage   string `json:"lineage"`
+	Serial    int    `json:"serial"`
+	Resources []struct {
+		Type      string              `json:"type"`
+		Name      string              `json:"name"`
+		Mode      tfjson.ResourceMode `json:"mode"`
+		Instances []struct {
+			Attributes json.RawMessage `json:"attributes"`
+		} `json:"instances"`
+	} `json:"resources"`
+}
+
 // ETagFor returns the "etag" attribute for a bundle resource, or "" if absent.
 // Reads directly from the raw JSON without full path translation.
 func (a TFStateAttrs) ETagFor(group, name string) string {
@@ -35,18 +62,6 @@ func (a TFStateAttrs) ETagFor(group, name string) string {
 		return ""
 	}
 	return v.Etag
-}
-
-// TFState holds everything parsed from a single terraform state file read.
-type TFState struct {
-	// Attrs maps (tfResourceType → resourceName → raw JSON attributes).
-	Attrs TFStateAttrs
-	// IDs maps bundle resource key → resource ID.
-	IDs map[string]string
-
-	// Lineage and Serial are the top-level state metadata used to seed the direct state.
-	Lineage string
-	Serial  int
 }
 
 // ParseTFStateFull reads the terraform state file once and returns all parsed data.
@@ -78,21 +93,6 @@ func ParseTFStateFull(ctx context.Context, path string) (*TFState, error) {
 		ids[k] = v.ID
 	}
 	return &TFState{Attrs: attrs, IDs: ids, Lineage: parsed.Lineage, Serial: parsed.Serial}, nil
-}
-
-// rawTFState is the on-disk terraform state format; it captures everything we need in one parse.
-type rawTFState struct {
-	Version   int    `json:"version"`
-	Lineage   string `json:"lineage"`
-	Serial    int    `json:"serial"`
-	Resources []struct {
-		Type      string              `json:"type"`
-		Name      string              `json:"name"`
-		Mode      tfjson.ResourceMode `json:"mode"`
-		Instances []struct {
-			Attributes json.RawMessage `json:"attributes"`
-		} `json:"instances"`
-	} `json:"resources"`
 }
 
 func parseTFStateAttrsFromRaw(s *rawTFState) TFStateAttrs {
