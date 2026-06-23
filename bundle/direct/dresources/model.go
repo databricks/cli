@@ -24,16 +24,6 @@ type MlflowModelRemote struct {
 	ModelId string `json:"model_id"`
 }
 
-// Custom marshalers needed because embedded ml.ModelDatabricks has its own
-// MarshalJSON which would otherwise take over and ignore model_id.
-func (s *MlflowModelRemote) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, s)
-}
-
-func (s MlflowModelRemote) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(s)
-}
-
 // Custom marshalers needed because embedded ml.ModelDatabricks has its own MarshalJSON
 // that otherwise shadows the outer struct's fields (model_id gets dropped without this).
 func (r *MlflowModelRemote) UnmarshalJSON(b []byte) error {
