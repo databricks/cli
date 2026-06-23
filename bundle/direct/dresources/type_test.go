@@ -30,7 +30,10 @@ var knownMissingInRemoteType = map[string][]string{
 		"warehouse_id",
 	},
 	"secret_scopes": {
+		"backend_azure_keyvault",
 		"initial_manage_principal",
+		"scope",
+		"scope_backend_type",
 	},
 	"postgres_branches": {
 		"replace_existing",
