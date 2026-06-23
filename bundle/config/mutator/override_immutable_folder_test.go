@@ -17,7 +17,7 @@ func TestOverrideImmutableFolderNotSet(t *testing.T) {
 	b := &bundle.Bundle{Config: config.Root{}}
 	diags := bundle.Apply(ctx, b, mutator.OverrideImmutableFolder())
 	require.NoError(t, diags.Error())
-	assert.False(t, b.Config.Bundle.Deployment.ImmutableFolder)
+	assert.True(t, b.Config.Experimental == nil || !b.Config.Experimental.ImmutableFolder)
 }
 
 func TestOverrideImmutableFolderSet(t *testing.T) {
@@ -26,16 +26,18 @@ func TestOverrideImmutableFolderSet(t *testing.T) {
 	b := &bundle.Bundle{Config: config.Root{}}
 	diags := bundle.Apply(ctx, b, mutator.OverrideImmutableFolder())
 	require.NoError(t, diags.Error())
-	assert.True(t, b.Config.Bundle.Deployment.ImmutableFolder)
+	require.NotNil(t, b.Config.Experimental)
+	assert.True(t, b.Config.Experimental.ImmutableFolder)
 }
 
 func TestOverrideImmutableFolderAlreadyTrue(t *testing.T) {
 	t.Parallel()
 	ctx := env.Set(t.Context(), "DATABRICKS_IMMUTABLE_FOLDER", "")
 	b := &bundle.Bundle{Config: config.Root{}}
-	b.Config.Bundle.Deployment.ImmutableFolder = true
+	b.Config.Experimental = &config.Experimental{ImmutableFolder: true}
 	diags := bundle.Apply(ctx, b, mutator.OverrideImmutableFolder())
 	require.NoError(t, diags.Error())
 	// Existing true value must not be cleared when the env var is absent.
-	assert.True(t, b.Config.Bundle.Deployment.ImmutableFolder)
+	require.NotNil(t, b.Config.Experimental)
+	assert.True(t, b.Config.Experimental.ImmutableFolder)
 }

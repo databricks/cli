@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/env"
 )
@@ -26,6 +27,9 @@ func (m *overrideImmutableFolder) Apply(ctx context.Context, b *bundle.Bundle) d
 	if env.Get(ctx, "DATABRICKS_IMMUTABLE_FOLDER") == "" {
 		return nil
 	}
-	b.Config.Bundle.Deployment.ImmutableFolder = true
+	if b.Config.Experimental == nil {
+		b.Config.Experimental = &config.Experimental{}
+	}
+	b.Config.Experimental.ImmutableFolder = true
 	return nil
 }

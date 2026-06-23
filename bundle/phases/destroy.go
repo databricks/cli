@@ -136,37 +136,30 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalDestroy))
 	}()
 
-	if b.Config.Bundle.Deployment.ImmutableFolder {
-		// Restore the snapshot path so that TranslateResourcePaths (for terraform, below)
-		// knows where the snapshot lives. Must run for both engines.
-		bundle.ApplyContext(ctx, b, snapshot.LoadState())
+	if b.Config.Experimental != nil && b.Config.Experimental.ImmutableFolder {
+		// Restore snapshot_path from local (or remote) state so that the
+		// ${workspace.snapshot_path} placeholders written by translate_paths can be
+		// resolved before Terraform (or direct) processes the resource config.
+		bundle.ApplySeqContext(ctx, b,
+			snapshot.LoadState(),
+			mutator.ResolveVariableReferencesOnlyResources("workspace"),
+		)
 		if logdiag.HasError(ctx) {
 			return
 		}
 	}
 
 	if !engine.IsDirect() {
-		mutators := []bundle.Mutator{
+		bundle.ApplySeqContext(ctx, b,
 			// We need to resolve artifact variable (how we do it in build phase)
 			// because some of the to-be-destroyed resource might use this variable.
 			// Not resolving might lead to terraform "Reference to undeclared resource" error
 			mutator.ResolveVariableReferencesWithoutResources("artifacts"),
 			mutator.ResolveVariableReferencesOnlyResources("artifacts"),
-		}
-
-		if b.Config.Bundle.Deployment.ImmutableFolder {
-			// Resource paths are local absolute paths after translate_paths. Replace the
-			// local prefix with the snapshot remote path before Terraform processes the config.
-			mutators = append([]bundle.Mutator{snapshot.TranslateResourcePaths()}, mutators...)
-		}
-
-		mutators = append(mutators,
 			terraform.Interpolate(),
 			terraform.Write(),
 			terraform.Plan(terraform.PlanGoal("destroy")),
 		)
-
-		bundle.ApplySeqContext(ctx, b, mutators...)
 	}
 
 	if logdiag.HasError(ctx) {

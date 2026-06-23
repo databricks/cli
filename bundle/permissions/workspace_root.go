@@ -30,7 +30,7 @@ func (*workspaceRootPermissions) Name() string {
 // Apply implements bundle.Mutator.
 func (*workspaceRootPermissions) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	workspace := b.Config.Workspace
-	if b.Config.Bundle.Deployment.ImmutableFolder {
+	if b.Config.Experimental != nil && b.Config.Experimental.ImmutableFolder {
 		// For immutable bundles, file_path and artifact_path point into content-addressed
 		// snapshot storage that is not a normal workspace folder. Clear them so that
 		// giveAccessForWorkspaceRoot only applies permissions to root_path (and the

@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/bundle/artifacts"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/engine"
+	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/deploy"
 	"github.com/databricks/cli/bundle/deploy/files"
 	"github.com/databricks/cli/bundle/deploy/lock"
@@ -148,14 +149,21 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalDeploy))
 	}()
 
-	if b.Config.Bundle.Deployment.ImmutableFolder {
+	if b.Config.Experimental != nil && b.Config.Experimental.ImmutableFolder && !engine.IsDirect() {
+		logdiag.LogError(ctx, errors.New("experimental.immutable_folder is only supported with the direct deployment engine"))
+		return
+	}
+
+	if b.Config.Experimental != nil && b.Config.Experimental.ImmutableFolder {
 		// Upload all source files and built artifacts as a single immutable snapshot.
-		// The API assigns a content-addressed workspace.file_path; snapshot.TranslateResourcePaths()
-		// then replaces the local absolute paths (written by translate_paths during validate)
-		// with the actual snapshot remote paths.
+		// EnsureDeploymentID populates b.Metrics.DeploymentId (the lineage UUID) so
+		// Upload can use it as bundle_id. snapshot.Upload() then sets
+		// workspace.snapshot_path; the variable-resolution pass expands
+		// ${workspace.snapshot_path} placeholders written by translate_paths.
 		bundle.ApplySeqContext(ctx, b,
+			deploy.EnsureDeploymentID(),
 			snapshot.Upload(),
-			snapshot.TranslateResourcePaths(),
+			mutator.ResolveVariableReferencesOnlyResources("workspace"),
 		)
 		if !logdiag.HasError(ctx) {
 			_, libDiags := libraries.ReplaceWithRemotePath(ctx, b)
@@ -171,7 +179,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		return
 	}
 
-	if !b.Config.Bundle.Deployment.ImmutableFolder {
+	if b.Config.Experimental == nil || !b.Config.Experimental.ImmutableFolder {
 		bundle.ApplySeqContext(ctx, b, files.Upload(outputHandler))
 		if logdiag.HasError(ctx) {
 			return

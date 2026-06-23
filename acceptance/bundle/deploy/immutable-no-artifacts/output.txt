@@ -15,10 +15,13 @@ Updating deployment state...
 Deployment complete!
 
 >>> [CLI] jobs get [NUMID]
-"/Workspace/Users/[UUID]/.snapshots/test-bundle-immutable-no-artifacts-[UNIQUE_NAME]/[SNAPSHOT_HASH]/src/files/src/main.py"
+"/Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]/src/files/src/main.py"
 
 >>> [CLI] jobs get [NUMID]
-"/Workspace/Users/[UUID]/.snapshots/test-bundle-immutable-no-artifacts-[UNIQUE_NAME]/[SNAPSHOT_HASH]/src/files/src/notebook"
+"/Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]/src/files/src/notebook"
+
+>>> [CLI] jobs get [NUMID]
+"/Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]/src/files/some_path"
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

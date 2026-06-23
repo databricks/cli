@@ -133,6 +133,20 @@ func applyInitializeMutators(ctx context.Context, b *bundle.Bundle) {
 	)
 }
 
+// immutableExcludingResolver returns a variable reference resolver for the resources
+// section. When experimental.immutable_folder is enabled it excludes
+// workspace.file_path and workspace.artifact_path from resolution: those paths are
+// updated to the snapshot location by snapshot.Upload() in the Deploy phase, so
+// resolving them here would freeze them to the default bundle path instead.
+func immutableExcludingResolver(b *bundle.Bundle) bundle.Mutator {
+	if b.Config.Experimental != nil && b.Config.Experimental.ImmutableFolder {
+		return mutator.ResolveVariableReferencesOnlyResourcesExcluding(
+			[]string{"workspace.file_path", "workspace.artifact_path"},
+		)
+	}
+	return mutator.ResolveVariableReferencesOnlyResources()
+}
+
 // Normalization is applied multiple times if resource is modified during initialization
 //
 // If bundle is modified outside of 'resources' section, these changes are discarded.
@@ -146,7 +160,7 @@ func applyNormalizeMutators(ctx context.Context, b *bundle.Bundle) {
 		// Reads (dynamic): * (strings) (searches for variable references in string values)
 		// Updates (dynamic): resources.* (strings) (resolves variable references to their actual values)
 		// Resolves variable references in 'resources' using bundle, workspace, and variables prefixes
-		mutator.ResolveVariableReferencesOnlyResources(),
+		immutableExcludingResolver(b),
 
 		// Reads (dynamic): resources.pipelines.*.libraries (checks for notebook.path and file.path fields)
 		// Updates (dynamic): resources.pipelines.*.libraries (expands glob patterns in path fields to multiple library entries)

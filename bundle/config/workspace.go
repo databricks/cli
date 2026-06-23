@@ -81,8 +81,8 @@ type Workspace struct {
 
 	// SnapshotPath is the workspace path of the immutable snapshot uploaded during
 	// deployment. It is set by snapshot.Upload() and persisted to local state so
-	// that snapshot.LoadState() can restore workspace.file_path for destroy.
-	// Only populated for bundles with deployment.immutable_folder = true.
+	// that snapshot.LoadState() can restore workspace.snapshot_path for destroy/run.
+	// Only populated for bundles with experimental.immutable_folder = true.
 	SnapshotPath string `json:"snapshot_path,omitempty" bundle:"internal"`
 }
 

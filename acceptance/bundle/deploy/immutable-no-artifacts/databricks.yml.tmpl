@@ -1,7 +1,8 @@
 bundle:
   name: test-bundle-immutable-no-artifacts-$UNIQUE_NAME
-  deployment:
-    immutable_folder: true
+
+experimental:
+  immutable_folder: true
 
 resources:
   jobs:
@@ -15,6 +16,9 @@ resources:
         - task_key: notebook_task
           notebook_task:
             notebook_path: ./src/notebook.py
+            base_parameters:
+              path: ${workspace.file_path}/some_path
+
 
       environments:
         - environment_key: env

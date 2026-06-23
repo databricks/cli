@@ -2,9 +2,7 @@ Local = true
 Cloud = false
 RecordRequests = true
 
-# EnvMatrix here inherits the default DATABRICKS_BUNDLE_ENGINE matrix.
-# Override to opt out because immutable_folder is engine-agnostic and
-# running both variants would produce identical output but double the cost.
+# immutable_folder only works with the direct engine.
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 
 Ignore = [

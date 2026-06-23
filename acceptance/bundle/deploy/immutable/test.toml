@@ -1,6 +1,9 @@
 Local = true
 Cloud = true
 
+# immutable_folder only works with the direct engine.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+
 Ignore = [
     "dist",
     "databricks.yml",

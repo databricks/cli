@@ -10,6 +10,7 @@ import (
 	"slices"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/deploy/snapshot"
 	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/bundle/resources"
@@ -172,15 +173,13 @@ Example usage:
 				return nil
 			},
 			PostStateFunc: func(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc) error {
-				if b.Config.Bundle.Deployment.ImmutableFolder {
-					// Restore the snapshot path and rewrite resource paths from local
-					// absolute paths (set by translate_paths during Initialize) to the
-					// actual content-addressed snapshot paths. Without this, source_code_path
-					// for apps and other path fields remain as local filesystem paths, which
-					// the Databricks API rejects.
+				if b.Config.Experimental != nil && b.Config.Experimental.ImmutableFolder {
+					// Restore workspace.snapshot_path from local state so that the
+					// ${workspace.snapshot_path} placeholders written by translate_paths
+					// resolve to the actual content-addressed remote paths before running.
 					bundle.ApplySeqContext(ctx, b,
 						snapshot.LoadState(),
-						snapshot.TranslateResourcePaths(),
+						mutator.ResolveVariableReferencesOnlyResources("workspace"),
 					)
 					if logdiag.HasError(ctx) {
 						return root.ErrAlreadyPrinted

@@ -47,7 +47,11 @@ func (m *snapshotUpload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 	log.Debugf(ctx, "snapshot.Upload: snapshotID=%s zip=%d bytes", snapshotID, len(zipContent))
 
 	acl := BuildACL(b)
-	info, err := uploader.Upload(ctx, b.Config.Bundle.Name, snapshotID, acl, zipContent)
+	// Use the deployment lineage UUID as bundle_id so the snapshot directory is
+	// keyed to this specific deployment (not to the bundle name, which can be
+	// reused across unrelated deployments).
+	bundleID := b.Metrics.DeploymentId.String()
+	info, err := uploader.Upload(ctx, bundleID, snapshotID, acl, zipContent)
 	if err != nil {
 		return diag.FromErr(err)
 	}

@@ -82,8 +82,8 @@ func (s *loadState) loadFromRemote(ctx context.Context, b *bundle.Bundle) diag.D
 
 func applySnapshotPath(b *bundle.Bundle, snapshotPath string) {
 	b.Config.Workspace.SnapshotPath = snapshotPath
-	// Restore FilePath and ArtifactPath so that TranslateResourcePaths() can
-	// rewrite local absolute paths to snapshot paths during destroy.
+	// Restore FilePath and ArtifactPath for other callers (permissions checks, etc.).
+	// The resource paths themselves are resolved later via ResolveVariableReferencesOnlyResources("workspace").
 	b.Config.Workspace.FilePath = path.Join(snapshotPath, "src", "files")
 	b.Config.Workspace.ArtifactPath = path.Join(snapshotPath, "src", "artifacts")
 }

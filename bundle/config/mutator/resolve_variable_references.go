@@ -79,6 +79,24 @@ func ResolveVariableReferencesOnlyResources(prefixes ...string) bundle.Mutator {
 	}
 }
 
+// ResolveVariableReferencesOnlyResourcesExcluding is like ResolveVariableReferencesOnlyResources
+// but leaves the listed variable reference paths unresolved. Use this when a workspace path will
+// be updated by a later mutator (e.g. snapshot.Upload sets workspace.file_path to the snapshot
+// location) and the final value should be substituted at that later point.
+func ResolveVariableReferencesOnlyResourcesExcluding(excluded []string, prefixes ...string) bundle.Mutator {
+	if len(prefixes) == 0 {
+		prefixes = defaultPrefixes
+	}
+	return &resolveVariableReferences{
+		prefixes:         prefixes,
+		lookupFn:         lookup,
+		extraRounds:      maxResolutionRounds - 1,
+		pattern:          dyn.NewPattern(dyn.Key("resources")),
+		includeResources: true,
+		excludePaths:     excluded,
+	}
+}
+
 func ResolveVariableReferencesWithoutResources(prefixes ...string) bundle.Mutator {
 	if len(prefixes) == 0 {
 		prefixes = defaultPrefixes

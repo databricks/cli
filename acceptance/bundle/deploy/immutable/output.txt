@@ -10,27 +10,140 @@ Validation OK!
 
 >>> [CLI] bundle deploy
 Building python_artifact...
-Uploading immutable bundle snapshot...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Error: build failed python_artifact, error: exit status 2, output: Building wheel...
+  × Failed to build
+  │ `[TEST_TMP_DIR]`
+  ├─▶ Failed to resolve requirements from `build-system.requires`
+  ├─▶ No solution found when resolving: `hatchling`
+  ╰─▶ Because only the following versions of hatchling are available:
+          hatchling==0.8.0
+          hatchling==0.8.1
+          hatchling==0.8.2
+          hatchling==0.9.0
+          hatchling==0.10.0
+          hatchling==0.11.0
+          hatchling==0.11.1
+          hatchling==0.11.2
+          hatchling==0.11.3
+          hatchling==0.12.0
+          hatchling==0.13.0
+          hatchling==0.14.0
+          hatchling==0.15.0
+          hatchling==0.16.0
+          hatchling==0.17.0
+          hatchling==0.18.0
+          hatchling==0.19.0
+          hatchling==0.20.0
+          hatchling==0.20.1
+          hatchling==0.21.0
+          hatchling==0.21.1
+          hatchling==0.22.0
+          hatchling==0.23.0
+          hatchling==0.24.0
+          hatchling==0.25.0
+          hatchling==0.25.1
+          hatchling==1.0.0
+          hatchling==1.1.0
+          hatchling==1.2.0
+          hatchling==1.3.0
+          hatchling==1.3.1
+          hatchling==1.4.0
+          hatchling==1.4.1
+          hatchling==1.5.0
+          hatchling==1.6.0
+          hatchling==1.7.0
+          hatchling==1.7.1
+          hatchling==1.8.0
+          hatchling==1.8.1
+          hatchling==1.9.0
+          hatchling==1.10.0
+          hatchling==1.11.0
+          hatchling==1.11.1
+          hatchling==1.12.0
+          hatchling==1.12.1
+          hatchling==1.12.2
+          hatchling==1.13.0
+          hatchling==1.14.0
+          hatchling==1.14.1
+          hatchling==1.15.0
+          hatchling==1.16.0
+          hatchling==1.16.1
+          hatchling==1.17.0
+          hatchling==1.17.1
+          hatchling==1.18.0
+          hatchling==1.19.0
+          hatchling==1.19.1
+          hatchling==1.20.0
+          hatchling==1.21.0
+          hatchling==1.21.1
+          hatchling==1.22.0
+          hatchling==1.22.1
+          hatchling==1.22.2
+          hatchling==1.22.3
+          hatchling==1.22.4
+          hatchling==1.22.5
+          hatchling==1.23.0
+          hatchling==1.24.0
+          hatchling==1.24.1
+          hatchling==1.24.2
+          hatchling==1.25.0
+          hatchling==1.26.0
+          hatchling==1.26.1
+          hatchling==1.26.2
+          hatchling==1.26.3
+          hatchling==1.27.0
+          hatchling==1.28.0
+          hatchling==1.29.0
+      and hatchling<=1.3.1 needs to be downloaded from a registry, we can
+      conclude that hatchling<=1.3.1 cannot be used.
+      And because hatchling==1.4.0 was yanked (reason: Building wheels from
+      sdists is broken), we can conclude that hatchling<1.4.1 cannot be used.
+      And because hatchling>=1.4.1,<=1.19.0 needs to be downloaded
+      from a registry and hatchling==1.19.1 was yanked (reason:
+      https://github.com/pypa/hatch/issues/1129), we can conclude that
+      hatchling<1.20.0 cannot be used.
+      And because hatchling>=1.20.0,<=1.21.1 needs to be downloaded from
+      a registry and hatchling>=1.22.0,<=1.22.1 was yanked (reason: Broken
+      builds from sdists), we can conclude that hatchling>=1.22.0,<=1.22.1
+      cannot be used.
+      And because hatchling>=1.22.2,<=1.25.0 needs to be downloaded from a
+      registry and hatchling==1.26.0 was yanked (reason: Incompatible with
+      currently released Hatch), we can conclude that hatchling<1.26.1 cannot
+      be used.
+      And because hatchling>=1.26.1,<=1.26.2 was yanked (reason: Upload
+      issues) and hatchling>=1.26.3,<=1.28.0 needs to be downloaded from a
+      registry, we can conclude that hatchling>=1.26.3,<=1.28.0 cannot be
+      used. (1)
 
->>> [CLI] jobs get [NUMID]
-"/Workspace/Users/[UUID]/.snapshots/test-bundle-immutable-[UNIQUE_NAME]/[SNAPSHOT_HASH]/src/files/src/main.py"
+      Because only the following versions of tomli{python_full_version <
+      '3.11'} are available:
+          tomli{python_full_version < '3.11'}<=1.2.2
+          tomli{python_full_version < '3.11'}==1.2.3
+          tomli{python_full_version < '3.11'}==2.0.0
+          tomli{python_full_version < '3.11'}==2.0.1
+          tomli{python_full_version < '3.11'}==2.0.2
+          tomli{python_full_version < '3.11'}==2.1.0
+          tomli{python_full_version < '3.11'}==2.2.1
+          tomli{python_full_version < '3.11'}==2.3.0
+          tomli{python_full_version < '3.11'}==2.3.1
+          tomli{python_full_version < '3.11'}==2.4.0
+          tomli{python_full_version < '3.11'}==2.4.1
+      and tomli>=1.2.2 needs to be downloaded from a registry, we can conclude
+      that tomli{python_full_version < '3.11'}>=1.2.2,<1.2.3 cannot be used.
+      And because hatchling==1.29.0 depends on tomli{python_full_version <
+      '3.11'}>=1.2.2, we can conclude that hatchling==1.29.0 cannot be used.
+      And because we know from (1) that hatchling>=1.26.3,<=1.28.0 cannot be
+      used, we can conclude that all versions of hatchling cannot be used.
+      And because you require hatchling, we can conclude that your
+      requirements are unsatisfiable.
 
->>> [CLI] jobs get [NUMID]
-"/Workspace/Users/[UUID]/.snapshots/test-bundle-immutable-[UNIQUE_NAME]/[SNAPSHOT_HASH]/src/files/src/notebook"
+      hint: Packages were unavailable because the network was disabled. When
+      the network is disabled, registry packages may only be read from the
+      cache.
 
->>> [CLI] jobs get [NUMID]
-[
-  "/Workspace/Users/[UUID]/.snapshots/test-bundle-immutable-[UNIQUE_NAME]/[SNAPSHOT_HASH]/src/artifacts/.internal/immutable-0.0.1-py3-none-any.whl"
-]
+
 
 >>> [CLI] bundle destroy --auto-approve
-The following resources will be deleted:
-  delete resources.jobs.my_job
+No active deployment found to destroy!
 
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-immutable-[UNIQUE_NAME]/default
-
-Deleting files...
-Destroy complete!
+Exit code: 1
