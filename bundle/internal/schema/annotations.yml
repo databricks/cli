@@ -282,7 +282,7 @@ resources:
             PLACEHOLDER
         "lifecycle":
           "description": |-
-            Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+            Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
         "permissions":
           "description": |-
             The permissions to apply to this resource.
@@ -354,7 +354,7 @@ resources:
             The source_code_path within git_source specifies the relative path to the app code within the repository.
         "lifecycle":
           "description": |-
-            Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+            Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
         "oauth2_app_client_id":
           "description": |-
             PLACEHOLDER
@@ -521,7 +521,7 @@ resources:
             ```
         "lifecycle":
           "description": |-
-            Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+            Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
         "managed_encryption_settings":
           "$fields":
             "azure_encryption_settings":
@@ -572,7 +572,7 @@ resources:
       "$fields":
         "lifecycle":
           "description": |-
-            Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+            Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
           "$fields":
             "prevent_destroy":
               "description": |-
@@ -661,7 +661,7 @@ resources:
             PLACEHOLDER
         "lifecycle":
           "description": |-
-            Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+            Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
         "lifecycle_state":
           "description": |-
             The state of the dashboard resource. Used for tracking trashed status.
@@ -729,7 +729,7 @@ resources:
             PLACEHOLDER
         "lifecycle":
           "description": |-
-            Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+            Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
         "uid":
           "description": |-
             PLACEHOLDER
@@ -739,7 +739,7 @@ resources:
       "$fields":
         "lifecycle":
           "description": |-
-            Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+            Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
         "permissions":
           "description": |-
             The permissions to apply to this resource.
@@ -781,7 +781,7 @@ resources:
       "$fields":
         "lifecycle":
           "description": |-
-            Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+            Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
         "permissions":
           "description": |-
             The permissions to apply to this resource.
@@ -868,7 +868,7 @@ resources:
             ```
         "lifecycle":
           "description": |-
-            Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+            Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
     "genie_spaces":
       "description": |-
         PLACEHOLDER
@@ -884,7 +884,7 @@ resources:
             Local path to a `.geniespace.json` file holding the serialized Genie space definition. The contents are inlined into `serialized_space` at deploy time. Mutually exclusive with an inline `serialized_space`.
         "lifecycle":
           "description": |-
-            Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+            Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
         "parent_path":
           "description": |-
             Workspace folder under which to create the Genie space. Immutable: changing this field recreates the resource.
@@ -976,7 +976,7 @@ resources:
                         Contains the Azure Data Lake Storage destination path
         "lifecycle":
           "description": |-
-            Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+            Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
           "$fields":
             "prevent_destroy":
               "description": |-
@@ -1124,7 +1124,7 @@ resources:
             PLACEHOLDER
         "lifecycle":
           "description": |-
-            Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+            Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
         "permissions":
           "description": |-
             The permissions to apply to this resource.
@@ -1166,7 +1166,7 @@ resources:
       "$fields":
         "lifecycle":
           "description": |-
-            Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+            Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
         "permissions":
           "description": |-
             The permissions to apply to this resource.
@@ -1284,7 +1284,7 @@ resources:
                 This field is deprecated
         "lifecycle":
           "description": |-
-            Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+            Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
         "permissions":
           "description": |-
             The permissions to apply to this resource.
@@ -1347,7 +1347,7 @@ resources:
             PLACEHOLDER
         "lifecycle":
           "description": |-
-            Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+            Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
         "no_expiry":
           "description": |-
             PLACEHOLDER
@@ -1384,7 +1384,7 @@ resources:
             PLACEHOLDER
         "lifecycle":
           "description": |-
-            Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+            Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
         "postgres_database":
           "description": |-
             PLACEHOLDER
@@ -1397,7 +1397,7 @@ resources:
             PLACEHOLDER
         "lifecycle":
           "description": |-
-            Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+            Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
         "parent":
           "description": |-
             PLACEHOLDER
@@ -1431,7 +1431,7 @@ resources:
             PLACEHOLDER
         "lifecycle":
           "description": |-
-            Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+            Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
         "no_suspension":
           "description": |-
             PLACEHOLDER
@@ -1474,7 +1474,7 @@ resources:
             PLACEHOLDER
         "lifecycle":
           "description": |-
-            Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+            Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
         "permissions":
           "description": |-
             The permissions to apply to this resource.
@@ -1526,7 +1526,7 @@ resources:
             The type of the Databricks managed identity that this Role represents. Leave empty to create a regular Postgres role not associated with a Databricks identity.
         "lifecycle":
           "description": |-
-            Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+            Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
         "membership_roles":
           "description": |-
             Standard roles that this role is a member of.
@@ -1557,7 +1557,7 @@ resources:
             PLACEHOLDER
         "lifecycle":
           "description": |-
-            Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+            Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
         "new_pipeline_spec":
           "description": |-
             PLACEHOLDER
@@ -1621,7 +1621,7 @@ resources:
                 Granularities for aggregating data into time windows based on their timestamp. Valid values are 5 minutes, 30 minutes, 1 hour, 1 day, n weeks, 1 month, or 1 year.
         "lifecycle":
           "description": |-
-            Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+            Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
         "table_name":
           "description": |-
             PLACEHOLDER
@@ -1674,7 +1674,7 @@ resources:
             ```
         "lifecycle":
           "description": |-
-            Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+            Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
     "schemas":
       "description": |-
         The schema definitions for the bundle, where each key is the name of the schema.
@@ -1746,7 +1746,7 @@ resources:
             ```
         "lifecycle":
           "description": |-
-            Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+            Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
     "secret_scopes":
       "description": |-
         The secret scope definitions for the bundle, where each key is the name of the secret scope.
@@ -1761,7 +1761,7 @@ resources:
             The metadata for the secret scope if the `backend_type` is `AZURE_KEYVAULT`
         "lifecycle":
           "description": |-
-            Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+            Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
         "name":
           "description": |-
             Scope name requested by the user. Scope names are unique.
@@ -1810,7 +1810,7 @@ resources:
             Defaults to true.
         "lifecycle":
           "description": |-
-            Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+            Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
         "permissions":
           "description": |-
             The permissions to apply to this resource.
@@ -1866,14 +1866,14 @@ resources:
                     PLACEHOLDER
         "lifecycle":
           "description": |-
-            Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+            Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
     "vector_search_endpoints":
       "description": |-
         PLACEHOLDER
       "$fields":
         "lifecycle":
           "description": |-
-            Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+            Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
         "permissions":
           "description": |-
             The permissions to apply to this resource.
@@ -1914,7 +1914,7 @@ resources:
             ```
         "lifecycle":
           "description": |-
-            Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+            Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
     "volumes":
       "description": |-
         The volume definitions for the bundle, where each key is the name of the volume.
@@ -1960,7 +1960,7 @@ resources:
             ```
         "lifecycle":
           "description": |-
-            Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+            Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
 run_as:
   "description": |-
     The identity to use when running Declarative Automation Bundles resources.

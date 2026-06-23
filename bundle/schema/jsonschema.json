@@ -99,7 +99,7 @@
                         "$ref": "#/$defs/string"
                       },
                       "lifecycle": {
-                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
+                        "description": "Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "parent_path": {
@@ -189,7 +189,7 @@
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.GitSource"
                       },
                       "lifecycle": {
-                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
+                        "description": "Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.LifecycleWithStarted"
                       },
                       "name": {
@@ -340,7 +340,7 @@
                         "markdownDescription": "A Sequence of Unity Catalog privilege grants on this securable, where each item grants a set of `privileges` to a `principal` (a user, group, or service principal).\n\nSee [link](https://docs.databricks.com/data-governance/unity-catalog/manage-privileges/index.html)."
                       },
                       "lifecycle": {
-                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
+                        "description": "Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "managed_encryption_settings": {
@@ -470,7 +470,7 @@
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.Kind"
                       },
                       "lifecycle": {
-                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
+                        "description": "Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.LifecycleWithStarted"
                       },
                       "node_type_id": {
@@ -613,7 +613,7 @@
                         "$ref": "#/$defs/string"
                       },
                       "lifecycle": {
-                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
+                        "description": "Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "lifecycle_state": {
@@ -673,7 +673,7 @@
                         "$ref": "#/$defs/string"
                       },
                       "lifecycle": {
-                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
+                        "description": "Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "name": {
@@ -717,7 +717,7 @@
                         "$ref": "#/$defs/bool"
                       },
                       "lifecycle": {
-                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
+                        "description": "Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "name": {
@@ -796,7 +796,7 @@
                         "markdownDescription": "A Sequence of Unity Catalog privilege grants on this securable, where each item grants a set of `privileges` to a `principal` (a user, group, or service principal).\n\nSee [link](https://docs.databricks.com/data-governance/unity-catalog/manage-privileges/index.html)."
                       },
                       "lifecycle": {
-                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
+                        "description": "Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "name": {
@@ -846,7 +846,7 @@
                         "$ref": "#/$defs/string"
                       },
                       "lifecycle": {
-                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
+                        "description": "Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "parent_path": {
@@ -917,7 +917,7 @@
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/jobs.JobCluster"
                       },
                       "lifecycle": {
-                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
+                        "description": "Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "max_concurrent_runs": {
@@ -1076,7 +1076,7 @@
                         "$ref": "#/$defs/string"
                       },
                       "lifecycle": {
-                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
+                        "description": "Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "name": {
@@ -1148,7 +1148,7 @@
                         "$ref": "#/$defs/string"
                       },
                       "lifecycle": {
-                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
+                        "description": "Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "name": {
@@ -1235,7 +1235,7 @@
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.EmailNotifications"
                       },
                       "lifecycle": {
-                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
+                        "description": "Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "name": {
@@ -1412,7 +1412,7 @@
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/pipelines.PipelineLibrary"
                       },
                       "lifecycle": {
-                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
+                        "description": "Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "name": {
@@ -1548,7 +1548,7 @@
                         "$ref": "#/$defs/bool"
                       },
                       "lifecycle": {
-                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
+                        "description": "Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "no_expiry": {
@@ -1600,7 +1600,7 @@
                         "$ref": "#/$defs/bool"
                       },
                       "lifecycle": {
-                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
+                        "description": "Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "postgres_database": {
@@ -1628,7 +1628,7 @@
                         "$ref": "#/$defs/string"
                       },
                       "lifecycle": {
-                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
+                        "description": "Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "parent": {
@@ -1677,7 +1677,7 @@
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.EndpointGroupSpec"
                       },
                       "lifecycle": {
-                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
+                        "description": "Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "no_suspension": {
@@ -1736,7 +1736,7 @@
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/duration.Duration"
                       },
                       "lifecycle": {
-                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
+                        "description": "Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "permissions": {
@@ -1783,7 +1783,7 @@
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.RoleIdentityType"
                       },
                       "lifecycle": {
-                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
+                        "description": "Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "membership_roles": {
@@ -1833,7 +1833,7 @@
                         "$ref": "#/$defs/string"
                       },
                       "lifecycle": {
-                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
+                        "description": "Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "new_pipeline_spec": {
@@ -1903,7 +1903,7 @@
                         "$ref": "#/$defs/string"
                       },
                       "lifecycle": {
-                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
+                        "description": "Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "notifications": {
@@ -1995,7 +1995,7 @@
                         "markdownDescription": "A Sequence of Unity Catalog privilege grants on this securable, where each item grants a set of `privileges` to a `principal` (a user, group, or service principal).\n\nSee [link](https://docs.databricks.com/data-governance/unity-catalog/manage-privileges/index.html)."
                       },
                       "lifecycle": {
-                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
+                        "description": "Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "metastore_id": {
@@ -2059,7 +2059,7 @@
                         "markdownDescription": "A Sequence of Unity Catalog privilege grants on this securable, where each item grants a set of `privileges` to a `principal` (a user, group, or service principal).\n\nSee [link](https://docs.databricks.com/data-governance/unity-catalog/manage-privileges/index.html)."
                       },
                       "lifecycle": {
-                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
+                        "description": "Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "name": {
@@ -2102,7 +2102,7 @@
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/workspace.AzureKeyVaultSecretScopeMetadata"
                       },
                       "lifecycle": {
-                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
+                        "description": "Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "name": {
@@ -2211,7 +2211,7 @@
                         "deprecated": true
                       },
                       "lifecycle": {
-                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
+                        "description": "Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.LifecycleWithStarted"
                       },
                       "max_num_clusters": {
@@ -2295,7 +2295,7 @@
                         "$ref": "#/$defs/string"
                       },
                       "lifecycle": {
-                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
+                        "description": "Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "logical_database_name": {
@@ -2336,7 +2336,7 @@
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/vectorsearch.EndpointType"
                       },
                       "lifecycle": {
-                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
+                        "description": "Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "name": {
@@ -2402,7 +2402,7 @@
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/vectorsearch.VectorIndexType"
                       },
                       "lifecycle": {
-                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
+                        "description": "Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "name": {
@@ -2447,7 +2447,7 @@
                         "markdownDescription": "A Sequence of Unity Catalog privilege grants on this securable, where each item grants a set of `privileges` to a `principal` (a user, group, or service principal).\n\nSee [link](https://docs.databricks.com/data-governance/unity-catalog/manage-privileges/index.html)."
                       },
                       "lifecycle": {
-                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
+                        "description": "Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "name": {
