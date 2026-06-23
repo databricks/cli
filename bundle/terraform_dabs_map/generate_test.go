@@ -74,15 +74,25 @@ var tfKnownSegments = map[string]bool{
 	"provider_config": true, // Terraform provider metadata, not a DABs concept
 }
 
+// manualRenames maps DABs group → DABs field path → TF field path for renames the
+// heuristic matcher cannot derive. These are state-computed fields that live in the
+// RemoteType (not the config struct), whose DABs and TF names are semantically equivalent
+// but lexically unrelated, so neither exact nor stemmed matching can connect them.
+var manualRenames = map[string]map[string]string{
+	// models.model_id is the numeric model ID; TF names it registered_model_id.
+	"models": {"model_id": "registered_model_id"},
+}
+
 type groupResult struct {
-	group      string
-	tfType     string
-	hasTFType  bool
-	renames    map[string]string // TF path → DABs path (renamed fields only)
-	unwraps    []string          // TF paths that are structural wrappers (Unwrap: true)
-	dabsOnly   map[string]bool   // DABs clean paths with no Terraform equivalent
-	tfOnly     map[string]bool   // TF clean paths with no DABs equivalent
-	matchCount int               // used for stats output only, not written to generated.go
+	group              string
+	tfType             string
+	hasTFType          bool
+	renames            map[string]string // TF path → DABs path (renamed fields only)
+	unwraps            []string          // TF paths that are structural wrappers (Unwrap: true)
+	dabsOnly           map[string]bool   // DABs clean paths with no Terraform equivalent
+	tfOnly             map[string]bool   // TF clean paths with no DABs equivalent
+	matchCount         int               // used for stats output only, not written to generated.go
+	tfWrapperFirstSegs map[string]bool   // first-level DABs field names that go under the wrapper (only set when unwraps is non-empty)
 }
 
 func buildAll() ([]groupResult, error) {
@@ -246,6 +256,32 @@ func buildGroup(group string, adapter *dresources.Adapter) (groupResult, error) 
 		}
 		matchedTF[wrapper] = true // mark the wrapper segment itself to suppress it from tfOnly
 		res.unwraps = append(res.unwraps, wrapper)
+	}
+
+	// Collect first-level DABs field names that go under the wrapper for groups with wrappers.
+	if len(res.unwraps) > 0 {
+		res.tfWrapperFirstSegs = make(map[string]bool)
+		for _, wrapper := range res.unwraps {
+			prefix := wrapper + "."
+			for tf := range tfFields {
+				if matchedTF[tf] {
+					if after, ok := strings.CutPrefix(tf, prefix); ok {
+						res.tfWrapperFirstSegs[topSegment(after)] = true
+					}
+				}
+			}
+		}
+	}
+
+	// Apply manual renames for fields the heuristic matcher cannot derive. These connect a
+	// state-computed DABs field to its differently-named TF counterpart; recording them as
+	// renames also marks the TF field matched so it does not surface as Terraform-only.
+	for dabsPath, tfPath := range manualRenames[group] {
+		if !tfFields[tfPath] {
+			return groupResult{}, fmt.Errorf("manual rename %s.%s: TF field %q not found", group, dabsPath, tfPath)
+		}
+		res.renames[tfPath] = dabsPath
+		matchedTF[tfPath] = true
 	}
 
 	// Step 4: remaining unmatched fields.
@@ -462,6 +498,22 @@ func renderSource(results []groupResult) ([]byte, error) {
 		for _, wrapper := range r.unwraps {
 			w("\t%q: %q,\n", r.group, wrapper)
 		}
+	}
+	w("}\n\n")
+
+	w("// DABsToTerraformWrapperFields maps DABs group name → first-level DABs field names that\n")
+	w("// live under the TF wrapper. For wrapper groups, a DABs path is prefixed with the wrapper\n")
+	w("// in DABsPathToTerraform only when its first segment appears here.\n")
+	w("var DABsToTerraformWrapperFields = map[string]FieldSet{\n")
+	for _, r := range results {
+		if !r.hasTFType || len(r.tfWrapperFirstSegs) == 0 {
+			continue
+		}
+		w("\t%q: {\n", r.group)
+		for _, key := range slices.Sorted(maps.Keys(r.tfWrapperFirstSegs)) {
+			w("\t\t%q: {},\n", key)
+		}
+		w("\t},\n")
 	}
 	w("}\n")
 

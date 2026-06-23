@@ -15,7 +15,7 @@ package terraform_dabs_map
 // jobs / databricks_job: 10 dabs-only
 // jobs / databricks_job: 257 tf-only
 // model_serving_endpoints / databricks_model_serving: 2 tf-only
-// models / databricks_mlflow_model: 1 tf-only
+// models / databricks_mlflow_model: 1 renames
 // pipelines / databricks_pipeline: 3 renames
 // pipelines / databricks_pipeline: 7 dabs-only
 // pipelines / databricks_pipeline: 2 tf-only
@@ -55,6 +55,9 @@ var TerraformToDABsFieldMap = map[string]RenameTree{
 			}},
 			"library": {NewName: "libraries"},
 		}},
+	},
+	"models": {
+		"registered_model_id": {NewName: "model_id"},
 	},
 	"pipelines": {
 		"cluster":      {NewName: "clusters"},
@@ -570,9 +573,6 @@ var TerraformOnlyFields = map[string]FieldSet{
 		"endpoint_url":        {},
 		"serving_endpoint_id": {},
 	},
-	"models": {
-		"registered_model_id": {},
-	},
 	"pipelines": {
 		"expected_last_modified": {},
 		"url":                    {},
@@ -618,6 +618,9 @@ var DABsToTerraformRenameMap = map[string]RenameTree{
 			"libraries": {NewName: "library"},
 		}},
 	},
+	"models": {
+		"model_id": {NewName: "registered_model_id"},
+	},
 	"pipelines": {
 		"clusters":      {NewName: "cluster"},
 		"libraries":     {NewName: "library"},
@@ -636,4 +639,68 @@ var DABsToTerraformWrappers = map[string]string{
 	"postgres_projects":      "spec",
 	"postgres_roles":         "spec",
 	"postgres_synced_tables": "spec",
+}
+
+// DABsToTerraformWrapperFields maps DABs group name → first-level DABs field names that
+// live under the TF wrapper. For wrapper groups, a DABs path is prefixed with the wrapper
+// in DABsPathToTerraform only when its first segment appears here.
+var DABsToTerraformWrapperFields = map[string]FieldSet{
+	"postgres_branches": {
+		"expire_time":        {},
+		"is_protected":       {},
+		"no_expiry":          {},
+		"source_branch":      {},
+		"source_branch_lsn":  {},
+		"source_branch_time": {},
+		"ttl":                {},
+	},
+	"postgres_catalogs": {
+		"branch":                     {},
+		"create_database_if_missing": {},
+		"postgres_database":          {},
+	},
+	"postgres_databases": {
+		"postgres_database": {},
+		"role":              {},
+	},
+	"postgres_endpoints": {
+		"autoscaling_limit_max_cu": {},
+		"autoscaling_limit_min_cu": {},
+		"disabled":                 {},
+		"endpoint_type":            {},
+		"group":                    {},
+		"no_suspension":            {},
+		"settings":                 {},
+		"suspend_timeout_duration": {},
+	},
+	"postgres_projects": {
+		"budget_policy_id":           {},
+		"custom_tags":                {},
+		"default_branch":             {},
+		"default_endpoint_settings":  {},
+		"display_name":               {},
+		"enable_pg_native_login":     {},
+		"history_retention_duration": {},
+		"pg_version":                 {},
+	},
+	"postgres_roles": {
+		"attributes":       {},
+		"auth_method":      {},
+		"identity_type":    {},
+		"membership_roles": {},
+		"postgres_role":    {},
+	},
+	"postgres_synced_tables": {
+		"accelerated_sync":                   {},
+		"branch":                             {},
+		"create_database_objects_if_missing": {},
+		"existing_pipeline_id":               {},
+		"new_pipeline_spec":                  {},
+		"postgres_database":                  {},
+		"primary_key_columns":                {},
+		"scheduling_policy":                  {},
+		"source_table_full_name":             {},
+		"timeseries_key":                     {},
+		"type_overrides":                     {},
+	},
 }
