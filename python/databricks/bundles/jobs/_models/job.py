@@ -121,7 +121,7 @@ class Job(Resource):
 
     lifecycle: VariableOrOptional[Lifecycle] = None
     """
-    Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+    Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
     """
 
     max_concurrent_runs: VariableOrOptional[int] = None
@@ -277,7 +277,7 @@ class JobDict(TypedDict, total=False):
 
     lifecycle: VariableOrOptional[LifecycleParam]
     """
-    Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+    Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
     """
 
     max_concurrent_runs: VariableOrOptional[int]
