@@ -7,6 +7,7 @@
 ### CLI
 
 ### Bundles
+* `bundle validate` now warns when a job defines a `continuous` block without `continuous.task_retry_mode`, since it defaults to `NEVER` and the continuous job's tasks are not retried on failure ([#5691](https://github.com/databricks/cli/pull/5691)).
 * Add documentation for the common bundle resource fields `permissions`, `lifecycle`, and `grants` in the JSON schema, so they surface in editor completions and the docs.
 * `bundle run` now prints the modern job run URL (`/jobs/<id>/runs/<id>`) so that non-admin users permitted to view the run are taken to the run instead of the workspace homepage.
 * References to a registered model's `registered_model_id` now resolve under the direct engine, matching Terraform behavior ([#5621](https://github.com/databricks/cli/pull/5621)).
