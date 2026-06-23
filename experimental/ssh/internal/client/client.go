@@ -53,6 +53,16 @@ const (
 	minEnvironmentVersion    = 4
 )
 
+// acceleratorProvisioningNotice maps a GPU accelerator type to the upfront notice
+// shown while its serverless compute is provisioned. Latencies vary widely by type
+// (a single A10 is acquired in minutes; an 8xH100 node is ~10 min at P50 and can
+// exceed 30 min at P90), so the wording is tuned per type to set expectations
+// accurately. Types absent from this map fall back to a generic message.
+var acceleratorProvisioningNotice = map[string]string{
+	"GPU_1xA10":  "Provisioning GPU_1xA10 compute. This usually takes a few minutes, longer when capacity is constrained.",
+	"GPU_8xH100": "Provisioning GPU_8xH100 compute. This typically takes around 10 minutes and can exceed 30 minutes when capacity is constrained.",
+}
+
 type ClientOptions struct {
 	// Id of the cluster to connect to (for dedicated clusters)
 	ClusterID string
@@ -665,10 +675,16 @@ func checkClusterState(ctx context.Context, client *databricks.WorkspaceClient, 
 func waitForJobToStart(ctx context.Context, client *databricks.WorkspaceClient, runID int64, opts ClientOptions) error {
 	waitingMessage := "Waiting for compute to start..."
 	if opts.Accelerator != "" {
-		// GPU capacity is acquired on demand and routinely takes 10+ minutes; without
-		// this notice users assume a long PENDING wait means the service is down.
-		cmdio.LogString(ctx, fmt.Sprintf("Waiting for %s compute to be provisioned. This can take upwards of 10 minutes depending on capacity...", opts.Accelerator))
-		waitingMessage = fmt.Sprintf("Waiting for %s compute to be provisioned...", opts.Accelerator)
+		// GPU capacity is acquired on demand and the wait varies a lot by accelerator
+		// type; without this notice users assume a long PENDING wait means the service
+		// is down. Latencies differ enough between types that a single message would be
+		// misleading, so phrase the heads-up per accelerator with a generic fallback.
+		notice, ok := acceleratorProvisioningNotice[opts.Accelerator]
+		if !ok {
+			notice = fmt.Sprintf("Provisioning %s compute. This can take several minutes, longer when capacity is constrained.", opts.Accelerator)
+		}
+		cmdio.LogString(ctx, notice)
+		waitingMessage = fmt.Sprintf("Provisioning %s compute...", opts.Accelerator)
 	}
 
 	sp := cmdio.NewSpinner(ctx, cmdio.WithElapsedTime())
