@@ -130,32 +130,33 @@ func convertChangeDesc(path string, cd *deployplan.ChangeDesc) (*ConfigChangeDes
 	}, nil
 }
 
-// DetectChanges compares current remote state with the last deployed state
-// and returns a map of resource changes.
-func DetectChanges(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) (Changes, error) {
-	changes := make(Changes)
-
-	err := ensureSnapshotAvailable(ctx, b, engine)
-	if err != nil {
+// OpenDeploymentState returns the deployment bundle whose StateDB is open for
+// reading. For the direct engine the caller (process.go) has already opened
+// b.DeploymentBundle; for the terraform engine the config snapshot is opened
+// here. Both yield read-mode state, so GetResourceID and Data.State are usable.
+// Open the state once per command and pass it to CalculatePlan and
+// ResolveResourceSelectors so the terraform snapshot is read only once.
+func OpenDeploymentState(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) (*direct.DeploymentBundle, error) {
+	if err := ensureSnapshotAvailable(ctx, b, engine); err != nil {
 		return nil, fmt.Errorf("state snapshot not available: %w", err)
 	}
 
-	var deployBundle *direct.DeploymentBundle
 	if engine.IsDirect() {
-		// For direct engine, state is already opened by the caller (process.go).
-		deployBundle = &b.DeploymentBundle
-	} else {
-		deployBundle = &direct.DeploymentBundle{}
-		_, statePath := b.StateFilenameConfigSnapshot(ctx)
-		if err := deployBundle.StateDB.Open(ctx, statePath, dstate.WithRecovery(true), dstate.WithWrite(false)); err != nil {
-			return nil, fmt.Errorf("failed to open state: %w", err)
-		}
+		return &b.DeploymentBundle, nil
 	}
 
-	plan, err := deployBundle.CalculatePlan(ctx, b.WorkspaceClient(ctx), &b.Config)
-	if err != nil {
-		return nil, fmt.Errorf("failed to calculate plan: %w", err)
+	deployBundle := &direct.DeploymentBundle{}
+	_, statePath := b.StateFilenameConfigSnapshot(ctx)
+	if err := deployBundle.StateDB.Open(ctx, statePath, dstate.WithRecovery(true), dstate.WithWrite(false)); err != nil {
+		return nil, fmt.Errorf("failed to open state: %w", err)
 	}
+	return deployBundle, nil
+}
+
+// ExtractChanges extracts the map of remote-vs-config changes from a deploy
+// plan. engine selects the LocalEdit comparison below.
+func ExtractChanges(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, engine engine.EngineType) (Changes, error) {
+	changes := make(Changes)
 
 	for resourceKey, entry := range plan.Plan {
 		resourceChanges := make(ResourceChanges)
