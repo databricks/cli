@@ -31,7 +31,9 @@ func makeBundleWithFiles(t *testing.T, files map[string]string) *bundle.Bundle {
 		// WorktreeRoot = SyncRoot is the fallback used by LoadGitDetails when
 		// there is no git repository.
 		WorktreeRoot: root,
-		Config:       config.Root{},
+		Config: config.Root{
+			Bundle: config.Bundle{Target: "default"},
+		},
 	}
 }
 

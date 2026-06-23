@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/deploy/files"
 	"github.com/databricks/cli/libs/fileset"
 	libsync "github.com/databricks/cli/libs/sync"
 )
@@ -66,18 +67,16 @@ func SnapshotID(ctx context.Context, b *bundle.Bundle) (string, error) {
 }
 
 func addSyncRootToZip(ctx context.Context, zw *zip.Writer, b *bundle.Bundle) error {
-	files, err := libsync.GetFileList(ctx, libsync.SyncOptions{
-		WorktreeRoot: b.WorktreeRoot,
-		LocalRoot:    b.SyncRoot,
-		Paths:        b.Config.Sync.Paths,
-		Include:      b.Config.Sync.Include,
-		Exclude:      b.Config.Sync.Exclude,
-	})
+	opts, err := files.GetSyncOptions(ctx, b)
+	if err != nil {
+		return err
+	}
+	fileList, err := libsync.GetFileList(ctx, *opts)
 	if err != nil {
 		return err
 	}
 	// Sort for a stable zip (same content → same hash regardless of iteration order).
-	slices.SortFunc(files, func(a, b fileset.File) int {
+	slices.SortFunc(fileList, func(a, b fileset.File) int {
 		if a.Relative < b.Relative {
 			return -1
 		}
@@ -87,7 +86,7 @@ func addSyncRootToZip(ctx context.Context, zw *zip.Writer, b *bundle.Bundle) err
 		return 0
 	})
 
-	for _, f := range files {
+	for _, f := range fileList {
 		rc, err := b.SyncRoot.Open(f.Relative)
 		if err != nil {
 			return fmt.Errorf("open %s: %w", f.Relative, err)

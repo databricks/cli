@@ -112,4 +112,3 @@ func (c *snapshotAPIClient) Upload(ctx context.Context, bundleID, snapshotID str
 
 	return &SnapshotInfo{Path: resp.Snapshot.Path}, nil
 }
-
