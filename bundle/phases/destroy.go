@@ -107,10 +107,6 @@ func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, e
 		return
 	}
 
-	if b.Config.Bundle.Deployment.ImmutableFolder {
-		bundle.ApplyContext(ctx, b, snapshot.DeleteBundleSnapshots())
-	}
-
 	if !logdiag.HasError(ctx) {
 		cmdio.LogString(ctx, "Destroy complete!")
 	}
@@ -142,8 +138,7 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 
 	if b.Config.Bundle.Deployment.ImmutableFolder {
 		// Restore the snapshot path so that TranslateResourcePaths (for terraform, below)
-		// and DeleteBundleSnapshots (in destroyCore) know where the snapshot lives.
-		// Must run for both engines.
+		// knows where the snapshot lives. Must run for both engines.
 		bundle.ApplyContext(ctx, b, snapshot.LoadState())
 		if logdiag.HasError(ctx) {
 			return

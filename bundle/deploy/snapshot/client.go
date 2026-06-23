@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/textproto"
 
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/databricks-sdk-go"
 	databricksclient "github.com/databricks/databricks-sdk-go/client"
 )
@@ -19,17 +20,22 @@ type SnapshotInfo struct {
 	Path string
 }
 
+// ACLEntry is one element of the access_control_list sent to the snapshot API.
+// All entries are granted CAN_READ; the snapshot API does not support other levels.
+type ACLEntry struct {
+	UserName             string `json:"user_name,omitempty"`
+	GroupName            string `json:"group_name,omitempty"`
+	ServicePrincipalName string `json:"service_principal_name,omitempty"`
+	PermissionLevel      string `json:"permission_level"`
+}
+
 // SnapshotUploader abstracts the /api/2.0/repos/snapshots endpoint.
 // snapshotID is the content-addressed key supplied by the caller; the API uses
 // it as the final path component so that identical content always resolves to
 // the same workspace location.
 // This interface exists so the implementation can later be replaced with a Go SDK call.
 type SnapshotUploader interface {
-	Upload(ctx context.Context, bundleID, snapshotID, currentUser string, zipContent []byte) (*SnapshotInfo, error)
-	// Delete removes all snapshots for a bundle. The server is responsible for
-	// cleaning up the content-addressed storage; the caller does not need to
-	// know individual snapshot paths.
-	Delete(ctx context.Context, bundleID string) error
+	Upload(ctx context.Context, bundleID, snapshotID string, acl []ACLEntry, zipContent []byte) (*SnapshotInfo, error)
 }
 
 // snapshotAPIClient implements SnapshotUploader against /api/2.0/repos/snapshots.
@@ -54,9 +60,9 @@ func NewSnapshotUploader(w *databricks.WorkspaceClient) (SnapshotUploader, error
 }
 
 // Upload uploads zipContent as an immutable snapshot identified by snapshotID.
-// snapshotID is the SHA-256 of the files-only zip and is used by the server as
-// the content-addressed path component. currentUser is granted CAN_READ on the snapshot.
-func (c *snapshotAPIClient) Upload(ctx context.Context, bundleID, snapshotID, currentUser string, zipContent []byte) (*SnapshotInfo, error) {
+// snapshotID is the SHA-256 of the zip and is used by the server as the
+// content-addressed path component. acl grants CAN_READ to each listed principal.
+func (c *snapshotAPIClient) Upload(ctx context.Context, bundleID, snapshotID string, acl []ACLEntry, zipContent []byte) (*SnapshotInfo, error) {
 	var body bytes.Buffer
 	mw := multipart.NewWriter(&body)
 
@@ -67,14 +73,11 @@ func (c *snapshotAPIClient) Upload(ctx context.Context, bundleID, snapshotID, cu
 		return nil, fmt.Errorf("failed to write bundle_id: %w", err)
 	}
 
-	// The API requires an access_control_list granting the current user read access.
-	acl, err := json.Marshal([]map[string]string{
-		{"user_name": currentUser, "permission_level": "CAN_READ"},
-	})
+	aclJSON, err := json.Marshal(acl)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal access_control_list: %w", err)
 	}
-	if err := mw.WriteField("access_control_list", string(acl)); err != nil {
+	if err := mw.WriteField("access_control_list", string(aclJSON)); err != nil {
 		return nil, fmt.Errorf("failed to write access_control_list: %w", err)
 	}
 
@@ -93,9 +96,13 @@ func (c *snapshotAPIClient) Upload(ctx context.Context, bundleID, snapshotID, cu
 		return nil, fmt.Errorf("failed to finalize multipart body: %w", err)
 	}
 
-	headers := map[string]string{
-		"Content-Type": mw.FormDataContentType(),
+	// Workspace routing header is required so the server can locate the correct
+	// ASP (application service principal) that owns the snapshot directory.
+	headers := auth.WorkspaceIDHeaders(c.client.Config)
+	if headers == nil {
+		headers = make(map[string]string)
 	}
+	headers["Content-Type"] = mw.FormDataContentType()
 
 	var resp snapshotUploadResponse
 	err = c.client.Do(ctx, http.MethodPost, "/api/2.0/repos/snapshots", headers, nil, body.Bytes(), &resp)
@@ -106,7 +113,3 @@ func (c *snapshotAPIClient) Upload(ctx context.Context, bundleID, snapshotID, cu
 	return &SnapshotInfo{Path: resp.Snapshot.Path}, nil
 }
 
-// Delete deletes all snapshots for the given bundleID via DELETE /api/2.0/repos/snapshots/{bundleID}.
-func (c *snapshotAPIClient) Delete(ctx context.Context, bundleID string) error {
-	return c.client.Do(ctx, http.MethodDelete, "/api/2.0/repos/snapshots/"+bundleID, nil, nil, nil, nil)
-}

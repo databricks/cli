@@ -28,7 +28,3 @@ All files and directories at the following location will be deleted: /Workspace/
 
 Deleting files...
 Destroy complete!
-{
-  "method": "DELETE",
-  "path": "/api/2.0/repos/snapshots/test-bundle-immutable-no-artifacts-[UNIQUE_NAME]"
-}

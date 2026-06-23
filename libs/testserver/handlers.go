@@ -594,10 +594,6 @@ func AddDefaultHandlers(server *Server) {
 		}
 	})
 
-	server.Handle("DELETE", "/api/2.0/repos/snapshots/{bundle_id}", func(req Request) any {
-		return Response{StatusCode: http.StatusNoContent}
-	})
-
 	// SQL Warehouses:
 
 	server.Handle("GET", "/api/2.0/sql/warehouses/{warehouse_id}", func(req Request) any {

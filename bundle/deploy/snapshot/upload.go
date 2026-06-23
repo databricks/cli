@@ -46,7 +46,8 @@ func (m *snapshotUpload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 	snapshotID := IDFromContent(zipContent)
 	log.Debugf(ctx, "snapshot.Upload: snapshotID=%s zip=%d bytes", snapshotID, len(zipContent))
 
-	info, err := uploader.Upload(ctx, b.Config.Bundle.Name, snapshotID, b.Config.Workspace.CurrentUser.UserName, zipContent)
+	acl := BuildACL(b)
+	info, err := uploader.Upload(ctx, b.Config.Bundle.Name, snapshotID, acl, zipContent)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -63,4 +64,22 @@ func (m *snapshotUpload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 	}
 
 	return nil
+}
+
+// BuildACL constructs the access_control_list for the snapshot upload.
+// It grants CAN_READ to the current user and to every principal listed in the
+// top-level permissions section of the bundle config.
+func BuildACL(b *bundle.Bundle) []ACLEntry {
+	acl := []ACLEntry{
+		{UserName: b.Config.Workspace.CurrentUser.UserName, PermissionLevel: "CAN_READ"},
+	}
+	for _, p := range b.Config.Permissions {
+		acl = append(acl, ACLEntry{
+			UserName:             p.UserName,
+			GroupName:            p.GroupName,
+			ServicePrincipalName: p.ServicePrincipalName,
+			PermissionLevel:      "CAN_READ",
+		})
+	}
+	return acl
 }

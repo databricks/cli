@@ -26,12 +26,6 @@ Deployment complete!
   "/Workspace/Users/[UUID]/.snapshots/test-bundle-immutable-[UNIQUE_NAME]/[SNAPSHOT_HASH]/src/artifacts/.internal/immutable-0.0.1-py3-none-any.whl"
 ]
 
->>> [CLI] bundle run my_job
-Run URL: [DATABRICKS_URL]/jobs/[NUMID]/runs/[NUMID]?o=[NUMID]
-
-[TIMESTAMP] "my job" RUNNING
-[TIMESTAMP] "my job" TERMINATED SUCCESS
-
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.jobs.my_job

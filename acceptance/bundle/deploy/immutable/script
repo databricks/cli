@@ -14,4 +14,5 @@ trace $CLI jobs get $JOB_ID | jq '.settings.tasks' | jq '.[] | select(.spark_pyt
 trace $CLI jobs get $JOB_ID | jq '.settings.tasks' | jq '.[] | select(.notebook_task != null) | .notebook_task.notebook_path'
 trace $CLI jobs get $JOB_ID | jq '.settings.environments[0].spec.dependencies'
 
-trace $CLI bundle run my_job
+# Redirect run output to a log file — the real workspace produces different output than the local test server.
+$CLI bundle run my_job &> LOG.run
