@@ -198,6 +198,53 @@ func TestHostKeyChangedHint(t *testing.T) {
 	}
 }
 
+func TestBuildRemoteShellArgs(t *testing.T) {
+	const bashCmd = `command -v bash >/dev/null 2>&1 && exec bash -l || exec "${SHELL:-/bin/sh}" -l`
+
+	t.Run("interactive returns login bash command", func(t *testing.T) {
+		args := buildRemoteShellArgs(ClientOptions{})
+		require.Len(t, args, 1)
+		assert.Equal(t, bashCmd, args[0])
+	})
+
+	t.Run("non-interactive passes additional args verbatim", func(t *testing.T) {
+		additional := []string{"ls", "-la"}
+		args := buildRemoteShellArgs(ClientOptions{AdditionalArgs: additional})
+		assert.Equal(t, additional, args)
+	})
+}
+
+func TestBuildSSHArgsPTYPlacement(t *testing.T) {
+	indexOf := func(args []string, want string) int {
+		for i, a := range args {
+			if a == want {
+				return i
+			}
+		}
+		return -1
+	}
+
+	t.Run("interactive forces a PTY before the destination", func(t *testing.T) {
+		args := buildSSHArgs("user", "/key", "proxy command", "myhost", ClientOptions{})
+		ptyIdx := indexOf(args, "-t")
+		hostIdx := indexOf(args, "myhost")
+		require.NotEqual(t, -1, ptyIdx, "-t must be present for interactive sessions")
+		require.NotEqual(t, -1, hostIdx)
+		assert.Less(t, ptyIdx, hostIdx, "-t must precede the destination host")
+		// The remote command is the final arg, after the host.
+		assert.Greater(t, len(args)-1, hostIdx)
+		assert.Contains(t, args[len(args)-1], "exec bash -l")
+	})
+
+	t.Run("non-interactive does not force a PTY", func(t *testing.T) {
+		args := buildSSHArgs("user", "/key", "proxy command", "myhost", ClientOptions{AdditionalArgs: []string{"ls", "-la"}})
+		assert.Equal(t, -1, indexOf(args, "-t"), "no PTY for non-interactive passthrough")
+		hostIdx := indexOf(args, "myhost")
+		require.NotEqual(t, -1, hostIdx)
+		assert.Equal(t, []string{"ls", "-la"}, args[hostIdx+1:], "additional args follow the host verbatim")
+	})
+}
+
 func TestTailWriterRetainsTail(t *testing.T) {
 	t.Run("retains only the tail", func(t *testing.T) {
 		w := &tailWriter{maxBytes: 4}

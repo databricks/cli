@@ -6,6 +6,7 @@
 
 ### CLI
 * `workspace export-dir` no longer aborts when a workspace object's name is not a legal local filename (e.g. a notebook named `New Notebook 2026-05-04 13:54:24` whose `:` is illegal on Windows). Such files are now exported under a sanitized name with a warning and the export completes ([#5171](https://github.com/databricks/cli/issues/5171)).
+* `ssh connect` now opens an interactive `bash` login shell by default instead of the compute image's default `/bin/sh`, falling back gracefully when `bash` is unavailable. Passing an explicit remote command (`-- <cmd>`) is unaffected ([#5687](https://github.com/databricks/cli/pull/5687)).
 
 ### Bundles
 * Add documentation for the common bundle resource fields `permissions`, `lifecycle`, and `grants` in the JSON schema, so they surface in editor completions and the docs.
