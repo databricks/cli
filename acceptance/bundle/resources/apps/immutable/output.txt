@@ -1,0 +1,42 @@
+
+>>> [CLI] bundle deploy
+Uploading immutable bundle snapshot...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] bundle run my_app
+✓ Getting the status of the app my-immutable-app
+✓ App is in RUNNING state
+✓ App compute is in STOPPED state
+✓ Starting the app my-immutable-app
+✓ App is starting...
+✓ App is started!
+✓ Deployment succeeded
+You can access the app at my-immutable-app-123.cloud.databricksapps.com
+
+>>> print_requests.py //apps
+{
+  "method": "POST",
+  "path": "/api/2.0/apps",
+  "q": {
+    "no_compute": "true"
+  },
+  "body": {
+    "description": "",
+    "name": "my-immutable-app"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/apps/my-immutable-app/start",
+  "body": {}
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/apps/my-immutable-app/deployments",
+  "body": {
+    "mode": "SNAPSHOT",
+    "source_code_path": "/Workspace/Users/[UUID]/.snapshots/test-bundle-immutable-app-[UNIQUE_NAME]/[SNAPSHOT_HASH]/src/files/app"
+  }
+}

@@ -1,0 +1,22 @@
+Local = true
+Cloud = false
+RecordRequests = true
+
+# EnvMatrix here inherits the default DATABRICKS_BUNDLE_ENGINE matrix.
+# Override to opt out because immutable_folder is engine-agnostic and
+# running both variants would produce identical output but double the cost.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+
+Ignore = [
+    "databricks.yml",
+    ".databricks",
+    ".venv",
+    "script",
+    "*.pyc",
+]
+
+# Normalize the content-addressed snapshot hash so the test doesn't need
+# to be updated whenever the bundle content changes.
+[[Repls]]
+Old = '[0-9a-f]{64}'
+New = '[SNAPSHOT_HASH]'
