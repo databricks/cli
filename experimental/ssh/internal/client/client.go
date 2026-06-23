@@ -629,6 +629,10 @@ func shellSingleQuote(s string) string {
 //
 // For the non-interactive case (e.g. `databricks ssh connect ... -- ls -la`),
 // the user's command is returned verbatim so behavior is unchanged.
+//
+// Note: this returns the remote command only. PTY allocation (-t) is added to
+// the ssh options *before* the destination by the caller; -t placed after the
+// host would be parsed as part of the remote command, not as ssh's flag.
 func buildRemoteShellArgs(opts ClientOptions, wsHome string) []string {
 	if len(opts.AdditionalArgs) > 0 {
 		return opts.AdditionalArgs
@@ -637,7 +641,32 @@ func buildRemoteShellArgs(opts ClientOptions, wsHome string) []string {
 	if wsHome != "" {
 		cmd = "cd " + shellSingleQuote(wsHome) + " 2>/dev/null; " + cmd
 	}
-	return []string{"-t", cmd}
+	return []string{cmd}
+}
+
+// buildSSHArgs assembles the argument list for the ssh client. Options come
+// first, then the destination host, then the remote command (if any). PTY
+// allocation (-t) for the interactive case is added before the host: ssh stops
+// parsing options at the destination, so a -t placed after the host would be
+// treated as part of the remote command rather than as ssh's force-PTY flag.
+func buildSSHArgs(userName, privateKeyPath, proxyCommand, hostName, wsHome string, opts ClientOptions) []string {
+	sshArgs := []string{
+		"-l", userName,
+		"-i", privateKeyPath,
+		"-o", "IdentitiesOnly=yes",
+		"-o", "StrictHostKeyChecking=accept-new",
+		"-o", "ConnectTimeout=360",
+		"-o", "ProxyCommand=" + proxyCommand,
+	}
+	if opts.UserKnownHostsFile != "" {
+		sshArgs = append(sshArgs, "-o", "UserKnownHostsFile="+opts.UserKnownHostsFile)
+	}
+	if len(opts.AdditionalArgs) == 0 {
+		sshArgs = append(sshArgs, "-t")
+	}
+	sshArgs = append(sshArgs, hostName)
+	sshArgs = append(sshArgs, buildRemoteShellArgs(opts, wsHome)...)
+	return sshArgs
 }
 
 func spawnSSHClient(ctx context.Context, client *databricks.WorkspaceClient, userName, privateKeyPath string, serverPort int, clusterID string, opts ClientOptions) error {
@@ -652,20 +681,9 @@ func spawnSSHClient(ctx context.Context, client *databricks.WorkspaceClient, use
 
 	hostName := opts.SessionIdentifier()
 
-	sshArgs := []string{
-		"-l", userName,
-		"-i", privateKeyPath,
-		"-o", "IdentitiesOnly=yes",
-		"-o", "StrictHostKeyChecking=accept-new",
-		"-o", "ConnectTimeout=360",
-		"-o", "ProxyCommand=" + proxyCommand,
-	}
-	if opts.UserKnownHostsFile != "" {
-		sshArgs = append(sshArgs, "-o", "UserKnownHostsFile="+opts.UserKnownHostsFile)
-	}
-	// For an interactive session, land the shell in the user's workspace home folder
-	// (/Workspace/Users/<email>) instead of the OS home. Only needed when no remote
-	// command is given; skip the lookup otherwise.
+	// For an interactive session (no remote command supplied), land the shell in
+	// the user's workspace home folder (/Workspace/Users/<email>) instead of the
+	// OS home. Only needed for an interactive session; skip the lookup otherwise.
 	var wsHome string
 	if len(opts.AdditionalArgs) == 0 {
 		if currentUser, err := client.CurrentUser.Me(ctx, iam.MeRequest{}); err != nil {
@@ -675,8 +693,7 @@ func spawnSSHClient(ctx context.Context, client *databricks.WorkspaceClient, use
 		}
 	}
 
-	sshArgs = append(sshArgs, hostName)
-	sshArgs = append(sshArgs, buildRemoteShellArgs(opts, wsHome)...)
+	sshArgs := buildSSHArgs(userName, privateKeyPath, proxyCommand, hostName, wsHome, opts)
 
 	log.Debugf(ctx, "Launching SSH client: ssh %s", strings.Join(sshArgs, " "))
 	sshCmd := exec.CommandContext(ctx, "ssh", sshArgs...)
