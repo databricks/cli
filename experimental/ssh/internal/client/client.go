@@ -661,7 +661,11 @@ Databricks serverless cluster.
 - DATABRICKS_TOKEN is a static session token that may expire during a long session; if
   "databricks" calls start failing with auth errors, the session likely needs reconnecting.
 - You can run shell commands and use the "databricks" CLI to explore the workspace
-  (clusters, jobs, Unity Catalog, DBFS, etc.).`, cwd)
+  (clusters, jobs, Unity Catalog, DBFS, etc.).
+- If the user asks to set up a new project, suggest scaffolding it with "databricks bundle
+  init" (Databricks Asset Bundles / DABs). If the project needs any resources deployed
+  (jobs, pipelines, serving endpoints, etc.), define them in the bundle and deploy via
+  "databricks bundle deploy" rather than creating them ad hoc.`, cwd)
 
 	return fmt.Sprintf(`export PATH="$HOME/.local/bin:$PATH"
 command -v claude >/dev/null 2>&1 || curl -fsSL https://claude.ai/install.sh | bash
