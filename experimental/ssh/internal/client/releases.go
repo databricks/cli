@@ -2,16 +2,21 @@ package client
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"io/fs"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/databricks/cli/experimental/ssh/internal/workspace"
+	"github.com/databricks/cli/internal/build"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
@@ -34,8 +39,109 @@ func UploadTunnelReleases(ctx context.Context, client *databricks.WorkspaceClien
 	getRelease := getGithubRelease
 	if releasesDir != "" {
 		getRelease = getLocalRelease
+	} else if strings.Contains(version, "dev") {
+		// Dev/snapshot builds have no GitHub Release to download the server
+		// binary from, so fetch it from the branch's GitHub Actions build
+		// instead. This lets `ssh connect` work out of the box on a bugbash
+		// build without the caller passing --releases-dir.
+		cmdio.LogString(ctx, "Snapshot build detected, downloading Linux binaries from GitHub Actions...")
+		snapshotDir, cleanup, err := prepareSnapshotReleases(ctx)
+		if err != nil {
+			return fmt.Errorf("failed to prepare snapshot releases: %w", err)
+		}
+		defer cleanup()
+		releasesDir = snapshotDir
+		getRelease = getLocalRelease
 	}
 	return uploadReleases(ctx, workspaceFiler, getRelease, version, releasesDir)
+}
+
+// prepareSnapshotReleases downloads the release-build "cli" artifact for the
+// current branch from GitHub Actions and returns the directory containing the
+// per-arch zips (databricks_cli_linux_<arch>.zip), plus a cleanup function.
+// The artifact already ships those zips, so they can be used as a releases dir
+// directly. Requires the GitHub CLI (`gh`).
+func prepareSnapshotReleases(ctx context.Context) (string, func(), error) {
+	if _, err := exec.LookPath("gh"); err != nil {
+		return "", nil, fmt.Errorf("the GitHub CLI (gh) is required to download snapshot builds: %w", err)
+	}
+
+	branch := build.GetInfo().Branch
+	if branch == "" || branch == "undefined" {
+		// Binary not built with GoReleaser (e.g. `go build`); fall back to git.
+		out, err := exec.CommandContext(ctx, "git", "rev-parse", "--abbrev-ref", "HEAD").Output()
+		if err != nil {
+			return "", nil, fmt.Errorf("cannot determine branch: not set at build time and git failed: %w", err)
+		}
+		branch = strings.TrimSpace(string(out))
+	}
+
+	runID, err := findLatestSnapshotRunID(ctx, branch)
+	if err != nil {
+		return "", nil, err
+	}
+
+	tmpDir, err := os.MkdirTemp("", "cli-snapshot-*")
+	if err != nil {
+		return "", nil, fmt.Errorf("failed to create temp directory: %w", err)
+	}
+	cleanup := func() { os.RemoveAll(tmpDir) }
+
+	if err := downloadSnapshotArtifact(ctx, runID, tmpDir); err != nil {
+		cleanup()
+		return "", nil, err
+	}
+	return tmpDir, cleanup, nil
+}
+
+type ghRunEntry struct {
+	DatabaseID int    `json:"databaseId"`
+	Conclusion string `json:"conclusion"`
+}
+
+// findLatestSnapshotRunID finds the most recent successful release-build
+// workflow run for the given branch.
+func findLatestSnapshotRunID(ctx context.Context, branch string) (string, error) {
+	cmd := exec.CommandContext(ctx,
+		"gh", "run", "list",
+		"-b", branch,
+		"-w", "release-build",
+		"-R", "databricks/cli",
+		"--json", "databaseId,conclusion",
+		"--limit", "20",
+	)
+	out, err := cmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("failed to list GitHub Actions runs: %w", err)
+	}
+
+	var runs []ghRunEntry
+	if err := json.Unmarshal(out, &runs); err != nil {
+		return "", fmt.Errorf("failed to parse GitHub Actions run list: %w", err)
+	}
+
+	for _, r := range runs {
+		if r.Conclusion == "success" {
+			return strconv.Itoa(r.DatabaseID), nil
+		}
+	}
+
+	return "", fmt.Errorf("no successful release-build run found for branch %s", branch)
+}
+
+// downloadSnapshotArtifact downloads the "cli" artifact (which contains the
+// databricks_cli_<os>_<arch>.zip files) from the given GitHub Actions run.
+func downloadSnapshotArtifact(ctx context.Context, runID, destDir string) error {
+	cmd := exec.CommandContext(ctx,
+		"gh", "run", "download", runID,
+		"-n", "cli",
+		"-D", destDir,
+		"-R", "databricks/cli",
+	)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("failed to download snapshot artifact: %w\n%s", err, out)
+	}
+	return nil
 }
 
 func uploadReleases(ctx context.Context, workspaceFiler filer.Filer, getRelease releaseProvider, version, releasesDir string) error {
