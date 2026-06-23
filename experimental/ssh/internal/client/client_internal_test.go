@@ -221,6 +221,35 @@ func TestBuildRemoteShellArgs(t *testing.T) {
 		assert.Equal(t, additional, args)
 		assert.NotContains(t, args, "-t")
 	})
+
+	t.Run("ide claude bootstraps and launches ucode", func(t *testing.T) {
+		args := buildRemoteShellArgs(ClientOptions{IDE: claudeIDEOption}, "")
+		require.Len(t, args, 2)
+		assert.Equal(t, "-t", args[0])
+		assert.Equal(t, claudeRemoteBootstrap, args[1])
+		assert.Contains(t, args[1], "exec ucode claude")
+		assert.NotContains(t, args[1], "exec bash")
+	})
+
+	t.Run("ide claude cds into workspace home when set", func(t *testing.T) {
+		args := buildRemoteShellArgs(ClientOptions{IDE: claudeIDEOption}, "/Workspace/Users/me@example.com")
+		require.Len(t, args, 2)
+		assert.Equal(t, "-t", args[0])
+		assert.Equal(t, `cd '/Workspace/Users/me@example.com' 2>/dev/null; `+claudeRemoteBootstrap, args[1])
+	})
+
+	t.Run("ide claude with additional args passes them verbatim", func(t *testing.T) {
+		additional := []string{"echo", "hi"}
+		args := buildRemoteShellArgs(ClientOptions{IDE: claudeIDEOption, AdditionalArgs: additional}, "")
+		assert.Equal(t, additional, args)
+	})
+}
+
+func TestIsGUIIDE(t *testing.T) {
+	assert.True(t, (&ClientOptions{IDE: "vscode"}).isGUIIDE())
+	assert.True(t, (&ClientOptions{IDE: "cursor"}).isGUIIDE())
+	assert.False(t, (&ClientOptions{IDE: "claude"}).isGUIIDE())
+	assert.False(t, (&ClientOptions{IDE: ""}).isGUIIDE())
 }
 
 func TestTailWriterRetainsTail(t *testing.T) {

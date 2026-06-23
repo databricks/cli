@@ -75,7 +75,7 @@ func TestValidate(t *testing.T) {
 		{
 			name:    "invalid IDE value",
 			opts:    client.ClientOptions{ClusterID: "abc-123", IDE: "vim"},
-			wantErr: `invalid IDE value: "vim", expected "vscode" or "cursor"`,
+			wantErr: `invalid IDE value: "vim", expected "vscode", "cursor", or "claude"`,
 		},
 		{
 			name: "valid IDE vscode",
@@ -84,6 +84,10 @@ func TestValidate(t *testing.T) {
 		{
 			name: "valid IDE cursor",
 			opts: client.ClientOptions{ClusterID: "abc-123", IDE: "cursor"},
+		},
+		{
+			name: "valid IDE claude",
+			opts: client.ClientOptions{ClusterID: "abc-123", IDE: "claude"},
 		},
 		{
 			name:    "environment version too low",
