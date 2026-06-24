@@ -57,6 +57,7 @@ func BuildStateFromTF(
 		id, ok := tfIDs[node]
 		if !ok {
 			// Resource is in config but not in TF state (new resource); skip.
+			log.Infof(ctx, "%s: not found in terraform state, skipping", node)
 			continue
 		}
 
