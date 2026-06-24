@@ -13,7 +13,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// getData is the payload printed by `air get run`. The json-tagged fields form
+// getData is the payload printed by `air get`. The json-tagged fields form
 // the machine-readable output; fields tagged `json:"-"` are shown only in the
 // human-readable text view.
 type getData struct {
@@ -27,7 +27,7 @@ type getData struct {
 	MLflowURL       *string `json:"mlflow_url"`
 
 	// The fields below are pre-rendered text-view cells, excluded from JSON
-	// (matching `air get run --json`). Each shows "N/A" when its value is
+	// (matching `air get --json`). Each shows "N/A" when its value is
 	// missing. The styled single-run renderer (render.go) consumes them; the
 	// Run ID, Status, and MLflow Run cells it draws are styled and hyperlinked
 	// there rather than stored here.
@@ -63,20 +63,11 @@ Sweep Tasks:
 {{- end}}
 `
 
-// newGetCommand is the `get` parent group. Subcommands name the resource to
-// describe, e.g. `air get run JOB_RUN_ID`, mirroring the Python CLI.
+// newGetCommand returns the `air get JOB_RUN_ID` command, which shows status,
+// configuration, and timing details for a specific run.
 func newGetCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "get",
-		Short: "Show details for a specific resource",
-	}
-	cmd.AddCommand(newGetRunCommand())
-	return cmd
-}
-
-func newGetRunCommand() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "run JOB_RUN_ID",
+		Use:   "get JOB_RUN_ID",
 		Args:  root.ExactArgs(1),
 		Short: "Show status, configuration, and timing details for a specific run",
 		Annotations: map[string]string{

@@ -11,7 +11,7 @@ Usage:
 
 Available Commands:
   cancel         Cancel one or more runs
-  get            Show details for a specific resource
+  get            Show status, configuration, and timing details for a specific run
   list           List your recent runs (active and completed) for the current profile
   logs           Stream or fetch logs for a run
   register-image Mirror a Docker image into the workspace registry

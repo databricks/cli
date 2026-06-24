@@ -130,8 +130,8 @@ func renderRunText(ctx context.Context, out io.Writer, w *databricks.WorkspaceCl
 	// stdout is not a hyperlink-capable terminal (piped, redirected, NO_COLOR).
 	// In that case the OSC 8 hyperlinks on the Run ID / MLflow Run cells
 	// degrade to plain labels and the URLs would otherwise disappear from text
-	// output, breaking workflows like `air get run X > out.txt` or
-	// `NO_COLOR=1 air get run X` that the previous `Job Link:` line supported.
+	// output, breaking workflows like `air get X > out.txt` or
+	// `NO_COLOR=1 air get X` that the previous `Job Link:` line supported.
 	if view.dashboardURL != "" {
 		fmt.Fprintf(out, "Run URL:    %s\n", view.dashboardURL)
 	}
