@@ -102,11 +102,9 @@ func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, e
 
 	bundle.ApplyContext(ctx, b, files.Delete())
 
-	if logdiag.HasError(ctx) {
-		return
+	if !logdiag.HasError(ctx) {
+		cmdio.LogString(ctx, "Destroy complete!")
 	}
-
-	cmdio.LogString(ctx, "Destroy complete!")
 }
 
 // The destroy phase deletes artifacts and resources.
@@ -140,6 +138,7 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 			// Not resolving might lead to terraform "Reference to undeclared resource" error
 			mutator.ResolveVariableReferencesWithoutResources("artifacts"),
 			mutator.ResolveVariableReferencesOnlyResources("artifacts"),
+
 			terraform.Interpolate(),
 			terraform.Write(),
 			terraform.Plan(terraform.PlanGoal("destroy")),

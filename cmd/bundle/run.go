@@ -10,8 +10,6 @@ import (
 	"slices"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/config/mutator"
-	"github.com/databricks/cli/bundle/deploy/snapshot"
 	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/bundle/resources"
 	"github.com/databricks/cli/bundle/run"
@@ -173,19 +171,6 @@ Example usage:
 				return nil
 			},
 			PostStateFunc: func(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc) error {
-				if b.Config.Experimental != nil && b.Config.Experimental.ImmutableFolder {
-					// Restore workspace.snapshot_path from local state so that the
-					// ${workspace.snapshot_path} placeholders written by translate_paths
-					// resolve to the actual content-addressed remote paths before running.
-					bundle.ApplySeqContext(ctx, b,
-						snapshot.LoadState(),
-						mutator.ResolveVariableReferencesOnlyResources("workspace"),
-					)
-					if logdiag.HasError(ctx) {
-						return root.ErrAlreadyPrinted
-					}
-				}
-
 				runner, err := keyToRunner(b, key)
 				if err != nil {
 					return err

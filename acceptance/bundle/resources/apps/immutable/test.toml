@@ -1,5 +1,5 @@
 Local = true
-Cloud = false
+Cloud = false # Temporary disable cloud tests until the API is fully available
 RecordRequests = true
 
 # immutable_folder only works with the direct engine.

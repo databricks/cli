@@ -105,7 +105,6 @@ func (m *compute) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 
 	// Set file upload destination of the bundle in metadata
 	b.Metadata.Config.Workspace.FilePath = b.Config.Workspace.FilePath
-	b.Metadata.Config.Workspace.SnapshotPath = b.Config.Workspace.SnapshotPath
 	// In source-linked deployment files are not copied and resources use source files, therefore we use sync path as file path in metadata
 	if config.IsExplicitlyEnabled(b.Config.Presets.SourceLinkedDeployment) {
 		b.Metadata.Config.Workspace.FilePath = b.SyncRootPath

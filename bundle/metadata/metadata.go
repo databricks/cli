@@ -15,9 +15,6 @@ type Bundle struct {
 
 type Workspace struct {
 	FilePath string `json:"file_path"`
-	// SnapshotPath is the workspace path of the immutable snapshot uploaded
-	// during deployment. Only populated for bundles with bundle.immutable = true.
-	SnapshotPath string `json:"snapshot_path,omitempty"`
 }
 
 type Resource struct {

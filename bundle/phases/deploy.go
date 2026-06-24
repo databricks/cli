@@ -254,26 +254,6 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 
 func RunPlan(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) *deployplan.Plan {
 	if engine.IsDirect() {
-		// When planning in immutable mode, ${workspace.snapshot_path} placeholders
-		// written by translate_paths must be resolved before CalculatePlan parses
-		// the resource DAG. If snapshot.Upload() already ran (Deploy calls RunPlan
-		// after uploading), SnapshotPath is set and this is a no-op. When called
-		// standalone (bundle plan), we load the previous snapshot path from state.
-		// If no state exists yet (first deploy), SnapshotPath stays empty and
-		// ${workspace.snapshot_path} is left as a literal template for CalculatePlan
-		// to preserve in the plan output.
-		if b.IsImmutableFolder() && b.Config.Workspace.SnapshotPath == "" {
-			bundle.ApplySeqContext(ctx, b, snapshot.LoadState())
-			if logdiag.HasError(ctx) {
-				return nil
-			}
-			if b.Config.Workspace.SnapshotPath != "" {
-				bundle.ApplySeqContext(ctx, b, mutator.ResolveVariableReferencesOnlyResources("workspace"))
-				if logdiag.HasError(ctx) {
-					return nil
-				}
-			}
-		}
 		plan, err := b.DeploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(ctx), &b.Config)
 		if err != nil {
 			logdiag.LogError(ctx, err)

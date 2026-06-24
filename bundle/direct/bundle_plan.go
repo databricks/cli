@@ -973,9 +973,9 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 
 				targetNodeDP, _ := config.GetNodeAndType(targetPathParsed)
 				targetNode := targetNodeDP.String()
-				// Skip non-resource references (e.g. ${workspace.snapshot_path}).
-				// They are not resource cross-references and don't create DAG edges.
-				if targetNode == "" {
+				// ${workspace.snapshot_path} is resolved by the mutator pipeline after
+				// snapshot.Upload(), not by the direct engine — skip it here.
+				if targetPath == "workspace.snapshot_path" {
 					continue
 				}
 

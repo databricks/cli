@@ -53,10 +53,6 @@ type DeploymentState struct {
 
 	// UUID uniquely identifying the deployment.
 	ID uuid.UUID `json:"id"`
-
-	// SnapshotPath is the remote content-addressed path for immutable folder deployments.
-	// Empty for non-immutable deployments.
-	SnapshotPath string `json:"snapshot_path,omitempty"`
 }
 
 // We use this entry type as a proxy to fs.DirEntry.
