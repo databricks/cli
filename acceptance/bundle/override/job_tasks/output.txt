@@ -18,6 +18,7 @@
     },
     {
       "new_cluster": {
+        "num_workers": 0,
         "spark_version": "13.3.x-scala2.12"
       },
       "spark_python_task": {
@@ -42,6 +43,7 @@ Exit code: 1
   "tasks": [
     {
       "new_cluster": {
+        "num_workers": 0,
         "spark_version": "13.3.x-scala2.12"
       },
       "spark_python_task": {
