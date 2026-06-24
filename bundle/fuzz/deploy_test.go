@@ -61,21 +61,6 @@ func captureJobCreate(ctx context.Context, t *testing.T, job *resources.Job, eng
 	return body, nil
 }
 
-// compareJobEngines deploys job under both engines and returns the create-payload
-// differences that are not covered by DefaultIgnorePaths. An empty result means
-// the engines produced equivalent create payloads.
-func compareJobEngines(ctx context.Context, t *testing.T, job *resources.Job) ([]Difference, error) {
-	direct, err := captureJobCreate(ctx, t, job, "direct")
-	if err != nil {
-		return nil, fmt.Errorf("capturing direct payload: %w", err)
-	}
-	terraform, err := captureJobCreate(ctx, t, job, "terraform")
-	if err != nil {
-		return nil, fmt.Errorf("capturing terraform payload: %w", err)
-	}
-	return DiffPayloads(direct, terraform, DefaultIgnorePaths)
-}
-
 // writeJobBundle writes a minimal databricks.yml describing a single job. The
 // document is emitted as JSON, which is valid YAML, so we can reuse the job's
 // own JSON marshaling (which honors ForceSendFields) without a YAML dependency.
