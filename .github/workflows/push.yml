@@ -391,6 +391,8 @@ jobs:
     permissions:
       id-token: write
       contents: read
+      # Needed by the failure-reporting step below to open/comment a tracking issue.
+      issues: write
 
     steps:
       - name: Checkout repository and submodules
@@ -418,6 +420,41 @@ jobs:
         run: |
           export FUZZ_SEED_OFFSET=$(( GITHUB_RUN_NUMBER * FUZZ_SEEDS ))
           go tool -modfile=tools/task/go.mod task test-fuzz
+
+      # This job is intentionally excluded from test-result, so a failure here is
+      # invisible unless someone watches the Actions tab. Surface it as a GitHub
+      # issue instead. Reuse a single open issue (deduped by label) so a recurring
+      # divergence doesn't open one issue per night.
+      - name: Report failure
+        if: ${{ failure() }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh label create fuzz-nightly \
+            --description "Nightly terraform/direct create-payload parity failures" \
+            --color FBCA04 2>/dev/null || true
+
+          body=$(cat <<EOF
+          The nightly terraform/direct create-payload parity job (\`task test-fuzz\`) failed.
+
+          Run: $RUN_URL
+
+          The failing seed(s) are printed in the job log as \`reproduce with: FUZZ_SEED=<n>\`.
+          Reproduce locally with:
+
+          \`\`\`
+          FUZZ_SEED=<seed> go test ./bundle/fuzz -run TestJobCreateParity
+          \`\`\`
+          EOF
+          )
+
+          existing=$(gh issue list --state open --label fuzz-nightly --json number --jq '.[0].number')
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body "$body"
+          else
+            gh issue create --title "Nightly fuzz parity failure" --label fuzz-nightly --body "$body"
+          fi
 
   # This job groups the result of all the above test jobs.
   # It is a required check, so it blocks auto-merge and the merge queue.
