@@ -3,7 +3,7 @@
 ## [Unreleased]
 
 ### Bundles
-* direct: Fix spurious cluster recreate when `apply_policy_default_values: true` is set; the field is accepted by the API on create but not returned by GET, so the engine previously saw it as drifted on every subsequent deploy ([#5693](https://github.com/databricks/cli/pull/5693)).
+* direct: Fix spurious cluster recreate when `apply_policy_default_values: true` is set ([#5693](https://github.com/databricks/cli/pull/5693)).
 
 ## Release v1.4.0 (2026-06-17)
 
