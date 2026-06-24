@@ -8,6 +8,7 @@ import (
 	"path"
 	"strings"
 
+	"github.com/databricks/databricks-sdk-go/service/bundle"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -65,6 +66,12 @@ func AddDefaultHandlers(server *Server) {
 				},
 			},
 		}
+	})
+
+	// Deployment metadata service (DMS): record resource operations. The parent
+	// is "deployments/{id}/versions/{n}", so the path tail is captured wholesale.
+	server.Handle("POST", "/api/2.0/bundle/{path...}", func(req Request) any {
+		return bundle.Operation{}
 	})
 
 	server.Handle("GET", "/api/2.0/preview/scim/v2/Me", func(req Request) any {

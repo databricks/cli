@@ -96,8 +96,15 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 				}
 				return true
 			}
+			// Read the ID before Destroy: it removes the entry from state.
+			deletedID := b.StateDB.GetResourceID(resourceKey)
 			err = d.Destroy(ctx, &b.StateDB)
 			if err != nil {
+				logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
+				return false
+			}
+			// state is nil: the resource no longer exists after a delete.
+			if err := b.recordOperation(ctx, resourceKey, deployplan.Delete, deletedID, nil); err != nil {
 				logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
 				return false
 			}
@@ -139,6 +146,15 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 			if err != nil {
 				logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
 				return false
+			}
+
+			// Record the operation with DMS. Migration only mirrors existing
+			// state into the local store; there is no operation to report.
+			if !migrateMode {
+				if err := b.recordOperation(ctx, resourceKey, action, b.StateDB.GetResourceID(resourceKey), sv.Value); err != nil {
+					logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
+					return false
+				}
 			}
 		}
 
@@ -206,6 +222,16 @@ func (b *DeploymentBundle) LookupReferencePostDeploy(ctx context.Context, path *
 	}
 
 	return structaccess.Get(remoteState, fieldPath)
+}
+
+// recordOperation reports a completed resource operation to DMS. It is a no-op
+// unless the bundle is opted into managed state (OpRec is set). state is the
+// serialized config after the operation and must be nil for deletes.
+func (b *DeploymentBundle) recordOperation(ctx context.Context, resourceKey string, action deployplan.ActionType, resourceID string, state any) error {
+	if b.OpRec == nil {
+		return nil
+	}
+	return b.OpRec.record(ctx, resourceKey, action, resourceID, state)
 }
 
 func jsonDump(obj any) string {
