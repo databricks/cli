@@ -10,6 +10,6 @@ resources:
         - principal: ${workspace.current_user.userName}
           privileges:
             - USE_SCHEMA
-        - principal: extra@example.test  # TO_REMOVE
-          privileges:  # TO_REMOVE
-            - CREATE_TABLE  # TO_REMOVE
+        - principal: extra@example.test # TO_REMOVE
+          privileges: # TO_REMOVE
+            - CREATE_TABLE # TO_REMOVE
