@@ -25,6 +25,7 @@ import (
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
 )
 
 var errDelayed = errors.New("must be resolved after apply")
@@ -161,7 +162,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 				return adapter.DoRead(ctx, id)
 			})
 			if err != nil {
-				if isResourceGone(err) {
+				if apierr.IsMissing(err) {
 					// no such resource
 					plan.RemoveEntry(resourceKey)
 				} else {
@@ -218,7 +219,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			return adapter.DoRead(ctx, dbentry.ID)
 		})
 		if err != nil {
-			if isResourceGone(err) {
+			if apierr.IsMissing(err) {
 				remoteState = nil
 			} else {
 				logdiag.LogError(ctx, fmt.Errorf("%s: reading id=%q: %w", errorPrefix, dbentry.ID, err))
@@ -1027,6 +1028,12 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 	}
 
 	return p, nil
+}
+
+// ExtractReferences extracts all variable references from the config subtree rooted at node.
+// Returns a map from structpath string (field path within the resource) to template string.
+func ExtractReferences(root dyn.Value, node string) (map[string]string, error) {
+	return extractReferences(root, node)
 }
 
 func extractReferences(root dyn.Value, node string) (map[string]string, error) {
