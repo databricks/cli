@@ -1,0 +1,34 @@
+# Deploy a fresh bundle with one job — DMS records a single CREATE operation.
+trace $CLI bundle deploy
+
+# Drop the local cache so the next deploy re-reads state from DMS via ListResources.
+rm -rf .databricks
+
+# Add a second job and redeploy. The new deploy should:
+#  - read existing state from DMS,
+#  - skip job_a (no change),
+#  - create job_b and report exactly one CREATE operation under version 2.
+cat > databricks.yml << 'EOF'
+bundle:
+  name: dms-add-resources
+
+resources:
+  jobs:
+    job_a:
+      name: job-a
+    job_b:
+      name: job-b
+EOF
+trace $CLI bundle deploy
+
+# Drop the cache one more time and run plan — both resources should show as
+# unchanged because their reported state matches the local config.
+rm -rf .databricks
+trace $CLI bundle plan
+
+# Inspect the recorded DMS traffic. Expect:
+#  - Deploy 1: CreateDeployment + CreateVersion(1) + CreateOperation(job_a, CREATE) + CompleteVersion(1)
+#  - Deploy 2: ListResources + GetDeployment + CreateVersion(2) + CreateOperation(job_b, CREATE) + CompleteVersion(2)
+#  - Plan:    ListResources
+trace print_requests.py --get //bundle ^//workspace-files ^//import-file
+print_requests.py --get > /dev/null 2>&1 || true

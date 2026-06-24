@@ -40,6 +40,10 @@ func (b *DeploymentBundle) init(client *databricks.WorkspaceClient) error {
 
 // ValidatePlanAgainstState validates that a plan's lineage and serial match the given state.
 // If the plan has no lineage (first deployment), validation is skipped.
+//
+// Serialized plans are not yet supported with the deployment metadata
+// service. When that lands, an equivalent check will be needed against the
+// server-side deployment_id + version_id pair.
 func ValidatePlanAgainstState(stateDB *dstate.DeploymentState, plan *deployplan.Plan) error {
 	if plan.Lineage == "" {
 		return nil

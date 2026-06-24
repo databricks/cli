@@ -1,0 +1,7 @@
+bundle:
+  name: dms-sequential-deploys
+
+resources:
+  jobs:
+    test_job:
+      name: test-job

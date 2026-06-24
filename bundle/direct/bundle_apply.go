@@ -22,6 +22,14 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 		panic("Planning is not done")
 	}
 
+	// Migrate mode rewrites local state in-place and does not call resource
+	// adapters, so there are no operations to report. Reject the combination
+	// rather than silently dropping migrations from the DMS view.
+	if migrateMode && b.OperationReporter != nil {
+		logdiag.LogError(ctx, errors.New("migration is not supported with the deployment metadata service"))
+		return
+	}
+
 	if len(plan.Plan) == 0 {
 		// Avoid creating state file if nothing to deploy
 		return
@@ -96,7 +104,19 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 				}
 				return true
 			}
+
+			// Capture the resource ID before Destroy clears it from state so
+			// the DMS report carries a usable resource_id.
+			var deleteResourceID string
+			if b.OperationReporter != nil {
+				deleteResourceID = b.StateDB.GetResourceID(resourceKey)
+			}
+
 			err = d.Destroy(ctx, &b.StateDB)
+			if reportErr := b.reportOperation(ctx, resourceKey, deleteResourceID, action, err, nil); reportErr != nil {
+				logdiag.LogError(ctx, fmt.Errorf("%s: failed to report operation: %w", errorPrefix, reportErr))
+				return false
+			}
 			if err != nil {
 				logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
 				return false
@@ -134,6 +154,30 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 			} else {
 				// TODO: redo calcDiff to downgrade planned action if possible (?)
 				err = d.Deploy(ctx, &b.StateDB, sv.Value, action, entry)
+			}
+
+			// Report the operation outcome to DMS (if enabled). On success
+			// we report the post-deploy resource ID + the new local state;
+			// on failure we report the action and error message and omit
+			// the state payload (matches OPERATION_STATUS_FAILED conventions).
+			// migrateMode is rejected up-front above when DMS is enabled, so
+			// it's safe to always go through reportOperation here.
+			if b.OperationReporter != nil {
+				var reportState json.RawMessage
+				var reportID string
+				if err == nil {
+					reportID = b.StateDB.GetResourceID(resourceKey)
+					stateBytes, marshalErr := json.Marshal(sv.Value)
+					if marshalErr != nil {
+						logdiag.LogError(ctx, fmt.Errorf("%s: marshalling state for report: %w", errorPrefix, marshalErr))
+						return false
+					}
+					reportState = stateBytes
+				}
+				if reportErr := b.reportOperation(ctx, resourceKey, reportID, action, err, reportState); reportErr != nil {
+					logdiag.LogError(ctx, fmt.Errorf("%s: failed to report operation: %w", errorPrefix, reportErr))
+					return false
+				}
 			}
 
 			if err != nil {
@@ -206,6 +250,23 @@ func (b *DeploymentBundle) LookupReferencePostDeploy(ctx context.Context, path *
 	}
 
 	return structaccess.Get(remoteState, fieldPath)
+}
+
+// reportOperation forwards a single resource operation outcome to the
+// configured OperationReporter (if any). Returning nil when the reporter is
+// unset lets callers invoke this unconditionally and keeps the DMS-off path
+// identical to before.
+func (b *DeploymentBundle) reportOperation(
+	ctx context.Context,
+	resourceKey, resourceID string,
+	action deployplan.ActionType,
+	operationErr error,
+	state json.RawMessage,
+) error {
+	if b.OperationReporter == nil {
+		return nil
+	}
+	return b.OperationReporter(ctx, resourceKey, resourceID, action, operationErr, state)
 }
 
 func jsonDump(obj any) string {

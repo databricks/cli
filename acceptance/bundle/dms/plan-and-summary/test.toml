@@ -1,0 +1,10 @@
+Ignore = [".databricks"]
+
+# Verify the state-read path against the deployment metadata service:
+#  - bundle deploy populates managed_service.json with a deployment_id.
+#  - bundle plan / summary read state from DMS via ListResources rather than
+#    from the workspace resources.json file.
+#
+# With operation reporting (step 5) in place, the deploy reports a CREATE
+# operation so the subsequent plan sees the job as already deployed and the
+# summary renders its URL.

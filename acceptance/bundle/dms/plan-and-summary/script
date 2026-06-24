@@ -1,0 +1,17 @@
+# Deploy first so managed_service.json exists with a deployment_id.
+# Step 5 will report individual operations here; for now DMS only knows the
+# deployment exists.
+trace $CLI bundle deploy
+
+# bundle plan should hit DMS via ListResources. With no operations reported
+# yet, the resource list is empty and the job is planned as a create.
+trace $CLI bundle plan
+
+# bundle summary should also read from DMS. ListResources is empty, so the
+# job renders as (not deployed).
+trace $CLI bundle summary
+
+# Verify the metadata-service calls. Two ListResources lines confirm that
+# both plan and summary went through the DMS read path.
+trace print_requests.py --get //bundle ^//workspace-files ^//import-file
+print_requests.py --get > /dev/null 2>&1 || true
