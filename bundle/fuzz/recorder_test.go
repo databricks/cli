@@ -10,13 +10,13 @@ import (
 // jobsCreatePath is the Jobs API route both engines must hit on create. The
 // direct engine posts here via the SDK and the terraform provider is expected to
 // as well. The testserver registers only this exact route, so if an engine ever
-// posted to a different version the deploy would 404 and CaptureJobCreate would
+// posted to a different version the deploy would 404 and captureJobCreate would
 // fail with "did not POST". A version skew therefore surfaces as a capture
 // failure, not as a payload diff.
 const jobsCreatePath = "/api/2.2/jobs/create"
 
-// CapturedRequest is a single mutating API request observed by the testserver.
-type CapturedRequest struct {
+// capturedRequest is a single mutating API request observed by the testserver.
+type capturedRequest struct {
 	Method string
 	Path   string
 	Body   json.RawMessage
@@ -27,7 +27,7 @@ type CapturedRequest struct {
 // goroutines.
 type recorder struct {
 	mu       sync.Mutex
-	requests []CapturedRequest
+	requests []capturedRequest
 }
 
 func (r *recorder) callback(req *testserver.Request) {
@@ -40,7 +40,7 @@ func (r *recorder) callback(req *testserver.Request) {
 		body = append(json.RawMessage(nil), req.Body...)
 	}
 
-	r.requests = append(r.requests, CapturedRequest{
+	r.requests = append(r.requests, capturedRequest{
 		Method: req.Method,
 		Path:   req.URL.Path,
 		Body:   body,

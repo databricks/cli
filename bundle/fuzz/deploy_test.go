@@ -19,7 +19,7 @@ const (
 	fakeToken         = "testtoken"
 )
 
-// CaptureJobCreate deploys a bundle containing job through the given engine
+// captureJobCreate deploys a bundle containing job through the given engine
 // ("direct" or "terraform") and returns the create request body sent to the
 // Jobs API.
 //
@@ -31,8 +31,8 @@ const (
 //
 // The terraform engine additionally requires DATABRICKS_TF_EXEC_PATH and
 // DATABRICKS_TF_CLI_CONFIG_FILE to point at a provisioned terraform binary and
-// provider mirror; see RequireTerraform.
-func CaptureJobCreate(ctx context.Context, t *testing.T, job *resources.Job, engine string) (json.RawMessage, error) {
+// provider mirror; see requireTerraform.
+func captureJobCreate(ctx context.Context, t *testing.T, job *resources.Job, engine string) (json.RawMessage, error) {
 	rec := &recorder{}
 	server := testserver.New(t)
 	server.RequestCallback = rec.callback
@@ -61,15 +61,15 @@ func CaptureJobCreate(ctx context.Context, t *testing.T, job *resources.Job, eng
 	return body, nil
 }
 
-// CompareJobEngines deploys job under both engines and returns the create-payload
+// compareJobEngines deploys job under both engines and returns the create-payload
 // differences that are not covered by DefaultIgnorePaths. An empty result means
 // the engines produced equivalent create payloads.
-func CompareJobEngines(ctx context.Context, t *testing.T, job *resources.Job) ([]Difference, error) {
-	direct, err := CaptureJobCreate(ctx, t, job, "direct")
+func compareJobEngines(ctx context.Context, t *testing.T, job *resources.Job) ([]Difference, error) {
+	direct, err := captureJobCreate(ctx, t, job, "direct")
 	if err != nil {
 		return nil, fmt.Errorf("capturing direct payload: %w", err)
 	}
-	terraform, err := CaptureJobCreate(ctx, t, job, "terraform")
+	terraform, err := captureJobCreate(ctx, t, job, "terraform")
 	if err != nil {
 		return nil, fmt.Errorf("capturing terraform payload: %w", err)
 	}
@@ -106,10 +106,32 @@ func writeJobBundle(dir, host string, job *resources.Job) error {
 	return os.WriteFile(filepath.Join(dir, "databricks.yml"), data, 0o600)
 }
 
-// RequireTerraform points the terraform engine at the binary and provider mirror
-// provisioned by acceptance/install_terraform.py into <repo>/build, and skips the
-// test when they are absent so the suite still runs where terraform is not set up.
-func RequireTerraform(t testing.TB) {
+// fuzzOptInVars are the environment variables that opt a run into the
+// terraform-backed parity suite. FUZZ_SEED / FUZZ_SEEDS / FUZZ_SEED_OFFSET double
+// as the tuning knobs (see paritySeeds), so setting any of them implies opt-in;
+// FUZZ_PARITY is a no-tuning switch used by `task test-fuzz`.
+var fuzzOptInVars = []string{"FUZZ_PARITY", "FUZZ_SEED", "FUZZ_SEEDS", "FUZZ_SEED_OFFSET"}
+
+// requireFuzzOptIn skips unless the run explicitly opted into the terraform
+// parity suite. Gating on an env var rather than on the presence of build/ keeps
+// a leftover terraform install (from a prior `task test-fuzz` or acceptance run)
+// from silently turning a plain `task test` into dozens of real deploys.
+func requireFuzzOptIn(t testing.TB) {
+	for _, name := range fuzzOptInVars {
+		if os.Getenv(name) != "" {
+			return
+		}
+	}
+	t.Skip("terraform parity suite is opt-in; run `task test-fuzz` or set FUZZ_SEED=<n> to reproduce a single seed")
+}
+
+// requireTerraform opts in via requireFuzzOptIn, then points the terraform engine
+// at the binary and provider mirror provisioned by acceptance/install_terraform.py
+// into <repo>/build, skipping when they are absent so the suite still skips
+// cleanly where terraform is not set up.
+func requireTerraform(t testing.TB) {
+	requireFuzzOptIn(t)
+
 	buildDir := filepath.Join(repoRoot(t), "build")
 	execPath := filepath.Join(buildDir, "terraform")
 	cfgFile := filepath.Join(buildDir, ".terraformrc")

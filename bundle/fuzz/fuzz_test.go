@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -15,12 +16,27 @@ import (
 // kept modest; override with FUZZ_SEEDS for a deeper local run.
 const defaultParitySeeds = 20
 
+// regressionSeeds are seeds that previously surfaced a terraform/direct create
+// payload divergence. They are always checked (in addition to the rotating
+// nightly window) so a fixed divergence can never silently regress, even though
+// the nightly window moves on every run and would otherwise never revisit them.
+//
+// When the nightly job reports a new failing FUZZ_SEED, add it here in the same
+// PR that fixes the divergence.
+//
+//   - 29: first seed that generates a single-node task-level new_cluster
+//     (num_workers 0, no autoscale). The direct engine omitted num_workers on
+//     task clusters while terraform force-sent num_workers:0, so the create
+//     payloads diverged. Fixed by applying initializeNumWorkers to task clusters
+//     in resourcemutator.prepareJobSettingsForUpdate.
+var regressionSeeds = []int64{29}
+
 // TestJobCreateParity is the first DECO-25361 technique: for many random job
 // configs, assert the terraform and direct engines produce equivalent create
 // payloads. On divergence it prints the seed and the generated job so the failure
 // can be reproduced and inspected.
 func TestJobCreateParity(t *testing.T) {
-	RequireTerraform(t)
+	requireTerraform(t)
 
 	for _, seed := range paritySeeds(t) {
 		t.Run("seed="+strconv.FormatInt(seed, 10), func(t *testing.T) {
@@ -36,10 +52,12 @@ func TestJobCreateParity(t *testing.T) {
 // reported divergence can be reproduced with one command, without re-running
 // every seed before it.
 //
-// Otherwise the test runs FUZZ_SEEDS seeds (default defaultParitySeeds) starting
-// at FUZZ_SEED_OFFSET. The offset lets the nightly job shift the window every run
-// (push.yml derives it from the run number) so CI explores configs it has never
-// tested before instead of re-checking the same fixed set forever.
+// Otherwise the test runs the regressionSeeds plus FUZZ_SEEDS seeds (default
+// defaultParitySeeds) starting at FUZZ_SEED_OFFSET. The offset lets the nightly
+// job shift the window every run (push.yml derives it from the run number) so CI
+// explores configs it has never tested before instead of re-checking the same
+// fixed set forever; the regressionSeeds are always included on top so known
+// past divergences keep being verified.
 func paritySeeds(t *testing.T) []int64 {
 	if v := os.Getenv("FUZZ_SEED"); v != "" {
 		var seeds []int64
@@ -71,19 +89,62 @@ func paritySeeds(t *testing.T) []int64 {
 		offset = n
 	}
 
-	seeds := make([]int64, 0, count)
+	seeds := make([]int64, 0, len(regressionSeeds)+count)
+	seen := make(map[int64]bool, len(regressionSeeds)+count)
+	for _, s := range regressionSeeds {
+		if !seen[s] {
+			seen[s] = true
+			seeds = append(seeds, s)
+		}
+	}
 	for i := range int64(count) {
-		seeds = append(seeds, offset+i)
+		s := offset + i
+		if !seen[s] {
+			seen[s] = true
+			seeds = append(seeds, s)
+		}
 	}
 	return seeds
+}
+
+func TestParitySeeds(t *testing.T) {
+	t.Run("default includes regression seeds then window", func(t *testing.T) {
+		t.Setenv("FUZZ_SEEDS", "3")
+		t.Setenv("FUZZ_SEED_OFFSET", "100")
+		want := append(append([]int64{}, regressionSeeds...), 100, 101, 102)
+		assert.Equal(t, want, paritySeeds(t))
+	})
+
+	t.Run("window overlapping a regression seed is deduplicated", func(t *testing.T) {
+		t.Setenv("FUZZ_SEEDS", "5")
+		t.Setenv("FUZZ_SEED_OFFSET", "27")
+		seeds := paritySeeds(t)
+		count := 0
+		for _, s := range seeds {
+			if s == 29 {
+				count++
+			}
+		}
+		assert.Equal(t, 1, count, "seed 29 must appear once even though it is both a regression seed and inside the window")
+	})
+
+	t.Run("FUZZ_SEED override ignores regression seeds", func(t *testing.T) {
+		t.Setenv("FUZZ_SEED", "7, 8")
+		assert.Equal(t, []int64{7, 8}, paritySeeds(t))
+	})
 }
 
 // FuzzJobCreateParity exposes the same parity check to Go's native fuzzer
 // (`go test -fuzz=FuzzJobCreateParity`). Note each input runs two real deploys,
 // so this is intended for ad-hoc deep runs, not the default `go test` path.
 func FuzzJobCreateParity(f *testing.F) {
-	RequireTerraform(f)
+	requireTerraform(f)
 	for seed := range int64(5) {
+		f.Add(seed)
+	}
+	// Seed the corpus with known past divergences so the fuzzer always starts
+	// from inputs that previously exposed a bug.
+	for _, seed := range regressionSeeds {
 		f.Add(seed)
 	}
 	f.Fuzz(func(t *testing.T, seed int64) {
@@ -97,7 +158,7 @@ func checkJobParity(t *testing.T, seed int64) {
 	t.Helper()
 	job := GenerateJob(newRNG(seed))
 
-	diffs, err := CompareJobEngines(t.Context(), t, job)
+	diffs, err := compareJobEngines(t.Context(), t, job)
 	require.NoErrorf(t, err, "seed %d", seed)
 
 	if len(diffs) > 0 {
@@ -106,6 +167,6 @@ func checkJobParity(t *testing.T, seed int64) {
 		for _, d := range diffs {
 			t.Errorf("  %s", d)
 		}
-		t.Logf("reproduce with: FUZZ_SEED=%d go test ./bundle/fuzz -run TestJobCreateParity\n%s", seed, jobJSON)
+		t.Logf("reproduce with: FUZZ_SEED=%d task test-fuzz\nonce fixed, add %d to regressionSeeds in bundle/fuzz/fuzz_test.go\n%s", seed, seed, jobJSON)
 	}
 }
