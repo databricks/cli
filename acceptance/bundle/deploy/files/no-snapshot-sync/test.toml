@@ -5,13 +5,6 @@ Ignore = [
     "databricks.yml",
 ]
 
-# The local testserver and the real workspace API word the "missing path" error
-# differently ("Workspace path not found" vs "Path (...) doesn't exist."), so
-# normalize both to a stable token to keep one golden valid for local and cloud.
-[[Repls]]
-Old = 'Error: (Path \(.*?\) doesn.t exist\.|Workspace path not found)'
-New = 'Error: [WORKSPACE_PATH_NOT_FOUND]'
-
 [Env]
 # MSYS2 automatically converts absolute paths like /Users/$username/$UNIQUE_NAME to
 # C:/Program Files/Git/Users/$username/UNIQUE_NAME before passing it to the CLI

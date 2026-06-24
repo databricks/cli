@@ -50,12 +50,12 @@ Deployment complete!
 
 === Check that removed files are not in the workspace anymore
 >>> errcode [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files/test.py
-Error: [WORKSPACE_PATH_NOT_FOUND]
+Error: Path (/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files/test.py) doesn't exist.
 
 Exit code: 1
 
 >>> errcode [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files/notebook
-Error: [WORKSPACE_PATH_NOT_FOUND]
+Error: Path (/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files/notebook) doesn't exist.
 
 Exit code: 1
 
