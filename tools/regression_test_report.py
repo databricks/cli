@@ -3,46 +3,51 @@
 # requires-python = ">=3.12"
 # ///
 """
-Regression test report generator for CLI acceptance and unit tests.
+Regression test report generator for CLI acceptance tests.
 
-Finds tests modified or added on the current branch vs origin/main, runs them,
-and classifies each into one of these categories:
+Finds acceptance tests modified or added on the current branch vs origin/main, runs
+them, and classifies each into one of these categories:
 
-  Possible regression test  — passes on branch, fails on main's code (or
-                              cannot compile on main).
+  Possible regression test  — passes on branch, fails on main's CLI.
                               Exercises behavior introduced by this branch.
 
-  Unreleased behavior       — passes on branch and main's code, but fails
-  (acceptance only)           with the latest released CLI (-useversion latest).
-                              Tests behavior already merged but not yet shipped;
-                              no changelog entry needed for this PR.
+  Unreleased behavior       — passes on branch and main's CLI, but fails with the
+                              latest released CLI (-useversion latest). Tests
+                              behavior already merged but not yet shipped; no
+                              changelog entry needed for this PR.
 
   Additional coverage       — passes everywhere.
 
-  Cannot compile            — test file cannot be compiled (branch or main).
-
-For acceptance tests all three phases run. For unit tests only Phases 1 and 2
-run (no -useversion support).
-
-The worktree approach (Phase 2) keeps the working directory untouched: a
-temporary git worktree is created from the base branch, the relevant test
-files are copied into it, and go test runs there.
+The three phases run the same tests against, respectively: this branch's CLI, a CLI
+built from the base ref, and the latest released CLI. Phase 2 only swaps the CLI: a
+binary is built from the base ref in a temp dir and the branch's own test runner and
+tests run against it via -clipath, so the test infra and tests stay on this branch
+while exercising main's CLI.
 
 Run doctests: python3 -m doctest tools/regression_test_report.py
 
 Usage:
-    python3 tools/regression_test_report.py [--output PATH] [--max-tests N] [--base REF]
-    python3 tools/regression_test_report.py --commit [--max-tests N] [--base REF]
+    python3 tools/regression_test_report.py [--output PATH] [--max-tests N] [--base REF] [--cloud [ENV]] [FILTER ...]
+    python3 tools/regression_test_report.py --commit [--max-tests N] [--base REF] [--cloud [ENV]] [FILTER ...]
+
+FILTER arguments restrict the run to tests whose name contains one of the given
+substrings (e.g. `no_drift alert.yml.tmpl` runs only matching invariant tests).
+
+--cloud runs the acceptance tests against a real workspace instead of the mock
+server, mirroring the testme-aws script (fetches workspace secrets via
+testme-fetch-env and sets CLOUD_ENV). Defaults to the aws-prod-ucws environment.
 """
 
 import argparse
 import json
 import os
 import re
+import shlex
 import shutil
 import subprocess
 import sys
 import tempfile
+import time
 from collections import Counter
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -51,6 +56,49 @@ _git_root = subprocess.run(["git", "rev-parse", "--show-toplevel"], capture_outp
 REPO_ROOT = Path(_git_root.stdout.strip()) if _git_root.returncode == 0 else Path(__file__).parent.parent
 ACCEPTANCE_DIR = REPO_ROOT / "acceptance"
 DEFAULT_MAX_TESTS = 20
+INVARIANT_DIR = "bundle/invariant"
+INVARIANT_CONFIGS_PREFIX = "acceptance/bundle/invariant/configs/"
+INVARIANT_FILE_PREFIX = "acceptance/bundle/invariant/"
+# Under an invariant subdir these regenerate whenever the EnvMatrix config list
+# changes, so a change here must not trigger a full all-configs run — the per-config
+# scoped runs (from configs/) cover the actual change.
+INVARIANT_NON_TRIGGERING_NAMES = ("out.test.toml", "test.toml")
+
+
+@dataclass(frozen=True)
+class AccTest:
+    """An acceptance test to run.
+
+    For invariant tests a single config maps to many EnvMatrix variants; setting
+    `config` scopes the -run pattern to that one INPUT_CONFIG instead of all of them.
+    """
+
+    parent: str  # real test-name prefix used to find leaves, e.g. "TestAccept/bundle/foo"
+    is_new: bool  # True if added on this branch (False = modified)
+    config: str = ""  # invariant INPUT_CONFIG to scope to; "" runs the whole test
+    optional: bool = False  # drop if it produces no leaves (e.g. variant excluded in this subdir)
+
+    @property
+    def run(self):
+        """The -run regex passed to `go test`.
+
+        >>> AccTest("TestAccept/bundle/x", False).run
+        'TestAccept/bundle/x'
+        >>> AccTest("TestAccept/bundle/invariant/no_drift", True, "a.yml.tmpl").run
+        'TestAccept/bundle/invariant/no_drift/.*/INPUT_CONFIG=a\\\\.yml\\\\.tmpl$'
+        """
+        if not self.config:
+            return self.parent
+        escaped = self.config.replace(".", r"\.")
+        return rf"{self.parent}/.*/INPUT_CONFIG={escaped}$"
+
+    @property
+    def key(self):
+        return self.run
+
+    @property
+    def label(self):
+        return f"{self.parent} [{self.config}]" if self.config else self.parent
 
 
 # ---------------------------------------------------------------------------
@@ -60,19 +108,58 @@ DEFAULT_MAX_TESTS = 20
 # ---------------------------------------------------------------------------
 
 
-def extract_test_functions(go_source):
-    """Return Test* function names declared in Go source text.
+def config_from_path(rel_path):
+    """Return the INPUT_CONFIG name for a changed invariant config file, or None.
 
-    >>> extract_test_functions('func TestFoo(t *testing.T) {}')
-    ['TestFoo']
-    >>> extract_test_functions('func TestFoo(t *testing.T) {}\\nfunc TestBar(t *testing.T) {}')
-    ['TestFoo', 'TestBar']
-    >>> extract_test_functions('func helper() {}\\nfunc BenchmarkFoo(b *testing.B) {}')
-    []
-    >>> extract_test_functions('')
-    []
+    >>> config_from_path('acceptance/bundle/invariant/configs/job.yml.tmpl')
+    'job.yml.tmpl'
+    >>> config_from_path('acceptance/bundle/invariant/configs/job.yml.tmpl-init.sh')
+    'job.yml.tmpl'
+    >>> config_from_path('acceptance/bundle/invariant/configs/job.yml.tmpl-cleanup.sh')
+    'job.yml.tmpl'
+    >>> config_from_path('acceptance/bundle/invariant/no_drift/script') is None
+    True
+    >>> config_from_path('acceptance/bundle/invariant/configs/README.md') is None
+    True
     """
-    return re.findall(r"^func (Test\w+)\(", go_source, re.MULTILINE)
+    if not rel_path.startswith(INVARIANT_CONFIGS_PREFIX):
+        return None
+    name = rel_path[len(INVARIANT_CONFIGS_PREFIX) :]
+    m = re.match(r"(.+\.yml\.tmpl)(-init\.sh|-cleanup\.sh)?$", name)
+    return m.group(1) if m else None
+
+
+def _is_invariant_config_list_file(rel_path):
+    """Return True for an invariant out.test.toml/test.toml (tracks the config list).
+
+    These regenerate when the EnvMatrix config list changes, so they must not trigger
+    a full all-configs invariant run.
+
+    >>> _is_invariant_config_list_file('acceptance/bundle/invariant/migrate/out.test.toml')
+    True
+    >>> _is_invariant_config_list_file('acceptance/bundle/invariant/test.toml')
+    True
+    >>> _is_invariant_config_list_file('acceptance/bundle/invariant/migrate/script')
+    False
+    >>> _is_invariant_config_list_file('acceptance/bundle/other/out.test.toml')
+    False
+    """
+    return rel_path.startswith(INVARIANT_FILE_PREFIX) and Path(rel_path).name in INVARIANT_NON_TRIGGERING_NAMES
+
+
+def matches_filters(name, filters):
+    """Return True if name contains any filter substring, or no filters are given.
+
+    >>> matches_filters('TestAccept/bundle/foo', [])
+    True
+    >>> matches_filters('TestAccept/bundle/foo', ['foo'])
+    True
+    >>> matches_filters('TestAccept/bundle/foo', ['bar'])
+    False
+    >>> matches_filters('TestAccept/bundle/foo', ['bar', 'foo'])
+    True
+    """
+    return not filters or any(f in name for f in filters)
 
 
 def find_acceptance_test_for_path(rel_path, test_dirs):
@@ -97,28 +184,6 @@ def find_acceptance_test_for_path(rel_path, test_dirs):
         if candidate in test_dirs:
             return candidate
     return None
-
-
-def is_compile_failure_json(json_text):
-    """Return True if go test -json output indicates a build failure.
-
-    >>> is_compile_failure_json('{"Action":"build-fail"}')
-    True
-    >>> is_compile_failure_json('{"Action":"fail","FailedBuild":"pkg/test"}')
-    True
-    >>> is_compile_failure_json('{"Action":"fail"}')
-    False
-    >>> is_compile_failure_json('')
-    False
-    """
-    for line in json_text.splitlines():
-        try:
-            e = json.loads(line.strip())
-        except (json.JSONDecodeError, ValueError):
-            continue
-        if e.get("Action") == "build-fail" or e.get("FailedBuild"):
-            return True
-    return False
 
 
 def get_leaf_subtests(parent, test_names):
@@ -165,34 +230,6 @@ def classify_acceptance_result(main_status, latest_status):
     return "coverage"
 
 
-def classify_unit_result(compile_fail_on_main, function_results, passing_functions):
-    """Classify a unit test package based on how it fares on main.
-
-    Returns 'regression' or 'coverage'.
-    compile_fail_on_main: True if the package could not compile on main.
-    function_results: {func_name: status} for passing_functions after running on main.
-    passing_functions: functions that passed on the current branch.
-
-    >>> classify_unit_result(True, {}, ['TestFoo'])
-    'regression'
-    >>> classify_unit_result(False, {'TestFoo': 'fail'}, ['TestFoo'])
-    'regression'
-    >>> classify_unit_result(False, {'TestFoo': 'pass', 'TestBar': 'fail'}, ['TestFoo', 'TestBar'])
-    'regression'
-    >>> classify_unit_result(False, {'TestFoo': 'pass'}, ['TestFoo'])
-    'coverage'
-    >>> classify_unit_result(False, {'TestFoo': 'skip'}, ['TestFoo'])
-    'coverage'
-    >>> classify_unit_result(False, {}, [])
-    'coverage'
-    """
-    if compile_fail_on_main:
-        return "regression"
-    if any(function_results.get(f) not in ("pass", "skip") for f in passing_functions):
-        return "regression"
-    return "coverage"
-
-
 # ---------------------------------------------------------------------------
 # Parsing go test -json output
 # ---------------------------------------------------------------------------
@@ -231,11 +268,6 @@ def parse_json_output(json_text):
         elif action == "output":
             tests[name].output_lines.append(entry.get("Output", ""))
     return tests
-
-
-def is_compile_failure(proc):
-    """Return True if the CompletedProcess indicates a build failure."""
-    return proc.returncode != 0 and is_compile_failure_json(proc.stdout)
 
 
 def readable_output(json_text, max_lines=80):
@@ -323,18 +355,59 @@ def scan_acceptance_test_dirs(acceptance_dir):
 
 
 def collect_changed_acceptance_tests(changed_files, base_ref):
-    """Return (added, modified) lists of acceptance test paths."""
+    """Return a list of AccTest to run, added first.
+
+    Invariant configs (acceptance/bundle/invariant/configs/*) are special: each one
+    feeds every invariant subdir (no_drift, migrate, ...) as an EnvMatrix variant.
+    A changed config maps to a scoped run for just that INPUT_CONFIG, so we don't
+    re-run all ~30 configs. Editing an invariant subdir file (script/output) still
+    triggers the full run for that subdir, but out.test.toml/test.toml changes do
+    not (they track the config list and would otherwise force every config).
+    """
     test_dirs = scan_acceptance_test_dirs(ACCEPTANCE_DIR)
+    invariant_dirs = sorted(d for d in test_dirs if d.startswith(INVARIANT_DIR + "/"))
+
+    tests = []
+
+    # Regular acceptance tests (including full invariant-subdir runs when a file in
+    # the subdir itself changed).
+    mapping_files = [f for f in changed_files if not _is_invariant_config_list_file(f)]
     test_paths = sorted(
-        {tp for tp in (find_acceptance_test_for_path(f, test_dirs) for f in changed_files) if tp is not None}
+        {tp for tp in (find_acceptance_test_for_path(f, test_dirs) for f in mapping_files) if tp is not None}
     )
-    added = [tp for tp in test_paths if not file_exists_at_ref(f"acceptance/{tp}/script", base_ref)]
-    modified = [tp for tp in test_paths if file_exists_at_ref(f"acceptance/{tp}/script", base_ref)]
-    return added, modified
+    for tp in test_paths:
+        is_new = not file_exists_at_ref(f"acceptance/{tp}/script", base_ref)
+        tests.append(AccTest(parent="TestAccept/" + tp.replace(os.sep, "/"), is_new=is_new))
+
+    # Invariant config changes → one scoped run per invariant subdir for that config.
+    configs = {c: config_from_path(f) for f in changed_files if (c := config_from_path(f))}
+    for config in sorted(configs):
+        is_new = not file_exists_at_ref(f"{INVARIANT_CONFIGS_PREFIX}{config}", base_ref)
+        for sub in invariant_dirs:
+            tests.append(
+                AccTest(
+                    parent="TestAccept/" + sub.replace(os.sep, "/"),
+                    is_new=is_new,
+                    config=config,
+                    optional=True,
+                )
+            )
+
+    # A full subdir run supersedes scoped runs of the same subdir.
+    full_parents = {t.parent for t in tests if not t.config}
+    tests = [t for t in tests if not t.config or t.parent not in full_parents]
+
+    # Stable sort keeps regular-then-invariant order within each added/modified group.
+    return sorted(tests, key=lambda t: not t.is_new)
 
 
-def run_go_test(pattern, cwd, extra_args=None):
-    """Run go test ./acceptance -run PATTERN -json and return CompletedProcess."""
+def run_go_test(pattern, cwd, extra_args=None, env=None):
+    """Run go test ./acceptance -run PATTERN -json and return CompletedProcess.
+
+    When env carries CLOUD_ENV (i.e. --cloud), tests deploy to a real workspace, so
+    we allow the same 1h timeout the testme script uses instead of the 5m local one.
+    """
+    timeout = "3600s" if env and env.get("CLOUD_ENV") else "300s"
     cmd = [
         "go",
         "test",
@@ -342,34 +415,92 @@ def run_go_test(pattern, cwd, extra_args=None):
         f"-run={pattern}",
         "-json",
         "-count=1",
-        "-timeout=300s",
+        f"-timeout={timeout}",
     ] + (extra_args or [])
-    return subprocess.run(cmd, capture_output=True, text=True, cwd=str(cwd))
+    return subprocess.run(cmd, capture_output=True, text=True, cwd=str(cwd), env=env)
 
 
-def run_acceptance_on_main(test_path, subtest, base_ref):
-    """Run acceptance subtest using main's codebase with the current test directory."""
-    with tempfile.TemporaryDirectory(prefix="regression_main_") as tmpdir:
-        worktree_dir = Path(tmpdir) / "worktree"
-        r = git("worktree", "add", "--detach", str(worktree_dir), base_ref)
-        if r.returncode != 0:
-            print(f"    [error] worktree creation failed: {r.stderr.strip()}", file=sys.stderr)
-            return None
-        try:
-            src = ACCEPTANCE_DIR / test_path
-            dst = worktree_dir / "acceptance" / test_path
-            dst.parent.mkdir(parents=True, exist_ok=True)
-            if dst.exists():
-                shutil.rmtree(str(dst))
-            shutil.copytree(str(src), str(dst))
-            return run_go_test(subtest, worktree_dir)
-        finally:
-            git("worktree", "remove", "--force", str(worktree_dir))
+def build_main_cli(ref):
+    """Build a CLI binary from `ref` in a temp dir; return (cli_path, tmpdir).
+
+    Only the CLI comes from main: we export main's source tree at `ref` (via
+    `git archive`, no .git or full checkout) and `go build` it. The acceptance test
+    runner and the tests themselves still come from the current branch — Phase 2 runs
+    them with this binary via -clipath. The caller must remove tmpdir.
+    """
+    tmpdir = Path(tempfile.mkdtemp(prefix="regression_main_cli_"))
+    src = tmpdir / "src"
+    src.mkdir()
+    r = subprocess.run(
+        f"git archive --format=tar {shlex.quote(ref)} | tar -x -C {shlex.quote(str(src))}",
+        shell=True,
+        cwd=str(REPO_ROOT),
+        capture_output=True,
+        text=True,
+    )
+    if r.returncode != 0:
+        shutil.rmtree(tmpdir, ignore_errors=True)
+        sys.exit(f"[ERROR] failed to export main source at {ref}: {r.stderr.strip()}")
+
+    cli = src / ("databricks.exe" if os.name == "nt" else "databricks")
+    print(f"  Building CLI from {ref[:12]} ...", flush=True)
+    # -buildvcs=false: the exported tree has no .git, so VCS stamping would fail.
+    r = subprocess.run(
+        ["go", "build", "-buildvcs=false", "-o", str(cli), "."],
+        cwd=str(src),
+        capture_output=True,
+        text=True,
+    )
+    if r.returncode != 0:
+        shutil.rmtree(tmpdir, ignore_errors=True)
+        sys.exit(f"[ERROR] failed to build CLI from {ref}: {r.stderr.strip()}")
+    return str(cli), tmpdir
 
 
-def run_acceptance_with_latest_release(subtest, version, cwd):
+def run_acceptance_on_main(subtest, main_cli, env=None):
+    """Run a branch acceptance subtest with a CLI built from main (via -clipath)."""
+    return run_go_test(subtest, REPO_ROOT, extra_args=["-clipath", main_cli], env=env)
+
+
+def run_acceptance_with_latest_release(subtest, version, cwd, env=None):
     """Run acceptance subtest against the given released CLI version."""
-    return run_go_test(subtest, cwd, extra_args=["-useversion", version])
+    return run_go_test(subtest, cwd, extra_args=["-useversion", version], env=env)
+
+
+def load_cloud_env(env_name):
+    """Return the environment for running acceptance tests on the `env_name` cloud.
+
+    Mirrors the testme-aws / testme-env scripts: fetch the workspace secrets into
+    ~/.cache/testme-envs/<env>.env via testme-fetch-env (refreshing when missing or
+    stale), source them, and point DATABRICKS_CONFIG_FILE at /dev/null so the vault
+    secrets win. The resulting CLOUD_ENV / auth / TEST_METASTORE_ID variables are what
+    make the acceptance framework target a real workspace instead of the mock server.
+    """
+    cache_file = Path.home() / ".cache" / "testme-envs" / f"{env_name}.env"
+    ttl_minutes = int(os.environ.get("TESTME_TTL_MINUTES", "720"))
+    stale = not cache_file.exists() or (time.time() - cache_file.stat().st_mtime) > ttl_minutes * 60
+    if stale:
+        cache_file.parent.mkdir(parents=True, exist_ok=True)
+        r = subprocess.run(["testme-fetch-env", "--env", env_name, "--out", str(cache_file)])
+        if r.returncode != 0:
+            if not cache_file.exists():
+                sys.exit(f"[ERROR] testme-fetch-env failed and no cache exists at {cache_file}")
+            print(f"[WARN] testme-fetch-env failed; using stale cache at {cache_file}", file=sys.stderr)
+
+    # Source the env file in bash and capture the resulting environment (env -0 is
+    # null-delimited so values with spaces or newlines survive).
+    proc = subprocess.run(
+        ["bash", "-c", f"set -a; source {shlex.quote(str(cache_file))}; env -0"],
+        capture_output=True,
+        text=True,
+    )
+    if proc.returncode != 0:
+        sys.exit(f"[ERROR] failed to source {cache_file}: {proc.stderr.strip()}")
+    env = dict(kv.split("=", 1) for kv in proc.stdout.split("\0") if "=" in kv)
+    env["DATABRICKS_CONFIG_FILE"] = "/dev/null"
+    if not env.get("CLOUD_ENV"):
+        sys.exit(f"[ERROR] {cache_file} did not set CLOUD_ENV; cannot run on cloud")
+    return env
 
 
 def fetch_latest_release_version():
@@ -381,8 +512,6 @@ def fetch_latest_release_version():
         goos, goarch = r.stdout.strip().split("\n", 1)
         cache = ACCEPTANCE_DIR / "build" / f"{goos}_{goarch}" / "latest_version.txt"
         if cache.exists():
-            import time
-
             if time.time() - cache.stat().st_mtime < 3600:
                 version = cache.read_text().strip()
                 if version:
@@ -403,75 +532,6 @@ def fetch_latest_release_version():
 
 
 # ---------------------------------------------------------------------------
-# Unit test I/O
-# ---------------------------------------------------------------------------
-
-
-def read_test_functions(file_path):
-    """Read a Go test file and return its Test* function names."""
-    try:
-        return extract_test_functions(Path(file_path).read_text())
-    except OSError:
-        return []
-
-
-def collect_changed_unit_tests(changed_files, base_ref):
-    """Return (added, modified) lists of (package_dir, [changed_files], [functions])."""
-    pkg_files: dict[str, list[str]] = {}
-    for f in changed_files:
-        p = Path(f)
-        if not f.endswith("_test.go") or p.parts[0] == "acceptance":
-            continue
-        pkg_files.setdefault(str(p.parent), []).append(f)
-
-    added, modified = [], []
-    for pkg_dir in sorted(pkg_files):
-        files = pkg_files[pkg_dir]
-        functions = list(dict.fromkeys(fn for f in files for fn in read_test_functions(REPO_ROOT / f)))
-        if not functions:
-            continue
-        entry = (pkg_dir, files, functions)
-        if any(file_exists_at_ref(f, base_ref) for f in files):
-            modified.append(entry)
-        else:
-            added.append(entry)
-    return added, modified
-
-
-def run_unit_tests(pkg_dir, functions, cwd):
-    """Run specific test functions in a Go package."""
-    run_pattern = "^(" + "|".join(re.escape(f) for f in functions) + ")$"
-    cmd = [
-        "go",
-        "test",
-        "./" + pkg_dir,
-        f"-run={run_pattern}",
-        "-json",
-        "-count=1",
-        "-timeout=120s",
-    ]
-    return subprocess.run(cmd, capture_output=True, text=True, cwd=str(cwd))
-
-
-def run_unit_tests_on_main(pkg_dir, changed_files, functions, base_ref):
-    """Run unit tests on main's codebase with the changed test files copied in."""
-    with tempfile.TemporaryDirectory(prefix="regression_unit_") as tmpdir:
-        worktree_dir = Path(tmpdir) / "worktree"
-        r = git("worktree", "add", "--detach", str(worktree_dir), base_ref)
-        if r.returncode != 0:
-            print(f"    [error] worktree creation failed: {r.stderr.strip()}", file=sys.stderr)
-            return None
-        try:
-            for rel_path in changed_files:
-                dst = worktree_dir / rel_path
-                dst.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copy2(str(REPO_ROOT / rel_path), str(dst))
-            return run_unit_tests(pkg_dir, functions, worktree_dir)
-        finally:
-            git("worktree", "remove", "--force", str(worktree_dir))
-
-
-# ---------------------------------------------------------------------------
 # Report rendering
 # ---------------------------------------------------------------------------
 
@@ -479,22 +539,17 @@ def run_unit_tests_on_main(pkg_dir, changed_files, functions, base_ref):
 def render_report(
     commit_header,
     base_commit,
-    # acceptance
     acc_selected,
-    acc_added,
     acc_branch_info,
     acc_main_info,
     acc_latest_info,
     latest_version,
-    # unit
-    unit_selected,
-    unit_added_keys,
-    unit_branch_info,
-    unit_main_info,
 ):
-    """Return the full markdown report as a string."""
-    n_acc_added = sum(1 for t in acc_selected if t in acc_added)
-    n_unit_added = sum(1 for k in unit_selected if k in unit_added_keys)
+    """Return the full markdown report as a string.
+
+    acc_selected is a list of AccTest; acc_branch_info is keyed by AccTest.key.
+    """
+    n_acc_added = sum(1 for at in acc_selected if at.is_new)
 
     PASS = "✅"
     FAIL = "❌"
@@ -505,38 +560,24 @@ def render_report(
 
     # ---- classify ----
     acc_regression, acc_unreleased, acc_coverage, acc_failing = [], [], [], []
-    for tp in acc_selected:
-        info = acc_branch_info[tp]
+    for at in acc_selected:
+        info = acc_branch_info[at.key]
         if not info["passing_leaves"]:
-            acc_failing.append(tp)
+            acc_failing.append(at)
             continue
         cats = {
             classify_acceptance_result(
-                acc_main_info.get(l, {}).get("status", ""),
-                acc_latest_info.get(l, {}).get("status", ""),
+                acc_main_info.get(leaf, {}).get("status", ""),
+                acc_latest_info.get(leaf, {}).get("status", ""),
             )
-            for l in info["passing_leaves"]
+            for leaf in info["passing_leaves"]
         }
         if "regression" in cats:
-            acc_regression.append(tp)
+            acc_regression.append(at)
         elif "unreleased" in cats:
-            acc_unreleased.append(tp)
+            acc_unreleased.append(at)
         else:
-            acc_coverage.append(tp)
-
-    unit_regression, unit_coverage, unit_failing = [], [], []
-    for key in unit_selected:
-        info = unit_branch_info[key]
-        if info["compile_fail"] or not info["passing_functions"]:
-            unit_failing.append(key)
-            continue
-        mr = unit_main_info.get(key, {})
-        cat = classify_unit_result(
-            mr.get("compile_fail", False),
-            mr.get("function_results", {}),
-            info["passing_functions"],
-        )
-        (unit_regression if cat == "regression" else unit_coverage).append(key)
+            acc_coverage.append(at)
 
     # ---- summary header ----
     def _summary(label, total, n_added, cats):
@@ -555,16 +596,6 @@ def render_report(
             ("failing", len(acc_failing)),
         ],
     )
-    unit_summary = _summary(
-        "Unit tests",
-        len(unit_selected),
-        n_unit_added,
-        [
-            ("regression", len(unit_regression)),
-            ("coverage", len(unit_coverage)),
-            ("failing", len(unit_failing)),
-        ],
-    )
 
     lines = [
         "# Regression Test Report",
@@ -572,7 +603,6 @@ def render_report(
         commit_header,
         "",
         f"<!-- {acc_summary} -->",
-        f"<!-- {unit_summary} -->",
         "",
     ]
 
@@ -582,8 +612,8 @@ def render_report(
     columns = ["test", "branch", col_main, col_latest]
     rows = []
 
-    for tp in acc_selected:
-        info = acc_branch_info[tp]
+    for at in acc_selected:
+        info = acc_branch_info[at.key]
         leaves = info["leaves"]
         passing_set = set(info["passing_leaves"])
         if leaves:
@@ -591,28 +621,12 @@ def render_report(
                 is_pass = leaf in passing_set
                 if is_pass:
                     m = mark(acc_main_info.get(leaf, {}).get("status", ""))
-                    l = mark(acc_latest_info.get(leaf, {}).get("status", ""))
+                    lat = mark(acc_latest_info.get(leaf, {}).get("status", ""))
                 else:
-                    m = l = NA
-                rows.append({"test": leaf, "branch": PASS if is_pass else FAIL, col_main: m, col_latest: l})
+                    m = lat = NA
+                rows.append({"test": leaf, "branch": PASS if is_pass else FAIL, col_main: m, col_latest: lat})
         else:
-            rows.append({"test": f"TestAccept/{tp}", "branch": FAIL, col_main: NA, col_latest: NA})
-
-    for key in unit_selected:
-        info = unit_branch_info[key]
-        pkg = info["package_dir"]
-        mr = unit_main_info.get(key, {})
-        passing_set = set(info["passing_functions"])
-        if info["compile_fail"]:
-            rows.append({"test": f"{pkg} [cannot compile]", "branch": FAIL, col_main: NA, col_latest: NA})
-            continue
-        for func in info["all_functions"]:
-            is_pass = func in passing_set
-            if is_pass and not mr.get("compile_fail"):
-                m = mark(mr.get("function_results", {}).get(func, ""))
-            else:
-                m = NA
-            rows.append({"test": f"{pkg}: {func}", "branch": PASS if is_pass else FAIL, col_main: m, col_latest: NA})
+            rows.append({"test": at.label, "branch": FAIL, col_main: NA, col_latest: NA})
 
     if rows:
         lines.append("| " + " | ".join(columns) + " |")
@@ -622,12 +636,12 @@ def render_report(
         lines.append("")
 
     # ---- details sections for failing tests ----
-    for tp in acc_selected:
-        info = acc_branch_info[tp]
+    for at in acc_selected:
+        info = acc_branch_info[at.key]
         leaf_entries_branch = info.get("leaf_entries", {})
 
         if not info["leaves"]:
-            leaf = f"TestAccept/{tp}"
+            leaf = at.label
             entry = leaf_entries_branch.get(leaf)
             text = entry.output if entry else readable_output(info.get("raw_output", ""), max_lines=10000)
             lines.append("<details>")
@@ -725,14 +739,32 @@ def main():
         "--max-tests",
         type=int,
         default=DEFAULT_MAX_TESTS,
-        help=f"Max tests per category to analyze (default: {DEFAULT_MAX_TESTS}), added tests prioritized",
+        help=f"Max acceptance tests to analyze (default: {DEFAULT_MAX_TESTS}), added tests prioritized",
     )
     parser.add_argument(
         "--base",
         default=None,
         help="Base git ref for comparison (default: origin/main or main)",
     )
+    parser.add_argument(
+        "--cloud",
+        nargs="?",
+        const="aws-prod-ucws",
+        default=None,
+        metavar="ENV",
+        help="Run acceptance tests on a real cloud workspace (default env: aws-prod-ucws), mirroring testme-aws",
+    )
+    parser.add_argument(
+        "filters",
+        nargs="*",
+        help="Only check tests whose name contains one of these substrings",
+    )
     args = parser.parse_args()
+
+    cloud_env = None
+    if args.cloud:
+        print(f"Running acceptance tests on cloud: {args.cloud}")
+        cloud_env = load_cloud_env(args.cloud)
 
     base_ref = resolve_base_ref(args.base)
     merge_base = compute_merge_base(base_ref)
@@ -749,123 +781,72 @@ def main():
     changed_files = get_changed_files(merge_base)
     print(f"Files changed vs merge base ({base_commit}): {len(changed_files)}")
 
-    acc_added, acc_modified = collect_changed_acceptance_tests(changed_files, merge_base)
+    if args.filters:
+        print(f"Filtering tests by substring: {', '.join(args.filters)}")
+
+    acc_tests = collect_changed_acceptance_tests(changed_files, merge_base)
+    acc_tests = [t for t in acc_tests if matches_filters(t.label, args.filters)]
+    acc_added = [t for t in acc_tests if t.is_new]
+    acc_modified = [t for t in acc_tests if not t.is_new]
     acc_selected = acc_added[: args.max_tests]
     acc_selected += acc_modified[: args.max_tests - len(acc_selected)]
     print(f"Acceptance tests: {len(acc_added)} added, {len(acc_modified)} modified → {len(acc_selected)} selected")
 
-    unit_added, unit_modified = collect_changed_unit_tests(changed_files, merge_base)
-    unit_selected_entries = unit_added[: args.max_tests]
-    unit_selected_entries += unit_modified[: args.max_tests - len(unit_selected_entries)]
-    unit_added_keys = {e[0] for e in unit_added}
-    unit_selected = [e[0] for e in unit_selected_entries]
-    unit_entry_map = {e[0]: e for e in unit_selected_entries}
-    print(f"Unit tests:       {len(unit_added)} added, {len(unit_modified)} modified → {len(unit_selected)} selected")
-
-    if not acc_selected and not unit_selected:
-        report = (
-            f"# Regression Test Report\n\n{commit_header}\n\nNo acceptance or unit tests were changed on this branch.\n"
-        )
+    if not acc_selected:
+        report = f"# Regression Test Report\n\n{commit_header}\n\nNo acceptance tests were changed on this branch.\n"
         _emit(report, args)
         return
 
     # Phase 1: run on current branch
     acc_branch_info: dict[str, dict] = {}
-    unit_branch_info: dict[str, dict] = {}
 
     if acc_selected:
-        print("\n=== Phase 1a: Running acceptance tests on current branch ===")
-        for tp in acc_selected:
-            tag = "(added)" if tp in acc_added else "(modified)"
-            print(f"  {tp} {tag} ...", flush=True)
-            pattern = "TestAccept/" + tp.replace(os.sep, "/")
-            proc = run_go_test(pattern, REPO_ROOT)
+        print("\n=== Phase 1: Running acceptance tests on current branch ===")
+        acc_effective = []
+        for at in acc_selected:
+            tag = "(added)" if at.is_new else "(modified)"
+            print(f"  {at.label} {tag} ...", flush=True)
+            proc = run_go_test(at.run, REPO_ROOT, env=cloud_env)
             tests = parse_json_output(proc.stdout)
-            parent_entry = tests.get(pattern)
+            leaves = get_leaf_subtests(at.parent, tests)
+            # An optional (scoped invariant) run with no leaves means the variant is
+            # excluded in this subdir; drop it rather than report it as failing.
+            if at.optional and not leaves and proc.returncode == 0:
+                print("    not applicable (variant excluded), skipping")
+                continue
+            parent_entry = tests.get(at.parent)
             parent_status = parent_entry.status if parent_entry else ("fail" if proc.returncode != 0 else "")
-            leaves = get_leaf_subtests(pattern, tests)
-            passing_leaves = [l for l in leaves if tests.get(l, TestEntry(name=l)).status == "pass"]
-            acc_branch_info[tp] = {
+            passing_leaves = [leaf for leaf in leaves if tests.get(leaf, TestEntry(name=leaf)).status == "pass"]
+            acc_branch_info[at.key] = {
                 "parent_status": parent_status,
                 "leaves": leaves,
                 "passing_leaves": passing_leaves,
                 "leaf_entries": tests,
             }
+            acc_effective.append(at)
             print(f"    status={parent_status}, leaves={len(leaves)}, passing={len(passing_leaves)}")
             if proc.returncode != 0:
                 print(readable_output(proc.stdout + proc.stderr))
+        acc_selected = acc_effective
 
-    if unit_selected:
-        print("\n=== Phase 1b: Running unit tests on current branch ===")
-        for key in unit_selected:
-            pkg_dir, changed_files_pkg, functions = unit_entry_map[key]
-            tag = "(added)" if key in unit_added_keys else "(modified)"
-            print(f"  {pkg_dir} {tag} ({len(functions)} functions) ...", flush=True)
-            proc = run_unit_tests(pkg_dir, functions, REPO_ROOT)
-            if is_compile_failure(proc):
-                print("    cannot compile on branch")
-                unit_branch_info[key] = {
-                    "package_dir": pkg_dir,
-                    "compile_fail": True,
-                    "raw_output": proc.stdout,
-                    "parent_status": "cannot_compile",
-                    "all_functions": functions,
-                    "passing_functions": [],
-                }
-                continue
-            tests = parse_json_output(proc.stdout)
-            passing = [f for f in functions if tests.get(f, TestEntry(name=f)).status == "pass"]
-            parent_status = "pass" if passing else ("fail" if proc.returncode != 0 else "skip")
-            unit_branch_info[key] = {
-                "package_dir": pkg_dir,
-                "compile_fail": False,
-                "raw_output": proc.stdout,
-                "parent_status": parent_status,
-                "all_functions": functions,
-                "passing_functions": passing,
-            }
-            print(f"    status={parent_status}, functions={len(functions)}, passing={len(passing)}")
-
-    # Phase 2: compare against main (worktree)
+    # Phase 2: compare against a CLI built from main
     acc_main_info: dict[str, dict] = {}
-    unit_main_info: dict[str, dict] = {}
 
     if acc_selected:
-        print("\n=== Phase 2a: Testing acceptance tests against main (worktree) ===")
-        for tp in acc_selected:
-            for leaf in acc_branch_info[tp]["passing_leaves"]:
-                print(f"  {leaf} ...", flush=True)
-                proc = run_acceptance_on_main(tp, leaf, merge_base)
-                if proc is None:
-                    acc_main_info[leaf] = {"status": "error", "output": ""}
-                    continue
-                tests = parse_json_output(proc.stdout)
-                entry = tests.get(leaf)
-                status = entry.status if entry else ("fail" if proc.returncode != 0 else "unknown")
-                acc_main_info[leaf] = {"status": status, "output": proc.stdout}
-                print(f"    main status: {status}")
-
-    if unit_selected:
-        print("\n=== Phase 2b: Testing unit tests against main (worktree) ===")
-        for key in unit_selected:
-            info = unit_branch_info[key]
-            if not info["passing_functions"]:
-                continue
-            pkg_dir, changed_files_pkg, functions = unit_entry_map[key]
-            print(f"  {pkg_dir} ...", flush=True)
-            proc = run_unit_tests_on_main(pkg_dir, changed_files_pkg, info["passing_functions"], merge_base)
-            if proc is None:
-                unit_main_info[key] = {"compile_fail": False, "function_results": {}, "raw_output": ""}
-                continue
-            if is_compile_failure(proc):
-                print("    cannot compile on main")
-                unit_main_info[key] = {"compile_fail": True, "raw_output": proc.stdout, "function_results": {}}
-                continue
-            tests = parse_json_output(proc.stdout)
-            func_results = {f: (tests[f].status if f in tests else "not_found") for f in info["passing_functions"]}
-            unit_main_info[key] = {"compile_fail": False, "function_results": func_results, "raw_output": proc.stdout}
-            for f, s in func_results.items():
-                print(f"    {f}: {s}")
+        print("\n=== Phase 2: Testing acceptance tests against main CLI ===")
+        main_cli, main_cli_dir = build_main_cli(merge_base)
+        try:
+            for at in acc_selected:
+                for leaf in acc_branch_info[at.key]["passing_leaves"]:
+                    print(f"  {leaf} ...", flush=True)
+                    proc = run_acceptance_on_main(leaf, main_cli, env=cloud_env)
+                    tests = parse_json_output(proc.stdout)
+                    entry = tests.get(leaf)
+                    status = entry.status if entry else ("fail" if proc.returncode != 0 else "unknown")
+                    acc_main_info[leaf] = {"status": status, "output": proc.stdout}
+                    print(f"    main status: {status}")
+        finally:
+            shutil.rmtree(main_cli_dir, ignore_errors=True)
 
     # Phase 3: compare acceptance tests against latest release
     acc_latest_info: dict[str, dict] = {}
@@ -879,10 +860,10 @@ def main():
             print(f"  Warning: could not fetch latest release version: {e}")
         if latest_version:
             print(f"  Latest release: v{latest_version}")
-            for tp in acc_selected:
-                for leaf in acc_branch_info[tp]["passing_leaves"]:
+            for at in acc_selected:
+                for leaf in acc_branch_info[at.key]["passing_leaves"]:
                     print(f"  {leaf} ...", flush=True)
-                    proc = run_acceptance_with_latest_release(leaf, latest_version, REPO_ROOT)
+                    proc = run_acceptance_with_latest_release(leaf, latest_version, REPO_ROOT, env=cloud_env)
                     tests = parse_json_output(proc.stdout)
                     entry = tests.get(leaf)
                     status = entry.status if entry else ("fail" if proc.returncode != 0 else "unknown")
@@ -893,57 +874,35 @@ def main():
         commit_header,
         base_commit,
         acc_selected,
-        acc_added,
         acc_branch_info,
         acc_main_info,
         acc_latest_info,
         latest_version,
-        unit_selected,
-        unit_added_keys,
-        unit_branch_info,
-        unit_main_info,
     )
 
-    _print_counts(
-        acc_selected, acc_branch_info, acc_main_info, acc_latest_info, unit_selected, unit_branch_info, unit_main_info
-    )
+    _print_counts(acc_selected, acc_branch_info, acc_main_info, acc_latest_info)
     _emit(report, args)
 
 
-def _print_counts(
-    acc_selected, acc_branch_info, acc_main_info, acc_latest_info, unit_selected, unit_branch_info, unit_main_info
-):
-    def acc_cat(tp):
-        pl = acc_branch_info[tp]["passing_leaves"]
+def _print_counts(acc_selected, acc_branch_info, acc_main_info, acc_latest_info):
+    def acc_cat(at):
+        pl = acc_branch_info[at.key]["passing_leaves"]
         if not pl:
             return "failing"
         cats = {
             classify_acceptance_result(
-                acc_main_info.get(l, {}).get("status", ""),
-                acc_latest_info.get(l, {}).get("status", ""),
+                acc_main_info.get(leaf, {}).get("status", ""),
+                acc_latest_info.get(leaf, {}).get("status", ""),
             )
-            for l in pl
+            for leaf in pl
         }
         return "regression" if "regression" in cats else ("unreleased" if "unreleased" in cats else "coverage")
 
-    def unit_cat(key):
-        info = unit_branch_info[key]
-        if info["compile_fail"] or not info["passing_functions"]:
-            return "failing"
-        mr = unit_main_info.get(key, {})
-        return classify_unit_result(
-            mr.get("compile_fail", False),
-            mr.get("function_results", {}),
-            info["passing_functions"],
-        )
-
-    ac = Counter(acc_cat(tp) for tp in acc_selected)
-    uc = Counter(unit_cat(k) for k in unit_selected)
+    ac = Counter(acc_cat(at) for at in acc_selected)
     print(
         f"\nAcceptance: regression={ac['regression']} unreleased={ac['unreleased']} "
         f"coverage={ac['coverage']} failing={ac['failing']}"
     )
-    print(f"Unit:       regression={uc['regression']} coverage={uc['coverage']} failing={uc['failing']}")
 
 
 def _emit(report, args):
