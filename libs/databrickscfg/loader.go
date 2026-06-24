@@ -74,10 +74,20 @@ func findMatchingProfile(configFile *config.File, matcher func(*ini.Section) boo
 	return matching[0], nil
 }
 
-// hostAttrName is the SDK config attribute name for the Databricks host. The
-// host has no `auth` struct tag, so it is excluded from auth-only checks by
-// name rather than via HasAuthAttribute.
-const hostAttrName = "host"
+// nonAuthEnvSkipAttrs lists SDK config attribute names that nonAuthEnvLoader
+// must not read from the environment, beyond those caught by HasAuthAttribute.
+//
+//   - host: has no `auth` struct tag, so HasAuthAttribute can't see it.
+//   - auth_type, discovery_url: tagged `auth:"-"` in the SDK, which the SDK
+//     normalizes to an empty auth tag (internal), so HasAuthAttribute reports
+//     false even though both select/steer the authentication method. Leaving
+//     them to the env would let DATABRICKS_AUTH_TYPE / DATABRICKS_DISCOVERY_URL
+//     shadow the selected profile, the same bug as #5096.
+var nonAuthEnvSkipAttrs = map[string]bool{
+	"host":          true,
+	"auth_type":     true,
+	"discovery_url": true,
+}
 
 type nonAuthEnvLoader struct{}
 
@@ -87,22 +97,25 @@ func (nonAuthEnvLoader) Name() string {
 
 func (nonAuthEnvLoader) Configure(cfg *config.Config) error {
 	for _, attr := range config.ConfigAttributes {
-		// Leave the host and authentication credentials for the config file
+		// Leave the host and authentication settings for the config file
 		// (i.e. the selected profile) to provide.
-		if attr.Name == hostAttrName || attr.HasAuthAttribute() {
+		if nonAuthEnvSkipAttrs[attr.Name] || attr.HasAuthAttribute() {
 			continue
 		}
 		// Match the SDK loader semantics: don't overwrite a value previously set.
 		if !attr.IsZero(cfg) {
 			continue
 		}
-		v, _ := attr.ReadEnv()
+		v, envName := attr.ReadEnv()
 		if v == "" {
 			continue
 		}
 		if err := attr.SetS(cfg, v); err != nil {
 			return err
 		}
+		// Record the source so `databricks auth describe` and debug output
+		// attribute the value to the environment, matching the SDK loader.
+		cfg.SetAttrSource(&attr, config.Source{Type: config.SourceEnv, Name: envName})
 	}
 	return nil
 }

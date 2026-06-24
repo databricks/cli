@@ -448,7 +448,7 @@ func TestMustWorkspaceClientProfileFlagOverridesAuthEnv(t *testing.T) {
 	configFile := filepath.Join(t.TempDir(), ".databrickscfg")
 	err := os.WriteFile(configFile, []byte(`
 [tst-svc]
-host = https://tst.cloud.databricks.com
+host = https://tst.cloud.databricks.test
 token = tst-token
 `), 0o600)
 	require.NoError(t, err)
@@ -456,7 +456,7 @@ token = tst-token
 	t.Setenv("DATABRICKS_CONFIG_FILE", configFile)
 	// direnv-style auth env vars pointing at a different (dev) workspace. Before
 	// the fix for #5096 these shadowed the profile selected with --profile.
-	t.Setenv("DATABRICKS_HOST", "https://dev.cloud.databricks.com")
+	t.Setenv("DATABRICKS_HOST", "https://dev.cloud.databricks.test")
 	t.Setenv("DATABRICKS_TOKEN", "dev-token")
 
 	ctx := cmdio.MockDiscard(t.Context())
@@ -473,7 +473,7 @@ token = tst-token
 	require.NotNil(t, w)
 	// The explicitly selected profile must win over the auth env vars.
 	assert.Equal(t, "tst-svc", w.Config.Profile)
-	assert.Equal(t, "https://tst.cloud.databricks.com", w.Config.Host)
+	assert.Equal(t, "https://tst.cloud.databricks.test", w.Config.Host)
 	assert.Equal(t, "tst-token", w.Config.Token)
 }
 
@@ -483,14 +483,15 @@ func TestMustAccountClientProfileFlagOverridesAuthEnv(t *testing.T) {
 	configFile := filepath.Join(t.TempDir(), ".databrickscfg")
 	err := os.WriteFile(configFile, []byte(`
 [acc-tst]
-host = https://accounts.azuredatabricks.net/
+host = https://accounts.cloud.databricks.test
 account_id = 1111
 token = tst-token
 `), 0o600)
 	require.NoError(t, err)
 
 	t.Setenv("DATABRICKS_CONFIG_FILE", configFile)
-	t.Setenv("DATABRICKS_HOST", "https://accounts.azuredatabricks.net/")
+	// Auth env vars pointing at a different account host. The profile must win.
+	t.Setenv("DATABRICKS_HOST", "https://accounts.dev.databricks.test")
 	t.Setenv("DATABRICKS_TOKEN", "dev-token")
 
 	cmd := New(t.Context())
@@ -504,6 +505,7 @@ token = tst-token
 	require.NotNil(t, a)
 	// The explicitly selected profile must win over the auth env vars.
 	assert.Equal(t, "acc-tst", a.Config.Profile)
+	assert.Equal(t, "https://accounts.cloud.databricks.test", a.Config.Host)
 	assert.Equal(t, "tst-token", a.Config.Token)
 }
 

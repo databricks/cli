@@ -182,9 +182,19 @@ func (w *Workspace) Client(ctx context.Context) (*databricks.WorkspaceClient, er
 
 	cfg := w.Config(ctx)
 
-	// If only the host is configured, we try and unambiguously match it to
-	// a profile in the user's databrickscfg file. Override the default loaders.
-	if w.Host != "" && w.Profile == "" {
+	switch {
+	case w.Profile != "":
+		// An explicit profile (from --profile or workspace.profile) must take
+		// precedence over authentication environment variables, mirroring
+		// MustWorkspaceClient. The SDK's default loader reads the environment
+		// before the config file and never overwrites an already-set field, so
+		// without this DATABRICKS_HOST/DATABRICKS_TOKEN would shadow the
+		// selected profile (issue #5096). Load only non-auth attributes from
+		// the environment, then the profile.
+		cfg.Loaders = []config.Loader{databrickscfg.ResolveNonAuthFromEnv, config.ConfigFile}
+	case w.Host != "":
+		// If only the host is configured, we try and unambiguously match it to
+		// a profile in the user's databrickscfg file. Override the default loaders.
 		cfg.Loaders = []config.Loader{
 			// Load auth creds from env vars
 			config.ConfigAttributes,
