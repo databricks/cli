@@ -63,7 +63,32 @@ func isTruePtr(value *bool) bool {
 	return value != nil && *value
 }
 
-func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, outputDir string) (*sdkconfig.Config, iam.User) {
+// staleOnceEnabled reports whether the testserver should simulate eventual
+// consistency (the first GET after a create returns 404). It is opt-in via
+// TESTS_STALE_ONCE=1 and only applies to the direct engine, which retries reads
+// on a 404; the terraform provider does not, so it is skipped there.
+//
+// testEnv carries the per-variant EnvMatrix values, which are not visible via
+// os/env because matrix variants run in parallel and only reach the CLI subprocess.
+func staleOnceEnabled(testEnv []string) bool {
+	if v, _ := lookupEnv(testEnv, "TESTS_STALE_ONCE"); v != "1" {
+		return false
+	}
+	engine, _ := lookupEnv(testEnv, "DATABRICKS_BUNDLE_ENGINE")
+	return engine == "direct"
+}
+
+func lookupEnv(testEnv []string, key string) (string, bool) {
+	prefix := key + "="
+	for _, kv := range testEnv {
+		if v, ok := strings.CutPrefix(kv, prefix); ok {
+			return v, true
+		}
+	}
+	return "", false
+}
+
+func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, outputDir string, testEnv []string) (*sdkconfig.Config, iam.User) {
 	cloudEnv := env.Get(t.Context(), "CLOUD_ENV")
 	recordRequests := isTruePtr(config.RecordRequests)
 
@@ -73,11 +98,10 @@ func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, o
 
 	var token string
 	var testUser iam.User
-	engine := env.Get(t.Context(), "DATABRICKS_BUNDLE_ENGINE")
 	if isTruePtr(config.IsServicePrincipal) {
 		token = testserver.ServicePrincipalTokenPrefix + tokenSuffix
 		testUser = testserver.TestUserSP
-	} else if engine == "direct" {
+	} else if staleOnceEnabled(testEnv) {
 		// Use the eventual-consistency token so DashboardGet returns 404 on
 		// the first GET after a create, matching real cloud propagation delays.
 		token = testserver.EventualConsistencyTokenPrefix + tokenSuffix

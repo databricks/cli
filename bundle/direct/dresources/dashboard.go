@@ -358,6 +358,14 @@ func (r *ResourceDashboard) DoUpdate(ctx context.Context, id string, config *Das
 	return responseToState(updateResp, publishResp, dashboard.SerializedDashboard, config.Published), nil
 }
 
+// WaitAfterCreate reads the dashboard back after creation. Under eventual
+// consistency the first GET can 404; the read is retried at the apply layer
+// (retryOnTransientOrMissing), so the post-create stale is consumed inside
+// deploy rather than surfacing on the next read.
+func (r *ResourceDashboard) WaitAfterCreate(ctx context.Context, id string, _ *DashboardState) (*DashboardState, error) {
+	return r.DoRead(ctx, id)
+}
+
 func (r *ResourceDashboard) DoDelete(ctx context.Context, id string, _ *DashboardState) error {
 	return r.client.Lakeview.Trash(ctx, dashboards.TrashDashboardRequest{
 		DashboardId: id,

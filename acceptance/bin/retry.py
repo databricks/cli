@@ -10,6 +10,7 @@ An attempt is considered successful when the command exits with code 0 and:
   --until-not SUBSTR SUBSTR does not appear in stdout
 """
 
+import argparse
 import os
 import subprocess
 import sys
@@ -17,18 +18,16 @@ import time
 
 
 def main():
-    argv = sys.argv[1:]
-    until = None
-    until_not = None
-    while len(argv) >= 2 and argv[0] in ("--until", "--until-not"):
-        if argv[0] == "--until":
-            until = argv[1]
-        else:
-            until_not = argv[1]
-        argv = argv[2:]
-    if not argv:
-        sys.stderr.write("retry.py: no command given\n")
-        sys.exit(1)
+    parser = argparse.ArgumentParser(prog="retry.py")
+    parser.add_argument("--until")
+    parser.add_argument("--until-not")
+    parser.add_argument("cmd", nargs=argparse.REMAINDER)
+    args = parser.parse_args()
+    if not args.cmd:
+        parser.error("no command given")
+    until = args.until
+    until_not = args.until_not
+    argv = args.cmd
 
     interval = float(os.environ.get("RETRY_INTERVAL_MS", "500")) / 1000.0
     max_attempts = int(os.environ.get("RETRY_MAX_ATTEMPTS", "5"))

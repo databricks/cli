@@ -61,7 +61,13 @@ func retryWith[T any](ctx context.Context, check func(error) bool, fn func() (T,
 			}
 			msg = fmt.Sprintf("retrying after %d %s%s", apiErr.StatusCode, http.StatusText(apiErr.StatusCode), endpoint)
 		}
-		log.Warnf(ctx, "%s", msg)
+		// A 404 right after a write is expected under eventual consistency and not
+		// user-actionable, so log it at debug. Transient 5xx are worth a warning.
+		if apierr.IsMissing(err) {
+			log.Debugf(ctx, "%s", msg)
+		} else {
+			log.Warnf(ctx, "%s", msg)
+		}
 		select {
 		case <-ctx.Done():
 			var zero T

@@ -1,1 +1,7 @@
 EnvMatrix.READPLAN = ["", "1"]
+
+# Simulate eventual consistency (first GET after create returns 404) for the
+# direct engine, exercising its retry-on-missing path. Only no_drift runs a pure
+# current-CLI direct flow; migrate/continue_293 invoke terraform or the old CLI,
+# which do not retry, so EC is scoped to this directory.
+Env.TESTS_STALE_ONCE = "1"

@@ -17,6 +17,9 @@ Env.PYTHONDONTWRITEBYTECODE = "1"
 Env.PYTHONUNBUFFERED = "1"
 Env.PYTHONUTF8 = "1"
 
+# Keep retries fast: the direct engine retries reads on eventual-consistency 404s.
+Env.DATABRICKS_BUNDLE_RETRY_INTERVAL_MS = "1"
+
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
 EnvMatrixExclude.noplantf = ["DATABRICKS_BUNDLE_ENGINE=terraform", "READPLAN=1"]
 EnvRepl.DATABRICKS_BUNDLE_ENGINE = false
