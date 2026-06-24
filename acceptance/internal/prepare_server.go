@@ -63,14 +63,14 @@ func isTruePtr(value *bool) bool {
 	return value != nil && *value
 }
 
-// staleOnceEnabled reports whether the testserver should simulate eventual
+// StaleOnceEnabled reports whether the testserver should simulate eventual
 // consistency (the first GET after a create returns 404). It is opt-in via
 // TESTS_STALE_ONCE=1 and only applies to the direct engine, which retries reads
 // on a 404; the terraform provider does not, so it is skipped there.
 //
 // testEnv carries the per-variant EnvMatrix values, which are not visible via
 // os/env because matrix variants run in parallel and only reach the CLI subprocess.
-func staleOnceEnabled(testEnv []string) bool {
+func StaleOnceEnabled(testEnv []string) bool {
 	if v, _ := lookupEnv(testEnv, "TESTS_STALE_ONCE"); v != "1" {
 		return false
 	}
@@ -101,7 +101,7 @@ func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, o
 	if isTruePtr(config.IsServicePrincipal) {
 		token = testserver.ServicePrincipalTokenPrefix + tokenSuffix
 		testUser = testserver.TestUserSP
-	} else if staleOnceEnabled(testEnv) {
+	} else if StaleOnceEnabled(testEnv) {
 		// Use the eventual-consistency token so DashboardGet returns 404 on
 		// the first GET after a create, matching real cloud propagation delays.
 		token = testserver.EventualConsistencyTokenPrefix + tokenSuffix

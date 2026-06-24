@@ -825,6 +825,13 @@ func runTest(t *testing.T,
 		cmd.Env = addEnvVar(t, cmd.Env, &repls, key, value, config.EnvRepl, defaultRepl)
 	}
 
+	// When the testserver simulates eventual consistency locally, the direct engine
+	// retries reads on a 404. Keep that retry near-instant so tests don't sleep. This
+	// is local-only: on cloud the real propagation delay needs the real interval.
+	if !isRunningOnCloud && internal.StaleOnceEnabled(testEnv) && !hasKey(testEnv, "DATABRICKS_BUNDLE_RETRY_INTERVAL_MS") {
+		cmd.Env = append(cmd.Env, "DATABRICKS_BUNDLE_RETRY_INTERVAL_MS=1")
+	}
+
 	absDir, err := filepath.Abs(dir)
 	require.NoError(t, err)
 	cmd.Env = append(cmd.Env, "TESTDIR="+absDir)
