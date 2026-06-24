@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 
 	"github.com/databricks/cli/experimental/genie/agentstream"
 	"github.com/databricks/cli/libs/auth"
@@ -61,13 +62,10 @@ func PostStream(ctx context.Context, cfg *config.Config, req GenieRequest) (io.R
 		"Content-Type": "application/json",
 		"Accept":       "text/event-stream",
 	}
-	// This endpoint is workspace-scoped: without the org-id routing header the
-	// gateway rejects the request with "Credential was not sent or was of an
-	// unsupported type for this API" even when auth is otherwise valid.
-	// client.New populates cfg.WorkspaceID; WorkspaceIDNone means "none".
-	if orgID := cfg.WorkspaceID; orgID != "" && orgID != auth.WorkspaceIDNone {
-		headers["X-Databricks-Org-Id"] = orgID
-	}
+	// Workspace-scoped endpoint: on SPOG hosts the gateway can't route without the
+	// workspace-id header (else "Credential was not sent…"). The SDK adds it for
+	// generated methods; a direct client.Do call adds it via this helper.
+	maps.Copy(headers, auth.WorkspaceIDHeaders(cfg))
 	err = api.Do(ctx, "POST", genieResponsesPath, headers, nil, req, &body)
 	// The route is fixed and carries no resource IDs, so a 404 normally means
 	// the endpoint itself is gone: the backend route is undocumented and can
