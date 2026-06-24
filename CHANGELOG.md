@@ -1,10 +1,5 @@
 # Version changelog
 
-## [Unreleased]
-
-### Bundles
-* direct: Fix spurious cluster recreate when `apply_policy_default_values: true` is set ([#5693](https://github.com/databricks/cli/pull/5693)).
-
 ## Release v1.4.0 (2026-06-17)
 
 ### CLI
