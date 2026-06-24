@@ -477,6 +477,41 @@ token = tst-token
 	assert.Equal(t, "tst-token", w.Config.Token)
 }
 
+func TestMustWorkspaceClientProfileFlagFillsAuthFromEnv(t *testing.T) {
+	testutil.CleanupEnvironment(t)
+
+	// A host-only profile relies on the environment for credentials. This is a
+	// common CI pattern: the host lives in .databrickscfg while DATABRICKS_TOKEN
+	// is injected by the runner. The profile must take precedence for the host,
+	// but the env must still fill the token the profile does not provide (#5096).
+	configFile := filepath.Join(t.TempDir(), ".databrickscfg")
+	err := os.WriteFile(configFile, []byte(`
+[host-only]
+host = https://tst.cloud.databricks.test
+`), 0o600)
+	require.NoError(t, err)
+
+	t.Setenv("DATABRICKS_CONFIG_FILE", configFile)
+	t.Setenv("DATABRICKS_TOKEN", "env-token")
+
+	ctx := cmdio.MockDiscard(t.Context())
+	ctx = SkipLoadBundle(ctx)
+	cmd := New(ctx)
+
+	err = cmd.Flag("profile").Value.Set("host-only")
+	require.NoError(t, err)
+
+	err = MustWorkspaceClient(cmd, []string{})
+	require.NoError(t, err)
+
+	w := cmdctx.WorkspaceClient(cmd.Context())
+	require.NotNil(t, w)
+	assert.Equal(t, "host-only", w.Config.Profile)
+	assert.Equal(t, "https://tst.cloud.databricks.test", w.Config.Host)
+	// The token is not in the profile, so it is filled from the environment.
+	assert.Equal(t, "env-token", w.Config.Token)
+}
+
 func TestMustAccountClientProfileFlagOverridesAuthEnv(t *testing.T) {
 	testutil.CleanupEnvironment(t)
 

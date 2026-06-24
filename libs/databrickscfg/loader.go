@@ -15,16 +15,18 @@ import (
 var ResolveProfileFromHost = profileFromHostLoader{}
 
 // ResolveNonAuthFromEnv reads configuration from environment variables, except
-// for the host and any authentication credential. It is meant to replace the
-// SDK's default environment loader when the user has explicitly selected a
-// profile (via the --profile flag), so that the profile fully determines the
-// host and authentication.
+// for the host and any authentication credential. It runs before the config
+// file loader when the user has explicitly selected a profile (via the
+// --profile flag or workspace.profile), so that the profile takes precedence
+// over auth environment variables.
 //
 // The SDK's default loader order is environment first, then config file, and a
 // loader never overwrites a field that is already set. As a result auth env
 // vars (DATABRICKS_HOST, DATABRICKS_TOKEN, ...) shadow the selected profile.
 // Skipping them here lets the subsequent config-file loader populate host and
-// auth from the profile instead. See
+// auth from the profile instead. A trailing config.ConfigAttributes loader can
+// still fill auth fields the profile leaves empty (e.g. a host-only profile
+// combined with DATABRICKS_TOKEN). See
 // https://github.com/databricks/cli/issues/5096.
 var ResolveNonAuthFromEnv = nonAuthEnvLoader{}
 
