@@ -235,17 +235,6 @@ resources:
         reason: immutable
       - field: route_optimized
         reason: immutable
-    ignore_remote_changes:
-      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/serving/resource_model_serving.go#L370
-      # common.CustomizeSchemaPath(m, "config", "traffic_config").SetComputed()
-      # Routes have custom SuppressDiff (lines 387-388)
-      - field: config.traffic_config
-        reason: managed
-      - field: budget_policy_id
-        reason: no_update_api
-        # There is PublicPreview endpoints but we're not using it https://docs.databricks.com/api/workspace/servingendpoints/put
-      - field: rate_limits
-        reason: not_implemented
     ignore_local_changes:
       - field: budget_policy_id
         reason: no_update_api
@@ -271,8 +260,9 @@ resources:
 
   registered_models:
     ignore_remote_changes:
-      # Output-only timestamp/user fields zeroed in RemapState but still show up
-      # via ForceSendFields. These should never participate in diffs.
+      # Output-only timestamp/user fields populated by the backend on read.
+      # The user never sets them, so remote-only differences are ignored here
+      # rather than zeroed in RemapState.
       - field: created_at
         reason: output_only
       - field: created_by
@@ -309,13 +299,6 @@ resources:
     recreate_on_changes:
       - field: assets_dir
         reason: immutable
-    ignore_remote_changes:
-      - field: warehouse_id
-        reason: input_only
-      # skip_builtin_dashboard is input-only, not returned by the Get API.
-      # TF preserves it from state; see resource_quality_monitor.go.
-      - field: skip_builtin_dashboard
-        reason: input_only
 
   catalogs:
     recreate_on_changes:
@@ -362,10 +345,6 @@ resources:
     updatable_id_fields:
       - field: name
         reason: id_changes
-    ignore_remote_changes:
-      # skip_validation is input-only and not returned by the API
-      - field: skip_validation
-        reason: input_only
 
   volumes:
     provided_id_fields:
@@ -607,12 +586,6 @@ resources:
       # project_id is immutable (part of hierarchical name, not in API spec)
       - field: project_id
         reason: id_field
-    ignore_remote_changes:
-      # purge_on_delete is a delete-time query parameter; not returned by GET.
-      # When the user changes it locally we still want the new value to land
-      # in state so the next destroy honors it.
-      - field: purge_on_delete
-        reason: input_only
 
   postgres_branches:
     provided_id_fields:
@@ -621,10 +594,6 @@ resources:
         reason: id_field
       - field: branch_id
         reason: id_field
-    ignore_remote_changes:
-      # replace_existing is a create-time query parameter; not returned by GET.
-      - field: replace_existing
-        reason: input_only
     ignore_local_changes:
       # replace_existing only takes effect on create; toggling it later is a no-op.
       - field: replace_existing
@@ -645,10 +614,6 @@ resources:
         reason: id_field
       - field: endpoint_id
         reason: id_field
-    ignore_remote_changes:
-      # replace_existing is a create-time query parameter; not returned by GET.
-      - field: replace_existing
-        reason: input_only
     ignore_local_changes:
       # replace_existing only takes effect on create; toggling it later is a no-op.
       - field: replace_existing

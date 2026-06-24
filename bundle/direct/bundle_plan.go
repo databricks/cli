@@ -387,6 +387,9 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 		} else if reason, ok := shouldSkipNormalized(generatedCfg, path, ch); ok {
 			ch.Action = deployplan.Skip
 			ch.Reason = reason
+		} else if isFieldMissingInRemote(adapter, path) && structdiff.IsEqual(ch.Old, ch.New) {
+			ch.Action = deployplan.Skip
+			ch.Reason = deployplan.ReasonMissingInRemote
 		} else if reason, ok := findMatchingRule(path, cfg.RecreateOnChanges); ok {
 			ch.Action = deployplan.Recreate
 			ch.Reason = reason
@@ -422,6 +425,15 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 	}
 
 	return nil
+}
+
+// isFieldMissingInRemote reports whether path exists in StateType but is absent from RemoteType.
+// Such fields are accepted by the API on write but not returned by GET.
+func isFieldMissingInRemote(adapter *dresources.Adapter, path *structpath.PathNode) bool {
+	if structaccess.ValidatePath(adapter.StateType(), path) != nil {
+		return false
+	}
+	return structaccess.ValidatePath(adapter.RemoteType(), path) != nil
 }
 
 func findMatchingRule(path *structpath.PathNode, rules []dresources.FieldRule) (string, bool) {

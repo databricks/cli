@@ -140,7 +140,7 @@ func loadPreResolvedConfig(ctx context.Context, b *bundle.Bundle) dyn.Value {
 // deployed IDs from state. For the direct engine, the StateDB is already open
 // on b.DeploymentBundle. For the terraform engine, the config snapshot is
 // opened locally (it was downloaded by ensureSnapshotAvailable during
-// DetectChanges). Returns nil if no state is available.
+// OpenDeploymentState). Returns nil if no state is available.
 func resourceIDLookup(ctx context.Context, b *bundle.Bundle) func(string) string {
 	if b.DeploymentBundle.StateDB.Path != "" {
 		return b.DeploymentBundle.StateDB.GetResourceID
