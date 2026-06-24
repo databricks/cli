@@ -18,7 +18,7 @@ import (
 func TestBuildRequest_WireFormat(t *testing.T) {
 	// The backend expects camelCase warehouseId; this pins the wire format,
 	// not just the Go field values.
-	b, err := json.Marshal(BuildRequest("What tables exist?", "abc123"))
+	b, err := json.Marshal(BuildRequest("What tables exist?", "abc123", ""))
 	require.NoError(t, err)
 	assert.JSONEq(t, `{
 		"input": [{
@@ -31,9 +31,22 @@ func TestBuildRequest_WireFormat(t *testing.T) {
 }
 
 func TestBuildRequest_OmitsEmptyWarehouse(t *testing.T) {
-	b, err := json.Marshal(BuildRequest("q", ""))
+	b, err := json.Marshal(BuildRequest("q", "", ""))
 	require.NoError(t, err)
 	assert.NotContains(t, string(b), "warehouseId")
+}
+
+func TestBuildRequest_Conversation(t *testing.T) {
+	// A conversation id continues an existing conversation; the wire field is
+	// camelCase conversationId (verified live — the snake_case form is ignored).
+	b, err := json.Marshal(BuildRequest("q", "", "conv-123"))
+	require.NoError(t, err)
+	assert.Contains(t, string(b), `"conversationId":"conv-123"`)
+
+	// Omitted when empty (a fresh conversation).
+	b, err = json.Marshal(BuildRequest("q", "", ""))
+	require.NoError(t, err)
+	assert.NotContains(t, string(b), "conversationId")
 }
 
 func TestPostStream(t *testing.T) {
@@ -52,7 +65,7 @@ func TestPostStream(t *testing.T) {
 	defer srv.Close()
 
 	cfg := &config.Config{Host: srv.URL, Token: "dummy"}
-	body, err := PostStream(t.Context(), cfg, BuildRequest("What tables exist?", "wh1"))
+	body, err := PostStream(t.Context(), cfg, BuildRequest("What tables exist?", "wh1", ""))
 	require.NoError(t, err)
 	defer body.Close()
 
@@ -81,7 +94,7 @@ func TestPostStream_SendsOrgIDHeader(t *testing.T) {
 	defer srv.Close()
 
 	cfg := &config.Config{Host: srv.URL, Token: "dummy", WorkspaceID: "987654321"}
-	body, err := PostStream(t.Context(), cfg, BuildRequest("q", ""))
+	body, err := PostStream(t.Context(), cfg, BuildRequest("q", "", ""))
 	require.NoError(t, err)
 	defer body.Close()
 	assert.Equal(t, "987654321", gotOrgID)
@@ -99,7 +112,7 @@ func TestPostStream_OmitsOrgIDHeaderWhenUnset(t *testing.T) {
 	defer srv.Close()
 
 	cfg := &config.Config{Host: srv.URL, Token: "dummy"}
-	body, err := PostStream(t.Context(), cfg, BuildRequest("q", ""))
+	body, err := PostStream(t.Context(), cfg, BuildRequest("q", "", ""))
 	require.NoError(t, err)
 	defer body.Close()
 	assert.False(t, hadOrgID, "no org-id header when workspace id is unset")
@@ -118,7 +131,7 @@ func TestPostStream_EndpointGone(t *testing.T) {
 	defer srv.Close()
 
 	cfg := &config.Config{Host: srv.URL, Token: "dummy"}
-	_, err := PostStream(t.Context(), cfg, BuildRequest("q", ""))
+	_, err := PostStream(t.Context(), cfg, BuildRequest("q", "", ""))
 	require.Error(t, err)
 	assert.ErrorIs(t, err, apierr.ErrNotFound)
 	assert.Contains(t, err.Error(), "No API found")
@@ -137,7 +150,7 @@ func TestPostStream_ResourceNotFound(t *testing.T) {
 	defer srv.Close()
 
 	cfg := &config.Config{Host: srv.URL, Token: "dummy"}
-	_, err := PostStream(t.Context(), cfg, BuildRequest("q", "wh-missing"))
+	_, err := PostStream(t.Context(), cfg, BuildRequest("q", "wh-missing", ""))
 	require.Error(t, err)
 	assert.ErrorIs(t, err, apierr.ErrResourceDoesNotExist)
 	assert.Contains(t, err.Error(), "Warehouse wh-missing does not exist")
@@ -153,7 +166,7 @@ func TestPostStream_HTTPError(t *testing.T) {
 	defer srv.Close()
 
 	cfg := &config.Config{Host: srv.URL, Token: "dummy"}
-	_, err := PostStream(t.Context(), cfg, BuildRequest("q", ""))
+	_, err := PostStream(t.Context(), cfg, BuildRequest("q", "", ""))
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "backend exploded")
 	assert.Contains(t, err.Error(), "update the Databricks CLI to the latest version")
@@ -171,7 +184,7 @@ func TestPostStream_InternalErrorEmptyMessage(t *testing.T) {
 	defer srv.Close()
 
 	cfg := &config.Config{Host: srv.URL, Token: "dummy"}
-	_, err := PostStream(t.Context(), cfg, BuildRequest("q", ""))
+	_, err := PostStream(t.Context(), cfg, BuildRequest("q", "", ""))
 	require.Error(t, err)
 	assert.ErrorIs(t, err, apierr.ErrInternalError)
 	assert.Contains(t, err.Error(), "could not process the request (500 with no details)")

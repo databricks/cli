@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"os/signal"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/experimental/genie"
@@ -18,6 +20,7 @@ func newAskCmd() *cobra.Command {
 	var warehouseID string
 	var raw bool
 	var includeSQL bool
+	var conversationID string
 
 	cmd := &cobra.Command{
 		Use:   "ask QUESTION",
@@ -35,7 +38,12 @@ Examples:
 			return root.MustWorkspaceClient(cmd, args)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx := cmd.Context()
+			// The CLI root doesn't turn Ctrl-C into context cancellation, so scope
+			// a SIGINT handler here: an interrupt cancels ctx, which aborts the
+			// request (closing the stream signals the server to stop) and lets us
+			// exit cleanly instead of dying mid-render.
+			ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt)
+			defer stop()
 			outputType := root.OutputType(cmd)
 			if raw && outputType == flags.OutputJSON {
 				return errors.New("--raw cannot be used with --output json")
@@ -45,7 +53,7 @@ Examples:
 			}
 
 			w := cmdctx.WorkspaceClient(ctx)
-			req := genie.BuildRequest(args[0], warehouseID)
+			req := genie.BuildRequest(args[0], warehouseID, conversationID)
 
 			body, err := genie.PostStream(ctx, w.Config, req)
 			if err != nil {
@@ -66,6 +74,13 @@ Examples:
 				err = agentstream.RenderText(ctx, body, cmd.OutOrStdout(), cmd.ErrOrStderr(), genie.NewAdaptSSE(), opts)
 			}
 
+			// Ctrl-C: our signal handler cancelled ctx. Exit cleanly rather than
+			// dumping "context canceled"; aborting the request already told the
+			// server to stop.
+			if err != nil && ctx.Err() != nil {
+				fmt.Fprintln(cmd.ErrOrStderr(), "\nCancelled.")
+				return root.ErrAlreadyPrinted
+			}
 			// The SDK's inactivity timeout cancels the body's read context, so
 			// a stalled stream surfaces as context.Canceled while the command's
 			// own context is still alive. Translate it; "context canceled" is
@@ -80,6 +95,7 @@ Examples:
 	cmd.Flags().StringVar(&warehouseID, "warehouse-id", "", "SQL warehouse ID (auto-resolves if omitted)")
 	cmd.Flags().BoolVar(&raw, "raw", false, "Print raw SSE events instead of rendered output")
 	cmd.Flags().BoolVar(&includeSQL, "include-sql", false, "Show SQL queries executed by the agent (text output; JSON always includes them)")
+	cmd.Flags().StringVar(&conversationID, "conversation", "", "Continue an existing conversation by ID (the conversation_id from a prior answer)")
 
 	return cmd
 }

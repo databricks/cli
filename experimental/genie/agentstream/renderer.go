@@ -80,6 +80,7 @@ func RenderText(ctx context.Context, r io.Reader, stdout, stderr io.Writer, adap
 
 	var vizBuffer []*VizEvent
 	var finalResponse string
+	var conversationID string    // captured from the done event, shown as a footer
 	var rendered strings.Builder // all text shown so far, for final-response dedupe
 	events := 0
 	unparsed := 0
@@ -122,6 +123,7 @@ func RenderText(ctx context.Context, r io.Reader, stdout, stderr io.Writer, adap
 				return apiError(se)
 			case EventDone:
 				sawDone = true
+				conversationID = se.ConversationID
 				if se.Status != "" && se.Status != statusCompleted {
 					return fmt.Errorf("response finished with status %q", se.Status)
 				}
@@ -162,6 +164,11 @@ func RenderText(ctx context.Context, r io.Reader, stdout, stderr io.Writer, adap
 	warnUnparsed(stderr, unparsed)
 	if !answered {
 		return noAnswerError(events)
+	}
+	// Surface the conversation id so the answer can be followed up on. It goes
+	// to stderr to keep stdout the pure answer for piping.
+	if conversationID != "" {
+		fmt.Fprintf(stderr, "\nContinue this conversation with: --conversation %s\n", conversationID)
 	}
 	if !sawDone {
 		fmt.Fprintln(stderr, "Warning: the stream ended without a completion event; the answer may be incomplete.")
@@ -222,6 +229,7 @@ loop:
 				apiErr = apiError(se)
 				break loop
 			case EventDone:
+				result.ConversationID = se.ConversationID
 				if se.Status != "" && se.Status != statusCompleted {
 					result.Status = statusError
 					result.Error = fmt.Sprintf("response finished with status %q", se.Status)

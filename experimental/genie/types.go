@@ -4,6 +4,11 @@ package genie
 type GenieRequest struct {
 	Input       []InputItem `json:"input"`
 	WarehouseID string      `json:"warehouseId,omitempty"`
+	// ConversationID continues an existing conversation, carrying the
+	// conversation_id from a prior response. Empty starts a new one. The request
+	// field is camelCase (matching warehouseId); the snake_case conversation_id
+	// the response uses is NOT read back on the request — verified live.
+	ConversationID string `json:"conversationId,omitempty"`
 }
 
 // InputItem is a message in the input array.
