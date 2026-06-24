@@ -46,6 +46,7 @@ func (s *stateUpdate) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnost
 	}
 	state.Files = fl
 
+	// Generate a UUID for the deployment, if one does not already exist
 	if state.ID == uuid.Nil {
 		state.ID = uuid.New()
 	}
