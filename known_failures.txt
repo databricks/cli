@@ -57,3 +57,6 @@ acceptance TestAccept/ssh/connection
 * TestSparkJarTaskDeployAndRunOnWorkspace
 * TestGenerateFromExistingJobAndDeploy
 
+# This is broken on Azure; it times out.
+integration TestFetchRepositoryInfoAPI_FromRepo
+
