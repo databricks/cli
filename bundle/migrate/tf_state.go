@@ -43,26 +43,6 @@ type rawTFState struct {
 	} `json:"resources"`
 }
 
-// ETagFor returns the "etag" attribute for a bundle resource, or "" if absent.
-// Reads directly from the raw JSON without full path translation.
-func (a TFStateAttrs) ETagFor(group, name string) string {
-	tfType, ok := terraform.GroupToTerraformName[group]
-	if !ok {
-		return ""
-	}
-	raw, ok := a[tfType][name]
-	if !ok {
-		return ""
-	}
-	var v struct {
-		Etag string `json:"etag,omitempty"`
-	}
-	if err := json.Unmarshal(raw, &v); err != nil {
-		return ""
-	}
-	return v.Etag
-}
-
 // ParseTFStateFull reads the terraform state file once and returns all parsed data.
 // Returns nil without error when the file does not exist (first deploy with no resources).
 func ParseTFStateFull(ctx context.Context, path string) (*TFState, error) {

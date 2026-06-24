@@ -205,10 +205,13 @@ func BuildStateFromTF(
 
 		// Handle etag for dashboards: read it directly from TF state attributes.
 		// The "etag" field is a computed TF attribute not present in the bundle config,
-		// so it does not flow through PrepareState/ExtractReferences.
-		if etag := tfAttrs.ETagFor(group, srcName); etag != "" {
-			if err := structaccess.Set(sv.Value, structpath.NewStringKey(nil, "etag"), etag); err != nil {
-				return fmt.Errorf("%s: cannot set etag: %w", node, err)
+		// so it does not flow through PrepareState/ExtractReferences. Resources without
+		// an etag return an error from LookupTFField, which we treat as "no etag".
+		if v, err := LookupTFField(tfAttrs, group, srcName, structpath.NewStringKey(nil, "etag")); err == nil {
+			if etag, ok := v.(string); ok && etag != "" {
+				if err := structaccess.Set(sv.Value, structpath.NewStringKey(nil, "etag"), etag); err != nil {
+					return fmt.Errorf("%s: cannot set etag: %w", node, err)
+				}
 			}
 		}
 
