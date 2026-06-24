@@ -188,6 +188,22 @@ func hasRunFilter() bool {
 	return f != nil && strings.Contains(f.Value.String(), "=")
 }
 
+// requirePrerequisites verifies external tool prerequisites before doing any
+// work, so a stale toolchain fails fast with an actionable message instead of
+// producing confusing diffs deep into the run.
+func requirePrerequisites(t *testing.T) {
+	// Scripts use jq 1.7 features (the pick/1 builtin and the `.foo.[]` iteration syntax).
+	internal.RequireJQ(t, "1.7")
+	// uv builds the databricks-bundles wheel and provides the test interpreter
+	// via `uv python find`, which landed in the 0.3 line.
+	internal.RequireUV(t, "0.4")
+	// ruff 0.9.1 is pinned across the repo (python/pyproject.toml, Taskfile.yml);
+	// the check-formatting test's golden output assumes its formatter behavior.
+	internal.RequireRuff(t, "0.9.1")
+	// Acceptance scripts import the stdlib tomllib module, added in Python 3.11.
+	internal.EnsurePython(t, "3.11")
+}
+
 func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	if testdiff.OverwriteMode && !hasRunFilter() {
 		Subset = true
@@ -228,6 +244,8 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	} {
 		os.Unsetenv(v) //nolint:usetesting // t.Setenv cannot unset
 	}
+
+	requirePrerequisites(t)
 
 	buildDir := getBuildDir(t, cwd, runtime.GOOS, runtime.GOARCH)
 
@@ -609,6 +627,29 @@ func getSkipReason(config *internal.TestConfig, configPath string) string {
 	return ""
 }
 
+var ciRunID = regexp.MustCompile(`^[0-9]{1,16}$`)
+
+// ciUniqueName embeds a CI run id into the random unique name as "ci<runID>x<random>".
+// The result stays purely lowercase-alphanumeric like the base32 name it replaces, so it
+// remains valid everywhere $UNIQUE_NAME is used: app names (no hyphens would be fine but
+// underscores/uppercase are not), Python and Unity Catalog identifiers (no hyphens). No
+// punctuation separator works for all of them, so the run id (all digits) is delimited by
+// the letter "x", which also keeps the sweep prefix "ci<runID>x" collision-free between
+// runs whose ids share a prefix. Length is preserved ("app-$UNIQUE_NAME" is exactly the
+// 30-char app name maximum). Returns random unchanged when runID is absent, malformed, or
+// too long to leave at least 8 random characters.
+func ciUniqueName(runID, random string) string {
+	if !ciRunID.MatchString(runID) {
+		return random
+	}
+	prefix := "ci" + runID + "x"
+	randLen := len(random) - len(prefix)
+	if randLen < 8 {
+		return random
+	}
+	return prefix + random[:randLen]
+}
+
 func runTest(t *testing.T,
 	dir string,
 	variant int,
@@ -643,6 +684,8 @@ func runTest(t *testing.T,
 
 	id := uuid.New()
 	uniqueName := strings.ToLower(strings.Trim(base32.StdEncoding.EncodeToString(id[:]), "="))
+	// Embed the CI run id, when present, so leaked resources can be attributed to a run and swept by prefix.
+	uniqueName = ciUniqueName(os.Getenv("GITHUB_RUN_ID"), uniqueName)
 	repls.Set(uniqueName, "[UNIQUE_NAME]")
 
 	var tmpDir string
@@ -758,6 +801,21 @@ func runTest(t *testing.T,
 	// binaries (e.g. -useversion) must never reach GitHub or print the notice
 	// into compared output. Tests can override this via [Env] in test.toml.
 	cmd.Env = append(cmd.Env, "DATABRICKS_CLI_DISABLE_UPDATE_CHECK=true")
+
+	// Neutralize Databricks-internal development-environment interference so
+	// acceptance tests behave the same as on CI (which has none of this). Two
+	// sources both reach the blocking proxy on every git invocation:
+	//
+	//  1. A command-timing shim that wraps git (ahead of the real binary on
+	//     PATH) and POSTs per-command metrics over the network.
+	//     COMMAND_TIMER_DISABLE=1 makes it pass through without the beacon.
+	//  2. A managed global git config installs a core.hooksPath whose hooks
+	//     (secret scanning, etc.) also beacon metrics. Ignoring the global and
+	//     system git config disables those hooks and keeps tests hermetic; tests
+	//     configure the repos they create via git-repo-init locally.
+	cmd.Env = append(cmd.Env, "COMMAND_TIMER_DISABLE=1")
+	cmd.Env = append(cmd.Env, "GIT_CONFIG_GLOBAL="+os.DevNull)
+	cmd.Env = append(cmd.Env, "GIT_CONFIG_SYSTEM="+os.DevNull)
 
 	for _, kv := range testEnv {
 		key, value, _ := strings.Cut(kv, "=")

@@ -1,0 +1,11 @@
+json[0].method = "DELETE";
+json[0].path = "/api/2.0/serving-endpoints/[ENDPOINT_NAME_1]";
+json[1].method = "POST";
+json[1].path = "/api/2.0/serving-endpoints";
+json[1].body.name = "[ENDPOINT_NAME_2]";
+json[2].method = "PUT";
+json[2].path = "/api/2.0/permissions/serving-endpoints/[ENDPOINT_ID_2]";
+json[2].body.access_control_list[0].permission_level = "CAN_MANAGE";
+json[2].body.access_control_list[0].service_principal_name = "[USERNAME]";
+json[2].body.access_control_list[1].permission_level = "CAN_VIEW";
+json[2].body.access_control_list[1].user_name = "deco-test-user@databricks.com";

@@ -36,8 +36,11 @@
               }
             ]
           },
+          "creation_timestamp": [UNIX_TIME_MILLIS][0],
           "creator": "[USERNAME]",
+          "description": "",
           "id": "[UUID]",
+          "last_updated_timestamp": [UNIX_TIME_MILLIS][0],
           "name": "[ORIGINAL_ENDPOINT_ID]",
           "permission_level": "CAN_MANAGE",
           "route_optimized": false,
@@ -46,9 +49,26 @@
             "ready": "NOT_READY"
           }
         },
-        "endpoint_id": "[UUID]"
+        "endpoint_id": "[UUID]",
+        "config": {
+          "served_entities": [
+            {
+              "entity_name": "system.ai.llama_v3_2_1b_instruct",
+              "entity_version": "1",
+              "name": "llama",
+              "scale_to_zero_enabled": true,
+              "workload_size": "Small"
+            }
+          ]
+        },
+        "name": "[ORIGINAL_ENDPOINT_ID]"
       },
       "changes": {
+        "description": {
+          "action": "skip",
+          "reason": "empty",
+          "remote": ""
+        },
         "route_optimized": {
           "action": "recreate",
           "reason": "immutable",

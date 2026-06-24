@@ -110,23 +110,28 @@ func (s *FakeWorkspace) ServingEndpointCreate(req Request) Response {
 		}
 	}
 
+	now := nowMilli()
 	endpoint := serving.ServingEndpointDetailed{
-		AiGateway:          createReq.AiGateway,
-		BudgetPolicyId:     createReq.BudgetPolicyId,
-		Config:             config,
-		Creator:            s.CurrentUser().UserName,
-		Description:        createReq.Description,
-		EmailNotifications: createReq.EmailNotifications,
-		Id:                 nextUUID(),
-		Name:               createReq.Name,
-		PermissionLevel:    serving.ServingEndpointDetailedPermissionLevelCanManage,
-		RouteOptimized:     createReq.RouteOptimized,
-		Tags:               createReq.Tags,
+		AiGateway:            createReq.AiGateway,
+		BudgetPolicyId:       createReq.BudgetPolicyId,
+		Config:               config,
+		CreationTimestamp:    now,
+		Creator:              s.CurrentUser().UserName,
+		Description:          createReq.Description,
+		EmailNotifications:   createReq.EmailNotifications,
+		Id:                   nextUUID(),
+		LastUpdatedTimestamp: now,
+		Name:                 createReq.Name,
+		PermissionLevel:      serving.ServingEndpointDetailedPermissionLevelCanManage,
+		RouteOptimized:       createReq.RouteOptimized,
+		Tags:                 createReq.Tags,
 		State: &serving.EndpointState{
 			ConfigUpdate: serving.EndpointStateConfigUpdateNotUpdating,
 			Ready:        serving.EndpointStateReadyNotReady,
 		},
-		ForceSendFields: append(createReq.ForceSendFields, "PermissionLevel", "RouteOptimized"),
+		// Force-send Description so an empty value serializes as "", matching the
+		// real backend which always echoes the field back on GET.
+		ForceSendFields: append(createReq.ForceSendFields, "PermissionLevel", "RouteOptimized", "Description"),
 	}
 
 	s.ServingEndpoints[createReq.Name] = endpoint
@@ -180,6 +185,7 @@ func (s *FakeWorkspace) ServingEndpointUpdate(req Request, name string) Response
 	}
 
 	endpoint.Config = config
+	endpoint.LastUpdatedTimestamp = nowMilli()
 	endpoint.State = &serving.EndpointState{
 		ConfigUpdate: serving.EndpointStateConfigUpdateNotUpdating,
 		Ready:        serving.EndpointStateReadyNotReady,
