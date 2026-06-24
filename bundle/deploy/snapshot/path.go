@@ -32,21 +32,23 @@ var zipEpoch = time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC)
 //
 // The snapshot ID is always IDFromContent(BundleZip(b)), ensuring the
 // pre-calculated path and the uploaded path are derived from the same content.
-func BundleZip(ctx context.Context, b *bundle.Bundle) ([]byte, error) {
+// The second return value is the number of sync-root files included in the zip.
+func BundleZip(ctx context.Context, b *bundle.Bundle) ([]byte, int, error) {
 	var buf bytes.Buffer
 	zw := zip.NewWriter(&buf)
 
-	if err := addSyncRootToZip(ctx, zw, b); err != nil {
-		return nil, err
+	fileCount, err := addSyncRootToZip(ctx, zw, b)
+	if err != nil {
+		return nil, 0, err
 	}
 	if err := addArtifactsToZip(zw, b); err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	if err := zw.Close(); err != nil {
-		return nil, err
+		return nil, 0, err
 	}
-	return buf.Bytes(), nil
+	return buf.Bytes(), fileCount, nil
 }
 
 // IDFromContent returns the SHA-256 hex digest of content.
@@ -59,21 +61,22 @@ func IDFromContent(content []byte) string {
 // Called after artifacts are built so that ApplyImmutableWorkspacePaths and
 // snapshot.Upload both hash identical content.
 func SnapshotID(ctx context.Context, b *bundle.Bundle) (string, error) {
-	content, err := BundleZip(ctx, b)
+	content, _, err := BundleZip(ctx, b)
 	if err != nil {
 		return "", err
 	}
 	return IDFromContent(content), nil
 }
 
-func addSyncRootToZip(ctx context.Context, zw *zip.Writer, b *bundle.Bundle) error {
+// addSyncRootToZip returns the number of files added from the sync root.
+func addSyncRootToZip(ctx context.Context, zw *zip.Writer, b *bundle.Bundle) (int, error) {
 	opts, err := files.GetSyncOptions(ctx, b)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	fileList, err := libsync.GetFileList(ctx, *opts)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	// Sort for a stable zip (same content → same hash regardless of iteration order).
 	slices.SortFunc(fileList, func(a, b fileset.File) int {
@@ -89,7 +92,7 @@ func addSyncRootToZip(ctx context.Context, zw *zip.Writer, b *bundle.Bundle) err
 	for _, f := range fileList {
 		rc, err := b.SyncRoot.Open(f.Relative)
 		if err != nil {
-			return fmt.Errorf("open %s: %w", f.Relative, err)
+			return 0, fmt.Errorf("open %s: %w", f.Relative, err)
 		}
 
 		entryPath := filepath.ToSlash(f.Relative)
@@ -101,15 +104,15 @@ func addSyncRootToZip(ctx context.Context, zw *zip.Writer, b *bundle.Bundle) err
 		w, err := zw.CreateHeader(h)
 		if err != nil {
 			rc.Close()
-			return fmt.Errorf("zip entry for %s: %w", f.Relative, err)
+			return 0, fmt.Errorf("zip entry for %s: %w", f.Relative, err)
 		}
 		_, err = io.Copy(w, rc)
 		rc.Close()
 		if err != nil {
-			return fmt.Errorf("write %s: %w", f.Relative, err)
+			return 0, fmt.Errorf("write %s: %w", f.Relative, err)
 		}
 	}
-	return nil
+	return len(fileList), nil
 }
 
 func addArtifactsToZip(zw *zip.Writer, b *bundle.Bundle) error {

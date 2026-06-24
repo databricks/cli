@@ -11,6 +11,9 @@ import (
 	"github.com/databricks/cli/libs/log"
 )
 
+// fileLimitWarning is the file count above which immutable folder deployments may fail.
+const fileLimitWarning = 1000
+
 type snapshotUpload struct {
 	// uploader allows test injection of a custom SnapshotUploader.
 	uploader SnapshotUploader
@@ -39,9 +42,16 @@ func (m *snapshotUpload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 
 	cmdio.LogString(ctx, "Uploading immutable bundle snapshot...")
 
-	zipContent, err := BundleZip(ctx, b)
+	zipContent, fileCount, err := BundleZip(ctx, b)
 	if err != nil {
 		return diag.FromErr(fmt.Errorf("failed to build snapshot zip: %w", err))
+	}
+	var diags diag.Diagnostics
+	if fileCount > fileLimitWarning {
+		diags = append(diags, diag.Warningf(
+			"immutable folder deployment may not work correctly: bundle contains %d files (limit is %d)",
+			fileCount, fileLimitWarning,
+		)...)
 	}
 	snapshotID := IDFromContent(zipContent)
 	log.Debugf(ctx, "snapshot.Upload: snapshotID=%s zip=%d bytes", snapshotID, len(zipContent))
@@ -67,7 +77,7 @@ func (m *snapshotUpload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 		b.Config.Workspace.ArtifactPath = path.Join(info.Path, "src", "artifacts")
 	}
 
-	return nil
+	return diags
 }
 
 // BuildACL constructs the access_control_list for the snapshot upload.

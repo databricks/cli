@@ -43,9 +43,9 @@ func TestBundleZipIsDeterministic(t *testing.T) {
 		"src/task.py": "def run(): pass",
 	})
 
-	zip1, err := snapshot.BundleZip(t.Context(), b)
+	zip1, _, err := snapshot.BundleZip(t.Context(), b)
 	require.NoError(t, err)
-	zip2, err := snapshot.BundleZip(t.Context(), b)
+	zip2, _, err := snapshot.BundleZip(t.Context(), b)
 	require.NoError(t, err)
 
 	assert.Equal(t, zip1, zip2, "BundleZip must produce identical bytes for identical content")
@@ -55,9 +55,9 @@ func TestBundleZipChangesWithContent(t *testing.T) {
 	b1 := makeBundleWithFiles(t, map[string]string{"main.py": "v1"})
 	b2 := makeBundleWithFiles(t, map[string]string{"main.py": "v2"})
 
-	zip1, err := snapshot.BundleZip(t.Context(), b1)
+	zip1, _, err := snapshot.BundleZip(t.Context(), b1)
 	require.NoError(t, err)
-	zip2, err := snapshot.BundleZip(t.Context(), b2)
+	zip2, _, err := snapshot.BundleZip(t.Context(), b2)
 	require.NoError(t, err)
 
 	assert.NotEqual(t, zip1, zip2, "different file content must produce different zips")
@@ -74,9 +74,9 @@ func TestBundleZipRespectsExcludes(t *testing.T) {
 	})
 	bExclude.Config.Sync.Exclude = []string{"*.json"}
 
-	zipAll, err := snapshot.BundleZip(t.Context(), b)
+	zipAll, _, err := snapshot.BundleZip(t.Context(), b)
 	require.NoError(t, err)
-	zipExcl, err := snapshot.BundleZip(t.Context(), bExclude)
+	zipExcl, _, err := snapshot.BundleZip(t.Context(), bExclude)
 	require.NoError(t, err)
 
 	// The zip without the excluded file should be smaller and different.
@@ -94,7 +94,7 @@ func TestIDFromContent(t *testing.T) {
 func TestSnapshotIDMatchesBundleZipHash(t *testing.T) {
 	b := makeBundleWithFiles(t, map[string]string{"task.py": "x = 1"})
 
-	zipContent, err := snapshot.BundleZip(t.Context(), b)
+	zipContent, _, err := snapshot.BundleZip(t.Context(), b)
 	require.NoError(t, err)
 	expectedID := snapshot.IDFromContent(zipContent)
 
@@ -123,7 +123,7 @@ func TestBundleZipDoNotStripNotebookExtensions(t *testing.T) {
 		"src/script.py":         "print('hello')",
 	})
 
-	zipContent, err := snapshot.BundleZip(t.Context(), b)
+	zipContent, _, err := snapshot.BundleZip(t.Context(), b)
 	require.NoError(t, err)
 
 	names := zipEntryNames(t, zipContent)
