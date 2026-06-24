@@ -31,6 +31,28 @@ import (
 // SDK removed the variable entirely in v0.127.0, so we now own it here.
 var errNotWorkspaceClient = errors.New("invalid Databricks Workspace configuration - host is not a workspace host")
 
+// profileAuthLoaders is the SDK loader chain to use when the user explicitly
+// selects a profile (via --profile or workspace.profile). The selected profile
+// must determine the host and authentication, taking precedence over auth
+// environment variables (DATABRICKS_HOST, DATABRICKS_TOKEN, ...). The SDK's
+// default chain reads the environment before the config file and never
+// overwrites an already-set field, so the env vars would otherwise shadow the
+// profile (issue #5096).
+//
+// The order matters:
+//  1. ResolveNonAuthFromEnv loads non-auth attributes from the environment
+//     (e.g. cluster_id), preserving the env-wins precedence for those.
+//  2. ConfigFile loads the selected profile, populating host and auth.
+//  3. ConfigAttributes loads any remaining attributes from the environment,
+//     filling auth fields the profile did not provide (e.g. a host-only
+//     profile combined with DATABRICKS_TOKEN). It never overwrites a value the
+//     profile already set, so the profile still wins for #5096.
+var profileAuthLoaders = []config.Loader{
+	databrickscfg.ResolveNonAuthFromEnv,
+	config.ConfigFile,
+	config.ConfigAttributes,
+}
+
 type ErrNoWorkspaceProfiles struct {
 	path string
 }
@@ -204,7 +226,7 @@ func MustAccountClient(cmd *cobra.Command, args []string) error {
 		// An explicit --profile must take precedence over authentication
 		// environment variables; see the matching comment in MustWorkspaceClient
 		// and issue #5096.
-		cfg.Loaders = []config.Loader{databrickscfg.ResolveNonAuthFromEnv, config.ConfigFile}
+		cfg.Loaders = profileAuthLoaders
 	} else {
 		auth.NormalizeDatabricksConfigFromEnv(ctx, cfg)
 	}
@@ -330,12 +352,9 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 	if hasProfileFlag {
 		cfg.Profile = profile
 		// An explicit --profile must take precedence over authentication
-		// environment variables (DATABRICKS_HOST, DATABRICKS_TOKEN, ...).
-		// The SDK's default loader reads the environment before the config
-		// file and never overwrites an already-set field, so without this the
-		// env vars would shadow the selected profile (issue #5096). Load only
-		// non-auth attributes from the environment, then the profile.
-		cfg.Loaders = []config.Loader{databrickscfg.ResolveNonAuthFromEnv, config.ConfigFile}
+		// environment variables (DATABRICKS_HOST, DATABRICKS_TOKEN, ...);
+		// see profileAuthLoaders and issue #5096.
+		cfg.Loaders = profileAuthLoaders
 	} else {
 		auth.NormalizeDatabricksConfigFromEnv(ctx, cfg)
 	}

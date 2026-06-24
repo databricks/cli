@@ -180,6 +180,29 @@ func TestWorkspaceClientProfileOverridesAuthEnv(t *testing.T) {
 	assert.Equal(t, "tst-token", client.Config.Token)
 }
 
+func TestWorkspaceClientProfileFillsAuthFromEnv(t *testing.T) {
+	// A host-only profile relies on the environment for credentials. The profile
+	// must take precedence for the host, but the env must still fill the token
+	// the profile does not provide (#5096).
+	setupWorkspaceTest(t)
+
+	err := databrickscfg.SaveToProfile(t.Context(), &config.Config{
+		Profile: "host-only",
+		Host:    "https://tst.cloud.databricks.test",
+	})
+	require.NoError(t, err)
+
+	t.Setenv("DATABRICKS_TOKEN", "env-token")
+
+	w := Workspace{Profile: "host-only"}
+	client, err := w.Client(t.Context())
+	require.NoError(t, err)
+	assert.Equal(t, "host-only", client.Config.Profile)
+	assert.Equal(t, "https://tst.cloud.databricks.test", client.Config.Host)
+	// The token is not in the profile, so it is filled from the environment.
+	assert.Equal(t, "env-token", client.Config.Token)
+}
+
 func TestWorkspaceConfigHTTPTimeout(t *testing.T) {
 	for _, tc := range []struct {
 		envVal string
