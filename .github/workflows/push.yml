@@ -402,7 +402,21 @@ jobs:
           cache-key: test-fuzz
 
       - name: Run tests
+        env:
+          # Shift the seed window by the run number every nightly run so CI
+          # explores configs it has never tested before instead of re-checking a
+          # fixed set. The window is kept modest (each seed runs two real deploys)
+          # since the exploration comes from rotating the window, not its size;
+          # raise it once nightly timings are known. A divergence prints
+          # FUZZ_SEED=<n> for one-command reproduction.
+          #
+          # offset = GITHUB_RUN_NUMBER * FUZZ_SEEDS. GITHUB_RUN_NUMBER is a
+          # built-in, monotonically increasing, unique-per-run integer, so as long
+          # as FUZZ_SEEDS is constant the windows are non-overlapping (gaps from
+          # non-schedule runs are fine; we only need fresh seeds, not every seed).
+          FUZZ_SEEDS: "25"
         run: |
+          export FUZZ_SEED_OFFSET=$(( GITHUB_RUN_NUMBER * FUZZ_SEEDS ))
           go tool -modfile=tools/task/go.mod task test-fuzz
 
   # This job groups the result of all the above test jobs.
