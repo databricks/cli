@@ -22,7 +22,7 @@ require (
 	github.com/hashicorp/terraform-exec v0.25.2 // MPL-2.0
 	github.com/hashicorp/terraform-json v0.27.2 // MPL-2.0
 	github.com/hexops/gotextdiff v1.0.3 // BSD-3-Clause
-	github.com/jackc/pgx/v5 v5.9.2 // MIT
+	github.com/jackc/pgx/v5 v5.10.0 // MIT
 	github.com/mattn/go-isatty v0.0.22 // MIT
 	github.com/palantir/pkg/yamlpatch v1.5.0 // BSD-3-Clause
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c // BSD-2-Clause
@@ -38,7 +38,7 @@ require (
 	golang.org/x/mod v0.36.0 // BSD-3-Clause
 	golang.org/x/net v0.55.0 // BSD-3-Clause
 	golang.org/x/oauth2 v0.36.0 // BSD-3-Clause
-	golang.org/x/sync v0.20.0 // BSD-3-Clause
+	golang.org/x/sync v0.21.0 // BSD-3-Clause
 	golang.org/x/sys v0.46.0 // BSD-3-Clause
 	golang.org/x/text v0.37.0 // BSD-3-Clause
 	gopkg.in/ini.v1 v1.67.2 // Apache-2.0
