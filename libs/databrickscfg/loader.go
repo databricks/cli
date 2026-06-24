@@ -14,6 +14,20 @@ import (
 
 var ResolveProfileFromHost = profileFromHostLoader{}
 
+// ResolveNonAuthFromEnv reads configuration from environment variables, except
+// for the host and any authentication credential. It is meant to replace the
+// SDK's default environment loader when the user has explicitly selected a
+// profile (via the --profile flag), so that the profile fully determines the
+// host and authentication.
+//
+// The SDK's default loader order is environment first, then config file, and a
+// loader never overwrites a field that is already set. As a result auth env
+// vars (DATABRICKS_HOST, DATABRICKS_TOKEN, ...) shadow the selected profile.
+// Skipping them here lets the subsequent config-file loader populate host and
+// auth from the profile instead. See
+// https://github.com/databricks/cli/issues/5096.
+var ResolveNonAuthFromEnv = nonAuthEnvLoader{}
+
 var errNoMatchingProfiles = errors.New("no matching config profiles found")
 
 type errMultipleProfiles []string
@@ -58,6 +72,39 @@ func findMatchingProfile(configFile *config.File, matcher func(*ini.Section) boo
 	}
 
 	return matching[0], nil
+}
+
+// hostAttrName is the SDK config attribute name for the Databricks host. The
+// host has no `auth` struct tag, so it is excluded from auth-only checks by
+// name rather than via HasAuthAttribute.
+const hostAttrName = "host"
+
+type nonAuthEnvLoader struct{}
+
+func (nonAuthEnvLoader) Name() string {
+	return "environment (excluding auth)"
+}
+
+func (nonAuthEnvLoader) Configure(cfg *config.Config) error {
+	for _, attr := range config.ConfigAttributes {
+		// Leave the host and authentication credentials for the config file
+		// (i.e. the selected profile) to provide.
+		if attr.Name == hostAttrName || attr.HasAuthAttribute() {
+			continue
+		}
+		// Match the SDK loader semantics: don't overwrite a value previously set.
+		if !attr.IsZero(cfg) {
+			continue
+		}
+		v, _ := attr.ReadEnv()
+		if v == "" {
+			continue
+		}
+		if err := attr.SetS(cfg, v); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 type profileFromHostLoader struct{}

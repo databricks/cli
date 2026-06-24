@@ -442,6 +442,71 @@ token = flag-token
 	}
 }
 
+func TestMustWorkspaceClientProfileFlagOverridesAuthEnv(t *testing.T) {
+	testutil.CleanupEnvironment(t)
+
+	configFile := filepath.Join(t.TempDir(), ".databrickscfg")
+	err := os.WriteFile(configFile, []byte(`
+[tst-svc]
+host = https://tst.cloud.databricks.com
+token = tst-token
+`), 0o600)
+	require.NoError(t, err)
+
+	t.Setenv("DATABRICKS_CONFIG_FILE", configFile)
+	// direnv-style auth env vars pointing at a different (dev) workspace. Before
+	// the fix for #5096 these shadowed the profile selected with --profile.
+	t.Setenv("DATABRICKS_HOST", "https://dev.cloud.databricks.com")
+	t.Setenv("DATABRICKS_TOKEN", "dev-token")
+
+	ctx := cmdio.MockDiscard(t.Context())
+	ctx = SkipLoadBundle(ctx)
+	cmd := New(ctx)
+
+	err = cmd.Flag("profile").Value.Set("tst-svc")
+	require.NoError(t, err)
+
+	err = MustWorkspaceClient(cmd, []string{})
+	require.NoError(t, err)
+
+	w := cmdctx.WorkspaceClient(cmd.Context())
+	require.NotNil(t, w)
+	// The explicitly selected profile must win over the auth env vars.
+	assert.Equal(t, "tst-svc", w.Config.Profile)
+	assert.Equal(t, "https://tst.cloud.databricks.com", w.Config.Host)
+	assert.Equal(t, "tst-token", w.Config.Token)
+}
+
+func TestMustAccountClientProfileFlagOverridesAuthEnv(t *testing.T) {
+	testutil.CleanupEnvironment(t)
+
+	configFile := filepath.Join(t.TempDir(), ".databrickscfg")
+	err := os.WriteFile(configFile, []byte(`
+[acc-tst]
+host = https://accounts.azuredatabricks.net/
+account_id = 1111
+token = tst-token
+`), 0o600)
+	require.NoError(t, err)
+
+	t.Setenv("DATABRICKS_CONFIG_FILE", configFile)
+	t.Setenv("DATABRICKS_HOST", "https://accounts.azuredatabricks.net/")
+	t.Setenv("DATABRICKS_TOKEN", "dev-token")
+
+	cmd := New(t.Context())
+	err = cmd.Flag("profile").Value.Set("acc-tst")
+	require.NoError(t, err)
+
+	err = MustAccountClient(cmd, []string{})
+	require.NoError(t, err)
+
+	a := cmdctx.AccountClient(cmd.Context())
+	require.NotNil(t, a)
+	// The explicitly selected profile must win over the auth env vars.
+	assert.Equal(t, "acc-tst", a.Config.Profile)
+	assert.Equal(t, "tst-token", a.Config.Token)
+}
+
 func TestAccountClientOrPromptReturnsErrorForWrongHostType(t *testing.T) {
 	testutil.CleanupEnvironment(t)
 	t.Setenv("PATH", "")

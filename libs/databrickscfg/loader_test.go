@@ -34,6 +34,22 @@ func TestLoaderSkipsExistingAuth(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestResolveNonAuthFromEnvSkipsHostAndAuth(t *testing.T) {
+	t.Setenv("DATABRICKS_HOST", "https://env.test")
+	t.Setenv("DATABRICKS_TOKEN", "env-token")
+	t.Setenv("DATABRICKS_CLUSTER_ID", "env-cluster")
+
+	cfg := &config.Config{}
+	err := ResolveNonAuthFromEnv.Configure(cfg)
+	require.NoError(t, err)
+
+	// Host and auth credentials are left for the profile (config file) to set.
+	assert.Empty(t, cfg.Host)
+	assert.Empty(t, cfg.Token)
+	// Non-auth attributes are still populated from the environment.
+	assert.Equal(t, "env-cluster", cfg.ClusterID)
+}
+
 func TestLoaderSkipsExplicitAuthType(t *testing.T) {
 	cfg := config.Config{
 		Loaders: []config.Loader{
