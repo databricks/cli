@@ -50,7 +50,7 @@ func (m *snapshotUpload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 	// Use the deployment lineage UUID as bundle_id so the snapshot directory is
 	// keyed to this specific deployment (not to the bundle name, which can be
 	// reused across unrelated deployments).
-	bundleID := b.Metrics.DeploymentId.String()
+	bundleID := b.DeploymentBundle.StateDB.GetOrInitLineage()
 	info, err := uploader.Upload(ctx, bundleID, snapshotID, acl, zipContent)
 	if err != nil {
 		return diag.FromErr(err)

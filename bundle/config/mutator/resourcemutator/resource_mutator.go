@@ -135,13 +135,15 @@ func applyInitializeMutators(ctx context.Context, b *bundle.Bundle) {
 
 // immutableExcludingResolver returns a variable reference resolver for the resources
 // section. When experimental.immutable_folder is enabled it excludes
-// workspace.file_path and workspace.artifact_path from resolution: those paths are
-// updated to the snapshot location by snapshot.Upload() in the Deploy phase, so
+// workspace.file_path, workspace.artifact_path, and workspace.snapshot_path from
+// resolution: those paths are set by snapshot.Upload() in the Deploy phase, so
 // resolving them here would freeze them to the default bundle path instead.
+// workspace.snapshot_path is also excluded so it stays as a literal ${...} template
+// in the plan output (making the pre-upload intent visible).
 func immutableExcludingResolver(b *bundle.Bundle) bundle.Mutator {
-	if b.Config.Experimental != nil && b.Config.Experimental.ImmutableFolder {
+	if b.IsImmutableFolder() {
 		return mutator.ResolveVariableReferencesOnlyResourcesExcluding(
-			[]string{"workspace.file_path", "workspace.artifact_path"},
+			[]string{"workspace.file_path", "workspace.artifact_path", "workspace.snapshot_path"},
 		)
 	}
 	return mutator.ResolveVariableReferencesOnlyResources()

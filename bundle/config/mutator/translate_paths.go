@@ -321,7 +321,7 @@ func (t *translateContext) rewriteValue(ctx context.Context, p dyn.Path, v dyn.V
 
 func applyTranslations(ctx context.Context, b *bundle.Bundle, t *translateContext, translations []func(context.Context, dyn.Value) (dyn.Value, error)) diag.Diagnostics {
 	switch {
-	case b.Config.Experimental != nil && b.Config.Experimental.ImmutableFolder:
+	case b.IsImmutableFolder():
 		// Reject an explicit workspace.file_path: immutable bundles control that path
 		// automatically (it is set to the content-addressed snapshot location after upload).
 		// A user-supplied value would be silently discarded, so we error early instead.

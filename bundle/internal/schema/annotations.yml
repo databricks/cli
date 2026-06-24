@@ -89,9 +89,6 @@ bundle:
         "fail_on_active_runs":
           "description": |-
             Whether to fail on active runs. If this is set to true a deployment that is running can be interrupted.
-        "immutable_folder":
-          "description": |-
-            Whether to deploy bundle files and artifacts as a single immutable snapshot. When true, all files are packaged into a content-addressed archive and workspace.file_path and workspace.artifact_path are set to the resulting location. The validate and plan commands make no mutative API calls when this is enabled.
         "lock":
           "description": |-
             The deployment lock attributes.
@@ -142,6 +139,9 @@ experimental:
   "description": |-
     Defines attributes for experimental features.
   "$fields":
+    "immutable_folder":
+      "description": |-
+        Whether to deploy bundle files and artifacts as a single immutable snapshot. When true, all files are packaged into a content-addressed archive and workspace.file_path and workspace.artifact_path are set to the resulting location.
     "pydabs":
       "description": |-
         The PyDABs configuration.

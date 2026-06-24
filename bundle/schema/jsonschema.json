@@ -2727,10 +2727,6 @@
                       "description": "Whether to fail on active runs. If this is set to true a deployment that is running can be interrupted.",
                       "$ref": "#/$defs/bool"
                     },
-                    "immutable_folder": {
-                      "description": "Whether to deploy bundle files and artifacts as a single immutable snapshot. When true, all files are packaged into a content-addressed archive and workspace.file_path and workspace.artifact_path are set to the resulting location. The validate and plan commands make no mutative API calls when this is enabled.",
-                      "$ref": "#/$defs/bool"
-                    },
                     "lock": {
                       "description": "The deployment lock attributes.",
                       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Lock"
@@ -2749,6 +2745,10 @@
                 {
                   "type": "object",
                   "properties": {
+                    "immutable_folder": {
+                      "description": "Whether to deploy bundle files and artifacts as a single immutable snapshot. When true, all files are packaged into a content-addressed archive and workspace.file_path and workspace.artifact_path are set to the resulting location.",
+                      "$ref": "#/$defs/bool"
+                    },
                     "pydabs": {
                       "description": "The PyDABs configuration.",
                       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.PyDABs",

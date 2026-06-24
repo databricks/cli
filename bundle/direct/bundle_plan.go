@@ -658,6 +658,12 @@ func splitResourcePath(path *structpath.PathNode) (string, *structpath.PathNode)
 }
 
 func (b *DeploymentBundle) LookupReferencePreDeploy(ctx context.Context, path *structpath.PathNode) (any, error) {
+	// ${workspace.snapshot_path} is resolved by the mutator pipeline after
+	// snapshot.Upload() — not by the direct engine. Return errDelayed so the
+	// template string is preserved in the plan output rather than causing an error.
+	if path.String() == "workspace.snapshot_path" {
+		return nil, errDelayed
+	}
 	targetResourceKey, fieldPath := splitResourcePath(path)
 	targetGroup := config.GetResourceTypeFromKey(targetResourceKey)
 
@@ -967,6 +973,11 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 
 				targetNodeDP, _ := config.GetNodeAndType(targetPathParsed)
 				targetNode := targetNodeDP.String()
+				// Skip non-resource references (e.g. ${workspace.snapshot_path}).
+				// They are not resource cross-references and don't create DAG edges.
+				if targetNode == "" {
+					continue
+				}
 
 				fullRef := "${" + targetPath + "}"
 

@@ -1,0 +1,62 @@
+{
+  "plan_version": 2,
+  "cli_version": "[DEV_VERSION]",
+  "plan": {
+    "resources.jobs.my_job": {
+      "action": "create",
+      "new_state": {
+        "value": {
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle-immutable-[UNIQUE_NAME]/default/state/metadata.json"
+          },
+          "edit_mode": "UI_LOCKED",
+          "environments": [
+            {
+              "environment_key": "env",
+              "spec": {
+                "dependencies": [
+                  "dist/immutable-0.0.1-py3-none-any.whl"
+                ],
+                "environment_version": "4"
+              }
+            }
+          ],
+          "format": "MULTI_TASK",
+          "max_concurrent_runs": 1,
+          "name": "my job",
+          "queue": {
+            "enabled": true
+          },
+          "tasks": [
+            {
+              "notebook_task": {
+                "notebook_path": "${workspace.snapshot_path}/src/files/src/notebook"
+              },
+              "task_key": "notebook_task"
+            },
+            {
+              "environment_key": "env",
+              "python_wheel_task": {
+                "entry_point": "main",
+                "package_name": "immutable"
+              },
+              "task_key": "python_wheel_task"
+            },
+            {
+              "environment_key": "env",
+              "spark_python_task": {
+                "python_file": "${workspace.snapshot_path}/src/files/src/main.py"
+              },
+              "task_key": "spark_python_task"
+            }
+          ]
+        },
+        "vars": {
+          "tasks[0].notebook_task.notebook_path": "${workspace.snapshot_path}/src/files/src/notebook",
+          "tasks[2].spark_python_task.python_file": "${workspace.snapshot_path}/src/files/src/main.py"
+        }
+      }
+    }
+  }
+}

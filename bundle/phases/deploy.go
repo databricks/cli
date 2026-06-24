@@ -149,19 +149,17 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalDeploy))
 	}()
 
-	if b.Config.Experimental != nil && b.Config.Experimental.ImmutableFolder && !engine.IsDirect() {
+	immutable := b.IsImmutableFolder()
+	if immutable && !engine.IsDirect() {
 		logdiag.LogError(ctx, errors.New("experimental.immutable_folder is only supported with the direct deployment engine"))
 		return
 	}
 
-	if b.Config.Experimental != nil && b.Config.Experimental.ImmutableFolder {
+	if immutable {
 		// Upload all source files and built artifacts as a single immutable snapshot.
-		// EnsureDeploymentID populates b.Metrics.DeploymentId (the lineage UUID) so
-		// Upload can use it as bundle_id. snapshot.Upload() then sets
-		// workspace.snapshot_path; the variable-resolution pass expands
-		// ${workspace.snapshot_path} placeholders written by translate_paths.
+		// snapshot.Upload() sets workspace.snapshot_path; the variable-resolution
+		// pass expands ${workspace.snapshot_path} placeholders written by translate_paths.
 		bundle.ApplySeqContext(ctx, b,
-			deploy.EnsureDeploymentID(),
 			snapshot.Upload(),
 			mutator.ResolveVariableReferencesOnlyResources("workspace"),
 		)
@@ -179,7 +177,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		return
 	}
 
-	if b.Config.Experimental == nil || !b.Config.Experimental.ImmutableFolder {
+	if !immutable {
 		bundle.ApplySeqContext(ctx, b, files.Upload(outputHandler))
 		if logdiag.HasError(ctx) {
 			return
@@ -256,6 +254,26 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 
 func RunPlan(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) *deployplan.Plan {
 	if engine.IsDirect() {
+		// When planning in immutable mode, ${workspace.snapshot_path} placeholders
+		// written by translate_paths must be resolved before CalculatePlan parses
+		// the resource DAG. If snapshot.Upload() already ran (Deploy calls RunPlan
+		// after uploading), SnapshotPath is set and this is a no-op. When called
+		// standalone (bundle plan), we load the previous snapshot path from state.
+		// If no state exists yet (first deploy), SnapshotPath stays empty and
+		// ${workspace.snapshot_path} is left as a literal template for CalculatePlan
+		// to preserve in the plan output.
+		if b.IsImmutableFolder() && b.Config.Workspace.SnapshotPath == "" {
+			bundle.ApplySeqContext(ctx, b, snapshot.LoadState())
+			if logdiag.HasError(ctx) {
+				return nil
+			}
+			if b.Config.Workspace.SnapshotPath != "" {
+				bundle.ApplySeqContext(ctx, b, mutator.ResolveVariableReferencesOnlyResources("workspace"))
+				if logdiag.HasError(ctx) {
+					return nil
+				}
+			}
+		}
 		plan, err := b.DeploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(ctx), &b.Config)
 		if err != nil {
 			logdiag.LogError(ctx, err)

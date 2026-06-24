@@ -10,7 +10,6 @@ import (
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/deploy/files"
 	"github.com/databricks/cli/bundle/deploy/lock"
-	"github.com/databricks/cli/bundle/deploy/snapshot"
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct"
@@ -107,9 +106,7 @@ func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, e
 		return
 	}
 
-	if !logdiag.HasError(ctx) {
-		cmdio.LogString(ctx, "Destroy complete!")
-	}
+	cmdio.LogString(ctx, "Destroy complete!")
 }
 
 // The destroy phase deletes artifacts and resources.
@@ -135,19 +132,6 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 	defer func() {
 		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalDestroy))
 	}()
-
-	if b.Config.Experimental != nil && b.Config.Experimental.ImmutableFolder {
-		// Restore snapshot_path from local (or remote) state so that the
-		// ${workspace.snapshot_path} placeholders written by translate_paths can be
-		// resolved before Terraform (or direct) processes the resource config.
-		bundle.ApplySeqContext(ctx, b,
-			snapshot.LoadState(),
-			mutator.ResolveVariableReferencesOnlyResources("workspace"),
-		)
-		if logdiag.HasError(ctx) {
-			return
-		}
-	}
 
 	if !engine.IsDirect() {
 		bundle.ApplySeqContext(ctx, b,
