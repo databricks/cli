@@ -684,9 +684,15 @@ tasks:
     # FUZZ_SEEDS, and FUZZ_SEED_OFFSET env vars, which Task can't see. Skipping on
     # an unchanged source checksum would silently no-op a FUZZ_SEED=<n> repro run
     # or a shifted nightly window, so always run.
+    env:
+      # The terraform parity tests are opt-in (see requireFuzzOptIn): they skip
+      # unless a FUZZ_* var is set, so a leftover build/ never makes them run as
+      # part of a plain `task test`. This constant flag opts this target in
+      # without overriding the FUZZ_SEED(S)/OFFSET tuning knobs.
+      FUZZ_PARITY: "1"
     cmds:
       # The parity harness expects terraform + the provider mirror at <repo>/build;
-      # RequireTerraform skips when it's absent, so provision it first.
+      # requireTerraform skips when it's absent, so provision it first.
       - python3 acceptance/install_terraform.py --targetdir build
       - |
         {{.GO_TOOL}} gotestsum \

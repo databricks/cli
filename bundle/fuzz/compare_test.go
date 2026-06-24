@@ -78,6 +78,30 @@ func TestDiffPayloads(t *testing.T) {
 			ignore:    []string{`c.spark_conf["spark.x.y"]`},
 			want:      nil,
 		},
+		{
+			name:      "tasks matched by key ignore order",
+			direct:    `{"tasks":[{"task_key":"a","timeout_seconds":1},{"task_key":"b","timeout_seconds":2}]}`,
+			terraform: `{"tasks":[{"task_key":"b","timeout_seconds":2},{"task_key":"a","timeout_seconds":1}]}`,
+			want:      nil,
+		},
+		{
+			name:      "tasks matched by key surface real diff at direct index",
+			direct:    `{"tasks":[{"task_key":"a","timeout_seconds":1},{"task_key":"b","timeout_seconds":2}]}`,
+			terraform: `{"tasks":[{"task_key":"b","timeout_seconds":9},{"task_key":"a","timeout_seconds":1}]}`,
+			want:      []string{"tasks[1].timeout_seconds"},
+		},
+		{
+			name:      "task only on terraform reported at its index",
+			direct:    `{"tasks":[{"task_key":"a"}]}`,
+			terraform: `{"tasks":[{"task_key":"a"},{"task_key":"b"}]}`,
+			want:      []string{"tasks[1]"},
+		},
+		{
+			name:      "job_clusters matched by key ignore order",
+			direct:    `{"job_clusters":[{"job_cluster_key":"x","new_cluster":{"num_workers":1}},{"job_cluster_key":"y","new_cluster":{"num_workers":2}}]}`,
+			terraform: `{"job_clusters":[{"job_cluster_key":"y","new_cluster":{"num_workers":2}},{"job_cluster_key":"x","new_cluster":{"num_workers":1}}]}`,
+			want:      nil,
+		},
 	}
 
 	for _, tt := range tests {

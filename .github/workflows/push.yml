@@ -444,8 +444,11 @@ jobs:
           Reproduce locally with:
 
           \`\`\`
-          FUZZ_SEED=<seed> go test ./bundle/fuzz -run TestJobCreateParity
+          FUZZ_SEED=<seed> task test-fuzz
           \`\`\`
+
+          Once fixed, add the seed to \`regressionSeeds\` in \`bundle/fuzz/fuzz_test.go\`
+          in the same PR so the divergence can never silently regress.
           EOF
           )
 
