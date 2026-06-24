@@ -24,6 +24,8 @@ func (v *jobTaskClusterSpec) Name() string {
 }
 
 func (v *jobTaskClusterSpec) Apply(ctx context.Context, b *bundle.Bundle) error {
+	diags := diag.Diagnostics{}
+
 	jobsPath := dyn.NewPath(dyn.Key("resources"), dyn.Key("jobs"))
 
 	for resourceName, job := range b.Config.Resources.Jobs {
@@ -32,16 +34,16 @@ func (v *jobTaskClusterSpec) Apply(ctx context.Context, b *bundle.Bundle) error 
 		for taskIndex, task := range job.Tasks {
 			taskPath := resourcePath.Append(dyn.Key("tasks"), dyn.Index(taskIndex))
 
-			if err := validateJobTask(b, task, taskPath); err != nil {
-				return err
-			}
+			diags = diags.Extend(validateJobTask(b, task, taskPath))
 		}
 	}
 
-	return nil
+	return diags.Error()
 }
 
-func validateJobTask(b *bundle.Bundle, task jobs.Task, taskPath dyn.Path) error {
+func validateJobTask(b *bundle.Bundle, task jobs.Task, taskPath dyn.Path) diag.Diagnostics {
+	diags := diag.Diagnostics{}
+
 	var specified []string
 	var unspecified []string
 
@@ -72,9 +74,7 @@ func validateJobTask(b *bundle.Bundle, task jobs.Task, taskPath dyn.Path) error 
 	if task.ForEachTask != nil {
 		forEachTaskPath := taskPath.Append(dyn.Key("for_each_task"), dyn.Key("task"))
 
-		if err := validateJobTask(b, task.ForEachTask.Task, forEachTaskPath); err != nil {
-			return err
-		}
+		diags = diags.Extend(validateJobTask(b, task.ForEachTask.Task, forEachTaskPath))
 	}
 
 	if isComputeTask(task) && len(specified) == 0 {
@@ -88,17 +88,17 @@ func validateJobTask(b *bundle.Bundle, task jobs.Task, taskPath dyn.Path) error 
 				strings.Join(unspecified, ", "),
 			)
 
-			return diag.Diagnostic{
+			diags = diags.Append(diag.Diagnostic{
 				Severity:  diag.Error,
 				Summary:   "Missing required cluster or environment settings",
 				Detail:    detail,
 				Locations: b.Config.GetLocations(taskPath.String()),
 				Paths:     []dyn.Path{taskPath},
-			}
+			})
 		}
 	}
 
-	return nil
+	return diags
 }
 
 // isComputeTask returns true if the task runs on a cluster or serverless GC

@@ -44,6 +44,8 @@ func servedModelToServedEntity(model serving.ServedModelInput) serving.ServedEnt
 }
 
 func (m *modelServingEndpointFixups) Apply(ctx context.Context, b *bundle.Bundle) error {
+	var diags diag.Diagnostics
+
 	for key, endpoint := range b.Config.Resources.ModelServingEndpoints {
 		if endpoint == nil || endpoint.Config == nil {
 			continue
@@ -51,14 +53,15 @@ func (m *modelServingEndpointFixups) Apply(ctx context.Context, b *bundle.Bundle
 
 		// Validate that both ServedModels and ServedEntities are not used at the same time.
 		if len(endpoint.Config.ServedModels) > 0 && len(endpoint.Config.ServedEntities) > 0 {
-			return diag.Diagnostic{
+			diags = diags.Append(diag.Diagnostic{
 				Severity: diag.Error,
 				Summary:  "Cannot use both served_models and served_entities",
 				Detail:   "Model serving endpoint cannot specify both served_models and served_entities at the same time.",
 				Locations: []dyn.Location{
 					b.Config.GetLocation("resources.model_serving_endpoints." + key),
 				},
-			}
+			})
+			continue
 		}
 
 		// Convert ServedModels to ServedEntities if specified. ServedModels is a deprecated field, and the service recommends using ServedEntities instead.
@@ -83,5 +86,5 @@ func (m *modelServingEndpointFixups) Apply(ctx context.Context, b *bundle.Bundle
 		}
 	}
 
-	return nil
+	return logdiag.Flush(ctx, diags)
 }

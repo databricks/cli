@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/logdiag"
 )
 
 const serializedSpaceFieldName = "serialized_space"
@@ -22,7 +23,9 @@ func (c configureGenieSpaceSerializedSpace) Name() string {
 	return "ConfigureGenieSpaceSerializedSpace"
 }
 
-func (c configureGenieSpaceSerializedSpace) Apply(_ context.Context, b *bundle.Bundle) error {
+func (c configureGenieSpaceSerializedSpace) Apply(ctx context.Context, b *bundle.Bundle) error {
+	var diags diag.Diagnostics
+
 	pattern := dyn.NewPattern(
 		dyn.Key("resources"),
 		dyn.Key("genie_spaces"),
@@ -39,11 +42,12 @@ func (c configureGenieSpaceSerializedSpace) Apply(_ context.Context, b *bundle.B
 				// content. Accepting both is ambiguous, so reject it instead of
 				// silently picking one.
 				if ss.IsValid() && ss.Kind() != dyn.KindNil {
-					return dyn.InvalidValue, diag.Diagnostic{
+					diags = diags.Append(diag.Diagnostic{
 						Severity:  diag.Error,
 						Summary:   "both file_path and serialized_space are set; specify only one",
 						Locations: ss.Locations(),
-					}
+					})
+					return v, nil
 				}
 				contents, err := b.SyncRoot.ReadFile(filePath)
 				if err != nil {
@@ -69,14 +73,18 @@ func (c configureGenieSpaceSerializedSpace) Apply(_ context.Context, b *bundle.B
 				}
 				return dyn.Set(v, serializedSpaceFieldName, dyn.V(string(jsonBytes)))
 			default:
-				return dyn.InvalidValue, diag.Diagnostic{
+				diags = diags.Append(diag.Diagnostic{
 					Severity:  diag.Error,
 					Summary:   fmt.Sprintf("serialized_space must be a string, map, or sequence, got %s", ss.Kind()),
 					Locations: ss.Locations(),
-				}
+				})
+				return v, nil
 			}
 		})
 	})
+	if err != nil {
+		return err
+	}
 
-	return err
+	return logdiag.Flush(ctx, diags)
 }

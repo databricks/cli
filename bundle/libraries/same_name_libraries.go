@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/logdiag"
 )
 
 type checkForSameNameLibraries struct{}
@@ -83,22 +84,23 @@ func (c checkForSameNameLibraries) Apply(ctx context.Context, b *bundle.Bundle) 
 
 	// Iterate over all the libraries and check if there are any duplicates.
 	// Duplicates will have more than one location.
-	// If there are duplicates, return a diagnostic.
+	// If there are duplicates, add a diagnostic.
 	// Sort the keys for deterministic output when multiple duplicates exist.
+	var diags diag.Diagnostics
 	for _, lib := range slices.Sorted(maps.Keys(libs)) {
 		lv := libs[lib]
 		if len(lv.locations) > 1 {
-			return diag.Diagnostic{
+			diags = append(diags, diag.Diagnostic{
 				Severity:  diag.Error,
 				Summary:   "Duplicate local library names: " + lib,
 				Detail:    "Local library names must be unique but found libraries with the same name: " + lv.fullPath + ", " + strings.Join(lv.otherPaths, ", "),
 				Locations: lv.locations,
 				Paths:     lv.paths,
-			}
+			})
 		}
 	}
 
-	return nil
+	return logdiag.Flush(ctx, diags)
 }
 
 func (c checkForSameNameLibraries) Name() string {

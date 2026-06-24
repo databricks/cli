@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/vfs"
 )
 
@@ -83,17 +84,22 @@ func (m *syncInferRoot) Apply(ctx context.Context, b *bundle.Bundle) error {
 	// then one or more of the sync paths are outside the filesystem.
 	// Check if this happened by verifying that none of the paths escape the root
 	// when joined with the sync root path.
+	var diags diag.Diagnostics
 	for i, path := range b.Config.Sync.Paths {
 		if filepath.IsLocal(filepath.Join(rel, path)) {
 			continue
 		}
 
-		return diag.Diagnostic{
+		diags = append(diags, diag.Diagnostic{
 			Severity:  diag.Error,
 			Summary:   fmt.Sprintf("invalid sync path %q", path),
 			Locations: b.Config.GetLocations(fmt.Sprintf("sync.paths[%d]", i)),
 			Paths:     []dyn.Path{dyn.NewPath(dyn.Key("sync"), dyn.Key("paths"), dyn.Index(i))},
-		}
+		})
+	}
+
+	if diags.HasError() {
+		return logdiag.Flush(ctx, diags)
 	}
 
 	// Update all paths in the sync configuration to be relative to the sync root.

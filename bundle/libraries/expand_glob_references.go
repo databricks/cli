@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/patchwheel"
 )
 
@@ -72,9 +73,9 @@ func isGlobPattern(path string) bool {
 	return strings.ContainsAny(path, "*?[")
 }
 
-func expandLibraries(ctx context.Context, b *bundle.Bundle, p dyn.Path, v dyn.Value) ([]dyn.Value, error) {
+func expandLibraries(ctx context.Context, b *bundle.Bundle, p dyn.Path, v dyn.Value) (diag.Diagnostics, []dyn.Value) {
 	var output []dyn.Value
-	var firstErr error
+	var diags diag.Diagnostics
 
 	libs := v.MustSequence()
 	for i, lib := range libs {
@@ -89,9 +90,7 @@ func expandLibraries(ctx context.Context, b *bundle.Bundle, p dyn.Path, v dyn.Va
 
 		matches, err := findMatches(ctx, b, path)
 		if err != nil {
-			if firstErr == nil {
-				firstErr = matchError(lp, lib.Locations(), err.Error())
-			}
+			diags = diags.Append(matchError(lp, lib.Locations(), err.Error()))
 			continue
 		}
 
@@ -102,12 +101,12 @@ func expandLibraries(ctx context.Context, b *bundle.Bundle, p dyn.Path, v dyn.Va
 		}
 	}
 
-	return output, firstErr
+	return diags, output
 }
 
-func expandEnvironmentDeps(ctx context.Context, b *bundle.Bundle, p dyn.Path, v dyn.Value) ([]dyn.Value, error) {
+func expandEnvironmentDeps(ctx context.Context, b *bundle.Bundle, p dyn.Path, v dyn.Value) (diag.Diagnostics, []dyn.Value) {
 	var output []dyn.Value
-	var firstErr error
+	var diags diag.Diagnostics
 
 	deps := v.MustSequence()
 	for i, dep := range deps {
@@ -120,9 +119,7 @@ func expandEnvironmentDeps(ctx context.Context, b *bundle.Bundle, p dyn.Path, v 
 
 		matches, err := findMatches(ctx, b, path)
 		if err != nil {
-			if firstErr == nil {
-				firstErr = matchError(lp, dep.Locations(), err.Error())
-			}
+			diags = diags.Append(matchError(lp, dep.Locations(), err.Error()))
 			continue
 		}
 
@@ -131,12 +128,12 @@ func expandEnvironmentDeps(ctx context.Context, b *bundle.Bundle, p dyn.Path, v 
 		}
 	}
 
-	return output, firstErr
+	return diags, output
 }
 
 type expandPattern struct {
 	pattern dyn.Pattern
-	fn      func(ctx context.Context, b *bundle.Bundle, p dyn.Path, v dyn.Value) ([]dyn.Value, error)
+	fn      func(ctx context.Context, b *bundle.Bundle, p dyn.Path, v dyn.Value) (diag.Diagnostics, []dyn.Value)
 }
 
 var taskLibrariesPattern = dyn.NewPattern(
@@ -197,16 +194,14 @@ func (e *expand) Apply(ctx context.Context, b *bundle.Bundle) error {
 		},
 	}
 
-	var firstErr error
+	var diags diag.Diagnostics
 
 	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
 		var err error
 		for _, expander := range expanders {
 			v, err = dyn.MapByPattern(v, expander.pattern, func(p dyn.Path, lv dyn.Value) (dyn.Value, error) {
-				output, e := expander.fn(ctx, b, p, lv)
-				if e != nil && firstErr == nil {
-					firstErr = e
-				}
+				d, output := expander.fn(ctx, b, p, lv)
+				diags = diags.Extend(d)
 				return dyn.NewValue(output, lv.Locations()), nil
 			})
 			if err != nil {
@@ -216,10 +211,11 @@ func (e *expand) Apply(ctx context.Context, b *bundle.Bundle) error {
 
 		return v, nil
 	})
-	if firstErr != nil {
-		return firstErr
+	if err != nil {
+		return err
 	}
-	return err
+
+	return logdiag.Flush(ctx, diags)
 }
 
 func (e *expand) Name() string {

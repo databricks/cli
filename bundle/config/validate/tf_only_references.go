@@ -41,8 +41,7 @@ func (m *tfOnlyReferences) Apply(ctx context.Context, b *bundle.Bundle) error {
 	}
 	isDirect := effectiveEngine.IsDirect()
 
-	var found bool
-	var firstErr error
+	var diags diag.Diagnostics
 
 	// Walk the entire config looking for ${resources.*} references.
 	_ = dyn.WalkReadOnly(b.Config.Value(), func(_ dyn.Path, v dyn.Value) error {
@@ -55,26 +54,17 @@ func (m *tfOnlyReferences) Apply(ctx context.Context, b *bundle.Bundle) error {
 				continue
 			}
 			if d := checkTFOnlyReference(r, v.Location(), isDirect); d != nil {
-				found = true
-				// In Terraform mode these are warnings, emitted immediately.
-				// In direct mode they are errors; we return the first one.
-				if d.Severity == diag.Error {
-					if firstErr == nil {
-						firstErr = *d
-					}
-				} else {
-					logdiag.LogDiag(ctx, *d)
-				}
+				diags = append(diags, *d)
 			}
 		}
 		return nil
 	})
 
-	if found {
+	if len(diags) > 0 {
 		b.Metrics.AddBoolValue("has_tf_only_references", true)
 	}
 
-	return firstErr
+	return logdiag.Flush(ctx, diags)
 }
 
 // checkTFOnlyReference checks a single reference string like

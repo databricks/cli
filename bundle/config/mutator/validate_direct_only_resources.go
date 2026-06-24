@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/logdiag"
 )
 
 type validateDirectOnlyResources struct {
@@ -39,6 +40,7 @@ func (m *validateDirectOnlyResources) Apply(ctx context.Context, b *bundle.Bundl
 		return nil
 	}
 
+	var diags diag.Diagnostics
 	for _, group := range b.Config.Resources.AllResources() {
 		if len(group.Resources) == 0 {
 			continue
@@ -46,7 +48,7 @@ func (m *validateDirectOnlyResources) Apply(ctx context.Context, b *bundle.Bundl
 		if !isDirectOnly(group.Description.PluralName) {
 			continue
 		}
-		return diag.Diagnostic{
+		diags = diags.Append(diag.Diagnostic{
 			Severity: diag.Error,
 			Summary:  group.Description.SingularTitle + " resources are only supported with direct deployment mode",
 			Detail: fmt.Sprintf("%s resources require direct deployment mode. "+
@@ -54,8 +56,8 @@ func (m *validateDirectOnlyResources) Apply(ctx context.Context, b *bundle.Bundl
 				"Learn more at https://docs.databricks.com/dev-tools/bundles/direct",
 				group.Description.SingularTitle, group.Description.SingularName),
 			Locations: b.Config.GetLocations("resources." + group.Description.PluralName),
-		}
+		})
 	}
 
-	return nil
+	return logdiag.Flush(ctx, diags)
 }

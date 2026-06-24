@@ -525,14 +525,15 @@ func strictNormalize(dst any, generated dyn.Value) (dyn.Value, error) {
 
 	// warnings shouldn't happen because output should be already normalized
 	// when it happens, it's a bug in the mutator, and should be treated as an error.
-	// All normalization diagnostics are treated as errors, so return the first one.
-	if len(diags) > 0 {
-		d := diags[0]
-		d.Severity = diag.Error
-		return normalized, d
+	strictDiags := diag.Diagnostics{}
+	for _, d := range diags {
+		if d.Severity == diag.Warning {
+			d.Severity = diag.Error
+		}
+		strictDiags = strictDiags.Append(d)
 	}
 
-	return normalized, nil
+	return normalized, strictDiags.Error()
 }
 
 // loadDiagnosticsFile loads diagnostics from a file.
