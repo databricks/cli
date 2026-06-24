@@ -694,7 +694,21 @@ tasks:
           -- -parallel 4 -timeout=12h
 
   integration-short:
-    desc: Run short integration tests
+    desc: Run integration tests except the slow ones (skips CloudSlow via -short)
+    deps: [install-pythons]
+    cmds:
+      - |
+        VERBOSE_TEST=1 \
+        go run -modfile=tools/go.mod ./tools/testrunner/main.go \
+          {{.GO_TOOL}} gotestsum \
+          --format github-actions \
+          --rerun-fails \
+          --jsonfile output.json \
+          --packages "./acceptance ./integration/..." \
+          -- -parallel 4 -timeout=2h -short
+
+  integration-short-skiplocal:
+    desc: Run integration tests for PRs (skips CloudSlow and tests with testserver coverage)
     deps: [install-pythons]
     cmds:
       - |
@@ -705,7 +719,7 @@ tasks:
           --rerun-fails \
           --jsonfile output.json \
           --packages "./acceptance ./integration/..." \
-          -- -parallel 4 -timeout=12h -short
+          -- -parallel 4 -timeout=2h -short
 
   dbr-integration:
     desc: Run DBR acceptance tests on Databricks Runtime
