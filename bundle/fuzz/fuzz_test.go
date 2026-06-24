@@ -154,12 +154,35 @@ func FuzzJobCreateParity(f *testing.F) {
 
 // checkJobParity generates the job for seed, deploys it under both engines, and
 // fails the test with reproduction details if the create payloads diverge.
+//
+// A deploy/capture failure is not a create-payload divergence, so the three
+// outcomes are handled distinctly to keep nightly triage from misdirecting a
+// deploy failure into regressionSeeds (which is only for real payload diffs):
+//   - neither engine deployed: the generator produced a config nothing accepts,
+//     so skip (logging both errors) rather than flag a parity bug.
+//   - exactly one engine deployed: the engines disagree on whether the config is
+//     even valid. That is a real divergence worth failing on, but an acceptance
+//     divergence, not a payload diff, so it is reported as such.
+//   - both deployed: compare the captured create payloads.
 func checkJobParity(t *testing.T, seed int64) {
 	t.Helper()
 	job := GenerateJob(newRNG(seed))
 
-	diffs, err := compareJobEngines(t.Context(), t, job)
-	require.NoErrorf(t, err, "seed %d", seed)
+	ctx := t.Context()
+	direct, directErr := captureJobCreate(ctx, t, job, "direct")
+	terraform, tfErr := captureJobCreate(ctx, t, job, "terraform")
+
+	switch {
+	case directErr != nil && tfErr != nil:
+		t.Skipf("seed %d: config did not deploy under either engine (not a parity divergence)\ndirect: %v\nterraform: %v", seed, directErr, tfErr)
+	case directErr != nil:
+		t.Fatalf("seed %d: direct rejected a config terraform accepted (engine acceptance divergence, not a payload diff): %v", seed, directErr)
+	case tfErr != nil:
+		t.Fatalf("seed %d: terraform rejected a config direct accepted (engine acceptance divergence, not a payload diff): %v", seed, tfErr)
+	}
+
+	diffs, err := DiffPayloads(direct, terraform, DefaultIgnorePaths)
+	require.NoErrorf(t, err, "seed %d: comparing create payloads", seed)
 
 	if len(diffs) > 0 {
 		jobJSON, _ := json.MarshalIndent(job, "", "  ")
