@@ -195,15 +195,20 @@ func MustAnyClient(cmd *cobra.Command, args []string) (bool, error) {
 
 func MustAccountClient(cmd *cobra.Command, args []string) error {
 	cfg := &config.Config{}
+	ctx := cmd.Context()
 
 	// The command-line profile flag takes precedence over DATABRICKS_CONFIG_PROFILE.
 	pr, hasProfileFlag := profileFlagValue(cmd)
 	if hasProfileFlag {
 		cfg.Profile = pr
+		// An explicit --profile must take precedence over authentication
+		// environment variables; see the matching comment in MustWorkspaceClient
+		// and issue #5096.
+		cfg.Loaders = []config.Loader{databrickscfg.ResolveNonAuthFromEnv, config.ConfigFile}
+	} else {
+		auth.NormalizeDatabricksConfigFromEnv(ctx, cfg)
 	}
 
-	ctx := cmd.Context()
-	auth.NormalizeDatabricksConfigFromEnv(ctx, cfg)
 	ctx = cmdctx.SetConfigUsed(ctx, cfg)
 	cmd.SetContext(ctx)
 
@@ -324,9 +329,16 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 	profile, hasProfileFlag := profileFlagValue(cmd)
 	if hasProfileFlag {
 		cfg.Profile = profile
+		// An explicit --profile must take precedence over authentication
+		// environment variables (DATABRICKS_HOST, DATABRICKS_TOKEN, ...).
+		// The SDK's default loader reads the environment before the config
+		// file and never overwrites an already-set field, so without this the
+		// env vars would shadow the selected profile (issue #5096). Load only
+		// non-auth attributes from the environment, then the profile.
+		cfg.Loaders = []config.Loader{databrickscfg.ResolveNonAuthFromEnv, config.ConfigFile}
+	} else {
+		auth.NormalizeDatabricksConfigFromEnv(ctx, cfg)
 	}
-
-	auth.NormalizeDatabricksConfigFromEnv(ctx, cfg)
 	resolveDefaultProfile(ctx, cfg)
 
 	_, isTargetFlagSet := targetFlagValue(cmd)
