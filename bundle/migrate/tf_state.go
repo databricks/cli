@@ -19,14 +19,14 @@ type TFStateAttrs map[string]map[string]json.RawMessage
 
 // TFState holds everything parsed from a single terraform state file read.
 type TFState struct {
+	// Serial and Lineage are the top-level state metadata used to seed the direct state.
+	Serial  int
+	Lineage string
+
 	// Attrs maps (tfResourceType → resourceName → raw JSON attributes).
 	Attrs TFStateAttrs
 	// IDs maps bundle resource key → resource ID.
 	IDs map[string]string
-
-	// Serial and Lineage are the top-level state metadata used to seed the direct state.
-	Serial  int
-	Lineage string
 }
 
 // rawTFState is the on-disk terraform state format; it captures everything we need in one parse.
