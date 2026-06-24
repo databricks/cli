@@ -382,12 +382,10 @@ resources:
       - field: dataset_schema
         reason: input_only
 
+    # serialized_dashboard holds the inlined dashboard JSON (often megabytes); persist only
+    # its content hash. See "hashed_in_state" in README.md.
     hashed_in_state:
-      # serialized_dashboard holds the inlined dashboard JSON (often megabytes). It is
-      # ignore_remote_changes (etag_based) and re-sent from config on every deploy, so it
-      # is never read back from state; persist only its content hash to keep state small.
-      - field: serialized_dashboard
-        reason: large_content
+      - serialized_dashboard
 
   genie_spaces:
     ignore_remote_changes:

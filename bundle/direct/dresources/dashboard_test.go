@@ -2,6 +2,7 @@ package dresources
 
 import (
 	"encoding/json"
+	"slices"
 	"strings"
 	"testing"
 
@@ -63,15 +64,14 @@ func TestDashboardSerializedDashboardStateRules(t *testing.T) {
 	cfg := GetResourceConfig("dashboards")
 	path := structpath.NewStringKey(nil, "serialized_dashboard")
 
-	hasRule := func(rules []FieldRule) bool {
-		for _, rule := range rules {
-			if path.HasPatternPrefix(rule.Field) {
-				return true
-			}
+	ignoresRemote := false
+	for _, rule := range cfg.IgnoreRemoteChanges {
+		if path.HasPatternPrefix(rule.Field) {
+			ignoresRemote = true
+			break
 		}
-		return false
 	}
 
-	assert.True(t, hasRule(cfg.HashedInState), "serialized_dashboard must be declared hashed_in_state")
-	assert.True(t, hasRule(cfg.IgnoreRemoteChanges), "serialized_dashboard must be ignore_remote_changes (server normalizes the content)")
+	assert.True(t, slices.Contains(cfg.HashedInState, "serialized_dashboard"), "serialized_dashboard must be declared hashed_in_state")
+	assert.True(t, ignoresRemote, "serialized_dashboard must be ignore_remote_changes (server normalizes the content)")
 }

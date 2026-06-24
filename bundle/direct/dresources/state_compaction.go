@@ -1,14 +1,12 @@
 package dresources
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"reflect"
 	"strings"
 
+	"github.com/databricks/cli/libs/hash"
 	"github.com/databricks/cli/libs/structs/structaccess"
 )
 
@@ -34,14 +32,11 @@ func hashStateValue(v any) (any, error) {
 		return v, nil
 	}
 
-	// json.Marshal is deterministic (map keys are sorted), so equal content always
-	// produces an equal hash across runs and platforms.
-	data, err := json.Marshal(v)
+	h, err := hash.JSON(v)
 	if err != nil {
 		return nil, err
 	}
-	sum := sha256.Sum256(data)
-	return stateHashPrefix + hex.EncodeToString(sum[:]), nil
+	return stateHashPrefix + h, nil
 }
 
 // CompactState returns a copy of state with every field declared in cfg.HashedInState
@@ -66,8 +61,7 @@ func CompactState(cfg *ResourceLifecycleConfig, state any) (any, error) {
 	out.Elem().Set(rv.Elem())
 	compacted := out.Interface()
 
-	for _, rule := range cfg.HashedInState {
-		field := rule.Field.String()
+	for _, field := range cfg.HashedInState {
 		current, err := structaccess.GetByString(compacted, field)
 		if err != nil {
 			if _, ok := errors.AsType[*structaccess.NotFoundError](err); ok {

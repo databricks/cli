@@ -71,11 +71,10 @@ type ResourceLifecycleConfig struct {
 	// When old and new are nil but remote is set, and the remote value matches allowed values (if specified), the change is skipped.
 	BackendDefaults []BackendDefaultRule `yaml:"backend_defaults,omitempty"`
 
-	// HashedInState: fields persisted to state as a content hash ("sha256:<hex>")
-	// instead of their full contents. Only valid for large, equality-only fields
-	// that are never read back from state (e.g. dashboards' serialized_dashboard,
-	// which is ignore_remote_changes and re-sent from config on every deploy).
-	HashedInState []FieldRule `yaml:"hashed_in_state,omitempty"`
+	// HashedInState: field paths persisted to state as a content hash ("sha256:<hex>")
+	// instead of their full contents. Only valid for large, equality-only fields that
+	// are never read back from state (e.g. dashboards' serialized_dashboard).
+	HashedInState []string `yaml:"hashed_in_state,omitempty"`
 }
 
 // Config is the root configuration structure for resource lifecycle behavior.
