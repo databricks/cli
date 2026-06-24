@@ -68,13 +68,6 @@ func New(ctx context.Context) *cobra.Command {
 	// Add workspace subcommands.
 	workspaceCommands := workspace.All()
 	for _, cmd := range workspaceCommands {
-		// The auto-generated `bundle-deployments` workspace service (DMS) is
-		// surfaced under the DAB `bundle` command tree (cmd/bundle). Skip the
-		// generated top-level command; callers still have `databricks api ...`
-		// for the DMS endpoints.
-		if cmd.Name() == "bundle-deployments" {
-			continue
-		}
 		// Order the permissions subcommands after the main commands.
 		for _, sub := range cmd.Commands() {
 			// some commands override groups in overrides.go, leave them as-is
