@@ -23,6 +23,26 @@ func TestCompactStateNoDeclaredFields(t *testing.T) {
 	assert.Same(t, state, out.(*DashboardState))
 }
 
+func TestCompactStateMigratesLegacyFullContent(t *testing.T) {
+	// A pre-existing state still holds the full serialized_dashboard; the matching config
+	// holds identical content. Compaction must map both to the same hash, so a diff computed
+	// after the legacy state is hashed-on-read shows no spurious change (and the next save
+	// rewrites the state compactly).
+	content := `{"pages":[{"name":"p1"}]}`
+	legacy := &DashboardState{DashboardConfig: resources.DashboardConfig{SerializedDashboard: content}}
+	config := &DashboardState{DashboardConfig: resources.DashboardConfig{SerializedDashboard: content}}
+
+	cfg := GetResourceConfig("dashboards")
+	compactedLegacy, err := CompactState(cfg, legacy)
+	require.NoError(t, err)
+	compactedConfig, err := CompactState(cfg, config)
+	require.NoError(t, err)
+
+	legacyHash := compactedLegacy.(*DashboardState).SerializedDashboard
+	assert.Equal(t, compactedConfig.(*DashboardState).SerializedDashboard, legacyHash)
+	assert.True(t, strings.HasPrefix(legacyHash.(string), stateHashPrefix))
+}
+
 func TestHashStateValue(t *testing.T) {
 	stringHash, err := hashStateValue("hello")
 	require.NoError(t, err)
