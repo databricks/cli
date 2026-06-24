@@ -191,6 +191,11 @@ func hasRunFilter() bool {
 // requirePrerequisites verifies external tool prerequisites before doing any
 // work, so a stale toolchain fails fast with an actionable message instead of
 // producing confusing diffs deep into the run.
+//
+// On DBR the serverless image only provides what the test archive ships, so
+// every tool required here must also be bundled in internal/testarchive. When
+// adding a new RequireX prerequisite, add a matching downloader there too, or
+// DBR runs will fail this check before any test runs.
 func requirePrerequisites(t *testing.T) {
 	// Scripts use jq 1.7 features (the pick/1 builtin and the `.foo.[]` iteration syntax).
 	internal.RequireJQ(t, "1.7")
