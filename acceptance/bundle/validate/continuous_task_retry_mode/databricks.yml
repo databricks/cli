@@ -1,0 +1,25 @@
+bundle:
+  name: test-bundle
+
+resources:
+  jobs:
+    # Continuous job without task_retry_mode: should warn (defaults to NEVER).
+    continuous_no_retry:
+      name: continuous_no_retry
+      continuous:
+        pause_status: UNPAUSED
+      tasks:
+        - task_key: run_task
+          run_job_task:
+            job_id: 1234
+
+    # Continuous job with task_retry_mode set: should not warn.
+    continuous_with_retry:
+      name: continuous_with_retry
+      continuous:
+        pause_status: UNPAUSED
+        task_retry_mode: ON_FAILURE
+      tasks:
+        - task_key: run_task
+          run_job_task:
+            job_id: 1234
