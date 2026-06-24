@@ -680,8 +680,10 @@ tasks:
 
   test-fuzz:
     desc: Run terraform/direct create-payload parity fuzz tests (provisions terraform)
-    sources:
-      - bundle/fuzz/**
+    # No `sources:` fingerprint: the seeds checked are a function of the FUZZ_SEED,
+    # FUZZ_SEEDS, and FUZZ_SEED_OFFSET env vars, which Task can't see. Skipping on
+    # an unchanged source checksum would silently no-op a FUZZ_SEED=<n> repro run
+    # or a shifted nightly window, so always run.
     cmds:
       # The parity harness expects terraform + the provider mirror at <repo>/build;
       # RequireTerraform skips when it's absent, so provision it first.
