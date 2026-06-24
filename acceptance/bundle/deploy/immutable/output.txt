@@ -10,6 +10,29 @@ Validation OK!
 
 >>> [CLI] bundle plan -o json
 Building python_artifact...
+[
+  {
+    "notebook_task": {
+      "notebook_path": "${workspace.snapshot_path}/src/files/src/notebook"
+    },
+    "task_key": "notebook_task"
+  },
+  {
+    "environment_key": "env",
+    "python_wheel_task": {
+      "entry_point": "main",
+      "package_name": "immutable"
+    },
+    "task_key": "python_wheel_task"
+  },
+  {
+    "environment_key": "env",
+    "spark_python_task": {
+      "python_file": "${workspace.snapshot_path}/src/files/src/main.py"
+    },
+    "task_key": "spark_python_task"
+  }
+]
 
 >>> [CLI] bundle deploy
 Building python_artifact...

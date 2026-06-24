@@ -5,7 +5,7 @@ cleanup() {
 trap cleanup EXIT
 
 trace $CLI bundle validate
-trace $CLI bundle plan -o json > out.plan.json
+trace $CLI bundle plan -o json | jq '.plan["resources.jobs.my_job"].new_state.value.tasks'
 trace $CLI bundle deploy
 
 
