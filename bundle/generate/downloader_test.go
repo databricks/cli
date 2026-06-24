@@ -203,7 +203,7 @@ func designerStatusHandler(t *testing.T) http.HandlerFunc {
 			ObjectType: workspace.ObjectType("DESIGNER_FILE"),
 		}
 		w.Header().Set("Content-Type", "application/json")
-		require.NoError(t, json.NewEncoder(w).Encode(resp))
+		assert.NoError(t, json.NewEncoder(w).Encode(resp))
 	}
 }
 
