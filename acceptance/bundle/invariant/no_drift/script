@@ -42,11 +42,13 @@ cat LOG.deploy | contains.py '!panic' '!internal error' > /dev/null
 # Any failures after this point will be considered as "bug detected" by fuzzer.
 echo INPUT_CONFIG_OK
 
-# Check both text and JSON plan for no changes
+# Check both text and JSON plan for no changes.
+# LOCAL_DIFF is either empty or "--local"; with --local the plan ignores the remote
+# state of resources, so no drift means the local state saved by deploy matches config.
 # Note, expect that there maybe more than one resource unchanged
-$CLI bundle plan -o json > LOG.planjson 2>LOG.planjson.err
+$CLI bundle plan $LOCAL_DIFF -o json > LOG.planjson 2>LOG.planjson.err
 cat LOG.planjson.err | contains.py '!panic' '!internal error' > /dev/null
 verify_no_drift.py LOG.planjson
 
-$CLI bundle plan 2>LOG.plan.err | contains.py '!panic' '!internal error' 'Plan: 0 to add, 0 to change, 0 to delete' > LOG.plan
+$CLI bundle plan $LOCAL_DIFF 2>LOG.plan.err | contains.py '!panic' '!internal error' 'Plan: 0 to add, 0 to change, 0 to delete' > LOG.plan
 cat LOG.plan.err | contains.py '!panic' '!internal error' > /dev/null

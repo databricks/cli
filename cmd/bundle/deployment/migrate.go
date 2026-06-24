@@ -245,7 +245,7 @@ To start using direct engine, set "engine: direct" under bundle in your databric
 			return root.ErrAlreadyPrinted
 		}
 
-		plan, err := deploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(ctx), &b.Config)
+		plan, err := deploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(ctx), &b.Config, false)
 		if err != nil {
 			return err
 		}

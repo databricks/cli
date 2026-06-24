@@ -151,7 +151,7 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 
 	var plan *deployplan.Plan
 	if engine.IsDirect() {
-		plan, err = b.DeploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(ctx), nil)
+		plan, err = b.DeploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(ctx), nil, false)
 		if err != nil {
 			logdiag.LogError(ctx, err)
 			return

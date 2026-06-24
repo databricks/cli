@@ -44,6 +44,11 @@ type DeploymentBundle struct {
 	Plan             *deployplan.Plan
 	RemoteStateCache sync.Map
 	StateCache       structvar.Cache
+
+	// localOnly is set by CalculatePlan when planning with --local: the per-resource
+	// remote read is skipped. A reference that genuinely needs a target's remote state
+	// fetches it on demand (see remoteStateForRef), so --local is ignored per resource.
+	localOnly bool
 }
 
 // SetRemoteState updates the remote state with type validation and marks as fresh.

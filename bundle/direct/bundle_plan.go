@@ -95,8 +95,12 @@ func (b *DeploymentBundle) InitForApply(ctx context.Context, client *databricks.
 
 // CalculatePlan computes the deployment plan by comparing local config against remote state.
 // StateDB must already be open for read before calling this function.
-func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root) (*deployplan.Plan, error) {
+//
+// When localOnly is true, the remote state of resources is neither fetched nor considered:
+// the plan is computed solely from the difference between the saved local state and the config.
+func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root, localOnly bool) (*deployplan.Plan, error) {
 	b.StateDB.AssertOpenedForRead()
+	b.localOnly = localOnly
 
 	err := b.init(client)
 	if err != nil {
@@ -108,6 +112,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		return nil, fmt.Errorf("reading config: %w", err)
 	}
 
+	plan.LocalOnly = localOnly
 	b.Plan = plan
 
 	g, err := makeGraph(plan)
@@ -155,6 +160,12 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			if id == "" {
 				logdiag.LogError(ctx, fmt.Errorf("%s: internal error, missing in state", errorPrefix))
 				return false
+			}
+
+			if localOnly {
+				// The resource is being deleted because it is absent from config;
+				// its remote status is irrelevant, so skip the remote read.
+				return true
 			}
 
 			remoteState, err := retryOnTransient(ctx, func() (any, error) {
@@ -214,15 +225,18 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			return false
 		}
 
-		remoteState, err := retryOnTransient(ctx, func() (any, error) {
-			return adapter.DoRead(ctx, dbentry.ID)
-		})
-		if err != nil {
-			if isResourceGone(err) {
-				remoteState = nil
-			} else {
-				logdiag.LogError(ctx, fmt.Errorf("%s: reading id=%q: %w", errorPrefix, dbentry.ID, err))
-				return false
+		var remoteState any
+		if !localOnly {
+			remoteState, err = retryOnTransient(ctx, func() (any, error) {
+				return adapter.DoRead(ctx, dbentry.ID)
+			})
+			if err != nil {
+				if isResourceGone(err) {
+					remoteState = nil
+				} else {
+					logdiag.LogError(ctx, fmt.Errorf("%s: reading id=%q: %w", errorPrefix, dbentry.ID, err))
+					return false
+				}
 			}
 		}
 
@@ -260,17 +274,23 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			return false
 		}
 
-		if remoteState == nil {
+		if remoteState == nil && !localOnly {
 			// Even if local action is "recreate" which is higher than "create", we should still pick "create" here
 			// because we know remote does not exist.
 			action = deployplan.Create
 		} else {
+			// In local-only mode the action is derived purely from the local diff
+			// (saved state vs config); remote existence is not consulted.
 			action = getMaxAction(entry.Changes)
 		}
 
-		// Note, this unconditionally stores remoteState. However, it may updated post-deploy, so whether
-		// it can be used for variable resolution depends on several factors, see canReadRemoteCache in LookupReferencePreDeploy
-		b.RemoteStateCache.Store(resourceKey, remoteState)
+		// Note, remoteState may be updated post-deploy, so whether it can be used for
+		// variable resolution depends on several factors, see canReadRemoteCache in LookupReferencePreDeploy.
+		// In --local mode we skip the store entirely (remoteState is nil here): a reference that needs it
+		// fetches the target on demand via remoteStateForRef, which relies on the cache being absent.
+		if !localOnly {
+			b.RemoteStateCache.Store(resourceKey, remoteState)
+		}
 
 		// Validate that resources without DoUpdate don't have update actions
 		if action == deployplan.Update && !adapter.HasDoUpdate() {
@@ -284,6 +304,23 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 
 	if logdiag.HasError(ctx) {
 		return nil, errors.New("planning failed")
+	}
+
+	// In --local the main loop skips each resource's remote read, but reference
+	// resolution may still have fetched some targets on demand (remoteStateForRef
+	// stores them in RemoteStateCache). Surface those reads in the plan. This runs
+	// after the parallel walk so the write to entry.RemoteState is single-threaded:
+	// during the walk a target is fetched from a dependent's goroutine under the
+	// target's read lock, where writing its entry would race with sibling dependents.
+	if localOnly {
+		for key, entry := range plan.Plan {
+			if entry.RemoteState != nil {
+				continue
+			}
+			if remoteState, ok := b.RemoteStateCache.Load(key); ok {
+				entry.RemoteState = remoteState
+			}
+		}
 	}
 
 	for _, entry := range plan.Plan {
@@ -731,12 +768,14 @@ func (b *DeploymentBundle) LookupReferencePreDeploy(ctx context.Context, path *s
 	if configValidErr != nil && remoteValidErr == nil {
 		// The field is only present in remote state schema.
 		if canReadRemoteCache {
-			remoteState, ok := b.RemoteStateCache.Load(targetResourceKey)
+			remoteState, ok, err := b.remoteStateForRef(ctx, targetResourceKey, adapter)
+			if err != nil {
+				return nil, err
+			}
 			if ok {
 				return structaccess.Get(remoteState, fieldPath)
-			} else {
-				return nil, fmt.Errorf("internal error: no entry in remote state cache for %q (remote-only)", targetResourceKey)
 			}
+			return nil, fmt.Errorf("internal error: no entry in remote state cache for %q (remote-only)", targetResourceKey)
 		}
 		return nil, errDelayed
 	}
@@ -750,15 +789,54 @@ func (b *DeploymentBundle) LookupReferencePreDeploy(ctx context.Context, path *s
 	}
 
 	if canReadRemoteCache {
-		remoteState, ok := b.RemoteStateCache.Load(targetResourceKey)
+		remoteState, ok, err := b.remoteStateForRef(ctx, targetResourceKey, adapter)
+		if err != nil {
+			return nil, err
+		}
 		if ok {
 			return structaccess.Get(remoteState, fieldPath)
-		} else {
-			return nil, fmt.Errorf("internal error: no entry in remote state cache for %q", targetResourceKey)
 		}
+		return nil, fmt.Errorf("internal error: no entry in remote state cache for %q", targetResourceKey)
 	}
 
 	return nil, errDelayed
+}
+
+// remoteStateForRef returns the remote state of a referenced target resource for
+// reference resolution. Normally the state was cached when the target was processed
+// (targets precede their dependents in DAG order). In --local mode that proactive
+// read is skipped, so fetch it on demand here: a reference to a remote-only field
+// genuinely needs the remote state, so we ignore --local for that target.
+//
+// The bool reports whether a value is available. In non-local mode a cache miss
+// returns (nil, false, nil) and the caller surfaces its own internal error.
+func (b *DeploymentBundle) remoteStateForRef(ctx context.Context, targetResourceKey string, adapter *dresources.Adapter) (any, bool, error) {
+	if remoteState, ok := b.RemoteStateCache.Load(targetResourceKey); ok {
+		return remoteState, true, nil
+	}
+
+	if !b.localOnly {
+		return nil, false, nil
+	}
+
+	id := b.StateDB.GetResourceID(targetResourceKey)
+	if id == "" {
+		return nil, false, fmt.Errorf("internal error: no db entry for %q", targetResourceKey)
+	}
+
+	remoteState, err := retryOnTransient(ctx, func() (any, error) {
+		return adapter.DoRead(ctx, id)
+	})
+	if err != nil {
+		if isResourceGone(err) {
+			remoteState = nil
+		} else {
+			return nil, false, fmt.Errorf("reading id=%q: %w", id, err)
+		}
+	}
+
+	b.RemoteStateCache.Store(targetResourceKey, remoteState)
+	return remoteState, true, nil
 }
 
 // resolveReferences processes all references in entry.NewState.Refs.

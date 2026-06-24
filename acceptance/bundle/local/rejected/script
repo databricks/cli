@@ -1,0 +1,3 @@
+# --local is only supported by the direct engine; both plan and deploy reject it.
+errcode trace $CLI bundle plan --local
+errcode trace $CLI bundle deploy --local

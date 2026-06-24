@@ -1,0 +1,7 @@
+bundle:
+  name: local-rejected
+
+resources:
+  jobs:
+    my_job:
+      name: my-job

@@ -15,6 +15,7 @@ import (
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/bundle/direct/dstate"
+	"github.com/databricks/cli/bundle/metrics"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/cmd/root"
@@ -194,6 +195,15 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			return b, stateDesc, root.ErrAlreadyPrinted
 		}
 
+		// --local skips the per-resource remote read, which only the direct engine performs.
+		if b.Local {
+			if !stateDesc.Engine.IsDirect() {
+				logdiag.LogError(ctx, errors.New("--local is only supported with the direct engine. See https://docs.databricks.com/aws/en/dev-tools/bundles/direct"))
+				return b, stateDesc, root.ErrAlreadyPrinted
+			}
+			b.Metrics.SetBoolValue(metrics.LocalUsed, true)
+		}
+
 		// Open direct engine state once for all subsequent operations (ExportState, CalculatePlan, Apply, etc.)
 		needDirectState := stateDesc.Engine.IsDirect() && (opts.InitIDs || opts.ErrorOnEmptyState || opts.Deploy || opts.ReadPlanPath != "" || opts.PreDeployChecks || opts.PostStateFunc != nil)
 		if needDirectState {
@@ -254,6 +264,9 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		currentVersion := build.GetInfo().Version
 		if plan.CLIVersion != currentVersion {
 			log.Warnf(ctx, "Plan was created with CLI version %s but current version is %s", plan.CLIVersion, currentVersion)
+		}
+		if plan.LocalOnly {
+			log.Warnf(ctx, "Plan was created with --local and does not reflect the remote state of resources; applying it may miss out-of-band drift")
 		}
 
 		// Validate that the plan's lineage and serial match the current state

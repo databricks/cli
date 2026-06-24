@@ -10,6 +10,7 @@ const (
 	ClusterLifecycleStarted             = "cluster_lifecycle_started"
 	SqlWarehouseLifecycleStarted        = "sql_warehouse_lifecycle_started"
 	SelectUsed                          = "select_used"
+	LocalUsed                           = "local_used"
 
 	// Whether workspace.state_path is under /Workspace/Shared.
 	StatePathIsShared = "state_path_is_shared"
