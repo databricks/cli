@@ -111,7 +111,10 @@ const (
 	ReasonDrop = "!drop"
 )
 
-// HasChange checks if there are any changes for fields with the given prefix.
+// HasChange checks if there are any actionable changes for fields with the given prefix.
+// Skipped changes (e.g. backend defaults or ignored remote changes) do not count, so a
+// section composed only of suppressed changes is treated as unchanged. Callers use this to
+// decide whether to issue a section update, and updating for a skip-only change is a no-op.
 // This function is path-aware and correctly handles path component boundaries.
 // For example:
 //   - HasChange for path "a" matches "a" and "a.b" but not "aa"
@@ -122,6 +125,9 @@ func (c *Changes) HasChange(fieldPath *structpath.PathNode) bool {
 	}
 
 	for field := range *c {
+		if (*c)[field].Action == Skip {
+			continue
+		}
 		fieldNode, err := structpath.ParsePath(field)
 		if err != nil {
 			continue
