@@ -58,5 +58,5 @@ acceptance TestAccept/ssh/connection
 * TestGenerateFromExistingJobAndDeploy
 
 # This is broken on Azure; it times out.
-integration TestFetchRepositoryInfoAPI_FromRepo
+integration/libs/git TestFetchRepositoryInfoAPI_FromRepo
 
