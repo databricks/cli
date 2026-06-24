@@ -68,13 +68,14 @@ func TestPostStream(t *testing.T) {
 	assert.JSONEq(t, `{"type":"response.completed"}`, ev.Data)
 }
 
-func TestPostStream_SendsOrgIDHeader(t *testing.T) {
-	// The endpoint is workspace-scoped: without X-Databricks-Org-Id the gateway
-	// rejects the request ("Credential was not sent…") even with valid auth, so a
-	// resolved workspace id must be sent.
-	var gotOrgID string
+func TestPostStream_SendsWorkspaceIDHeader(t *testing.T) {
+	// The endpoint is workspace-scoped: on SPOG hosts the gateway rejects the
+	// request ("Credential was not sent…") without the workspace-id header even
+	// with valid auth, so a resolved workspace id must be sent. The wire header is
+	// the canonical X-Databricks-Workspace-Id.
+	var gotWorkspaceID string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		gotOrgID = r.Header.Get("X-Databricks-Org-Id")
+		gotWorkspaceID = r.Header.Get("X-Databricks-Workspace-Id")
 		w.Header().Set("Content-Type", "text/event-stream")
 		fmt.Fprint(w, "data: {\"type\":\"response.completed\"}\n\n")
 	}))
@@ -84,15 +85,15 @@ func TestPostStream_SendsOrgIDHeader(t *testing.T) {
 	body, err := PostStream(t.Context(), cfg, BuildRequest("q", ""))
 	require.NoError(t, err)
 	defer body.Close()
-	assert.Equal(t, "987654321", gotOrgID)
+	assert.Equal(t, "987654321", gotWorkspaceID)
 }
 
-func TestPostStream_OmitsOrgIDHeaderWhenUnset(t *testing.T) {
+func TestPostStream_OmitsWorkspaceIDHeaderWhenUnset(t *testing.T) {
 	// No workspace id (e.g. account-level config) means no header rather than an
 	// empty or "none" one.
-	var hadOrgID bool
+	var hadWorkspaceID bool
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, hadOrgID = r.Header["X-Databricks-Org-Id"]
+		_, hadWorkspaceID = r.Header["X-Databricks-Workspace-Id"]
 		w.Header().Set("Content-Type", "text/event-stream")
 		fmt.Fprint(w, "data: {\"type\":\"response.completed\"}\n\n")
 	}))
@@ -102,7 +103,7 @@ func TestPostStream_OmitsOrgIDHeaderWhenUnset(t *testing.T) {
 	body, err := PostStream(t.Context(), cfg, BuildRequest("q", ""))
 	require.NoError(t, err)
 	defer body.Close()
-	assert.False(t, hadOrgID, "no org-id header when workspace id is unset")
+	assert.False(t, hadWorkspaceID, "no workspace-id header when workspace id is unset")
 }
 
 func TestPostStream_EndpointGone(t *testing.T) {
