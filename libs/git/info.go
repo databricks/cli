@@ -33,6 +33,10 @@ type gitInfo struct {
 	HeadCommitID string `json:"head_commit_id"`
 	Path         string `json:"path"`
 	URL          string `json:"url"`
+	// ID of the git folder object. Some workspace git folders return only id+path
+	// from get-status (omitting branch/commit/url), so the id lets us recover the
+	// rest via the Repos API. See the fallback in fetchRepositoryInfoAPI.
+	ID int64 `json:"id"`
 }
 
 type response struct {
@@ -102,14 +106,30 @@ func fetchRepositoryInfoAPI(ctx context.Context, path string, w *databricks.Work
 
 	// Check if GitInfo is present and extract relevant fields
 	gi := response.GitInfo
-	if gi != nil {
-		fixedPath := ensureWorkspacePrefix(gi.Path)
-		result.OriginURL = gi.URL
-		result.LatestCommit = gi.HeadCommitID
-		result.CurrentBranch = gi.Branch
-		result.WorktreeRoot = fixedPath
-	} else {
+	if gi == nil {
 		log.Infof(ctx, "Failed to load git info from %s", apiEndpoint)
+		return result, nil
+	}
+
+	result.OriginURL = gi.URL
+	result.LatestCommit = gi.HeadCommitID
+	result.CurrentBranch = gi.Branch
+	result.WorktreeRoot = ensureWorkspacePrefix(gi.Path)
+
+	// Some workspace git folders return only id+path from get-status and omit the
+	// origin URL. When that happens, fetch the full provenance from the Repos API
+	// by id. Classic repos return the URL inline and skip this extra call.
+	if gi.ID != 0 && result.OriginURL == "" {
+		repo, err := w.Repos.GetByRepoId(ctx, gi.ID)
+		if err != nil {
+			// Best effort: WorktreeRoot is already set, so degrade to partial info
+			// rather than failing the deploy (see FetchRepositoryInfo's contract).
+			log.Debugf(ctx, "Failed to load git info from Repos API for id %d: %v", gi.ID, err)
+			return result, nil
+		}
+		result.OriginURL = repo.Url
+		result.LatestCommit = repo.HeadCommitId
+		result.CurrentBranch = repo.Branch
 	}
 
 	return result, nil

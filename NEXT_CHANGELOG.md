@@ -8,6 +8,8 @@
 
 ### Bundles
 
+* Fixed missing git information (origin URL, branch, commit) when deploying a bundle from a Git folder inside the workspace.
+
 ### Dependency updates
 
 ### API Changes
