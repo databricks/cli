@@ -42,6 +42,20 @@ func TestUpdateLegacyInstallDetected(t *testing.T) {
 	assert.Contains(t, err.Error(), "refresh before updating")
 }
 
+func TestUpdateLegacyAIDevKitInstallDetected(t *testing.T) {
+	tmp := setupTestHome(t)
+	ctx := cmdio.MockDiscard(t.Context())
+
+	legacySkill := filepath.Join(tmp, ".claude", "skills", "databricks-app-python")
+	require.NoError(t, os.MkdirAll(legacySkill, 0o755))
+
+	src := &mockManifestSource{manifest: testManifest()}
+	_, err := UpdateSkills(ctx, src, nil, UpdateOptions{})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "legacy Databricks AI Dev Kit artifacts")
+	assert.Contains(t, err.Error(), "refresh before updating")
+}
+
 func TestUpdateAlreadyUpToDate(t *testing.T) {
 	tmp := setupTestHome(t)
 	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())

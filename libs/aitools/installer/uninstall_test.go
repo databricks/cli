@@ -142,6 +142,19 @@ func TestUninstallNoStateReturnsError(t *testing.T) {
 	assert.Contains(t, err.Error(), "no skills installed")
 }
 
+func TestUninstallLegacyAIDevKitInstallDetected(t *testing.T) {
+	tmp := setupTestHome(t)
+	ctx := cmdio.MockDiscard(t.Context())
+
+	mcpConfig := filepath.Join(tmp, ".claude.json")
+	require.NoError(t, os.WriteFile(mcpConfig, []byte(`{"mcpServers":{"databricks":{"command":"python"}}}`), 0o644))
+
+	err := UninstallSkills(ctx)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "legacy Databricks AI Dev Kit artifacts")
+	assert.Contains(t, err.Error(), "databricks aitools install")
+}
+
 func TestUninstallHandlesMissingDirectories(t *testing.T) {
 	tmp := setupTestHome(t)
 	globalDir := filepath.Join(tmp, ".databricks", "aitools", "skills")

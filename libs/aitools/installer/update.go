@@ -76,7 +76,7 @@ func UpdateSkills(ctx context.Context, src ManifestSource, targetAgents []*agent
 
 	if state == nil {
 		if scope == ScopeGlobal && hasLegacyInstall(ctx, baseDir) {
-			return nil, errors.New("found skills from a previous install without state tracking; run 'databricks aitools install' to refresh before updating")
+			return nil, errors.New("found legacy Databricks AI Dev Kit artifacts or skills from a previous install without state tracking; run 'databricks aitools install' to refresh before updating")
 		}
 		return nil, errors.New("no skills installed. Run 'databricks aitools install' to install")
 	}
@@ -232,7 +232,7 @@ func hasLegacyInstall(ctx context.Context, globalDir string) bool {
 	if err != nil {
 		return false
 	}
-	return hasSkillsOnDisk(filepath.Join(homeDir, ".databricks", "agent-skills"))
+	return hasSkillsOnDisk(filepath.Join(homeDir, ".databricks", "agent-skills")) || hasLegacyAIDevKitArtifacts(ctx, ScopeGlobal)
 }
 
 // FormatUpdateResult returns a human-readable summary of the update result.

@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"io"
 	"io/fs"
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -599,6 +601,78 @@ func TestLegacyDetectLegacyDir(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Contains(t, stderr.String(), "Found skills installed before state tracking was added.")
+}
+
+func TestInstallWarnsAboutLegacyAIDevKitArtifacts(t *testing.T) {
+	tmp := setupTestHome(t)
+	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
+	setupFetchMock(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
+
+	replacedSkill := filepath.Join(tmp, ".claude", "skills", "databricks-bundles")
+	removedSkill := filepath.Join(tmp, ".github", "skills", "databricks-app-python")
+	require.NoError(t, os.MkdirAll(replacedSkill, 0o755))
+	require.NoError(t, os.MkdirAll(removedSkill, 0o755))
+	mcpConfig := filepath.Join(tmp, ".claude.json")
+	require.NoError(t, os.WriteFile(mcpConfig, []byte(`{"mcpServers":{"databricks":{"command":"python"}}}`), 0o644))
+
+	src := &mockManifestSource{manifest: testManifest()}
+	agent := testAgent(tmp)
+
+	err := InstallSkillsForAgents(ctx, src, []*agents.Agent{agent}, InstallOptions{})
+	require.NoError(t, err)
+
+	output := stderr.String()
+	assert.Contains(t, output, "Found legacy Databricks AI Dev Kit artifacts.")
+	assert.Contains(t, output, mcpConfig+" (mcpServers.databricks)")
+	assert.Contains(t, output, replacedSkill)
+	assert.Contains(t, output, removedSkill)
+	assert.Contains(t, output, "Remove the databricks MCP server entry")
+	assert.Contains(t, output, "Remove legacy AI Dev Kit skill directories")
+}
+
+func TestInstallOffersToRemoveLegacyAIDevKitArtifacts(t *testing.T) {
+	tmp := setupTestHome(t)
+	var stderr bytes.Buffer
+	ctx := cmdio.InContext(t.Context(), cmdio.NewTestIO(strings.NewReader(""), io.Discard, &stderr))
+	setupFetchMock(t)
+	t.Setenv("DATABRICKS_SKILLS_REF", testSkillsRef)
+
+	origPrompt := promptLegacyAIDevKitRemoval
+	t.Cleanup(func() { promptLegacyAIDevKitRemoval = origPrompt })
+	promptLegacyAIDevKitRemoval = func(_ context.Context, findings []legacyAIDevKitFinding) (bool, error) {
+		require.Len(t, findings, 2)
+		return true, nil
+	}
+
+	legacySkill := filepath.Join(tmp, ".claude", "skills", "databricks-bundles")
+	require.NoError(t, os.MkdirAll(legacySkill, 0o755))
+	mcpConfig := filepath.Join(tmp, ".claude.json")
+	require.NoError(t, os.WriteFile(mcpConfig, []byte(`{"mcpServers":{"databricks":{"command":"python"},"other":{"command":"node"}}}`), 0o644))
+
+	src := &mockManifestSource{manifest: testManifest()}
+	agent := testAgent(tmp)
+
+	err := InstallSkillsForAgents(ctx, src, []*agents.Agent{agent}, InstallOptions{})
+	require.NoError(t, err)
+
+	_, err = os.Lstat(legacySkill)
+	assert.ErrorIs(t, err, fs.ErrNotExist)
+	content, err := os.ReadFile(mcpConfig)
+	require.NoError(t, err)
+	assert.NotContains(t, string(content), `"databricks"`)
+	assert.Contains(t, string(content), `"other"`)
+	assert.Contains(t, stderr.String(), "Removed legacy Databricks AI Dev Kit artifacts.")
+}
+
+func TestLegacyAIDevKitMCPKeysSkipsSymlink(t *testing.T) {
+	tmp := t.TempDir()
+	target := filepath.Join(tmp, "target.json")
+	require.NoError(t, os.WriteFile(target, []byte(`{"mcpServers":{"databricks":{"command":"python"}}}`), 0o644))
+	link := filepath.Join(tmp, ".claude.json")
+	require.NoError(t, os.Symlink(target, link))
+
+	assert.Empty(t, legacyAIDevKitMCPKeys(link))
 }
 
 func TestIdempotentInstallReinstallsForNewAgent(t *testing.T) {
