@@ -110,6 +110,14 @@ func diffValue(path string, a, b any, diffs *[]Difference) {
 			*diffs = append(*diffs, Difference{Path: path, Direct: a, Terraform: b})
 			return
 		}
+		// Slices whose elements carry a natural identity key (tasks, job clusters)
+		// are matched by that key so an engine emitting the same elements in a
+		// different order is not reported as a difference. Everything else is
+		// compared positionally.
+		if key := identityKey(av, bv); key != "" {
+			diffKeyedSlice(path, key, av, bv, diffs)
+			return
+		}
 		n := max(len(av), len(bv))
 		for i := range n {
 			child := fmt.Sprintf("%s[%d]", path, i)
@@ -126,6 +134,70 @@ func diffValue(path string, a, b any, diffs *[]Difference) {
 		if !scalarEqual(a, b) {
 			*diffs = append(*diffs, Difference{Path: path, Direct: a, Terraform: b})
 		}
+	}
+}
+
+// identityFields are the keys, in priority order, that uniquely identify the
+// elements of a payload slice. Job tasks and shared job clusters are the slices
+// whose order is not significant but which the engines may emit differently.
+var identityFields = []string{"task_key", "job_cluster_key"}
+
+// identityKey returns the field that identifies every element of both slices, or
+// "" if the elements are not uniformly keyed objects (in which case the caller
+// falls back to positional comparison).
+func identityKey(a, b []any) string {
+	for _, field := range identityFields {
+		if allHaveKey(a, field) && allHaveKey(b, field) {
+			return field
+		}
+	}
+	return ""
+}
+
+func allHaveKey(s []any, field string) bool {
+	if len(s) == 0 {
+		return false
+	}
+	for _, el := range s {
+		m, ok := el.(map[string]any)
+		if !ok {
+			return false
+		}
+		if _, ok := m[field].(string); !ok {
+			return false
+		}
+	}
+	return true
+}
+
+// diffKeyedSlice matches elements of a and b by the value of key (which is unique
+// within each slice for tasks/job clusters) and diffs each matched pair,
+// reporting unmatched elements as present-on-one-side. Paths keep numeric indices
+// so ignore-path [*] normalization still applies.
+func diffKeyedSlice(path, key string, a, b []any, diffs *[]Difference) {
+	bByKey := make(map[string]any, len(b))
+	for _, el := range b {
+		bByKey[el.(map[string]any)[key].(string)] = el
+	}
+
+	matched := make(map[string]bool, len(a))
+	for i, el := range a {
+		child := fmt.Sprintf("%s[%d]", path, i)
+		k := el.(map[string]any)[key].(string)
+		matched[k] = true
+		if bel, ok := bByKey[k]; ok {
+			diffValue(child, el, bel, diffs)
+		} else {
+			*diffs = append(*diffs, Difference{Path: child, Direct: el, Terraform: missing{}})
+		}
+	}
+	for j, el := range b {
+		k := el.(map[string]any)[key].(string)
+		if matched[k] {
+			continue
+		}
+		child := fmt.Sprintf("%s[%d]", path, j)
+		*diffs = append(*diffs, Difference{Path: child, Direct: missing{}, Terraform: el})
 	}
 }
 
