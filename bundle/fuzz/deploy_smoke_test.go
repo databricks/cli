@@ -11,7 +11,7 @@ import (
 func TestCaptureJobCreateDirect(t *testing.T) {
 	job := GenerateJob(newRNG(1))
 
-	body, err := CaptureJobCreate(t.Context(), t, job, "direct")
+	body, err := captureJobCreate(t.Context(), t, job, "direct")
 	require.NoError(t, err)
 	require.NotEmpty(t, body)
 
@@ -22,10 +22,10 @@ func TestCaptureJobCreateDirect(t *testing.T) {
 }
 
 func TestCaptureJobCreateTerraform(t *testing.T) {
-	RequireTerraform(t)
+	requireTerraform(t)
 	job := GenerateJob(newRNG(1))
 
-	body, err := CaptureJobCreate(t.Context(), t, job, "terraform")
+	body, err := captureJobCreate(t.Context(), t, job, "terraform")
 	require.NoError(t, err)
 	require.NotEmpty(t, body)
 
