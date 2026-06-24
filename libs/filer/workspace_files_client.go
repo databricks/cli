@@ -148,6 +148,18 @@ func NewWorkspaceFilesClient(w *databricks.WorkspaceClient, root string) (Filer,
 	}, nil
 }
 
+// NewWorkspaceFilesClientWithClient is like [NewWorkspaceFilesClient] but uses the
+// provided SDK client instead of building one from w.Config. Callers use it to route
+// file operations over a custom HTTP transport (for example, forcing HTTP/1.1)
+// without copying or mutating the shared w.Config.
+func NewWorkspaceFilesClientWithClient(w *databricks.WorkspaceClient, root string, apiClient *client.DatabricksClient) Filer {
+	return &WorkspaceFilesClient{
+		workspaceClient: w,
+		apiClient:       apiClient,
+		root:            NewWorkspaceRootPath(root),
+	}
+}
+
 func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io.Reader, mode ...WriteMode) error {
 	absPath, err := w.root.Join(name)
 	if err != nil {
