@@ -1,10 +1,3 @@
 Local = true
 Cloud = true
 RequiresUnityCatalog = true
-
-# The effective predictive optimization value is inherited from the metastore, so
-# it differs between the real workspace (DISABLE on the test metastore) and the
-# local testserver (ENABLE). Normalize it to keep one golden valid for both.
-[[Repls]]
-Old = '"value": "(ENABLE|DISABLE)"'
-New = '"value": "[PREDICTIVE_OPTIMIZATION]"'
