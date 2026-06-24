@@ -6,6 +6,10 @@ fi
 export DASHBOARD_DISPLAY_NAME
 envsubst < databricks.yml.tmpl > databricks.yml
 
+render_dashboard() {
+    DASH_TITLE="$1" envsubst < dashboard.tmpl > dashboard.lvdash.json
+}
+
 cleanup() {
     trace $CLI bundle destroy --auto-approve
     rm -f out.requests.txt
@@ -13,8 +17,8 @@ cleanup() {
 trap cleanup EXIT
 rm -f out.requests.txt
 
-# The direct-engine plan keeps the FULL serialized_dashboard in new_state (so it can be
-# deployed), and reports the diff against state as a content hash.
+title "Create: plan keeps full content in new_state but reports the diff as a hash"
+render_dashboard "Sales Overview"
 trace $CLI bundle plan -o json > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
 
 # Deploy. With READPLAN=1 this applies the SAVED plan file instead of re-planning. The plan
@@ -33,6 +37,20 @@ rm -f out.requests.txt
 # Persisted state holds ONLY the content hash, never the dashboard JSON.
 print_state.py | gron.py | grep serialized_dashboard > out.state.$DATABRICKS_BUNDLE_ENGINE.txt
 
-# Re-plan with no local change: the server normalizes serialized_dashboard, but it is
-# ignore_remote_changes (etag_based), so the resource is unchanged (no spurious update).
+title "Re-plan with no local change is a no-op (server normalization is ignored, etag_based)"
 trace $CLI bundle plan -o json > out.plan_skip.$DATABRICKS_BUNDLE_ENGINE.json
+
+title "Edit serialized_dashboard: the hash changes, so the local diff detects an update"
+render_dashboard "Sales Overview v2"
+trace $CLI bundle plan -o json > out.plan_update.$DATABRICKS_BUNDLE_ENGINE.json
+
+# Apply the update (in-memory or from the saved plan). The update API call must carry the
+# FULL new content; out.update.serialized.json is identical across READPLAN, proving the
+# saved plan applies the real content for updates too.
+$CLI bundle deploy $(readplanarg out.plan_update.direct.json)
+
+jq -s '[.[] | select(.method == "PATCH" and (.path | contains("/api/2.0/lakeview/dashboards")) and .body.serialized_dashboard != null) | .body.serialized_dashboard]' out.requests.txt > out.update.serialized.json
+rm -f out.requests.txt
+
+# State holds the NEW content hash after the update.
+print_state.py | gron.py | grep serialized_dashboard > out.state_after_update.$DATABRICKS_BUNDLE_ENGINE.txt
