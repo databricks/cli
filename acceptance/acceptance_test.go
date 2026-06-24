@@ -193,9 +193,7 @@ func hasRunFilter() bool {
 // producing confusing diffs deep into the run.
 //
 // It reports whether all checks passed; a failure surfaces as
-// TestAccept/prerequisites rather than a bare TestAccept. ConfigurePython is
-// intentionally not run here: it mutates PATH for the rest of the run via
-// t.Setenv, which a subtest would tear down on return.
+// TestAccept/prerequisites rather than a bare TestAccept.
 func requirePrerequisites(t *testing.T) bool {
 	return t.Run("prerequisites", func(t *testing.T) {
 		// Scripts use jq 1.7 features (the pick/1 builtin and the `.foo.[]` iteration syntax).
