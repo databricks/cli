@@ -155,6 +155,31 @@ func TestWorkspaceClientNormalizesHostBeforeProfileResolution(t *testing.T) {
 	assert.Equal(t, "ws2", client.Config.Profile)
 }
 
+func TestWorkspaceClientProfileOverridesAuthEnv(t *testing.T) {
+	// An explicit profile (from --profile or workspace.profile) must win over
+	// authentication environment variables, mirroring MustWorkspaceClient.
+	// See https://github.com/databricks/cli/issues/5096.
+	setupWorkspaceTest(t)
+
+	err := databrickscfg.SaveToProfile(t.Context(), &config.Config{
+		Profile: "tst",
+		Host:    "https://tst.cloud.databricks.test",
+		Token:   "tst-token",
+	})
+	require.NoError(t, err)
+
+	// direnv-style auth env vars pointing at a different (dev) workspace.
+	t.Setenv("DATABRICKS_HOST", "https://dev.cloud.databricks.test")
+	t.Setenv("DATABRICKS_TOKEN", "dev-token")
+
+	w := Workspace{Profile: "tst"}
+	client, err := w.Client(t.Context())
+	require.NoError(t, err)
+	assert.Equal(t, "tst", client.Config.Profile)
+	assert.Equal(t, "https://tst.cloud.databricks.test", client.Config.Host)
+	assert.Equal(t, "tst-token", client.Config.Token)
+}
+
 func TestWorkspaceConfigHTTPTimeout(t *testing.T) {
 	for _, tc := range []struct {
 		envVal string
