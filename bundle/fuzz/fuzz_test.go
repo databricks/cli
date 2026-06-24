@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -21,18 +22,60 @@ const defaultParitySeeds = 20
 func TestJobCreateParity(t *testing.T) {
 	RequireTerraform(t)
 
-	seeds := defaultParitySeeds
-	if v := os.Getenv("FUZZ_SEEDS"); v != "" {
-		n, err := strconv.Atoi(v)
-		require.NoErrorf(t, err, "invalid FUZZ_SEEDS=%q", v)
-		seeds = n
-	}
-
-	for seed := range int64(seeds) {
+	for _, seed := range paritySeeds(t) {
 		t.Run("seed="+strconv.FormatInt(seed, 10), func(t *testing.T) {
 			checkJobParity(t, seed)
 		})
 	}
+}
+
+// paritySeeds returns the seeds TestJobCreateParity should check.
+//
+// FUZZ_SEED (comma-separated list) runs exactly those seeds and overrides
+// everything else. This is the knob the failure message prints so a single
+// reported divergence can be reproduced with one command, without re-running
+// every seed before it.
+//
+// Otherwise the test runs FUZZ_SEEDS seeds (default defaultParitySeeds) starting
+// at FUZZ_SEED_OFFSET. The offset lets the nightly job shift the window every run
+// (push.yml derives it from the run number) so CI explores configs it has never
+// tested before instead of re-checking the same fixed set forever.
+func paritySeeds(t *testing.T) []int64 {
+	if v := os.Getenv("FUZZ_SEED"); v != "" {
+		var seeds []int64
+		for _, part := range strings.Split(v, ",") {
+			part = strings.TrimSpace(part)
+			if part == "" {
+				continue
+			}
+			n, err := strconv.ParseInt(part, 10, 64)
+			require.NoErrorf(t, err, "invalid FUZZ_SEED entry %q", part)
+			seeds = append(seeds, n)
+		}
+		require.NotEmptyf(t, seeds, "FUZZ_SEED=%q contained no seeds", v)
+		return seeds
+	}
+
+	count := defaultParitySeeds
+	if v := os.Getenv("FUZZ_SEEDS"); v != "" {
+		n, err := strconv.Atoi(v)
+		require.NoErrorf(t, err, "invalid FUZZ_SEEDS=%q", v)
+		require.Greaterf(t, n, 0, "FUZZ_SEEDS must be positive, got %d", n)
+		count = n
+	}
+
+	var offset int64
+	if v := os.Getenv("FUZZ_SEED_OFFSET"); v != "" {
+		n, err := strconv.ParseInt(v, 10, 64)
+		require.NoErrorf(t, err, "invalid FUZZ_SEED_OFFSET=%q", v)
+		offset = n
+	}
+
+	seeds := make([]int64, 0, count)
+	for i := range int64(count) {
+		seeds = append(seeds, offset+i)
+	}
+	return seeds
 }
 
 // FuzzJobCreateParity exposes the same parity check to Go's native fuzzer
@@ -63,6 +106,6 @@ func checkJobParity(t *testing.T, seed int64) {
 		for _, d := range diffs {
 			t.Errorf("  %s", d)
 		}
-		t.Logf("reproduce with GenerateJob(newRNG(%d)):\n%s", seed, jobJSON)
+		t.Logf("reproduce with: FUZZ_SEED=%d go test ./bundle/fuzz -run TestJobCreateParity\n%s", seed, jobJSON)
 	}
 }
