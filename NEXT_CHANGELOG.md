@@ -15,6 +15,7 @@
 * References to a registered model's `registered_model_id` now resolve under the direct engine, matching Terraform behavior ([#5621](https://github.com/databricks/cli/pull/5621)).
 * Fix missing field descriptions in the bundle JSON schema for fields whose upstream API docs arrived after the field was first annotated (e.g. `vector_search_endpoints.*.target_qps`); stale placeholder markers no longer hide them ([#5588](https://github.com/databricks/cli/pull/5588)).
 * Fix `bundle deploy --plan` dropping a `postgres_role`'s `role_id`, which caused the role to be recreated on the next deploy ([#5672](https://github.com/databricks/cli/pull/5672)).
+* direct: Fix spurious cluster recreate when `apply_policy_default_values: true` is set ([#5693](https://github.com/databricks/cli/pull/5693)).
 
 ### Dependency updates
 * Bump `github.com/databricks/databricks-sdk-go` from v0.141.0 to v0.147.0 ([#5636](https://github.com/databricks/cli/pull/5636)).
