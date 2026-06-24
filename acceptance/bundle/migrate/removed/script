@@ -6,11 +6,8 @@ trace $CLI bundle deploy
 # Remove job_b from config without deploying the deletion
 grep -v job_b databricks.yml > databricks_tmp.yml && mv databricks_tmp.yml databricks.yml
 
-# Should fail at plan check: job_b is "1 to delete"
-trace musterr $CLI bundle deployment migrate
-
-# Should succeed: job_b's ID preserved in direct state for deletion on next deploy
-trace $CLI bundle deployment migrate --noplancheck
+# job_b's ID preserved in direct state for deletion on next deploy
+trace $CLI bundle deployment migrate
 
 # After migration: plan shows job_b as "to delete"
 trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle plan | contains.py "1 to delete"

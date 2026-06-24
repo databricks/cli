@@ -37,6 +37,7 @@ EnvMatrix.INPUT_CONFIG = [
     "job_pydabs_1000_tasks.yml.tmpl",
     "job_cross_resource_ref.yml.tmpl",
     "job_permission_ref.yml.tmpl",
+    "job_run_job_ref.yml.tmpl",
     "job_with_depends_on.yml.tmpl",
     "job_with_permissions.yml.tmpl",
     "job_with_task.yml.tmpl",
@@ -71,6 +72,11 @@ EnvMatrix.INPUT_CONFIG = [
 
 [EnvMatrixExclude]
 no_alert_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=alert.yml.tmpl"]
+
+# job_run_job_ref sets a health rule value to 2^53+1 to exercise large-integer
+# precision in state migration. The value is out of range for the real backend,
+# so this config is local-only (the mock server stores it verbatim).
+no_run_job_ref_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=job_run_job_ref.yml.tmpl"]
 
 # Postgres resources only work on AWS
 no_postgres_project_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=postgres_project.yml.tmpl"]

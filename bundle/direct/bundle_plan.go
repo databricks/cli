@@ -1029,6 +1029,12 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 	return p, nil
 }
 
+// ExtractReferences extracts all variable references from the config subtree rooted at node.
+// Returns a map from structpath string (field path within the resource) to template string.
+func ExtractReferences(root dyn.Value, node string) (map[string]string, error) {
+	return extractReferences(root, node)
+}
+
 func extractReferences(root dyn.Value, node string) (map[string]string, error) {
 	nodeType := config.GetResourceTypeFromKey(node)
 	refs := make(map[string]string)
