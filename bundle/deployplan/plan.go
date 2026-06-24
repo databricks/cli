@@ -16,11 +16,17 @@ import (
 const currentPlanVersion = 2
 
 type Plan struct {
-	PlanVersion int                   `json:"plan_version,omitempty"`
-	CLIVersion  string                `json:"cli_version,omitempty"`
-	Lineage     string                `json:"lineage,omitempty"`
-	Serial      int                   `json:"serial,omitempty"`
-	Plan        map[string]*PlanEntry `json:"plan,omitzero"`
+	PlanVersion int    `json:"plan_version,omitempty"`
+	CLIVersion  string `json:"cli_version,omitempty"`
+	Lineage     string `json:"lineage,omitempty"`
+	Serial      int    `json:"serial,omitempty"`
+
+	// LocalOnly is set when the plan was computed with --local, i.e. without
+	// fetching the remote state of resources. Such a plan can miss out-of-band
+	// drift, so consumers like "deploy --plan" warn before applying it.
+	LocalOnly bool `json:"local_only,omitempty"`
+
+	Plan map[string]*PlanEntry `json:"plan,omitzero"`
 
 	mutex   sync.Mutex `json:"-"`
 	lockmap lockmap    `json:"-"`

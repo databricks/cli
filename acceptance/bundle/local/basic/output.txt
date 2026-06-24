@@ -12,6 +12,31 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 >>> print_requests.py --get //jobs/get
 
+=== Plan --local as JSON:
+
+>>> [CLI] bundle plan --local -o json
+{
+  "plan_version": 2,
+  "cli_version": "[DEV_VERSION]",
+  "lineage": "[UUID]",
+  "serial": 1,
+  "local_only": true,
+  "plan": {
+    "resources.jobs.bar": {
+      "action": "skip"
+    },
+    "resources.jobs.foo": {
+      "depends_on": [
+        {
+          "node": "resources.jobs.bar",
+          "label": "${resources.jobs.bar.id}"
+        }
+      ],
+      "action": "skip"
+    }
+  }
+}
+
 >>> [CLI] bundle deploy --local
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/local-[UNIQUE_NAME]/default/files...
 Deploying resources...

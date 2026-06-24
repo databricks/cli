@@ -112,6 +112,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		return nil, fmt.Errorf("reading config: %w", err)
 	}
 
+	plan.LocalOnly = localOnly
 	b.Plan = plan
 
 	g, err := makeGraph(plan)

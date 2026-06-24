@@ -19,6 +19,12 @@ trace $CLI bundle plan --local
 title "Job reads during 'bundle plan --local':\n"
 trace print_requests.py --get //jobs/get
 
+# The JSON plan is self-describing: local_only is true and no entry carries
+# remote_state (nothing was fetched), so deploy --plan can warn before applying it.
+title "Plan --local as JSON:\n"
+trace $CLI bundle plan --local -o json
+rm -f out.requests.txt
+
 # A --local deploy likewise does not read remote state up front and reports its use via telemetry.
 trace $CLI bundle deploy --local
 title "Telemetry:\n"

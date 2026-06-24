@@ -265,6 +265,9 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		if plan.CLIVersion != currentVersion {
 			log.Warnf(ctx, "Plan was created with CLI version %s but current version is %s", plan.CLIVersion, currentVersion)
 		}
+		if plan.LocalOnly {
+			log.Warnf(ctx, "Plan was created with --local and does not reflect the remote state of resources; applying it may miss out-of-band drift")
+		}
 
 		// Validate that the plan's lineage and serial match the current state
 		// This must happen before any file operations
