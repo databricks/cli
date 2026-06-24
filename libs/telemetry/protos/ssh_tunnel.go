@@ -26,6 +26,10 @@ type SshTunnelEvent struct {
 	// GPU accelerator type for serverless compute.
 	AcceleratorType string `json:"accelerator_type,omitempty"`
 
+	// Base environment specified for serverless compute (raw --environment input:
+	// an env.yaml path, a workspace-base-environments resource ID, or a display name).
+	Environment string `json:"environment,omitempty"`
+
 	// IDE that initiated the connection (e.g., "vscode", "cursor").
 	IdeType string `json:"ide_type,omitempty"`
 

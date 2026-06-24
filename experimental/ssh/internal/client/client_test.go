@@ -94,6 +94,24 @@ func TestValidate(t *testing.T) {
 			name: "valid environment version",
 			opts: client.ClientOptions{ClusterID: "abc-123", EnvironmentVersion: 4},
 		},
+		{
+			name:    "environment with environment version",
+			opts:    client.ClientOptions{ConnectionName: "my-conn", Environment: "my-env", EnvironmentVersion: 4},
+			wantErr: "--environment cannot be used together with --environment-version",
+		},
+		{
+			name:    "environment with cluster",
+			opts:    client.ClientOptions{ClusterID: "abc-123", Environment: "my-env"},
+			wantErr: "--environment can only be used with serverless compute",
+		},
+		{
+			name: "valid environment with connection name",
+			opts: client.ClientOptions{ConnectionName: "my-conn", Environment: "/Workspace/path/to/env.yaml"},
+		},
+		{
+			name: "environment with serverless GPU accelerator",
+			opts: client.ClientOptions{ConnectionName: "my-conn", Accelerator: "GPU_1xA10", Environment: "my-gpu-env"},
+		},
 	}
 
 	for _, tt := range tests {
@@ -146,10 +164,23 @@ func TestGenerateDefaultConnectionName(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := client.GenerateDefaultConnectionName(tt.host, tt.accelerator)
+			got := client.GenerateDefaultConnectionName(tt.host, tt.accelerator, "")
 			assert.Equal(t, tt.want, got)
 		})
 	}
+
+	// A serverless server bakes in its environment, so distinct environments must
+	// map to distinct default names (otherwise --environment is silently ignored
+	// when an existing server for the default name is reused).
+	t.Run("environment differentiates the name", func(t *testing.T) {
+		const host = "https://my-workspace.cloud.databricks.com"
+		base := client.GenerateDefaultConnectionName(host, "", "")
+		withEnv := client.GenerateDefaultConnectionName(host, "", "my-env")
+		otherEnv := client.GenerateDefaultConnectionName(host, "", "other-env")
+		assert.NotEqual(t, base, withEnv, "setting --environment must change the default name")
+		assert.NotEqual(t, withEnv, otherEnv, "different environments must produce different names")
+		assert.Equal(t, withEnv, client.GenerateDefaultConnectionName(host, "", "my-env"), "must be deterministic")
+	})
 }
 
 func TestGenerateDefaultConnectionNameMatchesRegex(t *testing.T) {
@@ -159,12 +190,15 @@ func TestGenerateDefaultConnectionNameMatchesRegex(t *testing.T) {
 		"https://workspace3.gcp.databricks.com",
 	}
 	accelerators := []string{"", "GPU_1xA10", "GPU_8xH100"}
+	environments := []string{"", "my-env", "/Workspace/Users/me@example.com/env.yaml"}
 	nameRegex := regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9_-]*$`)
 
 	for _, host := range hosts {
 		for _, acc := range accelerators {
-			name := client.GenerateDefaultConnectionName(host, acc)
-			assert.Regexp(t, nameRegex, name, "host=%q accelerator=%q name=%q", host, acc, name)
+			for _, env := range environments {
+				name := client.GenerateDefaultConnectionName(host, acc, env)
+				assert.Regexp(t, nameRegex, name, "host=%q accelerator=%q environment=%q name=%q", host, acc, env, name)
+			}
 		}
 	}
 }
@@ -223,6 +257,11 @@ func TestToProxyCommand(t *testing.T) {
 			name: "with environment version",
 			opts: client.ClientOptions{ClusterID: "abc-123", EnvironmentVersion: 4},
 			want: quoted + " ssh connect --proxy --cluster=abc-123 --auto-start-cluster=false --shutdown-delay=0s --environment-version=4",
+		},
+		{
+			name: "serverless with environment",
+			opts: client.ClientOptions{ConnectionName: "my-conn", Environment: "my env", ShutdownDelay: 2 * time.Minute},
+			want: quoted + ` ssh connect --proxy --name=my-conn --shutdown-delay=2m0s --environment="my env"`,
 		},
 	}
 
