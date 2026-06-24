@@ -1,0 +1,40 @@
+Set up a local Python environment matched to your Databricks compute target.
+
+Derives the Python version, databricks-connect version, and dependency
+constraints from the selected compute (cluster, serverless, or job) so that
+local resolution matches the Databricks runtime.
+
+Usage:
+  databricks dbconnect [command]
+
+Available Commands:
+  init        Create a fresh pyproject.toml and provision a matched .venv
+  sync        Merge managed dependencies into an existing pyproject.toml and re-provision
+
+Flags:
+  -h, --help   help for dbconnect
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+Use "databricks dbconnect [command] --help" for more information about a command.
+Create a fresh pyproject.toml and provision a matched .venv
+
+Usage:
+  databricks dbconnect init [flags]
+
+Flags:
+      --check               compute the plan without writing files or provisioning
+      --cluster string      cluster ID to use as the compute target
+  -h, --help                help for init
+      --job string          job ID to use as the compute target
+      --serverless string   serverless version to use as the compute target (e.g. v4)
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
