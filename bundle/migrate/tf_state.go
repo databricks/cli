@@ -24,16 +24,15 @@ type TFState struct {
 	// IDs maps bundle resource key → resource ID.
 	IDs map[string]string
 
-	// Lineage and Serial are the top-level state metadata used to seed the direct state.
-	Lineage string
+	// Serial and Lineage are the top-level state metadata used to seed the direct state.
 	Serial  int
+	Lineage string
 }
 
 // rawTFState is the on-disk terraform state format; it captures everything we need in one parse.
 type rawTFState struct {
-	Version   int    `json:"version"`
-	Lineage   string `json:"lineage"`
 	Serial    int    `json:"serial"`
+	Lineage   string `json:"lineage"`
 	Resources []struct {
 		Type      string              `json:"type"`
 		Name      string              `json:"name"`
