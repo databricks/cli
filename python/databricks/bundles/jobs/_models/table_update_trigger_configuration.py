@@ -72,4 +72,6 @@ class TableUpdateTriggerConfigurationDict(TypedDict, total=False):
     """
 
 
-TableUpdateTriggerConfigurationParam = TableUpdateTriggerConfigurationDict | TableUpdateTriggerConfiguration
+TableUpdateTriggerConfigurationParam = (
+    TableUpdateTriggerConfigurationDict | TableUpdateTriggerConfiguration
+)

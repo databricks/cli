@@ -3,7 +3,11 @@ from typing import TYPE_CHECKING, TypedDict
 
 from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
-from databricks.bundles.core._variable import VariableOr, VariableOrList, VariableOrOptional
+from databricks.bundles.core._variable import (
+    VariableOr,
+    VariableOrList,
+    VariableOrOptional,
+)
 from databricks.bundles.pipelines._models.day_of_week import DayOfWeek, DayOfWeekParam
 
 if TYPE_CHECKING:

@@ -15,4 +15,6 @@ class OutlookAttachmentMode(Enum):
     NONE = "NONE"
 
 
-OutlookAttachmentModeParam = Literal["ALL", "NON_INLINE_ONLY", "INLINE_ONLY", "NONE"] | OutlookAttachmentMode
+OutlookAttachmentModeParam = (
+    Literal["ALL", "NON_INLINE_ONLY", "INLINE_ONLY", "NONE"] | OutlookAttachmentMode
+)

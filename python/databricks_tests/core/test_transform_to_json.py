@@ -3,6 +3,7 @@ from enum import Enum
 from typing import Optional
 
 import pytest
+
 from databricks.bundles.core import Variable
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
 

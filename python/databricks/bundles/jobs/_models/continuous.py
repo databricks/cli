@@ -5,7 +5,10 @@ from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
 from databricks.bundles.core._variable import VariableOrOptional
 from databricks.bundles.jobs._models.pause_status import PauseStatus, PauseStatusParam
-from databricks.bundles.jobs._models.task_retry_mode import TaskRetryMode, TaskRetryModeParam
+from databricks.bundles.jobs._models.task_retry_mode import (
+    TaskRetryMode,
+    TaskRetryModeParam,
+)
 
 if TYPE_CHECKING:
     from typing_extensions import Self

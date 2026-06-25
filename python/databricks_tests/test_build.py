@@ -35,7 +35,9 @@ from databricks.bundles.pipelines._models.pipeline import Pipeline
 
 
 def test_write_diagnostics():
-    diagnostics = Diagnostics.create_warning("foo is deprecated", path=("resources", "jobs", "job_0"))
+    diagnostics = Diagnostics.create_warning(
+        "foo is deprecated", path=("resources", "jobs", "job_0")
+    )
     diagnostics = diagnostics.extend(Diagnostics.create_error("foo is not available"))
 
     out = StringIO()
@@ -49,7 +51,9 @@ def test_write_diagnostics():
 
 
 def test_write_diagnostics_location():
-    diagnostics = Diagnostics.create_warning("foo is deprecated", location=Location(file="foo.py", line=42, column=1))
+    diagnostics = Diagnostics.create_warning(
+        "foo is deprecated", location=Location(file="foo.py", line=42, column=1)
+    )
 
     out = StringIO()
 
@@ -93,7 +97,10 @@ def test_write_location():
     out = StringIO()
     _write_locations(out, locations)
 
-    assert out.getvalue() == '{"path": "resources.jobs.job_0", "file": "foo.py", "line": 42, "column": 1}\n'
+    assert (
+        out.getvalue()
+        == '{"path": "resources.jobs.job_0", "file": "foo.py", "line": 42, "column": 1}\n'
+    )
 
 
 def test_write_output_unicode():
@@ -420,7 +427,10 @@ def test_pipeline_mutators():
     expected_location = Location.from_callable(update_pipeline_name.function)
 
     assert not diagnostics.has_error()
-    assert new_resources._locations[("resources", "pipelines", "pipeline_0")] == expected_location
+    assert (
+        new_resources._locations[("resources", "pipelines", "pipeline_0")]
+        == expected_location
+    )
     assert new_resources.pipelines["pipeline_0"].name == "My Pipeline (updated)"
 
 
@@ -491,8 +501,12 @@ def test_load_resources():
     }
 
     assert resources._locations == {
-        ("resources", "jobs", "my_job_1"): Location(file="my_job_1.py", line=42, column=1),
-        ("resources", "jobs", "my_job_2"): Location(file="my_job_2.py", line=42, column=1),
+        ("resources", "jobs", "my_job_1"): Location(
+            file="my_job_1.py", line=42, column=1
+        ),
+        ("resources", "jobs", "my_job_2"): Location(
+            file="my_job_2.py", line=42, column=1
+        ),
     }
 
 

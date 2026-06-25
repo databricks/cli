@@ -27,7 +27,9 @@ class PythonOperatorTask:
     For example, `my_project.my_function` or `my_project.MyOperator`.
     """
 
-    parameters: VariableOrList[PythonOperatorTaskParameter] = field(default_factory=list)
+    parameters: VariableOrList[PythonOperatorTaskParameter] = field(
+        default_factory=list
+    )
     """
     :meta private: [EXPERIMENTAL]
     

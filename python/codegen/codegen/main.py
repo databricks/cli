@@ -21,7 +21,9 @@ def main(output: str):
     schemas = openapi_patch.add_extra_required_fields(schemas)
     schemas = openapi_patch.remove_unsupported_fields(schemas)
 
-    schemas = _transitively_mark_deprecated_and_private(packages.RESOURCE_TYPES, schemas)
+    schemas = _transitively_mark_deprecated_and_private(
+        packages.RESOURCE_TYPES, schemas
+    )
     # first remove deprecated fields so there are more unused schemas
     schemas = _remove_deprecated_fields(schemas)
     schemas = _remove_unused_schemas(packages.RESOURCE_TYPES, schemas)
@@ -55,7 +57,9 @@ def _transitively_mark_deprecated_and_private(
     """
 
     not_private = _collect_reachable_schemas(roots, schemas, include_private=False)
-    not_deprecated = _collect_reachable_schemas(roots, schemas, include_deprecated=False)
+    not_deprecated = _collect_reachable_schemas(
+        roots, schemas, include_deprecated=False
+    )
     new_schemas = {}
 
     for schema_name, schema in schemas.items():
@@ -83,7 +87,10 @@ def _remove_deprecated_fields(
         if schema.type == openapi.SchemaType.OBJECT:
             new_properties = {}
             for field_name, field in schema.properties.items():
-                if field.deprecated and field.stage == openapi.LaunchStage.PRIVATE_PREVIEW:
+                if (
+                    field.deprecated
+                    and field.stage == openapi.LaunchStage.PRIVATE_PREVIEW
+                ):
                     continue
 
                 new_properties[field_name] = field
@@ -104,7 +111,9 @@ def _generate_code(
 
     for schema_name, schema in schemas.items():
         if schema.type == openapi.SchemaType.OBJECT:
-            generated = generated_dataclass.generate_dataclass(namespace, schema_name, schema)
+            generated = generated_dataclass.generate_dataclass(
+                namespace, schema_name, schema
+            )
 
             dataclasses[schema_name] = generated
         elif schema.type == openapi.SchemaType.STRING:
@@ -247,7 +256,10 @@ def _collect_reachable_schemas(
                 if field.ref:
                     name = field.ref.split("/")[-1]
 
-                    if not include_private and field.stage == openapi.LaunchStage.PRIVATE_PREVIEW:
+                    if (
+                        not include_private
+                        and field.stage == openapi.LaunchStage.PRIVATE_PREVIEW
+                    ):
                         continue
 
                     if not include_deprecated and field.deprecated:

@@ -366,13 +366,19 @@ def _append_dataclass(b: CodeBuilder, generated: GeneratedDataclass):
 
     if generated.extends:
         b.append("(")
-        b.append_list([_get_type_code(extend, quote=False) for extend in generated.extends])
+        b.append_list(
+            [_get_type_code(extend, quote=False) for extend in generated.extends]
+        )
         b.append(")")
 
     b.append(":").newline()
 
     # FIXME should contain class docstring
-    if not generated.description and not generated.experimental and not generated.deprecated:
+    if (
+        not generated.description
+        and not generated.experimental
+        and not generated.deprecated
+    ):
         b.indent().append_triple_quote().append_triple_quote().newline().newline()
     else:
         _append_description(
@@ -434,7 +440,9 @@ def _append_as_dict(b: CodeBuilder, generated: GeneratedDataclass):
     #       return _transform_to_json_value(self) # type:ignore
     #
 
-    b.indent().append("def as_dict(self) -> '").append(generated.class_name).append("Dict':").newline()
+    b.indent().append("def as_dict(self) -> '").append(generated.class_name).append(
+        "Dict':"
+    ).newline()
     b.indent().indent().append(
         "return _transform_to_json_value(self) # type:ignore",
     ).newline()
@@ -448,13 +456,17 @@ def _append_typed_dict(b: CodeBuilder, generated: GeneratedDataclass):
     #     """docstring"""
     #
 
-    b.append("class ").append(generated.class_name).append("Dict(TypedDict, total=False):").newline()
+    b.append("class ").append(generated.class_name).append(
+        "Dict(TypedDict, total=False):"
+    ).newline()
 
     # FIXME should contain class description
     b.indent().append_triple_quote().append_triple_quote().newline().newline()
 
 
-def _append_description(b: CodeBuilder, description: Optional[str], *, experimental: bool, deprecated: bool):
+def _append_description(
+    b: CodeBuilder, description: Optional[str], *, experimental: bool, deprecated: bool
+):
     if deprecated:
         description = "[DEPRECATED] " + (description or "")
 

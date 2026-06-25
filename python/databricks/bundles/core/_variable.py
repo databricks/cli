@@ -118,12 +118,16 @@ def variables(cls: type[_T]) -> type[_T]:
         origin = typing.get_origin(field_type) or field_type
 
         if origin != Variable:
-            raise ValueError(f"Only 'Variable' type is allowed in classes annotated with @variables, got {field_type}")
+            raise ValueError(
+                f"Only 'Variable' type is allowed in classes annotated with @variables, got {field_type}"
+            )
 
         args = typing.get_args(field_type)
 
         if not args:
-            raise ValueError(f"Variable type must be specified for '{field.name}', e.g. Variable[str]")
+            raise ValueError(
+                f"Variable type must be specified for '{field.name}', e.g. Variable[str]"
+            )
         else:
             variable_type = args[0]
 

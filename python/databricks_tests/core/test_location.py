@@ -1,4 +1,5 @@
 import pytest
+
 from databricks.bundles.core._location import Location
 
 

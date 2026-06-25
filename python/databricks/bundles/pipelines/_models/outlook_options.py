@@ -8,7 +8,10 @@ from databricks.bundles.pipelines._models.outlook_attachment_mode import (
     OutlookAttachmentMode,
     OutlookAttachmentModeParam,
 )
-from databricks.bundles.pipelines._models.outlook_body_format import OutlookBodyFormat, OutlookBodyFormatParam
+from databricks.bundles.pipelines._models.outlook_body_format import (
+    OutlookBodyFormat,
+    OutlookBodyFormatParam,
+)
 
 if TYPE_CHECKING:
     from typing_extensions import Self

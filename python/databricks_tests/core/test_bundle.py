@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
 import pytest
+
 from databricks.bundles.core import (
     Bundle,
     Variable,
@@ -22,7 +23,10 @@ def test_variable_unknown():
     with pytest.raises(ValueError) as exc_info:
         bundle.resolve_variable(var)
 
-    assert str(exc_info.value) == "Can't find 'foo' variable. Did you define it in databricks.yml?"
+    assert (
+        str(exc_info.value)
+        == "Can't find 'foo' variable. Did you define it in databricks.yml?"
+    )
 
 
 def test_variable_get_bool_true():
@@ -80,7 +84,8 @@ def test_variable_uses_variable_not_supported():
         bundle.resolve_variable(var)
 
     assert (
-        str(exc_info.value) == "Failed to resolve 'foo' because refers to another variable 'var.bar'. "
+        str(exc_info.value)
+        == "Failed to resolve 'foo' because refers to another variable 'var.bar'. "
         "Change variable type to Variable[VariableOr[str]]"
     )
 
@@ -97,13 +102,16 @@ def test_variable_uses_variable_not_supported_complex():
         bundle.resolve_variable(var)
 
     assert (
-        str(exc_info.value) == "Failed to resolve 'foo' because refers to another variable 'var.bar'. "
+        str(exc_info.value)
+        == "Failed to resolve 'foo' because refers to another variable 'var.bar'. "
         "Change variable type to Variable[VariableOr[Fake]]"
     )
 
 
 def test_resolve_variable_or_list():
-    bundle = Bundle(target="development", variables={"foo": ["${var.bar}"], "bar": "baz"})
+    bundle = Bundle(
+        target="development", variables={"foo": ["${var.bar}"], "bar": "baz"}
+    )
     var: VariableOrList[str] = Variable(path="var.foo", type=list[VariableOr[str]])
 
     assert bundle.resolve_variable_list(var) == ["baz"]

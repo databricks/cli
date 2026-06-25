@@ -8,21 +8,42 @@ from databricks.bundles.pipelines._models.confluence_connector_options import (
     ConfluenceConnectorOptions,
     ConfluenceConnectorOptionsParam,
 )
-from databricks.bundles.pipelines._models.google_ads_options import GoogleAdsOptions, GoogleAdsOptionsParam
-from databricks.bundles.pipelines._models.google_drive_options import GoogleDriveOptions, GoogleDriveOptionsParam
+from databricks.bundles.pipelines._models.google_ads_options import (
+    GoogleAdsOptions,
+    GoogleAdsOptionsParam,
+)
+from databricks.bundles.pipelines._models.google_drive_options import (
+    GoogleDriveOptions,
+    GoogleDriveOptionsParam,
+)
 from databricks.bundles.pipelines._models.jira_connector_options import (
     JiraConnectorOptions,
     JiraConnectorOptionsParam,
 )
-from databricks.bundles.pipelines._models.kafka_options import KafkaOptions, KafkaOptionsParam
-from databricks.bundles.pipelines._models.meta_marketing_options import MetaMarketingOptions, MetaMarketingOptionsParam
-from databricks.bundles.pipelines._models.outlook_options import OutlookOptions, OutlookOptionsParam
+from databricks.bundles.pipelines._models.kafka_options import (
+    KafkaOptions,
+    KafkaOptionsParam,
+)
+from databricks.bundles.pipelines._models.meta_marketing_options import (
+    MetaMarketingOptions,
+    MetaMarketingOptionsParam,
+)
+from databricks.bundles.pipelines._models.outlook_options import (
+    OutlookOptions,
+    OutlookOptionsParam,
+)
 from databricks.bundles.pipelines._models.sharepoint_options import (
     SharepointOptions,
     SharepointOptionsParam,
 )
-from databricks.bundles.pipelines._models.smartsheet_options import SmartsheetOptions, SmartsheetOptionsParam
-from databricks.bundles.pipelines._models.tik_tok_ads_options import TikTokAdsOptions, TikTokAdsOptionsParam
+from databricks.bundles.pipelines._models.smartsheet_options import (
+    SmartsheetOptions,
+    SmartsheetOptionsParam,
+)
+from databricks.bundles.pipelines._models.tik_tok_ads_options import (
+    TikTokAdsOptions,
+    TikTokAdsOptionsParam,
+)
 from databricks.bundles.pipelines._models.zendesk_support_options import (
     ZendeskSupportOptions,
     ZendeskSupportOptionsParam,

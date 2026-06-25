@@ -41,7 +41,9 @@ def test_parse_schema():
                         "$ref": "#/$defs/map/string",
                     },
                     "notebook_path": {"$ref": "#/$defs/string"},
-                    "source": {"$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.Source"},
+                    "source": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.Source"
+                    },
                     "warehouse_id": {"$ref": "#/$defs/string"},
                 },
                 "additionalProperties": False,

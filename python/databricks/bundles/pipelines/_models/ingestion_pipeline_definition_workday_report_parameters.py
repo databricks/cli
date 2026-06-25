@@ -29,7 +29,9 @@ class IngestionPipelineDefinitionWorkdayReportParameters:
     """
 
     @classmethod
-    def from_dict(cls, value: "IngestionPipelineDefinitionWorkdayReportParametersDict") -> "Self":
+    def from_dict(
+        cls, value: "IngestionPipelineDefinitionWorkdayReportParametersDict"
+    ) -> "Self":
         return _transform(cls, value)
 
     def as_dict(self) -> "IngestionPipelineDefinitionWorkdayReportParametersDict":
@@ -54,5 +56,6 @@ class IngestionPipelineDefinitionWorkdayReportParametersDict(TypedDict, total=Fa
 
 
 IngestionPipelineDefinitionWorkdayReportParametersParam = (
-    IngestionPipelineDefinitionWorkdayReportParametersDict | IngestionPipelineDefinitionWorkdayReportParameters
+    IngestionPipelineDefinitionWorkdayReportParametersDict
+    | IngestionPipelineDefinitionWorkdayReportParameters
 )

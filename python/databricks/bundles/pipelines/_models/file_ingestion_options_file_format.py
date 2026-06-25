@@ -18,5 +18,6 @@ class FileIngestionOptionsFileFormat(Enum):
 
 
 FileIngestionOptionsFileFormatParam = (
-    Literal["BINARYFILE", "JSON", "CSV", "XML", "EXCEL", "PARQUET", "AVRO", "ORC"] | FileIngestionOptionsFileFormat
+    Literal["BINARYFILE", "JSON", "CSV", "XML", "EXCEL", "PARQUET", "AVRO", "ORC"]
+    | FileIngestionOptionsFileFormat
 )

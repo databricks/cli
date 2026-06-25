@@ -55,4 +55,6 @@ class PythonOperatorTaskParameterDict(TypedDict, total=False):
     """
 
 
-PythonOperatorTaskParameterParam = PythonOperatorTaskParameterDict | PythonOperatorTaskParameter
+PythonOperatorTaskParameterParam = (
+    PythonOperatorTaskParameterDict | PythonOperatorTaskParameter
+)

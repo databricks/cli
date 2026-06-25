@@ -1,4 +1,5 @@
 import pytest
+
 from databricks.bundles.core import Variable
 from databricks.bundles.core._variable import variables
 
@@ -44,4 +45,7 @@ def test_bad_type():
 
     [msg] = exc_info.value.args
 
-    assert msg == "Only 'Variable' type is allowed in classes annotated with @variables, got <class 'str'>"
+    assert (
+        msg
+        == "Only 'Variable' type is allowed in classes annotated with @variables, got <class 'str'>"
+    )

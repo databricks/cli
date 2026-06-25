@@ -8,7 +8,10 @@ from databricks.bundles.pipelines._models.confidential_compute_type import (
     ConfidentialComputeType,
     ConfidentialComputeTypeParam,
 )
-from databricks.bundles.pipelines._models.gcp_availability import GcpAvailability, GcpAvailabilityParam
+from databricks.bundles.pipelines._models.gcp_availability import (
+    GcpAvailability,
+    GcpAvailabilityParam,
+)
 
 if TYPE_CHECKING:
     from typing_extensions import Self

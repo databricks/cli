@@ -28,7 +28,9 @@ def add_extra_required_fields(schemas: dict[str, Schema]):
             new_required = list(set(new_required))
 
             if set(new_required) == set(schema.required):
-                raise ValueError(f"Extra required fields for {name} are already present in the schema")
+                raise ValueError(
+                    f"Extra required fields for {name} are already present in the schema"
+                )
 
             new_schema = replace(schema, required=new_required)
 
@@ -44,7 +46,11 @@ def remove_unsupported_fields(schemas: dict[str, Schema]):
 
     for name, schema in schemas.items():
         if removed_fields := REMOVED_FIELDS.get(name):
-            new_properties = {field: prop for field, prop in schema.properties.items() if field not in removed_fields}
+            new_properties = {
+                field: prop
+                for field, prop in schema.properties.items()
+                if field not in removed_fields
+            }
 
             if new_properties.keys() == schema.properties.keys():
                 raise ValueError(f"No fields to remove in schema {name}")

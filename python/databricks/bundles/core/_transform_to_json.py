@@ -24,7 +24,10 @@ def _transform_to_json_value(
     elif isinstance(value, list):
         return [_transform_to_json_value(el) for el in value]
     elif isinstance(value, dict):
-        return {item_key: _transform_to_json_value(item_value) for item_key, item_value in value.items()}
+        return {
+            item_key: _transform_to_json_value(item_value)
+            for item_key, item_value in value.items()
+        }
     elif isinstance(value, Union[str, bool, int, float, None]):
         return value
 

@@ -150,7 +150,9 @@ def _apply_mutators_for_type(
 
                 if new_resource is not resource:
                     if location:
-                        resources.add_location(("resources", tpe.plural_name, resource_name), location)
+                        resources.add_location(
+                            ("resources", tpe.plural_name, resource_name), location
+                        )
                     resources_dict[resource_name] = new_resource
                     resource = new_resource
             except Exception as exc:
@@ -234,7 +236,9 @@ def python_mutator(
         if diagnostics.has_error():
             return input, {}, diagnostics
 
-        resources, diagnostics = diagnostics.extend_tuple(_load_resources(bundle, resource_functions))
+        resources, diagnostics = diagnostics.extend_tuple(
+            _load_resources(bundle, resource_functions)
+        )
         if diagnostics.has_error():
             return input, {}, diagnostics
 
@@ -251,7 +255,9 @@ def python_mutator(
         if diagnostics.has_error():
             return input, {}, diagnostics
 
-        resources, diagnostics = diagnostics.extend_tuple(_apply_mutators(bundle, resources, mutator_functions))
+        resources, diagnostics = diagnostics.extend_tuple(
+            _apply_mutators(bundle, resources, mutator_functions)
+        )
         if diagnostics.has_error():
             return input, {}, diagnostics
 
@@ -285,10 +291,14 @@ def _append_resources(bundle: dict, resources: Resources) -> dict:
 
         if resources_dict:
             new_bundle["resources"] = new_bundle.get("resources", {})
-            new_bundle["resources"][tpe.plural_name] = new_bundle["resources"].get(tpe.plural_name, {})
+            new_bundle["resources"][tpe.plural_name] = new_bundle["resources"].get(
+                tpe.plural_name, {}
+            )
 
             for resource_name, resource in resources_dict.items():
-                new_bundle["resources"][tpe.plural_name][resource_name] = resource.as_dict()
+                new_bundle["resources"][tpe.plural_name][resource_name] = (
+                    resource.as_dict()
+                )
 
     return new_bundle
 
@@ -306,7 +316,9 @@ def _load_resources(
 
     for function in functions:
         try:
-            function_resources, diagnostics = diagnostics.extend_tuple(_load_resources_from_function(bundle, function))
+            function_resources, diagnostics = diagnostics.extend_tuple(
+                _load_resources_from_function(bundle, function)
+            )
 
             resources.add_resources(function_resources)
         except Exception as exc:
@@ -350,7 +362,9 @@ def _load_resource_mutators(
 
     for name in names:
         try:
-            function, diagnostics = diagnostics.extend_tuple(_load_resource_mutator(name))
+            function, diagnostics = diagnostics.extend_tuple(
+                _load_resource_mutator(name)
+            )
 
             if function:
                 functions.append(function)
@@ -506,7 +520,9 @@ def _write_output(f: TextIO, bundle: dict) -> None:
 def _relativize_locations(
     locations: dict[tuple[str, ...], Location],
 ) -> dict[tuple[str, ...], Location]:
-    return {path: _relativize_location(location) for path, location in locations.items()}
+    return {
+        path: _relativize_location(location) for path, location in locations.items()
+    }
 
 
 def _relativize_location(location: Location) -> Location:

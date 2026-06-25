@@ -14,5 +14,6 @@ class SharepointOptionsSharepointEntityType(Enum):
 
 
 SharepointOptionsSharepointEntityTypeParam = (
-    Literal["FILE", "FILE_METADATA", "PERMISSION", "LIST"] | SharepointOptionsSharepointEntityType
+    Literal["FILE", "FILE_METADATA", "PERMISSION", "LIST"]
+    | SharepointOptionsSharepointEntityType
 )

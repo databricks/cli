@@ -3,6 +3,7 @@ from enum import Enum
 from typing import Optional, Union
 
 import pytest
+
 from databricks.bundles.core import (
     Variable,
     VariableOr,
@@ -24,7 +25,9 @@ class FakeEnum(Enum):
 
 @dataclass
 class Fake:
-    dict_field: VariableOrOptional[dict[str, VariableOr[str]]] = field(default_factory=dict)
+    dict_field: VariableOrOptional[dict[str, VariableOr[str]]] = field(
+        default_factory=dict
+    )
     str_field: VariableOrOptional[str] = None
     enum_field: VariableOrOptional[FakeEnum] = None
 

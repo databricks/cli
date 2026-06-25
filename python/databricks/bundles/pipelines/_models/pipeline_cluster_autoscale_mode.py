@@ -15,4 +15,6 @@ class PipelineClusterAutoscaleMode(Enum):
     LEGACY = "LEGACY"
 
 
-PipelineClusterAutoscaleModeParam = Literal["ENHANCED", "LEGACY"] | PipelineClusterAutoscaleMode
+PipelineClusterAutoscaleModeParam = (
+    Literal["ENHANCED", "LEGACY"] | PipelineClusterAutoscaleMode
+)

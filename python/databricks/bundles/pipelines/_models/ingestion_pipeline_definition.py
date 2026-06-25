@@ -4,14 +4,26 @@ from typing import TYPE_CHECKING, TypedDict
 from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
 from databricks.bundles.core._variable import VariableOrList, VariableOrOptional
-from databricks.bundles.pipelines._models.connector_type import ConnectorType, ConnectorTypeParam
-from databricks.bundles.pipelines._models.data_staging_options import DataStagingOptions, DataStagingOptionsParam
-from databricks.bundles.pipelines._models.ingestion_config import IngestionConfig, IngestionConfigParam
+from databricks.bundles.pipelines._models.connector_type import (
+    ConnectorType,
+    ConnectorTypeParam,
+)
+from databricks.bundles.pipelines._models.data_staging_options import (
+    DataStagingOptions,
+    DataStagingOptionsParam,
+)
+from databricks.bundles.pipelines._models.ingestion_config import (
+    IngestionConfig,
+    IngestionConfigParam,
+)
 from databricks.bundles.pipelines._models.operation_time_window import (
     OperationTimeWindow,
     OperationTimeWindowParam,
 )
-from databricks.bundles.pipelines._models.source_config import SourceConfig, SourceConfigParam
+from databricks.bundles.pipelines._models.source_config import (
+    SourceConfig,
+    SourceConfigParam,
+)
 from databricks.bundles.pipelines._models.table_specific_config import (
     TableSpecificConfig,
     TableSpecificConfigParam,
@@ -177,4 +189,6 @@ class IngestionPipelineDefinitionDict(TypedDict, total=False):
     """
 
 
-IngestionPipelineDefinitionParam = IngestionPipelineDefinitionDict | IngestionPipelineDefinition
+IngestionPipelineDefinitionParam = (
+    IngestionPipelineDefinitionDict | IngestionPipelineDefinition
+)

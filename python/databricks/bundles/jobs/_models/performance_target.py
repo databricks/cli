@@ -13,4 +13,6 @@ class PerformanceTarget(Enum):
     STANDARD = "STANDARD"
 
 
-PerformanceTargetParam = Literal["PERFORMANCE_OPTIMIZED", "STANDARD"] | PerformanceTarget
+PerformanceTargetParam = (
+    Literal["PERFORMANCE_OPTIMIZED", "STANDARD"] | PerformanceTarget
+)

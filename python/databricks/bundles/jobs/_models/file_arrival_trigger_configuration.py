@@ -61,4 +61,6 @@ class FileArrivalTriggerConfigurationDict(TypedDict, total=False):
     """
 
 
-FileArrivalTriggerConfigurationParam = FileArrivalTriggerConfigurationDict | FileArrivalTriggerConfiguration
+FileArrivalTriggerConfigurationParam = (
+    FileArrivalTriggerConfigurationDict | FileArrivalTriggerConfiguration
+)

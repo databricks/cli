@@ -14,7 +14,9 @@ if TYPE_CHECKING:
 class WebhookNotifications:
     """"""
 
-    on_duration_warning_threshold_exceeded: VariableOrList[Webhook] = field(default_factory=list)
+    on_duration_warning_threshold_exceeded: VariableOrList[Webhook] = field(
+        default_factory=list
+    )
     """
     An optional list of system notification IDs to call when the duration of a run exceeds the threshold specified for the `RUN_DURATION_SECONDS` metric in the `health` field. A maximum of 3 destinations can be specified for the `on_duration_warning_threshold_exceeded` property.
     """

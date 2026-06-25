@@ -19,7 +19,9 @@ class JobEmailNotifications:
     This field is `deprecated`. Please use the `notification_settings.no_alert_for_skipped_runs` field.
     """
 
-    on_duration_warning_threshold_exceeded: VariableOrList[str] = field(default_factory=list)
+    on_duration_warning_threshold_exceeded: VariableOrList[str] = field(
+        default_factory=list
+    )
     """
     A list of email addresses to be notified when the duration of a run exceeds the threshold specified for the `RUN_DURATION_SECONDS` metric in the `health` field. If no rule for the `RUN_DURATION_SECONDS` metric is specified in the `health` field for the job, notifications are not sent.
     """

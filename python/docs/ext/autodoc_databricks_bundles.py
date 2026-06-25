@@ -122,7 +122,12 @@ def resolve_forward_ref(obj, sig):
         },
     )
 
-    return sig.replace(parameters=[param.replace(annotation=hints[name]) for name, param in sig.parameters.items()])
+    return sig.replace(
+        parameters=[
+            param.replace(annotation=hints[name])
+            for name, param in sig.parameters.items()
+        ]
+    )
 
 
 def process_signature(app, what, name, obj, options, signature, return_annotation):
@@ -142,7 +147,9 @@ def process_signature(app, what, name, obj, options, signature, return_annotatio
                     if field.name in obj.__annotations__:
                         del obj.__annotations__[field.name]
                 else:
-                    annotation[field.name] = stringify_annotation(field_type, mode="smart")
+                    annotation[field.name] = stringify_annotation(
+                        field_type, mode="smart"
+                    )
                     obj.__annotations__[field.name] = field_type
 
         return "", ""
@@ -208,7 +215,9 @@ def simplify_from_dict_sig(sig: Signature):
 
     """
 
-    return sig.replace(parameters=[param.replace(annotation=dict) for param in sig.parameters.values()])
+    return sig.replace(
+        parameters=[param.replace(annotation=dict) for param in sig.parameters.values()]
+    )
 
 
 def process_docstring(app, what, name, obj, options, lines):
@@ -225,14 +234,19 @@ def process_docstring(app, what, name, obj, options, lines):
 
 def simplify_sig(sig, unwrap_variable: bool) -> inspect.Signature:
     parameters = [
-        param.replace(annotation=simplify_type(param.annotation, unwrap_variable=unwrap_variable))
+        param.replace(
+            annotation=simplify_type(param.annotation, unwrap_variable=unwrap_variable)
+        )
         if param.annotation is not param.empty
         else param
         for name, param in sig.parameters.items()
     ]
 
     parameters = [
-        param.replace(default=inspect.Parameter.empty) if param.default is None else param for param in parameters
+        param.replace(default=inspect.Parameter.empty)
+        if param.default is None
+        else param
+        for param in parameters
     ]
 
     parameters = [param for param in parameters if param.name != "self"]

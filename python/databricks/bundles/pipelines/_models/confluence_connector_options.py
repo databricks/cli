@@ -37,4 +37,6 @@ class ConfluenceConnectorOptionsDict(TypedDict, total=False):
     """
 
 
-ConfluenceConnectorOptionsParam = ConfluenceConnectorOptionsDict | ConfluenceConnectorOptions
+ConfluenceConnectorOptionsParam = (
+    ConfluenceConnectorOptionsDict | ConfluenceConnectorOptions
+)

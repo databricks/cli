@@ -8,7 +8,10 @@ from databricks.bundles.pipelines._models.json_transformer_options import (
     JsonTransformerOptions,
     JsonTransformerOptionsParam,
 )
-from databricks.bundles.pipelines._models.transformer_format import TransformerFormat, TransformerFormatParam
+from databricks.bundles.pipelines._models.transformer_format import (
+    TransformerFormat,
+    TransformerFormatParam,
+)
 
 if TYPE_CHECKING:
     from typing_extensions import Self

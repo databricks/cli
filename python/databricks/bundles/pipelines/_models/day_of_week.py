@@ -17,4 +17,9 @@ class DayOfWeek(Enum):
     SUNDAY = "SUNDAY"
 
 
-DayOfWeekParam = Literal["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"] | DayOfWeek
+DayOfWeekParam = (
+    Literal[
+        "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"
+    ]
+    | DayOfWeek
+)

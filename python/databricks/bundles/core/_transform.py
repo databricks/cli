@@ -176,7 +176,9 @@ def _transform(cls: Type[_T], value: Any) -> _T:
                 raise ValueError(f"Unexpected field '{key}' for class {cls.__name__}")
 
         kwargs = {
-            field.name: _transform_field(cls, field, value[field.name]) for field in cls_fields if field.name in value
+            field.name: _transform_field(cls, field, value[field.name])
+            for field in cls_fields
+            if field.name in value
         }
 
         return cls(**kwargs)  # type:ignore
@@ -280,7 +282,9 @@ def _unwrap_variable(tpe: type) -> Optional[type]:
 #   - "${a.b.c}"
 #   - "${a.b[0].c}"
 _base_var_def = r"[^\W\d_]+([-_]*[^\W_]+)*"
-_variable_regex = re.compile(r"\$\{(%s(\.%s(\[[0-9]+\])*)*(\[[0-9]+\])*)\}" % (_base_var_def, _base_var_def))
+_variable_regex = re.compile(
+    r"\$\{(%s(\.%s(\[[0-9]+\])*)*(\[[0-9]+\])*)\}" % (_base_var_def, _base_var_def)
+)
 
 
 def _unwrap_variable_path(value: Any) -> Optional[str]:

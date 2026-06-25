@@ -78,7 +78,11 @@ def _unwrap_variable(schema: dict):
         pattern = variable.get("pattern", "")
         type = variable.get("type", "")
 
-        if type == "string" and pattern.startswith("\\$\\{") and pattern.endswith("\\}"):
+        if (
+            type == "string"
+            and pattern.startswith("\\$\\{")
+            and pattern.endswith("\\}")
+        ):
             return primary
 
     return None
@@ -153,7 +157,9 @@ def get_schemas():
 
     # we don't need all spec, only get supported types
     flat_spec = {**sdk_types_spec, **resource_types_spec}
-    flat_spec = {key: value for key, value in flat_spec.items() if packages.should_load_ref(key)}
+    flat_spec = {
+        key: value for key, value in flat_spec.items() if packages.should_load_ref(key)
+    }
 
     for name, schema in flat_spec.items():
         try:

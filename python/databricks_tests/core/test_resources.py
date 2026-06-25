@@ -2,6 +2,7 @@ from dataclasses import dataclass, replace
 from typing import Callable
 
 import pytest
+
 from databricks.bundles.core import Location, Resources, Severity
 from databricks.bundles.core._bundle import Bundle
 from databricks.bundles.core._resource import Resource
@@ -163,7 +164,9 @@ def test_add_resource_type_location(tc: TestCase, tpe: _ResourceType):
         },
     )
 
-    assert resources._locations == {("resources", tpe.plural_name, "my_resource"): location}
+    assert resources._locations == {
+        ("resources", tpe.plural_name, "my_resource"): location
+    }
 
 
 def test_add_job_location_automatic():
@@ -191,7 +194,9 @@ def test_add_resource_type_location_automatic(tc: TestCase, tpe: _ResourceType):
         },
     )
 
-    assert resources._locations.keys() == {("resources", tpe.plural_name, "my_resource")}
+    assert resources._locations.keys() == {
+        ("resources", tpe.plural_name, "my_resource")
+    }
     [location] = resources._locations.values()
 
     assert location.file == __file__
@@ -239,7 +244,9 @@ def test_mutator(tc: TestCase, tpe: _ResourceType):
 def test_mutator_export(tc: TestCase, tpe: _ResourceType):
     import databricks.bundles.core
 
-    assert tc.mutator.__name__ in databricks.bundles.core.__all__, "mutator is not in databricks.bundles.core.__all__"
+    assert tc.mutator.__name__ in databricks.bundles.core.__all__, (
+        "mutator is not in databricks.bundles.core.__all__"
+    )
 
 
 @pytest.mark.parametrize("tc,tpe", test_cases, ids=test_case_ids)

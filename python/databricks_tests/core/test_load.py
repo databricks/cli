@@ -53,7 +53,10 @@ def test_load_resources_from_package_module():
     # error_module has error, and it is not loaded
     assert resources.diagnostics.has_error()
     assert len(resources.diagnostics.items) == 1
-    assert resources.diagnostics.items[0].summary == "Error while loading 'databricks_tests.fixtures.error_module'"
+    assert (
+        resources.diagnostics.items[0].summary
+        == "Error while loading 'databricks_tests.fixtures.error_module'"
+    )
 
 
 def test_parse_locations():

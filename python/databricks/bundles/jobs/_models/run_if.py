@@ -24,6 +24,13 @@ class RunIf(Enum):
 
 
 RunIfParam = (
-    Literal["ALL_SUCCESS", "ALL_DONE", "NONE_FAILED", "AT_LEAST_ONE_SUCCESS", "ALL_FAILED", "AT_LEAST_ONE_FAILED"]
+    Literal[
+        "ALL_SUCCESS",
+        "ALL_DONE",
+        "NONE_FAILED",
+        "AT_LEAST_ONE_SUCCESS",
+        "ALL_FAILED",
+        "AT_LEAST_ONE_FAILED",
+    ]
     | RunIf
 )

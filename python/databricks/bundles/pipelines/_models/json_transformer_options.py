@@ -33,7 +33,9 @@ class JsonTransformerOptions:
     [Private Preview] Inline schema string for JSON parsing (Spark DDL format).
     """
 
-    schema_evolution_mode: VariableOrOptional[FileIngestionOptionsSchemaEvolutionMode] = None
+    schema_evolution_mode: VariableOrOptional[
+        FileIngestionOptionsSchemaEvolutionMode
+    ] = None
     """
     :meta private: [EXPERIMENTAL]
     
@@ -79,7 +81,9 @@ class JsonTransformerOptionsDict(TypedDict, total=False):
     [Private Preview] Inline schema string for JSON parsing (Spark DDL format).
     """
 
-    schema_evolution_mode: VariableOrOptional[FileIngestionOptionsSchemaEvolutionModeParam]
+    schema_evolution_mode: VariableOrOptional[
+        FileIngestionOptionsSchemaEvolutionModeParam
+    ]
     """
     :meta private: [EXPERIMENTAL]
     
