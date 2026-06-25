@@ -296,11 +296,9 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		}
 	}
 
-	var libs phases.LibLocationMap
-
 	if opts.Build {
 		t2 := time.Now()
-		libs = phases.Build(ctx, b)
+		phases.Build(ctx, b)
 		b.Metrics.ExecutionTimes = append(b.Metrics.ExecutionTimes, protos.IntMapEntry{
 			Key:   "phases.Build",
 			Value: time.Since(t2).Milliseconds(),
@@ -329,7 +327,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		}
 
 		t3 := time.Now()
-		phases.Deploy(ctx, b, outputHandler, stateDesc.Engine, libs, plan)
+		phases.Deploy(ctx, b, outputHandler, stateDesc.Engine, plan)
 		b.Metrics.ExecutionTimes = append(b.Metrics.ExecutionTimes, protos.IntMapEntry{
 			Key:   "phases.Deploy",
 			Value: time.Since(t3).Milliseconds(),

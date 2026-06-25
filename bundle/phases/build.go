@@ -9,17 +9,11 @@ import (
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/bundle/scripts"
-	"github.com/databricks/cli/bundle/trampoline"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/cli/libs/logdiag"
 )
 
-// LibLocationMap maps artifact names to library locations that need uploading.
-// Computed by Build and consumed by Deploy to upload the right files.
-type LibLocationMap map[string][]libraries.LocationToUpdate
-
 // Build runs the build phase, which builds artifacts.
-func Build(ctx context.Context, b *bundle.Bundle) LibLocationMap {
+func Build(ctx context.Context, b *bundle.Bundle) {
 	log.Info(ctx, "Phase: build")
 
 	bundle.ApplySeqContext(ctx, b,
@@ -43,21 +37,4 @@ func Build(ctx context.Context, b *bundle.Bundle) LibLocationMap {
 		// SwitchToPatchedWheels must be run after ExpandGlobReferences and after build phase because it Artifact.Source and Artifact.Patched populated
 		libraries.SwitchToPatchedWheels(),
 	)
-
-	if logdiag.HasError(ctx) {
-		return nil
-	}
-
-	// For immutable bundles, library remote paths are set in the deploy phase
-	// after snapshot.Upload() provides the content-addressed workspace.artifact_path.
-	if b.IsImmutableFolder() {
-		return nil
-	}
-
-	libs, diags := libraries.ReplaceWithRemotePath(ctx, b)
-	for _, d := range diags {
-		logdiag.LogDiag(ctx, d)
-	}
-	bundle.ApplyContext(ctx, b, trampoline.TransformWheelTask())
-	return libs
 }

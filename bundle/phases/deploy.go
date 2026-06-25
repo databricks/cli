@@ -19,6 +19,7 @@ import (
 	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/bundle/metrics"
+	"github.com/databricks/cli/bundle/trampoline"
 	"github.com/databricks/cli/bundle/permissions"
 	"github.com/databricks/cli/bundle/scripts"
 	"github.com/databricks/cli/bundle/statemgmt"
@@ -117,8 +118,7 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, ta
 	}
 }
 
-// uploadLibraries uploads libraries to the workspace.
-// It also cleans up the artifacts directory and transforms wheel tasks.
+// uploadLibraries cleans up the artifacts directory and uploads libraries to the workspace.
 // It is called by only "bundle deploy".
 func uploadLibraries(ctx context.Context, b *bundle.Bundle, libs map[string][]libraries.LocationToUpdate) {
 	bundle.ApplySeqContext(ctx, b,
@@ -129,7 +129,7 @@ func uploadLibraries(ctx context.Context, b *bundle.Bundle, libs map[string][]li
 
 // The deploy phase deploys artifacts and resources.
 // If readPlanPath is provided, the plan is loaded from that file instead of being calculated.
-func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHandler, engine engine.EngineType, libs map[string][]libraries.LocationToUpdate, plan *deployplan.Plan) {
+func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHandler, engine engine.EngineType, plan *deployplan.Plan) {
 	log.Info(ctx, "Phase: deploy")
 
 	// Core mutators that CRUD resources and modify deployment state. These
@@ -170,7 +170,14 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 			}
 		}
 	} else {
-		uploadLibraries(ctx, b, libs)
+		libs, libDiags := libraries.ReplaceWithRemotePath(ctx, b)
+		for _, d := range libDiags {
+			logdiag.LogDiag(ctx, d)
+		}
+		if !logdiag.HasError(ctx) {
+			bundle.ApplyContext(ctx, b, trampoline.TransformWheelTask())
+			uploadLibraries(ctx, b, libs)
+		}
 	}
 
 	if logdiag.HasError(ctx) {
