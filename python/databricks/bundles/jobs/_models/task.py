@@ -3,11 +3,7 @@ from typing import TYPE_CHECKING, TypedDict
 
 from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
-from databricks.bundles.core._variable import (
-    VariableOr,
-    VariableOrList,
-    VariableOrOptional,
-)
+from databricks.bundles.core._variable import VariableOr, VariableOrList, VariableOrOptional
 from databricks.bundles.jobs._models.alert_task import AlertTask, AlertTaskParam
 from databricks.bundles.jobs._models.clean_rooms_notebook_task import (
     CleanRoomsNotebookTask,
@@ -15,83 +11,32 @@ from databricks.bundles.jobs._models.clean_rooms_notebook_task import (
 )
 from databricks.bundles.jobs._models.cluster_spec import ClusterSpec, ClusterSpecParam
 from databricks.bundles.jobs._models.compute import Compute, ComputeParam
-from databricks.bundles.jobs._models.condition_task import (
-    ConditionTask,
-    ConditionTaskParam,
-)
-from databricks.bundles.jobs._models.dashboard_task import (
-    DashboardTask,
-    DashboardTaskParam,
-)
-from databricks.bundles.jobs._models.dbt_platform_task import (
-    DbtPlatformTask,
-    DbtPlatformTaskParam,
-)
+from databricks.bundles.jobs._models.condition_task import ConditionTask, ConditionTaskParam
+from databricks.bundles.jobs._models.dashboard_task import DashboardTask, DashboardTaskParam
+from databricks.bundles.jobs._models.dbt_platform_task import DbtPlatformTask, DbtPlatformTaskParam
 from databricks.bundles.jobs._models.dbt_task import DbtTask, DbtTaskParam
-from databricks.bundles.jobs._models.for_each_task import (
-    ForEachTask,
-    ForEachTaskParam,
-)
-from databricks.bundles.jobs._models.gen_ai_compute_task import (
-    GenAiComputeTask,
-    GenAiComputeTaskParam,
-)
-from databricks.bundles.jobs._models.jobs_health_rules import (
-    JobsHealthRules,
-    JobsHealthRulesParam,
-)
+from databricks.bundles.jobs._models.for_each_task import ForEachTask, ForEachTaskParam
+from databricks.bundles.jobs._models.gen_ai_compute_task import GenAiComputeTask, GenAiComputeTaskParam
+from databricks.bundles.jobs._models.jobs_health_rules import JobsHealthRules, JobsHealthRulesParam
 from databricks.bundles.jobs._models.library import Library, LibraryParam
-from databricks.bundles.jobs._models.notebook_task import (
-    NotebookTask,
-    NotebookTaskParam,
-)
-from databricks.bundles.jobs._models.pipeline_task import (
-    PipelineTask,
-    PipelineTaskParam,
-)
+from databricks.bundles.jobs._models.notebook_task import NotebookTask, NotebookTaskParam
+from databricks.bundles.jobs._models.pipeline_task import PipelineTask, PipelineTaskParam
 from databricks.bundles.jobs._models.power_bi_task import PowerBiTask, PowerBiTaskParam
-from databricks.bundles.jobs._models.python_operator_task import (
-    PythonOperatorTask,
-    PythonOperatorTaskParam,
-)
-from databricks.bundles.jobs._models.python_wheel_task import (
-    PythonWheelTask,
-    PythonWheelTaskParam,
-)
+from databricks.bundles.jobs._models.python_operator_task import PythonOperatorTask, PythonOperatorTaskParam
+from databricks.bundles.jobs._models.python_wheel_task import PythonWheelTask, PythonWheelTaskParam
 from databricks.bundles.jobs._models.run_if import RunIf, RunIfParam
-from databricks.bundles.jobs._models.run_job_task import (
-    RunJobTask,
-    RunJobTaskParam,
-)
-from databricks.bundles.jobs._models.spark_jar_task import (
-    SparkJarTask,
-    SparkJarTaskParam,
-)
-from databricks.bundles.jobs._models.spark_python_task import (
-    SparkPythonTask,
-    SparkPythonTaskParam,
-)
-from databricks.bundles.jobs._models.spark_submit_task import (
-    SparkSubmitTask,
-    SparkSubmitTaskParam,
-)
+from databricks.bundles.jobs._models.run_job_task import RunJobTask, RunJobTaskParam
+from databricks.bundles.jobs._models.spark_jar_task import SparkJarTask, SparkJarTaskParam
+from databricks.bundles.jobs._models.spark_python_task import SparkPythonTask, SparkPythonTaskParam
+from databricks.bundles.jobs._models.spark_submit_task import SparkSubmitTask, SparkSubmitTaskParam
 from databricks.bundles.jobs._models.sql_task import SqlTask, SqlTaskParam
-from databricks.bundles.jobs._models.task_dependency import (
-    TaskDependency,
-    TaskDependencyParam,
-)
-from databricks.bundles.jobs._models.task_email_notifications import (
-    TaskEmailNotifications,
-    TaskEmailNotificationsParam,
-)
+from databricks.bundles.jobs._models.task_dependency import TaskDependency, TaskDependencyParam
+from databricks.bundles.jobs._models.task_email_notifications import TaskEmailNotifications, TaskEmailNotificationsParam
 from databricks.bundles.jobs._models.task_notification_settings import (
     TaskNotificationSettings,
     TaskNotificationSettingsParam,
 )
-from databricks.bundles.jobs._models.webhook_notifications import (
-    WebhookNotifications,
-    WebhookNotificationsParam,
-)
+from databricks.bundles.jobs._models.webhook_notifications import WebhookNotifications, WebhookNotificationsParam
 
 if TYPE_CHECKING:
     from typing_extensions import Self

@@ -4,10 +4,7 @@ from typing import TYPE_CHECKING, TypedDict
 from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
 from databricks.bundles.core._variable import VariableOrOptional
-from databricks.bundles.jobs._models.docker_basic_auth import (
-    DockerBasicAuth,
-    DockerBasicAuthParam,
-)
+from databricks.bundles.jobs._models.docker_basic_auth import DockerBasicAuth, DockerBasicAuthParam
 
 if TYPE_CHECKING:
     from typing_extensions import Self

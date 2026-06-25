@@ -20,11 +20,7 @@ __all__ = [
 ]
 
 
-from databricks.bundles.volumes._models.lifecycle import (
-    Lifecycle,
-    LifecycleDict,
-    LifecycleParam,
-)
+from databricks.bundles.volumes._models.lifecycle import Lifecycle, LifecycleDict, LifecycleParam
 from databricks.bundles.volumes._models.privilege import Privilege, PrivilegeParam
 from databricks.bundles.volumes._models.privilege_assignment import (
     PrivilegeAssignment,

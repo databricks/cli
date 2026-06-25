@@ -6,9 +6,8 @@ from databricks.bundles.core._transform_to_json import _transform_to_json_value
 from databricks.bundles.core._variable import VariableOr, VariableOrOptional
 
 if TYPE_CHECKING:
-    from typing_extensions import Self
-
     from databricks.bundles.jobs._models.task import Task, TaskParam
+    from typing_extensions import Self
 
 
 @dataclass(kw_only=True)

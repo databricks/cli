@@ -1,6 +1,3 @@
-from textwrap import dedent
-
-import codegen.packages as packages
 from codegen.code_builder import CodeBuilder
 from codegen.generated_dataclass import GeneratedDataclass
 from codegen.generated_enum import GeneratedEnum
@@ -33,9 +30,7 @@ def append_dataclass_imports(
         if package in exclude_packages:
             continue
 
-        b.append(
-            f"from {package} import {class_name}, {class_name}Dict, {class_name}Param"
-        ).newline()
+        b.append(f"from {package} import {class_name}, {class_name}Dict, {class_name}Param").newline()
 
 
 def get_code(
@@ -46,26 +41,20 @@ def get_code(
 ) -> str:
     b = CodeBuilder()
 
-    b.append(
-        "from typing import Literal, Optional, TypedDict, ClassVar, TYPE_CHECKING\n"
-    )
+    b.append("from typing import Literal, Optional, TypedDict, ClassVar, TYPE_CHECKING\n")
     b.append("from enum import Enum\n")
     b.append("from dataclasses import dataclass, replace, field\n")
     b.append("\n")
     b.append("from databricks.bundles.core._resource import Resource\n")
     b.append("from databricks.bundles.core._transform import _transform\n")
-    b.append(
-        "from databricks.bundles.core._transform_to_json import _transform_to_json_value\n"
-    )
+    b.append("from databricks.bundles.core._transform_to_json import _transform_to_json_value\n")
     b.append(
         "from databricks.bundles.core._variable import VariableOr, VariableOrOptional, VariableOrList, VariableOrDict\n"
     )
     b.newline()
 
     runtime_dataclasses = {
-        k: v
-        for k, v in dataclasses.items()
-        if v.class_name not in typechecking_imports.get(v.package, [])
+        k: v for k, v in dataclasses.items() if v.class_name not in typechecking_imports.get(v.package, [])
     }
 
     append_dataclass_imports(b, runtime_dataclasses, exclude_packages)

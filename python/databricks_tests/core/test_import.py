@@ -51,9 +51,7 @@ def test_import_regression(reset_sys_modules):
             is_core = module == databricks.bundles.core.__package__
             is_core_subpackage = is_subpackage(module, databricks.bundles.core)
 
-            assert is_core or is_core_subpackage, (
-                f"Unexpected loaded module AFTER loading core: {module}"
-            )
+            assert is_core or is_core_subpackage, f"Unexpected loaded module AFTER loading core: {module}"
 
 
 def is_subpackage(module: str, parent: ModuleType) -> bool:

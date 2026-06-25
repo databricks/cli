@@ -8,14 +8,8 @@ from databricks.bundles.pipelines._models.dbfs_storage_info import (
     DbfsStorageInfo,
     DbfsStorageInfoParam,
 )
-from databricks.bundles.pipelines._models.s3_storage_info import (
-    S3StorageInfo,
-    S3StorageInfoParam,
-)
-from databricks.bundles.pipelines._models.volumes_storage_info import (
-    VolumesStorageInfo,
-    VolumesStorageInfoParam,
-)
+from databricks.bundles.pipelines._models.s3_storage_info import S3StorageInfo, S3StorageInfoParam
+from databricks.bundles.pipelines._models.volumes_storage_info import VolumesStorageInfo, VolumesStorageInfoParam
 
 if TYPE_CHECKING:
     from typing_extensions import Self

@@ -13,6 +13,4 @@ class PipelinePermissionLevel(Enum):
     CAN_VIEW = "CAN_VIEW"
 
 
-PipelinePermissionLevelParam = (
-    Literal["CAN_MANAGE", "IS_OWNER", "CAN_RUN", "CAN_VIEW"] | PipelinePermissionLevel
-)
+PipelinePermissionLevelParam = Literal["CAN_MANAGE", "IS_OWNER", "CAN_RUN", "CAN_VIEW"] | PipelinePermissionLevel

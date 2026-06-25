@@ -3,11 +3,7 @@ from typing import TYPE_CHECKING, TypedDict
 
 from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
-from databricks.bundles.core._variable import (
-    VariableOrDict,
-    VariableOrList,
-    VariableOrOptional,
-)
+from databricks.bundles.core._variable import VariableOrDict, VariableOrList, VariableOrOptional
 from databricks.bundles.pipelines._models.auto_full_refresh_policy import (
     AutoFullRefreshPolicy,
     AutoFullRefreshPolicyParam,
@@ -135,9 +131,7 @@ class TableSpecificConfig:
     Note: table_properties in table specific configuration will override the table_properties of the pipeline definition.
     """
 
-    workday_report_parameters: VariableOrOptional[
-        IngestionPipelineDefinitionWorkdayReportParameters
-    ] = None
+    workday_report_parameters: VariableOrOptional[IngestionPipelineDefinitionWorkdayReportParameters] = None
     """
     :meta private: [EXPERIMENTAL]
     
@@ -257,9 +251,7 @@ class TableSpecificConfigDict(TypedDict, total=False):
     Note: table_properties in table specific configuration will override the table_properties of the pipeline definition.
     """
 
-    workday_report_parameters: VariableOrOptional[
-        IngestionPipelineDefinitionWorkdayReportParametersParam
-    ]
+    workday_report_parameters: VariableOrOptional[IngestionPipelineDefinitionWorkdayReportParametersParam]
     """
     :meta private: [EXPERIMENTAL]
     

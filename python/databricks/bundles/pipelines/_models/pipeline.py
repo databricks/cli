@@ -4,19 +4,9 @@ from typing import TYPE_CHECKING, TypedDict
 from databricks.bundles.core._resource import Resource
 from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
-from databricks.bundles.core._variable import (
-    VariableOrDict,
-    VariableOrList,
-    VariableOrOptional,
-)
-from databricks.bundles.pipelines._models.event_log_spec import (
-    EventLogSpec,
-    EventLogSpecParam,
-)
-from databricks.bundles.pipelines._models.filters import (
-    Filters,
-    FiltersParam,
-)
+from databricks.bundles.core._variable import VariableOrDict, VariableOrList, VariableOrOptional
+from databricks.bundles.pipelines._models.event_log_spec import EventLogSpec, EventLogSpecParam
+from databricks.bundles.pipelines._models.filters import Filters, FiltersParam
 from databricks.bundles.pipelines._models.ingestion_gateway_pipeline_definition import (
     IngestionGatewayPipelineDefinition,
     IngestionGatewayPipelineDefinitionParam,
@@ -26,10 +16,7 @@ from databricks.bundles.pipelines._models.ingestion_pipeline_definition import (
     IngestionPipelineDefinitionParam,
 )
 from databricks.bundles.pipelines._models.lifecycle import Lifecycle, LifecycleParam
-from databricks.bundles.pipelines._models.notifications import (
-    Notifications,
-    NotificationsParam,
-)
+from databricks.bundles.pipelines._models.notifications import Notifications, NotificationsParam
 from databricks.bundles.pipelines._models.pipeline_cluster import (
     PipelineCluster,
     PipelineClusterParam,
@@ -38,18 +25,9 @@ from databricks.bundles.pipelines._models.pipeline_library import (
     PipelineLibrary,
     PipelineLibraryParam,
 )
-from databricks.bundles.pipelines._models.pipeline_permission import (
-    PipelinePermission,
-    PipelinePermissionParam,
-)
-from databricks.bundles.pipelines._models.pipelines_environment import (
-    PipelinesEnvironment,
-    PipelinesEnvironmentParam,
-)
-from databricks.bundles.pipelines._models.restart_window import (
-    RestartWindow,
-    RestartWindowParam,
-)
+from databricks.bundles.pipelines._models.pipeline_permission import PipelinePermission, PipelinePermissionParam
+from databricks.bundles.pipelines._models.pipelines_environment import PipelinesEnvironment, PipelinesEnvironmentParam
+from databricks.bundles.pipelines._models.restart_window import RestartWindow, RestartWindowParam
 from databricks.bundles.pipelines._models.run_as import RunAs, RunAsParam
 
 if TYPE_CHECKING:

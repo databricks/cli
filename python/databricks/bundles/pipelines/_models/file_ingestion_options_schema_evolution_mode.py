@@ -17,12 +17,6 @@ class FileIngestionOptionsSchemaEvolutionMode(Enum):
 
 
 FileIngestionOptionsSchemaEvolutionModeParam = (
-    Literal[
-        "ADD_NEW_COLUMNS_WITH_TYPE_WIDENING",
-        "ADD_NEW_COLUMNS",
-        "RESCUE",
-        "FAIL_ON_NEW_COLUMNS",
-        "NONE",
-    ]
+    Literal["ADD_NEW_COLUMNS_WITH_TYPE_WIDENING", "ADD_NEW_COLUMNS", "RESCUE", "FAIL_ON_NEW_COLUMNS", "NONE"]
     | FileIngestionOptionsSchemaEvolutionMode
 )

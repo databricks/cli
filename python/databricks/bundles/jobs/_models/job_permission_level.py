@@ -13,6 +13,4 @@ class JobPermissionLevel(Enum):
     CAN_VIEW = "CAN_VIEW"
 
 
-JobPermissionLevelParam = (
-    Literal["CAN_MANAGE", "IS_OWNER", "CAN_MANAGE_RUN", "CAN_VIEW"] | JobPermissionLevel
-)
+JobPermissionLevelParam = Literal["CAN_MANAGE", "IS_OWNER", "CAN_MANAGE_RUN", "CAN_VIEW"] | JobPermissionLevel

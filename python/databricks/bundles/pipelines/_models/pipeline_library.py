@@ -4,22 +4,13 @@ from typing import TYPE_CHECKING, TypedDict
 from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
 from databricks.bundles.core._variable import VariableOrOptional
-from databricks.bundles.pipelines._models.file_library import (
-    FileLibrary,
-    FileLibraryParam,
-)
-from databricks.bundles.pipelines._models.maven_library import (
-    MavenLibrary,
-    MavenLibraryParam,
-)
+from databricks.bundles.pipelines._models.file_library import FileLibrary, FileLibraryParam
+from databricks.bundles.pipelines._models.maven_library import MavenLibrary, MavenLibraryParam
 from databricks.bundles.pipelines._models.notebook_library import (
     NotebookLibrary,
     NotebookLibraryParam,
 )
-from databricks.bundles.pipelines._models.path_pattern import (
-    PathPattern,
-    PathPatternParam,
-)
+from databricks.bundles.pipelines._models.path_pattern import PathPattern, PathPatternParam
 
 if TYPE_CHECKING:
     from typing_extensions import Self

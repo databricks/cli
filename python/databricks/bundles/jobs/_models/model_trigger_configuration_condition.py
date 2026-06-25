@@ -13,6 +13,5 @@ class ModelTriggerConfigurationCondition(Enum):
 
 
 ModelTriggerConfigurationConditionParam = (
-    Literal["MODEL_CREATED", "MODEL_VERSION_READY", "MODEL_ALIAS_SET"]
-    | ModelTriggerConfigurationCondition
+    Literal["MODEL_CREATED", "MODEL_VERSION_READY", "MODEL_ALIAS_SET"] | ModelTriggerConfigurationCondition
 )

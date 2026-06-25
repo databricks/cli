@@ -13,7 +13,4 @@ class GcpAvailability(Enum):
     PREEMPTIBLE_WITH_FALLBACK_GCP = "PREEMPTIBLE_WITH_FALLBACK_GCP"
 
 
-GcpAvailabilityParam = (
-    Literal["PREEMPTIBLE_GCP", "ON_DEMAND_GCP", "PREEMPTIBLE_WITH_FALLBACK_GCP"]
-    | GcpAvailability
-)
+GcpAvailabilityParam = Literal["PREEMPTIBLE_GCP", "ON_DEMAND_GCP", "PREEMPTIBLE_WITH_FALLBACK_GCP"] | GcpAvailability

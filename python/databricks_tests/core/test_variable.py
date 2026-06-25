@@ -1,5 +1,4 @@
 import pytest
-
 from databricks.bundles.core import Variable
 from databricks.bundles.core._variable import variables
 
@@ -28,7 +27,7 @@ def test_my_variables_untyped():
     with pytest.raises(ValueError) as exc_info:
 
         @variables
-        class UntypedVariables:  # noqa
+        class UntypedVariables:
             foo: Variable
 
     [msg] = exc_info.value.args
@@ -40,12 +39,9 @@ def test_bad_type():
     with pytest.raises(ValueError) as exc_info:
 
         @variables
-        class BadType:  # noqa
+        class BadType:
             foo: str
 
     [msg] = exc_info.value.args
 
-    assert (
-        msg
-        == "Only 'Variable' type is allowed in classes annotated with @variables, got <class 'str'>"
-    )
+    assert msg == "Only 'Variable' type is allowed in classes annotated with @variables, got <class 'str'>"

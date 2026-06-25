@@ -64,7 +64,7 @@ def load_resources_from_package_module(
 
         prefix = package_spec.name + "."
 
-        for loader, module_name, is_pkg in pkgutil.walk_packages(package_paths, prefix):
+        for _loader, module_name, _is_pkg in pkgutil.walk_packages(package_paths, prefix):
             module_names.append(module_name)
 
     module_names.sort()  # create deterministic order

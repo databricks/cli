@@ -225,34 +225,20 @@ __all__ = [
 ]
 
 
-from databricks.bundles.pipelines._models.adlsgen2_info import (
-    Adlsgen2Info,
-    Adlsgen2InfoDict,
-    Adlsgen2InfoParam,
-)
+from databricks.bundles.pipelines._models.adlsgen2_info import Adlsgen2Info, Adlsgen2InfoDict, Adlsgen2InfoParam
 from databricks.bundles.pipelines._models.auto_full_refresh_policy import (
     AutoFullRefreshPolicy,
     AutoFullRefreshPolicyDict,
     AutoFullRefreshPolicyParam,
 )
-from databricks.bundles.pipelines._models.aws_attributes import (
-    AwsAttributes,
-    AwsAttributesDict,
-    AwsAttributesParam,
-)
-from databricks.bundles.pipelines._models.aws_availability import (
-    AwsAvailability,
-    AwsAvailabilityParam,
-)
+from databricks.bundles.pipelines._models.aws_attributes import AwsAttributes, AwsAttributesDict, AwsAttributesParam
+from databricks.bundles.pipelines._models.aws_availability import AwsAvailability, AwsAvailabilityParam
 from databricks.bundles.pipelines._models.azure_attributes import (
     AzureAttributes,
     AzureAttributesDict,
     AzureAttributesParam,
 )
-from databricks.bundles.pipelines._models.azure_availability import (
-    AzureAvailability,
-    AzureAvailabilityParam,
-)
+from databricks.bundles.pipelines._models.azure_availability import AzureAvailability, AzureAvailabilityParam
 from databricks.bundles.pipelines._models.cluster_log_conf import (
     ClusterLogConf,
     ClusterLogConfDict,
@@ -277,10 +263,7 @@ from databricks.bundles.pipelines._models.connector_options import (
     ConnectorOptionsDict,
     ConnectorOptionsParam,
 )
-from databricks.bundles.pipelines._models.connector_type import (
-    ConnectorType,
-    ConnectorTypeParam,
-)
+from databricks.bundles.pipelines._models.connector_type import ConnectorType, ConnectorTypeParam
 from databricks.bundles.pipelines._models.data_staging_options import (
     DataStagingOptions,
     DataStagingOptionsDict,
@@ -292,20 +275,9 @@ from databricks.bundles.pipelines._models.dbfs_storage_info import (
     DbfsStorageInfoDict,
     DbfsStorageInfoParam,
 )
-from databricks.bundles.pipelines._models.ebs_volume_type import (
-    EbsVolumeType,
-    EbsVolumeTypeParam,
-)
-from databricks.bundles.pipelines._models.event_log_spec import (
-    EventLogSpec,
-    EventLogSpecDict,
-    EventLogSpecParam,
-)
-from databricks.bundles.pipelines._models.file_filter import (
-    FileFilter,
-    FileFilterDict,
-    FileFilterParam,
-)
+from databricks.bundles.pipelines._models.ebs_volume_type import EbsVolumeType, EbsVolumeTypeParam
+from databricks.bundles.pipelines._models.event_log_spec import EventLogSpec, EventLogSpecDict, EventLogSpecParam
+from databricks.bundles.pipelines._models.file_filter import FileFilter, FileFilterDict, FileFilterParam
 from databricks.bundles.pipelines._models.file_ingestion_options import (
     FileIngestionOptions,
     FileIngestionOptionsDict,
@@ -319,25 +291,10 @@ from databricks.bundles.pipelines._models.file_ingestion_options_schema_evolutio
     FileIngestionOptionsSchemaEvolutionMode,
     FileIngestionOptionsSchemaEvolutionModeParam,
 )
-from databricks.bundles.pipelines._models.file_library import (
-    FileLibrary,
-    FileLibraryDict,
-    FileLibraryParam,
-)
-from databricks.bundles.pipelines._models.filters import (
-    Filters,
-    FiltersDict,
-    FiltersParam,
-)
-from databricks.bundles.pipelines._models.gcp_attributes import (
-    GcpAttributes,
-    GcpAttributesDict,
-    GcpAttributesParam,
-)
-from databricks.bundles.pipelines._models.gcp_availability import (
-    GcpAvailability,
-    GcpAvailabilityParam,
-)
+from databricks.bundles.pipelines._models.file_library import FileLibrary, FileLibraryDict, FileLibraryParam
+from databricks.bundles.pipelines._models.filters import Filters, FiltersDict, FiltersParam
+from databricks.bundles.pipelines._models.gcp_attributes import GcpAttributes, GcpAttributesDict, GcpAttributesParam
+from databricks.bundles.pipelines._models.gcp_availability import GcpAvailability, GcpAvailabilityParam
 from databricks.bundles.pipelines._models.gcs_storage_info import (
     GcsStorageInfo,
     GcsStorageInfoDict,
@@ -402,31 +359,15 @@ from databricks.bundles.pipelines._models.json_transformer_options import (
     JsonTransformerOptionsDict,
     JsonTransformerOptionsParam,
 )
-from databricks.bundles.pipelines._models.kafka_options import (
-    KafkaOptions,
-    KafkaOptionsDict,
-    KafkaOptionsParam,
-)
-from databricks.bundles.pipelines._models.lifecycle import (
-    Lifecycle,
-    LifecycleDict,
-    LifecycleParam,
-)
-from databricks.bundles.pipelines._models.local_file_info import (
-    LocalFileInfo,
-    LocalFileInfoDict,
-    LocalFileInfoParam,
-)
+from databricks.bundles.pipelines._models.kafka_options import KafkaOptions, KafkaOptionsDict, KafkaOptionsParam
+from databricks.bundles.pipelines._models.lifecycle import Lifecycle, LifecycleDict, LifecycleParam
+from databricks.bundles.pipelines._models.local_file_info import LocalFileInfo, LocalFileInfoDict, LocalFileInfoParam
 from databricks.bundles.pipelines._models.log_analytics_info import (
     LogAnalyticsInfo,
     LogAnalyticsInfoDict,
     LogAnalyticsInfoParam,
 )
-from databricks.bundles.pipelines._models.maven_library import (
-    MavenLibrary,
-    MavenLibraryDict,
-    MavenLibraryParam,
-)
+from databricks.bundles.pipelines._models.maven_library import MavenLibrary, MavenLibraryDict, MavenLibraryParam
 from databricks.bundles.pipelines._models.meta_marketing_options import (
     MetaMarketingOptions,
     MetaMarketingOptionsDict,
@@ -437,11 +378,7 @@ from databricks.bundles.pipelines._models.notebook_library import (
     NotebookLibraryDict,
     NotebookLibraryParam,
 )
-from databricks.bundles.pipelines._models.notifications import (
-    Notifications,
-    NotificationsDict,
-    NotificationsParam,
-)
+from databricks.bundles.pipelines._models.notifications import Notifications, NotificationsDict, NotificationsParam
 from databricks.bundles.pipelines._models.operation_time_window import (
     OperationTimeWindow,
     OperationTimeWindowDict,
@@ -451,25 +388,10 @@ from databricks.bundles.pipelines._models.outlook_attachment_mode import (
     OutlookAttachmentMode,
     OutlookAttachmentModeParam,
 )
-from databricks.bundles.pipelines._models.outlook_body_format import (
-    OutlookBodyFormat,
-    OutlookBodyFormatParam,
-)
-from databricks.bundles.pipelines._models.outlook_options import (
-    OutlookOptions,
-    OutlookOptionsDict,
-    OutlookOptionsParam,
-)
-from databricks.bundles.pipelines._models.path_pattern import (
-    PathPattern,
-    PathPatternDict,
-    PathPatternParam,
-)
-from databricks.bundles.pipelines._models.pipeline import (
-    Pipeline,
-    PipelineDict,
-    PipelineParam,
-)
+from databricks.bundles.pipelines._models.outlook_body_format import OutlookBodyFormat, OutlookBodyFormatParam
+from databricks.bundles.pipelines._models.outlook_options import OutlookOptions, OutlookOptionsDict, OutlookOptionsParam
+from databricks.bundles.pipelines._models.path_pattern import PathPattern, PathPatternDict, PathPatternParam
+from databricks.bundles.pipelines._models.pipeline import Pipeline, PipelineDict, PipelineParam
 from databricks.bundles.pipelines._models.pipeline_cluster import (
     PipelineCluster,
     PipelineClusterDict,
@@ -513,27 +435,11 @@ from databricks.bundles.pipelines._models.postgres_slot_config import (
     PostgresSlotConfigDict,
     PostgresSlotConfigParam,
 )
-from databricks.bundles.pipelines._models.report_spec import (
-    ReportSpec,
-    ReportSpecDict,
-    ReportSpecParam,
-)
-from databricks.bundles.pipelines._models.restart_window import (
-    RestartWindow,
-    RestartWindowDict,
-    RestartWindowParam,
-)
+from databricks.bundles.pipelines._models.report_spec import ReportSpec, ReportSpecDict, ReportSpecParam
+from databricks.bundles.pipelines._models.restart_window import RestartWindow, RestartWindowDict, RestartWindowParam
 from databricks.bundles.pipelines._models.run_as import RunAs, RunAsDict, RunAsParam
-from databricks.bundles.pipelines._models.s3_storage_info import (
-    S3StorageInfo,
-    S3StorageInfoDict,
-    S3StorageInfoParam,
-)
-from databricks.bundles.pipelines._models.schema_spec import (
-    SchemaSpec,
-    SchemaSpecDict,
-    SchemaSpecParam,
-)
+from databricks.bundles.pipelines._models.s3_storage_info import S3StorageInfo, S3StorageInfoDict, S3StorageInfoParam
+from databricks.bundles.pipelines._models.schema_spec import SchemaSpec, SchemaSpecDict, SchemaSpecParam
 from databricks.bundles.pipelines._models.sharepoint_options import (
     SharepointOptions,
     SharepointOptionsDict,
@@ -553,16 +459,8 @@ from databricks.bundles.pipelines._models.source_catalog_config import (
     SourceCatalogConfigDict,
     SourceCatalogConfigParam,
 )
-from databricks.bundles.pipelines._models.source_config import (
-    SourceConfig,
-    SourceConfigDict,
-    SourceConfigParam,
-)
-from databricks.bundles.pipelines._models.table_spec import (
-    TableSpec,
-    TableSpecDict,
-    TableSpecParam,
-)
+from databricks.bundles.pipelines._models.source_config import SourceConfig, SourceConfigDict, SourceConfigParam
+from databricks.bundles.pipelines._models.table_spec import TableSpec, TableSpecDict, TableSpecParam
 from databricks.bundles.pipelines._models.table_specific_config import (
     TableSpecificConfig,
     TableSpecificConfigDict,
@@ -577,15 +475,8 @@ from databricks.bundles.pipelines._models.tik_tok_ads_options import (
     TikTokAdsOptionsDict,
     TikTokAdsOptionsParam,
 )
-from databricks.bundles.pipelines._models.transformer import (
-    Transformer,
-    TransformerDict,
-    TransformerParam,
-)
-from databricks.bundles.pipelines._models.transformer_format import (
-    TransformerFormat,
-    TransformerFormatParam,
-)
+from databricks.bundles.pipelines._models.transformer import Transformer, TransformerDict, TransformerParam
+from databricks.bundles.pipelines._models.transformer_format import TransformerFormat, TransformerFormatParam
 from databricks.bundles.pipelines._models.volumes_storage_info import (
     VolumesStorageInfo,
     VolumesStorageInfoDict,

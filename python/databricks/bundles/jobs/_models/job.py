@@ -4,60 +4,26 @@ from typing import TYPE_CHECKING, TypedDict
 from databricks.bundles.core._resource import Resource
 from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
-from databricks.bundles.core._variable import (
-    VariableOrDict,
-    VariableOrList,
-    VariableOrOptional,
-)
-from databricks.bundles.jobs._models.continuous import (
-    Continuous,
-    ContinuousParam,
-)
-from databricks.bundles.jobs._models.cron_schedule import (
-    CronSchedule,
-    CronScheduleParam,
-)
+from databricks.bundles.core._variable import VariableOrDict, VariableOrList, VariableOrOptional
+from databricks.bundles.jobs._models.continuous import Continuous, ContinuousParam
+from databricks.bundles.jobs._models.cron_schedule import CronSchedule, CronScheduleParam
 from databricks.bundles.jobs._models.git_source import GitSource, GitSourceParam
 from databricks.bundles.jobs._models.job_cluster import JobCluster, JobClusterParam
-from databricks.bundles.jobs._models.job_email_notifications import (
-    JobEmailNotifications,
-    JobEmailNotificationsParam,
-)
-from databricks.bundles.jobs._models.job_environment import (
-    JobEnvironment,
-    JobEnvironmentParam,
-)
+from databricks.bundles.jobs._models.job_email_notifications import JobEmailNotifications, JobEmailNotificationsParam
+from databricks.bundles.jobs._models.job_environment import JobEnvironment, JobEnvironmentParam
 from databricks.bundles.jobs._models.job_notification_settings import (
     JobNotificationSettings,
     JobNotificationSettingsParam,
 )
-from databricks.bundles.jobs._models.job_parameter_definition import (
-    JobParameterDefinition,
-    JobParameterDefinitionParam,
-)
-from databricks.bundles.jobs._models.job_permission import (
-    JobPermission,
-    JobPermissionParam,
-)
+from databricks.bundles.jobs._models.job_parameter_definition import JobParameterDefinition, JobParameterDefinitionParam
+from databricks.bundles.jobs._models.job_permission import JobPermission, JobPermissionParam
 from databricks.bundles.jobs._models.job_run_as import JobRunAs, JobRunAsParam
-from databricks.bundles.jobs._models.jobs_health_rules import (
-    JobsHealthRules,
-    JobsHealthRulesParam,
-)
+from databricks.bundles.jobs._models.jobs_health_rules import JobsHealthRules, JobsHealthRulesParam
 from databricks.bundles.jobs._models.lifecycle import Lifecycle, LifecycleParam
-from databricks.bundles.jobs._models.performance_target import (
-    PerformanceTarget,
-    PerformanceTargetParam,
-)
-from databricks.bundles.jobs._models.queue_settings import (
-    QueueSettings,
-    QueueSettingsParam,
-)
+from databricks.bundles.jobs._models.performance_target import PerformanceTarget, PerformanceTargetParam
+from databricks.bundles.jobs._models.queue_settings import QueueSettings, QueueSettingsParam
 from databricks.bundles.jobs._models.task import Task, TaskParam
-from databricks.bundles.jobs._models.trigger_settings import (
-    TriggerSettings,
-    TriggerSettingsParam,
-)
+from databricks.bundles.jobs._models.trigger_settings import TriggerSettings, TriggerSettingsParam
 from databricks.bundles.jobs._models.webhook_notifications import (
     WebhookNotifications,
     WebhookNotificationsParam,

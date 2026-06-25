@@ -3,16 +3,12 @@ from pathlib import Path
 from typing import Any, Optional
 
 import pytest
-
 from databricks.bundles.core._transform import (
     _unwrap_variable_path,
     _variable_regex,
 )
 
-_REFERENCE_VECTORS = (
-    Path(__file__).resolve().parents[3]
-    / "libs/dyn/dynvar/testdata/reference_vectors.json"
-)
+_REFERENCE_VECTORS = Path(__file__).resolve().parents[3] / "libs/dyn/dynvar/testdata/reference_vectors.json"
 
 
 def _load_reference_vectors() -> list[dict[str, Any]]:

@@ -3,15 +3,8 @@ from typing import TYPE_CHECKING, TypedDict
 
 from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
-from databricks.bundles.core._variable import (
-    VariableOrDict,
-    VariableOrList,
-    VariableOrOptional,
-)
-from databricks.bundles.pipelines._models.transformer import (
-    Transformer,
-    TransformerParam,
-)
+from databricks.bundles.core._variable import VariableOrDict, VariableOrList, VariableOrOptional
+from databricks.bundles.pipelines._models.transformer import Transformer, TransformerParam
 
 if TYPE_CHECKING:
     from typing_extensions import Self

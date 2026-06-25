@@ -3,27 +3,11 @@ from typing import TYPE_CHECKING, TypedDict
 
 from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
-from databricks.bundles.core._variable import (
-    VariableOrDict,
-    VariableOrList,
-    VariableOrOptional,
-)
-from databricks.bundles.pipelines._models.aws_attributes import (
-    AwsAttributes,
-    AwsAttributesParam,
-)
-from databricks.bundles.pipelines._models.azure_attributes import (
-    AzureAttributes,
-    AzureAttributesParam,
-)
-from databricks.bundles.pipelines._models.cluster_log_conf import (
-    ClusterLogConf,
-    ClusterLogConfParam,
-)
-from databricks.bundles.pipelines._models.gcp_attributes import (
-    GcpAttributes,
-    GcpAttributesParam,
-)
+from databricks.bundles.core._variable import VariableOrDict, VariableOrList, VariableOrOptional
+from databricks.bundles.pipelines._models.aws_attributes import AwsAttributes, AwsAttributesParam
+from databricks.bundles.pipelines._models.azure_attributes import AzureAttributes, AzureAttributesParam
+from databricks.bundles.pipelines._models.cluster_log_conf import ClusterLogConf, ClusterLogConfParam
+from databricks.bundles.pipelines._models.gcp_attributes import GcpAttributes, GcpAttributesParam
 from databricks.bundles.pipelines._models.init_script_info import (
     InitScriptInfo,
     InitScriptInfoParam,

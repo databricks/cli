@@ -12,6 +12,4 @@ class EbsVolumeType(Enum):
     THROUGHPUT_OPTIMIZED_HDD = "THROUGHPUT_OPTIMIZED_HDD"
 
 
-EbsVolumeTypeParam = (
-    Literal["GENERAL_PURPOSE_SSD", "THROUGHPUT_OPTIMIZED_HDD"] | EbsVolumeType
-)
+EbsVolumeTypeParam = Literal["GENERAL_PURPOSE_SSD", "THROUGHPUT_OPTIMIZED_HDD"] | EbsVolumeType

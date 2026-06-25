@@ -5,10 +5,7 @@ from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
 from databricks.bundles.core._variable import VariableOr, VariableOrOptional
 from databricks.bundles.jobs._models.git_provider import GitProvider, GitProviderParam
-from databricks.bundles.jobs._models.sparse_checkout import (
-    SparseCheckout,
-    SparseCheckoutParam,
-)
+from databricks.bundles.jobs._models.sparse_checkout import SparseCheckout, SparseCheckoutParam
 
 if TYPE_CHECKING:
     from typing_extensions import Self

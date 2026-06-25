@@ -3,11 +3,7 @@ from typing import TYPE_CHECKING, TypedDict
 
 from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
-from databricks.bundles.core._variable import (
-    VariableOrDict,
-    VariableOrList,
-    VariableOrOptional,
-)
+from databricks.bundles.core._variable import VariableOrDict, VariableOrList, VariableOrOptional
 from databricks.bundles.pipelines._models.file_filter import FileFilter, FileFilterParam
 from databricks.bundles.pipelines._models.file_ingestion_options_file_format import (
     FileIngestionOptionsFileFormat,
@@ -86,9 +82,7 @@ class FileIngestionOptions:
     [Private Preview]
     """
 
-    schema_evolution_mode: VariableOrOptional[
-        FileIngestionOptionsSchemaEvolutionMode
-    ] = None
+    schema_evolution_mode: VariableOrOptional[FileIngestionOptionsSchemaEvolutionMode] = None
     """
     :meta private: [EXPERIMENTAL]
     
@@ -179,9 +173,7 @@ class FileIngestionOptionsDict(TypedDict, total=False):
     [Private Preview]
     """
 
-    schema_evolution_mode: VariableOrOptional[
-        FileIngestionOptionsSchemaEvolutionModeParam
-    ]
+    schema_evolution_mode: VariableOrOptional[FileIngestionOptionsSchemaEvolutionModeParam]
     """
     :meta private: [EXPERIMENTAL]
     

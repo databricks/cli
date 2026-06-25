@@ -16,6 +16,4 @@ class ConfidentialComputeType(Enum):
     SEV_SNP = "SEV_SNP"
 
 
-ConfidentialComputeTypeParam = (
-    Literal["CONFIDENTIAL_COMPUTE_TYPE_NONE", "SEV_SNP"] | ConfidentialComputeType
-)
+ConfidentialComputeTypeParam = Literal["CONFIDENTIAL_COMPUTE_TYPE_NONE", "SEV_SNP"] | ConfidentialComputeType

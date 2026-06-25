@@ -50,16 +50,12 @@ class Bundle:
             return variable
 
         if not variable.path.startswith(_VAR_PREFIX + "."):
-            raise ValueError(
-                "You can only get values of variables starting with 'var.*'"
-            )
+            raise ValueError("You can only get values of variables starting with 'var.*'")
         else:
             variable_name = variable.path[len(_VAR_PREFIX + ".") :]
 
         if variable_name not in self.variables:
-            raise ValueError(
-                f"Can't find '{variable_name}' variable. Did you define it in databricks.yml?"
-            )
+            raise ValueError(f"Can't find '{variable_name}' variable. Did you define it in databricks.yml?")
 
         value = self.variables.get(variable_name)
 
@@ -72,9 +68,7 @@ class Bundle:
         )
 
         if nested := _unwrap_variable_path(value):
-            can_be_variable = get_origin(variable.type) == Union and _find_union_arg(
-                nested, variable.type
-            )
+            can_be_variable = get_origin(variable.type) == Union and _find_union_arg(nested, variable.type)
             can_be_variable = can_be_variable or get_origin(variable.type) == Variable
 
             if not can_be_variable:

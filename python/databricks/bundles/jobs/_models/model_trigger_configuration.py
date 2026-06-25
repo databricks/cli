@@ -3,11 +3,7 @@ from typing import TYPE_CHECKING, TypedDict
 
 from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
-from databricks.bundles.core._variable import (
-    VariableOr,
-    VariableOrList,
-    VariableOrOptional,
-)
+from databricks.bundles.core._variable import VariableOr, VariableOrList, VariableOrOptional
 from databricks.bundles.jobs._models.model_trigger_configuration_condition import (
     ModelTriggerConfigurationCondition,
     ModelTriggerConfigurationConditionParam,
@@ -113,6 +109,4 @@ class ModelTriggerConfigurationDict(TypedDict, total=False):
     """
 
 
-ModelTriggerConfigurationParam = (
-    ModelTriggerConfigurationDict | ModelTriggerConfiguration
-)
+ModelTriggerConfigurationParam = ModelTriggerConfigurationDict | ModelTriggerConfiguration

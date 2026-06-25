@@ -10,9 +10,7 @@ def test_catch_exceptions():
     diagnostics = Diagnostics()
 
     try:
-        diagnostics = diagnostics.extend(
-            Diagnostics.create_warning("foo is deprecated")
-        )
+        diagnostics = diagnostics.extend(Diagnostics.create_warning("foo is deprecated"))
 
         raise ValueError("foo is not available")
 

@@ -14,6 +14,4 @@ class AwsAvailability(Enum):
     SPOT_WITH_FALLBACK = "SPOT_WITH_FALLBACK"
 
 
-AwsAvailabilityParam = (
-    Literal["SPOT", "ON_DEMAND", "SPOT_WITH_FALLBACK"] | AwsAvailability
-)
+AwsAvailabilityParam = Literal["SPOT", "ON_DEMAND", "SPOT_WITH_FALLBACK"] | AwsAvailability

@@ -4,14 +4,8 @@ from typing import TYPE_CHECKING, TypedDict
 from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
 from databricks.bundles.core._variable import VariableOrList, VariableOrOptional
-from databricks.bundles.jobs._models.power_bi_model import (
-    PowerBiModel,
-    PowerBiModelParam,
-)
-from databricks.bundles.jobs._models.power_bi_table import (
-    PowerBiTable,
-    PowerBiTableParam,
-)
+from databricks.bundles.jobs._models.power_bi_model import PowerBiModel, PowerBiModelParam
+from databricks.bundles.jobs._models.power_bi_table import PowerBiTable, PowerBiTableParam
 
 if TYPE_CHECKING:
     from typing_extensions import Self

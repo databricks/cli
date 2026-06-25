@@ -8,6 +8,4 @@ class PeriodicTriggerConfigurationTimeUnit(Enum):
     WEEKS = "WEEKS"
 
 
-PeriodicTriggerConfigurationTimeUnitParam = (
-    Literal["HOURS", "DAYS", "WEEKS"] | PeriodicTriggerConfigurationTimeUnit
-)
+PeriodicTriggerConfigurationTimeUnitParam = Literal["HOURS", "DAYS", "WEEKS"] | PeriodicTriggerConfigurationTimeUnit

@@ -49,6 +49,4 @@ class PeriodicTriggerConfigurationDict(TypedDict, total=False):
     """
 
 
-PeriodicTriggerConfigurationParam = (
-    PeriodicTriggerConfigurationDict | PeriodicTriggerConfiguration
-)
+PeriodicTriggerConfigurationParam = PeriodicTriggerConfigurationDict | PeriodicTriggerConfiguration

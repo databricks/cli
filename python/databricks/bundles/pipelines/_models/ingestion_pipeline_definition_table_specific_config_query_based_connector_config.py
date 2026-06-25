@@ -49,21 +49,14 @@ class IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfig:
     """
 
     @classmethod
-    def from_dict(
-        cls,
-        value: "IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfigDict",
-    ) -> "Self":
+    def from_dict(cls, value: "IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfigDict") -> "Self":
         return _transform(cls, value)
 
-    def as_dict(
-        self,
-    ) -> "IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfigDict":
+    def as_dict(self) -> "IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfigDict":
         return _transform_to_json_value(self)  # type:ignore
 
 
-class IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfigDict(
-    TypedDict, total=False
-):
+class IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfigDict(TypedDict, total=False):
     """"""
 
     cursor_columns: VariableOrList[str]

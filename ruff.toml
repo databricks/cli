@@ -4,3 +4,47 @@ line-length = 120
 exclude = [
     "tagging.py" # tagging.py is synced from universe in the `openapi/tagging` directory and follows different format rules.
 ]
+
+# `ruff check` is run by `task lint-python` over the maintained Python scripts
+# (the path list lives in Taskfile.yml). The formatter runs over every *.py in
+# the repo; the linter is deliberately scoped to first-party scripts so that
+# acceptance fixtures and golden outputs are not linted.
+#
+# The enabled set is intentionally conservative: rules that overlap with the
+# formatter (line length, trailing whitespace/commas) or require a large
+# stylistic migration (pep8-naming, pyupgrade, pathlib, simplify, ...) are
+# left out and tracked separately for a follow-up. See the rule groups marked
+# below and the suggestions doc for what is deferred.
+[lint]
+select = [
+    "E4",   # pycodestyle: import formatting (E501 line-length is left to the formatter)
+    "E7",   # pycodestyle: statement errors (e.g. `== None`, type comparisons)
+    "E9",   # pycodestyle: syntax / runtime errors
+    "F",    # pyflakes: undefined names, unused imports/variables, f-strings
+    "I",    # isort: import ordering
+    "B",    # flake8-bugbear: likely bugs (mutable defaults, zip without strict, ...)
+    "C4",   # flake8-comprehensions: simpler/clearer comprehensions
+    "PIE",  # flake8-pie: misc lints (unnecessary placeholders, dict literals, ...)
+    "FLY",  # flynt: prefer f-strings over str.join on literals
+    "FURB", # refurb: modernizations that don't change the target Python version
+    "LOG",  # flake8-logging: logging API misuse
+    "ISC",  # flake8-implicit-str-concat
+    "RUF",  # ruff-specific rules (RUF022 sorts __all__, RUF100 flags stale noqa, ...)
+]
+
+ignore = [
+    # ISC001/ISC002 are handled by the formatter; enabling them as lint rules
+    # conflicts with `ruff format`.
+    "ISC001",
+    "ISC002",
+    # The generated SDK docstrings carry non-ASCII characters copied verbatim
+    # from the OpenAPI spec; flagging them as ambiguous is a false positive.
+    "RUF001",
+    "RUF002",
+    "RUF003",
+]
+
+[lint.per-file-ignores]
+# dbutils and spark are injected into the global namespace by the Databricks
+# runtime where this bootstrap script executes; they are never imported.
+"experimental/ssh/internal/client/ssh-server-bootstrap.py" = ["F821"]

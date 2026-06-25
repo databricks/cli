@@ -4,7 +4,6 @@ from enum import Enum
 from typing import Optional
 
 import pytest
-
 from databricks.bundles.core import (
     Variable,
     VariableOr,

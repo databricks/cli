@@ -2,11 +2,11 @@
 # /// script
 # requires-python = ">=3.12"
 # ///
+import glob
 import os
 import re
-import sys
-import glob
 import subprocess
+import sys
 
 
 def load_ignores():

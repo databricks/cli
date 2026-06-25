@@ -18,11 +18,7 @@ __all__ = [
 ]
 
 
-from databricks.bundles.schemas._models.lifecycle import (
-    Lifecycle,
-    LifecycleDict,
-    LifecycleParam,
-)
+from databricks.bundles.schemas._models.lifecycle import Lifecycle, LifecycleDict, LifecycleParam
 from databricks.bundles.schemas._models.privilege import Privilege, PrivilegeParam
 from databricks.bundles.schemas._models.privilege_assignment import (
     PrivilegeAssignment,

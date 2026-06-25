@@ -3,24 +3,11 @@ from typing import TYPE_CHECKING, TypedDict
 
 from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
-from databricks.bundles.core._variable import (
-    VariableOr,
-    VariableOrDict,
-    VariableOrOptional,
-)
-from databricks.bundles.jobs._models.sql_task_alert import (
-    SqlTaskAlert,
-    SqlTaskAlertParam,
-)
-from databricks.bundles.jobs._models.sql_task_dashboard import (
-    SqlTaskDashboard,
-    SqlTaskDashboardParam,
-)
+from databricks.bundles.core._variable import VariableOr, VariableOrDict, VariableOrOptional
+from databricks.bundles.jobs._models.sql_task_alert import SqlTaskAlert, SqlTaskAlertParam
+from databricks.bundles.jobs._models.sql_task_dashboard import SqlTaskDashboard, SqlTaskDashboardParam
 from databricks.bundles.jobs._models.sql_task_file import SqlTaskFile, SqlTaskFileParam
-from databricks.bundles.jobs._models.sql_task_query import (
-    SqlTaskQuery,
-    SqlTaskQueryParam,
-)
+from databricks.bundles.jobs._models.sql_task_query import SqlTaskQuery, SqlTaskQueryParam
 
 if TYPE_CHECKING:
     from typing_extensions import Self
