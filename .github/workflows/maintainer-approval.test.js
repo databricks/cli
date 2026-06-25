@@ -158,6 +158,22 @@ describe("maintainer-approval", () => {
     assert.equal(github._updatedComments.length, 0);
   });
 
+  it("maintainer approval is ignored after same reviewer requests changes", async () => {
+    const github = makeGithub({
+      reviews: [
+        { state: "APPROVED", user: { login: "maintainer1" } },
+        { state: "CHANGES_REQUESTED", user: { login: "maintainer1" } },
+      ],
+      files: [{ filename: "cmd/pipelines/foo.go" }],
+    });
+    const core = makeCore();
+    const context = makeContext();
+
+    await runModule({ github, context, core });
+
+    assert.equal(github._checkRuns.length, 0);
+  });
+
   it("approval cleans up stale pending comment", async () => {
     const github = makeGithub({
       reviews: [
@@ -198,6 +214,22 @@ describe("maintainer-approval", () => {
     assert.equal(github._updatedComments.length, 0);
   });
 
+  it("maintainer-authored PR ignores stale approval after changes requested", async () => {
+    const github = makeGithub({
+      reviews: [
+        { state: "APPROVED", user: { login: "randomreviewer" } },
+        { state: "CHANGES_REQUESTED", user: { login: "randomreviewer" } },
+      ],
+      files: [{ filename: "cmd/pipelines/foo.go" }],
+    });
+    const core = makeCore();
+    const context = makeContext({ author: "maintainer1" });
+
+    await runModule({ github, context, core });
+
+    assert.equal(github._checkRuns.length, 0);
+  });
+
   it("single domain, owner approved -> success, no comment", async () => {
     const github = makeGithub({
       reviews: [
@@ -217,6 +249,22 @@ describe("maintainer-approval", () => {
     assert.equal(github._checkRuns[0].conclusion, "success");
     assert.equal(github._comments.length, 0);
     assert.equal(github._updatedComments.length, 0);
+  });
+
+  it("per-path approval ignores stale approval after owner requests changes", async () => {
+    const github = makeGithub({
+      reviews: [
+        { state: "APPROVED", user: { login: "jefferycheng1" } },
+        { state: "CHANGES_REQUESTED", user: { login: "jefferycheng1" } },
+      ],
+      files: [{ filename: "cmd/pipelines/foo.go" }],
+    });
+    const core = makeCore();
+    const context = makeContext();
+
+    await runModule({ github, context, core });
+
+    assert.equal(github._checkRuns.length, 0);
   });
 
   it("cross-domain, both approved -> success, no comment", async () => {
