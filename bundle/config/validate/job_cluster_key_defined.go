@@ -7,6 +7,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/logdiag"
 )
 
 func JobClusterKeyDefined() bundle.ReadOnlyMutator {
@@ -19,9 +20,7 @@ func (v *jobClusterKeyDefined) Name() string {
 	return "validate:job_cluster_key_defined"
 }
 
-func (v *jobClusterKeyDefined) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	diags := diag.Diagnostics{}
-
+func (v *jobClusterKeyDefined) Apply(ctx context.Context, b *bundle.Bundle) error {
 	for k, job := range b.Config.Resources.Jobs {
 		jobClusterKeys := make(map[string]bool)
 		for _, cluster := range job.JobClusters {
@@ -35,7 +34,7 @@ func (v *jobClusterKeyDefined) Apply(ctx context.Context, b *bundle.Bundle) diag
 				if _, ok := jobClusterKeys[task.JobClusterKey]; !ok {
 					path := fmt.Sprintf("resources.jobs.%s.tasks[%d].job_cluster_key", k, index)
 
-					diags = diags.Append(diag.Diagnostic{
+					logdiag.LogDiag(ctx, diag.Diagnostic{
 						Severity: diag.Warning,
 						Summary:  fmt.Sprintf("job_cluster_key %s is not defined", task.JobClusterKey),
 						// Show only the location where the job_cluster_key is defined.
@@ -49,5 +48,5 @@ func (v *jobClusterKeyDefined) Apply(ctx context.Context, b *bundle.Bundle) diag
 		}
 	}
 
-	return diags
+	return nil
 }

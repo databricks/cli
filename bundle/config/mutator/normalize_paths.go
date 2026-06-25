@@ -13,7 +13,6 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/mutator/paths"
 	"github.com/databricks/cli/bundle/libraries"
-	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 )
 
@@ -39,7 +38,7 @@ func NormalizePaths() bundle.Mutator {
 	return &normalizePaths{}
 }
 
-func (a normalizePaths) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (a normalizePaths) Apply(_ context.Context, b *bundle.Bundle) error {
 	// Do not normalize job task paths if using git source
 	gitSourcePaths := collectGitSourcePaths(b)
 
@@ -63,10 +62,10 @@ func (a normalizePaths) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnost
 		})
 	})
 	if err != nil {
-		return diag.FromErr(fmt.Errorf("failed to normalize paths: %w", err))
+		return fmt.Errorf("failed to normalize paths: %w", err)
 	}
 
-	return diag.FromErr(err)
+	return err
 }
 
 func collectGitSourcePaths(b *bundle.Bundle) []dyn.Path {

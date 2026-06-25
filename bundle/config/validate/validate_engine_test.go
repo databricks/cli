@@ -22,7 +22,7 @@ func TestValidateEngineValid(t *testing.T) {
 			},
 		}
 		bundletest.SetLocation(b, "bundle.engine", []dyn.Location{{File: "databricks.yml", Line: 5, Column: 3}})
-		diags := ValidateEngine().Apply(t.Context(), b)
+		diags := bundle.Apply(t.Context(), b, ValidateEngine())
 		assert.Empty(t, diags)
 	}
 }
@@ -31,7 +31,7 @@ func TestValidateEngineNotSet(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{},
 	}
-	diags := ValidateEngine().Apply(t.Context(), b)
+	diags := bundle.Apply(t.Context(), b, ValidateEngine())
 	assert.Empty(t, diags)
 }
 
@@ -44,7 +44,7 @@ func TestValidateEngineInvalid(t *testing.T) {
 		},
 	}
 	bundletest.SetLocation(b, "bundle.engine", []dyn.Location{{File: "databricks.yml", Line: 5, Column: 3}})
-	diags := ValidateEngine().Apply(t.Context(), b)
+	diags := bundle.Apply(t.Context(), b, ValidateEngine())
 	assert.Len(t, diags, 1)
 	assert.Equal(t, diag.Error, diags[0].Severity)
 	assert.Contains(t, diags[0].Summary, "invalid")

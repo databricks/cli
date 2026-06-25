@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 )
 
@@ -18,7 +17,7 @@ func (m *annotatePipelines) Name() string {
 	return "metadata.AnnotatePipelines"
 }
 
-func (m *annotatePipelines) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (m *annotatePipelines) Apply(_ context.Context, b *bundle.Bundle) error {
 	for _, pipeline := range b.Config.Resources.Pipelines {
 		pipeline.Deployment = &pipelines.PipelineDeployment{
 			Kind:             pipelines.DeploymentKindBundle,

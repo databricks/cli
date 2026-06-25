@@ -7,7 +7,6 @@ import (
 	"path"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/filer"
 )
 
@@ -27,16 +26,16 @@ func (m *upload) Name() string {
 	return "metadata.Upload"
 }
 
-func (m *upload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (m *upload) Apply(ctx context.Context, b *bundle.Bundle) error {
 	f, err := filer.NewWorkspaceFilesClient(b.WorkspaceClient(ctx), b.Config.Workspace.StatePath)
 	if err != nil {
-		return diag.FromErr(err)
+		return err
 	}
 
 	metadata, err := json.MarshalIndent(b.Metadata, "", "  ")
 	if err != nil {
-		return diag.FromErr(err)
+		return err
 	}
 
-	return diag.FromErr(f.Write(ctx, metadataFileName, bytes.NewReader(metadata), filer.CreateParentDirectories, filer.OverwriteIfExists))
+	return f.Write(ctx, metadataFileName, bytes.NewReader(metadata), filer.CreateParentDirectories, filer.OverwriteIfExists)
 }

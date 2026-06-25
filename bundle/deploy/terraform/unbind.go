@@ -14,10 +14,9 @@ type unbind struct {
 	resourceKey    string
 }
 
-func (m *unbind) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	diags := Initialize(ctx, b)
-	if diags.HasError() {
-		return diags
+func (m *unbind) Apply(ctx context.Context, b *bundle.Bundle) error {
+	if err := Initialize(ctx, b); err != nil {
+		return err
 	}
 	tf := b.Terraform
 

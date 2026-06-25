@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/iamutil"
+	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/set"
 )
 
@@ -29,7 +30,7 @@ func (m *permissionDiagnostics) Name() string {
 	return "CheckPermissions"
 }
 
-func (m *permissionDiagnostics) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (m *permissionDiagnostics) Apply(ctx context.Context, b *bundle.Bundle) error {
 	if len(b.Config.Permissions) == 0 {
 		// Only warn if there is an explicit top-level permissions section
 		return nil
@@ -46,7 +47,7 @@ func (m *permissionDiagnostics) Apply(ctx context.Context, b *bundle.Bundle) dia
 		identityType = "service_principal_name"
 	}
 
-	return diag.Diagnostics{{
+	logdiag.LogDiag(ctx, diag.Diagnostic{
 		Severity: diag.Recommendation,
 		Summary: fmt.Sprintf("permissions section should explicitly include the current deployment identity '%s' or one of its groups\n"+
 			"If it is not included, CAN_MANAGE permissions are only applied if the present identity is used to deploy.\n\n"+
@@ -61,7 +62,8 @@ func (m *permissionDiagnostics) Apply(ctx context.Context, b *bundle.Bundle) dia
 		),
 		Locations: []dyn.Location{b.Config.GetLocation("permissions")},
 		ID:        diag.PermissionNotIncluded,
-	}}
+	})
+	return nil
 }
 
 // analyzeBundlePermissions analyzes the top-level permissions of the bundle.

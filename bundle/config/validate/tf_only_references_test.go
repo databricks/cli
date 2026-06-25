@@ -38,7 +38,7 @@ func TestTFOnlyReferences_DirectError(t *testing.T) {
 	})
 
 	ctx := env.Set(t.Context(), engine.EnvVar, "direct")
-	diags := TFOnlyReferences().Apply(ctx, b)
+	diags := bundle.Apply(ctx, b, TFOnlyReferences())
 	require.Len(t, diags, 1)
 	assert.Equal(t, diag.Error, diags[0].Severity)
 	assert.Contains(t, diags[0].Summary, "resources.jobs.src.always_running")
@@ -52,7 +52,7 @@ func TestTFOnlyReferences_TerraformWarning(t *testing.T) {
 	})
 
 	ctx := env.Set(t.Context(), engine.EnvVar, "terraform")
-	diags := TFOnlyReferences().Apply(ctx, b)
+	diags := bundle.Apply(ctx, b, TFOnlyReferences())
 	require.Len(t, diags, 1)
 	assert.Equal(t, diag.Warning, diags[0].Severity)
 	assert.Contains(t, diags[0].Summary, "resources.jobs.src.always_running")
@@ -67,7 +67,7 @@ func TestTFOnlyReferences_NormalReference(t *testing.T) {
 	})
 
 	ctx := env.Set(t.Context(), engine.EnvVar, "direct")
-	diags := TFOnlyReferences().Apply(ctx, b)
+	diags := bundle.Apply(ctx, b, TFOnlyReferences())
 	assert.Empty(t, diags)
 }
 
@@ -79,6 +79,6 @@ func TestTFOnlyReferences_RenamedField(t *testing.T) {
 	})
 
 	ctx := env.Set(t.Context(), engine.EnvVar, "direct")
-	diags := TFOnlyReferences().Apply(ctx, b)
+	diags := bundle.Apply(ctx, b, TFOnlyReferences())
 	assert.Empty(t, diags)
 }

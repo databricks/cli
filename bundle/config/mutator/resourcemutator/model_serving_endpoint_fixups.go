@@ -6,6 +6,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go/service/serving"
 )
@@ -42,7 +43,7 @@ func servedModelToServedEntity(model serving.ServedModelInput) serving.ServedEnt
 	}
 }
 
-func (m *modelServingEndpointFixups) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (m *modelServingEndpointFixups) Apply(ctx context.Context, b *bundle.Bundle) error {
 	var diags diag.Diagnostics
 
 	for key, endpoint := range b.Config.Resources.ModelServingEndpoints {
@@ -67,7 +68,7 @@ func (m *modelServingEndpointFixups) Apply(ctx context.Context, b *bundle.Bundle
 		// We perform this translation here so that the deployment plan only has to detect served_entities and can ignore served_models.
 		if len(endpoint.Config.ServedModels) > 0 {
 			// Add warning recommending served_entities
-			diags = diags.Append(diag.Diagnostic{
+			logdiag.LogDiag(ctx, diag.Diagnostic{
 				Severity: diag.Warning,
 				Summary:  "Using served_models is deprecated",
 				Detail:   "The served_models field is deprecated. Please use served_entities instead.",
@@ -85,5 +86,5 @@ func (m *modelServingEndpointFixups) Apply(ctx context.Context, b *bundle.Bundle
 		}
 	}
 
-	return diags
+	return logdiag.Flush(ctx, diags)
 }

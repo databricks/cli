@@ -19,7 +19,6 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structdiff"
 	"github.com/databricks/cli/libs/structs/structpath"
@@ -98,6 +97,7 @@ func (b *DeploymentBundle) InitForApply(ctx context.Context, client *databricks.
 // StateDB must already be open for read before calling this function.
 func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root) (*deployplan.Plan, error) {
 	b.StateDB.AssertOpenedForRead()
+	b.deployErrs.reset()
 
 	err := b.init(client)
 	if err != nil {
@@ -128,12 +128,12 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 
 		entry, err := plan.WriteLockEntry(resourceKey)
 		if err != nil {
-			logdiag.LogError(ctx, fmt.Errorf("%s: internal error: %w", errorPrefix, err))
+			b.deployErrs.add(fmt.Errorf("%s: internal error: %w", errorPrefix, err))
 			return false
 		}
 
 		if entry == nil {
-			logdiag.LogError(ctx, fmt.Errorf("%s: internal error: node not in graph", errorPrefix))
+			b.deployErrs.add(fmt.Errorf("%s: internal error: node not in graph", errorPrefix))
 			return false
 		}
 
@@ -141,20 +141,20 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 
 		if failedDependency != nil {
 			// TODO: this should be a warning
-			logdiag.LogError(ctx, fmt.Errorf("%s: dependency failed: %s", errorPrefix, *failedDependency))
+			b.deployErrs.add(fmt.Errorf("%s: dependency failed: %s", errorPrefix, *failedDependency))
 			return false
 		}
 
 		adapter, err := b.getAdapterForKey(resourceKey)
 		if err != nil {
-			logdiag.LogError(ctx, fmt.Errorf("%s: getting adapter: %w", errorPrefix, err))
+			b.deployErrs.add(fmt.Errorf("%s: getting adapter: %w", errorPrefix, err))
 			return false
 		}
 
 		if entry.Action == deployplan.Delete {
 			id := b.StateDB.GetResourceID(resourceKey)
 			if id == "" {
-				logdiag.LogError(ctx, fmt.Errorf("%s: internal error, missing in state", errorPrefix))
+				b.deployErrs.add(fmt.Errorf("%s: internal error, missing in state", errorPrefix))
 				return false
 			}
 
@@ -194,7 +194,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 
 		savedState, err := parseState(adapter.StateType(), dbentry.State)
 		if err != nil {
-			logdiag.LogError(ctx, fmt.Errorf("%s: interpreting state: %w", errorPrefix, err))
+			b.deployErrs.add(fmt.Errorf("%s: interpreting state: %w", errorPrefix, err))
 			return false
 		}
 
@@ -206,12 +206,12 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		// This means distinguishing between 0 that are actually object ids and 0 that are there because typed struct integer cannot contain ${...} string.
 		sv, ok := b.StateCache.Load(resourceKey)
 		if !ok {
-			logdiag.LogError(ctx, fmt.Errorf("%s: internal error: no state cache entry found for %q", errorPrefix, resourceKey))
+			b.deployErrs.add(fmt.Errorf("%s: internal error: no state cache entry found for %q", errorPrefix, resourceKey))
 			return false
 		}
 		localDiff, err := structdiff.GetStructDiff(savedState, sv.Value, adapter.KeyedSlices())
 		if err != nil {
-			logdiag.LogError(ctx, fmt.Errorf("%s: diffing local state: %w", errorPrefix, err))
+			b.deployErrs.add(fmt.Errorf("%s: diffing local state: %w", errorPrefix, err))
 			return false
 		}
 
@@ -222,7 +222,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			if apierr.IsMissing(err) {
 				remoteState = nil
 			} else {
-				logdiag.LogError(ctx, fmt.Errorf("%s: reading id=%q: %w", errorPrefix, dbentry.ID, err))
+				b.deployErrs.add(fmt.Errorf("%s: reading id=%q: %w", errorPrefix, dbentry.ID, err))
 				return false
 			}
 		}
@@ -238,26 +238,26 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		if remoteState != nil {
 			remoteStateComparable, err = adapter.RemapState(remoteState)
 			if err != nil {
-				logdiag.LogError(ctx, fmt.Errorf("%s: interpreting remote state id=%q: %w", errorPrefix, dbentry.ID, err))
+				b.deployErrs.add(fmt.Errorf("%s: interpreting remote state id=%q: %w", errorPrefix, dbentry.ID, err))
 				return false
 			}
 
 			remoteDiff, err = structdiff.GetStructDiff(remoteStateComparable, sv.Value, adapter.KeyedSlices())
 			if err != nil {
-				logdiag.LogError(ctx, fmt.Errorf("%s: diffing remote state: %w", errorPrefix, err))
+				b.deployErrs.add(fmt.Errorf("%s: diffing remote state: %w", errorPrefix, err))
 				return false
 			}
 		}
 
 		entry.Changes, err = prepareChanges(ctx, adapter, localDiff, remoteDiff, savedState, remoteStateComparable)
 		if err != nil {
-			logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
+			b.deployErrs.add(fmt.Errorf("%s: %w", errorPrefix, err))
 			return false
 		}
 
 		err = addPerFieldActions(ctx, adapter, entry.Changes, remoteState)
 		if err != nil {
-			logdiag.LogError(ctx, fmt.Errorf("%s: classifying changes: %w", errorPrefix, err))
+			b.deployErrs.add(fmt.Errorf("%s: classifying changes: %w", errorPrefix, err))
 			return false
 		}
 
@@ -275,7 +275,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 
 		// Validate that resources without DoUpdate don't have update actions
 		if action == deployplan.Update && !adapter.HasDoUpdate() {
-			logdiag.LogError(ctx, fmt.Errorf("%s: resource does not support update action but plan produced update", errorPrefix))
+			b.deployErrs.add(fmt.Errorf("%s: resource does not support update action but plan produced update", errorPrefix))
 			return false
 		}
 
@@ -283,8 +283,8 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		return true
 	})
 
-	if logdiag.HasError(ctx) {
-		return nil, errors.New("planning failed")
+	if err := b.deployErrs.join(); err != nil {
+		return nil, err
 	}
 
 	for _, entry := range plan.Plan {
@@ -778,7 +778,7 @@ func (b *DeploymentBundle) LookupReferencePreDeploy(ctx context.Context, path *s
 func (b *DeploymentBundle) resolveReferences(ctx context.Context, resourceKey string, entry *deployplan.PlanEntry, errorPrefix string, isPreDeploy bool) bool {
 	sv, ok := b.StateCache.Load(resourceKey)
 	if !ok {
-		logdiag.LogError(ctx, fmt.Errorf("%s: internal error: no cache entry found for %q", errorPrefix, resourceKey))
+		b.deployErrs.add(fmt.Errorf("%s: internal error: no cache entry found for %q", errorPrefix, resourceKey))
 		return false
 	}
 
@@ -786,7 +786,7 @@ func (b *DeploymentBundle) resolveReferences(ctx context.Context, resourceKey st
 	for fieldPathStr, refString := range sv.Refs {
 		refs, ok := dynvar.NewRef(dyn.V(refString))
 		if !ok {
-			logdiag.LogError(ctx, fmt.Errorf("%s: cannot parse %q", errorPrefix, refString))
+			b.deployErrs.add(fmt.Errorf("%s: cannot parse %q", errorPrefix, refString))
 			return false
 		}
 
@@ -804,7 +804,7 @@ func (b *DeploymentBundle) resolveReferences(ctx context.Context, resourceKey st
 			ref := "${" + pathString + "}"
 			targetPath, err := structpath.ParsePath(pathString)
 			if err != nil {
-				logdiag.LogError(ctx, fmt.Errorf("%s: cannot parse reference %q: %w", errorPrefix, ref, err))
+				b.deployErrs.add(fmt.Errorf("%s: cannot parse reference %q: %w", errorPrefix, ref, err))
 				return false
 			}
 
@@ -815,20 +815,20 @@ func (b *DeploymentBundle) resolveReferences(ctx context.Context, resourceKey st
 					if errors.Is(err, errDelayed) {
 						continue
 					}
-					logdiag.LogError(ctx, fmt.Errorf("%s: cannot resolve %q: %w", errorPrefix, ref, err))
+					b.deployErrs.add(fmt.Errorf("%s: cannot resolve %q: %w", errorPrefix, ref, err))
 					return false
 				}
 			} else {
 				value, err = b.LookupReferencePostDeploy(ctx, targetPath)
 				if err != nil {
-					logdiag.LogError(ctx, fmt.Errorf("%s: cannot resolve %q: %w", errorPrefix, ref, err))
+					b.deployErrs.add(fmt.Errorf("%s: cannot resolve %q: %w", errorPrefix, ref, err))
 					return false
 				}
 			}
 
 			err = sv.ResolveRef(ref, value)
 			if err != nil {
-				logdiag.LogError(ctx, fmt.Errorf("%s: cannot update %s with value of %q: %w", errorPrefix, fieldPathStr, ref, err))
+				b.deployErrs.add(fmt.Errorf("%s: cannot update %s with value of %q: %w", errorPrefix, fieldPathStr, ref, err))
 				return false
 			}
 			resolved = true
@@ -838,7 +838,7 @@ func (b *DeploymentBundle) resolveReferences(ctx context.Context, resourceKey st
 	// Sync resolved values back to StructVarJSON for serialization
 	if resolved {
 		if err := sv.SyncToJSON(entry.NewState); err != nil {
-			logdiag.LogError(ctx, fmt.Errorf("%s: cannot save state: %w", errorPrefix, err))
+			b.deployErrs.add(fmt.Errorf("%s: cannot save state: %w", errorPrefix, err))
 			return false
 		}
 	}

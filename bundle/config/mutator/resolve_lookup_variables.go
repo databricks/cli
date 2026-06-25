@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
 	"golang.org/x/sync/errgroup"
 )
@@ -16,7 +15,7 @@ func ResolveLookupVariables() bundle.Mutator {
 	return &resolveLookupVariables{}
 }
 
-func (m *resolveLookupVariables) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (m *resolveLookupVariables) Apply(ctx context.Context, b *bundle.Bundle) error {
 	errs, errCtx := errgroup.WithContext(ctx)
 
 	for k := range b.Config.Variables {
@@ -41,7 +40,7 @@ func (m *resolveLookupVariables) Apply(ctx context.Context, b *bundle.Bundle) di
 	}
 
 	// Note, diags are lost from all goroutines except the first one to return diag
-	return diag.FromErr(errs.Wait())
+	return errs.Wait()
 }
 
 func (*resolveLookupVariables) Name() string {

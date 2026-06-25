@@ -12,7 +12,6 @@ import (
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/logdiag"
 	"github.com/spf13/cobra"
 )
 
@@ -58,9 +57,8 @@ func deployCommand() *cobra.Command {
 		}
 		ctx := cmd.Context()
 
-		bundle.ApplyContext(ctx, b, mutator.InitializeURLs())
-		if logdiag.HasError(ctx) {
-			return root.ErrAlreadyPrinted
+		if err := bundle.ApplyContext(ctx, b, mutator.InitializeURLs()); err != nil {
+			return root.RenderAndReturnError(ctx, err)
 		}
 
 		for _, group := range b.Config.Resources.AllResources() {

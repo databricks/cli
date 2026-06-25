@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 )
 
@@ -26,7 +25,7 @@ var skipPrefixes = []string{
 	"/Volumes/",
 }
 
-func (m *prependWorkspacePrefix) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (m *prependWorkspacePrefix) Apply(ctx context.Context, b *bundle.Bundle) error {
 	patterns := []dyn.Pattern{
 		dyn.NewPattern(dyn.Key("workspace"), dyn.Key("root_path")),
 		dyn.NewPattern(dyn.Key("workspace"), dyn.Key("file_path")),
@@ -65,7 +64,7 @@ func (m *prependWorkspacePrefix) Apply(ctx context.Context, b *bundle.Bundle) di
 		return v, nil
 	})
 	if err != nil {
-		return diag.FromErr(err)
+		return err
 	}
 
 	return nil

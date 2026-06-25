@@ -80,6 +80,7 @@ func (t *translateContext) applyJobTranslations(visitor visitFunc, allowOutsideS
 						Summary:   fmt.Sprintf("path %s is defined relative to the %s directory (%s). Please update the path to be relative to the file where it is defined or use earlier version of CLI (0.261.0 or earlier).", originalPath, fallback[key], v.Location()),
 						Locations: v.Locations(),
 					})
+					t.errorLogged = true
 					return nv, nil
 				}
 			}

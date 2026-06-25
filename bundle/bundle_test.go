@@ -22,8 +22,11 @@ import (
 func mustLoad(t *testing.T) (*Bundle, []diag.Diagnostic) {
 	ctx := logdiag.InitContext(t.Context())
 	logdiag.SetCollect(ctx, true)
-	b := MustLoad(ctx)
+	b, err := MustLoad(ctx)
 	diags := logdiag.FlushCollected(ctx)
+	if err != nil {
+		diags = append(diags, diag.DiagnosticFromError(err))
+	}
 	return b, diags
 }
 
@@ -31,8 +34,11 @@ func mustLoad(t *testing.T) (*Bundle, []diag.Diagnostic) {
 func tryLoad(t *testing.T) (*Bundle, []diag.Diagnostic) {
 	ctx := logdiag.InitContext(t.Context())
 	logdiag.SetCollect(ctx, true)
-	b := TryLoad(ctx)
+	b, err := TryLoad(ctx)
 	diags := logdiag.FlushCollected(ctx)
+	if err != nil {
+		diags = append(diags, diag.DiagnosticFromError(err))
+	}
 	return b, diags
 }
 

@@ -7,6 +7,7 @@ import (
 	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/logdiag"
 )
 
 type validateLifecycleStarted struct {
@@ -24,7 +25,7 @@ func (m *validateLifecycleStarted) Name() string {
 	return "ValidateLifecycleStarted"
 }
 
-func (m *validateLifecycleStarted) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (m *validateLifecycleStarted) Apply(ctx context.Context, b *bundle.Bundle) error {
 	if m.engine.IsDirect() {
 		return nil
 	}
@@ -44,5 +45,5 @@ func (m *validateLifecycleStarted) Apply(_ context.Context, b *bundle.Bundle) di
 			})
 		}
 	}
-	return diags
+	return logdiag.Flush(ctx, diags)
 }

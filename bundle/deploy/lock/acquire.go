@@ -7,7 +7,6 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/permissions"
-	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/locker"
 	"github.com/databricks/cli/libs/log"
 )
@@ -34,7 +33,7 @@ func (m *acquire) init(ctx context.Context, b *bundle.Bundle) error {
 	return nil
 }
 
-func (m *acquire) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (m *acquire) Apply(ctx context.Context, b *bundle.Bundle) error {
 	// Return early if locking is disabled.
 	if !b.Config.Bundle.Deployment.Lock.IsEnabled() {
 		log.Infof(ctx, "Skipping; locking is disabled")
@@ -43,7 +42,7 @@ func (m *acquire) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 
 	err := m.init(ctx, b)
 	if err != nil {
-		return diag.FromErr(err)
+		return err
 	}
 
 	force := b.Config.Bundle.Deployment.Lock.Force
@@ -62,7 +61,7 @@ func (m *acquire) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 			return permissions.ReportPossiblePermissionDenied(ctx, b, b.Config.Workspace.StatePath)
 		}
 
-		return diag.FromErr(err)
+		return err
 	}
 
 	return nil

@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/bundle/internal/validation/generated"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/logdiag"
 )
 
 type required struct{}
@@ -23,7 +24,7 @@ func (f *required) Name() string {
 }
 
 // Warn for missing fields, based on annotations in the Go SDK / OpenAPI spec.
-func warnForMissingFields(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func warnForMissingFields(ctx context.Context, b *bundle.Bundle) error {
 	diags := diag.Diagnostics{}
 
 	// Generate prefix tree for all required fields.
@@ -31,12 +32,12 @@ func warnForMissingFields(ctx context.Context, b *bundle.Bundle) diag.Diagnostic
 	for k := range generated.RequiredFields {
 		pattern, err := dyn.NewPatternFromString(k)
 		if err != nil {
-			return diag.FromErr(fmt.Errorf("invalid pattern %q for required field validation: %w", k, err))
+			return fmt.Errorf("invalid pattern %q for required field validation: %w", k, err)
 		}
 
 		err = trie.Insert(pattern)
 		if err != nil {
-			return diag.FromErr(fmt.Errorf("failed to insert pattern %q into trie: %w", k, err))
+			return fmt.Errorf("failed to insert pattern %q into trie: %w", k, err)
 		}
 	}
 
@@ -65,7 +66,7 @@ func warnForMissingFields(ctx context.Context, b *bundle.Bundle) diag.Diagnostic
 		return nil
 	})
 	if err != nil {
-		return diag.FromErr(err)
+		return err
 	}
 
 	// Sort diagnostics to make them deterministic
@@ -79,18 +80,21 @@ func warnForMissingFields(ctx context.Context, b *bundle.Bundle) diag.Diagnostic
 		return cmp.Compare(fmt.Sprintf("%v", a.Locations), fmt.Sprintf("%v", b.Locations))
 	})
 
-	return diags
+	for _, d := range diags {
+		logdiag.LogDiag(ctx, d)
+	}
+
+	return nil
 }
 
 // Bespoke code to error for fields that are not marked as required in the Go SDK / OpenAPI spec.
-func errorForMissingFields(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func errorForMissingFields(ctx context.Context, b *bundle.Bundle) error {
 	// Dashboards should always have a name and warehouse_id.
 	var nameLocations []dyn.Location
 	var namePaths []dyn.Path
 	var warehouseIdLocations []dyn.Location
 	var warehouseIdPaths []dyn.Path
 
-	diags := diag.Diagnostics{}
 	for key, dashboard := range b.Config.Resources.Dashboards {
 		if dashboard.DisplayName == "" {
 			nameLocations = append(nameLocations, b.Config.GetLocations("resources.dashboards."+key)...)
@@ -102,6 +106,7 @@ func errorForMissingFields(ctx context.Context, b *bundle.Bundle) diag.Diagnosti
 		}
 	}
 
+	var diags diag.Diagnostics
 	if len(nameLocations) > 0 {
 		diags = diags.Append(diag.Diagnostic{
 			Severity:  diag.Error,
@@ -119,14 +124,12 @@ func errorForMissingFields(ctx context.Context, b *bundle.Bundle) diag.Diagnosti
 		})
 	}
 
-	return diags
+	return logdiag.Flush(ctx, diags)
 }
 
-func (f *required) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	diags := errorForMissingFields(ctx, b)
-	if diags.HasError() {
-		return diags
+func (f *required) Apply(ctx context.Context, b *bundle.Bundle) error {
+	if err := errorForMissingFields(ctx, b); err != nil {
+		return err
 	}
-	diags = diags.Extend(warnForMissingFields(ctx, b))
-	return diags
+	return warnForMissingFields(ctx, b)
 }

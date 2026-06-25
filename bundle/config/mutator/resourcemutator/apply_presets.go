@@ -36,11 +36,9 @@ func (m *applyPresets) Name() string {
 	return "ApplyPresets"
 }
 
-func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	var diags diag.Diagnostics
-
-	if d := validatePauseStatus(b); d != nil {
-		diags = diags.Extend(d)
+func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) error {
+	if err := validatePauseStatus(b); err != nil {
+		return err
 	}
 
 	r := b.Config.Resources
@@ -310,19 +308,19 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 	// it as the deployment id), so prefixing would change the resource's
 	// identity rather than just its display name.
 
-	return diags
+	return nil
 }
 
-func validatePauseStatus(b *bundle.Bundle) diag.Diagnostics {
+func validatePauseStatus(b *bundle.Bundle) error {
 	p := b.Config.Presets.TriggerPauseStatus
 	if p == "" || p == config.Paused || p == config.Unpaused {
 		return nil
 	}
-	return diag.Diagnostics{{
+	return diag.Diagnostic{
 		Summary:   "Invalid value for trigger_pause_status, should be PAUSED or UNPAUSED",
 		Severity:  diag.Error,
 		Locations: []dyn.Location{b.Config.GetLocation("presets.trigger_pause_status")},
-	}}
+	}
 }
 
 // toTagArray converts a map of tags to an array of tags.

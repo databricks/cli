@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/logdiag"
 )
 
 // Validates that any single node clusters defined in the bundle are correctly configured.
@@ -105,9 +106,7 @@ func showSingleNodeClusterWarning(ctx context.Context, v dyn.Value) bool {
 	return false
 }
 
-func (m *singleNodeCluster) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	diags := diag.Diagnostics{}
-
+func (m *singleNodeCluster) Apply(ctx context.Context, b *bundle.Bundle) error {
 	patterns := []dyn.Pattern{
 		// Interactive clusters
 		dyn.NewPattern(dyn.Key("resources"), dyn.Key("clusters"), dyn.AnyKey()),
@@ -132,7 +131,7 @@ func (m *singleNodeCluster) Apply(ctx context.Context, b *bundle.Bundle) diag.Di
 			}
 
 			if showSingleNodeClusterWarning(ctx, v) {
-				diags = append(diags, warning)
+				logdiag.LogDiag(ctx, warning)
 			}
 			return v, nil
 		})
@@ -140,5 +139,5 @@ func (m *singleNodeCluster) Apply(ctx context.Context, b *bundle.Bundle) diag.Di
 			log.Debugf(ctx, "Error while applying single node cluster validation: %s", err)
 		}
 	}
-	return diags
+	return nil
 }

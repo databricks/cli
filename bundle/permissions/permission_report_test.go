@@ -18,7 +18,7 @@ func TestPermissionsReportPermissionDeniedWithGroup(t *testing.T) {
 		"For assistance, contact the owners of this project.\n" +
 		"They can redeploy the project to apply the latest set of permissions.\n" +
 		"Please refer to https://docs.databricks.com/dev-tools/bundles/permissions.html for more on managing permissions."
-	require.ErrorContains(t, diags.Error(), expected)
+	require.ErrorContains(t, diags, expected)
 }
 
 func TestPermissionsReportPermissionDeniedWithOtherGroup(t *testing.T) {
@@ -32,7 +32,7 @@ func TestPermissionsReportPermissionDeniedWithOtherGroup(t *testing.T) {
 		"For assistance, users or groups with appropriate permissions may include: othergroup.\n" +
 		"They may need to redeploy the bundle to apply the new permissions.\n" +
 		"Please refer to https://docs.databricks.com/dev-tools/bundles/permissions.html for more on managing permissions."
-	require.ErrorContains(t, diags.Error(), expected)
+	require.ErrorContains(t, diags, expected)
 }
 
 func TestPermissionsReportPermissionDeniedWithoutPermission(t *testing.T) {
@@ -46,7 +46,7 @@ func TestPermissionsReportPermissionDeniedWithoutPermission(t *testing.T) {
 		"For assistance, contact the owners of this project.\n" +
 		"They may need to redeploy the bundle to apply the new permissions.\n" +
 		"Please refer to https://docs.databricks.com/dev-tools/bundles/permissions.html for more on managing permissions."
-	require.ErrorContains(t, diags.Error(), expected)
+	require.ErrorContains(t, diags, expected)
 }
 
 func TestPermissionsReportPermissionDeniedNilPermission(t *testing.T) {
@@ -58,7 +58,7 @@ func TestPermissionsReportPermissionDeniedNilPermission(t *testing.T) {
 		"For assistance, contact the owners of this project.\n" +
 		"They may need to redeploy the bundle to apply the new permissions.\n" +
 		"Please refer to https://docs.databricks.com/dev-tools/bundles/permissions.html for more on managing permissions"
-	require.ErrorContains(t, diags.Error(), expected)
+	require.ErrorContains(t, diags, expected)
 }
 
 func TestPermissionsReportFindOtherOwners(t *testing.T) {
@@ -68,7 +68,7 @@ func TestPermissionsReportFindOtherOwners(t *testing.T) {
 	})
 
 	diags := permissions.ReportPossiblePermissionDenied(t.Context(), b, "testpath")
-	require.ErrorContains(t, diags.Error(), "EPERM3: unable to deploy to testpath as testuser@databricks.com. Cannot apply local deployment permissions.\n"+
+	require.ErrorContains(t, diags, "EPERM3: unable to deploy to testpath as testuser@databricks.com. Cannot apply local deployment permissions.\n"+
 		"For assistance, users or groups with appropriate permissions may include: alice@databricks.com.\n"+
 		"They can redeploy the project to apply the latest set of permissions.\n"+
 		"Please refer to https://docs.databricks.com/dev-tools/bundles/permissions.html for more on managing permissions.")

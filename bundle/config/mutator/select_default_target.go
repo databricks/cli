@@ -21,7 +21,7 @@ func (m *selectDefaultTarget) Name() string {
 	return "SelectDefaultTarget"
 }
 
-func (m *selectDefaultTarget) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (m *selectDefaultTarget) Apply(ctx context.Context, b *bundle.Bundle) error {
 	if len(b.Config.Targets) == 0 {
 		return diag.Errorf("no targets defined")
 	}
@@ -29,8 +29,7 @@ func (m *selectDefaultTarget) Apply(ctx context.Context, b *bundle.Bundle) diag.
 	// One target means there's only one default.
 	names := slices.Collect(maps.Keys(b.Config.Targets))
 	if len(names) == 1 {
-		bundle.ApplyContext(ctx, b, SelectTarget(names[0]))
-		return nil
+		return bundle.ApplyContext(ctx, b, SelectTarget(names[0]))
 	}
 
 	// Multiple targets means we look for the `default` flag.
@@ -52,6 +51,5 @@ func (m *selectDefaultTarget) Apply(ctx context.Context, b *bundle.Bundle) diag.
 	}
 
 	// One default remaining.
-	bundle.ApplyContext(ctx, b, SelectTarget(defaults[0]))
-	return nil
+	return bundle.ApplyContext(ctx, b, SelectTarget(defaults[0]))
 }

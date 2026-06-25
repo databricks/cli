@@ -11,7 +11,6 @@ import (
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/cli/libs/logdiag"
 	"github.com/spf13/cobra"
 )
 
@@ -61,9 +60,9 @@ It is useful for previewing changes before running 'bundle deploy'.`,
 		}
 		ctx := cmd.Context()
 
-		plan := phases.RunPlan(ctx, b, stateDesc.Engine)
-		if logdiag.HasError(ctx) {
-			return root.ErrAlreadyPrinted
+		plan, err := phases.RunPlan(ctx, b, stateDesc.Engine)
+		if err != nil {
+			return root.RenderAndReturnError(ctx, err)
 		}
 
 		// Count actions by type and collect formatted actions
@@ -114,14 +113,7 @@ It is useful for previewing changes before running 'bundle deploy'.`,
 				return err
 			}
 			fmt.Fprintln(out, string(buf))
-			if logdiag.HasError(ctx) {
-				return root.ErrAlreadyPrinted
-			}
 			return nil
-		}
-
-		if logdiag.HasError(ctx) {
-			return root.ErrAlreadyPrinted
 		}
 
 		return nil

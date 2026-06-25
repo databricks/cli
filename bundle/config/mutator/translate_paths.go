@@ -16,8 +16,8 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/notebook"
 )
 
@@ -100,6 +100,11 @@ type translateContext struct {
 	// is still needed to produce fully resolved paths for comparison with remote state,
 	// but local file validation would incorrectly fail.
 	skipLocalFileValidation bool
+
+	// errorLogged is set when a fallback path error was logged via logdiag.
+	// Translation continues so that every offending path is reported, and the
+	// mutator then fails once all translations have run.
+	errorLogged bool
 }
 
 // rewritePath converts a given relative path from the loaded config to a new path based on the passed rewriting function
@@ -319,7 +324,7 @@ func (t *translateContext) rewriteValue(ctx context.Context, p dyn.Path, v dyn.V
 	return dyn.NewValue(out, v.Locations()), nil
 }
 
-func applyTranslations(ctx context.Context, b *bundle.Bundle, t *translateContext, translations []func(context.Context, dyn.Value) (dyn.Value, error)) diag.Diagnostics {
+func applyTranslations(ctx context.Context, b *bundle.Bundle, t *translateContext, translations []func(context.Context, dyn.Value) (dyn.Value, error)) error {
 	// Set the remote root to the sync root if source-linked deployment is enabled.
 	// Otherwise, set it to the workspace file path.
 	if config.IsExplicitlyEnabled(t.b.Config.Presets.SourceLinkedDeployment) {
@@ -339,17 +344,17 @@ func applyTranslations(ctx context.Context, b *bundle.Bundle, t *translateContex
 		return v, nil
 	})
 
-	return diag.FromErr(err)
+	return err
 }
 
-func (m *translatePaths) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (m *translatePaths) Apply(ctx context.Context, b *bundle.Bundle) error {
 	t := &translateContext{
 		b:                       b,
 		seen:                    make(map[seenKey]string),
 		skipLocalFileValidation: b.SkipLocalFileValidation,
 	}
 
-	return applyTranslations(ctx, b, t, []func(context.Context, dyn.Value) (dyn.Value, error){
+	err := applyTranslations(ctx, b, t, []func(context.Context, dyn.Value) (dyn.Value, error){
 		t.applyJobTranslations(paths.VisitJobPaths, false),
 		t.applyJobTranslations(paths.VisitJobLibrariesPaths, true),
 		t.applyPipelineTranslations(paths.VisitPipelinePaths, false),
@@ -357,9 +362,19 @@ func (m *translatePaths) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 		t.applyArtifactTranslations,
 		t.applyAppsTranslations,
 	})
+	if err != nil {
+		return err
+	}
+
+	// Fallback path errors are logged (so every offending path is reported) but
+	// translation continues; fail here once all of them have been surfaced.
+	if t.errorLogged {
+		return logdiag.ErrAlreadyPrinted
+	}
+	return nil
 }
 
-func (m *translatePathsDashboards) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (m *translatePathsDashboards) Apply(ctx context.Context, b *bundle.Bundle) error {
 	t := &translateContext{
 		b:                       b,
 		seen:                    make(map[seenKey]string),

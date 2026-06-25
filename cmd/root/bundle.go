@@ -16,7 +16,6 @@ import (
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	envlib "github.com/databricks/cli/libs/env"
-	"github.com/databricks/cli/libs/logdiag"
 	"github.com/spf13/cobra"
 )
 
@@ -68,7 +67,7 @@ func getProfile(cmd *cobra.Command) (value string) {
 }
 
 // configureProfile applies the profile flag to the bundle.
-func configureProfile(cmd *cobra.Command, b *bundle.Bundle) {
+func configureProfile(cmd *cobra.Command, b *bundle.Bundle) error {
 	profile := getProfile(cmd)
 
 	// Fall back to [__settings__].default_profile only when the bundle does
@@ -83,10 +82,10 @@ func configureProfile(cmd *cobra.Command, b *bundle.Bundle) {
 	}
 
 	if profile == "" {
-		return
+		return nil
 	}
 
-	bundle.ApplyFuncContext(cmd.Context(), b, func(ctx context.Context, b *bundle.Bundle) {
+	return bundle.ApplyFuncContext(cmd.Context(), b, func(ctx context.Context, b *bundle.Bundle) {
 		b.Config.Workspace.Profile = profile
 	})
 }
@@ -153,21 +152,24 @@ func resolveProfileAmbiguity(cmd *cobra.Command, b *bundle.Bundle, originalErr e
 }
 
 // configureBundle loads the bundle configuration and configures flag values, if any.
-func configureBundle(cmd *cobra.Command, b *bundle.Bundle) {
+func configureBundle(cmd *cobra.Command, b *bundle.Bundle) error {
 	// Load bundle and select target.
 	ctx := cmd.Context()
+	var loadErr error
 	if target := getTarget(cmd); target == "" {
-		phases.LoadDefaultTarget(ctx, b)
+		loadErr = phases.LoadDefaultTarget(ctx, b)
 	} else {
-		phases.LoadNamedTarget(ctx, b, target)
+		loadErr = phases.LoadNamedTarget(ctx, b, target)
 	}
 
-	if logdiag.HasError(ctx) {
-		return
+	if loadErr != nil {
+		return loadErr
 	}
 
 	// Configure the workspace profile if the flag has been set.
-	configureProfile(cmd, b)
+	if err := configureProfile(cmd, b); err != nil {
+		return err
+	}
 
 	// Set the auth configuration in the command context. This can be used
 	// downstream to initialize a API client.
@@ -178,77 +180,84 @@ func configureBundle(cmd *cobra.Command, b *bundle.Bundle) {
 	if err != nil {
 		names, isMulti := databrickscfg.AsMultipleProfiles(err)
 		if !isMulti {
-			logdiag.LogError(ctx, err)
-			return
+			return err
 		}
 
 		selected, resolveErr := resolveProfileAmbiguity(cmd, b, err, names)
 		if resolveErr != nil {
-			logdiag.LogError(ctx, resolveErr)
-			return
+			return resolveErr
 		}
 
 		b.Config.Workspace.Profile = selected
 		b.ClearWorkspaceClient(ctx)
 		client, err = b.WorkspaceClientE(ctx)
 		if err != nil {
-			logdiag.LogError(ctx, err)
-			return
+			return err
 		}
 	}
 
 	ctx = cmdctx.SetConfigUsed(ctx, client.Config)
 	cmd.SetContext(ctx)
+	return nil
 }
 
 // MustConfigureBundle configures a bundle on the command context.
-func MustConfigureBundle(cmd *cobra.Command) *bundle.Bundle {
+func MustConfigureBundle(cmd *cobra.Command) (*bundle.Bundle, error) {
 	// A bundle may be configured on the context when testing.
 	// If it is, return it immediately.
 	b := bundle.GetOrNil(cmd.Context())
 	if b != nil {
-		return b
+		return b, nil
 	}
 
-	b = bundle.MustLoad(cmd.Context())
-	if b != nil {
-		configureBundle(cmd, b)
+	b, err := bundle.MustLoad(cmd.Context())
+	if err != nil {
+		return b, err
 	}
-	return b
+	if b != nil {
+		if err := configureBundle(cmd, b); err != nil {
+			return b, err
+		}
+	}
+	return b, nil
 }
 
 // TryConfigureBundle configures a bundle on the command context
 // if there is one, but doesn't fail if there isn't one.
-func TryConfigureBundle(cmd *cobra.Command) *bundle.Bundle {
+func TryConfigureBundle(cmd *cobra.Command) (*bundle.Bundle, error) {
 	// A bundle may be configured on the context when testing.
 	// If it is, return it immediately.
 	b := bundle.GetOrNil(cmd.Context())
 	if b != nil {
-		return b
+		return b, nil
 	}
 
 	ctx := cmd.Context()
-	b = bundle.TryLoad(ctx)
+	b, err := bundle.TryLoad(ctx)
+	if err != nil {
+		return nil, err
+	}
 	// No bundle is fine in this case.
-	if b == nil || logdiag.HasError(ctx) {
-		return nil
+	if b == nil {
+		return nil, nil
 	}
 
-	configureBundle(cmd, b)
-	return b
+	if err := configureBundle(cmd, b); err != nil {
+		return b, err
+	}
+	return b, nil
 }
 
 // targetCompletion executes to autocomplete the argument to the target flag.
 func targetCompletion(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 	ctx := cmd.Context()
-	b := bundle.MustLoad(ctx)
-	if b == nil || logdiag.HasError(ctx) {
+	b, err := bundle.MustLoad(ctx)
+	if err != nil || b == nil {
 		return nil, cobra.ShellCompDirectiveError
 	}
 
 	// Load bundle but don't select a target (we're completing those).
-	phases.Load(ctx, b)
-	if logdiag.HasError(ctx) {
+	if err := phases.Load(ctx, b); err != nil {
 		return nil, cobra.ShellCompDirectiveError
 	}
 

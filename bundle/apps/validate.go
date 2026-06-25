@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 )
 
@@ -17,7 +18,7 @@ var resourceReferencePattern = regexp.MustCompile(`\$\{resources\.(\w+)\.([^.]+)
 
 type validate struct{}
 
-func (v *validate) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (v *validate) Apply(ctx context.Context, b *bundle.Bundle) error {
 	var diags diag.Diagnostics
 	usedSourceCodePaths := make(map[string]string)
 
@@ -52,10 +53,10 @@ func (v *validate) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics
 		}
 		usedSourceCodePaths[app.SourceCodePath] = key
 
-		diags = diags.Extend(warnForAppResourcePermissions(b, key, app))
+		warnForAppResourcePermissions(ctx, b, key, app)
 	}
 
-	return diags
+	return logdiag.Flush(ctx, diags)
 }
 
 // appResourceRef extracts resource references from an app resource entry.
@@ -130,9 +131,7 @@ func hasAppSPInPermissions(b *bundle.Bundle, resourcePath, appKey string) bool {
 // Without the SP in the permission list, the second deploy will overwrite the
 // app-granted permission on the resource.
 // See https://github.com/databricks/cli/issues/4309
-func warnForAppResourcePermissions(b *bundle.Bundle, appKey string, app *resources.App) diag.Diagnostics {
-	var diags diag.Diagnostics
-
+func warnForAppResourcePermissions(ctx context.Context, b *bundle.Bundle, appKey string, app *resources.App) {
 	for _, ar := range app.Resources {
 		ref, ok := appResourceRef(ar)
 		if !ok {
@@ -155,7 +154,7 @@ func warnForAppResourcePermissions(b *bundle.Bundle, appKey string, app *resourc
 		}
 
 		appPath := "resources.apps." + appKey
-		diags = append(diags, diag.Diagnostic{
+		logdiag.LogDiag(ctx, diag.Diagnostic{
 			Severity: diag.Warning,
 			Summary:  fmt.Sprintf("app %q references %s %q which has permissions set. To prevent permission override after deploying the app, please add the app service principal to the %s permissions", appKey, refType, resourceKey, refType),
 			Detail: fmt.Sprintf(
@@ -176,8 +175,6 @@ func warnForAppResourcePermissions(b *bundle.Bundle, appKey string, app *resourc
 			Locations: b.Config.GetLocations(appPath),
 		})
 	}
-
-	return diags
 }
 
 func (v *validate) Name() string {

@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/libs/diag"
 )
 
 // FastValidate runs a subset of fast validation checks. This is a subset of the full
@@ -24,8 +23,8 @@ func (f *fastValidate) Name() string {
 	return "fast_validate(readonly)"
 }
 
-func (f *fastValidate) Apply(ctx context.Context, rb *bundle.Bundle) diag.Diagnostics {
-	bundle.ApplyParallel(ctx, rb,
+func (f *fastValidate) Apply(ctx context.Context, rb *bundle.Bundle) error {
+	return bundle.ApplyParallel(ctx, rb,
 		// Fast mutators with only in-memory checks
 		JobClusterKeyDefined(),
 		JobTaskClusterSpec(),
@@ -33,6 +32,4 @@ func (f *fastValidate) Apply(ctx context.Context, rb *bundle.Bundle) diag.Diagno
 		// Blocking mutators. Deployments will fail if these checks fail.
 		ValidateArtifactPath(),
 	)
-
-	return nil
 }

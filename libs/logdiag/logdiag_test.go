@@ -1,9 +1,9 @@
 package logdiag_test
 
 import (
-	"errors"
 	"testing"
 
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/stretchr/testify/assert"
 )
@@ -14,11 +14,9 @@ func TestIsolatedContext(t *testing.T) {
 
 	isolated := logdiag.IsolatedContext(ctx)
 	logdiag.SetCollect(isolated, true)
-	logdiag.LogError(isolated, errors.New("inner failure"))
+	logdiag.LogDiag(isolated, diag.Diagnostic{Severity: diag.Error, Summary: "inner failure"})
 
-	assert.True(t, logdiag.HasError(isolated))
+	// The error is recorded in the isolated context only, not the parent.
 	assert.Len(t, logdiag.FlushCollected(isolated), 1)
-
-	assert.False(t, logdiag.HasError(ctx))
 	assert.Empty(t, logdiag.FlushCollected(ctx))
 }

@@ -69,14 +69,16 @@ func NewListTargetsCommand() *cobra.Command {
 		cmd.SetContext(ctx)
 		logdiag.SetSeverity(ctx, diag.Warning)
 
-		b := bundle.MustLoad(ctx)
-		if b == nil || logdiag.HasError(ctx) {
+		b, err := bundle.MustLoad(ctx)
+		if err != nil {
+			return root.RenderAndReturnError(ctx, err)
+		}
+		if b == nil {
 			return root.ErrAlreadyPrinted
 		}
 
-		phases.Load(ctx, b)
-		if logdiag.HasError(ctx) {
-			return root.ErrAlreadyPrinted
+		if err := phases.Load(ctx, b); err != nil {
+			return root.RenderAndReturnError(ctx, err)
 		}
 
 		targets := collectTargets(b.Config.Targets)

@@ -340,11 +340,11 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 
 	// Try to load a bundle configuration if we're allowed to by the caller (see `./auth_options.go`).
 	if !shouldSkipLoadBundle(cmd.Context()) {
-		b := TryConfigureBundle(cmd)
+		b, err := TryConfigureBundle(cmd)
 		// Use the updated context from the command after TryConfigureBundle
 		ctx = cmd.Context()
-		if logdiag.HasError(ctx) {
-			return ErrAlreadyPrinted
+		if err != nil {
+			return RenderAndReturnError(ctx, err)
 		}
 
 		if b != nil {

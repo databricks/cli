@@ -26,7 +26,7 @@ func TestGetFilerForLibrariesValidWsfs(t *testing.T) {
 	b.SetWorkpaceClient(m.WorkspaceClient)
 
 	client, uploadPath, diags := GetFilerForLibraries(t.Context(), b)
-	require.NoError(t, diags.Error())
+	require.NoError(t, diags)
 	assert.Equal(t, "/Workspace/foo/bar/artifacts/.internal", uploadPath)
 
 	assert.IsType(t, &filer.WorkspaceFilesClient{}, client)
@@ -46,7 +46,7 @@ func TestGetFilerForLibrariesCleanupValidWsfs(t *testing.T) {
 	b.SetWorkpaceClient(m.WorkspaceClient)
 
 	client, uploadPath, diags := GetFilerForLibrariesCleanup(t.Context(), b)
-	require.NoError(t, diags.Error())
+	require.NoError(t, diags)
 	assert.Equal(t, "/Workspace/foo/bar/artifacts", uploadPath)
 
 	assert.IsType(t, &filer.WorkspaceFilesClient{}, client)
@@ -66,7 +66,7 @@ func TestGetFilerForLibrariesValidUcVolume(t *testing.T) {
 	b.SetWorkpaceClient(m.WorkspaceClient)
 
 	client, uploadPath, diags := GetFilerForLibraries(t.Context(), b)
-	require.NoError(t, diags.Error())
+	require.NoError(t, diags)
 	assert.Equal(t, "/Volumes/main/my_schema/my_volume/.internal", uploadPath)
 
 	assert.IsType(t, &filer.FilesClient{}, client)
@@ -86,7 +86,7 @@ func TestGetFilerForLibrariesCleanupValidUcVolume(t *testing.T) {
 	b.SetWorkpaceClient(m.WorkspaceClient)
 
 	client, uploadPath, diags := GetFilerForLibrariesCleanup(t.Context(), b)
-	require.NoError(t, diags.Error())
+	require.NoError(t, diags)
 	assert.Equal(t, "/Volumes/main/my_schema/my_volume", uploadPath)
 
 	assert.IsType(t, &filer.FilesClient{}, client)
@@ -104,5 +104,5 @@ func TestGetFilerForLibrariesRemotePathNotSet(t *testing.T) {
 	b.SetWorkpaceClient(m.WorkspaceClient)
 
 	_, _, diags := GetFilerForLibraries(t.Context(), b)
-	require.EqualError(t, diags.Error(), "remote artifact path not configured")
+	require.EqualError(t, diags, "remote artifact path not configured")
 }

@@ -2,6 +2,7 @@ package direct
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"reflect"
 	"sync"
@@ -44,6 +45,36 @@ type DeploymentBundle struct {
 	Plan             *deployplan.Plan
 	RemoteStateCache sync.Map
 	StateCache       structvar.Cache
+
+	// deployErrs collects errors reported by the parallel graph workers in
+	// CalculatePlan and Apply. Workers record errors here (thread-safe) and
+	// signal failure to the graph by returning false; the collected errors are
+	// joined and returned to the caller once the run completes.
+	deployErrs errorList
+}
+
+// errorList is a thread-safe accumulator for errors produced by parallel workers.
+type errorList struct {
+	mu   sync.Mutex
+	errs []error
+}
+
+func (e *errorList) reset() {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	e.errs = nil
+}
+
+func (e *errorList) add(err error) {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	e.errs = append(e.errs, err)
+}
+
+func (e *errorList) join() error {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	return errors.Join(e.errs...)
 }
 
 // SetRemoteState updates the remote state with type validation and marks as fresh.

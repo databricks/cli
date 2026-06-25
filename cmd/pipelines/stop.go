@@ -14,7 +14,6 @@ import (
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/logdiag"
 	"github.com/spf13/cobra"
 )
 
@@ -86,8 +85,8 @@ If there is only one pipeline in the project, KEY is optional and the pipeline w
 
 	// TODO: This autocomplete functionality was copied from cmd/bundle/run.go and is not working properly.
 	cmd.ValidArgsFunction = func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		b := root.MustConfigureBundle(cmd)
-		if logdiag.HasError(cmd.Context()) {
+		b, err := root.MustConfigureBundle(cmd)
+		if err != nil {
 			return nil, cobra.ShellCompDirectiveError
 		}
 

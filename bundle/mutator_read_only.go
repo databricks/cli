@@ -2,10 +2,10 @@ package bundle
 
 import (
 	"context"
+	"errors"
 	"sync"
 
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/cli/libs/logdiag"
 )
 
 type ReadOnlyMutator interface {
@@ -26,10 +26,11 @@ func (*RO) IsRO() {}
 // Warning: none of the mutators involved must modify bundle directly or indirectly. In particular,
 // they must not call bundle.ApplyContext or bundle.ApplyContextSeq because those include writes to config even if mutator does not.
 // Deprecated: do not use for new use cases. Refactor your parallel task not to depend on bundle at all.
-func ApplyParallel(ctx context.Context, b *Bundle, mutators ...ReadOnlyMutator) {
+func ApplyParallel(ctx context.Context, b *Bundle, mutators ...ReadOnlyMutator) error {
 	var wg sync.WaitGroup
 
 	contexts := make([]context.Context, len(mutators))
+	errs := make([]error, len(mutators))
 
 	for ind, m := range mutators {
 		contexts[ind] = log.NewContext(ctx, log.GetLogger(ctx).With("mutator", m.Name())) //nolint:fatcontext // independent contexts from same parent, not nested
@@ -39,13 +40,13 @@ func ApplyParallel(ctx context.Context, b *Bundle, mutators ...ReadOnlyMutator) 
 
 	for ind, m := range mutators {
 		wg.Go(func() {
-			// We're not using bundle.ApplyContext here because we don't do copy between typed and dynamic values
-			diags := m.Apply(contexts[ind], b)
-			for _, d := range diags {
-				logdiag.LogDiag(ctx, d)
-			}
+			// We're not using bundle.ApplyContext here because we don't do copy between typed and dynamic values.
+			// Mutators emit warnings/recommendations via logdiag.LogDiag and return an error to report failures.
+			errs[ind] = m.Apply(contexts[ind], b)
 		})
 	}
 
 	wg.Wait()
+
+	return errors.Join(errs...)
 }

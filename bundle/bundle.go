@@ -189,47 +189,33 @@ func Load(ctx context.Context, path string) (*Bundle, error) {
 }
 
 // MustLoad returns a bundle configuration.
-// The errors are recorded by logdiag, check with logdiag.HasError().
-func MustLoad(ctx context.Context) *Bundle {
+func MustLoad(ctx context.Context) (*Bundle, error) {
 	root, err := mustGetRoot(ctx)
 	if err != nil {
-		logdiag.LogError(ctx, err)
-		return nil
+		return nil, err
 	}
 
 	logdiag.SetRoot(ctx, root)
 
-	b, err := Load(ctx, root)
-	if err != nil {
-		logdiag.LogError(ctx, err)
-		return nil
-	}
-	return b
+	return Load(ctx, root)
 }
 
 // TryLoad returns a bundle configuration if there is one, but doesn't fail if there isn't one.
-// The errors are recorded by logdiag, check with logdiag.HasError().
 // It returns a `nil` bundle if a bundle was not found.
-func TryLoad(ctx context.Context) *Bundle {
+func TryLoad(ctx context.Context) (*Bundle, error) {
 	root, err := tryGetRoot(ctx)
 	if err != nil {
-		logdiag.LogError(ctx, err)
-		return nil
+		return nil, err
 	}
 
 	// No root is fine in this function.
 	if root == "" {
-		return nil
+		return nil, nil
 	}
 
 	logdiag.SetRoot(ctx, root)
 
-	b, err := Load(ctx, root)
-	if err != nil {
-		logdiag.LogError(ctx, err)
-		return nil
-	}
-	return b
+	return Load(ctx, root)
 }
 
 func (b *Bundle) initClientOnce(ctx context.Context) {

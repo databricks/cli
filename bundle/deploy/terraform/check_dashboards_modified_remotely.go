@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/libs/agent"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/logdiag"
 )
 
 type dashboardState struct {
@@ -62,7 +63,7 @@ func (l *checkDashboardsModifiedRemotely) Name() string {
 	return "CheckDashboardsModifiedRemotely"
 }
 
-func (l *checkDashboardsModifiedRemotely) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (l *checkDashboardsModifiedRemotely) Apply(ctx context.Context, b *bundle.Bundle) error {
 	// This mutator is relevant only if the bundle includes dashboards.
 	if len(b.Config.Resources.Dashboards) == 0 {
 		return nil
@@ -75,7 +76,7 @@ func (l *checkDashboardsModifiedRemotely) Apply(ctx context.Context, b *bundle.B
 
 	dashboards, err := collectDashboardsFromState(ctx, b, l.engine.IsDirect())
 	if err != nil {
-		return diag.FromErr(err)
+		return err
 	}
 
 	var diags diag.Diagnostics
@@ -128,7 +129,7 @@ func (l *checkDashboardsModifiedRemotely) Apply(ctx context.Context, b *bundle.B
 		})
 	}
 
-	return diags
+	return logdiag.Flush(ctx, diags)
 }
 
 func CheckDashboardsModifiedRemotely(isPlan bool, engine engine.EngineType) *checkDashboardsModifiedRemotely {

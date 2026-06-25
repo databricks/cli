@@ -67,7 +67,7 @@ func TestGenieSpace_UpdateForResource_WritesFileWhenNotWatching(t *testing.T) {
 	ctx, _ := cmdio.NewTestContextWithStdout(t.Context())
 	ctx = logdiag.InitContext(ctx)
 	logdiag.SetCollect(ctx, true)
-	g.updateGenieSpaceForResource(ctx, b)
+	require.NoError(t, g.updateGenieSpaceForResource(ctx, b))
 
 	require.Empty(t, logdiag.FlushCollected(ctx))
 
@@ -107,7 +107,9 @@ func TestGenieSpace_UpdateForResource_WatchExitsOnCancel(t *testing.T) {
 
 	done := make(chan struct{})
 	go func() {
-		g.updateGenieSpaceForResource(ctx, b)
+		// Returns nil once the context is cancelled below; the test asserts the
+		// initial save landed and that this goroutine exits promptly.
+		_ = g.updateGenieSpaceForResource(ctx, b)
 		close(done)
 	}()
 

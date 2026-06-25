@@ -9,7 +9,6 @@ import (
 	"github.com/databricks/cli/bundle/config/validate"
 
 	"github.com/databricks/cli/libs/dyn/merge"
-	"github.com/databricks/cli/libs/logdiag"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/dyn"
@@ -19,8 +18,8 @@ import (
 // settings and defaults to it. Initialization is applied only once.
 //
 // If bundle is modified outside of 'resources' section, these changes are discarded.
-func applyInitializeMutators(ctx context.Context, b *bundle.Bundle) {
-	bundle.ApplySeqContext(
+func applyInitializeMutators(ctx context.Context, b *bundle.Bundle) error {
+	err := bundle.ApplySeqContext(
 		ctx,
 		b,
 		// Reads (typed): b.Config.RunAs, b.Config.Workspace.CurrentUser (validates run_as configuration)
@@ -41,9 +40,8 @@ func applyInitializeMutators(ctx context.Context, b *bundle.Bundle) {
 		// ApplyPresets should have more priority than defaults below, so it should be run first
 		ApplyPresets(),
 	)
-
-	if logdiag.HasError(ctx) {
-		return
+	if err != nil {
+		return err
 	}
 
 	defaults := []struct {
@@ -104,13 +102,12 @@ func applyInitializeMutators(ctx context.Context, b *bundle.Bundle) {
 	}
 
 	for _, defaultDef := range defaults {
-		bundle.SetDefault(ctx, b, defaultDef.pattern, defaultDef.value)
-		if logdiag.HasError(ctx) {
-			return
+		if err := bundle.SetDefault(ctx, b, defaultDef.pattern, defaultDef.value); err != nil {
+			return err
 		}
 	}
 
-	bundle.ApplySeqContext(ctx, b,
+	return bundle.ApplySeqContext(ctx, b,
 		// Reads (typed): b.Config.Resources.Dashboards (checks dashboard configurations)
 		// Updates (typed): b.Config.Resources.Dashboards[].ParentPath (ensures /Workspace prefix is present)
 		// Ensures dashboard parent paths have the required /Workspace prefix
@@ -136,8 +133,8 @@ func applyInitializeMutators(ctx context.Context, b *bundle.Bundle) {
 // Normalization is applied multiple times if resource is modified during initialization
 //
 // If bundle is modified outside of 'resources' section, these changes are discarded.
-func applyNormalizeMutators(ctx context.Context, b *bundle.Bundle) {
-	bundle.ApplySeqContext(
+func applyNormalizeMutators(ctx context.Context, b *bundle.Bundle) error {
+	return bundle.ApplySeqContext(
 		ctx,
 		b,
 
@@ -215,9 +212,9 @@ func NormalizeAndInitializeResources(
 	ctx context.Context,
 	b *bundle.Bundle,
 	addedResources ResourceKeySet,
-) {
+) error {
 	if addedResources.IsEmpty() {
-		return
+		return nil
 	}
 
 	var snapshot dyn.Value
@@ -228,18 +225,15 @@ func NormalizeAndInitializeResources(
 		return selectResources(root, addedResources)
 	})
 	if err != nil {
-		logdiag.LogError(ctx, fmt.Errorf("failed to select resources: %s", err))
-		return
+		return fmt.Errorf("failed to select resources: %w", err)
 	}
 
-	applyNormalizeMutators(ctx, b)
-	if logdiag.HasError(ctx) {
-		return
+	if err := applyNormalizeMutators(ctx, b); err != nil {
+		return err
 	}
 
-	applyInitializeMutators(ctx, b)
-	if logdiag.HasError(ctx) {
-		return
+	if err := applyInitializeMutators(ctx, b); err != nil {
+		return err
 	}
 
 	// after mutators, we merge updated resources back to snapshot to preserve non-selected resources
@@ -247,8 +241,10 @@ func NormalizeAndInitializeResources(
 		return mergeResources(root, snapshot)
 	})
 	if err != nil {
-		logdiag.LogError(ctx, fmt.Errorf("failed to merge resources: %s", err))
+		return fmt.Errorf("failed to merge resources: %w", err)
 	}
+
+	return nil
 }
 
 // NormalizeResources normalizes resources specified resources,
@@ -257,9 +253,9 @@ func NormalizeResources(
 	ctx context.Context,
 	b *bundle.Bundle,
 	updatedResources ResourceKeySet,
-) {
+) error {
 	if updatedResources.IsEmpty() {
-		return
+		return nil
 	}
 
 	var snapshot dyn.Value
@@ -270,13 +266,11 @@ func NormalizeResources(
 		return selectResources(root, updatedResources)
 	})
 	if err != nil {
-		logdiag.LogError(ctx, fmt.Errorf("failed to select resources: %s", err))
-		return
+		return fmt.Errorf("failed to select resources: %w", err)
 	}
 
-	applyNormalizeMutators(ctx, b)
-	if logdiag.HasError(ctx) {
-		return
+	if err := applyNormalizeMutators(ctx, b); err != nil {
+		return err
 	}
 
 	// after mutators, we merge updated resources back to snapshot to preserve non-selected resources
@@ -284,8 +278,10 @@ func NormalizeResources(
 		return mergeResources(root, snapshot)
 	})
 	if err != nil {
-		logdiag.LogError(ctx, fmt.Errorf("failed to merge resources: %s", err))
+		return fmt.Errorf("failed to merge resources: %w", err)
 	}
+
+	return nil
 }
 
 // selectResources returns bundle configuration with resources only present in resourcePaths.

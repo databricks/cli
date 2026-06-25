@@ -30,7 +30,7 @@ func TestResolveSelectors_NoSelectors(t *testing.T) {
 	b, err := bundle.Load(ctx, tmpDir)
 	require.NoError(t, err)
 
-	mutator.DefaultMutators(ctx, b)
+	require.NoError(t, mutator.DefaultMutators(ctx, b))
 
 	result, _, err := resolveSelectors("resources.jobs.test_job.name", b, OperationReplace)
 	require.NoError(t, err)
@@ -55,7 +55,7 @@ func TestResolveSelectors_NumericIndices(t *testing.T) {
 	b, err := bundle.Load(ctx, tmpDir)
 	require.NoError(t, err)
 
-	mutator.DefaultMutators(ctx, b)
+	require.NoError(t, mutator.DefaultMutators(ctx, b))
 
 	result, _, err := resolveSelectors("resources.jobs.test_job.tasks[0].task_key", b, OperationReplace)
 	require.NoError(t, err)
@@ -88,7 +88,7 @@ func TestResolveSelectors_KeyValueSelector(t *testing.T) {
 	b, err := bundle.Load(ctx, tmpDir)
 	require.NoError(t, err)
 
-	mutator.DefaultMutators(ctx, b)
+	require.NoError(t, mutator.DefaultMutators(ctx, b))
 
 	result, _, err := resolveSelectors("resources.jobs.test_job.tasks[task_key='main'].notebook_task.notebook_path", b, OperationReplace)
 	require.NoError(t, err)
@@ -118,7 +118,7 @@ func TestResolveSelectors_SelectorNotFound(t *testing.T) {
 	b, err := bundle.Load(ctx, tmpDir)
 	require.NoError(t, err)
 
-	mutator.DefaultMutators(ctx, b)
+	require.NoError(t, mutator.DefaultMutators(ctx, b))
 
 	_, _, err = resolveSelectors("resources.jobs.test_job.tasks[task_key='nonexistent'].notebook_task.notebook_path", b, OperationReplace)
 	require.Error(t, err)
@@ -130,9 +130,9 @@ func TestResolveSelectors_SelectorOnNonArray(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	yamlContent := `resources:
-		jobs:
-			test_job:
-      	name: "Test Job"
+  jobs:
+    test_job:
+      name: "Test Job"
 `
 	yamlPath := filepath.Join(tmpDir, "databricks.yml")
 	err := os.WriteFile(yamlPath, []byte(yamlContent), 0o644)
@@ -141,7 +141,7 @@ func TestResolveSelectors_SelectorOnNonArray(t *testing.T) {
 	b, err := bundle.Load(ctx, tmpDir)
 	require.NoError(t, err)
 
-	mutator.DefaultMutators(ctx, b)
+	require.NoError(t, mutator.DefaultMutators(ctx, b))
 
 	_, _, err = resolveSelectors("resources.jobs.test_job[task_key='main'].name", b, OperationReplace)
 	require.Error(t, err)
@@ -172,7 +172,7 @@ func TestResolveSelectors_NestedSelectors(t *testing.T) {
 	b, err := bundle.Load(ctx, tmpDir)
 	require.NoError(t, err)
 
-	mutator.DefaultMutators(ctx, b)
+	require.NoError(t, mutator.DefaultMutators(ctx, b))
 
 	result, _, err := resolveSelectors("resources.jobs.test_job.tasks[task_key='main'].libraries[0].pypi.package", b, OperationReplace)
 	require.NoError(t, err)
@@ -198,7 +198,7 @@ func TestResolveSelectors_WildcardNotSupported(t *testing.T) {
 	b, err := bundle.Load(ctx, tmpDir)
 	require.NoError(t, err)
 
-	mutator.DefaultMutators(ctx, b)
+	require.NoError(t, mutator.DefaultMutators(ctx, b))
 
 	_, _, err = resolveSelectors("resources.jobs.test_job.tasks.*.task_key", b, OperationReplace)
 	require.Error(t, err)

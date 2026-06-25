@@ -19,7 +19,7 @@ func (m *defineDefaultWorkspacePaths) Name() string {
 	return "DefaultWorkspacePaths"
 }
 
-func (m *defineDefaultWorkspacePaths) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (m *defineDefaultWorkspacePaths) Apply(ctx context.Context, b *bundle.Bundle) error {
 	root := b.Config.Workspace.RootPath
 	if root == "" {
 		return diag.Errorf("unable to define default workspace paths: workspace root not defined")

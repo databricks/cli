@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 )
 
@@ -21,7 +20,7 @@ func (*collectEscapeTelemetry) Name() string {
 	return "CollectEscapeTelemetry"
 }
 
-func (*collectEscapeTelemetry) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (*collectEscapeTelemetry) Apply(ctx context.Context, b *bundle.Bundle) error {
 	var hasDoubleDollarBrace, hasDoubleDollar, hasBackslashDollarBrace, hasBackslashDollar bool
 
 	_, err := dyn.Walk(b.Config.Value(), func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
@@ -46,7 +45,7 @@ func (*collectEscapeTelemetry) Apply(ctx context.Context, b *bundle.Bundle) diag
 		return v, nil
 	})
 	if err != nil {
-		return diag.FromErr(err)
+		return err
 	}
 
 	if hasDoubleDollarBrace {

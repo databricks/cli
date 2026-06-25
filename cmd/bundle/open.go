@@ -106,8 +106,8 @@ Use after deployment to quickly navigate to your resources in the workspace.`,
 		ctx := logdiag.InitContext(cmd.Context())
 		cmd.SetContext(ctx)
 
-		b := root.MustConfigureBundle(cmd)
-		if logdiag.HasError(cmd.Context()) {
+		b, err := root.MustConfigureBundle(cmd)
+		if err != nil {
 			return nil, cobra.ShellCompDirectiveError
 		}
 

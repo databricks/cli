@@ -466,10 +466,10 @@ func TestStrictNormalize(t *testing.T) {
 	value := dyn.NewValue(map[string]dyn.Value{"A": dyn.NewValue("abc", nil)}, nil)
 
 	_, diags := convert.Normalize(TestStruct{}, value)
-	_, strictDiags := strictNormalize(TestStruct{}, value)
+	_, strictErr := strictNormalize(TestStruct{}, value)
 
 	assert.False(t, diags.HasError())
-	assert.True(t, strictDiags.HasError())
+	assert.Error(t, strictErr)
 }
 
 func TestCreateCacheDir(t *testing.T) {

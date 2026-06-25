@@ -853,13 +853,13 @@ func TestTranslatePathWithComplexVariables(t *testing.T) {
 
 	ctx := t.Context()
 	// Assign the variables to the dynamic configuration.
-	bundle.ApplyFuncContext(ctx, b, func(ctx context.Context, b *bundle.Bundle) {
+	require.NoError(t, bundle.ApplyFuncContext(ctx, b, func(ctx context.Context, b *bundle.Bundle) {
 		err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
 			p := dyn.MustPathFromString("resources.jobs.job.tasks[0]")
 			return dyn.SetByPath(v, p.Append(dyn.Key("libraries")), dyn.V("${var.cluster_libraries}"))
 		})
 		require.NoError(t, err)
-	})
+	}))
 
 	diags := bundle.ApplySeq(ctx, b,
 		mutator.SetVariables(),

@@ -6,7 +6,6 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/cache"
-	"github.com/databricks/cli/libs/diag"
 )
 
 type initializeCache struct{}
@@ -20,7 +19,7 @@ func (m *initializeCache) Name() string {
 	return "InitializeCache"
 }
 
-func (m *initializeCache) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (m *initializeCache) Apply(ctx context.Context, b *bundle.Bundle) error {
 	// Initialize cache with 30 minute expiry for user information
 	b.Cache = cache.NewCache(ctx, "user", 30*time.Minute, &b.Metrics)
 	return nil

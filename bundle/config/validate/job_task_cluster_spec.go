@@ -23,7 +23,7 @@ func (v *jobTaskClusterSpec) Name() string {
 	return "validate:job_task_cluster_spec"
 }
 
-func (v *jobTaskClusterSpec) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (v *jobTaskClusterSpec) Apply(ctx context.Context, b *bundle.Bundle) error {
 	diags := diag.Diagnostics{}
 
 	jobsPath := dyn.NewPath(dyn.Key("resources"), dyn.Key("jobs"))
@@ -38,7 +38,7 @@ func (v *jobTaskClusterSpec) Apply(ctx context.Context, b *bundle.Bundle) diag.D
 		}
 	}
 
-	return diags
+	return diags.Error()
 }
 
 func validateJobTask(b *bundle.Bundle, task jobs.Task, taskPath dyn.Path) diag.Diagnostics {

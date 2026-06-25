@@ -39,8 +39,6 @@ test-file-[UNIQUE_NAME].txt -> dbfs:/Volumes/test-catalog-[UNIQUE_NAME]/test-sch
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Error: cannot plan resources.schemas.foo: cannot resolve "${resources.catalogs.bar.name}": internal error: resources.catalogs.bar: action is "delete" missing new_state
 
-Error: planning failed
-
 
 === Test cleanup
 >>> [CLI] bundle destroy --auto-approve

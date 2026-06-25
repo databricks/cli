@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/libs/diag"
 )
 
 type trackUsedCompute struct{}
@@ -13,7 +12,7 @@ func (c *trackUsedCompute) Name() string {
 	return "trackUsedCompute"
 }
 
-func (c *trackUsedCompute) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (c *trackUsedCompute) Apply(ctx context.Context, b *bundle.Bundle) error {
 	// Track different types of compute used
 	hasServerlessCompute := false
 	hasClassicJobCompute := false

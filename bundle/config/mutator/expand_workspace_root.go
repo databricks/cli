@@ -20,7 +20,7 @@ func (m *expandWorkspaceRoot) Name() string {
 	return "ExpandWorkspaceRoot"
 }
 
-func (m *expandWorkspaceRoot) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (m *expandWorkspaceRoot) Apply(ctx context.Context, b *bundle.Bundle) error {
 	root := b.Config.Workspace.RootPath
 	if root == "" {
 		return diag.Errorf("unable to expand workspace root: workspace root not defined")

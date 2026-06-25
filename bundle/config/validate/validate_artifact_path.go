@@ -74,20 +74,18 @@ func findVolumeInBundle(r config.Root, catalogName, schemaName, volumeName strin
 	return nil, nil, false
 }
 
-func (v *validateArtifactPath) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (v *validateArtifactPath) Apply(ctx context.Context, b *bundle.Bundle) error {
 	// We only validate UC Volumes paths right now.
 	if !libraries.IsVolumesPath(b.Config.Workspace.ArtifactPath) {
 		return nil
 	}
 
-	wrapErrorMsg := func(s string) diag.Diagnostics {
-		return diag.Diagnostics{
-			{
-				Summary:   s,
-				Severity:  diag.Error,
-				Locations: b.Config.GetLocations("workspace.artifact_path"),
-				Paths:     []dyn.Path{dyn.MustPathFromString("workspace.artifact_path")},
-			},
+	wrapErrorMsg := func(s string) error {
+		return diag.Diagnostic{
+			Summary:   s,
+			Severity:  diag.Error,
+			Locations: b.Config.GetLocations("workspace.artifact_path"),
+			Paths:     []dyn.Path{dyn.MustPathFromString("workspace.artifact_path")},
 		}
 	}
 
@@ -110,7 +108,7 @@ func (v *validateArtifactPath) Apply(ctx context.Context, b *bundle.Bundle) diag
 
 		// If the volume is defined in the bundle, provide a more helpful error diagnostic,
 		// with more details and location information.
-		return diag.Diagnostics{{
+		return diag.Diagnostic{
 			Summary:  fmt.Sprintf("volume %s does not exist", volumeFullName),
 			Severity: diag.Error,
 			Detail: `You are using a volume in your artifact_path that is managed by
@@ -119,7 +117,7 @@ the volume using 'bundle deploy' and then switch over to using it in
 the artifact_path.`,
 			Locations: slices.Concat(b.Config.GetLocations("workspace.artifact_path"), locations),
 			Paths:     append([]dyn.Path{dyn.MustPathFromString("workspace.artifact_path")}, path),
-		}}
+		}
 
 	}
 	if err != nil {

@@ -8,7 +8,6 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/internal/tf/schema"
-	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 )
 
@@ -18,10 +17,10 @@ func (w *write) Name() string {
 	return "terraform.Write"
 }
 
-func (w *write) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (w *write) Apply(ctx context.Context, b *bundle.Bundle) error {
 	dir, err := Dir(ctx, b)
 	if err != nil {
-		return diag.FromErr(err)
+		return err
 	}
 
 	var root *schema.Root
@@ -30,12 +29,12 @@ func (w *write) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		return v, err
 	})
 	if err != nil {
-		return diag.FromErr(err)
+		return err
 	}
 
 	f, err := os.Create(filepath.Join(dir, TerraformConfigFileName))
 	if err != nil {
-		return diag.FromErr(err)
+		return err
 	}
 
 	defer f.Close()
@@ -44,7 +43,7 @@ func (w *write) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	enc.SetIndent("", "  ")
 	err = enc.Encode(root)
 	if err != nil {
-		return diag.FromErr(err)
+		return err
 	}
 
 	return nil

@@ -7,7 +7,6 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/auth"
-	"github.com/databricks/cli/libs/diag"
 )
 
 type initializeURLs struct{}
@@ -24,15 +23,15 @@ func (m *initializeURLs) Name() string {
 	return "InitializeURLs"
 }
 
-func (m *initializeURLs) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (m *initializeURLs) Apply(ctx context.Context, b *bundle.Bundle) error {
 	workspaceID, err := auth.ResolveWorkspaceID(ctx, b.WorkspaceClient(ctx))
 	if err != nil {
-		return diag.FromErr(err)
+		return err
 	}
 	host := b.WorkspaceClient(ctx).Config.CanonicalHostName()
 	err = initializeForWorkspace(b, workspaceID, host)
 	if err != nil {
-		return diag.FromErr(err)
+		return err
 	}
 	return nil
 }

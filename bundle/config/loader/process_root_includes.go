@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/logdiag"
 )
 
 type processRootIncludes struct{}
@@ -36,7 +37,7 @@ func hasGlobCharacters(path string) (string, bool) {
 	return "", false
 }
 
-func (m *processRootIncludes) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (m *processRootIncludes) Apply(ctx context.Context, b *bundle.Bundle) error {
 	var out []bundle.Mutator
 
 	// Map with files we've already seen to avoid loading them twice.
@@ -60,13 +61,11 @@ func (m *processRootIncludes) Apply(ctx context.Context, b *bundle.Bundle) diag.
 	// 1. Change CWD to the bundle root path before calling [filepath.Glob]
 	// 2. Implement our own custom globbing function. We can use [filepath.Match] to do so.
 	if char, ok := hasGlobCharacters(b.BundleRootPath); ok {
-		diags = diags.Append(diag.Diagnostic{
+		return diag.Diagnostic{
 			Severity: diag.Error,
 			Summary:  "Bundle root path contains glob pattern characters",
 			Detail:   fmt.Sprintf("The path to the bundle root %s contains glob pattern character %q. Please remove the character from this path to use bundle commands.", b.BundleRootPath, char),
-		})
-
-		return diags
+		}
 	}
 
 	// For each glob, find all files to load.
@@ -81,7 +80,7 @@ func (m *processRootIncludes) Apply(ctx context.Context, b *bundle.Bundle) diag.
 		// Anchor includes to the bundle root path.
 		matches, err := filepath.Glob(filepath.Join(b.BundleRootPath, entry))
 		if err != nil {
-			return diag.FromErr(err)
+			return err
 		}
 
 		// If the entry is not a glob pattern and no matches found,
@@ -95,7 +94,7 @@ func (m *processRootIncludes) Apply(ctx context.Context, b *bundle.Bundle) diag.
 		for _, match := range matches {
 			rel, err := filepath.Rel(b.BundleRootPath, match)
 			if err != nil {
-				return diag.FromErr(err)
+				return err
 			}
 			if _, ok := seen[rel]; ok {
 				continue
@@ -115,7 +114,7 @@ func (m *processRootIncludes) Apply(ctx context.Context, b *bundle.Bundle) diag.
 		}
 
 		if len(diags) > 0 {
-			return diags
+			return logdiag.Flush(ctx, diags)
 		}
 
 		// Add matches to list of mutators to return.
@@ -133,6 +132,5 @@ func (m *processRootIncludes) Apply(ctx context.Context, b *bundle.Bundle) diag.
 	// to account for the root databricks.yaml file.
 	b.Metrics.ConfigurationFileCount = int64(len(files)) + 1
 
-	bundle.ApplySeqContext(ctx, b, out...)
-	return nil
+	return bundle.ApplySeqContext(ctx, b, out...)
 }

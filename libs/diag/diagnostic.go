@@ -30,13 +30,29 @@ type Diagnostic struct {
 	ID ID
 }
 
+// Error implements the error interface so an error-severity Diagnostic can be
+// returned and propagated as a regular Go error. The message mirrors the
+// formatting used by [Diagnostics.Error].
+func (d Diagnostic) Error() string {
+	message := d.Detail
+	if message == "" {
+		message = d.Summary
+	}
+	if d.ID != "" {
+		message = string(d.ID) + ": " + message
+	}
+	return message
+}
+
 // Errorf creates a new error diagnostic.
-func Errorf(format string, args ...any) Diagnostics {
-	return []Diagnostic{
-		{
-			Severity: Error,
-			Summary:  fmt.Sprintf(format, args...),
-		},
+//
+// The returned value implements the error interface so it can be returned and
+// propagated like any other Go error while still carrying the diagnostic's
+// Summary/Detail/ID for rendering at the top level.
+func Errorf(format string, args ...any) error {
+	return Diagnostic{
+		Severity: Error,
+		Summary:  fmt.Sprintf(format, args...),
 	}
 }
 
@@ -51,6 +67,21 @@ func FromErr(err error) Diagnostics {
 			Summary:  FormatAPIErrorSummary(err),
 			Detail:   FormatAPIErrorDetails(err),
 		},
+	}
+}
+
+// DiagnosticFromError converts an error into a single error-severity Diagnostic
+// for rendering. If the error (or anything it wraps) is already a Diagnostic, it
+// is returned unchanged so its Locations/Paths/Detail/ID render as authored.
+// Otherwise the error is formatted as an API/error diagnostic.
+func DiagnosticFromError(err error) Diagnostic {
+	if d, ok := errors.AsType[Diagnostic](err); ok {
+		return d
+	}
+	return Diagnostic{
+		Severity: Error,
+		Summary:  FormatAPIErrorSummary(err),
+		Detail:   FormatAPIErrorDetails(err),
 	}
 }
 
@@ -110,21 +141,27 @@ func (ds Diagnostics) HasError() bool {
 	return false
 }
 
-// Return first error in the set of diagnostics.
+// Error returns the error-severity diagnostics in the set as a single error, or
+// nil if there are none. A single error is returned as the [Diagnostic] itself
+// (it implements the error interface); multiple errors are combined with
+// [errors.Join] so they unpack via Unwrap() []error and render as separate
+// diagnostic blocks (see [FlushError]). Either way Locations/Paths/Detail/ID are
+// preserved and render correctly when surfaced via [DiagnosticFromError].
 func (ds Diagnostics) Error() error {
+	var errs []error
 	for _, d := range ds {
 		if d.Severity == Error {
-			message := d.Detail
-			if message == "" {
-				message = d.Summary
-			}
-			if d.ID != "" {
-				message = string(d.ID) + ": " + message
-			}
-			return errors.New(message)
+			errs = append(errs, d)
 		}
 	}
-	return nil
+	switch len(errs) {
+	case 0:
+		return nil
+	case 1:
+		return errs[0]
+	default:
+		return errors.Join(errs...)
+	}
 }
 
 // Filter returns a new list of diagnostics that match the specified severity.

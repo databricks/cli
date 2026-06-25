@@ -68,7 +68,7 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.P
 	return cmdio.AskYesOrNo(ctx, "Would you like to proceed?")
 }
 
-func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, targetEngine engine.EngineType) {
+func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, targetEngine engine.EngineType) error {
 	// Core mutators that CRUD resources and modify deployment state. These
 	// mutators need informed consent if they are potentially destructive.
 	cmdio.LogString(ctx, "Deploying resources...")
@@ -82,43 +82,52 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, ta
 		err   error
 	)
 	if targetEngine.IsDirect() {
-		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(ctx), plan)
-		state, err = b.DeploymentBundle.StateDB.Finalize(ctx)
+		applyErr := b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(ctx), plan)
+		var finalizeErr error
+		state, finalizeErr = b.DeploymentBundle.StateDB.Finalize(ctx)
 		// Capture the finalized state for deploy telemetry. It carries each
 		// resource's state-size in bytes (from the WAL replay Finalize just
 		// did), so telemetry needs no extra read or parse of the state file.
 		b.Metrics.ResourceState = state
+		err = errors.Join(applyErr, finalizeErr)
 	} else {
-		bundle.ApplyContext(ctx, b, terraform.Apply())
-		state, err = terraform.ParseResourcesState(ctx, b)
+		applyErr := bundle.ApplyContext(ctx, b, terraform.Apply())
+		var parseErr error
+		state, parseErr = terraform.ParseResourcesState(ctx, b)
+		err = errors.Join(applyErr, parseErr)
 	}
-	if err != nil {
-		logdiag.LogError(ctx, err)
-	}
+
+	// Flush the deploy error now, before the (potentially slow) state push and
+	// metadata upload below, so the user sees the failure before that work runs.
+	err = logdiag.FlushError(ctx, err)
 
 	// Even if deployment failed, there might be updates in states that we need to upload
-	statemgmt.PushResourcesState(ctx, b, targetEngine)
-	if logdiag.HasError(ctx) {
-		return
+	if pushErr := statemgmt.PushResourcesState(ctx, b, targetEngine); pushErr != nil {
+		return errors.Join(err, logdiag.FlushError(ctx, pushErr))
 	}
 
-	bundle.ApplySeqContext(ctx, b,
+	if seqErr := bundle.ApplySeqContext(ctx, b,
 		statemgmt.Load(state),
 		metadata.Compute(),
 		metadata.Upload(),
 		statemgmt.UploadStateForYamlSync(targetEngine),
-	)
-
-	if !logdiag.HasError(ctx) {
-		cmdio.LogString(ctx, "Deployment complete!")
+	); seqErr != nil {
+		return errors.Join(err, logdiag.FlushError(ctx, seqErr))
 	}
+
+	if err != nil {
+		return err
+	}
+
+	cmdio.LogString(ctx, "Deployment complete!")
+	return nil
 }
 
 // uploadLibraries uploads libraries to the workspace.
 // It also cleans up the artifacts directory and transforms wheel tasks.
 // It is called by only "bundle deploy".
-func uploadLibraries(ctx context.Context, b *bundle.Bundle, libs map[string][]libraries.LocationToUpdate) {
-	bundle.ApplySeqContext(ctx, b,
+func uploadLibraries(ctx context.Context, b *bundle.Bundle, libs map[string][]libraries.LocationToUpdate) error {
+	return bundle.ApplySeqContext(ctx, b,
 		artifacts.CleanUp(),
 		libraries.Upload(libs),
 	)
@@ -126,136 +135,118 @@ func uploadLibraries(ctx context.Context, b *bundle.Bundle, libs map[string][]li
 
 // The deploy phase deploys artifacts and resources.
 // If readPlanPath is provided, the plan is loaded from that file instead of being calculated.
-func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHandler, engine engine.EngineType, libs map[string][]libraries.LocationToUpdate, plan *deployplan.Plan) {
+func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHandler, engine engine.EngineType, libs map[string][]libraries.LocationToUpdate, plan *deployplan.Plan) (err error) {
 	log.Info(ctx, "Phase: deploy")
 
 	// Core mutators that CRUD resources and modify deployment state. These
 	// mutators need informed consent if they are potentially destructive.
-	bundle.ApplySeqContext(ctx, b,
+	if seqErr := bundle.ApplySeqContext(ctx, b,
 		scripts.Execute(config.ScriptPreDeploy),
 		lock.Acquire(),
-	)
-
-	if logdiag.HasError(ctx) {
+	); seqErr != nil {
 		// lock is not acquired here
-		return
+		return seqErr
 	}
 
 	// lock is acquired here
 	defer func() {
-		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalDeploy))
+		// Flush the deploy error before releasing the lock so the user sees the
+		// failure before this final API call runs.
+		err = logdiag.FlushError(ctx, err)
+		if releaseErr := bundle.ApplyContext(ctx, b, lock.Release(lock.GoalDeploy)); releaseErr != nil && err == nil {
+			err = logdiag.FlushError(ctx, releaseErr)
+		}
 	}()
 
-	uploadLibraries(ctx, b, libs)
-	if logdiag.HasError(ctx) {
-		return
+	if uploadErr := uploadLibraries(ctx, b, libs); uploadErr != nil {
+		return uploadErr
 	}
 
-	bundle.ApplySeqContext(ctx, b,
+	if seqErr := bundle.ApplySeqContext(ctx, b,
 		files.Upload(outputHandler),
 		deploy.StateUpdate(),
 		deploy.StatePush(),
 		permissions.ApplyWorkspaceRootPermissions(),
 		metrics.TrackUsedCompute(),
 		deploy.ResourcePathMkdir(),
-	)
-
-	if logdiag.HasError(ctx) {
-		return
+	); seqErr != nil {
+		return seqErr
 	}
 
 	planFromFile := plan != nil
 	if plan == nil {
-		// State is already open for read by process.go (for direct engine)
-		plan = RunPlan(ctx, b, engine)
-	}
-
-	// Stop before opening the WAL for write if planning failed. UpgradeToWrite
-	// writes a WAL header that only deployCore's Finalize commits or discards;
-	// returning past it without finalizing leaves a header-only WAL behind.
-	if logdiag.HasError(ctx) {
-		return
+		// State is already open for read by process.go (for direct engine).
+		// Stop before opening the WAL for write if planning failed. UpgradeToWrite
+		// writes a WAL header that only deployCore's Finalize commits or discards;
+		// returning past it without finalizing leaves a header-only WAL behind.
+		var planErr error
+		plan, planErr = RunPlan(ctx, b, engine)
+		if planErr != nil {
+			return planErr
+		}
 	}
 
 	if engine.IsDirect() {
 		// Upgrade from read (opened by process.go) to write mode
-		if err := b.DeploymentBundle.StateDB.UpgradeToWrite(); err != nil {
-			logdiag.LogError(ctx, err)
-			return
+		if upgradeErr := b.DeploymentBundle.StateDB.UpgradeToWrite(); upgradeErr != nil {
+			return upgradeErr
 		}
 	}
 
 	if planFromFile {
 		// Initialize DeploymentBundle for applying the loaded plan
-		err := b.DeploymentBundle.InitForApply(ctx, b.WorkspaceClient(ctx), plan)
-		if err != nil {
-			logdiag.LogError(ctx, err)
-			return
+		if initErr := b.DeploymentBundle.InitForApply(ctx, b.WorkspaceClient(ctx), plan); initErr != nil {
+			return initErr
 		}
 	}
 
-	// InitForApply receives ctx and could log a diagnostic without returning an
-	// error, so re-check before deploying. (UpgradeToWrite above takes no ctx and
-	// thus cannot log, so the earlier check is enough to guard the WAL open.)
-	if logdiag.HasError(ctx) {
-		return
+	haveApproval, approvalErr := approvalForDeploy(ctx, b, plan)
+	if approvalErr != nil {
+		return approvalErr
 	}
-
-	haveApproval, err := approvalForDeploy(ctx, b, plan)
-	if err != nil {
-		logdiag.LogError(ctx, err)
-		return
-	}
-	if haveApproval {
-		deployCore(ctx, b, plan, engine)
-	} else {
+	if !haveApproval {
 		cmdio.LogString(ctx, "Deployment cancelled!")
-		return
+		return nil
 	}
 
-	if logdiag.HasError(ctx) {
-		return
+	if coreErr := deployCore(ctx, b, plan, engine); coreErr != nil {
+		return coreErr
 	}
 
-	bundle.ApplyContext(ctx, b, scripts.Execute(config.ScriptPostDeploy))
+	return bundle.ApplyContext(ctx, b, scripts.Execute(config.ScriptPostDeploy))
 }
 
-func RunPlan(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) *deployplan.Plan {
+func RunPlan(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) (*deployplan.Plan, error) {
 	if engine.IsDirect() {
 		plan, err := b.DeploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(ctx), &b.Config)
 		if err != nil {
-			logdiag.LogError(ctx, err)
-			return nil
+			return nil, err
 		}
 		if len(b.Select) > 0 {
 			plan.FilterToSelected(b.Select)
 		}
-		return plan
+		return plan, nil
 	}
 
 	// b.Select is rejected for the terraform engine in ProcessBundleRet, so it is
 	// never set here.
 
-	bundle.ApplySeqContext(ctx, b,
+	if err := bundle.ApplySeqContext(ctx, b,
 		terraform.Interpolate(),
 		terraform.Write(),
 		terraform.Plan(terraform.PlanGoal("deploy")),
-	)
-
-	if logdiag.HasError(ctx) {
-		return nil
+	); err != nil {
+		return nil, err
 	}
 
 	tf := b.Terraform
 	if tf == nil {
-		logdiag.LogError(ctx, errors.New("terraform not initialized"))
-		return nil
+		return nil, errors.New("terraform not initialized")
 	}
 
 	plan, err := terraform.ShowPlanFile(ctx, tf, b.TerraformPlanPath)
 	if err != nil {
-		logdiag.LogError(ctx, err)
-		return nil
+		return nil, err
 	}
 
 	for _, group := range b.Config.Resources.AllResources() {
@@ -269,7 +260,7 @@ func RunPlan(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) *d
 		}
 	}
 
-	return plan
+	return plan, nil
 }
 
 // If there are more than 1 thousand of a resource type, do not

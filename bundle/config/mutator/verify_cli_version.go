@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/logdiag"
 )
 
 func VerifyCliVersion() bundle.Mutator {
@@ -17,7 +18,7 @@ func VerifyCliVersion() bundle.Mutator {
 
 type verifyCliVersion struct{}
 
-func (v *verifyCliVersion) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (v *verifyCliVersion) Apply(ctx context.Context, b *bundle.Bundle) error {
 	// No constraints specified, skip the check.
 	if b.Config.Bundle.DatabricksCliVersion == "" {
 		return nil
@@ -25,12 +26,12 @@ func (v *verifyCliVersion) Apply(ctx context.Context, b *bundle.Bundle) diag.Dia
 
 	constraint := b.Config.Bundle.DatabricksCliVersion
 	if err := validateConstraintSyntax(constraint); err != nil {
-		return diag.FromErr(err)
+		return err
 	}
 	currentVersion := build.GetInfo().Version
 	c, err := semver.NewConstraint(constraint)
 	if err != nil {
-		return diag.FromErr(err)
+		return err
 	}
 
 	version, err := semver.NewVersion(currentVersion)
@@ -40,7 +41,11 @@ func (v *verifyCliVersion) Apply(ctx context.Context, b *bundle.Bundle) diag.Dia
 
 	if !c.Check(version) {
 		if version.Prerelease() == "dev" && version.Major() == 0 {
-			return diag.Warningf("Ignoring Databricks CLI version constraint for development build. Required: %s, current: %s", constraint, currentVersion)
+			logdiag.LogDiag(ctx, diag.Diagnostic{
+				Severity: diag.Warning,
+				Summary:  fmt.Sprintf("Ignoring Databricks CLI version constraint for development build. Required: %s, current: %s", constraint, currentVersion),
+			})
+			return nil
 		}
 
 		return diag.Errorf("Databricks CLI version constraint not satisfied. Required: %s, current: %s", constraint, currentVersion)

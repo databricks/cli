@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/patchwheel"
 )
 
@@ -39,7 +40,7 @@ func (e expandGlobs) Name() string {
 	return "expandGlobs"
 }
 
-func (e expandGlobs) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (e expandGlobs) Apply(ctx context.Context, b *bundle.Bundle) error {
 	// Base path for this mutator.
 	// This path is set with the list of expanded globs when done.
 	base := dyn.NewPath(
@@ -117,8 +118,8 @@ func (e expandGlobs) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnosti
 		return dyn.SetByPath(rootv, base, dyn.V(output))
 	})
 	if err != nil {
-		diags = diags.Extend(diag.FromErr(err))
+		return err
 	}
 
-	return diags
+	return logdiag.Flush(ctx, diags)
 }

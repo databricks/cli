@@ -7,7 +7,6 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/libraries"
-	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/patchwheel"
 )
@@ -91,7 +90,7 @@ func (m *expandPipelineGlobPaths) expandSequence(ctx context.Context, dir string
 	return dyn.NewValue(vs, v.Locations()), nil
 }
 
-func (m *expandPipelineGlobPaths) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (m *expandPipelineGlobPaths) Apply(ctx context.Context, b *bundle.Bundle) error {
 	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
 		p := dyn.NewPattern(
 			dyn.Key("resources"),
@@ -106,7 +105,7 @@ func (m *expandPipelineGlobPaths) Apply(ctx context.Context, b *bundle.Bundle) d
 		})
 	})
 
-	return diag.FromErr(err)
+	return err
 }
 
 func (*expandPipelineGlobPaths) Name() string {

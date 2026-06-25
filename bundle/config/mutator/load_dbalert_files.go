@@ -43,7 +43,7 @@ func (d AlertFile) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(d)
 }
 
-func (m *loadDBAlertFiles) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (m *loadDBAlertFiles) Apply(ctx context.Context, b *bundle.Bundle) error {
 	// Fields that are only settable in the API, and are not allowed in .dbalert.json.
 	// We will only allow these fields to be set in the bundle YAML when an .dbalert.json is
 	// specified. This is done to only have one way to set these fields when a .dbalert.json is
@@ -57,13 +57,13 @@ func (m *loadDBAlertFiles) Apply(ctx context.Context, b *bundle.Bundle) diag.Dia
 
 		alertV, err := dyn.GetByPath(b.Config.Value(), dyn.NewPath(dyn.Key("resources"), dyn.Key("alerts"), dyn.Key(alertKey)))
 		if err != nil {
-			return diag.FromErr(err)
+			return err
 		}
 
 		// No other fields other than allowedInYAML should be set in the bundle YAML.
 		m, ok := alertV.AsMap()
 		if !ok {
-			return diag.FromErr(fmt.Errorf("internal error: alert value is not a map: %w", err))
+			return fmt.Errorf("internal error: alert value is not a map: %w", err)
 		}
 
 		for _, p := range m.Pairs() {
@@ -78,58 +78,50 @@ func (m *loadDBAlertFiles) Apply(ctx context.Context, b *bundle.Bundle) diag.Dia
 				continue
 			}
 
-			return diag.Diagnostics{
-				{
-					ID:        "",
-					Severity:  diag.Error,
-					Summary:   fmt.Sprintf("field %s is not allowed in the bundle configuration.", k),
-					Detail:    "When a .dbalert.json is specified, only the following fields are allowed in the bundle configuration: " + strings.Join(allowedInYAML, ", "),
-					Paths:     []dyn.Path{dyn.MustPathFromString(fmt.Sprintf("resources.alerts.%s.%s", alertKey, k))},
-					Locations: v.Locations(),
-				},
+			return diag.Diagnostic{
+				ID:        "",
+				Severity:  diag.Error,
+				Summary:   fmt.Sprintf("field %s is not allowed in the bundle configuration.", k),
+				Detail:    "When a .dbalert.json is specified, only the following fields are allowed in the bundle configuration: " + strings.Join(allowedInYAML, ", "),
+				Paths:     []dyn.Path{dyn.MustPathFromString(fmt.Sprintf("resources.alerts.%s.%s", alertKey, k))},
+				Locations: v.Locations(),
 			}
 		}
 
 		content, err := os.ReadFile(alert.FilePath)
 		if err != nil {
-			return diag.Diagnostics{
-				{
-					ID:        diag.ID(""),
-					Severity:  diag.Error,
-					Summary:   fmt.Sprintf("failed to read .dbalert.json file %s: %s", alert.FilePath, err),
-					Detail:    "",
-					Paths:     []dyn.Path{dyn.MustPathFromString(fmt.Sprintf("resources.alerts.%s.file_path", alertKey))},
-					Locations: alertV.Get("file_path").Locations(),
-				},
+			return diag.Diagnostic{
+				ID:        diag.ID(""),
+				Severity:  diag.Error,
+				Summary:   fmt.Sprintf("failed to read .dbalert.json file %s: %s", alert.FilePath, err),
+				Detail:    "",
+				Paths:     []dyn.Path{dyn.MustPathFromString(fmt.Sprintf("resources.alerts.%s.file_path", alertKey))},
+				Locations: alertV.Get("file_path").Locations(),
 			}
 		}
 
 		var dbalertFromFile AlertFile
 		err = json.Unmarshal(content, &dbalertFromFile)
 		if err != nil {
-			return diag.Diagnostics{
-				{
-					ID:        diag.ID(""),
-					Severity:  diag.Error,
-					Summary:   fmt.Sprintf("failed to parse .dbalert.json file %s: %s", alert.FilePath, err),
-					Detail:    "",
-					Paths:     []dyn.Path{dyn.MustPathFromString(fmt.Sprintf("resources.alerts.%s.file_path", alertKey))},
-					Locations: alertV.Get("file_path").Locations(),
-				},
+			return diag.Diagnostic{
+				ID:        diag.ID(""),
+				Severity:  diag.Error,
+				Summary:   fmt.Sprintf("failed to parse .dbalert.json file %s: %s", alert.FilePath, err),
+				Detail:    "",
+				Paths:     []dyn.Path{dyn.MustPathFromString(fmt.Sprintf("resources.alerts.%s.file_path", alertKey))},
+				Locations: alertV.Get("file_path").Locations(),
 			}
 		}
 
 		// Check that the file does not have any variable interpolations.
 		if dynvar.ContainsVariableReference(string(content)) {
-			return diag.Diagnostics{
-				{
-					ID:        diag.ID(""),
-					Severity:  diag.Error,
-					Summary:   fmt.Sprintf(".alert file %s must not contain variable interpolations.", alert.FilePath),
-					Detail:    "Please inline the alert configuration in the bundle configuration to use variables",
-					Paths:     []dyn.Path{dyn.MustPathFromString(fmt.Sprintf("resources.alerts.%s.file_path", alertKey))},
-					Locations: alertV.Get("file_path").Locations(),
-				},
+			return diag.Diagnostic{
+				ID:        diag.ID(""),
+				Severity:  diag.Error,
+				Summary:   fmt.Sprintf(".alert file %s must not contain variable interpolations.", alert.FilePath),
+				Detail:    "Please inline the alert configuration in the bundle configuration to use variables",
+				Paths:     []dyn.Path{dyn.MustPathFromString(fmt.Sprintf("resources.alerts.%s.file_path", alertKey))},
+				Locations: alertV.Get("file_path").Locations(),
 			}
 		}
 

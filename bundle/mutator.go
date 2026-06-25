@@ -2,6 +2,7 @@ package bundle
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"reflect"
 	"time"
@@ -19,8 +20,9 @@ type Mutator interface {
 	// Name returns the mutators name.
 	Name() string
 
-	// Apply mutates the specified bundle object.
-	Apply(context.Context, *Bundle) diag.Diagnostics
+	// Apply mutates the specified bundle object. It returns an error to abort
+	// the pipeline; warnings and recommendations are emitted via logdiag.LogDiag.
+	Apply(context.Context, *Bundle) error
 }
 
 // safeMutatorName returns the package name and type name of the underlying mutator type
@@ -55,7 +57,10 @@ func safeMutatorName(m Mutator) string {
 	return packageName + ".(" + typeName + ")"
 }
 
-func ApplyContext(ctx context.Context, b *Bundle, m Mutator) {
+// ApplyContext applies a single mutator. It returns the error produced by the
+// mutator (if any); warnings and recommendations are emitted directly via
+// logdiag.LogDiag and are not part of the returned error.
+func ApplyContext(ctx context.Context, b *Bundle, m Mutator) (err error) {
 	t0 := time.Now()
 	defer func() {
 		duration := time.Since(t0).Milliseconds()
@@ -75,33 +80,27 @@ func ApplyContext(ctx context.Context, b *Bundle, m Mutator) {
 
 	log.Debugf(ctx, "Apply")
 
-	err := b.Config.MarkMutatorEntry(ctx)
-	if err != nil {
-		logdiag.LogError(ctx, fmt.Errorf("entry error: %w", err))
-		return
+	if entryErr := b.Config.MarkMutatorEntry(ctx); entryErr != nil {
+		return fmt.Errorf("entry error: %w", entryErr)
 	}
 
 	defer func() {
-		err := b.Config.MarkMutatorExit(ctx)
-		if err != nil {
-			logdiag.LogError(ctx, fmt.Errorf("exit error: %w", err))
+		if exitErr := b.Config.MarkMutatorExit(ctx); exitErr != nil && err == nil {
+			err = fmt.Errorf("exit error: %w", exitErr)
 		}
 	}()
 
-	diags := m.Apply(ctx, b)
-
-	for _, d := range diags {
-		logdiag.LogDiag(ctx, d)
-	}
+	return m.Apply(ctx, b)
 }
 
-func ApplySeqContext(ctx context.Context, b *Bundle, mutators ...Mutator) {
+// ApplySeqContext applies mutators in order, stopping at the first error.
+func ApplySeqContext(ctx context.Context, b *Bundle, mutators ...Mutator) error {
 	for _, m := range mutators {
-		ApplyContext(ctx, b, m)
-		if logdiag.HasError(ctx) {
-			break
+		if err := ApplyContext(ctx, b, m); err != nil {
+			return err
 		}
 	}
+	return nil
 }
 
 type funcMutator struct {
@@ -112,18 +111,21 @@ func (m funcMutator) Name() string {
 	return "<func>"
 }
 
-func (m funcMutator) Apply(ctx context.Context, b *Bundle) diag.Diagnostics {
+func (m funcMutator) Apply(ctx context.Context, b *Bundle) error {
 	m.fn(ctx, b)
 	return nil
 }
 
 // ApplyFuncContext applies an inline-specified function mutator.
-func ApplyFuncContext(ctx context.Context, b *Bundle, fn func(context.Context, *Bundle)) {
-	ApplyContext(ctx, b, funcMutator{fn})
+func ApplyFuncContext(ctx context.Context, b *Bundle, fn func(context.Context, *Bundle)) error {
+	return ApplyContext(ctx, b, funcMutator{fn})
 }
 
 // Test helpers. TODO: move to separate package.
 
+// Apply is a test helper that runs a mutator and returns the diagnostics it
+// produced: warnings/recommendations collected via logdiag plus the returned
+// error (if any) as a trailing error diagnostic.
 func Apply(ctx context.Context, b *Bundle, m Mutator) diag.Diagnostics {
 	if !logdiag.IsSetup(ctx) {
 		ctx = logdiag.InitContext(ctx)
@@ -133,11 +135,18 @@ func Apply(ctx context.Context, b *Bundle, m Mutator) diag.Diagnostics {
 		panic(fmt.Sprintf("Already have %d diags collected: %v", len(previous), previous))
 	}
 	logdiag.SetCollect(ctx, true)
-	ApplyContext(ctx, b, m)
-	return logdiag.FlushCollected(ctx)
+	err := ApplyContext(ctx, b, m)
+	diags := logdiag.FlushCollected(ctx)
+	// A mutator that renders its own diagnostics returns the ErrAlreadyPrinted
+	// sentinel; those diagnostics are already in Collected, so only append errors
+	// that were returned directly (not yet rendered).
+	if err != nil && !errors.Is(err, logdiag.ErrAlreadyPrinted) {
+		diags = append(diags, diag.DiagnosticFromError(err))
+	}
+	return diags
 }
 
-// Test helper to get diagnostics in this call
+// ApplySeq is a test helper to get diagnostics in this call
 func ApplySeq(ctx context.Context, b *Bundle, mutators ...Mutator) diag.Diagnostics {
 	if !logdiag.IsSetup(ctx) {
 		ctx = logdiag.InitContext(ctx)
@@ -147,6 +156,13 @@ func ApplySeq(ctx context.Context, b *Bundle, mutators ...Mutator) diag.Diagnost
 		panic(fmt.Sprintf("Already have %d diags collected: %v", len(previous), previous))
 	}
 	logdiag.SetCollect(ctx, true)
-	ApplySeqContext(ctx, b, mutators...)
-	return logdiag.FlushCollected(ctx)
+	err := ApplySeqContext(ctx, b, mutators...)
+	diags := logdiag.FlushCollected(ctx)
+	// A mutator that renders its own diagnostics returns the ErrAlreadyPrinted
+	// sentinel; those diagnostics are already in Collected, so only append errors
+	// that were returned directly (not yet rendered).
+	if err != nil && !errors.Is(err, logdiag.ErrAlreadyPrinted) {
+		diags = append(diags, diag.DiagnosticFromError(err))
+	}
+	return diags
 }

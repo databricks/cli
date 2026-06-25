@@ -11,7 +11,6 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/log"
@@ -40,10 +39,10 @@ type LocationToUpdate struct {
 	location   dyn.Location
 }
 
-func (u *upload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	client, _, diags := GetFilerForLibraries(ctx, b)
-	if diags.HasError() {
-		return diags
+func (u *upload) Apply(ctx context.Context, b *bundle.Bundle) error {
+	client, _, err := GetFilerForLibraries(ctx, b)
+	if err != nil {
+		return err
 	}
 
 	// Only set the filer client if it's not already set. We use the client field
@@ -71,10 +70,10 @@ func (u *upload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	}
 
 	if err := errs.Wait(); err != nil {
-		return diag.FromErr(err)
+		return err
 	}
 
-	return diags
+	return nil
 }
 
 func (u *upload) Name() string {

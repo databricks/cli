@@ -18,7 +18,7 @@ func (m *validateVolumePath) Name() string {
 	return "validate:volume-path"
 }
 
-func (m *validateVolumePath) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (m *validateVolumePath) Apply(ctx context.Context, b *bundle.Bundle) error {
 	var diags diag.Diagnostics
 	// Define paths to check and their corresponding config field names
 	pathChecks := []struct {
@@ -44,12 +44,12 @@ func (m *validateVolumePath) Apply(ctx context.Context, b *bundle.Bundle) diag.D
 
 			// Return early for root path validation
 			if check.configName == "workspace.root_path" {
-				return diags
+				return diags.Error()
 			}
 		}
 	}
 
-	return diags
+	return diags.Error()
 }
 
 func ValidateVolumePath() bundle.ReadOnlyMutator {

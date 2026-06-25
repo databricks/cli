@@ -2,12 +2,15 @@ package libraries
 
 import (
 	"context"
+	"maps"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/logdiag"
 )
 
 type checkForSameNameLibraries struct{}
@@ -28,8 +31,7 @@ type libData struct {
 	otherPaths []string
 }
 
-func (c checkForSameNameLibraries) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	var diags diag.Diagnostics
+func (c checkForSameNameLibraries) Apply(ctx context.Context, b *bundle.Bundle) error {
 	libs := make(map[string]*libData)
 
 	err := b.Config.Mutate(func(rootConfig dyn.Value) (dyn.Value, error) {
@@ -76,11 +78,17 @@ func (c checkForSameNameLibraries) Apply(ctx context.Context, b *bundle.Bundle) 
 
 		return rootConfig, nil
 	})
+	if err != nil {
+		return err
+	}
 
 	// Iterate over all the libraries and check if there are any duplicates.
 	// Duplicates will have more than one location.
 	// If there are duplicates, add a diagnostic.
-	for lib, lv := range libs {
+	// Sort the keys for deterministic output when multiple duplicates exist.
+	var diags diag.Diagnostics
+	for _, lib := range slices.Sorted(maps.Keys(libs)) {
+		lv := libs[lib]
 		if len(lv.locations) > 1 {
 			diags = append(diags, diag.Diagnostic{
 				Severity:  diag.Error,
@@ -91,11 +99,8 @@ func (c checkForSameNameLibraries) Apply(ctx context.Context, b *bundle.Bundle) 
 			})
 		}
 	}
-	if err != nil {
-		diags = diags.Extend(diag.FromErr(err))
-	}
 
-	return diags
+	return logdiag.Flush(ctx, diags)
 }
 
 func (c checkForSameNameLibraries) Name() string {

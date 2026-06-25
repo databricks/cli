@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/logdiag"
 )
 
 type validateDirectOnlyResources struct {
@@ -34,7 +35,7 @@ func isDirectOnly(pluralName string) bool {
 	return hasDirect && !hasTerraform
 }
 
-func (m *validateDirectOnlyResources) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (m *validateDirectOnlyResources) Apply(ctx context.Context, b *bundle.Bundle) error {
 	if m.engine.IsDirect() {
 		return nil
 	}
@@ -58,5 +59,5 @@ func (m *validateDirectOnlyResources) Apply(ctx context.Context, b *bundle.Bundl
 		})
 	}
 
-	return diags
+	return logdiag.Flush(ctx, diags)
 }

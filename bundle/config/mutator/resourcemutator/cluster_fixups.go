@@ -5,7 +5,6 @@ import (
 	"slices"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
@@ -20,7 +19,7 @@ func (m *jobClustersFixups) Name() string {
 	return "JobClustersFixups"
 }
 
-func (m *jobClustersFixups) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (m *jobClustersFixups) Apply(ctx context.Context, b *bundle.Bundle) error {
 	for _, job := range b.Config.Resources.Jobs {
 		if job == nil {
 			continue
@@ -44,7 +43,7 @@ func (m *clusterFixups) Name() string {
 	return "ClusterFixups"
 }
 
-func (m *clusterFixups) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (m *clusterFixups) Apply(ctx context.Context, b *bundle.Bundle) error {
 	for _, cluster := range b.Config.Resources.Clusters {
 		if cluster == nil {
 			continue

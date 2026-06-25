@@ -9,40 +9,39 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/terraform_dabs_map"
-	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go"
 )
 
-func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.WorkspaceClient, plan *deployplan.Plan) {
+func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.WorkspaceClient, plan *deployplan.Plan) error {
 	if plan == nil {
 		panic("Planning is not done")
 	}
 
 	if len(plan.Plan) == 0 {
 		// Avoid creating state file if nothing to deploy
-		return
+		return nil
 	}
 
 	b.StateDB.AssertOpenedForWrite()
 	b.RemoteStateCache.Clear()
+	b.deployErrs.reset()
 
 	g, err := makeGraph(plan)
 	if err != nil {
-		logdiag.LogError(ctx, err)
-		return
+		return err
 	}
 
 	g.Run(defaultParallelism, func(resourceKey string, failedDependency *string) bool {
 		entry, err := plan.WriteLockEntry(resourceKey)
 		if err != nil {
-			logdiag.LogError(ctx, fmt.Errorf("%s: internal error: %w", resourceKey, err))
+			b.deployErrs.add(fmt.Errorf("%s: internal error: %w", resourceKey, err))
 			return false
 		}
 
 		if entry == nil {
-			logdiag.LogError(ctx, fmt.Errorf("%s: internal error: node not in graph", resourceKey))
+			b.deployErrs.add(fmt.Errorf("%s: internal error: node not in graph", resourceKey))
 			return false
 		}
 
@@ -52,21 +51,21 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 		errorPrefix := fmt.Sprintf("cannot %s %s", action, resourceKey)
 
 		if action == deployplan.Undefined {
-			logdiag.LogError(ctx, fmt.Errorf("cannot deploy %s: unknown action %q", resourceKey, action))
+			b.deployErrs.add(fmt.Errorf("cannot deploy %s: unknown action %q", resourceKey, action))
 			return false
 		}
 
 		// If a dependency failed, report and skip execution for this node by returning false
 		if failedDependency != nil {
 			if action != deployplan.Skip {
-				logdiag.LogError(ctx, fmt.Errorf("%s: dependency failed: %s", errorPrefix, *failedDependency))
+				b.deployErrs.add(fmt.Errorf("%s: dependency failed: %s", errorPrefix, *failedDependency))
 			}
 			return false
 		}
 
 		adapter, err := b.getAdapterForKey(resourceKey)
 		if adapter == nil {
-			logdiag.LogError(ctx, fmt.Errorf("%s: internal error: cannot get adapter: %w", errorPrefix, err))
+			b.deployErrs.add(fmt.Errorf("%s: internal error: cannot get adapter: %w", errorPrefix, err))
 			return false
 		}
 
@@ -79,7 +78,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 		if action == deployplan.Delete {
 			err = d.Destroy(ctx, &b.StateDB)
 			if err != nil {
-				logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
+				b.deployErrs.add(fmt.Errorf("%s: %w", errorPrefix, err))
 				return false
 			}
 			return true
@@ -95,19 +94,19 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 			// Get the cached StructVar to check for unresolved refs and get value
 			sv, ok := b.StateCache.Load(resourceKey)
 			if !ok {
-				logdiag.LogError(ctx, fmt.Errorf("%s: internal error: missing cached StructVar", errorPrefix))
+				b.deployErrs.add(fmt.Errorf("%s: internal error: missing cached StructVar", errorPrefix))
 				return false
 			}
 
 			if len(sv.Refs) > 0 {
-				logdiag.LogError(ctx, fmt.Errorf("%s: unresolved references: %s", errorPrefix, jsonDump(sv.Refs)))
+				b.deployErrs.add(fmt.Errorf("%s: unresolved references: %s", errorPrefix, jsonDump(sv.Refs)))
 				return false
 			}
 
 			// TODO: redo calcDiff to downgrade planned action if possible (?)
 			err = d.Deploy(ctx, &b.StateDB, sv.Value, action, entry)
 			if err != nil {
-				logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
+				b.deployErrs.add(fmt.Errorf("%s: %w", errorPrefix, err))
 				return false
 			}
 		}
@@ -119,13 +118,13 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 		if needRemoteState {
 			id := b.StateDB.GetResourceID(d.ResourceKey)
 			if id == "" {
-				logdiag.LogError(ctx, fmt.Errorf("%s: internal error: missing entry in state after deploy", errorPrefix))
+				b.deployErrs.add(fmt.Errorf("%s: internal error: missing entry in state after deploy", errorPrefix))
 				return false
 			}
 
 			err = d.refreshRemoteState(ctx, id)
 			if err != nil {
-				logdiag.LogError(ctx, fmt.Errorf("%s: failed to read remote state: %w", errorPrefix, err))
+				b.deployErrs.add(fmt.Errorf("%s: failed to read remote state: %w", errorPrefix, err))
 				return false
 			}
 			b.RemoteStateCache.Store(resourceKey, d.RemoteState)
@@ -133,6 +132,8 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 
 		return true
 	})
+
+	return b.deployErrs.join()
 }
 
 func (b *DeploymentBundle) LookupReferencePostDeploy(ctx context.Context, path *structpath.PathNode) (any, error) {

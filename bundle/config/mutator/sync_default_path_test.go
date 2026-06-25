@@ -57,7 +57,7 @@ func TestSyncDefaultPath_SkipIfSet(t *testing.T) {
 
 			ctx := logdiag.InitContext(t.Context())
 
-			bundle.ApplyFuncContext(ctx, b, func(ctx context.Context, b *bundle.Bundle) {
+			err := bundle.ApplyFuncContext(ctx, b, func(ctx context.Context, b *bundle.Bundle) {
 				err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
 					v, err := dyn.Set(v, "sync", dyn.V(dyn.NewMapping()))
 					if err != nil {
@@ -71,7 +71,7 @@ func TestSyncDefaultPath_SkipIfSet(t *testing.T) {
 				})
 				require.NoError(t, err)
 			})
-			require.False(t, logdiag.HasError(ctx))
+			require.NoError(t, err)
 
 			diags := bundle.Apply(ctx, b, mutator.SyncDefaultPath())
 			require.NoError(t, diags.Error())

@@ -114,13 +114,19 @@ func LoadFromBytes(path string, raw []byte) (*Root, diag.Diagnostics) {
 				Locations: []dyn.Location{le.Loc},
 			}}
 		}
-		return nil, diag.Errorf("failed to load %s: %v", path, err)
+		return nil, diag.Diagnostics{{
+			Severity: diag.Error,
+			Summary:  fmt.Sprintf("failed to load %s: %v", path, err),
+		}}
 	}
 
 	// Rewrite configuration tree where necessary.
 	v, err = rewriteShorthands(v)
 	if err != nil {
-		return nil, diag.Errorf("failed to rewrite %s: %v", path, err)
+		return nil, diag.Diagnostics{{
+			Severity: diag.Error,
+			Summary:  fmt.Sprintf("failed to rewrite %s: %v", path, err),
+		}}
 	}
 
 	// Normalize dynamic configuration tree according to configuration type.
@@ -129,7 +135,10 @@ func LoadFromBytes(path string, raw []byte) (*Root, diag.Diagnostics) {
 	// Convert normalized configuration tree to typed configuration.
 	err = r.updateWithDynamicValue(v)
 	if err != nil {
-		diags = diags.Extend(diag.Errorf("failed to load %s: %v", path, err))
+		diags = diags.Append(diag.Diagnostic{
+			Severity: diag.Error,
+			Summary:  fmt.Sprintf("failed to load %s: %v", path, err),
+		})
 		return nil, diags
 	}
 	return &r, diags

@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn/dynloc"
 )
 
@@ -20,14 +19,14 @@ func (m *populateLocations) Name() string {
 	return "PopulateLocations"
 }
 
-func (m *populateLocations) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (m *populateLocations) Apply(ctx context.Context, b *bundle.Bundle) error {
 	locs, err := dynloc.Build(
 		b.Config.Value(),
 		// Make all paths relative to the bundle root.
 		b.BundleRootPath,
 	)
 	if err != nil {
-		return diag.FromErr(err)
+		return err
 	}
 
 	b.Config.Locations = &locs

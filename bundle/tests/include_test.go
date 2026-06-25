@@ -18,10 +18,9 @@ func TestIncludeInvalid(t *testing.T) {
 	logdiag.SetCollect(ctx, true)
 	b, err := bundle.Load(ctx, "./include_invalid")
 	require.NoError(t, err)
-	phases.Load(ctx, b)
-	diags := logdiag.FlushCollected(ctx)
-	require.Error(t, diags.Error())
-	assert.ErrorContains(t, diags.Error(), "notexists.yml defined in 'include' section does not match any files")
+	err = phases.Load(ctx, b)
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "notexists.yml defined in 'include' section does not match any files")
 }
 
 func TestIncludeWithGlob(t *testing.T) {

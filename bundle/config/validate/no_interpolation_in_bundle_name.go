@@ -20,7 +20,7 @@ func (m *noInterpolationInBundleName) Name() string {
 	return "validate:no_interpolation_in_bundle_name"
 }
 
-func (m *noInterpolationInBundleName) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (m *noInterpolationInBundleName) Apply(ctx context.Context, b *bundle.Bundle) error {
 	if dynvar.ContainsVariableReference(b.Config.Bundle.Name) {
 		logdiag.LogDiag(ctx, diag.Diagnostic{
 			Severity: diag.Warning,

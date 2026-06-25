@@ -9,7 +9,6 @@ import (
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/logdiag"
 	"github.com/spf13/cobra"
 )
 
@@ -47,14 +46,13 @@ func BindResource(cmd *cobra.Command, resourceKey, resourceId string, autoApprov
 	if !ok {
 		tfName = resource.ResourceDescription().PluralName
 	}
-	phases.Bind(ctx, b, &terraform.BindOptions{
+	if err := phases.Bind(ctx, b, &terraform.BindOptions{
 		AutoApprove:  autoApprove,
 		ResourceType: tfName,
 		ResourceKey:  resourceKey,
 		ResourceId:   resourceId,
-	}, stateDesc.Engine)
-	if logdiag.HasError(ctx) {
-		return root.ErrAlreadyPrinted
+	}, stateDesc.Engine); err != nil {
+		return root.RenderAndReturnError(ctx, err)
 	}
 
 	cmdio.LogString(ctx, fmt.Sprintf("Successfully bound %s with an id '%s'", resource.ResourceDescription().SingularName, resourceId))

@@ -7,6 +7,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/git"
+	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/vfs"
 )
 
@@ -20,11 +21,12 @@ func (m *loadGitDetails) Name() string {
 	return "LoadGitDetails"
 }
 
-func (m *loadGitDetails) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	var diags diag.Diagnostics
+func (m *loadGitDetails) Apply(ctx context.Context, b *bundle.Bundle) error {
 	info, err := git.FetchRepositoryInfo(ctx, b.BundleRoot.Native(), b.WorkspaceClient(ctx))
 	if err != nil {
-		diags = append(diags, diag.WarningFromErr(err)...)
+		for _, d := range diag.WarningFromErr(err) {
+			logdiag.LogDiag(ctx, d)
+		}
 	}
 
 	if info.WorktreeRoot == "" {
@@ -51,9 +53,8 @@ func (m *loadGitDetails) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 
 	relBundlePath, err := filepath.Rel(b.WorktreeRoot.Native(), b.BundleRoot.Native())
 	if err != nil {
-		diags = append(diags, diag.FromErr(err)...)
-	} else {
-		b.Config.Bundle.Git.BundleRootPath = filepath.ToSlash(relBundlePath)
+		return err
 	}
-	return diags
+	b.Config.Bundle.Git.BundleRootPath = filepath.ToSlash(relBundlePath)
+	return nil
 }

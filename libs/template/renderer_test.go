@@ -68,28 +68,31 @@ func assertBuiltinTemplateValid(t *testing.T, template string, settings map[stri
 	ctx = logdiag.InitContext(ctx)
 	logdiag.SetCollect(ctx, true)
 
-	phases.LoadNamedTarget(ctx, b, target)
+	loadErr := phases.LoadNamedTarget(ctx, b, target)
 	diags := logdiag.FlushCollected(ctx)
 	require.Empty(t, diags)
+	require.NoError(t, loadErr)
 
 	// Apply initialize / validation mutators
-	bundle.ApplyFuncContext(ctx, b, func(ctx context.Context, b *bundle.Bundle) {
+	require.NoError(t, bundle.ApplyFuncContext(ctx, b, func(ctx context.Context, b *bundle.Bundle) {
 		b.Config.Workspace.CurrentUser = &bundleConfig.User{User: cachedUser}
-	})
+	}))
 
 	b.Tagging = tags.ForCloud(w.Config)
 	b.SetWorkpaceClient(w)
 	b.WorkspaceClient(ctx)
 
-	phases.Initialize(ctx, b)
+	initErr := phases.Initialize(ctx, b)
 	diags = logdiag.FlushCollected(ctx)
 	require.Empty(t, diags)
+	require.NoError(t, initErr)
 
 	// Apply build mutator
 	if build {
-		phases.Build(ctx, b)
+		_, buildErr := phases.Build(ctx, b)
 		diags = logdiag.FlushCollected(ctx)
 		require.Empty(t, diags)
+		require.NoError(t, buildErr)
 	}
 }
 

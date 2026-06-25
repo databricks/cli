@@ -15,7 +15,6 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/python"
 )
 
@@ -29,23 +28,22 @@ func (m *prepare) Name() string {
 	return "artifacts.Prepare"
 }
 
-func (m *prepare) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (m *prepare) Apply(ctx context.Context, b *bundle.Bundle) error {
 	err := InsertPythonArtifact(ctx, b)
 	if err != nil {
-		return diag.FromErr(err)
+		return err
 	}
 
 	for _, artifactName := range slices.Sorted(maps.Keys(b.Config.Artifacts)) {
 		artifact := b.Config.Artifacts[artifactName]
 		if artifact == nil {
 			l := b.Config.GetLocation("artifacts." + artifactName)
-			logdiag.LogDiag(ctx, diag.Diagnostic{
+			return diag.Diagnostic{
 				Severity:  diag.Error,
 				Summary:   "Artifact not properly configured",
 				Detail:    "please specify artifact properties",
 				Locations: []dyn.Location{l},
-			})
-			continue
+			}
 		}
 		b.Metrics.AddBoolValue(metrics.ArtifactBuildCommandIsSet, artifact.BuildCommand != "")
 		b.Metrics.AddBoolValue(metrics.ArtifactFilesIsSet, len(artifact.Files) != 0)
@@ -85,15 +83,13 @@ func (m *prepare) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 		}
 
 		if artifact.BuildCommand == "" && len(artifact.Files) == 0 {
-			logdiag.LogError(ctx, errors.New("misconfigured artifact: please specify 'build' or 'files' property"))
+			return errors.New("misconfigured artifact: please specify 'build' or 'files' property")
 		}
 
 		if len(artifact.Files) > 0 && artifact.BuildCommand == "" {
-			bundle.ApplyContext(ctx, b, expandGlobs{name: artifactName})
-		}
-
-		if logdiag.HasError(ctx) {
-			break
+			if err := bundle.ApplyContext(ctx, b, expandGlobs{name: artifactName}); err != nil {
+				return err
+			}
 		}
 	}
 

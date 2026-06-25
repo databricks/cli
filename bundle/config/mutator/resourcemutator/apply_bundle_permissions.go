@@ -97,10 +97,10 @@ func ApplyBundlePermissions() bundle.Mutator {
 	return &bundlePermissions{}
 }
 
-func (m *bundlePermissions) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (m *bundlePermissions) Apply(ctx context.Context, b *bundle.Bundle) error {
 	err := validatePermissions(b)
 	if err != nil {
-		return diag.FromErr(err)
+		return err
 	}
 
 	patterns := make(map[string]dyn.Pattern, 0)
@@ -154,7 +154,7 @@ func (m *bundlePermissions) Apply(ctx context.Context, b *bundle.Bundle) diag.Di
 		return v, nil
 	})
 	if err != nil {
-		return diag.FromErr(err)
+		return err
 	}
 
 	return nil

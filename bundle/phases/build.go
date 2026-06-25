@@ -11,16 +11,15 @@ import (
 	"github.com/databricks/cli/bundle/scripts"
 	"github.com/databricks/cli/bundle/trampoline"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/cli/libs/logdiag"
 )
 
 type LibLocationMap map[string][]libraries.LocationToUpdate
 
 // The build phase builds artifacts.
-func Build(ctx context.Context, b *bundle.Bundle) LibLocationMap {
+func Build(ctx context.Context, b *bundle.Bundle) (LibLocationMap, error) {
 	log.Info(ctx, "Phase: build")
 
-	bundle.ApplySeqContext(ctx, b,
+	if err := bundle.ApplySeqContext(ctx, b,
 		scripts.Execute(config.ScriptPreBuild),
 		artifacts.Build(),
 		scripts.Execute(config.ScriptPostBuild),
@@ -39,18 +38,22 @@ func Build(ctx context.Context, b *bundle.Bundle) LibLocationMap {
 		libraries.CheckForSameNameLibraries(),
 		// SwitchToPatchedWheels must be run after ExpandGlobReferences and after build phase because it Artifact.Source and Artifact.Patched populated
 		libraries.SwitchToPatchedWheels(),
-	)
-
-	libs, diags := libraries.ReplaceWithRemotePath(ctx, b)
-	for _, diag := range diags {
-		logdiag.LogDiag(ctx, diag)
+	); err != nil {
+		return nil, err
 	}
 
-	bundle.ApplyContext(ctx, b,
+	libs, err := libraries.ReplaceWithRemotePath(ctx, b)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := bundle.ApplyContext(ctx, b,
 		// TransformWheelTask must be run after ReplaceWithRemotePath so we can use correct remote path in the
 		// transformed notebook
 		trampoline.TransformWheelTask(),
-	)
+	); err != nil {
+		return nil, err
+	}
 
-	return libs
+	return libs, nil
 }

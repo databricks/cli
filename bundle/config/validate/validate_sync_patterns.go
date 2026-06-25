@@ -23,19 +23,17 @@ func (v *validateSyncPatterns) Name() string {
 	return "validate:validate_sync_patterns"
 }
 
-func (v *validateSyncPatterns) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (v *validateSyncPatterns) Apply(ctx context.Context, b *bundle.Bundle) error {
 	s := b.Config.Sync
 
-	checkPatterns(ctx, s.Exclude, "sync.exclude", b)
-	if logdiag.HasError(ctx) {
-		return nil
+	if err := checkPatterns(ctx, s.Exclude, "sync.exclude", b); err != nil {
+		return err
 	}
 
-	checkPatterns(ctx, s.Include, "sync.include", b)
-	return nil
+	return checkPatterns(ctx, s.Include, "sync.include", b)
 }
 
-func checkPatterns(ctx context.Context, patterns []string, path string, b *bundle.Bundle) {
+func checkPatterns(ctx context.Context, patterns []string, path string, b *bundle.Bundle) error {
 	var errs errgroup.Group
 
 	for index, pattern := range patterns {
@@ -69,8 +67,5 @@ func checkPatterns(ctx context.Context, patterns []string, path string, b *bundl
 		})
 	}
 
-	err := errs.Wait()
-	if err != nil {
-		logdiag.LogError(ctx, err)
-	}
+	return errs.Wait()
 }

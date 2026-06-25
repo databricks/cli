@@ -18,7 +18,6 @@ import (
 	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/bundle/migrate"
-	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/filer"
@@ -42,7 +41,7 @@ func (m *uploadStateForYamlSync) Name() string {
 	return "statemgmt.UploadStateForYamlSync"
 }
 
-func (m *uploadStateForYamlSync) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (m *uploadStateForYamlSync) Apply(ctx context.Context, b *bundle.Bundle) error {
 	if m.engine.IsDirect() {
 		return nil
 	}
@@ -141,9 +140,8 @@ func (m *uploadStateForYamlSync) convertState(ctx context.Context, b *bundle.Bun
 	// Apply SecretScopeFixups so the config matches what the direct engine expects.
 	// This adds MANAGE ACL for the current user to all secret scopes, ensuring
 	// the migrated state and config agree on .permissions entries.
-	bundle.ApplyContext(ctx, b, resourcemutator.SecretScopeFixups(engine.EngineDirect))
-	if logdiag.HasError(ctx) {
-		return false, errors.New("failed to apply secret scope fixups")
+	if err := bundle.ApplyContext(ctx, b, resourcemutator.SecretScopeFixups(engine.EngineDirect)); err != nil {
+		return false, err
 	}
 
 	// b.Config has been modified by terraform.Interpolate which converts bundle-style
@@ -178,12 +176,6 @@ func (m *uploadStateForYamlSync) convertState(ctx context.Context, b *bundle.Bun
 
 	if _, err := stateDB.Finalize(ctx); err != nil {
 		return false, err
-	}
-
-	// Apply reports failures via logdiag instead of returning an error. Don't
-	// upload a snapshot that is missing entries for the failed resources.
-	if logdiag.HasError(ctx) {
-		return false, errors.New("state conversion failed")
 	}
 
 	return true, nil

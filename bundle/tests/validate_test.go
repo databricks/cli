@@ -1,6 +1,7 @@
 package config_tests
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -132,8 +133,11 @@ func TestValidateUniqueResourceIdentifiers(t *testing.T) {
 			require.NoError(t, err)
 
 			// The UniqueResourceKeys mutator is run as part of the Load phase.
-			phases.Load(ctx, b)
+			loadErr := phases.Load(ctx, b)
 			diags := logdiag.FlushCollected(ctx)
+			if loadErr != nil && !errors.Is(loadErr, logdiag.ErrAlreadyPrinted) {
+				diags = append(diags, diag.DiagnosticFromError(loadErr))
+			}
 			assert.Equal(t, tc.diagnostics, diags)
 		})
 	}

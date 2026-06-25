@@ -22,10 +22,10 @@ import (
 // The initialize phase fills in defaults and connects to the workspace.
 // Interpolation of fields referring to the "bundle" and "workspace" keys
 // happens upon completion of this phase.
-func Initialize(ctx context.Context, b *bundle.Bundle) {
+func Initialize(ctx context.Context, b *bundle.Bundle) error {
 	log.Info(ctx, "Phase: initialize")
 
-	bundle.ApplySeqContext(ctx, b,
+	return bundle.ApplySeqContext(ctx, b,
 		// Reads (dynamic): resource.*.*
 		// Checks that none of resources.<type>.<key> is nil. Raises error otherwise.
 		validate.AllResourcesHaveValues(),

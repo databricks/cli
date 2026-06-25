@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/vfs"
 )
 
@@ -53,9 +54,7 @@ func (m *syncInferRoot) computeRoot(path, root string) string {
 	return filepath.Clean(root)
 }
 
-func (m *syncInferRoot) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	var diags diag.Diagnostics
-
+func (m *syncInferRoot) Apply(ctx context.Context, b *bundle.Bundle) error {
 	// Use the bundle root path as the starting point for inferring the sync root path.
 	bundleRootPath := filepath.Clean(b.BundleRootPath)
 
@@ -78,13 +77,14 @@ func (m *syncInferRoot) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 	// Compute the relative path from the sync root to the bundle root.
 	rel, err := filepath.Rel(syncRootPath, bundleRootPath)
 	if err != nil {
-		return diag.FromErr(err)
+		return err
 	}
 
 	// If during computation of the sync root path we hit the root of the filesystem,
 	// then one or more of the sync paths are outside the filesystem.
 	// Check if this happened by verifying that none of the paths escape the root
 	// when joined with the sync root path.
+	var diags diag.Diagnostics
 	for i, path := range b.Config.Sync.Paths {
 		if filepath.IsLocal(filepath.Join(rel, path)) {
 			continue
@@ -99,7 +99,7 @@ func (m *syncInferRoot) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 	}
 
 	if diags.HasError() {
-		return diags
+		return logdiag.Flush(ctx, diags)
 	}
 
 	// Update all paths in the sync configuration to be relative to the sync root.

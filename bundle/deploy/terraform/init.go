@@ -319,7 +319,7 @@ func getTerraformExec(ctx context.Context, b *bundle.Bundle, execPath string) (*
 	return tfexec.NewTerraform(workingDir, execPath)
 }
 
-func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func Initialize(ctx context.Context, b *bundle.Bundle) error {
 	tfConfig := b.Config.Bundle.Terraform
 	if tfConfig == nil {
 		tfConfig = &config.Terraform{}
@@ -328,46 +328,46 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 
 	execPath, err := findExecPath(ctx, b, tfConfig, tfInstaller{})
 	if err != nil {
-		return diag.FromErr(err)
+		return err
 	}
 
 	tfe, err := getTerraformExec(ctx, b, execPath)
 	if err != nil {
-		return diag.FromErr(err)
+		return err
 	}
 
 	environ, err := b.AuthEnv(ctx)
 	if err != nil {
-		return diag.FromErr(err)
+		return err
 	}
 
 	err = inheritEnvVars(ctx, environ)
 	if err != nil {
-		return diag.FromErr(err)
+		return err
 	}
 
 	// Set the temporary directory environment variables
 	err = setTempDirEnvVars(ctx, environ, b)
 	if err != nil {
-		return diag.FromErr(err)
+		return err
 	}
 
 	// Set the proxy related environment variables
 	err = setProxyEnvVars(ctx, environ, b)
 	if err != nil {
-		return diag.FromErr(err)
+		return err
 	}
 
 	err = setUserAgentExtraEnvVar(environ, b)
 	if err != nil {
-		return diag.FromErr(err)
+		return err
 	}
 
 	// Configure environment variables for auth for Terraform to use.
 	log.Debugf(ctx, "Environment variables for Terraform: %s", strings.Join(slices.Collect(maps.Keys(environ)), ", "))
 	err = tfe.SetEnv(environ)
 	if err != nil {
-		return diag.FromErr(err)
+		return err
 	}
 
 	err = tfe.Init(ctx, tfexec.Upgrade(true))

@@ -30,7 +30,7 @@ func (m *release) Name() string {
 	return "lock:release"
 }
 
-func (m *release) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (m *release) Apply(ctx context.Context, b *bundle.Bundle) error {
 	// Return early if locking is disabled.
 	if !b.Config.Bundle.Deployment.Lock.IsEnabled() {
 		log.Infof(ctx, "Skipping; locking is disabled")
@@ -47,11 +47,11 @@ func (m *release) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 	log.Infof(ctx, "Releasing deployment lock")
 	switch m.goal {
 	case GoalDeploy:
-		return diag.FromErr(b.Locker.Unlock(ctx))
+		return b.Locker.Unlock(ctx)
 	case GoalBind, GoalUnbind:
-		return diag.FromErr(b.Locker.Unlock(ctx))
+		return b.Locker.Unlock(ctx)
 	case GoalDestroy:
-		return diag.FromErr(b.Locker.Unlock(ctx, locker.AllowLockFileNotExist))
+		return b.Locker.Unlock(ctx, locker.AllowLockFileNotExist)
 	default:
 		return diag.Errorf("unknown goal for lock release: %s", m.goal)
 	}

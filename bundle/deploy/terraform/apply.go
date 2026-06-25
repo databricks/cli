@@ -16,7 +16,7 @@ func (w *apply) Name() string {
 	return "terraform.Apply"
 }
 
-func (w *apply) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (w *apply) Apply(ctx context.Context, b *bundle.Bundle) error {
 	// return early if plan is empty
 	if b.TerraformPlanIsEmpty {
 		log.Debugf(ctx, "No changes in plan. Skipping terraform apply.")
@@ -35,9 +35,8 @@ func (w *apply) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	// Apply terraform according to the computed plan
 	err := tf.Apply(ctx, tfexec.DirOrPlan(b.TerraformPlanPath))
 	if err != nil {
-		diags := permissions.TryExtendTerraformPermissionError(ctx, b, err)
-		if diags != nil {
-			return diags
+		if extErr := permissions.TryExtendTerraformPermissionError(ctx, b, err); extErr != nil {
+			return extErr
 		}
 		return diag.Errorf("terraform apply: %v", err)
 	}

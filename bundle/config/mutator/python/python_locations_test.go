@@ -5,7 +5,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/dynassert"
 	"github.com/stretchr/testify/assert"
@@ -141,13 +140,13 @@ func TestLoadOutput(t *testing.T) {
 		location,
 	)
 
-	value, diags := loadOutput(
+	value, err := loadOutput(
 		bundleRoot,
 		bytes.NewReader([]byte(output)),
 		locations,
 	)
 
-	assert.Equal(t, diag.Diagnostics{}, diags)
+	require.NoError(t, err)
 
 	name, err := dyn.Get(value, "resources.jobs.my_job.name")
 	require.NoError(t, err)

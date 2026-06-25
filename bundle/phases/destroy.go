@@ -75,13 +75,18 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.
 	return cmdio.AskYesOrNo(ctx, "Would you like to proceed?")
 }
 
-func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, engine engine.EngineType) {
+func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, engine engine.EngineType) error {
+	var applyErr error
 	if engine.IsDirect() {
-		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(ctx), plan)
+		applyErr = b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(ctx), plan)
 	} else {
 		// Core destructive mutators for destroy. These require informed user consent.
-		bundle.ApplyContext(ctx, b, terraform.Apply())
+		applyErr = bundle.ApplyContext(ctx, b, terraform.Apply())
 	}
+
+	// Flush the apply error before the (potentially slow) state finalize below,
+	// so the user sees the failure before that work runs.
+	applyErr = logdiag.FlushError(ctx, applyErr)
 
 	// Flush WAL to local state file before deleting remote files.
 	// Warn instead of hard-error: resources are already deleted, so proceed
@@ -95,43 +100,47 @@ func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, e
 		}
 	}
 
-	if logdiag.HasError(ctx) {
-		return
+	if applyErr != nil {
+		return applyErr
 	}
 
-	bundle.ApplyContext(ctx, b, files.Delete())
-
-	if !logdiag.HasError(ctx) {
-		cmdio.LogString(ctx, "Destroy complete!")
+	if err := bundle.ApplyContext(ctx, b, files.Delete()); err != nil {
+		return logdiag.FlushError(ctx, err)
 	}
+
+	cmdio.LogString(ctx, "Destroy complete!")
+	return nil
 }
 
 // The destroy phase deletes artifacts and resources.
-func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
+func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) (err error) {
 	log.Info(ctx, "Phase: destroy")
 
-	ok, err := assertRootPathExists(ctx, b)
-	if err != nil {
-		logdiag.LogError(ctx, err)
-		return
+	ok, existErr := assertRootPathExists(ctx, b)
+	if existErr != nil {
+		return existErr
 	}
 
 	if !ok {
 		cmdio.LogString(ctx, "No active deployment found to destroy!")
-		return
+		return nil
 	}
 
-	bundle.ApplyContext(ctx, b, lock.Acquire())
-	if logdiag.HasError(ctx) {
-		return
+	if acquireErr := bundle.ApplyContext(ctx, b, lock.Acquire()); acquireErr != nil {
+		return acquireErr
 	}
 
 	defer func() {
-		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalDestroy))
+		// Flush the destroy error before releasing the lock so the user sees the
+		// failure before this final API call runs.
+		err = logdiag.FlushError(ctx, err)
+		if releaseErr := bundle.ApplyContext(ctx, b, lock.Release(lock.GoalDestroy)); releaseErr != nil && err == nil {
+			err = logdiag.FlushError(ctx, releaseErr)
+		}
 	}()
 
 	if !engine.IsDirect() {
-		bundle.ApplySeqContext(ctx, b,
+		if seqErr := bundle.ApplySeqContext(ctx, b,
 			// We need to resolve artifact variable (how we do it in build phase)
 			// because some of the to-be-destroyed resource might use this variable.
 			// Not resolving might lead to terraform "Reference to undeclared resource" error
@@ -141,50 +150,45 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 			terraform.Interpolate(),
 			terraform.Write(),
 			terraform.Plan(terraform.PlanGoal("destroy")),
-		)
-	}
-
-	if logdiag.HasError(ctx) {
-		return
+		); seqErr != nil {
+			return seqErr
+		}
 	}
 
 	var plan *deployplan.Plan
 	if engine.IsDirect() {
 		plan, err = b.DeploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(ctx), nil)
 		if err != nil {
-			logdiag.LogError(ctx, err)
-			return
+			return err
 		}
 	} else {
 		tf := b.Terraform
 		if tf == nil {
-			logdiag.LogError(ctx, errors.New("terraform not initialized"))
-			return
+			return errors.New("terraform not initialized")
 		}
 
 		plan, err = terraform.ShowPlanFile(ctx, tf, b.TerraformPlanPath)
 		if err != nil {
-			logdiag.LogError(ctx, err)
-			return
+			return err
 		}
 	}
 
-	hasApproval, err := approvalForDestroy(ctx, b, plan)
-	if err != nil {
-		logdiag.LogError(ctx, err)
-		return
+	hasApproval, approvalErr := approvalForDestroy(ctx, b, plan)
+	if approvalErr != nil {
+		return approvalErr
 	}
 
-	if hasApproval {
-		if engine.IsDirect() {
-			// Upgrade from read (opened by process.go) to write mode
-			if err := b.DeploymentBundle.StateDB.UpgradeToWrite(); err != nil {
-				logdiag.LogError(ctx, err)
-				return
-			}
-		}
-		destroyCore(ctx, b, plan, engine)
-	} else {
+	if !hasApproval {
 		cmdio.LogString(ctx, "Destroy cancelled!")
+		return nil
 	}
+
+	if engine.IsDirect() {
+		// Upgrade from read (opened by process.go) to write mode
+		if upgradeErr := b.DeploymentBundle.StateDB.UpgradeToWrite(); upgradeErr != nil {
+			return upgradeErr
+		}
+	}
+
+	return destroyCore(ctx, b, plan, engine)
 }

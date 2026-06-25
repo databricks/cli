@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/bundle/paths"
 	"github.com/databricks/cli/bundle/permissions"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"golang.org/x/sync/errgroup"
@@ -18,45 +19,50 @@ import (
 
 type folderPermissions struct{ bundle.RO }
 
-func (f *folderPermissions) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (f *folderPermissions) Apply(ctx context.Context, b *bundle.Bundle) error {
 	if len(b.Config.Permissions) == 0 {
 		return nil
 	}
 
 	bundlePaths := paths.CollectUniqueWorkspacePathPrefixes(b.Config.Workspace).Paths
 
-	var diags diag.Diagnostics
 	g, ctx := errgroup.WithContext(ctx)
 	results := make([]diag.Diagnostics, len(bundlePaths))
 	for i, p := range bundlePaths {
 		g.Go(func() error {
-			results[i] = checkFolderPermission(ctx, b, p)
+			diags, err := checkFolderPermission(ctx, b, p)
+			if err != nil {
+				return err
+			}
+			results[i] = diags
 			return nil
 		})
 	}
 
+	// Note, only error from first coroutine is captured, others are lost
 	if err := g.Wait(); err != nil {
-		// Note, only diag from first coroutine is captured, others are lost
-		diags = diags.Extend(diag.FromErr(err))
+		return err
 	}
 
 	for _, r := range results {
-		diags = diags.Extend(r)
+		for _, d := range r {
+			logdiag.LogDiag(ctx, d)
+		}
 	}
 
-	return diags
+	return nil
 }
 
-func checkFolderPermission(ctx context.Context, b *bundle.Bundle, folderPath string) diag.Diagnostics {
+func checkFolderPermission(ctx context.Context, b *bundle.Bundle, folderPath string) (diag.Diagnostics, error) {
 	// If the folder is shared, then we don't need to check permissions as it was already checked in the other mutator before.
 	if libraries.IsWorkspaceSharedPath(folderPath) {
-		return nil
+		return nil, nil
 	}
 
 	w := b.WorkspaceClient(ctx).Workspace
 	obj, err := getClosestExistingObject(ctx, w, folderPath)
 	if err != nil {
-		return diag.FromErr(err)
+		return nil, err
 	}
 
 	objPermissions, err := w.GetPermissions(ctx, workspace.GetWorkspaceObjectPermissionsRequest{
@@ -64,11 +70,11 @@ func checkFolderPermission(ctx context.Context, b *bundle.Bundle, folderPath str
 		WorkspaceObjectType: "directories",
 	})
 	if err != nil {
-		return diag.FromErr(err)
+		return nil, err
 	}
 
 	p := permissions.ObjectAclToResourcePermissions(folderPath, objPermissions.AccessControlList)
-	return p.Compare(b.Config.Permissions)
+	return p.Compare(b.Config.Permissions), nil
 }
 
 func getClosestExistingObject(ctx context.Context, w workspace.WorkspaceInterface, folderPath string) (*workspace.ObjectInfo, error) {

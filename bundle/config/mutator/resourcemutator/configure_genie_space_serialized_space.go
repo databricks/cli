@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/logdiag"
 )
 
 const serializedSpaceFieldName = "serialized_space"
@@ -22,7 +23,7 @@ func (c configureGenieSpaceSerializedSpace) Name() string {
 	return "ConfigureGenieSpaceSerializedSpace"
 }
 
-func (c configureGenieSpaceSerializedSpace) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (c configureGenieSpaceSerializedSpace) Apply(ctx context.Context, b *bundle.Bundle) error {
 	var diags diag.Diagnostics
 
 	pattern := dyn.NewPattern(
@@ -81,7 +82,9 @@ func (c configureGenieSpaceSerializedSpace) Apply(_ context.Context, b *bundle.B
 			}
 		})
 	})
+	if err != nil {
+		return err
+	}
 
-	diags = diags.Extend(diag.FromErr(err))
-	return diags
+	return logdiag.Flush(ctx, diags)
 }

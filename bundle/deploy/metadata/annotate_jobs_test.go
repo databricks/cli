@@ -40,7 +40,7 @@ func TestAnnotateJobsMutator(t *testing.T) {
 	ctx = dbr.MockRuntime(ctx, dbr.Environment{IsDbr: false, Version: ""})
 
 	diags := AnnotateJobs().Apply(ctx, b)
-	require.NoError(t, diags.Error())
+	require.NoError(t, diags)
 
 	assert.Equal(t,
 		&jobs.JobDeployment{
@@ -76,7 +76,7 @@ func TestAnnotateJobsMutatorJobWithoutSettings(t *testing.T) {
 	ctx = dbr.MockRuntime(ctx, dbr.Environment{IsDbr: false, Version: ""})
 
 	diags := AnnotateJobs().Apply(ctx, b)
-	require.NoError(t, diags.Error())
+	require.NoError(t, diags)
 }
 
 func TestAnnotateJobsWorkspaceWithFlag(t *testing.T) {
@@ -106,7 +106,7 @@ func TestAnnotateJobsWorkspaceWithFlag(t *testing.T) {
 	ctx = env.Set(ctx, "DATABRICKS_BUNDLE_ENABLE_EXPERIMENTAL_YAML_SYNC", "1")
 
 	diags := AnnotateJobs().Apply(ctx, b)
-	require.NoError(t, diags.Error())
+	require.NoError(t, diags)
 
 	assert.Equal(t, jobs.JobEditModeEditable, b.Config.Resources.Jobs["my-job"].EditMode)
 	assert.Equal(t, jobs.FormatMultiTask, b.Config.Resources.Jobs["my-job"].Format)
@@ -139,7 +139,7 @@ func TestAnnotateJobsWorkspaceNonDevelopment(t *testing.T) {
 	ctx = env.Set(ctx, "DATABRICKS_BUNDLE_ENABLE_EXPERIMENTAL_YAML_SYNC", "1")
 
 	diags := AnnotateJobs().Apply(ctx, b)
-	require.NoError(t, diags.Error())
+	require.NoError(t, diags)
 
 	assert.Equal(t, jobs.JobEditModeUiLocked, b.Config.Resources.Jobs["my-job"].EditMode)
 	assert.Equal(t, jobs.FormatMultiTask, b.Config.Resources.Jobs["my-job"].Format)
@@ -168,7 +168,7 @@ func TestAnnotateJobsWorkspaceWithoutFlag(t *testing.T) {
 	ctx = dbr.MockRuntime(ctx, dbr.Environment{IsDbr: true, Version: "14.0"})
 
 	diags := AnnotateJobs().Apply(ctx, b)
-	require.NoError(t, diags.Error())
+	require.NoError(t, diags)
 
 	assert.Equal(t, jobs.JobEditModeUiLocked, b.Config.Resources.Jobs["my-job"].EditMode)
 	assert.Equal(t, jobs.FormatMultiTask, b.Config.Resources.Jobs["my-job"].Format)
@@ -198,7 +198,7 @@ func TestAnnotateJobsNonWorkspaceWithFlag(t *testing.T) {
 	ctx = env.Set(ctx, "DATABRICKS_BUNDLE_ENABLE_EXPERIMENTAL_YAML_SYNC", "1")
 
 	diags := AnnotateJobs().Apply(ctx, b)
-	require.NoError(t, diags.Error())
+	require.NoError(t, diags)
 
 	assert.Equal(t, jobs.JobEditModeUiLocked, b.Config.Resources.Jobs["my-job"].EditMode)
 	assert.Equal(t, jobs.FormatMultiTask, b.Config.Resources.Jobs["my-job"].Format)

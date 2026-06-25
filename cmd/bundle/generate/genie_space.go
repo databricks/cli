@@ -62,21 +62,19 @@ type genieSpace struct {
 	bind bool
 }
 
-func (g *genieSpace) resolveFromID(ctx context.Context, b *bundle.Bundle) string {
+func (g *genieSpace) resolveFromID(ctx context.Context, b *bundle.Bundle) (string, error) {
 	w := b.WorkspaceClient(ctx)
 	obj, err := w.Genie.GetSpace(ctx, dashboards.GenieGetSpaceRequest{
 		SpaceId: g.existingID,
 	})
 	if err != nil {
 		if apierr.IsMissing(err) {
-			logdiag.LogError(ctx, fmt.Errorf("genie space with ID %s not found", g.existingID))
-			return ""
+			return "", fmt.Errorf("genie space with ID %s not found", g.existingID)
 		}
-		logdiag.LogError(ctx, err)
-		return ""
+		return "", err
 	}
 
-	return obj.SpaceId
+	return obj.SpaceId, nil
 }
 
 func (g *genieSpace) saveSerializedGenieSpace(ctx context.Context, b *bundle.Bundle, genieSpace *dashboards.GenieSpace, filename string) error {
@@ -169,16 +167,14 @@ func (g *genieSpace) saveConfiguration(ctx context.Context, b *bundle.Bundle, ge
 	return nil
 }
 
-func (g *genieSpace) updateGenieSpaceForResource(ctx context.Context, b *bundle.Bundle) {
+func (g *genieSpace) updateGenieSpaceForResource(ctx context.Context, b *bundle.Bundle) error {
 	resource, ok := b.Config.Resources.GenieSpaces[g.resource]
 	if !ok {
-		logdiag.LogError(ctx, fmt.Errorf("genie space resource %q is not defined", g.resource))
-		return
+		return fmt.Errorf("genie space resource %q is not defined", g.resource)
 	}
 
 	if resource.FilePath == "" {
-		logdiag.LogError(ctx, fmt.Errorf("genie space resource %q has no file path defined", g.resource))
-		return
+		return fmt.Errorf("genie space resource %q has no file path defined", g.resource)
 	}
 
 	genieSpaceID := resource.ID
@@ -193,8 +189,7 @@ func (g *genieSpace) updateGenieSpaceForResource(ctx context.Context, b *bundle.
 			IncludeSerializedSpace: true,
 		})
 		if err != nil {
-			logdiag.LogError(ctx, err)
-			return
+			return err
 		}
 
 		// Genie has no remote modification timestamp we can poll. Compare
@@ -205,27 +200,25 @@ func (g *genieSpace) updateGenieSpaceForResource(ctx context.Context, b *bundle.
 		if !first {
 			differs, err := genieSpaceBodyDiffersFromDisk(genieSpace.SerializedSpace, genieSpacePath)
 			if err != nil {
-				logdiag.LogError(ctx, err)
-				return
+				return err
 			}
 			shouldSave = differs
 		}
 
 		if shouldSave {
 			if err := g.saveSerializedGenieSpace(ctx, b, genieSpace, genieSpacePath); err != nil {
-				logdiag.LogError(ctx, err)
-				return
+				return err
 			}
 		}
 
 		if !g.watch {
-			return
+			return nil
 		}
 
 		first = false
 		select {
 		case <-ctx.Done():
-			return
+			return nil
 		case <-time.After(genieSpaceWatchInterval):
 		}
 	}
@@ -251,15 +244,14 @@ func genieSpaceBodyDiffersFromDisk(remoteSerialized, filename string) (bool, err
 	return !bytes.Equal(canonical, onDisk), nil
 }
 
-func (g *genieSpace) generateForExisting(ctx context.Context, b *bundle.Bundle, genieSpaceID string) {
+func (g *genieSpace) generateForExisting(ctx context.Context, b *bundle.Bundle, genieSpaceID string) error {
 	w := b.WorkspaceClient(ctx)
 	genieSpace, err := w.Genie.GetSpace(ctx, dashboards.GenieGetSpaceRequest{
 		SpaceId:                genieSpaceID,
 		IncludeSerializedSpace: true,
 	})
 	if err != nil {
-		logdiag.LogError(ctx, err)
-		return
+		return err
 	}
 
 	key := g.cmd.Flag("key").Value.String()
@@ -268,21 +260,21 @@ func (g *genieSpace) generateForExisting(ctx context.Context, b *bundle.Bundle, 
 	}
 	err = g.saveConfiguration(ctx, b, genieSpace, key)
 	if err != nil {
-		logdiag.LogError(ctx, err)
-		return
+		return err
 	}
 
 	if g.bind {
 		err = deployment.BindResource(g.cmd, key, genieSpaceID, true, false, true)
 		if err != nil {
-			logdiag.LogError(ctx, err)
-			return
+			return err
 		}
 		cmdio.LogString(ctx, fmt.Sprintf("Successfully bound genie space with an id '%s'", genieSpaceID))
 	}
+
+	return nil
 }
 
-func (g *genieSpace) initialize(ctx context.Context, b *bundle.Bundle) {
+func (g *genieSpace) initialize(ctx context.Context, b *bundle.Bundle) error {
 	// Make the paths absolute if they aren't already.
 	if !filepath.IsAbs(g.resourceDir) {
 		g.resourceDir = filepath.Join(b.BundleRootPath, g.resourceDir)
@@ -294,88 +286,84 @@ func (g *genieSpace) initialize(ctx context.Context, b *bundle.Bundle) {
 	// Make sure we know how the genie space path is relative to the resource path.
 	rel, err := filepath.Rel(g.resourceDir, g.genieSpaceDir)
 	if err != nil {
-		logdiag.LogError(ctx, err)
-		return
+		return err
 	}
 
 	g.relativeGenieSpaceDir = filepath.ToSlash(rel)
+	return nil
 }
 
-func (g *genieSpace) runForResource(ctx context.Context, b *bundle.Bundle) {
-	phases.Initialize(ctx, b)
-	if logdiag.HasError(ctx) {
-		return
+func (g *genieSpace) runForResource(ctx context.Context, b *bundle.Bundle) error {
+	if err := phases.Initialize(ctx, b); err != nil {
+		return err
 	}
 
 	requiredEngine, err := utils.ResolveEngineSetting(ctx, b)
 	if err != nil {
-		logdiag.LogError(ctx, err)
-		return
+		return err
 	}
-	ctx, stateDesc := statemgmt.PullResourcesState(ctx, b, statemgmt.AlwaysPull(true), requiredEngine)
-	if logdiag.HasError(ctx) {
-		return
+	ctx, stateDesc, err := statemgmt.PullResourcesState(ctx, b, statemgmt.AlwaysPull(true), requiredEngine)
+	if err != nil {
+		return err
 	}
 
 	var state statemgmt.ExportedResourcesMap
 	if stateDesc.Engine.IsDirect() {
 		_, localPath := b.StateFilenameDirect(ctx)
 		if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(true), dstate.WithWrite(false)); err != nil {
-			logdiag.LogError(ctx, err)
-			return
+			return err
 		}
 		state = b.DeploymentBundle.ExportState(ctx)
 	} else {
-		var err error
 		state, err = terraform.ParseResourcesState(ctx, b)
 		if err != nil {
-			logdiag.LogError(ctx, err)
-			return
+			return err
 		}
 	}
 
-	bundle.ApplySeqContext(ctx, b,
+	if err := bundle.ApplySeqContext(ctx, b,
 		statemgmt.Load(state),
-	)
-	if logdiag.HasError(ctx) {
-		return
+	); err != nil {
+		return err
 	}
 
-	g.updateGenieSpaceForResource(ctx, b)
+	return g.updateGenieSpaceForResource(ctx, b)
 }
 
-func (g *genieSpace) runForExisting(ctx context.Context, b *bundle.Bundle) {
+func (g *genieSpace) runForExisting(ctx context.Context, b *bundle.Bundle) error {
 	// Resolve the ID of the genie space to generate configuration for.
-	genieSpaceID := g.resolveFromID(ctx, b)
-	if logdiag.HasError(ctx) {
-		return
+	genieSpaceID, err := g.resolveFromID(ctx, b)
+	if err != nil {
+		return err
 	}
 
-	g.generateForExisting(ctx, b, genieSpaceID)
+	return g.generateForExisting(ctx, b, genieSpaceID)
 }
 
 func (g *genieSpace) RunE(cmd *cobra.Command, args []string) error {
 	ctx := logdiag.InitContext(cmd.Context())
 	cmd.SetContext(ctx)
 
-	b := root.MustConfigureBundle(cmd)
-	if b == nil || logdiag.HasError(ctx) {
+	b, err := root.MustConfigureBundle(cmd)
+	if err != nil {
+		return root.RenderAndReturnError(ctx, err)
+	}
+	if b == nil {
 		return root.ErrAlreadyPrinted
 	}
 
-	g.initialize(ctx, b)
-	if logdiag.HasError(ctx) {
-		return root.ErrAlreadyPrinted
+	if err := g.initialize(ctx, b); err != nil {
+		return root.RenderAndReturnError(ctx, err)
 	}
 
 	if g.resource != "" {
-		g.runForResource(ctx, b)
+		err = g.runForResource(ctx, b)
 	} else {
-		g.runForExisting(ctx, b)
+		err = g.runForExisting(ctx, b)
 	}
 
-	if logdiag.HasError(ctx) {
-		return root.ErrAlreadyPrinted
+	if err != nil {
+		return root.RenderAndReturnError(ctx, err)
 	}
 
 	return nil
@@ -388,8 +376,8 @@ func filterGenieSpaces(ref resources.Reference) bool {
 
 // genieSpaceResourceCompletion executes to autocomplete the argument to the resource flag.
 func genieSpaceResourceCompletion(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-	b := root.MustConfigureBundle(cmd)
-	if logdiag.HasError(cmd.Context()) {
+	b, err := root.MustConfigureBundle(cmd)
+	if err != nil {
 		return nil, cobra.ShellCompDirectiveError
 	}
 

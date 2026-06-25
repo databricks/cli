@@ -9,21 +9,20 @@ import (
 	"slices"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 )
 
 // ReplaceWithRemotePath updates all the libraries paths to point to the remote location
 // where the libraries will be uploaded later.
-func ReplaceWithRemotePath(ctx context.Context, b *bundle.Bundle) (map[string][]LocationToUpdate, diag.Diagnostics) {
-	_, uploadPath, diags := GetFilerForLibraries(ctx, b)
-	if diags.HasError() {
-		return nil, diags
+func ReplaceWithRemotePath(ctx context.Context, b *bundle.Bundle) (map[string][]LocationToUpdate, error) {
+	_, uploadPath, err := GetFilerForLibraries(ctx, b)
+	if err != nil {
+		return nil, err
 	}
 
 	libs, err := collectLocalLibraries(b)
 	if err != nil {
-		return nil, diag.FromErr(err)
+		return nil, err
 	}
 
 	sources := slices.Sorted(maps.Keys(libs))
@@ -45,10 +44,10 @@ func ReplaceWithRemotePath(ctx context.Context, b *bundle.Bundle) (map[string][]
 		return v, nil
 	})
 	if err != nil {
-		diags = diags.Extend(diag.FromErr(err))
+		return nil, err
 	}
 
-	return libs, diags
+	return libs, nil
 }
 
 // Collect all libraries from the bundle configuration and their config paths.

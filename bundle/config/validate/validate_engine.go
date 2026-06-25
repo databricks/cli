@@ -21,7 +21,7 @@ func (v *validateEngine) Name() string {
 	return "validate:engine"
 }
 
-func (v *validateEngine) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (v *validateEngine) Apply(_ context.Context, b *bundle.Bundle) error {
 	configEngine := b.Config.Bundle.Engine
 	if configEngine == engine.EngineNotSet {
 		return nil
@@ -30,11 +30,11 @@ func (v *validateEngine) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnos
 	if _, ok := engine.Parse(string(configEngine)); !ok {
 		val := dyn.GetValue(b.Config.Value(), "bundle.engine")
 		loc := val.Location()
-		return diag.Diagnostics{{
+		return diag.Diagnostic{
 			Severity:  diag.Error,
 			Summary:   fmt.Sprintf("invalid value %q for bundle.engine (expected %q or %q)", configEngine, engine.EngineTerraform, engine.EngineDirect),
 			Locations: []dyn.Location{loc},
-		}}
+		}
 	}
 
 	return nil

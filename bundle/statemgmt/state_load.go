@@ -11,7 +11,6 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/statemgmt/resourcestate"
-	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 )
 
@@ -32,18 +31,18 @@ func (l *load) Name() string {
 	return "statemgmt.Load"
 }
 
-func (l *load) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (l *load) Apply(ctx context.Context, b *bundle.Bundle) error {
 	return applyState(ctx, b, l.state, l.modes)
 }
 
 // applyState merges the exported resource state into the bundle configuration.
-func applyState(ctx context.Context, b *bundle.Bundle, state ExportedResourcesMap, modes []LoadMode) diag.Diagnostics {
+func applyState(ctx context.Context, b *bundle.Bundle, state ExportedResourcesMap, modes []LoadMode) error {
 	if err := validateLoadedState(state, modes); err != nil {
-		return diag.FromErr(err)
+		return err
 	}
 
 	if err := StateToBundle(ctx, state, &b.Config); err != nil {
-		return diag.FromErr(err)
+		return err
 	}
 
 	// Merge dashboard etags into configuration.

@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/dynvar"
+	"github.com/databricks/cli/libs/logdiag"
 )
 
 type enum struct{}
@@ -23,7 +24,7 @@ func (f *enum) Name() string {
 	return "validate:enum"
 }
 
-func (f *enum) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (f *enum) Apply(ctx context.Context, b *bundle.Bundle) error {
 	diags := diag.Diagnostics{}
 
 	// Generate prefix tree for all enum fields.
@@ -31,12 +32,12 @@ func (f *enum) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	for k := range generated.EnumFields {
 		pattern, err := dyn.NewPatternFromString(k)
 		if err != nil {
-			return diag.FromErr(fmt.Errorf("invalid pattern %q for enum field validation: %w", k, err))
+			return fmt.Errorf("invalid pattern %q for enum field validation: %w", k, err)
 		}
 
 		err = trie.Insert(pattern)
 		if err != nil {
-			return diag.FromErr(fmt.Errorf("failed to insert pattern %q into trie: %w", k, err))
+			return fmt.Errorf("failed to insert pattern %q into trie: %w", k, err)
 		}
 	}
 
@@ -82,7 +83,7 @@ func (f *enum) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		return nil
 	})
 	if err != nil {
-		return diag.FromErr(err)
+		return err
 	}
 
 	// Sort diagnostics to make them deterministic
@@ -96,5 +97,9 @@ func (f *enum) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		return cmp.Compare(fmt.Sprintf("%v", a.Locations), fmt.Sprintf("%v", b.Locations))
 	})
 
-	return diags
+	for _, d := range diags {
+		logdiag.LogDiag(ctx, d)
+	}
+
+	return nil
 }

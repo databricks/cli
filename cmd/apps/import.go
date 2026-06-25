@@ -30,7 +30,6 @@ import (
 	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/dyn/yamlsaver"
 	"github.com/databricks/cli/libs/env"
-	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/textutil"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/apps"
@@ -335,14 +334,13 @@ func runImport(ctx context.Context, w *databricks.WorkspaceClient, appName, outp
 		if !ok {
 			tfName = resource.ResourceDescription().PluralName
 		}
-		phases.Bind(ctx, b, &terraform.BindOptions{
+		if err := phases.Bind(ctx, b, &terraform.BindOptions{
 			AutoApprove:  true,
 			ResourceType: tfName,
 			ResourceKey:  appKey,
 			ResourceId:   app.Name,
-		}, stateDesc.Engine)
-		if logdiag.HasError(ctx) {
-			return errors.New("failed to bind resource")
+		}, stateDesc.Engine); err != nil {
+			return root.RenderAndReturnError(ctx, err)
 		}
 
 		if !quiet {
