@@ -107,6 +107,8 @@ func paritySeeds(t *testing.T) []int64 {
 	return seeds
 }
 
+// TestParitySeeds verifies paritySeeds composes the regression seeds with the
+// rotating window, deduplicates overlaps, and lets FUZZ_SEED override both.
 func TestParitySeeds(t *testing.T) {
 	t.Run("default includes regression seeds then window", func(t *testing.T) {
 		t.Setenv("FUZZ_SEEDS", "3")
