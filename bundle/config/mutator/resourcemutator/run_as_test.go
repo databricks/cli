@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
+	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/sql"
@@ -169,6 +170,7 @@ func TestRunAsWorksForAllowedResources(t *testing.T) {
 // they are not on the allow list below.
 var allowList = []string{
 	"alerts",
+	"apps",
 	"catalogs",
 	"clusters",
 	"dashboards",
@@ -300,4 +302,174 @@ func TestRunAsNoErrorForSupportedResources(t *testing.T) {
 		diags := bundle.Apply(t.Context(), b, SetRunAs())
 		require.NoError(t, diags.Error())
 	}
+}
+
+func TestRunAsAppNotMutated(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Workspace: config.Workspace{
+				CurrentUser: &config.User{
+					User: &iam.User{UserName: "alice"},
+				},
+			},
+			RunAs: &jobs.JobRunAs{UserName: "bob"},
+			Resources: config.Resources{
+				Apps: map[string]*resources.App{
+					"my_app": {
+						App: apps.App{
+							Name:        "my_app",
+							Description: "desc",
+						},
+						SourceCodePath: "./src",
+					},
+				},
+			},
+		},
+	}
+
+	diags := bundle.Apply(t.Context(), b, SetRunAs())
+	assert.NoError(t, diags.Error())
+
+	app := b.Config.Resources.Apps["my_app"]
+	assert.Equal(t, "my_app", app.Name)
+	assert.Equal(t, "./src", app.SourceCodePath)
+	assert.Equal(t, "desc", app.Description)
+}
+
+func TestRunAsNoOpForApps(t *testing.T) {
+	tests := []struct {
+		name  string
+		runAs *jobs.JobRunAs
+	}{
+		{
+			name:  "user identity",
+			runAs: &jobs.JobRunAs{UserName: "bob"},
+		},
+		{
+			name:  "service principal",
+			runAs: &jobs.JobRunAs{ServicePrincipalName: "sp-acme"},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			b := &bundle.Bundle{
+				Config: config.Root{
+					Workspace: config.Workspace{
+						CurrentUser: &config.User{
+							User: &iam.User{UserName: "alice"},
+						},
+					},
+					RunAs: tc.runAs,
+					Resources: config.Resources{
+						Apps: map[string]*resources.App{
+							"my_app": {App: apps.App{Name: "my_app"}},
+						},
+					},
+				},
+			}
+
+			diags := bundle.Apply(t.Context(), b, SetRunAs())
+			assert.NoError(t, diags.Error())
+		})
+	}
+}
+
+func TestRunAsNoRunAs_AppUnchanged(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Workspace: config.Workspace{
+				CurrentUser: &config.User{
+					User: &iam.User{UserName: "alice"},
+				},
+			},
+			Resources: config.Resources{
+				Apps: map[string]*resources.App{
+					"my_app": {App: apps.App{Name: "my_app"}},
+				},
+			},
+		},
+	}
+
+	diags := bundle.Apply(t.Context(), b, SetRunAs())
+	assert.Nil(t, diags)
+	assert.Equal(t, "my_app", b.Config.Resources.Apps["my_app"].Name)
+}
+
+func TestRunAsAppAndJobTogether(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Workspace: config.Workspace{
+				CurrentUser: &config.User{
+					User: &iam.User{UserName: "alice"},
+				},
+			},
+			RunAs: &jobs.JobRunAs{UserName: "bob"},
+			Resources: config.Resources{
+				Apps: map[string]*resources.App{
+					"my_app": {App: apps.App{Name: "my_app"}},
+				},
+				Jobs: map[string]*resources.Job{
+					"my_job": {
+						JobSettings: jobs.JobSettings{Name: "my_job"},
+					},
+				},
+			},
+		},
+	}
+
+	diags := bundle.Apply(t.Context(), b, SetRunAs())
+	require.NoError(t, diags.Error())
+	assert.Equal(t, "bob", b.Config.Resources.Jobs["my_job"].RunAs.UserName)
+	assert.Equal(t, "my_app", b.Config.Resources.Apps["my_app"].Name)
+}
+
+func TestRunAsAppWithDeniedResourceStillErrors(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Workspace: config.Workspace{
+				CurrentUser: &config.User{
+					User: &iam.User{UserName: "alice"},
+				},
+			},
+			RunAs: &jobs.JobRunAs{UserName: "bob"},
+			Resources: config.Resources{
+				Apps: map[string]*resources.App{
+					"my_app": {App: apps.App{Name: "my_app"}},
+				},
+				ModelServingEndpoints: map[string]*resources.ModelServingEndpoint{
+					"my_endpoint": {},
+				},
+			},
+		},
+	}
+
+	diags := bundle.Apply(t.Context(), b, SetRunAs())
+	require.True(t, diags.HasError())
+	assert.Contains(t, diags.Error().Error(), "model_serving_endpoints do not support a setting a run_as user")
+	assert.NotContains(t, diags.Error().Error(), "apps do not support")
+}
+
+func TestRunAsAppSameIdentity_NoError(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Workspace: config.Workspace{
+				CurrentUser: &config.User{
+					User: &iam.User{UserName: "alice"},
+				},
+			},
+			RunAs: &jobs.JobRunAs{UserName: "alice"},
+			Resources: config.Resources{
+				Apps: map[string]*resources.App{
+					"my_app": {App: apps.App{Name: "my_app"}},
+				},
+				ModelServingEndpoints: map[string]*resources.ModelServingEndpoint{
+					"my_endpoint": {},
+				},
+			},
+		},
+	}
+
+	diags := bundle.Apply(t.Context(), b, SetRunAs())
+	assert.NoError(t, diags.Error())
 }
