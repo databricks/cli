@@ -105,10 +105,10 @@ func (s *FakeWorkspace) JobsReset(req Request) Response {
 		return Response{StatusCode: 403, Body: "{}"}
 	}
 
-	// The Jobs reset API treats run_as as sticky: omitting it from new_settings
-	// keeps the previously configured identity rather than clearing it (unlike
-	// other fields, which reset fully). Mirror that so a removed run_as in the
-	// bundle does not drop the value on the fake.
+	// Known cloud quirk (see the test's Badness note): jobs/reset is a full
+	// replace, but omitting run_as from new_settings does NOT clear it — cloud
+	// keeps the previously configured identity. Mirror that so the local
+	// testserver matches cloud against one golden.
 	if request.NewSettings.RunAs == nil {
 		request.NewSettings.RunAs = prevjob.Settings.RunAs
 	}
