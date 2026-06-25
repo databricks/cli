@@ -6,14 +6,13 @@
   "catalog_name": "main"
 }
 
-=== Bind schema: Updating deployment state...
-Successfully bound schema with an id 'main.test-schema-[UUID]'
+=== Bind schema: Successfully bound schema with an id 'main.test-schema-[UUID]'
 Run 'bundle deploy' to deploy changes to your workspace
 
 === Deploy bundle: Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+updated schemas.schema1
+
+Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
 
 === Read the pre-defined schema: {
   "full_name": "main.test-schema-[UUID]",
@@ -21,12 +20,10 @@ Deployment complete!
   "comment": "This schema was created from DABs"
 }
 
-=== Unbind the schema: Updating deployment state...
-
+=== Unbind the schema: 
 === Destroy the bundle: All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
 
-Deleting files...
-Destroy complete!
+Destroy: 0 deleted.
 
 === Read the pre-defined schema again (expecting it still exists): {
   "full_name": "main.test-schema-[UUID]",

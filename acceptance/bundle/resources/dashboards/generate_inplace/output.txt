@@ -1,9 +1,9 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dashboard-replace-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created dashboards.already_exists
+
+Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 === Get current dashboard
 "{\n  \"uiSettings\": {\n    \"theme\": {\n      \"widgetHeaderAlignment\": \"ALIGNMENT_UNSPECIFIED\"\n    }\n  }\n}\n"
@@ -44,5 +44,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/dashboard-replace-[UNIQUE_NAME]/default
 
-Deleting files...
-Destroy complete!
+Destroy: 1 deleted.

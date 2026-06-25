@@ -5,9 +5,11 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-registered-models-basic-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created registered_models.my_registered_model
+created registered_models.my_registered_model.grants
+created schemas.my_schema
+
+Deploy: 3 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> print_requests.py //permissions
 
@@ -33,7 +35,6 @@ This action will result in the deletion of the following UC schemas. Any underly
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-registered-models-basic-[UNIQUE_NAME]/default
 
-Deleting files...
-Destroy complete!
+Destroy: 2 deleted.
 
 >>> print_requests.py //permissions

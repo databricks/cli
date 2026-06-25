@@ -5,9 +5,9 @@
 === deploy initial dashboard
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dashboard update inplace/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created dashboards.test_dashboard
+
+Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 === update the dashboard
 >>> [CLI] lakeview update [DASHBOARD_ID] --serialized-dashboard {"a":"b"}

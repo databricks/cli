@@ -6,8 +6,8 @@ Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/usage_logs/dev/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created jobs.refresh_usage_logs
+
+Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> [CLI] bundle plan -o json

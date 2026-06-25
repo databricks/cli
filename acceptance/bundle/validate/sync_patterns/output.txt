@@ -23,5 +23,4 @@ Validation OK!
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Deploying resources...
-Deployment complete!
+Deploy: 0 created, 0 changed, 0 deleted, 0 unchanged.

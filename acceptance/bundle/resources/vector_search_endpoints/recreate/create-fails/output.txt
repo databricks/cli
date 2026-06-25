@@ -2,9 +2,10 @@
 === Initial deploy creates two endpoints with distinct names
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/recreate-create-fails-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created vector_search_endpoints.blocker_endpoint
+created vector_search_endpoints.my_endpoint
+
+Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
 
 === Edit my_endpoint: rename onto blocker_endpoint's name and switch endpoint_type to trigger Recreate
 >>> update_file.py databricks.yml vs-endpoint-a-[UNIQUE_NAME] vs-endpoint-b-[UNIQUE_NAME]
@@ -14,7 +15,6 @@ Deployment complete!
 === Deploy: Recreate of my_endpoint runs Delete (ok) then Create (409, name taken by blocker)
 >>> [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/recreate-create-fails-[UNIQUE_NAME]/default/files...
-Deploying resources...
 Error: cannot recreate resources.vector_search_endpoints.my_endpoint: Vector search endpoint with name vs-endpoint-b-[UNIQUE_NAME] already exists (409 RESOURCE_ALREADY_EXISTS)
 
 Endpoint: POST [DATABRICKS_URL]/api/2.0/vector-search/endpoints
@@ -22,7 +22,6 @@ HTTP Status: 409 Conflict
 API error_code: RESOURCE_ALREADY_EXISTS
 API message: Vector search endpoint with name vs-endpoint-b-[UNIQUE_NAME] already exists
 
-Updating deployment state...
 
 Exit code: 1
 
@@ -38,5 +37,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/recreate-create-fails-[UNIQUE_NAME]/default
 
-Deleting files...
-Destroy complete!
+Destroy: 1 deleted.

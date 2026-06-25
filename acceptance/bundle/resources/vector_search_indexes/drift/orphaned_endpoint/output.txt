@@ -2,9 +2,10 @@
 === Initial deployment
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/drift-vs-index-orphaned-endpoint-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created vector_search_endpoints.vs_endpoint
+created vector_search_indexes.my_index
+
+Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
 
 === Simulate remote endpoint deletion (index is orphaned, still exists by name)
 >>> [CLI] vector-search-endpoints delete-endpoint vs-endpoint-[UNIQUE_NAME]
@@ -24,9 +25,10 @@ This action will result in the deletion or recreation of the following Vector Se
 Recreating a Delta Sync index re-runs the full embedding pipeline; recreating a Direct Access
 index drops all upserted vectors. Both can be expensive to rebuild:
   recreate resources.vector_search_indexes.my_index
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created vector_search_endpoints.vs_endpoint
+recreated vector_search_indexes.my_index
+
+Deploy: 2 created, 0 changed, 1 deleted, 0 unchanged.
 
 >>> [CLI] vector-search-indexes get-index main.default.vs_index_[UNIQUE_NAME]
 {
@@ -48,5 +50,4 @@ For Direct Access indexes, all upserted vectors are permanently lost:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/drift-vs-index-orphaned-endpoint-[UNIQUE_NAME]/default
 
-Deleting files...
-Destroy complete!
+Destroy: 2 deleted.

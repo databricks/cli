@@ -3,9 +3,9 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created model_serving_endpoints.test_endpoint
+
+Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> print_requests.py //serving-endpoints
 {
@@ -40,9 +40,9 @@ Deployment complete!
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+recreated model_serving_endpoints.test_endpoint
+
+Deploy: 1 created, 0 changed, 1 deleted, 0 unchanged.
 
 >>> print_requests.py //serving-endpoints
 {
@@ -81,5 +81,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
 
-Deleting files...
-Destroy complete!
+Destroy: 1 deleted.

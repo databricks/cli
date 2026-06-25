@@ -13,5 +13,4 @@ is removed from the catalog, but the underlying files are not deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/testbundle-[UNIQUE_NAME]/default
 
-Deleting files...
-Destroy complete!
+Destroy: 2 deleted.

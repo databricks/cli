@@ -1,9 +1,10 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/genie-serialized-space-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created genie_spaces.from_file
+created genie_spaces.from_inline
+
+Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
@@ -17,5 +18,4 @@ The conversation history attached to them is permanently lost:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/genie-serialized-space-[UNIQUE_NAME]/default
 
-Deleting files...
-Destroy complete!
+Destroy: 2 deleted.

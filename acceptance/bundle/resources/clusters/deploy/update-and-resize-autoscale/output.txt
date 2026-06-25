@@ -1,9 +1,7 @@
 
->>> [CLI] bundle deploy
+>>> [CLI] bundle deploy -q
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 === Cluster should exist with num_workers after bundle deployment:
 {
@@ -19,11 +17,9 @@ Deployment complete!
 
 === Adding autoscale section should call update API on stopped cluster
 
->>> [CLI] bundle deploy
+>>> [CLI] bundle deploy -q
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
 
 >>> jq select(.method == "POST" and (.path | contains("/clusters/edit"))) | del(.body.aws_attributes, .body.driver_node_type_id, .body.data_security_mode, .body.enable_elastic_disk) out.requests.txt
 {
@@ -54,11 +50,9 @@ Deployment complete!
 
 === Changing autoscale should call update API on stopped cluster
 
->>> [CLI] bundle deploy
+>>> [CLI] bundle deploy -q
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
 
 >>> jq select(.method == "POST" and (.path | contains("/clusters/edit"))) | del(.body.aws_attributes, .body.driver_node_type_id, .body.data_security_mode, .body.enable_elastic_disk) out.requests.txt
 {
@@ -109,11 +103,9 @@ Deployment complete!
 
 === Changing autoscale should call resize API on running cluster
 
->>> [CLI] bundle deploy
+>>> [CLI] bundle deploy -q
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
 
 >>> jq select(.method == "POST" and (.path | contains("/clusters/resize"))) out.requests.txt
 {
@@ -140,11 +132,9 @@ Deployment complete!
 
 === Removing autoscale section should call resize API
 
->>> [CLI] bundle deploy
+>>> [CLI] bundle deploy -q
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
 
 >>> jq select(.method == "POST" and (.path | contains("/clusters/resize"))) out.requests.txt
 {
@@ -169,5 +159,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
 
-Deleting files...
-Destroy complete!
+Destroy: 1 deleted.

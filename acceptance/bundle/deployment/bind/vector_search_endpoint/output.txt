@@ -7,15 +7,12 @@
 }
 
 >>> [CLI] bundle deployment bind endpoint1 test-vs-endpoint-[UNIQUE_NAME] --auto-approve
-Updating deployment state...
 Successfully bound vector_search_endpoint with an id 'test-vs-endpoint-[UNIQUE_NAME]'
 Run 'bundle deploy' to deploy changes to your workspace
 
 >>> [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Deploy: 0 created, 0 changed, 0 deleted, 1 unchanged.
 
 >>> [CLI] vector-search-endpoints get-endpoint test-vs-endpoint-[UNIQUE_NAME]
 {
@@ -25,13 +22,11 @@ Deployment complete!
 }
 
 >>> [CLI] bundle deployment unbind endpoint1
-Updating deployment state...
 
 >>> [CLI] bundle destroy --auto-approve
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
 
-Deleting files...
-Destroy complete!
+Destroy: 0 deleted.
 
 >>> [CLI] vector-search-endpoints get-endpoint test-vs-endpoint-[UNIQUE_NAME]
 {

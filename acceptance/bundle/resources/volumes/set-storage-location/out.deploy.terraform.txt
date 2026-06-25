@@ -1,7 +1,6 @@
 
 >>> musterr [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/testbundle-[UNIQUE_NAME]/default/files...
-Deploying resources...
 Error: terraform apply: exit status 1
 
 Error: cannot create volume: CreateVolume storage_location can not be provided.
@@ -12,4 +11,3 @@ Error: cannot create volume: CreateVolume storage_location can not be provided.
 
 
 
-Updating deployment state...

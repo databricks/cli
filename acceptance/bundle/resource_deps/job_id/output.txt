@@ -9,9 +9,10 @@ Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created jobs.bar
+created jobs.foo
+
+Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> print_requests.py //jobs
 {
@@ -61,9 +62,10 @@ Deployment complete!
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+deleted jobs.bar
+deleted jobs.foo
+
+Deploy: 0 created, 0 changed, 2 deleted, 0 unchanged.
 
 >>> print_requests.py //jobs
 {
@@ -84,7 +86,6 @@ Deployment complete!
 >>> [CLI] bundle destroy --auto-approve
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
-Deleting files...
-Destroy complete!
+Destroy: 0 deleted.
 
 >>> print_requests.py //jobs

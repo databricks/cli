@@ -17,15 +17,14 @@ test.py
       name: generate-job-[UNIQUE_NAME]
 
 >>> [CLI] bundle deployment bind test_job_key [NUMID] --auto-approve
-Updating deployment state...
 Successfully bound job with an id '[NUMID]'
 Run 'bundle deploy' to deploy changes to your workspace
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-generate-bind-[UNIQUE_NAME]/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+updated jobs.test_job_key
+
+Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
@@ -33,8 +32,7 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-generate-bind-[UNIQUE_NAME]
 
-Deleting files...
-Destroy complete!
+Destroy: 1 deleted.
 
 === Check that job is bound and does not exist after bundle is destroyed:
 >>> errcode [CLI] jobs get [NUMID] --output json

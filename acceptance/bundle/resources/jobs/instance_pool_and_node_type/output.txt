@@ -43,9 +43,9 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created jobs.some_other_job
+
+Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> jq -s .[] | select(.path=="/api/2.2/jobs/create") | .body.tasks out.requests.txt
 [

@@ -2,9 +2,9 @@
 === Deploy with started=false: cluster created and then stopped
 >>> errcode [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created clusters.mycluster
+
+Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> print_requests.py //clusters
 {
@@ -34,9 +34,9 @@ Deployment complete!
 
 >>> errcode [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+updated clusters.mycluster
+
+Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
 
 >>> print_requests.py //clusters
 {
@@ -55,9 +55,9 @@ Deployment complete!
 
 >>> errcode [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+updated clusters.mycluster
+
+Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
 
 >>> print_requests.py //clusters
 {
@@ -77,5 +77,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
 
-Deleting files...
-Destroy complete!
+Destroy: 1 deleted.

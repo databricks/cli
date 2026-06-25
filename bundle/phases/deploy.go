@@ -3,7 +3,9 @@ package phases
 import (
 	"context"
 	"errors"
+	"fmt"
 	"slices"
+	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/artifacts"
@@ -76,10 +78,6 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.P
 }
 
 func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, stateEngine engine.EngineType, requestedEngine engine.EngineSetting) {
-	// Core mutators that CRUD resources and modify deployment state. These
-	// mutators need informed consent if they are potentially destructive.
-	cmdio.LogString(ctx, "Deploying resources...")
-
 	// Apply resources and capture post-apply state.
 	// For direct: Finalize flushes the WAL to disk and returns the state;
 	// called even if Apply failed so partial progress is saved.
@@ -106,6 +104,12 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, st
 		logdiag.LogError(ctx, err)
 	}
 
+	// Report what was deployed only on success, so the summary reflects the plan
+	// that was actually applied (a partial failure returns below before this).
+	if !logdiag.HasError(ctx) {
+		logDeploySummary(ctx, b, plan)
+	}
+
 	// Even if deployment failed, there might be updates in states that we need to upload
 	statemgmt.PushResourcesState(ctx, b, stateEngine)
 	if logdiag.HasError(ctx) {
@@ -119,10 +123,6 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, st
 		statemgmt.UploadStateForYamlSync(stateEngine),
 	)
 
-	if !logdiag.HasError(ctx) {
-		cmdio.LogString(ctx, "Deployment complete!")
-	}
-
 	// Once the deploy is complete, dry-run the migration to the direct engine
 	// and record the outcome in telemetry. If the user has opted in to the
 	// direct engine (via bundle.engine or DATABRICKS_BUNDLE_ENGINE) and the
@@ -131,6 +131,33 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, st
 	if !stateEngine.IsDirect() && !logdiag.HasError(ctx) {
 		statemgmt.MigrateToDirect(ctx, b, requestedEngine)
 	}
+}
+
+// logDeploySummary prints the per-resource actions that were applied followed by
+// a summary line, mirroring the output of "bundle plan". Per-resource lines are
+// suppressed by --quiet. The past-tense verb is the short action name plus "d"
+// (create→created, delete→deleted, ...).
+func logDeploySummary(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) {
+	printed := false
+	if !b.Quiet {
+		for _, action := range plan.GetActions() {
+			if action.ActionType == deployplan.Skip || action.ActionType == deployplan.Undefined {
+				continue
+			}
+			cmdio.LogString(ctx, action.ActionType.StringShort()+"d "+strings.TrimPrefix(action.ResourceKey, "resources."))
+			printed = true
+		}
+	}
+	if printed {
+		cmdio.LogString(ctx, "")
+	}
+
+	counts := plan.CountActions()
+	summary := fmt.Sprintf("Deploy: %d created, %d changed, %d deleted, %d unchanged", counts.Create, counts.Change, counts.Delete, counts.Unchanged)
+	if len(b.Select) > 0 {
+		summary += fmt.Sprintf(", %d not selected", plan.NotSelected)
+	}
+	cmdio.LogString(ctx, summary+".")
 }
 
 // uploadLibraries uploads libraries to the workspace.

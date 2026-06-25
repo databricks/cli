@@ -1,7 +1,7 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created jobs.job1
+
+Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 === Simulate a cluster policy injecting custom_tags and cluster_log_conf
 These fields exist only remotely (the user never set them in config).
@@ -34,5 +34,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
 
-Deleting files...
-Destroy complete!
+Destroy: 1 deleted.

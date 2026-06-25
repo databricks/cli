@@ -1,9 +1,10 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test_bundle_[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created jobs.job
+created sql_warehouses.warehouse
+
+Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
 
 === Permissions API simply takes the latest level in the request for a given principal
 jobs CAN_VIEW,CAN_MANAGE_RUN => CAN_MANAGE_RUN
@@ -29,5 +30,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test_bundle_[UNIQUE_NAME]/default
 
-Deleting files...
-Destroy complete!
+Destroy: 2 deleted.

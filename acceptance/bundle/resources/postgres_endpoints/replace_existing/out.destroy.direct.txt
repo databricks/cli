@@ -13,5 +13,4 @@ All data stored in them will be permanently lost:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-replace-endpoint-[UNIQUE_NAME]/default
 
-Deleting files...
-Destroy complete!
+Destroy: 3 deleted.

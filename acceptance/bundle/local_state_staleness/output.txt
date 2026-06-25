@@ -2,23 +2,19 @@
 === Step 1: Deploy bundle A
 >>> [CLI] bundle deploy --force-lock --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/local-state-staleness-test-[UNIQUE_NAME]/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created jobs.test_job
+
+Deploy: 1 created, 0 changed, 0 deleted, 0 unchanged.
 
 === Step 2: Deploy bundle B
 >>> [CLI] bundle deploy --force-lock --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/local-state-staleness-test-[UNIQUE_NAME]/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Deploy: 0 created, 0 changed, 0 deleted, 1 unchanged.
 
 === Step 3: Deploy bundle A again (should use remote state)
 >>> [CLI] bundle deploy --force-lock --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/local-state-staleness-test-[UNIQUE_NAME]/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Deploy: 0 created, 0 changed, 0 deleted, 1 unchanged.
 
 === Step 4: Verify only one job exists
 {
@@ -34,8 +30,7 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/local-state-staleness-test-[UNIQUE_NAME]
 
-Deleting files...
-Destroy complete!
+Destroy: 1 deleted.
 
 >>> rm -rf [TEST_TMP_DIR]/bundle_a
 

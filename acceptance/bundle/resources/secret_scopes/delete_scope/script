@@ -7,12 +7,12 @@ cleanup() {
 trap cleanup EXIT
 
 title "create the secret scope"
-trace $CLI bundle deploy
+trace $CLI bundle deploy -q 2>&1 | grep -v '^Deploy:'
 
 grep -v DELETE < databricks.yml > databricks.yml.tmp && mv databricks.yml.tmp databricks.yml
 
 trace $CLI bundle plan &> out.plan.$DATABRICKS_BUNDLE_ENGINE.txt
 rm out.requests.txt
 
-trace $CLI bundle deploy
+trace $CLI bundle deploy -q 2>&1 | grep -v '^Deploy:'
 trace print_requests.py '^//import-file/' '^//workspace/' '^//telemetry-ext' &> out.deploy.requests.txt

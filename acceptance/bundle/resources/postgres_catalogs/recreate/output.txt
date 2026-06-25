@@ -1,9 +1,10 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/recreate-postgres-catalog-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created postgres_catalogs.my_catalog
+created postgres_projects.my_project
+
+Deploy: 2 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> [CLI] bundle plan
 recreate postgres_catalogs.my_catalog
@@ -12,9 +13,9 @@ Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/recreate-postgres-catalog-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+recreated postgres_catalogs.my_catalog
+
+Deploy: 1 created, 0 changed, 1 deleted, 1 unchanged.
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
@@ -27,5 +28,4 @@ all their branches, databases, and endpoints. All data stored in them will be pe
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/recreate-postgres-catalog-[UNIQUE_NAME]/default
 
-Deleting files...
-Destroy complete!
+Destroy: 2 deleted.

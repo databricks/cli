@@ -34,9 +34,11 @@ Validation OK!
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-lakebase-synced-table-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+created database_catalogs.my_catalog
+created database_instances.my_instance
+created synced_database_tables.my_synced_table
+
+Deploy: 3 created, 0 changed, 0 deleted, 0 unchanged.
 
 >>> [CLI] bundle summary
 
@@ -60,6 +62,5 @@ The synced data in the destination database will be lost (the source table is pr
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-lakebase-synced-table-[UNIQUE_NAME]/default
 
-Deleting files...
-Destroy complete!
+Destroy: 3 deleted.
 Cleaning up temporary source table

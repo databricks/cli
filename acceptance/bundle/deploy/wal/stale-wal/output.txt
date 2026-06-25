@@ -5,9 +5,9 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/wal-stale-test/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+updated jobs.test_job
+
+Deploy: 0 created, 1 changed, 0 deleted, 0 unchanged.
 === Checking WAL file after deploy ===
 Stale WAL deleted (expected)
 === State file should NOT contain stale_job ===
