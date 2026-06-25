@@ -8,6 +8,7 @@ import (
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
@@ -258,6 +259,7 @@ func (r *ResourceCluster) DoResize(ctx context.Context, id string, config *Clust
 	}
 
 	// Cluster is not running; fall back to the full clusters/edit path.
+	log.Debugf(ctx, "cluster %s: resize returned INVALID_STATE (%s), falling back to edit", id, err)
 	_, err = r.DoUpdate(ctx, id, config, entry)
 	return err
 }
