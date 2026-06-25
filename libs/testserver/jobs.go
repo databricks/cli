@@ -105,6 +105,14 @@ func (s *FakeWorkspace) JobsReset(req Request) Response {
 		return Response{StatusCode: 403, Body: "{}"}
 	}
 
+	// The Jobs reset API treats run_as as sticky: omitting it from new_settings
+	// keeps the previously configured identity rather than clearing it (unlike
+	// other fields, which reset fully). Mirror that so a removed run_as in the
+	// bundle does not drop the value on the fake.
+	if request.NewSettings.RunAs == nil {
+		request.NewSettings.RunAs = prevjob.Settings.RunAs
+	}
+
 	s.Jobs[jobId] = jobs.Job{
 		JobId:           jobId,
 		CreatorUserName: prevjob.CreatorUserName,
