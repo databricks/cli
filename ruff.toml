@@ -5,16 +5,6 @@ exclude = [
     "tagging.py" # tagging.py is synced from universe in the `openapi/tagging` directory and follows different format rules.
 ]
 
-# `ruff check` is run by `task lint-python` over the maintained Python scripts
-# (the path list lives in Taskfile.yml). The formatter runs over every *.py in
-# the repo; the linter is deliberately scoped to first-party scripts so that
-# acceptance fixtures and golden outputs are not linted.
-#
-# The enabled set is intentionally conservative: rules that overlap with the
-# formatter (line length, trailing whitespace/commas) or require a large
-# stylistic migration (pep8-naming, pyupgrade, pathlib, simplify, ...) are
-# left out and tracked separately for a follow-up. See the rule groups marked
-# below and the suggestions doc for what is deferred.
 [lint]
 select = [
     "E4",   # pycodestyle: import formatting (E501 line-length is left to the formatter)
