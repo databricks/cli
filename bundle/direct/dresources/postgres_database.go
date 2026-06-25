@@ -95,7 +95,7 @@ func (r *ResourcePostgresDatabase) DoRead(ctx context.Context, id string) (*Post
 	return makePostgresDatabaseRemote(database), nil
 }
 
-func (r *ResourcePostgresDatabase) DoCreate(ctx context.Context, config *PostgresDatabaseState) (string, *PostgresDatabaseRemote, error) {
+func (r *ResourcePostgresDatabase) DoCreate(ctx context.Context, _ *StateSaver, config *PostgresDatabaseState) (string, *PostgresDatabaseRemote, error) {
 	waiter, err := r.client.Postgres.CreateDatabase(ctx, postgres.CreateDatabaseRequest{
 		DatabaseId: config.DatabaseId,
 		Parent:     config.Parent,
@@ -127,7 +127,7 @@ func (r *ResourcePostgresDatabase) DoCreate(ctx context.Context, config *Postgre
 	return remote.Name, remote, nil
 }
 
-func (r *ResourcePostgresDatabase) DoUpdate(ctx context.Context, id string, config *PostgresDatabaseState, entry *PlanEntry) (*PostgresDatabaseRemote, error) {
+func (r *ResourcePostgresDatabase) DoUpdate(ctx context.Context, _ *StateSaver, id string, config *PostgresDatabaseState, entry *PlanEntry) (*PostgresDatabaseRemote, error) {
 	// Build update mask from fields that have action="update" in the changes map.
 	// This excludes immutable fields and fields that haven't changed.
 	// Prefix with "spec." because the API expects paths relative to the Database object,
