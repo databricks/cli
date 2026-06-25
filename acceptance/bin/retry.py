@@ -49,4 +49,5 @@ def main():
     sys.exit(result.returncode)
 
 
-main()
+if __name__ == "__main__":
+    main()
