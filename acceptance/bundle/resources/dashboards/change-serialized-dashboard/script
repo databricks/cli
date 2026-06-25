@@ -12,7 +12,7 @@ deploy_dashboard() {
     trace $CLI bundle deploy
     dashboard_id=$($CLI bundle summary --output json | jq -r '.resources.dashboards.my_dashboard.id')
 
-    trace $CLI lakeview get $dashboard_id | jq '{display_name, lifecycle_state, parent_path, path, warehouse_id}'
+    trace retry.py $CLI lakeview get $dashboard_id | jq '{display_name, lifecycle_state, parent_path, path, warehouse_id}'
     trace $CLI lakeview get $dashboard_id | jq '.serialized_dashboard | fromjson' | jq -S '.pages[0]'
 }
 

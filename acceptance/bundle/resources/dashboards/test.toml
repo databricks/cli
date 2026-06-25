@@ -10,3 +10,9 @@ RequiresWarehouse = true
 # C:/Program Files/Git/Users/$username/UNIQUE_NAME before passing it to the CLI
 # Setting this environment variable prevents that conversion on windows.
 MSYS_NO_PATHCONV = "1"
+
+# Simulate eventual consistency on the direct engine: the first GET of a dashboard
+# after it is created returns 404. This reproduces, deterministically, the cloud
+# behaviour these tests are exposed to (Cloud = true), so reads right after deploy
+# must be retried (retry.py) rather than assumed to succeed. Ignored on terraform.
+TESTS_STALE_ONCE = "1"
