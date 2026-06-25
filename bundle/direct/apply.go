@@ -80,8 +80,7 @@ func (d *DeploymentUnit) Create(ctx context.Context, db *dstate.DeploymentState,
 		return fmt.Errorf("saving state after creating id=%s: %w", newID, err)
 	}
 
-	// The resource may not be immediately visible after creation (eventual consistency).
-	waitRemoteState, err := retryOnTransientOrMissing(ctx, func() (any, error) {
+	waitRemoteState, err := retryOnTransient(ctx, func() (any, error) {
 		return d.Adapter.WaitAfterCreate(ctx, newID, newState)
 	})
 	if err != nil {
@@ -107,7 +106,7 @@ func (d *DeploymentUnit) Recreate(ctx context.Context, db *dstate.DeploymentStat
 	// replace_existing=true will reconfigure the parent-managed resource in
 	// place, matching the Terraform provider's recreate behaviour.
 	err = retryOnTransientErr(ctx, func() error { return d.Adapter.DoDelete(ctx, oldID, oldState) })
-	if err != nil && !apierr.IsMissing(err) && !isManagedByParent(err) {
+	if err != nil && !isResourceGone(err) && !isManagedByParent(err) {
 		return fmt.Errorf("deleting old id=%s: %w", oldID, err)
 	}
 
@@ -219,7 +218,7 @@ func (d *DeploymentUnit) Delete(ctx context.Context, db *dstate.DeploymentState,
 	}
 
 	err = d.Adapter.DoDelete(ctx, oldID, oldState)
-	if err != nil && !apierr.IsMissing(err) && !isManagedByParent(err) {
+	if err != nil && !isResourceGone(err) && !isManagedByParent(err) {
 		// Rather than failing delete and requiring user to unbind, we perform unbind automatically there.
 		// Some services, e.g. jobs, return 403 for missing resources if caller did not have permissions to it when job existed.
 		// In those cases 403 hides 404. In other cases, user not having permissions to resource but having in the bundle might
@@ -292,10 +291,7 @@ func (d *DeploymentUnit) refreshRemoteState(ctx context.Context, id string) erro
 	if d.RemoteState != nil {
 		return nil
 	}
-	// Retry on 404: the resource may not be visible yet after a recent create
-	// (eventual consistency). The engine knows the resource should exist because
-	// it has the ID on record.
-	remoteState, err := retryOnTransientOrMissing(ctx, func() (any, error) {
+	remoteState, err := retryOnTransient(ctx, func() (any, error) {
 		return d.Adapter.DoRead(ctx, id)
 	})
 	if err != nil {

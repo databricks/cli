@@ -744,7 +744,7 @@ func runTest(t *testing.T,
 	args := []string{"bash", "-euo", "pipefail", EntryPointScript}
 	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
 
-	cfg, user := internal.PrepareServerAndClient(t, config, LogRequests, tmpDir, testEnv)
+	cfg, user := internal.PrepareServerAndClient(t, config, LogRequests, tmpDir)
 	testdiff.PrepareReplacementsUser(t, &repls, user)
 	testdiff.PrepareReplacementsWorkspaceConfig(t, &repls, cfg)
 
@@ -823,13 +823,6 @@ func runTest(t *testing.T,
 		// (to avoid matching "yes" and "no" values from template input parameters)
 		defaultRepl := hasKey(customEnv, key) && len(config.EnvMatrix[key]) > 1 && len(value) >= 4
 		cmd.Env = addEnvVar(t, cmd.Env, &repls, key, value, config.EnvRepl, defaultRepl)
-	}
-
-	// When the testserver simulates eventual consistency locally, the direct engine
-	// retries reads on a 404. Keep that retry near-instant so tests don't sleep. This
-	// is local-only: on cloud the real propagation delay needs the real interval.
-	if !isRunningOnCloud && internal.StaleOnceEnabled(testEnv) && !hasKey(testEnv, "DATABRICKS_BUNDLE_RETRY_INTERVAL_MS") {
-		cmd.Env = append(cmd.Env, "DATABRICKS_BUNDLE_RETRY_INTERVAL_MS=1")
 	}
 
 	absDir, err := filepath.Abs(dir)

@@ -61,13 +61,7 @@ func retryWith[T any](ctx context.Context, check func(error) bool, fn func() (T,
 			}
 			msg = fmt.Sprintf("retrying after %d %s%s", apiErr.StatusCode, http.StatusText(apiErr.StatusCode), endpoint)
 		}
-		// A 404 right after a write is expected under eventual consistency and not
-		// user-actionable, so log it at debug. Transient 5xx are worth a warning.
-		if apierr.IsMissing(err) {
-			log.Debugf(ctx, "%s", msg)
-		} else {
-			log.Warnf(ctx, "%s", msg)
-		}
+		log.Warnf(ctx, "%s", msg)
 		select {
 		case <-ctx.Done():
 			var zero T
@@ -80,14 +74,6 @@ func retryWith[T any](ctx context.Context, check func(error) bool, fn func() (T,
 // retryOnTransient retries fn on transient 504 errors that the SDK did not already handle.
 func retryOnTransient[T any](ctx context.Context, fn func() (T, error)) (T, error) {
 	return retryWith(ctx, func(err error) bool { return isTransient(ctx, err) }, fn)
-}
-
-// retryOnTransientOrMissing retries fn on transient errors and on 404 (resource not yet
-// visible due to eventual consistency after a recent create).
-func retryOnTransientOrMissing[T any](ctx context.Context, fn func() (T, error)) (T, error) {
-	return retryWith(ctx, func(err error) bool {
-		return isTransient(ctx, err) || apierr.IsMissing(err)
-	}, fn)
 }
 
 // retryOnTransientErr wraps retryOnTransient for functions that return only an error.
